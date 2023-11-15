@@ -936,11 +936,11 @@ def bytes_dlg(
         game: Game - Game the dialogue is from
         file_format: ResourceType - Format to return bytes in
         use_deprecated: bool - Use deprecated fields if True
-    - Dismantle the DLG into a GFF structure
-    - Encode the GFF into bytes in the requested format.
-    Returns: 
+    Returns:
         bytes: Bytes of dialogue in specified format
     - The DLG is read from source if not already a DLG object
+    - Dismantle the DLG into a GFF structure
+    - Encode the GFF into bytes in the requested format.
     """
     if not isinstance(dlg, DLG):
         dlg = read_dlg(dlg)
