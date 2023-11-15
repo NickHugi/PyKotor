@@ -145,7 +145,6 @@ class HelpWindow(QMainWindow):
                         loader = AsyncLoader(self, "Download newer help files...", task, "Failed to update.")
                         if loader.exec_():
                             self._setupContents()
-                    self.version = new_version
         except Exception as e:
             QMessageBox(
                 QMessageBox.Information,
