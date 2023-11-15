@@ -2,11 +2,7 @@
 # From DarthParametric and Drazgar in the DeadlyStream Discord.
 from __future__ import annotations
 
-import contextlib
 from typing import TYPE_CHECKING
-
-with contextlib.suppress(ImportError):
-    from PIL import Image, ImageDraw, ImageFont  # HACK: fix later
 
 from pykotor.helpers.path import Path
 
@@ -84,6 +80,11 @@ class TXIFontInformation(TXIBaseInformation):
 
 def write_bitmap_font(target: os.PathLike | str, font_path: os.PathLike | str, resolution: tuple[int, int], lang: Language) -> None:
     """Generates a bitmap font from a TTF font file."""
+    from PIL import (  # Import things here to separate from HoloPatcher code.
+        Image,
+        ImageDraw,
+        ImageFont,
+    )
     font_path, target_path = (Path(p).resolve() for p in (font_path, target))
 
     txi_font_info = TXIFontInformation()
