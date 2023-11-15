@@ -360,7 +360,7 @@ class WalkmeshRenderer(QWidget):
         -------
             The color that represents a particular material.
         """
-        return self.materialColors[material] if material in self.materialColors else QColor(255, 0, 255)
+        return self.materialColors[material] if material in self.materialColors else QColor(255, 0, 255)  # TODO: fix the typing - an int is not the same as a QColor object
 
     def instancesUnderMouse(self) -> List[GITInstance]:
         return self._instancesUnderMouse
