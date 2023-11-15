@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import math
+import os
 import zipfile
 from contextlib import suppress
 from copy import copy, deepcopy
@@ -981,12 +982,29 @@ class KitDownloader(QDialog):
             button.setText("Download Failed")
             button.setEnabled(True)
 
-    def _downloadKit(self, kitId: str, link: str) -> None:
-        response = requests.get(link, stream=True, timeout=15)
-        filepath: Path = Path.cwd().joinpath("kits", kitId).add_suffix(".zip")
-        with filepath.open("wb") as f:
-            for chunk in response.iter_content(chunk_size=1024):
-                if chunk:
+    def download_file(self, url: str, local_path: os.PathLike | str):
+        local_path = Path(local_path)
+        local_path.parent.mkdir(parents=True, exist_ok=True)
+
+        with requests.get(url, stream=True, timeout=15) as r:
+            r.raise_for_status()
+            with local_path.open("wb") as f:
+                for chunk in r.iter_content(chunk_size=8192):
                     f.write(chunk)
-        with zipfile.ZipFile(filepath, "r") as zip_ref:
-            zip_ref.extractall(filepath.parent)
+
+    def download_directory(self, repo, repo_path, local_dir: os.PathLike | str):
+        api_url = f"https://api.github.com/repos/{repo}/contents/{repo_path}"
+        response = requests.get(api_url, timeout=15)
+        response.raise_for_status()
+
+        for item in response.json():
+            item_path: Path = Path(repo_path) / item["name"]
+            local_path = Path(local_dir) / item_path.relative_to(repo_path)
+
+            if item["type"] == "file":
+                self.download_file(item["download_url"], local_path)
+            elif item["type"] == "dir":
+                self.download_directory(repo, str(item_path), str(local_path))
+
+    def _downloadKit(self, kitId: str, link: str) -> None:
+        self.download_directory("NickHugi/PyKotor", f"toolset/{kitId}", "kits")
