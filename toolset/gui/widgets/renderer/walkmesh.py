@@ -508,7 +508,7 @@ class WalkmeshRenderer(QWidget):
     # region Events
     def paintEvent(self, e: QPaintEvent) -> None:
         # Build walkmesh faces cache
-        """Renders the scene by drawing walkmesh faces, instances and selected objects
+        """Renders the scene by drawing walkmesh faces, instances and selected objects.
 
         Args:
         ----
@@ -686,7 +686,7 @@ class WalkmeshRenderer(QWidget):
         Processes mouse movement:
             - Updates mouse position
             - Emits mouseMoved signal
-            - Finds instances and geometry points under mouse
+            - Finds instances and geometry points under mouse.
         """
         coords = Vector2(e.x(), e.y())
         coordsDelta = Vector2(coords.x - self._mousePrev.x, coords.y - self._mousePrev.y)

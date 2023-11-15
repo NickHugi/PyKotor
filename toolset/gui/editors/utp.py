@@ -343,7 +343,7 @@ class UTPEditor(Editor):
         - Gets list of capsule paths for the module
         - Creates capsule objects from the paths
         - Initializes InventoryEditor with the capsules and other data
-        - Runs editor and updates inventory if changes were made
+        - Runs editor and updates inventory if changes were made.
         """
         capsules = []
 

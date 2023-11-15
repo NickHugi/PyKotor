@@ -18,7 +18,6 @@ from pykotor.extract.file import (
     ResourceResult,
 )
 from pykotor.extract.talktable import TalkTable
-from pykotor.helpers.path import Path
 from pykotor.resource.formats.gff import read_gff
 from pykotor.resource.formats.tpc import TPC, read_tpc
 from pykotor.resource.type import ResourceType
@@ -30,6 +29,7 @@ from pykotor.tslpatcher.logger import PatchLogger
 if TYPE_CHECKING:
     import os
 
+    from pykotor.helpers.path import Path
     from pykotor.resource.formats.gff import GFF
 
 

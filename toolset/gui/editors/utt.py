@@ -81,7 +81,7 @@ class UTTEditor(Editor):
             - Sets trap properties from utt
             - Sets scripts from utt
             - Sets comments from utt
-        }
+        }.
         """
         self._utt = utt
 
