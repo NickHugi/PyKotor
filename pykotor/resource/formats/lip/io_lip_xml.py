@@ -1,27 +1,33 @@
 from __future__ import annotations
 
 import io
-from typing import Optional
 from xml.etree import ElementTree
 
 from pykotor.resource.formats.lip import LIP, LIPShape
-from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES, ResourceReader, ResourceWriter, autoclose
+from pykotor.resource.type import (
+    SOURCE_TYPES,
+    TARGET_TYPES,
+    ResourceReader,
+    ResourceWriter,
+    autoclose,
+)
+from pykotor.tools.indent_xml import indent
 
 
 class LIPXMLReader(ResourceReader):
     def __init__(
-            self,
-            source: SOURCE_TYPES,
-            offset: int = 0,
-            size: int = 0
+        self,
+        source: SOURCE_TYPES,
+        offset: int = 0,
+        size: int = 0,
     ):
         super().__init__(source, offset, size)
-        self._lip: Optional[LIP] = None
+        self._lip: LIP | None = None
 
     @autoclose
     def load(
-            self,
-            auto_close: bool = True
+        self,
+        auto_close: bool = True,
     ) -> LIP:
         self._lip = LIP()
 
@@ -29,7 +35,8 @@ class LIPXMLReader(ResourceReader):
         xml_root = ElementTree.parse(io.StringIO(data)).getroot()
 
         if xml_root.tag != "lip":
-            raise ValueError("The XML file that was loaded was not a valid LIP.")
+            msg = "The XML file that was loaded was not a valid LIP."
+            raise ValueError(msg)
 
         self._lip.length = float(xml_root.get("duration"))
 
@@ -43,9 +50,9 @@ class LIPXMLReader(ResourceReader):
 
 class LIPXMLWriter(ResourceWriter):
     def __init__(
-            self,
-            lip: LIP,
-            target: TARGET_TYPES
+        self,
+        lip: LIP,
+        target: TARGET_TYPES,
     ):
         super().__init__(target)
         self._lip = lip
@@ -53,16 +60,18 @@ class LIPXMLWriter(ResourceWriter):
 
     @autoclose
     def write(
-            self,
-            auto_close: bool = True
+        self,
+        auto_close: bool = True,
     ) -> None:
         self._xml_root.set("duration", str(self._lip.length))
 
         for keyframe in self._lip:
-            ElementTree.SubElement(self._xml_root,
-                                   "keyframe",
-                                   time=str(keyframe.time),
-                                   shape=str(keyframe.shape.value))
+            ElementTree.SubElement(
+                self._xml_root,
+                "keyframe",
+                time=str(keyframe.time),
+                shape=str(keyframe.shape.value),
+            )
 
-        ElementTree.indent(self._xml_root)
+        indent(self._xml_root)
         self._writer.write_bytes(ElementTree.tostring(self._xml_root))

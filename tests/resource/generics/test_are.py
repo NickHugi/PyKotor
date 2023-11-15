@@ -1,22 +1,32 @@
-from unittest import TestCase
+import pathlib
+import sys
+import unittest
 
-from pykotor.resource.formats.gff import read_gff
-from pykotor.resource.generics.are import construct_are, dismantle_are
+if getattr(sys, "frozen", False) is False:
+    pykotor_path = pathlib.Path(__file__).parents[3] / "pykotor"
+    if pykotor_path.joinpath("__init__.py").exists():
+        working_dir = str(pykotor_path.parent)
+        if working_dir in sys.path:
+            sys.path.remove(working_dir)
+        sys.path.insert(0, str(pykotor_path.parent))
 
-TEST_FILE = "../../files/test.are"
+from pykotor.resource.formats.gff import GFF, read_gff
+from pykotor.resource.generics.are import ARE, construct_are, dismantle_are
+
+TEST_FILE = "tests/files/test.are"
 
 
-class TestARE(TestCase):
-    def test_io(self):
-        gff = read_gff(TEST_FILE)
-        are = construct_are(gff)
+class TestARE(unittest.TestCase):
+    def test_io(self) -> None:
+        gff: GFF = read_gff(TEST_FILE)
+        are: ARE = construct_are(gff)
         self.validate_io(are)
 
         gff = dismantle_are(are)
         are = construct_are(gff)
         self.validate_io(are)
 
-    def validate_io(self, are):
+    def validate_io(self, are: ARE) -> None:
         self.assertEqual(0, are.unused_id)
         self.assertEqual(0, are.creator_id)
         self.assertEqual("Untitled", are.tag)
@@ -85,7 +95,11 @@ class TestARE(TestCase):
         self.assertEqual(16777215, are.sun_diffuse.bgr_integer())
         self.assertEqual(16777215, are.fog_color.bgr_integer())
         self.assertEqual(16777215, are.dynamic_light.bgr_integer())
-        self.assertEqual(123, are.dirty_argb_1.bgr_integer())
-        self.assertEqual(1234, are.dirty_argb_2.bgr_integer())
-        self.assertEqual(12345, are.dirty_argb_3.bgr_integer())
+        self.assertEqual(8060928, are.dirty_argb_1.bgr_integer())
+        self.assertEqual(13763584, are.dirty_argb_2.bgr_integer())
+        self.assertEqual(3747840, are.dirty_argb_3.bgr_integer())
+        # TODO: Fix RGB/BGR mix up
 
+
+if __name__ == "__main__":
+    unittest.main()

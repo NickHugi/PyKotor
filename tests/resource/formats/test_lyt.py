@@ -1,15 +1,25 @@
-import platform
+import os
+import pathlib
+import sys
+import unittest
 from unittest import TestCase
 
+if getattr(sys, "frozen", False) is False:
+    pykotor_path = pathlib.Path(__file__).parents[3] / "pykotor"
+    if pykotor_path.joinpath("__init__.py").exists():
+        working_dir = str(pykotor_path.parent)
+        if working_dir in sys.path:
+            sys.path.remove(working_dir)
+        sys.path.insert(0, str(pykotor_path.parent))
+
 from pykotor.common.geometry import Vector3, Vector4
-from pykotor.resource.formats.lyt import LYTAsciiReader, LYTRoom, LYTTrack, LYT, LYTObstacle, LYTDoorHook
-from pykotor.resource.formats.lyt.lyt_auto import write_lyt, read_lyt
+from pykotor.resource.formats.lyt import LYT, LYTAsciiReader, LYTDoorHook, LYTObstacle, LYTRoom, LYTTrack
+from pykotor.resource.formats.lyt.lyt_auto import read_lyt, write_lyt
 from pykotor.resource.type import ResourceType
 
-
-ASCII_TEST_FILE = "../../files/test.lyt"
+ASCII_TEST_FILE = "tests/files/test.lyt"
 DOES_NOT_EXIST_FILE = "./thisfiledoesnotexist"
-CORRUPT_BINARY_TEST_FILE = "../../files/test_corrupted.lyt"
+CORRUPT_BINARY_TEST_FILE = "tests/files/test_corrupted.lyt"
 
 
 class TestLYT(TestCase):
@@ -29,13 +39,27 @@ class TestLYT(TestCase):
         self.assertEqual(lyt.tracks[1], LYTTrack("M17mg_MGT02", Vector3(112.047, 209.04, 0.0)))
         self.assertEqual(lyt.obstacles[0], LYTObstacle("M17mg_MGO01", Vector3(103.309, 3691.61, 0.0)))
         self.assertEqual(lyt.obstacles[1], LYTObstacle("M17mg_MGO02", Vector3(118.969, 3688.0, 0.0)))
-        self.assertEqual(lyt.doorhooks[0], LYTDoorHook("M02ac_02h", "door_01", Vector3(170.475, 66.375, 0.0),
-                                                       Vector4(0.707107, 0.0, 0.0, -0.707107)))
-        self.assertEqual(lyt.doorhooks[1],
-                         LYTDoorHook("M02ac_02a", "door_06", Vector3(90.0, 129.525, 0.0), Vector4(1.0, 0.0, 0.0, 0.0)))
-    
+        self.assertEqual(
+            lyt.doorhooks[0],
+            LYTDoorHook(
+                "M02ac_02h",
+                "door_01",
+                Vector3(170.475, 66.375, 0.0),
+                Vector4(0.707107, 0.0, 0.0, -0.707107),
+            ),
+        )
+        self.assertEqual(
+            lyt.doorhooks[1],
+            LYTDoorHook(
+                "M02ac_02a",
+                "door_06",
+                Vector3(90.0, 129.525, 0.0),
+                Vector4(1.0, 0.0, 0.0, 0.0),
+            ),
+        )
+
     def test_read_raises(self):
-        if platform.system() == "Windows":
+        if os.name == "nt":
             self.assertRaises(PermissionError, read_lyt, ".")
         else:
             self.assertRaises(IsADirectoryError, read_lyt, ".")
@@ -43,8 +67,12 @@ class TestLYT(TestCase):
         self.assertRaises(ValueError, read_lyt, CORRUPT_BINARY_TEST_FILE)
 
     def test_write_raises(self):
-        if platform.system() == "Windows":
+        if os.name == "nt":
             self.assertRaises(PermissionError, write_lyt, LYT(), ".", ResourceType.LYT)
         else:
             self.assertRaises(IsADirectoryError, write_lyt, LYT(), ".", ResourceType.LYT)
         self.assertRaises(ValueError, write_lyt, LYT(), ".", ResourceType.INVALID)
+
+
+if __name__ == "__main__":
+    unittest.main()

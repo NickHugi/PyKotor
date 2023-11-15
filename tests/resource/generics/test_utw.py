@@ -1,22 +1,35 @@
+import pathlib
+import sys
+import unittest
 from unittest import TestCase
 
-from pykotor.resource.formats.gff import read_gff
-from pykotor.resource.generics.utw import construct_utw, dismantle_utw
+from pykotor.resource.formats.gff.gff_data import GFF
 
-TEST_FILE = "../../files/test.utw"
+if getattr(sys, "frozen", False) is False:
+    pykotor_path = pathlib.Path(__file__).parents[3] / "pykotor"
+    if pykotor_path.joinpath("__init__.py").exists():
+        working_dir = str(pykotor_path.parent)
+        if working_dir in sys.path:
+            sys.path.remove(working_dir)
+        sys.path.insert(0, str(pykotor_path.parent))
+
+from pykotor.resource.formats.gff import read_gff
+from pykotor.resource.generics.utw import UTW, construct_utw, dismantle_utw
+
+TEST_FILE = "tests/files/test.utw"
 
 
 class TestUTW(TestCase):
     def test_io(self):
-        gff = read_gff(TEST_FILE)
-        utw = construct_utw(gff)
+        gff: GFF = read_gff(TEST_FILE)
+        utw: UTW = construct_utw(gff)
         self.validate_io(utw)
 
         gff = dismantle_utw(utw)
         utw = construct_utw(gff)
         self.validate_io(utw)
 
-    def validate_io(self, utw):
+    def validate_io(self, utw: UTW):
         self.assertEqual(1, utw.appearance_id)
         self.assertEqual("", utw.linked_to)
         self.assertEqual("sw_mapnote011", utw.resref)
@@ -28,3 +41,7 @@ class TestUTW(TestCase):
         self.assertEqual(1, utw.map_note_enabled)
         self.assertEqual(5, utw.palette_id)
         self.assertEqual("comment", utw.comment)
+
+
+if __name__ == "__main__":
+    unittest.main()

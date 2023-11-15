@@ -2,23 +2,38 @@ import struct
 
 from pykotor.common.stream import BinaryReader
 from pykotor.resource.formats.tpc import TPC, TPCTextureFormat
-from pykotor.resource.type import ResourceWriter, TARGET_TYPES, autoclose
+from pykotor.resource.type import TARGET_TYPES, ResourceWriter, autoclose
 
 
 class TPCBMPWriter(ResourceWriter):
     def __init__(
-            self,
-            tpc: TPC,
-            target: TARGET_TYPES
+        self,
+        tpc: TPC,
+        target: TARGET_TYPES,
     ):
         super().__init__(target)
         self._tpc = tpc
 
     @autoclose
     def write(
-            self,
-            auto_close: bool = True
+        self,
+        auto_close: bool = True,
     ) -> None:
+        """Writes the texture to a bitmap file.
+
+        Args:
+        ----
+            self: The Texture object
+            auto_close: Whether to close the file after writing (default True).
+
+        Returns:
+        -------
+            None: No value is returned
+        Processing Logic:
+            - Convert texture to RGB format and get width, height, data
+            - Write bitmap header and info header
+            - Read pixels from data and write to file in BGR format line by line.
+        """
         width, height, data = self._tpc.convert(TPCTextureFormat.RGB, 0)
         file_size = 14 + 40 + (width * height * 3)
 
@@ -43,7 +58,7 @@ class TPCBMPWriter(ResourceWriter):
 
         pixel_reader = BinaryReader.from_bytes(data)
         temp_pixels = []
-        for i in range(len(data) // 3):
+        for _i in range(len(data) // 3):
             r = pixel_reader.read_uint8()
             g = pixel_reader.read_uint8()
             b = pixel_reader.read_uint8()
@@ -53,4 +68,4 @@ class TPCBMPWriter(ResourceWriter):
             x = i % width
             y = height - (i // width) - 1
             index = x + width * y
-            self._writer.write_bytes(struct.pack('BBB', *temp_pixels[index]))
+            self._writer.write_bytes(struct.pack("BBB", *temp_pixels[index]))

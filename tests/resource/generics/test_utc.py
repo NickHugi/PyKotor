@@ -1,10 +1,21 @@
+import pathlib
+import sys
+import unittest
 from unittest import TestCase
+
+if getattr(sys, "frozen", False) is False:
+    pykotor_path = pathlib.Path(__file__).parents[3] / "pykotor"
+    if pykotor_path.joinpath("__init__.py").exists():
+        working_dir = str(pykotor_path.parent)
+        if working_dir in sys.path:
+            sys.path.remove(working_dir)
+        sys.path.insert(0, str(pykotor_path.parent))
 
 from pykotor.common.misc import EquipmentSlot
 from pykotor.resource.formats.gff import read_gff
-from pykotor.resource.generics.utc import construct_utc, dismantle_utc, UTC
+from pykotor.resource.generics.utc import UTC, construct_utc, dismantle_utc
 
-TEST_FILE = "../../files/test.utc"
+TEST_FILE = "tests/files/test.utc"
 
 
 class TestUTC(TestCase):
@@ -108,6 +119,5 @@ class TestUTC(TestCase):
         self.assertEqual(8, utc.treat_injury)
 
 
-
-
-
+if __name__ == "__main__":
+    unittest.main()

@@ -1,13 +1,23 @@
-from unittest import TestCase
+import pathlib
+import sys
+import unittest
+
+if getattr(sys, "frozen", False) is False:
+    pykotor_path = pathlib.Path(__file__).parents[3] / "pykotor"
+    if pykotor_path.joinpath("__init__.py").exists():
+        working_dir = str(pykotor_path.parent)
+        if working_dir in sys.path:
+            sys.path.remove(working_dir)
+        sys.path.insert(0, str(pykotor_path.parent))
 
 from pykotor.common.misc import Color
 from pykotor.resource.formats.gff import read_gff
 from pykotor.resource.generics.git import construct_git, dismantle_git
 
-TEST_FILE = "../../files/test.git"
+TEST_FILE = "tests/files/test.git"
 
 
-class TestGIT(TestCase):
+class TestGIT(unittest.TestCase):
     def test_io(self):
         gff = read_gff(TEST_FILE)
         git = construct_git(gff)
@@ -42,7 +52,7 @@ class TestGIT(TestCase):
         self.assertAlmostEqual(-41.238, git.creatures[0].position.x, 2)
         self.assertAlmostEqual(-53.214, git.creatures[0].position.y, 2)
         self.assertAlmostEqual(0.000, git.creatures[0].position.z, 2)
-        self.assertAlmostEqual(0.9817400806520653, git.creatures[0].bearing, 2)
+        self.assertAlmostEqual(0.982, git.creatures[0].bearing, 2)
 
         self.assertAlmostEqual(1.0, git.doors[0].bearing, 2)
         self.assertAlmostEqual(-43.763, git.doors[0].position.x, 2)
@@ -108,3 +118,7 @@ class TestGIT(TestCase):
         self.assertAlmostEqual(-16.065, git.waypoints[0].position.y, 2)
         self.assertAlmostEqual(1.0, git.waypoints[0].position.z, 2)
         self.assertAlmostEqual(0.000, git.waypoints[0].bearing, 2)
+
+
+if __name__ == "__main__":
+    unittest.main()

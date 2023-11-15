@@ -2,48 +2,73 @@ from __future__ import annotations
 
 import csv
 import io
-from typing import Optional
 
+from pykotor.common.misc import decode_bytes_with_fallbacks
 from pykotor.resource.formats.twoda.twoda_data import TwoDA
-from pykotor.resource.type import TARGET_TYPES, SOURCE_TYPES, ResourceReader, ResourceWriter, autoclose
+from pykotor.resource.type import (
+    SOURCE_TYPES,
+    TARGET_TYPES,
+    ResourceReader,
+    ResourceWriter,
+    autoclose,
+)
 
 
 class TwoDACSVReader(ResourceReader):
     def __init__(
-            self,
-            source: SOURCE_TYPES,
-            offset: int = 0,
-            size: int = 0
+        self,
+        source: SOURCE_TYPES,
+        offset: int = 0,
+        size: int = 0,
     ):
         super().__init__(source, offset, size)
-        self._twoda: Optional[TwoDA] = None
+        self._twoda: TwoDA | None = None
 
     @autoclose
     def load(
-            self,
-            auto_close: bool = True
+        self,
+        auto_close: bool = True,
     ) -> TwoDA:
         self._twoda = TwoDA()
-        data = self._reader.read_bytes(self._reader.size()).decode()
-        _csv: csv.reader = csv.reader(io.StringIO(data))
+        data: str = decode_bytes_with_fallbacks(self._reader.read_bytes(self._reader.size()))
+        _csv = csv.reader(io.StringIO(data))
 
-        headers = next(_csv)[1:]
-        for header in headers:
-            self._twoda.add_column(header)
+        try:
+            headers = next(_csv)[1:]
+            if not headers:
+                msg = "CSV header is missing or not formatted correctly."
+                raise ValueError(msg)
 
-        for row in _csv:
-            label = row[:1][0]
-            cells = dict(zip(headers, row[1:]))
-            self._twoda.add_row(label, cells)
+            for header in headers:
+                if not header.strip():
+                    msg = "Empty header detected, CSV is not valid."
+                    raise ValueError(msg)
+                self._twoda.add_column(header.strip())
+
+            for i, row in enumerate(_csv, start=1):
+                if len(row) != len(headers) + 1:
+                    msg = f"Row {i} does not have the correct number of columns."
+                    raise ValueError(msg)
+
+                label = row[0]
+                if not label.strip():
+                    msg = f"Row {i} does not have a valid label."
+                    raise ValueError(msg)
+
+                cells = dict(zip(headers, row[1:]))
+                self._twoda.add_row(label.strip(), cells)
+        except csv.Error as e:
+            msg = f"CSV reader error: {e!r}"
+            raise ValueError(msg) from e
 
         return self._twoda
 
 
 class TwoDACSVWriter(ResourceWriter):
     def __init__(
-            self,
-            twoda: TwoDA,
-            target: TARGET_TYPES
+        self,
+        twoda: TwoDA,
+        target: TARGET_TYPES,
     ):
         super().__init__(target)
         self._twoda: TwoDA = twoda
@@ -52,21 +77,19 @@ class TwoDACSVWriter(ResourceWriter):
 
     @autoclose
     def write(
-            self,
-            auto_close: bool = True
+        self,
+        auto_close: bool = True,
     ) -> None:
         headers = self._twoda.get_headers()
 
         insert = [""]
-        for header in headers:
-            insert.append(header)
+        insert.extend(iter(headers))
         self._csv_writer.writerow(insert)
 
         for row in self._twoda:
             insert = [str(row.label())]
-            for header in headers:
-                insert.append(row.get_string(header))
+            insert.extend(row.get_string(header) for header in headers)
             self._csv_writer.writerow(insert)
 
-        data = self._csv_string.getvalue().encode('ascii')
+        data = self._csv_string.getvalue().encode("ascii")
         self._writer.write_bytes(data)

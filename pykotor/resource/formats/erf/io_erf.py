@@ -1,36 +1,56 @@
 from __future__ import annotations
 
-from typing import Optional
-
 from pykotor.resource.formats.erf import ERF, ERFType
-from pykotor.resource.type import ResourceType, TARGET_TYPES, ResourceReader, SOURCE_TYPES, ResourceWriter, autoclose
+from pykotor.resource.type import (
+    SOURCE_TYPES,
+    TARGET_TYPES,
+    ResourceReader,
+    ResourceType,
+    ResourceWriter,
+    autoclose,
+)
 
 
 class ERFBinaryReader(ResourceReader):
     def __init__(
-            self,
-            source: SOURCE_TYPES,
-            offset: int = 0,
-            size: int = 0
+        self,
+        source: SOURCE_TYPES,
+        offset: int = 0,
+        size: int = 0,
     ):
         super().__init__(source, offset, size)
-        self._erf: Optional[ERF] = None
+        self._erf: ERF | None = None
 
     @autoclose
     def load(
-            self,
-            auto_close: bool = True
+        self,
+        auto_close: bool = True,
     ) -> ERF:
-        self._erf = ERF()
-
+        """Load ERF file
+        Args:
+            self: The ERF object
+            auto_close: Whether to close the file after loading
+        Returns:
+            ERF: The loaded ERF object
+        Processing Logic:
+            - Read file header and validate file type and version
+            - Read entry count and offsets to keys and resources sections
+            - Read keys section into lists of ref, id, type
+            - Read resources section into lists of offsets and sizes
+            - Seek to each resource and read data into ERF object.
+        """
         file_type = self._reader.read_string(4)
         file_version = self._reader.read_string(4)
 
         if not any(x for x in ERFType if x.value == file_type):
-            raise ValueError("Not a valid ERF file.")
+            msg = "Not a valid ERF file."
+            raise ValueError(msg)
+
+        self._erf = ERF(ERFType.MOD if file_type == ERFType.MOD.value else ERFType.ERF)
 
         if file_version != "V1.0":
-            raise ValueError("The ERF version that was loaded is unsupported.")
+            msg = f"ERF version '{file_version}' is unsupported."
+            raise ValueError(msg)
 
         self._reader.skip(8)
         entry_count = self._reader.read_uint32()
@@ -42,23 +62,23 @@ class ERFBinaryReader(ResourceReader):
         resids = []
         restypes = []
         self._reader.seek(offset_to_keys)
-        for i in range(entry_count):
+        for _i in range(entry_count):
             resrefs.append(self._reader.read_string(16))
             resids.append(self._reader.read_uint32())
             restypes.append(self._reader.read_uint16())
             self._reader.skip(2)
 
-        resoffsets = []
-        ressizes = []
+        resoffsets: list[int] = []
+        ressizes: list[int] = []
         self._reader.seek(offset_to_resources)
-        for i in range(entry_count):
+        for _i in range(entry_count):
             resoffsets.append(self._reader.read_uint32())
             ressizes.append(self._reader.read_uint32())
 
         for i in range(entry_count):
             self._reader.seek(resoffsets[i])
             resdata = self._reader.read_bytes(ressizes[i])
-            self._erf.set(resrefs[i], ResourceType.from_id(restypes[i]), resdata)
+            self._erf.set_data(resrefs[i], ResourceType.from_id(restypes[i]), resdata)
 
         return self._erf
 
@@ -69,17 +89,17 @@ class ERFBinaryWriter(ResourceWriter):
     RESOURCE_ELEMENT_SIZE = 8
 
     def __init__(
-            self,
-            erf: ERF,
-            target: TARGET_TYPES
+        self,
+        erf: ERF,
+        target: TARGET_TYPES,
     ):
         super().__init__(target)
         self.erf = erf
 
     @autoclose
     def write(
-            self,
-            auto_close: bool = True
+        self,
+        auto_close: bool = True,
     ) -> None:
         entry_count = len(self.erf)
         offset_to_keys = ERFBinaryWriter.FILE_HEADER_SIZE
@@ -96,16 +116,13 @@ class ERFBinaryWriter(ResourceWriter):
         self._writer.write_uint32(0)
         self._writer.write_uint32(0)
         self._writer.write_uint32(0xFFFFFFFF)
-        self._writer.write_bytes(b'\0' * 116)
+        self._writer.write_bytes(b"\0" * 116)
 
-        resid = 0
-        for resource in self.erf:
+        for resid, resource in enumerate(self.erf):
             self._writer.write_string(resource.resref.get(), string_length=16)
             self._writer.write_uint32(resid)
             self._writer.write_uint16(resource.restype.type_id)
             self._writer.write_uint16(0)
-            resid += 1
-
         data_offset = offset_to_resources + ERFBinaryWriter.RESOURCE_ELEMENT_SIZE * entry_count
         for resource in self.erf:
             self._writer.write_uint32(data_offset)

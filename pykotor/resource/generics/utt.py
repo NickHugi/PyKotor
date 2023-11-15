@@ -4,14 +4,14 @@ from pykotor.common.language import LocalizedString
 from pykotor.common.misc import Game, ResRef
 from pykotor.resource.formats.gff import GFF, GFFContent, read_gff, write_gff
 from pykotor.resource.formats.gff.gff_auto import bytes_gff
-from pykotor.resource.type import ResourceType, SOURCE_TYPES, TARGET_TYPES
+from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES, ResourceType
 
 
 class UTT:
-    """
-    Stores trigger data.
+    """Stores trigger data.
 
-    Attributes:
+    Attributes
+    ----------
         tag: "Tag" field.
         resref: "TemplateResRef" field.
         auto_remove_key: "AutoRemoveKey" field.
@@ -46,7 +46,7 @@ class UTT:
     BINARY_TYPE = ResourceType.UTT
 
     def __init__(
-            self
+        self,
     ):
         self.resref: ResRef = ResRef.from_blank()
         self.comment: str = ""
@@ -87,8 +87,19 @@ class UTT:
 
 
 def construct_utt(
-        gff: GFF
+    gff: GFF,
 ) -> UTT:
+    """Constructs a UTT object from a GFF node
+    Args:
+        gff: GFF - The GFF node to parse
+    Returns:
+        utt: UTT - The constructed UTT object
+    Processing Logic:
+    - Initialize an empty UTT object
+    - Get the root node of the GFF
+    - Acquire and set various UTT properties by parsing attributes from the root node
+    - Return the completed UTT object.
+    """
     utt = UTT()
 
     root = gff.root
@@ -125,11 +136,28 @@ def construct_utt(
 
 
 def dismantle_utt(
-        utt: UTT,
-        game: Game = Game.K2,
-        *,
-        use_deprecated: bool = True
+    utt: UTT,
+    game: Game = Game.K2,
+    *,
+    use_deprecated: bool = True,
 ) -> GFF:
+    """Dismantles a UTT object into a GFF structure.
+
+    Args:
+    ----
+        utt: UTT - The UTT object to dismantle
+        game: Game - The game the UTT is for (default K2)
+        use_deprecated: bool - Whether to include deprecated fields (default True)
+
+    Returns:
+    -------
+        GFF - The dismantled UTT as a GFF structure
+
+    Processes the UTT by:
+    - Creating a GFF root node
+    - Setting UTT fields as properties on the root node
+    - Returning the completed GFF.
+    """
     gff = GFF(GFFContent.UTT)
 
     root = gff.root
@@ -168,33 +196,34 @@ def dismantle_utt(
 
 
 def read_utt(
-        source: SOURCE_TYPES,
-        offset: int = 0,
-        size: int = None
+    source: SOURCE_TYPES,
+    offset: int = 0,
+    size: int | None = None,
 ) -> UTT:
     gff = read_gff(source, offset, size)
-    utt = construct_utt(gff)
-    return utt
+    return construct_utt(gff)
 
 
 def write_utt(
-        utt: UTT,
-        target: TARGET_TYPES,
-        game: Game = Game.K2,
-        file_format: ResourceType = ResourceType.GFF,
-        *,
-        use_deprecated: bool = True
+    utt: UTT,
+    target: TARGET_TYPES,
+    game: Game = Game.K2,
+    file_format: ResourceType = ResourceType.GFF,
+    *,
+    use_deprecated: bool = True,
 ) -> None:
     gff = dismantle_utt(utt, game, use_deprecated=use_deprecated)
     write_gff(gff, target, file_format)
 
 
 def bytes_utt(
-        utt: UTT,
-        game: Game = Game.K2,
-        file_format: ResourceType = ResourceType.GFF,
-        *,
-        use_deprecated: bool = True
+    utt: UTT | SOURCE_TYPES,
+    game: Game = Game.K2,
+    file_format: ResourceType = ResourceType.GFF,
+    *,
+    use_deprecated: bool = True,
 ) -> bytes:
+    if not isinstance(utt, UTT):
+        utt = read_utt(utt)
     gff = dismantle_utt(utt, game, use_deprecated=use_deprecated)
     return bytes_gff(gff, file_format)

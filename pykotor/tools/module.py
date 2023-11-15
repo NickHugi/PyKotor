@@ -1,13 +1,16 @@
-import os
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
 
 from pykotor.common.language import LocalizedString
 from pykotor.common.module import Module
 from pykotor.extract.installation import Installation, SearchLocation
+from pykotor.helpers.string import ireplace
 from pykotor.resource.formats.erf import ERF, ERFType, write_erf
 from pykotor.resource.formats.gff import write_gff
-from pykotor.resource.formats.lyt.lyt_auto import write_lyt
-from pykotor.resource.formats.rim import read_rim, RIM
-from pykotor.resource.formats.tpc import TPCTextureFormat, TPC, write_tpc
+from pykotor.resource.formats.lyt import write_lyt
+from pykotor.resource.formats.rim import RIM, read_rim
+from pykotor.resource.formats.tpc import TPC, TPCTextureFormat, write_tpc
 from pykotor.resource.formats.vis import write_vis
 from pykotor.resource.generics.are import dismantle_are
 from pykotor.resource.generics.git import dismantle_git
@@ -18,55 +21,70 @@ from pykotor.resource.generics.utp import dismantle_utp
 from pykotor.resource.generics.uts import dismantle_uts
 from pykotor.resource.type import ResourceType
 from pykotor.tools import model
+from pykotor.tools.path import CaseAwarePath
+
+if TYPE_CHECKING:
+    import os
 
 
 def clone_module(
-        root: str,
-        identifier: str,
-        prefix: str,
-        name: str,
-        installation: Installation,
-        *,
-        copyTextures: bool = False,
-        copyLightmaps: bool = False,
-        keepDoors: bool = False,
-        keepPlaceables: bool = False,
-        keepSounds: bool = False,
-        keepPathing: bool = False
+    root: str,
+    identifier: str,
+    prefix: str,
+    name: str,
+    installation: Installation,
+    *,
+    copy_textures: bool = False,
+    copy_lightmaps: bool = False,
+    keep_doors: bool = False,
+    keep_placeables: bool = False,
+    keep_sounds: bool = False,
+    keep_pathing: bool = False,
 ) -> None:
-    installation = installation
-    root = root
-    identifier = identifier
+    """Clones a module
+    Args:
+        root: str - The path to the module root
+        identifier: str - The identifier for the new module
+        prefix: str - Prefix for generated textures and lightmaps
+        name: str - Name for the new ARE file
+        installation: Installation - The installation context
+    Returns:
+        None
+    Processing Logic:
+        1. Load resources from old module
+        2. Rename resources and change identifiers
+        3. Copy textures and lightmaps if specified
+        4. Write new module resources to file.
+    """
+    old_module = Module(root, installation)
+    new_module = ERF(ERFType.MOD)
 
-    oldModule = Module(root, installation)
-    newModule = ERF(ERFType.MOD)
-
-    ifo = oldModule.info().resource()
-    oldIdentifier = ifo.identifier.get()
-    ifo.identifier.set(identifier)
+    ifo = old_module.info().resource()
+    old_identifier = ifo.identifier.get()
+    ifo.identifier.set_data(identifier)
     ifo.mod_name = LocalizedString.from_english(identifier.upper())
     ifo.tag = identifier.upper()
-    ifo.area_name.set(identifier)
+    ifo.area_name.set_data(identifier)
     ifo_data = bytearray()
     write_gff(dismantle_ifo(ifo), ifo_data)
-    newModule.set("module", ResourceType.IFO, ifo_data)
+    new_module.set_data("module", ResourceType.IFO, ifo_data)
 
-    are = oldModule.are().resource()
+    are = old_module.are().resource()
     are.name = LocalizedString.from_english(name)
     are_data = bytearray()
     write_gff(dismantle_are(are), are_data)
-    newModule.set(identifier, ResourceType.ARE, are_data)
+    new_module.set_data(identifier, ResourceType.ARE, are_data)
 
-    lyt = oldModule.layout().resource()
-    vis = oldModule.vis().resource()
+    lyt = old_module.layout().resource()
+    vis = old_module.vis().resource()
+    git = old_module.git().resource()
 
-    if keepPathing:
-        pth = oldModule.pth().resource()
+    if keep_pathing:
+        pth = old_module.pth().resource()
         pth_data = bytearray()
         write_gff(dismantle_pth(pth), pth_data)
-        newModule.set(identifier, ResourceType.PTH, pth_data)
+        new_module.set_data(identifier, ResourceType.PTH, pth_data)
 
-    git = oldModule.git().resource()
     git.creatures = []
     git.encounters = []
     git.stores = []
@@ -74,144 +92,155 @@ def clone_module(
     git.waypoints = []
     git.cameras = []
 
-    if keepDoors:
+    if keep_doors:
         for i, door in enumerate(git.doors):
-            oldResname = door.resref.get()
-            newResname = "{}_dor{}".format(identifier, i)
-            door.resref.set(newResname)
-            door.tag = newResname
+            old_resname = door.resref.get()
+            new_resname = f"{identifier}_dor{i}"
+            door.resref.set_data(new_resname)
+            door.tag = new_resname
 
-            utd = oldModule.door(oldResname).resource()
+            utd = old_module.door(old_resname).resource()
             data = bytearray()
             write_gff(dismantle_utd(utd), data)
-            newModule.set(newResname, ResourceType.UTD, data)
+            new_module.set_data(new_resname, ResourceType.UTD, data)
     else:
         git.doors = []
 
-    if keepPlaceables:
+    if keep_placeables:
         for i, placeable in enumerate(git.placeables):
-            oldResname = placeable.resref.get()
-            newResname = "{}_plc{}".format(identifier, i)
-            placeable.resref.set(newResname)
-            placeable.tag = newResname
+            old_resname = placeable.resref.get()
+            new_resname = f"{identifier}_plc{i}"
+            placeable.resref.set_data(new_resname)
+            placeable.tag = new_resname
 
-            utp = oldModule.placeable(oldResname).resource()
+            utp = old_module.placeable(old_resname).resource()
             data = bytearray()
             write_gff(dismantle_utp(utp), data)
-            newModule.set(newResname, ResourceType.UTP, data)
+            new_module.set_data(new_resname, ResourceType.UTP, data)
     else:
         git.placeables = []
 
-    if keepSounds:
+    if keep_sounds:
         for i, sound in enumerate(git.sounds):
-            oldResname = sound.resref.get()
-            newResname = "{}_snd{}".format(identifier, i)
-            sound.resref.set(newResname)
-            sound.tag = newResname
+            old_resname = sound.resref.get()
+            new_resname = f"{identifier}_snd{i}"
+            sound.resref.set_data(new_resname)
+            sound.tag = new_resname
 
-            uts = oldModule.sound(oldResname).resource()
+            uts = old_module.sound(old_resname).resource()
             data = bytearray()
             write_gff(dismantle_uts(uts), data)
-            newModule.set(newResname, ResourceType.UTS, data)
+            new_module.set_data(new_resname, ResourceType.UTS, data)
     else:
         git.sounds = []
 
     git_data = bytearray()
     write_gff(dismantle_git(git), git_data)
-    newModule.set(identifier, ResourceType.GIT, git_data)
+    new_module.set_data(identifier, ResourceType.GIT, git_data)
 
-    newLightmaps = {}
-    newTextures = {}
+    new_lightmaps: dict[str, str] = {}
+    new_textures: dict[str, str] = {}
     for room in lyt.rooms:
-        oldModelName = room.model
-        newModelName = oldModelName.lower().replace(oldIdentifier, identifier)
+        old_model_name = room.model
+        new_model_name = ireplace(old_model_name, old_identifier, identifier)
 
-        room.model = newModelName
-        if vis.room_exists(oldModelName):
-            vis.rename_room(oldModelName, newModelName)
+        room.model = new_model_name
+        if vis.room_exists(old_model_name):
+            vis.rename_room(old_model_name, new_model_name)
 
-        mdlData = installation.resource(oldModelName, ResourceType.MDL).data
-        mdxData = installation.resource(oldModelName, ResourceType.MDX).data
-        wokData = installation.resource(oldModelName, ResourceType.WOK).data
+        mdl_data = installation.resource(old_model_name, ResourceType.MDL).data
+        mdx_data = installation.resource(old_model_name, ResourceType.MDX).data
+        wok_data = installation.resource(old_model_name, ResourceType.WOK).data
 
-        if copyTextures:
-            for texture in model.list_textures(mdlData):
-                if texture not in newTextures:
-                    newTextureName = prefix + texture[3:]
-                    newTextures[texture] = newTextureName
+        if copy_textures:
+            for texture in model.list_textures(mdl_data):
+                if texture not in new_textures:
+                    new_texture_name = prefix + texture[3:]
+                    new_textures[texture] = new_texture_name
 
                     tpc = installation.texture(texture)
                     tpc = TPC() if tpc is None else tpc
                     rgba = tpc.convert(TPCTextureFormat.RGBA)
 
                     tga = TPC()
-                    tga.set(rgba.width, rgba.height, [rgba.data], TPCTextureFormat.RGBA)
+                    tga.set_data(rgba.width, rgba.height, [rgba.data], TPCTextureFormat.RGBA)
 
                     tga_data = bytearray()
                     write_tpc(tga, tga_data, ResourceType.TGA)
-                    newModule.set(newTextureName, ResourceType.TGA, tga_data)
-            mdlData = model.change_textures(mdlData, newTextures)
+                    new_module.set_data(new_texture_name, ResourceType.TGA, tga_data)
+            mdl_data = model.change_textures(mdl_data, new_textures)
 
-        if copyLightmaps:
-            for lightmap in model.list_lightmaps(mdlData):
-                if lightmap not in newLightmaps:
-                    newLightmapName = "{}_lm_{}".format(identifier, len(newLightmaps.keys()))
-                    newLightmaps[lightmap] = newLightmapName
+        if copy_lightmaps:
+            for lightmap in model.list_lightmaps(mdl_data):
+                if lightmap not in new_lightmaps:
+                    new_lightmap_name = f"{identifier}_lm_{len(new_lightmaps.keys())}"
+                    new_lightmaps[lightmap] = new_lightmap_name
 
-                    tpc = installation.texture(lightmap, [SearchLocation.CHITIN, SearchLocation.OVERRIDE])
+                    tpc = installation.texture(
+                        lightmap,
+                        [SearchLocation.CHITIN, SearchLocation.OVERRIDE],
+                    )
                     tpc = TPC() if tpc is None else tpc
                     rgba = tpc.convert(TPCTextureFormat.RGBA)
 
                     tga = TPC()
-                    tga.set(rgba.width, rgba.height, [rgba.data], TPCTextureFormat.RGBA)
+                    tga.set_data(rgba.width, rgba.height, [rgba.data], TPCTextureFormat.RGBA)
 
                     tga_data = bytearray()
                     write_tpc(tga, tga_data, ResourceType.TGA)
-                    newModule.set(newLightmapName, ResourceType.TGA, tga_data)
-            mdlData = model.change_lightmaps(mdlData, newLightmaps)
+                    new_module.set_data(new_lightmap_name, ResourceType.TGA, tga_data)
+            mdl_data = model.change_lightmaps(mdl_data, new_lightmaps)
 
-        mdlData = model.rename(mdlData, newModelName)
-        newModule.set(newModelName, ResourceType.MDL, mdlData)
-        newModule.set(newModelName, ResourceType.MDX, mdxData)
-        newModule.set(newModelName, ResourceType.WOK, wokData)
+        mdl_data = model.rename(mdl_data, new_model_name)
+        new_module.set_data(new_model_name, ResourceType.MDL, mdl_data)
+        new_module.set_data(new_model_name, ResourceType.MDX, mdx_data)
+        new_module.set_data(new_model_name, ResourceType.WOK, wok_data)
 
     vis_data = bytearray()
     write_vis(vis, vis_data)
-    newModule.set(identifier, ResourceType.VIS, vis_data)
+    new_module.set_data(identifier, ResourceType.VIS, vis_data)
 
     lyt_data = bytearray()
     write_lyt(lyt, lyt_data)
-    newModule.set(identifier, ResourceType.LYT, lyt_data)
+    new_module.set_data(identifier, ResourceType.LYT, lyt_data)
 
-    filepath = installation.module_path() + identifier + ".mod"
-    write_erf(newModule, filepath)
+    filepath = installation.module_path() / f"{identifier}.mod"
+    write_erf(new_module, filepath)
 
 
-def rim_to_mod(filepath: str) -> None:
-    """
-    Creates a MOD file at the given filepath and copies the resources from the corresponding
+def rim_to_mod(filepath: os.PathLike | str) -> None:
+    """Creates a MOD file at the given filepath and copies the resources from the corresponding
     RIM files.
 
     Raises:
+    ------
         ValueError: If the file was corrupted or the format could not be determined.
         FileNotFoundError: If the file could not be found.
         IsADirectoryError: If the specified path is a directory (Unix-like systems only).
         PermissionError: If the file could not be accessed.
 
     Args:
+    ----
         filepath: The filepath of the MOD file you would like to create.
     """
-    if not filepath.endswith(".mod"):
-        raise ValueError("Specified file must end with the .mod extension")
+    resolved_file_path = CaseAwarePath(filepath)
+    if resolved_file_path.suffix.lower() != ".mod":
+        msg = "Specified file must end with the .mod extension"
+        raise ValueError(msg)
 
-    filepath_rim_s = filepath.replace(".mod", "_s.rim")
-    filepath_rim = filepath.replace(".mod", ".rim")
+    file_ext_rim = resolved_file_path.suffix.lower().replace(".mod", ".rim")
+    file_ext_rim_s = resolved_file_path.suffix.lower().replace(".mod", "_s.rim")
+
+    filepath_rim = resolved_file_path.with_suffix(file_ext_rim)
+    filepath_rim_s = resolved_file_path.with_suffix(file_ext_rim_s)
 
     rim = read_rim(filepath_rim)
-    rim_s = read_rim(filepath_rim_s) if os.path.exists(filepath_rim_s) else RIM()
+    rim_s = read_rim(filepath_rim_s) if filepath_rim_s.exists() else RIM()
 
     mod = ERF(ERFType.MOD)
-    [mod.set(res.resref.get(), res.restype, res.data) for res in rim]
-    [mod.set(res.resref.get(), res.restype, res.data) for res in rim_s]
+    for res in rim:
+        mod.set_data(res.resref.get(), res.restype, res.data)
+    for res in rim_s:
+        mod.set_data(res.resref.get(), res.restype, res.data)
 
     write_erf(mod, filepath, ResourceType.ERF)

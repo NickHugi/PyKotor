@@ -1,18 +1,27 @@
-import platform
-from unittest import TestCase
+import os
+import pathlib
+import sys
+import unittest
 
-from pykotor.resource.formats.ssf import SSF, SSFSound, SSFBinaryReader, detect_ssf, SSFXMLReader, write_ssf, read_ssf
+if getattr(sys, "frozen", False) is False:
+    pykotor_path = pathlib.Path(__file__).parents[3] / "pykotor"
+    if pykotor_path.joinpath("__init__.py").exists():
+        working_dir = str(pykotor_path.parent)
+        if working_dir in sys.path:
+            sys.path.remove(working_dir)
+        sys.path.insert(0, str(pykotor_path.parent))
+
+from pykotor.resource.formats.ssf import SSF, SSFBinaryReader, SSFSound, SSFXMLReader, detect_ssf, read_ssf, write_ssf
 from pykotor.resource.type import ResourceType
 
-
-BINARY_TEST_FILE = "../../files/test.ssf"
-XML_TEST_FILE = "../../files/test.ssf.xml"
+BINARY_TEST_FILE = "tests/files/test.ssf"
+XML_TEST_FILE = "tests/files/test.ssf.xml"
 DOES_NOT_EXIST_FILE = "./thisfiledoesnotexist"
-CORRUPT_BINARY_TEST_FILE = "../../files/test_corrupted.ssf"
-CORRUPT_XML_TEST_FILE = "../../files/test_corrupted.ssf.xml"
+CORRUPT_BINARY_TEST_FILE = "tests/files/test_corrupted.ssf"
+CORRUPT_XML_TEST_FILE = "tests/files/test_corrupted.ssf.xml"
 
 
-class TestSSF(TestCase):
+class TestSSF(unittest.TestCase):
     def test_binary_io(self):
         self.assertEqual(detect_ssf(BINARY_TEST_FILE), ResourceType.SSF)
 
@@ -65,8 +74,9 @@ class TestSSF(TestCase):
         self.assertEqual(ssf.get(SSFSound.REJOINED_PARTY), 123049)
         self.assertEqual(ssf.get(SSFSound.POISONED), 123048)
 
+    # sourcery skip: no-conditionals-in-tests
     def test_read_raises(self):
-        if platform.system() == "Windows":
+        if os.name == "nt":
             self.assertRaises(PermissionError, read_ssf, ".")
         else:
             self.assertRaises(IsADirectoryError, read_ssf, ".")
@@ -74,9 +84,14 @@ class TestSSF(TestCase):
         self.assertRaises(ValueError, read_ssf, CORRUPT_BINARY_TEST_FILE)
         self.assertRaises(ValueError, read_ssf, CORRUPT_XML_TEST_FILE)
 
+    # sourcery skip: no-conditionals-in-tests
     def test_write_raises(self):
-        if platform.system() == "Windows":
+        if os.name == "nt":
             self.assertRaises(PermissionError, write_ssf, SSF(), ".", ResourceType.SSF)
         else:
             self.assertRaises(IsADirectoryError, write_ssf, SSF(), ".", ResourceType.SSF)
         self.assertRaises(ValueError, write_ssf, SSF(), ".", ResourceType.INVALID)
+
+
+if __name__ == "__main__":
+    unittest.main()

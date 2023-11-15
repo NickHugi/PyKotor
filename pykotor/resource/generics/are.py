@@ -1,21 +1,20 @@
 from __future__ import annotations
 
 from enum import IntEnum
-from typing import List
 
 from pykotor.common.geometry import Vector2
 from pykotor.common.language import LocalizedString
-from pykotor.common.misc import Game, Color, ResRef
+from pykotor.common.misc import Color, Game, ResRef
 from pykotor.resource.formats.gff import GFF, GFFContent, GFFStruct, read_gff, write_gff
 from pykotor.resource.formats.gff.gff_auto import bytes_gff
-from pykotor.resource.type import ResourceType, SOURCE_TYPES, TARGET_TYPES
+from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES, ResourceType
 
 
 class ARE:
-    """
-    Stores static area data.
+    """Stores static area data.
 
-    Attributes:
+    Attributes
+    ----------
         tag: "Tag" field.
         name: "Name" field.
         alpha_test: "AlphaTest" field.
@@ -94,7 +93,7 @@ class ARE:
     BINARY_TYPE = ResourceType.ARE
 
     def __init__(
-            self
+        self,
     ):
         self.alpha_test: float = 0.0
         self.camera_style: int = 0
@@ -169,7 +168,7 @@ class ARE:
         self.map_zoom: int = 0
         self.north_axis: ARENorthAxis = ARENorthAxis.PositiveX
 
-        self.rooms: List[ARERoom] = []
+        self.rooms: list[ARERoom] = []
 
         self.version: int = 0
 
@@ -198,12 +197,12 @@ class ARE:
 
 class ARERoom:
     def __init__(
-            self,
-            name: str,
-            weather: bool,
-            env_audio: int,
-            force_rating: int,
-            ambient_scale: float
+        self,
+        name: str,
+        weather: bool,
+        env_audio: int,
+        force_rating: int,
+        ambient_scale: float,
     ):
         self.name: str = name
         self.weather: bool = weather
@@ -226,22 +225,42 @@ class ARENorthAxis(IntEnum):
 
 
 def construct_are(
-        gff: GFF
+    gff: GFF,
 ) -> ARE:
+    """Constructs an ARE object from a GFF file
+    Args:
+        gff: GFF - The GFF file object
+    Returns:
+        ARE - The constructed ARE object
+    Processing Logic:
+        - Acquires values from the GFF root node and assigns them to ARE properties
+        - Handles color values as special case, converting to Color objects
+        - All other values assigned directly from GFF.
+    """
     are = ARE()
 
     root = gff.root
-    are.north_axis = ARENorthAxis(root.acquire("Map", GFFStruct()).acquire("NorthAxis", 0))
+    are.north_axis = ARENorthAxis(
+        root.acquire("Map", GFFStruct()).acquire("NorthAxis", 0),
+    )
     are.map_zoom = root.acquire("Map", GFFStruct()).acquire("MapZoom", 0)
     are.map_res_x = root.acquire("Map", GFFStruct()).acquire("MapResX", 0)
-    are.map_point_1 = Vector2(root.acquire("Map", GFFStruct()).acquire("MapPt1X", 0.0),
-                              root.acquire("Map", GFFStruct()).acquire("MapPt1Y", 0.0))
-    are.map_point_2 = Vector2(root.acquire("Map", GFFStruct()).acquire("MapPt2X", 0.0),
-                              root.acquire("Map", GFFStruct()).acquire("MapPt2Y", 0.0))
-    are.world_point_1 = Vector2(root.acquire("Map", GFFStruct()).acquire("WorldPt1X", 0.0),
-                                root.acquire("Map", GFFStruct()).acquire("WorldPt1Y", 0.0))
-    are.world_point_2 = Vector2(root.acquire("Map", GFFStruct()).acquire("WorldPt2X", 0.0),
-                                root.acquire("Map", GFFStruct()).acquire("WorldPt2Y", 0.0))
+    are.map_point_1 = Vector2(
+        root.acquire("Map", GFFStruct()).acquire("MapPt1X", 0.0),
+        root.acquire("Map", GFFStruct()).acquire("MapPt1Y", 0.0),
+    )
+    are.map_point_2 = Vector2(
+        root.acquire("Map", GFFStruct()).acquire("MapPt2X", 0.0),
+        root.acquire("Map", GFFStruct()).acquire("MapPt2Y", 0.0),
+    )
+    are.world_point_1 = Vector2(
+        root.acquire("Map", GFFStruct()).acquire("WorldPt1X", 0.0),
+        root.acquire("Map", GFFStruct()).acquire("WorldPt1Y", 0.0),
+    )
+    are.world_point_2 = Vector2(
+        root.acquire("Map", GFFStruct()).acquire("WorldPt2X", 0.0),
+        root.acquire("Map", GFFStruct()).acquire("WorldPt2Y", 0.0),
+    )
     are.version = root.acquire("Version", 0)
     are.tag = root.acquire("Tag", "")
     are.name = root.acquire("Name", LocalizedString.from_invalid())
@@ -320,11 +339,25 @@ def construct_are(
 
 
 def dismantle_are(
-        are: ARE,
-        game: Game = Game.K2,
-        *,
-        use_deprecated: bool = True
+    are: ARE,
+    game: Game = Game.K2,
+    *,
+    use_deprecated: bool = True,
 ) -> GFF:
+    """Converts an ARE structure to a GFF structure
+    Args:
+        are: ARE - The ARE structure to convert
+        game: Game - The game type (K1, K2, etc)
+        use_deprecated: bool - Whether to include deprecated fields
+    Returns:
+        gff: GFF - The converted GFF structure
+    Processing Logic:
+        - Creates a new GFF structure
+        - Maps ARE fields to GFF fields
+        - Includes additional K2-specific fields if game is K2
+        - Includes deprecated fields if use_deprecated is True
+        - Returns the populated GFF structure.
+    """
     gff = GFF(GFFContent.ARE)
 
     root = gff.root
@@ -425,33 +458,74 @@ def dismantle_are(
 
 
 def read_are(
-        source: SOURCE_TYPES,
-        offset: int = 0,
-        size: int = None
+    source: SOURCE_TYPES,
+    offset: int = 0,
+    size: int | None = None,
 ) -> ARE:
+    """Returns an ARE instance from the source.
+
+    Args:
+    ----
+        source: The source to read from
+        offset: The byte offset to start reading from
+        size: The maximum number of bytes to read
+    Returns:
+        ARE: The constructed annotation regions
+    - Read GFF from source starting at offset with max size
+    - Construct ARE object from parsed GFF
+    """
     gff = read_gff(source, offset, size)
-    are = construct_are(gff)
-    return are
+    return construct_are(gff)
 
 
 def write_are(
-        are: ARE,
-        target: TARGET_TYPES,
-        game: Game = Game.K2,
-        file_format: ResourceType = ResourceType.GFF,
-        *,
-        use_deprecated: bool = True
+    are: ARE,
+    target: TARGET_TYPES,
+    game: Game = Game.K2,
+    file_format: ResourceType = ResourceType.GFF,
+    *,
+    use_deprecated: bool = True,
 ) -> None:
+    """Writes an ARE resource to a target file format.
+
+    Args:
+    ----
+        are: ARE - The ARE resource to write
+        target: TARGET_TYPES - The target file path or object to write to
+        game: Game - The game type of the ARE (default K2)
+        file_format: ResourceType - The file format to write as (default GFF)
+        use_deprecated: bool - Whether to include deprecated fields (default True)
+
+    Returns:
+    -------
+        None: Writes the ARE as GFF to the target without returning anything
+    - Dismantles the ARE into a GFF structure
+    - Writes the GFF structure to the target using the specified file format
+    """
     gff = dismantle_are(are, game, use_deprecated=use_deprecated)
     write_gff(gff, target, file_format)
 
 
 def bytes_are(
-        are: ARE,
-        game: Game = Game.K2,
-        file_format: ResourceType = ResourceType.GFF,
-        *,
-        use_deprecated: bool = True
+    are: ARE | SOURCE_TYPES,
+    game: Game = Game.K2,
+    file_format: ResourceType = ResourceType.GFF,
+    *,
+    use_deprecated: bool = True,
 ) -> bytes:
+    """Converts ARE to bytes in specified file format
+    Args:
+        are: ARE or source path: ARE object or path to ARE file
+        game: Game: Game type are is for
+        file_format: ResourceType: File format to convert to
+        use_deprecated: bool: Use deprecated ARE fields if true
+    Returns:
+        bytes: Converted ARE bytes
+    - Dismantle ARE to GFF format
+    - Convert GFF to specified file format bytes
+    - If ARE in bytes/path format, read ARE the source first.
+    """
+    if not isinstance(are, ARE):
+        are = read_are(are)
     gff = dismantle_are(are, game, use_deprecated=use_deprecated)
     return bytes_gff(gff, file_format)

@@ -1,13 +1,23 @@
-from unittest import TestCase
+import pathlib
+import sys
+import unittest
+
+if getattr(sys, "frozen", False) is False:
+    pykotor_path = pathlib.Path(__file__).parents[3] / "pykotor"
+    if pykotor_path.joinpath("__init__.py").exists():
+        working_dir = str(pykotor_path.parent)
+        if working_dir in sys.path:
+            sys.path.remove(working_dir)
+        sys.path.insert(0, str(pykotor_path.parent))
 
 from pykotor.common.geometry import Vector2
 from pykotor.resource.formats.gff import read_gff
 from pykotor.resource.generics.pth import construct_pth, dismantle_pth
 
-TEST_FILE = "../../files/test.pth"
+TEST_FILE = "tests/files/test.pth"
 
 
-class TestPTH(TestCase):
+class TestPTH(unittest.TestCase):
     def test_io(self):
         gff = read_gff(TEST_FILE)
         pth = construct_pth(gff)
@@ -38,3 +48,7 @@ class TestPTH(TestCase):
 
         self.assertEqual(1, len(pth.outgoing(3)))
         self.assertTrue(pth.is_connected(3, 1))
+
+
+if __name__ == "__main__":
+    unittest.main()

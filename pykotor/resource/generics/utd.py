@@ -1,17 +1,17 @@
 from __future__ import annotations
 
 from pykotor.common.language import LocalizedString
-from pykotor.common.misc import ResRef, Game
+from pykotor.common.misc import Game, ResRef
 from pykotor.resource.formats.gff import GFF, GFFContent, write_gff
 from pykotor.resource.formats.gff.gff_auto import bytes_gff, read_gff
-from pykotor.resource.type import ResourceType, TARGET_TYPES, SOURCE_TYPES
+from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES, ResourceType
 
 
 class UTD:
-    """
-    Stores door data.
+    """Stores door data.
 
-    Attributes:
+    Attributes
+    ----------
         tag: "Tag" field.
         name: "LocName" field.
         resref: "TemplateResRef" field.
@@ -75,7 +75,7 @@ class UTD:
     BINARY_TYPE = ResourceType.UTD
 
     def __init__(
-            self
+        self,
     ):
         self.resref: ResRef = ResRef.from_blank()
         self.conversation: ResRef = ResRef.from_blank()
@@ -145,16 +145,25 @@ class UTD:
 
 
 def utd_version(
-        gff: GFF
+    gff: GFF,
 ) -> Game:
-    for label in ("NotBlastable", "OpenLockDiff", "OpenLockDiffMod", "OpenState"):
-        if gff.root.exists(label):
-            return Game.K2
-    return Game.K1
+    return next(
+        (
+            Game.K2
+            for label in (
+                "NotBlastable",
+                "OpenLockDiff",
+                "OpenLockDiffMod",
+                "OpenState",
+            )
+            if gff.root.exists(label)
+        ),
+        Game.K1,
+    )
 
 
 def construct_utd(
-        gff: GFF
+    gff: GFF,
 ) -> UTD:
     utd = UTD()
 
@@ -219,10 +228,10 @@ def construct_utd(
 
 
 def dismantle_utd(
-        utd: UTD,
-        game: Game = Game.K2,
-        *,
-        use_deprecated: bool = True
+    utd: UTD,
+    game: Game = Game.K2,
+    *,
+    use_deprecated: bool = True,
 ) -> GFF:
     gff = GFF(GFFContent.UTD)
 
@@ -291,33 +300,34 @@ def dismantle_utd(
 
 
 def read_utd(
-        source: SOURCE_TYPES,
-        offset: int = 0,
-        size: int = None
+    source: SOURCE_TYPES,
+    offset: int = 0,
+    size: int | None = None,
 ) -> UTD:
     gff = read_gff(source, offset, size)
-    utd = construct_utd(gff)
-    return utd
+    return construct_utd(gff)
 
 
 def write_utd(
-        utd: UTD,
-        target: TARGET_TYPES,
-        game: Game = Game.K2,
-        file_format: ResourceType = ResourceType.GFF,
-        *,
-        use_deprecated: bool = True
+    utd: UTD,
+    target: TARGET_TYPES,
+    game: Game = Game.K2,
+    file_format: ResourceType = ResourceType.GFF,
+    *,
+    use_deprecated: bool = True,
 ) -> None:
     gff = dismantle_utd(utd, game, use_deprecated=use_deprecated)
     write_gff(gff, target, file_format)
 
 
 def bytes_utd(
-        utd: UTD,
-        game: Game = Game.K2,
-        file_format: ResourceType = ResourceType.GFF,
-        *,
-        use_deprecated: bool = True
+    utd: UTD | SOURCE_TYPES,
+    game: Game = Game.K2,
+    file_format: ResourceType = ResourceType.GFF,
+    *,
+    use_deprecated: bool = True,
 ) -> bytes:
+    if not isinstance(utd, UTD):
+        utd = read_utd(utd)
     gff = dismantle_utd(utd, game, use_deprecated=use_deprecated)
     return bytes_gff(gff, file_format)

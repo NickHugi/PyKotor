@@ -1,14 +1,25 @@
-import platform
+import os
+import pathlib
+import sys
+import unittest
 from unittest import TestCase
 
-from pykotor.resource.formats.lip import LIP, LIPShape, LIPBinaryReader, detect_lip, write_lip, LIPXMLReader, read_lip
+if getattr(sys, "frozen", False) is False:
+    pykotor_path = pathlib.Path(__file__).parents[3] / "pykotor"
+    if pykotor_path.joinpath("__init__.py").exists():
+        working_dir = str(pykotor_path.parent)
+        if working_dir in sys.path:
+            sys.path.remove(working_dir)
+        sys.path.insert(0, str(pykotor_path.parent))
+
+from pykotor.resource.formats.lip import LIP, LIPBinaryReader, LIPShape, LIPXMLReader, detect_lip, read_lip, write_lip
 from pykotor.resource.type import ResourceType
 
-BINARY_TEST_FILE = "../../files/test.lip"
-XML_TEST_FILE = "../../files/test.lip.xml"
+BINARY_TEST_FILE = "tests/files/test.lip"
+XML_TEST_FILE = "tests/files/test.lip.xml"
 DOES_NOT_EXIST_FILE = "./thisfiledoesnotexist"
-CORRUPT_BINARY_TEST_FILE = "../../files/test_corrupted.lip"
-CORRUPT_XML_TEST_FILE = "../../files/test_corrupted.lip.xml"
+CORRUPT_BINARY_TEST_FILE = "tests/files/test_corrupted.lip"
+CORRUPT_XML_TEST_FILE = "tests/files/test_corrupted.lip.xml"
 
 
 class TestLIP(TestCase):
@@ -44,7 +55,7 @@ class TestLIP(TestCase):
         self.assertAlmostEqual(1.25, lip.get(2).time, 4)
 
     def test_read_raises(self):
-        if platform.system() == "Windows":
+        if os.name == "nt":
             self.assertRaises(PermissionError, read_lip, ".")
         else:
             self.assertRaises(IsADirectoryError, read_lip, ".")
@@ -53,8 +64,12 @@ class TestLIP(TestCase):
         self.assertRaises(ValueError, read_lip, CORRUPT_XML_TEST_FILE)
 
     def test_write_raises(self):
-        if platform.system() == "Windows":
+        if os.name == "nt":
             self.assertRaises(PermissionError, write_lip, LIP(), ".", ResourceType.LIP)
         else:
             self.assertRaises(IsADirectoryError, write_lip, LIP(), ".", ResourceType.LIP)
         self.assertRaises(ValueError, write_lip, LIP(), ".", ResourceType.INVALID)
+
+
+if __name__ == "__main__":
+    unittest.main()

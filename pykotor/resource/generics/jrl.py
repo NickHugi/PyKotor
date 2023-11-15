@@ -1,33 +1,30 @@
 from __future__ import annotations
 
 from enum import IntEnum
-from typing import List
 
 from pykotor.common.language import LocalizedString
 from pykotor.common.misc import Game
-from pykotor.resource.formats.gff import GFF, GFFList, GFFContent, read_gff, write_gff
+from pykotor.resource.formats.gff import GFF, GFFContent, GFFList, read_gff, write_gff
 from pykotor.resource.formats.gff.gff_auto import bytes_gff
-from pykotor.resource.type import ResourceType, SOURCE_TYPES, TARGET_TYPES
+from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES, ResourceType
 
 
 class JRL:
-    """
-    Stores journal (quest) data.
-    """
+    """Stores journal (quest) data."""
 
     BINARY_TYPE = ResourceType.JRL
 
     def __init__(
-            self
+        self,
     ):
-        self.quests: List[JRLQuest] = []
+        self.quests: list[JRLQuest] = []
 
 
 class JRLQuest:
-    """
-    Stores data of an individual quest.
+    """Stores data of an individual quest.
 
-    Attributes:
+    Attributes
+    ----------
         name: "Name" field.
         planet_id: "PlanetID" field.
         plot_index: "PlotIndex" field.
@@ -38,7 +35,7 @@ class JRLQuest:
     """
 
     def __init__(
-            self
+        self,
     ):
         self.comment: str = ""
         self.name: LocalizedString = LocalizedString.from_invalid()
@@ -46,14 +43,14 @@ class JRLQuest:
         self.plot_index: int = 0  # plot.2da
         self.priority: JRLQuestPriority = JRLQuestPriority.LOWEST
         self.tag: str = ""
-        self.entries: List[JRLEntry] = []
+        self.entries: list[JRLEntry] = []
 
 
 class JRLEntry:
-    """
-    Stores the data for an entry in a quest.
+    """Stores the data for an entry in a quest.
 
-    Attributes:
+    Attributes
+    ----------
         end: "End" field.
         entry_id: "ID" field.
         text: "Text" field.
@@ -61,7 +58,7 @@ class JRLEntry:
     """
 
     def __init__(
-            self
+        self,
     ):
         self.end: bool = False
         self.entry_id: int = 0
@@ -78,7 +75,7 @@ class JRLQuestPriority(IntEnum):
 
 
 def construct_jrl(
-        gff: GFF
+    gff: GFF,
 ) -> JRL:
     jrl = JRL()
 
@@ -104,10 +101,10 @@ def construct_jrl(
 
 
 def dismantle_jrl(
-        jrl: JRL,
-        game: Game = Game.K2,
-        *,
-        use_deprecated: bool = True
+    jrl: JRL,
+    game: Game = Game.K2,
+    *,
+    use_deprecated: bool = True,
 ) -> GFF:
     gff = GFF(GFFContent.JRL)
 
@@ -133,33 +130,34 @@ def dismantle_jrl(
 
 
 def read_jrl(
-        source: SOURCE_TYPES,
-        offset: int = 0,
-        size: int = None
+    source: SOURCE_TYPES,
+    offset: int = 0,
+    size: int | None = None,
 ) -> JRL:
     gff = read_gff(source, offset, size)
-    jrl = construct_jrl(gff)
-    return jrl
+    return construct_jrl(gff)
 
 
 def write_jrl(
-        jrl: JRL,
-        target: TARGET_TYPES,
-        game: Game = Game.K2,
-        file_format: ResourceType = ResourceType.GFF,
-        *,
-        use_deprecated: bool = True
+    jrl: JRL,
+    target: TARGET_TYPES,
+    game: Game = Game.K2,
+    file_format: ResourceType = ResourceType.GFF,
+    *,
+    use_deprecated: bool = True,
 ) -> None:
     gff = dismantle_jrl(jrl, game, use_deprecated=use_deprecated)
     write_gff(gff, target, file_format)
 
 
 def bytes_jrl(
-        jrl: JRL,
-        game: Game = Game.K2,
-        file_format: ResourceType = ResourceType.GFF,
-        *,
-        use_deprecated: bool = True
+    jrl: JRL | SOURCE_TYPES,
+    game: Game = Game.K2,
+    file_format: ResourceType = ResourceType.GFF,
+    *,
+    use_deprecated: bool = True,
 ) -> bytes:
+    if not isinstance(jrl, JRL):
+        jrl = read_jrl(jrl)
     gff = dismantle_jrl(jrl, game, use_deprecated=use_deprecated)
     return bytes_gff(gff, file_format)

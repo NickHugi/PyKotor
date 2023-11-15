@@ -1,4 +1,15 @@
+import pathlib
+import sys
+import unittest
 from unittest import TestCase
+
+if getattr(sys, "frozen", False) is False:
+    pykotor_path = pathlib.Path(__file__).parents[3] / "pykotor"
+    if pykotor_path.joinpath("__init__.py").exists():
+        working_dir = str(pykotor_path.parent)
+        if working_dir in sys.path:
+            sys.path.remove(working_dir)
+        sys.path.insert(0, str(pykotor_path.parent))
 
 from pykotor.common.geometry import Vector3
 from pykotor.common.script import DataType
@@ -6,12 +17,11 @@ from pykotor.resource.formats.ncs.compiler.interpreter import Stack
 
 
 class TestStack(TestCase):
-
     def test_peek_past_vector(self):
         stack = Stack()
-        stack.add(DataType.FLOAT, 1.0)                      # -20
+        stack.add(DataType.FLOAT, 1.0)  # -20
         stack.add(DataType.VECTOR, Vector3(2.0, 3.0, 4.0))  # -16
-        stack.add(DataType.FLOAT, 5.0)                      # -4
+        stack.add(DataType.FLOAT, 5.0)  # -4
         print(stack.peek(-20))
 
     def test_move_negative(self):
@@ -77,3 +87,7 @@ class TestStack(TestCase):
         self.assertEqual(4, stack.peek(-24))
         self.assertEqual(5, stack.peek(-20))
         self.assertEqual(6, stack.peek(-16))
+
+
+if __name__ == "__main__":
+    unittest.main()

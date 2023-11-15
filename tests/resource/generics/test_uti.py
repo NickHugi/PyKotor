@@ -1,9 +1,20 @@
+import pathlib
+import sys
+import unittest
 from unittest import TestCase
 
-from pykotor.resource.formats.gff import read_gff
-from pykotor.resource.generics.uti import construct_uti, dismantle_uti, UTI
+if getattr(sys, "frozen", False) is False:
+    pykotor_path = pathlib.Path(__file__).parents[3] / "pykotor"
+    if pykotor_path.joinpath("__init__.py").exists():
+        working_dir = str(pykotor_path.parent)
+        if working_dir in sys.path:
+            sys.path.remove(working_dir)
+        sys.path.insert(0, str(pykotor_path.parent))
 
-TEST_FILE = "../../files/test.uti"
+from pykotor.resource.formats.gff import read_gff
+from pykotor.resource.generics.uti import UTI, construct_uti, dismantle_uti
+
+TEST_FILE = "tests/files/test.uti"
 
 
 class TestUTI(TestCase):
@@ -45,3 +56,7 @@ class TestUTI(TestCase):
         self.assertEqual(45, uti.properties[1].property_name)
         self.assertEqual(6, uti.properties[1].subtype)
         self.assertEqual(24, uti.properties[1].upgrade_type)
+
+
+if __name__ == "__main__":
+    unittest.main()

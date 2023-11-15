@@ -1,19 +1,17 @@
 from __future__ import annotations
 
-from typing import List
-
 from pykotor.common.language import LocalizedString
 from pykotor.common.misc import Game, ResRef
-from pykotor.resource.formats.gff import GFF, GFFList, GFFContent, read_gff, write_gff
+from pykotor.resource.formats.gff import GFF, GFFContent, GFFList, read_gff, write_gff
 from pykotor.resource.formats.gff.gff_auto import bytes_gff
-from pykotor.resource.type import ResourceType, SOURCE_TYPES, TARGET_TYPES
+from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES, ResourceType
 
 
 class UTS:
-    """
-    Stores sound data.
+    """Stores sound data.
 
-    Attributes:
+    Attributes
+    ----------
         tag: "Tag" field.
         resref: "TemplateResRef" field.
         active: "Active" field.
@@ -45,7 +43,7 @@ class UTS:
     BINARY_TYPE = ResourceType.UTS
 
     def __init__(
-            self
+        self,
     ):
         self.resref: ResRef = ResRef.from_blank()
         self.tag: str = ""
@@ -73,7 +71,7 @@ class UTS:
         self.volume: int = 0
         self.volume_variation: int = 0
 
-        self.sounds: List[ResRef] = []
+        self.sounds: list[ResRef] = []
 
         # Deprecated:
         self.name: LocalizedString = LocalizedString.from_invalid()
@@ -83,7 +81,7 @@ class UTS:
 
 
 def construct_uts(
-        gff: GFF
+    gff: GFF,
 ) -> UTS:
     uts = UTS()
 
@@ -121,10 +119,10 @@ def construct_uts(
 
 
 def dismantle_uts(
-        uts: UTS,
-        game: Game = Game.K2,
-        *,
-        use_deprecated: bool = True
+    uts: UTS,
+    game: Game = Game.K2,
+    *,
+    use_deprecated: bool = True,
 ) -> GFF:
     gff = GFF(GFFContent.UTS)
 
@@ -165,33 +163,34 @@ def dismantle_uts(
 
 
 def read_uts(
-        source: SOURCE_TYPES,
-        offset: int = 0,
-        size: int = None
+    source: SOURCE_TYPES,
+    offset: int = 0,
+    size: int | None = None,
 ) -> UTS:
     gff = read_gff(source, offset, size)
-    uts = construct_uts(gff)
-    return uts
+    return construct_uts(gff)
 
 
 def write_uts(
-        uts: UTS,
-        target: TARGET_TYPES,
-        game: Game = Game.K2,
-        file_format: ResourceType = ResourceType.GFF,
-        *,
-        use_deprecated: bool = True
+    uts: UTS,
+    target: TARGET_TYPES,
+    game: Game = Game.K2,
+    file_format: ResourceType = ResourceType.GFF,
+    *,
+    use_deprecated: bool = True,
 ) -> None:
     gff = dismantle_uts(uts, game, use_deprecated=use_deprecated)
     write_gff(gff, target, file_format)
 
 
 def bytes_uts(
-        uts: UTS,
-        game: Game = Game.K2,
-        file_format: ResourceType = ResourceType.GFF,
-        *,
-        use_deprecated: bool = True
+    uts: UTS | SOURCE_TYPES,
+    game: Game = Game.K2,
+    file_format: ResourceType = ResourceType.GFF,
+    *,
+    use_deprecated: bool = True,
 ) -> bytes:
+    if not isinstance(uts, UTS):
+        uts = read_uts(uts)
     gff = dismantle_uts(uts, game, use_deprecated=use_deprecated)
     return bytes_gff(gff, file_format)

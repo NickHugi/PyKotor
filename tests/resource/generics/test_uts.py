@@ -1,9 +1,19 @@
+import pathlib
+import sys
 from unittest import TestCase
+
+if getattr(sys, "frozen", False) is False:
+    pykotor_path = pathlib.Path(__file__).parents[3] / "pykotor"
+    if pykotor_path.joinpath("__init__.py").exists():
+        working_dir = str(pykotor_path.parent)
+        if working_dir in sys.path:
+            sys.path.remove(working_dir)
+        sys.path.insert(0, str(pykotor_path.parent))
 
 from pykotor.resource.formats.gff import read_gff
 from pykotor.resource.generics.uts import construct_uts, dismantle_uts
 
-TEST_FILE = "../../files/test.uts"
+TEST_FILE = "tests/files/test.uts"
 
 
 class TestUTS(TestCase):
@@ -44,4 +54,3 @@ class TestUTS(TestCase):
 
         self.assertEqual(4, len(uts.sounds))
         self.assertEqual("c_drdastro_atk2", uts.sounds[3])
-

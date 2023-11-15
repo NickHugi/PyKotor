@@ -1,9 +1,20 @@
+import pathlib
+import sys
+import unittest
 from unittest import TestCase
 
-from pykotor.resource.formats.gff import read_gff
-from pykotor.resource.generics.utp import construct_utp, dismantle_utp, UTP
+if getattr(sys, "frozen", False) is False:
+    pykotor_path = pathlib.Path(__file__).parents[3] / "pykotor"
+    if pykotor_path.joinpath("__init__.py").exists():
+        working_dir = str(pykotor_path.parent)
+        if working_dir in sys.path:
+            sys.path.remove(working_dir)
+        sys.path.insert(0, str(pykotor_path.parent))
 
-TEST_FILE = "../../files/test.utp"
+from pykotor.resource.formats.gff import read_gff
+from pykotor.resource.generics.utp import UTP, construct_utp, dismantle_utp
+
+TEST_FILE = "tests/files/test.utp"
 
 
 class Test(TestCase):
@@ -81,3 +92,7 @@ class Test(TestCase):
         self.assertFalse(utp.inventory[0].droppable)
         self.assertTrue(utp.inventory[1].droppable)
         self.assertEqual("g_w_iongren02", utp.inventory[1].resref)
+
+
+if __name__ == "__main__":
+    unittest.main()

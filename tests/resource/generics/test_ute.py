@@ -1,9 +1,20 @@
+import pathlib
+import sys
+import unittest
 from unittest import TestCase
+
+if getattr(sys, "frozen", False) is False:
+    pykotor_path = pathlib.Path(__file__).parents[3] / "pykotor"
+    if pykotor_path.joinpath("__init__.py").exists():
+        working_dir = str(pykotor_path.parent)
+        if working_dir in sys.path:
+            sys.path.remove(working_dir)
+        sys.path.insert(0, str(pykotor_path.parent))
 
 from pykotor.resource.formats.gff import read_gff
 from pykotor.resource.generics.ute import construct_ute, dismantle_ute
 
-TEST_FILE = "../../files/test.ute"
+TEST_FILE = "tests/files/test.ute"
 
 
 class TestUTE(TestCase):
@@ -46,3 +57,6 @@ class TestUTE(TestCase):
         self.assertEqual(1, ute.creatures[1].guaranteed_count)
         self.assertTrue(ute.creatures[1].single_spawn)
 
+
+if __name__ == "__main__":
+    unittest.main()

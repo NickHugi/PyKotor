@@ -1,19 +1,19 @@
 from __future__ import annotations
 
-from typing import List, Dict
+from typing import Optional
 
 from pykotor.common.language import LocalizedString
-from pykotor.common.misc import ResRef, EquipmentSlot, InventoryItem, Game
-from pykotor.resource.formats.gff import GFF, GFFList, GFFContent, read_gff, write_gff
+from pykotor.common.misc import EquipmentSlot, Game, InventoryItem, ResRef
+from pykotor.resource.formats.gff import GFF, GFFContent, GFFList, read_gff, write_gff
 from pykotor.resource.formats.gff.gff_auto import bytes_gff
-from pykotor.resource.type import ResourceType, SOURCE_TYPES, TARGET_TYPES
+from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES, ResourceType
 
 
 class UTC:
-    """
-    Stores creature data.
+    """Stores creature data.
 
-    Attributes:
+    Attributes
+    ----------
         resref: "TemplateResRef" field.
         tag: "Tag" field.
         comment: "Comment" field.
@@ -90,7 +90,7 @@ class UTC:
     BINARY_TYPE = ResourceType.UTC
 
     def __init__(
-            self
+        self,
     ):
         self.resref: ResRef = ResRef.from_blank()
         self.conversation: ResRef = ResRef.from_blank()
@@ -172,10 +172,10 @@ class UTC:
         self.on_death: ResRef = ResRef.from_blank()
         self.on_user_defined: ResRef = ResRef.from_blank()
 
-        self.classes: List[UTCClass] = []
-        self.feats: List[int] = []
-        self.inventory: List[InventoryItem] = []
-        self.equipment: Dict[EquipmentSlot, InventoryItem] = {}
+        self.classes: list[UTCClass] = []
+        self.feats: list[int] = []
+        self.inventory: list[InventoryItem] = []
+        self.equipment: dict[EquipmentSlot, InventoryItem] = {}
 
         # Deprecated:
         self.palette_id: int = 0
@@ -184,29 +184,29 @@ class UTC:
         self.description: LocalizedString = LocalizedString.from_invalid()
         self.lawfulness: int = 0
         self.phenotype_id: int = 0
-        self.on_rested: ResRef = ResRef.from_blank()
+        # self.on_rested: ResRef = ResRef.from_blank()  # noqa: ERA001
         self.subrace_name: str = ""
 
 
 class UTCClass:
     def __init__(
-            self,
-            class_id: int,
-            class_level: int = 0
+        self,
+        class_id: int,
+        class_level: int = 0,
     ):
         self.class_id: int = class_id
         self.class_level: int = class_level
-        self.powers: List[int] = []
+        self.powers: list[int] = []
 
     def __eq__(
-            self,
-            other: UTCClass
+        self,
+        other,
     ):
         return self.class_id == other.class_id and self.class_level == self.class_level
 
 
 def construct_utc(
-        gff: GFF
+    gff: GFF,
 ) -> UTC:
     utc = UTC()
 
@@ -325,10 +325,10 @@ def construct_utc(
 
 
 def dismantle_utc(
-        utc: UTC,
-        game: Game = Game.K2,
-        *,
-        use_deprecated: bool = True
+    utc: UTC,
+    game: Game = Game.K2,
+    *,
+    use_deprecated: bool = True,
 ) -> GFF:
     gff = GFF(GFFContent.UTC)
 
@@ -432,7 +432,7 @@ def dismantle_utc(
         equipment_struct = equipment_list.add(slot.value)
         equipment_struct.set_resref("EquippedRes", item.resref)
         if item.droppable:
-            equipment_struct.set_uint8("Dropable", True)
+            equipment_struct.set_uint8("Dropable", value=True)
 
     item_list = root.set_list("ItemList", GFFList())
     for i, item in enumerate(utc.inventory):
@@ -441,7 +441,7 @@ def dismantle_utc(
         item_struct.set_uint16("Repos_PosX", i)
         item_struct.set_uint16("Repos_Posy", 0)
         if item.droppable:
-            item_struct.set_uint8("Dropable", True)
+            item_struct.set_uint8("Dropable", value=True)
 
     if game == Game.K2:
         root.set_single("BlindSpot", utc.blindspot)
@@ -464,33 +464,34 @@ def dismantle_utc(
 
 
 def read_utc(
-        source: SOURCE_TYPES,
-        offset: int = 0,
-        size: int = None
+    source: SOURCE_TYPES,
+    offset: int = 0,
+    size: Optional[int] = None,
 ) -> UTC:
     gff = read_gff(source, offset, size)
-    utc = construct_utc(gff)
-    return utc
+    return construct_utc(gff)
 
 
 def write_utc(
-        utc: UTC,
-        target: TARGET_TYPES,
-        game: Game = Game.K2,
-        file_format: ResourceType = ResourceType.GFF,
-        *,
-        use_deprecated: bool = True
+    utc: UTC,
+    target: TARGET_TYPES,
+    game: Game = Game.K2,
+    file_format: ResourceType = ResourceType.GFF,
+    *,
+    use_deprecated: bool = True,
 ) -> None:
     gff = dismantle_utc(utc, game, use_deprecated=use_deprecated)
     write_gff(gff, target, file_format)
 
 
 def bytes_utc(
-        utc: UTC,
-        game: Game = Game.K2,
-        file_format: ResourceType = ResourceType.GFF,
-        *,
-        use_deprecated: bool = True
+    utc: UTC | SOURCE_TYPES,
+    game: Game = Game.K2,
+    file_format: ResourceType = ResourceType.GFF,
+    *,
+    use_deprecated: bool = True,
 ) -> bytes:
+    if not isinstance(utc, UTC):
+        utc = read_utc(utc)
     gff = dismantle_utc(utc, game, use_deprecated=use_deprecated)
     return bytes_gff(gff, file_format)

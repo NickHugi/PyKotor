@@ -4,12 +4,11 @@ from pykotor.common.language import LocalizedString
 from pykotor.common.misc import Game, ResRef
 from pykotor.resource.formats.gff import GFF, GFFContent, read_gff, write_gff
 from pykotor.resource.formats.gff.gff_auto import bytes_gff
-from pykotor.resource.type import ResourceType, SOURCE_TYPES, TARGET_TYPES
+from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES, ResourceType
 
 
 class UTW:
-    """
-    Stores waypoint data.
+    """Stores waypoint data.
 
     resref: "TemplateResRef" field.
     tag: "Tag" field.
@@ -29,7 +28,7 @@ class UTW:
     BINARY_TYPE = ResourceType.UTW
 
     def __init__(
-            self
+        self,
     ):
         self.resref: ResRef = ResRef.from_blank()
         self.comment: str = ""
@@ -50,7 +49,7 @@ class UTW:
 
 
 def construct_utw(
-        gff: GFF
+    gff: GFF,
 ) -> UTW:
     utw = UTW()
 
@@ -71,10 +70,10 @@ def construct_utw(
 
 
 def dismantle_utw(
-        utw: UTW,
-        game: Game = Game.K2,
-        *,
-        use_deprecated: bool = True
+    utw: UTW,
+    game: Game = Game.K2,
+    *,
+    use_deprecated: bool = True,
 ) -> GFF:
     gff = GFF(GFFContent.UTW)
 
@@ -95,33 +94,34 @@ def dismantle_utw(
 
 
 def read_utw(
-        source: SOURCE_TYPES,
-        offset: int = 0,
-        size: int = None
+    source: SOURCE_TYPES,
+    offset: int = 0,
+    size: int | None = None,
 ) -> UTW:
     gff = read_gff(source, offset, size)
-    utw = construct_utw(gff)
-    return utw
+    return construct_utw(gff)
 
 
 def write_utw(
-        utw: UTW,
-        target: TARGET_TYPES,
-        game: Game = Game.K2,
-        file_format: ResourceType = ResourceType.GFF,
-        *,
-        use_deprecated: bool = True
+    utw: UTW,
+    target: TARGET_TYPES,
+    game: Game = Game.K2,
+    file_format: ResourceType = ResourceType.GFF,
+    *,
+    use_deprecated: bool = True,
 ) -> None:
     gff = dismantle_utw(utw, game, use_deprecated=use_deprecated)
     write_gff(gff, target, file_format)
 
 
 def bytes_utw(
-        utw: UTW,
-        game: Game = Game.K2,
-        file_format: ResourceType = ResourceType.GFF,
-        *,
-        use_deprecated: bool = True
+    utw: UTW | SOURCE_TYPES,
+    game: Game = Game.K2,
+    file_format: ResourceType = ResourceType.GFF,
+    *,
+    use_deprecated: bool = True,
 ) -> bytes:
+    if not isinstance(utw, UTW):
+        utw = read_utw(utw)
     gff = dismantle_utw(utw, game, use_deprecated=use_deprecated)
     return bytes_gff(gff, file_format)

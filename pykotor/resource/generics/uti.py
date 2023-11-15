@@ -1,26 +1,45 @@
 from __future__ import annotations
 
-from typing import List, Optional
-
 from pykotor.common.language import LocalizedString
 from pykotor.common.misc import Game, ResRef
-from pykotor.resource.formats.gff import GFF, GFFList, GFFContent, read_gff, write_gff
+from pykotor.resource.formats.gff import GFF, GFFContent, GFFList, read_gff, write_gff
 from pykotor.resource.formats.gff.gff_auto import bytes_gff
-from pykotor.resource.type import ResourceType, SOURCE_TYPES, TARGET_TYPES
+from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES, ResourceType
 
-ARMOR_BASE_ITEMS = {35, 36, 37, 38, 39, 40, 41, 42, 43, 53, 58, 63, 64, 65, 69, 71, 85, 89, 98, 100, 102, 103}
+ARMOR_BASE_ITEMS = {
+    35,
+    36,
+    37,
+    38,
+    39,
+    40,
+    41,
+    42,
+    43,
+    53,
+    58,
+    63,
+    64,
+    65,
+    69,
+    71,
+    85,
+    89,
+    98,
+    100,
+    102,
+    103,
+}
 """ Base Item IDs that are considered armor as per the 2DA files. """
 
 
 class UTI:
-    """
-    Stores item data.
-    """
+    """Stores item data."""
 
     BINARY_TYPE = ResourceType.UTI
 
     def __init__(
-            self
+        self,
     ):
         self.resref: ResRef = ResRef.from_blank()
         self.base_item: int = 0
@@ -37,7 +56,7 @@ class UTI:
 
         self.upgrade_level: int = 0
 
-        self.properties: List[UTIProperty] = []
+        self.properties: list[UTIProperty] = []
 
         # Armor Items Only:
         self.body_variation: int = 0
@@ -49,14 +68,14 @@ class UTI:
         self.identified: int = 0
 
     def is_armor(
-            self
+        self,
     ) -> bool:
         return self.base_item in ARMOR_BASE_ITEMS
 
 
 class UTIProperty:
     def __init__(
-            self
+        self,
     ):
         self.cost_table: int = 0
         self.cost_value: int = 0
@@ -65,11 +84,11 @@ class UTIProperty:
         self.property_name: int = 0
         self.subtype: int = 0
         self.chance_appear: int = 100
-        self.upgrade_type: Optional[int] = None
+        self.upgrade_type: int | None = None
 
 
 def construct_uti(
-        gff: GFF
+    gff: GFF,
 ) -> UTI:
     uti = UTI()
 
@@ -111,10 +130,10 @@ def construct_uti(
 
 
 def dismantle_uti(
-        uti: UTI,
-        game: Game = Game.K2,
-        *,
-        use_deprecated: bool = True
+    uti: UTI,
+    game: Game = Game.K2,
+    *,
+    use_deprecated: bool = True,
 ) -> GFF:
     gff = GFF(GFFContent.UTI)
 
@@ -161,33 +180,34 @@ def dismantle_uti(
 
 
 def read_uti(
-        source: SOURCE_TYPES,
-        offset: int = 0,
-        size: int = None
+    source: SOURCE_TYPES,
+    offset: int = 0,
+    size: int | None = None,
 ) -> UTI:
     gff = read_gff(source, offset, size)
-    uti = construct_uti(gff)
-    return uti
+    return construct_uti(gff)
 
 
 def write_uti(
-        uti: UTI,
-        target: TARGET_TYPES,
-        game: Game = Game.K2,
-        file_format: ResourceType = ResourceType.GFF,
-        *,
-        use_deprecated: bool = True
+    uti: UTI,
+    target: TARGET_TYPES,
+    game: Game = Game.K2,
+    file_format: ResourceType = ResourceType.GFF,
+    *,
+    use_deprecated: bool = True,
 ) -> None:
     gff = dismantle_uti(uti, game, use_deprecated=use_deprecated)
     write_gff(gff, target, file_format)
 
 
 def bytes_uti(
-        uti: UTI,
-        game: Game = Game.K2,
-        file_format: ResourceType = ResourceType.GFF,
-        *,
-        use_deprecated: bool = True
+    uti: UTI | SOURCE_TYPES,
+    game: Game = Game.K2,
+    file_format: ResourceType = ResourceType.GFF,
+    *,
+    use_deprecated: bool = True,
 ) -> bytes:
+    if not isinstance(uti, UTI):
+        uti = read_uti(uti)
     gff = dismantle_uti(uti, game, use_deprecated=use_deprecated)
     return bytes_gff(gff, file_format)

@@ -1,10 +1,21 @@
+import pathlib
+import sys
+import unittest
 from unittest import TestCase
+
+if getattr(sys, "frozen", False) is False:
+    pykotor_path = pathlib.Path(__file__).parents[3] / "pykotor"
+    if pykotor_path.joinpath("__init__.py").exists():
+        working_dir = str(pykotor_path.parent)
+        if working_dir in sys.path:
+            sys.path.remove(working_dir)
+        sys.path.insert(0, str(pykotor_path.parent))
 
 from pykotor.common.misc import Game
 from pykotor.resource.formats.gff import read_gff
 from pykotor.resource.generics.dlg import construct_dlg, dismantle_dlg
 
-TEST_FILE = "../../files/test.dlg"
+TEST_FILE = "tests/files/test.dlg"
 
 
 class TestDLG(TestCase):
@@ -99,3 +110,7 @@ class TestDLG(TestCase):
 
         self.assertEqual("bbb", dlg.stunts[1].participant)
         self.assertEqual("m01aa_c04_char01", dlg.stunts[1].stunt_model)
+
+
+if __name__ == "__main__":
+    unittest.main()
