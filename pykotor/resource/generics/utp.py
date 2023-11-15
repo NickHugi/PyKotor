@@ -337,11 +337,13 @@ def write_utp(
 
 
 def bytes_utp(
-    utp: UTP,
+    utp: UTP | SOURCE_TYPES,
     game: Game = Game.K2,
     file_format: ResourceType = ResourceType.GFF,
     *,
     use_deprecated: bool = True,
 ) -> bytes:
+    if not isinstance(utp, UTP):
+        utp = read_utp(utp)
     gff = dismantle_utp(utp, game, use_deprecated=use_deprecated)
     return bytes_gff(gff, file_format)

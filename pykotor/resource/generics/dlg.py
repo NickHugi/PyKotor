@@ -467,6 +467,17 @@ class DLGStunt:
 def construct_dlg(
     gff: GFF,
 ) -> DLG:
+    """Constructs a DLG from a GFF file
+    Args:
+        gff: GFF - The GFF file to construct the DLG from
+    Returns:
+        DLG - The constructed DLG object
+    Processing Logic:
+        - Constructs DLGNode objects from GFFStructs
+        - Constructs DLGLink objects from GFFStructs
+        - Populates DLG object with nodes, links, and metadata
+        - Loops through GFF lists to populate all nodes and links.
+    """
     def construct_node(
         gff_struct: GFFStruct,
         node: DLGNode,
@@ -913,22 +924,25 @@ def write_dlg(
 
 
 def bytes_dlg(
-    dlg: DLG,
+    dlg: DLG | SOURCE_TYPES,
     game: Game = Game.K2,
     file_format: ResourceType = ResourceType.GFF,
     *,
     use_deprecated: bool = True,
 ) -> bytes:
-    """Convert a DLG object to bytes in a file format
+    """Converts a DLG object to bytes in a file format
     Args:
-        dlg: DLG - Dialog object to convert
-        game: Game - Game the dialog is from
+        dlg: DLG | SOURCE_TYPES - Dialogue object or source to convert
+        game: Game - Game the dialogue is from
         file_format: ResourceType - Format to return bytes in
         use_deprecated: bool - Use deprecated fields if True
-    Returns:
-        bytes: Byte representation of the dialog in the given format
     - Dismantle the DLG into a GFF structure
     - Encode the GFF into bytes in the requested format.
+    Returns: 
+        bytes: Bytes of dialogue in specified format
+    - The DLG is read from source if not already a DLG object
     """
+    if not isinstance(dlg, DLG):
+        dlg = read_dlg(dlg)
     gff = dismantle_dlg(dlg, game, use_deprecated=use_deprecated)
     return bytes_gff(gff, file_format)

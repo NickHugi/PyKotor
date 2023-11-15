@@ -227,6 +227,16 @@ class ARENorthAxis(IntEnum):
 def construct_are(
     gff: GFF,
 ) -> ARE:
+    """Constructs an ARE object from a GFF file
+    Args:
+        gff: GFF - The GFF file object
+    Returns:
+        ARE - The constructed ARE object
+    Processing Logic:
+        - Acquires values from the GFF root node and assigns them to ARE properties
+        - Handles color values as special case, converting to Color objects
+        - All other values assigned directly from GFF.
+    """
     are = ARE()
 
     root = gff.root
@@ -334,6 +344,20 @@ def dismantle_are(
     *,
     use_deprecated: bool = True,
 ) -> GFF:
+    """Converts an ARE structure to a GFF structure
+    Args:
+        are: ARE - The ARE structure to convert
+        game: Game - The game type (K1, K2, etc)
+        use_deprecated: bool - Whether to include deprecated fields
+    Returns:
+        gff: GFF - The converted GFF structure
+    Processing Logic:
+        - Creates a new GFF structure
+        - Maps ARE fields to GFF fields
+        - Includes additional K2-specific fields if game is K2
+        - Includes deprecated fields if use_deprecated is True
+        - Returns the populated GFF structure.
+    """
     gff = GFF(GFFContent.ARE)
 
     root = gff.root
@@ -438,6 +462,18 @@ def read_are(
     offset: int = 0,
     size: int | None = None,
 ) -> ARE:
+    """Returns an ARE instance from the source.
+
+    Args:
+    ----
+        source: The source to read from
+        offset: The byte offset to start reading from
+        size: The maximum number of bytes to read
+    Returns:
+        ARE: The constructed annotation regions
+    - Read GFF from source starting at offset with max size
+    - Construct ARE object from parsed GFF
+    """
     gff = read_gff(source, offset, size)
     return construct_are(gff)
 
@@ -450,16 +486,46 @@ def write_are(
     *,
     use_deprecated: bool = True,
 ) -> None:
+    """Writes an ARE resource to a target file format.
+
+    Args:
+    ----
+        are: ARE - The ARE resource to write
+        target: TARGET_TYPES - The target file path or object to write to
+        game: Game - The game type of the ARE (default K2)
+        file_format: ResourceType - The file format to write as (default GFF)
+        use_deprecated: bool - Whether to include deprecated fields (default True)
+
+    Returns:
+    -------
+        None: Writes the ARE as GFF to the target without returning anything
+    - Dismantles the ARE into a GFF structure
+    - Writes the GFF structure to the target using the specified file format
+    """
     gff = dismantle_are(are, game, use_deprecated=use_deprecated)
     write_gff(gff, target, file_format)
 
 
 def bytes_are(
-    are: ARE,
+    are: ARE | SOURCE_TYPES,
     game: Game = Game.K2,
     file_format: ResourceType = ResourceType.GFF,
     *,
     use_deprecated: bool = True,
 ) -> bytes:
+    """Converts ARE to bytes in specified file format
+    Args:
+        are: ARE or source path: ARE object or path to ARE file
+        game: Game: Game type are is for
+        file_format: ResourceType: File format to convert to
+        use_deprecated: bool: Use deprecated ARE fields if true
+    Returns:
+        bytes: Converted ARE bytes
+    - Dismantle ARE to GFF format
+    - Convert GFF to specified file format bytes
+    - If ARE in bytes/path format, read ARE the source first.
+    """
+    if not isinstance(are, ARE):
+        are = read_are(are)
     gff = dismantle_are(are, game, use_deprecated=use_deprecated)
     return bytes_gff(gff, file_format)

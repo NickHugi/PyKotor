@@ -416,6 +416,17 @@ class GITDoor(GITInstance):
     def identifier(
         self,
     ) -> ResourceIdentifier | None:
+        """Returns a ResourceIdentifier for the resource or None if not found
+        Args:
+            self: {Object containing resource reference}.
+
+        Returns
+        -------
+            ResourceIdentifier | None: {Resource identifier object or None}
+        - Get resource reference from self
+        - Create ResourceIdentifier object from reference and type
+        - Return ResourceIdentifier or None.
+        """
         return ResourceIdentifier(self.resref.get(), ResourceType.UTD)
 
     def classification(
@@ -464,6 +475,18 @@ class GITEncounter(GITInstance):
         y: float,
         z: float,
     ) -> None:
+        """Moves an object to a new position
+        Args:
+            x: New x coordinate
+            y: New y coordinate
+            z: New z coordinate
+        Returns:
+            None: Does not return anything
+        - Adds the passed x value to the current x coordinate
+        - Adds the passed y value to the current y coordinate
+        - Adds the passed z value to the current z coordinate
+        - Updates the object's position with the new coordinates.
+        """
         self.position.x += x
         self.position.y += y
         self.position.z += z
@@ -519,6 +542,18 @@ class GITPlaceable(GITInstance):
         y: float,
         z: float,
     ) -> None:
+        """Moves an object to a new position
+        Args:
+            x: New x coordinate
+            y: New y coordinate
+            z: New z coordinate
+        Returns:
+            None: Does not return anything
+        - Adds the passed x value to the current x coordinate
+        - Adds the passed y value to the current y coordinate
+        - Adds the passed z value to the current z coordinate
+        - Updates the object's position with the new coordinates.
+        """
         self.position.x += x
         self.position.y += y
         self.position.z += z
@@ -1166,11 +1201,13 @@ def write_git(
 
 
 def bytes_git(
-    git: GIT,
+    git: GIT | SOURCE_TYPES,
     game: Game = Game.K2,
     file_format: ResourceType = ResourceType.GFF,
     *,
     use_deprecated: bool = True,
 ) -> bytes:
+    if not isinstance(git, GIT):
+        git = read_git(git)
     gff = dismantle_git(git, game, use_deprecated=use_deprecated)
     return bytes_gff(gff, file_format)

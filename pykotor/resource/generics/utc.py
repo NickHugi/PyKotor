@@ -485,11 +485,13 @@ def write_utc(
 
 
 def bytes_utc(
-    utc: UTC,
+    utc: UTC | SOURCE_TYPES,
     game: Game = Game.K2,
     file_format: ResourceType = ResourceType.GFF,
     *,
     use_deprecated: bool = True,
 ) -> bytes:
+    if not isinstance(utc, UTC):
+        utc = read_utc(utc)
     gff = dismantle_utc(utc, game, use_deprecated=use_deprecated)
     return bytes_gff(gff, file_format)

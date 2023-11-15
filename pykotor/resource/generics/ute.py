@@ -216,11 +216,13 @@ def write_ute(
 
 
 def bytes_ute(
-    ute: UTE,
+    ute: UTE | SOURCE_TYPES,
     game: Game = Game.K2,
     file_format: ResourceType = ResourceType.GFF,
     *,
     use_deprecated: bool = True,
 ) -> bytes:
+    if not isinstance(ute, UTE):
+        ute = read_ute(ute)
     gff = dismantle_ute(ute, game, use_deprecated=use_deprecated)
     return bytes_gff(gff, file_format)

@@ -151,11 +151,13 @@ def write_jrl(
 
 
 def bytes_jrl(
-    jrl: JRL,
+    jrl: JRL | SOURCE_TYPES,
     game: Game = Game.K2,
     file_format: ResourceType = ResourceType.GFF,
     *,
     use_deprecated: bool = True,
 ) -> bytes:
+    if not isinstance(jrl, JRL):
+        jrl = read_jrl(jrl)
     gff = dismantle_jrl(jrl, game, use_deprecated=use_deprecated)
     return bytes_gff(gff, file_format)

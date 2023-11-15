@@ -115,11 +115,13 @@ def write_utw(
 
 
 def bytes_utw(
-    utw: UTW,
+    utw: UTW | SOURCE_TYPES,
     game: Game = Game.K2,
     file_format: ResourceType = ResourceType.GFF,
     *,
     use_deprecated: bool = True,
 ) -> bytes:
+    if not isinstance(utw, UTW):
+        utw = read_utw(utw)
     gff = dismantle_utw(utw, game, use_deprecated=use_deprecated)
     return bytes_gff(gff, file_format)
