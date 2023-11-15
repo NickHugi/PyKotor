@@ -3,11 +3,14 @@ from __future__ import annotations
 import base64
 import json
 import xml.etree.ElementTree as ElemTree
+import zipfile
 from contextlib import suppress
+from io import BytesIO
 from typing import TYPE_CHECKING, Optional
 
 import markdown
 import requests
+from bs4 import BeautifulSoup, Tag
 from config import UPDATE_INFO_LINK
 from PyQt5 import QtCore
 from PyQt5.QtWidgets import QMainWindow, QMessageBox, QTreeWidgetItem, QWidget
@@ -20,6 +23,8 @@ from toolset.gui.dialogs.asyncloader import AsyncLoader
 
 if TYPE_CHECKING:
     import os
+
+    from bs4 import NavigableString
 
 
 class HelpWindow(QMainWindow):
@@ -82,11 +87,15 @@ class HelpWindow(QMainWindow):
             add(item)
             self._setupContentsRecXML(item, child)
 
-    def download_file(self, url: str, local_path: os.PathLike | str):
+
+    def download_file(self, url_or_repo: str, local_path: os.PathLike | str, repo_path = None) -> None:
+        api_url = url_or_repo
+        if repo_path is not None:
+            api_url = f"https://api.github.com/repos/{PurePath(url_or_repo).as_posix()}/contents/{PurePath(repo_path).as_posix()}"
         local_path = local_path if isinstance(local_path, Path) else Path(local_path)
         local_path.parent.mkdir(parents=True, exist_ok=True)
 
-        with requests.get(url, stream=True, timeout=15) as r:
+        with requests.get(api_url, stream=True, timeout=15) as r:
             r.raise_for_status()
             with local_path.open("wb") as f:
                 for chunk in r.iter_content(chunk_size=8192):
@@ -95,9 +104,9 @@ class HelpWindow(QMainWindow):
     def download_directory(
         self,
         repo: os.PathLike | str,
-        repo_path: os.PathLike | str,
         local_dir: os.PathLike | str,
-    ):
+        repo_path: os.PathLike | str,
+    ) -> None:
         repo = repo if isinstance(repo, PurePath) else PurePath(repo)
         repo_path = repo_path if isinstance(repo_path, PurePath) else PurePath(repo_path)
         api_url = f"https://api.github.com/repos/{repo.as_posix()}/contents/{repo_path.as_posix()}"
@@ -155,10 +164,15 @@ class HelpWindow(QMainWindow):
             ).exec_()
 
     def _downloadUpdate(self) -> None:
-        help_path = Path("help")
-        if not help_path.exists():
-            help_path.mkdir(parents=True)
-        self.download_directory("NickHugi/PyKotor", "toolset/help", ".")
+        help_path = Path("help").resolve()
+        help_path.mkdir(parents=True, exist_ok=True)
+        self.download_file("NickHugi/PyKotor", ".", "toolset/help.zip")
+
+        # Extract the ZIP file
+        with zipfile.ZipFile("./help.zip") as zip_file:
+            print(f"Extracting downloaded content to {help_path!s}")
+            zip_file.extractall(help_path)
+        Path("help.zip").unlink()
 
     def displayFile(self, filepath: str) -> None:
         try:
