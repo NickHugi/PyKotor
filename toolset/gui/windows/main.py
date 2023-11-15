@@ -1,4 +1,5 @@
 from __future__ import annotations
+import base64
 
 try:
     from packaging.version import Version as StrictVersion
@@ -450,7 +451,11 @@ class ToolWindow(QMainWindow):
         """
         try:
             req = requests.get(UPDATE_INFO_LINK, timeout=15)
-            data = json.loads(req.text)
+            req.raise_for_status()
+            file_data = req.json()
+            base64_content = file_data["content"]
+            decoded_content = base64.b64decode(base64_content)  # Correctly decoding the base64 content
+            data = json.loads(decoded_content.decode("utf-8"))
 
             latestVersion = data["latestVersion"]
             downloadLink = data["downloadLink"]
