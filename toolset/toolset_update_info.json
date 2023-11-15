@@ -11,5 +11,5 @@
 		"Jedi Enclave": { "version": 1, "id": "jedienclave" },
 		"Taris Sewers": { "version": 1, "id": "tarissewers" }
 	},
-	"help": { "version": 3 }
+	"help": { "version": 4 }
 }
