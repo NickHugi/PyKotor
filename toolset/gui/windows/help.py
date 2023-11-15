@@ -5,7 +5,7 @@ import xml.etree.ElementTree as ElemTree
 import zipfile
 from contextlib import suppress
 from pathlib import Path
-from typing import Optional
+from typing import TYPE_CHECKING, Optional
 
 import markdown
 import requests
@@ -16,6 +16,9 @@ from PyQt5.QtWidgets import QMainWindow, QMessageBox, QTreeWidgetItem, QWidget
 from pykotor.common.misc import decode_bytes_with_fallbacks
 from pykotor.common.stream import BinaryReader
 from toolset.gui.dialogs.asyncloader import AsyncLoader
+
+if TYPE_CHECKING:
+    import os
 
 
 class HelpWindow(QMainWindow):
@@ -65,7 +68,7 @@ class HelpWindow(QMainWindow):
         if "structure" in data:
             for title in data["structure"]:
                 item = QTreeWidgetItem([title])
-                item.setData(0, QtCore.Qt.UserRole, data["structure"][title]["filename"])
+                item.setData(0, QtCore.Qt.UserRole, data["structure"][title]["filename"])  # type: ignore[attr-defined]
                 add(item)
                 self._setupContentsRecJSON(item, data["structure"][title])
 
@@ -74,9 +77,33 @@ class HelpWindow(QMainWindow):
 
         for child in element:
             item = QTreeWidgetItem([child.get("name")])
-            item.setData(0, QtCore.Qt.UserRole, child.get("file"))
+            item.setData(0, QtCore.Qt.UserRole, child.get("file"))  # type: ignore[attr-defined]
             add(item)
             self._setupContentsRecXML(item, child)
+
+    def download_file(self, url: str, local_path: os.PathLike | str):
+        local_path = Path(local_path)
+        local_path.parent.mkdir(parents=True, exist_ok=True)
+
+        with requests.get(url, stream=True, timeout=15) as r:
+            r.raise_for_status()
+            with local_path.open("wb") as f:
+                for chunk in r.iter_content(chunk_size=8192):
+                    f.write(chunk)
+
+    def download_directory(self, repo, repo_path, local_dir: os.PathLike | str):
+        api_url = f"https://api.github.com/repos/{repo}/contents/{repo_path}"
+        response = requests.get(api_url, timeout=15)
+        response.raise_for_status()
+
+        for item in response.json():
+            item_path: Path = Path(repo_path) / item["name"]
+            local_path = Path(local_dir) / item_path.relative_to(repo_path)
+
+            if item["type"] == "file":
+                self.download_file(item["download_url"], local_path)
+            elif item["type"] == "dir":
+                self.download_directory(repo, str(item_path), str(local_path))
 
     def checkForUpdates(self) -> None:
         with suppress(Exception):
@@ -97,14 +124,7 @@ class HelpWindow(QMainWindow):
         help_path = Path("help")
         if not help_path.exists():
             help_path.mkdir(parents=True)
-        response = requests.get(link, stream=True, timeout=15)
-        help_zip_path = help_path / "help.zip"
-        with help_zip_path.open("wb") as f:
-            for chunk in response.iter_content(chunk_size=1024):
-                if chunk:
-                    f.write(chunk)
-        with zipfile.ZipFile(help_zip_path, "r") as zip_ref:
-            zip_ref.extractall("./help")
+        self.download_directory("NickHugi/PyKotor", "toolset/help", ".")
 
     def displayFile(self, filepath: str) -> None:
         try:
@@ -121,7 +141,7 @@ class HelpWindow(QMainWindow):
     def onContentsClicked(self) -> None:
         if self.ui.contentsTree.selectedItems():
             item = self.ui.contentsTree.selectedItems()[0]
-            filename = item.data(0, QtCore.Qt.UserRole)
+            filename = item.data(0, QtCore.Qt.UserRole)  # type: ignore[attr-defined]
             if filename:
                 self.ui.textDisplay.setSearchPaths(["./help", f"./help/{Path(filename).parent!s}"])
                 self.displayFile(f"./help/{filename}")
