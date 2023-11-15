@@ -20,7 +20,6 @@ from tempfile import TemporaryDirectory
 from typing import TYPE_CHECKING, ClassVar
 
 import requests
-from config import PROGRAM_VERSION, UPDATE_INFO_LINK
 from PyQt5 import QtCore, QtGui
 from PyQt5.QtGui import QCloseEvent, QIcon, QPixmap, QStandardItem
 from PyQt5.QtWidgets import QFileDialog, QMainWindow, QMessageBox, QTreeView
@@ -38,6 +37,8 @@ from pykotor.resource.type import ResourceType
 from pykotor.tools import model
 from pykotor.tools.misc import is_rim_file
 from pykotor.tools.path import CaseAwarePath
+
+from toolset.config import PROGRAM_VERSION, UPDATE_INFO_LINK
 from toolset.data.installation import HTInstallation
 from toolset.gui.dialogs.about import About
 from toolset.gui.dialogs.asyncloader import AsyncBatchLoader, AsyncLoader
