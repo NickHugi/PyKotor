@@ -326,7 +326,7 @@ class UTDEditor(Editor):
             None: Does not return anything.
 
         - Checks if the global setting for showing preview is True
-        - If True, calls _update_model() to update the 3D model preview 
+        - If True, calls _update_model() to update the 3D model preview
         - If False, sets the fixed size of the window without leaving space for preview
         """
         self.ui.previewRenderer.setVisible(self.globalSettings.showPreviewUTP)

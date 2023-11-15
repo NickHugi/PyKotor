@@ -919,7 +919,7 @@ class ModuleDesignerControls3d:
 
         Args:
         ----
-            screen (Vector2): Screen position 
+            screen (Vector2): Screen position
             screenDelta (Vector2): Screen position change
             world (Vector3): World position
             buttons (set[int]): Pressed mouse buttons
@@ -1009,7 +1009,7 @@ class ModuleDesignerControls3d:
         Args:
             buttons: Set[int]: The pressed buttons
             keys: Set[int]: The pressed keys
-        Returns: 
+        Returns:
             None: Does not return anything
         Processes keyboard input:
             - Toggles free camera mode
@@ -1206,7 +1206,7 @@ class ModuleDesignerControls2d:
         """Handles mouse movement events in the editor
         Args:
             screen: Vector2 - Mouse position on screen in pixels
-            screenDelta: Vector2 - Mouse movement since last event in pixels 
+            screenDelta: Vector2 - Mouse movement since last event in pixels
             world: Vector2 - Mouse position in world space
             worldDelta: Vector2 - Mouse movement since last event in world space
             buttons: Set[int] - Mouse buttons currently held down
@@ -1244,7 +1244,7 @@ class ModuleDesignerControls2d:
             screen: Vector2 - Mouse position
             buttons: Set[int] - Pressed buttons
             keys: Set[int] - Pressed keys
-        Returns: 
+        Returns:
             None
         Processing Logic:
             - Check if select button is pressed and select instance under mouse

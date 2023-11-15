@@ -12,11 +12,11 @@ from pykotor.extract.capsule import Capsule
 from pykotor.extract.file import ResourceIdentifier
 from pykotor.extract.installation import Installation
 from pykotor.helpers.path import Path, PurePath
-from pykotor.resource.formats.gff import GFFContent, bytes_gff, read_gff
-from pykotor.resource.formats.lip import bytes_lip, read_lip
-from pykotor.resource.formats.ssf import bytes_ssf, read_ssf
-from pykotor.resource.formats.tlk import bytes_tlk, read_tlk
-from pykotor.resource.formats.twoda import bytes_2da, read_2da
+from pykotor.resource.formats.gff import GFFContent, bytes_gff
+from pykotor.resource.formats.lip import bytes_lip
+from pykotor.resource.formats.ssf import bytes_ssf
+from pykotor.resource.formats.tlk import bytes_tlk
+from pykotor.resource.formats.twoda import bytes_2da
 from pykotor.tools.misc import is_capsule_file
 from pykotor.tools.path import CaseAwarePath
 from pykotor.tslpatcher.logger import PatchLogger
@@ -290,7 +290,7 @@ class ModInstaller:
 
     def load_resource_file(self, resource_path: Path) -> bytes:
         """Loads a resource file and returns its contents as bytes.
-        BinaryReader.load_file works in all normal scenarios, the 
+        BinaryReader.load_file works in all normal scenarios, the
         format checks are provided for convenience to allow the user to load XML/JSON/CSV type data as well as defaults.
 
         Args:

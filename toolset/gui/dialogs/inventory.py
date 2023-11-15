@@ -230,7 +230,7 @@ class InventoryEditor(QDialog):
             uti: UTI - Universal type identifier object
         Processing Logic:
         - If no filepath is provided, get resource from installation
-        - If filepath ends with .rim/.mod/.erf, get resource from capsule file 
+        - If filepath ends with .rim/.mod/.erf, get resource from capsule file
         - If filepath ends with .bif, get resource from installation searching CHITIN
         - Else load resource directly from filepath
         - Return filepath, name extracted from UTI, and UTI object

@@ -75,7 +75,7 @@ class ModelRenderer(QOpenGLWidget):
         """Renders the scene
         Args:
             self: The class instance
-        Returns: 
+        Returns:
             None: Does not return anything
         Processing Logic:
             - Checks if scene is None and returns if so

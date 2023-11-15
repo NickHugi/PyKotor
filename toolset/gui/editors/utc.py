@@ -511,7 +511,7 @@ class UTCEditor(Editor):
             None: Does not return anything
         Processing Logic:
         1. Gets the conversation name from the UI text field
-        2. Searches the installation for the conversation resource 
+        2. Searches the installation for the conversation resource
         3. If not found, prompts to create a new file in the override folder
         4. Opens the resource editor with the conversation data.
         """

@@ -93,7 +93,7 @@ class BWMEditor(Editor):
         - Clear existing items from the material list
         - Loop through all material colors
         - Create image from color and set as icon
-        - Format material name as title 
+        - Format material name as title
         - Create list item with icon and text
         - Add item to material list.
         """
@@ -155,7 +155,7 @@ class BWMEditor(Editor):
             delta: Vector2 - Mouse movement since last event
             buttons: set[int] - Currently pressed mouse buttons
             keys: set[int] - Currently pressed keyboard keys
-        Returns: 
+        Returns:
             None
         - Converts mouse position to world and render coordinates
         - Pans/rotates camera if Ctrl + mouse buttons pressed

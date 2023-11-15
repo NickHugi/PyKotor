@@ -28,7 +28,7 @@ class UTSEditor(Editor):
         Args:
             parent: {QWidget}: The parent widget of this window
             installation: {HTInstallation}: The installation object
-        Returns: 
+        Returns:
             None: Does not return anything
         Processing Logic:
             - Initialize supported resource types

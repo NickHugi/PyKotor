@@ -15,5 +15,5 @@ from pykotor.resource.formats.tlk.tlk_auto import (
     detect_tlk,
     read_tlk,
     write_tlk,
-    bytes_tlk
+    bytes_tlk,
 )

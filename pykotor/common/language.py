@@ -159,7 +159,7 @@ class Language(IntEnum):
             {String}: The encoding for the given language
         Processing Logic:
             - Check if language is in list of Latin-based languages and return "cp1252" encoding
-            - Check if language is in list of Cyrillic-based languages and return "cp1251" encoding 
+            - Check if language is in list of Cyrillic-based languages and return "cp1251" encoding
             - Check if language is in list of Central European languages and return "cp1250" encoding
             - Check individual languages and return their specific encodings.
         """

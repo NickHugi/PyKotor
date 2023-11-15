@@ -371,7 +371,7 @@ class Module:
         -------
             resource: The PTH resource or None if not found.
         Finds the PTH resource:
-        - Iterates through all resources 
+        - Iterates through all resources
         - Checks if resource name matches self._id and type is PTH
         - Returns first matching resource or None.
         """
@@ -415,7 +415,7 @@ class Module:
             resname: Name of the resource to search for
         Returns:
             resource: The UTC resource or None if not found
-        - Iterate through self.resources dictionary values 
+        - Iterate through self.resources dictionary values
         - Check if resname matches resource name and type is UTC
         - Return matching resource or None if not found.
         """

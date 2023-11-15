@@ -98,7 +98,7 @@ class FileSearcher(QDialog):
             searchModules: bool - Search modules flag
             searchOverride: bool - Search override flag
             checkTypes: list[ResourceType] - Resource types to check
-        Returns: 
+        Returns:
             None - No return, updates results attribute
         Processing Logic:
             - Filters resources to search based on flags

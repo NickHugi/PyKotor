@@ -1,8 +1,8 @@
 from __future__ import annotations
 
+from copy import deepcopy
 from operator import attrgetter
 from typing import TYPE_CHECKING, ClassVar
-from copy import deepcopy
 
 from PyQt5 import QtCore
 from PyQt5.QtCore import QRect, QRegExp, QSize

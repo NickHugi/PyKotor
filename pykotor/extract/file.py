@@ -2,12 +2,12 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, NamedTuple
 
+from pykotor.helpers.path import Path, PurePath
 from pykotor.resource.type import ResourceType
 from pykotor.tools.misc import (
     is_bif_file,
     is_capsule_file,
 )
-from pykotor.helpers.path import Path, PurePath
 
 if TYPE_CHECKING:
     import os

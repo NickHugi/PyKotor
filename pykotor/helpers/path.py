@@ -147,7 +147,7 @@ class BasePurePath:
             bool: True if string ends with the suffix, False otherwise.
         Processing Logic:
         - If case sensitivity is not required, normalize self and text to lower case
-        - Normalize each string in the tuple if text is a tuple  
+        - Normalize each string in the tuple if text is a tuple
         - Utilize Python's built-in endswith method to check for suffix.
         """
         if not case_sensitive:

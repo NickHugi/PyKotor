@@ -8,7 +8,13 @@ from PyQt5.QtWidgets import QColorDialog, QLabel, QWidget
 from pykotor.common.geometry import Vector2
 from pykotor.common.misc import Color, ResRef
 from pykotor.resource.formats.gff import write_gff
-from pykotor.resource.generics.are import ARE, ARENorthAxis, AREWindPower, dismantle_are, read_are
+from pykotor.resource.generics.are import (
+    ARE,
+    ARENorthAxis,
+    AREWindPower,
+    dismantle_are,
+    read_are,
+)
 from pykotor.resource.type import ResourceType
 from toolset.data.installation import HTInstallation
 from toolset.gui.dialogs.edit.locstring import LocalizedStringDialog

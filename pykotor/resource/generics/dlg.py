@@ -195,7 +195,7 @@ class DLG:
         ----
             links: list[DLGLink] | None = None: The starting links to traverse
             seen_replies: list | None = None: Replies already seen
-        Returns: 
+        Returns:
             replies: list[DLGReply]: All reachable replies
         Processing Logic:
             - If no links given, use starters as starting links

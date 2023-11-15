@@ -6,7 +6,6 @@ from copy import copy
 from enum import IntEnum
 from typing import TYPE_CHECKING, ClassVar, NamedTuple, Optional
 
-from pykotor.helpers.path import Path
 from pykotor.common.language import Gender, Language, LocalizedString
 from pykotor.common.misc import CaseInsensitiveDict, Game
 from pykotor.common.stream import BinaryReader
@@ -19,6 +18,7 @@ from pykotor.extract.file import (
     ResourceResult,
 )
 from pykotor.extract.talktable import TalkTable
+from pykotor.helpers.path import Path
 from pykotor.resource.formats.gff import read_gff
 from pykotor.resource.formats.tpc import TPC, read_tpc
 from pykotor.resource.type import ResourceType

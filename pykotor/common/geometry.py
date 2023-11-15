@@ -806,7 +806,7 @@ class Vector4:
         Args:
         ----
             data: The compressed data as an integer
-        Returns: 
+        Returns:
             Vector4: The decompressed Vector4
         Processing Logic:
             - Extract x, y, z components from data bits
@@ -882,7 +882,7 @@ class Vector4:
         """Converts a quaternion to Euler angles
         Args:
             self: Quaternion to convert
-        Returns: 
+        Returns:
             Vector3: Converted Euler angles as roll, pitch, yaw
         Processing Logic:
             - Calculate roll by taking the atan2 of t0/t1 where t0 and t1 are functions of self.w, self.x, self.y, self.z
