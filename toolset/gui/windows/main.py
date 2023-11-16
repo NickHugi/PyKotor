@@ -1,5 +1,4 @@
 from __future__ import annotations
-import base64
 
 try:
     from packaging.version import Version as StrictVersion
@@ -13,6 +12,7 @@ except ImportError:
             msg = "Could not import StrictVersion from any known library"
             raise ImportError(msg) from e3
 
+import base64
 import json
 import traceback
 from contextlib import suppress
@@ -38,7 +38,6 @@ from pykotor.resource.type import ResourceType
 from pykotor.tools import model
 from pykotor.tools.misc import is_rim_file
 from pykotor.tools.path import CaseAwarePath
-
 from toolset.config import PROGRAM_VERSION, UPDATE_INFO_LINK
 from toolset.data.installation import HTInstallation
 from toolset.gui.dialogs.about import About
@@ -781,23 +780,23 @@ class FolderObserver(FileSystemEventHandler):
         self.lastModified = datetime.now(tz=timezone.utc).astimezone()
 
     def on_any_event(self, event):
-        rightnow = datetime.now(tz=timezone.utc).astimezone()
+        rightnow: datetime = datetime.now(tz=timezone.utc).astimezone()
         if rightnow - self.lastModified < timedelta(seconds=1):
             return
 
         self.lastModified = rightnow
 
-        modulePath = Path(self.window.active.module_path())
-        overridePath = Path(self.window.active.override_path())
-        modifiedPath = Path(event.src_path)
+        module_path: Path = Path(self.window.active.module_path()).resolve()
+        override_path: Path = Path(self.window.active.override_path()).resolve()
+        modified_path: Path = Path(event.src_path).resolve()
 
-        isDir = Path(modifiedPath).is_dir()
+        isDir = Path(modified_path).is_dir()
 
-        if modulePath.is_relative_to(modifiedPath) and not isDir:
-            moduleFile = modifiedPath.parent
-            self.window.moduleFilesUpdated.emit(str(moduleFile), event.event_type)
-        elif overridePath.is_relative_to(modifiedPath) and not isDir:
-            overrideDir = str(overridePath.relative_to(modifiedPath.parent))
-            if overrideDir.startswith(("\\", "//")):
-                overrideDir = overrideDir[1:]
-            self.window.overrideFilesUpdate.emit(overrideDir, event.event_type)
+        if module_path.as_posix().startswith(modified_path.as_posix()) and not isDir:
+            module_file = modified_path.parent
+            self.window.moduleFilesUpdated.emit(str(module_file), event.event_type)
+        elif override_path.as_posix().startswith(modified_path.as_posix()) and not isDir:
+            override_dir = str(override_path.relative_to(modified_path.parent))
+            if override_dir.startswith(("\\", "//")):
+                override_dir = override_dir[1:]
+            self.window.overrideFilesUpdate.emit(override_dir, event.event_type)
