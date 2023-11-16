@@ -33,6 +33,8 @@ exclude = '''
 | \.chat
 | \.ruff_cache
 | \.trunk
+| .mdx
+| .mdl
 )/
 '''
 
@@ -94,6 +96,8 @@ ignore = [
 "toolset/*.py" = ["FBT003", "N802", "N803", "N806", "A001"]
 "toolset/uic/*.py" = ["ALL"]
 "resources_rc.py" = ["ALL"]
+".mdx" = ["ALL"]
+".mdl" = ["ALL"]
 "pykotor/resource/formats/ncs/compiler/*.py" = ["ALL"]
 
 [tool.ruff.flake8-pytest-style]
