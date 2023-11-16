@@ -406,7 +406,9 @@ if parser_args.translate:
             parser_args.to_lang = Language[parser_args.to_lang]
         except KeyError:
             # Handle the case where the input is not a valid name in Language
+            parser.print_help()
             msg = f"{parser_args.to_lang.upper()} is not a valid Language."  # type: ignore[union-attr, reportGeneralTypeIssues]
+            print(msg)
             parser_args.to_lang = None
             continue
         break
@@ -419,9 +421,9 @@ if parser_args.translate:
         elif parser_args.create_fonts.lower() in ["n", "no"]:  # type: ignore[attr-defined]
             parser_args.create_fonts = False
         if not isinstance(parser_args.create_fonts, bool):
-            print("Invalid input, please enter yes or no")
             parser_args.create_fonts = None
             parser.print_help()
+            print("Invalid input, please enter yes or no")
             continue
         break
     if parser_args.create_fonts:
@@ -432,8 +434,8 @@ if parser_args.translate:
             ).resolve()
             if parser_args.font_path.exists() and parser_args.font_path.suffix.lower() == ".ttf":
                 break
-            print("Invalid font path:", parser_args.font_path)
             parser.print_help()
+            print("Invalid font path:", parser_args.font_path)
             parser_args.font_path = None
         while True:
             parser_args.resolution = parser_args.resolution or input("Choose the desired resolution (single number - must be a square, and probably a multiple of 256): ").upper()
