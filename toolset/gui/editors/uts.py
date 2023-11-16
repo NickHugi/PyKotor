@@ -126,7 +126,7 @@ class UTSEditor(Editor):
         self.ui.playRandomRadio.setChecked(False)
         self.ui.playSpecificRadio.setChecked(False)
         self.ui.playEverywhereRadio.setChecked(False)
-        if uts.random_range_y != 0 and uts.random_range_y != 0:  # TODO: should be range_x and range_y aren't 0?
+        if uts.random_range_x != 0 and uts.random_range_y != 0:
             self.ui.playRandomRadio.setChecked(True)
         elif uts.positional:
             self.ui.playSpecificRadio.setChecked(True)
