@@ -2,13 +2,14 @@
 	"latestVersion": "2.2.0",
 	"downloadLink": "https://deadlystream.com/files/file/1982-holocron-toolset/",
 	"kits": {
-		"Sith Base": {"version": 2.1, "id": "sithbase" },
-		"Enclave Surface": { "version": 2.1, "id": "enclavesurface" },
 		"Dantooine Estate": { "version": 1.1, "id": "dantooineestate" },
-		"Davik Estate": { "version": 1, "id": "davikestate" },
+		"Sith Base": {"version": 2.1, "id": "sithbase" },
 		"Endar Spire": { "version": 1, "id": "endarspire" },
 		"Hidden Bek Base": { "version": 1, "id": "hiddenbek" },
+		"Enclave Surface": { "version": 2.1, "id": "enclavesurface" },
+		"Davik Estate": { "version": 1, "id": "davikestate" },
 		"Jedi Enclave": { "version": 1, "id": "jedienclave" },
+		"Black Vulkar Base": { "version": 1, "id": "blackvulkar" },
 		"Taris Sewers": { "version": 1, "id": "tarissewers" }
 	},
 	"help": { "version": 4 }

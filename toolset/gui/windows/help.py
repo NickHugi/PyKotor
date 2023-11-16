@@ -18,7 +18,7 @@ from PyQt5.QtWidgets import QMainWindow, QMessageBox, QTreeWidgetItem, QWidget
 from pykotor.common.misc import decode_bytes_with_fallbacks
 from pykotor.common.stream import BinaryReader
 from pykotor.helpers.path import Path, PurePath
-from toolset.__main__ import is_debug_mode
+from toolset.__main__ import is_debug_mode, is_frozen
 from toolset.gui.dialogs.asyncloader import AsyncLoader
 
 if TYPE_CHECKING:
@@ -33,7 +33,7 @@ class HelpWindow(QMainWindow):
     def __init__(self, parent: Optional[QWidget], startingPage: Optional[str] = None):
         super().__init__(parent)
 
-        self.version: Optional[int] = None
+        self.version: Optional[float] = None
 
         from toolset.uic.windows import help
         self.ui = help.Ui_MainWindow()
@@ -59,7 +59,7 @@ class HelpWindow(QMainWindow):
             tree = ElemTree.parse("./help/contents.xml")
             root = tree.getroot()
 
-            self.version = int(root.get("version", 0))
+            self.version = float(root.get("version", 0.0))
             self._setupContentsRecXML(None, root)
 
             # Old JSON code:
@@ -88,14 +88,32 @@ class HelpWindow(QMainWindow):
             self._setupContentsRecXML(item, child)
 
 
-    def download_file(self, url_or_repo: str, local_path: os.PathLike | str, repo_path = None) -> None:
-        api_url = url_or_repo
-        if repo_path is not None:
-            api_url = f"https://api.github.com/repos/{PurePath(url_or_repo).as_posix()}/contents/{PurePath(repo_path).as_posix()}"
-        local_path = local_path if isinstance(local_path, Path) else Path(local_path)
+    def download_file(self, url_or_repo: str, local_path: os.PathLike | str, repo_path=None) -> None:
+        local_path = Path(local_path)
         local_path.parent.mkdir(parents=True, exist_ok=True)
 
-        with requests.get(api_url, stream=True, timeout=15) as r:
+        if repo_path is not None:
+            # Construct the API URL for the file in the repository
+            owner, repo = PurePath(url_or_repo).parts[-2:]
+            api_url = f"https://api.github.com/repos/{owner}/{repo}/contents/{PurePath(repo_path).as_posix()}"
+
+            # Get file info from GitHub API
+            response = requests.get(api_url, timeout=15)
+            response.raise_for_status()
+            file_info = response.json()
+
+            # Check if it's a file and get the download URL
+            if file_info["type"] == "file":
+                download_url = file_info["download_url"]
+            else:
+                msg = "The provided repo_path does not point to a file."
+                raise ValueError(msg)
+        else:
+            # Direct URL
+            download_url = url_or_repo
+
+        # Download the file
+        with requests.get(download_url, stream=True, timeout=15) as r:
             r.raise_for_status()
             with local_path.open("wb") as f:
                 for chunk in r.iter_content(chunk_size=8192):
@@ -132,8 +150,8 @@ class HelpWindow(QMainWindow):
             decoded_content = base64.b64decode(base64_content)  # Correctly decoding the base64 content
             updateInfoData = json.loads(decoded_content.decode("utf-8"))
 
-            new_version = int(updateInfoData["help"]["version"])
-            if self.version is None or new_version > self.version:
+            new_version = float(updateInfoData["help"]["version"])
+            if self.version is None or new_version > self.version:  # TODO: use versioning
                 msgbox = QMessageBox(QMessageBox.Information, "Update available",
                                     "A newer version of the help book is available for download, would you like to download it?")
                 msgbox.addButton(QMessageBox.Yes)
@@ -166,13 +184,15 @@ class HelpWindow(QMainWindow):
     def _downloadUpdate(self) -> None:
         help_path = Path("help").resolve()
         help_path.mkdir(parents=True, exist_ok=True)
-        self.download_file("NickHugi/PyKotor", ".", "toolset/help.zip")
+        self.download_file("NickHugi/PyKotor", "help.zip", "toolset/help.zip")
 
         # Extract the ZIP file
         with zipfile.ZipFile("./help.zip") as zip_file:
             print(f"Extracting downloaded content to {help_path!s}")
             zip_file.extractall(help_path)
-        Path("help.zip").unlink()
+
+        if is_frozen():
+            Path("help.zip").unlink()
 
     def displayFile(self, filepath: str) -> None:
         try:

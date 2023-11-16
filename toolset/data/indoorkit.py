@@ -83,7 +83,7 @@ def load_kits(path: os.PathLike | str) -> list[Kit]:
     if not kits_path.exists():
         kits_path.mkdir(parents=True)
     for file in [file for file in kits_path.iterdir() if file.endswith(".json")]:
-        kit_json = json.loads(BinaryReader.load_file(f"{kits_path}/{file}"))
+        kit_json = json.loads(BinaryReader.load_file(file))
         kit = Kit(kit_json["name"])
         kit_identifier = kit_json["id"]
 
@@ -143,7 +143,7 @@ def load_kits(path: os.PathLike | str) -> list[Kit]:
             name = component_json["name"]
             component_identifier = component_json["id"]
 
-            image = QImage(kits_path / kit_identifier / f"{component_identifier}.png").mirrored()
+            image = QImage(str(kits_path / kit_identifier / f"{component_identifier}.png")).mirrored()
 
             bwm = read_bwm(kits_path / kit_identifier / f"{component_identifier}.wok")
             mdl = BinaryReader.load_file(kits_path / kit_identifier / f"{component_identifier}.mdl")

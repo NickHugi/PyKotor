@@ -115,6 +115,19 @@ class BasePurePath:
         """
         return str(key) + str(self)
 
+    def as_posix(self):
+        """Convert path to a POSIX path.
+
+        Args:
+        ----
+            self: Path object
+        Returns:
+            str: POSIX representation of the path
+        - Call as_posix() on the Path object to get the POSIX path string
+        - Pass the result to _fix_path_formatting() to normalize the path format. This is done to fix any known bugs with the pathlib library.
+        """
+        return self._fix_path_formatting(super().as_posix(), slash="/")
+
     def joinpath(self, *args: PATH_TYPES):
         """Appends one or more path-like objects and/or relative paths to self.
 

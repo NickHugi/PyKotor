@@ -1,14 +1,19 @@
 from __future__ import annotations
+import base64
 
 import json
 import math
-import os
+import shutil
+from tempfile import TemporaryDirectory
 import zipfile
 from contextlib import suppress
 from copy import copy, deepcopy
+from io import BytesIO
 from typing import TYPE_CHECKING
 
 import requests
+from bs4 import BeautifulSoup, Tag
+from __main__ import is_debug_mode, is_frozen
 from config import UPDATE_INFO_LINK
 from PyQt5 import QtCore
 from PyQt5.QtCore import QPoint, QPointF, QRectF, QTimer
@@ -40,7 +45,7 @@ from PyQt5.QtWidgets import (
 
 from pykotor.common.geometry import Vector2, Vector3
 from pykotor.common.stream import BinaryReader, BinaryWriter
-from pykotor.helpers.path import Path
+from pykotor.helpers.path import Path, PurePath
 from toolset.data.indoorkit import Kit, KitComponent, load_kits
 from toolset.data.indoormap import IndoorMap, IndoorMapRoom
 from toolset.gui.dialogs.asyncloader import AsyncLoader
@@ -48,6 +53,10 @@ from toolset.gui.dialogs.indoor_settings import IndoorMapSettings
 from toolset.gui.windows.help import HelpWindow
 
 if TYPE_CHECKING:
+    import os
+
+    from bs4 import NavigableString
+
     from pykotor.resource.formats.bwm import BWMFace
     from toolset.data.installation import HTInstallation
 
@@ -945,7 +954,11 @@ class KitDownloader(QDialog):
         - Adds kit name and button to layout in group box
         """
         req = requests.get(UPDATE_INFO_LINK, timeout=15)
-        updateInfoData = json.loads(req.text)
+        req.raise_for_status()
+        file_data = req.json()
+        base64_content = file_data["content"]
+        decoded_content = base64.b64decode(base64_content)  # Correctly decoding the base64 content
+        updateInfoData = json.loads(decoded_content.decode("utf-8"))
 
         for kitName, kitDict in updateInfoData["kits"].items():
             kitId = kitDict["id"]
@@ -955,7 +968,7 @@ class KitDownloader(QDialog):
                 button.setEnabled(False)
                 with suppress(Exception):
                     localKitDict = json.loads(BinaryReader.load_file(kitPath))
-                    if localKitDict["version"] < kitDict["version"]:
+                    if float(localKitDict["version"]) < float(kitDict["version"]):  # TODO: use versioning
                         button.setText("Update Available")
                         button.setEnabled(True)
                         button.clicked.connect(
@@ -972,39 +985,121 @@ class KitDownloader(QDialog):
         button.setText("Downloading")
         button.setEnabled(False)
 
-        def task():
-            return self._downloadKit(infoDict["id"])
-
-        loader = AsyncLoader(self, "Downloading Kit...", task, "Failed to download.")
-        if loader.exec_():
-            button.setText("Download Complete")
+        def task() -> bool:
+            try:
+                return self._downloadKit(infoDict["id"])
+            except Exception as e:
+                print(repr(e))
+                raise
+        if is_debug_mode() and not is_frozen():
+            # Run synchronously for debugging
+            try:
+                task()
+                button.setText("Download Complete")
+            except Exception as e:
+                # Handle exception or log error
+                print(f"Error downloading kit: {e!r}")
+                button.setText("Download Failed")
+                button.setEnabled(True)
         else:
-            button.setText("Download Failed")
-            button.setEnabled(True)
+            loader = AsyncLoader(self, "Downloading Kit...", task, "Failed to download.")
+            if loader.exec_():
+                button.setText("Download Complete")
+            else:
+                button.setText("Download Failed")
+                button.setEnabled(True)
 
-    def download_file(self, url: str, local_path: os.PathLike | str):
+    def download_file(self, url_or_repo: str, local_path: os.PathLike | str, repo_path=None) -> None:
         local_path = Path(local_path)
         local_path.parent.mkdir(parents=True, exist_ok=True)
 
-        with requests.get(url, stream=True, timeout=15) as r:
+        if repo_path is not None:
+            # Construct the API URL for the file in the repository
+            owner, repo = PurePath(url_or_repo).parts[-2:]
+            api_url = f"https://api.github.com/repos/{owner}/{repo}/contents/{PurePath(repo_path).as_posix()}"
+
+            # Get file info from GitHub API
+            response = requests.get(api_url, timeout=15)
+            response.raise_for_status()
+            file_info = response.json()
+
+            # Check if it's a file and get the download URL
+            if file_info["type"] == "file":
+                download_url = file_info["download_url"]
+            else:
+                msg = "The provided repo_path does not point to a file."
+                raise ValueError(msg)
+        else:
+            # Direct URL
+            download_url = url_or_repo
+
+        # Download the file
+        with requests.get(download_url, stream=True, timeout=15) as r:
             r.raise_for_status()
             with local_path.open("wb") as f:
                 for chunk in r.iter_content(chunk_size=8192):
                     f.write(chunk)
 
-    def download_directory(self, repo, repo_path, local_dir: os.PathLike | str):
-        api_url = f"https://api.github.com/repos/{repo}/contents/{repo_path}"
-        response = requests.get(api_url, timeout=15)
-        response.raise_for_status()
+    def download_directory(
+        self,
+        repo: os.PathLike | str,
+        local_dir: os.PathLike | str,
+        repo_path: os.PathLike | str,
+    ) -> None:
+        repo = repo if isinstance(repo, PurePath) else PurePath(repo)
+        repo_path = repo_path if isinstance(repo_path, PurePath) else PurePath(repo_path)
+        api_url = f"https://api.github.com/repos/{repo.as_posix()}/contents/{repo_path.as_posix()}"
+        req = requests.get(api_url, timeout=15)
+        req.raise_for_status()
+        data = req.json()
 
-        for item in response.json():
-            item_path: Path = Path(repo_path) / item["name"]
-            local_path = Path(local_dir) / item_path.relative_to(repo_path)
+        for item in data:
+            item_path = Path(item["path"])
+            local_path = item_path.relative_to("toolset")
 
             if item["type"] == "file":
                 self.download_file(item["download_url"], local_path)
             elif item["type"] == "dir":
-                self.download_directory(repo, str(item_path), str(local_path))
+                self.download_directory(repo, item_path, local_path)
 
-    def _downloadKit(self, kitId: str) -> None:
-        self.download_directory("NickHugi/PyKotor", f"toolset/{kitId}", "kits")
+    def _downloadKit(self, kitId: str) -> bool:
+        kits_path = Path("kits").resolve()
+        kits_path.mkdir(parents=True, exist_ok=True)
+        kits_zip_path = Path("kits.zip")
+        self.download_file("NickHugi/PyKotor", kits_zip_path, "toolset/kits.zip")
+
+        # Extract the ZIP file
+        with zipfile.ZipFile("./kits.zip") as zip_file:
+            print(f"Extracting downloaded content to {kits_path!s}")
+            tempdir = None
+            original_exception = None
+            try:
+                with TemporaryDirectory() as tempdir:
+                    tempdir_path = Path(tempdir)
+                    zip_file.extractall(tempdir)
+                    src_path = str(tempdir_path / kitId)
+                    this_kit_dst_path = kits_path / kitId
+                    print(f"Copying {src_path} to {this_kit_dst_path}...")
+                    if this_kit_dst_path.exists():
+                        print(f"Deleting old {kitId} kit folder/files...")
+                        shutil.rmtree(this_kit_dst_path)
+                    shutil.copytree(src_path, str(this_kit_dst_path))
+                    this_kit_json_filename = f"{kitId}.json"
+                    src_kit_json_path = tempdir_path / this_kit_json_filename
+                    if not src_kit_json_path.exists():
+                        msg = f"Kit {kitId} is missing the {this_kit_json_filename} file, cannot complete download"
+                        print(msg)
+                        return False
+                    shutil.copy(src_kit_json_path, kits_path / this_kit_json_filename)
+            except Exception as original_exception:  # noqa: BLE001
+                print(repr(original_exception))
+                return False
+            finally:
+                try:
+                    if tempdir:
+                        shutil.rmtree(tempdir)
+                except Exception:  # noqa: S110, BLE001
+                    pass
+
+        if is_frozen() and kits_zip_path.exists():
+            kits_zip_path.unlink()
