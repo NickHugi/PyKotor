@@ -8,7 +8,7 @@ NAME = "PyKotor"
 VERSION = "1.7.0"
 AUTHOR = "Nicholas Hugi"
 DESCRIPTION = "Read, modify and write files used by KotOR's game engine."
-PACKAGES = find_namespace_packages(exclude=["tests", "docs", "scripts/k_batchpatcher", "toolkit"])
+PACKAGES = find_namespace_packages(exclude=["tests", "docs", "scripts/k_batchpatcher"])
 URL = "https://github.com/NickHugi/PyKotor"
 
 README = (HERE / "README.md").read_text()
