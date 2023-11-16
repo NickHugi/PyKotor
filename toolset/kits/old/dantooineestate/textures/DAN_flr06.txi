@@ -1,2 +1,2 @@
-bumpyshinytexture CM_602dan  
+bumpyshinytexture CM_602dan
 bumpmaptexture DAN_flr06B
