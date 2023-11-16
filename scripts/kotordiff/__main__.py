@@ -1,10 +1,10 @@
 from __future__ import annotations
 
-import argparse
 import cProfile
 import os
 import pathlib
 import sys
+from argparse import ArgumentParser
 from hashlib import sha256
 from io import StringIO
 from typing import TYPE_CHECKING
@@ -25,9 +25,10 @@ from pykotor.tools.path import CaseAwarePath
 
 if TYPE_CHECKING:
     from pykotor.extract.file import FileResource
-OUTPUT_LOG: Path
-LOGGING_ENABLED: bool
+OUTPUT_LOG: Path = None
+LOGGING_ENABLED: bool = None
 
+parser_args = None
 
 def log_output(*args, **kwargs) -> None:
     # Create an in-memory text stream
@@ -378,113 +379,120 @@ def run_differ_from_args(path1: Path, path2: Path) -> bool | None:
     msg = f"--path1='{path1.name}' and --path2='{path2.name}' must be the same type"
     raise ValueError(msg)
 
-
-parser = argparse.ArgumentParser(description="Finds differences between two KOTOR installations")
-parser.add_argument("--path1", type=str, help="Path to the first K1/TSL install, file, or directory to diff.")
-parser.add_argument("--path2", type=str, help="Path to the second K1/TSL install, file, or directory to diff.")
-parser.add_argument("--output-log", type=str, help="Filepath of the desired output logfile")
-parser.add_argument("--compare-hashes", type=bool, help="Compare hashes of any unsupported file/resource type")
-parser.add_argument("--ignore-rims", type=bool, help="Whether to compare RIMS (default is False)")
-parser.add_argument("--ignore-tlk", type=bool, help="Whether to compare dialog.TLK (default is False)")
-parser.add_argument("--ignore-lips", type=bool, help="Whether to compare dialog.TLK (default is False)")
-parser.add_argument("--logging", type=bool, help="Whether to log the results to a file or not (default is True)")
-parser.add_argument(
-    "--use-profiler",
-    type=bool,
-    default=False,
-    help="Use cProfile to find where most of the execution time is taking place in source code.",
-)
-
-parser_args, unknown = parser.parse_known_args()
-LOGGING_ENABLED = bool(parser_args.logging is None or parser_args.logging)
-while True:
-    parser_args.path1 = Path(
-        parser_args.path1
-        or (unknown[0] if len(unknown) > 0 else None)
-        or input("Path to the first K1/TSL install, file, or directory to diff: ")
-        or "C:\\Program Files (x86)\\Steam\\steamapps\\common\\Knights of the Old Republic II",
-    ).resolve()
-    if parser_args.path1.exists():
-        break
-    print("Invalid path:", parser_args.path1)
-    parser.print_help()
-    parser_args.path1 = None
-while True:
-    parser_args.path2 = Path(
-        parser_args.path2
-        or (unknown[1] if len(unknown) > 1 else None)
-        or input("Path to the second K1/TSL install, file, or directory to diff: ")
-        or "C:\\Program Files (x86)\\Steam\\steamapps\\common\\Knights of the Old Republic II - PyKotor",
-    ).resolve()
-    if parser_args.path2.exists():
-        break
-    print("Invalid path:", parser_args.path2)
-    parser.print_help()
-    parser_args.path2 = None
-if LOGGING_ENABLED:
-    while True:
-        chosen_log_file_path = (
-            parser_args.output_log
-            or (unknown[2] if len(unknown) > 2 else None)
-            or input("Filepath of the desired output logfile: ").strip()
-            or "log_install_differ.log"
-        )
-        OUTPUT_LOG = Path(chosen_log_file_path).resolve()
-        if OUTPUT_LOG.parent.exists():
-            break
-        print("Invalid path:", OUTPUT_LOG)
-        parser.print_help()
-
-parser_args.ignore_rims = bool(parser_args.ignore_rims)
-parser_args.ignore_lips = bool(parser_args.ignore_lips)
-parser_args.ignore_tlk = bool(parser_args.ignore_tlk)
-parser_args.use_profiler = bool(parser_args.use_profiler)
-parser_args.compare_hashes = not bool(parser_args.compare_hashes)
-
-log_output()
-log_output(f"Using --path1='{parser_args.path1}'")
-log_output(f"Using --path2='{parser_args.path2}'")
-log_output(f"Using --output-log='{parser_args.output_log}'")
-log_output(f"Using --ignore-rims={parser_args.ignore_rims!s}")
-log_output(f"Using --ignore-tlk={parser_args.ignore_tlk!s}")
-log_output(f"Using --ignore-lips={parser_args.ignore_lips!s}")
-log_output(f"Using --compare-hashes={parser_args.compare_hashes!s}")
-log_output(f"Using --use-profiler={parser_args.use_profiler!s}")
-
-profiler = None
-try:
-    if parser_args.use_profiler:
-        profiler = cProfile.Profile()
-        profiler.enable()
-
-    comparison: bool | None = run_differ_from_args(
-        parser_args.path1,
-        parser_args.path2,
+def main() -> None:
+    global parser_args
+    global OUTPUT_LOG
+    global LOGGING_ENABLED
+    parser = ArgumentParser(description="Finds differences between two KOTOR installations")
+    parser.add_argument("--path1", type=str, help="Path to the first K1/TSL install, file, or directory to diff.")
+    parser.add_argument("--path2", type=str, help="Path to the second K1/TSL install, file, or directory to diff.")
+    parser.add_argument("--output-log", type=str, help="Filepath of the desired output logfile")
+    parser.add_argument("--compare-hashes", type=bool, help="Compare hashes of any unsupported file/resource type (default is True)")
+    parser.add_argument("--ignore-rims", type=bool, help="Whether to compare RIMS (default is False)")
+    parser.add_argument("--ignore-tlk", type=bool, help="Whether to compare dialog.TLK (default is False)")
+    parser.add_argument("--ignore-lips", type=bool, help="Whether to compare dialog.TLK (default is False)")
+    parser.add_argument("--logging", type=bool, help="Whether to log the results to a file or not (default is True)")
+    parser.add_argument(
+        "--use-profiler",
+        type=bool,
+        default=False,
+        help="Use cProfile to find where most of the execution time is taking place in source code.",
     )
 
-    if profiler is not None:
-        profiler.disable()
-        profiler_output_file = Path("profiler_output.pstat").resolve()
-        profiler.dump_stats(str(profiler_output_file))
-        log_output(f"Profiler output saved to: {profiler_output_file}")
-    if comparison is not None:
-        log_output(
-            f"'{relative_path_from_to(parser_args.path2, parser_args.path1)}'",
-            " MATCHES " if comparison else " DOES NOT MATCH ",
-            f"'{relative_path_from_to(parser_args.path1, parser_args.path2)}'",
+    parser_args, unknown = parser.parse_known_args()
+    LOGGING_ENABLED = bool(parser_args.logging is None or parser_args.logging)
+    while True:
+        parser_args.path1 = Path(
+            parser_args.path1
+            or (unknown[0] if len(unknown) > 0 else None)
+            or input("Path to the first K1/TSL install, file, or directory to diff: ")
+            or "C:\\Program Files (x86)\\Steam\\steamapps\\common\\Knights of the Old Republic II",
+        ).resolve()
+        if parser_args.path1.exists():
+            break
+        print("Invalid path:", parser_args.path1)
+        parser.print_help()
+        parser_args.path1 = None
+    while True:
+        parser_args.path2 = Path(
+            parser_args.path2
+            or (unknown[1] if len(unknown) > 1 else None)
+            or input("Path to the second K1/TSL install, file, or directory to diff: ")
+            or "C:\\Program Files (x86)\\Steam\\steamapps\\common\\Knights of the Old Republic II - PyKotor",
+        ).resolve()
+        if parser_args.path2.exists():
+            break
+        print("Invalid path:", parser_args.path2)
+        parser.print_help()
+        parser_args.path2 = None
+    if LOGGING_ENABLED:
+        while True:
+            chosen_log_file_path = (
+                parser_args.output_log
+                or (unknown[2] if len(unknown) > 2 else None)
+                or input("Filepath of the desired output logfile: ").strip()
+                or "log_install_differ.log"
+            )
+            OUTPUT_LOG = Path(chosen_log_file_path).resolve()
+            if OUTPUT_LOG.parent.exists():
+                break
+            print("Invalid path:", OUTPUT_LOG)
+            parser.print_help()
+
+    parser_args.ignore_rims = bool(parser_args.ignore_rims)
+    parser_args.ignore_lips = bool(parser_args.ignore_lips)
+    parser_args.ignore_tlk = bool(parser_args.ignore_tlk)
+    parser_args.use_profiler = bool(parser_args.use_profiler)
+    parser_args.compare_hashes = not bool(parser_args.compare_hashes)
+
+    log_output()
+    log_output(f"Using --path1='{parser_args.path1}'")
+    log_output(f"Using --path2='{parser_args.path2}'")
+    log_output(f"Using --output-log='{parser_args.output_log}'")
+    log_output(f"Using --ignore-rims={parser_args.ignore_rims!s}")
+    log_output(f"Using --ignore-tlk={parser_args.ignore_tlk!s}")
+    log_output(f"Using --ignore-lips={parser_args.ignore_lips!s}")
+    log_output(f"Using --compare-hashes={parser_args.compare_hashes!s}")
+    log_output(f"Using --use-profiler={parser_args.use_profiler!s}")
+
+    profiler = None
+    try:
+        if parser_args.use_profiler:
+            profiler = cProfile.Profile()
+            profiler.enable()
+
+        comparison: bool | None = run_differ_from_args(
+            parser_args.path1,
+            parser_args.path2,
         )
-        if comparison is True:
-            sys.exit(0)
-        if comparison is False:
-            sys.exit(2)
-    if comparison is None:
-        log_output("Completed with errors found during comparison")
-        sys.exit(3)
-except KeyboardInterrupt:
-    if profiler is not None:
-        profiler.disable()
-        profiler_output_file = Path("profiler_output.pstat").resolve()
-        profiler.dump_stats(str(profiler_output_file))
-        log_output(f"Profiler output saved to: {profiler_output_file}")
-    log_output("KeyboardInterrupt - KotorDiff was cancelled by user.")
-    raise
+
+        if profiler is not None:
+            profiler.disable()
+            profiler_output_file = Path("profiler_output.pstat").resolve()
+            profiler.dump_stats(str(profiler_output_file))
+            log_output(f"Profiler output saved to: {profiler_output_file}")
+        if comparison is not None:
+            log_output(
+                f"'{relative_path_from_to(parser_args.path2, parser_args.path1)}'",
+                " MATCHES " if comparison else " DOES NOT MATCH ",
+                f"'{relative_path_from_to(parser_args.path1, parser_args.path2)}'",
+            )
+            if comparison is True:
+                sys.exit(0)
+            if comparison is False:
+                sys.exit(2)
+        if comparison is None:
+            log_output("Completed with errors found during comparison")
+            sys.exit(3)
+    except KeyboardInterrupt:
+        if profiler is not None:
+            profiler.disable()
+            profiler_output_file = Path("profiler_output.pstat").resolve()
+            profiler.dump_stats(str(profiler_output_file))
+            log_output(f"Profiler output saved to: {profiler_output_file}")
+        log_output("KeyboardInterrupt - KotorDiff was cancelled by user.")
+        raise
+
+
+if __name__ == "__main__":
+    main()
