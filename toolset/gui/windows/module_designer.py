@@ -7,7 +7,16 @@ from typing import TYPE_CHECKING, Dict, List, Optional, Set
 from PyQt5 import QtCore
 from PyQt5.QtCore import QPoint, QTimer
 from PyQt5.QtGui import QColor, QIcon, QKeyEvent, QPixmap
-from PyQt5.QtWidgets import QAction, QCheckBox, QListWidgetItem, QMainWindow, QMenu, QMessageBox, QTreeWidgetItem, QWidget
+from PyQt5.QtWidgets import (
+    QAction,
+    QCheckBox,
+    QListWidgetItem,
+    QMainWindow,
+    QMenu,
+    QMessageBox,
+    QTreeWidgetItem,
+    QWidget,
+)
 
 from pykotor.common.geometry import SurfaceMaterial, Vector2, Vector3, Vector4
 from pykotor.common.misc import Color, ResRef
@@ -82,6 +91,7 @@ class ModuleDesigner(QMainWindow):
         self.lockInstances: bool = False
 
         from toolset.uic.windows.module_designer import Ui_MainWindow
+
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
         self._setupSignals()
@@ -97,7 +107,8 @@ class ModuleDesigner(QMainWindow):
             - Pass converted values to QColor constructor to return QColor object.
             """
             color = Color.from_rgba_integer(intvalue)
-            return QColor(int(color.r*255), int(color.g*255), int(color.b*255), int(color.a*255))
+            return QColor(int(color.r * 255), int(color.g * 255), int(color.b * 255), int(color.a * 255))
+
         self.materialColors: Dict[SurfaceMaterial, QColor] = {
             SurfaceMaterial.UNDEFINED: intColorToQColor(self.settings.undefinedMaterialColour),
             SurfaceMaterial.OBSCURING: intColorToQColor(self.settings.obscuringMaterialColour),
@@ -228,7 +239,9 @@ class ModuleDesigner(QMainWindow):
             self.ui.mainRenderer.init(self._installation, self._module)
 
             self.ui.flatRenderer.setGit(self._module.git().resource())
-            self.ui.flatRenderer.setWalkmeshes([bwm.resource() for bwm in self._module.resources.values() if bwm.restype() == ResourceType.WOK])
+            self.ui.flatRenderer.setWalkmeshes(
+                [bwm.resource() for bwm in self._module.resources.values() if bwm.restype() == ResourceType.WOK],
+            )
             self.ui.flatRenderer.centerCamera()
 
     def unloadModule(self) -> None:
@@ -313,9 +326,11 @@ class ModuleDesigner(QMainWindow):
                                     self._installation, self)[1]
 
         if editor is None:
-            QMessageBox(QMessageBox.Critical,
-                        "Failed to open editor",
-                        f"Failed to open editor for file: {resource.resname()}.{resource.restype().extension}")
+            QMessageBox(
+                QMessageBox.Critical,
+                "Failed to open editor",
+                f"Failed to open editor for file: {resource.resname()}.{resource.restype().extension}",
+            )
         else:
             editor.savedFile.connect(lambda: self._onSavedResource(resource))
 
@@ -353,7 +368,11 @@ class ModuleDesigner(QMainWindow):
             for j in range(parent.childCount()):
                 item = parent.child(j)
                 res: ModuleResource = item.data(0, QtCore.Qt.UserRole)
-                if instance.identifier() is not None and res.resname() == instance.identifier().resname and res.restype() == instance.identifier().restype:
+                if (
+                    instance.identifier() is not None
+                    and res.resname() == instance.identifier().resname
+                    and res.restype() == instance.identifier().restype
+                ):
                     parent.setExpanded(True)
                     item.setSelected(True)
                     self.ui.resourceTree.scrollToItem(item)
@@ -419,7 +438,7 @@ class ModuleDesigner(QMainWindow):
             if isinstance(instance, GITCamera):
                 item.setText(f"Camera #{instance.camera_id}")
                 item.setToolTip(f"Struct Index: {struct_index}\nCamera ID: {instance.camera_id}\nFOV: {instance.fov}")
-                item.setData(QtCore.Qt.UserRole+1, "cam" + str(instance.camera_id).rjust(10, "0"))
+                item.setData(QtCore.Qt.UserRole + 1, "cam" + str(instance.camera_id).rjust(10, "0"))
             else:
                 resource = self._module.resource(instance.identifier().resname, instance.identifier().restype)
                 resourceExists = resource is not None and resource.resource() is not None
@@ -444,13 +463,13 @@ class ModuleDesigner(QMainWindow):
 
                 item.setText(name)
                 item.setToolTip(f"Struct Index: {struct_index}\nResRef: {resref}\nName: {name}\nTag: {tag}")
-                item.setData(QtCore.Qt.UserRole+1, instance.identifier().restype.extension + name)
+                item.setData(QtCore.Qt.UserRole + 1, instance.identifier().restype.extension + name)
 
             item.setFont(font)
             item.setData(QtCore.Qt.UserRole, instance)
             items.append(item)
 
-        for item in sorted(items, key=lambda i: i.data(QtCore.Qt.UserRole+1)):
+        for item in sorted(items, key=lambda i: i.data(QtCore.Qt.UserRole + 1)):
             self.ui.instanceList.addItem(item)
 
     def selectInstanceItemOnList(self, instance: GITInstance) -> None:
@@ -510,7 +529,11 @@ class ModuleDesigner(QMainWindow):
         7. Rebuilds the instance list
         """
         if walkmeshSnap:
-            instance.position.z = self.ui.mainRenderer.walkmeshPoint(instance.position.x, instance.position.y, self.ui.mainRenderer.scene.camera.z).z
+            instance.position.z = self.ui.mainRenderer.walkmeshPoint(
+                instance.position.x,
+                instance.position.y,
+                self.ui.mainRenderer.scene.camera.z,
+            ).z
 
         if not isinstance(instance, GITCamera):
             dialog = InsertInstanceDialog(self, self._installation, self._module, instance.identifier().restype)
@@ -572,13 +595,13 @@ class ModuleDesigner(QMainWindow):
         instance.pitch = 0
         instance.height = 0
         instance.position = Vector3(view.x, view.y, view.z)
-        instance.orientation = Vector4.from_euler(math.pi/2-rot.yaw, 0, math.pi-rot.pitch)
+        instance.orientation = Vector4.from_euler(math.pi / 2 - rot.yaw, 0, math.pi - rot.pitch)
 
     def snapViewToCamera(self, instance: GITCamera) -> None:
         camera = self.ui.mainRenderer.scene.camera
         euler = instance.orientation.to_euler()
-        camera.pitch = math.pi-euler.z - math.radians(instance.pitch)
-        camera.yaw = math.pi/2-euler.x
+        camera.pitch = math.pi - euler.z - math.radians(instance.pitch)
+        camera.yaw = math.pi / 2 - euler.x
         camera.x = instance.position.x
         camera.y = instance.position.y
         camera.z = instance.position.z + instance.height
@@ -646,7 +669,8 @@ class ModuleDesigner(QMainWindow):
             return
 
         for instance in self.selectedInstances:
-            instance.rotate(x/60, y/60, 0.0)
+            instance.rotate(x / 60, y / 60, 0.0)
+
     # endregion
 
     # region Signal Callbacks
@@ -777,7 +801,9 @@ class ModuleDesigner(QMainWindow):
         view = self.ui.mainRenderer.scene.camera.true_position()
         rot = self.ui.mainRenderer.scene.camera
         menu.addAction("Insert Camera").triggered.connect(lambda: self.addInstance(GITCamera(*world), False))
-        menu.addAction("Insert Camera at View").triggered.connect(lambda: self.addInstance(GITCamera(view.x, view.y, view.z, rot.yaw, rot.pitch, 0, 0), False))
+        menu.addAction("Insert Camera at View").triggered.connect(
+            lambda: self.addInstance(GITCamera(view.x, view.y, view.z, rot.yaw, rot.pitch, 0, 0), False),
+        )
         menu.addSeparator()
         menu.addAction("Insert Creature").triggered.connect(lambda: self.addInstance(GITCreature(*world), True))
         menu.addAction("Insert Door").triggered.connect(lambda: self.addInstance(GITDoor(*world), False))
@@ -837,6 +863,7 @@ class ModuleDesigner(QMainWindow):
 
     def on2dKeyboardPressed(self, buttons: Set[int], keys: Set[int]) -> None:
         self._controls2d.onKeyboardPressed(buttons, keys)
+
     # endregion
 
     # region Events
@@ -849,6 +876,7 @@ class ModuleDesigner(QMainWindow):
         super().keyReleaseEvent(e)
         self.ui.mainRenderer.keyReleaseEvent(e)
         self.ui.flatRenderer.keyReleaseEvent(e)
+
     # endregion
 
 
@@ -1040,13 +1068,13 @@ class ModuleDesignerControls3d:
             self.editor.deleteSelected()
 
         if self.rotateCameraLeft.satisfied(buttons, keys):
-            self.renderer.rotateCamera(math.pi/4, 0)
+            self.renderer.rotateCamera(math.pi / 4, 0)
         if self.rotateCameraRight.satisfied(buttons, keys):
-            self.renderer.rotateCamera(-math.pi/4, 0)
+            self.renderer.rotateCamera(-math.pi / 4, 0)
         if self.rotateCameraUp.satisfied(buttons, keys):
-            self.renderer.rotateCamera(0, math.pi/4)
+            self.renderer.rotateCamera(0, math.pi / 4)
         if self.rotateCameraDown.satisfied(buttons, keys):
-            self.renderer.rotateCamera(0, -math.pi/4)
+            self.renderer.rotateCamera(0, -math.pi / 4)
 
         if self.moveCameraUp.satisfied(buttons, keys):
             self.renderer.scene.camera.z += 1
@@ -1122,7 +1150,7 @@ class ModuleDesignerControlsFreeCam:
         mouseY = rendererPos.y() + self.renderer.height() / 2
         strength = self.settings.rotateCameraSensitivityFC / 10000
 
-        self.renderer.rotateCamera(-screenDelta.x*strength, screenDelta.y*strength, snapRotations=False)
+        self.renderer.rotateCamera(-screenDelta.x * strength, screenDelta.y * strength, snapRotations=False)
         self.renderer.cursor().setPos(mouseX, mouseY)
 
     def onMousePressed(self, screen: Vector2, buttons: set[int], keys: set[int]) -> None:
@@ -1202,7 +1230,15 @@ class ModuleDesignerControls2d:
             strength = self.settings.moveCameraSensitivity2d / 100 / 50
             self.renderer.camera.nudgeZoom(delta.y * strength)
 
-    def onMouseMoved(self, screen: Vector2, screenDelta: Vector2, world: Vector2, worldDelta: Vector2, buttons: set[int], keys: set[int]) -> None:
+    def onMouseMoved(
+        self,
+        screen: Vector2,
+        screenDelta: Vector2,
+        world: Vector2,
+        worldDelta: Vector2,
+        buttons: set[int],
+        keys: set[int],
+    ) -> None:
         """Handles mouse movement events in the editor
         Args:
             screen: Vector2 - Mouse position on screen in pixels
