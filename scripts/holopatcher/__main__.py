@@ -13,9 +13,8 @@ from configparser import ConfigParser
 from datetime import datetime, timedelta, timezone
 from enum import IntEnum
 from threading import Thread
-from tkinter import filedialog
+from tkinter import filedialog, messagebox, ttk
 from tkinter import font as tkfont
-from tkinter import messagebox, ttk
 from typing import TYPE_CHECKING, NoReturn
 
 if getattr(sys, "frozen", False) is False:

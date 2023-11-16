@@ -1,7 +1,12 @@
 from __future__ import annotations
 
 from pykotor.resource.formats.ltr.ltr_data import LTR
-from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES, ResourceReader, ResourceWriter
+from pykotor.resource.type import (
+    SOURCE_TYPES,
+    TARGET_TYPES,
+    ResourceReader,
+    ResourceWriter,
+)
 
 
 class LTRBinaryReader(ResourceReader):

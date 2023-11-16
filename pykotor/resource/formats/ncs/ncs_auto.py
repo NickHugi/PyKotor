@@ -3,12 +3,19 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from pykotor.common.misc import Game
-from pykotor.common.scriptdefs import KOTOR_CONSTANTS, KOTOR_FUNCTIONS, TSL_CONSTANTS, TSL_FUNCTIONS
+from pykotor.common.scriptdefs import (
+    KOTOR_CONSTANTS,
+    KOTOR_FUNCTIONS,
+    TSL_CONSTANTS,
+    TSL_FUNCTIONS,
+)
 from pykotor.common.scriptlib import KOTOR_LIBRARY, TSL_LIBRARY
 from pykotor.resource.formats.ncs import NCS, NCSBinaryReader, NCSBinaryWriter
 from pykotor.resource.formats.ncs.compiler.lexer import NssLexer
 from pykotor.resource.formats.ncs.compiler.parser import NssParser
-from pykotor.resource.formats.ncs.optimizers import RemoveNopOptimizer
+from pykotor.resource.formats.ncs.optimizers import (
+    RemoveNopOptimizer,
+)
 from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES, ResourceType
 
 if TYPE_CHECKING:

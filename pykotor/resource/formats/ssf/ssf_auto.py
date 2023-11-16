@@ -1,7 +1,12 @@
 from __future__ import annotations
 
 from pykotor.common.stream import BinaryReader
-from pykotor.resource.formats.ssf import SSF, SSFBinaryReader, SSFBinaryWriter, SSFXMLReader
+from pykotor.resource.formats.ssf import (
+    SSF,
+    SSFBinaryReader,
+    SSFBinaryWriter,
+    SSFXMLReader,
+)
 from pykotor.resource.formats.ssf.io_ssf_xml import SSFXMLWriter
 from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES, ResourceType
 from pykotor.tools.path import CaseAwarePath

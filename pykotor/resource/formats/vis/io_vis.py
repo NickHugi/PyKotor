@@ -3,7 +3,13 @@ from __future__ import annotations
 import os
 
 from pykotor.resource.formats.vis import VIS
-from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES, ResourceReader, ResourceWriter, autoclose
+from pykotor.resource.type import (
+    SOURCE_TYPES,
+    TARGET_TYPES,
+    ResourceReader,
+    ResourceWriter,
+    autoclose,
+)
 
 
 class VISAsciiReader(ResourceReader):

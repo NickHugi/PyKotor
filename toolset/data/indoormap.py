@@ -14,11 +14,15 @@ from pykotor.common.language import LocalizedString
 from pykotor.common.misc import Color, ResRef
 from pykotor.common.stream import BinaryReader
 from pykotor.extract.file import ResourceIdentifier
-from pykotor.resource.formats.bwm import bytes_bwm
-from pykotor.resource.formats.erf import ERF, ERFType, write_erf
-from pykotor.resource.formats.lyt import LYT, LYTDoorHook, LYTRoom, bytes_lyt
-from pykotor.resource.formats.tpc import TPC, TPCTextureFormat, bytes_tpc
-from pykotor.resource.formats.vis import VIS, bytes_vis
+from pykotor.resource.formats.bwm.bwm_auto import bytes_bwm
+from pykotor.resource.formats.erf import ERF, ERFType
+from pykotor.resource.formats.erf.erf_auto import write_erf
+from pykotor.resource.formats.lyt import LYT, LYTDoorHook, LYTRoom
+from pykotor.resource.formats.lyt.lyt_auto import bytes_lyt
+from pykotor.resource.formats.tpc import TPC, TPCTextureFormat
+from pykotor.resource.formats.tpc.tpc_auto import bytes_tpc
+from pykotor.resource.formats.vis import VIS
+from pykotor.resource.formats.vis.vis_auto import bytes_vis
 from pykotor.resource.generics.are import ARE, ARENorthAxis, bytes_are
 from pykotor.resource.generics.git import GIT, GITDoor, bytes_git
 from pykotor.resource.generics.ifo import IFO, bytes_ifo

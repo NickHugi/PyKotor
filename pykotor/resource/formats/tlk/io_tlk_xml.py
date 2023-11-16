@@ -6,7 +6,13 @@ from xml.etree import ElementTree
 from pykotor.common.language import Language
 from pykotor.common.misc import ResRef, decode_bytes_with_fallbacks
 from pykotor.resource.formats.tlk.tlk_data import TLK
-from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES, ResourceReader, ResourceWriter, autoclose
+from pykotor.resource.type import (
+    SOURCE_TYPES,
+    TARGET_TYPES,
+    ResourceReader,
+    ResourceWriter,
+    autoclose,
+)
 from pykotor.tools.indent_xml import indent
 
 

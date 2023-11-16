@@ -59,9 +59,8 @@ from pykotor.resource.formats.ncs.compiler.lexer import NssLexer
 from pykotor.tools.path import CaseAwarePath
 
 if TYPE_CHECKING:
-    from ply.lex import LexToken
-
     from pykotor.common.script import ScriptConstant, ScriptFunction
+    from ply.lex import LexToken
 
 
 class NssParser:

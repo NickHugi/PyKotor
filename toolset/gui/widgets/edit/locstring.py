@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+
 from PyQt5 import QtCore
 from PyQt5.QtWidgets import QWidget
 

@@ -11,13 +11,12 @@ if getattr(sys, "frozen", False) is False:
         sys.path.insert(0, str(pykotor_path.parent))
 
 from pykotor.common.language import Language
-from pykotor.helpers.path import Path
 from pykotor.resource.formats.tpc.txi_data import write_bitmap_font
+from pykotor.helpers.path import Path
 
 FONT_PATH = Path("tests/files/roboto/Roboto-Black.ttf")
 
 from PIL import Image
-
 
 class TestWriteBitmapFont(unittest.TestCase):
     def setUp(self):

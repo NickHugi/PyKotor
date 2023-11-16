@@ -1,7 +1,14 @@
 from __future__ import annotations
 
 from pykotor.common.stream import BinaryReader
-from pykotor.resource.formats.tpc import TPC, TPCBinaryReader, TPCBinaryWriter, TPCBMPWriter, TPCTGAReader, TPCTGAWriter
+from pykotor.resource.formats.tpc import (
+    TPC,
+    TPCBinaryReader,
+    TPCBinaryWriter,
+    TPCBMPWriter,
+    TPCTGAReader,
+    TPCTGAWriter,
+)
 from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES, ResourceType
 from pykotor.tools.path import CaseAwarePath
 

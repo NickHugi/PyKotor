@@ -3,7 +3,13 @@ from __future__ import annotations
 import os
 
 from pykotor.common.stream import BinaryReader
-from pykotor.resource.formats.mdl import MDL, MDLAsciiReader, MDLAsciiWriter, MDLBinaryReader, MDLBinaryWriter
+from pykotor.resource.formats.mdl import (
+    MDL,
+    MDLAsciiReader,
+    MDLAsciiWriter,
+    MDLBinaryReader,
+    MDLBinaryWriter,
+)
 from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES, ResourceType
 
 

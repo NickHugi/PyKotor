@@ -8,7 +8,14 @@ from pykotor.common.geometry import Polygon3, Vector2, Vector3, Vector4
 from pykotor.common.language import LocalizedString
 from pykotor.common.misc import Color, Game, ResRef
 from pykotor.extract.file import ResourceIdentifier
-from pykotor.resource.formats.gff import GFF, GFFContent, GFFList, GFFStruct, read_gff, write_gff
+from pykotor.resource.formats.gff import (
+    GFF,
+    GFFContent,
+    GFFList,
+    GFFStruct,
+    read_gff,
+    write_gff,
+)
 from pykotor.resource.formats.gff.gff_auto import bytes_gff
 from pykotor.resource.generics.utc import UTC, bytes_utc
 from pykotor.resource.generics.utd import UTD, bytes_utd
