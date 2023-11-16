@@ -86,11 +86,11 @@ def openInstanceDialog(parent: QWidget, instance: GITInstance, installation: HTI
 class GITEditor(Editor):
     settingsUpdated = QtCore.pyqtSignal(object)
 
-    def __init__(self, parent: Optional[QWidget], installation: Optional[HTInstallation] = None):
+    def __init__(self, parent: Optional[QWidget], installation: HTInstallation | None = None):
         """Initializes the GIT editor
         Args:
             parent: Optional[QWidget]: The parent widget
-            installation: Optional[HTInstallation]: The installation
+            installation: HTInstallation | None: The installation
         Returns:
             None
         Initializes the editor UI and connects signals. Loads default settings. Initializes rendering area and mode. Clears any existing geometry.
@@ -366,7 +366,7 @@ class GITEditor(Editor):
 
         checkbox.setChecked(True)
 
-    def getInstanceExternalName(self, instance: GITInstance) -> Optional[str]:
+    def getInstanceExternalName(self, instance: GITInstance) -> str | None:
         """Get external name of a GIT instance
         Args:
             instance: The GIT instance object
@@ -385,7 +385,7 @@ class GITEditor(Editor):
             self.nameBuffer[resid] = None if res is None else self._installation.string(extract_name(res.data))
         return self.nameBuffer[resid]
 
-    def getInstanceExternalTag(self, instance: GITInstance) -> Optional[str]:
+    def getInstanceExternalTag(self, instance: GITInstance) -> str | None:
         """Gets external tag for the given instance
         Args:
             instance: The instance to get tag for

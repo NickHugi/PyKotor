@@ -1,15 +1,20 @@
+from __future__ import annotations
+
 from contextlib import suppress
-from typing import Dict, List, Optional
+from typing import TYPE_CHECKING, List, Optional
 
 from PyQt5.QtGui import QImage, QPixmap, QStandardItemModel, QTransform
-from PyQt5.QtWidgets import QWidget
 
 from pykotor.extract.file import ResourceIdentifier
 from pykotor.extract.installation import Installation, SearchLocation
 from pykotor.resource.formats.tpc import TPC, TPCTextureFormat
 from pykotor.resource.formats.twoda import TwoDA, read_2da
-from pykotor.resource.generics.uti import UTI
 from pykotor.resource.type import ResourceType
+
+if TYPE_CHECKING:
+    from PyQt5.QtWidgets import QWidget
+
+    from pykotor.resource.generics.uti import UTI
 
 
 class HTInstallation(Installation):
@@ -66,8 +71,8 @@ class HTInstallation(Installation):
         self.mainWindow: QWidget = mainWindow
         self.cacheCoreItems: Optional[QStandardItemModel] = None
 
-        self._cache2da: Dict[str, TwoDA] = {}
-        self._cacheTpc: Dict[str, TPC] = {}
+        self._cache2da: dict[str, TwoDA] = {}
+        self._cacheTpc: dict[str, TPC] = {}
 
     # region Cache 2DA
     def htGetCache2DA(self, resname: str):

@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import math
-from typing import TYPE_CHECKING, Set
+from typing import TYPE_CHECKING
 
 from PyQt5.QtCore import QTimer
 from PyQt5.QtWidgets import QOpenGLWidget, QWidget
@@ -30,8 +30,8 @@ class ModelRenderer(QOpenGLWidget):
         self._modelToLoad = None
         self._creatureToLoad = None
 
-        self._keysDown: Set[int] = set()
-        self._mouseDown: Set[int] = set()
+        self._keysDown: set[int] = set()
+        self._mouseDown: set[int] = set()
         self._mousePrev: Vector2 = Vector2(0, 0)
 
         self.settings: ModuleDesignerSettings = ModuleDesignerSettings()

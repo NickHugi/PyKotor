@@ -54,7 +54,7 @@ class ModuleRenderer(QOpenGLWidget):
         self.scene: Optional[Scene] = None
         self.settings: ModuleDesignerSettings = ModuleDesignerSettings()
         self._module: Optional[Module] = None
-        self._installation: Optional[HTInstallation] = None
+        self._installation: HTInstallation | None = None
         self._init = False
 
         self._renderTime: int = 0

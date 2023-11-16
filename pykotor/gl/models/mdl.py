@@ -34,7 +34,7 @@ class Model:
         self._scene: Scene = scene
         self.root: Node = root
 
-    def draw(self, shader: Shader, transform: mat4, *, override_texture: Optional[str] = None):
+    def draw(self, shader: Shader, transform: mat4, *, override_texture: str | None = None):
         self.root.draw(shader, transform, override_texture)
 
     def find(self, name: str) -> Optional[Node]:
@@ -199,7 +199,7 @@ class Node:
         self._rotation = quat(vec3(pitch, yaw, roll))
         self._recalc_transform()
 
-    def draw(self, shader: Shader, transform: mat4, override_texture: Optional[str] = None):
+    def draw(self, shader: Shader, transform: mat4, override_texture: str | None = None):
         transform = transform * self._transform
 
         if self.mesh and self.render:
@@ -274,7 +274,7 @@ class Mesh:
         glBindBuffer(GL_ARRAY_BUFFER, 0)
         glBindVertexArray(0)
 
-    def draw(self, shader: Shader, transform: mat4, override_texture: Optional[str] = None):
+    def draw(self, shader: Shader, transform: mat4, override_texture: str | None = None):
         shader.set_matrix4("model", transform)
 
         glActiveTexture(GL_TEXTURE0)

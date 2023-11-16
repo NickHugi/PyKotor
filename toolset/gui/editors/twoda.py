@@ -19,7 +19,7 @@ if TYPE_CHECKING:
 
 
 class TwoDAEditor(Editor):
-    def __init__(self, parent: Optional[QWidget], installation: Optional[HTInstallation] = None):
+    def __init__(self, parent: Optional[QWidget], installation: HTInstallation | None = None):
         """Initializes the 2DA editor
         Args:
             parent: QWidget: The parent widget
@@ -361,7 +361,7 @@ class TwoDAEditor(Editor):
         for i in range(self.model.rowCount()):
             self.model.item(i, 0).setText(str(i))
 
-    def setVerticalHeaderOption(self, option: VerticalHeaderOption, column: Optional[str] = None) -> None:
+    def setVerticalHeaderOption(self, option: VerticalHeaderOption, column: str | None = None) -> None:
         self.verticalHeaderOption = option
         self.verticalHeaderColumn = column
         self.resetVerticalHeaders()

@@ -1,16 +1,20 @@
+from __future__ import annotations
+
 import traceback
-from typing import Any, Callable, List, Optional
+from typing import TYPE_CHECKING, Any, Callable, Optional
 
 from PyQt5 import QtCore
 from PyQt5.QtCore import QThread
-from PyQt5.QtGui import QCloseEvent
 from PyQt5.QtWidgets import QDialog, QLabel, QMessageBox, QProgressBar, QVBoxLayout, QWidget
 
 from pykotor.helpers.path import Path
 
+if TYPE_CHECKING:
+    from PyQt5.QtGui import QCloseEvent
+
 
 class AsyncLoader(QDialog):
-    def __init__(self, parent: QWidget, title: str, task: Callable, errorTitle: Optional[str] = None):
+    def __init__(self, parent: QWidget, title: str, task: Callable, errorTitle: str | None = None):
         """Initializes a progress dialog.
 
         Args:
@@ -50,7 +54,7 @@ class AsyncLoader(QDialog):
 
         self.value: Any = None
         self.error: Optional[Exception] = None
-        self.errorTitle: Optional[str] = errorTitle
+        self.errorTitle: str | None = errorTitle
 
         self._worker = AsyncWorker(self, task)
         self._worker.successful.connect(self._onSuccessful)
@@ -102,14 +106,14 @@ class AsyncWorker(QThread):
 
 
 class AsyncBatchLoader(QDialog):
-    def __init__(self, parent: QWidget, title: str, tasks: List[Callable], errorTitle: Optional[str] = None, *,
+    def __init__(self, parent: QWidget, title: str, tasks: list[Callable], errorTitle: str | None = None, *,
                  cascade: bool = False):
         """Initializes a progress dialog for running multiple tasks asynchronously
         Args:
             parent (QWidget): Parent widget
             title (str): Title of the progress dialog
-            tasks (List[Callable]): List of tasks to run
-            errorTitle (Optional[str]): Title for error dialog, if any
+            tasks (list[Callable]): List of tasks to run
+            errorTitle (str | None): Title for error dialog, if any
         Returns:
             None: Does not return anything
         Processing Logic:
@@ -137,9 +141,9 @@ class AsyncBatchLoader(QDialog):
 
         self.setWindowFlag(QtCore.Qt.WindowContextHelpButtonHint, False)
 
-        self.value: List[Any] = []
-        self.errors: List[Exception] = []
-        self.errorTitle: Optional[str] = errorTitle
+        self.value: list[Any] = []
+        self.errors: list[Exception] = []
+        self.errorTitle: str | None = errorTitle
         self.successCount = 0
         self.failCount = 0
 
@@ -196,9 +200,9 @@ class AsyncBatchWorker(QThread):
     failed = QtCore.pyqtSignal(object)
     completed = QtCore.pyqtSignal()
 
-    def __init__(self, parent: QWidget, tasks: List[Callable], cascade: bool):
+    def __init__(self, parent: QWidget, tasks: list[Callable], cascade: bool):
         super().__init__(parent)
-        self._tasks: List[Callable] = tasks
+        self._tasks: list[Callable] = tasks
         self._cascade: bool = cascade
 
     def run(self):

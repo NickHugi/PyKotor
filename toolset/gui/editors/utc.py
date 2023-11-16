@@ -31,7 +31,7 @@ if TYPE_CHECKING:
 
 
 class UTCEditor(Editor):
-    def __init__(self, parent: Optional[QWidget], installation: Optional[HTInstallation] = None, *, mainwindow=None):
+    def __init__(self, parent: Optional[QWidget], installation: HTInstallation | None = None, *, mainwindow=None):
         """Initializes the Creature Editor window
         Args:
             parent: QWidget: The parent widget

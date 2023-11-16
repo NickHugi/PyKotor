@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import math
 from copy import deepcopy
-from typing import TYPE_CHECKING, Dict, List, Optional, Set
+from typing import TYPE_CHECKING
 
 from PyQt5 import QtCore
 from PyQt5.QtCore import QPoint, QTimer
@@ -58,7 +58,7 @@ if TYPE_CHECKING:
 
 
 class ModuleDesigner(QMainWindow):
-    def __init__(self, parent: Optional[QWidget], installation: HTInstallation):
+    def __init__(self, parent: QWidget | None, installation: HTInstallation):
         """Initializes the Module Designer window
         Args:
             parent: Optional[QWidget]: Parent widget
@@ -74,9 +74,9 @@ class ModuleDesigner(QMainWindow):
         super().__init__(parent)
 
         self._installation: HTInstallation = installation
-        self._module: Optional[Module] = None
+        self._module: Module | None = None
 
-        self.selectedInstances: List[GITInstance] = []
+        self.selectedInstances: list[GITInstance] = []
         self.settings: ModuleDesignerSettings = ModuleDesignerSettings()
 
         self.hideCreatures: bool = False
@@ -109,7 +109,7 @@ class ModuleDesigner(QMainWindow):
             color = Color.from_rgba_integer(intvalue)
             return QColor(int(color.r * 255), int(color.g * 255), int(color.b * 255), int(color.a * 255))
 
-        self.materialColors: Dict[SurfaceMaterial, QColor] = {
+        self.materialColors: dict[SurfaceMaterial, QColor] = {
             SurfaceMaterial.UNDEFINED: intColorToQColor(self.settings.undefinedMaterialColour),
             SurfaceMaterial.OBSCURING: intColorToQColor(self.settings.obscuringMaterialColour),
             SurfaceMaterial.DIRT: intColorToQColor(self.settings.dirtMaterialColour),
@@ -614,7 +614,7 @@ class ModuleDesigner(QMainWindow):
             self._controls3d = ModuleDesignerControls3d(self, self.ui.mainRenderer)
 
     # region Selection Manipulations
-    def setSelection(self, instances: List[GITInstance]) -> None:
+    def setSelection(self, instances: list[GITInstance]) -> None:
         if instances:
             self.ui.mainRenderer.scene.select(instances[0])
             self.ui.flatRenderer.instanceSelection.select(instances)
@@ -754,16 +754,16 @@ class ModuleDesigner(QMainWindow):
                 copyToOverrideAction.setEnabled(False)
             menu.addAction(locationAction)
 
-    def on3dMouseMoved(self, screen: Vector2, screenDelta: Vector2, world: Vector3, buttons: Set[int], keys: Set[int]) -> None:
+    def on3dMouseMoved(self, screen: Vector2, screenDelta: Vector2, world: Vector3, buttons: set[int], keys: set[int]) -> None:
         self._controls3d.onMouseMoved(screen, screenDelta, world, buttons, keys)
 
-    def on3dMouseScrolled(self, delta: Vector2, buttons: Set[int], keys: Set[int]) -> None:
+    def on3dMouseScrolled(self, delta: Vector2, buttons: set[int], keys: set[int]) -> None:
         self._controls3d.onMouseScrolled(delta, buttons, keys)
 
-    def on3dMousePressed(self, screen: Vector2, buttons: Set[int], keys: Set[int]) -> None:
+    def on3dMousePressed(self, screen: Vector2, buttons: set[int], keys: set[int]) -> None:
         self._controls3d.onMousePressed(screen, buttons, keys)
 
-    def on3dKeyboardPressed(self, buttons: Set[int], keys: Set[int]) -> None:
+    def on3dKeyboardPressed(self, buttons: set[int], keys: set[int]) -> None:
         self._controls3d.onKeyboardPressed(buttons, keys)
 
     def on3dObjectSelected(self, instance: GITInstance) -> None:
@@ -850,18 +850,18 @@ class ModuleDesigner(QMainWindow):
         self._refreshWindowTitle()
         self.updateToggles()
 
-    def on2dMouseMoved(self, screen: Vector2, delta: Vector2, buttons: Set[int], keys: Set[int]) -> None:
+    def on2dMouseMoved(self, screen: Vector2, delta: Vector2, buttons: set[int], keys: set[int]) -> None:
         worldDelta = self.ui.flatRenderer.toWorldDelta(delta.x, delta.y)
         world = self.ui.flatRenderer.toWorldCoords(screen.x, screen.y)
         self._controls2d.onMouseMoved(screen, delta, world, worldDelta, buttons, keys)
 
-    def on2dMouseScrolled(self, delta: Vector2, buttons: Set[int], keys: Set[int]) -> None:
+    def on2dMouseScrolled(self, delta: Vector2, buttons: set[int], keys: set[int]) -> None:
         self._controls2d.onMouseScrolled(delta, buttons, keys)
 
-    def on2dMousePressed(self, screen: Vector2, buttons: Set[int], keys: Set[int]) -> None:
+    def on2dMousePressed(self, screen: Vector2, buttons: set[int], keys: set[int]) -> None:
         self._controls2d.onMousePressed(screen, buttons, keys)
 
-    def on2dKeyboardPressed(self, buttons: Set[int], keys: Set[int]) -> None:
+    def on2dKeyboardPressed(self, buttons: set[int], keys: set[int]) -> None:
         self._controls2d.onKeyboardPressed(buttons, keys)
 
     # endregion
@@ -933,7 +933,7 @@ class ModuleDesignerControls3d:
         self.renderer.freeCam = False
         self.renderer.setCursor(QtCore.Qt.CursorShape.ArrowCursor)
 
-    def onMouseScrolled(self, delta: Vector2, buttons: Set[int], keys: Set[int]) -> None:
+    def onMouseScrolled(self, delta: Vector2, buttons: set[int], keys: set[int]) -> None:
         if self.zoomCamera.satisfied(buttons, keys):
             strength = self.settings.zoomCameraSensitivity3d / 2000
             self.renderer.scene.camera.distance += -delta.y * strength
@@ -1035,8 +1035,8 @@ class ModuleDesignerControls3d:
     def onKeyboardPressed(self, buttons: set[int], keys: set[int]) -> None:
         """Handles keyboard input in the editor
         Args:
-            buttons: Set[int]: The pressed buttons
-            keys: Set[int]: The pressed keys
+            buttons: set[int]: The pressed buttons
+            keys: set[int]: The pressed keys
         Returns:
             None: Does not return anything
         Processes keyboard input:
@@ -1141,7 +1141,7 @@ class ModuleDesignerControlsFreeCam:
         mouseY = rendererPos.y() + self.renderer.height() / 2
         self.renderer.cursor().setPos(mouseX, mouseY)
 
-    def onMouseScrolled(self, delta: Vector2, buttons: Set[int], keys: Set[int]) -> None:
+    def onMouseScrolled(self, delta: Vector2, buttons: set[int], keys: set[int]) -> None:
         ...
 
     def onMouseMoved(self, screen: Vector2, screenDelta: Vector2, world: Vector3, buttons: set[int], keys: set[int]) -> None:
@@ -1177,7 +1177,7 @@ class ModuleDesignerControlsFreeCam:
         if self.moveCameraBackward.satisfied(buttons, keys, exactKeys=False):
             self.renderer.moveCamera(-strength, 0, 0)
 
-    def onKeyboardReleased(self, buttons: Set[int], keys: Set[int]) -> None:
+    def onKeyboardReleased(self, buttons: set[int], keys: set[int]) -> None:
         ...
 
 
@@ -1245,8 +1245,8 @@ class ModuleDesignerControls2d:
             screenDelta: Vector2 - Mouse movement since last event in pixels
             world: Vector2 - Mouse position in world space
             worldDelta: Vector2 - Mouse movement since last event in world space
-            buttons: Set[int] - Mouse buttons currently held down
-            keys: Set[int] - Keyboard keys currently held down
+            buttons: set[int] - Mouse buttons currently held down
+            keys: set[int] - Keyboard keys currently held down
         Returns:
             None
         Processing Logic:
@@ -1274,12 +1274,12 @@ class ModuleDesignerControls2d:
                 else:
                     instance.rotate(-instance.yaw() + rotation, 0, 0)
 
-    def onMousePressed(self, screen: Vector2, buttons: set[int], keys: Set[int]) -> None:
+    def onMousePressed(self, screen: Vector2, buttons: set[int], keys: set[int]) -> None:
         """Handle mouse press events in the editor
         Args:
             screen: Vector2 - Mouse position
-            buttons: Set[int] - Pressed buttons
-            keys: Set[int] - Pressed keys
+            buttons: set[int] - Pressed buttons
+            keys: set[int] - Pressed keys
         Returns:
             None
         Processing Logic:

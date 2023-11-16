@@ -1,9 +1,11 @@
-from typing import Callable, List
+from __future__ import annotations
+
+from typing import Callable
 
 
 class Observable:
     def __init__(self):
-        self.callbacks: List[Callable] = []
+        self.callbacks: list[Callable] = []
 
     def subscribe(self, callback: Callable) -> None:
         self.callbacks.append(callback)

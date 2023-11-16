@@ -22,7 +22,7 @@ if TYPE_CHECKING:
 
 
 class UTDEditor(Editor):
-    def __init__(self, parent: Optional[QWidget], installation: Optional[HTInstallation] = None, *, mainwindow=None):
+    def __init__(self, parent: Optional[QWidget], installation: HTInstallation | None = None, *, mainwindow=None):
         """Initialize the Door Editor.
 
         Args:

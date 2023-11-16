@@ -26,7 +26,7 @@ if TYPE_CHECKING:
 
 
 class UTPEditor(Editor):
-    def __init__(self, parent: Optional[QWidget], installation: Optional[HTInstallation] = None, *, mainwindow=None):
+    def __init__(self, parent: Optional[QWidget], installation: HTInstallation | None = None, *, mainwindow=None):
         """Initialize Placeable Editor
         Args:
             parent: {QWidget}: Parent widget

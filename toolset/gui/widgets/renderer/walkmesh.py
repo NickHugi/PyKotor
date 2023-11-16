@@ -2,12 +2,13 @@ from __future__ import annotations
 
 import math
 from copy import copy
-from typing import TYPE_CHECKING, Dict, Generic, List, NamedTuple, Optional, Set, TypeVar, Union
+from typing import TYPE_CHECKING, Generic, NamedTuple, TypeVar
 
 from PyQt5 import QtCore
-from PyQt5.QtCore import QPointF, QRectF, QTimer, QRect
+from PyQt5.QtCore import QPointF, QRect, QRectF, QTimer
 from PyQt5.QtGui import (
     QColor,
+    QImage,
     QKeyEvent,
     QMouseEvent,
     QPainter,
@@ -16,16 +17,13 @@ from PyQt5.QtGui import (
     QPen,
     QPixmap,
     QTransform,
-    QWheelEvent, QImage,
+    QWheelEvent,
 )
 from PyQt5.QtWidgets import QWidget
 
+from pykotor.common.geometry import SurfaceMaterial, Vector2, Vector3
 from pykotor.resource.formats.tpc import TPC, TPCTextureFormat
 from pykotor.resource.generics.are import ARE, ARENorthAxis
-from pykotor.resource.generics.pth import PTH
-from toolset.utils.misc import clamp
-
-from pykotor.common.geometry import SurfaceMaterial, Vector2, Vector3
 from pykotor.resource.generics.git import (
     GIT,
     GITCamera,
@@ -43,6 +41,7 @@ from toolset.utils.misc import clamp
 
 if TYPE_CHECKING:
     from pykotor.resource.formats.bwm import BWM, BWMFace
+    from pykotor.resource.generics.pth import PTH
 
 T = TypeVar("T")
 
@@ -89,13 +88,13 @@ class WalkmeshCamera:
 
 
 class WalkmeshSelection(Generic[T]):
-    def __init__(self):
-        self._selection: List[T] = []
+    def __init__(self) -> None:
+        self._selection: list[T] = []
 
     def remove(self, element: T) -> None:
         self._selection.remove(element)
 
-    def last(self) -> Optional[T]:
+    def last(self) -> T | None:
         return self._selection[-1] if self._selection else None
 
     def count(self) -> int:
@@ -104,7 +103,7 @@ class WalkmeshSelection(Generic[T]):
     def isEmpty(self) -> bool:
         return len(self._selection) == 0
 
-    def all(self) -> List[T]:
+    def all(self) -> list[T]:
         return copy(self._selection)
 
     def get(self, index: int) -> T:
@@ -113,7 +112,7 @@ class WalkmeshSelection(Generic[T]):
     def clear(self) -> None:
         self._selection.clear()
 
-    def select(self, elements: List[T], clearExisting: bool = True) -> None:
+    def select(self, elements: list[T], clearExisting: bool = True) -> None:
         if clearExisting:
             self._selection.clear()
         self._selection.extend(elements)
@@ -156,11 +155,11 @@ class WalkmeshRenderer(QWidget):
         """
         super().__init__(parent)
 
-        self._walkmeshes: List[BWM] = []
-        self._git: Optional[GIT] = None
-        self._pth: Optional[PTH] = None
-        self._are: Optional[ARE] = None
-        self._minimapImage: Optional[QImage] = None
+        self._walkmeshes: list[BWM] = []
+        self._git: GIT | None = None
+        self._pth: PTH | None = None
+        self._are: ARE | None = None
+        self._minimapImage: QImage | None = None
 
         # Min/Max points and lengths for each axis
         self._bbmin: Vector3 = Vector3.from_null()
@@ -172,7 +171,7 @@ class WalkmeshRenderer(QWidget):
         self.geometrySelection: WalkmeshSelection[GeomPoint] = WalkmeshSelection()
 
         self._mousePrev: Vector2 = Vector2(self.cursor().pos().x(), self.cursor().pos().y())
-        self._walkmeshFaceCache: Optional[List[QPainterPath]] = None
+        self._walkmeshFaceCache: list[QPainterPath] | None = None
 
         self.highlightOnHover: bool = False
         self.highlightBoundaries: bool = True
@@ -189,10 +188,10 @@ class WalkmeshRenderer(QWidget):
         self.hideWaypoints: bool = True
         self.hideCameras: bool = True
 
-        self.materialColors: Dict[SurfaceMaterial, int] = {}
+        self.materialColors: dict[SurfaceMaterial, int] = {}
 
-        self._keysDown: Set[int] = set()
-        self._mouseDown: Set[int] = set()
+        self._keysDown: set[int] = set()
+        self._mouseDown: set[int] = set()
 
         self._pixmapCreature: QPixmap = QPixmap(":/images/icons/k1/creature.png")
         self._pixmapDoor: QPixmap = QPixmap(":/images/icons/k1/door.png")
@@ -204,10 +203,10 @@ class WalkmeshRenderer(QWidget):
         self._pixmapEncounter: QPixmap = QPixmap(":/images/icons/k1/encounter.png")
         self._pixmapCamera: QPixmap = QPixmap(":/images/icons/k1/camera.png")
 
-        self._instancesUnderMouse: List[GITInstance] = []
-        self._geomPointsUnderMouse: List[GeomPoint] = []
+        self._instancesUnderMouse: list[GITInstance] = []
+        self._geomPointsUnderMouse: list[GeomPoint] = []
 
-        self._pathNodesUnderMouse: List[Vector2] = []
+        self._pathNodesUnderMouse: list[Vector2] = []
         self.pathSelection: WalkmeshSelection[Vector2] = WalkmeshSelection()
         self._pathNodeSize: float = 0.3
         self._pathEdgeWidth: float = 0.2
@@ -219,7 +218,7 @@ class WalkmeshRenderer(QWidget):
         self.repaint()
         QTimer.singleShot(33, self._loop)
 
-    def setWalkmeshes(self, walkmeshes: List[BWM]) -> None:
+    def setWalkmeshes(self, walkmeshes: list[BWM]) -> None:
         """Sets the list of walkmeshes to be rendered.
 
         Args:
@@ -268,7 +267,7 @@ class WalkmeshRenderer(QWidget):
         crop = QRect(0, 0, 435, 256)
         self._minimapImage = image.copy(crop)
 
-    def snapCameraToPoint(self, point: Union[Vector2, Vector3], zoom: int = 8) -> None:
+    def snapCameraToPoint(self, point: Vector2 | Vector3, zoom: int = 8) -> None:
         self.camera.setPosition(point.x, point.y)
         self.camera.setZoom(zoom)
 
@@ -356,7 +355,7 @@ class WalkmeshRenderer(QWidget):
         # We need to find a face in the walkmesh that is underneath the mouse to find the Z
         # We also want to prioritize walkable faces
         # And if we cant find a face, then set the Z to 0.0
-        face: Optional[BWMFace] = None
+        face: BWMFace | None = None
         for walkmesh in self._walkmeshes:
             over = walkmesh.faceAt(x, y)
             if over and (
@@ -385,13 +384,13 @@ class WalkmeshRenderer(QWidget):
         """
         return self.materialColors[material] if material in self.materialColors else QColor(255, 0, 255)  # TODO: fix the typing - an int is not the same as a QColor object
 
-    def instancesUnderMouse(self) -> List[GITInstance]:
+    def instancesUnderMouse(self) -> list[GITInstance]:
         return self._instancesUnderMouse
 
-    def pathNodesUnderMouse(self) -> List[Vector2]:
+    def pathNodesUnderMouse(self) -> list[Vector2]:
         return self._pathNodesUnderMouse
 
-    def geomPointsUnderMouse(self) -> List[GeomPoint]:
+    def geomPointsUnderMouse(self) -> list[GeomPoint]:
         return self._geomPointsUnderMouse
 
     def isInstanceVisible(self, instance: GITInstance) -> bool | None:
@@ -448,7 +447,7 @@ class WalkmeshRenderer(QWidget):
             return self._pixmapMerchant
         return None
 
-    def geomPointsUnderMouse(self) -> List[GeomPoint]:
+    def geomPointsUnderMouse(self) -> list[GeomPoint]:
         return self._geomPointsUnderMouse
 
     def centerCamera(self) -> None:

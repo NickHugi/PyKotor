@@ -5,12 +5,10 @@ import json
 import xml.etree.ElementTree as ElemTree
 import zipfile
 from contextlib import suppress
-from io import BytesIO
 from typing import TYPE_CHECKING, Optional
 
 import markdown
 import requests
-from bs4 import BeautifulSoup, Tag
 from config import UPDATE_INFO_LINK
 from PyQt5 import QtCore
 from PyQt5.QtWidgets import QMainWindow, QMessageBox, QTreeWidgetItem, QWidget
@@ -24,13 +22,11 @@ from toolset.gui.dialogs.asyncloader import AsyncLoader
 if TYPE_CHECKING:
     import os
 
-    from bs4 import NavigableString
-
 
 class HelpWindow(QMainWindow):
     ENABLE_UPDATES = True
 
-    def __init__(self, parent: Optional[QWidget], startingPage: Optional[str] = None):
+    def __init__(self, parent: Optional[QWidget], startingPage: str | None = None):
         super().__init__(parent)
 
         self.version: Optional[float] = None

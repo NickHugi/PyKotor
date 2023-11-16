@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from contextlib import suppress
-from typing import TYPE_CHECKING, Dict, List, NamedTuple, Optional, Tuple, Union
+from typing import TYPE_CHECKING, NamedTuple, Optional, Tuple, Union
 
 from PyQt5 import QtCore
 from PyQt5.QtCore import QPoint, QSize, QSortFilterProxyModel, QThread
@@ -47,17 +47,17 @@ class SlotMapping(NamedTuple):
 
 
 class InventoryEditor(QDialog):
-    def __init__(self, parent: QWidget, installation: HTInstallation, capsules: List[Capsule], folders: List[str],
-                 inventory: List[InventoryItem], equipment: Dict[EquipmentSlot, InventoryItem], droid: bool = False,
+    def __init__(self, parent: QWidget, installation: HTInstallation, capsules: list[Capsule], folders: list[str],
+                 inventory: list[InventoryItem], equipment: dict[EquipmentSlot, InventoryItem], droid: bool = False,
                  hide_equipment: bool = False, is_store: bool = False):
         """Initializes the inventory dialog
         Args:
             parent (QWidget): Parent widget
             installation (HTInstallation): Homeworld installation
-            capsules (List[Capsule]): List of capsules
-            folders (List[str]): List of folders
-            inventory (List[InventoryItem]): List of inventory items
-            equipment (Dict[EquipmentSlot, InventoryItem]): Equipped items
+            capsules (list[Capsule]): List of capsules
+            folders (list[str]): List of folders
+            inventory (list[InventoryItem]): List of inventory items
+            equipment (dict[EquipmentSlot, InventoryItem]): Equipped items
             droid (bool): True if droid inventory
             hide_equipment (bool): True if equipment tab hidden
             is_store (bool): True if store inventory
@@ -90,8 +90,8 @@ class InventoryEditor(QDialog):
         self.ui.modulesSearchEdit.textEdited.connect(self.doSearch)
 
         self._installation: HTInstallation = installation
-        self._capsules: List[Capsule] = capsules
-        self._slotMap: Dict[EquipmentSlot, SlotMapping] = {
+        self._capsules: list[Capsule] = capsules
+        self._slotMap: dict[EquipmentSlot, SlotMapping] = {
             EquipmentSlot.IMPLANT: SlotMapping(self.ui.implantPicture, self.ui.implantFrame, ":/images/inventory/{}_implant.png"),
             EquipmentSlot.HEAD: SlotMapping(self.ui.headPicture, self.ui.headFrame, ":/images/inventory/{}_head.png"),
             EquipmentSlot.GAUNTLET: SlotMapping(self.ui.gauntletPicture, self.ui.gauntletFrame, ":/images/inventory/{}_gauntlet.png"),
@@ -107,8 +107,8 @@ class InventoryEditor(QDialog):
             EquipmentSlot.HIDE: SlotMapping(self.ui.hidePicture, self.ui.hideFrame, ":/images/inventory/{}_armor.png"),
         }
         self._droid = droid
-        self.inventory: List[InventoryItem] = inventory
-        self.equipment: Dict[EquipmentSlot, InventoryItem] = equipment
+        self.inventory: list[InventoryItem] = inventory
+        self.equipment: dict[EquipmentSlot, InventoryItem] = equipment
         self.is_store: bool = is_store
 
         self.ui.implantFrame.itemDropped.connect(lambda filepath, resname, name: self.setEquipment(EquipmentSlot.IMPLANT, resname, filepath, name))
@@ -630,7 +630,7 @@ class InventoryTableResnameItem(ItemContainer, QTableWidgetItem):
 class ItemBuilderDialog(QDialog):
     """Popup dialog responsible for extracting a list of resources from the game files."""
 
-    def __init__(self, parent: QWidget, installation: HTInstallation, capsules: List[Capsule]):
+    def __init__(self, parent: QWidget, installation: HTInstallation, capsules: list[Capsule]):
         super().__init__(parent)
 
         self._progressBar = QProgressBar(self)
@@ -649,7 +649,7 @@ class ItemBuilderDialog(QDialog):
         self.overrideModel = ItemModel(self.parent())
         self._tlk: TLK = read_tlk(CaseAwarePath(installation.path(), "dialog.tlk"))
         self._installation: HTInstallation = installation
-        self._capsules: List[Capsule] = capsules
+        self._capsules: list[Capsule] = capsules
 
         self._worker = ItemBuilderWorker(installation, capsules)
         self._worker.utiLoaded.connect(self.utiLoaded)
@@ -724,7 +724,7 @@ class ItemBuilderWorker(QThread):
     utiLoaded = QtCore.pyqtSignal(object, object)
     finished = QtCore.pyqtSignal()
 
-    def __init__(self, installation: HTInstallation, capsules: List[Capsule]):
+    def __init__(self, installation: HTInstallation, capsules: list[Capsule]):
         super().__init__()
         self._installation = installation
         self._capsules = capsules

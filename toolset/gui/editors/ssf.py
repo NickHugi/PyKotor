@@ -16,7 +16,7 @@ if TYPE_CHECKING:
 
 
 class SSFEditor(Editor):
-    def __init__(self, parent: Optional[QWidget], installation: Optional[Installation] = None):
+    def __init__(self, parent: Optional[QWidget], installation: Installation | None = None):
         """Initialize Soundset Editor window
         Args:
             parent: {Parent widget}

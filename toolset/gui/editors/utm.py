@@ -22,7 +22,7 @@ if TYPE_CHECKING:
 
 
 class UTMEditor(Editor):
-    def __init__(self, parent: Optional[QWidget], installation: Optional[HTInstallation] = None):
+    def __init__(self, parent: Optional[QWidget], installation: HTInstallation | None = None):
         """Initialize the Merchant Editor window
         Args:
             parent: {Widget that is the parent of this window}

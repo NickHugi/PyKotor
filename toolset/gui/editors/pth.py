@@ -1,39 +1,30 @@
 from __future__ import annotations
 
-import ast
-import math
-from abc import ABC, abstractmethod
-from contextlib import suppress
-from copy import deepcopy, copy
-from typing import Optional, Set, Dict, List, Callable, Tuple
+from typing import TYPE_CHECKING, Optional, Set, Tuple
 
-from PyQt5 import QtCore
-from PyQt5.QtCore import QPoint, QSettings
-from PyQt5.QtGui import QIcon, QColor, QKeySequence, QKeyEvent
-from PyQt5.QtWidgets import QWidget, QMenu, QListWidgetItem, QCheckBox, QDialog
-from pykotor.resource.generics.pth import PTH, bytes_pth, read_pth
+from PyQt5.QtGui import QColor, QKeyEvent
+from PyQt5.QtWidgets import QMenu, QWidget
 
+from pykotor.common.geometry import SurfaceMaterial, Vector2
 from pykotor.common.misc import Color
-
-from pykotor.common.module import Module
-from pykotor.extract.file import ResourceIdentifier
-
-from pykotor.common.geometry import Vector2, SurfaceMaterial, Vector3
 from pykotor.extract.installation import SearchLocation
 from pykotor.resource.formats.bwm import read_bwm
 from pykotor.resource.formats.lyt import LYT, read_lyt
+from pykotor.resource.generics.pth import PTH, bytes_pth, read_pth
 from pykotor.resource.type import ResourceType
-
-from toolset.data.installation import HTInstallation
+from toolset.data.misc import ControlItem
 from toolset.gui.editor import Editor
-from toolset.data.misc import Bind, ControlItem
 from toolset.gui.widgets.settings.git import GITSettings
-from toolset.utils.misc import getResourceFromFile
-from toolset.utils.window import openResourceEditor
+
+if TYPE_CHECKING:
+    from PyQt5.QtCore import QPoint
+
+    from pykotor.extract.file import ResourceIdentifier
+    from toolset.data.installation import HTInstallation
 
 
 class PTHEditor(Editor):
-    def __init__(self, parent: Optional[QWidget], installation: Optional[HTInstallation] = None):
+    def __init__(self, parent: Optional[QWidget], installation: HTInstallation | None = None):
         supported = [ResourceType.PTH]
         super().__init__(parent, "PTH Editor", "pth", supported, supported, installation)
 
@@ -51,7 +42,7 @@ class PTHEditor(Editor):
         def intColorToQColor(intvalue):
             color = Color.from_rgba_integer(intvalue)
             return QColor(int(color.r*255), int(color.g*255), int(color.b*255), int(color.a*255))
-        self.materialColors: Dict[SurfaceMaterial, QColor] = {
+        self.materialColors: dict[SurfaceMaterial, QColor] = {
             SurfaceMaterial.UNDEFINED: intColorToQColor(self.settings.undefinedMaterialColour),
             SurfaceMaterial.OBSCURING: intColorToQColor(self.settings.obscuringMaterialColour),
             SurfaceMaterial.DIRT: intColorToQColor(self.settings.dirtMaterialColour),
@@ -74,8 +65,8 @@ class PTHEditor(Editor):
             SurfaceMaterial.NON_WALK_GRASS: intColorToQColor(self.settings.nonWalkGrassMaterialColour),
             SurfaceMaterial.TRIGGER: intColorToQColor(self.settings.nonWalkGrassMaterialColour)
         }
-        self.nameBuffer: Dict[ResourceIdentifier, str] = {}
-        self.tagBuffer: Dict[ResourceIdentifier, str] = {}
+        self.nameBuffer: dict[ResourceIdentifier, str] = {}
+        self.tagBuffer: dict[ResourceIdentifier, str] = {}
 
         self.ui.renderArea.materialColors = self.materialColors
         self.ui.renderArea.hideWalkmeshEdges = True
@@ -166,10 +157,10 @@ class PTHEditor(Editor):
     def addEdge(self, source: int, target: int) -> None:
         self._pth.connect(source, target)
 
-    def pointsUnderMouse(self) -> List[Vector2]:
+    def pointsUnderMouse(self) -> list[Vector2]:
         return self.ui.renderArea.pathNodesUnderMouse()
 
-    def selectedNodes(self) -> List[Vector2]:
+    def selectedNodes(self) -> list[Vector2]:
         return self.ui.renderArea.pathSelection.all()
 
     # region Signal Callbacks
@@ -178,21 +169,21 @@ class PTHEditor(Editor):
         world = self.ui.renderArea.toWorldCoords(point.x(), point.y())
         self._controls.onRenderContextMenu(world, globalPoint)
 
-    def onMouseMoved(self, screen: Vector2, delta: Vector2, buttons: Set[int], keys: Set[int]) -> None:
+    def onMouseMoved(self, screen: Vector2, delta: Vector2, buttons: set[int], keys: set[int]) -> None:
         worldDelta = self.ui.renderArea.toWorldDelta(delta.x, delta.y)
         world = self.ui.renderArea.toWorldCoords(screen.x, screen.y)
         self._controls.onMouseMoved(screen, delta, world, worldDelta, buttons, keys)
 
-    def onMouseScrolled(self, delta: Vector2, buttons: Set[int], keys: Set[int]) -> None:
+    def onMouseScrolled(self, delta: Vector2, buttons: set[int], keys: set[int]) -> None:
         self._controls.onMouseScrolled(delta, buttons, keys)
 
-    def onMousePressed(self, screen: Vector2, buttons: Set[int], keys: Set[int]) -> None:
+    def onMousePressed(self, screen: Vector2, buttons: set[int], keys: set[int]) -> None:
         self._controls.onMousePressed(screen, buttons, keys)
 
-    def onMouseReleased(self, buttons: Set[int], keys: Set[int]) -> None:
+    def onMouseReleased(self, buttons: set[int], keys: set[int]) -> None:
         self._controls.onMouseReleased(Vector2(0, 0), buttons, keys)
 
-    def onKeyPressed(self, buttons: Set[int], keys: Set[int]) -> None:
+    def onKeyPressed(self, buttons: set[int], keys: set[int]) -> None:
         self._controls.onKeyboardPressed(buttons, keys)
 
     def keyPressEvent(self, e: QKeyEvent) -> None:
@@ -215,11 +206,11 @@ class PTHControlScheme:
         self.selectUnderneath: ControlItem = ControlItem(self.settings.selectUnderneathBind)
         self.deleteSelected: ControlItem = ControlItem(self.settings.deleteSelectedBind)
 
-    def onMouseScrolled(self, delta: Vector2, buttons: Set[int], keys: Set[int]) -> None:
+    def onMouseScrolled(self, delta: Vector2, buttons: set[int], keys: set[int]) -> None:
         if self.zoomCamera.satisfied(buttons, keys):
             self.editor.zoomCamera(delta.y / 50)
 
-    def onMouseMoved(self, screen: Vector2, screenDelta: Vector2, world: Vector2, worldDelta: Vector2, buttons: Set[int], keys: Set[int]) -> None:
+    def onMouseMoved(self, screen: Vector2, screenDelta: Vector2, world: Vector2, worldDelta: Vector2, buttons: set[int], keys: set[int]) -> None:
         if self.panCamera.satisfied(buttons, keys):
             self.editor.moveCamera(-worldDelta.x, -worldDelta.y)
         if self.rotateCamera.satisfied(buttons, keys):
@@ -227,18 +218,18 @@ class PTHControlScheme:
         if self.moveSelected.satisfied(buttons, keys):
             self.editor.moveSelected(world.x, world.y)
 
-    def onMousePressed(self, screen: Vector2, buttons: Set[int], keys: Set[int]) -> None:
+    def onMousePressed(self, screen: Vector2, buttons: set[int], keys: set[int]) -> None:
         if self.selectUnderneath.satisfied(buttons, keys):
             self.editor.selectNodeUnderMouse()
 
-    def onMouseReleased(self, screen: Vector2, buttons: Set[int], keys: Set[int]) -> None:
+    def onMouseReleased(self, screen: Vector2, buttons: set[int], keys: set[int]) -> None:
         ...
 
-    def onKeyboardPressed(self, buttons: Set[int], keys: Set[int]) -> None:
+    def onKeyboardPressed(self, buttons: set[int], keys: set[int]) -> None:
         if self.deleteSelected.satisfied(buttons, keys):
             self.editor.deleteSelected()
 
-    def onKeyboardReleased(self, buttons: Set[int], keys: Set[int]) -> None:
+    def onKeyboardReleased(self, buttons: set[int], keys: set[int]) -> None:
         ...
 
     def onRenderContextMenu(self, world: Vector2, screen: QPoint) -> None:

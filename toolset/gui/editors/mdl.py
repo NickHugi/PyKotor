@@ -21,7 +21,7 @@ if TYPE_CHECKING:
 
 
 class MDLEditor(Editor):
-    def __init__(self, parent: Optional[QWidget], installation: Optional[HTInstallation] = None):
+    def __init__(self, parent: Optional[QWidget], installation: HTInstallation | None = None):
         """Initialize the Model Viewer window
         Args:
             parent: {QWidget}: The parent widget of this window

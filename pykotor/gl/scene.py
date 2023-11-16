@@ -98,7 +98,7 @@ SEARCH_ORDER = [SearchLocation.CUSTOM_MODULES, SearchLocation.OVERRIDE, SearchLo
 class Scene:
     SPECIAL_MODELS: ClassVar[list[str]] = ["waypoint", "store", "sound", "camera", "trigger", "encounter", "unknown"]
 
-    def __init__(self, *, installation: Optional[Installation] = None, module: Optional[Module] = None):
+    def __init__(self, *, installation: Installation | None = None, module: Optional[Module] = None):
         """Initializes the renderer
         Args:
             installation: Installation: The installation to load resources from
@@ -117,7 +117,7 @@ class Scene:
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
         glCullFace(GL_BACK)
 
-        self.installation: Optional[Installation] = installation
+        self.installation: Installation | None = installation
         self.textures: CaseInsensitiveDict[Texture] = CaseInsensitiveDict()
         self.models: CaseInsensitiveDict[Model] = CaseInsensitiveDict()
         self.objects: dict[Any, RenderObject] = {}
@@ -719,7 +719,7 @@ class RenderObject:
         *,
         data: Any = None,
         gen_boundary: Optional[Callable[[], Boundary]] = None,
-        override_texture: Optional[str] = None,
+        override_texture: str | None = None,
     ):
         self.model: str = model
         self.children: list[RenderObject] = []
@@ -730,7 +730,7 @@ class RenderObject:
         self._boundary: Optional[Boundary] = None
         self.genBoundary: Optional[Callable[[], Boundary]] = gen_boundary
         self.data: Any = data
-        self.override_texture: Optional[str] = override_texture
+        self.override_texture: str | None = override_texture
 
         self._recalc_transform()
 
