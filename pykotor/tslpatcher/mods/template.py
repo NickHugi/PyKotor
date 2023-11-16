@@ -14,7 +14,7 @@ class OverrideType:
 
     IGNORE = "ignore"  # Do nothing: don't even check (TSLPatcher default)
     WARN   = "warn"    # Log a warning (HoloPatcher default)
-    RENAME = "rename"  # Rename the file in the Override folder with the 'old_' prefix. Also logs a warning.  # TODO: Test TSLPatcher's behavior.
+    RENAME = "rename"  # Rename the file in the Override folder with the 'old_' prefix. Also logs a warning.
 
 class PatcherModifications(ABC):
     DEFAULT_DESTINATION = "Override"

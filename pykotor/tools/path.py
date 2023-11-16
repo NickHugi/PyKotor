@@ -113,6 +113,26 @@ class CaseAwarePath(InternalPath):
             else super(self.__class__, self._get_case_sensitive_path(self)).__str__()
         )
 
+    def is_relative_to(self, other: PathElem) -> bool:
+        """Check if path is relative to other path
+        Args:
+            self: Path to check
+            other: Path to check against
+        Returns:
+            bool: Whether self is relative to other
+        Processing Logic:
+        - Resolve self and other if they are paths
+        - Get lowercase string representations of self and other
+        - Check if self string starts with other string
+        - Return True if it starts with, False otherwise.
+        """
+        other = other if isinstance(other, InternalPurePath) else InternalPurePath(other)
+        other = other.resolve() if isinstance(other, InternalPath) else other
+        resolved_self = self.resolve() if isinstance(self, InternalPath) else self
+        self_str = str(resolved_self).lower()
+        other_str = str(other).lower()
+        return bool(self_str.startswith(other_str))
+
     @staticmethod
     def _get_case_sensitive_path(path: os.PathLike | str) -> CaseAwarePath:
         pathlib_path: pathlib.Path = pathlib.Path(path)

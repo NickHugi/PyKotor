@@ -146,6 +146,29 @@ class BasePurePath:
             return NotImplemented
         return self._create_instance(str(self) + extension)
 
+    def is_relative_to(self, other):
+        """Checks if one path is relative to another
+        Args:
+            self: Path to check
+            other: Path to check against
+        Returns:
+            bool: Whether self is relative to other
+        Processing Logic:
+            - Resolve both paths if they are not already absolute
+            - Convert both paths to their string representations
+            - Lowercase both strings on Windows for case-insensitive comparisons
+            - Check if the string for self starts with the string for other.
+        """
+        other = other if isinstance(other, PurePath) else PurePath(other)
+        other = other.resolve() if isinstance(other, Path) else other
+        resolved_self = self.resolve() if isinstance(self, Path) else self
+        self_str = str(resolved_self)
+        other_str = str(other)
+        if os.name == "nt":
+            self_str = self_str.lower()
+            other_str = other_str.lower()
+        return bool(self_str.startswith(other_str))
+
     def endswith(self, text: str | tuple[str, ...], case_sensitive: bool = False) -> bool:
         # If case sensitivity is not required, normalize the self string and the text to lower case
         """Checks if string ends with the specified suffix.

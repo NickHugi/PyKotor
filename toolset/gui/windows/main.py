@@ -70,7 +70,8 @@ from toolset.utils.window import addWindow, openResourceEditor
 if TYPE_CHECKING:
     import os
 
-    from pykotor.resource.formats.tpc.tpc_data import TPC
+    from pykotor.resource.formats.tpc import TPC
+    from pykotor.resource.type import SOURCE_TYPES
     from toolset.gui.widgets.main_widgets import ResourceList
 
 
@@ -519,14 +520,14 @@ class ToolWindow(QMainWindow):
         for module in sortedKeys:
             # Some users may choose to have their RIM files for the same module merged into a single option for the
             # dropdown menu.
-            if self.settings.joinRIMsTogether and module.endswith("_s.rim"):
+            if self.settings.joinRIMsTogether and module.lower().endswith("_s.rim"):
                 continue
 
             item = QStandardItem(f"{areaNames[module]} [{module}]")
             item.setData(module, QtCore.Qt.UserRole)  # type: ignore[reportGeneralTypeIssues]
 
             # Some users may choose to have items representing RIM files to have grey text.
-            if self.settings.greyRIMText and module.endswith(".rim"):
+            if self.settings.greyRIMText and module.lower().endswith(".rim"):
                 item.setForeground(self.palette().shadow())
 
             modules.append(item)
@@ -540,7 +541,7 @@ class ToolWindow(QMainWindow):
 
         sections = []
         for directory in self.active.override_list():
-            section = QStandardItem(directory if directory != "" else "[Root]")
+            section = QStandardItem(directory if directory.strip() else "[Root]")
             section.setData(directory, QtCore.Qt.UserRole)  # type: ignore[reportGeneralTypeIssues]
             sections.append(section)
         self.ui.overrideWidget.setSections(sections)
@@ -560,8 +561,8 @@ class ToolWindow(QMainWindow):
     def changeModule(self, module: str) -> None:
         # Some users may choose to merge their RIM files under one option in the Modules tab; if this is the case we
         # need to account for this.
-        if self.settings.joinRIMsTogether and module.endswith("_s.rim"):
-            module = module.replace("_s.rim", ".rim")
+        if self.settings.joinRIMsTogether and module.lower().endswith("_s.rim"):
+            module = module.lower().replace("_s.rim", ".rim")
 
         self.ui.modulesWidget.changeSection(module)
 
@@ -578,9 +579,10 @@ class ToolWindow(QMainWindow):
             self.ui.resourceTabs.setCurrentWidget(self.ui.overrideTab)
             self.ui.overrideWidget.setResourceSelection(resource)
             subfolder = ""
-            for folder in self.active.override_list():
-                if Path(folder).is_relative_to(resource.filepath()) and len(subfolder) < len(folder):
-                    subfolder = folder
+            for folder_name in self.active.override_list():
+                folder_path: CaseAwarePath = self.active.override_path() / folder_name
+                if resource.filepath().is_relative_to(folder_path) and len(subfolder) < len(folder_path.name):
+                    subfolder = folder_path.name
             self.changeOverrideFolder(subfolder)
 
     def changeOverrideFolder(self, subfolder: str) -> None:
@@ -734,7 +736,7 @@ class ToolWindow(QMainWindow):
         write_tpc(tpc, data, ResourceType.TGA)
         return data
 
-    def _decompileMdl(self, resource, data):
+    def _decompileMdl(self, resource: FileResource, data: SOURCE_TYPES):
         mdxData = self.active.resource(resource.resname(), ResourceType.MDX).data
         mdl = read_mdl(data, 0, 0, mdxData, 0, 0)
 
@@ -786,16 +788,16 @@ class FolderObserver(FileSystemEventHandler):
 
         self.lastModified = rightnow
 
-        module_path: Path = Path(self.window.active.module_path()).resolve()
-        override_path: Path = Path(self.window.active.override_path()).resolve()
-        modified_path: Path = Path(event.src_path).resolve()
+        module_path: Path = self.window.active.module_path()
+        override_path: Path = self.window.active.override_path()
+        modified_path: Path = Path(event.src_path)
 
-        isDir = Path(modified_path).is_dir()
+        isDir = modified_path.is_dir()
 
-        if module_path.as_posix().startswith(modified_path.as_posix()) and not isDir:
+        if module_path.is_relative_to(modified_path) and not isDir:
             module_file = modified_path.parent
             self.window.moduleFilesUpdated.emit(str(module_file), event.event_type)
-        elif override_path.as_posix().startswith(modified_path.as_posix()) and not isDir:
+        elif override_path.is_relative_to(modified_path) and not isDir:
             override_dir = str(override_path.relative_to(modified_path.parent))
             if override_dir.startswith(("\\", "//")):
                 override_dir = override_dir[1:]

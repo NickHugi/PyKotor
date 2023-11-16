@@ -79,7 +79,7 @@ class TestLocalizedStringDelta(TestCase):
         self.assertEqual(3, len(locstring))
         self.assertEqual("1", locstring.get(Language.ENGLISH, Gender.MALE))
         self.assertEqual("2", locstring.get(Language.GERMAN, Gender.MALE))
-        self.assertEqual("b", locstring.get(Language.FRENCH, Gender.MALE))  # TODO: Why is this 'b'?
+        self.assertEqual("b", locstring.get(Language.FRENCH, Gender.MALE))
 
 
 if __name__ == "__main__":

@@ -2277,7 +2277,6 @@ class TestConfigReader(unittest.TestCase):
             TypeId=111
             2DAMEMORY5=ListIndex
             """
-        # TODO: Add field to struct
 
         ini = ConfigParser(
             delimiters=("="),
