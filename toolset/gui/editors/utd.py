@@ -209,8 +209,6 @@ class UTDEditor(Editor):
 
         # Advanced
         utd.min1_hp = self.ui.min1HpCheckbox.isChecked()
-        # utd.party_interact = self.ui.partyInteractCheckbox.isChecked()  # TODO: find out why this and the below line are undefined
-        # utd.useable = self.ui.useableCheckbox.isChecked()
         utd.plot = self.ui.plotCheckbox.isChecked()
         utd.static = self.ui.staticCheckbox.isChecked()
         utd.not_blastable = self.ui.notBlastableCheckbox.isChecked()
