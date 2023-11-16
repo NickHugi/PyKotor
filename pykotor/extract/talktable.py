@@ -95,7 +95,7 @@ class TalkTable:
         reader.close()
         return ResRef(sound_resref)
 
-    def _extract_common_data(self, reader: BinaryReader, stringref: int):
+    def _extract_common_data(self, reader: BinaryReader, stringref: int) -> tuple[int, str, int, int, int, int, int]:
         reader.seek(20 + 40 * stringref)
         flags = reader.read_uint32()
         sound_resref = reader.read_string(16)
