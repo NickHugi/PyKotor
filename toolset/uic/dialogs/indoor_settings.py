@@ -10,6 +10,8 @@
 
 from PyQt5 import QtCore, QtGui, QtWidgets
 
+from gui.widgets.edit.color import ColorEdit
+from gui.widgets.edit.locstring import LocalizedStringLineEdit
 
 class Ui_Dialog(object):
     def setupUi(self, Dialog):
@@ -71,4 +73,3 @@ class Ui_Dialog(object):
         self.label_2.setText(_translate("Dialog", "Lighting:"))
         self.label_3.setText(_translate("Dialog", "Warp Code:"))
         self.label_4.setText(_translate("Dialog", "Skybox:"))
-from toolset.misc.widget.widgets import ColorEdit, LocalizedStringLineEdit
