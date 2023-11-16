@@ -14,6 +14,7 @@ from pykotor.common.misc import Color, ResRef
 from pykotor.common.module import Module, ModuleResource
 from pykotor.common.stream import BinaryWriter
 from pykotor.extract.file import ResourceIdentifier
+from pykotor.resource.generics.are import ARE
 from pykotor.resource.generics.git import (
     GIT,
     GITCamera,
@@ -27,6 +28,7 @@ from pykotor.resource.generics.git import (
     GITTrigger,
     GITWaypoint,
 )
+from pykotor.resource.generics.ifo import IFO
 from pykotor.resource.generics.utd import read_utd
 from pykotor.resource.generics.utt import read_utt
 from pykotor.resource.generics.utw import read_utw
@@ -246,6 +248,12 @@ class ModuleDesigner(QMainWindow):
 
     def git(self) -> GIT:
         return self._module.git().resource()
+
+    def are(self) -> ARE:
+        return self._module.are().resource()
+
+    def ifo(self) -> IFO:
+        return self._module.info().resource()
 
     def saveGit(self) -> None:
         self._module.git().save()
@@ -597,6 +605,11 @@ class ModuleDesigner(QMainWindow):
         camera.y = instance.position.y
         camera.z = instance.position.z + instance.height
         camera.distance = 0
+
+    def snapCameraToEntryLocation(self) -> None:
+        self.ui.mainRenderer.scene.camera.x = self.ifo().entry_position.x
+        self.ui.mainRenderer.scene.camera.y = self.ifo().entry_position.y
+        self.ui.mainRenderer.scene.camera.z = self.ifo().entry_position.z
 
     def toggleFreeCam(self) -> None:
         if isinstance(self._controls3d, ModuleDesignerControls3d):
@@ -1053,7 +1066,7 @@ class ModuleDesignerControls3d:
             camera.y = self.renderer.scene.cursor.position().y
             camera.z = self.renderer.scene.cursor.position().z
         if self.moveCameraToEntryPoint.satisfied(buttons, keys):
-            self.renderer.scene.jumpToEntryLocation()  # TODO: undefined??
+            self.editor.snapCameraToEntryLocation()
 
         if self.deleteSelected.satisfied(buttons, keys):
             self.editor.deleteSelected()
