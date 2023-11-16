@@ -63,7 +63,7 @@ class PTHEditor(Editor):
             SurfaceMaterial.DEEP_WATER: intColorToQColor(self.settings.deepWaterMaterialColour),
             SurfaceMaterial.DOOR: intColorToQColor(self.settings.doorMaterialColour),
             SurfaceMaterial.NON_WALK_GRASS: intColorToQColor(self.settings.nonWalkGrassMaterialColour),
-            SurfaceMaterial.TRIGGER: intColorToQColor(self.settings.nonWalkGrassMaterialColour)
+            SurfaceMaterial.TRIGGER: intColorToQColor(self.settings.nonWalkGrassMaterialColour),
         }
         self.nameBuffer: dict[ResourceIdentifier, str] = {}
         self.tagBuffer: dict[ResourceIdentifier, str] = {}
@@ -99,7 +99,7 @@ class PTHEditor(Editor):
         self.ui.renderArea.setPth(pth)
 
     def build(self) -> Tuple[bytes, bytes]:
-        return bytes_pth(self._pth), b''
+        return bytes_pth(self._pth), b""
 
     def new(self) -> None:
         super().new()

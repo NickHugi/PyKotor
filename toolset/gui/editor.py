@@ -68,7 +68,7 @@ class Editor(QMainWindow):
         super().__init__(parent)
 
         self._filepath: Optional[Path] = None
-        self._resref: str | Nonee
+        self._resref: str | None
         self._restype: Optional[ResourceType] = None
         self._revert: Optional[bytes] = None
         self._readSupported: list[ResourceType] = readSupported
