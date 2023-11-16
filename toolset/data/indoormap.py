@@ -111,9 +111,9 @@ class IndoorMap:
 
                 if position not in points:
                     points.append(position)  # 47
-                    if room2 is None:
-                        msg = "room2 cannot be None"
-                        raise ValueError(msg)
+                    #if room2 is None:
+                    #    msg = "room2 cannot be None"
+                    #    raise ValueError(msg)
 
                     static = connection is None
                     insertions.append(DoorInsertion(door, room1, room2, static, position, rotation, hook1, hook2))
