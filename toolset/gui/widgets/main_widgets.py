@@ -4,7 +4,7 @@ import multiprocessing
 from abc import abstractmethod
 from contextlib import suppress
 from time import sleep
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 from PyQt5 import QtCore
 from PyQt5.QtCore import QModelIndex, QPoint, QSortFilterProxyModel, QThread, QTimer

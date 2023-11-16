@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Optional, Set, Tuple
+from typing import TYPE_CHECKING, Optional, Tuple
 
 from PyQt5.QtGui import QColor, QKeyEvent
 from PyQt5.QtWidgets import QMenu, QWidget
