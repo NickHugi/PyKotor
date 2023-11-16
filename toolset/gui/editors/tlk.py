@@ -20,13 +20,13 @@ if TYPE_CHECKING:
 
 
 class TLKEditor(Editor):
-    def __init__(self, parent: Optional[QWidget], installation: Optional[HTInstallation] = None):
+    def __init__(self, parent: Optional[QWidget], installation: HTInstallation | None = None):
         """Initialize the TLK Editor.
 
         Args:
         ----
             parent: QWidget - Parent widget
-            installation: Optional[HTInstallation] - Installation object
+            installation: HTInstallation | None - Installation object
         Returns:
             None
         Processing Logic:

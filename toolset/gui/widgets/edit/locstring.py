@@ -28,7 +28,7 @@ class LocalizedStringLineEdit(QWidget):
         self.ui = Ui_Form()
         self.ui.setupUi(self)
 
-        self._installation: Optional[HTInstallation] = None
+        self._installation: HTInstallation | None = None
         self._locstring: LocalizedString = LocalizedString.from_invalid()
 
         self.ui.editButton.clicked.connect(self.editLocstring)

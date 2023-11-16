@@ -22,11 +22,11 @@ _TRANS_EDGE_ROLE = QtCore.Qt.UserRole + 2
 
 
 class BWMEditor(Editor):
-    def __init__(self, parent: Optional[QWidget], installation: Optional[HTInstallation] = None):
+    def __init__(self, parent: Optional[QWidget], installation: HTInstallation | None = None):
         """Initializes the walkmesh painter window
         Args:
             parent: Optional[QWidget]: The parent widget
-            installation: Optional[HTInstallation]: The installation
+            installation: HTInstallation | None: The installation
         Returns:
             None
         Initializes UI components and connects signals:

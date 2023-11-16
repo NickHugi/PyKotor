@@ -15,6 +15,7 @@ from pykotor.resource.type import ResourceType
 
 
 class TestResourceIdentifier(unittest.TestCase):
+    """ This test was created because of the many soft, hard-to-find errors that would happen if this function ever fails."""
     def test_from_path(self):
         test_cases = [
             # Happy path tests

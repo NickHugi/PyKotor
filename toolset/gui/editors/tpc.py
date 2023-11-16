@@ -19,7 +19,7 @@ if TYPE_CHECKING:
 
 
 class TPCEditor(Editor):
-    def __init__(self, parent: Optional[QWidget], installation: Optional[Installation] = None):
+    def __init__(self, parent: Optional[QWidget], installation: Installation | None = None):
         """Initializes the texture viewer window.
 
         Args:

@@ -23,7 +23,7 @@ if TYPE_CHECKING:
 
 
 class ERFEditor(Editor):
-    def __init__(self, parent: Optional[QWidget], installation: Optional[HTInstallation] = None):
+    def __init__(self, parent: Optional[QWidget], installation: HTInstallation | None = None):
         """Initialize ERF Editor window
         Args:
             parent: QWidget: Parent widget

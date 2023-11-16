@@ -31,7 +31,7 @@ def openResourceEditor(
     resref: str,
     restype: ResourceType,
     data: bytes,
-    installation: Optional[HTInstallation] = None,
+    installation: HTInstallation | None = None,
     parentwindow: Optional[QWidget] = None,
     gff_specialized: Optional[bool] = None,
 ) -> Union[tuple[str, QWidget], tuple[None, None]]:

@@ -906,7 +906,7 @@ class Installation:
             )
         )
 
-        textures: CaseInsensitiveDict[TPC | None] = CaseInsensitiveDict[Optional[TPC]]()
+        textures: CaseInsensitiveDict[TPC | None] = CaseInsensitiveDict[TPC | None]()
         texture_types = [ResourceType.TPC, ResourceType.TGA]
         queries = [resname.lower() for resname in queries]
 

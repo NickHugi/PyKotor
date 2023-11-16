@@ -60,7 +60,7 @@ class Editor(QMainWindow):
         iconName: str,
         readSupported: list[ResourceType],
         writeSupported: list[ResourceType],
-        installation: Optional[HTInstallation] = None,
+        installation: HTInstallation | None = None,
         mainwindow: Optional[QMainWindow] = None,
     ):
         """Initializes the editor
@@ -70,7 +70,7 @@ class Editor(QMainWindow):
             iconName: str: The name of the icon to display
             readSupported: list[ResourceType]: The supported resource types for reading
             writeSupported: list[ResourceType]: The supported resource types for writing
-            installation: Optional[HTInstallation]: The installation context
+            installation: HTInstallation | None: The installation context
             mainwindow: Optional[QMainWindow]: The main window
         Returns:
             None
@@ -83,13 +83,13 @@ class Editor(QMainWindow):
         super().__init__(parent)
 
         self._filepath: Optional[Path] = None
-        self._resref: Optional[str] = None
+        self._resref: str | Nonee
         self._restype: Optional[ResourceType] = None
         self._revert: Optional[bytes] = None
         self._readSupported: list[ResourceType] = readSupported
         self._writeSupported: list[ResourceType] = writeSupported
         self._global_settings: GlobalSettings = GlobalSettings()
-        self._installation: Optional[HTInstallation] = installation
+        self._installation: HTInstallation | None = installation
         self._mainwindow = mainwindow
 
         self._editorTitle = title
@@ -482,5 +482,5 @@ class Editor(QMainWindow):
             setText(self._installation.talktable().string(locstring.stringref))
             textbox.setStyleSheet(className + " {background-color: #fffded;}")
 
-    def filepath(self) -> Optional[str]:
+    def filepath(self) -> str | None:
         return str(self._filepath)

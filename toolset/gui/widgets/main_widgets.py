@@ -287,7 +287,7 @@ class TextureList(MainWindowList):
         self.ui.setupUi(self)
         self.setupSignals()
 
-        self._installation: Optional[HTInstallation] = None
+        self._installation: HTInstallation | None = None
         self._scannedTextures: set[str] = set()
 
         self.texturesModel = QStandardItemModel()

@@ -31,7 +31,7 @@ class JRLEditor(Editor):
     # It would be nice at some point to create our own implementation of QAbstractItemModel that automatically mirrors
     # the JRL object.
 
-    def __init__(self, parent: Optional[QWidget], installation: Optional[HTInstallation] = None):
+    def __init__(self, parent: Optional[QWidget], installation: HTInstallation | None = None):
         """Initializes the Journal Editor window
         Args:
             parent: {QWidget}: Parent widget

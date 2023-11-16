@@ -175,12 +175,12 @@ class Modify2DA(ABC):
     ) -> tuple[dict[str, str], dict[int, str], str | None, str | None]:
         """Splits modifiers into categories
         Args:
-            modifiers: Dict[str, str]: Modifiers dictionary
+            modifiers: dict[str, str]: Modifiers dictionary
             memory: PatcherMemory: Patcher memory object
             twoda: TwoDA: TwoDA object
         Returns:
-            new_values: Dict[str, str]: Split modifiers
-            memory_values: Dict[int, str]: 2DA memory values
+            new_values: dict[str, str]: Split modifiers
+            memory_values: dict[int, str]: 2DA memory values
             row_label: str|None: Row label value
             new_row_label: str|None: New row label value
         - Updates special value references like StrRef and 2DAMEMORY

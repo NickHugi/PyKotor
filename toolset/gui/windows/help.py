@@ -29,7 +29,7 @@ class HelpWindow(QMainWindow):
     def __init__(self, parent: Optional[QWidget], startingPage: str | None = None):
         super().__init__(parent)
 
-        self.version: Optional[float] = None
+        self.version: float | None = None
 
         from toolset.uic.windows import help
         self.ui = help.Ui_MainWindow()

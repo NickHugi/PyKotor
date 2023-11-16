@@ -27,7 +27,7 @@ if TYPE_CHECKING:
 
 
 class AREEditor(Editor):
-    def __init__(self, parent: Optional[QWidget], installation: Optional[HTInstallation] = None):
+    def __init__(self, parent: Optional[QWidget], installation: HTInstallation | None = None):
         """Initialize the ARE Editor window
         Args:
             parent: {QWidget}: Parent widget

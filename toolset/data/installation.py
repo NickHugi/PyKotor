@@ -124,7 +124,7 @@ class HTInstallation(Installation):
     # endregion
 
     # region Cache TPC
-    def htGetCacheTPC(self, resname: str) -> Optional[TPC]:
+    def htGetCacheTPC(self, resname: str) -> TPC | None:
         """Gets cached TPC texture or loads and caches it.
 
         Args:
