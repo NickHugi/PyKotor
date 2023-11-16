@@ -35,6 +35,7 @@ class UTDEditorTest(TestCase):
     @classmethod
     def setUpClass(cls) -> None:
         from toolset.data.installation import HTInstallation
+
         # Make sure to configure this environment path before testing!
         cls.INSTALLATION = HTInstallation(K1_PATH, "", False, None)
 

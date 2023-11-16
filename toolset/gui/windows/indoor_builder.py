@@ -1,18 +1,16 @@
 from __future__ import annotations
-import base64
 
+import base64
 import json
 import math
 import shutil
-from tempfile import TemporaryDirectory
 import zipfile
 from contextlib import suppress
 from copy import copy, deepcopy
-from io import BytesIO
+from tempfile import TemporaryDirectory
 from typing import TYPE_CHECKING
 
 import requests
-from bs4 import BeautifulSoup, Tag
 from __main__ import is_debug_mode, is_frozen
 from config import UPDATE_INFO_LINK
 from PyQt5 import QtCore
@@ -54,8 +52,6 @@ from toolset.gui.windows.help import HelpWindow
 
 if TYPE_CHECKING:
     import os
-
-    from bs4 import NavigableString
 
     from pykotor.resource.formats.bwm import BWMFace
     from toolset.data.installation import HTInstallation

@@ -7,14 +7,7 @@ from typing import TYPE_CHECKING, Any, Callable
 from pykotor.common.language import LocalizedString
 from pykotor.common.misc import Game, ResRef
 from pykotor.helpers.path import PureWindowsPath
-from pykotor.resource.formats.gff import (
-    GFF,
-    GFFFieldType,
-    GFFList,
-    GFFStruct,
-    bytes_gff,
-    read_gff,
-)
+from pykotor.resource.formats.gff import GFF, GFFFieldType, GFFList, GFFStruct, bytes_gff, read_gff
 from pykotor.tslpatcher.mods.template import PatcherModifications
 
 if TYPE_CHECKING:
