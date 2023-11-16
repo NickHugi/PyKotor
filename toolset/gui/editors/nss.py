@@ -334,8 +334,17 @@ class NSSEditor(Editor):
         self._length = len(self.ui.codeEdit.toPlainText())
 
     def onInsertShortcut(self) -> None:
-        """This method should be connected to the activated signal of a QShortcut. Its purpose is to insert a constant or
+        """Inserts selected shortcut based on active tab
+        This method should be connected to the activated signal of a QShortcut. Its purpose is to insert a constant or
         function depending on which tab is currently open at the time.
+
+        Args:
+        ----
+            self: The class instance.
+
+        - Check current index of tabWidget
+        - If index is 0, call insertSelectedFunction()
+        - If index is 1, call insertSelectedConstant()
         """
         if self.ui.tabWidget.currentIndex() == 0:
             self.insertSelectedFunction()
@@ -424,6 +433,19 @@ class CodeEditor(QPlainTextEdit):
             blockNumber += 1
 
     def lineNumberAreaWidth(self) -> int:
+        """Calculates the width needed to display line numbers.
+
+        Args:
+        ----
+            self: The object whose method this is.
+
+        Returns:
+        -------
+            int: The width in pixels needed to display line numbers.
+        - Calculates the number of digits needed to display the maximum line number.
+        - Uses the maximum line number and digit count to calculate the minimum space needed.
+        - Returns the larger of the minimum and calculated widths.
+        """
         digits = 1
         maximum = max(1, self.blockCount())
         while maximum >= 10:
@@ -443,6 +465,17 @@ class CodeEditor(QPlainTextEdit):
         self.setViewportMargins(self.lineNumberAreaWidth(), 0, 0, 0)
 
     def _highlightCurrentLine(self) -> None:
+        """Highlights the current line in the text editor
+        Args:
+            self: The text editor widget
+        Returns:
+            None
+        - Checks if the text editor is read only
+        - Creates a selection object and sets the background color and full width selection property
+        - Sets the selection cursor to the text cursor and clears any existing selection
+        - Appends the selection to the extra selections list
+        - Sets the extra selections on the text editor.
+        """
         extraSelections = []
 
         if not self.isReadOnly():

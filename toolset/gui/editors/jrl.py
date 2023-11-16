@@ -254,9 +254,21 @@ class JRLEditor(Editor):
         self._jrl.quests.append(newQuest)
 
     def onValueUpdated(self) -> None:
-        """This method should be connected to all the widgets that store data related quest or entry text (besides the
+        """Updates the selected item in the journal tree when values change
+        This method should be connected to all the widgets that store data related quest or entry text (besides the
         ones storing localized strings, those are updated elsewhere). This method will update either all the values
         for an entry or quest based off the aforementioned widgets.
+
+        Args:
+        ----
+            self: The class instance
+        Returns:
+            None: No return value
+        Processing Logic:
+            - Get the selected item from the journal tree
+            - Check if it is a quest or entry
+            - Update the appropriate fields on the item object
+            - Refresh the entry item to update the display.
         """
         item = self._model.itemFromIndex(self.ui.journalTree.selectedIndexes()[0])
         data = item.data()
@@ -275,9 +287,22 @@ class JRLEditor(Editor):
             self.refreshEntryItem(item)
 
     def onSelectionChanged(self, selection: QItemSelection, deselected: QItemSelection) -> None:
-        """This method should be connected to a signal that emits when selection changes for the journalTree widget. It
+        """Updates UI on journal tree selection change.
+
+        This method should be connected to a signal that emits when selection changes for the journalTree widget. It
         will update the widget values that store data for either entries or quests, depending what has been selected
         in the tree.
+
+        Args:
+        ----
+            selection: QItemSelection - Current selection
+            deselected: QItemSelection - Previously selected
+        Returns:
+            None
+        Updates UI elements based on selected item:
+        - Sets category/entry details from selected Quest/Entry data
+        - Blocks signals while updating to prevent duplicate calls
+        - Handles selection of Quest or Entry differently
         """
         QTreeView.selectionChanged(self.ui.journalTree, selection, deselected)
         self.ui.categoryCommentEdit.blockSignals(True)
@@ -305,9 +330,22 @@ class JRLEditor(Editor):
         self.ui.entryTextEdit.blockSignals(False)
 
     def onContextMenuRequested(self, point: QPoint) -> None:
-        """This method should be connected to the customContextMenuRequested of the journalTree object. This will popup the
+        """Handle context menu requests for the journal tree widget
+        This method should be connected to the customContextMenuRequested of the journalTree object. This will popup the
         context menu and display various options depending on if there is an item selected in the tree and what kind
         of data the item stores (Quest or Entry).
+
+        Args:
+        ----
+            point: QPoint: The position of the context menu request
+        Returns:
+            None: No return value
+        Processing Logic:
+        - Get the index and item at the point of the context menu request
+        - Create a QMenu object
+        - Check if an item was selected and get its data
+        - Add appropriate actions to the menu based on the data type
+        - Popup the menu at the global position of the context menu request.
         """
         index = self.ui.journalTree.indexAt(point)
         item = self._model.itemFromIndex(index)
@@ -330,8 +368,19 @@ class JRLEditor(Editor):
         menu.popup(self.ui.journalTree.viewport().mapToGlobal(point))
 
     def onDeleteShortcut(self) -> None:
-        """This method should be connected to the activated signal of a QShortcut. The method will delete the selected
+        """Deletes selected shortcut from journal tree.
+        This method should be connected to the activated signal of a QShortcut. The method will delete the selected
         item from the tree.
+
+        Args:
+        ----
+            self: The class instance
+        Returns:
+            None: No value is returned
+        - Check if any items are selected in the journal tree
+        - Get the index and item for the selected item
+        - Check if the item is a root (quest) or child (entry) item
+        - Call the appropriate method to remove the quest or entry.
         """
         if self.ui.journalTree.selectedIndexes():
             index = self.ui.journalTree.selectedIndexes()[0]

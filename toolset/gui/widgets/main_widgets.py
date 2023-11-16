@@ -449,7 +449,7 @@ class TextureList(MainWindowList):
 
 
 class TextureListConsumer(multiprocessing.Process):
-    def __init__(self, taskQueue, resultQueue):
+    def __init__(self, taskQueue, resultQueue) -> None:
         multiprocessing.Process.__init__(self)
         self.taskQueue: multiprocessing.JoinableQueue = taskQueue
         self.resultQueue: multiprocessing.Queue = resultQueue
