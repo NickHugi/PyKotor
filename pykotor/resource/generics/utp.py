@@ -80,7 +80,7 @@ class UTP:
 
     def __init__(
         self,
-    ):
+    ) -> None:
         self.resref: ResRef = ResRef.from_blank()
         self.conversation: ResRef = ResRef.from_blank()
         self.tag: str = ""

@@ -1145,10 +1145,10 @@ class TestManipulateGFF(TestCase):
             gff: GFF - The GFF object
             memory: PatcherMemory - The memory object
             modifiers: list[ModifyGFF] - The list of modifiers
-        Returns: 
+        Returns:
             None: No return value
         Processing Logic:
-        1. Creates a GFF object 
+        1. Creates a GFF object
         2. Sets a locstring field on the root node
         3. Populates the memory with a test string
         4. Creates an AddField modifier to add the Field1 locstring using the memory reference

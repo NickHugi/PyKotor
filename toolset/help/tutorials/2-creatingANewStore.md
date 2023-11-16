@@ -57,7 +57,7 @@ void main()
 {
 	object oStore = GetObjectByTag("aarn_store");
 	object oSpeaker = GetPCSpeaker();
-    
+
 	if (GetIsObjectValid(oStore))
     {
 		DelayCommand(0.5, OpenStore(oStore, oSpeaker));
