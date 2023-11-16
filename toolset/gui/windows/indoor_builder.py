@@ -239,7 +239,7 @@ class IndoorMapBuilder(QMainWindow):
 
     def selectedComponent(self) -> KitComponent | None:
         currentItem = self.ui.componentList.currentItem()
-        return None if currentItem is None else currentItem.data(QtCore.Qt.UserRole)
+        return None if currentItem is None else currentItem.data(QtCore.Qt.UserRole)  # type: ignore[reportGeneralTypeIssues]
 
     def setWarpPoint(self, x: float, y: float, z: float):
         self._map.warpPoint = Vector3(x, y, z)
@@ -264,13 +264,13 @@ class IndoorMapBuilder(QMainWindow):
             self.ui.componentList.clear()
             for component in kit.components:
                 item = QListWidgetItem(component.name)
-                item.setData(QtCore.Qt.UserRole, component)
+                item.setData(QtCore.Qt.UserRole, component)  # type: ignore[reportGeneralTypeIssues]
                 self.ui.componentList.addItem(item)
 
     def onComponentSelected(self, item: QListWidgetItem) -> None:
         if item is None:
             return
-        component: KitComponent = item.data(QtCore.Qt.UserRole)
+        component: KitComponent = item.data(QtCore.Qt.UserRole)  # type: ignore[reportGeneralTypeIssues]
         self.ui.componentImage.setPixmap(QPixmap.fromImage(component.image))
         self.ui.mapRenderer.setCursorComponent(component)
 
@@ -295,13 +295,13 @@ class IndoorMapBuilder(QMainWindow):
         self._refreshStatusBar()
         worldDelta = self.ui.mapRenderer.toWorldDelta(delta.x, delta.y)
 
-        if QtCore.Qt.LeftButton in buttons and QtCore.Qt.Key_Control in keys:
+        if QtCore.Qt.LeftButton in buttons and QtCore.Qt.Key_Control in keys:  # type: ignore[reportGeneralTypeIssues]
             # LMB + CTRL
             self.ui.mapRenderer.panCamera(-worldDelta.x, -worldDelta.y)
-        elif QtCore.Qt.MiddleButton in buttons and QtCore.Qt.Key_Control in keys:
+        elif QtCore.Qt.MiddleButton in buttons and QtCore.Qt.Key_Control in keys:  # type: ignore[reportGeneralTypeIssues]
             # MMB + CTRL
             self.ui.mapRenderer.rotateCamera(delta.x / 50)
-        elif QtCore.Qt.LeftButton in buttons and QtCore.Qt.Key_Control not in keys:
+        elif QtCore.Qt.LeftButton in buttons and QtCore.Qt.Key_Control not in keys:  # type: ignore[reportGeneralTypeIssues]
             # LMB
             rooms = self.ui.mapRenderer.selectedRooms()
             if len(rooms) == 0:
@@ -338,24 +338,24 @@ class IndoorMapBuilder(QMainWindow):
         - Clears selection if no room found
         - Toggles cursor flip if middle mouse button and no control pressed.
         """
-        if QtCore.Qt.LeftButton in buttons and QtCore.Qt.Key_Control not in keys:
+        if QtCore.Qt.LeftButton in buttons and QtCore.Qt.Key_Control not in keys:  # type: ignore[reportGeneralTypeIssues]
             if self.ui.mapRenderer._cursorComponent is not None:
                 component = self.selectedComponent()
                 if component is not None:
                     self._build_indoor_map_room_and_refresh(component)
-                if QtCore.Qt.Key_Shift not in keys:
+                if QtCore.Qt.Key_Shift not in keys:  # type: ignore[reportGeneralTypeIssues]
                     self.ui.mapRenderer.setCursorComponent(None)
                     self.ui.componentList.clearSelection()
                     self.ui.componentList.setCurrentItem(None)
             else:
-                clearExisting = QtCore.Qt.Key_Shift not in keys
+                clearExisting = QtCore.Qt.Key_Shift not in keys  # type: ignore[reportGeneralTypeIssues]
                 room = self.ui.mapRenderer.roomUnderMouse()
                 if room:
                     self.ui.mapRenderer.selectRoom(self.ui.mapRenderer.roomUnderMouse(), clearExisting)
                 else:
                     self.ui.mapRenderer.clearSelectedRooms()
 
-        if QtCore.Qt.MiddleButton in buttons and QtCore.Qt.Key_Control not in keys:
+        if QtCore.Qt.MiddleButton in buttons and QtCore.Qt.Key_Control not in keys:  # type: ignore[reportGeneralTypeIssues]
             self.ui.mapRenderer.toggleCursorFlip()
 
     def _build_indoor_map_room_and_refresh(self, component):
@@ -390,13 +390,13 @@ class IndoorMapBuilder(QMainWindow):
         self.ui.mapRenderer._cursorFlipY = False
 
     def onMouseScrolled(self, delta: Vector2, buttons: set[int], keys: set[int]) -> None:
-        if QtCore.Qt.Key_Control in keys:
+        if QtCore.Qt.Key_Control in keys:  # type: ignore[reportGeneralTypeIssues]
             self.ui.mapRenderer.zoomInCamera(delta.y / 50)
         else:
             self.ui.mapRenderer._cursorRotation += math.copysign(5, delta.y)
 
     def onMouseDoubleClicked(self, delta: Vector2, buttons: set[int], keys: set[int]) -> None:
-        if QtCore.Qt.LeftButton in buttons and self.ui.mapRenderer.roomUnderMouse():
+        if QtCore.Qt.LeftButton in buttons and self.ui.mapRenderer.roomUnderMouse():  # type: ignore[reportGeneralTypeIssues]
             self.ui.mapRenderer.clearSelectedRooms()
             self.addConnectedToSelection(self.ui.mapRenderer.roomUnderMouse())
 
@@ -732,7 +732,7 @@ class IndoorMapRenderer(QWidget):
         bwm.rotate(room.rotation)
         bwm.translate(*room.position)
         painter.setBrush(QColor(255, 255, 255, alpha))
-        painter.setPen(QtCore.Qt.NoPen)
+        painter.setPen(QtCore.Qt.NoPen)  # type: ignore[reportGeneralTypeIssues]
         for face in bwm.faces:
             path = self._buildFace(face)
             painter.drawPath(path)
@@ -741,7 +741,7 @@ class IndoorMapRenderer(QWidget):
         ...
 
     def _drawSpawnPoint(self, painter: QPainter, coords: Vector3):
-        painter.setPen(QtCore.Qt.NoPen)
+        painter.setPen(QtCore.Qt.NoPen)  # type: ignore[reportGeneralTypeIssues]
         painter.setBrush(QColor(0, 255, 0, 127))
         painter.drawEllipse(QPointF(coords.x, coords.y), 1.0, 1.0)
 
@@ -815,7 +815,7 @@ class IndoorMapRenderer(QWidget):
 
                 hookPos = room.hookPosition(hook)
                 painter.setBrush(QColor("red"))
-                painter.setPen(QtCore.Qt.NoPen)
+                painter.setPen(QtCore.Qt.NoPen)  # type: ignore[reportGeneralTypeIssues]
                 painter.drawEllipse(QPointF(hookPos.x, hookPos.y), 0.5, 0.5)
 
         for room in self._map.rooms:
@@ -1042,6 +1042,7 @@ class KitDownloader(QDialog):
         local_dir: os.PathLike | str,
         repo_path: os.PathLike | str,
     ) -> None:
+        """This method should not be used due to github's api restrictions. Use download_file to get a .zip of the folder instead."""  # noqa: D404
         repo = repo if isinstance(repo, PurePath) else PurePath(repo)
         repo_path = repo_path if isinstance(repo_path, PurePath) else PurePath(repo_path)
         api_url = f"https://api.github.com/repos/{repo.as_posix()}/contents/{repo_path.as_posix()}"
@@ -1099,3 +1100,4 @@ class KitDownloader(QDialog):
 
         if is_frozen() and kits_zip_path.exists():
             kits_zip_path.unlink()
+        return True

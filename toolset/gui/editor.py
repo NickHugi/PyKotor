@@ -294,7 +294,7 @@ class Editor(QMainWindow):
                 # Re-save with the updated filepath
                 self.save()
             elif dialog.option == RimSaveOption.Override:
-                self._filepath = self._installation.override_path().joinpath(f"{self._resref}.{self._restype.extension}")
+                self._filepath = self._installation.override_path() / f"{self._resref}.{self._restype.extension}"
                 self.save()
             return
 

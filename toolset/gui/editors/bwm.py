@@ -17,8 +17,8 @@ if TYPE_CHECKING:
 
     from toolset.data.installation import HTInstallation
 
-_TRANS_FACE_ROLE = QtCore.Qt.UserRole + 1
-_TRANS_EDGE_ROLE = QtCore.Qt.UserRole + 2
+_TRANS_FACE_ROLE = QtCore.Qt.UserRole + 1  # type: ignore[reportGeneralTypeIssues, attr-defined]
+_TRANS_EDGE_ROLE = QtCore.Qt.UserRole + 2  # type: ignore[reportGeneralTypeIssues, attr-defined]
 
 
 class BWMEditor(Editor):
@@ -104,7 +104,7 @@ class BWMEditor(Editor):
             icon = QIcon(QPixmap(image))
             text = material.name.replace("_", " ").title()
             item = QListWidgetItem(icon, text)
-            item.setData(QtCore.Qt.UserRole, material)
+            item.setData(QtCore.Qt.UserRole, material)  # type: ignore[reportGeneralTypeIssues, attr-defined]
             self.ui.materialList.addItem(item)
 
     def load(self, filepath: os.PathLike | str, resref: str, restype: ResourceType, data: bytes) -> None:
@@ -166,11 +166,11 @@ class BWMEditor(Editor):
         worldData = self.ui.renderArea.toWorldDelta(delta.x, delta.y)
         face = self._bwm.faceAt(world.x, world.y)
 
-        if QtCore.Qt.LeftButton in buttons and QtCore.Qt.Key_Control in keys:
+        if QtCore.Qt.LeftButton in buttons and QtCore.Qt.Key_Control in keys:  # type: ignore[reportGeneralTypeIssues, attr-defined]
             self.ui.renderArea.panCamera(-worldData.x, -worldData.y)
-        elif QtCore.Qt.MiddleButton in buttons and QtCore.Qt.Key_Control in keys:
+        elif QtCore.Qt.MiddleButton in buttons and QtCore.Qt.Key_Control in keys:  # type: ignore[reportGeneralTypeIssues, attr-defined]
             self.ui.renderArea.rotateCamera(delta.x / 50)
-        elif QtCore.Qt.LeftButton in buttons:
+        elif QtCore.Qt.LeftButton in buttons:  # type: ignore[reportGeneralTypeIssues, attr-defined]
             self.changeFaceMaterial(face)
 
         coordsText = f"x: {world.x:.2f}, {world.y:.2f}"
@@ -182,7 +182,7 @@ class BWMEditor(Editor):
         self.statusBar().showMessage(coordsText + faceText + xy)
 
     def onMouseScrolled(self, delta: Vector2, buttons: set[int], keys: set[int]) -> None:
-        if QtCore.Qt.Key_Control in keys:
+        if QtCore.Qt.Key_Control in keys:  # type: ignore[reportGeneralTypeIssues, attr-defined]
             self.ui.renderArea.zoomInCamera(delta.y / 50)
 
     def changeFaceMaterial(self, face: BWMFace):
@@ -193,7 +193,7 @@ class BWMEditor(Editor):
         - Check if the current face material is different than the selected material
         - Assign the selected material to the provided face.
         """
-        newMaterial = self.ui.materialList.currentItem().data(QtCore.Qt.UserRole)
+        newMaterial = self.ui.materialList.currentItem().data(QtCore.Qt.UserRole)  # type: ignore[reportGeneralTypeIssues, attr-defined]
         if face and face.material != newMaterial:
             face.material = newMaterial
 
