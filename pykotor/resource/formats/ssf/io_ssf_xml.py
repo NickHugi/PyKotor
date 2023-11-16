@@ -6,13 +6,7 @@ from xml.etree import ElementTree
 
 from pykotor.common.misc import decode_bytes_with_fallbacks
 from pykotor.resource.formats.ssf.ssf_data import SSF, SSFSound
-from pykotor.resource.type import (
-    SOURCE_TYPES,
-    TARGET_TYPES,
-    ResourceReader,
-    ResourceWriter,
-    autoclose,
-)
+from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES, ResourceReader, ResourceWriter, autoclose
 from pykotor.tools.indent_xml import indent
 
 

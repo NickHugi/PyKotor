@@ -4,20 +4,8 @@ from typing import Any
 
 from pykotor.common.misc import ResRef
 from pykotor.common.stream import BinaryWriter
-from pykotor.resource.formats.gff import (
-    GFF,
-    GFFContent,
-    GFFFieldType,
-    GFFList,
-    GFFStruct,
-)
-from pykotor.resource.type import (
-    SOURCE_TYPES,
-    TARGET_TYPES,
-    ResourceReader,
-    ResourceWriter,
-    autoclose,
-)
+from pykotor.resource.formats.gff import GFF, GFFContent, GFFFieldType, GFFList, GFFStruct
+from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES, ResourceReader, ResourceWriter, autoclose
 
 _COMPLEX_FIELD = {
     GFFFieldType.UInt64,

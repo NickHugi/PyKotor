@@ -2,8 +2,7 @@ from __future__ import annotations
 
 from pykotor.common.language import LocalizedString
 from pykotor.common.misc import Game, ResRef
-from pykotor.resource.formats.gff import GFF, GFFContent, write_gff
-from pykotor.resource.formats.gff.gff_auto import bytes_gff, read_gff
+from pykotor.resource.formats.gff import GFF, GFFContent, bytes_gff, read_gff, write_gff
 from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES, ResourceType
 
 
@@ -76,7 +75,7 @@ class UTD:
 
     def __init__(
         self,
-    ):
+    ) -> None:
         self.resref: ResRef = ResRef.from_blank()
         self.conversation: ResRef = ResRef.from_blank()
         self.tag: str = ""

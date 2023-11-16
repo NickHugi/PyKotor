@@ -4,13 +4,7 @@ import struct
 
 from pykotor.common.geometry import SurfaceMaterial, Vector3
 from pykotor.resource.formats.bwm import BWM, BWMFace, BWMType
-from pykotor.resource.type import (
-    SOURCE_TYPES,
-    TARGET_TYPES,
-    ResourceReader,
-    ResourceWriter,
-    autoclose,
-)
+from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES, ResourceReader, ResourceWriter, autoclose
 
 
 class BWMBinaryReader(ResourceReader):

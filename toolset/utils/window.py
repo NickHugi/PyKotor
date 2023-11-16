@@ -62,6 +62,7 @@ def openResourceEditor(
     from toolset.gui.editors.git import GITEditor
     from toolset.gui.editors.jrl import JRLEditor
     from toolset.gui.editors.nss import NSSEditor
+    from toolset.gui.editors.pth import PTHEditor
     from toolset.gui.editors.ssf import SSFEditor
     from toolset.gui.editors.tlk import TLKEditor
     from toolset.gui.editors.tpc import TPCEditor
@@ -76,7 +77,6 @@ def openResourceEditor(
     from toolset.gui.editors.uts import UTSEditor
     from toolset.gui.editors.utt import UTTEditor
     from toolset.gui.editors.utw import UTWEditor
-    from toolset.gui.editors.pth import PTHEditor
     from toolset.gui.windows.audio_player import AudioPlayer
 
     if gff_specialized is None:

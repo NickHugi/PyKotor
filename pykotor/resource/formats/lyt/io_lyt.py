@@ -3,20 +3,8 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from pykotor.common.geometry import Vector3, Vector4
-from pykotor.resource.formats.lyt import (
-    LYT,
-    LYTDoorHook,
-    LYTObstacle,
-    LYTRoom,
-    LYTTrack,
-)
-from pykotor.resource.type import (
-    SOURCE_TYPES,
-    TARGET_TYPES,
-    ResourceReader,
-    ResourceWriter,
-    autoclose,
-)
+from pykotor.resource.formats.lyt import LYT, LYTDoorHook, LYTObstacle, LYTRoom, LYTTrack
+from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES, ResourceReader, ResourceWriter, autoclose
 
 if TYPE_CHECKING:
     from collections.abc import Iterator

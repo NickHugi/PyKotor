@@ -5,13 +5,7 @@ import io
 
 from pykotor.common.misc import decode_bytes_with_fallbacks
 from pykotor.resource.formats.twoda.twoda_data import TwoDA
-from pykotor.resource.type import (
-    SOURCE_TYPES,
-    TARGET_TYPES,
-    ResourceReader,
-    ResourceWriter,
-    autoclose,
-)
+from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES, ResourceReader, ResourceWriter, autoclose
 
 
 class TwoDACSVReader(ResourceReader):

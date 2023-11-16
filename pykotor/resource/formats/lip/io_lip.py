@@ -1,13 +1,7 @@
 from __future__ import annotations
 
 from pykotor.resource.formats.lip import LIP, LIPShape
-from pykotor.resource.type import (
-    SOURCE_TYPES,
-    TARGET_TYPES,
-    ResourceReader,
-    ResourceWriter,
-    autoclose,
-)
+from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES, ResourceReader, ResourceWriter, autoclose
 
 
 class LIPBinaryReader(ResourceReader):

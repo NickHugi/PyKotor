@@ -5,14 +5,7 @@ from enum import IntEnum
 from pykotor.common.geometry import Vector3
 from pykotor.common.language import Gender, Language, LocalizedString
 from pykotor.common.misc import Color, Game, ResRef
-from pykotor.resource.formats.gff import (
-    GFF,
-    GFFContent,
-    GFFList,
-    GFFStruct,
-    read_gff,
-    write_gff,
-)
+from pykotor.resource.formats.gff import GFF, GFFContent, GFFList, GFFStruct, read_gff, write_gff
 from pykotor.resource.formats.gff.gff_auto import bytes_gff
 from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES, ResourceType
 
