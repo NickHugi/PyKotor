@@ -183,7 +183,7 @@ def translate_numerals(num_string: str, source_lang: Language, target_lang: Lang
         Language.JAPANESE: "〇一二三四五六七八九",
         Language.THAI: "๐๑๒๓๔๕๖๗๘๙",
         Language.GREEK: "𐅀𐅁𐅂𐅃𐅄𐅅𐅆𐅇𐅈𐅉",
-        Language.HEBREW: "0אבגדהוזחט",  # noqa: RUF001
+        Language.HEBREW: "טחזוהדגבא0",
         Language.ARABIC: "٠١٢٣٤٥٦٧٨٩",
     }
 
