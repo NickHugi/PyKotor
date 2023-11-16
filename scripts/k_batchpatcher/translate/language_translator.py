@@ -121,6 +121,7 @@ class LibreFallbackTranslator:
 
 
 def get_language_code(lang: Language) -> str:
+    """For use with the translator only. Some take different language codes than the bt47 format specifies."""
     return {
         Language.ENGLISH: "en",
         Language.FRENCH: "fr",
