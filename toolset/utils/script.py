@@ -57,19 +57,25 @@ def decompileScript(compiled: bytes, tsl: bool) -> str:
     global_settings.ncsDecompilerPath = str(ncs_decompiler_path)
 
     tempCompiledPath = extract_path / "tempscript.ncs"
+    tempDecompiledPath = extract_path / "tempscript_decompiled.nss"
     BinaryWriter.dump(tempCompiledPath, compiled)
 
-    gameIndex = "--kotor2" if tsl else "--kotor"
-    command = [global_settings.ncsDecompilerPath, gameIndex, tempCompiledPath]
-    process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
+    try:
+        game = Game.K2 if tsl else Game.K1
+        result = ExternalNCSCompiler(ncs_decompiler_path).decompile_script(tempCompiledPath, tempDecompiledPath, game)
+        if result:
+            return BinaryReader.load_file(tempDecompiledPath).decode(encoding="windows-1252")
 
-    output = process.communicate()[0].decode()
-    error = process.communicate()[1].decode()
-
-    if process.returncode:
-        raise ValueError(error)
-
-    return output
+        gameIndex = "--kotor2" if tsl else "--kotor"
+        command = [global_settings.ncsDecompilerPath, gameIndex, tempCompiledPath]
+        process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
+        output = process.communicate()[0].decode()
+        error = process.communicate()[1].decode()
+        if process.returncode:
+            raise ValueError(error)
+        return output
+    finally:
+        global_settings.ncsDecompilerPath = None
 
 
 def compileScript(source: str, tsl: bool) -> bytes:
