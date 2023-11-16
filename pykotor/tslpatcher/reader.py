@@ -768,7 +768,7 @@ class ConfigReader:
         elif field_type.return_type() == GFFList:
             value = FieldValueConstant(GFFList())
         elif field_type.return_type() == GFFStruct:
-            raw_struct_id: str = ini_section_dict.pop("TypeId", "0").strip()  # TODO: Double check that '0' is the default TypeId
+            raw_struct_id: str = ini_section_dict.pop("TypeId", "0").strip()  # 0 is the default struct id.
             if not is_int(raw_struct_id):
                 msg = f"Invalid TypeId: expected int but got '{raw_struct_id}' in [{identifier}]"
                 raise ValueError(msg)
