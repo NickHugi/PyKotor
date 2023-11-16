@@ -36,7 +36,7 @@ class TPCTGAReader(ResourceReader):
         super().__init__(source, offset, size)
         self._tpc: TPC | None = None
 
-    # @autoclose  # TODO:?
+    @autoclose
     def load(
         self,
         auto_close: bool = True,

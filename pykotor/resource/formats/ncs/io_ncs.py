@@ -12,6 +12,7 @@ from pykotor.resource.type import (
     TARGET_TYPES,
     ResourceReader,
     ResourceWriter,
+    autoclose,
 )
 
 
@@ -27,6 +28,7 @@ class NCSBinaryReader(ResourceReader):
         self._instructions: dict[int, NCSInstruction] = {}
         self._jumps: dict[NCSInstruction, int] = {}
 
+    #@autoclose
     def load(
         self,
         auto_close: bool = True,

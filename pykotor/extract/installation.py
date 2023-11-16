@@ -501,7 +501,7 @@ class Installation:
 
         Processing Logic:
         - Checks for files/folders specific to KOTOR 1 or KOTOR 2
-        - Checks KOTOR 1 first as a rims folder does not exist in KOTOR 2, which is an identifying characteristic.
+        - Checks KOTOR 2 first as a rims folder does not exist in KOTOR 2, which should not be the sole identifying characteristic.
         - Returns Game object with game ID 1 for KOTOR 1 or 2 for KOTOR 2
         - Raises a ValueError if the game cannot be determined
         """
