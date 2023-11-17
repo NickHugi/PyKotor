@@ -36,8 +36,7 @@ from pykotor.resource.formats.mdl import read_mdl, write_mdl
 from pykotor.resource.formats.tpc import read_tpc, write_tpc
 from pykotor.resource.type import ResourceType
 from pykotor.tools import model
-from pykotor.tools.misc import is_rim_file
-from pykotor.tools.path import CaseAwarePath
+from pykotor.tools.misc import is_bif_file, is_rim_file
 from toolset.config import PROGRAM_VERSION, UPDATE_INFO_LINK
 from toolset.data.installation import HTInstallation
 from toolset.gui.dialogs.about import About
@@ -72,6 +71,7 @@ if TYPE_CHECKING:
 
     from pykotor.resource.formats.tpc import TPC
     from pykotor.resource.type import SOURCE_TYPES
+    from pykotor.tools.path import CaseAwarePath
     from toolset.gui.widgets.main_widgets import ResourceList
 
 
@@ -233,7 +233,7 @@ class ToolWindow(QMainWindow):
         # Some users may choose to have their RIM files for the same module merged into a single option for the
         # dropdown menu.
         if self.settings.joinRIMsTogether and is_rim_file(moduleFile):
-            resources += self.active.module_resources(PurePath(moduleFile).with_suffix("_s.rim").name)
+            resources += self.active.module_resources(PurePath(moduleFile).stem + "_s.rim")
 
         self.active.reload_module(moduleFile)
         self.ui.modulesWidget.setResources(resources)
@@ -401,7 +401,7 @@ class ToolWindow(QMainWindow):
         """Opens the talktable for the active (currently selected) installation. If there is no active information, show
         a message box instead.
         """
-        filepath = CaseAwarePath(self.active.path(), "dialog.tlk")
+        filepath = self.active.path() / "dialog.tlk"
         data = BinaryReader.load_file(filepath)
         openResourceEditor(filepath, "dialog", ResourceType.TLK, data, self.active, self)
 
@@ -427,7 +427,7 @@ class ToolWindow(QMainWindow):
                 elif self.active.override_path().is_relative_to(selection.filepath()):
                     self.ui.resourceTabs.setCurrentIndex(2)
                     self.selectResource(self.ui.overrideWidget, selection)
-                elif selection.filepath().endswith(".bif"):
+                elif is_bif_file(selection.filepath().name):
                     self.selectResource(self.ui.coreWidget, selection)
 
     def openIndoorMapBuilder(self) -> None:
@@ -524,7 +524,7 @@ class ToolWindow(QMainWindow):
                 continue
 
             item = QStandardItem(f"{areaNames[module]} [{module}]")
-            item.setData(module, QtCore.Qt.UserRole)  # type: ignore[reportGeneralTypeIssues]
+            item.setData(module, QtCore.Qt.UserRole)
 
             # Some users may choose to have items representing RIM files to have grey text.
             if self.settings.greyRIMText and module.lower().endswith(".rim"):
@@ -542,7 +542,7 @@ class ToolWindow(QMainWindow):
         sections = []
         for directory in self.active.override_list():
             section = QStandardItem(directory if directory.strip() else "[Root]")
-            section.setData(directory, QtCore.Qt.UserRole)  # type: ignore[reportGeneralTypeIssues]
+            section.setData(directory, QtCore.Qt.UserRole)
             sections.append(section)
         self.ui.overrideWidget.setSections(sections)
 
@@ -553,7 +553,7 @@ class ToolWindow(QMainWindow):
         sections = []
         for texturepack in self.active.texturepacks_list():
             section = QStandardItem(texturepack)
-            section.setData(texturepack, QtCore.Qt.UserRole)  # type: ignore[reportGeneralTypeIssues]
+            section.setData(texturepack, QtCore.Qt.UserRole)
             sections.append(section)
 
         self.ui.texturesWidget.setSections(sections)
