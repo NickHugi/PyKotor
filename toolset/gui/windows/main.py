@@ -562,7 +562,7 @@ class ToolWindow(QMainWindow):
         # Some users may choose to merge their RIM files under one option in the Modules tab; if this is the case we
         # need to account for this.
         if self.settings.joinRIMsTogether and module.lower().endswith("_s.rim"):
-            module = module.lower().replace("_s.rim", ".rim")
+            module = module.lower()[:-6] + ".rim"
 
         self.ui.modulesWidget.changeSection(module)
 
