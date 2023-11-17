@@ -78,14 +78,45 @@ class TXIFontInformation(TXIBaseInformation):
         self.upper_left_coords: list[tuple[float, float, int]]
         self.lower_right_coords: list[tuple[float, float, int]]
 
-def write_bitmap_font(target: os.PathLike | str, font_path: os.PathLike | str, resolution: tuple[int, int], lang: Language) -> None:
-    """Generates a bitmap font from a TTF font file."""
+def write_bitmap_fonts(target: os.PathLike | str, font_path: os.PathLike | str, resolution: tuple[int, int], lang: Language) -> None:
+    font_path, target_path = ((p if isinstance(p, Path) else Path(p)).resolve() for p in (font_path, target))
+    default_font_names = [
+        "fnt_galahad14",
+        "dialogfont10x10",
+        "dialogfont10x10a",
+        "dialogfont10x10b",
+        "dialogfont12x16",
+        "dialogfont16x16",
+        "dialogfont16x16a",
+        "dialogfont16x16a",
+        "dialogfont16x16b",
+#        "fnt_console",
+        "fnt_credits",
+        "fnt_creditsa",
+        "fnt_creditsa",
+        "fnt_d10x10b",
+        "fnt_d16x16",
+        "fnt_d16x16a",
+        "fnt_d16x16b",
+        "fnt_dialog16x16",
+    ]
+    for font_name in default_font_names:
+        write_bitmap_font(target_path / font_name, font_path, resolution, lang)
+
+def write_bitmap_font(
+    target: os.PathLike | str,
+    font_path: os.PathLike | str,
+    resolution: tuple[int, int],
+    lang: Language,
+    char_range: tuple[int, int] = (0, 256),
+) -> None:
+    """Generates a bitmap font (TGA and TXI) from a TTF font file."""
     from PIL import (  # Import things here to separate from HoloPatcher code.
         Image,
         ImageDraw,
         ImageFont,
     )
-    font_path, target_path = (Path(p).resolve() for p in (font_path, target))
+    font_path, target_path = ((p if isinstance(p, Path) else Path(p)).resolve() for p in (font_path, target))
 
     txi_font_info = TXIFontInformation()
 
@@ -116,7 +147,7 @@ def write_bitmap_font(target: os.PathLike | str, font_path: os.PathLike | str, r
     max_char_height = ascent + descent
     baseline_heights = []
     x, y = 0, 0
-    for i in range(256):  # Standard ASCII set
+    for i in range(*char_range):  # Standard ASCII set
         char = bytes([i]).decode(lang.get_encoding(), errors="replace")
         bbox = draw.textbbox((0, 0), char, font=pil_font)
         text_width = bbox[2] - bbox[0]
@@ -132,10 +163,10 @@ def write_bitmap_font(target: os.PathLike | str, font_path: os.PathLike | str, r
             draw.text((text_x, text_y), char, font=pil_font, fill=(255, 255, 255, 255))
 
         # Calculate normalized coordinates
-        norm_x1 = text_x / resolution[0]
-        norm_y1 = text_y / resolution[1]
-        norm_x2 = (text_x + text_width) / resolution[0]
-        norm_y2 = (text_y + text_height) / resolution[1]
+        #norm_x1 = text_x / resolution[0]
+        #norm_y1 = text_y / resolution[1]
+        #norm_x2 = (text_x + text_width) / resolution[0]
+        #norm_y2 = (text_y + text_height) / resolution[1]
 
         # Determine grid position
         grid_x = i % 16
@@ -158,17 +189,17 @@ def write_bitmap_font(target: os.PathLike | str, font_path: os.PathLike | str, r
         baseline_heights.append(bbox[1])
     # Check if baseline_heights is not empty to avoid division by zero
     if baseline_heights:
-        average_baseline_height = sum(baseline_heights) / len(baseline_heights)
+        average_baseline_height: float = sum(baseline_heights) / len(baseline_heights)
         # Normalize the baseline height
         txi_font_info.baselineheight = average_baseline_height / resolution[1]
     if character_widths:
-        average_char_width = sum(character_widths) / len(character_widths)
+        average_char_width: float = sum(character_widths) / len(character_widths)
         txi_font_info.fontwidth = average_char_width / grid_cell_size
         caret_proportion = 0.1  # Adjust this value as needed
         txi_font_info.caretindent = (average_char_width * caret_proportion) / grid_cell_size
 
     target_path.parent.mkdir(parents=True, exist_ok=True)
-    charset_image.save(target_path, format="TGA")
+    charset_image.save(target_path.with_suffix(".tga"), format="TGA")
 
     # Generate and save the TXI data
     txi_data = _generate_txi_data(txi_font_info)
@@ -179,10 +210,10 @@ def write_bitmap_font(target: os.PathLike | str, font_path: os.PathLike | str, r
 
 def _generate_txi_data(txi_font_info: TXIFontInformation) -> str:
     # Format the upper left coordinates
-    ul_coords_str = "\n".join([f"{x:.6f} {y:.6f} {z}" for x, y, z in txi_font_info.upper_left_coords])
+    ul_coords_str = "\n".join([f"    {x:.6f} {y:.6f} {z}" for x, y, z in txi_font_info.upper_left_coords])
 
     # Format the lower right coordinates
-    lr_coords_str = "\n".join([f"{x:.6f} {y:.6f} {z}" for x, y, z in txi_font_info.lower_right_coords])
+    lr_coords_str = "\n".join([f"    {x:.6f} {y:.6f} {z}" for x, y, z in txi_font_info.lower_right_coords])
     return f"""mipmap {txi_font_info.mipmap}
 filter {txi_font_info.filter}
 numchars {txi_font_info.numchars}
