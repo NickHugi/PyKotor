@@ -6,6 +6,7 @@ from typing import TYPE_CHECKING, Any, Callable, Optional
 from PyQt5 import QtCore
 from PyQt5.QtCore import QThread
 from PyQt5.QtWidgets import QDialog, QLabel, QMessageBox, QProgressBar, QVBoxLayout, QWidget
+from pykotor.helpers.error_handling import format_exception_with_variables
 
 from pykotor.helpers.path import Path
 
@@ -85,7 +86,7 @@ class AsyncLoader(QDialog):
             QMessageBox(QMessageBox.Critical, self.errorTitle, str(error)).exec_()
 
         with Path("errorlog.txt").open("a") as file:
-            lines = traceback.format_exception(type(self.error), self.error, self.error.__traceback__)
+            lines = format_exception_with_variables(type(self.error), self.error, self.error.__traceback__)
             file.writelines(lines)
             file.write("\n----------------------\n")
 
@@ -188,7 +189,7 @@ class AsyncBatchLoader(QDialog):
             with Path("errorlog.txt").open("a") as file:
                 lines = []
                 for e in self.errors:
-                    lines.extend(*traceback.format_exception(type(e), e, e.__traceback__))
+                    lines.extend(format_exception_with_variables(type(e), e, e.__traceback__).split("\n"))
                 file.writelines(lines)
                 file.write("\n----------------------\n")
         else:

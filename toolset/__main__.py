@@ -2,7 +2,6 @@ import multiprocessing
 import os
 import pathlib
 import sys
-import traceback
 from types import TracebackType
 
 from PyQt5.QtCore import QThread
@@ -10,8 +9,9 @@ from PyQt5.QtWidgets import QApplication
 
 
 def onAppCrash(e: BaseException, value: str, tback: TracebackType):
+    from pykotor.helpers.error_handling import format_exception_with_variables
     with pathlib.Path("errorlog.txt").open("a") as file:
-        file.writelines(traceback.format_exception(e, value, tback))
+        file.writelines(format_exception_with_variables(e, value, tback))
         file.write("\n----------------------\n")
     raise e
 

@@ -2,6 +2,80 @@ from __future__ import annotations
 
 import inspect as ___inspect___
 import sys as ___sys___
+import traceback as ___traceback___
+import types as ___types___
+
+
+def format_exception_with_variables(___etype___, ___value___, ___tb___, ___message___: str = "Assertion with Exception Trace") -> str:
+    # Check if the arguments are of the correct type
+    if not issubclass(___etype___, BaseException):
+        msg = "___etype___ is not an exception class"
+        raise TypeError(msg)
+    if not isinstance(___value___, BaseException):
+        msg = "___value___ is not an exception instance"
+        raise TypeError(msg)
+    if not isinstance(___tb___, ___types___.TracebackType):
+        msg = "___tb___ is not a traceback object"
+        raise TypeError(msg)
+
+    # Construct the stack trace using traceback
+    formatted_traceback = "".join(___traceback___.format_exception(___etype___, ___value___, ___tb___))
+
+    # Capture the current stack trace
+    ___frames___ = ___inspect___.getinnerframes(___tb___, context=5)
+
+    # Get default module attributes to filter out built-ins
+    ___default_attrs___: set[str] = set(dir(___sys___.modules["builtins"]))
+
+    # Construct a detailed message with variables from all stack frames
+    ___detailed_message___: list[str] = [
+        f"{___message___}: Exception '{___value___}' of type '{___etype___}' occurred.",
+        "Formatted Traceback:",
+        formatted_traceback,
+        "Stack Trace Variables:",
+    ]
+    for ___frame_info___ in ___frames___:
+        (
+            ___frame___,
+            ___filename___,
+            ___line_no___,
+            ___function___,
+            ___code_context___,
+            ___index___,
+        ) = ___frame_info___
+        ___detailed_message___.append(f"\nFunction '{___function___}' at {___filename___}:{___line_no___}:")
+
+        # Filter out built-in and imported names
+        ___detailed_message___.extend(
+            f"  {___var___} = {___val___!r}"
+            for ___var___, ___val___ in ___frame___.f_locals.items()
+            if ___var___ not in ___default_attrs___
+            and ___var___ not in [
+                "___var___",
+                "___detailed_message___",
+                "___message___",
+                "___default_attrs___",
+                "___frames___",
+                "___filename___",
+                "___line_no___",
+                "___function___",
+                "___frame_info___",
+                "__builtins__",
+                "___inspect___",
+                "___sys___",
+                "format_exception_with_variables",
+                "___etype___",
+                "___value___",
+                "___tb___",
+                "___index___",
+                "___code_context___",
+                "___frame___",
+                "___traceback___",
+                "___types___",
+            ]
+        )
+
+    return "\n".join(___detailed_message___)
 
 
 def assert_with_variable_trace(___condition___: bool, ___message___: str = "Assertion Failed"):

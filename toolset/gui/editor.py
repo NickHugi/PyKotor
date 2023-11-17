@@ -10,6 +10,7 @@ from PyQt5.QtWidgets import QFileDialog, QLineEdit, QMainWindow, QMessageBox, QP
 
 from pykotor.common.module import Module
 from pykotor.extract.capsule import Capsule
+from pykotor.helpers.error_handling import format_exception_with_variables
 from pykotor.helpers.path import Path
 from pykotor.resource.formats.erf import ERFType, read_erf, write_erf
 from pykotor.resource.formats.rim import read_rim, write_rim
@@ -236,7 +237,7 @@ class Editor(QMainWindow):
                 self._saveEndsWithOther(data, data_ext)
         except Exception as e:  # noqa: BLE001
             with Path("errorlog.txt").open("a") as file:
-                lines = traceback.format_exception(type(e), e, e.__traceback__)
+                lines = format_exception_with_variables(type(e), e, e.__traceback__)
                 file.writelines(lines)
                 file.write("\n----------------------\n")
             QMessageBox(QMessageBox.Critical, "Failed to write to file", str(e)).exec_()
