@@ -11,8 +11,6 @@ from tempfile import TemporaryDirectory
 from typing import TYPE_CHECKING
 
 import requests
-from __main__ import is_debug_mode, is_frozen
-from config import UPDATE_INFO_LINK
 from PyQt5 import QtCore
 from PyQt5.QtCore import QPoint, QPointF, QRectF, QTimer
 from PyQt5.QtGui import (
@@ -44,6 +42,8 @@ from PyQt5.QtWidgets import (
 from pykotor.common.geometry import Vector2, Vector3
 from pykotor.common.stream import BinaryReader, BinaryWriter
 from pykotor.helpers.path import Path, PurePath
+from toolset.__main__ import is_debug_mode, is_frozen
+from toolset.config import UPDATE_INFO_LINK
 from toolset.data.indoorkit import Kit, KitComponent, load_kits
 from toolset.data.indoormap import IndoorMap, IndoorMapRoom
 from toolset.gui.dialogs.asyncloader import AsyncLoader
