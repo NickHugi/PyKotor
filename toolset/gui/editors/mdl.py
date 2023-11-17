@@ -79,8 +79,8 @@ class MDLEditor(Editor):
         super().load(filepath, resref, restype, data)
         c_filepath = Path(filepath)
 
-        mdl_data = None
-        mdx_data = None
+        mdl_data: bytes | None = None
+        mdx_data: bytes | None = None
 
         if restype == ResourceType.MDL:
             mdl_data = data
@@ -110,7 +110,7 @@ class MDLEditor(Editor):
         if mdl_data and mdx_data:
             self.ui.modelRenderer.setModel(mdl_data, mdx_data)
         else:
-            QMessageBox(QMessageBox.Critical, "Could not find MDL/MDX", "").exec_()
+            QMessageBox(QMessageBox.Critical, f"Could not find the {c_filepath.stem} MDL/MDX", "").exec_()
 
         self._mdl = read_mdl(mdl_data, 0, 0, mdx_data, 0, 0)
 
