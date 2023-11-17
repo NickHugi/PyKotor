@@ -91,7 +91,7 @@ class DLG:
         self.alien_race_owner: int = 0
         self.next_node_id: int = 0
         self.post_proc_owner: int = 0
-        self.record_no_vo: bool = False
+        self.record_no_vo: int = 0
 
         # Deprecated:
         self.delay_entry: int = 0
