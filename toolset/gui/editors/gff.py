@@ -753,8 +753,7 @@ class GFFEditor(Editor):
             menu = QMenu(self)
 
             if item.data(_TYPE_NODE_ROLE) == GFFFieldType.List:
-                menu.addAction("Add Struct").triggered.connect(
-                )
+                menu.addAction("Add Struct").triggered.connect()
             elif item.data(_TYPE_NODE_ROLE) in [GFFFieldType.Struct, None]:
                 self._build_context_menu_gff_struct(menu, item)
             else:
@@ -778,31 +777,17 @@ class GFFEditor(Editor):
             - Connects each action to call self.insertNode() and pass relevant args.
         """
         menu.addAction("Add UInt8").triggered.connect(lambda: self.insertNode(item, "New UInt8", GFFFieldType.UInt8, 0))
-        menu.addAction("Add UInt16").triggered.connect(
-            lambda: self.insertNode(item, "New UInt16", GFFFieldType.UInt16, 0),
-        )
-        menu.addAction("Add UInt32").triggered.connect(
-            lambda: self.insertNode(item, "New UInt32", GFFFieldType.UInt32, 0),
-        )
-        menu.addAction("Add UInt64").triggered.connect(
-            lambda: self.insertNode(item, "New UInt64", GFFFieldType.UInt64, 0),
-        )
+        menu.addAction("Add UInt16").triggered.connect(lambda: self.insertNode(item, "New UInt16", GFFFieldType.UInt16, 0))
+        menu.addAction("Add UInt32").triggered.connect(lambda: self.insertNode(item, "New UInt32", GFFFieldType.UInt32, 0))
+        menu.addAction("Add UInt64").triggered.connect(lambda: self.insertNode(item, "New UInt64", GFFFieldType.UInt64, 0))
         menu.addAction("Add Int8").triggered.connect(lambda: self.insertNode(item, "New Int8", GFFFieldType.Int8, 0))
         menu.addAction("Add Int16").triggered.connect(lambda: self.insertNode(item, "New Int16", GFFFieldType.Int16, 0))
         menu.addAction("Add Int32").triggered.connect(lambda: self.insertNode(item, "New Int32", GFFFieldType.Int32, 0))
         menu.addAction("Add Int64").triggered.connect(lambda: self.insertNode(item, "New Int64", GFFFieldType.Int64, 0))
-        menu.addAction("Add Single").triggered.connect(
-            lambda: self.insertNode(item, "New Single", GFFFieldType.Single, 0.0),
-        )
-        menu.addAction("Add Double").triggered.connect(
-            lambda: self.insertNode(item, "New Double", GFFFieldType.Double, 0.0),
-        )
-        menu.addAction("Add ResRef").triggered.connect(
-            lambda: self.insertNode(item, "New ResRef", GFFFieldType.ResRef, 0),
-        )
-        menu.addAction("Add String").triggered.connect(
-            lambda: self.insertNode(item, "New String", GFFFieldType.String, 0),
-        )
+        menu.addAction("Add Single").triggered.connect(lambda: self.insertNode(item, "New Single", GFFFieldType.Single, 0.0))
+        menu.addAction("Add Double").triggered.connect(lambda: self.insertNode(item, "New Double", GFFFieldType.Double, 0.0))
+        menu.addAction("Add ResRef").triggered.connect(lambda: self.insertNode(item, "New ResRef", GFFFieldType.ResRef, 0))
+        menu.addAction("Add String").triggered.connect(lambda: self.insertNode(item, "New String", GFFFieldType.String, 0))
         menu.addAction("Add LocalizedString").triggered.connect(
             lambda: self.insertNode(
                 item,
@@ -811,22 +796,12 @@ class GFFEditor(Editor):
                 LocalizedString.from_invalid(),
             ),
         )
-        menu.addAction("Add Binary").triggered.connect(
-            lambda: self.insertNode(item, "New Binary", GFFFieldType.Binary, b""),
-        )
-        menu.addAction("Add Vector3").triggered.connect(
-            lambda: self.insertNode(item, "New Vector3", GFFFieldType.Vector3, Vector3.from_null()),
-        )
-        menu.addAction("Add Vector4").triggered.connect(
-            lambda: self.insertNode(item, "New Vector4", GFFFieldType.Vector4, Vector3.from_null()),
-        )
+        menu.addAction("Add Binary").triggered.connect(lambda: self.insertNode(item, "New Binary", GFFFieldType.Binary, b""))
+        menu.addAction("Add Vector3").triggered.connect(lambda: self.insertNode(item, "New Vector3", GFFFieldType.Vector3, Vector3.from_null()))
+        menu.addAction("Add Vector4").triggered.connect(lambda: self.insertNode(item, "New Vector4", GFFFieldType.Vector4, Vector3.from_null()))
         menu.addSeparator()
-        menu.addAction("Add Struct").triggered.connect(
-            lambda: self.insertNode(item, "New Struct", GFFFieldType.Struct, GFFStruct()),
-        )
-        menu.addAction("Add List").triggered.connect(
-            lambda: self.insertNode(item, "New List", GFFFieldType.List, GFFList()),
-        )
+        menu.addAction("Add Struct").triggered.connect(lambda: self.insertNode(item, "New Struct", GFFFieldType.Struct, GFFStruct()))
+        menu.addAction("Add List").triggered.connect(lambda: self.insertNode(item, "New List", GFFFieldType.List, GFFList()))
         menu.addSeparator()
 
     def selectTalkTable(self) -> None:
