@@ -232,7 +232,7 @@ def rim_to_mod(filepath: os.PathLike | str) -> None:
     file_ext_rim_s = resolved_file_path.suffix.lower().replace(".mod", "_s.rim")
 
     filepath_rim = resolved_file_path.with_suffix(file_ext_rim)
-    filepath_rim_s = resolved_file_path.with_suffix(file_ext_rim_s)
+    filepath_rim_s = resolved_file_path.parent / (resolved_file_path.stem + file_ext_rim_s)
 
     rim = read_rim(filepath_rim)
     rim_s = read_rim(filepath_rim_s) if filepath_rim_s.exists() else RIM()
