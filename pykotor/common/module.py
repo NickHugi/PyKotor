@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from contextlib import suppress
 from copy import copy
-from typing import TYPE_CHECKING, Any, Generic, TypeVar
+from typing import TYPE_CHECKING, Any, Callable, Generic, TypeVar
 
 from pykotor.common.misc import CaseInsensitiveDict
 from pykotor.common.stream import BinaryReader, BinaryWriter
@@ -40,6 +40,7 @@ if TYPE_CHECKING:
 
     from pykotor.resource.formats.lyt import LYT
     from pykotor.resource.formats.mdl import MDL
+    from pykotor.resource.type import SOURCE_TYPES
 
 T = TypeVar("T")
 SEARCH_ORDER = [
@@ -91,12 +92,11 @@ class Module:
         -------
             The string for the root name of a module.
         """
-        filepath_obj = PurePath(filepath)
-        root = str(filepath_obj.with_suffix(filepath_obj.suffix.lower().replace(".rim", "").replace(".erf", "").replace(".mod", "")))
+        root = PurePath(filepath).name.lower().replace(".rim", "").replace(".erf", "").replace(".mod", "")
         roota = root[:5]
         rootb = root[5:]
         if "_" in rootb:
-            rootb = rootb[: rootb.index("_")]
+            rootb = rootb[:rootb.index("_")]
         return roota + rootb
 
     def capsules(self) -> list[Capsule]:
@@ -931,27 +931,27 @@ class ModuleResource(Generic[T]):
             The resource object.
         """
         if self._resource is None:
-            conversions = {
-                ResourceType.UTC: (read_utc),
-                ResourceType.UTP: (read_utp),
-                ResourceType.UTD: (read_utd),
-                ResourceType.UTI: (read_uti),
-                ResourceType.UTM: (read_utm),
-                ResourceType.UTE: (read_ute),
-                ResourceType.UTT: (read_utt),
-                ResourceType.UTW: (read_utw),
-                ResourceType.UTS: (read_uts),
-                ResourceType.DLG: (read_dlg),
-                ResourceType.PTH: (read_pth),
-                ResourceType.NCS: (lambda data: data),
-                ResourceType.TPC: (read_tpc),
-                ResourceType.TGA: (read_tpc),
-                ResourceType.LYT: (read_lyt),
-                ResourceType.VIS: (read_vis),
-                ResourceType.IFO: (read_ifo),
-                ResourceType.ARE: (read_are),
-                ResourceType.GIT: (read_git),
-                ResourceType.WOK: (read_bwm),
+            conversions: dict[ResourceType, Callable[[SOURCE_TYPES], Any]] = {
+                ResourceType.UTC: read_utc,
+                ResourceType.UTP: read_utp,
+                ResourceType.UTD: read_utd,
+                ResourceType.UTI: read_uti,
+                ResourceType.UTM: read_utm,
+                ResourceType.UTE: read_ute,
+                ResourceType.UTT: read_utt,
+                ResourceType.UTW: read_utw,
+                ResourceType.UTS: read_uts,
+                ResourceType.DLG: read_dlg,
+                ResourceType.PTH: read_pth,
+                ResourceType.NCS: lambda data: data,
+                ResourceType.TPC: read_tpc,
+                ResourceType.TGA: read_tpc,
+                ResourceType.LYT: read_lyt,
+                ResourceType.VIS: read_vis,
+                ResourceType.IFO: read_ifo,
+                ResourceType.ARE: read_are,
+                ResourceType.GIT: read_git,
+                ResourceType.WOK: read_bwm,
             }
 
             if self._active is None:
@@ -1045,27 +1045,27 @@ class ModuleResource(Generic[T]):
             - Checks file type and writes resource data accordingly
             - Writes resource data to ERF, RIM or binary file using appropriate conversion and writer.
         """
-        conversions = {
-            ResourceType.UTC: (bytes_utc),
-            ResourceType.UTP: (bytes_utp),
-            ResourceType.UTD: (bytes_utd),
-            ResourceType.UTI: (bytes_uti),
-            ResourceType.UTM: (bytes_utm),
-            ResourceType.UTE: (bytes_ute),
-            ResourceType.UTT: (bytes_utt),
-            ResourceType.UTW: (bytes_utw),
-            ResourceType.UTS: (bytes_uts),
-            ResourceType.DLG: (bytes_dlg),
-            ResourceType.PTH: (bytes_pth),
-            ResourceType.NCS: (lambda res: res),
-            ResourceType.TPC: (bytes_tpc),
-            ResourceType.TGA: (bytes_tpc),
-            ResourceType.LYT: (bytes_lyt),
-            ResourceType.VIS: (bytes_vis),
-            ResourceType.IFO: (bytes_ifo),
-            ResourceType.ARE: (bytes_are),
-            ResourceType.GIT: (bytes_git),
-            ResourceType.WOK: (bytes_bwm),
+        conversions: dict[ResourceType, Callable[[Any], bytes]] = {
+            ResourceType.UTC: bytes_utc,
+            ResourceType.UTP: bytes_utp,
+            ResourceType.UTD: bytes_utd,
+            ResourceType.UTI: bytes_uti,
+            ResourceType.UTM: bytes_utm,
+            ResourceType.UTE: bytes_ute,
+            ResourceType.UTT: bytes_utt,
+            ResourceType.UTW: bytes_utw,
+            ResourceType.UTS: bytes_uts,
+            ResourceType.DLG: bytes_dlg,
+            ResourceType.PTH: bytes_pth,
+            ResourceType.NCS: lambda res: res,
+            ResourceType.TPC: bytes_tpc,
+            ResourceType.TGA: bytes_tpc,
+            ResourceType.LYT: bytes_lyt,
+            ResourceType.VIS: bytes_vis,
+            ResourceType.IFO: bytes_ifo,
+            ResourceType.ARE: bytes_are,
+            ResourceType.GIT: bytes_git,
+            ResourceType.WOK: bytes_bwm,
         }
 
         if self._active is None:

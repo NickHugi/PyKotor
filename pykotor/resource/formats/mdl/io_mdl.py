@@ -947,7 +947,7 @@ class _SkinmeshHeader:
         self.offset_to_unknown0 = reader.read_uint32()
         self.unknown0_count = reader.read_uint32()
         self.unknown0_count2 = reader.read_uint32()
-        self.bones = [reader.read_uint16() for _ in range(16)]
+        self.bones = (reader.read_uint16() for _ in range(16))
         self.unknown1 = reader.read_uint32()
         return self
 

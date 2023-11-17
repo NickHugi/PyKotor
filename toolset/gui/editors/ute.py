@@ -135,7 +135,8 @@ class UTEEditor(Editor):
         self.ui.respawnCountSpin.setValue(ute.respawns)
 
         # Creatures
-        [self.ui.creatureTable.removeRow(0) for _ in range(self.ui.creatureTable.rowCount())]
+        for _ in range(self.ui.creatureTable.rowCount()):
+            self.ui.creatureTable.removeRow(0)
         for creature in ute.creatures:
             self.addCreature(creature.resref.get(), creature.appearance_id, creature.challenge_rating, creature.single_spawn)
 

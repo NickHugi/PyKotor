@@ -93,7 +93,7 @@ class BWM:
         - Add AABB to return list
         - Return list of all AABBs.
         """
-        aabbs = []
+        aabbs: list[BWMNodeAABB] = []
         self._aabbs_rec(aabbs, copy(self.faces))
         return aabbs
 
