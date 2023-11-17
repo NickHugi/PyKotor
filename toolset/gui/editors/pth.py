@@ -17,6 +17,8 @@ from toolset.gui.editor import Editor
 from toolset.gui.widgets.settings.git import GITSettings
 
 if TYPE_CHECKING:
+    import os
+
     from PyQt5.QtCore import QPoint
 
     from pykotor.extract.file import ResourceIdentifier
@@ -82,7 +84,7 @@ class PTHEditor(Editor):
         self.ui.renderArea.customContextMenuRequested.connect(self.onContextMenu)
         self.ui.renderArea.keyPressed.connect(self.onKeyPressed)
 
-    def load(self, filepath: str, resref: str, restype: ResourceType, data: bytes) -> None:
+    def load(self, filepath: os.PathLike | str, resref: str, restype: ResourceType, data: bytes) -> None:
         super().load(filepath, resref, restype, data)
 
         order = [SearchLocation.OVERRIDE, SearchLocation.CHITIN, SearchLocation.MODULES]
@@ -186,10 +188,10 @@ class PTHEditor(Editor):
     def onKeyPressed(self, buttons: set[int], keys: set[int]) -> None:
         self._controls.onKeyboardPressed(buttons, keys)
 
-    def keyPressEvent(self, e: QKeyEvent) -> None:
+    def keyPressEvent(self, e: QKeyEvent | None) -> None:
         self.ui.renderArea.keyPressEvent(e)
 
-    def keyReleaseEvent(self, e: QKeyEvent) -> None:
+    def keyReleaseEvent(self, e: QKeyEvent | None) -> None:
         self.ui.renderArea.keyReleaseEvent(e)
     # endregion
 
