@@ -583,9 +583,9 @@ def construct_dlg(
         """
         link.active1 = gff_struct.acquire("Active", ResRef.from_blank())
         link.active2 = gff_struct.acquire("Active2", ResRef.from_blank())
-        link.logic = gff_struct.acquire("Logic", 0)
-        link.active1_not = gff_struct.acquire("Not", 0)
-        link.active2_not = gff_struct.acquire("Not2", 0)
+        link.logic = bool(gff_struct.acquire("Logic", 0))
+        link.active1_not = bool(gff_struct.acquire("Not", 0))
+        link.active2_not = bool(gff_struct.acquire("Not2", 0))
         link.active1_param1 = gff_struct.acquire("Param1", 0)
         link.active1_param2 = gff_struct.acquire("Param2", 0)
         link.active1_param3 = gff_struct.acquire("Param3", 0)
@@ -615,9 +615,9 @@ def construct_dlg(
     dlg.camera_model = root.acquire("CameraModel", ResRef.from_blank())
     dlg.computer_type = DLGComputerType(root.acquire("ComputerType", 0))
     dlg.conversation_type = DLGConversationType(root.acquire("ConversationType", 0))
-    dlg.old_hit_check = root.acquire("OldHitCheck", 0)
-    dlg.unequip_hands = root.acquire("UnequipHItem", 0)
-    dlg.unequip_items = root.acquire("UnequipItems", 0)
+    dlg.old_hit_check = bool(root.acquire("OldHitCheck", 0))
+    dlg.unequip_hands = bool(root.acquire("UnequipHItem", 0))
+    dlg.unequip_items = bool(root.acquire("UnequipItems", 0))
     dlg.vo_id = root.acquire("VO_ID", "")
     dlg.alien_race_owner = root.acquire("AlienRaceOwner", 0)
     dlg.post_proc_owner = root.acquire("PostProcOwner", 0)
@@ -648,7 +648,7 @@ def construct_dlg(
             link = DLGLink()
             link.node = all_replies[link_struct.acquire("Index", 0)]
             link.is_child = bool(link_struct.acquire("IsChild", 0))
-            link.comment = link_struct.acquire("LinkComment", 0)
+            link.comment = link_struct.acquire("LinkComment", "")
 
             entry.links.append(link)
             construct_link(link_struct, link)
@@ -661,7 +661,7 @@ def construct_dlg(
             link = DLGLink()
             link.node = all_entries[link_struct.acquire("Index", 0)]
             link.is_child = bool(link_struct.acquire("IsChild", 0))
-            link.comment = link_struct.acquire("LinkComment", 0)
+            link.comment = link_struct.acquire("LinkComment", "")
 
             reply.links.append(link)
             construct_link(link_struct, link)
