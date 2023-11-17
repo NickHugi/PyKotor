@@ -3,8 +3,10 @@ from __future__ import annotations
 import os
 import re
 
+from pykotor.helpers.path import PurePath
 
-def is_int(string: str):
+
+def is_int(string: str) -> bool:
     """Can be cast to an int without raising an error.
 
     Args:
@@ -20,7 +22,7 @@ def is_int(string: str):
         return True
 
 
-def is_float(string: str):
+def is_float(string: str) -> bool:
     """Can be cast to a float without raising an error.
 
     Args:
@@ -36,47 +38,47 @@ def is_float(string: str):
         return True
 
 
-def is_nss_file(filename: str):
+def is_nss_file(filename: os.PathLike | str) -> bool:
     """Returns true if the given filename has a NSS file extension."""
-    return filename.lower().endswith(".nss")
+    return PurePath(filename).suffix.lower() == ".nss"
 
 
-def is_mod_file(filename: str):
+def is_mod_file(filename: os.PathLike | str) -> bool:
     """Returns true if the given filename has a MOD file extension."""
-    return filename.lower().endswith(".mod")
+    return PurePath(filename).suffix.lower() == ".mod"
 
 
-def is_erf_file(filename: str):
+def is_erf_file(filename: os.PathLike | str) -> bool:
     """Returns true if the given filename has a ERF file extension."""
-    return filename.lower().endswith(".erf")
+    return PurePath(filename).suffix.lower() == ".erf"
 
 
-def is_erf_or_mod_file(filename: str):
+def is_erf_or_mod_file(filename: os.PathLike | str) -> bool:
     """Returns true if the given filename has either an ERF or MOD file extension."""
-    return filename.lower().endswith((".erf", ".mod"))
+    return PurePath(filename).suffix.lower() in [".erf", ".mod"]
 
 
-def is_rim_file(filename: str):
+def is_rim_file(filename: os.PathLike | str) -> bool:
     """Returns true if the given filename has a RIM file extension."""
-    return filename.lower().endswith(".rim")
+    return PurePath(filename).suffix.lower() == ".rim"
 
 
-def is_bif_file(filename: str):
+def is_bif_file(filename: os.PathLike | str) -> bool:
     """Returns true if the given filename has a BIF file extension."""
-    return filename.lower().endswith(".bif")
+    return PurePath(filename).suffix.lower() == ".bif"
 
 
-def is_capsule_file(filename: str):
+def is_capsule_file(filename: os.PathLike | str) -> bool:
     """Returns true if the given filename has either an ERF, MOD or RIM file extension."""
-    return is_erf_or_mod_file(filename) or is_rim_file(filename)
+    return PurePath(filename).suffix.lower() in [".erf", ".mod", ".rim"]
 
 
-def is_storage_file(filename: str):
-    """Returns true if the given filename has either an BIF, ERF, MOD or RIM file extension."""
-    return is_capsule_file(filename) or is_bif_file(filename)
+def is_storage_file(filename: os.PathLike | str) -> bool:
+    """Returns true if the given filename has either an ERF, MOD, RIM, or BIF file extension."""
+    return PurePath(filename).suffix.lower() in [".erf", ".mod", ".rim", ".bif"]
 
 
-def universal_simplify_exception(e):
+def universal_simplify_exception(e) -> tuple[str, str]:
     """Simplify exceptions into a standardized format
     Args:
         e: Exception - The exception to simplify
@@ -140,13 +142,13 @@ def universal_simplify_exception(e):
 
 MAX_CHARS_BEFORE_NEWLINE_FORMAT = 20  # Adjust as needed
 
-def format_text(text):
+def format_text(text) -> str:
     text_str = str(text)
     if "\n" in text_str or len(text_str) > MAX_CHARS_BEFORE_NEWLINE_FORMAT:
         return f'"""{os.linesep}{text_str}{os.linesep}"""'
     return f"'{text_str}'"
 
-def first_char_diff_index(str1, str2):
+def first_char_diff_index(str1, str2) -> int:
     """Find the index of the first differing character in two strings."""
     min_length = min(len(str1), len(str2))
     for i in range(min_length):
@@ -156,13 +158,13 @@ def first_char_diff_index(str1, str2):
         return min_length  # Difference due to length
     return -1  # No difference
 
-def generate_diff_marker_line(index, length):
+def generate_diff_marker_line(index, length) -> str:
     """Generate a line of spaces with a '^' at the specified index."""
     if index == -1:
         return ""
     return " " * index + "^" + " " * (length - index - 1)
 
-def compare_and_format(old_value, new_value):
+def compare_and_format(old_value, new_value) -> tuple[str, str]:
     """Compares and formats two values for diff display
     Args:
         old_value: The old value to compare
