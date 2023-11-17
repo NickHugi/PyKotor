@@ -421,10 +421,10 @@ class ToolWindow(QMainWindow):
                 selection = resultsDialog.selection
 
                 # Open relevant tab then select resource in the tree
-                if self.active.module_path().is_relative_to(selection.filepath()):
+                if selection.filepath().is_relative_to(self.active.module_path()):
                     self.ui.resourceTabs.setCurrentIndex(1)
                     self.selectResource(self.ui.modulesWidget, selection)
-                elif self.active.override_path().is_relative_to(selection.filepath()):
+                elif selection.filepath().is_relative_to(self.active.override_path()):
                     self.ui.resourceTabs.setCurrentIndex(2)
                     self.selectResource(self.ui.overrideWidget, selection)
                 elif is_bif_file(selection.filepath().name):
