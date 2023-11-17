@@ -411,7 +411,7 @@ class GFFStruct:
         if (
             self.exists(label)
             and object_type is not None
-            and isinstance(self[label], object_type)
+#            and isinstance(self[label], object_type)  # TODO: uncomment this and assert type after fixing all the call typings
         ):
             value = self[label]
         return value
