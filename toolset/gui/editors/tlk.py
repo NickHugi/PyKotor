@@ -269,7 +269,7 @@ class LoaderDialog(QDialog):
     def onEntryCount(self, count: int):
         self._progressBar.setMaximum(count)
 
-    def onBatch(self, batch: [QStandardItem]):
+    def onBatch(self, batch: list[QStandardItem]):
         for row in batch:
             self.model.appendRow(row)
             index = self.model.rowCount() - 1
