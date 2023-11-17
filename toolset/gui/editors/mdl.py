@@ -76,8 +76,8 @@ class MDLEditor(Editor):
         - Sets model data on renderer if both MDL and MDX found
         - Displays error if unable to find associated data.
         """
-        super().load(filepath, resref, restype, data)
         c_filepath = Path(filepath)
+        super().load(c_filepath, resref, restype, data)
 
         mdl_data: bytes | None = None
         mdx_data: bytes | None = None
