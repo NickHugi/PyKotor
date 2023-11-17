@@ -180,26 +180,28 @@ class HelpWindow(QMainWindow):
     def _downloadUpdate(self) -> None:
         help_path = Path("help").resolve()
         help_path.mkdir(parents=True, exist_ok=True)
-        self.download_file("NickHugi/PyKotor", "help.zip", "toolset/help.zip")
+        help_zip_path = Path("./help.zip").resolve()
+        self.download_file("NickHugi/PyKotor", help_zip_path, "toolset/help.zip")
 
         # Extract the ZIP file
-        with zipfile.ZipFile("./help.zip") as zip_file:
+        with zipfile.ZipFile(help_zip_path) as zip_file:
             print(f"Extracting downloaded content to {help_path!s}")
             zip_file.extractall(help_path)
 
         if is_frozen():
-            Path("help.zip").unlink()
+            help_zip_path.unlink()
 
-    def displayFile(self, filepath: str) -> None:
+    def displayFile(self, filepath: os.PathLike | str) -> None:
+        filepath = filepath if isinstance(filepath, Path) else Path(filepath)
         try:
             text = decode_bytes_with_fallbacks(BinaryReader.load_file(filepath))
-            html = markdown.markdown(text, extensions=["tables", "fenced_code", "codehilite"]) if filepath.lower().endswith(".md") else text
+            html = markdown.markdown(text, extensions=["tables", "fenced_code", "codehilite"]) if filepath.endswith(".md") else text
             self.ui.textDisplay.setHtml(html)
         except OSError:
             QMessageBox(
                 QMessageBox.Critical,
                 "Failed to open help file",
-                f"Could not access '{filepath}'.",
+                f"Could not access '{filepath!s}'.",
             ).exec_()
 
     def onContentsClicked(self) -> None:
@@ -207,5 +209,7 @@ class HelpWindow(QMainWindow):
             item = self.ui.contentsTree.selectedItems()[0]
             filename = item.data(0, QtCore.Qt.UserRole)  # type: ignore[attr-defined]
             if filename:
-                self.ui.textDisplay.setSearchPaths(["./help", f"./help/{Path(filename).parent!s}"])
-                self.displayFile(f"./help/{filename}")
+                help_path = Path("./help").resolve()
+                file_path = Path(help_path, filename)
+                self.ui.textDisplay.setSearchPaths([str(help_path), str(file_path.parent)])
+                self.displayFile(file_path)
