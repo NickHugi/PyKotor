@@ -794,11 +794,11 @@ class FolderObserver(FileSystemEventHandler):
 
         isDir = modified_path.is_dir()
 
-        if module_path.is_relative_to(modified_path) and not isDir:
+        if modified_path.is_relative_to(module_path) and not isDir:
             module_file = modified_path.parent
             self.window.moduleFilesUpdated.emit(str(module_file), event.event_type)
-        elif override_path.is_relative_to(modified_path) and not isDir:
-            override_dir = str(override_path.relative_to(modified_path.parent))
+        elif modified_path.is_relative_to(override_path) and not isDir:
+            override_dir = str(modified_path.parent.relative_to(override_path))
             if override_dir.startswith(("\\", "//")):
                 override_dir = override_dir[1:]
             self.window.overrideFilesUpdate.emit(override_dir, event.event_type)
