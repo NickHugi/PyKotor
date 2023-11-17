@@ -380,6 +380,7 @@ class ModInstaller:
 
         override_dir = self.game_path / "Override"
         override_resource_path = override_dir / patch.saveas
+        override_resource_path = override_resource_path.resolve()
         if override_resource_path.exists():
             if override_type == OverrideType.RENAME:
                 renamed_file_path: CaseAwarePath = override_dir / f"old_{patch.saveas}"
@@ -393,7 +394,8 @@ class ModInstaller:
                     renamed_file_path = renamed_file_path.parent / next_filename
                     i += 1
                 try:
-                    shutil.move(str(override_resource_path), renamed_file_path)
+                    renamed_file_path = renamed_file_path.resolve()
+                    shutil.move(str(override_resource_path), str(renamed_file_path))
                 except Exception as e:  # noqa: BLE001
                     # Handle exceptions such as permission errors or file in use.
                     self.log.add_error(f"Could not rename '{patch.saveas}' to '{renamed_file_path.name}' in the Override folder: {e!r}")
