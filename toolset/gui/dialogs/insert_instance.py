@@ -72,7 +72,7 @@ class InsertInstanceDialog(QDialog):
     def _setupLocationSelect(self) -> None:
         self.ui.locationSelect.addItem(str(self._installation.override_path()), self._installation.override_path())
         for capsule in self._module.capsules():
-            if capsule.path().endswith(".rim") and GlobalSettings().disableRIMSaving:
+            if is_rim_file(capsule.path()) and GlobalSettings().disableRIMSaving:
                 continue
             self.ui.locationSelect.addItem(str(capsule.path()), capsule.path())
         self.ui.locationSelect.setCurrentIndex(self.ui.locationSelect.count() - 1)
