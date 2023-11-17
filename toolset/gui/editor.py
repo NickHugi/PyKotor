@@ -138,7 +138,7 @@ class Editor(QMainWindow):
         self.setWindowIcon(QIcon(QPixmap(iconPath)))
 
     def encapsulated(self) -> bool:
-        return is_storage_file(self._filepath)
+        return is_storage_file(self._filepath.name)
 
     def refreshWindowTitle(self) -> None:
         """Refreshes the window title based on the current state
@@ -339,7 +339,7 @@ class Editor(QMainWindow):
             module.rim_to_mod(self._filepath)
 
         erf = read_erf(self._filepath)
-        erf.erf_type = ERFType.ERF if is_erf_file(self._filepath) else ERFType.MOD
+        erf.erf_type = ERFType.ERF if is_erf_file(self._filepath.name) else ERFType.MOD
 
         # MDL is a special case - we need to save the MDX file with the MDL file.
         if self._restype == ResourceType.MDL:
