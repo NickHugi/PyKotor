@@ -214,6 +214,7 @@ def get_default_paths():
                 r"C:\Program Files\LucasArts\SWKotOR",
                 r"C:\Program Files (x86)\LucasArts\SWKotOR",
                 r"C:\GOG Games\Star Wars - KotOR",
+                r"C:\Amazon Games\Library\Star Wars - Knights of the Old",
             ],
             Game.K2: [
                 r"C:\Program Files\Steam\steamapps\common\Knights of the Old Republic II",
@@ -242,6 +243,7 @@ def get_default_paths():
                 "/mnt/C/Program Files/LucasArts/SWKotOR",
                 "/mnt/C/Program Files (x86)/LucasArts/SWKotOR",
                 "/mnt/C/GOG Games/Star Wars - KotOR",
+                "/mnt/C/Amazon Games/Library/Star Wars - Knights of the Old",
             ],
             Game.K2: [
                 "~/.local/share/Steam/common/SteamApps/Knights of the Old Republic II",
