@@ -582,7 +582,7 @@ class ToolWindow(QMainWindow):
             for folder_name in self.active.override_list():
                 folder_path: CaseAwarePath = self.active.override_path() / folder_name
                 if resource.filepath().is_relative_to(folder_path) and len(subfolder) < len(folder_path.name):
-                    subfolder = folder_path.name
+                    subfolder = folder_name
             self.changeOverrideFolder(subfolder)
 
     def changeOverrideFolder(self, subfolder: str) -> None:
