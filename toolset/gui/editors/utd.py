@@ -257,7 +257,7 @@ class UTDEditor(Editor):
         self._loadUTD(UTD())
 
     def changeName(self) -> None:
-        dialog = LocalizedStringDialog(self, self._installation, self.ui.nameEdit.locstring)
+        dialog = LocalizedStringDialog(self, self._installation, self.ui.nameEdit.locstring())
         if dialog.exec_():
             self._loadLocstring(self.ui.nameEdit, dialog.locstring)
 
