@@ -225,12 +225,17 @@ class IndoorMapBuilder(QMainWindow):
         def task():
             return self._map.build(self._installation, self._kits, path)
 
-        loader = AsyncLoader(self, "Building Map...", task, "Failed to build map.")
-
-        if loader.exec_():
-            msg = f"You can warp to the game using the code 'warp {self._map.moduleId}'. "
-            msg += f"Map files can be found in:\n{path}"
-            QMessageBox(QMessageBox.Information, "Map built", msg).exec_()
+        msg = f"You can warp to the game using the code 'warp {self._map.moduleId}'. "
+        msg += f"Map files can be found in:\n{path}"
+        if is_debug_mode() and not is_frozen():
+            if task():
+                QMessageBox(QMessageBox.Information, "Map built", msg).exec_()
+            else:
+                QMessageBox(QMessageBox.Information, "Failed to build map.", msg).exec_()
+        else:
+            loader = AsyncLoader(self, "Building Map...", task, "Failed to build map.")
+            if loader.exec_():
+                QMessageBox(QMessageBox.Information, "Map built", msg).exec_()
 
     def deleteSelected(self) -> None:
         for room in self.ui.mapRenderer.selectedRooms():

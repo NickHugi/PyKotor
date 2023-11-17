@@ -6,6 +6,7 @@ from PyQt5.QtWidgets import QDialog, QMessageBox, QWidget
 
 from pykotor.common.module import Module
 from pykotor.tools import module
+from toolset.__main__ import is_debug_mode, is_frozen
 from toolset.gui.dialogs.asyncloader import AsyncLoader
 
 if TYPE_CHECKING:
@@ -90,7 +91,7 @@ class CloneModuleDialog(QDialog):
         keepSounds = self.ui.keepSoundsCheckbox.isChecked()
         keepPathing = self.ui.keepPathingCheckbox.isChecked()
 
-        def l():
+        def task():
             return module.clone_module(root, identifier, prefix, name, installation, copy_textures=copyTextures,
                                         copy_lightmaps=copyLightmaps, keep_doors=keepDoors, keep_placeables=keepPlaceables,
                                         keep_sounds=keepSounds, keep_pathing=keepPathing)
@@ -99,9 +100,12 @@ class CloneModuleDialog(QDialog):
             QMessageBox(QMessageBox.Information, "This may take a while", "You have selected to create copies of the "
                         "texture. This process may add a few extra minutes to the waiting time.").exec_()
 
-        if AsyncLoader(self, "Creating module", l, "Failed to create module").exec_():
-            QMessageBox(QMessageBox.Information, "Clone Successful",
-                        f"You can now warp to the cloned module '{identifier}'.").exec_()
+        if is_debug_mode() and not is_frozen():
+            task()
+        elif not AsyncLoader(self, "Creating module", task, "Failed to create module").exec_():
+            return
+        QMessageBox(QMessageBox.Information, "Clone Successful",
+                    f"You can now warp to the cloned module '{identifier}'.").exec_()
 
     def loadModules(self) -> None:
         """Loads module options from installed modules

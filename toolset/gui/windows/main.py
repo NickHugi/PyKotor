@@ -37,6 +37,7 @@ from pykotor.resource.formats.tpc import read_tpc, write_tpc
 from pykotor.resource.type import ResourceType
 from pykotor.tools import model
 from pykotor.tools.misc import is_bif_file, is_rim_file
+from toolset.__main__ import is_debug_mode, is_frozen
 from toolset.config import PROGRAM_VERSION, UPDATE_INFO_LINK
 from toolset.data.installation import HTInstallation
 from toolset.gui.dialogs.about import About
@@ -642,14 +643,16 @@ class ToolWindow(QMainWindow):
             # If the installation had not already been loaded previously this session, load it now
             if name not in self.installations:
 
-                def task():
+                def task() -> HTInstallation:
                     return HTInstallation(path, name, tsl, self)
 
-                loader = AsyncLoader(self, "Loading Installation", task, "Failed to load installation")
-
-                if loader.exec_():
-                    self.settings.installations()[name].path = path
-                    self.installations[name] = loader.value
+                self.settings.installations()[name].path = path
+                if is_debug_mode() and not is_frozen():
+                    self.installations[name] = task()
+                else:
+                    loader = AsyncLoader(self, "Loading Installation", task, "Failed to load installation")
+                    if loader.exec_():
+                        self.installations[name] = loader.value
 
             # If the data has been successfully been loaded, dump the data into the models
             if name in self.installations:
