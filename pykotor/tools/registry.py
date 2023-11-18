@@ -11,6 +11,7 @@ KOTOR_REG_PATHS = {
             (r"HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\Steam App 32370", "InstallLocation"),
             (r"HKEY_LOCAL_MACHINE\SOFTWARE\GOG.com\Games\1207666283", "PATH"),
             (r"HKEY_LOCAL_MACHINE\SOFTWARE\BioWare\SW\KOTOR", "InternalPath"),
+#            (r"HKEY_USERS\S-1-5-21-3288518552-3737095363-3281442775-1001\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\AmazonGames/Star Wars - Knights of the Old", "InstallLocation"),
         ],
         ProcessorArchitecture.BIT_64: [
             (r"HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\Steam App 32370", "InstallLocation"),
@@ -31,6 +32,33 @@ KOTOR_REG_PATHS = {
         ],
     },
 }
+
+# amazon's k1 reg key can be found using the below code. Doesn't store it in HKLM for some reason.
+#def find_software_key(software_name):
+#    software_keys = []
+#    with winreg.ConnectRegistry(None, winreg.HKEY_USERS) as hkey_users:
+#        i = 0
+#        while True:
+#            try:
+#                # Enumerate through the SIDs
+#                sid = winreg.EnumKey(hkey_users, i)
+#                software_path = f"{sid}\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\{software_name}"
+#                try:
+#                    with winreg.OpenKey(hkey_users, software_path) as software_key:
+#                        # If this point is reached, the software is installed under this SID
+#                        software_keys.append(software_path)
+#                except FileNotFoundError:
+#                    pass
+#                i += 1
+#            except OSError:
+#                break
+#
+#    return software_keys
+
+#software_name = "AmazonGames/Star Wars - Knights of the Old"
+#found_keys = find_software_key(software_name)
+#for key in found_keys:
+#    print("Found key:", key)
 
 
 def winreg_key(game: Game) -> list[tuple[str, str]]:
