@@ -269,16 +269,16 @@
         "--onefile",
         "--clean",
         "--noconfirm",
-        "--exclude-module numpy",
-        "--exclude-module PyQt5",
-        "--exclude-module PIL",
-        "--exclude-module matplotlib",
-        "--exclude-module multiprocessing",
-        "--exclude-module PyOpenGL",
-        "--exclude-module PyGLM",
+        "--exclude-module=numpy",
+        "--exclude-module=PyQt5",
+        "--exclude-module=PIL",
+        "--exclude-module=matplotlib",
+        "--exclude-module=multiprocessing",
+        "--exclude-module=PyOpenGL",
+        "--exclude-module=PyGLM",
         "--name=HoloPatcher",
-        "--icon=resources${pathSeparator}icons${pathSeparator}patcher_icon_v2.ico",
-        "scripts${pathSeparator}holopatcher${pathSeparator}__main__.py"
+        "--icon=Tools${pathSeparator}holopatcher${pathSeparator}resources${pathSeparator}icons${pathSeparator}patcher_icon_v2.ico",
+        "Tools${pathSeparator}holopatcher${pathSeparator}__main__.py"
       ],
       "problemMatcher": []
     },
@@ -295,11 +295,11 @@
 //        "--mingw64",
 //        "--clang",
         "--output-filename=HoloPatcher",
-        "--windows-icon-from-ico=resources${pathSeparator}icons${pathSeparator}patcher_icon_v2.ico",
+        "--windows-icon-from-ico=Tools${pathSeparator}holopatcher${pathSeparator}resources${pathSeparator}icons${pathSeparator}patcher_icon_v2.ico",
         "--remove-output",
         "--output-dir=${workspaceFolder}${pathSeparator}nuitka_dist",
         "--enable-plugin=tk-inter",
-        "scripts${pathSeparator}holopatcher${pathSeparator}__main__.py",
+        "Tools${pathSeparator}holopatcher${pathSeparator}__main__.py",
       ],
       "problemMatcher": []
     },
@@ -316,9 +316,9 @@
         "--clean",
         "--noconfirm",
         "--name=HolocronToolset",
-        "--path=${workspaceFolder}${pathSeparator}toolset",
-        "--icon=resources${pathSeparator}icons${pathSeparator}sith.ico",
-        "toolset${pathSeparator}__main__.py"
+        "--path=${workspaceFolder}${pathSeparator}tools${pathSeparator}HolocronToolset${pathSeparator}toolset",
+        "--icon=Tools${pathSeparator}HolocronToolset${pathSeparator}resources${pathSeparator}icons${pathSeparator}sith.ico",
+        "Tools${pathSeparator}HolocronToolset${pathSeparator}toolset${pathSeparator}__main__.py",
       ],
       "problemMatcher": []
     },
@@ -340,7 +340,7 @@
         "--output-dir=${workspaceFolder}${pathSeparator}nuitka_dist",
         "--include-module=pykotor",
         "--enable-plugin=pyqt5",
-        "toolset${pathSeparator}__main__.py",
+        "Tools${pathSeparator}HolocronToolset${pathSeparator}toolset${pathSeparator}__main__.py",
       ],
       "problemMatcher": []
     },
@@ -357,7 +357,7 @@
         "--clean",
         "--noconfirm",
         "--name=kotordiff",
-        "scripts${pathSeparator}kotordiff${pathSeparator}__main__.py"
+        "Tools${pathSeparator}kotordiff${pathSeparator}__main__.py"
       ],
       "problemMatcher": []
     },
@@ -374,7 +374,7 @@
         "--clean",
         "--noconfirm",
         "--name=K_BatchPatcher",
-        "scripts${pathSeparator}k_batchpatcher${pathSeparator}__main__.py"
+        "Tools${pathSeparator}k_batchpatcher${pathSeparator}__main__.py"
       ],
       "problemMatcher": []
     },
@@ -391,7 +391,7 @@
         "--clean",
         "--noconfirm",
         "--name=gui_creator",
-        "scripts${pathSeparator}guicreator${pathSeparator}__main__.py"
+        "Tools${pathSeparator}guicreator${pathSeparator}__main__.py"
       ],
       "problemMatcher": []
     },
@@ -408,7 +408,7 @@
         "--clean",
         "--noconfirm",
         "--name=mdl_decompile",
-        "scripts${pathSeparator}mdl_decompile${pathSeparator}__main__.py"
+        "Tools${pathSeparator}mdl_decompile${pathSeparator}__main__.py"
       ],
       "problemMatcher": []
     }
