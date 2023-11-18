@@ -8,16 +8,22 @@ try:
     from PyQt5.QtTest import QTest
     from PyQt5.QtWidgets import QApplication
 except (ImportError, ModuleNotFoundError):
-    QTest, QApplication = None, None
+    QTest, QApplication = None, None  # type: ignore[misc, assignment]
+
 
 if getattr(sys, "frozen", False) is False:
     pykotor_path = pathlib.Path(__file__).parents[3] / "pykotor"
-    toolset_path = pathlib.Path(__file__).parents[3] / "toolset"
-    if pykotor_path.joinpath("__init__.py").exists() or toolset_path.joinpath("__init__.py").exists():
+    if pykotor_path.joinpath("__init__.py").exists():
         working_dir = str(pykotor_path.parent)
         if working_dir in sys.path:
             sys.path.remove(working_dir)
-        sys.path.insert(0, str(pykotor_path.parent))
+        sys.path.insert(0, working_dir)
+    toolset_path = pathlib.Path(__file__).parents[3] / "Tools" / "HolocronToolset" / "toolset"
+    if toolset_path.joinpath("__init__.py").exists():
+        working_dir = str(toolset_path.parent)
+        if working_dir in sys.path:
+            sys.path.remove(working_dir)
+        sys.path.insert(0, working_dir)
 
 K1_PATH = os.environ.get("K1_PATH")
 

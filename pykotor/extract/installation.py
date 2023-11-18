@@ -283,7 +283,7 @@ class Installation:
                     )
                     resources.append(resource)  # type: ignore[assignment, call-overload, union-attr]
         if not resources or not files_list:
-            self.log.add_warning(f"No resources found at '{self.path()!s}' when loading the installation, skipping...")
+            self.log.add_warning(f"No resources found at '{path!s}' when loading the installation, skipping...")
         else:
             self.log.add_note(f"Loading '{path.name}' folder from installation...")
         return resources
