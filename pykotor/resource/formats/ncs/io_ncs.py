@@ -28,7 +28,7 @@ class NCSBinaryReader(ResourceReader):
         self._instructions: dict[int, NCSInstruction] = {}
         self._jumps: dict[NCSInstruction, int] = {}
 
-    #@autoclose
+    @autoclose
     def load(
         self,
         auto_close: bool = True,
@@ -111,9 +111,7 @@ class NCSBinaryReader(ResourceReader):
             NCSInstructionType.CPDOWNBP,
             NCSInstructionType.CPTOPBP,
         ]:
-            instruction.args.extend(
-                [self._reader.read_int32(big=True), self._reader.read_uint16(big=True)],
-            )
+            instruction.args.extend([self._reader.read_int32(big=True), self._reader.read_uint16(big=True)])
 
         elif instruction.ins_type in [NCSInstructionType.CONSTI]:
             instruction.args.extend([self._reader.read_uint32(big=True)])
@@ -129,9 +127,7 @@ class NCSBinaryReader(ResourceReader):
             instruction.args.extend([self._reader.read_uint16(big=True)])
 
         elif instruction.ins_type in [NCSInstructionType.ACTION]:
-            instruction.args.extend(
-                [self._reader.read_uint16(big=True), self._reader.read_uint8(big=True)],
-            )
+            instruction.args.extend([self._reader.read_uint16(big=True), self._reader.read_uint8(big=True)])
 
         elif instruction.ins_type in [NCSInstructionType.MOVSP]:
             instruction.args.extend([self._reader.read_int32(big=True)])
@@ -163,9 +159,7 @@ class NCSBinaryReader(ResourceReader):
             instruction.args.extend([self._reader.read_uint32(big=True)])
 
         elif instruction.ins_type in [NCSInstructionType.STORE_STATE]:
-            instruction.args.extend(
-                [self._reader.read_uint32(big=True), self._reader.read_uint32(big=True)],
-            )
+            instruction.args.extend([self._reader.read_uint32(big=True), self._reader.read_uint32(big=True)])
 
         elif instruction.ins_type in [
             NCSInstructionType.EQUALTT,
@@ -265,10 +259,19 @@ class NCSBinaryWriter(ResourceWriter):
         ]:
             size = 8
 
-        elif instruction.ins_type in [NCSInstructionType.CONSTI]:
-            size += 4
-
-        elif instruction.ins_type in [NCSInstructionType.CONSTF]:
+        elif instruction.ins_type in [
+            NCSInstructionType.CONSTI,
+            NCSInstructionType.CONSTF,
+            NCSInstructionType.MOVSP,
+            NCSInstructionType.JMP,
+            NCSInstructionType.JSR,
+            NCSInstructionType.JZ,
+            NCSInstructionType.JNZ,
+            NCSInstructionType.DECISP,
+            NCSInstructionType.INCISP,
+            NCSInstructionType.DECIBP,
+            NCSInstructionType.INCIBP,
+        ]:
             size += 4
 
         elif instruction.ins_type in [NCSInstructionType.CONSTS]:
@@ -280,35 +283,13 @@ class NCSBinaryWriter(ResourceWriter):
         elif instruction.ins_type in [NCSInstructionType.ACTION]:
             size = 5
 
-        elif instruction.ins_type in [NCSInstructionType.MOVSP]:
-            size += 4
-
-        elif instruction.ins_type in [
-            NCSInstructionType.JMP,
-            NCSInstructionType.JSR,
-            NCSInstructionType.JZ,
-            NCSInstructionType.JNZ,
-        ]:
-            size += 4
-
         elif instruction.ins_type in [NCSInstructionType.DESTRUCT]:
             size += 6
-
-        elif instruction.ins_type in [
-            NCSInstructionType.DECISP,
-            NCSInstructionType.INCISP,
-            NCSInstructionType.DECIBP,
-            NCSInstructionType.INCIBP,
-        ]:
-            size += 4
 
         elif instruction.ins_type in [NCSInstructionType.STORE_STATE]:
             size += 8
 
-        elif instruction.ins_type in [
-            NCSInstructionType.EQUALTT,
-            NCSInstructionType.NEQUALTT,
-        ]:
+        elif instruction.ins_type in [NCSInstructionType.EQUALTT, NCSInstructionType.NEQUALTT]:
             size += 2
 
         elif instruction.ins_type in [NCSInstructionType.NOP]:
