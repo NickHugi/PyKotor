@@ -49,6 +49,7 @@ def decompileScript(compiled: bytes, tsl: bool) -> str:
         ncs_decompiler_path, _ = QFileDialog.getOpenFileName(None, "Select the NCS Decompiler executable")
         ncs_decompiler_path = Path(ncs_decompiler_path)
         if not ncs_decompiler_path.exists():
+            global_settings.ncsDecompilerPath = ""
             msg = "NCS Decompiler has not been set or is invalid."
             raise NoConfigurationSetError(msg)
 
