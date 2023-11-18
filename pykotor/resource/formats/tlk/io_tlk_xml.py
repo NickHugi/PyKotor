@@ -1,10 +1,12 @@
 from __future__ import annotations
 
-import io
 from xml.etree import ElementTree
+
+from defusedxml.ElementTree import fromstring
 
 from pykotor.common.language import Language
 from pykotor.common.misc import ResRef, decode_bytes_with_fallbacks
+from pykotor.helpers.misc import indent
 from pykotor.resource.formats.tlk.tlk_data import TLK
 from pykotor.resource.type import (
     SOURCE_TYPES,
@@ -13,7 +15,6 @@ from pykotor.resource.type import (
     ResourceWriter,
     autoclose,
 )
-from pykotor.tools.indent_xml import indent
 
 
 class TLKXMLReader(ResourceReader):
@@ -34,7 +35,7 @@ class TLKXMLReader(ResourceReader):
         self._tlk = TLK()
 
         data = decode_bytes_with_fallbacks(self._reader.read_bytes(self._reader.size()))
-        xml = ElementTree.parse(io.StringIO(data)).getroot()
+        xml = fromstring(data)
 
         self._tlk.language = Language(int(xml.get("language")))
         self._tlk.resize(len(xml))

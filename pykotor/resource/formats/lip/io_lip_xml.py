@@ -1,8 +1,10 @@
 from __future__ import annotations
 
-import io
 from xml.etree import ElementTree
 
+from defusedxml.ElementTree import fromstring
+
+from pykotor.helpers.misc import indent
 from pykotor.resource.formats.lip import LIP, LIPShape
 from pykotor.resource.type import (
     SOURCE_TYPES,
@@ -11,7 +13,6 @@ from pykotor.resource.type import (
     ResourceWriter,
     autoclose,
 )
-from pykotor.tools.indent_xml import indent
 
 
 class LIPXMLReader(ResourceReader):
@@ -32,7 +33,7 @@ class LIPXMLReader(ResourceReader):
         self._lip = LIP()
 
         data = self._reader.read_bytes(self._reader.size()).decode()
-        xml_root = ElementTree.parse(io.StringIO(data)).getroot()
+        xml_root = fromstring(data)
 
         if xml_root.tag != "lip":
             msg = "The XML file that was loaded was not a valid LIP."

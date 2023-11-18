@@ -4,3 +4,4 @@ PyOpenGL~=3.1
 charset-normalizer>=2.0,<3.4
 PyGLM>=2.0,<2.8
 Pillow>=9.5,<11
+defusedxml~=0.7

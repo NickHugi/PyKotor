@@ -10,6 +10,7 @@ from pykotor.helpers.path import Path
 
 if TYPE_CHECKING:
     import os
+    from xml.etree.ElementTree import Element
 
 
 class ProcessorArchitecture(Enum):
@@ -84,3 +85,34 @@ def generate_filehash_sha256(filepath: os.PathLike | str) -> str:
             sha1_hash.update(data)
             data = f.read(65536)
     return sha1_hash.hexdigest()
+
+
+def indent(elem: Element, level=0):
+    """Indents the XML element by the given level
+    Args:
+        elem: Element - The element to indent
+        level: int - The level of indentation (default: 0).
+
+    Returns
+    -------
+        None - Indents the element in-place
+    Processing Logic:
+        - Calculate indentation string based on level
+        - If element is empty, set text to indentation
+        - If no tail, set tail to newline + indentation
+        - Recursively indent child elements with increased level
+        - If no tail after children, set tail to indentation
+        - If level and no tail, set tail to indentation.
+    """
+    i = "\n" + level * "  "
+    if len(elem):
+        if not elem.text or not elem.text.strip():
+            elem.text = f"{i}  "
+        if not elem.tail or not elem.tail.strip():
+            elem.tail = i
+        for e in elem:
+            indent(e, level + 1)
+        if not elem.tail or not elem.tail.strip():
+            elem.tail = i
+    elif level and (not elem.tail or not elem.tail.strip()):
+        elem.tail = i

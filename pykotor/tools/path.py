@@ -35,7 +35,7 @@ def simple_wrapper(fn_name, wrapped_class_type) -> Callable[..., Any]:
 
         def parse_arg(arg):
             if is_instance_or_subinstance(arg, InternalPurePath) and CaseAwarePath.should_resolve_case(arg):
-                return CaseAwarePath._get_case_sensitive_path(arg)
+                return CaseAwarePath.get_case_sensitive_path(arg)
 
             return arg
 
@@ -109,7 +109,7 @@ class CaseAwarePath(InternalPath):
     def resolve(self, strict=False):
         new_path = super().resolve(strict)
         if self.should_resolve_case(new_path):
-            new_path = self._get_case_sensitive_path(new_path)
+            new_path = self.get_case_sensitive_path(new_path)
         return new_path
 
     # Call __eq__ when using 'in' keyword
@@ -134,7 +134,7 @@ class CaseAwarePath(InternalPath):
         return (
             super().__str__()
             if pathlib.Path(self).exists()
-            else super(self.__class__, self._get_case_sensitive_path(self)).__str__()
+            else super(self.__class__, self.get_case_sensitive_path(self)).__str__()
         )
 
     def is_relative_to(self, other: PathElem) -> bool:
@@ -158,7 +158,19 @@ class CaseAwarePath(InternalPath):
         return bool(self_str.startswith(other_str))
 
     @staticmethod
-    def _get_case_sensitive_path(path: os.PathLike | str) -> CaseAwarePath:
+    def get_case_sensitive_path(path: os.PathLike | str) -> CaseAwarePath:
+        """Get a case sensitive path
+        Args:
+            path: The path to resolve case sensitivity for
+        Returns:
+            CaseAwarePath: The path with case sensitivity resolved
+        Processing Logic:
+            - Convert the path to a pathlib Path object
+            - Iterate through each path part starting from index 1
+            - Check if the current path part and the path up to that part exist
+            - If not, find the closest matching file/folder name in the existing path
+            - Return a CaseAwarePath instance with case sensitivity resolved.
+        """
         pathlib_path: pathlib.Path = pathlib.Path(path)
         parts = list(pathlib_path.parts)
 
