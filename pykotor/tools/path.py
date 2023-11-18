@@ -286,8 +286,8 @@ def find_kotor_paths_from_default() -> dict[Game, list[CaseAwarePath]]:
     os_str = platform.system()
 
     # Build hardcoded default kotor locations
-    raw_locations: dict[str, dict[Game, list[str]]] = get_default_paths()
-    locations: dict[Game, set[CaseAwarePath]] = {
+    raw_locations = get_default_paths()
+    locations = {
         game: {case_path for case_path in (CaseAwarePath(path).resolve() for path in paths) if case_path.exists()}
         for game, paths in raw_locations.get(os_str, {}).items()
     }
