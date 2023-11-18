@@ -134,7 +134,7 @@
         "label": "pylint: toolset",
         "dependsOn": ["requirements.txt", "install_pylint"],
         "type": "shell",
-        "command": "${command:python.interpreterPath} -m pylint --disable=C0301,C0302,C0115,C0116,R0913,C0114,R0903,R0902,W0212,R0914,R0904,W0613,E0611,C0415,I1101 toolset",
+        "command": "${command:python.interpreterPath} -m pylint --disable=C0301,C0302,C0115,C0116,R0913,C0114,R0903,R0902,W0212,R0914,R0904,W0613,E0611,C0415,I1101 Tools/HolocronToolset/toolset",
         "presentation": {
             "reveal": "never",
             "panel": "shared"
