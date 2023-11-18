@@ -19,6 +19,17 @@ PATH_TYPES = Union[PathElem, List[PathElem], Tuple[PathElem, ...]]
 
 
 def simple_wrapper(fn_name, wrapped_class_type) -> Callable[..., Any]:
+    """Wraps a function to handle case-sensitive pathlib.PurePath arguments
+    Args:
+        fn_name: The name of the function to wrap
+        wrapped_class_type: The class type that the function belongs to
+    Returns:
+        Callable[..., Any]: A wrapped function with the same signature as the original
+    Processing Logic:
+        1. Gets the original function from the class's _original_methods attribute
+        2. Parses arguments that are paths, resolving case if needed
+        3. Calls the original function with the parsed arguments.
+    """
     def wrapped(self, *args, **kwargs) -> Any:
         orig_fn = wrapped_class_type._original_methods[fn_name]
 
@@ -47,6 +58,19 @@ def simple_wrapper(fn_name, wrapped_class_type) -> Callable[..., Any]:
 
 def create_case_insensitive_pathlib_class(cls) -> None:
     # Create a dictionary that'll hold the original methods for this class
+    """Wraps methods of a pathlib class to be case insensitive
+    Args:
+        cls: The pathlib class to wrap
+    Returns:
+        None
+    Processing Logic:
+        1. Create a dictionary to store original methods
+        2. Get the method resolution order and exclude current class
+        3. Store already wrapped methods to avoid wrapping multiple times
+        4. Loop through parent classes and methods
+        5. Check if method and not wrapped before
+        6. Add method to wrapped dictionary and reassign with wrapper.
+    """
     cls._original_methods = {}
     mro = cls.mro()  # Gets the method resolution order
     parent_classes = mro[1:-1]  # Exclude the current class itself
