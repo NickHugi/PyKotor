@@ -1,11 +1,11 @@
-# scripts/settings.py
+# Tools/settings.py
 # Allows easy importing of the pykotor library for end user convenience
 import sys
 from pathlib import Path
 
 import pkg_resources
 
-# whether to use the PIP pykotor package or the local folder in project root (./scripts/../pykotor). If set to None, will use default behavior.
+# whether to use the PIP pykotor package or the local folder in project root (./Tools/../pykotor). If set to None, will use default behavior.
 PYKOTOR_LIBRARY_LOOKUP = "pip"  # set to either "pip", "local", or None.
 SHOW_DEBUG_OUTPUT = False
 

@@ -24,7 +24,7 @@ from pykotor.resource.formats.tlk import TLK, read_tlk, write_tlk
 from pykotor.resource.formats.tpc.txi_data import write_bitmap_font
 from pykotor.tools.misc import is_capsule_file
 from pykotor.tools.path import CaseAwarePath
-from scripts.k_batchpatcher.translate.language_translator import TranslationOption, Translator, get_language_code
+from Tools.k_batchpatcher.translate.language_translator import TranslationOption, Translator, get_language_code
 
 if TYPE_CHECKING:
     import os

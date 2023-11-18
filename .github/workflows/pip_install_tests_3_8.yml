@@ -52,4 +52,4 @@ jobs:
       uses: actions/checkout@v2
 
     - name: Install k_batchpatcher
-      run: pip install -r ./scripts/k_batchpatcher/requirements.txt
+      run: pip install -r ./Tools/k_batchpatcher/requirements.txt

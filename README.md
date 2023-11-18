@@ -35,7 +35,7 @@ pip install -r toolset/requirements.txt
 ```
 Then, you can run any entry-point scripts, such as HoloPatcher and the Toolset, like this:
 ```bash
-python -m scripts.holopatcher
+python -m Tools.holopatcher
 python -m toolset
 ```
 

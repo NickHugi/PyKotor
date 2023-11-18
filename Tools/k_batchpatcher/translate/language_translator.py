@@ -6,7 +6,7 @@ from enum import Enum
 import requests
 
 from pykotor.common.language import Language
-from scripts.k_batchpatcher.translate.deepl_scraper import deepl_tr
+from Tools.k_batchpatcher.translate.deepl_scraper import deepl_tr
 
 # region LoadTranslatorPackages
 try:
