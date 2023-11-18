@@ -1,15 +1,23 @@
+from __future__ import annotations
+
 import time
+from typing import TYPE_CHECKING
 
 from PyQt5 import QtCore
 from PyQt5.QtCore import QBuffer, QIODevice
-from PyQt5.QtGui import QCloseEvent
 from PyQt5.QtMultimedia import QMediaContent, QMediaPlayer
 from PyQt5.QtWidgets import QFileDialog, QMainWindow, QWidget
 
 from pykotor.common.stream import BinaryReader
 from pykotor.extract.file import ResourceIdentifier
-from pykotor.resource.type import ResourceType
 from pykotor.tools import sound
+
+if TYPE_CHECKING:
+    import os
+
+    from PyQt5.QtGui import QCloseEvent
+
+    from pykotor.resource.type import ResourceType
 
 
 class AudioPlayer(QMainWindow):
@@ -32,7 +40,7 @@ class AudioPlayer(QMainWindow):
         self.player.durationChanged.connect(self.durationChanged)
         self.player.positionChanged.connect(self.positionChanged)
 
-    def load(self, filepath: str, resname: str, restype: ResourceType, data: bytes):
+    def load(self, filepath: os.PathLike | str, resname: str, restype: ResourceType, data: bytes):
         data = sound.fix_audio(data)
 
         self.player.stop()
@@ -69,5 +77,5 @@ class AudioPlayer(QMainWindow):
         position = self.ui.timeSlider.value()
         self.player.setPosition(position)
 
-    def closeEvent(self, e: QCloseEvent) -> None:
+    def closeEvent(self, e: QCloseEvent | None) -> None:
         self.player.stop()
