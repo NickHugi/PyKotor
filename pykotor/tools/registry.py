@@ -59,6 +59,7 @@ KOTOR_REG_PATHS = {
 #found_keys = find_software_key(software_name)
 #for key in found_keys:
 #    print("Found key:", key)
+#    print(f"Found amazon kotor path: {winreg.QueryValueEx(key, "InstallLocation")}")
 
 
 def winreg_key(game: Game) -> list[tuple[str, str]]:
