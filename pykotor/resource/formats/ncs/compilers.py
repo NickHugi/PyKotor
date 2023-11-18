@@ -22,7 +22,7 @@ class InbuiltNCSCompiler(NCSCompiler):
         write_ncs(ncs, output_path)
 
 
-class ExternalNCSCompiler(NCSCompiler):  # TODO: This currently uses the nwnnsscomp.exe modified for TSLPatcher. Needs to support the other versions as well.
+class ExternalNCSCompiler(NCSCompiler):
     def __init__(self, nwnnsscomp_path: os.PathLike | str):
         self.nwnnsscomp_path: Path = nwnnsscomp_path if isinstance(nwnnsscomp_path, Path) else Path(nwnnsscomp_path)
         self.filehash: str | None = None
