@@ -2,6 +2,7 @@ import multiprocessing
 import os
 import pathlib
 import sys
+import tempfile
 from types import TracebackType
 
 from PyQt5.QtCore import QThread
@@ -16,7 +17,13 @@ def onAppCrash(e: BaseException, value: str, tback: TracebackType):
     raise e
 
 def is_frozen() -> bool:
-    return getattr(sys, "frozen", False)
+    # Check for sys.frozen attribute
+    if getattr(sys, "frozen", False):
+        return True
+    # Check if the executable is in a temp directory (common for frozen apps)
+    if tempfile.gettempdir() in sys.executable:
+        return True
+    return False
 
 def is_debug_mode() -> bool:
     ret = False
