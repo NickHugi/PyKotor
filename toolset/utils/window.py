@@ -19,7 +19,8 @@ windows: list[QWidget] = []
 def addWindow(window: QWidget) -> None:
     def removeFromList(a0):
         QWidget.closeEvent(window, a0)
-        windows.remove(window)
+        if window in windows:
+            windows.remove(window)
 
     windows.append(window)
     window.closeEvent = removeFromList
