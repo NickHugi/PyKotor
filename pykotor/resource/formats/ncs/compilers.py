@@ -126,6 +126,18 @@ class ExternalNCSCompiler(NCSCompiler):  # TODO: This currently uses the nwnnssc
                 cwd=str(self.nwnnsscomp_path.parent),
                 timeout=15,
             )
-        else:
-            return False
+        else  # dencs? what is this?
+            try:
+                gameIndex = "--kotor2" if game == Game.K2 else "--kotor"
+                command = [str(self.nwnnsscomp_path), gameIndex, str(source_filepath)]
+
+                # Execute the command and redirect the output directly to a file
+                process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
+                output, error = process.communicate()
+                if process.returncode:
+                    raise ValueError(error.decode())
+                with output_filepath.open("w") as file:
+                    file.write(output.decode(errors="ignore"))
+            except Exception:
+                return False
         return True
