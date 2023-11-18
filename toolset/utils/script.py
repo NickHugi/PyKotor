@@ -68,6 +68,8 @@ def decompileScript(compiled: bytes, tsl: bool) -> str:
     finally:
         global_settings.ncsDecompilerPath = None
 
+    return ""
+
 
 def compileScript(source: str, tsl: bool) -> bytes:
     """Returns the NCS bytes of compiled source script using either nwnnsscomp.exe (Windows only) or our built-in compiler.
