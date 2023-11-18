@@ -14,76 +14,76 @@ class NCSInstructionTypeValue(NamedTuple):
 
 
 class NCSByteCode(IntEnum):
-    NOP = 0x2D
-    CPDOWNSP = 0x01
-    RSADDx = 0x02
-    CPTOPSP = 0x03
-    CONSTx = 0x04
-    ACTION = 0x05
-    LOGANDxx = 0x06
-    LOGORxx = 0x07
-    INCORxx = 0x08
-    EXCORxx = 0x09
-    BOOLANDxx = 0x0A
-    EQUALxx = 0x0B
-    NEQUALxx = 0x0C
-    GEQxx = 0x0D
-    GTxx = 0x0E
-    LTxx = 0x0F
-    LEQxx = 0x10
-    SHLEFTxx = 0x11
-    SHRIGHTxx = 0x12
-    USHRIGHTxx = 0x13
-    ADDxx = 0x14
-    SUBxx = 0x15
-    MULxx = 0x16
-    DIVxx = 0x17
-    MODxx = 0x18
-    NEGx = 0x19
-    COMPx = 0x1A
-    MOVSP = 0x1B
-    JMP = 0x1D
-    JSR = 0x1E
-    JZ = 0x1F
-    RETN = 0x20
-    DESTRUCT = 0x21
-    NOTx = 0x22
-    DECxSP = 0x23
-    INCxSP = 0x24
-    JNZ = 0x25
-    CPDOWNBP = 0x26
-    CPTOPBP = 0x27
-    DECxBP = 0x28
-    INCxBP = 0x29
-    SAVEBP = 0x2A
-    RESTOREBP = 0x2B
+    NOP         = 0x2D
+    CPDOWNSP    = 0x01
+    RSADDx      = 0x02
+    CPTOPSP     = 0x03
+    CONSTx      = 0x04
+    ACTION      = 0x05
+    LOGANDxx    = 0x06
+    LOGORxx     = 0x07
+    INCORxx     = 0x08
+    EXCORxx     = 0x09
+    BOOLANDxx   = 0x0A
+    EQUALxx     = 0x0B
+    NEQUALxx    = 0x0C
+    GEQxx       = 0x0D
+    GTxx        = 0x0E
+    LTxx        = 0x0F
+    LEQxx       = 0x10
+    SHLEFTxx    = 0x11
+    SHRIGHTxx   = 0x12
+    USHRIGHTxx  = 0x13
+    ADDxx       = 0x14
+    SUBxx       = 0x15
+    MULxx       = 0x16
+    DIVxx       = 0x17
+    MODxx       = 0x18
+    NEGx        = 0x19
+    COMPx       = 0x1A
+    MOVSP       = 0x1B
+    JMP         = 0x1D
+    JSR         = 0x1E
+    JZ          = 0x1F
+    RETN        = 0x20
+    DESTRUCT    = 0x21
+    NOTx        = 0x22
+    DECxSP      = 0x23
+    INCxSP      = 0x24
+    JNZ         = 0x25
+    CPDOWNBP    = 0x26
+    CPTOPBP     = 0x27
+    DECxBP      = 0x28
+    INCxBP      = 0x29
+    SAVEBP      = 0x2A
+    RESTOREBP   = 0x2B
     STORE_STATE = 0x2C
-    NOP2 = 0x2D
+    NOP2        = 0x2D
 
 
 class NCSInstructionQualifier(IntEnum):
-    Int = 0x03
-    Float = 0x04
-    String = 0x05
-    Object = 0x06
-    Effect = 0x10
-    Event = 0x11
-    Location = 0x12
-    Talent = 0x13
-    IntInt = 0x20
-    FloatFloat = 0x21
-    ObjectObject = 0x22
-    StringString = 0x23
-    StructStruct = 0x24
-    IntFloat = 0x25
-    FloatInt = 0x26
-    EffectEffect = 0x30
-    EventEvent = 0x31
+    Int              = 0x03
+    Float            = 0x04
+    String           = 0x05
+    Object           = 0x06
+    Effect           = 0x10
+    Event            = 0x11
+    Location         = 0x12
+    Talent           = 0x13
+    IntInt           = 0x20
+    FloatFloat       = 0x21
+    ObjectObject     = 0x22
+    StringString     = 0x23
+    StructStruct     = 0x24
+    IntFloat         = 0x25
+    FloatInt         = 0x26
+    EffectEffect     = 0x30
+    EventEvent       = 0x31
     LocationLocation = 0x32
-    TalentTalent = 0x33
-    VectorVector = 0x3A
-    VectorFloat = 0x3B
-    FloatVector = 0x3C
+    TalentTalent     = 0x33
+    VectorVector     = 0x3A
+    VectorFloat      = 0x3B
+    FloatVector      = 0x3C
 
 
 class NCSInstructionType(Enum):
@@ -93,202 +93,73 @@ class NCSInstructionType(Enum):
     RSADDF = NCSInstructionTypeValue(NCSByteCode.RSADDx, NCSInstructionQualifier.Float)
     RSADDS = NCSInstructionTypeValue(NCSByteCode.RSADDx, NCSInstructionQualifier.String)
     RSADDO = NCSInstructionTypeValue(NCSByteCode.RSADDx, NCSInstructionQualifier.Object)
-    RSADDEFF = NCSInstructionTypeValue(
-        NCSByteCode.RSADDx,
-        NCSInstructionQualifier.Effect,
-    )
-    RSADDEVT = NCSInstructionTypeValue(
-        NCSByteCode.RSADDx,
-        NCSInstructionQualifier.Event,
-    )
-    RSADDLOC = NCSInstructionTypeValue(
-        NCSByteCode.RSADDx,
-        NCSInstructionQualifier.Location,
-    )
-    RSADDTAL = NCSInstructionTypeValue(
-        NCSByteCode.RSADDx,
-        NCSInstructionQualifier.Talent,
-    )
+    RSADDEFF = NCSInstructionTypeValue(NCSByteCode.RSADDx, NCSInstructionQualifier.Effect)
+    RSADDEVT = NCSInstructionTypeValue(NCSByteCode.RSADDx, NCSInstructionQualifier.Event)
+    RSADDLOC = NCSInstructionTypeValue(NCSByteCode.RSADDx, NCSInstructionQualifier.Location)
+    RSADDTAL = NCSInstructionTypeValue(NCSByteCode.RSADDx, NCSInstructionQualifier.Talent)
     CPTOPSP = NCSInstructionTypeValue(NCSByteCode.CPTOPSP, 0x01)
     CONSTI = NCSInstructionTypeValue(NCSByteCode.CONSTx, NCSInstructionQualifier.Int)
     CONSTF = NCSInstructionTypeValue(NCSByteCode.CONSTx, NCSInstructionQualifier.Float)
     CONSTS = NCSInstructionTypeValue(NCSByteCode.CONSTx, NCSInstructionQualifier.String)
     CONSTO = NCSInstructionTypeValue(NCSByteCode.CONSTx, NCSInstructionQualifier.Object)
     ACTION = NCSInstructionTypeValue(NCSByteCode.ACTION, 0x00)
-    LOGANDII = NCSInstructionTypeValue(
-        NCSByteCode.LOGANDxx,
-        NCSInstructionQualifier.IntInt,
-    )
-    LOGORII = NCSInstructionTypeValue(
-        NCSByteCode.LOGORxx,
-        NCSInstructionQualifier.IntInt,
-    )
-    INCORII = NCSInstructionTypeValue(
-        NCSByteCode.INCORxx,
-        NCSInstructionQualifier.IntInt,
-    )
-    EXCORII = NCSInstructionTypeValue(
-        NCSByteCode.EXCORxx,
-        NCSInstructionQualifier.IntInt,
-    )
-    BOOLANDII = NCSInstructionTypeValue(
-        NCSByteCode.BOOLANDxx,
-        NCSInstructionQualifier.IntInt,
-    )
-    EQUALII = NCSInstructionTypeValue(
-        NCSByteCode.EQUALxx,
-        NCSInstructionQualifier.IntInt,
-    )
-    EQUALFF = NCSInstructionTypeValue(
-        NCSByteCode.EQUALxx,
-        NCSInstructionQualifier.FloatFloat,
-    )
-    EQUALSS = NCSInstructionTypeValue(
-        NCSByteCode.EQUALxx,
-        NCSInstructionQualifier.StringString,
-    )
-    EQUALOO = NCSInstructionTypeValue(
-        NCSByteCode.EQUALxx,
-        NCSInstructionQualifier.ObjectObject,
-    )
-    EQUALTT = NCSInstructionTypeValue(
-        NCSByteCode.EQUALxx,
-        NCSInstructionQualifier.StructStruct,
-    )
-    EQUALEFFEFF = NCSInstructionTypeValue(
-        NCSByteCode.EQUALxx,
-        NCSInstructionQualifier.EffectEffect,
-    )
-    EQUALEVTEVT = NCSInstructionTypeValue(
-        NCSByteCode.EQUALxx,
-        NCSInstructionQualifier.EventEvent,
-    )
-    EQUALLOCLOC = NCSInstructionTypeValue(
-        NCSByteCode.EQUALxx,
-        NCSInstructionQualifier.LocationLocation,
-    )
-    EQUALTALTAL = NCSInstructionTypeValue(
-        NCSByteCode.EQUALxx,
-        NCSInstructionQualifier.TalentTalent,
-    )
-    NEQUALII = NCSInstructionTypeValue(
-        NCSByteCode.NEQUALxx,
-        NCSInstructionQualifier.IntInt,
-    )
-    NEQUALFF = NCSInstructionTypeValue(
-        NCSByteCode.NEQUALxx,
-        NCSInstructionQualifier.FloatFloat,
-    )
-    NEQUALSS = NCSInstructionTypeValue(
-        NCSByteCode.NEQUALxx,
-        NCSInstructionQualifier.StringString,
-    )
-    NEQUALOO = NCSInstructionTypeValue(
-        NCSByteCode.NEQUALxx,
-        NCSInstructionQualifier.ObjectObject,
-    )
-    NEQUALTT = NCSInstructionTypeValue(
-        NCSByteCode.NEQUALxx,
-        NCSInstructionQualifier.StructStruct,
-    )
-    NEQUALEFFEFF = NCSInstructionTypeValue(
-        NCSByteCode.NEQUALxx,
-        NCSInstructionQualifier.EffectEffect,
-    )
-    NEQUALEVTEVT = NCSInstructionTypeValue(
-        NCSByteCode.NEQUALxx,
-        NCSInstructionQualifier.EventEvent,
-    )
-    NEQUALLOCLOC = NCSInstructionTypeValue(
-        NCSByteCode.NEQUALxx,
-        NCSInstructionQualifier.LocationLocation,
-    )
-    NEQUALTALTAL = NCSInstructionTypeValue(
-        NCSByteCode.NEQUALxx,
-        NCSInstructionQualifier.TalentTalent,
-    )
+    LOGANDII = NCSInstructionTypeValue(NCSByteCode.LOGANDxx, NCSInstructionQualifier.IntInt)
+    LOGORII = NCSInstructionTypeValue(NCSByteCode.LOGORxx, NCSInstructionQualifier.IntInt)
+    INCORII = NCSInstructionTypeValue(NCSByteCode.INCORxx, NCSInstructionQualifier.IntInt)
+    EXCORII = NCSInstructionTypeValue(NCSByteCode.EXCORxx, NCSInstructionQualifier.IntInt)
+    BOOLANDII = NCSInstructionTypeValue(NCSByteCode.BOOLANDxx, NCSInstructionQualifier.IntInt)
+    EQUALII = NCSInstructionTypeValue(NCSByteCode.EQUALxx, NCSInstructionQualifier.IntInt)
+    EQUALFF = NCSInstructionTypeValue(NCSByteCode.EQUALxx, NCSInstructionQualifier.FloatFloat)
+    EQUALSS = NCSInstructionTypeValue(NCSByteCode.EQUALxx, NCSInstructionQualifier.StringString)
+    EQUALOO = NCSInstructionTypeValue(NCSByteCode.EQUALxx, NCSInstructionQualifier.ObjectObject)
+    EQUALTT = NCSInstructionTypeValue(NCSByteCode.EQUALxx, NCSInstructionQualifier.StructStruct)
+    EQUALEFFEFF = NCSInstructionTypeValue(NCSByteCode.EQUALxx, NCSInstructionQualifier.EffectEffect)
+    EQUALEVTEVT = NCSInstructionTypeValue(NCSByteCode.EQUALxx, NCSInstructionQualifier.EventEvent)
+    EQUALLOCLOC = NCSInstructionTypeValue(NCSByteCode.EQUALxx, NCSInstructionQualifier.LocationLocation)
+    EQUALTALTAL = NCSInstructionTypeValue(NCSByteCode.EQUALxx, NCSInstructionQualifier.TalentTalent)
+    NEQUALII = NCSInstructionTypeValue(NCSByteCode.NEQUALxx, NCSInstructionQualifier.IntInt)
+    NEQUALFF = NCSInstructionTypeValue(NCSByteCode.NEQUALxx, NCSInstructionQualifier.FloatFloat)
+    NEQUALSS = NCSInstructionTypeValue(NCSByteCode.NEQUALxx, NCSInstructionQualifier.StringString)
+    NEQUALOO = NCSInstructionTypeValue(NCSByteCode.NEQUALxx, NCSInstructionQualifier.ObjectObject)
+    NEQUALTT = NCSInstructionTypeValue(NCSByteCode.NEQUALxx, NCSInstructionQualifier.StructStruct)
+    NEQUALEFFEFF = NCSInstructionTypeValue(NCSByteCode.NEQUALxx, NCSInstructionQualifier.EffectEffect)
+    NEQUALEVTEVT = NCSInstructionTypeValue(NCSByteCode.NEQUALxx, NCSInstructionQualifier.EventEvent)
+    NEQUALLOCLOC = NCSInstructionTypeValue(NCSByteCode.NEQUALxx, NCSInstructionQualifier.LocationLocation)
+    NEQUALTALTAL = NCSInstructionTypeValue(NCSByteCode.NEQUALxx, NCSInstructionQualifier.TalentTalent)
     GEQII = NCSInstructionTypeValue(NCSByteCode.GEQxx, NCSInstructionQualifier.IntInt)
-    GEQFF = NCSInstructionTypeValue(
-        NCSByteCode.GEQxx,
-        NCSInstructionQualifier.FloatFloat,
-    )
+    GEQFF = NCSInstructionTypeValue(NCSByteCode.GEQxx, NCSInstructionQualifier.FloatFloat)
     GTII = NCSInstructionTypeValue(NCSByteCode.GTxx, NCSInstructionQualifier.IntInt)
     GTFF = NCSInstructionTypeValue(NCSByteCode.GTxx, NCSInstructionQualifier.FloatFloat)
     LTII = NCSInstructionTypeValue(NCSByteCode.LTxx, NCSInstructionQualifier.IntInt)
     LTFF = NCSInstructionTypeValue(NCSByteCode.LTxx, NCSInstructionQualifier.FloatFloat)
     LEQII = NCSInstructionTypeValue(NCSByteCode.LEQxx, NCSInstructionQualifier.IntInt)
-    LEQFF = NCSInstructionTypeValue(
-        NCSByteCode.LEQxx,
-        NCSInstructionQualifier.FloatFloat,
-    )
-    SHLEFTII = NCSInstructionTypeValue(
-        NCSByteCode.SHLEFTxx,
-        NCSInstructionQualifier.IntInt,
-    )
-    SHRIGHTII = NCSInstructionTypeValue(
-        NCSByteCode.SHRIGHTxx,
-        NCSInstructionQualifier.IntInt,
-    )
-    USHRIGHTII = NCSInstructionTypeValue(
-        NCSByteCode.USHRIGHTxx,
-        NCSInstructionQualifier.IntInt,
-    )
+    LEQFF = NCSInstructionTypeValue(NCSByteCode.LEQxx, NCSInstructionQualifier.FloatFloat)
+    SHLEFTII = NCSInstructionTypeValue(NCSByteCode.SHLEFTxx, NCSInstructionQualifier.IntInt)
+    SHRIGHTII = NCSInstructionTypeValue(NCSByteCode.SHRIGHTxx, NCSInstructionQualifier.IntInt)
+    USHRIGHTII = NCSInstructionTypeValue(NCSByteCode.USHRIGHTxx, NCSInstructionQualifier.IntInt)
     ADDII = NCSInstructionTypeValue(NCSByteCode.ADDxx, NCSInstructionQualifier.IntInt)
     ADDIF = NCSInstructionTypeValue(NCSByteCode.ADDxx, NCSInstructionQualifier.IntFloat)
     ADDFI = NCSInstructionTypeValue(NCSByteCode.ADDxx, NCSInstructionQualifier.FloatInt)
-    ADDFF = NCSInstructionTypeValue(
-        NCSByteCode.ADDxx,
-        NCSInstructionQualifier.FloatFloat,
-    )
-    ADDSS = NCSInstructionTypeValue(
-        NCSByteCode.ADDxx,
-        NCSInstructionQualifier.StringString,
-    )
-    ADDVV = NCSInstructionTypeValue(
-        NCSByteCode.ADDxx,
-        NCSInstructionQualifier.VectorVector,
-    )
+    ADDFF = NCSInstructionTypeValue(NCSByteCode.ADDxx, NCSInstructionQualifier.FloatFloat)
+    ADDSS = NCSInstructionTypeValue(NCSByteCode.ADDxx, NCSInstructionQualifier.StringString)
+    ADDVV = NCSInstructionTypeValue(NCSByteCode.ADDxx, NCSInstructionQualifier.VectorVector)
     SUBII = NCSInstructionTypeValue(NCSByteCode.SUBxx, NCSInstructionQualifier.IntInt)
     SUBIF = NCSInstructionTypeValue(NCSByteCode.SUBxx, NCSInstructionQualifier.IntFloat)
     SUBFI = NCSInstructionTypeValue(NCSByteCode.SUBxx, NCSInstructionQualifier.FloatInt)
-    SUBFF = NCSInstructionTypeValue(
-        NCSByteCode.SUBxx,
-        NCSInstructionQualifier.FloatFloat,
-    )
-    SUBVV = NCSInstructionTypeValue(
-        NCSByteCode.SUBxx,
-        NCSInstructionQualifier.VectorVector,
-    )
+    SUBFF = NCSInstructionTypeValue(NCSByteCode.SUBxx, NCSInstructionQualifier.FloatFloat)
+    SUBVV = NCSInstructionTypeValue(NCSByteCode.SUBxx, NCSInstructionQualifier.VectorVector)
     MULII = NCSInstructionTypeValue(NCSByteCode.MULxx, NCSInstructionQualifier.IntInt)
     MULIF = NCSInstructionTypeValue(NCSByteCode.MULxx, NCSInstructionQualifier.IntFloat)
     MULFI = NCSInstructionTypeValue(NCSByteCode.MULxx, NCSInstructionQualifier.FloatInt)
-    MULFF = NCSInstructionTypeValue(
-        NCSByteCode.MULxx,
-        NCSInstructionQualifier.FloatFloat,
-    )
-    MULVF = NCSInstructionTypeValue(
-        NCSByteCode.MULxx,
-        NCSInstructionQualifier.VectorFloat,
-    )
-    MULFV = NCSInstructionTypeValue(
-        NCSByteCode.MULxx,
-        NCSInstructionQualifier.FloatVector,
-    )
+    MULFF = NCSInstructionTypeValue(NCSByteCode.MULxx, NCSInstructionQualifier.FloatFloat)
+    MULVF = NCSInstructionTypeValue(NCSByteCode.MULxx, NCSInstructionQualifier.VectorFloat)
+    MULFV = NCSInstructionTypeValue(NCSByteCode.MULxx, NCSInstructionQualifier.FloatVector)
     DIVII = NCSInstructionTypeValue(NCSByteCode.DIVxx, NCSInstructionQualifier.IntInt)
     DIVIF = NCSInstructionTypeValue(NCSByteCode.DIVxx, NCSInstructionQualifier.IntFloat)
     DIVFI = NCSInstructionTypeValue(NCSByteCode.DIVxx, NCSInstructionQualifier.FloatInt)
-    DIVFF = NCSInstructionTypeValue(
-        NCSByteCode.DIVxx,
-        NCSInstructionQualifier.FloatFloat,
-    )
-    DIVVF = NCSInstructionTypeValue(
-        NCSByteCode.DIVxx,
-        NCSInstructionQualifier.VectorFloat,
-    )
-    DIVFV = NCSInstructionTypeValue(
-        NCSByteCode.DIVxx,
-        NCSInstructionQualifier.FloatVector,
-    )
+    DIVFF = NCSInstructionTypeValue(NCSByteCode.DIVxx, NCSInstructionQualifier.FloatFloat)
+    DIVVF = NCSInstructionTypeValue(NCSByteCode.DIVxx, NCSInstructionQualifier.VectorFloat)
+    DIVFV = NCSInstructionTypeValue(NCSByteCode.DIVxx, NCSInstructionQualifier.FloatVector)
     MODII = NCSInstructionTypeValue(NCSByteCode.MODxx, NCSInstructionQualifier.IntInt)
     NEGI = NCSInstructionTypeValue(NCSByteCode.NEGx, NCSInstructionQualifier.Int)
     NEGF = NCSInstructionTypeValue(NCSByteCode.NEGx, NCSInstructionQualifier.Float)
@@ -332,6 +203,25 @@ class NCS:
         jump: NCSInstruction | None = None,
         index: int | None = None,
     ) -> NCSInstruction:
+        """Adds an instruction to the program.
+
+        Args:
+        ----
+            instruction_type: The type of instruction to add
+            args: The arguments for the instruction
+            jump: The jump target for this instruction
+            index: The index to insert the instruction at.
+
+        Returns:
+        -------
+            instruction: The added instruction
+
+        Processing Logic:
+        - Create a new NCSInstruction object from the parameters
+        - Insert the instruction into the instructions list at the given index if provided
+        - Otherwise append the instruction to the end of the list
+        - Return the added instruction.
+        """
         instruction = NCSInstruction(instruction_type, args, jump)
         self.instructions.insert(
             index,
@@ -344,26 +234,51 @@ class NCS:
         return [inst for inst in self.instructions if inst.jump is target]
 
     def optimize(self, optimizers: list[NCSOptimizer]) -> None:
-        """The `optimize` function takes a list of optimizers and applies each optimizer to optimize the
-        current object.
+        """Optimize the model using the provided optimizers.
 
-        :param optimizers: A list of NCSOptimizer objects
-        :type optimizers: list[NCSOptimizer]
+        Args:
+        ----
+            optimizers: List of optimizers to optimize the model
+
+        Processing Logic:
+        - Loop through each optimizer in the list
+        - Call the optimize method on each optimizer passing the model
+        - The optimizer will perform optimization on the model.
         """
         for optimizer in optimizers:
             optimizer.optimize(self)
 
     def merge(self, other: NCS) -> None:
-        """The `merge` function takes another `NCS` object and appends its instructions to the instructions of
-        the current object.
+        """Merge instructions from another NCS object into this one.
 
-        :param other: The parameter "other" is of type NCS, which is likely a custom class or data structure
-        :type other: NCS
+        Args:
+        ----
+            other: NCS object to merge instructions from.
+
+        Processing Logic:
+        - Extend self.instructions list with other.instructions list to combine instruction sets
+        - Modifies instructions of the calling NCS object directly rather than returning new object
+        - Other NCS object is not modified, only its instructions are copied over
+        - Ensures all instructions from both NCS objects are now part of single combined set.
         """
         self.instructions.extend(other.instructions)
 
 
 class NCSInstruction:
+    """Initialize a NCS instruction object.
+
+    Args:
+    ----
+        ins_type: NCS instruction type
+        args: List of arguments
+        jump: Jump target instruction
+
+    Initializes a NCS instruction object with provided attributes:
+        - Sets instruction type
+        - Sets jump target if provided
+        - Sets args list if provided.
+    """
+
     def __init__(
         self,
         ins_type: NCSInstructionType = NCSInstructionType.NOP,
