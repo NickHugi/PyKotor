@@ -7,7 +7,7 @@ from PyQt5.QtGui import QColor
 from PyQt5.QtWidgets import QDialog, QDialogButtonBox, QListWidgetItem, QWidget
 
 from pykotor.common.stream import BinaryWriter
-from pykotor.helpers.path import Path
+from pykotor.utility.path import Path
 from pykotor.resource.formats.erf import read_erf, write_erf
 from pykotor.resource.formats.rim import read_rim, write_rim
 from pykotor.resource.generics.utc import UTC, bytes_utc

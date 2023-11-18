@@ -14,7 +14,7 @@ if getattr(sys, "frozen", False) is False:
 from pykotor.common.geometry import Vector3, Vector4
 from pykotor.common.language import LocalizedString
 from pykotor.common.misc import ResRef
-from pykotor.helpers.path import PureWindowsPath
+from pykotor.utility.path import PureWindowsPath
 from pykotor.resource.formats.gff import GFF, GFFFieldType, GFFList
 from pykotor.resource.formats.gff.gff_auto import bytes_gff, read_gff
 from pykotor.resource.formats.gff.gff_data import GFFStruct

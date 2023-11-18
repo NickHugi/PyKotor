@@ -7,7 +7,7 @@ from typing import Callable
 from pykotor.common.language import Language
 from pykotor.common.misc import ResRef
 from pykotor.resource.type import ResourceType
-from pykotor.tools.misc import compare_and_format, format_text
+from pykotor.utility.string import compare_and_format, format_text
 
 
 class TLK:

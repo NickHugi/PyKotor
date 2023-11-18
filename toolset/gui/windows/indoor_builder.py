@@ -41,7 +41,7 @@ from PyQt5.QtWidgets import (
 
 from pykotor.common.geometry import Vector2, Vector3
 from pykotor.common.stream import BinaryReader, BinaryWriter
-from pykotor.helpers.path import Path, PurePath
+from pykotor.utility.path import Path, PurePath
 from toolset.__main__ import is_debug_mode, is_frozen
 from toolset.config import UPDATE_INFO_LINK
 from toolset.data.indoorkit import Kit, KitComponent, load_kits

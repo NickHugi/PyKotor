@@ -18,7 +18,7 @@ if getattr(sys, "frozen", False) is False:
         sys.path.insert(0, working_dir)
 
 from pykotor.extract.capsule import Capsule
-from pykotor.helpers.path import Path, PureWindowsPath
+from pykotor.utility.path import Path, PureWindowsPath
 from pykotor.resource.formats import gff, lip, tlk, twoda
 from pykotor.tools.misc import is_capsule_file
 from pykotor.tools.path import CaseAwarePath

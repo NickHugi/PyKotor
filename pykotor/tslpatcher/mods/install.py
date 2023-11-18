@@ -3,7 +3,7 @@ from __future__ import annotations
 import shutil
 from typing import TYPE_CHECKING
 
-from pykotor.helpers.path import PurePath
+from pykotor.utility.path import PurePath
 from pykotor.tslpatcher.mods.template import PatcherModifications
 
 if TYPE_CHECKING:

@@ -9,15 +9,9 @@ from defusedxml.ElementTree import fromstring
 from pykotor.common.geometry import Vector3, Vector4
 from pykotor.common.language import LocalizedString
 from pykotor.common.misc import ResRef
-from pykotor.helpers.misc import indent
 from pykotor.resource.formats.gff.gff_data import GFF, GFFFieldType, GFFList, GFFStruct
-from pykotor.resource.type import (
-    SOURCE_TYPES,
-    TARGET_TYPES,
-    ResourceReader,
-    ResourceWriter,
-    autoclose,
-)
+from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES, ResourceReader, ResourceWriter, autoclose
+from pykotor.utility.misc import indent
 
 
 class GFFXMLReader(ResourceReader):

@@ -5,11 +5,11 @@ import pathlib
 import platform
 from typing import TYPE_CHECKING, Any, Callable, Generator, List, Tuple, Union
 
-from pykotor.helpers.misc import is_instance_or_subinstance
-from pykotor.helpers.path import Path as InternalPath
-from pykotor.helpers.path import PurePath as InternalPurePath
-from pykotor.helpers.registry import resolve_reg_key_to_path
 from pykotor.tools.registry import winreg_key
+from pykotor.utility.misc import is_instance_or_subinstance
+from pykotor.utility.path import Path as InternalPath
+from pykotor.utility.path import PurePath as InternalPurePath
+from pykotor.utility.registry import resolve_reg_key_to_path
 
 if TYPE_CHECKING:
     from pykotor.common.misc import Game
@@ -103,7 +103,7 @@ def create_case_insensitive_pathlib_class(cls) -> None:
                 wrapped_methods.add(attr_name)
 
 
-class CaseAwarePath(InternalPath):
+class CaseAwarePath(InternalPath):  # TODO: Move to common
     """A class capable of resolving case-sensitivity in a path. Absolutely essential for working with KOTOR files."""
 
     def resolve(self, strict=False):

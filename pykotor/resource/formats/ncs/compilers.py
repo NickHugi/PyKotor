@@ -4,8 +4,8 @@ import subprocess
 from typing import TYPE_CHECKING
 
 from pykotor.common.stream import BinaryReader
-from pykotor.helpers.misc import generate_filehash_sha256
-from pykotor.helpers.path import Path
+from pykotor.utility.misc import generate_filehash_sha256
+from pykotor.utility.path import Path
 from pykotor.resource.formats.ncs.ncs_auto import compile_nss, write_ncs
 from pykotor.resource.formats.ncs.ncs_data import NCSCompiler
 
@@ -126,7 +126,7 @@ class ExternalNCSCompiler(NCSCompiler):
                 cwd=str(self.nwnnsscomp_path.parent),
                 timeout=15,
             )
-        else  # dencs? what is this?
+        else:  # dencs? what is this?
             gameIndex = "--kotor2" if game == Game.K2 else "--kotor"
             command = [str(self.nwnnsscomp_path), gameIndex, str(source_filepath)]
 

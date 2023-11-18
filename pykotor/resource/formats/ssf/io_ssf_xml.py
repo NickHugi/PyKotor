@@ -5,16 +5,10 @@ from xml.etree import ElementTree
 
 from defusedxml.ElementTree import fromstring
 
-from pykotor.common.misc import decode_bytes_with_fallbacks
-from pykotor.helpers.misc import indent
 from pykotor.resource.formats.ssf.ssf_data import SSF, SSFSound
-from pykotor.resource.type import (
-    SOURCE_TYPES,
-    TARGET_TYPES,
-    ResourceReader,
-    ResourceWriter,
-    autoclose,
-)
+from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES, ResourceReader, ResourceWriter, autoclose
+from pykotor.tools.encoding import decode_bytes_with_fallbacks
+from pykotor.utility.misc import indent
 
 
 class SSFXMLReader(ResourceReader):

@@ -9,13 +9,9 @@ from configparser import ConfigParser
 
 from pykotor.resource.formats.gff.gff_data import GFFFieldType, GFFStruct
 
-if getattr(sys, "frozen", False) is False:
-    pykotor_path = pathlib.Path(__file__).parents[2] / "pykotor"
-    if pykotor_path.joinpath("__init__.py").exists():
-        working_dir = str(pykotor_path.parent)
-        if working_dir in sys.path:
-            sys.path.remove(working_dir)
-        sys.path.insert(0, str(pykotor_path.parent))
+PROJECT_PATH = os.getcwd()
+SOURCE_PATH = os.path.join(PROJECT_PATH, "Libraries/PyKotor/src")
+sys.path.append(SOURCE_PATH)
 
 from pykotor.common.geometry import Vector3, Vector4
 from pykotor.common.language import Gender, Language
@@ -26,7 +22,7 @@ from pykotor.resource.formats.tlk import TLK, write_tlk
 from pykotor.resource.type import ResourceType
 from pykotor.tslpatcher.config import PatcherConfig
 from pykotor.tslpatcher.memory import NoTokenUsage, TokenUsage2DA, TokenUsageTLK
-from pykotor.tslpatcher.mods.gff import (
+from pykotor.tslpatcher.mods import (
     AddFieldGFF,
     AddStructToListGFF,
     FieldValue2DAMemory,
@@ -35,9 +31,9 @@ from pykotor.tslpatcher.mods.gff import (
     LocalizedStringDelta,
     ModifyFieldGFF,
 )
-from pykotor.tslpatcher.mods.ssf import ModifySSF
-from pykotor.tslpatcher.mods.tlk import ModificationsTLK, ModifyTLK
-from pykotor.tslpatcher.mods.twoda import (
+from pykotor.tslpatcher.mods import ModifySSF
+from pykotor.tslpatcher.mods import ModificationsTLK, ModifyTLK
+from pykotor.tslpatcher.mods import (
     AddColumn2DA,
     AddRow2DA,
     ChangeRow2DA,

@@ -18,7 +18,7 @@ if getattr(sys, "frozen", False) is False:
 
 from pykotor.common.language import Language, LocalizedString
 from pykotor.extract.capsule import Capsule
-from pykotor.helpers.path import Path, PureWindowsPath
+from pykotor.utility.path import Path, PureWindowsPath
 from pykotor.resource.formats.gff import GFF, GFFContent, GFFFieldType, GFFList, GFFStruct, bytes_gff, read_gff, write_gff
 from pykotor.resource.formats.tlk import TLK, read_tlk, write_tlk
 from pykotor.resource.formats.tpc.txi_data import write_bitmap_font

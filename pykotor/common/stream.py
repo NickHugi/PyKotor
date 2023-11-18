@@ -9,8 +9,8 @@ from typing import TYPE_CHECKING, BinaryIO
 
 from pykotor.common.geometry import Vector2, Vector3, Vector4
 from pykotor.common.language import LocalizedString
-from pykotor.common.misc import decode_bytes_with_fallbacks, find_best_8bit_encoding
-from pykotor.helpers.path import Path
+from pykotor.tools.encoding import decode_bytes_with_fallbacks, find_best_8bit_encoding
+from pykotor.utility.path import Path
 
 if TYPE_CHECKING:
     from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES

@@ -11,7 +11,7 @@ if getattr(sys, "frozen", False) is False:
             sys.path.remove(working_dir)
         sys.path.insert(0, working_dir)
 
-from pykotor.helpers.path import Path
+from pykotor.utility.path import Path
 from pykotor.resource.formats.mdl import read_mdl, write_mdl
 from pykotor.resource.type import ResourceType
 

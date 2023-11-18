@@ -2,18 +2,10 @@ from __future__ import annotations
 
 import json
 
-from pykotor.common.misc import (
-    ResRef,
-    decode_bytes_with_fallbacks,
-)
+from pykotor.common.misc import ResRef
 from pykotor.resource.formats.tlk import TLK
-from pykotor.resource.type import (
-    SOURCE_TYPES,
-    TARGET_TYPES,
-    ResourceReader,
-    ResourceWriter,
-    autoclose,
-)
+from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES, ResourceReader, ResourceWriter, autoclose
+from pykotor.tools.encoding import decode_bytes_with_fallbacks
 
 
 class TLKJSONReader(ResourceReader):

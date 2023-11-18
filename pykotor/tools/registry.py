@@ -3,7 +3,7 @@ from __future__ import annotations
 import os
 
 from pykotor.common.misc import Game
-from pykotor.helpers.misc import ProcessorArchitecture
+from pykotor.utility.misc import ProcessorArchitecture
 
 KOTOR_REG_PATHS = {
     Game.K1: {

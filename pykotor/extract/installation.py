@@ -24,7 +24,7 @@ from pykotor.tslpatcher.logger import PatchLogger
 if TYPE_CHECKING:
     import os
 
-    from pykotor.helpers.path import Path
+    from pykotor.utility.path import Path
     from pykotor.resource.formats.gff import GFF
 
 

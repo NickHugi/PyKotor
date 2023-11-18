@@ -4,7 +4,7 @@ from xml.etree import ElementTree
 
 from defusedxml.ElementTree import fromstring
 
-from pykotor.helpers.misc import indent
+from pykotor.utility.misc import indent
 from pykotor.resource.formats.lip import LIP, LIPShape
 from pykotor.resource.type import (
     SOURCE_TYPES,

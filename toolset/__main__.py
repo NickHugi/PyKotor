@@ -9,7 +9,7 @@ from PyQt5.QtWidgets import QApplication
 
 
 def onAppCrash(e: BaseException, value: str, tback: TracebackType):
-    from pykotor.helpers.error_handling import format_exception_with_variables
+    from pykotor.utility.error_handling import format_exception_with_variables
     with pathlib.Path("errorlog.txt").open("a") as file:
         file.writelines(format_exception_with_variables(e, value, tback))
         file.write("\n----------------------\n")

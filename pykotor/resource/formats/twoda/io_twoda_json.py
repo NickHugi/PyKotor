@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import json
 
-from pykotor.common.misc import decode_bytes_with_fallbacks
+from pykotor.tools.encoding import decode_bytes_with_fallbacks
 from pykotor.resource.formats.twoda.twoda_data import TwoDA
 from pykotor.resource.type import (
     SOURCE_TYPES,

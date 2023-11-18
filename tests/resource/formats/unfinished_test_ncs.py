@@ -13,7 +13,7 @@ if getattr(sys, "frozen", False) is False:
         sys.path.insert(0, str(pykotor_path.parent))
 
 from pykotor.common.stream import BinaryReader
-from pykotor.helpers.path import Path
+from pykotor.utility.path import Path
 from pykotor.resource.formats.ncs import NCS, NCSBinaryReader
 from pykotor.resource.formats.ncs.ncs_auto import bytes_ncs, read_ncs, write_ncs
 

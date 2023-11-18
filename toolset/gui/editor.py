@@ -10,8 +10,8 @@ from PyQt5.QtWidgets import QFileDialog, QLineEdit, QMainWindow, QMessageBox, QP
 
 from pykotor.common.module import Module
 from pykotor.extract.capsule import Capsule
-from pykotor.helpers.error_handling import format_exception_with_variables
-from pykotor.helpers.path import Path
+from pykotor.utility.error_handling import format_exception_with_variables
+from pykotor.utility.path import Path
 from pykotor.resource.formats.erf import ERFType, read_erf, write_erf
 from pykotor.resource.formats.rim import read_rim, write_rim
 from pykotor.resource.type import ResourceType

@@ -187,21 +187,13 @@ class GITEditor(Editor):
         self.ui.viewCameraCheck.toggled.connect(self.updateVisibility)
         self.ui.viewStoreCheck.toggled.connect(self.updateVisibility)
 
-        self.ui.viewCreatureCheck.mouseDoubleClickEvent = lambda _: self.onInstanceVisibilityDoubleClick(
-            self.ui.viewCreatureCheck,
-        )
-        self.ui.viewPlaceableCheck.mouseDoubleClickEvent = lambda _: self.onInstanceVisibilityDoubleClick(
-            self.ui.viewPlaceableCheck,
-        )
+        self.ui.viewCreatureCheck.mouseDoubleClickEvent = lambda _: self.onInstanceVisibilityDoubleClick( self.ui.viewCreatureCheck)
+        self.ui.viewPlaceableCheck.mouseDoubleClickEvent = lambda _: self.onInstanceVisibilityDoubleClick( self.ui.viewPlaceableCheck)
         self.ui.viewDoorCheck.mouseDoubleClickEvent = lambda _: self.onInstanceVisibilityDoubleClick(self.ui.viewDoorCheck)
         self.ui.viewSoundCheck.mouseDoubleClickEvent = lambda _: self.onInstanceVisibilityDoubleClick(self.ui.viewSoundCheck)
         self.ui.viewTriggerCheck.mouseDoubleClickEvent = lambda _: self.onInstanceVisibilityDoubleClick(self.ui.viewTriggerCheck)
-        self.ui.viewEncounterCheck.mouseDoubleClickEvent = lambda _: self.onInstanceVisibilityDoubleClick(
-            self.ui.viewEncounterCheck,
-        )
-        self.ui.viewWaypointCheck.mouseDoubleClickEvent = lambda _: self.onInstanceVisibilityDoubleClick(
-            self.ui.viewWaypointCheck,
-        )
+        self.ui.viewEncounterCheck.mouseDoubleClickEvent = lambda _: self.onInstanceVisibilityDoubleClick( self.ui.viewEncounterCheck)
+        self.ui.viewWaypointCheck.mouseDoubleClickEvent = lambda _: self.onInstanceVisibilityDoubleClick( self.ui.viewWaypointCheck)
         self.ui.viewCameraCheck.mouseDoubleClickEvent = lambda _: self.onInstanceVisibilityDoubleClick(self.ui.viewCameraCheck)
         self.ui.viewStoreCheck.mouseDoubleClickEvent = lambda _: self.onInstanceVisibilityDoubleClick(self.ui.viewStoreCheck)
 
@@ -892,7 +884,7 @@ class _InstanceMode(_Mode):
 
         menu.popup(point)
 
-    # TODO Rename this here and in `onRenderContextMenu`
+    # TODO: Rename this here and in `onRenderContextMenu`
     def _extracted_from_onRenderContextMenu_22(self, menu, world):
         menu.addAction("Insert Creature").triggered.connect(lambda: self.addInstance(GITCreature(world.x, world.y)))
         menu.addAction("Insert Door").triggered.connect(lambda: self.addInstance(GITDoor(world.x, world.y)))

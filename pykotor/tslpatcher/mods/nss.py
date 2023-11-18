@@ -5,9 +5,9 @@ import re
 from tempfile import TemporaryDirectory
 from typing import TYPE_CHECKING
 
-from pykotor.common.misc import decode_bytes_with_fallbacks
+from pykotor.tools.encoding import decode_bytes_with_fallbacks
 from pykotor.common.stream import BinaryReader
-from pykotor.helpers.path import Path, PurePath
+from pykotor.utility.path import Path, PurePath
 from pykotor.resource.formats.ncs import bytes_ncs
 from pykotor.resource.formats.ncs import compile_nss as compile_with_builtin
 from pykotor.resource.formats.ncs.compilers import ExternalNCSCompiler

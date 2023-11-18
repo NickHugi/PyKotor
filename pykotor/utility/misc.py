@@ -6,7 +6,7 @@ import sys
 from enum import Enum
 from typing import TYPE_CHECKING
 
-from pykotor.helpers.path import Path
+from pykotor.utility.path import Path
 
 if TYPE_CHECKING:
     import os
@@ -116,3 +116,37 @@ def indent(elem: Element, level=0):
             elem.tail = i
     elif level and (not elem.tail or not elem.tail.strip()):
         elem.tail = i
+
+
+
+
+def is_int(string: str) -> bool:
+    """Can be cast to an int without raising an error.
+
+    Args:
+    ----
+        string (str):
+
+    """
+    try:
+        _ = int(string)
+    except ValueError:
+        return False
+    else:
+        return True
+
+
+def is_float(string: str) -> bool:
+    """Can be cast to a float without raising an error.
+
+    Args:
+    ----
+        string (str):
+
+    """
+    try:
+        _ = float(string)
+    except ValueError:
+        return False
+    else:
+        return True

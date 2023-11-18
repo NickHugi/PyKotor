@@ -5,7 +5,6 @@ from typing import TYPE_CHECKING
 from pykotor.common.language import LocalizedString
 from pykotor.common.module import Module
 from pykotor.extract.installation import Installation, SearchLocation
-from pykotor.helpers.string import ireplace
 from pykotor.resource.formats.erf import ERF, ERFType, write_erf
 from pykotor.resource.formats.gff import write_gff
 from pykotor.resource.formats.lyt import write_lyt
@@ -22,6 +21,7 @@ from pykotor.resource.generics.uts import dismantle_uts
 from pykotor.resource.type import ResourceType
 from pykotor.tools import model
 from pykotor.tools.path import CaseAwarePath
+from pykotor.utility.string import ireplace
 
 if TYPE_CHECKING:
     import os

@@ -8,9 +8,9 @@ from typing import TYPE_CHECKING, Any, Callable, ClassVar, TypeVar
 from pykotor.common.geometry import Vector3, Vector4
 from pykotor.common.language import LocalizedString
 from pykotor.common.misc import ResRef
-from pykotor.helpers.path import PureWindowsPath
 from pykotor.resource.type import ResourceType
-from pykotor.tools.misc import compare_and_format, format_text
+from pykotor.utility.path import PureWindowsPath
+from pykotor.utility.string import compare_and_format, format_text
 
 if TYPE_CHECKING:
     from collections.abc import Generator, Iterator

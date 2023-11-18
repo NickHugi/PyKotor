@@ -9,7 +9,6 @@ from pykotor.common.stream import BinaryReader, BinaryWriter
 from pykotor.extract.capsule import Capsule
 from pykotor.extract.file import LocationResult, ResourceIdentifier
 from pykotor.extract.installation import Installation, SearchLocation
-from pykotor.helpers.path import Path, PurePath
 from pykotor.resource.formats.bwm import bytes_bwm, read_bwm
 from pykotor.resource.formats.erf import ERFType, read_erf, write_erf
 from pykotor.resource.formats.gff import read_gff
@@ -34,6 +33,7 @@ from pykotor.resource.generics.utw import UTW, bytes_utw, read_utw
 from pykotor.resource.type import ResourceType
 from pykotor.tools.misc import is_bif_file, is_capsule_file, is_erf_file, is_erf_or_mod_file, is_rim_file
 from pykotor.tools.model import list_lightmaps, list_textures
+from pykotor.utility.path import Path, PurePath
 
 if TYPE_CHECKING:
     import os

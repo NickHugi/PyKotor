@@ -30,8 +30,8 @@ from watchdog.observers import Observer
 from pykotor.common.stream import BinaryReader
 from pykotor.extract.file import FileResource, ResourceIdentifier
 from pykotor.extract.installation import SearchLocation
-from pykotor.helpers.error_handling import assert_with_variable_trace
-from pykotor.helpers.path import Path, PurePath
+from pykotor.utility.error_handling import assert_with_variable_trace
+from pykotor.utility.path import Path, PurePath
 from pykotor.resource.formats.mdl import read_mdl, write_mdl
 from pykotor.resource.formats.tpc import read_tpc, write_tpc
 from pykotor.resource.type import ResourceType

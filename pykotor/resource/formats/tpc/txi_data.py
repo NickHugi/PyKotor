@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from pykotor.helpers.path import Path
+from pykotor.utility.path import Path
 
 if TYPE_CHECKING:
     import os

@@ -6,17 +6,16 @@ from datetime import datetime, timezone
 from enum import IntEnum
 from typing import TYPE_CHECKING
 
-from pykotor.common.misc import Game, decode_bytes_with_fallbacks
 from pykotor.common.stream import BinaryReader, BinaryWriter
 from pykotor.extract.capsule import Capsule
 from pykotor.extract.file import ResourceIdentifier
 from pykotor.extract.installation import Installation
-from pykotor.helpers.path import Path, PurePath
 from pykotor.resource.formats.gff import GFFContent, bytes_gff
 from pykotor.resource.formats.lip import bytes_lip
 from pykotor.resource.formats.ssf import bytes_ssf
 from pykotor.resource.formats.tlk import bytes_tlk
 from pykotor.resource.formats.twoda import bytes_2da
+from pykotor.tools.encoding import decode_bytes_with_fallbacks
 from pykotor.tools.misc import is_capsule_file
 from pykotor.tools.path import CaseAwarePath
 from pykotor.tslpatcher.logger import PatchLogger
@@ -24,10 +23,12 @@ from pykotor.tslpatcher.memory import PatcherMemory
 from pykotor.tslpatcher.mods.install import InstallFile, create_backup
 from pykotor.tslpatcher.mods.template import OverrideType, PatcherModifications
 from pykotor.tslpatcher.mods.tlk import ModificationsTLK
+from pykotor.utility.path import Path, PurePath
 
 if TYPE_CHECKING:
     import os
 
+    from pykotor.common.misc import Game
     from pykotor.tslpatcher.mods.gff import ModificationsGFF
     from pykotor.tslpatcher.mods.nss import ModificationsNSS
     from pykotor.tslpatcher.mods.ssf import ModificationsSSF

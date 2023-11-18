@@ -13,9 +13,9 @@ from config import UPDATE_INFO_LINK
 from PyQt5 import QtCore
 from PyQt5.QtWidgets import QMainWindow, QMessageBox, QTreeWidgetItem, QWidget
 
-from pykotor.common.misc import decode_bytes_with_fallbacks
+from pykotor.tools.encoding import decode_bytes_with_fallbacks
 from pykotor.common.stream import BinaryReader
-from pykotor.helpers.path import Path, PurePath
+from pykotor.utility.path import Path, PurePath
 from toolset.__main__ import is_debug_mode, is_frozen
 from toolset.gui.dialogs.asyncloader import AsyncLoader
 

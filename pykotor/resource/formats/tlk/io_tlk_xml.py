@@ -5,16 +5,11 @@ from xml.etree import ElementTree
 from defusedxml.ElementTree import fromstring
 
 from pykotor.common.language import Language
-from pykotor.common.misc import ResRef, decode_bytes_with_fallbacks
-from pykotor.helpers.misc import indent
+from pykotor.common.misc import ResRef
 from pykotor.resource.formats.tlk.tlk_data import TLK
-from pykotor.resource.type import (
-    SOURCE_TYPES,
-    TARGET_TYPES,
-    ResourceReader,
-    ResourceWriter,
-    autoclose,
-)
+from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES, ResourceReader, ResourceWriter, autoclose
+from pykotor.tools.encoding import decode_bytes_with_fallbacks
+from pykotor.utility.misc import indent
 
 
 class TLKXMLReader(ResourceReader):

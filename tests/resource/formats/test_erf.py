@@ -13,7 +13,7 @@ if getattr(sys, "frozen", False) is False:
 
 from unittest import TestCase
 
-from pykotor.helpers.path import Path
+from pykotor.utility.path import Path
 from pykotor.resource.formats.erf import ERF, ERFBinaryReader, read_erf, write_erf
 from pykotor.resource.type import ResourceType
 
