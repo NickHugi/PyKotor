@@ -239,7 +239,7 @@ def get_default_paths():
                 "~/.local/share/Steam/common/SteamApps/swkotor",
                 "~/.local/share/Steam/common/steamapps/swkotor",
                 "~/.local/share/Steam/common/swkotor",
-                "~/.steam/root/steamapps/common/swkotor",
+                "~/.steam/root/steamapps/common/swkotor",  # executable name is `KOTOR2` no extension
                 # wsl paths
                 "/mnt/C/Program Files/Steam/steamapps/common/swkotor",
                 "/mnt/C/Program Files (x86)/Steam/steamapps/common/swkotor",
