@@ -24,12 +24,11 @@ class ModificationsTLK(PatcherModifications):
 
     def apply(
         self,
-        source_tlk: SOURCE_TYPES,
+        dialog: TLK,
         memory: PatcherMemory,
         log: PatchLogger | None = None,
         game: Game | None = None,
-    ) -> bytes:
-        dialog: TLK = read_tlk(source_tlk)
+    ) -> None:
         for modifier in self.modifiers:
             if modifier.is_replacement:
                 modifier.replace(dialog, memory)
@@ -37,6 +36,16 @@ class ModificationsTLK(PatcherModifications):
                 modifier.insert(dialog, memory)
             if log:
                 log.complete_patch()
+
+    def execute_patch(
+        self,
+        source_tlk: SOURCE_TYPES,
+        memory: PatcherMemory,
+        log: PatchLogger | None = None,
+        game: Game | None = None,
+    ) -> bytes:
+        dialog: TLK = read_tlk(source_tlk)
+        self.apply(dialog, memory, log, game)
         return bytes_tlk(dialog)
 
     def pop_tslpatcher_vars(self, file_section_dict, default_destination=DEFAULT_DESTINATION):

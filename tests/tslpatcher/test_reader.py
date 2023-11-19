@@ -999,7 +999,7 @@ class TestConfigReader(unittest.TestCase):
         self.assertEqual("st_forcestrike", mod_0.cells['impactscript'].string)
         self.assertEqual("up", mod_0.cells['conjanim'].string)
         self.assertEqual("up", mod_0.cells['castanim'].string)
-        self.assertEqual("high()", mod_0.cells['forcehostile'].column)
+        self.assertEqual("forcehostile", mod_0.cells['forcehostile'].column)
         self.assertIsInstance(mod_0.cells["forcehostile"], RowValueHigh)
         self.assertEqual("", mod_0.cells['dark_recom'].string)
         self.assertEqual("", mod_0.cells['light_recom'].string)

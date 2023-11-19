@@ -69,18 +69,6 @@ class Target:
         return source_row
 
 
-class Modifications2DA(PatcherModifications):
-    def __init__(self, filename: str):
-        super().__init__(filename)
-        self.modifiers: list[Modify2DA] = []
-
-    def apply(self, source_2da: SOURCE_TYPES, memory: PatcherMemory, log=None, game=None) -> bytes:
-        twoda: TwoDA = read_2da(source_2da)
-        for row in self.modifiers:
-            row.apply(twoda, memory)
-        return bytes_2da(twoda)
-
-
 # region Value Returners
 class RowValue(ABC):
     @abstractmethod
@@ -542,3 +530,18 @@ class AddColumn2DA(Modify2DA):
 
 
 # endregion
+
+
+class Modifications2DA(PatcherModifications):
+    def __init__(self, filename: str):
+        super().__init__(filename)
+        self.modifiers: list[Modify2DA] = []
+
+    def execute_patch(self, source_2da: SOURCE_TYPES, memory: PatcherMemory, log=None, game=None) -> bytes:
+        twoda: TwoDA = read_2da(source_2da)
+        self.apply(twoda, memory, log, game)
+        return bytes_2da(twoda)
+
+    def apply(self, twoda: TwoDA, memory: PatcherMemory, log=None, game=None) -> None:
+        for row in self.modifiers:
+            row.apply(twoda, memory)

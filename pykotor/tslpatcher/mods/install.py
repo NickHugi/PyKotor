@@ -292,5 +292,9 @@ class InstallFile(PatcherModifications):
         self.action: str = "Copy "
         self.skip_if_not_replace: bool = True
 
-    def apply(self, source, memory, log, game):
+    def execute_patch(self, source, *args, **kwargs) -> bytes:
+        self.apply(source, *args, **kwargs)
         return source
+
+    def apply(self, source, *args, **kwargs) -> None:
+        pass

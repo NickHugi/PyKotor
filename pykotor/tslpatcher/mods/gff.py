@@ -378,14 +378,18 @@ class ModificationsGFF(PatcherModifications):
         super().__init__(filename, replace)
         self.modifiers: list[ModifyGFF] = modifiers if modifiers is not None else []
 
-    def apply(
+    def execute_patch(
         self,
         source_gff: SOURCE_TYPES,
         memory: PatcherMemory,
-        logger: PatchLogger,
+        logger: PatchLogger | None = None,
         game: Game | None = None,
     ) -> bytes:
         gff: GFF = read_gff(source_gff)
+        self.apply(gff, memory, logger, game)
+        return bytes_gff(gff)
+    
+    def apply(self, gff: GFF, memory: PatcherMemory, logger: PatchLogger | None = None, game: Game | None = None) -> None:
         for change_field in self.modifiers:
             change_field.apply(gff.root, memory, logger)
-        return bytes_gff(gff)
+
