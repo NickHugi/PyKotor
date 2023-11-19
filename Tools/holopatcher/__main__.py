@@ -709,6 +709,7 @@ class App(tk.Tk):
             self.browse_button.config(state=tk.DISABLED)
         else:
             self.install_running = False
+            self.logger = PatchLogger()  # reset the errors/warnings etc
             self.install_button.config(state=tk.NORMAL)
             self.uninstall_button.config(state=tk.NORMAL)
             self.gamepaths_browse_button.config(state=tk.NORMAL)
