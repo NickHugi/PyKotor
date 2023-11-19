@@ -690,7 +690,6 @@ class App(tk.Tk):
             self._execute_mod_install(installer)
         except Exception as e:  # noqa: BLE001
             self._handle_exception_during_install(e, installer)
-        self.set_active_install(install_running=False)
 
     def set_active_install(self, install_running: bool) -> None:
         """Sets the active install state
