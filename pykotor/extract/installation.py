@@ -264,9 +264,7 @@ class Installation:
         resources: dict[str, list[FileResource]] | list[FileResource] = {} if capsule_check else []
 
         if not path.exists():
-            self.log.add_warning(
-                f"The '{path.name}' folder did not exist at '{self.path()!s}' when loading the installation, skipping...",
-            )
+            self.log.add_warning(f"The '{path.name}' folder did not exist at '{self.path()!s}' when loading the installation, skipping...")
             return resources
 
         files_list: list[CaseAwarePath] = list(path.safe_rglob("*")) if recurse else list(path.safe_iterdir())  # type: ignore[reportGeneralTypeIssues]
@@ -292,9 +290,7 @@ class Installation:
         """Reloads the list of resources in the Chitin linked to the Installation."""
         c_path = CaseAwarePath(self._path)
         if not c_path.joinpath("chitin.key").exists():
-            self.log.add_warning(
-                f"The chitin.key file did not exist at '{self._path!s}' when loading the installation, skipping...",
-            )
+            self.log.add_warning(f"The chitin.key file did not exist at '{self._path!s}' when loading the installation, skipping...")
             return
         self._chitin = list(Chitin(kotor_path=c_path))
 
@@ -356,6 +352,18 @@ class Installation:
         for folder in target_dirs:
             relative_folder = folder.relative_to(override_path).as_posix()  # '.' if folder is the same as override_path
             self._override[relative_folder] = self.load_resources(folder)  # type: ignore[assignment]
+    def reload_override(self, directory: str) -> None:
+        """Reload the resources in the specified override subdirectory.
+
+        Args:
+        ----
+            directory: Path to directory containing override configuration
+
+        Processing Logic:
+        - Load override configuration from given directory
+        - Override any existing resources with new ones from directory
+        """
+        self.load_override(directory)
 
     def load_streammusic(self) -> None:
         """Reloads the list of resources in the streammusic folder linked to the Installation."""
@@ -593,9 +601,7 @@ class Installation:
         )
         search = batch[query]
         if not search or not search.data:
-            self.log.add_error(
-                f"Could not find '{resname}.{restype}' during resource lookup.",
-            )
+            self.log.add_error(f"Could not find '{resname}.{restype}' during resource lookup.")
             return None
         return search
 
