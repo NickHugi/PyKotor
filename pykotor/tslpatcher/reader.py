@@ -1079,7 +1079,7 @@ class ConfigReader:
                 token_id = int(value[6:])
                 row_value = RowValueTLKMemory(token_id)
             elif value_lowercase == "high()":
-                row_value = RowValueHigh(None) if modifier == "rowlabel" else RowValueHigh(value)
+                row_value = RowValueHigh(None) if modifier == "rowlabel" else RowValueHigh(modifier)
             elif value_lowercase == "rowindex":
                 row_value = RowValueRowIndex()
             elif value_lowercase == "rowlabel":
