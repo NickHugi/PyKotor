@@ -6,7 +6,7 @@ from pykotor.utility.event import Observable
 
 
 class PatchLogger:
-    def __init__(self):
+    def __init__(self) -> None:
         self.verbose_logs: list[PatchLog] = []
         self.notes: list[PatchLog] = []
         self.warnings: list[PatchLog] = []

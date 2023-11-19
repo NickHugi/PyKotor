@@ -4,9 +4,8 @@ from abc import ABC, abstractmethod
 
 
 class PatcherMemory:
-    def __init__(self):
-        self.memory_2da: dict[int, str] = {}
-        self.memory_gff: dict = {}
+    def __init__(self) -> None:
+        self.memory_2da: dict[int, str] = {}  # 2DAMemory# (token) -> str
         self.memory_str: dict[int, int] = {}  # StrRef# (token) -> dialog.tlk index
 
 
