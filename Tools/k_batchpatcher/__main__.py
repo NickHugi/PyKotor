@@ -4,9 +4,12 @@ import argparse
 import cProfile
 import pathlib
 import sys
+import tkinter as tk
 import traceback
 from copy import deepcopy
 from io import StringIO
+from pathlib import Path
+from tkinter import filedialog, messagebox, ttk
 from typing import TYPE_CHECKING
 
 if getattr(sys, "frozen", False) is False:
@@ -18,12 +21,12 @@ if getattr(sys, "frozen", False) is False:
 
 from pykotor.common.language import Language, LocalizedString
 from pykotor.extract.capsule import Capsule
-from pykotor.utility.path import Path, PureWindowsPath
 from pykotor.resource.formats.gff import GFF, GFFContent, GFFFieldType, GFFList, GFFStruct, bytes_gff, read_gff, write_gff
 from pykotor.resource.formats.tlk import TLK, read_tlk, write_tlk
 from pykotor.resource.formats.tpc.txi_data import write_bitmap_font
 from pykotor.tools.misc import is_capsule_file
 from pykotor.tools.path import CaseAwarePath
+from pykotor.utility.path import Path, PureWindowsPath
 from Tools.k_batchpatcher.translate.language_translator import TranslationOption, Translator, get_language_code
 
 if TYPE_CHECKING:
@@ -308,10 +311,173 @@ def run_patches(path: Path):
     if path.is_file():
         handle_capsule_and_patch(path)
 
+
+class KOTORPatchingToolUI:
+    def __init__(self, root) -> None:
+        self.root = root
+        root.title("KOTOR Translate Tool")
+
+        self.path = tk.StringVar()
+        self.output_log = "log_batch_patcher.log"
+        self.logging_enabled = tk.BooleanVar(value=True)
+        self.translate = tk.BooleanVar(value=True)
+        self.to_lang = tk.StringVar()
+        self.create_fonts = tk.BooleanVar(value=False)
+        self.font_path = tk.StringVar()
+        self.resolution = tk.IntVar(value=512)
+        self.use_profiler = tk.BooleanVar()
+        self.translation_option = tk.StringVar()
+
+        self.chosen_languages: list[Language] = []
+        self.lang_vars: list[str] = []
+
+        self.setup_ui()
+
+    def setup_ui(self):
+        row = 0
+        # Path to K1/TSL install
+        ttk.Label(self.root, text="Path to K1/TSL install:").grid(row=row, column=0)
+        ttk.Entry(self.root, textvariable=self.path).grid(row=row, column=1)
+        ttk.Button(self.root, text="Browse", command=self.browse_path).grid(row=row, column=2)
+        row += 1
+
+        # Logging Enabled
+        ttk.Label(self.root, text="Enable Logging:").grid(row=row, column=0)
+        ttk.Checkbutton(self.root, text="Yes", variable=self.logging_enabled).grid(row=row, column=1)
+        row += 1
+
+        # Translate
+        ttk.Label(self.root, text="Translate:").grid(row=row, column=0)
+        ttk.Checkbutton(self.root, text="Yes", variable=self.translate).grid(row=row, column=1)
+        row += 1
+
+
+        # To Language
+        ttk.Label(self.root, text="To Language:").grid(row=row, column=0)
+        self.create_language_checkbuttons(row)
+        row += len(Language)
+
+        # Create Fonts
+        ttk.Label(self.root, text="Create Fonts:").grid(row=row, column=0)
+        ttk.Checkbutton(self.root, text="Yes", variable=self.create_fonts).grid(row=row, column=1)
+        row += 1
+
+        # Font Path
+        ttk.Label(self.root, text="Font Path:").grid(row=row, column=0)
+        ttk.Entry(self.root, textvariable=self.font_path).grid(row=row, column=1)
+        ttk.Button(self.root, text="Browse", command=self.browse_font_path).grid(row=row, column=2)
+        row += 1
+
+        # Resolution
+        ttk.Label(self.root, text="Resolution:").grid(row=row, column=0)
+        ttk.Entry(self.root, textvariable=self.resolution).grid(row=row, column=1)
+        row += 1
+
+        # Use Profiler
+        ttk.Label(self.root, text="Use Profiler:").grid(row=row, column=0)
+        ttk.Checkbutton(self.root, text="Yes", variable=self.use_profiler).grid(row=row, column=1)
+        row += 1
+
+        # Translation Option
+        ttk.Label(self.root, text="Translation Option:").grid(row=row, column=0)
+        ttk.Entry(self.root, textvariable=self.translation_option).grid(row=row, column=1)
+        row += 1
+
+        # Start Patching Button
+        ttk.Button(self.root, text="Start Patching", command=self.start_patching).grid(row=row, column=1)
+
+    def create_language_checkbuttons(self, row):
+        # Create a Checkbutton for "ALL"
+        all_var = tk.BooleanVar()
+        ttk.Checkbutton(self.root, text="ALL", variable=all_var, command=lambda: self.toggle_all_languages(all_var)).grid(row=row, column=0, columnspan=3, sticky="w")
+        row += 1
+
+        # Create Checkbuttons for each language in three columns
+        column = 0
+        for lang in Language:
+            lang_var = tk.BooleanVar()
+            ttk.Checkbutton(self.root, text=lang.name, variable=lang_var, command=lambda lang=lang, lang_var=lang_var: self.update_chosen_languages(lang, lang_var)).grid(row=row, column=column, sticky="w")
+
+            # Alternate between columns
+            column = (column + 1) % 3
+            if column == 0:
+                row += 1
+
+
+    def update_chosen_languages(self, lang: Language, lang_var):
+        if lang_var.get():
+            self.chosen_languages.append(lang)
+        else:
+            self.chosen_languages.remove(lang)
+
+    def toggle_all_languages(self, all_var):
+        all_value = all_var.get()
+        if all_value:
+            self.chosen_languages = list(Language)
+        else:
+            self.chosen_languages = []
+
+    def create_font_pack(self, lang: Language):
+        print(f"Creating font pack for '{lang.name}'...")
+        write_bitmap_font(Path.cwd() / f"font_pack_{lang.name}.tga", str(self.font_path), (self.resolution.get(), self.resolution.get()), lang)
+
+    def browse_path(self):
+        directory = filedialog.askdirectory()
+        if directory:
+            self.path.set(directory)
+
+    def browse_font_path(self):
+        file = filedialog.askopenfilename()
+        if file:
+            self.font_path.set(file)
+
+    def start_patching(self):
+        # Mapping UI input to script logic
+        path = Path(self.path.get()).resolve()
+        if not path.exists():
+            messagebox.showerror("Error", "Invalid path")
+            return
+
+        try:
+            # Profiling logic
+            if self.use_profiler.get():
+                profiler = cProfile.Profile()
+                profiler.enable()
+
+            # Patching logic
+            if self.to_lang.get() == "ALL":
+                for lang in Language.__members__:
+                    print(f"Translating to {lang}...")
+                    enum_member_lang = Language[lang]
+                    if self.create_fonts:
+                        self.create_font_pack(enum_member_lang)
+                    self.to_lang = enum_member_lang
+                    pytranslator = Translator(self.to_lang)
+                    pytranslator.translation_option = self.translation_option  # type: ignore[assignment]
+                    run_patches(Path(str(self.path)))
+            else:
+                # Single language patching
+                pass
+
+            if self.use_profiler.get():
+                profiler.disable()
+                profiler_output_file = Path("profiler_output.pstat").resolve()
+                profiler.dump_stats(str(profiler_output_file))
+                log_output(f"Profiler output saved to: {profiler_output_file}")
+
+            log_output(f"Completed batch patcher of {path}")
+        except Exception as e:
+            log_output("Unhandled exception during the patching process.")
+            log_output(traceback.format_exc())
+            messagebox.showerror("Error", "An error occurred during patching.")
+
+root = tk.Tk()
+app = KOTORPatchingToolUI(root)
+root.mainloop()
+
 def create_font_pack(lang: Language):
     print(f"Creating font pack for '{lang.name}'...")
     write_bitmap_font(Path.cwd() / f"font_pack_{lang.name}.tga", parser_args.font_path, (parser_args.resolution, parser_args.resolution), lang)
-
 
 parser = argparse.ArgumentParser(description="Finds differences between two KOTOR installations")
 parser.add_argument("--path", type=str, help="Path to the first K1/TSL install, file, or directory to patch.")
@@ -330,7 +496,6 @@ parser.add_argument(
     default=False,
     help="Use cProfile to find where most of the execution time is taking place in source code.",
 )
-
 parser_args, unknown = parser.parse_known_args()
 LOGGING_ENABLED = bool(parser_args.logging is None or parser_args.logging)
 while True:
@@ -449,12 +614,9 @@ if parser_args.translate:
             translation_option = None  # type: ignore[assignment]
             continue
         break
-
 parser_args.use_profiler = bool(parser_args.use_profiler)
 input("Parameters have been set! Press [Enter] to start the patching process, or Ctrl+C to exit.")
 profiler = None
-
-
 if translation_option is not None and parser_args.to_lang != "ALL":
     pytranslator = Translator(parser_args.to_lang)
     pytranslator.translation_option = translation_option  # type: ignore[assignment]
@@ -462,7 +624,6 @@ try:
     if parser_args.use_profiler:
         profiler = cProfile.Profile()
         profiler.enable()
-
     if parser_args.to_lang == "ALL":
         for lang in Language.__members__:
             print(f"Translating to {lang}...")
@@ -477,13 +638,11 @@ try:
         if parser_args.create_fonts:
             create_font_pack(parser_args.to_lang)
         comparison: bool | None = run_patches(parser_args.path)
-
     if profiler is not None:
         profiler.disable()
         profiler_output_file = Path("profiler_output.pstat").resolve()
         profiler.dump_stats(str(profiler_output_file))
         log_output(f"Profiler output saved to: {profiler_output_file}")
-
     log_output(f"Completed batch patcher of {parser_args.path}")
     sys.exit(0)
 except KeyboardInterrupt:
