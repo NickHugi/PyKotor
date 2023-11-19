@@ -22,9 +22,9 @@ if TYPE_CHECKING:
 
 def getMouseCode(string: str):
     MOUSE_MAP = {
-        "LEFT": QtCore.Qt.LeftButton,  # type: ignore[reportGeneralTypeIssues]
-        "MIDDLE": QtCore.Qt.MiddleButton,  # type: ignore[reportGeneralTypeIssues]
-        "RIGHT": QtCore.Qt.RightButton,  # type: ignore[reportGeneralTypeIssues]
+        "LEFT": QtCore.Qt.LeftButton,
+        "MIDDLE": QtCore.Qt.MiddleButton,
+        "RIGHT": QtCore.Qt.RightButton,
     }
 
     return MOUSE_MAP[string]
@@ -43,9 +43,9 @@ def getKeyCode(string: str):
     - Returns the mapped key code if found, otherwise returns the first key code from parsing the key name.
     """
     KEY_MAP = {
-        "CTRL": QtCore.Qt.Key_Control,  # type: ignore[reportGeneralTypeIssues]
-        "ALT": QtCore.Qt.Key_Alt,  # type: ignore[reportGeneralTypeIssues]
-        "SHIFT": QtCore.Qt.Key_Shift,  # type: ignore[reportGeneralTypeIssues]
+        "CTRL": QtCore.Qt.Key_Control,
+        "ALT": QtCore.Qt.Key_Alt,
+        "SHIFT": QtCore.Qt.Key_Shift,
     }
 
     if string in KEY_MAP:
