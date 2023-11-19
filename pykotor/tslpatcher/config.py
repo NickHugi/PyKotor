@@ -30,7 +30,7 @@ if TYPE_CHECKING:
 
     from pykotor.common.misc import Game
     from pykotor.tslpatcher.mods.gff import ModificationsGFF
-    from pykotor.tslpatcher.mods.nss import ModificationsNSS
+    from pykotor.tslpatcher.mods.nss import ModificationsNCS, ModificationsNSS
     from pykotor.tslpatcher.mods.ssf import ModificationsSSF
     from pykotor.tslpatcher.mods.twoda import Modifications2DA
 
@@ -71,6 +71,7 @@ class PatcherConfig:
         self.patches_gff: list[ModificationsGFF] = []
         self.patches_ssf: list[ModificationsSSF] = []
         self.patches_nss: list[ModificationsNSS] = []
+        self.patches_ncs: list[ModificationsNCS] = []
         self.patches_tlk: ModificationsTLK = ModificationsTLK()
 
     def load(self, ini_text: str, mod_path: os.PathLike | str, logger: PatchLogger | None = None) -> None:
@@ -487,11 +488,12 @@ class ModInstaller:
                 config.install_list.append(file_install)
 
         patches_list: list[PatcherModifications] = [
-            *config.install_list,
+            *config.install_list,  # Note: TSLPatcher executes [InstallList] after [TLKList]
             *([config.patches_tlk] if config.patches_tlk.modifiers else []),
             *config.patches_2da,
             *config.patches_gff,
             *config.patches_nss,
+            *config.patches_ncs,   # Note: TSLPatcher executes [CompileList] after [HACKList]
             *config.patches_ssf,
         ]
 

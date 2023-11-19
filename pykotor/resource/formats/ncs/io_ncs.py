@@ -28,7 +28,7 @@ class NCSBinaryReader(ResourceReader):
         self._instructions: dict[int, NCSInstruction] = {}
         self._jumps: dict[NCSInstruction, int] = {}
 
-    @autoclose
+    #@autoclose
     def load(
         self,
         auto_close: bool = True,

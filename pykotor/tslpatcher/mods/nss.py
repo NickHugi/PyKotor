@@ -6,7 +6,7 @@ import re
 from tempfile import TemporaryDirectory
 from typing import TYPE_CHECKING
 
-from pykotor.common.stream import BinaryReader
+from pykotor.common.stream import BinaryReader, BinaryWriter
 from pykotor.resource.formats.ncs import bytes_ncs
 from pykotor.resource.formats.ncs import compile_nss as compile_with_builtin
 from pykotor.resource.formats.ncs.compilers import ExternalNCSCompiler
@@ -20,6 +20,38 @@ if TYPE_CHECKING:
     from pykotor.tslpatcher.logger import PatchLogger
     from pykotor.tslpatcher.memory import PatcherMemory
 
+
+class ModificationsNCS(PatcherModifications):
+    def __init__(self, filename, replace=None, modifiers=None) -> None:
+        super().__init__(filename, replace, modifiers)
+        self.action: str = "Hacking"
+        self.hackdata: list[tuple[str, int, int]] = []
+
+    def execute_patch(self, ncs_source: SOURCE_TYPES, *args) -> bytes:
+        ncs_bytes = bytes_ncs(ncs_source)
+        self.apply(ncs_bytes, *args)
+        return ncs_bytes
+
+    def apply(self, ncs_bytes: bytearray, memory: PatcherMemory, log: PatchLogger | None = None, game: Game | None = None) -> None:
+        writer = BinaryWriter.to_bytearray(ncs_bytes)
+        for this_data in self.hackdata:
+            token_type, offset, token_id_or_value = this_data
+            log.add_note(f"HACKList {self.sourcefile}: seeking to offset {offset:#X}")
+            writer.seek(offset)
+            value = token_id_or_value
+            if token_type == "StrRef":  # noqa: S105
+                value = memory.memory_str[value]
+            elif token_type == "2DAMemory":  # noqa: S105
+                value = int(memory.memory_2da[value])
+            log.add_note(f"HACKList {self.sourcefile}: writing WORD {value} at offset {offset:#X}")
+            writer.write_int16(value)
+            writer.seek(offset * -1)
+        ncs_bytes.clear()
+        ncs_bytes.extend(writer.data())
+
+    def pop_tslpatcher_vars(self, file_section_dict, default_destination=PatcherModifications.DEFAULT_DESTINATION):
+        super().pop_tslpatcher_vars(file_section_dict, default_destination)
+        self.replace_file = file_section_dict.pop("ReplaceFile", self.replace_file)  # for some reason, hacklist doesn't prefix with an exclamation point.
 
 class ModificationsNSS(PatcherModifications):
     def __init__(self, filename, replace=None, modifiers=None) -> None:
@@ -104,8 +136,22 @@ class ModificationsNSS(PatcherModifications):
             logger.add_note(f"Patching from a unix operating system, compiling '{self.sourcefile}' using the built-in compilers...")
 
         # Compile using built-in script compiler if external compiler fails.
-        return bytes_ncs(compile_with_builtin(source, game))
 
-    def pop_tslpatcher_vars(self, file_section_dict, default_destination=PatcherModifications.DEFAULT_DESTINATION):
-        super().pop_tslpatcher_vars(file_section_dict, default_destination)
-        # TODO: Need to handle HACKList here and in apply.
+        source = MutableString(decode_bytes_with_fallbacks(nss_bytes))
+        self.apply(source, memory, logger, game)
+        return bytes_ncs(compile_with_builtin(source.value, game))
+
+    def apply(self, nss_source: MutableString, memory: PatcherMemory, logger: PatchLogger | None = None, game: Game | None = None) -> None:
+        match = re.search(r"#2DAMEMORY\d+#", nss_source.value)
+        while match:
+            token_id = int(nss_source.value[match.start() + 10 : match.end() - 1])
+            value_str: str = memory.memory_2da[token_id]
+            nss_source.value = nss_source.value[: match.start()] + value_str + nss_source.value[match.end() :]
+            match = re.search(r"#2DAMEMORY\d+#", nss_source.value)
+
+        match = re.search(r"#StrRef\d+#", nss_source.value)
+        while match:
+            token_id = int(nss_source.value[match.start() + 7 : match.end() - 1])
+            value = memory.memory_str[token_id]
+            nss_source.value = nss_source.value[: match.start()] + str(value) + nss_source.value[match.end() :]
+            match = re.search(r"#StrRef\d+#", nss_source.value)

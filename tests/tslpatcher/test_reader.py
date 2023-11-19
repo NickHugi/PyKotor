@@ -44,6 +44,7 @@ from pykotor.tslpatcher.mods.twoda import (
     CopyRow2DA,
     RowValue2DAMemory,
     RowValueConstant,
+    RowValueHigh,
     RowValueRowCell,
     RowValueRowIndex,
     RowValueRowLabel,
@@ -917,6 +918,94 @@ class TestConfigReader(unittest.TestCase):
         # noinspection PyTypeChecker
         mod_1: CopyRow2DA = config.patches_2da[0].modifiers.pop(0)  # type: ignore
         self.assertEqual("copy_row_1", mod_1.identifier)
+    
+    def test_2da_copyrow_high(self):
+        """Test that high() is working correctly in copyrow's."""
+
+        ini_text = """
+            [2DAList]
+            Table0=spells_hlfp_test.2da
+
+            [spells_hlfp_test.2da]
+            CopyRow0=spells_forcestrike
+
+            [spells_forcestrike]
+            RowIndex=23
+            ExclusiveColumn=label
+            label=ST_FORCE_POWER_STRIKE
+            name=StrRef0
+            spelldesc=StrRef1
+            forcepoints=55
+            jedimaster=21
+            sithlord=21
+            guardian=-1
+            consular=-1
+            sentinel=-1
+            weapmstr=-1
+            watchman=-1
+            marauder=-1
+            assassin=-1
+            inate=21
+            maxcr=12
+            category=0x4101
+            iconresref=ip_st_strike
+            impactscript=st_forcestrike
+            conjanim=up
+            castanim=up
+            forcehostile=high()
+            dark_recom=****
+            light_recom=****
+            forcepriority=0
+            pips=3
+            """
+
+        ini = ConfigParser(
+            delimiters=("="),
+            allow_no_value=True,
+            strict=False,
+            interpolation=None,
+        )
+        # use case-sensitive keys
+        ini.optionxform = lambda optionstr: optionstr  #  type: ignore[method-assign]
+
+        ini.read_string(ini_text)
+
+        config = PatcherConfig()
+        ConfigReader(ini, "").load(config)
+
+        # noinspection PyTypeChecker
+        mod_0: CopyRow2DA = config.patches_2da[0].modifiers.pop(0)  # type: ignore
+
+        # Asserting all properties of mod_0
+        self.assertEqual(TargetType.ROW_INDEX, mod_0.target.target_type)
+        self.assertEqual(23, mod_0.target.value)
+        self.assertEqual("spells_forcestrike", mod_0.identifier)
+        self.assertEqual("label", mod_0.exclusive_column)
+        self.assertEqual("ST_FORCE_POWER_STRIKE", mod_0.cells["label"].string)
+        self.assertEqual("55", mod_0.cells['forcepoints'].string)
+        self.assertEqual("21", mod_0.cells['jedimaster'].string)
+        self.assertEqual("21", mod_0.cells['sithlord'].string)
+        self.assertEqual("-1", mod_0.cells['guardian'].string)
+        self.assertEqual("-1", mod_0.cells['consular'].string)
+        self.assertEqual("-1", mod_0.cells['sentinel'].string)
+        self.assertEqual("-1", mod_0.cells['weapmstr'].string)
+        self.assertEqual("-1", mod_0.cells['watchman'].string)
+        self.assertEqual("-1", mod_0.cells['marauder'].string)
+        self.assertEqual("-1", mod_0.cells['assassin'].string)
+        self.assertEqual("21", mod_0.cells['inate'].string)
+        self.assertEqual("12", mod_0.cells['maxcr'].string)
+        self.assertEqual(f"{0x4101:#x}", mod_0.cells['category'].string)
+        self.assertEqual("ip_st_strike", mod_0.cells['iconresref'].string)
+        self.assertEqual("st_forcestrike", mod_0.cells['impactscript'].string)
+        self.assertEqual("up", mod_0.cells['conjanim'].string)
+        self.assertEqual("up", mod_0.cells['castanim'].string)
+        self.assertEqual("high()", mod_0.cells['forcehostile'].column)
+        self.assertIsInstance(mod_0.cells["forcehostile"], RowValueHigh)
+        self.assertEqual("", mod_0.cells['dark_recom'].string)
+        self.assertEqual("", mod_0.cells['light_recom'].string)
+        self.assertEqual("0", mod_0.cells['forcepriority'].string)
+        self.assertEqual("3", mod_0.cells['pips'].string)
+        
 
     def test_2da_copyrow_target(self):
         """Test that target values (line to modify) are loading correctly."""

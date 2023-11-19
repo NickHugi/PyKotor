@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     from pykotor.common.misc import CaseInsensitiveDict, Game
@@ -31,7 +31,17 @@ class PatcherModifications(ABC):
         self.skip_if_not_replace = False  # [InstallList] only
 
     @abstractmethod
-    def apply(self, source: SOURCE_TYPES, memory: PatcherMemory, logger: PatchLogger, game: Game) -> bytes:
+    def execute_patch(self, source: SOURCE_TYPES, memory: PatcherMemory, logger: PatchLogger, game: Game) -> bytes:
+        ...
+
+    @abstractmethod
+    def apply(
+        self,
+        mutable_data: Any,
+        memory: PatcherMemory,
+        log: PatchLogger | None = None,
+        game: Game | None = None,
+    ) -> None:
         ...
 
     def pop_tslpatcher_vars(self, file_section_dict: CaseInsensitiveDict, default_destination=None) -> None:
