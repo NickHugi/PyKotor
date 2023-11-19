@@ -1,9 +1,10 @@
 {
   "version": "0.2.0",
-  "justMyCode": false,
+  "justMyCode": true,
   "preLaunchTask": "install_requirements",
   "dependsOn": "install_requirements",
   "configurations": [
+    
     {
       "name": "Python: Current File",
       "type": "python",
@@ -14,7 +15,7 @@
         "-Xfrozen_modules=off",
         "-Xdev"
       ],
-      "justMyCode": false,
+      "justMyCode": true,
     },
     {
       "name": "Debug Unit Test",
