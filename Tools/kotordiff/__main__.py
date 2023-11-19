@@ -453,7 +453,6 @@ def main() -> None:
     log_output()
     log_output(f"Using --path1='{PARSER_ARGS.path1}'")
     log_output(f"Using --path2='{PARSER_ARGS.path2}'")
-    log_output(f"Using --output-log='{PARSER_ARGS.output_log}'")
     log_output(f"Using --ignore-rims={PARSER_ARGS.ignore_rims!s}")
     log_output(f"Using --ignore-tlk={PARSER_ARGS.ignore_tlk!s}")
     log_output(f"Using --ignore-lips={PARSER_ARGS.ignore_lips!s}")
