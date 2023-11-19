@@ -509,7 +509,7 @@ class ModInstaller:
             if not data_to_patch_bytes:
                 self.log.add_warning(f"'{patch.sourcefile}' has no content/data and is completely empty.")
 
-            patched_bytes_data = patch.apply(data_to_patch_bytes, memory, self.log, self._game)
+            patched_bytes_data = patch.execute_patch(data_to_patch_bytes, memory, self.log, self._game)
             if capsule is not None:
                 self.handle_override_type(patch)
                 capsule.add(*ResourceIdentifier.from_path(patch.saveas), patched_bytes_data)
