@@ -19,8 +19,12 @@ PATH_TYPES = Union[PathElem, List[PathElem], Tuple[PathElem, ...]]
 
 
 def simple_wrapper(fn_name, wrapped_class_type) -> Callable[..., Any]:
-    """Wraps a function to handle case-sensitive pathlib.PurePath arguments
+    """Wraps a function to handle case-sensitive pathlib.PurePath arguments.
+    This is a hacky way of ensuring that all args to any pathlib methods have their path case-sensitively resolved.
+    This also resolves self and kwargs for ensured accuracy.
+
     Args:
+    ----
         fn_name: The name of the function to wrap
         wrapped_class_type: The class type that the function belongs to
     Returns:
@@ -56,7 +60,7 @@ def simple_wrapper(fn_name, wrapped_class_type) -> Callable[..., Any]:
     return wrapped
 
 
-def create_case_insensitive_pathlib_class(cls) -> None:
+def create_case_insensitive_pathlib_class(cls) -> None:  # TODO: move into CaseAwarePath.__getattr__
     # Create a dictionary that'll hold the original methods for this class
     """Wraps methods of a pathlib class to be case insensitive
     Args:
@@ -73,7 +77,7 @@ def create_case_insensitive_pathlib_class(cls) -> None:
     """
     cls._original_methods = {}
     mro = cls.mro()  # Gets the method resolution order
-    parent_classes = mro[1:-1]  # Exclude the current class itself
+    parent_classes = mro[1:-1]  # Exclude the current class itself and the object class
 
     # Store already wrapped methods to avoid wrapping multiple times
     wrapped_methods = set()
@@ -103,8 +107,8 @@ def create_case_insensitive_pathlib_class(cls) -> None:
                 wrapped_methods.add(attr_name)
 
 
-class CaseAwarePath(InternalPath):  # TODO: Move to common
-    """A class capable of resolving case-sensitivity in a path. Absolutely essential for working with KOTOR files."""
+class CaseAwarePath(InternalPath):  # TODO: Move to pykotor.common
+    """A class capable of resolving case-sensitivity in a path. Absolutely essential for working with KOTOR files on Unix filesystems."""
 
     def resolve(self, strict=False):
         new_path = super().resolve(strict)
@@ -180,16 +184,17 @@ class CaseAwarePath(InternalPath):  # TODO: Move to common
 
             # Find the first non-existent case-sensitive file/folder in hierarchy
             if not next_path.safe_isdir() and base_path.safe_isdir():
-                base_path_items_generator = (
-                    item for item in base_path.safe_iterdir() if (i == len(parts) - 1) or item.safe_isdir()
-                )
 
                 # if multiple are found, use the one that most closely matches our case
                 # A closest match is defined in this context as the file/folder's name which has the most case-sensitive positional character matches
                 # If two closest matches are identical (e.g. we're looking for TeST and we find TeSt and TesT), it's random.
-                parts[i] = CaseAwarePath._find_closest_match(
+                parts[i] = CaseAwarePath.find_closest_match(
                     parts[i],
-                    base_path_items_generator,
+                    (
+                        item
+                        for item in base_path.safe_iterdir()
+                        if (i == len(parts) - 1) or item.safe_isdir()
+                    ),
                 )
 
             # return a CaseAwarePath instance that resolves the case of existing items on disk, joined with the non-existing
@@ -202,23 +207,20 @@ class CaseAwarePath(InternalPath):  # TODO: Move to common
         return CaseAwarePath._create_instance(*parts)
 
     @classmethod
-    def _find_closest_match(cls, target, candidates: Generator[InternalPath, None, None]) -> str:
-        max_matching_chars = -1
-        closest_match = target
+    def find_closest_match(cls, target: str, candidates: Generator[InternalPath, None, None]) -> str:
+        max_matching_chars: int = -1
+        closest_match: str = target
         for candidate in candidates:
-            matching_chars = cls._get_matching_characters_count(
-                candidate.name,
-                target,
-            )
+            matching_chars: int = cls.get_matching_characters_count(candidate.name, target)
             if matching_chars > max_matching_chars:
-                max_matching_chars = matching_chars
                 closest_match = candidate.name
-                if max_matching_chars == len(target):
+                if matching_chars == len(target):  # break if exact match
                     break
+                max_matching_chars = matching_chars
         return closest_match
 
     @staticmethod
-    def _get_matching_characters_count(str1: str, str2: str) -> int:
+    def get_matching_characters_count(str1: str, str2: str) -> int:
         """Returns the number of case sensitive characters that match in each position of the two strings.
         if str1 and str2 are NOT case-insensitive matches, this method will return -1.
         """

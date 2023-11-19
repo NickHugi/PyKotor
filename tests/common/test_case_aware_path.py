@@ -54,12 +54,12 @@ class TestCaseAwarePath(unittest.TestCase):
     @unittest.skipIf(os.name == "nt", "see the HACK in pykotor\\tools\\path.py")
     def test_find_closest_match(self):
         items = [CaseAwarePath("test"), CaseAwarePath("TEST"), CaseAwarePath("TesT"), CaseAwarePath("teSt")]
-        self.assertEqual(str(CaseAwarePath._find_closest_match("teST", items)), "teSt")  # type: ignore[generator vs list]
+        self.assertEqual(str(CaseAwarePath.find_closest_match("teST", items)), "teSt")  # type: ignore[generator vs list]
 
     @unittest.skipIf(os.name == "nt", "see the HACK in pykotor\\tools\\path.py")
     def test_get_matching_characters_count(self):
-        self.assertEqual(CaseAwarePath._get_matching_characters_count("test", "tesT"), 3)
-        self.assertEqual(CaseAwarePath._get_matching_characters_count("test", "teat"), -1)
+        self.assertEqual(CaseAwarePath.get_matching_characters_count("test", "tesT"), 3)
+        self.assertEqual(CaseAwarePath.get_matching_characters_count("test", "teat"), -1)
 
     def test_fix_path_formatting(self):
         self.assertEqual(CaseAwarePath._fix_path_formatting("C:/path//to/dir/", "\\"), "C:\\path\\to\\dir")
