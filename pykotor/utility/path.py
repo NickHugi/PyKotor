@@ -60,6 +60,10 @@ class BasePurePath:
         instance.__init__(*args, **kwargs)
         return instance
 
+    # Call is_relative_to when using 'in' keyword
+    def __contains__(self, other_path: os.PathLike | str):
+        return self.is_relative_to(other_path)
+
     def __str__(self):
         """Call _fix_path_formatting before returning the pathlib class's __str__ result.
         In Python 3.12, pathlib's __str__ methods will return '' instead of '.', so we return '.' in this instance for backwards compatibility.
