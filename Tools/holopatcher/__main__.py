@@ -352,16 +352,16 @@ class App(tk.Tk):
                         else:
                             missing_files = True
                             print(f"ERROR! {line} no longer exists!")
-            if missing_files:
-                messagebox.showerror(
-                    "Backup out of date or mismatched",
-                    (
-                        f"This backup doesn't match your current KOTOR installation. Files are missing/changed in your KOTOR install.{os.linesep}"
-                        f"It is important that you uninstall all mods in their installed order when utilizing this feature.{os.linesep}"
-                        f"Also ensure you selected the right mod, and the right KOTOR folder."
-                    ),
-                )
-                return
+#            if missing_files:
+#                messagebox.showerror(
+#                    "Backup out of date or mismatched",
+#                    (
+#                        f"This backup doesn't match your current KOTOR installation. Files are missing/changed in your KOTOR install.{os.linesep}"
+#                        f"It is important that you uninstall all mods in their installed order when utilizing this feature.{os.linesep}"
+#                        f"Also ensure you selected the right mod, and the right KOTOR folder."
+#                    ),
+#                )
+#                return
         all_items_in_backup = list(Path(most_recent_backup_folder).safe_rglob("*"))
         files_in_backup: list[Path] = [item for item in all_items_in_backup if item.safe_isfile()]
         folder_count: int = len(all_items_in_backup) - len(files_in_backup)

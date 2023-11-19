@@ -73,24 +73,23 @@ class ModificationsNSS(PatcherModifications):
             source = source[: match.start()] + str(value) + source[match.end() :]
             match = re.search(r"#StrRef\d+#", source)
 
+        if os.name == "nt":
+            source_script = self.nwnnsscomp_path.parent / self.sourcefile
+            nwnnsscompiler = ExternalNCSCompiler(self.nwnnsscomp_path)
+            detected_nwnnsscomp = next((key for key, value in ExternalNCSCompiler.NWNNSSCOMP_SHA256_HASHES.items() if value == nwnnsscompiler.filehash), None)
+            if detected_nwnnsscomp != "TSLPatcher":
+                logger.add_warning(
+                    "The nwnnsscomp.exe in the tslpatchdata folder is not the expected TSLPatcher version.\n"
+                    f"PyKotor has detected that the provided nwnnsscomp.exe is the '{detected_nwnnsscomp}' version.\n"
+                    "PyKotor will compile regardless, but this may not yield the expected result.",
+                )
+            with TemporaryDirectory() as tempdir:
+                tempcompiled_filepath = Path(tempdir, "temp_script.ncs")
+                nwnnsscompiler.compile_script(source_script, tempcompiled_filepath, game)
+                return BinaryReader.load_file(tempcompiled_filepath)
         if os.name == "posix":
             # Compile using built-in script compiler.
             return bytes_ncs(compile_with_builtin(source, game))
-        if os.name == "nt":
-            # Compile using nwnnsscomp.exe on windows.
-            #  1. Create a temporary directory
-            #  2. Compile script with nwnnsscomp.exe's CLI to that directory.
-            #  3. Load newly compiled script as bytes and return them.
-            #  4. cleanup the temp dir
-            with TemporaryDirectory() as tempdir:
-                tempdir_path = Path(tempdir)
-                source_script = self.nwnnsscomp_path.parent / self.sourcefile
-                tempcompiled_filepath = tempdir_path / "temp_script.ncs"
-
-                nwnnsscompiler = ExternalNCSCompiler(self.nwnnsscomp_path)
-                nwnnsscompiler.compile_script(source_script, tempcompiled_filepath, game)
-                compiled_bytes: bytes = BinaryReader.load_file(tempcompiled_filepath)
-                return compiled_bytes
 
         logger.add_error("Operating system not supported - cannot compile script.")
         return b""
