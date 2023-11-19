@@ -30,7 +30,7 @@ class MutableString:
 class ModificationsNCS(PatcherModifications):
     def __init__(self, filename, replace=None, modifiers=None) -> None:
         super().__init__(filename, replace, modifiers)
-        self.action: str = "Hacking"
+        self.action: str = "Hack "
         self.hackdata: list[tuple[str, int, int]] = []
 
     def execute_patch(self, ncs_source: SOURCE_TYPES, *args) -> bytes:
