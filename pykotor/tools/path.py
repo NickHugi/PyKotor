@@ -93,7 +93,7 @@ def create_case_insensitive_pathlib_class(cls) -> None:  # TODO: move into CaseA
         "__setattr__",
         "__init__",
         "_init",
-        *[method for method in dir(cls) if callable(getattr(cls, method))],
+        *[method for method in cls.__dict__ if callable(getattr(cls, method))],
     }
 
     for parent in parent_classes:
