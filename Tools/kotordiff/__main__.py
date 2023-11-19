@@ -410,12 +410,7 @@ def main() -> None:
     PARSER.add_argument("--ignore-tlk", type=bool, help="Whether to compare TLK files (default is False)")
     PARSER.add_argument("--ignore-lips", type=bool, help="Whether to compare LIPS (default is False)")
     PARSER.add_argument("--logging", type=bool, help="Whether to log the results to a file or not (default is True)")
-    PARSER.add_argument(
-        "--use-profiler",
-        type=bool,
-        default=False,
-        help="Use cProfile to find where most of the execution time is taking place in source code.",
-    )
+    PARSER.add_argument("--use-profiler", type=bool, default=False, help="Use cProfile to find where most of the execution time is taking place in source code.")
 
     PARSER_ARGS, unknown = PARSER.parse_known_args()
     LOGGING_ENABLED = bool(PARSER_ARGS.logging is None or PARSER_ARGS.logging)
@@ -423,8 +418,7 @@ def main() -> None:
         PARSER_ARGS.path1 = Path(
             PARSER_ARGS.path1
             or (unknown[0] if len(unknown) > 0 else None)
-            or input("Path to the first K1/TSL install, file, or directory to diff: ")
-            or "C:\\Program Files (x86)\\Steam\\steamapps\\common\\Knights of the Old Republic II",
+            or input("Path to the first K1/TSL install, file, or directory to diff: "),
         ).resolve()
         if PARSER_ARGS.path1.exists():
             break
@@ -435,8 +429,7 @@ def main() -> None:
         PARSER_ARGS.path2 = Path(
             PARSER_ARGS.path2
             or (unknown[1] if len(unknown) > 1 else None)
-            or input("Path to the second K1/TSL install, file, or directory to diff: ")
-            or "C:\\Program Files (x86)\\Steam\\steamapps\\common\\Knights of the Old Republic II - PyKotor",
+            or input("Path to the second K1/TSL install, file, or directory to diff: "),
         ).resolve()
         if PARSER_ARGS.path2.exists():
             break
