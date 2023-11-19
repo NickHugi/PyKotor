@@ -111,7 +111,7 @@ class ExternalNCSCompiler(NCSCompiler):
         source_file: os.PathLike | str,
         output_file: os.PathLike | str,
         game: Game | int,
-        timeout: int=15,
+        timeout: int=5,
     ) -> None:
         """Compiles a NSS script into NCS using the external compiler.
         Function is compatible with any nwnnsscomp.exe versions.
@@ -121,7 +121,7 @@ class ExternalNCSCompiler(NCSCompiler):
             source_file: Path or name of the source file to compile
             output_file: Path or name of the output file
             game: Game object or ID of the game module
-            timeout - Optional[int]: How long to wait for compiling to finish. Defaults to 15 seconds.
+            timeout - Optional[int]: How long to wait for compiling to finish. Defaults to 5 seconds.
 
         Returns:
         -------
@@ -146,7 +146,7 @@ class ExternalNCSCompiler(NCSCompiler):
         source_file: os.PathLike | str,
         output_file: os.PathLike | str,
         game: Game | int,
-        timeout: int=15,
+        timeout: int=5,
     ) -> None:
         """Decompiles a script file into C# source code.
 
@@ -155,7 +155,7 @@ class ExternalNCSCompiler(NCSCompiler):
             source_file: Path to the script file to decompile.
             output_file: Path to output the decompiled C# source code.
             game: The Game object containing configuration.
-            timeout - Optional[int]: How long to wait for decompiling to finish. Defaults to 15 seconds.
+            timeout - Optional[int]: How long to wait for decompiling to finish. Defaults to 5 seconds.
 
         Returns:
         -------
