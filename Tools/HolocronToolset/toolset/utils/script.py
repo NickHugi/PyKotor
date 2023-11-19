@@ -62,10 +62,9 @@ def decompileScript(compiled: bytes, tsl: bool) -> str:
 
     try:
         game = Game.K2 if tsl else Game.K1
-        result = ExternalNCSCompiler(ncs_decompiler_path).decompile_script(tempCompiledPath, tempDecompiledPath, game)
-        if result:
-            return BinaryReader.load_file(tempDecompiledPath).decode(encoding="windows-1252")
-    finally:
+        ExternalNCSCompiler(ncs_decompiler_path).decompile_script(tempCompiledPath, tempDecompiledPath, game)
+        return BinaryReader.load_file(tempDecompiledPath).decode(encoding="windows-1252")
+    except Exception:
         global_settings.ncsDecompilerPath = None
 
     return ""
