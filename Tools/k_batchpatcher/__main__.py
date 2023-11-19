@@ -8,7 +8,6 @@ import tkinter as tk
 import traceback
 from copy import deepcopy
 from io import StringIO
-from pathlib import Path
 from tkinter import filedialog, messagebox, ttk
 from typing import TYPE_CHECKING
 
@@ -354,6 +353,7 @@ class KOTORPatchingToolUI:
 
         # To Language
         ttk.Label(self.root, text="To Language:").grid(row=row, column=0)
+        row += 1
         self.create_language_checkbuttons(row)
         row += len(Language)
 

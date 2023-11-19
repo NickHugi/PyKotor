@@ -13,9 +13,8 @@ from configparser import ConfigParser
 from datetime import datetime, timedelta, timezone
 from enum import IntEnum
 from threading import Thread
-from tkinter import filedialog
+from tkinter import filedialog, messagebox, ttk
 from tkinter import font as tkfont
-from tkinter import messagebox, ttk
 from typing import TYPE_CHECKING, NoReturn
 
 if getattr(sys, "frozen", False) is False:
@@ -387,9 +386,7 @@ class App(tk.Tk):
                 destination_path = destination_folder / file_path.relative_to(most_recent_backup_folder)
                 destination_path.parent.mkdir(parents=True, exist_ok=True)
                 shutil.copy(file_path, destination_path)
-                self.write_log(
-                    f"Restoring backup of '{file_path.name}' to '{destination_path.relative_to(destination_folder.parent)}'...",
-                )
+                self.write_log(f"Restoring backup of '{file_path.name}' to '{destination_path.relative_to(destination_folder.parent)}'...")
         except Exception as e:  # noqa: BLE001
             error_name, msg = universal_simplify_exception(e)
             messagebox.showerror(

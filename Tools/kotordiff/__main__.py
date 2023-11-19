@@ -374,7 +374,7 @@ def diff_installs(install_path1: os.PathLike | str, install_path2: os.PathLike |
 
 
 def is_kotor_install_dir(path: os.PathLike | str) -> bool:
-    c_path: CaseAwarePath = CaseAwarePath(path)
+    c_path: CaseAwarePath = path if isinstance(path, CaseAwarePath) else CaseAwarePath(path)
     return c_path.safe_isdir() and c_path.joinpath("chitin.key").exists()
 
 
