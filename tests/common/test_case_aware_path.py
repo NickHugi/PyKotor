@@ -61,6 +61,19 @@ class TestCaseAwarePath(unittest.TestCase):
         self.assertEqual(CaseAwarePath.get_matching_characters_count("test", "tesT"), 3)
         self.assertEqual(CaseAwarePath.get_matching_characters_count("test", "teat"), -1)
 
+    @unittest.skipIf(os.name == "nt", "see the HACK in pykotor\\tools\\path.py")
+    def test_relative_to_case_sensitive(self):
+        file_path = CaseAwarePath("TEST\\path\\to\\something.test")
+        folder_path = CaseAwarePath("TesT\\Path\\")
+        self.assertTrue(folder_path in file_path)
+        self.assertTrue(file_path.is_relative_to(folder_path))
+
+    def test_relative_to_base(self):
+        file_path = CaseAwarePath("TEST\\path\\to\\something.test")
+        folder_path = CaseAwarePath("TEST\\path\\")
+        self.assertTrue(folder_path in file_path)
+        self.assertTrue(file_path.is_relative_to(folder_path))
+
     def test_fix_path_formatting(self):
         self.assertEqual(CaseAwarePath._fix_path_formatting("C:/path//to/dir/", "\\"), "C:\\path\\to\\dir")
         self.assertEqual(CaseAwarePath._fix_path_formatting("C:/path//to/dir/", "/"), "C:/path/to/dir")
@@ -77,6 +90,45 @@ class TestCaseAwarePath(unittest.TestCase):
         self.assertTrue(CaseAwarePath.should_resolve_case(CaseAwarePath("/path/to/dir")))
         self.assertFalse(CaseAwarePath.should_resolve_case("path/to/dir"))
 
+class TestIsRelativeTo(unittest.TestCase):
+
+    def test_basic(self):
+        p1 = CaseAwarePath('/usr/local/bin')
+        p2 = CaseAwarePath('/usr/local')
+        self.assertTrue(p1.is_relative_to(p2))
+
+    def test_different_paths(self):
+        p1 = CaseAwarePath('/usr/local/bin') 
+        p2 = CaseAwarePath('/etc')
+        self.assertFalse(p1.is_relative_to(p2))
+
+    def test_relative_paths(self):
+        p1 = CaseAwarePath('docs/file.txt')
+        p2 = CaseAwarePath('docs')
+        self.assertTrue(p1.is_relative_to(p2))
+
+    def test_case_insensitive(self):
+        p1 = CaseAwarePath('/User/Docs')
+        p2 = CaseAwarePath('/user/docs')
+        self.assertTrue(p1.is_relative_to(p2))
+
+    def test_not_path(self):
+        p1 = CaseAwarePath('/home')
+        p2 = '/home'
+        self.assertTrue(p1.is_relative_to(p2))
+
+    def test_empty_path(self):
+        p1 = CaseAwarePath('')
+        p2 = CaseAwarePath('/home')
+        self.assertFalse(p1.is_relative_to(p2))
+
+    def test_same_path(self):
+        p1 = CaseAwarePath('/home/user')
+        p2 = CaseAwarePath('/home/user')
+        self.assertTrue(p1.is_relative_to(p2))
+
+if __name__ == '__main__':
+    unittest.main()
 
 if __name__ == "__main__":
     unittest.main()

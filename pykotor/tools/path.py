@@ -3,20 +3,17 @@ from __future__ import annotations
 import os
 import pathlib
 import platform
-from typing import TYPE_CHECKING, Any, Callable, Generator, List, Tuple, Union
+from typing import TYPE_CHECKING, Any, Callable, Generator
 
 from pykotor.tools.registry import winreg_key
 from pykotor.utility.misc import is_instance_or_subinstance
 from pykotor.utility.path import Path as InternalPath
+from pykotor.utility.path import PathElem
 from pykotor.utility.path import PurePath as InternalPurePath
 from pykotor.utility.registry import resolve_reg_key_to_path
 
 if TYPE_CHECKING:
     from pykotor.common.misc import Game
-
-PathElem = Union[str, os.PathLike]
-PATH_TYPES = Union[PathElem, List[PathElem], Tuple[PathElem, ...]]
-
 
 def simple_wrapper(fn_name, wrapped_class_type) -> Callable[..., Any]:
     """Wraps a function to handle case-sensitive pathlib.PurePath arguments.
@@ -96,6 +93,7 @@ def create_case_insensitive_pathlib_class(cls) -> None:  # TODO: move into CaseA
         "__setattr__",
         "__init__",
         "_init",
+        *[method for method in dir(cls) if callable(getattr(cls, method))],
     }
 
     for parent in parent_classes:
@@ -137,25 +135,11 @@ class CaseAwarePath(InternalPath):  # TODO: Move to pykotor.common
             else super(self.__class__, self.get_case_sensitive_path(self)).__str__()
         )
 
-    def is_relative_to(self, other: PathElem) -> bool:
-        """Check if path is relative to other path
-        Args:
-            self: Path to check
-            other: Path to check against
-        Returns:
-            bool: Whether self is relative to other
-        Processing Logic:
-        - Resolve self and other if they are paths
-        - Get lowercase string representations of self and other
-        - Check if self string starts with other string
-        - Return True if it starts with, False otherwise.
-        """
-        other = other if isinstance(other, InternalPurePath) else InternalPurePath(other)
-        other = other.resolve() if isinstance(other, InternalPath) else other
-        resolved_self = self.resolve() if isinstance(self, InternalPath) else self
-        self_str = str(resolved_self).lower()
-        other_str = str(other).lower()
-        return bool(self_str.startswith(other_str))
+    def __contains__(self, other_path: os.PathLike | str):
+        return self.is_relative_to(other_path)
+
+    def is_relative_to(self, other: PathElem, case_sensitive=False) -> bool:
+        return super().is_relative_to(other, case_sensitive=case_sensitive)
 
     @staticmethod
     def get_case_sensitive_path(path: os.PathLike | str) -> CaseAwarePath:

@@ -7,22 +7,29 @@ import platform
 import re
 import sys
 import uuid
-from typing import List, Tuple, Union
+from typing import Union
 
 PathElem = Union[str, os.PathLike]
-PATH_TYPES = Union[PathElem, List[PathElem], Tuple[PathElem, ...]]
-
 
 class BasePurePath:
     """BasePath is a class created to fix some annoyances with pathlib, such as its refusal to resolve mixed/repeating/trailing slashes."""
 
-    def __new__(cls, *args: PATH_TYPES, **kwargs):
-        return super().__new__(cls, *cls.parse_args(*args), **kwargs)
+    def __new__(cls, *args: PathElem, **kwargs):
+        return args[0] if len(args) == 1 and isinstance(args[0], cls) else super().__new__(cls, *cls.parse_args(args), **kwargs)
 
     def __init__(self, *args, _called_from_pathlib=True):
+        """Initializes a path object. This is used to unify python 3.7-3.11 with most of python 3.12's changes.
+
+        Processing Logic:
+            - Finds the next class in the MRO that defines __init__ and is not BasePurePath
+            - Return immediately (do nothing here) if the next class with a __init__ is the object class
+            - Gets the __init__ method from the found class
+            - Parses args if called from pathlib and calls __init__ with parsed args
+            - Else directly calls __init__ with passed args.
+        """
         next_init_method_class = next(
             (cls for cls in self.__class__.mro() if "__init__" in cls.__dict__ and cls is not BasePurePath),
-            self.__class__,  # reminder: self.__class__ will never be BasePurePath
+            self.__class__,
         )
         # Check if the class that defines the next __init__ is object
         if next_init_method_class is object:
@@ -33,26 +40,25 @@ class BasePurePath:
 
         # Parse args if called from pathlib (Python 3.12+)
         if _called_from_pathlib:
-            init_method(self, *self.parse_args(*args))
+            init_method(self, *self.parse_args(args))
         else:
             init_method(self, *args)
 
     @classmethod
-    def parse_args(cls, *args):
+    def parse_args(cls, args: tuple[PathElem, ...]) -> list[BasePurePath]:
         args_list = list(args)
         for i, arg in enumerate(args_list):
-            if isinstance(arg, cls):
-                continue
-            path_str = arg if isinstance(arg, str) else getattr(arg, "__fspath__", lambda: None)()
-            if path_str is None:
-                msg = f"Object '{arg}' (index {i} of *args) must be str or a path-like object, but instead was '{type(arg)}'"
-                raise TypeError(msg)
+            if isinstance(arg, BasePurePath):
+                continue  # do nothing if already our instance type
+            formatted_path_str = cls._fix_path_formatting(cls._fspath_str(arg), cls._flavour.sep)  # type: ignore[attr-defined]
 
-            formatted_path_str = cls._fix_path_formatting(path_str, cls._flavour.sep)  # type: ignore[_flavour exists in children]
-            arg_pathlib_instance = super().__new__(cls, formatted_path_str)  # type: ignore  # noqa: PGH003
-            arg_pathlib_instance.__init__(formatted_path_str, _called_from_pathlib=False)
+            # Create the pathlib class instance, ignore the type errors in super().__new__
+            arg_pathlib_instance = super().__new__(cls, formatted_path_str)  # type: ignore[call-arg, reportGeneralTypeIssues]
+            arg_pathlib_instance.__init__(formatted_path_str, _called_from_pathlib=False)  # type: ignore[misc]
+
             args_list[i] = arg_pathlib_instance
-        return args_list
+
+        return args_list  # type: ignore[return-value, reportGeneralTypeIssues]
 
     @classmethod
     def _create_instance(cls, *args, **kwargs):
@@ -60,9 +66,28 @@ class BasePurePath:
         instance.__init__(*args, **kwargs)
         return instance
 
+    @staticmethod
+    def _fspath_str(arg: object) -> str:
+        """Convert object to a file system path string
+        Args:
+            arg: Object to convert to a file system path string
+        Returns:
+            str: File system path string
+        - Check if arg is already a string
+        - Check if arg has a __fspath__ method and call it
+        - Raise TypeError if arg is neither string nor has __fspath__ method.
+        """
+        if isinstance(arg, str):
+            return arg
+        fspath_method = getattr(arg, "__fspath__", None)
+        if fspath_method is not None:
+            return fspath_method()
+        msg = f"Object '{arg}' must be str or path-like object, but instead was '{type(arg)}'"
+        raise TypeError(msg)
+
     # Call is_relative_to when using 'in' keyword
     def __contains__(self, other_path: os.PathLike | str):
-        return self.is_relative_to(other_path)
+        return self.is_relative_to(other_path, case_sensitive=False)
 
     def __str__(self):
         """Call _fix_path_formatting before returning the pathlib class's __str__ result.
@@ -132,7 +157,7 @@ class BasePurePath:
         """
         return self._fix_path_formatting(super().as_posix(), slash="/")
 
-    def joinpath(self, *args: PATH_TYPES):
+    def joinpath(self, *args: PathElem):
         """Appends one or more path-like objects and/or relative paths to self.
 
         If any path being joined is already absolute, it will override and replace self instead of join us.
@@ -150,25 +175,31 @@ class BasePurePath:
             return NotImplemented
         return self._create_instance(str(self) + extension)
 
-    def is_relative_to(self, other):
-        """Checks if one path is relative to another
+    def is_relative_to(self, other: PathElem, case_sensitive=True) -> bool:
+        """Checks if self is relative to other
         Args:
             self: Path to check
             other: Path to check against
+            case_sensitive: Whether to do case-sensitive comparison
         Returns:
             bool: Whether self is relative to other
         Processing Logic:
-            - Resolve both paths if they are not already absolute
-            - Convert both paths to their string representations
-            - Lowercase both strings on Windows for case-insensitive comparisons
-            - Check if the string for self starts with the string for other.
+            - Resolve self and other if they are Path objects
+            - Convert self and other to strings
+            - Lowercase strings on Windows or if case_sensitive is False
+            - Check if self string starts with other string.
         """
-        other = other if isinstance(other, PurePath) else PurePath(other)
-        other = other.resolve() if isinstance(other, Path) else other
-        resolved_self = self.resolve() if isinstance(self, Path) else self
-        self_str = str(resolved_self)
-        other_str = str(other)
-        if os.name == "nt":
+        resolved_self = self
+        if isinstance(self, Path):
+            if not isinstance(other, Path):
+                other = self.__class__(other)
+            other = other.resolve()
+            resolved_self = resolved_self.resolve()  # type: ignore[attr-defined]
+        else:
+            other = other if isinstance(other, PurePath) else PurePath(other)
+
+        self_str, other_str = map(str, (resolved_self, other))
+        if os.name == "nt" or not case_sensitive:
             self_str = self_str.lower()
             other_str = other_str.lower()
         return bool(self_str.startswith(other_str))
