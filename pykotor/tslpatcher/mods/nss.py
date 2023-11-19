@@ -34,7 +34,11 @@ class ModificationsNCS(PatcherModifications):
         self.hackdata: list[tuple[str, int, int]] = []
 
     def execute_patch(self, ncs_source: SOURCE_TYPES, *args) -> bytes:
-        ncs_bytes = bytes_ncs(ncs_source)
+        if isinstance(ncs_source, (bytes, bytearray)):
+            ncs_bytes = bytearray(ncs_source)
+        else:
+            msg = "ncs source must be bytes due to a current bug with the read_ncs method."
+            raise TypeError(msg)
         self.apply(ncs_bytes, *args)
         return ncs_bytes
 
