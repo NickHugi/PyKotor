@@ -8,8 +8,10 @@ from pykotor.resource.formats.twoda import bytes_2da, read_2da
 from pykotor.tslpatcher.mods.template import PatcherModifications
 
 if TYPE_CHECKING:
+    from pykotor.common.misc import Game
     from pykotor.resource.formats.twoda import TwoDA, TwoDARow
     from pykotor.resource.type import SOURCE_TYPES
+    from pykotor.tslpatcher.logger import PatchLogger
     from pykotor.tslpatcher.memory import PatcherMemory
 
 
@@ -59,26 +61,16 @@ class Target:
             source_row = twoda.find_row(str(self.value))
         elif self.target_type == TargetType.LABEL_COLUMN:
             if "label" not in twoda.get_headers():
-                raise WarningError
+                msg = f"The label could not be found in the twoda's headers: ({self.target_type.name}, {self.value})"
+                raise WarningError(msg)
             if self.value not in twoda.get_column("label"):
-                raise WarningError
+                msg = f"The value '{self.value}' could not be found in the twoda's columns"
+                raise WarningError(msg)
             for row in twoda:
                 if row.get_string("label") == self.value:
                     source_row = row
 
         return source_row
-
-
-class Modifications2DA(PatcherModifications):
-    def __init__(self, filename: str):
-        super().__init__(filename)
-        self.modifiers: list[Modify2DA] = []
-
-    def apply(self, source_2da: SOURCE_TYPES, memory: PatcherMemory, log=None, game=None) -> bytes:
-        twoda: TwoDA = read_2da(source_2da)
-        for row in self.modifiers:
-            row.apply(twoda, memory)
-        return bytes_2da(twoda)
 
 
 # region Value Returners
@@ -221,12 +213,10 @@ class Modify2DA(ABC):
 
     def _check_memory(
         self,
-        value: Any,
+        value: str,
         memory: PatcherMemory,
     ) -> Any:
-        if value.startswith("2DAMEMORY"):
-            value = int(value.replace("2DAMEMORY", ""))
-        return value
+        return int(value[9:]) if value.lower().startswith("2DAMEMORY") else value
 
     @abstractmethod
     def apply(
@@ -269,7 +259,8 @@ class ChangeRow2DA(Modify2DA):
         source_row = self.target.search(twoda)
 
         if source_row is None:
-            raise WarningError
+            msg = f"The source row was not found during the search: ({self.target.target_type.name}, {self.target.value})"
+            raise WarningError(msg)
 
         cells = self._unpack(self.cells, memory, twoda, source_row)
         source_row.update_values(cells)
@@ -330,9 +321,7 @@ class AddRow2DA(Modify2DA):
         if self.exclusive_column is not None:
             if self.exclusive_column not in self.cells:
                 msg = f"Exclusive column {self.exclusive_column} does not exists"
-                raise WarningError(
-                    msg,
-                )
+                raise WarningError(msg)
 
             exclusive_value = self.cells[self.exclusive_column].value(
                 memory,
@@ -347,9 +336,7 @@ class AddRow2DA(Modify2DA):
             row_label = str(twoda.get_height()) if self.row_label is None else self.row_label
             index = twoda.add_row(row_label, {})
             self._row = target_row = twoda.get_row(index)
-            target_row.update_values(
-                self._unpack(self.cells, memory, twoda, target_row),
-            )
+            target_row.update_values(self._unpack(self.cells, memory, twoda, target_row))
         else:
             cells = self._unpack(self.cells, memory, twoda, target_row)
             target_row.update_values(cells)
@@ -419,9 +406,7 @@ class CopyRow2DA(Modify2DA):
         if self.exclusive_column is not None:
             if self.exclusive_column not in self.cells:
                 msg = f"Exclusive column {self.exclusive_column} does not exists"
-                raise WarningError(
-                    msg,
-                )
+                raise WarningError(msg)
 
             exclusive_value = self.cells[self.exclusive_column].value(
                 memory,
@@ -528,7 +513,41 @@ class AddColumn2DA(Modify2DA):
                 cell = twoda.find_row(value[1:]).get_string(self.header)
                 memory.memory_2da[token_id] = cell
             else:
-                raise WarningError
-
-
+                msg = f"store_2da dict has an invalid value at {token_id}: '{value}'"
+                raise WarningError(msg)
 # endregion
+
+class Modifications2DA(PatcherModifications):
+    def __init__(self, filename: str):
+        super().__init__(filename)
+        self.modifiers: list[Modify2DA] = []
+
+    def execute_patch(
+        self,
+        source_2da: SOURCE_TYPES,
+        memory: PatcherMemory,
+        log: PatchLogger | None = None,
+        game: Game | None = None,
+    ) -> bytes:
+        twoda: TwoDA = read_2da(source_2da)
+        self.apply(twoda, memory, log, game)
+        return bytes_2da(twoda)
+
+    def apply(
+        self,
+        twoda: TwoDA,
+        memory: PatcherMemory,
+        log: PatchLogger | None = None,
+        game: Game | None = None,
+    ) -> None:
+        for row in self.modifiers:
+            try:
+                row.apply(twoda, memory)
+            except Exception as e:  # noqa: PERF203, BLE001
+                msg = f"{e!s} when patching the file '{self.saveas}'"
+                if log:
+                    log.add_warning(msg) if isinstance(e, WarningError) else log.add_error(msg)
+                else:
+                    print(msg)
+                if not isinstance(e, WarningError):
+                    break

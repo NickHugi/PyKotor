@@ -22,14 +22,26 @@ class ModificationsTLK(PatcherModifications):
         self.destination = self.DEFAULT_DESTINATION
         self.modifiers: list[ModifyTLK] = modifiers if modifiers is not None else []
 
-    def apply(
+    def execute_patch(
         self,
         source_tlk: SOURCE_TYPES,
         memory: PatcherMemory,
         log: PatchLogger | None = None,
         game: Game | None = None,
     ) -> bytes:
+        if log:
+            log.add_note(f"Load TLK '{self.saveas}' for patching")
         dialog: TLK = read_tlk(source_tlk)
+        self.apply(dialog, memory, log, game)
+        return bytes_tlk(dialog)
+
+    def apply(
+        self,
+        dialog: TLK,
+        memory: PatcherMemory,
+        log: PatchLogger | None = None,
+        game: Game | None = None,
+    ) -> None:
         for modifier in self.modifiers:
             if modifier.is_replacement:
                 modifier.replace(dialog, memory)
@@ -37,7 +49,6 @@ class ModificationsTLK(PatcherModifications):
                 modifier.insert(dialog, memory)
             if log:
                 log.complete_patch()
-        return bytes_tlk(dialog)
 
     def pop_tslpatcher_vars(self, file_section_dict, default_destination=DEFAULT_DESTINATION):
         if "!ReplaceFile" in file_section_dict:

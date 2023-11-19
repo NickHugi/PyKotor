@@ -20,6 +20,13 @@ if TYPE_CHECKING:
     from pykotor.tslpatcher.logger import PatchLogger
     from pykotor.tslpatcher.memory import PatcherMemory
 
+class MutableString:
+    def __init__(self, value=""):
+        self.value = value
+
+    def __str__(self):
+        return self.value
+
 
 class ModificationsNSS(PatcherModifications):
     def __init__(self, filename, replace=None, modifiers=None) -> None:
@@ -38,47 +45,32 @@ class ModificationsNSS(PatcherModifications):
             return BinaryReader.load_file(nss_source)
         return None
 
-    def apply(self, nss_source: SOURCE_TYPES, memory: PatcherMemory, logger: PatchLogger, game: Game) -> bytes:
-        """Takes the source nss bytes and replaces instances of 2DAMEMORY# and StrRef# with the values in patcher memory. Compiles the
-        source bytes and returns the ncs compiled script as a bytes object.
+    def execute_patch(self, nss_source: SOURCE_TYPES, memory: PatcherMemory, logger: PatchLogger, game: Game) -> bytes:
+        """Apply NSS patch and compile script.
 
         Args:
         ----
-            nss_source: SOURCE_TYPES: NSS source object to apply modifications to
-            memory: (PatcherMemory): current memory of 2damemory and strref
-            logger (PatchLogger): Logging object
-            game (Game): KOTOR Game enum value
+            nss_source: {The source of the NSS script to apply (file path or bytes)}
+            memory: {The PatcherMemory instance to apply patches to}
+            logger: {The PatchLogger to log messages}
+            game: {The Game enum value to pass to the compiler}.
 
         Returns:
         -------
-            bytes: Compiled NCS bytes
-
+            bytes: {The compiled NSS script as bytes}
         Processing Logic:
-        1. Loads NSS source bytes and decodes
-        2. Replaces #2DAMEMORY and StrRef# tokens with values from patcher memory
-        3. Attempts to compile with external NWN compiler if on Windows
-        4. Falls back to built-in compiler if external isn't available, fails, or not on Windows
+            - Load NSS source bytes
+            - Apply patch operations to memory
+            - Compile script
+            - Handle external vs built-in compilation.
+
+            Takes the source nss bytes and replaces instances of 2DAMEMORY# and StrRef# with the values in patcher memory. Compiles the
+        source bytes and returns the ncs compiled script as a bytes object.
         """
         nss_bytes: bytes | None = self.load(nss_source)
         if nss_bytes is None:
             logger.add_error(f"Invalid nss source provided to ModificationsNSS.apply(), got {type(nss_source)}")
             return b""
-
-        source: str = decode_bytes_with_fallbacks(nss_bytes)
-
-        match = re.search(r"#2DAMEMORY\d+#", source)
-        while match:
-            token_id = int(source[match.start() + 10 : match.end() - 1])
-            value_str: str = memory.memory_2da[token_id]
-            source = source[: match.start()] + value_str + source[match.end() :]
-            match = re.search(r"#2DAMEMORY\d+#", source)
-
-        match = re.search(r"#StrRef\d+#", source)
-        while match:
-            token_id = int(source[match.start() + 7 : match.end() - 1])
-            value = memory.memory_str[token_id]
-            source = source[: match.start()] + str(value) + source[match.end() :]
-            match = re.search(r"#StrRef\d+#", source)
 
         if os.name == "nt" and self.nwnnsscomp_path.exists():
             nwnnsscompiler = ExternalNCSCompiler(self.nwnnsscomp_path)
@@ -104,7 +96,25 @@ class ModificationsNSS(PatcherModifications):
             logger.add_note(f"Patching from a unix operating system, compiling '{self.sourcefile}' using the built-in compilers...")
 
         # Compile using built-in script compiler if external compiler fails.
-        return bytes_ncs(compile_with_builtin(source, game))
+
+        source = MutableString(decode_bytes_with_fallbacks(nss_bytes))
+        self.apply(source, memory, logger, game)
+        return bytes_ncs(compile_with_builtin(source.value, game))
+
+    def apply(self, nss_source: MutableString, memory: PatcherMemory, logger: PatchLogger | None = None, game: Game | None = None) -> None:
+        match = re.search(r"#2DAMEMORY\d+#", nss_source.value)
+        while match:
+            token_id = int(nss_source.value[match.start() + 10 : match.end() - 1])
+            value_str: str = memory.memory_2da[token_id]
+            nss_source.value = nss_source.value[: match.start()] + value_str + nss_source.value[match.end() :]
+            match = re.search(r"#2DAMEMORY\d+#", nss_source.value)
+
+        match = re.search(r"#StrRef\d+#", nss_source.value)
+        while match:
+            token_id = int(nss_source.value[match.start() + 7 : match.end() - 1])
+            value = memory.memory_str[token_id]
+            nss_source.value = nss_source.value[: match.start()] + str(value) + nss_source.value[match.end() :]
+            match = re.search(r"#StrRef\d+#", nss_source.value)
 
     def pop_tslpatcher_vars(self, file_section_dict, default_destination=PatcherModifications.DEFAULT_DESTINATION):
         super().pop_tslpatcher_vars(file_section_dict, default_destination)

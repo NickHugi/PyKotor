@@ -3,8 +3,8 @@ from __future__ import annotations
 import shutil
 from typing import TYPE_CHECKING
 
-from pykotor.utility.path import PurePath
 from pykotor.tslpatcher.mods.template import PatcherModifications
+from pykotor.utility.path import PurePath
 
 if TYPE_CHECKING:
     import os
@@ -292,5 +292,8 @@ class InstallFile(PatcherModifications):
         self.action: str = "Copy "
         self.skip_if_not_replace: bool = True
 
-    def apply(self, source, memory, log, game):
+    def execute_patch(self, source, memory, log, game):
         return source
+
+    def apply(self, source, memory, log, game):
+        ...

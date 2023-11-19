@@ -32,8 +32,11 @@ class ModificationsSSF(PatcherModifications):
         self.no_replacefile_check = True
         self.modifiers: list[ModifySSF] = modifiers if modifiers is not None else []
 
-    def apply(self, source_ssf: SOURCE_TYPES, memory: PatcherMemory, log=None, game=None) -> bytes:
+    def execute_patch(self, source_ssf: SOURCE_TYPES, memory: PatcherMemory, log=None, game=None) -> bytes:
         ssf: SSF = read_ssf(source_ssf)
+        self.apply(ssf, memory, log, game)
+        return bytes_ssf(ssf)
+
+    def apply(self, ssf: SSF, memory: PatcherMemory, log=None, game=None) -> None:
         for modifier in self.modifiers:
             modifier.apply(ssf, memory)
-        return bytes_ssf(ssf)
