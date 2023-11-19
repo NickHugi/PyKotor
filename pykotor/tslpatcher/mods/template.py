@@ -37,7 +37,7 @@ class PatcherModifications(ABC):
     @abstractmethod
     def apply(
         self,
-        twoda: Any,
+        mutable_data: Any,
         memory: PatcherMemory,
         log: PatchLogger | None = None,
         game: Game | None = None,

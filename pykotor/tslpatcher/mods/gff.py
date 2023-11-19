@@ -382,19 +382,14 @@ class ModificationsGFF(PatcherModifications):
         self,
         source_gff: SOURCE_TYPES,
         memory: PatcherMemory,
-        logger: PatchLogger,
+        logger: PatchLogger | None = None,
         game: Game | None = None,
     ) -> bytes:
         gff: GFF = read_gff(source_gff)
         self.apply(gff, memory, logger, game)
         return bytes_gff(gff)
-
-    def apply(
-        self,
-        gff: GFF,
-        memory: PatcherMemory,
-        logger: PatchLogger | None = None,
-        game: Game | None = None,
-    ) -> None:
+    
+    def apply(self, gff: GFF, memory: PatcherMemory, logger: PatchLogger | None = None, game: Game | None = None) -> None:
         for change_field in self.modifiers:
             change_field.apply(gff.root, memory, logger)
+

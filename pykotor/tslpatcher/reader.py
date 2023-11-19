@@ -29,7 +29,7 @@ from pykotor.tslpatcher.mods.gff import (
     ModifyFieldGFF,
 )
 from pykotor.tslpatcher.mods.install import InstallFile
-from pykotor.tslpatcher.mods.nss import ModificationsNSS
+from pykotor.tslpatcher.mods.nss import ModificationsNCS, ModificationsNSS
 from pykotor.tslpatcher.mods.ssf import ModificationsSSF, ModifySSF
 from pykotor.tslpatcher.mods.tlk import ModificationsTLK, ModifyTLK
 from pykotor.tslpatcher.mods.twoda import (
@@ -111,19 +111,13 @@ class ConfigReader:
     def load(self, config: PatcherConfig) -> PatcherConfig:
         self.config = config
 
-        # check for unsupported [HACKList]
-        hacklist_found = self.get_section_name("HACKList")
-        if hacklist_found:
-            for _ in self.ini[hacklist_found]:
-                msg = "TSLPatcher's [HACKList] section is not currently supported."
-                raise NotImplementedError(msg)
-
         self.load_settings()
         self.load_tlk_list()
         self.load_install_list()
         self.load_2da_list()
         self.load_gff_list()
         self.load_compile_list()
+        self.load_hack_list()
         self.load_ssf_list()
 
         return self.config
@@ -604,6 +598,36 @@ class ConfigReader:
                 modifications.pop_tslpatcher_vars(file_section_dict, default_destination)
             self.config.patches_nss.append(modifications)
 
+    def load_hack_list(self) -> None:
+        hacklist_section = self.get_section_name("hacklist")
+        if not hacklist_section:
+            self.log.add_note("[HACKList] section missing from ini.")
+            return
+
+        self.log.add_note("Loading [HACKList] patches from ini...")
+        compilelist_section_dict = CaseInsensitiveDict(self.ini[hacklist_section].items())
+        default_destination = compilelist_section_dict.pop("!DefaultDestination", ModificationsNCS.DEFAULT_DESTINATION)
+
+        for identifier, file in compilelist_section_dict.items():
+            replace = identifier.lower().startswith("replace")
+            modifications = ModificationsNCS(file, replace)
+
+            optional_file_section_name = self.get_section_name(file)
+            if optional_file_section_name is None:
+                raise KeyError(SECTION_NOT_FOUND_ERROR.format(file, identifier, file, hacklist_section))
+            file_section_dict = CaseInsensitiveDict(self.ini[optional_file_section_name].items())
+            modifications.pop_tslpatcher_vars(file_section_dict, default_destination)
+            for offset_str, value_str in file_section_dict.items():
+                lower_value = value_str.lower()
+                if lower_value.startswith("strref"):
+                    modifications.hackdata.append(("StrRef", int(offset_str), int(value_str[6:])))
+                elif lower_value.startswith("2damemory"):
+                    modifications.hackdata.append(("2DAMEMORY", int(offset_str), int(value_str[9:])))
+                else:
+                    modifications.hackdata.append(("VALUE", int(offset_str), int(value_str)))
+
+            self.config.patches_ncs.append(modifications)
+
     #################
 
     def modify_field_gff(self, identifier: str, key: str, string_value: str) -> ModifyFieldGFF:
@@ -1079,7 +1103,7 @@ class ConfigReader:
                 token_id = int(value[6:])
                 row_value = RowValueTLKMemory(token_id)
             elif value_lowercase == "high()":
-                row_value = RowValueHigh(None) if modifier == "rowlabel" else RowValueHigh(value)
+                row_value = RowValueHigh(None) if modifier == "rowlabel" else RowValueHigh(modifier)
             elif value_lowercase == "rowindex":
                 row_value = RowValueRowIndex()
             elif value_lowercase == "rowlabel":

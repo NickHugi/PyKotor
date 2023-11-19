@@ -114,6 +114,16 @@ class RowValueHigh(RowValue):
         self.column: str | None = column
 
     def value(self, memory: PatcherMemory, twoda: TwoDA, row: TwoDARow | None) -> str:
+        """Returns the maximum value in a column or overall label
+        Args:
+            memory: PatcherMemory object
+            twoda: TwoDA object
+            row: TwoDARow object or None
+        Returns:
+            str: String representation of maximum value
+        - If column is not None, return maximum value in that column
+        - Else return overall maximum label value.
+        """
         return str(twoda.column_max(self.column)) if self.column is not None else str(twoda.label_max())
 
 

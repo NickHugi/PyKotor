@@ -74,7 +74,7 @@ def write_ncs(
 def bytes_ncs(
     ncs: NCS | SOURCE_TYPES,
     file_format: ResourceType = ResourceType.NCS,
-) -> bytes:
+) -> bytearray:
     """Returns the NCS data in the specified format (NCS only) as a bytes object.
 
     This is a convenience method that wraps the write_ncs() method.

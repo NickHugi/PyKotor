@@ -359,6 +359,21 @@ class TwoDA:
     def label_max(
         self,
     ) -> int:
+        """Finds the maximum label and returns the next integer.
+
+        Args:
+        ----
+            self: The object containing labels.
+
+        Returns:
+        -------
+            int: The next integer label.
+        Processes labels:
+            - Initialize max_found to -1
+            - Iterate through labels
+            - Try converting each label to int and update max_found
+            - Return max_found + 1 to get the next integer label.
+        """
         max_found = -1
         for label in self.get_labels():
             with suppress(ValueError):

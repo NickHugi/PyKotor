@@ -14,6 +14,7 @@ from pykotor.resource.formats.gff import GFFContent, bytes_gff
 from pykotor.resource.formats.lip import bytes_lip
 from pykotor.resource.formats.ssf import bytes_ssf
 from pykotor.resource.formats.tlk import bytes_tlk
+from pykotor.resource.formats.tlk.tlk_auto import read_tlk
 from pykotor.resource.formats.twoda import bytes_2da
 from pykotor.tools.encoding import decode_bytes_with_fallbacks
 from pykotor.tools.misc import is_capsule_file
@@ -30,7 +31,7 @@ if TYPE_CHECKING:
 
     from pykotor.common.misc import Game
     from pykotor.tslpatcher.mods.gff import ModificationsGFF
-    from pykotor.tslpatcher.mods.nss import ModificationsNSS
+    from pykotor.tslpatcher.mods.nss import ModificationsNCS, ModificationsNSS
     from pykotor.tslpatcher.mods.ssf import ModificationsSSF
     from pykotor.tslpatcher.mods.twoda import Modifications2DA
 
@@ -71,6 +72,7 @@ class PatcherConfig:
         self.patches_gff: list[ModificationsGFF] = []
         self.patches_ssf: list[ModificationsSSF] = []
         self.patches_nss: list[ModificationsNSS] = []
+        self.patches_ncs: list[ModificationsNCS] = []
         self.patches_tlk: ModificationsTLK = ModificationsTLK()
 
     def load(self, ini_text: str, mod_path: os.PathLike | str, logger: PatchLogger | None = None) -> None:
@@ -313,7 +315,7 @@ class ModInstaller:
         if ext == "ssf":
             return bytes_ssf(resource_path)
         if ext == "tlk":
-            return bytes_tlk(resource_path)
+            return read_tlk(resource_path)
         if ext == "2da":
             return bytes_2da(resource_path)
         if ext == "lip":
@@ -430,7 +432,7 @@ class ModInstaller:
         - Logs the patching action
         - Returns True if the patch should be applied.
         """
-        local_folder = self.game_path.name if patch.destination.strip("/").strip("\\") == "." else patch.destination
+        local_folder = self.game_path.name if patch.destination.strip("\\").strip("/") == "." else patch.destination
         container_type = "folder" if capsule is None else "archive"
 
         if patch.replace_file and exists:
@@ -487,11 +489,12 @@ class ModInstaller:
                 config.install_list.append(file_install)
 
         patches_list: list[PatcherModifications] = [
-            *config.install_list,
+            *config.install_list,  # Note: TSLPatcher executes [InstallList] after [TLKList]
             *([config.patches_tlk] if config.patches_tlk.modifiers else []),
             *config.patches_2da,
             *config.patches_gff,
             *config.patches_nss,
+            *config.patches_ncs,   # Note: TSLPatcher executes [CompileList] after [HACKList]
             *config.patches_ssf,
         ]
 
