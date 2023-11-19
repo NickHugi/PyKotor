@@ -27,12 +27,13 @@ if getattr(sys, "frozen", False) is False:
         sys.path.insert(0, working_dir)
 
 from pykotor.common.misc import CaseInsensitiveDict, Game
-from pykotor.helpers.path import Path
-from pykotor.tools.misc import striprtf, universal_simplify_exception
 from pykotor.tools.path import CaseAwarePath, find_kotor_paths_from_default
 from pykotor.tslpatcher.config import ModInstaller, PatcherNamespace
 from pykotor.tslpatcher.logger import PatchLogger
 from pykotor.tslpatcher.reader import ConfigReader, NamespaceReader
+from pykotor.utility.error_handling import universal_simplify_exception
+from pykotor.utility.path import Path
+from pykotor.utility.string import striprtf
 
 if TYPE_CHECKING:
     from io import TextIOWrapper
