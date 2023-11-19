@@ -75,6 +75,7 @@ def create_case_insensitive_pathlib_class(cls) -> None:  # TODO: move into CaseA
     cls._original_methods = {}
     mro = cls.mro()  # Gets the method resolution order
     parent_classes = mro[1:-1]  # Exclude the current class itself and the object class
+    cls_methods = [method for method in cls.__dict__ if callable(getattr(cls, method))]  # define names of methods in the cls, excluding inherited
 
     # Store already wrapped methods to avoid wrapping multiple times
     wrapped_methods = set()
@@ -84,16 +85,12 @@ def create_case_insensitive_pathlib_class(cls) -> None:  # TODO: move into CaseA
         "__instancecheck__",
         "__getattribute__",
         "__setattribute__",
-        "__str__",
-        "__repr__",
         "_fix_path_formatting",
-        "__eq__",
-        "__hash__",
         "__getattr__",
         "__setattr__",
         "__init__",
         "_init",
-        *[method for method in cls.__dict__ if callable(getattr(cls, method))],
+        *cls_methods,
     }
 
     for parent in parent_classes:
