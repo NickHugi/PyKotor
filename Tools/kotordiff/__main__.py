@@ -407,8 +407,8 @@ def main() -> None:
     PARSER.add_argument("--output-log", type=str, help="Filepath of the desired output logfile")
     PARSER.add_argument("--compare-hashes", type=bool, help="Compare hashes of any unsupported file/resource type (default is True)")
     PARSER.add_argument("--ignore-rims", type=bool, help="Whether to compare RIMS (default is False)")
-    PARSER.add_argument("--ignore-tlk", type=bool, help="Whether to compare dialog.TLK (default is False)")
-    PARSER.add_argument("--ignore-lips", type=bool, help="Whether to compare dialog.TLK (default is False)")
+    PARSER.add_argument("--ignore-tlk", type=bool, help="Whether to compare TLK files (default is False)")
+    PARSER.add_argument("--ignore-lips", type=bool, help="Whether to compare LIPS (default is False)")
     PARSER.add_argument("--logging", type=bool, help="Whether to log the results to a file or not (default is True)")
     PARSER.add_argument(
         "--use-profiler",
