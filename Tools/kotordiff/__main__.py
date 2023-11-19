@@ -134,6 +134,7 @@ def diff_data(
         # log_output(message)  # noqa: ERA001
         return True
 
+    assert PARSER_ARGS
     if ext == "tlk" and PARSER_ARGS.ignore_tlk:
         return True
     if ext == "lip" and PARSER_ARGS.ignore_lips:
@@ -167,13 +168,13 @@ def diff_data(
         try:
             twoda1 = twoda.read_2da(data1)
         except Exception:  # noqa: BLE001
-            if file1_rel.parent.name == "rims" and (file1_rel.name.lower() == "global.rim" or file1_rel.name == "miniglobal.rim"):
+            if file1_rel.parent.name.lower() == "rims" and (file1_rel.name.lower() == "global.rim" or file1_rel.name == "miniglobal.rim"):
                 return True
             return log_output(f"Error loading 2DA {file1_rel.parent / where}!")  # type: ignore[func-returns-value]
         try:
             twoda2 = twoda.read_2da(data2)
         except Exception:  # noqa: BLE001
-            if file1_rel.parent.name == "rims" and (file1_rel.name.lower() == "global.rim" or file1_rel.name == "miniglobal.rim"):
+            if file1_rel.parent.name.lower() == "rims" and (file1_rel.name.lower() == "global.rim" or file1_rel.name == "miniglobal.rim"):
                 return True
             return log_output(f"Error loading 2DA {file2_rel.parent / where}!")  # type: ignore[func-returns-value]
         if twoda1 and not twoda2:
@@ -292,15 +293,11 @@ def diff_files(file1: os.PathLike | str, file2: os.PathLike | str) -> bool | Non
         missing_in_capsule1: set[str] = capsule2_resources.keys() - capsule1_resources.keys()
         missing_in_capsule2: set[str] = capsule1_resources.keys() - capsule2_resources.keys()
         for resref in missing_in_capsule1:
-            message = (
-                f"Capsule1 resource missing\t{c_file1_rel}\t{resref}\t{capsule2_resources[resref].restype().extension.upper()}"
-            )
+            message = f"Capsule1 resource missing\t{c_file1_rel}\t{resref}\t{capsule2_resources[resref].restype().extension.upper()}"
             log_output(message)
 
         for resref in missing_in_capsule2:
-            message = (
-                f"Capsule2 resource missing\t{c_file2_rel}\t{resref}\t{capsule1_resources[resref].restype().extension.upper()}"
-            )
+            message = f"Capsule2 resource missing\t{c_file2_rel}\t{resref}\t{capsule1_resources[resref].restype().extension.upper()}"
             log_output(message)
 
         # Checking for differences
