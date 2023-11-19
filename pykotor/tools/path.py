@@ -116,9 +116,9 @@ class CaseAwarePath(InternalPath):  # TODO: Move to pykotor.common
             new_path = self.get_case_sensitive_path(new_path)
         return new_path
 
-    # Call __eq__ when using 'in' keyword
+    # Call is_relative_to when using 'in' keyword
     def __contains__(self, other_path: os.PathLike | str):
-        return super().__eq__(other_path)
+        return self.is_relative_to(other_path)
 
     def __hash__(self):
         """Ensures any instance of this class will be treated the same in lists etc, if they're case-insensitive matches."""
