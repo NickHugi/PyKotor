@@ -14,6 +14,7 @@ from pykotor.resource.formats.gff import GFFContent, bytes_gff
 from pykotor.resource.formats.lip import bytes_lip
 from pykotor.resource.formats.ssf import bytes_ssf
 from pykotor.resource.formats.tlk import bytes_tlk
+from pykotor.resource.formats.tlk.tlk_auto import read_tlk
 from pykotor.resource.formats.twoda import bytes_2da
 from pykotor.tools.encoding import decode_bytes_with_fallbacks
 from pykotor.tools.misc import is_capsule_file
@@ -314,7 +315,7 @@ class ModInstaller:
         if ext == "ssf":
             return bytes_ssf(resource_path)
         if ext == "tlk":
-            return bytes_tlk(resource_path)
+            return read_tlk(resource_path)
         if ext == "2da":
             return bytes_2da(resource_path)
         if ext == "lip":

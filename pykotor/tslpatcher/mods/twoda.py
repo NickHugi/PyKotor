@@ -545,3 +545,10 @@ class Modifications2DA(PatcherModifications):
     def apply(self, twoda: TwoDA, memory: PatcherMemory, log=None, game=None) -> None:
         for row in self.modifiers:
             row.apply(twoda, memory)
+
+    def pop_tslpatcher_vars(self, file_section_dict, default_destination=PatcherModifications.DEFAULT_DESTINATION):
+        if "!OverrideType" in file_section_dict:
+            msg = "!OverrideType is not supported in [2DAList]"
+            raise ValueError(msg)
+
+        super().pop_tslpatcher_vars(file_section_dict, default_destination)

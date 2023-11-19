@@ -60,7 +60,7 @@ def universal_simplify_exception(e) -> tuple[str, str]:
             return error_name, f"{error_name}: {msg}"
 
     # Check if 'args' attribute has any information
-    return error_name, f"{error_name}: {','.join(e.args)}"
+    return error_name, repr(e)
 
 
 def format_exception_with_variables(___etype___, ___value___, ___tb___, ___message___: str = "Assertion with Exception Trace") -> str:

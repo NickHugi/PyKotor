@@ -2,12 +2,12 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+from pykotor.resource.formats.tlk import TLK
 from pykotor.resource.formats.tlk.tlk_auto import bytes_tlk, read_tlk
 from pykotor.tslpatcher.mods.template import PatcherModifications
 
 if TYPE_CHECKING:
     from pykotor.common.misc import Game, ResRef
-    from pykotor.resource.formats.tlk import TLK
     from pykotor.resource.type import SOURCE_TYPES
     from pykotor.tslpatcher.logger import PatchLogger
     from pykotor.tslpatcher.memory import PatcherMemory
@@ -44,7 +44,9 @@ class ModificationsTLK(PatcherModifications):
         log: PatchLogger | None = None,
         game: Game | None = None,
     ) -> bytes:
-        dialog: TLK = read_tlk(source_tlk)
+        dialog: TLK | SOURCE_TYPES = source_tlk
+        if not isinstance(source_tlk, TLK):
+            dialog = read_tlk(source_tlk)
         self.apply(dialog, memory, log, game)
         return bytes_tlk(dialog)
 

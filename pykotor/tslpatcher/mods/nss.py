@@ -55,9 +55,6 @@ class ModificationsNCS(PatcherModifications):
                 value = int(memory.memory_2da[value])
             log.add_note(f"HACKList {self.sourcefile}: writing WORD {value} at offset {offset:#X}")
             writer.write_int16(value)
-            writer.seek(offset * -1)
-        ncs_bytes.clear()
-        ncs_bytes.extend(writer.data())
 
     def pop_tslpatcher_vars(self, file_section_dict, default_destination=PatcherModifications.DEFAULT_DESTINATION):
         super().pop_tslpatcher_vars(file_section_dict, default_destination)
