@@ -430,7 +430,7 @@ class ModInstaller:
         - Logs the patching action
         - Returns True if the patch should be applied.
         """
-        local_folder = self.game_path.name if patch.destination == "." else patch.destination
+        local_folder = self.game_path.name if patch.destination.strip("/").strip("\\") == "." else patch.destination
         container_type = "folder" if capsule is None else "archive"
 
         if patch.replace_file and exists:
