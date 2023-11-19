@@ -20,12 +20,13 @@ from pykotor.tools.misc import is_capsule_file, is_erf_file, is_mod_file, is_rim
 from pykotor.tools.path import CaseAwarePath
 from pykotor.tools.sound import fix_audio
 from pykotor.tslpatcher.logger import PatchLogger
+from pykotor.utility.path import PurePath
 
 if TYPE_CHECKING:
     import os
 
-    from pykotor.utility.path import Path
     from pykotor.resource.formats.gff import GFF
+    from pykotor.utility.path import Path
 
 
 # The SearchLocation class is an enumeration that represents different locations for searching.
@@ -94,7 +95,7 @@ class Installation:
         self._path: CaseAwarePath = path if isinstance(path, CaseAwarePath) else CaseAwarePath(path)
         self.log = logger or PatchLogger()
 
-        self._talktable: TalkTable = TalkTable(CaseAwarePath(self._path, "dialog.tlk"))
+        self._talktable: TalkTable = TalkTable(self._path / "dialog.tlk")
 
         self._chitin: list[FileResource] = []
         self._modules: dict[str, list[FileResource]] = {}
@@ -107,7 +108,6 @@ class Installation:
         self._rims: dict[str, list[FileResource]] = {}
         self._game: Game | None = None
 
-        self.log.add_note("Load chitin...")
         self.load_chitin()
         self.load_lips()
         self.load_modules()
@@ -248,7 +248,7 @@ class Installation:
     # region Load Data
 
     def load_resources(self, path: CaseAwarePath, capsule_check=None, recurse=False) -> dict[str, list[FileResource]] | list[FileResource]:
-        """Load resources for a given path and store them in the provided list.
+        """Load resources for a given path and store them in a new list/dict.
 
         Args:
         ----
@@ -292,6 +292,7 @@ class Installation:
         if not c_path.joinpath("chitin.key").exists():
             self.log.add_warning(f"The chitin.key file did not exist at '{self._path!s}' when loading the installation, skipping...")
             return
+        self.log.add_note("Load chitin...")
         self._chitin = list(Chitin(kotor_path=c_path))
 
     def load_lips(
@@ -470,7 +471,7 @@ class Installation:
         """Returns the list of subdirectories located in override folder
         linked to the Installation.
 
-        Subdirectories are cached and require to be refreshed after a folder
+        Subdirectories are cached and require a refresh after a folder
         is added, deleted or renamed.
 
         Returns
@@ -599,7 +600,7 @@ class Installation:
             capsules=capsules,
             folders=folders,
         )
-        search = batch[query]
+        search: ResourceResult | None = batch[query]
         if not search or not search.data:
             self.log.add_error(f"Could not find '{resname}.{restype}' during resource lookup.")
             return None
@@ -1160,7 +1161,7 @@ class Installation:
         -------
             The name of the area for the module.
         """
-        root = self._replace_module_extensions(module_filename)
+        root = self.replace_module_extensions(module_filename)
         if use_hardcoded:
             hardcoded = {
                 "STUNT_00": "Ebon Hawk - Cutscene (Vision Sequences)",
@@ -1244,7 +1245,7 @@ class Installation:
         -------
             The ID of the area for the module.
         """
-        root = self._replace_module_extensions(module_filename)
+        root = self.replace_module_extensions(module_filename)
         if use_hardcoded:
             hardcoded = {
                 "STUNT_00": "000",
@@ -1289,12 +1290,14 @@ class Installation:
 
         return mod_id
 
-    def _replace_module_extensions(self, module_filename: str) -> str:
+    @staticmethod
+    def replace_module_extensions(module_filepath: os.PathLike | str) -> str:
+        module_filename: str = module_filepath.name if isinstance(module_filepath, PurePath) else PurePath(module_filepath).name
         result = re.sub(r"\.mod$", "", module_filename, flags=re.IGNORECASE)
         result = re.sub(r"\.erf$", "", result, flags=re.IGNORECASE)
         result = re.sub(r"\.rim$", "", result, flags=re.IGNORECASE)
-        result = result[:-2] if result.endswith("_s") else result
-        result = result[:-4] if result.endswith("_dlg") else result
+        result = result[:-2] if result.lower().endswith("_s") else result
+        result = result[:-4] if result.lower().endswith("_dlg") else result
         return result  # noqa: RET504
 
     def module_ids(self) -> dict[str, str]:
