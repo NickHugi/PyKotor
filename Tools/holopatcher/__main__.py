@@ -690,7 +690,6 @@ class App(tk.Tk):
             self._execute_mod_install(installer)
         except Exception as e:  # noqa: BLE001
             self._handle_exception_during_install(e, installer)
-        self.set_active_install(install_running=False)
 
     def set_active_install(self, install_running: bool) -> None:
         """Sets the active install state
@@ -709,6 +708,7 @@ class App(tk.Tk):
             self.browse_button.config(state=tk.DISABLED)
         else:
             self.install_running = False
+            self.logger = PatchLogger()  # reset the errors/warnings etc
             self.install_button.config(state=tk.NORMAL)
             self.uninstall_button.config(state=tk.NORMAL)
             self.gamepaths_browse_button.config(state=tk.NORMAL)

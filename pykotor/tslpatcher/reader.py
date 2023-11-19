@@ -104,7 +104,7 @@ class ConfigReader:
         ini.read_string(ini_text)
 
         config = PatcherConfig()
-        instance = cls(ini, resolved_file_path, logger)
+        instance = cls(ini, resolved_file_path.parent, logger)
         instance.config = config
         return instance
 
