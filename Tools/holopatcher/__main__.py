@@ -140,7 +140,7 @@ class App(tk.Tk):
 
         self.uninstall_button = ttk.Button(self, text="Uninstall", command=self.uninstall_selected_mod)
         self.uninstall_button.place(x=160, y=470, width=75, height=25)
-        self.uninstall_button.place_forget()  # comment this to enable the uninstall button.
+        #self.uninstall_button.place_forget()  # comment this to enable the uninstall button.
 
         # Create a Frame to hold the Text and Scrollbar widgets
         text_frame = tk.Frame(self)
@@ -690,6 +690,7 @@ class App(tk.Tk):
             self._execute_mod_install(installer)
         except Exception as e:  # noqa: BLE001
             self._handle_exception_during_install(e, installer)
+        self.set_active_install(install_running=False)
 
     def set_active_install(self, install_running: bool) -> None:
         """Sets the active install state
