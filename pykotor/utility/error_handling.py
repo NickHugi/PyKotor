@@ -16,24 +16,19 @@ def universal_simplify_exception(e) -> tuple[str, str]:
     Processing Logic:
     - Extract the exception name from the type
     - Handle specific exception types differently
-      - FileNotFoundError uses filename attribute
-      - PermissionError uses filename attribute
-      - TimeoutError uses args[0]
-      - InterruptedError uses errno attribute
-      - ConnectionError uses request attribute if available
     - Try common exception attributes for a message
-    - Return exception name and args joined as a string if no other info available.
+    - Return (error_name, repr(e)) if nothing else.
     """
     error_name = type(e).__name__
-    # Fallback: use the exception type name itself
-    if not e.args:
-        return error_name, repr(e)
 
     # Handle FileNotFoundError, which has 'filename' attribute
     if isinstance(e, FileNotFoundError):
         if len(e.args) > 1:
-            return error_name, f"{e.args[1]}: {e.filename if hasattr(e, 'filename') else e.args[0]}"
-        return error_name, f"Could not find the file: '{e.filename if hasattr(e, 'filename') else e.args[0]}'"
+            return error_name, f"{e.args[1]}: {e.args[0]}"
+        if len(e.args) == 1:
+            return error_name, f"Could not find the file: '{e.args[0]}'"
+        if hasattr(e, "filename"):
+            return error_name, f"Could not find the file: '{e.filename}'"
 
     # Handle PermissionError, which may have a 'filename' attribute
     if isinstance(e, PermissionError):
@@ -59,7 +54,6 @@ def universal_simplify_exception(e) -> tuple[str, str]:
         if msg:
             return error_name, f"{error_name}: {msg}"
 
-    # Check if 'args' attribute has any information
     return error_name, repr(e)
 
 
