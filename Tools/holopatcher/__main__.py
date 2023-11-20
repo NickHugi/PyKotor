@@ -330,13 +330,6 @@ class App(tk.Tk):
         most_recent_backup_folder: Path = backup_parent_folder / str(sorted_backup_folders[0][0])
         self.write_log(f"Using backup folder '{most_recent_backup_folder}'")
         delete_list_file = most_recent_backup_folder / "remove these files.txt"
-        if not delete_list_file.exists():
-            # messagebox.showerror(
-            #     "File list missing from backup",
-            #     f"'remove these files.txt' missing from backup '{most_recent_backup_folder}', cannot restore backup.",  # noqa: ERA001
-            # )  # noqa: ERA001, RUF100
-            # return  # noqa: ERA001, RUF100
-            pass
         existing_files = set()
         line: str
         if delete_list_file.exists():
@@ -351,16 +344,16 @@ class App(tk.Tk):
                         else:
                             missing_files = True
                             print(f"ERROR! {line} no longer exists!")
-#            if missing_files:
-#                messagebox.showerror(
-#                    "Backup out of date or mismatched",
-#                    (
-#                        f"This backup doesn't match your current KOTOR installation. Files are missing/changed in your KOTOR install.{os.linesep}"
-#                        f"It is important that you uninstall all mods in their installed order when utilizing this feature.{os.linesep}"
-#                        f"Also ensure you selected the right mod, and the right KOTOR folder."
-#                    ),
-#                )
-#                return
+            if missing_files and not messagebox.askyesno(
+                    "Backup out of date or mismatched",
+                    (
+                        f"This backup doesn't match your current KOTOR installation. Files are missing/changed in your KOTOR install.{os.linesep}"
+                        f"It is important that you uninstall all mods in their installed order when utilizing this feature.{os.linesep}"
+                        f"Also ensure you selected the right mod, and the right KOTOR folder.{os.linesep}"
+                        "Continue anyway?"
+                    ),
+            ):
+                return
         all_items_in_backup = list(Path(most_recent_backup_folder).safe_rglob("*"))
         files_in_backup: list[Path] = [item for item in all_items_in_backup if item.safe_isfile()]
         folder_count: int = len(all_items_in_backup) - len(files_in_backup)
