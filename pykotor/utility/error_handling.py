@@ -70,7 +70,7 @@ def format_exception_with_variables(___etype___, ___value___, ___tb___, ___messa
         raise TypeError(msg)
 
     # Construct the stack trace using traceback
-    formatted_traceback = "".join(___traceback___.format_exception(___etype___, ___value___, ___tb___))
+    ___formatted_traceback___ = "".join(___traceback___.format_exception(___etype___, ___value___, ___tb___))
 
     # Capture the current stack trace
     ___frames___ = ___inspect___.getinnerframes(___tb___, context=5)
@@ -82,7 +82,7 @@ def format_exception_with_variables(___etype___, ___value___, ___tb___, ___messa
     ___detailed_message___: list[str] = [
         f"{___message___}: Exception '{___value___}' of type '{___etype___}' occurred.",
         "Formatted Traceback:",
-        formatted_traceback,
+        ___formatted_traceback___,
         "Stack Trace Variables:",
     ]
     for ___frame_info___ in ___frames___:
@@ -104,6 +104,7 @@ def format_exception_with_variables(___etype___, ___value___, ___tb___, ___messa
             and ___var___ not in [
                 "___var___",
                 "___detailed_message___",
+                "___formatted_traceback___",
                 "___message___",
                 "___default_attrs___",
                 "___frames___",
