@@ -290,16 +290,7 @@ class App(tk.Tk):
             - Restore files from backup
             - Offer to delete restored backup.
         """
-        if self.install_running:
-            messagebox.showerror("An install is already running!", "Please wait for all operations to finish")
-            return
-        namespace_option = next((x for x in self.namespaces if x.name == self.namespaces_combobox.get()), None)
-        if not self.namespaces or not namespace_option:
-            messagebox.showerror("No mod loaded", "Load/select a mod first.")
-            return
-        destination_folder = Path(self.gamepaths.get())
-        if not destination_folder.exists():
-            messagebox.showerror("No game path selected", "Select your KOTOR directory first")
+        if not self.preinstall_validate_chosen():
             return
         backup_parent_folder = Path(self.mod_path, "backup")
         if not backup_parent_folder.exists():
@@ -339,7 +330,7 @@ class App(tk.Tk):
                     line = line.strip()  # noqa: PLW2901
 
                     if line:
-                        if Path(line).safe_isfile():
+                        if Path(line).is_file():
                             existing_files.add(line)
                         else:
                             missing_files = True
@@ -354,8 +345,8 @@ class App(tk.Tk):
                     ),
             ):
                 return
-        all_items_in_backup = list(Path(most_recent_backup_folder).safe_rglob("*"))
-        files_in_backup: list[Path] = [item for item in all_items_in_backup if item.safe_isfile()]
+        all_items_in_backup = list(Path(most_recent_backup_folder).rglob("*"))
+        files_in_backup: list[Path] = [item for item in all_items_in_backup if item.is_file()]
         folder_count: int = len(all_items_in_backup) - len(files_in_backup)
 
         if len(files_in_backup) < 6:  # noqa: PLR2004[6 represents a small number of files to display]
@@ -621,19 +612,19 @@ class App(tk.Tk):
         if self.install_running:
             messagebox.showinfo(
                 "Install already running",
-                "Cannot start an install while the previous installation is still ongoing",
+                "Wait for the previous task to finish.",
             )
             return False
         if not self.mod_path or not CaseAwarePath(self.mod_path).exists():
             return _if_missing(
                 "No mod chosen",
-                "Select your mod directory before starting an install",
+                "Select your mod directory first.",
             )
         game_path = self.gamepaths.get()
         if not game_path or not CaseAwarePath(game_path).exists():
             return _if_missing(
                 "No KOTOR directory chosen",
-                "Select your KOTOR install before starting an install.",
+                "Select your KOTOR directory first.",
             )
         return self.check_access(Path(self.gamepaths.get()))
 
