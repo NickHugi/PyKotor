@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import contextlib
 import os
 import re
 import tempfile
@@ -138,6 +137,23 @@ class ModificationsNSS(PatcherModifications):
         return bytes_ncs(compile_with_builtin(source.value, game))
 
     def apply(self, nss_source: MutableString, memory: PatcherMemory, logger: PatchLogger | None = None, game: Game | None = None) -> None:
+        """Applies memory patches to a string.
+
+        Args:
+        ----
+            nss_source: {MutableString object containing the string to patch}
+            memory: {PatcherMemory object containing memory references}
+            logger: {PatchLogger object for logging (optional)}
+            game: {Game object for game context (optional)}.
+
+        Returns:
+        -------
+            None: {Returns nothing, patches string in-place}
+        Processing Logic:
+            - Searches string for #2DAMEMORY# patterns and replaces with 2DA value
+            - Searches string for #StrRef# patterns and replaces with string reference value
+            - Repeats searches until no matches remain.
+        """
         match = re.search(r"#2DAMEMORY\d+#", nss_source.value)
         while match:
             token_id = int(nss_source.value[match.start() + 10 : match.end() - 1])
