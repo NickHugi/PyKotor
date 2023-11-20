@@ -45,14 +45,16 @@ class ModificationsNCS(PatcherModifications):
         writer = BinaryWriter.from_bytearray(ncs_bytes)
         for this_data in self.hackdata:
             token_type, offset, token_id_or_value = this_data
-            log.add_note(f"HACKList {self.sourcefile}: seeking to offset {offset:#X}")
+            if log:
+                log.add_verbose(f"HACKList {self.sourcefile}: seeking to offset {offset:#X}")
             writer.seek(offset)
             value = token_id_or_value
             if token_type == "StrRef":  # noqa: S105
                 value = memory.memory_str[value]
             elif token_type == "2DAMemory":  # noqa: S105
                 value = int(memory.memory_2da[value])
-            log.add_note(f"HACKList {self.sourcefile}: writing WORD {value} at offset {offset:#X}")
+            if log:
+                log.add_verbose(f"HACKList {self.sourcefile}: writing WORD {value} at offset {offset:#X}")
             writer.write_int16(value)
 
     def pop_tslpatcher_vars(self, file_section_dict, default_destination=PatcherModifications.DEFAULT_DESTINATION):
@@ -76,7 +78,7 @@ class ModificationsNSS(PatcherModifications):
             return BinaryReader.load_file(nss_source)
         return None
 
-    def execute_patch(self, nss_source: SOURCE_TYPES, memory: PatcherMemory, logger: PatchLogger | None = None, game: Game | None = None) -> bytes:
+    def execute_patch(self, nss_source: SOURCE_TYPES, memory: PatcherMemory, logger: PatchLogger, game: Game) -> bytes:
         """Takes the source nss bytes and replaces instances of 2DAMEMORY# and StrRef# with the values in patcher memory. Compiles the
         source bytes and returns the ncs compiled script as a bytes object.
 
@@ -93,7 +95,7 @@ class ModificationsNSS(PatcherModifications):
 
         Processing Logic:
         1. Loads NSS source bytes and decodes
-        2. Replaces #2DAMEMORY and StrRef# tokens with values from patcher memory
+        2. Replaces 2DAMEMORY# and StrRef# tokens with values from patcher memory
         3. Attempts to compile with external NWN compiler if on Windows
         4. Falls back to built-in compiler if external isn't available, fails, or not on Windows
         """
@@ -123,10 +125,12 @@ class ModificationsNSS(PatcherModifications):
                 stdout, stderr = nwnnsscompiler.compile_script(temp_file.name, tempcompiled_filepath, game)
                 if stdout.strip():
                     for line in stdout.split("\n"):
-                        logger.add_verbose(line)
+                        if line.strip():
+                            logger.add_verbose(line)
                 if stderr.strip():
                     for line in stdout.split("\n"):
-                        logger.add_verbose(line)
+                        if line.strip():
+                            logger.add_verbose(line)
                     raise ValueError(stderr)
                 return BinaryReader.load_file(tempcompiled_filepath)
             except Exception as e:
