@@ -302,7 +302,7 @@ class UTDEditor(Editor):
 
                 write_gff(dismantle_dlg(DLG()), data)
                 filepath = self._installation.override_path() / f"{resname}.dlg"
-                writer = BinaryWriter.to_file(filepath)
+                writer = BinaryWriter.from_file(filepath)
                 writer.write_bytes(data)
                 writer.close()
         else:

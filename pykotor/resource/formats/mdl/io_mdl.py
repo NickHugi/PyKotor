@@ -1508,8 +1508,8 @@ class MDLBinaryWriter:
 
         self._target = target
         self._target_ext = target_ext
-        self._writer = BinaryWriter.to_bytearray()
-        self._writer_ext = BinaryWriter.to_bytearray()
+        self._writer = BinaryWriter.from_bytearray()
+        self._writer_ext = BinaryWriter.from_bytearray()
 
         self.game: Game = Game.K1
 

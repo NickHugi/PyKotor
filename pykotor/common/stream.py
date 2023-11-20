@@ -665,7 +665,7 @@ class BinaryReader:
 
 class BinaryWriter(ABC):
     @classmethod
-    def to_file(
+    def from_file(
         cls,
         path: os.PathLike | str,
     ) -> BinaryWriter:
@@ -684,7 +684,7 @@ class BinaryWriter(ABC):
         return BinaryWriterFile(stream)
 
     @classmethod
-    def to_bytearray(
+    def from_bytearray(
         cls,
         data: bytearray | None = None,
     ) -> BinaryWriter:
@@ -708,9 +708,9 @@ class BinaryWriter(ABC):
         source: TARGET_TYPES | object,
     ) -> BinaryWriter:
         if isinstance(source, (os.PathLike, str)):  # is path
-            return BinaryWriter.to_file(source)
+            return BinaryWriter.from_file(source)
         if isinstance(source, bytearray):  # is binary data
-            return BinaryWriter.to_bytearray(source)
+            return BinaryWriter.from_bytearray(source)
         if isinstance(source, BinaryWriter):
             return source
         msg = "Must specify a path, bytes object or an existing BinaryWriter instance."
@@ -1470,7 +1470,7 @@ class BinaryWriterFile(BinaryWriter):
             value: The localized string to be written.
             big: Write any integers as big endian.
         """
-        bw = BinaryWriter.to_bytearray()
+        bw = BinaryWriter.from_bytearray()
         bw.write_uint32(value.stringref, big=big, max_neg1=True)
         bw.write_uint32(len(value), big=big)
         for language, gender, substring in value:
@@ -1953,7 +1953,7 @@ class BinaryWriterBytearray(BinaryWriter):
             value: The localized string to be written.
             big: Write any integers as big endian.
         """
-        bw = BinaryWriter.to_bytearray()
+        bw = BinaryWriter.from_bytearray()
         bw.write_uint32(value.stringref, big=big, max_neg1=True)
         bw.write_uint32(len(value), big=big)
 

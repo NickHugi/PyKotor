@@ -42,7 +42,7 @@ class ModificationsNCS(PatcherModifications):
         return ncs_bytes
 
     def apply(self, ncs_bytes: bytearray, memory: PatcherMemory, log: PatchLogger | None = None, game: Game | None = None) -> None:
-        writer = BinaryWriter.to_bytearray(ncs_bytes)
+        writer = BinaryWriter.from_bytearray(ncs_bytes)
         for this_data in self.hackdata:
             token_type, offset, token_id_or_value = this_data
             log.add_note(f"HACKList {self.sourcefile}: seeking to offset {offset:#X}")

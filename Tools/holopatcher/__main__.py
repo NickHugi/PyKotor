@@ -774,6 +774,8 @@ class App(tk.Tk):
                 "Install complete!",
                 f"Check the logs for details etc. Utilize the script in the 'uninstall' folder of the mod directory to revert these changes. Total install time: {time_str}",
             )
+            if self.one_shot:
+                sys.exit(ExitCode.SUCCESS)
 
     def _handle_exception_during_install(self, e: Exception, installer: ModInstaller) -> NoReturn:
         """Handles exceptions during installation
