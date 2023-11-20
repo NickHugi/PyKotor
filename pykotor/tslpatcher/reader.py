@@ -549,7 +549,7 @@ class ConfigReader:
                     next_section_dict = CaseInsensitiveDict(self.ini[next_gff_section].items())
                     modifier = self.add_field_gff(next_gff_section, next_section_dict)
                 elif lowercase_key.startswith("2damemory"):
-                    if value.lower() != "!fieldpath" and not value.startswith("2damemory"):
+                    if value.lower() != "!fieldpath" and not value.lower().startswith("2damemory"):
                         msg = f"Cannot parse '{key}={value}' in [{identifier}]. GFFList only supports 2DAMEMORY#=!FieldPath assignments"
                         raise ValueError(msg)
                     modifier = Memory2DAModifierGFF(

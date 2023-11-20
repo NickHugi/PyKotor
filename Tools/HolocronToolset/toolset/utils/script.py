@@ -3,13 +3,13 @@ from __future__ import annotations
 import os
 
 from PyQt5.QtWidgets import QFileDialog, QMessageBox
+from toolset.gui.widgets.settings.installations import GlobalSettings, NoConfigurationSetError
 
 from pykotor.common.misc import Game
 from pykotor.common.stream import BinaryReader, BinaryWriter
-from pykotor.utility.path import Path
 from pykotor.resource.formats.ncs.compilers import ExternalNCSCompiler
 from pykotor.resource.formats.ncs.ncs_auto import bytes_ncs, compile_nss
-from toolset.gui.widgets.settings.installations import GlobalSettings, NoConfigurationSetError
+from pykotor.utility.path import Path
 
 
 def decompileScript(compiled: bytes, tsl: bool) -> str:
@@ -62,10 +62,9 @@ def decompileScript(compiled: bytes, tsl: bool) -> str:
 
     try:
         game = Game.K2 if tsl else Game.K1
-        result = ExternalNCSCompiler(ncs_decompiler_path).decompile_script(tempCompiledPath, tempDecompiledPath, game)
-        if result:
-            return BinaryReader.load_file(tempDecompiledPath).decode(encoding="windows-1252")
-    finally:
+        ExternalNCSCompiler(ncs_decompiler_path).decompile_script(tempCompiledPath, tempDecompiledPath, game)
+        return BinaryReader.load_file(tempDecompiledPath).decode(encoding="windows-1252")
+    except Exception:
         global_settings.ncsDecompilerPath = None
 
     return ""

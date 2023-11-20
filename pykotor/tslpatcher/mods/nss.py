@@ -30,7 +30,7 @@ class MutableString:
 class ModificationsNCS(PatcherModifications):
     def __init__(self, filename, replace=None, modifiers=None) -> None:
         super().__init__(filename, replace, modifiers)
-        self.action: str = "Hacking"
+        self.action: str = "Hack "
         self.hackdata: list[tuple[str, int, int]] = []
 
     def execute_patch(self, ncs_source: SOURCE_TYPES, *args) -> bytes:
@@ -103,21 +103,8 @@ class ModificationsNSS(PatcherModifications):
             logger.add_error(f"Invalid nss source provided to ModificationsNSS.apply(), got {type(nss_source)}")
             return b""
 
-        source: str = decode_bytes_with_fallbacks(nss_bytes)
-
-        match = re.search(r"#2DAMEMORY\d+#", source)
-        while match:
-            token_id = int(source[match.start() + 10 : match.end() - 1])
-            value_str: str = memory.memory_2da[token_id]
-            source = source[: match.start()] + value_str + source[match.end() :]
-            match = re.search(r"#2DAMEMORY\d+#", source)
-
-        match = re.search(r"#StrRef\d+#", source)
-        while match:
-            token_id = int(source[match.start() + 7 : match.end() - 1])
-            value = memory.memory_str[token_id]
-            source = source[: match.start()] + str(value) + source[match.end() :]
-            match = re.search(r"#StrRef\d+#", source)
+        source = MutableString(decode_bytes_with_fallbacks(nss_bytes))
+        self.apply(source, memory, logger, game)
 
         if os.name == "nt" and self.nwnnsscomp_path.exists():
             nwnnsscompiler = ExternalNCSCompiler(self.nwnnsscomp_path)
@@ -128,11 +115,16 @@ class ModificationsNSS(PatcherModifications):
                     f"PyKotor has detected that the provided nwnnsscomp.exe is the '{detected_nwnnsscomp}' version.\n"
                     "PyKotor will compile regardless, but this may not yield the expected result.",
                 )
-            with contextlib.suppress(Exception), TemporaryDirectory() as tempdir:
-                source_script = self.nwnnsscomp_path.parent / self.sourcefile
-                tempcompiled_filepath = Path(tempdir, "temp_script.ncs")
-                nwnnsscompiler.compile_script(source_script, tempcompiled_filepath, game)
-                return BinaryReader.load_file(tempcompiled_filepath)
+            try:
+                with TemporaryDirectory() as tempdir:
+                    tempdir_path = Path(tempdir)
+                    temp_source_path = tempdir_path / self.sourcefile
+                    BinaryWriter.dump(temp_source_path, source.value.encode(encoding="windows-1252", errors="ignore"))
+                    tempcompiled_filepath = tempdir_path / "temp_script.ncs"
+                    nwnnsscompiler.compile_script(temp_source_path, tempcompiled_filepath, game)
+                    return BinaryReader.load_file(tempcompiled_filepath)
+            except Exception as e:
+                logger.add_error(repr(e))
 
         if os.name == "nt":
             if not self.nwnnsscomp_path.exists():
@@ -143,8 +135,6 @@ class ModificationsNSS(PatcherModifications):
             logger.add_note(f"Patching from a unix operating system, compiling '{self.sourcefile}' using the built-in compilers...")
 
         # Compile using built-in script compiler if external compiler fails.
-        source = MutableString(decode_bytes_with_fallbacks(nss_bytes))
-        self.apply(source, memory, logger, game)
         return bytes_ncs(compile_with_builtin(source.value, game))
 
     def apply(self, nss_source: MutableString, memory: PatcherMemory, logger: PatchLogger | None = None, game: Game | None = None) -> None:
