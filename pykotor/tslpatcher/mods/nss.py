@@ -120,7 +120,14 @@ class ModificationsNSS(PatcherModifications):
                     temp_source_script = Path(temp_file.name)
                 BinaryWriter.dump(temp_source_script, source.value.encode(encoding="windows-1252", errors="ignore"))
                 tempcompiled_filepath = self.nwnnsscomp_path.parent / "temp_script.ncs"
-                nwnnsscompiler.compile_script(temp_file.name, tempcompiled_filepath, game)
+                stdout, stderr = nwnnsscompiler.compile_script(temp_file.name, tempcompiled_filepath, game)
+                if stdout.strip():
+                    for line in stdout.split("\n"):
+                        logger.add_verbose(line)
+                if stderr.strip():
+                    for line in stdout.split("\n"):
+                        logger.add_verbose(line)
+                    raise ValueError(stderr)
                 return BinaryReader.load_file(tempcompiled_filepath)
             except Exception as e:
                 logger.add_error(repr(e))
