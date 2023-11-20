@@ -13,7 +13,7 @@ URL = "https://github.com/NickHugi/PyKotor"
 
 README = (HERE / "README.md").read_text()
 REQUIREMENTS = (HERE / "requirements.txt").read_text().splitlines()
-TOOLSET_REQUIREMENTS = (HERE / "toolset" / "requirements.txt").read_text().splitlines()
+TOOLSET_REQUIREMENTS = (HERE / "Tools" / "HolocronToolset" / "toolset" / "requirements.txt").read_text().splitlines()
 REQUIREMENTS.extend(TOOLSET_REQUIREMENTS)
 
 setup(

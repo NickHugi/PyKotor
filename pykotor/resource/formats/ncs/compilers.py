@@ -113,33 +113,39 @@ class ExternalNCSCompiler(NCSCompiler):
         output_file: os.PathLike | str,
         game: Game | int,
         timeout: int=5,
-    ) -> None:
+    ) -> tuple[str, str]:
         """Compiles a NSS script into NCS using the external compiler.
-        Function is compatible with any nwnnsscomp.exe versions.
+        Function is compatible with any nwnnsscomp.exe version.
 
         Args:
         ----
-            source_file: Path or name of the source file to compile
-            output_file: Path or name of the output file
-            game: Game object or ID of the game module
-            timeout - Optional[int]: How long to wait for compiling to finish. Defaults to 5 seconds.
+            source_file: The path or name of the script source file to compile.
+            output_file: The path or name of the compiled module file to output.
+            game: The Game object or game ID to configure the compiler for.
+            timeout: The timeout in seconds for the compilation process.
 
         Returns:
         -------
-            None
+            A tuple of (stdout, stderr) strings from the compilation process.
 
         Processing Logic:
-        - Checks if configuration exists and configures if not
-        - Calls nwnnsscomp to compile the source file using the configuration
-        - Waits up to the provided timeout seconds for compilation process to complete.
+            - Configures the compiler based on the nwnnsscomp.exe used.
+            - Runs the compiler process, capturing stdout and stderr.
+            - Returns a tuple of the stdout and stderr strings on completion.
         """
         if not self.config:
             self.config = self.configure(source_file, output_file, game)
 
-        subprocess.call(
-            args = self.config.get_compile_args(str(self.nwnnsscomp_path)),
+        result = subprocess.run(
+            args=self.config.get_compile_args(str(self.nwnnsscomp_path)),
+            capture_output=True,  # Capture stdout and stderr
+            text=True,
             timeout=timeout,
+            check=False,
         )
+
+        stderr_message = result.stderr if result.stderr else "no error provided but return code is nonzero"
+        return result.stdout, stderr_message if result.returncode != 0 else result.stderr
 
 
     def decompile_script(
@@ -148,7 +154,7 @@ class ExternalNCSCompiler(NCSCompiler):
         output_file: os.PathLike | str,
         game: Game | int,
         timeout: int=5,
-    ) -> None:
+    ) -> tuple[str, str]:
         """Decompiles a script file into C# source code.
 
         Args:
@@ -170,7 +176,13 @@ class ExternalNCSCompiler(NCSCompiler):
         if not self.config:
             self.config = self.configure(source_file, output_file, game)
 
-        subprocess.call(
-            args = self.config.get_decompile_args(str(self.nwnnsscomp_path)),
+        result = subprocess.run(
+            args=self.config.get_decompile_args(str(self.nwnnsscomp_path)),
+            capture_output=True,  # Capture stdout and stderr
+            text=True,
             timeout=timeout,
+            check=False,
         )
+
+        stderr_message = result.stderr if result.stderr else "no error provided but return code is nonzero"
+        return result.stdout, stderr_message if result.returncode != 0 else result.stderr

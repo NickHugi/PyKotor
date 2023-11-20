@@ -1,9 +1,8 @@
 from __future__ import annotations
 
-import contextlib
 import os
 import re
-from tempfile import TemporaryDirectory
+import tempfile
 from typing import TYPE_CHECKING
 
 from pykotor.common.stream import BinaryReader, BinaryWriter
@@ -116,13 +115,20 @@ class ModificationsNSS(PatcherModifications):
                     "PyKotor will compile regardless, but this may not yield the expected result.",
                 )
             try:
-                with TemporaryDirectory() as tempdir:
-                    tempdir_path = Path(tempdir)
-                    temp_source_path = tempdir_path / self.sourcefile
-                    BinaryWriter.dump(temp_source_path, source.value.encode(encoding="windows-1252", errors="ignore"))
-                    tempcompiled_filepath = tempdir_path / "temp_script.ncs"
-                    nwnnsscompiler.compile_script(temp_source_path, tempcompiled_filepath, game)
-                    return BinaryReader.load_file(tempcompiled_filepath)
+                temp_source_script: Path
+                with tempfile.NamedTemporaryFile(mode="w+t", suffix=".nss", dir=self.nwnnsscomp_path.parent, delete=True) as temp_file:
+                    temp_source_script = Path(temp_file.name)
+                BinaryWriter.dump(temp_source_script, source.value.encode(encoding="windows-1252", errors="ignore"))
+                tempcompiled_filepath = self.nwnnsscomp_path.parent / "temp_script.ncs"
+                stdout, stderr = nwnnsscompiler.compile_script(temp_file.name, tempcompiled_filepath, game)
+                if stdout.strip():
+                    for line in stdout.split("\n"):
+                        logger.add_verbose(line)
+                if stderr.strip():
+                    for line in stdout.split("\n"):
+                        logger.add_verbose(line)
+                    raise ValueError(stderr)
+                return BinaryReader.load_file(tempcompiled_filepath)
             except Exception as e:
                 logger.add_error(repr(e))
 
@@ -138,6 +144,23 @@ class ModificationsNSS(PatcherModifications):
         return bytes_ncs(compile_with_builtin(source.value, game))
 
     def apply(self, nss_source: MutableString, memory: PatcherMemory, logger: PatchLogger | None = None, game: Game | None = None) -> None:
+        """Applies memory patches to a string.
+
+        Args:
+        ----
+            nss_source: {MutableString object containing the string to patch}
+            memory: {PatcherMemory object containing memory references}
+            logger: {PatchLogger object for logging (optional)}
+            game: {Game object for game context (optional)}.
+
+        Returns:
+        -------
+            None: {Returns nothing, patches string in-place}
+        Processing Logic:
+            - Searches string for #2DAMEMORY# patterns and replaces with 2DA value
+            - Searches string for #StrRef# patterns and replaces with string reference value
+            - Repeats searches until no matches remain.
+        """
         match = re.search(r"#2DAMEMORY\d+#", nss_source.value)
         while match:
             token_id = int(nss_source.value[match.start() + 10 : match.end() - 1])
