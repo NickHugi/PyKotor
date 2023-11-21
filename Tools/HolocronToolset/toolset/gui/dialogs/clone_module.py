@@ -6,7 +6,8 @@ from PyQt5.QtWidgets import QDialog, QMessageBox, QWidget
 
 from pykotor.common.module import Module
 from pykotor.tools import module
-from toolset.__main__ import is_debug_mode, is_frozen
+from pykotor.utility.misc import is_debug_mode
+from toolset.__main__ import is_frozen
 from toolset.gui.dialogs.asyncloader import AsyncLoader
 
 if TYPE_CHECKING:

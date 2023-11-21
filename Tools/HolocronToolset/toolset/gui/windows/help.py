@@ -13,10 +13,11 @@ from config import UPDATE_INFO_LINK
 from PyQt5 import QtCore
 from PyQt5.QtWidgets import QMainWindow, QMessageBox, QTreeWidgetItem, QWidget
 
-from pykotor.tools.encoding import decode_bytes_with_fallbacks
 from pykotor.common.stream import BinaryReader
+from pykotor.tools.encoding import decode_bytes_with_fallbacks
+from pykotor.utility.misc import is_debug_mode
 from pykotor.utility.path import Path, PurePath
-from toolset.__main__ import is_debug_mode, is_frozen
+from toolset.__main__ import is_frozen
 from toolset.gui.dialogs.asyncloader import AsyncLoader
 
 if TYPE_CHECKING:
@@ -29,7 +30,7 @@ class HelpWindow(QMainWindow):
     def __init__(self, parent: Optional[QWidget], startingPage: str | None = None):
         super().__init__(parent)
 
-        self.version: float | None = None
+        self.version: tuple[int, ...] | None = None
 
         from toolset.uic.windows import help
         self.ui = help.Ui_MainWindow()
@@ -55,7 +56,7 @@ class HelpWindow(QMainWindow):
             tree = ElemTree.parse("./help/contents.xml")
             root = tree.getroot()
 
-            self.version = float(root.get("version", 0.0))
+            self.version = tuple(map(int, root.get("version", "0.0").split(".")))
             self._setupContentsRecXML(None, root)
 
             # Old JSON code:
@@ -121,8 +122,8 @@ class HelpWindow(QMainWindow):
         local_dir: os.PathLike | str,
         repo_path: os.PathLike | str,
     ) -> None:
-        repo = repo if isinstance(repo, PurePath) else PurePath(repo)
-        repo_path = repo_path if isinstance(repo_path, PurePath) else PurePath(repo_path)
+        repo = PurePath(repo)
+        repo_path = PurePath(repo_path)
         api_url = f"https://api.github.com/repos/{repo.as_posix()}/contents/{repo_path.as_posix()}"
         req = requests.get(api_url, timeout=15)
         req.raise_for_status()
@@ -133,7 +134,7 @@ class HelpWindow(QMainWindow):
             local_path = item_path.relative_to("toolset")
 
             if item["type"] == "file":
-                self.download_file(item["download_url"], local_path)
+                self.download_file(item["download_url"], Path(local_dir, local_path))
             elif item["type"] == "dir":
                 self.download_directory(repo, item_path, local_path)
 
@@ -146,10 +147,13 @@ class HelpWindow(QMainWindow):
             decoded_content = base64.b64decode(base64_content)  # Correctly decoding the base64 content
             updateInfoData = json.loads(decoded_content.decode("utf-8"))
 
-            new_version = float(updateInfoData["help"]["version"])
-            if self.version is None or new_version > self.version:  # TODO: use versioning
-                msgbox = QMessageBox(QMessageBox.Information, "Update available",
-                                    "A newer version of the help book is available for download, would you like to download it?")
+            new_version = tuple(map(int, updateInfoData["help"]["version"].split(".")))
+            if self.version is None or new_version > self.version:
+                msgbox = QMessageBox(
+                    QMessageBox.Information,
+                    "Update available",
+                    "A newer version of the help book is available for download, would you like to download it?",
+                )
                 msgbox.addButton(QMessageBox.Yes)
                 msgbox.addButton(QMessageBox.No)
                 user_response = msgbox.exec_()
@@ -172,7 +176,10 @@ class HelpWindow(QMainWindow):
             QMessageBox(
                 QMessageBox.Information,
                 "Unable to fetch latest version of the help booklet.",
-                f"Check if you are connected to the internet.\nError: {e!r}",
+                (
+                    f"Error: {e!r}\n"
+                    "Check if you are connected to the internet."
+                ),
                 QMessageBox.Ok,
                 self,
             ).exec_()

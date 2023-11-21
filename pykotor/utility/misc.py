@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import hashlib
+import os
 import platform
 import sys
 from enum import Enum
@@ -9,7 +10,6 @@ from typing import TYPE_CHECKING
 from pykotor.utility.path import Path
 
 if TYPE_CHECKING:
-    import os
     from xml.etree.ElementTree import Element
 
 
@@ -53,6 +53,16 @@ class ProcessorArchitecture(Enum):
         """Check if the architecture supports 64-bit processing."""
         return self == ProcessorArchitecture.BIT_64
 
+def is_debug_mode() -> bool:
+    ret = False
+    if os.getenv("PYTHONDEBUG", None):
+        ret = True
+    if os.getenv("DEBUG_MODE", "0") == "1":
+        ret = True
+    if hasattr(sys, "gettrace") and sys.gettrace() is not None:
+        ret = True
+    print(f"DEBUG MODE: {ret!s}")
+    return ret
 
 def has_attr_excluding_object(cls, attr_name) -> bool:
     # Exclude the built-in 'object' class

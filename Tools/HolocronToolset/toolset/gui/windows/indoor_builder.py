@@ -41,8 +41,9 @@ from PyQt5.QtWidgets import (
 
 from pykotor.common.geometry import Vector2, Vector3
 from pykotor.common.stream import BinaryReader, BinaryWriter
+from pykotor.utility.misc import is_debug_mode
 from pykotor.utility.path import Path, PurePath
-from toolset.__main__ import is_debug_mode, is_frozen
+from toolset.__main__ import is_frozen
 from toolset.config import UPDATE_INFO_LINK
 from toolset.data.indoorkit import Kit, KitComponent, load_kits
 from toolset.data.indoormap import IndoorMap, IndoorMapRoom
@@ -967,17 +968,28 @@ class KitDownloader(QDialog):
             if kitPath.exists():
                 button = QPushButton("Already Downloaded")
                 button.setEnabled(False)
-                with suppress(Exception):
+                localKitDict = None
+                try:
                     localKitDict = json.loads(BinaryReader.load_file(kitPath))
-                    if float(localKitDict["version"]) < float(kitDict["version"]):  # TODO: use versioning
-                        button.setText("Update Available")
-                        button.setEnabled(True)
-                        button.clicked.connect(
-                            lambda _, kitDict=kitDict, button=button: self._downloadButtonPressed(button, kitDict),
-                        )
+                except Exception as e:
+                    print(repr(e),"\n in _setupDownloads for kit update check")
+                    button.setText("Missing JSON - click to redownload.")
+                    button.setEnabled(True)
+                else:
+                    with suppress(Exception):
+                        local_kit_version = tuple(map(int, localKitDict["version"].split(".")))
+                        retrieved_kit_version = tuple(map(int, kitDict["version"].split(".")))
+                        if local_kit_version < retrieved_kit_version:
+                            button.setText("Update Available")
+                            button.setEnabled(True)
+
             else:
                 button = QPushButton("Download")
-                button.clicked.connect(lambda _, kitDict=kitDict, button=button: self._downloadButtonPressed(button, kitDict))
+            button.clicked.connect(
+                lambda _,
+                kitDict=kitDict,
+                button=button: self._downloadButtonPressed(button, kitDict),
+            )
 
             layout: QFormLayout = self.ui.groupBox.layout()
             layout.addRow(kitName, button)

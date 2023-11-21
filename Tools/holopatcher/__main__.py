@@ -1,7 +1,9 @@
 from __future__ import annotations
 
+import base64
 import contextlib
 import ctypes
+import json
 import os
 import pathlib
 import shutil
@@ -16,6 +18,8 @@ from threading import Thread
 from tkinter import filedialog, messagebox, ttk
 from tkinter import font as tkfont
 from typing import TYPE_CHECKING, NoReturn
+
+import requests
 
 if getattr(sys, "frozen", False) is False:
     pykotor_path = pathlib.Path(__file__).parents[2] / "pykotor"
@@ -36,6 +40,8 @@ from pykotor.utility.string import striprtf
 
 if TYPE_CHECKING:
     from io import TextIOWrapper
+
+CURRENT_VERSION: tuple[int, ...] = (1, 3)
 
 
 class ExitCode(IntEnum):
@@ -115,7 +121,44 @@ class App(tk.Tk):
 
         self.initialize_logger()
         self.set_window(width=400, height=500)
+        self.initialize_ui_menu()
+        self.initialize_ui_controls()
 
+        self.install_running = False
+        self.protocol("WM_DELETE_WINDOW", self.handle_exit_button)
+
+        cmdline_args = parse_args()
+        self.open_mod(cmdline_args.tslpatchdata or CaseAwarePath.cwd())
+        self.handle_commandline(cmdline_args)
+
+    def initialize_logger(self):
+        self.logger = PatchLogger()
+        self.logger.verbose_observable.subscribe(self.write_log)
+        self.logger.note_observable.subscribe(self.write_log)
+        self.logger.warning_observable.subscribe(self.write_log)
+        self.logger.error_observable.subscribe(self.write_log)
+
+    def initialize_ui_menu(self):
+        # Initialize top menu bar
+        self.menu_bar = tk.Menu(self)
+        self.config(menu=self.menu_bar)
+
+        # About menu
+        about_menu = tk.Menu(self.menu_bar, tearoff=0)
+        self.menu_bar.add_cascade(label="About", menu=about_menu)
+
+        # Adding items to About menu
+        about_menu.add_command(label="Check for Updates", command=self.check_for_updates)
+        about_menu.add_command(label="Homepage", command=self.open_homepage)
+        about_menu.add_command(label="GitHub Source", command=self.open_github)
+
+        # Discord submenu
+        discord_menu = tk.Menu(about_menu, tearoff=0)
+        about_menu.add_cascade(label="Discord", menu=discord_menu)
+        discord_menu.add_command(label="DeadlyStream", command=self.open_deadlystream_discord)
+        discord_menu.add_command(label="r/kotor", command=self.open_kotor_discord)
+
+    def initialize_ui_controls(self):
         # Use grid layout for main window
         self.grid_rowconfigure(1, weight=1)
         self.grid_columnconfigure(0, weight=1)
@@ -136,7 +179,7 @@ class App(tk.Tk):
         self.namespaces_combobox.bind("<<ComboboxSelected>>", self.on_namespace_option_chosen)
         self.namespaces_combobox.bind("<FocusIn>", self.on_combobox_focus_in)
         self.namespaces_combobox.bind("<FocusOut>", self.on_combobox_focus_out)
-        self.namespaces_combobox_state = 0
+        self.namespaces_combobox_state = 0  # used for handling focus events
 
         self.browse_button = ttk.Button(top_frame, text="Browse", command=self.open_mod)
         self.browse_button.grid(row=0, column=1, padx=5, pady=2, sticky="e")
@@ -180,12 +223,45 @@ class App(tk.Tk):
         self.install_button = ttk.Button(bottom_frame, text="Install", command=self.begin_install)
         self.install_button.pack(side="right", padx=5, pady=5)
 
-        self.install_running = False
-        self.protocol("WM_DELETE_WINDOW", self.handle_exit_button)
 
-        cmdline_args = parse_args()
-        self.open_mod(cmdline_args.tslpatchdata or CaseAwarePath.cwd())
-        self.handle_commandline(cmdline_args)
+    def checkForUpdates(self) -> None:
+        try:
+            req = requests.get("https://api.github.com/repos/NickHugi/PyKotor/contents/toolset/toolset_update_info.json", timeout=15)
+            req.raise_for_status()
+            file_data = req.json()
+            base64_content = file_data["content"]
+            decoded_content = base64.b64decode(base64_content)  # Correctly decoding the base64 content
+            updateInfoData = json.loads(decoded_content.decode("utf-8"))
+
+            new_version = tuple(map(int, updateInfoData["hpLatestVersion"].split(".")))
+            if (
+                    new_version > CURRENT_VERSION
+                    and messagebox.askyesno(
+                        "Update available",
+                        "A newer version of HoloPatcher is available, would you like to download it now?",
+                    )
+            ):
+                pass
+        except Exception as e:
+            messagebox.showerror(
+                "Unable to fetch latest version.",
+                (
+                    f"Error: {e!r}\n"
+                    "Check if you are connected to the internet."
+                ),
+            )
+
+    def open_homepage(self):
+        pass
+
+    def open_github(self):
+        pass
+
+    def open_deadlystream_discord(self):
+        pass
+
+    def open_kotor_discord(self):
+        pass
 
     def on_combobox_focus_in(self, event):
         if self.namespaces_combobox_state == 2:  # no selection, fix the focus
@@ -275,13 +351,6 @@ class App(tk.Tk):
         # messagebox.askyesno = MessageboxOverride.askyesno  # noqa: ERA001
         # messagebox.askyesnocancel = MessageboxOverride.askyesno  # noqa: ERA001
         # messagebox.askretrycancel = MessageboxOverride.askyesno  # noqa: ERA001
-
-    def initialize_logger(self):
-        self.logger = PatchLogger()
-        self.logger.verbose_observable.subscribe(self.write_log)
-        self.logger.note_observable.subscribe(self.write_log)
-        self.logger.warning_observable.subscribe(self.write_log)
-        self.logger.error_observable.subscribe(self.write_log)
 
     def set_window(self, width: int, height: int):
         # Get screen dimensions

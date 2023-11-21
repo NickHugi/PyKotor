@@ -19,4 +19,4 @@ class About(QDialog):
 
         self.ui.closeButton.clicked.connect(self.close)
 
-        self.ui.aboutLabel.setText(self.ui.aboutLabel.text().replace("X.X.X", PROGRAM_VERSION))
+        self.ui.aboutLabel.setText(self.ui.aboutLabel.text().replace("X.X.X", ".".join(map(str, PROGRAM_VERSION))))

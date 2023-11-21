@@ -1,17 +1,5 @@
 from __future__ import annotations
 
-try:
-    from packaging.version import Version as StrictVersion
-except ImportError:
-    try:
-        from setuptools.version import StrictVersion
-    except ImportError:
-        try:
-            from distutils.version import StrictVersion
-        except ImportError as e3:
-            msg = "Could not import StrictVersion from any known library"
-            raise ImportError(msg) from e3
-
 import base64
 import json
 import traceback
@@ -30,14 +18,15 @@ from watchdog.observers import Observer
 from pykotor.common.stream import BinaryReader
 from pykotor.extract.file import FileResource, ResourceIdentifier
 from pykotor.extract.installation import SearchLocation
-from pykotor.utility.error_handling import assert_with_variable_trace
-from pykotor.utility.path import Path, PurePath
 from pykotor.resource.formats.mdl import read_mdl, write_mdl
 from pykotor.resource.formats.tpc import read_tpc, write_tpc
 from pykotor.resource.type import ResourceType
 from pykotor.tools import model
 from pykotor.tools.misc import is_bif_file, is_rim_file
-from toolset.__main__ import is_debug_mode, is_frozen
+from pykotor.utility.error_handling import assert_with_variable_trace
+from pykotor.utility.misc import is_debug_mode
+from pykotor.utility.path import Path, PurePath
+from toolset.__main__ import is_frozen
 from toolset.config import PROGRAM_VERSION, UPDATE_INFO_LINK
 from toolset.data.installation import HTInstallation
 from toolset.gui.dialogs.about import About
@@ -101,7 +90,7 @@ class ToolWindow(QMainWindow):
         ResourceType.ITP,
     ]
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initializes the main window
         Args:
             self: The object instance
@@ -458,10 +447,10 @@ class ToolWindow(QMainWindow):
             decoded_content = base64.b64decode(base64_content)  # Correctly decoding the base64 content
             data = json.loads(decoded_content.decode("utf-8"))
 
-            latestVersion = data["latestVersion"]
+            latestVersion = tuple(map(int, data["latestVersion"].split(".")))
             downloadLink = data["downloadLink"]
 
-            if StrictVersion(latestVersion) > StrictVersion(PROGRAM_VERSION):
+            if latestVersion > PROGRAM_VERSION:
                 QMessageBox(
                     QMessageBox.Information,
                     "New version is available.",

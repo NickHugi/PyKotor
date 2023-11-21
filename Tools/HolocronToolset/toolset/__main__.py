@@ -25,17 +25,6 @@ def is_frozen() -> bool:
         return True
     return False
 
-def is_debug_mode() -> bool:
-    ret = False
-    if os.getenv("PYTHONDEBUG", None):
-        ret = True
-    if os.getenv("DEBUG_MODE", "0") == "1":
-        ret = True
-    if hasattr(sys, "gettrace") and sys.gettrace() is not None:
-        ret = True
-    print(f"DEBUG MODE: {ret!s}")
-    return ret
-
 def fix_sys_and_cwd_path():
     """Fixes sys.path and current working directory for PyKotor.
 
@@ -68,6 +57,8 @@ def fix_sys_and_cwd_path():
 if __name__ == "__main__":
     if is_frozen() is False:
         fix_sys_and_cwd_path()
+
+    from pykotor.utility.misc import is_debug_mode
 
     os.environ["QT_MULTIMEDIA_PREFERRED_PLUGINS"] = "windowsmediafoundation"
     os.environ["QT_DEBUG_PLUGINS"] = "1"
