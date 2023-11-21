@@ -20,8 +20,6 @@ from tkinter import filedialog, messagebox, ttk
 from tkinter import font as tkfont
 from typing import TYPE_CHECKING, NoReturn
 
-import requests
-
 if getattr(sys, "frozen", False) is False:
     pykotor_path = pathlib.Path(__file__).parents[2] / "pykotor"
     if pykotor_path.exists():
@@ -232,6 +230,7 @@ class App(tk.Tk):
 
     def check_for_updates(self) -> None:
         try:
+            import requests
             req = requests.get("https://api.github.com/repos/NickHugi/PyKotor/contents/update_info.json", timeout=15)
             req.raise_for_status()
             file_data = req.json()
@@ -239,17 +238,17 @@ class App(tk.Tk):
             decoded_content = base64.b64decode(base64_content)  # Correctly decoding the base64 content
             updateInfoData = json.loads(decoded_content.decode("utf-8"))
 
-            new_version = tuple(map(int, str(updateInfoData["hpLatestVersion"]).split(".")))
+            new_version = tuple(map(int, str(updateInfoData["holopatcherLatestVersion"]).split(".")))
             if new_version > CURRENT_VERSION:
                 if messagebox.askyesno(
                     "Update available",
                     "A newer version of HoloPatcher is available, would you like to download it now?",
                 ):
-                    webbrowser.open_new("https://deadlystream.com/files/file/2243-holopatcher")
+                    webbrowser.open_new(updateInfoData["holopatcherDownloadLink"])
             else:
                 messagebox.showinfo(
                     "No updates available.",
-                    f"You are already running the latest version of HoloPatcher ({updateInfoData['hpLatestVersion']})",
+                    f"You are already running the latest version of HoloPatcher ({updateInfoData['holopatcherLatestVersion']})",
                 )
         except Exception as e:
             messagebox.showerror(

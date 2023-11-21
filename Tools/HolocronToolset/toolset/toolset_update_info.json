@@ -1,12 +1,11 @@
 {
 	"toolsetLatestVersion": "2.2.0",
-	"holopatcherLatestVersion": "1.3",
 	"toolsetDownloadLink": "https://deadlystream.com/files/file/1982-holocron-toolset/",
-	"holopatcherDownloadLink": "https://deadlystream.com/files/file/2243-holopatcher",
 	"kits": {
 		"Black Vulkar Base": { "version": 1, "id": "blackvulkar" },
 		"Endar Spire": { "version": 1, "id": "endarspire" },
 		"Hidden Bek Base": { "version": 1, "id": "hiddenbek" }
 	},
+	"holopatcherLatestVersion": "1.3",
 	"help": { "version": 3 }
 }

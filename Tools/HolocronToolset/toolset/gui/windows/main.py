@@ -447,14 +447,14 @@ class ToolWindow(QMainWindow):
             decoded_content = base64.b64decode(base64_content)  # Correctly decoding the base64 content
             data = json.loads(decoded_content.decode("utf-8"))
 
-            latestVersion = tuple(map(int, str(data["latestVersion"]).split(".")))
-            downloadLink = data["downloadLink"]
+            toolsetLatestVersion = tuple(map(int, str(data["toolsetLatestVersion"]).split(".")))
+            toolsetDownloadLink = data["toolsetDownloadLink"]
 
-            if latestVersion > PROGRAM_VERSION:
+            if toolsetLatestVersion > PROGRAM_VERSION:
                 QMessageBox(
                     QMessageBox.Information,
                     "New version is available.",
-                    f"New version available for <a href='{downloadLink}'>download</a>.",
+                    f"New version available for <a href='{toolsetDownloadLink}'>download</a>.",
                     QMessageBox.Ok,
                     self,
                 ).exec_()
@@ -462,7 +462,7 @@ class ToolWindow(QMainWindow):
                 QMessageBox(
                     QMessageBox.Information,
                     "Version is up to date",
-                    f"You are running the latest version ({latestVersion}).",
+                    f"You are running the latest version ({toolsetLatestVersion}).",
                     QMessageBox.Ok,
                     self,
                 ).exec_()
