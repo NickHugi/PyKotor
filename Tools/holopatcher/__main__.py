@@ -115,51 +115,70 @@ class App(tk.Tk):
 
         self.initialize_logger()
         self.set_window(width=400, height=500)
-        self.namespaces_combobox = ttk.Combobox(self, state="readonly")
+
+        # Use grid layout for main window
+        self.grid_rowconfigure(1, weight=1)
+        self.grid_columnconfigure(0, weight=1)
+
+        # Configure style for Combobox
+        style = ttk.Style(self)
+        style.configure("TCombobox", font=("Helvetica", 10), padding=4)
+
+        # Top area for comboboxes and buttons
+        top_frame = tk.Frame(self)
+        top_frame.grid(row=0, column=0, sticky="ew")
+        top_frame.grid_columnconfigure(0, weight=1)  # Make comboboxes expand
+        top_frame.grid_columnconfigure(1, weight=0)  # Keep buttons fixed size
+
+        self.namespaces_combobox = ttk.Combobox(top_frame, state="readonly", style="TCombobox")
         self.namespaces_combobox.set("Select the mod to install")
-        self.namespaces_combobox.place(x=5, y=5, width=310, height=25)
+        self.namespaces_combobox.grid(row=0, column=0, padx=5, pady=2, sticky="ew")
         self.namespaces_combobox.bind("<<ComboboxSelected>>", self.on_namespace_option_chosen)
+        self.namespaces_combobox.bind("<FocusIn>", self.on_combobox_focus_in)
+        self.namespaces_combobox.bind("<FocusOut>", self.on_combobox_focus_out)
+        self.namespaces_combobox_state = 0
 
-        self.browse_button = ttk.Button(self, text="Browse", command=self.open_mod)
-        self.browse_button.place(x=320, y=5, width=75, height=25)
+        self.browse_button = ttk.Button(top_frame, text="Browse", command=self.open_mod)
+        self.browse_button.grid(row=0, column=1, padx=5, pady=2, sticky="e")
 
-        self.gamepaths = ttk.Combobox(self)
+        self.gamepaths = ttk.Combobox(top_frame, style="TCombobox")
         self.gamepaths.set("Select your KOTOR directory path")
-        self.gamepaths.place(x=5, y=35, width=310, height=25)
+        self.gamepaths.grid(row=1, column=0, padx=5, pady=2, sticky="ew")
         self.gamepaths["values"] = [str(path) for game in find_kotor_paths_from_default().values() for path in game]
         self.gamepaths.bind("<<ComboboxSelected>>", self.on_gamepaths_chosen)
 
-        self.gamepaths_browse_button = ttk.Button(self, text="Browse", command=self.open_kotor)
-        self.gamepaths_browse_button.place(x=320, y=35, width=75, height=25)
+        self.gamepaths_browse_button = ttk.Button(top_frame, text="Browse", command=self.open_kotor)
+        self.gamepaths_browse_button.grid(row=1, column=1, padx=5, pady=2, sticky="e")
 
-        self.exit_button = ttk.Button(self, text="Exit", command=self.handle_exit_button)
-        self.exit_button.place(x=5, y=470, width=75, height=25)
-
-        self.install_button = ttk.Button(self, text="Install", command=self.begin_install)
-        self.install_button.place(x=320, y=470, width=75, height=25)
-
-        self.uninstall_button = ttk.Button(self, text="Uninstall", command=self.uninstall_selected_mod)
-        self.uninstall_button.place(x=160, y=470, width=75, height=25)
-        #self.uninstall_button.place_forget()  # comment this to enable the uninstall button.
-
-        # Create a Frame to hold the Text and Scrollbar widgets
+        # Middle area for text and scrollbar
         text_frame = tk.Frame(self)
-        text_frame.place(x=5, y=65, width=390, height=400)
+        text_frame.grid(row=1, column=0, sticky="nsew")
+        text_frame.grid_rowconfigure(0, weight=1)
+        text_frame.grid_columnconfigure(0, weight=1)
 
-        # Create the Scrollbar and pack it to the right side of the Frame
-        scrollbar = tk.Scrollbar(text_frame)
-        scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
-
-        # Create the Text widget with word wrapping and pack it to the left side of the Frame
-        self.description_text = tk.Text(text_frame, wrap=tk.WORD, yscrollcommand=scrollbar.set)
-        # Get the current font properties
+        self.description_text = tk.Text(text_frame, wrap=tk.WORD)
         font_obj = tkfont.Font(font=self.description_text.cget("font"))
         font_obj.configure(size=9)
         self.description_text.configure(font=font_obj)
-        self.description_text.pack(side=tk.LEFT, fill=tk.BOTH, expand=1)
+        self.description_text.grid(row=0, column=0, sticky="nsew")
 
-        # Link the Scrollbar to the Text widget
-        scrollbar.config(command=self.description_text.yview)
+        scrollbar = tk.Scrollbar(text_frame, command=self.description_text.yview)
+        scrollbar.grid(row=0, column=1, sticky="ns")
+
+        self.description_text.config(yscrollcommand=scrollbar.set)
+
+        # Bottom area for buttons
+        bottom_frame = tk.Frame(self)
+        bottom_frame.grid(row=2, column=0, sticky="ew")
+
+        self.exit_button = ttk.Button(bottom_frame, text="Exit", command=self.handle_exit_button)
+        self.exit_button.pack(side="left", padx=5, pady=5)
+
+        self.uninstall_button = ttk.Button(bottom_frame, text="Uninstall", command=self.uninstall_selected_mod)
+        self.uninstall_button.pack(side="left", padx=5, pady=5)
+
+        self.install_button = ttk.Button(bottom_frame, text="Install", command=self.begin_install)
+        self.install_button.pack(side="right", padx=5, pady=5)
 
         self.install_running = False
         self.protocol("WM_DELETE_WINDOW", self.handle_exit_button)
@@ -167,6 +186,17 @@ class App(tk.Tk):
         cmdline_args = parse_args()
         self.open_mod(cmdline_args.tslpatchdata or CaseAwarePath.cwd())
         self.handle_commandline(cmdline_args)
+
+    def on_combobox_focus_in(self, event):
+        if self.namespaces_combobox_state == 2:  # no selection, fix the focus
+            self.focus_set()
+            self.namespaces_combobox_state = 0  # base status
+        else:
+            self.namespaces_combobox_state = 1  # combobox clicked
+
+    def on_combobox_focus_out(self, event):
+        if self.namespaces_combobox_state == 1:
+            self.namespaces_combobox_state = 2  # no selection
 
     def handle_commandline(self, cmdline_args: Namespace) -> None:
         """Handle command line arguments passed to the application.
@@ -417,18 +447,20 @@ class App(tk.Tk):
         self.destroy()
         sys.exit(ExitCode.ABORT_INSTALL_UNSAFE)
 
-    def on_gamepaths_chosen(self, event) -> None:
-        """Adjust the gamepaths combobox after a short delay."""
-        self.after(10, self.move_cursor_to_end)
+    def on_gamepaths_chosen(self, event: tk.Event) -> None:
+        """Adjust the combobox after a short delay."""
+        self.after(10, lambda: self.move_cursor_to_end(event.widget))
 
-    def move_cursor_to_end(self) -> None:
-        """Shows the rightmost portion of the game paths combobox as that's the most relevant."""
-        self.gamepaths.focus_set()
-        position: int = len(self.gamepaths.get())
-        self.gamepaths.icursor(position)
-        self.gamepaths.xview(position)
+    def move_cursor_to_end(self, combobox: ttk.Combobox) -> None:
+        """Shows the rightmost portion of the specified combobox as that's the most relevant."""
+        combobox.focus_set()
+        position: int = len(combobox.get())
+        combobox.icursor(position)
+        combobox.xview(position)
+        self.focus_set()
 
-    def on_namespace_option_chosen(self, event) -> None:
+
+    def on_namespace_option_chosen(self, event: tk.Event) -> None:
         """Handles the namespace option being chosen from the combobox
         Args:
             self: The PatcherWindow instance
@@ -460,6 +492,8 @@ class App(tk.Tk):
                 error_name,
                 f"An unexpected error occurred while loading the namespace option.{os.linesep*2}{msg}",
             )
+        else:
+            self.after(10, lambda: self.move_cursor_to_end(self.namespaces_combobox))
 
     def check_access(self, directory: Path, recurse=False) -> bool:
         """Check access to a directory
