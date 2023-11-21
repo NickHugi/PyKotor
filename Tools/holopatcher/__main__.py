@@ -121,13 +121,16 @@ class ToolTip:
 
     def show_tip(self, event=None):
         """Display text in a tooltip window."""
+        text = self.text().strip()
+        if not text:
+            return
         x, y, _, _ = self.widget.bbox("insert")
         x += self.widget.winfo_rootx() + 25
         y += self.widget.winfo_rooty() + 20
         self.tip_window = tk.Toplevel(self.widget)
         self.tip_window.wm_overrideredirect(boolean=True)
         self.tip_window.wm_geometry(f"+{x}+{y}")
-        label = tk.Label(self.tip_window, text=self.text(), justify=tk.LEFT,
+        label = tk.Label(self.tip_window, text=text, justify=tk.LEFT,
                          background="#ffffff", relief=tk.SOLID, borderwidth=1,
                          font=("tahoma", "8", "normal"))
         label.pack(ipadx=1)
@@ -252,7 +255,7 @@ class App(tk.Tk):
         self.exit_button.pack(side="left", padx=5, pady=5)
 
         self.uninstall_button = ttk.Button(bottom_frame, text="Uninstall", command=self.uninstall_selected_mod)
-        #self.uninstall_button.pack(side="right", padx=5, pady=5)
+        self.uninstall_button.pack(side="right", padx=5, pady=5)
 
         self.install_button = ttk.Button(bottom_frame, text="Install", command=self.begin_install)
         self.install_button.pack(side="right", padx=5, pady=5)
