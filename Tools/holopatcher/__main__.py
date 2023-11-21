@@ -10,6 +10,7 @@ import shutil
 import sys
 import tkinter as tk
 import traceback
+import webbrowser
 from argparse import ArgumentParser, Namespace
 from configparser import ConfigParser
 from datetime import datetime, timedelta, timezone
@@ -241,7 +242,7 @@ class App(tk.Tk):
                         "A newer version of HoloPatcher is available, would you like to download it now?",
                     )
             ):
-                pass
+                webbrowser.open_new("https://deadlystream.com/files/file/2243-holopatcher")
         except Exception as e:
             messagebox.showerror(
                 "Unable to fetch latest version.",
