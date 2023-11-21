@@ -2,9 +2,10 @@
 games.
 """
 from __future__ import annotations
+from enum import Enum
 
 import os
-from typing import Union
+from typing import NamedTuple, Union
 from xml.etree.ElementTree import ParseError
 
 from pykotor.common.stream import BinaryReader, BinaryWriter
@@ -41,8 +42,13 @@ class ResourceWriter:
     ):
         self._writer.close()
 
+class ResourceTuple(NamedTuple):
+    type_id: int
+    extension: str
+    category: str
+    contents: str
 
-class ResourceType:
+class ResourceType(Enum):
     """Represents a resource type that is used within either games.
 
     Stored in the class is also several static attributes, each an actual resource type used by the games.
@@ -55,91 +61,92 @@ class ResourceType:
         contents: How the resource type stores data, ie. plaintext, binary, or gff.
     """
 
-    # For PyCharm type hints
-    INVALID: ResourceType
-    BMP: ResourceType
-    TGA: ResourceType
-    WAV: ResourceType
-    PLT: ResourceType
-    INI: ResourceType
-    TXT: ResourceType
-    MDL: ResourceType
-    NSS: ResourceType
-    NCS: ResourceType
-    MOD: ResourceType
-    ARE: ResourceType
-    SET: ResourceType
-    IFO: ResourceType
-    BIC: ResourceType
-    WOK: ResourceType
-    TwoDA: ResourceType
-    TLK: ResourceType
-    TXI: ResourceType
-    GIT: ResourceType
-    BTI: ResourceType
-    UTI: ResourceType
-    BTC: ResourceType
-    UTC: ResourceType
-    DLG: ResourceType
-    ITP: ResourceType
-    UTT: ResourceType
-    DDS: ResourceType
-    UTS: ResourceType
-    LTR: ResourceType
-    GFF: ResourceType
-    FAC: ResourceType
-    UTE: ResourceType
-    UTD: ResourceType
-    UTP: ResourceType
-    DFT: ResourceType
-    GIC: ResourceType
-    GUI: ResourceType
-    UTM: ResourceType
-    DWK: ResourceType
-    PWK: ResourceType
-    JRL: ResourceType
-    UTW: ResourceType
-    SSF: ResourceType
-    NDB: ResourceType
-    PTM: ResourceType
-    PTT: ResourceType
-    JPG: ResourceType
-    PNG: ResourceType
-    LYT: ResourceType
-    VIS: ResourceType
-    RIM: ResourceType
-    PTH: ResourceType
-    LIP: ResourceType
-    TPC: ResourceType
-    MDX: ResourceType
-    ERF: ResourceType
-    MP3: ResourceType
-    TLK_XML: ResourceType
-    MDL_ASCII: ResourceType
-    TwoDA_CSV: ResourceType
-    GFF_XML: ResourceType
-    IFO_XML: ResourceType
-    GIT_XML: ResourceType
-    UTI_XML: ResourceType
-    UTC_XML: ResourceType
-    DLG_XML: ResourceType
-    ITP_XML: ResourceType
-    UTT_XML: ResourceType
-    UTS_XML: ResourceType
-    FAC_XML: ResourceType
-    UTE_XML: ResourceType
-    UTD_XML: ResourceType
-    UTP_XML: ResourceType
-    GUI_XML: ResourceType
-    UTM_XML: ResourceType
-    JRL_XML: ResourceType
-    UTW_XML: ResourceType
-    PTH_XML: ResourceType
-    LIP_XML: ResourceType
-    SSF_XML: ResourceType
-    ARE_XML: ResourceType
-    TwoDA_JSON: ResourceType
-    TLK_JSON: ResourceType
+    INVALID = ResourceTuple(0, "", "Undefined", "binary")
+    BMP = ResourceTuple(1, "bmp", "Images", "binary")
+    TGA = ResourceTuple(3, "tga", "Textures", "binary")
+    WAV = ResourceTuple(4, "wav", "Audio", "binary")
+    PLT = ResourceTuple(6, "plt", "Other", "binary")
+    INI = ResourceTuple(7, "ini", "Text Files", "plaintext")
+    TXT = ResourceTuple(10, "txt", "Text Files", "plaintext")
+    MDL = ResourceTuple(2002, "mdl", "Models", "binary")
+    NSS = ResourceTuple(2009, "nss", "Scripts", "plaintext")
+    NCS = ResourceTuple(2010, "ncs", "Scripts", "binary")
+    MOD = ResourceTuple(2011, "mod", "Modules", "binary")
+    ARE = ResourceTuple(2012, "are", "Module Data", "gff")
+    SET = ResourceTuple(2013, "set", "Unused", "binary")
+    IFO = ResourceTuple(2014, "ifo", "Module Data", "gff")
+    BIC = ResourceTuple(2015, "bic", "Creatures", "binary")
+    WOK = ResourceTuple(2016, "wok", "Walkmeshes", "binary")
+    TwoDA = ResourceTuple(2017, "2da", "2D Arrays", "binary")
+    TLK = ResourceTuple(2018, "tlk", "Talk Tables", "binary")
+    TXI = ResourceTuple(2022, "txi", "Textures", "plaintext")
+    GIT = ResourceTuple(2023, "git", "Module Data", "gff")
+    BTI = ResourceTuple(2024, "bti", "Items", "gff")
+    UTI = ResourceTuple(2025, "uti", "Items", "gff")
+    BTC = ResourceTuple(2026, "btc", "Creatures", "gff")
+    UTC = ResourceTuple(2027, "utc", "Creatures", "gff")
+    DLG = ResourceTuple(2029, "dlg", "Dialogs", "gff")
+    ITP = ResourceTuple(2030, "itp", "Palettes", "binary")
+    UTT = ResourceTuple(2032, "utt", "Triggers", "gff")
+    DDS = ResourceTuple(2033, "dds", "Textures", "binary")
+    UTS = ResourceTuple(2035, "uts", "Sounds", "gff")
+    LTR = ResourceTuple(2036, "ltr", "Other", "binary")
+    GFF = ResourceTuple(2037, "gff", "Other", "gff")
+    FAC = ResourceTuple(2038, "fac", "Factions", "gff")
+    UTE = ResourceTuple(2040, "ute", "Encounters", "gff")
+    UTD = ResourceTuple(2042, "utd", "Doors", "gff")
+    UTP = ResourceTuple(2044, "utp", "Placeables", "gff")
+    DFT = ResourceTuple(2045, "dft", "Other", "binary")
+    GIC = ResourceTuple(2046, "gic", "Module Data", "gff")
+    GUI = ResourceTuple(2047, "gui", "GUIs", "gff")
+    UTM = ResourceTuple(2051, "utm", "Merchants", "gff")
+    DWK = ResourceTuple(2052, "dwk", "Walkmeshes", "binary")
+    PWK = ResourceTuple(2053, "pwk", "Walkmeshes", "binary")
+    JRL = ResourceTuple(2056, "jrl", "Journals", "gff")
+    UTW = ResourceTuple(2058, "utw", "Waypoints", "gff")
+    SSF = ResourceTuple(2060, "ssf", "Soundsets", "binary")
+    NDB = ResourceTuple(2064, "ndb", "Other", "binary")
+    PTM = ResourceTuple(2065, "ptm", "Other", "binary")
+    PTT = ResourceTuple(2066, "ptt", "Other", "binary")
+    JPG = ResourceTuple(2076, "jpg", "Images", "binary")
+    PNG = ResourceTuple(2110, "png", "Images", "binary")
+    LYT = ResourceTuple(3000, "lyt", "Module Data", "plaintext")
+    VIS = ResourceTuple(3001, "vis", "Module Data", "plaintext")
+    RIM = ResourceTuple(3002, "rim", "Modules", "binary")
+    PTH = ResourceTuple(3003, "pth", "Paths", "gff")
+    LIP = ResourceTuple(3004, "lip", "Lips", "lips")
+    TPC = ResourceTuple(3007, "tpc", "Textures", "binary")
+    MDX = ResourceTuple(3008, "mdx", "Models", "binary")
+    ERF = ResourceTuple(9997, "erf", "Modules", "binary")
+
+    # For Toolset Use:
+    MP3 = ResourceTuple(25014, "mp3", "Audio", "binary")
+    TLK_XML = ResourceTuple(50001, "tlk.xml", "Talk Tables", "plaintext")
+    MDL_ASCII = ResourceTuple(50002, "mdl.ascii", "Models", "plaintext")
+    TwoDA_CSV = ResourceTuple(50003, "2da.csv", "2D Arrays", "plaintext")
+    GFF_XML = ResourceTuple(50004, "gff.xml", "Other", "plaintext")
+    IFO_XML = ResourceTuple(50005, "ifo.xml", "Module Data", "plaintext")
+    GIT_XML = ResourceTuple(50006, "git.xml", "Module Data", "plaintext")
+    UTI_XML = ResourceTuple(50007, "uti.xml", "Items", "plaintext")
+    UTC_XML = ResourceTuple(50008, "utc.xml", "Creatures", "plaintext")
+    DLG_XML = ResourceTuple(50009, "dlg.xml", "Dialogs", "plaintext")
+    ITP_XML = ResourceTuple(50010, "itp.xml", "Palettes", "plaintext")
+    UTT_XML = ResourceTuple(50011, "utt.xml", "Triggers", "plaintext")
+    UTS_XML = ResourceTuple(50012, "uts.xml", "Sounds", "plaintext")
+    FAC_XML = ResourceTuple(50013, "fac.xml", "Factions", "plaintext")
+    UTE_XML = ResourceTuple(50014, "ute.xml", "Encounters", "plaintext")
+    UTD_XML = ResourceTuple(50015, "utd.xml", "Doors", "plaintext")
+    UTP_XML = ResourceTuple(50016, "utp.xml", "Placeables", "plaintext")
+    GUI_XML = ResourceTuple(50017, "gui.xml", "GUIs", "plaintext")
+    UTM_XML = ResourceTuple(50018, "utm.xml", "Merchants", "plaintext")
+    JRL_XML = ResourceTuple(50019, "jrl.xml", "Journals", "plaintext")
+    UTW_XML = ResourceTuple(50020, "utw.xml", "Waypoints", "plaintext")
+    PTH_XML = ResourceTuple(50021, "pth.xml", "Paths", "plaintext")
+    LIP_XML = ResourceTuple(50022, "lip.xml", "Lips", "plaintext")
+    SSF_XML = ResourceTuple(50023, "ssf.xml", "Soundsets", "plaintext")
+    ARE_XML = ResourceTuple(50023, "are.xml", "Module Data", "plaintext")
+    TwoDA_JSON = ResourceTuple(50024, "2da.json", "2D Arrays", "plaintext")
+    TLK_JSON = ResourceTuple(50024, "tlk.json", "Talk Tables", "plaintext")
 
     def __init__(
         self,
@@ -176,14 +183,19 @@ class ResourceType:
 
     def __eq__(
         self,
-        other,
+        other: ResourceType | str | int | object,
     ):
         """Two ResourceTypes are equal if they are the same.
         A ResourceType and a str are equal if the extension is equal to the string.
         A ResourceType and a int are equal if the type_id is equal to the integer.
         """
         if isinstance(other, ResourceType):
-            return self is other
+            return (
+                self.type_id == other.type_id
+                and self.extension == other.extension
+                and self.contents == other.contents
+                and self.category == other.category
+            )
         if isinstance(other, str):
             return self.extension == other.lower()
         if isinstance(other, int):
@@ -193,7 +205,7 @@ class ResourceType:
     def __hash__(
         self,
     ):
-        return hash(str(self.extension))
+        return hash((self.__class__.__name__, str(self.extension)))
 
     @classmethod
     def from_id(
@@ -210,9 +222,12 @@ class ResourceType:
         -------
             The corresponding ResourceType object.
         """
-        for value in ResourceType.__dict__.values():
-            if value == type_id:
-                return value
+        value = next(
+            (restype for restype in ResourceType.__members__.values() if type_id == restype.type_id),
+            None,
+        )
+        if value is not None:
+            return value
         msg = f"Could not find resource type with ID {type_id}."
         raise ValueError(msg)
 
@@ -231,11 +246,13 @@ class ResourceType:
         -------
             The corresponding ResourceType object.
         """
-        for resource_type in ResourceType.__annotations__:
-            if not isinstance(ResourceType.__dict__[resource_type], ResourceType):
-                continue
-            if ResourceType.__dict__[resource_type].extension.upper() == extension.upper():
-                return ResourceType.__dict__[resource_type]
+        lower_ext = extension.lower()
+        value = next(
+            (restype for restype in ResourceType.__members__.values() if lower_ext == restype.extension),
+            None,
+        )
+        if value is not None:
+            return value
         msg = f"Could not find resource type with extension '{extension}'."
         raise ValueError(msg)
 
@@ -254,90 +271,3 @@ def autoclose(func):
 
     return _autoclose
 
-
-ResourceType.INVALID = ResourceType(0, "", "Undefined", "binary")
-ResourceType.BMP = ResourceType(1, "bmp", "Images", "binary")
-ResourceType.TGA = ResourceType(3, "tga", "Textures", "binary")
-ResourceType.WAV = ResourceType(4, "wav", "Audio", "binary")
-ResourceType.PLT = ResourceType(6, "plt", "Other", "binary")
-ResourceType.INI = ResourceType(7, "ini", "Text Files", "plaintext")
-ResourceType.TXT = ResourceType(10, "txt", "Text Files", "plaintext")
-ResourceType.MDL = ResourceType(2002, "mdl", "Models", "binary")
-ResourceType.NSS = ResourceType(2009, "nss", "Scripts", "plaintext")
-ResourceType.NCS = ResourceType(2010, "ncs", "Scripts", "binary")
-ResourceType.MOD = ResourceType(2011, "mod", "Modules", "binary")
-ResourceType.ARE = ResourceType(2012, "are", "Module Data", "gff")
-ResourceType.SET = ResourceType(2013, "set", "Unused", "binary")
-ResourceType.IFO = ResourceType(2014, "ifo", "Module Data", "gff")
-ResourceType.BIC = ResourceType(2015, "bic", "Creatures", "binary")
-ResourceType.WOK = ResourceType(2016, "wok", "Walkmeshes", "binary")
-ResourceType.TwoDA = ResourceType(2017, "2da", "2D Arrays", "binary")
-ResourceType.TLK = ResourceType(2018, "tlk", "Talk Tables", "binary")
-ResourceType.TXI = ResourceType(2022, "txi", "Textures", "plaintext")
-ResourceType.GIT = ResourceType(2023, "git", "Module Data", "gff")
-ResourceType.BTI = ResourceType(2024, "bti", "Items", "gff")
-ResourceType.UTI = ResourceType(2025, "uti", "Items", "gff")
-ResourceType.BTC = ResourceType(2026, "btc", "Creatures", "gff")
-ResourceType.UTC = ResourceType(2027, "utc", "Creatures", "gff")
-ResourceType.DLG = ResourceType(2029, "dlg", "Dialogs", "gff")
-ResourceType.ITP = ResourceType(2030, "itp", "Palettes", "binary")
-ResourceType.UTT = ResourceType(2032, "utt", "Triggers", "gff")
-ResourceType.DDS = ResourceType(2033, "dds", "Textures", "binary")
-ResourceType.UTS = ResourceType(2035, "uts", "Sounds", "gff")
-ResourceType.LTR = ResourceType(2036, "ltr", "Other", "binary")
-ResourceType.GFF = ResourceType(2037, "gff", "Other", "gff")
-ResourceType.FAC = ResourceType(2038, "fac", "Factions", "gff")
-ResourceType.UTE = ResourceType(2040, "ute", "Encounters", "gff")
-ResourceType.UTD = ResourceType(2042, "utd", "Doors", "gff")
-ResourceType.UTP = ResourceType(2044, "utp", "Placeables", "gff")
-ResourceType.DFT = ResourceType(2045, "dft", "Other", "binary")
-ResourceType.GIC = ResourceType(2046, "gic", "Module Data", "gff")
-ResourceType.GUI = ResourceType(2047, "gui", "GUIs", "gff")
-ResourceType.UTM = ResourceType(2051, "utm", "Merchants", "gff")
-ResourceType.DWK = ResourceType(2052, "dwk", "Walkmeshes", "binary")
-ResourceType.PWK = ResourceType(2053, "pwk", "Walkmeshes", "binary")
-ResourceType.JRL = ResourceType(2056, "jrl", "Journals", "gff")
-ResourceType.UTW = ResourceType(2058, "utw", "Waypoints", "gff")
-ResourceType.SSF = ResourceType(2060, "ssf", "Soundsets", "binary")
-ResourceType.NDB = ResourceType(2064, "ndb", "Other", "binary")
-ResourceType.PTM = ResourceType(2065, "ptm", "Other", "binary")
-ResourceType.PTT = ResourceType(2066, "ptt", "Other", "binary")
-ResourceType.JPG = ResourceType(2076, "jpg", "Images", "binary")
-ResourceType.PNG = ResourceType(2110, "png", "Images", "binary")
-ResourceType.LYT = ResourceType(3000, "lyt", "Module Data", "plaintext")
-ResourceType.VIS = ResourceType(3001, "vis", "Module Data", "plaintext")
-ResourceType.RIM = ResourceType(3002, "rim", "Modules", "binary")
-ResourceType.PTH = ResourceType(3003, "pth", "Paths", "gff")
-ResourceType.LIP = ResourceType(3004, "lip", "Lips", "lips")
-ResourceType.TPC = ResourceType(3007, "tpc", "Textures", "binary")
-ResourceType.MDX = ResourceType(3008, "mdx", "Models", "binary")
-ResourceType.ERF = ResourceType(9997, "erf", "Modules", "binary")
-
-# For Toolset Use:
-ResourceType.MP3 = ResourceType(25014, "mp3", "Audio", "binary")
-ResourceType.TLK_XML = ResourceType(50001, "tlk.xml", "Talk Tables", "plaintext")
-ResourceType.MDL_ASCII = ResourceType(50002, "mdl.ascii", "Models", "plaintext")
-ResourceType.TwoDA_CSV = ResourceType(50003, "2da.csv", "2D Arrays", "plaintext")
-ResourceType.GFF_XML = ResourceType(50004, "gff.xml", "Other", "plaintext")
-ResourceType.IFO_XML = ResourceType(50005, "ifo.xml", "Module Data", "plaintext")
-ResourceType.GIT_XML = ResourceType(50006, "git.xml", "Module Data", "plaintext")
-ResourceType.UTI_XML = ResourceType(50007, "uti.xml", "Items", "plaintext")
-ResourceType.UTC_XML = ResourceType(50008, "utc.xml", "Creatures", "plaintext")
-ResourceType.DLG_XML = ResourceType(50009, "dlg.xml", "Dialogs", "plaintext")
-ResourceType.ITP_XML = ResourceType(50010, "itp.xml", "Palettes", "plaintext")
-ResourceType.UTT_XML = ResourceType(50011, "utt.xml", "Triggers", "plaintext")
-ResourceType.UTS_XML = ResourceType(50012, "uts.xml", "Sounds", "plaintext")
-ResourceType.FAC_XML = ResourceType(50013, "fac.xml", "Factions", "plaintext")
-ResourceType.UTE_XML = ResourceType(50014, "ute.xml", "Encounters", "plaintext")
-ResourceType.UTD_XML = ResourceType(50015, "utd.xml", "Doors", "plaintext")
-ResourceType.UTP_XML = ResourceType(50016, "utp.xml", "Placeables", "plaintext")
-ResourceType.GUI_XML = ResourceType(50017, "gui.xml", "GUIs", "plaintext")
-ResourceType.UTM_XML = ResourceType(50018, "utm.xml", "Merchants", "plaintext")
-ResourceType.JRL_XML = ResourceType(50019, "jrl.xml", "Journals", "plaintext")
-ResourceType.UTW_XML = ResourceType(50020, "utw.xml", "Waypoints", "plaintext")
-ResourceType.PTH_XML = ResourceType(50021, "pth.xml", "Paths", "plaintext")
-ResourceType.LIP_XML = ResourceType(50022, "lip.xml", "Lips", "plaintext")
-ResourceType.SSF_XML = ResourceType(50023, "ssf.xml", "Soundsets", "plaintext")
-ResourceType.ARE_XML = ResourceType(50023, "are.xml", "Module Data", "plaintext")
-ResourceType.TwoDA_JSON = ResourceType(50024, "2da.json", "2D Arrays", "plaintext")
-ResourceType.TLK_JSON = ResourceType(50024, "tlk.json", "Talk Tables", "plaintext")
