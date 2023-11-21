@@ -6,9 +6,10 @@ from typing import TYPE_CHECKING, Any, Callable
 
 from pykotor.common.language import LocalizedString
 from pykotor.common.misc import Game, ResRef
-from pykotor.utility.path import PureWindowsPath
-from pykotor.resource.formats.gff import GFF, GFFFieldType, GFFList, GFFStruct, bytes_gff, read_gff
+from pykotor.resource.formats.gff import GFF, GFFFieldType, GFFList, GFFStruct, bytes_gff
+from pykotor.resource.formats.gff.io_gff import GFFBinaryReader
 from pykotor.tslpatcher.mods.template import PatcherModifications
+from pykotor.utility.path import PureWindowsPath
 
 if TYPE_CHECKING:
     from pykotor.resource.formats.gff.gff_data import _GFFField
@@ -385,7 +386,7 @@ class ModificationsGFF(PatcherModifications):
         logger: PatchLogger | None = None,
         game: Game | None = None,
     ) -> bytes:
-        gff: GFF = read_gff(source_gff)
+        gff: GFF = GFFBinaryReader(source_gff).load()
         self.apply(gff, memory, logger, game)
         return bytes_gff(gff)
 

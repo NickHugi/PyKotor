@@ -24,9 +24,9 @@ class TLKBinaryReader(ResourceReader):
         size: int = 0,
     ):
         super().__init__(source, offset, size)
-        self._tlk: TLK | None = None
+        self._tlk: TLK
         self._texts_offset = 0
-        self._text_headers = []
+        self._text_headers: list[ArrayHead] = []
 
     @autoclose
     def load(
