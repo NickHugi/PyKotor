@@ -109,6 +109,35 @@ def parse_args() -> Namespace:
 
     return kwargs
 
+class ToolTip:
+    def __init__(self, widget, text):
+        self.widget = widget
+        self.text = text
+        self.tip_window = None
+        self.id = None
+        self.x = self.y = 0
+        self.widget.bind("<Enter>", self.show_tip)
+        self.widget.bind("<Leave>", self.hide_tip)
+
+    def show_tip(self, event=None):
+        """Display text in a tooltip window."""
+        x, y, _, _ = self.widget.bbox("insert")
+        x += self.widget.winfo_rootx() + 25
+        y += self.widget.winfo_rooty() + 20
+        self.tip_window = tk.Toplevel(self.widget)
+        self.tip_window.wm_overrideredirect(boolean=True)
+        self.tip_window.wm_geometry(f"+{x}+{y}")
+        label = tk.Label(self.tip_window, text=self.text(), justify=tk.LEFT,
+                         background="#ffffff", relief=tk.SOLID, borderwidth=1,
+                         font=("tahoma", "8", "normal"))
+        label.pack(ipadx=1)
+
+    def hide_tip(self, event=None):
+        """Destroy the tooltip window."""
+        tw = self.tip_window
+        self.tip_window = None
+        if tw:
+            tw.destroy()
 
 class App(tk.Tk):
     def __init__(self):
@@ -184,6 +213,7 @@ class App(tk.Tk):
         self.namespaces_combobox.bind("<FocusIn>", self.on_combobox_focus_in)
         self.namespaces_combobox.bind("<FocusOut>", self.on_combobox_focus_out)
         self.namespaces_combobox_state = 0  # used for handling focus events
+        ToolTip(self.namespaces_combobox, lambda: self.on_namespace_option_hover())
 
         self.browse_button = ttk.Button(top_frame, text="Browse", command=self.open_mod)
         self.browse_button.grid(row=0, column=1, padx=5, pady=2, sticky="e")
@@ -266,7 +296,7 @@ class App(tk.Tk):
         webbrowser.open_new("https://github.com/NickHugi/PyKotor")
 
     def open_deadlystream_discord(self):
-        pass  # implement only if we have permissions
+        webbrowser.open_new("https://discord.gg/HBwVCpAA")
 
     def open_kotor_discord(self):
         webbrowser.open_new("https://discord.com/invite/kotor")
@@ -536,6 +566,9 @@ class App(tk.Tk):
         combobox.xview(position)
         self.focus_set()
 
+    def on_namespace_option_hover(self) -> str:
+        namespace_option: PatcherNamespace | None = next((x for x in self.namespaces if x.name == self.namespaces_combobox.get()), None)
+        return namespace_option.description if namespace_option else ""
 
     def on_namespace_option_chosen(self, event: tk.Event) -> None:
         """Handles the namespace option being chosen from the combobox
@@ -552,9 +585,9 @@ class App(tk.Tk):
         try:
             namespace_option: PatcherNamespace = next(x for x in self.namespaces if x.name == self.namespaces_combobox.get())
             changes_ini_path = CaseAwarePath(self.mod_path, "tslpatchdata", namespace_option.changes_filepath())
-            reader = ConfigReader.from_filepath(changes_ini_path)
-            reader.load_settings()
-            game_number: int | None = reader.config.game_number
+            self.reader = ConfigReader.from_filepath(changes_ini_path)
+            self.reader.load_settings()
+            game_number: int | None = self.reader.config.game_number
             if game_number:
                 self._handle_gamepaths_with_mod(game_number)
             info_rtf = CaseAwarePath(self.mod_path, "tslpatchdata", namespace_option.rtf_filepath())
@@ -834,9 +867,14 @@ class App(tk.Tk):
             8. If CLI, exit regardless of success or error.
         """
         self.set_active_install(install_running=True)
+        #profiler = cProfile.Profile()
+        #profiler.enable()
         install_start_time: datetime = datetime.now(timezone.utc).astimezone()
         installer.install()
         total_install_time: timedelta = datetime.now(timezone.utc).astimezone() - install_start_time
+        #profiler.disable()
+        #profiler_output_file = Path("profiler_output.pstat").resolve()
+        #profiler.dump_stats(str(profiler_output_file))
 
         days, remainder = divmod(total_install_time.total_seconds(), 24 * 60 * 60)
         hours, remainder = divmod(remainder, 60 * 60)
