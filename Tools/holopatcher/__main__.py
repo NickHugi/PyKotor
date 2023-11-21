@@ -235,14 +235,17 @@ class App(tk.Tk):
             updateInfoData = json.loads(decoded_content.decode("utf-8"))
 
             new_version = tuple(map(int, updateInfoData["hpLatestVersion"].split(".")))
-            if (
-                    new_version > CURRENT_VERSION
-                    and messagebox.askyesno(
-                        "Update available",
-                        "A newer version of HoloPatcher is available, would you like to download it now?",
-                    )
-            ):
-                webbrowser.open_new("https://deadlystream.com/files/file/2243-holopatcher")
+            if new_version > CURRENT_VERSION:
+                if messagebox.askyesno(
+                    "Update available",
+                    "A newer version of HoloPatcher is available, would you like to download it now?",
+                ):
+                    webbrowser.open_new("https://deadlystream.com/files/file/2243-holopatcher")
+            else:
+                messagebox.showinfo(
+                    "No updates available.",
+                    f"You are already running the latest version of HoloPatcher ({updateInfoData['hpLatestVersion']})",
+                )
         except Exception as e:
             messagebox.showerror(
                 "Unable to fetch latest version.",
@@ -250,11 +253,6 @@ class App(tk.Tk):
                     f"Error: {e!r}\n"
                     "Check if you are connected to the internet."
                 ),
-            )
-        else:
-            messagebox.showinfo(
-                "No updates available.",
-                f"You are already running the latest version of HoloPatcher ({updateInfoData['hpLatestVersion']})",
             )
 
     def open_homepage(self):
