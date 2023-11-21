@@ -420,7 +420,7 @@ class ModInstaller:
             return True
 
         if patch.skip_if_not_replace and not patch.replace_file and exists:  # [InstallList] only
-            self.log.add_warning(f"'{patch.saveas}' already exists in the '{local_folder}' {container_type}. Skipping file...")
+            self.log.add_note(f"'{patch.saveas}' already exists in the '{local_folder}' {container_type}. Skipping file...")
             return False
 
         if capsule is not None and not capsule.path().exists():
