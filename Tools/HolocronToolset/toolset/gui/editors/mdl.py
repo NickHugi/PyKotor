@@ -6,12 +6,12 @@ from PyQt5.QtWidgets import QMessageBox, QWidget
 
 from pykotor.common.stream import BinaryReader
 from pykotor.extract.installation import SearchLocation
-from pykotor.utility.path import Path
 from pykotor.resource.formats.erf import read_erf
 from pykotor.resource.formats.mdl import MDL, read_mdl, write_mdl
 from pykotor.resource.formats.rim import read_rim
 from pykotor.resource.type import ResourceType
 from pykotor.tools.misc import is_bif_file, is_erf_or_mod_file, is_rim_file
+from pykotor.utility.path import Path
 from toolset.gui.editor import Editor
 
 if TYPE_CHECKING:

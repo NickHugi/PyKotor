@@ -15,13 +15,13 @@ if getattr(sys, "frozen", False) is False:
 
 from pathlib import Path, PosixPath, PurePath, PurePosixPath, PureWindowsPath, WindowsPath
 
+from pykotor.tools.path import CaseAwarePath
 from pykotor.utility.path import Path as CustomPath
 from pykotor.utility.path import PosixPath as CustomPosixPath
 from pykotor.utility.path import PurePath as CustomPurePath
 from pykotor.utility.path import PurePosixPath as CustomPurePosixPath
 from pykotor.utility.path import PureWindowsPath as CustomPureWindowsPath
 from pykotor.utility.path import WindowsPath as CustomWindowsPath
-from pykotor.tools.path import CaseAwarePath
 
 
 class TestPathlibMixedSlashes(unittest.TestCase):

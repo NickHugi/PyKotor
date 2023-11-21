@@ -20,7 +20,6 @@ if getattr(sys, "frozen", False) is False:
 from pykotor.common.geometry import Vector3, Vector4
 from pykotor.common.language import Gender, Language
 from pykotor.common.misc import ResRef
-from pykotor.utility.path import Path
 from pykotor.resource.formats.ssf import SSFSound
 from pykotor.resource.formats.tlk import TLK, write_tlk
 from pykotor.resource.type import ResourceType
@@ -52,6 +51,7 @@ from pykotor.tslpatcher.mods.twoda import (
     TargetType,
 )
 from pykotor.tslpatcher.reader import ConfigReader
+from pykotor.utility.path import Path
 
 
 class TestConfigReader(unittest.TestCase):

@@ -7,10 +7,10 @@ from PyQt5.QtCore import QUrl
 from PyQt5.QtGui import QDesktopServices, QKeySequence
 
 from pykotor.common.stream import BinaryReader
-from pykotor.utility.path import Path
 from pykotor.resource.formats.erf import read_erf
 from pykotor.resource.formats.rim import read_rim
 from pykotor.tools.misc import is_erf_or_mod_file, is_rim_file
+from pykotor.utility.path import Path
 
 if TYPE_CHECKING:
     import os

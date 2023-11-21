@@ -46,6 +46,7 @@ skip_gitignore = true
 
 [tool.ruff]
 target-version = "py38"
+line-length = 130
 
 select = ["ALL"]
 

@@ -1,13 +1,12 @@
 from __future__ import annotations
 
-import traceback
 from typing import TYPE_CHECKING, Any, Callable, Optional
 
 from PyQt5 import QtCore
 from PyQt5.QtCore import QThread
 from PyQt5.QtWidgets import QDialog, QLabel, QMessageBox, QProgressBar, QVBoxLayout, QWidget
-from pykotor.utility.error_handling import format_exception_with_variables
 
+from pykotor.utility.error_handling import format_exception_with_variables
 from pykotor.utility.path import Path
 
 if TYPE_CHECKING:

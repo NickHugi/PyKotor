@@ -9,8 +9,8 @@ from PyQt5.QtGui import QStandardItem, QStandardItemModel
 from PyQt5.QtWidgets import QWidget
 
 from pykotor.common.misc import Game
-from pykotor.utility.path import Path
 from pykotor.tools.path import find_kotor_paths_from_default
+from pykotor.utility.path import Path
 from toolset.data.settings import Settings
 
 

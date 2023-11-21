@@ -13,9 +13,9 @@ if getattr(sys, "frozen", False) is False:
 
 from unittest import TestCase
 
-from pykotor.utility.path import Path
 from pykotor.resource.formats.erf import ERF, ERFBinaryReader, read_erf, write_erf
 from pykotor.resource.type import ResourceType
+from pykotor.utility.path import Path
 
 BINARY_TEST_FILE = Path("tests/files/test.erf")
 DOES_NOT_EXIST_FILE = "./thisfiledoesnotexist"

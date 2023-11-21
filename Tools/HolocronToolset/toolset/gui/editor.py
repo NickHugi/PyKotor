@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import traceback
 from abc import abstractmethod
 from typing import TYPE_CHECKING, Optional, Union
 
@@ -10,13 +9,13 @@ from PyQt5.QtWidgets import QFileDialog, QLineEdit, QMainWindow, QMessageBox, QP
 
 from pykotor.common.module import Module
 from pykotor.extract.capsule import Capsule
-from pykotor.utility.error_handling import format_exception_with_variables
-from pykotor.utility.path import Path
 from pykotor.resource.formats.erf import ERFType, read_erf, write_erf
 from pykotor.resource.formats.rim import read_rim, write_rim
 from pykotor.resource.type import ResourceType
 from pykotor.tools import module
 from pykotor.tools.misc import is_bif_file, is_capsule_file, is_erf_file, is_erf_or_mod_file, is_rim_file, is_storage_file
+from pykotor.utility.error_handling import format_exception_with_variables
+from pykotor.utility.path import Path
 from toolset.gui.dialogs.load_from_module import LoadFromModuleDialog
 from toolset.gui.dialogs.save.to_bif import BifSaveDialog, BifSaveOption
 from toolset.gui.dialogs.save.to_module import SaveToModuleDialog

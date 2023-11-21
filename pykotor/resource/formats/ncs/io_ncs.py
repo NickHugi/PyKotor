@@ -1,19 +1,7 @@
 from __future__ import annotations
 
-from pykotor.resource.formats.ncs.ncs_data import (
-    NCS,
-    NCSByteCode,
-    NCSInstruction,
-    NCSInstructionType,
-    NCSInstructionTypeValue,
-)
-from pykotor.resource.type import (
-    SOURCE_TYPES,
-    TARGET_TYPES,
-    ResourceReader,
-    ResourceWriter,
-    autoclose,
-)
+from pykotor.resource.formats.ncs.ncs_data import NCS, NCSByteCode, NCSInstruction, NCSInstructionType, NCSInstructionTypeValue
+from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES, ResourceReader, ResourceWriter
 
 
 class NCSBinaryReader(ResourceReader):

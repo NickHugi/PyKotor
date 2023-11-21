@@ -5,8 +5,8 @@ from typing import TYPE_CHECKING, Optional, Tuple
 
 from PyQt5.QtWidgets import QPlainTextEdit, QWidget
 
-from pykotor.tools.encoding import decode_bytes_with_fallbacks
 from pykotor.resource.type import ResourceType
+from pykotor.tools.encoding import decode_bytes_with_fallbacks
 from toolset.gui.editor import Editor
 
 if TYPE_CHECKING:

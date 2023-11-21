@@ -111,11 +111,7 @@ def write_bitmap_font(
     char_range: tuple[int, int] = (0, 256),
 ) -> None:
     """Generates a bitmap font (TGA and TXI) from a TTF font file."""
-    from PIL import (  # Import things here to separate from HoloPatcher code.
-        Image,
-        ImageDraw,
-        ImageFont,
-    )
+    from PIL import Image, ImageDraw, ImageFont  # Import things here to separate from HoloPatcher code.
     font_path, target_path = ((p if isinstance(p, Path) else Path(p)).resolve() for p in (font_path, target))
 
     txi_font_info = TXIFontInformation()

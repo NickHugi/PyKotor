@@ -3,8 +3,8 @@ from __future__ import annotations
 import shutil
 from typing import TYPE_CHECKING
 
-from pykotor.utility.path import PurePath
 from pykotor.tslpatcher.mods.template import PatcherModifications
+from pykotor.utility.path import PurePath
 
 if TYPE_CHECKING:
     import os

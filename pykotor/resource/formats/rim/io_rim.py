@@ -1,14 +1,7 @@
 from __future__ import annotations
 
 from pykotor.resource.formats.rim import RIM
-from pykotor.resource.type import (
-    SOURCE_TYPES,
-    TARGET_TYPES,
-    ResourceReader,
-    ResourceType,
-    ResourceWriter,
-    autoclose,
-)
+from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES, ResourceReader, ResourceType, ResourceWriter, autoclose
 
 
 class RIMBinaryReader(ResourceReader):
