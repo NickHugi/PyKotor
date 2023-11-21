@@ -3,7 +3,8 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from pykotor.resource.formats.tlk import TLK
-from pykotor.resource.formats.tlk.tlk_auto import bytes_tlk, read_tlk
+from pykotor.resource.formats.tlk.io_tlk import TLKBinaryReader
+from pykotor.resource.formats.tlk.tlk_auto import bytes_tlk
 from pykotor.tslpatcher.mods.template import PatcherModifications
 
 if TYPE_CHECKING:
@@ -46,7 +47,7 @@ class ModificationsTLK(PatcherModifications):
     ) -> bytes:
         dialog: TLK | SOURCE_TYPES = source_tlk
         if not isinstance(source_tlk, TLK):
-            dialog = read_tlk(source_tlk)
+            dialog = TLKBinaryReader(source_tlk).load()
         self.apply(dialog, memory, log, game)
         return bytes_tlk(dialog)
 

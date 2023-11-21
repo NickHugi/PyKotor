@@ -2,7 +2,8 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from pykotor.resource.formats.ssf import bytes_ssf, read_ssf
+from pykotor.resource.formats.ssf import bytes_ssf
+from pykotor.resource.formats.ssf.io_ssf import SSFBinaryReader
 from pykotor.tslpatcher.mods.template import PatcherModifications
 
 if TYPE_CHECKING:
@@ -33,7 +34,7 @@ class ModificationsSSF(PatcherModifications):
         self.modifiers: list[ModifySSF] = modifiers if modifiers is not None else []
 
     def execute_patch(self, source_ssf: SOURCE_TYPES, memory: PatcherMemory, log=None, game=None) -> bytes:
-        ssf: SSF = read_ssf(source_ssf)
+        ssf: SSF = SSFBinaryReader(source_ssf).load()
         self.apply(ssf, memory, log, game)
         return bytes_ssf(ssf)
 
