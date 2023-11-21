@@ -4,6 +4,7 @@ import hashlib
 import os
 import platform
 import sys
+from contextlib import suppress
 from enum import Enum
 from typing import TYPE_CHECKING
 
@@ -53,6 +54,69 @@ class ProcessorArchitecture(Enum):
         """Check if the architecture supports 64-bit processing."""
         return self == ProcessorArchitecture.BIT_64
 
+def format_gpu_info(info, headers):
+    # Determine the maximum width for each column
+    column_widths = [max(len(str(row[i])) for row in [headers, *info]) for i in range(len(headers))]
+
+    # Function to format a single row
+    def format_row(row):
+        return " | ".join(f"{str(item).ljust(column_widths[i])}" for i, item in enumerate(row))
+
+    # Build the output string
+    output = format_row(headers) + "\n"
+    output += "-" * (sum(column_widths) + len(headers) * 3 - 1) + "\n"  # Add a separator line
+
+    # Append each row of GPU details to the output string
+    for row in info:
+        output += format_row(row) + "\n"
+
+    return output
+
+def get_system_info():
+    info = {}
+
+    # Basic OS information
+    info["Platform"] = platform.system()
+    info["Platform-Release"] = platform.release()
+    info["Platform-Version"] = platform.version()
+    info["Architecture"] = platform.machine()
+
+    # CPU information
+    psutil = None
+    with suppress(ImportError):
+        import psutil
+    if psutil is not None:
+        info["Physical cores"] = psutil.cpu_count(logical=False)
+        info["Total cores"] = psutil.cpu_count(logical=True)
+        cpu_freq = psutil.cpu_freq()
+        info["Max Frequency"] = f"{cpu_freq.max:.2f}Mhz"
+        info["Min Frequency"] = f"{cpu_freq.min:.2f}Mhz"
+        info["Current Frequency"] = f"{cpu_freq.current:.2f}Mhz"
+        info["CPU Usage Per Core"] = [f"{x}%" for x in psutil.cpu_percent(percpu=True, interval=1)]
+        info["Total CPU Usage"] = f"{psutil.cpu_percent()}%"
+
+        # RAM Information
+        svmem = psutil.virtual_memory()
+        info["Total Memory"] = f"{svmem.total / (1024 ** 3):.2f} GB"
+        info["Available Memory"] = f"{svmem.available / (1024 ** 3):.2f} GB"
+        info["Used Memory"] = f"{svmem.used / (1024 ** 3):.2f} GB"
+        info["Memory Usage"] = f"{svmem.percent}%"
+
+    # GPU Information
+    GPUtil = None
+    with suppress(ImportError):
+        import GPUtil
+    if GPUtil is not None:
+        gpus = GPUtil.getGPUs()
+        gpu_info = []
+        for gpu in gpus:
+            gpu_info.append((
+                gpu.id, gpu.name, f"{gpu.memoryTotal}MB", f"{gpu.memoryUsed}MB", 
+                f"{gpu.memoryFree}MB", f"{gpu.driver}", f"{gpu.temperature} C"
+            ))
+        info["GPU Details"] = format_gpu_info(gpu_info, headers=("id", "name", "total memory", "used memory", "free memory", "driver", "temperature"))
+
+    return info
 def is_debug_mode() -> bool:
     ret = False
     if os.getenv("PYTHONDEBUG", None):
