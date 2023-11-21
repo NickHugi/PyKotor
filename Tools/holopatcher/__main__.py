@@ -256,16 +256,16 @@ class App(tk.Tk):
             )
 
     def open_homepage(self):
-        pass
+        webbrowser.open_new("https://deadlystream.com/files/file/2243-holopatcher")
 
     def open_github(self):
-        pass
+        webbrowser.open_new("https://github.com/NickHugi/PyKotor")
 
     def open_deadlystream_discord(self):
-        pass
+        pass  # implement only if we have permissions
 
     def open_kotor_discord(self):
-        pass
+        webbrowser.open_new("https://discord.com/invite/kotor")
 
     def on_combobox_focus_in(self, event):
         if self.namespaces_combobox_state == 2:  # no selection, fix the focus
