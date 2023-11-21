@@ -515,11 +515,16 @@ class Installation:
         -------
             Game: The detected Game IntEnum, or None if not determined.
 
-        Processing Logic:
-        - Checks for files/folders specific to KOTOR 1 or KOTOR 2
-        - Checks KOTOR 2 first as a rims folder does not exist in KOTOR 2, which should not be the sole identifying characteristic.
-        - Returns Game object with game ID 1 for KOTOR 1 or 2 for KOTOR 2
-        - Raises a ValueError if the game cannot be determined
+        Determines the game via distinguishing characteristics of the install by:
+        - check if `streamvoice` exists but not `streamwaves` exists
+        - check if `swkotor2.exe` exists but not `swkotor.exe` exists
+        if any of those is true, it's a K2 install.
+
+        Otherwise:
+        - check if `streamwaves` exists but not `streamvoice` exists
+        - check if `swkotor.exe` exists but not `swkotor2.exe` exists
+        - check if `rims` exists
+        if any of those is true, it's a K1 install.
         """
         r_path: CaseAwarePath = path if isinstance(path, CaseAwarePath) else CaseAwarePath(path)
 
@@ -527,17 +532,113 @@ class Installation:
             file_path: CaseAwarePath = r_path.joinpath(x)
             return file_path.exists()
 
-        is_game1_stream = check("streamwaves") and not check("streamvoice")
-        is_game1_exe = check("swkotor.exe") and not check("swkotor2.exe")
-        is_game1_rims = check("rims")
+        # Checks for each game
+        game1_checks = [
+            check("streamwaves"),
+            check("swkotor.exe"),
+            check("swkotor.ini"),
+            check("rims"),
+            check("utils"),
+            check("32370_install.vdf"),
+            check("miles/mssds3d.m3d"),
+            check("miles/msssoft.m3d"),
+            check("data/party.bif"),
+            check("data/player.bif"),
+            check("modules/danm13_loc.mod"),
+            check("modules/danm14aa_loc.mod"),
+            check("modules/danm14ab_loc.mod"),
+            check("modules/danm14ac_loc.mod"),
+            check("modules/danm14ad_loc.mod"),
+            check("modules/danm14ae_loc.mod"),
+            check("modules/danm15_loc.mod"),
+            check("modules/danm16_loc.mod"),
+            check("modules/ebo_m12aa_loc.mod"),
+            check("modules/ebo_m40aa_loc.mod"),
+            check("modules/ebo_m40ad_loc.mod"),
+            check("modules/ebo_m41aa_loc.mod"),
+            check("modules/ebo_m46ab_loc.mod"),
+            check("modules/end_m01aa_loc.mod"),
+            check("modules/end_m01ab_loc.mod"),
+            check("modules/global.mod"),
+            check("modules/kas_m22aa_loc.mod"),
+            check("kas_m22ab_loc.mod"),
+            check("kas_m23aa_loc.mod"),
+            check("kas_m23ab_loc.mod"),
+            check("kas_m23ac_loc.mod"),
+            check("kas_m23ad_loc.mod"),
+            check("kas_m24aa_loc.mod"),
+            check("kas_m25aa_loc.mod"),
+            check("korr_m33aa_loc.mod"),
+            check("korr_m33ab_loc.mod"),
+            check("korr_m34aa_loc.mod"),
+            check("korr_m35aa_loc.mod"),
+            check("korr_m36aa_loc.mod"),
+            check("korr_m37aa_loc.mod"),
+            check("korr_m38aa_loc.mod"),
+            check("korr_m38ab_loc.mod"),
+            check("korr_m39aa_loc.mod"),
+            check("legal.mod"),
+            check("lev_m40aa_loc.mod"),
+            check("lev_m40ab_loc.mod"),
+            check("lev_m40ac_loc.mod"),
+            check("lev_m40ad_loc.mod"),
+            check("liv_m99aa_loc.mod"),
+            check("M12ab_loc.mod"),
+            check("mainmenu.mod"),
+            check("manm26aa_loc.mod"),
+            check("manm26ab_loc.mod"),
+            check("manm26ac_loc.mod"),
+            check("STUNT_00_loc.mod"),
+        ]
 
-        is_game2_stream = check("streamvoice") and not check("streamwaves")
-        is_game2_exe = check("swkotor2.exe") and not check("swkotor.exe")
+        game2_checks = [
+            check("streamvoice"),
+            check("swkotor2.exe"),
+            check("swkotor2.ini"),
+            check("LocalVault"),
+            check("LocalVault/test.bic"),
+            check("LocalVault/testold.bic"),
+            check("miles/binkawin.asi"),
+            check("miles/mssds3d.flt"),
+            check("miles/mssdolby.flt"),
+            check("miles/mssogg.asi"),
+            check("data/Dialogs.bif"),
+            check("lips/001EBO_loc.mod"),
+            check("002EBO_loc.mod"),
+            check("003EBO_loc.mod"),
+            check("004EBO_loc.mod"),
+            check("005EBO_loc.mod"),
+            check("006EBO_loc.mod"),
+            check("007EBO_loc.mod"),
+            check("101per_loc.mod"),
+            check("102PER_loc.mod"),
+            check("103PER_loc.mod"),
+            check("104PER_loc.mod"),
+            check("105PER_loc.mod"),
+            check("106PER_loc.mod"),
+            check("107PER_loc.mod"),
+            check("151HAR_loc.mod"),
+            check("152HAR_loc.mod"),
+            check("153HAR_loc.mod"),
+        ]
 
-        if any((is_game2_stream, is_game2_exe)):  # check TSL first otherwise the 'rims' folder takes priority
-            return Game(2)
-        if any((is_game1_stream, is_game1_exe, is_game1_rims)):
+        # Scoring for each game
+        game1_score = sum(check for check in game1_checks)
+        game2_score = sum(check for check in game2_checks)
+
+        # Determine the game with the most checks passed
+        if game1_score > game2_score:
             return Game(1)
+        if game2_score > game1_score:
+            return Game(2)
+
+        # No checks passed
+        if game1_score == 0 and game2_score == 0:
+            return None
+
+        # Same score
+        if game1_score == game2_score:
+            return None
         return None
 
     def game(self) -> Game:
