@@ -224,9 +224,9 @@ class App(tk.Tk):
         self.install_button.pack(side="right", padx=5, pady=5)
 
 
-    def checkForUpdates(self) -> None:
+    def check_for_updates(self) -> None:
         try:
-            req = requests.get("https://api.github.com/repos/NickHugi/PyKotor/contents/toolset/toolset_update_info.json", timeout=15)
+            req = requests.get("https://api.github.com/repos/NickHugi/PyKotor/update_info.json", timeout=15)
             req.raise_for_status()
             file_data = req.json()
             base64_content = file_data["content"]
