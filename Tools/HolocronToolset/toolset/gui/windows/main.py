@@ -447,7 +447,7 @@ class ToolWindow(QMainWindow):
             decoded_content = base64.b64decode(base64_content)  # Correctly decoding the base64 content
             data = json.loads(decoded_content.decode("utf-8"))
 
-            latestVersion = tuple(map(int, data["latestVersion"].split(".")))
+            latestVersion = tuple(map(int, str(data["latestVersion"]).split(".")))
             downloadLink = data["downloadLink"]
 
             if latestVersion > PROGRAM_VERSION:

@@ -56,7 +56,7 @@ class HelpWindow(QMainWindow):
             tree = ElemTree.parse("./help/contents.xml")
             root = tree.getroot()
 
-            self.version = tuple(map(int, root.get("version", "0.0").split(".")))
+            self.version = tuple(map(int, str(root.get("version", "0.0")).split(".")))
             self._setupContentsRecXML(None, root)
 
             # Old JSON code:
@@ -147,7 +147,7 @@ class HelpWindow(QMainWindow):
             decoded_content = base64.b64decode(base64_content)  # Correctly decoding the base64 content
             updateInfoData = json.loads(decoded_content.decode("utf-8"))
 
-            new_version = tuple(map(int, updateInfoData["help"]["version"].split(".")))
+            new_version = tuple(map(int, str(updateInfoData["help"]["version"]).split(".")))
             if self.version is None or new_version > self.version:
                 msgbox = QMessageBox(
                     QMessageBox.Information,

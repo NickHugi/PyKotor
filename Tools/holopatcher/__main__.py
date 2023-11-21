@@ -144,6 +144,11 @@ class App(tk.Tk):
         self.menu_bar = tk.Menu(self)
         self.config(menu=self.menu_bar)
 
+        # Version display - non-clickable
+        version_label = f"v{'.'.join(map(str, CURRENT_VERSION))}"
+        self.menu_bar.add_command(label=version_label)
+        self.menu_bar.entryconfig(version_label, state="disabled")
+
         # About menu
         about_menu = tk.Menu(self.menu_bar, tearoff=0)
         self.menu_bar.add_cascade(label="About", menu=about_menu)
@@ -219,7 +224,7 @@ class App(tk.Tk):
         self.exit_button.pack(side="left", padx=5, pady=5)
 
         self.uninstall_button = ttk.Button(bottom_frame, text="Uninstall", command=self.uninstall_selected_mod)
-        self.uninstall_button.pack(side="left", padx=5, pady=5)
+        #self.uninstall_button.pack(side="right", padx=5, pady=5)
 
         self.install_button = ttk.Button(bottom_frame, text="Install", command=self.begin_install)
         self.install_button.pack(side="right", padx=5, pady=5)
@@ -234,7 +239,7 @@ class App(tk.Tk):
             decoded_content = base64.b64decode(base64_content)  # Correctly decoding the base64 content
             updateInfoData = json.loads(decoded_content.decode("utf-8"))
 
-            new_version = tuple(map(int, updateInfoData["hpLatestVersion"].split(".")))
+            new_version = tuple(map(int, str(updateInfoData["hpLatestVersion"]).split(".")))
             if new_version > CURRENT_VERSION:
                 if messagebox.askyesno(
                     "Update available",

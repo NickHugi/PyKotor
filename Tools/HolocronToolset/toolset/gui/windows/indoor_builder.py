@@ -977,8 +977,8 @@ class KitDownloader(QDialog):
                     button.setEnabled(True)
                 else:
                     with suppress(Exception):
-                        local_kit_version = tuple(map(int, localKitDict["version"].split(".")))
-                        retrieved_kit_version = tuple(map(int, kitDict["version"].split(".")))
+                        local_kit_version = tuple(map(int, str(localKitDict["version"]).split(".")))
+                        retrieved_kit_version = tuple(map(int, str(kitDict["version"]).split(".")))
                         if local_kit_version < retrieved_kit_version:
                             button.setText("Update Available")
                             button.setEnabled(True)
