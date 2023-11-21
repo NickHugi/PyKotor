@@ -226,7 +226,7 @@ class App(tk.Tk):
 
     def check_for_updates(self) -> None:
         try:
-            req = requests.get("https://api.github.com/repos/NickHugi/PyKotor/update_info.json", timeout=15)
+            req = requests.get("https://api.github.com/repos/NickHugi/PyKotor/contents/update_info.json", timeout=15)
             req.raise_for_status()
             file_data = req.json()
             base64_content = file_data["content"]
@@ -249,6 +249,11 @@ class App(tk.Tk):
                     f"Error: {e!r}\n"
                     "Check if you are connected to the internet."
                 ),
+            )
+        else:
+            messagebox.showinfo(
+                "No updates available.",
+                f"You are already running the latest version of HoloPatcher ({updateInfoData['hpLatestVersion']})",
             )
 
     def open_homepage(self):
