@@ -298,9 +298,9 @@ class Capsule:
         offset_to_keys = reader.read_uint32()
         offset_to_resources = reader.read_uint32()
 
-        resrefs = []
-        resids = []
-        restypes = []
+        resrefs:  list[str] = []
+        resids:   list[int] = []
+        restypes: list[ResourceType] = []
         reader.seek(offset_to_keys)
         for _ in range(entry_count):
             resrefs.append(reader.read_string(16))
@@ -312,9 +312,7 @@ class Capsule:
         for i in range(entry_count):
             res_offset = reader.read_uint32()
             res_size = reader.read_uint32()
-            self._resources.append(
-                FileResource(resrefs[i], restypes[i], res_size, res_offset, self._path),
-            )
+            self._resources.append(FileResource(resrefs[i], restypes[i], res_size, res_offset, self._path))
 
     def _load_rim(
         self,

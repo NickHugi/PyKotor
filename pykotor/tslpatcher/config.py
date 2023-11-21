@@ -292,34 +292,9 @@ class ModInstaller:
         return (exists, capsule)
 
     def load_resource_file(self, resource_path: Path) -> bytes:
-        """Loads a resource file and returns its contents as bytes.
-        BinaryReader.load_file works in all normal scenarios, the
-        format checks are provided for convenience to allow the user to load XML/JSON/CSV type data as well as defaults.
-
-        Args:
-        ----
-            resource_path: Path to the resource file to load.
-
-        Returns:
-        -------
-            bytes: The contents of the resource file as bytes.
-        Processing Logic:
-            - Get the file extension of the resource_path
-            - Check if the extension matches a known GFF type and return bytes of the GFF
-            - Check if the extension matches other known types and return bytes of that type
-            - Otherwise return bytes using the default loader.
-        """
         ext: str = resource_path.suffix.strip() and resource_path.suffix.lower()[1:]
-        if ext in GFFContent.get_valid_types():
-            return bytes_gff(resource_path)
-        if ext == "ssf":
-            return bytes_ssf(resource_path)
         if ext == "tlk":
             return read_tlk(resource_path)
-        if ext == "2da":
-            return bytes_2da(resource_path)
-        if ext == "lip":
-            return bytes_lip(resource_path)
         return BinaryReader.load_file(resource_path)
 
     def lookup_resource(
@@ -508,7 +483,7 @@ class ModInstaller:
                 self.log.add_error(f"Could not locate resource to {patch.action.lower().strip()}: '{patch.sourcefile}'")
                 continue
             if not data_to_patch_bytes:
-                self.log.add_warning(f"'{patch.sourcefile}' has no content/data and is completely empty.")
+                self.log.add_verbose(f"'{patch.sourcefile}' has no content/data and is completely empty.")
 
             patched_bytes_data = patch.execute_patch(data_to_patch_bytes, memory, self.log, self._game)
             if capsule is not None:

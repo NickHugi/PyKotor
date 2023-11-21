@@ -272,7 +272,7 @@ class App(tk.Tk):
         webbrowser.open_new("https://discord.com/invite/kotor")
 
     def on_combobox_focus_in(self, event):
-        if self.namespaces_combobox_state == 2:  # no selection, fix the focus
+        if self.namespaces_combobox_state == 2: # no selection, fix the focus
             self.focus_set()
             self.namespaces_combobox_state = 0  # base status
         else:
