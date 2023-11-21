@@ -9,7 +9,12 @@ import traceback
 from copy import deepcopy
 from io import StringIO
 from tkinter import filedialog, messagebox, ttk
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
+from pykotor.extract.file import ResourceIdentifier
+
+from pykotor.extract.installation import Installation
+from pykotor.resource.formats.tlk.tlk_data import TLKEntry
+from pykotor.resource.type import ResourceType
 
 if getattr(sys, "frozen", False) is False:
     pykotor_path = pathlib.Path(__file__).parents[2] / "pykotor"
@@ -33,7 +38,7 @@ if TYPE_CHECKING:
 
     from pykotor.extract.file import FileResource
 
-
+APP: KOTORPatchingToolUI
 OUTPUT_LOG: Path
 LOGGING_ENABLED: bool
 pytranslator: Translator | None = None
@@ -59,6 +64,29 @@ fieldtype_to_fieldname: dict[GFFFieldType, str] = {
     GFFFieldType.List: "List",
 }
 
+class Globals:
+    def __init__(self) -> None:
+        # Initialize with an empty dictionary to store attributes
+        self._attributes: dict[str, Any] = {}
+
+    def __setattr__(self, key, value):
+        # If the key is '_attributes', handle it as a normal attribute assignment
+        # This is necessary to avoid recursion during initialization
+        if key == "_attributes":
+            super().__setattr__(key, value)
+        else:
+            self._attributes[key] = value
+
+    def __getattr__(self, item):
+        return self._attributes.get(item, None)
+
+    def __setitem__(self, key, value):
+        self._attributes[key] = value
+
+    def __getitem__(self, key):
+        return self._attributes.get(key, None)
+
+SCRIPT_GLOBALS = Globals()
 
 def relative_path_from_to(src, dst) -> Path:
     src_parts = list(src.parts)
@@ -77,6 +105,8 @@ def do_patch(
     gff_content: GFFContent,
     current_path: PureWindowsPath | os.PathLike | str | None = None,
 ):
+    if gff_content != GFFContent.DLG:
+        return
     current_path = current_path if isinstance(current_path, PureWindowsPath) else PureWindowsPath(current_path or "GFFRoot")
     for label, ftype, value in gff_struct:
         if label.lower() == "mod_name":
@@ -85,7 +115,7 @@ def do_patch(
 
         if ftype == GFFFieldType.Struct:
             assert isinstance(value, GFFStruct)  # noqa: S101
-            if parser_args.set_unskippable and "Skippable" in value._fields:
+            if APP.set_unskippable.get() and "Skippable" in value._fields:
                 log_output(f"Setting '{child_path}' as unskippable")
                 value._fields["Skippable"]._value = 0
 
@@ -97,7 +127,7 @@ def do_patch(
             recurse_through_list(value, gff_content, child_path)
             continue
 
-        if ftype == GFFFieldType.LocalizedString and parser_args.translate:  # and gff_content.value == GFFContent.DLG.value:
+        if ftype == GFFFieldType.LocalizedString and APP.translate.get():  # and gff_content.value == GFFContent.DLG.value:
             assert isinstance(value, LocalizedString)  # noqa: S101
             new_substrings = deepcopy(value._substrings)
             for lang, gender, text in value:
@@ -105,7 +135,7 @@ def do_patch(
                     log_output_with_separator(f"Translating CExoLocString at {child_path}", above=True)
                     translated_text = pytranslator.translate(text, from_lang=lang)
                     log_output(f"Translated {text} --> {translated_text}")
-                    substring_id = LocalizedString.substring_id(parser_args.to_lang, gender)
+                    substring_id = LocalizedString.substring_id(SCRIPT_GLOBALS.to_lang, gender)
                     new_substrings[substring_id] = translated_text
             value._substrings = new_substrings
 
@@ -127,96 +157,55 @@ def log_output(*args, **kwargs) -> None:
     msg = buffer.getvalue()
 
     # Write the captured output to the file
-    encoding = parser_args.to_lang.get_encoding() if parser_args.to_lang else "utf-8"
-    with OUTPUT_LOG.open("a", encoding=encoding, errors="ignore") as f:
+    with Path("log_batch_patcher.log").open("a", errors="ignore") as f:
         f.write(msg)
 
     # Print the captured output to console
     print(*args, **kwargs)  # noqa: T201
 
 
-def handle_restype_and_patch(
-    file_path: Path,
-    bytes_data: bytes | None = None,
-    ext: str | None = None,
-    resref: FileResource | None = None,
-    capsule: Capsule | None = None,
-) -> None:
-    # sourcery skip: extract-method
-    data: bytes | Path = file_path if bytes_data is None else bytes_data
-    if ext == "tlk":
+def patch_resource(resource: FileResource) -> None:
+    if resource.restype().extension.lower() == "tlk" and SCRIPT_GLOBALS.translate:
         tlk: TLK | None = None
         try:
-            log_output(f"Loading TLK '{file_path}'")
-            tlk = read_tlk(data)
+            log_output(f"Loading TLK '{resource.filepath()}'")
+            tlk = read_tlk(resource.filepath())
         except Exception as e:  # noqa: BLE001
-            log_output(f"Error loading TLK {file_path}! {e!r}")
+            log_output(f"Error loading TLK {resource.filepath()}! {e!r}")
             return
         if not tlk:
-            message = f"TLK resource missing in memory:\t'{file_path}'"
+            message = f"TLK resource missing in memory:\t'{resource.filepath()}'"
             log_output(message)
             return
 
-        if pytranslator is not None:
-            new_entries = deepcopy(tlk.entries)
-            from_lang = tlk.language
-            tlk.language = parser_args.to_lang
-            new_file_path = file_path.parent / (
-                f"{file_path.stem}_" + (get_language_code(parser_args.to_lang) or "UNKNOWN") + file_path.suffix
-            )
-            for strref, tlkentry in tlk:
-                text = tlkentry.text
-                if not text.strip() or text.isdigit():
-                    continue
-                log_output_with_separator(f"Translating TLK text at {file_path!s}", above=True)
-                translated_text = pytranslator.translate(text, from_lang=from_lang)
-                log_output(f"Translated {text} --> {translated_text}")
-                new_entries[strref].text = translated_text
-            tlk.entries = new_entries
-            write_tlk(tlk, new_file_path)
-            processed_files.add(new_file_path)
-    if ext in gff_types:
+        new_entries: list[TLKEntry] = deepcopy(tlk.entries)
+        from_lang: Language = tlk.language
+        tlk.language = SCRIPT_GLOBALS.to_lang
+        new_filename_stem = f"{resource.resname()}_" + (get_language_code(SCRIPT_GLOBALS.to_lang) or "UNKNOWN")
+        new_file_path = resource.filepath().parent / (new_filename_stem + resource.restype().extension)
+        for strref, tlkentry in tlk:
+            text = tlkentry.text
+            if not text.strip() or text.isdigit():
+                continue
+            log_output_with_separator(f"Translating TLK text at {resource.filepath()!s}", above=True)
+            translated_text = pytranslator.translate(text, from_lang=from_lang)
+            log_output(f"Translated {text} --> {translated_text}")
+            new_entries[strref].text = translated_text
+        tlk.entries = new_entries
+        write_tlk(tlk, new_file_path)
+        processed_files.add(new_file_path)
+    if resource.restype().extension.lower() in gff_types:
         gff: GFF | None = None
         try:
-            gff = read_gff(data)
+            log_output(f"Loading GFF '{resource.filepath()}'")
+            gff = read_gff(resource.filepath())
         except Exception as e:  # noqa: BLE001
-            log_output(f"[Error] loading GFF {file_path}! {e!r}")
+            log_output(f"[Error] loading GFF {resource.filepath()}! {e!r}")
             return
 
         if not gff:
-            log_output(f"GFF resource missing in memory:\t'{file_path}'")
+            log_output(f"GFF resource missing in memory:\t'{resource.filepath()}'")
             return
-
-        # TODO: Don't write files that are unchanged.
-        if capsule is not None and resref is not None:
-            do_patch(
-                gff.root,
-                gff.content,
-                Path(
-                    resref.filepath(),
-                    f"{resref.identifier().resname}.{resref.identifier().restype.extension}",
-                ),
-            )
-            new_file_path = file_path.parent / (
-                f"{file_path.stem}_" + (get_language_code(parser_args.to_lang) or "UNKNOWN") + file_path.suffix
-            )
-            new_capsule = Capsule(
-                new_file_path,
-                create_nonexisting=True,
-            )
-            new_capsule._resources = deepcopy(capsule._resources)
-            new_capsule.add(resref.resname(), resref.restype(), bytes_gff(gff))
-            processed_files.add(new_capsule.path())
-        else:
-            do_patch(gff.root, gff.content, file_path.name)
-            new_file_path = file_path.parent / (
-                f"{file_path.stem}_" + (get_language_code(parser_args.to_lang) or "UNKNOWN") + file_path.suffix
-            )
-            write_gff(gff, new_file_path)
-            processed_files.add(new_file_path)
-        return
-
-    return
 
 
 def visual_length(s: str, tab_length=8) -> int:
@@ -250,6 +239,7 @@ def handle_capsule_and_patch(file: os.PathLike | str) -> None:
         return
 
     if is_capsule_file(c_file.name):
+        log_output(f"Load {c_file.name}")
         try:
             file_capsule = Capsule(file)
         except ValueError as e:
@@ -258,10 +248,17 @@ def handle_capsule_and_patch(file: os.PathLike | str) -> None:
 
         for resref in file_capsule:
             ext = resref.restype().extension.lower()
-            handle_restype_and_patch(c_file, resref.data(), ext, resref, file_capsule)
+            patch_resource(resref)
     else:
         ext = c_file.suffix.lower()[1:]
-        handle_restype_and_patch(c_file, ext=ext)
+        resource = FileResource(
+            c_file.name,
+            ResourceType.from_extension(ext),
+            c_file.stat().st_size,
+            0,
+            c_file,
+        )
+        patch_resource(resource)
 
 
 def recurse_directories(folder_path: os.PathLike | str) -> None:
@@ -271,22 +268,18 @@ def recurse_directories(folder_path: os.PathLike | str) -> None:
         handle_capsule_and_patch(file_path)
 
 
-# TODO: Use the Installation class
 def patch_install(install_path: os.PathLike | str) -> None:
-    install_path = install_path if isinstance(install_path, Path) else Path(install_path).resolve()
     log_output()
     log_output_with_separator(f"Patching install dir:\t{install_path}", above=True)
     log_output()
 
+    log_output_with_separator("Patching modules...")
+    k_install = Installation(Path(install_path).resolve())
+    for module_name in k_install.modules_list():
+        for resource in k_install.module_resources(module_name):
+            patch_resource(resource)
+
     handle_capsule_and_patch(install_path.joinpath("dialog.tlk"))
-    modules_path: Path = install_path / "Modules"
-    recurse_directories(modules_path)
-
-    override_path: Path = install_path / "Override"
-    recurse_directories(override_path)
-
-    rims_path: Path = install_path / "rims"
-    recurse_directories(rims_path)
 
 
 def is_kotor_install_dir(path: os.PathLike | str) -> bool:
@@ -311,21 +304,67 @@ def run_patches(path: Path):
         handle_capsule_and_patch(path)
 
 
+def do_main_patchloop():
+    try:
+        # Profiling logic
+        if SCRIPT_GLOBALS.use_profiler:
+            profiler = cProfile.Profile()
+            profiler.enable()
+
+        # Patching logic
+        for lang in SCRIPT_GLOBALS.chosen_languages:
+            print(f"Translating to {lang}...")
+            enum_member_lang = Language[lang]
+            if SCRIPT_GLOBALS.create_fonts:
+                SCRIPT_GLOBALS.create_font_pack(enum_member_lang)
+            SCRIPT_GLOBALS.to_lang = enum_member_lang
+            pytranslator = Translator(SCRIPT_GLOBALS.to_lang)
+            pytranslator.translation_option = SCRIPT_GLOBALS.translation_option  # type: ignore[assignment]
+            run_patches(Path(SCRIPT_GLOBALS.path))
+
+        if SCRIPT_GLOBALS.use_profiler:
+            profiler.disable()
+            profiler_output_file = Path("profiler_output.pstat").resolve()
+            profiler.dump_stats(str(profiler_output_file))
+            log_output(f"Profiler output saved to: {profiler_output_file}")
+
+        log_output(f"Completed batch patcher of {SCRIPT_GLOBALS.path}")
+    except Exception:
+        log_output("Unhandled exception during the patching process.")
+        log_output(traceback.format_exc())
+        messagebox.showerror("Error", "An error occurred during patching.")
+
+
+def assign_to_globals(instance):
+    for attr, value in instance.__dict__.items():
+        # Convert tkinter variables to their respective Python types
+        if isinstance(value, tk.StringVar):
+            SCRIPT_GLOBALS[attr] = value.get()
+        elif isinstance(value, tk.BooleanVar):
+            SCRIPT_GLOBALS[attr] = bool(value.get())
+        elif isinstance(value, tk.IntVar):
+            SCRIPT_GLOBALS[attr] = int(value.get())
+        else:
+            # Directly assign if it's not a tkinter variable
+            SCRIPT_GLOBALS[attr] = value
+
+
 class KOTORPatchingToolUI:
-    def __init__(self, root) -> None:
+    def __init__(self, root, parser_args) -> None:
         self.root = root
         root.title("KOTOR Translate Tool")
 
-        self.path = tk.StringVar()
+        self.path = tk.StringVar(value=parser_args.path or None)
         self.output_log = "log_batch_patcher.log"
-        self.logging_enabled = tk.BooleanVar(value=True)
-        self.translate = tk.BooleanVar(value=True)
-        self.to_lang = tk.StringVar()
-        self.create_fonts = tk.BooleanVar(value=False)
-        self.font_path = tk.StringVar()
-        self.resolution = tk.IntVar(value=512)
-        self.use_profiler = tk.BooleanVar()
-        self.translation_option = tk.StringVar()
+        self.set_unskippable = tk.BooleanVar(value=parser_args.set_unskippable)
+        self.logging_enabled = tk.BooleanVar(value=parser_args.logging)
+        self.translate = tk.BooleanVar(value=parser_args.translate)
+        self.to_lang = tk.StringVar(value=parser_args.to_lang)
+        self.create_fonts = tk.BooleanVar(value=parser_args.create_fonts)
+        self.font_path = tk.StringVar(value=parser_args.font_path)
+        self.resolution = tk.IntVar(value=parser_args.resolution)
+        self.use_profiler = tk.BooleanVar(value=parser_args.use_profiler)
+        self.translation_option = tk.StringVar(value=parser_args.translation_option)
 
         self.chosen_languages: list[Language] = []
         self.lang_vars: list[str] = []
@@ -338,6 +377,11 @@ class KOTORPatchingToolUI:
         ttk.Label(self.root, text="Path to K1/TSL install:").grid(row=row, column=0)
         ttk.Entry(self.root, textvariable=self.path).grid(row=row, column=1)
         ttk.Button(self.root, text="Browse", command=self.browse_path).grid(row=row, column=2)
+        row += 1
+
+        # Skippable
+        ttk.Label(self.root, text="Make all dialog unskippable:").grid(row=row, column=0)
+        ttk.Checkbutton(self.root, text="Yes", variable=self.set_unskippable).grid(row=row, column=1)
         row += 1
 
         # Logging Enabled
@@ -399,7 +443,7 @@ class KOTORPatchingToolUI:
             ttk.Checkbutton(self.root, text=lang.name, variable=lang_var, command=lambda lang=lang, lang_var=lang_var: self.update_chosen_languages(lang, lang_var)).grid(row=row, column=column, sticky="w")
 
             # Alternate between columns
-            column = (column + 1) % 3
+            column = (column + 1) % 4
             if column == 0:
                 row += 1
 
@@ -419,7 +463,7 @@ class KOTORPatchingToolUI:
 
     def create_font_pack(self, lang: Language):
         print(f"Creating font pack for '{lang.name}'...")
-        write_bitmap_font(Path.cwd() / f"font_pack_{lang.name}.tga", str(self.font_path), (self.resolution.get(), self.resolution.get()), lang)
+        write_bitmap_font(Path.cwd() / f"font_pack_{lang.name}.tga", str(SCRIPT_GLOBALS.font_path), (SCRIPT_GLOBALS.resolution, SCRIPT_GLOBALS.resolution), lang)
 
     def browse_path(self):
         directory = filedialog.askdirectory()
@@ -432,227 +476,203 @@ class KOTORPatchingToolUI:
             self.font_path.set(file)
 
     def start_patching(self):
+        assign_to_globals(self)
         # Mapping UI input to script logic
-        path = Path(self.path.get()).resolve()
+        path = Path(SCRIPT_GLOBALS.path).resolve()
         if not path.exists():
             messagebox.showerror("Error", "Invalid path")
             return
 
+        do_main_patchloop()
+
+def create_font_pack(lang: Language):
+    print(f"Creating font pack for '{lang.name}'...")
+    write_bitmap_font(Path.cwd() / f"font_pack_{lang.name}.tga", SCRIPT_GLOBALS.font_path, (SCRIPT_GLOBALS.resolution, SCRIPT_GLOBALS.resolution), lang)
+
+if __name__ == "__main__":
+
+    parser = argparse.ArgumentParser(description="Finds differences between two KOTOR installations")
+    parser.add_argument("--path", type=str, help="Path to the first K1/TSL install, file, or directory to patch.")
+    parser.add_argument("--output-log", type=str, help="Filepath of the desired output logfile")
+    parser.add_argument("--logging", type=bool, help="Whether to log the results to a file or not (default is enabled)")
+    parser.add_argument("--set-unskippable", type=str, help="Makes all dialog unskippable. (y/N)")
+    parser.add_argument("--translate", type=str, help="Should we ai translate the TLK and all GFF locstrings? (y/N)")
+    parser.add_argument("--to-lang", type=str, help="The language to translate the files to")
+    parser.add_argument("--from-lang", type=str, help="The language the files are written in (defaults to auto if available)")
+    parser.add_argument("--create-fonts", type=str, help="Create font packs for the selected language(s) (y/N).")
+    parser.add_argument("--font-path", type=str, help="Path to the font file to use for the font pack creation (must be a file that ends in .ttk)")
+    parser.add_argument("--resolution", type=int, help="A single number representing the resolution Y x Y. Must be divisible by 256. The single number entered will be used for both the height and width, as it must be a square.")
+    parser.add_argument(
+        "--use-profiler",
+        type=bool,
+        default=False,
+        help="Use cProfile to find where most of the execution time is taking place in source code.",
+    )
+    parser_args, unknown = parser.parse_known_args()
+    try:
+        root = tk.Tk()
+        APP = KOTORPatchingToolUI(root, parser_args)
+        root.mainloop()
+    except Exception as e:  # noqa: BLE001
+        print(repr(e))
+        LOGGING_ENABLED = bool(parser_args.logging is None or parser_args.logging)
+        while True:
+            parser_args.path = Path(
+                parser_args.path
+                or input("Path to the K1/TSL install, file, or directory to patch: ")
+                or "C:\\Program Files (x86)\\Steam\\steamapps\\common\\Knights of the Old Republic II",
+            ).resolve()
+            if parser_args.path.exists():
+                break
+            print("Invalid path:", parser_args.path)
+            parser.print_help()
+            parser_args.path = None
+        while True:
+            parser_args.set_unskippable = parser_args.set_unskippable or input("Would you like to make all dialog unskippable? (y/N): ")
+            if parser_args.set_unskippable.lower() in ["y", "yes"]:  # type: ignore[attr-defined]
+                parser_args.set_unskippable = True
+            elif parser_args.set_unskippable.lower() in ["n", "no"]:  # type: ignore[attr-defined]
+                parser_args.set_unskippable = False
+            if not isinstance(parser_args.set_unskippable, bool):
+                print("Invalid input, please enter yes or no")
+                parser_args.set_unskippable = None
+                parser.print_help()
+                continue
+            break
+        while True:
+            parser_args.translate = parser_args.translate or input(
+                "Would you like to translate all CExoLocStrings and TLK entries to another language? (y/N): ",
+            )
+            if parser_args.translate.lower() in ["y", "yes"]:  # type: ignore[attr-defined]
+                parser_args.translate = True
+            elif parser_args.translate.lower() in ["n", "no"]:  # type: ignore[attr-defined]
+                parser_args.translate = False
+            if not isinstance(parser_args.translate, bool):
+                print("Invalid input, please enter yes or no")
+                parser_args.translate = None
+                parser.print_help()
+                continue
+            break
+        if LOGGING_ENABLED:
+            while True:
+                OUTPUT_LOG = Path(
+                    parser_args.output_log
+                    or "./log_batch_patcher.log",
+                ).resolve()
+                if OUTPUT_LOG.parent.exists():
+                    break
+                print("Invalid path:", OUTPUT_LOG)
+                parser.print_help()
+        translation_option: str = None  # type: ignore[assignment]
+        if parser_args.translate:
+            while True:
+                print("Languages: ", *Language.__members__)
+                parser_args.to_lang = parser_args.to_lang or input("Choose a language to translate to: ").upper()
+                try:
+                    if parser_args.to_lang == "ALL":
+                        break
+                    # Convert the string representation to the enum member, and then get its value
+                    parser_args.to_lang = Language[parser_args.to_lang]
+                except KeyError:
+                    # Handle the case where the input is not a valid name in Language
+                    parser.print_help()
+                    msg = f"{parser_args.to_lang.upper()} is not a valid Language."  # type: ignore[union-attr, reportGeneralTypeIssues]
+                    print(msg)
+                    parser_args.to_lang = None
+                    continue
+                break
+            while True:
+                parser_args.create_fonts = parser_args.create_fonts or input(
+                    "Would you like to create font packs for your language(s)? (y/N): ",
+                )
+                if parser_args.create_fonts.lower() in ["y", "yes"]:  # type: ignore[attr-defined]
+                    SCRIPT_GLOBALS.create_fonts = True
+                elif parser_args.create_fonts.lower() in ["n", "no"]:  # type: ignore[attr-defined]
+                    SCRIPT_GLOBALS.create_fonts = False
+                if not isinstance(parser_args.create_fonts, bool):
+                    parser_args.create_fonts = None
+                    parser.print_help()
+                    print("Invalid input, please enter yes or no")
+                    continue
+                break
+            if parser_args.create_fonts:
+                while True:
+                    SCRIPT_GLOBALS.font_path = Path(
+                        parser_args.font_path
+                        or input("Path to your TTF font file: "),
+                    ).resolve()
+                    if SCRIPT_GLOBALS.font_path.exists() and SCRIPT_GLOBALS.font_path.suffix.lower() == ".ttf":
+                        break
+                    parser.print_help()
+                    print("Invalid font path:", parser_args.font_path)
+                    parser_args.font_path = None
+                while True:
+                    SCRIPT_GLOBALS.resolution = (
+                        parser_args.resolution
+                        or input("Choose the desired resolution (single number - must be a square, and probably a multiple of 256): ").upper()
+                    )
+                    try:
+                        val = int(SCRIPT_GLOBALS.resolution)
+                        if val % 256 != 0:
+                            msg = "not an int of required value"
+                            raise ValueError(msg)
+                        SCRIPT_GLOBALS.resolution = val
+                    except Exception:
+                        msg = f"{SCRIPT_GLOBALS.resolution.upper()} is not a resolution. Must be an int cleanly divisible by 256 (single number)."  # type: ignore[union-attr, reportGeneralTypeIssues]
+                        print(msg)
+                        parser_args.resolution = None
+                        continue
+                    break
+            while True:
+                print(*TranslationOption.__members__)
+                translation_option = input("Choose a preferred translator library: ")
+                try:
+                    # Convert the string representation to the enum member, and then get its value
+                    SCRIPT_GLOBALS.translation_option = TranslationOption[translation_option]  # type: ignore[assignment]
+                except KeyError:
+                    msg = f"{translation_option} is not a valid translation option. Please choose one of [{TranslationOption.__members__}]"  # type: ignore[union-attr, reportGeneralTypeIssues]
+                    continue
+                break
+        SCRIPT_GLOBALS.use_profiler = bool(parser_args.use_profiler)
+        input("Parameters have been set! Press [Enter] to start the patching process, or Ctrl+C to exit.")
+        profiler = None
+        if SCRIPT_GLOBALS.translation_option is not None and SCRIPT_GLOBALS.to_lang != "ALL":
+            pytranslator = Translator(SCRIPT_GLOBALS.to_lang)
+            pytranslator.translation_option = SCRIPT_GLOBALS.translation_option  # type: ignore[assignment]
         try:
-            # Profiling logic
-            if self.use_profiler.get():
+            if SCRIPT_GLOBALS.use_profiler:
                 profiler = cProfile.Profile()
                 profiler.enable()
-
-            # Patching logic
-            if self.to_lang.get() == "ALL":
+            if SCRIPT_GLOBALS.to_lang == "ALL":
                 for lang in Language.__members__:
                     print(f"Translating to {lang}...")
                     enum_member_lang = Language[lang]
-                    if self.create_fonts:
-                        self.create_font_pack(enum_member_lang)
-                    self.to_lang = enum_member_lang
-                    pytranslator = Translator(self.to_lang)
-                    pytranslator.translation_option = self.translation_option  # type: ignore[assignment]
-                    run_patches(Path(str(self.path)))
+                    if SCRIPT_GLOBALS.create_fonts:
+                        create_font_pack(enum_member_lang)
+                    SCRIPT_GLOBALS.to_lang = enum_member_lang
+                    pytranslator = Translator(SCRIPT_GLOBALS.to_lang)
+                    pytranslator.translation_option = translation_option  # type: ignore[assignment]
+                    comparison: bool | None = run_patches(SCRIPT_GLOBALS.path)
             else:
-                # Single language patching
-                pass
-
-            if self.use_profiler.get():
+                if SCRIPT_GLOBALS.create_fonts:
+                    create_font_pack(SCRIPT_GLOBALS.to_lang)
+                comparison = run_patches(SCRIPT_GLOBALS.path)
+            if profiler is not None:
                 profiler.disable()
                 profiler_output_file = Path("profiler_output.pstat").resolve()
                 profiler.dump_stats(str(profiler_output_file))
                 log_output(f"Profiler output saved to: {profiler_output_file}")
-
-            log_output(f"Completed batch patcher of {path}")
-        except Exception as e:
-            log_output("Unhandled exception during the patching process.")
+            log_output(f"Completed batch patcher of {SCRIPT_GLOBALS.path}")
+            sys.exit(0)
+        except KeyboardInterrupt:
+            raise
+        except Exception:  # noqa: BLE001
+            log_output("Unhandled exception during the batchpatch process.")
             log_output(traceback.format_exc())
-            messagebox.showerror("Error", "An error occurred during patching.")
-
-root = tk.Tk()
-app = KOTORPatchingToolUI(root)
-root.mainloop()
-
-def create_font_pack(lang: Language):
-    print(f"Creating font pack for '{lang.name}'...")
-    write_bitmap_font(Path.cwd() / f"font_pack_{lang.name}.tga", parser_args.font_path, (parser_args.resolution, parser_args.resolution), lang)
-
-parser = argparse.ArgumentParser(description="Finds differences between two KOTOR installations")
-parser.add_argument("--path", type=str, help="Path to the first K1/TSL install, file, or directory to patch.")
-parser.add_argument("--output-log", type=str, help="Filepath of the desired output logfile")
-parser.add_argument("--logging", type=bool, help="Whether to log the results to a file or not (default is enabled)")
-parser.add_argument("--set-unskippable", type=str, help="Makes all dialog unskippable. (y/N)")
-parser.add_argument("--translate", type=str, help="Should we ai translate the TLK and all GFF locstrings? (y/N)")
-parser.add_argument("--to-lang", type=str, help="The language to translate the files to")
-parser.add_argument("--from-lang", type=str, help="The language the files are written in (defaults to auto if available)")
-parser.add_argument("--create-fonts", type=str, help="Create font packs for the selected language(s) (y/N).")
-parser.add_argument("--font-path", type=str, help="Path to the font file to use for the font pack creation (must be a file that ends in .ttk)")
-parser.add_argument("--resolution", type=int, help="A single number representing the resolution Y x Y. Must be divisible by 256. The single number entered will be used for both the height and width, as it must be a square.")
-parser.add_argument(
-    "--use-profiler",
-    type=bool,
-    default=False,
-    help="Use cProfile to find where most of the execution time is taking place in source code.",
-)
-parser_args, unknown = parser.parse_known_args()
-LOGGING_ENABLED = bool(parser_args.logging is None or parser_args.logging)
-while True:
-    parser_args.path = Path(
-        parser_args.path
-        or input("Path to the K1/TSL install, file, or directory to patch: ")
-        or "C:\\Program Files (x86)\\Steam\\steamapps\\common\\Knights of the Old Republic II",
-    ).resolve()
-    if parser_args.path.exists():
-        break
-    print("Invalid path:", parser_args.path)
-    parser.print_help()
-    parser_args.path = None
-while True:
-    parser_args.set_unskippable = parser_args.set_unskippable or input("Would you like to make all dialog unskippable? (y/N): ")
-    if parser_args.set_unskippable.lower() in ["y", "yes"]:  # type: ignore[attr-defined]
-        parser_args.set_unskippable = True
-    elif parser_args.set_unskippable.lower() in ["n", "no"]:  # type: ignore[attr-defined]
-        parser_args.set_unskippable = False
-    if not isinstance(parser_args.set_unskippable, bool):
-        print("Invalid input, please enter yes or no")
-        parser_args.set_unskippable = None
-        parser.print_help()
-        continue
-    break
-while True:
-    parser_args.translate = parser_args.translate or input(
-        "Would you like to translate all CExoLocStrings and TLK entries to another language? (y/N): ",
-    )
-    if parser_args.translate.lower() in ["y", "yes"]:  # type: ignore[attr-defined]
-        parser_args.translate = True
-    elif parser_args.translate.lower() in ["n", "no"]:  # type: ignore[attr-defined]
-        parser_args.translate = False
-    if not isinstance(parser_args.translate, bool):
-        print("Invalid input, please enter yes or no")
-        parser_args.translate = None
-        parser.print_help()
-        continue
-    break
-if LOGGING_ENABLED:
-    while True:
-        OUTPUT_LOG = Path(
-            parser_args.output_log
-            or "./log_batch_patcher.log"  # noqa: SIM222
-            or input("Filepath of the desired output logfile: "),
-        ).resolve()
-        if OUTPUT_LOG.parent.exists():
-            break
-        print("Invalid path:", OUTPUT_LOG)
-        parser.print_help()
-translation_option: str = None  # type: ignore[assignment]
-if parser_args.translate:
-    while True:
-        print("Languages: ", *Language.__members__)
-        parser_args.to_lang = parser_args.to_lang or input("Choose a language to translate to: ").upper()
-        try:
-            if parser_args.to_lang == "ALL":
-                break
-            # Convert the string representation to the enum member, and then get its value
-            parser_args.to_lang = Language[parser_args.to_lang]
-        except KeyError:
-            # Handle the case where the input is not a valid name in Language
-            parser.print_help()
-            msg = f"{parser_args.to_lang.upper()} is not a valid Language."  # type: ignore[union-attr, reportGeneralTypeIssues]
-            print(msg)
-            parser_args.to_lang = None
-            continue
-        break
-    while True:
-        parser_args.create_fonts = parser_args.create_fonts or input(
-            "Would you like to create font packs for your language(s)? (y/N): ",
-        )
-        if parser_args.create_fonts.lower() in ["y", "yes"]:  # type: ignore[attr-defined]
-            parser_args.create_fonts = True
-        elif parser_args.create_fonts.lower() in ["n", "no"]:  # type: ignore[attr-defined]
-            parser_args.create_fonts = False
-        if not isinstance(parser_args.create_fonts, bool):
-            parser_args.create_fonts = None
-            parser.print_help()
-            print("Invalid input, please enter yes or no")
-            continue
-        break
-    if parser_args.create_fonts:
-        while True:
-            parser_args.font_path = Path(
-                parser_args.font_path
-                or input("Path to your TTF font file: "),
-            ).resolve()
-            if parser_args.font_path.exists() and parser_args.font_path.suffix.lower() == ".ttf":
-                break
-            parser.print_help()
-            print("Invalid font path:", parser_args.font_path)
-            parser_args.font_path = None
-        while True:
-            parser_args.resolution = parser_args.resolution or input("Choose the desired resolution (single number - must be a square, and probably a multiple of 256): ").upper()
-            try:
-                val = int(parser_args.resolution)
-                if val % 256 != 0:
-                    msg = "not an int of required value"
-                    raise ValueError(msg)
-                parser_args.resolution = val
-            except Exception:
-                msg = f"{parser_args.resolution.upper()} is not a resolution. Must be an int cleanly divisible by 256 (single number)."  # type: ignore[union-attr, reportGeneralTypeIssues]
-                print(msg)
-                parser_args.resolution = None
-                continue
-            break
-    while True:
-        print(*TranslationOption.__members__)
-        translation_option = input("Choose a preferred translator library: ")
-        try:
-            # Convert the string representation to the enum member, and then get its value
-            translation_option = TranslationOption[translation_option]  # type: ignore[assignment]
-        except KeyError:
-            msg = f"{translation_option} is not a valid translation option. Please choose one of [{TranslationOption.__members__}]"  # type: ignore[union-attr, reportGeneralTypeIssues]
-            translation_option = None  # type: ignore[assignment]
-            continue
-        break
-parser_args.use_profiler = bool(parser_args.use_profiler)
-input("Parameters have been set! Press [Enter] to start the patching process, or Ctrl+C to exit.")
-profiler = None
-if translation_option is not None and parser_args.to_lang != "ALL":
-    pytranslator = Translator(parser_args.to_lang)
-    pytranslator.translation_option = translation_option  # type: ignore[assignment]
-try:
-    if parser_args.use_profiler:
-        profiler = cProfile.Profile()
-        profiler.enable()
-    if parser_args.to_lang == "ALL":
-        for lang in Language.__members__:
-            print(f"Translating to {lang}...")
-            enum_member_lang = Language[lang]
-            if parser_args.create_fonts:
-                create_font_pack(enum_member_lang)
-            parser_args.to_lang = enum_member_lang
-            pytranslator = Translator(parser_args.to_lang)
-            pytranslator.translation_option = translation_option  # type: ignore[assignment]
-            comparison = run_patches(parser_args.path)
-    else:
-        if parser_args.create_fonts:
-            create_font_pack(parser_args.to_lang)
-        comparison: bool | None = run_patches(parser_args.path)
-    if profiler is not None:
-        profiler.disable()
-        profiler_output_file = Path("profiler_output.pstat").resolve()
-        profiler.dump_stats(str(profiler_output_file))
-        log_output(f"Profiler output saved to: {profiler_output_file}")
-    log_output(f"Completed batch patcher of {parser_args.path}")
-    sys.exit(0)
-except KeyboardInterrupt:
-    if profiler is not None:
-        profiler.disable()
-        profiler_output_file = Path("profiler_output.pstat").resolve()
-        profiler.dump_stats(str(profiler_output_file))
-        log_output(f"Profiler output saved to: {profiler_output_file}")
-    raise
-except Exception:  # noqa: BLE001
-    log_output("Unhandled exception during the batchpatch process.")
-    log_output(traceback.format_exc())
-    input("The program must shut down. Press Enter to close.")
+            input("The program must shut down. Press Enter to close.")
+        finally:
+            if profiler is not None:
+                profiler.disable()
+                profiler_output_file = Path("profiler_output.pstat").resolve()
+                profiler.dump_stats(str(profiler_output_file))
+                log_output(f"Profiler output saved to: {profiler_output_file}")
