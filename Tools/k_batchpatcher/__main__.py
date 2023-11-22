@@ -10,9 +10,14 @@ from copy import deepcopy
 from io import StringIO
 from tkinter import filedialog, messagebox, ttk
 from typing import TYPE_CHECKING, Any
-from pykotor.extract.file import ResourceIdentifier
+from pykotor.common.stream import BinaryWriter
 
 from pykotor.extract.installation import Installation
+from pykotor.resource.formats.erf.erf_auto import write_erf
+from pykotor.resource.formats.erf.erf_data import ERF
+from pykotor.resource.formats.gff.gff_auto import bytes_gff
+from pykotor.resource.formats.rim.rim_auto import write_rim
+from pykotor.resource.formats.rim.rim_data import RIM
 from pykotor.resource.formats.tlk.tlk_data import TLKEntry
 from pykotor.resource.type import ResourceType
 
@@ -25,12 +30,12 @@ if getattr(sys, "frozen", False) is False:
 
 from pykotor.common.language import Language, LocalizedString
 from pykotor.extract.capsule import Capsule
-from pykotor.resource.formats.gff import GFF, GFFContent, GFFFieldType, GFFList, GFFStruct, bytes_gff, read_gff, write_gff
+from pykotor.resource.formats.gff import GFF, GFFContent, GFFFieldType, GFFList, GFFStruct, read_gff
 from pykotor.resource.formats.tlk import TLK, read_tlk, write_tlk
 from pykotor.resource.formats.tpc.txi_data import write_bitmap_font
 from pykotor.tools.misc import is_capsule_file
 from pykotor.tools.path import CaseAwarePath
-from pykotor.utility.path import Path, PureWindowsPath
+from pykotor.utility.path import Path, PurePath, PureWindowsPath
 from Tools.k_batchpatcher.translate.language_translator import TranslationOption, Translator, get_language_code
 
 if TYPE_CHECKING:
@@ -100,52 +105,6 @@ def relative_path_from_to(src, dst) -> Path:
     return Path(*rel_parts)
 
 
-def do_patch(
-    gff_struct: GFFStruct,
-    gff_content: GFFContent,
-    current_path: PureWindowsPath | os.PathLike | str | None = None,
-):
-    if gff_content != GFFContent.DLG:
-        return
-    current_path = current_path if isinstance(current_path, PureWindowsPath) else PureWindowsPath(current_path or "GFFRoot")
-    for label, ftype, value in gff_struct:
-        if label.lower() == "mod_name":
-            continue
-        child_path = current_path / label
-
-        if ftype == GFFFieldType.Struct:
-            assert isinstance(value, GFFStruct)  # noqa: S101
-            if APP.set_unskippable.get() and "Skippable" in value._fields:
-                log_output(f"Setting '{child_path}' as unskippable")
-                value._fields["Skippable"]._value = 0
-
-            do_patch(value, gff_content, child_path)
-            continue
-
-        if ftype == GFFFieldType.List:
-            assert isinstance(value, GFFList)  # noqa: S101
-            recurse_through_list(value, gff_content, child_path)
-            continue
-
-        if ftype == GFFFieldType.LocalizedString and APP.translate.get():  # and gff_content.value == GFFContent.DLG.value:
-            assert isinstance(value, LocalizedString)  # noqa: S101
-            new_substrings = deepcopy(value._substrings)
-            for lang, gender, text in value:
-                if pytranslator is not None and text is not None and text.strip():
-                    log_output_with_separator(f"Translating CExoLocString at {child_path}", above=True)
-                    translated_text = pytranslator.translate(text, from_lang=lang)
-                    log_output(f"Translated {text} --> {translated_text}")
-                    substring_id = LocalizedString.substring_id(SCRIPT_GLOBALS.to_lang, gender)
-                    new_substrings[substring_id] = translated_text
-            value._substrings = new_substrings
-
-
-def recurse_through_list(gff_list: GFFList, gff_content: GFFContent, current_path: PureWindowsPath):
-    current_path = current_path if isinstance(current_path, PureWindowsPath) else PureWindowsPath(current_path or "GFFListRoot")
-    for list_index, gff_struct in enumerate(gff_list):
-        do_patch(gff_struct, gff_content, current_path / str(list_index))
-
-
 def log_output(*args, **kwargs) -> None:
     # Create an in-memory text stream
     buffer = StringIO()
@@ -162,50 +121,6 @@ def log_output(*args, **kwargs) -> None:
 
     # Print the captured output to console
     print(*args, **kwargs)  # noqa: T201
-
-
-def patch_resource(resource: FileResource) -> None:
-    if resource.restype().extension.lower() == "tlk" and SCRIPT_GLOBALS.translate:
-        tlk: TLK | None = None
-        try:
-            log_output(f"Loading TLK '{resource.filepath()}'")
-            tlk = read_tlk(resource.filepath())
-        except Exception as e:  # noqa: BLE001
-            log_output(f"Error loading TLK {resource.filepath()}! {e!r}")
-            return
-        if not tlk:
-            message = f"TLK resource missing in memory:\t'{resource.filepath()}'"
-            log_output(message)
-            return
-
-        new_entries: list[TLKEntry] = deepcopy(tlk.entries)
-        from_lang: Language = tlk.language
-        tlk.language = SCRIPT_GLOBALS.to_lang
-        new_filename_stem = f"{resource.resname()}_" + (get_language_code(SCRIPT_GLOBALS.to_lang) or "UNKNOWN")
-        new_file_path = resource.filepath().parent / (new_filename_stem + resource.restype().extension)
-        for strref, tlkentry in tlk:
-            text = tlkentry.text
-            if not text.strip() or text.isdigit():
-                continue
-            log_output_with_separator(f"Translating TLK text at {resource.filepath()!s}", above=True)
-            translated_text = pytranslator.translate(text, from_lang=from_lang)
-            log_output(f"Translated {text} --> {translated_text}")
-            new_entries[strref].text = translated_text
-        tlk.entries = new_entries
-        write_tlk(tlk, new_file_path)
-        processed_files.add(new_file_path)
-    if resource.restype().extension.lower() in gff_types:
-        gff: GFF | None = None
-        try:
-            log_output(f"Loading GFF '{resource.filepath()}'")
-            gff = read_gff(resource.filepath())
-        except Exception as e:  # noqa: BLE001
-            log_output(f"[Error] loading GFF {resource.filepath()}! {e!r}")
-            return
-
-        if not gff:
-            log_output(f"GFF resource missing in memory:\t'{resource.filepath()}'")
-            return
 
 
 def visual_length(s: str, tab_length=8) -> int:
@@ -229,16 +144,129 @@ def log_output_with_separator(message, below=True, above=False, surround=False) 
         log_output(visual_length(message) * "-")
 
 
-def handle_capsule_and_patch(file: os.PathLike | str) -> None:
+def patch_nested_gff(
+    gff_struct: GFFStruct,
+    gff_content: GFFContent,
+    current_path: PureWindowsPath | os.PathLike | str | None = None,
+    made_change: bool = False,
+) -> bool:
+    if gff_content != GFFContent.DLG:
+        return False
+    current_path = current_path if isinstance(current_path, PureWindowsPath) else PureWindowsPath(current_path or "GFFRoot")
+    for label, ftype, value in gff_struct:
+        if label.lower() == "mod_name":
+            continue
+        child_path = current_path / label
+
+        if ftype == GFFFieldType.Struct:
+            assert isinstance(value, GFFStruct)  # noqa: S101
+            if APP.set_unskippable.get() and "Skippable" in value._fields:
+                log_output(f"Setting '{child_path}' as unskippable")
+                value._fields["Skippable"]._value = 0
+                made_change = True
+            patch_nested_gff(value, gff_content, child_path, made_change)
+            continue
+
+        if ftype == GFFFieldType.List:
+            assert isinstance(value, GFFList)  # noqa: S101
+            recurse_through_list(value, gff_content, child_path, made_change)
+            continue
+
+        if ftype == GFFFieldType.LocalizedString and APP.translate.get():  # and gff_content.value == GFFContent.DLG.value:
+            assert isinstance(value, LocalizedString)  # noqa: S101
+            new_substrings = deepcopy(value._substrings)
+            for lang, gender, text in value:
+                if pytranslator is not None and text is not None and text.strip():
+                    log_output_with_separator(f"Translating CExoLocString at {child_path}", above=True)
+                    translated_text = pytranslator.translate(text, from_lang=lang)
+                    log_output(f"Translated {text} --> {translated_text}")
+                    substring_id = LocalizedString.substring_id(SCRIPT_GLOBALS.to_lang, gender)
+                    new_substrings[substring_id] = translated_text
+            value._substrings = new_substrings
+    return made_change
+
+
+def recurse_through_list(gff_list: GFFList, gff_content: GFFContent, current_path: PureWindowsPath, made_change: bool):
+    current_path = current_path if isinstance(current_path, PureWindowsPath) else PureWindowsPath(current_path or "GFFListRoot")
+    for list_index, gff_struct in enumerate(gff_list):
+        patch_nested_gff(gff_struct, gff_content, current_path / str(list_index), made_change)
+
+
+def patch_resource(resource: FileResource) -> GFF | None:
+    if resource.restype().extension.lower() == "tlk" and SCRIPT_GLOBALS.translate and pytranslator:
+        tlk: TLK | None = None
+        try:
+            log_output(f"Loading TLK '{resource.filepath()}'")
+            tlk = read_tlk(resource.filepath())
+        except Exception as e:  # noqa: BLE001
+            log_output(f"Error loading TLK {resource.filepath()}! {e!r}")
+            return None
+        if not tlk:
+            message = f"TLK resource missing in memory:\t'{resource.filepath()}'"
+            log_output(message)
+            return None
+
+        new_entries: list[TLKEntry] = deepcopy(tlk.entries)
+        from_lang: Language = tlk.language
+        tlk.language = SCRIPT_GLOBALS.to_lang
+        new_filename_stem = f"{resource.resname()}_" + (get_language_code(SCRIPT_GLOBALS.to_lang) or "UNKNOWN")
+        new_file_path = resource.filepath().parent / (new_filename_stem + resource.restype().extension)
+        for strref, tlkentry in tlk:
+            text = tlkentry.text
+            if not text.strip() or text.isdigit():
+                continue
+            log_output_with_separator(f"Translating TLK text at {resource.filepath()!s}", above=True)
+            translated_text = pytranslator.translate(text, from_lang=from_lang)
+            log_output(f"Translated {text} --> {translated_text}")
+            new_entries[strref].text = translated_text
+        tlk.entries = new_entries
+        write_tlk(tlk, new_file_path)
+        processed_files.add(new_file_path)
+    if resource.restype().extension.lower() in gff_types or f"{resource.restype().name.upper()} " in GFFContent.get_valid_types():
+        gff: GFF | None = None
+        try:
+            log_output(f"Loading GFF '{resource.filepath()}'")
+            gff = read_gff(resource.filepath())
+            if patch_nested_gff(
+                gff.root,
+                gff.content,
+                f"{resource.resname()}.{resource.restype().extension}",
+            ):
+                return gff
+        except Exception as e:  # noqa: BLE001
+            log_output(f"[Error] loading GFF {resource.filepath()}! {e!r}")
+            return None
+
+        if not gff:
+            log_output(f"GFF resource missing in memory:\t'{resource.filepath()}'")
+            return None
+    return None
+
+
+def patch_and_save_noncapsule(resource: FileResource):
+    gff: GFF | None = patch_resource(resource)
+    new_data: bytes = resource.data()
+    if gff is not None:
+        new_data = bytes_gff(gff)
+
+    new_path = resource.filepath()
+    new_gff_filename = resource.filename()
+    if SCRIPT_GLOBALS.translate:
+        new_gff_filename = f"{resource.resname()}_{SCRIPT_GLOBALS.to_lang.get_bcp47_code()}{resource.restype().extension}"
+    new_path = new_path.parent / new_gff_filename
+
+    BinaryWriter.dump(new_path, new_data)
+
+
+def patch_file(file: os.PathLike | str) -> None:
     c_file = file if isinstance(file, Path) else Path(file).resolve()
     if c_file in processed_files:
         return
 
-    if not c_file.exists():
-        log_output(f"Missing file:\t{c_file!s}")
-        return
+    new_data: bytes
+    gff: GFF | None
 
-    if is_capsule_file(c_file.name):
+    if is_capsule_file(c_file):
         log_output(f"Load {c_file.name}")
         try:
             file_capsule = Capsule(file)
@@ -246,9 +274,14 @@ def handle_capsule_and_patch(file: os.PathLike | str) -> None:
             log_output(f"Could not load '{c_file!s}'. Reason: {e!r}")
             return
 
-        for resref in file_capsule:
-            ext = resref.restype().extension.lower()
-            patch_resource(resref)
+        new_filepath: Path = c_file.parent / f"{c_file.name}_{SCRIPT_GLOBALS.to_lang.get_bcp47_code()}"
+        new_capsule = Capsule(new_filepath, create_nonexisting=True)
+        for resource in file_capsule:
+            gff = patch_resource(resource)
+            new_data = resource.data()
+            if gff is not None:
+                new_data = bytes_gff(gff)
+            new_capsule.add(resource.resname(), resource.restype(), new_data)
     else:
         ext = c_file.suffix.lower()[1:]
         resource = FileResource(
@@ -258,15 +291,24 @@ def handle_capsule_and_patch(file: os.PathLike | str) -> None:
             0,
             c_file,
         )
-        patch_resource(resource)
+        patch_and_save_noncapsule(resource)
 
-
-def recurse_directories(folder_path: os.PathLike | str) -> None:
+def patch_folder(folder_path: os.PathLike | str) -> None:
     c_folderpath = folder_path if isinstance(folder_path, Path) else Path(folder_path).resolve()
     log_output_with_separator(f"Recursing through resources in the '{c_folderpath.name}' folder...", above=True)
     for file_path in c_folderpath.safe_rglob("*"):
-        handle_capsule_and_patch(file_path)
+        patch_file(file_path)
 
+def patch_capsule_resources(resources: list[FileResource], filename: str, erf_or_rim: RIM | ERF) -> PurePath:
+    for resource in resources:
+        gff: GFF | None = patch_resource(resource)
+        new_data: bytes = bytes_gff(gff) if gff else resource.data()
+        erf_or_rim.set_data(resource.resname(), resource.restype(), new_data)
+
+    new_filename = PurePath(filename)
+    if SCRIPT_GLOBALS.translate:
+        new_filename = PurePath(f"{new_filename.stem}_{SCRIPT_GLOBALS.to_lang.get_bcp47_code()}{new_filename.suffix}")
+    return new_filename
 
 def patch_install(install_path: os.PathLike | str) -> None:
     log_output()
@@ -274,12 +316,26 @@ def patch_install(install_path: os.PathLike | str) -> None:
     log_output()
 
     log_output_with_separator("Patching modules...")
-    k_install = Installation(Path(install_path).resolve())
-    for module_name in k_install.modules_list():
-        for resource in k_install.module_resources(module_name):
-            patch_resource(resource)
+    k_install = Installation(install_path)
 
-    handle_capsule_and_patch(install_path.joinpath("dialog.tlk"))
+    # Patch modules...
+    for module_name, resources in k_install._modules.items():
+        new_erf = ERF()
+        new_erf_filename = patch_capsule_resources(resources, module_name, new_erf)
+        write_erf(new_erf, k_install.path() / new_erf_filename, ResourceType.from_extension(new_erf_filename.suffix))
+
+    # Patch rims...
+    for rim_name, resources in k_install._rims.items():
+        new_rim = RIM()
+        new_rim_filename = patch_capsule_resources(resources, rim_name, new_rim)
+        write_rim(new_rim, k_install.path() / new_rim_filename)
+
+    # Patch Override...
+    for folder in k_install.override_list():
+        for resource in k_install.override_resources(folder):
+            patch_and_save_noncapsule(resource)
+
+    patch_file(k_install.path().joinpath("dialog.tlk"))
 
 
 def is_kotor_install_dir(path: os.PathLike | str) -> bool:
@@ -287,7 +343,7 @@ def is_kotor_install_dir(path: os.PathLike | str) -> bool:
     return c_path.safe_isdir() and c_path.joinpath("chitin.key").exists()
 
 
-def run_patches(path: Path):
+def determine_input_path(path: Path):
     if not path.exists():
         log_output(f"--path1='{path}' does not exist on disk, cannot diff")
         return
@@ -297,16 +353,17 @@ def run_patches(path: Path):
         return
 
     if path.is_dir():
-        recurse_directories(path)
+        patch_folder(path)
         return
 
     if path.is_file():
-        handle_capsule_and_patch(path)
+        patch_file(path)
 
 
 def do_main_patchloop():
     try:
         # Profiling logic
+        profiler = None
         if SCRIPT_GLOBALS.use_profiler:
             profiler = cProfile.Profile()
             profiler.enable()
@@ -320,9 +377,9 @@ def do_main_patchloop():
             SCRIPT_GLOBALS.to_lang = enum_member_lang
             pytranslator = Translator(SCRIPT_GLOBALS.to_lang)
             pytranslator.translation_option = SCRIPT_GLOBALS.translation_option  # type: ignore[assignment]
-            run_patches(Path(SCRIPT_GLOBALS.path))
+            determine_input_path(Path(SCRIPT_GLOBALS.path))
 
-        if SCRIPT_GLOBALS.use_profiler:
+        if profiler and SCRIPT_GLOBALS.use_profiler:
             profiler.disable()
             profiler_output_file = Path("profiler_output.pstat").resolve()
             profiler.dump_stats(str(profiler_output_file))
@@ -436,11 +493,20 @@ class KOTORPatchingToolUI:
         ttk.Checkbutton(self.root, text="ALL", variable=all_var, command=lambda: self.toggle_all_languages(all_var)).grid(row=row, column=0, columnspan=3, sticky="w")
         row += 1
 
+        # Sort the languages in alphabetical order
+        sorted_languages = sorted(Language, key=lambda lang: lang.name)
+
         # Create Checkbuttons for each language in three columns
         column = 0
-        for lang in Language:
+        for lang in sorted_languages:
             lang_var = tk.BooleanVar()
-            ttk.Checkbutton(self.root, text=lang.name, variable=lang_var, command=lambda lang=lang, lang_var=lang_var: self.update_chosen_languages(lang, lang_var)).grid(row=row, column=column, sticky="w")
+            ttk.Checkbutton(
+                self.root,
+                text=lang.name,
+                variable=lang_var,
+                command=lambda lang=lang,
+                lang_var=lang_var: self.update_chosen_languages(lang, lang_var),
+            ).grid(row=row, column=column, sticky="w")
 
             # Alternate between columns
             column = (column + 1) % 4
@@ -460,10 +526,6 @@ class KOTORPatchingToolUI:
             self.chosen_languages = list(Language)
         else:
             self.chosen_languages = []
-
-    def create_font_pack(self, lang: Language):
-        print(f"Creating font pack for '{lang.name}'...")
-        write_bitmap_font(Path.cwd() / f"font_pack_{lang.name}.tga", str(SCRIPT_GLOBALS.font_path), (SCRIPT_GLOBALS.resolution, SCRIPT_GLOBALS.resolution), lang)
 
     def browse_path(self):
         directory = filedialog.askdirectory()
@@ -502,6 +564,7 @@ if __name__ == "__main__":
     parser.add_argument("--create-fonts", type=str, help="Create font packs for the selected language(s) (y/N).")
     parser.add_argument("--font-path", type=str, help="Path to the font file to use for the font pack creation (must be a file that ends in .ttk)")
     parser.add_argument("--resolution", type=int, help="A single number representing the resolution Y x Y. Must be divisible by 256. The single number entered will be used for both the height and width, as it must be a square.")
+    parser.add_argument("--start", action="store_true", help="Start patching immediately, doesn't show a UI at all, exits when done.")
     parser.add_argument(
         "--use-profiler",
         type=bool,
@@ -509,12 +572,15 @@ if __name__ == "__main__":
         help="Use cProfile to find where most of the execution time is taking place in source code.",
     )
     parser_args, unknown = parser.parse_known_args()
-    try:
-        root = tk.Tk()
-        APP = KOTORPatchingToolUI(root, parser_args)
-        root.mainloop()
-    except Exception as e:  # noqa: BLE001
-        print(repr(e))
+    SCRIPT_GLOBALS.start = parser_args.start
+    if SCRIPT_GLOBALS.start:
+        try:
+            root = tk.Tk()
+            APP = KOTORPatchingToolUI(root, parser_args)
+            root.mainloop()
+        except Exception as e:  # noqa: BLE001
+            print(repr(e))
+    else:
         LOGGING_ENABLED = bool(parser_args.logging is None or parser_args.logging)
         while True:
             parser_args.path = Path(
@@ -636,6 +702,7 @@ if __name__ == "__main__":
         SCRIPT_GLOBALS.use_profiler = bool(parser_args.use_profiler)
         input("Parameters have been set! Press [Enter] to start the patching process, or Ctrl+C to exit.")
         profiler = None
+        do_main_patchloop()
         if SCRIPT_GLOBALS.translation_option is not None and SCRIPT_GLOBALS.to_lang != "ALL":
             pytranslator = Translator(SCRIPT_GLOBALS.to_lang)
             pytranslator.translation_option = SCRIPT_GLOBALS.translation_option  # type: ignore[assignment]
@@ -652,11 +719,11 @@ if __name__ == "__main__":
                     SCRIPT_GLOBALS.to_lang = enum_member_lang
                     pytranslator = Translator(SCRIPT_GLOBALS.to_lang)
                     pytranslator.translation_option = translation_option  # type: ignore[assignment]
-                    comparison: bool | None = run_patches(SCRIPT_GLOBALS.path)
+                    comparison: bool | None = determine_input_path(SCRIPT_GLOBALS.path)
             else:
                 if SCRIPT_GLOBALS.create_fonts:
                     create_font_pack(SCRIPT_GLOBALS.to_lang)
-                comparison = run_patches(SCRIPT_GLOBALS.path)
+                comparison = determine_input_path(SCRIPT_GLOBALS.path)
             if profiler is not None:
                 profiler.disable()
                 profiler_output_file = Path("profiler_output.pstat").resolve()

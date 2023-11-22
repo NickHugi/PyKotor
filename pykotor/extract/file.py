@@ -62,6 +62,11 @@ class FileResource:
     ) -> int:
         return self._size
 
+    def filename(
+        self,
+    ) -> str:
+        return f"{self._resname}.{self.restype().extension}"
+
     def filepath(
         self,
     ) -> Path:
