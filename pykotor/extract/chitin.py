@@ -1,10 +1,12 @@
 from __future__ import annotations
 
+import struct
 from typing import TYPE_CHECKING
 
-from pykotor.common.stream import BinaryReader
+from pykotor.common.stream import BinaryReader, BinaryWriter
 from pykotor.extract.file import FileResource, ResourceIdentifier
 from pykotor.resource.type import ResourceType
+from pykotor.utility.path import PurePath
 
 if TYPE_CHECKING:
     from pykotor.tools.path import CaseAwarePath
@@ -18,6 +20,7 @@ class Chitin:
     Chitin support is read-only and you cannot write your own key/bif files with this class.
     """
 
+    KEY_ELEMENT_SIZE = 8
     def __init__(
         self,
         kotor_path: CaseAwarePath,
@@ -25,6 +28,7 @@ class Chitin:
         self._kotor_path: CaseAwarePath = kotor_path
 
         self._resources: list[FileResource] = []
+        self._resource_dict: dict[str, list[FileResource]] = {}
         self.load()
 
     def __iter__(
@@ -42,60 +46,120 @@ class Chitin:
     ) -> None:
         """Reload the list of resource info linked from the chitin.key file."""
         self._resources = []
+        self._resource_dict = {}
 
-        with BinaryReader.from_file(self._kotor_path / "chitin.key") as reader:
-            reader.read_string(4)  # file type
-            reader.read_string(4)  # file version
-            bif_count = reader.read_uint32()
-            key_count = reader.read_uint32()
-            file_table_offset = reader.read_uint32()
-            reader.read_uint32()   # key table offset
-
-            files = []
-            reader.seek(file_table_offset)
-            for _ in range(bif_count):
-                reader.skip(4)
-                file_offset = reader.read_uint32()
-                file_length = reader.read_uint16()
-                reader.skip(2)
-                files.append((file_offset, file_length))
-
-            bifs = []
-            for file_offset, file_length in files:
-                reader.seek(file_offset)
-                bif = reader.read_string(file_length).replace("\\", "/")
-                bifs.append(bif)
-
-            keys = {}
-            for _ in range(key_count):
-                resref = reader.read_string(16)
-                reader.read_uint16()  # restype id
-                res_id = reader.read_uint32()
-                keys[res_id] = resref
-
+        keys, bifs = self._get_chitin_data()
         for bif in bifs:
-            with BinaryReader.from_file(self._kotor_path / bif) as reader:
-                reader.read_string(4)  # file type
-                reader.read_string(4)  # file version
+            self._resource_dict[bif] = []
+            absolute_bif_path = self._kotor_path / bif
+            with BinaryReader.from_file(absolute_bif_path) as reader:
+                _bif_file_type = reader.read_string(4)
+                _bif_file_version = reader.read_string(4)
                 resource_count = reader.read_uint32()
-                reader.skip(4)
-                resource_offset = reader.read_uint32()
+                reader.skip(4)  # padding (always 0x00000000?) fixed resource count, unimplemented
+                resource_offset = reader.read_uint32()  # 0x10 always 20
 
-                reader.seek(resource_offset)
+                reader.seek(resource_offset)  # 0x20
                 for _ in range(resource_count):
                     res_id = reader.read_uint32()
                     offset = reader.read_uint32()
                     size = reader.read_uint32()
-                    restype = ResourceType.from_id(reader.read_uint32())
+                    restype_id = reader.read_uint32()
+
                     resref = keys[res_id]
+                    restype = ResourceType.from_id(restype_id)
                     resource = FileResource(
                         resref,
                         restype,
                         size,
                         offset,
-                        self._kotor_path / bif,
+                        absolute_bif_path,
                     )
                     self._resources.append(resource)
+                    self._resource_dict[bif].append(resource)
+
+    def save(self) -> None:
+        """Writes the list of resource info to the chitin.key file and associated .bif files."""
+        keys, bifs = self._get_chitin_data()
+        resource_lookup = {resource.resname(): (PurePath(bif), resource)
+                           for bif, bif_resources in self._resource_dict.items()
+                           for resource in bif_resources}
+
+        # Initialize a dictionary to store bytearrays for each bif file
+        bif_data = {}
+        bif_offsets = {}  # To track the current offset for each bif file
+
+        for index, resref in keys.items():
+            if resref not in resource_lookup:
+                msg = f"Resource {resref} not found."
+                raise ValueError(msg)
+
+            this_bif, this_resource = resource_lookup[resref]
+
+            if this_bif not in bif_data:
+                bif_data[this_bif] = bytearray()
+                bif_offsets[this_bif] = 0  # Initialize offset to 0
+
+            # Accumulate resource data in bytes
+            resource_data = this_resource.data()
+            restype_id = this_resource.restype().type_id
+            resource_data_length = len(resource_data)
+
+            # Calculate the current offset
+            current_offset = bif_offsets[this_bif]
+            bif_offsets[this_bif] += resource_data_length
+
+            # Format: index, current offset, length, type_id, data
+            data_block = struct.pack(f"<I I I I {resource_data_length}s", index, current_offset, resource_data_length, restype_id, resource_data)
+            bif_data[this_bif].extend(data_block)
+
+        for bif_path, byte_array_data in bif_data.items():
+            absolute_bif_path = self._kotor_path / bif_path
+            merged_bytearrays = bytearray()
+            bif_writer = BinaryWriter.to_bytearray(merged_bytearrays)
+            # Write file type and version
+            bif_writer.write_string("BIFF")  # 0x0
+            bif_writer.write_string("V1  ")  # 0x4
+
+            resource_count = len(self._resource_dict[str(bif_path)])
+            bif_writer.write_uint32(resource_count)  # 0x8
+            bif_writer.write_uint32(0)   # 0xC padding (always 0x00000000?)
+            bif_writer.write_uint32(20)  # 0x10 resource offset
+            merged_bytearrays.extend(byte_array_data)
+            BinaryWriter.dump(absolute_bif_path, merged_bytearrays)
+
+    def _get_chitin_data(self) -> tuple[dict[int, str], list[str]]:
+        with BinaryReader.from_file(self._kotor_path / "chitin.key") as reader:
+            _key_file_type = reader.read_string(4)
+            _key_file_version = reader.read_string(4)
+            bif_count = reader.read_uint32()
+            key_count = reader.read_uint32()
+            file_table_offset = reader.read_uint32()
+            _key_table_offset = reader.read_uint32()
+
+            files = []
+            reader.seek(file_table_offset)
+            for _ in range(bif_count):
+                reader.skip(4)  # ??? 0x000696E0 in k1, 0x000DDD8A in k2
+                file_offset = reader.read_uint32()
+                file_length = reader.read_uint16()
+                reader.skip(2)  # ??? 0x0001 in K1, 0x0000 in K2
+                files.append((file_offset, file_length))
+
+            bifs: list[str] = []
+            for file_offset, file_length in files:
+                reader.seek(file_offset)
+                bif = reader.read_string(file_length)
+                bifs.append(bif)
+
+            keys: dict[int, str] = {}
+            for _ in range(key_count):
+                resref = reader.read_string(16)
+                _restype_id = reader.read_uint16()
+                res_id = reader.read_uint32()
+                keys[res_id] = resref
+
+            return keys, bifs
 
     def resource(
         self,
@@ -125,6 +189,17 @@ class Chitin:
         resref: str,
         restype: ResourceType,
     ) -> bool:
+        """Checks if a resource exists in the registry
+        Args:
+            resref: Resource reference string
+            restype: Resource type
+        Returns:
+            bool: True if resource exists, False otherwise
+        Processes the following logic:
+            - Constructs a ResourceIdentifier object from the resref and restype
+            - Iterates through internal _resources list to find matching resource
+            - Returns True if match found, False otherwise.
+        """
         query = ResourceIdentifier(resref, restype)
         resource = next(
             (resource for resource in self._resources if resource == query),
