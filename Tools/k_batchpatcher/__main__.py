@@ -420,7 +420,7 @@ class KOTORPatchingToolUI:
         self.font_path = tk.StringVar(value=parser_args.font_path)
         self.resolution = tk.IntVar(value=parser_args.resolution)
         self.use_profiler = tk.BooleanVar(value=parser_args.use_profiler)
-        self.translation_option = tk.StringVar(value=parser_args.translation_option)
+        self.translation_option = tk.StringVar()
 
         self.chosen_languages: list[Language] = []
         self.lang_vars: list[str] = []
@@ -572,13 +572,13 @@ if __name__ == "__main__":
     )
     parser_args, unknown = parser.parse_known_args()
     SCRIPT_GLOBALS.start = parser_args.start
-    if SCRIPT_GLOBALS.start:
+    if not SCRIPT_GLOBALS.start:
         try:
             root = tk.Tk()
             APP = KOTORPatchingToolUI(root, parser_args)
             root.mainloop()
-        except Exception as e:  # noqa: BLE001
-            print(repr(e))
+        except Exception:  # noqa: BLE001
+            print(traceback.format_exc())
     else:
         LOGGING_ENABLED = bool(parser_args.logging is None or parser_args.logging)
         while True:
@@ -628,7 +628,7 @@ if __name__ == "__main__":
                     break
                 print("Invalid path:", OUTPUT_LOG)
                 parser.print_help()
-        translation_option: str = None  # type: ignore[assignment]
+        SCRIPT_GLOBALS.translation_option: str = None  # type: ignore[assignment]
         if parser_args.translate:
             while True:
                 print("Languages: ", *Language.__members__)
@@ -690,12 +690,12 @@ if __name__ == "__main__":
                     break
             while True:
                 print(*TranslationOption.__members__)
-                translation_option = input("Choose a preferred translator library: ")
+                SCRIPT_GLOBALS.translation_option = input("Choose a preferred translator library: ")
                 try:
                     # Convert the string representation to the enum member, and then get its value
                     SCRIPT_GLOBALS.translation_option = TranslationOption[translation_option]  # type: ignore[assignment]
                 except KeyError:
-                    msg = f"{translation_option} is not a valid translation option. Please choose one of [{TranslationOption.__members__}]"  # type: ignore[union-attr, reportGeneralTypeIssues]
+                    msg = f"{SCRIPT_GLOBALS.translation_option} is not a valid translation option. Please choose one of [{TranslationOption.__members__}]"  # type: ignore[union-attr, reportGeneralTypeIssues]
                     continue
                 break
         SCRIPT_GLOBALS.use_profiler = bool(parser_args.use_profiler)
