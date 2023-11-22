@@ -158,7 +158,7 @@ def patch_nested_gff(
 
         if ftype == GFFFieldType.Struct:
             assert isinstance(value, GFFStruct)  # noqa: S101
-            if APP.set_unskippable.get() and "Skippable" in value._fields:
+            if APP.set_unskippable.get() and "Skippable" in value._fields and gff_content != GFFContent.DLG:
                 log_output(f"Setting '{child_path}' as unskippable")
                 value._fields["Skippable"]._value = 0
                 made_change = True
