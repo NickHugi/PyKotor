@@ -1,3 +1,0 @@
-mipmap 0
-downsamplemax 0
-downsamplemin 0
