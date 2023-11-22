@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import math
 import struct
 from copy import deepcopy
 from typing import NamedTuple
@@ -665,6 +666,13 @@ def transform(
 ) -> bytes:
     """Performs a translation and then rotation on the target MDL data.
 
+    Process:
+        - Injects a new node at the end of the MDL file.
+        - New node has the appropriate transformations applied to it.
+        - The children of the root node are copied to the new node.
+        - The root node is set to have a single child.
+        - The root node's single child offset is overriden to be the offset to the new node.
+
     Args:
     ----
         data: MDL data.
@@ -675,7 +683,7 @@ def transform(
     -------
         The MDL data post-transformation.
     """
-    orientation = Vector4.from_euler(0, 0, rotation)
+    orientation = Vector4.from_euler(0, 0, math.radians(rotation))
     mdx_size = struct.unpack("I", data[8:12])[0]
     data = bytearray(data[12:])
 
@@ -708,16 +716,22 @@ def transform(
     insert_controller_offset = insert_node_offset + 80
     insert_controller_data_offset = insert_controller_offset + 32
 
+    # Increase global node count by 1
     data[44:48] = struct.pack("I", node_count + 1)
 
+    # Update the offset the array of child offsets to our injected array
     data[root_offset + 44 : root_offset + 48] = struct.pack(
         "I",
         root_child_array_offset,
     )
+    # Set the root node to have 1 child
     data[root_offset + 48 : root_offset + 52] = struct.pack("I", 1)
     data[root_offset + 52 : root_offset + 56] = struct.pack("I", 1)
 
+    # Populate the injected new root child offsets array
+    # It will contain our new node
     data += struct.pack("I", insert_node_offset)
+    # Create the new node
     data += struct.pack(
         "HHHH II fff ffff III III III",
         1,  # Node Type
@@ -741,7 +755,7 @@ def transform(
         9,
         9,
     )
-
+    # Inject controller and controller data of new node to the end of the file
     data += struct.pack("IHHHHBBBB", 8, 0xFFFF, 1, 0, 1, 3, 0, 0, 0)
     data += struct.pack("IHHHHBBBB", 20, 0xFFFF, 1, 4, 5, 4, 0, 0, 0)
     data += struct.pack("ffff", 0.0, *translation)
