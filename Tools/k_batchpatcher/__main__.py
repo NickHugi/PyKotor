@@ -10,16 +10,6 @@ from copy import deepcopy
 from io import StringIO
 from tkinter import filedialog, messagebox, ttk
 from typing import TYPE_CHECKING, Any
-from pykotor.common.stream import BinaryWriter
-
-from pykotor.extract.installation import Installation
-from pykotor.resource.formats.erf.erf_auto import write_erf
-from pykotor.resource.formats.erf.erf_data import ERF
-from pykotor.resource.formats.gff.gff_auto import bytes_gff
-from pykotor.resource.formats.rim.rim_auto import write_rim
-from pykotor.resource.formats.rim.rim_data import RIM
-from pykotor.resource.formats.tlk.tlk_data import TLKEntry
-from pykotor.resource.type import ResourceType
 
 if getattr(sys, "frozen", False) is False:
     pykotor_path = pathlib.Path(__file__).parents[2] / "pykotor"
@@ -29,10 +19,19 @@ if getattr(sys, "frozen", False) is False:
         sys.path.insert(0, str(pykotor_path.parent))
 
 from pykotor.common.language import Language, LocalizedString
+from pykotor.common.stream import BinaryWriter
 from pykotor.extract.capsule import Capsule
+from pykotor.extract.file import FileResource
+from pykotor.extract.installation import Installation
+from pykotor.resource.formats.erf.erf_auto import write_erf
+from pykotor.resource.formats.erf.erf_data import ERF
 from pykotor.resource.formats.gff import GFF, GFFContent, GFFFieldType, GFFList, GFFStruct, read_gff
+from pykotor.resource.formats.gff.gff_auto import bytes_gff
+from pykotor.resource.formats.rim.rim_auto import write_rim
+from pykotor.resource.formats.rim.rim_data import RIM
 from pykotor.resource.formats.tlk import TLK, read_tlk, write_tlk
 from pykotor.resource.formats.tpc.txi_data import write_bitmap_font
+from pykotor.resource.type import ResourceType
 from pykotor.tools.misc import is_capsule_file
 from pykotor.tools.path import CaseAwarePath
 from pykotor.utility.path import Path, PurePath, PureWindowsPath
@@ -41,7 +40,7 @@ from Tools.k_batchpatcher.translate.language_translator import TranslationOption
 if TYPE_CHECKING:
     import os
 
-    from pykotor.extract.file import FileResource
+    from pykotor.resource.formats.tlk.tlk_data import TLKEntry
 
 APP: KOTORPatchingToolUI
 OUTPUT_LOG: Path
