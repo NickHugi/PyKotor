@@ -2,13 +2,16 @@ from __future__ import annotations
 
 import argparse
 import cProfile
+import os
 import pathlib
 import sys
 import tkinter as tk
 import traceback
 from copy import deepcopy
 from io import StringIO
+from threading import Thread
 from tkinter import filedialog, messagebox, ttk
+from tkinter import font as tkfont
 from typing import TYPE_CHECKING, Any
 
 if getattr(sys, "frozen", False) is False:
@@ -34,11 +37,11 @@ from pykotor.resource.formats.tpc.txi_data import write_bitmap_font
 from pykotor.resource.type import ResourceType
 from pykotor.tools.misc import is_capsule_file
 from pykotor.tools.path import CaseAwarePath, find_kotor_paths_from_default
+from pykotor.tslpatcher.logger import PatchLogger
 from pykotor.utility.path import Path, PurePath, PureWindowsPath
 from Tools.k_batchpatcher.translate.language_translator import TranslationOption, Translator, get_language_code
 
 if TYPE_CHECKING:
-    import os
 
     from pykotor.resource.formats.tlk.tlk_data import TLKEntry
 
@@ -119,6 +122,7 @@ def log_output(*args, **kwargs) -> None:
 
     # Print the captured output to console
     print(*args, **kwargs)  # noqa: T201
+    SCRIPT_GLOBALS.patchlogger.add_note("\t".join(args))
 
 
 def visual_length(s: str, tab_length=8) -> int:
@@ -158,9 +162,9 @@ def patch_nested_gff(
 
         if ftype == GFFFieldType.Struct:
             assert isinstance(value, GFFStruct)  # noqa: S101
-            if APP.set_unskippable.get() and "Skippable" in value._fields and gff_content != GFFContent.DLG:
+            if SCRIPT_GLOBALS.set_unskippable and gff_content == GFFContent.DLG and current_path.parent == "RepliesList":
                 log_output(f"Setting '{child_path}' as unskippable")
-                value._fields["Skippable"]._value = 0
+                value.set_uint32("Skippable", 0)
                 made_change = True
             patch_nested_gff(value, gff_content, child_path, made_change)
             continue
@@ -170,12 +174,12 @@ def patch_nested_gff(
             recurse_through_list(value, gff_content, child_path, made_change)
             continue
 
-        if ftype == GFFFieldType.LocalizedString and APP.translate.get():  # and gff_content.value == GFFContent.DLG.value:
+        if ftype == GFFFieldType.LocalizedString and SCRIPT_GLOBALS.translate:  # and gff_content.value == GFFContent.DLG.value:
             assert isinstance(value, LocalizedString)  # noqa: S101
             new_substrings = deepcopy(value._substrings)
             for lang, gender, text in value:
                 if SCRIPT_GLOBALS.pyinstaller is not None and text is not None and text.strip():
-                    log_output_with_separator(f"Translating CExoLocString at {child_path}", above=True)
+                    log_output_with_separator(f"Translating CExoLocString at {child_path} to {SCRIPT_GLOBALS.to_lang.name}", above=True)
                     translated_text = SCRIPT_GLOBALS.pyinstaller.translate(text, from_lang=lang)
                     log_output(f"Translated {text} --> {translated_text}")
                     substring_id = LocalizedString.substring_id(SCRIPT_GLOBALS.to_lang, gender)
@@ -224,7 +228,7 @@ def patch_resource(resource: FileResource) -> GFF | None:
     if resource.restype().extension.lower() in gff_types or f"{resource.restype().name.upper()} " in GFFContent.get_valid_types():
         gff: GFF | None = None
         try:
-            log_output(f"Loading {resource.resname()} from '{resource.filepath().name}'")
+            log_output(f"Loading {resource.resname()}.{resource.restype().extension} from '{resource.filepath().name}'")
             gff = read_gff(resource.data())
             if patch_nested_gff(
                 gff.root,
@@ -315,7 +319,7 @@ def patch_install(install_path: os.PathLike | str) -> None:
     log_output()
 
     log_output_with_separator("Patching modules...")
-    k_install = Installation(install_path)
+    k_install = Installation(install_path, SCRIPT_GLOBALS.patchlogger)
 
     # Patch modules...
     for module_name, resources in k_install._modules.items():
@@ -367,28 +371,39 @@ def determine_input_path(path: Path):
         patch_file(path)
 
 
-def do_main_patchloop():
+def execute_patchloop_thread():
     try:
-        # Profiling logic
-        profiler = None
-        if SCRIPT_GLOBALS.use_profiler:
-            profiler = cProfile.Profile()
-            profiler.enable()
-
-        # Patching logic
-        for lang in SCRIPT_GLOBALS.chosen_languages:
-            main_patchloop_logic(lang)
-        if profiler and SCRIPT_GLOBALS.use_profiler:
-            profiler.disable()
-            profiler_output_file = Path("profiler_output.pstat").resolve()
-            profiler.dump_stats(str(profiler_output_file))
-            log_output(f"Profiler output saved to: {profiler_output_file}")
-
-        log_output(f"Completed batch patcher of {SCRIPT_GLOBALS.path}")
-    except Exception:
+        do_main_patchloop()
+    except Exception as e:  # noqa: BLE001
         log_output("Unhandled exception during the patching process.")
         log_output(traceback.format_exc())
-        messagebox.showerror("Error", "An error occurred during patching.")
+        messagebox.showerror("Error", f"An error occurred during patching\n{e!r}")
+
+def do_main_patchloop():
+    # Profiling logic
+    profiler = None
+    if SCRIPT_GLOBALS.use_profiler:
+        profiler = cProfile.Profile()
+        profiler.enable()
+    if not SCRIPT_GLOBALS.chosen_languages and SCRIPT_GLOBALS.translate:
+        return messagebox.showwarning("No language chosen", "Select a language first if you want to translate")
+    if not SCRIPT_GLOBALS.chosen_languages or not SCRIPT_GLOBALS.translate:
+        if not SCRIPT_GLOBALS.set_unskippable:
+            messagebox.showwarning("No options chosen", "Select what you want to do.")
+            return
+        determine_input_path(Path(SCRIPT_GLOBALS.path))
+
+    # Patching logic
+    for lang in SCRIPT_GLOBALS.chosen_languages:
+        main_patchloop_logic(lang)
+    if profiler and SCRIPT_GLOBALS.use_profiler:
+        profiler.disable()
+        profiler_output_file = Path("profiler_output.pstat").resolve()
+        profiler.dump_stats(str(profiler_output_file))
+        log_output(f"Profiler output saved to: {profiler_output_file}")
+
+    log_output(f"Completed batch patcher of {SCRIPT_GLOBALS.path}")
+    messagebox.showinfo("Patching complete!", "Check the log file log_batch_patcher.log for more information.")
 
 
 def main_patchloop_logic(lang):
@@ -431,10 +446,54 @@ class KOTORPatchingToolUI:
         self.resolution = tk.IntVar(value=parser_args.resolution or 512)
         self.use_profiler = tk.BooleanVar(value=parser_args.use_profiler)
 
-        SCRIPT_GLOBALS.chosen_languages: list[Language] = []
-        self.lang_vars = {}
+        # Middle area for text and scrollbar
+        self.output_frame = tk.Frame(self.root)
+        self.output_frame.grid_remove()
+
+        self.description_text = tk.Text(self.output_frame, wrap=tk.WORD)
+        font_obj = tkfont.Font(font=self.description_text.cget("font"))
+        font_obj.configure(size=9)
+        self.description_text.configure(font=font_obj)
+        self.description_text.grid(row=0, column=0, sticky="nsew")
+
+        scrollbar = tk.Scrollbar(self.output_frame, command=self.description_text.yview)
+        scrollbar.grid(row=0, column=1, sticky="ns")
+
+        self.lang_vars: dict[Language, tk.BooleanVar] = {}
+        self.language_row: int
+        self.language_frame = ttk.Frame(root)  # Frame to contain language checkboxes
+        SCRIPT_GLOBALS.chosen_languages = []
 
         self.setup_ui()
+
+    def write_log(self, message: str) -> None:
+        """Writes a message to the log.
+
+        Args:
+        ----
+            message (str): The message to write to the log.
+
+        Returns:
+        -------
+            None
+        Processes the log message by:
+            - Setting the description text widget to editable
+            - Inserting the message plus a newline at the end of the text
+            - Scrolling to the end of the text
+            - Making the description text widget not editable again.
+        """
+        self.description_text.config(state=tk.NORMAL)
+        self.description_text.insert(tk.END, message + os.linesep)
+        self.description_text.see(tk.END)
+        self.description_text.config(state=tk.DISABLED)
+
+    def initialize_logger(self):
+        self.logger = PatchLogger()
+        SCRIPT_GLOBALS.patchlogger = self.logger
+        self.logger.verbose_observable.subscribe(self.write_log)
+        self.logger.note_observable.subscribe(self.write_log)
+        self.logger.warning_observable.subscribe(self.write_log)
+        self.logger.error_observable.subscribe(self.write_log)
 
     def on_gamepaths_chosen(self, event: tk.Event) -> None:
         """Adjust the combobox after a short delay."""
@@ -481,12 +540,25 @@ class KOTORPatchingToolUI:
         ttk.Checkbutton(self.root, text="Yes", variable=self.translate).grid(row=row, column=1)
         row += 1
 
+        # Show/Hide output window
+        self.show_hide_output = tk.BooleanVar(value=False)
+        ttk.Checkbutton(self.root, text="Show Output:", command=lambda: self.toggle_output_frame(self.show_hide_output)).grid(row=row, column=1)
+        row += 1
 
         # To Language
-        ttk.Label(self.root, text="To Language:").grid(row=row, column=0)
-        row += 1
         self.create_language_checkbuttons(row)
         row += len(Language)
+        self.output_frame = tk.Frame(self.root)
+        self.output_frame.grid(row=self.language_row, column=0, sticky="nsew")
+        self.output_frame.grid_rowconfigure(0, weight=1)
+        self.output_frame.grid_columnconfigure(0, weight=1)
+        self.output_frame.grid_remove()
+
+        self.description_text = tk.Text(self.output_frame, wrap=tk.WORD)
+        font_obj = tkfont.Font(font=self.description_text.cget("font"))
+        font_obj.configure(size=9)
+        self.description_text.configure(font=font_obj)
+        self.description_text.grid(row=0, column=0, sticky="nsew")
 
         # Create Fonts
         ttk.Label(self.root, text="Create Fonts:").grid(row=row, column=0)
@@ -520,11 +592,29 @@ class KOTORPatchingToolUI:
         # Start Patching Button
         ttk.Button(self.root, text="Start Patching", command=self.start_patching).grid(row=row, column=1)
 
+
     def create_language_checkbuttons(self, row):
+
+        # Show/Hide Languages
+        self.show_hide_language = tk.BooleanVar(value=False)
+        ttk.Checkbutton(self.root, text="Show/Hide Languages:", command=lambda: self.toggle_language_frame(self.show_hide_language)).grid(row=row, column=1)
+        row += 1
+
+        # Middle area for text and scrollbar
+        self.language_row = row
+        self.language_frame = tk.Frame(self.root)
+        self.language_frame.grid(row=row, column=0, sticky="nsew")
+        self.language_frame.grid_rowconfigure(0, weight=1)
+        self.language_frame.grid_columnconfigure(0, weight=1)
+        self.language_frame.grid_remove()
+        row += 1
+
+        ttk.Label(self.root, text="To Language:").grid(row=row, column=0)
+        row += 1
         # Create a Checkbutton for "ALL"
         all_var = tk.BooleanVar()
         ttk.Checkbutton(
-            self.root,
+            self.language_frame,
             text="ALL",
             variable=all_var,
             command=lambda: self.toggle_all_languages(all_var),
@@ -537,15 +627,15 @@ class KOTORPatchingToolUI:
         # Create Checkbuttons for each language
         column = 0
         for lang in sorted_languages:
-            if lang.name == "UNKNOWN" or not lang.is_8bit_encoding():
+            if not lang.is_8bit_encoding():
                 continue
             lang_var = tk.BooleanVar()
             self.lang_vars[lang] = lang_var  # Store reference to the language variable
             ttk.Checkbutton(
-                self.root,
+                self.language_frame,
                 text=lang.name,
                 variable=lang_var,
-                command=lambda lang=lang, lang_var=lang_var: self.update_chosen_languages(lang, lang_var)
+                command=lambda lang=lang, lang_var=lang_var: self.update_chosen_languages(lang, lang_var),
             ).grid(row=row, column=column, sticky="w")
 
             # Alternate between columns
@@ -553,13 +643,13 @@ class KOTORPatchingToolUI:
             if column == 0:
                 row += 1
 
-    def update_chosen_languages(self, lang: Language, lang_var):
+    def update_chosen_languages(self, lang: Language, lang_var: tk.BooleanVar):
         if lang_var.get():
             SCRIPT_GLOBALS.chosen_languages.append(lang)
         else:
             SCRIPT_GLOBALS.chosen_languages.remove(lang)
 
-    def toggle_all_languages(self, all_var):
+    def toggle_all_languages(self, all_var: tk.BooleanVar):
         all_value = all_var.get()
         for lang, lang_var in self.lang_vars.items():
             lang_var.set(all_value)  # Set each language variable to the state of the "ALL" checkbox
@@ -568,6 +658,20 @@ class KOTORPatchingToolUI:
                     SCRIPT_GLOBALS.chosen_languages.append(lang)
             elif lang in SCRIPT_GLOBALS.chosen_languages:
                 SCRIPT_GLOBALS.chosen_languages.remove(lang)
+
+    def toggle_language_frame(self, show_var: tk.BooleanVar):
+        show_var.set(not show_var.get())
+        if show_var.get():
+            self.language_frame.grid(row=self.language_row, column=0, columnspan=4, sticky="ew")
+        else:
+            self.language_frame.grid_remove()  # Hide the frame
+
+    def toggle_output_frame(self, show_var: tk.BooleanVar):
+        show_var.set(not show_var.get())
+        if show_var.get():
+            self.output_frame.grid(row=self.language_row, column=0, columnspan=4, sticky="ew")
+        else:
+            self.output_frame.grid_remove()  # Hide the frame
 
     def browse_path(self):
         directory = filedialog.askdirectory()
@@ -585,15 +689,17 @@ class KOTORPatchingToolUI:
         try:
             path = Path(SCRIPT_GLOBALS.path).resolve()
         except OSError as e:
-            messagebox.showerror("Error", "Invalid path")
-            return
+            return messagebox.showerror("Error", f"Invalid path\n{e!r}")
         else:
             if not path.exists():
-                messagebox.showerror("Error", "Invalid path")
-                return
+                return messagebox.showerror("Error", "Invalid path")
         SCRIPT_GLOBALS.translation_option = TranslationOption[self.translation_option.get()]
+        self.toggle_output_frame(tk.BooleanVar(value=False))
+        self.initialize_logger()
 
-        do_main_patchloop()
+        SCRIPT_GLOBALS.install_thread = Thread(target=execute_patchloop_thread)
+        SCRIPT_GLOBALS.install_thread.start()
+        return None
 
 def create_font_pack(lang: Language):
     print(f"Creating font pack for '{lang.name}'...")
@@ -751,7 +857,7 @@ if __name__ == "__main__":
         SCRIPT_GLOBALS.use_profiler = bool(parser_args.use_profiler)
         input("Parameters have been set! Press [Enter] to start the patching process, or Ctrl+C to exit.")
         profiler = None
-        do_main_patchloop()
+        execute_patchloop_thread()
         if SCRIPT_GLOBALS.translation_option is not None and SCRIPT_GLOBALS.to_lang != "ALL":
             SCRIPT_GLOBALS.pyinstaller = Translator(SCRIPT_GLOBALS.to_lang)
             SCRIPT_GLOBALS.pyinstaller.translation_option = SCRIPT_GLOBALS.translation_option  # type: ignore[assignment]

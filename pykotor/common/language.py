@@ -148,7 +148,7 @@ class Language(IntEnum):
         return Language.ENGLISH
 
     def is_8bit_encoding(self) -> bool:
-        return self not in {Language.KOREAN, Language.CHINESE_TRADITIONAL, Language.CHINESE_SIMPLIFIED, Language.JAPANESE}
+        return self not in {Language.UNKNOWN, Language.KOREAN, Language.CHINESE_TRADITIONAL, Language.CHINESE_SIMPLIFIED, Language.JAPANESE}
 
     def get_encoding(self):
         """Gets the encoding for a given language.
