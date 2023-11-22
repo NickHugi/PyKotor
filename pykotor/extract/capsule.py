@@ -15,9 +15,9 @@ if TYPE_CHECKING:
 
 
 class Capsule:
-    """Capsule object is used for loading the list of resources stored in the .erf/.rim/.mod files used by the game.
+    """StreamCapsule object is used for loading the list of resources stored in the .erf/.rim/.mod files used by the game.
     Resource data is not actually stored in memory by default but is instead loaded up on demand with the
-    Capsule.resource() method. Use the RIM or ERF classes if you want to solely work with capsules in memory.
+    StreamCapsule.resource() method. Use the RIM or ERF classes if you want to solely work with capsules in memory.
     """
 
     def __init__(
@@ -125,26 +125,23 @@ class Capsule:
             return {}
 
         results: dict[ResourceIdentifier, ResourceResult | None] = {}
-        reader = BinaryReader.from_file(self._path)
-
-        for query in queries:
-            results[query] = None
-            if self.exists(query.resname, query.restype):
-                resource = next(
-                    (resource for resource in self._resources if resource == query),
-                    None,
-                )
-                if resource is not None:
-                    reader.seek(resource.offset())
-                    data = reader.read_bytes(resource.size())
-                    results[query] = ResourceResult(
-                        query.resname,
-                        query.restype,
-                        self._path,
-                        data,
+        with BinaryReader.from_file(self._path) as reader:
+            for query in queries:
+                results[query] = None
+                if self.exists(query.resname, query.restype):
+                    resource = next(
+                        (resource for resource in self._resources if resource == query),
+                        None,
                     )
-
-        reader.close()
+                    if resource is not None:
+                        reader.seek(resource.offset())
+                        data = reader.read_bytes(resource.size())
+                        results[query] = ResourceResult(
+                            query.resname,
+                            query.restype,
+                            self._path,
+                            data,
+                        )
         return results
 
     def exists(

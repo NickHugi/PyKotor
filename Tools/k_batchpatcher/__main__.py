@@ -33,7 +33,7 @@ from pykotor.resource.formats.tlk import TLK, read_tlk, write_tlk
 from pykotor.resource.formats.tpc.txi_data import write_bitmap_font
 from pykotor.resource.type import ResourceType
 from pykotor.tools.misc import is_capsule_file
-from pykotor.tools.path import CaseAwarePath
+from pykotor.tools.path import CaseAwarePath, find_kotor_paths_from_default
 from pykotor.utility.path import Path, PurePath, PureWindowsPath
 from Tools.k_batchpatcher.translate.language_translator import TranslationOption, Translator, get_language_code
 
@@ -319,9 +319,17 @@ def patch_install(install_path: os.PathLike | str) -> None:
 
     # Patch modules...
     for module_name, resources in k_install._modules.items():
-        new_erf = ERF()
-        new_erf_filename = patch_capsule_resources(resources, module_name, new_erf)
-        write_erf(new_erf, k_install.path() / new_erf_filename, ResourceType.from_extension(new_erf_filename.suffix))
+        restype = ResourceType.from_extension(PurePath(module_name).suffix[1:])
+        if restype == ResourceType.RIM:
+            new_rim = RIM()
+            new_rim_filename = patch_capsule_resources(resources, module_name, new_rim)
+            write_rim(new_rim, k_install.path() / new_rim_filename)
+        elif restype in [ResourceType.MOD, ResourceType.ERF]:
+            new_erf = ERF()
+            new_erf_filename = patch_capsule_resources(resources, module_name, new_erf)
+            write_erf(new_erf, k_install.path() / new_erf_filename, restype)
+        else:
+            log_output("Unsupported module:", module_name, " - cannot patch")
 
     # Patch rims...
     for rim_name, resources in k_install._rims.items():
@@ -369,11 +377,10 @@ def do_main_patchloop():
 
         # Patching logic
         for lang in SCRIPT_GLOBALS.chosen_languages:
-            print(f"Translating to {lang}...")
-            enum_member_lang = Language[lang]
+            print(f"Translating to {lang.name}...")
             if SCRIPT_GLOBALS.create_fonts:
-                SCRIPT_GLOBALS.create_font_pack(enum_member_lang)
-            SCRIPT_GLOBALS.to_lang = enum_member_lang
+                SCRIPT_GLOBALS.create_font_pack(lang)
+            SCRIPT_GLOBALS.to_lang = lang
             pytranslator = Translator(SCRIPT_GLOBALS.to_lang)
             pytranslator.translation_option = SCRIPT_GLOBALS.translation_option  # type: ignore[assignment]
             determine_input_path(Path(SCRIPT_GLOBALS.path))
@@ -413,26 +420,47 @@ class KOTORPatchingToolUI:
         self.path = tk.StringVar(value=parser_args.path or None)
         self.output_log = "log_batch_patcher.log"
         self.set_unskippable = tk.BooleanVar(value=parser_args.set_unskippable)
-        self.logging_enabled = tk.BooleanVar(value=parser_args.logging)
-        self.translate = tk.BooleanVar(value=parser_args.translate)
+        self.logging_enabled = tk.BooleanVar(value=parser_args.logging or True)
+        self.translate = tk.BooleanVar(value=parser_args.translate or True)
         self.to_lang = tk.StringVar(value=parser_args.to_lang)
         self.create_fonts = tk.BooleanVar(value=parser_args.create_fonts)
         self.font_path = tk.StringVar(value=parser_args.font_path)
-        self.resolution = tk.IntVar(value=parser_args.resolution)
+        self.resolution = tk.IntVar(value=parser_args.resolution or 512)
         self.use_profiler = tk.BooleanVar(value=parser_args.use_profiler)
-        self.translation_option = tk.StringVar()
 
-        self.chosen_languages: list[Language] = []
-        self.lang_vars: list[str] = []
+        SCRIPT_GLOBALS.chosen_languages: list[Language] = []
+        self.lang_vars = {}
 
         self.setup_ui()
+
+    def on_gamepaths_chosen(self, event: tk.Event) -> None:
+        """Adjust the combobox after a short delay."""
+        self.root.after(10, lambda: self.move_cursor_to_end(event.widget))
+
+    def move_cursor_to_end(self, combobox: ttk.Combobox) -> None:
+        """Shows the rightmost portion of the specified combobox as that's the most relevant."""
+        combobox.focus_set()
+        position: int = len(combobox.get())
+        combobox.icursor(position)
+        combobox.xview(position)
+        self.root.focus_set()
 
     def setup_ui(self):
         row = 0
         # Path to K1/TSL install
         ttk.Label(self.root, text="Path to K1/TSL install:").grid(row=row, column=0)
-        ttk.Entry(self.root, textvariable=self.path).grid(row=row, column=1)
-        ttk.Button(self.root, text="Browse", command=self.browse_path).grid(row=row, column=2)
+        # Gamepaths Combobox
+        self.gamepaths = ttk.Combobox(self.root, textvariable=self.path)
+        self.gamepaths.grid(row=row, column=1, columnspan=2, sticky="ew")
+        self.gamepaths.set("Path to file, folder, or K1/TSL install path:")
+        self.gamepaths["values"] = [str(path) for game in find_kotor_paths_from_default().values() for path in game]
+        self.gamepaths.bind("<<ComboboxSelected>>", self.on_gamepaths_chosen)
+
+        # Browse button
+        browse_button = ttk.Button(self.root, text="Browse", command=self.browse_path)
+        browse_button.grid(row=row, column=3, padx=2)  # Stick to both sides within its cell
+        browse_button.config(width=15)
+
         row += 1
 
         # Skippable
@@ -480,7 +508,10 @@ class KOTORPatchingToolUI:
 
         # Translation Option
         ttk.Label(self.root, text="Translation Option:").grid(row=row, column=0)
-        ttk.Entry(self.root, textvariable=self.translation_option).grid(row=row, column=1)
+        self.translation_option = ttk.Combobox(self.root)
+        self.translation_option.grid(row=row, column=1)
+        self.translation_option["values"] = list(TranslationOption.__members__)
+        self.translation_option.set("GOOGLE_TRANSLATE")
         row += 1
 
         # Start Patching Button
@@ -489,22 +520,29 @@ class KOTORPatchingToolUI:
     def create_language_checkbuttons(self, row):
         # Create a Checkbutton for "ALL"
         all_var = tk.BooleanVar()
-        ttk.Checkbutton(self.root, text="ALL", variable=all_var, command=lambda: self.toggle_all_languages(all_var)).grid(row=row, column=0, columnspan=3, sticky="w")
+        ttk.Checkbutton(
+            self.root,
+            text="ALL",
+            variable=all_var,
+            command=lambda: self.toggle_all_languages(all_var),
+        ).grid(row=row, column=0, columnspan=3, sticky="w")
         row += 1
 
         # Sort the languages in alphabetical order
         sorted_languages = sorted(Language, key=lambda lang: lang.name)
 
-        # Create Checkbuttons for each language in three columns
+        # Create Checkbuttons for each language
         column = 0
         for lang in sorted_languages:
+            if lang.name == "UNKNOWN" or not lang.is_8bit_encoding():
+                continue
             lang_var = tk.BooleanVar()
+            self.lang_vars[lang] = lang_var  # Store reference to the language variable
             ttk.Checkbutton(
                 self.root,
                 text=lang.name,
                 variable=lang_var,
-                command=lambda lang=lang,
-                lang_var=lang_var: self.update_chosen_languages(lang, lang_var),
+                command=lambda lang=lang, lang_var=lang_var: self.update_chosen_languages(lang, lang_var)
             ).grid(row=row, column=column, sticky="w")
 
             # Alternate between columns
@@ -512,19 +550,21 @@ class KOTORPatchingToolUI:
             if column == 0:
                 row += 1
 
-
     def update_chosen_languages(self, lang: Language, lang_var):
         if lang_var.get():
-            self.chosen_languages.append(lang)
+            SCRIPT_GLOBALS.chosen_languages.append(lang)
         else:
-            self.chosen_languages.remove(lang)
+            SCRIPT_GLOBALS.chosen_languages.remove(lang)
 
     def toggle_all_languages(self, all_var):
         all_value = all_var.get()
-        if all_value:
-            self.chosen_languages = list(Language)
-        else:
-            self.chosen_languages = []
+        for lang, lang_var in self.lang_vars.items():
+            lang_var.set(all_value)  # Set each language variable to the state of the "ALL" checkbox
+            if all_value:
+                if lang not in SCRIPT_GLOBALS.chosen_languages:
+                    SCRIPT_GLOBALS.chosen_languages.append(lang)
+            elif lang in SCRIPT_GLOBALS.chosen_languages:
+                SCRIPT_GLOBALS.chosen_languages.remove(lang)
 
     def browse_path(self):
         directory = filedialog.askdirectory()
@@ -543,6 +583,7 @@ class KOTORPatchingToolUI:
         if not path.exists():
             messagebox.showerror("Error", "Invalid path")
             return
+        SCRIPT_GLOBALS.translation_option = TranslationOption[self.translation_option.get()]
 
         do_main_patchloop()
 
@@ -578,7 +619,8 @@ if __name__ == "__main__":
             APP = KOTORPatchingToolUI(root, parser_args)
             root.mainloop()
         except Exception:  # noqa: BLE001
-            print(traceback.format_exc())
+            log_output(traceback.format_exc())
+            raise
     else:
         LOGGING_ENABLED = bool(parser_args.logging is None or parser_args.logging)
         while True:
@@ -693,7 +735,7 @@ if __name__ == "__main__":
                 SCRIPT_GLOBALS.translation_option = input("Choose a preferred translator library: ")
                 try:
                     # Convert the string representation to the enum member, and then get its value
-                    SCRIPT_GLOBALS.translation_option = TranslationOption[translation_option]  # type: ignore[assignment]
+                    SCRIPT_GLOBALS.translation_option = TranslationOption[SCRIPT_GLOBALS.translation_option]  # type: ignore[assignment]
                 except KeyError:
                     msg = f"{SCRIPT_GLOBALS.translation_option} is not a valid translation option. Please choose one of [{TranslationOption.__members__}]"  # type: ignore[union-attr, reportGeneralTypeIssues]
                     continue
@@ -709,20 +751,18 @@ if __name__ == "__main__":
             if SCRIPT_GLOBALS.use_profiler:
                 profiler = cProfile.Profile()
                 profiler.enable()
-            if SCRIPT_GLOBALS.to_lang == "ALL":
-                for lang in Language.__members__:
-                    print(f"Translating to {lang}...")
-                    enum_member_lang = Language[lang]
-                    if SCRIPT_GLOBALS.create_fonts:
-                        create_font_pack(enum_member_lang)
-                    SCRIPT_GLOBALS.to_lang = enum_member_lang
-                    pytranslator = Translator(SCRIPT_GLOBALS.to_lang)
-                    pytranslator.translation_option = translation_option  # type: ignore[assignment]
-                    comparison: bool | None = determine_input_path(SCRIPT_GLOBALS.path)
-            else:
+            for lang in SCRIPT_GLOBALS.chosen_languages:
+                print(f"Translating to {lang.name}...")
+                enum_member_lang = Language[lang]
                 if SCRIPT_GLOBALS.create_fonts:
-                    create_font_pack(SCRIPT_GLOBALS.to_lang)
-                comparison = determine_input_path(SCRIPT_GLOBALS.path)
+                    create_font_pack(enum_member_lang)
+                SCRIPT_GLOBALS.to_lang = enum_member_lang
+                pytranslator = Translator(SCRIPT_GLOBALS.to_lang)
+                pytranslator.translation_option = SCRIPT_GLOBALS.translation_option  # type: ignore[assignment]
+                comparison: bool | None = determine_input_path(SCRIPT_GLOBALS.path)
+            if SCRIPT_GLOBALS.create_fonts:
+                create_font_pack(SCRIPT_GLOBALS.to_lang)
+            comparison = determine_input_path(SCRIPT_GLOBALS.path)
             if profiler is not None:
                 profiler.disable()
                 profiler_output_file = Path("profiler_output.pstat").resolve()
