@@ -27,7 +27,7 @@ def _load_node(scene, node: Optional[Node], mdl: BinaryReader, mdx: BinaryReader
     if node_type & 0b100000:
         mdl.seek(offset + 80)
         fp = mdl.read_uint32()
-        k2 = True if fp == 4216880 or fp == 4216816 or fp == 4216864 else False
+        k2 = fp in [4216880, 4216816, 4216864]
 
         mdl.seek(offset + 80 + 8)
         offset_to_faces = mdl.read_uint32()
@@ -94,18 +94,14 @@ def gl_load_mdl(scene, mdl: BinaryReader, mdx: BinaryReader) -> Model:
     offset_to_name_offsets = mdl.read_uint32()
     name_count = mdl.read_uint32()
 
-    name_offsets = []
     mdl.seek(offset_to_name_offsets)
-    for i in range(name_count):
-        name_offsets.append(mdl.read_uint32())
-
+    name_offsets = [mdl.read_uint32() for _ in range(name_count)]
     names = []
     for name_offset in name_offsets:
         mdl.seek(name_offset)
         names.append(mdl.read_terminated_string("\0"))
 
-    model = Model(scene, _load_node(scene, None, mdl, mdx, offset, names))
-    return model
+    return Model(scene, _load_node(scene, None, mdl, mdx, offset, names))
 
 
 def gl_load_stitched_model(scene, mdl: BinaryReader, mdx: BinaryReader) -> Model:
@@ -121,11 +117,8 @@ def gl_load_stitched_model(scene, mdl: BinaryReader, mdx: BinaryReader) -> Model
     offset_to_name_offsets = mdl.read_uint32()
     name_count = mdl.read_uint32()
 
-    name_offsets = []
     mdl.seek(offset_to_name_offsets)
-    for i in range(name_count):
-        name_offsets.append(mdl.read_uint32())
-
+    name_offsets = [mdl.read_uint32() for _ in range(name_count)]
     names = []
     for name_offset in name_offsets:
         mdl.seek(name_offset)
@@ -160,8 +153,7 @@ def gl_load_stitched_model(scene, mdl: BinaryReader, mdx: BinaryReader) -> Model
 
         if mesh and not walkmesh:
             mdl.seek(offset + 80 + 313)
-            render = mdl.read_uint8()
-            if render:
+            if render := mdl.read_uint8():
                 offsets.append((offset, transform))
 
         if names[name_id].lower() in ["headhook", "rhand", "lhand", "gogglehook", "maskhook"]:
@@ -180,17 +172,17 @@ def gl_load_stitched_model(scene, mdl: BinaryReader, mdx: BinaryReader) -> Model
             merged[key] = []
         merged[key].append((offset, transform))
 
-    for key in merged:
+    for key, value in merged.items():
         vertex_data = bytearray()
         elements = []
         child = Node(scene, root, "child")
         root.children.append(child)
 
         last_element = 0
-        for offset, transform in merged[key]:
+        for offset, transform in value:
             mdl.seek(offset + 80)
             fp = mdl.read_uint32()
-            k2 = True if fp == 4216880 or fp == 4216816 or fp == 4216864 else False
+            k2 = fp in [4216880, 4216816, 4216864]
 
             mdl.seek(offset + 80 + 252)
             mdx_block_size = mdl.read_uint32()
@@ -211,7 +203,10 @@ def gl_load_stitched_model(scene, mdl: BinaryReader, mdx: BinaryReader) -> Model
                 mdl.seek(offset_to_element_offsets)
                 offset_to_elements = mdl.read_uint32()
                 mdl.seek(offset_to_elements)
-                [elements.append(mdl.read_uint16() + last_element) for i in range(face_count * 3)]
+                [
+                    elements.append(mdl.read_uint16() + last_element)
+                    for _ in range(face_count * 3)
+                ]
 
             mdl.seek(offset + 80 + 304)
             vertex_count = mdl.read_uint16()
