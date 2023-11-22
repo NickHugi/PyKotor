@@ -95,7 +95,7 @@ class UTCEditor(Editor):
         self.ui.featList.itemChanged.connect(self.updateFeatSummary)
         self.ui.powerList.itemChanged.connect(self.updatePowerSummary)
 
-        #self.ui.appearanceSelect.currentIndexChanged.connect(self.update3dPreview)
+        self.ui.appearanceSelect.currentIndexChanged.connect(self.update3dPreview)
         self.ui.alignmentSlider.valueChanged.connect(self.update3dPreview)
 
         self.ui.actionSaveUnusedFields.triggered.connect(lambda: setattr(self.settings, "saveUnusedFields", self.ui.actionSaveUnusedFields.isChecked()))
