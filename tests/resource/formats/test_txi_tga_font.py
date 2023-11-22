@@ -45,6 +45,7 @@ class TestWriteBitmapFont(unittest.TestCase):
         img = Image.open(target_path)
         self.assertEqual(img.size, resolution)
         self.assertEqual(img.mode, "RGBA")
+        img.close()
 
     def test_invalid_font_path(self):
         # Test with invalid font path

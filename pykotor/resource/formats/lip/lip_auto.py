@@ -9,7 +9,7 @@ from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES, ResourceType
 
 
 def detect_lip(
-    source: SOURCE_TYPES | object,
+    source: SOURCE_TYPES,
     offset: int = 0,
 ) -> ResourceType:
     """Returns what format the LIP data is believed to be in. This function performs a basic check and does not guarantee

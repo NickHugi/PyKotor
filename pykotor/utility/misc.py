@@ -111,8 +111,8 @@ def get_system_info():
         gpu_info = []
         for gpu in gpus:
             gpu_info.append((
-                gpu.id, gpu.name, f"{gpu.memoryTotal}MB", f"{gpu.memoryUsed}MB", 
-                f"{gpu.memoryFree}MB", f"{gpu.driver}", f"{gpu.temperature} C"
+                gpu.id, gpu.name, f"{gpu.memoryTotal}MB", f"{gpu.memoryUsed}MB",
+                f"{gpu.memoryFree}MB", f"{gpu.driver}", f"{gpu.temperature} C",
             ))
         info["GPU Details"] = format_gpu_info(gpu_info, headers=("id", "name", "total memory", "used memory", "free memory", "driver", "temperature"))
 

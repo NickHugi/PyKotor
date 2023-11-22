@@ -225,10 +225,7 @@ class BasePurePath:
             self_str = str(self).lower()
 
             # Normalize each string in the tuple if text is a tuple
-            if isinstance(text, tuple):
-                text = tuple(subtext.lower() for subtext in text)
-            else:
-                text = text.lower()
+            text = tuple(subtext.lower() for subtext in text) if isinstance(text, tuple) else text.lower()
         else:
             self_str = str(self)
 

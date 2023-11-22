@@ -124,7 +124,7 @@ class BinaryReader:
     @classmethod
     def from_auto(
         cls,
-        source: SOURCE_TYPES | object,
+        source: SOURCE_TYPES,
         offset: int = 0,
         size: int | None = None,
     ):
@@ -664,11 +664,19 @@ class BinaryReader:
 
 
 class BinaryWriter(ABC):
+    @abstractmethod
+    def __enter__(self):
+        ...
+
+    @abstractmethod
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        ...
+
     @classmethod
-    def from_file(
+    def to_file(
         cls,
         path: os.PathLike | str,
-    ) -> BinaryWriter:
+    ) -> BinaryWriterFile:
         """Returns a new BinaryWriter with a stream established to the specified path.
 
         Args:
@@ -684,10 +692,10 @@ class BinaryWriter(ABC):
         return BinaryWriterFile(stream)
 
     @classmethod
-    def from_bytearray(
+    def to_bytearray(
         cls,
         data: bytearray | None = None,
-    ) -> BinaryWriter:
+    ) -> BinaryWriterBytearray:
         """Returns a new BinaryWriter with a stream established to the specified bytes.
 
         Args:
@@ -698,6 +706,9 @@ class BinaryWriter(ABC):
         -------
             A new BinaryWriter instance.
         """
+        if isinstance(data, (bytes, memoryview)):
+            msg = "Must be bytearray, not bytes or memoryview."
+            raise TypeError(msg)
         if data is None:
             data = bytearray()
         return BinaryWriterBytearray(data)
@@ -705,12 +716,12 @@ class BinaryWriter(ABC):
     @classmethod
     def to_auto(
         cls,
-        source: TARGET_TYPES | object,
+        source: TARGET_TYPES,
     ) -> BinaryWriter:
         if isinstance(source, (os.PathLike, str)):  # is path
-            return BinaryWriter.from_file(source)
+            return BinaryWriter.to_file(source)
         if isinstance(source, bytearray):  # is binary data
-            return BinaryWriter.from_bytearray(source)
+            return BinaryWriter.to_bytearray(source)
         if isinstance(source, BinaryWriter):
             return source
         msg = "Must specify a path, bytes object or an existing BinaryWriter instance."
@@ -1470,7 +1481,7 @@ class BinaryWriterFile(BinaryWriter):
             value: The localized string to be written.
             big: Write any integers as big endian.
         """
-        bw = BinaryWriter.from_bytearray()
+        bw = BinaryWriter.to_bytearray()
         bw.write_uint32(value.stringref, big=big, max_neg1=True)
         bw.write_uint32(len(value), big=big)
         for language, gender, substring in value:
@@ -1953,7 +1964,7 @@ class BinaryWriterBytearray(BinaryWriter):
             value: The localized string to be written.
             big: Write any integers as big endian.
         """
-        bw = BinaryWriter.from_bytearray()
+        bw = BinaryWriter.to_bytearray()
         bw.write_uint32(value.stringref, big=big, max_neg1=True)
         bw.write_uint32(len(value), big=big)
 

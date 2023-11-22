@@ -180,11 +180,11 @@ class GFFBinaryWriter(ResourceWriter):
         super().__init__(target)
         self._gff = gff
 
-        self._struct_writer: BinaryWriter = BinaryWriter.from_bytearray()
-        self._field_writer: BinaryWriter = BinaryWriter.from_bytearray()
-        self._field_data_writer: BinaryWriter = BinaryWriter.from_bytearray()
-        self._field_indices_writer: BinaryWriter = BinaryWriter.from_bytearray()
-        self._list_indices_writer: BinaryWriter = BinaryWriter.from_bytearray()
+        self._struct_writer: BinaryWriter = BinaryWriter.to_bytearray()
+        self._field_writer: BinaryWriter = BinaryWriter.to_bytearray()
+        self._field_data_writer: BinaryWriter = BinaryWriter.to_bytearray()
+        self._field_indices_writer: BinaryWriter = BinaryWriter.to_bytearray()
+        self._list_indices_writer: BinaryWriter = BinaryWriter.to_bytearray()
 
         self._labels: list[str] = []
 

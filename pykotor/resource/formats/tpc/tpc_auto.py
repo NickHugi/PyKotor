@@ -7,7 +7,7 @@ from pykotor.tools.path import CaseAwarePath
 
 
 def detect_tpc(
-    source: SOURCE_TYPES | object,
+    source: SOURCE_TYPES,
     offset: int = 0,
 ) -> ResourceType:
     """Returns what format the TPC data is believed to be in. This function performs a basic check and does not guarantee
