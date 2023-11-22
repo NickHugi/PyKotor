@@ -353,9 +353,7 @@ class Boundary:
             index2 = i*2+2 if i*2+2 < count else 0
             index3 = i*2+1
             index4 = (i*2+2)+1 if (i*2+2)+1 < count else 1
-            npfaces.extend([index1, index2, index3])
-            npfaces.extend([index2, index4, index3])
-
+            npfaces.extend([index1, index2, index3, index2, index4, index3])
         return numpy.array(npvertices, dtype='float32'), numpy.array(npfaces, dtype='int16')
 
 

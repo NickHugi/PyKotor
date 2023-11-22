@@ -412,7 +412,7 @@ class Scene:
         self.picker_shader.set_matrix4("view", self.camera.view())
         self.picker_shader.set_matrix4("projection", self.camera.projection())
         instances = list(self.objects.values())
-        for i, obj in enumerate(instances):
+        for obj in instances:
             int_rgb = instances.index(obj)
             r = int_rgb & 0xFF
             g = (int_rgb >> 8) & 0xFF
@@ -682,8 +682,7 @@ class Camera:
         camera = mat4() * glm.translate(vec3(x, y, z))
         camera = glm.rotate(camera, self.yaw + math.pi/2, up)
         camera = glm.rotate(camera, math.pi - self.pitch, pitch)
-        view = glm.inverse(camera)
-        return view
+        return glm.inverse(camera)
 
     def projection(self) -> mat4:
         return glm.perspective(self.fov, self.width/self.height, 0.1, 5000)
@@ -712,13 +711,12 @@ class Camera:
         return glm.normalize(glm.cross(self.forward(ignoreZ), vec3(0.0, 0.0, 1.0)))
 
     def upward(self, ignoreXY: bool = True) -> vec3:
-        if not ignoreXY:
-            forward = self.forward(False)
-            sideward = self.sideward(False)
-            cross = glm.cross(forward, sideward)
-            return glm.normalize(cross)
-        else:
+        if ignoreXY:
             return glm.normalize(vec3(0, 0, 1))
+        forward = self.forward(False)
+        sideward = self.sideward(False)
+        cross = glm.cross(forward, sideward)
+        return glm.normalize(cross)
 
     def truePosition(self) -> vec3:
         x, y, z = self.x, self.y, self.z
