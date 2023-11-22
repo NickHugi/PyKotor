@@ -409,7 +409,7 @@ def do_main_patchloop():
 def main_patchloop_logic(lang):
     print(f"Translating to {lang.name}...")
     if SCRIPT_GLOBALS.create_fonts:
-        SCRIPT_GLOBALS.create_font_pack(lang)
+        create_font_pack(lang)
     SCRIPT_GLOBALS.to_lang = lang
     SCRIPT_GLOBALS.pyinstaller = Translator(SCRIPT_GLOBALS.to_lang)
     SCRIPT_GLOBALS.pyinstaller.translation_option = SCRIPT_GLOBALS.translation_option  # type: ignore[assignment]
