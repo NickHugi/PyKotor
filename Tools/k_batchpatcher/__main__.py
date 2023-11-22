@@ -45,7 +45,6 @@ if TYPE_CHECKING:
 APP: KOTORPatchingToolUI
 OUTPUT_LOG: Path
 LOGGING_ENABLED: bool
-pytranslator: Translator | None = None
 processed_files: set[Path] = set()
 
 gff_types = [x.value.lower().strip() for x in GFFContent]
@@ -149,7 +148,7 @@ def patch_nested_gff(
     current_path: PureWindowsPath | os.PathLike | str | None = None,
     made_change: bool = False,
 ) -> bool:
-    if gff_content != GFFContent.DLG:
+    if gff_content != GFFContent.DLG and not SCRIPT_GLOBALS.translate:
         return False
     current_path = current_path if isinstance(current_path, PureWindowsPath) else PureWindowsPath(current_path or "GFFRoot")
     for label, ftype, value in gff_struct:
@@ -175,12 +174,13 @@ def patch_nested_gff(
             assert isinstance(value, LocalizedString)  # noqa: S101
             new_substrings = deepcopy(value._substrings)
             for lang, gender, text in value:
-                if pytranslator is not None and text is not None and text.strip():
+                if SCRIPT_GLOBALS.pyinstaller is not None and text is not None and text.strip():
                     log_output_with_separator(f"Translating CExoLocString at {child_path}", above=True)
-                    translated_text = pytranslator.translate(text, from_lang=lang)
+                    translated_text = SCRIPT_GLOBALS.pyinstaller.translate(text, from_lang=lang)
                     log_output(f"Translated {text} --> {translated_text}")
                     substring_id = LocalizedString.substring_id(SCRIPT_GLOBALS.to_lang, gender)
                     new_substrings[substring_id] = translated_text
+                    made_change = True
             value._substrings = new_substrings
     return made_change
 
@@ -192,11 +192,11 @@ def recurse_through_list(gff_list: GFFList, gff_content: GFFContent, current_pat
 
 
 def patch_resource(resource: FileResource) -> GFF | None:
-    if resource.restype().extension.lower() == "tlk" and SCRIPT_GLOBALS.translate and pytranslator:
+    if resource.restype().extension.lower() == "tlk" and SCRIPT_GLOBALS.translate and SCRIPT_GLOBALS.pyinstaller:
         tlk: TLK | None = None
         try:
             log_output(f"Loading TLK '{resource.filepath()}'")
-            tlk = read_tlk(resource.filepath())
+            tlk = read_tlk(resource.data())
         except Exception as e:  # noqa: BLE001
             log_output(f"Error loading TLK {resource.filepath()}! {e!r}")
             return None
@@ -215,7 +215,7 @@ def patch_resource(resource: FileResource) -> GFF | None:
             if not text.strip() or text.isdigit():
                 continue
             log_output_with_separator(f"Translating TLK text at {resource.filepath()!s}", above=True)
-            translated_text = pytranslator.translate(text, from_lang=from_lang)
+            translated_text = SCRIPT_GLOBALS.pyinstaller.translate(text, from_lang=from_lang)
             log_output(f"Translated {text} --> {translated_text}")
             new_entries[strref].text = translated_text
         tlk.entries = new_entries
@@ -224,8 +224,8 @@ def patch_resource(resource: FileResource) -> GFF | None:
     if resource.restype().extension.lower() in gff_types or f"{resource.restype().name.upper()} " in GFFContent.get_valid_types():
         gff: GFF | None = None
         try:
-            log_output(f"Loading GFF '{resource.filepath()}'")
-            gff = read_gff(resource.filepath())
+            log_output(f"Loading {resource.resname()} from '{resource.filepath().name}'")
+            gff = read_gff(resource.data())
             if patch_nested_gff(
                 gff.root,
                 gff.content,
@@ -233,11 +233,11 @@ def patch_resource(resource: FileResource) -> GFF | None:
             ):
                 return gff
         except Exception as e:  # noqa: BLE001
-            log_output(f"[Error] loading GFF {resource.filepath()}! {e!r}")
+            log_output(f"[Error] loading GFF {resource.resname()} at {resource.filepath()}! {e!r}")
             return None
 
         if not gff:
-            log_output(f"GFF resource missing in memory:\t'{resource.filepath()}'")
+            log_output(f"GFF resource {resource.resname()} missing in memory:\t'{resource.filepath()}'")
             return None
     return None
 
@@ -377,14 +377,7 @@ def do_main_patchloop():
 
         # Patching logic
         for lang in SCRIPT_GLOBALS.chosen_languages:
-            print(f"Translating to {lang.name}...")
-            if SCRIPT_GLOBALS.create_fonts:
-                SCRIPT_GLOBALS.create_font_pack(lang)
-            SCRIPT_GLOBALS.to_lang = lang
-            pytranslator = Translator(SCRIPT_GLOBALS.to_lang)
-            pytranslator.translation_option = SCRIPT_GLOBALS.translation_option  # type: ignore[assignment]
-            determine_input_path(Path(SCRIPT_GLOBALS.path))
-
+            main_patchloop_logic(lang)
         if profiler and SCRIPT_GLOBALS.use_profiler:
             profiler.disable()
             profiler_output_file = Path("profiler_output.pstat").resolve()
@@ -396,6 +389,16 @@ def do_main_patchloop():
         log_output("Unhandled exception during the patching process.")
         log_output(traceback.format_exc())
         messagebox.showerror("Error", "An error occurred during patching.")
+
+
+def main_patchloop_logic(lang):
+    print(f"Translating to {lang.name}...")
+    if SCRIPT_GLOBALS.create_fonts:
+        SCRIPT_GLOBALS.create_font_pack(lang)
+    SCRIPT_GLOBALS.to_lang = lang
+    SCRIPT_GLOBALS.pyinstaller = Translator(SCRIPT_GLOBALS.to_lang)
+    SCRIPT_GLOBALS.pyinstaller.translation_option = SCRIPT_GLOBALS.translation_option  # type: ignore[assignment]
+    determine_input_path(Path(SCRIPT_GLOBALS.path))
 
 
 def assign_to_globals(instance):
@@ -579,10 +582,15 @@ class KOTORPatchingToolUI:
     def start_patching(self):
         assign_to_globals(self)
         # Mapping UI input to script logic
-        path = Path(SCRIPT_GLOBALS.path).resolve()
-        if not path.exists():
+        try:
+            path = Path(SCRIPT_GLOBALS.path).resolve()
+        except OSError as e:
             messagebox.showerror("Error", "Invalid path")
             return
+        else:
+            if not path.exists():
+                messagebox.showerror("Error", "Invalid path")
+                return
         SCRIPT_GLOBALS.translation_option = TranslationOption[self.translation_option.get()]
 
         do_main_patchloop()
@@ -745,8 +753,8 @@ if __name__ == "__main__":
         profiler = None
         do_main_patchloop()
         if SCRIPT_GLOBALS.translation_option is not None and SCRIPT_GLOBALS.to_lang != "ALL":
-            pytranslator = Translator(SCRIPT_GLOBALS.to_lang)
-            pytranslator.translation_option = SCRIPT_GLOBALS.translation_option  # type: ignore[assignment]
+            SCRIPT_GLOBALS.pyinstaller = Translator(SCRIPT_GLOBALS.to_lang)
+            SCRIPT_GLOBALS.pyinstaller.translation_option = SCRIPT_GLOBALS.translation_option  # type: ignore[assignment]
         try:
             if SCRIPT_GLOBALS.use_profiler:
                 profiler = cProfile.Profile()
@@ -757,8 +765,8 @@ if __name__ == "__main__":
                 if SCRIPT_GLOBALS.create_fonts:
                     create_font_pack(enum_member_lang)
                 SCRIPT_GLOBALS.to_lang = enum_member_lang
-                pytranslator = Translator(SCRIPT_GLOBALS.to_lang)
-                pytranslator.translation_option = SCRIPT_GLOBALS.translation_option  # type: ignore[assignment]
+                SCRIPT_GLOBALS.pyinstaller = Translator(SCRIPT_GLOBALS.to_lang)
+                SCRIPT_GLOBALS.pyinstaller.translation_option = SCRIPT_GLOBALS.translation_option  # type: ignore[assignment]
                 comparison: bool | None = determine_input_path(SCRIPT_GLOBALS.path)
             if SCRIPT_GLOBALS.create_fonts:
                 create_font_pack(SCRIPT_GLOBALS.to_lang)
