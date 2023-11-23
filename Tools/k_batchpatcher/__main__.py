@@ -356,6 +356,7 @@ def is_kotor_install_dir(path: os.PathLike | str) -> bool:
 
 def determine_input_path(path: Path):
     if not path.safe_exists() or path.resolve() == Path.cwd().resolve():
+        msg = "Path does not exist"
         raise FileNotFoundError(msg)
 
     if is_kotor_install_dir(path):
@@ -392,7 +393,8 @@ def do_main_patchloop():
         for lang in SCRIPT_GLOBALS.chosen_languages:
             main_patchloop_logic(lang)
     if SCRIPT_GLOBALS.create_fonts:
-        create_font_pack(lang)
+        for lang in SCRIPT_GLOBALS.chosen_languages:
+            create_font_pack(lang)
         has_action = True
     if SCRIPT_GLOBALS.set_unskippable:
         determine_input_path(Path(SCRIPT_GLOBALS.path))
