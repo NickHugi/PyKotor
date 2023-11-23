@@ -355,8 +355,8 @@ def is_kotor_install_dir(path: os.PathLike | str) -> bool:
 
 
 def determine_input_path(path: Path):
-    if not path.safe_exists():
-        return messagebox.showerror("Path does not exist", f"the path {path} does not exist on disk.")
+    if not path.safe_exists() or path.resolve() == Path.cwd().resolve():
+        raise FileNotFoundError(msg)
 
     if is_kotor_install_dir(path):
         return patch_install(path)
@@ -384,22 +384,21 @@ def do_main_patchloop():
             return messagebox.showwarning("No language chosen", "Select a language first if you want to translate")
         if SCRIPT_GLOBALS.create_fonts:
             return messagebox.showwarning("No language chosen", "Select a language first to create fonts.")
-    if SCRIPT_GLOBALS.use_profiler:
-        profiler = cProfile.Profile()
-        profiler.enable()
-    if not SCRIPT_GLOBALS.chosen_languages or not SCRIPT_GLOBALS.translate:
-        if not SCRIPT_GLOBALS.set_unskippable:
-            return messagebox.showwarning("No options chosen", "Select what you want to do.")
-        determine_input_path(Path(SCRIPT_GLOBALS.path))
-    elif SCRIPT_GLOBALS.set_unskippable:
-        determine_input_path(Path(SCRIPT_GLOBALS.path))
 
     # Patching logic
-    profiler = None
+    has_action = False
+    if SCRIPT_GLOBALS.translate:
+        has_action = True
+        for lang in SCRIPT_GLOBALS.chosen_languages:
+            main_patchloop_logic(lang)
     if SCRIPT_GLOBALS.create_fonts:
         create_font_pack(lang)
-    for lang in SCRIPT_GLOBALS.chosen_languages:
-        main_patchloop_logic(lang)
+        has_action = True
+    if SCRIPT_GLOBALS.set_unskippable:
+        determine_input_path(Path(SCRIPT_GLOBALS.path))
+        has_action = True
+    if not has_action:
+        return messagebox.showwarning("No options chosen", "Select what you want to do.")
 
     log_output(f"Completed batch patcher of {SCRIPT_GLOBALS.path}")
     return messagebox.showinfo("Patching complete!", "Check the log file log_batch_patcher.log for more information.")
