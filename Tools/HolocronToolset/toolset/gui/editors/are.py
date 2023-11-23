@@ -4,10 +4,15 @@ from typing import TYPE_CHECKING, Optional
 
 from PyQt5.QtGui import QColor, QImage, QPixmap
 from PyQt5.QtWidgets import QColorDialog, QLabel, QWidget
+from pykotor.extract.installation import SearchLocation
+
+from pykotor.extract.file import ResourceIdentifier
 
 from pykotor.common.geometry import Vector2
 from pykotor.common.misc import Color, ResRef
+from pykotor.resource.formats.bwm import read_bwm
 from pykotor.resource.formats.gff import write_gff
+from pykotor.resource.formats.lyt import read_lyt
 from pykotor.resource.generics.are import ARE, ARENorthAxis, AREWindPower, dismantle_are, read_are
 from pykotor.resource.type import ResourceType
 from toolset.data.installation import HTInstallation
@@ -108,6 +113,25 @@ class AREEditor(Editor):
         - Sets comment text.
         """
         self._are = are
+
+        if self._resref:
+            result = self._installation.resource(self._resref, ResourceType.LYT)
+            if result:
+                lyt = read_lyt(result.data)
+
+                results = self._installation.resources([ResourceIdentifier(room.model, ResourceType.WOK) for room in lyt.rooms])
+                woks = [read_bwm(result.data) for result in results.values() if result]
+
+                self.ui.minimapRenderer.setWalkmeshes(woks)
+
+            order = [
+                SearchLocation.OVERRIDE,
+                SearchLocation.TEXTURES_GUI,
+                SearchLocation.MODULES
+            ]
+            minimap = self._installation.texture("lbl_map" + self._resref, order)
+            self.ui.minimapRenderer.setMinimap(are, minimap)
+            self.ui.minimapRenderer.centerCamera()
 
         # Basic
         self.ui.nameEdit.setLocstring(are.name)

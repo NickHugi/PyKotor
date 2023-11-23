@@ -18,7 +18,7 @@
     <item row="0" column="0">
      <widget class="QTabWidget" name="tabWidget">
       <property name="currentIndex">
-       <number>0</number>
+       <number>1</number>
       </property>
       <widget class="QWidget" name="tab">
        <attribute name="title">
@@ -488,6 +488,16 @@
             </layout>
            </item>
           </layout>
+         </widget>
+        </item>
+        <item>
+         <widget class="WalkmeshRenderer" name="minimapRenderer" native="true">
+          <property name="minimumSize">
+           <size>
+            <width>0</width>
+            <height>150</height>
+           </size>
+          </property>
          </widget>
         </item>
         <item>
@@ -1306,20 +1316,26 @@
  </widget>
  <customwidgets>
   <customwidget>
+   <class>WalkmeshRenderer</class>
+   <extends>QWidget</extends>
+   <header location="global">toolset.gui.widgets.renderer.walkmesh</header>
+   <container>1</container>
+  </customwidget>
+  <customwidget>
    <class>LocalizedStringLineEdit</class>
    <extends>QWidget</extends>
-   <header location="global">toolset.gui.widgets.locstring_edit</header>
+   <header location="global">toolset.gui.widgets.edit.locstring</header>
    <container>1</container>
   </customwidget>
   <customwidget>
    <class>ComboBox2DA</class>
    <extends>QComboBox</extends>
-   <header location="global">toolset.gui.widgets.combobox_2da</header>
+   <header location="global">toolset.gui.widgets.edit.combobox_2da</header>
   </customwidget>
   <customwidget>
    <class>ColorEdit</class>
    <extends>QWidget</extends>
-   <header location="global">toolset.gui.widgets.color_edit</header>
+   <header location="global">toolset.gui.widgets.edit.color</header>
    <container>1</container>
   </customwidget>
  </customwidgets>
