@@ -644,7 +644,7 @@ class KOTORPatchingToolUI:
         column = 0
         for lang in sorted_languages:
             if not lang.is_8bit_encoding():
-                pass
+                continue
             lang_var = tk.BooleanVar()
             self.lang_vars[lang] = lang_var  # Store reference to the language variable
             ttk.Checkbutton(
