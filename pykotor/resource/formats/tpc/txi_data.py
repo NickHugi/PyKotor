@@ -275,7 +275,7 @@ def write_bitmap_font(
         if draw_boxes:
             # Draw a yellow box representing the grid cell
             yellow_box = (pixel_x1, pixel_y1, pixel_x2, pixel_y2)
-            #draw.rectangle(yellow_box, outline="yellow")    # Draw the character onto the image
+            draw.rectangle(yellow_box, outline="yellow")    # Draw the character onto the image
 
         if not char:  # for errors="ignore" tests. Coordinates match the whole cell size
             txi_font_info.upper_left_coords.append((norm_x1, 1 - norm_y1, 0))
@@ -297,9 +297,6 @@ def write_bitmap_font(
         except Exception as e:
             print(f"Failed to draw text with preferred arguments: {e!r}. Using fallback..")
             draw.text((text_x, text_y), char, align="center", font=pil_font, fill=(255, 255, 255, 255))
-
-        # Append to lists
-        baseline_heights.append(text_height)
 
         diff = 2
         if text_underhang > 0:
@@ -330,10 +327,7 @@ def write_bitmap_font(
         # Append to coordinate lists
         txi_font_info.upper_left_coords.append((norm_x1, norm_y1, 0))
         txi_font_info.lower_right_coords.append((norm_x2, norm_y2, 0))
-
-        # Append to coordinate lists
-        txi_font_info.upper_left_coords.append((norm_x1, norm_y1, 0))
-        txi_font_info.lower_right_coords.append((norm_x2, norm_y2, 0))
+        baseline_heights.append(text_height)
 
     # Check if baseline_heights is not empty to avoid division by zero
     if baseline_heights:
