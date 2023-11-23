@@ -589,7 +589,7 @@ class KOTORPatchingToolUI:
 
         # Draw bounds
         ttk.Label(self.root, text="Draw bounds:").grid(row=row, column=0)
-        ttk.Entry(self.root, textvariable=self.draw_bounds).grid(row=row, column=1)
+        ttk.Checkbutton(self.root, variable=self.draw_bounds).grid(row=row, column=1)
         row += 1
 
         # Resolution
