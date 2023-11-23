@@ -33,7 +33,7 @@ from pykotor.resource.formats.gff.gff_auto import bytes_gff
 from pykotor.resource.formats.rim.rim_auto import write_rim
 from pykotor.resource.formats.rim.rim_data import RIM
 from pykotor.resource.formats.tlk import TLK, read_tlk, write_tlk
-from pykotor.resource.formats.tpc.txi_data import write_bitmap_font
+from pykotor.resource.formats.tpc.txi_data import write_bitmap_font, write_bitmap_fonts
 from pykotor.resource.type import ResourceType
 from pykotor.tools.misc import is_capsule_file
 from pykotor.tools.path import CaseAwarePath, find_kotor_paths_from_default
@@ -355,20 +355,18 @@ def is_kotor_install_dir(path: os.PathLike | str) -> bool:
 
 
 def determine_input_path(path: Path):
-    if not path.exists():
-        log_output(f"--path1='{path}' does not exist on disk, cannot diff")
-        return
+    if not path.safe_exists():
+        return messagebox.showerror("Path does not exist", f"the path {path} does not exist on disk.")
 
     if is_kotor_install_dir(path):
-        patch_install(path)
-        return
+        return patch_install(path)
 
     if path.is_dir():
-        patch_folder(path)
-        return
+        return patch_folder(path)
 
     if path.is_file():
-        patch_file(path)
+        return patch_file(path)
+    return None
 
 
 def execute_patchloop_thread():
@@ -377,39 +375,38 @@ def execute_patchloop_thread():
     except Exception as e:  # noqa: BLE001
         log_output("Unhandled exception during the patching process.")
         log_output(traceback.format_exc())
-        messagebox.showerror("Error", f"An error occurred during patching\n{e!r}")
+        return messagebox.showerror("Error", f"An error occurred during patching\n{e!r}")
 
 def do_main_patchloop():
-    # Profiling logic
-    profiler = None
+    # Validate args
+    if not SCRIPT_GLOBALS.chosen_languages:
+        if SCRIPT_GLOBALS.translate:
+            return messagebox.showwarning("No language chosen", "Select a language first if you want to translate")
+        if SCRIPT_GLOBALS.create_fonts:
+            return messagebox.showwarning("No language chosen", "Select a language first to create fonts.")
     if SCRIPT_GLOBALS.use_profiler:
         profiler = cProfile.Profile()
         profiler.enable()
-    if not SCRIPT_GLOBALS.chosen_languages and SCRIPT_GLOBALS.translate:
-        return messagebox.showwarning("No language chosen", "Select a language first if you want to translate")
     if not SCRIPT_GLOBALS.chosen_languages or not SCRIPT_GLOBALS.translate:
         if not SCRIPT_GLOBALS.set_unskippable:
-            messagebox.showwarning("No options chosen", "Select what you want to do.")
-            return
+            return messagebox.showwarning("No options chosen", "Select what you want to do.")
+        determine_input_path(Path(SCRIPT_GLOBALS.path))
+    elif SCRIPT_GLOBALS.set_unskippable:
         determine_input_path(Path(SCRIPT_GLOBALS.path))
 
     # Patching logic
+    profiler = None
+    if SCRIPT_GLOBALS.create_fonts:
+        create_font_pack(lang)
     for lang in SCRIPT_GLOBALS.chosen_languages:
         main_patchloop_logic(lang)
-    if profiler and SCRIPT_GLOBALS.use_profiler:
-        profiler.disable()
-        profiler_output_file = Path("profiler_output.pstat").resolve()
-        profiler.dump_stats(str(profiler_output_file))
-        log_output(f"Profiler output saved to: {profiler_output_file}")
 
     log_output(f"Completed batch patcher of {SCRIPT_GLOBALS.path}")
-    messagebox.showinfo("Patching complete!", "Check the log file log_batch_patcher.log for more information.")
+    return messagebox.showinfo("Patching complete!", "Check the log file log_batch_patcher.log for more information.")
 
 
 def main_patchloop_logic(lang):
     print(f"Translating to {lang.name}...")
-    if SCRIPT_GLOBALS.create_fonts:
-        create_font_pack(lang)
     SCRIPT_GLOBALS.to_lang = lang
     SCRIPT_GLOBALS.pyinstaller = Translator(SCRIPT_GLOBALS.to_lang)
     SCRIPT_GLOBALS.pyinstaller.translation_option = SCRIPT_GLOBALS.translation_option  # type: ignore[assignment]
@@ -514,7 +511,6 @@ class KOTORPatchingToolUI:
         # Gamepaths Combobox
         self.gamepaths = ttk.Combobox(self.root, textvariable=self.path)
         self.gamepaths.grid(row=row, column=1, columnspan=2, sticky="ew")
-        self.gamepaths.set("Path to file, folder, or K1/TSL install path:")
         self.gamepaths["values"] = [str(path) for game in find_kotor_paths_from_default().values() for path in game]
         self.gamepaths.bind("<<ComboboxSelected>>", self.on_gamepaths_chosen)
 
@@ -530,14 +526,22 @@ class KOTORPatchingToolUI:
         ttk.Checkbutton(self.root, text="Yes", variable=self.set_unskippable).grid(row=row, column=1)
         row += 1
 
-        # Logging Enabled
-        ttk.Label(self.root, text="Enable Logging:").grid(row=row, column=0)
-        ttk.Checkbutton(self.root, text="Yes", variable=self.logging_enabled).grid(row=row, column=1)
-        row += 1
-
         # Translate
         ttk.Label(self.root, text="Translate:").grid(row=row, column=0)
         ttk.Checkbutton(self.root, text="Yes", variable=self.translate).grid(row=row, column=1)
+        row += 1
+
+        # Translation Option
+        ttk.Label(self.root, text="Translation Option:").grid(row=row, column=0)
+        self.translation_option = ttk.Combobox(self.root)
+        self.translation_option.grid(row=row, column=1)
+        self.translation_option["values"] = list(TranslationOption.__members__)
+        self.translation_option.set("GOOGLE_TRANSLATE")
+        row += 1
+
+        # Create Fonts
+        ttk.Label(self.root, text="Create Fonts:").grid(row=row, column=0)
+        ttk.Checkbutton(self.root, text="Yes", variable=self.create_fonts).grid(row=row, column=1)
         row += 1
 
         # Show/Hide output window
@@ -560,11 +564,6 @@ class KOTORPatchingToolUI:
         self.description_text.configure(font=font_obj)
         self.description_text.grid(row=0, column=0, sticky="nsew")
 
-        # Create Fonts
-        ttk.Label(self.root, text="Create Fonts:").grid(row=row, column=0)
-        ttk.Checkbutton(self.root, text="Yes", variable=self.create_fonts).grid(row=row, column=1)
-        row += 1
-
         # Font Path
         ttk.Label(self.root, text="Font Path:").grid(row=row, column=0)
         ttk.Entry(self.root, textvariable=self.font_path).grid(row=row, column=1)
@@ -576,18 +575,15 @@ class KOTORPatchingToolUI:
         ttk.Entry(self.root, textvariable=self.resolution).grid(row=row, column=1)
         row += 1
 
-        # Use Profiler
-        ttk.Label(self.root, text="Use Profiler:").grid(row=row, column=0)
-        ttk.Checkbutton(self.root, text="Yes", variable=self.use_profiler).grid(row=row, column=1)
-        row += 1
+        # Logging Enabled
+        #ttk.Label(self.root, text="Enable Logging:").grid(row=row, column=0)
+        #ttk.Checkbutton(self.root, text="Yes", variable=self.logging_enabled).grid(row=row, column=1)
+        #row += 1
 
-        # Translation Option
-        ttk.Label(self.root, text="Translation Option:").grid(row=row, column=0)
-        self.translation_option = ttk.Combobox(self.root)
-        self.translation_option.grid(row=row, column=1)
-        self.translation_option["values"] = list(TranslationOption.__members__)
-        self.translation_option.set("GOOGLE_TRANSLATE")
-        row += 1
+        # Use Profiler
+        #ttk.Label(self.root, text="Use Profiler:").grid(row=row, column=0)
+        #ttk.Checkbutton(self.root, text="Yes", variable=self.use_profiler).grid(row=row, column=1)
+        #row += 1
 
         # Start Patching Button
         ttk.Button(self.root, text="Start Patching", command=self.start_patching).grid(row=row, column=1)
@@ -609,8 +605,6 @@ class KOTORPatchingToolUI:
         self.language_frame.grid_remove()
         row += 1
 
-        ttk.Label(self.root, text="To Language:").grid(row=row, column=0)
-        row += 1
         # Create a Checkbutton for "ALL"
         all_var = tk.BooleanVar()
         ttk.Checkbutton(
@@ -689,7 +683,7 @@ class KOTORPatchingToolUI:
         try:
             path = Path(SCRIPT_GLOBALS.path).resolve()
         except OSError as e:
-            return messagebox.showerror("Error", f"Invalid path\n{e!r}")
+            return messagebox.showerror("Error", f"Invalid path '{SCRIPT_GLOBALS.path}'\n{e!r}")
         else:
             if not path.exists():
                 return messagebox.showerror("Error", "Invalid path")
@@ -703,7 +697,7 @@ class KOTORPatchingToolUI:
 
 def create_font_pack(lang: Language):
     print(f"Creating font pack for '{lang.name}'...")
-    write_bitmap_font(Path.cwd() / f"font_pack_{lang.name}.tga", SCRIPT_GLOBALS.font_path, (SCRIPT_GLOBALS.resolution, SCRIPT_GLOBALS.resolution), lang)
+    write_bitmap_fonts(Path.cwd(), SCRIPT_GLOBALS.font_path, (SCRIPT_GLOBALS.resolution, SCRIPT_GLOBALS.resolution), lang)
 
 if __name__ == "__main__":
 

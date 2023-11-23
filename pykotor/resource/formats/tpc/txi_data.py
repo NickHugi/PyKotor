@@ -4,7 +4,6 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-
 from pykotor.utility.path import Path
 
 if TYPE_CHECKING:
@@ -161,8 +160,8 @@ def get_character_dimensions_fallback(font, char: str, point_size: int, DPI=96):
 def get_character_dimensions(ttfont, char: str, point_size: int, DPI=96):
     from fontTools.pens.boundsPen import BoundsPen
     from fontTools.pens.ttGlyphPen import TTGlyphPen
-    units_per_em = ttfont['head'].unitsPerEm
-    cmap = next(c for c in ttfont['cmap'].tables if c.format == 4)
+    units_per_em = ttfont["head"].unitsPerEm
+    cmap = next(c for c in ttfont["cmap"].tables if c.format == 4)
     glyph_id = cmap.cmap.get(ord(char))
 
     if glyph_id is None:
@@ -185,7 +184,7 @@ def get_character_dimensions(ttfont, char: str, point_size: int, DPI=96):
     glyph = pen.glyph()
 
     # Get glyph's bounding box
-    glyf_table = ttfont['glyf']
+    glyf_table = ttfont["glyf"]
     boundsPen = BoundsPen(glyf_table)
     glyph.draw(boundsPen, glyf_table)
 
@@ -242,9 +241,10 @@ def write_bitmap_font(
     draw = ImageDraw.Draw(charset_image)
 
     average_baseline_height = ascent / font_units_per_em
-    baselineheight2 = average_baseline_height / resolution[1]
-    txi_font_info.baselineheight = average_baseline_height / resolution[1]
+    #txi_font_info.baselineheight = average_baseline_height / resolution[1]
     #txi_font_info.fontheight = grid_cell_size / font_units_per_em
+    txi_font_info.baselineheight = 0.080000
+    txi_font_info.fontheight = 0.100000
 
     txi_font_info.upper_left_coords = []
     txi_font_info.lower_right_coords = []
@@ -298,17 +298,17 @@ def write_bitmap_font(
             print(f"Failed to draw text with preferred arguments: {e!r}. Using fallback..")
             draw.text((text_x, text_y), char, align="center", font=pil_font, fill=(255, 255, 255, 255))
 
-        diff = 2
+        diff = 3
         if text_underhang > 0:
-            diff = 4
-            pixel_y2 += 2
+            diff = 5
+            pixel_y2 += 3
         pixel_x2 = pixel_x1 + char_width
         pixel_y1 = pixel_y2 - char_height - diff # top
         pixel_y2 = pixel_y2  # bottom
         if draw_boxes:
             # Draw a red rectangle around the character based on actual text dimensions
             red_box = (pixel_x1, pixel_y1, pixel_x2, pixel_y2)
-            draw.rectangle(red_box, outline="red")
+            #draw.rectangle(red_box, outline="red")
 
         # Calculate normalized coordinates for the red box
         norm_x1 = pixel_x1 / resolution[0]
@@ -332,7 +332,7 @@ def write_bitmap_font(
     # Check if baseline_heights is not empty to avoid division by zero
     if baseline_heights:
         average_baseline_height: float = sum(baseline_heights) / len(baseline_heights)
-        txi_font_info.baselineheight = average_baseline_height / resolution[1]
+        #txi_font_info.baselineheight = average_baseline_height / resolution[1]
 
     target_path.parent.mkdir(parents=True, exist_ok=True)
     charset_image.save(target_path.with_suffix(".tga"), format="TGA")
