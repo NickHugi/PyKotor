@@ -125,11 +125,9 @@ class Language(IntEnum):
     MALAGASY = 93
     MALAY_LATIN = 94
     MAORI = 95
-    MARSHALLESE = 96
-    MOLDOVAN_LATIN = 97
-    PALAUAN = 98
-    SAMOAN = 99
-    SOMALI = 100
+    MOLDOVAN_LATIN = 96
+    SAMOAN = 97
+    SOMALI = 98
 
     # The following languages are supported in the GFF/TLK file formats, but are not encodable to 8-bit without significant loss of information
     # therefore are incompatible with KOTOR.
@@ -280,14 +278,19 @@ class Language(IntEnum):
         if self in [
             Language.MALAY_LATIN,
             Language.SAMOAN,
+            Language.SOMALI,
         ]:
             return "ISO-8859-1"
         if self in [
-            Language.ESPERANTO,
             Language.AYMARA,
+            Language.ESPERANTO,
             Language.MALAGASY,
         ]:
             return "ISO-8859-3"
+        if self in [
+            Language.KURDISH_LATIN,
+        ]:
+            return "ISO-8859-9"
         if self in [
             Language.KINYARWANDA,
         ]:
@@ -405,9 +408,7 @@ class Language(IntEnum):
             Language.MALAGASY: "mg",
             Language.MALAY_LATIN: "ms-Latn",
             Language.MAORI: "mi",
-            Language.MARSHALLESE: "mh",
             Language.MOLDOVAN_LATIN: "mo-Latn",
-            Language.PALAUAN: "pau",
             Language.SAMOAN: "sm",
             Language.SOMALI: "so",
             Language.KOREAN: "ko",
