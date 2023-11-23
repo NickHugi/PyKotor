@@ -698,7 +698,7 @@ class KOTORPatchingToolUI:
 
 def create_font_pack(lang: Language):
     print(f"Creating font pack for '{lang.name}'...")
-    write_bitmap_fonts(Path.cwd(), SCRIPT_GLOBALS.font_path, (SCRIPT_GLOBALS.resolution, SCRIPT_GLOBALS.resolution), lang)
+    write_bitmap_fonts(Path.cwd() / lang.name, SCRIPT_GLOBALS.font_path, (SCRIPT_GLOBALS.resolution, SCRIPT_GLOBALS.resolution), lang)
 
 if __name__ == "__main__":
 

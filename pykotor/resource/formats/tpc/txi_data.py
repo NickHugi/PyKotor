@@ -80,6 +80,7 @@ class TXIFontInformation(TXIBaseInformation):
 
 def write_bitmap_fonts(target: os.PathLike | str, font_path: os.PathLike | str, resolution: tuple[int, int], lang: Language) -> None:
     font_path, target_path = ((p if isinstance(p, Path) else Path(p)).resolve() for p in (font_path, target))
+    target_path.mkdir(parents=True, exist_ok=True)
     default_font_names = [
         "fnt_galahad14",
         "dialogfont10x10",
