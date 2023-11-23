@@ -30,3 +30,4 @@ logs/*
 .vscode/PythonImportHelper-v2-Completion.json
 nuitka_dist
 pyinstaller.exe
+Tools/HolocronToolset/toolset/kits

@@ -1,3 +1,0 @@
-wateralpha 0.50
-bumpyshinytexture CM_asith
-bumpmaptexture LSI_win01bmp

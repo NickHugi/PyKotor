@@ -221,7 +221,7 @@ class IndoorMapBuilder(QMainWindow):
         self._setupKits()
 
     def buildMap(self) -> None:
-        path = f"{self._installation.module_path()}{self._map.moduleId}.mod"
+        path = f"{self._installation.module_path() / self._map.moduleId}.mod"
 
         def task():
             return self._map.build(self._installation, self._kits, path)

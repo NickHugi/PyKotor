@@ -1,3 +1,0 @@
-envmaptexture CM_asith
-
-
