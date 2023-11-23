@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from typing import TYPE_CHECKING
+from pykotor.utility.misc import is_float
 
 from pykotor.utility.path import Path
 
@@ -78,7 +79,7 @@ class TXIFontInformation(TXIBaseInformation):
         self.upper_left_coords: list[tuple[float, float, int]]  # each float is 0 to 1, 3rd tuple item is always 0
         self.lower_right_coords: list[tuple[float, float, int]]  # each float is 0 to 1, 3rd tuple item is always 0
 
-def write_bitmap_fonts(target: os.PathLike | str, font_path: os.PathLike | str, resolution: tuple[int, int], lang: Language) -> None:
+def write_bitmap_fonts(target: os.PathLike | str, font_path: os.PathLike | str, resolution: tuple[int, int], lang: Language, texturewidth = 2.160000, draw_box=False) -> None:
     font_path, target_path = ((p if isinstance(p, Path) else Path(p)).resolve() for p in (font_path, target))
     target_path.mkdir(parents=True, exist_ok=True)
     default_font_names = [
@@ -102,7 +103,7 @@ def write_bitmap_fonts(target: os.PathLike | str, font_path: os.PathLike | str, 
         "fnt_dialog16x16",
     ]
     for font_name in default_font_names:
-        write_bitmap_font(target_path / font_name, font_path, resolution, lang)
+        write_bitmap_font(target_path / font_name, font_path, resolution, lang, 0, draw_box, texturewidth)
 
 def coords_to_boxes(upper_left_coords, lower_right_coords, resolution):
     boxes = []
@@ -208,13 +209,15 @@ def write_bitmap_font(
     font_path: os.PathLike | str,
     resolution: tuple[int, int],
     lang: Language,
-    char_range: tuple[int, int] = (0, 256),
     spacingR = 0,
     draw_boxes = True,
+    texturewidth = 2.160000,
+    char_range: tuple[int, int] = (0, 256),
 ) -> None:
     """Generates a bitmap font (TGA and TXI) from a TTF font file."""
     from fontTools.ttLib import TTFont
     from PIL import Image, ImageDraw, ImageFont  # Import things here to separate from HoloPatcher code.
+    texturewidth = float(texturewidth) if is_float(texturewidth) else 2.16  # TODO: fix batch patcher arg validator
     font_path, target_path = ((p if isinstance(p, Path) else Path(p)).resolve() for p in (font_path, target))
 
     txi_font_info = TXIFontInformation()
@@ -229,10 +232,10 @@ def write_bitmap_font(
     ascent, descent, font_units_per_em = get_font_info(font, grid_cell_size)
 
     # Set the texture resolution in proportion
-    txi_font_info.texturewidth = resolution[0] / 100
+    txi_font_info.texturewidth = texturewidth
     txi_font_info.fontwidth = 1
     txi_font_info.fontheight = 1
-    txi_font_info.caretindent = 0.1
+    txi_font_info.caretindent = -0.010000
 
     # Assuming a square grid cell, set the font size to fit within the cell
     pil_font = ImageFont.truetype(str(font_path), grid_cell_size)
@@ -244,8 +247,8 @@ def write_bitmap_font(
     average_baseline_height = ascent / font_units_per_em
     #txi_font_info.baselineheight = average_baseline_height / resolution[1]
     #txi_font_info.fontheight = grid_cell_size / font_units_per_em
-    txi_font_info.baselineheight = 0.080000
-    txi_font_info.fontheight = 0.100000
+    txi_font_info.baselineheight = 0.150000
+    txi_font_info.fontheight = 0.080000
 
     txi_font_info.upper_left_coords = []
     txi_font_info.lower_right_coords = []
@@ -299,17 +302,17 @@ def write_bitmap_font(
             print(f"Failed to draw text with preferred arguments: {e!r}. Using fallback..")
             draw.text((text_x, text_y), char, align="center", font=pil_font, fill=(255, 255, 255, 255))
 
-        diff = 3
+        diff = 4
         if text_underhang > 0:
-            diff = 5
-            pixel_y2 += 3
+            diff = 7
+            pixel_y2 += 4
         pixel_x2 = pixel_x1 + char_width
         pixel_y1 = pixel_y2 - char_height - diff # top
         pixel_y2 = pixel_y2  # bottom
         if draw_boxes:
             # Draw a red rectangle around the character based on actual text dimensions
             red_box = (pixel_x1, pixel_y1, pixel_x2, pixel_y2)
-            #draw.rectangle(red_box, outline="red")
+            draw.rectangle(red_box, outline="red")
 
         # Calculate normalized coordinates for the red box
         norm_x1 = pixel_x1 / resolution[0]

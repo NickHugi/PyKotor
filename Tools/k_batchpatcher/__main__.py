@@ -21,6 +21,7 @@ if getattr(sys, "frozen", False) is False:
             sys.path.remove(str(pykotor_path))
         sys.path.insert(0, str(pykotor_path.parent))
 
+
 from pykotor.common.language import Language, LocalizedString
 from pykotor.common.stream import BinaryWriter
 from pykotor.extract.capsule import Capsule
@@ -38,6 +39,7 @@ from pykotor.resource.type import ResourceType
 from pykotor.tools.misc import is_capsule_file
 from pykotor.tools.path import CaseAwarePath, find_kotor_paths_from_default
 from pykotor.tslpatcher.logger import PatchLogger
+from pykotor.utility.misc import is_float, is_int
 from pykotor.utility.path import Path, PurePath, PureWindowsPath
 from Tools.k_batchpatcher.translate.language_translator import TranslationOption, Translator, get_language_code
 
@@ -416,6 +418,10 @@ def main_patchloop_logic(lang):
     SCRIPT_GLOBALS.pyinstaller.translation_option = SCRIPT_GLOBALS.translation_option  # type: ignore[assignment]
     determine_input_path(Path(SCRIPT_GLOBALS.path))
 
+def create_font_pack(lang: Language):
+    print(f"Creating font pack for '{lang.name}'...")
+    write_bitmap_fonts(Path.cwd() / lang.name, SCRIPT_GLOBALS.font_path, (SCRIPT_GLOBALS.resolution, SCRIPT_GLOBALS.resolution), lang, SCRIPT_GLOBALS.texturewidth, SCRIPT_GLOBALS.draw_bounds)
+
 
 def assign_to_globals(instance):
     for attr, value in instance.__dict__.items():
@@ -444,8 +450,10 @@ class KOTORPatchingToolUI:
         self.to_lang = tk.StringVar(value=parser_args.to_lang)
         self.create_fonts = tk.BooleanVar(value=parser_args.create_fonts)
         self.font_path = tk.StringVar(value=parser_args.font_path)
+        self.texturewidth = tk.StringVar(value=parser_args.font_path)
         self.resolution = tk.IntVar(value=parser_args.resolution or 512)
         self.use_profiler = tk.BooleanVar(value=parser_args.use_profiler)
+        self.draw_bounds = tk.BooleanVar(value=False)
 
         # Middle area for text and scrollbar
         self.output_frame = tk.Frame(self.root)
@@ -574,6 +582,16 @@ class KOTORPatchingToolUI:
         ttk.Button(self.root, text="Browse", command=self.browse_font_path).grid(row=row, column=2)
         row += 1
 
+        # Texture Width
+        ttk.Label(self.root, text="Texturewidth:").grid(row=row, column=0)
+        ttk.Entry(self.root, textvariable=self.texturewidth).grid(row=row, column=1)
+        row += 1
+
+        # Draw bounds
+        ttk.Label(self.root, text="Draw bounds:").grid(row=row, column=0)
+        ttk.Entry(self.root, textvariable=self.draw_bounds).grid(row=row, column=1)
+        row += 1
+
         # Resolution
         ttk.Label(self.root, text="Resolution:").grid(row=row, column=0)
         ttk.Entry(self.root, textvariable=self.resolution).grid(row=row, column=1)
@@ -590,7 +608,7 @@ class KOTORPatchingToolUI:
         #row += 1
 
         # Start Patching Button
-        ttk.Button(self.root, text="Start Patching", command=self.start_patching).grid(row=row, column=1)
+        ttk.Button(self.root, text="Run All Operations", command=self.start_patching).grid(row=row, column=1)
 
 
     def create_language_checkbuttons(self, row):
@@ -626,7 +644,7 @@ class KOTORPatchingToolUI:
         column = 0
         for lang in sorted_languages:
             if not lang.is_8bit_encoding():
-                continue
+                pass
             lang_var = tk.BooleanVar()
             self.lang_vars[lang] = lang_var  # Store reference to the language variable
             ttk.Checkbutton(
@@ -683,6 +701,8 @@ class KOTORPatchingToolUI:
 
     def start_patching(self):
         assign_to_globals(self)
+        if is_float(SCRIPT_GLOBALS.texturewidth):
+            SCRIPT_GLOBALS.texturewidth = float(SCRIPT_GLOBALS.texturewidth)
         # Mapping UI input to script logic
         try:
             path = Path(SCRIPT_GLOBALS.path).resolve()
@@ -698,10 +718,6 @@ class KOTORPatchingToolUI:
         SCRIPT_GLOBALS.install_thread = Thread(target=execute_patchloop_thread)
         SCRIPT_GLOBALS.install_thread.start()
         return None
-
-def create_font_pack(lang: Language):
-    print(f"Creating font pack for '{lang.name}'...")
-    write_bitmap_fonts(Path.cwd() / lang.name, SCRIPT_GLOBALS.font_path, (SCRIPT_GLOBALS.resolution, SCRIPT_GLOBALS.resolution), lang)
 
 if __name__ == "__main__":
 

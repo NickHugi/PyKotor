@@ -167,6 +167,35 @@ class Language(IntEnum):
             - Check individual languages and return their specific encodings.
         """
         if self in (
+            Language.ALBANIAN,
+            Language.BOSNIAN_LATIN,
+            Language.CROATIAN,
+            Language.CZECH,
+            Language.HUNGARIAN,
+            Language.MOLDOVAN_LATIN,
+            Language.POLISH,
+            Language.ROMANIAN,  # before 1993 reform
+            Language.SERBIAN_LATIN,
+            Language.SLOVAK,
+            Language.SLOVENE,
+        ):
+            return "cp1250"
+        if self in (
+            Language.AZERBAIJANI_CYRILLIC,
+            Language.BOSNIAN_CYRILLIC,
+            Language.BULGARIAN,
+            Language.BELARISIAN,
+            Language.MACEDONIAN,
+            Language.RUSSIAN,
+            Language.SERBIAN_CYRILLIC,
+            Language.TAJIK,
+            Language.TATAR_CYRILLIC,
+            Language.TURKMEN_CYRILLIC,
+            Language.UKRAINIAN,
+            Language.UZBEK,
+        ):
+            return "cp1251"
+        if self in (
             Language.ENGLISH,
             Language.FRENCH,
             Language.GERMAN,
@@ -203,6 +232,7 @@ class Language(IntEnum):
             Language.LATIN,
             Language.LUXEMBOURGISH,
             Language.MALTESE,
+            Language.MAORI,
             Language.NORWEGIAN,
             Language.OCCITAN,
             Language.PORTUGUESE,
@@ -224,39 +254,8 @@ class Language(IntEnum):
             Language.ZULU,
         ):
             return "cp1252"
-        if self in (
-            Language.AZERBAIJANI_CYRILLIC,
-            Language.BOSNIAN_CYRILLIC,
-            Language.BULGARIAN,
-            Language.BELARISIAN,
-            Language.MACEDONIAN,
-            Language.RUSSIAN,
-            Language.SERBIAN_CYRILLIC,
-            Language.TAJIK,
-            Language.TATAR_CYRILLIC,
-            Language.TURKMEN_CYRILLIC,
-            Language.UKRAINIAN,
-            Language.UZBEK,
-        ):
-            return "cp1251"
-
-        if self in (
-            Language.POLISH,
-            Language.ALBANIAN,
-            Language.BOSNIAN_LATIN,
-            Language.CZECH,
-            Language.SLOVAK,
-            Language.SLOVENE,
-            Language.CROATIAN,
-            Language.SERBIAN_LATIN,
-            Language.HUNGARIAN,
-            Language.ROMANIAN,  # before 1993 reform
-        ):
-            return "cp1250"
         if self == Language.GREEK:
             return "cp1253"
-        if self == Language.ESPERANTO:
-            return "ISO-8859-3"
         if self in (
             Language.AZERBAIJANI_LATIN,
             Language.TATAR_LATIN,
@@ -278,6 +277,21 @@ class Language(IntEnum):
             return "cp1258"
         if self == Language.THAI:
             return "cp874"
+        if self in [
+            Language.MALAY_LATIN,
+            Language.SAMOAN,
+        ]:
+            return "ISO-8859-1"
+        if self in [
+            Language.ESPERANTO,
+            Language.AYMARA,
+            Language.MALAGASY,
+        ]:
+            return "ISO-8859-3"
+        if self in [
+            Language.KINYARWANDA,
+        ]:
+            return "ISO-8859-10"
 
         # The following languages/encodings are not 8-bit and need additional information in order to be supported.
         if self == Language.KOREAN:
