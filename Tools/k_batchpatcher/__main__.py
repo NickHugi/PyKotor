@@ -470,6 +470,8 @@ class KOTORPatchingToolUI:
 
         self.lang_vars: dict[Language, tk.BooleanVar] = {}
         self.language_row: int
+        self.install_running = False
+        self.install_button = None
         self.language_frame = ttk.Frame(root)  # Frame to contain language checkboxes
         SCRIPT_GLOBALS.chosen_languages = []
 
@@ -608,7 +610,7 @@ class KOTORPatchingToolUI:
         #row += 1
 
         # Start Patching Button
-        ttk.Button(self.root, text="Run All Operations", command=self.start_patching).grid(row=row, column=1)
+        self.install_button = ttk.Button(self.root, text="Run All Operations", command=self.start_patching).grid(row=row, column=1)
 
 
     def create_language_checkbuttons(self, row):
@@ -700,23 +702,32 @@ class KOTORPatchingToolUI:
             self.font_path.set(file)
 
     def start_patching(self):
-        assign_to_globals(self)
-        if is_float(SCRIPT_GLOBALS.texturewidth):
-            SCRIPT_GLOBALS.texturewidth = float(SCRIPT_GLOBALS.texturewidth)
-        # Mapping UI input to script logic
+        if self.install_running:
+            return messagebox.showerror("Install already running", "Please wait for all operations to complete. Check the console/output for details.")
+        self.install_button.config(state=tk.ENABLED)
+        self.install_running = True
         try:
-            path = Path(SCRIPT_GLOBALS.path).resolve()
-        except OSError as e:
-            return messagebox.showerror("Error", f"Invalid path '{SCRIPT_GLOBALS.path}'\n{e!r}")
-        else:
-            if not path.exists():
-                return messagebox.showerror("Error", "Invalid path")
-        SCRIPT_GLOBALS.translation_option = TranslationOption[self.translation_option.get()]
-        self.toggle_output_frame(tk.BooleanVar(value=False))
-        self.initialize_logger()
+            assign_to_globals(self)
+            if is_float(SCRIPT_GLOBALS.texturewidth):
+                SCRIPT_GLOBALS.texturewidth = float(SCRIPT_GLOBALS.texturewidth)
+            # Mapping UI input to script logic
+            try:
+                path = Path(SCRIPT_GLOBALS.path).resolve()
+            except OSError as e:
+                return messagebox.showerror("Error", f"Invalid path '{SCRIPT_GLOBALS.path}'\n{e!r}")
+            else:
+                if not path.exists():
+                    return messagebox.showerror("Error", "Invalid path")
+            SCRIPT_GLOBALS.translation_option = TranslationOption[self.translation_option.get()]
+            self.toggle_output_frame(tk.BooleanVar(value=False))
+            self.initialize_logger()
 
-        SCRIPT_GLOBALS.install_thread = Thread(target=execute_patchloop_thread)
-        SCRIPT_GLOBALS.install_thread.start()
+            SCRIPT_GLOBALS.install_thread = Thread(target=execute_patchloop_thread)
+            SCRIPT_GLOBALS.install_thread.start()
+        except Exception as e:
+            messagebox.showerror(f"Unhandled exception: {e}")
+            self.install_running = False
+            self.install_button.config(state=tk.DISABLED)
         return None
 
 if __name__ == "__main__":
