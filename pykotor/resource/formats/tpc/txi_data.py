@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from typing import TYPE_CHECKING
+from pykotor.utility.misc import is_float
 
 from pykotor.utility.path import Path
 
@@ -64,7 +65,7 @@ class TXIFontInformation(TXIBaseInformation):
         super().__init__()
         self.numchars: int = 256
         self.upperleftcoords: int = 256
-        self.lowerrightcoords: int = 0
+        self.lowerrightcoords: int = 256
         self.spacingB: float = 0  # Float between 0 and 1. spacingB should be left alone.
         self.isdoublebyte: int = 0  # unused?
 
@@ -75,11 +76,12 @@ class TXIFontInformation(TXIBaseInformation):
         self.spacingR: float  # Float between 0 and 1. Do NOT exceed the maximum of 0.002600
         self.caretindent: float  # Float between 0 and 1.
         # self.dbmapping:  # unused in KOTOR
-        self.upper_left_coords: list[tuple[float, float, int]]
-        self.lower_right_coords: list[tuple[float, float, int]]
+        self.upper_left_coords: list[tuple[float, float, int]]  # each float is 0 to 1, 3rd tuple item is always 0
+        self.lower_right_coords: list[tuple[float, float, int]]  # each float is 0 to 1, 3rd tuple item is always 0
 
-def write_bitmap_fonts(target: os.PathLike | str, font_path: os.PathLike | str, resolution: tuple[int, int], lang: Language) -> None:
+def write_bitmap_fonts(target: os.PathLike | str, font_path: os.PathLike | str, resolution: tuple[int, int], lang: Language, texturewidth = 2.160000, draw_box=False) -> None:
     font_path, target_path = ((p if isinstance(p, Path) else Path(p)).resolve() for p in (font_path, target))
+    target_path.mkdir(parents=True, exist_ok=True)
     default_font_names = [
         "fnt_galahad14",
         "dialogfont10x10",
@@ -93,7 +95,7 @@ def write_bitmap_fonts(target: os.PathLike | str, font_path: os.PathLike | str, 
 #        "fnt_console",
         "fnt_credits",
         "fnt_creditsa",
-        "fnt_creditsa",
+        "fnt_creditsb",
         "fnt_d10x10b",
         "fnt_d16x16",
         "fnt_d16x16a",
@@ -101,74 +103,165 @@ def write_bitmap_fonts(target: os.PathLike | str, font_path: os.PathLike | str, 
         "fnt_dialog16x16",
     ]
     for font_name in default_font_names:
-        write_bitmap_font(target_path / font_name, font_path, resolution, lang)
+        write_bitmap_font(target_path / font_name, font_path, resolution, lang, 0, draw_box, texturewidth)
+
+def coords_to_boxes(upper_left_coords, lower_right_coords, resolution):
+    boxes = []
+    for (ulx, uly, _), (lrx, lry, _) in zip(upper_left_coords, lower_right_coords):
+        # Convert normalized coords back to pixel coords
+        pixel_ulx = ulx * resolution[0]
+        pixel_uly = (1 - uly) * resolution[1]  # Y is inverted
+        pixel_lrx = lrx * resolution[0]
+        pixel_lry = (1 - lry) * resolution[1]  # Y is inverted
+        boxes.append([int(pixel_ulx), int(pixel_uly), int(pixel_lrx), int(pixel_lry)])
+    return boxes
+
+def boxes_to_coords(boxes, resolution):
+    upper_left_coords = []
+    lower_right_coords = []
+
+    for box in boxes:
+        ulx, uly, lrx, lry = box
+        # Convert pixel coords to normalized coords
+        norm_ulx = ulx / resolution[0]
+        norm_uly = 1 - (uly / resolution[1])  # Y is inverted
+        norm_lrx = lrx / resolution[0]
+        norm_lry = 1 - (lry / resolution[1])  # Y is inverted
+        upper_left_coords.append([norm_ulx, norm_uly, 0])
+        lower_right_coords.append([norm_lrx, norm_lry, 0])
+
+    return upper_left_coords, lower_right_coords
+
+def get_font_info(font, point_size: int):
+    units_per_em = font["head"].unitsPerEm
+    ascent = font["hhea"].ascent * point_size / units_per_em
+    descent = font["hhea"].descent * point_size / units_per_em
+    return ascent, descent, units_per_em
+
+def get_character_dimensions_fallback(font, char: str, point_size: int, DPI=96):
+    cmap = font["cmap"].getcmap(3, 1).cmap
+    glyph_set = font.getGlyphSet()
+    units_per_em = font["head"].unitsPerEm
+    glyph_name = cmap.get(ord(char), ".notdef")
+    glyph = glyph_set[glyph_name]
+
+    point_to_pixels = point_size / 72 * DPI
+    width = glyph.width * point_to_pixels / units_per_em if glyph.width != 0 else point_size
+    height = None
+    # Use the font's ascent and descent to calculate height
+    ascent = font["hhea"].ascent * point_to_pixels / units_per_em
+    descent = -font["hhea"].descent * point_to_pixels / units_per_em  # descent is typically negative
+    height = ascent + descent
+    if hasattr(glyph, "yMax") and hasattr(glyph, "yMin") and glyph.yMax != glyph.yMin:
+        height = (glyph.yMax - glyph.yMin) * point_to_pixels / units_per_em
+    else:
+        height = point_size  # Default height if yMax and yMin are not available or the same
+
+    return width, height
+
+def get_character_dimensions(ttfont, char: str, point_size: int, DPI=96):
+    from fontTools.pens.boundsPen import BoundsPen
+    from fontTools.pens.ttGlyphPen import TTGlyphPen
+    units_per_em = ttfont["head"].unitsPerEm
+    cmap = next(c for c in ttfont["cmap"].tables if c.format == 4)
+    glyph_id = cmap.cmap.get(ord(char))
+
+    if glyph_id is None:
+        print(f"Character {char} not found in font.")
+        return *get_character_dimensions_fallback(ttfont, char, point_size, DPI), 0, 0
+
+    # Glyph metrics
+    h_metrics = ttfont["hmtx"].metrics[glyph_id]
+    glyph_width = h_metrics[0]
+
+    # Create a glyph pen
+    pen = TTGlyphPen(ttfont.getGlyphSet())
+
+    # Draw the glyph
+    try:
+        ttfont.getGlyphSet()[char].draw(pen)
+    except Exception as e:
+        print(f"Character '{char}':", repr(e))
+        return *get_character_dimensions_fallback(ttfont, char, point_size, DPI), 0, 0
+    glyph = pen.glyph()
+
+    # Get glyph's bounding box
+    glyf_table = ttfont["glyf"]
+    boundsPen = BoundsPen(glyf_table)
+    glyph.draw(boundsPen, glyf_table)
+
+    xMin, yMin, xMax, yMax = boundsPen.bounds
+    point_to_pixels = point_size / 72 * DPI
+    ascent = ttfont["hhea"].ascent * point_to_pixels / units_per_em
+    descent = -ttfont["hhea"].descent * point_to_pixels / units_per_em  # descent is typically negative
+    height = ascent + descent
+    scale = point_size / units_per_em * DPI / 72
+    width = glyph_width * scale
+    #height = (yMax - yMin) * scale
+    overhang = yMax * scale if yMax > 0 else 0
+    underhang = abs(yMin) * scale if yMin < 0 else 0
+
+    return width, height, overhang, underhang
+
 
 def write_bitmap_font(
     target: os.PathLike | str,
     font_path: os.PathLike | str,
     resolution: tuple[int, int],
     lang: Language,
+    spacingR = 0,
+    draw_boxes = True,
+    texturewidth = 2.160000,
     char_range: tuple[int, int] = (0, 256),
 ) -> None:
     """Generates a bitmap font (TGA and TXI) from a TTF font file."""
+    from fontTools.ttLib import TTFont
     from PIL import Image, ImageDraw, ImageFont  # Import things here to separate from HoloPatcher code.
+    texturewidth = float(texturewidth) if is_float(texturewidth) else 2.16  # TODO: fix batch patcher arg validator
     font_path, target_path = ((p if isinstance(p, Path) else Path(p)).resolve() for p in (font_path, target))
 
     txi_font_info = TXIFontInformation()
-
-    # idk
-    txi_font_info.spacingR = 0.0
-
-    # Set the texture resolution in proportion
-    txi_font_info.texturewidth = resolution[0] / 100
-    txi_font_info.fontheight = resolution[1] / max(resolution)
+    txi_font_info.spacingR = spacingR
 
     # Calculate grid cell size for a 16x16 grid
     characters_per_row = 16
     grid_cell_size = min(resolution[0] // characters_per_row, resolution[1] // characters_per_row)
 
+    # Load the TTF font with fontTools
+    font = TTFont(str(font_path))
+    ascent, descent, font_units_per_em = get_font_info(font, grid_cell_size)
+
+    # Set the texture resolution in proportion
+    txi_font_info.texturewidth = texturewidth
+    txi_font_info.fontwidth = 1
+    txi_font_info.fontheight = 1
+    txi_font_info.caretindent = -0.010000
+
     # Assuming a square grid cell, set the font size to fit within the cell
-    font_size = grid_cell_size - 4  # Subtracting a bit for padding
-    pil_font = ImageFont.truetype(str(font_path), font_size)
+    pil_font = ImageFont.truetype(str(font_path), grid_cell_size)
 
     # Create charset image
     charset_image = Image.new("RGBA", resolution, (0, 0, 0, 0))
     draw = ImageDraw.Draw(charset_image)
 
-    character_widths = []
+    average_baseline_height = ascent / font_units_per_em
+    #txi_font_info.baselineheight = average_baseline_height / resolution[1]
+    #txi_font_info.fontheight = grid_cell_size / font_units_per_em
+    txi_font_info.baselineheight = 0.150000
+    txi_font_info.fontheight = 0.080000
+
     txi_font_info.upper_left_coords = []
     txi_font_info.lower_right_coords = []
 
     ascent, descent = pil_font.getmetrics()
     max_char_height = ascent + descent
     baseline_heights = []
-    x, y = 0, 0
     for i in range(*char_range):  # Standard ASCII set
-        char = bytes([i]).decode(lang.get_encoding(), errors="replace")
-        bbox = draw.textbbox((0, 0), char, font=pil_font)
-        text_width = bbox[2] - bbox[0]
-        text_height = bbox[3] - bbox[1]
-
-        text_x = x + (grid_cell_size - text_width) // 2  # Center horizontally
-        text_y = y + (grid_cell_size - (max_char_height)) // 2  # Adjust vertical position upwards
-
-        try:  # libraqm
-            draw.text((text_x, text_y), char, language=lang.get_bcp47_code(), font=pil_font, fill=(255, 255, 255, 255))
-        except Exception as e:
-            print(f"Failed to draw text with preferred arguments: {e!r}. Using fallback..")
-            draw.text((text_x, text_y), char, font=pil_font, fill=(255, 255, 255, 255))
-
-        # Calculate normalized coordinates
-        #norm_x1 = text_x / resolution[0]
-        #norm_y1 = text_y / resolution[1]
-        #norm_x2 = (text_x + text_width) / resolution[0]
-        #norm_y2 = (text_y + text_height) / resolution[1]
+        char = bytes([i]).decode(lang.get_encoding(), errors="ignore")
 
         # Determine grid position
         grid_x = i % 16
         grid_y = i // 16
-        x = grid_x * grid_cell_size
-        y = grid_y * grid_cell_size
 
         # Calculate normalized coordinates for upper left
         norm_x1 = grid_x / 16
@@ -178,21 +271,72 @@ def write_bitmap_font(
         norm_x2 = (grid_x + 1) / 16
         norm_y2 = (grid_y + 1) / 16
 
-        # Append to lists
-        txi_font_info.upper_left_coords.append((norm_x1, 1 - norm_y1, 0))
-        txi_font_info.lower_right_coords.append((norm_x2, 1 - norm_y2, 0))
-        character_widths.append(text_width)
-        baseline_heights.append(bbox[1])
+        pixel_x1 = norm_x1 * resolution[0]
+        pixel_y1 = norm_y1 * resolution[1]
+        pixel_x2 = norm_x2 * resolution[0]
+        pixel_y2 = norm_y2 * resolution[1]
+
+        if draw_boxes:
+            # Draw a yellow box representing the grid cell
+            yellow_box = (pixel_x1, pixel_y1, pixel_x2, pixel_y2)
+            draw.rectangle(yellow_box, outline="yellow")    # Draw the character onto the image
+
+        if not char:  # for errors="ignore" tests. Coordinates match the whole cell size
+            txi_font_info.upper_left_coords.append((norm_x1, 1 - norm_y1, 0))
+            txi_font_info.lower_right_coords.append((norm_x2, 1 - norm_y2, 0))
+            continue
+
+
+        text_width, text_height, text_overhang, text_underhang = get_character_dimensions(font, char, grid_cell_size)
+        char_bbox = draw.textbbox((0, 0), char, font=pil_font)
+
+        char_width = char_bbox[2] - char_bbox[0]
+        char_height = char_bbox[3] - char_bbox[1]
+
+        text_x = pixel_x1
+        text_y = pixel_y1 - text_underhang/2
+
+        try:  # libraqm
+            draw.text((text_x, text_y), char, language=lang.get_bcp47_code(), font=pil_font, fill=(255, 255, 255, 255))
+        except Exception as e:
+            print(f"Failed to draw text with preferred arguments: {e!r}. Using fallback..")
+            draw.text((text_x, text_y), char, align="center", font=pil_font, fill=(255, 255, 255, 255))
+
+        diff = 4
+        if text_underhang > 0:
+            diff = 7
+            pixel_y2 += 4
+        pixel_x2 = pixel_x1 + char_width
+        pixel_y1 = pixel_y2 - char_height - diff # top
+        pixel_y2 = pixel_y2  # bottom
+        if draw_boxes:
+            # Draw a red rectangle around the character based on actual text dimensions
+            red_box = (pixel_x1, pixel_y1, pixel_x2, pixel_y2)
+            draw.rectangle(red_box, outline="red")
+
+        # Calculate normalized coordinates for the red box
+        norm_x1 = pixel_x1 / resolution[0]
+        norm_y1 = pixel_y1 / resolution[1]
+        norm_x2 = pixel_x2 / resolution[0]
+        norm_y2 = pixel_y2 / resolution[1]
+
+        # Invert Y-axis normalization
+        norm_y1 = 1 - norm_y1
+        norm_y2 = 1 - norm_y2
+
+        # Ensure we're within 0 and 1.
+        norm_x1, norm_x2 = max(0, min(norm_x1, 1)), max(0, min(norm_x2, 1))
+        norm_y1, norm_y2 = max(0, min(norm_y1, 1)), max(0, min(norm_y2, 1))
+
+        # Append to coordinate lists
+        txi_font_info.upper_left_coords.append((norm_x1, norm_y1, 0))
+        txi_font_info.lower_right_coords.append((norm_x2, norm_y2, 0))
+        baseline_heights.append(text_height)
+
     # Check if baseline_heights is not empty to avoid division by zero
     if baseline_heights:
         average_baseline_height: float = sum(baseline_heights) / len(baseline_heights)
-        # Normalize the baseline height
-        txi_font_info.baselineheight = average_baseline_height / resolution[1]
-    if character_widths:
-        average_char_width: float = sum(character_widths) / len(character_widths)
-        txi_font_info.fontwidth = average_char_width / grid_cell_size
-        caret_proportion = 0.1  # Adjust this value as needed
-        txi_font_info.caretindent = (average_char_width * caret_proportion) / grid_cell_size
+        #txi_font_info.baselineheight = average_baseline_height / resolution[1]
 
     target_path.parent.mkdir(parents=True, exist_ok=True)
     charset_image.save(target_path.with_suffix(".tga"), format="TGA")
@@ -202,7 +346,6 @@ def write_bitmap_font(
     txi_target = target_path.with_suffix(".txi")
     with txi_target.open("w") as txi_file:
         txi_file.write(txi_data)
-
 
 def _generate_txi_data(txi_font_info: TXIFontInformation) -> str:
     # Format the upper left coordinates

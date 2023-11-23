@@ -125,11 +125,9 @@ class Language(IntEnum):
     MALAGASY = 93
     MALAY_LATIN = 94
     MAORI = 95
-    MARSHALLESE = 96
-    MOLDOVAN_LATIN = 97
-    PALAUAN = 98
-    SAMOAN = 99
-    SOMALI = 100
+    MOLDOVAN_LATIN = 96
+    SAMOAN = 97
+    SOMALI = 98
 
     # The following languages are supported in the GFF/TLK file formats, but are not encodable to 8-bit without significant loss of information
     # therefore are incompatible with KOTOR.
@@ -167,6 +165,35 @@ class Language(IntEnum):
             - Check individual languages and return their specific encodings.
         """
         if self in (
+            Language.ALBANIAN,
+            Language.BOSNIAN_LATIN,
+            Language.CROATIAN,
+            Language.CZECH,
+            Language.HUNGARIAN,
+            Language.MOLDOVAN_LATIN,
+            Language.POLISH,
+            Language.ROMANIAN,  # before 1993 reform
+            Language.SERBIAN_LATIN,
+            Language.SLOVAK,
+            Language.SLOVENE,
+        ):
+            return "cp1250"
+        if self in (
+            Language.AZERBAIJANI_CYRILLIC,
+            Language.BOSNIAN_CYRILLIC,
+            Language.BULGARIAN,
+            Language.BELARISIAN,
+            Language.MACEDONIAN,
+            Language.RUSSIAN,
+            Language.SERBIAN_CYRILLIC,
+            Language.TAJIK,
+            Language.TATAR_CYRILLIC,
+            Language.TURKMEN_CYRILLIC,
+            Language.UKRAINIAN,
+            Language.UZBEK,
+        ):
+            return "cp1251"
+        if self in (
             Language.ENGLISH,
             Language.FRENCH,
             Language.GERMAN,
@@ -203,6 +230,7 @@ class Language(IntEnum):
             Language.LATIN,
             Language.LUXEMBOURGISH,
             Language.MALTESE,
+            Language.MAORI,
             Language.NORWEGIAN,
             Language.OCCITAN,
             Language.PORTUGUESE,
@@ -224,39 +252,8 @@ class Language(IntEnum):
             Language.ZULU,
         ):
             return "cp1252"
-        if self in (
-            Language.AZERBAIJANI_CYRILLIC,
-            Language.BOSNIAN_CYRILLIC,
-            Language.BULGARIAN,
-            Language.BELARISIAN,
-            Language.MACEDONIAN,
-            Language.RUSSIAN,
-            Language.SERBIAN_CYRILLIC,
-            Language.TAJIK,
-            Language.TATAR_CYRILLIC,
-            Language.TURKMEN_CYRILLIC,
-            Language.UKRAINIAN,
-            Language.UZBEK,
-        ):
-            return "cp1251"
-
-        if self in (
-            Language.POLISH,
-            Language.ALBANIAN,
-            Language.BOSNIAN_LATIN,
-            Language.CZECH,
-            Language.SLOVAK,
-            Language.SLOVENE,
-            Language.CROATIAN,
-            Language.SERBIAN_LATIN,
-            Language.HUNGARIAN,
-            Language.ROMANIAN,  # before 1993 reform
-        ):
-            return "cp1250"
         if self == Language.GREEK:
             return "cp1253"
-        if self == Language.ESPERANTO:
-            return "ISO-8859-3"
         if self in (
             Language.AZERBAIJANI_LATIN,
             Language.TATAR_LATIN,
@@ -278,6 +275,26 @@ class Language(IntEnum):
             return "cp1258"
         if self == Language.THAI:
             return "cp874"
+        if self in [
+            Language.MALAY_LATIN,
+            Language.SAMOAN,
+            Language.SOMALI,
+        ]:
+            return "ISO-8859-1"
+        if self in [
+            Language.AYMARA,
+            Language.ESPERANTO,
+            Language.MALAGASY,
+        ]:
+            return "ISO-8859-3"
+        if self in [
+            Language.KURDISH_LATIN,
+        ]:
+            return "ISO-8859-9"
+        if self in [
+            Language.KINYARWANDA,
+        ]:
+            return "ISO-8859-10"
 
         # The following languages/encodings are not 8-bit and need additional information in order to be supported.
         if self == Language.KOREAN:
@@ -391,9 +408,7 @@ class Language(IntEnum):
             Language.MALAGASY: "mg",
             Language.MALAY_LATIN: "ms-Latn",
             Language.MAORI: "mi",
-            Language.MARSHALLESE: "mh",
             Language.MOLDOVAN_LATIN: "mo-Latn",
-            Language.PALAUAN: "pau",
             Language.SAMOAN: "sm",
             Language.SOMALI: "so",
             Language.KOREAN: "ko",
