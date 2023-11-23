@@ -471,7 +471,7 @@ class KOTORPatchingToolUI:
         self.lang_vars: dict[Language, tk.BooleanVar] = {}
         self.language_row: int
         self.install_running = False
-        self.install_button = None
+        self.install_button: ttk.Button
         self.language_frame = ttk.Frame(root)  # Frame to contain language checkboxes
         SCRIPT_GLOBALS.chosen_languages = []
 
@@ -549,7 +549,7 @@ class KOTORPatchingToolUI:
         ttk.Label(self.root, text="Translation Option:").grid(row=row, column=0)
         self.translation_option = ttk.Combobox(self.root)
         self.translation_option.grid(row=row, column=1)
-        self.translation_option["values"] = list(TranslationOption.__members__)
+        self.translation_option["values"] = [v.name for v in TranslationOption.get_available_translators()]
         self.translation_option.set("GOOGLE_TRANSLATE")
         row += 1
 
@@ -610,7 +610,8 @@ class KOTORPatchingToolUI:
         #row += 1
 
         # Start Patching Button
-        self.install_button = ttk.Button(self.root, text="Run All Operations", command=self.start_patching).grid(row=row, column=1)
+        self.install_button = ttk.Button(self.root, text="Run All Operations", command=self.start_patching)
+        self.install_button.grid(row=row, column=1)
 
 
     def create_language_checkbuttons(self, row):
@@ -704,7 +705,7 @@ class KOTORPatchingToolUI:
     def start_patching(self):
         if self.install_running:
             return messagebox.showerror("Install already running", "Please wait for all operations to complete. Check the console/output for details.")
-        self.install_button.config(state=tk.ENABLED)
+        self.install_button.config(state="normal")
         self.install_running = True
         try:
             assign_to_globals(self)

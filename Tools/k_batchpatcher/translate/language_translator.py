@@ -34,7 +34,7 @@ try:
 except ImportError:
     GoogleTranslator = None
 try:
-    import dl_translateDISABLED as dlt
+    import dl_translate as dlt
 except ImportError:
     dlt = None
 try:
@@ -42,7 +42,7 @@ try:
 except ImportError:
     ApertiumLite = None
 try:
-    from transformersDISABLED import T5ForConditionalGeneration, T5Tokenizer
+    from transformers import T5ForConditionalGeneration, T5Tokenizer
 except ImportError:
     T5ForConditionalGeneration = None
     T5Tokenizer = None
@@ -444,9 +444,7 @@ class Translator:
                 translated_text += f"{translate_main(chunk.strip(), self.translation_option)} "
             return translated_text.rstrip()  # noqa: TRY300, RUF100
         except MinimumLengthError:
-            print(
-                f"Using a fallback translator because {self.translation_option.name} requires a minimum of 50 characters to translate.",
-            )
+            print(f"Using a fallback translator because {self.translation_option.name} does not support this minimum length of text to translate.")
             minimum_length_failed_translate_option = self.translation_option
         except Exception as e:  # noqa: BLE001
             # Log the exception, proceed to the next translation option
