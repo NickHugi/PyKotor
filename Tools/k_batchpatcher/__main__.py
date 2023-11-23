@@ -385,6 +385,9 @@ def do_main_patchloop():
             return messagebox.showwarning("No language chosen", "Select a language first if you want to translate")
         if SCRIPT_GLOBALS.create_fonts:
             return messagebox.showwarning("No language chosen", "Select a language first to create fonts.")
+    if SCRIPT_GLOBALS.create_fonts and (not Path(SCRIPT_GLOBALS.font_path).name or not Path(SCRIPT_GLOBALS.font_path).safe_exists()):
+        return messagebox.showwarning(f"Font path not found {SCRIPT_GLOBALS.font_path}", "Please set your font path to a valid TTF font file.")
+
 
     # Patching logic
     has_action = False
