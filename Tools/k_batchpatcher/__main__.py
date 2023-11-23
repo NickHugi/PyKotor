@@ -399,8 +399,7 @@ def do_main_patchloop():
             main_patchloop_logic(lang)
     if SCRIPT_GLOBALS.create_fonts:
         for lang in SCRIPT_GLOBALS.chosen_languages:
-            lang.get_encoding()
-            #create_font_pack(lang)
+            create_font_pack(lang)
         has_action = True
     if SCRIPT_GLOBALS.set_unskippable:
         determine_input_path(Path(SCRIPT_GLOBALS.path))
