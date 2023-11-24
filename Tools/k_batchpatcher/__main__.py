@@ -34,12 +34,11 @@ from pykotor.resource.formats.gff.gff_auto import bytes_gff
 from pykotor.resource.formats.rim.rim_auto import write_rim
 from pykotor.resource.formats.rim.rim_data import RIM
 from pykotor.resource.formats.tlk import TLK, read_tlk, write_tlk
-from pykotor.resource.formats.tpc.txi_data import write_bitmap_font, write_bitmap_fonts
+from pykotor.resource.formats.tpc.txi_data import write_bitmap_fonts
 from pykotor.resource.type import ResourceType
 from pykotor.tools.misc import is_capsule_file
 from pykotor.tools.path import CaseAwarePath, find_kotor_paths_from_default
 from pykotor.tslpatcher.logger import PatchLogger
-from pykotor.utility.misc import is_float, is_int
 from pykotor.utility.path import Path, PurePath, PureWindowsPath
 from Tools.k_batchpatcher.translate.language_translator import TranslationOption, Translator, get_language_code
 
