@@ -12,7 +12,7 @@ from io import StringIO
 from threading import Thread
 from tkinter import filedialog, messagebox, ttk
 from tkinter import font as tkfont
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Callable
 
 if getattr(sys, "frozen", False) is False:
     pykotor_path = pathlib.Path(__file__).parents[2] / "pykotor"
@@ -95,6 +95,7 @@ class Globals:
         return self._attributes.get(key, None)
 
 SCRIPT_GLOBALS = Globals()
+SCRIPT_GLOBALS.pytranslator = Translator(SCRIPT_GLOBALS.to_lang)
 
 def relative_path_from_to(src, dst) -> Path:
     src_parts = list(src.parts)
@@ -181,9 +182,9 @@ def patch_nested_gff(
             assert isinstance(value, LocalizedString)  # noqa: S101
             new_substrings = deepcopy(value._substrings)
             for lang, gender, text in value:
-                if SCRIPT_GLOBALS.pyinstaller is not None and text is not None and text.strip():
+                if SCRIPT_GLOBALS.pytranslator is not None and text is not None and text.strip():
                     log_output_with_separator(f"Translating CExoLocString at {child_path} to {SCRIPT_GLOBALS.to_lang.name}", above=True)
-                    translated_text = SCRIPT_GLOBALS.pyinstaller.translate(text, from_lang=lang)
+                    translated_text = SCRIPT_GLOBALS.pytranslator.translate(text, from_lang=lang)
                     log_output(f"Translated {text} --> {translated_text}")
                     substring_id = LocalizedString.substring_id(SCRIPT_GLOBALS.to_lang, gender)
                     new_substrings[substring_id] = translated_text
@@ -199,7 +200,7 @@ def recurse_through_list(gff_list: GFFList, gff_content: GFFContent, current_pat
 
 
 def patch_resource(resource: FileResource) -> GFF | None:
-    if resource.restype().extension.lower() == "tlk" and SCRIPT_GLOBALS.translate and SCRIPT_GLOBALS.pyinstaller:
+    if resource.restype().extension.lower() == "tlk" and SCRIPT_GLOBALS.translate and SCRIPT_GLOBALS.pytranslator:
         tlk: TLK | None = None
         try:
             log_output(f"Loading TLK '{resource.filepath()}'")
@@ -222,7 +223,7 @@ def patch_resource(resource: FileResource) -> GFF | None:
             if not text.strip() or text.isdigit():
                 continue
             log_output_with_separator(f"Translating TLK text at {resource.filepath()!s}", above=True)
-            translated_text = SCRIPT_GLOBALS.pyinstaller.translate(text, from_lang=from_lang)
+            translated_text = SCRIPT_GLOBALS.pytranslator.translate(text, from_lang=from_lang)
             log_output(f"Translated {text} --> {translated_text}")
             new_entries[strref].text = translated_text
         tlk.entries = new_entries
@@ -394,7 +395,8 @@ def do_main_patchloop():
             return messagebox.showwarning("No language chosen", "Select a language first to create fonts.")
     if SCRIPT_GLOBALS.create_fonts and (not Path(SCRIPT_GLOBALS.font_path).name or not Path(SCRIPT_GLOBALS.font_path).safe_exists()):
         return messagebox.showwarning(f"Font path not found {SCRIPT_GLOBALS.font_path}", "Please set your font path to a valid TTF font file.")
-
+    if SCRIPT_GLOBALS.translate and not SCRIPT_GLOBALS.translation_applied:
+        return messagebox.showwarning("Bad translation args", "Cannot start translation, you have not applied your translation options. (api key, db path, server url etc)")
 
     # Patching logic
     has_action = False
@@ -419,8 +421,7 @@ def do_main_patchloop():
 def main_patchloop_logic(lang):
     print(f"Translating to {lang.name}...")
     SCRIPT_GLOBALS.to_lang = lang
-    SCRIPT_GLOBALS.pyinstaller = Translator(SCRIPT_GLOBALS.to_lang)
-    SCRIPT_GLOBALS.pyinstaller.translation_option = SCRIPT_GLOBALS.translation_option  # type: ignore[assignment]
+    SCRIPT_GLOBALS.pytranslator.translation_option = SCRIPT_GLOBALS.translation_option  # type: ignore[assignment]
     determine_input_path(Path(SCRIPT_GLOBALS.path))
 
 def create_font_pack(lang: Language):
@@ -483,6 +484,7 @@ class KOTORPatchingToolUI:
         self.install_running = False
         self.install_button: ttk.Button
         self.language_frame = ttk.Frame(root)  # Frame to contain language checkboxes
+        self.translation_applied: bool = False
         SCRIPT_GLOBALS.chosen_languages = []
 
         self.setup_ui()
@@ -561,6 +563,15 @@ class KOTORPatchingToolUI:
         self.translation_option.grid(row=row, column=1)
         self.translation_option["values"] = [v.name for v in TranslationOption.get_available_translators()]
         self.translation_option.set("GOOGLE_TRANSLATE")
+        self.translation_option.bind("<<ComboboxSelected>>", self.on_translation_option_chosen)
+        row += 1
+
+        # Upper area for the translation options
+        self.translation_ui_options_row = row
+        self.translation_options_frame = tk.Frame(self.root)
+        self.translation_options_frame.grid(row=row, column=0, sticky="nsew")
+        self.translation_options_frame.grid_rowconfigure(0, weight=1)
+        self.translation_options_frame.grid_columnconfigure(0, weight=1)
         row += 1
 
         # Create Fonts
@@ -618,6 +629,42 @@ class KOTORPatchingToolUI:
         self.install_button = ttk.Button(self.root, text="Run All Operations", command=self.start_patching)
         self.install_button.grid(row=row, column=1)
 
+    def on_translation_option_chosen(self, event) -> None:
+        """Create Checkbuttons for each translator option and assign them to the translator.
+        Needs rewriting or cleaning, difficult readability lies ahead if you're reading this.
+        """
+        for widget in self.translation_options_frame.winfo_children():
+            widget.destroy()  # remove controls from a different translationoption before adding new ones below
+
+        row = self.translation_ui_options_row
+        t_option = TranslationOption.__members__[self.translation_option.get()]
+        ui_lambdas_dict: dict[str, Callable[[tk.Frame], ttk.Combobox | ttk.Label | ttk.Checkbutton | ttk.Entry]] = t_option.get_specific_ui_controls()
+        varname = None
+        value = None
+        for varname, ui_control_lambda in ui_lambdas_dict.items():
+            ui_control: ttk.Combobox | ttk.Label | ttk.Checkbutton | ttk.Entry = ui_control_lambda(self.translation_options_frame)
+            if varname.startswith("descriptor_label") or isinstance(ui_control, ttk.Label):
+                ui_control.grid(row=row, column=1)
+                continue
+            value = ui_control.instate(["selected"]) if isinstance(ui_control, ttk.Checkbutton) else ui_control.get()
+            ui_control.grid(row=row, column=2)
+            row += 1
+
+        if value is not None and varname is not None:
+            self.translation_applied = False
+            ttk.Button(self.translation_options_frame, text="Apply Options", command=lambda: self.apply_translation_option(varname=varname, value=value)).grid(row=row, column=2)
+        else:
+            self.translation_applied = True
+
+    def apply_translation_option(self, varname, value):
+        setattr(SCRIPT_GLOBALS.pytranslator, varname, value)  # TODO: add all the variable names to __init__ of Translator class
+        self.write_log(f"Applied Options for {self.translation_option.get()}")
+        cur_toption = TranslationOption.__members__[self.translation_option.get()]
+        msg = cur_toption.validate_args(SCRIPT_GLOBALS.pytranslator)
+        if msg:
+            messagebox.showwarning("Invalid translation options", msg)
+            return
+        self.translation_applied = True
 
     def create_language_checkbuttons(self, row):
 
@@ -887,8 +934,8 @@ if __name__ == "__main__":
         profiler = None
         execute_patchloop_thread()
         if SCRIPT_GLOBALS.translation_option is not None and SCRIPT_GLOBALS.to_lang != "ALL":
-            SCRIPT_GLOBALS.pyinstaller = Translator(SCRIPT_GLOBALS.to_lang)
-            SCRIPT_GLOBALS.pyinstaller.translation_option = SCRIPT_GLOBALS.translation_option  # type: ignore[assignment]
+            SCRIPT_GLOBALS.pytranslator = Translator(SCRIPT_GLOBALS.to_lang)
+            SCRIPT_GLOBALS.pytranslator.translation_option = SCRIPT_GLOBALS.translation_option  # type: ignore[assignment]
         try:
             if SCRIPT_GLOBALS.use_profiler:
                 profiler = cProfile.Profile()
@@ -899,8 +946,8 @@ if __name__ == "__main__":
                 if SCRIPT_GLOBALS.create_fonts:
                     create_font_pack(enum_member_lang)
                 SCRIPT_GLOBALS.to_lang = enum_member_lang
-                SCRIPT_GLOBALS.pyinstaller = Translator(SCRIPT_GLOBALS.to_lang)
-                SCRIPT_GLOBALS.pyinstaller.translation_option = SCRIPT_GLOBALS.translation_option  # type: ignore[assignment]
+                SCRIPT_GLOBALS.pytranslator = Translator(SCRIPT_GLOBALS.to_lang)
+                SCRIPT_GLOBALS.pytranslator.translation_option = SCRIPT_GLOBALS.translation_option  # type: ignore[assignment]
                 comparison: bool | None = determine_input_path(SCRIPT_GLOBALS.path)
             if SCRIPT_GLOBALS.create_fonts:
                 create_font_pack(SCRIPT_GLOBALS.to_lang)
