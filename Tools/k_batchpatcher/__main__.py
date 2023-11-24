@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import argparse
+import concurrent.futures
 import cProfile
 import os
 import pathlib
@@ -40,7 +41,7 @@ from pykotor.tools.misc import is_capsule_file
 from pykotor.tools.path import CaseAwarePath, find_kotor_paths_from_default
 from pykotor.tslpatcher.logger import PatchLogger
 from pykotor.utility.path import Path, PurePath, PureWindowsPath
-from Tools.k_batchpatcher.translate.language_translator import TranslationOption, Translator, get_language_code
+from Tools.k_batchpatcher.translate.language_translator import TranslationOption, Translator, get_general_lang_code
 
 if TYPE_CHECKING:
 
@@ -199,6 +200,30 @@ def recurse_through_list(gff_list: GFFList, gff_content: GFFContent, current_pat
 
 
 def patch_resource(resource: FileResource) -> GFF | None:
+    def translate_entry(strref, tlkentry, from_lang):
+        text = tlkentry.text
+        if not text.strip() or text.isdigit():
+            return strref, None
+        translated_text = SCRIPT_GLOBALS.pytranslator.translate(text, from_lang=from_lang)
+        return strref, translated_text
+
+    def process_translations(tlk, from_lang) -> list[TLKEntry]:
+        new_entries: list[TLKEntry] = deepcopy(tlk.entries)
+        with concurrent.futures.ThreadPoolExecutor(max_workers=SCRIPT_GLOBALS.max_threads) as executor:
+            # Create a future for each translation task
+            future_to_strref = {executor.submit(translate_entry, strref, tlkentry, from_lang): strref for strref, tlkentry in tlk}
+
+            for future in concurrent.futures.as_completed(future_to_strref):
+                strref = future_to_strref[future]
+                try:
+                    log_output_with_separator(f"Translating TLK text at {resource.filepath()!s}", above=True)
+                    translated_text = future.result()
+                    if translated_text:
+                        new_entries[strref].text = translated_text[1]
+                        log_output(f"Translated {tlk[strref].text} --> {translated_text[1]}")
+                except Exception as exc:
+                    print(f"{strref} generated an exception: {exc!r}")
+        return new_entries
     if resource.restype().extension.lower() == "tlk" and SCRIPT_GLOBALS.translate and SCRIPT_GLOBALS.pytranslator:
         tlk: TLK | None = None
         try:
@@ -212,20 +237,11 @@ def patch_resource(resource: FileResource) -> GFF | None:
             log_output(message)
             return None
 
-        new_entries: list[TLKEntry] = deepcopy(tlk.entries)
         from_lang: Language = tlk.language
-        tlk.language = SCRIPT_GLOBALS.to_lang
-        new_filename_stem = f"{resource.resname()}_" + (get_language_code(SCRIPT_GLOBALS.to_lang) or "UNKNOWN")
+        new_filename_stem = f"{resource.resname()}_" + (get_general_lang_code(SCRIPT_GLOBALS.to_lang) or "UNKNOWN")
         new_file_path = resource.filepath().parent / (new_filename_stem + resource.restype().extension)
-        for strref, tlkentry in tlk:
-            text = tlkentry.text
-            if not text.strip() or text.isdigit():
-                continue
-            log_output_with_separator(f"Translating TLK text at {resource.filepath()!s}", above=True)
-            translated_text = SCRIPT_GLOBALS.pytranslator.translate(text, from_lang=from_lang)
-            log_output(f"Translated {text} --> {translated_text}")
-            new_entries[strref].text = translated_text
-        tlk.entries = new_entries
+        tlk.language = SCRIPT_GLOBALS.to_lang
+        tlk.entries = process_translations(tlk, from_lang)
         write_tlk(tlk, new_file_path)
         processed_files.add(new_file_path)
     if resource.restype().extension.lower() in gff_types or f"{resource.restype().name.upper()} " in GFFContent.get_valid_types():
@@ -241,7 +257,7 @@ def patch_resource(resource: FileResource) -> GFF | None:
                 return gff
         except Exception as e:  # noqa: BLE001
             log_output(f"[Error] loading GFF {resource.resname()} at {resource.filepath()}! {e!r}")
-            raise
+            #raise
             return None
 
         if not gff:
@@ -567,6 +583,16 @@ class KOTORPatchingToolUI:
         self.translation_option["values"] = [v.name for v in TranslationOption.get_available_translators()]
         self.translation_option.set("GOOGLE_TRANSLATE")
         self.translation_option.bind("<<ComboboxSelected>>", self.on_translation_option_chosen)
+        row += 1
+
+        # Max threads
+        SCRIPT_GLOBALS.max_threads = 3
+        def on_value_change():
+            SCRIPT_GLOBALS.max_threads = int(spinbox_value.get())
+        ttk.Label(self.root, text="Max Translation Threads:").grid(row=row, column=0)
+        spinbox_value = tk.StringVar(value=str(SCRIPT_GLOBALS.max_threads))
+        self.spinbox = tk.Spinbox(root, from_=1, to=5, increment=1, command=on_value_change, textvariable=spinbox_value)
+        self.spinbox.grid(row=row, column=1)
         row += 1
 
         # Upper area for the translation options

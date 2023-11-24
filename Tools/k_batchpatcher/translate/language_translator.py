@@ -2,8 +2,8 @@ from __future__ import annotations
 
 import json
 import re
-from enum import Enum
 import traceback
+from enum import Enum
 from typing import TYPE_CHECKING, Any, Callable
 
 import requests
@@ -16,12 +16,19 @@ if TYPE_CHECKING:
     import os
 
 # region LoadTranslatorPackages
+BergamotTranslator = None
+TatoebaTranslator = None
 try:
     from translate import Translator as TranslateTranslator  # type: ignore[reportGeneralTypeIssues, import-not-found]
 except ImportError:
     TranslateTranslator = None
 try:
-    import deep_translator  # type: ignore[reportGeneralTypeIssues, import-not-found]
+    import argostranslate.package
+    import argostranslate.translate
+except Exception:  # noqa: BLE001
+    argostranslate = None
+try:
+    import deep_translator  # type: ignore[reportGeneralTypeIssues, import-not-found, import-untyped]
 except ImportError:
     deep_translator = None
 try:
@@ -33,7 +40,7 @@ try:
 except ImportError:
     dlt = None
 try:
-    from apertium_lite import ApertiumLite  # type: ignore[reportGeneralTypeIssues]
+    from apertium_lite import ApertiumLite  # type: ignore[reportGeneralTypeIssues, import-not-found]
 except ImportError:
     ApertiumLite = None
 try:
@@ -114,62 +121,6 @@ class LibreFallbackTranslator:
     def __call__(self):
         return
 
-
-def get_language_code(lang: Language) -> str | None:
-    """For use with the translator only. Some take different language codes than the bt47 format specifies."""
-    return {
-        Language.ENGLISH: "en",
-        Language.FRENCH: "fr",
-        Language.GERMAN: "de",
-        Language.ITALIAN: "it",
-        Language.SPANISH: "es",
-        Language.PORTUGUESE: "pt",
-        Language.DUTCH: "nl",
-        Language.DANISH: "da",
-        Language.SWEDISH: "sv",
-        Language.NORWEGIAN: "no",
-        Language.FINNISH: "fi",
-        Language.POLISH: "pl",
-        Language.TURKISH: "tr",
-        Language.HUNGARIAN: "hu",
-        Language.CZECH: "cs",
-        Language.GREEK: "el",
-        Language.SLOVAK: "sk",
-        Language.CROATIAN: "hr",
-        Language.SERBIAN_LATIN: "sr",  # sr-Latn
-        Language.ROMANIAN: "ro",
-        Language.ALBANIAN: "sq",
-        Language.ESTONIAN: "et",
-        Language.LATVIAN: "lv",
-        Language.LITHUANIAN: "lt",
-        Language.ICELANDIC: "is",
-        Language.MALTESE: "mt",
-        Language.WELSH: "cy",
-        Language.IRISH: "ga",
-        Language.SCOTTISH_GAELIC: "gd",
-        Language.CATALAN: "ca",
-        Language.BASQUE: "eu",
-        Language.GALICIAN: "gl",
-        Language.AFRIKAANS: "af",
-        Language.SWAHILI: "sw",
-        Language.INDONESIAN: "id",
-        Language.FILIPINO: "tl",
-        Language.LUXEMBOURGISH: "lb",
-        Language.BRETON: "br",
-        Language.CORSICAN: "co",
-        Language.FAROESE: "fo",
-        Language.FRISIAN: "fy",
-        Language.OCCITAN: "oc",
-        Language.TAGALOG: "tl",
-        Language.WALLOON: "wa",
-        Language.KOREAN: "ko",
-        Language.CHINESE_TRADITIONAL: "zh-TW",
-        Language.CHINESE_SIMPLIFIED: "zh-CN",
-        Language.JAPANESE: "ja",
-        Language.RUSSIAN: "ru",
-    }.get(lang, lang.get_bcp47_code())
-
-
 # Function to convert numerals
 def translate_numerals(num_string: str, source_lang: Language, target_lang: Language) -> str:
     # Dictionaries for each language's numerals
@@ -192,22 +143,18 @@ def translate_numerals(num_string: str, source_lang: Language, target_lang: Lang
     return translated_numerals
 
 
-BergamotTranslator = None
-TatoebaTranslator = None
-
-
 # Supported Translators
 class TranslationOption(Enum):
     # GOOGLETRANS = GoogleTranslator
     # LIBRE = LibreTranslateAPI("https://translate.argosopentech.com/")
-    # this translator is LARGE and SLOW  # noqa: ERA001, RUF100
     APERTIUM = ApertiumLite
+    ARGOS_TRANSLATE = argostranslate if argostranslate is not None else None
     BERGAMOT = BergamotTranslator if BergamotTranslator is not None else None
-    #CHATGPT_TRANSLATOR = deep_translatorai.ChatGPTTranslator if deep_translatorai is not None else None
+    CHATGPT_TRANSLATOR = deep_translator.ChatGptTranslator if deep_translator is not None else None
     DEEPL = deep_translator.DeeplTranslator if deep_translator is not None else None
     DEEPL_SCRAPER = AbstractTranslator(deepl_tr)
     DL_TRANSLATE = (lambda: dlt.TranslationModel()) if dlt is not None else None
-    GOOGLE_TRANSLATE = deep_translator.GoogleTranslator if deep_translator is not None else None
+    GOOGLE_TRANSLATE = deep_translator.GoogleTranslator if deep_translator is not None else None  # this translator is LARGE and SLOW  # noqa: ERA001, RUF100
     LIBRE_FALLBACK = LibreFallbackTranslator
     LIBRE_TRANSLATOR = deep_translator.LibreTranslator if deep_translator is not None else None
     LINGUEE_TRANSLATOR = deep_translator.LingueeTranslator if deep_translator is not None else None
@@ -329,6 +276,64 @@ class TranslationOption(Enum):
             return 1024
         return 1024
 
+    def get_lang_code(self, lang: Language):
+        if self is TranslationOption.MY_MEMORY_TRANSLATOR:
+            if lang is Language.GERMAN:
+                return "german"
+            if lang is Language.ENGLISH:
+                return "english us"
+        return {
+            Language.ENGLISH: "en",
+            Language.FRENCH: "fr",
+            Language.GERMAN: "de",
+            Language.ITALIAN: "it",
+            Language.SPANISH: "es",
+            Language.PORTUGUESE: "pt",
+            Language.DUTCH: "nl",
+            Language.DANISH: "da",
+            Language.SWEDISH: "sv",
+            Language.NORWEGIAN: "no",
+            Language.FINNISH: "fi",
+            Language.POLISH: "pl",
+            Language.TURKISH: "tr",
+            Language.HUNGARIAN: "hu",
+            Language.CZECH: "cs",
+            Language.GREEK: "el",
+            Language.SLOVAK: "sk",
+            Language.CROATIAN: "hr",
+            Language.SERBIAN_LATIN: "sr",  # sr-Latn
+            Language.ROMANIAN: "ro",
+            Language.ALBANIAN: "sq",
+            Language.ESTONIAN: "et",
+            Language.LATVIAN: "lv",
+            Language.LITHUANIAN: "lt",
+            Language.ICELANDIC: "is",
+            Language.MALTESE: "mt",
+            Language.WELSH: "cy",
+            Language.IRISH: "ga",
+            Language.SCOTTISH_GAELIC: "gd",
+            Language.CATALAN: "ca",
+            Language.BASQUE: "eu",
+            Language.GALICIAN: "gl",
+            Language.AFRIKAANS: "af",
+            Language.SWAHILI: "sw",
+            Language.INDONESIAN: "id",
+            Language.FILIPINO: "tl",
+            Language.LUXEMBOURGISH: "lb",
+            Language.BRETON: "br",
+            Language.CORSICAN: "co",
+            Language.FAROESE: "fo",
+            Language.FRISIAN: "fy",
+            Language.OCCITAN: "oc",
+            Language.TAGALOG: "tl",
+            Language.WALLOON: "wa",
+            Language.KOREAN: "ko",
+            Language.CHINESE_TRADITIONAL: "zh-TW",
+            Language.CHINESE_SIMPLIFIED: "zh-CN",
+            Language.JAPANESE: "ja",
+            Language.RUSSIAN: "ru",
+        }.get(lang, lang.get_bcp47_code())
+
     @staticmethod
     def get_available_translators() -> list[TranslationOption]:
         return [
@@ -338,9 +343,8 @@ class TranslationOption(Enum):
         ]
 
 def replace_with_placeholder(match, replaced_text: list[str], counter: int) -> str:
-    key = f"__{counter}__"
     replaced_text.append(match.group(0))  # Store the original text
-    return key
+    return f"__{counter}__"
 
 def replace_curly_braces(original_string: str):
     replaced_text: list[str] = []
@@ -399,8 +403,8 @@ class Translator:
         2. Sets the translator based on translation option value
         3. Initializes the translator and sets _initialized flag to True
         """
-        from_lang_code = get_language_code(self.from_lang)
-        to_lang_code = get_language_code(self.to_lang)
+        from_lang_code = self.translation_option.get_lang_code(self.from_lang)
+        to_lang_code = self.translation_option.get_lang_code(self.to_lang)
         if self.translation_option.value is None:
             msg = "not installed."
             raise ImportError(msg)
@@ -412,8 +416,6 @@ class Translator:
             TranslationOption.MY_MEMORY_TRANSLATOR,
             TranslationOption.APERTIUM,
         ]:
-            from_lang_code = "en-US" if self.from_lang == Language.ENGLISH and self.translation_option == TranslationOption.MY_MEMORY_TRANSLATOR else from_lang_code
-            to_lang_code = "en-US" if self.to_lang == Language.ENGLISH and self.translation_option == TranslationOption.MY_MEMORY_TRANSLATOR else to_lang_code
             self._translator = self.translation_option.value(from_lang_code, to_lang_code)
         elif self.translation_option in [
             TranslationOption.LINGUEE_TRANSLATOR,
@@ -459,10 +461,18 @@ class Translator:
                 api_key=self.api_key,
                 target=to_lang_code,
             )
-        # elif self.translation_option == TranslationOption.ARGOS_TRANSLATE:
-        #   import argostranslate.package, argostranslate.translate
-        #   argostranslate.package.install_from_path('path_to_argos_package.argosmodel')
-        #   self._translator = argostranslate.translate.get_installed_languages()[0].get_translation('en/')
+        elif self.translation_option == TranslationOption.ARGOS_TRANSLATE:
+            # Download and install Argos Translate package
+            argostranslate.package.update_package_index()
+            available_packages = argostranslate.package.get_available_packages()
+            package_to_install = next(
+                filter(
+                    lambda x: x.from_code == from_lang_code and x.to_code == to_lang_code,
+                    available_packages,
+                ),
+            )
+            argostranslate.package.install_from_path(package_to_install.download())
+            self._translator = argostranslate.translate
         # elif self.translation_option == TranslationOption.TATOEBA:
         #   This requires a local database of Tatoeba sentences. Placeholder for actual implementation.
         #   self._translator = TatoebaTranslator(local_db_path='path_to_tatoeba.db')
@@ -483,11 +493,11 @@ class Translator:
         self.from_lang = from_lang if from_lang is not None else self.from_lang
         if self.from_lang == self.to_lang:
             return text
-        from_lang_code: str | None = get_language_code(self.from_lang)
+        from_lang_code: str | None = self.translation_option.get_lang_code(self.from_lang)
         if from_lang_code is None:
             print(f"No bt47 lang code for {self.from_lang.name} found, attempting to use 'auto'")
             from_lang_code = "auto"
-        to_lang_code: str | None = get_language_code(self.to_lang)
+        to_lang_code: str | None =  self.translation_option.get_lang_code(self.to_lang)
         if to_lang_code is None:
             print(f"Cannot translate - could not find bt47 lang code for {self.to_lang.name}. returning original text.")
             return text
@@ -590,6 +600,7 @@ class Translator:
                 TranslationOption.DEEPL_SCRAPER,
                 TranslationOption.DL_TRANSLATE,
                 TranslationOption.TEXTBLOB,
+                TranslationOption.ARGOS_TRANSLATE,
             ):
                 # if self.from_lang is None and option == TranslationOption.LIBRE:
                 #    msg = "LibreTranslate requires a specified source language."  # noqa: ERA001
@@ -646,6 +657,8 @@ class Translator:
             try:
                 # Select the appropriate translator based on the option
                 self.translation_option = option
+                from_lang_code = self.translation_option.get_lang_code(self.from_lang)
+                to_lang_code =  self.translation_option.get_lang_code(self.to_lang)
                 try:
                     self.initialize()
                 except ImportError as e:
