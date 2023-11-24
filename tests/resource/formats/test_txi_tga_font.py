@@ -70,13 +70,12 @@ class TestWriteBitmapFont(unittest.TestCase):
 
     def test_invalid_resolution(self):
         # Test with invalid resolution
-        font_path = "tests/assets/font.ttf"
         target_path = "output/font.tga"
         resolution = (0, 0)
         lang = Language.ENGLISH
 
         with self.assertRaises(ZeroDivisionError):
-            write_bitmap_font(target_path, font_path, resolution, lang)
+            write_bitmap_font(target_path, FONT_PATH, resolution, lang)
 
 # Edge cases:
 # - Resolution is very small or very large

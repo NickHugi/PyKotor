@@ -50,11 +50,11 @@ class TLKBinaryReader(ResourceReader):
         string_count = self._reader.read_uint32()
         entries_offset = self._reader.read_uint32()
 
-        if file_version != "V3.0":
-            msg = "Invalid file version."
-            raise ValueError(msg)
         if file_type != "TLK ":
             msg = "Invalid file type."
+            raise ValueError(msg)
+        if file_version != "V3.0":
+            msg = "Invalid file version."
             raise ValueError(msg)
 
         self._tlk.language = Language(language_id)
@@ -66,7 +66,9 @@ class TLKBinaryReader(ResourceReader):
         self,
         stringref: int,
     ):
-        self._reader.read_uint32()  # unused - flags
+        entry: TLKEntry = self._tlk.entries[stringref]
+
+        entry_flags = self._reader.read_uint32()
         sound_resref = self._reader.read_string(16)
         self._reader.read_uint32()  # unused - volume variance
         self._reader.read_uint32()  # unused - pitch variance
@@ -74,8 +76,10 @@ class TLKBinaryReader(ResourceReader):
         text_length = self._reader.read_uint32()
         self._reader.read_single()  # unused - sound length
 
-        self._tlk.entries[stringref].voiceover = ResRef(sound_resref)
-
+        entry.text_present = (entry_flags & 0x0001) != 0         # Check if the TEXT_PRESENT flag is set
+        entry.sound_present = (entry_flags & 0x0002) != 0        # Check if the SND_PRESENT flag is set
+        entry.soundlength_present = (entry_flags & 0x0004) != 0  # Check if the SND_LENGTH flag is set
+        entry.voiceover = ResRef(sound_resref)
         self._text_headers.append(ArrayHead(text_offset, text_length))
 
     def _load_text(
@@ -97,7 +101,7 @@ class TLKBinaryWriter(ResourceWriter):
         target: TARGET_TYPES,
     ):
         super().__init__(target)
-        self._tlk = tlk
+        self._tlk: TLK = tlk
 
     @autoclose
     def write(
@@ -111,7 +115,7 @@ class TLKBinaryWriter(ResourceWriter):
             self._write_entry(entry, text_offset)
 
         for entry in self._tlk.entries:
-            self._writer.write_string(entry.text, self._tlk.language.get_encoding())
+            self._writer.write_string(entry.text, self._tlk.language.get_encoding(), errors="ignore")
 
     def _calculate_entries_offset(
         self,
@@ -121,7 +125,7 @@ class TLKBinaryWriter(ResourceWriter):
     def _write_file_header(
         self,
     ) -> None:
-        language_id = self._tlk.language.value
+        language_id: int = self._tlk.language.value
         string_count: int = len(self._tlk)
         entries_offset: int = self._calculate_entries_offset()
 
@@ -141,9 +145,12 @@ class TLKBinaryWriter(ResourceWriter):
         text_length = len(entry.text)
 
         entry_flags = 0  # Initialize entry_flags as zero
-        entry_flags |= 0x0001  # TEXT_PRESENT: As we're writing text, let's assume it's always present
-        entry_flags |= 0x0002  # SND_PRESENT: If sound_resref is defined in this entry. This is set in both game's TLKs, regardless of whether it's used.
-        entry_flags |= 0x0004  # SND_LENGTH: Unused by KOTOR1 and 2. Determines whether the sound length field is utilized.
+        if entry.text_present:
+            entry_flags |= 0x0001  # TEXT_PRESENT: As we're writing text, let's assume it's always present
+        elif entry.sound_present:
+            entry_flags |= 0x0002  # SND_PRESENT: If sound_resref is defined in this entry.
+        elif entry.soundlength_present:
+            entry_flags |= 0x0004  # SND_LENGTH: Unused by KOTOR1 and 2. Determines whether the sound length field is utilized.
 
         self._writer.write_uint32(entry_flags)
         self._writer.write_string(sound_resref, string_length=16)
