@@ -57,7 +57,7 @@ brew install pyqt5
 HoloPatcher requires `python3-tkinter`
 #### Linux:
 ```commandline
-brew install python3-tkinter
+sudo apt install python3-tkinter
 ```
 #### Mac OS:
 - If you've installed Python with HomeBrew (you should have), install tkinter:
