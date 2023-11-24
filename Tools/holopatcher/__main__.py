@@ -40,7 +40,7 @@ from pykotor.utility.string import striprtf
 if TYPE_CHECKING:
     from io import TextIOWrapper
 
-CURRENT_VERSION: tuple[int, ...] = (1, 4)
+CURRENT_VERSION: tuple[int, ...] = (1, 4, 1)
 
 
 class ExitCode(IntEnum):
