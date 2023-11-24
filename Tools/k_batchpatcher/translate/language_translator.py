@@ -1,44 +1,47 @@
 from __future__ import annotations
 
 import json
-from enum import Enum
 import re
-from typing import Any, Callable
+from enum import Enum
+from typing import TYPE_CHECKING, Any, Callable
 
 import requests
 
 from pykotor.common.language import Language
-from Tools.k_batchpatcher.translate.deepl_scraper import deepl_tr
 from pykotor.utility.path import Path
+from Tools.k_batchpatcher.translate.deepl_scraper import deepl_tr
+
+if TYPE_CHECKING:
+    import os
 
 # region LoadTranslatorPackages
 try:
-    from translate import Translator as TranslateTranslator
+    from translate import Translator as TranslateTranslator  # type: ignore[reportGeneralTypeIssues, import-not-found]
 except ImportError:
     TranslateTranslator = None
 try:
-    import deep_translator
+    import deep_translator  # type: ignore[reportGeneralTypeIssues, import-not-found]
 except ImportError:
     deep_translator = None
 try:
-    from googletrans import Translator as GoogleTranslator
+    from googletrans import Translator as GoogleTranslator  # type: ignore[reportGeneralTypeIssues, import-not-found]
 except ImportError:
     GoogleTranslator = None
 try:
-    import dl_translate as dlt
+    import dl_translate as dlt  # type: ignore[reportGeneralTypeIssues, import-not-found]
 except ImportError:
     dlt = None
 try:
-    from apertium_lite import ApertiumLite
+    from apertium_lite import ApertiumLite  # type: ignore[reportGeneralTypeIssues]
 except ImportError:
     ApertiumLite = None
 try:
-    from transformers import T5ForConditionalGeneration, T5Tokenizer
+    from transformers import T5ForConditionalGeneration, T5Tokenizer  # type: ignore[reportGeneralTypeIssues, import-not-found]
 except ImportError:
     T5ForConditionalGeneration = None
     T5Tokenizer = None
 try:
-    from textblob import TextBlob
+    from textblob import TextBlob  # type: ignore[reportGeneralTypeIssues, import-not-found]
 except ImportError:
     TextBlob = None
 
@@ -198,7 +201,7 @@ class TranslationOption(Enum):
     # LIBRE = LibreTranslateAPI("https://translate.argosopentech.com/")
     # this translator is LARGE and SLOW  # noqa: ERA001, RUF100
     APERTIUM = ApertiumLite
-    BERGAMOT = (lambda: BergamotTranslator(local_server_url="http://localhost:8080")) if BergamotTranslator is not None else None
+    BERGAMOT = BergamotTranslator if BergamotTranslator is not None else None
     #CHATGPT_TRANSLATOR = deep_translatorai.ChatGPTTranslator if deep_translatorai is not None else None
     DEEPL = deep_translator.DeeplTranslator if deep_translator is not None else None
     DEEPL_SCRAPER = AbstractTranslator(deepl_tr)
@@ -213,7 +216,7 @@ class TranslationOption(Enum):
     PONS_TRANSLATOR = deep_translator.PonsTranslator if deep_translator is not None else None
     QCRI_TRANSLATOR = deep_translator.QcriTranslator if deep_translator is not None else None
     T5_TRANSLATOR = T5Translator if T5ForConditionalGeneration is not None else None
-    TATOEBA = (lambda: TatoebaTranslator(local_db_path="path_to_tatoeba.db")) if TatoebaTranslator is not None else None
+    TATOEBA = TatoebaTranslator if TatoebaTranslator is not None else None
     TEXTBLOB = TextBlob
     TRANSLATE = TranslateTranslator  # has api limits
     YANDEX_TRANSLATOR = deep_translator.YandexTranslator if deep_translator is not None else None
@@ -294,6 +297,15 @@ class TranslationOption(Enum):
             }
         if self in [
             self.DEEPL,
+        ]:
+            return {
+                "descriptor_label": lambda root: ttk.Label(root, text="API Key:"),
+                "api_key": lambda root: ttk.Entry(root),
+                "descriptor_label2": lambda root: ttk.Label(root, text="Use Free API:"),
+                "use_free_api": lambda root: ttk.Checkbutton(root),
+            }
+        if self in [
+            self.DEEPL,
             self.QCRI_TRANSLATOR,
             self.YANDEX_TRANSLATOR,
             self.MICROSOFT_TRANSLATOR,
@@ -364,6 +376,11 @@ class Translator:
 
         self._translator = None
         self._initialized = False
+        self.api_key: str
+        self.base_url: str
+        self.server_url: str
+        self.database_path: os.PathLike | str
+        self.use_free_api: bool
 
     def initialize(self) -> None:
         """Initializes the translator.
@@ -381,18 +398,60 @@ class Translator:
         2. Sets the translator based on translation option value
         3. Initializes the translator and sets _initialized flag to True
         """
+        from_lang_code = get_language_code(self.from_lang)
+        to_lang_code = get_language_code(self.to_lang)
         if self.translation_option.value is None:
             msg = "not installed."
             raise ImportError(msg)
         if self.translation_option == TranslationOption.TRANSLATE:
-            self._translator = self.translation_option.value(to_lang=get_language_code(self.to_lang), from_lang=get_language_code(self.from_lang))  # type: ignore[misc]
+            self._translator = self.translation_option.value(to_lang=to_lang_code, from_lang=from_lang_code)  # type: ignore[misc]
         elif self.translation_option in [
             TranslationOption.PONS_TRANSLATOR,
             TranslationOption.MY_MEMORY_TRANSLATOR,
             TranslationOption.GOOGLE_TRANSLATE,
             TranslationOption.APERTIUM,
         ]:
-            self._translator = self.translation_option.value(get_language_code(self.from_lang), get_language_code(self.to_lang))
+            self._translator = self.translation_option.value(from_lang_code, to_lang_code)
+        elif self.translation_option in [
+            TranslationOption.LIBRE_TRANSLATOR,
+        ]:
+            self._translator = self.translation_option.value(
+                source=from_lang_code,
+                target=to_lang_code,
+                base_url=self.base_url,
+                api_key=self.api_key,
+            )
+        elif self.translation_option in [
+            TranslationOption.TATOEBA,
+        ]:
+            self._translator = self.translation_option.value(local_db_path=self.database_path)
+        elif self.translation_option in [
+            TranslationOption.BERGAMOT,
+        ]:
+            self._translator = self.translation_option.value(local_server_url=self.server_url)
+        elif self.translation_option in [
+            TranslationOption.DEEPL,
+        ]:
+            self._translator = self.translation_option.value(
+                api_key=self.api_key,
+                source=from_lang_code,
+                target=to_lang_code,
+                use_free_api=self.use_free_api,
+            )
+        elif self.translation_option in [
+            TranslationOption.YANDEX_TRANSLATOR,
+            TranslationOption.QCRI_TRANSLATOR,
+        ]:
+            self._translator = self.translation_option.value(
+                api_key=self.api_key,
+            )
+        elif self.translation_option in [
+            TranslationOption.MICROSOFT_TRANSLATOR,
+        ]:
+            self._translator = self.translation_option.value(
+                api_key=self.api_key,
+                target=to_lang_code,
+            )
         # elif self.translation_option == TranslationOption.ARGOS_TRANSLATE:
         #   import argostranslate.package, argostranslate.translate
         #   argostranslate.package.install_from_path('path_to_argos_package.argosmodel')
@@ -403,7 +462,7 @@ class Translator:
         else:
             self._translator = self.translation_option.value
             translator = self._translator()
-            self._translator = translator if translator is not None else self._translator
+            self._translator = translator if translator is not None else self._translator  # why did I do this?
         self._initialized = True
 
     def translate(

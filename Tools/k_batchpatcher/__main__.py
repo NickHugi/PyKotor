@@ -656,11 +656,11 @@ class KOTORPatchingToolUI:
         else:
             self.translation_applied = True
 
-    def apply_translation_option(self, varname, value):
+    def apply_translation_option(self, varname, value) -> None:
         setattr(SCRIPT_GLOBALS.pytranslator, varname, value)  # TODO: add all the variable names to __init__ of Translator class
-        self.write_log(f"Applied Options for {self.translation_option.get()}")
-        cur_toption = TranslationOption.__members__[self.translation_option.get()]
-        msg = cur_toption.validate_args(SCRIPT_GLOBALS.pytranslator)
+        self.write_log(f"Applied Options for {self.translation_option.get()}: {varname} = {value}")
+        cur_toption: TranslationOption = TranslationOption.__members__[self.translation_option.get()]
+        msg: str = cur_toption.validate_args(SCRIPT_GLOBALS.pytranslator)
         if msg:
             messagebox.showwarning("Invalid translation options", msg)
             return
