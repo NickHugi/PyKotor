@@ -155,6 +155,7 @@ def patch_nested_gff(
     made_change: bool = False,
 ) -> bool:
     if gff_content != GFFContent.DLG and not SCRIPT_GLOBALS.translate:
+        print("Skipping file, translate not set.")
         return False
     current_path = current_path if isinstance(current_path, PureWindowsPath) else PureWindowsPath(current_path or "GFFRoot")
     for label, ftype, value in gff_struct:
@@ -230,7 +231,7 @@ def patch_resource(resource: FileResource) -> GFF | None:
     if resource.restype().extension.lower() in gff_types or f"{resource.restype().name.upper()} " in GFFContent.get_valid_types():
         gff: GFF | None = None
         try:
-            log_output(f"Loading {resource.resname()}.{resource.restype().extension} from '{resource.filepath().name}'")
+            #log_output(f"Loading {resource.resname()}.{resource.restype().extension} from '{resource.filepath().name}'")
             gff = read_gff(resource.data())
             if patch_nested_gff(
                 gff.root,
@@ -240,6 +241,7 @@ def patch_resource(resource: FileResource) -> GFF | None:
                 return gff
         except Exception as e:  # noqa: BLE001
             log_output(f"[Error] loading GFF {resource.resname()} at {resource.filepath()}! {e!r}")
+            raise
             return None
 
         if not gff:
@@ -374,10 +376,13 @@ def determine_input_path(path: Path):
 
 def execute_patchloop_thread():
     try:
+        SCRIPT_GLOBALS.install_running = True
         do_main_patchloop()
+        SCRIPT_GLOBALS.install_running = False
     except Exception as e:  # noqa: BLE001
         log_output("Unhandled exception during the patching process.")
         log_output(traceback.format_exc())
+        SCRIPT_GLOBALS.install_running = False
         return messagebox.showerror("Error", f"An error occurred during patching\n{e!r}")
 
 def do_main_patchloop():
@@ -393,14 +398,14 @@ def do_main_patchloop():
 
     # Patching logic
     has_action = False
-    if SCRIPT_GLOBALS.translate:
-        has_action = True
-        for lang in SCRIPT_GLOBALS.chosen_languages:
-            main_patchloop_logic(lang)
     if SCRIPT_GLOBALS.create_fonts:
         for lang in SCRIPT_GLOBALS.chosen_languages:
             create_font_pack(lang)
         has_action = True
+    if SCRIPT_GLOBALS.translate:
+        has_action = True
+        for lang in SCRIPT_GLOBALS.chosen_languages:
+            main_patchloop_logic(lang)
     if SCRIPT_GLOBALS.set_unskippable:
         determine_input_path(Path(SCRIPT_GLOBALS.path))
         has_action = True
@@ -420,7 +425,13 @@ def main_patchloop_logic(lang):
 
 def create_font_pack(lang: Language):
     print(f"Creating font pack for '{lang.name}'...")
-    write_bitmap_fonts(Path.cwd() / lang.name, SCRIPT_GLOBALS.font_path, (SCRIPT_GLOBALS.resolution, SCRIPT_GLOBALS.resolution), lang, SCRIPT_GLOBALS.texturewidth, SCRIPT_GLOBALS.draw_bounds)
+    write_bitmap_fonts(
+        Path.cwd() / lang.name,
+        SCRIPT_GLOBALS.font_path,
+        (SCRIPT_GLOBALS.resolution, SCRIPT_GLOBALS.resolution),
+        lang,
+        SCRIPT_GLOBALS.draw_bounds,
+    )
 
 
 def assign_to_globals(instance):
@@ -450,7 +461,6 @@ class KOTORPatchingToolUI:
         self.to_lang = tk.StringVar(value=parser_args.to_lang)
         self.create_fonts = tk.BooleanVar(value=parser_args.create_fonts)
         self.font_path = tk.StringVar(value=parser_args.font_path)
-        self.texturewidth = tk.StringVar(value=parser_args.font_path)
         self.resolution = tk.IntVar(value=parser_args.resolution or 512)
         self.use_profiler = tk.BooleanVar(value=parser_args.use_profiler)
         self.draw_bounds = tk.BooleanVar(value=False)
@@ -584,11 +594,6 @@ class KOTORPatchingToolUI:
         ttk.Button(self.root, text="Browse", command=self.browse_font_path).grid(row=row, column=2)
         row += 1
 
-        # Texture Width
-        ttk.Label(self.root, text="Texturewidth:").grid(row=row, column=0)
-        ttk.Entry(self.root, textvariable=self.texturewidth).grid(row=row, column=1)
-        row += 1
-
         # Draw bounds
         ttk.Label(self.root, text="Draw bounds:").grid(row=row, column=0)
         ttk.Checkbutton(self.root, variable=self.draw_bounds).grid(row=row, column=1)
@@ -703,14 +708,11 @@ class KOTORPatchingToolUI:
             self.font_path.set(file)
 
     def start_patching(self):
-        if self.install_running:
+        if SCRIPT_GLOBALS.install_running:
             return messagebox.showerror("Install already running", "Please wait for all operations to complete. Check the console/output for details.")
         self.install_button.config(state="normal")
-        self.install_running = True
         try:
             assign_to_globals(self)
-            if is_float(SCRIPT_GLOBALS.texturewidth):
-                SCRIPT_GLOBALS.texturewidth = float(SCRIPT_GLOBALS.texturewidth)
             # Mapping UI input to script logic
             try:
                 path = Path(SCRIPT_GLOBALS.path).resolve()
@@ -727,7 +729,7 @@ class KOTORPatchingToolUI:
             SCRIPT_GLOBALS.install_thread.start()
         except Exception as e:
             messagebox.showerror(f"Unhandled exception: {e}")
-            self.install_running = False
+            SCRIPT_GLOBALS.install_running = False
             self.install_button.config(state=tk.DISABLED)
         return None
 

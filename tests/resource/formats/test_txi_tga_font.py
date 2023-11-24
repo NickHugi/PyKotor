@@ -29,6 +29,8 @@ class TestWriteBitmapFont(unittest.TestCase):
         pass
     def test_bitmap_font(self):
         write_bitmap_font(self.output_path / "test_font.tga", FONT_PATH, (512,512), Language.GREEK)
+    def test_bitmap_font_multi(self):
+        write_bitmap_font(self.output_path / "test_font_multi.tga", FONT_PATH, (10240,10240), Language.JAPANESE)
     def test_valid_inputs(self):
         # Test with valid inputs
         target_path = Path("output/font.tga").resolve()

@@ -171,7 +171,8 @@ def get_language_code(lang: Language) -> str:
         Language.CHINESE_TRADITIONAL: "zh-TW",
         Language.CHINESE_SIMPLIFIED: "zh-CN",
         Language.JAPANESE: "ja",
-    }.get(lang)  # type: ignore[return-value]
+        Language.RUSSIAN: "ru",
+    }.get(lang, lang.get_bcp47_code())  # type: ignore[return-value]
 
 
 # Function to convert numerals
@@ -308,8 +309,6 @@ class Translator:
         self.from_lang = from_lang if from_lang is not None else self.from_lang
         if self.from_lang == self.to_lang:
             return text
-        if not self._initialized:
-            self.initialize()
         from_lang_code: str = get_language_code(self.from_lang)  # type: ignore[union-attr]
         to_lang_code: str = get_language_code(self.to_lang)  # type: ignore[union-attr]
 
@@ -436,6 +435,8 @@ class Translator:
         chunk: str
         minimum_length_failed_translate_option: TranslationOption | None = None
         try:
+            if not self._initialized:
+                self.initialize()
             for chunk in chunks:
                 # Ensure not cutting off in the middle of a word
                 chunk = adjust_cutoff(chunk, chunks)  # noqa: PLW2901
