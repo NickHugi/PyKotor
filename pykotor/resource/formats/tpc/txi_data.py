@@ -260,6 +260,9 @@ def write_bitmap_font(
     draw_boxes = True,
 ) -> None:
     """Generates a bitmap font (TGA and TXI) from a TTF font file."""
+    if any(resolution) == 0:
+        msg = f"resolution must be nonzero, got {resolution}"
+        raise ZeroDivisionError(msg)
     from fontTools.ttLib import TTFont
     from PIL import Image, ImageDraw, ImageFont  # Import things here to separate from HoloPatcher code.
     font_path, target_path = ((p if isinstance(p, Path) else Path(p)).resolve() for p in (font_path, target))

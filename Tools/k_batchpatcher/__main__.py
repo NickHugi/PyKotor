@@ -41,7 +41,7 @@ from pykotor.tools.misc import is_capsule_file
 from pykotor.tools.path import CaseAwarePath, find_kotor_paths_from_default
 from pykotor.tslpatcher.logger import PatchLogger
 from pykotor.utility.path import Path, PurePath, PureWindowsPath
-from tools.k_batchpatcher.translate.language_translator import TranslationOption, Translator, get_general_lang_code
+from tools.k_batchpatcher.translate.language_translator import TranslationOption, Translator
 
 if TYPE_CHECKING:
 
@@ -238,7 +238,7 @@ def patch_resource(resource: FileResource) -> GFF | None:
             return None
 
         from_lang: Language = tlk.language
-        new_filename_stem = f"{resource.resname()}_" + (get_general_lang_code(SCRIPT_GLOBALS.to_lang) or "UNKNOWN")
+        new_filename_stem = f"{resource.resname()}_" + (SCRIPT_GLOBALS.to_lang.get_bcp47_code() or "UNKNOWN")
         new_file_path = resource.filepath().parent / (new_filename_stem + resource.restype().extension)
         tlk.language = SCRIPT_GLOBALS.to_lang
         tlk.entries = process_translations(tlk, from_lang)

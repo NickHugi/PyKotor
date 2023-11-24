@@ -32,6 +32,10 @@ try:
 except ImportError:
     deep_translator = None
 try:
+    from deep_translator import ChatGptTranslator
+except ImportError:
+    ChatGptTranslator = None
+try:
     from googletrans import Translator as GoogleTranslator  # type: ignore[reportGeneralTypeIssues, import-not-found]
 except ImportError:
     GoogleTranslator = None
@@ -150,7 +154,7 @@ class TranslationOption(Enum):
     APERTIUM = ApertiumLite
     ARGOS_TRANSLATE = argostranslate if argostranslate is not None else None
     BERGAMOT = BergamotTranslator if BergamotTranslator is not None else None
-    CHATGPT_TRANSLATOR = deep_translator.ChatGptTranslator if deep_translator is not None else None
+    CHATGPT_TRANSLATOR = ChatGptTranslator if ChatGptTranslator is not None else None
     DEEPL = deep_translator.DeeplTranslator if deep_translator is not None else None
     DEEPL_SCRAPER = AbstractTranslator(deepl_tr)
     DL_TRANSLATE = (lambda: dlt.TranslationModel()) if dlt is not None else None

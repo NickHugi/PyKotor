@@ -40,18 +40,18 @@ def fix_sys_and_cwd_path():
     - Also checks for toolset package and changes cwd to that directory if exists.
     - This ensures packages and scripts can be located correctly on import.
     """
+    def update_sys_path(path: pathlib.Path):
+        working_dir = str(path.parent)
+        if working_dir in sys.path:
+            sys.path.remove(working_dir)
+        sys.path.insert(0, working_dir)
+
     pykotor_path = pathlib.Path(__file__).parents[3] / "pykotor"
     if pykotor_path.joinpath("__init__.py").exists():
-        working_dir = str(pykotor_path.parent)
-        if working_dir in sys.path:
-            sys.path.remove(working_dir)
-        sys.path.insert(0, working_dir)
+        update_sys_path(pykotor_path)
     toolset_path = pathlib.Path(__file__).parents[1] / "toolset"
     if toolset_path.joinpath("__init__.py").exists():
-        working_dir = str(toolset_path.parent)
-        if working_dir in sys.path:
-            sys.path.remove(working_dir)
-        sys.path.insert(0, working_dir)
+        update_sys_path(toolset_path)
         os.chdir(toolset_path)
 
 if __name__ == "__main__":
