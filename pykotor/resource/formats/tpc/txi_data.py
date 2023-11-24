@@ -334,25 +334,29 @@ def write_bitmap_font(
         char_height = char_bbox[3] - char_bbox[1]
 
         text_x = pixel_x1
-        text_y = pixel_y1 - text_underhang/2
+        text_y = pixel_y1
 
         libraqm_available = True
         try:  # libraqm
             draw.text((text_x, text_y), char, language=lang.get_bcp47_code(), font=pil_font, fill=(255, 255, 255, 255))
         except Exception as e:
             libraqm_available = False
+            text_y = pixel_y1 - text_underhang/2
             print(f"Failed to draw text with preferred arguments: {e!r}. Using fallback..")
             draw.text((text_x, text_y), char, align="center", font=pil_font, fill=(255, 255, 255, 255))
 
         # this code is due to lack of libraqm to attempt to adjust the inaccuracies with the fallback.
-        diff = 3
+        diff = 4
         if libraqm_available:
             diff = 0
-        elif text_underhang > 0:
-            diff = 6
-            #pixel_y2 += 3
-        if text_overhang:
-            pixel_y1 -= 3
+            char_width = 0
+            char_height = 0
+        else:
+            if text_underhang > 0:
+                diff = 7
+                #pixel_y2 += 3
+            if text_overhang:
+                pixel_y1 -= 3
         pixel_x2 = pixel_x1 + char_width
         pixel_y1 = pixel_y2 - char_height - diff # top of char box
         if draw_boxes:
