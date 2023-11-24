@@ -95,7 +95,7 @@ class Globals:
         return self._attributes.get(key, None)
 
 SCRIPT_GLOBALS = Globals()
-SCRIPT_GLOBALS.pytranslator = Translator(SCRIPT_GLOBALS.to_lang)
+SCRIPT_GLOBALS.pytranslator: Translator = None
 
 def relative_path_from_to(src, dst) -> Path:
     src_parts = list(src.parts)
@@ -420,6 +420,10 @@ def do_main_patchloop():
 
 def main_patchloop_logic(lang):
     print(f"Translating to {lang.name}...")
+    if SCRIPT_GLOBALS.pytranslator is None:
+        SCRIPT_GLOBALS.pytranslator = Translator(lang)
+    else:
+        SCRIPT_GLOBALS.pytranslator.to_lang = lang
     SCRIPT_GLOBALS.to_lang = lang
     SCRIPT_GLOBALS.pytranslator.translation_option = SCRIPT_GLOBALS.translation_option  # type: ignore[assignment]
     determine_input_path(Path(SCRIPT_GLOBALS.path))
@@ -484,7 +488,7 @@ class KOTORPatchingToolUI:
         self.install_running = False
         self.install_button: ttk.Button
         self.language_frame = ttk.Frame(root)  # Frame to contain language checkboxes
-        self.translation_applied: bool = False
+        self.translation_applied: bool = True
         SCRIPT_GLOBALS.chosen_languages = []
 
         self.setup_ui()
@@ -579,26 +583,6 @@ class KOTORPatchingToolUI:
         ttk.Checkbutton(self.root, text="Yes", variable=self.create_fonts).grid(row=row, column=1)
         row += 1
 
-        # Show/Hide output window
-        self.show_hide_output = tk.BooleanVar(value=False)
-        ttk.Checkbutton(self.root, text="Show Output:", command=lambda: self.toggle_output_frame(self.show_hide_output)).grid(row=row, column=1)
-        row += 1
-
-        # To Language
-        self.create_language_checkbuttons(row)
-        row += len(Language)
-        self.output_frame = tk.Frame(self.root)
-        self.output_frame.grid(row=self.language_row, column=0, sticky="nsew")
-        self.output_frame.grid_rowconfigure(0, weight=1)
-        self.output_frame.grid_columnconfigure(0, weight=1)
-        self.output_frame.grid_remove()
-
-        self.description_text = tk.Text(self.output_frame, wrap=tk.WORD)
-        font_obj = tkfont.Font(font=self.description_text.cget("font"))
-        font_obj.configure(size=9)
-        self.description_text.configure(font=font_obj)
-        self.description_text.grid(row=0, column=0, sticky="nsew")
-
         # Font Path
         ttk.Label(self.root, text="Font Path:").grid(row=row, column=0)
         ttk.Entry(self.root, textvariable=self.font_path).grid(row=row, column=1)
@@ -624,6 +608,26 @@ class KOTORPatchingToolUI:
         #ttk.Label(self.root, text="Use Profiler:").grid(row=row, column=0)
         #ttk.Checkbutton(self.root, text="Yes", variable=self.use_profiler).grid(row=row, column=1)
         #row += 1
+
+        # Show/Hide output window
+        self.show_hide_output = tk.BooleanVar(value=False)
+        ttk.Checkbutton(self.root, text="Show Output:", command=lambda: self.toggle_output_frame(self.show_hide_output)).grid(row=row, column=1)
+        row += 1
+
+        # To Language
+        self.create_language_checkbuttons(row)
+        row += len(Language)
+        self.output_frame = tk.Frame(self.root)
+        self.output_frame.grid(row=self.language_row, column=0, sticky="nsew")
+        self.output_frame.grid_rowconfigure(0, weight=1)
+        self.output_frame.grid_columnconfigure(0, weight=1)
+        self.output_frame.grid_remove()
+
+        self.description_text = tk.Text(self.output_frame, wrap=tk.WORD)
+        font_obj = tkfont.Font(font=self.description_text.cget("font"))
+        font_obj.configure(size=9)
+        self.description_text.configure(font=font_obj)
+        self.description_text.grid(row=0, column=0, sticky="nsew")
 
         # Start Patching Button
         self.install_button = ttk.Button(self.root, text="Run All Operations", command=self.start_patching)
@@ -666,7 +670,7 @@ class KOTORPatchingToolUI:
             return
         self.translation_applied = True
 
-    def create_language_checkbuttons(self, row):
+    def create_language_checkbuttons(self, row) -> None:
 
         # Show/Hide Languages
         self.show_hide_language = tk.BooleanVar(value=False)

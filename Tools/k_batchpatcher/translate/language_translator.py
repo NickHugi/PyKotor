@@ -376,11 +376,11 @@ class Translator:
 
         self._translator = None
         self._initialized = False
-        self.api_key: str
-        self.base_url: str
-        self.server_url: str
-        self.database_path: os.PathLike | str
-        self.use_free_api: bool
+        self.api_key: str | None = None
+        self.base_url: str | None = None
+        self.server_url: str | None = None
+        self.database_path: os.PathLike | str | None = None
+        self.use_free_api: bool = False
 
     def initialize(self) -> None:
         """Initializes the translator.
@@ -545,7 +545,7 @@ class Translator:
                 msg = "Same text was returned from translate function."
                 raise ValueError(msg)
 
-        def prevalidate_text(chunk: str):
+        def prevalidate_text(chunk: str, option: TranslationOption):
             # Throw errors when there's not enough text to translate.
             if len(chunk) < self.translation_option.min_chunk_length():
                 print(f"'{chunk}' is not enough text to translate!")
@@ -573,7 +573,7 @@ class Translator:
             """
             if chunk.isdigit():
                 return translate_numerals(chunk, self.from_lang, self.to_lang)
-            prevalidate_text(chunk)
+            prevalidate_text(chunk, option)
             chunk, replacements = replace_curly_braces(chunk)
             translated_chunk: str
             # if option == TranslationOption.GOOGLETRANS:
