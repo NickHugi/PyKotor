@@ -255,7 +255,7 @@ class App(tk.Tk):
         self.exit_button.pack(side="left", padx=5, pady=5)
 
         self.uninstall_button = ttk.Button(bottom_frame, text="Uninstall", command=self.uninstall_selected_mod)
-        self.uninstall_button.pack(side="right", padx=5, pady=5)
+        #self.uninstall_button.pack(side="right", padx=5, pady=5)
 
         self.install_button = ttk.Button(bottom_frame, text="Install", command=self.begin_install)
         self.install_button.pack(side="right", padx=5, pady=5)
@@ -432,6 +432,7 @@ class App(tk.Tk):
         """
         if not self.preinstall_validate_chosen():
             return
+        destination_folder = Path(self.gamepaths.get())
         backup_parent_folder = Path(self.mod_path, "backup")
         if not backup_parent_folder.exists():
             messagebox.showerror(
