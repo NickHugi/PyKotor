@@ -8,12 +8,12 @@ NAME = "PyKotor"
 VERSION = "1.7.0"
 AUTHOR = "Nicholas Hugi"
 DESCRIPTION = "Read, modify and write files used by KotOR's game engine."
-PACKAGES = find_namespace_packages(exclude=["tests", "docs", "Tools/k_batchpatcher"])
+PACKAGES = find_namespace_packages(exclude=["tests", "docs", "tools/k_batchpatcher"])
 URL = "https://github.com/NickHugi/PyKotor"
 
 README = (HERE / "README.md").read_text()
 REQUIREMENTS = (HERE / "requirements.txt").read_text().splitlines()
-TOOLSET_REQUIREMENTS = (HERE / "Tools" / "HolocronToolset" / "toolset" / "requirements.txt").read_text().splitlines()
+TOOLSET_REQUIREMENTS = (HERE / "tools" / "HolocronToolset" / "toolset" / "requirements.txt").read_text().splitlines()
 REQUIREMENTS.extend(TOOLSET_REQUIREMENTS)
 
 setup(

@@ -30,7 +30,7 @@ def fix_sys_and_cwd_path():
 
     This function will determine whether they have the source files downloaded for pykotor in the expected directory. If they do, we
     insert the source path to pykotor to the beginning of sys.path so it'll have priority over pip's pykotor package if that is installed.
-    If the toolset dir exists, change directory to that of the toolset. Allows users to do things like `python -m Tools.HolocronToolset.toolset`
+    If the toolset dir exists, change directory to that of the toolset. Allows users to do things like `python -m tools.HolocronToolset.toolset`
     This function should never be used in frozen code.
     This function also ensures a user can run toolset/__main__.py directly.
 

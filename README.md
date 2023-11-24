@@ -31,12 +31,12 @@ If you would like to work with the source files directly from GitHub, run the fo
 git clone https://github.com/NickHugi/PyKotor
 cd PyKotor
 pip install -r requirements.txt
-pip install -r Tools/HolocronToolset/toolset/requirements.txt
+pip install -r tools/HolocronToolset/toolset/requirements.txt
 ```
 Then, you can run any entry-point scripts, such as HoloPatcher and the Toolset, like this:
 ```bash
-python -m Tools.holopatcher
-python -m Tools.HolocronToolset.toolset
+python -m tools.holopatcher
+python -m tools.HolocronToolset.toolset
 ```
 
 ## Troubleshooting

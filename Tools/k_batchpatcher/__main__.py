@@ -41,7 +41,7 @@ from pykotor.tools.misc import is_capsule_file
 from pykotor.tools.path import CaseAwarePath, find_kotor_paths_from_default
 from pykotor.tslpatcher.logger import PatchLogger
 from pykotor.utility.path import Path, PurePath, PureWindowsPath
-from Tools.k_batchpatcher.translate.language_translator import TranslationOption, Translator, get_general_lang_code
+from tools.k_batchpatcher.translate.language_translator import TranslationOption, Translator, get_general_lang_code
 
 if TYPE_CHECKING:
 

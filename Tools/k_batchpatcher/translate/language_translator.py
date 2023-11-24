@@ -10,7 +10,7 @@ import requests
 
 from pykotor.common.language import Language
 from pykotor.utility.path import Path
-from Tools.k_batchpatcher.translate.deepl_scraper import deepl_tr
+from tools.k_batchpatcher.translate.deepl_scraper import deepl_tr
 
 if TYPE_CHECKING:
     import os

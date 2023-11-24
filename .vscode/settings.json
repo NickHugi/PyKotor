@@ -176,7 +176,7 @@
 "python.analysis.enablePytestSupport": false,
 "python.testing.pytestEnabled": false,
 "python.analysis.extraPaths": [
-  "./Tools/HolocronToolset/toolset",
+  "./tools/HolocronToolset/toolset",
   ".",
 ],
 "python.testing.unittestEnabled": true,
