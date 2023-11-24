@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import re
 from enum import Enum
+import traceback
 from typing import TYPE_CHECKING, Any, Callable
 
 import requests
@@ -407,11 +408,17 @@ class Translator:
             self._translator = self.translation_option.value(to_lang=to_lang_code, from_lang=from_lang_code)  # type: ignore[misc]
         elif self.translation_option in [
             TranslationOption.PONS_TRANSLATOR,
-            TranslationOption.MY_MEMORY_TRANSLATOR,
             TranslationOption.GOOGLE_TRANSLATE,
+            TranslationOption.MY_MEMORY_TRANSLATOR,
             TranslationOption.APERTIUM,
         ]:
+            from_lang_code = "en-US" if self.from_lang == Language.ENGLISH and self.translation_option == TranslationOption.MY_MEMORY_TRANSLATOR else from_lang_code
+            to_lang_code = "en-US" if self.to_lang == Language.ENGLISH and self.translation_option == TranslationOption.MY_MEMORY_TRANSLATOR else to_lang_code
             self._translator = self.translation_option.value(from_lang_code, to_lang_code)
+        elif self.translation_option in [
+            TranslationOption.LINGUEE_TRANSLATOR,
+        ]:
+            self._translator = self.translation_option.value(self.from_lang.name.lower(), self.to_lang.name.lower())
         elif self.translation_option in [
             TranslationOption.LIBRE_TRANSLATOR,
         ]:
@@ -668,6 +675,7 @@ class Translator:
             except Exception as e:  # noqa: BLE001
                 # Log the exception, proceed to the next translation option
                 print(f"Translation using '{option.name}' failed: {e!r}")
+                print(traceback.format_exc())
                 continue
 
         if minimum_length_failed_translate_option is not None:  # set the preferred translator back.
