@@ -15,6 +15,8 @@ from pykotor.resource.formats.tpc.txi_data import write_bitmap_font
 from pykotor.utility.path import Path
 
 FONT_PATH = Path("tests/files/roboto/Roboto-Black.ttf")
+CHINESE_FONT_PATH = Path("tests/files/chinese_simplified_ttf/Unifontexmono-AL3RA.ttf")
+THAI_FONT_PATH = Path("tests/files/TH Sarabun New Regular/TH Sarabun New Regular.ttf")
 
 from PIL import Image
 
@@ -28,7 +30,11 @@ class TestWriteBitmapFont(unittest.TestCase):
         #self.output_path.unlink()
         pass
     def test_bitmap_font(self):
-        write_bitmap_font(self.output_path / "test_font.tga", FONT_PATH, (512,512), Language.GREEK)
+        write_bitmap_font(self.output_path / "test_font.tga", FONT_PATH, (512,512), Language.ENGLISH)
+    def test_bitmap_font_chinese(self):
+        write_bitmap_font(self.output_path / "test_font_chinese.tga", CHINESE_FONT_PATH, (2048,2048), Language.CHINESE_SIMPLIFIED)
+    def test_bitmap_font_thai(self):
+        write_bitmap_font(self.output_path / "test_font_thai.tga", THAI_FONT_PATH, (2048,2048), Language.THAI)
     def test_bitmap_font_multi(self):
         write_bitmap_font(self.output_path / "test_font_multi.tga", FONT_PATH, (10240,10240), Language.JAPANESE)
     def test_valid_inputs(self):
