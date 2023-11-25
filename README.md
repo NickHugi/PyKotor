@@ -54,7 +54,7 @@ sudo apt install python3-pyqt5
 brew install pyqt5
 ```
 ### HoloPatcher
-HoloPatcher requires `python3-tkinter`
+HoloPatcher requires `tkinter`
 #### Linux:
 ```commandline
 sudo apt install python3-tkinter
