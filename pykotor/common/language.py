@@ -146,7 +146,7 @@ class Language(IntEnum):
         return Language.ENGLISH
 
     def is_8bit_encoding(self) -> bool:
-        return self not in {Language.UNKNOWN, Language.KOREAN, Language.CHINESE_TRADITIONAL, Language.CHINESE_SIMPLIFIED, Language.JAPANESE}
+        return self not in {Language.UNKNOWN}
 
     def get_encoding(self):
         """Gets the encoding for a given language.
@@ -296,15 +296,15 @@ class Language(IntEnum):
         ]:
             return "ISO-8859-10"
 
-        # The following languages/encodings are not 8-bit and need additional information in order to be supported.
+        # The following languages/encodings may not be 8-bit and need additional information in order to be supported.
         if self == Language.KOREAN:
-            return "euc_kr"
+            return "cp949"
         if self == Language.CHINESE_TRADITIONAL:
-            return "big5"
+            return "cp950"
         if self == Language.CHINESE_SIMPLIFIED:
-            return "gb2312"
+            return "cp936"
         if self == Language.JAPANESE:
-            return "shift_jis"
+            return "cp932"
         if self == Language.UNKNOWN:
             return None
         msg = f"No encoding defined for language: {self.name}"
