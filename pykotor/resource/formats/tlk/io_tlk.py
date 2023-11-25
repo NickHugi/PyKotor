@@ -100,7 +100,7 @@ class TLKBinaryWriter(ResourceWriter):
         tlk: TLK,
         target: TARGET_TYPES,
     ):
-        super().__init__(target, tlk.language.get_encoding() or "cp-1252")
+        super().__init__(target)
         self._tlk: TLK = tlk
 
     @autoclose

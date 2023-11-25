@@ -2,9 +2,9 @@
 games.
 """
 from __future__ import annotations
+from enum import Enum
 
 import os
-from enum import Enum
 from typing import NamedTuple, Union
 from xml.etree.ElementTree import ParseError
 
@@ -20,9 +20,8 @@ class ResourceReader:
         source: SOURCE_TYPES,
         offset: int = 0,
         size: int = 0,
-        encoding = "utf-8",
     ):
-        self._reader = BinaryReader.from_auto(source, offset, encoding=encoding)
+        self._reader = BinaryReader.from_auto(source, offset)
         self._size = self._reader.remaining() if size == 0 else size
 
     def close(
@@ -35,9 +34,8 @@ class ResourceWriter:
     def __init__(
         self,
         target: TARGET_TYPES,
-        encoding = "utf-8",
     ):
-        self._writer = BinaryWriter.to_auto(target, encoding)
+        self._writer = BinaryWriter.to_auto(target)
 
     def close(
         self,

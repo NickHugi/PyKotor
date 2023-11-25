@@ -82,7 +82,6 @@ class BinaryReader:
         path: os.PathLike | str,
         offset: int = 0,
         size: int | None = None,
-        encoding = "utf-8",
     ) -> BinaryReader:
         """Returns a new BinaryReader with a stream established to the specified path.
 
@@ -97,7 +96,7 @@ class BinaryReader:
             A new BinaryReader instance.
         """
         resolved_path = (path if isinstance(path, Path) else Path(path)).resolve()
-        stream = resolved_path.open("rb", encoding=encoding)
+        stream = resolved_path.open("rb")
         return BinaryReader(stream, offset, size)
 
     @classmethod
@@ -128,10 +127,9 @@ class BinaryReader:
         source: SOURCE_TYPES,
         offset: int = 0,
         size: int | None = None,
-        encoding="utf-8",
     ):
         if isinstance(source, (os.PathLike, str)):  # is path
-            reader = BinaryReader.from_file(source, offset, size, encoding)
+            reader = BinaryReader.from_file(source, offset, size)
         elif isinstance(source, (bytes, bytearray)):  # is binary data
             reader = BinaryReader.from_bytes(source, offset, size)
         elif isinstance(source, BinaryReader):
@@ -678,7 +676,6 @@ class BinaryWriter(ABC):
     def to_file(
         cls,
         path: os.PathLike | str,
-        encoding = "utf-8",
     ) -> BinaryWriterFile:
         """Returns a new BinaryWriter with a stream established to the specified path.
 
@@ -691,7 +688,7 @@ class BinaryWriter(ABC):
             A new BinaryWriter instance.
         """
         resolved_path = (path if isinstance(path, Path) else Path(path)).resolve()
-        stream = resolved_path.open("wb", encoding=encoding)
+        stream = resolved_path.open("wb")
         return BinaryWriterFile(stream)
 
     @classmethod
@@ -720,10 +717,9 @@ class BinaryWriter(ABC):
     def to_auto(
         cls,
         source: TARGET_TYPES,
-        encoding="utf-8",
     ) -> BinaryWriter:
         if isinstance(source, (os.PathLike, str)):  # is path
-            return BinaryWriter.to_file(source, encoding)
+            return BinaryWriter.to_file(source)
         if isinstance(source, bytearray):  # is binary data
             return BinaryWriter.to_bytearray(source)
         if isinstance(source, BinaryWriter):
