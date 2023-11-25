@@ -214,7 +214,7 @@ def patch_resource(resource: FileResource) -> GFF | None:
     def process_translations(tlk: TLK, from_lang) -> None:
         with concurrent.futures.ThreadPoolExecutor(max_workers=SCRIPT_GLOBALS.max_threads) as executor:
             # Create a future for each translation task
-            future_to_strref = {executor.submit(translate_entry, tlkentry, from_lang): strref for strref, tlkentry in tlk}
+            future_to_strref: dict[concurrent.futures.Future[tuple[str, str]], int] = {executor.submit(translate_entry, tlkentry, from_lang): strref for strref, tlkentry in tlk}
 
             for future in concurrent.futures.as_completed(future_to_strref):
                 strref: int = future_to_strref[future]
@@ -222,8 +222,9 @@ def patch_resource(resource: FileResource) -> GFF | None:
                     log_output(f"Translating TLK text at {resource.filepath()!s}")
                     original_text, translated_text = future.result()
                     if translated_text.strip():
+                        translated_text = fix_encoding(translated_text, SCRIPT_GLOBALS.to_lang.get_encoding())
                         tlk.entries[strref].text_present = True
-                        tlk.replace(strref, fix_encoding(translated_text, SCRIPT_GLOBALS.to_lang.get_encoding()))
+                        tlk.replace(strref, translated_text)
                         log_output(f"#{strref} Translated {original_text} --> {translated_text}")
                 except Exception as exc:
                     log_output(f"tlk strref {strref} generated an exception: {exc!r}")
