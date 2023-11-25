@@ -55,11 +55,11 @@ def find_best_8bit_encoding(s: str) -> str | None:
     matches = charset_normalizer.from_bytes(utf8_encoded)
 
     # We filter out non 8-bit encodings and Unicode encodings
-    eight_bit_encodings = [match for match in matches if match.encoding != "utf-8" and "iso" in match.encoding]
+    eight_bit_encodings: list[charset_normalizer.CharsetMatch] = [match for match in matches if "iso" in match.encoding.lower() or match.encoding.startswith("cp") or match.encoding.startswith("windows-")]
 
     # If we have 8-bit matches, we take the one with the highest confidence
     if eight_bit_encodings:
-        best_match = max(eight_bit_encodings, key=lambda m: m.chaos)
+        best_match: charset_normalizer.CharsetMatch = max(eight_bit_encodings, key=lambda m: m.chaos)
         return best_match.encoding
 
     return None

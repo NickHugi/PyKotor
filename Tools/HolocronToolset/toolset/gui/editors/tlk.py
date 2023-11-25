@@ -11,6 +11,7 @@ from PyQt5.QtWidgets import QDialog, QProgressBar, QShortcut, QVBoxLayout, QWidg
 from pykotor.common.misc import ResRef
 from pykotor.resource.formats.tlk import TLK, TLKEntry, read_tlk, write_tlk
 from pykotor.resource.type import ResourceType
+from pykotor.utility.misc import is_debug_mode
 from toolset.gui.editor import Editor
 
 if TYPE_CHECKING:
@@ -260,11 +261,19 @@ class LoaderDialog(QDialog):
         self.model = QStandardItemModel()
         self.model.setColumnCount(2)
 
-        self.worker = LoaderWorker(fileData, model)
-        self.worker.entryCount.connect(self.onEntryCount)
-        self.worker.batch.connect(self.onBatch)
-        self.worker.loaded.connect(self.onLoaded)
-        self.worker.start()
+        if is_debug_mode():
+            # Run synchronously
+            self.worker = LoaderWorker(fileData, model)
+            self.worker.entryCount.connect(self.onEntryCount)
+            self.worker.batch.connect(self.onBatch)
+            self.worker.loaded.connect(self.onLoaded)
+            self.worker.load_data()  # Directly call the loading function
+        else:
+            self.worker = LoaderWorker(fileData, model)
+            self.worker.entryCount.connect(self.onEntryCount)
+            self.worker.batch.connect(self.onBatch)
+            self.worker.loaded.connect(self.onLoaded)
+            self.worker.start()
 
     def onEntryCount(self, count: int):
         self._progressBar.setMaximum(count)
@@ -285,10 +294,25 @@ class LoaderWorker(QThread):
     entryCount = QtCore.pyqtSignal(object)
     loaded = QtCore.pyqtSignal()
 
-    def __init__(self, fileData, model):
+    def __init__(self, fileData, model) -> None:
         super().__init__()
         self._fileData: bytes = fileData
         self._model: QStandardItemModel = model
+
+    def load_data(self):
+        """Load tlk data from file."""
+        tlk = read_tlk(self._fileData)
+        self.entryCount.emit(len(tlk))
+
+        batch = []
+        for _stringref, entry in tlk:
+            batch.append([QStandardItem(entry.text), QStandardItem(entry.voiceover.get())])
+            if len(batch) > 200:
+                self.batch.emit(batch)
+                batch = []
+                sleep(0.001)
+        self.batch.emit(batch)
+        self.loaded.emit()
 
     def run(self):
         """Load tlk data from file in batches
@@ -304,17 +328,4 @@ class LoaderWorker(QThread):
             - Emits final batch
             - Signals loading is complete.
         """
-        tlk = read_tlk(self._fileData)
-
-        self.entryCount.emit(len(tlk))
-
-        batch = []
-        for _stringref, entry in tlk:
-            batch.append([QStandardItem(entry.text), QStandardItem(entry.voiceover.get())])
-            if len(batch) > 200:
-                self.batch.emit(batch)
-                batch = []
-                sleep(0.001)
-        self.batch.emit(batch)
-
-        self.loaded.emit()
+        self.load_data()

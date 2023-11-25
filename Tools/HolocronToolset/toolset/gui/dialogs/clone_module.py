@@ -101,9 +101,7 @@ class CloneModuleDialog(QDialog):
             QMessageBox(QMessageBox.Information, "This may take a while", "You have selected to create copies of the "
                         "texture. This process may add a few extra minutes to the waiting time.").exec_()
 
-        if is_debug_mode() and not is_frozen():
-            task()
-        elif not AsyncLoader(self, "Creating module", task, "Failed to create module").exec_():
+        if not AsyncLoader(self, "Creating module", task, "Failed to create module").exec_():
             return
         QMessageBox(QMessageBox.Information, "Clone Successful",
                     f"You can now warp to the cloned module '{identifier}'.").exec_()

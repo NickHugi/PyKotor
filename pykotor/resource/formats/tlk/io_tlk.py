@@ -5,6 +5,7 @@ from pykotor.common.misc import ResRef, WrappedInt
 from pykotor.common.stream import ArrayHead
 from pykotor.resource.formats.tlk import TLK, TLKEntry
 from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES, ResourceReader, ResourceWriter, autoclose
+from pykotor.tools.encoding import find_best_8bit_encoding
 
 _FILE_HEADER_SIZE = 20
 _ENTRY_SIZE = 40
@@ -93,7 +94,6 @@ class TLKBinaryReader(ResourceReader):
 
         self._tlk.entries[stringref].text = text
 
-
 class TLKBinaryWriter(ResourceWriter):
     def __init__(
         self,
@@ -111,11 +111,12 @@ class TLKBinaryWriter(ResourceWriter):
         self._write_file_header()
 
         text_offset = WrappedInt(0)
+        encoding: str | None = self._tlk.language.get_encoding() or find_best_8bit_encoding("\n".join(entry.text for entry in self._tlk.entries))
         for entry in self._tlk.entries:
             self._write_entry(entry, text_offset)
 
         for entry in self._tlk.entries:
-            self._writer.write_string(entry.text, self._tlk.language.get_encoding(), errors="ignore")
+            self._writer.write_string(entry.text, encoding or "cp1252", errors="replace")
 
     def _calculate_entries_offset(
         self,
