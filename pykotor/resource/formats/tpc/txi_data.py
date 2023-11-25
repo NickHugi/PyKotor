@@ -149,125 +149,6 @@ def get_font_info(font, point_size: int):
     descent = font["hhea"].descent * point_size / units_per_em
     return ascent, descent, units_per_em
 
-def get_character_dimensions_fallback(font, char: str, point_size: int, DPI=96):
-    cmap = font["cmap"].getcmap(3, 1).cmap
-    glyph_set = font.getGlyphSet()
-    units_per_em = font["head"].unitsPerEm
-    glyph_name = cmap.get(ord(char), ".notdef")
-    glyph = glyph_set[glyph_name]
-
-    point_to_pixels = point_size / 72 * DPI
-    width = glyph.width * point_to_pixels / units_per_em if glyph.width != 0 else point_size
-    height = None
-    # Use the font's ascent and descent to calculate height
-    ascent = font["hhea"].ascent * point_to_pixels / units_per_em
-    descent = -font["hhea"].descent * point_to_pixels / units_per_em  # descent is typically negative
-    height = ascent + descent
-    if hasattr(glyph, "yMax") and hasattr(glyph, "yMin") and glyph.yMax != glyph.yMin:
-        height = (glyph.yMax - glyph.yMin) * point_to_pixels / units_per_em
-    else:
-        height = point_size  # Default height if yMax and yMin are not available or the same
-
-    return width, height
-
-def getTextWidth(text, font, pointSize):
-    cmap = font["cmap"]
-    t = cmap.getcmap(3,1).cmap
-    s = font.getGlyphSet()
-    units_per_em = font["head"].unitsPerEm
-    total = 0
-    for c in text:
-        if ord(c) in t and t[ord(c)] in s:
-            total += s[t[ord(c)]].width
-        else:
-            total += s[".notdef"].width
-    return total*float(pointSize)/units_per_em
-
-def get_char_width(char, pil_font):
-    from PIL import Image, ImageDraw, ImageFont
-    # Create an image with 'RGB' mode and white background
-    image = Image.new("RGB", (100, 100), color=(255, 255, 255))
-    draw = ImageDraw.Draw(image)
-
-    # Draw the character on the image
-    draw.text((0, 0), char, font=pil_font, fill=(0, 0, 0))
-
-    # Find the bounding box of the drawn text
-    bbox = image.getbbox()
-
-    if bbox:  # bbox can be None if the character is not visible
-        return bbox[2] - bbox[0]
-    return 0
-
-def get_char_advance_width_in_pixels(font, char, point_size):
-    
-    # Get horizontal metrics table (hmtx)
-    hmtx_table = font['hmtx']
-
-    # Get cmap table to map character to glyph index
-    cmap = font['cmap']
-    t = cmap.getcmap(3, 1).cmap
-
-    # Get the glyph index for the character
-    glyph_index = t[ord(char)] if ord(char) in t else None
-
-    # Get the units per em from the font's head table
-    units_per_em = font['head'].unitsPerEm
-
-    # Default advance width (can be an average or a fixed value)
-    default_advance_width = sum(width for width, _ in hmtx_table.metrics.values()) / len(hmtx_table.metrics)
-
-    # Use the glyph's advance width if available, else use default
-    advance_width = hmtx_table.metrics.get(glyph_index, (default_advance_width, 0))[0]
-
-    # Convert the advance width to pixels
-    pixel_width = advance_width * float(point_size) / units_per_em
-    return int(pixel_width)  # Return as integer for use in Pillow
-
-def get_character_dimensions(ttfont, char: str, point_size: int, DPI=96):
-    from fontTools.pens.boundsPen import BoundsPen
-    from fontTools.pens.ttGlyphPen import TTGlyphPen
-    units_per_em = ttfont["head"].unitsPerEm
-    cmap = next(c for c in ttfont["cmap"].tables if c.format == 4)
-    glyph_id = cmap.cmap.get(ord(char))
-
-    if glyph_id is None:
-        print(f"Character {char} not found in font TTF file.")
-        return *get_character_dimensions_fallback(ttfont, char, point_size, DPI), 0, 0
-
-    # Glyph metrics
-    h_metrics = ttfont["hmtx"].metrics[glyph_id]
-    glyph_width = h_metrics[0]
-
-    # Create a glyph pen
-    pen = TTGlyphPen(ttfont.getGlyphSet())
-
-    # Draw the glyph
-    try:
-        ttfont.getGlyphSet()[char].draw(pen)
-    except Exception as e:
-        print(f"Character '{char}':", repr(e))
-        return *get_character_dimensions_fallback(ttfont, char, point_size, DPI), 0, 0
-    glyph = pen.glyph()
-
-    # Get glyph's bounding box
-    glyf_table = ttfont["glyf"]
-    boundsPen = BoundsPen(glyf_table)
-    glyph.draw(boundsPen, glyf_table)
-
-    xMin, yMin, xMax, yMax = boundsPen.bounds
-    point_to_pixels = point_size / 72 * DPI
-    ascent = ttfont["hhea"].ascent * point_to_pixels / units_per_em
-    descent = -ttfont["hhea"].descent * point_to_pixels / units_per_em  # descent is typically negative
-    height = ascent + descent
-    scale = point_size / units_per_em * DPI / 72
-    #height = (yMax - yMin) * scale  # inaccurate?
-    width = glyph_width * scale
-    overhang = yMax * scale if yMax > 0 else 0
-    underhang = abs(yMin) * scale if yMin < 0 else 0
-
-    return width, height, overhang, underhang
-
 def write_bitmap_fonts(
     target: os.PathLike | str,
     font_path: os.PathLike | str,
@@ -317,7 +198,6 @@ def write_bitmap_font(
     if any(resolution) == 0:
         msg = f"resolution must be nonzero, got {resolution}"
         raise ZeroDivisionError(msg)
-    from fontTools.ttLib import TTFont
     from PIL import Image, ImageDraw, ImageFont  # Import things here to separate from HoloPatcher code.
     font_path, target_path = ((p if isinstance(p, Path) else Path(p)).resolve() for p in (font_path, target))
 
@@ -341,12 +221,8 @@ def write_bitmap_font(
     txi_font_info.upperleftcoords = 0x110000 if txi_font_info.isdoublebyte else 256
     txi_font_info.lowerrightcoords = 0x110000 if txi_font_info.isdoublebyte else 256
 
-    # Load the TTF font with fontTools
-    font = TTFont(str(font_path))
-
     # Assuming a square grid cell, set the font size to fit within the cell
     pil_font = ImageFont.truetype(str(font_path), grid_cell_size, encoding=lang.get_encoding())
-    ascent, descent = pil_font.getmetrics()
 
     # Create charset image
     charset_image = Image.new("RGBA", resolution, (0, 0, 0, 0))
@@ -384,21 +260,13 @@ def write_bitmap_font(
             txi_font_info.lower_right_coords.append((norm_x2, 1 - norm_y2, 0))
             continue
 
-
-        text_width, text_height, text_overhang, text_underhang = get_character_dimensions(font, char, grid_cell_size)
         if char == "\n":
             char_bbox = draw.textbbox((0, 0), char, font=pil_font, spacing=0, align="left")
         else:
             char_bbox = draw.textbbox((0, 0), char, anchor="lt", font=pil_font, spacing=0, align="left")
 
         char_width = char_bbox[2] - char_bbox[0]
-        char_width2 = pil_font.getlength(char)
-        char_width3 = get_character_dimensions_fallback(font, char, grid_cell_size)[0]
-        char_width4 = get_char_advance_width_in_pixels(font, char, grid_cell_size)
-        if char_width != char_width2 or char_width != text_width:
-            print("char:", char, "w1:", char_width, "w2:", char_width2, "w3:", text_width)
         char_height = char_bbox[3] - char_bbox[1]
-        char_height2 = ascent + descent
 
         if char == "\n":
             draw.text((pixel_x1, pixel_y1), char, font=pil_font, fill=(255, 255, 255, 255))
