@@ -224,6 +224,7 @@ def patch_resource(resource: FileResource) -> GFF | None:
                 except Exception as exc:
                     print(f"{strref} generated an exception: {exc!r}")
         return new_entries
+
     if resource.restype().extension.lower() == "tlk" and SCRIPT_GLOBALS.translate and SCRIPT_GLOBALS.pytranslator:
         tlk: TLK | None = None
         try:
@@ -239,7 +240,10 @@ def patch_resource(resource: FileResource) -> GFF | None:
 
         from_lang: Language = tlk.language
         new_filename_stem = f"{resource.resname()}_" + (SCRIPT_GLOBALS.to_lang.get_bcp47_code() or "UNKNOWN")
-        new_file_path = resource.filepath().parent / (new_filename_stem + resource.restype().extension)
+        new_file_path = (
+            resource.filepath().parent
+            / f"{new_filename_stem}.{resource.restype().extension}"
+        )
         tlk.language = SCRIPT_GLOBALS.to_lang
         tlk.entries = process_translations(tlk, from_lang)
         write_tlk(tlk, new_file_path)
@@ -252,7 +256,7 @@ def patch_resource(resource: FileResource) -> GFF | None:
             if patch_nested_gff(
                 gff.root,
                 gff.content,
-                f"{resource.resname()}.{resource.restype().extension}",
+                f"{resource.filepath().name}/{resource.resname()}.{resource.restype().extension}",
             ):
                 return gff
         except Exception as e:  # noqa: BLE001
@@ -275,7 +279,7 @@ def patch_and_save_noncapsule(resource: FileResource):
     new_path = resource.filepath()
     new_gff_filename = resource.filename()
     if SCRIPT_GLOBALS.translate:
-        new_gff_filename = f"{resource.resname()}_{SCRIPT_GLOBALS.to_lang.get_bcp47_code()}{resource.restype().extension}"
+        new_gff_filename = f"{resource.resname()}_{SCRIPT_GLOBALS.to_lang.get_bcp47_code()}.{resource.restype().extension}"
     new_path = new_path.parent / new_gff_filename
 
     BinaryWriter.dump(new_path, new_data)
