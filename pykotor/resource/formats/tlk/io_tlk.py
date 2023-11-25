@@ -147,9 +147,9 @@ class TLKBinaryWriter(ResourceWriter):
         entry_flags = 0  # Initialize entry_flags as zero
         if entry.text_present:
             entry_flags |= 0x0001  # TEXT_PRESENT: As we're writing text, let's assume it's always present
-        elif entry.sound_present:
+        if entry.sound_present:
             entry_flags |= 0x0002  # SND_PRESENT: If sound_resref is defined in this entry.
-        elif entry.soundlength_present:
+        if entry.soundlength_present:
             entry_flags |= 0x0004  # SND_LENGTH: Unused by KOTOR1 and 2. Determines whether the sound length field is utilized.
 
         self._writer.write_uint32(entry_flags)

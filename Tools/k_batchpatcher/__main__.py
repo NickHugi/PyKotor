@@ -187,7 +187,7 @@ def patch_nested_gff(
                     translated_text = SCRIPT_GLOBALS.pytranslator.translate(text, from_lang=lang)
                     log_output(f"Translated {text} --> {translated_text}")
                     substring_id = LocalizedString.substring_id(SCRIPT_GLOBALS.to_lang, gender)
-                    new_substrings[substring_id] = translated_text
+                    new_substrings[substring_id] = str(translated_text)
                     made_change = True
             value._substrings = new_substrings
     return made_change
@@ -197,33 +197,36 @@ def recurse_through_list(gff_list: GFFList, gff_content: GFFContent, current_pat
     current_path = current_path if isinstance(current_path, PureWindowsPath) else PureWindowsPath(current_path or "GFFListRoot")
     for list_index, gff_struct in enumerate(gff_list):
         patch_nested_gff(gff_struct, gff_content, current_path / str(list_index), made_change)
-
+def fix_encoding(text: str, encoding: str):
+    return text.encode(encoding=encoding, errors="ignore").decode(encoding=encoding, errors="ignore").strip()
 
 def patch_resource(resource: FileResource) -> GFF | None:
-    def translate_entry(strref, tlkentry: TLKEntry, from_lang: Language):
+    def translate_entry(tlkentry: TLKEntry, from_lang: Language) -> str:
         text = tlkentry.text
         if not text.strip() or text.isdigit():
-            return strref, None
-        translated_text = SCRIPT_GLOBALS.pytranslator.translate(text, from_lang=from_lang)
-        return strref, translated_text
+            return ""
+        if "Do not translate this text" in text:
+            return text
+        if "actual text to be translated" in text:
+            return text
+        return SCRIPT_GLOBALS.pytranslator.translate(text, from_lang=from_lang)
 
-    def process_translations(tlk, from_lang) -> list[TLKEntry]:
-        new_entries: list[TLKEntry] = deepcopy(tlk.entries)
+    def process_translations(tlk: TLK, from_lang) -> None:
         with concurrent.futures.ThreadPoolExecutor(max_workers=SCRIPT_GLOBALS.max_threads) as executor:
             # Create a future for each translation task
-            future_to_strref = {executor.submit(translate_entry, strref, tlkentry, from_lang): strref for strref, tlkentry in tlk}
+            future_to_strref = {executor.submit(translate_entry, tlkentry, from_lang): strref for strref, tlkentry in tlk}
 
             for future in concurrent.futures.as_completed(future_to_strref):
-                strref = future_to_strref[future]
+                strref: int = future_to_strref[future]
                 try:
-                    log_output_with_separator(f"Translating TLK text at {resource.filepath()!s}", above=True)
-                    translated_text = future.result()
-                    if translated_text:
-                        new_entries[strref].text = str(translated_text[1])
-                        log_output(f"#{strref} Translated {tlk[strref].text} --> {translated_text[1]}")
+                    log_output(f"Translating TLK text at {resource.filepath()!s}")
+                    translated_text: str = future.result()
+                    if translated_text.strip():
+                        tlk.entries[strref].text_present = True
+                        tlk.replace(strref, fix_encoding(translated_text, SCRIPT_GLOBALS.to_lang.get_encoding()))
+                        log_output(f"#{strref} Translated {tlk[strref].text} --> {translated_text}")
                 except Exception as exc:
-                    print(f"{strref} generated an exception: {exc!r}")
-        return new_entries
+                    log_output(f"tlk strref {strref} generated an exception: {exc!r}")
 
     if resource.restype().extension.lower() == "tlk" and SCRIPT_GLOBALS.translate and SCRIPT_GLOBALS.pytranslator:
         tlk: TLK | None = None
@@ -245,7 +248,7 @@ def patch_resource(resource: FileResource) -> GFF | None:
             / f"{new_filename_stem}.{resource.restype().extension}"
         )
         tlk.language = SCRIPT_GLOBALS.to_lang
-        tlk.entries = process_translations(tlk, from_lang)
+        process_translations(tlk, from_lang)
         write_tlk(tlk, new_file_path)
         processed_files.add(new_file_path)
     if resource.restype().extension.lower() in gff_types or f"{resource.restype().name.upper()} " in GFFContent.get_valid_types():
