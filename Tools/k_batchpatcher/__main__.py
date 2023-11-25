@@ -220,7 +220,7 @@ def patch_resource(resource: FileResource) -> GFF | None:
                 strref: int = future_to_strref[future]
                 try:
                     log_output(f"Translating TLK text at {resource.filepath()!s}")
-                    original_text, translated_text: str = future.result()
+                    original_text, translated_text = future.result()
                     if translated_text.strip():
                         tlk.entries[strref].text_present = True
                         tlk.replace(strref, fix_encoding(translated_text, SCRIPT_GLOBALS.to_lang.get_encoding()))
