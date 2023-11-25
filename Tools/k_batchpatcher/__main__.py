@@ -219,7 +219,7 @@ def patch_resource(resource: FileResource) -> GFF | None:
                     log_output_with_separator(f"Translating TLK text at {resource.filepath()!s}", above=True)
                     translated_text = future.result()
                     if translated_text:
-                        new_entries[strref].text = translated_text[1]
+                        new_entries[strref].text = str(translated_text[1])
                         log_output(f"#{strref} Translated {tlk[strref].text} --> {translated_text[1]}")
                 except Exception as exc:
                     print(f"{strref} generated an exception: {exc!r}")
@@ -586,12 +586,12 @@ class KOTORPatchingToolUI:
         row += 1
 
         # Max threads
-        SCRIPT_GLOBALS.max_threads = 3
+        SCRIPT_GLOBALS.max_threads = 2
         def on_value_change():
             SCRIPT_GLOBALS.max_threads = int(spinbox_value.get())
         ttk.Label(self.root, text="Max Translation Threads:").grid(row=row, column=0)
         spinbox_value = tk.StringVar(value=str(SCRIPT_GLOBALS.max_threads))
-        self.spinbox = tk.Spinbox(root, from_=1, to=5, increment=1, command=on_value_change, textvariable=spinbox_value)
+        self.spinbox = tk.Spinbox(root, from_=1, to=2, increment=1, command=on_value_change, textvariable=spinbox_value)
         self.spinbox.grid(row=row, column=1)
         row += 1
 

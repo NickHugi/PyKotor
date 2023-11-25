@@ -366,7 +366,7 @@ def replace_curly_braces(original_string: str):
         counter += 1
         return key
 
-    pattern = r"\{[^}]*\}"
+    pattern = r"\<[^}]*\>"
     modified_string = re.sub(pattern, matcher, original_string)
     return modified_string, replaced_text
 
