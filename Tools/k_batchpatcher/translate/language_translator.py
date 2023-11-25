@@ -659,8 +659,6 @@ class Translator:
             try:
                 # Select the appropriate translator based on the option
                 self.translation_option = option
-                from_lang_code = option.get_lang_code(self.from_lang)
-                to_lang_code =  option.get_lang_code(self.to_lang)
                 try:
                     self.initialize()
                 except ImportError as e:

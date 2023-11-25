@@ -220,7 +220,7 @@ def patch_resource(resource: FileResource) -> GFF | None:
                     translated_text = future.result()
                     if translated_text:
                         new_entries[strref].text = translated_text[1]
-                        log_output(f"Translated {tlk[strref].text} --> {translated_text[1]}")
+                        log_output(f"#{strref} Translated {tlk[strref].text} --> {translated_text[1]}")
                 except Exception as exc:
                     print(f"{strref} generated an exception: {exc!r}")
         return new_entries
