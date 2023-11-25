@@ -223,7 +223,6 @@ def patch_resource(resource: FileResource) -> GFF | None:
                     original_text, translated_text = future.result()
                     if translated_text.strip():
                         translated_text = fix_encoding(translated_text, SCRIPT_GLOBALS.to_lang.get_encoding())
-                        tlk.entries[strref].text_present = True
                         tlk.replace(strref, translated_text)
                         log_output(f"#{strref} Translated {original_text} --> {translated_text}")
                 except Exception as exc:
