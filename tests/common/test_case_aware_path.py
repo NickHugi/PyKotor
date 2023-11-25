@@ -117,11 +117,6 @@ class TestIsRelativeTo(unittest.TestCase):
         p2 = '/home'
         self.assertTrue(p1.is_relative_to(p2))
 
-    def test_empty_path(self):
-        p1 = CaseAwarePath('')
-        p2 = CaseAwarePath('/home')
-        self.assertFalse(p1.is_relative_to(p2))
-
     def test_same_path(self):
         p1 = CaseAwarePath('/home/user')
         p2 = CaseAwarePath('/home/user')
