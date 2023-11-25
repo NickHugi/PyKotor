@@ -10,7 +10,6 @@ import requests
 
 from pykotor.common.language import Language
 from pykotor.utility.path import Path
-from tools.k_batchpatcher.translate.deepl_scraper import deepl_tr
 
 if TYPE_CHECKING:
     import os
@@ -19,14 +18,19 @@ if TYPE_CHECKING:
 BergamotTranslator = None
 TatoebaTranslator = None
 try:
+    from tools.k_batchpatcher.translate.deepl_scraper import deepl_tr
+except ImportError:
+    deepl_tr = None
+try:
     from translate import Translator as TranslateTranslator  # type: ignore[reportGeneralTypeIssues, import-not-found]
 except ImportError:
     TranslateTranslator = None
+argos_import_success = True
 try:
     import argostranslate.package
     import argostranslate.translate
 except Exception:  # noqa: BLE001
-    argostranslate = None
+    argos_import_success = False
 try:
     import deep_translator  # type: ignore[reportGeneralTypeIssues, import-not-found, import-untyped]
 except ImportError:
@@ -152,7 +156,7 @@ class TranslationOption(Enum):
     # GOOGLETRANS = GoogleTranslator
     # LIBRE = LibreTranslateAPI("https://translate.argosopentech.com/")
     APERTIUM = ApertiumLite
-    ARGOS_TRANSLATE = argostranslate if argostranslate is not None else None
+    ARGOS_TRANSLATE = True
     BERGAMOT = BergamotTranslator if BergamotTranslator is not None else None
     CHATGPT_TRANSLATOR = ChatGptTranslator if ChatGptTranslator is not None else None
     DEEPL = deep_translator.DeeplTranslator if deep_translator is not None else None
@@ -286,6 +290,8 @@ class TranslationOption(Enum):
                 return "german"
             if lang is Language.ENGLISH:
                 return "english us"
+            if lang is Language.RUSSIAN:
+                return "russian"
         return {
             Language.ENGLISH: "en",
             Language.FRENCH: "fr",

@@ -200,7 +200,7 @@ def recurse_through_list(gff_list: GFFList, gff_content: GFFContent, current_pat
 
 
 def patch_resource(resource: FileResource) -> GFF | None:
-    def translate_entry(strref, tlkentry, from_lang):
+    def translate_entry(strref, tlkentry: TLKEntry, from_lang: Language):
         text = tlkentry.text
         if not text.strip() or text.isdigit():
             return strref, None

@@ -374,6 +374,11 @@
         "--clean",
         "--noconfirm",
         "--name=K_BatchPatcher",
+        "--exclude-module=PyQt5",
+        "--exclude-module=PyOpenGL",
+        "--exclude-module=PyGLM",
+        "--exclude-module=dl_translate",
+        "--exclude-module=torch",
         "tools${pathSeparator}k_batchpatcher${pathSeparator}__main__.py"
       ],
       "problemMatcher": []
