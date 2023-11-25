@@ -268,9 +268,9 @@ def patch_resource(resource: FileResource) -> GFF | None:
 
 def patch_and_save_noncapsule(resource: FileResource):
     gff: GFF | None = patch_resource(resource)
-    new_data: bytes = resource.data()
-    if gff is not None:
-        new_data = bytes_gff(gff)
+    if gff is None:
+        return
+    new_data = bytes_gff(gff)
 
     new_path = resource.filepath()
     new_gff_filename = resource.filename()
@@ -308,7 +308,7 @@ def patch_file(file: os.PathLike | str) -> None:
     else:
         ext = c_file.suffix.lower()[1:]
         resource = FileResource(
-            c_file.name,
+            c_file.stem,
             ResourceType.from_extension(ext),
             c_file.stat().st_size,
             0,

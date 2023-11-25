@@ -92,7 +92,7 @@ class TestCaseAwarePath(unittest.TestCase):
 
 class TestIsRelativeTo(unittest.TestCase):
 
-    def test_basic(self):
+    def test_basic(self):  # sourcery skip: class-extract-method
         p1 = CaseAwarePath('/usr/local/bin')
         p2 = CaseAwarePath('/usr/local')
         self.assertTrue(p1.is_relative_to(p2))
@@ -123,7 +123,4 @@ class TestIsRelativeTo(unittest.TestCase):
         self.assertTrue(p1.is_relative_to(p2))
 
 if __name__ == '__main__':
-    unittest.main()
-
-if __name__ == "__main__":
     unittest.main()
