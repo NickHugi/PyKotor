@@ -201,15 +201,15 @@ def fix_encoding(text: str, encoding: str):
     return text.encode(encoding=encoding, errors="ignore").decode(encoding=encoding, errors="ignore").strip()
 
 def patch_resource(resource: FileResource) -> GFF | None:
-    def translate_entry(tlkentry: TLKEntry, from_lang: Language) -> str:
+    def translate_entry(tlkentry: TLKEntry, from_lang: Language) -> tuple[str, str]:
         text = tlkentry.text
         if not text.strip() or text.isdigit():
-            return ""
+            return text, ""
         if "Do not translate this text" in text:
-            return text
+            return text, text
         if "actual text to be translated" in text:
-            return text
-        return SCRIPT_GLOBALS.pytranslator.translate(text, from_lang=from_lang)
+            return text, text
+        return text, SCRIPT_GLOBALS.pytranslator.translate(text, from_lang=from_lang)
 
     def process_translations(tlk: TLK, from_lang) -> None:
         with concurrent.futures.ThreadPoolExecutor(max_workers=SCRIPT_GLOBALS.max_threads) as executor:
@@ -220,11 +220,11 @@ def patch_resource(resource: FileResource) -> GFF | None:
                 strref: int = future_to_strref[future]
                 try:
                     log_output(f"Translating TLK text at {resource.filepath()!s}")
-                    translated_text: str = future.result()
+                    original_text, translated_text: str = future.result()
                     if translated_text.strip():
                         tlk.entries[strref].text_present = True
                         tlk.replace(strref, fix_encoding(translated_text, SCRIPT_GLOBALS.to_lang.get_encoding()))
-                        log_output(f"#{strref} Translated {tlk[strref].text} --> {translated_text}")
+                        log_output(f"#{strref} Translated {original_text} --> {translated_text}")
                 except Exception as exc:
                     log_output(f"tlk strref {strref} generated an exception: {exc!r}")
 
