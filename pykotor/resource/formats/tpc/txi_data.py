@@ -272,8 +272,8 @@ def write_bitmap_font(
         else:
             draw.text((pixel_x1, pixel_y1), char, anchor="lt", font=pil_font, fill=(255, 255, 255, 255))
 
-        pixel_x2 = min(pixel_x2, pixel_x1 + char_width+1)
-        pixel_y2 = min(pixel_y2, pixel_y1 + char_height+1)
+        pixel_x2 = min(pixel_x2, pixel_x1 + char_width)
+        pixel_y2 = min(pixel_y2, pixel_y1 + char_height)
         if draw_boxes:
             # Draw a red rectangle around the character based on actual text dimensions
             red_box = (pixel_x1, pixel_y1, pixel_x2, pixel_y2)

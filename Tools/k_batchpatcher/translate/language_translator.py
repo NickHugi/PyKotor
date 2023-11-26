@@ -491,8 +491,10 @@ class Translator:
                     lambda x: x.from_code == from_lang_code and x.to_code == to_lang_code,
                     available_packages,
                 ),
+                None,
             )
-            argostranslate.package.install_from_path(package_to_install.download())
+            if package_to_install:
+                argostranslate.package.install_from_path(package_to_install.download())
             self._translator = argostranslate.translate
 
         # elif self.translation_option == TranslationOption.TATOEBA:
@@ -617,6 +619,7 @@ class Translator:
             elif option in (
                 TranslationOption.DL_TRANSLATE,
                 TranslationOption.T5_TRANSLATOR,
+                TranslationOption.MY_MEMORY_TRANSLATOR,
             ):  # noqa: ERA001, RUF100
                 translated_chunk = self._translator.translate(chunk, self.from_lang.name, self.to_lang.name)  # type: ignore[attr-defined, union-attr]  # noqa: ERA001, RUF100
             elif option in (
