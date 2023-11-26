@@ -757,7 +757,7 @@ class ToolWindow(QMainWindow):
         for filepath in filepaths:
             r_filepath = Path(filepath)
             try:
-                resref, restype_ext = r_filepath.name.rsplit(".", 1)
+                resref, restype_ext = r_filepath.stem, r_filepath.name.split(".", 1)[1]
                 restype = ResourceType.from_extension(restype_ext)
                 with r_filepath.open("rb") as file:
                     data = file.read()

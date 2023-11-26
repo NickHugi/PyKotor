@@ -221,7 +221,7 @@ def write_bitmap_font(
     txi_font_info.lowerrightcoords = 0x110000 if txi_font_info.isdoublebyte else 256
 
     # Assuming a square grid cell, set the font size to fit within the cell
-    pil_font = ImageFont.truetype(str(font_path), grid_cell_size, encoding=lang.get_encoding())
+    pil_font = ImageFont.truetype(str(font_path), grid_cell_size)
 
     # Create charset image
     charset_image = Image.new("RGBA", resolution, (0, 0, 0, 0))
