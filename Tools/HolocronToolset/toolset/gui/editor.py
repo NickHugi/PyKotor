@@ -196,7 +196,7 @@ class Editor(QMainWindow):
                     self._filepath = Path(filepath_str)
             else:
                 self._filepath = Path(filepath_str)
-                self._resref, restype_ext = self._filepath.stem, self._filepath.suffix[1:]
+                self._resref, restype_ext = self._filepath.stem, self._filepath.name.split(".", 1)[1]
                 self._restype = ResourceType.from_extension(restype_ext)
             self.save()
 
