@@ -20,6 +20,8 @@ from tkinter import filedialog, messagebox, ttk
 from tkinter import font as tkfont
 from typing import TYPE_CHECKING, NoReturn
 
+from pykotor.tools.encoding import decode_bytes_with_fallbacks
+
 if getattr(sys, "frozen", False) is False:
     pykotor_path = pathlib.Path(__file__).parents[2] / "pykotor"
     if pykotor_path.exists():
@@ -700,7 +702,7 @@ class App(tk.Tk):
             error_name, msg = universal_simplify_exception(e)
             messagebox.showerror(
                 error_name,
-                f"An unexpected error occurred while loading mod info.{os.linesep*2}{msg}",
+                f"An unexpected error occurred while loading the mod info.{os.linesep*2}{msg}",
             )
 
     def open_kotor(self, default_kotor_dir_str=None) -> None:
@@ -949,39 +951,24 @@ class App(tk.Tk):
 
         Args:
         ----
-            filepath: CaseAwarePath - The path to the changes.ini file
-        Returns:
-            PatcherNamespace - The PatcherNamespace object representing the parsed changes.ini file
-        Processing Logic:
-        - Opens the changes.ini file and parses it using ConfigParser
-        - Sets the ini_filename and info_filename attributes on the PatcherNamespace
-        - Looks for a "settings" section and parses its values into a CaseInsensitiveDict
-        - Gets the "WindowCaption" value from the settings dict and sets it as the name attribute
-        - Returns the populated PatcherNamespace object.
-        """
-        with filepath.open() as file:
-            ini = ConfigParser(
-                delimiters=("="),
-                allow_no_value=True,
-                strict=False,
-                interpolation=None,
-            )
-            # use case sensitive keys
-            ini.optionxform = lambda optionstr: optionstr  # type: ignore[method-assign]
-            ini.read_string(file.read())
+            filepath: CaseAwarePath - Path to the config file
 
-            namespace = PatcherNamespace()
-            namespace.ini_filename = "changes.ini"
-            namespace.info_filename = "info.rtf"
-            settings_section = next(
-                (section for section in ini.sections() if section.lower() == "settings"),
-                None,
-            )
-            if not settings_section:
-                namespace.name = "<< Untitled Mod Loaded >>"
-                return namespace
-            settings_ini = CaseInsensitiveDict(ini[settings_section].items())
-            namespace.name = settings_ini.get("WindowCaption", "<< Untitled Mod Loaded >>")
+        Returns:
+        -------
+            PatcherNamespace - Namespace containing the mod info
+        Processing Logic:
+            - Loads settings from the config file at the given filepath
+            - Creates a PatcherNamespace object
+            - Sets the ini_filename, info_filename and name attributes from the config
+            - Returns the populated PatcherNamespace
+        """
+        reader = ConfigReader.from_filepath(filepath, self.logger)
+        reader.load_settings()
+
+        namespace = PatcherNamespace()
+        namespace.ini_filename = "changes.ini"
+        namespace.info_filename = "info.rtf"
+        namespace.name = reader.config.window_title or "<< Untitled Mod Loaded >>"
 
         return namespace
 

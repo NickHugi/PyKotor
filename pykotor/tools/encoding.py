@@ -31,7 +31,13 @@ def decode_bytes_with_fallbacks(
 
     detected_encoding = charset_normalizer.from_bytes(byte_content).best()
     if detected_encoding:
-        return byte_content.decode(encoding=detected_encoding.encoding, errors=errors)
+        encoding = detected_encoding.encoding
+
+        # Special handling for UTF-8 BOM
+        if detected_encoding.byte_order_mark and "utf-8" in encoding.replace("_", "-"):  # covers 'utf-8', 'utf_8', etc.
+            encoding = "utf-8-sig"
+
+        return byte_content.decode(encoding=encoding, errors=errors)
     return byte_content.decode(errors=errors)
 
 
