@@ -30,7 +30,7 @@ class TestWriteBitmapFont(unittest.TestCase):
         #self.output_path.unlink()
         pass
     def test_bitmap_font(self):
-        write_bitmap_font(self.output_path / "test_font.tga", FONT_PATH, (512,512), Language.ENGLISH)
+        write_bitmap_font(self.output_path / "test_font.tga", FONT_PATH, (1024,1024), Language.ENGLISH)
     def test_bitmap_font_chinese(self):
         write_bitmap_font(self.output_path / "test_font_chinese.tga", CHINESE_FONT_PATH, (2048,2048), Language.CHINESE_SIMPLIFIED)
     def test_bitmap_font_thai(self):

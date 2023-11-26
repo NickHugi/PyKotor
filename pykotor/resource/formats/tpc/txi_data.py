@@ -206,7 +206,6 @@ def write_bitmap_font(
     txi_font_info.spacingR = 0
     txi_font_info.texturewidth = 2.160000
     txi_font_info.fontwidth = 1
-    txi_font_info.fontheight = 1
     txi_font_info.caretindent = -0.010000
     txi_font_info.baselineheight = 0.150000
     txi_font_info.fontheight = 0.080000
@@ -253,7 +252,7 @@ def write_bitmap_font(
         if draw_boxes:
             # Draw a yellow box representing the grid cell
             yellow_box = (pixel_x1, pixel_y1, pixel_x2, pixel_y2)
-            draw.rectangle(yellow_box, outline="yellow")    # Draw the character onto the image
+            #draw.rectangle(yellow_box, outline="yellow")    # Draw the character onto the image
 
         if not char:  # for errors="ignore" tests. Coordinates match the whole cell size
             txi_font_info.upper_left_coords.append((norm_x1, 1 - norm_y1, 0))
@@ -261,9 +260,9 @@ def write_bitmap_font(
             continue
 
         if char == "\n":
-            char_bbox = draw.textbbox((0, 0), char, font=pil_font, spacing=0, align="left")
+            char_bbox = draw.textbbox((0, 0), char, font=pil_font)
         else:
-            char_bbox = draw.textbbox((0, 0), char, anchor="lt", font=pil_font, spacing=0, align="left")
+            char_bbox = draw.textbbox((0, 0), char, anchor="lt", font=pil_font)
 
         char_width = char_bbox[2] - char_bbox[0]
         char_height = char_bbox[3] - char_bbox[1]
@@ -273,8 +272,8 @@ def write_bitmap_font(
         else:
             draw.text((pixel_x1, pixel_y1), char, anchor="lt", font=pil_font, fill=(255, 255, 255, 255))
 
-        pixel_x2 = pixel_x1 + char_width
-        pixel_y2 = min(pixel_y2, pixel_y1 + char_height)
+        pixel_x2 = min(pixel_x2, pixel_x1 + char_width+1)
+        pixel_y2 = min(pixel_y2, pixel_y1 + char_height+1)
         if draw_boxes:
             # Draw a red rectangle around the character based on actual text dimensions
             red_box = (pixel_x1, pixel_y1, pixel_x2, pixel_y2)
