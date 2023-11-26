@@ -388,7 +388,7 @@ class Editor(QMainWindow):
                 if dialog.exec_():
                     self.load(c_filepath, dialog.resref(), dialog.restype(), dialog.data())
             else:
-                resref, restype_ext = c_filepath.stem, c_filepath.suffix[1:]
+                resref, restype_ext = c_filepath.stem, c_filepath.name.split(".", 1)[1]
                 restype = ResourceType.from_extension(restype_ext)
                 with c_filepath.open("rb") as file:
                     data = file.read()
