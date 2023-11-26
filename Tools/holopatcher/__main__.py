@@ -968,7 +968,12 @@ class App(tk.Tk):
         namespace = PatcherNamespace()
         namespace.ini_filename = "changes.ini"
         namespace.info_filename = "info.rtf"
-        namespace.name = reader.config.window_title or "<< Untitled Mod Loaded >>"
+        namespace.name = reader.config.window_title
+        if not namespace.name:
+            try:
+                namespace.name = filepath.parent.parent.name
+            except Exception:
+                namespace.name = "<< Untitled Mod Loaded >>"
 
         return namespace
 
