@@ -51,7 +51,7 @@ from pykotor.tslpatcher.mods.twoda import (
     TargetType,
 )
 from pykotor.utility.misc import is_float, is_int
-from pykotor.utility.path import Path, PureWindowsPath
+from pykotor.utility.path import BasePath, Path, PureWindowsPath
 
 if TYPE_CHECKING:
     import os
@@ -88,7 +88,7 @@ class ConfigReader:
             - Populate its config attribute from the ConfigParser
             - Return the initialized instance
         """
-        resolved_file_path = (file_path if isinstance(file_path, Path) else Path(file_path)).resolve()
+        resolved_file_path = (file_path if isinstance(file_path, BasePath) else Path(file_path)).resolve()  # type: ignore[reportGeneralTypeIssues]
 
         ini = ConfigParser(
             delimiters=("="),

@@ -154,6 +154,28 @@ class ResourceIdentifier(NamedTuple):
     def from_path(
         file_path: os.PathLike | str,
     ) -> ResourceIdentifier:
+        """Generate a ResourceIdentifier from a file path.
+
+        Args:
+        ----
+            file_path: {Path or string to the file}:
+
+        Returns:
+        -------
+            ResourceIdentifier: {Resource identifier object}
+        - Split the file path on the filename and extension
+        - Determine the resource type from the extension
+        - Return a ResourceIdentifier with the name and type.
+        """
         file_path = PurePath(file_path)
-        resname, restype_ext = file_path.stem, file_path.suffix[1:]
-        return ResourceIdentifier(resname, ResourceType.from_extension(restype_ext))
+        try:
+            resname, restype_ext = file_path.split_filename(dots=1)
+            restype = ResourceType.from_extension(restype_ext)
+        except ValueError:  # for things like resname.tlk.xml
+            try:
+                resname, restype_ext = file_path.split_filename(dots=2)
+                restype = ResourceType.from_extension(restype_ext)
+            except ValueError:
+                resname = file_path.stem
+                restype = ResourceType.INVALID
+        return ResourceIdentifier(resname, restype)

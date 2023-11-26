@@ -117,22 +117,12 @@ class ModificationsNSS(PatcherModifications):
                     "PyKotor will compile regardless, but this may not yield the expected result.",
                 )
             try:
-                temp_source_script: Path
-                with tempfile.NamedTemporaryFile(mode="w+t", suffix=".nss", dir=self.nwnnsscomp_path.parent, delete=True) as temp_file:
-                    temp_source_script = Path(temp_file.name)
-                BinaryWriter.dump(temp_source_script, source.value.encode(encoding="windows-1252", errors="ignore"))
-                tempcompiled_filepath = self.nwnnsscomp_path.parent / "temp_script.ncs"
-                stdout, stderr = nwnnsscompiler.compile_script(temp_file.name, tempcompiled_filepath, game)
-                if stdout.strip():
-                    for line in stdout.split("\n"):
-                        if line.strip():
-                            logger.add_verbose(line)
-                if stderr.strip():
-                    for line in stdout.split("\n"):
-                        if line.strip():
-                            logger.add_verbose(line)
-                    raise ValueError(stderr)
-                return BinaryReader.load_file(tempcompiled_filepath)
+                return self._compile_with_external(
+                    source.value,
+                    nwnnsscompiler,
+                    logger,
+                    game,
+                )
             except Exception as e:
                 logger.add_error(repr(e))
 
@@ -147,8 +137,34 @@ class ModificationsNSS(PatcherModifications):
         # Compile using built-in script compiler if external compiler fails.
         return bytes_ncs(compile_with_builtin(source.value, game))
 
+
+    def _compile_with_external(self, nss_script: str, nwnnsscompiler: ExternalNCSCompiler, logger: PatchLogger, game: Game) -> bytes:
+        # Get a temporary filename.
+        temp_source_script: Path
+        with tempfile.NamedTemporaryFile(mode="w+t", suffix=".nss", dir=self.nwnnsscomp_path.parent) as temp_file:
+            temp_source_script = Path(temp_file.name)
+
+        # Dump the script to a tempfile, then send to the external compiler.
+        BinaryWriter.dump(temp_source_script, nss_script.encode(encoding="windows-1252", errors="ignore"))
+        tempcompiled_filepath = self.nwnnsscomp_path.parent / "temp_script.ncs"
+        stdout, stderr = nwnnsscompiler.compile_script(temp_source_script, tempcompiled_filepath, game)
+
+        # Parse the output.
+        if stdout.strip():
+            for line in stdout.split("\n"):
+                if line.strip():
+                    logger.add_verbose(line)
+        if stderr.strip():
+            for line in stdout.split("\n"):
+                if line.strip():
+                    logger.add_warning(line)
+            raise ValueError(stderr)
+
+        # Return the compiled bytes
+        return BinaryReader.load_file(tempcompiled_filepath)
+
     def apply(self, nss_source: MutableString, memory: PatcherMemory, logger: PatchLogger | None = None, game: Game | None = None) -> None:
-        """Applies memory patches to a string.
+        """Applies memory patches to the source script.
 
         Args:
         ----

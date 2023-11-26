@@ -26,7 +26,7 @@ if getattr(sys, "frozen", False) is False:
 from pykotor.common.language import Language, LocalizedString
 from pykotor.common.stream import BinaryWriter
 from pykotor.extract.capsule import Capsule
-from pykotor.extract.file import FileResource
+from pykotor.extract.file import FileResource, ResourceIdentifier
 from pykotor.extract.installation import Installation
 from pykotor.resource.formats.erf.erf_auto import write_erf
 from pykotor.resource.formats.erf.erf_data import ERF
@@ -313,10 +313,8 @@ def patch_file(file: os.PathLike | str) -> None:
                 new_data = bytes_gff(gff)
             new_capsule.add(resource.resname(), resource.restype(), new_data)
     else:
-        ext = c_file.suffix.lower()[1:]
         resource = FileResource(
-            c_file.stem,
-            ResourceType.from_extension(ext),
+            *ResourceIdentifier.from_path(c_file),
             c_file.stat().st_size,
             0,
             c_file,
@@ -337,7 +335,7 @@ def patch_capsule_resources(resources: list[FileResource], filename: str, erf_or
 
     new_filename = PurePath(filename)
     if SCRIPT_GLOBALS.translate:
-        new_filename = PurePath(f"{new_filename.stem}_{SCRIPT_GLOBALS.to_lang.get_bcp47_code()}{new_filename.suffix}")
+        new_filename = PurePath(f"{new_filename.stem}_{SCRIPT_GLOBALS.to_lang.name}{new_filename.suffix}")
     return new_filename
 
 def patch_install(install_path: os.PathLike | str) -> None:
@@ -350,7 +348,7 @@ def patch_install(install_path: os.PathLike | str) -> None:
 
     # Patch modules...
     for module_name, resources in k_install._modules.items():
-        restype = ResourceType.from_extension(PurePath(module_name).suffix[1:])
+        _resname, restype = ResourceIdentifier.from_path(module_name)
         if restype == ResourceType.RIM:
             new_rim = RIM()
             new_rim_filename = patch_capsule_resources(resources, module_name, new_rim)

@@ -144,6 +144,43 @@ class BasePurePath:
         """
         return str(key) + str(self)
 
+    def split_filename(self, dots: int = 1) -> tuple[str, str]:
+        """Splits a filename into a tuple of stem and extension.
+
+        Args:
+        ----
+            dots: Number of dots to split on (default 1).
+                  Negative values indicate splitting from the left.
+
+        Returns:
+        -------
+            tuple: A tuple containing (stem, extension)
+
+        Processing Logic:
+            - The filename is split on the last N dots, where N is the dots argument
+            - For negative dots, the filename is split on the first N dots from the left
+            - If there are fewer parts than dots, the filename is split at the first dot
+            - Otherwise, the filename is split into a stem and extension part
+        """
+        if dots == 0:
+            msg = "Number of dots must not be 0"
+            raise ValueError(msg)
+
+        def split_func(parts: list[str]) -> tuple[str, str]:
+            return ".".join(parts[:-abs(dots)]), ".".join(parts[-abs(dots):])
+
+        if dots < 0:
+            parts: list[str] = self.name.split(".", abs(dots))
+            parts.reverse()  # Reverse the order of parts for negative dots
+        else:
+            parts: list[str] = self.name.rsplit(".", abs(dots) + 1)
+
+        if len(parts) <= abs(dots):
+            first_dot = self.name.find(".")
+            return (self.name[:first_dot], self.name[first_dot + 1:]) if first_dot != -1 else (self.name, "")
+
+        return split_func(parts)
+
     def as_posix(self):
         """Convert path to a POSIX path.
 

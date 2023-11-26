@@ -286,12 +286,8 @@ class TranslationOption(Enum):
 
     def get_lang_code(self, lang: Language):
         if self is TranslationOption.MY_MEMORY_TRANSLATOR:
-            if lang is Language.GERMAN:
-                return "german"
             if lang is Language.ENGLISH:
                 return "english us"
-            if lang is Language.RUSSIAN:
-                return "russian"
         return {
             Language.ENGLISH: "en",
             Language.FRENCH: "fr",
@@ -311,7 +307,6 @@ class TranslationOption(Enum):
             Language.GREEK: "el",
             Language.SLOVAK: "sk",
             Language.CROATIAN: "hr",
-            Language.SERBIAN_LATIN: "sr",  # sr-Latn
             Language.ROMANIAN: "ro",
             Language.ALBANIAN: "sq",
             Language.ESTONIAN: "et",

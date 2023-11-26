@@ -10,7 +10,7 @@ from typing import TYPE_CHECKING, BinaryIO
 from pykotor.common.geometry import Vector2, Vector3, Vector4
 from pykotor.common.language import LocalizedString
 from pykotor.tools.encoding import decode_bytes_with_fallbacks, find_best_8bit_encoding
-from pykotor.utility.path import Path
+from pykotor.utility.path import BasePath, Path
 
 if TYPE_CHECKING:
     from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES
@@ -95,7 +95,7 @@ class BinaryReader:
         -------
             A new BinaryReader instance.
         """
-        resolved_path = (path if isinstance(path, Path) else Path(path)).resolve()
+        resolved_path = (path if isinstance(path, BasePath) else Path(path)).resolve()  # type: ignore[attr-defined]
         stream = resolved_path.open("rb")
         return BinaryReader(stream, offset, size)
 
@@ -158,7 +158,7 @@ class BinaryReader:
         -------
             The bytes of the file.
         """
-        resolved_path = (path if isinstance(path, Path) else Path(path)).resolve()
+        resolved_path = (path if isinstance(path, BasePath) else Path(path)).resolve()  # type: ignore[attr-defined]
         with resolved_path.open("rb") as reader:
             reader.seek(offset)
             return reader.read() if size == -1 else reader.read(size)
@@ -687,7 +687,7 @@ class BinaryWriter(ABC):
         -------
             A new BinaryWriter instance.
         """
-        resolved_path = (path if isinstance(path, Path) else Path(path)).resolve()
+        resolved_path = (path if isinstance(path, BasePath) else Path(path)).resolve()  # type: ignore[attr-defined]
         stream = resolved_path.open("wb")
         return BinaryWriterFile(stream)
 
@@ -739,7 +739,7 @@ class BinaryWriter(ABC):
             path: The filepath of the file.
             data: The data to write to the file.
         """
-        resolved_path = (path if isinstance(path, Path) else Path(path)).resolve()
+        resolved_path = (path if isinstance(path, BasePath) else Path(path)).resolve()  # type: ignore[attr-defined]
         with resolved_path.open("wb") as file:
             file.write(data)
 

@@ -20,7 +20,7 @@ from pykotor.tools.misc import is_capsule_file, is_erf_file, is_mod_file, is_rim
 from pykotor.tools.path import CaseAwarePath
 from pykotor.tools.sound import fix_audio
 from pykotor.tslpatcher.logger import PatchLogger
-from pykotor.utility.path import PurePath
+from pykotor.utility.path import BasePurePath, PurePath
 
 if TYPE_CHECKING:
     import os
@@ -1400,7 +1400,7 @@ class Installation:
 
     @staticmethod
     def replace_module_extensions(module_filepath: os.PathLike | str) -> str:
-        module_filename: str = module_filepath.name if isinstance(module_filepath, PurePath) else PurePath(module_filepath).name
+        module_filename: str = module_filepath.name if isinstance(module_filepath, BasePurePath) else PurePath(module_filepath).name
         result = re.sub(r"\.mod$", "", module_filename, flags=re.IGNORECASE)
         result = re.sub(r"\.erf$", "", result, flags=re.IGNORECASE)
         result = re.sub(r"\.rim$", "", result, flags=re.IGNORECASE)

@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING, NamedTuple
 from pykotor.common.language import Language
 from pykotor.common.misc import ResRef
 from pykotor.common.stream import BinaryReader
-from pykotor.utility.path import Path
+from pykotor.utility.path import BasePath, Path
 
 if TYPE_CHECKING:
     import os
@@ -26,7 +26,7 @@ class TalkTable:
         self,
         path: os.PathLike | str,
     ):
-        self._path: Path = path if isinstance(path, Path) else Path(path)
+        self._path: Path = path if isinstance(path, BasePath) else Path(path)  # type: ignore[assignment]
 
     def string(
         self,

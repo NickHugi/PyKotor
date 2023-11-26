@@ -42,7 +42,7 @@ from PyQt5.QtWidgets import (
 from pykotor.common.geometry import Vector2, Vector3
 from pykotor.common.stream import BinaryReader, BinaryWriter
 from pykotor.utility.misc import is_debug_mode
-from pykotor.utility.path import Path, PurePath
+from pykotor.utility.path import BasePurePath, Path, PurePath
 from toolset.__main__ import is_frozen
 from toolset.config import UPDATE_INFO_LINK
 from toolset.data.indoorkit import Kit, KitComponent, load_kits
@@ -1060,8 +1060,8 @@ class KitDownloader(QDialog):
         repo_path: os.PathLike | str,
     ) -> None:
         """This method should not be used due to github's api restrictions. Use download_file to get a .zip of the folder instead."""  # noqa: D404
-        repo = repo if isinstance(repo, PurePath) else PurePath(repo)
-        repo_path = repo_path if isinstance(repo_path, PurePath) else PurePath(repo_path)
+        repo = repo if isinstance(repo, BasePurePath) else PurePath(repo)
+        repo_path = repo_path if isinstance(repo_path, BasePurePath) else PurePath(repo_path)
         api_url = f"https://api.github.com/repos/{repo.as_posix()}/contents/{repo_path.as_posix()}"
         req = requests.get(api_url, timeout=15)
         req.raise_for_status()

@@ -10,6 +10,7 @@ from pykotor.common.stream import BinaryReader, BinaryWriter
 from pykotor.extract.capsule import Capsule
 from pykotor.extract.file import ResourceIdentifier
 from pykotor.extract.installation import Installation
+from pykotor.resource.formats.tlk.io_tlk import TLKBinaryReader
 from pykotor.resource.formats.tlk.tlk_auto import read_tlk
 from pykotor.tools.encoding import decode_bytes_with_fallbacks
 from pykotor.tools.misc import is_capsule_file
@@ -289,7 +290,7 @@ class ModInstaller:
     def load_resource_file(self, resource_path: Path) -> bytes:
         ext: str = resource_path.suffix.strip() and resource_path.suffix.lower()[1:]
         if ext == "tlk":
-            return read_tlk(resource_path)
+            return TLKBinaryReader(resource_path).load()
         return BinaryReader.load_file(resource_path)
 
     def lookup_resource(

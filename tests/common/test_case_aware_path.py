@@ -90,6 +90,49 @@ class TestCaseAwarePath(unittest.TestCase):
         self.assertTrue(CaseAwarePath.should_resolve_case(CaseAwarePath("/path/to/dir")))
         self.assertFalse(CaseAwarePath.should_resolve_case("path/to/dir"))
 
+class TestSplitFilename(unittest.TestCase):
+    def test_normal(self):
+        path = CaseAwarePath('file.txt')
+        stem, ext = path.split_filename()
+        self.assertEqual(stem, 'file')
+        self.assertEqual(ext, 'txt')
+
+    def test_multiple_dots(self):
+        path = CaseAwarePath('file.with.dots.txt')
+        stem, ext = path.split_filename(dots=2)
+        self.assertEqual(stem, 'file.with')
+        self.assertEqual(ext, 'dots.txt')
+        path = CaseAwarePath('test.asdf.qwerty.tlk.xml')
+        stem, ext = path.split_filename(dots=2)
+        self.assertEqual(stem, 'test.asdf.qwerty')
+        self.assertEqual(ext, 'tlk.xml')
+
+    def test_no_dots(self):
+        path = CaseAwarePath('filename')
+        stem, ext = path.split_filename()
+        self.assertEqual(stem, 'filename')
+        self.assertEqual(ext, '')
+
+    def test_negative_dots(self):
+        path = CaseAwarePath('left.right.txt')
+        stem, ext = path.split_filename(dots=-1)
+        self.assertEqual(stem, 'right.txt')
+        self.assertEqual(ext, 'left')
+
+    def test_more_dots_than_parts(self):
+        path = CaseAwarePath('file.txt')
+        stem, ext = path.split_filename(dots=3)
+        self.assertEqual(stem, 'file')
+        self.assertEqual(ext, 'txt')
+        stem, ext = path.split_filename(dots=-3)
+        self.assertEqual(stem, 'file')
+        self.assertEqual(ext, 'txt')
+
+    def test_invalid_dots(self):
+        path = CaseAwarePath('file.txt')
+        with self.assertRaises(ValueError):
+            path.split_filename(dots=0)
+
 class TestIsRelativeTo(unittest.TestCase):
 
     def test_basic(self):  # sourcery skip: class-extract-method

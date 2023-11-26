@@ -7,7 +7,7 @@ import math
 from typing import TYPE_CHECKING, Literal
 from pykotor.utility.misc import is_float
 
-from pykotor.utility.path import Path
+from pykotor.utility.path import BasePath, Path
 
 if TYPE_CHECKING:
     import os
@@ -156,7 +156,7 @@ def write_bitmap_fonts(
     lang: Language,
     draw_box=False,
 ) -> None:
-    font_path, target_path = ((p if isinstance(p, Path) else Path(p)).resolve() for p in (font_path, target))
+    font_path, target_path = ((p if isinstance(p, BasePath) else Path(p)).resolve() for p in (font_path, target))  # type: ignore[reportGeneralTypeIssues]
     target_path.mkdir(parents=True, exist_ok=True)
     default_font_names = [
         "fnt_galahad14",
@@ -199,7 +199,7 @@ def write_bitmap_font(
         msg = f"resolution must be nonzero, got {resolution}"
         raise ZeroDivisionError(msg)
     from PIL import Image, ImageDraw, ImageFont  # Import things here to separate from HoloPatcher code.
-    font_path, target_path = ((p if isinstance(p, Path) else Path(p)).resolve() for p in (font_path, target))
+    font_path, target_path = ((p if isinstance(p, BasePath) else Path(p)).resolve() for p in (font_path, target))  # type: ignore[reportGeneralTypeIssues]
 
     txi_font_info = TXIFontInformation()
     txi_font_info.spacingB = 0

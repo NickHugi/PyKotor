@@ -757,11 +757,9 @@ class ToolWindow(QMainWindow):
         for filepath in filepaths:
             r_filepath = Path(filepath)
             try:
-                resref, restype_ext = r_filepath.stem, r_filepath.name.split(".", 1)[1]
-                restype = ResourceType.from_extension(restype_ext)
                 with r_filepath.open("rb") as file:
                     data = file.read()
-                openResourceEditor(filepath, resref, restype, data, self.active, self)
+                openResourceEditor(filepath, *ResourceIdentifier.from_path(r_filepath), data, self.active, self)
             except ValueError as e:
                 QMessageBox(QMessageBox.Critical, "Failed to open file", str(e)).exec_()
 
@@ -769,11 +767,11 @@ class ToolWindow(QMainWindow):
 
 
 class FolderObserver(FileSystemEventHandler):
-    def __init__(self, window: ToolWindow):
-        self.window = window
-        self.lastModified = datetime.now(tz=timezone.utc).astimezone()
+    def __init__(self, window: ToolWindow) -> None:
+        self.window: ToolWindow = window
+        self.lastModified: datetime = datetime.now(tz=timezone.utc).astimezone()
 
-    def on_any_event(self, event):
+    def on_any_event(self, event) -> None:
         rightnow: datetime = datetime.now(tz=timezone.utc).astimezone()
         if rightnow - self.lastModified < timedelta(seconds=1):
             return

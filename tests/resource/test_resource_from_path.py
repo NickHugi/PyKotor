@@ -40,27 +40,14 @@ class TestResourceIdentifier(unittest.TestCase):
             # Edge cases
             {
                 "return_type": "invalid",
-                "file_path": "C:/path/to/.hidden",
-                "expected_resname": ".hidden",
-                "expected_restype": ResourceType.INVALID,
-            },
-            {
-                "return_type": "invalid",
                 "file_path": "C:/path/to/no_extension",
                 "expected_resname": "no_extension",
                 "expected_restype": ResourceType.INVALID,
             },
             {
-                "return_type": "error",
+                "return_type": "invalid",
                 "file_path": "C:/path/to/long_extension.xyz",
                 "expected_resname": "long_extension",
-                "expected_restype": ResourceType.INVALID,
-            },
-            # Error cases
-            {
-                "return_type": "error",
-                "file_path": None,
-                "expected_resname": None,
                 "expected_restype": ResourceType.INVALID,
             },
             {
@@ -71,14 +58,27 @@ class TestResourceIdentifier(unittest.TestCase):
             },
             {
                 "return_type": "invalid",
-                "file_path": "C:/path/to/invalid.",
-                "expected_resname": "invalid.",
+                "file_path": "C:/path/to/invalid.ext",
+                "expected_resname": "invalid",
                 "expected_restype": ResourceType.INVALID,
             },
             {
-                "return_type": "error",
-                "file_path": "C:/path/to/invalid.ext",
+                "return_type": "invalid",
+                "file_path": "C:/path/to/.hidden",
+                "expected_resname": ".hidden",
+                "expected_restype": ResourceType.INVALID,
+            },
+            {
+                "return_type": "invalid",
+                "file_path": "C:/path/to/invalid.",
                 "expected_resname": "invalid",
+                "expected_restype": ResourceType.INVALID,
+            },
+            # Error cases
+            {
+                "return_type": "error",
+                "file_path": None,
+                "expected_resname": None,
                 "expected_restype": ResourceType.INVALID,
             },
         ]
