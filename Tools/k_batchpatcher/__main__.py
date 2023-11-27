@@ -222,7 +222,7 @@ def patch_resource(resource: FileResource) -> GFF | None:
             for future in concurrent.futures.as_completed(future_to_strref):
                 strref: int = future_to_strref[future]
                 try:
-                    log_output(f"Translating TLK text at {resource.filepath()!s} to {SCRIPT_GLOBALS.pytranslator.to_lang}")
+                    log_output(f"Translating TLK text at {resource.filepath()!s} to {SCRIPT_GLOBALS.pytranslator.to_lang.name}")
                     original_text, translated_text = future.result()
                     if translated_text.strip():
                         translated_text = fix_encoding(translated_text, SCRIPT_GLOBALS.pytranslator.to_lang.get_encoding())
@@ -726,8 +726,6 @@ class KOTORPatchingToolUI:
         # Create Checkbuttons for each language
         column = 0
         for lang in sorted_languages:
-            if not lang.is_8bit_encoding():
-                continue
             lang_var = tk.BooleanVar()
             self.lang_vars[lang] = lang_var  # Store reference to the language variable
             ttk.Checkbutton(

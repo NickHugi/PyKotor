@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import codecs
 import contextlib
 from typing import TYPE_CHECKING
 
@@ -8,6 +9,109 @@ import charset_normalizer
 if TYPE_CHECKING:
     from pykotor.common.language import Language
 
+
+def get_single_byte_charset(encoding) -> list[str]:
+    charset = []
+    for i in range(256):
+        try:
+            char = codecs.decode(bytes([i]), encoding)
+            charset.append(char)
+        except UnicodeDecodeError:  # noqa: PERF203
+            charset.append("")  # Append a blank for non-existent characters
+    return charset
+
+def get_double_byte_charset(encoding) -> list[str]:
+    # sourcery skip: merge-duplicate-blocks
+    charset = []
+    if encoding == "cp936":
+        for i in range(256):
+            if 0x00 <= i <= 0x7F:
+                # Single-byte code
+                try:
+                    char = codecs.decode(bytes([i]), encoding)
+                    charset.append(char)
+                except UnicodeDecodeError:
+                    charset.append("")  # Append a blank for non-existent characters
+            elif 0x81 <= i <= 0x9F:
+                # Double-byte introducer, skip this byte
+                continue
+            elif 0xA1 <= i <= 0xDF:
+                # Single-byte code
+                try:
+                    char = codecs.decode(bytes([i]), encoding)
+                    charset.append(char)
+                except UnicodeDecodeError:
+                    charset.append("")  # Append a blank for non-existent characters
+            elif 0xE0 <= i <= 0xFC:
+                # Double-byte introducer, the second byte can be any of the 256 possible values
+                for j in range(256):
+                    try:
+                        char = codecs.decode(bytes([i, j]), encoding)
+                        charset.append(char)
+                    except UnicodeDecodeError:  # noqa: PERF203
+                        charset.append("")  # Append a blank for non-existent characters
+            else:
+                charset.append("")  # Undefined code point, append a blank
+    elif encoding == "cp949":
+        for i in range(256):
+            # Adjusted ranges based on IBM-949 encoding structure
+            if 0x00 <= i <= 0x7F or 0xA1 <= i <= 0xDF or 0x9A <= i <= 0xA0:
+                # Single-byte code
+                try:
+                    char = codecs.decode(bytes([i]), encoding)
+                    charset.append(char)
+                except UnicodeDecodeError:
+                    charset.append("")  # Append a blank for non-existent characters
+            elif 0x81 <= i <= 0x9F or i == 0xC9 or i == 0xFE:
+                # User-defined ranges or double-byte introducer
+                charset.append("")  # Placeholder for user-defined ranges
+            elif 0xE0 <= i <= 0xFC or 0x8F <= i <= 0x99:
+                # Double-byte introducer, the second byte can be any of the 256 possible values
+                for j in range(256):
+                    try:
+                        char = codecs.decode(bytes([i, j]), encoding)
+                        charset.append(char)
+                    except UnicodeDecodeError:  # noqa: PERF203
+                        charset.append("")  # Append a blank for non-existent characters
+            else:
+                charset.append("")  # Undefined code point, append a blank
+    elif encoding == "cp950":
+        # Include single-byte graphical characters (standard ASCII + additional characters)
+        for i in range(256):
+            if i <= 0x7F or i == 0xA1:  # ASCII range and single-byte euro sign
+                try:
+                    char = chr(i)  # Direct ASCII mapping
+                    charset.append(char)
+                except ValueError:
+                    charset.append("")  # Append a blank for invalid values
+            elif 0x81 <= i <= 0xFE:  # Double-byte character lead byte
+                for j in range(256):
+                    if (0x40 <= j <= 0x7E) or (0xA1 <= j <= 0xFE):
+                        # Apply formula based on Big5 to Unicode PUA mapping
+                        if 0x81 <= i <= 0x8D:
+                            unicode_val = 0xeeb8 + (157 * (i - 0x81)) + (j - 0x40 if j < 0x80 else j - 0x62)
+                        elif 0x8E <= i <= 0xA0:
+                            unicode_val = 0xe311 + (157 * (i - 0x8E)) + (j - 0x40 if j < 0x80 else j - 0x62)
+                        elif 0xC6 <= i <= 0xC8:
+                            unicode_val = 0xf672 + (157 * (i - 0xC6)) + (j - 0x40 if j < 0x80 else j - 0x62)
+                        elif 0xFA <= i <= 0xFE:
+                            unicode_val = 0xe000 + (157 * (i - 0xFA)) + (j - 0x40 if j < 0x80 else j - 0x62)
+                        else:
+                            unicode_val = -1  # Placeholder for ranges not covered
+
+                        if unicode_val != -1:
+                            try:
+                                char = chr(unicode_val)
+                                charset.append(char)
+                            except ValueError:
+                                charset.append("")  # Append a blank for invalid Unicode values
+                    else:
+                        charset.append("")  # Append a blank for bytes not in the valid range
+            else:
+                charset.append("")  # Append a blank for bytes outside the Big5 range
+
+
+    return charset
 
 def decode_bytes_with_fallbacks(
     byte_content: bytes,

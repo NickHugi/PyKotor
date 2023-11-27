@@ -35,7 +35,7 @@ class TestWriteBitmapFont(unittest.TestCase):
         write_bitmap_font(self.output_path / "test_font_chinese.tga", CHINESE_FONT_PATH, (10240,10240), Language.CHINESE_SIMPLIFIED)
     def test_bitmap_font_thai(self):
         write_bitmap_font(self.output_path / "test_font_thai.tga", THAI_FONT_PATH, (2048,2048), Language.THAI)
-    def test_valid_inputs(self):
+    def test_valid_inputs(self) -> None:
         # Test with valid inputs
         target_path = Path("output/font.tga").resolve()
         resolution = (2048, 2048)

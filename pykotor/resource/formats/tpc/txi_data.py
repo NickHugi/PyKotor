@@ -2,12 +2,10 @@
 # From DarthParametric and Drazgar in the DeadlyStream Discord.
 from __future__ import annotations
 
-import codecs
-import contextlib
-import itertools
 import math
 from typing import TYPE_CHECKING
 
+from pykotor.tools.encoding import get_double_byte_charset, get_single_byte_charset
 from pykotor.utility.path import BasePath, Path
 
 if TYPE_CHECKING:
@@ -95,49 +93,6 @@ class TXIFontInformation(TXIBaseInformation):
         # Alignment or Padding: In some data structures, additional elements
         # are included for alignment purposes, ensuring that the data aligns well with memory boundaries
 
-def get_single_byte_charset(encoding) -> list[str]:
-    charset = []
-    for i in range(256):
-        try:
-            char = codecs.decode(bytes([i]), encoding)
-            charset.append(char)
-        except UnicodeDecodeError:  # noqa: PERF203
-            charset.append("")  # Append a blank for non-existent characters
-    return charset
-
-def get_double_byte_charset(encoding) -> list[str]:
-    charset = []
-    for i in range(256):
-        if 0x00 <= i <= 0x7F:
-            # Single-byte code
-            try:
-                char = codecs.decode(bytes([i]), encoding)
-                charset.append(char)
-            except UnicodeDecodeError:
-                charset.append("")  # Append a blank for non-existent characters
-        elif 0x81 <= i <= 0x9F:
-            # Double-byte introducer, skip this byte
-            continue
-        elif 0xA1 <= i <= 0xDF:
-            # Single-byte code
-            try:
-                char = codecs.decode(bytes([i]), encoding)
-                charset.append(char)
-            except UnicodeDecodeError:
-                charset.append("")  # Append a blank for non-existent characters
-        elif 0xE0 <= i <= 0xFC:
-            # Double-byte introducer, the second byte can be any of the 256 possible values
-            for j in range(256):
-                try:
-                    char = codecs.decode(bytes([i, j]), encoding)
-                    charset.append(char)
-                except UnicodeDecodeError:  # noqa: PERF203
-                    charset.append("")  # Append a blank for non-existent characters
-        else:
-            charset.append("")  # Undefined code point, append a blank
-
-    return charset
-
 def coords_to_boxes(upper_left_coords, lower_right_coords, resolution):
     boxes = []
     for (ulx, uly, _), (lrx, lry, _) in zip(upper_left_coords, lower_right_coords):
@@ -221,7 +176,7 @@ def write_bitmap_font(
         msg = f"resolution must be nonzero, got {resolution}"
         raise ZeroDivisionError(msg)
     from PIL import Image, ImageDraw, ImageFont  # Import things here to separate from HoloPatcher code.
-    font_path, target_path = ((p if isinstance(p, BasePath) else Path(p)).resolve() for p in (font_path, target))  # type: ignore[reportGeneralTypeIssues]
+    font_path, target_path = ((p if isinstance(p, BasePath) else Path(p)).resolve() for p in (font_path, target))  # type: ignore[attr-defined, reportGeneralTypeIssues]
 
     txi_font_info = TXIFontInformation()
     txi_font_info.spacingB = 0
