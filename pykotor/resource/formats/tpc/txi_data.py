@@ -230,6 +230,12 @@ def write_bitmap_font(
     txi_font_info.upper_left_coords = []
     txi_font_info.lower_right_coords = []
 
+    # Get the bounding box of a character without ascenders or descenders (e.g., 'x')
+    baseline_char = "0"
+    baseline_bbox = draw.textbbox((0, 0), baseline_char, font=pil_font)
+    baseline_height = baseline_bbox[3] - baseline_bbox[1]
+    txi_font_info.baselineheight = baseline_height
+
     for i, char in enumerate(charset_list):
 
         # Determine grid position
@@ -244,6 +250,9 @@ def write_bitmap_font(
         norm_x2 = (grid_x + 1) / characters_per_row
         norm_y2 = (grid_y + 1) / characters_per_column
 
+        cell_width = resolution[0] / characters_per_column
+        cell_height = resolution[1] / characters_per_column
+
         pixel_x1 = norm_x1 * resolution[0]
         pixel_y1 = norm_y1 * resolution[1]
         pixel_x2 = norm_x2 * resolution[0]
@@ -252,28 +261,32 @@ def write_bitmap_font(
         if draw_boxes:
             # Draw a yellow box representing the grid cell
             yellow_box = (pixel_x1, pixel_y1, pixel_x2, pixel_y2)
-            #draw.rectangle(yellow_box, outline="yellow")    # Draw the character onto the image
+            draw.rectangle(yellow_box, outline="yellow")    # Draw the character onto the image
 
         if not char:  # for errors="ignore" tests. Coordinates match the whole cell size
             txi_font_info.upper_left_coords.append((norm_x1, 1 - norm_y1, 0))
             txi_font_info.lower_right_coords.append((norm_x2, 1 - norm_y2, 0))
             continue
 
-        if char == "\n":
-            char_bbox = draw.textbbox((0, 0), char, font=pil_font)
-        else:
-            char_bbox = draw.textbbox((0, 0), char, anchor="lt", font=pil_font)
+
+        char_bbox = draw.textbbox((pixel_x1, pixel_y1), char, font=pil_font)
 
         char_width = char_bbox[2] - char_bbox[0]
         char_height = char_bbox[3] - char_bbox[1]
 
         if char == "\n":
-            draw.text((pixel_x1, pixel_y1), char, font=pil_font, fill=(255, 255, 255, 255))
+            # Adjust Y coordinates to move one cell downwards
+            draw.text((pixel_x1 + cell_width/2, pixel_y1 + cell_height), char, font=pil_font, fill=(255, 255, 255, 255))
         else:
-            draw.text((pixel_x1, pixel_y1), char, anchor="lt", font=pil_font, fill=(255, 255, 255, 255))
+            draw.text((pixel_x1 + cell_width/2, pixel_y1 + cell_height), char, anchor="mb", font=pil_font, fill=(255, 255, 255, 255))
 
-        pixel_x2 = min(pixel_x2, pixel_x1 + char_width)
-        pixel_y2 = min(pixel_y2, pixel_y1 + char_height)
+        # Calculate center of the cell
+        cell_center_x = pixel_x1 + cell_width / 2
+
+        # Adjust red rectangle coordinates
+        pixel_x1 = cell_center_x - char_width / 2
+        pixel_x2 = cell_center_x + char_width / 2
+        pixel_y1 = min(pixel_y2 - baseline_height, pixel_y2 - char_height)
         if draw_boxes:
             # Draw a red rectangle around the character based on actual text dimensions
             red_box = (pixel_x1, pixel_y1, pixel_x2, pixel_y2)
