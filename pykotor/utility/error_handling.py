@@ -101,6 +101,7 @@ def format_exception_with_variables(___etype___, ___value___, ___tb___, ___messa
             f"  {___var___} = {___val___!r}"
             for ___var___, ___val___ in ___frame___.f_locals.items()
             if ___var___ not in ___default_attrs___
+            and ___sys___.getsizeof(___val___) <= (1024 * 1024)
             and ___var___ not in [
                 "___var___",
                 "___detailed_message___",
