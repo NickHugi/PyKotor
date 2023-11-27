@@ -231,7 +231,6 @@ def write_bitmap_font(
     baseline_char = "0"
     baseline_bbox = temp_draw.textbbox((0, 0), baseline_char, font=pil_font)
     baseline_height = baseline_bbox[3] - baseline_bbox[1]
-    txi_font_info.baselineheight = baseline_height
 
     # Get the bounding box of the descender character
     descender_char = "y"
@@ -246,6 +245,7 @@ def write_bitmap_font(
 
     # Adjust the resolution to include the additional height
     adjusted_resolution = (resolution[0], resolution[1] + total_additional_height)
+    txi_font_info.baselineheight = baseline_height / adjusted_resolution[1]
 
     # Create charset image with adjusted resolution
     charset_image = Image.new("RGBA", adjusted_resolution, (0, 0, 0, 0))
