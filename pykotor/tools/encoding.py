@@ -21,7 +21,7 @@ def get_single_byte_charset(encoding) -> list[str]:
     return charset
 
 def get_double_byte_charset(encoding) -> list[str]:
-    # sourcery skip: merge-duplicate-blocks
+    # I believe these need to be mapped to the TXI with the 'dbmapping' field. Experimentation would be required for the syntax, perhaps could pull from other aurora games.
     charset = []
     if encoding == "cp936":
         for i in range(256):
@@ -34,7 +34,8 @@ def get_double_byte_charset(encoding) -> list[str]:
                     charset.append("")  # Append a blank for non-existent characters
             elif 0x81 <= i <= 0x9F:
                 # Double-byte introducer, skip this byte
-                continue
+                #continue
+                charset.append("")  # Undefined code point, append a blank
             elif 0xA1 <= i <= 0xDF:
                 # Single-byte code
                 try:
@@ -88,6 +89,7 @@ def get_double_byte_charset(encoding) -> list[str]:
                 for j in range(256):
                     if (0x40 <= j <= 0x7E) or (0xA1 <= j <= 0xFE):
                         # Apply formula based on Big5 to Unicode PUA mapping
+                        unicode_val: int = -1  # Placeholder for ranges not covered
                         if 0x81 <= i <= 0x8D:
                             unicode_val = 0xeeb8 + (157 * (i - 0x81)) + (j - 0x40 if j < 0x80 else j - 0x62)
                         elif 0x8E <= i <= 0xA0:
@@ -96,8 +98,6 @@ def get_double_byte_charset(encoding) -> list[str]:
                             unicode_val = 0xf672 + (157 * (i - 0xC6)) + (j - 0x40 if j < 0x80 else j - 0x62)
                         elif 0xFA <= i <= 0xFE:
                             unicode_val = 0xe000 + (157 * (i - 0xFA)) + (j - 0x40 if j < 0x80 else j - 0x62)
-                        else:
-                            unicode_val = -1  # Placeholder for ranges not covered
 
                         if unicode_val != -1:
                             try:
@@ -109,8 +109,28 @@ def get_double_byte_charset(encoding) -> list[str]:
                         charset.append("")  # Append a blank for bytes not in the valid range
             else:
                 charset.append("")  # Append a blank for bytes outside the Big5 range
+    else:  # maybe possible?
+        single_byte_end = 0x7F  # End of single-byte range
+        potential_lead_byte_start = 0x81  # Start of potential lead byte range for double-byte characters
+        potential_lead_byte_end = 0xFC  # End of potential lead byte range
 
+        for i in range(256):
+            if i <= single_byte_end or (0xA1 <= i <= 0xDF):  # Single-byte characters
+                try:
+                    char = bytes([i]).decode(encoding)
+                    charset.append(char)
+                except UnicodeDecodeError:
+                    charset.append("")  # Append a blank for non-existent characters
 
+            elif potential_lead_byte_start <= i <= potential_lead_byte_end:  # Potential lead byte for double-byte characters
+                for j in range(256):
+                    try:
+                        char = bytes([i, j]).decode(encoding)
+                        charset.append(char)
+                    except UnicodeDecodeError:  # noqa: PERF203
+                        charset.append("")  # Append a blank for non-existent characters
+            else:
+                charset.append("")  # For bytes outside the valid range
     return charset
 
 def decode_bytes_with_fallbacks(
