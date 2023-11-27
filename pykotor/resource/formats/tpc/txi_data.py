@@ -1,11 +1,10 @@
 # From https://nwn.wiki/display/NWN1/TXI#TXI-TextureRelatedFields
 # From DarthParametric and Drazgar in the DeadlyStream Discord.
 from __future__ import annotations
-import codecs
-import math
 
-from typing import TYPE_CHECKING, Literal
-from pykotor.utility.misc import is_float
+import codecs
+import itertools
+from typing import TYPE_CHECKING
 
 from pykotor.utility.path import BasePath, Path
 
@@ -100,19 +99,18 @@ def get_single_byte_charset(encoding) -> list[str]:
         try:
             char = codecs.decode(bytes([i]), encoding)
             charset.append(char)
-        except UnicodeDecodeError:
+        except UnicodeDecodeError:  # noqa: PERF203
             charset.append("")  # Append a blank for non-existent characters
     return charset
 
 def get_multi_byte_charset(encoding) -> list[str]:
     charset = []
-    for codepoint in range(0x110000):
+    for lead, trail in itertools.product(range(0x81, 0xFF), range(0x40, 0xFF)):
         try:
-            char = chr(codepoint)
-            # Encode and decode to check if the character is valid in the encoding
-            if char.encode(encoding).decode(encoding) == char:
-                charset.append(char)
-        except (UnicodeEncodeError, LookupError):
+            byte_seq = bytes([lead, trail])
+            char = codecs.decode(byte_seq, encoding, "strict")
+            charset.append(char)
+        except UnicodeDecodeError:  # noqa: PERF203
             charset.append("")  # Append a blank for non-existent characters
     return charset
 
@@ -213,12 +211,13 @@ def write_bitmap_font(
     # Determine doublebyte encodings.
     txi_font_info.isdoublebyte = 0 if lang.is_8bit_encoding() else 1
     charset_list: list[str] = get_multi_byte_charset(lang.get_encoding()) if txi_font_info.isdoublebyte else get_single_byte_charset(lang.get_encoding())
+
     # Calculate grid cell size
-    characters_per_row: Literal[1024, 16] = 1024 if txi_font_info.isdoublebyte else 16
-    characters_per_column: Literal[1088, 16] = 1088 if txi_font_info.isdoublebyte else 16
+    characters_per_row = 16
+    characters_per_column = 16
     grid_cell_size: int = min(resolution[0] // characters_per_column, resolution[1] // characters_per_row)
-    txi_font_info.upperleftcoords = 0x110000 if txi_font_info.isdoublebyte else 256
-    txi_font_info.lowerrightcoords = 0x110000 if txi_font_info.isdoublebyte else 256
+    txi_font_info.upperleftcoords = 256
+    txi_font_info.lowerrightcoords = 256
 
     # Assuming a square grid cell, set the font size to fit within the cell
     pil_font = ImageFont.truetype(str(font_path), grid_cell_size)
