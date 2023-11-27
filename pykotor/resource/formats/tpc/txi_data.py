@@ -1,6 +1,7 @@
 # From https://nwn.wiki/display/NWN1/TXI#TXI-TextureRelatedFields
 # From DarthParametric and Drazgar in the DeadlyStream Discord.
 from __future__ import annotations
+from contextlib import suppress
 
 import math
 from typing import TYPE_CHECKING
@@ -164,6 +165,17 @@ def write_bitmap_fonts(
             draw_box,
         )
 
+def get_charset_from_encoding(encoding):
+    charset = []
+    for i in range(0x110000):
+        try:
+            char = chr(i)
+            char.encode(encoding)
+            charset.append(char)
+        except UnicodeEncodeError:  # noqa: PERF203
+            charset.append("")
+    return charset
+
 def write_bitmap_font(
     target: os.PathLike | str,
     font_path: os.PathLike | str,
@@ -189,16 +201,15 @@ def write_bitmap_font(
 
     # Determine doublebyte encodings.
     txi_font_info.isdoublebyte = 0 if lang.is_8bit_encoding() else 1
-    charset_list: list[str] = get_double_byte_charset(lang.get_encoding()) if txi_font_info.isdoublebyte else get_single_byte_charset(lang.get_encoding())
-    print("numchars:", len(charset_list))
-
+    charset_list: list[str] = get_charset_from_encoding(lang.get_encoding())
+    numchars = len([char for char in charset_list if char])
     # Calculate grid cell size
-    characters_per_row = math.ceil(math.sqrt(len(charset_list)))
-    characters_per_column = math.ceil(math.sqrt(len(charset_list)))
+    characters_per_row = math.ceil(math.sqrt(numchars))
+    characters_per_column = math.ceil(math.sqrt(numchars))
     grid_cell_size: int = min(resolution[0] // characters_per_column, resolution[1] // characters_per_row)
-    txi_font_info.upperleftcoords = len(charset_list)
-    txi_font_info.lowerrightcoords = len(charset_list)
-    txi_font_info.numchars = len(charset_list)
+    txi_font_info.upperleftcoords = numchars
+    txi_font_info.lowerrightcoords = numchars
+    txi_font_info.numchars = numchars
 
     # Assuming a square grid cell, set the font size to fit within the cell
     pil_font = ImageFont.truetype(str(font_path), grid_cell_size)
@@ -233,86 +244,83 @@ def write_bitmap_font(
     txi_font_info.upper_left_coords = []
     txi_font_info.lower_right_coords = []
 
+    # Initialize the grid position
+    grid_x = 0
+    grid_y = 0
+
 
     for i, char in enumerate(charset_list):
+        if char:
+            # Calculate cell dimensions
+            cell_width = resolution[0] / characters_per_column
+            cell_height = resolution[1] / characters_per_row
 
-        cell_width = resolution[0] / characters_per_column
-        cell_height = resolution[1] / characters_per_column
+            # Adjust cell height to include padding for underhang
+            padded_cell_height = cell_height + underhang_height
 
-        # Adjust cell height to include padding for underhang
-        padded_cell_height = cell_height + underhang_height
+            # Calculate normalized coordinates for upper left
+            norm_x1 = grid_x / characters_per_row
+            norm_y1 = (grid_y * padded_cell_height) / resolution[1]
 
-        # Determine grid position
-        grid_x = i % characters_per_row
-        grid_y = i // characters_per_column
+            # Calculate normalized coordinates for lower right
+            norm_x2 = (grid_x + 1) / characters_per_row
+            norm_y2 = ((grid_y + 1) * padded_cell_height) / resolution[1]
 
-        # Calculate normalized coordinates for upper left
-        norm_x1 = grid_x / characters_per_row
-        # Adjust normalized coordinates for the padded grid
-        norm_y1 = (grid_y * padded_cell_height) / resolution[1]
+            # Convert normalized coordinates to pixels
+            pixel_x1 = norm_x1 * resolution[0]
+            pixel_y1 = norm_y1 * resolution[1]
+            pixel_x2 = norm_x2 * resolution[0]
+            pixel_y2 = norm_y2 * resolution[1]
 
-        # Calculate normalized coordinates for lower right
-        norm_x2 = (grid_x + 1) / characters_per_row
-        # Adjust normalized coordinates for the padded grid
-        norm_y2 = ((grid_y + 1) * padded_cell_height) / resolution[1]
+            char_bbox = draw.textbbox((pixel_x1, pixel_y1), char, font=pil_font)
 
-        pixel_x1 = norm_x1 * resolution[0]
-        pixel_y1 = norm_y1 * resolution[1]
-        pixel_x2 = norm_x2 * resolution[0]
-        pixel_y2 = norm_y2 * resolution[1]
+            char_width = char_bbox[2] - char_bbox[0]
+            char_height = char_bbox[3] - char_bbox[1]
 
-        #if draw_boxes:
-            # Draw a yellow box representing the grid cell
-        #    yellow_box = (pixel_x1, pixel_y1, pixel_x2, pixel_y2)
-        #    draw.rectangle(yellow_box, outline="yellow")    # Draw the character onto the image
+            if char == "\n":
+                # Adjust Y coordinates to move one cell downwards
+                draw.text((pixel_x1 + cell_width/2, pixel_y1 + cell_height - underhang_height), char, font=pil_font, fill=(255, 255, 255, 255))
+            else:
+                draw.text((pixel_x1 + cell_width/2, pixel_y1 + cell_height - underhang_height), char, anchor="ms", font=pil_font, fill=(255, 255, 255, 255))
 
-        if not char:  # for errors="ignore" tests. Coordinates match the whole cell size
-            txi_font_info.upper_left_coords.append((norm_x1, 1 - norm_y1, 0))
-            txi_font_info.lower_right_coords.append((norm_x2, 1 - norm_y2, 0))
-            continue
+            # Calculate center of the cell
+            cell_center_x = pixel_x1 + cell_width / 2
 
+            # Adjust red rectangle coordinates
+            pixel_x1 = cell_center_x - char_width / 2
+            pixel_x2 = cell_center_x + char_width / 2
+            pixel_y1 = pixel_y2 - char_height - underhang_height*2 - max(0, baseline_height - char_height)
+            pixel_y2 -= underhang_height
+            if draw_boxes:
+                # Draw a red rectangle around the character based on actual text dimensions
+                red_box = (pixel_x1, pixel_y1, pixel_x2, pixel_y2)
+                draw.rectangle(red_box, outline="red")
 
-        char_bbox = draw.textbbox((pixel_x1, pixel_y1), char, font=pil_font)
+            # Calculate normalized coordinates for the red box
+            norm_x1 = pixel_x1 / adjusted_resolution[0]
+            norm_y1 = pixel_y1 / adjusted_resolution[1]
+            norm_x2 = pixel_x2 / adjusted_resolution[0]
+            norm_y2 = pixel_y2 / adjusted_resolution[1]
 
-        char_width = char_bbox[2] - char_bbox[0]
-        char_height = char_bbox[3] - char_bbox[1]
+            # Invert Y-axis normalization
+            norm_y1 = 1 - norm_y1
+            norm_y2 = 1 - norm_y2
 
-        if char == "\n":
-            # Adjust Y coordinates to move one cell downwards
-            draw.text((pixel_x1 + cell_width/2, pixel_y1 + cell_height - underhang_height), char, font=pil_font, fill=(255, 255, 255, 255))
+            # Ensure we're within 0 and 1 ( required due to inaccuracies with fallback from libraqm )
+            norm_x1, norm_x2 = max(0, min(norm_x1, 1)), max(0, min(norm_x2, 1))
+            norm_y1, norm_y2 = max(0, min(norm_y1, 1)), max(0, min(norm_y2, 1))
+
+            # Append to coordinate lists
+            txi_font_info.upper_left_coords.append((norm_x1, norm_y1, 0))
+            txi_font_info.lower_right_coords.append((norm_x2, norm_y2, 0))
+
+            # Move to the next grid position
+            grid_x = (grid_x + 1) % characters_per_row
+            if grid_x == 0:
+                grid_y += 1
         else:
-            draw.text((pixel_x1 + cell_width/2, pixel_y1 + cell_height - underhang_height), char, anchor="ms", font=pil_font, fill=(255, 255, 255, 255))
-
-        # Calculate center of the cell
-        cell_center_x = pixel_x1 + cell_width / 2
-
-        # Adjust red rectangle coordinates
-        pixel_x1 = cell_center_x - char_width / 2
-        pixel_x2 = cell_center_x + char_width / 2
-        pixel_y1 = pixel_y2 - char_height - underhang_height*2 - max(0, baseline_height - char_height)
-        pixel_y2 -= underhang_height
-        if draw_boxes:
-            # Draw a red rectangle around the character based on actual text dimensions
-            red_box = (pixel_x1, pixel_y1, pixel_x2, pixel_y2)
-            draw.rectangle(red_box, outline="red")
-
-        # Calculate normalized coordinates for the red box
-        norm_x1 = pixel_x1 / adjusted_resolution[0]
-        norm_y1 = pixel_y1 / adjusted_resolution[1]
-        norm_x2 = pixel_x2 / adjusted_resolution[0]
-        norm_y2 = pixel_y2 / adjusted_resolution[1]
-
-        # Invert Y-axis normalization
-        norm_y1 = 1 - norm_y1
-        norm_y2 = 1 - norm_y2
-
-        # Ensure we're within 0 and 1 ( required due to inaccuracies with fallback from libraqm )
-        norm_x1, norm_x2 = max(0, min(norm_x1, 1)), max(0, min(norm_x2, 1))
-        norm_y1, norm_y2 = max(0, min(norm_y1, 1)), max(0, min(norm_y2, 1))
-
-        # Append to coordinate lists
-        txi_font_info.upper_left_coords.append((norm_x1, norm_y1, 0))
-        txi_font_info.lower_right_coords.append((norm_x2, norm_y2, 0))
+            txi_font_info.upper_left_coords.append((0.000000, 0.000000, 0))
+            txi_font_info.lower_right_coords.append((0.000000, 0.000000, 0))
 
     target_path.parent.mkdir(parents=True, exist_ok=True)
     charset_image.save(target_path.with_suffix(".tga"), format="TGA")
