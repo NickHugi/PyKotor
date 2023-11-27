@@ -238,7 +238,6 @@ def write_bitmap_font(
 
     # Calculate underhang height
     underhang_height = descender_bbox[3] - baseline_bbox[3]
-    print("underhang_height:", underhang_height)
 
     # Calculate total additional height needed for the underhang
     total_additional_height = underhang_height * characters_per_column
