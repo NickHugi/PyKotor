@@ -307,7 +307,6 @@ class UTDEditor(Editor):
                 writer.close()
         else:
             resname, restype, filepath, data = search
-            self._installation.load_override()  # TODO: Why is this here?
 
         if data is not None:
             openResourceEditor(filepath, resname, ResourceType.DLG, data, self._installation, self)
