@@ -223,20 +223,45 @@ def write_bitmap_font(
     # Assuming a square grid cell, set the font size to fit within the cell
     pil_font = ImageFont.truetype(str(font_path), grid_cell_size)
 
-    # Create charset image
-    charset_image = Image.new("RGBA", resolution, (0, 0, 0, 0))
+    # Create a temporary image for measurements
+    temp_image = Image.new("RGBA", (100, 100), (0, 0, 0, 0))
+    temp_draw = ImageDraw.Draw(temp_image)
+
+    # Get the bounding box of the baseline character
+    baseline_char = "0"
+    baseline_bbox = temp_draw.textbbox((0, 0), baseline_char, font=pil_font)
+    baseline_height = baseline_bbox[3] - baseline_bbox[1]
+    txi_font_info.baselineheight = baseline_height
+
+    # Get the bounding box of the descender character
+    descender_char = "y"
+    descender_bbox = temp_draw.textbbox((0, 0), descender_char, font=pil_font)
+
+    # Calculate underhang height
+    underhang_height = descender_bbox[3] - baseline_bbox[3]
+    print("underhang_height:", underhang_height)
+
+    # Calculate total additional height needed for the underhang
+    total_additional_height = underhang_height * characters_per_column
+
+    # Adjust the resolution to include the additional height
+    adjusted_resolution = (resolution[0], resolution[1] + total_additional_height)
+
+    # Create charset image with adjusted resolution
+    charset_image = Image.new("RGBA", adjusted_resolution, (0, 0, 0, 0))
     draw = ImageDraw.Draw(charset_image)
 
     txi_font_info.upper_left_coords = []
     txi_font_info.lower_right_coords = []
 
-    # Get the bounding box of a character without ascenders or descenders (e.g., 'x')
-    baseline_char = "0"
-    baseline_bbox = draw.textbbox((0, 0), baseline_char, font=pil_font)
-    baseline_height = baseline_bbox[3] - baseline_bbox[1]
-    txi_font_info.baselineheight = baseline_height
 
     for i, char in enumerate(charset_list):
+
+        cell_width = resolution[0] / characters_per_column
+        cell_height = resolution[1] / characters_per_column
+
+        # Adjust cell height to include padding for underhang
+        padded_cell_height = cell_height + underhang_height
 
         # Determine grid position
         grid_x = i % characters_per_row
@@ -244,24 +269,23 @@ def write_bitmap_font(
 
         # Calculate normalized coordinates for upper left
         norm_x1 = grid_x / characters_per_row
-        norm_y1 = grid_y / characters_per_column
+        # Adjust normalized coordinates for the padded grid
+        norm_y1 = (grid_y * padded_cell_height) / resolution[1]
 
         # Calculate normalized coordinates for lower right
         norm_x2 = (grid_x + 1) / characters_per_row
-        norm_y2 = (grid_y + 1) / characters_per_column
-
-        cell_width = resolution[0] / characters_per_column
-        cell_height = resolution[1] / characters_per_column
+        # Adjust normalized coordinates for the padded grid
+        norm_y2 = ((grid_y + 1) * padded_cell_height) / resolution[1]
 
         pixel_x1 = norm_x1 * resolution[0]
         pixel_y1 = norm_y1 * resolution[1]
         pixel_x2 = norm_x2 * resolution[0]
         pixel_y2 = norm_y2 * resolution[1]
 
-        if draw_boxes:
+        #if draw_boxes:
             # Draw a yellow box representing the grid cell
-            yellow_box = (pixel_x1, pixel_y1, pixel_x2, pixel_y2)
-            draw.rectangle(yellow_box, outline="yellow")    # Draw the character onto the image
+        #    yellow_box = (pixel_x1, pixel_y1, pixel_x2, pixel_y2)
+        #    draw.rectangle(yellow_box, outline="yellow")    # Draw the character onto the image
 
         if not char:  # for errors="ignore" tests. Coordinates match the whole cell size
             txi_font_info.upper_left_coords.append((norm_x1, 1 - norm_y1, 0))
@@ -276,9 +300,9 @@ def write_bitmap_font(
 
         if char == "\n":
             # Adjust Y coordinates to move one cell downwards
-            draw.text((pixel_x1 + cell_width/2, pixel_y1 + cell_height), char, font=pil_font, fill=(255, 255, 255, 255))
+            draw.text((pixel_x1 + cell_width/2, pixel_y1 + cell_height - underhang_height), char, font=pil_font, fill=(255, 255, 255, 255))
         else:
-            draw.text((pixel_x1 + cell_width/2, pixel_y1 + cell_height), char, anchor="mb", font=pil_font, fill=(255, 255, 255, 255))
+            draw.text((pixel_x1 + cell_width/2, pixel_y1 + cell_height - underhang_height), char, anchor="ms", font=pil_font, fill=(255, 255, 255, 255))
 
         # Calculate center of the cell
         cell_center_x = pixel_x1 + cell_width / 2
@@ -286,17 +310,18 @@ def write_bitmap_font(
         # Adjust red rectangle coordinates
         pixel_x1 = cell_center_x - char_width / 2
         pixel_x2 = cell_center_x + char_width / 2
-        pixel_y1 = min(pixel_y2 - baseline_height, pixel_y2 - char_height)
+        pixel_y1 = pixel_y2 - char_height - underhang_height*2 - max(0, baseline_height - char_height)
+        pixel_y2 -= underhang_height
         if draw_boxes:
             # Draw a red rectangle around the character based on actual text dimensions
             red_box = (pixel_x1, pixel_y1, pixel_x2, pixel_y2)
             draw.rectangle(red_box, outline="red")
 
         # Calculate normalized coordinates for the red box
-        norm_x1 = pixel_x1 / resolution[0]
-        norm_y1 = pixel_y1 / resolution[1]
-        norm_x2 = pixel_x2 / resolution[0]
-        norm_y2 = pixel_y2 / resolution[1]
+        norm_x1 = pixel_x1 / adjusted_resolution[0]
+        norm_y1 = pixel_y1 / adjusted_resolution[1]
+        norm_x2 = pixel_x2 / adjusted_resolution[0]
+        norm_y2 = pixel_y2 / adjusted_resolution[1]
 
         # Invert Y-axis normalization
         norm_y1 = 1 - norm_y1
