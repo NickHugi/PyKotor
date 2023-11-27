@@ -25,7 +25,6 @@ class Language(IntEnum):
     # cp-1252
     AFRIKAANS = 6
     BASQUE = 7
-    BISLAMA = 8
     BRETON = 9
     CATALAN = 10
     CHAMORRO = 11
@@ -191,7 +190,6 @@ class Language(IntEnum):
             Language.SPANISH,
             Language.AFRIKAANS,
             Language.BASQUE,
-            Language.BISLAMA,
             Language.BRETON,
             Language.CATALAN,
             Language.CHAMORRO,
@@ -308,7 +306,6 @@ class Language(IntEnum):
             Language.POLISH: "pl",
             Language.AFRIKAANS: "af",
             Language.BASQUE: "eu",
-            Language.BISLAMA: "bi",
             Language.BRETON: "br",
             Language.CATALAN: "ca",
             Language.CHAMORRO: "ch",

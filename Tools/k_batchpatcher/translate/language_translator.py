@@ -421,13 +421,13 @@ class Translator:
         elif self.translation_option in [
             TranslationOption.PONS_TRANSLATOR,
             TranslationOption.GOOGLE_TRANSLATE,
-            TranslationOption.MY_MEMORY_TRANSLATOR,
             TranslationOption.APERTIUM,
         ]:
             self._translator = self.translation_option.value(from_lang_code, to_lang_code)
 
         elif self.translation_option in [
             TranslationOption.LINGUEE_TRANSLATOR,
+            TranslationOption.MY_MEMORY_TRANSLATOR,
         ]:
             self._translator = self.translation_option.value(self.from_lang.name.lower(), self.to_lang.name.lower())
 
@@ -611,6 +611,10 @@ class Translator:
                 #    msg = "LibreTranslate requires a specified source language."  # noqa: ERA001
                 #    raise ValueError(msg)  # noqa: ERA001
                 translated_chunk = self._translator.translate(chunk, from_lang_code, to_lang_code)  # type: ignore[attr-defined]
+            elif option in (
+                TranslationOption.YANDEX_TRANSLATOR,
+            ):
+                translated_chunk = self._translator.translate(from_lang_code, to_lang_code, chunk)  # type: ignore[attr-defined]
             elif option in (
                 TranslationOption.DL_TRANSLATE,
                 TranslationOption.T5_TRANSLATOR,
