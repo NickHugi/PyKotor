@@ -39,33 +39,3 @@ def decode_bytes_with_fallbacks(
 
         return byte_content.decode(encoding=encoding, errors=errors)
     return byte_content.decode(errors=errors)
-
-
-def find_best_8bit_encoding(s: str) -> str | None:
-    """Finds the best 8-bit encoding for a string
-    Args:
-        s: str - The input string to analyze
-    Returns:
-        str | None - The detected 8-bit encoding or None if no match found
-    - The string is first encoded to UTF-8 bytes
-    - The byte string is analyzed to find potential charset matches
-    - Non 8-bit and Unicode matches are filtered out
-    - If any 8-bit matches remain, the one with the highest confidence is returned
-    - If no 8-bit matches, None is returned.
-    """
-    # First, we encode the string to UTF-8 bytes. Python str objects are inherently Unicode.
-    utf8_encoded = s.encode("utf-8")
-
-    # Then, we try to find the best match for this byte string
-    # assuming it was originally encoded with an unknown 8-bit charset
-    matches = charset_normalizer.from_bytes(utf8_encoded)
-
-    # We filter out non 8-bit encodings and Unicode encodings
-    eight_bit_encodings: list[charset_normalizer.CharsetMatch] = [match for match in matches if "iso" in match.encoding.lower() or match.encoding.startswith("cp") or match.encoding.startswith("windows-")]
-
-    # If we have 8-bit matches, we take the one with the highest confidence
-    if eight_bit_encodings:
-        best_match: charset_normalizer.CharsetMatch = max(eight_bit_encodings, key=lambda m: m.chaos)
-        return best_match.encoding
-
-    return None

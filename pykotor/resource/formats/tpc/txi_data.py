@@ -3,7 +3,9 @@
 from __future__ import annotations
 
 import codecs
+import contextlib
 import itertools
+import math
 from typing import TYPE_CHECKING
 
 from pykotor.utility.path import BasePath, Path
@@ -104,14 +106,14 @@ def get_single_byte_charset(encoding) -> list[str]:
     return charset
 
 def get_multi_byte_charset(encoding) -> list[str]:
-    charset = []
-    for lead, trail in itertools.product(range(0x81, 0xFF), range(0x40, 0xFF)):
-        try:
-            byte_seq = bytes([lead, trail])
-            char = codecs.decode(byte_seq, encoding, "strict")
+    charset: list[str] = []
+    lead_bytes = list(range(0x81, 0xFE))  # Lead bytes in cp-936 range from 0x81 to 0xFE (inclusive)
+    trail_bytes = list(range(0x40, 0x7F)) + list(range(0x80, 0xFF))  # Trail bytes in cp-936 include 0x40-0x7E and 0x80-0xFE
+
+    for lead_byte, trail_byte in itertools.product(lead_bytes, trail_bytes):
+        with contextlib.suppress(UnicodeDecodeError):
+            char = codecs.decode(bytes([lead_byte, trail_byte]), encoding, errors="strict")
             charset.append(char)
-        except UnicodeDecodeError:  # noqa: PERF203
-            charset.append("")  # Append a blank for non-existent characters
     return charset
 
 def coords_to_boxes(upper_left_coords, lower_right_coords, resolution):
@@ -211,13 +213,15 @@ def write_bitmap_font(
     # Determine doublebyte encodings.
     txi_font_info.isdoublebyte = 0 if lang.is_8bit_encoding() else 1
     charset_list: list[str] = get_multi_byte_charset(lang.get_encoding()) if txi_font_info.isdoublebyte else get_single_byte_charset(lang.get_encoding())
+    print("numchars:", len(charset_list))
 
     # Calculate grid cell size
-    characters_per_row = 16
-    characters_per_column = 16
+    characters_per_row = math.ceil(math.sqrt(len(charset_list)))
+    characters_per_column = math.ceil(math.sqrt(len(charset_list)))
     grid_cell_size: int = min(resolution[0] // characters_per_column, resolution[1] // characters_per_row)
-    txi_font_info.upperleftcoords = 256
-    txi_font_info.lowerrightcoords = 256
+    txi_font_info.upperleftcoords = len(charset_list)
+    txi_font_info.lowerrightcoords = len(charset_list)
+    txi_font_info.numchars = len(charset_list)
 
     # Assuming a square grid cell, set the font size to fit within the cell
     pil_font = ImageFont.truetype(str(font_path), grid_cell_size)
