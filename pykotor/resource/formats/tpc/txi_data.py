@@ -136,7 +136,7 @@ def write_bitmap_fonts(
     font_path, target_path = ((p if isinstance(p, BasePath) else Path(p)).resolve() for p in (font_path, target))  # type: ignore[reportGeneralTypeIssues]
     target_path.mkdir(parents=True, exist_ok=True)
     default_font_names = [
-        "fnt_galahad14",
+        "fnt_galahad14",  # Main menu stuff?
         "dialogfont10x10",
         "dialogfont10x10a",
         "dialogfont10x10b",
