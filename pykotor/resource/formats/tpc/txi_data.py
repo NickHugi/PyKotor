@@ -105,15 +105,37 @@ def get_single_byte_charset(encoding) -> list[str]:
             charset.append("")  # Append a blank for non-existent characters
     return charset
 
-def get_multi_byte_charset(encoding) -> list[str]:
-    charset: list[str] = []
-    lead_bytes = list(range(0x81, 0xFE))  # Lead bytes in cp-936 range from 0x81 to 0xFE (inclusive)
-    trail_bytes = list(range(0x40, 0x7F)) + list(range(0x80, 0xFF))  # Trail bytes in cp-936 include 0x40-0x7E and 0x80-0xFE
+def get_double_byte_charset(encoding) -> list[str]:
+    charset = []
+    for i in range(256):
+        if 0x00 <= i <= 0x7F:
+            # Single-byte code
+            try:
+                char = codecs.decode(bytes([i]), encoding)
+                charset.append(char)
+            except UnicodeDecodeError:
+                charset.append("")  # Append a blank for non-existent characters
+        elif 0x81 <= i <= 0x9F:
+            # Double-byte introducer, skip this byte
+            continue
+        elif 0xA1 <= i <= 0xDF:
+            # Single-byte code
+            try:
+                char = codecs.decode(bytes([i]), encoding)
+                charset.append(char)
+            except UnicodeDecodeError:
+                charset.append("")  # Append a blank for non-existent characters
+        elif 0xE0 <= i <= 0xFC:
+            # Double-byte introducer, the second byte can be any of the 256 possible values
+            for j in range(256):
+                try:
+                    char = codecs.decode(bytes([i, j]), encoding)
+                    charset.append(char)
+                except UnicodeDecodeError:  # noqa: PERF203
+                    charset.append("")  # Append a blank for non-existent characters
+        else:
+            charset.append("")  # Undefined code point, append a blank
 
-    for lead_byte, trail_byte in itertools.product(lead_bytes, trail_bytes):
-        with contextlib.suppress(UnicodeDecodeError):
-            char = codecs.decode(bytes([lead_byte, trail_byte]), encoding, errors="strict")
-            charset.append(char)
     return charset
 
 def coords_to_boxes(upper_left_coords, lower_right_coords, resolution):
@@ -212,7 +234,7 @@ def write_bitmap_font(
 
     # Determine doublebyte encodings.
     txi_font_info.isdoublebyte = 0 if lang.is_8bit_encoding() else 1
-    charset_list: list[str] = get_multi_byte_charset(lang.get_encoding()) if txi_font_info.isdoublebyte else get_single_byte_charset(lang.get_encoding())
+    charset_list: list[str] = get_double_byte_charset(lang.get_encoding()) if txi_font_info.isdoublebyte else get_single_byte_charset(lang.get_encoding())
     print("numchars:", len(charset_list))
 
     # Calculate grid cell size
