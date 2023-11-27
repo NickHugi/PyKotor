@@ -32,7 +32,7 @@ class ModificationsNCS(PatcherModifications):
         self.action: str = "Hack "
         self.hackdata: list[tuple[str, int, int]] = []
 
-    def execute_patch(self, ncs_source: SOURCE_TYPES, *args) -> bytes:
+    def patch_resource_from_bytes(self, ncs_source: SOURCE_TYPES, *args) -> bytes:
         if isinstance(ncs_source, (bytes, bytearray)):
             ncs_bytes = bytearray(ncs_source)
         else:
@@ -78,7 +78,7 @@ class ModificationsNSS(PatcherModifications):
             return BinaryReader.load_file(nss_source)
         return None
 
-    def execute_patch(self, nss_source: SOURCE_TYPES, memory: PatcherMemory, logger: PatchLogger, game: Game) -> bytes:
+    def patch_resource_from_bytes(self, nss_source: SOURCE_TYPES, memory: PatcherMemory, logger: PatchLogger, game: Game) -> bytes:
         """Takes the source nss bytes and replaces instances of 2DAMEMORY# and StrRef# with the values in patcher memory. Compiles the
         source bytes and returns the ncs compiled script as a bytes object.
 

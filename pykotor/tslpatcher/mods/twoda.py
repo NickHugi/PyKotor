@@ -532,7 +532,7 @@ class Modifications2DA(PatcherModifications):
         super().__init__(filename)
         self.modifiers: list[Modify2DA] = []
 
-    def execute_patch(
+    def patch_resource_from_bytes(
         self,
         source_2da: SOURCE_TYPES,
         memory: PatcherMemory,

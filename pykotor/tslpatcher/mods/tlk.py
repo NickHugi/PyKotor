@@ -38,7 +38,7 @@ class ModificationsTLK(PatcherModifications):
             if log:
                 log.complete_patch()
 
-    def execute_patch(
+    def patch_resource_from_bytes(
         self,
         source_tlk: SOURCE_TYPES,
         memory: PatcherMemory,

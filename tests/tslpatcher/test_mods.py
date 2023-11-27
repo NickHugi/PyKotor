@@ -148,7 +148,7 @@ class TestManipulate2DA(TestCase):
         config = Modifications2DA("")
         config.modifiers.append(ChangeRow2DA("", Target(TargetType.ROW_INDEX, 0), {"Col1": RowValueTLKMemory(0)}))
         config.modifiers.append(ChangeRow2DA("", Target(TargetType.ROW_INDEX, 1), {"Col1": RowValueTLKMemory(1)}))
-        twoda = read_2da(config.execute_patch(bytes_2da(twoda), memory))
+        twoda = read_2da(config.patch_resource_from_bytes(bytes_2da(twoda), memory))
 
         self.assertEqual(["0", "1"], twoda.get_column("Col1"))
         self.assertEqual(["b", "e"], twoda.get_column("Col2"))
@@ -298,7 +298,7 @@ class TestManipulate2DA(TestCase):
                 {"Col1": RowValueConstant("123"), "Col2": RowValueConstant("ABC")},
             )
         )
-        twoda = read_2da(config.execute_patch(bytes_2da(twoda), memory))
+        twoda = read_2da(config.patch_resource_from_bytes(bytes_2da(twoda), memory))
 
         self.assertEqual(1, twoda.get_height())
         self.assertEqual("0", twoda.get_label(0))
@@ -499,7 +499,7 @@ class TestManipulate2DA(TestCase):
                 {"Col2": RowValueConstant("X")},
             )
         )
-        twoda = read_2da(config.execute_patch(bytes_2da(twoda), memory))
+        twoda = read_2da(config.patch_resource_from_bytes(bytes_2da(twoda), memory))
 
         self.assertEqual(3, twoda.get_height())
         self.assertEqual(["a", "c", "a"], twoda.get_column("Col1"))
@@ -856,7 +856,7 @@ class TestManipulateGFF(TestCase):
         memory = PatcherMemory()
 
         config = ModificationsGFF("", False, [ModifyFieldGFF("Field1", FieldValueConstant(2))])
-        gff = read_gff(config.execute_patch(bytes_gff(gff), memory, PatchLogger()))
+        gff = read_gff(config.patch_resource_from_bytes(bytes_gff(gff), memory, PatchLogger()))
 
         self.assertEqual(2, gff.root.get_uint8("Field1"))
 
@@ -867,7 +867,7 @@ class TestManipulateGFF(TestCase):
         memory = PatcherMemory()
 
         config = ModificationsGFF("", False, [ModifyFieldGFF("Field1", FieldValueConstant(2))])
-        gff = read_gff(config.execute_patch(bytes_gff(gff), memory, PatchLogger()))
+        gff = read_gff(config.patch_resource_from_bytes(bytes_gff(gff), memory, PatchLogger()))
 
         self.assertEqual(2, gff.root.get_int8("Field1"))
 
@@ -878,7 +878,7 @@ class TestManipulateGFF(TestCase):
         memory = PatcherMemory()
 
         config = ModificationsGFF("", False, [ModifyFieldGFF("Field1", FieldValueConstant(2))])
-        gff = read_gff(config.execute_patch(bytes_gff(gff), memory, PatchLogger()))
+        gff = read_gff(config.patch_resource_from_bytes(bytes_gff(gff), memory, PatchLogger()))
 
         self.assertEqual(2, gff.root.get_uint16("Field1"))
 
@@ -889,7 +889,7 @@ class TestManipulateGFF(TestCase):
         memory = PatcherMemory()
 
         config = ModificationsGFF("", False, [ModifyFieldGFF("Field1", FieldValueConstant(2))])
-        gff = read_gff(config.execute_patch(bytes_gff(gff), memory, PatchLogger()))
+        gff = read_gff(config.patch_resource_from_bytes(bytes_gff(gff), memory, PatchLogger()))
 
         self.assertEqual(2, gff.root.get_int16("Field1"))
 
@@ -900,7 +900,7 @@ class TestManipulateGFF(TestCase):
         memory = PatcherMemory()
 
         config = ModificationsGFF("", False, [ModifyFieldGFF("Field1", FieldValueConstant(2))])
-        gff = read_gff(config.execute_patch(bytes_gff(gff), memory, PatchLogger()))
+        gff = read_gff(config.patch_resource_from_bytes(bytes_gff(gff), memory, PatchLogger()))
 
         self.assertEqual(2, gff.root.get_uint32("Field1"))
 
@@ -911,7 +911,7 @@ class TestManipulateGFF(TestCase):
         memory = PatcherMemory()
 
         config = ModificationsGFF("", False, [ModifyFieldGFF("Field1", FieldValueConstant(2))])
-        gff = read_gff(config.execute_patch(bytes_gff(gff), memory, PatchLogger()))
+        gff = read_gff(config.patch_resource_from_bytes(bytes_gff(gff), memory, PatchLogger()))
 
         self.assertEqual(2, gff.root.get_int32("Field1"))
 
@@ -922,7 +922,7 @@ class TestManipulateGFF(TestCase):
         memory = PatcherMemory()
 
         config = ModificationsGFF("", False, [ModifyFieldGFF("Field1", FieldValueConstant(2))])
-        gff = read_gff(config.execute_patch(bytes_gff(gff), memory, PatchLogger()))
+        gff = read_gff(config.patch_resource_from_bytes(bytes_gff(gff), memory, PatchLogger()))
 
         self.assertEqual(2, gff.root.get_uint64("Field1"))
 
@@ -933,7 +933,7 @@ class TestManipulateGFF(TestCase):
         memory = PatcherMemory()
 
         config = ModificationsGFF("", False, [ModifyFieldGFF("Field1", FieldValueConstant(2))])
-        gff = read_gff(config.execute_patch(bytes_gff(gff), memory, PatchLogger()))
+        gff = read_gff(config.patch_resource_from_bytes(bytes_gff(gff), memory, PatchLogger()))
 
         self.assertEqual(2, gff.root.get_int64("Field1"))
 
@@ -944,7 +944,7 @@ class TestManipulateGFF(TestCase):
         memory = PatcherMemory()
 
         config = ModificationsGFF("", False, [ModifyFieldGFF("Field1", FieldValueConstant(2.345))])
-        gff = read_gff(config.execute_patch(bytes_gff(gff), memory, PatchLogger()))
+        gff = read_gff(config.patch_resource_from_bytes(bytes_gff(gff), memory, PatchLogger()))
 
         self.assertEqual(2.3450000286102295, gff.root.get_single("Field1"))
 
@@ -955,7 +955,7 @@ class TestManipulateGFF(TestCase):
         memory = PatcherMemory()
 
         config = ModificationsGFF("", False, [ModifyFieldGFF("Field1", FieldValueConstant(2.345678))])
-        gff = read_gff(config.execute_patch(bytes_gff(gff), memory, PatchLogger()))
+        gff = read_gff(config.patch_resource_from_bytes(bytes_gff(gff), memory, PatchLogger()))
 
         self.assertEqual(2.345678, gff.root.get_double("Field1"))
 
@@ -966,7 +966,7 @@ class TestManipulateGFF(TestCase):
         memory = PatcherMemory()
 
         config = ModificationsGFF("", False, [ModifyFieldGFF("Field1", FieldValueConstant("def"))])
-        gff = read_gff(config.execute_patch(bytes_gff(gff), memory, PatchLogger()))
+        gff = read_gff(config.patch_resource_from_bytes(bytes_gff(gff), memory, PatchLogger()))
 
         self.assertEqual("def", gff.root.get_string("Field1"))
 
@@ -986,7 +986,7 @@ class TestManipulateGFF(TestCase):
                 )
             ],
         )
-        gff = read_gff(config.execute_patch(bytes_gff(gff), memory, PatchLogger()))
+        gff = read_gff(config.patch_resource_from_bytes(bytes_gff(gff), memory, PatchLogger()))
 
         self.assertEqual(1, gff.root.get_locstring("Field1").stringref)
 
@@ -997,7 +997,7 @@ class TestManipulateGFF(TestCase):
         memory = PatcherMemory()
 
         config = ModificationsGFF("", False, [ModifyFieldGFF("Field1", FieldValueConstant(Vector3(1, 2, 3)))])
-        gff = read_gff(config.execute_patch(bytes_gff(gff), memory, PatchLogger()))
+        gff = read_gff(config.patch_resource_from_bytes(bytes_gff(gff), memory, PatchLogger()))
 
         self.assertEqual(Vector3(1, 2, 3), gff.root.get_vector3("Field1"))
 
@@ -1012,7 +1012,7 @@ class TestManipulateGFF(TestCase):
             False,
             [ModifyFieldGFF("Field1", FieldValueConstant(Vector4(1, 2, 3, 4)))],
         )
-        gff = read_gff(config.execute_patch(bytes_gff(gff), memory, PatchLogger()))
+        gff = read_gff(config.patch_resource_from_bytes(bytes_gff(gff), memory, PatchLogger()))
 
         self.assertEqual(Vector4(1, 2, 3, 4), gff.root.get_vector4("Field1"))
 
@@ -1026,7 +1026,7 @@ class TestManipulateGFF(TestCase):
         modifiers: list[ModifyGFF] = [ModifyFieldGFF(PureWindowsPath("List\\0\\String"), FieldValueConstant("abc"))]
 
         config = ModificationsGFF("", False, modifiers)
-        gff = read_gff(config.execute_patch(bytes_gff(gff), memory, PatchLogger()))
+        gff = read_gff(config.patch_resource_from_bytes(bytes_gff(gff), memory, PatchLogger()))
         patched_gff_list = gff.root.get_list("List")
         patched_gff_struct = patched_gff_list.at(0)
 
@@ -1043,7 +1043,7 @@ class TestManipulateGFF(TestCase):
         config = ModificationsGFF("", False, [])
         config.modifiers.append(ModifyFieldGFF("String", FieldValue2DAMemory(5)))
         config.modifiers.append(ModifyFieldGFF("Integer", FieldValue2DAMemory(5)))
-        gff = read_gff(config.execute_patch(bytes_gff(gff), memory, PatchLogger()))
+        gff = read_gff(config.patch_resource_from_bytes(bytes_gff(gff), memory, PatchLogger()))
 
         self.assertEqual("123", gff.root.get_string("String"))
         self.assertEqual(123, gff.root.get_uint8("Integer"))
@@ -1059,7 +1059,7 @@ class TestManipulateGFF(TestCase):
         config = ModificationsGFF("", False, [])
         config.modifiers.append(ModifyFieldGFF("String", FieldValueTLKMemory(5)))
         config.modifiers.append(ModifyFieldGFF("Integer", FieldValueTLKMemory(5)))
-        gff = read_gff(config.execute_patch(bytes_gff(gff), memory, PatchLogger()))
+        gff = read_gff(config.patch_resource_from_bytes(bytes_gff(gff), memory, PatchLogger()))
 
         self.assertEqual("123", gff.root.get_string("String"))
         self.assertEqual(123, gff.root.get_uint8("Integer"))
@@ -1080,7 +1080,7 @@ class TestManipulateGFF(TestCase):
         add_field2.modifiers.append(add_field3)
 
         config = ModificationsGFF("", False, [add_field1])
-        gff = read_gff(config.execute_patch(bytes_gff(gff), memory, PatchLogger()))
+        gff = read_gff(config.patch_resource_from_bytes(bytes_gff(gff), memory, PatchLogger()))
 
         self.assertIsNotNone(gff.root.get_list("List"))
         self.assertIsNotNone(gff.root.get_list("List").at(0))
@@ -1104,7 +1104,7 @@ class TestManipulateGFF(TestCase):
                 path=PureWindowsPath("List\\0"),
             )
         )
-        gff = read_gff(config.execute_patch(bytes_gff(gff), memory, PatchLogger()))
+        gff = read_gff(config.patch_resource_from_bytes(bytes_gff(gff), memory, PatchLogger()))
         patched_gff_list = gff.root.get_list("List")
         patched_gff_struct = patched_gff_list.at(0)
 
@@ -1119,7 +1119,7 @@ class TestManipulateGFF(TestCase):
         config = ModificationsGFF("", False, [])
         config.modifiers.append(AddFieldGFF("", "String", GFFFieldType.String, FieldValue2DAMemory(5), PureWindowsPath("")))
         config.modifiers.append(AddFieldGFF("", "Integer", GFFFieldType.UInt8, FieldValue2DAMemory(5), PureWindowsPath("")))
-        gff = read_gff(config.execute_patch(bytes_gff(gff), memory, PatchLogger()))
+        gff = read_gff(config.patch_resource_from_bytes(bytes_gff(gff), memory, PatchLogger()))
 
         self.assertEqual("123", gff.root.get_string("String"))
         self.assertEqual(123, gff.root.get_uint8("Integer"))
@@ -1133,7 +1133,7 @@ class TestManipulateGFF(TestCase):
         config = ModificationsGFF("", False, [])
         config.modifiers.append(AddFieldGFF("", "String", GFFFieldType.String, FieldValueTLKMemory(5), PureWindowsPath("")))
         config.modifiers.append(AddFieldGFF("", "Integer", GFFFieldType.UInt8, FieldValueTLKMemory(5), PureWindowsPath("")))
-        gff = read_gff(config.execute_patch(bytes_gff(gff), memory, PatchLogger()))
+        gff = read_gff(config.patch_resource_from_bytes(bytes_gff(gff), memory, PatchLogger()))
 
         self.assertEqual("123", gff.root.get_string("String"))
         self.assertEqual(123, gff.root.get_uint8("Integer"))
@@ -1175,7 +1175,7 @@ class TestManipulateGFF(TestCase):
             False,
             modifiers,
         )
-        gff = read_gff(config.execute_patch(bytes_gff(gff), memory, PatchLogger()))
+        gff = read_gff(config.patch_resource_from_bytes(bytes_gff(gff), memory, PatchLogger()))
 
         self.assertEqual(123, gff.root.get_locstring("Field1").stringref)
 
@@ -1190,7 +1190,7 @@ class TestManipulateGFF(TestCase):
         config.modifiers.append(AddStructToListGFF("test2", FieldValueConstant(GFFStruct(3)), "List", None))
         config.modifiers.append(AddStructToListGFF("test3", FieldValueConstant(GFFStruct(1)), "List", None))
 
-        gff = read_gff(config.execute_patch(bytes_gff(gff), memory, PatchLogger()))
+        gff = read_gff(config.patch_resource_from_bytes(bytes_gff(gff), memory, PatchLogger()))
         patched_gff_list = gff.root.get_list("List")
 
         self.assertEqual(5, patched_gff_list.at(0).struct_id)  # type: ignore
@@ -1206,7 +1206,7 @@ class TestManipulateGFF(TestCase):
         config = ModificationsGFF("", False, [])
         config.modifiers.append(AddStructToListGFF("test1", FieldValueConstant(GFFStruct()), "List"))
         config.modifiers.append(AddStructToListGFF("test2", FieldValueConstant(GFFStruct()), "List", index_to_token=12))
-        gff = read_gff(config.execute_patch(bytes_gff(gff), memory, PatchLogger()))
+        gff = read_gff(config.patch_resource_from_bytes(bytes_gff(gff), memory, PatchLogger()))
 
         self.assertEqual("1", memory.memory_2da[12])
 
@@ -1219,7 +1219,7 @@ class TestManipulateSSF(TestCase):
 
         config = ModificationsSSF("", False, [])
         config.modifiers.append(ModifySSF(SSFSound.BATTLE_CRY_1, NoTokenUsage(5)))
-        ssf = read_ssf(config.execute_patch(bytes_ssf(ssf), memory))
+        ssf = read_ssf(config.patch_resource_from_bytes(bytes_ssf(ssf), memory))
 
         self.assertEqual(5, ssf.get(SSFSound.BATTLE_CRY_1))
 
@@ -1231,7 +1231,7 @@ class TestManipulateSSF(TestCase):
 
         config = ModificationsSSF("", False, [])
         config.modifiers.append(ModifySSF(SSFSound.BATTLE_CRY_2, TokenUsage2DA(5)))
-        ssf = read_ssf(config.execute_patch(bytes_ssf(ssf), memory))
+        ssf = read_ssf(config.patch_resource_from_bytes(bytes_ssf(ssf), memory))
 
         self.assertEqual(123, ssf.get(SSFSound.BATTLE_CRY_2))
 
@@ -1243,7 +1243,7 @@ class TestManipulateSSF(TestCase):
 
         config = ModificationsSSF("", False, [])
         config.modifiers.append(ModifySSF(SSFSound.BATTLE_CRY_3, TokenUsageTLK(5)))
-        ssf = read_ssf(config.execute_patch(bytes_ssf(ssf), memory))
+        ssf = read_ssf(config.patch_resource_from_bytes(bytes_ssf(ssf), memory))
 
         self.assertEqual(321, ssf.get(SSFSound.BATTLE_CRY_3))
 
