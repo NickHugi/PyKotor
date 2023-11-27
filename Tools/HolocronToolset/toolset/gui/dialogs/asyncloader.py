@@ -16,6 +16,12 @@ if TYPE_CHECKING:
 
 
 class AsyncLoader(QDialog):
+
+    def exec_(self, *args, **kwargs):
+        if is_debug_mode() and not is_frozen():
+            self.value = self._debug_task()
+            return 1
+        return super().exec_(*args, **kwargs)
     def __init__(self, parent: QWidget, title: str, task: Callable, errorTitle: str | None = None):
         """Initializes a progress dialog.
 
@@ -35,10 +41,10 @@ class AsyncLoader(QDialog):
             - Connects callbacks for successful/failed task completion.
         """
         if is_debug_mode() and not is_frozen():
-            task()
+            self._debug_task = task
             return
-        super().__init__(parent)
 
+        super().__init__(parent)
         self._progressBar = QProgressBar(self)
         self._progressBar.setMinimum(0)
         self._progressBar.setMaximum(0)

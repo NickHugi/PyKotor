@@ -10,11 +10,11 @@ from pykotor.tools.encoding import decode_bytes_with_fallbacks
 from toolset.gui.editor import Editor
 
 if TYPE_CHECKING:
-    from data.installation import HTInstallation
+    from toolset.data.installation import HTInstallation
 
 
 class TXTEditor(Editor):
-    def __init__(self, parent: Optional[QWidget], installation: HTInstallation | None = None):
+    def __init__(self, parent: Optional[QWidget], installation: HTInstallation = None):
         """Initialize the text editor
         Args:
             parent: {Parent widget}

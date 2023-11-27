@@ -14,7 +14,7 @@ from pykotor.resource.formats.erf import ERFType, read_erf, write_erf
 from pykotor.resource.formats.rim import read_rim, write_rim
 from pykotor.resource.type import ResourceType
 from pykotor.tools import module
-from pykotor.tools.misc import is_bif_file, is_capsule_file, is_erf_file, is_erf_or_mod_file, is_rim_file, is_storage_file
+from pykotor.tools.misc import is_bif_file, is_capsule_file, is_erf_or_mod_file, is_rim_file
 from pykotor.utility.error_handling import format_exception_with_variables
 from pykotor.utility.path import BasePath, Path
 from toolset.gui.dialogs.load_from_module import LoadFromModuleDialog
@@ -75,7 +75,7 @@ class Editor(QMainWindow):
         self._readSupported: list[ResourceType] = readSupported
         self._writeSupported: list[ResourceType] = writeSupported
         self._global_settings: GlobalSettings = GlobalSettings()
-        self._installation: HTInstallation | None = installation
+        self._installation: HTInstallation = installation
         self._mainwindow = mainwindow
 
         self._editorTitle = title
@@ -138,9 +138,6 @@ class Editor(QMainWindow):
         iconPath = f":/images/icons/k{iconVersion}/{iconName}.png"
         self.setWindowIcon(QIcon(QPixmap(iconPath)))
 
-    def encapsulated(self) -> bool:
-        return is_storage_file(self._filepath.name)
-
     def refreshWindowTitle(self) -> None:
         """Refreshes the window title based on the current state
         Args:
@@ -198,6 +195,9 @@ class Editor(QMainWindow):
             else:
                 self._filepath = Path(filepath_str)
                 self._resref, self._restype = ResourceIdentifier.from_path(self._filepath)
+                if self._restype is ResourceType.INVALID:
+                    msg = f"Invalid resource type: {self._restype.extension}"
+                    raise TypeError(msg)
             self.save()
 
             self.refreshWindowTitle()
@@ -289,7 +289,7 @@ class Editor(QMainWindow):
             dialog.exec_()
             if dialog.option == RimSaveOption.MOD:
                 folderpath = self._filepath.parent
-                filename = f"{Module.get_root(str(self._filepath))}.mod"
+                filename = f"{Module.get_root(self._filepath)}.mod"
                 self._filepath = folderpath / filename
                 # Re-save with the updated filepath
                 self.save()
@@ -339,7 +339,7 @@ class Editor(QMainWindow):
             module.rim_to_mod(self._filepath)
 
         erf = read_erf(self._filepath)
-        erf.erf_type = ERFType.ERF if is_erf_file(self._filepath.name) else ERFType.MOD
+        erf.erf_type = ERFType.from_extension(self._filepath)
 
         # MDL is a special case - we need to save the MDX file with the MDL file.
         if self._restype == ResourceType.MDL:

@@ -115,9 +115,7 @@ class IndoorMapBuilder(QMainWindow):
         self.ui.actionSave.triggered.connect(self.save)
         self.ui.actionSaveAs.triggered.connect(self.saveAs)
         self.ui.actionBuild.triggered.connect(self.buildMap)
-        self.ui.actionSettings.triggered.connect(
-            lambda: IndoorMapSettings(self, self._installation, self._map, self._kits).exec_(),
-        )
+        self.ui.actionSettings.triggered.connect(lambda: IndoorMapSettings(self, self._installation, self._map, self._kits).exec_())
         self.ui.actionDeleteSelected.triggered.connect(self.deleteSelected)
         self.ui.actionDownloadKits.triggered.connect(self.openKitDownloader)
         self.ui.actionInstructions.triggered.connect(self.showHelpWindow)
@@ -228,15 +226,9 @@ class IndoorMapBuilder(QMainWindow):
 
         msg = f"You can warp to the game using the code 'warp {self._map.moduleId}'. "
         msg += f"Map files can be found in:\n{path}"
-        if is_debug_mode() and not is_frozen():
-            if task():
-                QMessageBox(QMessageBox.Information, "Map built", msg).exec_()
-            else:
-                QMessageBox(QMessageBox.Information, "Failed to build map.", msg).exec_()
-        else:
-            loader = AsyncLoader(self, "Building Map...", task, "Failed to build map.")
-            if loader.exec_():
-                QMessageBox(QMessageBox.Information, "Map built", msg).exec_()
+        loader = AsyncLoader(self, "Building Map...", task, "Failed to build map.")
+        if loader.exec_():
+            QMessageBox(QMessageBox.Information, "Map built", msg).exec_()
 
     def deleteSelected(self) -> None:
         for room in self.ui.mapRenderer.selectedRooms():
@@ -955,9 +947,7 @@ class KitDownloader(QDialog):
             - If not, sets button to "Download"
         - Adds kit name and button to layout in group box
         """
-        req = requests.get(UPDATE_INFO_LINK, timeout=15)
-        req.raise_for_status()
-        file_data = req.json()
+        file_data = self._get_update_data(UPDATE_INFO_LINK)
         base64_content = file_data["content"]
         decoded_content = base64.b64decode(base64_content)  # Correctly decoding the base64 content
         updateInfoData = json.loads(decoded_content.decode("utf-8"))
@@ -1031,11 +1021,7 @@ class KitDownloader(QDialog):
             owner, repo = PurePath(url_or_repo).parts[-2:]
             api_url = f"https://api.github.com/repos/{owner}/{repo}/contents/{PurePath(repo_path).as_posix()}"
 
-            # Get file info from GitHub API
-            response = requests.get(api_url, timeout=15)
-            response.raise_for_status()
-            file_info = response.json()
-
+            file_info = self._get_update_data(api_url)
             # Check if it's a file and get the download URL
             if file_info["type"] == "file":
                 download_url = file_info["download_url"]
@@ -1063,10 +1049,7 @@ class KitDownloader(QDialog):
         repo = repo if isinstance(repo, BasePurePath) else PurePath(repo)
         repo_path = repo_path if isinstance(repo_path, BasePurePath) else PurePath(repo_path)
         api_url = f"https://api.github.com/repos/{repo.as_posix()}/contents/{repo_path.as_posix()}"
-        req = requests.get(api_url, timeout=15)
-        req.raise_for_status()
-        data = req.json()
-
+        data = self._get_update_data(api_url)
         for item in data:
             item_path = Path(item["path"])
             local_path = item_path.relative_to("toolset")
@@ -1075,6 +1058,11 @@ class KitDownloader(QDialog):
                 self.download_file(item["download_url"], local_path)
             elif item["type"] == "dir":
                 self.download_directory(repo, item_path, local_path)
+
+    def _get_update_data(self, link):
+        req = requests.get(link, timeout=15)
+        req.raise_for_status()
+        return req.json()
 
     def _downloadKit(self, kitId: str) -> bool:
         kits_path = Path("kits").resolve()

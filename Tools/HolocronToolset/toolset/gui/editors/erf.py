@@ -276,6 +276,9 @@ class ERFEditor(Editor):
                     data = file.read()
 
                     resref, restype = ResourceIdentifier.from_path(c_filepath.parent)
+                    if restype is ResourceType.INVALID:
+                        msg = f"Invalid resource type: {restype.extension}"
+                        raise TypeError(msg)
                     resource = ERFResource(ResRef(resref), restype, data)
 
                     resrefItem = QStandardItem(resource.resref.get())

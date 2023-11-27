@@ -7,6 +7,7 @@ from PyQt5 import QtCore
 from PyQt5.QtCore import QSortFilterProxyModel, QThread
 from PyQt5.QtGui import QStandardItem, QStandardItemModel
 from PyQt5.QtWidgets import QDialog, QProgressBar, QShortcut, QVBoxLayout, QWidget
+from pykotor.common.language import Language
 
 from pykotor.common.misc import ResRef
 from pykotor.resource.formats.tlk import TLK, TLKEntry, read_tlk, write_tlk
@@ -261,19 +262,11 @@ class LoaderDialog(QDialog):
         self.model = QStandardItemModel()
         self.model.setColumnCount(2)
 
-        if is_debug_mode():
-            # Run synchronously
-            self.worker = LoaderWorker(fileData, model)
-            self.worker.entryCount.connect(self.onEntryCount)
-            self.worker.batch.connect(self.onBatch)
-            self.worker.loaded.connect(self.onLoaded)
-            self.worker.load_data()  # Directly call the loading function
-        else:
-            self.worker = LoaderWorker(fileData, model)
-            self.worker.entryCount.connect(self.onEntryCount)
-            self.worker.batch.connect(self.onBatch)
-            self.worker.loaded.connect(self.onLoaded)
-            self.worker.start()
+        self.worker = LoaderWorker(fileData, model)
+        self.worker.entryCount.connect(self.onEntryCount)
+        self.worker.batch.connect(self.onBatch)
+        self.worker.loaded.connect(self.onLoaded)
+        self.worker.start()
 
     def onEntryCount(self, count: int):
         self._progressBar.setMaximum(count)

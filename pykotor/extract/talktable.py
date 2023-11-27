@@ -16,7 +16,7 @@ class StringResult(NamedTuple):
     sound: ResRef
 
 
-class TalkTable:
+class TalkTable:  # TODO: dialogf.tlk
     """Talktables are for read-only loading of stringrefs stored in a dialog.tlk file. Files are only opened when accessing
     a stored string, this means that strings are always up to date at the time of access as opposed to TLK objects which
     may be out of date with its source file.
@@ -27,6 +27,9 @@ class TalkTable:
         path: os.PathLike | str,
     ):
         self._path: Path = path if isinstance(path, BasePath) else Path(path)  # type: ignore[assignment]
+
+    def path(self):
+        return self._path
 
     def string(
         self,

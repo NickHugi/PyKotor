@@ -319,6 +319,8 @@ def patch_file(file: os.PathLike | str) -> None:
             0,
             c_file,
         )
+        if resource._restype is ResourceType.INVALID:
+            return
         patch_and_save_noncapsule(resource)
 
 def patch_folder(folder_path: os.PathLike | str) -> None:

@@ -3,11 +3,14 @@ from __future__ import annotations
 
 from copy import copy
 from enum import Enum
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from pykotor.common.misc import ResRef
 from pykotor.resource.type import ResourceType
 from pykotor.tools.misc import is_erf_file, is_mod_file
+
+if TYPE_CHECKING:
+    import os
 
 
 class ERFType(Enum):
@@ -17,7 +20,7 @@ class ERFType(Enum):
     MOD = "MOD "
 
     @staticmethod
-    def from_extension(filepath: str) -> ERFType:
+    def from_extension(filepath: os.PathLike | str) -> ERFType:
         if is_erf_file(filepath):
             return ERFType.ERF
         if is_mod_file(filepath):
