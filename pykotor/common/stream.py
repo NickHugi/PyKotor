@@ -9,7 +9,7 @@ from typing import TYPE_CHECKING, BinaryIO
 
 from pykotor.common.geometry import Vector2, Vector3, Vector4
 from pykotor.common.language import LocalizedString
-from pykotor.tools.encoding import decode_bytes_with_fallbacks, find_best_8bit_encoding
+from pykotor.tools.encoding import decode_bytes_with_fallbacks
 from pykotor.utility.path import BasePath, Path
 
 if TYPE_CHECKING:
@@ -1443,7 +1443,7 @@ class BinaryWriterFile(BinaryWriter):
                 value += padding
             value = value[:string_length]
         if encoding is None:
-            self._stream.write(value.encode(find_best_8bit_encoding(value) or "windows-1252", errors=errors))
+            self._stream.write(value.encode("windows-1252", errors=errors))
         else:
             self._stream.write(value.encode(encoding, errors=errors))
 
@@ -1943,7 +1943,7 @@ class BinaryWriterBytearray(BinaryWriter):
 
     def _encode_val_and_update_position(self, value: str, encoding: str | None, errors: str = "strict"):
         if encoding is None:
-            encoded = value.encode(find_best_8bit_encoding(value) or "windows-1252", errors=errors)
+            encoded = value.encode(value or "windows-1252", errors=errors)
         else:
             encoded = value.encode(encoding, errors=errors)
         self._ba[self._position : self._position + len(encoded)] = encoded
