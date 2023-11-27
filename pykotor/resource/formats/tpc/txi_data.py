@@ -236,6 +236,13 @@ def write_bitmap_font(
     # Adjust the resolution to include the additional height
     adjusted_resolution = (resolution[0], resolution[1] + total_additional_height)
     txi_font_info.baselineheight = baseline_height / adjusted_resolution[1]
+    # Calculate fontheight and texturewidth (approx based on 5 resolution tests)
+    txi_font_info.fontheight = (4.88265e-4 * adjusted_resolution[0] - 3.54439e-4 * adjusted_resolution[1] -
+                                1.86629e-7 * adjusted_resolution[0]**2 + 1.43077e-7 * adjusted_resolution[1]**2 +
+                                0.128595)
+    txi_font_info.texturewidth = (0.0302212 * adjusted_resolution[0] - 0.0238694 * adjusted_resolution[1] -
+                                1.12594e-5 * adjusted_resolution[0]**2 + 9.13224e-6 * adjusted_resolution[1]**2 +
+                                1.07333)
 
     # Create charset image with adjusted resolution
     charset_image = Image.new("RGBA", adjusted_resolution, (0, 0, 0, 0))
@@ -249,7 +256,7 @@ def write_bitmap_font(
     grid_y = 0
 
 
-    for i, char in enumerate(charset_list):
+    for char in charset_list:
         if char:
             # Calculate cell dimensions
             cell_width = resolution[0] / characters_per_column
@@ -319,8 +326,9 @@ def write_bitmap_font(
             if grid_x == 0:
                 grid_y += 1
         else:
-            txi_font_info.upper_left_coords.append((0.000000, 0.000000, 0))
-            txi_font_info.lower_right_coords.append((0.000000, 0.000000, 0))
+            pass
+            #txi_font_info.upper_left_coords.append((0.000000, 0.000000, 0))
+            #txi_font_info.lower_right_coords.append((0.000000, 0.000000, 0))
 
     target_path.parent.mkdir(parents=True, exist_ok=True)
     charset_image.save(target_path.with_suffix(".tga"), format="TGA")

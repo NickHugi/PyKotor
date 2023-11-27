@@ -721,7 +721,7 @@ class KOTORPatchingToolUI:
         row += 1
 
         # Sort the languages in alphabetical order
-        sorted_languages = sorted(Language, key=lambda lang: lang.name)
+        sorted_languages: list[Language] = sorted(Language, key=lambda lang: lang.name)
 
         # Create Checkbuttons for each language
         column = 0
