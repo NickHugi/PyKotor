@@ -191,6 +191,7 @@ def write_bitmap_font(
 
     txi_font_info = TXIFontInformation()
     txi_font_info.spacingR = 0
+    txi_font_info.spacingB = 0
     txi_font_info.texturewidth = 2.160000
     txi_font_info.fontwidth = 1
     txi_font_info.caretindent = -0.010000
@@ -244,12 +245,12 @@ def write_bitmap_font(
     # Adjust the resolution to include the additional height
     adjusted_resolution = (resolution[0] + total_additional_height, resolution[1] + total_additional_height)
     res_const = adjusted_resolution[0] / 512
-    txi_font_info.spacingB = max_underhang_height / (adjusted_resolution[1] // characters_per_column) / res_const
     txi_font_info.baselineheight = baseline_height / adjusted_resolution[1] / res_const
     txi_font_info.texturewidth = adjusted_resolution[0] / 100 / res_const
     # Calculate the scaling factor
     scaling_factor = 2 ** (math.log2(res_const) - 1)
     # Adjust the formula
+    #txi_font_info.spacingB = max_underhang_height / (adjusted_resolution[1] // characters_per_column) / res_const
     txi_font_info.fontheight = max_char_height / adjusted_resolution[1] * txi_font_info.texturewidth / scaling_factor
 
     # Create charset image with adjusted resolution
