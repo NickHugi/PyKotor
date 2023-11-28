@@ -1,12 +1,10 @@
 # From https://nwn.wiki/display/NWN1/TXI#TXI-TextureRelatedFields
 # From DarthParametric and Drazgar in the DeadlyStream Discord.
 from __future__ import annotations
-from contextlib import suppress
 
 import math
 from typing import TYPE_CHECKING
 
-from pykotor.tools.encoding import get_double_byte_charset, get_single_byte_charset
 from pykotor.utility.path import BasePath, Path
 
 if TYPE_CHECKING:
@@ -167,7 +165,8 @@ def write_bitmap_fonts(
 
 def get_charset_from_encoding(encoding):
     charset = []
-    for i in range(0x110000):
+    #for i in range(0x110000):
+    for i in range(256):
         try:
             char = chr(i)
             char.encode(encoding)
@@ -191,7 +190,6 @@ def write_bitmap_font(
     font_path, target_path = ((p if isinstance(p, BasePath) else Path(p)).resolve() for p in (font_path, target))  # type: ignore[attr-defined, reportGeneralTypeIssues]
 
     txi_font_info = TXIFontInformation()
-    txi_font_info.spacingB = 0
     txi_font_info.spacingR = 0
     txi_font_info.texturewidth = 2.160000
     txi_font_info.fontwidth = 1
@@ -218,32 +216,41 @@ def write_bitmap_font(
     temp_image = Image.new("RGBA", (100, 100), (0, 0, 0, 0))
     temp_draw = ImageDraw.Draw(temp_image)
 
-    # Get the bounding box of the baseline character
+    # Get the bounding box of the baseline character ( 0 should be in every code page )
     baseline_char = "0"
     baseline_bbox = temp_draw.textbbox((0, 0), baseline_char, font=pil_font)
     baseline_height = baseline_bbox[3] - baseline_bbox[1]
 
-    # Get the bounding box of the descender character
-    descender_char = "y"
-    descender_bbox = temp_draw.textbbox((0, 0), descender_char, font=pil_font)
+    # Initialize the maximum underhang length
+    max_underhang_height = 0
 
-    # Calculate underhang height
-    underhang_height = descender_bbox[3] - baseline_bbox[3]
+    # Loop through all characters to find the maximum underhang
+    for char in charset_list:
+        char_bbox = temp_draw.textbbox((0, 0), char, font=pil_font)
+        underhang_height = char_bbox[3] - baseline_bbox[3]
+        max_underhang_height = max(max_underhang_height, underhang_height)
+
+    # Initialize the maximum underhang length
+    max_char_height = 0
+
+    # Loop through all characters to find the maximum underhang
+    for char in charset_list:
+        char_bbox = temp_draw.textbbox((0, 0), char, font=pil_font)
+        max_char_height = max(max_char_height, char_bbox[3] - char_bbox[1] + max_underhang_height)
 
     # Calculate total additional height needed for the underhang
-    total_additional_height = underhang_height * characters_per_column
+    total_additional_height = max_underhang_height * characters_per_column
 
     # Adjust the resolution to include the additional height
-    adjusted_resolution = (resolution[0], resolution[1] + total_additional_height)
-    txi_font_info.baselineheight = baseline_height / adjusted_resolution[1]
-    # Calculate fontheight and texturewidth
-    # Using derived linear regression formulas
-    width, height = adjusted_resolution
-    resolution_product = width * height
-
-    # Calculating font_height and texture_width (estimates due to lack of knowledge)
-    txi_font_info.fontheight = max(0, min(1, 4.53e-10 * resolution_product + 0.492))
-    txi_font_info.texturewidth = max(3, -1.10e-7 * resolution_product + 12.19)
+    adjusted_resolution = (resolution[0] + total_additional_height, resolution[1] + total_additional_height)
+    res_const = adjusted_resolution[0] / 512
+    txi_font_info.spacingB = max_underhang_height / (adjusted_resolution[1] // characters_per_column) / res_const
+    txi_font_info.baselineheight = baseline_height / adjusted_resolution[1] / res_const
+    txi_font_info.texturewidth = adjusted_resolution[0] / 100 / res_const
+    # Calculate the scaling factor
+    scaling_factor = 2 ** (math.log2(res_const) - 1)
+    # Adjust the formula
+    txi_font_info.fontheight = max_char_height / adjusted_resolution[1] * txi_font_info.texturewidth / scaling_factor
 
     # Create charset image with adjusted resolution
     charset_image = Image.new("RGBA", adjusted_resolution, (0, 0, 0, 0))
@@ -268,7 +275,7 @@ def write_bitmap_font(
         cell_height = resolution[1] / characters_per_row
 
         # Adjust cell height to include padding for underhang
-        padded_cell_height = cell_height + underhang_height
+        padded_cell_height = cell_height + max_underhang_height
 
         # Calculate normalized coordinates for upper left
         norm_x1 = grid_x / characters_per_row
@@ -291,9 +298,9 @@ def write_bitmap_font(
 
         if char == "\n":
             # Adjust Y coordinates to move one cell downwards
-            draw.text((pixel_x1 + cell_width/2, pixel_y1 + cell_height - underhang_height), char, font=pil_font, fill=(255, 255, 255, 255))
+            draw.text((pixel_x1 + cell_width/2, pixel_y1 + cell_height - max_underhang_height), char, font=pil_font, fill=(255, 255, 255, 255))
         else:
-            draw.text((pixel_x1 + cell_width/2, pixel_y1 + cell_height - underhang_height), char, anchor="ms", font=pil_font, fill=(255, 255, 255, 255))
+            draw.text((pixel_x1 + cell_width/2, pixel_y1 + cell_height - max_underhang_height), char, anchor="ms", font=pil_font, fill=(255, 255, 255, 255))
 
         # Calculate center of the cell
         cell_center_x = pixel_x1 + cell_width / 2
@@ -301,8 +308,8 @@ def write_bitmap_font(
         # Adjust red rectangle coordinates
         pixel_x1 = cell_center_x - char_width / 2
         pixel_x2 = cell_center_x + char_width / 2
-        pixel_y1 = pixel_y2 - char_height - underhang_height*2 - max(0, baseline_height - char_height)
-        pixel_y2 -= underhang_height
+        pixel_y1 = pixel_y2 - char_height - max_underhang_height*2 - max(0, baseline_height - char_height)
+        pixel_y2 -= max_underhang_height
         if draw_boxes:
             # Draw a red rectangle around the character based on actual text dimensions
             red_box = (pixel_x1, pixel_y1, pixel_x2, pixel_y2)
@@ -341,10 +348,10 @@ def write_bitmap_font(
 
 def _generate_txi_data(txi_font_info: TXIFontInformation) -> str:
     # Format the upper left coordinates
-    ul_coords_str = "\n".join([f"    {x:.6f} {y:.6f} {z}" for x, y, z in txi_font_info.upper_left_coords])
+    ul_coords_str = "\n".join([f"    {x:.6f} {y:.6f} {not_z}" for x, y, not_z in txi_font_info.upper_left_coords])
 
     # Format the lower right coordinates
-    lr_coords_str = "\n".join([f"    {x:.6f} {y:.6f} {z}" for x, y, z in txi_font_info.lower_right_coords])
+    lr_coords_str = "\n".join([f"    {x:.6f} {y:.6f} {not_z}" for x, y, not_z in txi_font_info.lower_right_coords])
     return f"""mipmap {txi_font_info.mipmap}
 filter {txi_font_info.filter}
 numchars {txi_font_info.numchars}
