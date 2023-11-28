@@ -55,6 +55,9 @@ class AudioPlayer(QMainWindow):
         filepath = QFileDialog.getOpenFileName(self, "Select an audio file")[0]
         if filepath != "":
             resname, restype = ResourceIdentifier.from_path(filepath)
+            if restype is ResourceType.INVALID:
+                msg = f"Invalid resource type: {restype.extension}"
+                raise TypeError(msg)
             data = BinaryReader.load_file(filepath)
             self.load(filepath, resname, restype, data)
 

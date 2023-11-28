@@ -146,7 +146,7 @@ class ResourceType(Enum):
     SSF_XML = ResourceTuple(50023, "ssf.xml", "Soundsets", "plaintext")
     ARE_XML = ResourceTuple(50023, "are.xml", "Module Data", "plaintext")
     TwoDA_JSON = ResourceTuple(50024, "2da.json", "2D Arrays", "plaintext")
-    TLK_JSON = ResourceTuple(50024, "tlk.json", "Talk Tables", "plaintext")
+    TLK_JSON = ResourceTuple(50025, "tlk.json", "Talk Tables", "plaintext")
 
     def __init__(
         self,

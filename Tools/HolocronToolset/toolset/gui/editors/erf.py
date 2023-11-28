@@ -8,6 +8,7 @@ from PyQt5.QtGui import QStandardItem, QStandardItemModel
 from PyQt5.QtWidgets import QFileDialog, QMessageBox, QShortcut, QTableView, QWidget
 
 from pykotor.common.misc import ResRef
+from pykotor.extract.file import ResourceIdentifier
 from pykotor.resource.formats.erf import ERF, ERFResource, ERFType, read_erf, write_erf
 from pykotor.resource.formats.rim import RIM, read_rim, write_rim
 from pykotor.resource.type import ResourceType
@@ -272,10 +273,12 @@ class ERFEditor(Editor):
             c_filepath = Path(filepath).resolve()
             try:
                 with c_filepath.open("rb") as file:
-                    resref, restype_ext = c_filepath.parent.name.split(".", 1)
-                    restype = ResourceType.from_extension(restype_ext)
                     data = file.read()
 
+                    resref, restype = ResourceIdentifier.from_path(c_filepath.parent)
+                    if restype is ResourceType.INVALID:
+                        msg = f"Invalid resource type: {restype.extension}"
+                        raise TypeError(msg)
                     resource = ERFResource(ResRef(resref), restype, data)
 
                     resrefItem = QStandardItem(resource.resref.get())

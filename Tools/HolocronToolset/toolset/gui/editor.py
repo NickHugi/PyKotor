@@ -9,13 +9,14 @@ from PyQt5.QtWidgets import QFileDialog, QLineEdit, QMainWindow, QMessageBox, QP
 
 from pykotor.common.module import Module
 from pykotor.extract.capsule import Capsule
+from pykotor.extract.file import ResourceIdentifier
 from pykotor.resource.formats.erf import ERFType, read_erf, write_erf
 from pykotor.resource.formats.rim import read_rim, write_rim
 from pykotor.resource.type import ResourceType
 from pykotor.tools import module
-from pykotor.tools.misc import is_bif_file, is_capsule_file, is_erf_file, is_erf_or_mod_file, is_rim_file, is_storage_file
+from pykotor.tools.misc import is_bif_file, is_capsule_file, is_erf_or_mod_file, is_rim_file
 from pykotor.utility.error_handling import format_exception_with_variables
-from pykotor.utility.path import Path
+from pykotor.utility.path import BasePath, Path
 from toolset.gui.dialogs.load_from_module import LoadFromModuleDialog
 from toolset.gui.dialogs.save.to_bif import BifSaveDialog, BifSaveOption
 from toolset.gui.dialogs.save.to_module import SaveToModuleDialog
@@ -74,7 +75,7 @@ class Editor(QMainWindow):
         self._readSupported: list[ResourceType] = readSupported
         self._writeSupported: list[ResourceType] = writeSupported
         self._global_settings: GlobalSettings = GlobalSettings()
-        self._installation: HTInstallation | None = installation
+        self._installation: HTInstallation = installation
         self._mainwindow = mainwindow
 
         self._editorTitle = title
@@ -137,9 +138,6 @@ class Editor(QMainWindow):
         iconPath = f":/images/icons/k{iconVersion}/{iconName}.png"
         self.setWindowIcon(QIcon(QPixmap(iconPath)))
 
-    def encapsulated(self) -> bool:
-        return is_storage_file(self._filepath.name)
-
     def refreshWindowTitle(self) -> None:
         """Refreshes the window title based on the current state
         Args:
@@ -196,8 +194,10 @@ class Editor(QMainWindow):
                     self._filepath = Path(filepath_str)
             else:
                 self._filepath = Path(filepath_str)
-                self._resref, restype_ext = self._filepath.stem, self._filepath.suffix[1:]
-                self._restype = ResourceType.from_extension(restype_ext)
+                self._resref, self._restype = ResourceIdentifier.from_path(self._filepath)
+                if self._restype is ResourceType.INVALID:
+                    msg = f"Invalid resource type: {self._restype.extension}"
+                    raise TypeError(msg)
             self.save()
 
             self.refreshWindowTitle()
@@ -289,7 +289,7 @@ class Editor(QMainWindow):
             dialog.exec_()
             if dialog.option == RimSaveOption.MOD:
                 folderpath = self._filepath.parent
-                filename = f"{Module.get_root(str(self._filepath))}.mod"
+                filename = f"{Module.get_root(self._filepath)}.mod"
                 self._filepath = folderpath / filename
                 # Re-save with the updated filepath
                 self.save()
@@ -339,7 +339,7 @@ class Editor(QMainWindow):
             module.rim_to_mod(self._filepath)
 
         erf = read_erf(self._filepath)
-        erf.erf_type = ERFType.ERF if is_erf_file(self._filepath.name) else ERFType.MOD
+        erf.erf_type = ERFType.from_extension(self._filepath)
 
         # MDL is a special case - we need to save the MDX file with the MDL file.
         if self._restype == ResourceType.MDL:
@@ -388,12 +388,9 @@ class Editor(QMainWindow):
                 if dialog.exec_():
                     self.load(c_filepath, dialog.resref(), dialog.restype(), dialog.data())
             else:
-                resref, restype_ext = c_filepath.stem, c_filepath.suffix[1:]
-                restype = ResourceType.from_extension(restype_ext)
                 with c_filepath.open("rb") as file:
                     data = file.read()
-
-                self.load(c_filepath, resref, restype, data)
+                self.load(c_filepath, *ResourceIdentifier.from_path(c_filepath), data)
 
     @abstractmethod
     def build(self) -> tuple[bytes, bytes]:
@@ -415,7 +412,7 @@ class Editor(QMainWindow):
             - Refresh window title
             - Emit loadedFile signal with load details.
         """
-        self._filepath = filepath if isinstance(filepath, Path) else Path(filepath)
+        self._filepath = filepath if isinstance(filepath, BasePath) else Path(filepath)  # type: ignore[reportGeneralTypeIssues]
         self._resref = resref
         self._restype = restype
         self._revert = data

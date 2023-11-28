@@ -1,4 +1,5 @@
 from __future__ import annotations
+from contextlib import suppress
 
 from typing import TYPE_CHECKING, NamedTuple
 
@@ -154,6 +155,32 @@ class ResourceIdentifier(NamedTuple):
     def from_path(
         file_path: os.PathLike | str,
     ) -> ResourceIdentifier:
-        file_path = PurePath(file_path)
-        resname, restype_ext = file_path.stem, file_path.suffix[1:]
-        return ResourceIdentifier(resname, ResourceType.from_extension(restype_ext))
+        """Generate a ResourceIdentifier from a file path. If not valid, will return ResourceType.INVALID.
+
+        Args:
+        ----
+            file_path: {Path or string to the file}:
+
+        Returns:
+        -------
+            ResourceIdentifier: {Resource identifier object}
+        - Split the file path on the filename and extension
+        - Determine the resource type from the extension
+        - Return a ResourceIdentifier with the name and type.
+        """
+        with suppress(TypeError):
+            file_path = PurePath(file_path)
+        try:
+            resname, restype_ext = file_path.split_filename(dots=1)
+            restype = ResourceType.from_extension(restype_ext)
+        except AttributeError:
+            resname = file_path.stem if file_path else ""
+            restype = ResourceType.INVALID
+        except (TypeError, ValueError):  # for things like resname.tlk.xml
+            try:
+                resname, restype_ext = file_path.split_filename(dots=2)
+                restype = ResourceType.from_extension(restype_ext)
+            except (TypeError, ValueError):  # noqa: TRY302
+                resname = file_path.stem
+                restype = ResourceType.INVALID
+        return ResourceIdentifier(resname, restype)

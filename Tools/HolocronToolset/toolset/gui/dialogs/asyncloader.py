@@ -7,13 +7,21 @@ from PyQt5.QtCore import QThread
 from PyQt5.QtWidgets import QDialog, QLabel, QMessageBox, QProgressBar, QVBoxLayout, QWidget
 
 from pykotor.utility.error_handling import format_exception_with_variables
+from pykotor.utility.misc import is_debug_mode
 from pykotor.utility.path import Path
+from tools.HolocronToolset.toolset.__main__ import is_frozen
 
 if TYPE_CHECKING:
     from PyQt5.QtGui import QCloseEvent
 
 
 class AsyncLoader(QDialog):
+
+    def exec_(self, *args, **kwargs):
+        if is_debug_mode() and not is_frozen():
+            self.value = self._debug_task()
+            return 1
+        return super().exec_(*args, **kwargs)
     def __init__(self, parent: QWidget, title: str, task: Callable, errorTitle: str | None = None):
         """Initializes a progress dialog.
 
@@ -32,8 +40,11 @@ class AsyncLoader(QDialog):
             - Starts an AsyncWorker thread to run the task asynchronously
             - Connects callbacks for successful/failed task completion.
         """
-        super().__init__(parent)
+        if is_debug_mode() and not is_frozen():
+            self._debug_task = task
+            return
 
+        super().__init__(parent)
         self._progressBar = QProgressBar(self)
         self._progressBar.setMinimum(0)
         self._progressBar.setMaximum(0)

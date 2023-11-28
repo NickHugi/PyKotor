@@ -163,6 +163,11 @@ class TLKEntry:
         self.text: str = text
         self.voiceover: ResRef = voiceover
 
+        # entry flags. These are set in both game's TLKs, regardless of whether they're used.
+        self.text_present: bool = True
+        self.sound_present: bool = False
+        self.soundlength_present: bool = False
+
     def __eq__(
         self,
         other,

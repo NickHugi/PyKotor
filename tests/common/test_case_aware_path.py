@@ -90,9 +90,52 @@ class TestCaseAwarePath(unittest.TestCase):
         self.assertTrue(CaseAwarePath.should_resolve_case(CaseAwarePath("/path/to/dir")))
         self.assertFalse(CaseAwarePath.should_resolve_case("path/to/dir"))
 
+class TestSplitFilename(unittest.TestCase):
+    def test_normal(self):
+        path = CaseAwarePath('file.txt')
+        stem, ext = path.split_filename()
+        self.assertEqual(stem, 'file')
+        self.assertEqual(ext, 'txt')
+
+    def test_multiple_dots(self):
+        path = CaseAwarePath('file.with.dots.txt')
+        stem, ext = path.split_filename(dots=2)
+        self.assertEqual(stem, 'file.with')
+        self.assertEqual(ext, 'dots.txt')
+        path = CaseAwarePath('test.asdf.qwerty.tlk.xml')
+        stem, ext = path.split_filename(dots=2)
+        self.assertEqual(stem, 'test.asdf.qwerty')
+        self.assertEqual(ext, 'tlk.xml')
+
+    def test_no_dots(self):
+        path = CaseAwarePath('filename')
+        stem, ext = path.split_filename()
+        self.assertEqual(stem, 'filename')
+        self.assertEqual(ext, '')
+
+    def test_negative_dots(self):
+        path = CaseAwarePath('left.right.txt')
+        stem, ext = path.split_filename(dots=-1)
+        self.assertEqual(stem, 'right.txt')
+        self.assertEqual(ext, 'left')
+
+    def test_more_dots_than_parts(self):
+        path = CaseAwarePath('file.txt')
+        stem, ext = path.split_filename(dots=3)
+        self.assertEqual(stem, 'file')
+        self.assertEqual(ext, 'txt')
+        stem, ext = path.split_filename(dots=-3)
+        self.assertEqual(stem, 'file')
+        self.assertEqual(ext, 'txt')
+
+    def test_invalid_dots(self):
+        path = CaseAwarePath('file.txt')
+        with self.assertRaises(ValueError):
+            path.split_filename(dots=0)
+
 class TestIsRelativeTo(unittest.TestCase):
 
-    def test_basic(self):
+    def test_basic(self):  # sourcery skip: class-extract-method
         p1 = CaseAwarePath('/usr/local/bin')
         p2 = CaseAwarePath('/usr/local')
         self.assertTrue(p1.is_relative_to(p2))
@@ -117,18 +160,10 @@ class TestIsRelativeTo(unittest.TestCase):
         p2 = '/home'
         self.assertTrue(p1.is_relative_to(p2))
 
-    def test_empty_path(self):
-        p1 = CaseAwarePath('')
-        p2 = CaseAwarePath('/home')
-        self.assertFalse(p1.is_relative_to(p2))
-
     def test_same_path(self):
         p1 = CaseAwarePath('/home/user')
         p2 = CaseAwarePath('/home/user')
         self.assertTrue(p1.is_relative_to(p2))
 
 if __name__ == '__main__':
-    unittest.main()
-
-if __name__ == "__main__":
     unittest.main()

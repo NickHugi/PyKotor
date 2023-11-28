@@ -269,6 +269,7 @@ def get_default_paths():
             Game.K2: [
                 "~/.local/share/Steam/common/SteamApps/Knights of the Old Republic II",
                 "~/.local/share/Steam/common/steamapps/Knights of the Old Republic II",
+                "~/.local/share/aspyr-media/kotor2",
                 "~/.local/share/Steam/common/Knights of the Old Republic II",
                 "~/.steam/root/steamapps/common/Knights of the Old Republic II",  # executable name is `KOTOR2` no extension
                 # wsl paths

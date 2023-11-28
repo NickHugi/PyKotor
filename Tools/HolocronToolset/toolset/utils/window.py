@@ -88,7 +88,7 @@ def openResourceEditor(
     if restype in [ResourceType.TwoDA, ResourceType.TwoDA_CSV, ResourceType.TwoDA_JSON]:
         editor = TwoDAEditor(None, installation)
 
-    if restype in [ResourceType.SSF, ResourceType.TLK_XML, ResourceType.TLK_JSON]:
+    if restype in [ResourceType.SSF, ResourceType.SSF_XML]:
         editor = SSFEditor(None, installation)
 
     if restype in [ResourceType.TLK, ResourceType.TLK_XML, ResourceType.TLK_JSON]:

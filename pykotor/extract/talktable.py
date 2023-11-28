@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING, NamedTuple
 from pykotor.common.language import Language
 from pykotor.common.misc import ResRef
 from pykotor.common.stream import BinaryReader
-from pykotor.utility.path import Path
+from pykotor.utility.path import BasePath, Path
 
 if TYPE_CHECKING:
     import os
@@ -16,7 +16,7 @@ class StringResult(NamedTuple):
     sound: ResRef
 
 
-class TalkTable:
+class TalkTable:  # TODO: dialogf.tlk
     """Talktables are for read-only loading of stringrefs stored in a dialog.tlk file. Files are only opened when accessing
     a stored string, this means that strings are always up to date at the time of access as opposed to TLK objects which
     may be out of date with its source file.
@@ -26,7 +26,10 @@ class TalkTable:
         self,
         path: os.PathLike | str,
     ):
-        self._path: Path = path if isinstance(path, Path) else Path(path)
+        self._path: Path = path if isinstance(path, BasePath) else Path(path)  # type: ignore[assignment]
+
+    def path(self):
+        return self._path
 
     def string(
         self,

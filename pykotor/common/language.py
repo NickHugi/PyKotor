@@ -25,7 +25,6 @@ class Language(IntEnum):
     # cp-1252
     AFRIKAANS = 6
     BASQUE = 7
-    BISLAMA = 8
     BRETON = 9
     CATALAN = 10
     CHAMORRO = 11
@@ -34,7 +33,6 @@ class Language(IntEnum):
     DANISH = 14
     DUTCH = 15
     FAROESE = 16
-    FIJIAN = 17
     FILIPINO = 18
     FINNISH = 19
     FLEMISH = 20
@@ -74,8 +72,6 @@ class Language(IntEnum):
     WELSH = 54
     ZULU = 55
     # cp-1251
-    AZERBAIJANI_CYRILLIC = 56
-    BOSNIAN_CYRILLIC = 57
     BULGARIAN = 58
     BELARISIAN = 59
     MACEDONIAN = 60
@@ -83,7 +79,6 @@ class Language(IntEnum):
     SERBIAN_CYRILLIC = 62
     TAJIK = 63
     TATAR_CYRILLIC = 64
-    TURKMEN_CYRILLIC = 65
     UKRAINIAN = 66
     UZBEK = 67
     # cp-1250
@@ -93,7 +88,6 @@ class Language(IntEnum):
     SLOVAK = 71
     SLOVENE = 72
     CROATIAN = 73
-    SERBIAN_LATIN = 74
     HUNGARIAN = 75
     ROMANIAN = 76  # before 1993 reform
     # cp-1253
@@ -102,7 +96,6 @@ class Language(IntEnum):
     ESPERANTO = 78  # loss of information if encoded to cp-1253
     # cp-1254
     AZERBAIJANI_LATIN = 79
-    TATAR_LATIN = 80
     TURKISH = 81
     TURKMEN_LATIN = 82
     # cp-1255
@@ -129,8 +122,8 @@ class Language(IntEnum):
     SAMOAN = 97
     SOMALI = 98
 
-    # The following languages are supported in the GFF/TLK file formats, but are not encodable to 8-bit without significant loss of information
-    # therefore are incompatible with KOTOR.
+    # The following languages are supported in the GFF/TLK file formats, but are probably not encodable to 8-bit without significant loss of information
+    # therefore are probably incompatible with KOTOR.
     KOREAN = 128
     CHINESE_TRADITIONAL = 129
     CHINESE_SIMPLIFIED = 130
@@ -146,7 +139,14 @@ class Language(IntEnum):
         return Language.ENGLISH
 
     def is_8bit_encoding(self) -> bool:
-        return self not in {Language.UNKNOWN, Language.KOREAN, Language.CHINESE_TRADITIONAL, Language.CHINESE_SIMPLIFIED, Language.JAPANESE}
+        return self not in {
+            Language.UNKNOWN,
+            Language.KOREAN,
+            Language.JAPANESE,
+            Language.CHINESE_SIMPLIFIED,
+            Language.CHINESE_TRADITIONAL,
+            Language.THAI,
+        }
 
     def get_encoding(self):
         """Gets the encoding for a given language.
@@ -173,14 +173,11 @@ class Language(IntEnum):
             Language.MOLDOVAN_LATIN,
             Language.POLISH,
             Language.ROMANIAN,  # before 1993 reform
-            Language.SERBIAN_LATIN,
             Language.SLOVAK,
             Language.SLOVENE,
         ):
             return "cp1250"
         if self in (
-            Language.AZERBAIJANI_CYRILLIC,
-            Language.BOSNIAN_CYRILLIC,
             Language.BULGARIAN,
             Language.BELARISIAN,
             Language.MACEDONIAN,
@@ -188,7 +185,6 @@ class Language(IntEnum):
             Language.SERBIAN_CYRILLIC,
             Language.TAJIK,
             Language.TATAR_CYRILLIC,
-            Language.TURKMEN_CYRILLIC,
             Language.UKRAINIAN,
             Language.UZBEK,
         ):
@@ -201,7 +197,6 @@ class Language(IntEnum):
             Language.SPANISH,
             Language.AFRIKAANS,
             Language.BASQUE,
-            Language.BISLAMA,
             Language.BRETON,
             Language.CATALAN,
             Language.CHAMORRO,
@@ -210,7 +205,6 @@ class Language(IntEnum):
             Language.DANISH,
             Language.DUTCH,
             Language.FAROESE,
-            Language.FIJIAN,
             Language.FILIPINO,
             Language.FINNISH,
             Language.FLEMISH,
@@ -256,7 +250,6 @@ class Language(IntEnum):
             return "cp1253"
         if self in (
             Language.AZERBAIJANI_LATIN,
-            Language.TATAR_LATIN,
             Language.TURKISH,
             Language.TURKMEN_LATIN,
         ):
@@ -296,15 +289,15 @@ class Language(IntEnum):
         ]:
             return "ISO-8859-10"
 
-        # The following languages/encodings are not 8-bit and need additional information in order to be supported.
+        # The following languages/encodings may not be 8-bit and need additional information in order to be supported.
         if self == Language.KOREAN:
-            return "euc_kr"
+            return "cp949"
         if self == Language.CHINESE_TRADITIONAL:
-            return "big5"
+            return "cp950"
         if self == Language.CHINESE_SIMPLIFIED:
-            return "gb2312"
+            return "cp936"
         if self == Language.JAPANESE:
-            return "shift_jis"
+            return "cp932"
         if self == Language.UNKNOWN:
             return None
         msg = f"No encoding defined for language: {self.name}"
@@ -320,7 +313,6 @@ class Language(IntEnum):
             Language.POLISH: "pl",
             Language.AFRIKAANS: "af",
             Language.BASQUE: "eu",
-            Language.BISLAMA: "bi",
             Language.BRETON: "br",
             Language.CATALAN: "ca",
             Language.CHAMORRO: "ch",
@@ -329,8 +321,7 @@ class Language(IntEnum):
             Language.DANISH: "da",
             Language.DUTCH: "nl",
             Language.FAROESE: "fo",
-            Language.FIJIAN: "fj",
-            Language.FILIPINO: "fil",
+            Language.FILIPINO: "filipino",
             Language.FINNISH: "fi",
             Language.FLEMISH: "nl-BE",
             Language.FRISIAN: "fy",
@@ -345,7 +336,7 @@ class Language(IntEnum):
             Language.IGBO: "ig",
             Language.IRISH: "ga",
             Language.INTERLINGUA: "ia",
-            Language.JAVANESE_LATIN: "jv-Latn",
+            Language.JAVANESE_LATIN: "jv",  # jv-Latn
             Language.LATIN: "la",
             Language.LUXEMBOURGISH: "lb",
             Language.MALTESE: "mt",
@@ -356,45 +347,40 @@ class Language(IntEnum):
             Language.SCOTTISH_GAELIC: "gd",
             Language.SHONA: "sn",
             Language.SOTO: "st",
-            Language.SUNDANESE_LATIN: "su-Latn",
+            Language.SUNDANESE_LATIN: "su",  # su-Latn
             Language.SWAHILI: "sw",
             Language.SWEDISH: "sv",
             Language.TAGALOG: "tl",
             Language.TAHITIAN: "ty",
             Language.TONGAN: "to",
-            Language.UZBEK_LATIN: "uz-Latn",
+            Language.UZBEK_LATIN: "uz",  # uz-Latn
             Language.WALLOON: "wa",
             Language.XHOSA: "xh",
             Language.YORUBA: "yo",
             Language.WELSH: "cy",
             Language.ZULU: "zu",
-            Language.AZERBAIJANI_CYRILLIC: "az-Cyrl",
-            Language.BOSNIAN_CYRILLIC: "bs-Cyrl",
             Language.BULGARIAN: "bg",
             Language.BELARISIAN: "be",
             Language.MACEDONIAN: "mk",
             Language.RUSSIAN: "ru",
-            Language.SERBIAN_CYRILLIC: "sr-Cyrl",
+            Language.SERBIAN_CYRILLIC: "sr",  # sr-Cyrl
             Language.TAJIK: "tg",
-            Language.TATAR_CYRILLIC: "tt-Cyrl",
-            Language.TURKMEN_CYRILLIC: "tk-Cyrl",
+            Language.TATAR_CYRILLIC: "tt",  # tt-Cyrl
             Language.UKRAINIAN: "uk",
-            Language.UZBEK: "uz-Cyrl",
+            Language.UZBEK: "uz",  # uz-Cyrl
             Language.ALBANIAN: "sq",
             Language.BOSNIAN_LATIN: "bs",
             Language.CZECH: "cs",
             Language.SLOVAK: "sk",
             Language.SLOVENE: "sl",
             Language.CROATIAN: "hr",
-            Language.SERBIAN_LATIN: "sr-Latn",
             Language.HUNGARIAN: "hu",
             Language.ROMANIAN: "ro",
             Language.GREEK: "el",
             Language.ESPERANTO: "eo",
-            Language.AZERBAIJANI_LATIN: "az-Latn",
-            Language.TATAR_LATIN: "tt-Latn",
+            Language.AZERBAIJANI_LATIN: "az",  # az-Latn
             Language.TURKISH: "tr",
-            Language.TURKMEN_LATIN: "tk-Latn",
+            Language.TURKMEN_LATIN: "tk",  # tk-Latn
             Language.HEBREW: "he",
             Language.ARABIC: "ar",
             Language.ESTONIAN: "et",
@@ -404,20 +390,20 @@ class Language(IntEnum):
             Language.THAI: "th",
             Language.AYMARA: "ay",
             Language.KINYARWANDA: "rw",
-            Language.KURDISH_LATIN: "ku-Latn",
+            Language.KURDISH_LATIN: "ku",  # ku-Latn
             Language.MALAGASY: "mg",
-            Language.MALAY_LATIN: "ms-Latn",
+            Language.MALAY_LATIN: "ms",  # ms-Latn
             Language.MAORI: "mi",
-            Language.MOLDOVAN_LATIN: "mo-Latn",
+            Language.MOLDOVAN_LATIN: "mo",  # mo-Latn
             Language.SAMOAN: "sm",
             Language.SOMALI: "so",
             Language.KOREAN: "ko",
-            Language.CHINESE_TRADITIONAL: "zh-Hant",
-            Language.CHINESE_SIMPLIFIED: "zh-Hans",
+            Language.CHINESE_TRADITIONAL: "zh-TW",  # zh-Hant
+            Language.CHINESE_SIMPLIFIED: "zh-CN",  # zh-Hans
             Language.JAPANESE: "ja",
             # Add any additional languages if necessary
         }
-        return lang_map.get(self, None)
+        return lang_map.get(self)
 
 
 class Gender(IntEnum):

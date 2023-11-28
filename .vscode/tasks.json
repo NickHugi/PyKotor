@@ -134,7 +134,7 @@
         "label": "pylint: toolset",
         "dependsOn": ["requirements.txt", "install_pylint"],
         "type": "shell",
-        "command": "${command:python.interpreterPath} -m pylint --disable=C0301,C0302,C0115,C0116,R0913,C0114,R0903,R0902,W0212,R0914,R0904,W0613,E0611,C0415,I1101 Tools/HolocronToolset/toolset",
+        "command": "${command:python.interpreterPath} -m pylint --disable=C0301,C0302,C0115,C0116,R0913,C0114,R0903,R0902,W0212,R0914,R0904,W0613,E0611,C0415,I1101 tools/HolocronToolset/toolset",
         "presentation": {
             "reveal": "never",
             "panel": "shared"
@@ -277,8 +277,8 @@
         "--exclude-module=PyOpenGL",
         "--exclude-module=PyGLM",
         "--name=HoloPatcher",
-        "--icon=Tools${pathSeparator}holopatcher${pathSeparator}resources${pathSeparator}icons${pathSeparator}patcher_icon_v2.ico",
-        "Tools${pathSeparator}holopatcher${pathSeparator}__main__.py"
+        "--icon=tools${pathSeparator}holopatcher${pathSeparator}resources${pathSeparator}icons${pathSeparator}patcher_icon_v2.ico",
+        "tools${pathSeparator}holopatcher${pathSeparator}__main__.py"
       ],
       "problemMatcher": []
     },
@@ -295,11 +295,11 @@
 //        "--mingw64",
 //        "--clang",
         "--output-filename=HoloPatcher",
-        "--windows-icon-from-ico=Tools${pathSeparator}holopatcher${pathSeparator}resources${pathSeparator}icons${pathSeparator}patcher_icon_v2.ico",
+        "--windows-icon-from-ico=tools${pathSeparator}holopatcher${pathSeparator}resources${pathSeparator}icons${pathSeparator}patcher_icon_v2.ico",
         "--remove-output",
         "--output-dir=${workspaceFolder}${pathSeparator}nuitka_dist",
         "--enable-plugin=tk-inter",
-        "Tools${pathSeparator}holopatcher${pathSeparator}__main__.py",
+        "tools${pathSeparator}holopatcher${pathSeparator}__main__.py",
       ],
       "problemMatcher": []
     },
@@ -317,8 +317,8 @@
         "--noconfirm",
         "--name=HolocronToolset",
         "--path=${workspaceFolder}${pathSeparator}tools${pathSeparator}HolocronToolset${pathSeparator}toolset",
-        "--icon=Tools${pathSeparator}HolocronToolset${pathSeparator}resources${pathSeparator}icons${pathSeparator}sith.ico",
-        "Tools${pathSeparator}HolocronToolset${pathSeparator}toolset${pathSeparator}__main__.py",
+        "--icon=tools${pathSeparator}HolocronToolset${pathSeparator}resources${pathSeparator}icons${pathSeparator}sith.ico",
+        "tools${pathSeparator}HolocronToolset${pathSeparator}toolset${pathSeparator}__main__.py",
       ],
       "problemMatcher": []
     },
@@ -340,7 +340,7 @@
         "--output-dir=${workspaceFolder}${pathSeparator}nuitka_dist",
         "--include-module=pykotor",
         "--enable-plugin=pyqt5",
-        "Tools${pathSeparator}HolocronToolset${pathSeparator}toolset${pathSeparator}__main__.py",
+        "tools${pathSeparator}HolocronToolset${pathSeparator}toolset${pathSeparator}__main__.py",
       ],
       "problemMatcher": []
     },
@@ -357,7 +357,7 @@
         "--clean",
         "--noconfirm",
         "--name=kotordiff",
-        "Tools${pathSeparator}kotordiff${pathSeparator}__main__.py"
+        "tools${pathSeparator}kotordiff${pathSeparator}__main__.py"
       ],
       "problemMatcher": []
     },
@@ -374,7 +374,12 @@
         "--clean",
         "--noconfirm",
         "--name=K_BatchPatcher",
-        "Tools${pathSeparator}k_batchpatcher${pathSeparator}__main__.py"
+        "--exclude-module=PyQt5",
+        "--exclude-module=PyOpenGL",
+        "--exclude-module=PyGLM",
+        "--exclude-module=dl_translate",
+        "--exclude-module=torch",
+        "tools${pathSeparator}k_batchpatcher${pathSeparator}__main__.py"
       ],
       "problemMatcher": []
     },
@@ -391,7 +396,7 @@
         "--clean",
         "--noconfirm",
         "--name=gui_creator",
-        "Tools${pathSeparator}guicreator${pathSeparator}__main__.py"
+        "tools${pathSeparator}guicreator${pathSeparator}__main__.py"
       ],
       "problemMatcher": []
     },
@@ -408,7 +413,7 @@
         "--clean",
         "--noconfirm",
         "--name=mdl_decompile",
-        "Tools${pathSeparator}mdl_decompile${pathSeparator}__main__.py"
+        "tools${pathSeparator}mdl_decompile${pathSeparator}__main__.py"
       ],
       "problemMatcher": []
     }

@@ -160,18 +160,9 @@ class HelpWindow(QMainWindow):
                 if user_response == QMessageBox.Yes:
                     def task():
                         return self._downloadUpdate()
-                    if is_debug_mode():
-                        # Run synchronously for debugging
-                        try:
-                            task()
-                            self._setupContents()
-                        except Exception as e:
-                            # Handle exception or log error
-                            print(f"Error during update: {e!r}")
-                    else:
-                        loader = AsyncLoader(self, "Download newer help files...", task, "Failed to update.")
-                        if loader.exec_():
-                            self._setupContents()
+                    loader = AsyncLoader(self, "Download newer help files...", task, "Failed to update.")
+                    if loader.exec_():
+                        self._setupContents()
         except Exception as e:
             QMessageBox(
                 QMessageBox.Information,

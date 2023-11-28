@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import codecs
 import contextlib
 from typing import TYPE_CHECKING
 
@@ -8,6 +9,129 @@ import charset_normalizer
 if TYPE_CHECKING:
     from pykotor.common.language import Language
 
+
+def get_single_byte_charset(encoding) -> list[str]:
+    charset = []
+    for i in range(256):
+        try:
+            char = codecs.decode(bytes([i]), encoding)
+            charset.append(char)
+        except UnicodeDecodeError:  # noqa: PERF203
+            charset.append("")  # Append a blank for non-existent characters
+    return charset
+
+def get_double_byte_charset(encoding) -> list[str]:
+    # I believe these need to be mapped to the TXI with the 'dbmapping' field. Experimentation would be required for the syntax, perhaps could pull from other aurora games.
+    charset = []
+    if encoding == "cp936":
+        for i in range(256):
+            if 0x00 <= i <= 0x7F:
+                # Single-byte code
+                try:
+                    char = codecs.decode(bytes([i]), encoding)
+                    charset.append(char)
+                except UnicodeDecodeError:
+                    charset.append("")  # Append a blank for non-existent characters
+            elif 0x81 <= i <= 0x9F:
+                # Double-byte introducer, skip this byte
+                #continue
+                charset.append("")  # Undefined code point, append a blank
+            elif 0xA1 <= i <= 0xDF:
+                # Single-byte code
+                try:
+                    char = codecs.decode(bytes([i]), encoding)
+                    charset.append(char)
+                except UnicodeDecodeError:
+                    charset.append("")  # Append a blank for non-existent characters
+            elif 0xE0 <= i <= 0xFC:
+                # Double-byte introducer, the second byte can be any of the 256 possible values
+                for j in range(256):
+                    try:
+                        char = codecs.decode(bytes([i, j]), encoding)
+                        charset.append(char)
+                    except UnicodeDecodeError:  # noqa: PERF203
+                        charset.append("")  # Append a blank for non-existent characters
+            else:
+                charset.append("")  # Undefined code point, append a blank
+    elif encoding == "cp949":
+        for i in range(256):
+            # Adjusted ranges based on IBM-949 encoding structure
+            if 0x00 <= i <= 0x7F or 0xA1 <= i <= 0xDF or 0x9A <= i <= 0xA0:
+                # Single-byte code
+                try:
+                    char = codecs.decode(bytes([i]), encoding)
+                    charset.append(char)
+                except UnicodeDecodeError:
+                    charset.append("")  # Append a blank for non-existent characters
+            elif 0x81 <= i <= 0x9F or i == 0xC9 or i == 0xFE:
+                # User-defined ranges or double-byte introducer
+                charset.append("")  # Placeholder for user-defined ranges
+            elif 0xE0 <= i <= 0xFC or 0x8F <= i <= 0x99:
+                # Double-byte introducer, the second byte can be any of the 256 possible values
+                for j in range(256):
+                    try:
+                        char = codecs.decode(bytes([i, j]), encoding)
+                        charset.append(char)
+                    except UnicodeDecodeError:  # noqa: PERF203
+                        charset.append("")  # Append a blank for non-existent characters
+            else:
+                charset.append("")  # Undefined code point, append a blank
+    elif encoding == "cp950":
+        # Include single-byte graphical characters (standard ASCII + additional characters)
+        for i in range(256):
+            if i <= 0x7F or i == 0xA1:  # ASCII range and single-byte euro sign
+                try:
+                    char = chr(i)  # Direct ASCII mapping
+                    charset.append(char)
+                except ValueError:
+                    charset.append("")  # Append a blank for invalid values
+            elif 0x81 <= i <= 0xFE:  # Double-byte character lead byte
+                for j in range(256):
+                    if (0x40 <= j <= 0x7E) or (0xA1 <= j <= 0xFE):
+                        # Apply formula based on Big5 to Unicode PUA mapping
+                        unicode_val: int = -1  # Placeholder for ranges not covered
+                        if 0x81 <= i <= 0x8D:
+                            unicode_val = 0xeeb8 + (157 * (i - 0x81)) + (j - 0x40 if j < 0x80 else j - 0x62)
+                        elif 0x8E <= i <= 0xA0:
+                            unicode_val = 0xe311 + (157 * (i - 0x8E)) + (j - 0x40 if j < 0x80 else j - 0x62)
+                        elif 0xC6 <= i <= 0xC8:
+                            unicode_val = 0xf672 + (157 * (i - 0xC6)) + (j - 0x40 if j < 0x80 else j - 0x62)
+                        elif 0xFA <= i <= 0xFE:
+                            unicode_val = 0xe000 + (157 * (i - 0xFA)) + (j - 0x40 if j < 0x80 else j - 0x62)
+
+                        if unicode_val != -1:
+                            try:
+                                char = chr(unicode_val)
+                                charset.append(char)
+                            except ValueError:
+                                charset.append("")  # Append a blank for invalid Unicode values
+                    else:
+                        charset.append("")  # Append a blank for bytes not in the valid range
+            else:
+                charset.append("")  # Append a blank for bytes outside the Big5 range
+    else:  # maybe possible?
+        single_byte_end = 0x7F  # End of single-byte range
+        potential_lead_byte_start = 0x81  # Start of potential lead byte range for double-byte characters
+        potential_lead_byte_end = 0xFC  # End of potential lead byte range
+
+        for i in range(256):
+            if i <= single_byte_end or (0xA1 <= i <= 0xDF):  # Single-byte characters
+                try:
+                    char = bytes([i]).decode(encoding)
+                    charset.append(char)
+                except UnicodeDecodeError:
+                    charset.append("")  # Append a blank for non-existent characters
+
+            elif potential_lead_byte_start <= i <= potential_lead_byte_end:  # Potential lead byte for double-byte characters
+                for j in range(256):
+                    try:
+                        char = bytes([i, j]).decode(encoding)
+                        charset.append(char)
+                    except UnicodeDecodeError:  # noqa: PERF203
+                        charset.append("")  # Append a blank for non-existent characters
+            else:
+                charset.append("")  # For bytes outside the valid range
+    return charset
 
 def decode_bytes_with_fallbacks(
     byte_content: bytes,
@@ -31,35 +155,11 @@ def decode_bytes_with_fallbacks(
 
     detected_encoding = charset_normalizer.from_bytes(byte_content).best()
     if detected_encoding:
-        return byte_content.decode(encoding=detected_encoding.encoding, errors=errors)
+        encoding = detected_encoding.encoding
+
+        # Special handling for UTF-8 BOM
+        if detected_encoding.byte_order_mark and "utf-8" in encoding.replace("_", "-"):  # covers 'utf-8', 'utf_8', etc.
+            encoding = "utf-8-sig"
+
+        return byte_content.decode(encoding=encoding, errors=errors)
     return byte_content.decode(errors=errors)
-
-
-def find_best_8bit_encoding(s: str) -> str | None:
-    """Finds the best 8-bit encoding for a string
-    Args:
-        s: str - The input string to analyze
-    Returns:
-        str | None - The detected 8-bit encoding or None if no match found
-    - The string is first encoded to UTF-8 bytes
-    - The byte string is analyzed to find potential charset matches
-    - Non 8-bit and Unicode matches are filtered out
-    - If any 8-bit matches remain, the one with the highest confidence is returned
-    - If no 8-bit matches, None is returned.
-    """
-    # First, we encode the string to UTF-8 bytes. Python str objects are inherently Unicode.
-    utf8_encoded = s.encode("utf-8")
-
-    # Then, we try to find the best match for this byte string
-    # assuming it was originally encoded with an unknown 8-bit charset
-    matches = charset_normalizer.from_bytes(utf8_encoded)
-
-    # We filter out non 8-bit encodings and Unicode encodings
-    eight_bit_encodings = [match for match in matches if match.encoding != "utf-8" and "iso" in match.encoding]
-
-    # If we have 8-bit matches, we take the one with the highest confidence
-    if eight_bit_encodings:
-        best_match = max(eight_bit_encodings, key=lambda m: m.chaos)
-        return best_match.encoding
-
-    return None

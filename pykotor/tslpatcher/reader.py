@@ -13,7 +13,6 @@ from pykotor.resource.formats.ssf import SSFSound
 from pykotor.resource.formats.tlk import TLK, read_tlk
 from pykotor.tools.encoding import decode_bytes_with_fallbacks
 from pykotor.tools.path import CaseAwarePath
-from pykotor.tslpatcher.config import PatcherConfig, PatcherNamespace
 from pykotor.tslpatcher.logger import PatchLogger
 from pykotor.tslpatcher.memory import NoTokenUsage, TokenUsage, TokenUsage2DA, TokenUsageTLK
 from pykotor.tslpatcher.mods.gff import (
@@ -50,17 +49,72 @@ from pykotor.tslpatcher.mods.twoda import (
     Target,
     TargetType,
 )
+from pykotor.tslpatcher.namespaces import PatcherNamespace
 from pykotor.utility.misc import is_float, is_int
-from pykotor.utility.path import Path, PureWindowsPath
+from pykotor.utility.path import BasePath, Path, PurePath, PureWindowsPath
 
 if TYPE_CHECKING:
     import os
 
     from pykotor.resource.formats.tlk.tlk_data import TLKEntry
+    from pykotor.tslpatcher.config import PatcherConfig
     from pykotor.tslpatcher.mods.gff import ModifyGFF
 
-SECTION_NOT_FOUND_ERROR: str = "The [{}] section was not found in the ini, referenced by '{}={}' in [{}]"
+SECTION_NOT_FOUND_ERROR: str = "The [{}] section was not found in the ini"
+REFERENCES_TRACEBACK_MSG = ", referenced by '{}={}' in [{}]"
 
+class NamespaceReader:
+    """Responsible for reading and loading namespaces from the namespaces.ini file."""
+
+    def __init__(self, ini: ConfigParser):
+        self.ini = ini
+        self.namespaces: list[PatcherNamespace] = []
+
+    @classmethod
+    def from_filepath(cls, path: os.PathLike | str) -> list[PatcherNamespace]:
+        ini = ConfigParser(
+            delimiters=("="),
+            allow_no_value=True,
+            strict=False,
+            interpolation=None,
+        )
+        # use case insensitive keys
+        ini.optionxform = lambda optionstr: optionstr.lower()  # type: ignore[method-assign]
+
+        ini.read_string(decode_bytes_with_fallbacks(BinaryReader.load_file(path)))
+
+        return NamespaceReader(ini).load()
+
+    def load(self) -> list[PatcherNamespace]:  # Case-insensitive access to section
+        namespaces_section_name = next((section for section in self.ini.sections() if section.lower() == "namespaces"), None)
+        if namespaces_section_name is None:
+            raise KeyError(SECTION_NOT_FOUND_ERROR.format("Namespaces"))
+        namespace_ids: CaseInsensitiveDict[str] = CaseInsensitiveDict(self.ini[namespaces_section_name].items())
+        namespaces: list[PatcherNamespace] = []
+
+        for key, namespace_id in namespace_ids.items():
+            # Case-insensitive access to namespace_id
+            namespace_section_key: str | None = next((section for section in self.ini.sections() if section.lower() == namespace_id.lower()), None)
+            if namespace_section_key is None:
+                msg = f"The '[{namespace_id}]' section was not found in the 'namespaces.ini' file, referenced by '{key}={namespace_id}' in [{namespaces_section_name}]."
+                raise KeyError(msg)
+
+            this_namespace_section = CaseInsensitiveDict(self.ini[namespace_section_key].items())
+
+            # required
+            ini_filename = this_namespace_section["IniName"]
+            info_filename = this_namespace_section["InfoName"]
+            namespace = PatcherNamespace(ini_filename, info_filename)
+
+            # optional
+            namespace.data_folderpath = PurePath(this_namespace_section.get("DataPath", ""))
+            namespace.name = this_namespace_section.get("Name", "").strip()
+            namespace.description = this_namespace_section.get("Description", "")
+
+            namespace.namespace_id = namespace_section_key
+            namespaces.append(namespace)
+
+        return namespaces
 
 class ConfigReader:
     def __init__(self, ini: ConfigParser, mod_path: os.PathLike | str, logger: PatchLogger | None = None) -> None:
@@ -88,7 +142,8 @@ class ConfigReader:
             - Populate its config attribute from the ConfigParser
             - Return the initialized instance
         """
-        resolved_file_path = (file_path if isinstance(file_path, Path) else Path(file_path)).resolve()
+        from pykotor.tslpatcher.config import PatcherConfig
+        resolved_file_path = (file_path if isinstance(file_path, BasePath) else Path(file_path)).resolve()  # type: ignore[attr-defined, reportGeneralTypeIssues]
 
         ini = ConfigParser(
             delimiters=("="),
@@ -98,10 +153,7 @@ class ConfigReader:
         )
         # use case-sensitive keys
         ini.optionxform = lambda optionstr: optionstr  #  type: ignore[method-assign]
-
-        ini_file_bytes = BinaryReader.load_file(resolved_file_path)
-        ini_text: str | None = decode_bytes_with_fallbacks(ini_file_bytes)
-        ini.read_string(ini_text)
+        ini.read_string(decode_bytes_with_fallbacks(BinaryReader.load_file(resolved_file_path)))
 
         config = PatcherConfig()
         instance = cls(ini, resolved_file_path.parent, logger)
@@ -179,7 +231,7 @@ class ConfigReader:
         for key, foldername in self.ini[install_list_section].items():
             foldername_section = self.get_section_name(key)
             if foldername_section is None:
-                raise KeyError(SECTION_NOT_FOUND_ERROR.format(foldername, key, foldername, install_list_section))
+                raise KeyError(SECTION_NOT_FOUND_ERROR.format(foldername) + REFERENCES_TRACEBACK_MSG.format(key, foldername, install_list_section))
 
             for key2, filename in self.ini[foldername_section].items():
                 replace_existing = key2.lower().startswith("replace")
@@ -352,7 +404,7 @@ class ConfigReader:
                     next_section_name = self.get_section_name(value)
                     if not next_section_name:
                         syntax_error_caught = True
-                        raise ValueError(SECTION_NOT_FOUND_ERROR.format(value, key, value, tlk_list_section))  # noqa: TRY301
+                        raise ValueError(SECTION_NOT_FOUND_ERROR.format(value) + REFERENCES_TRACEBACK_MSG.format(key, value, tlk_list_section))  # noqa: TRY301
 
                     next_section_dict = CaseInsensitiveDict(self.ini[next_section_name].items())
                     self.config.patches_tlk.pop_tslpatcher_vars(next_section_dict, default_destination)
@@ -427,7 +479,7 @@ class ConfigReader:
         for identifier, file in twoda_section_dict.items():
             file_section = self.get_section_name(file)
             if not file_section:
-                raise KeyError(SECTION_NOT_FOUND_ERROR.format(file, identifier, file, twoda_section_name))
+                raise KeyError(SECTION_NOT_FOUND_ERROR.format(file) + REFERENCES_TRACEBACK_MSG.format(identifier, file, twoda_section_name))
 
             modifications = Modifications2DA(file)
             file_section_dict = CaseInsensitiveDict(self.ini[file_section].items())
@@ -439,7 +491,7 @@ class ConfigReader:
             for key, modification_id in file_section_dict.items():
                 next_section_name = self.get_section_name(modification_id)
                 if not next_section_name:
-                    raise KeyError(SECTION_NOT_FOUND_ERROR.format(modification_id, key, modification_id, file_section))
+                    raise KeyError(SECTION_NOT_FOUND_ERROR.format(modification_id) + REFERENCES_TRACEBACK_MSG.format(key, modification_id, file_section))
                 modification_ids_dict = CaseInsensitiveDict(self.ini[modification_id].items())
                 manipulation: Modify2DA | None = self.discern_2da(
                     key,
@@ -475,7 +527,7 @@ class ConfigReader:
         for identifier, file in ssf_section_dict.items():
             ssf_file_section = self.get_section_name(file)
             if not ssf_file_section:
-                raise KeyError(SECTION_NOT_FOUND_ERROR.format(file, identifier, file, ssf_list_section))
+                raise KeyError(SECTION_NOT_FOUND_ERROR.format(file) + REFERENCES_TRACEBACK_MSG.format(identifier, file, ssf_list_section))
 
             replace = identifier.lower().startswith("replace")
             modifications = ModificationsSSF(file, replace)
@@ -530,7 +582,7 @@ class ConfigReader:
         for identifier, file in gff_section_dict.items():
             file_section_name = self.get_section_name(file)
             if not file_section_name:
-                raise KeyError(SECTION_NOT_FOUND_ERROR.format(file, identifier, file, gff_list_section))
+                raise KeyError(SECTION_NOT_FOUND_ERROR.format(file) + REFERENCES_TRACEBACK_MSG.format(identifier, file, gff_list_section))
 
             replace = identifier.lower().startswith("replace")
             modifications = ModificationsGFF(file, replace)
@@ -544,7 +596,7 @@ class ConfigReader:
                 if lowercase_key.startswith("addfield"):
                     next_gff_section = self.get_section_name(value)
                     if not next_gff_section:
-                        raise KeyError(SECTION_NOT_FOUND_ERROR.format(value, key, value, file_section_name))
+                        raise KeyError(SECTION_NOT_FOUND_ERROR.format(value) + REFERENCES_TRACEBACK_MSG.format(key, value, file_section_name))
 
                     next_section_dict = CaseInsensitiveDict(self.ini[next_gff_section].items())
                     modifier = self.add_field_gff(next_gff_section, next_section_dict)
@@ -614,7 +666,7 @@ class ConfigReader:
 
             optional_file_section_name = self.get_section_name(file)
             if optional_file_section_name is None:
-                raise KeyError(SECTION_NOT_FOUND_ERROR.format(file, identifier, file, hacklist_section))
+                raise KeyError(SECTION_NOT_FOUND_ERROR.format(file) + REFERENCES_TRACEBACK_MSG.format(identifier, file, hacklist_section))
             file_section_dict = CaseInsensitiveDict(self.ini[optional_file_section_name].items())
             modifications.pop_tslpatcher_vars(file_section_dict, default_destination)
             for offset_str, value_str in file_section_dict.items():
@@ -669,7 +721,7 @@ class ConfigReader:
         identifier: str,
         ini_data: CaseInsensitiveDict[str],
         current_path: PureWindowsPath | None = None,
-    ) -> ModifyGFF:  # sourcery skip: extract-method, remove-unreachable-code
+    ) -> ModifyGFF:    # sourcery skip: extract-method, remove-unreachable-code
         """Parse GFFList's AddField syntax from the ini to determine what fields/structs/lists to add.
 
         Args:
@@ -705,8 +757,8 @@ class ConfigReader:
         index_in_list_token = None
         for key, iterated_value in ini_data.items():
             lower_key: str = key.lower()
-            lower_iterated_value: str = iterated_value.lower()
             if lower_key.startswith("2damemory"):
+                lower_iterated_value: str = iterated_value.lower()
                 if lower_iterated_value == "listindex":
                     index_in_list_token = int(key[9:])
                 elif lower_iterated_value == "!fieldpath":
@@ -721,7 +773,7 @@ class ConfigReader:
             if lower_key.startswith("addfield"):
                 next_section_name: str | None = self.get_section_name(iterated_value)
                 if not next_section_name:
-                    raise KeyError(SECTION_NOT_FOUND_ERROR.format(iterated_value, key, iterated_value, identifier))
+                    raise KeyError(SECTION_NOT_FOUND_ERROR.format(iterated_value) + REFERENCES_TRACEBACK_MSG.format(key, iterated_value, identifier))
                 next_nested_section = CaseInsensitiveDict(self.ini[next_section_name].items())
                 nested_modifier: ModifyGFF = self.add_field_gff(
                     next_section_name,
@@ -1004,32 +1056,35 @@ class ConfigReader:
                 store_tlk,
             )
         elif lowercase_key.startswith("addcolumn"):
-            header = modifiers.pop("ColumnLabel", None)
-            if header is None:
-                msg = f"Missing 'ColumnLabel' in [{identifier}]"
-                raise KeyError(msg)
-            default = modifiers.pop("DefaultValue", None)
-            if default is None:
-                msg = f"Missing 'DefaultValue' in [{identifier}]"
-                raise KeyError(msg)
-            default = default if default != "****" else ""
-            index_insert, label_insert, store_2da = self.column_inserts_2da(  # type: ignore[assignment]
-                identifier,
-                modifiers,
-            )
-            modification = AddColumn2DA(
-                identifier,
-                header,
-                default,
-                index_insert,
-                label_insert,
-                store_2da,  # type: ignore[arg-type]
-            )
+            modification = self._read_add_column(modifiers, identifier)
         else:
             msg = (f"Could not parse key '{key}={identifier}', expecting one of ['ChangeRow=', 'AddColumn=', 'AddRow=', 'CopyRow=']")
             raise KeyError(msg)
 
         return modification
+
+    def _read_add_column(self, modifiers: CaseInsensitiveDict[str], identifier: str):
+        header = modifiers.pop("ColumnLabel", None)
+        if header is None:
+            msg = f"Missing 'ColumnLabel' in [{identifier}]"
+            raise KeyError(msg)
+        default = modifiers.pop("DefaultValue", None)
+        if default is None:
+            msg = f"Missing 'DefaultValue' in [{identifier}]"
+            raise KeyError(msg)
+        default = default if default != "****" else ""
+        index_insert, label_insert, store_2da = self.column_inserts_2da(  # type: ignore[assignment]
+            identifier,
+            modifiers,
+        )
+        return AddColumn2DA(
+            identifier,
+            header,
+            default,
+            index_insert,
+            label_insert,
+            store_2da,  # type: ignore[arg-type]
+        )
 
     def target_2da(self, identifier: str, modifiers: CaseInsensitiveDict[str]) -> Target | None:
         """Gets or creates a 2D target from modifiers.
@@ -1275,58 +1330,3 @@ class ConfigReader:
             }.items(),
         )
         return fieldname_to_fieldtype[field_type_num_str]
-
-class NamespaceReader:
-    """Responsible for reading and loading namespaces from the namespaces.ini file."""
-
-    def __init__(self, ini: ConfigParser):
-        self.ini = ini
-        self.namespaces: list[PatcherNamespace] = []
-
-    @classmethod
-    def from_filepath(cls, path: os.PathLike | str) -> list[PatcherNamespace]:
-        ini = ConfigParser(
-            delimiters=("="),
-            allow_no_value=True,
-            strict=False,
-            interpolation=None,
-        )
-        # use case insensitive keys
-        ini.optionxform = lambda optionstr: optionstr.lower()  # type: ignore[method-assign]
-
-        ini_file_bytes: bytes = BinaryReader.load_file(path)
-        ini_text: str | None = decode_bytes_with_fallbacks(ini_file_bytes)
-        ini.read_string(ini_text)
-
-        return NamespaceReader(ini).load()
-
-    def load(self) -> list[PatcherNamespace]:  # Case-insensitive access to section
-        namespaces_section_name = next((section for section in self.ini.sections() if section.lower() == "namespaces"), None)
-        if namespaces_section_name is None:
-            msg = "The '[Namespaces]' section was not found in the 'namespaces.ini' file."
-            raise KeyError(msg)
-        namespace_ids: CaseInsensitiveDict[str] = CaseInsensitiveDict(self.ini[namespaces_section_name].items())
-        namespaces: list[PatcherNamespace] = []
-
-        for key, namespace_id in namespace_ids.items():
-            # Case-insensitive access to namespace_id
-            namespace_section_key: str | None = next((section for section in self.ini.sections() if section.lower() == namespace_id.lower()), None)
-            if namespace_section_key is None:
-                msg = f"The '[{namespace_id}]' section was not found in the 'namespaces.ini' file, referenced by '{key}={namespace_id}' in [{namespaces_section_name}]."
-                raise KeyError(msg)
-
-            this_namespace_section = CaseInsensitiveDict(self.ini[namespace_section_key].items())
-            namespace = PatcherNamespace()
-
-            # required
-            namespace.ini_filename = this_namespace_section["IniName"]
-            namespace.info_filename = this_namespace_section["InfoName"]
-            # optional
-            namespace.data_folderpath = this_namespace_section.get("DataPath", "")
-            namespace.name = this_namespace_section.get("Name", "")
-            namespace.description = this_namespace_section.get("Description", "")
-
-            namespace.namespace_id = namespace_section_key
-            namespaces.append(namespace)
-
-        return namespaces

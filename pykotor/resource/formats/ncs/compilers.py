@@ -8,7 +8,7 @@ from pykotor.common.stream import BinaryReader
 from pykotor.resource.formats.ncs.ncs_auto import compile_nss, write_ncs
 from pykotor.resource.formats.ncs.ncs_data import NCSCompiler
 from pykotor.utility.misc import generate_filehash_sha256
-from pykotor.utility.path import Path
+from pykotor.utility.path import BasePath, Path
 
 if TYPE_CHECKING:
     import os
@@ -66,12 +66,11 @@ class ExternalNCSCompiler(NCSCompiler):
             }
 
             config = arg_configurations.get(self.sha256_hash)
-            if config:
-                self.compile_args = config["compile"]
-                self.decompile_args = config["decompile"]
-            else:
+            if not config:
                 msg = "Unknown NWNNSSCOMP hash"
                 raise ValueError(msg)
+            self.compile_args = config["compile"]
+            self.decompile_args = config["decompile"]
 
         def _format_args(self, args_list: list[str], executable: str) -> list[str]:
             formatted_args: list[str] = [arg.format(
@@ -85,7 +84,7 @@ class ExternalNCSCompiler(NCSCompiler):
             return formatted_args
 
     def __init__(self, nwnnsscomp_path: os.PathLike | str) -> None:
-        self.nwnnsscomp_path: Path = nwnnsscomp_path if isinstance(nwnnsscomp_path, Path) else Path(nwnnsscomp_path)
+        self.nwnnsscomp_path: Path = nwnnsscomp_path if isinstance(nwnnsscomp_path, BasePath) else Path(nwnnsscomp_path)  # type: ignore[reportGeneralTypeIssues, assignment]
         self.filehash: str = generate_filehash_sha256(self.nwnnsscomp_path).upper()
         self.config: ExternalNCSCompiler.NwnnsscompConfig | None = None
 
@@ -144,7 +143,7 @@ class ExternalNCSCompiler(NCSCompiler):
             check=False,
         )
 
-        stderr_message = result.stderr if result.stderr else "no error provided but return code is nonzero"
+        stderr_message = result.stderr or f"no error provided but return code is nonzero: {result.returncode}"
         return result.stdout, stderr_message if result.returncode != 0 else result.stderr
 
 
@@ -184,5 +183,5 @@ class ExternalNCSCompiler(NCSCompiler):
             check=False,
         )
 
-        stderr_message = result.stderr if result.stderr else "no error provided but return code is nonzero"
+        stderr_message = result.stderr or f"no error provided but return code is nonzero: {result.returncode}"
         return result.stdout, stderr_message if result.returncode != 0 else result.stderr

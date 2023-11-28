@@ -332,7 +332,6 @@ class UTPEditor(Editor):
 
         if data is not None:
             openResourceEditor(filepath, resname, ResourceType.DLG, data, self._installation, self)
-            self._installation.load_override()  # TODO: Why is this here?
 
     def openInventory(self) -> None:
         """Opens inventory editor for the module

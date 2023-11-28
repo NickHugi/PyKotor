@@ -103,6 +103,7 @@ class Installation:
         self.log = logger or PatchLogger()
 
         self._talktable: TalkTable = TalkTable(self._path / "dialog.tlk")
+        self._female_talktable: TalkTable = TalkTable(self._path / "dialogf.tlk")
 
         self._chitin: list[FileResource] = []
         self._modules: dict[str, list[FileResource]] = {}
@@ -360,6 +361,7 @@ class Installation:
         for folder in target_dirs:
             relative_folder = folder.relative_to(override_path).as_posix()  # '.' if folder is the same as override_path
             self._override[relative_folder] = self.load_resources(folder)  # type: ignore[assignment]
+
     def reload_override(self, directory: str) -> None:
         """Reload the resources in the specified override subdirectory.
 
@@ -623,8 +625,8 @@ class Installation:
         ]
 
         # Scoring for each game
-        game1_score = sum(check for check in game1_checks)
-        game2_score = sum(check for check in game2_checks)
+        game1_score = sum(game1_checks)
+        game2_score = sum(game2_checks)
 
         # Determine the game with the most checks passed
         if game1_score > game2_score:
@@ -671,6 +673,15 @@ class Installation:
             A TalkTable object.
         """
         return self._talktable
+
+    def female_talktable(self) -> TalkTable:
+        """Returns the female TalkTable linked to the Installation. This is 'dialogf.tlk' in the Polish game.
+
+        Returns
+        -------
+            A TalkTable object.
+        """
+        return self._female_talktable
 
     def resource(
         self,
@@ -838,22 +849,19 @@ class Installation:
         -------
             A dictionary mapping a resource identifier to a list of locations.
         """
-        capsules = [] if capsules is None else capsules
-        folders = [] if folders is None else folders
+        if order is None:
+            order = [
+                SearchLocation.CUSTOM_FOLDERS,
+                SearchLocation.OVERRIDE,
+                SearchLocation.CUSTOM_MODULES,
+                SearchLocation.MODULES,
+                SearchLocation.CHITIN,
+            ]
+        if capsules is None:
+            capsules = []
+        if folders is None:
+            folders = []
 
-        order = (
-            order
-            if order is not None
-            else (
-                [
-                    SearchLocation.CUSTOM_FOLDERS,
-                    SearchLocation.OVERRIDE,
-                    SearchLocation.CUSTOM_MODULES,
-                    SearchLocation.MODULES,
-                    SearchLocation.CHITIN,
-                ]
-            )
-        )
 
         locations: dict[ResourceIdentifier, list[LocationResult]] = {}
         for qinden in queries:
@@ -999,22 +1007,18 @@ class Installation:
         -------
             A dictionary mapping case-insensitive strings to TPC objects or None.
         """
-        capsules = [] if capsules is None else capsules
-        folders = [] if folders is None else folders
-
-        order = (
-            order
-            if order is not None
-            else (
-                [
-                    SearchLocation.CUSTOM_FOLDERS,
-                    SearchLocation.OVERRIDE,
-                    SearchLocation.CUSTOM_MODULES,
-                    SearchLocation.TEXTURES_TPA,
-                    SearchLocation.CHITIN,
-                ]
-            )
-        )
+        if order is None:
+            order = [
+                SearchLocation.CUSTOM_FOLDERS,
+                SearchLocation.OVERRIDE,
+                SearchLocation.CUSTOM_MODULES,
+                SearchLocation.TEXTURES_TPA,
+                SearchLocation.CHITIN,
+            ]
+        if capsules is None:
+            capsules = []
+        if folders is None:
+            folders = []
 
         textures: CaseInsensitiveDict[TPC | None] = CaseInsensitiveDict()
         texture_types = [ResourceType.TPC, ResourceType.TGA]
@@ -1125,22 +1129,18 @@ class Installation:
         -------
             A dictionary mapping a case-insensitive string to a bytes object or None.
         """
-        capsules = capsules or []
-        folders = folders or []
-
-        order = (
-            order
-            if order is not None
-            else (
-                [
-                    SearchLocation.CUSTOM_FOLDERS,
-                    SearchLocation.OVERRIDE,
-                    SearchLocation.CUSTOM_MODULES,
-                    SearchLocation.SOUND,
-                    SearchLocation.CHITIN,
-                ]
-            )
-        )
+        if order is None:
+            order = [
+                SearchLocation.CUSTOM_FOLDERS,
+                SearchLocation.OVERRIDE,
+                SearchLocation.CUSTOM_MODULES,
+                SearchLocation.SOUND,
+                SearchLocation.CHITIN,
+            ]
+        if capsules is None:
+            capsules = []
+        if folders is None:
+            folders = []
 
         sounds: CaseInsensitiveDict[bytes | None] = CaseInsensitiveDict[Optional[bytes]]()
         texture_types = [ResourceType.WAV, ResourceType.MP3]
@@ -1242,11 +1242,18 @@ class Installation:
         """
         stringrefs = [locstring.stringref for locstring in queries]
         batch = self.talktable().batch(stringrefs)
+        female_talktable_exists = self.female_talktable().path().exists()
+        female_batch = {}
+        if female_talktable_exists:
+            female_batch = self.female_talktable().batch(stringrefs)
 
         results: dict[LocalizedString, str] = {}
         for locstring in queries:
-            if locstring.stringref in batch and locstring.stringref != -1:
-                results[locstring] = batch[locstring.stringref].text
+            if locstring.stringref != -1:  # TODO: use gender information from locstring.
+                if locstring.stringref in batch:
+                    results[locstring] = batch[locstring.stringref].text
+                elif locstring.stringref in female_batch:
+                    results[locstring] = female_batch[locstring.stringref].text
             elif len(locstring):
                 for _language, _gender, text in locstring:
                     results[locstring] = text
@@ -1309,6 +1316,7 @@ class Installation:
                     return value
 
         name: str = ""
+        female_talktable_exists = self.female_talktable().path().exists()
         for module in self.modules_list():
             if root not in module:
                 continue
@@ -1323,7 +1331,9 @@ class Installation:
                 are: GFF = read_gff(capsule.resource(tag, ResourceType.ARE))
                 locstring = are.root.get_locstring("Name")
                 if locstring.stringref > 0:
-                    name = self._talktable.string(locstring.stringref) or ""  # TODO: why did I add 'or ""'?
+                    name = self.talktable().string(locstring.stringref) or ""  # TODO: why did I add 'or ""'?
+                    if not name and female_talktable_exists:  # check the female talktable if not found.
+                        name = self.female_talktable().string(locstring.stringref)
                 elif locstring.exists(Language.ENGLISH, Gender.MALE):
                     name = locstring.get(Language.ENGLISH, Gender.MALE) or ""
                 break
@@ -1400,7 +1410,7 @@ class Installation:
 
     @staticmethod
     def replace_module_extensions(module_filepath: os.PathLike | str) -> str:
-        module_filename: str = module_filepath.name if isinstance(module_filepath, PurePath) else PurePath(module_filepath).name
+        module_filename: str = PurePath(module_filepath).name
         result = re.sub(r"\.mod$", "", module_filename, flags=re.IGNORECASE)
         result = re.sub(r"\.erf$", "", result, flags=re.IGNORECASE)
         result = re.sub(r"\.rim$", "", result, flags=re.IGNORECASE)

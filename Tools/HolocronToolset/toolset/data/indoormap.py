@@ -222,6 +222,9 @@ class IndoorMap:
         """
         for filename, data in room.component.kit.always.items():
             resname, restype = ResourceIdentifier.from_path(filename)
+            if restype is ResourceType.INVALID:
+                msg = f"Invalid resource type: {restype.extension}"
+                raise TypeError(msg)
             self.mod.set_data(resname, restype, data)
 
     def process_model(self, room: IndoorMapRoom, installation):

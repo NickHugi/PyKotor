@@ -24,9 +24,7 @@ from pykotor.resource.type import ResourceType
 from pykotor.tools import model
 from pykotor.tools.misc import is_bif_file, is_rim_file
 from pykotor.utility.error_handling import assert_with_variable_trace
-from pykotor.utility.misc import is_debug_mode
 from pykotor.utility.path import Path, PurePath
-from toolset.__main__ import is_frozen
 from toolset.config import PROGRAM_VERSION, UPDATE_INFO_LINK
 from toolset.data.installation import HTInstallation
 from toolset.gui.dialogs.about import About
@@ -105,9 +103,9 @@ class ToolWindow(QMainWindow):
 
         self.dogObserver = None
         self.dogHandler = FolderObserver(self)
-        self.active: HTInstallation | None = None
+        self.active: HTInstallation = None
         self.settings: GlobalSettings = GlobalSettings()
-        self.installations = {}
+        self.installations: dict[str, HTInstallation] = {}
 
         from toolset.uic.windows.main import Ui_MainWindow
 
@@ -223,7 +221,7 @@ class ToolWindow(QMainWindow):
         # Some users may choose to have their RIM files for the same module merged into a single option for the
         # dropdown menu.
         if self.settings.joinRIMsTogether and is_rim_file(moduleFile):
-            resources += self.active.module_resources(PurePath(moduleFile).stem + "_s.rim")
+            resources += self.active.module_resources(f"{PurePath(moduleFile).stem}_s.rim")
 
         self.active.reload_module(moduleFile)
         self.ui.modulesWidget.setResources(resources)
@@ -298,25 +296,30 @@ class ToolWindow(QMainWindow):
     # endregion
 
     # region Events
-    def closeEvent(self, e: QCloseEvent) -> None:
+    def closeEvent(self, e: QCloseEvent | None) -> None:
         self.ui.texturesWidget.doTerminations()
 
-    def dropEvent(self, e: QtGui.QDropEvent) -> None:
+    def dropEvent(self, e: QtGui.QDropEvent | None) -> None:
         if e.mimeData().hasUrls():
             for url in e.mimeData().urls():
                 filepath = url.toLocalFile()
                 r_filepath = Path(filepath)
                 with r_filepath.open("rb") as file:
                     resref, restype = ResourceIdentifier.from_path(filepath)
+                    if restype is ResourceType.INVALID:
+                        msg = f"Invalid resource type: {restype.extension}"
+                        raise TypeError(msg)
                     data = file.read()
                     openResourceEditor(r_filepath, resref, restype, data, self.active, self)
 
-    def dragEnterEvent(self, e: QtGui.QDragEnterEvent) -> None:
+    def dragEnterEvent(self, e: QtGui.QDragEnterEvent | None) -> None:
         if e.mimeData().hasUrls():
             for url in e.mimeData().urls():
                 with suppress(Exception):
-                    # Call from_path method as it will throw an error if the file extension is not recognized.
-                    ResourceIdentifier.from_path(url.toLocalFile())
+                    _resref, restype = ResourceIdentifier.from_path(url.toLocalFile())
+                    if restype is ResourceType.INVALID:
+                        msg = f"Invalid resource type: {restype.extension}"
+                        raise TypeError(msg)
                     e.accept()
 
     # endregion
@@ -552,7 +555,7 @@ class ToolWindow(QMainWindow):
         # Some users may choose to merge their RIM files under one option in the Modules tab; if this is the case we
         # need to account for this.
         if self.settings.joinRIMsTogether and module.lower().endswith("_s.rim"):
-            module = module.lower()[:-6] + ".rim"
+            module = f"{module.lower()[:-6]}.rim"
 
         self.ui.modulesWidget.changeSection(module)
 
@@ -636,12 +639,9 @@ class ToolWindow(QMainWindow):
                     return HTInstallation(path, name, tsl, self)
 
                 self.settings.installations()[name].path = path
-                if is_debug_mode() and not is_frozen():
-                    self.installations[name] = task()
-                else:
-                    loader = AsyncLoader(self, "Loading Installation", task, "Failed to load installation")
-                    if loader.exec_():
-                        self.installations[name] = loader.value
+                loader = AsyncLoader(self, "Loading Installation", task, "Failed to load installation")
+                if loader.exec_():
+                    self.installations[name] = loader.value
 
             # If the data has been successfully been loaded, dump the data into the models
             if name in self.installations:
@@ -757,11 +757,9 @@ class ToolWindow(QMainWindow):
         for filepath in filepaths:
             r_filepath = Path(filepath)
             try:
-                resref, restype_ext = r_filepath.name.rsplit(".", 1)
-                restype = ResourceType.from_extension(restype_ext)
                 with r_filepath.open("rb") as file:
                     data = file.read()
-                openResourceEditor(filepath, resref, restype, data, self.active, self)
+                openResourceEditor(filepath, *ResourceIdentifier.from_path(r_filepath), data, self.active, self)
             except ValueError as e:
                 QMessageBox(QMessageBox.Critical, "Failed to open file", str(e)).exec_()
 
@@ -769,11 +767,11 @@ class ToolWindow(QMainWindow):
 
 
 class FolderObserver(FileSystemEventHandler):
-    def __init__(self, window: ToolWindow):
-        self.window = window
-        self.lastModified = datetime.now(tz=timezone.utc).astimezone()
+    def __init__(self, window: ToolWindow) -> None:
+        self.window: ToolWindow = window
+        self.lastModified: datetime = datetime.now(tz=timezone.utc).astimezone()
 
-    def on_any_event(self, event):
+    def on_any_event(self, event) -> None:
         rightnow: datetime = datetime.now(tz=timezone.utc).astimezone()
         if rightnow - self.lastModified < timedelta(seconds=1):
             return

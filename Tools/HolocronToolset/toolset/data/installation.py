@@ -153,10 +153,7 @@ class HTInstallation(Installation):
         - Filter names not already in cache
         - Loop through remaining names and cache textures from sources.
         """
-        if reload:
-            queries = list(names)
-        else:
-            queries = [name for name in names if name not in self._cache2da]
+        queries = list(names) if reload else [name for name in names if name not in self._cache2da]
 
         if not queries:
             return

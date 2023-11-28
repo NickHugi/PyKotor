@@ -6,19 +6,19 @@ import ctypes
 import json
 import os
 import pathlib
-import shutil
 import sys
 import tkinter as tk
 import traceback
 import webbrowser
 from argparse import ArgumentParser, Namespace
-from configparser import ConfigParser
 from datetime import datetime, timedelta, timezone
 from enum import IntEnum
 from threading import Thread
 from tkinter import filedialog, messagebox, ttk
 from tkinter import font as tkfont
 from typing import TYPE_CHECKING, NoReturn
+
+from pykotor.tslpatcher.config import PatcherConfig
 
 if getattr(sys, "frozen", False) is False:
     pykotor_path = pathlib.Path(__file__).parents[2] / "pykotor"
@@ -28,19 +28,23 @@ if getattr(sys, "frozen", False) is False:
             sys.path.remove(working_dir)
         sys.path.insert(0, working_dir)
 
-from pykotor.common.misc import CaseInsensitiveDict, Game
+from pykotor.common.misc import Game
 from pykotor.tools.path import CaseAwarePath, find_kotor_paths_from_default
-from pykotor.tslpatcher.config import ModInstaller, PatcherNamespace
 from pykotor.tslpatcher.logger import PatchLogger
+from pykotor.tslpatcher.patcher import ModInstaller
 from pykotor.tslpatcher.reader import ConfigReader, NamespaceReader
 from pykotor.utility.error_handling import universal_simplify_exception
 from pykotor.utility.path import Path
 from pykotor.utility.string import striprtf
+from tools.holopatcher.tooltip import ToolTip
+from tools.holopatcher.uninstall_mod import ModUninstaller
 
 if TYPE_CHECKING:
     from io import TextIOWrapper
 
-CURRENT_VERSION: tuple[int, ...] = (1, 3)
+    from pykotor.tslpatcher.namespaces import PatcherNamespace
+
+CURRENT_VERSION: tuple[int, ...] = (1, 4, 1)
 
 
 class ExitCode(IntEnum):
@@ -109,39 +113,6 @@ def parse_args() -> Namespace:
 
     return kwargs
 
-class ToolTip:
-    def __init__(self, widget, text):
-        self.widget = widget
-        self.text = text
-        self.tip_window = None
-        self.id = None
-        self.x = self.y = 0
-        self.widget.bind("<Enter>", self.show_tip)
-        self.widget.bind("<Leave>", self.hide_tip)
-
-    def show_tip(self, event=None):
-        """Display text in a tooltip window."""
-        text = self.text().strip()
-        if not text:
-            return
-        x, y, _, _ = self.widget.bbox("insert")
-        x += self.widget.winfo_rootx() + 25
-        y += self.widget.winfo_rooty() + 20
-        self.tip_window = tk.Toplevel(self.widget)
-        self.tip_window.wm_overrideredirect(boolean=True)
-        self.tip_window.wm_geometry(f"+{x}+{y}")
-        label = tk.Label(self.tip_window, text=text, justify=tk.LEFT,
-                         background="#ffffff", relief=tk.SOLID, borderwidth=1,
-                         font=("tahoma", "8", "normal"))
-        label.pack(ipadx=1)
-
-    def hide_tip(self, event=None):
-        """Destroy the tooltip window."""
-        tw = self.tip_window
-        self.tip_window = None
-        if tw:
-            tw.destroy()
-
 class App(tk.Tk):
     def __init__(self):
         super().__init__()
@@ -159,7 +130,7 @@ class App(tk.Tk):
         self.protocol("WM_DELETE_WINDOW", self.handle_exit_button)
 
         cmdline_args = parse_args()
-        self.open_mod(cmdline_args.tslpatchdata or CaseAwarePath.cwd())
+        self.open_mod(cmdline_args.tslpatchdata or Path.cwd())
         self.handle_commandline(cmdline_args)
 
     def initialize_logger(self):
@@ -194,7 +165,7 @@ class App(tk.Tk):
         discord_menu.add_command(label="DeadlyStream", command=self.open_deadlystream_discord)
         discord_menu.add_command(label="r/kotor", command=self.open_kotor_discord)
 
-    def initialize_ui_controls(self):
+    def initialize_ui_controls(self) -> None:
         # Use grid layout for main window
         self.grid_rowconfigure(1, weight=1)
         self.grid_columnconfigure(0, weight=1)
@@ -255,7 +226,7 @@ class App(tk.Tk):
         self.exit_button.pack(side="left", padx=5, pady=5)
 
         self.uninstall_button = ttk.Button(bottom_frame, text="Uninstall", command=self.uninstall_selected_mod)
-        self.uninstall_button.pack(side="right", padx=5, pady=5)
+        #self.uninstall_button.pack(side="right", padx=5, pady=5)
 
         self.install_button = ttk.Button(bottom_frame, text="Install", command=self.begin_install)
         self.install_button.pack(side="right", padx=5, pady=5)
@@ -439,99 +410,8 @@ class App(tk.Tk):
                 f"Could not find backup folder '{backup_parent_folder}'{os.linesep*2}Are you sure the mod is installed?",
             )
             return
-
         self._clear_description_textbox()
-        sorted_backup_folders: list[tuple[Path, datetime]] = []
-        for folder in backup_parent_folder.iterdir():
-            try:
-                dt = datetime.strptime(folder.name, "%Y-%m-%d_%H.%M.%S").astimezone()
-                self.write_log(f"Found backup '{folder.name}'")
-                sorted_backup_folders.append((folder, dt))
-            except ValueError:  # noqa: PERF203
-                if folder.name.strip():
-                    self.write_log(f"Ignoring directory '{folder.name}' because it is not timestamped as '%Y-%m-%d_%H.%M.%S'")
-
-        if not sorted_backup_folders:
-            messagebox.showerror(
-                "No backups found!",
-                f"No backups found at '{backup_parent_folder}'!{os.linesep}HoloPatcher cannot uninstall TSLPatcher.exe installations.",
-            )
-            return
-        sorted_backup_folders.sort(key=lambda x: x[1], reverse=True)
-        most_recent_backup_folder: Path = backup_parent_folder / str(sorted_backup_folders[0][0])
-        self.write_log(f"Using backup folder '{most_recent_backup_folder}'")
-        delete_list_file = most_recent_backup_folder / "remove these files.txt"
-        existing_files = set()
-        line: str
-        if delete_list_file.exists():
-            missing_files = False
-            with delete_list_file.open("r") as f:
-                for line in f:
-                    line = line.strip()  # noqa: PLW2901
-
-                    if line:
-                        if Path(line).is_file():
-                            existing_files.add(line)
-                        else:
-                            missing_files = True
-                            print(f"ERROR! {line} no longer exists!")
-            if missing_files and not messagebox.askyesno(
-                    "Backup out of date or mismatched",
-                    (
-                        f"This backup doesn't match your current KOTOR installation. Files are missing/changed in your KOTOR install.{os.linesep}"
-                        f"It is important that you uninstall all mods in their installed order when utilizing this feature.{os.linesep}"
-                        f"Also ensure you selected the right mod, and the right KOTOR folder.{os.linesep}"
-                        "Continue anyway?"
-                    ),
-            ):
-                return
-        all_items_in_backup = list(Path(most_recent_backup_folder).rglob("*"))
-        files_in_backup: list[Path] = [item for item in all_items_in_backup if item.is_file()]
-        folder_count: int = len(all_items_in_backup) - len(files_in_backup)
-
-        if len(files_in_backup) < 6:  # noqa: PLR2004[6 represents a small number of files to display]
-            for item in files_in_backup:
-                self.write_log(f"Would restore file '{item.relative_to(most_recent_backup_folder)!s}'")
-        if not messagebox.askyesno(
-            "Confirmation",
-            f"Really uninstall {len(existing_files)} files and restore the most recent backup (containing {len(files_in_backup)} files and {folder_count} folders)?",
-        ):
-            return
-        deleted_count = 0
-
-        try:
-            for file in existing_files:
-                file_path = Path(file)
-                if file_path.exists():
-                    file_path.unlink()
-                    self.write_log(f"Removed {file}...")
-                    deleted_count += 1
-            for file_path in files_in_backup:
-                destination_path = destination_folder / file_path.relative_to(most_recent_backup_folder)
-                destination_path.parent.mkdir(parents=True, exist_ok=True)
-                shutil.copy(file_path, destination_path)
-                self.write_log(f"Restoring backup of '{file_path.name}' to '{destination_path.relative_to(destination_folder.parent)}'...")
-        except Exception as e:  # noqa: BLE001
-            error_name, msg = universal_simplify_exception(e)
-            messagebox.showerror(
-                error_name,
-                f"Failed to restore backup because of exception:{os.linesep*2}{msg}",
-            )
-            return
-        while messagebox.askyesno(
-            "Uninstall completed!",
-            f"Deleted {deleted_count} files and successfully restored backup {most_recent_backup_folder.name}{os.linesep*2}"
-            f"Would you like to delete the backup {most_recent_backup_folder.name} now that it's been restored?",
-        ):
-            try:
-                shutil.rmtree(most_recent_backup_folder)
-                self.write_log(f"Deleted restored backup '{most_recent_backup_folder.name}'")
-                break
-            except PermissionError:
-                messagebox.showerror(
-                    "Permission Error",
-                    "Unable to delete the restored backup due to permission issues. Please try again.",
-                )
+        ModUninstaller(backup_parent_folder, Path(self.gamepaths.get()), self.logger)
 
     def handle_exit_button(self) -> None:
         """Handle exit button click during installation
@@ -573,7 +453,7 @@ class App(tk.Tk):
         namespace_option: PatcherNamespace | None = next((x for x in self.namespaces if x.name == self.namespaces_combobox.get()), None)
         return namespace_option.description if namespace_option else ""
 
-    def on_namespace_option_chosen(self, event: tk.Event) -> None:
+    def on_namespace_option_chosen(self, event: tk.Event, config_reader: ConfigReader | None = None) -> None:
         """Handles the namespace option being chosen from the combobox
         Args:
             self: The PatcherWindow instance
@@ -588,9 +468,9 @@ class App(tk.Tk):
         try:
             namespace_option: PatcherNamespace = next(x for x in self.namespaces if x.name == self.namespaces_combobox.get())
             changes_ini_path = CaseAwarePath(self.mod_path, "tslpatchdata", namespace_option.changes_filepath())
-            self.reader = ConfigReader.from_filepath(changes_ini_path)
-            self.reader.load_settings()
-            game_number: int | None = self.reader.config.game_number
+            reader: ConfigReader = config_reader or ConfigReader.from_filepath(changes_ini_path)
+            reader.load_settings()
+            game_number: int | None = reader.config.game_number
             if game_number:
                 self._handle_gamepaths_with_mod(game_number)
             info_rtf = CaseAwarePath(self.mod_path, "tslpatchdata", namespace_option.rtf_filepath())
@@ -607,6 +487,110 @@ class App(tk.Tk):
             )
         else:
             self.after(10, lambda: self.move_cursor_to_end(self.namespaces_combobox))
+
+    def load_namespace(self, namespaces: list[PatcherNamespace], config_reader: ConfigReader | None = None) -> None:
+        """Loads namespaces into the UI
+        Args:
+            namespaces: List of PatcherNamespace objects
+            config_reader: ConfigReader object or None
+        Returns:
+            None: Does not return anything
+        - Populates the namespaces combobox with the provided namespaces
+        - Sets the first namespace as the selected option
+        - Stores the namespaces for later use
+        - Calls on_namespace_option_chosen to load initial config.
+        """
+        self.namespaces_combobox["values"] = namespaces
+        self.namespaces_combobox.set(self.namespaces_combobox["values"][0])
+        self.namespaces = namespaces
+        self.on_namespace_option_chosen(tk.Event(), config_reader)
+
+    def open_mod(self, default_directory_path_str: os.PathLike | str | None = None) -> None:
+        """Opens a mod directory.
+
+        Args:
+        ----
+            default_directory_path_str: The default directory path to open as a string or None. This is
+                relevant when HoloPatcher is placed next to a 'tslpatchdata' folder containing the patcher files.
+                This is also relevant when using the CLI.
+
+        Processing Logic:
+        - Gets the directory path from the argument or opens a file dialog
+        - Loads namespaces from namespaces.ini or changes from changes.ini
+            - If a changes.ini was loaded, build it as a single entry in a namespace.
+        - Checks permissions of the mod folder
+        - Handles errors opening the mod.
+        """
+        try:
+            directory_path_str = default_directory_path_str or filedialog.askdirectory()
+            if not directory_path_str:
+                return
+
+            self.mod_path = directory_path_str
+
+            tslpatchdata_path = CaseAwarePath(directory_path_str, "tslpatchdata")
+            # handle when a user selects 'tslpatchdata' instead of mod root
+            if not tslpatchdata_path.exists() and tslpatchdata_path.parent.name.lower() == "tslpatchdata":
+                tslpatchdata_path = tslpatchdata_path.parent
+                self.mod_path = str(tslpatchdata_path.parent)
+
+            namespace_path: CaseAwarePath = tslpatchdata_path / "namespaces.ini"
+            changes_path: CaseAwarePath = tslpatchdata_path / "changes.ini"
+
+            if namespace_path.exists():
+                self.load_namespace(NamespaceReader.from_filepath(namespace_path))
+                if default_directory_path_str:
+                    self.browse_button.place_forget()
+            elif changes_path.exists():
+                config_reader: ConfigReader = ConfigReader.from_filepath(changes_path)
+                namespaces: list[PatcherNamespace] = [config_reader.config.as_namespace(changes_path)]
+                self.load_namespace(namespaces, config_reader)
+                if default_directory_path_str:
+                    self.browse_button.place_forget()
+            else:
+                self.mod_path = ""
+                if not default_directory_path_str:  # don't show the error if the cwd was attempted
+                    messagebox.showerror("Error", "Could not find a mod located at the given folder.")
+                return
+
+            self.check_access(tslpatchdata_path, recurse=True)
+        except Exception as e:  # noqa: BLE001
+            error_name, msg = universal_simplify_exception(e)
+            messagebox.showerror(
+                error_name,
+                f"An unexpected error occurred while loading the mod info.{os.linesep*2}{msg}",
+            )
+
+    def open_kotor(self, default_kotor_dir_str=None) -> None:
+        """Opens the KOTOR directory.
+
+        Args:
+        ----
+            default_kotor_dir_str: The default KOTOR directory path as a string. This is only relevant when using the CLI.
+
+        Processing Logic:
+            - Try to get the directory path from the default or by opening a file dialog
+            - Check access permissions for the directory
+            - Set the gamepaths config value and add path to list if not already present
+            - Move cursor after a delay to end of dropdown
+        """
+        try:
+            directory_path_str = default_kotor_dir_str or filedialog.askdirectory()
+            if not directory_path_str:
+                return
+            directory = CaseAwarePath(directory_path_str)
+            self.check_access(directory)
+            directory_str = str(directory)
+            self.gamepaths.set(str(directory))
+            if directory_str not in self.gamepaths["values"]:
+                self.gamepaths["values"] = (*self.gamepaths["values"], directory_str)
+            self.after(10, self.move_cursor_to_end)
+        except Exception as e:  # noqa: BLE001
+            error_name, msg = universal_simplify_exception(e)
+            messagebox.showerror(
+                error_name,
+                f"An unexpected error occurred while loading the game directory.{os.linesep*2}{msg}",
+            )
 
     def check_access(self, directory: Path, recurse=False) -> bool:
         """Check access to a directory
@@ -645,93 +629,6 @@ class App(tk.Tk):
                 ),
             )
         return True
-
-    def open_mod(self, default_directory_path_str: os.PathLike | str | None = None) -> None:
-        """Opens a mod directory.
-
-        Args:
-        ----
-            default_directory_path_str: The default directory path to open as a string or None. This is
-                relevant when HoloPatcher is placed next to a 'tslpatchdata' folder containing the patcher files.
-                This is also relevant when using the CLI.
-
-        Processing Logic:
-        - Gets the directory path from the argument or opens a file dialog
-        - Loads namespaces from namespaces.ini or changes from changes.ini
-            - If a changes.ini was loaded, build it as a single entry in a namespace.
-        - Checks permissions of the mod folder
-        - Handles errors opening the mod.
-        """
-        try:
-            directory_path_str = default_directory_path_str or filedialog.askdirectory()
-            if not directory_path_str:
-                return
-
-            self.mod_path = directory_path_str
-
-            tslpatchdata_path = CaseAwarePath(directory_path_str, "tslpatchdata")
-            # handle when a user selects 'tslpatchdata' instead of mod root
-            if not tslpatchdata_path.exists() and tslpatchdata_path.parent.name.lower() == "tslpatchdata":
-                tslpatchdata_path = tslpatchdata_path.parent
-                self.mod_path = str(tslpatchdata_path.parent)
-
-            namespace_path: CaseAwarePath = tslpatchdata_path / "namespaces.ini"
-            changes_path: CaseAwarePath = tslpatchdata_path / "changes.ini"
-
-            if namespace_path.exists():
-                namespaces = NamespaceReader.from_filepath(namespace_path)
-                self.load_namespace(namespaces)
-                if default_directory_path_str:
-                    self.browse_button.place_forget()
-            elif changes_path.exists():
-                namespaces = [self.build_changes_as_namespace(changes_path)]
-                self.load_namespace(namespaces)
-                if default_directory_path_str:
-                    self.browse_button.place_forget()
-            else:
-                self.mod_path = ""
-                if not default_directory_path_str:  # don't show the error if the cwd was attempted
-                    messagebox.showerror("Error", "Could not find a mod located at the given folder.")
-                return
-
-            self.check_access(tslpatchdata_path, recurse=True)
-        except Exception as e:  # noqa: BLE001
-            error_name, msg = universal_simplify_exception(e)
-            messagebox.showerror(
-                error_name,
-                f"An unexpected error occurred while loading mod info.{os.linesep*2}{msg}",
-            )
-
-    def open_kotor(self, default_kotor_dir_str=None) -> None:
-        """Opens the KOTOR directory.
-
-        Args:
-        ----
-            default_kotor_dir_str: The default KOTOR directory path as a string. This is only relevant when using the CLI.
-
-        Processing Logic:
-            - Try to get the directory path from the default or by opening a file dialog
-            - Check access permissions for the directory
-            - Set the gamepaths config value and add path to list if not already present
-            - Move cursor after a delay to end of dropdown
-        """
-        try:
-            directory_path_str = default_kotor_dir_str or filedialog.askdirectory()
-            if not directory_path_str:
-                return
-            directory = CaseAwarePath(directory_path_str)
-            self.check_access(directory)
-            directory_str = str(directory)
-            self.gamepaths.set(str(directory))
-            if directory_str not in self.gamepaths["values"]:
-                self.gamepaths["values"] = (*self.gamepaths["values"], directory_str)
-            self.after(10, self.move_cursor_to_end)
-        except Exception as e:  # noqa: BLE001
-            error_name, msg = universal_simplify_exception(e)
-            messagebox.showerror(
-                error_name,
-                f"An unexpected error occurred while loading the game directory.{os.linesep*2}{msg}",
-            )
 
     def preinstall_validate_chosen(self) -> bool:
         """Validates prerequisites for starting an install.
@@ -942,62 +839,6 @@ class App(tk.Tk):
         self.set_active_install(install_running=False)
         raise
 
-    def build_changes_as_namespace(self, filepath: CaseAwarePath) -> PatcherNamespace:
-        """Builds a changes.ini file as PatcherNamespace object.
-        When a changes.ini is loaded when no namespaces.ini is created, we create a namespace internally with this single entry.
-
-        Args:
-        ----
-            filepath: CaseAwarePath - The path to the changes.ini file
-        Returns:
-            PatcherNamespace - The PatcherNamespace object representing the parsed changes.ini file
-        Processing Logic:
-        - Opens the changes.ini file and parses it using ConfigParser
-        - Sets the ini_filename and info_filename attributes on the PatcherNamespace
-        - Looks for a "settings" section and parses its values into a CaseInsensitiveDict
-        - Gets the "WindowCaption" value from the settings dict and sets it as the name attribute
-        - Returns the populated PatcherNamespace object.
-        """
-        with filepath.open() as file:
-            ini = ConfigParser(
-                delimiters=("="),
-                allow_no_value=True,
-                strict=False,
-                interpolation=None,
-            )
-            # use case sensitive keys
-            ini.optionxform = lambda optionstr: optionstr  # type: ignore[method-assign]
-            ini.read_string(file.read())
-
-            namespace = PatcherNamespace()
-            namespace.ini_filename = "changes.ini"
-            namespace.info_filename = "info.rtf"
-            settings_section = next(
-                (section for section in ini.sections() if section.lower() == "settings"),
-                None,
-            )
-            if not settings_section:
-                namespace.name = "<< Untitled Mod Loaded >>"
-                return namespace
-            settings_ini = CaseInsensitiveDict(ini[settings_section].items())
-            namespace.name = settings_ini.get("WindowCaption", "<< Untitled Mod Loaded >>")
-
-        return namespace
-
-    def load_namespace(self, namespaces: list[PatcherNamespace]) -> None:
-        """Load namespaces into the UI
-        Args:
-            namespaces: A list of PatcherNamespace objects
-        - Populate the namespaces combobox with the provided namespaces
-        - Set the first namespace as the selected option
-        - Store the namespaces on the class
-        - Trigger the callback for namespace selection.
-        """
-        self.namespaces_combobox["values"] = namespaces
-        self.namespaces_combobox.set(self.namespaces_combobox["values"][0])
-        self.namespaces = namespaces
-        self.on_namespace_option_chosen(None)
-
     def _handle_gamepaths_with_mod(self, game_number) -> None:
         """Determines what shows up in the gamepaths combobox, based on the LookupGameNumber setting."""
         game = Game(game_number)
@@ -1038,7 +879,6 @@ class App(tk.Tk):
         self.description_text.config(state=tk.DISABLED)
 
 
-#
 def custom_excepthook(exc_type, exc_value, exc_traceback) -> None:
     """Custom exception hook to display errors in message box.
     When pyinstaller compiled in --console mode, this will match the same error message behavior of --noconsole.

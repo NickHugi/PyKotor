@@ -8,7 +8,7 @@ from pykotor.resource.formats.erf import ERF, ERFType, read_erf, write_erf
 from pykotor.resource.formats.rim import RIM, read_rim, write_rim
 from pykotor.resource.type import ResourceType
 from pykotor.tools.misc import is_capsule_file, is_erf_or_mod_file, is_rim_file
-from pykotor.utility.path import Path
+from pykotor.utility.path import BasePath, Path
 
 if TYPE_CHECKING:
     import os
@@ -39,7 +39,7 @@ class Capsule:
             - Initialize self._path and self._resources attributes
             - Reload resources from file.
         """
-        self._path: Path = path if isinstance(path, Path) else Path(path)
+        self._path: Path = path if isinstance(path, BasePath) else Path(path)  # type: ignore[assignment]
         self._resources: list[FileResource] = []
 
         str_path = str(self._path)
@@ -48,7 +48,7 @@ class Capsule:
             msg = f"Invalid file extension in capsule filepath '{str_path}'."
             raise ValueError(msg)
 
-        if create_nonexisting and not self._path.exists():
+        if create_nonexisting and not self._path.exists():  # type: ignore[reportGeneralTypeIssues]
             if is_rim_file(str_path):
                 write_rim(RIM(), self._path)
             elif is_erf_or_mod_file(str_path):

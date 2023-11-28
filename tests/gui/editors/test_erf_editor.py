@@ -18,7 +18,7 @@ if getattr(sys, "frozen", False) is False:
         if working_dir in sys.path:
             sys.path.remove(working_dir)
         sys.path.insert(0, working_dir)
-    toolset_path = pathlib.Path(__file__).parents[3] / "Tools" / "HolocronToolset" / "toolset"
+    toolset_path = pathlib.Path(__file__).parents[3] / "tools" / "HolocronToolset" / "toolset"
     if toolset_path.joinpath("__init__.py").exists():
         working_dir = str(toolset_path.parent)
         if working_dir in sys.path:
