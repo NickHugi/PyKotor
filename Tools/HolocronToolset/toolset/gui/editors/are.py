@@ -8,7 +8,7 @@ from pykotor.extract.installation import SearchLocation
 
 from pykotor.extract.file import ResourceIdentifier
 
-from pykotor.common.geometry import Vector2
+from pykotor.common.geometry import Vector2, SurfaceMaterial
 from pykotor.common.misc import Color, ResRef
 from pykotor.resource.formats.bwm import read_bwm
 from pykotor.resource.formats.gff import write_gff
@@ -49,6 +49,7 @@ class AREEditor(Editor):
         self.resize(400, 250)
 
         self._are: ARE = ARE()
+        self._minimap = None
 
         from toolset.uic.editors.are import Ui_MainWindow
 
@@ -62,10 +63,29 @@ class AREEditor(Editor):
         self.ui.dirtColor2Edit.allowAlpha = True
         self.ui.dirtColor3Edit.allowAlpha = True
 
+        self.ui.minimapRenderer.defaultMaterialColor = QColor(0, 0, 255, 127)
+        self.ui.minimapRenderer.materialColors[SurfaceMaterial.NON_WALK] = QColor(255, 0, 0, 80)
+        self.ui.minimapRenderer.materialColors[SurfaceMaterial.NON_WALK_GRASS] = QColor(255, 0, 0, 80)
+        self.ui.minimapRenderer.materialColors[SurfaceMaterial.UNDEFINED] = QColor(255, 0, 0, 80)
+        self.ui.minimapRenderer.materialColors[SurfaceMaterial.OBSCURING] = QColor(255, 0, 0, 80)
+        self.ui.minimapRenderer.hideWalkmeshEdges = True
+        self.ui.minimapRenderer.highlightBoundaries = False
+        self.ui.minimapRenderer.highlightOnHover = False
+
         self.new()
 
     def _setupSignals(self) -> None:
         self.ui.tagGenerateButton.clicked.connect(self.generateTag)
+
+        self.ui.mapAxisSelect.currentIndexChanged.connect(self.redoMinimap)
+        self.ui.mapWorldX1Spin.valueChanged.connect(self.redoMinimap)
+        self.ui.mapWorldX2Spin.valueChanged.connect(self.redoMinimap)
+        self.ui.mapWorldY2Spin.valueChanged.connect(self.redoMinimap)
+        self.ui.mapWorldY2Spin.valueChanged.connect(self.redoMinimap)
+        self.ui.mapImageX1Spin.valueChanged.connect(self.redoMinimap)
+        self.ui.mapImageX2Spin.valueChanged.connect(self.redoMinimap)
+        self.ui.mapImageY1Spin.valueChanged.connect(self.redoMinimap)
+        self.ui.mapImageY2Spin.valueChanged.connect(self.redoMinimap)
 
     def _setupInstallation(self, installation: HTInstallation) -> None:
         """Set up installation details
@@ -129,8 +149,8 @@ class AREEditor(Editor):
                 SearchLocation.TEXTURES_GUI,
                 SearchLocation.MODULES
             ]
-            minimap = self._installation.texture("lbl_map" + self._resref, order)
-            self.ui.minimapRenderer.setMinimap(are, minimap)
+            self._minimap = self._installation.texture("lbl_map" + self._resref, order)
+            self.ui.minimapRenderer.setMinimap(are, self._minimap)
             self.ui.minimapRenderer.centerCamera()
 
         # Basic
@@ -220,7 +240,14 @@ class AREEditor(Editor):
             - Writes ARE data to bytearray
             - Returns ARE data and empty log
         """
-        are = self._are
+        self._are = self._buildARE()
+
+        data = bytearray()
+        write_gff(dismantle_are(self._are), data)
+        return data, b""
+
+    def _buildARE(self) -> ARE:
+        are = ARE()
 
         # Basic
         are.name = self.ui.nameEdit.locstring()
@@ -291,13 +318,16 @@ class AREEditor(Editor):
         # Comments
         are.comment = self.ui.commentsEdit.toPlainText()
 
-        data = bytearray()
-        write_gff(dismantle_are(self._are), data)
-        return data, b""
+        return are
 
     def new(self) -> None:
         super().new()
         self._loadARE(ARE())
+
+    def redoMinimap(self) -> None:
+        if self._minimap:
+            are = self._buildARE()
+            self.ui.minimapRenderer.setMinimap(are, self._minimap)
 
     def changeColor(self, colorSpin: LongSpinBox) -> None:
         """Changes the color selection.

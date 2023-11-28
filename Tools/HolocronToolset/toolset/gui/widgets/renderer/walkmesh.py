@@ -189,6 +189,7 @@ class WalkmeshRenderer(QWidget):
         self.hideCameras: bool = True
 
         self.materialColors: dict[SurfaceMaterial, int] = {}
+        self.defaultMaterialColor: QColor = QColor(255, 0, 255)
 
         self._keysDown: set[int] = set()
         self._mouseDown: set[int] = set()
@@ -382,7 +383,7 @@ class WalkmeshRenderer(QWidget):
         -------
             The color that represents a particular material.
         """
-        return self.materialColors[material] if material in self.materialColors else QColor(255, 0, 255)  # TODO: fix the typing - an int is not the same as a QColor object
+        return self.materialColors[material] if material in self.materialColors else self.defaultMaterialColor  # TODO: fix the typing - an int is not the same as a QColor object
 
     def instancesUnderMouse(self) -> list[GITInstance]:
         return self._instancesUnderMouse
