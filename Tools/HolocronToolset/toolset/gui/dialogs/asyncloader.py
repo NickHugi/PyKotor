@@ -9,7 +9,7 @@ from PyQt5.QtWidgets import QDialog, QLabel, QMessageBox, QProgressBar, QVBoxLay
 from pykotor.utility.error_handling import format_exception_with_variables
 from pykotor.utility.misc import is_debug_mode
 from pykotor.utility.path import Path
-from tools.HolocronToolset.toolset.__main__ import is_frozen
+from toolset.__main__ import is_frozen
 
 if TYPE_CHECKING:
     from PyQt5.QtGui import QCloseEvent
