@@ -30,7 +30,24 @@ class TestWriteBitmapFont(unittest.TestCase):
         #self.output_path.unlink()
         pass
     def test_bitmap_font(self):
-        write_bitmap_font(self.output_path / "test_font.tga", FONT_PATH, (1024,1024), Language.ENGLISH)
+        #write_bitmap_font(self.output_path / "fnt_creditsb", FONT_PATH, (256, 256), Language.ENGLISH)
+        #write_bitmap_font(self.output_path / "fnt_creditsb", FONT_PATH, (512, 512), Language.ENGLISH)
+        #write_bitmap_font(self.output_path / "fnt_creditsb", FONT_PATH, (1024, 1024), Language.ENGLISH)
+        #write_bitmap_font(self.output_path / "fnt_creditsb", FONT_PATH, (2048, 2048), Language.ENGLISH)
+        #write_bitmap_font(self.output_path / "fnt_creditsb", FONT_PATH, (4096, 4096), Language.ENGLISH)
+        #write_bitmap_font(self.output_path / "fnt_creditsb", FONT_PATH, (256, 512), Language.ENGLISH)
+        #write_bitmap_font(self.output_path / "fnt_creditsb", FONT_PATH, (512, 1024), Language.ENGLISH)
+        #write_bitmap_font(self.output_path / "fnt_creditsb", FONT_PATH, (1024, 2048), Language.ENGLISH)
+        write_bitmap_font(self.output_path / "fnt_creditsb", FONT_PATH, (2048, 4096), Language.ENGLISH)
+        #write_bitmap_font(self.output_path / "fnt_creditsb", FONT_PATH, (128, 512), Language.ENGLISH)
+        #write_bitmap_font(self.output_path / "fnt_creditsb", FONT_PATH, (256, 1024), Language.ENGLISH)
+        #write_bitmap_font(self.output_path / "fnt_creditsb", FONT_PATH, (512, 2048), Language.ENGLISH)
+        #write_bitmap_font(self.output_path / "fnt_creditsb", FONT_PATH, (1024, 4096), Language.ENGLISH)
+        #write_bitmap_font(self.output_path / "fnt_creditsb", FONT_PATH, (300, 300), Language.ENGLISH)
+        #write_bitmap_font(self.output_path / "fnt_creditsb", FONT_PATH, (600, 600), Language.ENGLISH)
+        #write_bitmap_font(self.output_path / "fnt_creditsb", FONT_PATH, (1200, 1200), Language.ENGLISH)
+        #write_bitmap_font(self.output_path / "fnt_creditsb", FONT_PATH, (2400, 2400), Language.ENGLISH)
+        #write_bitmap_font(self.output_path / "fnt_creditsb", FONT_PATH, (4800, 4800), Language.ENGLISH)
     def test_bitmap_font_chinese(self):
         write_bitmap_font(self.output_path / "test_font_chinese.tga", CHINESE_FONT_PATH, (10240,10240), Language.CHINESE_SIMPLIFIED)
     def test_bitmap_font_thai(self):
