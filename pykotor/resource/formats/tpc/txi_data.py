@@ -131,10 +131,12 @@ def write_bitmap_fonts(
     resolution: tuple[int, int],
     lang: Language,
     draw_box=False,
+    custom_scaling = 1.0,
+    font_color=None,
 ) -> None:
     font_path, target_path = ((p if isinstance(p, BasePath) else Path(p)).resolve() for p in (font_path, target))  # type: ignore[reportGeneralTypeIssues]
     target_path.mkdir(parents=True, exist_ok=True)
-    default_font_names = [
+    default_font_names = [  # TODO: figure out which ones the game actually uses.
         "fnt_galahad14",  # Main menu stuff?
         "dialogfont10x10",
         "dialogfont10x10a",
@@ -161,6 +163,8 @@ def write_bitmap_fonts(
             resolution,
             lang,
             draw_box,
+            custom_scaling,
+            font_color,
         )
 
 def get_charset_from_encoding(encoding):
@@ -181,8 +185,10 @@ def write_bitmap_font(
     resolution: tuple[int, int],
     lang: Language,
     draw_boxes = True,
+    custom_scaling = 1.0,
+    font_color=None,
 ) -> None:
-    """Generates a bitmap font (TGA and TXI) from a TTF font file."""
+    """Generates a bitmap font (TGA and TXI) from a TTF font file. Note the default 'draw_boxes', none of these boxes show up in the game (just outside the coords)."""
     if any(resolution) == 0:
         msg = f"resolution must be nonzero, got {resolution}"
         raise ZeroDivisionError(msg)
@@ -243,9 +249,9 @@ def write_bitmap_font(
     adjusted_resolution = (resolution[0] + total_additional_height, resolution[1] + total_additional_height)
     res_const = adjusted_resolution[0] / 512
     txi_font_info.baselineheight = baseline_height / adjusted_resolution[1] / res_const
-    txi_font_info.texturewidth = adjusted_resolution[0] / 100 / res_const
+    txi_font_info.texturewidth = adjusted_resolution[0] / 100 / res_const * custom_scaling
     scaling_factor = 2 ** (math.log2(res_const) - 1)
-    txi_font_info.fontheight = max_char_height / adjusted_resolution[1] * txi_font_info.texturewidth / scaling_factor
+    txi_font_info.fontheight = max_char_height / adjusted_resolution[1] * txi_font_info.texturewidth / scaling_factor * custom_scaling
 
     # Create charset image with adjusted resolution
     charset_image = Image.new("RGBA", adjusted_resolution, (0, 0, 0, 0))
@@ -293,9 +299,9 @@ def write_bitmap_font(
 
         if char == "\n":
             # Adjust Y coordinates to move one cell downwards
-            draw.text((pixel_x1 + cell_width/2, pixel_y1 + cell_height - max_underhang_height), char, font=pil_font, fill=(255, 255, 255, 255))
+            draw.text((pixel_x1 + cell_width/2, pixel_y1 + cell_height - max_underhang_height), char, font=pil_font, fill=font_color or (255, 255, 255, 255))
         else:
-            draw.text((pixel_x1 + cell_width/2, pixel_y1 + cell_height - max_underhang_height), char, anchor="ms", font=pil_font, fill=(255, 255, 255, 255))
+            draw.text((pixel_x1 + cell_width/2, pixel_y1 + cell_height - max_underhang_height), char, anchor="ms", font=pil_font, fill=font_color or (255, 255, 255, 255))
 
         # Calculate center of the cell
         cell_center_x = pixel_x1 + cell_width / 2

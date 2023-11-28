@@ -746,7 +746,7 @@ class ToolWindow(QMainWindow):
                     file_format = ResourceType.TGA if self.ui.tpcDecompileCheckbox.isChecked() else ResourceType.TPC
                     extension = "tga" if file_format == ResourceType.TGA else "tpc"
                     write_tpc(tpc, folderpath.joinpath(f"{texture}.{extension}"), file_format)
-                except Exception:
+                except Exception:  # noqa: PERF203
                     loader.errors.append(ValueError(f"Could not find or extract tpc: '{texture}'"))
         except Exception:
             loader.errors.append(ValueError(f"Could not determine textures used in model: '{resource.resname()}'"))

@@ -18,7 +18,7 @@ if TYPE_CHECKING:
 BergamotTranslator = None
 TatoebaTranslator = None
 try:
-    from tools.k_batchpatcher.translate.deepl_scraper import deepl_tr
+    from translate.deepl_scraper import deepl_tr
 except ImportError:
     deepl_tr = None
 try:

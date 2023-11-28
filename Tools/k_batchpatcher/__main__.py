@@ -1,19 +1,20 @@
 from __future__ import annotations
 
-import argparse
 import concurrent.futures
-import cProfile
+from contextlib import suppress
 import os
 import pathlib
+import platform
 import sys
 import tkinter as tk
+from tkinter import colorchooser
 import traceback
 from copy import deepcopy
 from io import StringIO
 from threading import Thread
 from tkinter import filedialog, messagebox, ttk
 from tkinter import font as tkfont
-from typing import TYPE_CHECKING, Any, Callable
+from typing import TYPE_CHECKING, Callable
 
 if getattr(sys, "frozen", False) is False:
     pykotor_path = pathlib.Path(__file__).parents[2] / "pykotor"
@@ -22,6 +23,8 @@ if getattr(sys, "frozen", False) is False:
             sys.path.remove(str(pykotor_path))
         sys.path.insert(0, str(pykotor_path.parent))
 
+
+from translate.language_translator import TranslationOption, Translator
 
 from pykotor.common.language import Language, LocalizedString
 from pykotor.common.stream import BinaryWriter
@@ -41,7 +44,6 @@ from pykotor.tools.misc import is_capsule_file
 from pykotor.tools.path import CaseAwarePath, find_kotor_paths_from_default
 from pykotor.tslpatcher.logger import PatchLogger
 from pykotor.utility.path import Path, PurePath, PureWindowsPath
-from tools.k_batchpatcher.translate.language_translator import TranslationOption, Translator
 
 if TYPE_CHECKING:
 
@@ -76,7 +78,9 @@ class Globals:
     def __init__(self) -> None:
         self.chosen_languages: list[Language] = []
         self.create_fonts: bool = False
+        self.custom_scaling: float = 1.0
         self.draw_bounds: bool = False
+        self.font_color: float
         self.font_path: Path
         self.install_running: bool = False
         self.install_thread: Thread
@@ -100,12 +104,51 @@ class Globals:
 
 SCRIPT_GLOBALS = Globals()
 
-def relative_path_from_to(src, dst) -> Path:
+def get_font_paths_linux() -> list[Path]:
+    font_dirs = [Path("/usr/share/fonts/"), Path("/usr/local/share/fonts/"), Path.home() / ".fonts"]
+    return [font for font_dir in font_dirs for font in font_dir.glob("**/*.ttf")]
+
+def get_font_paths_macos() -> list[Path]:
+    font_dirs = [Path("/Library/Fonts/"), Path("/System/Library/Fonts/"), Path.home() / "Library/Fonts"]
+    return [font for font_dir in font_dirs for font in font_dir.glob("**/*.ttf")]
+
+def get_font_paths_windows() -> list[Path]:
+    import winreg
+    font_registry_path = r"SOFTWARE\Microsoft\Windows NT\CurrentVersion\Fonts"
+    fonts_dir = Path("C:/Windows/Fonts")
+    font_paths = []
+
+    with winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, font_registry_path) as key:
+        for i in range(winreg.QueryInfoKey(key)[1]):  # Number of values in the key
+            value = winreg.EnumValue(key, i)
+            font_path: Path = fonts_dir / value[1]
+            if font_path.suffix.lower() == ".ttf":  # Filtering for .ttf files
+                font_paths.append(font_path)
+
+    return font_paths
+
+def get_font_paths() -> list[Path]:
+    with suppress(Exception):
+        os_str = platform.system()
+        if os_str == "Linux":
+            return get_font_paths_linux()
+        if os_str == "Darwin":
+            return get_font_paths_macos()
+        if os_str == "Windows":
+            return get_font_paths_windows()
+    msg = "Unsupported operating system"
+    raise NotImplementedError(msg)
+
+def relative_path_from_to(src: PurePath, dst: PurePath) -> Path:
     src_parts = list(src.parts)
     dst_parts = list(dst.parts)
 
     common_length = next(
-        (i for i, (src_part, dst_part) in enumerate(zip(src_parts, dst_parts)) if src_part != dst_part),
+        (
+            i
+            for i, (src_part, dst_part) in enumerate(zip(src_parts, dst_parts))
+            if src_part != dst_part
+        ),
         len(src_parts),
     )
     rel_parts = dst_parts[common_length:]
@@ -127,7 +170,7 @@ def log_output(*args, **kwargs) -> None:
         f.write(msg)
 
     # Print the captured output to console
-    print(*args, **kwargs)  # noqa: T201
+    #print(*args, **kwargs)  # noqa: T201
     SCRIPT_GLOBALS.patchlogger.add_note("\t".join(args))
 
 
@@ -228,7 +271,7 @@ def patch_resource(resource: FileResource) -> GFF | None:
                         translated_text = fix_encoding(translated_text, SCRIPT_GLOBALS.pytranslator.to_lang.get_encoding())
                         tlk.replace(strref, translated_text)
                         log_output(f"#{strref} Translated {original_text} --> {translated_text}")
-                except Exception as exc:
+                except Exception as exc:  # noqa: BLE001
                     log_output(f"tlk strref {strref} generated an exception: {exc!r}")
 
     if resource.restype().extension.lower() == "tlk" and SCRIPT_GLOBALS.translate and SCRIPT_GLOBALS.pytranslator:
@@ -456,6 +499,8 @@ def create_font_pack(lang: Language):
         (SCRIPT_GLOBALS.resolution, SCRIPT_GLOBALS.resolution),
         lang,
         SCRIPT_GLOBALS.draw_bounds,
+        SCRIPT_GLOBALS.custom_scaling,
+        font_color = SCRIPT_GLOBALS.font_color,
     )
 
 
@@ -468,6 +513,8 @@ def assign_to_globals(instance):
             SCRIPT_GLOBALS[attr] = bool(value.get())
         elif isinstance(value, tk.IntVar):
             SCRIPT_GLOBALS[attr] = int(value.get())
+        elif isinstance(value, tk.DoubleVar):
+            SCRIPT_GLOBALS[attr] = float(value.get())
         else:
             # Directly assign if it's not a tkinter variable
             SCRIPT_GLOBALS[attr] = value
@@ -486,6 +533,8 @@ class KOTORPatchingToolUI:
         self.create_fonts = tk.BooleanVar(value=SCRIPT_GLOBALS.create_fonts)
         self.font_path = tk.StringVar()
         self.resolution = tk.IntVar(value=SCRIPT_GLOBALS.resolution)
+        self.custom_scaling = tk.DoubleVar(value=SCRIPT_GLOBALS.custom_scaling)
+        self.font_color = tk.StringVar()
         self.draw_bounds = tk.BooleanVar(value=False)
 
         # Middle area for text and scrollbar
@@ -609,18 +658,34 @@ class KOTORPatchingToolUI:
 
         # Font Path
         ttk.Label(self.root, text="Font Path:").grid(row=row, column=0)
-        ttk.Entry(self.root, textvariable=self.font_path).grid(row=row, column=1)
+        ttk.Combobox(self.root, textvariable=self.font_path, values=[str(path_str) for path_str in get_font_paths()]).grid(row=row, column=1)
         ttk.Button(self.root, text="Browse", command=self.browse_font_path).grid(row=row, column=2)
         row += 1
 
-        # Draw bounds
-        ttk.Label(self.root, text="Draw bounds:").grid(row=row, column=0)
+        # Font - Draw Rectangles
+        ttk.Label(self.root, text="Draw borders:").grid(row=row, column=0)
         ttk.Checkbutton(self.root, variable=self.draw_bounds).grid(row=row, column=1)
         row += 1
 
-        # Resolution
-        ttk.Label(self.root, text="Resolution:").grid(row=row, column=0)
+        # Font Resolution
+        ttk.Label(self.root, text="Font Resolution:").grid(row=row, column=0)
         ttk.Entry(self.root, textvariable=self.resolution).grid(row=row, column=1)
+        row += 1
+
+        def choose_color():
+            color_code = colorchooser.askcolor(title="Choose a color")
+            if color_code[1]:
+                self.font_color.set(color_code[1])
+
+        self.font_color = tk.StringVar()
+        ttk.Label(self.root, text="Font Color:").grid(row=row, column=0)
+        ttk.Entry(self.root, textvariable=self.font_color).grid(row=row, column=1)
+        tk.Button(self.root, text="Choose Color", command=choose_color).grid(row=row, column=2)
+        row += 1
+
+        # Font Scaling
+        ttk.Label(self.root, text="Font Scaling:").grid(row=row, column=0)
+        ttk.Entry(self.root, textvariable=self.custom_scaling).grid(row=row, column=1)
         row += 1
 
         # Logging Enabled
@@ -703,7 +768,7 @@ class KOTORPatchingToolUI:
 
         # Middle area for text and scrollbar
         self.language_row = row
-        self.language_frame = tk.Frame(self.root)
+        self.language_frame = ttk.Frame(self.root)
         self.language_frame.grid(row=row, column=0, sticky="nsew")
         self.language_frame.grid_rowconfigure(0, weight=1)
         self.language_frame.grid_columnconfigure(0, weight=1)
@@ -801,7 +866,7 @@ class KOTORPatchingToolUI:
 
             SCRIPT_GLOBALS.install_thread = Thread(target=execute_patchloop_thread)
             SCRIPT_GLOBALS.install_thread.start()
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             messagebox.showerror("Unhandled exception", repr(e))
             SCRIPT_GLOBALS.install_running = False
             self.install_button.config(state=tk.DISABLED)

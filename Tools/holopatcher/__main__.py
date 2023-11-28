@@ -18,8 +18,6 @@ from tkinter import filedialog, messagebox, ttk
 from tkinter import font as tkfont
 from typing import TYPE_CHECKING, NoReturn
 
-from pykotor.tslpatcher.config import PatcherConfig
-
 if getattr(sys, "frozen", False) is False:
     pykotor_path = pathlib.Path(__file__).parents[2] / "pykotor"
     if pykotor_path.exists():
@@ -27,6 +25,9 @@ if getattr(sys, "frozen", False) is False:
         if working_dir in sys.path:
             sys.path.remove(working_dir)
         sys.path.insert(0, working_dir)
+
+from tooltip import ToolTip
+from uninstall_mod import ModUninstaller
 
 from pykotor.common.misc import Game
 from pykotor.tools.path import CaseAwarePath, find_kotor_paths_from_default
@@ -36,8 +37,6 @@ from pykotor.tslpatcher.reader import ConfigReader, NamespaceReader
 from pykotor.utility.error_handling import universal_simplify_exception
 from pykotor.utility.path import Path
 from pykotor.utility.string import striprtf
-from tools.holopatcher.tooltip import ToolTip
-from tools.holopatcher.uninstall_mod import ModUninstaller
 
 if TYPE_CHECKING:
     from io import TextIOWrapper
