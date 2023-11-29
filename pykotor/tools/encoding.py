@@ -133,6 +133,18 @@ def get_double_byte_charset(encoding) -> list[str]:
                 charset.append("")  # For bytes outside the valid range
     return charset
 
+def get_charset_from_encoding(encoding):
+    charset = []
+    #for i in range(0x110000):
+    for i in range(256):
+        try:
+            char = chr(i)
+            char.encode(encoding)
+            charset.append(char)
+        except UnicodeEncodeError:  # noqa: PERF203
+            charset.append("")
+    return charset
+
 def decode_bytes_with_fallbacks(
     byte_content: bytes,
     errors="strict",
