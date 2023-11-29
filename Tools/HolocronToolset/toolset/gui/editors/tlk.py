@@ -22,7 +22,6 @@ if TYPE_CHECKING:
 
 
 class TLKEditor(Editor):
-    def __init__(self, parent: Optional[QWidget], installation: HTInstallation | None = None):
     def __init__(self, parent: QWidget | None, installation: HTInstallation | None = None):
         """Initialize the TLK Editor.
 

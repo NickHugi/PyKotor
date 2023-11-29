@@ -10,12 +10,13 @@ import os
 from pathlib import Path
 os.environ['PYTHONPATH'] = Path(r"../get-pwbrowser-sync")
 """  # noqa: D415, D400, D212
+from __future__ import annotations
+
 import re
 from time import sleep
-from typing import Optional
 from urllib.parse import quote
 
-from pyquery import PyQuery as pq
+from pyquery import PyQuery as PyQ
 
 try:
     from playwright.sync_api import sync_playwright
@@ -26,7 +27,7 @@ except Exception as exc:  # noqa: BLE001
 URL = r"https://www.deepl.com/translator"
 
 
-class scraper_cons:
+class ScraperCons:
     """Scraper Connections
     Attributes:
         sync_playwright (function): playwright.sync_api.sync_playwright.
@@ -36,10 +37,10 @@ class scraper_cons:
         self.sync_playwright = sync_playwright
 
 
-scraperCons = scraper_cons(sync_playwright)
+scraper_cons_instance = ScraperCons(sync_playwright)
 
 
-def deepl_tr(text: str, from_lang: str = "auto", to_lang: str = "zh", timeout: float = 5, headless: Optional[bool] = None):
+def deepl_tr(text: str, from_lang: str = "auto", to_lang: str = "zh", timeout: float = 5, headless: bool | None = None):
     r"""Deepl via playwright-sync.
 
     text = "Test it and\n\n more"
@@ -47,11 +48,11 @@ def deepl_tr(text: str, from_lang: str = "auto", to_lang: str = "zh", timeout: f
     to_lang="zh"
     """
     # check playwright browser
-    if scraperCons.sync_playwright is None:
+    if scraper_cons_instance.sync_playwright is None:
         try:
             from playwright.sync_api import sync_playwright
 
-            scraperCons.sync_playwright = sync_playwright
+            scraper_cons_instance.sync_playwright = sync_playwright
         except Exception as exc:  # noqa: BLE001
             print(exc)
             return str(exc)
@@ -64,7 +65,7 @@ def deepl_tr(text: str, from_lang: str = "auto", to_lang: str = "zh", timeout: f
         raise
 
     #print("Spawning playwright-sync")
-    with scraperCons.sync_playwright() as playwright:
+    with scraper_cons_instance.sync_playwright() as playwright:
         #print("Launching browser")
         browser = playwright.chromium.launch(headless=headless)
 
@@ -86,14 +87,14 @@ def deepl_tr(text: str, from_lang: str = "auto", to_lang: str = "zh", timeout: f
             print(exc)
             raise
 
-        doc = pq(content)
+        doc = PyQ(content)
         text_old = doc("#source-dummydiv").html()
 
         # selector = "div.lmt__translations_as_text"
         if text_old and text.strip() == text_old.strip():  # type: ignore
             #print(" ** early result: ** ")
             #print("%s, %s", text, doc(".lmt__translations_as_text__text_btn").html())
-            doc = pq(page.content())
+            doc = PyQ(page.content())
             # content = doc(".lmt__translations_as_text__text_btn").text()
             content = doc(".lmt__translations_as_text__text_btn").html()
         else:
@@ -112,7 +113,7 @@ def deepl_tr(text: str, from_lang: str = "auto", to_lang: str = "zh", timeout: f
                 print(exc)
                 raise
 
-            doc = pq(page.content())
+            doc = PyQ(page.content())
             # content_old = doc(".lmt__translations_as_text__text_btn").text()
             content_old = doc(".lmt__translations_as_text__text_btn").html()
 
@@ -133,7 +134,7 @@ def deepl_tr(text: str, from_lang: str = "auto", to_lang: str = "zh", timeout: f
                 print(exc)
                 raise
 
-            doc = pq(page.content())
+            doc = PyQ(page.content())
             content = doc(".lmt__translations_as_text__text_btn").text()
 
             # loop until content changed
@@ -143,7 +144,7 @@ def deepl_tr(text: str, from_lang: str = "auto", to_lang: str = "zh", timeout: f
             while idx < timeout / 0.1:
                 idx += 1
                 sleep(0.1)
-                doc = pq(page.content())
+                doc = PyQ(page.content())
                 content = doc(".lmt__translations_as_text__text_btn").html()
 
                 if content_old != content and bool(content):

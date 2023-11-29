@@ -4,7 +4,7 @@ import re
 from contextlib import suppress
 from copy import copy
 from enum import Enum, IntEnum
-from typing import TYPE_CHECKING, ClassVar, NamedTuple, Optional
+from typing import TYPE_CHECKING, ClassVar, NamedTuple
 
 from pykotor.common.language import Gender, Language, LocalizedString
 from pykotor.common.misc import CaseInsensitiveDict, Game
