@@ -235,7 +235,7 @@ lowerrightcoords {self.lr_coords_count}
         scaling_factor = 2 ** (math.log2(res_const) - (math.log2(res_const)))
 
         self.texturewidth: float = resolution[0] / 100 / res_const * custom_scaling
-        self.fontheight: float = max_char_height / resolution[1] * self.texturewidth / scaling_factor * custom_scaling
+        self.fontheight: float = max_char_height / resolution[1] * self.texturewidth / scaling_factor
         self.baselineheight = baseline_height / resolution[1] / TXIFontInformation.DEFAULT_RESOLUTION
 
 def calculate_character_metrics(
