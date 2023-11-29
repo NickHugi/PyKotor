@@ -3,7 +3,7 @@ from __future__ import annotations
 import math
 from abc import ABC, abstractmethod
 from copy import deepcopy
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 from PyQt5 import QtCore
 from PyQt5.QtGui import QColor, QIcon, QKeyEvent, QKeySequence
@@ -86,10 +86,10 @@ def openInstanceDialog(parent: QWidget, instance: GITInstance, installation: HTI
 class GITEditor(Editor):
     settingsUpdated = QtCore.pyqtSignal(object)
 
-    def __init__(self, parent: Optional[QWidget], installation: HTInstallation | None = None):
+    def __init__(self, parent: QWidget | None, installation: HTInstallation | None = None):
         """Initializes the GIT editor
         Args:
-            parent: Optional[QWidget]: The parent widget
+            parent: QWidget | None: The parent widget
             installation: HTInstallation | None: The installation
         Returns:
             None
@@ -109,7 +109,7 @@ class GITEditor(Editor):
         self._git: GIT = GIT()
         self._mode: _Mode = _InstanceMode(self, installation, self._git)
         self._controls: GITControlScheme = GITControlScheme(self)
-        self._geomInstance: Optional[GITInstance] = None  # Used to track which trigger/encounter you are editing
+        self._geomInstance: GITInstance | None = None  # Used to track which trigger/encounter you are editing
 
         self.settings = GITSettings()
 

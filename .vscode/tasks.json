@@ -234,7 +234,7 @@
         "ruff",
         "check",
         ".",
-        "--ignore=D101,D102,D103,D107,D205,D417,D205,PLR5501,PLW2901"
+        "--ignore=D101,D102,D103,D107,D205,D417,D205,PLR5501,PLW2901,RUF100"
       ],
       "group": "test",
       "presentation": {

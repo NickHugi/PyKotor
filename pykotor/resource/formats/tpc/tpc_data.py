@@ -575,7 +575,7 @@ class TPC:
         ----
             color: 16-bit 565 RGB color value
         Returns:
-            tuple: Tuple of (red, green, blue) color component values
+            tuple: tuple of (red, green, blue) color component values
         - Extracts the blue component from the lowest 5 bits
         - Extracts the green component from bits 5-10
         - Extracts the red component from bits 11-15

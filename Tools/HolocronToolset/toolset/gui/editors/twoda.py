@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from enum import IntEnum
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 import pyperclip
 from PyQt5.QtCore import QSortFilterProxyModel
@@ -19,7 +19,7 @@ if TYPE_CHECKING:
 
 
 class TwoDAEditor(Editor):
-    def __init__(self, parent: Optional[QWidget], installation: HTInstallation | None = None) -> None:
+    def __init__(self, parent: QWidget | None, installation: HTInstallation | None = None) -> None:
         """Initializes the 2DA editor
         Args:
             parent: QWidget: The parent widget
@@ -182,7 +182,7 @@ class TwoDAEditor(Editor):
             self: The object instance
             model: The table model to convert
         Returns:
-            Tuple[bytes, bytes]: A tuple containing the 2DA data and an empty string
+            tuple[bytes, bytes]: A tuple containing the 2DA data and an empty string
         Processing Logic:
             - Initialize an empty TwoDA object
             - Add column headers from the table model's horizontal header

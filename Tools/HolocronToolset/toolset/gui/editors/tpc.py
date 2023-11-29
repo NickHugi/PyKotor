@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import io
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 from PIL import Image, ImageOps
 from PyQt5.QtGui import QImage, QPixmap, QTransform
@@ -19,7 +19,7 @@ if TYPE_CHECKING:
 
 
 class TPCEditor(Editor):
-    def __init__(self, parent: Optional[QWidget], installation: Installation | None = None):
+    def __init__(self, parent: QWidget | None, installation: Installation | None = None):
         """Initializes the texture viewer window.
 
         Args:

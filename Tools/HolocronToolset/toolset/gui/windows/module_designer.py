@@ -14,7 +14,6 @@ from pykotor.common.misc import Color, ResRef
 from pykotor.common.module import Module, ModuleResource
 from pykotor.common.stream import BinaryWriter
 from pykotor.extract.file import ResourceIdentifier
-from pykotor.resource.generics.are import ARE
 from pykotor.resource.generics.git import (
     GIT,
     GITCamera,
@@ -28,7 +27,6 @@ from pykotor.resource.generics.git import (
     GITTrigger,
     GITWaypoint,
 )
-from pykotor.resource.generics.ifo import IFO
 from pykotor.resource.generics.utd import read_utd
 from pykotor.resource.generics.utt import read_utt
 from pykotor.resource.generics.utw import read_utw
@@ -45,6 +43,8 @@ from toolset.utils.misc import QtMouse
 from toolset.utils.window import openResourceEditor
 
 if TYPE_CHECKING:
+    from pykotor.resource.generics.ifo import IFO
+    from pykotor.resource.generics.are import ARE
     from toolset.data.installation import HTInstallation
     from toolset.gui.widgets.renderer.module import ModuleRenderer
     from toolset.gui.widgets.renderer.walkmesh import WalkmeshRenderer
@@ -54,7 +54,7 @@ class ModuleDesigner(QMainWindow):
     def __init__(self, parent: QWidget | None, installation: HTInstallation):
         """Initializes the Module Designer window
         Args:
-            parent: Optional[QWidget]: Parent widget
+            parent: QWidget | None: Parent widget
             installation: HTInstallation: Hometuck installation
         Returns:
             None

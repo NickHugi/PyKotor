@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import struct
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 from PyQt5 import QtCore
 from PyQt5.QtGui import QColor, QIcon, QImage, QPixmap
@@ -22,10 +22,10 @@ _TRANS_EDGE_ROLE = QtCore.Qt.UserRole + 2  # type: ignore[reportGeneralTypeIssue
 
 
 class BWMEditor(Editor):
-    def __init__(self, parent: Optional[QWidget], installation: HTInstallation | None = None):
+    def __init__(self, parent: QWidget | None, installation: HTInstallation | None = None):
         """Initializes the walkmesh painter window
         Args:
-            parent: Optional[QWidget]: The parent widget
+            parent: QWidget | None: The parent widget
             installation: HTInstallation | None: The installation
         Returns:
             None
@@ -47,7 +47,7 @@ class BWMEditor(Editor):
         self._setupMenus()
         self._setupSignals()
 
-        self._bwm: Optional[BWM] = None
+        self._bwm: BWM | None = None
 
         self.materialColors: dict[SurfaceMaterial, QColor] = {
             SurfaceMaterial.UNDEFINED: QColor(0xF45086),

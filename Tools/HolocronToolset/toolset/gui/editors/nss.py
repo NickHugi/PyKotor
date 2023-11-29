@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from copy import deepcopy
 from operator import attrgetter
-from typing import TYPE_CHECKING, ClassVar, Optional
+from typing import TYPE_CHECKING, ClassVar
 
 from PyQt5 import QtCore
 from PyQt5.QtCore import QRect, QRegExp, QSize
@@ -283,7 +283,7 @@ class NSSEditor(Editor):
             insert = f"{function.name}()"
             self.insertTextAtCursor(insert, insert.index("(") + 1)
 
-    def insertTextAtCursor(self, insert: str, offset: Optional[int] = None) -> None:
+    def insertTextAtCursor(self, insert: str, offset: int | None = None) -> None:
         """Inserts the given text at the cursors location and then shifts the cursor position by the offset specified. If
         no offset is specified then the cursor is moved to the end of the inserted text.
 

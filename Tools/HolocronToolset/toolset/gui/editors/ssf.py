@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 from PyQt5.QtWidgets import QFileDialog, QWidget
 
@@ -16,7 +16,7 @@ if TYPE_CHECKING:
 
 
 class SSFEditor(Editor):
-    def __init__(self, parent: Optional[QWidget], installation: Installation | None = None):
+    def __init__(self, parent: QWidget | None, installation: Installation | None = None):
         """Initialize Soundset Editor window
         Args:
             parent: {Parent widget}
@@ -35,7 +35,7 @@ class SSFEditor(Editor):
         supported = [ResourceType.SSF]
         super().__init__(parent, "Soundset Editor", "soundset", supported, supported, installation)
 
-        self._talktable: Optional[TalkTable] = installation.talktable() if installation else None
+        self._talktable: TalkTable | None = installation.talktable() if installation else None
 
         from toolset.uic.editors.ssf import Ui_MainWindow
 

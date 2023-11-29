@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from contextlib import suppress
-from typing import TYPE_CHECKING, NamedTuple, Optional, Tuple, Union
+from typing import TYPE_CHECKING, NamedTuple
 
 from PyQt5 import QtCore
 from PyQt5.QtCore import QPoint, QSize, QSortFilterProxyModel, QThread
@@ -214,10 +214,10 @@ class InventoryEditor(QDialog):
         else:
             self.reject()
 
-    def getItemImage(self, uti: Optional[UTI]) -> QPixmap:
+    def getItemImage(self, uti: UTI | None) -> QPixmap:
         return self._installation.getItemIconFromUTI(uti)
 
-    def getItem(self, resname: str, filepath: str) -> Tuple[str, str, UTI]:
+    def getItem(self, resname: str, filepath: str) -> tuple[str, str, UTI]:
         """Gets item resource data from filepath or installation.
 
         Args:
@@ -292,12 +292,12 @@ class InventoryEditor(QDialog):
         self.ui.modulesTree.model().setFilterFixedString(text)
         self.ui.overrideTree.model().setFilterFixedString(text)
 
-    def openItemContextMenu(self, widget: Union[QWidget, ItemContainer], point: QPoint) -> None:
+    def openItemContextMenu(self, widget: QWidget | ItemContainer, point: QPoint) -> None:
         """Opens an item context menu at a given point.
 
         Args:
         ----
-            widget: Union[QWidget, ItemContainer]: Widget the menu is for
+            widget: QWidget | ItemContainer: Widget the menu is for
             point: QPoint: Point to open menu at
         Returns:
             None: No return value
@@ -678,7 +678,7 @@ class ItemBuilderDialog(QDialog):
     def finished(self) -> None:
         self.accept()
 
-    def getCategory(self, uti: Optional[UTI]) -> str:
+    def getCategory(self, uti: UTI | None) -> str:
         """Gets the category for an item based on its equipable slots
         Args:
             uti: {UTI object}: Item to get category for
@@ -819,7 +819,7 @@ class ItemModel(QStandardItemModel):
 
 
 class SetItemResRefDialog(QDialog):
-    def __init__(self, parent: Optional[QWidget] = None):
+    def __init__(self, parent: QWidget | None = None):
         super().__init__(parent)
 
         from editors import ui_setitemresref

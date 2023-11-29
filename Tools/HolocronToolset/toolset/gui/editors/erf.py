@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Optional, Union
+from typing import TYPE_CHECKING
 
 from PyQt5 import QtCore, QtGui
 from PyQt5.QtCore import QMimeData
@@ -24,7 +24,7 @@ if TYPE_CHECKING:
 
 
 class ERFEditor(Editor):
-    def __init__(self, parent: Optional[QWidget], installation: HTInstallation | None = None):
+    def __init__(self, parent: QWidget | None, installation: HTInstallation | None = None):
         """Initialize ERF Editor window
         Args:
             parent: QWidget: Parent widget
@@ -418,10 +418,10 @@ class ERFEditorTable(QTableView):
         else:
             event.ignore()
 
-    def startDrag(self, actions: Union[QtCore.Qt.DropActions, QtCore.Qt.DropAction]) -> None:
+    def startDrag(self, actions: QtCore.Qt.DropActions | QtCore.Qt.DropAction) -> None:
         """Starts a drag operation with the selected items
         Args:
-            actions: Union[QtCore.Qt.DropActions, QtCore.Qt.DropAction]: The allowed actions for the drag
+            actions: QtCore.Qt.DropActions | QtCore.Qt.DropAction: The allowed actions for the drag
         Returns:
             None: No return value
         - Extracts selected items to a temp directory

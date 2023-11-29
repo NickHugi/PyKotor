@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 from PyQt5.QtGui import QColor, QImage, QPixmap
 from PyQt5.QtWidgets import QColorDialog, QLabel, QWidget
@@ -26,7 +26,7 @@ if TYPE_CHECKING:
 
 
 class AREEditor(Editor):
-    def __init__(self, parent: Optional[QWidget], installation: HTInstallation | None = None):
+    def __init__(self, parent: QWidget | None, installation: HTInstallation | None = None):
         """Initialize the ARE Editor window
         Args:
             parent: {QWidget}: Parent widget

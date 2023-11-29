@@ -287,7 +287,7 @@ class ConfigReader:
 
             Returns:
             -------
-                tuple[int, int | None]: Tuple containing start and end parts as integers or None.
+                tuple[int, int | None]: tuple containing start and end parts as integers or None.
             - Splits the range string on delimiters like '-' or ':'
             - Converts start and end parts to integers if present
             - Returns start and end as a tuple of integers or integer and None
@@ -1131,7 +1131,7 @@ class ConfigReader:
 
         Returns:
         -------
-            tuple[dict[str, RowValue], dict[int, RowValue], dict[int, RowValue]] - Tuple containing cells dictionary, 2DA store dictionary, TLK store dictionary
+            tuple[dict[str, RowValue], dict[int, RowValue], dict[int, RowValue]] - tuple containing cells dictionary, 2DA store dictionary, TLK store dictionary
 
         Processing Logic:
         1. Loops through each modifier and value

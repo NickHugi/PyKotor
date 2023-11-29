@@ -3,7 +3,7 @@ from __future__ import annotations
 import math
 from contextlib import suppress
 from copy import copy
-from typing import TYPE_CHECKING, Any, Callable, ClassVar, Optional, Union
+from typing import TYPE_CHECKING, Any, Callable, ClassVar, Union
 
 import glm
 from glm import mat4, quat, vec3, vec4
@@ -98,7 +98,7 @@ SEARCH_ORDER = [SearchLocation.CUSTOM_MODULES, SearchLocation.OVERRIDE, SearchLo
 class Scene:
     SPECIAL_MODELS: ClassVar[list[str]] = ["waypoint", "store", "sound", "camera", "trigger", "encounter", "unknown"]
 
-    def __init__(self, *, installation: Installation | None = None, module: Optional[Module] = None):
+    def __init__(self, *, installation: Installation | None = None, module: Module | None = None):
         """Initializes the renderer
         Args:
             installation: Installation: The installation to load resources from
@@ -122,14 +122,14 @@ class Scene:
         self.models: CaseInsensitiveDict[Model] = CaseInsensitiveDict()
         self.objects: dict[Any, RenderObject] = {}
         self.selection: list[RenderObject] = []
-        self.module: Optional[Module] = module
+        self.module: Module | None = module
         self.camera: Camera = Camera()
         self.cursor: RenderObject = RenderObject("cursor")
 
         self.textures["NULL"] = Texture.from_color()
 
-        self.git: Optional[GIT] = None
-        self.layout: Optional[LYT] = None
+        self.git: GIT | None = None
+        self.layout: LYT | None = None
         self.clearCacheBuffer: list[ResourceIdentifier] = []
 
         self.picker_shader: Shader = Shader(PICKER_VSHADER, PICKER_FSHADER)
@@ -169,7 +169,7 @@ class Scene:
         self.table_heads = read_2da(installation.resource("heads", ResourceType.TwoDA, SEARCH_ORDER_2DA).data)
         self.table_baseitems = read_2da(installation.resource("baseitems", ResourceType.TwoDA, SEARCH_ORDER_2DA).data)
 
-    def getCreatureRenderObject(self, instance: GITCreature, utc: Optional[UTC] = None) -> RenderObject:
+    def getCreatureRenderObject(self, instance: GITCreature, utc: UTC | None = None) -> RenderObject:
         """Generates a render object for a creature instance
         Args:
             instance: {Creature instance}: Creature instance to generate render object for
@@ -581,7 +581,7 @@ class Scene:
         instances = list(self.objects.values())
         return instances[pixel] if pixel != 0xFFFFFF else None
 
-    def select(self, target: Union[RenderObject, GITInstance], clear_existing: bool = True):
+    def select(self, target: RenderObject | GITInstance, clear_existing: bool = True):
         if clear_existing:
             self.selection.clear()
 
@@ -718,7 +718,7 @@ class RenderObject:
         rotation: vec3 | None = None,
         *,
         data: Any = None,
-        gen_boundary: Optional[Callable[[], Boundary]] = None,
+        gen_boundary: Callable[[], Boundary] | None = None,
         override_texture: str | None = None,
     ):
         self.model: str = model
@@ -726,9 +726,9 @@ class RenderObject:
         self._transform: mat4 = mat4()
         self._position: vec3 = position if position is not None else vec3()
         self._rotation: vec3 = rotation if rotation is not None else vec3()
-        self._cube: Optional[Cube] = None
-        self._boundary: Optional[Boundary] = None
-        self.genBoundary: Optional[Callable[[], Boundary]] = gen_boundary
+        self._cube: Cube | None = None
+        self._boundary: Boundary | None = None
+        self.genBoundary: Callable[[], Boundary] | None = gen_boundary
         self.data: Any = data
         self.override_texture: str | None = override_texture
 

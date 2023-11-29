@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from contextlib import suppress
-from typing import TYPE_CHECKING, Optional, Tuple
+from typing import TYPE_CHECKING
 
 from PyQt5 import QtCore
 from PyQt5.QtWidgets import QDialog, QListWidgetItem, QShortcut, QTreeWidgetItem, QWidget
@@ -19,7 +19,7 @@ if TYPE_CHECKING:
 
 
 class UTIEditor(Editor):
-    def __init__(self, parent: Optional[QWidget], installation: HTInstallation | None = None):
+    def __init__(self, parent: QWidget | None, installation: HTInstallation | None = None):
         """Initializes the Item Editor window
         Args:
             parent: {QWidget}: The parent widget
@@ -172,14 +172,14 @@ class UTIEditor(Editor):
         # Comments
         self.ui.commentsEdit.setPlainText(uti.comment)
 
-    def build(self) -> Tuple[bytes, bytes]:
+    def build(self) -> tuple[bytes, bytes]:
         """Builds a UTI object from UI input.
 
         Args:
         ----
             self: The object instance
         Returns:
-            Tuple[bytes, bytes]: Byte data and empty string
+            tuple[bytes, bytes]: Byte data and empty string
         {Processing Logic}:
             - Populate UTI object properties from UI elements
             - Convert UTI to GFF structure

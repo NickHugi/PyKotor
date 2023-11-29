@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Optional, Union
+from typing import TYPE_CHECKING
 
 from PyQt5.QtWidgets import QMessageBox, QWidget
 
@@ -33,9 +33,9 @@ def openResourceEditor(
     restype: ResourceType,
     data: bytes,
     installation: HTInstallation | None = None,
-    parentwindow: Optional[QWidget] = None,
-    gff_specialized: Optional[bool] = None,
-) -> Union[tuple[str, QWidget], tuple[None, None]]:
+    parentwindow: QWidget | None = None,
+    gff_specialized: bool | None = None,
+) -> tuple[str, QWidget] | tuple[None, None]:
     """Opens an editor for the specified resource. If the user settings have the editor set to inbuilt it will return
     the editor, otherwise it returns None.
 
@@ -104,7 +104,7 @@ def openResourceEditor(
         editor = TXTEditor(None)
 
     if restype in [ResourceType.NSS]:
-        if installation:
+        if installation:  # noqa: SIM108
             editor = NSSEditor(None, installation)
         else:
             editor = TXTEditor(None, installation)
@@ -113,7 +113,7 @@ def openResourceEditor(
         editor = NSSEditor(None, installation)
 
     if restype in [ResourceType.DLG, ResourceType.DLG_XML]:
-        if installation is None:
+        if installation is None:  # noqa: SIM108
             editor = GFFEditor(None, installation)
         else:
             editor = DLGEditor(None, installation)

@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from time import sleep
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 from PyQt5 import QtCore
 from PyQt5.QtCore import QSortFilterProxyModel, QThread
@@ -23,6 +23,7 @@ if TYPE_CHECKING:
 
 class TLKEditor(Editor):
     def __init__(self, parent: Optional[QWidget], installation: HTInstallation | None = None):
+    def __init__(self, parent: QWidget | None, installation: HTInstallation | None = None):
         """Initialize the TLK Editor.
 
         Args:
@@ -221,6 +222,7 @@ class TLKEditor(Editor):
         - Return the byte array and an empty bytes object as a tuple.
         """
         tlk = TLK()
+        tlk.language = self.language
 
         for i in range(self.model.rowCount()):
             text = self.model.item(i, 0).text()

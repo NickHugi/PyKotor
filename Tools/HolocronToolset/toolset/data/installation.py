@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from contextlib import suppress
-from typing import TYPE_CHECKING, List, Optional
+from typing import TYPE_CHECKING, List
 
 from PyQt5.QtGui import QImage, QPixmap, QStandardItemModel, QTransform
 
@@ -69,7 +69,7 @@ class HTInstallation(Installation):
         self.tsl = tsl
 
         self.mainWindow: QWidget = mainWindow
-        self.cacheCoreItems: Optional[QStandardItemModel] = None
+        self.cacheCoreItems: QStandardItemModel | None = None
 
         self._cache2da: dict[str, TwoDA] = {}
         self._cacheTpc: dict[str, TPC] = {}

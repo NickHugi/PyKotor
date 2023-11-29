@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 from PyQt5 import QtCore
 from PyQt5.QtCore import QUrl
@@ -75,7 +75,7 @@ def getStringFromKey(key: int) -> str:
     return QKeySequence(key).toString()
 
 
-def getResourceFromFile(filepath: os.PathLike | str, resname: str, restype: ResourceType) -> Optional[bytes]:
+def getResourceFromFile(filepath: os.PathLike | str, resname: str, restype: ResourceType) -> bytes | None:
     """Gets a resource from a file by name and type.
 
     Args:

@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from abc import abstractmethod
-from typing import TYPE_CHECKING, Optional, Union
+from typing import TYPE_CHECKING
 
 from PyQt5 import QtCore
 from PyQt5.QtGui import QIcon, QPixmap
@@ -41,13 +41,13 @@ class Editor(QMainWindow):
 
     def __init__(
         self,
-        parent: Optional[QWidget],
+        parent: QWidget | None,
         title: str,
         iconName: str,
         readSupported: list[ResourceType],
         writeSupported: list[ResourceType],
         installation: HTInstallation | None = None,
-        mainwindow: Optional[QMainWindow] = None,
+        mainwindow: QMainWindow | None = None,
     ):
         """Initializes the editor
         Args:
@@ -57,7 +57,7 @@ class Editor(QMainWindow):
             readSupported: list[ResourceType]: The supported resource types for reading
             writeSupported: list[ResourceType]: The supported resource types for writing
             installation: HTInstallation | None: The installation context
-            mainwindow: Optional[QMainWindow]: The main window
+            mainwindow: QMainWindow | None: The main window
         Returns:
             None
         Initializes editor properties:
@@ -68,10 +68,10 @@ class Editor(QMainWindow):
         """
         super().__init__(parent)
 
-        self._filepath: Optional[Path] = None
+        self._filepath: Path | None = None
         self._resref: str | None = None
-        self._restype: Optional[ResourceType] = None
-        self._revert: Optional[bytes] = None
+        self._restype: ResourceType | None = None
+        self._revert: bytes | None = None
         self._readSupported: list[ResourceType] = readSupported
         self._writeSupported: list[ResourceType] = writeSupported
         self._global_settings: GlobalSettings = GlobalSettings()
@@ -438,7 +438,7 @@ class Editor(QMainWindow):
         if self._revert is not None:
             self.load(self._filepath, self._resref, self._restype, self._revert)
 
-    def _loadLocstring(self, textbox: Union[QLineEdit, QPlainTextEdit], locstring: LocalizedString) -> None:
+    def _loadLocstring(self, textbox: QLineEdit | QPlainTextEdit, locstring: LocalizedString) -> None:
         """Loads a LocalizedString into a textbox.
 
         Args:

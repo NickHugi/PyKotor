@@ -4,7 +4,7 @@
 from __future__ import annotations
 
 from enum import Enum, IntEnum
-from typing import TYPE_CHECKING, Generic, Iterable, Optional, TypeVar
+from typing import TYPE_CHECKING, Generic, Iterable, TypeVar
 
 from pykotor.common.geometry import Vector3
 from pykotor.utility.path import PurePath
@@ -433,7 +433,7 @@ class EquipmentSlot(Enum):
 
 
 class CaseInsensitiveHashSet(set, Generic[T]):
-    def __init__(self, iterable: Optional[Iterable[T]] = None):
+    def __init__(self, iterable: Iterable[T] | None = None):
         super().__init__()
         if iterable:
             for item in iterable:

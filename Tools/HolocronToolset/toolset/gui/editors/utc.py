@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from contextlib import suppress
-from typing import TYPE_CHECKING, Optional, Tuple
+from typing import TYPE_CHECKING
 
 from PyQt5 import QtCore
 from PyQt5.QtCore import QSettings
@@ -31,7 +31,7 @@ if TYPE_CHECKING:
 
 
 class UTCEditor(Editor):
-    def __init__(self, parent: Optional[QWidget], installation: HTInstallation | None = None, *, mainwindow=None):
+    def __init__(self, parent: QWidget | None, installation: HTInstallation | None = None, *, mainwindow=None):
         """Initializes the Creature Editor window
         Args:
             parent: QWidget: The parent widget
@@ -324,12 +324,12 @@ class UTCEditor(Editor):
         # Comments
         self.ui.comments.setPlainText(utc.comment)
 
-    def build(self) -> Tuple[bytes, bytes]:
+    def build(self) -> tuple[bytes, bytes]:
         """Builds a UTC from UI data
         Args:
             self: The class instance
         Returns:
-            Tuple[bytes, bytes]: The GFF data and log
+            tuple[bytes, bytes]: The GFF data and log
         Processing Logic:
             - Populate UTC object from UI fields
             - Add class and feat data from lists
@@ -571,14 +571,14 @@ class UTCEditor(Editor):
     def updateItemCount(self) -> None:
         self.ui.inventoryCountLabel.setText(f"Total Items: {len(self._utc.inventory)}")
 
-    def getFeatItem(self, featId: int) -> Optional[QListWidgetItem]:
+    def getFeatItem(self, featId: int) -> QListWidgetItem | None:
         for i in range(self.ui.featList.count()):
             item = self.ui.featList.item(i)
             if item.data(QtCore.Qt.UserRole) == featId:
                 return item
         return None
 
-    def getPowerItem(self, powerId: int) -> Optional[QListWidgetItem]:
+    def getPowerItem(self, powerId: int) -> QListWidgetItem | None:
         for i in range(self.ui.powerList.count()):
             item = self.ui.powerList.item(i)
             if item.data(QtCore.Qt.UserRole) == powerId:

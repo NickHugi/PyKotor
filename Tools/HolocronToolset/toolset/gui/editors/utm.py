@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from contextlib import suppress
-from typing import TYPE_CHECKING, Optional, Tuple
+from typing import TYPE_CHECKING
 
 from pykotor.common.misc import ResRef
 from pykotor.common.module import Module
@@ -22,7 +22,7 @@ if TYPE_CHECKING:
 
 
 class UTMEditor(Editor):
-    def __init__(self, parent: Optional[QWidget], installation: HTInstallation | None = None):
+    def __init__(self, parent: QWidget | None, installation: HTInstallation | None = None):
         """Initialize the Merchant Editor window
         Args:
             parent: {Widget that is the parent of this window}
@@ -106,7 +106,7 @@ class UTMEditor(Editor):
         # Comments
         self.ui.commentsEdit.setPlainText(utm.comment)
 
-    def build(self) -> Tuple[bytes, bytes]:
+    def build(self) -> tuple[bytes, bytes]:
         """Builds a UTM object from UI fields.
 
         Args:

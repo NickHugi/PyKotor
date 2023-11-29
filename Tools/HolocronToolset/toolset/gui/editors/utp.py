@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from contextlib import suppress
-from typing import TYPE_CHECKING, Optional, Tuple
+from typing import TYPE_CHECKING
 
 from PyQt5.QtWidgets import QMessageBox, QWidget
 
@@ -26,7 +26,7 @@ if TYPE_CHECKING:
 
 
 class UTPEditor(Editor):
-    def __init__(self, parent: Optional[QWidget], installation: HTInstallation | None = None, *, mainwindow=None):
+    def __init__(self, parent: QWidget | None, installation: HTInstallation | None = None, *, mainwindow=None):
         """Initialize Placeable Editor
         Args:
             parent: {QWidget}: Parent widget
@@ -198,7 +198,7 @@ class UTPEditor(Editor):
 
         self.updateItemCount()
 
-    def build(self) -> Tuple[bytes, bytes]:
+    def build(self) -> tuple[bytes, bytes]:
         """Builds a UTP from UI fields
         Args:
             self: The class instance

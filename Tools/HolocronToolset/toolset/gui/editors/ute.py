@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Optional, Tuple
+from typing import TYPE_CHECKING
 
 from PyQt5.QtWidgets import QCheckBox, QDoubleSpinBox, QSpinBox, QTableWidgetItem, QWidget
 
@@ -17,7 +17,7 @@ if TYPE_CHECKING:
 
 
 class UTEEditor(Editor):
-    def __init__(self, parent: Optional[QWidget], installation: HTInstallation | None = None):
+    def __init__(self, parent: QWidget | None, installation: HTInstallation | None = None):
         """Initialize the trigger editor window
         Args:
             parent: {The parent widget of the editor}
@@ -150,12 +150,12 @@ class UTEEditor(Editor):
         # Comments
         self.ui.commentsEdit.setPlainText(ute.comment)
 
-    def build(self) -> Tuple[bytes, bytes]:
+    def build(self) -> tuple[bytes, bytes]:
         """Builds a UTE object from UI data
         Args:
             self: The UTE builder object
         Returns:
-            Tuple[bytes, bytes]: A tuple containing the UTE data and an empty string
+            tuple[bytes, bytes]: A tuple containing the UTE data and an empty string
         Builds the UTE object by:
             - Setting basic properties from UI elements
             - Setting advanced properties from checkboxes and dropdowns

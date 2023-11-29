@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import os
-from typing import TYPE_CHECKING, Optional, Tuple
+from typing import TYPE_CHECKING
 
 from PyQt5.QtWidgets import QPlainTextEdit, QWidget
 
@@ -14,7 +14,7 @@ if TYPE_CHECKING:
 
 
 class TXTEditor(Editor):
-    def __init__(self, parent: Optional[QWidget], installation: HTInstallation = None):
+    def __init__(self, parent: QWidget | None, installation: HTInstallation = None):
         """Initialize the text editor
         Args:
             parent: {Parent widget}
@@ -53,7 +53,7 @@ class TXTEditor(Editor):
         super().load(filepath, resref, restype, data)
         self.ui.textEdit.setPlainText(decode_bytes_with_fallbacks(data))
 
-    def build(self) -> Tuple[bytes, bytes]:
+    def build(self) -> tuple[bytes, bytes]:
         return self.ui.textEdit.toPlainText().replace("\r\n", os.linesep).replace("\n", os.linesep).encode(), b""
 
     def new(self) -> None:

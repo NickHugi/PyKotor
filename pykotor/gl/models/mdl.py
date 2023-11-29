@@ -4,7 +4,7 @@ import ctypes
 import math
 import struct
 from copy import copy
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 import glm
 import numpy as np
@@ -37,7 +37,7 @@ class Model:
     def draw(self, shader: Shader, transform: mat4, *, override_texture: str | None = None):
         self.root.draw(shader, transform, override_texture)
 
-    def find(self, name: str) -> Optional[Node]:
+    def find(self, name: str) -> Node | None:
         nodes = [self.root]
         while nodes:
             node = nodes.pop()
@@ -47,8 +47,8 @@ class Model:
         return None
 
     def all(self) -> list[Node]:
-        all_nodes = []
-        search = [self.root]
+        all_nodes: list[Node] = []
+        search: list[Node] = [self.root]
         while search:
             node = search.pop()
             search.extend(node.children)
@@ -124,16 +124,16 @@ class Model:
 
 
 class Node:
-    def __init__(self, scene: Scene, parent: Optional[Node], name: str):
+    def __init__(self, scene: Scene, parent: Node | None, name: str):
         self._scene: Scene = scene
-        self._parent: Optional[Node] = parent
+        self._parent: Node | None = parent
         self.name: str = name
         self._transform: mat4 = mat4()
         self._position: vec3 = glm.vec3()
         self._rotation: quat = glm.quat()
         self.children: list[Node] = []
         self.render: bool = True
-        self.mesh: Optional[Mesh] = None
+        self.mesh: Mesh | None = None
 
         self._recalc_transform()
 

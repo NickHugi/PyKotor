@@ -4,7 +4,7 @@ import itertools
 import json
 import math
 from copy import copy, deepcopy
-from typing import TYPE_CHECKING, NamedTuple, Optional
+from typing import TYPE_CHECKING, NamedTuple
 
 from PyQt5 import QtCore
 from PyQt5.QtGui import QColor, QImage, QPainter, QPixmap, QTransform
@@ -42,7 +42,7 @@ class DoorInsertion(NamedTuple):
     position: Vector3
     rotation: float
     hook1: KitComponentHook
-    hook2: Optional[KitComponentHook]
+    hook2: KitComponentHook | None
 
 
 class MinimapData(NamedTuple):
@@ -809,7 +809,7 @@ class IndoorMapRoom:
         self.component: KitComponent = component
         self.position: Vector3 = position
         self.rotation: float = rotation
-        self.hooks: list[Optional[IndoorMapRoom]] = [None] * len(component.hooks)
+        self.hooks: list[IndoorMapRoom | None] = [None] * len(component.hooks)
         self.flip_x: bool = flip_x
         self.flip_y: bool = flip_y
 
@@ -863,7 +863,7 @@ class IndoorMapRoom:
             - Checks if the distance between the two hook positions is close
             - Assigns the other room to the current hook's slot in the hooks list if close.
         """
-        self.hooks: list[Optional[IndoorMapRoom]] = [None] * len(self.component.hooks)
+        self.hooks: list[IndoorMapRoom | None] = [None] * len(self.component.hooks)
 
         for hook in self.component.hooks:
             hookIndex = self.component.hooks.index(hook)

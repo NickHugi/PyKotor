@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 from PyQt5.QtWidgets import QMessageBox, QWidget
 
@@ -21,7 +21,7 @@ if TYPE_CHECKING:
 
 
 class MDLEditor(Editor):
-    def __init__(self, parent: Optional[QWidget], installation: HTInstallation | None = None):
+    def __init__(self, parent: QWidget | None, installation: HTInstallation | None = None):
         """Initialize the Model Viewer window
         Args:
             parent: {QWidget}: The parent widget of this window

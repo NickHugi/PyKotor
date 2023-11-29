@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import struct
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 import glm
 from glm import mat4, vec3, vec4
@@ -12,7 +12,7 @@ if TYPE_CHECKING:
     from pykotor.common.stream import BinaryReader
 
 
-def _load_node(scene, node: Optional[Node], mdl: BinaryReader, mdx: BinaryReader, offset: int, names: list[str]) -> Node:
+def _load_node(scene, node: Node | None, mdl: BinaryReader, mdx: BinaryReader, offset: int, names: list[str]) -> Node:
     """Loads a node from the binary model data.
 
     Args:

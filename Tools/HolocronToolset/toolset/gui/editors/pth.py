@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Optional, Tuple
+from typing import TYPE_CHECKING
 
 from PyQt5.QtGui import QColor, QKeyEvent
 from PyQt5.QtWidgets import QMenu, QWidget
@@ -26,7 +26,7 @@ if TYPE_CHECKING:
 
 
 class PTHEditor(Editor):
-    def __init__(self, parent: Optional[QWidget], installation: HTInstallation | None = None):
+    def __init__(self, parent: QWidget | None, installation: HTInstallation | None = None):
         supported = [ResourceType.PTH]
         super().__init__(parent, "PTH Editor", "pth", supported, supported, installation)
 
@@ -100,7 +100,7 @@ class PTHEditor(Editor):
         self.ui.renderArea.centerCamera()
         self.ui.renderArea.setPth(pth)
 
-    def build(self) -> Tuple[bytes, bytes]:
+    def build(self) -> tuple[bytes, bytes]:
         return bytes_pth(self._pth), b""
 
     def new(self) -> None:

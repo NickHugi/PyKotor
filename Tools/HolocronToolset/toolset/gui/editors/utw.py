@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Optional, Tuple
+from typing import TYPE_CHECKING
 
 from pykotor.common.misc import ResRef
 from pykotor.resource.formats.gff import write_gff
@@ -18,7 +18,7 @@ if TYPE_CHECKING:
 
 
 class UTWEditor(Editor):
-    def __init__(self, parent: Optional[QWidget], installation: HTInstallation | None = None):
+    def __init__(self, parent: QWidget | None, installation: HTInstallation | None = None):
         """Initialize Waypoint Editor window
         Args:
             parent: {Parent widget}
@@ -90,7 +90,7 @@ class UTWEditor(Editor):
         # Comments
         self.ui.commentsEdit.setPlainText(utw.comment)
 
-    def build(self) -> Tuple[bytes, bytes]:
+    def build(self) -> tuple[bytes, bytes]:
         """Builds a UTW object from UI controls.
 
         Args:

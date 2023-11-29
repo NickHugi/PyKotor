@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Optional
+from typing import TYPE_CHECKING, Any
 
 from PyQt5 import QtCore
 from PyQt5.QtCore import QItemSelectionRange, QModelIndex, QSortFilterProxyModel
@@ -29,7 +29,7 @@ _TEXT_SUBSTRING_ROLE = QtCore.Qt.UserRole + 2
 
 
 class GFFEditor(Editor):
-    def __init__(self, parent: Optional[QWidget], installation: Installation | None = None):
+    def __init__(self, parent: QWidget | None, installation: Installation | None = None):
         supported = [
             ResourceType.GFF,
             ResourceType.UTC,
@@ -52,7 +52,7 @@ class GFFEditor(Editor):
         super().__init__(parent, "GFF Editor", "none", supported, supported, installation)
         self.resize(400, 250)
 
-        self._talktable: Optional[TalkTable] = installation.talktable() if installation else None
+        self._talktable: TalkTable | None = installation.talktable() if installation else None
 
         from toolset.uic.editors.gff import Ui_MainWindow
 

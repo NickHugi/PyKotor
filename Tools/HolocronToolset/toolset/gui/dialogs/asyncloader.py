@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Callable, Optional
+from typing import TYPE_CHECKING, Any, Callable
 
 from PyQt5 import QtCore
 from PyQt5.QtCore import QThread
@@ -64,7 +64,7 @@ class AsyncLoader(QDialog):
         self.setWindowFlag(QtCore.Qt.WindowContextHelpButtonHint, False)
 
         self.value: Any = None
-        self.error: Optional[Exception] = None
+        self.error: Exception | None = None
         self.errorTitle: str | None = errorTitle
 
         self._worker = AsyncWorker(self, task)

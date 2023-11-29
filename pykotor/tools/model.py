@@ -404,7 +404,7 @@ def convert_to_k2(
         return data
 
     offsets = {}  # Maps the offset for an offset to its offset
-    mesh_offsets = []  # Tuple of (Offset to every mesh node, Node type)
+    mesh_offsets = []  # tuple of (Offset to every mesh node, Node type)
     anim_offsets = []
 
     # First, we build a dictionary of every offset in the file plus a list of the mesh nodes

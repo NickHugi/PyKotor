@@ -5,7 +5,7 @@ import json
 import xml.etree.ElementTree as ElemTree
 import zipfile
 from contextlib import suppress
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 import markdown
 import requests
@@ -26,7 +26,7 @@ if TYPE_CHECKING:
 class HelpWindow(QMainWindow):
     ENABLE_UPDATES = True
 
-    def __init__(self, parent: Optional[QWidget], startingPage: str | None = None):
+    def __init__(self, parent: QWidget | None, startingPage: str | None = None):
         super().__init__(parent)
 
         self.version: tuple[int, ...] | None = None
@@ -64,7 +64,7 @@ class HelpWindow(QMainWindow):
             # self.version = data["version"]
             # self._setupContentsRecJSON(None, data)
 
-    def _setupContentsRecJSON(self, parent: Optional[QTreeWidgetItem], data: dict) -> None:
+    def _setupContentsRecJSON(self, parent: QTreeWidgetItem | None, data: dict) -> None:
         add = self.ui.contentsTree.addTopLevelItem if parent is None else parent.addChild
 
         if "structure" in data:
@@ -74,7 +74,7 @@ class HelpWindow(QMainWindow):
                 add(item)
                 self._setupContentsRecJSON(item, data["structure"][title])
 
-    def _setupContentsRecXML(self, parent: Optional[QTreeWidgetItem], element: ElemTree.Element) -> None:
+    def _setupContentsRecXML(self, parent: QTreeWidgetItem | None, element: ElemTree.Element) -> None:
         add = self.ui.contentsTree.addTopLevelItem if parent is None else parent.addChild
 
         for child in element:

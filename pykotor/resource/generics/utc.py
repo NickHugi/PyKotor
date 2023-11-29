@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from typing import Optional
 
 from pykotor.common.language import LocalizedString
 from pykotor.common.misc import EquipmentSlot, Game, InventoryItem, ResRef
@@ -466,7 +465,7 @@ def dismantle_utc(
 def read_utc(
     source: SOURCE_TYPES,
     offset: int = 0,
-    size: Optional[int] = None,
+    size: int | None = None,
 ) -> UTC:
     gff = read_gff(source, offset, size)
     return construct_utc(gff)

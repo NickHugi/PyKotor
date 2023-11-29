@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from copy import copy, deepcopy
-from typing import TYPE_CHECKING, Tuple
+from typing import TYPE_CHECKING
 
 from PyQt5 import QtCore
 from PyQt5.QtCore import QBuffer, QIODevice, QItemSelection, QItemSelectionModel, QPoint
@@ -268,7 +268,7 @@ class DLGEditor(Editor):
                 self._loadDLGRec(child_item, child_link, seenLink, seenNode)
                 item.appendRow(child_item)
 
-    def build(self) -> Tuple[bytes, bytes]:
+    def build(self) -> tuple[bytes, bytes]:
         """Builds a dialogue from UI components.
 
         Args:
@@ -277,7 +277,7 @@ class DLGEditor(Editor):
 
         Returns:
         -------
-            Tuple[bytes, bytes]: {A tuple containing the dialogue data and an empty string}
+            tuple[bytes, bytes]: {A tuple containing the dialogue data and an empty string}
         Processing Logic:
             - Sets dialogue properties from UI components
             - Encodes dialogue data into bytes

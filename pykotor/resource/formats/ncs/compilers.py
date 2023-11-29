@@ -161,7 +161,7 @@ class ExternalNCSCompiler(NCSCompiler):
             source_file: Path to the script file to decompile.
             output_file: Path to output the decompiled C# source code.
             game: The Game object containing configuration.
-            timeout - Optional[int]: How long to wait for decompiling to finish. Defaults to 5 seconds.
+            timeout - int | None: How long to wait for decompiling to finish. Defaults to 5 seconds.
 
         Returns:
         -------

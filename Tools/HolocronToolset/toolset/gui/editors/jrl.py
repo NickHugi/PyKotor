@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 from PyQt5.QtGui import QColor, QStandardItem, QStandardItemModel
 from PyQt5.QtWidgets import QMenu, QShortcut, QTreeView, QWidget
@@ -31,7 +31,7 @@ class JRLEditor(Editor):
     # It would be nice at some point to create our own implementation of QAbstractItemModel that automatically mirrors
     # the JRL object.
 
-    def __init__(self, parent: Optional[QWidget], installation: HTInstallation | None = None):
+    def __init__(self, parent: QWidget | None, installation: HTInstallation | None = None):
         """Initializes the Journal Editor window
         Args:
             parent: {QWidget}: Parent widget

@@ -1,11 +1,15 @@
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 from PyQt5 import QtCore
 from PyQt5.QtWidgets import QWidget
 
 from pykotor.common.language import LocalizedString
-from toolset.data.installation import HTInstallation
 from toolset.gui.dialogs.edit.locstring import LocalizedStringDialog
+
+if TYPE_CHECKING:
+    from toolset.data.installation import HTInstallation
 
 
 class LocalizedStringLineEdit(QWidget):

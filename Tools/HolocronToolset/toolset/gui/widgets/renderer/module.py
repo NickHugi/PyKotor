@@ -3,7 +3,7 @@ from __future__ import annotations
 import math
 from copy import copy
 from datetime import datetime, timedelta, timezone
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 from PyQt5 import QtCore
 from PyQt5.QtCore import QTimer
@@ -51,9 +51,9 @@ class ModuleRenderer(QOpenGLWidget):
 
         from toolset.gui.windows.module_designer import ModuleDesignerSettings
 
-        self.scene: Optional[Scene] = None
+        self.scene: Scene | None = None
         self.settings: ModuleDesignerSettings = ModuleDesignerSettings()
-        self._module: Optional[Module] = None
+        self._module: Module | None = None
         self._installation: HTInstallation | None = None
         self._init = False
 
@@ -95,7 +95,7 @@ class ModuleRenderer(QOpenGLWidget):
         - Checks if the found face is walkable, and overrides any previous less walkable face
         - Returns a Vector3 with the input x,y coords and either the face z height or default z if no face.
         """
-        face: Optional[BWMFace] = None
+        face: BWMFace | None = None
         for walkmesh in [res.resource() for res in self._module.resources.values() if
                          res.restype() == ResourceType.WOK]:
             if walkmesh is None:
