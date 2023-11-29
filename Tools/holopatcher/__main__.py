@@ -43,7 +43,7 @@ if TYPE_CHECKING:
 
     from pykotor.tslpatcher.namespaces import PatcherNamespace
 
-CURRENT_VERSION: tuple[int, ...] = (1, 4, 1)
+CURRENT_VERSION: tuple[int, ...] = (1, 4, 2)
 
 
 class ExitCode(IntEnum):
