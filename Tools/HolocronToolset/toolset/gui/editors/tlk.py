@@ -6,13 +6,13 @@ from typing import TYPE_CHECKING, Optional
 from PyQt5 import QtCore
 from PyQt5.QtCore import QSortFilterProxyModel, QThread
 from PyQt5.QtGui import QStandardItem, QStandardItemModel
-from PyQt5.QtWidgets import QDialog, QProgressBar, QShortcut, QVBoxLayout, QWidget
-from pykotor.common.language import Language
+from PyQt5.QtWidgets import QAction, QDialog, QProgressBar, QShortcut, QVBoxLayout, QWidget
 
+from pykotor.common.language import Language
 from pykotor.common.misc import ResRef
 from pykotor.resource.formats.tlk import TLK, TLKEntry, read_tlk, write_tlk
 from pykotor.resource.type import ResourceType
-from pykotor.utility.misc import is_debug_mode
+from pykotor.tools.encoding import decode_bytes_with_fallbacks
 from toolset.gui.editor import Editor
 
 if TYPE_CHECKING:
@@ -52,6 +52,8 @@ class TLKEditor(Editor):
         self.ui.searchBox.setVisible(False)
         self.ui.jumpBox.setVisible(False)
 
+        self.language = Language.ENGLISH
+
         self.model = QStandardItemModel(self)
         self.proxyModel = QSortFilterProxyModel(self)
         self.proxyModel.setSourceModel(self.model)
@@ -83,14 +85,77 @@ class TLKEditor(Editor):
         self.ui.actionFind.triggered.connect(self.toggleFilterBox)
         self.ui.searchButton.clicked.connect(lambda: self.doFilter(self.ui.searchEdit.text()))
         self.ui.actionInsert.triggered.connect(self.insert)
+        #self.ui.actionAuto_detect_slower.triggered.connect()
 
         self.ui.talkTable.clicked.connect(self.selectionChanged)
         self.ui.textEdit.textChanged.connect(self.updateEntry)
         self.ui.soundEdit.textChanged.connect(self.updateEntry)
 
+        self.populateLanguageMenu()
+
         QShortcut("Ctrl+F", self).activated.connect(self.toggleFilterBox)
         QShortcut("Ctrl+G", self).activated.connect(self.toggleGotoBox)
         QShortcut("Ctrl+I", self).activated.connect(self.insert)
+
+    def populateLanguageMenu(self):
+        self.ui.menuLanguage.clear()
+
+        # Add 'Auto_Detect_slower' action first
+        autoDetectAction = QAction("Auto_detect_slower", self)
+        autoDetectAction.triggered.connect(lambda: self.onLanguageSelected("auto_detect"))
+        self.ui.menuLanguage.addAction(autoDetectAction)
+
+        # Separator
+        self.ui.menuLanguage.addSeparator()
+
+        # Add languages from the enum
+        for language in Language:
+            action = QAction(language.name.replace("_", " "), self)
+            action.triggered.connect(lambda _checked, lang=language: self.onLanguageSelected(lang))
+            self.ui.menuLanguage.addAction(action)
+
+    def onLanguageSelected(self, language) -> None:
+        if isinstance(language, Language):
+            print(f"Language selected: {language.name}")
+            self.change_language(language)
+        else:
+            print("Auto detect selected")
+            self.change_language(Language.UNKNOWN)
+
+    def change_language(self, language: Language):
+        encoding = language.get_encoding()  # Assuming get_encoding() returns the correct encoding string
+
+        for i in range(self.model.rowCount()):
+            # Retrieve the current text from the model
+            current_text_item = self.model.item(i, 0)  # Assuming column 0 has the text
+            if current_text_item is not None:
+                current_text = current_text_item.text()
+
+                # Re-encode the text
+                try:
+                    text_bytes = current_text.encode(self.language.get_encoding())
+                    decoded_text = text_bytes.decode(encoding) if encoding else decode_bytes_with_fallbacks(text_bytes)
+                except UnicodeEncodeError:
+                    print("could not encode, attempting encode as utf-8...")
+                    # Handle encoding errors, maybe log or set a default value
+                    try:
+                        text_bytes = current_text.encode()
+                        decoded_text = text_bytes.decode(encoding) if encoding else decode_bytes_with_fallbacks(text_bytes)
+                    except UnicodeDecodeError:
+                        print("could not encode or decode, using utf-8 for both")
+                        text_bytes = current_text.encode()
+                        decoded_text = text_bytes.decode()
+                except UnicodeDecodeError:
+                    print("could not decode but encoding works, decoding as utf-8")
+                    text_bytes = current_text.encode(self.language.get_encoding())
+                    decoded_text = text_bytes.decode()
+
+                # Update the model with the new text
+                self.model.setItem(i, 0, QStandardItem(decoded_text))
+
+        # Update UI components if necessary, like the table view
+        self.ui.talkTable.setModel(self.proxyModel)
+        self.language = language
 
     def load(self, filepath: os.PathLike | str, resref: str, restype: ResourceType, data: bytes) -> None:
         """Loads data into the resource from a file.
@@ -266,6 +331,7 @@ class LoaderDialog(QDialog):
         self.worker.entryCount.connect(self.onEntryCount)
         self.worker.batch.connect(self.onBatch)
         self.worker.loaded.connect(self.onLoaded)
+        self.worker.language.connect(self.setupLanguage)
         self.worker.start()
 
     def onEntryCount(self, count: int):
@@ -278,6 +344,9 @@ class LoaderDialog(QDialog):
             self.model.setVerticalHeaderItem(index, QStandardItem(str(index)))
         self._progressBar.setValue(self.model.rowCount())
 
+    def setupLanguage(self, language: Language):
+        self.language = language
+
     def onLoaded(self):
         self.close()
 
@@ -286,6 +355,7 @@ class LoaderWorker(QThread):
     batch = QtCore.pyqtSignal(object)
     entryCount = QtCore.pyqtSignal(object)
     loaded = QtCore.pyqtSignal()
+    language = QtCore.pyqtSignal(object)
 
     def __init__(self, fileData, model) -> None:
         super().__init__()
@@ -296,6 +366,7 @@ class LoaderWorker(QThread):
         """Load tlk data from file."""
         tlk = read_tlk(self._fileData)
         self.entryCount.emit(len(tlk))
+        self.language.emit(tlk.language)
 
         batch = []
         for _stringref, entry in tlk:

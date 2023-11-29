@@ -20,7 +20,7 @@
       <property name="orientation">
        <enum>Qt::Vertical</enum>
       </property>
-      <widget class="QWidget" name="">
+      <widget class="QWidget" name="layoutWidget">
        <layout class="QVBoxLayout" name="verticalLayout">
         <item>
          <layout class="QHBoxLayout" name="horizontalLayout_3" stretch="5,3">
@@ -88,7 +88,7 @@
         </item>
        </layout>
       </widget>
-      <widget class="QWidget" name="">
+      <widget class="QWidget" name="layoutWidget">
        <layout class="QVBoxLayout" name="verticalLayout_2">
         <item>
          <widget class="QPlainTextEdit" name="textEdit">
@@ -160,8 +160,15 @@
     <addaction name="separator"/>
     <addaction name="actionClose"/>
    </widget>
+   <widget class="QMenu" name="menuLanguage">
+    <property name="title">
+     <string>Language</string>
+    </property>
+    <addaction name="actionAuto_detect_slower"/>
+   </widget>
    <addaction name="menuFIle"/>
    <addaction name="menuView"/>
+   <addaction name="menuLanguage"/>
   </widget>
   <action name="actionGoTo">
    <property name="text">
@@ -206,6 +213,11 @@
   <action name="actionInsert">
    <property name="text">
     <string>Insert</string>
+   </property>
+  </action>
+  <action name="actionAuto_detect_slower">
+   <property name="text">
+    <string>Auto-detect (slower)</string>
    </property>
   </action>
  </widget>
