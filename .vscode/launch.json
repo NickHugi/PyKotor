@@ -33,5 +33,15 @@
       "args": [],
       "console": "integratedTerminal"
     },
+    {
+        "name": "Run Holocron Toolset",
+        "type": "python",
+        "request": "launch",
+        "module": "toolset",
+        "cwd": "${workspaceFolder}/Tools/HolocronToolset/src/",
+        "args": [],
+        "console": "integratedTerminal",
+        "env": {"PYTHONPATH": "${workspaceFolder}/Libraries/PyKotor/src${pathSeparator}${env:PYTHONPATH}"}
+      },
   ]
 }

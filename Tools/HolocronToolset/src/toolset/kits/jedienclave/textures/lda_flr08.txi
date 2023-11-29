@@ -1,0 +1,2 @@
+bumpyshinytexture CM_dantii
+bumpmaptexture LDA_nobump

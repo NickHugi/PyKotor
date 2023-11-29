@@ -1,0 +1,3 @@
+wateralpha 0.4
+bumpyshinytexture CM_awintaris
+bumpmaptexture LTS_Water01B

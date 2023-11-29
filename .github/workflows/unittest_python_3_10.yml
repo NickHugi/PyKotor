@@ -1,10 +1,6 @@
 name: Python 3.10 unittest
 
-on:
-  push:
-    branches: [ "master" ]
-  pull_request:
-    branches: [ "master" ]
+on: [push, pull_request]
 
 permissions:
   contents: read
@@ -23,8 +19,9 @@ jobs:
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
-        if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+        pip install -r Libraries/PyKotor/requirements.txt
 
     - name: Run unittest on files in pykotor/tests
       run: |
-        python -m unittest discover -s tests -p 'test_*.py' -v
+        cd Libraries/PyKotor
+        python -m unittest discover -s src/tests -p 'test_*.py' -v

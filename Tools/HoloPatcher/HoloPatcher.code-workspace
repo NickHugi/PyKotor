@@ -1,0 +1,16 @@
+{
+	"folders": [
+		{
+			"path": "."
+		},
+		{
+			"path": "../../Libraries/PyKotor"
+		}
+	],
+	"settings":  {
+		"python.analysis.extraPaths": [
+			"../../Libraries/PyKotor/src",
+			"./src"
+		]
+	},
+}

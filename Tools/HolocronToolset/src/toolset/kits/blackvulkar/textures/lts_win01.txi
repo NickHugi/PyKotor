@@ -1,0 +1,3 @@
+blending additive
+
+envmaptexture CM_mycubemap

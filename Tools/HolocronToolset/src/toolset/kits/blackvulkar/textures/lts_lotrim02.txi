@@ -1,0 +1,2 @@
+downsamplemin 0
+downsamplemax 0

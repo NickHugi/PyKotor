@@ -1,0 +1,5 @@
+blending additive
+
+envmaptexture CM_awintaris
+
+
