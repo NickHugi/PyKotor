@@ -65,7 +65,7 @@ class TXITextureInformation(TXIBaseInformation):
 
 class TXIFontInformation(TXIBaseInformation):
     DEFAULT_RESOLUTION: ClassVar[int] = 512
-    DEFAULT_FONT_NAMES: ClassVar[list[str]] = [  # TODO: figure out which ones the game actually uses.
+    FONT_TEXTURES: ClassVar[list[str]] = [  # TODO: figure out which ones the game actually uses.
         "fnt_galahad14",  # Main menu?
         "dialogfont10x10",
         "dialogfont10x10a",
@@ -75,7 +75,7 @@ class TXIFontInformation(TXIBaseInformation):
         "dialogfont16x16a",
         "dialogfont16x16a",
         "dialogfont16x16b",
-        "dialogfont32x32",  # It is possible this is the only one used in k1.
+        "dialogfont32x32",
         "fnt_console",     # 127 chars, also has a large horizontally-wide rectangle probably used as the consolebox display
         "fnt_credits",
         "fnt_creditsa",
@@ -87,6 +87,28 @@ class TXIFontInformation(TXIBaseInformation):
         "fnt_dialog16x16",
     ]
 
+    TSL_ADDED_FONTS: ClassVar[list[str]] = [
+        "dialogfont16x16b",
+        "d2xfnt_d16x16b",
+        "d2xfont16x16b",
+        "d2xfont16x16b_ps",
+        "d3xfnt_d16x16b",
+        "d3xfont16x16b",
+        "d3xfont16x16b_ps",
+        "diafnt16x16b_ps",
+    ]
+
+    ASPYR_CONTROLLER_BUTTON_TEXTURES: ClassVar[list[str]] = [
+        "cus_button_a",
+        "cus_button_aps",
+        "cus_button_b",
+        "cus_button_bps",
+        "cus_button_x",
+        "cus_button_xps",
+        "cus_button_y",
+        "cus_button_yps",
+    ]
+
     def __init__(self) -> None:
         super().__init__()
         # Actual fields
@@ -94,21 +116,21 @@ class TXIFontInformation(TXIBaseInformation):
         self.spacingR: float = 0  # Untested. Float between 0 and 1. According to research, should NEVER exceed the maximum of 0.002600
         self.spacingB: float = 0  # Confirmed. Float between 0 and 1. Spacing between each multiline string rendered ingame.
         self.caretindent: float = -0.010000  # Untested. Probably determines the accent information above the character. Probably negative since Y is inverted so this checks out.
-        self.fontwidth: float = 1.000000  # Untested. Float between 0 and 1. Actually stretches down somehow. Heavily distorts the text when modified.
+        self.fontwidth: float = 1.000000  # Tested. Float between 0 and 1. Was told this actually stretches text down somehow. But in my tests, changing this does not yield any noticeable ingame result.
 
         # This could easily be used for DBCS (double byte encodings).
         # It may be unimplemented in KOTOR. Or hopefully, nobody's figured out how to use it.
         # Figuring this out would likely be the solution for supporting languages like Korean, Japanese, Chinese, and Vietnamese.
         # Otherwise a new engine, or implementing an overlay (like discord/steam/rivatuner's) into kotor to bypass kotor's bitmap fonts for displayed text.
-        self.isdoublebyte: bool = False  # (???) Potentially for multi-byte encodings? Might not even be a bool.
-        self.dbmapping: object = None  # (???) Potentially for multi-byte encodings?
+        self.isdoublebyte: bool = False  # (???) Potentially for dbcs multi-byte encodings? Might not even be a bool.
+        self.dbmapping: object = None  # (???) Potentially for dbcs multi-byte encodings?
 
-        self.fontheight: float  # Float between 0 and 1.
+        self.fontheight: float  # Tested. Float between 0 and 1.
         self.baselineheight: float  # Untested. Float between 0 and 1.
         self.texturewidth: float  # Tested. Float between 0 and 1. Actual displayed width of the texture, allows stretching/compressing along the X axis.
 
-        self.upper_left_coords: list[tuple[float, float, int]]  # The top left coordinates for the character box the game draws. each float is 0 to 1. 3rd tuple int is always 0
-        self.lower_right_coords: list[tuple[float, float, int]]  # The bottom right coordinates for the character box the game draws. each float is 0 to 1. 3rd tuple int is always 0
+        self.upper_left_coords: list[tuple[float, float, int]]  # Confirmed. The top left coordinates for the character box the game draws. each float is 0 to 1. 3rd tuple int is always 0
+        self.lower_right_coords: list[tuple[float, float, int]]  # Confirmed. The bottom right coordinates for the character box the game draws. each float is 0 to 1. 3rd tuple int is always 0
         #
         # The 3rd int in the upperleftcoords and bottomright coords is unknown. It could be any of the following:
         #
@@ -230,11 +252,19 @@ lowerrightcoords {self.lr_coords_count}
         baseline_height: float,
         custom_scaling: float,
     ):
-        #self.texturewidth: float = self.numchars * custom_scaling / 50
-        #self.fontheight: float = (self.numchars * custom_scaling * max_char_height) / (50 * resolution[1])
         self.texturewidth = 128 * custom_scaling / 25
         self.fontheight = 128 * custom_scaling * max_char_height / (25 * resolution[1])
         self.baselineheight = baseline_height / resolution[1]
+
+        #self.texturewidth: float = self.numchars * custom_scaling / 50  # maybe?
+        #self.fontheight: float = (self.numchars * custom_scaling * max_char_height) / (50 * resolution[1])  # maybe?
+
+        # TODO: I'm pretty sure fontwidth could be calculated here too. During testing, it's been easier to leave that at 1.000000 so there's less variables to worry about.
+        # We should figure out the relationship for proper readability. I think vanilla K1 defines texturewidth as 'resolution_x / 100'.
+        # Also worth mentioning the above math doesn't even work if the resolution isn't a perfect square.
+        # EDIT: Editing fontwidth yields no changes in game. Probably unused.
+        #self.fontwidth = self.texturewidth / self.fontheight * max_char_height / resolution[0]
+        #assert int(round(self.fontwidth)) == 1
 
 def calculate_character_metrics(
     pil_font,
@@ -278,7 +308,7 @@ def write_bitmap_fonts(
     target_path = (Path(target) if isinstance(target, BasePath) else Path(target)).resolve()
     target_path.mkdir(parents=True, exist_ok=True)
 
-    for font_name in TXIFontInformation.DEFAULT_FONT_NAMES:
+    for font_name in TXIFontInformation.FONT_TEXTURES:
         if font_name == "fnt_console":
             continue
 
