@@ -2,9 +2,9 @@
 games.
 """
 from __future__ import annotations
-from enum import Enum
 
 import os
+from enum import Enum
 from typing import NamedTuple, Union
 from xml.etree.ElementTree import ParseError
 

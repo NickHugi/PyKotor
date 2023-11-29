@@ -20,7 +20,6 @@ from pykotor.resource.formats.gff.gff_data import GFFStruct
 from pykotor.resource.formats.ssf import SSF, SSFSound
 from pykotor.resource.formats.ssf.ssf_auto import bytes_ssf, read_ssf
 from pykotor.resource.formats.tlk import TLK
-from pykotor.resource.formats.tlk.tlk_auto import bytes_tlk, read_tlk
 from pykotor.resource.formats.twoda import TwoDA
 from pykotor.resource.formats.twoda.twoda_auto import bytes_2da, read_2da
 from pykotor.tslpatcher.logger import PatchLogger

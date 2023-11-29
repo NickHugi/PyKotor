@@ -15,7 +15,6 @@ from PyQt5.QtWidgets import QMainWindow, QMessageBox, QTreeWidgetItem, QWidget
 
 from pykotor.common.stream import BinaryReader
 from pykotor.tools.encoding import decode_bytes_with_fallbacks
-from pykotor.utility.misc import is_debug_mode
 from pykotor.utility.path import Path, PurePath
 from toolset.__main__ import is_frozen
 from toolset.gui.dialogs.asyncloader import AsyncLoader

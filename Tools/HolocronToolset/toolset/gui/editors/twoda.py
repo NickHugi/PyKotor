@@ -19,7 +19,7 @@ if TYPE_CHECKING:
 
 
 class TwoDAEditor(Editor):
-    def __init__(self, parent: Optional[QWidget], installation: HTInstallation | None = None):
+    def __init__(self, parent: Optional[QWidget], installation: HTInstallation | None = None) -> None:
         """Initializes the 2DA editor
         Args:
             parent: QWidget: The parent widget
@@ -115,7 +115,7 @@ class TwoDAEditor(Editor):
             self.proxyModel.setSourceModel(self.model)
             self.new()
 
-    def _load_main(self, data):
+    def _load_main(self, data) -> None:
         """Loads data from a 2DA file into the main table
         Args:
             data: The 2DA data to load
@@ -405,11 +405,11 @@ class TwoDAEditor(Editor):
 
 
 class SortFilterProxyModel(QSortFilterProxyModel):
-    def __init__(self, parent):
+    def __init__(self, parent) -> None:
         super().__init__(parent)
         self._filterString: str = ""
 
-    def filterAcceptsRow(self, sourceRow, sourceParent):
+    def filterAcceptsRow(self, sourceRow, sourceParent) -> bool:
         """Filters rows based on regular expression pattern match.
 
         Args:
