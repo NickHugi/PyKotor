@@ -1142,7 +1142,7 @@ class Installation:
         if folders is None:
             folders = []
 
-        sounds: CaseInsensitiveDict[bytes | None] = CaseInsensitiveDict[Optional[bytes]]()
+        sounds: CaseInsensitiveDict[bytes | None] = CaseInsensitiveDict()
         texture_types = [ResourceType.WAV, ResourceType.MP3]
         resnames = [resname.lower() for resname in resnames]
 
