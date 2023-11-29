@@ -11,6 +11,8 @@ from toolset.gui.widgets.settings.installations import GlobalSettings
 if TYPE_CHECKING:
     import os
 
+    from gui.editor import Editor
+
     from toolset.data.installation import HTInstallation
 
 windows: list[QWidget] = []
@@ -35,7 +37,7 @@ def openResourceEditor(
     installation: HTInstallation | None = None,
     parentwindow: QWidget | None = None,
     gff_specialized: bool | None = None,
-) -> tuple[str, QWidget] | tuple[None, None]:
+) -> tuple[os.PathLike | str, Editor] | tuple[None, None]:
     """Opens an editor for the specified resource. If the user settings have the editor set to inbuilt it will return
     the editor, otherwise it returns None.
 
@@ -137,61 +139,61 @@ def openResourceEditor(
             editor = UTDEditor(None, installation, mainwindow=parentwindow)
 
     if restype in [ResourceType.UTS, ResourceType.UTS_XML]:
-        if installation is None or not gff_specialized:
+        if installation is None or not gff_specialized:  # noqa: SIM108
             editor = GFFEditor(None, installation)
         else:
             editor = UTSEditor(None, installation)
 
     if restype in [ResourceType.UTT, ResourceType.UTT_XML]:
-        if installation is None or not gff_specialized:
+        if installation is None or not gff_specialized:  # noqa: SIM108
             editor = GFFEditor(None, installation)
         else:
             editor = UTTEditor(None, installation)
 
     if restype in [ResourceType.UTM, ResourceType.UTM_XML]:
-        if installation is None or not gff_specialized:
+        if installation is None or not gff_specialized:  # noqa: SIM108
             editor = GFFEditor(None, installation)
         else:
             editor = UTMEditor(None, installation)
 
     if restype in [ResourceType.UTW, ResourceType.UTW_XML]:
-        if installation is None or not gff_specialized:
+        if installation is None or not gff_specialized:  # noqa: SIM108
             editor = GFFEditor(None, installation)
         else:
             editor = UTWEditor(None, installation)
 
     if restype in [ResourceType.UTE, ResourceType.UTE_XML]:
-        if installation is None or not gff_specialized:
+        if installation is None or not gff_specialized:  # noqa: SIM108
             editor = GFFEditor(None, installation)
         else:
             editor = UTEEditor(None, installation)
 
     if restype in [ResourceType.UTI, ResourceType.UTI_XML]:
-        if installation is None or not gff_specialized:
+        if installation is None or not gff_specialized:  # noqa: SIM108
             editor = GFFEditor(None, installation)
         else:
             editor = UTIEditor(None, installation)
 
     if restype in [ResourceType.JRL, ResourceType.JRL_XML]:
-        if installation is None or not gff_specialized:
+        if installation is None or not gff_specialized:  # noqa: SIM108
             editor = GFFEditor(None, installation)
         else:
             editor = JRLEditor(None, installation)
 
     if restype in [ResourceType.ARE, ResourceType.ARE_XML]:
-        if installation is None or not gff_specialized:
+        if installation is None or not gff_specialized:  # noqa: SIM108
             editor = GFFEditor(None, installation)
         else:
             editor = AREEditor(None, installation)
 
     if restype in [ResourceType.PTH, ResourceType.PTH_XML]:
-        if installation is None or not gff_specialized:
+        if installation is None or not gff_specialized:  # noqa: SIM108
             editor = GFFEditor(None, installation)
         else:
             editor = PTHEditor(None, installation)
 
     if restype in [ResourceType.GIT, ResourceType.GIT_XML]:
-        if installation is None or not gff_specialized:
+        if installation is None or not gff_specialized:  # noqa: SIM108
             editor = GFFEditor(None, installation)
         else:
             editor = GITEditor(None, installation)
