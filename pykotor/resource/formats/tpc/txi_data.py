@@ -364,7 +364,7 @@ def write_bitmap_font(
     upper_left_coords = []
     lower_right_coords = []
     for char in charset_list:
-        if not char:
+        if not char:  # don't use a cell for characters that can't be drawn.
             # append some coords around blank space (to keep character's byte indexing aligned)
             upper_left_coords.append((0.000001, 0.000001, 0))
             lower_right_coords.append((0.000002, 0.000002, 0))
@@ -390,7 +390,7 @@ def write_bitmap_font(
         # Calculate character height and width
         char_bbox = draw.textbbox((pixel_x1, pixel_y1), char, font=pil_font)
         char_width = char_bbox[2] - char_bbox[0]
-        char_height = char_bbox[3] - char_bbox[1]
+        _char_height = char_bbox[3] - char_bbox[1]
 
         # Draw character. Adjust Y coordinates to move one cell downwards
         if char == "\n":
