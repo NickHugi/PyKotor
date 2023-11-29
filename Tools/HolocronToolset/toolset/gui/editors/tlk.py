@@ -123,6 +123,8 @@ class TLKEditor(Editor):
             self.change_language(Language.UNKNOWN)
 
     def change_language(self, language: Language):
+
+        # TODO: This code is a mess... need to just store the tlk text in a way easy to grab the original bytes.
         encoding = language.get_encoding()  # Assuming get_encoding() returns the correct encoding string
 
         for i in range(self.model.rowCount()):
