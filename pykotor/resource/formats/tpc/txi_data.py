@@ -232,6 +232,7 @@ lowerrightcoords {self.lr_coords_count}
     ):
         res_const: float = resolution[0] / TXIFontInformation.DEFAULT_RESOLUTION
         scaling_factor: float = 2 ** (math.log2(res_const) - 1)
+        scaling_factor = 2 ** (math.log2(res_const) - (math.log2(res_const)))
 
         self.texturewidth: float = resolution[0] / 100 / res_const * custom_scaling
         self.fontheight: float = max_char_height / resolution[1] * self.texturewidth / scaling_factor * custom_scaling
