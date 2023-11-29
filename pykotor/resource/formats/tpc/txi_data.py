@@ -230,12 +230,11 @@ lowerrightcoords {self.lr_coords_count}
         baseline_height: float,
         custom_scaling: float,
     ):
-        res_const: float = resolution[0] / TXIFontInformation.DEFAULT_RESOLUTION
-        scaling_factor = 2 ** (math.log2(res_const) - (math.log2(res_const)))
-
-        self.texturewidth: float = resolution[0] / 100 / res_const * custom_scaling
-        self.fontheight: float = max_char_height / resolution[1] * self.texturewidth / scaling_factor
-        self.baselineheight = baseline_height / resolution[1] / TXIFontInformation.DEFAULT_RESOLUTION
+        #self.texturewidth: float = self.numchars * custom_scaling / 50
+        #self.fontheight: float = (self.numchars * custom_scaling * max_char_height) / (50 * resolution[1])
+        self.texturewidth = 128 * custom_scaling / 25
+        self.fontheight = 128 * custom_scaling * max_char_height / (25 * resolution[1])
+        self.baselineheight = baseline_height / resolution[1]
 
 def calculate_character_metrics(
     pil_font,
@@ -321,7 +320,7 @@ def write_bitmap_font(
     baseline_height, max_underhang_height, max_char_height = calculate_character_metrics(pil_font, charset_list)
 
     # Calculate total additional height needed for the underhang
-    total_additional_height = (baseline_height - max_underhang_height) * characters_per_column
+    total_additional_height = (baseline_height) * characters_per_column
     # Adjust the resolution to include the additional height
     adjusted_resolution = (resolution[0] + total_additional_height, resolution[1] + total_additional_height)
 
@@ -405,7 +404,7 @@ def write_bitmap_font(
     # Build txi fields
     txi_font_info = TXIFontInformation()
     txi_font_info.isdoublebyte = not lang.is_8bit_encoding()
-    txi_font_info.numchars = numchars
+    #txi_font_info.numchars = numchars
     txi_font_info.upper_left_coords = upper_left_coords
     txi_font_info.lower_right_coords = lower_right_coords
     # Normalize and set font metrics
