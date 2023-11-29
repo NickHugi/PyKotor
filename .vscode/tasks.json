@@ -277,6 +277,7 @@
         "--exclude-module=PyOpenGL",
         "--exclude-module=PyGLM",
         "--name=HoloPatcher",
+        "--path=${workspaceFolder}${pathSeparator}tools${pathSeparator}holopatcher",
         "--icon=tools${pathSeparator}holopatcher${pathSeparator}resources${pathSeparator}icons${pathSeparator}patcher_icon_v2.ico",
         "tools${pathSeparator}holopatcher${pathSeparator}__main__.py"
       ],
@@ -357,6 +358,7 @@
         "--clean",
         "--noconfirm",
         "--name=kotordiff",
+        "--path=${workspaceFolder}${pathSeparator}tools${pathSeparator}kotordiff",
         "tools${pathSeparator}kotordiff${pathSeparator}__main__.py"
       ],
       "problemMatcher": []
@@ -379,6 +381,7 @@
         "--exclude-module=PyGLM",
         "--exclude-module=dl_translate",
         "--exclude-module=torch",
+        "--path=${workspaceFolder}${pathSeparator}tools${pathSeparator}k_batchpatcher",
         "tools${pathSeparator}k_batchpatcher${pathSeparator}__main__.py"
       ],
       "problemMatcher": []
@@ -396,6 +399,7 @@
         "--clean",
         "--noconfirm",
         "--name=gui_creator",
+        "--path=${workspaceFolder}${pathSeparator}tools${pathSeparator}guicreator",
         "tools${pathSeparator}guicreator${pathSeparator}__main__.py"
       ],
       "problemMatcher": []
@@ -413,6 +417,7 @@
         "--clean",
         "--noconfirm",
         "--name=mdl_decompile",
+        "--path=${workspaceFolder}${pathSeparator}tools${pathSeparator}mdl_decompile",
         "tools${pathSeparator}mdl_decompile${pathSeparator}__main__.py"
       ],
       "problemMatcher": []
