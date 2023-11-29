@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from enum import IntEnum
-from typing import TYPE_CHECKING, Optional, Tuple
+from typing import TYPE_CHECKING, Optional
 
 import pyperclip
 from PyQt5.QtCore import QSortFilterProxyModel
@@ -176,7 +176,7 @@ class TwoDAEditor(Editor):
         for i in range(twoda.get_height()):
             self.ui.twodaTable.resizeColumnToContents(i)
 
-    def build(self) -> Tuple[bytes, bytes]:
+    def build(self) -> tuple[bytes, bytes]:
         """Builds a 2D array from a table model
         Args:
             self: The object instance

@@ -327,7 +327,7 @@ def write_bitmap_font(
     font_path: os.PathLike | str,
     resolution: tuple[int, int],
     lang: Language,
-    draw_boxes: bool = False,
+    draw_box: bool = False,
     custom_scaling: float = 1.0,
     font_color=None,
 ) -> None:
@@ -394,18 +394,18 @@ def write_bitmap_font(
 
         # Draw character. Adjust Y coordinates to move one cell downwards
         if char == "\n":
-            draw.text((pixel_x1 + cell_width/2, pixel_y1 + cell_height - max_underhang_height), char, font=pil_font, fill=font_color or (255, 255, 255, 255))
+            draw.text((pixel_x1, pixel_y1 + cell_height - max_underhang_height), char, font=pil_font, fill=font_color or (255, 255, 255, 255))
         else:
-            draw.text((pixel_x1 + cell_width/2, pixel_y1 + cell_height - max_underhang_height), char, anchor="ms", font=pil_font, fill=font_color or (255, 255, 255, 255))
+            draw.text((pixel_x1, pixel_y1 + cell_height - max_underhang_height), char, anchor="ls", font=pil_font, fill=font_color or (255, 255, 255, 255))
 
         # Adjust text coordinates
         cell_center_x = pixel_x1 + cell_width / 2  # center of the cell
-        pixel_x1 = cell_center_x - char_width / 2
-        pixel_x2 = cell_center_x + char_width / 2
+        pixel_x1 = pixel_x1
+        pixel_x2 = pixel_x1 + char_width
         pixel_y1 = pixel_y2 - max_char_height
 
         # Draw a red rectangle around the character based on actual text dimensions
-        if draw_boxes:
+        if draw_box:
             draw.rectangle((pixel_x1, pixel_y1, pixel_x2, pixel_y2), outline="red")
 
         # Calculate normalized coordinates

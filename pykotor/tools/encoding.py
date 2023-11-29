@@ -138,10 +138,9 @@ def get_charset_from_encoding(encoding):
     #for i in range(0x110000):
     for i in range(256):
         try:
-            char = chr(i)
-            char.encode(encoding)
+            char = bytes([i]).decode(encoding)
             charset.append(char)
-        except UnicodeEncodeError:  # noqa: PERF203
+        except UnicodeDecodeError:  # noqa: PERF203
             charset.append("")
     return charset
 

@@ -1,18 +1,17 @@
 from __future__ import annotations
 
 import concurrent.futures
-from contextlib import suppress
 import os
 import pathlib
 import platform
 import sys
 import tkinter as tk
-from tkinter import colorchooser
 import traceback
+from contextlib import suppress
 from copy import deepcopy
 from io import StringIO
 from threading import Thread
-from tkinter import filedialog, messagebox, ttk
+from tkinter import colorchooser, filedialog, messagebox, ttk
 from tkinter import font as tkfont
 from typing import TYPE_CHECKING, Callable
 
@@ -116,16 +115,19 @@ def get_font_paths_windows() -> list[Path]:
     import winreg
     font_registry_path = r"SOFTWARE\Microsoft\Windows NT\CurrentVersion\Fonts"
     fonts_dir = Path("C:/Windows/Fonts")
-    font_paths = []
+    font_paths = set()
 
     with winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, font_registry_path) as key:
         for i in range(winreg.QueryInfoKey(key)[1]):  # Number of values in the key
             value = winreg.EnumValue(key, i)
             font_path: Path = fonts_dir / value[1]
             if font_path.suffix.lower() == ".ttf":  # Filtering for .ttf files
-                font_paths.append(font_path)
+                font_paths.add(font_path)
+    for file in fonts_dir.rglob("*"):
+        if file.suffix.lower() == ".ttf" and file.is_file():
+            font_paths.add(file)
 
-    return font_paths
+    return list(font_paths)
 
 def get_font_paths() -> list[Path]:
     with suppress(Exception):
