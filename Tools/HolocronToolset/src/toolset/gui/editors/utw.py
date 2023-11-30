@@ -13,20 +13,18 @@ if TYPE_CHECKING:
     import os
 
     from PyQt5.QtWidgets import QWidget
-
     from toolset.data.installation import HTInstallation
 
 
 class UTWEditor(Editor):
     def __init__(self, parent: QWidget | None, installation: HTInstallation | None = None):
-        """Initialize Waypoint Editor window
+        """Initialize Waypoint Editor window.
+
         Args:
+        ----
             parent: {Parent widget}
             installation: {Installation object}.
 
-        Returns
-        -------
-            None
         Processing Logic:
             - Initialize UI elements from designer file
             - Set up menu bar and signal connections
@@ -64,11 +62,12 @@ class UTWEditor(Editor):
         self._loadUTW(utw)
 
     def _loadUTW(self, utw: UTW):
-        """Load UTW data into UI elements
+        """Load UTW data into UI elements.
+
         Args:
+        ----
             utw (UTW): UTW object to load data from
-        Returns:
-            None: No return value
+
         Processing Logic:
             - Load basic UTW data like name, tag and resref into line edits
             - Load advanced data like map note flags and text into checkboxes and line edit

@@ -33,7 +33,7 @@ from pykotor.resource.generics.utw import UTW, bytes_utw, read_utw
 from pykotor.resource.type import ResourceType
 from pykotor.tools.misc import is_bif_file, is_capsule_file, is_erf_file, is_erf_or_mod_file, is_rim_file
 from pykotor.tools.model import list_lightmaps, list_textures
-from pykotor.utility.path import BasePath, Path, PurePath
+from utility.path import BasePath, Path, PurePath
 
 if TYPE_CHECKING:
     import os

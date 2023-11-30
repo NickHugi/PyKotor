@@ -23,8 +23,8 @@ from pykotor.resource.formats.tpc import read_tpc, write_tpc
 from pykotor.resource.type import ResourceType
 from pykotor.tools import model
 from pykotor.tools.misc import is_bif_file, is_rim_file
-from pykotor.utility.error_handling import assert_with_variable_trace
-from pykotor.utility.path import Path, PurePath
+from utility.error_handling import assert_with_variable_trace
+from utility.path import Path, PurePath
 from toolset.config import PROGRAM_VERSION, UPDATE_INFO_LINK
 from toolset.data.installation import HTInstallation
 from toolset.gui.dialogs.about import About
@@ -89,8 +89,10 @@ class ToolWindow(QMainWindow):
     ]
 
     def __init__(self) -> None:
-        """Initializes the main window
+        """Initializes the main window.
+
         Args:
+        ----
             self: The object instance
         Processing Logic:
             - Sets up superclass initialization
@@ -129,11 +131,12 @@ class ToolWindow(QMainWindow):
         self.checkForUpdates(True)
 
     def _setupSignals(self) -> None:
-        """Connects signals to slots for UI interactions
+        """Connects signals to slots for UI interactions.
+
         Args:
-            self: {The class instance}: Sets up connections for UI signals
-        Returns:
-            None: No return value
+        ----
+            self: {The class instance}: Sets up connections for UI signals.
+
         {Processing Logic}:
             - Connects game combo box index changed to change active installation
             - Connects module/override file updated signals to update handlers
@@ -305,10 +308,7 @@ class ToolWindow(QMainWindow):
                 filepath = url.toLocalFile()
                 r_filepath = Path(filepath)
                 with r_filepath.open("rb") as file:
-                    resref, restype = ResourceIdentifier.from_path(filepath)
-                    if restype is ResourceType.INVALID:
-                        msg = f"Invalid resource type: {restype.extension}"
-                        raise TypeError(msg)
+                    resref, restype = ResourceIdentifier.from_path(filepath).validate()
                     data = file.read()
                     openResourceEditor(r_filepath, resref, restype, data, self.active, self)
 
@@ -316,10 +316,7 @@ class ToolWindow(QMainWindow):
         if e.mimeData().hasUrls():
             for url in e.mimeData().urls():
                 with suppress(Exception):
-                    _resref, restype = ResourceIdentifier.from_path(url.toLocalFile())
-                    if restype is ResourceType.INVALID:
-                        msg = f"Invalid resource type: {restype.extension}"
-                        raise TypeError(msg)
+                    _resref, restype = ResourceIdentifier.from_path(url.toLocalFile()).validate()
                     e.accept()
 
     # endregion
@@ -391,8 +388,9 @@ class ToolWindow(QMainWindow):
             self.reloadSettings()
 
     def openActiveTalktable(self) -> None:
-        """Opens the talktable for the active (currently selected) installation. If there is no active information, show
-        a message box instead.
+        """Opens the talktable for the active (currently selected) installation.
+
+        If there is no active information, show a message box instead.
         """
         filepath = self.active.path() / "dialog.tlk"
         data = BinaryReader.load_file(filepath)
@@ -404,7 +402,9 @@ class ToolWindow(QMainWindow):
         openResourceEditor(res.filepath, "global", ResourceType.JRL, res.data, self.active, self)
 
     def openFileSearchDialog(self) -> None:
-        """Opens the FileSearcher dialog. If a search is conducted then a FileResults dialog displays the results
+        """Opens the FileSearcher dialog.
+
+        If a search is conducted then a FileResults dialog displays the results
         where the user can then select a resource and the selected resouce will then be shown in the main window.
         """
         searchDialog = FileSearcher(self, self.installations)
@@ -590,13 +590,15 @@ class ToolWindow(QMainWindow):
             self.ui.gameCombo.addItem(installation.name)
 
     def changeActiveInstallation(self, index: int) -> None:
-        """Changes the active installation selected. If an installation does not have a path yet set, the user is prompted
-        to select a directory for it. If the installation path remains unset then the active installation also remains
-        unselected.
+        """Changes the active installation selected.
+
+        If an installation does not have a path yet set, the user is prompted
+        to select a directory for it. If the installation path remains unset then the active
+        installation also remains unselected.
 
         Args:
         ----
-            index: Index of the installation in the installationCombo combobox.
+            index (int): Index of the installation in the installationCombo combobox.
         """
         self.ui.gameCombo.setCurrentIndex(index)
 
@@ -674,10 +676,8 @@ class ToolWindow(QMainWindow):
             resource: {FileResource}: The FileResource object
             filepath: {os.PathLike | str}: Path to save the extracted file
             loader: {AsyncBatchLoader}: Loader for async operations
-        Returns:
-            None: No return value
 
-        {Processes the resource based on its type:
+        Processing Logic:
         - Extracts Txi data from TPC files
         - Decompiles TPC and MDL files
         - Extracts textures from MDL files
@@ -746,10 +746,10 @@ class ToolWindow(QMainWindow):
                     file_format = ResourceType.TGA if self.ui.tpcDecompileCheckbox.isChecked() else ResourceType.TPC
                     extension = "tga" if file_format == ResourceType.TGA else "tpc"
                     write_tpc(tpc, folderpath.joinpath(f"{texture}.{extension}"), file_format)
-                except Exception:  # noqa: PERF203
-                    loader.errors.append(ValueError(f"Could not find or extract tpc: '{texture}'"))
-        except Exception:
-            loader.errors.append(ValueError(f"Could not determine textures used in model: '{resource.resname()}'"))
+                except Exception as e:  # noqa: PERF203
+                    loader.errors.append(ValueError(f"Could not find or extract tpc: '{texture}'\nreason: {e!r}"))
+        except Exception as e:
+            loader.errors.append(ValueError(f"Could not determine textures used in model: '{resource.resname()}'\nreason: {e!r}"))
 
     def openFromFile(self) -> None:
         filepaths = QFileDialog.getOpenFileNames(self, "Select files to open")[:-1][0]
@@ -759,7 +759,7 @@ class ToolWindow(QMainWindow):
             try:
                 with r_filepath.open("rb") as file:
                     data = file.read()
-                openResourceEditor(filepath, *ResourceIdentifier.from_path(r_filepath), data, self.active, self)
+                openResourceEditor(filepath, *ResourceIdentifier.from_path(r_filepath).validate(), data, self.active, self)
             except ValueError as e:
                 QMessageBox(QMessageBox.Critical, "Failed to open file", str(e)).exec_()
 

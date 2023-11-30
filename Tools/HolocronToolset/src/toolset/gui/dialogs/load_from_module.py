@@ -1,7 +1,6 @@
-from PyQt5.QtWidgets import QDialog, QListWidgetItem
-
 from pykotor.extract.capsule import Capsule
 from pykotor.resource.type import ResourceType
+from PyQt5.QtWidgets import QDialog, QListWidgetItem
 
 
 class LoadFromModuleDialog(QDialog):

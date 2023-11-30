@@ -17,7 +17,7 @@ from pykotor.tslpatcher.logger import PatchLogger
 from pykotor.tslpatcher.memory import PatcherMemory
 from pykotor.tslpatcher.mods.install import InstallFile, create_backup
 from pykotor.tslpatcher.mods.template import OverrideType, PatcherModifications
-from pykotor.utility.path import Path, PurePath
+from utility.path import Path, PurePath
 
 if TYPE_CHECKING:
     import os

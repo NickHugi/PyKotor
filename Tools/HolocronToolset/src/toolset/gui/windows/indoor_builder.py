@@ -11,6 +11,10 @@ from tempfile import TemporaryDirectory
 from typing import TYPE_CHECKING
 
 import requests
+from pykotor.common.geometry import Vector2, Vector3
+from pykotor.common.stream import BinaryReader, BinaryWriter
+from utility.misc import is_debug_mode
+from utility.path import BasePurePath, Path, PurePath
 from PyQt5 import QtCore
 from PyQt5.QtCore import QPoint, QPointF, QRectF, QTimer
 from PyQt5.QtGui import (
@@ -38,11 +42,6 @@ from PyQt5.QtWidgets import (
     QPushButton,
     QWidget,
 )
-
-from pykotor.common.geometry import Vector2, Vector3
-from pykotor.common.stream import BinaryReader, BinaryWriter
-from pykotor.utility.misc import is_debug_mode
-from pykotor.utility.path import BasePurePath, Path, PurePath
 from toolset.__main__ import is_frozen
 from toolset.config import UPDATE_INFO_LINK
 from toolset.data.indoorkit import Kit, KitComponent, load_kits

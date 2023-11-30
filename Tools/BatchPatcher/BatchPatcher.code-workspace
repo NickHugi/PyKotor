@@ -5,12 +5,20 @@
 		},
 		{
 			"path": "../../Libraries/PyKotor"
-		}
+		},
+		{
+			"path": "../../Libraries/PyKotorFont"
+		},
+		{
+			"path": "../../Libraries/Utility"
+		},
 	],
 	"settings":  {
 		"python.analysis.extraPaths": [
+			"./src",
 			"../../Libraries/PyKotor/src",
-			"./src"
+			"../../Libraries/PyKotorFont/src",
+			"../../Libraries/Utility/src",
 		]
 	},
 }

@@ -13,10 +13,10 @@
       "justMyCode":true
     },
     {
-      "name":"Python: Module",
+      "name":"Start HoloPatcher",
       "type":"python",
       "request":"launch",
-      "module":"holopatcher",
+      "program":"${workspaceFolder}/src/__main__.py",
       "justMyCode":true,
       "cwd": "${workspaceFolder}/src"
     },

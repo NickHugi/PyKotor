@@ -3,10 +3,9 @@ from __future__ import annotations
 import os
 from typing import TYPE_CHECKING
 
-from PyQt5.QtWidgets import QPlainTextEdit, QWidget
-
 from pykotor.resource.type import ResourceType
 from pykotor.tools.encoding import decode_bytes_with_fallbacks
+from PyQt5.QtWidgets import QPlainTextEdit, QWidget
 from toolset.gui.editor import Editor
 
 if TYPE_CHECKING:
@@ -15,15 +14,14 @@ if TYPE_CHECKING:
 
 class TXTEditor(Editor):
     def __init__(self, parent: QWidget | None, installation: HTInstallation = None):
-        """Initialize the text editor
+        """Initialize the text editor.
+
         Args:
+        ----
             parent: {Parent widget}
             installation: {Installation object}.
 
-        Returns
-        -------
-            None
-        Initializes the text editor window:
+        Initialize the text editor window:
             - Sets supported file types
             - Initializes parent class
             - Sets initial window size

@@ -2,13 +2,12 @@ from __future__ import annotations
 
 import os
 
-from PyQt5.QtWidgets import QFileDialog, QMessageBox
-
 from pykotor.common.misc import Game
 from pykotor.common.stream import BinaryReader, BinaryWriter
 from pykotor.resource.formats.ncs.compilers import ExternalNCSCompiler
 from pykotor.resource.formats.ncs.ncs_auto import bytes_ncs, compile_nss
-from pykotor.utility.path import Path
+from utility.path import Path
+from PyQt5.QtWidgets import QFileDialog, QMessageBox
 from toolset.gui.widgets.settings.installations import GlobalSettings, NoConfigurationSetError
 
 

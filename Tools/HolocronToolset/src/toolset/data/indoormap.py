@@ -6,9 +6,6 @@ import math
 from copy import copy, deepcopy
 from typing import TYPE_CHECKING, NamedTuple
 
-from PyQt5 import QtCore
-from PyQt5.QtGui import QColor, QImage, QPainter, QPixmap, QTransform
-
 from pykotor.common.geometry import Vector2, Vector3, Vector4
 from pykotor.common.language import LocalizedString
 from pykotor.common.misc import Color, ResRef
@@ -25,12 +22,13 @@ from pykotor.resource.generics.ifo import IFO, bytes_ifo
 from pykotor.resource.generics.utd import bytes_utd
 from pykotor.resource.type import ResourceType
 from pykotor.tools import model
+from PyQt5 import QtCore
+from PyQt5.QtGui import QColor, QImage, QPainter, QPixmap, QTransform
 
 if TYPE_CHECKING:
     import os
 
     from pykotor.resource.formats.bwm import BWM
-
     from toolset.data.indoorkit import Kit, KitComponent, KitComponentHook, KitDoor
     from toolset.data.installation import HTInstallation
 
@@ -68,12 +66,19 @@ class IndoorMap:
             room.rebuildConnections(self.rooms)
 
     def doorInsertions(self) -> list[DoorInsertion]:
-        """Returns a list of connections between rooms. Used when determining when to place doors when building a map.
-        Generates door insertions between rooms
+        """Generates door insertions between rooms.
+
+        Used when determining when to place doors when building a map.
+
         Args:
-            self: The FloorPlan object
+        ----
+            self: The FloorPlan object.
+
         Returns:
-            list[DoorInsertion]: List of door insertion objects
+        -------
+            list[DoorInsertion]: Returns a list of connections between rooms.
+
+        Processing Logic:
         1. Loops through each room and connection
         2. Determines door, rooms, hooks and positions
         3. Checks if door already exists at point
@@ -123,11 +128,13 @@ class IndoorMap:
             self.vis.add_room(modelname)
 
     def process_room_components(self):
-        """Process room components by adding them to tracking sets
+        """Process room components by adding them to tracking sets.
+
         Args:
-            self: The class instance
-        Returns:
-            None: No value is returned
+        ----
+            self: The class instance.
+
+        Processing Logic:
         - Iterate through rooms and add component to usedRooms set
         - Iterate through usedRooms and add mdl to scanMdls and kit to usedKits
         - Iterate through door padding dicts and values, adding padding mdl to scanMdls.
@@ -144,9 +151,6 @@ class IndoorMap:
     def handle_textures(self):
         """Rename textures to avoid conflicts.
 
-        Returns
-        -------
-            None: {Does not return anything}
         Processing Logic:
             - Scan through all models
             - Get textures from each model
@@ -172,9 +176,6 @@ class IndoorMap:
             room: {The room object being processed}
             mdl: {The 3D room model object}.
 
-        Returns:
-        -------
-            None
         Processing Logic:
             - Loops through each face in the room model
             - Generates a lightmap texture for each face
@@ -224,16 +225,20 @@ class IndoorMap:
         for filename, data in room.component.kit.always.items():
             resname, restype = ResourceIdentifier.from_path(filename)
             if restype is ResourceType.INVALID:
-                msg = f"Invalid resource type: {restype.extension}"
-                raise TypeError(msg)
+                print("Invalid resource, skipping...", filename, restype)
+                continue
             self.mod.set_data(resname, restype, data)
 
     def process_model(self, room: IndoorMapRoom, installation):
-        """Processes a model based on room properties
+        """Processes a model based on room properties.
+
         Args:
+        ----
             room: IndoorMapRoom: The room object containing model properties
-            installation: Installation: The installation object containing target system properties
+            installation: Installation: The installation object containing target system properties.
+
         Returns:
+        -------
             mdl: str: The processed model string
             mdx: str: The processed material index string
         Processing Logic:

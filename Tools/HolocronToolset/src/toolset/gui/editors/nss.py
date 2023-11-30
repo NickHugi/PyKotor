@@ -4,6 +4,13 @@ from copy import deepcopy
 from operator import attrgetter
 from typing import TYPE_CHECKING, ClassVar
 
+from pykotor.common.scriptdefs import KOTOR_CONSTANTS, KOTOR_FUNCTIONS, TSL_CONSTANTS, TSL_FUNCTIONS
+from pykotor.common.stream import BinaryWriter
+from pykotor.resource.formats.erf import ERF, read_erf, write_erf
+from pykotor.resource.formats.rim import RIM, read_rim, write_rim
+from pykotor.resource.type import ResourceType
+from pykotor.tools.misc import is_bif_file, is_erf_or_mod_file, is_rim_file
+from utility.path import Path
 from PyQt5 import QtCore
 from PyQt5.QtCore import QRect, QRegExp, QSize
 from PyQt5.QtGui import (
@@ -19,14 +26,6 @@ from PyQt5.QtGui import (
     QTextFormat,
 )
 from PyQt5.QtWidgets import QListWidgetItem, QMessageBox, QPlainTextEdit, QShortcut, QTextEdit, QWidget
-
-from pykotor.common.scriptdefs import KOTOR_CONSTANTS, KOTOR_FUNCTIONS, TSL_CONSTANTS, TSL_FUNCTIONS
-from pykotor.common.stream import BinaryWriter
-from pykotor.resource.formats.erf import ERF, read_erf, write_erf
-from pykotor.resource.formats.rim import RIM, read_rim, write_rim
-from pykotor.resource.type import ResourceType
-from pykotor.tools.misc import is_bif_file, is_erf_or_mod_file, is_rim_file
-from pykotor.utility.path import Path
 from toolset.gui.editor import Editor
 from toolset.gui.widgets.settings.installations import GlobalSettings, NoConfigurationSetError
 from toolset.utils.script import compileScript, decompileScript

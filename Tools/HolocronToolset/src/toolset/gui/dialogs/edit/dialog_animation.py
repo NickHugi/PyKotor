@@ -1,6 +1,5 @@
-from PyQt5.QtWidgets import QDialog, QWidget
-
 from pykotor.resource.generics.dlg import DLGAnimation
+from PyQt5.QtWidgets import QDialog, QWidget
 from toolset.data.installation import HTInstallation
 
 

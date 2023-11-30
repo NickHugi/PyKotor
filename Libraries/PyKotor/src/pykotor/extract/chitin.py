@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING
 from pykotor.common.stream import BinaryReader, BinaryWriter
 from pykotor.extract.file import FileResource, ResourceIdentifier
 from pykotor.resource.type import ResourceType
-from pykotor.utility.path import PurePath
+from utility.path import PurePath
 
 if TYPE_CHECKING:
     from pykotor.tools.path import CaseAwarePath

@@ -13,13 +13,13 @@ except (ImportError, ModuleNotFoundError):
 if getattr(sys, "frozen", False) is False:
     pykotor_path = pathlib.Path(__file__).parents[6] / "Libraries" / "PyKotor" / "src" / "pykotor"
     print(pykotor_path)
-    if pykotor_path.joinpath("__init__.py").exists():
+    if pykotor_path.exists():
         working_dir = str(pykotor_path.parent)
         if working_dir in sys.path:
             sys.path.remove(working_dir)
         sys.path.insert(0, working_dir)
     toolset_path = pathlib.Path(__file__).parents[3] / "toolset"
-    if toolset_path.joinpath("__init__.py").exists():
+    if toolset_path.exists():
         working_dir = str(toolset_path.parent)
         if working_dir in sys.path:
             sys.path.remove(working_dir)

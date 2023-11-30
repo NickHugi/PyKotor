@@ -4,11 +4,6 @@ import math
 from copy import deepcopy
 from typing import TYPE_CHECKING
 
-from PyQt5 import QtCore
-from PyQt5.QtCore import QPoint, QTimer
-from PyQt5.QtGui import QColor, QIcon, QKeyEvent, QPixmap
-from PyQt5.QtWidgets import QAction, QCheckBox, QListWidgetItem, QMainWindow, QMenu, QMessageBox, QTreeWidgetItem, QWidget
-
 from pykotor.common.geometry import SurfaceMaterial, Vector2, Vector3, Vector4
 from pykotor.common.misc import Color, ResRef
 from pykotor.common.module import Module, ModuleResource
@@ -32,6 +27,10 @@ from pykotor.resource.generics.utt import read_utt
 from pykotor.resource.generics.utw import read_utw
 from pykotor.resource.type import ResourceType
 from pykotor.tools import module
+from PyQt5 import QtCore
+from PyQt5.QtCore import QPoint, QTimer
+from PyQt5.QtGui import QColor, QIcon, QKeyEvent, QPixmap
+from PyQt5.QtWidgets import QAction, QCheckBox, QListWidgetItem, QMainWindow, QMenu, QMessageBox, QTreeWidgetItem, QWidget
 from toolset.data.misc import ControlItem
 from toolset.gui.dialogs.insert_instance import InsertInstanceDialog
 from toolset.gui.dialogs.select_module import SelectModuleDialog
@@ -43,8 +42,8 @@ from toolset.utils.misc import QtMouse
 from toolset.utils.window import openResourceEditor
 
 if TYPE_CHECKING:
-    from pykotor.resource.generics.ifo import IFO
     from pykotor.resource.generics.are import ARE
+    from pykotor.resource.generics.ifo import IFO
     from toolset.data.installation import HTInstallation
     from toolset.gui.widgets.renderer.module import ModuleRenderer
     from toolset.gui.widgets.renderer.walkmesh import WalkmeshRenderer

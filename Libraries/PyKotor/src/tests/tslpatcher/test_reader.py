@@ -40,7 +40,7 @@ from pykotor.tslpatcher.mods.twoda import (
     TargetType,
 )
 from pykotor.tslpatcher.reader import ConfigReader
-from pykotor.utility.path import Path
+from utility.path import Path
 
 if TYPE_CHECKING:
     from pykotor.tslpatcher.mods.ssf import ModifySSF

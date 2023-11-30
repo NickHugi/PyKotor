@@ -2,10 +2,9 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, NamedTuple
 
-from PyQt5.QtWidgets import QDialog, QMessageBox, QWidget
-
 from pykotor.common.module import Module
 from pykotor.tools import module
+from PyQt5.QtWidgets import QDialog, QMessageBox, QWidget
 from toolset.gui.dialogs.asyncloader import AsyncLoader
 
 if TYPE_CHECKING:

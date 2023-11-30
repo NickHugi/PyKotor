@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING, NamedTuple
 
 from pykotor.resource.type import ResourceType
 from pykotor.tools.misc import is_bif_file, is_capsule_file
-from pykotor.utility.path import Path, PurePath
+from utility.path import Path, PurePath
 
 if TYPE_CHECKING:
     import os
@@ -151,6 +151,13 @@ class ResourceIdentifier(NamedTuple):
             return self.resname.lower() == other.resname.lower() and self.restype == other.restype
         return NotImplemented
 
+    def validate(self):
+        restype = self.restype()
+        if restype is ResourceType.INVALID:
+            msg = f"Invalid resource type: {restype.extension}"
+            raise ValueError(msg)
+        return self
+
     @staticmethod
     def from_path(
         file_path: os.PathLike | str,
@@ -180,7 +187,7 @@ class ResourceIdentifier(NamedTuple):
             try:
                 resname, restype_ext = file_path.split_filename(dots=2)
                 restype = ResourceType.from_extension(restype_ext)
-            except (TypeError, ValueError):  # noqa: TRY302
+            except (TypeError, ValueError):
                 resname = file_path.stem
                 restype = ResourceType.INVALID
         return ResourceIdentifier(resname, restype)

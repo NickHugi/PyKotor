@@ -1,7 +1,6 @@
+from pykotor.resource.generics.git import GITCamera
 from PyQt5.QtGui import QIcon, QPixmap
 from PyQt5.QtWidgets import QDialog, QWidget
-
-from pykotor.resource.generics.git import GITCamera
 
 
 class CameraDialog(QDialog):

@@ -5,7 +5,7 @@ import unittest
 
 if getattr(sys, "frozen", False) is False:
     pykotor_path = pathlib.Path(__file__).parents[3] / "pykotor"
-    if pykotor_path.joinpath("__init__.py").exists():
+    if pykotor_path.exists():
         working_dir = str(pykotor_path.parent)
         if working_dir in sys.path:
             sys.path.remove(working_dir)
@@ -15,7 +15,7 @@ from unittest import TestCase
 
 from pykotor.resource.formats.erf import ERF, ERFBinaryReader, read_erf, write_erf
 from pykotor.resource.type import ResourceType
-from pykotor.utility.path import Path
+from utility.path import Path
 
 BINARY_TEST_FILE = Path("src/tests/files/test.erf").resolve()
 DOES_NOT_EXIST_FILE = "./thisfiledoesnotexist"

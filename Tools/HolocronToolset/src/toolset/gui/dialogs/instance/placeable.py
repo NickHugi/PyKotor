@@ -1,10 +1,9 @@
 import math
 
-from PyQt5.QtGui import QColor, QIcon, QImage, QPixmap
-from PyQt5.QtWidgets import QColorDialog, QDialog, QDoubleSpinBox, QLabel, QWidget
-
 from pykotor.common.misc import Color, ResRef
 from pykotor.resource.generics.git import GITPlaceable
+from PyQt5.QtGui import QColor, QIcon, QImage, QPixmap
+from PyQt5.QtWidgets import QColorDialog, QDialog, QDoubleSpinBox, QLabel, QWidget
 from toolset.gui.widgets.long_spinbox import LongSpinBox
 
 

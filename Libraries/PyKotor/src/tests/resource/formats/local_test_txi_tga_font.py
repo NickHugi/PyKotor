@@ -7,7 +7,7 @@ from PIL import Image
 
 if getattr(sys, "frozen", False) is False:
     pykotor_path = pathlib.Path(__file__).parents[3] / "pykotor"
-    if pykotor_path.joinpath("__init__.py").exists():
+    if pykotor_path.exists():
         working_dir = str(pykotor_path.parent)
         if working_dir in sys.path:
             sys.path.remove(working_dir)
@@ -15,7 +15,7 @@ if getattr(sys, "frozen", False) is False:
 
 from pykotor.common.language import Language
 from pykotor.resource.formats.tpc.txi_data import write_bitmap_font, write_bitmap_fonts
-from pykotor.utility.path import Path
+from utility.path import Path
 
 FONT_PATH_FILE = Path("src/tests/files/roboto/Roboto-Black.ttf")
 CHINESE_FONT_PATH_FILE = Path("src/tests/files/chinese_simplified_ttf/Unifontexmono-AL3RA.ttf")

@@ -6,11 +6,11 @@ import platform
 from typing import TYPE_CHECKING, Any, Callable, Generator
 
 from pykotor.tools.registry import winreg_key
-from pykotor.utility.misc import is_instance_or_subinstance
-from pykotor.utility.path import Path as InternalPath
-from pykotor.utility.path import PathElem
-from pykotor.utility.path import PurePath as InternalPurePath
-from pykotor.utility.registry import resolve_reg_key_to_path
+from utility.misc import is_instance_or_subinstance
+from utility.path import Path as InternalPath
+from utility.path import PathElem
+from utility.path import PurePath as InternalPurePath
+from utility.registry import resolve_reg_key_to_path
 
 if TYPE_CHECKING:
     from pykotor.common.misc import Game

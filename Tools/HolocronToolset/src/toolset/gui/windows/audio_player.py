@@ -3,21 +3,19 @@ from __future__ import annotations
 import time
 from typing import TYPE_CHECKING
 
+from pykotor.common.stream import BinaryReader
+from pykotor.extract.file import ResourceIdentifier
+from pykotor.tools import sound
 from PyQt5 import QtCore
 from PyQt5.QtCore import QBuffer, QIODevice
 from PyQt5.QtMultimedia import QMediaContent, QMediaPlayer
 from PyQt5.QtWidgets import QFileDialog, QMainWindow, QWidget
 
-from pykotor.common.stream import BinaryReader
-from pykotor.extract.file import ResourceIdentifier
-from pykotor.tools import sound
-
 if TYPE_CHECKING:
     import os
 
-    from PyQt5.QtGui import QCloseEvent
-
     from pykotor.resource.type import ResourceType
+    from PyQt5.QtGui import QCloseEvent
 
 
 class AudioPlayer(QMainWindow):
@@ -54,10 +52,7 @@ class AudioPlayer(QMainWindow):
     def open(self) -> None:
         filepath = QFileDialog.getOpenFileName(self, "Select an audio file")[0]
         if filepath != "":
-            resname, restype = ResourceIdentifier.from_path(filepath)
-            if restype is ResourceType.INVALID:
-                msg = f"Invalid resource type: {restype.extension}"
-                raise TypeError(msg)
+            resname, restype = ResourceIdentifier.from_path(filepath).validate()
             data = BinaryReader.load_file(filepath)
             self.load(filepath, resname, restype, data)
 

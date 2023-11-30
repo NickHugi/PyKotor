@@ -21,7 +21,7 @@ from pykotor.resource.generics.uts import dismantle_uts
 from pykotor.resource.type import ResourceType
 from pykotor.tools import model
 from pykotor.tools.path import CaseAwarePath
-from pykotor.utility.string import ireplace
+from utility.string import ireplace
 
 if TYPE_CHECKING:
     import os

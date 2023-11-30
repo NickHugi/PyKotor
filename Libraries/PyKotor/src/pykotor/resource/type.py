@@ -231,6 +231,11 @@ class ResourceType(Enum):
         msg = f"Could not find resource type with ID {type_id}."
         raise ValueError(msg)
 
+    def validate(self):
+        if self is ResourceType.INVALID:
+            msg = f"Invalid resource type: {self.extension}"
+            raise TypeError(msg)
+
     @classmethod
     def from_extension(
         cls,

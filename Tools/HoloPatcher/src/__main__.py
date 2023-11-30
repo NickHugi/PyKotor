@@ -25,17 +25,23 @@ if getattr(sys, "frozen", False) is False:
         if working_dir in sys.path:
             sys.path.remove(working_dir)
         sys.path.insert(0, working_dir)
+    utility_path = pathlib.Path(__file__).parents[3] / "Libraries" / "Utility" / "src"
+    if utility_path.exists():
+        working_dir = str(utility_path)
+        if working_dir in sys.path:
+            sys.path.remove(working_dir)
+        sys.path.insert(0, working_dir)
 
 from pykotor.common.misc import Game
 from pykotor.tools.path import CaseAwarePath, find_kotor_paths_from_default
 from pykotor.tslpatcher.logger import PatchLogger
 from pykotor.tslpatcher.patcher import ModInstaller
 from pykotor.tslpatcher.reader import ConfigReader, NamespaceReader
-from pykotor.utility.error_handling import universal_simplify_exception
-from pykotor.utility.path import Path
-from pykotor.utility.string import striprtf
 from tooltip import ToolTip
 from uninstall_mod import ModUninstaller
+from utility.error_handling import universal_simplify_exception
+from utility.path import Path
+from utility.string import striprtf
 
 if TYPE_CHECKING:
     from io import TextIOWrapper
@@ -115,12 +121,12 @@ class App(tk.Tk):
     def __init__(self):
         super().__init__()
         self.title("HoloPatcher")
+        self.set_window(width=400, height=500)
 
         self.mod_path = ""
         self.namespaces = []
 
         self.initialize_logger()
-        self.set_window(width=400, height=500)
         self.initialize_ui_menu()
         self.initialize_ui_controls()
 
@@ -130,6 +136,19 @@ class App(tk.Tk):
         cmdline_args = parse_args()
         self.open_mod(cmdline_args.tslpatchdata or Path.cwd())
         self.handle_commandline(cmdline_args)
+
+    def set_window(self, width: int, height: int):
+        # Get screen dimensions
+        screen_width = self.winfo_screenwidth()
+        screen_height = self.winfo_screenheight()
+
+        # Calculate position to center the window
+        x_position = int((screen_width / 2) - (width / 2))
+        y_position = int((screen_height / 2) - (height / 2))
+
+        # Set the dimensions and position
+        self.geometry(f"{width}x{height}+{x_position}+{y_position}")
+        self.resizable(width=False, height=False)
 
     def initialize_logger(self):
         self.logger = PatchLogger()
@@ -229,6 +248,16 @@ class App(tk.Tk):
         self.install_button = ttk.Button(bottom_frame, text="Install", command=self.begin_install)
         self.install_button.pack(side="right", padx=5, pady=5)
 
+    def on_combobox_focus_in(self, event):
+        if self.namespaces_combobox_state == 2: # no selection, fix the focus
+            self.focus_set()
+            self.namespaces_combobox_state = 0  # base status
+        else:
+            self.namespaces_combobox_state = 1  # combobox clicked
+
+    def on_combobox_focus_out(self, event):
+        if self.namespaces_combobox_state == 1:
+            self.namespaces_combobox_state = 2  # no selection
 
     def check_for_updates(self) -> None:
         try:
@@ -263,26 +292,12 @@ class App(tk.Tk):
 
     def open_homepage(self):
         webbrowser.open_new("https://deadlystream.com/files/file/2243-holopatcher")
-
     def open_github(self):
         webbrowser.open_new("https://github.com/NickHugi/PyKotor")
-
     def open_deadlystream_discord(self):
         webbrowser.open_new("https://discord.gg/HBwVCpAA")
-
     def open_kotor_discord(self):
         webbrowser.open_new("https://discord.com/invite/kotor")
-
-    def on_combobox_focus_in(self, event):
-        if self.namespaces_combobox_state == 2: # no selection, fix the focus
-            self.focus_set()
-            self.namespaces_combobox_state = 0  # base status
-        else:
-            self.namespaces_combobox_state = 1  # combobox clicked
-
-    def on_combobox_focus_out(self, event):
-        if self.namespaces_combobox_state == 1:
-            self.namespaces_combobox_state = 2  # no selection
 
     def handle_commandline(self, cmdline_args: Namespace) -> None:
         """Handle command line arguments passed to the application.
@@ -361,19 +376,6 @@ class App(tk.Tk):
         # messagebox.askyesno = MessageboxOverride.askyesno  # noqa: ERA001
         # messagebox.askyesnocancel = MessageboxOverride.askyesno  # noqa: ERA001
         # messagebox.askretrycancel = MessageboxOverride.askyesno  # noqa: ERA001
-
-    def set_window(self, width: int, height: int):
-        # Get screen dimensions
-        screen_width = self.winfo_screenwidth()
-        screen_height = self.winfo_screenheight()
-
-        # Calculate position to center the window
-        x_position = int((screen_width / 2) - (width / 2))
-        y_position = int((screen_height / 2) - (height / 2))
-
-        # Set the dimensions and position
-        self.geometry(f"{width}x{height}+{x_position}+{y_position}")
-        self.resizable(width=False, height=False)
 
     def hide_console(self) -> None:
         """Hide the console window in GUI mode."""

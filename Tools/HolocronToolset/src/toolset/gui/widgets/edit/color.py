@@ -1,7 +1,6 @@
+from pykotor.common.misc import Color
 from PyQt5.QtGui import QColor, QImage, QPixmap
 from PyQt5.QtWidgets import QColorDialog, QWidget
-
-from pykotor.common.misc import Color
 
 
 class ColorEdit(QWidget):

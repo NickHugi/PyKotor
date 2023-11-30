@@ -10,7 +10,7 @@ from pykotor.common.language import LocalizedString
 from pykotor.common.misc import ResRef
 from pykotor.resource.formats.gff.gff_data import GFF, GFFFieldType, GFFList, GFFStruct
 from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES, ResourceReader, ResourceWriter, autoclose
-from pykotor.utility.misc import indent
+from utility.misc import indent
 
 
 class GFFXMLReader(ResourceReader):

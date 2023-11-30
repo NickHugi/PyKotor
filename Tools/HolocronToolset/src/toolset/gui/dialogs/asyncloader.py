@@ -2,13 +2,12 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any, Callable
 
+from utility.error_handling import format_exception_with_variables
+from utility.misc import is_debug_mode
+from utility.path import Path
 from PyQt5 import QtCore
 from PyQt5.QtCore import QThread
 from PyQt5.QtWidgets import QDialog, QLabel, QMessageBox, QProgressBar, QVBoxLayout, QWidget
-
-from pykotor.utility.error_handling import format_exception_with_variables
-from pykotor.utility.misc import is_debug_mode
-from pykotor.utility.path import Path
 from toolset.__main__ import is_frozen
 
 if TYPE_CHECKING:

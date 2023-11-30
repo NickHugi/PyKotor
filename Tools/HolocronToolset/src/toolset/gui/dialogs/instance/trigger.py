@@ -1,8 +1,7 @@
-from PyQt5.QtGui import QIcon, QPixmap
-from PyQt5.QtWidgets import QDialog, QWidget
-
 from pykotor.common.misc import ResRef
 from pykotor.resource.generics.git import GITModuleLink, GITTrigger
+from PyQt5.QtGui import QIcon, QPixmap
+from PyQt5.QtWidgets import QDialog, QWidget
 from toolset.data.installation import HTInstallation
 
 

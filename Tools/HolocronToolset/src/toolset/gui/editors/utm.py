@@ -17,20 +17,19 @@ if TYPE_CHECKING:
     import os
 
     from PyQt5.QtWidgets import QWidget
-
     from toolset.data.installation import HTInstallation
 
 
 class UTMEditor(Editor):
     def __init__(self, parent: QWidget | None, installation: HTInstallation | None = None):
-        """Initialize the Merchant Editor window
+        """Initialize the Merchant Editor window.
+
         Args:
+        ----
             parent: {Widget that is the parent of this window}
             installation: {Optional HTInstallation object to load data from}.
 
-        Returns
-        -------
-            None
+        Processing Logic:
         - Sets up the UI from the designer file
         - Initializes menus and signals
         - Loads data from the provided installation if given
@@ -51,22 +50,19 @@ class UTMEditor(Editor):
         self.new()
 
     def _setupSignals(self) -> None:
-        """Sets up signal connections for UI buttons
-        Args:
-            self: The class instance
-        Returns:
-            None: No return value.
-        """
+        """Sets up signal connections for UI buttons"""
         self.ui.tagGenerateButton.clicked.connect(self.generateTag)
         self.ui.resrefGenerateButton.clicked.connect(self.generateResref)
         self.ui.inventoryButton.clicked.connect(self.openInventory)
 
     def _setupInstallation(self, installation: HTInstallation):
-        """Sets up the installation for editing
+        """Sets up the installation for editing.
+
         Args:
+        ----
             installation: The installation to edit
-        Returns:
-            None: No return value
+
+        Processing Logic:
         - Sets the internal installation reference to the passed in installation
         - Sets the installation on the UI name edit to the passed installation
         - Allows editing of the installation details in the UI.
@@ -81,11 +77,12 @@ class UTMEditor(Editor):
         self._loadUTM(utm)
 
     def _loadUTM(self, utm: UTM) -> None:
-        """Loads UTM data into UI elements
+        """Loads UTM data into UI elements.
+
         Args:
+        ----
             utm (UTM): UTM object to load data from
-        Returns:
-            None: No return value
+
         Processing Logic:
             - Sets name, tag, resref, id, markups from UTM object
             - Sets can_buy, can_sell flags from UTM object
@@ -109,11 +106,7 @@ class UTMEditor(Editor):
     def build(self) -> tuple[bytes, bytes]:
         """Builds a UTM object from UI fields.
 
-        Args:
-        ----
-            self: The class instance.
-
-        Returns:
+        Returns
         -------
             data: The built UTM data.
             b"": An empty bytes object.

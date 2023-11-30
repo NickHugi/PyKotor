@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from datetime import datetime, timezone
 
-from pykotor.utility.event import Observable
+from utility.event import Observable
 
 
 class PatchLogger:

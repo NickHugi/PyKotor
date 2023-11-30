@@ -2,12 +2,11 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from PyQt5.QtWidgets import QCheckBox, QDoubleSpinBox, QSpinBox, QTableWidgetItem, QWidget
-
 from pykotor.common.misc import ResRef
 from pykotor.resource.formats.gff import write_gff
 from pykotor.resource.generics.ute import UTE, UTECreature, dismantle_ute, read_ute
 from pykotor.resource.type import ResourceType
+from PyQt5.QtWidgets import QCheckBox, QDoubleSpinBox, QSpinBox, QTableWidgetItem, QWidget
 from toolset.data.installation import HTInstallation
 from toolset.gui.dialogs.edit.locstring import LocalizedStringDialog
 from toolset.gui.editor import Editor
@@ -18,15 +17,14 @@ if TYPE_CHECKING:
 
 class UTEEditor(Editor):
     def __init__(self, parent: QWidget | None, installation: HTInstallation | None = None):
-        """Initialize the trigger editor window
+        """Initialize the trigger editor window.
+
         Args:
+        ----
             parent: {The parent widget of the editor}
             installation: {The installation object being edited}.
 
-        Returns
-        -------
-            None
-        {Processing Logic}:
+        Processing Logic:
             - Call super().__init__ to initialize base editor class
             - Load UI from designer file
             - Set up menus, signals and installation
@@ -48,11 +46,8 @@ class UTEEditor(Editor):
         self.new()
 
     def _setupSignals(self) -> None:
-        """Connects UI signals to handler functions
-        Args:
-            self: The class instance
-        Returns:
-            None
+        """Connects UI signals to handler functions.
+
         Processing Logic:
             - Connects the tagGenerateButton clicked signal to generateTag handler
             - Connects the resrefGenerateButton clicked signal to generateResref handler
@@ -75,9 +70,7 @@ class UTEEditor(Editor):
         ----
             installation: {The installation object being edited}
 
-        Returns:
-        -------
-            None
+        Processing Logic:
         - Sets the internal installation object reference
         - Populates the name field with the installation details
         - Fetches the faction and difficulty data from the installation
@@ -102,11 +95,12 @@ class UTEEditor(Editor):
         self._loadUTE(ute)
 
     def _loadUTE(self, ute: UTE) -> None:
-        """Loads UTE data into UI elements
+        """Loads UTE data into UI elements.
+
         Args:
+        ----
             ute (UTE): UTE object to load
-        Returns:
-            None: Does not return anything
+
         Loads UTE:
         - Sets basic UTE properties like name, tag, etc.
         - Sets advanced properties like active, faction, respawning
@@ -151,11 +145,12 @@ class UTEEditor(Editor):
         self.ui.commentsEdit.setPlainText(ute.comment)
 
     def build(self) -> tuple[bytes, bytes]:
-        """Builds a UTE object from UI data
-        Args:
-            self: The UTE builder object
-        Returns:
-            tuple[bytes, bytes]: A tuple containing the UTE data and an empty string
+        """Builds a UTE object from UI data.
+
+        Returns
+        -------
+            tuple[bytes, bytes]: A tuple containing the UTE data and an empty string.
+
         Builds the UTE object by:
             - Setting basic properties from UI elements
             - Setting advanced properties from checkboxes and dropdowns
@@ -261,8 +256,7 @@ class UTEEditor(Editor):
             appearanceId (int): ID number for the creature's appearance
             challenge (float): Difficulty rating for the creature
             singe (bool): Whether the creature is a single creature encounter
-        Returns:
-            None: Does not return anything
+
         Processing Logic:
             - Gets the current row count of the creature table
             - Inserts a new row at that index

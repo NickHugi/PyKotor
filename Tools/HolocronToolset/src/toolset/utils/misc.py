@@ -2,15 +2,14 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from PyQt5 import QtCore
-from PyQt5.QtCore import QUrl
-from PyQt5.QtGui import QDesktopServices, QKeySequence
-
 from pykotor.common.stream import BinaryReader
 from pykotor.resource.formats.erf import read_erf
 from pykotor.resource.formats.rim import read_rim
 from pykotor.tools.misc import is_erf_or_mod_file, is_rim_file
-from pykotor.utility.path import Path
+from utility.path import Path
+from PyQt5 import QtCore
+from PyQt5.QtCore import QUrl
+from PyQt5.QtGui import QDesktopServices, QKeySequence
 
 if TYPE_CHECKING:
     import os

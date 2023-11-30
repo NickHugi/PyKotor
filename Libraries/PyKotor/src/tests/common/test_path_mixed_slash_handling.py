@@ -8,12 +8,12 @@ import unittest
 from pathlib import Path, PosixPath, PurePath, PurePosixPath, PureWindowsPath, WindowsPath
 
 from pykotor.tools.path import CaseAwarePath
-from pykotor.utility.path import Path as CustomPath
-from pykotor.utility.path import PosixPath as CustomPosixPath
-from pykotor.utility.path import PurePath as CustomPurePath
-from pykotor.utility.path import PurePosixPath as CustomPurePosixPath
-from pykotor.utility.path import PureWindowsPath as CustomPureWindowsPath
-from pykotor.utility.path import WindowsPath as CustomWindowsPath
+from utility.path import Path as CustomPath
+from utility.path import PosixPath as CustomPosixPath
+from utility.path import PurePath as CustomPurePath
+from utility.path import PurePosixPath as CustomPurePosixPath
+from utility.path import PureWindowsPath as CustomPureWindowsPath
+from utility.path import WindowsPath as CustomWindowsPath
 
 
 class TestPathlibMixedSlashes(unittest.TestCase):

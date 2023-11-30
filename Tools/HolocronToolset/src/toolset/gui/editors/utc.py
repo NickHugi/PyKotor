@@ -1,12 +1,7 @@
 from __future__ import annotations
 
 from contextlib import suppress
-from typing import TYPE_CHECKING
-
-from PyQt5 import QtCore
-from PyQt5.QtCore import QSettings
-from PyQt5.QtGui import QImage, QPixmap, QTransform
-from PyQt5.QtWidgets import QListWidgetItem, QMessageBox, QWidget
+from typing import TYPE_CHECKING, Literal
 
 from pykotor.common.language import Gender, Language
 from pykotor.common.misc import Game, ResRef
@@ -20,6 +15,10 @@ from pykotor.resource.formats.tpc import TPCTextureFormat
 from pykotor.resource.generics.dlg import DLG, dismantle_dlg
 from pykotor.resource.generics.utc import UTC, UTCClass, dismantle_utc, read_utc
 from pykotor.resource.type import ResourceType
+from PyQt5 import QtCore
+from PyQt5.QtCore import QSettings
+from PyQt5.QtGui import QImage, QPixmap, QTransform
+from PyQt5.QtWidgets import QListWidgetItem, QMessageBox, QWidget
 from toolset.data.installation import HTInstallation
 from toolset.gui.dialogs.inventory import InventoryEditor
 from toolset.gui.editor import Editor
@@ -29,16 +28,19 @@ from toolset.utils.window import openResourceEditor
 if TYPE_CHECKING:
     import os
 
+    from pykotor.extract.file import ResourceResult
+
 
 class UTCEditor(Editor):
     def __init__(self, parent: QWidget | None, installation: HTInstallation | None = None, *, mainwindow=None):
-        """Initializes the Creature Editor window
+        """Initializes the Creature Editor window.
+
         Args:
+        ----
             parent: QWidget: The parent widget
             installation: HTInstallation: The installation object
             mainwindow: QMainWindow: The main window
-        Returns:
-            None: Does not return anything
+
         Processing Logic:
             - Sets up supported resource types
             - Initializes superclass with parameters
@@ -73,14 +75,9 @@ class UTCEditor(Editor):
         self.new()
 
     def _setupSignals(self) -> None:
-        """Connect signals to slots
-        Args:
-            self: {The class instance}.
+        """Connect signals to slots.
 
-        Returns
-        -------
-            None: {Does not return anything}
-        {Processing Logic}:
+        Processing Logic:
         - Connects button and widget signals to appropriate slot methods
         - Connects value changed signals from slider and dropdowns
         - Connects menu action triggers to toggle settings.
@@ -103,11 +100,13 @@ class UTCEditor(Editor):
         self.ui.actionShowPreview.triggered.connect(self.togglePreview)
 
     def _setupInstallation(self, installation: HTInstallation):
-        """Sets up the installation for character creation
+        """Sets up the installation for character creation.
+
         Args:
+        ----
             installation: {HTInstallation}: The installation to load data from
-        Returns:
-            None: No return value
+
+        Processing Logic:
         - Loads required 2da files if not already loaded
         - Sets items for dropdown menus from loaded 2da files
         - Clears and populates feat and power lists from loaded 2da files
@@ -120,7 +119,7 @@ class UTCEditor(Editor):
         self.ui.lastnameEdit.setInstallation(installation)
 
         # Load required 2da files if they have not been loaded already
-        required = [HTInstallation.TwoDA_APPEARANCES, HTInstallation.TwoDA_SOUNDSETS, HTInstallation.TwoDA_PORTRAITS,
+        required: list[str] = [HTInstallation.TwoDA_APPEARANCES, HTInstallation.TwoDA_SOUNDSETS, HTInstallation.TwoDA_PORTRAITS,
                     HTInstallation.TwoDA_SUBRACES, HTInstallation.TwoDA_SPEEDS, HTInstallation.TwoDA_FACTIONS,
                     HTInstallation.TwoDA_GENDERS, HTInstallation.TwoDA_PERCEPTIONS, HTInstallation.TwoDA_CLASSES,
                     HTInstallation.TwoDA_FEATS, HTInstallation.TwoDA_POWERS]
@@ -201,8 +200,7 @@ class UTCEditor(Editor):
         Args:
         ----
             utc (UTC): UTC object to load data from
-        Returns:
-            None: No return value
+
         Loads UTC data:
             - Sets UTC object reference
             - Sets preview renderer creature
@@ -293,6 +291,7 @@ class UTCEditor(Editor):
             item.setCheckState(QtCore.Qt.Checked)
 
         # Powers
+        item: QListWidgetItem | None
         for i in range(self.ui.powerList.count()):
             item = self.ui.powerList.item(i)
             item.setCheckState(QtCore.Qt.Unchecked)
@@ -325,11 +324,12 @@ class UTCEditor(Editor):
         self.ui.comments.setPlainText(utc.comment)
 
     def build(self) -> tuple[bytes, bytes]:
-        """Builds a UTC from UI data
-        Args:
-            self: The class instance
-        Returns:
-            tuple[bytes, bytes]: The GFF data and log
+        """Builds a UTC from UI data.
+
+        Returns
+        -------
+            tuple[bytes, bytes]: The GFF data and log.
+
         Processing Logic:
             - Populate UTC object from UI fields
             - Add class and feat data from lists
@@ -410,6 +410,7 @@ class UTCEditor(Editor):
             classLevel = self.ui.class2LevelSpin.value()
             utc.classes.append(UTCClass(classId, classLevel))
 
+        item: QListWidgetItem | None
         utc.feats = []
         for i in range(self.ui.featList.count()):
             item = self.ui.featList.item(i)
@@ -423,7 +424,7 @@ class UTCEditor(Editor):
                 powers.append(item.data(QtCore.Qt.UserRole))
 
         data = bytearray()
-        version = Game.K2 if self.settings.alwaysSaveK2Fields or self._installation.tsl else Game.K1
+        version: Literal[Game.K2, Game.K1] = Game.K2 if self.settings.alwaysSaveK2Fields or self._installation.tsl else Game.K1
         gff = dismantle_utc(utc, version, use_deprecated=self.settings.saveUnusedFields)
         write_gff(gff, data)
 
@@ -453,11 +454,12 @@ class UTCEditor(Editor):
         self.ui.tagEdit.setText(self.ui.resrefEdit.text())
 
     def portraitChanged(self, index: int) -> None:
-        """Updates the portrait picture based on the selected index
+        """Updates the portrait picture based on the selected index.
+
         Args:
+        ----
             index (int): The selected index
-        Returns:
-            None
+
         Updates the portrait pixmap:
             - Checks if index is 0, creates blank image
             - Else builds pixmap from index
@@ -471,10 +473,14 @@ class UTCEditor(Editor):
         self.ui.portraitPicture.setPixmap(pixmap)
 
     def _build_pixmap(self, index):
-        """Builds a portrait pixmap based on character alignment
+        """Builds a portrait pixmap based on character alignment.
+
         Args:
-            index: The character index to build a portrait for
+        ----
+            index: The character index to build a portrait for.
+
         Returns:
+        -------
             pixmap: A QPixmap of the character portrait
         Builds the portrait pixmap by:
             1. Getting the character's alignment value
@@ -485,7 +491,7 @@ class UTCEditor(Editor):
         alignment = self.ui.alignmentSlider.value()
         portraits = self._installation.htGetCache2DA(HTInstallation.TwoDA_PORTRAITS)
         portrait = portraits.get_cell(index, "baseresref")
-        if 40 >= alignment > 30 and portraits.get_cell(index, "baseresrefe") != "":
+        if 40 >= alignment > 30 and portraits.get_cell(index, "baseresrefe") != "":  # TODO: document these magic numbers
             portrait = portraits.get_cell(index, "baseresrefe")
         elif 30 >= alignment > 20 and portraits.get_cell(index, "baseresrefve") != "":
             portrait = portraits.get_cell(index, "baseresrefve")
@@ -504,11 +510,8 @@ class UTCEditor(Editor):
         return QPixmap.fromImage(image)
 
     def editConversation(self) -> None:
-        """Edits a conversation
-        Args:
-            self: The class instance
-        Returns:
-            None: Does not return anything
+        """Edits a conversation.
+
         Processing Logic:
         1. Gets the conversation name from the UI text field
         2. Searches the installation for the conversation resource
@@ -522,7 +525,7 @@ class UTCEditor(Editor):
             QMessageBox(QMessageBox.Critical, "Failed to open DLG Editor", "Conversation field cannot be blank.").exec_()
             return
 
-        search = self._installation.resource(resname, ResourceType.DLG)
+        search: ResourceResult | None = self._installation.resource(resname, ResourceType.DLG)
 
         if search is None:
             msgbox = QMessageBox(QMessageBox.Information, "DLG file not found",
@@ -543,11 +546,9 @@ class UTCEditor(Editor):
             openResourceEditor(filepath, resname, ResourceType.DLG, data, self._installation, self)
 
     def openInventory(self) -> None:
-        """Opens the inventory editor
-        Args:
-            self: The class instance
-        Returns:
-            None: Does not return anything
+        """Opens the inventory editor.
+
+        Processing Logic:
         - Loads installed capsules from the root module folder
         - Initializes InventoryEditor with loaded capsules and current inventory/equipment
         - If InventoryEditor is closed successfully, updates internal inventory/equipment
@@ -590,9 +591,8 @@ class UTCEditor(Editor):
         self.update3dPreview()
 
     def updateFeatSummary(self) -> None:
-        """Updates the feats summary text
-        Args:
-            self: The class instance
+        """Updates the feats summary text.
+
         Processing Logic:
         - Loops through each item in the feature list
         - Checks if the item is checked
@@ -607,9 +607,8 @@ class UTCEditor(Editor):
         self.ui.featSummaryEdit.setPlainText(summary)
 
     def updatePowerSummary(self) -> None:
-        """Updates the power summary text with checked items from the power list
-        Args:
-            self: The class instance
+        """Updates the power summary text with checked items from the power list.
+
         Processing Logic:
         - Loops through each item in the power list
         - Checks if the item is checked
@@ -624,11 +623,8 @@ class UTCEditor(Editor):
         self.ui.powerSummaryEdit.setPlainText(summary)
 
     def update3dPreview(self) -> None:
-        """Updates the 3D preview based on global settings
-        Args:
-            self: The class instance
-        Returns:
-            None
+        """Updates the 3D preview based on global settings.
+
         Processing Logic:
             - Check if the global setting for showing preview is checked
             - If checked, show the preview renderer and set the window size

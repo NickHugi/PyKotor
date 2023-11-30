@@ -7,8 +7,8 @@ from pykotor.common.misc import Game
 from pykotor.common.stream import BinaryReader
 from pykotor.resource.formats.ncs.ncs_auto import compile_nss, write_ncs
 from pykotor.resource.formats.ncs.ncs_data import NCSCompiler
-from pykotor.utility.misc import generate_filehash_sha256
-from pykotor.utility.path import BasePath, Path
+from utility.misc import generate_filehash_sha256
+from utility.path import BasePath, Path
 
 if TYPE_CHECKING:
     import os

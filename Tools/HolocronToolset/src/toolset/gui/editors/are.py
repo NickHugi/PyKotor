@@ -2,19 +2,17 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from PyQt5.QtGui import QColor, QImage, QPixmap
-from PyQt5.QtWidgets import QColorDialog, QLabel, QWidget
-from pykotor.extract.installation import SearchLocation
-
-from pykotor.extract.file import ResourceIdentifier
-
-from pykotor.common.geometry import Vector2, SurfaceMaterial
+from pykotor.common.geometry import SurfaceMaterial, Vector2
 from pykotor.common.misc import Color, ResRef
+from pykotor.extract.file import ResourceIdentifier
+from pykotor.extract.installation import SearchLocation
 from pykotor.resource.formats.bwm import read_bwm
 from pykotor.resource.formats.gff import write_gff
 from pykotor.resource.formats.lyt import read_lyt
 from pykotor.resource.generics.are import ARE, ARENorthAxis, AREWindPower, dismantle_are, read_are
 from pykotor.resource.type import ResourceType
+from PyQt5.QtGui import QColor, QImage, QPixmap
+from PyQt5.QtWidgets import QColorDialog, QLabel, QWidget
 from toolset.data.installation import HTInstallation
 from toolset.gui.dialogs.edit.locstring import LocalizedStringDialog
 from toolset.gui.editor import Editor
@@ -27,12 +25,13 @@ if TYPE_CHECKING:
 
 class AREEditor(Editor):
     def __init__(self, parent: QWidget | None, installation: HTInstallation | None = None):
-        """Initialize the ARE Editor window
+        """Initialize the ARE Editor window.
+
         Args:
+        ----
             parent: {QWidget}: Parent widget
             installation: {HTInstallation}: Installation object
-        Returns:
-            None: Does not return anything
+
         Processing Logic:
             - Initialize superclass with supported types
             - Set window size
@@ -88,11 +87,12 @@ class AREEditor(Editor):
         self.ui.mapImageY2Spin.valueChanged.connect(self.redoMinimap)
 
     def _setupInstallation(self, installation: HTInstallation) -> None:
-        """Set up installation details
+        """Set up installation details.
+
         Args:
+        ----
             installation: {HTInstallation object}: Installation details
-        Returns:
-            None: No return value
+
         - Set installation object to internal variable
         - Set installation name to name edit field
         - Get camera styles from htinstallation and populate dropdown
@@ -121,9 +121,12 @@ class AREEditor(Editor):
         self._loadARE(are)
 
     def _loadARE(self, are: ARE) -> None:
-        """Loads area data into UI widgets
+        """Loads area data into UI widgets.
+
         Args:
+        ----
             are: ARE - Area object
+
         Loads area data:
         - Sets basic properties like name, tag, camera style
         - Sets map properties like points, zoom, axis
@@ -149,7 +152,7 @@ class AREEditor(Editor):
                 SearchLocation.TEXTURES_GUI,
                 SearchLocation.MODULES
             ]
-            self._minimap = self._installation.texture("lbl_map" + self._resref, order)
+            self._minimap = self._installation.texture(f"lbl_map{self._resref}", order)
             self.ui.minimapRenderer.setMinimap(are, self._minimap)
             self.ui.minimapRenderer.centerCamera()
 
@@ -229,10 +232,8 @@ class AREEditor(Editor):
     def build(self) -> tuple[bytes, bytes]:
         """Builds the ARE data from UI controls.
 
-        Args:
-        ----
-            self: The ARE editor object
-        Returns:
+        Returns
+        -------
             tuple[bytes, bytes]: The ARE data and log
         Processing Logic:
             - Reads values from UI controls like name, tag, camera style etc
@@ -335,8 +336,8 @@ class AREEditor(Editor):
         Args:
         ----
             colorSpin: LongSpinBox widget to update color value
-        Returns:
-            None: No value is returned
+
+        Processing Logic:
         - Opens a QColorDialog to select a new color
         - Converts the selected QColor to a Color object
         - Sets the colorSpin value to the BGR integer of the selected color.
@@ -346,6 +347,20 @@ class AREEditor(Editor):
         colorSpin.setValue(color.bgr_integer())
 
     def redoColorImage(self, value: int, colorLabel: QLabel) -> None:
+        """Redraws a color image based on a value.
+
+        Args:
+        ----
+            value: The integer value representing the BGR color
+            colorLabel: The label to display the color image
+
+        Processing Logic:
+        - Convert the integer value to a Color object 
+        - Extract the RGB values from the Color object
+        - Create a bytes object with the RGB values repeated for a 16x16 image
+        - Create a QImage from the bytes data
+        - Set the pixmap on the colorLabel from the QImage
+        """
         color = Color.from_bgr_integer(value)
         r, g, b = int(color.r * 255), int(color.g * 255), int(color.b * 255)
         data = bytes([r, g, b] * 16 * 16)

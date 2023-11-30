@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING, NamedTuple
 from pykotor.common.language import Language
 from pykotor.common.misc import ResRef
 from pykotor.common.stream import BinaryReader
-from pykotor.utility.path import BasePath, Path
+from utility.path import BasePath, Path
 
 if TYPE_CHECKING:
     import os

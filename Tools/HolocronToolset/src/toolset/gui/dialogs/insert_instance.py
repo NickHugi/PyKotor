@@ -2,10 +2,6 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from PyQt5 import QtCore
-from PyQt5.QtGui import QColor
-from PyQt5.QtWidgets import QDialog, QDialogButtonBox, QListWidgetItem, QWidget
-
 from pykotor.common.stream import BinaryWriter
 from pykotor.resource.formats.erf import read_erf, write_erf
 from pykotor.resource.formats.rim import read_rim, write_rim
@@ -19,7 +15,10 @@ from pykotor.resource.generics.utt import UTT, bytes_utt
 from pykotor.resource.generics.utw import UTW, bytes_utw
 from pykotor.resource.type import ResourceType
 from pykotor.tools.misc import is_erf_or_mod_file, is_rim_file
-from pykotor.utility.path import Path
+from utility.path import Path
+from PyQt5 import QtCore
+from PyQt5.QtGui import QColor
+from PyQt5.QtWidgets import QDialog, QDialogButtonBox, QListWidgetItem, QWidget
 from toolset.gui.widgets.settings.installations import GlobalSettings
 
 if TYPE_CHECKING:

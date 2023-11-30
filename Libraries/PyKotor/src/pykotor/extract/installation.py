@@ -20,13 +20,13 @@ from pykotor.tools.misc import is_capsule_file, is_erf_file, is_mod_file, is_rim
 from pykotor.tools.path import CaseAwarePath
 from pykotor.tools.sound import fix_audio
 from pykotor.tslpatcher.logger import PatchLogger
-from pykotor.utility.path import PurePath
+from utility.path import PurePath
 
 if TYPE_CHECKING:
     import os
 
     from pykotor.resource.formats.gff import GFF
-    from pykotor.utility.path import Path
+    from utility.path import Path
 
 
 # The SearchLocation class is an enumeration that represents different locations for searching.

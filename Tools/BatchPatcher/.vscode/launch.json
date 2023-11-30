@@ -4,7 +4,14 @@
   "preLaunchTask": "install_requirements",
   "dependsOn": "install_requirements",
   "configurations": [
-    
+    {
+      "name":"Run BatchPatcher",
+      "type":"python",
+      "request":"launch",
+      "program":"${workspaceFolder}${pathSeparator}src${pathSeparator}__main__.py",
+      "console":"integratedTerminal",
+      "justMyCode":true
+    },
     {
       "name": "Python: Current File",
       "type": "python",
@@ -24,14 +31,6 @@
       "program": "${file}",
       "purpose": ["debug-test"],
       "justMyCode": false,
-    },
-    {
-      "name": "Run KotorDiff",
-      "type": "python",
-      "request": "launch",
-      "module": "scripts.kotordiff",
-      "args": [],
-      "console": "integratedTerminal"
     },
   ]
 }

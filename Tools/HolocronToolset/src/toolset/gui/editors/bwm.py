@@ -3,13 +3,12 @@ from __future__ import annotations
 import struct
 from typing import TYPE_CHECKING
 
-from PyQt5 import QtCore
-from PyQt5.QtGui import QColor, QIcon, QImage, QPixmap
-from PyQt5.QtWidgets import QListWidgetItem, QShortcut, QWidget
-
 from pykotor.common.geometry import SurfaceMaterial, Vector2
 from pykotor.resource.formats.bwm import BWM, BWMFace, read_bwm, write_bwm
 from pykotor.resource.type import ResourceType
+from PyQt5 import QtCore
+from PyQt5.QtGui import QColor, QIcon, QImage, QPixmap
+from PyQt5.QtWidgets import QListWidgetItem, QShortcut, QWidget
 from toolset.gui.editor import Editor
 
 if TYPE_CHECKING:
@@ -23,12 +22,13 @@ _TRANS_EDGE_ROLE = QtCore.Qt.UserRole + 2  # type: ignore[reportGeneralTypeIssue
 
 class BWMEditor(Editor):
     def __init__(self, parent: QWidget | None, installation: HTInstallation | None = None):
-        """Initializes the walkmesh painter window
+        """Initializes the walkmesh painter window.
+
         Args:
+        ----
             parent: QWidget | None: The parent widget
             installation: HTInstallation | None: The installation
-        Returns:
-            None
+
         Initializes UI components and connects signals:
             - Sets up UI from designer file
             - Sets up menus
@@ -85,11 +85,8 @@ class BWMEditor(Editor):
         QShortcut("-", self).activated.connect(lambda: self.ui.renderArea.cameraZoom(-2))
 
     def rebuildMaterials(self) -> None:
-        """Rebuild the material list
-        Args:
-            self: The class instance
-        Returns:
-            None: Does not return anything
+        """Rebuild the material list.
+
         - Clear existing items from the material list
         - Loop through all material colors
         - Create image from color and set as icon
@@ -149,14 +146,15 @@ class BWMEditor(Editor):
         super().new()
 
     def onMouseMoved(self, screen: Vector2, delta: Vector2, buttons: set[int], keys: set[int]) -> None:
-        """Handles mouse movement events in the viewer
+        """Handles mouse movement events in the viewer.
+
         Args:
+        ----
             screen: Vector2 - Current mouse screen position
             delta: Vector2 - Mouse movement since last event
             buttons: set[int] - Currently pressed mouse buttons
             keys: set[int] - Currently pressed keyboard keys
-        Returns:
-            None
+
         - Converts mouse position to world and render coordinates
         - Pans/rotates camera if Ctrl + mouse buttons pressed
         - Changes face material if left button pressed
@@ -186,8 +184,10 @@ class BWMEditor(Editor):
             self.ui.renderArea.zoomInCamera(delta.y / 50)
 
     def changeFaceMaterial(self, face: BWMFace):
-        """Change material of a face
+        """Change material of a face.
+
         Args:
+        ----
             face (BWMFace): The face object to change material
         - Check if a face is provided. Perhaps this can be called from an ambiguous/generalized function/event somewhere.
         - Check if the current face material is different than the selected material

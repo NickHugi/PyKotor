@@ -4,7 +4,7 @@ import unittest
 
 if getattr(sys, "frozen", False) is False:
     pykotor_path = pathlib.Path(__file__).parents[3] / "pykotor"
-    if pykotor_path.joinpath("__init__.py").exists():
+    if pykotor_path.exists():
         working_dir = str(pykotor_path.parent)
         if working_dir in sys.path:
             sys.path.remove(working_dir)
@@ -17,7 +17,7 @@ from pykotor.resource.formats.ncs.compiler.classes import CompileException
 from pykotor.resource.formats.ncs.compiler.interpreter import Interpreter
 from pykotor.resource.formats.ncs.compiler.lexer import NssLexer
 from pykotor.resource.formats.ncs.compiler.parser import NssParser
-from pykotor.utility.path import Path
+from utility.path import Path
 
 
 class TestNSSCompiler(unittest.TestCase):

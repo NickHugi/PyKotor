@@ -3,13 +3,12 @@ from __future__ import annotations
 from contextlib import suppress
 from typing import TYPE_CHECKING
 
-from PyQt5 import QtCore
-from PyQt5.QtWidgets import QDialog, QListWidgetItem, QShortcut, QTreeWidgetItem, QWidget
-
 from pykotor.common.misc import ResRef
 from pykotor.resource.formats.gff import write_gff
 from pykotor.resource.generics.uti import UTI, UTIProperty, dismantle_uti, read_uti
 from pykotor.resource.type import ResourceType
+from PyQt5 import QtCore
+from PyQt5.QtWidgets import QDialog, QListWidgetItem, QShortcut, QTreeWidgetItem, QWidget
 from toolset.data.installation import HTInstallation
 from toolset.gui.dialogs.edit.locstring import LocalizedStringDialog
 from toolset.gui.editor import Editor
@@ -20,13 +19,14 @@ if TYPE_CHECKING:
 
 class UTIEditor(Editor):
     def __init__(self, parent: QWidget | None, installation: HTInstallation | None = None):
-        """Initializes the Item Editor window
+        """Initializes the Item Editor window.
+
         Args:
+        ----
             parent: {QWidget}: The parent widget
             installation: {HTInstallation | None}: The installation object
-        Returns:
-            None: Does not return anything
-        {Processing Logic}:
+
+        Processing Logic:
             - Initializes supported resource types
             - Calls super().__init__ to initialize base class
             - Initializes UTI object
@@ -57,12 +57,7 @@ class UTIEditor(Editor):
         self.new()
 
     def _setupSignals(self) -> None:
-        """Set up signal connections for UI elements
-        Args:
-            self: {The class instance}: The class instance
-        Returns:
-            None: No return value.
-        """
+        """Set up signal connections for UI elements."""
         self.ui.tagGenerateButton.clicked.connect(self.generateTag)
         self.ui.resrefGenerateButton.clicked.connect(self.generateResref)
         self.ui.editPropertyButton.clicked.connect(self.editSelectedProperty)
@@ -83,9 +78,6 @@ class UTIEditor(Editor):
         ----
             installation (HTInstallation): The installation to set up.
 
-        Returns:
-        -------
-            None
         Processing Logic:
             - Sets the installation property on the UI
             - Loads required 2DAs into the installation cache
@@ -134,11 +126,12 @@ class UTIEditor(Editor):
         self._loadUTI(uti)
 
     def _loadUTI(self, uti: UTI):
-        """Loads a UTI object into the UI
+        """Loads a UTI object into the UI.
+
         Args:
+        ----
             uti: UTI - The UTI object to load
-        Returns:
-            None - Loads UTI data into UI elements
+
         Loads UTI data:
             - Loads basic UTI data like name, description etc into corresponding UI elements.
             - Loads properties and comments from UTI object into UI lists and text editors.
@@ -180,7 +173,8 @@ class UTIEditor(Editor):
             self: The object instance
         Returns:
             tuple[bytes, bytes]: Byte data and empty string
-        {Processing Logic}:
+
+        Processing Logic:
             - Populate UTI object properties from UI elements
             - Convert UTI to GFF structure
             - Write GFF to byte array
@@ -268,9 +262,6 @@ class UTIEditor(Editor):
             propertyId: The id of the property to add.
             subtypeId: The subtype id of the item.
 
-        Returns:
-        -------
-            None: Does not return anything.
         Processing Logic:
         - Gets the item properties table from the installation.
         - Creates a UTIProperty object and populates it with data from the table.
@@ -299,7 +290,9 @@ class UTIEditor(Editor):
             self.ui.assignedPropertiesList.takeItem(index.row())
 
     def propertySummary(self, utiProperty: UTIProperty) -> str:
-        """The function retrieves the property, subproperty and cost names from the UTIEditor.
+        """Retrieve the property, subproperty and cost names from the UTIEditor.
+
+        Processing Logic:
         - It returns a formatted string combining the retrieved names.
         - If a cost or subproperty is not present, it is omitted from the returned string.
         """
@@ -347,8 +340,10 @@ class UTIEditor(Editor):
         ----
             installation: HTInstallation - The installation object
             prop: int - The property index
-            subprop: int - The subproperty index
+            subprop: int - The subproperty index.
+
         Returns:
+        -------
             string - The name of the subproperty
 
         Processing Logic:
@@ -392,12 +387,13 @@ class UTIEditor(Editor):
 
 class PropertyEditor(QDialog):
     def __init__(self, installation: HTInstallation, utiProperty: UTIProperty):
-        """Initializes the UTI property editor dialog
+        """Initializes the UTI property editor dialog.
+
         Args:
+        ----
             installation: {HTInstallation object}: The installation object
             utiProperty: {UTIProperty object}: The UTI property object
-        Returns:
-            None
+
         Processing Logic:
             - Connects UI elements to callback functions
             - Populates cost and parameter lists from installation data
@@ -445,25 +441,18 @@ class PropertyEditor(QDialog):
         self.reloadTextboxes()
 
     def reloadTextboxes(self) -> None:
-        """Reloads textboxes with property names.
-
-        Args:
-        ----
-            self: The class instance
-        Returns:
-            None
-        """
+        """Reloads textboxes with property names."""
         propertyName = UTIEditor.propertyName(self._installation, self._utiProperty.property_name)
-        self.ui.propertyEdit.setText(propertyName if propertyName else "")
+        self.ui.propertyEdit.setText(propertyName or "")
 
         subpropertyName = UTIEditor.subpropertyName(self._installation, self._utiProperty.property_name, self._utiProperty.subtype)
-        self.ui.subpropertyEdit.setText(subpropertyName if subpropertyName else "")
+        self.ui.subpropertyEdit.setText(subpropertyName or "")
 
         costName = UTIEditor.costName(self._installation, self._utiProperty.cost_table, self._utiProperty.cost_value)
-        self.ui.costEdit.setText(costName if costName else "")
+        self.ui.costEdit.setText(costName or "")
 
         paramName = UTIEditor.paramName(self._installation, self._utiProperty.param1, self._utiProperty.param1_value)
-        self.ui.parameterEdit.setText(paramName if paramName else "")
+        self.ui.parameterEdit.setText(paramName or "")
 
     def selectCost(self) -> None:
         if not self.ui.costList.currentItem():

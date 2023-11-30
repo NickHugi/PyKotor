@@ -45,7 +45,7 @@ from pykotor.tslpatcher.mods.twoda import (
     Target,
     TargetType,
 )
-from pykotor.utility.path import PureWindowsPath
+from utility.path import PureWindowsPath
 
 # TODO Error, Warning tracking
 

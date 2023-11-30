@@ -6,14 +6,13 @@ from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, Any
 
 from jsmin import jsmin
-from PyQt5 import QtCore
-from PyQt5.QtCore import QPoint
-from PyQt5.QtGui import QKeySequence
-
 from pykotor.common.geometry import Vector2, Vector3
 from pykotor.gl.scene import Camera
 from pykotor.tools.encoding import decode_bytes_with_fallbacks
-from pykotor.utility.path import Path
+from utility.path import Path
+from PyQt5 import QtCore
+from PyQt5.QtCore import QPoint
+from PyQt5.QtGui import QKeySequence
 
 if TYPE_CHECKING:
     from pykotor.resource.generics.git import GITInstance

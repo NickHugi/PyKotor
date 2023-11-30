@@ -1,0 +1,5 @@
+__init__
+__main__
+resources
+tooltip
+uninstall_mod

@@ -2,10 +2,9 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+from pykotor.common.language import LocalizedString
 from PyQt5 import QtCore
 from PyQt5.QtWidgets import QWidget
-
-from pykotor.common.language import LocalizedString
 from toolset.gui.dialogs.edit.locstring import LocalizedStringDialog
 
 if TYPE_CHECKING:

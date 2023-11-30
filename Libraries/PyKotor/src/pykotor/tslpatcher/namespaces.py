@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from pykotor.utility.path import PurePath
+from utility.path import PurePath
 
 
 class PatcherNamespace:

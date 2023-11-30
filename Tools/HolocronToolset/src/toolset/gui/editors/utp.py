@@ -3,8 +3,6 @@ from __future__ import annotations
 from contextlib import suppress
 from typing import TYPE_CHECKING
 
-from PyQt5.QtWidgets import QMessageBox, QWidget
-
 from pykotor.common.misc import ResRef
 from pykotor.common.module import Module
 from pykotor.common.stream import BinaryWriter
@@ -14,6 +12,7 @@ from pykotor.resource.generics.dlg import DLG, dismantle_dlg
 from pykotor.resource.generics.utp import UTP, dismantle_utp, read_utp
 from pykotor.resource.type import ResourceType
 from pykotor.tools import placeable
+from PyQt5.QtWidgets import QMessageBox, QWidget
 from toolset.data.installation import HTInstallation
 from toolset.gui.dialogs.edit.locstring import LocalizedStringDialog
 from toolset.gui.dialogs.inventory import InventoryEditor
@@ -27,14 +26,15 @@ if TYPE_CHECKING:
 
 class UTPEditor(Editor):
     def __init__(self, parent: QWidget | None, installation: HTInstallation | None = None, *, mainwindow=None):
-        """Initialize Placeable Editor
+        """Initialize Placeable Editor.
+
         Args:
+        ----
             parent: {QWidget}: Parent widget
             installation: {HTInstallation}: HTInstallation object
             mainwindow: {QWidget}: MainWindow object
-        Returns:
-            None: Does not return anything
-        {Processing Logic}:
+
+        Processing Logic:
         1. Initialize supported resource types and call super constructor
         2. Initialize global settings object
         3. Get placeables 2DA cache from installation
@@ -63,13 +63,6 @@ class UTPEditor(Editor):
     def _setupSignals(self) -> None:
         """Connect UI buttons to their respective methods.
 
-        Args:
-        ----
-            self: The class instance.
-
-        Returns:
-        -------
-            None
         Processing Logic:
             - Connect tagGenerateButton clicked signal to generateTag method
             - Connect resrefGenerateButton clicked signal to generateResref method
@@ -94,9 +87,7 @@ class UTPEditor(Editor):
         ----
             installation: {HTInstallation}: The installation to set up for editing.
 
-        Returns:
-        -------
-            None
+        Processing Logic:
         - Sets the internal installation reference and updates UI elements
         - Loads required 2da files if not already loaded
         - Populates appearance and faction dropdowns from loaded 2da data
@@ -131,11 +122,12 @@ class UTPEditor(Editor):
         self.updateItemCount()
 
     def _loadUTP(self, utp: UTP):
-        """Loads UTP data into UI elements
+        """Loads UTP data into UI elements.
+
         Args:
-            utp (UTP): UTP object to load data from
-        Returns:
-            None: No return value
+        ----
+            utp (UTP): UTP object to load data from.
+
         Loads UTP data:
             - Sets UI element values like name, tag, etc from UTP properties
             - Sets checkboxes, dropdowns, spinboxes from UTP boolean and integer properties
@@ -199,11 +191,15 @@ class UTPEditor(Editor):
         self.updateItemCount()
 
     def build(self) -> tuple[bytes, bytes]:
-        """Builds a UTP from UI fields
+        """Builds a UTP from UI fields.
+
         Args:
+        ----
             self: The class instance
             utp: The UTP object
+
         Returns:
+        -------
             data: The built UTP data
             b"": Empty byte string
         Builds a UTP by:
@@ -295,11 +291,9 @@ class UTPEditor(Editor):
             self.ui.resrefEdit.setText("m00xx_plc_000")
 
     def editConversation(self) -> None:
-        """Edits a conversation
-        Args:
-            self: The class instance
-        Returns:
-            None: Does not return anything
+        """Edits a conversation.
+
+        Processing Logic:
         - It gets the conversation name from the UI text field
         - Searches the installation for the conversation resource
         - If not found, it creates a new empty file in the override
@@ -334,11 +328,9 @@ class UTPEditor(Editor):
             openResourceEditor(filepath, resname, ResourceType.DLG, data, self._installation, self)
 
     def openInventory(self) -> None:
-        """Opens inventory editor for the module
-        Args:
-            self: The module instance
-        Returns:
-            None: Does not return anything
+        """Opens inventory editor for the module.
+
+        Processing Logic:
         - Gets list of capsule paths for the module
         - Creates capsule objects from the paths
         - Initializes InventoryEditor with the capsules and other data
@@ -364,13 +356,6 @@ class UTPEditor(Editor):
     def update3dPreview(self) -> None:
         """Updates the model preview.
 
-        Args:
-        ----
-            self: The class instance.
-
-        Returns:
-        -------
-            None: No value is returned.
         Processing Logic:
             - Build the data and model name from the provided data
             - Get the MDL and MDX resources from the installation based on the model name
@@ -386,6 +371,14 @@ class UTPEditor(Editor):
             self.setFixedSize(374, 457)
 
     def _update_model(self):
+        """Updates the model preview.
+
+        Processing Logic:
+            - Build the data and model name from the provided data
+            - Get the MDL and MDX resources from the installation based on the model name
+            - If both resources exist, set them on the preview renderer
+            - If not, clear out any existing model from the preview
+        """
         self.setFixedSize(674, 457)
 
         data, _ = self.build()

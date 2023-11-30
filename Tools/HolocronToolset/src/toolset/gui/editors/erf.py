@@ -2,17 +2,16 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from PyQt5 import QtCore, QtGui
-from PyQt5.QtCore import QMimeData
-from PyQt5.QtGui import QStandardItem, QStandardItemModel
-from PyQt5.QtWidgets import QFileDialog, QMessageBox, QShortcut, QTableView, QWidget
-
 from pykotor.common.misc import ResRef
 from pykotor.extract.file import ResourceIdentifier
 from pykotor.resource.formats.erf import ERF, ERFResource, ERFType, read_erf, write_erf
 from pykotor.resource.formats.rim import RIM, read_rim, write_rim
 from pykotor.resource.type import ResourceType
-from pykotor.utility.path import Path
+from utility.path import Path
+from PyQt5 import QtCore, QtGui
+from PyQt5.QtCore import QMimeData
+from PyQt5.QtGui import QStandardItem, QStandardItemModel
+from PyQt5.QtWidgets import QFileDialog, QMessageBox, QShortcut, QTableView, QWidget
 from toolset.gui.editor import Editor
 from toolset.gui.widgets.settings.installations import GlobalSettings
 from toolset.utils.window import openResourceEditor
@@ -25,12 +24,13 @@ if TYPE_CHECKING:
 
 class ERFEditor(Editor):
     def __init__(self, parent: QWidget | None, installation: HTInstallation | None = None):
-        """Initialize ERF Editor window
+        """Initialize ERF Editor window.
+
         Args:
+        ----
             parent: QWidget: Parent widget
             installation: HTInstallation: HT Installation object
-        Returns:
-            None
+
         Processing Logic:
             - Set supported resource types
             - Initialize base editor window
@@ -64,11 +64,6 @@ class ERFEditor(Editor):
     def _setupSignals(self) -> None:
         """Setup signal connections for UI elements.
 
-        Args:
-        ----
-            self: {The class instance}: The class instance
-        Returns:
-            None: No return value
         Processing Logic:
         - Connect extractButton clicked signal to extractSelected method
         - Connect loadButton clicked signal to selectFilesToAdd method
@@ -90,14 +85,15 @@ class ERFEditor(Editor):
         QShortcut("Del", self).activated.connect(self.removeSelected)
 
     def load(self, filepath: os.PathLike | str, resref: str, restype: ResourceType, data: bytes) -> None:
-        """Load resource file
+        """Load resource file.
+
         Args:
+        ----
             filepath: Path to resource file
             resref: Resource reference
             restype: Resource type
             data: File data
-        Returns:
-            None
+
         Load resource file:
         - Clear existing model data
         - Set model column count to 3 and header labels
@@ -145,11 +141,7 @@ class ERFEditor(Editor):
     def build(self) -> tuple[bytes, bytes]:
         """Builds resource data from the model.
 
-        Args:
-        ----
-            self: The class instance.
-
-        Returns:
+        Returns
         -------
             data: The built resource data.
             b"": An empty bytes object.
@@ -187,11 +179,6 @@ class ERFEditor(Editor):
     def save(self) -> None:
         """Saves the current state of the editor to the file path.
 
-        Args:
-        ----
-            self: The editor object
-        Returns:
-            None: Does not return anything
         - Checks if file path is None and calls saveAs() method to set the file path
         - Enables the refresh button on the UI
         - Builds the data from the editor contents
@@ -212,11 +199,8 @@ class ERFEditor(Editor):
             file.write(data[0])
 
     def extractSelected(self) -> None:
-        """Extract selected resources to a folder
-        Args:
-            self: The class instance
-        Returns:
-            None: No value is returned
+        """Extract selected resources to a folder.
+
         - Get the target folder path from the file dialog
         - Check if a valid folder is selected
         - Get the selected rows from the table view
@@ -238,13 +222,6 @@ class ERFEditor(Editor):
     def removeSelected(self) -> None:
         """Removes selected rows from table view.
 
-        Args:
-        ----
-            self: The class instance.
-
-        Returns:
-        -------
-            None: Does not return anything.
         Removes selected rows from table view by:
         - Getting selected row indexes from table view
         - Reversing the list to remove from last to first
@@ -260,8 +237,7 @@ class ERFEditor(Editor):
         Args:
         ----
             filepaths: list of filepaths to add as resources
-        Returns:
-            None
+
         - Loops through each filepath
         - Resolves the filepath and opens it for reading
         - Splits the parent directory name to get the resref and restype
@@ -275,10 +251,7 @@ class ERFEditor(Editor):
                 with c_filepath.open("rb") as file:
                     data = file.read()
 
-                    resref, restype = ResourceIdentifier.from_path(c_filepath.parent)
-                    if restype is ResourceType.INVALID:
-                        msg = f"Invalid resource type: {restype.extension}"
-                        raise TypeError(msg)
+                    resref, restype = ResourceIdentifier.from_path(c_filepath.parent).validate()
                     resource = ERFResource(ResRef(resref), restype, data)
 
                     resrefItem = QStandardItem(resource.resref.get())
@@ -300,13 +273,7 @@ class ERFEditor(Editor):
     def openSelected(self) -> None:
         """Opens the selected resource in the editor.
 
-        Args:
-        ----
-            self: The current class instance.
-
-        Returns:
-        -------
-            None
+        Processing Logic:
         - Checks if a filepath is set and shows error if not
         - Loops through selected rows in table
         - Gets the item and resource data
@@ -347,11 +314,8 @@ class ERFEditor(Editor):
             self.load(self._filepath, self._resref, self._restype, data)
 
     def selectionChanged(self) -> None:
-        """Updates UI controls based on table selection
-        Args:
-            self: The class instance
-        Returns:
-            None: No return value
+        """Updates UI controls based on table selection.
+
         - Check if any rows are selected in the table view
         - If no rows selected, disable UI controls by calling _set_ui_controls_state(False)
         - If rows are selected, enable UI controls by calling _set_ui_controls_state(True).
@@ -367,14 +331,16 @@ class ERFEditor(Editor):
         self.ui.unloadButton.setEnabled(state)
 
     def resourceSaved(self, filepath: str, resref: str, restype: ResourceType, data: bytes) -> None:
-        """Saves resource data to the UI table
+        """Saves resource data to the UI table.
+
         Args:
+        ----
             filepath: Filepath of the resource being saved
             resref: Reference of the resource being saved
             restype: Type of the resource being saved
             data: Data being saved for the resource
-        Returns:
-            None
+
+        Processing Logic:
         - Check if filepath matches internal filepath
         - Iterate through selected rows in table view
         - Get item from selected index
@@ -419,11 +385,12 @@ class ERFEditorTable(QTableView):
             event.ignore()
 
     def startDrag(self, actions: QtCore.Qt.DropActions | QtCore.Qt.DropAction) -> None:
-        """Starts a drag operation with the selected items
+        """Starts a drag operation with the selected items.
+
         Args:
+        ----
             actions: QtCore.Qt.DropActions | QtCore.Qt.DropAction: The allowed actions for the drag
-        Returns:
-            None: No return value
+
         - Extracts selected items to a temp directory
         - Creates a list of local file URLs from the extracted files
         - Sets the file URLs on a QMimeData object

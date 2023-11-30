@@ -1,6 +1,5 @@
-from PyQt5.QtWidgets import QDialog
-
 from pykotor.resource.type import ResourceType
+from PyQt5.QtWidgets import QDialog
 
 
 class SaveToModuleDialog(QDialog):

@@ -4,18 +4,16 @@ import io
 from typing import TYPE_CHECKING
 
 from PIL import Image, ImageOps
-from PyQt5.QtGui import QImage, QPixmap, QTransform
-
 from pykotor.resource.formats.tpc import TPC, TPCTextureFormat, read_tpc, write_tpc
 from pykotor.resource.type import ResourceType
+from PyQt5.QtGui import QImage, QPixmap, QTransform
 from toolset.gui.editor import Editor
 
 if TYPE_CHECKING:
     import os
 
-    from PyQt5.QtWidgets import QWidget
-
     from pykotor.extract.installation import Installation
+    from PyQt5.QtWidgets import QWidget
 
 
 class TPCEditor(Editor):

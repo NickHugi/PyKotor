@@ -26,20 +26,15 @@
       "justMyCode": false,
     },
     {
-      "name": "Run KotorDiff",
-      "type": "python",
-      "request": "launch",
-      "module": "scripts.kotordiff",
-      "args": [],
-      "console": "integratedTerminal"
-    },
-    {
         "name": "Run Holocron Toolset",
         "type": "python",
         "request": "launch",
         "module": "toolset",
         "cwd": "${workspaceFolder}/Tools/HolocronToolset/src/",
-        "args": [],
+        "pythonArgs": [
+          "-Xfrozen_modules=off",
+          "-Xdev"
+        ],
         "console": "integratedTerminal",
         "env": {"PYTHONPATH": "${workspaceFolder}/Libraries/PyKotor/src${pathSeparator}${env:PYTHONPATH}"}
       },

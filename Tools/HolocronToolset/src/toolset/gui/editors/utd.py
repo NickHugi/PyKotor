@@ -2,8 +2,6 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from PyQt5.QtWidgets import QMessageBox, QWidget
-
 from pykotor.common.misc import ResRef
 from pykotor.common.stream import BinaryWriter
 from pykotor.resource.formats.gff import write_gff
@@ -11,6 +9,7 @@ from pykotor.resource.generics.dlg import DLG, dismantle_dlg
 from pykotor.resource.generics.utd import UTD, dismantle_utd, read_utd
 from pykotor.resource.type import ResourceType
 from pykotor.tools import door
+from PyQt5.QtWidgets import QMessageBox, QWidget
 from toolset.data.installation import HTInstallation
 from toolset.gui.dialogs.edit.locstring import LocalizedStringDialog
 from toolset.gui.editor import Editor
@@ -124,11 +123,12 @@ class UTDEditor(Editor):
         self._loadUTD(utd)
 
     def _loadUTD(self, utd: UTD) -> None:
-        """Loads UTD data into UI elements
+        """Loads UTD data into UI elements.
+
         Args:
+        ----
             utd (UTD): UTD object to load data from
-        Returns:
-            None: No return value
+
         Processing Logic:
         - Sets UI element values from UTD object attributes
         - Divides loading into sections for Basic, Advanced, Lock, Scripts, and Comments
@@ -185,11 +185,7 @@ class UTDEditor(Editor):
     def build(self) -> tuple[bytes, bytes]:
         """Builds a UTD object from UI data.
 
-        Args:
-        ----
-            self: The class instance
-
-        Returns:
+        Returns
         -------
             tuple[bytes, bytes]: A tuple containing the GFF data (bytes) and errors (bytes)
 
@@ -273,11 +269,8 @@ class UTDEditor(Editor):
             self.ui.resrefEdit.setText("m00xx_dor_000")
 
     def editConversation(self) -> None:
-        """Edits a conversation
-        Args:
-            self: The class instance
-        Returns:
-            None: Does not return anything
+        """Edits a conversation.
+
         Processing Logic:
             1. Gets the conversation name from the UI text field
             2. Searches the installation for the conversation resource
@@ -316,15 +309,12 @@ class UTDEditor(Editor):
         self.update3dPreview()
 
     def update3dPreview(self) -> None:
-        """Updates the 3D preview renderer visibility and size
-        Args:
-            self: The class instance
-        Returns:
-            None: Does not return anything.
+        """Updates the 3D preview renderer visibility and size.
 
+        Processing Logic:
         - Checks if the global setting for showing preview is True
         - If True, calls _update_model() to update the 3D model preview
-        - If False, sets the fixed size of the window without leaving space for preview
+        - If False, sets the fixed size of the window without leaving space for preview.
         """
         self.ui.previewRenderer.setVisible(self.globalSettings.showPreviewUTP)
         self.ui.actionShowPreview.setChecked(self.globalSettings.showPreviewUTP)
@@ -337,13 +327,6 @@ class UTDEditor(Editor):
     def _update_model(self):
         """Updates the model preview.
 
-        Args:
-        ----
-            self: The class instance.
-
-        Returns:
-        -------
-            None: No value is returned.
         Processing Logic:
             - Build the model data from the installation data
             - Get the model name based on the data and installation details

@@ -9,7 +9,7 @@ from pykotor.common.misc import ResRef
 from pykotor.resource.formats.tlk.tlk_data import TLK
 from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES, ResourceReader, ResourceWriter, autoclose
 from pykotor.tools.encoding import decode_bytes_with_fallbacks
-from pykotor.utility.misc import indent
+from utility.misc import indent
 
 
 class TLKXMLReader(ResourceReader):

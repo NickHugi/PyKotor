@@ -5,13 +5,51 @@ requires = [
 ]
 build-backend = "setuptools.build_meta"
 
+[project]
+name="PyKotor"
+description="Read, modify and write files used by KotOR's game engine."
+version="1.7"
+requires-python = ">= 3.7"
+dependencies = [
+    "ply>=3.11,<4",     # required for the nss compiler lexer
+    "numpy~=1.22",      # probably required by PyKotorGL
+    "charset-normalizer>=2.0,<3.4",  # used for localized string decodings
+    "defusedxml~=0.7",  # secure XML parsing
+]
+authors = [
+  {name = "NickHugi"},
+]
+maintainers = [
+  {name = "th3w1zard1", email = "halomastar@gmail.com"},
+]
+readme = {file = "README.md", content-type = "text/markdown"}
+license = {text = "MIT License"}
+keywords = ["kotor", "library", "holocron", "toolset", "pykotor", "editor", "mit", "holopatcher", "tslpatcher"]
+
+[project.optional-dependencies]
+font_writer = ["Pillow>=9.5,<11"] # required for TXI/TGA fonts
+xml         = ["defusedxml~=0.7"]         # secure XML parsing
+gl          = [
+  "PyGLM>=2.0,<2.8",
+  "PyOpenGL~=3.1",
+  "django>2.1; os_name != 'nt'",
+  "django>2.0; os_name == 'nt'",
+]
+
+[project.urls]
+Homepage = "https://github.com/NickHugi/PyKotor"
+Documentation = "https://github.com/NickHugi/PyKotor/blob/master/README.md"
+Repository = "https://github.com/NickHugi/PyKotor.git"
+Issues = "https://github.com/NickHugi/PyKotor/issues"
+#Changelog = "https://github.com/NickHugi/PyKotor/blob/master/CHANGELOG.md"
+
 ########################################################
 ## define only linter configurations below this point ##
 ########################################################
 
 [tool.black]
 line-length = 130
-target-version = ['py38']
+target-version = ['py37']
 include = '\.pyi?$'
 exclude = '''
 /(
@@ -45,7 +83,7 @@ line_length = 130
 skip_gitignore = true
 
 [tool.ruff]
-target-version = "py38"
+target-version = "py37"
 line-length = 130
 
 select = ["ALL"]
@@ -94,10 +132,6 @@ unfixable = ["N815", "F841", "ERA001"]
 "tests/*.py" = ["ALL"]
 ".github/*py" = ["INP001"]
 "__init__.py" = ["I001", "F401"]
-"globalsettings.py" = ["I001", "F401"]
-"tools/HolocronToolset/toolset/*.py" = ["FBT003", "N802", "N803", "N806", "A001"]
-"tools/HolocronToolset/toolset/uic/*.py" = ["ALL"]
-"resources_rc.py" = ["ALL"]
 ".mdx" = ["ALL"]
 ".mdl" = ["ALL"]
 "pykotor/resource/formats/ncs/compiler/*.py" = ["ALL"]

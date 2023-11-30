@@ -16,11 +16,21 @@ from tkinter import font as tkfont
 from typing import TYPE_CHECKING, Callable
 
 if getattr(sys, "frozen", False) is False:
+    pykotor_font_path = pathlib.Path(__file__).parents[3] / "Libraries" / "PyKotorFont" / "src" / "pykotor"
+    if pykotor_font_path.exists():
+        if pykotor_font_path in sys.path:
+            sys.path.remove(str(pykotor_font_path))
+        sys.path.insert(0, str(pykotor_font_path.parent))
     pykotor_path = pathlib.Path(__file__).parents[3] / "Libraries" / "PyKotor" / "src" / "pykotor"
-    if pykotor_path.joinpath("__init__.py").exists():
+    if pykotor_path.exists():
         if pykotor_path in sys.path:
             sys.path.remove(str(pykotor_path))
         sys.path.insert(0, str(pykotor_path.parent))
+    utility_path = pathlib.Path(__file__).parents[3] / "Libraries" / "Utility" / "src"
+    if utility_path.exists():
+        if utility_path in sys.path:
+            sys.path.remove(str(utility_path))
+        sys.path.insert(0, str(utility_path))
 
 
 from pykotor.common.language import Language, LocalizedString
@@ -28,6 +38,7 @@ from pykotor.common.stream import BinaryWriter
 from pykotor.extract.capsule import Capsule
 from pykotor.extract.file import FileResource, ResourceIdentifier
 from pykotor.extract.installation import Installation
+from pykotor.font.draw import write_bitmap_fonts
 from pykotor.resource.formats.erf.erf_auto import write_erf
 from pykotor.resource.formats.erf.erf_data import ERF
 from pykotor.resource.formats.gff import GFF, GFFContent, GFFFieldType, GFFList, GFFStruct, read_gff
@@ -35,13 +46,12 @@ from pykotor.resource.formats.gff.gff_auto import bytes_gff
 from pykotor.resource.formats.rim.rim_auto import write_rim
 from pykotor.resource.formats.rim.rim_data import RIM
 from pykotor.resource.formats.tlk import TLK, read_tlk, write_tlk
-from pykotor.resource.formats.tpc.txi_data import write_bitmap_fonts
 from pykotor.resource.type import ResourceType
 from pykotor.tools.misc import is_capsule_file
 from pykotor.tools.path import CaseAwarePath, find_kotor_paths_from_default
 from pykotor.tslpatcher.logger import PatchLogger
-from pykotor.utility.path import Path, PurePath, PureWindowsPath
 from translate.language_translator import TranslationOption, Translator
+from utility.path import Path, PurePath, PureWindowsPath
 
 if TYPE_CHECKING:
 

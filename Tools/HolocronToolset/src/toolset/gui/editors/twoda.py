@@ -4,12 +4,11 @@ from enum import IntEnum
 from typing import TYPE_CHECKING
 
 import pyperclip
+from pykotor.resource.formats.twoda import TwoDA, read_2da, write_2da
+from pykotor.resource.type import ResourceType
 from PyQt5.QtCore import QSortFilterProxyModel
 from PyQt5.QtGui import QStandardItem, QStandardItemModel
 from PyQt5.QtWidgets import QAction, QMessageBox, QWidget
-
-from pykotor.resource.formats.twoda import TwoDA, read_2da, write_2da
-from pykotor.resource.type import ResourceType
 from toolset.gui.editor import Editor
 
 if TYPE_CHECKING:

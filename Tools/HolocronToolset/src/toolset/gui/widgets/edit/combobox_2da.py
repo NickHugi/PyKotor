@@ -4,7 +4,6 @@ from typing import TYPE_CHECKING
 
 from PyQt5 import QtCore
 from PyQt5.QtWidgets import QComboBox, QMenu, QWidget
-
 from toolset.gui.dialogs.edit.combo_2da import ModdedValueSpinboxDialog
 
 if TYPE_CHECKING:

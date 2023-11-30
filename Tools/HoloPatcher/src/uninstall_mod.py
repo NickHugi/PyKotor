@@ -6,8 +6,8 @@ from datetime import datetime
 from tkinter import messagebox
 
 from pykotor.tslpatcher.logger import PatchLogger
-from pykotor.utility.error_handling import universal_simplify_exception
-from pykotor.utility.path import Path
+from utility.error_handling import universal_simplify_exception
+from utility.path import Path
 
 
 class ModUninstaller:

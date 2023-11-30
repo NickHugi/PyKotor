@@ -6,7 +6,7 @@ from defusedxml.ElementTree import fromstring
 
 from pykotor.resource.formats.lip import LIP, LIPShape
 from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES, ResourceReader, ResourceWriter, autoclose
-from pykotor.utility.misc import indent
+from utility.misc import indent
 
 
 class LIPXMLReader(ResourceReader):

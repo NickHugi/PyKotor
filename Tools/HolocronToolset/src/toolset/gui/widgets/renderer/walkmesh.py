@@ -4,23 +4,6 @@ import math
 from copy import copy
 from typing import TYPE_CHECKING, Generic, NamedTuple, TypeVar
 
-from PyQt5 import QtCore
-from PyQt5.QtCore import QPointF, QRect, QRectF, QTimer
-from PyQt5.QtGui import (
-    QColor,
-    QImage,
-    QKeyEvent,
-    QMouseEvent,
-    QPainter,
-    QPainterPath,
-    QPaintEvent,
-    QPen,
-    QPixmap,
-    QTransform,
-    QWheelEvent,
-)
-from PyQt5.QtWidgets import QWidget
-
 from pykotor.common.geometry import SurfaceMaterial, Vector2, Vector3
 from pykotor.resource.formats.tpc import TPC, TPCTextureFormat
 from pykotor.resource.generics.are import ARE, ARENorthAxis
@@ -37,6 +20,22 @@ from pykotor.resource.generics.git import (
     GITTrigger,
     GITWaypoint,
 )
+from PyQt5 import QtCore
+from PyQt5.QtCore import QPointF, QRect, QRectF, QTimer
+from PyQt5.QtGui import (
+    QColor,
+    QImage,
+    QKeyEvent,
+    QMouseEvent,
+    QPainter,
+    QPainterPath,
+    QPaintEvent,
+    QPen,
+    QPixmap,
+    QTransform,
+    QWheelEvent,
+)
+from PyQt5.QtWidgets import QWidget
 from toolset.utils.misc import clamp
 
 if TYPE_CHECKING:
@@ -140,11 +139,12 @@ class WalkmeshRenderer(QWidget):
     instancePressed = QtCore.pyqtSignal(object)  # instance
 
     def __init__(self, parent: QWidget):
-        """Initializes the WalkmeshViewer widget
+        """Initializes the WalkmeshViewer widget.
+
         Args:
+        ----
             parent (QWidget): The parent widget
-        Returns:
-            None
+
         Processing Logic:
             - Initializes variables and properties
             - Sets up camera
@@ -273,8 +273,9 @@ class WalkmeshRenderer(QWidget):
         self.camera.setZoom(zoom)
 
     def toRenderCoords(self, x: float, y: float) -> Vector2:
-        """Returns a screen-space coordinates coverted from the specified world-space coordinates. The origin of the
-        screen-space coordinates is the top-left of the WalkmeshRenderer widget.
+        """Returns a screen-space coordinates coverted from the specified world-space coordinates.
+
+        The origin of the screen-space coordinates is the top-left of the WalkmeshRenderer widget.
 
         Args:
         ----
@@ -294,9 +295,10 @@ class WalkmeshRenderer(QWidget):
         return Vector2(x2, y2)
 
     def toWorldCoords(self, x: float, y: float) -> Vector3:
-        """Returns the world-space coordinates converted from the specified screen-space coordinates. The Z component
-        is calculated using the X/Y components and the walkmesh face the mouse is over. If there is no face underneath
-        the mouse, the Z component is set to zero.
+        """Returns the world-space coordinates converted from the specified screen-space coordinates.
+
+        The Z component is calculated using the X/Y components and the walkmesh
+        face the mouse is over. If there is no face underneath the mouse, the Z component is set to zero.
 
         Args:
         ----
@@ -320,8 +322,10 @@ class WalkmeshRenderer(QWidget):
         return Vector3(x2, y2, z)
 
     def toWorldDelta(self, x: float, y: float) -> Vector2:
-        """Returns the coordinates representing a change in world-space. This is convereted from coordinates representing
-        a change in screen-space, such as the delta paramater given in a mouseMove event.
+        """Returns the coordinates representing a change in world-space.
+
+        This is convereted from coordinates representing a
+        change in screen-space, such as the delta paramater given in a mouseMove event.
 
         Args:
         ----
@@ -341,8 +345,9 @@ class WalkmeshRenderer(QWidget):
         return Vector2(x2, -y2)
 
     def getZCoord(self, x: float, y: float) -> float:
-        """Returns the Z coordinate based of walkmesh data for the specified point. If there are overlapping faces, the
-        walkable face will take priority.
+        """Returns the Z coordinate based of walkmesh data for the specified point.
+
+        If there are overlapping faces, the walkable face will take priority.
 
         Args:
         ----
@@ -452,11 +457,12 @@ class WalkmeshRenderer(QWidget):
         return self._geomPointsUnderMouse
 
     def centerCamera(self) -> None:
-        """Centers the camera on the bounding box of the world
+        """Centers the camera on the bounding box of the world.
+
         Args:
+        ----
             self: The object calling the function
-        Returns:
-            None: Does not return anything
+
         Processing Logic:
         1. Sets the camera position to the center of the bounding box
         2. Calculates the world and screen sizes
@@ -542,9 +548,8 @@ class WalkmeshRenderer(QWidget):
         Args:
         ----
             e (QPaintEvent): The paint event
-        Returns:
-            None
 
+        Processing Logic:
         - Builds and caches walkmesh face geometry
         - Sets up camera transform
         - Fills background and draws walkmesh faces
@@ -625,9 +630,16 @@ class WalkmeshRenderer(QWidget):
             targetRect = QRectF(QPointF(imageX, imageY), QPointF(imageX + fullWidthWU, imageY + fullHeightWU))
             painter.drawImage(targetRect, rotated)
 
-        painter.setPen(QPen(QColor(10, 10, 10, 120),
-                            1 / self.camera.zoom(),
-                            QtCore.Qt.SolidLine) if not self.hideWalkmeshEdges else QPen(QtCore.Qt.NoPen))
+        pen: QPen = (
+            QPen(QtCore.Qt.NoPen)
+            if self.hideWalkmeshEdges
+            else QPen(
+                QColor(10, 10, 10, 120),
+                1 / self.camera.zoom(),
+                QtCore.Qt.SolidLine
+            )
+        )
+        painter.setPen(pen)
         for face, path in self._walkmeshFaceCache.items():
             painter.setBrush(self.materialColor(face.material))
             painter.drawPath(path)
@@ -676,47 +688,47 @@ class WalkmeshRenderer(QWidget):
         painter.setOpacity(0.6)
         painter.setRenderHint(QPainter.SmoothPixmapTransform, True)
         if self._git is not None:
-            for creature in self._git.creatures if not self.hideCreatures else []:
+            for creature in [] if self.hideCreatures else self._git.creatures:
                 if self.instanceFilter.lower() not in creature.resref.get().lower() and creature.resref.get() != "":
                     continue
                 self._drawImage(painter, self._pixmapCreature, creature.position.x, creature.position.y, 3.142+self.camera.rotation(), 1/16)
 
-            for door in self._git.doors if not self.hideDoors else []:
+            for door in [] if self.hideDoors else self._git.doors:
                 if self.instanceFilter.lower() not in door.resref.get().lower() and door.resref.get() != "":
                     continue
                 self._drawImage(painter, self._pixmapDoor, door.position.x, door.position.y, 3.142+self.camera.rotation(), 1/16)
 
-            for placeable in self._git.placeables if not self.hidePlaceables else []:
+            for placeable in [] if self.hidePlaceables else self._git.placeables:
                 if self.instanceFilter.lower() not in placeable.resref.get().lower() and placeable.resref.get() != "":
                     continue
                 self._drawImage(painter, self._pixmapPlaceable, placeable.position.x, placeable.position.y, 3.142+self.camera.rotation(), 1/16)
 
-            for merchant in self._git.stores if not self.hideStores else []:
+            for merchant in [] if self.hideStores else self._git.stores:
                 if self.instanceFilter.lower() not in merchant.resref.get().lower() and merchant.resref.get() != "":
                     continue
                 self._drawImage(painter, self._pixmapMerchant, merchant.position.x, merchant.position.y, 3.142+self.camera.rotation(), 1/16)
 
-            for waypoint in self._git.waypoints if not self.hideWaypoints else []:
+            for waypoint in [] if self.hideWaypoints else self._git.waypoints:
                 if self.instanceFilter.lower() not in waypoint.resref.get().lower() and waypoint.resref.get() != "":
                     continue
                 self._drawImage(painter, self._pixmapWaypoint, waypoint.position.x, waypoint.position.y, 3.142+self.camera.rotation(), 1/16)
 
-            for sound in self._git.sounds if not self.hideSounds else []:
+            for sound in [] if self.hideSounds else self._git.sounds:
                 if self.instanceFilter.lower() not in sound.resref.get().lower() and sound.resref.get() != "":
                     continue
                 self._drawImage(painter, self._pixmapSound, sound.position.x, sound.position.y, 3.142+self.camera.rotation(), 1/16)
 
-            for encounter in self._git.encounters if not self.hideEncounters else []:
+            for encounter in [] if self.hideEncounters else self._git.encounters:
                 if self.instanceFilter.lower() not in encounter.resref.get().lower() and encounter.resref.get() != "":
                     continue
                 self._drawImage(painter, self._pixmapEncounter, encounter.position.x, encounter.position.y, 3.142+self.camera.rotation(), 1/16)
 
-            for trigger in self._git.triggers if not self.hideTriggers else []:
+            for trigger in [] if self.hideTriggers else self._git.triggers:
                 if self.instanceFilter.lower() not in trigger.resref.get().lower() and trigger.resref.get() != "":
                     continue
                 self._drawImage(painter, self._pixmapTrigger, trigger.position.x, trigger.position.y, 3.142+self.camera.rotation(), 1/16)
 
-            for camera in self._git.cameras if not self.hideCameras else []:
+            for camera in [] if self.hideCameras else self._git.cameras:
                 self._drawImage(painter, self._pixmapCamera, camera.position.x, camera.position.y, 3.142+self.camera.rotation(), 1/16)
 
         # Highlight the first instance that is underneath the mouse
@@ -780,11 +792,12 @@ class WalkmeshRenderer(QWidget):
         self.mouseScrolled.emit(Vector2(e.angleDelta().x(), e.angleDelta().y()), self._mouseDown, self._keysDown)
 
     def mouseMoveEvent(self, e: QMouseEvent) -> None:
-        """Handles mouse move events
+        """Handles mouse move events.
+
         Args:
+        ----
             e: QMouseEvent - Mouse event object
-        Returns:
-            None
+
         Processes mouse movement:
             - Updates mouse position
             - Emits mouseMoved signal

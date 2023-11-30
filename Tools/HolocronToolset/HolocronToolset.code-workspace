@@ -5,12 +5,19 @@
 		},
 		{
 			"path": "../../Libraries/PyKotor"
-		}
+		},
+		{
+			"path": "../../Libraries/PyKotorGL"
+		},
+		{
+			"path": "../../Libraries/Utility"
+		},
 	],
-	"settings": {
-		"python.analysis.extraPaths": [
-			"../../Libraries/PyKotor/src",
-			"./src",
-		]
+	"launch": {
+	  "justMyCode": true,
+	  "debugStdLib": false,
 	},
+    "settings": {
+        "debug.allowBreakpointsEverywhere": true
+    }
 }

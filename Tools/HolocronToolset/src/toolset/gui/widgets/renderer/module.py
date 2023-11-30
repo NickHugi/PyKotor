@@ -5,21 +5,19 @@ from copy import copy
 from datetime import datetime, timedelta, timezone
 from typing import TYPE_CHECKING
 
-from PyQt5 import QtCore
-from PyQt5.QtCore import QTimer
-from PyQt5.QtWidgets import QOpenGLWidget, QWidget
-
 from pykotor.common.geometry import Vector2, Vector3
 from pykotor.gl.scene import Scene
 from pykotor.resource.generics.git import GITInstance
 from pykotor.resource.type import ResourceType
+from PyQt5 import QtCore
+from PyQt5.QtCore import QTimer
+from PyQt5.QtWidgets import QOpenGLWidget, QWidget
 
 if TYPE_CHECKING:
     from glm import vec3
-    from PyQt5.QtGui import QKeyEvent, QMouseEvent, QResizeEvent, QWheelEvent
-
     from pykotor.common.module import Module
     from pykotor.resource.formats.bwm import BWMFace
+    from PyQt5.QtGui import QKeyEvent, QMouseEvent, QResizeEvent, QWheelEvent
     from toolset.data.installation import HTInstallation
 
 
@@ -47,6 +45,17 @@ class ModuleRenderer(QOpenGLWidget):
     """Signal emitted when an object has been selected through the renderer."""
 
     def __init__(self, parent: QWidget):
+        """Initializes the ModuleDesigner widget.
+
+        Args:
+        ----
+            parent: QWidget: The parent widget.
+
+        Processing Logic:
+            - Calls super().__init__() to initialize the base QWidget class
+            - Initializes scene, settings and other member variables
+            - Sets initial values for mouse, key states and camera properties
+        """
         super().__init__(parent)
 
         from toolset.gui.windows.module_designer import ModuleDesignerSettings
@@ -74,6 +83,17 @@ class ModuleRenderer(QOpenGLWidget):
         QTimer.singleShot(33, self.loop)
 
     def loop(self) -> None:
+        """Repaints and checks for keyboard input on mouse press.
+
+        Args:
+        ----
+            self: The object instance
+
+        - Calls repaint() to redraw the canvas
+        - Checks if mouse is over object and keyboard keys are pressed
+        - Emits keyboardPressed signal with mouse/key info
+        - Schedules next loop call after delay to maintain ~30fps
+        """
         self.repaint()
         if self.underMouse() and self.freeCam and len(self._keysDown) > 0:
             self.keyboardPressed.emit(self._mouseDown, self._keysDown)
@@ -113,6 +133,19 @@ class ModuleRenderer(QOpenGLWidget):
         self._mouseDown.clear()
 
     def paintGL(self) -> None:
+        """Renders the scene and handles object selection.
+
+        Args:
+        ----
+            self: The viewport widget
+
+        Processing Logic:
+            - Initializes painting if not already initialized
+            - Handles object selection on mouse click
+            - Sets cursor position based on mouse
+            - Renders the scene
+            - Records render time.
+        """
         start = datetime.now(tz=timezone.utc).astimezone()
         if not self._init:
             self._initialize_paintGL()
@@ -159,7 +192,9 @@ class ModuleRenderer(QOpenGLWidget):
         camera.distance = distance
 
     def panCamera(self, forward: float, right: float, up: float) -> None:
-        """Moves the camera by the specified amount. The movement takes into account both the rotation and zoom of the
+        """Moves the camera by the specified amount.
+
+        The movement takes into account both the rotation and zoom of the
         camera on the x/y plane.
 
         Args:
@@ -215,6 +250,18 @@ class ModuleRenderer(QOpenGLWidget):
         self.mouseScrolled.emit(Vector2(e.angleDelta().x(), e.angleDelta().y()), self._mouseDown, self._keysDown)
 
     def mouseMoveEvent(self, e: QMouseEvent) -> None:
+        """Handles mouse move events.
+
+        Args:
+        ----
+            e: QMouseEvent: Current mouse event.
+
+        Processing Logic:
+            1. Get current mouse position on screen
+            2. Calculate delta from previous position or center of screen if free camera mode
+            3. Get world position of cursor
+            4. Emit signal with mouse data if time since press > threshold
+        """
         screen = Vector2(e.x(), e.y())
         if self.freeCam:
             screenDelta = Vector2(screen.x - self.width()/2, screen.y - self.height()/2)

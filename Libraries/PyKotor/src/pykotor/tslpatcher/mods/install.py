@@ -4,7 +4,7 @@ import shutil
 from typing import TYPE_CHECKING
 
 from pykotor.tslpatcher.mods.template import PatcherModifications
-from pykotor.utility.path import PurePath
+from utility.path import PurePath
 
 if TYPE_CHECKING:
     import os

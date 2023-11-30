@@ -3,22 +3,20 @@ from __future__ import annotations
 import math
 from typing import TYPE_CHECKING
 
-from PyQt5.QtCore import QTimer
-from PyQt5.QtWidgets import QOpenGLWidget, QWidget
-
 from pykotor.common.geometry import Vector2
 from pykotor.common.stream import BinaryReader
 from pykotor.gl.models.read_mdl import gl_load_mdl
 from pykotor.gl.scene import RenderObject, Scene
 from pykotor.resource.generics.git import GIT, GITCreature
+from PyQt5.QtCore import QTimer
+from PyQt5.QtWidgets import QOpenGLWidget, QWidget
 from toolset.data.misc import ControlItem
 from toolset.gui.widgets.settings.module_designer import ModuleDesignerSettings
 
 if TYPE_CHECKING:
-    from PyQt5.QtGui import QKeyEvent, QMouseEvent, QResizeEvent, QWheelEvent
-
     from pykotor.extract.installation import Installation
     from pykotor.resource.generics.utc import UTC
+    from PyQt5.QtGui import QKeyEvent, QMouseEvent, QResizeEvent, QWheelEvent
 
 
 class ModelRenderer(QOpenGLWidget):

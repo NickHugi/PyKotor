@@ -11,7 +11,7 @@ from pykotor.resource.formats.ncs import compile_nss as compile_with_builtin
 from pykotor.resource.formats.ncs.compilers import ExternalNCSCompiler
 from pykotor.tools.encoding import decode_bytes_with_fallbacks
 from pykotor.tslpatcher.mods.template import PatcherModifications
-from pykotor.utility.path import Path, PurePath
+from utility.path import Path, PurePath
 
 if TYPE_CHECKING:
     from pykotor.common.misc import Game

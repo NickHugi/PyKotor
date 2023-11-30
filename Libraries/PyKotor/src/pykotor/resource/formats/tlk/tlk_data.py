@@ -7,7 +7,7 @@ from typing import Callable
 from pykotor.common.language import Language
 from pykotor.common.misc import ResRef
 from pykotor.resource.type import ResourceType
-from pykotor.utility.string import compare_and_format, format_text
+from utility.string import compare_and_format, format_text
 
 
 class TLK:
@@ -15,9 +15,10 @@ class TLK:
 
     def __init__(
         self,
+        language: Language = Language.ENGLISH,
     ) -> None:
         self.entries: list[TLKEntry] = []
-        self.language: Language = Language.ENGLISH  # has no visible effect in the game
+        self.language: language  # game does not care what this value is
 
     def __len__(
         self,

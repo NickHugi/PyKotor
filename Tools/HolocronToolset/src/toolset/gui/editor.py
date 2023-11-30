@@ -3,10 +3,6 @@ from __future__ import annotations
 from abc import abstractmethod
 from typing import TYPE_CHECKING
 
-from PyQt5 import QtCore
-from PyQt5.QtGui import QIcon, QPixmap
-from PyQt5.QtWidgets import QFileDialog, QLineEdit, QMainWindow, QMessageBox, QPlainTextEdit, QShortcut, QWidget
-
 from pykotor.common.module import Module
 from pykotor.extract.capsule import Capsule
 from pykotor.extract.file import ResourceIdentifier
@@ -15,8 +11,11 @@ from pykotor.resource.formats.rim import read_rim, write_rim
 from pykotor.resource.type import ResourceType
 from pykotor.tools import module
 from pykotor.tools.misc import is_bif_file, is_capsule_file, is_erf_or_mod_file, is_rim_file
-from pykotor.utility.error_handling import format_exception_with_variables
-from pykotor.utility.path import BasePath, Path
+from utility.error_handling import format_exception_with_variables
+from utility.path import BasePath, Path
+from PyQt5 import QtCore
+from PyQt5.QtGui import QIcon, QPixmap
+from PyQt5.QtWidgets import QFileDialog, QLineEdit, QMainWindow, QMessageBox, QPlainTextEdit, QShortcut, QWidget
 from toolset.gui.dialogs.load_from_module import LoadFromModuleDialog
 from toolset.gui.dialogs.save.to_bif import BifSaveDialog, BifSaveOption
 from toolset.gui.dialogs.save.to_module import SaveToModuleDialog
@@ -194,7 +193,7 @@ class Editor(QMainWindow):
                     self._filepath = Path(filepath_str)
             else:
                 self._filepath = Path(filepath_str)
-                self._resref, self._restype = ResourceIdentifier.from_path(self._filepath)
+                self._resref, self._restype = ResourceIdentifier.from_path(self._filepath).validate()
                 if self._restype is ResourceType.INVALID:
                     msg = f"Invalid resource type: {self._restype.extension}"
                     raise TypeError(msg)
@@ -206,11 +205,11 @@ class Editor(QMainWindow):
                     action.setEnabled(True)
 
     def save(self) -> None:
-        """Saves the current data to file
+        """Saves the current data to file.
+
         Args:
+        ----
             self: The object instance
-            Returns:
-                None: No value is returned
         Processing Logic:
             - Builds the data and extension to save
             - Checks the file extension and calls the appropriate save method
@@ -390,20 +389,24 @@ class Editor(QMainWindow):
             else:
                 with c_filepath.open("rb") as file:
                     data = file.read()
-                self.load(c_filepath, *ResourceIdentifier.from_path(c_filepath), data)
+                self.load(c_filepath, *ResourceIdentifier.from_path(c_filepath).validate(), data)
 
     @abstractmethod
     def build(self) -> tuple[bytes, bytes]:
         ...
 
     def load(self, filepath: os.PathLike | str, resref: str, restype: ResourceType, data: bytes) -> None:
-        """Load a resource from a file
+        """Load a resource from a file.
+
         Args:
+        ----
             filepath: Filepath to load resource from
             resref (str): Resource reference
             restype: ResourceType
-            data (bytes): Resource data
+            data (bytes): Resource data.
+
         Returns:
+        -------
             None: No return value
         Processing Logic:
             - Convert filepath to Path object if string

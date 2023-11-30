@@ -2,11 +2,10 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from PyQt5.QtWidgets import QFileDialog, QWidget
-
 from pykotor.extract.talktable import TalkTable
 from pykotor.resource.formats.ssf import SSF, SSFSound, read_ssf, write_ssf
 from pykotor.resource.type import ResourceType
+from PyQt5.QtWidgets import QFileDialog, QWidget
 from toolset.gui.editor import Editor
 
 if TYPE_CHECKING:

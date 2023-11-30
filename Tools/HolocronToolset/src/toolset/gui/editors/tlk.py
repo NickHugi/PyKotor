@@ -3,16 +3,14 @@ from __future__ import annotations
 from time import sleep
 from typing import TYPE_CHECKING
 
+from pykotor.common.language import Language
+from pykotor.common.misc import ResRef
+from pykotor.resource.formats.tlk import TLK, TLKEntry, bytes_tlk, read_tlk, write_tlk
+from pykotor.resource.type import ResourceType
 from PyQt5 import QtCore
 from PyQt5.QtCore import QSortFilterProxyModel, QThread
 from PyQt5.QtGui import QStandardItem, QStandardItemModel
 from PyQt5.QtWidgets import QAction, QDialog, QProgressBar, QShortcut, QVBoxLayout, QWidget
-
-from pykotor.common.language import Language
-from pykotor.common.misc import ResRef
-from pykotor.resource.formats.tlk import TLK, TLKEntry, read_tlk, write_tlk
-from pykotor.resource.type import ResourceType
-from pykotor.tools.encoding import decode_bytes_with_fallbacks
 from toolset.gui.editor import Editor
 
 if TYPE_CHECKING:
@@ -29,8 +27,7 @@ class TLKEditor(Editor):
         ----
             parent: QWidget - Parent widget
             installation: HTInstallation | None - Installation object
-        Returns:
-            None
+
         Processing Logic:
             - Set up the UI from the designer file
             - Connect menu and signal handlers
@@ -67,13 +64,6 @@ class TLKEditor(Editor):
     def _setupSignals(self) -> None:
         """Set up signal connections for UI actions and widgets.
 
-        Args:
-        ----
-            self: The class instance.
-
-        Returns:
-        -------
-            None
         Processing Logic:
             - Connect action triggers to slot functions
             - Connect button clicks to slot functions
@@ -124,40 +114,11 @@ class TLKEditor(Editor):
 
     def change_language(self, language: Language):
 
-        # TODO: This code is a mess... need to just store the tlk text in a way easy to grab the original bytes.
-        encoding = language.get_encoding()  # Assuming get_encoding() returns the correct encoding string
-
-        for i in range(self.model.rowCount()):
-            # Retrieve the current text from the model
-            current_text_item = self.model.item(i, 0)  # Assuming column 0 has the text
-            if current_text_item is not None:
-                current_text = current_text_item.text()
-
-                # Re-encode the text
-                try:
-                    text_bytes = current_text.encode(self.language.get_encoding())
-                    decoded_text = text_bytes.decode(encoding) if encoding else decode_bytes_with_fallbacks(text_bytes)
-                except UnicodeEncodeError:
-                    print("could not encode, attempting encode as utf-8...")
-                    # Handle encoding errors, maybe log or set a default value
-                    try:
-                        text_bytes = current_text.encode()
-                        decoded_text = text_bytes.decode(encoding) if encoding else decode_bytes_with_fallbacks(text_bytes)
-                    except UnicodeDecodeError:
-                        print("could not encode or decode, using utf-8 for both")
-                        text_bytes = current_text.encode()
-                        decoded_text = text_bytes.decode()
-                except UnicodeDecodeError:
-                    print("could not decode but encoding works, decoding as utf-8")
-                    text_bytes = current_text.encode(self.language.get_encoding())
-                    decoded_text = text_bytes.decode()
-
-                # Update the model with the new text
-                self.model.setItem(i, 0, QStandardItem(decoded_text))
-
-        # Update UI components if necessary, like the table view
-        self.ui.talkTable.setModel(self.proxyModel)
-        self.language = language
+        tlk: TLK = read_tlk(self._revert)
+        tlk.language = language
+        self._extracted_from_new_2()
+        dialog = LoaderDialog(self, bytes_tlk(tlk), self.model)
+        self._extracted_from_load_10(dialog)
 
     def load(self, filepath: os.PathLike | str, resref: str, restype: ResourceType, data: bytes) -> None:
         """Loads data into the resource from a file.
@@ -169,9 +130,6 @@ class TLKEditor(Editor):
             restype: The resource type.
             data: The raw data bytes.
 
-        Returns:
-        -------
-            None
         Processing Logic:
             - Clears existing model data
             - Sets column count to 2 and hides second column
@@ -182,38 +140,41 @@ class TLKEditor(Editor):
             - Sets max rows in spinbox.
         """
         super().load(filepath, resref, restype, data)
-        self.model.clear()
-        self.model.setColumnCount(2)
-        self.ui.talkTable.hideColumn(1)
-
+        self._extracted_from_new_2()
         dialog = LoaderDialog(self, data, self.model)
+        self._extracted_from_load_10(dialog)
+
+    # TODO Rename this here and in `change_language` and `load`
+    def _extracted_from_load_10(self, dialog):
         dialog.exec_()
         self.model = dialog.model
         self.proxyModel = QSortFilterProxyModel(self)
         self.proxyModel.setSourceModel(self.model)
         self.ui.talkTable.setModel(self.proxyModel)
         self.ui.talkTable.selectionModel().selectionChanged.connect(self.selectionChanged)
-
         self.ui.jumpSpinbox.setMaximum(self.model.rowCount())
 
     def new(self) -> None:
         super().new()
 
+        self._extracted_from_new_2()
+        self.ui.textEdit.setEnabled(False)
+        self.ui.soundEdit.setEnabled(False)
+
+    # TODO Rename this here and in `_extracted_from_load_5` and `new`
+    def _extracted_from_new_2(self):
         self.model.clear()
         self.model.setColumnCount(2)
         self.ui.talkTable.hideColumn(1)
 
-        self.ui.textEdit.setEnabled(False)
-        self.ui.soundEdit.setEnabled(False)
-
     def build(self) -> tuple[bytes, bytes]:
         """Builds a TLK file from the model data.
 
-        Args:
-        ----
-            self: The object instance
-        Returns:
+        Returns
+        -------
             tuple[bytes, bytes]: A tuple containing the TLK data and an empty bytes object
+
+        Processing Logic:
         - Iterate through each row in the model
         - Extract the text and sound from each item
         - Add an entry to the TLK object with the text and sound
@@ -253,11 +214,7 @@ class TLKEditor(Editor):
     def selectionChanged(self) -> None:
         """Handle selection changes in the talk table.
 
-        Args:
-        ----
-            self: The class instance
-        Returns:
-            None: Does not return anything
+        Processing Logic:
         - Check if any rows are selected in the talk table
         - If no rows selected, disable text and sound editors
         - If rows selected, enable text and sound editors
@@ -302,9 +259,6 @@ class LoaderDialog(QDialog):
             fileData: {The data to load}
             model: {The model to populate}.
 
-        Returns:
-        -------
-            None: {Does not return anything}
         Processing Logic:
             - Creates a progress bar to display loading progress
             - Sets up the dialog layout and adds progress bar
@@ -382,12 +336,9 @@ class LoaderWorker(QThread):
         self.loaded.emit()
 
     def run(self):
-        """Load tlk data from file in batches
-        Args:
-            self: The class instance
-        Returns:
-            None: Load data and emit signals
-        Processes tlk data:
+        """Load tlk data from file in batches.
+
+        Processing Logic:
             - Reads timeline data from file
             - Counts number of entries and emits count
             - Loops through entries and batches data into lists of 200

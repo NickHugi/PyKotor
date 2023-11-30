@@ -10,7 +10,7 @@ from PyQt5.QtWidgets import QApplication
 
 
 def onAppCrash(e: BaseException, value: str, tback: TracebackType):
-    from pykotor.utility.error_handling import format_exception_with_variables
+    from utility.error_handling import format_exception_with_variables
     with pathlib.Path("errorlog.txt").open("a") as file:
         file.writelines(format_exception_with_variables(e, value, tback))
         file.write("\n----------------------\n")
@@ -30,7 +30,7 @@ def fix_sys_and_cwd_path():
 
     This function will determine whether they have the source files downloaded for pykotor in the expected directory. If they do, we
     insert the source path to pykotor to the beginning of sys.path so it'll have priority over pip's pykotor package if that is installed.
-    If the toolset dir exists, change directory to that of the toolset. Allows users to do things like `python -m tools.HolocronToolset.toolset`
+    If the toolset dir exists, change directory to that of the toolset. Allows users to do things like `python -m toolset`
     This function should never be used in frozen code.
     This function also ensures a user can run toolset/__main__.py directly.
 
@@ -41,25 +41,30 @@ def fix_sys_and_cwd_path():
     - This ensures packages and scripts can be located correctly on import.
     """
     def update_sys_path(path: pathlib.Path):
-        working_dir = str(path.parent)
+        working_dir = str(path)
         if working_dir in sys.path:
             sys.path.remove(working_dir)
         sys.path.insert(0, working_dir)
 
     pykotor_path = pathlib.Path(__file__).parents[4] / "Libraries" / "PyKotor" / "src" / "pykotor"
-    print(pykotor_path)
-    if pykotor_path.joinpath("__init__.py").exists():
-        update_sys_path(pykotor_path)
+    if pykotor_path.exists():
+        update_sys_path(pykotor_path.parent)
+    pykotor_gl_path = pathlib.Path(__file__).parents[4] / "Libraries" / "PyKotorGL" / "src" / "pykotor"
+    if pykotor_gl_path.exists():
+        update_sys_path(pykotor_gl_path.parent)
+    utility_path = pathlib.Path(__file__).parents[4] / "Libraries" / "Utility" / "src"
+    if utility_path.exists():
+        update_sys_path(utility_path)
     toolset_path = pathlib.Path(__file__).parents[1] / "toolset"
-    if toolset_path.joinpath("__init__.py").exists():
-        update_sys_path(toolset_path)
+    if toolset_path.exists():
+        update_sys_path(toolset_path.parent)
         os.chdir(toolset_path)
 
 if __name__ == "__main__":
     if is_frozen() is False:
         fix_sys_and_cwd_path()
 
-    from pykotor.utility.misc import is_debug_mode
+    from utility.misc import is_debug_mode
 
     os.environ["QT_MULTIMEDIA_PREFERRED_PLUGINS"] = "windowsmediafoundation"
     os.environ["QT_DEBUG_PLUGINS"] = "1"

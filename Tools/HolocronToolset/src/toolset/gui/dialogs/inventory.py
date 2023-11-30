@@ -3,6 +3,16 @@ from __future__ import annotations
 from contextlib import suppress
 from typing import TYPE_CHECKING, NamedTuple
 
+from pykotor.common.misc import EquipmentSlot, InventoryItem, ResRef
+from pykotor.common.stream import BinaryReader
+from pykotor.extract.capsule import Capsule
+from pykotor.extract.file import ResourceIdentifier, ResourceResult
+from pykotor.extract.installation import SearchLocation
+from pykotor.resource.formats.tlk import TLK, read_tlk
+from pykotor.resource.generics.uti import UTI, read_uti
+from pykotor.resource.type import ResourceType
+from pykotor.tools.misc import is_bif_file, is_capsule_file
+from pykotor.tools.path import CaseAwarePath
 from PyQt5 import QtCore
 from PyQt5.QtCore import QPoint, QSize, QSortFilterProxyModel, QThread
 from PyQt5.QtGui import QDragEnterEvent, QDragMoveEvent, QDropEvent, QIcon, QPixmap, QStandardItem, QStandardItemModel
@@ -19,17 +29,6 @@ from PyQt5.QtWidgets import (
     QVBoxLayout,
     QWidget,
 )
-
-from pykotor.common.misc import EquipmentSlot, InventoryItem, ResRef
-from pykotor.common.stream import BinaryReader
-from pykotor.extract.capsule import Capsule
-from pykotor.extract.file import ResourceIdentifier, ResourceResult
-from pykotor.extract.installation import SearchLocation
-from pykotor.resource.formats.tlk import TLK, read_tlk
-from pykotor.resource.generics.uti import UTI, read_uti
-from pykotor.resource.type import ResourceType
-from pykotor.tools.misc import is_bif_file, is_capsule_file
-from pykotor.tools.path import CaseAwarePath
 from toolset.data.installation import HTInstallation
 
 if TYPE_CHECKING:

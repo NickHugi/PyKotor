@@ -1,7 +1,0 @@
-ply>=3.11,<4     # required for the nss compiler lexer
-numpy~=1.22      # probably required by PyKotorGL
-PyOpenGL~=3.1    # PyKotorGL
-charset-normalizer>=2.0,<3.4  # used for localized string decodings
-PyGLM>=2.0,<2.8  # PyKotorGL
-Pillow>=9.5,<11  # required for TXI/TGA fonts
-defusedxml~=0.7  # secure XML parsing

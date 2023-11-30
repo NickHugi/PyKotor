@@ -2,15 +2,14 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from PyQt5 import QtCore
-from PyQt5.QtCore import QBuffer, QIODevice
-from PyQt5.QtMultimedia import QMediaContent, QMediaPlayer
-from PyQt5.QtWidgets import QListWidgetItem, QMessageBox, QWidget
-
 from pykotor.common.misc import ResRef
 from pykotor.resource.formats.gff import write_gff
 from pykotor.resource.generics.uts import UTS, dismantle_uts, read_uts
 from pykotor.resource.type import ResourceType
+from PyQt5 import QtCore
+from PyQt5.QtCore import QBuffer, QIODevice
+from PyQt5.QtMultimedia import QMediaContent, QMediaPlayer
+from PyQt5.QtWidgets import QListWidgetItem, QMessageBox, QWidget
 from toolset.gui.dialogs.edit.locstring import LocalizedStringDialog
 from toolset.gui.editor import Editor
 
@@ -18,18 +17,18 @@ if TYPE_CHECKING:
     import os
 
     from PyQt5.QtGui import QCloseEvent
-
     from toolset.data.installation import HTInstallation
 
 
 class UTSEditor(Editor):
     def __init__(self, parent: QWidget | None, installation: HTInstallation | None = None):
-        """Initialize the Sound Editor window
+        """Initialize the Sound Editor window.
+
         Args:
+        ----
             parent: {QWidget}: The parent widget of this window
             installation: {HTInstallation}: The installation object
-        Returns:
-            None: Does not return anything
+
         Processing Logic:
             - Initialize supported resource types
             - Initialize the superclass with window details
@@ -57,11 +56,8 @@ class UTSEditor(Editor):
         self.new()
 
     def _setupSignals(self) -> None:
-        """Sets up signal connections for UI buttons and radio buttons
-        Args:
-            self: The class instance
-        Returns:
-            None: No return value
+        """Sets up signal connections for UI buttons and radio buttons.
+
         Processing Logic:
             - Connects addSoundButton click signal to addSound method
             - Connects removeSoundButton click signal to removeSound method
@@ -101,11 +97,12 @@ class UTSEditor(Editor):
         self._loadUTS(uts)
 
     def _loadUTS(self, uts: UTS):
-        """Loads UTS data into UI controls
+        """Loads UTS data into UI controls.
+
         Args:
+        ----
             uts (UTS): UTS object to load
-        Returns:
-            None: No return value, loads data into UI controls
+
         Processing Logic:
             - Sets basic property values like name, tag, etc
             - Sets advanced playback options like random, specific position
@@ -171,11 +168,7 @@ class UTSEditor(Editor):
     def build(self) -> tuple[bytes, bytes]:
         """Builds a UTS from UI fields.
 
-        Args:
-        ----
-            self: The class instance.
-
-        Returns:
+        Returns
         -------
             tuple[bytes, bytes]: A tuple containing the unit data and log.
         Processing Logic:

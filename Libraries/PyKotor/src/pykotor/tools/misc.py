@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from pykotor.utility.path import BasePurePath, PurePath
+from utility.path import BasePurePath, PurePath
 
 if TYPE_CHECKING:
     import os

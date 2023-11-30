@@ -18,14 +18,13 @@ if TYPE_CHECKING:
 
 class UTTEditor(Editor):
     def __init__(self, parent: QWidget | None, installation: HTInstallation | None = None):
-        """Initialize the trigger editor window
+        """Initialize the trigger editor window.
+
         Args:
+        ----
             parent: {Parent widget}
             installation: {Installation object}.
 
-        Returns
-        -------
-            None
         Processing Logic:
             - Initialize the base editor window
             - Set up the UI from the designer file
@@ -70,11 +69,12 @@ class UTTEditor(Editor):
         self._loadUTT(utt)
 
     def _loadUTT(self, utt: UTT) -> None:
-        """Loads UTT data into UI elements
+        """Loads UTT data into UI elements.
+
         Args:
+        ----
             utt: UTT - UTT object to load data from
-        Returns:
-            None - No return value
+
         Loads UTT data:{
             - Sets name, tag, resref from utt
             - Sets cursor, type indexes from utt
@@ -122,11 +122,7 @@ class UTTEditor(Editor):
     def build(self) -> tuple[bytes, bytes]:
         """Builds an UTT from UI input.
 
-        Args:
-        ----
-            self: The UI class instance.
-
-        Returns:
+        Returns
         -------
             tuple[bytes, bytes]: A tuple containing the GFF data (bytes) and any errors (bytes).
         Processing Logic:

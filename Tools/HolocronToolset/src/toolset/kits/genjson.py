@@ -5,17 +5,17 @@ import sys
 from pathlib import Path
 from typing import TYPE_CHECKING
 
-#import config
-#import pyperclip
-from PyQt5 import QtCore
-from PyQt5.QtGui import QColor, QPainter, QPainterPath, QPixmap, QTransform
-from PyQt5.QtWidgets import QApplication
-
 from pykotor.common.geometry import SurfaceMaterial, Vector2
 from pykotor.common.stream import BinaryReader
 from pykotor.resource.formats.bwm import read_bwm
 from pykotor.resource.formats.mdl import read_mdl
 from pykotor.tools import model
+
+#import config
+#import pyperclip
+from PyQt5 import QtCore
+from PyQt5.QtGui import QColor, QPainter, QPainterPath, QPixmap, QTransform
+from PyQt5.QtWidgets import QApplication
 
 if TYPE_CHECKING:
     import os

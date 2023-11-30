@@ -5,10 +5,6 @@ from abc import ABC, abstractmethod
 from copy import deepcopy
 from typing import TYPE_CHECKING
 
-from PyQt5 import QtCore
-from PyQt5.QtGui import QColor, QIcon, QKeyEvent, QKeySequence
-from PyQt5.QtWidgets import QCheckBox, QDialog, QListWidgetItem, QMenu, QWidget
-
 from pykotor.common.geometry import SurfaceMaterial, Vector2, Vector3
 from pykotor.common.misc import Color
 from pykotor.common.module import Module
@@ -33,6 +29,9 @@ from pykotor.resource.generics.git import (
 from pykotor.resource.type import ResourceType
 from pykotor.tools.misc import is_rim_file
 from pykotor.tools.template import extract_name, extract_tag
+from PyQt5 import QtCore
+from PyQt5.QtGui import QColor, QIcon, QKeyEvent, QKeySequence
+from PyQt5.QtWidgets import QCheckBox, QDialog, QListWidgetItem, QMenu, QWidget
 from toolset.data.misc import ControlItem
 from toolset.gui.dialogs.instance.camera import CameraDialog
 from toolset.gui.dialogs.instance.creature import CreatureDialog
@@ -51,9 +50,8 @@ from toolset.utils.window import openResourceEditor
 if TYPE_CHECKING:
     import os
 
-    from PyQt5.QtCore import QPoint
-
     from pykotor.extract.file import ResourceIdentifier
+    from PyQt5.QtCore import QPoint
     from toolset.data.installation import HTInstallation
     from toolset.uic.editors import git as gitui
 
