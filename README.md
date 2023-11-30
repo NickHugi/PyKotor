@@ -1,45 +1,70 @@
-# HolocronToolset
+PyKotor
+=======
+A Python library that can read and modify most file formats used by the game Knights of the Old Republic and its sequel.
 
-A PyQt5 application that can edit the files used by the KotOR game engine.
+## Installation
+Install from [PyPI](https://pypi.org/project/PyKotor/).
+```bash
+pip install pykotor
+```
 
 ## Requirements
+PyKotor supports any Python version within 3.8 through 3.12. See requirements.txt for additional pip dependencies.
+PyKotor is supported on most operating systems, including Mac OS and Linux.
 
-- Python 3
+## Example Usage
+Simple example of loading data from a game directory, searching for a specific texture and exporting it to the TGA format.
+```python
+from pykotor.resource.type import ResourceType
+from pykotor.extract.installation import Installation
+from pykotor.resource.formats.tpc import write_tpc
 
-## Local Run
-
-### Windows
-
-From command line:
-
+inst = Installation("C:/Program Files (x86)/Steam/steamapps/common/swkotor")
+tex = inst.texture("C_Gammorean01")
+write_tpc(tex, "./C_Gammorean01.tga", ResourceType.TGA)
 ```
+As shown, this will save C_Gammorean01.tga to the current directory.
+
+## Cloning the repo
+If you would like to work with the source files directly from GitHub, run the following commands to get yourself set:
+```bash
+git clone https://github.com/NickHugi/PyKotor
+cd PyKotor
 pip install -r requirements.txt
-set PYTHONPATH=%cd%
-python toolset/__main__.py
+pip install -r Tools/HolocronToolset/src/requirements.txt
+```
+Then, you can run any entry-point scripts, such as HoloPatcher and the Toolset, like this:
+```bash
+cd ./Tools/HoloPatcher/src
+python __main__.py
+cd ../../Tools/HolocronToolset/src
+python -m toolset
 ```
 
-### Unix
-
-From terminal:
-
+## Troubleshooting
+If you find yourself unable to run certain entry-point scripts on this repo in your python interpreter (e.g. HoloPatcher or Holocron Toolset), you may be missing some system-level dependencies. **These are *not* required when using the compiled releases**
+### Holocron Toolset
+Holocron Toolset requires PyQt5.
+#### Linux:
+- On Debian-based Linux distros, install `python3-pyqt5`
+```commandline
+sudo apt install python3-pyqt5
 ```
-pip install -r requirements.txt
-PYTHONPATH=$PWD python toolset/__main__.py
+#### Mac OS:
+- If you've installed Python with HomeBrew (you should have), install PyQt5:
+```commandline
+brew install pyqt5
 ```
-
-## Local Development
-
-- Clone [PyKotor](https://github.com/NickHugi/PyKotor) and [PyKotorGL](https://github.com/NickHugi/PyKotorGL) repositories
-- Create symbolic link to `PyKotorGL/pykotor/gl` directory in `PyKotor/pykotor`
-- Create symbolic link to `PyKotor/pykotor` directory in `HolocronToolset`
-
-### Windows
-
+### HoloPatcher
+HoloPatcher requires `tkinter`
+#### Linux:
+```commandline
+sudo apt install python3-tkinter
 ```
-cd %SOURCE_DIR%\PyKotor\pykotor
-mklink gl /D %SOURCE_DIR%\PyKotorGL\pykotor\gl
-cd %SOURCE_DIR%\HolocronToolset
-mklink pykotor /D %SOURCE_DIR%\PyKotor\pykotor
+#### Mac OS:
+- If you've installed Python with HomeBrew (you should have), install tkinter:
+```commandline
+brew install python-tk
 ```
 
 ## Accessing the GUI Designer
@@ -58,3 +83,6 @@ python -m site --user-site
 ```
 
 Then navigate to ```./qt5_applications/Qt/bin``` and open the ```designer.exe``` file.
+
+## License
+This repository falls under the [MIT License](https://github.com/NickHugi/PyKotor/blob/master/README.md).

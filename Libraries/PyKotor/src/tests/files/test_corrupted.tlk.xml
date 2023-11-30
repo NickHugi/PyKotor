@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<tlk language="0">
+  <string id="0" sound="resref01" soundlength="0.000000">abcdef</string>
+  <string id="1" sound="resref02" soundlength="0.000000">ghijklmnop</string
+  <string id="2" soundlength="0.000000">qrstuvwxyz</string>
+</tlk>

@@ -1,0 +1,42 @@
+{
+  "version": "0.2.0",
+  "justMyCode": true,
+  "preLaunchTask": "install_requirements",
+  "dependsOn": "install_requirements",
+  "configurations": [
+    
+    {
+      "name": "Python: Current File",
+      "type": "python",
+      "request": "launch",
+      "program": "${file}",
+      "console": "integratedTerminal",
+      "pythonArgs": [
+        "-Xfrozen_modules=off",
+        "-Xdev"
+      ],
+      "justMyCode": true,
+    },
+    {
+      "name": "Debug Unit Test",
+      "type": "python",
+      "request": "launch",
+      "program": "${file}",
+      "purpose": ["debug-test"],
+      "justMyCode": false,
+    },
+    {
+        "name": "Run Holocron Toolset",
+        "type": "python",
+        "request": "launch",
+        "module": "toolset",
+        "cwd": "${workspaceFolder}/Tools/HolocronToolset/src/",
+        "pythonArgs": [
+          "-Xfrozen_modules=off",
+          "-Xdev"
+        ],
+        "console": "integratedTerminal",
+        "env": {"PYTHONPATH": "${workspaceFolder}/Libraries/PyKotor/src${pathSeparator}${env:PYTHONPATH}"}
+      },
+  ]
+}

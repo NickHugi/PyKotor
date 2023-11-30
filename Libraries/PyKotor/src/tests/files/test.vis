@@ -1,0 +1,12 @@
+room_01 3
+  room_02
+     room_03
+  room_04
+room_02 1
+     room_01
+room_03 2
+room_01
+  room_04
+room_04 2
+  room_03
+ room_01

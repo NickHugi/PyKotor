@@ -1,0 +1,308 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "pykotor_requirements",
+      "type": "shell",
+      "command": "${command:python.interpreterPath}",
+      "args": [
+        "-m",
+        "pip",
+        "install",
+        "-r",
+        "../../Libraries/PyKotor/requirements.txt",
+      ],
+      "presentation": {
+        "echo": true,
+        "reveal": "always"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "holopatcher requirements",
+      "dependsOn": ["pykotor_requirements"],
+      "type": "shell",
+      "command": "${command:python.interpreterPath}",
+      "args": [
+        "-m",
+        "pip",
+        "install",
+        "-r",
+        "requirements.txt",
+      ],
+      "presentation": {
+        "echo": true,
+        "reveal": "always"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "install_pyinstaller",
+      "type": "shell",
+      "command": "${command:python.interpreterPath}",
+      "args": [
+        "-m",
+        "pip",
+        "install",
+        "pyinstaller",
+      ],
+      "presentation": {
+        "echo": true,
+        "reveal": "always"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "install_shiv",
+      "type": "shell",
+      "command": "${command:python.interpreterPath}",
+      "args": [
+        "-m",
+        "pip",
+        "install",
+        "shiv",
+      ],
+      "presentation": {
+        "echo": true,
+        "reveal": "always"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "install_nuitka",
+      "type": "shell",
+      "command": "${command:python.interpreterPath}",
+      "args": [
+        "-m",
+        "pip",
+        "install",
+        "nuitka",
+      ],
+      "presentation": {
+        "echo": true,
+        "reveal": "always"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "install_pylint",
+      "type": "shell",
+      "command": "${command:python.interpreterPath}",
+      "args": [
+        "-m",
+        "pip",
+        "install",
+        "pylint",
+      ],
+      "presentation": {
+        "echo": true,
+        "reveal": "always"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "install_ruff",
+      "type": "shell",
+      "command": "${command:python.interpreterPath}",
+      "args": [
+        "-m",
+        "pip",
+        "install",
+        "ruff",
+      ],
+      "presentation": {
+        "echo": true,
+        "reveal": "always"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "install_mypy",
+      "type": "shell",
+      "command": "${command:python.interpreterPath}",
+      "args": [
+        "-m",
+        "pip",
+        "install",
+        "mypy",
+      ],
+      "presentation": {
+        "echo": true,
+        "reveal": "always"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "install_pylint",
+      "type": "shell",
+      "command": "${command:python.interpreterPath}",
+      "args": [
+        "-m",
+        "pip",
+        "install",
+        "pylint",
+      ],
+      "presentation": {
+        "echo": true,
+        "reveal": "always"
+      },
+      "problemMatcher": []
+    },
+    {
+        "label": "pylint: pykotor",
+        "dependsOn": ["all requirements", "install_pylint"],
+        "type": "shell",
+        "command": "${command:python.interpreterPath} -m pylint --disable=C0301,C0302,C0115,C0116,R0913,C0114,R0903,R0902,W0212,R0914,R0904,W0613,E0611,C0415 pykotor",
+        "presentation": {
+            "reveal": "never",
+            "panel": "shared"
+        },
+        "problemMatcher": []
+    },
+    {
+      "label": "Python: lint pykotor with mypy",
+      "dependsOn": ["all requirements", "install_mypy"],
+      "type": "shell",
+      "command": "${command:python.interpreterPath}",
+      "args": [
+        "-m",
+        "mypy",
+        "--no-pretty",
+        "--show-column-numbers",
+        "--package",
+        "pykotor",
+        "--check-untyped-defs",
+        "--no-strict-optional"
+      ],
+      "group": "test",
+      "presentation": {
+        "reveal": "always",
+        "panel": "new"
+      },
+      "problemMatcher": {
+        "owner": "python",
+        "fileLocation": [
+          "relative",
+          "${workspaceFolder}"
+        ],
+        "pattern": {
+          "regexp": "^(.+):(\\d+):(\\d+): (\\w+): (.*)$",
+          "file": 1,
+          "line": 2,
+          "column": 3,
+          "severity": 4,
+          "message": 5
+        }
+      }
+    },
+    {
+      "label": "Python: lint toolset with mypy",
+      "dependsOn": ["all requirements"],
+      "type": "shell",
+      "command": "${command:python.interpreterPath}",
+      "args": [
+        "-m",
+        "mypy",
+        "--no-pretty",
+        "--show-column-numbers",
+        "--package",
+        "toolset",
+        "--check-untyped-defs",
+        "--no-strict-optional"
+      ],
+      "group": "test",
+      "presentation": {
+        "reveal": "always",
+        "panel": "new"
+      },
+      "problemMatcher": {
+        "owner": "python",
+        "fileLocation": [
+          "relative",
+          "${workspaceFolder}"
+        ],
+        "pattern": {
+          "regexp": "^(.+):(\\d+):(\\d+): (\\w+): (.*)$",
+          "file": 1,
+          "line": 2,
+          "column": 3,
+          "severity": 4,
+          "message": 5
+        }
+      }
+    },
+    {
+      "label": "Python: Ruff check entire project",
+      "type": "shell",
+      "dependsOn": ["all requirements", "install_ruff"],
+      "command": "${command:python.interpreterPath}",
+      "args": [
+        "-m",
+        "ruff",
+        "check",
+        ".",
+        "--ignore=D101,D102,D103,D107,D205,D417,D205,PLR5501,PLW2901,RUF100"
+      ],
+      "group": "test",
+      "presentation": {
+        "reveal": "always",
+        "panel": "new"
+      },
+      "problemMatcher": {
+        "owner": "python",
+        "fileLocation": [
+          "relative",
+          "${workspaceFolder}"
+        ],
+        "pattern": {
+          "regexp": "^(.+):(\\d+):(\\d+): (\\w+): (.*)$",
+          "file": 1,
+          "line": 2,
+          "column": 3,
+          "severity": 4,
+          "message": 5
+        }
+      }
+    },
+    {
+      "label": "Build HoloPatcher - PyInstaller",
+      "type": "shell",
+      "dependsOn": ["all requirements", "install_pyinstaller"],
+      "command": "${command:python.interpreterPath}",
+      "args": [
+        "-m",
+        "PyInstaller",
+        "--noconsole",
+        "--onefile",
+        "--clean",
+        "--noconfirm",
+        "--name=HoloPatcher",
+        "--path=${workspaceFolder}${pathSeparator}tools${pathSeparator}holopatcher",
+        "--icon=Tools${pathSeparator}HoloPatcher${pathSeparator}resources${pathSeparator}icons${pathSeparator}patcher_icon_v2.ico",
+        "tools${pathSeparator}holopatcher${pathSeparator}__main__.py"
+      ],
+      "problemMatcher": []
+    },
+    {
+      "label": "Build HoloPatcher - Nuitka (Windows only, no CLI support)",
+      "type": "shell",
+      "dependsOn": ["all requirements", "install_nuitka"],
+      "command": "${command:python.interpreterPath}",
+      "args": [
+        "-m",
+        "nuitka",
+        "--disable-console",
+        "--onefile",
+//        "--mingw64",
+//        "--clang",
+        "--output-filename=HoloPatcher",
+        "--windows-icon-from-ico=Tools${pathSeparator}HoloPatcher${pathSeparator}resources${pathSeparator}icons${pathSeparator}patcher_icon_v2.ico",
+        "--remove-output",
+        "--output-dir=${workspaceFolder}${pathSeparator}nuitka_dist",
+        "--enable-plugin=tk-inter",
+        "tools${pathSeparator}holopatcher${pathSeparator}__main__.py",
+      ],
+      "problemMatcher": []
+    },
+  ]
+}

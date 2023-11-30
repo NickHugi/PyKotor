@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<ssf>
+  <sound id="0" label="BattleCry1" strref="123075"></sound>
+  <sound id="1" label="BattleCry2" strref="123074"></sound>
+  <sound id="2" label="BattleCry3" strref="123073"></sound>
+  <sound id="3" label="BattleCry4" strref="123072"></sound>
+  <sound id="4" label="BattleCry5" strref="123071"></sound>
+  <sound id="5" label="BattleCry6" strref="123070"></sound>
+  <sound id="6" label="Selected1" strref="123069"></sound>
+  <sound id="7" label="Selected2" strref="123068"></sound>
+  <sound id="8" label="Selected3" strref="123067"></sound>
+  <sound id="9" label="GruntAttack1" strref="123066"></sound>
+  <sound id="10" label="GruntAttack2" strref="123065"></sound
+  <sound id="11" label="GruntAttack3" strref="123064"></sound>
+  <sound id="12" label="Pain1" strref="123063"></sound>
+  <sound id="13" label="Pain2" strref="123062"></sound>
+  <sound id="14" label="NearDeath" strref="123061"></sound>
+  <sound id="15" label="Death" strref="123060"></sound>
+  <sound id="16" label="Critical" strref="123059"></sound>
+  <sound id="17" label="WeaponSucks" strref="123058"></sound>
+  <sound id="18" label="FoundMine" strref="123057"></sound>
+  <sound id="19" label="DisabledMine" strref="123056"></sound>
+  <sound id="20" label="Hide" strref="123055"></sound>
+  <sound id="21" label="Search" strref="123054"></sound>
+  <sound id="22" label="PickLock" strref="123053"></sound>
+  <sound id="23" label="CanDo" strref="123052"></sound>
+  <sound id="24" label="CantDo" strref="123051"></sound>
+  <sound id="25" label="Single" strref="123050"></sound>
+  <sound id="26" label="Group" strref="123049"></sound>
+  <sound id="27" label="Poisoned" strref="123048"></sound>
+  <sound id="28"></sound>
+  <sound id="29"></sound>
+  <sound id="30"></sound>
+  <sound id="31"></sound>
+  <sound id="32"></sound>
+  <sound id="33"></sound>
+  <sound id="34"></sound>
+  <sound id="35"></sound>
+  <sound id="36"></sound>
+  <sound id="37"></sound>
+  <sound id="38"></sound>
+  <sound id="39"></sound>
+</ssf>

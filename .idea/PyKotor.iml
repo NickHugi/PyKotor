@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<module type="PYTHON_MODULE" version="4">
+  <component name="NewModuleRootManager">
+    <content url="file://$MODULE_DIR$">
+      <sourceFolder url="file://$MODULE_DIR$/Libraries/PyKotor/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/Tools/HoloPatcher/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/Tools/HolocronToolset/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/Libraries/PyKotorFont/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/Libraries/PyKotorGL/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/Libraries/Utility/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/Tools/BatchPatcher/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/Tools/GUICreator/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/Tools/GuiDuplicator/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/Tools/KotorDiff/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/Tools/MDLDecompile/src" isTestSource="false" />
+    </content>
+    <orderEntry type="jdk" jdkName="Python 3.8 (PyKotor_orig) (2)" jdkType="Python SDK" />
+    <orderEntry type="sourceFolder" forTests="false" />
+  </component>
+  <component name="PyDocumentationSettings">
+    <option name="format" value="GOOGLE" />
+    <option name="myDocStringFormat" value="Google" />
+  </component>
+</module>

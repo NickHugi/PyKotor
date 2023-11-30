@@ -1,0 +1,36 @@
+{
+  "version": "0.2.0",
+  "justMyCode": true,
+  "preLaunchTask": "install_requirements",
+  "dependsOn": "install_requirements",
+  "configurations": [
+    {
+      "name":"Run BatchPatcher",
+      "type":"python",
+      "request":"launch",
+      "program":"${workspaceFolder}${pathSeparator}src${pathSeparator}__main__.py",
+      "console":"integratedTerminal",
+      "justMyCode":true
+    },
+    {
+      "name": "Python: Current File",
+      "type": "python",
+      "request": "launch",
+      "program": "${file}",
+      "console": "integratedTerminal",
+      "pythonArgs": [
+        "-Xfrozen_modules=off",
+        "-Xdev"
+      ],
+      "justMyCode": true,
+    },
+    {
+      "name": "Debug Unit Test",
+      "type": "python",
+      "request": "launch",
+      "program": "${file}",
+      "purpose": ["debug-test"],
+      "justMyCode": false,
+    },
+  ]
+}

@@ -1,0 +1,86 @@
+Metadata-Version: 2.1
+Name: HolocronToolset
+Version: 2.2.0
+Summary: A PyQt5-backed program with a collection of tools and editors that make it easy to work with kotor files
+Author: NickHugi
+Maintainer-email: th3w1zard1 <halomastar@gmail.com>
+License: MIT License
+Project-URL: Homepage, https://github.com/NickHugi/PyKotor
+Project-URL: Documentation, https://github.com/NickHugi/PyKotor/blob/master/README.md
+Project-URL: Repository, https://github.com/NickHugi/PyKotor.git
+Project-URL: Issues, https://github.com/NickHugi/PyKotor/issues
+Keywords: kotor,pyqt5,holocron,toolset,pykotor
+Requires-Python: >=3.7
+Description-Content-Type: text/markdown
+Requires-Dist: PyQt5~=5.15
+Requires-Dist: PyQt5-Qt5~=5.15
+Requires-Dist: PyQt5-sip~=12.10
+Requires-Dist: urllib3~=1.26
+Requires-Dist: watchdog<3.1,>=2.1
+Requires-Dist: Markdown<3.6,>=3.3
+Requires-Dist: jsmin~=3.0
+Requires-Dist: requests<2.32,>=2.27
+Requires-Dist: certifi==2021.10.8
+Requires-Dist: pyperclip~=1.8
+Requires-Dist: setuptools>=68.2.2
+
+# HolocronToolset
+
+A PyQt5 application that can edit the files used by the KotOR game engine.
+
+## Requirements
+
+- Python 3
+
+## Local Run
+
+### Windows
+
+From command line:
+
+```
+pip install -r requirements.txt
+set PYTHONPATH=%cd%
+python toolset/__main__.py
+```
+
+### Unix
+
+From terminal:
+
+```
+pip install -r requirements.txt
+PYTHONPATH=$PWD python toolset/__main__.py
+```
+
+## Local Development
+
+- Clone [PyKotor](https://github.com/NickHugi/PyKotor) and [PyKotorGL](https://github.com/NickHugi/PyKotorGL) repositories
+- Create symbolic link to `PyKotorGL/pykotor/gl` directory in `PyKotor/pykotor`
+- Create symbolic link to `PyKotor/pykotor` directory in `HolocronToolset`
+
+### Windows
+
+```
+cd %SOURCE_DIR%\PyKotor\pykotor
+mklink gl /D %SOURCE_DIR%\PyKotorGL\pykotor\gl
+cd %SOURCE_DIR%\HolocronToolset
+mklink pykotor /D %SOURCE_DIR%\PyKotor\pykotor
+```
+
+## Accessing the GUI Designer
+
+Run the command from your terminal:
+
+```commandline
+pip install qt5-applications
+```
+
+You will then need to navigate to your Python's site-packages folder. You can determine its location through your terminal
+with the following commands:
+
+```commandline
+python -m site --user-site
+```
+
+Then navigate to ```./qt5_applications/Qt/bin``` and open the ```designer.exe``` file.

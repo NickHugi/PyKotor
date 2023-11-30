@@ -1,0 +1,23 @@
+{
+	"folders": [
+		{
+			"name": "HoloPatcher",
+			"path": ".",
+		},
+		{
+			"name": "PyKotor",
+			"path": "../../Libraries/PyKotor"
+		},
+		{
+			"name": "Utility",
+			"path": "../../Libraries/Utility"
+		},
+	],
+	"settings":  {
+		"python.analysis.extraPaths": [
+			"../../Libraries/PyKotor/src",
+			"../../Libraries/Utility/src",
+			"./src"
+		]
+	},
+}

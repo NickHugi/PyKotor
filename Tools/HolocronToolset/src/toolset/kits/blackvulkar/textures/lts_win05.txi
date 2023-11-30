@@ -1,0 +1,4 @@
+blending additive
+
+envmaptexture window
+

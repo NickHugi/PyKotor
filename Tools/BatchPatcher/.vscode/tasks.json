@@ -1,0 +1,258 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "requirements.txt",
+      "dependsOn": ["pykotor_requirements"],
+      "type": "shell",
+      "command": "${command:python.interpreterPath}",
+      "args": [
+        "-m",
+        "pip",
+        "install",
+        "-r",
+        "requirements.txt",
+      ],
+      "presentation": {
+        "echo": true,
+        "reveal": "always"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "pykotor_requirements",
+      "type": "shell",
+      "command": "${command:python.interpreterPath}",
+      "args": [
+        "-m",
+        "pip",
+        "install",
+        "-r",
+        "requirements.txt",
+      ],
+      "presentation": {
+        "echo": true,
+        "reveal": "always"
+      },
+      "options": {
+        "cwd": "../../Libraries/PyKotor",
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "install_pyinstaller",
+      "type": "shell",
+      "command": "${command:python.interpreterPath}",
+      "args": [
+        "-m",
+        "pip",
+        "install",
+        "pyinstaller",
+      ],
+      "presentation": {
+        "echo": true,
+        "reveal": "always"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "install_shiv",
+      "type": "shell",
+      "command": "${command:python.interpreterPath}",
+      "args": [
+        "-m",
+        "pip",
+        "install",
+        "shiv",
+      ],
+      "presentation": {
+        "echo": true,
+        "reveal": "always"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "install_nuitka",
+      "type": "shell",
+      "command": "${command:python.interpreterPath}",
+      "args": [
+        "-m",
+        "pip",
+        "install",
+        "nuitka",
+      ],
+      "presentation": {
+        "echo": true,
+        "reveal": "always"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "install_pylint",
+      "type": "shell",
+      "command": "${command:python.interpreterPath}",
+      "args": [
+        "-m",
+        "pip",
+        "install",
+        "pylint",
+      ],
+      "presentation": {
+        "echo": true,
+        "reveal": "always"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "install_ruff",
+      "type": "shell",
+      "command": "${command:python.interpreterPath}",
+      "args": [
+        "-m",
+        "pip",
+        "install",
+        "ruff",
+      ],
+      "presentation": {
+        "echo": true,
+        "reveal": "always"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "install_mypy",
+      "type": "shell",
+      "command": "${command:python.interpreterPath}",
+      "args": [
+        "-m",
+        "pip",
+        "install",
+        "mypy",
+      ],
+      "presentation": {
+        "echo": true,
+        "reveal": "always"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "install_pylint",
+      "type": "shell",
+      "command": "${command:python.interpreterPath}",
+      "args": [
+        "-m",
+        "pip",
+        "install",
+        "pylint",
+      ],
+      "presentation": {
+        "echo": true,
+        "reveal": "always"
+      },
+      "problemMatcher": []
+    },
+    {
+        "label": "pylint: pykotor",
+        "dependsOn": ["requirements.txt", "install_pylint"],
+        "type": "shell",
+        "command": "${command:python.interpreterPath} -m pylint --disable=C0301,C0302,C0115,C0116,R0913,C0114,R0903,R0902,W0212,R0914,R0904,W0613,E0611,C0415 pykotor",
+        "presentation": {
+            "reveal": "never",
+            "panel": "shared"
+        },
+        "problemMatcher": [],
+    },
+    {
+      "label": "Python: lint pykotor with mypy",
+      "dependsOn": ["requirements.txt", "install_mypy"],
+      "type": "shell",
+      "command": "${command:python.interpreterPath}",
+      "args": [
+        "-m",
+        "mypy",
+        "--no-pretty",
+        "--show-column-numbers",
+        "--package",
+        "pykotor",
+        "--check-untyped-defs",
+        "--no-strict-optional",
+      ],
+      "group": "test",
+      "presentation": {
+        "reveal": "always",
+        "panel": "new",
+      },
+      "problemMatcher": {
+        "owner": "python",
+        "fileLocation": [
+          "relative",
+          "${workspaceFolder}",
+        ],
+        "pattern": {
+          "regexp": "^(.+):(\\d+):(\\d+): (\\w+): (.*)$",
+          "file": 1,
+          "line": 2,
+          "column": 3,
+          "severity": 4,
+          "message": 5,
+        }
+      }
+    },
+    {
+      "label": "Python: Ruff check entire project",
+      "type": "shell",
+      "dependsOn": ["requirements.txt", "install_ruff"],
+      "command": "${command:python.interpreterPath}",
+      "args": [
+        "-m",
+        "ruff",
+        "check",
+        ".",
+        "--ignore=D101,D102,D103,D107,D205,D417,D205,PLR5501,PLW2901,RUF100"
+      ],
+      "group": "test",
+      "presentation": {
+        "reveal": "always",
+        "panel": "new"
+      },
+      "problemMatcher": {
+        "owner": "python",
+        "fileLocation": [
+          "relative",
+          "${workspaceFolder}"
+        ],
+        "pattern": {
+          "regexp": "^(.+):(\\d+):(\\d+): (\\w+): (.*)$",
+          "file": 1,
+          "line": 2,
+          "column": 3,
+          "severity": 4,
+          "message": 5
+        }
+      }
+    },
+    {
+      "label": "Build K-BatchPatcher",
+      "type": "shell",
+      "dependsOn": ["requirements.txt", "install_pyinstaller"],
+      "command": "${command:python.interpreterPath}",
+      "args": [
+        "-m",
+        "PyInstaller",
+        "--console",
+        "--onefile",
+        "--clean",
+        "--noconfirm",
+        "--name=K_BatchPatcher",
+        "--exclude-module=PyQt5",
+        "--exclude-module=PyOpenGL",
+        "--exclude-module=PyGLM",
+        "--exclude-module=dl_translate",
+        "--exclude-module=torch",
+        "--path=${workspaceFolder}${pathSeparator}tools${pathSeparator}k_batchpatcher",
+        "tools${pathSeparator}k_batchpatcher${pathSeparator}__main__.py"
+      ],
+      "problemMatcher": [],
+    },
+  ]
+}

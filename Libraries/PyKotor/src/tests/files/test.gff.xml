@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<gff3 type="GFF">
+  <struct id="4294967295">
+    <byte label="uint8">255</byte>
+    <char label="int8">-127</char>
+    <uint16 label="uint16">65535</uint16>
+    <sint16 label="int16">-32768</sint16>
+    <uint32 label="uint32">4294967295</uint32>
+    <sint32 label="int32">-2147483648</sint32>
+    <uint64 label="uint64">4294967296</uint64>
+    <sint64 label="int64">2147483647</sint64>
+    <float label="single">12.345670</float>
+    <double label="double">12.345678901234</double>
+    <exostring label="string">abcdefghij123456789</exostring>
+    <resref label="resref">resref01</resref>
+    <locstring label="locstring" strref="4294967295">
+      <string language="0">male_eng</string>
+      <string language="5">fem_german</string>
+    </locstring>
+    <data label="binary">YmluYXJ5ZGF0YQ==</data>
+    <orientation label="orientation">
+      <double>1.000000</double>
+      <double>2.000000</double>
+      <double>3.000000</double>
+      <double>4.000000</double>
+    </orientation>
+    <vector label="position">
+      <double>11.000000</double>
+      <double>22.000000</double>
+      <double>33.000000</double>
+    </vector>
+    <struct label="child_struct" id="0">
+      <byte label="child_uint8">4</byte>
+    </struct>
+    <list label="list">
+      <struct id="1"/>
+      <struct id="2"/>
+    </list>
+  </struct>
+</gff3>

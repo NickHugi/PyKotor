@@ -1,0 +1,19 @@
+<Contents version="3">
+    <Folder name="Introduction">
+        <Document name="Getting Started" file="introduction1-gettingStarted.md" />
+        <Document name="Core Tab" file="introduction2-coreResources.md" />
+        <Document name="Modules Tab" file="introduction3-moduleResources.md" />
+        <Document name="Override Tab" file="introduction4-overrideResources.md" />
+    </Folder>
+
+    <Folder name="Tools">
+        <Document name="Module Editor" file="tools/1-moduleEditor.md" />
+        <Document name="Map Builder" file="tools/2-mapBuilder.md" />
+    </Folder>
+
+    <Folder name="Tutorials">
+        <Document name="Custom Robes" file="tutorials/1-creatingCustomRobes.md" />
+        <Document name="New Store" file="tutorials/2-creatingANewStore.md" />
+        <Document name="Area Transitions" file="tutorials/3-areaTransition.md" />
+    </Folder>
+</Contents>

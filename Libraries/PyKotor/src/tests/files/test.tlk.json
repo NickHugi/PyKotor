@@ -1,0 +1,19 @@
+{
+    "strings": [
+        {
+            "_index": "0",
+            "text": "abcdef",
+            "soundResRef": "resref01"
+        },
+        {
+            "_index": "1",
+            "text": "ghijklmnop",
+            "soundResRef": "resref02"
+        },
+        {
+            "_index": "2",
+            "text": "qrstuvwxyz",
+            "soundResRef": ""
+        }
+    ]
+}

@@ -1,0 +1,24 @@
+{
+	"folders": [
+		{
+			"path": "."
+		},
+		{
+			"path": "../../Libraries/PyKotor"
+		},
+		{
+			"path": "../../Libraries/PyKotorFont"
+		},
+		{
+			"path": "../../Libraries/Utility"
+		},
+	],
+	"settings":  {
+		"python.analysis.extraPaths": [
+			"./src",
+			"../../Libraries/PyKotor/src",
+			"../../Libraries/PyKotorFont/src",
+			"../../Libraries/Utility/src",
+		]
+	},
+}
