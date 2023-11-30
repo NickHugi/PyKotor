@@ -219,8 +219,7 @@ class TomlDecoder:
             if ((value[0] == value[-1] and value[0] in ('"', "'")) or (value[0] in '-0123456789' or value in ('true', 'false') or (value[0] == "[" and value[-1] == "]") or (value[0] == '{' and value[-1] == '}'))):
                 groups.append(candidate_group)
             elif len(candidate_groups) > 0:
-                candidate_groups[0] = (candidate_group + "," +
-                                       candidate_groups[0])
+                candidate_groups[0] = f"{candidate_group},{candidate_groups[0]}"
             else:
                 raise ValueError("Invalid inline table value encountered")
         for group in groups:
@@ -230,6 +229,7 @@ class TomlDecoder:
                 break
 
     def _get_split_on_quotes(self, line):
+    def _get_split_on_quotes(self, line):
         doublequotesplits = line.split('"')
         quoted = False
         quotesplits = []
@@ -237,7 +237,7 @@ class TomlDecoder:
             singlequotesplits = doublequotesplits[0].split("'")
             doublequotesplits = doublequotesplits[1:]
             while len(singlequotesplits) % 2 == 0 and len(doublequotesplits):
-                singlequotesplits[-1] += '"' + doublequotesplits[0]
+                singlequotesplits[-1] += f'"{doublequotesplits[0]}'
                 doublequotesplits = doublequotesplits[1:]
                 if "'" in singlequotesplits[-1]:
                     singlequotesplits = (singlequotesplits[:-1] + singlequotesplits[-1].split("'"))
@@ -249,7 +249,6 @@ class TomlDecoder:
                 quotesplits += doublequotesplit.split("'")
                 quoted = not quoted
         return quotesplits
-
     def load_line(self, line, currentlevel, multikey, multibackslash):
         i = 1
         quotesplits = self._get_split_on_quotes(line)
@@ -578,7 +577,7 @@ def _strictly_valid_num(n):
         return True
     if n[0] == '0' and n[1] not in ['.', 'o', 'b', 'x']:
         return False
-    if n[0] == '+' or n[0] == '-':
+    if n[0] in ['+', '-']:
         n = n[1:]
         if len(n) > 1 and n[0] == '0' and n[1] != '.':
             return False

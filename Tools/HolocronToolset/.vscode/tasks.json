@@ -2,7 +2,8 @@
   "version": "2.0.0",
   "tasks": [
     {
-      "label": "requirements.txt",
+      "label": "toolset requirements",
+      "dependsOn": ["pykotor_requirements", "pykotorgl_requirements"],
       "type": "shell",
       "command": "${command:python.interpreterPath}",
       "args": [
@@ -11,6 +12,40 @@
         "install",
         "-r",
         "requirements.txt",
+      ],
+      "presentation": {
+        "echo": true,
+        "reveal": "always"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "pykotor_requirements",
+      "type": "shell",
+      "command": "${command:python.interpreterPath}",
+      "args": [
+        "-m",
+        "pip",
+        "install",
+        "-r",
+        "../../Libraries/PyKotor/requirements.txt",
+      ],
+      "presentation": {
+        "echo": true,
+        "reveal": "always"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "pykotorgl_requirements",
+      "type": "shell",
+      "command": "${command:python.interpreterPath}",
+      "args": [
+        "-m",
+        "pip",
+        "install",
+        "-r",
+        "../../Libraries/PyKotorGL/requirements.txt",
       ],
       "presentation": {
         "echo": true,

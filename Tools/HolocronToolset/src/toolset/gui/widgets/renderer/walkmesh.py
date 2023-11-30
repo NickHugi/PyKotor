@@ -407,14 +407,17 @@ class WalkmeshRenderer(QWidget):
 
         Args:
         ----
-            instance (GITInstance): Instance to check visibility for
+            instance (GITInstance): Instance to check visibility for.
+
         Returns:
+        -------
             bool | None: True if visible, False if hidden, None if invalid type
+
         Processing Logic:
         ----------------
-        - Check if instance is a valid subclass
-        - Return True if type is not hidden in settings
-        - Return None if type is invalid
+            - Check if instance is a valid subclass
+            - Return True if type is not hidden in settings
+            - Return None if type is invalid
         """
         if isinstance(instance, GITCreature):
             return not self.hideCreatures
@@ -466,10 +469,10 @@ class WalkmeshRenderer(QWidget):
 
         Processing Logic:
         ----------------
-        1. Sets the camera position to the center of the bounding box
-        2. Calculates the world and screen sizes
-        3. Calculates the scale factor to fit the world in the screen
-        4. Sets the camera zoom and rotation based on the scale.
+            1. Sets the camera position to the center of the bounding box
+            2. Calculates the world and screen sizes
+            3. Calculates the scale factor to fit the world in the screen
+            4. Sets the camera zoom and rotation based on the scale.
         """
         self.camera.setPosition((self._bbmin.x + self._bbmax.x) / 2, (self._bbmin.y + self._bbmax.y) / 2)
         world_w = self._worldSize.x
@@ -528,10 +531,10 @@ class WalkmeshRenderer(QWidget):
 
         Processing Logic:
         ----------------
-        - Checks if the instance is an encounter or trigger with geometry
-        - Moves to the first point of the geometry
-        - Draws lines between subsequent points
-        - Closes the path by drawing a line to the first point
+            - Checks if the instance is an encounter or trigger with geometry
+            - Moves to the first point of the geometry
+            - Draws lines between subsequent points
+            - Closes the path by drawing a line to the first point
         """
         path = QPainterPath()
         if (isinstance(instance, (GITEncounter, GITTrigger))) and len(instance.geometry) > 0:
@@ -569,13 +572,13 @@ class WalkmeshRenderer(QWidget):
 
         Processing Logic:
         ----------------
-        - Builds and caches walkmesh face geometry
-        - Sets up camera transform
-        - Fills background and draws walkmesh faces
-        - Draws instances like creatures, doors as icons
-        - Highlights first instance under mouse
-        - Highlights first geom point under mouse
-        - Highlights selected instances and geometry points
+            - Builds and caches walkmesh face geometry
+            - Sets up camera transform
+            - Fills background and draws walkmesh faces
+            - Draws instances like creatures, doors as icons
+            - Highlights first instance under mouse
+            - Highlights first geom point under mouse
+            - Highlights selected instances and geometry points
         """
         # Build walkmesh faces cache
         if self._walkmeshFaceCache is None:

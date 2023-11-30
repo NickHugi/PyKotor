@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import struct
-from typing import TYPE_CHECKING, LiteralString
+from typing import TYPE_CHECKING
 
 from pykotor.common.geometry import SurfaceMaterial, Vector2, Vector3
 from pykotor.resource.formats.bwm import BWM, BWMFace, read_bwm, write_bwm
@@ -103,7 +103,7 @@ class BWMEditor(Editor):
             color: QColor = self.materialColors[material]
             image = QImage(struct.pack("BBB", color.red(), color.green(), color.blue()) * 16 * 16, 16, 16, QImage.Format_RGB888)
             icon = QIcon(QPixmap(image))
-            text: LiteralString = material.name.replace("_", " ").title()
+            text = material.name.replace("_", " ").title()
             item = QListWidgetItem(icon, text)
             item.setData(QtCore.Qt.UserRole, material)  # type: ignore[reportGeneralTypeIssues, attr-defined]
             self.ui.materialList.addItem(item)

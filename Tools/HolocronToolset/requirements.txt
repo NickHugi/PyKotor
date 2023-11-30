@@ -11,3 +11,4 @@ certifi==2021.10.8
 #pykotor>=1.7  # Required, but due to limited granularity of this requirements.txt format we can't uncomment this on the repo.
 pyperclip~=1.8
 setuptools>=68.2.2
+Pillow>=9.5,<11
