@@ -186,8 +186,9 @@ def decode_bytes_with_fallbacks(
         result_detect: charset_normalizer.CharsetMatch | None = detected_encodings.best()
 
         if result_detect:
-            # Special handling for BOM
             best_encoding: str = result_detect.encoding
+
+            # Special handling for BOM
             aliases: list[str] = result_detect.encoding_aliases
             if result_detect.bom:
                 aliases.append(best_encoding)

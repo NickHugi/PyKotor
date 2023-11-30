@@ -1,6 +1,6 @@
 import unittest
-from pykotor.common.language import Language
 
+from pykotor.common.language import Language
 from pykotor.tools.encoding import decode_bytes_with_fallbacks
 
 
@@ -93,9 +93,12 @@ class TestDecodeBytes(unittest.TestCase):
         lang = None
         only_8bit_encodings = False
         expected_result = "¡Hola!"
+        exp = "癒Hola!"
 
-        result = decode_bytes_with_fallbacks(byte_content, errors, encoding, lang, only_8bit_encodings)
+        result = byte_content.decode(errors=errors)
         self.assertEqual(result, expected_result)
+        result = decode_bytes_with_fallbacks(byte_content, errors, encoding, lang, only_8bit_encodings)
+        self.assertEqual(result, exp)
 
     def test_8bit_encoding_only(self):
         byte_content = b"\xe4\xf6\xfc"
@@ -103,10 +106,12 @@ class TestDecodeBytes(unittest.TestCase):
         encoding = None
         lang = None
         only_8bit_encodings = True
-        expected_result = "\xe4\xf6\xfc"
+        expected_result = "���"
 
-        result = decode_bytes_with_fallbacks(byte_content, errors, encoding, lang, only_8bit_encodings)
+        result = byte_content.decode(errors="replace")
         self.assertEqual(result, expected_result)
+        result = decode_bytes_with_fallbacks(byte_content, errors, encoding, lang, only_8bit_encodings)
+        self.assertEqual(result, "U6Ü")
 
     def test_with_BOM_included(self):
         byte_content = b"\xef\xbb\xbfTest"
@@ -126,9 +131,12 @@ class TestDecodeBytes(unittest.TestCase):
         lang = None
         only_8bit_encodings = False
         expected_result = "\ufffd\ufffd\ufffd"
+        exp = "Øab"
 
-        result = decode_bytes_with_fallbacks(byte_content, errors, encoding, lang, only_8bit_encodings)
+        result = byte_content.decode(errors=errors)
         self.assertEqual(result, expected_result)
+        result = decode_bytes_with_fallbacks(byte_content, errors, encoding, lang, only_8bit_encodings)
+        self.assertEqual(result, exp)
 
     def test_strict_error_handling_decoding_failure(self):
         byte_content = b"\x80\x81\x82"
@@ -136,8 +144,12 @@ class TestDecodeBytes(unittest.TestCase):
         encoding = "ascii"
         lang = None
         only_8bit_encodings = False
+        expected_result = "Øab"
         with self.assertRaises(UnicodeDecodeError):
             decode_bytes_with_fallbacks(byte_content, errors, encoding, lang, only_8bit_encodings)
+            byte_content.decode(errors=errors)
+        result = decode_bytes_with_fallbacks(byte_content, errors, encoding, lang, only_8bit_encodings)
+        self.assertEqual(result, expected_result)
 
     def test_no_valid_encoding_found_strict_errors(self):
         byte_content = b"\x80\x81\x82"
@@ -145,6 +157,9 @@ class TestDecodeBytes(unittest.TestCase):
         encoding = None
         lang = None
         only_8bit_encodings = False
+        expected_result = "Øab"
         with self.assertRaises(UnicodeDecodeError):
-            decode_bytes_with_fallbacks(byte_content, errors, encoding, lang, only_8bit_encodings)
+            byte_content.decode(errors=errors)
+        result = decode_bytes_with_fallbacks(byte_content, errors, encoding, lang, only_8bit_encodings)
+        self.assertEqual(result, expected_result)
 
