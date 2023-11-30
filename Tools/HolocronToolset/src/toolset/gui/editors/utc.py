@@ -590,6 +590,15 @@ class UTCEditor(Editor):
         self.update3dPreview()
 
     def updateFeatSummary(self) -> None:
+        """Updates the feats summary text
+        Args:
+            self: The class instance
+        Processing Logic:
+        - Loops through each item in the feature list
+        - Checks if the item is checked
+        - Adds the text of checked items to a summary string
+        - Sets the summary text to the feature summary edit text area.
+        """
         summary = ""
         for i in range(self.ui.featList.count()):
             item = self.ui.featList.item(i)
@@ -598,6 +607,15 @@ class UTCEditor(Editor):
         self.ui.featSummaryEdit.setPlainText(summary)
 
     def updatePowerSummary(self) -> None:
+        """Updates the power summary text with checked items from the power list
+        Args:
+            self: The class instance
+        Processing Logic:
+        - Loops through each item in the power list
+        - Checks if the item is checked
+        - Adds the item text to the summary string with a newline
+        - Sets the power summary edit text to the generated summary.
+        """
         summary = ""
         for i in range(self.ui.powerList.count()):
             item = self.ui.powerList.item(i)
