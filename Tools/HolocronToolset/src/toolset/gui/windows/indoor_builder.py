@@ -1068,7 +1068,7 @@ class KitDownloader(QDialog):
         kits_path = Path("kits").resolve()
         kits_path.mkdir(parents=True, exist_ok=True)
         kits_zip_path = Path("kits.zip")
-        self.download_file("NickHugi/PyKotor", kits_zip_path, "toolset/kits.zip")
+        self.download_file("NickHugi/PyKotor", kits_zip_path, "Tools/HolocronToolset/downloads/kits.zip")
 
         # Extract the ZIP file
         with zipfile.ZipFile("./kits.zip") as zip_file:

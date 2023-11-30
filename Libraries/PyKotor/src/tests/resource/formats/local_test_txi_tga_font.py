@@ -1,6 +1,9 @@
 import pathlib
 import sys
 import unittest
+from tempfile import TemporaryDirectory
+
+from PIL import Image
 
 if getattr(sys, "frozen", False) is False:
     pykotor_path = pathlib.Path(__file__).parents[3] / "pykotor"
@@ -18,36 +21,15 @@ FONT_PATH_FILE = Path("src/tests/files/roboto/Roboto-Black.ttf")
 CHINESE_FONT_PATH_FILE = Path("src/tests/files/chinese_simplified_ttf/Unifontexmono-AL3RA.ttf")
 THAI_FONT_PATH_FILE = Path("src/tests/files/TH Sarabun New Regular/TH Sarabun New Regular.ttf")
 
-from PIL import Image
-
 
 class TestWriteBitmapFont(unittest.TestCase):
     def setUp(self):
-        #self.output_path = Path(TemporaryDirectory().name)
-        self.output_path = Path(r"output")
+        self.output_path = Path(TemporaryDirectory().name)
         self.output_path.mkdir(exist_ok=True)
     def cleanUp(self):
-        #self.output_path.unlink()
-        pass
+        self.output_path.unlink()
     def test_bitmap_font(self):
-        #write_bitmap_font(self.output_path / "fnt_creditsb", FONT_PATH, (256, 256), Language.ENGLISH)
-        #write_bitmap_font(self.output_path / "fnt_creditsb", FONT_PATH, (512, 512), Language.ENGLISH)
-        #write_bitmap_font(self.output_path / "fnt_creditsb", FONT_PATH, (1024, 1024), Language.ENGLISH)
-        #write_bitmap_font(self.output_path / "fnt_creditsb", FONT_PATH, (2048, 2048), Language.ENGLISH)
-        #write_bitmap_font(self.output_path / "fnt_creditsb", FONT_PATH, (4096, 4096), Language.ENGLISH)
-        #write_bitmap_font(self.output_path / "fnt_creditsb", FONT_PATH, (256, 512), Language.ENGLISH)
-        #write_bitmap_font(self.output_path / "fnt_creditsb", FONT_PATH, (512, 1024), Language.ENGLISH)
-        #write_bitmap_font(self.output_path / "fnt_creditsb", FONT_PATH, (1024, 2048), Language.ENGLISH)
         write_bitmap_fonts(self.output_path, r"C:\Windows\Fonts\Inkfree.ttf", (2048, 2048), Language.ENGLISH, draw_box=False, custom_scaling=1.0)
-        #write_bitmap_font(self.output_path / "fnt_creditsb", FONT_PATH, (128, 512), Language.ENGLISH)
-        #write_bitmap_font(self.output_path / "fnt_creditsb", FONT_PATH, (256, 1024), Language.ENGLISH)
-        #write_bitmap_font(self.output_path / "fnt_creditsb", FONT_PATH, (512, 2048), Language.ENGLISH)
-        #write_bitmap_font(self.output_path / "fnt_creditsb", FONT_PATH, (1024, 4096), Language.ENGLISH)
-        #write_bitmap_font(self.output_path / "fnt_creditsb", FONT_PATH, (300, 300), Language.ENGLISH)
-        #write_bitmap_font(self.output_path / "fnt_creditsb", FONT_PATH, (600, 600), Language.ENGLISH)
-        #write_bitmap_font(self.output_path / "fnt_creditsb", FONT_PATH, (1200, 1200), Language.ENGLISH)
-        #write_bitmap_font(self.output_path / "fnt_creditsb", FONT_PATH, (2400, 2400), Language.ENGLISH)
-        #write_bitmap_font(self.output_path / "fnt_creditsb", FONT_PATH, (4800, 4800), Language.ENGLISH)
     def test_bitmap_font_chinese(self):
         write_bitmap_font(self.output_path / "test_font_chinese.tga", CHINESE_FONT_PATH_FILE, (10240,10240), Language.CHINESE_SIMPLIFIED)
     def test_bitmap_font_thai(self):
@@ -87,7 +69,7 @@ class TestWriteBitmapFont(unittest.TestCase):
         lang = "invalid"
 
         with self.assertRaises((AttributeError, ValueError)):
-            write_bitmap_font(target_path, FONT_PATH_FILE, resolution, lang)
+            write_bitmap_font(target_path, FONT_PATH_FILE, resolution, lang)  # type: ignore[reportGeneralTypeIssues]
 
     def test_invalid_resolution(self):
         # Test with invalid resolution
