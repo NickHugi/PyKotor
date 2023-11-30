@@ -179,27 +179,28 @@ def decode_bytes_with_fallbacks(
         if only_8bit_encodings:
             max_8bit_characters = 256
             detected_8bit_encodings: list[charset_normalizer.CharsetMatch] = [enc for enc in detected_encodings if len(enc.alphabets) <= max_8bit_characters]
-            best_8bit_encoding: str = detected_8bit_encodings[0].encoding if detected_8bit_encodings else "windows-1252"
+            best_match: charset_normalizer.CharsetMatch = detected_8bit_encodings[0]
+            best_8bit_encoding: str = best_match.encoding or "windows-1252"
             return byte_content.decode(encoding=best_8bit_encoding, errors=attempt_errors)
 
         result_detect: charset_normalizer.CharsetMatch | None = detected_encodings.best()
 
+        if result_detect:
+            # Special handling for BOM
+            best_encoding: str = result_detect.encoding
+            aliases: list[str] = result_detect.encoding_aliases
+            if result_detect.bom:
+                aliases.append(best_encoding)
+                for alias in aliases:
+                    normalized_alias = alias.replace("_", "-")
+                    if normalized_alias.startswith("utf-"):
+                        best_encoding=f"{best_encoding}-sig"
+                        break
+
+            return byte_content.decode(encoding=best_encoding, errors=attempt_errors)
+
         # Final fallback if no encoding is detected
-        if not result_detect:
-            return byte_content.decode(errors=attempt_errors)
-
-        # Special handling for BOM
-        best_encoding: str = result_detect.encoding
-        aliases: list[str] = result_detect.encoding_aliases
-        if result_detect.byte_order_mark:
-            aliases.append(best_encoding)
-            for alias in aliases:
-                normalized_alias = alias.replace("_", "-")
-                if normalized_alias.startswith("utf-"):
-                    best_encoding=f"{best_encoding}-sig"
-                    break
-
-        return byte_content.decode(encoding=best_encoding, errors=attempt_errors)
+        return byte_content.decode(errors=attempt_errors)
 
     # Attempt strict first for more accurate results.
     with contextlib.suppress(UnicodeDecodeError):
