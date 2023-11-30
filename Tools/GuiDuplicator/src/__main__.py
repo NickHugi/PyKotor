@@ -243,7 +243,7 @@ def main():
         process_file(input_path, parser_args.output)
 
     elif input_path.is_dir():
-        for gui_file in input_path.rglob("*.gui", case_sensitive=False):
+        for gui_file in input_path.rglob("*.gui"):
             relative_path = gui_file.relative_to(input_path)
             new_output_dir = parser_args.output / relative_path.parent / gui_file.stem
             new_output_dir.mkdir(parents=True, exist_ok=True)
