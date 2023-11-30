@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import struct
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, LiteralString
 
 from pykotor.common.geometry import SurfaceMaterial, Vector2
 from pykotor.resource.formats.bwm import BWM, BWMFace, read_bwm, write_bwm
@@ -72,7 +72,7 @@ class BWMEditor(Editor):
             SurfaceMaterial.NON_WALK_GRASS: QColor(0xB3FFB3),
             SurfaceMaterial.TRIGGER: QColor(0x4D0033),
         }
-        self.ui.renderArea.materialColors = self.materialColors
+        self.ui.renderArea.materialColors = self.materialColors  # TODO: fix the QColor\int typing here
         self.rebuildMaterials()
 
         self.new()
@@ -96,10 +96,10 @@ class BWMEditor(Editor):
         """
         self.ui.materialList.clear()
         for material in self.materialColors:
-            color = self.materialColors[material]
+            color: QColor = self.materialColors[material]
             image = QImage(struct.pack("BBB", color.red(), color.green(), color.blue()) * 16 * 16, 16, 16, QImage.Format_RGB888)
             icon = QIcon(QPixmap(image))
-            text = material.name.replace("_", " ").title()
+            text: LiteralString = material.name.replace("_", " ").title()
             item = QListWidgetItem(icon, text)
             item.setData(QtCore.Qt.UserRole, material)  # type: ignore[reportGeneralTypeIssues, attr-defined]
             self.ui.materialList.addItem(item)
@@ -165,9 +165,9 @@ class BWMEditor(Editor):
         face = self._bwm.faceAt(world.x, world.y)
 
         if QtCore.Qt.LeftButton in buttons and QtCore.Qt.Key_Control in keys:  # type: ignore[reportGeneralTypeIssues, attr-defined]
-            self.ui.renderArea.panCamera(-worldData.x, -worldData.y)
+            self.ui.renderArea.camera.nudgePosition(-worldData.x, -worldData.y)
         elif QtCore.Qt.MiddleButton in buttons and QtCore.Qt.Key_Control in keys:  # type: ignore[reportGeneralTypeIssues, attr-defined]
-            self.ui.renderArea.rotateCamera(delta.x / 50)
+            self.ui.renderArea.camera.nudgeRotation(delta.x / 50)
         elif QtCore.Qt.LeftButton in buttons:  # type: ignore[reportGeneralTypeIssues, attr-defined]
             self.changeFaceMaterial(face)
 
@@ -181,7 +181,12 @@ class BWMEditor(Editor):
 
     def onMouseScrolled(self, delta: Vector2, buttons: set[int], keys: set[int]) -> None:
         if QtCore.Qt.Key_Control in keys:  # type: ignore[reportGeneralTypeIssues, attr-defined]
-            self.ui.renderArea.zoomInCamera(delta.y / 50)
+            zoomInFactor = 1.1
+            zoomOutFactor = 0.90
+
+            zoomFactor = zoomInFactor if delta.y > 0 else zoomOutFactor
+            self.ui.renderArea.camera.nudgeZoom(zoomFactor)
+            self.ui.renderArea.update()  # Trigger a re-render
 
     def changeFaceMaterial(self, face: BWMFace):
         """Change material of a face.

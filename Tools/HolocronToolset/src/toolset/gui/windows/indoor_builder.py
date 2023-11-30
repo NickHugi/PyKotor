@@ -13,8 +13,6 @@ from typing import TYPE_CHECKING
 import requests
 from pykotor.common.geometry import Vector2, Vector3
 from pykotor.common.stream import BinaryReader, BinaryWriter
-from utility.misc import is_debug_mode
-from utility.path import BasePurePath, Path, PurePath
 from PyQt5 import QtCore
 from PyQt5.QtCore import QPoint, QPointF, QRectF, QTimer
 from PyQt5.QtGui import (
@@ -49,6 +47,8 @@ from toolset.data.indoormap import IndoorMap, IndoorMapRoom
 from toolset.gui.dialogs.asyncloader import AsyncLoader
 from toolset.gui.dialogs.indoor_settings import IndoorMapSettings
 from toolset.gui.windows.help import HelpWindow
+from utility.misc import is_debug_mode
+from utility.path import BasePurePath, Path, PurePath
 
 if TYPE_CHECKING:
     import os
@@ -196,8 +196,7 @@ class IndoorMapBuilder(QMainWindow):
         Args:
         ----
             self: The object instance
-        Returns:
-            None
+
         - Opens a file dialog to select an indoor map file
         - Attempts to load the selected file and rebuild room connections
         - Sets the filepath and refreshes window title on success
@@ -242,11 +241,12 @@ class IndoorMapBuilder(QMainWindow):
         self._map.warpPoint = Vector3(x, y, z)
 
     def onKitSelected(self) -> None:
-        """Selects a kit and populates component list
+        """Selects a kit and populates component list.
+
         Args:
+        ----
             self: The class instance
-        Returns:
-            None
+
         - Gets the selected kit from the UI kit selection widget
         - Checks if a kit is selected
         - Clears any existing items from the component list
@@ -272,14 +272,15 @@ class IndoorMapBuilder(QMainWindow):
         self.ui.mapRenderer.setCursorComponent(component)
 
     def onMouseMoved(self, screen: Vector2, delta: Vector2, buttons: set[int], keys: set[int]) -> None:
-        """Handles events when the mouse is moved in the ui
+        """Handles events when the mouse is moved in the ui.
+
         Args:
+        ----
             screen: Vector2 - Current screen position
             delta: Vector2 - Change in screen position
             buttons: set[int] - Current pressed buttons
             keys: set[int] - Current pressed keys
-        Returns:
-            None
+
         Processing Logic:
             - Refresh status bar
             - Convert screen delta to world delta
@@ -320,13 +321,15 @@ class IndoorMapBuilder(QMainWindow):
             self._map.rebuildRoomConnections()
 
     def onMousePressed(self, screen: Vector2, buttons: set[int], keys: set[int]) -> None:
-        """Handles mouse press events on the map view
+        """Handles mouse press events on the map view.
+
         Args:
+        ----
             screen: Vector2 - Mouse position on screen
             buttons: set[int] - Pressed mouse buttons
             keys: set[int] - Pressed modifier keys
-        Returns:
-            None
+
+        Processing Logic:
         - Checks if left mouse button and control key are pressed
         - Gets component under cursor and selected component
         - Builds indoor map if component selected
@@ -435,11 +438,12 @@ class IndoorMapRenderer(QWidget):
     """Signal emitted when a mouse button is double clicked on the widget."""
 
     def __init__(self, parent: QWidget):
-        """Initialize the indoor map viewer widget
+        """Initialize the indoor map viewer widget.
+
         Args:
+        ----
             parent (QWidget): Parent widget
-        Returns:
-            None
+
         Processing Logic:
             - Initialize the indoor map object
             - Initialize variables to track selected rooms, camera position etc
@@ -497,7 +501,9 @@ class IndoorMapRenderer(QWidget):
         self._selectedRooms.clear()
 
     def toRenderCoords(self, x, y) -> Vector2:
-        """Returns a screen-space coordinates coverted from the specified world-space coordinates. The origin of the
+        """Returns a screen-space coordinates coverted from the specified world-space coordinates.
+
+        The origin of the
         screen-space coordinates is the top-left of the WalkmeshRenderer widget.
 
         Args:
@@ -518,8 +524,10 @@ class IndoorMapRenderer(QWidget):
         return Vector2(x2, y2)
 
     def toWorldCoords(self, x, y) -> Vector3:
-        """Returns the world-space coordinates converted from the specified screen-space coordinates. The Z component
-        is calculated using the X/Y components and the walkmesh face the mouse is over. If there is no face underneath
+        """Returns the world-space coordinates converted from the specified screen-space coordinates.
+
+        The Z component is calculated using the X/Y components and
+        the walkmesh face the mouse is over. If there is no face underneath
         the mouse, the Z component is set to zero.
 
         Args:
@@ -540,7 +548,9 @@ class IndoorMapRenderer(QWidget):
         return Vector3(x2, y2, 0)
 
     def toWorldDelta(self, x, y) -> Vector2:
-        """Returns the coordinates representing a change in world-space. This is convereted from coordinates representing
+        """Returns the coordinates representing a change in world-space.
+
+        This is convereted from coordinates representing
         a change in screen-space, such as the delta paramater given in a mouseMove event.
 
         Args:
@@ -561,12 +571,17 @@ class IndoorMapRenderer(QWidget):
         return Vector2(x2, y2)
 
     def getConnectedHooks(self, room1: IndoorMapRoom, room2: IndoorMapRoom) -> tuple:
-        """Get connected hooks between two rooms
+        """Get connected hooks between two rooms.
+
         Args:
+        ----
             room1: IndoorMapRoom - The first room
             room2: IndoorMapRoom - The second room
+
         Returns:
+        -------
             tuple - A tuple containing the connected hooks or None if no connection
+
         Processing Logic:
         - Loop through all hooks in room1 and get their positions
         - Loop through all hooks in room2 and get their positions

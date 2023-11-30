@@ -82,8 +82,10 @@ class WalkmeshCamera:
     def setZoom(self, zoom: float) -> None:
         self._zoom = clamp(zoom, 0.1, 100)
 
-    def nudgeZoom(self, zoom: float) -> None:
-        self._zoom = clamp(self._zoom + zoom, 0.1, 100)
+    def nudgeZoom(self, zoomFactor: float) -> None:
+        newZoom = self._zoom * zoomFactor
+        self._zoom = clamp(newZoom, 0.1, 100)
+
 
 
 class WalkmeshSelection(Generic[T]):
