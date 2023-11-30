@@ -68,6 +68,7 @@ class IndoorMapBuilder(QMainWindow):
         Returns:
             None
         Processing Logic:
+        ----------------
             - Initialize UI components
             - Set up signal connections
             - Set up keyboard shortcuts
@@ -102,6 +103,7 @@ class IndoorMapBuilder(QMainWindow):
         Returns:
             None: Does not return anything
         Processing Logic:
+        ----------------
             - Connect index changed signals from kit and component selectors to selection changed slots
             - Connect action triggers from menu to method calls
             - Connect mouse events on map renderer to handler methods.
@@ -282,6 +284,7 @@ class IndoorMapBuilder(QMainWindow):
             keys: set[int] - Current pressed keys
 
         Processing Logic:
+        ----------------
             - Refresh status bar
             - Convert screen delta to world delta
             - Pan camera if LMB + CTRL pressed
@@ -330,6 +333,7 @@ class IndoorMapBuilder(QMainWindow):
             keys: set[int] - Pressed modifier keys
 
         Processing Logic:
+        ----------------
         - Checks if left mouse button and control key are pressed
         - Gets component under cursor and selected component
         - Builds indoor map if component selected
@@ -445,6 +449,7 @@ class IndoorMapRenderer(QWidget):
             parent (QWidget): Parent widget
 
         Processing Logic:
+        ----------------
             - Initialize the indoor map object
             - Initialize variables to track selected rooms, camera position etc
             - Start the main update loop.
@@ -583,6 +588,7 @@ class IndoorMapRenderer(QWidget):
             tuple - A tuple containing the connected hooks or None if no connection
 
         Processing Logic:
+        ----------------
         - Loop through all hooks in room1 and get their positions
         - Loop through all hooks in room2 and get their positions
         - Check distance between each hook pair and return the closest pair if < 1 unit apart
@@ -793,6 +799,7 @@ class IndoorMapRenderer(QWidget):
         Returns:
             None
         Processing Logic:
+        ----------------
             - Maps mouse position to world coordinates
             - Applies transformations
             - Draws background rectangle

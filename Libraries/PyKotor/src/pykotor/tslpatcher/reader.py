@@ -136,6 +136,7 @@ class ConfigReader:
         -------
             instance: A PatcherConfig instance loaded from the file.
         Processing Logic:
+        ----------------
             - Resolve the file path and load its contents
             - Parse the INI text into a ConfigParser
             - Initialize a PatcherConfig instance
@@ -257,6 +258,7 @@ class ConfigReader:
             None: Modifies the TLK patches attached to this object.
 
         Processing Logic:
+        ----------------
         - Parses the [TLKList] section to get TLK patch entries
         - Handles different patch syntaxes like file replacements, string references etc
         - Builds ModifyTLK objects for each patch and adds to the patch list
@@ -454,6 +456,7 @@ class ConfigReader:
     def load_2da_list(self) -> None:
         """Load 2D array patches from ini file
         Processing Logic:
+        ----------------
             - Get the section name for the [2DAList] section
             - Load the section into a dictionary
             - Pop the default destination key
@@ -691,6 +694,7 @@ class ConfigReader:
         Returns:
             ModifyFieldGFF - A ModifyFieldGFF object representing the modification
         Processing Logic:
+        ----------------
             1. Parses the string value into a FieldValue
             2. Handles special cases for keys containing "(strref)", "(lang)" or starting with "2damemory"
             3. Returns a ModifyFieldGFF object representing the modification.
@@ -732,6 +736,7 @@ class ConfigReader:
         Returns:
             ModifyGFF - Object containing the field modification
         Processing Logic:
+        ----------------
             1. Determines the field type from the field type string
             2. Gets the label and optional value, path from the ini data
             3. Construct a current path from the gff root struct based on recursion level and path key.
@@ -822,6 +827,7 @@ class ConfigReader:
             value: {FieldValue | None}: The parsed field value or None
 
         Processing Logic:
+        ----------------
         - Parses the "Value" key to get a raw value and parses it based on field type
         - For LocalizedString, see field_value_from_localized_string
         - For GFFList and GFFStruct, constructs empty instances to be filled in later - see pykotor/tslpatcher/mods/gff.py
@@ -863,6 +869,7 @@ class ConfigReader:
         Returns:
             FieldValueConstant: Parsed TSLPatcher localized string
         Processing Logic:
+        ----------------
             1. Pop the "StrRef" key to get the base string reference
             2. Lookup the string reference from memory or use it as-is if not found
             3. Iterate the keys, filtering for language codes
@@ -896,6 +903,7 @@ class ConfigReader:
         Returns:
             FieldValue | None: FieldValue object or None
         Processing Logic:
+        ----------------
         - Lowercase the raw value string
         - Check if it starts with "strref" and extract token ID
         - Check if it starts with "2damemory" and extract token ID
@@ -925,6 +933,7 @@ class ConfigReader:
         -------
             FieldValue: The parsed value represented as a FieldValue object.
         Processing Logic:
+        ----------------
             - Checks if the value is already cached in memory
             - Tries to parse as int if possible
             - Otherwise parses as float by normalizing the string
@@ -963,6 +972,7 @@ class ConfigReader:
         -------
             FieldValue: {Field value object}
         Processing Logic:
+        ----------------
             - Checks if value already exists in memory as a 2DAMEMORY or StrRef
             - Otherwise, converts raw_value to appropriate type based on field_type
             - Returns FieldValueConstant object wrapping extracted value.
@@ -1006,6 +1016,7 @@ class ConfigReader:
         Returns:
             Modify2DA | None - The 2DA modification object or None
         Processing Logic:
+        ----------------
         - Parses the key to determine modification type
         - Checks for required parameters
         - Constructs the appropriate modification object
@@ -1134,6 +1145,7 @@ class ConfigReader:
             tuple[dict[str, RowValue], dict[int, RowValue], dict[int, RowValue]] - tuple containing cells dictionary, 2DA store dictionary, TLK store dictionary
 
         Processing Logic:
+        ----------------
         1. Loops through each modifier and value
         2. Determines modifier type (cell, 2DA store, TLK store, row label)
         3. Creates appropriate RowValue for cell/store value
@@ -1255,6 +1267,7 @@ class ConfigReader:
         Returns:
             SSFSound: The resolved SSFSound enum value
         Processing Logic:
+        ----------------
         - Defines a CaseInsensitiveDict mapping config strings to SSFSound enum values
         - Looks up the provided name in the dict and returns the corresponding SSFSound value.
         """
@@ -1305,6 +1318,7 @@ class ConfigReader:
         -------
             GFFFieldType: {The GFFFieldType enum value corresponding to the input string}
         Processing Logic:
+        ----------------
             - Defines a dictionary mapping field type number strings to GFFFieldType enum values
             - Looks up the input string in the dictionary
             - Returns the corresponding GFFFieldType value.

@@ -100,6 +100,7 @@ class FileSearcher(QDialog):
         Returns:
             None - No return, updates results attribute
         Processing Logic:
+        ----------------
             - Filters resources to search based on flags
             - Defines search function to check resources
             - Applies search function asynchronously to resources

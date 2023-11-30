@@ -49,6 +49,7 @@ class NSSEditor(Editor):
         Returns:
             None: Does not return anything
         Processing Logic:
+        ----------------
         1. Call the base class initializer
         2. Load the UI from the designer file
         3. Set up menus and signals
@@ -86,6 +87,7 @@ class NSSEditor(Editor):
         -------
             None: No return value.
         Processing Logic:
+        ----------------
             - Connect compile action to compileCurrentScript slot
             - Connect tab changes to changeDescription slot
             - Connect constant and function list selections to changeDescription slot
@@ -200,6 +202,7 @@ class NSSEditor(Editor):
             None: No value is returned.
 
         Processing Logic:
+        ----------------
         1. Compiles the script source code.
         2. Determines the file path and extension to save to.
         3. Writes the compiled data to the file.
@@ -246,6 +249,7 @@ class NSSEditor(Editor):
         Returns:
             None: Does not return anything
         Processing Logic:
+        ----------------
             - Clears the description edit text
             - Checks if Functions tab is selected and item is selected
             - Gets the function object and sets description text
@@ -308,6 +312,7 @@ class NSSEditor(Editor):
         Returns:
             None: Does not return anything
         Processing Logic:
+        ----------------
             - Check if text was inserted not deleted
             - Get the inserted text and preceding text
             - Count opening and closing braces in preceding text

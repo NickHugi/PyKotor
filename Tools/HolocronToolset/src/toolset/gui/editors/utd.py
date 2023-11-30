@@ -33,6 +33,7 @@ class UTDEditor(Editor):
         -------
             None: Does not return anything.
         Processing Logic:
+        ----------------
             1. Get supported resource types and call parent initializer.
             2. Initialize global settings object.
             3. Get generic doors 2DA cache from installation.
@@ -130,6 +131,7 @@ class UTDEditor(Editor):
             utd (UTD): UTD object to load data from
 
         Processing Logic:
+        ----------------
         - Sets UI element values from UTD object attributes
         - Divides loading into sections for Basic, Advanced, Lock, Scripts, and Comments
         - Handles different UI element types like checkboxes, dropdowns, text fields, etc.
@@ -190,6 +192,7 @@ class UTDEditor(Editor):
             tuple[bytes, bytes]: A tuple containing the GFF data (bytes) and errors (bytes)
 
         Processing Logic:
+        ----------------
         - Sets UTD properties from UI elements like name, tag, resrefs etc
         - Writes the constructed UTD to a GFF bytearray
         - Returns the GFF data and any errors
@@ -272,6 +275,7 @@ class UTDEditor(Editor):
         """Edits a conversation.
 
         Processing Logic:
+        ----------------
             1. Gets the conversation name from the UI text field
             2. Searches the installation for the conversation resource
             3. If not found, prompts to create a new file in the override folder
@@ -312,6 +316,7 @@ class UTDEditor(Editor):
         """Updates the 3D preview renderer visibility and size.
 
         Processing Logic:
+        ----------------
         - Checks if the global setting for showing preview is True
         - If True, calls _update_model() to update the 3D model preview
         - If False, sets the fixed size of the window without leaving space for preview.
@@ -328,6 +333,7 @@ class UTDEditor(Editor):
         """Updates the model preview.
 
         Processing Logic:
+        ----------------
             - Build the model data from the installation data
             - Get the model name based on the data and installation details
             - Load the MDL and MDX resources using the model name

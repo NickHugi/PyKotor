@@ -29,6 +29,7 @@ class TLKEditor(Editor):
             installation: HTInstallation | None - Installation object
 
         Processing Logic:
+        ----------------
             - Set up the UI from the designer file
             - Connect menu and signal handlers
             - Hide search/jump boxes
@@ -65,6 +66,7 @@ class TLKEditor(Editor):
         """Set up signal connections for UI actions and widgets.
 
         Processing Logic:
+        ----------------
             - Connect action triggers to slot functions
             - Connect button clicks to slot functions
             - Connect table and text edits to update functions
@@ -131,6 +133,7 @@ class TLKEditor(Editor):
             data: The raw data bytes.
 
         Processing Logic:
+        ----------------
             - Clears existing model data
             - Sets column count to 2 and hides second column
             - Opens dialog to process loading data
@@ -175,6 +178,7 @@ class TLKEditor(Editor):
             tuple[bytes, bytes]: A tuple containing the TLK data and an empty bytes object
 
         Processing Logic:
+        ----------------
         - Iterate through each row in the model
         - Extract the text and sound from each item
         - Add an entry to the TLK object with the text and sound
@@ -215,6 +219,7 @@ class TLKEditor(Editor):
         """Handle selection changes in the talk table.
 
         Processing Logic:
+        ----------------
         - Check if any rows are selected in the talk table
         - If no rows selected, disable text and sound editors
         - If rows selected, enable text and sound editors
@@ -260,6 +265,7 @@ class LoaderDialog(QDialog):
             model: {The model to populate}.
 
         Processing Logic:
+        ----------------
             - Creates a progress bar to display loading progress
             - Sets up the dialog layout and adds progress bar
             - Starts a worker thread to load the data in the background
@@ -339,6 +345,7 @@ class LoaderWorker(QThread):
         """Load tlk data from file in batches.
 
         Processing Logic:
+        ----------------
             - Reads timeline data from file
             - Counts number of entries and emits count
             - Loops through entries and batches data into lists of 200

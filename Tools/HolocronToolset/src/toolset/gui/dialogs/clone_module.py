@@ -35,6 +35,7 @@ class CloneModuleDialog(QDialog):
         -------
             None: Does not return anything.
         Processing Logic:
+        ----------------
             - Sets up the UI from the clone_module module.
             - Stores the active installation and dictionary of installations.
             - Connects button clicks and edits to methods.
@@ -70,6 +71,7 @@ class CloneModuleDialog(QDialog):
         -------
             None: No return value.
         Processing Logic:
+        ----------------
         - Gets module cloning parameters from UI elements
         - Defines cloning function
         - Warns user if copying textures selected due to longer wait time

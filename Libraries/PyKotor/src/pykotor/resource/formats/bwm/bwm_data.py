@@ -116,6 +116,7 @@ class BWM:
             None: Tree is built by side effect of modifying aabbs
 
         Processing Logic:
+        ----------------
         - Calculate bounding box of all faces
         - Split faces into left and right based on longest axis
         - Recursively build left and right trees
@@ -206,6 +207,7 @@ class BWM:
             list[BWMEdge]: A list of edges in the BWM.
 
         Processing Logic:
+        ----------------
         - Finds walkable faces and their adjacencies
         - Iterates through faces and edges to find unconnected edges
         - Traces edge paths and adds them to the edges list until it loops back
@@ -267,6 +269,7 @@ class BWM:
         Returns:
             tuple: {Tuple of adjacencies or None}
         Processing Logic:
+        ----------------
         1. Get list of walkable faces
         2. Define edge lists for each potential adjacency
         3. Iterate through walkable faces and check if edges match using a bit flag
@@ -336,6 +339,7 @@ class BWM:
         Returns:
             tuple[Vector3, Vector3]: Bounding box minimum and maximum points
         Processing Logic:
+        ----------------
             - Initialize bounding box minimum and maximum points to extreme values
             - Iterate through all vertices of the mesh
             - Update minimum x, y, z values of bbmin
@@ -359,6 +363,7 @@ class BWM:
         Returns:
             None - Updates bbmin and bbmax in place
         Processing Logic:
+        ----------------
             - Compare vertex x, y, z to bbmin x, y, z and update bbmin with minimum
             - Compare vertex x, y, z to bbmax x, y, z and update bbmax with maximum.
         """
@@ -538,6 +543,7 @@ class BWMNodeAABB:
         Returns:
             self - The initialized BWMNodeAABB object
         Processing Logic:
+        ----------------
             - Sets the bounding box minimum and maximum bounds
             - Sets the splitting face and most significant plane
             - Sets the left and right child nodes.

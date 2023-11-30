@@ -48,6 +48,7 @@ class Target:
         Returns:
             TwoDARow | None - The matching row if found, else None
         Processing Logic:
+        ----------------
             - Checks target_type and searches twoda accordingly
             - For row index, gets row directly
             - For row label, finds row by label
@@ -321,6 +322,7 @@ class AddRow2DA(Modify2DA):
         -------
             None: No value is returned.
         Processing Logic:
+        ----------------
             - Finds the target row to apply the patch to based on an optional exclusive column
             - If no target row is found, a new row is added
             - The cells are unpacked and applied to the target row
@@ -401,6 +403,7 @@ class CopyRow2DA(Modify2DA):
         Returns:
             None
         Processing Logic:
+        ----------------
             1. Searches for the source row in the TwoDA
             2. Determines if an existing target row should be used or a new row added
             3. Unpacks the cell values and updates/adds the target row
@@ -486,6 +489,7 @@ class AddColumn2DA(Modify2DA):
         Returns:
             None
         Processing Logic:
+        ----------------
             - Adds a column to the TwoDA with the patcher header
             - Sets the default value for all rows in the new column
             - Sets values in the new column based on index lookups

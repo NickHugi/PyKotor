@@ -10,6 +10,7 @@ class About(QDialog):
         ----
             parent: The parent QWidget.
         Processing Logic:
+        ----------------
         - Sets up the UI from the about.py UI file
         - Connects the closeButton clicked signal to close the dialog
         - Replaces the version placeholder in the about text with the actual version.

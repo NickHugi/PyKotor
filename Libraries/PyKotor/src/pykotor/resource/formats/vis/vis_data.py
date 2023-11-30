@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 from copy import copy, deepcopy
+from typing import Any, Generator
 
 from pykotor.resource.type import ResourceType
 
@@ -13,13 +14,13 @@ class VIS:
 
     def __init__(
         self,
-    ):
+    ) -> None:
         self._rooms: set[str] = set()
         self._visibility: dict[str, set[str]] = {}
 
     def __iter__(
         self,
-    ):
+    ) -> Generator[tuple[str, set[str]], Any, None]:
         for observer, observed in self._visibility.items():
             yield observer, deepcopy(observed)
 
@@ -65,14 +66,14 @@ class VIS:
         ----
             model: The name or model of the room.
         """
-        model = model.lower()
+        lower_model = model.lower()
 
         for room in self._rooms:
-            if model in self._visibility[room]:
-                self._visibility[room].remove(model)
+            if lower_model in self._visibility[room]:
+                self._visibility[room].remove(lower_model)
 
-        if model in self._rooms:
-            self._rooms.remove(model)
+        if lower_model in self._rooms:
+            self._rooms.remove(lower_model)
 
     def rename_room(
         self,
@@ -86,6 +87,7 @@ class VIS:
         Returns:
             None: Returns nothing
         Processing Logic:
+        ----------------
             - Lowercase old and new room names
             - Check if old and new names are the same
             - Remove old room name from rooms list

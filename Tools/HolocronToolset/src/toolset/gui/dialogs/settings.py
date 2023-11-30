@@ -9,6 +9,7 @@ class SettingsDialog(QDialog):
         Returns:
             None: Does not return anything
         Processing Logic:
+        ----------------
         - Initialize parent class with parent widget
         - Set flag for edited installations
         - Import UI dialog class

@@ -42,6 +42,7 @@ class UTCEditor(Editor):
             mainwindow: QMainWindow: The main window
 
         Processing Logic:
+        ----------------
             - Sets up supported resource types
             - Initializes superclass with parameters
             - Initializes settings objects
@@ -78,6 +79,7 @@ class UTCEditor(Editor):
         """Connect signals to slots.
 
         Processing Logic:
+        ----------------
         - Connects button and widget signals to appropriate slot methods
         - Connects value changed signals from slider and dropdowns
         - Connects menu action triggers to toggle settings.
@@ -107,6 +109,7 @@ class UTCEditor(Editor):
             installation: {HTInstallation}: The installation to load data from
 
         Processing Logic:
+        ----------------
         - Loads required 2da files if not already loaded
         - Sets items for dropdown menus from loaded 2da files
         - Clears and populates feat and power lists from loaded 2da files
@@ -331,6 +334,7 @@ class UTCEditor(Editor):
             tuple[bytes, bytes]: The GFF data and log.
 
         Processing Logic:
+        ----------------
             - Populate UTC object from UI fields
             - Add class and feat data from lists
             - Convert UTC to GFF bytes
@@ -513,6 +517,7 @@ class UTCEditor(Editor):
         """Edits a conversation.
 
         Processing Logic:
+        ----------------
         1. Gets the conversation name from the UI text field
         2. Searches the installation for the conversation resource
         3. If not found, prompts to create a new file in the override folder
@@ -549,6 +554,7 @@ class UTCEditor(Editor):
         """Opens the inventory editor.
 
         Processing Logic:
+        ----------------
         - Loads installed capsules from the root module folder
         - Initializes InventoryEditor with loaded capsules and current inventory/equipment
         - If InventoryEditor is closed successfully, updates internal inventory/equipment
@@ -594,6 +600,7 @@ class UTCEditor(Editor):
         """Updates the feats summary text.
 
         Processing Logic:
+        ----------------
         - Loops through each item in the feature list
         - Checks if the item is checked
         - Adds the text of checked items to a summary string
@@ -610,6 +617,7 @@ class UTCEditor(Editor):
         """Updates the power summary text with checked items from the power list.
 
         Processing Logic:
+        ----------------
         - Loops through each item in the power list
         - Checks if the item is checked
         - Adds the item text to the summary string with a newline
@@ -626,6 +634,7 @@ class UTCEditor(Editor):
         """Updates the 3D preview based on global settings.
 
         Processing Logic:
+        ----------------
             - Check if the global setting for showing preview is checked
             - If checked, show the preview renderer and set the window size
             - If an installation is present, build the data and pass it to the renderer

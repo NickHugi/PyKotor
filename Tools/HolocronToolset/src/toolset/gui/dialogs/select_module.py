@@ -13,6 +13,7 @@ class SelectModuleDialog(QDialog):
         Returns:
             None: Does not return anything
         Processing Logic:
+        ----------------
             - Initializes the UI from the dialog design
             - Connects button click signals to methods
             - Builds the initial module list

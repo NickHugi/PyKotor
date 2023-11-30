@@ -85,6 +85,7 @@ class InsertInstanceDialog(QDialog):
         Returns:
             None
         Processing Logic:
+        ----------------
             - Loops through installation resources and adds matching type
             - Loops through module capsules and nested resources, adding matching type
             - Selects first item if list is populated.
@@ -115,6 +116,7 @@ class InsertInstanceDialog(QDialog):
         Returns:
             None: Does not return anything
         Processing Logic:
+        ----------------
             - Checks which radio button is selected for reuse, copy or create resource
             - Sets resource name, file path and data based on selection
             - Writes data to file if resource is new

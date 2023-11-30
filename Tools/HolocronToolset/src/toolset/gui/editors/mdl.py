@@ -28,6 +28,7 @@ class MDLEditor(Editor):
         Returns:
             None: Does not return anything
         Processing Logic:
+        ----------------
             - Initialize the base class with the given parameters
             - Create an MDL model object
             - Load the UI from the designer file

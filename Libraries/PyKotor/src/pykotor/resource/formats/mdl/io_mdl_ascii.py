@@ -154,6 +154,7 @@ class MDLAsciiWriter:
         Returns:
             None: Does not return anything
         Processing Logic:
+        ----------------
             - Writes mesh properties like diffuse color, texture, etc
             - Writes vertex position data
             - Writes UV data if present
@@ -243,6 +244,7 @@ class MDLAsciiWriter:
         Returns:
             None: Writes controller values to the MDL file
         Processing Logic:
+        ----------------
             - Loops through each controller
             - Checks the controller type
             - Writes the appropriate line to the MDL file with the controller values formatted correctly

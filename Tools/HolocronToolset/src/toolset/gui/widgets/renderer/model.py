@@ -76,6 +76,7 @@ class ModelRenderer(QOpenGLWidget):
         Returns:
             None: Does not return anything
         Processing Logic:
+        ----------------
             - Checks if scene is None and returns if so
             - Loads model if _modelToLoad is not None
             - Loads creature if _creatureToLoad is not None

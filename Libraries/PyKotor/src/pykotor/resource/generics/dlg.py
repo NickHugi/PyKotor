@@ -50,6 +50,7 @@ class DLG:
         Returns:
             None
         Processing Logic:
+        ----------------
             1. Initializes starter and stunt lists
             2. Sets default values for node properties
             3. Adds a blank starter node if blank_node is True
@@ -191,6 +192,7 @@ class DLG:
         Returns:
             replies: list[DLGReply]: All reachable replies
         Processing Logic:
+        ----------------
             - If no links given, use starters as starting links
             - Initialize seen_replies if not given
             - Iterate over links and add node to replies if not seen
@@ -289,6 +291,7 @@ class DLGNode:
             None: Does not return anything, initializes internal properties of a DLGNode.
 
         Processing Logic:
+        ----------------
         - Sets default values for all properties of a DLGNode object
         - Initializes lists and optional properties as empty/None
         - Sets flags and identifiers to default values
@@ -482,6 +485,7 @@ def construct_dlg(
         Returns:
             None - Populates the node in-place
         Processing Logic:
+        ----------------
             - Acquires fields from the GFFStruct and assigns to the node
             - Handles optional fields
             - Populates animations list
@@ -568,6 +572,7 @@ def construct_dlg(
         Returns:
             None - Populates the link object
         Processing Logic:
+        ----------------
             - Acquires an "Active" resource and assigns to link.active1
             - Acquires an "Active2" resource and assigns to link.active2
             - Acquires a "Logic" resource and assigns to link.logic
@@ -699,6 +704,7 @@ def dismantle_dlg(
         Returns:
             None: Populates the GFFStruct
         Processing Logic:
+        ----------------
             - Sets the Active resref on the GFFStruct from the link
             - Sets the Index uint32 on the GFFStruct from the node list index
             - If game is K2, sets additional link properties on the GFFStruct.
@@ -738,6 +744,7 @@ def dismantle_dlg(
         Returns:
             None
         Processing Logic:
+        ----------------
             - Sets node properties like text, listener etc on the GFFStruct
             - Handles optional node properties
             - Creates lists for animations and links and populates them.

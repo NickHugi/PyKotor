@@ -159,6 +159,7 @@ class GITEditor(Editor):
         Returns:
             None
         Processing Logic:
+        ----------------
             - Connect mouse/key events to handlers
             - Connect checkbox toggles to visibility updater
             - Connect menu options to label settings changes.
@@ -341,6 +342,7 @@ class GITEditor(Editor):
         Returns:
             None: No return value
         Processing Logic:
+        ----------------
         - Uncheck all other instance type checkboxes
         - Check the checkbox that was double clicked
         """
@@ -605,6 +607,7 @@ class _InstanceMode(_Mode):
         Returns:
             None
         Processing Logic:
+        ----------------
             - Select instances in the renderer widget
             - Block list widget signals to prevent selection changed signal
             - Loop through list widget items and select matching instances
@@ -647,6 +650,7 @@ class _InstanceMode(_Mode):
         Returns:
             None: No value is returned
         Processing Logic:
+        ----------------
             - Gets the selected instance from the render area
             - Gets the resource name and type from the instance
             - Searches installation locations for the resource file path
@@ -1130,6 +1134,7 @@ class GITControlScheme:
         Returns:
             None
         Processing Logic:
+        ----------------
             - Checks if pan camera condition is satisfied and moves camera accordingly
             - Checks if rotate camera condition is satisfied and rotates camera
             - Checks if move selected condition is satisfied and moves selected object

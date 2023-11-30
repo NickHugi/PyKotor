@@ -45,6 +45,7 @@ class ModInstaller:
         -------
             self: {Returns the Patcher instance}
         Processing Logic:
+        ----------------
             - Initialize the logger if not already defined.
             - Initialize parameters passed for game, mod and changes ini paths
             - Handle legacy changes ini path syntax (before the merge of the fork)
@@ -102,6 +103,7 @@ class ModInstaller:
             tuple[CaseAwarePath, set]: Returns a tuple containing the backup directory path and a set of processed backup files
 
         Processing Logic:
+        ----------------
         - Checks if a backup folder was already initialized and return that and the currently processed files if so
         - Finds the mod path directory to backup from
         - Generates a timestamped subdirectory name
@@ -148,6 +150,7 @@ class ModInstaller:
             tuple[bool, Capsule | None]: Exists flag and capsule object
 
         Processing Logic:
+        ----------------
         - Check if patch destination is capsule file
         - If yes, create Capsule object and backup file
         - Else, backup file directly
@@ -190,6 +193,7 @@ class ModInstaller:
             bytes | None - Loaded resource bytes or None
 
         Processing Logic:
+        ----------------
             - Check if file should be replaced or doesn't exist at output, load from mod path
             - Otherwise, load the file to be patched from the destination if it exists.
                 - If no capsule, it's a file and load it directly as a file.
@@ -269,6 +273,7 @@ class ModInstaller:
         -------
             bool - Whether the patch should be applied
         Processing Logic:
+        ----------------
         - Determines the local folder and container type from the patch details
         - Checks if the patch replaces an existing file and logs the action
         - Checks if the file already exists and the patch settings allow skipping
@@ -310,6 +315,7 @@ class ModInstaller:
         Returns:
             None: No return value
         Processing Logic:
+        ----------------
         - Load config and determine game type
         - Get list of patches from config
         - For each patch:

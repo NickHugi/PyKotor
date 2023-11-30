@@ -157,6 +157,7 @@ class AddStructToListGFF(ModifyGFF):
             None
 
         Processing Logic:
+        ----------------
         1. Navigates to the target list container using the provided path.
         2. Checks if the navigated container is a list, otherwise logs an error.
         3. Creates a new struct and adds it to the list.
@@ -227,6 +228,7 @@ class AddFieldGFF(ModifyGFF):
         -------
             None
         Processing Logic:
+        ----------------
             - Navigates to the specified container using the provided path.
             - Gets the value to set from the provided value expression.
             - Maps the field type to the appropriate setter method.

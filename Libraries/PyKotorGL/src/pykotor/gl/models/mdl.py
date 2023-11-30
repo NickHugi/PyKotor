@@ -64,6 +64,7 @@ class Model:
         -------
             tuple[vec3, vec3]: {Minimum and maximum points of bounding box}
         Processing Logic:
+        ----------------
             - Initialize minimum and maximum points to extreme values
             - Recursively calculate bounding box of each child node
             - Expand bounding box by 0.1 units in each direction
@@ -97,6 +98,7 @@ class Model:
         -------
             None: {No value is returned}
         Processing Logic:
+        ----------------
             - Apply transformation on node position and rotation
             - Iterate through vertices of node mesh if present
             - Transform vertices and update bounding box points
@@ -229,6 +231,7 @@ class Mesh:
         Returns:
             None
         Processing Logic:
+        ----------------
             - Generates VAO and VBO
             - Binds vertex and element data to VBO and EBO
             - Enables vertex attributes based on bitflags
@@ -299,6 +302,7 @@ class Cube:
         -------
             None: Does not return anything
         Processing Logic:
+        ----------------
             - Sets default values for min_point and max_point if not provided
             - Generates vertex and element arrays for the cube mesh
             - Binds VAO, VBO and EBO buffers and uploads data
@@ -373,6 +377,7 @@ class Boundary:
         Returns:
             None
         Processing Logic:
+        ----------------
             - Build normalized data from vertices
             - Generate VAO, VBO, EBO OpenGL buffers
             - Populate VBO with vertex data
@@ -411,6 +416,7 @@ class Boundary:
         Returns:
             Boundary - The generated circular boundary
         Processing Logic:
+        ----------------
             - Calculate vertex positions around the circle at intervals of smoothness
             - Add vertices rotating around the circle four times
             - Return a new Boundary instance with the calculated vertices.

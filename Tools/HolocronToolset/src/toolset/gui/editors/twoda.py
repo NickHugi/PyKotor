@@ -26,6 +26,7 @@ class TwoDAEditor(Editor):
         Returns:
             None: Does not return anything
         Processing Logic:
+        ----------------
             - Sets supported resource types
             - Initializes UI elements
             - Connects model change signals
@@ -65,6 +66,7 @@ class TwoDAEditor(Editor):
         -------
             None: No return value.
         Processing Logic:
+        ----------------
             - Connect textEdited signal from filter edit to doFilter slot
             - Connect triggered signal from toggle filter action to toggleFilter slot
             - Connect triggered signal from copy action to copySelection slot
@@ -121,6 +123,7 @@ class TwoDAEditor(Editor):
         Returns:
             None
         Processing Logic:
+        ----------------
             1. Reads the 2DA data
             2. Sets up the model with headers
             3. Loops through rows and inserts data
@@ -183,6 +186,7 @@ class TwoDAEditor(Editor):
         Returns:
             tuple[bytes, bytes]: A tuple containing the 2DA data and an empty string
         Processing Logic:
+        ----------------
             - Initialize an empty TwoDA object
             - Add column headers from the table model's horizontal header
             - Add a row for each row in the table model
@@ -304,6 +308,7 @@ class TwoDAEditor(Editor):
         -------
             None: No value is returned.
         Processing Logic:
+        ----------------
             - Gets the current row count from the model
             - Appends a new empty row to the model
             - Sets the item in the first column to the row index
@@ -376,6 +381,7 @@ class TwoDAEditor(Editor):
         -------
             None: No value is returned.
         Processing Logic:
+        ----------------
             - Clear existing vertical header styling
             - Determine header values based on vertical header option
             - Populate headers list with appropriate values
@@ -419,6 +425,7 @@ class SortFilterProxyModel(QSortFilterProxyModel):
             True: If row matches filter pattern
             False: If row does not match filter pattern
         Processing Logic:
+        ----------------
             - Get regular expression pattern from filter
             - If pattern is empty, always return True
             - Iterate through each column of the row

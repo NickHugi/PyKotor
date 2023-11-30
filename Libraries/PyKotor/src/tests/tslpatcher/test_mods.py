@@ -1139,6 +1139,7 @@ class TestManipulateGFF(TestCase):
         Returns:
             None: No return value
         Processing Logic:
+        ----------------
         1. Creates a GFF object
         2. Sets a locstring field on the root node
         3. Populates the memory with a test string

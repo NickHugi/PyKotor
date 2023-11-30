@@ -1200,6 +1200,7 @@ class GFFList:
         -------
             is_same_result: bool - Whether the lists are the same
         Processing Logic:
+        ----------------
             - Compare list lengths and log differences
             - Create dictionaries to index lists for comparison
             - Detect unique items in each list and log differences

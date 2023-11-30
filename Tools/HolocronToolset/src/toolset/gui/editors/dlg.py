@@ -96,6 +96,7 @@ class DLGEditor(Editor):
             self: {The class instance}: Connects UI signals to methods
 
         Processing Logic:
+        ----------------
             - Connects text/value changes of various UI elements to onNodeUpdate method
             - Connects buttons to respective methods like play sound, load tree, add/remove anims
             - Connects delete shortcut to delete node.
@@ -245,6 +246,7 @@ class DLGEditor(Editor):
             seenNode: list[DLGNode] - Nodes already loaded
 
         Processing Logic:
+        ----------------
             - Sets the link on the item
             - Checks if link/node already loaded
             - Marks item as already loaded
@@ -280,6 +282,7 @@ class DLGEditor(Editor):
         -------
             tuple[bytes, bytes]: A tuple containing the dialogue data and an empty string
         Processing Logic:
+        ----------------
             - Sets dialogue properties from UI components
             - Encodes dialogue data into bytes
             - Returns bytes containing dialogue data and empty string.
@@ -316,6 +319,7 @@ class DLGEditor(Editor):
         Returns:
             None
         Processing Logic:
+        ----------------
             - Sets enabled states of UI elements based on installation.tsl
             - Loads required 2da files if not already loaded
             - Sets up additional definitions if installation.tsl is True
@@ -452,6 +456,7 @@ class DLGEditor(Editor):
             node: The node to add the item to.
 
         Processing Logic:
+        ----------------
             - Creates a new DLGEntry or DLGReply node based on the type of node passed in
             - Calls _add_node_main to add the new node to the dialog tree
             - Sets the item on the new node
@@ -533,6 +538,7 @@ class DLGEditor(Editor):
             node: DLGNode - The node associated with the link
 
         Processing Logic:
+        ----------------
             - Get the link and node associated with the item
             - If item has no parent, remove link from starters list and row from model
             - Else, get parent item and associated link/node
@@ -587,6 +593,7 @@ class DLGEditor(Editor):
             sourceItem: The copied item to find the original of.
 
         Processing Logic:
+        ----------------
             - Get the copied node from the source item
             - Iterate through all items in the tree
             - Check if the item's node matches the copied node and it is not a copy
@@ -753,6 +760,7 @@ class DLGEditor(Editor):
             point: {The position of the mouse click}.
 
         Processing Logic:
+        ----------------
             - Gets link and node data from item
             - Creates a QMenu
             - Adds actions like Focus, Move Up/Down
@@ -805,6 +813,7 @@ class DLGEditor(Editor):
             selection: QItemSelection - The current selection
 
         Processing Logic:
+        ----------------
             - Disable updates to prevent recursion
             - Get selected item and link/node data
             - Populate various UI fields like text, scripts, conditions from node data
@@ -1058,6 +1067,7 @@ class DLGEditor(Editor):
             self: The class instance
 
         Processing Logic:
+        ----------------
             - Clears the existing animations list
             - Gets the selected dialog node from the tree view
             - Loops through the animations on the node

@@ -217,6 +217,7 @@ class NCS:
             instruction: The added instruction
 
         Processing Logic:
+        ----------------
         - Create a new NCSInstruction object from the parameters
         - Insert the instruction into the instructions list at the given index if provided
         - Otherwise append the instruction to the end of the list
@@ -241,6 +242,7 @@ class NCS:
             optimizers: List of optimizers to optimize the model
 
         Processing Logic:
+        ----------------
         - Loop through each optimizer in the list
         - Call the optimize method on each optimizer passing the model
         - The optimizer will perform optimization on the model.
@@ -256,6 +258,7 @@ class NCS:
             other: NCS object to merge instructions from.
 
         Processing Logic:
+        ----------------
         - Extend self.instructions list with other.instructions list to combine instruction sets
         - Modifies instructions of the calling NCS object directly rather than returning new object
         - Other NCS object is not modified, only its instructions are copied over

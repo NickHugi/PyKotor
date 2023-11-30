@@ -68,6 +68,7 @@ class InstallationsWidget(QWidget):
         -------
             None: {No return value}
         Processing Logic:
+        ----------------
             - Connect add path button click to add new installation slot
             - Connect remove path button click to remove selected installation slot
             - Connect path name and directory edits to update installation slot

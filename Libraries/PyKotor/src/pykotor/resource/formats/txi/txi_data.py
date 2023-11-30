@@ -185,6 +185,7 @@ lowerrightcoords {self.lr_coords_count}
         -------
             boxes: List of bounding boxes as lists of [x1,y1,x2,y2] coordinates
         Processing Logic:
+        ----------------
             - Loops through upper_left_coords and lower_right_coords and zips them
             - Converts normalized coords to pixel coords using resolution
             - Appends pixel coords as a list representing a bounding box
@@ -216,6 +217,7 @@ lowerrightcoords {self.lr_coords_count}
         -------
             tuple: tuple containing lists of normalized upper left and lower right box coordinates
         Processing Logic:
+        ----------------
             - Loops through each bounding box
             - Extracts upper left and lower right coordinates from each box
             - Normalizes the coordinates by dividing by image width/height

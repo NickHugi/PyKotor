@@ -106,6 +106,7 @@ class Scene:
         Returns:
             None: Does not return anything
         Processing Logic:
+        ----------------
             - Initializes OpenGL settings
             - Sets up default textures, shaders, camera
             - Loads 2DA tables from installation
@@ -177,6 +178,7 @@ class Scene:
         Returns:
             RenderObject: Render object representing the creature
         Processing Logic:
+        ----------------
         - Gets body, head, weapon and mask models/textures based on creature appearance
         - Creates base render object and attaches head, hands and mask sub-objects
         - Catches exceptions and returns default "unknown" render object if model loading fails.
@@ -256,6 +258,7 @@ class Scene:
         Returns:
             None
         Processing Logic:
+        ----------------
             - Clear existing cache if clear_cache is True
             - Delete objects matching identifiers in clearCacheBuffer
             - Retrieve/update game objects from module
@@ -438,6 +441,7 @@ class Scene:
         Returns:
             None: Does not return anything, renders directly to the framebuffer
         Processing Logic:
+        ----------------
             - Clear color and depth buffers
             - Enable/disable backface culling
             - Set view and projection matrices

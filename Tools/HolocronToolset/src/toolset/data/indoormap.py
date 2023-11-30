@@ -79,6 +79,7 @@ class IndoorMap:
             list[DoorInsertion]: Returns a list of connections between rooms.
 
         Processing Logic:
+        ----------------
         1. Loops through each room and connection
         2. Determines door, rooms, hooks and positions
         3. Checks if door already exists at point
@@ -135,6 +136,7 @@ class IndoorMap:
             self: The class instance.
 
         Processing Logic:
+        ----------------
         - Iterate through rooms and add component to usedRooms set
         - Iterate through usedRooms and add mdl to scanMdls and kit to usedKits
         - Iterate through door padding dicts and values, adding padding mdl to scanMdls.
@@ -152,6 +154,7 @@ class IndoorMap:
         """Rename textures to avoid conflicts.
 
         Processing Logic:
+        ----------------
             - Scan through all models
             - Get textures from each model
             - Check if texture is already renamed
@@ -177,6 +180,7 @@ class IndoorMap:
             mdl: {The 3D room model object}.
 
         Processing Logic:
+        ----------------
             - Loops through each face in the room model
             - Generates a lightmap texture for each face
             - Bakes ambient occlusion and lighting information into the lightmap texture
@@ -242,6 +246,7 @@ class IndoorMap:
             mdl: str: The processed model string
             mdx: str: The processed material index string
         Processing Logic:
+        ----------------
             - Flip the model based on room flip_x and flip_y properties
             - Rotate the model based on room rotation property
             - Convert the model to target system format based on installation tsl property
@@ -260,6 +265,7 @@ class IndoorMap:
         Returns:
             mdl: The model with renamed lightmaps
         Processing Logic:
+        ----------------
             - Renames each lightmap to a unique name prefixed with the module ID
             - Sets the renamed lightmap and txi textures in the mod
             - Returns the model with all lightmaps renamed according to the mapping.
@@ -297,6 +303,7 @@ class IndoorMap:
         Returns:
             bwm: {OccupancyGridMap}: Processed BWM for the room
         Processing Logic:
+        ----------------
             - Make a deep copy of the room BWM
             - Apply flip, rotation and translation transforms to the copy
             - Remap transition indices to reference connected rooms
@@ -345,6 +352,7 @@ class IndoorMap:
         Returns:
             None: No value is returned
         Processing Logic:
+        ----------------
         1. Loops through each door insertion
         2. Creates a door object and sets properties
         3. Copies UTD data and sets properties
@@ -447,6 +455,7 @@ class IndoorMap:
         Returns:
             None: No value is returned
         Processing Logic:
+        ----------------
             - Check if a skybox is specified for the module
             - Loop through kits to find matching skybox
             - Extract model and texture from matching kit
@@ -506,6 +515,7 @@ class IndoorMap:
         -------
             None: {No return value}
         Processing Logic:
+        ----------------
             - Set area tag from module ID
             - Set area dynamic lighting from lighting value
             - Set area name from name
@@ -549,6 +559,7 @@ class IndoorMap:
         Returns:
             None - Writes module data to ERF file
         Processing Logic:
+        ----------------
             - Sets module data for LYT, VIS, ARE, GIT resources
             - Sets module info (IFO) data
             - Writes finalized module data to ERF file at output path.
@@ -575,6 +586,7 @@ class IndoorMap:
             None
 
         Processing Logic:
+        ----------------
         - Adds all rooms from components to the indoor map
         - Processes room components like inserting textures and models
         - Handles textures renaming and lightmap generation
@@ -675,6 +687,7 @@ class IndoorMap:
         Returns:
             self: The indoor map object with data loaded
         Processing Logic:
+        ----------------
             - Load name data from stringrefs
             - Load lighting values
             - Load moduleId and skybox
@@ -730,6 +743,7 @@ class IndoorMap:
         Returns:
             MinimapData: A data object containing the minimap image and bounding points
         Processing Logic:
+        ----------------
             1. Get the bounding box of all walkmeshes
             2. Draw each room image onto the pixmap at the correct position/rotation
             3. Scale the pixmap to the target minimap size
@@ -829,6 +843,7 @@ class IndoorMapRoom:
         Returns:
             Vector3: The calculated position of the hook
         Processing Logic:
+        ----------------
             - Copies the hook's position
             - Flips the x and y coordinates if the component is flipped
             - Rotates the position by the component's rotation
@@ -860,6 +875,7 @@ class IndoorMapRoom:
         -------
             None: {No return value}
         Processing Logic:
+        ----------------
             - Loops through each hook in the component's hooks
             - Finds the index of the current hook
             - Gets the position of the current hook

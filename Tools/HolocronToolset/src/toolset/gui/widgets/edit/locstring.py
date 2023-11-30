@@ -51,6 +51,7 @@ class LocalizedStringLineEdit(QWidget):
         -------
             None: {No return value}
         Processing Logic:
+        ----------------
             - Sets the internal locstring property to the passed in value
             - Checks if the stringref is -1
             - If so, sets the text directly from the string and uses white background

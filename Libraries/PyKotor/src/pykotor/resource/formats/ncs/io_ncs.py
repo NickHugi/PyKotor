@@ -31,6 +31,7 @@ class NCSBinaryReader(ResourceReader):
         -------
             NCS: {The loaded NCS object}
         Processing Logic:
+        ----------------
             - Reads the file type and version headers
             - Reads each instruction from the file into a dictionary
             - Resolves jump offsets to reference the target instructions
@@ -79,6 +80,7 @@ class NCSBinaryReader(ResourceReader):
             instruction: {An NCSInstruction object}: The instruction read from the bytecode
 
         Processing Logic:
+        ----------------
         - Reads the byte code and qualifier from the reader
         - Determines the instruction type from these values
         - Initializes an NCSInstruction object
@@ -231,6 +233,7 @@ class NCSBinaryWriter(ResourceWriter):
         Returns:
             int - The size of the instruction in bytes
         Processing Logic:
+        ----------------
             - Initialize size to 2 bytes
             - Check instruction type and add additional bytes if needed
             - Types like CONSTI, MOVSP add fixed number of bytes
@@ -297,6 +300,7 @@ class NCSBinaryWriter(ResourceWriter):
         Returns:
             None
         Processing Logic:
+        ----------------
             - Writes instruction type and qualifier bytes
             - Writes instruction arguments based on type
                 - Integer, float, string, object ID

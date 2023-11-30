@@ -194,6 +194,7 @@ class InventoryEditor(QDialog):
         -------
             None: {Does not return anything}
         Processing Logic:
+        ----------------
             - Opens an ItemBuilderDialog
             - Checks if dialog was accepted
             - Caches core items model if not already cached
@@ -228,6 +229,7 @@ class InventoryEditor(QDialog):
             name: str - Name of the item
             uti: UTI - Universal type identifier object
         Processing Logic:
+        ----------------
         - If no filepath is provided, get resource from installation
         - If filepath ends with .rim/.mod/.erf, get resource from capsule file
         - If filepath ends with .bif, get resource from installation searching CHITIN
@@ -262,6 +264,7 @@ class InventoryEditor(QDialog):
         Returns:
             None: No value is returned
         Processing Logic:
+        ----------------
             - Gets the label and frame for the given slot
             - If resname is provided:
                 - Gets the filepath, name and uti for the item from the item database
@@ -301,6 +304,7 @@ class InventoryEditor(QDialog):
         Returns:
             None: No return value
         Processing Logic:
+        ----------------
         - Create a QMenu at the given point
         - Add actions like Infinite, Droppable based on widget properties
         - Add Remove Item action
@@ -489,6 +493,7 @@ class InventoryTable(QTableWidget):
         Returns:
             None: Does not return anything
         Processing Logic:
+        ----------------
             - Gets the row count and inserts a new row
             - Gets the item info from the window
             - Creates icon and name table widgets
@@ -511,6 +516,7 @@ class InventoryTable(QTableWidget):
         Returns:
             None: Does not return anything
         Processing Logic:
+        ----------------
             - Check if drop source is a QTreeView
             - Set drop action to Copy
             - Get selected item from source tree view
@@ -684,6 +690,7 @@ class ItemBuilderDialog(QDialog):
         Returns:
             str: Category name for the item
         Processing Logic:
+        ----------------
         - Check equipable slots of item against slot bitmasks
         - Return category based on first matching slot
         - Return default categories if no slots match.
@@ -735,6 +742,7 @@ class ItemBuilderWorker(QThread):
         Returns:
             None: No value is returned
         Processing Logic:
+        ----------------
             - Queries a list of resource identifiers from the installation
             - Extends the queries list with override resources
             - Extends the queries list with resources from each capsule

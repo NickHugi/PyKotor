@@ -238,6 +238,7 @@ class TPC:
         Returns:
             bytearray - Uncompressed RGBA pixel data
         Processing Logic:
+        ----------------
             - Reads the compressed DXT5 data using a BinaryReader
             - Loops through each 4x4 block
                 - Decodes the alpha and color data
@@ -314,6 +315,7 @@ class TPC:
         Returns:
             bytearray - Uncompressed RGBA texture data
         Processing Logic:
+        ----------------
             - Parse the DXT1 data using a BinaryReader
             - Iterate over 4x4 pixel blocks
             - Decode the color values and interpolation data
@@ -547,6 +549,7 @@ class TPC:
         Returns:
             int - Interpolated color
         Processing Logic:
+        ----------------
             - Extract blue, green, red channels from each color
             - Interpolate each channel value based on weight
             - Reassemble and return new color.

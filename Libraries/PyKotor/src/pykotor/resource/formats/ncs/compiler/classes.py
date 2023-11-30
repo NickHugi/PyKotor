@@ -600,6 +600,7 @@ class FunctionDefinition(TopLevelObject):
         Returns:
             None: Does not return anything
         Processing Logic:
+        ----------------
         1. Checks if the function signature matches the definition
         2. Creates a temporary NCS block to hold the compiled code
         3. Compiles the function body into the temporary block

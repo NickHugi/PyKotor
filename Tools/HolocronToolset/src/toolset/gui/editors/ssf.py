@@ -25,6 +25,7 @@ class SSFEditor(Editor):
         -------
             None
         Processing Logic:
+        ----------------
             - Call super().__init__ to initialize base editor
             - Get talktable from installation if provided
             - Import and setup UI
@@ -56,6 +57,7 @@ class SSFEditor(Editor):
         -------
             None
         Processing Logic:
+        ----------------
             - Connects valueChanged signals from spin boxes to updateTextBoxes method
             - Connects triggered signal from actionSetTLK to selectTalkTable method
         """
@@ -143,6 +145,7 @@ class SSFEditor(Editor):
         Returns:
             tuple[bytes, bytes]: {The built sound data and empty string}
         Processing Logic:
+        ----------------
             - Initialize SSF object
             - Set data for each sound type from corresponding UI element value
             - Serialize SSF to bytearray
@@ -222,6 +225,7 @@ class SSFEditor(Editor):
         Returns:
             None: Does not return anything
         Processing Logic:
+        ----------------
             - Gets stringref values from UI elements
             - Batches stringref lookups to talktable
             - Loops through pairs of UI elements and assigns text/sound from talktable.

@@ -42,6 +42,7 @@ class TPCTGAReader(ResourceReader):
         Returns:
             TPC: The loaded TPC texture
         Processing Logic:
+        ----------------
             - Read header values from the reader
             - Check for uncompressed or RLE encoded RGB data
             - Load pixel data into rows or run lengths
@@ -168,6 +169,7 @@ class TPCTGAWriter(ResourceWriter):
         -------
             None: No value is returned
         Processing Logic:
+        ----------------
             - Get width and height of texture from TPC instance
             - Write BMP file header
             - Write pixel data in RGB or RGBA format depending on TPC format.

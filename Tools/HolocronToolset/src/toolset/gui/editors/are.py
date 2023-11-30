@@ -33,6 +33,7 @@ class AREEditor(Editor):
             installation: {HTInstallation}: Installation object
 
         Processing Logic:
+        ----------------
             - Initialize superclass with supported types
             - Set window size
             - Create ARE object
@@ -236,6 +237,7 @@ class AREEditor(Editor):
         -------
             tuple[bytes, bytes]: The ARE data and log
         Processing Logic:
+        ----------------
             - Reads values from UI controls like name, tag, camera style etc
             - Sets properties like fog, weather, terrain etc
             - Writes ARE data to bytearray
@@ -338,6 +340,7 @@ class AREEditor(Editor):
             colorSpin: LongSpinBox widget to update color value
 
         Processing Logic:
+        ----------------
         - Opens a QColorDialog to select a new color
         - Converts the selected QColor to a Color object
         - Sets the colorSpin value to the BGR integer of the selected color.
@@ -355,6 +358,7 @@ class AREEditor(Editor):
             colorLabel: The label to display the color image
 
         Processing Logic:
+        ----------------
         - Convert the integer value to a Color object 
         - Extract the RGB values from the Color object
         - Create a bytes object with the RGB values repeated for a 16x16 image

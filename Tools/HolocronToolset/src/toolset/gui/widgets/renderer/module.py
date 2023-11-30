@@ -52,6 +52,7 @@ class ModuleRenderer(QOpenGLWidget):
             parent: QWidget: The parent widget.
 
         Processing Logic:
+        ----------------
             - Calls super().__init__() to initialize the base QWidget class
             - Initializes scene, settings and other member variables
             - Sets initial values for mouse, key states and camera properties
@@ -140,6 +141,7 @@ class ModuleRenderer(QOpenGLWidget):
             self: The viewport widget
 
         Processing Logic:
+        ----------------
             - Initializes painting if not already initialized
             - Handles object selection on mouse click
             - Sets cursor position based on mouse
@@ -257,6 +259,7 @@ class ModuleRenderer(QOpenGLWidget):
             e: QMouseEvent: Current mouse event.
 
         Processing Logic:
+        ----------------
             1. Get current mouse position on screen
             2. Calculate delta from previous position or center of screen if free camera mode
             3. Get world position of cursor

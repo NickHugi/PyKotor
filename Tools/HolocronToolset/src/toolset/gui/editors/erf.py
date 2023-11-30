@@ -32,6 +32,7 @@ class ERFEditor(Editor):
             installation: HTInstallation: HT Installation object
 
         Processing Logic:
+        ----------------
             - Set supported resource types
             - Initialize base editor window
             - Set up UI from designer file
@@ -65,6 +66,7 @@ class ERFEditor(Editor):
         """Setup signal connections for UI elements.
 
         Processing Logic:
+        ----------------
         - Connect extractButton clicked signal to extractSelected method
         - Connect loadButton clicked signal to selectFilesToAdd method
         - Connect unloadButton clicked signal to removeSelected method
@@ -274,6 +276,7 @@ class ERFEditor(Editor):
         """Opens the selected resource in the editor.
 
         Processing Logic:
+        ----------------
         - Checks if a filepath is set and shows error if not
         - Loops through selected rows in table
         - Gets the item and resource data
@@ -341,6 +344,7 @@ class ERFEditor(Editor):
             data: Data being saved for the resource
 
         Processing Logic:
+        ----------------
         - Check if filepath matches internal filepath
         - Iterate through selected rows in table view
         - Get item from selected index

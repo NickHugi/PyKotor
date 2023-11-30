@@ -100,15 +100,11 @@ class Editor(QMainWindow):
     def _setupMenus(self) -> None:
         """Sets up menu actions and keyboard shortcuts.
 
-        Args:
-        ----
-            self: {The class instance}: The class instance
-        Returns:
-            None: Does not return anything
-        {Processing Logic}:
-        - Loops through menu actions and connects signals for New, Open, Save, Save As, Revert and Exit
-        - Sets Revert action to disabled
-        - Connects keyboard shortcuts for New, Open, Save, Save As, Revert and Exit.
+        Processing Logic:
+        ----------------
+            - Loops through menu actions and connects signals for New, Open, Save, Save As, Revert and Exit
+            - Sets Revert action to disabled
+            - Connects keyboard shortcuts for New, Open, Save, Save As, Revert and Exit.
         """
         for action in self.menuBar().actions()[0].menu().actions():
             if action.text() == "New":  # sourcery skip: extract-method
@@ -138,15 +134,14 @@ class Editor(QMainWindow):
         self.setWindowIcon(QIcon(QPixmap(iconPath)))
 
     def refreshWindowTitle(self) -> None:
-        """Refreshes the window title based on the current state
-        Args:
-            self: The object instance
-        Returns:
-            None: Does not return anything
-        - Sets the installation name variable based on whether an installation is set or not
-        - Checks if a file path is set, if not just uses the editor title
-        - If encapsulated, constructs the title combining file path, installation, editor title
-        - If not encapsulated, constructs title combining parent folder, file, installation, editor title.
+        """Refreshes the window title based on the current state.
+
+        Processing Logic:
+        ----------------
+            - Sets the installation name variable based on whether an installation is set or not
+            - Checks if a file path is set, if not just uses the editor title
+            - If encapsulated, constructs the title combining file path, installation, editor title
+            - If not encapsulated, constructs title combining parent folder, file, installation, editor title.
         """
         installationName = "No Installation" if self._installation is None else self._installation.name  # TODO: Fix it always saying 'no installation' in every case.
 
@@ -162,22 +157,15 @@ class Editor(QMainWindow):
     def saveAs(self) -> None:
         """Saves the file with the selected filepath.
 
-        Args:
-        ----
-            self: The class instance.
-
-        Returns:
-        -------
-            None: No value is returned.
-
         Processing Logic:
-        - Gets the selected filepath and filter from a file dialog
-        - Checks if the filepath is a capsule file and filter is for modules
-        - If so, shows a dialog to select resource reference and type
-        - Sets filepath, reference and type attributes from selection
-        - Calls the save method
-        - Refreshes the window title
-        - Enables the Revert menu item
+        ----------------
+            - Gets the selected filepath and filter from a file dialog
+            - Checks if the filepath is a capsule file and filter is for modules
+            - If so, shows a dialog to select resource reference and type
+            - Sets filepath, reference and type attributes from selection
+            - Calls the save method
+            - Refreshes the window title
+            - Enables the Revert menu item
         """
         filepath_str, _filter = QFileDialog.getSaveFileName(self, "Save As", "", self._saveFilter, "")
         if filepath_str != "":
@@ -207,10 +195,8 @@ class Editor(QMainWindow):
     def save(self) -> None:
         """Saves the current data to file.
 
-        Args:
-        ----
-            self: The object instance
         Processing Logic:
+        ----------------
             - Builds the data and extension to save
             - Checks the file extension and calls the appropriate save method
             - Catches any exceptions and writes to an error log.
@@ -241,13 +227,15 @@ class Editor(QMainWindow):
             QMessageBox(QMessageBox.Critical, "Failed to write to file", str(e)).exec_()
 
     def _saveEndsWithBif(self, data: bytes, data_ext: bytes):
-        """Saves data if dialog returns specific options
+        """Saves data if dialog returns specific options.
+
         Args:
+        ----
             data: bytes - Data to save
             data_ext: bytes - File extension
-        Returns:
-            None - No return value
+
         Processing Logic:
+        ----------------
             - Show save dialog to choose MOD or override save
             - If MOD chosen, show second dialog to set resref/restype
             - Set filepath based on option
@@ -275,13 +263,12 @@ class Editor(QMainWindow):
             data: {Bytes containing resource data}
             data_ext: {Bytes containing additional resource data like MDX for MDL}.
 
-        Returns:
-        -------
-            None: {No return value}
+        Processing Logic:
+        ----------------
         Saves resource data to RIM file:
-        - Checks for RIM saving disabled setting and shows dialog
-        - Writes data to RIM file
-        - Updates installation cache.
+            - Checks for RIM saving disabled setting and shows dialog
+            - Writes data to RIM file
+            - Updates installation cache.
         """
         if self._global_settings.disableRIMSaving:
             dialog = RimSaveDialog(self)
@@ -322,17 +309,16 @@ class Editor(QMainWindow):
             data: {Bytes of data to save}
             data_ext: {Bytes of associated file extension if saving MDL}.
 
-        Returns:
-        -------
-            None: {No value is returned}
-        - Create the mod file if it does not exist
-        - Read the existing ERF file
-        - Set the ERF type based on file extension
-        - For MDL, also save the MDX file data
-        - Save the provided data and file reference
-        - Write updated ERF back to file
-        - Emit a signal that a file was saved
-        - Reload the module in the installation cache.
+        Processing Logic:
+        ----------------
+            - Create the mod file if it does not exist
+            - Read the existing ERF file
+            - Set the ERF type based on file extension
+            - For MDL, also save the MDX file data
+            - Save the provided data and file reference
+            - Write updated ERF back to file
+            - Emit a signal that a file was saved
+            - Reload the module in the installation cache.
         """
         if not self._filepath.exists():
             module.rim_to_mod(self._filepath)
@@ -367,17 +353,12 @@ class Editor(QMainWindow):
     def open(self):  # noqa: A003
         """Opens a file dialog to select a file to open.
 
-        Args:
-        ----
-            self: The current object instance
-        Returns:
-            None: No value is returned
-
         Processing Logic:
-        - Use QFileDialog to open a file dialog and get the selected filepath
-        - Check if the selected file is a capsule file
-        - If it is, show a LoadFromModuleDialog to get additional module data
-        - Otherwise, directly load the file by path, reference, type and content
+        ----------------
+            - Use QFileDialog to open a file dialog and get the selected filepath
+            - Check if the selected file is a capsule file
+            - If it is, show a LoadFromModuleDialog to get additional module data
+            - Otherwise, directly load the file by path, reference, type and content
         """
         filepath_str, filter = QFileDialog.getOpenFileName(self, "Open file", "", self._openFilter)
         if filepath_str:
@@ -405,10 +386,8 @@ class Editor(QMainWindow):
             restype: ResourceType
             data (bytes): Resource data.
 
-        Returns:
-        -------
-            None: No return value
         Processing Logic:
+        ----------------
             - Convert filepath to Path object if string
             - Set internal properties like filepath, resref, restype, data
             - Enable "Revert" menu item
@@ -448,12 +427,14 @@ class Editor(QMainWindow):
         ----
             textbox: QLineEdit or QPlainTextEdit - Textbox to load string into
             locstring: LocalizedString - String to load
-        Returns:
-            None
-        - Determines if textbox is QLineEdit or QPlainTextEdit
-        - Sets textbox's locstring property
-        - Checks if locstring has stringref or not
-        - Sets textbox text and style accordingly.
+
+
+        Processing Logic:
+        ----------------
+            - Determines if textbox is QLineEdit or QPlainTextEdit
+            - Sets textbox's locstring property
+            - Checks if locstring has stringref or not
+            - Sets textbox text and style accordingly.
         """
         setText = textbox.setPlainText if isinstance(textbox, QPlainTextEdit) else textbox.setText
         className = "QLineEdit" if isinstance(textbox, QLineEdit) else "QPlainTextEdit"

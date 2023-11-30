@@ -346,6 +346,7 @@ class HolocronModuleEditorControls(DynamicModuleEditorControls):
         Returns:
             None - Initializes camera controller variables and events
         Processing Logic:
+        ----------------
         - Defines camera sensitivity variables
         - Sets up mouse and key events to control camera position and rotation
         - Mouse events pan/rotate camera and select/manipulate objects

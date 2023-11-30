@@ -26,6 +26,7 @@ class ERFBinaryReader(ResourceReader):
         Returns:
             ERF: The loaded ERF object
         Processing Logic:
+        ----------------
             - Read file header and validate file type and version
             - Read entry count and offsets to keys and resources sections
             - Read keys section into lists of ref, id, type

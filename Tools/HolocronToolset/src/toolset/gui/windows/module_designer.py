@@ -59,6 +59,7 @@ class ModuleDesigner(QMainWindow):
             installation: HTInstallation: Hometuck installation
 
         Processing Logic:
+        ----------------
             - Initializes UI elements and connects signals
             - Sets up 3D and 2D renderer controls
             - Populates resource tree and instance list
@@ -152,6 +153,7 @@ class ModuleDesigner(QMainWindow):
             self: {The class instance}: Connects signals from UI elements to methods
 
         Processing Logic:
+        ----------------
             - Connect menu actions to methods like open, save
             - Connect toggles of instance visibility checks to update method
             - Connect double clicks on checks and instance list to methods
@@ -218,6 +220,7 @@ class ModuleDesigner(QMainWindow):
             dialog: The dialog to select a module
 
         Processing Logic:
+        ----------------
             - Unloads any currently loaded module
             - Gets the selected module filepath
             - Converts RIM file to mod if saving is disabled
@@ -362,6 +365,7 @@ class ModuleDesigner(QMainWindow):
             clearExisting: {Clear existing selections if True}.
 
         Processing Logic:
+        ----------------
             1. Clear selection if clearExisting is True
             2. Iterate through top level items
             3. Iterate through child items of each top level
@@ -529,6 +533,7 @@ class ModuleDesigner(QMainWindow):
         -------
             None
         Processing Logic:
+        ----------------
         1. Snaps the instance position to the walkmesh if walkmeshSnap is True
         2. Checks if the instance is a camera, and if not:
         3. Opens an insert instance dialog
@@ -712,6 +717,7 @@ class ModuleDesigner(QMainWindow):
             checkbox (QCheckBox): Checkbox that was double clicked.
 
         Processing Logic:
+        ----------------
             - Unchecks all other instance type checkboxes
             - Checks the checkbox that was double clicked
             - This ensures only one instance type is visible at a time
@@ -745,6 +751,7 @@ class ModuleDesigner(QMainWindow):
             menu: QMenu - The menu to build actions on
 
         Processing Logic:
+        ----------------
             - Adds actions to edit active file, reload active file, and copy to override
             - Loops through each location in the resource and adds an action
             - Disables the active location action
@@ -803,6 +810,7 @@ class ModuleDesigner(QMainWindow):
             world: (Vector3): World position for context menu
 
         Processing Logic:
+        ----------------
         - Creates a QMenu object
         - Adds actions to menu for inserting different object types at world position or view position
         - Connects actions to addInstance method
@@ -904,6 +912,7 @@ class ModuleDesignerControls3d:
             renderer: ModuleRenderer - The 3D renderer instance
 
         Processing Logic:
+        ----------------
             - Initializes control items from settings bindings
             - Sets initial scene and renderer properties
             - Hides cursor if setting is unchecked.
@@ -971,6 +980,7 @@ class ModuleDesignerControls3d:
             None
 
         Processing Logic:
+        ----------------
         - Moves camera if moveXYCamera or moveCameraPlane bindings are satisfied based on screenDelta
         - Rotates camera if rotateCamera binding is satisfied based on screenDelta
         - Zooms camera if zoomCameraMM binding is satisfied based on screenDelta
@@ -1027,6 +1037,7 @@ class ModuleDesignerControls3d:
             keys: set[int] - Pressed keyboard keys
 
         Processing Logic:
+        ----------------
             - Check if select button is pressed and set doSelect flag
             - Check if duplicate button is pressed, duplicate selected instance and add/select new instance
             - Check if context menu button is pressed and open context menu at cursor position.
@@ -1211,6 +1222,7 @@ class ModuleDesignerControls2d:
         -------
             None: None
         Processing Logic:
+        ----------------
             - Sets editor and renderer references
             - Initializes control bindings from settings
             - Initializes ControlItem objects for each binding.
@@ -1273,6 +1285,7 @@ class ModuleDesignerControls2d:
             keys: set[int] - Keyboard keys currently held down
 
         Processing Logic:
+        ----------------
             - Nudges camera position if move camera key is held based on worldDelta
             - Nudges camera rotation if rotate camera key is held based on screenDelta
             - Moves selected instances by worldDelta if move selected key is held
@@ -1307,6 +1320,7 @@ class ModuleDesignerControls2d:
             keys: set[int] - Pressed keys
 
         Processing Logic:
+        ----------------
             - Check if select button is pressed and select instance under mouse
             - Check if duplicate button is pressed and duplicate selected instance
             - Check if context menu button is pressed and open context menu.

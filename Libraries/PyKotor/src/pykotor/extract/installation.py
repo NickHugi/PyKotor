@@ -228,6 +228,7 @@ class Installation:
         -------
             CaseAwarePath: The path to the found folder.
         Processing Logic:
+        ----------------
             - Iterates through the provided folder names
             - Joins each name to the base path to check if the folder exists
             - Returns the first existing path
@@ -370,6 +371,7 @@ class Installation:
             directory: Path to directory containing override configuration
 
         Processing Logic:
+        ----------------
         - Load override configuration from given directory
         - Override any existing resources with new ones from directory
         """

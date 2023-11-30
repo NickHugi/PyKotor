@@ -244,6 +244,7 @@ class Module:
         -------
             None: Does not return anything.
         Processing Logic:
+        ----------------
             - Checks if the resource already exists in the dictionary
             - If it doesn't exist, creates a new ModuleResource object
             - Adds the locations to the existing or newly created ModuleResource
@@ -873,6 +874,7 @@ class ModuleResource(Generic[T]):
         Returns:
             str | None: Localized name or None if not found
         Processing Logic:
+        ----------------
             - Get the resource from self.resource()
             - Check if resource is None and return None
             - Check type of resource and return localized name by calling installation string method
@@ -1041,6 +1043,7 @@ class ModuleResource(Generic[T]):
         Returns:
             None: This function does not return anything
         Processing Logic:
+        ----------------
             - Checks if an active file is selected
             - Checks file type and writes resource data accordingly
             - Writes resource data to ERF, RIM or binary file using appropriate conversion and writer.

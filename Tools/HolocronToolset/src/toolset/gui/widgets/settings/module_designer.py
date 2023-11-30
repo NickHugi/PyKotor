@@ -21,6 +21,7 @@ class ModuleDesignerWidget(SettingsWidget):
         Returns:
             None
         Processing Logic:
+        ----------------
             - Initializes settings and binds lists
             - Loads UI from module_designer
             - Sets alpha channel for material colour pickers

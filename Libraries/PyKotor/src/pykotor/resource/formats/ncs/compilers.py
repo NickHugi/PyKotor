@@ -128,6 +128,7 @@ class ExternalNCSCompiler(NCSCompiler):
             A tuple of (stdout, stderr) strings from the compilation process.
 
         Processing Logic:
+        ----------------
             - Configures the compiler based on the nwnnsscomp.exe used.
             - Runs the compiler process, capturing stdout and stderr.
             - Returns a tuple of the stdout and stderr strings on completion.
@@ -168,6 +169,7 @@ class ExternalNCSCompiler(NCSCompiler):
             None
 
         Processing Logic:
+        ----------------
         - Checks if configuration exists and configures if not
         - Calls nwnnsscomp subprocess to decompile script file using configuration
         - Waits up to the provided timeout seconds for decompilation process to complete.

@@ -27,6 +27,7 @@ class UTIEditor(Editor):
             installation: {HTInstallation | None}: The installation object
 
         Processing Logic:
+        ----------------
             - Initializes supported resource types
             - Calls super().__init__ to initialize base class
             - Initializes UTI object
@@ -79,6 +80,7 @@ class UTIEditor(Editor):
             installation (HTInstallation): The installation to set up.
 
         Processing Logic:
+        ----------------
             - Sets the installation property on the UI
             - Loads required 2DAs into the installation cache
             - Populates base item select from baseitems 2DA
@@ -175,6 +177,7 @@ class UTIEditor(Editor):
             tuple[bytes, bytes]: Byte data and empty string
 
         Processing Logic:
+        ----------------
             - Populate UTI object properties from UI elements
             - Convert UTI to GFF structure
             - Write GFF to byte array
@@ -263,6 +266,7 @@ class UTIEditor(Editor):
             subtypeId: The subtype id of the item.
 
         Processing Logic:
+        ----------------
         - Gets the item properties table from the installation.
         - Creates a UTIProperty object and populates it with data from the table.
         - Adds a summary of the property to the assigned properties list widget.
@@ -293,6 +297,7 @@ class UTIEditor(Editor):
         """Retrieve the property, subproperty and cost names from the UTIEditor.
 
         Processing Logic:
+        ----------------
         - It returns a formatted string combining the retrieved names.
         - If a cost or subproperty is not present, it is omitted from the returned string.
         """
@@ -347,6 +352,7 @@ class UTIEditor(Editor):
             string - The name of the subproperty
 
         Processing Logic:
+        ----------------
         - Gets the item properties 2DA from the cache
         - Gets the subtype resource reference from the property row
         - Gets the subproperties 2DA from the subtype resource
@@ -395,6 +401,7 @@ class PropertyEditor(QDialog):
             utiProperty: {UTIProperty object}: The UTI property object
 
         Processing Logic:
+        ----------------
             - Connects UI elements to callback functions
             - Populates cost and parameter lists from installation data
             - Populates upgrade dropdown from installation data

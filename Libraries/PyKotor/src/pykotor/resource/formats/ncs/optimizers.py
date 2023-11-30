@@ -47,6 +47,7 @@ class RemoveMoveSPEqualsZeroOptimizer(NCSOptimizer):
         Returns:
             None
         Processing Logic:
+        ----------------
             - Finds all MOVSP=0 instructions
             - Changes any jumps to those instructions to jump to the next instruction instead
             - Removes all MOVSP=0 instructions from the program.
@@ -84,6 +85,7 @@ class RemoveUnusedBlocksOptimizer(NCSOptimizer):
         Returns:
             None
         Processing Logic:
+        ----------------
             - Find list of reachable instructions using breadth first search
             - Instructions not in reachable list are unreachable
             - Remove unreachable instructions from NCS.

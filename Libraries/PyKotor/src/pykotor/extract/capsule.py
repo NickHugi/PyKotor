@@ -32,6 +32,7 @@ class Capsule:
         Returns:
             self: The initialized Capsule object
         Processing Logic:
+        ----------------
             - Check if the path points to a valid capsule file
             - If create_nonexisting is True and file doesn't exist:
                 - Create RIM file if rim extension
@@ -105,6 +106,7 @@ class Capsule:
         Returns:
             dict[ResourceIdentifier, ResourceResult | None]: The results for each query keyed by query
         Processing Logic:
+        ----------------
         - Reloads capsule metadata if reload is True
         - Checks if capsule exists on disk, prints error and returns empty dict if not
         - Initializes results dict to return
@@ -209,6 +211,7 @@ class Capsule:
         Returns:
             None: Reloading is done in-place
         Processing Logic:
+        ----------------
             - Check if capsule exists on disk and print error if not
             - Open file and read header
             - Call appropriate reload method based on file type
@@ -283,6 +286,7 @@ class Capsule:
         Returns:
             None - Populates internal resources list
         Processing Logic:
+        ----------------
             - Skips header data
             - Reads entry count and offset tables
             - Loops through keys to read resource references, IDs and types
@@ -321,6 +325,7 @@ class Capsule:
         Returns:
             None: No value is returned
         Processing Logic:
+        ----------------
             - Skip the first 4 bytes of unknown data
             - Read the entry count from the next 4 bytes
             - Read the offset to entries from the next 4 bytes

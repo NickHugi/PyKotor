@@ -95,6 +95,7 @@ class ToolWindow(QMainWindow):
         ----
             self: The object instance
         Processing Logic:
+        ----------------
             - Sets up superclass initialization
             - Initializes observer and handler objects
             - Hides unnecessary UI sections on startup
@@ -258,6 +259,7 @@ class ToolWindow(QMainWindow):
         ----
             resources: list[FileResource]: List of selected resources to extract
         Processing Logic:
+        ----------------
             - If single resource selected, prompt user to save with default or custom name
             - If multiple resources selected, prompt user for extract directory and extract each with original name.
         """
@@ -678,6 +680,7 @@ class ToolWindow(QMainWindow):
             loader: {AsyncBatchLoader}: Loader for async operations
 
         Processing Logic:
+        ----------------
         - Extracts Txi data from TPC files
         - Decompiles TPC and MDL files
         - Extracts textures from MDL files

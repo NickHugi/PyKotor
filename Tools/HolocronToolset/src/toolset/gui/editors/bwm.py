@@ -3,7 +3,7 @@ from __future__ import annotations
 import struct
 from typing import TYPE_CHECKING, LiteralString
 
-from pykotor.common.geometry import SurfaceMaterial, Vector2
+from pykotor.common.geometry import SurfaceMaterial, Vector2, Vector3
 from pykotor.resource.formats.bwm import BWM, BWMFace, read_bwm, write_bwm
 from pykotor.resource.type import ResourceType
 from PyQt5 import QtCore
@@ -29,6 +29,8 @@ class BWMEditor(Editor):
             parent: QWidget | None: The parent widget
             installation: HTInstallation | None: The installation
 
+        Processing Logic:
+        ----------------
         Initializes UI components and connects signals:
             - Sets up UI from designer file
             - Sets up menus
@@ -81,18 +83,20 @@ class BWMEditor(Editor):
         self.ui.renderArea.mouseMoved.connect(self.onMouseMoved)
         self.ui.renderArea.mouseScrolled.connect(self.onMouseScrolled)
 
-        QShortcut("+", self).activated.connect(lambda: self.ui.renderArea.cameraZoom(2))
-        QShortcut("-", self).activated.connect(lambda: self.ui.renderArea.cameraZoom(-2))
+        QShortcut("+", self).activated.connect(lambda: self.ui.renderArea.camera.setZoom(2))
+        QShortcut("-", self).activated.connect(lambda: self.ui.renderArea.camera.setZoom(-2))
 
     def rebuildMaterials(self) -> None:
         """Rebuild the material list.
 
-        - Clear existing items from the material list
-        - Loop through all material colors
-        - Create image from color and set as icon
-        - Format material name as title
-        - Create list item with icon and text
-        - Add item to material list.
+        Processing Logic:
+        ----------------
+            - Clear existing items from the material list
+            - Loop through all material colors
+            - Create image from color and set as icon
+            - Format material name as title
+            - Create list item with icon and text
+            - Add item to material list.
         """
         self.ui.materialList.clear()
         for material in self.materialColors:
@@ -114,10 +118,12 @@ class BWMEditor(Editor):
             restype: The resource type
             data: The raw resource data
 
-        - Reads the bwm data from the resource data
-        - Sets the loaded bwm on the render area
-        - Clears any existing transition items
-        - Loops through faces and adds a transition item for each transition
+        Processing Logic:
+        ----------------
+            - Reads the bwm data from the resource data
+            - Sets the loaded bwm on the render area
+            - Clears any existing transition items
+            - Loops through faces and adds a transition item for each transition
         """
         super().load(filepath, resref, restype, data)
 
@@ -155,14 +161,16 @@ class BWMEditor(Editor):
             buttons: set[int] - Currently pressed mouse buttons
             keys: set[int] - Currently pressed keyboard keys
 
+        Processing Logic:
+        ----------------
         - Converts mouse position to world and render coordinates
         - Pans/rotates camera if Ctrl + mouse buttons pressed
         - Changes face material if left button pressed
         - Displays coordinates, face index in status bar.
         """
-        world = self.ui.renderArea.toWorldCoords(screen.x, screen.y)
-        worldData = self.ui.renderArea.toWorldDelta(delta.x, delta.y)
-        face = self._bwm.faceAt(world.x, world.y)
+        world: Vector3 = self.ui.renderArea.toWorldCoords(screen.x, screen.y)
+        worldData: Vector2 = self.ui.renderArea.toWorldDelta(delta.x, delta.y)
+        face: BWMFace | None = self._bwm.faceAt(world.x, world.y)
 
         if QtCore.Qt.LeftButton in buttons and QtCore.Qt.Key_Control in keys:  # type: ignore[reportGeneralTypeIssues, attr-defined]
             self.ui.renderArea.camera.nudgePosition(-worldData.x, -worldData.y)
@@ -194,6 +202,9 @@ class BWMEditor(Editor):
         Args:
         ----
             face (BWMFace): The face object to change material
+
+        Processing Logic:
+        ----------------
         - Check if a face is provided. Perhaps this can be called from an ambiguous/generalized function/event somewhere.
         - Check if the current face material is different than the selected material
         - Assign the selected material to the provided face.
@@ -203,8 +214,17 @@ class BWMEditor(Editor):
             face.material = newMaterial
 
     def onTransitionSelect(self) -> None:
+        """Select currently highlighted transition in list.
+
+        Processing Logic:
+        ----------------
+            - Check if a transition is selected in the list 
+            - If selected, get the selected item and extract the transition data
+            - Pass the transition data to the render area to highlight
+            - If no item selected, clear any existing highlight.
+        """
         if self.ui.transList.currentItem():
-            item = self.ui.transList.currentItem()
+            item: QListWidgetItem | None = self.ui.transList.currentItem()
             self.ui.renderArea.setHighlightedTrans(item.data(_TRANS_FACE_ROLE))
         else:
             self.ui.renderArea.setHighlightedTrans(None)

@@ -15,6 +15,7 @@ class GITWidget(SettingsWidget):
         Returns:
             None
         Processing Logic:
+        ----------------
             - Calls the parent __init__ method
             - Initializes settings object
             - Loads UI from form

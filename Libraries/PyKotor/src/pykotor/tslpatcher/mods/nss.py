@@ -94,6 +94,7 @@ class ModificationsNSS(PatcherModifications):
             bytes: Compiled NCS bytes
 
         Processing Logic:
+        ----------------
         1. Loads NSS source bytes and decodes
         2. Replaces 2DAMEMORY# and StrRef# tokens with values from patcher memory
         3. Attempts to compile with external NWN compiler if on Windows
@@ -177,6 +178,7 @@ class ModificationsNSS(PatcherModifications):
         -------
             None: {Returns nothing, patches string in-place}
         Processing Logic:
+        ----------------
             - Searches string for #2DAMEMORY# patterns and replaces with 2DA value
             - Searches string for #StrRef# patterns and replaces with string reference value
             - Repeats searches until no matches remain.

@@ -19,6 +19,7 @@ class SetBindWidget(QWidget):
         Returns:
             None
         Processing Logic:
+        ----------------
             - Sets up initial keybind set as empty
             - Loads UI from designer file
             - Connects button click signals to methods

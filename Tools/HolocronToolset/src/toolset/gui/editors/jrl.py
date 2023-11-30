@@ -72,6 +72,7 @@ class JRLEditor(Editor):
         Returns:
             None: No return value
         Processing Logic:
+        ----------------
             - Connect selectionChanged signal on journal tree to onSelectionChanged handler
             - Connect customContextMenuRequested signal on journal tree to onContextMenuRequested handler
             - Connect doubleClicked signal on entry text edit to changeEntryText handler
@@ -264,6 +265,7 @@ class JRLEditor(Editor):
         Returns:
             None: No return value
         Processing Logic:
+        ----------------
             - Get the selected item from the journal tree
             - Check if it is a quest or entry
             - Update the appropriate fields on the item object
@@ -340,6 +342,7 @@ class JRLEditor(Editor):
         Returns:
             None: No return value
         Processing Logic:
+        ----------------
         - Get the index and item at the point of the context menu request
         - Create a QMenu object
         - Check if an item was selected and get its data

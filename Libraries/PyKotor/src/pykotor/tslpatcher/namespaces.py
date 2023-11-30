@@ -14,6 +14,7 @@ class PatcherNamespace:
         Returns:
             None
         Processing Logic:
+        ----------------
             - Read namespace id, data folder path, name and description from ini file
             - Read name and description from info file if not present in ini file
             - Initialize attributes with values read from files.

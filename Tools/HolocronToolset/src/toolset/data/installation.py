@@ -100,6 +100,7 @@ class HTInstallation(Installation):
         Returns:
             None: No return value
         Processing Logic:
+        ----------------
             1. Check if reload is True, query all resources. Else, query only non-cached resources
             2. Query the resources from override and chitin locations
             3. Read and cache the 2DA data for each queried resource.
@@ -131,6 +132,7 @@ class HTInstallation(Installation):
         Returns:
             TPC: Loaded TPC texture or None
         Processing Logic:
+        ----------------
             - Check if texture is already cached in _cacheTpc dict
             - If not cached, load texture from search locations
             - Cache loaded texture in _cacheTpc dict
@@ -198,6 +200,7 @@ class HTInstallation(Installation):
         Returns:
             QPixmap - Item icon pixmap
         Processing Logic:
+        ----------------
             1. Get base item class from cache
             2. Get texture resource name from item class and variation
             3. Get texture from cache using resource name

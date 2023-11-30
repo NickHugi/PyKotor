@@ -165,6 +165,7 @@ class GFFEditor(Editor):
         Returns:
             None
         Processing Logic:
+        ----------------
             - Loops through each field in the struct
             - Creates a child node for each field
             - Sets the node type, label and value
@@ -224,6 +225,7 @@ class GFFEditor(Editor):
             bytes: The built GFF file
             bytes: An empty byte array
         Processing Logic:
+        ----------------
         - Creates a GFFContent object to hold the GFF data
         - Initializes a GFF object with the GFFContent
         - Calls _build_struct to populate the GFF structure from the model
@@ -255,6 +257,7 @@ class GFFEditor(Editor):
         -------
             None
         Processing Logic:
+        ----------------
             - Loops through each child node of the item
             - Gets label, value, and type from node data
             - Calls corresponding set method on gffStruct based on type
@@ -546,6 +549,7 @@ class GFFEditor(Editor):
         """Adds a substring to the selected localized string.
 
         Processing Logic:
+        ----------------
         - Gets the selected language and gender from combo boxes
         - Generates a unique substring ID based on language and gender
         - Loops through existing substring list to check for duplicate ID
@@ -584,6 +588,7 @@ class GFFEditor(Editor):
             None: No value is returned.
 
         Processing Logic:
+        ----------------
         - Gets the substring ID from the language and gender indexes
         - Loops through the substring list backwards and removes any items with a matching ID
         - Gets the selected localized string from the tree view
@@ -645,6 +650,7 @@ class GFFEditor(Editor):
         -------
             None
         Processing Logic:
+        ----------------
             - Gets the new field type object from the ID
             - Gets the selected node from the UI
             - Sets the new type on the node
@@ -759,6 +765,7 @@ class GFFEditor(Editor):
         Returns:
             None: Does not return anything
         Processing Logic:
+        ----------------
             - Gets proxy and source index for item at point
             - Gets item from model using source index
             - Builds context menu with actions depending on item type
@@ -794,6 +801,7 @@ class GFFEditor(Editor):
         Returns:
             None
         Processing Logic:
+        ----------------
             - Adds actions to add primitive numeric, string and vector node types
             - Adds actions to add struct and list node types
             - Connects each action to call self.insertNode() and pass relevant args.
@@ -876,6 +884,7 @@ class GFFSortFilterProxyModel(QSortFilterProxyModel):
         Returns:
             bool: True if left is less than right, False otherwise
         Processing Logic:
+        ----------------
             - Extract text from each index using _LABEL_NODE_ROLE and _VALUE_NODE_ROLE roles
             - If both texts are digits, convert to ints and compare numerically
             - Otherwise compare strings alphabetically.

@@ -30,6 +30,7 @@ class TPCBMPWriter(ResourceWriter):
         -------
             None: No value is returned
         Processing Logic:
+        ----------------
             - Convert texture to RGB format and get width, height, data
             - Write bitmap header and info header
             - Read pixels from data and write to file in BGR format line by line.

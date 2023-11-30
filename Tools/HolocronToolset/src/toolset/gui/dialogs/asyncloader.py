@@ -34,6 +34,7 @@ class AsyncLoader(QDialog):
         -------
             None: Does not return anything.
         Processing Logic:
+        ----------------
             - Creates a QProgressBar and QLabel to display progress
             - Sets the dialog layout, title and size
             - Starts an AsyncWorker thread to run the task asynchronously
@@ -127,6 +128,7 @@ class AsyncBatchLoader(QDialog):
         Returns:
             None: Does not return anything
         Processing Logic:
+        ----------------
             - Sets up progress bar, info text and layout
             - Starts AsyncBatchWorker thread to run tasks asynchronously
             - Connects signals from worker for successful, failed and completed tasks.

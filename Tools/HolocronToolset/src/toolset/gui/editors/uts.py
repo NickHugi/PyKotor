@@ -30,6 +30,7 @@ class UTSEditor(Editor):
             installation: {HTInstallation}: The installation object
 
         Processing Logic:
+        ----------------
             - Initialize supported resource types
             - Initialize the superclass with window details
             - Initialize UTS object
@@ -59,6 +60,7 @@ class UTSEditor(Editor):
         """Sets up signal connections for UI buttons and radio buttons.
 
         Processing Logic:
+        ----------------
             - Connects addSoundButton click signal to addSound method
             - Connects removeSoundButton click signal to removeSound method
             - Connects playSoundButton click signal to playSound method
@@ -104,6 +106,7 @@ class UTSEditor(Editor):
             uts (UTS): UTS object to load
 
         Processing Logic:
+        ----------------
             - Sets basic property values like name, tag, etc
             - Sets advanced playback options like random, specific position
             - Loads sounds list
@@ -172,6 +175,7 @@ class UTSEditor(Editor):
         -------
             tuple[bytes, bytes]: A tuple containing the unit data and log.
         Processing Logic:
+        ----------------
             - Collects input from UI elements and assigns to _uts attribute
             - Loops through sound list adding each sound to _uts
             - Writes _uts to bytearray using dismantle_uts and write_gff

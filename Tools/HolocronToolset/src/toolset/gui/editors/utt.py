@@ -26,6 +26,7 @@ class UTTEditor(Editor):
             installation: {Installation object}.
 
         Processing Logic:
+        ----------------
             - Initialize the base editor window
             - Set up the UI from the designer file
             - Connect menu and signal handlers
@@ -126,6 +127,7 @@ class UTTEditor(Editor):
         -------
             tuple[bytes, bytes]: A tuple containing the GFF data (bytes) and any errors (bytes).
         Processing Logic:
+        ----------------
         - Gets input from various UI elements like name, tag, scripts etc and populates an UTT object
         - Serializes the UTT to GFF format
         - Returns the GFF data and any errors

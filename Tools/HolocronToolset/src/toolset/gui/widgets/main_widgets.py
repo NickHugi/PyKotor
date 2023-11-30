@@ -48,6 +48,7 @@ class ResourceList(MainWindowList):
         Returns:
             None: Does not return anything
         Processing Logic:
+        ----------------
             - Initializes the UI from the designer file
             - Sets up the signal connections
             - Creates a ResourceModel and sets it as the model for the tree view
@@ -178,6 +179,7 @@ class ResourceList(MainWindowList):
         Returns:
             None
         Processing Logic:
+        ----------------
             - Create QMenu at mouse position
             - Get selected resources
             - If single resource and GFF type:

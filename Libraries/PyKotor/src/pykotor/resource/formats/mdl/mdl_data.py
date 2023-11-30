@@ -275,6 +275,7 @@ class MDLNode:
         Returns:
             None: Does not return anything
         Processing Logic:
+        ----------------
             - Sets the children list to an empty list
             - Sets the controllers list to an empty list
             - Sets the name to an empty string

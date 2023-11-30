@@ -21,6 +21,7 @@ class BasePurePath:
         """Initializes a path object. This is used to unify python 3.7-3.11 with most of python 3.12's changes.
 
         Processing Logic:
+        ----------------
             - Finds the next class in the MRO that defines __init__ and is not BasePurePath
             - Return immediately (do nothing here) if the next class with a __init__ is the object class
             - Gets the __init__ method from the found class
@@ -157,6 +158,7 @@ class BasePurePath:
             tuple: A tuple containing (stem, extension)
 
         Processing Logic:
+        ----------------
             - The filename is split on the last N dots, where N is the dots argument
             - For negative dots, the filename is split on the first N dots from the left
             - If there are fewer parts than dots, the filename is split at the first dot
@@ -221,6 +223,7 @@ class BasePurePath:
         Returns:
             bool: Whether self is relative to other
         Processing Logic:
+        ----------------
             - Resolve self and other if they are Path objects
             - Convert self and other to strings
             - Lowercase strings on Windows or if case_sensitive is False
@@ -254,6 +257,7 @@ class BasePurePath:
         -------
             bool: True if string ends with the suffix, False otherwise.
         Processing Logic:
+        ----------------
         - If case sensitivity is not required, normalize self and text to lower case
         - Normalize each string in the tuple if text is a tuple
         - Utilize Python's built-in endswith method to check for suffix.
@@ -280,6 +284,7 @@ class BasePurePath:
         Returns:
             str: The formatted path string
         Processing Logic:
+        ----------------
             1. Validate the slash character
             2. Strip quotes from the path
             3. Format Windows paths by replacing mixed slashes and normalizing slashes

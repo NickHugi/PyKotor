@@ -146,6 +146,7 @@ class CaseAwarePath(InternalPath):  # TODO: Move to pykotor.common
         Returns:
             CaseAwarePath: The path with case sensitivity resolved
         Processing Logic:
+        ----------------
             - Convert the path to a pathlib Path object
             - Iterate through each path part starting from index 1
             - Check if the current path part and the path up to that part exist

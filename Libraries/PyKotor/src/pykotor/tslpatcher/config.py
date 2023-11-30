@@ -102,6 +102,7 @@ class PatcherConfig:
         -------
             PatcherNamespace - Namespace containing the mod info
         Processing Logic:
+        ----------------
             - Loads settings from the config file at the given filepath
             - Creates a PatcherNamespace object
             - Sets the ini_filename, info_filename and name attributes from the config

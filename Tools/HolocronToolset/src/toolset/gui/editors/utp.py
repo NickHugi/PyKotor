@@ -35,6 +35,7 @@ class UTPEditor(Editor):
             mainwindow: {QWidget}: MainWindow object
 
         Processing Logic:
+        ----------------
         1. Initialize supported resource types and call super constructor
         2. Initialize global settings object
         3. Get placeables 2DA cache from installation
@@ -64,6 +65,7 @@ class UTPEditor(Editor):
         """Connect UI buttons to their respective methods.
 
         Processing Logic:
+        ----------------
             - Connect tagGenerateButton clicked signal to generateTag method
             - Connect resrefGenerateButton clicked signal to generateResref method
             - Connect conversationModifyButton clicked signal to editConversation method
@@ -88,6 +90,7 @@ class UTPEditor(Editor):
             installation: {HTInstallation}: The installation to set up for editing.
 
         Processing Logic:
+        ----------------
         - Sets the internal installation reference and updates UI elements
         - Loads required 2da files if not already loaded
         - Populates appearance and faction dropdowns from loaded 2da data
@@ -294,6 +297,7 @@ class UTPEditor(Editor):
         """Edits a conversation.
 
         Processing Logic:
+        ----------------
         - It gets the conversation name from the UI text field
         - Searches the installation for the conversation resource
         - If not found, it creates a new empty file in the override
@@ -331,6 +335,7 @@ class UTPEditor(Editor):
         """Opens inventory editor for the module.
 
         Processing Logic:
+        ----------------
         - Gets list of capsule paths for the module
         - Creates capsule objects from the paths
         - Initializes InventoryEditor with the capsules and other data
@@ -357,6 +362,7 @@ class UTPEditor(Editor):
         """Updates the model preview.
 
         Processing Logic:
+        ----------------
             - Build the data and model name from the provided data
             - Get the MDL and MDX resources from the installation based on the model name
             - If both resources exist, set them on the preview renderer
@@ -374,6 +380,7 @@ class UTPEditor(Editor):
         """Updates the model preview.
 
         Processing Logic:
+        ----------------
             - Build the data and model name from the provided data
             - Get the MDL and MDX resources from the installation based on the model name
             - If both resources exist, set them on the preview renderer

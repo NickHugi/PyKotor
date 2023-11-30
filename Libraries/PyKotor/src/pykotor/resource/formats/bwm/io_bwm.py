@@ -24,6 +24,7 @@ class BWMBinaryReader(ResourceReader):
         -------
             self: {The initialized Wok object}
         Processing Logic:
+        ----------------
             - Initializes the superclass with the given source, offset and size
             - Sets the wok attribute to None
             - Initializes the position, relative and absolute hook vectors to null vectors
@@ -49,6 +50,7 @@ class BWMBinaryReader(ResourceReader):
         Returns:
             BWM: The loaded BWM object
         Processing Logic:
+        ----------------
             - Reads header info like file type, version
             - Reads BWM properties like type, positions etc
             - Reads vertex data

@@ -148,6 +148,7 @@ class WalkmeshRenderer(QWidget):
             parent (QWidget): The parent widget
 
         Processing Logic:
+        ----------------
             - Initializes variables and properties
             - Sets up camera
             - Sets up selection
@@ -340,8 +341,8 @@ class WalkmeshRenderer(QWidget):
         """
         cos = math.cos(-self.camera.rotation())
         sin = math.sin(-self.camera.rotation())
-        x = x / self.camera.zoom()
-        y = y / self.camera.zoom()
+        x /= self.camera.zoom()
+        y /= self.camera.zoom()
         x2 = x*cos - y*sin
         y2 = x*sin + y*cos
         return Vector2(x2, -y2)
@@ -410,6 +411,7 @@ class WalkmeshRenderer(QWidget):
         Returns:
             bool | None: True if visible, False if hidden, None if invalid type
         Processing Logic:
+        ----------------
         - Check if instance is a valid subclass
         - Return True if type is not hidden in settings
         - Return None if type is invalid
@@ -455,9 +457,6 @@ class WalkmeshRenderer(QWidget):
             return self._pixmapMerchant
         return None
 
-    def geomPointsUnderMouse(self) -> list[GeomPoint]:
-        return self._geomPointsUnderMouse
-
     def centerCamera(self) -> None:
         """Centers the camera on the bounding box of the world.
 
@@ -466,6 +465,7 @@ class WalkmeshRenderer(QWidget):
             self: The object calling the function
 
         Processing Logic:
+        ----------------
         1. Sets the camera position to the center of the bounding box
         2. Calculates the world and screen sizes
         3. Calculates the scale factor to fit the world in the screen
@@ -486,7 +486,7 @@ class WalkmeshRenderer(QWidget):
 
         scale_w = screen_w / world_w if world_w != 0 else 0
         scale_h = screen_h / world_h if world_h != 0 else 0
-        camScale = min(scale_w, scale_h)
+        camScale: float | int = min(scale_w, scale_h)
 
         self.camera.setZoom(camScale)
         self.camera.setRotation(0)
@@ -516,6 +516,23 @@ class WalkmeshRenderer(QWidget):
         return path
 
     def _buildInstanceBounds(self, instance: GITInstance) -> QPainterPath:
+        """Builds a path for the instance geometry.
+
+        Args:
+        ----
+            instance: The GITInstance object
+
+        Returns:
+        -------
+            path: A QPainterPath representing the instance geometry.
+
+        Processing Logic:
+        ----------------
+        - Checks if the instance is an encounter or trigger with geometry
+        - Moves to the first point of the geometry
+        - Draws lines between subsequent points
+        - Closes the path by drawing a line to the first point
+        """
         path = QPainterPath()
         if (isinstance(instance, (GITEncounter, GITTrigger))) and len(instance.geometry) > 0:
             path.moveTo(instance.position.x + instance.geometry[0].x, instance.position.y + instance.geometry[0].y)
@@ -544,7 +561,6 @@ class WalkmeshRenderer(QWidget):
 
     # region Events
     def paintEvent(self, e: QPaintEvent) -> None:
-        # Build walkmesh faces cache
         """Renders the scene by drawing walkmesh faces, instances and selected objects.
 
         Args:
@@ -552,6 +568,7 @@ class WalkmeshRenderer(QWidget):
             e (QPaintEvent): The paint event
 
         Processing Logic:
+        ----------------
         - Builds and caches walkmesh face geometry
         - Sets up camera transform
         - Fills background and draws walkmesh faces
@@ -560,6 +577,7 @@ class WalkmeshRenderer(QWidget):
         - Highlights first geom point under mouse
         - Highlights selected instances and geometry points
         """
+        # Build walkmesh faces cache
         if self._walkmeshFaceCache is None:
             self._walkmeshFaceCache = {}
             for walkmesh in self._walkmeshes:
@@ -627,7 +645,7 @@ class WalkmeshRenderer(QWidget):
             imageX = world_point_1_x - (fullWidthWU * map_point_1_x)
             imageY = world_point_1_y - (fullHeightWU * (1 - map_point_1_y))
 
-            rotated = self._minimapImage.transformed(QTransform().rotate(rotation))
+            rotated: QImage = self._minimapImage.transformed(QTransform().rotate(rotation))
 
             targetRect = QRectF(QPointF(imageX, imageY), QPointF(imageX + fullWidthWU, imageY + fullHeightWU))
             painter.drawImage(targetRect, rotated)
@@ -793,7 +811,7 @@ class WalkmeshRenderer(QWidget):
     def wheelEvent(self, e: QWheelEvent) -> None:
         self.mouseScrolled.emit(Vector2(e.angleDelta().x(), e.angleDelta().y()), self._mouseDown, self._keysDown)
 
-    def mouseMoveEvent(self, e: QMouseEvent) -> None:
+    def mouseMoveEvent(self, e: QMouseEvent) -> None:  # TODO: something here is causing the camera to continually zoom out while middlemouse is held down.
         """Handles mouse move events.
 
         Args:
@@ -810,9 +828,9 @@ class WalkmeshRenderer(QWidget):
         self._mousePrev = coords
         self.mouseMoved.emit(coords, coordsDelta, self._mouseDown, self._keysDown)
 
-        self._instancesUnderMouse = []
-        self._geomPointsUnderMouse = []
-        self._pathNodesUnderMouse = []
+        self._instancesUnderMouse: list[GITInstance] = []
+        self._geomPointsUnderMouse: list[GeomPoint] = []
+        self._pathNodesUnderMouse: list[Vector2] = []
 
         world = Vector2.from_vector3(self.toWorldCoords(coords.x, coords.y))  # Mouse pos in world
 

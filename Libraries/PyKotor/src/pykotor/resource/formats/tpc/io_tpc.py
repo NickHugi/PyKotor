@@ -65,6 +65,7 @@ class TPCBinaryReader(ResourceReader):
             TPC: {The loaded TPC texture object}
 
         Processing Logic:
+        ----------------
             - Reads header values like size, dimensions, format
             - Skips unnecessary data
             - Loops to read each mipmap level

@@ -26,6 +26,7 @@ class UTWEditor(Editor):
             installation: {Installation object}.
 
         Processing Logic:
+        ----------------
             - Initialize UI elements from designer file
             - Set up menu bar and signal connections
             - Load installation data if provided
@@ -69,6 +70,7 @@ class UTWEditor(Editor):
             utw (UTW): UTW object to load data from
 
         Processing Logic:
+        ----------------
             - Load basic UTW data like name, tag and resref into line edits
             - Load advanced data like map note flags and text into checkboxes and line edit
             - Load comment text into plain text edit

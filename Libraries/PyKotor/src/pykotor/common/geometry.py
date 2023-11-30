@@ -809,6 +809,7 @@ class Vector4:
         Returns:
             Vector4: The decompressed Vector4
         Processing Logic:
+        ----------------
             - Extract x, y, z components from data bits
             - Calculate w component from x, y, z
             - Normalize vector if magnitude is greater than 1
@@ -885,6 +886,7 @@ class Vector4:
         Returns:
             Vector3: Converted Euler angles as roll, pitch, yaw
         Processing Logic:
+        ----------------
             - Calculate roll by taking the atan2 of t0/t1 where t0 and t1 are functions of self.w, self.x, self.y, self.z
             - Calculate pitch by taking the asin of t2 where t2 is a function of self.w, self.y, self.z, with bounds checking
             - Calculate yaw by taking the atan2 of t3/t4 where t3 and t4 are functions of self.w, self.x, self.y, self.z
@@ -1290,6 +1292,7 @@ class Polygon2:
         Returns:
             float: The calculated area of the polygon
         Processing Logic:
+        ----------------
             - Loops through points calculating trianglular areas
             - Sums all triangular areas
             - Returns absolute value of the calculated area to ensure positivity.

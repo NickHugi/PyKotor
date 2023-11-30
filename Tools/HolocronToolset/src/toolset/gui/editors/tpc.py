@@ -27,6 +27,7 @@ class TPCEditor(Editor):
         Returns:
             None: Does not return anything
         Processing Logic:
+        ----------------
             - Initializes the base class with supported resource types
             - Loads the UI from the designer file
             - Sets up menus and connects signals
@@ -98,6 +99,7 @@ class TPCEditor(Editor):
         Returns:
             None: No return value
         Processing Logic:
+        ----------------
             1. Call super().new() to initialize parent class
             2. Create TPC object and set single texture
             3. Convert TPC texture to RGBA format

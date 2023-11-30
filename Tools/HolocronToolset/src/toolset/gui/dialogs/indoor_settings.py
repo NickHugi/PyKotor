@@ -26,6 +26,7 @@ class IndoorMapSettings(QDialog):
         -------
             None
         Processing Logic:
+        ----------------
             - Initializes UI elements from indoorMap properties
             - Populates skybox selector with options from available kits
             - Sets initial skybox selection.

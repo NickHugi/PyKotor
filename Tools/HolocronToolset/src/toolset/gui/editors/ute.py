@@ -25,6 +25,7 @@ class UTEEditor(Editor):
             installation: {The installation object being edited}.
 
         Processing Logic:
+        ----------------
             - Call super().__init__ to initialize base editor class
             - Load UI from designer file
             - Set up menus, signals and installation
@@ -49,6 +50,7 @@ class UTEEditor(Editor):
         """Connects UI signals to handler functions.
 
         Processing Logic:
+        ----------------
             - Connects the tagGenerateButton clicked signal to generateTag handler
             - Connects the resrefGenerateButton clicked signal to generateResref handler
             - Connects the infiniteRespawnCheckbox stateChanged signal to setInfiniteRespawn handler
@@ -71,6 +73,7 @@ class UTEEditor(Editor):
             installation: {The installation object being edited}
 
         Processing Logic:
+        ----------------
         - Sets the internal installation object reference
         - Populates the name field with the installation details
         - Fetches the faction and difficulty data from the installation
@@ -258,6 +261,7 @@ class UTEEditor(Editor):
             singe (bool): Whether the creature is a single creature encounter
 
         Processing Logic:
+        ----------------
             - Gets the current row count of the creature table
             - Inserts a new row at that index
             - Creates widgets for the single checkbox, challenge spinbox, and appearance spinbox

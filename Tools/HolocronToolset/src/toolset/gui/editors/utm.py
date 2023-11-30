@@ -30,6 +30,7 @@ class UTMEditor(Editor):
             installation: {Optional HTInstallation object to load data from}.
 
         Processing Logic:
+        ----------------
         - Sets up the UI from the designer file
         - Initializes menus and signals
         - Loads data from the provided installation if given
@@ -63,6 +64,7 @@ class UTMEditor(Editor):
             installation: The installation to edit
 
         Processing Logic:
+        ----------------
         - Sets the internal installation reference to the passed in installation
         - Sets the installation on the UI name edit to the passed installation
         - Allows editing of the installation details in the UI.
@@ -84,6 +86,7 @@ class UTMEditor(Editor):
             utm (UTM): UTM object to load data from
 
         Processing Logic:
+        ----------------
             - Sets name, tag, resref, id, markups from UTM object
             - Sets can_buy, can_sell flags from UTM object
             - Sets comment text from UTM object.
@@ -111,6 +114,7 @@ class UTMEditor(Editor):
             data: The built UTM data.
             b"": An empty bytes object.
         Processing Logic:
+        ----------------
         - Populate UTM object fields from UI elements
         - Convert UTM to GFF format
         - Write GFF to bytearray
