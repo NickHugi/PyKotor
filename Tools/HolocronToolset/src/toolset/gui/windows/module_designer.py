@@ -51,12 +51,13 @@ if TYPE_CHECKING:
 
 class ModuleDesigner(QMainWindow):
     def __init__(self, parent: QWidget | None, installation: HTInstallation):
-        """Initializes the Module Designer window
+        """Initializes the Module Designer window.
+
         Args:
+        ----
             parent: QWidget | None: Parent widget
             installation: HTInstallation: Hometuck installation
-        Returns:
-            None
+
         Processing Logic:
             - Initializes UI elements and connects signals
             - Sets up 3D and 2D renderer controls
@@ -89,11 +90,16 @@ class ModuleDesigner(QMainWindow):
         self._setupSignals()
 
         def intColorToQColor(intvalue):
-            """Converts an integer color value to a QColor object
+            """Converts an integer color value to a QColor object.
+
             Args:
-                intvalue: Integer color value
+            ----
+                intvalue: Integer color value.
+
             Returns:
+            -------
                 QColor: QColor object representing the color
+
             - Extract RGBA components from integer color value using Color.from_rgba_integer()
             - Multiply each component by 255 to convert to QColor expected value range of 0-255
             - Pass converted values to QColor constructor to return QColor object.
@@ -139,11 +145,12 @@ class ModuleDesigner(QMainWindow):
         QTimer().singleShot(33, self.openModule)
 
     def _setupSignals(self) -> None:
-        """Connect signals to slots
+        """Connect signals to slots.
+
         Args:
+        ----
             self: {The class instance}: Connects signals from UI elements to methods
-        Returns:
-            None: No return value
+
         Processing Logic:
             - Connect menu actions to methods like open, save
             - Connect toggles of instance visibility checks to update method
@@ -203,12 +210,13 @@ class ModuleDesigner(QMainWindow):
         self.setWindowTitle(title)
 
     def openModule(self) -> None:
-        """Opens a module
+        """Opens a module.
+
         Args:
+        ----
             self: The class instance
             dialog: The dialog to select a module
-        Returns:
-            None: Does not return anything
+
         Processing Logic:
             - Unloads any currently loaded module
             - Gets the selected module filepath
@@ -258,8 +266,10 @@ class ModuleDesigner(QMainWindow):
         self._module.git().save()
 
     def rebuildResourceTree(self) -> None:
-        """Rebuilds the resource tree widget
+        """Rebuilds the resource tree widget.
+
         Args:
+        ----
             self: The class instance
         Returns:
             None
@@ -344,14 +354,13 @@ class ModuleDesigner(QMainWindow):
         self.ui.mainRenderer.scene.clearCacheBuffer.append(ResourceIdentifier(resource.resname(), resource.restype()))
 
     def selectResourceItem(self, instance: GITInstance, clearExisting: bool = True) -> None:
-        """Select a resource item in the tree
+        """Select a resource item in the tree.
+
         Args:
+        ----
             instance: {The GIT instance to select}
             clearExisting: {Clear existing selections if True}.
 
-        Returns
-        -------
-            None
         Processing Logic:
             1. Clear selection if clearExisting is True
             2. Iterate through top level items
@@ -376,11 +385,12 @@ class ModuleDesigner(QMainWindow):
                     self.ui.resourceTree.scrollToItem(item)
 
     def rebuildInstanceList(self) -> None:
-        """Rebuilds the instance list
+        """Rebuilds the instance list.
+
         Args:
+        ----
             self: The class instance
-        Returns:
-            None
+
         Rebuilding Logic:
             - Clear existing instance list
             - Only rebuild if module is loaded
@@ -471,11 +481,12 @@ class ModuleDesigner(QMainWindow):
             self.ui.instanceList.addItem(item)
 
     def selectInstanceItemOnList(self, instance: GITInstance) -> None:
-        """Select an instance item on the instance list
+        """Select an instance item on the instance list.
+
         Args:
+        ----
             instance (GITInstance): The instance to select
-        Returns:
-            None
+
         - Clear any existing selection from the instance list
         - Iterate through each item in the instance list
         - Check if the item's stored data matches the passed in instance
@@ -556,11 +567,12 @@ class ModuleDesigner(QMainWindow):
         self.rebuildInstanceList()
 
     def addInstanceAtCursor(self, instance: GITInstance) -> None:
-        """Adds instance at cursor position
+        """Adds instance at cursor position.
+
         Args:
+        ----
             instance (GITInstance): Instance to add
-        Returns:
-            None: No return value
+
         - Sets position of instance to cursor position
         - Checks if instance is camera, opens dialog if not
         - Adds instance to resource tree if dialog confirms
@@ -691,6 +703,7 @@ class ModuleDesigner(QMainWindow):
 
     def onInstanceVisibilityDoubleClick(self, checkbox: QCheckBox) -> None:
         """Toggles visibility of a single instance type on double click.
+
         This method should be called whenever one of the instance visibility checkboxes have been double clicked. The
         resulting affect should be that all checkboxes become unchecked except for the one that was pressed.
 
@@ -698,9 +711,6 @@ class ModuleDesigner(QMainWindow):
         ----
             checkbox (QCheckBox): Checkbox that was double clicked.
 
-        Returns:
-        -------
-            None
         Processing Logic:
             - Unchecks all other instance type checkboxes
             - Checks the checkbox that was double clicked
@@ -727,12 +737,13 @@ class ModuleDesigner(QMainWindow):
         menu.exec_(self.ui.resourceTree.mapToGlobal(point))
 
     def _build_active_override_menu(self, data: ModuleResource, menu: QMenu):
-        """Builds an active override menu for a module resource
+        """Builds an active override menu for a module resource.
+
         Args:
+        ----
             data: ModuleResource - The module resource data
             menu: QMenu - The menu to build actions on
-        Returns:
-            None
+
         Processing Logic:
             - Adds actions to edit active file, reload active file, and copy to override
             - Loops through each location in the resource and adds an action
@@ -790,8 +801,7 @@ class ModuleDesigner(QMainWindow):
         Args:
         ----
             world: (Vector3): World position for context menu
-        Returns:
-            None: Does not return anything
+
         Processing Logic:
         - Creates a QMenu object
         - Adds actions to menu for inserting different object types at world position or view position
@@ -821,11 +831,12 @@ class ModuleDesigner(QMainWindow):
         menu.aboutToHide.connect(self.ui.mainRenderer.resetMouseButtons)
 
     def onContextMenuSelectionExists(self) -> None:
-        """Checks if a context menu selection exists
+        """Checks if a context menu selection exists.
+
         Args:
+        ----
             self: The class instance
-        Returns:
-            None: Does not return anything
+
         - Checks if any instances are selected
         - If a camera instance is selected, adds camera-view snapping actions
         - Always adds edit and remove actions
@@ -885,12 +896,13 @@ class ModuleDesigner(QMainWindow):
 
 class ModuleDesignerControls3d:
     def __init__(self, editor: ModuleDesigner, renderer: ModuleRenderer):
-        """Initializes the 3D view controller
+        """Initializes the 3D view controller.
+
         Args:
+        ----
             editor: ModuleDesigner - The module designer instance
             renderer: ModuleRenderer - The 3D renderer instance
-        Returns:
-            None - Initializes controller items and properties
+
         Processing Logic:
             - Initializes control items from settings bindings
             - Sets initial scene and renderer properties
@@ -1006,13 +1018,14 @@ class ModuleDesignerControls3d:
             self.editor.rotateSelected(screenDelta.x, screenDelta.y)
 
     def onMousePressed(self, screen: Vector2, buttons: set[int], keys: set[int]) -> None:
-        """Handle mouse press events in the editor
+        """Handle mouse press events in the editor.
+
         Args:
+        ----
             screen: Vector2 - Mouse position on screen
             buttons: set[int] - Pressed mouse buttons
             keys: set[int] - Pressed keyboard keys
-        Returns:
-            None
+
         Processing Logic:
             - Check if select button is pressed and set doSelect flag
             - Check if duplicate button is pressed, duplicate selected instance and add/select new instance
@@ -1036,12 +1049,13 @@ class ModuleDesignerControls3d:
         ...
 
     def onKeyboardPressed(self, buttons: set[int], keys: set[int]) -> None:
-        """Handles keyboard input in the editor
+        """Handles keyboard input in the editor.
+
         Args:
+        ----
             buttons: set[int]: The pressed buttons
             keys: set[int]: The pressed keys
-        Returns:
-            None: Does not return anything
+
         Processes keyboard input:
             - Toggles free camera mode
             - Snaps camera to selected instance
@@ -1218,20 +1232,25 @@ class ModuleDesignerControls2d:
         self.toggleInstanceLock: ControlItem = ControlItem(self.settings.toggleLockInstancesBind)
 
     def onMouseScrolled(self, delta: Vector2, buttons: set[int], keys: set[int]) -> None:
-        """Scrolls camera zoom on mouse scroll
+        """Scrolls camera zoom on mouse scroll.
+
         Args:
+        ----
             delta: Mouse scroll delta vector
             buttons: Mouse buttons pressed
             keys: Keyboard keys pressed
-        Returns:
-            None: No return value
+
         - Checks if zoom camera control is satisfied by buttons and keys
         - Calculates zoom strength from scroll delta and sensitivity setting
         - Nudges camera zoom by calculated amount.
         """
         if self.zoomCamera.satisfied(buttons, keys):
             strength = self.settings.moveCameraSensitivity2d / 100 / 50
-            self.renderer.camera.nudgeZoom(delta.y * strength)
+            zoomInFactor = 1.1
+            zoomOutFactor = 0.90
+
+            zoomFactor = zoomInFactor if delta.y > 0 else zoomOutFactor
+            self.renderer.camera.nudgeZoom(delta.y * zoomFactor)
 
     def onMouseMoved(
         self,
@@ -1242,16 +1261,17 @@ class ModuleDesignerControls2d:
         buttons: set[int],
         keys: set[int],
     ) -> None:
-        """Handles mouse movement events in the editor
+        """Handles mouse movement events in the editor.
+
         Args:
+        ----
             screen: Vector2 - Mouse position on screen in pixels
             screenDelta: Vector2 - Mouse movement since last event in pixels
             world: Vector2 - Mouse position in world space
             worldDelta: Vector2 - Mouse movement since last event in world space
             buttons: set[int] - Mouse buttons currently held down
             keys: set[int] - Keyboard keys currently held down
-        Returns:
-            None
+
         Processing Logic:
             - Nudges camera position if move camera key is held based on worldDelta
             - Nudges camera rotation if rotate camera key is held based on screenDelta
@@ -1278,13 +1298,14 @@ class ModuleDesignerControls2d:
                     instance.rotate(-instance.yaw() + rotation, 0, 0)
 
     def onMousePressed(self, screen: Vector2, buttons: set[int], keys: set[int]) -> None:
-        """Handle mouse press events in the editor
+        """Handle mouse press events in the editor.
+
         Args:
+        ----
             screen: Vector2 - Mouse position
             buttons: set[int] - Pressed buttons
             keys: set[int] - Pressed keys
-        Returns:
-            None
+
         Processing Logic:
             - Check if select button is pressed and select instance under mouse
             - Check if duplicate button is pressed and duplicate selected instance
@@ -1322,9 +1343,6 @@ class ModuleDesignerControls2d:
             buttons: {Set of pressed button codes}
             keys: {Set of pressed key codes}.
 
-        Returns:
-        -------
-            None
         - Check if delete selection shortcut satisfied and call editor delete selection
         - Check if snap camera to selection shortcut satisfied and snap camera to first selected instance
         - Check if toggle instance lock shortcut satisfied and toggle lock instances checkbox
