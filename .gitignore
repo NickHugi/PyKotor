@@ -18,3 +18,7 @@ dist-win
 pykotor
 build-windows.ps1
 __pycache__
+.idea
+.git
+PyKotorGL.egg-info
+/pykotor/gl/window.py

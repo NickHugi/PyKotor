@@ -16,3 +16,8 @@ numpy==1.22.2
 Markdown==3.3.6
 jsmin==3.0.1
 requests==2.27.1
+numpy==1.22.2
+PyGLM==2.5.7
+PyOpenGL==3.1.6
+PyKotor==1.5.4
+setuptools==57.4.0
