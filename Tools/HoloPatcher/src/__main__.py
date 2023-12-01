@@ -201,9 +201,12 @@ class App(tk.Tk):
         self.namespaces_combobox.set("Select the mod to install")
         self.namespaces_combobox.grid(row=0, column=0, padx=5, pady=2, sticky="ew")
         self.namespaces_combobox.bind("<<ComboboxSelected>>", self.on_namespace_option_chosen)
+
+        # used for handling focus events
         self.namespaces_combobox.bind("<FocusIn>", self.on_combobox_focus_in)
         self.namespaces_combobox.bind("<FocusOut>", self.on_combobox_focus_out)
-        self.namespaces_combobox_state = 0  # used for handling focus events
+        self.namespaces_combobox_state = 0
+
         ToolTip(self.namespaces_combobox, lambda: self.on_namespace_option_hover())
 
         self.browse_button = ttk.Button(top_frame, text="Browse", command=self.open_mod)
@@ -411,7 +414,7 @@ class App(tk.Tk):
             )
             return
         self._clear_description_textbox()
-        ModUninstaller(backup_parent_folder, Path(self.gamepaths.get()), self.logger)
+        ModUninstaller(backup_parent_folder, Path(self.gamepaths.get()), self.logger).uninstall_selected_mod()
 
     def handle_exit_button(self) -> None:
         """Handle exit button click during installation

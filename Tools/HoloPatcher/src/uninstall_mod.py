@@ -11,22 +11,60 @@ from utility.path import Path
 
 
 class ModUninstaller:
+    """A class that provides functionality to uninstall a selected mod using the most recent backup folder created during the last install.
+
+    Args:
+    ----
+        backups_location_path (Path): The path to the location of the backup folders.
+        game_path (Path): The path to the game folder.
+        logger (PatchLogger | None, optional): An optional logger object. Defaults to a new PatchLogger.
+
+    Attributes:
+    ----------
+        backups_location_path (Path): The path to the location of the backup folders.
+        game_path (Path): The path to the game folder.
+        log (PatchLogger): The logger object.
+
+    Methods:
+    -------
+        is_valid_backup_folder(folder: Path, datetime_pattern="%Y-%m-%d_%H.%M.%S") -> bool:
+            Check if a folder name is a valid backup folder name based on a datetime pattern.
+        get_most_recent_backup(backup_folder_path: Path) -> Path | None:
+            Returns the most recent valid backup folder.
+        restore_backup(backup_folder: Path, existing_files: set[str], files_in_backup: list[Path]) -> None:
+            Restores a game backup folder to the existing game files.
+        get_backup_info() -> tuple[Path | None, set[str], list[Path], int]:
+            Get information about the most recent valid backup.
+        uninstall_selected_mod() -> None:
+            Uninstalls the selected mod using the most recent backup folder created during the last install.
+    """
+
     def __init__(self, backups_location_path: Path, game_path: Path, logger: PatchLogger | None = None):
         self.backups_location_path: Path = backups_location_path
         self.game_path: Path = game_path
         self.log: PatchLogger = logger or PatchLogger()
 
     @staticmethod
-    def is_valid_backup_folder(folder: Path) -> bool:
-        """Check if a folder name is valid backup folder format, i.e. the folder name can be parsed to datetime
+    def is_valid_backup_folder(folder: Path, datetime_pattern="%Y-%m-%d_%H.%M.%S") -> bool:
+        """Check if a folder name is valid backup folder name based on datetime pattern.
+
         Args:
-            folder: Path object to check folder name
+        ----
+            folder: Path object of the folder to validate
+            datetime_pattern: String pattern to match folder name against (default: "%Y-%m-%d_%H.%M.%S").
+
         Returns:
-            bool: True if valid backup folder format, False otherwise
-        Checks if folder name can be parsed to datetime.
+        -------
+            bool: True if folder name matches datetime pattern, False otherwise
+
+        Processing Logic:
+        ----------------
+            - Try to parse folder name as datetime string with given pattern
+            - Return True if parsing succeeds without error
+            - Return False if parsing fails with ValueError
         """
         try:
-            datetime.strptime(folder.name, "%Y-%m-%d_%H.%M.%S").astimezone()
+            datetime.strptime(folder.name, datetime_pattern).astimezone()
         except ValueError:
             return False
         else:
@@ -34,6 +72,22 @@ class ModUninstaller:
 
     @staticmethod
     def get_most_recent_backup(backup_folder_path: Path) -> Path | None:
+        """Returns the most recent valid backup folder.
+
+        Args:
+        ----
+            backup_folder_path: Path - Path to the backup folder.
+
+        Returns:
+        -------
+            Path | None: Path to the most recent valid backup folder or None
+
+        Processing Logic:
+        ----------------
+            - Filter subfolders to only valid backup folders
+            - Return None if no valid backups found
+            - Otherwise return the subfolder with the maximum datetime parsed from folder name.
+        """
         valid_backups: list[Path] = [
             subfolder
             for subfolder in backup_folder_path.iterdir()
@@ -49,6 +103,24 @@ class ModUninstaller:
         return max(valid_backups, key=lambda x: datetime.strptime(x.name, "%Y-%m-%d_%H.%M.%S").astimezone())
 
     def restore_backup(self, backup_folder: Path, existing_files: set[str], files_in_backup: list[Path]) -> None:
+        """Restores a game backup folder to the existing game files.
+
+        Args:
+        ----
+            backup_folder: Path to the backup folder
+            existing_files: set of existing file paths
+            files_in_backup: list of file paths in the backup
+
+        Processing Logic:
+        ----------------
+            - Remove any existing files not in the backup
+            - Copy each file from the backup folder to the destination restoring the file structure
+            - Log each file operation
+
+        Examples:
+        --------
+            restore_backup(Path('backup'), {'file1.txt', 'file2.txt'}, [Path('backup/file1.txt'), Path('backup/file2.txt')])
+        """
         for file in existing_files:
             file_path = Path(file)
             rel_filepath = file_path.relative_to(self.game_path)
@@ -67,12 +139,13 @@ class ModUninstaller:
             return None, set(), [], 0
 
         delete_list_file = most_recent_backup_folder / "remove these files.txt"
+        files_to_delete: set[str] = set()
         existing_files: set[str] = set()
         if delete_list_file.exists():
             with delete_list_file.open("r") as f:
-                file_lines = [line.strip() for line in f if line.strip()]
-                existing_files = {line.strip() for line in f if line.strip() and Path(line.strip()).is_file()}
-            if len(existing_files) < len(file_lines) and not messagebox.askyesno(
+                files_to_delete = {line.strip() for line in f if line.strip()}
+                existing_files = {line.strip() for line in files_to_delete if line.strip() and Path(line.strip()).is_file()}
+            if len(existing_files) < len(files_to_delete) and not messagebox.askyesno(
                     "Backup out of date or mismatched",
                     (
                         f"This backup doesn't match your current KOTOR installation. Files are missing/changed in your KOTOR install.{os.linesep}"
@@ -92,6 +165,7 @@ class ModUninstaller:
         """Uninstalls the selected mod using the most recent backup folder created during the last install.
 
         Processing Logic:
+        ----------------
             - Check if an install is already running
             - Get the selected namespace option
             - Check for valid namespace and game path
@@ -112,20 +186,19 @@ class ModUninstaller:
         if len(files_in_backup) < 6:  # noqa: PLR2004[6 represents a small number of files to display]
             for item in files_in_backup:
                 self.log.add_note(f"Would restore file '{item.relative_to(most_recent_backup_folder)!s}'")
-        while not messagebox.askyesno(
+        if not messagebox.askyesno(
             "Confirmation",
             f"Really uninstall {len(existing_files)} files and restore the most recent backup (containing {len(files_in_backup)} files and {folder_count} folders)?",
         ):
-            try:
-                self.restore_backup(most_recent_backup_folder, existing_files, files_in_backup)
-            except Exception as e:  # noqa: BLE001, PERF203
-                error_name, msg = universal_simplify_exception(e)
-                messagebox.showerror(
-                    error_name,
-                    f"Failed to restore backup because of exception. Please try again:{os.linesep*2}{msg}",
-                )
-            else:
-                break
+            return
+        try:
+            self.restore_backup(most_recent_backup_folder, existing_files, files_in_backup)
+        except Exception as e:  # noqa: BLE001
+            error_name, msg = universal_simplify_exception(e)
+            messagebox.showerror(
+                error_name,
+                f"Failed to restore backup because of exception.{os.linesep*2}{msg}",
+            )
         while messagebox.askyesno(
             "Uninstall completed!",
             f"Deleted {len(existing_files)} files and successfully restored backup {most_recent_backup_folder.name}{os.linesep*2}"

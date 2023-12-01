@@ -20,6 +20,14 @@ class BasePurePath:
     def __init__(self, *args, _called_from_pathlib=True):
         """Initializes a path object. This is used to unify python 3.7-3.11 with most of python 3.12's changes.
 
+        Args:
+        ----
+            *args (os.PathLike | str): the path parts to join and create a path object out of.
+
+        Returns:
+        -------
+            A constructed Path object
+
         Processing Logic:
         ----------------
             - Finds the next class in the MRO that defines __init__ and is not BasePurePath
