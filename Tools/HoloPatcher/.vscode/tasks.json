@@ -19,7 +19,7 @@
       "problemMatcher": []
     },
     {
-      "label": "holopatcher requirements",
+      "label": "holopatcher_requirements",
       "dependsOn": ["pykotor_requirements"],
       "type": "shell",
       "command": "${command:python.interpreterPath}",
@@ -150,7 +150,7 @@
     },
     {
         "label": "pylint: pykotor",
-        "dependsOn": ["all requirements", "install_pylint"],
+        "dependsOn": ["holopatcher_requirements", "install_pylint"],
         "type": "shell",
         "command": "${command:python.interpreterPath} -m pylint --disable=C0301,C0302,C0115,C0116,R0913,C0114,R0903,R0902,W0212,R0914,R0904,W0613,E0611,C0415 pykotor",
         "presentation": {
@@ -161,7 +161,7 @@
     },
     {
       "label": "Python: lint pykotor with mypy",
-      "dependsOn": ["all requirements", "install_mypy"],
+      "dependsOn": ["holopatcher_requirements", "install_mypy"],
       "type": "shell",
       "command": "${command:python.interpreterPath}",
       "args": [
@@ -196,45 +196,9 @@
       }
     },
     {
-      "label": "Python: lint toolset with mypy",
-      "dependsOn": ["all requirements"],
-      "type": "shell",
-      "command": "${command:python.interpreterPath}",
-      "args": [
-        "-m",
-        "mypy",
-        "--no-pretty",
-        "--show-column-numbers",
-        "--package",
-        "toolset",
-        "--check-untyped-defs",
-        "--no-strict-optional"
-      ],
-      "group": "test",
-      "presentation": {
-        "reveal": "always",
-        "panel": "new"
-      },
-      "problemMatcher": {
-        "owner": "python",
-        "fileLocation": [
-          "relative",
-          "${workspaceFolder}"
-        ],
-        "pattern": {
-          "regexp": "^(.+):(\\d+):(\\d+): (\\w+): (.*)$",
-          "file": 1,
-          "line": 2,
-          "column": 3,
-          "severity": 4,
-          "message": 5
-        }
-      }
-    },
-    {
       "label": "Python: Ruff check entire project",
       "type": "shell",
-      "dependsOn": ["all requirements", "install_ruff"],
+      "dependsOn": ["holopatcher_requirements", "install_ruff"],
       "command": "${command:python.interpreterPath}",
       "args": [
         "-m",
@@ -267,7 +231,7 @@
     {
       "label": "Build HoloPatcher - PyInstaller",
       "type": "shell",
-      "dependsOn": ["all requirements", "install_pyinstaller"],
+      "dependsOn": ["holopatcher_requirements", "install_pyinstaller"],
       "command": "${command:python.interpreterPath}",
       "args": [
         "-m",
@@ -277,16 +241,16 @@
         "--clean",
         "--noconfirm",
         "--name=HoloPatcher",
-        "--path=${workspaceFolder}${pathSeparator}tools${pathSeparator}holopatcher",
+        "--path=${workspaceFolder}${pathSeparator}Tools${pathSeparator}holopatcher",
         "--icon=Tools${pathSeparator}HoloPatcher${pathSeparator}resources${pathSeparator}icons${pathSeparator}patcher_icon_v2.ico",
-        "tools${pathSeparator}holopatcher${pathSeparator}__main__.py"
+        "Tools${pathSeparator}holopatcher${pathSeparator}__main__.py"
       ],
       "problemMatcher": []
     },
     {
       "label": "Build HoloPatcher - Nuitka (Windows only, no CLI support)",
       "type": "shell",
-      "dependsOn": ["all requirements", "install_nuitka"],
+      "dependsOn": ["holopatcher_requirements", "install_nuitka"],
       "command": "${command:python.interpreterPath}",
       "args": [
         "-m",
@@ -300,7 +264,7 @@
         "--remove-output",
         "--output-dir=${workspaceFolder}${pathSeparator}nuitka_dist",
         "--enable-plugin=tk-inter",
-        "tools${pathSeparator}holopatcher${pathSeparator}__main__.py",
+        "Tools${pathSeparator}holopatcher${pathSeparator}__main__.py",
       ],
       "problemMatcher": []
     },
