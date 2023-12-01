@@ -7,7 +7,7 @@ from tkinter import messagebox
 
 from pykotor.tslpatcher.logger import PatchLogger
 from utility.error_handling import universal_simplify_exception
-from utility.path import Path
+from utility.path import BasePath, Path
 
 
 class ModUninstaller:
@@ -71,12 +71,12 @@ class ModUninstaller:
             return True
 
     @staticmethod
-    def get_most_recent_backup(backup_folder_path: Path) -> Path | None:
+    def get_most_recent_backup(backup_folder: os.PathLike | str) -> Path | None:
         """Returns the most recent valid backup folder.
 
         Args:
         ----
-            backup_folder_path: Path - Path to the backup folder.
+            backup_folder: os.PathLike | str - Path to the backup folder.
 
         Returns:
         -------
@@ -88,9 +88,10 @@ class ModUninstaller:
             - Return None if no valid backups found
             - Otherwise return the subfolder with the maximum datetime parsed from folder name.
         """
+        backup_folder_path = backup_folder if isinstance(backup_folder, BasePath) else Path(backup_folder)
         valid_backups: list[Path] = [
             subfolder
-            for subfolder in backup_folder_path.iterdir()
+            for subfolder in backup_folder_path.iterdir()  # type: ignore[attr-defined]
             if subfolder.is_dir() and ModUninstaller.is_valid_backup_folder(subfolder)
         ]
         if not valid_backups:
@@ -102,7 +103,12 @@ class ModUninstaller:
             return None
         return max(valid_backups, key=lambda x: datetime.strptime(x.name, "%Y-%m-%d_%H.%M.%S").astimezone())
 
-    def restore_backup(self, backup_folder: Path, existing_files: set[str], files_in_backup: list[Path]) -> None:
+    def restore_backup(
+        self,
+        backup_folder: Path,
+        existing_files,
+        files_in_backup,
+    ) -> None:
         """Restores a game backup folder to the existing game files.
 
         Args:
@@ -122,15 +128,16 @@ class ModUninstaller:
             restore_backup(Path('backup'), {'file1.txt', 'file2.txt'}, [Path('backup/file1.txt'), Path('backup/file2.txt')])
         """
         for file in existing_files:
-            file_path = Path(file)
-            rel_filepath = file_path.relative_to(self.game_path)
-            file_path.unlink(missing_ok=True)
+            file_path = file if isinstance(file, BasePath) else Path(file)
+            rel_filepath = file_path.relative_to(self.game_path)  # type: ignore[attr-defined]
+            file_path.unlink(missing_ok=True)  # type: ignore[attr-defined]
             self.log.add_note(f"Removed {rel_filepath}...")
-        for file_path in files_in_backup:
-            destination_path = self.game_path / file_path.relative_to(backup_folder)
+        for file in files_in_backup:
+            file_path = file if isinstance(file, BasePath) else Path(file)
+            destination_path = self.game_path / file_path.relative_to(backup_folder)  # type: ignore[attr-defined]
             destination_path.parent.mkdir(parents=True, exist_ok=True)
             shutil.copy(file_path, destination_path)
-            self.log.add_note(f"Restoring backup of '{file_path.name}' to '{destination_path.relative_to(self.game_path.parent)}'...")
+            self.log.add_note(f"Restoring backup of '{file_path.name}' to '{destination_path.relative_to(self.game_path.parent)}'...")  # type: ignore[attr-defined]
 
     def get_backup_info(self) -> tuple[Path | None, set[str], list[Path], int]:
         """Get info about the most recent valid backup."""
