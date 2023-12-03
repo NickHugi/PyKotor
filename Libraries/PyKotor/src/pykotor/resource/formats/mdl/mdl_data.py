@@ -67,19 +67,24 @@ class MDL:
         Args:
         ----
             self: The tree object
+
         Returns:
+        -------
             list[MDLNode]: A list of all nodes in the tree
-        - Initialize an empty list to store nodes
-        - Initialize a scan list with the root node
-        - Pop a node from scan and add it to nodes list
-        - Extend scan with children of the popped node
-        - Repeat until scan is empty
-        - Return the nodes list with all nodes
+
+        Processing Logic:
+        ----------------
+            - Initialize an empty list to store nodes
+            - Initialize a scan list with the root node
+            - Pop a node from scan and add it to nodes list
+            - Extend scan with children of the popped node
+            - Repeat until scan is empty
+            - Return the nodes list with all nodes
         """
-        nodes = []
-        scan = [self.root]
+        nodes: list[MDLNode] = []
+        scan: list[MDLNode] = [self.root]
         while scan:
-            node = scan.pop()
+            node: MDLNode = scan.pop()
             nodes.append(node)
             scan.extend(node.children)
         return nodes
@@ -88,19 +93,26 @@ class MDL:
         self,
         child: MDLNode,
     ) -> MDLNode | None:
-        """Find the parent node of the given child node
+        """Find the parent node of the given child node.
+
         Args:
+        ----
             child: The child node to find the parent for
+
         Returns:
+        -------
             parent: The parent node of the given child or None if not found
-        - Get all nodes in the scene
-        - Iterate through all nodes
-        - Check if the child is in the node's children
-        - If found, set the parent variable to that node
-        - Return the parent node or None if not found.
+
+        Processing Logic:
+        ----------------
+            - Get all nodes in the scene
+            - Iterate through all nodes
+            - Check if the child is in the node's children
+            - If found, set the parent variable to that node
+            - Return the parent node or None if not found.
         """
-        all_nodes = self.all_nodes()
-        parent = None
+        all_nodes: list[MDLNode] = self.all_nodes()
+        parent: MDLNode | None = None
         for node in all_nodes:
             if child in node.children:
                 parent = node
@@ -114,16 +126,21 @@ class MDL:
 
         Args:
         ----
-            node: The node to get the global position for
+            node: The node to get the global position for.
+
         Returns:
+        -------
             Vector3: The global position of the node
-        - Traverse up the parent chain of the node and add each parent's position to a running total
-        - Start with the node's local position
-        - Keep traversing up parents until the parent is None (root node reached)
-        - Return the final global position
+
+        Processing Logic:
+        ----------------
+            - Traverse up the parent chain of the node and add each parent's position to a running total
+            - Start with the node's local position
+            - Keep traversing up parents until the parent is None (root node reached)
+            - Return the final global position
         """
-        position = node.position
-        parent = self.find_parent(node)
+        position: Vector3 = node.position
+        parent: MDLNode | None = self.find_parent(node)
         while parent is not None:
             position += parent.position
             parent = self.find_parent(parent)
@@ -133,15 +150,22 @@ class MDL:
         self,
         node_id,
     ) -> MDLNode:
-        """Get node by node id
+        """Get node by node id.
+
         Args:
+        ----
             node_id: The id of the node to retrieve
+
         Returns:
+        -------
             MDLNode: The node with matching id
-        - Iterate through all nodes in the graph
-        - Check if current node id matches argument node id
-        - Return node if id matches
-        - Raise error if no matching node found.
+
+        Processing Logic:
+        ----------------
+            - Iterate through all nodes in the graph
+            - Check if current node id matches argument node id
+            - Return node if id matches
+            - Raise error if no matching node found.
         """
         for node in self.all_nodes():
             if node.node_id == node_id:
@@ -151,15 +175,22 @@ class MDL:
     def all_textures(
         self,
     ) -> set[str]:
-        """Returns all unique texture names used in the scene
+        """Returns all unique texture names used in the scene.
+
         Args:
+        ----
             self: The scene object
+
         Returns:
+        -------
             set[str]: A set containing all unique texture names used in meshes
-        - Iterate through all nodes in the scene
-        - Check if the node has a mesh and the mesh has a valid texture name
-        - Add the texture name to a set to eliminate duplicates
-        - Return the final set of unique texture names.
+
+        Processing Logic:
+        ----------------
+            - Iterate through all nodes in the scene
+            - Check if the node has a mesh and the mesh has a valid texture name
+            - Add the texture name to a set to eliminate duplicates
+            - Return the final set of unique texture names.
         """
         return {
             node.mesh.texture_1

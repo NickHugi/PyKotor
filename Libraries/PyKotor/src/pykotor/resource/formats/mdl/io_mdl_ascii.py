@@ -45,14 +45,18 @@ class MDLAsciiWriter:
         self,
         auto_close: bool = True,
     ) -> None:
-        """Writes a 3D model to a .mdl file
-        Args:
-            auto_close: {Whether to close the writer after writing is complete}.
+        """Writes a 3D model to a .mdl file.
 
-        Returns
+        Args:
+        ----
+            auto_close: Whether to close the writer after writing is complete (default True).
+
+        Returns:
         -------
-            None: {Does not return anything, writes directly to the writer}
-        {Processing Logic}:
+            None: Does not return anything, writes directly to the writer
+
+        Processing Logic:
+        ----------------
             - Writes header information for the model
             - Writes geometry bounds and info
             - Writes each node in the model
@@ -107,10 +111,6 @@ class MDLAsciiWriter:
             anim: bool: Whether to write animation controllers
             indent: int: The indentation level
 
-        Returns:
-        -------
-            None
-
         Writes the node header and properties. Then:
         1. Writes the parent, orientation, and position
         2. Writes mesh properties if it has a mesh
@@ -144,14 +144,15 @@ class MDLAsciiWriter:
         newline(indent + 0, "endnode")
 
     def _write_mesh_data(self, newline, indent, node):
-        """Writes mesh node data to a file in MDL format
+        """Writes mesh node data to a file in MDL format.
+
         Args:
+        ----
             self: The class instance
             newline: Function to write a new line
             indent: String of spaces for indentation
             node: Mesh node object
-        Returns:
-            None: Does not return anything
+
         Processing Logic:
         ----------------
             - Writes mesh properties like diffuse color, texture, etc
@@ -235,13 +236,18 @@ class MDLAsciiWriter:
         controllers: list[MDLController],
         indent: int,
     ):
-        """Writes MDL controllers to the MDL file
+        """Writes MDL controllers to the MDL file.
+
         Args:
+        ----
             node: MDLNode - The node to write controllers for
             controllers: list[MDLController] - The controllers to write
             indent: int - The indentation level
+
         Returns:
+        -------
             None: Writes controller values to the MDL file
+
         Processing Logic:
         ----------------
             - Loops through each controller
@@ -270,13 +276,18 @@ class MDLAsciiWriter:
         controllers: list[MDLController],
         indent: int,
     ):
-        """Writes animation controllers to the ASCII file
+        """Writes animation controllers to the ASCII file.
+
         Args:
+        ----
             node: MDLNode - The node the controllers belong to
             controllers: list[MDLController] - The controllers to write
             indent: int - The indentation level
+
         Returns:
+        -------
             None - Writes controllers directly to the file
+
         Writes animation controllers to the ASCII file:
             - Converts position controllers to be relative to the node's global position
             - Converts orientation controllers from quaternions to axis-angle format
