@@ -535,6 +535,7 @@ class Installation:
         Determines the game via distinguishing characteristics of the install by:
         - check if `streamvoice` exists but not `streamwaves` exists
         - check if `swkotor2.exe` exists but not `swkotor.exe` exists
+        - check if LocalVault exists
         if any of those is true, it's a K2 install.
 
         Otherwise:
@@ -654,8 +655,6 @@ class Installation:
             return None
 
         # Same score
-        if game1_score == game2_score:
-            return None
         return None
 
     def game(self) -> Game:
@@ -1257,7 +1256,7 @@ class Installation:
         """
         stringrefs = [locstring.stringref for locstring in queries]
         batch = self.talktable().batch(stringrefs)
-        female_talktable_exists = self.female_talktable().path().exists()
+        female_talktable_exists = self.female_talktable()._path.exists()
         female_batch = {}
         if female_talktable_exists:
             female_batch = self.female_talktable().batch(stringrefs)
