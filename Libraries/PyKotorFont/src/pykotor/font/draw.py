@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING
 
 from PIL import Image, ImageDraw, ImageFont
 from pykotor.resource.formats.txi import TXIFontInformation
-from pykotor.tools.encoding import get_charset_from_encoding
+from pykotor.tools.encoding import get_charset_from_singlebyte_encoding
 from utility.path import BasePath, Path
 
 if TYPE_CHECKING:
@@ -84,7 +84,7 @@ def write_bitmap_font(
         raise ZeroDivisionError(msg)
 
     font_path, target_path = ((p if isinstance(p, BasePath) else Path(p)).resolve() for p in (font_path, target))  # type: ignore[attr-defined, reportGeneralTypeIssues]
-    charset_list: list[str] = get_charset_from_encoding(lang.get_encoding())
+    charset_list: list[str] = get_charset_from_singlebyte_encoding(lang.get_encoding())
     numchars: int = len([char for char in charset_list if char])
 
     # Calculate grid cell size

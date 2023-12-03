@@ -1,3 +1,4 @@
+import os
 import pathlib
 import sys
 from unittest import TestCase
@@ -11,6 +12,7 @@ if PYKOTOR_PATH.exists():
     working_dir = str(PYKOTOR_PATH)
     if working_dir in sys.path:
         sys.path.remove(working_dir)
+        os.chdir(PYKOTOR_PATH.parent)
     sys.path.insert(0, working_dir)
 if UTILITY_PATH.exists():
     working_dir = str(UTILITY_PATH)

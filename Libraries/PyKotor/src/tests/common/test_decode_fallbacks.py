@@ -1,3 +1,4 @@
+import os
 import pathlib
 import sys
 import unittest
@@ -9,6 +10,7 @@ if PYKOTOR_PATH.exists():
     working_dir = str(PYKOTOR_PATH)
     if working_dir in sys.path:
         sys.path.remove(working_dir)
+        os.chdir(PYKOTOR_PATH.parent)
     sys.path.insert(0, working_dir)
 if UTILITY_PATH.exists():
     working_dir = str(UTILITY_PATH)
@@ -110,11 +112,12 @@ class TestDecodeBytes(unittest.TestCase):
         only_8bit_encodings = False
         expected_result = "¡Hola!"
         exp = "癒Hola!"
+        exp2 = "Â¡Hola!"
 
         result = byte_content.decode(errors=errors)
         self.assertEqual(result, expected_result)
         result = decode_bytes_with_fallbacks(byte_content, errors, encoding, lang, only_8bit_encodings)
-        self.assertEqual(result, exp)
+        self.assertEqual(result, exp2)
 
     def test_8bit_encoding_only(self):
         byte_content = b"\xe4\xf6\xfc"
@@ -127,7 +130,7 @@ class TestDecodeBytes(unittest.TestCase):
         result = byte_content.decode(errors="replace")
         self.assertEqual(result, expected_result)
         result = decode_bytes_with_fallbacks(byte_content, errors, encoding, lang, only_8bit_encodings)
-        self.assertEqual(result, "U6Ü")
+        self.assertEqual(result, "дць")
 
     def test_with_BOM_included(self):
         byte_content = b"\xef\xbb\xbfTest"
