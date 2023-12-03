@@ -1,8 +1,13 @@
 from __future__ import annotations
 
+from contextlib import suppress
+
+# Try to import defusedxml, fallback to ElementTree if not available
 from xml.etree import ElementTree
 
-from defusedxml.ElementTree import fromstring
+with suppress(ImportError):
+    from defusedxml.ElementTree import fromstring as _fromstring
+    ElementTree.fromstring = _fromstring
 
 from pykotor.common.language import Language
 from pykotor.common.misc import ResRef
@@ -30,7 +35,7 @@ class TLKXMLReader(ResourceReader):
         self._tlk = TLK()
 
         data = decode_bytes_with_fallbacks(self._reader.read_bytes(self._reader.size()))
-        xml = fromstring(data)
+        xml = ElementTree.fromstring(data)  # noqa: S314
 
         self._tlk.language = Language(int(xml.get("language")))
         self._tlk.resize(len(xml))

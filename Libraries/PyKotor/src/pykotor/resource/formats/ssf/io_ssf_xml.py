@@ -1,9 +1,13 @@
 from __future__ import annotations
 
 from contextlib import suppress
+
+# Try to import defusedxml, fallback to ElementTree if not available
 from xml.etree import ElementTree
 
-from defusedxml.ElementTree import fromstring
+with suppress(ImportError):
+    from defusedxml.ElementTree import fromstring as _fromstring
+    ElementTree.fromstring = _fromstring
 
 from pykotor.resource.formats.ssf.ssf_data import SSF, SSFSound
 from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES, ResourceReader, ResourceWriter, autoclose
@@ -29,7 +33,7 @@ class SSFXMLReader(ResourceReader):
         self._ssf = SSF()
 
         data = decode_bytes_with_fallbacks(self._reader.read_bytes(self._reader.size()))
-        xml_root = fromstring(data)
+        xml_root = ElementTree.fromstring(data)  # noqa: S314
 
         for child in xml_root:
             with suppress(ValueError):

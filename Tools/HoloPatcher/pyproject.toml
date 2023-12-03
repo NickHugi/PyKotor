@@ -11,9 +11,6 @@ description="A faster, multi-platform alternative to TSLPatcher written in Pytho
 version="1.7"
 requires-python = ">= 3.7"
 dependencies = [
-    "ply>=3.11,<4",                 # required for the nss compiler lexer
-    "charset-normalizer>=2.0,<3.4", # used for localized string decodings
-    "defusedxml~=0.7",              # secure XML parsing
     "requests",                     # for 'check for updates' feature.
 ]
 authors = [{name = "NickHugi"}]

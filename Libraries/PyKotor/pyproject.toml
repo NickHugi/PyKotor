@@ -7,29 +7,21 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name="PyKotor"
-description="Read, modify and write files used by KotOR's game engine."
 version="1.7"
-requires-python = ">= 3.7"
-dependencies = [
-    "ply>=3.11,<4",     # required for the nss compiler lexer
-    "numpy~=1.22",      # probably required by PyKotorGL
-    "charset-normalizer>=2.0,<3.4",  # used for localized string decodings
-    "defusedxml~=0.7",  # secure XML parsing
-]
-authors = [
-  {name = "NickHugi"},
-]
-maintainers = [
-  {name = "th3w1zard1", email = "halomastar@gmail.com"},
-]
+description="Read, modify and write files used by KotOR's game engine."
+authors = [{name = "NickHugi"}]
+maintainers = [{name = "th3w1zard1", email = "halomastar@gmail.com"}]
 readme = {file = "README.md", content-type = "text/markdown"}
 license = {text = "MIT License"}
 keywords = ["kotor", "library", "holocron", "toolset", "pykotor", "editor", "mit", "holopatcher", "tslpatcher"]
+requires-python = ">= 3.7"
+dependencies = ["ply>=3.11,<4"]  # required for the nss compiler lexer
 
 [project.optional-dependencies]
-font_writer = ["Pillow>=9.5,<11"] # required for TXI/TGA fonts
-xml         = ["defusedxml~=0.7"]         # secure XML parsing
-gl          = [
+font                 = ["Pillow>=9.5,<11"]               # required for TXI/TGA fonts
+secure_xml           = ["defusedxml~=0.7"]               # secure XML parsing
+autodetect_encodings = ["charset-normalizer>=2.0,<3.4"]  # used for localized string decodings
+gl = [
   "PyGLM>=2.0,<2.8",
   "PyOpenGL~=3.1",
   "django>2.1; os_name != 'nt'",

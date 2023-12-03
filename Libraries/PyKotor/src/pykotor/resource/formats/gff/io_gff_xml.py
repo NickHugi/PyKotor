@@ -1,10 +1,16 @@
 from __future__ import annotations
 
 import base64
+from contextlib import suppress
 from typing import Any
+
+# Try to import defusedxml, fallback to ElementTree if not available
 from xml.etree import ElementTree
 
-from defusedxml.ElementTree import fromstring
+with suppress(ImportError):
+    from defusedxml.ElementTree import fromstring as _fromstring
+    ElementTree.fromstring = _fromstring
+
 from pykotor.common.geometry import Vector3, Vector4
 from pykotor.common.language import LocalizedString
 from pykotor.common.misc import ResRef
@@ -31,7 +37,7 @@ class GFFXMLReader(ResourceReader):
         self._gff = GFF()
 
         data = self._reader.read_bytes(self._reader.size()).decode()
-        xml_root = fromstring(data).find("struct")
+        xml_root = ElementTree.fromstring(data).find("struct")  # noqa: S314
         self._load_struct(self._gff.root, xml_root)
 
         return self._gff

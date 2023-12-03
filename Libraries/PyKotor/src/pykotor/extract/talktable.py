@@ -15,11 +15,20 @@ class StringResult(NamedTuple):
     text: str
     sound: ResRef
 
+class TLKData(NamedTuple):
+    flags: int
+    sound_resref: str
+    volume_variance: int
+    pitch_variance: int
+    text_offset: int
+    text_length: int
+    sound_length: float
 
 class TalkTable:  # TODO: dialogf.tlk
-    """Talktables are for read-only loading of stringrefs stored in a dialog.tlk file. Files are only opened when accessing
-    a stored string, this means that strings are always up to date at the time of access as opposed to TLK objects which
-    may be out of date with its source file.
+    """Talktables are for read-only loading of stringrefs stored in a dialog.tlk file.
+
+    Files are only opened when accessing a stored string, this means that strings are always up to date at
+    the time of access as opposed to TLK objects which may be out of date with its source file.
     """
 
     def __init__(
@@ -27,9 +36,6 @@ class TalkTable:  # TODO: dialogf.tlk
         path: os.PathLike | str,
     ):
         self._path: Path = path if isinstance(path, BasePath) else Path(path)  # type: ignore[assignment]
-
-    def path(self):
-        return self._path
 
     def string(
         self,
@@ -45,21 +51,18 @@ class TalkTable:  # TODO: dialogf.tlk
         -------
             A string.
         """
-        reader = BinaryReader.from_file(self._path)
-        reader.seek(12)
-        entries_count = reader.read_uint32()
-        texts_offset = reader.read_uint32()
+        with BinaryReader.from_file(self._path) as reader:
+            reader.seek(12)
+            entries_count = reader.read_uint32()
+            texts_offset = reader.read_uint32()
 
-        if stringref == -1 or stringref >= entries_count:
-            string = ""
-        else:
-            _, _, _, _, text_offset, text_length, _ = self._extract_common_data(
-                reader,
-                stringref,
-            )
-            reader.seek(texts_offset + text_offset)
-            string = reader.read_string(text_length, encoding=None)
-        reader.close()
+            if stringref == -1 or stringref >= entries_count:
+                string = ""
+            else:
+                tlkdata = self._extract_common_tlk_data(reader, stringref)
+                reader.seek(texts_offset + tlkdata.text_offset)
+                string = reader.read_string(tlkdata.text_length)
+
         return string
 
     def sound(
@@ -70,52 +73,39 @@ class TalkTable:  # TODO: dialogf.tlk
 
         Args:
         ----
-            stringref: The entry id. The string reference to lookup the sound for
+            stringref: The entry id.
 
         Returns:
         -------
-            ResRef: The sound resource reference
-        - Opens the binary file for reading
-        - Seeks to the sound entries offset
-        - Reads the number of sound entries
-        - Checks if the string reference is valid
-        - Extracts the sound resource reference if valid
-        - Closes the file reader
-        - Returns the sound resource reference
+            A ResRef.
         """
-        reader = BinaryReader.from_file(self._path)
-        reader.seek(12)
-        entries_count = reader.read_uint32()
-        _ = reader.read_uint32()  # Unused texts_offset
+        with BinaryReader.from_file(self._path) as reader:
+            reader.seek(12)
+            entries_count = reader.read_uint32()
+            _texts_offset = reader.read_uint32()
 
-        if stringref == -1 or stringref >= entries_count:
-            sound_resref = ""
-        else:
-            _, sound_resref, _, _, _, _, _ = self._extract_common_data(
-                reader,
-                stringref,
-            )
-        reader.close()
-        return ResRef(sound_resref)
+            if stringref == -1 or stringref >= entries_count:
+                return ResRef.from_blank()
 
-    def _extract_common_data(self, reader: BinaryReader, stringref: int) -> tuple[int, str, int, int, int, int, int]:
+            tlkdata = self._extract_common_tlk_data(reader, stringref)
+            return ResRef(tlkdata.sound_resref)
+
+
+    def _extract_common_tlk_data(
+        self,
+        reader: BinaryReader,
+        stringref: int,
+    ) -> TLKData:
         reader.seek(20 + 40 * stringref)
-        flags = reader.read_uint32()
-        sound_resref = reader.read_string(16)
-        volume_variance = reader.read_uint32()
-        pitch_variance = reader.read_uint32()
-        text_offset = reader.read_uint32()
-        text_length = reader.read_uint32()
-        sound_length = reader.read_single()
 
-        return (
-            flags,
-            sound_resref,
-            volume_variance,
-            pitch_variance,
-            text_offset,
-            text_length,
-            sound_length,
+        return TLKData(
+            flags=reader.read_uint32(),
+            sound_resref=reader.read_string(16),
+            volume_variance=reader.read_uint32(),
+            pitch_variance=reader.read_uint32(),
+            text_offset=reader.read_uint32(),
+            text_length=reader.read_uint32(),
+            sound_length=reader.read_single(),
         )
 
     def batch(
@@ -133,37 +123,30 @@ class TalkTable:  # TODO: dialogf.tlk
         -------
             Dictionary with stringref keys and Tuples (string, sound) values.
         """
-        reader = BinaryReader.from_file(self._path)
-        reader.seek(12)
-        entries_count = reader.read_uint32()
-        texts_offset = reader.read_uint32()
+        with BinaryReader.from_file(self._path) as reader:
+            reader.seek(8)
+            language_id = reader.read_uint32()
+            language: Language = Language(language_id)
+            encoding: str | None = language.get_encoding()
+            entries_count = reader.read_uint32()
+            texts_offset = reader.read_uint32()
 
-        batch: dict[int, StringResult] = {}
+            batch = {}
 
-        for stringref in stringrefs:
-            if stringref == -1 or stringref >= entries_count:
-                batch[stringref] = StringResult("", ResRef.from_blank())
-                continue
+            for stringref in stringrefs:
+                if stringref == -1 or stringref >= entries_count:
+                    batch[stringref] = StringResult("", ResRef.from_blank())
+                    continue
 
-            (
-                _,
-                sound_resref,
-                _,
-                _,
-                text_offset,
-                text_length,
-                _,
-            ) = self._extract_common_data(reader, stringref)
+                tlkdata = self._extract_common_tlk_data(reader, stringref)
 
-            reader.seek(texts_offset + text_offset)
-            string = reader.read_string(text_length, encoding=None)
-            sound = ResRef(sound_resref)
+                reader.seek(texts_offset + tlkdata.text_offset)
+                string = reader.read_string(tlkdata.text_length, encoding=encoding)
+                sound = ResRef(tlkdata.sound_resref)
 
-            batch[stringref] = StringResult(string, sound)
+                batch[stringref] = StringResult(string, sound)
 
-        reader.close()
-
-        return batch
+            return batch
 
     def size(
         self,
@@ -174,11 +157,9 @@ class TalkTable:  # TODO: dialogf.tlk
         -------
             The number of entries in the talk table.
         """
-        reader = BinaryReader.from_file(self._path)
-        reader.seek(12)
-        entries_count = reader.read_uint32()
-        reader.close()
-        return entries_count
+        with BinaryReader.from_file(self._path) as reader:
+            reader.seek(12)
+            return reader.read_uint32()  # entries_count
 
     def language(
         self,
@@ -189,8 +170,7 @@ class TalkTable:  # TODO: dialogf.tlk
         -------
             The language of the TLK file.
         """
-        reader = BinaryReader.from_file(self._path)
-        reader.seek(8)
-        language_id = reader.read_uint32()
-        reader.close()
-        return Language(language_id)
+        with BinaryReader.from_file(self._path) as reader:
+            reader.seek(8)
+            language_id = reader.read_uint32()
+            return Language(language_id)
