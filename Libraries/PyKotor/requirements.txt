@@ -1,2 +1,1 @@
 ply>=3.11,<4                    # required for the nss compiler lexer
-charset-normalizer>=2.0,<3.4    # used for localized string decodings
