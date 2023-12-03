@@ -18,7 +18,7 @@ class TLK:
         language: Language = Language.ENGLISH,
     ) -> None:
         self.entries: list[TLKEntry] = []
-        self.language: language  # game does not care what this value is
+        self.language: Language = language  # game does not care what this value is
 
     def __len__(
         self,
