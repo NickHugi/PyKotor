@@ -5,6 +5,30 @@ requires = [
 ]
 build-backend = "setuptools.build_meta"
 
+[project]
+name="HoloPatcher"
+description="A faster, multi-platform alternative to TSLPatcher written in Python."
+version="1.7"
+requires-python = ">= 3.7"
+dependencies = [
+    "ply>=3.11,<4",                 # required for the nss compiler lexer
+    "charset-normalizer>=2.0,<3.4", # used for localized string decodings
+    "defusedxml~=0.7",              # secure XML parsing
+    "requests",                     # for 'check for updates' feature.
+]
+authors = [{name = "NickHugi"}]
+maintainers = [{name = "th3w1zard1", email = "halomastar@gmail.com"}]
+readme = {file = "README.md", content-type = "text/markdown"}
+license = {text = "MIT License"}
+keywords = ["kotor", "library", "holocron", "toolset", "pykotor", "editor", "mit", "holopatcher", "tslpatcher"]
+
+[project.urls]
+Homepage = "https://deadlystream.com/files/file/2243-holopatcher/"
+Documentation = "https://github.com/NickHugi/PyKotor/blob/master/README.md"
+Repository = "https://github.com/NickHugi/PyKotor.git"
+Issues = "https://github.com/NickHugi/PyKotor/issues"
+#Changelog = "https://github.com/NickHugi/PyKotor/blob/master/CHANGELOG.md"
+
 ########################################################
 ## define only linter configurations below this point ##
 ########################################################

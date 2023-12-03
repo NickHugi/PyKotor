@@ -392,6 +392,7 @@ class App(tk.Tk):
         """Uninstalls the selected mod using the most recent backup folder created during the last install.
 
         Processing Logic:
+        ----------------
             - Check if an install is already running
             - Get the selected namespace option
             - Check for valid namespace and game path
@@ -417,13 +418,15 @@ class App(tk.Tk):
         ModUninstaller(backup_parent_folder, Path(self.gamepaths.get()), self.logger).uninstall_selected_mod()
 
     def handle_exit_button(self) -> None:
-        """Handle exit button click during installation
+        """Handle exit button click during installation.
+
         Processing Logic:
-        - Check if installation is running
-        - Display confirmation dialog and check response
-        - Try stopping install thread gracefully
-        - If stopping fails, force terminate install thread
-        - Destroy window and exit with abort code.
+        ----------------
+            - Check if installation is running
+            - Display confirmation dialog and check response
+            - Try stopping install thread gracefully
+            - If stopping fails, force terminate install thread
+            - Destroy window and exit with abort code.
         """
         if not self.install_running:
             sys.exit(ExitCode.SUCCESS)
@@ -457,10 +460,13 @@ class App(tk.Tk):
         return namespace_option.description if namespace_option else ""
 
     def on_namespace_option_chosen(self, event: tk.Event, config_reader: ConfigReader | None = None) -> None:
-        """Handles the namespace option being chosen from the combobox
+        """Handles the namespace option being chosen from the combobox.
+
         Args:
+        ----
             self: The PatcherWindow instance
             event: The event object from the combobox
+
         Processes the chosen namespace option by:
             1. Finding the matching PatcherNamespace object
             2. Loading the changes.ini file path
@@ -518,11 +524,12 @@ class App(tk.Tk):
                 This is also relevant when using the CLI.
 
         Processing Logic:
-        - Gets the directory path from the argument or opens a file dialog
-        - Loads namespaces from namespaces.ini or changes from changes.ini
-            - If a changes.ini was loaded, build it as a single entry in a namespace.
-        - Checks permissions of the mod folder
-        - Handles errors opening the mod.
+        ----------------
+            - Gets the directory path from the argument or opens a file dialog
+            - Loads namespaces from namespaces.ini or changes from changes.ini
+                - If a changes.ini was loaded, build it as a single entry in a namespace.
+            - Checks permissions of the mod folder
+            - Handles errors opening the mod.
         """
         try:
             directory_path_str = default_directory_path_str or filedialog.askdirectory()
@@ -572,6 +579,7 @@ class App(tk.Tk):
             default_kotor_dir_str: The default KOTOR directory path as a string. This is only relevant when using the CLI.
 
         Processing Logic:
+        ----------------
             - Try to get the directory path from the default or by opening a file dialog
             - Check access permissions for the directory
             - Set the gamepaths config value and add path to list if not already present
@@ -596,16 +604,23 @@ class App(tk.Tk):
             )
 
     def check_access(self, directory: Path, recurse=False) -> bool:
-        """Check access to a directory
+        """Check access to a directory.
+
         Args:
+        ----
             directory (Path): Directory path to check access
             recurse (bool): Check access recursively if True
+
         Returns:
+        -------
             bool: True if access is granted, False otherwise
-        - Check if directory has access
-        - If no access, prompt user to automatically gain access
-        - If access cannot be gained, show error
-        - If no access after trying, prompt user to continue with an install anyway.
+
+        Processing Logic:
+        ----------------
+            - Check if directory has access
+            - If no access, prompt user to automatically gain access
+            - If access cannot be gained, show error
+            - If no access after trying, prompt user to continue with an install anyway.
         """
         if directory.has_access(recurse):
             return True
@@ -643,7 +658,9 @@ class App(tk.Tk):
         Returns:
         -------
             bool: True if validation passed, False otherwise
+
         Processing Logic:
+        ----------------
             - Check if a previous install is still running
             - Check if a mod path is selected
             - Check if a KOTOR install path is selected
@@ -700,7 +717,9 @@ class App(tk.Tk):
         Args:
         ----
             self: The PatcherWindow instance
+
         Processing Logic:
+        ----------------
             - Validate pre-install checks have passed
             - Get the selected namespace option
             - Get the path to the ini file
@@ -724,13 +743,17 @@ class App(tk.Tk):
         self.set_active_install(install_running=False)
 
     def set_active_install(self, install_running: bool) -> None:
-        """Sets the active install state
+        """Sets the active install state.
+
         Args:
+        ----
             install_running: Whether the install is running or not
+
         Processing Logic:
-        - Sets the install_running attribute based on the install_running argument
-        - Configures the state of relevant buttons to disabled if install is running, normal otherwise
-        - Handles enabling/disabling buttons during install process.
+        ----------------
+            - Sets the install_running attribute based on the install_running argument
+            - Configures the state of relevant buttons to disabled if install is running, normal otherwise
+            - Handles enabling/disabling buttons during install process.
         """
         if install_running:
             self.install_running = True
@@ -752,14 +775,14 @@ class App(tk.Tk):
         self.description_text.config(state=tk.DISABLED)
 
     def _execute_mod_install(self, installer: ModInstaller) -> None:
-        """Executes the mod installation
-        Args:
-            installer: {ModInstaller object containing installation logic}.
+        """Executes the mod installation.
 
-        Returns
-        -------
-            None: {Does not return anything, just executes installation}
+        Args:
+        ----
+            installer: ModInstaller object containing installation logic.
+
         Processing Logic:
+        ----------------
             1. Sets installation status to running
             2. Gets start time of installation
             3. Calls installer install method
@@ -814,11 +837,15 @@ class App(tk.Tk):
                 sys.exit(ExitCode.SUCCESS)
 
     def _handle_exception_during_install(self, e: Exception, installer: ModInstaller) -> NoReturn:
-        """Handles exceptions during installation
+        """Handles exceptions during installation.
+
         Args:
+        ----
             e: Exception - The exception raised
             installer: ModInstaller - The installer object
+
         Processing Logic:
+        ----------------
             - Simplifies the exception for error name and message
             - Writes the error message to the log
             - Adds an error to the installer log
@@ -867,9 +894,6 @@ class App(tk.Tk):
         ----
             message (str): The message to write to the log.
 
-        Returns:
-        -------
-            None
         Processes the log message by:
             - Setting the description text widget to editable
             - Inserting the message plus a newline at the end of the text
@@ -891,9 +915,9 @@ def custom_excepthook(exc_type, exc_value, exc_traceback) -> None:
         exc_type: Exception type
         exc_value: Exception value
         exc_traceback: Exception traceback
-    Returns:
-        None
+
     Processing Logic:
+    ----------------
         - Format the exception using traceback
         - Create a hidden root Tk window
         - Show error message in message box

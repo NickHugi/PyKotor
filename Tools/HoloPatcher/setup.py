@@ -27,7 +27,7 @@ def main() -> None:
         REQUIREMENTS.update(requirements_txt_path.read_text().splitlines())
 
     EXTRA_PATHS = [str(HERE)]
-    pykotor_path = HERE.joinpath("..", "..", "Librariers", "PyKotor")
+    pykotor_path = HERE.joinpath("..", "..", "Libraries", "PyKotor")
     pykotor_src_path = pykotor_path / "src"
     pykotor_requirements = pykotor_path / "requirements.txt"
     if pykotor_requirements.exists():
