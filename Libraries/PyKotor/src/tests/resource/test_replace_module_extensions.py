@@ -2,8 +2,21 @@ import pathlib
 import sys
 import unittest
 
-from pykotor.extract.installation import Installation
+THIS_SCRIPT_PATH = pathlib.Path(__file__)
+PYKOTOR_PATH = THIS_SCRIPT_PATH.parents[2].resolve()
+UTILITY_PATH = THIS_SCRIPT_PATH.parents[4].joinpath("Utility", "src").resolve()
+if PYKOTOR_PATH.exists():
+    working_dir = str(PYKOTOR_PATH)
+    if working_dir in sys.path:
+        sys.path.remove(working_dir)
+    sys.path.insert(0, working_dir)
+if UTILITY_PATH.exists():
+    working_dir = str(UTILITY_PATH)
+    if working_dir in sys.path:
+        sys.path.remove(working_dir)
+    sys.path.insert(0, working_dir)
 
+from pykotor.extract.installation import Installation
 
 class TestReplaceModuleExtensions(unittest.TestCase):
     def testreplace_module_extensions(self):

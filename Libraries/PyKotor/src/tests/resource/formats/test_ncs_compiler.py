@@ -2,13 +2,19 @@ import pathlib
 import sys
 import unittest
 
-if getattr(sys, "frozen", False) is False:
-    pykotor_path = pathlib.Path(__file__).parents[3] / "pykotor"
-    if pykotor_path.exists():
-        working_dir = str(pykotor_path.parent)
-        if working_dir in sys.path:
-            sys.path.remove(working_dir)
-        sys.path.insert(0, str(pykotor_path.parent))
+THIS_SCRIPT_PATH = pathlib.Path(__file__)
+PYKOTOR_PATH = THIS_SCRIPT_PATH.parents[3].resolve()
+UTILITY_PATH = THIS_SCRIPT_PATH.parents[5].joinpath("Utility", "src").resolve()
+if PYKOTOR_PATH.exists():
+    working_dir = str(PYKOTOR_PATH)
+    if working_dir in sys.path:
+        sys.path.remove(working_dir)
+    sys.path.insert(0, working_dir)
+if UTILITY_PATH.exists():
+    working_dir = str(UTILITY_PATH)
+    if working_dir in sys.path:
+        sys.path.remove(working_dir)
+    sys.path.insert(0, working_dir)
 
 from pykotor.common.geometry import Vector3
 from pykotor.common.scriptdefs import KOTOR_CONSTANTS, KOTOR_FUNCTIONS

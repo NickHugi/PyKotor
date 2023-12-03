@@ -3,6 +3,20 @@ import sys
 import unittest
 from unittest import TestCase
 
+THIS_SCRIPT_PATH = pathlib.Path(__file__)
+PYKOTOR_PATH = THIS_SCRIPT_PATH.parents[2].resolve()
+UTILITY_PATH = THIS_SCRIPT_PATH.parents[4].joinpath("Utility", "src").resolve()
+if PYKOTOR_PATH.exists():
+    working_dir = str(PYKOTOR_PATH)
+    if working_dir in sys.path:
+        sys.path.remove(working_dir)
+    sys.path.insert(0, working_dir)
+if UTILITY_PATH.exists():
+    working_dir = str(UTILITY_PATH)
+    if working_dir in sys.path:
+        sys.path.remove(working_dir)
+    sys.path.insert(0, working_dir)
+
 from pykotor.common.geometry import Vector3, Vector4
 from pykotor.common.language import LocalizedString
 from pykotor.common.misc import ResRef

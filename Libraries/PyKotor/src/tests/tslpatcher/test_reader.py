@@ -1,10 +1,26 @@
 from __future__ import annotations
 
 import shutil
+import sys
 import tempfile
 import unittest
 from configparser import ConfigParser
+from pathlib import Path
 from typing import TYPE_CHECKING
+
+THIS_SCRIPT_PATH = Path(__file__)
+PYKOTOR_PATH = THIS_SCRIPT_PATH.parents[2].resolve()
+UTILITY_PATH = THIS_SCRIPT_PATH.parents[4].joinpath("Utility", "src").resolve()
+if PYKOTOR_PATH.exists():
+    working_dir = str(PYKOTOR_PATH)
+    if working_dir in sys.path:
+        sys.path.remove(working_dir)
+    sys.path.insert(0, working_dir)
+if UTILITY_PATH.exists():
+    working_dir = str(UTILITY_PATH)
+    if working_dir in sys.path:
+        sys.path.remove(working_dir)
+    sys.path.insert(0, working_dir)
 
 from pykotor.common.geometry import Vector3, Vector4
 from pykotor.common.language import Gender, Language
