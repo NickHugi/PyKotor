@@ -94,6 +94,7 @@ class ToolWindow(QMainWindow):
         Args:
         ----
             self: The object instance
+
         Processing Logic:
         ----------------
             - Sets up superclass initialization
@@ -233,18 +234,19 @@ class ToolWindow(QMainWindow):
     def onModuleRefresh(self) -> None:
         self.refreshModuleList()
 
-    def onOverrideFileUpdated(self, changedDir: str, eventType: str) -> None:
+    def onOverrideFileUpdated(self, changedFile: str, eventType: str) -> None:
         if eventType == "deleted":
             self.onOverrideRefresh()
         else:
-            self.onOverrideReload(changedDir)
+            self.onOverrideReload(changedFile)
 
     def onOverrideChanged(self, newDirectory: str) -> None:
         self.ui.overrideWidget.setResources(self.active.override_resources(newDirectory))
 
-    def onOverrideReload(self, directory: str) -> None:
-        self.active.load_override(directory)
-        self.ui.overrideWidget.setResources(self.active.override_resources(directory))
+    def onOverrideReload(self, file: str) -> None:
+        file_path = Path(file)
+        self.active.reload_override_file(file_path)
+        self.ui.overrideWidget.setResources(self.active.override_resources(str(file_path.parent)))
 
     def onOverrideRefresh(self) -> None:
         self.refreshOverrideList()
@@ -780,18 +782,16 @@ class FolderObserver(FileSystemEventHandler):
             return
 
         self.lastModified = rightnow
+        modified_path: Path = Path(event.src_path)
+        isDir = modified_path.is_dir()
+        if not isDir:
+            return
 
         module_path: Path = self.window.active.module_path()
         override_path: Path = self.window.active.override_path()
-        modified_path: Path = Path(event.src_path)
 
-        isDir = modified_path.is_dir()
-
-        if modified_path.is_relative_to(module_path) and not isDir:
+        if modified_path.is_relative_to(module_path):
             module_file = modified_path.parent
             self.window.moduleFilesUpdated.emit(str(module_file), event.event_type)
-        elif modified_path.is_relative_to(override_path) and not isDir:
-            override_dir = str(modified_path.parent.relative_to(override_path))
-            if override_dir.startswith(("\\", "//")):
-                override_dir = override_dir[1:]
-            self.window.overrideFilesUpdate.emit(override_dir, event.event_type)
+        elif modified_path.is_relative_to(override_path):
+            self.window.overrideFilesUpdate.emit(str(modified_path), event.event_type)

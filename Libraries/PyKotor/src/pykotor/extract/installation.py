@@ -20,13 +20,12 @@ from pykotor.tools.misc import is_capsule_file, is_erf_file, is_mod_file, is_rim
 from pykotor.tools.path import CaseAwarePath
 from pykotor.tools.sound import fix_audio
 from pykotor.tslpatcher.logger import PatchLogger
-from utility.path import PurePath
+from utility.path import BasePath, Path, PurePath
 
 if TYPE_CHECKING:
     import os
 
     from pykotor.resource.formats.gff import GFF
-    from utility.path import Path
 
 
 # The SearchLocation class is an enumeration that represents different locations for searching.
@@ -283,7 +282,7 @@ class Installation:
             else:
                 with suppress(Exception):
                     resource = FileResource(
-                        *ResourceIdentifier.from_path(file),
+                        *ResourceIdentifier.from_path(file).validate(),
                         file.stat().st_size,
                         0,
                         file,
@@ -376,6 +375,20 @@ class Installation:
         - Override any existing resources with new ones from directory
         """
         self.load_override(directory)
+
+    def reload_override_file(self, file: os.PathLike | str) -> None:
+        filepath: Path = file if isinstance(file, BasePath) else Path(file)  # type: ignore[reportGeneralTypeIssues, assignment]
+        rel_folderpath = filepath.parent.relative_to(self.override_path())
+        with suppress(Exception):
+            resource = FileResource(
+                *ResourceIdentifier.from_path(filepath),
+                filepath.stat().st_size,
+                0,
+                filepath,
+            )
+            override_list: list[FileResource] = self._override[str(rel_folderpath)]
+            index: int = override_list.index(resource)
+            override_list[index] = resource
 
     def load_streammusic(self) -> None:
         """Reloads the list of resources in the streammusic folder linked to the Installation."""
