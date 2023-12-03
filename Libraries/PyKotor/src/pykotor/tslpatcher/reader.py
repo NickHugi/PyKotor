@@ -117,7 +117,12 @@ class NamespaceReader:
         return namespaces
 
 class ConfigReader:
-    def __init__(self, ini: ConfigParser, mod_path: os.PathLike | str, logger: PatchLogger | None = None) -> None:
+    def __init__(
+        self,
+        ini: ConfigParser,
+        mod_path: os.PathLike | str,
+        logger: PatchLogger | None = None,
+    ) -> None:
         self.ini = ini
         self.mod_path: CaseAwarePath = mod_path if isinstance(mod_path, CaseAwarePath) else CaseAwarePath(mod_path)
         self.config: PatcherConfig
@@ -134,7 +139,8 @@ class ConfigReader:
 
         Returns:
         -------
-            instance: A PatcherConfig instance loaded from the file.
+            A PatcherConfig instance loaded from the file.
+
         Processing Logic:
         ----------------
             - Resolve the file path and load its contents
@@ -208,20 +214,14 @@ class ConfigReader:
     def load_install_list(self) -> None:
         """Loads [InstallList] from ini configuration.
 
-        Args:
-        ----
-            self: The class instance.
-
-        Returns:
-        -------
-            None: No value is returned.
-        Loading File List:
-        - Gets [InstallList] section from ini
-        - Loops through section items getting foldername and filenames
-        - Gets section for each filename
-        - Creates InstallFile object for each filename
-        - Adds InstallFile to config install list
-        - Optionally loads additional vars from filename section
+        Processing Logic:
+        ----------------
+            - Gets [InstallList] section from ini
+            - Loops through section items getting foldername and filenames
+            - Gets section for each filename
+            - Creates InstallFile object for each filename
+            - Adds InstallFile to config install list
+            - Optionally loads additional vars from filename section
         """
         install_list_section = self.get_section_name("installlist")
         if not install_list_section:
@@ -249,20 +249,12 @@ class ConfigReader:
     def load_tlk_list(self) -> None:
         """Loads TLK patches from the ini file.
 
-        Args:
-        ----
-            self: Loads patches from the ini file attached to this object.
-
-        Returns:
-        -------
-            None: Modifies the TLK patches attached to this object.
-
         Processing Logic:
         ----------------
-        - Parses the [TLKList] section to get TLK patch entries
-        - Handles different patch syntaxes like file replacements, string references etc
-        - Builds ModifyTLK objects for each patch and adds to the patch list
-        - Raises errors for invalid syntax or missing files
+            - Parses the [TLKList] section to get TLK patch entries
+            - Handles different patch syntaxes like file replacements, string references etc
+            - Builds ModifyTLK objects for each patch and adds to the patch list
+            - Raises errors for invalid syntax or missing files
         """
         tlk_list_section: str | None = self.get_section_name("tlklist")
         if not tlk_list_section:
@@ -290,9 +282,12 @@ class ConfigReader:
             Returns:
             -------
                 tuple[int, int | None]: tuple containing start and end parts as integers or None.
-            - Splits the range string on delimiters like '-' or ':'
-            - Converts start and end parts to integers if present
-            - Returns start and end as a tuple of integers or integer and None
+
+            Processing Logic:
+            ----------------
+                - Splits the range string on delimiters like '-' or ':'
+                - Converts start and end parts to integers if present
+                - Returns start and end as a tuple of integers or integer and None
             """
             if range_str.lower().startswith("strref") or range_str.lower().startswith("ignore"):
                 range_str = range_str[6:]
@@ -305,15 +300,22 @@ class ConfigReader:
             return int(range_str), None
 
         def parse_range(range_str: str) -> range:
-            """Parses a string representing a range into a range object
+            """Parses a string representing a range into a range object.
+
             Args:
+            ----
                 range_str: String representing a range
+
             Returns:
+            -------
                 range: Parsed range object from the string
-            - Extracts the start and end parts from the range string
-            - If end is None, return a range from start to start+1 (meaning no range)
-            - Check invalid syntax i.e. if end is less than start, raise ValueError
-            - Return the range from start to end+1.
+
+            Processing Logic:
+            ----------------
+                - Extracts the start and end parts from the range string
+                - If end is None, return a range from start to start+1 (meaning no range)
+                - Check invalid syntax i.e. if end is less than start, raise ValueError
+                - Return the range from start to end+1.
             """
             start, end = extract_range_parts(range_str)
             if end is None:
@@ -339,7 +341,9 @@ class ConfigReader:
                 dialog_tlk_keys - Keys for dialog entries to modify
                 modifications_tlk_keys - New values for the dialog entries
                 is_replacement: bool - Whether it is replacing or modifying text
+
             Processing Logic:
+            ----------------
                 - Zips the dialog keys and modification values
                 - Parses the keys and values to get the change indices and new values
                 - Iterates through the change indices
@@ -454,7 +458,8 @@ class ConfigReader:
                 raise ValueError(msg) from e
 
     def load_2da_list(self) -> None:
-        """Load 2D array patches from ini file
+        """Load 2D array patches from ini file.
+
         Processing Logic:
         ----------------
             - Get the section name for the [2DAList] section
@@ -508,14 +513,16 @@ class ConfigReader:
     def load_ssf_list(self) -> None:
         """Loads SSF patches from the ini file.
 
-        - Gets the [SSFList] section name from the ini file
-        - Checks for [SSFList] section, logs warning if missing
-        - Maps sound names to enum values
-        - Loops through [SSFList] parsing patches
-            - Gets section for each SSF file
-            - Creates ModificationsSSF object
-            - Parses file section into modifiers
-        - Adds ModificationsSSF objects to config patches
+        Processing Logic:
+        ----------------
+            - Gets the [SSFList] section name from the ini file
+            - Checks for [SSFList] section, logs warning if missing
+            - Maps sound names to enum values
+            - Loops through [SSFList] parsing patches
+                - Gets section for each SSF file
+                - Creates ModificationsSSF object
+                - Parses file section into modifiers
+            - Adds ModificationsSSF objects to config patches
         """
         ssf_list_section = self.get_section_name("ssflist")
         if not ssf_list_section:
@@ -555,21 +562,18 @@ class ConfigReader:
                 modifications.modifiers.append(modifier)
 
     def load_gff_list(self) -> None:
-        """Loads GFF patches from the ini file
-        Args:
-            self: The object instance
-        Returns:
-            None: No value is returned
+        """Loads GFF patches from the ini file.
+
         Loading GFF Patches:
-        - Gets the "[GFFList]" section from the ini file
-        - Loops through each GFF patch defined
-            - Gets the section for the individual GFF file
-            - Creates a ModificationsGFF object for it
-            - Populates variables from the GFF section
-            - Loops through each modifier
-                - Creates the appropriate modifier object
-                - Adds it to the modifications object
-        - Adds the fully configured modifications object to the config.
+            - Gets the "[GFFList]" section from the ini file
+            - Loops through each GFF patch defined
+                - Gets the section for the individual GFF file
+                - Creates a ModificationsGFF object for it
+                - Populates variables from the GFF section
+                - Loops through each modifier
+                    - Creates the appropriate modifier object
+                    - Adds it to the modifications object
+            - Adds the fully configured modifications object to the config.
         """
         gff_list_section = self.get_section_name("gfflist")
         if not gff_list_section:
@@ -620,18 +624,15 @@ class ConfigReader:
     def load_compile_list(self) -> None:
         """Loads patches from the [CompileList] section of the ini file.
 
-        Args:
-        ----
-            self: The reader instance
-        Returns:
-            None
-        - Parses the [CompileList] section of the ini file into a dictionary
-        - Sets a default destination from an optional key
-        - Loops through each identifier/file pair
-            - Creates a ModificationsNSS object
-            - Looks for an optional section for the file
-            - Passes any values to populate the patch
-        - Adds each patch to the config patches list
+        Processing Logic:
+        ----------------
+            - Parses the [CompileList] section of the ini file into a dictionary
+            - Sets a default destination from an optional key
+            - Loops through each identifier/file pair
+                - Creates a ModificationsNSS object
+                - Looks for an optional section for the file
+                - Passes any values to populate the patch
+            - Adds each patch to the config patches list
         """
         compilelist_section = self.get_section_name("compilelist")
         if not compilelist_section:
@@ -685,21 +686,27 @@ class ConfigReader:
 
     #################
 
-    def modify_field_gff(self, identifier: str, key: str, string_value: str) -> ModifyFieldGFF:
-        """Modifies a field in a GFF based on the key(path) and string value
+    @classmethod
+    def modify_field_gff(cls, identifier: str, key: str, string_value: str) -> ModifyFieldGFF:
+        """Modifies a field in a GFF based on the key(path) and string value.
+
         Args:
+        ----
             identifier: str - The section name (for logging purposes)
             key: str - The key of the field to modify
-            string_value: str - The string value to set the field to
+            string_value: str - The string value to set the field to.
+
         Returns:
+        -------
             ModifyFieldGFF - A ModifyFieldGFF object representing the modification
+
         Processing Logic:
         ----------------
             1. Parses the string value into a FieldValue
             2. Handles special cases for keys containing "(strref)", "(lang)" or starting with "2damemory"
             3. Returns a ModifyFieldGFF object representing the modification.
         """
-        value: FieldValue = self.field_value_from_unknown(string_value)
+        value: FieldValue = cls.field_value_from_unknown(string_value)
         key_lower = key.lower()
         if "(strref)" in key_lower:
             value = FieldValueConstant(LocalizedStringDelta(value))
@@ -733,8 +740,11 @@ class ConfigReader:
             identifier: str - Identifier of the section in the current recursion from the ini file
             ini_data: CaseInsensitiveDict - Data from the ini section
             current_path: PureWindowsPath or None - Current path in the GFF
+
         Returns:
+        -------
             ModifyGFF - Object containing the field modification
+
         Processing Logic:
         ----------------
             1. Determines the field type from the field type string
@@ -810,8 +820,9 @@ class ConfigReader:
             modifiers,
         )
 
+    @classmethod
     def _get_addfield_value(
-        self,
+        cls,
         ini_section_dict: CaseInsensitiveDict[str],
         field_type: GFFFieldType,
         identifier: str,
@@ -823,27 +834,29 @@ class ConfigReader:
             ini_section_dict: {CaseInsensitiveDict}: The section of the ini, as a dict.
             field_type: {GFFFieldType}: The field type of this addfield section.
             identifier: {str}: The name identifier for the section
+
         Returns:
+        -------
             value: {FieldValue | None}: The parsed field value or None
 
         Processing Logic:
         ----------------
-        - Parses the "Value" key to get a raw value and parses it based on field type
-        - For LocalizedString, see field_value_from_localized_string
-        - For GFFList and GFFStruct, constructs empty instances to be filled in later - see pykotor/tslpatcher/mods/gff.py
-        - Returns None if value cannot be parsed or field type not supported (config err)
+            - Parses the "Value" key to get a raw value and parses it based on field type
+            - For LocalizedString, see field_value_from_localized_string
+            - For GFFList and GFFStruct, constructs empty instances to be filled in later - see pykotor/tslpatcher/mods/gff.py
+            - Returns None if value cannot be parsed or field type not supported (config err)
         """
         value: FieldValue | None = None
 
         raw_value: str | None = ini_section_dict.pop("Value", None)
         if raw_value is not None:
-            ret_value: FieldValue | None = self.field_value_from_type(raw_value, field_type)
+            ret_value: FieldValue | None = cls.field_value_from_type(raw_value, field_type)
             if ret_value is None:
                 msg = f"Could not parse fieldtype '{field_type}' in GFFList section [{identifier}]"
                 raise ValueError(msg)
             value = ret_value
         elif field_type.return_type() == LocalizedString:
-            value = self.field_value_from_localized_string(ini_section_dict)
+            value = cls.field_value_from_localized_string(ini_section_dict)
         elif field_type.return_type() == GFFList:
             value = FieldValueConstant(GFFList())
         elif field_type.return_type() == GFFStruct:
@@ -866,8 +879,11 @@ class ConfigReader:
         Args:
         ----
             ini_section_dict: CaseInsensitiveDict containing localized string data
+
         Returns:
+        -------
             FieldValueConstant: Parsed TSLPatcher localized string
+
         Processing Logic:
         ----------------
             1. Pop the "StrRef" key to get the base string reference
@@ -932,6 +948,7 @@ class ConfigReader:
         Returns:
         -------
             FieldValue: The parsed value represented as a FieldValue object.
+
         Processing Logic:
         ----------------
             - Checks if the value is already cached in memory
@@ -963,14 +980,17 @@ class ConfigReader:
 
     @staticmethod
     def field_value_from_type(raw_value: str, field_type: GFFFieldType) -> FieldValue | None:
-        """Extracts field value from raw string based on field type
+        """Extracts field value from raw string based on field type.
+
         Args:
+        ----
             raw_value: {Raw string value from file}
             field_type: {Field type enum}.
 
-        Returns
+        Returns:
         -------
             FieldValue: {Field value object}
+
         Processing Logic:
         ----------------
             - Checks if value already exists in memory as a 2DAMEMORY or StrRef
@@ -1008,19 +1028,24 @@ class ConfigReader:
         identifier: str,
         modifiers: CaseInsensitiveDict[str],
     ) -> Modify2DA | None:
-        """Determines the type of 2DA modification based on the key
+        """Determines the type of 2DA modification based on the key.
+
         Args:
+        ----
             key: str - The key identifying the type of modification
             identifier: str - The identifier of the 2DA (section name)
             modifiers: CaseInsensitiveDict - Additional parameters for the modification
+
         Returns:
+        -------
             Modify2DA | None - The 2DA modification object or None
+
         Processing Logic:
         ----------------
-        - Parses the key to determine modification type
-        - Checks for required parameters
-        - Constructs the appropriate modification object
-        - Returns the modification object or None.
+            - Parses the key to determine modification type
+            - Checks for required parameters
+            - Constructs the appropriate modification object
+            - Returns the modification object or None.
         """
         exclusive_column: str | None
         modification: Modify2DA | None = None
@@ -1146,10 +1171,10 @@ class ConfigReader:
 
         Processing Logic:
         ----------------
-        1. Loops through each modifier and value
-        2. Determines modifier type (cell, 2DA store, TLK store, row label)
-        3. Creates appropriate RowValue for cell/store value
-        4. Adds cell/store value to return dictionaries
+            1. Loops through each modifier and value
+            2. Determines modifier type (cell, 2DA store, TLK store, row label)
+            3. Creates appropriate RowValue for cell/store value
+            4. Adds cell/store value to return dictionaries
         """
         cells: dict[str, RowValue] = {}
         store_2da: dict[int, RowValue] = {}
@@ -1194,6 +1219,7 @@ class ConfigReader:
         return cells, store_2da, store_tlk
 
     def row_label_2da(self, identifier: str, modifiers: CaseInsensitiveDict[str]) -> str | None:
+        # sourcery skip: assign-if-exp, reintroduce-else
         if "RowLabel" in modifiers:
             return modifiers.pop("RowLabel")  # type: ignore[reportGeneralTypeIssues]
         if "NewRowLabel" in modifiers:
@@ -1205,17 +1231,23 @@ class ConfigReader:
         identifier: str,
         modifiers: CaseInsensitiveDict[str],
     ) -> tuple[dict[int, RowValue], dict[str, RowValue], dict[int, str]]:
-        """Extracts specific 2DA patch information from the ini
+        """Extracts specific 2DA patch information from the ini.
+
         Args:
+        ----
             identifier: str - Section name being handled
             modifiers: CaseInsensitiveDict[str] - Modifiers to insert values
+
         Returns:
+        -------
             tuple[dict[int, RowValue], dict[str, RowValue], dict[int, str]] - Index inserts, label inserts, 2DA store
+
         Processes Logic:
-        - Loops through modifiers and extracts value type
-        - Assigns row value based on value type
-        - Inserts into appropriate return dictionary based on modifier key
-        - Returns tuple of inserted values dictionaries.
+        ---------------
+            - Loops through modifiers and extracts value type
+            - Assigns row value based on value type
+            - Inserts into appropriate return dictionary based on modifier key
+            - Returns tuple of inserted values dictionaries.
         """
         index_insert: dict[int, RowValue] = {}
         label_insert: dict[str, RowValue] = {}
@@ -1261,15 +1293,20 @@ class ConfigReader:
 
     @staticmethod
     def resolve_tslpatcher_ssf_sound(name: str):
-        """Resolves a config string to an SSFSound enum value
+        """Resolves a config string to an SSFSound enum value.
+
         Args:
+        ----
             name (str): The config string name
+
         Returns:
+        -------
             SSFSound: The resolved SSFSound enum value
+
         Processing Logic:
         ----------------
-        - Defines a CaseInsensitiveDict mapping config strings to SSFSound enum values
-        - Looks up the provided name in the dict and returns the corresponding SSFSound value.
+            - Defines a CaseInsensitiveDict mapping config strings to SSFSound enum values
+            - Looks up the provided name in the dict and returns the corresponding SSFSound value.
         """
         configstr_to_ssfsound = CaseInsensitiveDict(
             {
@@ -1307,7 +1344,8 @@ class ConfigReader:
 
     @staticmethod
     def resolve_tslpatcher_gff_field_type(field_type_num_str: str) -> GFFFieldType:
-        """Resolves a TSlpatcher GFF field type to a PyKotor GFFFieldType enum.
+        """Resolves a TSLPatcher GFF field type to a PyKotor GFFFieldType enum.
+
         Use this function to work with the ini's FieldType= values in PyKotor.
 
         Args:
@@ -1317,6 +1355,7 @@ class ConfigReader:
         Returns:
         -------
             GFFFieldType: {The GFFFieldType enum value corresponding to the input string}
+
         Processing Logic:
         ----------------
             - Defines a dictionary mapping field type number strings to GFFFieldType enum values
