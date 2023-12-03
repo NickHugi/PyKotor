@@ -1318,7 +1318,7 @@ class Installation:
                     return value
 
         name: str = ""
-        female_talktable_exists = self.female_talktable().path().exists()
+        female_talktable_exists = self.female_talktable()._path.exists()
         for module in self.modules_list():
             if root not in module:
                 continue
