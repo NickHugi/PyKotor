@@ -5,8 +5,8 @@ from typing import TYPE_CHECKING
 from pykotor.common.geometry import SurfaceMaterial, Vector2, Vector3, Vector4
 from pykotor.common.misc import Color, Game
 from pykotor.common.stream import BinaryReader, BinaryWriter
-from pykotor.resource.formats.mdl import MDL
 from pykotor.resource.formats.mdl.mdl_data import (
+    MDL,
     MDLAnimation,
     MDLBoneVertex,
     MDLController,

@@ -3,9 +3,10 @@ from __future__ import annotations
 import os
 
 from pykotor.common.stream import BinaryReader
-from pykotor.resource.formats.tlk import TLK, TLKBinaryReader, TLKBinaryWriter, TLKXMLReader
+from pykotor.resource.formats.tlk.io_tlk import TLKBinaryReader, TLKBinaryWriter
 from pykotor.resource.formats.tlk.io_tlk_json import TLKJSONReader, TLKJSONWriter
-from pykotor.resource.formats.tlk.io_tlk_xml import TLKXMLWriter
+from pykotor.resource.formats.tlk.io_tlk_xml import TLKXMLReader, TLKXMLWriter
+from pykotor.resource.formats.tlk.tlk_data import TLK
 from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES, ResourceType
 
 

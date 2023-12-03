@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from pykotor.resource.formats.erf import ERF, ERFType
+from pykotor.resource.formats.erf.erf_data import ERF, ERFType
 from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES, ResourceReader, ResourceType, ResourceWriter, autoclose
 
 

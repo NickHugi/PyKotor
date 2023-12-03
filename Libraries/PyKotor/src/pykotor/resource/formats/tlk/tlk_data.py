@@ -18,7 +18,7 @@ class TLK:
         language: Language = Language.ENGLISH,
     ) -> None:
         self.entries: list[TLKEntry] = []
-        self.language: Language = language  # game does not care what this value is
+        self.language: Language = language  # game does not use this field
 
     def __len__(
         self,
@@ -50,9 +50,7 @@ class TLK:
         -------
             The corresponding TLKEntry.
         """
-        if not isinstance(item, int):
-            return NotImplemented
-        return self.entries[item]
+        return self.entries[item] if isinstance(item, int) else NotImplemented
 
     def get(
         self,
@@ -108,9 +106,8 @@ class TLK:
         if len(self) > size:
             self.entries = self.entries[:size]
         else:
-            self.entries.extend(
-                [TLKEntry("", ResRef.from_blank()) for _ in range(len(self), size)],
-            )
+            self.entries.extend([TLKEntry("", ResRef.from_blank()) for _ in range(len(self), size)])
+
     def compare(self, other: TLK, log_func: Callable = print) -> bool:
         if len(self) != len(other):
             log_func(f"TLK row count mismatch. Old: {len(self)}, New: {len(other)}")
@@ -125,11 +122,8 @@ class TLK:
                     continue
                 continue
             if new_stringref is None or new_entry is None:
-                if old_stringref is not None and old_entry is not None:
-                    extra_old += 1
-                    continue
+                extra_old += 1
                 continue
-
             if old_entry != new_entry:
                 text_mismatch: bool = old_entry.text.lower() != new_entry.text.lower()
                 vo_mismatch: bool = old_entry.voiceover.get().lower() != new_entry.voiceover.get().lower()
@@ -164,10 +158,12 @@ class TLKEntry:
         self.text: str = text
         self.voiceover: ResRef = voiceover
 
-        # entry flags. These are set in both game's TLKs, regardless of whether they're used.
+        # The following fields exist in TLK format, but do not perform any function in KOTOR. The game ignores these.
+        # entry flags. These are set in both game's TLKs
         self.text_present: bool = True
-        self.sound_present: bool = False
-        self.soundlength_present: bool = False
+        self.sound_present: bool = True
+        self.soundlength_present: bool = True
+        self.sound_length: int = 0
 
     def __eq__(
         self,
@@ -177,3 +173,7 @@ class TLKEntry:
         if not isinstance(other, TLKEntry):
             return NotImplemented
         return other.text == self.text and other.voiceover == self.voiceover
+
+    @property
+    def text_length(self) -> int:
+        return len(self.text)

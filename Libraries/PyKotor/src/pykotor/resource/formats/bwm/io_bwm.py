@@ -3,7 +3,7 @@ from __future__ import annotations
 import struct
 
 from pykotor.common.geometry import SurfaceMaterial, Vector3
-from pykotor.resource.formats.bwm import BWM, BWMFace, BWMType
+from pykotor.resource.formats.bwm.bwm_data import BWM, BWMFace, BWMType
 from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES, ResourceReader, ResourceWriter, autoclose
 
 

@@ -4,8 +4,7 @@ from typing import TYPE_CHECKING
 
 from pykotor.common.geometry import AxisAngle, Vector4
 from pykotor.common.stream import BinaryReader, BinaryWriter
-from pykotor.resource.formats.mdl import MDL
-from pykotor.resource.formats.mdl.mdl_data import MDLController, MDLControllerType, MDLNode
+from pykotor.resource.formats.mdl.mdl_data import MDL, MDLController, MDLControllerType, MDLNode
 
 if TYPE_CHECKING:
     from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES

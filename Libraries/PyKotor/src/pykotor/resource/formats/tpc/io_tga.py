@@ -4,7 +4,7 @@ import struct
 from enum import IntEnum
 
 from pykotor.common.stream import BinaryReader
-from pykotor.resource.formats.tpc import TPC, TPCTextureFormat
+from pykotor.resource.formats.tpc.tpc_data import TPC, TPCTextureFormat
 from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES, ResourceReader, ResourceWriter, autoclose
 
 

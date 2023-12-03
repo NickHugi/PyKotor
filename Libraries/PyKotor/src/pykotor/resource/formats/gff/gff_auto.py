@@ -3,7 +3,9 @@ from __future__ import annotations
 import os
 
 from pykotor.common.stream import BinaryReader
-from pykotor.resource.formats.gff import GFF, GFFBinaryReader, GFFBinaryWriter, GFFContent, GFFXMLReader, GFFXMLWriter
+from pykotor.resource.formats.gff.gff_data import GFF, GFFContent
+from pykotor.resource.formats.gff.io_gff import GFFBinaryReader, GFFBinaryWriter
+from pykotor.resource.formats.gff.io_gff_xml import GFFXMLReader, GFFXMLWriter
 from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES, ResourceType
 
 

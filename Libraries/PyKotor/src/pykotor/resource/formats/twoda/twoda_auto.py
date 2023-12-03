@@ -3,15 +3,10 @@ from __future__ import annotations
 import os
 
 from pykotor.common.stream import BinaryReader
-from pykotor.resource.formats.twoda import (
-    TwoDA,
-    TwoDABinaryReader,
-    TwoDABinaryWriter,
-    TwoDACSVReader,
-    TwoDACSVWriter,
-    TwoDAJSONReader,
-    TwoDAJSONWriter,
-)
+from pykotor.resource.formats.twoda.io_twoda import TwoDABinaryReader, TwoDABinaryWriter
+from pykotor.resource.formats.twoda.io_twoda_csv import TwoDACSVReader, TwoDACSVWriter
+from pykotor.resource.formats.twoda.io_twoda_json import TwoDAJSONReader, TwoDAJSONWriter
+from pykotor.resource.formats.twoda.twoda_data import TwoDA
 from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES, ResourceType
 
 

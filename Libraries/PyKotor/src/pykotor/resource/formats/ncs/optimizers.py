@@ -1,7 +1,6 @@
 from copy import copy
 
-from pykotor.resource.formats.ncs import NCS
-from pykotor.resource.formats.ncs.ncs_data import NCSInstructionType, NCSOptimizer
+from pykotor.resource.formats.ncs.ncs_data import NCS, NCSInstructionType, NCSOptimizer
 
 
 class RemoveNopOptimizer(NCSOptimizer):

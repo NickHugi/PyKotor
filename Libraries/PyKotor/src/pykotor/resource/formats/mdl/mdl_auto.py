@@ -1,10 +1,15 @@
 from __future__ import annotations
 
 import os
+from typing import TYPE_CHECKING
 
 from pykotor.common.stream import BinaryReader
-from pykotor.resource.formats.mdl import MDL, MDLAsciiReader, MDLAsciiWriter, MDLBinaryReader, MDLBinaryWriter
+from pykotor.resource.formats.mdl.io_mdl import MDLBinaryReader, MDLBinaryWriter
+from pykotor.resource.formats.mdl.io_mdl_ascii import MDLAsciiReader, MDLAsciiWriter
 from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES, ResourceType
+
+if TYPE_CHECKING:
+    from pykotor.resource.formats.mdl.mdl_data import MDL
 
 
 def detect_mdl(

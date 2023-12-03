@@ -1,8 +1,12 @@
 from __future__ import annotations
 
-from pykotor.resource.formats.bwm import BWM, BWMBinaryReader, BWMBinaryWriter
+from typing import TYPE_CHECKING
+
+from pykotor.resource.formats.bwm.io_bwm import BWMBinaryReader, BWMBinaryWriter
 from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES, ResourceType
 
+if TYPE_CHECKING:
+    from pykotor.resource.formats.bwm.bwm_data import BWM
 
 def read_bwm(
     source: SOURCE_TYPES,

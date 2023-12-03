@@ -1,10 +1,12 @@
 from __future__ import annotations
 
+import os
+
 from pykotor.common.stream import BinaryReader
-from pykotor.resource.formats.ssf import SSF, SSFBinaryReader, SSFBinaryWriter, SSFXMLReader
-from pykotor.resource.formats.ssf.io_ssf_xml import SSFXMLWriter
+from pykotor.resource.formats.ssf.io_ssf import SSFBinaryReader, SSFBinaryWriter
+from pykotor.resource.formats.ssf.io_ssf_xml import SSFXMLReader, SSFXMLWriter
+from pykotor.resource.formats.ssf.ssf_data import SSF
 from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES, ResourceType
-from pykotor.tools.path import CaseAwarePath
 
 
 def detect_ssf(
@@ -30,7 +32,7 @@ def detect_ssf(
         The format of the SSF data.
     """
     try:
-        if isinstance(source, (str, CaseAwarePath)):
+        if isinstance(source, (str, os.PathLike)):
             with BinaryReader.from_file(source, offset) as reader:
                 file_format = ResourceType.SSF if reader.read_string(4) == "SSF " else ResourceType.SSF_XML
         elif isinstance(source, (bytes, bytearray)):

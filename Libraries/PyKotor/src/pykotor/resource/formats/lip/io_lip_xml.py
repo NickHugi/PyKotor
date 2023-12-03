@@ -9,7 +9,7 @@ with suppress(ImportError):
     from defusedxml.ElementTree import fromstring as _fromstring
     ElementTree.fromstring = _fromstring
 
-from pykotor.resource.formats.lip import LIP, LIPShape
+from pykotor.resource.formats.lip.lip_data import LIP, LIPShape
 from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES, ResourceReader, ResourceWriter, autoclose
 from utility.misc import indent
 

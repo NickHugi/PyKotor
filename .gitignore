@@ -15,7 +15,6 @@ dist-lin
 dist-win
 /toolset/help/
 /toolset/kits/
-pykotor
 build-windows.ps1
 __pycache__
 .idea

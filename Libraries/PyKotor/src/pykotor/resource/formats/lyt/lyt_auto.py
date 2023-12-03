@@ -1,7 +1,12 @@
 from __future__ import annotations
 
-from pykotor.resource.formats.lyt import LYT, LYTAsciiReader, LYTAsciiWriter
+from typing import TYPE_CHECKING
+
+from pykotor.resource.formats.lyt.io_lyt import LYTAsciiReader, LYTAsciiWriter
 from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES, ResourceType
+
+if TYPE_CHECKING:
+    from pykotor.resource.formats.lyt.lyt_data import LYT
 
 
 def read_lyt(

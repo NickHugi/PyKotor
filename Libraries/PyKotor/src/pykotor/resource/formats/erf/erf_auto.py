@@ -1,7 +1,12 @@
 from __future__ import annotations
 
-from pykotor.resource.formats.erf import ERF, ERFBinaryReader, ERFBinaryWriter
+from typing import TYPE_CHECKING
+
+from pykotor.resource.formats.erf.io_erf import ERFBinaryReader, ERFBinaryWriter
 from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES, ResourceType
+
+if TYPE_CHECKING:
+    from pykotor.resource.formats.erf.erf_data import ERF
 
 
 def read_erf(

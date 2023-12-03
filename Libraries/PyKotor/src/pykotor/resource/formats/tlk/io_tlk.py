@@ -3,7 +3,7 @@ from __future__ import annotations
 from pykotor.common.language import Language
 from pykotor.common.misc import ResRef, WrappedInt
 from pykotor.common.stream import ArrayHead
-from pykotor.resource.formats.tlk import TLK, TLKEntry
+from pykotor.resource.formats.tlk.tlk_data import TLK, TLKEntry
 from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES, ResourceReader, ResourceWriter, autoclose
 
 _FILE_HEADER_SIZE = 20
@@ -70,12 +70,11 @@ class TLKBinaryReader(ResourceReader):
 
         entry_flags = self._reader.read_uint32()
         sound_resref = self._reader.read_string(16)
-        self._reader.read_uint32()  # unused - volume variance
-        self._reader.read_uint32()  # unused - pitch variance
+        _volume_variance = self._reader.read_uint32()  # unused
+        _pitch_variance = self._reader.read_uint32()  # unused
         text_offset = self._reader.read_uint32()
         text_length = self._reader.read_uint32()
-        self._reader.read_single()  # unused - sound length
-
+        entry.sound_length = self._reader.read_single()  # unused
         entry.text_present = (entry_flags & 0x0001) != 0         # Check if the TEXT_PRESENT flag is set
         entry.sound_present = (entry_flags & 0x0002) != 0        # Check if the SND_PRESENT flag is set
         entry.soundlength_present = (entry_flags & 0x0004) != 0  # Check if the SND_LENGTH flag is set

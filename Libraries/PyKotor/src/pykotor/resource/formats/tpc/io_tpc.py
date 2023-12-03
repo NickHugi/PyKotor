@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from pykotor.resource.formats.tpc import TPC, TPCTextureFormat
+from pykotor.resource.formats.tpc.tpc_data import TPC, TPCTextureFormat
 from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES, ResourceReader, ResourceWriter, autoclose
 
 
