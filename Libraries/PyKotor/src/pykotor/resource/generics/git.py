@@ -26,7 +26,7 @@ class GIT:
 
     def __init__(
         self,
-    ):
+    ) -> None:
         self.ambient_sound_id: int = 0
         self.ambient_volume: int = 0
         self.env_audio: int = 0
@@ -187,13 +187,19 @@ class GIT:
 
 class GITInstance(ABC):
     def __init__(self, x: float, y: float, z: float):
+        """Initializes a GIT instance with the given position coordinates.
+
+        Args:
+        ----
+            x (float): The x-coordinate of the position.
+            y (float): The y-coordinate of the position.
+            z (float): The z-coordinate of the position.
+        """
         self.position: Vector3 = Vector3(x, y, z)
 
     @abstractmethod
-    def identifier(
-        self,
-    ) -> ResourceIdentifier | None:
-        ...
+    def identifier(self) -> ResourceIdentifier | None:
+        """Returns the resource identifier of the instance, or None if it doesn't have one."""
 
     @abstractmethod
     def blank(
@@ -208,7 +214,14 @@ class GITInstance(ABC):
         y: float,
         z: float,
     ) -> None:
-        ...
+        """Moves the instance to the specified position.
+
+        Args:
+        ----
+            - x (float): The new x-coordinate of the position.
+            - y (float): The new y-coordinate of the position.
+            - z (float): The new z-coordinate of the position.
+        """
 
     @abstractmethod
     def rotate(
@@ -415,10 +428,13 @@ class GITDoor(GITInstance):
 
         Returns
         -------
-            ResourceIdentifier | None: {Resource identifier object or None}
-        - Get resource reference from self
-        - Create ResourceIdentifier object from reference and type
-        - Return ResourceIdentifier or None.
+            ResourceIdentifier | None
+
+        Processing Logic:
+        ----------------
+            - Get resource reference from self
+            - Create ResourceIdentifier object from reference and type
+            - Return ResourceIdentifier or None.
         """
         return ResourceIdentifier(self.resref.get(), ResourceType.UTD)
 
@@ -468,17 +484,20 @@ class GITEncounter(GITInstance):
         y: float,
         z: float,
     ) -> None:
-        """Moves an object to a new position
+        """Moves an object to a new position.
+
         Args:
+        ----
             x: New x coordinate
             y: New y coordinate
             z: New z coordinate
-        Returns:
-            None: Does not return anything
-        - Adds the passed x value to the current x coordinate
-        - Adds the passed y value to the current y coordinate
-        - Adds the passed z value to the current z coordinate
-        - Updates the object's position with the new coordinates.
+
+        Processing Logic:
+        ----------------
+            - Adds the passed x value to the current x coordinate
+            - Adds the passed y value to the current y coordinate
+            - Adds the passed z value to the current z coordinate
+            - Updates the object's position with the new coordinates.
         """
         self.position.x += x
         self.position.y += y
@@ -535,17 +554,20 @@ class GITPlaceable(GITInstance):
         y: float,
         z: float,
     ) -> None:
-        """Moves an object to a new position
+        """Moves an object to a new position.
+
         Args:
+        ----
             x: New x coordinate
             y: New y coordinate
             z: New z coordinate
-        Returns:
-            None: Does not return anything
-        - Adds the passed x value to the current x coordinate
-        - Adds the passed y value to the current y coordinate
-        - Adds the passed z value to the current z coordinate
-        - Updates the object's position with the new coordinates.
+
+        Processing Logic:
+        ----------------
+            - Adds the passed x value to the current x coordinate
+            - Adds the passed y value to the current y coordinate
+            - Adds the passed z value to the current z coordinate
+            - Updates the object's position with the new coordinates.
         """
         self.position.x += x
         self.position.y += y

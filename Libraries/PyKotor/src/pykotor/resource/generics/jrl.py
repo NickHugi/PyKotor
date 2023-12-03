@@ -3,7 +3,6 @@ from __future__ import annotations
 from enum import IntEnum
 
 from pykotor.common.language import LocalizedString
-from pykotor.common.misc import Game
 from pykotor.resource.formats.gff import GFF, GFFContent, GFFList, read_gff, write_gff
 from pykotor.resource.formats.gff.gff_auto import bytes_gff
 from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES, ResourceType
@@ -16,7 +15,7 @@ class JRL:
 
     def __init__(
         self,
-    ):
+    ) -> None:
         self.quests: list[JRLQuest] = []
 
 
@@ -36,7 +35,7 @@ class JRLQuest:
 
     def __init__(
         self,
-    ):
+    ) -> None:
         self.comment: str = ""
         self.name: LocalizedString = LocalizedString.from_invalid()
         self.planet_id: int = 0
@@ -59,7 +58,7 @@ class JRLEntry:
 
     def __init__(
         self,
-    ):
+    ) -> None:
         self.end: bool = False
         self.entry_id: int = 0
         self.text: LocalizedString = LocalizedString.from_invalid()
@@ -74,9 +73,7 @@ class JRLQuestPriority(IntEnum):
     LOWEST = 4
 
 
-def construct_jrl(
-    gff: GFF,
-) -> JRL:
+def construct_jrl(gff: GFF) -> JRL:
     jrl = JRL()
 
     for category_struct in gff.root.acquire("Categories", GFFList()):
@@ -100,12 +97,7 @@ def construct_jrl(
     return jrl
 
 
-def dismantle_jrl(
-    jrl: JRL,
-    game: Game = Game.K2,
-    *,
-    use_deprecated: bool = True,
-) -> GFF:
+def dismantle_jrl(jrl: JRL) -> GFF:
     gff = GFF(GFFContent.JRL)
 
     category_list = gff.root.set_list("Categories", GFFList())
@@ -141,23 +133,17 @@ def read_jrl(
 def write_jrl(
     jrl: JRL,
     target: TARGET_TYPES,
-    game: Game = Game.K2,
     file_format: ResourceType = ResourceType.GFF,
-    *,
-    use_deprecated: bool = True,
 ) -> None:
-    gff = dismantle_jrl(jrl, game, use_deprecated=use_deprecated)
+    gff = dismantle_jrl(jrl)
     write_gff(gff, target, file_format)
 
 
 def bytes_jrl(
     jrl: JRL | SOURCE_TYPES,
-    game: Game = Game.K2,
     file_format: ResourceType = ResourceType.GFF,
-    *,
-    use_deprecated: bool = True,
 ) -> bytes:
     if not isinstance(jrl, JRL):
         jrl = read_jrl(jrl)
-    gff = dismantle_jrl(jrl, game, use_deprecated=use_deprecated)
+    gff = dismantle_jrl(jrl)
     return bytes_gff(gff, file_format)

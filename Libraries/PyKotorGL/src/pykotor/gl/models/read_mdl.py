@@ -23,10 +23,13 @@ def _load_node(scene, node: Node | None, mdl: BinaryReader, mdx: BinaryReader, o
         mdx: {BinaryReader}: Reader for the mesh data
         offset: {int}: Offset to read node data from
         names: {list}: List of node name strings
+
     Returns:
+    -------
         node: {Node}: The loaded node
 
     Processing Logic:
+    ----------------
         - Reads node data from the model file at the given offset
         - Sets node properties like position, rotation, name
         - Loads child nodes recursively
@@ -130,9 +133,13 @@ def gl_load_mdl(scene, mdl: BinaryReader, mdx: BinaryReader) -> Model:
         scene: Scene - The scene to load the model into
         mdl: BinaryReader - The binary reader for the .mdl file
         mdx: BinaryReader - The binary reader for the .mdx file
+
     Returns:
+    -------
         Model - The loaded model
+
     Processing Logic:
+    ----------------
         - Seeks to the offset table in the .mdl file
         - Reads name count and offset to name offsets table
         - Reads name offsets and extracts names
@@ -158,14 +165,21 @@ def gl_load_mdl(scene, mdl: BinaryReader, mdx: BinaryReader) -> Model:
 
 def gl_load_stitched_model(scene, mdl: BinaryReader, mdx: BinaryReader) -> Model:
     """Returns a model instance that has meshes with the same textures merged together.
+
     Loads and stitches together a gltf model from binary files
+
     Args:
+    ----
         scene: {Scene}: The scene to add the model to
         mdl: {BinaryReader}: Reader for the binary model file
         mdx: {BinaryReader}: Reader for the binary mesh data file
+
     Returns:
-        {Model}: The loaded and stitched model
+    -------
+        Model: The loaded and stitched model
+
     Processing Logic:
+    ----------------
         - Parses header data from mdl to get node names and offsets
         - Builds a list of node offsets that contain renderable meshes
         - Merges meshes that use the same materials

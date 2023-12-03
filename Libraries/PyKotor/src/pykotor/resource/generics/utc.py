@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-
 from pykotor.common.language import LocalizedString
 from pykotor.common.misc import EquipmentSlot, Game, InventoryItem, ResRef
 from pykotor.resource.formats.gff import GFF, GFFContent, GFFList, read_gff, write_gff
@@ -90,7 +89,7 @@ class UTC:
 
     def __init__(
         self,
-    ):
+    ) -> None:
         self.resref: ResRef = ResRef.from_blank()
         self.conversation: ResRef = ResRef.from_blank()
         self.tag: str = ""

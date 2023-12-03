@@ -56,13 +56,16 @@ class Model:
         return all_nodes
 
     def box(self) -> tuple[vec3, vec3]:
-        """Calculates bounding box of the scene
+        """Calculates bounding box of the scene.
+
         Args:
+        ----
             self: {Node to calculate bounding box for}.
 
-        Returns
+        Returns:
         -------
             tuple[vec3, vec3]: {Minimum and maximum points of bounding box}
+
         Processing Logic:
         ----------------
             - Initialize minimum and maximum points to extreme values
@@ -85,6 +88,7 @@ class Model:
 
     def _box_rec(self, node: Node, transform: mat4, min_point: vec3, max_point: vec3) -> None:
         """Calculates bounding box of node and its children recursively.
+
         Call the 'box' function to get started here, don't call this directly.
 
         Args:
@@ -94,9 +98,6 @@ class Model:
             min_point: {vec3 to store minimum point of bounding box}
             max_point: {vec3 to store maximum point of bounding box}.
 
-        Returns:
-        -------
-            None: {No value is returned}
         Processing Logic:
         ----------------
             - Apply transformation on node position and rotation
@@ -214,8 +215,10 @@ class Node:
 class Mesh:
     def __init__(self, scene, node, texture, lightmap, vertex_data, element_data, block_size, data_bitflags,
                  vertex_offset, normal_offset, texture_offset, lightmap_offset):
-        """Initializes a Mesh object
+        """Initializes a Mesh object.
+
         Args:
+        ----
             scene: Scene - The scene object
             node: Node - The node object
             texture: str - The texture path
@@ -228,8 +231,7 @@ class Mesh:
             normal_offset: int - The normal offset
             texture_offset: int - The texture offset
             lightmap_offset: int - The lightmap offset
-        Returns:
-            None
+
         Processing Logic:
         ----------------
             - Generates VAO and VBO
@@ -292,15 +294,14 @@ class Mesh:
 
 class Cube:
     def __init__(self, scene: Scene, min_point: vec3 | None = None, max_point: vec3 | None = None):
-        """Initializes a cube mesh
+        """Initializes a cube mesh.
+
         Args:
+        ----
             scene: Scene: The scene object
             min_point: vec3 | None: The minimum point of the cube (default is (-1, -1, -1))
             max_point: vec3 | None: The maximum point of the cube (default is (1, 1, 1)).
 
-        Returns
-        -------
-            None: Does not return anything
         Processing Logic:
         ----------------
             - Sets default values for min_point and max_point if not provided
@@ -374,8 +375,7 @@ class Boundary:
         ----
             scene: Scene - The scene to add this mesh to
             vertices: list[Vector3] - The vertices of the mesh
-        Returns:
-            None
+
         Processing Logic:
         ----------------
             - Build normalized data from vertices
@@ -408,13 +408,18 @@ class Boundary:
 
     @classmethod
     def from_circle(cls, scene: Scene, radius: float, smoothness: int = 10) -> Boundary:
-        """Generates a circular boundary from a circle
+        """Generates a circular boundary from a circle.
+
         Args:
+        ----
             scene: Scene - The scene to add the boundary to
             radius: float - The radius of the circle
             smoothness: int = 10 - The number of vertices used to approximate the circle
+
         Returns:
+        -------
             Boundary - The generated circular boundary
+
         Processing Logic:
         ----------------
             - Calculate vertex positions around the circle at intervals of smoothness

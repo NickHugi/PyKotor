@@ -65,18 +65,23 @@ class ExitCode(IntEnum):
 
 # Please be careful modifying this functionality as 3rd parties depend on this syntax.
 def parse_args() -> Namespace:
-    """Parses command line arguments
+    """Parses command line arguments.
+
     Args:
+    ----
         parser: ArgumentParser - Argument parser object from the argparse library.
         kwargs: dict - Keyword arguments dictionary
         positional: list - Positional arguments list
+
     Returns:
+    -------
         Namespace - Namespace containing parsed arguments
+
     Parses command line arguments and returns Namespace:
-    - Creates ArgumentParser object to parse arguments
-    - Adds supported arguments to parser
-    - Parses arguments into kwargs and positional lists
-    - Unifies positional and keyword args into kwargs Namespace.
+        - Creates ArgumentParser object to parse arguments
+        - Adds supported arguments to parser
+        - Parses arguments into kwargs and positional lists
+        - Unifies positional and keyword args into kwargs Namespace.
     """
     parser = ArgumentParser(description="HoloPatcher CLI")
 
@@ -310,6 +315,7 @@ class App(tk.Tk):
             cmdline_args: Namespace of command line arguments passed to the application.
 
         Processing Logic:
+        ----------------
             - Open the specified game directory if provided
             - Set the selected namespace if namespace index is provided
             - Hide the console if not explicitly shown
@@ -342,10 +348,12 @@ class App(tk.Tk):
         Args:
         ----
             self: The class instance.
+
         Processing Logic:
-        - Replaces message box functions with print statements to display messages in the console.
-        - Prompts the user for input and returns True/False for yes/no questions instead of opening a message box.
-        - Allows message boxes to work as expected in console mode without GUI dependencies.
+        ----------------
+            - Replaces message box functions with print statements to display messages in the console.
+            - Prompts the user for input and returns True/False for yes/no questions instead of opening a message box.
+            - Allows message boxes to work as expected in console mode without GUI dependencies.
         """
 
         class MessageboxOverride:
@@ -498,16 +506,19 @@ class App(tk.Tk):
             self.after(10, lambda: self.move_cursor_to_end(self.namespaces_combobox))
 
     def load_namespace(self, namespaces: list[PatcherNamespace], config_reader: ConfigReader | None = None) -> None:
-        """Loads namespaces into the UI
+        """Loads namespaces into the UI.
+
         Args:
+        ----
             namespaces: List of PatcherNamespace objects
             config_reader: ConfigReader object or None
-        Returns:
-            None: Does not return anything
-        - Populates the namespaces combobox with the provided namespaces
-        - Sets the first namespace as the selected option
-        - Stores the namespaces for later use
-        - Calls on_namespace_option_chosen to load initial config.
+
+        Processing Logic:
+        ----------------
+            - Populates the namespaces combobox with the provided namespaces
+            - Sets the first namespace as the selected option
+            - Stores the namespaces for later use
+            - Calls on_namespace_option_chosen to load initial config.
         """
         self.namespaces_combobox["values"] = namespaces
         self.namespaces_combobox.set(self.namespaces_combobox["values"][0])
@@ -693,12 +704,16 @@ class App(tk.Tk):
         return self.check_access(Path(self.gamepaths.get()))
 
     def begin_install(self) -> None:
-        """Starts the installation process in a background thread
+        """Starts the installation process in a background thread.
+
+        Note: This function is not called when utilizing the CLI due to the thread creation - for passthrough purposes.
+
+        Processing Logic:
+        ----------------
             - Starts a new Thread to run the installation in the background
             - Catches any exceptions during thread start and displays error message
             - Exits program if exception occurs during installation thread start.
 
-        Note that this function is not called when utilizing the CLI due to the thread creation - for passthrough purposes.
         """
         try:
             self.install_thread = Thread(target=self.begin_install_thread)
@@ -908,6 +923,7 @@ class App(tk.Tk):
 
 def custom_excepthook(exc_type, exc_value, exc_traceback) -> None:
     """Custom exception hook to display errors in message box.
+
     When pyinstaller compiled in --console mode, this will match the same error message behavior of --noconsole.
 
     Args:

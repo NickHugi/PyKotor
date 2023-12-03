@@ -17,6 +17,7 @@ def onAppCrash(e: BaseException, value: str, tback: TracebackType):
     raise e
 
 def is_frozen() -> bool:
+    # sourcery skip: assign-if-exp, boolean-if-exp-identity, reintroduce-else, remove-unnecessary-cast
     # Check for sys.frozen attribute
     if getattr(sys, "frozen", False):
         return True
@@ -35,10 +36,11 @@ def fix_sys_and_cwd_path():
     This function also ensures a user can run toolset/__main__.py directly.
 
     Processing Logic:
-    - Checks if PyKotor package exists in parent directory of calling file.
-    - If exists, removes parent directory from sys.path and adds to front.
-    - Also checks for toolset package and changes cwd to that directory if exists.
-    - This ensures packages and scripts can be located correctly on import.
+    ----------------
+        - Checks if PyKotor package exists in parent directory of calling file.
+        - If exists, removes parent directory from sys.path and adds to front.
+        - Also checks for toolset package and changes cwd to that directory if exists.
+        - This ensures packages and scripts can be located correctly on import.
     """
     def update_sys_path(path: pathlib.Path):
         working_dir = str(path)

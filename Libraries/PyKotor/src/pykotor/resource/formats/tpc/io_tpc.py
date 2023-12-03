@@ -8,7 +8,7 @@ def _get_size(
     width: int,
     height: int,
     tpc_format: TPCTextureFormat,
-) -> int:
+) -> int | None:
     """Calculates the size of a texture in bytes based on its format.
 
     Args:
@@ -16,9 +16,13 @@ def _get_size(
         width: int - Width of the texture in pixels
         height: int - Height of the texture in pixels
         tpc_format: TPCTextureFormat - Format of the texture
+
     Returns:
-        int - Size of the texture in bytes
+    -------
+        int - Size of the texture in bytes, or None if unknown format
+
     Processing Logic:
+    ----------------
         - Calculate size based on format:
             - Greyscale: width * height * 1 byte per pixel
             - RGB: width * height * 3 bytes per pixel
@@ -58,11 +62,11 @@ class TPCBinaryReader(ResourceReader):
 
         Args:
         ----
-            auto_close: {Whether to close the reader after loading}
+            auto_close: Whether to close the reader after loading (default True)
 
         Returns:
         -------
-            TPC: {The loaded TPC texture object}
+            TPC: The loaded TPC texture object
 
         Processing Logic:
         ----------------
@@ -99,7 +103,7 @@ class TPCBinaryReader(ResourceReader):
             tpc_format = TPCTextureFormat.RGBA
             size = width * height * 4
 
-        mipmaps = []
+        mipmaps: list[bytes] = []
         mm_width, mm_height = width, height
         for _i in range(mipmap_count):
             mm_size = _get_size(mm_width, mm_height, tpc_format)
@@ -140,9 +144,6 @@ class TPCBinaryWriter(ResourceWriter):
         ----
             auto_close: Whether to close the file stream after writing (default: True)
 
-        Returns:
-        -------
-            None: This function does not return anything
         Writes TPC texture data to file stream:
             - Gets texture data from TPC object
             - Writes header information like size, dimensions, encoding

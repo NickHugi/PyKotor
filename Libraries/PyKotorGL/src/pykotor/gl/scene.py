@@ -28,7 +28,6 @@ from OpenGL.raw.GL.VERSION.GL_1_0 import (
     glEnable,
 )
 from OpenGL.raw.GL.VERSION.GL_1_2 import GL_BGRA, GL_UNSIGNED_INT_8_8_8_8
-
 from pykotor.common.geometry import Vector3
 from pykotor.common.misc import CaseInsensitiveDict
 from pykotor.common.stream import BinaryReader
@@ -99,12 +98,13 @@ class Scene:
     SPECIAL_MODELS: ClassVar[list[str]] = ["waypoint", "store", "sound", "camera", "trigger", "encounter", "unknown"]
 
     def __init__(self, *, installation: Installation | None = None, module: Module | None = None):
-        """Initializes the renderer
+        """Initializes the renderer.
+
         Args:
+        ----
             installation: Installation: The installation to load resources from
             module: Module: The active module
-        Returns:
-            None: Does not return anything
+
         Processing Logic:
         ----------------
             - Initializes OpenGL settings
@@ -171,12 +171,17 @@ class Scene:
         self.table_baseitems = read_2da(installation.resource("baseitems", ResourceType.TwoDA, SEARCH_ORDER_2DA).data)
 
     def getCreatureRenderObject(self, instance: GITCreature, utc: UTC | None = None) -> RenderObject:
-        """Generates a render object for a creature instance
+        """Generates a render object for a creature instance.
+
         Args:
+        ----
             instance: {Creature instance}: Creature instance to generate render object for
             utc: {Optional timestamp}: Timestamp to use for generation or current time if None
+
         Returns:
+        -------
             RenderObject: Render object representing the creature
+
         Processing Logic:
         ----------------
         - Gets body, head, weapon and mask models/textures based on creature appearance
@@ -252,11 +257,12 @@ class Scene:
         obj.children.append(rhand_obj)
 
     def buildCache(self, clear_cache: bool = False) -> None:
-        """Builds and caches game objects from the module
+        """Builds and caches game objects from the module.
+
         Args:
+        ----
             clear_cache (bool): Whether to clear the existing cache
-        Returns:
-            None
+
         Processing Logic:
         ----------------
             - Clear existing cache if clear_cache is True
@@ -435,11 +441,16 @@ class Scene:
             del self.objects[obj]
 
     def render(self) -> None:
-        """Renders the scene
+        """Renders the scene.
+
         Args:
+        ----
             self: Renderer object containing scene data
+
         Returns:
+        -------
             None: Does not return anything, renders directly to the framebuffer
+
         Processing Logic:
         ----------------
             - Clear color and depth buffers

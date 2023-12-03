@@ -89,16 +89,22 @@ class UTT:
 def construct_utt(
     gff: GFF,
 ) -> UTT:
-    """Constructs a UTT object from a GFF node
+    """Constructs a UTT object from a GFF node.
+
     Args:
+    ----
         gff: GFF - The GFF node to parse
+
     Returns:
+    -------
         utt: UTT - The constructed UTT object
+
     Processing Logic:
-    - Initialize an empty UTT object
-    - Get the root node of the GFF
-    - Acquire and set various UTT properties by parsing attributes from the root node
-    - Return the completed UTT object.
+    ----------------
+        - Initialize an empty UTT object
+        - Get the root node of the GFF
+        - Acquire and set various UTT properties by parsing attributes from the root node
+        - Return the completed UTT object.
     """
     utt = UTT()
 
