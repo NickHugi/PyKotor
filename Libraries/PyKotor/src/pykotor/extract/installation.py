@@ -522,27 +522,22 @@ class Installation:
 
     @staticmethod
     def determine_game(path: os.PathLike | str) -> Game | None:
-        """Determines the game based on known heuristics from the provided path.
+        """Determines the game based on files and folders.
 
         Args:
         ----
-            path (str or pathlike object): The path to the KOTOR directory
+            path: Path to game directory
 
         Returns:
         -------
-            Game: The detected Game IntEnum, or None if not determined.
+            Game: Game enum or None
 
-        Determines the game via distinguishing characteristics of the install by:
-        - check if `streamvoice` exists but not `streamwaves` exists
-        - check if `swkotor2.exe` exists but not `swkotor.exe` exists
-        - check if LocalVault exists
-        if any of those is true, it's a K2 install.
-
-        Otherwise:
-        - check if `streamwaves` exists but not `streamvoice` exists
-        - check if `swkotor.exe` exists but not `swkotor2.exe` exists
-        - check if `rims` exists
-        if any of those is true, it's a K1 install.
+        Processing Logic:
+        ----------------
+            1. Normalize the path and check for existence of game files
+            2. Define checks for each game
+            3. Run checks and score games
+            4. Return game with highest score or None if scores are equal or all checks fail
         """
         r_path: CaseAwarePath = path if isinstance(path, CaseAwarePath) else CaseAwarePath(path)
 
@@ -658,15 +653,22 @@ class Installation:
         return None
 
     def game(self) -> Game:
-        """Determines the game object for the given save file path
+        """Determines the game object for the given save file path.
+
         Args:
+        ----
             self: The class instance
+
         Returns:
+        -------
             Game: The determined Game object
-        - Check if game is already determined and stored in _game
-        - Determine the game by calling determine_game() method with path
-        - If game is determined, store it in _game and return
-        - If game is not determined, raise ValueError with message.
+
+        Processing Logic:
+        ----------------
+            - Check if game is already determined and stored in _game
+            - Determine the game by calling determine_game() method with path
+            - If game is determined, store it in _game and return
+            - If game is not determined, raise ValueError with message.
         """
         if self._game is not None:
             return self._game
@@ -689,7 +691,7 @@ class Installation:
         return self._talktable
 
     def female_talktable(self) -> TalkTable:
-        """Returns the female TalkTable linked to the Installation. This is 'dialogf.tlk' in the Polish game.
+        """Returns the female TalkTable linked to the Installation. This is 'dialogf.tlk' in the Polish version of K1.
 
         Returns
         -------
@@ -825,9 +827,12 @@ class Installation:
         Returns:
         -------
             A list of LocationResult objects where the matching resources can be found.
-        - Constructs a query from the resource name and type
-        - Searches locations based on the order, capsules and folders
-        - Returns the matching locations for the given resource from the results
+
+        Processing Logic:
+        ----------------
+            - Constructs a query from the resource name and type
+            - Searches locations based on the order, capsules and folders
+            - Returns the matching locations for the given resource from the results
         """
         capsules = [] if capsules is None else capsules
         folders = [] if folders is None else folders
@@ -1222,14 +1227,17 @@ class Installation:
 
     def string(self, locstring: LocalizedString, default: str = "") -> str:
         """Returns the string for the LocalizedString provided.
+
         This is a wrapper of the strings() method provided to make searching for a single string more convenient.
 
         Args:
         ----
-            locstring:
-            default:
+            locstring (LocalizedString):
+            default (str): the str to return when not found.
+
         Returns:
-        -------.
+        -------
+            str: text from the locstring lookup
         """
         batch = self.strings([locstring], default)
         return batch[locstring]
