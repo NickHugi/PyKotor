@@ -1,0 +1,9 @@
+-r Tools/BatchPatcher/requirements.txt
+-r Tools/HolocronToolset/requirements.txt
+-r Tools/HoloPatcher/requirements.txt
+-r Libraries/PyKotor/requirements.txt
+-r Libraries/PyKotorGL/requirements.txt
+-r Libraries/PyKotorFont/requirements.txt
+mypy
+ruff
+pylint
