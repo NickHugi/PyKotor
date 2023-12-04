@@ -243,7 +243,7 @@
         "--name=HoloPatcher",
         "--path=${workspaceFolder}${pathSeparator}..${pathSeparator}..${pathSeparator}Libraries${pathSeparator}PyKotor${pathSeparator}src",
         "--path=${workspaceFolder}${pathSeparator}..${pathSeparator}..${pathSeparator}Libraries${pathSeparator}Utility${pathSeparator}src",
-        "--icon=..${pathSeparator}resources${pathSeparator}icons${pathSeparator}patcher_icon_v2.ico",
+        "--icon=${workspaceFolder}${pathSeparator}resources${pathSeparator}icons${pathSeparator}patcher_icon_v2.ico",
         "__main__.py"
       ],
       "problemMatcher": [],
@@ -264,13 +264,19 @@
 //        "--mingw64",
 //        "--clang",
         "--output-filename=HoloPatcher",
-        "--windows-icon-from-ico=Tools${pathSeparator}HoloPatcher${pathSeparator}resources${pathSeparator}icons${pathSeparator}patcher_icon_v2.ico",
+        "--windows-icon-from-ico=${workspaceFolder}${pathSeparator}resources${pathSeparator}icons${pathSeparator}patcher_icon_v2.ico",
         "--remove-output",
         "--output-dir=${workspaceFolder}${pathSeparator}nuitka_dist",
         "--enable-plugin=tk-inter",
-        "Tools${pathSeparator}holopatcher${pathSeparator}__main__.py",
+        "__main__.py",
       ],
-      "problemMatcher": []
+      "problemMatcher": [],
+      "options": {
+        "cwd": "${workspaceFolder}${pathSeparator}src",
+        "env": {
+          "PYTHONPATH": "${workspaceFolder}${pathSeparator}..${pathSeparator}..${pathSeparator}Libraries${pathSeparator}PyKotor${pathSeparator}src:${workspaceFolder}${pathSeparator}..${pathSeparator}..${pathSeparator}Libraries${pathSeparator}Utility${pathSeparator}src"
+        }
+      },
     },
   ]
 }
