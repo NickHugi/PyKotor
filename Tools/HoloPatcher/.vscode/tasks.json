@@ -241,11 +241,15 @@
         "--clean",
         "--noconfirm",
         "--name=HoloPatcher",
-        "--path=${workspaceFolder}${pathSeparator}Tools${pathSeparator}holopatcher",
-        "--icon=Tools${pathSeparator}HoloPatcher${pathSeparator}resources${pathSeparator}icons${pathSeparator}patcher_icon_v2.ico",
-        "Tools${pathSeparator}holopatcher${pathSeparator}__main__.py"
+        "--path=${workspaceFolder}${pathSeparator}..${pathSeparator}..${pathSeparator}Libraries${pathSeparator}PyKotor${pathSeparator}src",
+        "--path=${workspaceFolder}${pathSeparator}..${pathSeparator}..${pathSeparator}Libraries${pathSeparator}Utility${pathSeparator}src",
+        "--icon=..${pathSeparator}resources${pathSeparator}icons${pathSeparator}patcher_icon_v2.ico",
+        "__main__.py"
       ],
-      "problemMatcher": []
+      "problemMatcher": [],
+      "options": {
+        "cwd": "${workspaceFolder}${pathSeparator}src",
+      }
     },
     {
       "label": "Build HoloPatcher - Nuitka (Windows only, no CLI support)",
