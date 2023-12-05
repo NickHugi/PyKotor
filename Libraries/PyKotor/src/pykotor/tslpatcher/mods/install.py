@@ -51,13 +51,15 @@ def create_backup(
 
         # Write a list of files that should be removed in order to uninstall the mod
         uninstall_folder = backup_folderpath.parent.parent.joinpath("uninstall")
-        if not uninstall_folder.exists():
+        uninstall_str_lower = str(uninstall_folder).lower()
+        if uninstall_str_lower not in processed_files:
             uninstall_folder.mkdir(exist_ok=True)
 
             # Write the PowerShell/Bash uninstall scripts to the uninstall folder
             subdir_temp = PurePath(subdirectory_path) if subdirectory_path else None
             game_folder = destination_filepath.parents[len(subdir_temp.parts)] if subdir_temp else destination_filepath.parent
             create_uninstall_scripts(backup_folderpath, uninstall_folder, game_folder)
+            processed_files.add(uninstall_str_lower)
 
         if destination_filepath.exists():
             # Check if the backup path exists and generate a new one if necessary
@@ -124,7 +126,7 @@ if (-not (Test-Path -LiteralPath $deleteListFile -ErrorAction SilentlyContinue))
     Write-Host "Delete file list not found."
     #exit
 }} else {{
-    $filesToDelete = Get-Content $deleteListFile
+    $filesToDelete = Get-Content -LiteralPath $deleteListFile
     foreach ($file in $filesToDelete) {{
         if ($file) {{ # Check if $file is non-null and non-empty
             if (Test-Path -LiteralPath $file -ErrorAction SilentlyContinue) {{
