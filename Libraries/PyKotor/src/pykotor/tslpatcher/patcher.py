@@ -358,7 +358,7 @@ class ModInstaller:
                 self.log.add_error(f"Could not locate resource to {patch.action.lower().strip()}: '{patch.sourcefile}'")
                 continue
             if not data_to_patch_bytes:
-                self.log.add_warning(f"'{patch.sourcefile}' has no content/data and is completely empty.")
+                self.log.add_note(f"'{patch.sourcefile}' has no content/data and is completely empty.")
 
             patched_bytes_data = patch.patch_resource_from_bytes(data_to_patch_bytes, memory, self.log, self._game)
             if capsule is not None:
