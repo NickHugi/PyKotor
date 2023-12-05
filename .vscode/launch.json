@@ -4,6 +4,14 @@
   "preLaunchTask": "install_requirements",
   "dependsOn": "install_requirements",
   "configurations": [
+
+    {
+      "name": "PowerShell Launch Current File",
+      "type": "PowerShell",
+      "request": "launch",
+      "script": "${file}",
+      "cwd": "${fileDirname}"
+    },
     
     {
       "name": "Python: Current File",
