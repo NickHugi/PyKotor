@@ -105,12 +105,12 @@ class ModInstaller:
 
         Processing Logic:
         ----------------
-        - Checks if a backup folder was already initialized and return that and the currently processed files if so
-        - Finds the mod path directory to backup from
-        - Generates a timestamped subdirectory name
-        - Removes any existing uninstall directories
-        - Creates the backup directory
-        - Returns the backup directory and new hashset that'll contain the processed files
+            - Checks if a backup folder was already initialized and return that and the currently processed files if so
+            - Finds the mod path directory to backup from
+            - Generates a timestamped subdirectory name
+            - Removes any existing uninstall directories
+            - Creates the backup directory
+            - Returns the backup directory and new hashset that'll contain the processed files
         """
         if self._backup:
             return (self._backup, self._processed_backup_files)

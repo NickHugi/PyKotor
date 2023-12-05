@@ -68,13 +68,12 @@ class PatcherConfig:
             mod_path: The path to the mod being configured.
             logger: Optional logger for logging messages.
 
-        Returns:
-        -------
-            None: No value is returned.
-        - Parse the ini text string into a ConfigParser object
-        - Initialize a ConfigReader with the ConfigParser and pass it the mod path and logger
-        - Set the ConfigParser to use case-insensitive keys. Ini is inherently case-insensitive by default.
-        - Call the load method on the ConfigReader, passing self to populate the configuration instance.
+        Processing Logic:
+        ----------------
+            - Parse the ini text string into a ConfigParser object
+            - Initialize a ConfigReader with the ConfigParser and pass it the mod path and logger
+            - Set the ConfigParser to use case-insensitive keys. Ini is inherently case-insensitive by default.
+            - Call the load method on the ConfigReader, passing self to populate the configuration instance.
         """
         from pykotor.tslpatcher.reader import ConfigReader
 
