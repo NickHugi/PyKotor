@@ -48,6 +48,17 @@ def create_backup(
         backup_filepath = backup_folderpath / destination_filepath.name
 
     if destination_file_str_lower not in processed_files:
+
+        # Write a list of files that should be removed in order to uninstall the mod
+        uninstall_folder = backup_folderpath.parent.parent.joinpath("uninstall")
+        if not uninstall_folder.exists():
+            uninstall_folder.mkdir(exist_ok=True)
+
+            # Write the PowerShell/Bash uninstall scripts to the uninstall folder
+            subdir_temp = PurePath(subdirectory_path) if subdirectory_path else None
+            game_folder = destination_filepath.parents[len(subdir_temp.parts)] if subdir_temp else destination_filepath.parent
+            create_uninstall_scripts(backup_folderpath, uninstall_folder, game_folder)
+
         if destination_filepath.exists():
             # Check if the backup path exists and generate a new one if necessary
             i = 2
@@ -64,9 +75,6 @@ def create_backup(
             except PermissionError as e:
                 log.add_warning(f"Failed to create backup of '{destination_file_str}': {e}")
         else:
-            # Write a list of files that should be removed in order to uninstall the mod
-            uninstall_folder = backup_folderpath.parent.parent.joinpath("uninstall")
-            uninstall_folder.mkdir(exist_ok=True)
 
             # Write the file path to remove these files.txt in backup directory
             removal_files_txt = backup_folderpath.joinpath("remove these files.txt")
@@ -74,22 +82,17 @@ def create_backup(
             with removal_files_txt.open("a") as f:
                 f.write(line)
 
-            # Write the PowerShell uninstall script to the uninstall folder
-            subdir_temp = PurePath(subdirectory_path) if subdirectory_path else None
-            game_folder = destination_filepath.parents[len(subdir_temp.parts)] if subdir_temp else destination_filepath.parent
-            write_powershell_uninstall_script(backup_folderpath, uninstall_folder, game_folder)
-
         # Add the lowercased path string to the processed_files set
         processed_files.add(destination_file_str_lower)
 
 
-def write_powershell_uninstall_script(backup_dir: CaseAwarePath, uninstall_folder: CaseAwarePath, main_folder: CaseAwarePath):
+def create_uninstall_scripts(backup_dir: CaseAwarePath, uninstall_folder: CaseAwarePath, main_folder: CaseAwarePath):
     with uninstall_folder.joinpath("uninstall.ps1").open("w") as f:
         f.write(
             rf"""
 #!/usr/bin/env pwsh
 $backupParentFolder = Get-Item -Path "..$([System.IO.Path]::DirectorySeparatorChar)backup"
-$mostRecentBackupFolder = Get-ChildItem -Path $backupParentFolder.FullName -Directory | ForEach-Object {{
+$mostRecentBackupFolder = Get-ChildItem -LiteralPath $backupParentFolder.FullName -Directory | ForEach-Object {{
     $dirName = $_.Name
     try {{
         [datetime]$dt = [datetime]::ParseExact($dirName, "yyyy-MM-dd_HH.mm.ss", $null)
@@ -104,10 +107,10 @@ $mostRecentBackupFolder = Get-ChildItem -Path $backupParentFolder.FullName -Dire
         }}
     }}
 }} | Sort-Object DateTime -Descending | Select-Object -ExpandProperty Directory -First 1
-if (-not $mostRecentBackupFolder -and -not (Test-Path $mostRecentBackupFolder -ErrorAction SilentlyContinue)) {{
+if ($null -eq $mostRecentBackupFolder -or -not $mostRecentBackupFolder -or -not (Test-Path -LiteralPath $mostRecentBackupFolder -ErrorAction SilentlyContinue)) {{
     $mostRecentBackupFolder = "{backup_dir}"
-    if (-not (Test-Path $mostRecentBackupFolder -ErrorAction SilentlyContinue)) {{
-        Write-Host "No backups found in '$backupParentFolder.FullName'"
+    if (-not (Test-Path -LiteralPath $mostRecentBackupFolder -ErrorAction SilentlyContinue)) {{
+        Write-Host "No backups found in '$($backupParentFolder.FullName)'"
         exit
     }}
     Write-Host "Using hardcoded backup dir: '$mostRecentBackupFolder'"
@@ -116,29 +119,30 @@ if (-not $mostRecentBackupFolder -and -not (Test-Path $mostRecentBackupFolder -E
 }}
 
 $deleteListFile = $mostRecentBackupFolder + "$([System.IO.Path]::DirectorySeparatorChar)remove these files.txt"
-if (-not (Test-Path $deleteListFile -ErrorAction SilentlyContinue)) {{
-    Write-Host "File list not found."
-    exit
-}}
-
-$filesToDelete = Get-Content $deleteListFile
 $existingFiles = New-Object System.Collections.Generic.HashSet[string]
-foreach ($file in $filesToDelete) {{
-    if ($file) {{ # Check if $file is non-null and non-empty
-        if (Test-Path $file -ErrorAction SilentlyContinue) {{
-            # Check if the path is not a directory
-            if (-not (Get-Item $file).PSIsContainer) {{
-                $existingFiles.Add($file) | Out-Null
+if (-not (Test-Path -LiteralPath $deleteListFile -ErrorAction SilentlyContinue)) {{
+    Write-Host "Delete file list not found."
+    #exit
+}} else {{
+    $filesToDelete = Get-Content $deleteListFile
+    foreach ($file in $filesToDelete) {{
+        if ($file) {{ # Check if $file is non-null and non-empty
+            if (Test-Path -LiteralPath $file -ErrorAction SilentlyContinue) {{
+                # Check if the path is not a directory
+                if (-not (Get-Item -LiteralPath $file).PSIsContainer) {{
+                    $existingFiles.Add($file) | Out-Null
+                }}
+            }} else {{
+                Write-Host "WARNING! $file no longer exists! Running this script is no longer recommended!"
             }}
-        }} else {{
-            Write-Host "WARNING! $file no longer exists! Running this script is no longer recommended!"
         }}
     }}
 }}
 
+
 $numberOfExistingFiles = $existingFiles.Count
 
-$allItemsInBackup = Get-ChildItem -Path $mostRecentBackupFolder -Recurse | Where-Object {{ $_.Name -ne 'remove these files.txt' }}
+$allItemsInBackup = Get-ChildItem -LiteralPath $mostRecentBackupFolder -Recurse | Where-Object {{ $_.Name -ne 'remove these files.txt' }}
 $filesInBackup = ($allItemsInBackup | Where-Object {{ -not $_.PSIsContainer }})
 $folderCount = ($allItemsInBackup | Where-Object {{ $_.PSIsContainer }}).Count
 
@@ -161,7 +165,7 @@ if ($confirmation.Trim().ToLower() -notin $validConfirmations) {{
 
 $deletedCount = 0
 foreach ($file in $existingFiles) {{
-    if ($file -and (Test-Path $file -ErrorAction SilentlyContinue)) {{
+    if ($file -and (Test-Path -LiteralPath $file -ErrorAction SilentlyContinue)) {{
         Remove-Item $file -Force
         Write-Host "Removed $file..."
         $deletedCount++
@@ -175,23 +179,22 @@ if ($deletedCount -ne 0) {{
 foreach ($file in $filesInBackup) {{
     try {{
         $relativePath = $file.FullName.Substring($mostRecentBackupFolder.Length)
-        $destinationPath = Join-Path -Path "{main_folder}" -ChildPath $relativePath
+        $destinationPath = Join-Path "{main_folder}" -ChildPath $relativePath
 
         # Create the directory structure if it doesn't exist
         $destinationDir = [System.IO.Path]::GetDirectoryName($destinationPath)
-        if (-not (Test-Path $destinationDir)) {{
-            New-Item -Path $destinationDir -ItemType Directory -Force
+        if (-not (Test-Path -LiteralPath $destinationDir)) {{
+            New-Item -LiteralPath $destinationDir -ItemType Directory -Force
         }}
 
         # Copy the file to the destination
-        Copy-Item -Path $file.FullName -Destination $destinationPath -Force
+        Copy-Item -LiteralPath $file.FullName -Destination $destinationPath -Force
         Write-Host "Restoring backup of '$($file.Name)' to '$destinationDir'..."
     }} catch {{
         Write-Host "Failed to restore backup of $($file.Name) because of: $($_.Exception.Message)"
     }}
 }}
 Pause
-
 """,
         )
     with uninstall_folder.joinpath("uninstall.sh").open("w", newline="\n") as f:
