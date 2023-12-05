@@ -246,7 +246,7 @@ class AddFieldGFF(ModifyGFF):
         value = self.value.value(memory, self.field_type)
 
         # if 2DAMEMORY holds a path string from !FieldPath, navigate to that field and use its value.
-        if isinstance(value, str):
+        if isinstance(value, str) and self.field_type != GFFFieldType.String:
             from_path = PureWindowsPath(value)
             if from_path.parent.name:
                 from_container = self._navigate_containers(root_struct, from_path.parent)
