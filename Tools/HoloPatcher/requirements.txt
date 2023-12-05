@@ -1,1 +1,1 @@
-requests
+requests  # for 'check for updates' feature.

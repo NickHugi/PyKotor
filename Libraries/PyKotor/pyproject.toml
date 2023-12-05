@@ -21,12 +21,6 @@ dependencies = ["ply>=3.11,<4"]  # required for the nss compiler lexer
 font                 = ["Pillow>=9.5,<11"]    # required for TXI/TGA fonts
 secure_xml           = ["defusedxml~=0.7"]    # secure XML parsing
 encodings = ["charset-normalizer>=2.0,<3.4"]  # used for localized string decodings
-gl = [
-  "PyGLM>=2.0,<2.8",
-  "PyOpenGL~=3.1",
-  "django>2.1; os_name != 'nt'",
-  "django>2.0; os_name == 'nt'",
-]
 
 [project.urls]
 Homepage = "https://github.com/NickHugi/PyKotor"
@@ -86,8 +80,8 @@ ignore = [
     "ANN401",   # Dynamically typed expressions (typing.Any) are disallowed in {name}
 #    "E402",     # Module level import not at top of file
     "E501",     # line too long
-    "FBT001",   # Boolean positional arg in function definition
-    "FBT002",   # Boolean default value in function definition
+#    "FBT001",   # Boolean positional arg in function definition
+#    "FBT002",   # Boolean default value in function definition
     "D100",     # Missing docstring in public module
     "D101",     # Missing docstring in public class
     "D102",     # Missing docstring in public method
@@ -95,17 +89,17 @@ ignore = [
     "D104",     # Missing docstring in public package
     "D105",     # Missing docstring in magic method
     "D107",     # Missing docstring in __init__
-    "D205",     # 1 blank line required between summary line and description
-    "D213",     # Multi-line docstring summary should start at the second line
+#    "D205",     # 1 blank line required between summary line and description
+#    "D213",     # Multi-line docstring summary should start at the second line
 #    "D400",     # First line should end with a period
     "D401",     # First line of docstring should be in imperative mood
 #    "D403",     # First word of the first line should be capitalized: {} -> {}
 #    "D404",     # First word of the docstring should not be "This"
-    "D417",     # Missing argument description in the docstring for {definition}: {name}
+#    "D417",     # Missing argument description in the docstring for {definition}: {name}
     "N802",     # Function name `screenToWorld` should be lowercase
     "N806",     # Variable `jumpToOffset` in function should be lowercase
     "N815",     # Variable `var` in class scope should not be mixedCase
-    # The following are currently violated by the codebase.
+# The following are currently violated by the codebase.
     "ARG002",   # Unused method argument: `method`
 #    "FIX004",   # Line contains HACK, consider resolving the issue
 #    "PD901",    # df is a bad variable name. Be kinder to your future self.
@@ -115,7 +109,7 @@ ignore = [
 #    "S101",     # Use of assert detected
 #    "S314",     # Using `xml` to parse untrusted data is known to be vulnerable to XML attacks; use `defusedxml` equivalents
 #    "S605",     # Starting a process with a shell, possible injection detected
-    "SLF001",   # Private member accessed
+#    "SLF001",   # Private member accessed
 #    "T201",     # `print` found
 ]
 unfixable = ["N815", "F841", "ERA001"]
@@ -126,7 +120,7 @@ unfixable = ["N815", "F841", "ERA001"]
 "__init__.py" = ["I001", "F401"]
 ".mdx" = ["ALL"]
 ".mdl" = ["ALL"]
-"src/pykotor/resource/formats/ncs/compiler/*.py" = ["ALL"]
+"Libraries/PyKotor/src/pykotor/resource/formats/ncs/compiler/*.py" = ["ALL"]
 
 [tool.ruff.flake8-pytest-style]
 fixture-parentheses = false

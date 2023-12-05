@@ -234,7 +234,7 @@
         "--no-pretty",
         "--show-column-numbers",
         "--package",
-        "toolset",
+        "src${pathSeparator}toolset",
         "--check-untyped-defs",
         "--no-strict-optional"
       ],
@@ -305,11 +305,17 @@
         "--clean",
         "--noconfirm",
         "--name=HolocronToolset",
-        "--path=${workspaceFolder}${pathSeparator}tools${pathSeparator}HolocronToolset${pathSeparator}toolset",
-        "--icon=tools${pathSeparator}HolocronToolset${pathSeparator}resources${pathSeparator}icons${pathSeparator}sith.ico",
-        "tools${pathSeparator}HolocronToolset${pathSeparator}toolset${pathSeparator}__main__.py",
+        "--distpath=${workspaceFolder}${pathSeparator}dist",
+        "--path=${workspaceFolder}${pathSeparator}..${pathSeparator}..${pathSeparator}Libraries${pathSeparator}PyKotor${pathSeparator}src",
+        "--path=${workspaceFolder}${pathSeparator}..${pathSeparator}..${pathSeparator}Libraries${pathSeparator}PyKotorGL${pathSeparator}src",
+        "--path=${workspaceFolder}${pathSeparator}..${pathSeparator}..${pathSeparator}Libraries${pathSeparator}Utility${pathSeparator}src",
+        "--icon=resources${pathSeparator}icons${pathSeparator}sith.ico",
+        "toolset${pathSeparator}__main__.py",
       ],
-      "problemMatcher": []
+      "problemMatcher": [],
+      "options": {
+        "cwd": "src",
+      }
     },
     {
       "label": "Build Toolset - Nuitka (Windows - Untested)",
@@ -327,11 +333,16 @@
         "--windows-icon-from-ico=resources${pathSeparator}icons${pathSeparator}sith.ico",
         "--remove-output",
         "--output-dir=${workspaceFolder}${pathSeparator}nuitka_dist",
-        "--include-module=pykotor",
         "--enable-plugin=pyqt5",
-        "tools${pathSeparator}HolocronToolset${pathSeparator}toolset${pathSeparator}__main__.py",
+        "toolset${pathSeparator}__main__.py",
       ],
-      "problemMatcher": []
+      "problemMatcher": [],
+      "options": {
+        "cwd": "src",
+        "env": {
+          "PYTHONPATH": "${env:PYTHONPATH};${workspaceFolder}${pathSeparator}..${pathSeparator}..${pathSeparator}Libraries${pathSeparator}PyKotor${pathSeparator}src;${workspaceFolder}${pathSeparator}..${pathSeparator}..${pathSeparator}Libraries${pathSeparator}PyKotorGL${pathSeparator}src;${workspaceFolder}${pathSeparator}..${pathSeparator}..${pathSeparator}Libraries${pathSeparator}Utility${pathSeparator}src"
+        },
+      }
     },
   ]
 }

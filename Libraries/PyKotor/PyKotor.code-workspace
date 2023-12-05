@@ -7,10 +7,4 @@
 			"path": "../Utility"
 		}
 	],
-	"settings": {
-		"python.analysis.extraPaths": [
-			"../Utility/src",
-			"./src"
-		]
-	}
 }

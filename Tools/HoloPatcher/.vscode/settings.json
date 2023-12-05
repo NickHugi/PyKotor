@@ -26,4 +26,9 @@
     "5678",
     "--wait-for-client"
   ],
+  "python.analysis.extraPaths": [
+    "../../Libraries/PyKotor/src",
+    "../../Libraries/Utility/src",
+    "./src"
+  ]
 }

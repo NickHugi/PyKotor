@@ -10,7 +10,7 @@
         "pip",
         "install",
         "-r",
-        "../../Libraries/PyKotor/requirements.txt",
+        "${workspaceFolder}..${pathSeparator}..${pathSeparator}Libraries${pathSeparator}PyKotor${pathSeparator}requirements.txt",
       ],
       "presentation": {
         "echo": true,
@@ -241,14 +241,16 @@
         "--clean",
         "--noconfirm",
         "--name=HoloPatcher",
-        "--path=${workspaceFolder}${pathSeparator}..${pathSeparator}..${pathSeparator}Libraries${pathSeparator}PyKotor${pathSeparator}src",
-        "--path=${workspaceFolder}${pathSeparator}..${pathSeparator}..${pathSeparator}Libraries${pathSeparator}Utility${pathSeparator}src",
+        "--distpath=${workspaceFolder}${pathSeparator}dist",
         "--icon=${workspaceFolder}${pathSeparator}resources${pathSeparator}icons${pathSeparator}patcher_icon_v2.ico",
         "__main__.py"
       ],
       "problemMatcher": [],
       "options": {
         "cwd": "${workspaceFolder}${pathSeparator}src",
+        "env": {
+          "PYTHONPATH": "${env:PYTHONPATH};${workspaceFolder}${pathSeparator}..${pathSeparator}..${pathSeparator}Libraries${pathSeparator}PyKotor${pathSeparator}src;${workspaceFolder}${pathSeparator}..${pathSeparator}..${pathSeparator}Libraries${pathSeparator}Utility${pathSeparator}src"
+        },
       }
     },
     {
@@ -274,8 +276,8 @@
       "options": {
         "cwd": "${workspaceFolder}${pathSeparator}src",
         "env": {
-          "PYTHONPATH": "${workspaceFolder}${pathSeparator}..${pathSeparator}..${pathSeparator}Libraries${pathSeparator}PyKotor${pathSeparator}src:${workspaceFolder}${pathSeparator}..${pathSeparator}..${pathSeparator}Libraries${pathSeparator}Utility${pathSeparator}src"
-        }
+          "PYTHONPATH": "${env:PYTHONPATH};${workspaceFolder}${pathSeparator}..${pathSeparator}..${pathSeparator}Libraries${pathSeparator}PyKotor${pathSeparator}src;${workspaceFolder}${pathSeparator}..${pathSeparator}..${pathSeparator}Libraries${pathSeparator}Utility${pathSeparator}src"
+        },
       },
     },
   ]

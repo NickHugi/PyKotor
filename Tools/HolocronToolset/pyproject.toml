@@ -1,6 +1,6 @@
 [build-system]
 requires = [
-    "setuptools>=42",
+    "setuptools>=68.2.2",
     "wheel"
 ]
 build-backend = "setuptools.build_meta"
@@ -21,9 +21,9 @@ dependencies = [
     "jsmin~=3.0",
     "requests>=2.27,<2.32",
     "certifi==2021.10.8",
-    #pykotor>=1.7  # Required, but due to limited granularity of this requirements.txt format we can't uncomment this on the repo.
     "pyperclip~=1.8",
-    "setuptools>=68.2.2",
+    "pykotor>=1.7",
+    "pykotor[gl]>=1.7"
 ]
 authors = [
   {name = "NickHugi"},

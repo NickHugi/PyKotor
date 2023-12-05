@@ -5,6 +5,37 @@ requires = [
 ]
 build-backend = "setuptools.build_meta"
 
+[project]
+name="PyKotor"
+version="1.7"
+description="Read, modify and write files used by KotOR's game engine."
+authors = [{name = "NickHugi"}]
+maintainers = [{name = "th3w1zard1", email = "halomastar@gmail.com"}]
+readme = {file = "README.md", content-type = "text/markdown"}
+license = {text = "MIT License"}
+keywords = ["kotor", "library", "holocron", "toolset", "pykotor", "editor", "mit", "holopatcher", "tslpatcher"]
+requires-python = ">= 3.7"
+dependencies = ["ply>=3.11,<4"]  # required for the nss compiler lexer
+
+[project.optional-dependencies]
+font                 = ["Pillow>=9.5,<11"]    # required for TXI/TGA fonts
+secure_xml           = ["defusedxml~=0.7"]    # secure XML parsing
+encodings = ["charset-normalizer>=2.0,<3.4"]  # used for localized string decodings
+gl = [
+  "django>2.1; os_name != 'nt'",
+  "django>2.0; os_name == 'nt'",
+  "numpy~=1.22",      # PyKotorGL ( might need 1.22.2 )
+  "PyOpenGL~=3.1",    # PyKotorGL ( might need 3.1.6 )
+  "PyGLM>=2.0,<2.8",  # PyKotorGL ( might need 2.5.7 )
+]
+
+[project.urls]
+Homepage = "https://github.com/NickHugi/PyKotor"
+Documentation = "https://github.com/NickHugi/PyKotor/blob/master/README.md"
+Repository = "https://github.com/NickHugi/PyKotor.git"
+Issues = "https://github.com/NickHugi/PyKotor/issues"
+#Changelog = "https://github.com/NickHugi/PyKotor/blob/master/CHANGELOG.md"
+
 ########################################################
 ## define only linter configurations below this point ##
 ########################################################
