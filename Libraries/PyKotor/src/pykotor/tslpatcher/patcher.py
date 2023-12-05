@@ -365,6 +365,8 @@ class ModInstaller:
                 self.handle_override_type(patch)
                 capsule.add(*ResourceIdentifier.from_path(patch.saveas), patched_bytes_data)
             else:
+                if not output_container_path.exists():
+                    output_container_path.mkdir(parents=True)
                 BinaryWriter.dump(output_container_path / patch.saveas, patched_bytes_data)
             self.log.complete_patch()
 
