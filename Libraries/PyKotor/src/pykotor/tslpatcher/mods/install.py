@@ -230,24 +230,25 @@ else
     echo "Selected backup folder '$mostRecentBackupFolder'"
 fi
 
+existingFiles=()
 deleteListFile="$mostRecentBackupFolder/remove these files.txt"
 if [[ ! -f "$deleteListFile" ]]; then
     echo "File list not found."
-    exit 1
+    #exit 1
+else
+    declare -a filesToDelete
+    mapfile -t filesToDelete < "$deleteListFile"
+    echo "Building file lists..."
+    for file in "${{filesToDelete[@]}}"; do
+        normalizedFile=$(echo "$file" | tr '\\' '/')
+        if [[ -n "$file" && -f "$file" ]]; then
+            existingFiles+=("$file")
+        else
+            echo "WARNING! $file no longer exists! Running this script is no longer recommended!"
+        fi
+    done
 fi
 
-declare -a filesToDelete
-mapfile -t filesToDelete < "$deleteListFile"
-existingFiles=()
-echo "Building file lists..."
-for file in "${{filesToDelete[@]}}"; do
-    normalizedFile=$(echo "$file" | tr '\\' '/')
-    if [[ -n "$file" && -f "$file" ]]; then
-        existingFiles+=("$file")
-    else
-        echo "WARNING! $file no longer exists! Running this script is no longer recommended!"
-    fi
-done
 
 fileCount=$(find "$mostRecentBackupFolder" -type f ! -name 'remove these files.txt' | wc -l)
 folderCount=$(find "$mostRecentBackupFolder" -type d | wc -l)
