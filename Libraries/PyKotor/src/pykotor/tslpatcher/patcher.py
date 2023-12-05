@@ -69,8 +69,9 @@ class ModInstaller:
         self._game: Game | None = None
 
     def config(self) -> PatcherConfig:
-        """Returns the PatcherConfig object associated with the mod installer. The object is created when the method is
-        first called then cached for future calls.
+        """Returns the PatcherConfig object associated with the mod installer.
+
+        The object is created when the method is first called then cached for future calls.
         """
         if self._config is not None:
             return self._config

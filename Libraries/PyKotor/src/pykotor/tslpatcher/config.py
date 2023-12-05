@@ -92,6 +92,7 @@ class PatcherConfig:
 
     def as_namespace(self, filepath: CaseAwarePath) -> PatcherNamespace:
         """Builds a changes.ini file as PatcherNamespace object.
+
         When a changes.ini is loaded when no namespaces.ini is created, we create a namespace internally with this single entry.
 
         Args:
@@ -100,7 +101,8 @@ class PatcherConfig:
 
         Returns:
         -------
-            PatcherNamespace - Namespace containing the mod info
+            PatcherNamespace - Namespace containing the mod info.
+
         Processing Logic:
         ----------------
             - Loads settings from the config file at the given filepath
