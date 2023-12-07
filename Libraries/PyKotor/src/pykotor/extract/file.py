@@ -152,7 +152,7 @@ class ResourceIdentifier(NamedTuple):
         return NotImplemented
 
     def validate(self):
-        restype = self.restype()
+        restype = self.restype
         if restype is ResourceType.INVALID:
             msg = f"Invalid resource type: {restype.extension}"
             raise ValueError(msg)
