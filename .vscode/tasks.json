@@ -397,7 +397,7 @@
         "--distpath=${workspaceFolder}${pathSeparator}dist",
         "--exclude-module=dl_translate",
         "--exclude-module=torch",
-        "--icon=..${pathSeparator}resources${pathSeparator}icons${pathSeparator}sith.ico",
+        "--icon=resources${pathSeparator}icons${pathSeparator}sith.ico",
         "toolset${pathSeparator}__main__.py",
       ],
       "problemMatcher": [],

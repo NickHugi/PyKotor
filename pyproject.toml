@@ -24,9 +24,9 @@ encodings = ["charset-normalizer>=2.0,<3.4"]  # used for localized string decodi
 gl = [
   "django>2.1; os_name != 'nt'",
   "django>2.0; os_name == 'nt'",
-  "numpy~=1.22",      # PyKotorGL ( might need 1.22.2 )
-  "PyOpenGL~=3.1",    # PyKotorGL ( might need 3.1.6 )
-  "PyGLM>=2.0,<2.8",  # PyKotorGL ( might need 2.5.7 )
+  "numpy~=1.22",      # ( might need 1.22.2 )
+  "PyOpenGL~=3.1",    # ( might need 3.1.6 )
+  "PyGLM>=2.0,<2.8",  # ( might need 2.5.7 )
 ]
 
 [project.urls]
@@ -97,7 +97,7 @@ ignore = [
     "D105",     # Missing docstring in magic method
     "D107",     # Missing docstring in __init__
     "D205",     # 1 blank line required between summary line and description
-    "D213",     # Multi-line docstring summary should start at the second line
+#    "D213",     # Multi-line docstring summary should start at the second line
 #    "D400",     # First line should end with a period
     "D401",     # First line of docstring should be in imperative mood
 #    "D403",     # First word of the first line should be capitalized: {} -> {}
