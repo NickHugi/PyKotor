@@ -44,6 +44,7 @@ class ModInstaller:
         Returns:
         -------
             self: {Returns the Patcher instance}
+
         Processing Logic:
         ----------------
             - Initialize the logger if not already defined.
@@ -152,10 +153,10 @@ class ModInstaller:
 
         Processing Logic:
         ----------------
-        - Check if patch destination is capsule file
-        - If yes, create Capsule object and backup file
-        - Else, backup file directly
-        - Return exists flag and capsule object.
+            - Check if patch destination is capsule file
+            - If yes, create Capsule object and backup file
+            - Else, backup file directly
+            - Return exists flag and capsule object.
         """
         capsule = None
         if is_capsule_file(patch.destination):
@@ -218,10 +219,6 @@ class ModInstaller:
         ----
             patch: PatcherModifications - The patch modification object.
 
-        Returns:
-        -------
-            None
-
         Processes the override type:
             - Checks if override type is empty or set to ignore and returns early.
             - Gets the override resource path.
@@ -273,15 +270,16 @@ class ModInstaller:
         Returns:
         -------
             bool - Whether the patch should be applied
+
         Processing Logic:
         ----------------
-        - Determines the local folder and container type from the patch details
-        - Checks if the patch replaces an existing file and logs the action
-        - Checks if the file already exists and the patch settings allow skipping
-        - Checks if the target capsule exists if patching one
-        - Logs the patching action
-        - Returns True if the patch should be applied.
-        """
+            - Determines the local folder and container type from the patch details
+            - Checks if the patch replaces an existing file and logs the action
+            - Checks if the file already exists and the patch settings allow skipping
+            - Checks if the target capsule exists if patching one
+            - Logs the patching action
+            - Returns True if the patch should be applied.
+        """  # noqa: D205
         local_folder = self.game_path.name if patch.destination.strip("\\").strip("/") == "." else patch.destination
         container_type = "folder" if capsule is None else "archive"
 
@@ -310,20 +308,17 @@ class ModInstaller:
         return True
 
     def install(self) -> None:
-        """Install patches from the config file
-        Args:
-            self: The Patcher instance
-        Returns:
-            None: No return value
+        """Install patches from the config file.
+
         Processing Logic:
         ----------------
-        - Load config and determine game type
-        - Get list of patches from config
-        - For each patch:
-            - Get output path and check for existing file/capsule
-            - Apply patch if needed
-            - Save patched data to destination file or add to capsule
-        - Log completion.
+            - Load config and determine game type
+            - Get list of patches from config
+            - For each patch:
+                - Get output path and check for existing file/capsule
+                - Apply patch if needed
+                - Save patched data to destination file or add to capsule
+            - Log completion.
         """
         config = self.config()
         self._game = Installation.determine_game(self.game_path)
