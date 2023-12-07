@@ -1,7 +1,6 @@
 import os
 from unittest import TestCase
 
-from PyQt5.QtTest import QTest
 from PyQt5.QtWidgets import QApplication
 
 from data.installation import HTInstallation

@@ -4,7 +4,6 @@ import os
 import pathlib
 import sys
 import unittest
-
 from pathlib import Path, PosixPath, PurePath, PurePosixPath, PureWindowsPath, WindowsPath
 
 THIS_SCRIPT_PATH = pathlib.Path(__file__)

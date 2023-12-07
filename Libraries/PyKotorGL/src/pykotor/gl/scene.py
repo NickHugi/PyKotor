@@ -3,7 +3,7 @@ from __future__ import annotations
 import math
 from contextlib import suppress
 from copy import copy
-from typing import TYPE_CHECKING, Any, Callable, ClassVar, Union
+from typing import TYPE_CHECKING, Any, Callable, ClassVar
 
 import glm
 from glm import mat4, quat, vec3, vec4

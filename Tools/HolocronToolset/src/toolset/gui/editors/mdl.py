@@ -9,9 +9,9 @@ from pykotor.resource.formats.mdl import MDL, read_mdl, write_mdl
 from pykotor.resource.formats.rim import read_rim
 from pykotor.resource.type import ResourceType
 from pykotor.tools.misc import is_bif_file, is_erf_or_mod_file, is_rim_file
-from utility.path import Path
 from PyQt5.QtWidgets import QMessageBox, QWidget
 from toolset.gui.editor import Editor
+from utility.path import Path
 
 if TYPE_CHECKING:
     import os

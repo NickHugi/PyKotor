@@ -9,10 +9,10 @@ from jsmin import jsmin
 from pykotor.common.geometry import Vector2, Vector3
 from pykotor.gl.scene import Camera
 from pykotor.tools.encoding import decode_bytes_with_fallbacks
-from utility.path import Path
 from PyQt5 import QtCore
 from PyQt5.QtCore import QPoint
 from PyQt5.QtGui import QKeySequence
+from utility.path import Path
 
 if TYPE_CHECKING:
     from pykotor.resource.generics.git import GITInstance

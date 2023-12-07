@@ -8,9 +8,9 @@ from pykotor.common.misc import CaseInsensitiveDict
 from pykotor.common.stream import BinaryReader
 from pykotor.resource.formats.bwm import BWM, read_bwm
 from pykotor.resource.generics.utd import UTD, read_utd
-from utility.path import Path
 from PyQt5.QtGui import QImage
 from toolset.utils.misc import get_nums
+from utility.path import Path
 
 if TYPE_CHECKING:
     import os

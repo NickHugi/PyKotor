@@ -1,7 +1,7 @@
-from pathlib import Path
 import os
 import sys
 import unittest
+from pathlib import Path
 from unittest import TestCase
 
 THIS_SCRIPT_PATH = Path(__file__)

@@ -15,11 +15,11 @@ from pykotor.resource.generics.utt import UTT, bytes_utt
 from pykotor.resource.generics.utw import UTW, bytes_utw
 from pykotor.resource.type import ResourceType
 from pykotor.tools.misc import is_erf_or_mod_file, is_rim_file
-from utility.path import Path
 from PyQt5 import QtCore
 from PyQt5.QtGui import QColor
 from PyQt5.QtWidgets import QDialog, QDialogButtonBox, QListWidgetItem, QWidget
 from toolset.gui.widgets.settings.installations import GlobalSettings
+from utility.path import Path
 
 if TYPE_CHECKING:
     from pykotor.common.module import Module

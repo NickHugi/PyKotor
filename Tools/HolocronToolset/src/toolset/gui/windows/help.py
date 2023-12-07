@@ -11,12 +11,12 @@ import markdown
 import requests
 from pykotor.common.stream import BinaryReader
 from pykotor.tools.encoding import decode_bytes_with_fallbacks
-from utility.path import Path, PurePath
 from PyQt5 import QtCore
 from PyQt5.QtWidgets import QMainWindow, QMessageBox, QTreeWidgetItem, QWidget
 from toolset.__main__ import is_frozen
 from toolset.config import UPDATE_INFO_LINK
 from toolset.gui.dialogs.asyncloader import AsyncLoader
+from utility.path import Path, PurePath
 
 if TYPE_CHECKING:
     import os

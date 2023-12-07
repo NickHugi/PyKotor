@@ -20,6 +20,7 @@ if UTILITY_PATH.exists():
 
 from pykotor.extract.installation import Installation
 
+
 class TestReplaceModuleExtensions(unittest.TestCase):
     def testreplace_module_extensions(self):
         # Happy path tests

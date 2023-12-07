@@ -10,7 +10,6 @@ from pykotor.resource.formats.erf import ERF, read_erf, write_erf
 from pykotor.resource.formats.rim import RIM, read_rim, write_rim
 from pykotor.resource.type import ResourceType
 from pykotor.tools.misc import is_bif_file, is_erf_or_mod_file, is_rim_file
-from utility.path import Path
 from PyQt5 import QtCore
 from PyQt5.QtCore import QRect, QRegExp, QSize
 from PyQt5.QtGui import (
@@ -29,6 +28,7 @@ from PyQt5.QtWidgets import QListWidgetItem, QMessageBox, QPlainTextEdit, QShort
 from toolset.gui.editor import Editor
 from toolset.gui.widgets.settings.installations import GlobalSettings, NoConfigurationSetError
 from toolset.utils.script import compileScript, decompileScript
+from utility.path import Path
 
 if TYPE_CHECKING:
     import os
