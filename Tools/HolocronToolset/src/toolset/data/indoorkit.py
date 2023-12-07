@@ -87,8 +87,9 @@ def load_kits(path: os.PathLike | str) -> list[Kit]:
         kit_identifier = kit_json["id"]
 
         always_path = kits_path / file.stem / "always"
-        for always_file in always_path.iterdir():
-            kit.always[always_file] = BinaryReader.load_file(always_file)
+        if always_path.exists():
+            for always_file in always_path.iterdir():
+                kit.always[always_file] = BinaryReader.load_file(always_file)
 
         textures_path = kits_path / file.stem / "textures"
         for texture_file in [file for file in textures_path.iterdir() if file.endswith(".tga")]:
