@@ -340,7 +340,7 @@ def patch_resource(resource: FileResource) -> GFF | TPC | None:
 
 
 def patch_and_save_noncapsule(resource: FileResource):
-    patched_data: GFF | None = patch_resource(resource)
+    patched_data: GFF | TPC | None = patch_resource(resource)
     if patched_data is None:
         return
     new_path = resource.filepath()
@@ -353,6 +353,11 @@ def patch_and_save_noncapsule(resource: FileResource):
         new_path = new_path.parent / new_gff_filename
         BinaryWriter.dump(new_path, new_data)
     elif isinstance(patched_data, TPC):
+        txi_file = resource.filepath().with_suffix(".txi")
+        if txi_file.exists():
+            log_output("Embedding TXI information...")
+            with txi_file.open() as f:
+                patched_data.txi = f.read()
         TPCTGAWriter(patched_data, new_path.with_suffix(".tpc")).write()
         resource.filepath().unlink()
 
@@ -383,10 +388,10 @@ def patch_file(file: os.PathLike | str) -> None:
             new_restype: ResourceType = resource.restype()
             if isinstance(patched_data, GFF):
                 new_data: bytes = bytes_gff(patched_data) if patched_data else resource.data()
-            elif isinstance(patched_data, TPC):
-                if new_restype == ResourceType.TGA and SCRIPT_GLOBALS.convert_tga:
-                    new_restype = ResourceType.TPC
-                new_data = bytes_tpc(patched_data)
+            #elif isinstance(patched_data, TPC):
+            #    if new_restype == ResourceType.TGA and SCRIPT_GLOBALS.convert_tga:
+            #        new_restype = ResourceType.TPC
+            #   new_data = bytes_tpc(patched_data)
             else:
                 continue
             new_capsule.add(resource.resname(), new_restype, new_data)
@@ -413,10 +418,10 @@ def patch_capsule_resources(resources: list[FileResource], filename: str, erf_or
         new_restype = resource.restype()
         if isinstance(patched_data, GFF):
             new_data: bytes = bytes_gff(patched_data) if patched_data else resource.data()
-        elif isinstance(patched_data, TPC):
-            if new_restype == ResourceType.TGA and SCRIPT_GLOBALS.convert_tga:
-                new_restype = ResourceType.TPC
-            new_data = bytes_tpc(patched_data)
+        #elif isinstance(patched_data, TPC):
+        #    if new_restype == ResourceType.TGA and SCRIPT_GLOBALS.convert_tga:
+        #        new_restype = ResourceType.TPC
+        #    new_data = bytes_tpc(patched_data)
         else:
             continue
         erf_or_rim.set_data(resource.resname(), new_restype, new_data)
