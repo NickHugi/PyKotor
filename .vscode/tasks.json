@@ -491,6 +491,7 @@
         "--distpath=${workspaceFolder}${pathSeparator}dist",
         "--path=${workspaceFolder}${pathSeparator}Libraries${pathSeparator}Utility${pathSeparator}src",
         "--path=${workspaceFolder}${pathSeparator}Libraries${pathSeparator}PyKotor${pathSeparator}src",
+        "--path=${workspaceFolder}${pathSeparator}Libraries${pathSeparator}PyKotorFont${pathSeparator}src",
         "__main__.py"
       ],
       "problemMatcher": [],
