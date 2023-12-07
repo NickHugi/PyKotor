@@ -17,8 +17,9 @@ def detect_tpc(
     source: SOURCE_TYPES,
     offset: int = 0,
 ) -> ResourceType:
-    """Returns what format the TPC data is believed to be in. This function performs a basic check and does not guarantee
-    accuracy of the result or integrity of the data.
+    """Returns what format the TPC data is believed to be in.
+
+    This function performs a basic check and does not guarantee accuracy of the result or integrity of the data.
 
     Args:
     ----
@@ -72,8 +73,9 @@ def read_tpc(
     offset: int = 0,
     size: int | None = None,
 ) -> TPC:
-    """Returns an TPC instance from the source. The file format (TPC or TGA) is automatically determined before
-    parsing the data.
+    """Returns an TPC instance from the source.
+
+    The file format (TPC or TGA) is automatically determined before parsing the data.
 
     Args:
     ----

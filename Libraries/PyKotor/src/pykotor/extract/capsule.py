@@ -16,6 +16,7 @@ if TYPE_CHECKING:
 
 class Capsule:
     """StreamCapsule object is used for loading the list of resources stored in the .erf/.rim/.mod files used by the game.
+
     Resource data is not actually stored in memory by default but is instead loaded up on demand with the
     StreamCapsule.resource() method. Use the RIM or ERF classes if you want to solely work with capsules in memory.
     """
@@ -25,12 +26,17 @@ class Capsule:
         path: os.PathLike | str,
         create_nonexisting: bool = False,
     ):
-        """Initialize a Capsule object
+        """Initialize a Capsule object.
+
         Args:
+        ----
             path: Path to the capsule file
             create_nonexisting: Whether to create the file if it doesn't exist
+
         Returns:
+        -------
             self: The initialized Capsule object
+
         Processing Logic:
         ----------------
             - Check if the path points to a valid capsule file

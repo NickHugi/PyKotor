@@ -35,12 +35,17 @@ class TPCTGAReader(ResourceReader):
         self,
         auto_close: bool = True,
     ) -> TPC:
-        """Loads image data from the reader into a TPC texture
+        """Loads image data from the reader into a TPC texture.
+
         Args:
+        ----
             self: The loader object
             auto_close: Whether to close the reader after loading
+
         Returns:
+        -------
             TPC: The loaded TPC texture
+
         Processing Logic:
         ----------------
             - Read header values from the reader
