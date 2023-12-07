@@ -46,6 +46,9 @@ from pykotor.resource.formats.gff.gff_auto import bytes_gff
 from pykotor.resource.formats.rim.rim_auto import write_rim
 from pykotor.resource.formats.rim.rim_data import RIM
 from pykotor.resource.formats.tlk import TLK, read_tlk, write_tlk
+from pykotor.resource.formats.tpc.io_tga import TPCTGAReader, TPCTGAWriter
+from pykotor.resource.formats.tpc.tpc_auto import bytes_tpc
+from pykotor.resource.formats.tpc.tpc_data import TPC
 from pykotor.resource.type import ResourceType
 from pykotor.tools.misc import is_capsule_file
 from pykotor.tools.path import CaseAwarePath, find_kotor_paths_from_default
@@ -86,6 +89,7 @@ class Globals:
     def __init__(self) -> None:
         self.chosen_languages: list[Language] = []
         self.create_fonts: bool = False
+        self.convert_tga: bool = False
         self.custom_scaling: float = 1.0
         self.draw_bounds: bool = False
         self.font_color: float
@@ -257,7 +261,7 @@ def recurse_through_list(gff_list: GFFList, gff_content: GFFContent, current_pat
 def fix_encoding(text: str, encoding: str):
     return text.encode(encoding=encoding, errors="ignore").decode(encoding=encoding, errors="ignore").strip()
 
-def patch_resource(resource: FileResource) -> GFF | None:
+def patch_resource(resource: FileResource) -> GFF | TPC | None:
     def translate_entry(tlkentry: TLKEntry, from_lang: Language) -> tuple[str, str]:
         text = tlkentry.text
         if not text.strip() or text.isdigit():
@@ -308,6 +312,11 @@ def patch_resource(resource: FileResource) -> GFF | None:
         process_translations(tlk, from_lang)
         write_tlk(tlk, new_file_path)
         processed_files.add(new_file_path)
+
+    if resource.restype().extension.lower() == "tga" and SCRIPT_GLOBALS.convert_tga:
+        log_output(f"Converting TGA at {resource.filepath()} to TPC...")
+        return TPCTGAReader(resource.data()).load()
+
     if resource.restype().extension.lower() in gff_types or f"{resource.restype().name.upper()} " in GFFContent.get_valid_types():
         gff: GFF | None = None
         try:
@@ -331,18 +340,22 @@ def patch_resource(resource: FileResource) -> GFF | None:
 
 
 def patch_and_save_noncapsule(resource: FileResource):
-    gff: GFF | None = patch_resource(resource)
-    if gff is None:
+    patched_data: GFF | None = patch_resource(resource)
+    if patched_data is None:
         return
-    new_data = bytes_gff(gff)
-
     new_path = resource.filepath()
-    new_gff_filename = resource.filename()
-    if SCRIPT_GLOBALS.translate:
-        new_gff_filename = f"{resource.resname()}_{SCRIPT_GLOBALS.pytranslator.to_lang.get_bcp47_code()}.{resource.restype().extension}"
-    new_path = new_path.parent / new_gff_filename
+    if isinstance(patched_data, GFF):
+        new_data = bytes_gff(patched_data)
 
-    BinaryWriter.dump(new_path, new_data)
+        new_gff_filename = resource.filename()
+        if SCRIPT_GLOBALS.translate:
+            new_gff_filename = f"{resource.resname()}_{SCRIPT_GLOBALS.pytranslator.to_lang.get_bcp47_code()}.{resource.restype().extension}"
+        new_path = new_path.parent / new_gff_filename
+        BinaryWriter.dump(new_path, new_data)
+    elif isinstance(patched_data, TPC):
+        TPCTGAWriter(patched_data, new_path.with_suffix(".tpc")).write()
+        resource.filepath().unlink()
+
 
 
 def patch_file(file: os.PathLike | str) -> None:
@@ -361,14 +374,22 @@ def patch_file(file: os.PathLike | str) -> None:
             log_output(f"Could not load '{c_file!s}'. Reason: {e!r}")
             return
 
-        new_filepath: Path = c_file.parent / f"{c_file.name}_{SCRIPT_GLOBALS.pytranslator.to_lang.get_bcp47_code()}"
+        new_filepath = c_file
+        if SCRIPT_GLOBALS.translate:
+            new_filepath: Path = c_file.parent / f"{c_file.stem}_{SCRIPT_GLOBALS.pytranslator.to_lang.get_bcp47_code()}{c_file.suffix}"
         new_capsule = Capsule(new_filepath, create_nonexisting=True)
         for resource in file_capsule:
-            gff = patch_resource(resource)
-            new_data = resource.data()
-            if gff is not None:
-                new_data = bytes_gff(gff)
-            new_capsule.add(resource.resname(), resource.restype(), new_data)
+            patched_data: GFF | TPC | None = patch_resource(resource)
+            new_restype: ResourceType = resource.restype()
+            if isinstance(patched_data, GFF):
+                new_data: bytes = bytes_gff(patched_data) if patched_data else resource.data()
+            elif isinstance(patched_data, TPC):
+                if new_restype == ResourceType.TGA and SCRIPT_GLOBALS.convert_tga:
+                    new_restype = ResourceType.TPC
+                new_data = bytes_tpc(patched_data)
+            else:
+                continue
+            new_capsule.add(resource.resname(), new_restype, new_data)
     else:
         resource = FileResource(
             *ResourceIdentifier.from_path(c_file),
@@ -388,9 +409,17 @@ def patch_folder(folder_path: os.PathLike | str) -> None:
 
 def patch_capsule_resources(resources: list[FileResource], filename: str, erf_or_rim: RIM | ERF) -> PurePath:
     for resource in resources:
-        gff: GFF | None = patch_resource(resource)
-        new_data: bytes = bytes_gff(gff) if gff else resource.data()
-        erf_or_rim.set_data(resource.resname(), resource.restype(), new_data)
+        patched_data: GFF | TPC | None = patch_resource(resource)
+        new_restype = resource.restype()
+        if isinstance(patched_data, GFF):
+            new_data: bytes = bytes_gff(patched_data) if patched_data else resource.data()
+        elif isinstance(patched_data, TPC):
+            if new_restype == ResourceType.TGA and SCRIPT_GLOBALS.convert_tga:
+                new_restype = ResourceType.TPC
+            new_data = bytes_tpc(patched_data)
+        else:
+            continue
+        erf_or_rim.set_data(resource.resname(), new_restype, new_data)
 
     new_filename = PurePath(filename)
     if SCRIPT_GLOBALS.translate:
@@ -487,7 +516,7 @@ def do_main_patchloop():
         has_action = True
         for lang in SCRIPT_GLOBALS.chosen_languages:
             main_translate_loop(lang)
-    if SCRIPT_GLOBALS.set_unskippable:
+    if SCRIPT_GLOBALS.set_unskippable or SCRIPT_GLOBALS.convert_tga:
         determine_input_path(Path(SCRIPT_GLOBALS.path))
         has_action = True
     if not has_action:
@@ -547,6 +576,7 @@ class KOTORPatchingToolUI:
         self.custom_scaling = tk.DoubleVar(value=SCRIPT_GLOBALS.custom_scaling)
         self.font_color = tk.StringVar()
         self.draw_bounds = tk.BooleanVar(value=False)
+        self.convert_tga = tk.BooleanVar(value=False)
 
         # Middle area for text and scrollbar
         self.output_frame = tk.Frame(self.root)
@@ -629,6 +659,11 @@ class KOTORPatchingToolUI:
         # Skippable
         ttk.Label(self.root, text="Make all dialog unskippable:").grid(row=row, column=0)
         ttk.Checkbutton(self.root, text="Yes", variable=self.set_unskippable).grid(row=row, column=1)
+        row += 1
+
+        # TGA -> TPC
+        ttk.Label(self.root, text="Convert TGAs to TPCs:").grid(row=row, column=0)
+        ttk.Checkbutton(self.root, text="Yes", variable=self.convert_tga).grid(row=row, column=1)
         row += 1
 
         # Translate
