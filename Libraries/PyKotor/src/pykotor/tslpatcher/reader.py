@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from configparser import ConfigParser
+from copy import deepcopy
 from itertools import tee
 from typing import TYPE_CHECKING, Any
 
@@ -234,10 +235,13 @@ class ConfigReader:
             if foldername_section is None:
                 raise KeyError(SECTION_NOT_FOUND_ERROR.format(foldername) + REFERENCES_TRACEBACK_MSG.format(key, foldername, install_list_section))
 
-            for key2, filename in self.ini[foldername_section].items():
+            folder_section_dict = CaseInsensitiveDict(self.ini[foldername_section].items())
+            sourcefolder = folder_section_dict.pop("!SourceFolder", ".")
+            for key2, filename in folder_section_dict.items():
                 replace_existing = key2.lower().startswith("replace")
                 file_install = InstallFile(filename, replace_existing)
                 file_install.destination = foldername
+                file_install.sourcefolder = sourcefolder
                 self.config.install_list.append(file_install)
 
                 # optional according to tslpatcher readme

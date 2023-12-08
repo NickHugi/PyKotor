@@ -204,7 +204,7 @@ class ModInstaller:
         """
         try:
             if patch.replace_file or not exists_at_output_location:
-                return self.load_resource_file(self.mod_path / patch.sourcefile)
+                return self.load_resource_file(self.mod_path / patch.sourcefolder / patch.sourcefile)
             if capsule is None:
                 return self.load_resource_file(output_container_path / patch.saveas)
             return capsule.resource(*ResourceIdentifier.from_path(patch.saveas))

@@ -22,6 +22,7 @@ class PatcherModifications(ABC):
     @abstractmethod
     def __init__(self, sourcefile: str, replace: bool | None = None, modifiers: list | None = None) -> None:
         self.sourcefile: str = sourcefile
+        self.sourcefolder: str = "."
         self.saveas: str = sourcefile
         self.replace_file: bool = bool(replace)
         self.destination: str = self.DEFAULT_DESTINATION
