@@ -15,6 +15,8 @@ from tkinter import colorchooser, filedialog, messagebox, ttk
 from tkinter import font as tkfont
 from typing import TYPE_CHECKING, Callable
 
+from pykotor.resource.formats.tpc.tpc_auto import bytes_tpc
+
 if getattr(sys, "frozen", False) is False:
     pykotor_font_path = pathlib.Path(__file__).parents[3] / "Libraries" / "PyKotorFont" / "src" / "pykotor"
     if pykotor_font_path.exists():
@@ -368,8 +370,6 @@ def patch_file(file: os.PathLike | str) -> None:
         return
 
     new_data: bytes
-    gff: GFF | None
-
     if is_capsule_file(c_file):
         log_output(f"Load {c_file.name}")
         try:
@@ -378,22 +378,31 @@ def patch_file(file: os.PathLike | str) -> None:
             log_output(f"Could not load '{c_file!s}'. Reason: {e!r}")
             return
 
-        new_filepath = c_file
+        new_filepath: Path = c_file
         if SCRIPT_GLOBALS.translate:
-            new_filepath: Path = c_file.parent / f"{c_file.stem}_{SCRIPT_GLOBALS.pytranslator.to_lang.get_bcp47_code()}{c_file.suffix}"
+            new_filepath = c_file.parent / f"{c_file.stem}_{SCRIPT_GLOBALS.pytranslator.to_lang.get_bcp47_code()}{c_file.suffix}"
         new_capsule = Capsule(new_filepath, create_nonexisting=True)
+        omitted_resources = []
         for resource in file_capsule:
             patched_data: GFF | TPC | None = patch_resource(resource)
-            new_restype: ResourceType = resource.restype()
             if isinstance(patched_data, GFF):
-                new_data: bytes = bytes_gff(patched_data) if patched_data else resource.data()
-            #elif isinstance(patched_data, TPC):
-            #    if new_restype == ResourceType.TGA and SCRIPT_GLOBALS.convert_tga:
-            #        new_restype = ResourceType.TPC
-            #   new_data = bytes_tpc(patched_data)
-            else:
-                continue
-            new_capsule.add(resource.resname(), new_restype, new_data)
+                new_data = bytes_gff(patched_data) if patched_data else resource.data()
+                log_output(f"Adding patched GFF resource '{resource.resname()}' to capsule {c_file.name}")
+                new_capsule.add(resource.resname(), resource.restype(), new_data)
+                omitted_resources.append(resource)
+            elif isinstance(patched_data, TPC):
+                txi_resource = file_capsule.resource(resource.resname(), ResourceType.TXI)
+                if txi_resource:
+                    patched_data.txi = txi_resource.decode("ascii", errors="ignore")
+                    omitted_resources.append(txi_resource)
+                new_data = bytes_tpc(patched_data)
+                log_output(f"Adding patched TPC resource '{resource.resname()}' to capsule {c_file.name}")
+                new_capsule.add(resource.resname(), ResourceType.TPC, new_data)
+                omitted_resources.append(resource)
+
+        for resource in file_capsule:
+            if resource not in omitted_resources:
+                new_capsule.add(resource.resname(), resource.restype(), resource.data())
     else:
         resource = FileResource(
             *ResourceIdentifier.from_path(c_file),
@@ -412,24 +421,38 @@ def patch_folder(folder_path: os.PathLike | str) -> None:
         patch_file(file_path)
 
 def patch_capsule_resources(resources: list[FileResource], filename: str, erf_or_rim: RIM | ERF) -> PurePath:
-    for resource in resources:
-        patched_data: GFF | TPC | None = patch_resource(resource)
-        new_restype = resource.restype()
-        if isinstance(patched_data, GFF):
-            new_data: bytes = bytes_gff(patched_data) if patched_data else resource.data()
-        #elif isinstance(patched_data, TPC):
-        #    if new_restype == ResourceType.TGA and SCRIPT_GLOBALS.convert_tga:
-        #        new_restype = ResourceType.TPC
-        #    new_data = bytes_tpc(patched_data)
-        else:
-            continue
-        erf_or_rim.set_data(resource.resname(), new_restype, new_data)
-
+    omitted_resources = []
     new_filename = PurePath(filename)
     if SCRIPT_GLOBALS.translate:
         new_filename = PurePath(f"{new_filename.stem}_{SCRIPT_GLOBALS.pytranslator.to_lang.name}{new_filename.suffix}")
+    for resource in resources:
+        patched_data: GFF | TPC | None = patch_resource(resource)
+        if isinstance(patched_data, GFF):
+            log_output(f"Adding patched GFF resource '{resource.resname()}' to {new_filename}")
+            new_data: bytes = bytes_gff(patched_data) if patched_data else resource.data()
+            erf_or_rim.set_data(resource.resname(), resource.restype(), new_data)
+            omitted_resources.append(resource)
+        elif isinstance(patched_data, TPC):
+            log_output(f"Adding patched TPC resource '{resource.resname()}' to {new_filename}")
+            txi_resource: FileResource | None = next(
+                (
+                    res
+                    for res in resources
+                    if res.resname() == resource.resname()
+                    and res.restype() == ResourceType.TXI
+                ),
+                None,
+            )
+            if txi_resource:
+                patched_data.txi = txi_resource.data().decode("ascii", errors="ignore")
+                omitted_resources.append(txi_resource)
+            new_data = bytes_tpc(patched_data)
+            erf_or_rim.set_data(resource.resname(), ResourceType.TPC, new_data)
+            omitted_resources.append(resource)
+    for resource in resources:
+        if resource not in omitted_resources:
+            erf_or_rim.set_data(resource.resname(), resource.restype(), resource.data())
     return new_filename
-
 def patch_install(install_path: os.PathLike | str) -> None:
     log_output()
     log_output_with_separator(f"Patching install dir:\t{install_path}", above=True)
