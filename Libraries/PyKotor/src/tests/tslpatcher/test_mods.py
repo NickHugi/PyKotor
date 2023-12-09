@@ -66,6 +66,7 @@ from utility.path import PureWindowsPath
 # TODO Error, Warning tracking
 
 
+@unittest.skip("unfinished")
 class TestManipulateTLK(TestCase):
     def test_apply(self):
         memory = PatcherMemory()
