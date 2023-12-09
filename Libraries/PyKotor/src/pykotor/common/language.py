@@ -7,6 +7,7 @@ from enum import IntEnum
 # BCP 47 language code
 class Language(IntEnum):
     """Language IDs recognized by both the games.
+
     Found in the TalkTable header, and CExoLocStrings (LocalizedStrings) within GFFs.
     """
 
@@ -157,7 +158,8 @@ class Language(IntEnum):
 
         Returns:
         -------
-            {String}: The encoding for the given language
+            encoding (str): The encoding for the given language
+
         Processing Logic:
         ----------------
             - Check if language is in list of Latin-based languages and return "cp1252" encoding
@@ -502,9 +504,6 @@ class LocalizedString:
     @staticmethod
     def substring_pair(substring_id: int) -> tuple[Language, Gender]:
         """Returns a tuple containing the Language and Gender for a given substring ID.
-        - Divide the substring_id by 2 to get the Language id
-        - Take the remainder of substring_id % 2 to get the Gender id
-        - Return a tuple with the Language and Gender enum instances.
 
         Args:
         ----
@@ -513,14 +512,21 @@ class LocalizedString:
         Returns:
         -------
             tuple: A tuple containing (Language, Gender)
+
+        Processing Logic:
+        ----------------
+            - Divide the substring_id by 2 to get the Language id
+            - Take the remainder of substring_id % 2 to get the Gender id
+            - Return a tuple with the Language and Gender enum instances.
         """
         language = Language(substring_id // 2)
         gender = Gender(substring_id % 2)
         return language, gender
 
     def set_data(self, language: Language, gender: Gender, string: str) -> None:
-        """Sets the text of the substring with the corresponding language/gender pair. The substring is created if it does
-        not exist.
+        """Sets the text of the substring with the corresponding language/gender pair.
+
+        Note: The substring is created if it does not exist.
 
         Args:
         ----
@@ -547,8 +553,9 @@ class LocalizedString:
         return self._substrings[substring_id] if substring_id in self._substrings else None
 
     def remove(self, language: Language, gender: Gender) -> None:
-        """Removes the existing substring with the respective language/gender pair if it exists. No error is thrown if it
-        does not find a corresponding pair.
+        """Removes the existing substring with the respective language/gender pair if it exists.
+
+        Note: No error is thrown if it does not find a corresponding pair.
 
         Args:
         ----

@@ -156,15 +156,21 @@ class GFF:
                     self.print_tree(gff_struct, indent + 2)
 
     def compare(self, other_gff: GFF, log_func: Callable = print, path: PureWindowsPath | None = None) -> bool:
-        """Compare two GFF objects
+        """Compare two GFF objects.
+
         Args:
+        ----
             self: The GFF object to compare from
             other_gff: The GFF object to compare to
             log_func: Function used to log comparison messages (default print)
             path: Optional path to write comparison report to
+
         Returns:
+        -------
             bool: True if GFFs are identical, False otherwise
-        Processes:
+
+        Processing Logic:
+        ----------------
             - Compare root nodes of both GFFs
             - Recursively compare child nodes
             - Log any differences found
@@ -298,19 +304,26 @@ class GFFStruct:
         log_func: Callable = print,
         current_path: PureWindowsPath | os.PathLike | str | None = None,
     ) -> bool:
-        """Recursively compares two GFFStructs. Functionally the same as __eq__, but will log/print comparison information as well
+        """Recursively compares two GFFStructs.
+
+        Functionally the same as __eq__, but will log/print comparison information as well
+
         Args:
+        ----
             other_gff_struct: {GFFStruct}: GFFStruct to compare against
             log_func: {Callable}: Function to log differences. Defaults to print.
             current_path: {PureWindowsPath | os.PathLike | str | None}: Path of structure being compared
+
         Returns:
+        -------
             bool: True if structures are the same, False otherwise
-        {Processing Logic:
-        - Creates dictionaries of fields for each structure
-        - Gets union of all field labels
-        - Compares field types, values recursively for structs and lists
-        - Logs any differences found
-        }.
+
+        Processing Logic:
+        ----------------
+            - Creates dictionaries of fields for each structure
+            - Gets union of all field labels
+            - Compares field types, values recursively for structs and lists
+            - Logs any differences found
         """
         current_path = PureWindowsPath(current_path or "GFFRoot")
         if len(self) != len(other_gff_struct):  # sourcery skip: class-extract-method
@@ -392,8 +405,7 @@ class GFFStruct:
         default: T,
         object_type: type[U | T] | tuple[type[U], ...] | None = None,
     ) -> T | U:
-        """Gets the value from the specified field. If the field does not exist or the value type does not match the
-        specified type then the default is returned instead.
+        """Gets the value from the specified field.
 
         Args:
         ----
@@ -403,7 +415,7 @@ class GFFStruct:
 
         Returns:
         -------
-            The field value or default value.
+            The field value. If the field does not exist or the value type does not match the specified type then the default is returned instead.
         """
         value = default
         if object_type is None:
@@ -1188,6 +1200,7 @@ class GFFList:
 
     def compare(self, other_gff_list: GFFList, log_func=print, current_path: PureWindowsPath | None = None) -> bool:
         """Compare two GFFLists recursively.
+
         Functionally the same as __eq__, but will also log/print the differences.
 
         Args:
@@ -1199,6 +1212,7 @@ class GFFList:
         Returns:
         -------
             is_same_result: bool - Whether the lists are the same
+
         Processing Logic:
         ----------------
             - Compare list lengths and log differences

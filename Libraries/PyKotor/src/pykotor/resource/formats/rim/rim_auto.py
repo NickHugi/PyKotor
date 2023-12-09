@@ -13,8 +13,9 @@ def read_rim(
     offset: int = 0,
     size: int | None = None,
 ) -> RIM:
-    """Returns an RIM instance from the source. The file format (RIM only) is automatically determined before parsing
-    the data.
+    """Returns an RIM instance from the source.
+
+    The file format (RIM only) is automatically determined before parsing the data.
 
     Args:
     ----

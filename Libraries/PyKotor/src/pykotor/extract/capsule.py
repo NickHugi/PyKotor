@@ -109,20 +109,23 @@ class Capsule:
         ----
             queries: list[ResourceIdentifier]: The queries to batch
             reload: bool = False: Whether to reload the capsule metadata
+
         Returns:
+        -------
             dict[ResourceIdentifier, ResourceResult | None]: The results for each query keyed by query
+
         Processing Logic:
         ----------------
-        - Reloads capsule metadata if reload is True
-        - Checks if capsule exists on disk, prints error and returns empty dict if not
-        - Initializes results dict to return
-        - Opens capsule file as binary reader
-        - Loops through queries
-            - Sets result to None
-            - Checks if resource exists in capsule
-            - If so, seeks to offset, reads bytes and sets result
-        - Closes reader
-        - Returns results dict.
+            - Reloads capsule metadata if reload is True
+            - Checks if capsule exists on disk, prints error and returns empty dict if not
+            - Initializes results dict to return
+            - Opens capsule file as binary reader
+            - Loops through queries
+                - Sets result to None
+                - Checks if resource exists in capsule
+                - If so, seeks to offset, reads bytes and sets result
+            - Closes reader
+            - Returns results dict.
         """
         if reload:
             self.reload()
@@ -158,17 +161,22 @@ class Capsule:
         restype: ResourceType,
         reload: bool = False,
     ) -> bool:
-        """Check if a resource exists
+        """Check if a resource exists.
+
         Args:
+        ----
             resref: str: Resource reference
             restype: ResourceType: Resource type
             reload: bool: Reload resources cache
+
         Returns:
+        -------
             bool: True if resource exists, False otherwise
+
         Checks if a resource exists:
-        - Constructs a ResourceIdentifier from resref and restype
-        - Searches self._resources for a matching resource
-        - Returns True if a match is found, False otherwise.
+            - Constructs a ResourceIdentifier from resref and restype
+            - Searches self._resources for a matching resource
+            - Returns True if a match is found, False otherwise.
         """
         if reload:
             self.reload()
@@ -193,11 +201,16 @@ class Capsule:
             resref: Resource reference as string
             restype: Resource type
             reload: Reload resources if True
+
         Returns:
+        -------
             FileResource: Matched file resource
-        - Check if reload is True and call reload()
-        - Create query object from resref and restype
-        - Return first matching resource from internal list.
+
+        Processing Logic:
+        ----------------
+            - Check if reload is True and call reload()
+            - Create query object from resref and restype
+            - Return first matching resource from internal list.
         """
         if reload:
             self.reload()
@@ -214,8 +227,11 @@ class Capsule:
         Args:
         ----
             self: Capsule object to reload
+
         Returns:
+        -------
             None: Reloading is done in-place
+
         Processing Logic:
         ----------------
             - Check if capsule exists on disk and print error if not
@@ -255,10 +271,13 @@ class Capsule:
         Returns:
         -------
             None: No value is returned in one line.
-        - Checks if the file is RIM or ERF
-        - Reads the file as appropriate container
-        - Calls set_data to add the resource
-        - Writes the container back to the file.
+
+        Processing Logic:
+        ----------------
+            - Checks if the file is RIM or ERF
+            - Reads the file as appropriate container
+            - Calls set_data to add the resource
+            - Writes the container back to the file.
         """
         container: RIM | ERF
         if is_rim_file(self._path.name):
@@ -289,8 +308,7 @@ class Capsule:
         Args:
         ----
             reader: BinaryReader - Reader for the ERF file
-        Returns:
-            None - Populates internal resources list
+
         Processing Logic:
         ----------------
             - Skips header data
@@ -325,11 +343,12 @@ class Capsule:
         self,
         reader: BinaryReader,
     ):
-        """Load resources from a rim file
+        """Load resources from a rim file.
+
         Args:
+        ----
             reader: BinaryReader: The binary reader to read data from
-        Returns:
-            None: No value is returned
+
         Processing Logic:
         ----------------
             - Skip the first 4 bytes of unknown data
@@ -349,7 +368,7 @@ class Capsule:
         offset_to_entries = reader.read_uint32()
 
         reader.seek(offset_to_entries)
-        for _i in range(entry_count):
+        for _ in range(entry_count):
             resref = reader.read_string(16)
             restype = ResourceType.from_id(reader.read_uint32())
             reader.read_uint32()

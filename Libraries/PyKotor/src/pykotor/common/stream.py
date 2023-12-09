@@ -1030,8 +1030,9 @@ class BinaryWriter(ABC):
         string_length: int = -1,
         padding: str = "\0",
     ) -> None:
-        """Writes the specified string to the stream. The string can also be prefixed by an integer specifying the
-        strings length.
+        """Writes the specified string to the stream.
+
+        The string can also be prefixed by an integer specifying the strings length.
 
         Args:
         ----
@@ -1405,8 +1406,9 @@ class BinaryWriterFile(BinaryWriter):
         string_length: int = -1,
         padding: str = "\0",
     ) -> None:  # sourcery skip: inline-variable, switch
-        """Writes the specified string to the stream. The string can also be prefixed by an integer specifying the
-        strings length.
+        """Writes the specified string to the stream.
+
+        The string can also be prefixed by an integer specifying the strings length.
 
         Args:
         ----
@@ -1881,8 +1883,9 @@ class BinaryWriterBytearray(BinaryWriter):
         string_length: int = -1,
         padding: str = "\0",
     ) -> None:  # sourcery skip: inline-variable, switch
-        """Writes the specified string to the stream. The string can also be prefixed by an integer specifying the
-        strings length.
+        """Writes the specified string to the stream.
+
+        The string can also be prefixed by an integer specifying the strings length.
 
         Args:
         ----

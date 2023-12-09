@@ -14,8 +14,9 @@ def detect_2da(
     source: SOURCE_TYPES | object,
     offset: int = 0,
 ) -> ResourceType:  # sourcery skip: assign-if-exp, reintroduce-else
-    """Returns what format the TwoDA data is believed to be in. This function performs a basic check and does not guarantee
-    accuracy of the result or integrity of the data.
+    """Returns what format the TwoDA data is believed to be in.
+
+    This function performs a basic check and does not guarantee accuracy of the result or integrity of the data.
 
     Args:
     ----
@@ -68,8 +69,9 @@ def read_2da(
     offset: int = 0,
     size: int | None = None,
 ) -> TwoDA:
-    """Returns an TwoDA instance from the source. The file format (TwoDA, TwoDA_CSV, TwoDA_JSON) is automatically
-    determined before parsing the data.
+    """Returns an TwoDA instance from the source.
+
+    The file format (TwoDA, TwoDA_CSV, TwoDA_JSON) is automatically determined before parsing the data.
 
     Args:
     ----

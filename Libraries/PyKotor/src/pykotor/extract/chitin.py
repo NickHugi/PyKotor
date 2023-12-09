@@ -14,6 +14,7 @@ if TYPE_CHECKING:
 
 class Chitin:
     """Chitin object is used for loading the list of resources stored in the chitin.key/.bif files used by the game.
+
     Resource data is not actually stored in memory by default but is instead loaded up on demand with the
     Chitin.resource() method.
 
@@ -189,12 +190,17 @@ class Chitin:
         resref: str,
         restype: ResourceType,
     ) -> bool:
-        """Checks if a resource exists in the registry
+        """Checks if a resource exists in the registry.
+
         Args:
+        ----
             resref: Resource reference string
             restype: Resource type
+
         Returns:
+        -------
             bool: True if resource exists, False otherwise
+
         Processes the following logic:
             - Constructs a ResourceIdentifier object from the resref and restype
             - Iterates through internal _resources list to find matching resource

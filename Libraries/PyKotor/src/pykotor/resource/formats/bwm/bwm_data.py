@@ -33,14 +33,21 @@ class BWM:
     def walkable_faces(
         self,
     ) -> list[BWMFace]:
-        """Get a list of walkable faces'
+        """Get a list of walkable faces'.
+
         Args:
+        ----
             self: Object containing faces
+
         Returns:
+        -------
             list[BWMFace]: List of faces that are walkable
-        - Iterate through all faces in self.faces
-        - Check if each face's material is walkable using face.material.walkable()
-        - Add face to return list if walkable.
+
+        Processing Logic:
+        ----------------
+            - Iterate through all faces in self.faces
+            - Check if each face's material is walkable using face.material.walkable()
+            - Add face to return list if walkable.
         """
         return [face for face in self.faces if face.material.walkable()]
 
@@ -52,10 +59,13 @@ class BWM:
             self: The mesh object
         Returns:
             list[BWMFace]: List of unwalkable faces in the mesh
-        - Iterate through all faces in the mesh
-        - Check if the material of the face is not walkable
-        - Add the face to the return list if material is not walkable
-        - Return the list of unwalkable faces.
+
+        Processing Logic:
+        ----------------
+            - Iterate through all faces in the mesh
+            - Check if the material of the face is not walkable
+            - Add the face to the return list if material is not walkable
+            - Return the list of unwalkable faces.
         """
         return [face for face in self.faces if not face.material.walkable()]
 
@@ -88,10 +98,13 @@ class BWM:
             self: The node object
         Returns:
             list[BWMNodeAABB]: List of AABB objects for each face
-        - Recursively traverse the faces tree to collect all leaf faces
-        - Calculate AABB for each leaf face
-        - Add AABB to return list
-        - Return list of all AABBs.
+
+        Processing Logic:
+        ----------------
+            - Recursively traverse the faces tree to collect all leaf faces
+            - Calculate AABB for each leaf face
+            - Add AABB to return list
+            - Return list of all AABBs.
         """
         aabbs: list[BWMNodeAABB] = []
         self._aabbs_rec(aabbs, copy(self.faces))
@@ -117,10 +130,10 @@ class BWM:
 
         Processing Logic:
         ----------------
-        - Calculate bounding box of all faces
-        - Split faces into left and right based on longest axis
-        - Recursively build left and right trees
-        - Stop when single face remains or axes exhausted
+            - Calculate bounding box of all faces
+            - Split faces into left and right based on longest axis
+            - Recursively build left and right trees
+            - Stop when single face remains or axes exhausted
         """
         if rlevel > 128:
             msg = f"rlevel must not exceed 128, but is equal to {rlevel}"
@@ -208,10 +221,10 @@ class BWM:
 
         Processing Logic:
         ----------------
-        - Finds walkable faces and their adjacencies
-        - Iterates through faces and edges to find unconnected edges
-        - Traces edge paths and adds them to the edges list until it loops back
-        - Marks final edges and records perimeter lengths
+            - Finds walkable faces and their adjacencies
+            - Iterates through faces and edges to find unconnected edges
+            - Traces edge paths and adds them to the edges list until it loops back
+            - Marks final edges and records perimeter lengths
         """
         walkable = [face for face in self.faces if face.material.walkable()]
         adjacencies = [self.adjacencies(face) for face in walkable]
@@ -263,17 +276,22 @@ class BWM:
         self,
         face: BWMFace,
     ) -> tuple[BWMAdjacency | None, BWMAdjacency | None, BWMAdjacency | None]:
-        """Finds adjacencies of a face
+        """Finds adjacencies of a face.
+
         Args:
+        ----
             face: {Face}: Face to find adjacencies for
+
         Returns:
+        -------
             tuple: {Tuple of adjacencies or None}
+
         Processing Logic:
         ----------------
-        1. Get list of walkable faces
-        2. Define edge lists for each potential adjacency
-        3. Iterate through walkable faces and check if edges match using a bit flag
-        4. Return adjacencies or None.
+            1. Get list of walkable faces
+            2. Define edge lists for each potential adjacency
+            3. Iterate through walkable faces and check if edges match using a bit flag
+            4. Return adjacencies or None.
         """
         walkable = self.walkable_faces()
 
@@ -336,8 +354,11 @@ class BWM:
         Args:
         ----
             self: Mesh object
+
         Returns:
+        -------
             tuple[Vector3, Vector3]: Bounding box minimum and maximum points
+
         Processing Logic:
         ----------------
             - Initialize bounding box minimum and maximum points to extreme values
@@ -360,8 +381,11 @@ class BWM:
             bbmin: Vector3 - Bounding box minimum point
             vertex: Vector3 - Vertex position
             bbmax: Vector3 - Bounding box maximum point
+
         Returns:
+        -------
             None - Updates bbmin and bbmax in place
+
         Processing Logic:
         ----------------
             - Compare vertex x, y, z to bbmin x, y, z and update bbmin with minimum
@@ -379,7 +403,7 @@ class BWM:
         x: float,
         y: float,
     ) -> BWMFace | None:
-        """Returns the face at the given 2D coordinates if there si one otherwise returns None.
+        """Returns the face at the given 2D coordinates if there is one otherwise returns None.
 
         Args:
         ----
@@ -447,17 +471,20 @@ class BWM:
         old: int,
         new: int | None,
     ) -> None:
-        """Changes layout indexes in faces
+        """Changes layout indexes in faces.
+
         Args:
+        ----
             old: Index to replace
             new: New index to set or None
-        Returns:
-            None: No return value
-        - Loops through all faces in the object
-        - Checks if face's trans1 attribute equals old index
-        - If equal, sets trans1 to new index
-        - Checks if face's trans2 attribute equals old index
-        - If equal, sets trans2 to new index.
+
+        Processing Logic:
+        ----------------
+            - Loops through all faces in the object
+            - Checks if face's trans1 attribute equals old index
+            - If equal, sets trans1 to new index
+            - Checks if face's trans2 attribute equals old index
+            - If equal, sets trans2 to new index.
         """
         for face in self.faces:
             if face.trans1 == old:
@@ -532,16 +559,21 @@ class BWMNodeAABB:
         left: BWMNodeAABB | None,
         right: BWMNodeAABB | None,
     ):
-        """Initializes a bounding volume node
+        """Initializes a bounding volume node.
+
         Args:
+        ----
             bb_min: Vector3 - Minimum bounds of the bounding box
             bb_max: Vector3 - Maximum bounds of the bounding box
             face: BWMFace | None - Face that splits the node or None
             sigplane: int - Index of most significant splitting plane
             left: BWMNodeAABB | None - Left child node or None
             right: BWMNodeAABB | None - Right child node or None
+
         Returns:
+        -------
             self - The initialized BWMNodeAABB object
+
         Processing Logic:
         ----------------
             - Sets the bounding box minimum and maximum bounds

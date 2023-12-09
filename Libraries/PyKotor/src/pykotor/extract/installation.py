@@ -336,6 +336,7 @@ class Installation:
 
     def load_override(self, directory: str | None = None) -> None:
         """Loads the list of resources in a specific subdirectory of the override folder linked to the Installation.
+
         If a directory argument is not passed, this will reload all subdirectories in the Override folder.
         If directory argument is ".", this will load all the loose files in the Override folder.
 
@@ -371,8 +372,8 @@ class Installation:
 
         Processing Logic:
         ----------------
-        - Load override configuration from given directory
-        - Override any existing resources with new ones from directory
+            - Load override configuration from given directory
+            - Override any existing resources with new ones from directory
         """
         self.load_override(directory)
 
@@ -415,11 +416,9 @@ class Installation:
         return self._chitin[:]
 
     def modules_list(self) -> list[str]:
-        """Returns the list of module filenames located in the modules folder
-        linked to the Installation.
+        """Returns the list of module filenames located in the modules folder linked to the Installation.
 
-        Module filenames are cached and require to be refreshed after a file
-        is added, deleted or renamed.
+        Module filenames are cached and require to be refreshed after a file is added, deleted or renamed.
 
         Returns
         -------
@@ -428,11 +427,9 @@ class Installation:
         return list(self._modules.keys())
 
     def module_resources(self, filename: str) -> list[FileResource]:
-        """Returns a list of FileResources stored in the specified module file
-        located in the modules folder linked to the Installation.
+        """Returns a list of FileResources stored in the specified module file located in the modules folder linked to the Installation.
 
-        Module resources are cached and require a reload after the contents
-        have been modified.
+        Module resources are cached and require a reload after the contents have been modified.
 
         Returns
         -------
@@ -441,11 +438,9 @@ class Installation:
         return self._modules[filename][:]
 
     def lips_list(self) -> list[str]:
-        """Returns the list of module filenames located in the lips folder
-        linked to the Installation.
+        """Returns the list of module filenames located in the lips folder linked to the Installation.
 
-        Module filenames are cached and require to be refreshed after a file
-        is added, deleted or renamed.
+        Module filenames are cached and require to be refreshed after a file is added, deleted or renamed.
 
         Returns
         -------
@@ -454,12 +449,9 @@ class Installation:
         return list(self._lips.keys())
 
     def lip_resources(self, filename: str) -> list[FileResource]:
-        """Returns a list of FileResources stored in the specified module file
-        located in the lips folder linked to the
-        Installation.
+        """Returns a list of FileResources stored in the specified module file located in the lips folder linked to the Installation.
 
-        Module resources are cached and require a reload after the contents
-        have been modified.
+        Module resources are cached and require a reload after the contents have been modified.
 
         Returns
         -------
@@ -468,8 +460,7 @@ class Installation:
         return self._lips[filename][:]
 
     def texturepacks_list(self) -> list[str]:
-        """Returns the list of texture-pack filenames located in the texturepacks
-        folder linked to the Installation.
+        """Returns the list of texture-pack filenames located in the texturepacks folder linked to the Installation.
 
         Returns
         -------
@@ -478,12 +469,9 @@ class Installation:
         return list(self._texturepacks.keys())
 
     def texturepack_resources(self, filename: str) -> list[FileResource]:
-        """Returns a list of FileResources stored in the specified module file
-        located in the texturepacks folder linked to
-        the Installation.
+        """Returns a list of FileResources stored in the specified module file located in the texturepacks folder linked to the Installation.
 
-        Texturepacks resources are cached and require a reload after the
-        contents have been modified.
+        Texturepacks resources are cached and require a reload after the contents have been modified.
 
         Returns
         -------
@@ -492,11 +480,9 @@ class Installation:
         return self._texturepacks[filename][:]
 
     def override_list(self) -> list[str]:
-        """Returns the list of subdirectories located in override folder
-        linked to the Installation.
+        """Returns the list of subdirectories located in override folder linked to the Installation.
 
-        Subdirectories are cached and require a refresh after a folder
-        is added, deleted or renamed.
+        Subdirectories are cached and require a refresh after a folder is added, deleted or renamed.
 
         Returns
         -------
@@ -505,12 +491,9 @@ class Installation:
         return list(self._override.keys())
 
     def override_resources(self, directory: str) -> list[FileResource]:
-        """Returns a list of FileResources stored in the specified subdirectory
-        located in the override folder linked to
-        the Installation.
+        """Returns a list of FileResources stored in the specified subdirectory located in the override folder linked to the Installation.
 
-        Override resources are cached and require a reload after the contents
-        have been modified.
+        Override resources are cached and require a reload after the contents have been modified.
 
         Returns
         -------
@@ -708,13 +691,13 @@ class Installation:
         capsules: list[Capsule] | None = None,
         folders: list[Path] | None = None,
     ) -> ResourceResult | None:
-        """Returns a resource matching the specified resref and restype. If no resource is found then None is returned
-        instead.
+        """Returns a resource matching the specified resref and restype.
+
+        This is a wrapper of the resources() method provided to make fetching for a single resource more convenient.
+        If no resource is found then None is returned instead.
 
         The default search order is (descending priority): 1. Folders in the folders parameter, 2. Override folders,
         3. Capsules in the capsules parameter, 4. Game modules, 5. Chitin.
-
-        This is a wrapper of the resources() method provided to make fetching for a single resource more convenient.
 
         Args:
         ----
@@ -749,8 +732,9 @@ class Installation:
         capsules: list[Capsule] | None = None,
         folders: list[Path] | None = None,
     ) -> dict[ResourceIdentifier, ResourceResult | None]:
-        """Returns a dictionary mapping the items provided in the queries argument to the resource data if it was found. If
-        the resource was not found, the value will be None.
+        """Returns a dictionary mapping the items provided in the queries argument to the resource data if it was found.
+
+        If the resource was not found, the value will be None.
 
         Args:
         ----
@@ -854,8 +838,7 @@ class Installation:
         capsules: list[Capsule] | None = None,
         folders: list[Path] | None = None,
     ) -> dict[ResourceIdentifier, list[LocationResult]]:
-        """Returns a dictionary mapping the items provided in the queries argument to a list of locations for that
-        respective resource.
+        """Returns a dictionary mapping the items provided in the queries argument to a list of locations for that respective resource.
 
         Args:
         ----
@@ -976,10 +959,11 @@ class Installation:
         capsules: list[Capsule] | None = None,
         folders: list[Path] | None = None,
     ) -> TPC | None:
-        """Returns a TPC object loaded from a resource with the specified name. If the specified texture could not be found
-        then the method returns None.
+        """Returns a TPC object loaded from a resource with the specified name.
 
         This is a wrapper of the textures() method provided to make searching for a single texture more convenient.
+
+        If the specified texture could not be found then the method returns None.
 
         Texture is search for in the following order:
             1. "folders" parameter.
@@ -1012,8 +996,9 @@ class Installation:
         capsules: list[Capsule] | None = None,
         folders: list[Path] | None = None,
     ) -> CaseInsensitiveDict[TPC | None]:
-        """Returns a dictionary mapping the items provided in the queries argument to a TPC object if it exists. If the
-        texture could not be found then the value is None.
+        """Returns a dictionary mapping the items provided in the queries argument to a TPC object if it exists.
+
+        If the texture could not be found then the value is None.
 
         Args:
         ----
@@ -1134,8 +1119,9 @@ class Installation:
         capsules: list[Capsule] | None = None,
         folders: list[Path] | None = None,
     ) -> CaseInsensitiveDict[bytes | None]:
-        """Returns a dictionary mapping the items provided in the queries argument to a bytes object if the respective
-        sound resource could be found. If the sound could not be found the value will return None.
+        """Returns a dictionary mapping the items provided in the queries argument to a bytes object if the respective sound resource could be found.
+
+        If the sound could not be found the value will return None.
 
         Args:
         ----
@@ -1286,8 +1272,9 @@ class Installation:
         return results
 
     def module_name(self, module_filename: str, use_hardcoded: bool = True) -> str:
-        """Returns the name of the area for a module from the installations module list. The name is taken from the
-        LocalizedString "Name" in the relevant module file's ARE resource.
+        """Returns the name of the area for a module from the installations module list.
+
+        The name is taken from the LocalizedString "Name" in the relevant module file's ARE resource.
 
         Args:
         ----
@@ -1363,8 +1350,9 @@ class Installation:
         return name
 
     def module_names(self) -> dict[str, str]:
-        """Returns a dictionary mapping module filename to the name of the area. The name is taken from the LocalizedString
-        "Name" in the relevant module file's ARE resource.
+        """Returns a dictionary mapping module filename to the name of the area.
+
+        The name is taken from the LocalizedString "Name" in the relevant module file's ARE resource.
 
         Returns
         -------
@@ -1373,8 +1361,9 @@ class Installation:
         return {module: self.module_name(module) for module in self.modules_list()}
 
     def module_id(self, module_filename: str, use_hardcoded: bool = True) -> str:
-        """Returns the ID of the area for a module from the installations module list. The ID is taken from the
-        ResRef field "Mod_Entry_Area" in the relevant module file's IFO resource.
+        """Returns the ID of the area for a module from the installations module list.
+
+        The ID is taken from the ResRef field "Mod_Entry_Area" in the relevant module file's IFO resource.
 
         Args:
         ----
@@ -1441,8 +1430,9 @@ class Installation:
         return result  # noqa: RET504
 
     def module_ids(self) -> dict[str, str]:
-        """Returns a dictionary mapping module filename to the ID of the module. The ID is taken from the
-        ResRef field "Mod_Entry_Area" in the relevant module file's IFO resource.
+        """Returns a dictionary mapping module filename to the ID of the module.
+
+        The ID is taken from the ResRef field "Mod_Entry_Area" in the relevant module file's IFO resource.
 
         Returns
         -------

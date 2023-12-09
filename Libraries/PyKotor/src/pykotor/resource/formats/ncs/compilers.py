@@ -89,14 +89,20 @@ class ExternalNCSCompiler(NCSCompiler):
         self.config: ExternalNCSCompiler.NwnnsscompConfig | None = None
 
     def configure(self, source_file: os.PathLike | str, output_file: os.PathLike | str, game: Game | int) -> NwnnsscompConfig:
-        """Configures a Nwnnsscomp run
+        """Configures a Nwnnsscomp run.
+
         Args:
+        ----
             source_file: Path to the source file to compile
             output_file: Path to output file to generate
             game: Game enum or integer to configure in one line
+
         Returns:
+        -------
             NwnnsscompConfig: Config object for Nwnnsscomp run
-        Processes Logic:
+
+        Processing Logic:
+        ----------------
             - Resolves source and output file paths
             - Converts game arg to Game enum if integer
             - Returns NwnnsscompConfig object configured with args useable with the compile_script and decompile_script functions.
@@ -114,6 +120,7 @@ class ExternalNCSCompiler(NCSCompiler):
         timeout: int=5,
     ) -> tuple[str, str]:
         """Compiles a NSS script into NCS using the external compiler.
+
         Function is compatible with any nwnnsscomp.exe version.
 
         Args:
@@ -164,15 +171,11 @@ class ExternalNCSCompiler(NCSCompiler):
             game: The Game object containing configuration.
             timeout - int | None: How long to wait for decompiling to finish. Defaults to 5 seconds.
 
-        Returns:
-        -------
-            None
-
         Processing Logic:
         ----------------
-        - Checks if configuration exists and configures if not
-        - Calls nwnnsscomp subprocess to decompile script file using configuration
-        - Waits up to the provided timeout seconds for decompilation process to complete.
+            - Checks if configuration exists and configures if not
+            - Calls nwnnsscomp subprocess to decompile script file using configuration
+            - Waits up to the provided timeout seconds for decompilation process to complete.
         """
         if not self.config:
             self.config = self.configure(source_file, output_file, game)

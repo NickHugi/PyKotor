@@ -43,9 +43,12 @@ class MDL:
         Returns:
         -------
             pick: The node with the matching name or None.
-        - Traverse the tree depth-first by recursively adding child nodes to a stack.
-        - Check each node's name against the target name.
-        - Return the matching node or None if not found.
+
+        Processing Logic:
+        ----------------
+            - Traverse the tree depth-first by recursively adding child nodes to a stack.
+            - Check each node's name against the target name.
+            - Return the matching node or None if not found.
         """
         pick = None
 
@@ -201,14 +204,21 @@ class MDL:
     def all_lightmaps(
         self,
     ) -> set[str]:
-        """Returns a set of all lightmap textures used in the scene
+        """Returns a set of all lightmap textures used in the scene.
+
         Args:
+        ----
             self: The scene object
+
         Returns:
+        -------
             set[str]: A set of all lightmap texture names used in nodes
-        - Iterate through all nodes in the scene
-        - Check if the node has a mesh and a lightmap texture
-        - Add the lightmap texture to the return set if it is not empty.
+
+        Processing Logic:
+        ----------------
+            - Iterate through all nodes in the scene
+            - Check if the node has a mesh and a lightmap texture
+            - Add the lightmap texture to the return set if it is not empty.
         """
         return {
             node.mesh.texture_2
@@ -232,16 +242,23 @@ class MDLAnimation:
     def all_nodes(
         self,
     ) -> list[MDLNode]:
-        """Returns all nodes in the MDL tree including children recursively
+        """Returns all nodes in the MDL tree including children recursively.
+
         Args:
+        ----
             self: The MDL tree object
+
         Returns:
+        -------
             list[MDLNode]: A list containing all nodes in the tree
-        - Initialize an empty list to store nodes and a scan list containing just the root node
-        - Pop a node from scan and append it to nodes list
-        - Extend scan with children of the popped node
-        - Repeat until scan is empty
-        - Return the nodes list containing all nodes.
+
+        Processing Logic:
+        ----------------
+            - Initialize an empty list to store nodes and a scan list containing just the root node
+            - Pop a node from scan and append it to nodes list
+            - Extend scan with children of the popped node
+            - Repeat until scan is empty
+            - Return the nodes list containing all nodes.
         """
         nodes = []
         scan = [self.root]
@@ -278,8 +295,7 @@ class MDLNodeFlags(IntEnum):
 
 
 class MDLNode:
-    """A node in the MDL tree that can store additional nodes or some extra data related to the model such as geometry or
-    lighting.
+    """A node in the MDL tree that can store additional nodes or some extra data related to the model such as geometry or lighting.
 
     Attributes
     ----------
@@ -300,11 +316,12 @@ class MDLNode:
     def __init__(
         self,
     ) -> None:
-        """Initializes a MDLNode object
+        """Initializes a MDLNode object.
+
         Args:
+        ----
             self: The MDLNode object being initialized
-        Returns:
-            None: Does not return anything
+
         Processing Logic:
         ----------------
             - Sets the children list to an empty list
@@ -339,13 +356,18 @@ class MDLNode:
         Args:
         ----
             self: The node to find descendants for
+
         Returns:
+        -------
             list[MDLNode]: A list containing the node and all its descendants
-        - Initialize an empty list to store ancestors
-        - Loop through each child node of the current node
-        - Append the child to the ancestors list
-        - Recursively call descendants on the child to get its descendants and extend the ancestors list
-        - Return the final ancestors list containing the node and all its descendants.
+
+        Processing Logic:
+        ----------------
+            - Initialize an empty list to store ancestors
+            - Loop through each child node of the current node
+            - Append the child to the ancestors list
+            - Recursively call descendants on the child to get its descendants and extend the ancestors list
+            - Return the final ancestors list containing the node and all its descendants.
         """
         ancestors = []
         for child in self.children:
@@ -357,15 +379,22 @@ class MDLNode:
         self,
         name,
     ) -> MDLNode:
-        """Find child node by name
+        """Find child node by name.
+
         Args:
+        ----
             name: Name of child node to find
+
         Returns:
+        -------
             MDLNode: Child node with matching name
-        - Iterate through list of children nodes
-        - Check if child name matches name argument
-        - If match found, return child node
-        - If no match, raise KeyError.
+
+        Processing Logic:
+        ----------------
+            - Iterate through list of children nodes
+            - Check if child name matches name argument
+            - If match found, return child node
+            - If no match, raise KeyError.
         """
         for child in self.children:
             if child.name == name:
@@ -593,9 +622,7 @@ class MDLControllerType(IntEnum):
 
 
 class MDLController:
-    """A controller is an object that gets attached to the node and influences some sort of change that is either static
-    or animated.
-    """
+    """A controller is an object that gets attached to the node and influences some sort of change that is either static or animated."""
 
     def __init__(
         self,

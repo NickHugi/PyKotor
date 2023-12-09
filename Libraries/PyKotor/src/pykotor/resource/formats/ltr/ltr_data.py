@@ -22,7 +22,8 @@ class LTR:
         self._singles: LTRBlock = LTRBlock(LTR.NUM_CHARACTERS)
         self._doubles: list[LTRBlock] = [LTRBlock(LTR.NUM_CHARACTERS) for _ in range(LTR.NUM_CHARACTERS)]
         self._triples: list[list[LTRBlock]] = [
-            [LTRBlock(LTR.NUM_CHARACTERS) for _ in range(LTR.NUM_CHARACTERS)] for _ in range(LTR.NUM_CHARACTERS)
+            [LTRBlock(LTR.NUM_CHARACTERS) for _ in range(LTR.NUM_CHARACTERS)]
+            for _ in range(LTR.NUM_CHARACTERS)
         ]
 
     @staticmethod
@@ -181,9 +182,7 @@ class LTR:
 
 
 class LTRBlock:
-    """Stores three lists where each list index is mapped to a character and the value is a float representing the chance
-    of the character occuring.
-    """
+    """Stores three lists where each list index is mapped to a character and the value is a float representing the chance of the character occuring."""
 
     def __init__(
         self,

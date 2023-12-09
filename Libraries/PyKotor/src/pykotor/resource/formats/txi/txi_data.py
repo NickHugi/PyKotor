@@ -108,7 +108,7 @@ class TXIFontInformation(TXIBaseInformation):
         self.spacingR: float = 0  # Untested. Float between 0 and 1. According to research, should NEVER exceed the maximum of 0.002600
         self.spacingB: float = 0  # Confirmed. Float between 0 and 1. Spacing between each multiline string rendered ingame.
         self.caretindent: float = -0.010000  # Untested. Probably determines the accent information above the character. Probably negative since Y is inverted so this checks out.
-        self.fontwidth: float = 1.000000  # Tested. Float between 0 and 1. Was told this actually stretches text down somehow. But in my tests, changing this does not yield any noticeable ingame result.
+        self.fontwidth: float = 1.000000  # Tested. Float between 0 and 1. Was told this actually stretches text down somehow. But in k1 tests, changing this does not yield any noticeable ingame result.
 
         # This could easily be used for DBCS (double byte encodings).
         # It may be unimplemented in KOTOR. Or hopefully, nobody's figured out how to use it.
@@ -184,6 +184,7 @@ lowerrightcoords {self.lr_coords_count}
         Returns:
         -------
             boxes: List of bounding boxes as lists of [x1,y1,x2,y2] coordinates
+
         Processing Logic:
         ----------------
             - Loops through upper_left_coords and lower_right_coords and zips them
@@ -216,6 +217,7 @@ lowerrightcoords {self.lr_coords_count}
         Returns:
         -------
             tuple: tuple containing lists of normalized upper left and lower right box coordinates
+
         Processing Logic:
         ----------------
             - Loops through each bounding box
@@ -256,7 +258,7 @@ lowerrightcoords {self.lr_coords_count}
         # TODO: I'm pretty sure fontwidth could be calculated here too. During testing, it's been easier to leave that at 1.000000 so there's less variables to worry about.
         # We should figure out the relationship for proper readability. I think vanilla K1 defines texturewidth as 'resolution_x / 100'.
         # Also worth mentioning the above math doesn't even work if the resolution isn't a perfect square.
-        # EDIT: Editing fontwidth yields no changes in game. Probably unused.
+        # EDIT: Editing fontwidth yields no changes in K1. Might do something in K2.
         #self.fontwidth = self.texturewidth / self.fontheight * max_char_height / resolution[0]
         #assert int(round(self.fontwidth)) == 1
 

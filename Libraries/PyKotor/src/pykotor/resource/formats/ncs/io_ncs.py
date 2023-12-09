@@ -29,7 +29,8 @@ class NCSBinaryReader(ResourceReader):
 
         Returns:
         -------
-            NCS: {The loaded NCS object}
+            NCS: The loaded NCS object
+
         Processing Logic:
         ----------------
             - Reads the file type and version headers
@@ -81,12 +82,12 @@ class NCSBinaryReader(ResourceReader):
 
         Processing Logic:
         ----------------
-        - Reads the byte code and qualifier from the reader
-        - Determines the instruction type from these values
-        - Initializes an NCSInstruction object
-        - Reads arguments from the reader based on the instruction type
-        - Handles jump offsets
-        - Returns the completed instruction
+            - Reads the byte code and qualifier from the reader
+            - Determines the instruction type from these values
+            - Initializes an NCSInstruction object
+            - Reads arguments from the reader based on the instruction type
+            - Handles jump offsets
+            - Returns the completed instruction
         """
         byte_code = NCSByteCode(self._reader.read_uint8())
         qualifier = self._reader.read_uint8()
@@ -199,13 +200,12 @@ class NCSBinaryWriter(ResourceWriter):
         ----
             auto_close (bool): Whether to automatically close the writer.
 
-        Returns:
-        -------
-            None
-        - Calculates offset and size for each instruction
-        - Writes header with file type and total size
-        - Writes each instruction using pre-calculated offset and size
-        - Closes writer if auto_close is True.
+        Processing Logic:
+        ----------------
+            - Calculates offset and size for each instruction
+            - Writes header with file type and total size
+            - Writes each instruction using pre-calculated offset and size
+            - Closes writer if auto_close is True.
         """
         offset = 13
         for instruction in self._ncs.instructions:
@@ -230,8 +230,11 @@ class NCSBinaryWriter(ResourceWriter):
         Args:
         ----
             instruction: NCSInstruction - The instruction to determine size for
+
         Returns:
+        -------
             int - The size of the instruction in bytes
+
         Processing Logic:
         ----------------
             - Initialize size to 2 bytes
@@ -297,8 +300,7 @@ class NCSBinaryWriter(ResourceWriter):
         Args:
         ----
             instruction (NCSInstruction): The instruction to write
-        Returns:
-            None
+
         Processing Logic:
         ----------------
             - Writes instruction type and qualifier bytes

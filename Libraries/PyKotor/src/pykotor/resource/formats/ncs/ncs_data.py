@@ -243,9 +243,9 @@ class NCS:
 
         Processing Logic:
         ----------------
-        - Loop through each optimizer in the list
-        - Call the optimize method on each optimizer passing the model
-        - The optimizer will perform optimization on the model.
+            - Loop through each optimizer in the list
+            - Call the optimize method on each optimizer passing the model
+            - The optimizer will perform optimization on the model.
         """
         for optimizer in optimizers:
             optimizer.optimize(self)
@@ -259,10 +259,10 @@ class NCS:
 
         Processing Logic:
         ----------------
-        - Extend self.instructions list with other.instructions list to combine instruction sets
-        - Modifies instructions of the calling NCS object directly rather than returning new object
-        - Other NCS object is not modified, only its instructions are copied over
-        - Ensures all instructions from both NCS objects are now part of single combined set.
+            - Extend self.instructions list with other.instructions list to combine instruction sets
+            - Modifies instructions of the calling NCS object directly rather than returning new object
+            - Other NCS object is not modified, only its instructions are copied over
+            - Ensures all instructions from both NCS objects are now part of single combined set.
         """
         self.instructions.extend(other.instructions)
 

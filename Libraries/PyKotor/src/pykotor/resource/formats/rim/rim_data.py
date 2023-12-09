@@ -72,8 +72,9 @@ class RIM:
         restype: ResourceType,
         data: bytes,
     ) -> None:
-        """Sets the data of the resource with the specified resref/restype pair. If it does not exists, a resource is
-        appended to the resource list.
+        """Sets the data of the resource with the specified resref/restype pair.
+
+        If it does not exists, a resource is appended to the resource list.
 
         Args:
         ----

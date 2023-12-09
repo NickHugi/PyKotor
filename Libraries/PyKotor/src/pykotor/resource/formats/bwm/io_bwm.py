@@ -14,15 +14,18 @@ class BWMBinaryReader(ResourceReader):
         offset: int = 0,
         size: int = 0,
     ):
-        """Initializes a Wok object
+        """Initializes a Wok object.
+
         Args:
+        ----
             source: {The source object to initialize from}
             offset: {The offset into the source}
             size: {The number of bytes to read from the source}.
 
-        Returns
+        Returns:
         -------
             self: {The initialized Wok object}
+
         Processing Logic:
         ----------------
             - Initializes the superclass with the given source, offset and size
@@ -43,12 +46,17 @@ class BWMBinaryReader(ResourceReader):
         self,
         auto_close: bool = True,
     ) -> BWM:
-        """Loads a binary BWM file and returns a BWM object
+        """Loads a binary BWM file and returns a BWM object.
+
         Args:
+        ----
             self: The BWMReader object
             auto_close: Whether to automatically close the file after loading
+
         Returns:
+        -------
             BWM: The loaded BWM object
+
         Processing Logic:
         ----------------
             - Reads header info like file type, version
@@ -161,12 +169,10 @@ class BWMBinaryWriter(ResourceWriter):
         Args:
         ----
             self: The walkmesh object
-            auto_close: Whether to close the file after writing (default: True)..
+            auto_close: Whether to close the file after writing (default: True).
 
-        Returns:
-        -------
-            None: The function does not return anything
-        Processes Logic:
+        Processing Logic:
+        ----------------
             1. Extracts vertex, face, edge and other data from the walkmesh object
             2. Packs the data into byte arrays with the correct offsets
             3. Writes the header, offsets and packed data to the binary file

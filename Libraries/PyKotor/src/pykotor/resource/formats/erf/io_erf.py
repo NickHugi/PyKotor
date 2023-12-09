@@ -19,12 +19,17 @@ class ERFBinaryReader(ResourceReader):
         self,
         auto_close: bool = True,
     ) -> ERF:
-        """Load ERF file
+        """Load ERF file.
+
         Args:
+        ----
             self: The ERF object
             auto_close: Whether to close the file after loading
+
         Returns:
+        -------
             ERF: The loaded ERF object
+
         Processing Logic:
         ----------------
             - Read file header and validate file type and version
@@ -56,7 +61,7 @@ class ERFBinaryReader(ResourceReader):
         resids = []
         restypes = []
         self._reader.seek(offset_to_keys)
-        for _i in range(entry_count):
+        for _ in range(entry_count):
             resrefs.append(self._reader.read_string(16))
             resids.append(self._reader.read_uint32())
             restypes.append(self._reader.read_uint16())
@@ -65,7 +70,7 @@ class ERFBinaryReader(ResourceReader):
         resoffsets: list[int] = []
         ressizes: list[int] = []
         self._reader.seek(offset_to_resources)
-        for _i in range(entry_count):
+        for _ in range(entry_count):
             resoffsets.append(self._reader.read_uint32())
             ressizes.append(self._reader.read_uint32())
 

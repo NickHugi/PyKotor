@@ -171,9 +171,12 @@ class ResourceIdentifier(NamedTuple):
         Returns:
         -------
             ResourceIdentifier: {Resource identifier object}
-        - Split the file path on the filename and extension
-        - Determine the resource type from the extension
-        - Return a ResourceIdentifier with the name and type.
+
+        Processing Logic:
+        ----------------
+            - Split the file path on the filename and extension
+            - Determine the resource type from the extension
+            - Return a ResourceIdentifier with the name and type.
         """
         with suppress(TypeError):
             file_path = PurePath(file_path)

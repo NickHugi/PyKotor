@@ -92,8 +92,9 @@ class TwoDA:
         self,
         header: str,
     ) -> None:
-        """Removes a column from the table with the specified column header. If no such column header exists it is ignored;
-        no error is thrown.
+        """Removes a column from the table with the specified column header.
+
+        If no such column header exists it is ignored; no error is thrown.
 
         Args:
         ----
@@ -183,7 +184,9 @@ class TwoDA:
         row_label: str | None = None,
         cells: dict[str, Any] | None = None,
     ) -> int:
-        """Adds a new row to the end of the table. Headers specified in the cells parameter that do not exist in the table
+        """Adds a new row to the end of the table.
+
+        Headers specified in the cells parameter that do not exist in the table
         itself will be ignored, headers that are not specified in the cells parameter but do exist in the table will
         default to being blank. All cells are converted to strings before being added into the 2DA.
 
@@ -272,8 +275,7 @@ class TwoDA:
         column: str,
         value: Any,
     ) -> None:
-        """Sets the value of a cell at the specified row under the specified column. If the value is none, it will output a
-        blank string.
+        """Sets the value of a cell at the specified row under the specified column. If the value is none, it will output a blank string.
 
         Args:
         ----
@@ -315,8 +317,9 @@ class TwoDA:
         self,
         row_count: int,
     ) -> None:
-        """Sets the number of rows in the table. Use with caution; specifying a height less than the current height will
-        result in a loss of data.
+        """Sets the number of rows in the table.
+
+        Use with caution; specifying a height less than the current height will result in a loss of data.
 
         Args:
         ----
@@ -368,6 +371,7 @@ class TwoDA:
         Returns:
         -------
             int: The next integer label.
+
         Processes labels:
             - Initialize max_found to -1
             - Iterate through labels
@@ -490,8 +494,7 @@ class TwoDARow:
         header: str,
         default: int | None = None,
     ) -> int:
-        """Returns the integer value for the cell under the specified header. If the value of the cell is an invalid
-        integer then a default value is used instead.
+        """Returns the integer value for the cell under the specified header. If the value of the cell is an invalid integer then a default value is used instead.
 
         Args:
         ----
@@ -521,8 +524,7 @@ class TwoDARow:
         header: str,
         default: int | None = None,
     ) -> float:
-        """Returns the float value for the cell under the specified header. If the value of the cell is an invalid float
-        then a default value is used instead.
+        """Returns the float value for the cell under the specified header. If the value of the cell is an invalid float then a default value is used instead.
 
         Args:
         ----
@@ -581,7 +583,7 @@ class TwoDARow:
         header: str,
         value: str | None,
     ) -> None:
-        """Sets the value of a cell under the specified header. If the value is none it will default to a empty string.
+        """Sets the value of a cell under the specified header. If the value is None it will default to a empty string.
 
         Args:
         ----
@@ -604,8 +606,7 @@ class TwoDARow:
         header: str,
         value: int | None,
     ) -> None:
-        """Sets the value of a cell under the specified header, converting the integer into a string. If the value is none
-        it will default to a empty string.
+        """Sets the value of a cell under the specified header, converting the integer into a string. If the value is None it will default to a empty string.
 
         Args:
         ----
@@ -628,8 +629,7 @@ class TwoDARow:
         header: str,
         value: float | None,
     ) -> None:
-        """Sets the value of a cell under the specified header, converting the float into a string. If the value is none
-        it will default to a empty string.
+        """Sets the value of a cell under the specified header, converting the float into a string. If the value is None it will default to a empty string.
 
         Args:
         ----
@@ -652,8 +652,7 @@ class TwoDARow:
         header: str,
         value: Enum | None,
     ):
-        """Sets the value of a cell under the specified header, converting the enum into a string. If the value is none
-        it will default to a empty string.
+        """Sets the value of a cell under the specified header, converting the enum into a string. If the value is None it will default to a empty string.
 
         Args:
         ----

@@ -13,8 +13,9 @@ def detect_gff(
     source: SOURCE_TYPES,
     offset: int = 0,
 ) -> ResourceType:
-    """Returns what format the GFF data is believed to be in. This function performs a basic check and does not guarantee
-    accuracy of the result or integrity of the data.
+    """Returns what format the GFF data is believed to be in.
+
+    This function performs a basic check and does not guarantee accuracy of the result or integrity of the data.
 
     Args:
     ----
@@ -61,8 +62,9 @@ def read_gff(
     offset: int = 0,
     size: int | None = None,
 ) -> GFF:  # sourcery skip: hoist-statement-from-if, reintroduce-else
-    """Returns an GFF instance from the source. The file format (GFF or GFF_XML) is automatically determined before parsing
-    the data.
+    """Returns an GFF instance from the source.
+
+    The file format (GFF or GFF_XML) is automatically determined before parsing the data.
 
     Args:
     ----

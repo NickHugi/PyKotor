@@ -107,7 +107,7 @@ class LYTObstacle:
 class LYTDoorHook:
     """A door hook.
 
-    This is just exists for modelers to assist module designers.
+    This just exists for modelers to assist module designers.
 
     Attributes
     ----------

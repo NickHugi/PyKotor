@@ -14,8 +14,9 @@ def detect_tlk(
     source: SOURCE_TYPES,
     offset: int = 0,
 ) -> ResourceType:
-    """Returns what format the TLK data is believed to be in. This function performs a basic check and does not guarantee
-    accuracy of the result or integrity of the data.
+    """Returns what format the TLK data is believed to be in.
+
+    This function performs a basic check and does not guarantee accuracy of the result or integrity of the data.
 
     Args:
     ----
@@ -68,8 +69,9 @@ def read_tlk(
     offset: int = 0,
     size: int | None = None,
 ) -> TLK:
-    """Returns an TLK instance from the source. The file format (TLK, TLK_XML or TLK_JSON) is automatically determined
-    before parsing the data.
+    """Returns an TLK instance from the source.
+
+    The file format (TLK, TLK_XML or TLK_JSON) is automatically determined before parsing the data.
 
     Args:
     ----

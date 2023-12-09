@@ -83,8 +83,7 @@ class ERF:
         restype: ResourceType,
         data: bytes,
     ) -> None:
-        """The `set` function updates or adds a resource in a dictionary based on the given resource reference,
-        resource type, and data.
+        """Updates or adds a resource in a dictionary based on the given resource reference, resource type, and data.
 
         Args:
         ----

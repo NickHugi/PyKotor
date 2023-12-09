@@ -97,17 +97,24 @@ class Vector2:
         self,
         other,
     ):
-        """Performs element-wise true division of vector by scalar value
+        """Performs element-wise true division of vector by scalar value.
+
         Args:
+        ----
             self: The vector to be divided
             other: The scalar value to divide elements by
+
         Returns:
+        -------
             new: A new vector with elements divided by the scalar value
-        - Check if other is an integer
-        - Create a new vector from self
-        - Divide x element by other
-        - Divide y element by other
-        - Return the new vector.
+
+        Processing Logic:
+        ----------------
+            - Check if other is an integer
+            - Create a new vector from self
+            - Divide x element by other
+            - Divide y element by other
+            - Return the new vector.
         """
         if isinstance(other, int):
             new = Vector2.from_vector2(self)
@@ -307,8 +314,9 @@ class Vector2:
         self,
         container: list,
     ) -> bool:
-        """Checks to see if the same Vector2 object in located in the specified list. This differs from using the 'in'
-        keyword as that will return True for Vector2 objects that have simular coordinates.
+        """Checks to see if the same Vector2 object in located in the specified list.
+
+        This differs from using the 'in' keyword as that will return True for Vector2 objects that have simular coordinates.
 
         Args:
         ----
@@ -880,11 +888,16 @@ class Vector4:
     def to_euler(
         self,
     ) -> Vector3:
-        """Converts a quaternion to Euler angles
+        """Converts a quaternion to Euler angles.
+
         Args:
+        ----
             self: Quaternion to convert
+
         Returns:
+        -------
             Vector3: Converted Euler angles as roll, pitch, yaw
+
         Processing Logic:
         ----------------
             - Calculate roll by taking the atan2 of t0/t1 where t0 and t1 are functions of self.w, self.x, self.y, self.z
@@ -1159,8 +1172,9 @@ class Face:
         x: float,
         y: float,
     ):
-        """Returns the Z-component determined from the given X and Y components. This method does not check if the point
-        exists within the face, that must be done separately with inside().
+        """Returns the Z-component determined from the given X and Y components.
+
+        This method does not check if the point exists within the face, that must be done separately with inside().
 
         Returns
         -------
@@ -1286,11 +1300,16 @@ class Polygon2:
     def area(
         self,
     ) -> float:
-        """Calculates the area of a polygon
+        """Calculates the area of a polygon.
+
         Args:
+        ----
             self: The polygon object
+
         Returns:
+        -------
             float: The calculated area of the polygon
+
         Processing Logic:
         ----------------
             - Loops through points calculating trianglular areas

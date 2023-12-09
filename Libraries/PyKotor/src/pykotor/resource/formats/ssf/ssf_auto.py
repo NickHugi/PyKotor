@@ -13,8 +13,9 @@ def detect_ssf(
     source: SOURCE_TYPES,
     offset: int = 0,
 ) -> ResourceType:
-    """Returns what format the SSF data is believed to be in. This function performs a basic check and does not guarantee
-    accuracy of the result or integrity of the data.
+    """Returns what format the SSF data is believed to be in.
+
+    This function performs a basic check and does not guarantee accuracy of the result or integrity of the data.
 
     Args:
     ----
@@ -55,8 +56,9 @@ def read_ssf(
     offset: int = 0,
     size: int | None = None,
 ) -> SSF:
-    """Returns an SSF instance from the source. The file format (SSF or SSF_XML) is automatically determined before parsing
-    the data.
+    """Returns an SSF instance from the source.
+
+    The file format (SSF or SSF_XML) is automatically determined before parsing the data.
 
     Args:
     ----

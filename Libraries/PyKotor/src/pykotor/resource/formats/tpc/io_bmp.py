@@ -26,9 +26,6 @@ class TPCBMPWriter(ResourceWriter):
             self: The Texture object
             auto_close: Whether to close the file after writing (default True).
 
-        Returns:
-        -------
-            None: No value is returned
         Processing Logic:
         ----------------
             - Convert texture to RGB format and get width, height, data

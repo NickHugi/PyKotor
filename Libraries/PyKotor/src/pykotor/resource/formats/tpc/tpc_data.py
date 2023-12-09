@@ -34,9 +34,9 @@ class TPC:
 
     def __init__(
         self,
-    ):
+    ) -> None:
         self._texture_format: TPCTextureFormat = TPCTextureFormat.RGB
-        self._mipmaps: list[bytes] = [bytes(0 for i in range(4 * 4 * 3))]
+        self._mipmaps: list[bytes] = [bytes(0 for _ in range(4 * 4 * 3))]
         self._width: int = 4
         self._height: int = 4
         self.txi: str = ""
@@ -98,8 +98,7 @@ class TPC:
         convert_format: TPCTextureFormat,
         mipmap: int = 0,
     ) -> TPCConvertResult:
-        """Returns a tuple containing the width, height and data of the specified mipmap where the data returned is in
-        the texture format specified.
+        """Returns a tuple containing the width, height and data of the specified mipmap where the data returned is in the texture format specified.
 
         Args:
         ----
@@ -230,13 +229,18 @@ class TPC:
         width: int,
         height: int,
     ) -> bytearray:
-        """Converts DXT5 compressed texture data to RGBA bytes
+        """Converts DXT5 compressed texture data to RGBA bytes.
+
         Args:
+        ----
             data: bytes - The compressed DXT5 texture data
             width: int - Width of the texture
             height: int - Height of the texture
+
         Returns:
+        -------
             bytearray - Uncompressed RGBA pixel data
+
         Processing Logic:
         ----------------
             - Reads the compressed DXT5 data using a BinaryReader
@@ -307,13 +311,18 @@ class TPC:
         width: int,
         height: int,
     ) -> bytearray:
-        """Converts DXT1 compressed texture data to RGBA format
+        """Converts DXT1 compressed texture data to RGBA format.
+
         Args:
+        ----
             data: bytes - The compressed DXT1 texture data
             width: int - Width of the texture
             height: int - Height of the texture
+
         Returns:
+        -------
             bytearray - Uncompressed RGBA texture data
+
         Processing Logic:
         ----------------
             - Parse the DXT1 data using a BinaryReader
@@ -546,8 +555,11 @@ class TPC:
             weight: float - Blend factor between 0-1
             color0: int - First color
             color1: int - Second color
+
         Returns:
+        -------
             int - Interpolated color
+
         Processing Logic:
         ----------------
             - Extract blue, green, red channels from each color
@@ -577,12 +589,17 @@ class TPC:
         Args:
         ----
             color: 16-bit 565 RGB color value
+
         Returns:
+        -------
             tuple: tuple of (red, green, blue) color component values
-        - Extracts the blue component from the lowest 5 bits
-        - Extracts the green component from bits 5-10
-        - Extracts the red component from bits 11-15
-        - Left shifts the components to scale from 5 or 6 bits to 8 bits.
+
+        Processing Logic:
+        ----------------
+            - Extracts the blue component from the lowest 5 bits
+            - Extracts the green component from bits 5-10
+            - Extracts the red component from bits 11-15
+            - Left shifts the components to scale from 5 or 6 bits to 8 bits.
         """
         blue = color & 0x1F
         green = (color >> 5) & 0x3F
