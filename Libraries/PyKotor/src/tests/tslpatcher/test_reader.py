@@ -148,14 +148,14 @@ class TestConfigReader(unittest.TestCase):
         self.config_reader.load(self.config)
 
         self.assertEqual(len(self.config.patches_tlk.modifiers), 3)
-        modifiers_dict = {mod.token_id: {"text": mod.text, "voiceover": mod.sound, "replace": mod.is_replacement} for mod in self.config.patches_tlk.modifiers}
+        modifiers_dict = {mod.token_id: {"mod_index": mod.mod_index, "replace": mod.is_replacement} for mod in self.config.patches_tlk.modifiers}
         self.maxDiff = None
         self.assertDictEqual(
             modifiers_dict,
             {
-                0: {"text": "Modified 4", "voiceover": ResRef("vo_mod_4"), "replace": False},
-                1: {"text": "Modified 5", "voiceover": ResRef("vo_mod_5"), "replace": False},
-                2: {"text": "Modified 6", "voiceover": ResRef("vo_mod_6"), "replace": False},
+                0: {"mod_index": 4, "replace": False},
+                1: {"mod_index": 5, "replace": False},
+                2: {"mod_index": 6, "replace": False},
             },
         )
 
@@ -165,23 +165,17 @@ class TestConfigReader(unittest.TestCase):
             StrRef4:6=0:2
         """
 
-        write_tlk(
-            self.modified_tlk_data,
-            str(Path(self.mod_path, "append.tlk")),
-            ResourceType.TLK,
-        )
-
         self.ini.read_string(ini_text)
         self.config_reader.load(self.config)
 
         self.assertEqual(len(self.config.patches_tlk.modifiers), 3)
-        modifiers_dict = {mod.token_id: {"text": mod.text, "voiceover": mod.sound, "replace": mod.is_replacement} for mod in self.config.patches_tlk.modifiers}
+        modifiers_dict = {mod.token_id: {"mod_index": mod.mod_index, "replace": mod.is_replacement} for mod in self.config.patches_tlk.modifiers}
         self.assertDictEqual(
             modifiers_dict,
             {
-                4: {"text": "Modified 0", "voiceover": ResRef("vo_mod_0"), "replace": False},
-                5: {"text": "Modified 1", "voiceover": ResRef("vo_mod_1"), "replace": False},
-                6: {"text": "Modified 2", "voiceover": ResRef("vo_mod_2"), "replace": False},
+                4: {"mod_index": 0, "replace": False},
+                5: {"mod_index": 1, "replace": False},
+                6: {"mod_index": 2, "replace": False},
             },
         )
 
@@ -193,23 +187,17 @@ class TestConfigReader(unittest.TestCase):
             StrRef9=2
         """
 
-        write_tlk(
-            self.modified_tlk_data,
-            str(Path(self.mod_path, "append.tlk")),
-            ResourceType.TLK,
-        )
-
         self.ini.read_string(ini_text)
         self.config_reader.load(self.config)
 
         self.assertEqual(len(self.config.patches_tlk.modifiers), 3)
-        modifiers_dict = {mod.token_id: {"text": mod.text, "voiceover": mod.sound, "replace": mod.is_replacement} for mod in self.config.patches_tlk.modifiers}
+        modifiers_dict = {mod.token_id: {"mod_index": mod.mod_index, "replace": mod.is_replacement} for mod in self.config.patches_tlk.modifiers}
         self.assertDictEqual(
             modifiers_dict,
             {
-                7: {"text": "Modified 0", "voiceover": ResRef("vo_mod_0"), "replace": False},
-                8: {"text": "Modified 1", "voiceover": ResRef("vo_mod_1"), "replace": False},
-                9: {"text": "Modified 2", "voiceover": ResRef("vo_mod_2"), "replace": False},
+                7: {"mod_index": 0, "replace": False},
+                8: {"mod_index": 1, "replace": False},
+                9: {"mod_index": 2, "replace": False},
             },
         )
 
@@ -220,23 +208,17 @@ class TestConfigReader(unittest.TestCase):
             Ignore1:2=
         """
 
-        write_tlk(
-            self.modified_tlk_data,
-            str(Path(self.mod_path, "append.tlk")),
-            ResourceType.TLK,
-        )
-
         self.ini.read_string(ini_text)
         self.config_reader.load(self.config)
 
         self.assertEqual(len(self.config.patches_tlk.modifiers), 3)
-        modifiers_dict = {mod.token_id: {"text": mod.text, "voiceover": mod.sound, "replace": mod.is_replacement} for mod in self.config.patches_tlk.modifiers}
+        modifiers_dict = {mod.token_id: {"mod_index": mod.mod_index, "replace": mod.is_replacement} for mod in self.config.patches_tlk.modifiers}
         self.assertDictEqual(
             modifiers_dict,
             {
-                0: {"text": "Modified 2", "voiceover": ResRef("vo_mod_2"), "replace": False},
-                3: {"text": "Modified 5", "voiceover": ResRef("vo_mod_5"), "replace": False},
-                4: {"text": "Modified 6", "voiceover": ResRef("vo_mod_6"), "replace": False},
+                0: {"mod_index": 2, "replace": False},
+                3: {"mod_index": 5, "replace": False},
+                4: {"mod_index": 6, "replace": False},
             },
         )
 
@@ -261,6 +243,8 @@ class TestConfigReader(unittest.TestCase):
         """
         self.ini.read_string(ini_text)
         self.config_reader.load(self.config)
+        for entry in self.config.patches_tlk.modifiers:
+            entry.load()
 
         modifiers1 = self.config.patches_tlk.modifiers.copy()
         self.assertEqual(len(self.config.patches_tlk.modifiers), 26)
@@ -305,6 +289,8 @@ class TestConfigReader(unittest.TestCase):
 
         modifiers2: list[ModifyTLK] = self.config.patches_tlk.modifiers.copy()
         self.assertEqual(len(self.config.patches_tlk.modifiers), 26)
+        for entry in self.config.patches_tlk.modifiers:
+            entry.load()
 
         modifiers_dict1: dict[int, dict[str, str | ResRef | bool]] = {
             mod.token_id: {"text": mod.text, "voiceover": mod.sound, "is_replacement": mod.is_replacement} for mod in modifiers1
@@ -442,23 +428,23 @@ class TestConfigReader(unittest.TestCase):
         self.config_reader.load(self.config)
 
         self.assertEqual(len(self.config.patches_tlk.modifiers), 5)
-        modifiers_dict = {mod.token_id: {"text": mod.text, "voiceover": mod.sound} for mod in self.config.patches_tlk.modifiers}
+        modifiers_dict = {mod.token_id: {"mod_index": mod.mod_index, "replace": mod.is_replacement} for mod in self.config.patches_tlk.modifiers}
         self.assertDictEqual(
             modifiers_dict,
             {
-                0: {"text": "Modified 0", "voiceover": ResRef("vo_mod_0")},
-                1: {"text": "Modified 1", "voiceover": ResRef("vo_mod_1")},
-                2: {"text": "Modified 2", "voiceover": ResRef("vo_mod_2")},
-                3: {"text": "Modified 3", "voiceover": ResRef("vo_mod_3")},
-                4: {"text": "Modified 4", "voiceover": ResRef("vo_mod_4")},
+                0: {"mod_index": 0, "replace": True},
+                1: {"mod_index": 1, "replace": True},
+                2: {"mod_index": 2, "replace": True},
+                3: {"mod_index": 3, "replace": True},
+                4: {"mod_index": 4, "replace": True},
             },
         )
 
     def test_tlk_file_ignore_functionality(self):
         ini_text = """
             [TLKList]
-            ReplaceFile0=tlk_modifications_file.tlk
             Ignore1:2=
+            ReplaceFile0=tlk_modifications_file.tlk
 
             [tlk_modifications_file.tlk]
             0:4=2:6
@@ -474,13 +460,13 @@ class TestConfigReader(unittest.TestCase):
         self.config_reader.load(self.config)
 
         self.assertEqual(len(self.config.patches_tlk.modifiers), 3)
-        modifiers_dict = {mod.token_id: {"text": mod.text, "voiceover": mod.sound} for mod in self.config.patches_tlk.modifiers}
+        modifiers_dict = {mod.token_id: {"mod_index": mod.mod_index, "replace": mod.is_replacement} for mod in self.config.patches_tlk.modifiers}
         self.assertDictEqual(
             modifiers_dict,
             {
-                0: {"text": "Modified 2", "voiceover": ResRef("vo_mod_2")},
-                3: {"text": "Modified 3", "voiceover": ResRef("vo_mod_3")},
-                4: {"text": "Modified 4", "voiceover": ResRef("vo_mod_4")},
+                0: {"mod_index": 2, "replace": True},
+                3: {"mod_index": 3, "replace": True},
+                4: {"mod_index": 4, "replace": True},
             },
         )
 

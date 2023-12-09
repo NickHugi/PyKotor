@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from configparser import ConfigParser
-from copy import deepcopy
 from itertools import tee
 from typing import TYPE_CHECKING, Any
 
@@ -124,10 +123,10 @@ class ConfigReader:
         mod_path: os.PathLike | str,
         logger: PatchLogger | None = None,
     ) -> None:
-        self.ini = ini
+        self.ini: ConfigParser = ini
         self.mod_path: CaseAwarePath = mod_path if isinstance(mod_path, CaseAwarePath) else CaseAwarePath(mod_path)
         self.config: PatcherConfig
-        self.log = logger or PatchLogger()
+        self.log: PatchLogger = logger or PatchLogger()
 
     @classmethod
     def from_filepath(cls, file_path: os.PathLike | str, logger: PatchLogger | None = None):
@@ -332,7 +331,7 @@ class ConfigReader:
         tlk_list_ignored_indices: set[int] = set()
 
         def process_tlk_entries(
-            tlk_data: TLK,
+            tlk_filename: str,
             dialog_tlk_keys,
             modifications_tlk_keys,
             is_replacement: bool,
@@ -365,12 +364,12 @@ class ConfigReader:
                 change_iter, value_iter = tee(change_indices)
                 value_iter = iter(value_range)
 
-                for mod_index in change_iter:
-                    if mod_index in tlk_list_ignored_indices:
+                for token_id in change_iter:
+                    if token_id in tlk_list_ignored_indices:
                         continue
-                    token_id: int = next(value_iter)
-                    entry: TLKEntry = tlk_data[token_id]
-                    modifier = ModifyTLK(mod_index, entry.text, entry.voiceover, is_replacement)
+                    modifier = ModifyTLK(token_id, is_replacement)
+                    modifier.mod_index = next(value_iter)
+                    modifier.tlk_filepath = self.mod_path / tlk_filename
                     self.config.patches_tlk.modifiers.append(modifier)
 
         for i in tlk_list_edits:
@@ -389,28 +388,15 @@ class ConfigReader:
                 if lowercase_key.startswith("ignore"):
                     continue
                 if lowercase_key.startswith("strref"):
-                    if append_tlk_edits is None:  # load append.tlk only if it's needed.
-                        append_tlk_edits = read_tlk(self.mod_path / self.config.patches_tlk.sourcefile)
-                    if len(append_tlk_edits) == 0:
-                        syntax_error_caught = True
-                        msg = f"'{self.config.patches_tlk.sourcefile}' in mod directory is empty, but is required to perform modifier '{key}={value}' in [TLKList]"
-                        raise ValueError(msg)  # noqa: TRY301
                     strref_range = parse_range(lowercase_key[6:])
                     token_id_range = parse_range(value)
                     process_tlk_entries(
-                        append_tlk_edits,
+                        self.config.patches_tlk.sourcefile,
                         strref_range,
                         token_id_range,
                         is_replacement=False,
                     )
                 elif replace_file or append_file:
-                    tlk_modifications_path: CaseAwarePath = self.mod_path / value
-                    modifications_tlk_data: TLK = read_tlk(tlk_modifications_path)
-                    if len(modifications_tlk_data) == 0:
-                        syntax_error_caught = True
-                        msg = f"'{value}' file in mod directory is empty, but is required to perform modifier '{key}={value}' in [TLKList]"
-                        raise ValueError(msg)  # noqa: TRY301
-
                     next_section_name = self.get_section_name(value)
                     if not next_section_name:
                         syntax_error_caught = True
@@ -420,7 +406,7 @@ class ConfigReader:
                     self.config.patches_tlk.pop_tslpatcher_vars(next_section_dict, default_destination)
 
                     process_tlk_entries(
-                        modifications_tlk_data,
+                        value,
                         self.ini[next_section_name].keys(),
                         self.ini[next_section_name].values(),
                         is_replacement=replace_file,
@@ -437,20 +423,17 @@ class ConfigReader:
                         }
 
                     if property_name == "text":
-                        modifier_dict[token_id]["text"] = value
+                        modifier = ModifyTLK(token_id, is_replacement=True)
+                        modifier.text = value
+                        self.config.patches_tlk.modifiers.append(modifier)
                     elif property_name == "sound":
-                        modifier_dict[token_id]["voiceover"] = ResRef(value)
+                        modifier = ModifyTLK(token_id, is_replacement=True)
+                        modifier.sound = ResRef(value)
+                        self.config.patches_tlk.modifiers.append(modifier)
                     else:
                         syntax_error_caught = True
                         msg = f"Invalid [TLKList] syntax: '{key}={value}'! Expected '{key}' to be one of ['Sound', 'Text']"
                         raise ValueError(msg)  # noqa: TRY301
-
-                    text = modifier_dict[token_id].get("text")
-                    voiceover = modifier_dict[token_id].get("voiceover", ResRef.from_blank())
-
-                    if isinstance(text, str) and isinstance(voiceover, ResRef):
-                        modifier = ModifyTLK(token_id, text, voiceover, is_replacement=True)
-                        self.config.patches_tlk.modifiers.append(modifier)
                 else:
                     syntax_error_caught = True
                     msg = f"Invalid syntax found in [TLKList] '{key}={value}'! Expected '{key}' to be one of ['AppendFile', 'ReplaceFile', '!SourceFile', 'StrRef', 'Text', 'Sound']"
@@ -922,12 +905,13 @@ class ConfigReader:
             raw_value: String value to parse
         Returns:
             FieldValue | None: FieldValue object or None
+
         Processing Logic:
         ----------------
-        - Lowercase the raw value string
-        - Check if it starts with "strref" and extract token ID
-        - Check if it starts with "2damemory" and extract token ID
-        - Return FieldValue memory object with token ID, or None if no match
+            - Lowercase the raw value string
+            - Check if it starts with "strref" and extract token ID
+            - Check if it starts with "2damemory" and extract token ID
+            - Return FieldValue memory object with token ID, or None if no match
         """
         lower_str_value = raw_value.lower()
         if lower_str_value.startswith("strref"):
@@ -941,9 +925,9 @@ class ConfigReader:
     @staticmethod
     def field_value_from_unknown(string_value: str) -> FieldValue:
         """Extracts a field value from an unknown string representation.
+
             This section determines how to parse GFF key/value pairs such as:
                 EntryList/0/RepliesList/0/TypeId=5
-            A helper method for determining how to represent the data in PyKotor.
 
         Args:
         ----
@@ -1133,11 +1117,16 @@ class ConfigReader:
         ----
             identifier: Identifier for target
             modifiers: Modifiers dictionary
+
         Returns:
+        -------
             Target | None: Target object or None
-        - Checks for RowIndex, RowLabel or LabelIndex key
-        - Calls get_target() to create Target object
-        - Returns None if no valid key found with warning
+
+        Processing Logic:
+        ----------------
+            - Checks for RowIndex, RowLabel or LabelIndex key
+            - Calls get_target() to create Target object
+            - Returns None if no valid key found with warning
         """
         def get_target(target_type: TargetType, key: str, is_int: bool = False) -> Target:
             raw_value: str | None = modifiers.pop(key, None)

@@ -38,6 +38,9 @@ class ResRef:
     ):
         return len(self._value)
 
+    def __bool__(self):
+        return bool(self._value)
+
     def __eq__(
         self,
         other,
