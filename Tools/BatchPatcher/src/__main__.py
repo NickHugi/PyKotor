@@ -625,6 +625,7 @@ class KOTORPatchingToolUI:
         self.language_frame = ttk.Frame(root)  # Frame to contain language checkboxes
         self.translation_applied: bool = True
 
+        self.initialize_logger()
         self.setup_ui()
 
     def write_log(self, message: str) -> None:
@@ -935,7 +936,6 @@ class KOTORPatchingToolUI:
             SCRIPT_GLOBALS.pytranslator = Translator(Language.ENGLISH)
             SCRIPT_GLOBALS.pytranslator.translation_option = TranslationOption[self.translation_option.get()]
             self.toggle_output_frame(tk.BooleanVar(value=False))
-            self.initialize_logger()
 
             SCRIPT_GLOBALS.install_thread = Thread(target=execute_patchloop_thread)
             SCRIPT_GLOBALS.install_thread.start()
