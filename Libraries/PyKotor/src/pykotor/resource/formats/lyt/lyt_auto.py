@@ -14,8 +14,9 @@ def read_lyt(
     offset: int = 0,
     size: int | None = None,
 ) -> LYT:
-    """Returns an LYT instance from the source. The file format (LYT only) is automatically determined before parsing
-    the data.
+    """Returns an LYT instance from the source.
+
+    The file format (LYT only) is automatically determined before parsing the data.
 
     Args:
     ----

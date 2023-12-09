@@ -14,8 +14,9 @@ def read_erf(
     offset: int = 0,
     size: int | None = None,
 ) -> ERF:
-    """Returns an ERF instance from the source. The file format (ERF or MOD) is automatically determined before parsing
-    the data.
+    """Returns an ERF instance from the source.
+
+    The file format (ERF or MOD) is automatically determined before parsing the data.
 
     Args:
     ----

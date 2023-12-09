@@ -14,7 +14,9 @@ def read_vis(
     offset: int = 0,
     size: int | None = None,
 ) -> VIS:
-    """Returns an VIS instance from the source. The file format (VIS only) is automatically determined before parsing
+    """Returns an VIS instance from the source.
+
+    The file format (VIS only) is automatically determined before parsing
     the data.
 
     Args:
