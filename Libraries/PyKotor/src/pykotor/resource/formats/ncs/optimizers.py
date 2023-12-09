@@ -15,11 +15,12 @@ class RemoveNopOptimizer(NCSOptimizer):
         Args:
         ----
             ncs: NCS - The neural circuit specification to optimize
-        Returns:
-            None - The function modifies the NCS in-place
-        - Finds all NOP instructions in the NCS
-        - For each NOP, finds all links jumping to it and updates them to jump to the next instruction instead
-        - Removes all NOP instructions from the NCS instruction list.
+
+        Processing Logic:
+        ----------------
+            - Finds all NOP instructions in the NCS
+            - For each NOP, finds all links jumping to it and updates them to jump to the next instruction instead
+            - Removes all NOP instructions from the NCS instruction list.
         """
         nops = [inst for inst in ncs.instructions if inst.ins_type == NCSInstructionType.NOP]
 
@@ -43,8 +44,7 @@ class RemoveMoveSPEqualsZeroOptimizer(NCSOptimizer):
         Args:
         ----
             ncs (NCS): The NCS script to optimize
-        Returns:
-            None
+
         Processing Logic:
         ----------------
             - Finds all MOVSP=0 instructions
@@ -78,11 +78,12 @@ class RemoveJMPToAdjacentOptimizer(NCSOptimizer):
 
 class RemoveUnusedBlocksOptimizer(NCSOptimizer):
     def optimize(self, ncs: NCS) -> None:
-        """Optimizes the NCS by removing unreachable instructions
+        """Optimizes the NCS by removing unreachable instructions.
+
         Args:
+        ----
             ncs: NCS - The NCS object to optimize
-        Returns:
-            None
+
         Processing Logic:
         ----------------
             - Find list of reachable instructions using breadth first search

@@ -1147,22 +1147,16 @@ class TestManipulateGFF(TestCase):
         self.assertEqual(123, gff.root.get_uint8("Integer"))
 
     def test_add_field_locstring(self) -> None:
-        """
-        Adds a localized string field to a GFF using a 2DA memory reference
-        Args:
-            gff: GFF - The GFF object
-            memory: PatcherMemory - The memory object
-            modifiers: list[ModifyGFF] - The list of modifiers
-        Returns:
-            None: No return value
+        """Adds a localized string field to a GFF using a 2DA memory reference
+
         Processing Logic:
         ----------------
-        1. Creates a GFF object
-        2. Sets a locstring field on the root node
-        3. Populates the memory with a test string
-        4. Creates an AddField modifier to add the Field1 locstring using the memory reference
-        5. Applies the modifier to the GFF
-        6. Checks that the locstring was set correctly from memory
+            1. Creates a GFF object
+            2. Sets a locstring field on the root node
+            3. Populates the memory with a test string
+            4. Creates an AddField modifier to add the Field1 locstring using the memory reference
+            5. Applies the modifier to the GFF
+            6. Checks that the locstring was set correctly from memory
         """
         gff = GFF()
         gff.root.set_locstring("Field1", LocalizedString(0))
