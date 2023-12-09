@@ -28,6 +28,7 @@ class TestLookupResourceFunction(unittest.TestCase):
     def setUp(self):
         self.patch = Mock()
         self.patch.sourcefile = "test_filename"
+        self.patch.sourcefolder = "."
         self.patch.saveas = "test_filename"
         self.config = ModInstaller("", "", "")
         self.config.mod_path = Path("test_mod_path")
