@@ -15,8 +15,6 @@ from tkinter import colorchooser, filedialog, messagebox, ttk
 from tkinter import font as tkfont
 from typing import TYPE_CHECKING, Callable
 
-from pykotor.resource.formats.tpc.tpc_auto import bytes_tpc
-
 if getattr(sys, "frozen", False) is False:
     pykotor_font_path = pathlib.Path(__file__).parents[3] / "Libraries" / "PyKotorFont" / "src" / "pykotor"
     if pykotor_font_path.exists():
@@ -35,6 +33,7 @@ if getattr(sys, "frozen", False) is False:
         sys.path.insert(0, str(utility_path))
 
 
+
 from pykotor.common.language import Language, LocalizedString
 from pykotor.common.stream import BinaryWriter
 from pykotor.extract.capsule import Capsule
@@ -49,6 +48,7 @@ from pykotor.resource.formats.rim.rim_auto import write_rim
 from pykotor.resource.formats.rim.rim_data import RIM
 from pykotor.resource.formats.tlk import TLK, read_tlk, write_tlk
 from pykotor.resource.formats.tpc.io_tga import TPCTGAReader, TPCTGAWriter
+from pykotor.resource.formats.tpc.tpc_auto import bytes_tpc
 from pykotor.resource.formats.tpc.tpc_data import TPC
 from pykotor.resource.type import ResourceType
 from pykotor.tools.misc import is_capsule_file
