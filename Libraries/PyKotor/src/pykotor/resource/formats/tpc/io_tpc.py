@@ -78,6 +78,7 @@ class TPCBinaryReader(ResourceReader):
         self._tpc = TPC()
 
         size = self._reader.read_uint32()
+        min_size = -1
         compressed = size != 0
 
         self._reader.skip(4)
@@ -91,22 +92,27 @@ class TPCBinaryReader(ResourceReader):
         if compressed:
             if color_depth == 2:
                 tpc_format = TPCTextureFormat.DXT1
+                min_size = 8
             elif color_depth == 4:
                 tpc_format = TPCTextureFormat.DXT5
+                min_size = 16
         elif color_depth == 1:
             tpc_format = TPCTextureFormat.Greyscale
             size = width * height
+            min_size = 1
         elif color_depth == 2:
             tpc_format = TPCTextureFormat.RGB
             size = width * height * 3
+            min_size = 3
         elif color_depth == 4:
             tpc_format = TPCTextureFormat.RGBA
             size = width * height * 4
+            min_size = 4
 
         mipmaps: list[bytes] = []
         mm_width, mm_height = width, height
-        for _i in range(mipmap_count):
-            mm_size = _get_size(mm_width, mm_height, tpc_format)
+        for _ in range(mipmap_count):
+            mm_size = _get_size(mm_width, mm_height, tpc_format) or min_size
             mm_data = self._reader.read_bytes(mm_size)
             mipmaps.append(mm_data)
 
