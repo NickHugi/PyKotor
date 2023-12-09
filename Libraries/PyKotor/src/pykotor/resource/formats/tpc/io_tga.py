@@ -19,7 +19,6 @@ class _DataTypes(IntEnum):
     COMPRESSED_COLOR_MAPPED_A = 32
     COMPRESSED_COLOR_MAPPED_B = 33
 
-
 class TPCTGAReader(ResourceReader):
     def __init__(
         self,
@@ -29,6 +28,93 @@ class TPCTGAReader(ResourceReader):
     ):
         super().__init__(source, offset, size)
         self._tpc: TPC | None = None
+
+    def _read_color_map(self, length, depth) -> list[bytes]:
+        color_map: list[bytes] = []
+        bytes_per_entry = depth // 8
+
+        for _ in range(length):
+            entry: bytes = self._reader.read_bytes(bytes_per_entry)
+            if bytes_per_entry == 3:  # RGB format, append alpha value
+                entry += b"\xff"  # Append alpha value of 255
+            color_map.append(entry)
+
+        return color_map
+
+    def _convert_grayscale_to_rgba(self, grayscale_value: int) -> list[int]:
+        """Convert a grayscale value to RGBA."""
+        return [grayscale_value, grayscale_value, grayscale_value, 255]
+
+    def _process_rle_data(
+        self,
+        width: int,
+        height: int,
+        bits_per_pixel: int,
+        color_map: list[bytes] | None = None,
+        is_direct_rgb: bool = False,  # New parameter
+    ) -> bytearray:
+        """Process RLE compressed data."""
+        data = bytearray()
+        n = 0
+        pixel: list[int]
+        rgb_len = 3
+        while self._reader.remaining():  # while n < width * height:
+            packet = self._reader.read_uint8()
+            count = (packet & 0b01111111) + 1
+            is_raw_packet = (packet >> 7) == 0
+            #count = (packet & 0x7f) + 1
+            #is_raw_packet = packet & 0x80
+            n += count
+
+            if is_raw_packet:
+                for _ in range(count):
+                    if is_direct_rgb:
+                        b, g, r = (
+                            self._reader.read_uint8(),
+                            self._reader.read_uint8(),
+                            self._reader.read_uint8(),
+                        )
+                        pixel = [r, g, b, self._reader.read_uint8()] if bits_per_pixel == 32 else [r, g, b, 255]
+                    elif color_map:
+                        index = self._reader.read_uint8()
+                        color = list(color_map[index])
+                        if len(color) == rgb_len:  # Check the length of the color map entry
+                            color.append(255)  # Append alpha value 255
+                        pixel = color
+                    else:
+                        pixel = self._convert_grayscale_to_rgba(self._reader.read_uint8())
+
+                    data.extend(pixel)
+            else:
+                if is_direct_rgb:
+                    b, g, r = (
+                        self._reader.read_uint8(),
+                        self._reader.read_uint8(),
+                        self._reader.read_uint8(),
+                    )
+                    pixel = [r, g, b, self._reader.read_uint8()] if bits_per_pixel == 32 else [r, g, b, 255]
+                elif color_map:
+                    index = self._reader.read_uint8()
+                    color = list(color_map[index])
+                    if len(color) == rgb_len:  # Check the length of the color map entry
+                        color.append(255)  # Append alpha value 255
+                    pixel = color
+                else:
+                    pixel = self._convert_grayscale_to_rgba(self._reader.read_uint8())
+                for _ in range(count):
+                    data.extend(pixel)
+            if n == width * height:
+                break
+        return data
+
+
+    def _process_non_rle_color_mapped(self, width: int, height: int, color_map: list[bytes]) -> bytearray:
+        """Process non-RLE color-mapped data."""
+        data = bytearray()
+        for _ in range(width * height):
+            index = self._reader.read_uint8()
+            data.extend(color_map[index])
+        return data
 
     @autoclose
     def load(
@@ -70,14 +156,24 @@ class TPCTGAReader(ResourceReader):
         image_descriptor = self._reader.read_uint8()
         self._reader.skip(id_length)
 
+        # Read the color map if necessary
+        color_map = None
+        if colormap_type and colormap_length:
+            color_map = self._read_color_map(colormap_length, colormap_depth)
+
         y_flipped = bool(image_descriptor & 0b00100000)
         interleaving_id = (image_descriptor & 0b11000000) >> 6
         if interleaving_id:
             ValueError("The image data must not be interleaved.")
 
-        if datatype_code == _DataTypes.UNCOMPRESSED_RGB:
+        data: bytearray = bytearray()
+        if datatype_code == _DataTypes.UNCOMPRESSED_COLOR_MAPPED:
+            if color_map is None:
+                msg = "Expected color map not found for uncompressed color-mapped data"
+                raise ValueError(msg)
+            data = self._process_non_rle_color_mapped(width, height, color_map)
+        elif datatype_code == _DataTypes.UNCOMPRESSED_RGB:
             self._reader.skip(colormap_length * colormap_depth // 8)
-            data = bytearray()
 
             if bits_per_pixel not in [24, 32]:
                 ValueError("The image must store 24 or 32 bits per pixel.")
@@ -102,48 +198,30 @@ class TPCTGAReader(ResourceReader):
             else:
                 for pixels in pixel_rows:
                     data.extend(pixels)
-        elif datatype_code == _DataTypes.RLE_RGB:
+        elif datatype_code == _DataTypes.UNCOMPRESSED_BLACK_WHITE:
             data = bytearray()
-            pixels = []
-            n = 0
+            for _ in range(width * height):
+                # Read the grayscale value (assuming 1 byte per pixel)
+                gray_value = self._reader.read_uint8()
 
-            while self._reader.remaining():
-                packet = self._reader.read_uint8()
-
-                raw = (packet >> 7) == 0
-                count = (packet & 0b01111111) + 1
-                n += count
-
-                if raw:
-                    for _ in range(count):
-                        b, g, r = (
-                            self._reader.read_uint8(),
-                            self._reader.read_uint8(),
-                            self._reader.read_uint8(),
-                        )
-                        if bits_per_pixel == 32:
-                            pixels.extend([r, g, b, self._reader.read_uint8()])
-                        else:
-                            pixels.extend([r, g, b, 255])
-                else:
-                    b, g, r = (
-                        self._reader.read_uint8(),
-                        self._reader.read_uint8(),
-                        self._reader.read_uint8(),
-                    )
-                    pixel = [r, g, b]
-                    if bits_per_pixel == 32:
-                        pixel.append(self._reader.read_uint8())
-                    else:
-                        pixel.append(255)
-                    for _ in range(count):
-                        pixels.extend(pixel)
-
-                if n == width * height:
-                    break
-            data.extend(pixels)
+                # Convert grayscale to RGBA (R=G=B=gray_value, A=255)
+                data.extend([gray_value, gray_value, gray_value, 255])
+        elif datatype_code == _DataTypes.RLE_COLOR_MAPPED:
+            if color_map is None:
+                msg = "Expected color map not found for RLE color-mapped data"
+                raise ValueError(msg)
+            data = self._process_rle_data(width, height, bits_per_pixel, color_map=color_map)
+        elif datatype_code == _DataTypes.RLE_RGB:
+            data = self._process_rle_data(width, height, bits_per_pixel, is_direct_rgb=True)
+        elif datatype_code == _DataTypes.COMPRESSED_BLACK_WHITE:
+            data = self._process_rle_data(width, height, bits_per_pixel)
+        elif datatype_code in [_DataTypes.COMPRESSED_COLOR_MAPPED_A, _DataTypes.COMPRESSED_COLOR_MAPPED_B]:
+            if color_map is None:
+                msg = "Expected color map not found for compressed color-mapped data"
+                raise ValueError(msg)
+            data = self._process_rle_data(width, height, bits_per_pixel, color_map=color_map)
         else:
-            msg = "The image data must be RGB and not color-mapped."
+            msg = "The image format is not currently supported."
             raise ValueError(msg)
 
         self._tpc.set_data(width, height, [bytes(data)], TPCTextureFormat.RGBA)
@@ -165,14 +243,13 @@ class TPCTGAWriter(ResourceWriter):
         self,
         auto_close: bool = True,
     ) -> None:
-        """Writes the TPC texture to a BMP file
+        """Writes the TPC texture to a BMP file.
+
         Args:
+        ----
             self: The TPCWriter instance
             auto_close: Whether to close the underlying file stream (default True).
 
-        Returns
-        -------
-            None: No value is returned
         Processing Logic:
         ----------------
             - Get width and height of texture from TPC instance
