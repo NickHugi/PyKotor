@@ -8,7 +8,7 @@ from contextlib import suppress
 from enum import Enum
 from typing import TYPE_CHECKING
 
-from utility.path import BasePath, Path
+from utility.path import Path
 
 if TYPE_CHECKING:
     from xml.etree.ElementTree import Element
@@ -152,7 +152,7 @@ def is_instance_or_subinstance(instance, target_cls) -> bool:
 
 def generate_filehash_sha256(filepath: os.PathLike | str) -> str:
     sha1_hash = hashlib.sha256()
-    filepath = filepath if isinstance(filepath, BasePath) else Path(filepath)
+    filepath = filepath if isinstance(filepath, Path) else Path(filepath)
     with filepath.open("rb") as f:
         data = f.read(65536)
         while data:  # read in 64k chunks

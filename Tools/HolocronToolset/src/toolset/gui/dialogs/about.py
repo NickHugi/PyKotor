@@ -9,6 +9,7 @@ class About(QDialog):
         Args:
         ----
             parent: The parent QWidget.
+
         Processing Logic:
         ----------------
         - Sets up the UI from the about.py UI file

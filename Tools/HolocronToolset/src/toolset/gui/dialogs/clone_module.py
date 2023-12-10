@@ -34,6 +34,7 @@ class CloneModuleDialog(QDialog):
         Returns:
         -------
             None: Does not return anything.
+
         Processing Logic:
         ----------------
             - Sets up the UI from the clone_module module.
@@ -70,6 +71,7 @@ class CloneModuleDialog(QDialog):
         Returns:
         -------
             None: No return value.
+
         Processing Logic:
         ----------------
         - Gets module cloning parameters from UI elements

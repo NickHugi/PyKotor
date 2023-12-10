@@ -65,6 +65,7 @@ class TwoDAEditor(Editor):
         Returns:
         -------
             None: No return value.
+
         Processing Logic:
         ----------------
             - Connect textEdited signal from filter edit to doFilter slot
@@ -307,6 +308,7 @@ class TwoDAEditor(Editor):
         Returns:
         -------
             None: No value is returned.
+
         Processing Logic:
         ----------------
             - Gets the current row count from the model
@@ -380,6 +382,7 @@ class TwoDAEditor(Editor):
         Returns:
         -------
             None: No value is returned.
+
         Processing Logic:
         ----------------
             - Clear existing vertical header styling

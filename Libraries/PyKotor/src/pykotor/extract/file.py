@@ -94,7 +94,7 @@ class FileResource:
                 from pykotor.extract.capsule import Capsule
 
                 capsule = Capsule(self._filepath)
-                res = capsule.info(self._resname, self._restype)
+                res: FileResource = capsule.info(self._resname, self._restype)
                 self._offset = res.offset()
                 self._size = res.size()
             elif not is_bif_file(self._filepath.name):

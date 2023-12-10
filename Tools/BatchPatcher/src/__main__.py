@@ -339,7 +339,6 @@ def patch_resource(resource: FileResource) -> GFF | TPC | None:
             return None
     return None
 
-
 def patch_and_save_noncapsule(resource: FileResource):
     patched_data: GFF | TPC | None = patch_resource(resource)
     if patched_data is None:
@@ -362,65 +361,41 @@ def patch_and_save_noncapsule(resource: FileResource):
         TPCTGAWriter(patched_data, new_path.with_suffix(".tpc")).write()
         resource.filepath().unlink()
 
-
-
-def patch_file(file: os.PathLike | str) -> None:
-    c_file = file if isinstance(file, Path) else Path(file).resolve()
-    if c_file in processed_files:
-        return
-
+def patch_capsule_file(c_file: Path):
     new_data: bytes
-    if is_capsule_file(c_file):
-        log_output(f"Load {c_file.name}")
-        try:
-            file_capsule = Capsule(file)
-        except ValueError as e:
-            log_output(f"Could not load '{c_file!s}'. Reason: {e!r}")
-            return
+    log_output(f"Load {c_file.name}")
+    try:
+        file_capsule = Capsule(c_file)
+    except ValueError as e:
+        log_output(f"Could not load '{c_file!s}'. Reason: {e!r}")
+        return
+    new_filepath: Path = c_file
+    if SCRIPT_GLOBALS.translate:
+        new_filepath = c_file.parent / f"{c_file.stem}_{SCRIPT_GLOBALS.pytranslator.to_lang.get_bcp47_code()}{c_file.suffix}"
+    new_capsule = Capsule(new_filepath, create_nonexisting=True)
+    omitted_resources: list[ResourceIdentifier] = []
+    for resource in file_capsule:
+        patched_data: GFF | TPC | None = patch_resource(resource)
+        if isinstance(patched_data, GFF):
+            new_data = bytes_gff(patched_data) if patched_data else resource.data()
+            log_output(f"Adding patched GFF resource '{resource.resname()}' to capsule {c_file.name}")
+            new_capsule.add(resource.resname(), resource.restype(), new_data)
+            omitted_resources.append(resource.identifier())
+        elif isinstance(patched_data, TPC):
+            txi_resource = file_capsule.resource(resource.resname(), ResourceType.TXI)
+            if txi_resource is not None:
+                patched_data.txi = txi_resource.decode("ascii", errors="ignore")
+                omitted_resources.append(ResourceIdentifier(resource.resname(), ResourceType.TXI))
+            new_data = bytes_tpc(patched_data)
+            log_output(f"Adding patched TPC resource '{resource.resname()}' to capsule {c_file.name}")
+            new_capsule.add(resource.resname(), ResourceType.TPC, new_data)
+            omitted_resources.append(resource.identifier())
 
-        new_filepath: Path = c_file
-        if SCRIPT_GLOBALS.translate:
-            new_filepath = c_file.parent / f"{c_file.stem}_{SCRIPT_GLOBALS.pytranslator.to_lang.get_bcp47_code()}{c_file.suffix}"
-        new_capsule = Capsule(new_filepath, create_nonexisting=True)
-        omitted_resources: list[ResourceIdentifier] = []
-        for resource in file_capsule:
-            patched_data: GFF | TPC | None = patch_resource(resource)
-            if isinstance(patched_data, GFF):
-                new_data = bytes_gff(patched_data) if patched_data else resource.data()
-                log_output(f"Adding patched GFF resource '{resource.resname()}' to capsule {c_file.name}")
-                new_capsule.add(resource.resname(), resource.restype(), new_data)
-                omitted_resources.append(resource.identifier())
-            elif isinstance(patched_data, TPC):
-                txi_resource = file_capsule.resource(resource.resname(), ResourceType.TXI)
-                if txi_resource is not None:
-                    patched_data.txi = txi_resource.decode("ascii", errors="ignore")
-                    omitted_resources.append(ResourceIdentifier(resource.resname(), ResourceType.TXI))
-                new_data = bytes_tpc(patched_data)
-                log_output(f"Adding patched TPC resource '{resource.resname()}' to capsule {c_file.name}")
-                new_capsule.add(resource.resname(), ResourceType.TPC, new_data)
-                omitted_resources.append(resource.identifier())
+    for resource in file_capsule:
+        if resource.identifier() not in omitted_resources:
+            new_capsule.add(resource.resname(), resource.restype(), resource.data())
 
-        for resource in file_capsule:
-            if resource.identifier() not in omitted_resources:
-                new_capsule.add(resource.resname(), resource.restype(), resource.data())
-    else:
-        resource = FileResource(
-            *ResourceIdentifier.from_path(c_file),
-            c_file.stat().st_size,
-            0,
-            c_file,
-        )
-        if resource._restype is ResourceType.INVALID:
-            return
-        patch_and_save_noncapsule(resource)
-
-def patch_folder(folder_path: os.PathLike | str) -> None:
-    c_folderpath = folder_path if isinstance(folder_path, Path) else Path(folder_path).resolve()
-    log_output_with_separator(f"Recursing through resources in the '{c_folderpath.name}' folder...", above=True)
-    for file_path in c_folderpath.safe_rglob("*"):
-        patch_file(file_path)
-
-def patch_capsule_resources(resources: list[FileResource], filename: str, erf_or_rim: RIM | ERF) -> PurePath:
+def patch_erf_or_rim(resources: list[FileResource], filename: str, erf_or_rim: RIM | ERF) -> PurePath:
     omitted_resources: list[ResourceIdentifier] = []
     new_filename = PurePath(filename)
     if SCRIPT_GLOBALS.translate:
@@ -453,6 +428,34 @@ def patch_capsule_resources(resources: list[FileResource], filename: str, erf_or
         if resource.identifier() not in omitted_resources:
             erf_or_rim.set_data(resource.resname(), resource.restype(), resource.data())
     return new_filename
+
+def patch_file(file: os.PathLike | str) -> None:
+    c_file = file if isinstance(file, Path) else Path(file).resolve()
+    if c_file in processed_files:
+        return
+
+    if is_capsule_file(c_file):
+        patch_capsule_file(c_file)
+    else:
+        resname, restype = ResourceIdentifier.from_path(c_file)
+        if restype is ResourceType.INVALID:
+            return
+        patch_and_save_noncapsule(
+            FileResource(
+                resname,
+                restype,
+                c_file.stat().st_size,
+                0,
+                c_file,
+            ),
+        )
+
+def patch_folder(folder_path: os.PathLike | str) -> None:
+    c_folderpath = folder_path if isinstance(folder_path, Path) else Path(folder_path).resolve()
+    log_output_with_separator(f"Recursing through resources in the '{c_folderpath.name}' folder...", above=True)
+    for file_path in c_folderpath.safe_rglob("*"):
+        patch_file(file_path)
+
 def patch_install(install_path: os.PathLike | str) -> None:
     log_output()
     log_output_with_separator(f"Patching install dir:\t{install_path}", above=True)
@@ -466,11 +469,11 @@ def patch_install(install_path: os.PathLike | str) -> None:
         _resname, restype = ResourceIdentifier.from_path(module_name)
         if restype == ResourceType.RIM:
             new_rim = RIM()
-            new_rim_filename = patch_capsule_resources(resources, module_name, new_rim)
+            new_rim_filename = patch_erf_or_rim(resources, module_name, new_rim)
             write_rim(new_rim, k_install.path() / new_rim_filename)
         elif restype in [ResourceType.MOD, ResourceType.ERF]:
             new_erf = ERF()
-            new_erf_filename = patch_capsule_resources(resources, module_name, new_erf)
+            new_erf_filename = patch_erf_or_rim(resources, module_name, new_erf)
             write_erf(new_erf, k_install.path() / new_erf_filename, restype)
         else:
             log_output("Unsupported module:", module_name, " - cannot patch")
@@ -478,7 +481,7 @@ def patch_install(install_path: os.PathLike | str) -> None:
     # Patch rims...
     for rim_name, resources in k_install._rims.items():
         new_rim = RIM()
-        new_rim_filename = patch_capsule_resources(resources, rim_name, new_rim)
+        new_rim_filename = patch_erf_or_rim(resources, rim_name, new_rim)
         write_rim(new_rim, k_install.path() / new_rim_filename)
 
     # Patch Override...

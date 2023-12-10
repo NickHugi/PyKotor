@@ -174,6 +174,7 @@ class UTSEditor(Editor):
         Returns
         -------
             tuple[bytes, bytes]: A tuple containing the unit data and log.
+
         Processing Logic:
         ----------------
             - Collects input from UI elements and assigns to _uts attribute

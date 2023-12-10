@@ -101,8 +101,8 @@ def create_case_insensitive_pathlib_class(cls) -> None:  # TODO: move into CaseA
                 setattr(cls, attr_name, simple_wrapper(attr_name, cls))
                 wrapped_methods.add(attr_name)
 
-
-class CaseAwarePath(InternalPath):  # TODO: Move to pykotor.common
+ # TODO: Move to pykotor.common
+class CaseAwarePath(InternalPath):  # type: ignore[misc]
     """A class capable of resolving case-sensitivity in a path. Absolutely essential for working with KOTOR files on Unix filesystems."""
 
     def resolve(self, strict=False):
@@ -140,11 +140,16 @@ class CaseAwarePath(InternalPath):  # TODO: Move to pykotor.common
 
     @staticmethod
     def get_case_sensitive_path(path: os.PathLike | str) -> CaseAwarePath:
-        """Get a case sensitive path
+        """Get a case sensitive path.
+
         Args:
+        ----
             path: The path to resolve case sensitivity for
+
         Returns:
+        -------
             CaseAwarePath: The path with case sensitivity resolved
+
         Processing Logic:
         ----------------
             - Convert the path to a pathlib Path object

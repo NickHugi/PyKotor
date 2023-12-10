@@ -232,7 +232,8 @@ class ModInstaller:
 
         override_dir = self.game_path / "Override"
         override_resource_path = override_dir / patch.saveas
-        override_resource_path = override_resource_path.resolve()
+        if not override_resource_path.exists():
+            override_resource_path = override_resource_path.resolve()
         if override_resource_path.exists():
             if override_type == OverrideType.RENAME:
                 renamed_file_path: CaseAwarePath = override_dir / f"old_{patch.saveas}"

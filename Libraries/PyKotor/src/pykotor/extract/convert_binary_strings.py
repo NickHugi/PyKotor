@@ -125,7 +125,7 @@ def write_dictionary_to_py_file(
     dict_name: str,
     output_filepath: Path,
 ):  # sourcery skip: use-dict-items
-    output_message = f"Writing converted dictionary {dict_name} to '{file_path.resolve()}'"
+    output_message = f"Writing converted dictionary {dict_name} to '{file_path}'"
     print(
         os.linesep,
         "#" * len(output_message) + os.linesep,

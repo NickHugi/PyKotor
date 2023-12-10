@@ -48,7 +48,7 @@ from toolset.gui.dialogs.asyncloader import AsyncLoader
 from toolset.gui.dialogs.indoor_settings import IndoorMapSettings
 from toolset.gui.windows.help import HelpWindow
 from utility.misc import is_debug_mode
-from utility.path import BasePurePath, Path, PurePath
+from utility.path import Path, PurePath
 
 if TYPE_CHECKING:
     import os
@@ -1067,8 +1067,8 @@ class KitDownloader(QDialog):
         repo_path: os.PathLike | str,
     ) -> None:
         """This method should not be used due to github's api restrictions. Use download_file to get a .zip of the folder instead."""  # noqa: D404
-        repo = repo if isinstance(repo, BasePurePath) else PurePath(repo)
-        repo_path = repo_path if isinstance(repo_path, BasePurePath) else PurePath(repo_path)
+        repo = repo if isinstance(repo, PurePath) else PurePath(repo)
+        repo_path = repo_path if isinstance(repo_path, PurePath) else PurePath(repo_path)
         api_url = f"https://api.github.com/repos/{repo.as_posix()}/contents/{repo_path.as_posix()}"
         data = self._get_update_data(api_url)
         for item in data:

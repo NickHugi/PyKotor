@@ -20,7 +20,7 @@ from toolset.gui.dialogs.save.to_module import SaveToModuleDialog
 from toolset.gui.dialogs.save.to_rim import RimSaveDialog, RimSaveOption
 from toolset.gui.widgets.settings.installations import GlobalSettings
 from utility.error_handling import format_exception_with_variables
-from utility.path import BasePath, Path
+from utility.path import Path
 
 if TYPE_CHECKING:
     import os
@@ -30,8 +30,9 @@ if TYPE_CHECKING:
 
 
 class Editor(QMainWindow):
-    """Editor is a base class for all file-specific editors. It provides methods for saving and loading files that are
-    stored directly in folders and for files that are encapsulated in a MOD or RIM.
+    """Editor is a base class for all file-specific editors.
+
+    Provides methods for saving and loading files that are stored directly in folders and for files that are encapsulated in a MOD or RIM.
     """
 
     newFile = QtCore.pyqtSignal()
@@ -48,8 +49,10 @@ class Editor(QMainWindow):
         installation: HTInstallation | None = None,
         mainwindow: QMainWindow | None = None,
     ):
-        """Initializes the editor
+        """Initializes the editor.
+
         Args:
+        ----
             parent: QWidget: The parent widget
             title: str: The title of the editor window
             iconName: str: The name of the icon to display
@@ -57,8 +60,7 @@ class Editor(QMainWindow):
             writeSupported: list[ResourceType]: The supported resource types for writing
             installation: HTInstallation | None: The installation context
             mainwindow: QMainWindow | None: The main window
-        Returns:
-            None
+
         Initializes editor properties:
             - Sets up title, icon and parent widget
             - Sets supported read/write resource types
@@ -394,7 +396,7 @@ class Editor(QMainWindow):
             - Refresh window title
             - Emit loadedFile signal with load details.
         """
-        self._filepath = filepath if isinstance(filepath, BasePath) else Path(filepath)  # type: ignore[reportGeneralTypeIssues]
+        self._filepath = filepath if isinstance(filepath, Path) else Path(filepath)  # type: ignore[reportGeneralTypeIssues]
         self._resref = resref
         self._restype = restype
         self._revert = data

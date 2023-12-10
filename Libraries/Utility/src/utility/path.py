@@ -11,7 +11,55 @@ from typing import Union
 
 PathElem = Union[str, os.PathLike]
 
-class BasePurePath:
+def override_to_pathlib(cls):
+    if cls == PurePath:
+        return pathlib.PurePath
+    if cls == PureWindowsPath:
+        return pathlib.PureWindowsPath
+    if cls == PurePosixPath:
+        return pathlib.PurePosixPath
+    if cls == Path:
+        return pathlib.Path
+    if cls == WindowsPath:
+        return pathlib.WindowsPath
+    if cls == PosixPath:
+        return pathlib.PosixPath
+    return cls
+
+def pathlib_to_override(cls):
+    if cls == pathlib.PurePath:
+        return PurePath
+    if cls == pathlib.PureWindowsPath:
+        return PureWindowsPath
+    if cls == pathlib.PurePosixPath:
+        return PurePosixPath
+    if cls == pathlib.Path:
+        return Path
+    if cls == pathlib.WindowsPath:
+        return WindowsPath
+    if cls == pathlib.PosixPath:
+        return PosixPath
+    return cls
+
+class PurePathType(type):
+    def __instancecheck__(cls, instance): # sourcery skip: instance-method-first-arg-name
+        instance_type = type(instance)
+        mro = instance_type.__mro__
+        if cls in (pathlib.PurePath, PurePath):
+            return BasePurePath in mro or override_to_pathlib(cls) in override_to_pathlib(instance_type).__mro__
+        if cls in (pathlib.Path, Path):
+            return BasePath in mro or override_to_pathlib(cls) in override_to_pathlib(instance_type).__mro__
+        return cls in mro
+
+    def __subclasscheck__(cls, subclass): # sourcery skip: instance-method-first-arg-name
+        mro = subclass.__mro__
+        if cls in (pathlib.PurePath, PurePath):
+            return BasePurePath in mro or override_to_pathlib(cls) in override_to_pathlib(subclass).__mro__
+        if cls in (pathlib.Path, Path):
+            return BasePath in mro or override_to_pathlib(cls) in override_to_pathlib(subclass).__mro__
+        return cls in mro
+
+class BasePurePath(metaclass=PurePathType):
     """BasePath is a class created to fix some annoyances with pathlib, such as its refusal to resolve mixed/repeating/trailing slashes."""
 
     def __new__(cls, *args: PathElem, **kwargs):
@@ -77,14 +125,21 @@ class BasePurePath:
 
     @staticmethod
     def _fspath_str(arg: object) -> str:
-        """Convert object to a file system path string
+        """Convert object to a file system path string.
+
         Args:
+        ----
             arg: Object to convert to a file system path string
+
         Returns:
+        -------
             str: File system path string
-        - Check if arg is already a string
-        - Check if arg has a __fspath__ method and call it
-        - Raise TypeError if arg is neither string nor has __fspath__ method.
+
+        Processing Logic:
+        ----------------
+            - Check if arg is already a string
+            - Check if arg has a __fspath__ method and call it
+            - Raise TypeError if arg is neither string nor has __fspath__ method.
         """
         if isinstance(arg, str):
             return arg
@@ -95,17 +150,17 @@ class BasePurePath:
         raise TypeError(msg)
 
     # Call is_relative_to when using 'in' keyword
-    def __contains__(self, other_path: os.PathLike | str):
+    def __contains__(self, other_path: os.PathLike | str) -> bool:
         return self.is_relative_to(other_path, case_sensitive=False)
 
-    def __str__(self):
+    def __str__(self) -> str:
         """Call _fix_path_formatting before returning the pathlib class's __str__ result.
         In Python 3.12, pathlib's __str__ methods will return '' instead of '.', so we return '.' in this instance for backwards compatibility.
         """
         str_result = self._fix_path_formatting(super().__str__(), self._flavour.sep)  # type: ignore[_flavour exists in children]
         return "." if str_result == "" else str_result
 
-    def __fspath__(self):
+    def __fspath__(self) -> str:
         """Ensures any use of __fspath__ will call our __str__ method."""
         return str(self)
 
@@ -176,18 +231,22 @@ class BasePurePath:
             msg = "Number of dots must not be 0"
             raise ValueError(msg)
 
+        self_path = self
+        if not isinstance(self_path, PurePath):
+            return NotImplemented
+
         def split_func(parts: list[str]) -> tuple[str, str]:
             return ".".join(parts[:-abs(dots)]), ".".join(parts[-abs(dots):])
 
         if dots < 0:
-            parts: list[str] = self.name.split(".", abs(dots))
+            parts: list[str] = self_path.name.split(".", abs(dots))
             parts.reverse()  # Reverse the order of parts for negative dots
         else:
-            parts: list[str] = self.name.rsplit(".", abs(dots) + 1)
+            parts: list[str] = self_path.name.rsplit(".", abs(dots) + 1)
 
         if len(parts) <= abs(dots):
-            first_dot = self.name.find(".")
-            return (self.name[:first_dot], self.name[first_dot + 1:]) if first_dot != -1 else (self.name, "")
+            first_dot = self_path.name.find(".")
+            return (self_path.name[:first_dot], self_path.name[first_dot + 1:]) if first_dot != -1 else (self_path.name, "")
 
         return split_func(parts)
 
@@ -197,12 +256,20 @@ class BasePurePath:
         Args:
         ----
             self: Path object
+
         Returns:
+        -------
             str: POSIX representation of the path
-        - Call as_posix() on the Path object to get the POSIX path string
-        - Pass the result to _fix_path_formatting() to normalize the path format. This is done to fix any known bugs with the pathlib library.
+
+        Processing Logic:
+        ----------------
+            - Call as_posix() on the Path object to get the POSIX path string
+            - Pass the result to _fix_path_formatting() to normalize the path format. This is done to fix any known bugs with the pathlib library.
         """
-        return self._fix_path_formatting(super().as_posix(), slash="/")
+        super_obj = super()
+        if not isinstance(super_obj, Path):
+            return NotImplemented
+        return self._fix_path_formatting(super_obj.as_posix(), slash="/")
 
     def joinpath(self, *args: PathElem):
         """Appends one or more path-like objects and/or relative paths to self.
@@ -222,14 +289,19 @@ class BasePurePath:
             return NotImplemented
         return self._create_instance(str(self) + extension)
 
-    def is_relative_to(self, other: PathElem, case_sensitive=True) -> bool:
-        """Checks if self is relative to other
+    def is_relative_to(self, other: PathElem, case_sensitive: bool = True) -> bool:
+        """Checks if self is relative to other.
+
         Args:
+        ----
             self: Path to check
             other: Path to check against
             case_sensitive: Whether to do case-sensitive comparison
+
         Returns:
+        -------
             bool: Whether self is relative to other
+
         Processing Logic:
         ----------------
             - Resolve self and other if they are Path objects
@@ -238,18 +310,18 @@ class BasePurePath:
             - Check if self string starts with other string.
         """
         resolved_self = self
-        if isinstance(self, Path):
+        if isinstance(resolved_self, Path):
             if not isinstance(other, Path):
                 other = self.__class__(other)
-            other = other.resolve()
-            resolved_self = resolved_self.resolve()  # type: ignore[attr-defined]
+            if isinstance(other, Path):
+                other = other.resolve()
+            resolved_self = resolved_self.resolve()
         else:
             other = other if isinstance(other, PurePath) else PurePath(other)
 
         self_str, other_str = map(str, (resolved_self, other))
         if os.name == "nt" or not case_sensitive:
-            self_str = self_str.lower()
-            other_str = other_str.lower()
+            self_str, other_str = map(str.lower, (self_str, other_str))
         return bool(self_str.startswith(other_str))
 
     def endswith(self, text: str | tuple[str, ...], case_sensitive: bool = False) -> bool:
@@ -264,11 +336,12 @@ class BasePurePath:
         Returns:
         -------
             bool: True if string ends with the suffix, False otherwise.
+
         Processing Logic:
         ----------------
-        - If case sensitivity is not required, normalize self and text to lower case
-        - Normalize each string in the tuple if text is a tuple
-        - Utilize Python's built-in endswith method to check for suffix.
+            - If case sensitivity is not required, normalize self and text to lower case
+            - Normalize each string in the tuple if text is a tuple
+            - Utilize Python's built-in endswith method to check for suffix.
         """
         if not case_sensitive:
             self_str = str(self).lower()
@@ -289,8 +362,11 @@ class BasePurePath:
         ----
             str_path (str): The path string to format
             slash (str): The path separator character
+
         Returns:
+        -------
             str: The formatted path string
+
         Processing Logic:
         ----------------
             1. Validate the slash character
@@ -326,20 +402,19 @@ class BasePurePath:
         return formatted_path if len(formatted_path) == 1 else formatted_path.rstrip(slash)
 
 
-class PurePath(BasePurePath, pathlib.PurePath):
+class PurePath(BasePurePath, pathlib.PurePath):  # type: ignore[misc]
     # pylint: disable-all
     _flavour = pathlib.PureWindowsPath._flavour if os.name == "nt" else pathlib.PurePosixPath._flavour  # type: ignore[attr-defined]
 
-
-class PurePosixPath(BasePurePath, pathlib.PurePosixPath):
+class PurePosixPath(BasePurePath, pathlib.PurePosixPath):  # type: ignore[misc]
     pass
 
 
-class PureWindowsPath(BasePurePath, pathlib.PureWindowsPath):
+class PureWindowsPath(BasePurePath, pathlib.PureWindowsPath):  # type: ignore[misc]
     pass
-
 
 class BasePath(BasePurePath):
+
     # Safe rglob operation
     def safe_rglob(self, pattern: str):
         if not isinstance(self, Path):
@@ -473,14 +548,14 @@ class BasePath(BasePurePath):
         return success
 
 
-class Path(BasePath, pathlib.Path):
+class Path(BasePath, pathlib.Path):  # type: ignore[misc]
     # pylint: disable-all
     _flavour = pathlib.PureWindowsPath._flavour if os.name == "nt" else pathlib.PurePosixPath._flavour  # type: ignore[attr-defined]
 
 
-class PosixPath(BasePath, pathlib.PosixPath):
+class PosixPath(BasePath, pathlib.PosixPath):  # type: ignore[misc]
     pass
 
 
-class WindowsPath(BasePath, pathlib.WindowsPath):
+class WindowsPath(BasePath, pathlib.WindowsPath):  # type: ignore[misc]
     pass

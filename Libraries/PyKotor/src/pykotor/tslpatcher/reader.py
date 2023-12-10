@@ -51,12 +51,11 @@ from pykotor.tslpatcher.mods.twoda import (
 )
 from pykotor.tslpatcher.namespaces import PatcherNamespace
 from utility.misc import is_float, is_int
-from utility.path import BasePath, Path, PurePath, PureWindowsPath
+from utility.path import Path, PurePath, PureWindowsPath
 
 if TYPE_CHECKING:
     import os
 
-    from pykotor.resource.formats.tlk.tlk_data import TLKEntry
     from pykotor.tslpatcher.config import PatcherConfig
     from pykotor.tslpatcher.mods.gff import ModifyGFF
 
@@ -150,7 +149,7 @@ class ConfigReader:
             - Return the initialized instance
         """
         from pykotor.tslpatcher.config import PatcherConfig
-        resolved_file_path = (file_path if isinstance(file_path, BasePath) else Path(file_path)).resolve()  # type: ignore[attr-defined, reportGeneralTypeIssues]
+        resolved_file_path = (file_path if isinstance(file_path, Path) else Path(file_path)).resolve()
 
         ini = ConfigParser(
             delimiters=("="),

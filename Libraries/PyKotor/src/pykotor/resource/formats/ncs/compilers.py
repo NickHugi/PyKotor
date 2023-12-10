@@ -8,7 +8,7 @@ from pykotor.common.stream import BinaryReader
 from pykotor.resource.formats.ncs.ncs_auto import compile_nss, write_ncs
 from pykotor.resource.formats.ncs.ncs_data import NCSCompiler
 from utility.misc import generate_filehash_sha256
-from utility.path import BasePath, Path
+from utility.path import Path
 
 if TYPE_CHECKING:
     import os
@@ -84,7 +84,7 @@ class ExternalNCSCompiler(NCSCompiler):
             return formatted_args
 
     def __init__(self, nwnnsscomp_path: os.PathLike | str) -> None:
-        self.nwnnsscomp_path: Path = nwnnsscomp_path if isinstance(nwnnsscomp_path, BasePath) else Path(nwnnsscomp_path)  # type: ignore[reportGeneralTypeIssues, assignment]
+        self.nwnnsscomp_path: Path = nwnnsscomp_path if isinstance(nwnnsscomp_path, Path) else Path(nwnnsscomp_path)  # type: ignore[reportGeneralTypeIssues, assignment]
         self.filehash: str = generate_filehash_sha256(self.nwnnsscomp_path).upper()
         self.config: ExternalNCSCompiler.NwnnsscompConfig | None = None
 
@@ -107,7 +107,7 @@ class ExternalNCSCompiler(NCSCompiler):
             - Converts game arg to Game enum if integer
             - Returns NwnnsscompConfig object configured with args useable with the compile_script and decompile_script functions.
         """
-        source_filepath, output_filepath = (p.resolve() for p in map(Path, (source_file, output_file)))
+        source_filepath, output_filepath = (p if p.exists() else p.resolve() for p in map(Path, (source_file, output_file)))
         if not isinstance(game, Game):
             game = Game(game)
         return self.NwnnsscompConfig(self.filehash, source_filepath, output_filepath, game)

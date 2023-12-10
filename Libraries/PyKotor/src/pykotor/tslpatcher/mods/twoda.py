@@ -321,6 +321,7 @@ class AddRow2DA(Modify2DA):
         Returns:
         -------
             None: No value is returned.
+
         Processing Logic:
         ----------------
             - Finds the target row to apply the patch to based on an optional exclusive column

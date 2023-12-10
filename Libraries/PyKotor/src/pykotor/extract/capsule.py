@@ -8,17 +8,17 @@ from pykotor.resource.formats.erf import ERF, ERFType, read_erf, write_erf
 from pykotor.resource.formats.rim import RIM, read_rim, write_rim
 from pykotor.resource.type import ResourceType
 from pykotor.tools.misc import is_capsule_file, is_erf_or_mod_file, is_rim_file
-from utility.path import BasePath, Path
+from utility.path import Path
 
 if TYPE_CHECKING:
     import os
 
 
 class Capsule:
-    """StreamCapsule object is used for loading the list of resources stored in the .erf/.rim/.mod files used by the game.
+    """Capsule object is used for loading the list of resources stored in the .erf/.rim/.mod files used by the game.
 
     Resource data is not actually stored in memory by default but is instead loaded up on demand with the
-    StreamCapsule.resource() method. Use the RIM or ERF classes if you want to solely work with capsules in memory.
+    Capsule.resource() method. Use the RIM or ERF classes if you want to solely work with capsules in memory.
     """
 
     def __init__(
@@ -44,40 +44,36 @@ class Capsule:
                 - Create RIM file if rim extension
                 - Create ERF file if erf/mod extension
             - Initialize self._path and self._resources attributes
-            - Reload resources from file.
+            - Load resources from file.
         """
-        self._path: Path = path if isinstance(path, BasePath) else Path(path)  # type: ignore[assignment]
-        self._resources: list[FileResource] = []
+        self._path: Path = path if isinstance(path, Path) else Path(path)
+        if not self._path.exists():
+            self._path = self._path.resolve()
 
-        str_path = str(self._path)
-
-        if not is_capsule_file(str_path):
-            msg = f"Invalid file extension in capsule filepath '{str_path}'."
+        if not is_capsule_file(self._path):
+            msg = f"Invalid file extension in capsule filepath '{self._path}'."
             raise ValueError(msg)
 
         if create_nonexisting and not self._path.exists():  # type: ignore[reportGeneralTypeIssues]
-            if is_rim_file(str_path):
+            if is_rim_file(self._path):
                 write_rim(RIM(), self._path)
-            elif is_erf_or_mod_file(str_path):
-                write_erf(ERF(ERFType.from_extension(str_path)), str_path)
-
-        self.reload()
+            elif is_erf_or_mod_file(self._path):
+                write_erf(ERF(ERFType.from_extension(self._path)), self._path)
 
     def __iter__(
         self,
     ):
-        yield from self._resources
+        yield from self.resources()
 
     def __len__(
         self,
     ):
-        return len(self._resources)
+        return len(self.resources())
 
     def resource(
         self,
         resref: str,
         restype: ResourceType,
-        reload: bool = False,
     ) -> bytes | None:
         """Returns the bytes data of the specified resource. If the resource does not exist then returns None instead.
 
@@ -85,30 +81,24 @@ class Capsule:
         ----
             resref: The resource ResRef.
             restype: The resource type.
-            reload: If True Capsule will reload the ERF before opening rather than using cached offsets.
 
         Returns:
         -------
             bytes data of the resource.
         """
-        if reload:
-            self.reload()
-
         query = ResourceIdentifier(resref, restype)
-        resource = next((resource for resource in self._resources if resource == query), None)
+        resource = next((resource for resource in self.resources() if resource == query), None)
         return resource.data() if resource else None
 
     def batch(
         self,
         queries: list[ResourceIdentifier],
-        reload: bool = False,
     ) -> dict[ResourceIdentifier, ResourceResult | None]:
         """Batches queries against a capsule.
 
         Args:
         ----
             queries: list[ResourceIdentifier]: The queries to batch
-            reload: bool = False: Whether to reload the capsule metadata
 
         Returns:
         -------
@@ -116,7 +106,6 @@ class Capsule:
 
         Processing Logic:
         ----------------
-            - Reloads capsule metadata if reload is True
             - Checks if capsule exists on disk, prints error and returns empty dict if not
             - Initializes results dict to return
             - Opens capsule file as binary reader
@@ -127,21 +116,13 @@ class Capsule:
             - Closes reader
             - Returns results dict.
         """
-        if reload:
-            self.reload()
-
-        # nothing to search if capsule doesn't exist on disk (from_file will error if not existing)
-        if not self._path.exists():
-            print(f"Cannot query '{queries}'. Reason: Capsule doesn't exist on disk: '{self._path}'")
-            return {}
-
         results: dict[ResourceIdentifier, ResourceResult | None] = {}
         with BinaryReader.from_file(self._path) as reader:
             for query in queries:
                 results[query] = None
                 if self.exists(query.resname, query.restype):
-                    resource = next(
-                        (resource for resource in self._resources if resource == query),
+                    resource: FileResource | None = next(
+                        (resource for resource in self.resources() if resource == query),
                         None,
                     )
                     if resource is not None:
@@ -159,7 +140,6 @@ class Capsule:
         self,
         resref: str,
         restype: ResourceType,
-        reload: bool = False,
     ) -> bool:
         """Check if a resource exists.
 
@@ -167,7 +147,6 @@ class Capsule:
         ----
             resref: str: Resource reference
             restype: ResourceType: Resource type
-            reload: bool: Reload resources cache
 
         Returns:
         -------
@@ -178,12 +157,9 @@ class Capsule:
             - Searches self._resources for a matching resource
             - Returns True if a match is found, False otherwise.
         """
-        if reload:
-            self.reload()
-
         query = ResourceIdentifier(resref, restype)
         resource: FileResource | None = next(
-            (resource for resource in self._resources if resource == query),
+            (resource for resource in self.resources() if resource == query),
             None,
         )
         return resource is not None
@@ -192,15 +168,13 @@ class Capsule:
         self,
         resref: str,
         restype: ResourceType,
-        reload: bool = False,
-    ) -> FileResource:
+    ) -> FileResource | None:
         """Get file resource by reference and type.
 
         Args:
         ----
             resref: Resource reference as string
             restype: Resource type
-            reload: Reload resources if True
 
         Returns:
         -------
@@ -208,51 +182,33 @@ class Capsule:
 
         Processing Logic:
         ----------------
-            - Check if reload is True and call reload()
             - Create query object from resref and restype
             - Return first matching resource from internal list.
         """
-        if reload:
-            self.reload()
-
         query = ResourceIdentifier(resref, restype)
-        return next(resource for resource in self._resources if resource == query)
+        return next((resource for resource in self.resources() if resource == query), None)
 
-    def reload(
-        self,
-    ):
-        # nothing to reload if capsule doesn't exist on disk (from_file will error if not existing)
-        """Reload the list of resource info linked from the module file.
-
-        Args:
-        ----
-            self: Capsule object to reload
-
-        Returns:
-        -------
-            None: Reloading is done in-place
+    def resources(self) -> list[FileResource]:
+        """Returns a list of resources from the encapsulated resource file.
 
         Processing Logic:
         ----------------
             - Check if capsule exists on disk and print error if not
             - Open file and read header
-            - Call appropriate reload method based on file type
+            - Call appropriate load method based on file type
             - Raise error if unknown file type.
         """
-        if not self._path.exists():
-            print(f"Cannot reload '{self._path}'. Reason: Capsule doesn't exist on disk.")
-            return
         with BinaryReader.from_file(self._path) as reader:
             file_type = reader.read_string(4)
             reader.skip(4)  # file version
 
             if file_type in ("ERF ", "MOD "):
-                self._load_erf(reader)
-            elif file_type == "RIM ":
-                self._load_rim(reader)
-            else:
-                msg = f"File '{self._path}' was not an ERF/MOD/RIM."
-                raise ValueError(msg)
+                return self._load_erf(reader)
+            if file_type == "RIM ":
+                return self._load_rim(reader)
+
+            msg = f"File '{self._path}' is not an ERF/MOD/RIM capsule."
+            raise NotImplementedError(msg)
 
     def add(
         self,
@@ -284,10 +240,13 @@ class Capsule:
             container = read_rim(self._path)
             container.set_data(resname, restype, resdata)
             write_rim(container, self._path)
-        else:
+        elif is_erf_or_mod_file(self._path.name):
             container = read_erf(self._path)
             container.set_data(resname, restype, resdata)
             write_erf(container, self._path)
+        else:
+            msg = f"File '{self._path}' is not a ERF/MOD/RIM capsule."
+            raise NotImplementedError(msg)
 
     def path(
         self,
@@ -302,7 +261,7 @@ class Capsule:
     def _load_erf(
         self,
         reader: BinaryReader,
-    ):
+    ) -> list[FileResource]:
         """Loads an ERF resource file.
 
         Args:
@@ -334,15 +293,17 @@ class Capsule:
             reader.skip(2)
 
         reader.seek(offset_to_resources)
+        resources = []
         for i in range(entry_count):
             res_offset = reader.read_uint32()
             res_size = reader.read_uint32()
-            self._resources.append(FileResource(resrefs[i], restypes[i], res_size, res_offset, self._path))
+            resources.append(FileResource(resrefs[i], restypes[i], res_size, res_offset, self._path))
+        return resources
 
     def _load_rim(
         self,
         reader: BinaryReader,
-    ):
+    ) -> list[FileResource]:
         """Load resources from a rim file.
 
         Args:
@@ -368,10 +329,12 @@ class Capsule:
         offset_to_entries = reader.read_uint32()
 
         reader.seek(offset_to_entries)
+        resources = []
         for _ in range(entry_count):
             resref = reader.read_string(16)
             restype = ResourceType.from_id(reader.read_uint32())
-            reader.read_uint32()
+            reader.skip(4)
             offset = reader.read_uint32()
             size = reader.read_uint32()
-            self._resources.append(FileResource(resref, restype, size, offset, self._path))
+            resources.append(FileResource(resref, restype, size, offset, self._path))
+        return resources

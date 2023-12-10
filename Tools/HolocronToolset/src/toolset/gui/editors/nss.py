@@ -86,6 +86,7 @@ class NSSEditor(Editor):
         Returns:
         -------
             None: No return value.
+
         Processing Logic:
         ----------------
             - Connect compile action to compileCurrentScript slot

@@ -110,11 +110,8 @@ class InsertInstanceDialog(QDialog):
             self.ui.resourceList.item(0).setSelected(True)
 
     def accept(self) -> None:
-        """Accepts resource selection and updates module accordingly
-        Args:
-            self: Accepts the class instance
-        Returns:
-            None: Does not return anything
+        """Accepts resource selection and updates module accordingly.
+
         Processing Logic:
         ----------------
             - Checks which radio button is selected for reuse, copy or create resource

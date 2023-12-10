@@ -33,7 +33,7 @@ from pykotor.resource.generics.utw import UTW, bytes_utw, read_utw
 from pykotor.resource.type import ResourceType
 from pykotor.tools.misc import is_bif_file, is_capsule_file, is_erf_file, is_erf_or_mod_file, is_rim_file
 from pykotor.tools.model import list_lightmaps, list_textures
-from utility.path import BasePath, Path, PurePath
+from utility.path import Path, PurePath
 
 if TYPE_CHECKING:
     import os
@@ -62,16 +62,24 @@ class Module:
 
         self._capsules = [custom_capsule] if custom_capsule is not None else []
         self._capsules.extend(
-            [Capsule(installation.module_path() / module) for module in installation.module_names() if root in module.lower()],
+            [
+                Capsule(installation.module_path() / module)
+                for module in installation.module_names()
+                if root in module.lower()
+            ],
         )
 
         for capsule in self._capsules:
             if capsule.exists("module", ResourceType.IFO):
-                ifo = read_gff(capsule.resource("module", ResourceType.IFO))
+                module_resource = capsule.resource("module", ResourceType.IFO)
+                if module_resource is None:
+                    msg = f"Unable to locate module IFO file for '{root}'."
+                    raise ValueError(msg)
+                ifo = read_gff(module_resource)
                 self._id = ifo.root.get_resref("Mod_Entry_Area").get().lower()
                 break
         else:
-            msg = f"Unable to locate module IFO file for '{root}'."
+            msg = "Cannot initialize a Module from an empty capsule."
             raise ValueError(msg)
 
         self.resources: CaseInsensitiveDict[ModuleResource] = CaseInsensitiveDict()
@@ -1164,7 +1172,7 @@ class ModuleResource(Generic[T]):
         if filepath is None:
             self._active = self._locations[0] if self._locations else None
         else:
-            r_filepath = filepath if isinstance(filepath, BasePath) else Path(filepath)
+            r_filepath = (filepath if isinstance(filepath, Path) else Path(filepath)).resolve()
             if r_filepath in self._locations:
                 self._active = r_filepath
             else:

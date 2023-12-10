@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING, NamedTuple
 from pykotor.common.language import Language
 from pykotor.common.misc import ResRef
 from pykotor.common.stream import BinaryReader
-from utility.path import BasePath, Path
+from utility.path import Path
 
 if TYPE_CHECKING:
     import os
@@ -35,7 +35,10 @@ class TalkTable:  # TODO: dialogf.tlk
         self,
         path: os.PathLike | str,
     ):
-        self._path: Path = path if isinstance(path, BasePath) else Path(path)  # type: ignore[assignment]
+        self._path: Path = path if isinstance(path, Path) else Path(path)  # type: ignore[assignment]
+
+    def path(self):
+        return self._path
 
     def string(
         self,
@@ -51,19 +54,19 @@ class TalkTable:  # TODO: dialogf.tlk
         -------
             A string.
         """
+        if stringref == -1:
+            return ""
         with BinaryReader.from_file(self._path) as reader:
             reader.seek(12)
             entries_count = reader.read_uint32()
             texts_offset = reader.read_uint32()
 
-            if stringref == -1 or stringref >= entries_count:
-                string = ""
-            else:
-                tlkdata = self._extract_common_tlk_data(reader, stringref)
-                reader.seek(texts_offset + tlkdata.text_offset)
-                string = reader.read_string(tlkdata.text_length)
+            if stringref >= entries_count:
+                return ""
 
-        return string
+            tlkdata = self._extract_common_tlk_data(reader, stringref)
+            reader.seek(texts_offset + tlkdata.text_offset)
+            return reader.read_string(tlkdata.text_length)
 
     def sound(
         self,
@@ -79,12 +82,14 @@ class TalkTable:  # TODO: dialogf.tlk
         -------
             A ResRef.
         """
+        if stringref == -1:
+            return ResRef.from_blank()
         with BinaryReader.from_file(self._path) as reader:
             reader.seek(12)
             entries_count = reader.read_uint32()
             _texts_offset = reader.read_uint32()
 
-            if stringref == -1 or stringref >= entries_count:
+            if stringref >= entries_count:
                 return ResRef.from_blank()
 
             tlkdata = self._extract_common_tlk_data(reader, stringref)
@@ -112,8 +117,9 @@ class TalkTable:  # TODO: dialogf.tlk
         self,
         stringrefs: list[int],
     ) -> dict[int, StringResult]:
-        """Loads a list of strings and sound ResRefs from the specified list. This is all performed using a single file
-        handle and should be used if loading multiple strings from the tlk file.
+        """Loads a list of strings and sound ResRefs from the specified list.
+
+        This is all performed using a single file handle and should be used if loading multiple strings from the tlk file.
 
         Args:
         ----

@@ -126,6 +126,7 @@ class UTTEditor(Editor):
         Returns
         -------
             tuple[bytes, bytes]: A tuple containing the GFF data (bytes) and any errors (bytes).
+
         Processing Logic:
         ----------------
         - Gets input from various UI elements like name, tag, scripts etc and populates an UTT object

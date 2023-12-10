@@ -32,6 +32,7 @@ class UTDEditor(Editor):
         Returns:
         -------
             None: Does not return anything.
+
         Processing Logic:
         ----------------
             1. Get supported resource types and call parent initializer.

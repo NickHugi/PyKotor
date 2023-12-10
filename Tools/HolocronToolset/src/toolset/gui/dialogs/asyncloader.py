@@ -33,6 +33,7 @@ class AsyncLoader(QDialog):
         Returns:
         -------
             None: Does not return anything.
+
         Processing Logic:
         ----------------
             - Creates a QProgressBar and QLabel to display progress
