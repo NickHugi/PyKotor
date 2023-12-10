@@ -48,4 +48,6 @@ logs/*
 .vscode/PythonImportHelper-v2-Completion.json
 nuitka_dist
 pyinstaller.exe
-tools/HolocronToolset/src/toolset/kits
+Tools/HolocronToolset/src/toolset/kits
+Tools/HolocronToolset/src/toolset/kits/*/door0_k1.utd
+Tools/HolocronToolset/src/toolset/kits/*/*
