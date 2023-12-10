@@ -12,7 +12,7 @@ from pykotor.common.stream import BinaryReader
 from pykotor.extract.capsule import Capsule
 from pykotor.extract.chitin import Chitin
 from pykotor.extract.file import FileResource, LocationResult, ResourceIdentifier, ResourceResult
-from pykotor.extract.talktable import TalkTable
+from pykotor.extract.talktable import StringResult, TalkTable
 from pykotor.resource.formats.gff import read_gff
 from pykotor.resource.formats.tpc import TPC, read_tpc
 from pykotor.resource.type import ResourceType
@@ -20,7 +20,7 @@ from pykotor.tools.misc import is_capsule_file, is_erf_file, is_mod_file, is_rim
 from pykotor.tools.path import CaseAwarePath
 from pykotor.tools.sound import fix_audio
 from pykotor.tslpatcher.logger import PatchLogger
-from utility.path import BasePath, Path, PurePath
+from utility.path import Path, PurePath
 
 if TYPE_CHECKING:
     import os
@@ -86,10 +86,65 @@ class TexturePackNames(Enum):
     TPC = "swpc_tex_tpc.erf"
     GUI = "swpc_tex_gui.erf"
 
+
+HARDCODED_MODULE_NAMES: dict[str, str] = {
+    "STUNT_00": "Ebon Hawk - Cutscene (Vision Sequences)",
+    "STUNT_03A": "Leviathan - Cutscene (Destroy Taris)",
+    "STUNT_06": "Leviathan - Cutscene (Resume Bombardment)",
+    "STUNT_07": "Ebon Hawk - Cutscene (Escape Taris)",
+    "STUNT_12": "Leviathan - Cutscene (Calo Nord)",
+    "STUNT_14": "Leviathan - Cutscene (Darth Bandon)",
+    "STUNT_16": "Ebon Hawk - Cutscene (Leviathan Capture)",
+    "STUNT_18": "Unknown World - Cutscene (Bastila Torture)",
+    "STUNT_19": "Star Forge - Cutscene (Jawless Malak)",
+    "STUNT_31B": "Unknown World - Cutscene (Revan Reveal)",
+    "STUNT_34": "Ebon Hawk - Cutscene (Star Forge Arrival)",
+    "STUNT_35": "Ebon Hawk - Cutscene (Lehon Crash)",
+    "STUNT_42": "Ebon Hawk - Cutscene (LS Dodonna Call)",
+    "STUNT_44": "Ebon Hawk - Cutscene (DS Dodonna Call)",
+    "STUNT_50A": "Dodonna Flagship - Cutscene (Break In Formation)",
+    "STUNT_51A": "Dodonna Flagship - Cutscene (Bastila Against Us)",
+    "STUNT_54A": "Dodonna Flagship - Cutscene (Pull Back)",
+    "STUNT_55A": "Unknown World - Cutscene (DS Ending)",
+    "STUNT_56A": "Dodona Flagship - Cutscene (Star Forge Destroyed)",
+    "STUNT_57": "Unknown World - Cutscene (LS Ending)",
+    "001EBO": "Ebon Hawk - Interior (Prologue)",
+    "004EBO": "Ebon Hawk - Interior (Red Eclipse)",
+    "005EBO": "Ebon Hawk - Interior (Escaping Peragus)",
+    "006EBO": "Ebon Hawk - Cutscene (After Rebuilt Enclave)",
+    "007EBO": "Ebon Hawk - Cutscene (After Goto's Yatch)",
+    "154HAR": "Harbinger - Cutscene (Sion Introduction)",
+    "205TEL": "Citadel Station - Cutscene (Carth Discussion)",
+    "352NAR": "Nar Shaddaa - Cutscene (Goto Introduction)",
+    "853NIH": "Ravager - Cutscene (Nihilus Introduction)",
+    "856NIH": "Ravager - Cutscene (Sion vs. Nihilus)",
+}
+HARDCODED_MODULE_IDS: dict[str, str] = {
+    "STUNT_00": "000",
+    "STUNT_03A": "m03a",
+    "STUNT_06": "m07",
+    "STUNT_07": "m07",
+    "STUNT_12": "m12",
+    "STUNT_14": "m14",
+    "STUNT_16": "m16",
+    "STUNT_18": "m18",
+    "STUNT_19": "m19",
+    "STUNT_31B": "m31b",
+    "STUNT_34": "m34",
+    "STUNT_35": "m35",
+    "STUNT_42": "m43",
+    "STUNT_44": "m44",
+    "STUNT_50A": "m50a",
+    "STUNT_51A": "m51a",
+    "STUNT_54A": "m54a",
+    "STUNT_55A": "m55a",
+    "STUNT_56A": "m56a",
+    "STUNT_57": "m57",
+}
+
+
 class Installation:
-    """Installation provides a centralized location for loading resources stored in the game through its
-    various folders and formats.
-    """
+    """Installation provides a centralized location for loading resources stored in the game through its various folders and formats."""
 
     TEXTURES_TYPES: ClassVar[list[ResourceType]] = [
         ResourceType.TPC,
@@ -226,6 +281,7 @@ class Installation:
         Returns:
         -------
             CaseAwarePath: The path to the found folder.
+
         Processing Logic:
         ----------------
             - Iterates through the provided folder names
@@ -281,8 +337,10 @@ class Installation:
                 resources[file.name] = list(Capsule(file))  # type: ignore[assignment, call-overload]
             else:
                 with suppress(Exception):
+                    resname, restype = ResourceIdentifier.from_path(file).validate()
                     resource = FileResource(
-                        *ResourceIdentifier.from_path(file).validate(),
+                        resname,
+                        restype,
                         file.stat().st_size,
                         0,
                         file,
@@ -378,7 +436,7 @@ class Installation:
         self.load_override(directory)
 
     def reload_override_file(self, file: os.PathLike | str) -> None:
-        filepath: Path = file if isinstance(file, BasePath) else Path(file)  # type: ignore[reportGeneralTypeIssues, assignment]
+        filepath: Path = file if isinstance(file, Path) else Path(file)  # type: ignore[reportGeneralTypeIssues, assignment]
         rel_folderpath = filepath.parent.relative_to(self.override_path())
         with suppress(Exception):
             resource = FileResource(
@@ -859,11 +917,8 @@ class Installation:
                 SearchLocation.MODULES,
                 SearchLocation.CHITIN,
             ]
-        if capsules is None:
-            capsules = []
-        if folders is None:
-            folders = []
-
+        capsules = [] if capsules is None else capsules
+        folders = [] if folders is None else folders
 
         locations: dict[ResourceIdentifier, list[LocationResult]] = {}
         for qinden in queries:
@@ -871,18 +926,11 @@ class Installation:
 
         def check_dict(values: dict[str, list[FileResource]]):
             for resources in values.values():
-                for resource in resources:
-                    if resource in queries:
-                        location = LocationResult(
-                            resource.filepath(),
-                            resource.offset(),
-                            resource.size(),
-                        )
-                        locations[resource.identifier()].append(location)
+                check_list(resources)
 
         def check_list(values: list[FileResource]):
             for resource in values:
-                if resource in queries:
+                if resource.identifier() in queries:
                     location = LocationResult(
                         resource.filepath(),
                         resource.offset(),
@@ -893,12 +941,8 @@ class Installation:
         def check_capsules(values: list[Capsule]):
             for capsule in values:
                 for query in queries:
-                    if capsule.exists(query.resname, query.restype):
-                        resource = capsule.info(
-                            query.resname,
-                            query.restype,
-                            reload=True,
-                        )
+                    resource: FileResource | None = capsule.info(*query)
+                    if resource is not None:
                         location = LocationResult(
                             resource.filepath(),
                             resource.offset(),
@@ -906,28 +950,31 @@ class Installation:
                         )
                         locations[resource.identifier()].append(location)
 
+
         def check_folders(values: list[Path]):
-            for folder in values:
-                for file in folder.iterdir():
-                    if not file.safe_isfile():
-                        continue
-                    for query in queries:
-                        with suppress(Exception):
-                            identifier = ResourceIdentifier.from_path(file)
-                            if query == identifier:
-                                resource = FileResource(
-                                    query.resname,
-                                    query.restype,
-                                    file.stat().st_size,
-                                    0,
-                                    file,
-                                )
-                                location = LocationResult(
-                                    resource.filepath(),
-                                    resource.offset(),
-                                    resource.size(),
-                                )
-                                locations[identifier].append(location)
+            queried_files: set[Path] = set()
+            for query in queries:
+                for folder in values:
+                    queried_files.update(
+                        file
+                        for file in folder.rglob("*")
+                        if file.safe_isfile() and file.suffix.lower() == f".{query.restype.extension}"
+                    )
+            for file in queried_files:
+                if file.stem.lower() in queries:
+                    identifier = ResourceIdentifier.from_path(file)
+                    resource = FileResource(
+                        *identifier,
+                        file.stat().st_size,
+                        0,
+                        file,
+                    )
+                    location = LocationResult(
+                        resource.filepath(),
+                        resource.offset(),
+                        resource.size(),
+                    )
+                    locations[identifier].append(location)
 
         function_map = {
             SearchLocation.OVERRIDE: lambda: check_dict(self._override),
@@ -942,12 +989,13 @@ class Installation:
             SearchLocation.MUSIC: lambda: check_list(self._streammusic),
             SearchLocation.SOUND: lambda: check_list(self._streamsounds),
             SearchLocation.VOICE: lambda: check_list(self._streamwaves),
-            SearchLocation.CUSTOM_MODULES: lambda: check_capsules(capsules),
-            SearchLocation.CUSTOM_FOLDERS: lambda: check_folders(folders),
+            SearchLocation.CUSTOM_MODULES: lambda: check_capsules(capsules),  # type: ignore[arg-type]
+            SearchLocation.CUSTOM_FOLDERS: lambda: check_folders(folders),  # type: ignore[arg-type]
         }
 
         for item in order:
-            function_map[item]()
+            assert isinstance(item, SearchLocation)
+            function_map.get(item, lambda: None)()
 
         return locations
 
@@ -990,7 +1038,7 @@ class Installation:
 
     def textures(
         self,
-        queries: list[str],
+        queries: list[str] | set[str],
         order: list[SearchLocation] | None = None,
         *,
         capsules: list[Capsule] | None = None,
@@ -1019,49 +1067,83 @@ class Installation:
                 SearchLocation.TEXTURES_TPA,
                 SearchLocation.CHITIN,
             ]
-        if capsules is None:
-            capsules = []
-        if folders is None:
-            folders = []
+        queries = {resname.lower() for resname in queries}
+        capsules = [] if capsules is None else capsules
+        folders = [] if folders is None else folders
 
         textures: CaseInsensitiveDict[TPC | None] = CaseInsensitiveDict()
-        texture_types = [ResourceType.TPC, ResourceType.TGA]
-        queries = [resname.lower() for resname in queries]
+        texture_types: list[ResourceType] = [ResourceType.TPC, ResourceType.TGA]
 
         for resname in queries:
             textures[resname] = None
 
+        def decode_txi(txi_bytes):
+            return txi_bytes.decode("ascii", errors="ignore")
+
+        def get_txi_from_list(resource_list: list[FileResource]) -> str:
+            txi_resource: FileResource | None = next(
+                (
+                    resource
+                    for resource in resource_list
+                    if resource.resname() == resname and resource.restype() == ResourceType.TXI
+                ),
+                None,
+            )
+            if txi_resource is not None:
+                return decode_txi(txi_resource.data())
+            return ""
+
         def check_dict(values: dict[str, list[FileResource]]):
             for resources in values.values():
-                for resource in resources:
-                    if resource.resname() in copy(queries) and resource.restype() in texture_types:
-                        queries.remove(resource.resname())
-                        textures[resource.resname()] = read_tpc(resource.data())
+                check_list(resources)
 
-        def check_list(values: list[FileResource]):
-            for resource in values:
-                if resource.resname() in copy(queries) and resource.restype() in texture_types:
-                    queries.remove(resource.resname())
-                    textures[resource.resname()] = read_tpc(resource.data())
+        def check_list(resource_list: list[FileResource]):
+            for resource in resource_list:
+                resname = resource.resname()
+                if resname in queries and resource.restype() in texture_types:
+                    queries.remove(resname)
+                    tpc = read_tpc(resource.data())
+                    if resource.restype() == ResourceType.TGA:
+                        tpc.txi = get_txi_from_list(resource_list)
+                    textures[resname] = tpc
 
         def check_capsules(values: list[Capsule]):
             for capsule in values:
                 for resname in queries:
-                    if capsule.exists(resname, ResourceType.TPC):
-                        queries.remove(resname)
-                        textures[resname] = read_tpc(capsule.resource(resname, ResourceType.TPC))
-                    if capsule.exists(resname, ResourceType.TGA):
-                        queries.remove(resname)
-                        textures[resname] = read_tpc(capsule.resource(resname, ResourceType.TGA))
+                    texture_data: bytes | None = None
+                    tformat: ResourceType | None = None
+                    for tformat in texture_types:
+                        texture_data = capsule.resource(resname, tformat)
+                        if texture_data is not None:
+                            break
+                    if texture_data is None:
+                        continue
+
+                    queries.remove(resname)
+                    tpc: TPC = read_tpc(texture_data)
+                    if tformat == ResourceType.TGA:
+                        txi_source: bytes | None = capsule.resource(resname, ResourceType.TXI)
+                        if txi_source is not None:
+                            tpc.txi = decode_txi(txi_source)
+                    textures[resname] = tpc
 
         def check_folders(values: list[Path]):
+            texture_files_list: set[Path] = set()
             for folder in values:
-                for file in [file for file in folder.iterdir() if file.safe_isfile()]:
-                    identifier = ResourceIdentifier.from_path(file.name)
-                    for resname in queries:
-                        if identifier.resname == resname and identifier.restype in texture_types:
-                            data = BinaryReader.load_file(file)
-                            textures[resname] = read_tpc(data)
+                texture_files_list.update(
+                    file
+                    for file in folder.rglob("*")
+                    if file.safe_isfile() and ResourceType.from_extension(file.suffix) in texture_types
+                )
+            for texture_file in texture_files_list:
+                if texture_file.stem.lower() in queries:
+                    texture_data: bytes = BinaryReader.load_file(texture_file)
+                    tpc = read_tpc(texture_data)
+                    txi_file = CaseAwarePath(texture_file.with_suffix(".txi"))
+                    if Path(txi_file) in texture_files_list:
+                        txi_data: bytes = BinaryReader.load_file(txi_file)
+                        tpc.txi = decode_txi(txi_data)
+                    textures[texture_file.stem] = tpc
 
         function_map = {
             SearchLocation.OVERRIDE: lambda: check_dict(self._override),
@@ -1073,15 +1155,13 @@ class Installation:
             SearchLocation.TEXTURES_TPC: lambda: check_list(self._texturepacks[TexturePackNames.TPC.value]),
             SearchLocation.TEXTURES_GUI: lambda: check_list(self._texturepacks[TexturePackNames.GUI.value]),
             SearchLocation.CHITIN: lambda: check_list(self._chitin),
-            SearchLocation.MUSIC: lambda: check_list(self._streammusic),
-            SearchLocation.SOUND: lambda: check_list(self._streamsounds),
-            SearchLocation.VOICE: lambda: check_list(self._streamwaves),
-            SearchLocation.CUSTOM_MODULES: lambda: check_capsules(capsules),
-            SearchLocation.CUSTOM_FOLDERS: lambda: check_folders(folders),
+            SearchLocation.CUSTOM_MODULES: lambda: check_capsules(capsules),  # type: ignore[arg-type]
+            SearchLocation.CUSTOM_FOLDERS: lambda: check_folders(folders),  # type: ignore[arg-type]
         }
 
         for item in order:
-            function_map[item]()
+            assert isinstance(item, SearchLocation)
+            function_map.get(item, lambda: None)()
 
         return textures
 
@@ -1113,7 +1193,7 @@ class Installation:
 
     def sounds(
         self,
-        resnames: list[str],
+        queries: list[str] | set[str],
         order: list[SearchLocation] | None = None,
         *,
         capsules: list[Capsule] | None = None,
@@ -1125,7 +1205,7 @@ class Installation:
 
         Args:
         ----
-            resnames: A list of sounds to try locate.
+            queries: A list of sounds to try locate.
             order: The ordered list of locations to check.
             capsules: An extra list of capsules to search in.
             folders: An extra list of folders to search in.
@@ -1134,6 +1214,9 @@ class Installation:
         -------
             A dictionary mapping a case-insensitive string to a bytes object or None.
         """
+        queries = {resname.lower() for resname in queries}
+        capsules = [] if capsules is None else capsules
+        folders = [] if folders is None else folders
         if order is None:
             order = [
                 SearchLocation.CUSTOM_FOLDERS,
@@ -1142,16 +1225,11 @@ class Installation:
                 SearchLocation.SOUND,
                 SearchLocation.CHITIN,
             ]
-        if capsules is None:
-            capsules = []
-        if folders is None:
-            folders = []
 
         sounds: CaseInsensitiveDict[bytes | None] = CaseInsensitiveDict()
         sound_formats: list[ResourceType] = [ResourceType.WAV, ResourceType.MP3]
-        resnames = [resname.lower() for resname in resnames]
 
-        for resname in resnames:
+        for resname in queries:
             sounds[resname] = None
 
         def check_dict(values: dict[str, list[FileResource]]):
@@ -1160,13 +1238,13 @@ class Installation:
 
         def check_list(values: list[FileResource]):
             for resource in values:
-                if resource.resname() in copy(resnames) and resource.restype() in sound_formats:
-                    resnames.remove(resource.resname())
+                if resource.resname() in copy(queries) and resource.restype() in sound_formats:
+                    queries.remove(resource.resname())
                     sounds[resource.resname()] = fix_audio(resource.data())
 
         def check_capsules(values: list[Capsule]):
             for capsule in values:
-                for resname in resnames:
+                for resname in queries:
                     sound_data: bytes | None = None
                     for sformat in sound_formats:
                         sound_data = capsule.resource(resname, sformat)
@@ -1174,38 +1252,39 @@ class Installation:
                             break
                     if sound_data is None:
                         continue
-                    resnames.remove(resname)
+                    queries.remove(resname)
                     sounds[resname] = fix_audio(sound_data)
                     continue
 
         def check_folders(values: list[Path]):
+            sound_files_list: set[Path] = set()
             for folder in values:
-                for file in [file for file in folder.iterdir() if file.safe_isfile()]:
-                    identifier = ResourceIdentifier.from_path(file.name)
-                    for resname in resnames:
-                        if identifier.resname == resname and identifier.restype in sound_formats:
-                            data = BinaryReader.load_file(file)
-                            sounds[resname] = fix_audio(data)
+                sound_files_list.update(
+                    file
+                    for file in folder.rglob("*")
+                    if file.safe_isfile() and ResourceType.from_extension(file.suffix) in sound_formats
+                )
+            for sound_file in sound_files_list:
+                if sound_file.stem.lower() in queries:
+                    data = BinaryReader.load_file(sound_file)
+                    sounds[sound_file.stem] = fix_audio(data)
 
         function_map = {
             SearchLocation.OVERRIDE: lambda: check_dict(self._override),
             SearchLocation.MODULES: lambda: check_dict(self._modules),
             SearchLocation.LIPS: lambda: check_dict(self._lips),
             SearchLocation.RIMS: lambda: check_dict(self._rims),
-            SearchLocation.TEXTURES_TPA: lambda: check_list(self._texturepacks[TexturePackNames.TPA.value]),
-            SearchLocation.TEXTURES_TPB: lambda: check_list(self._texturepacks[TexturePackNames.TPB.value]),
-            SearchLocation.TEXTURES_TPC: lambda: check_list(self._texturepacks[TexturePackNames.TPC.value]),
-            SearchLocation.TEXTURES_GUI: lambda: check_list(self._texturepacks[TexturePackNames.GUI.value]),
             SearchLocation.CHITIN: lambda: check_list(self._chitin),
             SearchLocation.MUSIC: lambda: check_list(self._streammusic),
             SearchLocation.SOUND: lambda: check_list(self._streamsounds),
             SearchLocation.VOICE: lambda: check_list(self._streamwaves),
-            SearchLocation.CUSTOM_MODULES: lambda: check_capsules(capsules),
-            SearchLocation.CUSTOM_FOLDERS: lambda: check_folders(folders),
+            SearchLocation.CUSTOM_MODULES: lambda: check_capsules(capsules),  # type: ignore[arg-type]
+            SearchLocation.CUSTOM_FOLDERS: lambda: check_folders(folders),  # type: ignore[arg-type]
         }
 
         for item in order:
-            function_map[item]()
+            assert isinstance(item, SearchLocation)
+            function_map.get(item, lambda: None)()
 
         return sounds
 
@@ -1247,11 +1326,9 @@ class Installation:
             A dictionary mapping LocalizedString to a string.
         """
         stringrefs = [locstring.stringref for locstring in queries]
-        batch = self.talktable().batch(stringrefs)
-        female_talktable_exists = self.female_talktable()._path.exists()
-        female_batch = {}
-        if female_talktable_exists:
-            female_batch = self.female_talktable().batch(stringrefs)
+
+        batch: dict[int, StringResult] = self.talktable().batch(stringrefs)
+        female_batch: dict[int, StringResult] = self.female_talktable().batch(stringrefs) if self.female_talktable().path().exists() else {}
 
         results: dict[LocalizedString, str] = {}
         for locstring in queries:
@@ -1269,6 +1346,7 @@ class Installation:
 
         return results
 
+
     def module_name(self, module_filename: str, use_hardcoded: bool = True) -> str:
         """Returns the name of the area for a module from the installations module list.
 
@@ -1285,45 +1363,13 @@ class Installation:
         """
         root = self.replace_module_extensions(module_filename)
         if use_hardcoded:
-            hardcoded = {
-                "STUNT_00": "Ebon Hawk - Cutscene (Vision Sequences)",
-                "STUNT_03A": "Leviathan - Cutscene (Destroy Taris)",
-                "STUNT_06": "Leviathan - Cutscene (Resume Bombardment)",
-                "STUNT_07": "Ebon Hawk - Cutscene (Escape Taris)",
-                "STUNT_12": "Leviathan - Cutscene (Calo Nord)",
-                "STUNT_14": "Leviathan - Cutscene (Darth Bandon)",
-                "STUNT_16": "Ebon Hawk - Cutscene (Leviathan Capture)",
-                "STUNT_18": "Unknown World - Cutscene (Bastila Torture)",
-                "STUNT_19": "Star Forge - Cutscene (Jawless Malak)",
-                "STUNT_31B": "Unknown World - Cutscene (Revan Reveal)",
-                "STUNT_34": "Ebon Hawk - Cutscene (Star Forge Arrival)",
-                "STUNT_35": "Ebon Hawk - Cutscene (Lehon Crash)",
-                "STUNT_42": "Ebon Hawk - Cutscene (LS Dodonna Call)",
-                "STUNT_44": "Ebon Hawk - Cutscene (DS Dodonna Call)",
-                "STUNT_50A": "Dodonna Flagship - Cutscene (Break In Formation)",
-                "STUNT_51A": "Dodonna Flagship - Cutscene (Bastila Against Us)",
-                "STUNT_54A": "Dodonna Flagship - Cutscene (Pull Back)",
-                "STUNT_55A": "Unknown World - Cutscene (DS Ending)",
-                "STUNT_56A": "Dodona Flagship - Cutscene (Star Forge Destroyed)",
-                "STUNT_57": "Unknown World - Cutscene (LS Ending)",
-                "001EBO": "Ebon Hawk - Interior (Prologue)",
-                "004EBO": "Ebon Hawk - Interior (Red Eclipse)",
-                "005EBO": "Ebon Hawk - Interior (Escaping Peragus)",
-                "006EBO": "Ebon Hawk - Cutscene (After Rebuilt Enclave)",
-                "007EBO": "Ebon Hawk - Cutscene (After Goto's Yatch)",
-                "154HAR": "Harbinger - Cutscene (Sion Introduction)",
-                "205TEL": "Citadel Station - Cutscene (Carth Discussion)",
-                "352NAR": "Nar Shaddaa - Cutscene (Goto Introduction)",
-                "853NIH": "Ravager - Cutscene (Nihilus Introduction)",
-                "856NIH": "Ravager - Cutscene (Sion vs. Nihilus)",
-            }
 
-            for key, value in hardcoded.items():
+            for key, value in HARDCODED_MODULE_NAMES.items():
                 if key.upper() in module_filename.upper():
                     return value
 
         name: str = ""
-        female_talktable_exists = self.female_talktable()._path.exists()
+        female_talktable_exists = self.female_talktable().path().exists()
         for module in self.modules_list():
             if root not in module:
                 continue
@@ -1338,11 +1384,11 @@ class Installation:
                 are: GFF = read_gff(capsule.resource(tag, ResourceType.ARE))
                 locstring = are.root.get_locstring("Name")
                 if locstring.stringref > 0:
-                    name = self.talktable().string(locstring.stringref) or ""  # TODO: why did I add 'or ""'?
+                    name = self.talktable().string(locstring.stringref)
                     if not name and female_talktable_exists:  # check the female talktable if not found.
                         name = self.female_talktable().string(locstring.stringref)
                 elif locstring.exists(Language.ENGLISH, Gender.MALE):
-                    name = locstring.get(Language.ENGLISH, Gender.MALE) or ""
+                    name = locstring.get(Language.ENGLISH, Gender.MALE)
                 break
 
         return name
@@ -1357,6 +1403,8 @@ class Installation:
             A dictionary mapping module filename to in-game module area name.
         """
         return {module: self.module_name(module) for module in self.modules_list()}
+
+
 
     def module_id(self, module_filename: str, use_hardcoded: bool = True) -> str:
         """Returns the ID of the area for a module from the installations module list.
@@ -1374,30 +1422,7 @@ class Installation:
         """
         root = self.replace_module_extensions(module_filename)
         if use_hardcoded:
-            hardcoded = {
-                "STUNT_00": "000",
-                "STUNT_03A": "m03a",
-                "STUNT_06": "m07",
-                "STUNT_07": "m07",
-                "STUNT_12": "m12",
-                "STUNT_14": "m14",
-                "STUNT_16": "m16",
-                "STUNT_18": "m18",
-                "STUNT_19": "m19",
-                "STUNT_31B": "m31b",
-                "STUNT_34": "m34",
-                "STUNT_35": "m35",
-                "STUNT_42": "m43",
-                "STUNT_44": "m44",
-                "STUNT_50A": "m50a",
-                "STUNT_51A": "m51a",
-                "STUNT_54A": "m54a",
-                "STUNT_55A": "m55a",
-                "STUNT_56A": "m56a",
-                "STUNT_57": "m57",
-            }
-
-            for key, value in hardcoded.items():
+            for key, value in HARDCODED_MODULE_IDS.items():
                 if key.upper() in module_filename.upper():
                     return value
 
