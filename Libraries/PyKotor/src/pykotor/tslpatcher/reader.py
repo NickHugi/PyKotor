@@ -201,6 +201,9 @@ class ConfigReader:
         self.config.required_file = settings_ini.get("Required")
         self.config.required_message = settings_ini.get("RequiredMsg", "")
 
+        # hp optional
+        self.config.ignore_file_extensions = bool(settings_ini.get("IgnoreExtensions")) or False
+
         lookup_game_number = settings_ini.get("LookupGameNumber")
         if lookup_game_number:
             if not is_int(lookup_game_number):

@@ -51,6 +51,9 @@ class PatcherConfig:
         self.required_file: str | None = None
         self.required_message: str = ""
 
+        # optional hp features
+        self.ignore_file_extensions: bool = False
+
         self.install_list: list[InstallFile] = []
         self.patches_2da: list[Modifications2DA] = []
         self.patches_gff: list[ModificationsGFF] = []

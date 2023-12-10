@@ -14,6 +14,7 @@ from pykotor.resource.type import SOURCE_TYPES
 from pykotor.tools.encoding import decode_bytes_with_fallbacks
 from pykotor.tools.misc import is_capsule_file
 from pykotor.tools.path import CaseAwarePath
+from pykotor.tools.resource import load_resource_file
 from pykotor.tslpatcher.config import PatcherConfig
 from pykotor.tslpatcher.logger import PatchLogger
 from pykotor.tslpatcher.memory import PatcherMemory
@@ -170,6 +171,8 @@ class ModInstaller:
         return (exists, capsule)
 
     def load_resource_file(self, source: SOURCE_TYPES) -> bytes:
+        if self.config().ignore_file_extensions:
+            return load_resource_file(source)
         return BinaryReader.from_auto(source).read_all()
 
     def lookup_resource(
