@@ -4,13 +4,13 @@ import contextlib
 import os
 
 from pykotor.common.stream import BinaryReader
-from pykotor.resource.formats.gff import GFFContent, bytes_gff, detect_gff, read_gff
-from pykotor.resource.formats.lip import bytes_lip, detect_lip, read_lip
-from pykotor.resource.formats.mdl import detect_mdl, read_mdl, write_mdl
-from pykotor.resource.formats.ssf import bytes_ssf, detect_ssf, read_ssf
-from pykotor.resource.formats.tlk import bytes_tlk, detect_tlk, read_tlk
-from pykotor.resource.formats.tpc import bytes_tpc, detect_tpc, read_tpc
-from pykotor.resource.formats.twoda import bytes_2da, detect_2da, read_2da
+from pykotor.resource.formats.gff import GFFContent, bytes_gff, read_gff
+from pykotor.resource.formats.lip import bytes_lip, read_lip
+from pykotor.resource.formats.mdl import read_mdl, write_mdl
+from pykotor.resource.formats.ssf import bytes_ssf, read_ssf
+from pykotor.resource.formats.tlk import bytes_tlk, read_tlk
+from pykotor.resource.formats.tpc import bytes_tpc, read_tpc
+from pykotor.resource.formats.twoda import bytes_2da, read_2da
 from pykotor.resource.type import SOURCE_TYPES, ResourceType
 from utility.error_handling import universal_simplify_exception
 from utility.path import PurePath
