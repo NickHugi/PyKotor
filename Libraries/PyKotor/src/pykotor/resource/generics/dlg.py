@@ -44,11 +44,12 @@ class DLG:
         self,
         blank_node: bool = True,
     ):
-        """Initializes a DLGNode object
+        """Initializes a DLGNode object.
+
         Args:
+        ----
             blank_node (bool): Whether to add a blank starter node
-        Returns:
-            None
+
         Processing Logic:
         ----------------
             1. Initializes starter and stunt lists
@@ -189,8 +190,11 @@ class DLG:
         ----
             links: list[DLGLink] | None = None: The starting links to traverse
             seen_replies: list | None = None: Replies already seen
+
         Returns:
+        -------
             replies: list[DLGReply]: All reachable replies
+
         Processing Logic:
         ----------------
             - If no links given, use starters as starting links
@@ -286,15 +290,13 @@ class DLGNode:
     def __init__(
         self,
     ) -> None:
-        """Initializes a DLGNode object
-        Returns:
-            None: Does not return anything, initializes internal properties of a DLGNode.
+        """Initializes a DLGNode object.
 
         Processing Logic:
         ----------------
-        - Sets default values for all properties of a DLGNode object
-        - Initializes lists and optional properties as empty/None
-        - Sets flags and identifiers to default values
+            - Sets default values for all properties of a DLGNode object
+            - Initializes lists and optional properties as empty/None
+            - Sets flags and identifiers to default values
         """
         self.comment: str = ""
         self.links: list[DLGLink] = []
@@ -447,11 +449,12 @@ class DLGLink:
 
 
 class DLGStunt:
-    """Attributes
+    """
+    Attributes
     ----------
     participant: "Participant" field.
     stunt_model: "StuntModel" field.
-    """
+    """  # noqa: D205, D212
 
     def __init__(
         self,
@@ -463,12 +466,18 @@ class DLGStunt:
 def construct_dlg(
     gff: GFF,
 ) -> DLG:
-    """Constructs a DLG from a GFF file
+    """Constructs a DLG from a GFF file.
+
     Args:
+    ----
         gff: GFF - The GFF file to construct the DLG from
+
     Returns:
+    -------
         DLG - The constructed DLG object
+
     Processing Logic:
+    ----------------
         - Constructs DLGNode objects from GFFStructs
         - Constructs DLGLink objects from GFFStructs
         - Populates DLG object with nodes, links, and metadata
@@ -478,12 +487,17 @@ def construct_dlg(
         gff_struct: GFFStruct,
         node: DLGNode,
     ):
-        """Constructs a DLGNode from a GFFStruct
+        """Constructs a DLGNode from a GFFStruct.
+
         Args:
+        ----
             gff_struct: GFFStruct - The GFFStruct to construct the node from
             node: DLGNode - The node to populate
+
         Returns:
+        -------
             None - Populates the node in-place
+
         Processing Logic:
         ----------------
             - Acquires fields from the GFFStruct and assigns to the node
@@ -569,8 +583,11 @@ def construct_dlg(
         ----
             gff_struct: GFFStruct - The GFFStruct to acquire resources from
             link: DLGLink - The link to populate
+
         Returns:
+        -------
             None - Populates the link object
+
         Processing Logic:
         ----------------
             - Acquires an "Active" resource and assigns to link.active1
@@ -673,16 +690,20 @@ def dismantle_dlg(
     *,
     use_deprecated: bool = True,
 ) -> GFF:
-    """Dismantle a dialogue into a GFF structure
-    Args:
-        dlg: {DLG object}: The dialogue to dismantle
-        game: {Game enum}: The game type (default K2)
-        use_deprecated: {bool}: Use deprecated fields (default True).
+    """Dismantle a dialogue into a GFF structure.
 
-    Returns
+    Args:
+    ----
+        dlg: (DLG object): The dialogue to dismantle
+        game: (Game enum): The game type (default K2)
+        use_deprecated: (bool): Use deprecated fields (default True).
+
+    Returns:
     -------
         GFF: The dismantled dialogue as a GFF structure
+
     Processing Logic:
+    ----------------
         - Extract metadata from DLG and populate GFF root
         - Populate lists for starters, entries, replies
         - Call dismantle functions to extract node and link data
@@ -701,8 +722,11 @@ def dismantle_dlg(
             gff_struct: GFFStruct - The struct to populate
             link: DLGLink - The link to disassemble
             nodes: list - The list of nodes
+
         Returns:
+        -------
             None: Populates the GFFStruct
+
         Processing Logic:
         ----------------
             - Sets the Active resref on the GFFStruct from the link
@@ -741,8 +765,7 @@ def dismantle_dlg(
         ----
             gff_struct: GFFStruct - The GFFStruct to populate
             node: DLGNode - The DLGNode to disassemble
-        Returns:
-            None
+
         Processing Logic:
         ----------------
             - Sets node properties like text, listener etc on the GFFStruct
@@ -879,16 +902,23 @@ def read_dlg(
     offset: int = 0,
     size: int | None = None,
 ) -> DLG:
-    """Read a DLG object from a source
+    """Read a DLG object from a source.
+
     Args:
+    ----
         source: The source to read from
         offset: The byte offset to start reading from
         size: The maximum number of bytes to read
+
     Returns:
+    -------
         DLG: The constructed DLG object
-    - Read GFF data from the source using the given offset and size
-    - Construct a DLG object from the parsed GFF data
-    - Return the completed DLG object.
+
+    Processing Logic:
+    ----------------
+        - Read GFF data from the source using the given offset and size
+        - Construct a DLG object from the parsed GFF data
+        - Return the completed DLG object.
     """
     gff = read_gff(source, offset, size)
     return construct_dlg(gff)
@@ -915,34 +945,41 @@ def write_dlg(
     Returns:
     -------
         None
-    - Dismantles the dialogue into a GFF structure
-    - Writes the GFF structure to the target using the specified file format
-    - Does not return anything, writes the file directly
+
+    Processing Logic:
+    ----------------
+        - Dismantles the dialogue into a GFF structure
+        - Writes the GFF structure to the target using the specified file format
+        - Does not return anything, writes the file directly
     """
     gff = dismantle_dlg(dlg, game, use_deprecated=use_deprecated)
     write_gff(gff, target, file_format)
 
 
 def bytes_dlg(
-    dlg: DLG | SOURCE_TYPES,
+    dlg: DLG,
     game: Game = Game.K2,
     file_format: ResourceType = ResourceType.GFF,
     *,
     use_deprecated: bool = True,
 ) -> bytes:
-    """Converts a DLG object to bytes in a file format
+    """Converts a DLG object to bytes in a file format.
+
     Args:
-        dlg: DLG | SOURCE_TYPES - Dialogue object or source to convert
+    ----
+        dlg: DLG - Dialogue object
         game: Game - Game the dialogue is from
         file_format: ResourceType - Format to return bytes in
         use_deprecated: bool - Use deprecated fields if True
+
     Returns:
+    -------
         bytes: Bytes of dialogue in specified format
-    - The DLG is read from source if not already a DLG object
-    - Dismantle the DLG into a GFF structure
-    - Encode the GFF into bytes in the requested format.
+
+    Processing Logic:
+    ----------------
+        - Dismantle the DLG into a GFF structure
+        - Encode the GFF into bytes in the requested format.
     """
-    if not isinstance(dlg, DLG):
-        dlg = read_dlg(dlg)
     gff = dismantle_dlg(dlg, game, use_deprecated=use_deprecated)
     return bytes_gff(gff, file_format)

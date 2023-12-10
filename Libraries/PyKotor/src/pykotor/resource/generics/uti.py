@@ -201,13 +201,11 @@ def write_uti(
 
 
 def bytes_uti(
-    uti: UTI | SOURCE_TYPES,
+    uti: UTI,
     game: Game = Game.K2,
     file_format: ResourceType = ResourceType.GFF,
     *,
     use_deprecated: bool = True,
 ) -> bytes:
-    if not isinstance(uti, UTI):
-        uti = read_uti(uti)
     gff = dismantle_uti(uti, game, use_deprecated=use_deprecated)
     return bytes_gff(gff, file_format)

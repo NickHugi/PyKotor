@@ -130,13 +130,11 @@ def write_utm(
 
 
 def bytes_utm(
-    utm: UTM | SOURCE_TYPES,
+    utm: UTM,
     game: Game = Game.K2,
     file_format: ResourceType = ResourceType.GFF,
     *,
     use_deprecated: bool = True,
 ) -> bytes:
-    if not isinstance(utm, UTM):
-        utm = read_utm(utm)
     gff = dismantle_utm(utm, game, use_deprecated=use_deprecated)
     return bytes_gff(gff, file_format)

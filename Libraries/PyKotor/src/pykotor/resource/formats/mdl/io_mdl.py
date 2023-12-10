@@ -1583,16 +1583,15 @@ class MDLBinaryWriter:
             else:
                 fp0 = _TrimeshHeader.K1_FUNCTION_POINTER0
                 fp1 = _TrimeshHeader.K1_FUNCTION_POINTER1
+        elif mdl_node.skin:
+            fp0 = _TrimeshHeader.K2_SKIN_FUNCTION_POINTER0
+            fp1 = _TrimeshHeader.K2_SKIN_FUNCTION_POINTER1
+        elif mdl_node.dangly:
+            fp0 = _TrimeshHeader.K2_DANGLY_FUNCTION_POINTER0
+            fp1 = _TrimeshHeader.K2_DANGLY_FUNCTION_POINTER1
         else:
-            if mdl_node.skin:
-                fp0 = _TrimeshHeader.K2_SKIN_FUNCTION_POINTER0
-                fp1 = _TrimeshHeader.K2_SKIN_FUNCTION_POINTER1
-            elif mdl_node.dangly:
-                fp0 = _TrimeshHeader.K2_DANGLY_FUNCTION_POINTER0
-                fp1 = _TrimeshHeader.K2_DANGLY_FUNCTION_POINTER1
-            else:
-                fp0 = _TrimeshHeader.K2_FUNCTION_POINTER0
-                fp1 = _TrimeshHeader.K2_FUNCTION_POINTER1
+            fp0 = _TrimeshHeader.K2_FUNCTION_POINTER0
+            fp1 = _TrimeshHeader.K2_FUNCTION_POINTER1
 
         if mdl_node.mesh:
             bin_node.trimesh = _TrimeshHeader()
@@ -1619,9 +1618,9 @@ class MDLBinaryWriter:
             bin_node.trimesh.has_shadow = mdl_node.mesh.shadow
             bin_node.trimesh.beaming = mdl_node.mesh.beaming
             bin_node.trimesh.render = mdl_node.mesh.render
-            bin_node.trimesh.dirt_enabled = mdl_node.mesh.dirt_enabled
-            bin_node.trimesh.dirt_texture = mdl_node.mesh.dirt_texture
-            bin_node.trimesh.saber_unknowns = mdl_node.mesh.saber_unknowns
+            bin_node.trimesh.dirt_enabled = mdl_node.mesh.dirt_enabled  # TODO: undefined??
+            bin_node.trimesh.dirt_texture = mdl_node.mesh.dirt_texture  # TODO: undefined??
+            bin_node.trimesh.saber_unknowns = mdl_node.mesh.saber_unknowns  # TODO: wrong type??
 
             bin_node.trimesh.vertex_count = len(mdl_node.mesh.vertex_positions)
             bin_node.trimesh.vertices = mdl_node.mesh.vertex_positions

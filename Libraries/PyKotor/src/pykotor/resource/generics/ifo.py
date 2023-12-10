@@ -236,13 +236,11 @@ def write_ifo(
 
 
 def bytes_ifo(
-    ifo: IFO | SOURCE_TYPES,
+    ifo: IFO,
     game: Game = Game.K2,
     file_format: ResourceType = ResourceType.GFF,
     *,
     use_deprecated: bool = True,
 ) -> bytes:
-    if not isinstance(ifo, IFO):
-        ifo = read_ifo(ifo)
     gff = dismantle_ifo(ifo, game, use_deprecated=use_deprecated)
     return bytes_gff(gff, file_format)

@@ -66,7 +66,7 @@ def write_ncs(
 
 
 def bytes_ncs(
-    ncs: NCS | SOURCE_TYPES,
+    ncs: NCS,
     file_format: ResourceType = ResourceType.NCS,
 ) -> bytearray:
     """Returns the NCS data in the specified format (NCS only) as a bytes object.
@@ -86,8 +86,6 @@ def bytes_ncs(
     -------
         The NCS data.
     """
-    if not isinstance(ncs, NCS):
-        ncs = read_ncs(ncs)
     data = bytearray()
     write_ncs(ncs, data, file_format)
     return data

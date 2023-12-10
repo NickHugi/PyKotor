@@ -140,10 +140,8 @@ def write_jrl(
 
 
 def bytes_jrl(
-    jrl: JRL | SOURCE_TYPES,
+    jrl: JRL,
     file_format: ResourceType = ResourceType.GFF,
 ) -> bytes:
-    if not isinstance(jrl, JRL):
-        jrl = read_jrl(jrl)
     gff = dismantle_jrl(jrl)
     return bytes_gff(gff, file_format)

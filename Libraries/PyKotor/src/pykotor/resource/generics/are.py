@@ -507,25 +507,29 @@ def write_are(
 
 
 def bytes_are(
-    are: ARE | SOURCE_TYPES,
+    are: ARE,
     game: Game = Game.K2,
     file_format: ResourceType = ResourceType.GFF,
     *,
     use_deprecated: bool = True,
 ) -> bytes:
-    """Converts ARE to bytes in specified file format
+    """Converts ARE to bytes in specified file format.
+
     Args:
-        are: ARE or source path: ARE object or path to ARE file
+    ----
+        are: ARE: area object
         game: Game: Game type are is for
         file_format: ResourceType: File format to convert to
         use_deprecated: bool: Use deprecated ARE fields if true
+
     Returns:
+    -------
         bytes: Converted ARE bytes
-    - Dismantle ARE to GFF format
-    - Convert GFF to specified file format bytes
-    - If ARE in bytes/path format, read ARE the source first.
+
+    Processing Logic:
+    ----------------
+        - Dismantle ARE to GFF format
+        - Convert GFF to specified file format bytes
     """
-    if not isinstance(are, ARE):
-        are = read_are(are)
     gff = dismantle_are(are, game, use_deprecated=use_deprecated)
     return bytes_gff(gff, file_format)

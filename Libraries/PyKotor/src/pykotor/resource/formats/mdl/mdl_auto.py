@@ -139,7 +139,7 @@ def write_mdl(
         ValueError: If the specified format was unsupported.
     """
     if file_format == ResourceType.MDL:
-        MDLBinaryWriter(mdl, target, target_ext).write()
+        MDLBinaryWriter(mdl, target, target_ext or target).write()
     elif file_format == ResourceType.MDL_ASCII:
         MDLAsciiWriter(mdl, target).write()
     else:

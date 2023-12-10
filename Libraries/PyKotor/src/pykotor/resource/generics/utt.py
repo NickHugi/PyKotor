@@ -223,13 +223,11 @@ def write_utt(
 
 
 def bytes_utt(
-    utt: UTT | SOURCE_TYPES,
+    utt: UTT,
     game: Game = Game.K2,
     file_format: ResourceType = ResourceType.GFF,
     *,
     use_deprecated: bool = True,
 ) -> bytes:
-    if not isinstance(utt, UTT):
-        utt = read_utt(utt)
     gff = dismantle_utt(utt, game, use_deprecated=use_deprecated)
     return bytes_gff(gff, file_format)

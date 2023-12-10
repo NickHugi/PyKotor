@@ -184,13 +184,11 @@ def write_uts(
 
 
 def bytes_uts(
-    uts: UTS | SOURCE_TYPES,
+    uts: UTS,
     game: Game = Game.K2,
     file_format: ResourceType = ResourceType.GFF,
     *,
     use_deprecated: bool = True,
 ) -> bytes:
-    if not isinstance(uts, UTS):
-        uts = read_uts(uts)
     gff = dismantle_uts(uts, game, use_deprecated=use_deprecated)
     return bytes_gff(gff, file_format)

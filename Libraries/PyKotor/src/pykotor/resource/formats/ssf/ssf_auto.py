@@ -131,7 +131,7 @@ def write_ssf(
 
 
 def bytes_ssf(
-    ssf: SSF | SOURCE_TYPES,
+    ssf: SSF,
     file_format: ResourceType = ResourceType.SSF,
 ) -> bytes:
     """Returns the SSF data in the specified format (SSF or SSF_XML) as a bytes object.
@@ -151,8 +151,6 @@ def bytes_ssf(
     -------
         The SSF data.
     """
-    if not isinstance(ssf, SSF):
-        ssf = read_ssf(ssf)
     data = bytearray()
     write_ssf(ssf, data, file_format)
     return data

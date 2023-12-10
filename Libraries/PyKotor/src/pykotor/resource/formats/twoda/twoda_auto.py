@@ -141,7 +141,7 @@ def write_2da(
 
 
 def bytes_2da(
-    twoda: TwoDA | SOURCE_TYPES,
+    twoda: TwoDA,
     file_format: ResourceType = ResourceType.TwoDA,
 ) -> bytes:
     """Returns the TwoDA data in the specified format (TwoDA, TwoDA_CSV or TwoDA_JSON) as a bytes object.
@@ -161,8 +161,6 @@ def bytes_2da(
     -------
         The TwoDA data.
     """
-    if not isinstance(twoda, TwoDA):
-        twoda = read_2da(twoda)
     data = bytearray()
     write_2da(twoda, data, file_format)
     return data
