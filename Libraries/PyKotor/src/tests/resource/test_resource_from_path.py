@@ -23,7 +23,7 @@ from pykotor.resource.type import ResourceType
 
 
 class TestResourceIdentifier(unittest.TestCase):
-    """ This test was created because of the many soft, hard-to-find errors that would happen if this function ever fails."""
+    """ These test was created because of the many soft, hard-to-find errors that would happen if this function ever fails."""
     def test_from_path(self):
         test_cases = [
             # Happy path tests
@@ -45,6 +45,18 @@ class TestResourceIdentifier(unittest.TestCase):
                 "expected_resname": "SounD",
                 "expected_restype": ResourceType.WAV,
             },
+            {
+                "return_type": "ResourceType",
+                "file_path": "C:/path/to/asdf.Tlk.XmL",
+                "expected_resname": "asdf",
+                "expected_restype": ResourceType.TLK_XML,
+            },
+            {
+                "return_type": "ResourceType",
+                "file_path": "C:/path/to/asdf.xyz.qwerty.gff.xml",
+                "expected_resname": "asdf.xyz.qwerty",
+                "expected_restype": ResourceType.GFF_XML,
+            },
             # Edge cases
             {
                 "return_type": "invalid",
@@ -64,7 +76,7 @@ class TestResourceIdentifier(unittest.TestCase):
                 "expected_resname": "long_extension",
                 "expected_restype": ResourceType.INVALID,
             },
-            # Error cases
+            # Error cases?
             {
                 "return_type": "invalid",
                 "file_path": None,
@@ -99,15 +111,13 @@ class TestResourceIdentifier(unittest.TestCase):
             return_type = test_case["return_type"]
 
             # Act
-            if return_type == "error":
-                self.assertRaises((ValueError, TypeError), ResourceIdentifier.from_path, file_path)
-                continue
-            else:
-                result = ResourceIdentifier.from_path(file_path)
+            result = ResourceIdentifier.from_path(file_path)
 
             # Assert
             self.assertEqual(result.resname, expected_resname)
             self.assertEqual(result.restype, expected_restype)
+            if return_type == "invalid":
+                self.assertRaises((ValueError, TypeError), ResourceIdentifier.validate, ResourceIdentifier.from_path(file_path))
 
 
 if __name__ == "__main__":
