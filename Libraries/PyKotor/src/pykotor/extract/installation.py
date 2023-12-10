@@ -1383,7 +1383,7 @@ class Installation:
                 if key.upper() in root.upper():
                     return value
 
-        name: str = ""
+        name: str = root
         for module in self.modules_list():
             if root not in module:
                 continue
@@ -1395,19 +1395,20 @@ class Installation:
             if capsule_info is None:
                 return ""
 
-            ifo: GFF = read_gff(capsule_info.data())
-            tag = ifo.root.get_resref("Mod_Entry_Area").get()
-            are_tag_resource = capsule.resource(tag, ResourceType.ARE)
-            if are_tag_resource is None:
-                return tag
+            with suppress(Exception):
+                ifo: GFF = read_gff(capsule_info.data())
+                tag = ifo.root.get_resref("Mod_Entry_Area").get()
+                are_tag_resource = capsule.resource(tag, ResourceType.ARE)
+                if are_tag_resource is None:
+                    return tag
 
-            are: GFF = read_gff(are_tag_resource)
-            locstring = are.root.get_locstring("Name")
-            if locstring.stringref > 0:
-                name = self.talktable().string(locstring.stringref)
-            else:
-                name = locstring.get(Language.ENGLISH, Gender.MALE) or name
-            break
+                are: GFF = read_gff(are_tag_resource)
+                locstring = are.root.get_locstring("Name")
+                if locstring.stringref > 0:
+                    name = self.talktable().string(locstring.stringref)
+                else:
+                    name = locstring.get(Language.ENGLISH, Gender.MALE) or name
+                break
 
         return name
 
