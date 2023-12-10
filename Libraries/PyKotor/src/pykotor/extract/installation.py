@@ -354,12 +354,13 @@ class Installation:
 
     def load_chitin(self) -> None:
         """Reloads the list of resources in the Chitin linked to the Installation."""
-        c_path = CaseAwarePath(self._path)
-        if not c_path.joinpath("chitin.key").exists():
+        c_path = self._path
+        chitin_path = self._path / "chitin.key"
+        if not chitin_path.exists():
             self.log.add_warning(f"The chitin.key file did not exist at '{self._path!s}' when loading the installation, skipping...")
             return
         self.log.add_note("Load chitin...")
-        self._chitin = list(Chitin(kotor_path=c_path))
+        self._chitin = list(Chitin(key_path=chitin_path))
 
     def load_lips(
         self,
@@ -890,7 +891,7 @@ class Installation:
 
     def locations(
         self,
-        queries: list[ResourceIdentifier],
+        queries: list[ResourceIdentifier] | set[ResourceIdentifier],
         order: list[SearchLocation] | None = None,
         *,
         capsules: list[Capsule] | None = None,
@@ -929,8 +930,8 @@ class Installation:
                 check_list(resources)
 
         def check_list(values: list[FileResource]):
-            for resource in values:
-                for query in queries:
+            for query in queries:
+                for resource in values:
                     identifier = resource.identifier()
                     if query.resname.lower() == identifier.resname.lower() and identifier.restype == query.restype:
                         location = LocationResult(
@@ -1078,7 +1079,7 @@ class Installation:
         for resname in resnames:
             textures[resname] = None
 
-        def decode_txi(txi_bytes):
+        def decode_txi(txi_bytes: bytes):
             return txi_bytes.decode("ascii", errors="ignore")
 
         def get_txi_from_list(resource_list: list[FileResource]) -> str:
