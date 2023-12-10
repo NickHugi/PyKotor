@@ -6,10 +6,11 @@ from typing import TYPE_CHECKING
 from pykotor.common.stream import BinaryReader, BinaryWriter
 from pykotor.extract.file import FileResource, ResourceIdentifier
 from pykotor.resource.type import ResourceType
+from pykotor.tools.path import CaseAwarePath
 from utility.path import PurePath
 
 if TYPE_CHECKING:
-    from pykotor.tools.path import CaseAwarePath
+    import os
 
 
 class Chitin:
@@ -21,9 +22,12 @@ class Chitin:
     KEY_ELEMENT_SIZE = 8
     def __init__(
         self,
-        key_path: CaseAwarePath,
+        key_path: os.PathLike | str,
+        base_path: os.PathLike | str | None = None,
     ):
-        self._key_path: CaseAwarePath = key_path
+        self._key_path: CaseAwarePath = key_path if isinstance(key_path, CaseAwarePath) else CaseAwarePath(key_path)
+        base_path = base_path if base_path is not None else self._key_path.parent
+        self._base_path: CaseAwarePath = base_path if isinstance(base_path, CaseAwarePath) else CaseAwarePath(base_path)
 
         self._resources: list[FileResource] = []
         self._resource_dict: dict[str, list[FileResource]] = {}
@@ -49,7 +53,7 @@ class Chitin:
         keys, bifs = self._get_chitin_data()
         for bif in bifs:
             self._resource_dict[bif] = []
-            absolute_bif_path = self._key_path.parent / bif
+            absolute_bif_path = self._base_path / bif
             with BinaryReader.from_file(absolute_bif_path) as reader:
                 _bif_file_type = reader.read_string(4)
                 _bif_file_version = reader.read_string(4)
@@ -77,7 +81,7 @@ class Chitin:
                     self._resource_dict[bif].append(resource)
 
     def save(self) -> None:
-        """Writes the list of resource info to the chitin.key file and associated .bif files."""
+        """(unfinished) Writes the list of resource info to the chitin.key file and associated .bif files."""
         keys, bifs = self._get_chitin_data()
         resource_lookup: dict[str, tuple[PurePath, FileResource]] = {
             resource.resname(): (PurePath(bif), resource)
@@ -86,8 +90,8 @@ class Chitin:
         }
 
         # Initialize a dictionary to store bytearrays for each bif file
-        bif_data = {}
-        bif_offsets = {}  # To track the current offset for each bif file
+        bif_data: dict[PurePath, bytearray] = {}
+        bif_offsets: dict[PurePath, int] = {}  # To track the current offset for each bif file
 
         for index, resref in keys.items():
             if resref not in resource_lookup:
@@ -114,7 +118,7 @@ class Chitin:
             bif_data[this_bif].extend(data_block)
 
         for bif_path, byte_array_data in bif_data.items():
-            absolute_bif_path = self._key_path.parent / bif_path
+            absolute_bif_path = self._base_path / bif_path
             merged_bytearrays = bytearray()
             bif_writer = BinaryWriter.to_bytearray(merged_bytearrays)
             # Write file type and version

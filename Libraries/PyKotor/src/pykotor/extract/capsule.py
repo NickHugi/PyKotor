@@ -106,7 +106,6 @@ class Capsule:
 
         Processing Logic:
         ----------------
-            - Checks if capsule exists on disk, prints error and returns empty dict if not
             - Initializes results dict to return
             - Opens capsule file as binary reader
             - Loops through queries
@@ -193,7 +192,6 @@ class Capsule:
 
         Processing Logic:
         ----------------
-            - Check if capsule exists on disk and print error if not
             - Open file and read header
             - Call appropriate load method based on file type
             - Raise error if unknown file type.
