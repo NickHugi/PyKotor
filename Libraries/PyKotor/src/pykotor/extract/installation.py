@@ -1148,7 +1148,7 @@ class Installation:
             folders = []
 
         sounds: CaseInsensitiveDict[bytes | None] = CaseInsensitiveDict()
-        texture_types = [ResourceType.WAV, ResourceType.MP3]
+        sound_formats: list[ResourceType] = [ResourceType.WAV, ResourceType.MP3]
         resnames = [resname.lower() for resname in resnames]
 
         for resname in resnames:
@@ -1156,36 +1156,34 @@ class Installation:
 
         def check_dict(values: dict[str, list[FileResource]]):
             for resources in values.values():
-                for resource in resources:
-                    if resource.resname() in copy(resnames) and resource.restype() in texture_types:
-                        resnames.remove(resource.resname())
-                        sounds[resource.resname()] = fix_audio(resource.data())
+                check_list(resources)
 
         def check_list(values: list[FileResource]):
             for resource in values:
-                if resource.resname() in copy(resnames) and resource.restype() in texture_types:
+                if resource.resname() in copy(resnames) and resource.restype() in sound_formats:
                     resnames.remove(resource.resname())
                     sounds[resource.resname()] = fix_audio(resource.data())
 
         def check_capsules(values: list[Capsule]):
             for capsule in values:
                 for resname in resnames:
-                    resource = None
-                    if capsule.exists(resname, ResourceType.WAV):
-                        resnames.remove(resname)
-                        resource = capsule.resource(resname, ResourceType.TPC)
-                    if capsule.exists(resname, ResourceType.MP3):
-                        resnames.remove(resname)
-                        resource = capsule.resource(resname, ResourceType.TGA)
-                    if resource is not None:
-                        sounds[resname] = fix_audio(resource)
+                    sound_data: bytes | None = None
+                    for sformat in sound_formats:
+                        sound_data = capsule.resource(resname, sformat)
+                        if sound_data is not None:
+                            break
+                    if sound_data is None:
+                        continue
+                    resnames.remove(resname)
+                    sounds[resname] = fix_audio(sound_data)
+                    continue
 
         def check_folders(values: list[Path]):
             for folder in values:
                 for file in [file for file in folder.iterdir() if file.safe_isfile()]:
                     identifier = ResourceIdentifier.from_path(file.name)
                     for resname in resnames:
-                        if identifier.resname == resname and identifier.restype in texture_types:
+                        if identifier.resname == resname and identifier.restype in sound_formats:
                             data = BinaryReader.load_file(file)
                             sounds[resname] = fix_audio(data)
 
