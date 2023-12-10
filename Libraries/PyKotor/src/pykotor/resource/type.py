@@ -147,6 +147,7 @@ class ResourceType(Enum):
     ARE_XML = ResourceTuple(50023, "are.xml", "Module Data", "plaintext")
     TwoDA_JSON = ResourceTuple(50024, "2da.json", "2D Arrays", "plaintext")
     TLK_JSON = ResourceTuple(50025, "tlk.json", "Talk Tables", "plaintext")
+    LIP_JSON = ResourceTuple(50026, "lip.json", "Lips", "plaintext")
 
     def __init__(
         self,
@@ -186,7 +187,8 @@ class ResourceType(Enum):
         other: ResourceType | str | int | object,
     ):
         """Two ResourceTypes are equal if they are the same.
-        A ResourceType and a str are equal if the extension is equal to the string.
+
+        A ResourceType and a str are equal if the extension is case-sensitively equal to the string.
         A ResourceType and a int are equal if the type_id is equal to the integer.
         """
         if isinstance(other, ResourceType):
