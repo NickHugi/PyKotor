@@ -42,82 +42,59 @@ def read_resource(source: SOURCE_TYPES, resource_type: ResourceType | None = Non
     """
     source_path = None
     if not resource_type:
-        if isinstance(source, (os.PathLike, str)):
-            source_path = source if isinstance(source, PurePath) else PurePath(source)
-            _filestem, ext = source_path.split_filename(dots=2)
-            with contextlib.suppress(Exception):
-                resource_type = ResourceType.from_extension(ext)
-        else:
-            resource_type = detect_resource_bytes(source)
-    try:
-        resource_ext, _ = PurePath(resource_type.extension).split_filename()
-        if resource_type.category == "Talk Tables":
-            return bytes_tlk(read_tlk(source))
-        if resource_type.extension.upper() in GFFContent:
-            return bytes_gff(read_gff(source))
-        if resource_type in [ResourceType.TGA, ResourceType.TPC]:
-            return bytes_tpc(read_tpc(source))
-        if resource_ext == "ssf":
-            return bytes_ssf(read_ssf(source))
-        if resource_ext == "2da":
-            return bytes_2da(read_2da(source))
-        if resource_ext == "mdl":
-            mdl_data = bytearray()
-            mdl = read_mdl(source)
-            assert mdl is not None
-            write_mdl(mdl, mdl_data)
-            return bytes(mdl_data)
-        if resource_ext == "lip":
-            return bytes_lip(read_lip(source))
-    except Exception as e:
-        print(f"Could not load resource '{source_path!s}' as resource type '{resource_type!s}'")
-        print(universal_simplify_exception(e))
-        if isinstance(source, (os.PathLike, str)):  # try again as bytes
-            file_data = BinaryReader.from_file(source).read_all()
-            return read_resource(file_data)
+        if not isinstance(source, (os.PathLike, str)):
+            return get_resource_from_bytes(source)
 
+        source_path = source if isinstance(source, PurePath) else PurePath(source)
+        _filestem, ext = source_path.split_filename(dots=2)
+        try:
+            resource_type = ResourceType.from_extension(ext)
+            resource_ext, _ = PurePath(resource_type.extension).split_filename()
+            if resource_type.category == "Talk Tables":
+                return bytes_tlk(read_tlk(source))
+            if resource_type.extension.upper() in GFFContent:
+                return bytes_gff(read_gff(source))
+            if resource_type in [ResourceType.TGA, ResourceType.TPC]:
+                return bytes_tpc(read_tpc(source))
+            if resource_ext == "ssf":
+                return bytes_ssf(read_ssf(source))
+            if resource_ext == "2da":
+                return bytes_2da(read_2da(source))
+            if resource_ext == "mdl":
+                mdl_data = bytearray()
+                write_mdl(read_mdl(source), mdl_data)
+                return bytes(mdl_data)
+            if resource_ext == "lip":
+                return bytes_lip(read_lip(source))
+        except Exception as e:
+            print(f"Could not load resource '{source_path!s}' as resource type '{resource_type!s}'")
+            print(universal_simplify_exception(e))
+            if isinstance(source, (os.PathLike, str)):  # try again as bytes
+                file_data = BinaryReader.from_file(source).read_all()
+                return read_resource(file_data)
     return BinaryReader.from_auto(source).read_all()
 
 
-def detect_resource_bytes(source: SOURCE_TYPES) -> ResourceType:
-    """Detect resource type of source file bytes.
-
-    This is a convenience method for determining the resource's type when the source is unknown.
-    Ideally you shouldn't rely on this function, it only performs basic file header checks.
-
-    Args:
-    ----
-        source: (SOURCE_TYPES): Source file bytes
-
-    Returns:
-    -------
-        result (ResourceType): Detected resource type
-
-    Processing Logic:
-    ----------------
-        - Try detecting file as TLK
-        - Try detecting file as GFF if TLK detection failed
-        - Try detecting file as SSF if GFF detection failed
-        - Try detecting file as 2DA if SSF detection failed
-        - Try detecting file as MDL if 2DA detection failed
-        - Try detecting file as LIP if MDL detection failed
-        - Try detecting file as TPC if LIP detection failed
-        - Return ResourceType result
-    """
-    result: ResourceType = ResourceType.INVALID
+def get_resource_from_bytes(source: SOURCE_TYPES) -> bytes:
+    result: bytes | None = None
     with contextlib.suppress(OSError):
-        result = detect_tlk(source)
+        result = bytes_tlk(read_tlk(source))
     with contextlib.suppress(OSError):
-        result = detect_gff(source)
+        result = bytes_ssf(read_ssf(source))
     with contextlib.suppress(OSError):
-        result = detect_ssf(source)
+        result = bytes_2da(read_2da(source))
     with contextlib.suppress(OSError):
-        result = detect_2da(source)
+        mdl_data = bytearray()
+        write_mdl(read_mdl(source), mdl_data)
+        return bytes(mdl_data)
     with contextlib.suppress(OSError):
-        result = detect_mdl(source)
+        result = bytes_lip(read_lip(source))
     with contextlib.suppress(OSError):
-        result = detect_lip(source)
+        result = bytes_tpc(read_tpc(source))
     with contextlib.suppress(OSError):
-        result = detect_tpc(source)
+        result = bytes_gff(read_gff(source))
+    if not result:
+        msg = "Source resource data not recognized as any kotor file formats."
+        raise ValueError(msg)
 
     return result  # noqa: RET504

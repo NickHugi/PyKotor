@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 import shutil
 from copy import deepcopy
 from datetime import datetime, timezone
@@ -18,10 +19,10 @@ from pykotor.tslpatcher.logger import PatchLogger
 from pykotor.tslpatcher.memory import PatcherMemory
 from pykotor.tslpatcher.mods.install import InstallFile, create_backup
 from pykotor.tslpatcher.mods.template import OverrideType, PatcherModifications
+from utility.error_handling import universal_simplify_exception
 from utility.path import PurePath
 
 if TYPE_CHECKING:
-    import os
 
     from pykotor.common.misc import Game
     from pykotor.resource.type import SOURCE_TYPES
@@ -215,7 +216,7 @@ class ModInstaller:
                 return self.load_resource_file(output_container_path / patch.saveas)
             return capsule.resource(*ResourceIdentifier.from_path(patch.saveas))
         except OSError as e:
-            self.log.add_error(f"Could not load source file to {patch.action.lower().strip()}: {e!r}")
+            self.log.add_error(f"Could not load source file to {patch.action.lower().strip()}:{os.linesep}{universal_simplify_exception(e)}")
             return None
 
     def handle_override_type(self, patch: PatcherModifications):
