@@ -930,13 +930,15 @@ class Installation:
 
         def check_list(values: list[FileResource]):
             for resource in values:
-                if resource.identifier() in queries:
-                    location = LocationResult(
-                        resource.filepath(),
-                        resource.offset(),
-                        resource.size(),
-                    )
-                    locations[resource.identifier()].append(location)
+                for query in queries:
+                    identifier = resource.identifier()
+                    if query.resname.lower() == identifier.resname.lower() and identifier.restype == query.restype:
+                        location = LocationResult(
+                            resource.filepath(),
+                            resource.offset(),
+                            resource.size(),
+                        )
+                        locations[resource.identifier()].append(location)
 
         def check_capsules(values: list[Capsule]):
             for capsule in values:
@@ -958,23 +960,22 @@ class Installation:
                     queried_files.update(
                         file
                         for file in folder.rglob("*")
-                        if file.safe_isfile() and file.suffix.lower() == f".{query.restype.extension}"
+                        if file.suffix.lower() == f".{query.restype.extension}" and file.stem.lower() in queries and file.safe_isfile()
                     )
             for file in queried_files:
-                if file.stem.lower() in queries:
-                    identifier = ResourceIdentifier.from_path(file)
-                    resource = FileResource(
-                        *identifier,
-                        file.stat().st_size,
-                        0,
-                        file,
-                    )
-                    location = LocationResult(
-                        resource.filepath(),
-                        resource.offset(),
-                        resource.size(),
-                    )
-                    locations[identifier].append(location)
+                identifier = ResourceIdentifier.from_path(file)
+                resource = FileResource(
+                    *identifier,
+                    file.stat().st_size,
+                    0,
+                    file,
+                )
+                location = LocationResult(
+                    resource.filepath(),
+                    resource.offset(),
+                    resource.size(),
+                )
+                locations[identifier].append(location)
 
         function_map = {
             SearchLocation.OVERRIDE: lambda: check_dict(self._override),
@@ -1024,7 +1025,7 @@ class Installation:
 
         Args:
         ----
-            resname: The ResRef string.
+            resname: The ResRef string, case-insensitive.
             order: The ordered list of locations to check.
             capsules: An extra list of capsules to search in.
             folders: An extra list of folders to search in.
@@ -1038,7 +1039,7 @@ class Installation:
 
     def textures(
         self,
-        queries: list[str] | set[str],
+        resnames: list[str] | set[str],
         order: list[SearchLocation] | None = None,
         *,
         capsules: list[Capsule] | None = None,
@@ -1050,7 +1051,7 @@ class Installation:
 
         Args:
         ----
-            queries: A list of resources to try locate.
+            resnames: A list of case-insensitive resource names (without the extensions) to try locate.
             order: The ordered list of locations to check.
             capsules: An extra list of capsules to search in.
             folders: An extra list of folders to search in.
@@ -1067,14 +1068,14 @@ class Installation:
                 SearchLocation.TEXTURES_TPA,
                 SearchLocation.CHITIN,
             ]
-        queries = {resname.lower() for resname in queries}
+        resnames = {resname.lower() for resname in resnames}
         capsules = [] if capsules is None else capsules
         folders = [] if folders is None else folders
 
         textures: CaseInsensitiveDict[TPC | None] = CaseInsensitiveDict()
         texture_types: list[ResourceType] = [ResourceType.TPC, ResourceType.TGA]
 
-        for resname in queries:
+        for resname in resnames:
             textures[resname] = None
 
         def decode_txi(txi_bytes):
@@ -1100,8 +1101,8 @@ class Installation:
         def check_list(resource_list: list[FileResource]):
             for resource in resource_list:
                 resname = resource.resname()
-                if resname in queries and resource.restype() in texture_types:
-                    queries.remove(resname)
+                if resname.lower() in resnames and resource.restype() in texture_types:
+                    resnames.remove(resname)
                     tpc = read_tpc(resource.data())
                     if resource.restype() == ResourceType.TGA:
                         tpc.txi = get_txi_from_list(resource_list)
@@ -1109,7 +1110,7 @@ class Installation:
 
         def check_capsules(values: list[Capsule]):
             for capsule in values:
-                for resname in queries:
+                for resname in resnames:
                     texture_data: bytes | None = None
                     tformat: ResourceType | None = None
                     for tformat in texture_types:
@@ -1119,7 +1120,7 @@ class Installation:
                     if texture_data is None:
                         continue
 
-                    queries.remove(resname)
+                    resnames.remove(resname)
                     tpc: TPC = read_tpc(texture_data)
                     if tformat == ResourceType.TGA:
                         txi_source: bytes | None = capsule.resource(resname, ResourceType.TXI)
@@ -1136,7 +1137,7 @@ class Installation:
                     if file.safe_isfile() and ResourceType.from_extension(file.suffix) in texture_types
                 )
             for texture_file in texture_files_list:
-                if texture_file.stem.lower() in queries:
+                if texture_file.stem.lower() in resnames:
                     texture_data: bytes = BinaryReader.load_file(texture_file)
                     tpc = read_tpc(texture_data)
                     txi_file = CaseAwarePath(texture_file.with_suffix(".txi"))
@@ -1167,7 +1168,7 @@ class Installation:
 
     def sound(
         self,
-        queries: str,
+        resname: str,
         order: list[SearchLocation] | None = None,
         *,
         capsules: list[Capsule] | None = None,
@@ -1179,7 +1180,7 @@ class Installation:
 
         Args:
         ----
-            queries: The name of the resource to look for.
+            resname: The case-insensitive name of the sound (without the extension) to look for.
             order: The ordered list of locations to check.
             capsules: An extra list of capsules to search in.
             folders: An extra list of folders to search in.
@@ -1188,24 +1189,24 @@ class Installation:
         -------
             A bytes object or None.
         """
-        batch = self.sounds([queries], order, capsules=capsules, folders=folders)
-        return batch[queries] if batch else None
+        batch = self.sounds([resname], order, capsules=capsules, folders=folders)
+        return batch[resname] if batch else None
 
     def sounds(
         self,
-        queries: list[str] | set[str],
+        resnames: list[str] | set[str],
         order: list[SearchLocation] | None = None,
         *,
         capsules: list[Capsule] | None = None,
         folders: list[Path] | None = None,
     ) -> CaseInsensitiveDict[bytes | None]:
-        """Returns a dictionary mapping the items provided in the queries argument to a bytes object if the respective sound resource could be found.
+        """Returns a dictionary mapping the items provided in the resnames argument to a bytes object if the respective sound resource could be found.
 
         If the sound could not be found the value will return None.
 
         Args:
         ----
-            queries: A list of sounds to try locate.
+            resnames: A list of case-insensitive sound names (without the extensions) to try locate.
             order: The ordered list of locations to check.
             capsules: An extra list of capsules to search in.
             folders: An extra list of folders to search in.
@@ -1214,7 +1215,7 @@ class Installation:
         -------
             A dictionary mapping a case-insensitive string to a bytes object or None.
         """
-        queries = {resname.lower() for resname in queries}
+        resnames = {resname.lower() for resname in resnames}
         capsules = [] if capsules is None else capsules
         folders = [] if folders is None else folders
         if order is None:
@@ -1229,7 +1230,7 @@ class Installation:
         sounds: CaseInsensitiveDict[bytes | None] = CaseInsensitiveDict()
         sound_formats: list[ResourceType] = [ResourceType.WAV, ResourceType.MP3]
 
-        for resname in queries:
+        for resname in resnames:
             sounds[resname] = None
 
         def check_dict(values: dict[str, list[FileResource]]):
@@ -1238,13 +1239,13 @@ class Installation:
 
         def check_list(values: list[FileResource]):
             for resource in values:
-                if resource.resname() in copy(queries) and resource.restype() in sound_formats:
-                    queries.remove(resource.resname())
+                if resource.resname().lower() in resnames and resource.restype() in sound_formats:
+                    resnames.remove(resource.resname())
                     sounds[resource.resname()] = fix_audio(resource.data())
 
         def check_capsules(values: list[Capsule]):
             for capsule in values:
-                for resname in queries:
+                for resname in resnames:
                     sound_data: bytes | None = None
                     for sformat in sound_formats:
                         sound_data = capsule.resource(resname, sformat)
@@ -1252,7 +1253,7 @@ class Installation:
                             break
                     if sound_data is None:
                         continue
-                    queries.remove(resname)
+                    resnames.remove(resname)
                     sounds[resname] = fix_audio(sound_data)
                     continue
 
@@ -1265,7 +1266,7 @@ class Installation:
                     if file.safe_isfile() and ResourceType.from_extension(file.suffix) in sound_formats
                 )
             for sound_file in sound_files_list:
-                if sound_file.stem.lower() in queries:
+                if sound_file.stem.lower() in resnames:
                     data = BinaryReader.load_file(sound_file)
                     sounds[sound_file.stem] = fix_audio(data)
 
