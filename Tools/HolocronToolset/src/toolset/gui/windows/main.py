@@ -245,6 +245,9 @@ class ToolWindow(QMainWindow):
 
     def onOverrideReload(self, file: str) -> None:
         file_path = Path(file)
+        if not file_path.name:
+            print(f"Cannot reload {file}: no file loaded")
+            return
         self.active.reload_override_file(file_path)
         self.ui.overrideWidget.setResources(self.active.override_resources(str(file_path.parent)))
 

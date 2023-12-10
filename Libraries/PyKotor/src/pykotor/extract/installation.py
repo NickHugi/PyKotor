@@ -436,7 +436,8 @@ class Installation:
 
     def reload_override_file(self, file: os.PathLike | str) -> None:
         filepath: Path = file if isinstance(file, Path) else Path(file)  # type: ignore[reportGeneralTypeIssues, assignment]
-        rel_folderpath = filepath.parent.relative_to(self.override_path())
+        parent_folder = filepath.parent
+        rel_folderpath = filepath.parent.relative_to(self.override_path()) if parent_folder.name else "."
         identifier = ResourceIdentifier.from_path(filepath)
         if identifier.restype == ResourceType.INVALID:
             print("Cannot reload override file. Invalid KOTOR resource:", identifier)
