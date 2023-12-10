@@ -960,7 +960,7 @@ class Installation:
                     queried_files.update(
                         file
                         for file in folder.rglob("*")
-                        if file.suffix.lower() == f".{query.restype.extension}" and file.stem.lower() in queries and file.safe_isfile()
+                        if file.suffix.lower() == f".{query.restype.extension}" and file.stem.lower() == query.resname.lower() and file.safe_isfile()
                     )
             for file in queried_files:
                 identifier = ResourceIdentifier.from_path(file)
