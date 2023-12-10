@@ -32,14 +32,26 @@ def detect_ssf(
     -------
         The format of the SSF data.
     """
+    def check(first4) -> ResourceType:
+        if first4 == "SSF ":
+            return ResourceType.SSF
+        if "<" in first4:  # sourcery skip: assign-if-exp, reintroduce-else
+            return ResourceType.SSF_XML
+        #if "{" in first4:
+        #    return ResourceType.SSF_JSON
+        #if "," in first4:
+        #    return ResourceType.SSF_CSV
+        return ResourceType.INVALID
+
+    file_format: ResourceType
     try:
         if isinstance(source, (str, os.PathLike)):
             with BinaryReader.from_file(source, offset) as reader:
-                file_format = ResourceType.SSF if reader.read_string(4) == "SSF " else ResourceType.SSF_XML
+                file_format = check(reader.read_string(4))
         elif isinstance(source, (bytes, bytearray)):
-            file_format = ResourceType.SSF if source[:4].decode("ascii", "ignore") == "SSF " else ResourceType.SSF_XML
+            file_format = check(source[:4].decode("ascii", "ignore"))
         elif isinstance(source, BinaryReader):
-            file_format = ResourceType.SSF if source.read_string(4) == "SSF " else ResourceType.SSF_XML
+            file_format = check(source.read_string(4))
             source.skip(-4)
         else:
             file_format = ResourceType.INVALID

@@ -43,6 +43,8 @@ def detect_2da(
             return ResourceType.TwoDA_JSON
         if "," in first4:
             return ResourceType.TwoDA_CSV
+        #if "<" in first4:
+        #    return ResourceType.TwoDA_XML
         return ResourceType.INVALID
 
     try:

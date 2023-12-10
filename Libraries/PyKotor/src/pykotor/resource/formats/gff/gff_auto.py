@@ -32,20 +32,26 @@ def detect_gff(
     -------
         The format of the GFF data.
     """
+    def check(first4) -> ResourceType:
+        if any(x.value == first4 for x in GFFContent):
+            return ResourceType.GFF
+        if "<" in first4:  # sourcery skip: assign-if-exp, reintroduce-else
+            return ResourceType.GFF_XML
+        #if "{" in first4:
+        #    return ResourceType.GFF_JSON
+        #if "," in first4:
+        #    return ResourceType.GFF_CSV
+        return ResourceType.INVALID
+
+    file_format: ResourceType
     try:
         if isinstance(source, (str, os.PathLike)):
             with BinaryReader.from_file(source, offset) as reader:
-                file_header = reader.read_string(4)
-                file_format = ResourceType.GFF if any(x.value == file_header for x in GFFContent) else ResourceType.GFF_XML
+                file_format = check(reader.read_string(4))
         elif isinstance(source, (bytes, bytearray)):
-            file_format = (
-                ResourceType.GFF
-                if any(x for x in GFFContent if x.value == source[:4].decode("ascii", "ignore"))
-                else ResourceType.GFF_XML
-            )
+            file_format = check(source[:4].decode("ascii", "ignore"))
         elif isinstance(source, BinaryReader):
-            file_header = source.read_string(4)
-            file_format = ResourceType.GFF if any(x.value == file_header for x in GFFContent) else ResourceType.GFF_XML
+            file_format = check(source.read_string(4))
             source.skip(-4)
         else:
             file_format = ResourceType.INVALID

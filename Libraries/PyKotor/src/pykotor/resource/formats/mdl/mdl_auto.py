@@ -35,16 +35,25 @@ def detect_mdl(
     -------
         The format of the MDL data.
     """
+    def check(first4):
+        if first4 == b"\x00\x00\x00\x00":
+            return ResourceType.MDL
+        return ResourceType.MDL_ASCII
+        #if "<" in first4:
+        #    return ResourceType.MDL_XML
+        #if "{" in first4:
+        #    return ResourceType.MDL_JSON
+        #if "," in first4:
+        #    return ResourceType.MDL_CSV
+        #return ResourceType.INVALID
     try:
         if isinstance(source, (str, os.PathLike)):
             with BinaryReader.from_file(source, offset) as reader:
-                first4 = reader.read_bytes(4)
-                file_format = ResourceType.MDL if first4 == b"\x00\x00\x00\x00" else ResourceType.MDL_ASCII
+                file_format = check(reader.read_bytes(4))
         elif isinstance(source, (bytes, bytearray)):
-            file_format = ResourceType.MDL if source[:4] == b"\x00\x00\x00\x00" else ResourceType.MDL_ASCII
+            file_format = check(source[:4])
         elif isinstance(source, BinaryReader):
-            first4 = source.read_bytes(4)
-            file_format = ResourceType.MDL if first4 == b"\x00\x00\x00\x00" else ResourceType.MDL_ASCII
+            file_format = check(source.read_bytes(4))
             source.skip(-4)
         else:
             file_format = ResourceType.INVALID
