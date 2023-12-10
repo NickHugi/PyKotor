@@ -79,7 +79,7 @@ def read_resource(source: SOURCE_TYPES, resource_type: ResourceType | None = Non
     return BinaryReader.from_auto(source).read_all()
 
 
-def detect_resource_bytes(source: SOURCE_TYPES):
+def detect_resource_bytes(source: SOURCE_TYPES) -> ResourceType:
     """Detect resource type of source file bytes.
 
     This is a convenience method for determining the resource's type when the source is unknown.
@@ -104,7 +104,7 @@ def detect_resource_bytes(source: SOURCE_TYPES):
         - Try detecting file as TPC if LIP detection failed
         - Return ResourceType result
     """
-    result = ResourceType.INVALID
+    result: ResourceType = ResourceType.INVALID
     with contextlib.suppress(OSError):
         result = detect_tlk(source)
     with contextlib.suppress(OSError):
