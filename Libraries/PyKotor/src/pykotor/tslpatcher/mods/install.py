@@ -300,7 +300,7 @@ class InstallFile(PatcherModifications):
         self.action: str = "Copy "
         self.skip_if_not_replace: bool = True
 
-    def patch_resource_from_bytes(self, source, *args, **kwargs) -> bytes:
+    def patch_resource(self, source, *args, **kwargs) -> bytes:
         self.apply(source, *args, **kwargs)
         return source
 

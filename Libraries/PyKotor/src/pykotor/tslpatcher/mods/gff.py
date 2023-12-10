@@ -381,7 +381,7 @@ class ModificationsGFF(PatcherModifications):
         super().__init__(filename, replace)
         self.modifiers: list[ModifyGFF] = modifiers if modifiers is not None else []
 
-    def patch_resource_from_bytes(
+    def patch_resource(
         self,
         source_gff: SOURCE_TYPES,
         memory: PatcherMemory,

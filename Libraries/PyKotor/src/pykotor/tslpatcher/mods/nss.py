@@ -32,7 +32,7 @@ class ModificationsNCS(PatcherModifications):
         self.action: str = "Hack "
         self.hackdata: list[tuple[str, int, int]] = []
 
-    def patch_resource_from_bytes(self, ncs_source: SOURCE_TYPES, *args) -> bytes:
+    def patch_resource(self, ncs_source: SOURCE_TYPES, *args) -> bytes:
         if isinstance(ncs_source, (bytes, bytearray)):
             ncs_bytes = bytearray(ncs_source)
         else:
@@ -84,7 +84,7 @@ class ModificationsNSS(PatcherModifications):
             return BinaryReader.load_file(nss_source)
         return None
 
-    def patch_resource_from_bytes(
+    def patch_resource(
         self,
         nss_source: SOURCE_TYPES,
         memory: PatcherMemory,

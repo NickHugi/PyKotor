@@ -32,7 +32,7 @@ class PatcherModifications(ABC):
         self.skip_if_not_replace = False  # [InstallList] only
 
     @abstractmethod
-    def patch_resource_from_bytes(self, source: SOURCE_TYPES, memory: PatcherMemory, logger: PatchLogger, game: Game) -> bytes:
+    def patch_resource(self, source: SOURCE_TYPES, memory: PatcherMemory, logger: PatchLogger, game: Game) -> bytes:
         ...
 
     @abstractmethod

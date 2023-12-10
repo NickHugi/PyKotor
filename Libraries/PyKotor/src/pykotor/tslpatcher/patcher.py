@@ -1,4 +1,5 @@
 from __future__ import annotations
+from copy import deepcopy
 
 import shutil
 from datetime import datetime, timezone
@@ -17,6 +18,7 @@ from pykotor.tslpatcher.logger import PatchLogger
 from pykotor.tslpatcher.memory import PatcherMemory
 from pykotor.tslpatcher.mods.install import InstallFile, create_backup
 from pykotor.tslpatcher.mods.template import OverrideType, PatcherModifications
+from pykotor.tslpatcher.mods.tlk import ModificationsTLK
 from utility.path import Path, PurePath
 
 if TYPE_CHECKING:
@@ -322,28 +324,28 @@ class ModInstaller:
             - Log completion.
         """
         config = self.config()
+        memory = PatcherMemory()
         self._game = Installation.determine_game(self.game_path)
         if self._game is None:
             msg = "Chosen KOTOR directory is not a valid installation - cannot proceed. Aborting."
             raise RuntimeError(msg)
 
-        memory = PatcherMemory()
-
-        # Move nwscript.nss to Override if there are any nss patches to do
-        if len(config.patches_nss) > 0:
-            file_install = InstallFile("nwscript.nss", replace_existing=True)
-            if file_install not in config.install_list:
-                config.install_list.append(file_install)
-
+        tlk_patches = self.get_tlk_patches(config)
         patches_list: list[PatcherModifications] = [
             *config.install_list,  # Note: TSLPatcher executes [InstallList] after [TLKList]
-            *([config.patches_tlk] if config.patches_tlk.modifiers else []),
+            *tlk_patches,
             *config.patches_2da,
             *config.patches_gff,
             *config.patches_nss,
             *config.patches_ncs,   # Note: TSLPatcher executes [CompileList] after [HACKList]
             *config.patches_ssf,
         ]
+
+        # Move nwscript.nss to Override if there are any nss patches to do
+        if len(config.patches_nss) > 0:
+            file_install = InstallFile("nwscript.nss", replace_existing=True)
+            if file_install not in config.install_list:
+                config.install_list.append(file_install)
 
         for patch in patches_list:
             output_container_path = self.game_path / patch.destination
@@ -357,7 +359,7 @@ class ModInstaller:
             if not data_to_patch_bytes:
                 self.log.add_note(f"'{patch.sourcefile}' has no content/data and is completely empty.")
 
-            patched_bytes_data = patch.patch_resource_from_bytes(data_to_patch_bytes, memory, self.log, self._game)
+            patched_bytes_data = patch.patch_resource(data_to_patch_bytes, memory, self.log, self._game)
             if capsule is not None:
                 self.handle_override_type(patch)
                 capsule.add(*ResourceIdentifier.from_path(patch.saveas), patched_bytes_data)
@@ -368,3 +370,18 @@ class ModInstaller:
             self.log.complete_patch()
 
         self.log.add_note(f"Successfully completed {self.log.patches_completed} total patches.")
+
+    def get_tlk_patches(self, config: PatcherConfig) -> list[ModificationsTLK]:
+        tlk_patches: list[ModificationsTLK] = [config.patches_tlk] if config.patches_tlk.modifiers else []
+
+        female_dialog_filename = "dialogf.tlk"
+        female_dialog_file: CaseAwarePath = self.game_path / female_dialog_filename
+        if female_dialog_file.exists():
+            female_tlk_patches = deepcopy(config.patches_tlk)
+            female_append_file = self.mod_path / female_tlk_patches.sourcefile_f
+            if female_append_file.exists():
+                female_tlk_patches.sourcefile = female_tlk_patches.sourcefile_f
+            female_tlk_patches.saveas = female_dialog_filename
+            tlk_patches.append(female_tlk_patches)
+
+        return tlk_patches
