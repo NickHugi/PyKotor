@@ -12,10 +12,8 @@ from pykotor.resource.formats.tlk import bytes_tlk, detect_tlk, read_tlk
 from pykotor.resource.formats.tpc import bytes_tpc, detect_tpc, read_tpc
 from pykotor.resource.formats.twoda import bytes_2da, detect_2da, read_2da
 from pykotor.resource.type import SOURCE_TYPES, ResourceType
-
 from utility.error_handling import universal_simplify_exception
-from utility.path import Path, PurePath
-    
+from utility.path import PurePath
 
 
 def read_resource(source: SOURCE_TYPES, resource_type: ResourceType | None = None) -> bytes:
@@ -42,15 +40,13 @@ def read_resource(source: SOURCE_TYPES, resource_type: ResourceType | None = Non
             - Default: Read entire source as bytes
         - Handles errors and retries with bytes if path failed
     """
-    is_path = False
     source_path = None
     if not resource_type:
         if isinstance(source, (os.PathLike, str)):
-            source_path = source if isinstance(source, Path) else Path(source)
+            source_path = source if isinstance(source, PurePath) else PurePath(source)
             _filestem, ext = source_path.split_filename(dots=2)
             with contextlib.suppress(Exception):
                 resource_type = ResourceType.from_extension(ext)
-            is_path = True
         else:
             resource_type = detect_resource_bytes(source)
     try:
@@ -73,11 +69,11 @@ def read_resource(source: SOURCE_TYPES, resource_type: ResourceType | None = Non
             return bytes(mdl_data)
         if resource_ext == "lip":
             return bytes_lip(read_lip(source))
-    except (ValueError, OSError) as e:
+    except Exception as e:
         print(f"Could not load resource '{source_path!s}' as resource type '{resource_type!s}'")
         print(universal_simplify_exception(e))
-        if is_path:  # try again as bytes
-            file_data = BinaryReader.from_auto(source).read_all()
+        if isinstance(source, (os.PathLike, str)):  # try again as bytes
+            file_data = BinaryReader.from_file(source).read_all()
             return read_resource(file_data)
 
     return BinaryReader.from_auto(source).read_all()
