@@ -158,10 +158,10 @@ class AddStructToListGFF(ModifyGFF):
 
         Processing Logic:
         ----------------
-        1. Navigates to the target list container using the provided path.
-        2. Checks if the navigated container is a list, otherwise logs an error.
-        3. Creates a new struct and adds it to the list.
-        4. Applies any additional field modifications specified in the modifiers.
+            1. Navigates to the target list container using the provided path.
+            2. Checks if the navigated container is a list, otherwise logs an error.
+            3. Creates a new struct and adds it to the list.
+            4. Applies any additional field modifications specified in the modifiers.
         """
         list_container: GFFList | None = None
         if self.path.name == ">>##INDEXINLIST##<<":

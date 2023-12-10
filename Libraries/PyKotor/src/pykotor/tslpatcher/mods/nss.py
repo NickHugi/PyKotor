@@ -111,7 +111,7 @@ class ModificationsNSS(PatcherModifications):
             2. Replaces 2DAMEMORY# and StrRef# tokens with values from patcher memory
             3. Attempts to compile with external NWN compiler if on Windows
             4. Falls back to built-in compiler if external isn't available, fails, or not on Windows
-        """
+        """  # noqa: D205
         nss_bytes: bytes | None = self.load(nss_source)
         if nss_bytes is None:
             logger.add_error(f"Invalid nss source provided to ModificationsNSS.apply(), got {type(nss_source)}")

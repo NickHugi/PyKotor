@@ -106,24 +106,32 @@ class RowValueTLKMemory(RowValue):
 
 
 class RowValueHigh(RowValue):
-    """Attributes
+    """
+    Attributes
     ----------
     column: Column to get the max integer from. If None it takes it from the Row Label.
-    """
+    """  # noqa: D205, D212
 
     def __init__(self, column: str | None):
         self.column: str | None = column
 
     def value(self, memory: PatcherMemory, twoda: TwoDA, row: TwoDARow | None) -> str:
-        """Returns the maximum value in a column or overall label
+        """Returns the maximum value in a column or overall label.
+
         Args:
+        ----
             memory: PatcherMemory object
             twoda: TwoDA object
             row: TwoDARow object or None
+
         Returns:
+        -------
             str: String representation of maximum value
-        - If column is not None, return maximum value in that column
-        - Else return overall maximum label value.
+
+        Processing Logic:
+        ----------------
+            - If column is not None, return maximum value in that column
+            - Else return overall maximum label value.
         """
         return str(twoda.column_max(self.column)) if self.column is not None else str(twoda.label_max())
 
@@ -176,21 +184,28 @@ class Modify2DA(ABC):
         memory: PatcherMemory,
         twoda: TwoDA,
     ) -> tuple[dict[str, str], dict[int, str], str | None, str | None]:
-        """Splits modifiers into categories
+        """Splits modifiers into categories.
+
         Args:
+        ----
             modifiers: dict[str, str]: Modifiers dictionary
             memory: PatcherMemory: Patcher memory object
             twoda: TwoDA: TwoDA object
+
         Returns:
+        -------
             new_values: dict[str, str]: Split modifiers
             memory_values: dict[int, str]: 2DA memory values
             row_label: str|None: Row label value
             new_row_label: str|None: New row label value
-        - Updates special value references like StrRef and 2DAMEMORY
-        - Breaks apart values into new_values, memory_values, row_label, new_row_label categories
-        - new_values contains normal modifiers
-        - memory_values contains 2DA memory references
-        - row_label and new_row_label contain those single values.
+
+        Processing Logic:
+        ----------------
+            - Updates special value references like StrRef and 2DAMEMORY
+            - Breaks apart values into new_values, memory_values, row_label, new_row_label categories
+            - new_values contains normal modifiers
+            - memory_values contains 2DA memory references
+            - row_label and new_row_label contain those single values.
         """
         new_values: dict[str, str] = {}
         memory_values: dict[int, str] = {}
@@ -318,10 +333,6 @@ class AddRow2DA(Modify2DA):
             twoda: TwoDA - The Two Dimensional Array to apply the patch to.
             memory: PatcherMemory - The memory context.
 
-        Returns:
-        -------
-            None: No value is returned.
-
         Processing Logic:
         ----------------
             - Finds the target row to apply the patch to based on an optional exclusive column
@@ -362,8 +373,7 @@ class AddRow2DA(Modify2DA):
 
 
 class CopyRow2DA(Modify2DA):
-    """Copies the the row if the exclusive_column value doesn't already exist. If it does, then it simply modifies the
-    existing line.
+    """Copies the the row if the exclusive_column value doesn't already exist. If the row already exists, it simply modifies the existing line.
 
     Attributes
     ----------
@@ -401,8 +411,7 @@ class CopyRow2DA(Modify2DA):
         ----
             twoda: TwoDA - The TwoDA to apply the patch to
             memory: PatcherMemory - The memory context
-        Returns:
-            None
+
         Processing Logic:
         ----------------
             1. Searches for the source row in the TwoDA
@@ -451,8 +460,7 @@ class CopyRow2DA(Modify2DA):
 
 
 class AddColumn2DA(Modify2DA):
-    """Adds a column. The new cells are either given a default value or can be given a value based on what the row index
-    or row label is.
+    """Adds a column. The new cells are either given a default value or can be given a value based on what the row index or row label is.
 
     Attributes
     ----------
@@ -487,8 +495,7 @@ class AddColumn2DA(Modify2DA):
         ----
             twoda: TwoDA - The TwoDA to apply the patcher to
             memory: PatcherMemory - The memory object to store values
-        Returns:
-            None
+
         Processing Logic:
         ----------------
             - Adds a column to the TwoDA with the patcher header
