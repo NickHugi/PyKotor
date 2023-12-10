@@ -14,5 +14,6 @@ from pykotor.resource.formats.lip.io_lip_xml import (
 from pykotor.resource.formats.lip.lip_auto import (
     read_lip,
     write_lip,
+    detect_lip,
     bytes_lip,
 )
