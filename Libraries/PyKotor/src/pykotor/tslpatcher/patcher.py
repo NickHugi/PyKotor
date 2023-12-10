@@ -1,7 +1,8 @@
 from __future__ import annotations
-from copy import deepcopy
 
+import os
 import shutil
+from copy import deepcopy
 from datetime import datetime, timezone
 from typing import TYPE_CHECKING
 
@@ -9,7 +10,7 @@ from pykotor.common.stream import BinaryReader, BinaryWriter
 from pykotor.extract.capsule import Capsule
 from pykotor.extract.file import ResourceIdentifier
 from pykotor.extract.installation import Installation
-from pykotor.resource.formats.tlk.io_tlk import TLKBinaryReader
+from pykotor.resource.type import SOURCE_TYPES
 from pykotor.tools.encoding import decode_bytes_with_fallbacks
 from pykotor.tools.misc import is_capsule_file
 from pykotor.tools.path import CaseAwarePath
@@ -19,11 +20,9 @@ from pykotor.tslpatcher.memory import PatcherMemory
 from pykotor.tslpatcher.mods.install import InstallFile, create_backup
 from pykotor.tslpatcher.mods.template import OverrideType, PatcherModifications
 from pykotor.tslpatcher.mods.tlk import ModificationsTLK
-from utility.path import Path, PurePath
+from utility.path import PurePath
 
 if TYPE_CHECKING:
-    import os
-
     from pykotor.common.misc import Game
 
 class ModInstaller:
@@ -66,10 +65,10 @@ class ModInstaller:
                 msg = f"Could not find the changes ini file {self.changes_ini_path!s} on disk! Could not start install!"
                 raise FileNotFoundError(msg)
 
+        self.game: Game | None = None
         self._config: PatcherConfig | None = None
         self._backup: CaseAwarePath | None = None
         self._processed_backup_files: set = set()
-        self._game: Game | None = None
 
     def config(self) -> PatcherConfig:
         """Returns the PatcherConfig object associated with the mod installer.
@@ -170,11 +169,8 @@ class ModInstaller:
             exists = output_container_path.joinpath(patch.saveas).exists()
         return (exists, capsule)
 
-    def load_resource_file(self, resource_path: Path) -> bytes:
-        ext: str = resource_path.suffix.strip() and resource_path.suffix.lower()[1:]
-        if ext == "tlk":
-            return TLKBinaryReader(resource_path).load()
-        return BinaryReader.load_file(resource_path)
+    def load_resource_file(self, source: SOURCE_TYPES) -> bytes:
+        return BinaryReader.from_auto(source).read_all()
 
     def lookup_resource(
         self,
@@ -324,9 +320,8 @@ class ModInstaller:
             - Log completion.
         """
         config = self.config()
-        memory = PatcherMemory()
-        self._game = Installation.determine_game(self.game_path)
-        if self._game is None:
+        self.game = Installation.determine_game(self.game_path)
+        if self.game is None:
             msg = "Chosen KOTOR directory is not a valid installation - cannot proceed. Aborting."
             raise RuntimeError(msg)
 
@@ -347,6 +342,7 @@ class ModInstaller:
             if file_install not in config.install_list:
                 config.install_list.append(file_install)
 
+        memory = PatcherMemory()
         for patch in patches_list:
             output_container_path = self.game_path / patch.destination
             exists, capsule = self.handle_capsule_and_backup(patch, output_container_path)
@@ -359,7 +355,7 @@ class ModInstaller:
             if not data_to_patch_bytes:
                 self.log.add_note(f"'{patch.sourcefile}' has no content/data and is completely empty.")
 
-            patched_bytes_data = patch.patch_resource(data_to_patch_bytes, memory, self.log, self._game)
+            patched_bytes_data = patch.patch_resource(data_to_patch_bytes, memory, self.log, self.game)
             if capsule is not None:
                 self.handle_override_type(patch)
                 capsule.add(*ResourceIdentifier.from_path(patch.saveas), patched_bytes_data)
