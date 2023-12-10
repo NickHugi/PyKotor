@@ -1380,11 +1380,10 @@ class Installation:
         if use_hardcoded:
 
             for key, value in HARDCODED_MODULE_NAMES.items():
-                if key.upper() in module_filename.upper():
+                if key.upper() in root.upper():
                     return value
 
         name: str = ""
-        female_talktable_exists = self.female_talktable().path().exists()
         for module in self.modules_list():
             if root not in module:
                 continue
@@ -1392,19 +1391,23 @@ class Installation:
             capsule = Capsule(self.module_path() / module)
             tag = ""
 
-            if capsule.exists("module", ResourceType.IFO):
-                ifo: GFF = read_gff(capsule.resource("module", ResourceType.IFO))
-                tag = ifo.root.get_resref("Mod_Entry_Area").get()
-            if capsule.exists(tag, ResourceType.ARE):
-                are: GFF = read_gff(capsule.resource(tag, ResourceType.ARE))
-                locstring = are.root.get_locstring("Name")
-                if locstring.stringref > 0:
-                    name = self.talktable().string(locstring.stringref)
-                    if not name and female_talktable_exists:  # check the female talktable if not found.
-                        name = self.female_talktable().string(locstring.stringref)
-                elif locstring.exists(Language.ENGLISH, Gender.MALE):
-                    name = locstring.get(Language.ENGLISH, Gender.MALE)
-                break
+            capsule_info = capsule.info("module", ResourceType.IFO)
+            if capsule_info is None:
+                return ""
+
+            ifo: GFF = read_gff(capsule_info.data())
+            tag = ifo.root.get_resref("Mod_Entry_Area").get()
+            are_tag_resource = capsule.resource(tag, ResourceType.ARE)
+            if are_tag_resource is None:
+                return tag
+
+            are: GFF = read_gff(are_tag_resource)
+            locstring = are.root.get_locstring("Name")
+            if locstring.stringref > 0:
+                name = self.talktable().string(locstring.stringref)
+            else:
+                name = locstring.get(Language.ENGLISH, Gender.MALE) or name
+            break
 
         return name
 
