@@ -152,9 +152,8 @@ class Installation:
         ResourceType.DDS,
     ]
 
-    def __init__(self, path: os.PathLike | str, logger: PatchLogger | None = None):
+    def __init__(self, path: os.PathLike | str):
         self._path: CaseAwarePath = path if isinstance(path, CaseAwarePath) else CaseAwarePath(path)
-        self.log = logger or PatchLogger()
 
         self._talktable: TalkTable = TalkTable(self._path / "dialog.tlk")
         self._female_talktable: TalkTable = TalkTable(self._path / "dialogf.tlk")
@@ -180,7 +179,7 @@ class Installation:
         self.load_streamsounds()
         self.load_streamwaves()
         self.load_textures()
-        self.log.add_note(f"Finished loading the installation from {self._path!s}")
+        print(f"Finished loading the installation from {self._path!s}")
 
     # region Get Paths
     def path(self) -> CaseAwarePath:
@@ -328,7 +327,7 @@ class Installation:
         resources: dict[str, list[FileResource]] | list[FileResource] = {} if capsule_check else []
 
         if not path.exists():
-            self.log.add_warning(f"The '{path.name}' folder did not exist at '{self.path()!s}' when loading the installation, skipping...")
+            print(f"The '{path.name}' folder did not exist at '{self.path()!s}' when loading the installation, skipping...")
             return resources
 
         files_list: list[CaseAwarePath] = list(path.safe_rglob("*")) if recurse else list(path.safe_iterdir())  # type: ignore[reportGeneralTypeIssues]
@@ -347,19 +346,18 @@ class Installation:
                     )
                     resources.append(resource)  # type: ignore[assignment, call-overload, union-attr]
         if not resources or not files_list:
-            self.log.add_warning(f"No resources found at '{path!s}' when loading the installation, skipping...")
+            print(f"No resources found at '{path!s}' when loading the installation, skipping...")
         else:
-            self.log.add_note(f"Loading '{path.name}' folder from installation...")
+            print(f"Loading '{path.name}' folder from installation...")
         return resources
 
     def load_chitin(self) -> None:
         """Reloads the list of resources in the Chitin linked to the Installation."""
-        c_path = self._path
         chitin_path = self._path / "chitin.key"
         if not chitin_path.exists():
-            self.log.add_warning(f"The chitin.key file did not exist at '{self._path!s}' when loading the installation, skipping...")
+            print(f"The chitin.key file did not exist at '{self._path!s}' when loading the installation, skipping...")
             return
-        self.log.add_note("Load chitin...")
+        print("Load chitin...")
         self._chitin = list(Chitin(key_path=chitin_path))
 
     def load_lips(
@@ -439,16 +437,22 @@ class Installation:
     def reload_override_file(self, file: os.PathLike | str) -> None:
         filepath: Path = file if isinstance(file, Path) else Path(file)  # type: ignore[reportGeneralTypeIssues, assignment]
         rel_folderpath = filepath.parent.relative_to(self.override_path())
-        with suppress(Exception):
-            resource = FileResource(
-                *ResourceIdentifier.from_path(filepath),
-                filepath.stat().st_size,
-                0,
-                filepath,
-            )
-            override_list: list[FileResource] = self._override[str(rel_folderpath)]
-            index: int = override_list.index(resource)
-            override_list[index] = resource
+        identifier = ResourceIdentifier.from_path(filepath)
+        if identifier.restype == ResourceType.INVALID:
+            print("Cannot reload override file. Invalid KOTOR resource:", identifier)
+            return
+        resource = FileResource(
+            *identifier,
+            filepath.stat().st_size,
+            0,
+            filepath,
+        )
+        override_list: list[FileResource] = self._override[str(rel_folderpath)]
+        if resource not in override_list:
+            print(f"Cannot reload override file '{identifier!s}'. File not found in ", rel_folderpath)
+            return
+        index: int = override_list.index(resource)
+        override_list[index] = resource
 
     def load_streammusic(self) -> None:
         """Reloads the list of resources in the streammusic folder linked to the Installation."""
@@ -779,7 +783,7 @@ class Installation:
         )
         search: ResourceResult | None = batch[query]
         if not search or not search.data:
-            self.log.add_error(f"Could not find '{resname}.{restype}' during resource lookup.")
+            print(f"Could not find '{resname}.{restype}' during resource lookup.")
             return None
         return search
 
@@ -794,6 +798,7 @@ class Installation:
         """Returns a dictionary mapping the items provided in the queries argument to the resource data if it was found.
 
         If the resource was not found, the value will be None.
+        Unlike self.locations(), this function will only return the first found result for each query, instead of everywhere the resource can be located.
 
         Args:
         ----
@@ -820,7 +825,7 @@ class Installation:
             location_list = locations.get(query, [])
 
             if not location_list:
-                self.log.add_error(f"Resource not found: '{query}'")
+                print(f"Resource not found: '{query}'")
                 results[query] = None
                 continue
 
@@ -961,7 +966,11 @@ class Installation:
                     queried_files.update(
                         file
                         for file in folder.rglob("*")
-                        if file.suffix.lower() == f".{query.restype.extension}" and file.stem.lower() == query.resname.lower() and file.safe_isfile()
+                        if (
+                            file.stem.lower() == query.resname.lower()
+                            and file.suffix.lower() == f".{query.restype.extension.lower()}"
+                            and file.safe_isfile()
+                        )
                     )
             for file in queried_files:
                 identifier = ResourceIdentifier.from_path(file)
@@ -1130,27 +1139,29 @@ class Installation:
                     textures[resname] = tpc
 
         def check_folders(values: list[Path]):
-            texture_files_list: set[Path] = set()
+            queried_texture_files: set[Path] = set()
             for folder in values:
-                texture_files_list.update(
+                queried_texture_files.update(
                     file
                     for file in folder.rglob("*")
-                    if file.safe_isfile() and ResourceType.from_extension(file.suffix) in texture_types
+                    if (
+                        file.stem.lower() in resnames
+                        and ResourceType.from_extension(file.suffix) in texture_types
+                        and file.safe_isfile()
+                    )
                 )
-            for texture_file in texture_files_list:
-                if texture_file.stem.lower() in resnames:
-                    texture_data: bytes = BinaryReader.load_file(texture_file)
-                    tpc = read_tpc(texture_data)
-                    txi_file = CaseAwarePath(texture_file.with_suffix(".txi"))
-                    if Path(txi_file) in texture_files_list:
-                        txi_data: bytes = BinaryReader.load_file(txi_file)
-                        tpc.txi = decode_txi(txi_data)
-                    textures[texture_file.stem] = tpc
+            for texture_file in queried_texture_files:
+                texture_data: bytes = BinaryReader.load_file(texture_file)
+                tpc = read_tpc(texture_data)
+                txi_file = CaseAwarePath(texture_file.with_suffix(".txi"))
+                if Path(txi_file) in queried_texture_files:
+                    txi_data: bytes = BinaryReader.load_file(txi_file)
+                    tpc.txi = decode_txi(txi_data)
+                textures[texture_file.stem] = tpc
 
         function_map = {
             SearchLocation.OVERRIDE: lambda: check_dict(self._override),
             SearchLocation.MODULES: lambda: check_dict(self._modules),
-            SearchLocation.LIPS: lambda: check_dict(self._lips),
             SearchLocation.RIMS: lambda: check_dict(self._rims),
             SearchLocation.TEXTURES_TPA: lambda: check_list(self._texturepacks[TexturePackNames.TPA.value]),
             SearchLocation.TEXTURES_TPB: lambda: check_list(self._texturepacks[TexturePackNames.TPB.value]),
@@ -1259,22 +1270,24 @@ class Installation:
                     continue
 
         def check_folders(values: list[Path]):
-            sound_files_list: set[Path] = set()
+            queried_sound_files: set[Path] = set()
             for folder in values:
-                sound_files_list.update(
+                queried_sound_files.update(
                     file
                     for file in folder.rglob("*")
-                    if file.safe_isfile() and ResourceType.from_extension(file.suffix) in sound_formats
+                    if (
+                        file.stem.lower() in resnames
+                        and ResourceType.from_extension(file.suffix) in sound_formats
+                        and file.safe_isfile()
+                    )
                 )
-            for sound_file in sound_files_list:
-                if sound_file.stem.lower() in resnames:
-                    data = BinaryReader.load_file(sound_file)
-                    sounds[sound_file.stem] = fix_audio(data)
+            for sound_file in queried_sound_files:
+                data = BinaryReader.load_file(sound_file)
+                sounds[sound_file.stem] = fix_audio(data)
 
         function_map = {
             SearchLocation.OVERRIDE: lambda: check_dict(self._override),
             SearchLocation.MODULES: lambda: check_dict(self._modules),
-            SearchLocation.LIPS: lambda: check_dict(self._lips),
             SearchLocation.RIMS: lambda: check_dict(self._rims),
             SearchLocation.CHITIN: lambda: check_list(self._chitin),
             SearchLocation.MUSIC: lambda: check_list(self._streammusic),
@@ -1405,7 +1418,6 @@ class Installation:
             A dictionary mapping module filename to in-game module area name.
         """
         return {module: self.module_name(module) for module in self.modules_list()}
-
 
 
     def module_id(self, module_filename: str, use_hardcoded: bool = True) -> str:

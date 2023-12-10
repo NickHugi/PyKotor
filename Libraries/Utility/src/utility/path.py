@@ -283,7 +283,8 @@ class BasePurePath(metaclass=PurePathType):
     def add_suffix(self, extension: str):
         """Initialize a new path object with the added extension. Similar to with_suffix, but doesn't replace existing extensions."""
         if not isinstance(extension, str):
-            raise ValueError(f"Extension must be a path, got {extension!r}")
+            msg = f"Extension must be a path, got {extension!r}"
+            raise ValueError(msg)
         return self._create_instance(str(self) + extension)
 
     def is_relative_to(self, other: PathElem, case_sensitive: bool = True) -> bool:
@@ -415,21 +416,24 @@ class BasePath(BasePurePath):
     # Safe rglob operation
     def safe_rglob(self, pattern: str):
         if not isinstance(self, Path):
-            raise NotImplementedError(f"self must be a path, got {self!r}")
+            msg = f"self must be a path, got {self!r}"
+            raise NotImplementedError(msg)
         with contextlib.suppress(Exception):
             yield from self.rglob(pattern)
 
     # Safe iterdir operation
     def safe_iterdir(self):
         if not isinstance(self, Path):
-            raise NotImplementedError(f"self must be a path, got {self!r}")
+            msg = f"self must be a path, got {self!r}"
+            raise NotImplementedError(msg)
         with contextlib.suppress(Exception):
             yield from self.iterdir()
 
     # Safe is_dir operation
     def safe_isdir(self) -> bool:
         if not isinstance(self, Path):
-            raise NotImplementedError(f"self must be a path, got {self!r}")
+            msg = f"self must be a path, got {self!r}"
+            raise NotImplementedError(msg)
         try:
             return self.is_dir()
         except Exception:  # noqa: BLE001
@@ -438,7 +442,8 @@ class BasePath(BasePurePath):
     # Safe is_file operation
     def safe_isfile(self) -> bool:
         if not isinstance(self, Path):
-            raise NotImplementedError(f"self must be a path, got {self!r}")
+            msg = f"self must be a path, got {self!r}"
+            raise NotImplementedError(msg)
         try:
             return self.is_file()
         except Exception:  # noqa: BLE001
@@ -447,7 +452,8 @@ class BasePath(BasePurePath):
     # Safe exists operation
     def safe_exists(self) -> bool:
         if not isinstance(self, Path):
-            raise NotImplementedError(f"self must be a path, got {self!r}")
+            msg = f"self must be a path, got {self!r}"
+            raise NotImplementedError(msg)
         try:
             return self.exists()
         except Exception:  # noqa: BLE001
@@ -456,7 +462,8 @@ class BasePath(BasePurePath):
     # Safe stat operation
     def safe_stat(self, *args, **kwargs):
         if not isinstance(self, Path):
-            raise NotImplementedError(f"self must be a path, got {self!r}")
+            msg = f"self must be a path, got {self!r}"
+            raise NotImplementedError(msg)
         try:
             return self.stat(*args, **kwargs)
         except Exception:  # noqa: BLE001
@@ -465,7 +472,8 @@ class BasePath(BasePurePath):
     # Safe open operation
     def safe_open(self, *args, **kwargs):
         if not isinstance(self, Path):
-            raise NotImplementedError(f"self must be a path, got {self!r}")
+            msg = f"self must be a path, got {self!r}"
+            raise NotImplementedError(msg)
         try:
             return self.open(*args, **kwargs)
         except Exception:  # noqa: BLE001
@@ -483,7 +491,8 @@ class BasePath(BasePurePath):
             True if path can be modified, False otherwise.
         """
         if not isinstance(self, Path):
-            raise NotImplementedError(f"self must be a path, got {self!r}")
+            msg = f"self must be a path, got {self!r}"
+            raise NotImplementedError(msg)
         try:
             path_obj = Path(self)  # prevents usage of CaseAwarePath's wrappers
             if path_obj.is_dir():  # sourcery skip: extract-method
@@ -502,9 +511,10 @@ class BasePath(BasePurePath):
             return False
         return False
 
-    def gain_access(self, mode=0o777, owner_uid=-1, owner_gid=-1, recurse=True):
+    def gain_access(self, mode=0o777, owner_uid=-1, owner_gid=-1, recurse=True) -> bool:
         if not isinstance(self, Path):
-            raise NotImplementedError(f"self must be a path, got {self!r}")
+            msg = f"self must be a path, got {self!r}"
+            raise NotImplementedError(msg)
         path_obj = Path(self)  # prevents usage of CaseAwarePath's wrappers
         # (Unix) Gain ownership of the folder
         if os.name != "nt" and (owner_uid != -1 or owner_gid != -1) and not path_obj.has_access():

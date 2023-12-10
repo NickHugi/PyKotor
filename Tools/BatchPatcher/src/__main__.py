@@ -462,7 +462,7 @@ def patch_install(install_path: os.PathLike | str) -> None:
     log_output()
 
     log_output_with_separator("Patching modules...")
-    k_install = Installation(install_path, SCRIPT_GLOBALS.patchlogger)
+    k_install = Installation(install_path)
 
     # Patch modules...
     for module_name, resources in k_install._modules.items():
