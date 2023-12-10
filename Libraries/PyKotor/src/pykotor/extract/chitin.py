@@ -15,18 +15,15 @@ if TYPE_CHECKING:
 class Chitin:
     """Chitin object is used for loading the list of resources stored in the chitin.key/.bif files used by the game.
 
-    Resource data is not actually stored in memory by default but is instead loaded up on demand with the
-    Chitin.resource() method.
-
-    Chitin support is read-only and you cannot write your own key/bif files with this class.
+    Chitin support is read-only and you cannot write your own key/bif files with this class yet.
     """
 
     KEY_ELEMENT_SIZE = 8
     def __init__(
         self,
-        kotor_path: CaseAwarePath,
+        key_path: CaseAwarePath,
     ):
-        self._kotor_path: CaseAwarePath = kotor_path
+        self._key_path: CaseAwarePath = key_path
 
         self._resources: list[FileResource] = []
         self._resource_dict: dict[str, list[FileResource]] = {}
@@ -52,7 +49,7 @@ class Chitin:
         keys, bifs = self._get_chitin_data()
         for bif in bifs:
             self._resource_dict[bif] = []
-            absolute_bif_path = self._kotor_path / bif
+            absolute_bif_path = self._key_path.parent / bif
             with BinaryReader.from_file(absolute_bif_path) as reader:
                 _bif_file_type = reader.read_string(4)
                 _bif_file_version = reader.read_string(4)
@@ -82,9 +79,11 @@ class Chitin:
     def save(self) -> None:
         """Writes the list of resource info to the chitin.key file and associated .bif files."""
         keys, bifs = self._get_chitin_data()
-        resource_lookup = {resource.resname(): (PurePath(bif), resource)
-                           for bif, bif_resources in self._resource_dict.items()
-                           for resource in bif_resources}
+        resource_lookup: dict[str, tuple[PurePath, FileResource]] = {
+            resource.resname(): (PurePath(bif), resource)
+            for bif, bif_resources in self._resource_dict.items()
+            for resource in bif_resources
+        }
 
         # Initialize a dictionary to store bytearrays for each bif file
         bif_data = {}
@@ -115,7 +114,7 @@ class Chitin:
             bif_data[this_bif].extend(data_block)
 
         for bif_path, byte_array_data in bif_data.items():
-            absolute_bif_path = self._kotor_path / bif_path
+            absolute_bif_path = self._key_path.parent / bif_path
             merged_bytearrays = bytearray()
             bif_writer = BinaryWriter.to_bytearray(merged_bytearrays)
             # Write file type and version
@@ -130,7 +129,7 @@ class Chitin:
             BinaryWriter.dump(absolute_bif_path, merged_bytearrays)
 
     def _get_chitin_data(self) -> tuple[dict[int, str], list[str]]:
-        with BinaryReader.from_file(self._kotor_path / "chitin.key") as reader:
+        with BinaryReader.from_file(self._key_path) as reader:
             _key_file_type = reader.read_string(4)
             _key_file_version = reader.read_string(4)
             bif_count = reader.read_uint32()
