@@ -69,6 +69,11 @@ exclude = '''
 )/
 '''
 
+[tool.pyright]
+reportMissingImports = true
+reportMissingTypeStubs = true
+pythonVersion = "3.7"
+
 [tool.isort]
 atomic = true
 profile = "black"

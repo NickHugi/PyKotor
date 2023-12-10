@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import os
 import shutil
 from copy import deepcopy
 from datetime import datetime, timezone
@@ -10,21 +9,23 @@ from pykotor.common.stream import BinaryReader, BinaryWriter
 from pykotor.extract.capsule import Capsule
 from pykotor.extract.file import ResourceIdentifier
 from pykotor.extract.installation import Installation
-from pykotor.resource.type import SOURCE_TYPES
 from pykotor.tools.encoding import decode_bytes_with_fallbacks
 from pykotor.tools.misc import is_capsule_file
 from pykotor.tools.path import CaseAwarePath
-from pykotor.tools.resource import load_resource_file
+from pykotor.tools.resource import read_resource
 from pykotor.tslpatcher.config import PatcherConfig
 from pykotor.tslpatcher.logger import PatchLogger
 from pykotor.tslpatcher.memory import PatcherMemory
 from pykotor.tslpatcher.mods.install import InstallFile, create_backup
 from pykotor.tslpatcher.mods.template import OverrideType, PatcherModifications
-from pykotor.tslpatcher.mods.tlk import ModificationsTLK
 from utility.path import PurePath
 
 if TYPE_CHECKING:
+    import os
+
     from pykotor.common.misc import Game
+    from pykotor.resource.type import SOURCE_TYPES
+    from pykotor.tslpatcher.mods.tlk import ModificationsTLK
 
 class ModInstaller:
     def __init__(
@@ -51,7 +52,7 @@ class ModInstaller:
         ----------------
             - Initialize the logger if not already defined.
             - Initialize parameters passed for game, mod and changes ini paths
-            - Handle legacy changes ini path syntax (before the merge of the fork)
+            - Handle legacy changes ini path syntax (changes_ini_path used to just be a filename)
             - Initialize other attributes.
         """
         self.log: PatchLogger = logger or PatchLogger()
@@ -66,7 +67,11 @@ class ModInstaller:
                 msg = f"Could not find the changes ini file {self.changes_ini_path!s} on disk! Could not start install!"
                 raise FileNotFoundError(msg)
 
-        self.game: Game | None = None
+        game = Installation.determine_game(self.game_path)
+        if game is None:
+            msg = "Chosen KOTOR directory is not a valid installation - cannot initialize ModInstaller."
+            raise RuntimeError(msg)
+        self.game: Game = game
         self._config: PatcherConfig | None = None
         self._backup: CaseAwarePath | None = None
         self._processed_backup_files: set = set()
@@ -84,7 +89,7 @@ class ModInstaller:
             ini_text = decode_bytes_with_fallbacks(ini_file_bytes)
         except UnicodeDecodeError:
             self.log.add_warning(f"Could not determine encoding of '{self.changes_ini_path.name}'. Attempting to force load...")
-            ini_text = ini_file_bytes.decode(encoding="utf-32", errors="ignore")
+            ini_text = ini_file_bytes.decode(errors="ignore")
 
         self._config = PatcherConfig()
         self._config.load(ini_text, self.mod_path, self.log)
@@ -172,7 +177,7 @@ class ModInstaller:
 
     def load_resource_file(self, source: SOURCE_TYPES) -> bytes:
         if self.config().ignore_file_extensions:
-            return load_resource_file(source)
+            return read_resource(source)
         return BinaryReader.from_auto(source).read_all()
 
     def lookup_resource(
@@ -323,10 +328,6 @@ class ModInstaller:
             - Log completion.
         """
         config = self.config()
-        self.game = Installation.determine_game(self.game_path)
-        if self.game is None:
-            msg = "Chosen KOTOR directory is not a valid installation - cannot proceed. Aborting."
-            raise RuntimeError(msg)
 
         tlk_patches = self.get_tlk_patches(config)
         patches_list: list[PatcherModifications] = [
@@ -363,24 +364,34 @@ class ModInstaller:
                 self.handle_override_type(patch)
                 capsule.add(*ResourceIdentifier.from_path(patch.saveas), patched_bytes_data)
             else:
-                if not output_container_path.exists():
-                    output_container_path.mkdir(parents=True)
+                output_container_path.mkdir(exist_ok=True, parents=True)
                 BinaryWriter.dump(output_container_path / patch.saveas, patched_bytes_data)
             self.log.complete_patch()
 
         self.log.add_note(f"Successfully completed {self.log.patches_completed} total patches.")
 
     def get_tlk_patches(self, config: PatcherConfig) -> list[ModificationsTLK]:
-        tlk_patches: list[ModificationsTLK] = [config.patches_tlk] if config.patches_tlk.modifiers else []
+        tlk_patches: list[ModificationsTLK] = []
+        patches_tlk: ModificationsTLK = config.patches_tlk
+
+        if not patches_tlk.modifiers:
+            return tlk_patches
+
+        tlk_patches.append(patches_tlk)
 
         female_dialog_filename = "dialogf.tlk"
         female_dialog_file: CaseAwarePath = self.game_path / female_dialog_filename
+
         if female_dialog_file.exists():
-            female_tlk_patches = deepcopy(config.patches_tlk)
-            female_append_file = self.mod_path / female_tlk_patches.sourcefile_f
-            if female_append_file.exists():
-                female_tlk_patches.sourcefile = female_tlk_patches.sourcefile_f
+            female_tlk_patches: ModificationsTLK = deepcopy(patches_tlk)
+            female_tlk_patches.sourcefile = (
+                female_tlk_patches.sourcefile_f
+                if (self.mod_path / female_tlk_patches.sourcefile_f).exists()
+                else patches_tlk.sourcefile
+            )
             female_tlk_patches.saveas = female_dialog_filename
             tlk_patches.append(female_tlk_patches)
 
         return tlk_patches
+
+

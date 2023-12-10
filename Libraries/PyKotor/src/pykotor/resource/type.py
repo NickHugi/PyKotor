@@ -237,7 +237,7 @@ class ResourceType(Enum):
             raise TypeError(msg)
 
     @classmethod
-    def from_extension(
+    def from_extension(  # TODO: this should return ResourceType.INVALID instead of raising an error.
         cls,
         extension: str,
     ) -> ResourceType:
