@@ -17,6 +17,7 @@ if TYPE_CHECKING:
 
 def simple_wrapper(fn_name, wrapped_class_type) -> Callable[..., Any]:
     """Wraps a function to handle case-sensitive pathlib.PurePath arguments.
+
     This is a hacky way of ensuring that all args to any pathlib methods have their path case-sensitively resolved.
     This also resolves self and kwargs for ensured accuracy.
 
@@ -24,20 +25,41 @@ def simple_wrapper(fn_name, wrapped_class_type) -> Callable[..., Any]:
     ----
         fn_name: The name of the function to wrap
         wrapped_class_type: The class type that the function belongs to
+
     Returns:
+    -------
         Callable[..., Any]: A wrapped function with the same signature as the original
+
     Processing Logic:
+    ----------------
         1. Gets the original function from the class's _original_methods attribute
         2. Parses arguments that are paths, resolving case if needed
         3. Calls the original function with the parsed arguments.
     """
     def wrapped(self, *args, **kwargs) -> Any:
-        orig_fn = wrapped_class_type._original_methods[fn_name]
+        """Wraps a function to handle case-sensitive path resolution.
+
+        Args:
+        ----
+            self: The object the method is called on
+            *args: Variable length argument list
+            **kwargs: Arbitrary keyword arguments
+
+        Returns:
+        -------
+            Any: The return value of the wrapped function
+
+        Processing Logic:
+        ----------------
+            - Parse self, args and kwargs to resolve case-sensitive paths where needed
+            - Call the original function, passing the parsed arguments
+            - Return the result
+        """
+        orig_fn = wrapped_class_type._original_methods[fn_name]  # noqa: SLF001
 
         def parse_arg(arg):
             if is_instance_or_subinstance(arg, InternalPurePath) and CaseAwarePath.should_resolve_case(arg):
                 return CaseAwarePath.get_case_sensitive_path(arg)
-
             return arg
 
         # Parse `self` if it meets the condition
@@ -57,14 +79,16 @@ def simple_wrapper(fn_name, wrapped_class_type) -> Callable[..., Any]:
     return wrapped
 
 
-def create_case_insensitive_pathlib_class(cls) -> None:  # TODO: move into CaseAwarePath.__getattr__
+def create_case_insensitive_pathlib_class(cls: type) -> None:  # TODO: move into CaseAwarePath.__getattr__
     # Create a dictionary that'll hold the original methods for this class
-    """Wraps methods of a pathlib class to be case insensitive
+    """Wraps methods of a pathlib class to be case insensitive.
+
     Args:
+    ----
         cls: The pathlib class to wrap
-    Returns:
-        None
+
     Processing Logic:
+    ----------------
         1. Create a dictionary to store original methods
         2. Get the method resolution order and exclude current class
         3. Store already wrapped methods to avoid wrapping multiple times
@@ -72,7 +96,7 @@ def create_case_insensitive_pathlib_class(cls) -> None:  # TODO: move into CaseA
         5. Check if method and not wrapped before
         6. Add method to wrapped dictionary and reassign with wrapper.
     """
-    cls._original_methods = {}
+    cls._original_methods = {}  # type: ignore[reportGeneralTypeIssues]
     mro = cls.mro()  # Gets the method resolution order
     parent_classes = mro[1:-1]  # Exclude the current class itself and the object class
     cls_methods = [method for method in cls.__dict__ if callable(getattr(cls, method))]  # define names of methods in the cls, excluding inherited
@@ -97,7 +121,7 @@ def create_case_insensitive_pathlib_class(cls) -> None:  # TODO: move into CaseA
         for attr_name, attr_value in parent.__dict__.items():
             # Check if it's a method and hasn't been wrapped before
             if callable(attr_value) and attr_name not in wrapped_methods and attr_name not in ignored_methods:
-                cls._original_methods[attr_name] = attr_value
+                cls._original_methods[attr_name] = attr_value  # type: ignore[reportGeneralTypeIssues]
                 setattr(cls, attr_name, simple_wrapper(attr_name, cls))
                 wrapped_methods.add(attr_name)
 
@@ -184,10 +208,10 @@ class CaseAwarePath(InternalPath):  # type: ignore[misc]
             # parts in their original case.
             # if parts[1] is not found on disk, i.e. when i is 1 and base_path.exists() returns False, this will also return the original path.
             elif not next_path.safe_exists():
-                return CaseAwarePath._create_instance(base_path.joinpath(*parts[i:]))
+                return CaseAwarePath._create_instance(base_path.joinpath(*parts[i:]))  # noqa: SLF001
 
         # return a CaseAwarePath instance
-        return CaseAwarePath._create_instance(*parts)
+        return CaseAwarePath._create_instance(*parts)  # noqa: SLF001
 
     @classmethod
     def find_closest_match(cls, target: str, candidates: Generator[InternalPath, None, None]) -> str:
@@ -205,6 +229,7 @@ class CaseAwarePath(InternalPath):  # type: ignore[misc]
     @staticmethod
     def get_matching_characters_count(str1: str, str2: str) -> int:
         """Returns the number of case sensitive characters that match in each position of the two strings.
+
         if str1 and str2 are NOT case-insensitive matches, this method will return -1.
         """
         return sum(a == b for a, b in zip(str1, str2)) if str1.lower() == str2.lower() else -1
@@ -292,25 +317,29 @@ def get_default_paths():
 def find_kotor_paths_from_default() -> dict[Game, list[CaseAwarePath]]:
     """Finds paths to Knights of the Old Republic game data directories.
 
-    Args:
-    ----
-        None
-    Returns:
+    Returns
+    -------
         dict[Game, list[CaseAwarePath]]: A dictionary mapping Games to lists of existing path locations.
 
-    - Gets default hardcoded path locations from a lookup table
-    - Resolves paths and filters out non-existing ones
-    - On Windows, also searches the registry for additional locations
-    - Returns results as lists for each Game rather than sets
+    Processing Logic:
+    ----------------
+        - Gets default hardcoded path locations from a lookup table
+        - Resolves paths and filters out non-existing ones
+        - On Windows, also searches the registry for additional locations
+        - Returns results as lists for each Game rather than sets
     """
     from pykotor.common.misc import Game
 
     os_str = platform.system()
 
     # Build hardcoded default kotor locations
-    raw_locations = get_default_paths()
-    locations = {
-        game: {case_path for case_path in (CaseAwarePath(path).resolve() for path in paths) if case_path.exists()}
+    raw_locations: dict[str, dict[Game, list[str]]] = get_default_paths()
+    locations: dict[Game, set[CaseAwarePath]] = {
+        game: {
+            case_path
+            for case_path in (CaseAwarePath(path).resolve() for path in paths)
+            if case_path.exists()
+        }
         for game, paths in raw_locations.get(os_str, {}).items()
     }
 

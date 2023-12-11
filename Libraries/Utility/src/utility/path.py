@@ -233,16 +233,18 @@ class BasePurePath(metaclass=PurePathType):
 
         self_path = self
         if not isinstance(self_path, PurePath):
-            raise NotImplementedError(f"self must be a path, got {self_path!r}")
+            msg = f"self must be a path, got {self_path!r}"
+            raise NotImplementedError(msg)
 
         def split_func(parts: list[str]) -> tuple[str, str]:
             return ".".join(parts[:-abs(dots)]), ".".join(parts[-abs(dots):])
 
+        parts: list[str]
         if dots < 0:
-            parts: list[str] = self_path.name.split(".", abs(dots))
+            parts = self_path.name.split(".", abs(dots))
             parts.reverse()  # Reverse the order of parts for negative dots
         else:
-            parts: list[str] = self_path.name.rsplit(".", abs(dots) + 1)
+            parts = self_path.name.rsplit(".", abs(dots) + 1)
 
         if len(parts) <= abs(dots):
             first_dot = self_path.name.find(".")
@@ -283,8 +285,8 @@ class BasePurePath(metaclass=PurePathType):
     def add_suffix(self, extension: str):
         """Initialize a new path object with the added extension. Similar to with_suffix, but doesn't replace existing extensions."""
         if not isinstance(extension, str):
-            msg = f"Extension must be a path, got {extension!r}"
-            raise ValueError(msg)
+            msg = f"Extension must be a str, got '{extension!r}'"
+            raise TypeError(msg)
         return self._create_instance(str(self) + extension)
 
     def is_relative_to(self, other: PathElem, case_sensitive: bool = True) -> bool:
@@ -535,9 +537,9 @@ class BasePath(BasePurePath):
             try:
                 if platform.system() == "Darwin":
                     path_obj.request_mac_permission()
-                elif sys.platform == "Linux":
+                elif platform.system() == "Linux":
                     path_obj.request_linux_permission()
-                elif sys.platform == "Windows":
+                elif platform.system() == "Windows":
                     path_obj.request_windows_permission()
 
             except Exception as e:  # noqa: BLE001

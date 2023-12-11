@@ -4,12 +4,18 @@ import struct
 def fix_audio(
     data: bytes,
 ) -> bytes:
-    """Fixes corrupted audio data
+    """Fixes corrupted audio data.
+
     Args:
+    ----
         data: bytes - Audio data bytes
+
     Returns:
+    -------
         bytes: Fixed audio data bytes
+
     Processing Logic:
+    ----------------
         - Unpack first 4 bytes and check for magic number 1179011410
         - Unpack bytes 4-8 and check for value 50
         - Unpack bytes 16-20 and check for value 18

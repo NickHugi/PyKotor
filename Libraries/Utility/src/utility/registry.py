@@ -9,10 +9,12 @@ def resolve_reg_key_to_path(reg_key: str, keystr: str):
     Returns:
     -------
         resolved_path: File system path resolved from registry key/value or None.
+
     Processing Logic:
-    - Opens the registry key using the root and subkey
-    - Queries the key for the value specified by keystr
-    - Returns the path if found, otherwise returns None.
+    ----------------
+        - Opens the registry key using the root and subkey
+        - Queries the key for the value specified by keystr
+        - Returns the path if found, otherwise returns None.
     """
     import winreg
 

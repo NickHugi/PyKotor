@@ -68,11 +68,7 @@ class ModInstaller:
                 msg = f"Could not find the changes ini file {self.changes_ini_path!s} on disk! Could not start install!"
                 raise FileNotFoundError(msg)
 
-        game = Installation.determine_game(self.game_path)
-        if game is None:
-            msg = "Chosen KOTOR directory is not a valid installation - cannot initialize ModInstaller."
-            raise RuntimeError(msg)
-        self.game: Game = game
+        self.game: Game | None = Installation.determine_game(self.game_path)
         self._config: PatcherConfig | None = None
         self._backup: CaseAwarePath | None = None
         self._processed_backup_files: set = set()
@@ -177,7 +173,7 @@ class ModInstaller:
         return (exists, capsule)
 
     def load_resource_file(self, source: SOURCE_TYPES) -> bytes:
-        if self.config().ignore_file_extensions:
+        if self._config and self._config.ignore_file_extensions:
             return read_resource(source)
         return BinaryReader.from_auto(source).read_all()
 
@@ -328,6 +324,9 @@ class ModInstaller:
                 - Save patched data to destination file or add to capsule
             - Log completion.
         """
+        if self.game is None:
+            msg = "Chosen KOTOR directory is not a valid installation - cannot initialize ModInstaller."
+            raise RuntimeError(msg)
         config = self.config()
 
         tlk_patches = self.get_tlk_patches(config)

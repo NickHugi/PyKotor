@@ -18,7 +18,8 @@ if UTILITY_PATH.exists():
         sys.path.remove(working_dir)
     sys.path.insert(0, working_dir)
 
-from pykotor.resource.formats.ssf import SSF, SSFBinaryReader, SSFSound, SSFXMLReader, detect_ssf, read_ssf, write_ssf
+from pykotor.resource.formats.ssf import SSF, SSFBinaryReader, SSFSound, SSFXMLReader, read_ssf, write_ssf
+from pykotor.resource.formats.ssf.ssf_auto import detect_ssf
 from pykotor.resource.type import ResourceType
 
 BINARY_TEST_FILE = "src/tests/files/test.ssf"
