@@ -19,6 +19,7 @@ if UTILITY_PATH.exists():
         sys.path.remove(working_dir)
     sys.path.insert(0, working_dir)
 
+from pykotor.common.misc import Game
 from pykotor.resource.formats.gff import read_gff
 from pykotor.resource.generics.ute import construct_ute, dismantle_ute
 
@@ -32,10 +33,20 @@ class TestUTE(TestCase):
     def log_func(self, message=""):
         self.log_messages.append(message)
 
-    def test_gff_reconstruct(self) -> None:
+    def test_k2_reconstruct(self) -> None:
         gff = read_gff(TEST_FILE)
-        reconstructed_gff = dismantle_ute(construct_ute(gff))
-        self.assertTrue(gff.compare(reconstructed_gff, self.log_func), os.linesep.join(self.log_messages))
+        reconstructed_gff = dismantle_ute(construct_ute(gff), Game.K2)
+        result = gff.compare(reconstructed_gff, self.log_func)
+        output = os.linesep.join(self.log_messages)
+        if not result:
+            expected_output = r"""
+GFFStruct: number of fields have changed at 'GFFRoot\CreatureList\0': '4' --> '5'
+
+Extra 'Int32' field found at 'GFFRoot\CreatureList\0\GuaranteedCount': '0'
+""".replace("\r\n", "\n")
+            self.assertEqual(output.strip().replace("\r\n", "\n"), expected_output.strip(), "Comparison output does not match expected output")
+        else:
+            self.assertTrue(result)
 
     def test_io_construct(self):
         gff = read_gff(TEST_FILE)

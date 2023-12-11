@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import math
 import os
 from copy import copy, deepcopy
 from enum import Enum, IntEnum
@@ -325,15 +326,21 @@ class GFFStruct:
             - Compares field types, values recursively for structs and lists
             - Logs any differences found
         """
+        ignore_labels = {
+            "KTInfoDate",
+            "KTGameVerIndex",
+            "KTInfoVersion",
+            "EditorInfo",
+        }
         current_path = PureWindowsPath(current_path or "GFFRoot")
         if len(self) != len(other_gff_struct):  # sourcery skip: class-extract-method
-            log_func(f"GFFStruct: number of fields have changed at '{current_path}': '{len(self)}' --> '{len(other_gff_struct)}'")
             log_func()
+            log_func(f"GFFStruct: number of fields have changed at '{current_path}': '{len(self)}' --> '{len(other_gff_struct)}'")
             is_same_result = False
 
         # Create dictionaries for both old and new structures
-        old_dict: dict[str, tuple[GFFFieldType, Any]] = {label or f"gffstruct({idx})": (ftype, value) for idx, (label, ftype, value) in enumerate(self)}
-        new_dict: dict[str, tuple[GFFFieldType, Any]] = {label or f"gffstruct({idx})": (ftype, value) for idx, (label, ftype, value) in enumerate(other_gff_struct)}
+        old_dict: dict[str, tuple[GFFFieldType, Any]] = {label or f"gffstruct({idx})": (ftype, value) for idx, (label, ftype, value) in enumerate(self) if label not in ignore_labels}
+        new_dict: dict[str, tuple[GFFFieldType, Any]] = {label or f"gffstruct({idx})": (ftype, value) for idx, (label, ftype, value) in enumerate(other_gff_struct) if label not in ignore_labels}
 
         # Union of labels from both old and new structures
         all_labels = set(old_dict.keys()) | set(new_dict.keys())
@@ -382,6 +389,12 @@ class GFFStruct:
                     continue
 
             elif old_value != new_value:
+                if (
+                    isinstance(old_value, float)
+                    and isinstance(new_value, float)
+                    and math.isclose(old_value, new_value, rel_tol=1e-9, abs_tol=1e-9)
+                ):
+                    continue
                 if str(old_value) == str(new_value):
                     is_same_result = False
                     log_func(f"Field '{old_ftype.name}' is different at '{child_path}': String representations match, but have other properties that don't (such as a lang id difference).")

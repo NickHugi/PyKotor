@@ -18,10 +18,12 @@ if UTILITY_PATH.exists():
         sys.path.remove(working_dir)
     sys.path.insert(0, working_dir)
 
+from pykotor.common.misc import Game
 from pykotor.resource.formats.gff import read_gff
 from pykotor.resource.generics.uts import construct_uts, dismantle_uts
 
 TEST_FILE = "src/tests/files/test.uts"
+TEST_K1_FILE = "src/tests/files/test_k1.uts"
 
 
 class TestUTS(TestCase):
@@ -34,6 +36,11 @@ class TestUTS(TestCase):
     def test_gff_reconstruct(self) -> None:
         gff = read_gff(TEST_FILE)
         reconstructed_gff = dismantle_uts(construct_uts(gff))
+        self.assertTrue(gff.compare(reconstructed_gff, self.log_func), os.linesep.join(self.log_messages))
+
+    def test_k1_gff_reconstruct(self) -> None:
+        gff = read_gff(TEST_K1_FILE)
+        reconstructed_gff = dismantle_uts(construct_uts(gff), Game.K1)
         self.assertTrue(gff.compare(reconstructed_gff, self.log_func), os.linesep.join(self.log_messages))
 
     def test_io_construct(self):

@@ -376,11 +376,11 @@ def dismantle_utc(
     root.set_uint8("Wis", utc.wisdom)
     root.set_uint8("Cha", utc.charisma)
 
-    root.set_uint8("CurrentHitPoints", utc.current_hp)
-    root.set_uint8("MaxHitPoints", utc.max_hp)
-    root.set_uint8("HitPoints", utc.hp)
-    root.set_uint8("CurrentForce", utc.fp)
-    root.set_uint8("ForcePoints", utc.max_fp)
+    root.set_int16("CurrentHitPoints", utc.current_hp)
+    root.set_int16("MaxHitPoints", utc.max_hp)
+    root.set_int16("HitPoints", utc.hp)
+    root.set_int16("CurrentForce", utc.fp)
+    root.set_int16("ForcePoints", utc.max_fp)
 
     root.set_resref("ScriptEndDialogu", utc.on_end_dialog)
     root.set_resref("ScriptOnBlocked", utc.on_blocked)
@@ -413,7 +413,7 @@ def dismantle_utc(
     for utc_class in utc.classes:
         class_struct = class_list.add(2)
         class_struct.set_int32("Class", utc_class.class_id)
-        class_struct.set_int32("ClassLevel", utc_class.class_level)
+        class_struct.set_int16("ClassLevel", utc_class.class_level)
         power_list = class_struct.set_list("KnownList0", GFFList())
         for power in utc_class.powers:
             power_struct = power_list.add(3)

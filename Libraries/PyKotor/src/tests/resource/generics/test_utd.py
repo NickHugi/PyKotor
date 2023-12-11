@@ -23,6 +23,7 @@ from pykotor.resource.formats.gff import read_gff
 from pykotor.resource.generics.utd import construct_utd, dismantle_utd
 
 TEST_FILE = "src/tests/files/test.utd"
+K1_SAME_TEST_FILE = "src/tests/files/k1_utd_same_test.utd"
 
 
 class TestUTD(TestCase):
@@ -33,7 +34,7 @@ class TestUTD(TestCase):
         self.log_messages.append(message)
 
     def test_gff_reconstruct(self) -> None:
-        gff = read_gff(TEST_FILE)
+        gff = read_gff(K1_SAME_TEST_FILE)
         reconstructed_gff = dismantle_utd(construct_utd(gff))
         self.assertTrue(gff.compare(reconstructed_gff, self.log_func), os.linesep.join(self.log_messages))
 

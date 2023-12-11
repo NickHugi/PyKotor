@@ -19,12 +19,13 @@ if UTILITY_PATH.exists():
     sys.path.insert(0, working_dir)
 
 from pykotor.resource.formats.gff.gff_data import GFF
-from pykotor.common.misc import Color
+from pykotor.common.misc import Color, Game
 from pykotor.resource.formats.gff import read_gff
 from pykotor.resource.generics.git import construct_git, dismantle_git
 
 TEST_FILE = "src/tests/files/test.git"
 K1_SAME_TEST = "src/tests/files/k1_same_git_test.git"
+K1_LAST_GOOD_EXTRACT = "src/tests/files/k1_extracted_git_test.git"
 
 
 class TestGIT(unittest.TestCase):
@@ -34,9 +35,19 @@ class TestGIT(unittest.TestCase):
     def log_func(self, message=""):
         self.log_messages.append(message)
 
-    def test_gff_reconstruct(self) -> None:
+    def test_temp_diff(self) -> None:
+        gff: GFF = read_gff(K1_SAME_TEST)
+        reconstructed_gff: GFF = read_gff(K1_LAST_GOOD_EXTRACT)
+        self.assertTrue(gff.compare(reconstructed_gff, self.log_func), os.linesep.join(self.log_messages))
+
+    def test_k1_gff_reconstruct(self) -> None:
+        gff: GFF = read_gff(K1_SAME_TEST)
+        reconstructed_gff: GFF = dismantle_git(construct_git(gff), Game.K1)
+        self.assertTrue(gff.compare(reconstructed_gff, self.log_func), os.linesep.join(self.log_messages))
+
+    def test_k2_gff_reconstruct(self) -> None:
         gff: GFF = read_gff(TEST_FILE)
-        reconstructed_gff: GFF = dismantle_git(construct_git(gff))
+        reconstructed_gff: GFF = dismantle_git(construct_git(gff), Game.K2)
         self.assertTrue(gff.compare(reconstructed_gff, self.log_func), os.linesep.join(self.log_messages))
 
     def test_io_construct(self):

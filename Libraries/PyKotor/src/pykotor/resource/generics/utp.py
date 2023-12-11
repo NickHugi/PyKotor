@@ -290,7 +290,7 @@ def dismantle_utp(
     if game == Game.K2:
         root.set_uint8("NotBlastable", utp.not_blastable)
         root.set_uint8("OpenLockDiff", utp.unlock_diff)
-        root.set_uint8("OpenLockDiffMod", utp.unlock_diff_mod)
+        root.set_int8("OpenLockDiffMod", utp.unlock_diff_mod)
         root.set_resref("OnFailToOpen", utp.on_open_failed)
         root.set_uint8("CloseLockDC", utp.lock_dc)
 

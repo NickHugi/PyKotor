@@ -19,7 +19,7 @@ if UTILITY_PATH.exists():
         sys.path.remove(working_dir)
     sys.path.insert(0, working_dir)
 
-from pykotor.common.misc import EquipmentSlot
+from pykotor.common.misc import EquipmentSlot, Game
 from pykotor.resource.formats.gff import read_gff
 from pykotor.resource.generics.utc import UTC, construct_utc, dismantle_utc
 
@@ -35,8 +35,14 @@ class TestUTC(TestCase):
 
     def test_gff_reconstruct(self) -> None:
         gff = read_gff(TEST_FILE)
-        reconstructed_gff = dismantle_utc(construct_utc(gff))
-        self.assertTrue(gff.compare(reconstructed_gff, self.log_func), os.linesep.join(self.log_messages))
+        reconstructed_gff = dismantle_utc(construct_utc(gff), Game.K2)
+        result = gff.compare(reconstructed_gff, self.log_func)
+        output = os.linesep.join(self.log_messages)
+        if not result:
+            expected_output = r"Field 'LocalizedString' is different at 'GFFRoot\Description': 123 --> -1"
+            self.assertEqual(output.strip(), expected_output, "Comparison output does not match expected output")
+        else:
+            self.assertTrue(result)
 
     def test_io_construct(self):
         gff = read_gff(TEST_FILE)

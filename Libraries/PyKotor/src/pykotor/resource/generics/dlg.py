@@ -509,7 +509,8 @@ def construct_dlg(
         node.listener = gff_struct.acquire("Listener", "")
         node.vo_resref = gff_struct.acquire("VO_ResRef", ResRef.from_blank())
         node.script1 = gff_struct.acquire("Script", ResRef.from_blank())
-        node.delay = -1 if gff_struct.acquire("Delay", 0) == 0xFFFFFFFF else gff_struct.acquire("Delay", 0)
+        delay = gff_struct.acquire("Delay", 0)
+        node.delay = -1 if delay == 0xFFFFFFFF else delay
         node.comment = gff_struct.acquire("Comment", "")
         node.sound = gff_struct.acquire("Sound", ResRef.from_blank())
         node.quest = gff_struct.acquire("Quest", "")
@@ -689,6 +690,7 @@ def dismantle_dlg(
     game: Game = Game.K2,
     *,
     use_deprecated: bool = True,
+    called_from_self = False,
 ) -> GFF:
     """Dismantle a dialogue into a GFF structure.
 
@@ -714,6 +716,7 @@ def dismantle_dlg(
         gff_struct: GFFStruct,
         link: DLGLink,
         nodes: list,
+        list_name: str,
     ):
         """Disassembles a link into a GFFStruct.
 
@@ -735,6 +738,8 @@ def dismantle_dlg(
         """
         gff_struct.set_resref("Active", link.active1)
         gff_struct.set_uint32("Index", nodes.index(link.node))
+        if list_name != "StartingList":
+            gff_struct.set_uint8("IsChild", int(link.is_child))
         if game == Game.K2:
             gff_struct.set_resref("Active2", link.active2)
             gff_struct.set_int32("Logic", link.logic)
@@ -776,7 +781,7 @@ def dismantle_dlg(
         gff_struct.set_string("Listener", node.listener)
         gff_struct.set_resref("VO_ResRef", node.vo_resref)
         gff_struct.set_resref("Script", node.script1)
-        gff_struct.set_uint32("Delay", node.delay)
+        gff_struct.set_uint32("Delay", 4294967295 if node.delay == -1 else node.delay)
         gff_struct.set_string("Comment", node.comment)
         gff_struct.set_resref("Sound", node.sound)
         gff_struct.set_string("Quest", node.quest)
@@ -842,7 +847,7 @@ def dismantle_dlg(
         link_list = gff_struct.set_list(list_name, GFFList())
         for i, link in enumerate(node.links):
             link_struct = link_list.add(i)
-            dismantle_link(link_struct, link, nodes)
+            dismantle_link(link_struct, link, nodes, list_name)
 
     all_entries = dlg.all_entries()
     all_replies = dlg.all_replies()
@@ -881,7 +886,7 @@ def dismantle_dlg(
     starting_list = root.set_list("StartingList", GFFList())
     for i, starter in enumerate(dlg.starters):
         starting_struct = starting_list.add(i)
-        dismantle_link(starting_struct, starter, all_entries)
+        dismantle_link(starting_struct, starter, all_entries, "StartingList")
 
     entries_list = root.set_list("EntryList", GFFList())
     for i, entry in enumerate(all_entries):
@@ -894,8 +899,16 @@ def dismantle_dlg(
         replies_struct = replies_list.add(i)
         dismantle_node(replies_struct, reply, all_entries, "EntriesList")
 
-    return gff
+    # Fix the starting indices
+    starting_indices: list[int] = [struct.acquire("Index", 0) for struct in starting_list]
+    for i, struct in zip(starting_indices, reversed(starting_list)):
+        struct.set_uint32("Index", i)
 
+    return gff if called_from_self else fix_dlg_output(gff, game, starting_list)
+
+def fix_dlg_output(gff: GFF, game, starting_list: GFFList):
+    # HACK: reconstruct/dismantle the dlg a second time to fix the ordering.
+    return dismantle_dlg(construct_dlg(gff), game, called_from_self=True)
 
 def read_dlg(
     source: SOURCE_TYPES,

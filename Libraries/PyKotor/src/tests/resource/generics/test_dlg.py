@@ -25,16 +25,24 @@ from pykotor.resource.formats.gff import read_gff
 from pykotor.resource.generics.dlg import construct_dlg, dismantle_dlg
 
 TEST_FILE = "src/tests/files/test.dlg"
+TEST_K1_FILE = "src/tests/files/test_k1.dlg"
 
 
 class TestDLG(TestCase):
     def setUp(self):
         self.log_messages: list[str] = [os.linesep]
 
-    def log_func(self, message=""):
-        self.log_messages.append(message)
+    def log_func(self, *args):
+        self.log_messages.extend(args)
 
-    def test_gff_reconstruct(self) -> None:
+    def test_k1_reconstruct(self) -> None:
+        gff: GFF = read_gff(TEST_K1_FILE)
+        reconstructed_gff: GFF = dismantle_dlg(construct_dlg(gff), Game.K1)
+        result = gff.compare(reconstructed_gff, self.log_func)
+        output = os.linesep.join(self.log_messages)
+        self.assertTrue(result, output)
+
+    def test_k2_reconstruct(self) -> None:
         gff: GFF = read_gff(TEST_FILE)
         reconstructed_gff: GFF = dismantle_dlg(construct_dlg(gff))
         self.assertTrue(gff.compare(reconstructed_gff, self.log_func), os.linesep.join(self.log_messages))
