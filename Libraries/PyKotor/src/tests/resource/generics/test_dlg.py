@@ -19,6 +19,7 @@ if UTILITY_PATH.exists():
         sys.path.remove(working_dir)
     sys.path.insert(0, working_dir)
 
+from pykotor.resource.formats.gff import GFF
 from pykotor.common.misc import Game
 from pykotor.resource.formats.gff import read_gff
 from pykotor.resource.generics.dlg import construct_dlg, dismantle_dlg
@@ -27,12 +28,25 @@ TEST_FILE = "src/tests/files/test.dlg"
 
 
 class TestDLG(TestCase):
-    def test_io(self):
+    def setUp(self):
+        self.log_messages: list[str] = [os.linesep]
+
+    def log_func(self, message=""):
+        self.log_messages.append(message)
+
+    def test_gff_reconstruct(self) -> None:
+        gff: GFF = read_gff(TEST_FILE)
+        reconstructed_gff: GFF = dismantle_dlg(construct_dlg(gff))
+        self.assertTrue(gff.compare(reconstructed_gff, self.log_func), os.linesep.join(self.log_messages))
+
+    def test_io_construct(self):
         gff = read_gff(TEST_FILE)
         dlg = construct_dlg(gff)
         self.validate_io(dlg)
 
-        gff = dismantle_dlg(dlg, Game.K2)
+    def test_io_reconstruct(self):
+        gff = read_gff(TEST_FILE)
+        gff = dismantle_dlg(construct_dlg(gff), Game.K2)
         dlg = construct_dlg(gff)
         self.validate_io(dlg)
 

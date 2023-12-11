@@ -26,12 +26,25 @@ TEST_FILE = "src/tests/files/test.ute"
 
 
 class TestUTE(TestCase):
-    def test_io(self):
+    def setUp(self):
+        self.log_messages = [os.linesep]
+
+    def log_func(self, message=""):
+        self.log_messages.append(message)
+
+    def test_gff_reconstruct(self) -> None:
+        gff = read_gff(TEST_FILE)
+        reconstructed_gff = dismantle_ute(construct_ute(gff))
+        self.assertTrue(gff.compare(reconstructed_gff, self.log_func), os.linesep.join(self.log_messages))
+
+    def test_io_construct(self):
         gff = read_gff(TEST_FILE)
         ute = construct_ute(gff)
         self.validate_io(ute)
 
-        gff = dismantle_ute(ute)
+    def test_io_reconstruct(self):
+        gff = read_gff(TEST_FILE)
+        gff = dismantle_ute(construct_ute(gff))
         ute = construct_ute(gff)
         self.validate_io(ute)
 

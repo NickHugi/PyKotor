@@ -28,12 +28,25 @@ TEST_FILE = "src/tests/files/test.utw"
 
 
 class TestUTW(TestCase):
-    def test_io(self):
-        gff: GFF = read_gff(TEST_FILE)
-        utw: UTW = construct_utw(gff)
+    def setUp(self):
+        self.log_messages = [os.linesep]
+
+    def log_func(self, message=""):
+        self.log_messages.append(message)
+
+    def test_gff_reconstruct(self) -> None:
+        gff = read_gff(TEST_FILE)
+        reconstructed_gff = dismantle_utw(construct_utw(gff))
+        self.assertTrue(gff.compare(reconstructed_gff, self.log_func), os.linesep.join(self.log_messages))
+
+    def test_io_construct(self):
+        gff = read_gff(TEST_FILE)
+        utw = construct_utw(gff)
         self.validate_io(utw)
 
-        gff = dismantle_utw(utw)
+    def test_io_reconstruct(self):
+        gff = read_gff(TEST_FILE)
+        gff = dismantle_utw(construct_utw(gff))
         utw = construct_utw(gff)
         self.validate_io(utw)
 

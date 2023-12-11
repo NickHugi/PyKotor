@@ -10,10 +10,16 @@ from io import StringIO
 from typing import TYPE_CHECKING
 
 if getattr(sys, "frozen", False) is False:
-    pykotor_path = pathlib.Path(__file__).parents[2] / "pykotor"
+    pykotor_path = pathlib.Path(__file__).parents[3] / "Libraries/PyKotor/src"
     if pykotor_path.exists():
-        working_dir = str(pykotor_path.parent)
-        if working_dir in sys.path:
+        working_dir = str(pykotor_path)
+        if pykotor_path in sys.path:
+            sys.path.remove(working_dir)
+        sys.path.insert(0, working_dir)
+    utility_path = pathlib.Path(__file__).parents[3] / "Libraries/Utility/src"
+    if utility_path.exists():
+        working_dir = str(utility_path)
+        if pykotor_path in sys.path:
             sys.path.remove(working_dir)
         sys.path.insert(0, working_dir)
 

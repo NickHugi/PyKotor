@@ -26,12 +26,25 @@ TEST_FILE = "src/tests/files/test.ifo"
 
 
 class TestIFO(TestCase):
-    def test_io(self):
+    def setUp(self):
+        self.log_messages = [os.linesep]
+
+    def log_func(self, message=""):
+        self.log_messages.append(message)
+
+    def test_gff_reconstruct(self) -> None:
+        gff = read_gff(TEST_FILE)
+        reconstructed_gff = dismantle_ifo(construct_ifo(gff))
+        self.assertTrue(gff.compare(reconstructed_gff, self.log_func), os.linesep.join(self.log_messages))
+
+    def test_io_construct(self):
         gff = read_gff(TEST_FILE)
         ifo = construct_ifo(gff)
         self.validate_io(ifo)
 
-        gff = dismantle_ifo(ifo)
+    def test_io_reconstruct(self):
+        gff = read_gff(TEST_FILE)
+        gff = dismantle_ifo(construct_ifo(gff))
         ifo = construct_ifo(gff)
         self.validate_io(ifo)
 

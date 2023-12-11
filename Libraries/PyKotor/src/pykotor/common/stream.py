@@ -396,7 +396,7 @@ class BinaryReader:
         *,
         big: bool = False,
     ) -> int:
-        """Reads an signed 32-bit integer from the stream.
+        """Reads a signed 32-bit integer from the stream.
 
         Args:
         ----
@@ -432,7 +432,7 @@ class BinaryReader:
         *,
         big: bool = False,
     ) -> int:
-        """Reads an signed 64-bit integer from the stream.
+        """Reads a signed 64-bit integer from the stream.
 
         Args:
         ----
@@ -450,7 +450,7 @@ class BinaryReader:
         *,
         big: bool = False,
     ) -> int:
-        """Reads an 32-bit floating point number from the stream.
+        """Reads a 32-bit floating point number from the stream.
 
         Args:
         ----
@@ -468,7 +468,7 @@ class BinaryReader:
         *,
         big: bool = False,
     ) -> int:
-        """Reads an 64-bit floating point number from the stream.
+        """Reads a 64-bit floating point number from the stream.
 
         Args:
         ----
@@ -486,7 +486,7 @@ class BinaryReader:
         *,
         big: bool = False,
     ) -> Vector2:
-        """Reads a two 32-bit floating point numbers from the stream.
+        """Reads two 32-bit floating point numbers from the stream.
 
         Args:
         ----
@@ -505,7 +505,7 @@ class BinaryReader:
         *,
         big: bool = False,
     ) -> Vector3:
-        """Reads a three 32-bit floating point numbers from the stream.
+        """Reads three 32-bit floating point numbers from the stream.
 
         Args:
         ----
@@ -528,7 +528,7 @@ class BinaryReader:
         *,
         big: bool = False,
     ) -> Vector4:
-        """Reads a four 32-bit floating point numbers from the stream.
+        """Reads four 32-bit floating point numbers from the stream.
 
         Args:
         ----
@@ -569,8 +569,10 @@ class BinaryReader:
         length: int,
         encoding: str | None = "windows-1252",
     ) -> str:
-        """Reads a string from the stream with the specified length. Any null bytes and characters proceeding a null byte
-        are trimmed from the final value and any unknown characters are ignored.
+        """Reads a string from the stream with the specified length.
+
+        Any null bytes and characters proceeding a null byte are trimmed from the
+        final value and any unknown characters are ignored.
 
         Args:
         ----
@@ -593,8 +595,9 @@ class BinaryReader:
         self,
         terminator: str,
     ) -> str:
-        """Reads a string continuously from the stream until it hits the terminator string specified. Any unknown
-        characters are ignored.
+        """Reads a string continuously from the stream until it hits the terminator string specified.
+
+        Any unknown characters are ignored.
 
         Args:
         ----

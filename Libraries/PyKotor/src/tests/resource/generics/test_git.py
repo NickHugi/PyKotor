@@ -18,22 +18,56 @@ if UTILITY_PATH.exists():
         sys.path.remove(working_dir)
     sys.path.insert(0, working_dir)
 
+from pykotor.resource.formats.gff.gff_data import GFF
 from pykotor.common.misc import Color
 from pykotor.resource.formats.gff import read_gff
 from pykotor.resource.generics.git import construct_git, dismantle_git
 
 TEST_FILE = "src/tests/files/test.git"
+K1_SAME_TEST = "src/tests/files/k1_same_git_test.git"
 
 
 class TestGIT(unittest.TestCase):
-    def test_io(self):
+    def setUp(self):
+        self.log_messages = [os.linesep]
+
+    def log_func(self, message=""):
+        self.log_messages.append(message)
+
+    def test_gff_reconstruct(self) -> None:
+        gff: GFF = read_gff(TEST_FILE)
+        reconstructed_gff: GFF = dismantle_git(construct_git(gff))
+        self.assertTrue(gff.compare(reconstructed_gff, self.log_func), os.linesep.join(self.log_messages))
+
+    def test_io_construct(self):
         gff = read_gff(TEST_FILE)
         git = construct_git(gff)
         self.validate_io(git)
 
-        gff = dismantle_git(git)
+    def test_io_reconstruct(self):
+        gff = read_gff(TEST_FILE)
+        gff = dismantle_git(construct_git(gff))
         git = construct_git(gff)
         self.validate_io(git)
+
+    def assertDeepEqual(self, obj1, obj2, context=''):
+        if isinstance(obj1, dict) and isinstance(obj2, dict):
+            self.assertEqual(set(obj1.keys()), set(obj2.keys()), context)
+            for key in obj1:
+                new_context = f"{context}.{key}" if context else str(key)
+                self.assertDeepEqual(obj1[key], obj2[key], new_context)
+
+        elif isinstance(obj1, (list, tuple)) and isinstance(obj2, (list, tuple)):
+            self.assertEqual(len(obj1), len(obj2), context)
+            for index, (item1, item2) in enumerate(zip(obj1, obj2)):
+                new_context = f"{context}[{index}]" if context else f"[{index}]"
+                self.assertDeepEqual(item1, item2, new_context)
+
+        elif hasattr(obj1, '__dict__') and hasattr(obj2, '__dict__'):
+            self.assertDeepEqual(obj1.__dict__, obj2.__dict__, context)
+
+        else:
+            self.assertEqual(obj1, obj2, context)
 
     def validate_io(self, git):
         self.assertEqual(127, git.ambient_volume)

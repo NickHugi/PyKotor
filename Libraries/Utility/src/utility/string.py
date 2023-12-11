@@ -31,13 +31,11 @@ def ireplace(original, target, replacement):
     return result
 
 
-
-
 MAX_CHARS_BEFORE_NEWLINE_FORMAT = 20  # Adjust as needed
 
-def format_text(text) -> str:
+def format_text(text, max_chars_before_newline: int = 20) -> str:
     text_str = str(text)
-    if "\n" in text_str or len(text_str) > MAX_CHARS_BEFORE_NEWLINE_FORMAT:
+    if "\n" in text_str or len(text_str) > max_chars_before_newline:
         return f'"""{os.linesep}{text_str}{os.linesep}"""'
     return f"'{text_str}'"
 

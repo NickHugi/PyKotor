@@ -386,8 +386,15 @@ class GFFStruct:
                     is_same_result = False
                     log_func(f"Field '{old_ftype.name}' is different at '{child_path}': String representations match, but have other properties that don't (such as a lang id difference).")
                     continue
-                formatted_old_value, formatted_new_value = compare_and_format(old_value, new_value)
-                log_func(f"Field '{old_ftype.name}' is different at '{child_path}': {format_text(formatted_old_value)}{os.linesep}<-vvv->{os.linesep}{format_text(formatted_new_value)}\n")
+                formatted_old_value, formatted_new_value = map(str, (old_value, new_value))
+                newlines_in_old, newlines_in_new = (x.count("\n") for x in (formatted_old_value, formatted_new_value))
+                if newlines_in_old > 1 or newlines_in_new > 1:
+                    formatted_old_value, formatted_new_value = compare_and_format(old_value, new_value)
+                    log_func(f"Field '{old_ftype.name}' is different at '{child_path}': {format_text(formatted_old_value)}<-vvv->{format_text(formatted_new_value)}")
+                elif newlines_in_old == 1 or newlines_in_new == 1:
+                    log_func(f"Field '{old_ftype.name}' is different at '{child_path}': {os.linesep}{old_value!s}{os.linesep}<-vvv->{os.linesep}{new_value!s}")
+                else:
+                    log_func(f"Field '{old_ftype.name}' is different at '{child_path}': {old_value!s} --> {new_value!s}")
                 is_same_result = False
                 continue
 

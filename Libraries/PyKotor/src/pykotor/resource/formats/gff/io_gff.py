@@ -84,7 +84,7 @@ class GFFBinaryReader(ResourceReader):
     ):
         self._reader.seek(self._struct_offset + struct_index * 12)
         struct_id, data, field_count = (
-            self._reader.read_uint32(),
+            self._reader.read_int32(),
             self._reader.read_uint32(),
             self._reader.read_uint32(),
         )

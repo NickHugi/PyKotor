@@ -2,6 +2,7 @@ import os
 import pathlib
 import sys
 import unittest
+from pykotor.common.misc import Game
 
 THIS_SCRIPT_PATH = pathlib.Path(__file__)
 PYKOTOR_PATH = THIS_SCRIPT_PATH.parents[3].resolve()
@@ -25,12 +26,25 @@ TEST_FILE = "src/tests/files/test.are"
 
 
 class TestARE(unittest.TestCase):
-    def test_io(self) -> None:
+    def setUp(self):
+        self.log_messages = [os.linesep]
+
+    def log_func(self, message=""):
+        self.log_messages.append(message)
+
+    def test_gff_reconstruct(self) -> None:
         gff: GFF = read_gff(TEST_FILE)
-        are: ARE = construct_are(gff)
+        reconstructed_gff: GFF = dismantle_are(construct_are(gff))
+        self.assertTrue(gff.compare(reconstructed_gff, self.log_func), os.linesep.join(self.log_messages))
+
+    def test_io_construct(self):
+        gff = read_gff(TEST_FILE)
+        are = construct_are(gff)
         self.validate_io(are)
 
-        gff = dismantle_are(are)
+    def test_io_reconstruct(self):
+        gff = read_gff(TEST_FILE)
+        gff = dismantle_are(construct_are(gff), Game.K2)
         are = construct_are(gff)
         self.validate_io(are)
 
