@@ -29,7 +29,7 @@ class UTW:
 
     def __init__(
         self,
-    ):
+    ) -> None:
         self.resref: ResRef = ResRef.from_blank()
         self.comment: str = ""
         self.tag: str = ""

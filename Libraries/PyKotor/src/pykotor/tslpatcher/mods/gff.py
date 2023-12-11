@@ -152,10 +152,6 @@ class AddStructToListGFF(ModifyGFF):
             memory: The memory object to read/write values from.
             logger: The logger to log errors or warnings.
 
-        Returns:
-        -------
-            None
-
         Processing Logic:
         ----------------
             1. Navigates to the target list container using the provided path.

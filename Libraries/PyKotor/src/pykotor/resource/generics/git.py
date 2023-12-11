@@ -422,11 +422,13 @@ class GITDoor(GITInstance):
     def identifier(
         self,
     ) -> ResourceIdentifier | None:
-        """Returns a ResourceIdentifier for the resource or None if not found
+        """Returns a ResourceIdentifier for the resource or None if not found.
+
         Args:
+        ----
             self: {Object containing resource reference}.
 
-        Returns
+        Returns:
         -------
             ResourceIdentifier | None
 
@@ -1216,13 +1218,11 @@ def write_git(
 
 
 def bytes_git(
-    git: GIT | SOURCE_TYPES,
+    git: GIT,
     game: Game = Game.K2,
     file_format: ResourceType = ResourceType.GFF,
     *,
     use_deprecated: bool = True,
 ) -> bytes:
-    if not isinstance(git, GIT):
-        git = read_git(git)
     gff = dismantle_git(git, game, use_deprecated=use_deprecated)
     return bytes_gff(gff, file_format)
