@@ -900,11 +900,12 @@ def dismantle_dlg(
         dismantle_node(replies_struct, reply, all_entries, "EntriesList")
 
     # Fix the starting indices
-    starting_indices: list[int] = [struct.acquire("Index", 0) for struct in starting_list]
-    for i, struct in zip(starting_indices, reversed(starting_list)):
-        struct.set_uint32("Index", i)
+    if game == Game.K1:
+        starting_indices: list[int] = [struct.acquire("Index", 0) for struct in starting_list]
+        for i, struct in zip(starting_indices, reversed(starting_list)):
+            struct.set_uint32("Index", i)
 
-    return gff if called_from_self else fix_dlg_output(gff, game, starting_list)
+    return gff if called_from_self or game == Game.K2 else fix_dlg_output(gff, game, starting_list)
 
 def fix_dlg_output(gff: GFF, game, starting_list: GFFList):
     # HACK: reconstruct/dismantle the dlg a second time to fix the ordering.

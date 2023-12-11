@@ -41,7 +41,6 @@ class TestUTE(TestCase):
         if not result:
             expected_output = r"""
 GFFStruct: number of fields have changed at 'GFFRoot\CreatureList\0': '4' --> '5'
-
 Extra 'Int32' field found at 'GFFRoot\CreatureList\0\GuaranteedCount': '0'
 """.replace("\r\n", "\n")
             self.assertEqual(output.strip().replace("\r\n", "\n"), expected_output.strip(), "Comparison output does not match expected output")
