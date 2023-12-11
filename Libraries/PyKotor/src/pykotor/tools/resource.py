@@ -43,35 +43,37 @@ def read_resource(source: SOURCE_TYPES, resource_type: ResourceType | None = Non
     source_path = None
     if not resource_type:
         if not isinstance(source, (os.PathLike, str)):
-            return get_resource_from_bytes(source)
-
+    if isinstance(source, (os.PathLike | str)):
         source_path = source if isinstance(source, PurePath) else PurePath(source)
         _filestem, ext = source_path.split_filename(dots=2)
-        try:
+        with contextlib.suppress(Exception):
             resource_type = ResourceType.from_extension(ext)
-            resource_ext, _ = PurePath(resource_type.extension).split_filename()
-            if resource_type.category == "Talk Tables":
-                return bytes_tlk(read_tlk(source))
-            if resource_type.extension.upper() in GFFContent:
-                return bytes_gff(read_gff(source))
-            if resource_type in [ResourceType.TGA, ResourceType.TPC]:
-                return bytes_tpc(read_tpc(source))
-            if resource_ext == "ssf":
-                return bytes_ssf(read_ssf(source))
-            if resource_ext == "2da":
-                return bytes_2da(read_2da(source))
-            if resource_ext == "mdl":
-                mdl_data = bytearray()
-                write_mdl(read_mdl(source), mdl_data)
-                return bytes(mdl_data)
-            if resource_ext == "lip":
-                return bytes_lip(read_lip(source))
-        except Exception as e:
-            print(f"Could not load resource '{source_path!s}' as resource type '{resource_type!s}'")
-            print(universal_simplify_exception(e))
-            if isinstance(source, (os.PathLike, str)):  # try again as bytes
-                file_data = BinaryReader.from_file(source).read_all()
-                return read_resource(file_data)
+    if not resource_type:
+        return get_resource_from_bytes(source)
+    try:
+        resource_ext, _ = PurePath(resource_type.extension).split_filename()
+        if resource_type.category == "Talk Tables":
+            return bytes_tlk(read_tlk(source))
+        if resource_type.extension.upper() in GFFContent:
+            return bytes_gff(read_gff(source))
+        if resource_type in [ResourceType.TGA, ResourceType.TPC]:
+            return bytes_tpc(read_tpc(source))
+        if resource_ext == "ssf":
+            return bytes_ssf(read_ssf(source))
+        if resource_ext == "2da":
+            return bytes_2da(read_2da(source))
+        if resource_ext == "mdl":
+            mdl_data = bytearray()
+            write_mdl(read_mdl(source), mdl_data)
+            return bytes(mdl_data)
+        if resource_ext == "lip":
+            return bytes_lip(read_lip(source))
+    except Exception as e:
+        print(f"Could not load resource '{source_path!s}' as resource type '{resource_type!s}'")
+        print(universal_simplify_exception(e))
+        if isinstance(source, (os.PathLike, str)):  # try again as bytes
+            file_data = BinaryReader.from_file(source).read_all()
+            return read_resource(file_data)
     return BinaryReader.from_auto(source).read_all()
 
 
