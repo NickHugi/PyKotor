@@ -41,7 +41,7 @@ def read_resource(source: SOURCE_TYPES, resource_type: ResourceType | None = Non
         - Handles errors and retries with bytes if path failed
     """
     source_path = None
-    if isinstance(source, (os.PathLike, str)):
+    if not resource_type and isinstance(source, (os.PathLike, str)):
         source_path = source if isinstance(source, PurePath) else PurePath(source)
         _filestem, ext = source_path.split_filename(dots=2)
         with contextlib.suppress(Exception):
