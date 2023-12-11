@@ -10,7 +10,7 @@ from pykotor.common.stream import BinaryReader, BinaryWriter
 from pykotor.extract.capsule import Capsule
 from pykotor.extract.file import ResourceIdentifier
 from pykotor.extract.installation import Installation
-from pykotor.resource.io_resource import read_resource
+from pykotor.resource.resource_auto import read_resource
 from pykotor.tools.encoding import decode_bytes_with_fallbacks
 from pykotor.tools.misc import is_capsule_file
 from pykotor.tools.path import CaseAwarePath

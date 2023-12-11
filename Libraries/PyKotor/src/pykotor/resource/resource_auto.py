@@ -77,21 +77,21 @@ def read_resource(source: SOURCE_TYPES, resource_type: ResourceType | None = Non
 
 def get_resource_from_bytes(source: SOURCE_TYPES) -> bytes:
     result: bytes | None = None
-    with contextlib.suppress(OSError):
+    with contextlib.suppress(Exception):
         result = bytes_tlk(read_tlk(source))
-    with contextlib.suppress(OSError):
+    with contextlib.suppress(Exception):
         result = bytes_ssf(read_ssf(source))
-    with contextlib.suppress(OSError):
+    with contextlib.suppress(Exception):
         result = bytes_2da(read_2da(source))
-    with contextlib.suppress(OSError):
+    with contextlib.suppress(Exception):
         mdl_data = bytearray()
         write_mdl(read_mdl(source), mdl_data)
         return bytes(mdl_data)
-    with contextlib.suppress(OSError):
+    with contextlib.suppress(Exception):
         result = bytes_lip(read_lip(source))
-    with contextlib.suppress(OSError):
+    with contextlib.suppress(Exception):
         result = bytes_tpc(read_tpc(source))
-    with contextlib.suppress(OSError):
+    with contextlib.suppress(Exception):
         result = bytes_gff(read_gff(source))
     if not result:
         msg = "Source resource data not recognized as any kotor file formats."

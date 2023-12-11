@@ -570,9 +570,7 @@ def construct_dlg(
         if gff_struct.exists("TarHeightOffset"):
             node.target_height = gff_struct.acquire("TarHeightOffset", 0.0)
         if gff_struct.exists("FadeColor"):
-            node.fade_color = Color.from_bgr_vector3(
-                gff_struct.acquire("FadeColor", Vector3.from_null()),
-            )
+            node.fade_color = Color.from_bgr_vector3(gff_struct.acquire("FadeColor", Vector3.from_null()))
 
     def construct_link(
         gff_struct: GFFStruct,
@@ -890,7 +888,7 @@ def dismantle_dlg(
 
     entries_list = root.set_list("EntryList", GFFList())
     for i, entry in enumerate(all_entries):
-        entries_struct = entries_list.add(i)
+        entries_struct: GFFStruct = entries_list.add(i)
         entries_struct.set_string("Speaker", entry.speaker)
         dismantle_node(entries_struct, entry, all_replies, "RepliesList")
 
@@ -905,7 +903,7 @@ def dismantle_dlg(
         for i, struct in zip(starting_indices, reversed(starting_list)):
             struct.set_uint32("Index", i)
 
-    return gff if called_from_self or game == Game.K2 else fix_dlg_output(gff, game, starting_list)
+    return gff if called_from_self else fix_dlg_output(gff, game, starting_list)
 
 def fix_dlg_output(gff: GFF, game, starting_list: GFFList):
     # HACK: reconstruct/dismantle the dlg a second time to fix the ordering.
@@ -955,10 +953,6 @@ def write_dlg(
         game: Game the dialogue is for (default K2)
         file_format: Format to write as (default GFF)
         use_deprecated: Use deprecated fields (default True)
-
-    Returns:
-    -------
-        None
 
     Processing Logic:
     ----------------
