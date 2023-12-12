@@ -1036,7 +1036,7 @@ def dismantle_git(
     root = gff.root
     root.set_uint8("UseTemplates", 1)
 
-    properties_struct = root.set_struct("AreaProperties", GFFStruct())
+    properties_struct = root.set_struct("AreaProperties", GFFStruct(100))
     properties_struct.set_int32("AmbientSndDayVol", git.ambient_volume)
     properties_struct.set_int32("AmbientSndDay", git.ambient_sound_id)
     properties_struct.set_int32("AmbientSndNitVol", git.ambient_volume)
@@ -1192,6 +1192,14 @@ def dismantle_git(
             "MapNote",
             LocalizedString.from_invalid() if waypoint.map_note is None else waypoint.map_note,
         )
+
+        if use_deprecated:
+            waypoint_struct.set_uint8("Appearance", 1)
+            waypoint_struct.set_locstring("Description", LocalizedString(-1))
+            waypoint_struct.set_string("LinkedTo", "")
+
+    if use_deprecated:
+        root.set_list("List", GFFList())
 
     return gff
 
