@@ -210,6 +210,9 @@ def dismantle_ifo(
         root.set_resref("Mod_StartMovie", ifo.start_movie)
         root.set_int32("Mod_Creator_ID", ifo.creator_id)
         root.set_uint32("Mod_Version", ifo.version)
+        root.set_list("Mod_GVar_List", GFFList())
+        root.set_list("Mod_Expan_List", GFFList())
+        root.set_list("Mod_CutSceneList", GFFList())
 
     return gff
 
