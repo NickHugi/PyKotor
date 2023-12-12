@@ -338,11 +338,11 @@ def construct_are(
     rooms_list = root.acquire("Rooms", GFFList())
     for room_struct in rooms_list:
         ambient_scale = room_struct.acquire("AmbientScale", 0.0)
-        env_audio = room_struct.acquire("EnvAudio", 0.0)
-        room_name = room_struct.acquire("RoomName", 0.0)
+        env_audio = room_struct.acquire("EnvAudio", 0)
+        room_name = room_struct.acquire("RoomName", "")
         disable_weather = room_struct.acquire("DisableWeather", 0.0)
-        force_rating = room_struct.acquire("RoomName", 0.0)
-        room = ARERoom(room_name, disable_weather, env_audio, force_rating, ambient_scale)
+        force_rating = room_struct.acquire("ForceRating", 0)
+        are.rooms.append(ARERoom(room_name, disable_weather, env_audio, force_rating, ambient_scale))
 
     return are
 
@@ -426,10 +426,11 @@ def dismantle_are(
     for room in are.rooms:
         room_struct = rooms_list.add(0)
         room_struct.set_single("AmbientScale", room.ambient_scale)
-        room_struct.set_uint8("DisableWeather", room.weather)
         room_struct.set_int32("EnvAudio", room.env_audio)
-        room_struct.set_int32("ForceRating", room.force_rating)
         room_struct.set_string("RoomName", room.name)
+        if game == Game.K2:
+            room_struct.set_uint8("DisableWeather", room.weather)
+            room_struct.set_int32("ForceRating", room.force_rating)
 
     if game == Game.K2:
         root.set_int32("DirtyARGBOne", are.dirty_argb_1.rgb_integer())
