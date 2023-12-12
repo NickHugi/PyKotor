@@ -166,7 +166,6 @@ class DLG:
                     reply = reply_link.node
                     entries.extend(self._all_entries(reply.links, seen_entries))
 
-        entries.reverse()
         return entries
 
     def all_replies(
@@ -218,7 +217,6 @@ class DLG:
                     entry = entry_link.node
                     replies.extend(self._all_replies(entry.links, seen_replies))
 
-        replies.reverse()
         return replies
 
 
@@ -863,7 +861,9 @@ def dismantle_dlg(
             dismantle_link(link_struct, link, nodes, list_name)
 
     all_entries = dlg.all_entries()
+    all_entries.reverse()
     all_replies = dlg.all_replies()
+    all_replies.reverse()
 
     gff = GFF(GFFContent.DLG)
 
