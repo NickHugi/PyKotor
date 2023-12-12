@@ -797,12 +797,14 @@ def dismantle_dlg(
         gff_struct.set_resref("Sound", node.sound)
         gff_struct.set_string("Quest", node.quest)
         gff_struct.set_int32("PlotIndex", node.plot_index)
-        gff_struct.set_single("PlotXPPercentage", node.plot_xp_percentage)
+        if node.plot_xp_percentage:
+            gff_struct.set_single("PlotXPPercentage", node.plot_xp_percentage)
         gff_struct.set_uint32("WaitFlags", node.wait_flags)
         gff_struct.set_uint32("CameraAngle", node.camera_angle)
         gff_struct.set_uint8("FadeType", node.fade_type)
         gff_struct.set_uint8("SoundExists", node.sound_exists)
-        gff_struct.set_uint8("Changed", node.vo_text_changed)
+        if node.vo_text_changed:
+            gff_struct.set_uint8("Changed", node.vo_text_changed)
 
         anim_list = gff_struct.set_list("AnimList", GFFList())
         for anim in node.animations:
@@ -810,7 +812,7 @@ def dismantle_dlg(
             anim_struct.set_uint16("Animation", anim.animation_id)
             anim_struct.set_string("Participant", anim.participant)
 
-        if node.quest_entry is not None:
+        if node.quest_entry is not None and node.quest_entry:
             gff_struct.set_uint32("QuestEntry", node.quest_entry)
         if node.fade_delay is not None:
             gff_struct.set_single("FadeDelay", node.fade_delay)
@@ -872,14 +874,21 @@ def dismantle_dlg(
     root.set_resref("EndConverAbort", dlg.on_abort)
     root.set_resref("EndConversation", dlg.on_end)
     root.set_uint8("Skippable", dlg.skippable)
-    root.set_resref("AmbientTrack", dlg.ambient_track)
-    root.set_uint8("AnimatedCut", dlg.animated_cut)
+    if str(dlg.ambient_track):
+        root.set_resref("AmbientTrack", dlg.ambient_track)
+    if dlg.animated_cut:
+        root.set_uint8("AnimatedCut", dlg.animated_cut)
+    if dlg.computer_type:
+        root.set_uint8("ComputerType", dlg.computer_type.value)
     root.set_resref("CameraModel", dlg.camera_model)
-    root.set_uint8("ComputerType", dlg.computer_type.value)
-    root.set_int32("ConversationType", dlg.conversation_type.value)
-    root.set_uint8("OldHitCheck", dlg.old_hit_check)
-    root.set_uint8("UnequipHItem", dlg.unequip_hands)
-    root.set_uint8("UnequipItems", dlg.unequip_items)
+    if dlg.conversation_type:
+        root.set_int32("ConversationType", dlg.conversation_type.value)
+    if dlg.old_hit_check:
+        root.set_uint8("OldHitCheck", dlg.old_hit_check)
+    if dlg.unequip_hands:
+        root.set_uint8("UnequipHItem", dlg.unequip_hands)
+    if dlg.unequip_items:
+        root.set_uint8("UnequipItems", dlg.unequip_items)
     root.set_string("VO_ID", dlg.vo_id)
     if game == Game.K2:
         root.set_int32("AlienRaceOwner", dlg.alien_race_owner)
