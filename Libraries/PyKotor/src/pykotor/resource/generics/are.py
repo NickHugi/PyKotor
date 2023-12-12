@@ -5,7 +5,7 @@ from enum import IntEnum
 from pykotor.common.geometry import Vector2
 from pykotor.common.language import LocalizedString
 from pykotor.common.misc import Color, Game, ResRef
-from pykotor.resource.formats.gff import GFF, GFFContent, GFFStruct, read_gff, write_gff
+from pykotor.resource.formats.gff import GFF, GFFContent, GFFStruct, read_gff, write_gff, GFFList
 from pykotor.resource.formats.gff.gff_auto import bytes_gff
 from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES, ResourceType
 
@@ -453,6 +453,7 @@ def dismantle_are(
         root.set_uint8("NoHangBack", are.no_hang_back)
         root.set_uint8("PlayerOnly", are.player_only)
         root.set_uint8("PlayerVsPlayer", are.player_vs_player)
+        root.set_list("Expansion_List", GFFList())
 
     return gff
 
