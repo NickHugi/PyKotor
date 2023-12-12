@@ -335,7 +335,7 @@ class GFFStruct:
         current_path = PureWindowsPath(current_path or "GFFRoot")
         if len(self) != len(other_gff_struct):  # sourcery skip: class-extract-method
             log_func()
-            log_func(f"GFFStruct: number of fields have changed at '{current_path}': '{len(self)}' --> '{len(other_gff_struct)}'")
+            #log_func(f"GFFStruct: number of fields have changed at '{current_path}': '{len(self)}' --> '{len(other_gff_struct)}'")
             is_same_result = False
 
         # Create dictionaries for both old and new structures
@@ -357,7 +357,7 @@ class GFFStruct:
                 if new_ftype is None:
                     msg = "new_ftype shouldn't be None here."
                     raise RuntimeError(msg)
-                log_func(f"Extra '{new_ftype.name}' field found at '{child_path}': {format_text(new_value)}" )
+                #log_func(f"Extra '{new_ftype.name}' field found at '{child_path}': {format_text(new_value)}" )
                 is_same_result = False
                 continue
             if new_value is None or new_ftype is None:
@@ -374,8 +374,8 @@ class GFFStruct:
             # Compare values depending on their types
             if old_ftype == GFFFieldType.Struct:
                 cur_struct_this: GFFStruct = old_value
-                if cur_struct_this.struct_id != cur_struct_this.struct_id:
-                    log_func(f"Struct ID is different at '{child_path}': '{cur_struct_this.struct_id}'-->'{cur_struct_this.struct_id}'")
+                if cur_struct_this.struct_id != new_value.struct_id:
+                    log_func(f"Struct ID is different at '{child_path}': '{cur_struct_this.struct_id}'-->'{new_value.struct_id}'")
                     is_same_result = False
 
                 if not cur_struct_this.compare(new_value, log_func, child_path):

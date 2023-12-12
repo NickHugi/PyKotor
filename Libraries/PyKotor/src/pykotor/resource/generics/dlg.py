@@ -166,6 +166,7 @@ class DLG:
                     reply = reply_link.node
                     entries.extend(self._all_entries(reply.links, seen_entries))
 
+        entries.reverse()
         return entries
 
     def all_replies(
@@ -217,6 +218,7 @@ class DLG:
                     entry = entry_link.node
                     replies.extend(self._all_replies(entry.links, seen_replies))
 
+        replies.reverse()
         return replies
 
 
@@ -300,6 +302,7 @@ class DLGNode:
         """
         self.comment: str = ""
         self.links: list[DLGLink] = []
+        self.original_index: int | None = None
 
         self.camera_angle: int = 0
         self.delay: int = -1
@@ -522,7 +525,8 @@ def construct_dlg(
         node.sound_exists = gff_struct.acquire("SoundExists", 0)
         node.vo_text_changed = gff_struct.acquire("Changed", 0)
 
-        for anim_struct in gff_struct.acquire("AnimList", GFFList()):
+        anim_list: GFFList = gff_struct.acquire("AnimList", GFFList())
+        for anim_struct in anim_list:
             anim = DLGAnimation()
             anim.animation_id = anim_struct.acquire("Animation", 0)
             anim.participant = anim_struct.acquire("Participant", "")
@@ -640,40 +644,52 @@ def construct_dlg(
     dlg.delay_entry = root.acquire("DelayEntry", 0)
     dlg.delay_reply = root.acquire("DelayReply", 0)
 
-    for stunt_struct in root.acquire("StuntList", GFFList()):
+    stunt_list = root.acquire("StuntList", GFFList())
+    for stunt_struct in stunt_list:
         stunt = DLGStunt()
         dlg.stunts.append(stunt)
         stunt.participant = stunt_struct.acquire("Participant", "")
         stunt.stunt_model = stunt_struct.acquire("StuntModel", ResRef.from_blank())
 
-    for link_struct in root.acquire("StartingList", GFFList()):
+    starting_list = root.acquire("StartingList", GFFList())
+    for link_struct in starting_list:
         entry_index = link_struct.acquire("Index", 0)
         link = DLGLink()
         dlg.starters.append(link)
         link.node = all_entries[entry_index]
         construct_link(link_struct, link)
 
-    for i, entry_struct in enumerate(root.acquire("EntryList", GFFList())):
-        entry = all_entries[i]
+    entry_list: GFFList = root.acquire("EntryList", GFFList())
+    for i, entry_struct in enumerate(entry_list):
+        entry: DLGEntry = all_entries[i]
         entry.speaker = entry_struct.acquire("Speaker", "")
+        entry.original_index = i
         construct_node(entry_struct, entry)
 
-        for link_struct in entry_struct.acquire("RepliesList", GFFList()):
+        nested_replies_list = entry_struct.acquire("RepliesList", GFFList())
+        for j, link_struct in enumerate(nested_replies_list):
             link = DLGLink()
-            link.node = all_replies[link_struct.acquire("Index", 0)]
+            reply = all_replies[link_struct.acquire("Index", 0)]
+            reply.original_index = j
+            link.node = reply
             link.is_child = bool(link_struct.acquire("IsChild", 0))
             link.comment = link_struct.acquire("LinkComment", "")
 
             entry.links.append(link)
             construct_link(link_struct, link)
 
-    for i, reply_struct in enumerate(root.acquire("ReplyList", GFFList())):
-        reply = all_replies[i]
+    replies_list: GFFList = root.acquire("ReplyList", GFFList())
+    for i, reply_struct in enumerate(replies_list):
+        reply: DLGReply = all_replies[i]
+        reply.original_index = i
         construct_node(reply_struct, reply)
 
-        for link_struct in reply_struct.acquire("EntriesList", GFFList()):
+        nested_entries_list = reply_struct.acquire("EntriesList", GFFList())
+        for j, link_struct in enumerate(nested_entries_list):
             link = DLGLink()
-            link.node = all_entries[link_struct.acquire("Index", 0)]
+            entry = all_entries[link_struct.acquire("Index", 0)]
+            entry.original_index = j
+            link.node = entry
             link.is_child = bool(link_struct.acquire("IsChild", 0))
             link.comment = link_struct.acquire("LinkComment", "")
 
@@ -688,7 +704,6 @@ def dismantle_dlg(
     game: Game = Game.K2,
     *,
     use_deprecated: bool = True,
-    called_from_self = False,
 ) -> GFF:
     """Dismantle a dialogue into a GFF structure.
 
@@ -842,9 +857,9 @@ def dismantle_dlg(
             gff_struct.set_int32("RecordVO", node.record_vo)
             gff_struct.set_int32("VOTextChanged", node.vo_text_changed)
 
-        link_list = gff_struct.set_list(list_name, GFFList())
+        link_list: GFFList = gff_struct.set_list(list_name, GFFList())
         for i, link in enumerate(node.links):
-            link_struct = link_list.add(i)
+            link_struct: GFFStruct = link_list.add(i)
             dismantle_link(link_struct, link, nodes, list_name)
 
     all_entries = dlg.all_entries()
@@ -897,17 +912,7 @@ def dismantle_dlg(
         replies_struct = replies_list.add(i)
         dismantle_node(replies_struct, reply, all_entries, "EntriesList")
 
-    # Fix the starting indices
-    if game == Game.K1:
-        starting_indices: list[int] = [struct.acquire("Index", 0) for struct in starting_list]
-        for i, struct in zip(starting_indices, reversed(starting_list)):
-            struct.set_uint32("Index", i)
-
-    return gff if called_from_self else fix_dlg_output(gff, game, starting_list)
-
-def fix_dlg_output(gff: GFF, game, starting_list: GFFList):
-    # HACK: reconstruct/dismantle the dlg a second time to fix the ordering.
-    return dismantle_dlg(construct_dlg(gff), game, called_from_self=True)
+    return gff
 
 def read_dlg(
     source: SOURCE_TYPES,

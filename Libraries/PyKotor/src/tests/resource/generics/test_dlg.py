@@ -42,10 +42,26 @@ class TestDLG(TestCase):
         output = os.linesep.join(self.log_messages)
         self.assertTrue(result, output)
 
+    def test_k1_reconstruct_from_reconstruct(self) -> None:
+        gff: GFF = read_gff(TEST_K1_FILE)
+        reconstructed_gff: GFF = dismantle_dlg(construct_dlg(gff), Game.K1)
+        re_reconstructed_gff: GFF = dismantle_dlg(construct_dlg(reconstructed_gff), Game.K1)
+        result = reconstructed_gff.compare(re_reconstructed_gff, self.log_func)
+        output = os.linesep.join(self.log_messages)
+        self.assertTrue(result, output)
+
     def test_k2_reconstruct(self) -> None:
         gff: GFF = read_gff(TEST_FILE)
         reconstructed_gff: GFF = dismantle_dlg(construct_dlg(gff), Game.K2)
         self.assertTrue(gff.compare(reconstructed_gff, self.log_func), os.linesep.join(self.log_messages))
+
+    def test_k2_reconstruct_from_reconstruct(self) -> None:
+        gff: GFF = read_gff(TEST_FILE)
+        reconstructed_gff: GFF = dismantle_dlg(construct_dlg(gff), Game.K2)
+        re_reconstructed_gff: GFF = dismantle_dlg(construct_dlg(reconstructed_gff), Game.K2)
+        result = reconstructed_gff.compare(re_reconstructed_gff, self.log_func)
+        output = os.linesep.join(self.log_messages)
+        self.assertTrue(result, output)
 
     def test_io_construct(self):
         gff = read_gff(TEST_FILE)
