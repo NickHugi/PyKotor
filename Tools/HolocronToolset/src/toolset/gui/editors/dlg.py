@@ -519,7 +519,7 @@ class DLGEditor(Editor):
         """
         sourceCopy = deepcopy(source)
         newLink = DLGLink(sourceCopy)
-        target.links.append(newLink)
+        target._links.append(newLink)
 
         newItem = QStandardItem()
         self._loadDLGRec(newItem, newLink, [], [])
@@ -557,9 +557,9 @@ class DLGEditor(Editor):
             parentLink: DLGLink = parentItem.data(_LINK_ROLE)
             parentNode: DLGNode = parentLink.node
 
-            for link in copy(parentNode.links):
+            for link in copy(parentNode._links):
                 if link.node is node:
-                    parentNode.links.remove(link)
+                    parentNode._links.remove(link)
             parentItem.removeRow(item.row())
 
     def deleteSelectedNode(self) -> None:
@@ -635,7 +635,7 @@ class DLGEditor(Editor):
         text = self._installation.string(node.text, "(continue)")
         item.setText(text)
 
-        if not node.links:
+        if not node._links:
             item.setText(f"{item.text()} [End Dialog]")
 
         if isinstance(node, DLGReply):

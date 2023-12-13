@@ -87,8 +87,8 @@ class DLG(GFFStructInterface):
     ):
         super().__init__()
 
-        self.StartingList = GFFList()  # list[DLGLink]
-        self.StuntList = GFFList() # list[DLGStunt]
+        self.StartingList: GFFList  # list[DLGLink]
+        self.StuntList: GFFList # list[DLGStunt]
 
         # Add bare minimum to be openable by DLGEditor
         if blank_node:
@@ -338,6 +338,7 @@ class DLGNode(GFFStructInterface):
         "Script": _GFFField(GFFFieldType.ResRef, ResRef.from_blank()),
         "Delay": _GFFField(GFFFieldType.UInt32, 4294967295),
         "Comment": _GFFField(GFFFieldType.String, ""),
+        "AnimList": _GFFField(GFFFieldType.List, GFFList()),
         "Sound": _GFFField(GFFFieldType.ResRef, ResRef.from_blank()),
         "Quest": _GFFField(GFFFieldType.String, ""),
         "PlotIndex": _GFFField(GFFFieldType.Int32, 0),
@@ -347,7 +348,6 @@ class DLGNode(GFFStructInterface):
         "FadeType": _GFFField(GFFFieldType.UInt8, 0),
         "SoundExists": _GFFField(GFFFieldType.UInt8, 0),
         "Changed": _GFFField(GFFFieldType.UInt8, 0),
-        "AnimList": _GFFField(GFFFieldType.List, GFFList()),
         "QuestEntry": _GFFField(GFFFieldType.UInt32, 0),
         "FadeDelay": _GFFField(GFFFieldType.Single, 0.0),
         "FadeLength": _GFFField(GFFFieldType.Single, 0.0),
@@ -397,30 +397,31 @@ class DLGNode(GFFStructInterface):
             - Initializes lists and optional properties as empty/None
             - Sets flags and identifiers to default values
         """
-        self.links: list[DLGLink]
-        object.__setattr__(self, "links", [])
-        self.animations: list[DLGAnimation] = []
-        object.__setattr__(self, "animations", [])
+        super().__init__()
+        self._links: list[DLGLink]
+        object.__setattr__(self, "_links", [])
 
-        self.Comment: str
+        self.Comment: str = ""
 
-        self.CameraAngle: int
-        self.Delay: int
-        self.FadeType: int
-        self.Listener: str
-        self.PlotIndex: int
-        self.PlotXPPercentage: float
-        self.Quest: str
-        self.Script: ResRef
-        self.Sound: ResRef
-        self.SoundExists: bool
-        self.Text: LocalizedString
-        self.VO_ResRef: ResRef
-        self.WaitFlags: int
+        self.AnimList = GFFList()
+
+        self.CameraAngle: int = 0
+        self.Delay: int = 0
+        self.FadeType: int = 0
+        self.Listener: str = ""
+        self.PlotIndex: int = 0
+        self.PlotXPPercentage: float = 0.0
+        self.Quest: str = ""
+        self.Script: ResRef = ResRef.from_blank()
+        self.Sound: ResRef = ResRef.from_blank()
+        self.SoundExists: bool = False
+        self.Text: LocalizedString = LocalizedString.from_invalid()
+        self.VO_ResRef: ResRef = ResRef.from_blank()
+        self.WaitFlags: int = 0
 
 
-        self.QuestEntry: int
-        self.FadeColor: Color
+        self.QuestEntry: int = 0
+        self.FadeColor: Color = Vector3.from_null()
         self.FadeDelay: float
         self.FadeLength: float
         self.CameraAnimation: int
@@ -527,6 +528,7 @@ class DLGLink(GFFStructInterface):
         # not in StartingList
         "LinkComment": _GFFField(GFFFieldType.String, ""),
         "IsChild": _GFFField(GFFFieldType.UInt8, 0),
+        "Index": _GFFField(GFFFieldType.UInt32, 0),
     }
 
     K2_FIELDS: ClassVar[dict[str, _GFFField]] = {
@@ -552,8 +554,9 @@ class DLGLink(GFFStructInterface):
         self,
         node: DLGNode | None = None,
     ):
-        self.node: DLGNode
-        object.__setattr__(self, "node", node)
+        super().__init__()
+        self._node: DLGNode
+        object.__setattr__(self, "_node", node)
 
 
 class DLGStunt(GFFStructInterface):
@@ -606,50 +609,44 @@ def construct_dlg(
 
     stunt_list = root.acquire("StuntList", GFFList())
     for stunt_struct in stunt_list:
-        stunt = DLGStunt()
-        dlg.stunts.append(stunt)
-        stunt.participant = stunt_struct.acquire("Participant", "")
-        stunt.stunt_model = stunt_struct.acquire("StuntModel", ResRef.from_blank())
+        dlg.StuntList._structs.append(DLGStunt.from_struct(stunt_struct))
 
     starting_list = root.acquire("StartingList", GFFList())
     for link_struct in starting_list:
-        entry_index = link_struct.acquire("Index", 0)
-        link = DLGLink()
-        dlg.starters.append(link)
-        link.node = all_entries[entry_index]
-        link.from_struct(link_struct)
+        entry = all_entries[link_struct.acquire("Index", 0)]
+        link = DLGLink.from_struct(link_struct)
+        object.__setattr__(link, "_node", entry)
+        dlg.StartingList._structs.append(link)
 
     entry_list: GFFList = root.acquire("EntryList", GFFList())
     anim_list: GFFList
     for i, entry_struct in enumerate(entry_list):
-        entry: DLGEntry = all_entries[i]
-        entry.from_struct(entry_struct)
+        #entry: DLGEntry = all_entries[i]
+        entry: DLGEntry = DLGEntry.from_struct(entry_struct)
         anim_list = entry_struct.acquire("AnimList", GFFList())
         for anim_struct in anim_list:
-            entry.animations.append(DLGAnimation.from_struct(anim_struct))
+            entry.AnimList._structs.append(DLGAnimation.from_struct(anim_struct))
 
         nested_replies_list: GFFList = entry_struct.acquire("RepliesList", GFFList())
         for link_struct in nested_replies_list:
-            link = DLGLink()
-            link.node = all_replies[link_struct.acquire("Index", 0)]
-            entry.links.append(link)
-            link.from_struct(link_struct)
+            link = DLGLink.from_struct(link_struct)
+            link._node = all_replies[link_struct.acquire("Index", 0)]
+            entry._links.append(link)
 
     replies_list: GFFList = root.acquire("ReplyList", GFFList())
     for i, reply_struct in enumerate(replies_list):
-        reply: DLGReply = all_replies[i]
-        reply.from_struct(reply_struct)
+        #reply: DLGReply = all_replies[i]
+        reply = DLGReply.from_struct(reply_struct)
         anim_list = reply_struct.acquire("AnimList", GFFList())
         for anim_struct in anim_list:
-            reply.animations.append(DLGAnimation.from_struct(anim_struct))
+            reply.AnimList._structs.append(DLGAnimation.from_struct(anim_struct))
 
         nested_entries_list: GFFList = reply_struct.acquire("EntriesList", GFFList())
         for link_struct in nested_entries_list:
-            link = DLGLink()
             entry = all_entries[link_struct.acquire("Index", 0)]
-            link.node = entry
-            link.from_struct(link_struct)
-            reply.links.append(link)
+            link = DLGLink.from_struct(link_struct)
+            object.__setattr__(link, "_node", entry)
+            reply._links.append(link)
 
     return dlg
 
@@ -680,204 +677,8 @@ def dismantle_dlg(
         - dismantle_node handles populating node fields
         - dismantle_link handles populating link fields.
     """
-    def dismantle_link(
-        gff_struct: GFFStruct,
-        link: DLGLink,
-        nodes: list,
-        list_name: str,
-    ):
-        """Disassembles a link into a GFFStruct.
-
-        Args:
-        ----
-            gff_struct: GFFStruct - The struct to populate
-            link: DLGLink - The link to disassemble
-            nodes: list - The list of nodes
-
-        Returns:
-        -------
-            None: Populates the GFFStruct
-
-        Processing Logic:
-        ----------------
-            - Sets the Active resref on the GFFStruct from the link
-            - Sets the Index uint32 on the GFFStruct from the node list index
-            - If game is K2, sets additional link properties on the GFFStruct.
-        """
-        gff_struct.set_resref("Active", link.active1)
-        gff_struct.set_uint32("Index", nodes.index(link.node))
-        if list_name != "StartingList":
-            gff_struct.set_uint8("IsChild", int(link.is_child))
-        if game == Game.K2:
-            gff_struct.set_resref("Active2", link.active2)
-            gff_struct.set_int32("Logic", link.logic)
-            gff_struct.set_uint8("Not", link.active1_not)
-            gff_struct.set_uint8("Not2", link.active2_not)
-            gff_struct.set_int32("Param1", link.active1_param1)
-            gff_struct.set_int32("Param2", link.active1_param2)
-            gff_struct.set_int32("Param3", link.active1_param3)
-            gff_struct.set_int32("Param4", link.active1_param4)
-            gff_struct.set_int32("Param5", link.active1_param5)
-            gff_struct.set_string("ParamStrA", link.active1_param6)
-            gff_struct.set_int32("Param1b", link.active2_param1)
-            gff_struct.set_int32("Param2b", link.active2_param2)
-            gff_struct.set_int32("Param3b", link.active2_param3)
-            gff_struct.set_int32("Param4b", link.active2_param4)
-            gff_struct.set_int32("Param5b", link.active2_param5)
-            gff_struct.set_string("ParamStrB", link.active2_param6)
-
-    def dismantle_node(
-        gff_struct: GFFStruct,
-        node: DLGNode,
-        nodes: list,
-        list_name: str,
-    ):
-        """Disassembles a DLGNode into a GFFStruct.
-
-        Args:
-        ----
-            gff_struct: GFFStruct - The GFFStruct to populate
-            node: DLGNode - The DLGNode to disassemble
-
-        Processing Logic:
-        ----------------
-            - Sets node properties like text, listener etc on the GFFStruct
-            - Handles optional node properties
-            - Creates lists for animations and links and populates them.
-        """
-        gff_struct.set_locstring("Text", node.text)
-        gff_struct.set_string("Listener", node.listener)
-        gff_struct.set_resref("VO_ResRef", node.vo_resref)
-        gff_struct.set_resref("Script", node.script1)
-        gff_struct.set_uint32("Delay", 4294967295 if node.delay == -1 else node.delay)
-        gff_struct.set_string("Comment", node.comment)
-        gff_struct.set_resref("Sound", node.sound)
-        gff_struct.set_string("Quest", node.quest)
-        gff_struct.set_int32("PlotIndex", node.plot_index)
-        if node.plot_xp_percentage:
-            gff_struct.set_single("PlotXPPercentage", node.plot_xp_percentage)
-        gff_struct.set_uint32("WaitFlags", node.wait_flags)
-        gff_struct.set_uint32("CameraAngle", node.camera_angle)
-        gff_struct.set_uint8("FadeType", node.fade_type)
-        gff_struct.set_uint8("SoundExists", node.sound_exists)
-        if node.vo_text_changed:
-            gff_struct.set_uint8("Changed", node.vo_text_changed)
-
-        anim_list = gff_struct.set_list("AnimList", GFFList())
-        for anim in node.animations:
-            anim_struct = anim_list.add(0)
-            anim_struct.set_uint16("Animation", anim.animation_id)
-            anim_struct.set_string("Participant", anim.participant)
-
-        if node.quest_entry is not None and node.quest_entry:
-            gff_struct.set_uint32("QuestEntry", node.quest_entry)
-        if node.fade_delay is not None:
-            gff_struct.set_single("FadeDelay", node.fade_delay)
-        if node.fade_length is not None:
-            gff_struct.set_single("FadeLength", node.fade_length)
-        if node.camera_anim is not None:
-            gff_struct.set_uint16("CameraAnimation", node.camera_anim)
-        if node.camera_id is not None:
-            gff_struct.set_int32("CameraID", node.camera_id)
-        if node.camera_fov is not None:
-            gff_struct.set_single("CamFieldOfView", node.camera_fov)
-        if node.camera_height is not None:
-            gff_struct.set_single("CamHeightOffset", node.camera_height)
-        if node.camera_effect is not None:
-            gff_struct.set_int32("CamVidEffect", node.camera_effect)
-        if node.target_height is not None:
-            gff_struct.set_single("TarHeightOffset", node.target_height)
-        if node.fade_color is not None:
-            gff_struct.set_vector3("FadeColor", node.fade_color.bgr_vector3())
-
-        if game == Game.K2:
-            gff_struct.set_int32("ActionParam1", node.script1_param1)
-            gff_struct.set_int32("ActionParam1b", node.script2_param1)
-            gff_struct.set_int32("ActionParam2", node.script1_param2)
-            gff_struct.set_int32("ActionParam2b", node.script2_param2)
-            gff_struct.set_int32("ActionParam3", node.script1_param3)
-            gff_struct.set_int32("ActionParam3b", node.script2_param3)
-            gff_struct.set_int32("ActionParam4", node.script1_param4)
-            gff_struct.set_int32("ActionParam4b", node.script2_param4)
-            gff_struct.set_int32("ActionParam5", node.script1_param5)
-            gff_struct.set_int32("ActionParam5b", node.script2_param5)
-            gff_struct.set_string("ActionParamStrA", node.script1_param6)
-            gff_struct.set_string("ActionParamStrB", node.script2_param6)
-            gff_struct.set_resref("Script2", node.script2)
-            gff_struct.set_int32("AlienRaceNode", node.alien_race_node)
-            gff_struct.set_int32("Emotion", node.emotion_id)
-            gff_struct.set_int32("FacialAnim", node.facial_id)
-            gff_struct.set_int32("NodeID", node.node_id)
-            gff_struct.set_int32("NodeUnskippable", node.unskippable)
-            gff_struct.set_int32("PostProcNode", node.post_proc_node)
-            gff_struct.set_int32("RecordNoVOOverri", node.record_no_vo_override)
-            gff_struct.set_int32("RecordVO", node.record_vo)
-            gff_struct.set_int32("VOTextChanged", node.vo_text_changed)
-
-        link_list: GFFList = gff_struct.set_list(list_name, GFFList())
-        for i, link in enumerate(node.links):
-            link_struct: GFFStruct = link_list.add(i)
-            dismantle_link(link_struct, link, nodes, list_name)
-
-    all_entries = dlg.all_entries()
-    all_entries.reverse()
-    all_replies = dlg.all_replies()
-    all_replies.reverse()
-
     gff = GFF(GFFContent.DLG)
-
-    root = gff.root
-    root.set_uint32("NumWords", dlg.word_count)
-    root.set_resref("EndConverAbort", dlg.on_abort)
-    root.set_resref("EndConversation", dlg.on_end)
-    root.set_uint8("Skippable", dlg.skippable)
-    if str(dlg.ambient_track):
-        root.set_resref("AmbientTrack", dlg.ambient_track)
-    if dlg.animated_cut:
-        root.set_uint8("AnimatedCut", dlg.animated_cut)
-    if dlg.computer_type:
-        root.set_uint8("ComputerType", dlg.computer_type.value)
-    root.set_resref("CameraModel", dlg.camera_model)
-    if dlg.conversation_type:
-        root.set_int32("ConversationType", dlg.conversation_type.value)
-    if dlg.old_hit_check:
-        root.set_uint8("OldHitCheck", dlg.old_hit_check)
-    if dlg.unequip_hands:
-        root.set_uint8("UnequipHItem", dlg.unequip_hands)
-    if dlg.unequip_items:
-        root.set_uint8("UnequipItems", dlg.unequip_items)
-    root.set_string("VO_ID", dlg.vo_id)
-    if game == Game.K2:
-        root.set_int32("AlienRaceOwner", dlg.alien_race_owner)
-        root.set_int32("PostProcOwner", dlg.post_proc_owner)
-        root.set_int32("RecordNoVO", dlg.record_no_vo)
-        root.set_int32("NextNodeID", dlg.next_node_id)
-    if use_deprecated:
-        root.set_uint32("DelayEntry", dlg.delay_entry)
-        root.set_uint32("DelayReply", dlg.delay_reply)
-
-    stunt_list = root.set_list("StuntList", GFFList())
-    for stunt in dlg.stunts:
-        stunt_struct = stunt_list.add(0)
-        stunt_struct.set_string("Participant", stunt.participant)
-        stunt_struct.set_resref("StuntModel", stunt.stunt_model)
-
-    starting_list = root.set_list("StartingList", GFFList())
-    for i, starter in enumerate(dlg.starters):
-        starting_struct = starting_list.add(i)
-        dismantle_link(starting_struct, starter, all_entries, "StartingList")
-
-    entries_list = root.set_list("EntryList", GFFList())
-    for i, entry in enumerate(all_entries):
-        entries_struct: GFFStruct = entries_list.add(i)
-        entries_struct.set_string("Speaker", entry.speaker)
-        dismantle_node(entries_struct, entry, all_replies, "RepliesList")
-
-    replies_list = root.set_list("ReplyList", GFFList())
-    for i, reply in enumerate(all_replies):
-        replies_struct = replies_list.add(i)
-        dismantle_node(replies_struct, reply, all_entries, "EntriesList")
-
+    gff.root = dlg
     return gff
 
 def read_dlg(
