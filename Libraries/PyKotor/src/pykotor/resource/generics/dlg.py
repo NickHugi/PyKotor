@@ -652,10 +652,10 @@ def construct_dlg(
 
     starting_list = root.acquire("StartingList", GFFList())
     for link_struct in starting_list:
-        entry_index = link_struct.acquire("Index", 0)
         link = DLGLink()
+        link.original_index = link_struct.acquire("Index", 0)
+        link.node = all_entries[link.original_index]
         dlg.starters.append(link)
-        link.node = all_entries[entry_index]
         construct_link(link_struct, link)
 
     entry_list: GFFList = root.acquire("EntryList", GFFList())
@@ -668,9 +668,8 @@ def construct_dlg(
         replies_list = entry_struct.acquire("RepliesList", GFFList())
         for j, link_struct in enumerate(replies_list):
             link = DLGLink()
-            link.original_index = j
-            reply = all_replies[link_struct.acquire("Index", 0)]
-            link.node = reply
+            link.original_index = link_struct.acquire("Index", 0)
+            link.node = all_replies[link.original_index]
             link.is_child = bool(link_struct.acquire("IsChild", 0))
             link.comment = link_struct.acquire("LinkComment", "")
 
@@ -684,10 +683,10 @@ def construct_dlg(
         construct_node(reply_struct, reply)
 
         entries_list = reply_struct.acquire("EntriesList", GFFList())
-        for j, link_struct in enumerate(entries_list):
+        for link_struct in entries_list:
             link = DLGLink()
-            link.original_index = j
-            entry = all_entries[link_struct.acquire("Index", 0)]
+            link.original_index = link_struct.acquire("Index", 0)
+            entry = all_entries[link.original_index]
             link.node = entry
             link.is_child = bool(link_struct.acquire("IsChild", 0))
             link.comment = link_struct.acquire("LinkComment", "")
@@ -749,7 +748,7 @@ def dismantle_dlg(
             - If game is K2, sets additional link properties on the GFFStruct.
         """
         gff_struct.set_resref("Active", link.active1)
-        gff_struct.set_uint32("Index", nodes.index(link.node))
+        gff_struct.set_uint32("Index", link.original_index if link.original_index != -1 else nodes.index(link.node))
         if list_name != "StartingList":
             gff_struct.set_uint8("IsChild", int(link.is_child))
         if game == Game.K2:
@@ -863,9 +862,9 @@ def dismantle_dlg(
             link_struct: GFFStruct = link_list.add(i)
             dismantle_link(link_struct, link, nodes, list_name)
 
-    all_entries = dlg.all_entries()
+    all_entries: list[DLGEntry] = dlg.all_entries()
+    all_replies: list[DLGReply] = dlg.all_replies()
     all_entries.reverse()
-    all_replies = dlg.all_replies()
     all_replies.reverse()
 
     gff = GFF(GFFContent.DLG)
@@ -941,7 +940,6 @@ def dismantle_dlg(
         if entries_list is not None and field_index is not None:
             entry_original_index = all_entries[field_index].original_index
             entries_list._structs.sort(key=lambda x: sort_entries(x, entry_original_index))
-        field_index = struct.acquire("Index", None)
         return new_index
 
     entry_list._structs.sort(key=sort_entries)
