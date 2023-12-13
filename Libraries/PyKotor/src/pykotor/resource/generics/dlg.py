@@ -937,7 +937,7 @@ def dismantle_dlg(
         new_index = struct.struct_id if reply.list_index == -1 else reply.list_index
         new_index = link_index if link_index is not None else new_index
 
-        entries_list: GFFList | None = struct.acquire("EntryList", None, GFFList)
+        entries_list: GFFList | None = struct.acquire("EntriesList", None, GFFList)
         field_index: int | None = struct.acquire("Index", None, int)
         if entries_list is not None and field_index is not None:
             entries_list._structs.sort(key=lambda nested: sort_entry(nested, all_entries[field_index].list_index))
