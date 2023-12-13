@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from copy import copy, deepcopy
+import sys
 from typing import TYPE_CHECKING
 
 from pykotor.common.misc import ResRef
@@ -26,7 +27,7 @@ from PyQt5 import QtCore
 from PyQt5.QtCore import QBuffer, QIODevice, QItemSelection, QItemSelectionModel, QPoint
 from PyQt5.QtGui import QBrush, QColor, QStandardItem, QStandardItemModel
 from PyQt5.QtMultimedia import QMediaContent, QMediaPlayer
-from PyQt5.QtWidgets import QListWidgetItem, QMenu, QMessageBox, QPlainTextEdit, QShortcut, QWidget
+from PyQt5.QtWidgets import QApplication, QListWidgetItem, QMenu, QMessageBox, QPlainTextEdit, QShortcut, QWidget
 from toolset.data.installation import HTInstallation
 from toolset.gui.dialogs.edit.dialog_animation import EditAnimationDialog
 from toolset.gui.dialogs.edit.dialog_model import CutsceneModelDialog
@@ -537,6 +538,17 @@ class DLGEditor(Editor):
 
     def copyNode(self, node: DLGNode):
         self._copy = node
+        self.copyPath(node)
+
+    def copyPath(self, node: DLGNode):
+        app = QApplication(sys.argv)
+        path = ""
+        if isinstance(node, DLGEntry):
+            path = f"EntryList\\{node.list_index}"
+        elif isinstance(node, DLGReply):
+            path = f"ReplyList\\{node.list_index}"
+        if path:
+            app.clipboard().setText(path)
 
     def deleteNode(self, item: QStandardItem | None) -> None:
         """Deletes a node from the diagram.
@@ -642,23 +654,25 @@ class DLGEditor(Editor):
         """
         node: DLGNode = item.data(_LINK_ROLE).node
         isCopy: bool = item.data(_COPY_ROLE)
-        text = self._installation.string(node.text, "(continue)")
         prefix = "N"
+        color: QColor | None = None
         if isinstance(node, DLGEntry):
+            color = QColor(210, 90, 90) if isCopy else QColor(255, 0, 0)
             prefix = "E"
         elif isinstance(node, DLGReply):
+            color = QColor(90, 90, 210) if isCopy else QColor(0, 0, 255)
             prefix = "R"
-        text = f"{prefix}{node.list_index}: {text}"
-        item.setText(text)
+
+        text = self._installation.string(node.text, "(continue)")
+        if node.list_index != -1:
+            text = f"{prefix}{node.list_index}: {text}"
 
         if not node.links:
             item.setText(f"{text} [End Dialog]")
+        else:
+            item.setText(text)
 
-        if isinstance(node, DLGReply):
-            color = QColor(90, 90, 210) if isCopy else QColor(0, 0, 255)
-            item.setForeground(QBrush(color))
-        elif isinstance(node, DLGEntry):
-            color = QColor(210, 90, 90) if isCopy else QColor(255, 0, 0)
+        if color is not None:
             item.setForeground(QBrush(color))
 
     def playSound(self, resname: str) -> None:
@@ -824,6 +838,8 @@ class DLGEditor(Editor):
         elif isinstance(node, DLGEntry):
             menu.addAction("Copy Entry").triggered.connect(lambda: self.copyNode(node))
             menu.addAction("Delete Entry").triggered.connect(lambda: self.deleteNode(item))
+
+        menu.addAction("Copy GFF Path").triggered.connect(lambda: self.copyPath(node))
 
         menu.popup(self.ui.dialogTree.viewport().mapToGlobal(point))
 
