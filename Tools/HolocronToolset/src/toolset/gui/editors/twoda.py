@@ -234,14 +234,13 @@ class TwoDAEditor(Editor):
         ----
             self: The object instance.
 
-        Returns:
-        -------
-            None
-        - Gets the top, bottom, left, and right indices of the selected cells.
-        - Loops through the selected indices and maps them to the source model.
-        - Updates the top, bottom, left, and right indices.
-        - Loops through the indices range and builds a string with the cell texts separated by tabs.
-        - Copies the string to the clipboard.
+        Processing Logic:
+        ----------------
+            - Gets the top, bottom, left, and right indices of the selected cells.
+            - Loops through the selected indices and maps them to the source model.
+            - Updates the top, bottom, left, and right indices.
+            - Loops through the indices range and builds a string with the cell texts separated by tabs.
+            - Copies the string to the clipboard.
         """
         top = self.model.rowCount()
         bottom = -1
@@ -268,19 +267,22 @@ class TwoDAEditor(Editor):
         pyperclip.copy(clipboard)
 
     def pasteSelection(self) -> None:
-        """Pastes the clipboard contents into the selected table cells
+        """Pastes the clipboard contents into the selected table cells.
+
         Args:
+        ----
             self: The object instance
-        Returns:
-            None: No return value
-        - Splits the clipboard contents into rows separated by newlines
-        - Gets the top left selected cell index and item
-        - Loops through each row
-            - Loops through each cell in the row separated by tabs
-            - Sets the text of the model item at the current row and column
-            - Increments the column
-            - Resets column to the left column after each row
-            - Increments the row.
+
+        Processing Logic:
+        ----------------
+            - Splits the clipboard contents into rows separated by newlines
+            - Gets the top left selected cell index and item
+            - Loops through each row
+                - Loops through each cell in the row separated by tabs
+                - Sets the text of the model item at the current row and column
+                - Increments the column
+                - Resets column to the left column after each row
+                - Increments the row.
         """
         rows = pyperclip.paste().split("\n")
 
@@ -305,10 +307,6 @@ class TwoDAEditor(Editor):
         ----
             self: The table view object.
 
-        Returns:
-        -------
-            None: No value is returned.
-
         Processing Logic:
         ----------------
             - Gets the current row count from the model
@@ -328,6 +326,7 @@ class TwoDAEditor(Editor):
 
     def duplicateRow(self) -> None:
         """Duplicates the selected row in the table.
+
         Inserts a new row, copying values of the selected row, at the end of the table.
 
         Args:
@@ -337,12 +336,15 @@ class TwoDAEditor(Editor):
         Returns:
         -------
             None: Does not return anything.
-        - It checks if a row is selected in the table.
-        - Gets the index of the selected row.
-        - Increases the row count of the model by 1.
-        - Appends a new row with the items copied from the selected row.
-        - Sets the item of the first column of new row to the row index in bold font and changed background.
-        - Resets the vertical headers of the table.
+
+        Processing Logic:
+        ----------------
+            - It checks if a row is selected in the table.
+            - Gets the index of the selected row.
+            - Increases the row count of the model by 1.
+            - Appends a new row with the items copied from the selected row.
+            - Sets the item of the first column of new row to the row index in bold font and changed background.
+            - Resets the vertical headers of the table.
         """
         if self.ui.twodaTable.selectedIndexes():
             copyRow = self.ui.twodaTable.selectedIndexes()[0].row()
@@ -424,9 +426,12 @@ class SortFilterProxyModel(QSortFilterProxyModel):
         ----
             sourceRow: Row number to check
             sourceParent: Parent model of the row
+
         Returns:
+        -------
             True: If row matches filter pattern
             False: If row does not match filter pattern
+
         Processing Logic:
         ----------------
             - Get regular expression pattern from filter

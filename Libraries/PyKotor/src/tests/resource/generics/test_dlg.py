@@ -22,7 +22,7 @@ if UTILITY_PATH.exists():
 from pykotor.resource.formats.gff import GFF
 from pykotor.common.misc import Game
 from pykotor.resource.formats.gff import read_gff
-from pykotor.resource.generics.dlg import construct_dlg, dismantle_dlg
+from pykotor.resource.generics.dlg import DLG, construct_dlg, dismantle_dlg
 
 TEST_FILE = "src/tests/files/test.dlg"
 TEST_K1_FILE = "src/tests/files/test_k1.dlg"
@@ -51,7 +51,7 @@ class TestDLG(TestCase):
         self.assertTrue(result, output)
 
     def test_k2_reconstruct(self) -> None:
-        gff: GFF = read_gff(TEST_FILE)
+        gff: GFF = read_gff(r"C:\Program Files (x86)\Steam\steamapps\common\Knights of the Old Republic II\Override\ORIHA.dlg")
         reconstructed_gff: GFF = dismantle_dlg(construct_dlg(gff), Game.K2)
         self.assertTrue(gff.compare(reconstructed_gff, self.log_func), os.linesep.join(self.log_messages))
 
@@ -74,7 +74,7 @@ class TestDLG(TestCase):
         dlg = construct_dlg(gff)
         self.validate_io(dlg)
 
-    def validate_io(self, dlg):
+    def validate_io(self, dlg: DLG):
         all_entries = dlg.all_entries()
         all_replies = dlg.all_replies()
 

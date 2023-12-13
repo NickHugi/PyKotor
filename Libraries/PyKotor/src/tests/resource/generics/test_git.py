@@ -21,7 +21,7 @@ if UTILITY_PATH.exists():
 from pykotor.resource.formats.gff.gff_data import GFF
 from pykotor.common.misc import Color, Game
 from pykotor.resource.formats.gff import read_gff
-from pykotor.resource.generics.git import construct_git, dismantle_git
+from pykotor.resource.generics.git import GIT, construct_git, dismantle_git
 
 TEST_FILE = "src/tests/files/test.git"
 K1_SAME_TEST = "src/tests/files/k1_same_git_test.git"
@@ -75,7 +75,7 @@ class TestGIT(unittest.TestCase):
         else:
             self.assertEqual(obj1, obj2, context)
 
-    def validate_io(self, git):
+    def validate_io(self, git: GIT):
         self.assertEqual(127, git.ambient_volume)
         self.assertEqual(17, git.ambient_sound_id)
         self.assertEqual(1, git.env_audio)

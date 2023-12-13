@@ -51,14 +51,14 @@ class DLGEditor(Editor):
             installation: HTInstallation | None = None: The installation
 
         Initializes UI components:
-        - Sets up menus
-        - Connects signals
-        - Sets up installation
-        - Initializes model, tree view and selection model
-        - Sets buffer and media player
-        - Sets boolean to prevent events on programatic updates
-        - Sets splitter sizes
-        - Calls new() to start with empty dialog.
+            - Sets up menus
+            - Connects signals
+            - Sets up installation
+            - Initializes model, tree view and selection model
+            - Sets buffer and media player
+            - Sets boolean to prevent events on programatic updates
+            - Sets splitter sizes
+            - Calls new() to start with empty dialog.
         """
         supported = [ResourceType.DLG]
         super().__init__(parent, "Dialog Editor", "dialog", supported, supported, installation)
@@ -521,10 +521,12 @@ class DLGEditor(Editor):
             target: The target node to add the copy to
             source: The node to copy
 
-        - Makes a deep copy of the source node
-        - Creates a new link between the target and copy
-        - Creates a new item to hold the copied node
-        - Loads the copied node recursively into the new item.
+        Processing Logic:
+        ----------------
+            - Makes a deep copy of the source node
+            - Creates a new link between the target and copy
+            - Creates a new item to hold the copied node
+            - Loads the copied node recursively into the new item.
         """
         sourceCopy: DLGNode = deepcopy(source)
         newLink = DLGLink(sourceCopy)

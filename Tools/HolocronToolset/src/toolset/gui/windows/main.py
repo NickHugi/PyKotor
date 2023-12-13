@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 import base64
 import json
 import traceback
@@ -51,8 +53,11 @@ from toolset.gui.windows.indoor_builder import IndoorMapBuilder
 from toolset.gui.windows.module_designer import ModuleDesigner
 from toolset.utils.misc import openLink
 from toolset.utils.window import addWindow, openResourceEditor
-from utility.error_handling import assert_with_variable_trace
+from utility.error_handling import assert_with_variable_trace, universal_simplify_exception
 from utility.path import Path, PurePath
+
+if TYPE_CHECKING:
+    from pykotor.resource.formats.mdl.mdl_data import MDL
 
 if TYPE_CHECKING:
     import os
@@ -139,7 +144,8 @@ class ToolWindow(QMainWindow):
         ----
             self: {The class instance}: Sets up connections for UI signals.
 
-        {Processing Logic}:
+        Processing Logic:
+        ----------------
             - Connects game combo box index changed to change active installation
             - Connects module/override file updated signals to update handlers
             - Connects various widget signals like section changed to handler methods
@@ -221,7 +227,7 @@ class ToolWindow(QMainWindow):
         self.onModuleReload(newModuleFile)
 
     def onModuleReload(self, moduleFile: str) -> None:
-        resources = self.active.module_resources(moduleFile)
+        resources: list[FileResource] = self.active.module_resources(moduleFile)
 
         # Some users may choose to have their RIM files for the same module merged into a single option for the
         # dropdown menu.
@@ -246,7 +252,7 @@ class ToolWindow(QMainWindow):
     def onOverrideReload(self, file: str) -> None:
         file_path = Path(file)
         if not file_path.name:
-            print(f"Cannot reload {file}: no file loaded")
+            print(f"Cannot reload '{file}': no file loaded")
             return
         self.active.reload_override_file(file_path)
         self.ui.overrideWidget.setResources(self.active.override_resources(str(file_path.parent)))
@@ -263,6 +269,7 @@ class ToolWindow(QMainWindow):
         Args:
         ----
             resources: list[FileResource]: List of selected resources to extract
+
         Processing Logic:
         ----------------
             - If single resource selected, prompt user to save with default or custom name
@@ -405,8 +412,19 @@ class ToolWindow(QMainWindow):
 
     def openActiveJournal(self) -> None:
         self.active.load_override(".")
-        res = self.active.resource("global", ResourceType.JRL, [SearchLocation.OVERRIDE, SearchLocation.CHITIN])
-        openResourceEditor(res.filepath, "global", ResourceType.JRL, res.data, self.active, self)
+        res = self.active.resource(
+            "global",
+            ResourceType.JRL,
+            [SearchLocation.OVERRIDE, SearchLocation.CHITIN],
+        )
+        openResourceEditor(
+            res.filepath,
+            resref="global",
+            restype=ResourceType.JRL,
+            data=res.data,
+            installation=self.active,
+            parentwindow=self,
+        )
 
     def openFileSearchDialog(self) -> None:
         """Opens the FileSearcher dialog.
@@ -418,7 +436,7 @@ class ToolWindow(QMainWindow):
         if searchDialog.exec_():
             resultsDialog = FileResults(self, searchDialog.results, searchDialog.installation)
             if resultsDialog.exec_() and resultsDialog.selection:
-                selection = resultsDialog.selection
+                selection: FileResource = resultsDialog.selection
 
                 # Open relevant tab then select resource in the tree
                 if selection.filepath().is_relative_to(self.active.module_path()):
@@ -450,41 +468,45 @@ class ToolWindow(QMainWindow):
             silent: If true, only shows popup if an update is available.
         """
         try:
-            req = requests.get(UPDATE_INFO_LINK, timeout=15)
-            req.raise_for_status()
-            file_data = req.json()
-            base64_content = file_data["content"]
-            decoded_content = base64.b64decode(base64_content)  # Correctly decoding the base64 content
-            data = json.loads(decoded_content.decode("utf-8"))
+            self._check_toolset_update(silent)
+        except Exception as e:  # noqa: BLE001
+            if not silent:
+                etype, msg = universal_simplify_exception(e)
+                QMessageBox(
+                    QMessageBox.Information,
+                    f"Unable to fetch latest version ({etype})",
+                    f"Check if you are connected to the internet.\nError: {msg}",
+                    QMessageBox.Ok,
+                    self,
+                ).exec_()
 
-            toolsetLatestVersion = tuple(map(int, str(data["toolsetLatestVersion"]).split(".")))
+    def _check_toolset_update(self, silent: bool):
+        req = requests.get(UPDATE_INFO_LINK, timeout=15)
+        req.raise_for_status()
+        file_data = req.json()
+        base64_content = file_data["content"]
+        decoded_content = base64.b64decode(base64_content)  # Correctly decoding the base64 content
+        data = json.loads(decoded_content.decode("utf-8"))
+
+        toolsetLatestVersion = tuple(map(int, str(data["toolsetLatestVersion"]).split(".")))
+        if toolsetLatestVersion > PROGRAM_VERSION:
             toolsetDownloadLink = data["toolsetDownloadLink"]
 
-            if toolsetLatestVersion > PROGRAM_VERSION:
-                QMessageBox(
-                    QMessageBox.Information,
-                    "New version is available.",
-                    f"New version available for <a href='{toolsetDownloadLink}'>download</a>.",
-                    QMessageBox.Ok,
-                    self,
-                ).exec_()
-            elif not silent:
-                QMessageBox(
-                    QMessageBox.Information,
-                    "Version is up to date",
-                    f"You are running the latest version ({toolsetLatestVersion}).",
-                    QMessageBox.Ok,
-                    self,
-                ).exec_()
-        except Exception as e:
-            if not silent:
-                QMessageBox(
-                    QMessageBox.Information,
-                    "Unable to fetch latest version.",
-                    f"Check if you are connected to the internet.\nError: {e!r}",
-                    QMessageBox.Ok,
-                    self,
-                ).exec_()
+            QMessageBox(
+                QMessageBox.Information,
+                "New version is available.",
+                f"New version available for <a href='{toolsetDownloadLink}'>download</a>.",
+                QMessageBox.Ok,
+                self,
+            ).exec_()
+        elif not silent:
+            QMessageBox(
+                QMessageBox.Information,
+                "Version is up to date",
+                f"You are running the latest version ({toolsetLatestVersion}).",
+                QMessageBox.Ok,
+                self,
+            ).exec_()
 
     # endregion
 
@@ -513,10 +535,10 @@ class ToolWindow(QMainWindow):
         if reload:
             self.active.load_modules()
 
-        areaNames = self.active.module_names()
-        sortedKeys = sorted(areaNames, key=lambda key: areaNames.get(key).lower())
+        areaNames: dict[str, str] = self.active.module_names()
+        sortedKeys: list[str] = sorted(areaNames, key=lambda key: areaNames.get(key).lower())
 
-        modules = []
+        modules: list[QStandardItem] = []
         for module in sortedKeys:
             # Some users may choose to have their RIM files for the same module merged into a single option for the
             # dropdown menu.
@@ -629,9 +651,9 @@ class ToolWindow(QMainWindow):
         self.ui.resourceTabs.setEnabled(True)
         self.ui.sidebar.setEnabled(True)
 
-        name = self.ui.gameCombo.itemText(index)
-        path = self.settings.installations()[name].path.strip()
-        tsl = self.settings.installations()[name].tsl
+        name: str = self.ui.gameCombo.itemText(index)
+        path: str = self.settings.installations()[name].path.strip()
+        tsl: bool = self.settings.installations()[name].tsl
 
         # If the user has not set a path for the particular game yet, ask them too.
         if not path:
@@ -680,29 +702,29 @@ class ToolWindow(QMainWindow):
 
         Args:
         ----
-            resource: {FileResource}: The FileResource object
-            filepath: {os.PathLike | str}: Path to save the extracted file
-            loader: {AsyncBatchLoader}: Loader for async operations
+            resource (FileResource): The FileResource object
+            filepath (os.PathLike | str): Path to save the extracted file
+            loader (AsyncBatchLoader): Loader for async operations
 
         Processing Logic:
         ----------------
-        - Extracts Txi data from TPC files
-        - Decompiles TPC and MDL files
-        - Extracts textures from MDL files
-        - Writes extracted data to the file path}
+            - Extracts Txi data from TPC files
+            - Decompiles TPC and MDL files
+            - Extracts textures from MDL files
+            - Writes extracted data to the file path
         """
-        r_filepath = filepath if isinstance(filepath, Path) else Path(filepath)
-        folderpath = r_filepath.parent
+        r_filepath: Path = filepath if isinstance(filepath, Path) else Path(filepath)
+        folderpath: Path = r_filepath.parent
 
         try:
-            data = resource.data()
+            data: bytes = resource.data()
 
             if resource.restype() == ResourceType.MDX and self.ui.mdlDecompileCheckbox.isChecked():
                 # Ignore extracting MDX files if decompiling MDLs
                 return
 
             if resource.restype() == ResourceType.TPC:
-                tpc = read_tpc(data)
+                tpc: TPC = read_tpc(data)
 
                 if self.ui.tpcTxiCheckbox.isChecked():
                     self._extractTxi(tpc, r_filepath)
@@ -731,33 +753,35 @@ class ToolWindow(QMainWindow):
         with filepath.with_suffix(".txi").open("wb") as file:
             file.write(tpc.txi.encode("ascii"))
 
-    def _decompileTpc(self, tpc):
+    def _decompileTpc(self, tpc: TPC):
         data = bytearray()
         write_tpc(tpc, data, ResourceType.TGA)
         return data
 
     def _decompileMdl(self, resource: FileResource, data: SOURCE_TYPES):
-        mdxData = self.active.resource(resource.resname(), ResourceType.MDX).data
-        mdl = read_mdl(data, 0, 0, mdxData, 0, 0)
+        mdxData: bytes = self.active.resource(resource.resname(), ResourceType.MDX).data
+        mdl: MDL | None = read_mdl(data, 0, 0, mdxData, 0, 0)
 
         data = bytearray()
         write_mdl(mdl, data, ResourceType.MDL_ASCII)
         return data
 
-    def _extractMdlTextures(self, resource, folderpath: Path, loader: AsyncBatchLoader, data: bytes):
+    def _extractMdlTextures(self, resource: FileResource, folderpath: Path, loader: AsyncBatchLoader, data: bytes):
         try:
             for texture in model.list_textures(data):
                 try:
-                    tpc = self.active.texture(texture)
+                    tpc: TPC | None = self.active.texture(texture)
                     if self.ui.tpcTxiCheckbox.isChecked():
-                        self._extractTxi(tpc, folderpath.joinpath(f"{texture}.txi"))
+                        self._extractTxi(tpc, folderpath.joinpath(f"{texture}.tpc"))
                     file_format = ResourceType.TGA if self.ui.tpcDecompileCheckbox.isChecked() else ResourceType.TPC
                     extension = "tga" if file_format == ResourceType.TGA else "tpc"
                     write_tpc(tpc, folderpath.joinpath(f"{texture}.{extension}"), file_format)
                 except Exception as e:  # noqa: PERF203
-                    loader.errors.append(ValueError(f"Could not find or extract tpc: '{texture}'\nreason: {e!r}"))
+                    etype, msg = universal_simplify_exception(e)
+                    loader.errors.append(type(e)(f"Could not find or extract tpc: '{texture}'\nReason ({etype}): {msg}"))
         except Exception as e:
-            loader.errors.append(ValueError(f"Could not determine textures used in model: '{resource.resname()}'\nreason: {e!r}"))
+            etype, msg = universal_simplify_exception(e)
+            loader.errors.append(type(e)(f"Could not determine textures used in model: '{resource.resname()}'\nReason ({etype}): {msg}"))
 
     def openFromFile(self) -> None:
         filepaths = QFileDialog.getOpenFileNames(self, "Select files to open")[:-1][0]
@@ -769,7 +793,8 @@ class ToolWindow(QMainWindow):
                     data = file.read()
                 openResourceEditor(filepath, *ResourceIdentifier.from_path(r_filepath).validate(), data, self.active, self)
             except ValueError as e:
-                QMessageBox(QMessageBox.Critical, "Failed to open file", str(e)).exec_()
+                etype, msg = universal_simplify_exception(e)
+                QMessageBox(QMessageBox.Critical, f"Failed to open file ({etype})", msg).exec_()
 
     # endregion
 
@@ -786,15 +811,14 @@ class FolderObserver(FileSystemEventHandler):
 
         self.lastModified = rightnow
         modified_path: Path = Path(event.src_path)
-        isDir = modified_path.is_dir()
-        if not isDir:
+        if not modified_path.is_dir():
             return
 
         module_path: Path = self.window.active.module_path()
         override_path: Path = self.window.active.override_path()
 
         if modified_path.is_relative_to(module_path):
-            module_file = modified_path.parent
+            module_file: Path = modified_path.parent
             self.window.moduleFilesUpdated.emit(str(module_file), event.event_type)
         elif modified_path.is_relative_to(override_path):
             self.window.overrideFilesUpdate.emit(str(modified_path), event.event_type)

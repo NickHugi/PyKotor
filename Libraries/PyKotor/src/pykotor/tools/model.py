@@ -82,14 +82,18 @@ def list_textures(
     Args:
     ----
         data: bytes - The binary data to parse
+
     Returns:
+    -------
         list[str] - A list of unique texture names
+
     Processing Logic:
-    - Uses a BinaryReader to parse the binary data
-    - Starts at a root offset to traverse node offsets
-    - Checks node IDs for texture nodes
-    - Reads texture names and adds unique names to the textures list
-    - Returns the list of unique textures.
+    ----------------
+        - Uses a BinaryReader to parse the binary data
+        - Starts at a root offset to traverse node offsets
+        - Checks node IDs for texture nodes
+        - Reads texture names and adds unique names to the textures list
+        - Returns the list of unique textures.
     """
     textures = []
 
