@@ -373,6 +373,7 @@ class GFFStruct:
 
             # Compare values depending on their types
             if old_ftype == GFFFieldType.Struct:
+                assert isinstance(new_value, GFFStruct)
                 cur_struct_this: GFFStruct = old_value
                 if cur_struct_this.struct_id != new_value.struct_id:
                     log_func(f"Struct ID is different at '{child_path}': '{cur_struct_this.struct_id}'-->'{new_value.struct_id}'")
@@ -1279,6 +1280,13 @@ class GFFList:
         for list_index in common_items:
             old_child: GFFStruct = old_dict[list_index]
             new_child: GFFStruct = new_dict[list_index]
+            if old_child.struct_id != new_child.struct_id:
+                log_func(f"Struct ID is different at '{current_path / str(list_index)}': '{old_child.struct_id}'-->'{new_child.struct_id}'")
+                is_same_result = False
+
+            if not old_child.compare(new_child, log_func, current_path / str(list_index)):
+                is_same_result = False
+                continue
             if not old_child.compare(new_child, log_func, current_path / str(list_index)):
                 is_same_result = False
 

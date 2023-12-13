@@ -930,11 +930,13 @@ def dismantle_dlg(
 
     def sort_entry(struct: GFFStruct) -> int:
         entry = all_entries[struct.struct_id]
-        return struct.struct_id if entry.list_index == -1 else entry.list_index
+        struct.struct_id = struct.struct_id if entry.list_index == -1 else entry.list_index
+        return struct.struct_id
 
     def sort_reply(struct: GFFStruct) -> int:
         reply = all_replies[struct.struct_id]
-        return struct.struct_id if reply.list_index == -1 else reply.list_index
+        struct.struct_id = struct.struct_id if reply.list_index == -1 else reply.list_index
+        return struct.struct_id
 
     entry_list._structs.sort(key=sort_entry)
     reply_list._structs.sort(key=sort_reply)
