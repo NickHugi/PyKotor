@@ -914,7 +914,8 @@ class DLGEditor(Editor):
             self.ui.nodeIdSpin.setValue(node.NodeID)
             self.ui.alienRaceNodeSpin.setValue(node.AlienRaceNode)
             self.ui.postProcSpin.setValue(node.PostProcNode)
-            self.ui.delaySpin.setValue(node.Delay)
+            delay = -1 if node.Delay == 4294967295 else node.Delay
+            self.ui.delaySpin.setValue(delay)
             self.ui.logicSpin.setValue(link.Logic)
             self.ui.waitFlagSpin.setValue(node.WaitFlags)
             self.ui.fadeTypeSpin.setValue(node.FadeType)
