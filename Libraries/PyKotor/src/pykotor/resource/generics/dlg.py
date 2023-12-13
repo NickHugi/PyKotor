@@ -737,6 +737,7 @@ def dismantle_dlg(
             gff_struct: GFFStruct - The struct to populate
             link: DLGLink - The link to disassemble
             nodes: list - The list of nodes
+            list_name: str - The name of the GFF list.
 
         Returns:
         -------
@@ -748,10 +749,12 @@ def dismantle_dlg(
             - Sets the Index uint32 on the GFFStruct from the node list index
             - If game is K2, sets additional link properties on the GFFStruct.
         """
-        gff_struct.set_resref("Active", link.active1)
+        # Indexes the prior dialog
         gff_struct.set_uint32("Index", link.link_index if link.link_index != -1 else nodes.index(link.node))
+
         if list_name != "StartingList":
             gff_struct.set_uint8("IsChild", int(link.is_child))
+        gff_struct.set_resref("Active", link.active1)
         if game == Game.K2:
             gff_struct.set_resref("Active2", link.active2)
             gff_struct.set_int32("Logic", link.logic)
@@ -782,6 +785,8 @@ def dismantle_dlg(
         ----
             gff_struct: GFFStruct - The GFFStruct to populate
             node: DLGNode - The DLGNode to disassemble
+            nodes: list - The nodes list, used for linking
+            list_name: str - the nested list's name.
 
         Processing Logic:
         ----------------
