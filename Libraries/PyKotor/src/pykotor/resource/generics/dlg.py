@@ -61,6 +61,8 @@ class DLG(GFFStructInterface):
         "EndConversation": _GFFField(GFFFieldType.ResRef, ResRef.from_blank()),
         "Skippable": _GFFField(GFFFieldType.UInt8, 0),
 
+        "EntryList": _GFFField(GFFFieldType.List, GFFList()),
+        "ReplyList": _GFFField(GFFFieldType.List, GFFList()),
         "StuntList": _GFFField(GFFFieldType.List, GFFList()),
         "StartingList": _GFFField(GFFFieldType.List, GFFList()),
 
@@ -95,8 +97,7 @@ class DLG(GFFStructInterface):
             starter = DLGLink()
             entry = DLGEntry()
             entry.Text.set_data(Language.ENGLISH, Gender.MALE, "")
-            object.__setattr__(starter, "_node", entry)
-            starter.node = entry
+            starter._node = entry
             self.StartingList._structs.append(starter)
 
         self.AmbientTrack: ResRef = ResRef.from_blank()
@@ -358,8 +359,6 @@ class DLGNode(GFFStructInterface):
         "CamVidEffect": _GFFField(GFFFieldType.Int32, 0),
         "TarHeightOffset": _GFFField(GFFFieldType.Single, 0.0),
         "FadeColor": _GFFField(GFFFieldType.Vector3, Vector3.from_null()),
-        # DLGEntry only:
-        "Speaker": _GFFField(GFFFieldType.String, ""),
     }
     K2_FIELDS: ClassVar[dict[str, _GFFField]] = {
         "NodeID": _GFFField(GFFFieldType.Int32, 0),
@@ -382,6 +381,7 @@ class DLGNode(GFFStructInterface):
         "NodeUnskippable": _GFFField(GFFFieldType.Int32, 0),
         "PostProcNode": _GFFField(GFFFieldType.Int32, 0),
         "RecordNoVOOverri": _GFFField(GFFFieldType.Int32, 0),
+        "RecordNoOverri": _GFFField(GFFFieldType.Int32, 0),
         "RecordVO": _GFFField(GFFFieldType.Int32, 0),
         "VOTextChanged": _GFFField(GFFFieldType.Int32, 0),
     }
@@ -454,6 +454,7 @@ class DLGNode(GFFStructInterface):
         self.PostProcNode: int
 
         self.RecordNoVOOverri: bool
+        self.RecordNoOverri: bool
         self.RecordVO: bool
         self.VOTextChanged: bool
 
@@ -467,6 +468,11 @@ class DLGNode(GFFStructInterface):
 class DLGReply(DLGNode):
     """Replies are nodes that are responses by the player."""
 
+    FIELDS: ClassVar[dict[str, _GFFField]] = {
+        **DLGNode.FIELDS,
+        "EntryList": _GFFField(GFFFieldType.List, GFFList()),
+    }
+
     def __init__(
         self,
     ):
@@ -475,6 +481,15 @@ class DLGReply(DLGNode):
 
 class DLGEntry(DLGNode):
     """Entries are nodes that are responses by NPCs."""
+
+    FIELDS: ClassVar[dict[str, _GFFField]] = {
+        **DLGNode.FIELDS,
+        "Speaker": _GFFField(GFFFieldType.String, ""),
+        "RepliesList": _GFFField(GFFFieldType.List, GFFList()),
+    }
+    K2_FIELDS: ClassVar[dict[str, _GFFField]] = {
+        **DLGNode.K2_FIELDS
+    }
 
     def __init__(
         self,
@@ -486,14 +501,18 @@ class DLGEntry(DLGNode):
 class DLGAnimation(GFFStructInterface):
     """Represents a unit of animation executed during a node."""
 
-    FIELDS = {}
-    K2_FIELDS = {}
+    FIELDS: ClassVar[dict[str, _GFFField]] = {
+        "Animation": _GFFField(GFFFieldType.UInt32, 6),
+        "Participant": _GFFField(GFFFieldType.String, ""),
+    }
+    K2_FIELDS: ClassVar[dict[str, _GFFField]] = {}
 
     def __init__(
         self,
     ) -> None:
-        self.animation_id: int = 6
-        self.participant: str = ""
+        super().__init__()
+        self.Animation: int
+        self.Participant: str = ""
 
 
 class DLGLink(GFFStructInterface):
@@ -576,6 +595,7 @@ class DLGStunt(GFFStructInterface):
     def __init__(
         self,
     ) -> None:
+        super().__init__()
         self.Participant: str = ""
         self.StuntModel: ResRef = ResRef.from_blank()
 
@@ -600,7 +620,7 @@ def construct_dlg(
         - Populates DLG object with nodes, links, and metadata
         - Loops through GFF lists to populate all nodes and links.
     """
-    dlg = DLG(blank_node=False)
+    dlg = DLG.from_struct(gff.root)
 
     root = gff.root
 
@@ -612,11 +632,11 @@ def construct_dlg(
         dlg.StuntList._structs.append(DLGStunt.from_struct(stunt_struct))
 
     starting_list = root.acquire("StartingList", GFFList())
-    for link_struct in starting_list:
+    for i, link_struct in enumerate(starting_list):
         entry = all_entries[link_struct.acquire("Index", 0)]
         link = DLGLink.from_struct(link_struct)
         object.__setattr__(link, "_node", entry)
-        dlg.StartingList._structs.append(link)
+        dlg.StartingList._structs[i] = link
 
     entry_list: GFFList = root.acquire("EntryList", GFFList())
     anim_list: GFFList
@@ -633,7 +653,7 @@ def construct_dlg(
             link._node = all_replies[link_struct.acquire("Index", 0)]
             entry._links.append(link)
 
-    replies_list: GFFList = root.acquire("ReplyList", GFFList())
+    replies_list: GFFList = root.acquire("RepliesList", GFFList())
     for i, reply_struct in enumerate(replies_list):
         #reply: DLGReply = all_replies[i]
         reply = DLGReply.from_struct(reply_struct)
@@ -641,7 +661,7 @@ def construct_dlg(
         for anim_struct in anim_list:
             reply.AnimList._structs.append(DLGAnimation.from_struct(anim_struct))
 
-        nested_entries_list: GFFList = reply_struct.acquire("EntriesList", GFFList())
+        nested_entries_list: GFFList = reply_struct.acquire("EntryList", GFFList())
         for link_struct in nested_entries_list:
             entry = all_entries[link_struct.acquire("Index", 0)]
             link = DLGLink.from_struct(link_struct)

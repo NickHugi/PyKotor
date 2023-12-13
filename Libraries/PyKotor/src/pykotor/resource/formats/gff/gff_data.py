@@ -1177,13 +1177,14 @@ class GFFStructInterface(GFFStruct):
         all_fields: dict[str, _GFFField] = {}
         all_fields.update(cls.get_FIELDS())
         all_fields.update(cls.get_K2_FIELDS())
-        new_instance = cls()
+        new_instance = cls.__new__(cls)
+        super(cls, new_instance).__init__()
         for label, _type, value in struct:
             setattr(new_instance, label, value)
         return new_instance
 
     def __getattribute__(self, attr):
-        if attr.startswith("_") or attr == "struct_id" or attr == "exists":
+        if attr.startswith("_") or attr == "struct_id" or attr in GFFStruct.__dict__:
             return super().__getattribute__(attr)
         all_fields: dict[str, _GFFField] = {}
         all_fields.update(type(self).get_FIELDS())
