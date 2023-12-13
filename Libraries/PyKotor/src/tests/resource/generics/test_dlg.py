@@ -128,7 +128,7 @@ class TestDLG(TestCase):
         self.assertEqual(-1, entry0.Text.stringref)
         self.assertEqual("gand", entry0.VO_ResRef)
         self.assertEqual("num1", entry0.Script)
-        self.assertEqual(-1, entry0.Delay)
+        self.assertEqual(4294967295, entry0.Delay)
         self.assertEqual("commentto", entry0.Comment)
         self.assertEqual("gonk", entry0.Sound)
         self.assertEqual("quest", entry0.Quest)

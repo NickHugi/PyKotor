@@ -1153,11 +1153,11 @@ class GFFStruct:
 class GFFStructInterface(GFFStruct):
 
     @classmethod
-    def get_FIELDS(cls) -> dict[str, _GFFField]:
+    def _get_FIELDS(cls) -> dict[str, _GFFField]:
         return cls.FIELDS
 
     @classmethod
-    def get_K2_FIELDS(cls) -> dict[str, _GFFField]:
+    def _get_K2_FIELDS(cls) -> dict[str, _GFFField]:
         return cls.K2_FIELDS
 
     def __init__(self, *args, **kwargs):
@@ -1167,28 +1167,31 @@ class GFFStructInterface(GFFStruct):
         return chain(
             super().__dir__(),
             (
-                label for label in {**type(self).get_FIELDS(), **type(self).get_K2_FIELDS()}
+                label for label in {**type(self)._get_FIELDS(), **type(self)._get_K2_FIELDS()}
                 if self.exists(label)
             ),
         )
 
     @classmethod
     def from_struct(cls, struct: GFFStruct):
-        all_fields: dict[str, _GFFField] = {}
-        all_fields.update(cls.get_FIELDS())
-        all_fields.update(cls.get_K2_FIELDS())
         new_instance = cls.__new__(cls)
         super(cls, new_instance).__init__()
-        for label, field_type, value in struct:
-            new_instance._set_field_value(field_type, label, value)
+        new_instance._update_from_struct(struct)
         return new_instance
 
-    def __getattribute__(self, attr):
+    def _update_from_struct(self, struct: GFFStruct):
+        all_fields: dict[str, _GFFField] = {}
+        all_fields.update(self._get_FIELDS())
+        all_fields.update(self._get_K2_FIELDS())
+        for label, field_type, value in struct:
+            self._set_field_value(field_type, label, value)
+
+    def __getattribute__(self, attr: str):
         if attr.startswith("_") or attr == "struct_id" or attr in GFFStruct.__dict__ or attr in type(self).__dict__:
             return super().__getattribute__(attr)
         all_fields: dict[str, _GFFField] = {}
-        all_fields.update(type(self).get_FIELDS())
-        all_fields.update(type(self).get_K2_FIELDS())
+        all_fields.update(type(self)._get_FIELDS())
+        all_fields.update(type(self)._get_K2_FIELDS())
         if attr not in all_fields:
             msg = f"'{self.__class__.__name__}' object has no attribute '{attr}'"
             raise AttributeError(msg)
@@ -1204,8 +1207,8 @@ class GFFStructInterface(GFFStruct):
             super().__setattr__(attr, value)
             return
         all_fields: dict[str, _GFFField] = {}
-        all_fields.update(type(self).get_FIELDS())
-        all_fields.update(type(self).get_K2_FIELDS())
+        all_fields.update(type(self)._get_FIELDS())
+        all_fields.update(type(self)._get_K2_FIELDS())
         field_type: GFFFieldType | None
         if attr not in all_fields:
             field_type = self.what_type(attr) if self.exists(attr) else None

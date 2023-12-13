@@ -124,32 +124,27 @@ class DLG(GFFStructInterface):
         self.DelayEntry: int = 0
         self.DelayReply: int = 0
 
+    def __getattribute__(self, name):
+        # Your custom logic before the parent __getattribute__ is called
+        value = super().__getattribute__(name)
+        if name == "ComputerType" and not isinstance(value, DLGComputerType):
+            return DLGComputerType(value)
+        if name == "ConversationType" and not isinstance(value, DLGConversationType):
+            return DLGConversationType(value)
+        return value
 
-    @property
-    def ComputerType(self) -> DLGComputerType:
-        return DLGComputerType(self.__getattr__("ComputerType"))
-
-    @ComputerType.setter
-    def ComputerType(self, value: DLGComputerType | int) -> None:
-        if isinstance(value, DLGComputerType):
+    def __setattr__(self, name, value):
+        if name == "ComputerType" and isinstance(value, DLGComputerType):
             value = value.value
-        self.__setattr__("ComputerType", value)
-
-    @property
-    def ConversationType(self) -> DLGConversationType:
-        return DLGConversationType(self.__getattr__("DLGConversationType"))
-
-    @ConversationType.setter
-    def ConversationType(self, value: DLGConversationType | int) -> None:
-        if isinstance(value, DLGConversationType):
+        if name == "ConversationType" and isinstance(value, DLGConversationType):
             value = value.value
-        self.__setattr__("ConversationType", value)
+        super().__setattr__(name, value)
 
     def print_tree(
         self,
     ) -> None:
         """Prints all the nodes (one per line) in the dialog tree with appropriate indentation."""
-        self._print_tree(self.starters, 0, [], [])
+        self._print_tree(self.StartingList, 0, [], [])
 
     def _print_tree(
         self,
@@ -159,20 +154,20 @@ class DLG(GFFStructInterface):
         seen_nodes: list[DLGNode],
     ):
         for link in links:
-            if link.node not in seen_nodes:
-                print(f'{" " * indent}-> {link.node.text}')
+            if link._node not in seen_nodes:
+                print(f'{" " * indent}-> {link._node.Text}')
                 seen_links.append(link)
 
-                if link.node not in seen_nodes:
-                    seen_nodes.append(link.node)
+                if link._node not in seen_nodes:
+                    seen_nodes.append(link._node)
                     self._print_tree(
-                        link.node.links,
+                        link._node._links,
                         indent + 3,
                         seen_links,
                         seen_nodes,
                     )
             else:
-                print(f'{" " * indent}-> [LINK] {link.node.text}')
+                print(f'{" " * indent}-> [LINK] {link._node.Text}')
 
     def all_entries(
         self,
@@ -590,7 +585,7 @@ class DLGStunt(GFFStructInterface):
         "Participant": _GFFField(GFFFieldType.String, ""),
         "StuntModel": _GFFField(GFFFieldType.ResRef, ResRef.from_blank()),
     }
-    K2_FIELDS = {}
+    K2_FIELDS: ClassVar[dict[str, _GFFField]] = {}
 
     def __init__(
         self,
@@ -624,6 +619,10 @@ def construct_dlg(
 
     root = gff.root
 
+    entry: DLGEntry
+    reply: DLGReply
+    link: DLGLink
+
     all_entries = [DLGEntry() for _ in range(len(root.acquire("EntryList", GFFList())))]
     all_replies = [DLGReply() for _ in range(len(root.acquire("ReplyList", GFFList())))]
 
@@ -641,8 +640,8 @@ def construct_dlg(
     entry_list: GFFList = root.acquire("EntryList", GFFList())
     anim_list: GFFList
     for i, entry_struct in enumerate(entry_list):
-        #entry: DLGEntry = all_entries[i]
-        entry: DLGEntry = DLGEntry.from_struct(entry_struct)
+        entry = all_entries[i]
+        entry._update_from_struct(entry_struct)
         anim_list = entry_struct.acquire("AnimList", GFFList())
         for i, anim_struct in enumerate(anim_list):
             entry.AnimList._structs[i] = DLGAnimation.from_struct(anim_struct)
@@ -650,21 +649,22 @@ def construct_dlg(
         nested_replies_list: GFFList = entry_struct.acquire("RepliesList", GFFList())
         for link_struct in nested_replies_list:
             link = DLGLink.from_struct(link_struct)
-            link._node = all_replies[link_struct.acquire("Index", 0)]
+            reply = all_replies[link_struct.acquire("Index", 0)]
+            link._node = reply
             entry._links.append(link)
 
-    replies_list: GFFList = root.acquire("RepliesList", GFFList())
+    replies_list: GFFList = root.acquire("ReplyList", GFFList())
     for i, reply_struct in enumerate(replies_list):
-        #reply: DLGReply = all_replies[i]
-        reply = DLGReply.from_struct(reply_struct)
+        reply = all_replies[i]
+        reply._update_from_struct(reply_struct)
         anim_list = reply_struct.acquire("AnimList", GFFList())
         for j, anim_struct in enumerate(anim_list):
             reply.AnimList._structs[j] = DLGAnimation.from_struct(anim_struct)
 
-        nested_entries_list: GFFList = reply_struct.acquire("EntryList", GFFList())
+        nested_entries_list: GFFList = reply_struct.acquire("EntriesList", GFFList())
         for link_struct in nested_entries_list:
-            entry = all_entries[link_struct.acquire("Index", 0)]
             link = DLGLink.from_struct(link_struct)
+            entry = all_entries[link_struct.acquire("Index", 0)]
             link._node = entry
             reply._links.append(link)
 
