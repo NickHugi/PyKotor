@@ -1,16 +1,28 @@
 from __future__ import annotations
 
 from enum import IntEnum
+from typing import ClassVar
 
 from pykotor.common.geometry import Vector3
 from pykotor.common.language import Gender, Language, LocalizedString
 from pykotor.common.misc import Color, Game, ResRef
 from pykotor.resource.formats.gff import GFF, GFFContent, GFFList, GFFStruct, read_gff, write_gff
 from pykotor.resource.formats.gff.gff_auto import bytes_gff
+from pykotor.resource.formats.gff.gff_data import GFFFieldType, GFFStructInterface, _GFFField
 from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES, ResourceType
 
 
-class DLG:
+class DLGComputerType(IntEnum):
+    Modern = 0
+    Ancient = 1
+
+
+class DLGConversationType(IntEnum):
+    Human = 0
+    Computer = 1
+    Other = 2
+
+class DLG(GFFStructInterface):
     """Stores dialog data.
 
     Attributes
@@ -39,58 +51,98 @@ class DLG:
     """
 
     BINARY_TYPE = ResourceType.DLG
+    FIELDS: ClassVar[dict[str, _GFFField]] = {
+        "AmbientTrack": _GFFField(GFFFieldType.ResRef, ResRef.from_blank()),
+        "AnimatedCut": _GFFField(GFFFieldType.UInt8, 0),
+        "CameraModel": _GFFField(GFFFieldType.ResRef, ResRef.from_blank()),
+        "ComputerType": _GFFField(GFFFieldType.UInt8, DLGComputerType.Modern.value),
+        "ConversationType": _GFFField(GFFFieldType.Int32, DLGConversationType.Human.value),
+        "EndConverAbort": _GFFField(GFFFieldType.ResRef, ResRef.from_blank()),
+        "EndConversation": _GFFField(GFFFieldType.ResRef, ResRef.from_blank()),
+        "Skippable": _GFFField(GFFFieldType.UInt8, 0),
+
+        "StuntList": _GFFField(GFFFieldType.List, GFFList()),
+        "StartingList": _GFFField(GFFFieldType.List, GFFList()),
+
+        "NumWords": _GFFField(GFFFieldType.UInt32, 0),
+        "OldHitCheck": _GFFField(GFFFieldType.UInt8, 0),
+        "UnequipHItem": _GFFField(GFFFieldType.UInt8, 0),
+        "UnequipItems": _GFFField(GFFFieldType.UInt8, 0),
+        "VO_ID": _GFFField(GFFFieldType.String, ""),
+
+        "DelayEntry": _GFFField(GFFFieldType.UInt32, 0),  # Not used by game engine
+        "DelayReply": _GFFField(GFFFieldType.UInt32, 0),  # Not used by game engine
+    }
+
+    K2_FIELDS: ClassVar[dict[str, _GFFField]] = {
+        "AlienRaceOwner": _GFFField(GFFFieldType.Int32, 0),
+        "NextNodeID": _GFFField(GFFFieldType.Int32, 0),
+        "PostProcOwner": _GFFField(GFFFieldType.Int32, 0),
+        "RecordNoVO": _GFFField(GFFFieldType.Int32, 0),
+    }
 
     def __init__(
         self,
         blank_node: bool = True,
     ):
-        """Initializes a DLGNode object.
+        super().__init__()
 
-        Args:
-        ----
-            blank_node (bool): Whether to add a blank starter node
+        self.StartingList = GFFList()  # list[DLGLink]
+        self.StuntList = GFFList() # list[DLGStunt]
 
-        Processing Logic:
-        ----------------
-            1. Initializes starter and stunt lists
-            2. Sets default values for node properties
-            3. Adds a blank starter node if blank_node is True
-            4. Sets deprecated properties for backwards compatibility.
-        """
-        self.starters: list[DLGLink] = []
-        self.stunts: list[DLGStunt] = []
-
+        # Add bare minimum to be openable by DLGEditor
         if blank_node:
-            # Add bare minimum to be openable by DLGEditor
             starter = DLGLink()
             entry = DLGEntry()
-            entry.text.set_data(Language.ENGLISH, Gender.MALE, "")
+            entry.Text.set_data(Language.ENGLISH, Gender.MALE, "")
+            object.__setattr__(starter, "_node", entry)
             starter.node = entry
-            self.starters.append(starter)
+            self.StartingList._structs.append(starter)
 
-        self.ambient_track: ResRef = ResRef.from_blank()
-        self.animated_cut: int = 0
-        self.camera_model: ResRef = ResRef.from_blank()
-        self.computer_type: DLGComputerType = DLGComputerType.Modern
-        self.conversation_type: DLGConversationType = DLGConversationType.Human
-        self.on_abort: ResRef = ResRef.from_blank()
-        self.on_end: ResRef = ResRef.from_blank()
-        self.word_count: int = 0
-        self.old_hit_check: bool = False
-        self.skippable: bool = False
-        self.unequip_items: bool = False
-        self.unequip_hands: bool = False
-        self.vo_id: str = ""
+        self.AmbientTrack: ResRef = ResRef.from_blank()
+        self.AnimatedCut: int = 0
+        self.CameraModel: ResRef = ResRef.from_blank()
+        self.ComputerType: DLGComputerType = DLGComputerType.Modern
+        self.ConversationType: DLGConversationType = DLGConversationType.Human
+        self.EndConverAbort: ResRef = ResRef.from_blank()
+        self.EndConversation: ResRef = ResRef.from_blank()
+        self.NumWords: int = 0
+        self.OldHitCheck: bool = False
+        self.Skippable: bool = False
+        self.UnequipItems: bool = False
+        self.UnequipHItem: bool = False
+        self.VO_ID: str = ""
 
         # KotOR 2:
-        self.alien_race_owner: int = 0
-        self.next_node_id: int = 0
-        self.post_proc_owner: int = 0
-        self.record_no_vo: int = 0
+        self.AlienRaceOwner: int = 0
+        self.NextNodeID: int = 0
+        self.PostProcOwner: int = 0
+        self.RecordNoVO: int = 0
 
         # Deprecated:
-        self.delay_entry: int = 0
-        self.delay_reply: int = 0
+        self.DelayEntry: int = 0
+        self.DelayReply: int = 0
+
+
+    @property
+    def ComputerType(self) -> DLGComputerType:
+        return DLGComputerType(self.__getattr__("ComputerType"))
+
+    @ComputerType.setter
+    def ComputerType(self, value: DLGComputerType | int) -> None:
+        if isinstance(value, DLGComputerType):
+            value = value.value
+        self.__setattr__("ComputerType", value)
+
+    @property
+    def ConversationType(self) -> DLGConversationType:
+        return DLGConversationType(self.__getattr__("DLGConversationType"))
+
+    @ConversationType.setter
+    def ConversationType(self, value: DLGConversationType | int) -> None:
+        if isinstance(value, DLGConversationType):
+            value = value.value
+        self.__setattr__("ConversationType", value)
 
     def print_tree(
         self,
@@ -147,10 +199,13 @@ class DLG:
         Returns:
         -------
             entries: {List of all reachable DLGEntries}
-        - The function recursively traverses the graph of DLGLinks starting from the given links
-        - It collects all unique DLGEntries in a list
-        - Seen entries are tracked to avoid processing the same entry multiple times
-        - Child entries are recursively processed by calling the function again
+
+        Processing Logic:
+        ----------------
+            - The function recursively traverses the graph of DLGLinks starting from the given links
+            - It collects all unique DLGEntries in a list
+            - Seen entries are tracked to avoid processing the same entry multiple times
+            - Child entries are recursively processed by calling the function again
         """
         entries = []
 
@@ -220,18 +275,7 @@ class DLG:
         return replies
 
 
-class DLGComputerType(IntEnum):
-    Modern = 0
-    Ancient = 1
-
-
-class DLGConversationType(IntEnum):
-    Human = 0
-    Computer = 1
-    Other = 2
-
-
-class DLGNode:
+class DLGNode(GFFStructInterface):
     """Represents a node in the dialog tree.
 
     Attributes
@@ -287,6 +331,61 @@ class DLGNode:
         vo_text_changed: "VOTextChanged" field. KotOR 2 Only.
     """
 
+    FIELDS: ClassVar[dict[str, _GFFField]] = {
+        "Text": _GFFField(GFFFieldType.LocalizedString, LocalizedString.from_invalid()),
+        "Listener": _GFFField(GFFFieldType.String, ""),
+        "VO_ResRef": _GFFField(GFFFieldType.ResRef, ResRef.from_blank()),
+        "Script": _GFFField(GFFFieldType.ResRef, ResRef.from_blank()),
+        "Delay": _GFFField(GFFFieldType.UInt32, 4294967295),
+        "Comment": _GFFField(GFFFieldType.String, ""),
+        "Sound": _GFFField(GFFFieldType.ResRef, ResRef.from_blank()),
+        "Quest": _GFFField(GFFFieldType.String, ""),
+        "PlotIndex": _GFFField(GFFFieldType.Int32, 0),
+        "PlotXPPercentage": _GFFField(GFFFieldType.Single, 0.0),
+        "WaitFlags": _GFFField(GFFFieldType.UInt32, 0),
+        "CameraAngle": _GFFField(GFFFieldType.UInt32, 0),
+        "FadeType": _GFFField(GFFFieldType.UInt8, 0),
+        "SoundExists": _GFFField(GFFFieldType.UInt8, 0),
+        "Changed": _GFFField(GFFFieldType.UInt8, 0),
+        "AnimList": _GFFField(GFFFieldType.List, GFFList()),
+        "QuestEntry": _GFFField(GFFFieldType.UInt32, 0),
+        "FadeDelay": _GFFField(GFFFieldType.Single, 0.0),
+        "FadeLength": _GFFField(GFFFieldType.Single, 0.0),
+        "CameraAnimation": _GFFField(GFFFieldType.UInt16, 0),
+        "CameraID": _GFFField(GFFFieldType.Int32, 0),
+        "CamFieldOfView": _GFFField(GFFFieldType.Single, 0.0),
+        "CamHeightOffset": _GFFField(GFFFieldType.Single, 0.0),
+        "CamVidEffect": _GFFField(GFFFieldType.Int32, 0),
+        "TarHeightOffset": _GFFField(GFFFieldType.Single, 0.0),
+        "FadeColor": _GFFField(GFFFieldType.Vector3, Vector3.from_null()),
+        # DLGEntry only:
+        "Speaker": _GFFField(GFFFieldType.String, ""),
+    }
+    K2_FIELDS: ClassVar[dict[str, _GFFField]] = {
+        "NodeID": _GFFField(GFFFieldType.Int32, 0),
+        "ActionParam1": _GFFField(GFFFieldType.Int32, 0),
+        "ActionParam2": _GFFField(GFFFieldType.Int32, 0),
+        "ActionParam3": _GFFField(GFFFieldType.Int32, 0),
+        "ActionParam4": _GFFField(GFFFieldType.Int32, 0),
+        "ActionParam5": _GFFField(GFFFieldType.Int32, 0),
+        "ActionParamStrA": _GFFField(GFFFieldType.String, ""),
+        "Script2": _GFFField(GFFFieldType.ResRef, ResRef.from_blank()),
+        "ActionParam1b": _GFFField(GFFFieldType.Int32, 0),
+        "ActionParam2b": _GFFField(GFFFieldType.Int32, 0),
+        "ActionParam3b": _GFFField(GFFFieldType.Int32, 0),
+        "ActionParam4b": _GFFField(GFFFieldType.Int32, 0),
+        "ActionParam5b": _GFFField(GFFFieldType.Int32, 0),
+        "ActionParamStrB": _GFFField(GFFFieldType.String, ""),
+        "AlienRaceNode": _GFFField(GFFFieldType.Int32, 0),
+        "FacialAnim": _GFFField(GFFFieldType.Int32, 0),
+        "Emotion": _GFFField(GFFFieldType.Int32, 0),
+        "NodeUnskippable": _GFFField(GFFFieldType.Int32, 0),
+        "PostProcNode": _GFFField(GFFFieldType.Int32, 0),
+        "RecordNoVOOverri": _GFFField(GFFFieldType.Int32, 0),
+        "RecordVO": _GFFField(GFFFieldType.Int32, 0),
+        "VOTextChanged": _GFFField(GFFFieldType.Int32, 0),
+    }
+
     def __init__(
         self,
     ) -> None:
@@ -298,68 +397,70 @@ class DLGNode:
             - Initializes lists and optional properties as empty/None
             - Sets flags and identifiers to default values
         """
-        self.comment: str = ""
-        self.links: list[DLGLink] = []
-        self.original_index: int | None = None
-
-        self.camera_angle: int = 0
-        self.delay: int = -1
-        self.fade_type: int = 0
-        self.listener: str = ""
-        self.plot_index: int = 0
-        self.plot_xp_percentage: float = 0.0
-        self.quest: str = ""
-        self.script1: ResRef = ResRef.from_blank()
-        self.sound: ResRef = ResRef.from_blank()
-        self.sound_exists: bool = False
-        self.text: LocalizedString = LocalizedString.from_invalid()
-        self.vo_resref: ResRef = ResRef.from_blank()
-        self.wait_flags: int = 0
-
+        self.links: list[DLGLink]
+        object.__setattr__(self, "links", [])
         self.animations: list[DLGAnimation] = []
+        object.__setattr__(self, "animations", [])
 
-        self.quest_entry: int | None = 0
-        self.fade_color: Color | None = None
-        self.fade_delay: float | None = None
-        self.fade_length: float | None = None
-        self.camera_anim: int | None = None
-        self.camera_id: int | None = None
-        self.camera_fov: float | None = None
-        self.camera_height: float | None = None
-        self.camera_effect: int | None = None
-        self.target_height: float | None = None
+        self.Comment: str
+
+        self.CameraAngle: int
+        self.Delay: int
+        self.FadeType: int
+        self.Listener: str
+        self.PlotIndex: int
+        self.PlotXPPercentage: float
+        self.Quest: str
+        self.Script: ResRef
+        self.Sound: ResRef
+        self.SoundExists: bool
+        self.Text: LocalizedString
+        self.VO_ResRef: ResRef
+        self.WaitFlags: int
+
+
+        self.QuestEntry: int
+        self.FadeColor: Color
+        self.FadeDelay: float
+        self.FadeLength: float
+        self.CameraAnimation: int
+        self.CameraID: int
+        self.CamFieldOfView: float
+        self.CamHeightOffset: float
+        self.CamVidEffect: int
+        self.TarHeightOffset: float
 
         # KotOR 2:
-        self.script1_param1: int = 0
-        self.script1_param2: int = 0
-        self.script1_param3: int = 0
-        self.script1_param4: int = 0
-        self.script1_param5: int = 0
-        self.script1_param6: str = ""
-        self.script2_param1: int = 0
+        self.ActionParam1: int
+        self.ActionParam2: int
+        self.ActionParam3: int
+        self.ActionParam4: int
+        self.ActionParam5: int
+        self.ActionParamStrA: str
 
-        self.script2: ResRef = ResRef.from_blank()
-        self.script2_param2: int = 0
-        self.script2_param3: int = 0
-        self.script2_param4: int = 0
-        self.script2_param5: int = 0
-        self.script2_param6: str = ""
+        self.Script2: ResRef
+        self.ActionParam1b: int
+        self.ActionParam2b: int
+        self.ActionParam3b: int
+        self.ActionParam4b: int
+        self.ActionParam5b: int
+        self.ActionParamStrB: str
 
-        self.alien_race_node: int = 0
-        self.emotion_id: int = 0
-        self.facial_id: int = 0
-        self.unskippable: bool = False
-        self.node_id: int = 0
-        self.post_proc_node: int = 0
+        self.AlienRaceNode: int
+        self.Emotion: int
+        self.FacialAnim: int
+        self.NodeUnskippable: bool
+        self.PostProcNode: int
 
-        self.record_no_vo_override: bool = False
-        self.record_vo: bool = False
-        self.vo_text_changed: bool = False
+        self.RecordNoVOOverri: bool
+        self.RecordVO: bool
+        self.VOTextChanged: bool
 
     def __repr__(
         self,
     ):
-        return str(self.text.get(Language.ENGLISH, Gender.MALE))
+        return str(self.Text.get(Language.ENGLISH, Gender.MALE))
+
 
 
 class DLGReply(DLGNode):
@@ -376,22 +477,25 @@ class DLGEntry(DLGNode):
 
     def __init__(
         self,
-    ):
+    ) -> None:
         super().__init__()
-        self.speaker: str = ""
+        Speaker = ""
 
 
-class DLGAnimation:
+class DLGAnimation(GFFStructInterface):
     """Represents a unit of animation executed during a node."""
+
+    FIELDS = {}
+    K2_FIELDS = {}
 
     def __init__(
         self,
-    ):
+    ) -> None:
         self.animation_id: int = 6
         self.participant: str = ""
 
 
-class DLGLink:
+class DLGLink(GFFStructInterface):
     """Points to a node. Links are stored either in other nodes or in the starting list of the DLG.
 
     Attributes
@@ -417,39 +521,42 @@ class DLGLink:
         active2_param6: "ParamStrB" field. KotOR 2 Only.
     """
 
+    FIELDS: ClassVar[dict[str, _GFFField]] = {
+        "Active": _GFFField(GFFFieldType.ResRef, ResRef.from_blank()),
+
+        # not in StartingList
+        "LinkComment": _GFFField(GFFFieldType.String, ""),
+        "IsChild": _GFFField(GFFFieldType.UInt8, 0),
+    }
+
+    K2_FIELDS: ClassVar[dict[str, _GFFField]] = {
+        "Active2": _GFFField(GFFFieldType.ResRef, ResRef.from_blank()),
+        "Logic": _GFFField(GFFFieldType.Int32, 0),
+        "Not": _GFFField(GFFFieldType.UInt8, 0),
+        "Not2": _GFFField(GFFFieldType.UInt8, 0),
+        "Param1": _GFFField(GFFFieldType.Int32, 0),
+        "Param2": _GFFField(GFFFieldType.Int32, 0),
+        "Param3": _GFFField(GFFFieldType.Int32, 0),
+        "Param4": _GFFField(GFFFieldType.Int32, 0),
+        "Param5": _GFFField(GFFFieldType.Int32, 0),
+        "ParamStrA": _GFFField(GFFFieldType.String, ""),
+        "Param1b": _GFFField(GFFFieldType.Int32, 0),
+        "Param2b": _GFFField(GFFFieldType.Int32, 0),
+        "Param3b": _GFFField(GFFFieldType.Int32, 0),
+        "Param4b": _GFFField(GFFFieldType.Int32, 0),
+        "Param5b": _GFFField(GFFFieldType.Int32, 0),
+        "ParamStrB": _GFFField(GFFFieldType.String, ""),
+    }
+
     def __init__(
         self,
         node: DLGNode | None = None,
     ):
-        self.active1: ResRef = ResRef.from_blank()
-        self.node: DLGNode = node
-
-        # not in StartingList
-        self.is_child: bool = False
-        self.comment: str = ""
-
-        # KotOR 2 Only:
-        self.active2: ResRef = ResRef.from_blank()
-        self.active1_not: bool = False
-        self.active2_not: bool = False
-        self.logic: bool = False
-
-        self.active1_param1: int = 0
-        self.active1_param2: int = 0
-        self.active1_param3: int = 0
-        self.active1_param4: int = 0
-        self.active1_param5: int = 0
-        self.active1_param6: str = ""
-
-        self.active2_param1: int = 0
-        self.active2_param2: int = 0
-        self.active2_param3: int = 0
-        self.active2_param4: int = 0
-        self.active2_param5: int = 0
-        self.active2_param6: str = ""
+        self.node: DLGNode
+        object.__setattr__(self, "node", node)
 
 
-class DLGStunt:
+class DLGStunt(GFFStructInterface):
     """
     Attributes
     ----------
@@ -457,11 +564,17 @@ class DLGStunt:
     stunt_model: "StuntModel" field.
     """  # noqa: D205, D212
 
+    FIELDS: ClassVar[dict[str, _GFFField]] = {
+        "Participant": _GFFField(GFFFieldType.String, ""),
+        "StuntModel": _GFFField(GFFFieldType.ResRef, ResRef.from_blank()),
+    }
+    K2_FIELDS = {}
+
     def __init__(
         self,
-    ):
-        self.participant: str = ""
-        self.stunt_model: ResRef = ResRef.from_blank()
+    ) -> None:
+        self.Participant: str = ""
+        self.StuntModel: ResRef = ResRef.from_blank()
 
 
 def construct_dlg(
@@ -484,163 +597,12 @@ def construct_dlg(
         - Populates DLG object with nodes, links, and metadata
         - Loops through GFF lists to populate all nodes and links.
     """
-    def construct_node(
-        gff_struct: GFFStruct,
-        node: DLGNode,
-    ):
-        """Constructs a DLGNode from a GFFStruct.
-
-        Args:
-        ----
-            gff_struct: GFFStruct - The GFFStruct to construct the node from
-            node: DLGNode - The node to populate
-
-        Returns:
-        -------
-            None - Populates the node in-place
-
-        Processing Logic:
-        ----------------
-            - Acquires fields from the GFFStruct and assigns to the node
-            - Handles optional fields
-            - Populates animations list
-            - Sets various parameters.
-        """
-        node.text = gff_struct.acquire("Text", LocalizedString.from_invalid())
-        node.listener = gff_struct.acquire("Listener", "")
-        node.vo_resref = gff_struct.acquire("VO_ResRef", ResRef.from_blank())
-        node.script1 = gff_struct.acquire("Script", ResRef.from_blank())
-        delay = gff_struct.acquire("Delay", 0)
-        node.delay = -1 if delay == 0xFFFFFFFF else delay
-        node.comment = gff_struct.acquire("Comment", "")
-        node.sound = gff_struct.acquire("Sound", ResRef.from_blank())
-        node.quest = gff_struct.acquire("Quest", "")
-        node.plot_index = gff_struct.acquire("PlotIndex", -1)
-        node.plot_xp_percentage = gff_struct.acquire("PlotXPPercentage", 0.0)
-        node.wait_flags = gff_struct.acquire("WaitFlags", 0)
-        node.camera_angle = gff_struct.acquire("CameraAngle", 0)
-        node.fade_type = gff_struct.acquire("FadeType", 0)
-        node.sound_exists = gff_struct.acquire("SoundExists", 0)
-        node.vo_text_changed = gff_struct.acquire("Changed", 0)
-
-        anim_list: GFFList = gff_struct.acquire("AnimList", GFFList())
-        for anim_struct in anim_list:
-            anim = DLGAnimation()
-            anim.animation_id = anim_struct.acquire("Animation", 0)
-            anim.participant = anim_struct.acquire("Participant", "")
-            node.animations.append(anim)
-
-        node.script1_param1 = gff_struct.acquire("ActionParam1", 0)
-        node.script2_param1 = gff_struct.acquire("ActionParam1b", 0)
-        node.script1_param2 = gff_struct.acquire("ActionParam2", 0)
-        node.script2_param2 = gff_struct.acquire("ActionParam2b", 0)
-        node.script1_param3 = gff_struct.acquire("ActionParam3", 0)
-        node.script2_param3 = gff_struct.acquire("ActionParam3b", 0)
-        node.script1_param4 = gff_struct.acquire("ActionParam4", 0)
-        node.script2_param4 = gff_struct.acquire("ActionParam4b", 0)
-        node.script1_param5 = gff_struct.acquire("ActionParam5", 0)
-        node.script2_param5 = gff_struct.acquire("ActionParam5b", 0)
-        node.script1_param6 = gff_struct.acquire("ActionParamStrA", "")
-        node.script2_param6 = gff_struct.acquire("ActionParamStrB", "")
-        node.script2 = gff_struct.acquire("Script2", ResRef.from_blank())
-        node.alien_race_node = gff_struct.acquire("AlienRaceNode", 0)
-        node.emotion_id = gff_struct.acquire("Emotion", 0)
-        node.facial_id = gff_struct.acquire("FacialAnim", 0)
-        node.node_id = gff_struct.acquire("NodeID", 0)
-        node.unskippable = gff_struct.acquire("NodeUnskippable", 0)
-        node.post_proc_node = gff_struct.acquire("PostProcNode", 0)
-        node.record_no_vo_override = gff_struct.acquire("RecordNoVOOverri", 0)
-        node.record_vo = gff_struct.acquire("RecordVO", 0)
-        node.vo_text_changed = gff_struct.acquire("VOTextChanged", 0)
-
-        if gff_struct.exists("QuestEntry"):
-            node.quest_entry = gff_struct.acquire("QuestEntry", 0)
-        if gff_struct.exists("FadeDelay"):
-            node.fade_delay = gff_struct.acquire("FadeDelay", 0.0)
-        if gff_struct.exists("FadeLength"):
-            node.fade_length = gff_struct.acquire("FadeLength", 0.0)
-        if gff_struct.exists("CameraAnimation"):
-            node.camera_anim = gff_struct.acquire("CameraAnimation", 0)
-        if gff_struct.exists("CameraID"):
-            node.camera_id = gff_struct.acquire("CameraID", 0)
-        if gff_struct.exists("CamFieldOfView"):
-            node.camera_fov = gff_struct.acquire("CamFieldOfView", 0.0)
-        if gff_struct.exists("CamHeightOffset"):
-            node.camera_height = gff_struct.acquire("CamHeightOffset", 0.0)
-        if gff_struct.exists("CamVidEffect"):
-            node.camera_effect = gff_struct.acquire("CamVidEffect", 0)
-        if gff_struct.exists("TarHeightOffset"):
-            node.target_height = gff_struct.acquire("TarHeightOffset", 0.0)
-        if gff_struct.exists("FadeColor"):
-            node.fade_color = Color.from_bgr_vector3(gff_struct.acquire("FadeColor", Vector3.from_null()))
-
-    def construct_link(
-        gff_struct: GFFStruct,
-        link: DLGLink,
-    ):
-        """Constructs a DLGLink from a GFFStruct.
-
-        Args:
-        ----
-            gff_struct: GFFStruct - The GFFStruct to acquire resources from
-            link: DLGLink - The link to populate
-
-        Returns:
-        -------
-            None - Populates the link object
-
-        Processing Logic:
-        ----------------
-            - Acquires an "Active" resource and assigns to link.active1
-            - Acquires an "Active2" resource and assigns to link.active2
-            - Acquires a "Logic" resource and assigns to link.logic
-            - Acquires "Not", "Not2" resources and assigns to link.active1_not, link.active2_not
-            - Acquires "Param1-6", "ParamStrA-B" resources and assigns to link parameters.
-        """
-        link.active1 = gff_struct.acquire("Active", ResRef.from_blank())
-        link.active2 = gff_struct.acquire("Active2", ResRef.from_blank())
-        link.logic = bool(gff_struct.acquire("Logic", 0))
-        link.active1_not = bool(gff_struct.acquire("Not", 0))
-        link.active2_not = bool(gff_struct.acquire("Not2", 0))
-        link.active1_param1 = gff_struct.acquire("Param1", 0)
-        link.active1_param2 = gff_struct.acquire("Param2", 0)
-        link.active1_param3 = gff_struct.acquire("Param3", 0)
-        link.active1_param4 = gff_struct.acquire("Param4", 0)
-        link.active1_param5 = gff_struct.acquire("Param5", 0)
-        link.active1_param6 = gff_struct.acquire("ParamStrA", "")
-        link.active2_param1 = gff_struct.acquire("Param1b", 0)
-        link.active2_param2 = gff_struct.acquire("Param2b", 0)
-        link.active2_param3 = gff_struct.acquire("Param3b", 0)
-        link.active2_param4 = gff_struct.acquire("Param4b", 0)
-        link.active2_param5 = gff_struct.acquire("Param5b", 0)
-        link.active2_param6 = gff_struct.acquire("ParamStrB", "")
-
     dlg = DLG(blank_node=False)
 
     root = gff.root
 
     all_entries = [DLGEntry() for _ in range(len(root.acquire("EntryList", GFFList())))]
     all_replies = [DLGReply() for _ in range(len(root.acquire("ReplyList", GFFList())))]
-
-    dlg.word_count = root.acquire("NumWords", 0)
-    dlg.on_abort = root.acquire("EndConverAbort", ResRef.from_blank())
-    dlg.on_end = root.acquire("EndConversation", ResRef.from_blank())
-    dlg.skippable = bool(root.acquire("Skippable", 0))
-    dlg.ambient_track = root.acquire("AmbientTrack", ResRef.from_blank())
-    dlg.animated_cut = root.acquire("AnimatedCut", 0)
-    dlg.camera_model = root.acquire("CameraModel", ResRef.from_blank())
-    dlg.computer_type = DLGComputerType(root.acquire("ComputerType", 0))
-    dlg.conversation_type = DLGConversationType(root.acquire("ConversationType", 0))
-    dlg.old_hit_check = bool(root.acquire("OldHitCheck", 0))
-    dlg.unequip_hands = bool(root.acquire("UnequipHItem", 0))
-    dlg.unequip_items = bool(root.acquire("UnequipItems", 0))
-    dlg.vo_id = root.acquire("VO_ID", "")
-    dlg.alien_race_owner = root.acquire("AlienRaceOwner", 0)
-    dlg.post_proc_owner = root.acquire("PostProcOwner", 0)
-    dlg.record_no_vo = root.acquire("RecordNoVO", 0)
-    dlg.next_node_id = root.acquire("NextNodeID", 0)
-    dlg.delay_entry = root.acquire("DelayEntry", 0)
-    dlg.delay_reply = root.acquire("DelayReply", 0)
 
     stunt_list = root.acquire("StuntList", GFFList())
     for stunt_struct in stunt_list:
@@ -655,44 +617,39 @@ def construct_dlg(
         link = DLGLink()
         dlg.starters.append(link)
         link.node = all_entries[entry_index]
-        construct_link(link_struct, link)
+        link.from_struct(link_struct)
 
     entry_list: GFFList = root.acquire("EntryList", GFFList())
+    anim_list: GFFList
     for i, entry_struct in enumerate(entry_list):
         entry: DLGEntry = all_entries[i]
-        entry.speaker = entry_struct.acquire("Speaker", "")
-        entry.original_index = i
-        construct_node(entry_struct, entry)
+        entry.from_struct(entry_struct)
+        anim_list = entry_struct.acquire("AnimList", GFFList())
+        for anim_struct in anim_list:
+            entry.animations.append(DLGAnimation.from_struct(anim_struct))
 
-        nested_replies_list = entry_struct.acquire("RepliesList", GFFList())
-        for j, link_struct in enumerate(nested_replies_list):
+        nested_replies_list: GFFList = entry_struct.acquire("RepliesList", GFFList())
+        for link_struct in nested_replies_list:
             link = DLGLink()
-            reply = all_replies[link_struct.acquire("Index", 0)]
-            reply.original_index = j
-            link.node = reply
-            link.is_child = bool(link_struct.acquire("IsChild", 0))
-            link.comment = link_struct.acquire("LinkComment", "")
-
+            link.node = all_replies[link_struct.acquire("Index", 0)]
             entry.links.append(link)
-            construct_link(link_struct, link)
+            link.from_struct(link_struct)
 
     replies_list: GFFList = root.acquire("ReplyList", GFFList())
     for i, reply_struct in enumerate(replies_list):
         reply: DLGReply = all_replies[i]
-        reply.original_index = i
-        construct_node(reply_struct, reply)
+        reply.from_struct(reply_struct)
+        anim_list = reply_struct.acquire("AnimList", GFFList())
+        for anim_struct in anim_list:
+            reply.animations.append(DLGAnimation.from_struct(anim_struct))
 
-        nested_entries_list = reply_struct.acquire("EntriesList", GFFList())
-        for j, link_struct in enumerate(nested_entries_list):
+        nested_entries_list: GFFList = reply_struct.acquire("EntriesList", GFFList())
+        for link_struct in nested_entries_list:
             link = DLGLink()
             entry = all_entries[link_struct.acquire("Index", 0)]
-            entry.original_index = j
             link.node = entry
-            link.is_child = bool(link_struct.acquire("IsChild", 0))
-            link.comment = link_struct.acquire("LinkComment", "")
-
+            link.from_struct(link_struct)
             reply.links.append(link)
-            construct_link(link_struct, link)
 
     return dlg
 

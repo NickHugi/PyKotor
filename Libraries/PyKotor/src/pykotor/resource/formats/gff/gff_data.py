@@ -2,9 +2,11 @@ from __future__ import annotations
 
 import math
 import os
+from abc import abstractmethod
 from copy import copy, deepcopy
 from enum import Enum, IntEnum
-from typing import TYPE_CHECKING, Any, Callable, ClassVar, TypeVar
+from itertools import chain
+from typing import TYPE_CHECKING, Any, Callable, ClassVar, Iterable, TypeVar
 
 from pykotor.common.geometry import Vector3, Vector4
 from pykotor.common.language import LocalizedString
@@ -233,7 +235,6 @@ class _GFFField:
             The field's value.
         """
         return self._value
-
 
 class GFFStruct:
     """Stores a collection of GFFFields.
@@ -597,7 +598,7 @@ class GFFStruct:
     def set_resref(
         self,
         label: str,
-        value: ResRef,
+        value: str | ResRef,
     ) -> None:
         """Sets the value and field type of the field with the specified label.
 
@@ -606,6 +607,8 @@ class GFFStruct:
             label: The field label.
             value: The new field value.
         """
+        if isinstance(value, str):
+            value = ResRef(value)
         self._fields[label] = _GFFField(GFFFieldType.ResRef, value)
 
     def set_string(
@@ -1147,6 +1150,103 @@ class GFFStruct:
             raise TypeError(msg)
         return copy(self._fields[label].value())
 
+class GFFStructInterface(GFFStruct):
+
+    @classmethod
+    def get_FIELDS(cls) -> dict[str, _GFFField]:
+        return cls.FIELDS
+
+    @classmethod
+    def get_K2_FIELDS(cls) -> dict[str, _GFFField]:
+        return cls.K2_FIELDS
+
+    @abstractmethod
+    def __init__(self, *args, **kwargs):
+        ...
+
+    def __dir__(self) -> Iterable[str]:
+        return chain(
+            super().__dir__(),
+            (
+                label for label in {**type(self).get_FIELDS(), **type(self).get_K2_FIELDS()}
+                if self.exists(label)
+            ),
+        )
+
+    @classmethod
+    def from_struct(cls, struct: GFFStruct):
+        all_fields: dict[str, _GFFField] = {}
+        all_fields.update(cls.get_FIELDS())
+        all_fields.update(cls.get_K2_FIELDS())
+        new_instance = cls()
+        for label, type, value in struct:
+            setattr(new_instance, label, value)
+        return new_instance
+
+    def __getattr__(self, attr):
+        all_fields: dict[str, _GFFField] = {}
+        all_fields.update(type(self).get_FIELDS())
+        all_fields.update(type(self).get_K2_FIELDS())
+        if attr not in all_fields:
+            msg = f"'{self.__class__.__name__}' object has no attribute '{attr}'"
+            raise AttributeError(msg)
+        gff_field: _GFFField = all_fields[attr]
+        return self.acquire(
+            attr,
+            gff_field.value(),
+            gff_field.field_type().return_type(),
+        )
+
+    def __setattr__(self, attr, value) -> None:
+        all_fields: dict[str, _GFFField] = {}
+        all_fields.update(type(self).get_FIELDS())
+        all_fields.update(type(self).get_K2_FIELDS())
+        if attr not in all_fields:
+            msg = f"'{self.__class__.__name__}' object has no attribute '{attr}'"
+            raise AttributeError(msg)
+        field_type: GFFFieldType = all_fields[attr].field_type()
+        if not field_type:
+            msg = f"'{self.__class__.__name__}' No field type defined for {attr}"
+            raise TypeError(msg)
+        if field_type == GFFFieldType.UInt8:
+            self.set_uint8(attr, value)
+        elif field_type == GFFFieldType.Int8:
+            self.set_int8(attr, value)
+        elif field_type == GFFFieldType.UInt16:
+            self.set_uint16(attr, value)
+        elif field_type == GFFFieldType.Int16:
+            self.set_int16(attr, value)
+        elif field_type == GFFFieldType.UInt32:
+            self.set_uint32(attr, value)
+        elif field_type == GFFFieldType.Int32:
+            self.set_int32(attr, value)
+        elif field_type == GFFFieldType.UInt64:
+            self.set_uint64(attr, value)
+        elif field_type == GFFFieldType.Int64:
+            self.set_int64(attr, value)
+        elif field_type == GFFFieldType.Single:
+            self.set_single(attr, value)
+        elif field_type == GFFFieldType.Double:
+            self.set_double(attr, value)
+        elif field_type == GFFFieldType.String:
+            self.set_string(attr, value)
+        elif field_type == GFFFieldType.ResRef:
+            self.set_resref(attr, value)
+        elif field_type == GFFFieldType.LocalizedString:
+            self.set_locstring(attr, value)
+        elif field_type == GFFFieldType.Binary:
+            self.set_binary(attr, value)
+        elif field_type == GFFFieldType.Struct:
+            self.set_struct(attr, value)
+        elif field_type == GFFFieldType.List:
+            self.set_list(attr, value)
+        elif field_type == GFFFieldType.Vector4:
+            self.set_vector4(attr, value)
+        elif field_type == GFFFieldType.Vector3:
+            self.set_vector3(attr, value)
+        else:
+            msg = f"Unsupported field type for {attr}"
+            raise TypeError(msg)
 
 class GFFList:
     """A collection of GFFStructs."""
