@@ -228,7 +228,7 @@ class DLGEditor(Editor):
         self.model.clear()
         seenLink = []
         seenNode = []
-        for start in dlg.starters:
+        for start in dlg.StartingList:
             item = QStandardItem()
             self._loadDLGRec(item, start, seenLink, seenNode)
             self.model.appendRow(item)
@@ -253,7 +253,7 @@ class DLGEditor(Editor):
             - Refreshes the item
             - Loops through child links and loads recursively if not seen.
         """
-        node = link.node
+        node = link._node
         item.setData(link, _LINK_ROLE)
 
         alreadyListed = link in seenLink or node in seenNode
@@ -266,7 +266,7 @@ class DLGEditor(Editor):
         self.refreshItem(item)
 
         if not alreadyListed:
-            for child_link in node.links:
+            for child_link in node._links:
                 child_item = QStandardItem()
                 self._loadDLGRec(child_item, child_link, seenLink, seenNode)
                 item.appendRow(child_item)
@@ -287,9 +287,9 @@ class DLGEditor(Editor):
             - Encodes dialogue data into bytes
             - Returns bytes containing dialogue data and empty string.
         """
-        self._dlg.on_abort = ResRef(self.ui.onAbortEdit.text())
-        self._dlg.on_end = ResRef(self.ui.onEndEdit.text())
-        self._dlg.vo_id = self.ui.voIdEdit.text()
+        self._dlg.EndConverAbort = ResRef(self.ui.onAbortEdit.text())
+        self._dlg.EndConversation = ResRef(self.ui.onEndEdit.text())
+        self._dlg.VO_ID = self.ui.voIdEdit.text()
         self._dlg.AmbientTrack = ResRef(self.ui.ambientTrackEdit.text())
         self._dlg.CameraModel = ResRef(self.ui.cameraModelEdit.text())
         self._dlg.ConversationType = DLGConversationType(self.ui.conversationSelect.currentIndex())
@@ -299,8 +299,8 @@ class DLGEditor(Editor):
         self._dlg.OldHitCheck = self.ui.oldHitCheckbox.isChecked()
         self._dlg.UnequipHItem = self.ui.unequipHandsCheckbox.isChecked()
         self._dlg.UnequipItems = self.ui.unequipAllCheckbox.isChecked()
-        self._dlg.delay_entry = self.ui.entryDelaySpin.value()
-        self._dlg.delay_reply = self.ui.replyDelaySpin.value()
+        self._dlg.DelayEntry = self.ui.entryDelaySpin.value()
+        self._dlg.DelayReply = self.ui.replyDelaySpin.value()
 
         data = bytearray()
         write_gff(dismantle_dlg(self._dlg), data)
@@ -422,12 +422,12 @@ class DLGEditor(Editor):
             item = self.model.itemFromIndex(indexes[0])
             link: DLGLink = item.data(_LINK_ROLE)
             isCopy: bool = item.data(_COPY_ROLE)
-            node: DLGNode = link.node
-            dialog = LocalizedStringDialog(self, self._installation, node.text)
+            node: DLGNode = link._node
+            dialog = LocalizedStringDialog(self, self._installation, node.Text)
             if dialog.exec_() and not isCopy:
-                node.text = dialog.locstring
-                item.setText(self._installation.string(node.text, "(continue"))
-                self._loadLocstring(self.ui.textEdit, node.text)
+                node.Text = dialog.locstring
+                item.setText(self._installation.string(node.Text, "(continue"))
+                self._loadLocstring(self.ui.textEdit, node.Text)
 
     def _loadLocstring(self, textbox: QPlainTextEdit, locstring: LocalizedString) -> None:
         """Load a localized string into a text box.
@@ -482,7 +482,7 @@ class DLGEditor(Editor):
         """
         newNode = DLGEntry()
         newLink = DLGLink(newNode)
-        self._dlg.starters.append(newLink)
+        self._dlg.StartingList._structs.append(newLink)
 
         newItem = QStandardItem()
         newItem.setData(newLink, _LINK_ROLE)
@@ -545,20 +545,20 @@ class DLGEditor(Editor):
             - Remove link from parent's links and row from parent.
         """
         link: DLGLink = item.data(_LINK_ROLE)
-        node: DLGNode = link.node
+        node: DLGNode = link._node
 
         if item.parent() is None:
-            for link in copy(self._dlg.starters):
-                if link.node is node:
-                    self._dlg.starters.remove(link)
+            for link in copy(self._dlg.StartingList):
+                if link._node is node:
+                    self._dlg.StartingList.remove(link)
             self.model.removeRow(item.row())
         else:
             parentItem = item.parent()
             parentLink: DLGLink = parentItem.data(_LINK_ROLE)
-            parentNode: DLGNode = parentLink.node
+            parentNode: DLGNode = parentLink._node
 
             for link in copy(parentNode._links):
-                if link.node is node:
+                if link._node is node:
                     parentNode._links.remove(link)
             parentItem.removeRow(item.row())
 
@@ -601,14 +601,14 @@ class DLGEditor(Editor):
             - If no match is found, print a failure message.
         """
         copiedLink: DLGLink = sourceItem.data(_LINK_ROLE)
-        copiedNode: DLGNode = copiedLink.node
+        copiedNode: DLGNode = copiedLink._node
 
         items = [self.model.item(i, 0) for i in range(self.model.rowCount())]
         while items:
             item = items.pop()
             link: DLGLink = item.data(_LINK_ROLE)
             isCopy: bool = item.data(_COPY_ROLE)
-            if link.node is copiedNode and not isCopy:
+            if link._node is copiedNode and not isCopy:
                 self.expandToRoot(item)
                 self.ui.dialogTree.setCurrentIndex(item.index())
                 break
@@ -632,7 +632,7 @@ class DLGEditor(Editor):
         """
         node: DLGNode = item.data(_LINK_ROLE).node
         isCopy: bool = item.data(_COPY_ROLE)
-        text = self._installation.string(node.text, "(continue)")
+        text = self._installation.string(node.Text, "(continue)")
         item.setText(text)
 
         if not node._links:
@@ -723,8 +723,8 @@ class DLGEditor(Editor):
         self.ui.dialogTree.selectionModel().select(item.index(), QItemSelectionModel.ClearAndSelect)
 
         # Sync DLG to tree changes
-        links = self._dlg.starters if item.parent() is None else item.parent().data(_LINK_ROLE).node.links
-        link = links.pop(oldRow)
+        links = self._dlg.StartingList if item.parent() is None else item.parent().data(_LINK_ROLE)._node._links
+        link = links.pop(oldRow)  # FIXME:
         links.insert(newRow, link)
 
     def onTreeContextMenu(self, point: QPoint):
@@ -771,7 +771,7 @@ class DLGEditor(Editor):
         """
         link: DLGLink = item.data(_LINK_ROLE)
         isCopy: bool = item.data(_COPY_ROLE)
-        node: DLGNode = link.node
+        node: DLGNode = link._node
 
         menu = QMenu(self)
 
@@ -825,81 +825,81 @@ class DLGEditor(Editor):
             item = self.model.itemFromIndex(selection.indexes()[0])
             link: DLGLink = item.data(_LINK_ROLE)
             isCopy: bool = item.data(_COPY_ROLE)
-            node: DLGNode = link.node
+            node: DLGNode = link._node
 
             if isinstance(node, DLGEntry):
                 self.ui.speakerEdit.setEnabled(True)
-                self.ui.speakerEdit.setText(node.speaker)
+                self.ui.speakerEdit.setText(node.Speaker)
             elif isinstance(node, DLGReply):
                 self.ui.speakerEdit.setEnabled(False)
                 self.ui.speakerEdit.setText("")
 
             self.ui.textEdit.setEnabled(not isCopy)
 
-            self.ui.listenerEdit.setText(node.listener)
-            self._loadLocstring(self.ui.textEdit, node.text)
+            self.ui.listenerEdit.setText(node.Listener)
+            self._loadLocstring(self.ui.textEdit, node.Text)
 
-            self.ui.script1ResrefEdit.setText(node.script1.get())
-            self.ui.script1Param1Spin.setValue(node.script1_param1)
-            self.ui.script1Param2Spin.setValue(node.script1_param2)
-            self.ui.script1Param3Spin.setValue(node.script1_param3)
-            self.ui.script1Param4Spin.setValue(node.script1_param4)
-            self.ui.script1Param5Spin.setValue(node.script1_param5)
-            self.ui.script1Param6Edit.setText(node.script1_param6)
+            self.ui.script1ResrefEdit.setText(node.Script.get())
+            self.ui.script1Param1Spin.setValue(node.ActionParam1)
+            self.ui.script1Param2Spin.setValue(node.ActionParam2)
+            self.ui.script1Param3Spin.setValue(node.ActionParam3)
+            self.ui.script1Param4Spin.setValue(node.ActionParam4)
+            self.ui.script1Param5Spin.setValue(node.ActionParam5)
+            self.ui.script1Param6Edit.setText(node.ActionParamStrA)
 
-            self.ui.script2ResrefEdit.setText(node.script2.get())
-            self.ui.script2Param1Spin.setValue(node.script2_param1)
-            self.ui.script2Param2Spin.setValue(node.script2_param2)
-            self.ui.script2Param3Spin.setValue(node.script2_param3)
-            self.ui.script2Param4Spin.setValue(node.script2_param4)
-            self.ui.script2Param5Spin.setValue(node.script2_param5)
-            self.ui.script2Param6Edit.setText(node.script2_param6)
+            self.ui.script2ResrefEdit.setText(node.Script2.get())
+            self.ui.script2Param1Spin.setValue(node.ActionParam1b)
+            self.ui.script2Param2Spin.setValue(node.ActionParam2b)
+            self.ui.script2Param3Spin.setValue(node.ActionParam3b)
+            self.ui.script2Param4Spin.setValue(node.ActionParam4b)
+            self.ui.script2Param5Spin.setValue(node.ActionParam5b)
+            self.ui.script2Param6Edit.setText(node.ActionParamStrB)
 
-            self.ui.condition1ResrefEdit.setText(link.active1.get())
-            self.ui.condition1Param1Spin.setValue(link.active1_param1)
-            self.ui.condition1Param2Spin.setValue(link.active1_param2)
-            self.ui.condition1Param3Spin.setValue(link.active1_param3)
-            self.ui.condition1Param4Spin.setValue(link.active1_param4)
-            self.ui.condition1Param5Spin.setValue(link.active1_param5)
-            self.ui.condition1Param6Edit.setText(link.active1_param6)
-            self.ui.condition1NotCheckbox.setChecked(link.active1_not)
+            self.ui.condition1ResrefEdit.setText(link.Active.get())
+            self.ui.condition1Param1Spin.setValue(link.Param1)
+            self.ui.condition1Param2Spin.setValue(link.Param2)
+            self.ui.condition1Param3Spin.setValue(link.Param3)
+            self.ui.condition1Param4Spin.setValue(link.Param4)
+            self.ui.condition1Param5Spin.setValue(link.Param5)
+            self.ui.condition1Param6Edit.setText(link.ParamStrA)
+            self.ui.condition1NotCheckbox.setChecked(link.Not)
 
-            self.ui.condition2ResrefEdit.setText(link.active2.get())
-            self.ui.condition2Param1Spin.setValue(link.active2_param1)
-            self.ui.condition2Param2Spin.setValue(link.active2_param2)
-            self.ui.condition2Param3Spin.setValue(link.active2_param3)
-            self.ui.condition2Param4Spin.setValue(link.active2_param4)
-            self.ui.condition2Param5Spin.setValue(link.active2_param5)
-            self.ui.condition2Param6Edit.setText(link.active2_param6)
-            self.ui.condition2NotCheckbox.setChecked(link.active2_not)
+            self.ui.condition2ResrefEdit.setText(link.Active2.get())
+            self.ui.condition2Param1Spin.setValue(link.Param1b)
+            self.ui.condition2Param2Spin.setValue(link.Param2b)
+            self.ui.condition2Param3Spin.setValue(link.Param3b)
+            self.ui.condition2Param4Spin.setValue(link.Param4b)
+            self.ui.condition2Param5Spin.setValue(link.Param5b)
+            self.ui.condition2Param6Edit.setText(link.ParamStrB)
+            self.ui.condition2NotCheckbox.setChecked(link.Not2)
 
             self.refreshAnimList()
-            self.ui.emotionSelect.setCurrentIndex(node.emotion_id)
-            self.ui.expressionSelect.setCurrentIndex(node.facial_id)
-            self.ui.soundEdit.setText(node.sound.get())
-            self.ui.soundCheckbox.setChecked(node.sound_exists)
-            self.ui.voiceEdit.setText(node.vo_resref.get())
+            self.ui.emotionSelect.setCurrentIndex(node.Emotion)
+            self.ui.expressionSelect.setCurrentIndex(node.FacialAnim)
+            self.ui.soundEdit.setText(node.Sound.get())
+            self.ui.soundCheckbox.setChecked(node.SoundExists)
+            self.ui.voiceEdit.setText(node.VO_ResRef.get())
 
-            self.ui.plotIndexSpin.setValue(node.plot_index)
-            self.ui.plotXpSpin.setValue(node.plot_xp_percentage)
-            self.ui.questEdit.setText(node.quest)
-            self.ui.questEntrySpin.setValue(node.quest_entry)
+            self.ui.plotIndexSpin.setValue(node.PlotIndex)
+            self.ui.plotXpSpin.setValue(node.PlotXPPercentage)
+            self.ui.questEdit.setText(node.Quest)
+            self.ui.questEntrySpin.setValue(node.QuestEntry)
 
-            self.ui.cameraIdSpin.setValue(node.camera_id if node.camera_id is not None else -1)
-            self.ui.cameraAnimSpin.setValue(node.camera_anim if node.camera_anim is not None else -1)
-            self.ui.cameraAngleSelect.setCurrentIndex(node.camera_angle if node.camera_angle is not None else 0)
-            self.ui.cameraEffectSelect.setCurrentIndex(node.camera_effect+1 if node.camera_effect is not None else 0)
+            self.ui.cameraIdSpin.setValue(node.CameraID if node.CameraID is not None else -1)
+            self.ui.cameraAnimSpin.setValue(node.CameraAnimation if node.CameraAnimation is not None else -1)
+            self.ui.cameraAngleSelect.setCurrentIndex(node.CameraAnimation if node.CameraAnimation is not None else 0)
+            self.ui.cameraEffectSelect.setCurrentIndex(node.CamVidEffect+1 if node.CamVidEffect is not None else 0)
 
-            self.ui.nodeUnskippableCheckbox.setChecked(node.unskippable)
-            self.ui.nodeIdSpin.setValue(node.node_id)
-            self.ui.alienRaceNodeSpin.setValue(node.alien_race_node)
-            self.ui.postProcSpin.setValue(node.post_proc_node)
-            self.ui.delaySpin.setValue(node.delay)
-            self.ui.logicSpin.setValue(link.logic)
-            self.ui.waitFlagSpin.setValue(node.wait_flags)
-            self.ui.fadeTypeSpin.setValue(node.fade_type)
+            self.ui.nodeUnskippableCheckbox.setChecked(node.NodeUnskippable)
+            self.ui.nodeIdSpin.setValue(node.NodeID)
+            self.ui.alienRaceNodeSpin.setValue(node.AlienRaceNode)
+            self.ui.postProcSpin.setValue(node.PostProcNode)
+            self.ui.delaySpin.setValue(node.Delay)
+            self.ui.logicSpin.setValue(link.Logic)
+            self.ui.waitFlagSpin.setValue(node.WaitFlags)
+            self.ui.fadeTypeSpin.setValue(node.FadeType)
 
-            self.ui.commentsEdit.setPlainText(node.comment)
+            self.ui.commentsEdit.setPlainText(node.Comment)
         self.acceptUpdates = True
 
     def onNodeUpdate(self) -> None:
@@ -921,92 +921,92 @@ class DLGEditor(Editor):
         item = self.model.itemFromIndex(index)
 
         link: DLGLink = item.data(_LINK_ROLE)
-        node: DLGNode = link.node
+        node: DLGNode = link._node
 
-        node.listener = self.ui.listenerEdit.text()
+        node.Listener = self.ui.listenerEdit.text()
         if isinstance(node, DLGEntry):
-            node.speaker = self.ui.speakerEdit.text()
+            node.Speaker = self.ui.speakerEdit.text()
 
         # Scripts
-        node.script1 = ResRef(self.ui.script1ResrefEdit.text())
-        node.script1_param1 = self.ui.script1Param1Spin.value()
-        node.script1_param2 = self.ui.script1Param2Spin.value()
-        node.script1_param3 = self.ui.script1Param3Spin.value()
-        node.script1_param4 = self.ui.script1Param4Spin.value()
-        node.script1_param5 = self.ui.script1Param5Spin.value()
-        node.script1_param6 = self.ui.script1Param6Edit.text()
-        node.script2 = ResRef(self.ui.script2ResrefEdit.text())
-        node.script2_param1 = self.ui.script2Param1Spin.value()
-        node.script2_param2 = self.ui.script2Param2Spin.value()
-        node.script2_param3 = self.ui.script2Param3Spin.value()
-        node.script2_param4 = self.ui.script2Param4Spin.value()
-        node.script2_param5 = self.ui.script2Param5Spin.value()
-        node.script2_param6 = self.ui.script2Param6Edit.text()
+        node.Script = ResRef(self.ui.script1ResrefEdit.text())
+        node.ActionParam1 = self.ui.script1Param1Spin.value()
+        node.ActionParam2 = self.ui.script1Param2Spin.value()
+        node.ActionParam3 = self.ui.script1Param3Spin.value()
+        node.ActionParam4 = self.ui.script1Param4Spin.value()
+        node.ActionParam5 = self.ui.script1Param5Spin.value()
+        node.ActionParamStrA = self.ui.script1Param6Edit.text()
+        node.Script2 = ResRef(self.ui.script2ResrefEdit.text())
+        node.ActionParam1b = self.ui.script2Param1Spin.value()
+        node.ActionParam2b = self.ui.script2Param2Spin.value()
+        node.ActionParam3b = self.ui.script2Param3Spin.value()
+        node.ActionParam4b = self.ui.script2Param4Spin.value()
+        node.ActionParam5b = self.ui.script2Param5Spin.value()
+        node.ActionParamStrB = self.ui.script2Param6Edit.text()
 
-        link.active1 = ResRef(self.ui.condition1ResrefEdit.text())
-        link.active1_param1 = self.ui.condition1Param1Spin.value()
-        link.active1_param2 = self.ui.condition1Param2Spin.value()
-        link.active1_param3 = self.ui.condition1Param3Spin.value()
-        link.active1_param4 = self.ui.condition1Param4Spin.value()
-        link.active1_param5 = self.ui.condition1Param5Spin.value()
-        link.active1_param6 = self.ui.condition1Param6Edit.text()
-        link.active1_not = self.ui.condition1NotCheckbox.isChecked()
-        link.active2 = ResRef(self.ui.condition2ResrefEdit.text())
-        link.active2_param1 = self.ui.condition2Param1Spin.value()
-        link.active2_param2 = self.ui.condition2Param2Spin.value()
-        link.active2_param3 = self.ui.condition2Param3Spin.value()
-        link.active2_param4 = self.ui.condition2Param4Spin.value()
-        link.active2_param5 = self.ui.condition2Param5Spin.value()
-        link.active2_param6 = self.ui.condition2Param6Edit.text()
-        link.active2_not = self.ui.condition2NotCheckbox.isChecked()
+        link.Active = ResRef(self.ui.condition1ResrefEdit.text())
+        link.Param1 = self.ui.condition1Param1Spin.value()
+        link.Param2 = self.ui.condition1Param2Spin.value()
+        link.Param3 = self.ui.condition1Param3Spin.value()
+        link.Param4 = self.ui.condition1Param4Spin.value()
+        link.Param5 = self.ui.condition1Param5Spin.value()
+        link.ParamStrA = self.ui.condition1Param6Edit.text()
+        link.Not = self.ui.condition1NotCheckbox.isChecked()
+        link.Active2 = ResRef(self.ui.condition2ResrefEdit.text())
+        link.Param1b = self.ui.condition2Param1Spin.value()
+        link.Param2b = self.ui.condition2Param2Spin.value()
+        link.Param3b = self.ui.condition2Param3Spin.value()
+        link.Param4b = self.ui.condition2Param4Spin.value()
+        link.Param5b = self.ui.condition2Param5Spin.value()
+        link.ParamStrB = self.ui.condition2Param6Edit.text()
+        link.Not2 = self.ui.condition2NotCheckbox.isChecked()
 
         # Animations
-        node.emotion_id = self.ui.emotionSelect.currentIndex()
-        node.facial_id = self.ui.expressionSelect.currentIndex()
-        node.sound = ResRef(self.ui.soundEdit.text())
-        node.sound_exists = self.ui.soundCheckbox.isChecked()
-        node.vo_resref = ResRef(self.ui.voiceEdit.text())
+        node.Emotion = self.ui.emotionSelect.currentIndex()
+        node.FacialAnim = self.ui.expressionSelect.currentIndex()
+        node.Sound = ResRef(self.ui.soundEdit.text())
+        node.SoundExists = self.ui.soundCheckbox.isChecked()
+        node.VO_ResRef = ResRef(self.ui.voiceEdit.text())
 
         # Journal
-        node.plot_index = self.ui.plotIndexSpin.value()
-        node.plot_xp_percentage = self.ui.plotXpSpin.value()
-        node.quest = self.ui.questEdit.text()
-        node.quest_entry = self.ui.questEntrySpin.value()
+        node.PlotIndex = self.ui.plotIndexSpin.value()
+        node.PlotXPPercentage = self.ui.plotXpSpin.value()
+        node.Quest = self.ui.questEdit.text()
+        node.QuestEntry = self.ui.questEntrySpin.value()
 
         # Camera
-        node.camera_id = self.ui.cameraIdSpin.value()
-        node.camera_anim = self.ui.cameraAnimSpin.value()
-        node.camera_angle = self.ui.cameraAngleSelect.currentIndex()
-        node.camera_effect = self.ui.cameraEffectSelect.currentData()
-        if node.camera_id >= 0 and self.ui.cameraAngleSelect.currentIndex() == 0:
+        node.CameraID = self.ui.cameraIdSpin.value()
+        node.CameraAnimation = self.ui.cameraAnimSpin.value()
+        node.CameraAngle = self.ui.cameraAngleSelect.currentIndex()
+        node.CamVidEffect = self.ui.cameraEffectSelect.currentData()
+        if node.CameraID >= 0 and self.ui.cameraAngleSelect.currentIndex() == 0:
             self.ui.cameraAngleSelect.setCurrentIndex(6)
-        elif node.camera_id == -1 and self.ui.cameraAngleSelect.currentIndex() == 6:
+        elif node.CameraID == -1 and self.ui.cameraAngleSelect.currentIndex() == 6:
             self.ui.cameraAngleSelect.setCurrentIndex(0)
 
         # Other
-        node.unskippable = self.ui.nodeUnskippableCheckbox.isChecked()
-        node.node_id = self.ui.nodeIdSpin.value()
-        node.alien_race_node = self.ui.alienRaceNodeSpin.value()
-        node.post_proc_node = self.ui.postProcSpin.value()
-        node.delay = self.ui.delaySpin.value()
-        link.logic = self.ui.logicSpin.value()
-        node.wait_flags = self.ui.waitFlagSpin.value()
-        node.fade_type = self.ui.fadeTypeSpin.value()
+        node.NodeUnskippable = self.ui.nodeUnskippableCheckbox.isChecked()
+        node.NodeID = self.ui.nodeIdSpin.value()
+        node.AlienRaceNode = self.ui.alienRaceNodeSpin.value()
+        node.PostProcNode = self.ui.postProcSpin.value()
+        node.Delay = self.ui.delaySpin.value()
+        link.Logic = self.ui.logicSpin.value()
+        node.WaitFlags = self.ui.waitFlagSpin.value()
+        node.FadeType = self.ui.fadeTypeSpin.value()
 
         # Comments
-        node.comment = self.ui.commentsEdit.toPlainText()
+        node.Comment = self.ui.commentsEdit.toPlainText()
 
     def onAddStuntClicked(self) -> None:
         dialog = CutsceneModelDialog(self)
         if dialog.exec_():
-            self._dlg.stunts.append(dialog.stunt())
+            self._dlg.StuntList._structs.append(dialog.stunt())
             self.refreshStuntList()
 
     def onRemoveStuntClicked(self) -> None:
         if self.ui.stuntList.selectedItems():
             item = self.ui.stuntList.selectedItems()[0]
             stunt = item.data(QtCore.Qt.UserRole)
-            self._dlg.stunts.remove(stunt)
+            self._dlg.StuntList.remove(stunt)
             self.refreshStuntList()
 
     def onEditStuntClicked(self) -> None:
@@ -1015,14 +1015,14 @@ class DLGEditor(Editor):
             stunt = item.data(QtCore.Qt.UserRole)
             dialog = CutsceneModelDialog(self, stunt)
             if dialog.exec_():
-                stunt.stunt_model = dialog.stunt().stunt_model
-                stunt.participant = dialog.stunt().participant
+                stunt.StuntModel = dialog.stunt().StuntModel
+                stunt.Participant = dialog.stunt().Participant
                 self.refreshStuntList()
 
     def refreshStuntList(self) -> None:
         self.ui.stuntList.clear()
-        for stunt in self._dlg.stunts:
-            text = f"{stunt.stunt_model} ({stunt.participant})"
+        for stunt in self._dlg.StuntList:
+            text = f"{stunt.StuntModel} ({stunt.Participant})"
             item = QListWidgetItem(text)
             item.setData(QtCore.Qt.UserRole, stunt)
             self.ui.stuntList.addItem(item)
@@ -1031,22 +1031,22 @@ class DLGEditor(Editor):
         if self.ui.dialogTree.selectedIndexes():
             index = self.ui.dialogTree.selectedIndexes()[0]
             item = self.model.itemFromIndex(index)
-            node: DLGNode = item.data(_LINK_ROLE).node
+            node: DLGNode = item.data(_LINK_ROLE)._node
 
             dialog = EditAnimationDialog(self, self._installation)
             if dialog.exec_():
-                node.animations.append(dialog.animation())
+                node.AnimList._structs.append(dialog.animation())
                 self.refreshAnimList()
 
     def onRemoveAnimClicked(self) -> None:
         if self.ui.animsList.selectedItems():
             index = self.ui.dialogTree.selectedIndexes()[0]
             item = self.model.itemFromIndex(index)
-            node: DLGNode = item.data(_LINK_ROLE).node
+            node: DLGNode = item.data(_LINK_ROLE)._node
 
             animItem = self.ui.animsList.selectedItems()[0]
             anim = animItem.data(QtCore.Qt.UserRole)
-            node.animations.remove(anim)
+            node.AnimList.remove(anim)
             self.refreshAnimList()
 
     def onEditAnimClicked(self) -> None:
@@ -1055,8 +1055,8 @@ class DLGEditor(Editor):
             anim = animItem.data(QtCore.Qt.UserRole)
             dialog = EditAnimationDialog(self, self._installation, anim)
             if dialog.exec_():
-                anim.animation_id = dialog.animation().animation_id
-                anim.participant = dialog.animation().participant
+                anim.Animation = dialog.animation().Animation
+                anim.Participant = dialog.animation().Participant
                 self.refreshAnimList()
 
     def refreshAnimList(self) -> None:
@@ -1080,15 +1080,15 @@ class DLGEditor(Editor):
             index = self.ui.dialogTree.selectedIndexes()[0]
             item = self.model.itemFromIndex(index)
             link: DLGLink = item.data(_LINK_ROLE)
-            node: DLGNode = link.node
+            node: DLGNode = link._node
 
             animations_list = self._installation.htGetCache2DA(HTInstallation.TwoDA_DIALOG_ANIMS)
-            for anim in node.animations:
-                if animations_list.get_height() > anim.animation_id:
-                    name = animations_list.get_cell(anim.animation_id, "name")
+            for anim in node.AnimList:
+                if animations_list.get_height() > anim.Animation:
+                    name = animations_list.get_cell(anim.Animation, "name")
                 else:
-                    name = str(anim.animation_id)
-                text = f"{name} ({anim.participant})"
+                    name = str(anim.Animation)
+                text = f"{name} ({anim.Participant})"
                 item = QListWidgetItem(text)
                 item.setData(QtCore.Qt.UserRole, anim)
                 self.ui.animsList.addItem(item)
