@@ -1,13 +1,11 @@
 from __future__ import annotations
 
 from copy import copy, deepcopy
-import sys
 from typing import TYPE_CHECKING
 
+import pyperclip
 from pykotor.common.misc import ResRef
 from pykotor.extract.installation import SearchLocation
-from pykotor.resource.formats.gff import write_gff
-from pykotor.resource.formats.twoda.twoda_data import TwoDA
 from pykotor.resource.generics.dlg import (
     DLG,
     DLGAnimation,
@@ -18,7 +16,6 @@ from pykotor.resource.generics.dlg import (
     DLGNode,
     DLGReply,
     DLGStunt,
-    dismantle_dlg,
     read_dlg,
     write_dlg,
 )
@@ -27,7 +24,7 @@ from PyQt5 import QtCore
 from PyQt5.QtCore import QBuffer, QIODevice, QItemSelection, QItemSelectionModel, QPoint
 from PyQt5.QtGui import QBrush, QColor, QStandardItem, QStandardItemModel
 from PyQt5.QtMultimedia import QMediaContent, QMediaPlayer
-from PyQt5.QtWidgets import QApplication, QListWidgetItem, QMenu, QMessageBox, QPlainTextEdit, QShortcut, QWidget
+from PyQt5.QtWidgets import QListWidgetItem, QMenu, QMessageBox, QPlainTextEdit, QShortcut, QWidget
 from toolset.data.installation import HTInstallation
 from toolset.gui.dialogs.edit.dialog_animation import EditAnimationDialog
 from toolset.gui.dialogs.edit.dialog_model import CutsceneModelDialog
@@ -38,6 +35,7 @@ if TYPE_CHECKING:
     import os
 
     from pykotor.common.language import LocalizedString
+    from pykotor.resource.formats.twoda.twoda_data import TwoDA
 
 _LINK_ROLE = QtCore.Qt.UserRole + 1
 _COPY_ROLE = QtCore.Qt.UserRole + 2
@@ -541,14 +539,13 @@ class DLGEditor(Editor):
         self.copyPath(node)
 
     def copyPath(self, node: DLGNode):
-        app = QApplication(sys.argv)
         path = ""
         if isinstance(node, DLGEntry):
             path = f"EntryList\\{node.list_index}"
         elif isinstance(node, DLGReply):
             path = f"ReplyList\\{node.list_index}"
         if path:
-            app.clipboard().setText(path)
+            pyperclip.copy(path)
 
     def deleteNode(self, item: QStandardItem | None) -> None:
         """Deletes a node from the diagram.
