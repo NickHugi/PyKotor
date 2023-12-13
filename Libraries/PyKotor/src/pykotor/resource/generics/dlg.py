@@ -210,17 +210,17 @@ class DLG(GFFStructInterface):
         """
         entries = []
 
-        links = self.starters if links is None else links
+        links = self.StartingList if links is None else links
         seen_entries = [] if seen_entries is None else seen_entries
 
         for link in links:
-            entry = link.node
+            entry = link._node
             if entry not in seen_entries:
                 entries.append(entry)
                 seen_entries.append(entry)
-                for reply_link in entry.links:
-                    reply = reply_link.node
-                    entries.extend(self._all_entries(reply.links, seen_entries))
+                for reply_link in entry._links:
+                    reply = reply_link._node
+                    entries.extend(self._all_entries(reply._links, seen_entries))
 
         return entries
 
@@ -261,17 +261,17 @@ class DLG(GFFStructInterface):
         """
         replies = []
 
-        links = [_ for link in self.starters for _ in link.node.links] if links is None else links
+        links = [_ for link in self.StartingList for _ in link._node._links] if links is None else links
         seen_replies = [] if seen_replies is None else seen_replies
 
         for link in links:
-            reply = link.node
+            reply = link._node
             if reply not in seen_replies:
                 replies.append(reply)
                 seen_replies.append(reply)
-                for entry_link in reply.links:
-                    entry = entry_link.node
-                    replies.extend(self._all_replies(entry.links, seen_replies))
+                for entry_link in reply._links:
+                    entry = entry_link._node
+                    replies.extend(self._all_replies(entry._links, seen_replies))
 
         return replies
 
@@ -658,14 +658,14 @@ def construct_dlg(
         #reply: DLGReply = all_replies[i]
         reply = DLGReply.from_struct(reply_struct)
         anim_list = reply_struct.acquire("AnimList", GFFList())
-        for anim_struct in anim_list:
-            reply.AnimList._structs.append(DLGAnimation.from_struct(anim_struct))
+        for j, anim_struct in enumerate(anim_list):
+            reply.AnimList._structs[j] = DLGAnimation.from_struct(anim_struct)
 
         nested_entries_list: GFFList = reply_struct.acquire("EntryList", GFFList())
         for link_struct in nested_entries_list:
             entry = all_entries[link_struct.acquire("Index", 0)]
             link = DLGLink.from_struct(link_struct)
-            object.__setattr__(link, "_node", entry)
+            link._node = entry
             reply._links.append(link)
 
     return dlg

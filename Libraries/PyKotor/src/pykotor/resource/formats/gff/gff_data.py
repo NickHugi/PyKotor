@@ -1184,7 +1184,7 @@ class GFFStructInterface(GFFStruct):
         return new_instance
 
     def __getattribute__(self, attr):
-        if attr.startswith("_") or attr == "struct_id" or attr in GFFStruct.__dict__:
+        if attr.startswith("_") or attr == "struct_id" or attr in GFFStruct.__dict__ or attr in type(self).__dict__:
             return super().__getattribute__(attr)
         all_fields: dict[str, _GFFField] = {}
         all_fields.update(type(self).get_FIELDS())
