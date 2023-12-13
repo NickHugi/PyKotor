@@ -628,8 +628,8 @@ def construct_dlg(
     all_replies = [DLGReply() for _ in range(len(root.acquire("ReplyList", GFFList())))]
 
     stunt_list = root.acquire("StuntList", GFFList())
-    for stunt_struct in stunt_list:
-        dlg.StuntList._structs.append(DLGStunt.from_struct(stunt_struct))
+    for i, stunt_struct in enumerate(stunt_list):
+        dlg.StuntList._structs[i] = DLGStunt.from_struct(stunt_struct)
 
     starting_list = root.acquire("StartingList", GFFList())
     for i, link_struct in enumerate(starting_list):
@@ -644,8 +644,8 @@ def construct_dlg(
         #entry: DLGEntry = all_entries[i]
         entry: DLGEntry = DLGEntry.from_struct(entry_struct)
         anim_list = entry_struct.acquire("AnimList", GFFList())
-        for anim_struct in anim_list:
-            entry.AnimList._structs.append(DLGAnimation.from_struct(anim_struct))
+        for i, anim_struct in enumerate(anim_list):
+            entry.AnimList._structs[i] = DLGAnimation.from_struct(anim_struct)
 
         nested_replies_list: GFFList = entry_struct.acquire("RepliesList", GFFList())
         for link_struct in nested_replies_list:

@@ -1179,8 +1179,8 @@ class GFFStructInterface(GFFStruct):
         all_fields.update(cls.get_K2_FIELDS())
         new_instance = cls.__new__(cls)
         super(cls, new_instance).__init__()
-        for label, _type, value in struct:
-            setattr(new_instance, label, value)
+        for label, field_type, value in struct:
+            new_instance._set_field_value(field_type, label, value)
         return new_instance
 
     def __getattribute__(self, attr):
@@ -1206,13 +1206,20 @@ class GFFStructInterface(GFFStruct):
         all_fields: dict[str, _GFFField] = {}
         all_fields.update(type(self).get_FIELDS())
         all_fields.update(type(self).get_K2_FIELDS())
+        field_type: GFFFieldType | None
         if attr not in all_fields:
+            field_type = self.what_type(attr) if self.exists(attr) else None
+        else:
+            field_type = all_fields[attr].field_type()
+        if field_type is None:
             msg = f"'{self.__class__.__name__}' object has no attribute '{attr}'"
             raise AttributeError(msg)
-        field_type: GFFFieldType = all_fields[attr].field_type()
         #if not field_type:
         #    msg = f"'{self.__class__.__name__}' No field type defined for {attr}"
         #    raise TypeError(msg)
+        self._set_field_value(field_type, attr, value)
+
+    def _set_field_value(self, field_type, attr, value):
         if field_type == GFFFieldType.UInt8:
             super().set_uint8(attr, value)
         elif field_type == GFFFieldType.Int8:
