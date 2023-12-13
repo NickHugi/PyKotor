@@ -152,14 +152,15 @@ class DLG:
         - Seen entries are tracked to avoid processing the same entry multiple times
         - Child entries are recursively processed by calling the function again
         """
-        entries = []
+        entries: list[DLGEntry] = []
 
         links = self.starters if links is None else links
         seen_entries = [] if seen_entries is None else seen_entries
 
         for link in links:
             entry = link.node
-            if entry not in seen_entries:
+            if entry not in seen_entries:  # sourcery skip: class-extract-method
+                assert isinstance(entry, DLGEntry)
                 entries.append(entry)
                 seen_entries.append(entry)
                 for reply_link in entry.links:
@@ -203,14 +204,15 @@ class DLG:
             - Mark node as seen and recurse on its links
             - Extend replies with results of recursion.
         """
-        replies = []
+        replies: list[DLGReply] = []
 
         links = [_ for link in self.starters for _ in link.node.links] if links is None else links
         seen_replies = [] if seen_replies is None else seen_replies
 
         for link in links:
             reply = link.node
-            if reply not in seen_replies:
+            if reply not in seen_replies:  # sourcery skip: class-extract-method
+                assert isinstance(reply, DLGReply)
                 replies.append(reply)
                 seen_replies.append(reply)
                 for entry_link in reply.links:
@@ -376,7 +378,7 @@ class DLGEntry(DLGNode):
 
     def __init__(
         self,
-    ):
+    ) -> None:
         super().__init__()
         self.speaker: str = ""
 
@@ -386,7 +388,7 @@ class DLGAnimation:
 
     def __init__(
         self,
-    ):
+    ) -> None:
         self.animation_id: int = 6
         self.participant: str = ""
 
