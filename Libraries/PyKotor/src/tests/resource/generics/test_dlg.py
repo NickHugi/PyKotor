@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import os
 import pathlib
 import sys
@@ -29,7 +31,7 @@ TEST_K1_FILE = "src/tests/files/test_k1.dlg"
 
 
 class TestDLG(TestCase):
-    def setUp(self):
+    def setUp(self) -> None:
         self.log_messages: list[str] = [os.linesep]
 
     def log_func(self, *args):
@@ -157,7 +159,7 @@ class TestDLG(TestCase):
         stunt = dlg.StuntList[1]
         assert isinstance(stunt, DLGStunt)
         self.assertEqual("bbb", stunt.Participant)
-        self.assertEqual("m01aa_c04_char01", stunt.stunt_model)
+        self.assertEqual("m01aa_c04_char01", stunt.StuntModel)
 
 
 if __name__ == "__main__":

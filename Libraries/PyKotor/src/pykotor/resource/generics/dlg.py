@@ -347,7 +347,7 @@ class DLGNode(GFFStructInterface):
         "QuestEntry": _GFFField(GFFFieldType.UInt32, 0),
         "FadeDelay": _GFFField(GFFFieldType.Single, 0.0),
         "FadeLength": _GFFField(GFFFieldType.Single, 0.0),
-        "CameraAnimation": _GFFField(GFFFieldType.UInt16, 0),
+        "CameraAnimation": _GFFField(GFFFieldType.UInt16, -1),
         "CameraID": _GFFField(GFFFieldType.Int32, 0),
         "CamFieldOfView": _GFFField(GFFFieldType.Single, 0.0),
         "CamHeightOffset": _GFFField(GFFFieldType.Single, 0.0),
