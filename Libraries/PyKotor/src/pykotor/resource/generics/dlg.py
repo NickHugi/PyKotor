@@ -521,8 +521,8 @@ def construct_dlg(
         node.wait_flags = gff_struct.acquire("WaitFlags", 0)
         node.camera_angle = gff_struct.acquire("CameraAngle", 0)
         node.fade_type = gff_struct.acquire("FadeType", 0)
-        node.sound_exists = gff_struct.acquire("SoundExists", 0)
-        node.vo_text_changed = gff_struct.acquire("Changed", 0)
+        node.sound_exists = bool(gff_struct.acquire("SoundExists", 0))
+        node.vo_text_changed = bool(gff_struct.acquire("Changed", 0))
 
         anim_list: GFFList = gff_struct.acquire("AnimList", GFFList())
         for anim_struct in anim_list:
@@ -548,11 +548,11 @@ def construct_dlg(
         node.emotion_id = gff_struct.acquire("Emotion", 0)
         node.facial_id = gff_struct.acquire("FacialAnim", 0)
         node.node_id = gff_struct.acquire("NodeID", 0)
-        node.unskippable = gff_struct.acquire("NodeUnskippable", 0)
+        node.unskippable = bool(gff_struct.acquire("NodeUnskippable", 0))
         node.post_proc_node = gff_struct.acquire("PostProcNode", 0)
-        node.record_no_vo_override = gff_struct.acquire("RecordNoVOOverri", 0)
-        node.record_vo = gff_struct.acquire("RecordVO", 0)
-        node.vo_text_changed = gff_struct.acquire("VOTextChanged", 0)
+        node.record_no_vo_override = bool(gff_struct.acquire("RecordNoVOOverri", 0))
+        node.record_vo = bool(gff_struct.acquire("RecordVO", 0))
+        node.vo_text_changed = bool(gff_struct.acquire("VOTextChanged", 0))
 
         if gff_struct.exists("QuestEntry"):
             node.quest_entry = gff_struct.acquire("QuestEntry", 0)
@@ -812,7 +812,7 @@ def dismantle_dlg(
             anim_struct.set_uint16("Animation", anim.animation_id)
             anim_struct.set_string("Participant", anim.participant)
 
-        if node.quest_entry is not None and node.quest_entry:
+        if node.quest_entry:
             gff_struct.set_uint32("QuestEntry", node.quest_entry)
         if node.fade_delay is not None:
             gff_struct.set_single("FadeDelay", node.fade_delay)
