@@ -494,9 +494,9 @@ class DLGEditor(Editor):
     def addCopyLink(self, item: QStandardItem, target: DLGNode, source: DLGNode):
         self._add_node_main(source, target, True, item)
 
-    def _add_node_main(self, arg0, arg1, arg2, item):
-        newLink = DLGLink(arg0)
-        arg1.links.append(newLink)
+    def _add_node_main(self, source: DLGNode, target: DLGNode, arg2, item: QStandardItem):
+        newLink = DLGLink(source)
+        target._links.append(newLink)
         newItem = QStandardItem()
         newItem.setData(newLink, _LINK_ROLE)
         newItem.setData(arg2, _COPY_ROLE)
@@ -630,7 +630,7 @@ class DLGEditor(Editor):
         - Sets the item foreground color based on the node and copy type
         - Blue for replies, red for entries, lighter if it is a copy.
         """
-        node: DLGNode = item.data(_LINK_ROLE).node
+        node: DLGNode = item.data(_LINK_ROLE)._node
         isCopy: bool = item.data(_COPY_ROLE)
         text = self._installation.string(node.Text, "(continue)")
         item.setText(text)
@@ -724,8 +724,8 @@ class DLGEditor(Editor):
 
         # Sync DLG to tree changes
         links = self._dlg.StartingList if item.parent() is None else item.parent().data(_LINK_ROLE)._node._links
-        link = links.pop(oldRow)  # FIXME:
-        links.insert(newRow, link)
+        link = links._structs.pop(oldRow)
+        links._structs.insert(newRow, link)
 
     def onTreeContextMenu(self, point: QPoint):
         """Displays context menu for tree items.
