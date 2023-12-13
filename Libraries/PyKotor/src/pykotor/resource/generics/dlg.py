@@ -300,7 +300,7 @@ class DLGNode:
         """
         self.comment: str = ""
         self.links: list[DLGLink] = []
-        self.original_index: int | None = None
+        self.original_index: int = -1
 
         self.camera_angle: int = 0
         self.delay: int = -1
@@ -423,6 +423,7 @@ class DLGLink:
     ):
         self.active1: ResRef = ResRef.from_blank()
         self.node: DLGNode = node
+        self.original_index: int = -1
 
         # not in StartingList
         self.is_child: bool = False
@@ -664,11 +665,11 @@ def construct_dlg(
         entry.original_index = i
         construct_node(entry_struct, entry)
 
-        nested_replies_list = entry_struct.acquire("RepliesList", GFFList())
-        for j, link_struct in enumerate(nested_replies_list):
+        replies_list = entry_struct.acquire("RepliesList", GFFList())
+        for j, link_struct in enumerate(replies_list):
             link = DLGLink()
+            link.original_index = j
             reply = all_replies[link_struct.acquire("Index", 0)]
-            reply.original_index = j
             link.node = reply
             link.is_child = bool(link_struct.acquire("IsChild", 0))
             link.comment = link_struct.acquire("LinkComment", "")
@@ -676,17 +677,17 @@ def construct_dlg(
             entry.links.append(link)
             construct_link(link_struct, link)
 
-    replies_list: GFFList = root.acquire("ReplyList", GFFList())
-    for i, reply_struct in enumerate(replies_list):
+    reply_list: GFFList = root.acquire("ReplyList", GFFList())
+    for i, reply_struct in enumerate(reply_list):
         reply: DLGReply = all_replies[i]
         reply.original_index = i
         construct_node(reply_struct, reply)
 
-        nested_entries_list = reply_struct.acquire("EntriesList", GFFList())
-        for j, link_struct in enumerate(nested_entries_list):
+        entries_list = reply_struct.acquire("EntriesList", GFFList())
+        for j, link_struct in enumerate(entries_list):
             link = DLGLink()
+            link.original_index = j
             entry = all_entries[link_struct.acquire("Index", 0)]
-            entry.original_index = j
             link.node = entry
             link.is_child = bool(link_struct.acquire("IsChild", 0))
             link.comment = link_struct.acquire("LinkComment", "")
@@ -910,16 +911,41 @@ def dismantle_dlg(
         starting_struct = starting_list.add(i)
         dismantle_link(starting_struct, starter, all_entries, "StartingList")
 
-    entries_list = root.set_list("EntryList", GFFList())
+    entry_list = root.set_list("EntryList", GFFList())
     for i, entry in enumerate(all_entries):
-        entries_struct: GFFStruct = entries_list.add(i)
-        entries_struct.set_string("Speaker", entry.speaker)
-        dismantle_node(entries_struct, entry, all_replies, "RepliesList")
+        entry_struct: GFFStruct = entry_list.add(i)
+        entry_struct.set_string("Speaker", entry.speaker)
+        dismantle_node(entry_struct, entry, all_replies, "RepliesList")
 
-    replies_list = root.set_list("ReplyList", GFFList())
+    reply_list = root.set_list("ReplyList", GFFList())
     for i, reply in enumerate(all_replies):
-        replies_struct = replies_list.add(i)
-        dismantle_node(replies_struct, reply, all_entries, "EntriesList")
+        reply_struct = reply_list.add(i)
+        dismantle_node(reply_struct, reply, all_entries, "EntriesList")
+
+    def sort_entries(struct: GFFStruct, original_index: int | None = None):
+        entry = all_entries[struct.struct_id]
+        new_index = struct.struct_id if entry.original_index == -1 else entry.original_index
+        new_index = original_index if original_index is not None else new_index
+        field_index = struct.acquire("Index", None)
+        replies_list: GFFList | None = struct.acquire("RepliesList", None, GFFList)
+        if replies_list is not None and field_index is not None:
+            reply_original_index = all_replies[field_index].original_index
+            replies_list._structs.sort(key=lambda x: sort_replies(x, reply_original_index))
+        return new_index
+    def sort_replies(struct: GFFStruct, original_index: int | None = None):
+        reply = all_replies[struct.struct_id]
+        new_index = struct.struct_id if reply.original_index == -1 else reply.original_index
+        new_index = original_index if original_index is not None else new_index
+        entries_list: GFFList | None = struct.acquire("EntryList", None, GFFList)
+        field_index = struct.acquire("Index", None)
+        if entries_list is not None and field_index is not None:
+            entry_original_index = all_entries[field_index].original_index
+            entries_list._structs.sort(key=lambda x: sort_entries(x, entry_original_index))
+        field_index = struct.acquire("Index", None)
+        return new_index
+
+    entry_list._structs.sort(key=sort_entries)
+    reply_list._structs.sort(key=sort_replies)
 
     return gff
 
