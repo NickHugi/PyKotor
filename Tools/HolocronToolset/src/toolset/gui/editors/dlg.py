@@ -48,14 +48,14 @@ class DLGEditor(Editor):
             installation: HTInstallation | None = None: The installation
 
         Initializes UI components:
-        - Sets up menus
-        - Connects signals
-        - Sets up installation
-        - Initializes model, tree view and selection model
-        - Sets buffer and media player
-        - Sets boolean to prevent events on programatic updates
-        - Sets splitter sizes
-        - Calls new() to start with empty dialog.
+            - Sets up menus
+            - Connects signals
+            - Sets up installation
+            - Initializes model, tree view and selection model
+            - Sets buffer and media player
+            - Sets boolean to prevent events on programatic updates
+            - Sets splitter sizes
+            - Calls new() to start with empty dialog.
         """
         supported = [ResourceType.DLG]
         super().__init__(parent, "Dialog Editor", "dialog", supported, supported, installation)
@@ -193,20 +193,20 @@ class DLGEditor(Editor):
         self._loadDLG(dlg)
         self.refreshStuntList()
 
-        self.ui.onAbortEdit.setText(dlg.on_abort.get())
-        self.ui.onEndEdit.setText(dlg.on_end.get())
+        self.ui.onAbortEdit.setText(dlg.EndConverAbort.get())
+        self.ui.onEndEdit.setText(dlg.EndConversation.get())
         self.ui.voIdEdit.setText(dlg.VO_ID)
         self.ui.ambientTrackEdit.setText(dlg.AmbientTrack.get())
-        self.ui.cameraModelEdit.setText(dlg.camera_model.get())
-        self.ui.conversationSelect.setCurrentIndex(dlg.conversation_type.value)
-        self.ui.computerSelect.setCurrentIndex(dlg.computer_type.value)
-        self.ui.skippableCheckbox.setChecked(dlg.skippable)
-        self.ui.animatedCutCheckbox.setChecked(bool(dlg.animated_cut))
-        self.ui.oldHitCheckbox.setChecked(dlg.old_hit_check)
-        self.ui.unequipHandsCheckbox.setChecked(dlg.unequip_hands)
-        self.ui.unequipAllCheckbox.setChecked(dlg.unequip_items)
-        self.ui.entryDelaySpin.setValue(dlg.delay_entry)
-        self.ui.replyDelaySpin.setValue(dlg.delay_reply)
+        self.ui.cameraModelEdit.setText(dlg.CameraModel.get())
+        self.ui.conversationSelect.setCurrentIndex(dlg.ConversationType.value)
+        self.ui.computerSelect.setCurrentIndex(dlg.ComputerType.value)
+        self.ui.skippableCheckbox.setChecked(dlg.Skippable)
+        self.ui.animatedCutCheckbox.setChecked(bool(dlg.AnimatedCut))
+        self.ui.oldHitCheckbox.setChecked(dlg.OldHitCheck)
+        self.ui.unequipHandsCheckbox.setChecked(dlg.UnequipHItem)
+        self.ui.unequipAllCheckbox.setChecked(dlg.UnequipItems)
+        self.ui.entryDelaySpin.setValue(dlg.DelayEntry)
+        self.ui.replyDelaySpin.setValue(dlg.DelayReply)
 
     def _loadDLG(self, dlg: DLG):
         """Loads a dialog tree into the UI view.
@@ -215,11 +215,13 @@ class DLGEditor(Editor):
         ----
             dlg: The dialog tree to load
 
-        - Clears any existing styling from the dialog tree widget
-        - Sets the focused flag to False
-        - Sets the internal dlg variable to the passed dlg
-        - Clears the model
-        - Loops through the starter nodes and loads them recursively into the model.
+        Processing Logic:
+        ----------------
+            - Clears any existing styling from the dialog tree widget
+            - Sets the focused flag to False
+            - Sets the internal dlg variable to the passed dlg
+            - Clears the model
+            - Loops through the starter nodes and loads them recursively into the model.
         """
         self.ui.dialogTree.setStyleSheet("")
         self._focused = False
@@ -382,7 +384,7 @@ class DLGEditor(Editor):
         for i, label in enumerate(videoEffects.get_column("label")):
             self.ui.cameraEffectSelect.addItem(label.replace("VIDEO_EFFECT_", "").replace("_" , " ").title(), i)
 
-    def _setup_tsl_install_defs(self, installation):
+    def _setup_tsl_install_defs(self, installation: HTInstallation):
         """Set up UI elements for TSL installation selection.
 
         TSL has additional properties such as Emotions and Expressions.
@@ -391,9 +393,11 @@ class DLGEditor(Editor):
         ----
             installation: {Installation object to get data from}.
 
-        - Get expression and emotion data from installation object
-        - Clear existing items from emotion and expression dropdowns
-        - Populate dropdowns with labels from expression and emotion data.
+        Processing Logic:
+        ----------------
+            - Get expression and emotion data from installation object
+            - Clear existing items from emotion and expression dropdowns
+            - Populate dropdowns with labels from expression and emotion data.
         """
         expressions = installation.htGetCache2DA(HTInstallation.TwoDA_EXPRESSIONS)
         emotions = installation.htGetCache2DA(HTInstallation.TwoDA_EMOTIONS)
@@ -412,10 +416,12 @@ class DLGEditor(Editor):
             self: The class instance
             e: The triggering event
 
-        1. Gets the selected dialog node item from the dialog tree view.
-        2. Gets the DLGLink and DLGNode data from the item.
-        3. Opens a localized string dialog with the node's text.
-        4. If dialog is accepted and item is not a copy, updates the node's text and item text.
+        Processing Logic:
+        ----------------
+            1. Gets the selected dialog node item from the dialog tree view.
+            2. Gets the DLGLink and DLGNode data from the item.
+            3. Opens a localized string dialog with the node's text.
+            4. If dialog is accepted and item is not a copy, updates the node's text and item text.
         """
         indexes = self.ui.dialogTree.selectionModel().selectedIndexes()
         if indexes:
@@ -426,7 +432,7 @@ class DLGEditor(Editor):
             dialog = LocalizedStringDialog(self, self._installation, node.Text)
             if dialog.exec_() and not isCopy:
                 node.Text = dialog.locstring
-                item.setText(self._installation.string(node.Text, "(continue"))
+                item.setText(self._installation.string(node.Text, "(continue)"))
                 self._loadLocstring(self.ui.textEdit, node.Text)
 
     def _loadLocstring(self, textbox: QPlainTextEdit, locstring: LocalizedString) -> None:
@@ -473,12 +479,14 @@ class DLGEditor(Editor):
         ----
             self: The dialog manager object.
 
-        - A new DLGEntry node is created to represent the root node
-        - A DLGLink is created linking the root node
-        - The link is appended to the starters list of the dialog graph
-        - A QStandardItem is created and associated with the link
-        - The item is added to the model with the link and marked as not a copy
-        - The item is refreshed in the view and appended to the model row
+        Processing Logic:
+        ----------------
+            - A new DLGEntry node is created to represent the root node
+            - A DLGLink is created linking the root node
+            - The link is appended to the starters list of the dialog graph
+            - A QStandardItem is created and associated with the link
+            - The item is added to the model with the link and marked as not a copy
+            - The item is refreshed in the view and appended to the model row
         """
         newNode = DLGEntry()
         newLink = DLGLink(newNode)
@@ -512,10 +520,12 @@ class DLGEditor(Editor):
             target: The target node to add the copy to
             source: The node to copy
 
-        - Makes a deep copy of the source node
-        - Creates a new link between the target and copy
-        - Creates a new item to hold the copied node
-        - Loads the copied node recursively into the new item.
+        Processing Logic:
+        ----------------
+            - Makes a deep copy of the source node
+            - Creates a new link between the target and copy
+            - Creates a new item to hold the copied node
+            - Loads the copied node recursively into the new item.
         """
         sourceCopy = deepcopy(source)
         newLink = DLGLink(sourceCopy)
@@ -569,10 +579,12 @@ class DLGEditor(Editor):
         ----
             self: The class instance.
 
-        - Check if any node is selected in the tree
-        - Get the index of the selected node
-        - Get the item object from the model using the index
-        - Call the deleteNode method to remove the item from the model.
+        Processing Logic:
+        ----------------
+            - Check if any node is selected in the tree
+            - Get the index of the selected node
+            - Get the item object from the model using the index
+            - Call the deleteNode method to remove the item from the model.
         """
         if self.ui.dialogTree.selectedIndexes():
             index = self.ui.dialogTree.selectedIndexes()[0]
@@ -625,10 +637,12 @@ class DLGEditor(Editor):
         ----
             item: QStandardItem - The item to refresh
 
-        - Sets the item text to the node text translated by the installation
-        - Appends "[End Dialog]" if the node has no links
-        - Sets the item foreground color based on the node and copy type
-        - Blue for replies, red for entries, lighter if it is a copy.
+        Processing Logic:
+        ----------------
+            - Sets the item text to the node text translated by the installation
+            - Appends "[End Dialog]" if the node has no links
+            - Sets the item foreground color based on the node and copy type
+            - Blue for replies, red for entries, lighter if it is a copy.
         """
         node: DLGNode = item.data(_LINK_ROLE)._node
         isCopy: bool = item.data(_COPY_ROLE)
@@ -652,11 +666,13 @@ class DLGEditor(Editor):
         ----
             resname: The name of the sound resource to play.
 
-        - Stops any currently playing sound.
-        - Searches for the sound resource in multiple locations and loads the data if found.
-        - Creates a buffer with the sound data and sets it as the media for a player.
-        - Starts playback of the sound using a single shot timer to avoid blocking.
-        - Displays an error message if the sound resource is not found.
+        Processing Logic:
+        ----------------
+            - Stops any currently playing sound.
+            - Searches for the sound resource in multiple locations and loads the data if found.
+            - Creates a buffer with the sound data and sets it as the media for a player.
+            - Starts playback of the sound using a single shot timer to avoid blocking.
+            - Displays an error message if the sound resource is not found.
         """
         self.player.stop()
 
@@ -706,10 +722,12 @@ class DLGEditor(Editor):
             item: The item to shift.
             amount: The number of rows to shift by.
 
-        - It removes the item from its current row.
-        - It inserts the item into the new row calculated by adding the amount to the original row.
-        - It updates the selection in the tree view.
-        - It syncs the changes to the underlying DLG data structure by moving the corresponding link.
+        Processing Logic:
+        ----------------
+            - Remove the item from its current row.
+            - Insert the item into the new row calculated by adding the amount to the original row.
+            - Update the selection in the tree view.
+            - Sync the changes to the underlying DLG data structure by moving the corresponding link.
         """
         oldRow = item.row()
         parent = self.model if item.parent() is None else item.parent()
@@ -734,10 +752,12 @@ class DLGEditor(Editor):
         ----
             point (QPoint): Mouse position for context menu
 
-        - Checks if mouse position is over a tree item
-        - Gets the item from tree model if mouse is over an item
-        - Sets context menu actions based on the item
-        - Shows default add entry menu if mouse not over item.
+        Processing Logic:
+        ----------------
+            - Checks if mouse position is over a tree item
+            - Gets the item from tree model if mouse is over an item
+            - Sets context menu actions based on the item
+            - Shows default add entry menu if mouse not over item.
         """
         index = self.ui.dialogTree.indexAt(point)
         item = self.model.itemFromIndex(index)
@@ -910,10 +930,10 @@ class DLGEditor(Editor):
             self: The class instance
 
         Updates node properties:
-        - Sets listener, speaker and scripts based on UI selections
-        - Sets conditions and parameters based on UI selections
-        - Sets animations, journal, camera and other properties based on UI
-        - Sets comment text from UI text edit.
+            - Sets listener, speaker and scripts based on UI selections
+            - Sets conditions and parameters based on UI selections
+            - Sets animations, journal, camera and other properties based on UI
+            - Sets comment text from UI text edit.
         """
         if not self.ui.dialogTree.selectedIndexes() or not self.acceptUpdates:
             return
