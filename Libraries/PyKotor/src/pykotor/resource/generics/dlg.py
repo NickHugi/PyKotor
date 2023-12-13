@@ -43,7 +43,7 @@ class DLG:
     def __init__(
         self,
         blank_node: bool = True,
-    ):
+    ) -> None:
         """Initializes a DLGNode object.
 
         Args:
@@ -104,7 +104,7 @@ class DLG:
         indent: int,
         seen_links: list[DLGLink],
         seen_nodes: list[DLGNode],
-    ):
+    ) -> None:
         for link in links:
             if link.node not in seen_nodes:
                 print(f'{" " * indent}-> {link.node.text}')
@@ -158,9 +158,9 @@ class DLG:
         seen_entries = [] if seen_entries is None else seen_entries
 
         for link in links:
-            entry = link.node
+            entry: DLGNode = link.node
             if entry not in seen_entries:  # sourcery skip: class-extract-method
-                assert isinstance(entry, DLGEntry)
+                assert isinstance(entry, DLGEntry)  # noqa: S101
                 entries.append(entry)
                 seen_entries.append(entry)
                 for reply_link in entry.links:
@@ -212,7 +212,7 @@ class DLG:
         for link in links:
             reply = link.node
             if reply not in seen_replies:  # sourcery skip: class-extract-method
-                assert isinstance(reply, DLGReply)
+                assert isinstance(reply, DLGReply)  # noqa: S101
                 replies.append(reply)
                 seen_replies.append(reply)
                 for entry_link in reply.links:
@@ -360,7 +360,7 @@ class DLGNode:
 
     def __repr__(
         self,
-    ):
+    ) -> str:
         return str(self.text.get(Language.ENGLISH, Gender.MALE))
 
 
@@ -369,7 +369,7 @@ class DLGReply(DLGNode):
 
     def __init__(
         self,
-    ):
+    ) -> None:
         super().__init__()
 
 
@@ -422,7 +422,7 @@ class DLGLink:
     def __init__(
         self,
         node: DLGNode | None = None,
-    ):
+    ) -> None:
         self.active1: ResRef = ResRef.from_blank()
         self.node: DLGNode = node
         self.link_index: int = -1
@@ -462,7 +462,7 @@ class DLGStunt:
 
     def __init__(
         self,
-    ):
+    ) -> None:
         self.participant: str = ""
         self.stunt_model: ResRef = ResRef.from_blank()
 
@@ -490,7 +490,7 @@ def construct_dlg(
     def construct_node(
         gff_struct: GFFStruct,
         node: DLGNode,
-    ):
+    ) -> None:
         """Constructs a DLGNode from a GFFStruct.
 
         Args:
@@ -513,7 +513,7 @@ def construct_dlg(
         node.listener = gff_struct.acquire("Listener", "")
         node.vo_resref = gff_struct.acquire("VO_ResRef", ResRef.from_blank())
         node.script1 = gff_struct.acquire("Script", ResRef.from_blank())
-        delay = gff_struct.acquire("Delay", 0)
+        delay: int = gff_struct.acquire("Delay", 0)
         node.delay = -1 if delay == 0xFFFFFFFF else delay
         node.comment = gff_struct.acquire("Comment", "")
         node.sound = gff_struct.acquire("Sound", ResRef.from_blank())
@@ -580,7 +580,7 @@ def construct_dlg(
     def construct_link(
         gff_struct: GFFStruct,
         link: DLGLink,
-    ):
+    ) -> None:
         """Constructs a DLGLink from a GFFStruct.
 
         Args:
@@ -620,10 +620,10 @@ def construct_dlg(
 
     dlg = DLG(blank_node=False)
 
-    root = gff.root
+    root: GFFStruct = gff.root
 
-    all_entries = [DLGEntry() for _ in range(len(root.acquire("EntryList", GFFList())))]
-    all_replies = [DLGReply() for _ in range(len(root.acquire("ReplyList", GFFList())))]
+    all_entries: list[DLGEntry] = [DLGEntry() for _ in range(len(root.acquire("EntryList", GFFList())))]
+    all_replies: list[DLGReply] = [DLGReply() for _ in range(len(root.acquire("ReplyList", GFFList())))]
 
     dlg.word_count = root.acquire("NumWords", 0)
     dlg.on_abort = root.acquire("EndConverAbort", ResRef.from_blank())
@@ -645,14 +645,14 @@ def construct_dlg(
     dlg.delay_entry = root.acquire("DelayEntry", 0)
     dlg.delay_reply = root.acquire("DelayReply", 0)
 
-    stunt_list = root.acquire("StuntList", GFFList())
+    stunt_list: GFFList = root.acquire("StuntList", GFFList())
     for stunt_struct in stunt_list:
         stunt = DLGStunt()
         dlg.stunts.append(stunt)
         stunt.participant = stunt_struct.acquire("Participant", "")
         stunt.stunt_model = stunt_struct.acquire("StuntModel", ResRef.from_blank())
 
-    starting_list = root.acquire("StartingList", GFFList())
+    starting_list: GFFList = root.acquire("StartingList", GFFList())
     for link_struct in starting_list:
         link = DLGLink()
         link.link_index = link_struct.acquire("Index", 0)
@@ -667,7 +667,7 @@ def construct_dlg(
         entry.list_index = i
         construct_node(entry_struct, entry)
 
-        replies_list = entry_struct.acquire("RepliesList", GFFList())
+        replies_list: GFFList = entry_struct.acquire("RepliesList", GFFList())
         for link_struct in replies_list:
             link = DLGLink()
             link.link_index = link_struct.acquire("Index", 0)
@@ -684,7 +684,7 @@ def construct_dlg(
         reply.list_index = i
         construct_node(reply_struct, reply)
 
-        entries_list = reply_struct.acquire("EntriesList", GFFList())
+        entries_list: GFFList = reply_struct.acquire("EntriesList", GFFList())
         for link_struct in entries_list:
             link = DLGLink()
             link.link_index = link_struct.acquire("Index", 0)
@@ -729,7 +729,7 @@ def dismantle_dlg(
         link: DLGLink,
         nodes: list,
         list_name: str,
-    ):
+    ) -> None:
         """Disassembles a link into a GFFStruct.
 
         Args:
@@ -778,7 +778,7 @@ def dismantle_dlg(
         node: DLGNode,
         nodes: list,
         list_name: str,
-    ):
+    ) -> None:
         """Disassembles a DLGNode into a GFFStruct.
 
         Args:
@@ -812,9 +812,9 @@ def dismantle_dlg(
         if node.vo_text_changed:
             gff_struct.set_uint8("Changed", node.vo_text_changed)
 
-        anim_list = gff_struct.set_list("AnimList", GFFList())
+        anim_list: GFFList = gff_struct.set_list("AnimList", GFFList())
         for anim in node.animations:
-            anim_struct = anim_list.add(0)
+            anim_struct: GFFStruct = anim_list.add(0)
             anim_struct.set_uint16("Animation", anim.animation_id)
             anim_struct.set_string("Participant", anim.participant)
 
@@ -876,7 +876,7 @@ def dismantle_dlg(
 
     gff = GFF(GFFContent.DLG)
 
-    root = gff.root
+    root: GFFStruct = gff.root
     root.set_uint32("NumWords", dlg.word_count)
     root.set_resref("EndConverAbort", dlg.on_abort)
     root.set_resref("EndConversation", dlg.on_end)
@@ -906,26 +906,26 @@ def dismantle_dlg(
         root.set_uint32("DelayEntry", dlg.delay_entry)
         root.set_uint32("DelayReply", dlg.delay_reply)
 
-    stunt_list = root.set_list("StuntList", GFFList())
+    stunt_list: GFFList = root.set_list("StuntList", GFFList())
     for stunt in dlg.stunts:
-        stunt_struct = stunt_list.add(0)
+        stunt_struct: GFFStruct = stunt_list.add(0)
         stunt_struct.set_string("Participant", stunt.participant)
         stunt_struct.set_resref("StuntModel", stunt.stunt_model)
 
-    starting_list = root.set_list("StartingList", GFFList())
+    starting_list: GFFList = root.set_list("StartingList", GFFList())
     for i, starter in enumerate(dlg.starters):
-        starting_struct = starting_list.add(i)
+        starting_struct: GFFStruct = starting_list.add(i)
         dismantle_link(starting_struct, starter, all_entries, "StartingList")
 
-    entry_list = root.set_list("EntryList", GFFList())
+    entry_list: GFFList = root.set_list("EntryList", GFFList())
     for i, entry in enumerate(all_entries):
         entry_struct: GFFStruct = entry_list.add(i)
         entry_struct.set_string("Speaker", entry.speaker)
         dismantle_node(entry_struct, entry, all_replies, "RepliesList")
 
-    reply_list = root.set_list("ReplyList", GFFList())
+    reply_list: GFFList = root.set_list("ReplyList", GFFList())
     for i, reply in enumerate(all_replies):
-        reply_struct = reply_list.add(i)
+        reply_struct: GFFStruct = reply_list.add(i)
         dismantle_node(reply_struct, reply, all_entries, "EntriesList")
 
     def sort_entry(struct: GFFStruct) -> int:
@@ -937,8 +937,8 @@ def dismantle_dlg(
         struct.struct_id = struct.struct_id if reply.list_index == -1 else reply.list_index
         return struct.struct_id
 
-    entry_list._structs.sort(key=sort_entry)
-    reply_list._structs.sort(key=sort_reply)
+    entry_list._structs.sort(key=sort_entry)  # noqa: SLF001
+    reply_list._structs.sort(key=sort_reply)  # noqa: SLF001
 
     return gff
 
@@ -965,7 +965,7 @@ def read_dlg(
         - Construct a DLG object from the parsed GFF data
         - Return the completed DLG object.
     """
-    gff = read_gff(source, offset, size)
+    gff: GFF = read_gff(source, offset, size)
     return construct_dlg(gff)
 
 
@@ -993,7 +993,7 @@ def write_dlg(
         - Writes the GFF structure to the target using the specified file format
         - Does not return anything, writes the file directly
     """
-    gff = dismantle_dlg(dlg, game, use_deprecated=use_deprecated)
+    gff: GFF = dismantle_dlg(dlg, game, use_deprecated=use_deprecated)
     write_gff(gff, target, file_format)
 
 
@@ -1022,5 +1022,5 @@ def bytes_dlg(
         - Dismantle the DLG into a GFF structure
         - Encode the GFF into bytes in the requested format.
     """
-    gff = dismantle_dlg(dlg, game, use_deprecated=use_deprecated)
+    gff: GFF = dismantle_dlg(dlg, game, use_deprecated=use_deprecated)
     return bytes_gff(gff, file_format)
