@@ -42,11 +42,11 @@ class FieldValue(ABC):
         elif field_type == GFFFieldType.String and not isinstance(value, str):
             value = str(value)
         elif field_type.return_type() == int and isinstance(value, str):
-            if value = "":
+            if value == "":
                 value = "0"
             value = int(value)
         elif field_type.return_type() == float and isinstance(value, str):
-            if value = "":
+            if value == "":
                 value = "0.0"
             value = float(value)
         return value
