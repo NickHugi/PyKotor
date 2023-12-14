@@ -43,7 +43,7 @@ if TYPE_CHECKING:
     from pykotor.resource.type import SOURCE_TYPES
 
 T = TypeVar("T")
-SEARCH_ORDER = [
+SEARCH_ORDER: list[SearchLocation] = [
     SearchLocation.OVERRIDE,
     SearchLocation.CUSTOM_MODULES,
     SearchLocation.CHITIN,
@@ -57,10 +57,10 @@ class Module:
         installation: Installation,
         custom_capsule: Capsule | None = None,
     ):
-        self._installation = installation
-        self._root = root = root.lower()
+        self._installation: Installation = installation
+        self._root: str = root.lower()
 
-        self._capsules = [custom_capsule] if custom_capsule is not None else []
+        self._capsules: list[Capsule] = [custom_capsule] if custom_capsule is not None else []
         self._capsules.extend(
             [
                 Capsule(installation.module_path() / module)
@@ -79,7 +79,7 @@ class Module:
                 self._id = ifo.root.get_resref("Mod_Entry_Area").get().lower()
                 break
         else:
-            msg = "Cannot initialize a Module from an empty capsule."
+            msg = f"Cannot initialize a Module from an empty capsule with root '{root}'."
             raise ValueError(msg)
 
         self.resources: CaseInsensitiveDict[ModuleResource] = CaseInsensitiveDict()
@@ -151,12 +151,12 @@ class Module:
                     )
 
         # Any resource linked in the GIT not present in the module files
-        original = self.git().active()
+        original: Path = self.git().active()
         look_for: list[ResourceIdentifier] = []
         for location in self.git().locations():
             self.git().activate(location)
             self.git().resource()
-            git = self.git().resource()
+            git: GIT | None = self.git().resource()
             look_for.extend(
                 [ResourceIdentifier(creature.resref.get(), ResourceType.UTC) for creature in git.creatures]
                 + [ResourceIdentifier(placeable.resref.get(), ResourceType.UTP) for placeable in git.placeables]
@@ -173,7 +173,7 @@ class Module:
         original = self.layout().active()
         for location in self.layout().locations():
             self.layout().activate(location)
-            layout = self.layout().resource()
+            layout: LYT | None = self.layout().resource()
             for room in layout.rooms:
                 look_for.extend(
                     (
@@ -199,10 +199,10 @@ class Module:
         textures: set[str] = set()
         for model in self.models():
             with suppress(Exception):
-                data = model.data()
-                for texture in list_textures(data):  # type: ignore[]
+                data: bytes | None = model.data()
+                for texture in list_textures(data):
                     textures.add(texture)
-                for lightmap in list_lightmaps(data):  # type: ignore[]
+                for lightmap in list_lightmaps(data):
                     textures.add(lightmap)
         for texture in textures:
             look_for.extend(
@@ -237,7 +237,7 @@ class Module:
         resname: str,
         restype: ResourceType,
         locations: list[Path],
-    ):
+    ) -> None:
         """Adds resource locations to a ModuleResource.
 
         Args:
@@ -273,8 +273,18 @@ class Module:
         resname: str,
         restype: ResourceType,
     ) -> ModuleResource | None:
-        filename = f"{resname}.{restype.extension}"
-        return self.resources[filename] if filename in self.resources else None
+        """Returns the resource with the given name and type from the module.
+
+        Args:
+        ----
+            resname (str): The name of the resource.
+            restype (ResourceType): The type of the resource.
+
+        Returns:
+        -------
+            ModuleResource | None: The resource with the given name and type, or None if it does not exist.
+        """
+        return self.resources.get(f"{resname}.{restype.extension}", None)
 
     def layout(self) -> ModuleResource[LYT] | None:
         """Returns the LYT layout resource with a matching ID if it exists.
@@ -286,7 +296,7 @@ class Module:
 
         Returns:
         -------
-            resource: The layout resource or None if not found
+            ModuleResource[LYT] | None: The layout resource or None if not found
 
         Processing Logic:
         ----------------
@@ -312,7 +322,7 @@ class Module:
 
         Returns:
         -------
-            resource: The VIS resource object or None.
+            ModuleResource[VIS] | None: The VIS resource object or None.
 
         Finds the VIS resource object from the Module's resources:
             - Iterates through the resources dictionary values
@@ -339,7 +349,7 @@ class Module:
 
         Returns:
         -------
-            resource: The ARE resource or None if not found
+            ModuleResource[ARE] | None: The ARE resource or None if not found
 
         Processing Logic:
         ----------------
@@ -367,7 +377,7 @@ class Module:
 
         Returns:
         -------
-            resource: The git resource or None
+            ModuleResource[GIT] | None: The git resource or None
 
         Processing Logic:
         ----------------
@@ -395,12 +405,12 @@ class Module:
 
         Returns:
         -------
-            resource: The PTH resource or None if not found.
+            ModuleResource[PTH] | None: The PTH resource or None if not found.
 
         Finds the PTH resource:
-        - Iterates through all resources
-        - Checks if resource name matches self._id and type is PTH
-        - Returns first matching resource or None.
+            - Iterates through all resources
+            - Checks if resource name matches self._id and type is PTH
+            - Returns first matching resource or None.
         """
         return next(
             (
@@ -422,7 +432,7 @@ class Module:
 
         Returns:
         -------
-            resource: The ModuleResource with type IFO or None
+            ModuleResource[IFO] | None: The ModuleResource with type IFO or None
 
         Processing Logic:
         ----------------
@@ -452,7 +462,7 @@ class Module:
 
         Returns:
         -------
-            resource: The UTC resource or None if not found
+            ModuleResource[UTC]: The UTC resource or None if not found
 
         Processing Logic:
         ----------------
@@ -552,7 +562,7 @@ class Module:
 
         Returns:
         -------
-            resource: The UTD resource or None if not found
+            ModuleResource[UTD] | None: The UTD resource or None if not found
 
         Processing Logic:
         ----------------
@@ -837,9 +847,12 @@ class Module:
         Returns:
         -------
             resource: The ModuleResource object if found, None otherwise.
-        - Loops through all resources stored in self.resources
-        - Checks if the resource name matches the given name and the resource type is MDL
-        - Returns the matching resource if found, None otherwise.
+
+        Processing Logic:
+        ----------------
+            - Loops through all resources stored in self.resources
+            - Checks if the resource name matches the given name and the resource type is MDL
+            - Returns the matching resource if found, None otherwise.
         """
         return next(
             (
@@ -863,6 +876,7 @@ class Module:
         Returns:
         -------
             ModuleResource|None: The matching resource or None if not found.
+
         Processes the resources dictionary:
             - Iterates through resources.values()
             - Checks if resname matches resource.resname() and resource type is MDX
