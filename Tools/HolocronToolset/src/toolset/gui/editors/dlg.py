@@ -62,7 +62,7 @@ class DLGEditor(Editor):
             - Sets splitter sizes
             - Calls new() to start with empty dialog.
         """
-        supported = [ResourceType.DLG]
+        supported: list[ResourceType] = [ResourceType.DLG]
         super().__init__(parent, "Dialog Editor", "dialog", supported, supported, installation)
 
         from toolset.uic.editors.dlg import Ui_MainWindow
@@ -194,7 +194,7 @@ class DLGEditor(Editor):
         """
         super().load(filepath, resref, restype, data)
 
-        dlg = read_dlg(data)
+        dlg: DLG = read_dlg(data)
         self._loadDLG(dlg)
         self.refreshStuntList()
 
@@ -233,19 +233,19 @@ class DLGEditor(Editor):
 
         self._dlg = dlg
         self.model.clear()
-        seenLink = []
-        seenNode = []
-        for start in reversed(dlg.starters):
+        seenLinks: list[DLGLink] = []
+        seenNodes: list[DLGNode] = []
+        for start in reversed(dlg.starters):  # reversed = ascending order
             item = QStandardItem()
-            self._loadDLGRec(item, start, seenLink, seenNode)
+            self._loadDLGRec(item, start, seenLinks, seenNodes)
             self.model.appendRow(item)
 
     def _loadDLGRec(
         self,
         item: QStandardItem,
         link: DLGLink,
-        seenLink: list[DLGLink],
-        seenNode: list[DLGNode],
+        seenLinks: list[DLGLink],
+        seenNodes: list[DLGNode],
     ) -> None:
         """Don't call this function directly.
 
@@ -269,19 +269,19 @@ class DLGEditor(Editor):
         node: DLGNode = link.node
         item.setData(link, _LINK_ROLE)
 
-        alreadyListed: bool = link in seenLink or node in seenNode
-        if link not in seenLink:
-            seenLink.append(link)
-        if node not in seenNode:
-            seenNode.append(node)
+        alreadyListed: bool = link in seenLinks or node in seenNodes
+        if link not in seenLinks:
+            seenLinks.append(link)
+        if node not in seenNodes:
+            seenNodes.append(node)
 
         item.setData(alreadyListed, _COPY_ROLE)
         self.refreshItem(item)
 
         if not alreadyListed:
-            for child_link in reversed(node.links):
+            for child_link in reversed(node.links):  # reversed = ascending order
                 child_item = QStandardItem()
-                self._loadDLGRec(child_item, child_link, seenLink, seenNode)
+                self._loadDLGRec(child_item, child_link, seenLinks, seenNodes)
                 item.appendRow(child_item)
 
     def build(self) -> tuple[bytes, bytes]:
