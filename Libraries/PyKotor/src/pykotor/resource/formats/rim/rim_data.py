@@ -41,7 +41,8 @@ class RIM:
             try:
                 return next(resource for resource in self._resources if resource.resref == item)
             except StopIteration as e:
-                raise KeyError from e
+                msg = f"{item} not found."
+                raise KeyError(msg) from e
         return NotImplemented
 
     def __add__(self, other: RIM) -> RIM:

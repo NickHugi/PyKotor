@@ -24,6 +24,18 @@ class LocalizedStringDelta(LocalizedString):
         self.stringref: FieldValue | None = stringref
 
     def apply(self, locstring: LocalizedString, memory: PatcherMemory) -> None:
+        """Applies a LocalizedString patch to a LocalizedString object.
+
+        Args:
+        ----
+            locstring: LocalizedString object to apply patch to
+            memory: PatcherMemory object for resolving references
+
+        Processing Logic:
+        ----------------
+            - Checks if stringref is set and sets locstring stringref if so
+            - Iterates through tuple returned from function and sets language, gender and text on locstring.
+        """
         if self.stringref is not None:
             locstring.stringref = self.stringref.value(memory, GFFFieldType.UInt32)
         for language, gender, text in self:
@@ -37,6 +49,23 @@ class FieldValue(ABC):
         ...
 
     def validate(self, value: Any, field_type: GFFFieldType) -> ResRef | str | int | float | object:
+        """Validate a value based on its field type.
+
+        Args:
+        ----
+            value: The value to validate
+            field_type: The field type to validate against
+
+        Returns:
+        -------
+            value: The validated value
+
+        Processing Logic:
+        ----------------
+            - Check if value matches field type
+            - Convert value to expected type if needed
+            - Return validated value
+        """
         if field_type == GFFFieldType.ResRef and not isinstance(value, ResRef):
             value = (
                 ResRef(str(value))
@@ -95,6 +124,23 @@ class ModifyGFF(ABC):
         root_container: GFFStruct,
         path: PureWindowsPath,
     ) -> GFFList | GFFStruct | None:
+        """Navigates through gff lists/structs to find the specified path.
+
+        Args:
+        ----
+            root_container (GFFStruct): The root container to start navigation
+
+        Returns:
+        -------
+            container (GFFList | GFFStruct | None): The container at the end of the path or None if not found
+
+        Processing Logic:
+        ----------------
+            - It checks if the path is valid PureWindowsPath
+            - Loops through each part of the path
+            - Acquires the container at each step from the parent container
+            - Returns the container at the end or None if not found along the path
+        """
         path = path if isinstance(path, PureWindowsPath) else PureWindowsPath(path)
         if not path.name:
             return root_container
@@ -135,6 +181,16 @@ class AddStructToListGFF(ModifyGFF):
         index_to_token: int | None = None,
         modifiers: list[ModifyGFF] | None = None,
     ):
+        """Initialize a addfield patch that creates a new struct into an existing list.
+
+        Args:
+        ----
+            identifier (str): Field identifier
+            value (FieldValue): Field value object
+            path (PureWindowsPath): File path
+            index_to_token (int | None): Token index
+            modifiers (list[ModifyGFF]): Modifiers list
+        """
         self.identifier: str = identifier
         self.value: FieldValue = value
         self.path: PureWindowsPath = path if isinstance(path, PureWindowsPath) else PureWindowsPath(path)
@@ -224,17 +280,13 @@ class AddFieldGFF(ModifyGFF):
             memory: PatcherMemory - The memory state to read values from.
             logger: PatchLogger - The logger to record errors to.
 
-        Returns:
-        -------
-            None
-
         Processing Logic:
         ----------------
-            - Navigates to the specified container using the provided path.
-            - Gets the value to set from the provided value expression.
-            - Maps the field type to the appropriate setter method.
-            - Sets the new field on the container.
-            - Applies any modifier fields recursively.
+            - Navigates to the specified container path and gets the GFFStruct instance
+            - Resolves the field value using the provided value expression
+            - Resolves the value path if part of !FieldPath memory
+            - Sets the field on the struct instance using the appropriate setter based on field type
+            - Applies any modifier patches recursively
         """
         navigated_container: GFFList | GFFStruct | None = self._navigate_containers(root_struct, self.path)
         if isinstance(navigated_container, GFFStruct):
@@ -247,8 +299,8 @@ class AddFieldGFF(ModifyGFF):
         value = self.value.value(memory, self.field_type)
 
         # if 2DAMEMORY holds a path string from !FieldPath, navigate to that field and use its value.
-        if isinstance(value, str) and self.field_type != GFFFieldType.String:
-            from_path = PureWindowsPath(value)
+        if isinstance(value, str) and self.field_type != GFFFieldType.String or isinstance(value, PureWindowsPath):
+            from_path = value if isinstance(value, PureWindowsPath) else PureWindowsPath(value)
             if from_path.parent.name:
                 from_container = self._navigate_containers(root_struct, from_path.parent)
                 if not isinstance(from_container, GFFStruct):
@@ -312,7 +364,7 @@ class Memory2DAModifierGFF(ModifyGFF):
         self.path: PureWindowsPath = path if isinstance(path, PureWindowsPath) else PureWindowsPath(path)
 
     def apply(self, container, memory: PatcherMemory, logger: PatchLogger):
-        memory.memory_2da[self.twoda_index] = str(self.path)
+        memory.memory_2da[self.twoda_index] = self.path
 
 
 class ModifyFieldGFF(ModifyGFF):
@@ -330,6 +382,22 @@ class ModifyFieldGFF(ModifyGFF):
         memory: PatcherMemory,
         logger: PatchLogger,
     ) -> None:
+        """Applies a patch to an existing field in a GFF structure.
+
+        Args:
+        ----
+            root_struct: {GFF structure}: Root GFF structure to navigate and modify
+            memory: {PatcherMemory}: Memory context to retrieve values
+            logger: {PatchLogger}: Logger to record errors
+
+        Processing Logic:
+        ----------------
+            - Navigates container hierarchy to the parent of the field using the patch path
+            - Checks if parent container exists and is a GFFStruct
+            - Gets the field type from the parent struct
+            - Converts the patch value to the correct type
+            - Calls the corresponding setter method on the parent struct
+        """
         label = self.path.name
         navigated_container: GFFList | GFFStruct | None = self._navigate_containers(root_struct, self.path.parent)
         parent_struct_container: GFFStruct = navigated_container  # type: ignore[assignment]
@@ -393,7 +461,13 @@ class ModificationsGFF(PatcherModifications):
         self.apply(gff, memory, logger, game)
         return bytes_gff(gff)
 
-    def apply(self, gff: GFF, memory: PatcherMemory, logger: PatchLogger | None = None, game: Game | None = None) -> None:
+    def apply(
+        self,
+        gff: GFF,
+        memory: PatcherMemory,
+        logger: PatchLogger | None = None,
+        game: Game | None = None,
+    ) -> None:
         for change_field in self.modifiers:
             change_field.apply(gff.root, memory, logger)
 

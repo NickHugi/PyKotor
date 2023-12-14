@@ -188,6 +188,7 @@ class ConfigReader:
         )
 
     def load_settings(self) -> None:
+        """Loads [Settings] from ini configuration into memory."""
         settings_section = self.get_section_name("settings")
         if not settings_section:
             self.log.add_warning("[Settings] section missing from ini.")
@@ -214,7 +215,7 @@ class ConfigReader:
             self.config.game_number = None
 
     def load_install_list(self) -> None:
-        """Loads [InstallList] from ini configuration.
+        """Loads [InstallList] from ini configuration into memory.
 
         Processing Logic:
         ----------------
@@ -252,7 +253,7 @@ class ConfigReader:
                     file_install.pop_tslpatcher_vars(file_section_dict, foldername)
 
     def load_tlk_list(self) -> None:
-        """Loads TLK patches from the ini file.
+        """Loads TLK patches from the ini file into memory.
 
         Processing Logic:
         ----------------
@@ -446,7 +447,7 @@ class ConfigReader:
                 raise ValueError(msg) from e
 
     def load_2da_list(self) -> None:
-        """Load 2D array patches from ini file.
+        """Load 2D array patches from ini file into memory.
 
         Processing Logic:
         ----------------
@@ -499,7 +500,7 @@ class ConfigReader:
                 modifications.modifiers.append(manipulation)
 
     def load_ssf_list(self) -> None:
-        """Loads SSF patches from the ini file.
+        """Loads SSF patches from the ini file into memory.
 
         Processing Logic:
         ----------------
@@ -550,9 +551,10 @@ class ConfigReader:
                 modifications.modifiers.append(modifier)
 
     def load_gff_list(self) -> None:
-        """Loads GFF patches from the ini file.
+        """Loads GFF patches from the ini file into memory.
 
-        Loading GFF Patches:
+        Processing Logic:
+        ----------------
             - Gets the "[GFFList]" section from the ini file
             - Loops through each GFF patch defined
                 - Gets the section for the individual GFF file
@@ -643,6 +645,16 @@ class ConfigReader:
             self.config.patches_nss.append(modifications)
 
     def load_hack_list(self) -> None:
+        """Loads [HACKList] patches from ini file into memory.
+
+        Processing Logic:
+        ----------------
+            1. Gets the "[HACKList]" section name from the ini file
+            2. Loops through each identifier and file in the section
+            3. Creates a ModificationsNCS object for each file
+            4. Populates the object with offset/value pairs from the file's section
+            5. Adds the populated object to the config patches list
+        """
         hacklist_section = self.get_section_name("hacklist")
         if not hacklist_section:
             self.log.add_note("[HACKList] section missing from ini.")
@@ -929,7 +941,7 @@ class ConfigReader:
     def field_value_from_unknown(string_value: str) -> FieldValue:
         """Extracts a field value from an unknown string representation.
 
-            This section determines how to parse GFF key/value pairs such as:
+            This section determines how to parse ini key/value pairs in gfflist such as:
                 EntryList/0/RepliesList/0/TypeId=5
 
         Args:
@@ -975,8 +987,8 @@ class ConfigReader:
 
         Args:
         ----
-            raw_value: {Raw string value from file}
-            field_type: {Field type enum}.
+            raw_value (str): {Raw string value from file}
+            field_type (GFFFieldType): {Field type enum}.
 
         Returns:
         -------
@@ -1025,7 +1037,7 @@ class ConfigReader:
         ----
             key: str - The key identifying the type of modification
             identifier: str - The identifier of the 2DA (section name)
-            modifiers: CaseInsensitiveDict - Additional parameters for the modification
+            modifiers: CaseInsensitiveDict[str] - Additional parameters for the modification
 
         Returns:
         -------
@@ -1091,6 +1103,24 @@ class ConfigReader:
         return modification
 
     def _read_add_column(self, modifiers: CaseInsensitiveDict[str], identifier: str):
+        """Loads the add new column to be added to the 2D array.
+
+        Args:
+        ----
+            modifiers: CaseInsensitiveDict[str]: Dictionary of column modifiers.
+            identifier: str: Identifier of the column.
+
+        Returns:
+        -------
+            AddColumn2DA: Object containing details of added column.
+
+        Processing Logic:
+        ----------------
+            - Pop 'ColumnLabel' and 'DefaultValue' from modifiers dict
+            - Raise error if 'ColumnLabel' or 'DefaultValue' is missing
+            - Call column_inserts_2da() to get insert details
+            - Return AddColumn2DA object
+        """
         header = modifiers.pop("ColumnLabel", None)
         if header is None:
             msg = f"Missing 'ColumnLabel' in [{identifier}]"
@@ -1118,8 +1148,8 @@ class ConfigReader:
 
         Args:
         ----
-            identifier: Identifier for target
-            modifiers: Modifiers dictionary
+            identifier: str - Identifier for target
+            modifiers: CaseInsensitiveDict[str] - Modifiers dictionary
 
         Returns:
         -------
@@ -1282,9 +1312,39 @@ class ConfigReader:
 
     @staticmethod
     def normalize_tslpatcher_float(value_str: str) -> str:
+        """Normalize a float value string by replacing commas with periods.
+
+        Args:
+        ----
+            value_str: String value to normalize
+
+        Returns:
+        -------
+            str: Normalized string value with commas replaced with periods
+
+        Replace commas with periods in the input string value:
+            - Split the string on commas
+            - Join the string using periods instead of commas
+            - Return the normalized string
+        """
         return value_str.replace(",", ".")
     @staticmethod
     def normalize_tslpatcher_crlf(value_str: str) -> str:
+        r"""Normalize line endings in a string value.
+
+        Args:
+        ----
+            value_str: String value to normalize line endings
+
+        Returns:
+        -------
+            str: String with normalized line endings
+
+        Processes line endings:
+            - Replaces "<#LF#>" with "\n"
+            - Replaces "<#CR#>" with "\r"
+            - Returns string with all line endings normalized
+        """
         return value_str.replace("<#LF#>", "\n").replace("<#CR#>", "\r")
 
     @staticmethod

@@ -171,12 +171,46 @@ class TwoDA:
         self,
         row_label: str,
     ) -> TwoDARow | None:
+        """Find a row in a 2D array by its label.
+
+        Args:
+        ----
+            row_label: The label of the row to find
+
+        Returns:
+        -------
+            row: The row object if found, else None
+
+        Processing Logic:
+        ----------------
+            - Iterate through each row in the 2D array
+            - Check if the row's label matches the given label
+            - If a match is found, return the row
+            - If no match is found after iterating all rows, return None.
+        """
         return next((row for row in self if row.label() == row_label), None)
 
     def row_index(
         self,
         row: TwoDARow,
     ) -> int | None:
+        """Returns the index of a row in a 2D array if found.
+
+        Args:
+        ----
+            row: The row to search for in the 2D array.
+
+        Returns:
+        -------
+            int | None: The index of the row if found, else None.
+
+        Processing Logic:
+        ----------------
+            - Iterate through the 2D array and enumerate the rows.
+            - Check if the current row equals the searching row.
+            - If a match is found, return the index i.
+            - If no match is found after full iteration, return None.
+        """
         return next((i for i, searching in enumerate(self) if searching == row), None)
 
     def add_row(
@@ -373,6 +407,7 @@ class TwoDA:
             int: The next integer label.
 
         Processes labels:
+        ----------------
             - Initialize max_found to -1
             - Iterate through labels
             - Try converting each label to int and update max_found
@@ -386,6 +421,24 @@ class TwoDA:
         return max_found + 1
 
     def compare(self, other: TwoDA, log_func: Callable = print) -> bool:
+        """Compares two TwoDA objects.
+
+        Args:
+        ----
+            self: The first TwoDA object
+            other: The second TwoDA object
+            log_func: Function to log comparison results (default print)
+
+        Returns:
+        -------
+            bool: True if the TwoDAs match, False otherwise
+
+        Processing Logic:
+        ----------------
+            - Check for column header mismatches
+            - Check for row mismatches
+            - Check cell values for common rows
+        """
         old_headers = set(self.get_headers())
         new_headers = set(other.get_headers())
         ret = True
@@ -463,6 +516,18 @@ class TwoDARow:
         self,
         values: dict[str, str],
     ):
+        """Updates cell values in the table.
+
+        Args:
+        ----
+            values: dict[str, str]: A dictionary of column names and cell values
+
+        Updates each cell value:
+            - Loops through the values dictionary
+            - Gets the column name and cell value
+            - Calls set_string to update the cell with the value
+            - Repeats for each key-value pair in values
+        """
         for column, cell in values.items():
             self.set_string(column, cell)
 
@@ -514,7 +579,7 @@ class TwoDARow:
             raise KeyError(msg)
 
         value = default
-        with suppress(ValueError):
+        with suppress(ValueError):  # FIXME: this should not be suppressed
             cell = self._data[header]
             return int(cell, 16) if cell.startswith("0x") else int(cell)
         return value
@@ -543,7 +608,7 @@ class TwoDARow:
             msg = f"The header '{header}' does not exist."
             raise KeyError(msg)
 
-        with suppress(ValueError):
+        with suppress(ValueError):  # FIXME: this should not be suppressed
             cell = self._data[header]
             return float(cell)
 
@@ -594,12 +659,7 @@ class TwoDARow:
         ------
             KeyError: If the specified header does not exist.
         """
-        if header not in self._data:
-            msg = f"The header '{header}' does not exist."
-            raise KeyError(msg)
-
-        value = "" if value is None else value
-        self._data[header] = value
+        self._set_value(header, value)
 
     def set_integer(
         self,
@@ -617,12 +677,7 @@ class TwoDARow:
         ------
             KeyError: If the specified header does not exist.
         """
-        if header not in self._data:
-            msg = f"The header '{header}' does not exist."
-            raise KeyError(msg)
-
-        value_str = "" if value is None else str(value)
-        self._data[header] = value_str
+        self._set_value(header, value)
 
     def set_float(
         self,
@@ -640,12 +695,7 @@ class TwoDARow:
         ------
             KeyError: If the specified header does not exist.
         """
-        if header not in self._data:
-            msg = f"The header '{header}' does not exist."
-            raise KeyError(msg)
-
-        value_str = "" if value is None else str(value)
-        self._data[header] = value_str
+        self._set_value(header, value)
 
     def set_enum(
         self,
@@ -663,9 +713,11 @@ class TwoDARow:
         ------
             KeyError: If the specified header does not exist.
         """
+        self._set_value(header, value)
+
+    def _set_value(self, header: str, value: object):
         if header not in self._data:
             msg = f"The header '{header}' does not exist."
             raise KeyError(msg)
-
         value_str = "" if value is None else str(value)
         self._data[header] = value_str

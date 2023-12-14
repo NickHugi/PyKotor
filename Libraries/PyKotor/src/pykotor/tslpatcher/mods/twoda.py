@@ -424,7 +424,8 @@ class CopyRow2DA(Modify2DA):
         row_label = str(twoda.get_height()) if self.row_label is None else self.row_label
 
         if source_row is None:
-            raise WarningError
+            msg = f"Source row cannot be None. row_label was '{row_label}'"
+            raise WarningError(msg)
 
         if self.exclusive_column is not None:
             if self.exclusive_column not in self.cells:

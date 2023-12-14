@@ -70,13 +70,11 @@ class ERF:
         if isinstance(item, int):
             return self._resources[item]
         if isinstance(item, str):
-            key: tuple[str, ResourceType] | None = next(
-                (key for key in self._resource_dict if key[0] == item.casefold()),
-                None,
-            )
-            if key:
-                return self._resource_dict[key]
-            raise KeyError
+            try:
+                return self._resource_dict[next(key for key in self._resource_dict if key[0] == item.casefold())]
+            except StopIteration as e:
+                msg = f"{item} not found"
+                raise KeyError(msg) from e
 
         return NotImplemented
 
@@ -86,15 +84,21 @@ class ERF:
         restype: ResourceType,
         data: bytes,
     ) -> None:
-        """Updates or adds a resource in a dictionary based on the given resource reference, resource type, and data.
+        """Sets resource data in the ERF file.
 
         Args:
         ----
-            resref: The `resref` as a string
-            restype: The `restype` parameter is of type `ResourceType`. It represents the type of the
-                resource being set
-            data: The `data` parameter is of type `bytes` and represents the binary data of the resource.
-                It is the actual content of the resource that you want to set
+            resref: str - Resource reference identifier
+            restype: ResourceType - Resource type enumeration
+            data: bytes - Resource data bytes
+
+        Processing Logic:
+        ----------------
+            - Construct a tuple key from resref and restype
+            - Lookup existing resource by key in internal dict
+            - If no existing resource, create a new ERFResource instance
+            - If existing resource, update its properties
+            - Add/update resource to internal lists and dict
         """
         key: tuple[str, ResourceType] = (resref.casefold(), restype)
         resource: ERFResource | None = self._resource_dict.get(key)
@@ -120,7 +124,7 @@ class ERF:
             The bytes data of the resource or None.
         """
         resource: ERFResource | None = self._resource_dict.get((resref.casefold(), restype))
-        return resource.data if resource else None
+        return resource.data if resource is not None else None
 
     def remove(
         self,
@@ -136,7 +140,7 @@ class ERF:
         """
         key: tuple[str, ResourceType] = (resref.casefold(), restype)
         resource: ERFResource | None = self._resource_dict.pop(key, None)
-        if resource:
+        if resource:  # FIXME: should raise here
             self._resources.remove(resource)
 
     def to_rim(
