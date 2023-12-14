@@ -37,7 +37,7 @@ class GFFXMLReader(ResourceReader):
         self._gff = GFF()
 
         data = self._reader.read_bytes(self._reader.size()).decode()
-        xml_root = ElementTree.fromstring(data).find("struct")  # noqa: S314
+        xml_root: ElementTree.Element | None = ElementTree.fromstring(data).find("struct")  # noqa: S314
         self._load_struct(self._gff.root, xml_root)
 
         return self._gff
@@ -45,7 +45,7 @@ class GFFXMLReader(ResourceReader):
     def _load_struct(
         self,
         gff_struct: GFFStruct,
-        xml_struct,
+        xml_struct: ElementTree.Element,
     ):
         gff_struct.struct_id = int(xml_struct.get("id"))
 
@@ -55,9 +55,9 @@ class GFFXMLReader(ResourceReader):
     def _load_field(
         self,
         gff_struct: GFFStruct,
-        xml_field,
+        xml_field: ElementTree.Element,
     ):
-        label = xml_field.get("label")
+        label: str | None = xml_field.get("label")
 
         if xml_field.tag == "byte":
             gff_struct.set_uint8(label, int(xml_field.text))
@@ -130,7 +130,7 @@ class GFFXMLWriter(ResourceWriter):
         self,
         gff: GFF,
         target: TARGET_TYPES,
-    ):
+    ) -> None:
         super().__init__(target)
         self.xml_root = ElementTree.Element("xml")
         self.gff: GFF = gff
@@ -153,7 +153,7 @@ class GFFXMLWriter(ResourceWriter):
         self,
         gff_struct: GFFStruct,
         xml_struct: ElementTree.Element,
-    ):
+    ) -> None:
         xml_struct.set("id", str(gff_struct.struct_id))
 
         for label, field_type, value in gff_struct:
@@ -165,7 +165,7 @@ class GFFXMLWriter(ResourceWriter):
         value: Any,
         field_type: GFFFieldType,
         xml_struct: ElementTree.Element,
-    ):
+    ) -> None:
         xml_field = ElementTree.Element("")
         xml_field.set("label", label)
         xml_struct.append(xml_field)

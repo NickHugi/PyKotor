@@ -70,7 +70,10 @@ class ERF:
         if isinstance(item, int):
             return self._resources[item]
         if isinstance(item, str):
-            key = next((key for key in self._resource_dict if key[0] == item.casefold()), None)
+            key: tuple[str, ResourceType] | None = next(
+                (key for key in self._resource_dict if key[0] == item.casefold()),
+                None,
+            )
             if key:
                 return self._resource_dict[key]
             raise KeyError
@@ -93,8 +96,8 @@ class ERF:
             data: The `data` parameter is of type `bytes` and represents the binary data of the resource.
                 It is the actual content of the resource that you want to set
         """
-        key = (resref.casefold(), restype)
-        resource = self._resource_dict.get(key)
+        key: tuple[str, ResourceType] = (resref.casefold(), restype)
+        resource: ERFResource | None = self._resource_dict.get(key)
         if resource is None:
             resource = ERFResource(ResRef(resref), restype, data)
             self._resources.append(resource)
@@ -116,7 +119,7 @@ class ERF:
         -------
             The bytes data of the resource or None.
         """
-        resource = self._resource_dict.get((resref.casefold(), restype))
+        resource: ERFResource | None = self._resource_dict.get((resref.casefold(), restype))
         return resource.data if resource else None
 
     def remove(
@@ -131,8 +134,8 @@ class ERF:
             resref: The resref.
             restype: The resource type.
         """
-        key = (resref.casefold(), restype)
-        resource = self._resource_dict.pop(key, None)
+        key: tuple[str, ResourceType] = (resref.casefold(), restype)
+        resource: ERFResource | None = self._resource_dict.pop(key, None)
         if resource:
             self._resources.remove(resource)
 

@@ -432,7 +432,7 @@ class GFFStruct:
         ----
             label: The field label.
             default: Default value to return if value does not match object_type.
-            object_type: The preferred type of the field value. If not specified it will match the default's type.
+            object_type: The type of the field value. If not specified it will match the default's type.
 
         Returns:
         -------
@@ -444,7 +444,7 @@ class GFFStruct:
         if (
             self.exists(label)
             and object_type is not None
-#            and isinstance(self[label], object_type)  # TODO: uncomment this and assert type after fixing all the call typings
+#           and isinstance(self[label], object_type)  # TODO: uncomment this and assert type after fixing all the call typings
         ):
             value = self[label]
         return value

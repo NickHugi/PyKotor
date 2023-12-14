@@ -57,9 +57,9 @@ class ERFBinaryReader(ResourceReader):
         offset_to_keys = self._reader.read_uint32()
         offset_to_resources = self._reader.read_uint32()
 
-        resrefs = []
-        resids = []
-        restypes = []
+        resrefs: list[str] = []
+        resids: list[int] = []
+        restypes: list[int] = []
         self._reader.seek(offset_to_keys)
         for _ in range(entry_count):
             resrefs.append(self._reader.read_string(16))
@@ -93,7 +93,7 @@ class ERFBinaryWriter(ResourceWriter):
         target: TARGET_TYPES,
     ):
         super().__init__(target)
-        self.erf = erf
+        self.erf: ERF = erf
 
     @autoclose
     def write(

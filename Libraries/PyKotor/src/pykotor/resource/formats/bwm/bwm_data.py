@@ -54,10 +54,14 @@ class BWM:
     def unwalkable_faces(
         self,
     ) -> list[BWMFace]:
-        """Return unwalkable faces in the mesh
+        """Return unwalkable faces in the mesh.
+
         Args:
+        ----
             self: The mesh object
+
         Returns:
+        -------
             list[BWMFace]: List of unwalkable faces in the mesh
 
         Processing Logic:
@@ -96,7 +100,9 @@ class BWM:
         Args:
         ----
             self: The node object
+
         Returns:
+        -------
             list[BWMNodeAABB]: List of AABB objects for each face
 
         Processing Logic:

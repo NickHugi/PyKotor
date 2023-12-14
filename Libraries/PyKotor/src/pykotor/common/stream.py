@@ -647,7 +647,7 @@ class BinaryReader:
         self,
         length: int = 1,
     ) -> bytes:
-        data = self._stream.read(length)
+        data: bytes = self._stream.read(length)
         self._stream.seek(-length, 1)
         return data
 
@@ -697,8 +697,7 @@ class BinaryWriter(ABC):
         resolved_path = (path if isinstance(path, Path) else Path(path))
         if not resolved_path.exists():
             resolved_path = resolved_path.resolve()
-        stream = resolved_path.open("wb")
-        return BinaryWriterFile(stream)
+        return BinaryWriterFile(resolved_path.open("wb"))
 
     @classmethod
     def to_bytearray(
