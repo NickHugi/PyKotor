@@ -43,6 +43,7 @@ from toolset.gui.dialogs.instance.store import StoreDialog
 from toolset.gui.dialogs.instance.trigger import TriggerDialog
 from toolset.gui.dialogs.instance.waypoint import WaypointDialog
 from toolset.gui.editor import Editor
+from toolset.gui.widgets.renderer.walkmesh import GeomPoint
 from toolset.gui.widgets.settings.git import GITSettings
 from toolset.utils.misc import getResourceFromFile
 from toolset.utils.window import openResourceEditor
@@ -487,17 +488,20 @@ class GITEditor(Editor):
         self._mode.openListContextMenu(item, globalPoint)
 
     def onMouseMoved(self, screen: Vector2, delta: Vector2, buttons: set[int], keys: set[int]) -> None:
-        """Handle mouse movement event
+        """Handle mouse movement event.
+
         Args:
+        ----
             screen: Vector2: Mouse position on screen
             delta: Vector2: Mouse movement since last event
             buttons: set[int]: Currently pressed mouse buttons
             keys: set[int]: Currently pressed keyboard keys
-        Returns:
-            None: No return value
-        - Convert mouse position and movement to world coordinates
-        - Pass mouse event to controls handler
-        - Update status bar with world mouse position.
+
+        Processing Logic:
+        ----------------
+            - Convert mouse position and movement to world coordinates
+            - Pass mouse event to controls handler
+            - Update status bar with world mouse position.
         """
         worldDelta = self.ui.renderArea.toWorldDelta(delta.x, delta.y)
         world = self.ui.renderArea.toWorldCoords(screen.x, screen.y)
@@ -531,7 +535,7 @@ class _Mode(ABC):
         self._installation: HTInstallation = installation
         self._git: GIT = git
 
-        self._ui: gitui = editor.ui
+        self._ui = editor.ui
 
     @abstractmethod
     def onItemSelectionChanged(self, item: QListWidgetItem) -> None:
@@ -601,11 +605,12 @@ class _InstanceMode(_Mode):
 
     def setSelection(self, instances: list[GITInstance]) -> None:
         # set the renderer widget selection
-        """Sets the selection of instances in the renderer and list widgets
+        """Sets the selection of instances in the renderer and list widgets.
+
         Args:
+        ----
             instances: list[GITInstance]: List of instances to select
-        Returns:
-            None
+
         Processing Logic:
         ----------------
             - Select instances in the renderer widget
@@ -625,16 +630,19 @@ class _InstanceMode(_Mode):
         self._ui.listWidget.blockSignals(False)
 
     def editSelectedInstance(self) -> None:
-        """Edits the selected instance
+        """Edits the selected instance.
+
         Args:
+        ----
             self: The class instance
-        Returns:
-            None: Does not return anything
-        - Gets the selected instance from the render area
-        - Checks if an instance is selected
-        - Gets the last selected instance from the list
-        - Opens an instance dialog to edit the selected instance properties
-        - Rebuilds the instance list after editing.
+
+        Processing Logic:
+        ----------------
+            - Gets the selected instance from the render area
+            - Checks if an instance is selected
+            - Gets the last selected instance from the list
+            - Opens an instance dialog to edit the selected instance properties
+            - Rebuilds the instance list after editing.
         """
         selection = self._ui.renderArea.instanceSelection.all()
 
@@ -644,11 +652,8 @@ class _InstanceMode(_Mode):
             self.buildList()
 
     def editSelectedInstanceResource(self) -> None:
-        """Edits the selected instance resource
-        Args:
-            self: The class instance
-        Returns:
-            None: No value is returned
+        """Edits the selected instance resource.
+
         Processing Logic:
         ----------------
             - Gets the selected instance from the render area
@@ -702,18 +707,23 @@ class _InstanceMode(_Mode):
             self.buildList()
 
     def addInstanceActionsToMenu(self, instance: GITInstance, menu: QMenu) -> None:
-        """Adds instance actions to a context menu
+        """Adds instance actions to a context menu.
+
         Args:
+        ----
             instance: {The selected GIT instance object}
             menu: {The QMenu to add actions to}.
 
-        Returns
+        Returns:
         -------
             None: {Does not return anything, just adds actions to the provided menu}
-        - Adds basic "Remove" and "Edit Instance" actions
-        - Conditionally adds "Edit Resource" action and disables for cameras
-        - Adds additional geometry and spawn point editing for encounters and triggers
-        - Connects each action to a method on the class to handle the trigger
+
+        Processing Logic:
+        ----------------
+            - Adds basic "Remove" and "Edit Instance" actions
+            - Conditionally adds "Edit Resource" action and disables for cameras
+            - Adds additional geometry and spawn point editing for encounters and triggers
+            - Connects each action to a method on the class to handle the trigger
         """
         menu.addAction("Remove").triggered.connect(self.deleteSelected)
         menu.addAction("Edit Instance").triggered.connect(self.editSelectedInstance)
@@ -730,12 +740,13 @@ class _InstanceMode(_Mode):
             menu.addAction("Edit Spawn Points").triggered.connect(self.editSelectedInstanceSpawns)
 
     def setListItemLabel(self, item: QListWidgetItem, instance: GITInstance) -> None:
-        """Sets the label text of a QListWidget item for a game instance
+        """Sets the label text of a QListWidget item for a game instance.
+
         Args:
+        ----
             item (QListWidgetItem): The list widget item
             instance (GITInstance): The game instance
-        Returns:
-            None
+
         Sets the item data and tooltip, determines the label text based on instance type and editor settings, sets the item text and font if label not found.
         """
         item.setData(QtCore.Qt.UserRole, instance)
@@ -850,15 +861,14 @@ class _InstanceMode(_Mode):
         menu.popup(point)
 
     def onRenderContextMenu(self, world: Vector2, point: QPoint) -> None:
-        """Renders context menu on right click
+        """Renders context menu on right click.
+
         Args:
+        ----
             self: {The class instance}
             world: {The world coordinates clicked}
             point: {The screen coordinates clicked}.
 
-        Returns
-        -------
-            None
         Renders context menu:
             - Adds instance creation actions if no selection
             - Adds instance actions to selected instance if single selection
@@ -871,7 +881,7 @@ class _InstanceMode(_Mode):
         if not self._ui.renderArea.instanceSelection.isEmpty():
             self.addInstanceActionsToMenu(self._ui.renderArea.instanceSelection.last(), menu)
         else:
-            self._extracted_from_onRenderContextMenu_22(menu, world)
+            self._add_submenu(menu, world)
         if underMouse:
             menu.addSeparator()
             for instance in underMouse:
@@ -886,8 +896,7 @@ class _InstanceMode(_Mode):
 
         menu.popup(point)
 
-    # TODO: Rename this here and in `onRenderContextMenu`
-    def _extracted_from_onRenderContextMenu_22(self, menu, world):
+    def _add_submenu(self, menu: QMenu, world: Vector2):
         menu.addAction("Insert Creature").triggered.connect(lambda: self.addInstance(GITCreature(world.x, world.y)))
         menu.addAction("Insert Door").triggered.connect(lambda: self.addInstance(GITDoor(world.x, world.y)))
         menu.addAction("Insert Placeable").triggered.connect(lambda: self.addInstance(GITPlaceable(world.x, world.y)))
@@ -906,13 +915,11 @@ class _InstanceMode(_Mode):
     def buildList(self) -> None:
         self._ui.listWidget.clear()
 
-        def instanceSort(inst):
+        def instanceSort(inst: GITInstance):
             textToSort = str(inst.camera_id) if isinstance(inst, GITCamera) else inst.identifier().resname.lower()
             return textToSort.rjust(9, "0") if isinstance(inst, GITCamera) else inst.identifier().restype.extension + textToSort
 
-        instances = self._git.instances()
-        instances = sorted(instances, key=instanceSort)
-
+        instances: list[GITInstance] = sorted(self._git.instances(), key=instanceSort)
         for instance in instances:
             filterSource = str(instance.camera_id) if isinstance(instance, GITCamera) else instance.identifier().resname
             isVisible = self._ui.renderArea.isInstanceVisible(instance)
@@ -1015,7 +1022,7 @@ class _GeometryMode(_Mode):
 
         instance = self._ui.renderArea.instanceSelection.get(0)
         point = world - instance.position
-        instance.geometry.points.append(point)
+        self._ui.renderArea.geomPointsUnderMouse().append(GeomPoint(instance, point))
 
     # region Interface Methods
     def onItemSelectionChanged(self, item: QListWidgetItem) -> None:
@@ -1025,7 +1032,7 @@ class _GeometryMode(_Mode):
         pass
 
     def updateStatusBar(self, world: Vector2) -> None:
-        instance = self._ui.renderArea.instanceSelection.last()
+        instance: GITInstance | None = self._ui.renderArea.instanceSelection.last()
         if instance:
             self._editor.statusBar().showMessage(
                 f"({world.x:.1f}, {world.y:.1f}) Editing Geometry of {instance.identifier().resname}",
@@ -1052,8 +1059,8 @@ class _GeometryMode(_Mode):
         pass
 
     def selectUnderneath(self) -> None:
-        underMouse = self._ui.renderArea.geomPointsUnderMouse()
-        selection = self._ui.renderArea.geometrySelection.all()
+        underMouse: list[GeomPoint] = self._ui.renderArea.geomPointsUnderMouse()
+        selection: list[GeomPoint] = self._ui.renderArea.geometrySelection.all()
 
         # Do not change the selection if the selected instance if its still underneath the mouse
         if selection and selection[0] in underMouse:
@@ -1065,9 +1072,9 @@ class _GeometryMode(_Mode):
             self._ui.renderArea.geometrySelection.select([])
 
     def deleteSelected(self) -> None:
-        vertex = self._ui.renderArea.geometrySelection.last()
-        instance = vertex.instance
-        instance.geometry.remove(vertex.point)
+        vertex: GeomPoint | None = self._ui.renderArea.geometrySelection.last()
+        instance: GITInstance = vertex.instance
+        self._ui.renderArea.geometrySelection.remove(GeomPoint(instance, vertex.point))  # FIXME
 
     def duplicateSelected(self, position: Vector3) -> None:
         pass
@@ -1123,16 +1130,17 @@ class GITControlScheme:
         buttons: set[int],
         keys: set[int],
     ) -> None:
-        """Handles mouse movement events in the editor
+        """Handles mouse movement events in the editor.
+
         Args:
+        ----
             screen: Vector2 - Mouse position on screen in pixels
             screenDelta: Vector2 - Mouse movement since last event in pixels
             world: Vector2 - Mouse position in world space
             worldDelta: Vector2 - Mouse movement since last event in world space
             buttons: set[int] - Currently pressed mouse buttons
             keys: set[int] - Currently pressed keyboard keys
-        Returns:
-            None
+
         Processing Logic:
         ----------------
             - Checks if pan camera condition is satisfied and moves camera accordingly

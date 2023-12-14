@@ -133,18 +133,18 @@ def construct_pth(
 ) -> PTH:
     pth = PTH()
 
-    connections_list = gff.root.acquire("Path_Conections", GFFList())
+    connections_list: GFFList = gff.root.acquire("Path_Conections", GFFList())
 
     for point_struct in gff.root.acquire("Path_Points", GFFList()):
-        connections = point_struct.acquire("Conections", 0)
-        first_connection = point_struct.acquire("First_Conection", 0)
-        x = point_struct.acquire("X", 0.0)
-        y = point_struct.acquire("Y", 0.0)
+        connections: int = point_struct.acquire("Conections", 0)
+        first_connection: int = point_struct.acquire("First_Conection", 0)
+        x: float = point_struct.acquire("X", 0.0)
+        y: float = point_struct.acquire("Y", 0.0)
 
-        source = pth.add(x, y)
+        source: int = pth.add(x, y)
 
         for i in range(first_connection, first_connection + connections):
-            target = connections_list.at(i).acquire("Destination", 0)
+            target: int = connections_list.at(i).acquire("Destination", 0)
             pth.connect(source, target)
 
     return pth
@@ -158,11 +158,11 @@ def dismantle_pth(
 ) -> GFF:
     gff = GFF(GFFContent.PTH)
 
-    connections_list = gff.root.set_list("Path_Conections", GFFList())
-    points_list = gff.root.set_list("Path_Points", GFFList())
+    connections_list: GFFList = gff.root.set_list("Path_Conections", GFFList())
+    points_list: GFFList = gff.root.set_list("Path_Points", GFFList())
 
     for i, point in enumerate(pth):
-        outgoings = pth.outgoing(i)
+        outgoings: list[PTHEdge] = pth.outgoing(i)
 
         point_struct = points_list.add(2)
         point_struct.set_uint32("Conections", len(outgoings))
@@ -182,7 +182,7 @@ def read_pth(
     offset: int = 0,
     size: int | None = None,
 ) -> PTH:
-    gff = read_gff(source, offset, size)
+    gff: GFF = read_gff(source, offset, size)
     return construct_pth(gff)
 
 
@@ -194,7 +194,7 @@ def write_pth(
     *,
     use_deprecated: bool = True,
 ) -> None:
-    gff = dismantle_pth(pth, game, use_deprecated=use_deprecated)
+    gff: GFF = dismantle_pth(pth, game, use_deprecated=use_deprecated)
     write_gff(gff, target, file_format)
 
 
@@ -205,5 +205,5 @@ def bytes_pth(
     *,
     use_deprecated: bool = True,
 ) -> bytes:
-    gff = dismantle_pth(pth, game, use_deprecated=use_deprecated)
+    gff: GFF = dismantle_pth(pth, game, use_deprecated=use_deprecated)
     return bytes_gff(gff, file_format)

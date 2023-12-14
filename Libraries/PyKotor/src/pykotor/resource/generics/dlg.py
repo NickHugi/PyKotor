@@ -147,10 +147,13 @@ class DLG:
         Returns:
         -------
             entries: {List of all reachable DLGEntries}
-        - The function recursively traverses the graph of DLGLinks starting from the given links
-        - It collects all unique DLGEntries in a list
-        - Seen entries are tracked to avoid processing the same entry multiple times
-        - Child entries are recursively processed by calling the function again
+
+        Processing Logic:
+        ----------------
+            - The function recursively traverses the graph of DLGLinks starting from the given links
+            - It collects all unique DLGEntries in a list
+            - Seen entries are tracked to avoid processing the same entry multiple times
+            - Child entries are recursively processed by calling the function again
         """
         entries: list[DLGEntry] = []
 
@@ -523,8 +526,8 @@ def construct_dlg(
         node.wait_flags = gff_struct.acquire("WaitFlags", 0)
         node.camera_angle = gff_struct.acquire("CameraAngle", 0)
         node.fade_type = gff_struct.acquire("FadeType", 0)
-        node.sound_exists = bool(gff_struct.acquire("SoundExists", 0))
-        node.vo_text_changed = bool(gff_struct.acquire("Changed", 0))
+        node.sound_exists = gff_struct.acquire("SoundExists", default=False)
+        node.vo_text_changed = gff_struct.acquire("Changed", default=False)
 
         anim_list: GFFList = gff_struct.acquire("AnimList", GFFList())
         for anim_struct in anim_list:
@@ -550,11 +553,11 @@ def construct_dlg(
         node.emotion_id = gff_struct.acquire("Emotion", 0)
         node.facial_id = gff_struct.acquire("FacialAnim", 0)
         node.node_id = gff_struct.acquire("NodeID", 0)
-        node.unskippable = bool(gff_struct.acquire("NodeUnskippable", 0))
+        node.unskippable = gff_struct.acquire("NodeUnskippable", default=False)
         node.post_proc_node = gff_struct.acquire("PostProcNode", 0)
-        node.record_no_vo_override = bool(gff_struct.acquire("RecordNoVOOverri", 0))
-        node.record_vo = bool(gff_struct.acquire("RecordVO", 0))
-        node.vo_text_changed = bool(gff_struct.acquire("VOTextChanged", 0))
+        node.record_no_vo_override = gff_struct.acquire("RecordNoVOOverri", default=False)
+        node.record_vo = gff_struct.acquire("RecordVO", default=False)
+        node.vo_text_changed = gff_struct.acquire("VOTextChanged", default=False)
 
         if gff_struct.exists("QuestEntry"):
             node.quest_entry = gff_struct.acquire("QuestEntry", 0)
@@ -602,9 +605,9 @@ def construct_dlg(
         """
         link.active1 = gff_struct.acquire("Active", ResRef.from_blank())
         link.active2 = gff_struct.acquire("Active2", ResRef.from_blank())
-        link.logic = bool(gff_struct.acquire("Logic", 0))
-        link.active1_not = bool(gff_struct.acquire("Not", 0))
-        link.active2_not = bool(gff_struct.acquire("Not2", 0))
+        link.logic = gff_struct.acquire("Logic", default=False)
+        link.active1_not = gff_struct.acquire("Not", default=False)
+        link.active2_not = gff_struct.acquire("Not2", default=False)
         link.active1_param1 = gff_struct.acquire("Param1", 0)
         link.active1_param2 = gff_struct.acquire("Param2", 0)
         link.active1_param3 = gff_struct.acquire("Param3", 0)
@@ -628,15 +631,16 @@ def construct_dlg(
     dlg.word_count = root.acquire("NumWords", 0)
     dlg.on_abort = root.acquire("EndConverAbort", ResRef.from_blank())
     dlg.on_end = root.acquire("EndConversation", ResRef.from_blank())
-    dlg.skippable = bool(root.acquire("Skippable", 0))
+    dlg.skippable = root.acquire("Skippable", default=False)
     dlg.ambient_track = root.acquire("AmbientTrack", ResRef.from_blank())
     dlg.animated_cut = root.acquire("AnimatedCut", 0)
     dlg.camera_model = root.acquire("CameraModel", ResRef.from_blank())
     dlg.computer_type = DLGComputerType(root.acquire("ComputerType", 0))
     dlg.conversation_type = DLGConversationType(root.acquire("ConversationType", 0))
-    dlg.old_hit_check = bool(root.acquire("OldHitCheck", 0))
-    dlg.unequip_hands = bool(root.acquire("UnequipHItem", 0))
-    dlg.unequip_items = bool(root.acquire("UnequipItems", 0))
+
+    dlg.old_hit_check = root.acquire("OldHitCheck", default=False)
+    dlg.unequip_hands = root.acquire("UnequipHItem", default=False)
+    dlg.unequip_items = root.acquire("UnequipItems", default=False)
     dlg.vo_id = root.acquire("VO_ID", "")
     dlg.alien_race_owner = root.acquire("AlienRaceOwner", 0)
     dlg.post_proc_owner = root.acquire("PostProcOwner", 0)

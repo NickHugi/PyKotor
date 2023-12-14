@@ -40,7 +40,7 @@ class UTI:
 
     def __init__(
         self,
-    ):
+    ) -> None:
         self.resref: ResRef = ResRef.from_blank()
         self.base_item: int = 0
         self.name: LocalizedString = LocalizedString.from_invalid()
@@ -152,7 +152,7 @@ def dismantle_uti(
     root.set_uint8("PaletteID", uti.palette_id)
     root.set_string("Comment", uti.comment)
 
-    properties_list = root.set_list("PropertiesList", GFFList())
+    properties_list: GFFList = root.set_list("PropertiesList", GFFList())
     for prop in uti.properties:
         properties_struct = properties_list.add(0)
         properties_struct.set_uint8("CostTable", prop.cost_table)

@@ -16,8 +16,7 @@ def onAppCrash(e: BaseException, value: str, tback: TracebackType):
         file.write("\n----------------------\n")
     raise e
 
-def is_frozen() -> bool:
-    # sourcery skip: assign-if-exp, boolean-if-exp-identity, reintroduce-else, remove-unnecessary-cast
+def is_frozen() -> bool:  # sourcery skip: assign-if-exp, boolean-if-exp-identity, reintroduce-else, remove-unnecessary-cast
     # Check for sys.frozen attribute
     if getattr(sys, "frozen", False):
         return True
@@ -78,7 +77,6 @@ if __name__ == "__main__":
     if not is_debug_mode() or is_frozen():
         multiprocessing.freeze_support()
 
-    from toolset.gui.windows.main import ToolWindow
 
     app = QApplication(sys.argv)
 
@@ -91,6 +89,9 @@ if __name__ == "__main__":
     app.thread().setPriority(QThread.HighestPriority)
 
     sys.excepthook = onAppCrash
+
+    from toolset.gui.windows.main import ToolWindow
+
     window = ToolWindow()
     window.show()
     app.exec_()

@@ -1008,13 +1008,13 @@ def construct_git(
         waypoint.position.y = waypoint_struct.acquire("YPosition", 0.0)
         waypoint.position.z = waypoint_struct.acquire("ZPosition", 0.0)
 
-        waypoint.has_map_note = waypoint_struct.acquire("HasMapNote", 0)
+        waypoint.has_map_note = bool(waypoint_struct.acquire("HasMapNote", 0))
         if waypoint.has_map_note:
             waypoint.map_note = waypoint_struct.acquire(
                 "MapNote",
                 LocalizedString.from_invalid(),
             )
-            waypoint.map_note_enabled = waypoint_struct.acquire("MapNoteEnabled", 0)
+            waypoint.map_note_enabled = bool(waypoint_struct.acquire("MapNoteEnabled", 0))
 
         rot_x, rot_y = waypoint_struct.acquire(
             "XOrientation",

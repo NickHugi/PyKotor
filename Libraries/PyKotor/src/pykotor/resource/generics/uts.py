@@ -1,10 +1,15 @@
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 from pykotor.common.language import LocalizedString
 from pykotor.common.misc import Game, ResRef
 from pykotor.resource.formats.gff import GFF, GFFContent, GFFList, read_gff, write_gff
 from pykotor.resource.formats.gff.gff_auto import bytes_gff
 from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES, ResourceType
+
+if TYPE_CHECKING:
+    from pykotor.resource.formats.gff.gff_data import GFFStruct
 
 
 class UTS:
@@ -44,7 +49,7 @@ class UTS:
 
     def __init__(
         self,
-    ):
+    ) -> None:
         self.resref: ResRef = ResRef.from_blank()
         self.tag: str = ""
         self.comment: str = ""
@@ -85,15 +90,15 @@ def construct_uts(
 ) -> UTS:
     uts = UTS()
 
-    root = gff.root
+    root: GFFStruct = gff.root
     uts.tag = root.acquire("Tag", "")
     uts.resref = root.acquire("TemplateResRef", ResRef.from_blank())
-    uts.active = root.acquire("Active", 0)
-    uts.continuous = root.acquire("Continuous", 0)
-    uts.looping = root.acquire("Looping", 0)
-    uts.positional = root.acquire("Positional", 0)
-    uts.random_position = root.acquire("RandomPosition", 0)
-    uts.random_pick = root.acquire("Random", 0)
+    uts.active = bool(root.acquire("Active", 0))
+    uts.continuous = bool(root.acquire("Continuous", 0))
+    uts.looping = bool(root.acquire("Looping", 0))
+    uts.positional = bool(root.acquire("Positional", 0))
+    uts.random_position = bool(root.acquire("RandomPosition", 0))
+    uts.random_pick = bool(root.acquire("Random", 0))
     uts.elevation = root.acquire("Elevation", 0.0)
     uts.max_distance = root.acquire("MaxDistance", 0.0)
     uts.min_distance = root.acquire("MinDistance", 0.0)
@@ -126,7 +131,7 @@ def dismantle_uts(
 ) -> GFF:
     gff = GFF(GFFContent.UTS)
 
-    root = gff.root
+    root: GFFStruct = gff.root
     root.set_string("Tag", uts.tag)
     root.set_resref("TemplateResRef", uts.resref)
     root.set_uint8("Active", uts.active)

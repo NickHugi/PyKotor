@@ -399,7 +399,7 @@ def dismantle_utc(
 
     root.set_uint8("PaletteID", utc.palette_id)
 
-    skill_list = root.set_list("SkillList", GFFList())
+    skill_list: GFFList = root.set_list("SkillList", GFFList())
     skill_list.add(0).set_uint8("Rank", utc.computer_use)
     skill_list.add(0).set_uint8("Rank", utc.demolitions)
     skill_list.add(0).set_uint8("Rank", utc.stealth)
@@ -409,30 +409,30 @@ def dismantle_utc(
     skill_list.add(0).set_uint8("Rank", utc.security)
     skill_list.add(0).set_uint8("Rank", utc.treat_injury)
 
-    class_list = root.set_list("ClassList", GFFList())
+    class_list: GFFList = root.set_list("ClassList", GFFList())
     for utc_class in utc.classes:
         class_struct = class_list.add(2)
         class_struct.set_int32("Class", utc_class.class_id)
         class_struct.set_int16("ClassLevel", utc_class.class_level)
-        power_list = class_struct.set_list("KnownList0", GFFList())
+        power_list: GFFList = class_struct.set_list("KnownList0", GFFList())
         for power in utc_class.powers:
             power_struct = power_list.add(3)
             power_struct.set_uint16("Spell", power)
             power_struct.set_uint8("SpellFlags", 1)
             power_struct.set_uint8("SpellMetaMagic", 0)
 
-    feat_list = root.set_list("FeatList", GFFList())
+    feat_list: GFFList = root.set_list("FeatList", GFFList())
     for feat in utc.feats:
         feat_list.add(1).set_uint16("Feat", feat)
 
-    equipment_list = root.set_list("Equip_ItemList", GFFList())
+    equipment_list: GFFList = root.set_list("Equip_ItemList", GFFList())
     for slot, item in utc.equipment.items():
         equipment_struct = equipment_list.add(slot.value)
         equipment_struct.set_resref("EquippedRes", item.resref)
         if item.droppable:
             equipment_struct.set_uint8("Dropable", value=True)
 
-    item_list = root.set_list("ItemList", GFFList())
+    item_list: GFFList = root.set_list("ItemList", GFFList())
     for i, item in enumerate(utc.inventory):
         item_struct = item_list.add(i)
         item_struct.set_resref("InventoryRes", item.resref)
@@ -466,7 +466,7 @@ def read_utc(
     offset: int = 0,
     size: int | None = None,
 ) -> UTC:
-    gff = read_gff(source, offset, size)
+    gff: GFF = read_gff(source, offset, size)
     return construct_utc(gff)
 
 
@@ -478,7 +478,7 @@ def write_utc(
     *,
     use_deprecated: bool = True,
 ) -> None:
-    gff = dismantle_utc(utc, game, use_deprecated=use_deprecated)
+    gff: GFF = dismantle_utc(utc, game, use_deprecated=use_deprecated)
     write_gff(gff, target, file_format)
 
 
@@ -489,5 +489,5 @@ def bytes_utc(
     *,
     use_deprecated: bool = True,
 ) -> bytes:
-    gff = dismantle_utc(utc, game, use_deprecated=use_deprecated)
+    gff: GFF = dismantle_utc(utc, game, use_deprecated=use_deprecated)
     return bytes_gff(gff, file_format)

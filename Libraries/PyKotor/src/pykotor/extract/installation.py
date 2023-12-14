@@ -700,11 +700,11 @@ class Installation:
         return None
 
     def game(self) -> Game:
-        """Determines the game object for the given save file path.
+        """Determines the game (K1 or K2) for the given HTInstallation.
 
         Args:
         ----
-            self: The class instance
+            self: The HTInstallation instance
 
         Returns:
         -------

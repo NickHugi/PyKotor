@@ -1,10 +1,15 @@
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 from pykotor.common.language import LocalizedString
 from pykotor.common.misc import Game, InventoryItem, ResRef
 from pykotor.resource.formats.gff import GFF, GFFContent, GFFList, read_gff, write_gff
 from pykotor.resource.formats.gff.gff_auto import bytes_gff
 from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES, ResourceType
+
+if TYPE_CHECKING:
+    from pykotor.resource.formats.gff.gff_data import GFFStruct
 
 
 class UTM:
@@ -27,7 +32,7 @@ class UTM:
 
     def __init__(
         self,
-    ):
+    ) -> None:
         self.resref: ResRef = ResRef.from_blank()
         self.comment: str = ""
         self.tag: str = ""
@@ -65,7 +70,7 @@ def construct_utm(
     utm.can_buy = root.acquire("BuySellFlag", 0) & 1 != 0
     utm.can_sell = root.acquire("BuySellFlag", 0) & 2 != 0
 
-    item_list = root.acquire("ItemList", GFFList())
+    item_list: GFFList = root.acquire("ItemList", GFFList())
     for item_struct in item_list:
         item = InventoryItem(ResRef.from_blank())
         utm.inventory.append(item)
@@ -83,7 +88,7 @@ def dismantle_utm(
 ) -> GFF:
     gff = GFF(GFFContent.UTM)
 
-    root = gff.root
+    root: GFFStruct = gff.root
     root.set_resref("ResRef", utm.resref)
     root.set_locstring("LocName", utm.name)
     root.set_string("Tag", utm.tag)
@@ -93,7 +98,7 @@ def dismantle_utm(
     root.set_string("Comment", utm.comment)
     root.set_uint8("BuySellFlag", utm.can_buy + utm.can_sell * 2)
 
-    item_list = root.set_list("ItemList", GFFList())
+    item_list: GFFList = root.set_list("ItemList", GFFList())
     for i, item in enumerate(utm.inventory):
         item_struct = item_list.add(i)
         item_struct.set_resref("InventoryRes", item.resref)
@@ -113,7 +118,7 @@ def read_utm(
     offset: int = 0,
     size: int | None = None,
 ) -> UTM:
-    gff = read_gff(source, offset, size)
+    gff: GFF = read_gff(source, offset, size)
     return construct_utm(gff)
 
 
@@ -125,7 +130,7 @@ def write_utm(
     *,
     use_deprecated: bool = True,
 ) -> None:
-    gff = dismantle_utm(utm, game, use_deprecated=use_deprecated)
+    gff: GFF = dismantle_utm(utm, game, use_deprecated=use_deprecated)
     write_gff(gff, target, file_format)
 
 
@@ -136,5 +141,5 @@ def bytes_utm(
     *,
     use_deprecated: bool = True,
 ) -> bytes:
-    gff = dismantle_utm(utm, game, use_deprecated=use_deprecated)
+    gff: GFF = dismantle_utm(utm, game, use_deprecated=use_deprecated)
     return bytes_gff(gff, file_format)

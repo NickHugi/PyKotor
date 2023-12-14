@@ -5,7 +5,7 @@ from enum import IntEnum
 from pykotor.common.geometry import Vector2
 from pykotor.common.language import LocalizedString
 from pykotor.common.misc import Color, Game, ResRef
-from pykotor.resource.formats.gff import GFF, GFFContent, GFFStruct, read_gff, write_gff, GFFList
+from pykotor.resource.formats.gff import GFF, GFFContent, GFFList, GFFStruct, read_gff, write_gff
 from pykotor.resource.formats.gff.gff_auto import bytes_gff
 from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES, ResourceType
 
@@ -94,7 +94,7 @@ class ARE:
 
     def __init__(
         self,
-    ):
+    ) -> None:
         self.alpha_test: float = 0.0
         self.camera_style: int = 0
 
@@ -227,12 +227,18 @@ class ARENorthAxis(IntEnum):
 def construct_are(
     gff: GFF,
 ) -> ARE:
-    """Constructs an ARE object from a GFF file
+    """Constructs an ARE object from a GFF file.
+
     Args:
+    ----
         gff: GFF - The GFF file object
+
     Returns:
+    -------
         ARE - The constructed ARE object
+
     Processing Logic:
+    ----------------
         - Acquires values from the GFF root node and assigns them to ARE properties
         - Handles color values as special case, converting to Color objects
         - All other values assigned directly from GFF.
@@ -353,14 +359,20 @@ def dismantle_are(
     *,
     use_deprecated: bool = True,
 ) -> GFF:
-    """Converts an ARE structure to a GFF structure
+    """Converts an ARE structure to a GFF structure.
+
     Args:
+    ----
         are: ARE - The ARE structure to convert
         game: Game - The game type (K1, K2, etc)
         use_deprecated: bool - Whether to include deprecated fields
+
     Returns:
+    -------
         gff: GFF - The converted GFF structure
+
     Processing Logic:
+    ----------------
         - Creates a new GFF structure
         - Maps ARE fields to GFF fields
         - Includes additional K2-specific fields if game is K2
@@ -489,10 +501,15 @@ def read_are(
         source: The source to read from
         offset: The byte offset to start reading from
         size: The maximum number of bytes to read
+
     Returns:
+    -------
         ARE: The constructed annotation regions
-    - Read GFF from source starting at offset with max size
-    - Construct ARE object from parsed GFF
+
+    Processing Logic:
+    ----------------
+        - Read GFF from source starting at offset with max size
+        - Construct ARE object from parsed GFF
     """
     gff = read_gff(source, offset, size)
     return construct_are(gff)
@@ -519,8 +536,11 @@ def write_are(
     Returns:
     -------
         None: Writes the ARE as GFF to the target without returning anything
-    - Dismantles the ARE into a GFF structure
-    - Writes the GFF structure to the target using the specified file format
+
+    Processing Logic:
+    ----------------
+        - Dismantles the ARE into a GFF structure
+        - Writes the GFF structure to the target using the specified file format
     """
     gff = dismantle_are(are, game, use_deprecated=use_deprecated)
     write_gff(gff, target, file_format)
