@@ -1,3 +1,7 @@
+from __future__ import annotations
+
+from typing import ClassVar
+
 from ply import lex
 
 from pykotor.common.script import DataType
@@ -20,7 +24,7 @@ class NssLexer:
         self.lexer = lex.lex(module=self, errorlog=errorlog, nowarn=True)
         self.lexer.begin("INITIAL")
 
-    tokens = [
+    tokens: ClassVar[list[str]] = [
         "STRING_VALUE",
         "INT_VALUE",
         "FLOAT_VALUE",
@@ -84,7 +88,7 @@ class NssLexer:
         "NOP",
     ]
 
-    literals = [
+    literals: ClassVar[list[str]] = [
         "{",
         "}",
         "(",
@@ -101,97 +105,97 @@ class NssLexer:
     t_ignore = " \t\r"
 
     def t_NEWLINE(self, t):
-        r"\n+"
+        r"\n+"  # noqa: D300, D400, D415
         t.lexer.lineno += len(t.value)
 
     def t_NOP(self, t):
-        r"nop"
+        r"nop"  # noqa: D300, D400, D415, D403
         return t
 
     def t_COMMENT(self, t):
-        r"//[^\n]*\n"
+        r"//[^\n]*\n"  # noqa: D300, D400, D415
         t.lexer.lineno += 1
 
     def t_MULTILINE_COMMENT(self, t):
-        r"\/\*(\*(?!\/)|[^*])*\*\/"
+        r"\/\*(\*(?!\/)|[^*])*\*\/"  # noqa: D300, D400, D415
         t.lexer.lineno += t.value.count("\n")
 
     def t_INCLUDE(self, t):
-        r"\#include"
+        r"\#include"  # noqa: D300, D400, D415
         return t
 
     def t_OBJECTSELF_VALUE(self, t):
-        r"OBJECT_SELF"
+        r"OBJECT_SELF"  # noqa: D300, D400, D415
         t.value = ObjectExpression(0)
         return t
 
     def t_OBJECTINVALID_VALUE(self, t):
-        r"OBJECT_INVALID"
+        r"OBJECT_INVALID"  # noqa: D300, D400, D415
         t.value = ObjectExpression(1)
         return t
 
     def t_TRUE_VALUE(self, t):
-        r"TRUE"
+        r"TRUE"  # noqa: D300, D400, D415
         t.value = IntExpression(1)
         return t
 
     def t_FALSE_VALUE(self, t):
-        r"FALSE"
+        r"FALSE"  # noqa: D300, D400, D415
         t.value = IntExpression(0)
         return t
 
     # region Control Tokens
     def t_BREAK_CONTROL(self, t):
-        r"break"
+        r"break"  # noqa: D300, D400, D415, D403
         t.value = ControlKeyword.BREAK
         return t
 
     def t_CONTINUE_CONTROL(self, t):
-        r"continue"
+        r"continue"  # noqa: D300, D400, D415, D403
         return t
 
     def t_CASE_CONTROL(self, t):
-        r"case"
+        r"case"  # noqa: D300, D400, D415, D403
         t.value = ControlKeyword.CASE
         return t
 
     def t_DEFAULT_CONTROL(self, t):
-        r"default"
+        r"default"  # noqa: D300, D400, D415, D403
         t.value = ControlKeyword.DEFAULT
         return t
 
     def t_DO_CONTROL(self, t):
-        r"do"
+        r"do"  # noqa: D300, D400, D415, D403
         t.value = ControlKeyword.DO
         return t
 
     def t_ELSE_CONTROL(self, t):
-        r"else"
+        r"else"  # noqa: D300, D400, D415, D403
         t.value = ControlKeyword.ELSE
         return t
 
     def t_SWITCH_CONTROL(self, t):
-        r"switch"
+        r"switch"  # noqa: D300, D400, D415, D403
         t.value = ControlKeyword.SWITCH
         return t
 
     def t_WHILE_CONTROL(self, t):
-        r"while"
+        r"while"  # noqa: D300, D400, D415, D403
         t.value = ControlKeyword.WHILE
         return t
 
     def t_FOR_CONTROL(self, t):
-        r"for"
+        r"for"  # noqa: D300, D400, D415, D403
         t.value = ControlKeyword.FOR
         return t
 
     def t_IF_CONTROL(self, t):
-        r"if"
+        r"if"  # noqa: D300, D400, D415, D403
         t.value = ControlKeyword.IF
         return t
 
     def t_RETURN(self, t):
-        r"return"
+        r"return"  # noqa: D300, D400, D415, D403
         t.value = ControlKeyword.RETURN
         return t
 
@@ -199,67 +203,67 @@ class NssLexer:
 
     # region Type Tokens
     def t_STRUCT(self, t):
-        r"struct"
+        r"struct"  # noqa: D300, D400, D415, D403
         t.value = DataType.STRUCT
         return t
 
     def t_INT_TYPE(self, t):
-        r"int"
+        r"int"  # noqa: D300, D400, D415, D403
         t.value = DataType.INT
         return t
 
     def t_FLOAT_TYPE(self, t):
-        r"float"
+        r"float"  # noqa: D300, D400, D415, D403
         t.value = DataType.FLOAT
         return t
 
     def t_OBJECT_TYPE(self, t):
-        r"object"
+        r"object"  # noqa: D300, D400, D415, D403
         t.value = DataType.OBJECT
         return t
 
     def t_VOID_TYPE(self, t):
-        r"void"
+        r"void"  # noqa: D300, D400, D415, D403
         t.value = DataType.VOID
         return t
 
     def t_EVENT_TYPE(self, t):
-        r"event"
+        r"event"  # noqa: D300, D400, D415, D403
         t.value = DataType.EVENT
         return t
 
     def t_EFFECT_TYPE(self, t):
-        r"effect"
+        r"effect"  # noqa: D300, D400, D415, D403
         t.value = DataType.EFFECT
         return t
 
     def t_ITEMPROPERTY_TYPE(self, t):
-        r"itemproperty"
+        r"itemproperty"  # noqa: D300, D400, D415, D403
         t.value = DataType.ITEMPROPERTY
         return t
 
     def t_LOCATION_TYPE(self, t):
-        r"location"
+        r"location"  # noqa: D300, D400, D415, D403
         t.value = DataType.LOCATION
         return t
 
     def t_STRING_TYPE(self, t):
-        r"string"
+        r"string"  # noqa: D300, D400, D415, D403
         t.value = DataType.STRING
         return t
 
     def t_TALENT_TYPE(self, t):
-        r"talent"
+        r"talent"  # noqa: D300, D400, D415, D403
         t.value = DataType.TALENT
         return t
 
     def t_ACTION_TYPE(self, t):
-        r"action"
+        r"action"  # noqa: D300, D400, D415, D403
         t.value = DataType.ACTION
         return t
 
     def t_VECTOR_TYPE(self, t):
-        r"vector"
+        r"vector"  # noqa: D300, D400, D415, D403
         t.value = DataType.VECTOR
         return t
 
@@ -267,34 +271,34 @@ class NssLexer:
 
     # region Value Tokens
     def t_IDENTIFIER(self, t):
-        r"[a-zA-Z_]+[a-zA-Z0-9_]*"
+        r"[a-zA-Z_]+[a-zA-Z0-9_]*"  # noqa: D300, D400, D415
         t.value = Identifier(t.value)
         return t
 
     def t_STRING_VALUE(self, t):
-        r"\"[^\"]*\" "
+        r"\"[^\"]*\" "  # noqa: D300, D400, D415, D210
         t.value = StringExpression(t.value[1:-1])
         return t
 
     def t_FLOAT_VALUE(self, t):
-        r"[0-9]+\.[0-9]+f?|[0-9]f"
+        r"[0-9]+\.[0-9]+f?|[0-9]f"  # noqa: D300, D400, D415
         t.value = FloatExpression(float(t.value.replace("f", "")))
         return t
 
     def t_INT_HEX_VALUE(self, t):
-        r"0x[0-9a-fA-F]+"
+        r"0x[0-9a-fA-F]+"  # noqa: D300, D400, D415
         t.value = IntExpression(int(t.value, 16))
         return t
 
     def t_INT_VALUE(self, t):
-        r"[0-9]+"
+        r"[0-9]+"  # noqa: D300, D400, D415
         t.value = IntExpression(int(t.value))
         return t
 
     # endregion
 
     def t_INCREMENT(self, t):
-        r"\+\+"
+        r"\+\+"  # noqa: D300, D400, D415
         t.value = OperatorMapping(
             [
                 UnaryOperatorMapping(NCSInstructionType.INCISP, DataType.INT),
@@ -304,7 +308,7 @@ class NssLexer:
         return t
 
     def t_DECREMENT(self, t):
-        r"\-\-"
+        r"\-\-"  # noqa: D300, D400, D415
         t.value = OperatorMapping(
             [
                 UnaryOperatorMapping(NCSInstructionType.DECISP, DataType.INT),
@@ -314,24 +318,24 @@ class NssLexer:
         return t
 
     def t_ADDITION_ASSIGNMENT_OPERATOR(self, t):
-        r"\+\="
+        r"\+\="  # noqa: D300, D400, D415
         return t
 
     def t_SUBTRACTION_ASSIGNMENT_OPERATOR(self, t):
-        r"\-\="
+        r"\-\="  # noqa: D300, D400, D415
         return t
 
     def t_MULTIPLICATION_ASSIGNMENT_OPERATOR(self, t):
-        r"\*\="
+        r"\*\="  # noqa: D300, D400, D415
         return t
 
     def t_DIVISION_ASSIGNMENT_OPERATOR(self, t):
-        r"/\="
+        r"/\="  # noqa: D300, D400, D415
         return t
 
     # region Operators
     def t_BITWISE_LEFT(self, t):
-        "<<"
+        "<<"  # noqa: D300, D400, D415
         t.value = OperatorMapping(
             [],
             [
@@ -341,7 +345,7 @@ class NssLexer:
         return t
 
     def t_BITWISE_RIGHT(self, t):
-        ">>"
+        ">>"  # noqa: D300, D400, D415
         t.value = OperatorMapping(
             [],
             [
@@ -351,7 +355,7 @@ class NssLexer:
         return t
 
     def t_ADD(self, t):
-        r"\+"
+        r"\+"  # noqa: D300, D400, D415
         t.value = OperatorMapping(
             [],
             [
@@ -366,7 +370,7 @@ class NssLexer:
         return t
 
     def t_MINUS(self, t):
-        "-"
+        "-"  # noqa: D300, D400, D415
         t.value = OperatorMapping(
             [
                 UnaryOperatorMapping(NCSInstructionType.NEGI, DataType.INT),
@@ -383,7 +387,7 @@ class NssLexer:
         return t
 
     def t_MULTIPLY(self, t):
-        r"\*"
+        r"\*"  # noqa: D300, D400, D415
         t.value = OperatorMapping(
             [],
             [
@@ -398,7 +402,7 @@ class NssLexer:
         return t
 
     def t_DIVIDE(self, t):
-        "/"
+        "/"  # noqa: D300, D400, D415
         t.value = OperatorMapping(
             [],
             [
@@ -413,7 +417,7 @@ class NssLexer:
         return t
 
     def t_MOD(self, t):
-        r"\%"
+        r"\%"  # noqa: D300, D400, D415
         t.value = OperatorMapping(
             [],
             [
@@ -423,7 +427,7 @@ class NssLexer:
         return t
 
     def t_EQUALS(self, t):
-        r"\=\="
+        r"\=\="  # noqa: D300, D400, D415
         t.value = OperatorMapping(
             [],
             [
@@ -436,7 +440,7 @@ class NssLexer:
         return t
 
     def t_NOT_EQUALS(self, t):
-        r"\!="
+        r"\!="  # noqa: D300, D400, D415
         t.value = OperatorMapping(
             [],
             [
@@ -449,7 +453,7 @@ class NssLexer:
         return t
 
     def t_GREATER_THAN_OR_EQUALS(self, t):
-        r">\="
+        r">\="  # noqa: D300, D400, D415
         t.value = OperatorMapping(
             [],
             [
@@ -460,7 +464,7 @@ class NssLexer:
         return t
 
     def t_GREATER_THAN(self, t):
-        ">"
+        ">"  # noqa: D300, D400, D415
         t.value = OperatorMapping(
             [],
             [
@@ -471,7 +475,7 @@ class NssLexer:
         return t
 
     def t_LESS_THAN_OR_EQUALS(self, t):
-        r"\<="
+        r"\<="  # noqa: D300, D400, D415
         t.value = OperatorMapping(
             [],
             [
@@ -482,7 +486,7 @@ class NssLexer:
         return t
 
     def t_LESS_THAN(self, t):
-        r"\<"
+        r"\<"  # noqa: D300, D400, D415
         t.value = OperatorMapping(
             [],
             [
@@ -493,7 +497,7 @@ class NssLexer:
         return t
 
     def t_AND(self, t):
-        "&&"
+        "&&"  # noqa: D300, D400, D415
         t.value = OperatorMapping(
             [],
             [
@@ -503,7 +507,7 @@ class NssLexer:
         return t
 
     def t_OR(self, t):
-        r"\|\|"
+        r"\|\|"  # noqa: D300, D400, D415
         t.value = OperatorMapping(
             [],
             [
@@ -513,7 +517,7 @@ class NssLexer:
         return t
 
     def t_NOT(self, t):
-        r"\!"
+        r"\!"  # noqa: D300, D400
         t.value = OperatorMapping(
             [
                 UnaryOperatorMapping(NCSInstructionType.NOTI, DataType.INT),
@@ -523,7 +527,7 @@ class NssLexer:
         return t
 
     def t_BITWISE_AND(self, t):
-        "&"
+        "&"  # noqa: D300, D400, D415
         t.value = OperatorMapping(
             [],
             [
@@ -533,7 +537,7 @@ class NssLexer:
         return t
 
     def t_BITWISE_OR(self, t):
-        r"\|"
+        r"\|"  # noqa: D300, D400, D415
         t.value = OperatorMapping(
             [],
             [
@@ -543,7 +547,7 @@ class NssLexer:
         return t
 
     def t_BITWISE_XOR(self, t):
-        r"\^"
+        r"\^"  # noqa: D300, D400, D415
         t.value = OperatorMapping(
             [],
             [
@@ -553,7 +557,7 @@ class NssLexer:
         return t
 
     def t_BITWISE_NOT(self, t):
-        r"\~"
+        r"\~"  # noqa: D300, D400, D415
         t.value = OperatorMapping([UnaryOperatorMapping(NCSInstructionType.COMPI, DataType.INT)], [])
         return t
 

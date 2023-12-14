@@ -5,8 +5,8 @@ from enum import IntEnum
 from pykotor.common.geometry import Vector3
 from pykotor.common.language import Gender, Language, LocalizedString
 from pykotor.common.misc import Color, Game, ResRef
-from pykotor.resource.formats.gff import GFF, GFFContent, GFFList, GFFStruct, read_gff, write_gff
-from pykotor.resource.formats.gff.gff_auto import bytes_gff
+from pykotor.resource.formats.gff.gff_auto import bytes_gff, read_gff, write_gff
+from pykotor.resource.formats.gff.gff_data import GFF, GFFContent, GFFList, GFFStruct
 from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES, ResourceType
 
 
@@ -219,7 +219,7 @@ class DLG:
                 replies.append(reply)
                 seen_replies.append(reply)
                 for entry_link in reply.links:
-                    entry = entry_link.node
+                    entry: DLGNode | None = entry_link.node
                     replies.extend(self._all_replies(entry.links, seen_replies))
 
         return replies
@@ -427,7 +427,7 @@ class DLGLink:
         node: DLGNode | None = None,
     ) -> None:
         self.active1: ResRef = ResRef.from_blank()
-        self.node: DLGNode = node
+        self.node: DLGNode | None = node
         self.link_index: int = -1
 
         # not in StartingList

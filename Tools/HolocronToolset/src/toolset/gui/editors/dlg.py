@@ -213,7 +213,7 @@ class DLGEditor(Editor):
         self.ui.entryDelaySpin.setValue(dlg.delay_entry)
         self.ui.replyDelaySpin.setValue(dlg.delay_reply)
 
-    def _loadDLG(self, dlg: DLG):
+    def _loadDLG(self, dlg: DLG) -> None:
         """Loads a dialog tree into the UI view.
 
         Args:
@@ -828,7 +828,7 @@ class DLGEditor(Editor):
 
             menu.popup(self.ui.dialogTree.viewport().mapToGlobal(point))
 
-    def _set_context_menu_actions(self, item: QStandardItem | None, point: QPoint) -> None:
+    def _set_context_menu_actions(self, item: QStandardItem, point: QPoint) -> None:
         """Sets context menu actions for a dialog tree item.
 
         Args:
