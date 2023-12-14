@@ -1,12 +1,15 @@
 from __future__ import annotations
 
 import os
+from typing import TYPE_CHECKING
 
 from pykotor.common.stream import BinaryReader
 from pykotor.resource.formats.ssf.io_ssf import SSFBinaryReader, SSFBinaryWriter
 from pykotor.resource.formats.ssf.io_ssf_xml import SSFXMLReader, SSFXMLWriter
-from pykotor.resource.formats.ssf.ssf_data import SSF
 from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES, ResourceType
+
+if TYPE_CHECKING:
+    from pykotor.resource.formats.ssf.ssf_data import SSF
 
 
 def detect_ssf(

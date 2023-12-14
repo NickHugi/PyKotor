@@ -110,8 +110,8 @@ class TPC:
             A tuple equal to (width, height, data)
         """
         width, height = self._mipmap_size(mipmap)
-        raw_data = self._mipmaps[mipmap]
-        data = b""
+        raw_data: bytes = self._mipmaps[mipmap]
+        data = bytearray()
 
         if convert_format in [TPCTextureFormat.DXT1, TPCTextureFormat.DXT5]:
             raise NotImplementedError
@@ -119,13 +119,14 @@ class TPC:
         if convert_format == TPCTextureFormat.Greyscale:
             raise NotImplementedError
 
+        data: bytearray
         if convert_format == TPCTextureFormat.RGBA:
             if self._texture_format == TPCTextureFormat.DXT5:
                 data = TPC._dxt5_to_rgba(raw_data, width, height)
             elif self._texture_format == TPCTextureFormat.DXT1:
                 data = TPC._dxt1_to_rgba(raw_data, width, height)
             elif self._texture_format == TPCTextureFormat.RGBA:
-                data = raw_data
+                data = bytearray(raw_data)
             elif self._texture_format == TPCTextureFormat.RGB:
                 data = TPC._rgb_to_rgba(raw_data, width, height)
             elif self._texture_format == TPCTextureFormat.Greyscale:
@@ -139,7 +140,7 @@ class TPC:
             elif self._texture_format == TPCTextureFormat.RGBA:
                 data = TPC._rgba_to_rgb(raw_data, width, height)
             elif self._texture_format == TPCTextureFormat.RGB:
-                data = raw_data
+                data = bytearray(raw_data)
             elif self._texture_format == TPCTextureFormat.Greyscale:
                 data = TPC._grey_to_rgba(raw_data, width, height)
                 data = TPC._rgba_to_rgb(data, width, height)
@@ -217,7 +218,7 @@ class TPC:
 
         width = self._width
         height = self._height
-        for _i in range(mipmap):
+        for _ in range(mipmap):
             width >>= 1
             height >>= 1
         return width, height
@@ -250,7 +251,7 @@ class TPC:
                 - Writes the RGBA values to the output byte array
             - Returns the uncompressed pixel data.
         """
-        dxt_reader = BinaryReader.from_bytes(data)
+        dxt_reader: BinaryReader = BinaryReader.from_bytes(data)
         new_data = bytearray(width * height * 4)
 
         for ty, tx in itertools.product(range(4, height + 4, 4), range(0, width, 4)):
@@ -331,17 +332,17 @@ class TPC:
             - Extract and interpolate the RGBA values for each pixel
             - Write the uncompressed RGBA values to a bytearray.
         """
-        dxt_reader = BinaryReader.from_bytes(data)
+        dxt_reader: BinaryReader = BinaryReader.from_bytes(data)
         new_data = bytearray(width * height * 4)
 
         for ty, tx in itertools.product(range(4, height + 4, 4), range(0, width, 4)):
             x = dxt_reader.read_int16()
             y = dxt_reader.read_int16()
-            c0 = TPC._rgba565_to_rgb(x)
-            c1 = TPC._rgba565_to_rgb(y)
+            c0: tuple[int, int, int] = TPC._rgba565_to_rgb(x)
+            c1: tuple[int, int, int] = TPC._rgba565_to_rgb(y)
             dxt_pixels = dxt_reader.read_uint32(big=True)
 
-            cc = [c0, c1]
+            cc: list[tuple[int, int, int]] = [c0, c1]
             if TPC._rgba565_to_rgb888(x) > TPC._rgba565_to_rgb888(y):
                 cc.extend(
                     [
@@ -444,11 +445,11 @@ class TPC:
 
             x = dxt_reader.read_int16()
             y = dxt_reader.read_int16()
-            c0 = TPC._rgba565_to_rgb(x)
-            c1 = TPC._rgba565_to_rgb(y)
+            c0: tuple[int, int, int] = TPC._rgba565_to_rgb(x)
+            c1: tuple[int, int, int] = TPC._rgba565_to_rgb(y)
             dxt_pixels = dxt_reader.read_uint32(big=True)
 
-            cc = [c0, c1]
+            cc: list[tuple[int, int, int]] = [c0, c1]
             if TPC._rgba565_to_rgb888(x) > TPC._rgba565_to_rgb888(y):
                 cc.extend(
                     [
@@ -483,11 +484,11 @@ class TPC:
         for ty, tx in itertools.product(range(4, height + 4, 4), range(0, width, 4)):
             x = dxt_reader.read_int16()
             y = dxt_reader.read_int16()
-            c0 = TPC._rgba565_to_rgb(x)
-            c1 = TPC._rgba565_to_rgb(y)
+            c0: tuple[int, int, int] = TPC._rgba565_to_rgb(x)
+            c1: tuple[int, int, int] = TPC._rgba565_to_rgb(y)
             dxt_pixels = dxt_reader.read_uint32(big=True)
 
-            cc = [c0, c1]
+            cc: list[tuple[int, int, int]] = [c0, c1]
             if TPC._rgba565_to_rgb888(x) > TPC._rgba565_to_rgb888(y):
                 cc.extend(
                     [
@@ -517,7 +518,7 @@ class TPC:
         height: int,
     ) -> bytearray:
         new_data = bytearray()
-        rgb_reader = BinaryReader.from_bytes(data)
+        rgb_reader: BinaryReader = BinaryReader.from_bytes(data)
 
         for _y, _x in itertools.product(range(height), range(width)):
             new_data.extend(

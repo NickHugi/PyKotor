@@ -35,7 +35,7 @@ class LIPBinaryReader(ResourceReader):
         self._lip.length = self._reader.read_single()
         entry_count = self._reader.read_uint32()
 
-        for _i in range(entry_count):
+        for _ in range(entry_count):
             time = self._reader.read_single()
             shape = LIPShape(self._reader.read_uint8())
             self._lip.add(time, shape)

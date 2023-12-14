@@ -12,7 +12,7 @@ from pykotor.resource.formats.rim import RIM, read_rim
 from pykotor.resource.formats.tpc import TPC, TPCTextureFormat, write_tpc
 from pykotor.resource.formats.vis import write_vis
 from pykotor.resource.generics.are import dismantle_are
-from pykotor.resource.generics.git import dismantle_git
+from pykotor.resource.generics.git import GIT, dismantle_git
 from pykotor.resource.generics.ifo import dismantle_ifo
 from pykotor.resource.generics.pth import dismantle_pth
 from pykotor.resource.generics.utd import dismantle_utd
@@ -25,6 +25,12 @@ from utility.string import ireplace
 
 if TYPE_CHECKING:
     import os
+
+    from pykotor.resource.formats.lyt import LYT
+    from pykotor.resource.formats.tpc.tpc_data import TPCConvertResult
+    from pykotor.resource.formats.vis import VIS
+    from pykotor.resource.generics.are import ARE
+    from pykotor.resource.generics.ifo import IFO
 
 
 def clone_module(
@@ -41,16 +47,18 @@ def clone_module(
     keep_sounds: bool = False,
     keep_pathing: bool = False,
 ) -> None:
-    """Clones a module
+    """Clones a module.
+
     Args:
+    ----
         root: str - The path to the module root
         identifier: str - The identifier for the new module
         prefix: str - Prefix for generated textures and lightmaps
         name: str - Name for the new ARE file
         installation: Installation - The installation context
-    Returns:
-        None
+
     Processing Logic:
+    ----------------
         1. Load resources from old module
         2. Rename resources and change identifiers
         3. Copy textures and lightmaps if specified
@@ -59,8 +67,8 @@ def clone_module(
     old_module = Module(root, installation)
     new_module = ERF(ERFType.MOD)
 
-    ifo = old_module.info().resource()
-    old_identifier = ifo.identifier.get()
+    ifo: IFO | None = old_module.info().resource()
+    old_identifier: str = ifo.identifier.get()
     ifo.identifier.set_data(identifier)
     ifo.mod_name = LocalizedString.from_english(identifier.upper())
     ifo.tag = identifier.upper()
@@ -69,15 +77,15 @@ def clone_module(
     write_gff(dismantle_ifo(ifo), ifo_data)
     new_module.set_data("module", ResourceType.IFO, ifo_data)
 
-    are = old_module.are().resource()
+    are: ARE | None = old_module.are().resource()
     are.name = LocalizedString.from_english(name)
     are_data = bytearray()
     write_gff(dismantle_are(are), are_data)
     new_module.set_data(identifier, ResourceType.ARE, are_data)
 
-    lyt = old_module.layout().resource()
-    vis = old_module.vis().resource()
-    git = old_module.git().resource()
+    lyt: LYT | None = old_module.layout().resource()
+    vis: VIS | None = old_module.vis().resource()
+    git: GIT | None = old_module.git().resource()
 
     if keep_pathing:
         pth = old_module.pth().resource()
@@ -158,9 +166,9 @@ def clone_module(
                     new_texture_name = prefix + texture[3:]
                     new_textures[texture] = new_texture_name
 
-                    tpc = installation.texture(texture)
+                    tpc: TPC | None = installation.texture(texture)
                     tpc = TPC() if tpc is None else tpc
-                    rgba = tpc.convert(TPCTextureFormat.RGBA)
+                    rgba: TPCConvertResult = tpc.convert(TPCTextureFormat.RGBA)
 
                     tga = TPC()
                     tga.set_data(rgba.width, rgba.height, [rgba.data], TPCTextureFormat.RGBA)
@@ -204,13 +212,12 @@ def clone_module(
     write_lyt(lyt, lyt_data)
     new_module.set_data(identifier, ResourceType.LYT, lyt_data)
 
-    filepath = installation.module_path() / f"{identifier}.mod"
+    filepath: CaseAwarePath = installation.module_path() / f"{identifier}.mod"
     write_erf(new_module, filepath)
 
 
 def rim_to_mod(filepath: os.PathLike | str) -> None:
-    """Creates a MOD file at the given filepath and copies the resources from the corresponding
-    RIM files.
+    """Creates a MOD file at the given filepath and copies the resources from the corresponding RIM files.
 
     Raises:
     ------
@@ -228,11 +235,11 @@ def rim_to_mod(filepath: os.PathLike | str) -> None:
         msg = "Specified file must end with the .mod extension"
         raise ValueError(msg)
 
-    file_ext_rim = resolved_file_path.suffix.lower().replace(".mod", ".rim")
-    file_ext_rim_s = resolved_file_path.suffix.lower().replace(".mod", "_s.rim")
+    file_ext_rim: str = resolved_file_path.suffix.lower().replace(".mod", ".rim")
+    file_ext_rim_s: str = resolved_file_path.suffix.lower().replace(".mod", "_s.rim")
 
-    filepath_rim = resolved_file_path.with_suffix(file_ext_rim)
-    filepath_rim_s = resolved_file_path.parent / (resolved_file_path.stem + file_ext_rim_s)
+    filepath_rim: CaseAwarePath = resolved_file_path.with_suffix(file_ext_rim)
+    filepath_rim_s: CaseAwarePath = resolved_file_path.parent / (resolved_file_path.stem + file_ext_rim_s)
 
     rim = read_rim(filepath_rim)
     rim_s = read_rim(filepath_rim_s) if filepath_rim_s.exists() else RIM()

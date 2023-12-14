@@ -59,7 +59,7 @@ class LTR:
 
         while not done:
             attempts = 0
-            name = ""
+            name: str = ""
 
             for char in LTR.CHARACTER_SET:
                 if LTR._chance() < self._singles.get_start(char):
@@ -86,7 +86,7 @@ class LTR:
                 continue
 
             while True:
-                prob = LTR._chance()
+                prob: float = LTR._chance()
 
                 if (secrets.randbelow(12) % 12) <= len(name):
                     for char in LTR.CHARACTER_SET:

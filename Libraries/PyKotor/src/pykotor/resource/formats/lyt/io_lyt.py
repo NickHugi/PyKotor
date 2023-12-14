@@ -53,7 +53,7 @@ class LYTAsciiReader(ResourceReader):
         iterator: Iterator[str],
         count: int,
     ):
-        for _i in range(count):
+        for _ in range(count):
             tokens = next(iterator).split()
             model = tokens[0]
             position = Vector3(float(tokens[1]), float(tokens[2]), float(tokens[3]))
@@ -64,7 +64,7 @@ class LYTAsciiReader(ResourceReader):
         iterator: Iterator[str],
         count: int,
     ):
-        for _i in range(count):
+        for _ in range(count):
             tokens = next(iterator).split()
             model = tokens[0]
             position = Vector3(float(tokens[1]), float(tokens[2]), float(tokens[3]))
@@ -75,9 +75,9 @@ class LYTAsciiReader(ResourceReader):
         iterator: Iterator[str],
         count: int,
     ):
-        for _i in range(count):
-            tokens = next(iterator).split()
-            model = tokens[0]
+        for _ in range(count):
+            tokens: list[str] = next(iterator).split()
+            model: str = tokens[0]
             position = Vector3(float(tokens[1]), float(tokens[2]), float(tokens[3]))
             self._lyt.obstacles.append(LYTObstacle(model, position))
 
@@ -87,9 +87,9 @@ class LYTAsciiReader(ResourceReader):
         count: int,
     ):
         for _i in range(count):
-            tokens = next(iterator).split()
-            room = tokens[0]
-            door = tokens[1]
+            tokens: list[str] = next(iterator).split()
+            room: str = tokens[0]
+            door: str = tokens[1]
             position = Vector3(float(tokens[3]), float(tokens[4]), float(tokens[5]))
             orientation = Vector4(
                 float(tokens[6]),

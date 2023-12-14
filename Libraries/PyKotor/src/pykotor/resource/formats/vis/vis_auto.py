@@ -36,7 +36,7 @@ def read_vis(
     -------
         An VIS instance.
     """
-    return VISAsciiReader(source, offset, size).load()
+    return VISAsciiReader(source, offset, size or 0).load()
 
 
 def write_vis(

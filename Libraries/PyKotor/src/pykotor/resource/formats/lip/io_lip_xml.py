@@ -32,7 +32,7 @@ class LIPXMLReader(ResourceReader):
         self._lip = LIP()
 
         data = self._reader.read_bytes(self._reader.size()).decode()
-        xml_root = ElementTree.fromstring(data)  # noqa: S314
+        xml_root: ElementTree.Element = ElementTree.fromstring(data)  # noqa: S314
 
         if xml_root.tag != "lip":
             msg = "The XML file that was loaded was not a valid LIP."
@@ -55,7 +55,7 @@ class LIPXMLWriter(ResourceWriter):
         target: TARGET_TYPES,
     ):
         super().__init__(target)
-        self._lip = lip
+        self._lip: LIP = lip
         self._xml_root: ElementTree.Element = ElementTree.Element("lip")
 
     @autoclose

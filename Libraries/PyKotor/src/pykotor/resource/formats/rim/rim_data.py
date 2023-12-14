@@ -109,7 +109,7 @@ class RIM:
         -------
             The bytes data of the resource or None.
         """
-        resource = next(
+        resource: RIMResource | None = next(
             (resource for resource in self._resources if resource.resref == resref and resource.restype == restype),
             None,
         )
@@ -127,7 +127,11 @@ class RIM:
             resref: The resref.
             restype: The resource type.
         """
-        self._resources = [res for res in self._resources if res.resref != resref and res.restype != restype]
+        self._resources = [
+            res
+            for res in self._resources
+            if res.resref != resref and res.restype != restype
+        ]
 
     def to_erf(
         self,

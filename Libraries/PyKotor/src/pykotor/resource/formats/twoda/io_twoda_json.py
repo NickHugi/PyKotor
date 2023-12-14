@@ -47,7 +47,7 @@ class TwoDAJSONWriter(ResourceWriter):
     ):
         super().__init__(target)
         self._twoda: TwoDA = twoda
-        self._json = {"rows": []}
+        self._json: dict[str, list] = {"rows": []}
 
     @autoclose
     def write(
@@ -55,10 +55,10 @@ class TwoDAJSONWriter(ResourceWriter):
         auto_close: bool = True,
     ) -> None:
         for row in self._twoda:
-            json_row = {"_id": row.label()}
+            json_row: dict[str, str] = {"_id": row.label()}
             self._json["rows"].append(json_row)
             for header in self._twoda.get_headers():
                 json_row[header] = row.get_string(header)
 
-        json_dump = json.dumps(self._json, indent=4)
+        json_dump: str = json.dumps(self._json, indent=4)
         self._writer.write_bytes(json_dump.encode())

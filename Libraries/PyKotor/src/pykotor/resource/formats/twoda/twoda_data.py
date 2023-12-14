@@ -391,8 +391,8 @@ class TwoDA:
         ret = True
 
         # Check for column header mismatches
-        missing_headers = old_headers - new_headers
-        extra_headers = new_headers - old_headers
+        missing_headers: set[str] = old_headers - new_headers
+        extra_headers: set[str] = new_headers - old_headers
         if missing_headers:
             log_func(f"Missing headers in new TwoDA: {', '.join(missing_headers)}")
             ret = False

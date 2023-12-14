@@ -11,6 +11,7 @@ if TYPE_CHECKING:
     from pykotor.extract.installation import Installation
     from pykotor.resource.formats.twoda import TwoDA
     from pykotor.resource.generics.utc import UTC
+    from pykotor.resource.generics.uti import UTI
 
 
 def get_body_model(
@@ -43,7 +44,7 @@ def get_body_model(
     if baseitems is None:
         baseitems = read_2da(installation.resource("baseitems", ResourceType.TwoDA).data)
 
-    body_model = ""
+    body_model: str = ""
     override_texture = None
 
     if appearance.get_row(utc.appearance_id).get_string("modeltype") == "B":
@@ -109,11 +110,11 @@ def get_weapon_models(
     if baseitems is None:
         baseitems = read_2da(installation.resource("baseitems", ResourceType.TwoDA).data)
 
-    rhand_model = None
-    lhand_model = None
+    rhand_model: str | None = None
+    lhand_model: str | None = None
 
-    rhand_resref = utc.equipment[EquipmentSlot.RIGHT_HAND].resref.get() if EquipmentSlot.RIGHT_HAND in utc.equipment else None
-    lhand_resref = utc.equipment[EquipmentSlot.LEFT_HAND].resref.get() if EquipmentSlot.LEFT_HAND in utc.equipment else None
+    rhand_resref: str | None = utc.equipment[EquipmentSlot.RIGHT_HAND].resref.get() if EquipmentSlot.RIGHT_HAND in utc.equipment else None
+    lhand_resref: str | None = utc.equipment[EquipmentSlot.LEFT_HAND].resref.get() if EquipmentSlot.LEFT_HAND in utc.equipment else None
 
     if rhand_resref is not None:
         rhand_model = _load_hand_uti(
@@ -134,7 +135,7 @@ def _load_hand_uti(
     installation: Installation,
     hand_resref: str,
     baseitems: TwoDA | None,
-):
+) -> str:
     """Loads the hand UTI model variation from the base item row.
 
     Args:
@@ -144,10 +145,13 @@ def _load_hand_uti(
         baseitems: TwoDA | None - The base items table
     Returns:
         default_model: str - The default model string with model variation substituted
-    - The function reads the UTI data from the provided installation
-    - It looks up the default model string for the base item in the base items table
-    - It replaces the "001" placeholder in the default model with the zero padded model variation from the UTI
-    - The formatted default model is returned.
+
+    Processing Logic:
+    ----------------
+        - The function reads the UTI data from the provided installation
+        - It looks up the default model string for the base item in the base items table
+        - It replaces the "001" placeholder in the default model with the zero padded model variation from the UTI
+        - The formatted default model is returned.
     """
     hand_uti = read_uti(installation.resource(hand_resref, ResourceType.UTI).data)
     default_model = baseitems.get_row(hand_uti.base_item).get_string("defaultmodel")
@@ -228,11 +232,11 @@ def get_mask_model(
     -------
         Returns a name of the mask model.
     """
-    model = None
+    model: str | None = None
 
     if EquipmentSlot.HEAD in utc.equipment:
-        resref = utc.equipment[EquipmentSlot.HEAD].resref.get()
-        uti = read_uti(installation.resource(resref, ResourceType.UTI).data)
+        resref: str = utc.equipment[EquipmentSlot.HEAD].resref.get()
+        uti: UTI = read_uti(installation.resource(resref, ResourceType.UTI).data)
         model = "I_Mask_" + str(uti.model_variation).rjust(3, "0")
 
     return model

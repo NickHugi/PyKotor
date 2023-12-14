@@ -44,6 +44,8 @@ class LYTRoom:
         self,
         other,
     ):
+        if not isinstance(other, LYTRoom):
+            return NotImplemented
         return self.model == other.model and self.position == other.position
 
     def __hash__(
@@ -75,6 +77,8 @@ class LYTTrack:
         self,
         other,
     ):
+        if not isinstance(other, LYTTrack):
+            return NotImplemented
         return self.model == other.model and self.position == other.position
 
 
@@ -101,6 +105,8 @@ class LYTObstacle:
         self,
         other,
     ):
+        if not isinstance(other, LYTObstacle):
+            return NotImplemented
         return self.model == other.model and self.position == other.position
 
 
@@ -133,6 +139,8 @@ class LYTDoorHook:
         self,
         other,
     ):
+        if not isinstance(other, LYTDoorHook):
+            return NotImplemented
         return (
             self.room == other.room
             and self.door == other.door

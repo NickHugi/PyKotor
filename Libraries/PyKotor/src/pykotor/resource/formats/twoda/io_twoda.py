@@ -68,7 +68,7 @@ class TwoDABinaryReader(ResourceReader):
             row_label = row_header
             self._twoda.add_row(row_label)
 
-        cell_offsets = [0] * cell_count
+        cell_offsets: list[int] = [0] * cell_count
         for i in range(cell_count):
             cell_offsets[i] = self._reader.read_uint16()
 

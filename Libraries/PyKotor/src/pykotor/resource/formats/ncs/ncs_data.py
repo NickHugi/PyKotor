@@ -232,7 +232,11 @@ class NCS:
 
     def links_to(self, target: NCSInstruction) -> list[NCSInstruction]:
         """Get a list of all instructions which may jump to the target instructions."""
-        return [inst for inst in self.instructions if inst.jump is target]
+        return [
+            inst
+            for inst in self.instructions
+            if inst.jump is target
+        ]
 
     def optimize(self, optimizers: list[NCSOptimizer]) -> None:
         """Optimize the model using the provided optimizers.

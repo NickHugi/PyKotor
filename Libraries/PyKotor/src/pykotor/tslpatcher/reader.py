@@ -10,7 +10,6 @@ from pykotor.common.misc import CaseInsensitiveDict, ResRef
 from pykotor.common.stream import BinaryReader
 from pykotor.resource.formats.gff import GFFFieldType, GFFList, GFFStruct
 from pykotor.resource.formats.ssf import SSFSound
-from pykotor.resource.formats.tlk import TLK, read_tlk
 from pykotor.tools.encoding import decode_bytes_with_fallbacks
 from pykotor.tools.path import CaseAwarePath
 from pykotor.tslpatcher.logger import PatchLogger
@@ -56,6 +55,7 @@ from utility.path import Path, PurePath, PureWindowsPath
 if TYPE_CHECKING:
     import os
 
+    from pykotor.resource.formats.tlk import TLK
     from pykotor.tslpatcher.config import PatcherConfig
     from pykotor.tslpatcher.mods.gff import ModifyGFF
 
@@ -274,7 +274,6 @@ class ConfigReader:
 
         modifier_dict: dict[int, dict[str, str | ResRef]] = {}
         range_delims: list[str] = [":", "-", "to"]
-        append_tlk_edits: TLK | None = None
         syntax_error_caught = False
 
         def extract_range_parts(range_str: str) -> tuple[int, int | None]:
@@ -299,8 +298,8 @@ class ConfigReader:
             for delim in range_delims:
                 if delim in range_str:
                     parts: list[str] = range_str.split(delim)
-                    start = int(parts[0].strip()) if parts[0].strip() else 0
-                    end = int(parts[1].strip()) if parts[1].strip() else None
+                    start: int = int(parts[0].strip()) if parts[0].strip() else 0
+                    end: int | None = int(parts[1].strip()) if parts[1].strip() else None
                     return start, end
             return int(range_str), None
 
@@ -905,7 +904,9 @@ class ConfigReader:
         Args:
         ----
             raw_value: String value to parse
+
         Returns:
+        -------
             FieldValue | None: FieldValue object or None
 
         Processing Logic:

@@ -10,7 +10,7 @@ class RIMBinaryReader(ResourceReader):
         source: SOURCE_TYPES,
         offset: int = 0,
         size: int = 0,
-    ):
+    ) -> None:
         super().__init__(source, offset, size)
         self._rim: RIM | None = None
 
@@ -67,7 +67,7 @@ class RIMBinaryWriter(ResourceWriter):
         target: TARGET_TYPES,
     ):
         super().__init__(target)
-        self._rim = rim
+        self._rim: RIM = rim
 
     @autoclose
     def write(

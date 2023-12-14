@@ -73,7 +73,7 @@ class VIS:
         ----
             model: The name or model of the room.
         """
-        lower_model = model.lower()
+        lower_model: str = model.lower()
 
         for room in self._rooms:
             if lower_model in self._visibility[room]:
@@ -86,7 +86,7 @@ class VIS:
         self,
         old: str,
         new: str,
-    ):
+    ) -> None:
         """Renames a room.
 
         Args:
