@@ -488,7 +488,7 @@ class DLGEditor(Editor):
         """
         # Update DLG
         newNode: DLGNode = DLGEntry() if isinstance(node, DLGReply) else DLGReply()
-        self._add_node_main(newNode, node, False, item)
+        self._add_node_main(newNode, node.links, False, item)
 
     def addRootNode(self) -> None:
         """Adds a root node to the dialog graph.
@@ -782,9 +782,9 @@ class DLGEditor(Editor):
             - It updates the selection in the tree view.
             - It syncs the changes to the underlying DLG data structure by moving the corresponding link.
         """
-        oldRow = item.row()
+        oldRow: int = item.row()
         parent = self.model if item.parent() is None else item.parent()
-        newRow = oldRow + amount
+        newRow: int = oldRow + amount
 
         if newRow >= parent.rowCount() or newRow < 0:
             return  # Already at the start/end of the branch
@@ -816,7 +816,7 @@ class DLGEditor(Editor):
             - Sets context menu actions based on the item
             - Shows default add entry menu if mouse not over item.
         """
-        index = self.ui.dialogTree.indexAt(point)
+        index: QModelIndex = self.ui.dialogTree.indexAt(point)
         item: QStandardItem | None = self.model.itemFromIndex(index)
 
         if item is not None:
@@ -888,7 +888,7 @@ class DLGEditor(Editor):
         if event.key() in (QtKey.Key_Enter, QtKey.Key_Return):
             selectedItem: QModelIndex = self.ui.dialogTree.currentIndex()
             if selectedItem.isValid():
-                item = self.model.itemFromIndex(selectedItem)
+                item: QStandardItem | None = self.model.itemFromIndex(selectedItem)
                 link = item.data(_LINK_ROLE)
                 if link:
                     self.focusOnNode(link)
@@ -897,7 +897,7 @@ class DLGEditor(Editor):
     def mouseDoubleClickEvent(self, event: QMouseEvent | None):
         selectedItem: QModelIndex = self.ui.dialogTree.currentIndex()
         if selectedItem.isValid():
-            item = self.model.itemFromIndex(selectedItem)
+            item: QStandardItem | None = self.model.itemFromIndex(selectedItem)
             link = item.data(_LINK_ROLE)
             if link:
                 self.focusOnNode(link)
@@ -920,7 +920,7 @@ class DLGEditor(Editor):
         """
         self.acceptUpdates = False
         if selection.indexes():
-            item = self.model.itemFromIndex(selection.indexes()[0])
+            item: QStandardItem | None = self.model.itemFromIndex(selection.indexes()[0])
             link: DLGLink = item.data(_LINK_ROLE)
             isCopy: bool = item.data(_COPY_ROLE)
             node: DLGNode = link.node
@@ -1015,8 +1015,8 @@ class DLGEditor(Editor):
         """
         if not self.ui.dialogTree.selectedIndexes() or not self.acceptUpdates:
             return
-        index = self.ui.dialogTree.selectedIndexes()[0]
-        item = self.model.itemFromIndex(index)
+        index: QModelIndex = self.ui.dialogTree.selectedIndexes()[0]
+        item: QStandardItem | None = self.model.itemFromIndex(index)
 
         link: DLGLink = item.data(_LINK_ROLE)
         node: DLGNode = link.node
@@ -1102,14 +1102,14 @@ class DLGEditor(Editor):
 
     def onRemoveStuntClicked(self) -> None:
         if self.ui.stuntList.selectedItems():
-            item = self.ui.stuntList.selectedItems()[0]
+            item: QListWidgetItem = self.ui.stuntList.selectedItems()[0]
             stunt: DLGStunt = item.data(QtCore.Qt.UserRole)
             self._dlg.stunts.remove(stunt)
             self.refreshStuntList()
 
     def onEditStuntClicked(self) -> None:
         if self.ui.stuntList.selectedItems():
-            item = self.ui.stuntList.selectedItems()[0]
+            item: QListWidgetItem = self.ui.stuntList.selectedItems()[0]
             stunt: DLGStunt = item.data(QtCore.Qt.UserRole)
             dialog = CutsceneModelDialog(self, stunt)
             if dialog.exec_():
@@ -1127,8 +1127,8 @@ class DLGEditor(Editor):
 
     def onAddAnimClicked(self) -> None:
         if self.ui.dialogTree.selectedIndexes():
-            index = self.ui.dialogTree.selectedIndexes()[0]
-            item = self.model.itemFromIndex(index)
+            index: QModelIndex = self.ui.dialogTree.selectedIndexes()[0]
+            item: QStandardItem | None = self.model.itemFromIndex(index)
             node: DLGNode = item.data(_LINK_ROLE).node
 
             dialog = EditAnimationDialog(self, self._installation)
@@ -1138,11 +1138,11 @@ class DLGEditor(Editor):
 
     def onRemoveAnimClicked(self) -> None:
         if self.ui.animsList.selectedItems():
-            index = self.ui.dialogTree.selectedIndexes()[0]
-            item = self.model.itemFromIndex(index)
+            index: QModelIndex = self.ui.dialogTree.selectedIndexes()[0]
+            item: QStandardItem | None = self.model.itemFromIndex(index)
             node: DLGNode = item.data(_LINK_ROLE).node
 
-            animItem = self.ui.animsList.selectedItems()[0]
+            animItem: QListWidgetItem = self.ui.animsList.selectedItems()[0]
             anim: DLGAnimation = animItem.data(QtCore.Qt.UserRole)
             node.animations.remove(anim)
             self.refreshAnimList()
@@ -1175,16 +1175,16 @@ class DLGEditor(Editor):
         self.ui.animsList.clear()
 
         if self.ui.dialogTree.selectedIndexes():
-            index = self.ui.dialogTree.selectedIndexes()[0]
+            index: QModelIndex = self.ui.dialogTree.selectedIndexes()[0]
             item: QStandardItem | None = self.model.itemFromIndex(index)
             link: DLGLink = item.data(_LINK_ROLE)
             node: DLGNode = link.node
 
-            animations_list: TwoDA = self._installation.htGetCache2DA(HTInstallation.TwoDA_DIALOG_ANIMS)
+            animations_2da: TwoDA = self._installation.htGetCache2DA(HTInstallation.TwoDA_DIALOG_ANIMS)
             for anim in node.animations:
                 name: str = str(anim.animation_id)
-                if animations_list.get_height() > anim.animation_id:
-                    name = animations_list.get_cell(anim.animation_id, "name")
+                if animations_2da.get_height() > anim.animation_id:
+                    name = animations_2da.get_cell(anim.animation_id, "name")
                 text: str = f"{name} ({anim.participant})"
                 item = QListWidgetItem(text)
                 item.setData(QtCore.Qt.UserRole, anim)
