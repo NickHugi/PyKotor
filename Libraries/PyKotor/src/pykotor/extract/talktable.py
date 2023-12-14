@@ -144,7 +144,7 @@ class TalkTable:  # TODO: dialogf.tlk
                     batch[stringref] = StringResult("", ResRef.from_blank())
                     continue
 
-                tlkdata = self._extract_common_tlk_data(reader, stringref)
+                tlkdata: TLKData = self._extract_common_tlk_data(reader, stringref)
 
                 reader.seek(texts_offset + tlkdata.text_offset)
                 string = reader.read_string(tlkdata.text_length, encoding=encoding)

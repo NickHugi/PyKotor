@@ -125,7 +125,7 @@ def construct_uts(
 
 def dismantle_uts(
     uts: UTS,
-    game: Game = Game.K2,
+    game: Game = Game.K2,  # noqa: ARG001
     *,
     use_deprecated: bool = True,
 ) -> GFF:

@@ -157,6 +157,6 @@ class TLKBinaryWriter(ResourceWriter):
         self._writer.write_uint32(0)  # unused - pitch variance
         self._writer.write_uint32(text_offset)
         self._writer.write_uint32(text_length)
-        self._writer.write_uint32(entry.sound_length)  # unused - sound length
+        self._writer.write_uint32(0)  # unused - sound length
 
         previous_offset += text_length

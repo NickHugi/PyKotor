@@ -89,8 +89,8 @@ class TLK:
         if not 0 <= stringref < len(self.entries):
             msg = f"Cannot replace nonexistent stringref in dialog.tlk: '{stringref}'"
             raise IndexError(msg)
-        old_text = self.entries[stringref].text
-        old_sound = self.entries[stringref].voiceover
+        old_text: str = self.entries[stringref].text
+        old_sound: ResRef = self.entries[stringref].voiceover
         self.entries[stringref] = TLKEntry(text or old_text, ResRef(sound_resref) if sound_resref else old_sound)
 
     def resize(
