@@ -38,17 +38,17 @@ class FieldValue(ABC):
 
     def validate(self, value: Any, field_type: GFFFieldType) -> ResRef | str | int | float | object:
         if field_type == GFFFieldType.ResRef and not isinstance(value, ResRef):
-            value = ResRef(str(value))
+            value = (
+                ResRef(str(value))
+                if not isinstance(value, str) or value.strip()
+                else ResRef.from_blank()
+            )
         elif field_type == GFFFieldType.String and not isinstance(value, str):
             value = str(value)
         elif field_type.return_type() == int and isinstance(value, str):
-            if value == "":
-                value = "0"
-            value = int(value)
+            value = int(value) if value.strip() else "0"
         elif field_type.return_type() == float and isinstance(value, str):
-            if value == "":
-                value = "0.0"
-            value = float(value)
+            value = float(value) if value.strip() else "0.0"
         return value
 
 
