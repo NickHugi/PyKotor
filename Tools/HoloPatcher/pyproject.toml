@@ -11,8 +11,8 @@ description="A faster, multi-platform alternative to TSLPatcher written in Pytho
 version="1.7"
 requires-python = ">= 3.7"
 dependencies = [
-    "requests",                     # for 'check for updates' feature.
-    "pykotor>=1.7"
+    "requests"                     # for 'check for updates' feature.
+#    "pykotor>=1.7"
 ]
 authors = [{name = "NickHugi"}]
 maintainers = [{name = "th3w1zard1", email = "halomastar@gmail.com"}]
