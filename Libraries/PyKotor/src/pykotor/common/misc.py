@@ -115,7 +115,7 @@ class ResRef:
             else:
                 msg = "ResRef cannot exceed 16 characters."  # sourcery skip: inline-variable
                 raise ResRef.ExceedsMaxLengthError(msg)
-        if len(text) != len(text.encode(encoding="ascii", errors="strict")):
+        if len(text) != len(text.encode(encoding="ascii", errors="ignore")):
             msg = "ResRef must be in ASCII characters."  # sourcery skip: inline-variable
             raise ResRef.InvalidEncodingError(msg)
 
@@ -149,10 +149,10 @@ class Color:
         b: float,
         a: float = 1.0,
     ):
-        self.r = r
-        self.g = g
-        self.b = b
-        self.a = a
+        self.r: float = r
+        self.g: float = g
+        self.b: float = b
+        self.a: float = a
 
     def __repr__(
         self,
@@ -555,10 +555,10 @@ class CaseInsensitiveDict(Generic[T]):
         return repr(self._dictionary)
 
     def pop(self, __key: str, __default: VT = _unique_sentinel) -> VT | T:  # type: ignore[assignment]
-        lower_key = __key.lower()
+        lower_key: str = __key.lower()
         try:
             # Attempt to pop the value using the case-insensitive key.
-            value = self._dictionary.pop(self._case_map.pop(lower_key))
+            value: T = self._dictionary.pop(self._case_map.pop(lower_key))
         except KeyError:
             if __default is _unique_sentinel:
                 raise

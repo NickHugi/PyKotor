@@ -84,11 +84,11 @@ class TLKBinaryReader(ResourceReader):
     def _load_text(
         self,
         stringref: int,
-    ):
-        text_header = self._text_headers[stringref]
+    ) -> None:
+        text_header: ArrayHead = self._text_headers[stringref]
 
         self._reader.seek(text_header.offset + self._texts_offset)
-        text = self._reader.read_string(text_header.length, encoding=self._tlk.language.get_encoding())
+        text: str = self._reader.read_string(text_header.length, encoding=self._tlk.language.get_encoding())
 
         self._tlk.entries[stringref].text = text
 
@@ -138,7 +138,7 @@ class TLKBinaryWriter(ResourceWriter):
         self,
         entry: TLKEntry,
         previous_offset: WrappedInt,
-    ):
+    ) -> None:
         sound_resref = entry.voiceover.get()
         text_offset = previous_offset.get()
         text_length = len(entry.text)
@@ -157,6 +157,6 @@ class TLKBinaryWriter(ResourceWriter):
         self._writer.write_uint32(0)  # unused - pitch variance
         self._writer.write_uint32(text_offset)
         self._writer.write_uint32(text_length)
-        self._writer.write_uint32(0)  # unused - sound length
+        self._writer.write_uint32(entry.sound_length)  # unused - sound length
 
         previous_offset += text_length
