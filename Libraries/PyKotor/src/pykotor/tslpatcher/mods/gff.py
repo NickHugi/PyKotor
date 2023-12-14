@@ -42,8 +42,12 @@ class FieldValue(ABC):
         elif field_type == GFFFieldType.String and not isinstance(value, str):
             value = str(value)
         elif field_type.return_type() == int and isinstance(value, str):
+            if value = "":
+                value = "0"
             value = int(value)
         elif field_type.return_type() == float and isinstance(value, str):
+            if value = "":
+                value = "0.0"
             value = float(value)
         return value
 
@@ -66,7 +70,7 @@ class FieldValue2DAMemory(FieldValue):
 
 class FieldValueTLKMemory(FieldValue):
     def __init__(self, token_id: int):
-        self.token_id = token_id
+        self.token_id: int = token_id
 
     def value(self, memory: PatcherMemory, field_type: GFFFieldType):
         return self.validate(memory.memory_str[self.token_id], field_type)
