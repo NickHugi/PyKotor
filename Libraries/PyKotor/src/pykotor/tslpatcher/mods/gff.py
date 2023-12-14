@@ -311,13 +311,16 @@ class AddFieldGFF(ModifyGFF):
 
         def set_locstring():
             original = LocalizedString(0)
+            assert isinstance(value, LocalizedStringDelta)
             value.apply(original, memory)
             struct_container.set_locstring(self.label, original)
 
         def set_struct():
+            assert isinstance(value, GFFStruct)
             struct_container.set_struct(self.label, value)
 
         def set_list():
+            assert isinstance(value, GFFList)
             struct_container.set_list(self.label, value)
 
         func_map: dict[GFFFieldType, Any] = {
@@ -400,39 +403,39 @@ class ModifyFieldGFF(ModifyGFF):
         """
         label = self.path.name
         navigated_container: GFFList | GFFStruct | None = self._navigate_containers(root_struct, self.path.parent)
-        parent_struct_container: GFFStruct = navigated_container  # type: ignore[assignment]
         if not isinstance(navigated_container, GFFStruct):
             reason: str = "does not exist!" if navigated_container is None else "is not an instance of a GFFStruct."
             logger.add_error(f"Unable to modify Field '{label}'. Parent field at '{self.path}' {reason}")
             return
 
-        field_type = parent_struct_container._fields[label].field_type()
+        navigated_struct: GFFStruct = navigated_container
+        field_type = navigated_struct._fields[label].field_type()
         value = self.value.value(memory, field_type)
 
         def set_locstring() -> None:
-            if parent_struct_container.exists(label):
-                original: LocalizedString = parent_struct_container.get_locstring(label)
+            if navigated_struct.exists(label):
+                original: LocalizedString = navigated_struct.get_locstring(label)
                 value.apply(original, memory)
-                parent_struct_container.set_locstring(label, original)
+                navigated_struct.set_locstring(label, original)
             else:
-                parent_struct_container.set_locstring(label, value)
+                navigated_struct.set_locstring(label, value)
 
         func_map: dict[GFFFieldType, Callable] = {
-            GFFFieldType.Int8: lambda: parent_struct_container.set_int8(label, value),
-            GFFFieldType.UInt8: lambda: parent_struct_container.set_uint8(label, value),
-            GFFFieldType.Int16: lambda: parent_struct_container.set_int16(label, value),
-            GFFFieldType.UInt16: lambda: parent_struct_container.set_uint16(label, value),
-            GFFFieldType.Int32: lambda: parent_struct_container.set_int32(label, value),
-            GFFFieldType.UInt32: lambda: parent_struct_container.set_uint32(label, value),
-            GFFFieldType.Int64: lambda: parent_struct_container.set_int64(label, value),
-            GFFFieldType.UInt64: lambda: parent_struct_container.set_uint64(label, value),
-            GFFFieldType.Single: lambda: parent_struct_container.set_single(label, value),
-            GFFFieldType.Double: lambda: parent_struct_container.set_double(label, value),
-            GFFFieldType.String: lambda: parent_struct_container.set_string(label, value),
-            GFFFieldType.ResRef: lambda: parent_struct_container.set_resref(label, value),
+            GFFFieldType.Int8: lambda: navigated_struct.set_int8(label, value),
+            GFFFieldType.UInt8: lambda: navigated_struct.set_uint8(label, value),
+            GFFFieldType.Int16: lambda: navigated_struct.set_int16(label, value),
+            GFFFieldType.UInt16: lambda: navigated_struct.set_uint16(label, value),
+            GFFFieldType.Int32: lambda: navigated_struct.set_int32(label, value),
+            GFFFieldType.UInt32: lambda: navigated_struct.set_uint32(label, value),
+            GFFFieldType.Int64: lambda: navigated_struct.set_int64(label, value),
+            GFFFieldType.UInt64: lambda: navigated_struct.set_uint64(label, value),
+            GFFFieldType.Single: lambda: navigated_struct.set_single(label, value),
+            GFFFieldType.Double: lambda: navigated_struct.set_double(label, value),
+            GFFFieldType.String: lambda: navigated_struct.set_string(label, value),
+            GFFFieldType.ResRef: lambda: navigated_struct.set_resref(label, value),
             GFFFieldType.LocalizedString: set_locstring,
-            GFFFieldType.Vector3: lambda: parent_struct_container.set_vector3(label, value),
-            GFFFieldType.Vector4: lambda: parent_struct_container.set_vector4(label, value),
+            GFFFieldType.Vector3: lambda: navigated_struct.set_vector3(label, value),
+            GFFFieldType.Vector4: lambda: navigated_struct.set_vector4(label, value),
         }
         func_map[field_type]()
 
