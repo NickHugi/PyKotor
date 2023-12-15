@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import re
 from contextlib import suppress
-from copy import copy
 from enum import Enum, IntEnum
 from typing import TYPE_CHECKING, ClassVar, NamedTuple
 
@@ -19,7 +18,6 @@ from pykotor.resource.type import ResourceType
 from pykotor.tools.misc import is_capsule_file, is_erf_file, is_mod_file, is_rim_file
 from pykotor.tools.path import CaseAwarePath
 from pykotor.tools.sound import fix_audio
-from pykotor.tslpatcher.logger import PatchLogger
 from utility.path import Path, PurePath
 
 if TYPE_CHECKING:

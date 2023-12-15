@@ -3,7 +3,6 @@ import pathlib
 import sys
 from unittest import TestCase
 
-from pykotor.resource.formats.gff.gff_data import GFF
 
 THIS_SCRIPT_PATH = pathlib.Path(__file__)
 PYKOTOR_PATH = THIS_SCRIPT_PATH.parents[3].resolve()

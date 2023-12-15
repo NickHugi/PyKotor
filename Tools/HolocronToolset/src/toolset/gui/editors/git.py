@@ -54,7 +54,6 @@ if TYPE_CHECKING:
     from pykotor.extract.file import ResourceIdentifier
     from PyQt5.QtCore import QPoint
     from toolset.data.installation import HTInstallation
-    from toolset.uic.editors import git as gitui
 
 
 def openInstanceDialog(parent: QWidget, instance: GITInstance, installation: HTInstallation):

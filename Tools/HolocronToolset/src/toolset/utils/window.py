@@ -7,7 +7,6 @@ from PyQt5.QtWidgets import QMessageBox, QWidget
 from toolset.gui.editors.mdl import MDLEditor
 from toolset.gui.widgets.settings.installations import GlobalSettings
 from utility.error_handling import universal_simplify_exception
-from utility.path import PurePath
 
 if TYPE_CHECKING:
     import os

@@ -20,7 +20,7 @@ if UTILITY_PATH.exists():
         sys.path.remove(working_dir)
     sys.path.insert(0, working_dir)
 
-from pykotor.resource.formats.gff import GFF, read_gff
+from pykotor.resource.formats.gff import read_gff
 from pykotor.resource.generics.jrl import JRL, JRLEntry, construct_jrl, dismantle_jrl
 
 TEST_FILE = "src/tests/files/test.jrl"
