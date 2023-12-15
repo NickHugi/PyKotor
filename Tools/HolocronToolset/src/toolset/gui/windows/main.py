@@ -681,9 +681,9 @@ class ToolWindow(QMainWindow):
                 assert_with_variable_trace(isinstance(self.active, HTInstallation))
                 assert isinstance(self.active, HTInstallation)  # noqa: S101
 
-                self.ui.coreWidget.setResources(self.active.chitin_resources())
 
                 print("Loading installation resources into UI...")
+                self.ui.coreWidget.setResources(self.active.chitin_resources())
                 self.refreshModuleList(reload=True)  # TODO: Modules/Override/Textures are loaded twice when HT is first initialized.
                 self.refreshOverrideList(reload=True)
                 self.refreshTexturePackList(reload=True)
@@ -691,6 +691,7 @@ class ToolWindow(QMainWindow):
 
                 print("Updating menus...")
                 self.updateMenus()
+                print("Setting up watchdog observer...")
                 self.dogObserver = Observer()
                 self.dogObserver.schedule(self.dogHandler, self.active.path(), recursive=True)
                 self.dogObserver.start()
