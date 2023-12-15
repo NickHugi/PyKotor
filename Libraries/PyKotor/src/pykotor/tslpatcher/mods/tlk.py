@@ -2,19 +2,16 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from pykotor.common.misc import ResRef
-from pykotor.extract.talktable import TalkTable
 from pykotor.resource.formats.tlk.io_tlk import TLKBinaryReader
 from pykotor.resource.formats.tlk.tlk_auto import bytes_tlk
+from pykotor.resource.formats.tlk.tlk_data import TLK
 from pykotor.tslpatcher.mods.template import PatcherModifications
 
 if TYPE_CHECKING:
-    from pykotor.common.misc import Game
-    from pykotor.resource.formats.tlk import TLK
+    from pykotor.common.misc import Game, ResRef
     from pykotor.resource.type import SOURCE_TYPES
     from pykotor.tslpatcher.logger import PatchLogger
     from pykotor.tslpatcher.memory import PatcherMemory
-    from utility.path import Path
 
 
 class ModificationsTLK(PatcherModifications):
@@ -28,24 +25,29 @@ class ModificationsTLK(PatcherModifications):
 
     def apply(
         self,
-        dialog,
+        dialog: TLK,
         memory: PatcherMemory,
         log: PatchLogger | None = None,
         game: Game | None = None,
     ) -> None:
         for modifier in self.modifiers:
-            modifier.apply(dialog, memory)
+            if modifier.is_replacement:
+                modifier.replace(dialog, memory)
+            else:
+                modifier.insert(dialog, memory)
             if log:
                 log.complete_patch()
 
     def patch_resource(
         self,
-        source: SOURCE_TYPES,
+        source_tlk: SOURCE_TYPES,
         memory: PatcherMemory,
         log: PatchLogger | None = None,
         game: Game | None = None,
     ) -> bytes:
-        dialog: TLK = TLKBinaryReader(source).load()
+        dialog: TLK | SOURCE_TYPES = source_tlk
+        if not isinstance(source_tlk, TLK):
+            dialog = TLKBinaryReader(source_tlk).load()
         self.apply(dialog, memory, log, game)
         return bytes_tlk(dialog)
 
@@ -66,26 +68,19 @@ class ModifyTLK:
     def __init__(
         self,
         token_id: int,
+        text: str,
+        sound: ResRef,
         is_replacement: bool = False,
     ):
-        self.tlk_filepath: Path | None = None
-        self.text: str = ""
-        self.sound: ResRef = ResRef.from_blank()
-
-        self.mod_index: int = token_id
         self.token_id: int = token_id
+        self.text: str = text
+        self.sound: ResRef = sound
         self.is_replacement: bool = is_replacement
 
-    def apply(self, dialog: TLK, memory: PatcherMemory) -> None:
-        self.load()
-        if self.is_replacement:
-            memory.memory_str[self.token_id] = dialog.add(self.text, self.sound.get())
-        else:
-            dialog.replace(self.token_id, self.text, self.sound.get())
-            memory.memory_str[self.token_id] = self.token_id
+    def insert(self, dialog: TLK, memory: PatcherMemory) -> None:
+        dialog.add(self.text, self.sound.get())
+        memory.memory_str[self.token_id] = len(dialog.entries) - 1
 
-    def load(self):
-        if self.tlk_filepath is not None:
-            lookup_tlk = TalkTable(self.tlk_filepath)
-            self.text = self.text or lookup_tlk.string(self.mod_index)
-            self.sound = self.sound or lookup_tlk.sound(self.mod_index)
+    def replace(self, dialog: TLK, memory: PatcherMemory) -> None:
+        dialog.replace(self.token_id, self.text, self.sound.get())
+        memory.memory_str[self.token_id] = self.token_id
