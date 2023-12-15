@@ -503,7 +503,7 @@ class ToolWindow(QMainWindow):
             QMessageBox(
                 QMessageBox.Information,
                 "Version is up to date",
-                f"You are running the latest version ({toolsetLatestVersion}).",
+                f"You are running the latest version ({'.'.join(str(i) for i in PROGRAM_VERSION)}).",
                 QMessageBox.Ok,
                 self,
             ).exec_()
