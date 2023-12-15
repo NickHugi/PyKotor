@@ -4,9 +4,9 @@ games.
 from __future__ import annotations
 
 import os
+import uuid
 from enum import Enum
 from typing import Iterable, NamedTuple, Union
-import uuid
 from xml.etree.ElementTree import ParseError
 
 from pykotor.common.stream import BinaryReader, BinaryWriter
@@ -22,8 +22,8 @@ class ResourceReader:
         offset: int = 0,
         size: int = 0,
     ):
-        self._reader = BinaryReader.from_auto(source, offset)
-        self._size = self._reader.remaining() if size == 0 else size
+        self._reader: BinaryReader = BinaryReader.from_auto(source, offset)
+        self._size: int = self._reader.remaining() if size == 0 else size
 
     def close(
         self,
@@ -36,11 +36,11 @@ class ResourceWriter:
         self,
         target: TARGET_TYPES,
     ):
-        self._writer = BinaryWriter.to_auto(target)
+        self._writer: BinaryWriter = BinaryWriter.to_auto(target)
 
     def close(
         self,
-    ):
+    ) -> None:
         self._writer.close()
 
 class ResourceTuple(NamedTuple):
@@ -164,6 +164,7 @@ class ResourceType(Enum):
         cls.__setattr__ = Enum.__setattr__
         # Create a new instance of the enum member
         obj: ResourceType = object.__new__(cls)
+        obj._name_ = args[1].upper() or "INVALID"
         obj.__init__(*args, **kwargs)
         obj.__setattr__ = mag_setter
         super().__new__(cls, obj)
@@ -198,7 +199,7 @@ class ResourceType(Enum):
     def __repr__(
         self,
     ) -> str:
-        return f"ResourceType.{type(self).__members__[self.name]}"
+        return f"ResourceType.{self.name}"
 
     def __str__(
         self,
@@ -222,8 +223,8 @@ class ResourceType(Enum):
         A ResourceType and a int are equal if the type_id is equal to the integer.
         """
         if isinstance(other, ResourceType):
-            if other.is_invalid and self.is_invalid:
-                return True
+            if not self or not other:
+                return self.is_invalid and other.is_invalid
             return (
                 self.type_id == other.type_id
                 and self.extension == other.extension
@@ -244,7 +245,7 @@ class ResourceType(Enum):
     @classmethod
     def from_id(
         cls,
-        type_id: int,
+        type_id: int | str,
     ) -> ResourceType:
         """Returns the ResourceType for the specified id.
 
@@ -256,18 +257,20 @@ class ResourceType(Enum):
         -------
             The corresponding ResourceType object.
         """
-        value = next(
-            (restype for restype in ResourceType.__members__.values() if type_id == restype.type_id),
-            None,
+        if isinstance(type_id, str):
+            type_id = int(type_id)
+        return next(
+            (
+                restype
+                for restype in ResourceType.__members__.values()
+                if type_id == restype.type_id
+            ),
+            ResourceType.from_invalid(type_id=type_id),
         )
-        if value is not None:
-            return value
-        msg = f"Could not find resource type with ID {type_id}."
-        raise ValueError(msg)
 
     def validate(self):
-        if self == ResourceType.INVALID:
-            msg = f"Could not find resource type with extension '{self.extension}'"
+        if not self:
+            msg = f"Could not find resource type with extension '{self.extension}' ID '{self.type_id}'"
             raise ValueError(msg)
         return self
 
@@ -279,13 +282,9 @@ class ResourceType(Enum):
         if not kwargs:
             return cls.INVALID
         instance = object.__new__(cls)
-        mag_setter = instance.__setattr__
-        instance.__setattr__ = super(cls, instance).__setattr__
-
         instance._name_ = f"INVALID_{kwargs.get('extension', cls.INVALID.extension) or uuid.uuid4().hex}"
         instance._value_ = ResourceTuple(**{**cls.INVALID.value, **kwargs, "is_invalid":True})
         instance.__init__(**instance.value)
-        instance.__setattr__ = mag_setter
         return instance
 
     @classmethod
@@ -331,4 +330,3 @@ def autoclose(func):
         return resource
 
     return _autoclose
-

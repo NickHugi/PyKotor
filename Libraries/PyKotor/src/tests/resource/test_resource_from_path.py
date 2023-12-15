@@ -23,12 +23,15 @@ from pykotor.resource.type import ResourceType
 
 class TestResourceType(unittest.TestCase):
     def test_from_invalid(self):
-        invalid = ResourceType.from_invalid(extension="asdf")
+        invalid = ResourceType.from_invalid(extension="aSdF")
         self.assertEqual(invalid, ResourceType.INVALID)
         self.assertEqual(invalid.type_id, ResourceType.INVALID.type_id)
         self.assertEqual(invalid.contents, ResourceType.INVALID.contents)
         self.assertEqual(invalid.category, ResourceType.INVALID.category)
         self.assertEqual(invalid.extension, "asdf")
+        self.assertEqual(repr(invalid), "ResourceType.INVALID_aSdF")
+        self.assertEqual(repr(ResourceType.INVALID), "ResourceType.INVALID")
+        self.assertEqual(str(invalid), "ASDF")
         self.assertNotEqual(invalid.extension, ResourceType.INVALID.extension)
     def test_from_extension(self):
         acquired_type = ResourceType.from_extension("tlk")
@@ -37,6 +40,8 @@ class TestResourceType(unittest.TestCase):
         self.assertEqual("Tlk", acquired_type)
         self.assertEqual(ResourceType.TLK.extension, "tlk")
         self.assertEqual(ResourceType.TLK.type_id, 2018)
+        self.assertEqual(repr(ResourceType.TLK), "ResourceType.TLK")
+        self.assertEqual(str(ResourceType.TLK), "TLK")
         self.assertEqual(ResourceType.TLK.contents, "binary")
         self.assertEqual(ResourceType.TLK.category, "Talk Tables")
         self.assertEqual(acquired_type.extension, "tlk")
