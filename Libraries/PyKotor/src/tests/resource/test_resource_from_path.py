@@ -21,6 +21,28 @@ if UTILITY_PATH.exists():
 from pykotor.extract.file import ResourceIdentifier
 from pykotor.resource.type import ResourceType
 
+class TestResourceType(unittest.TestCase):
+    def test_from_invalid(self):
+        invalid = ResourceType.from_invalid(extension="asdf")
+        self.assertEqual(invalid, ResourceType.INVALID)
+        self.assertEqual(invalid.type_id, ResourceType.INVALID.type_id)
+        self.assertEqual(invalid.contents, ResourceType.INVALID.contents)
+        self.assertEqual(invalid.category, ResourceType.INVALID.category)
+        self.assertEqual(invalid.extension, "asdf")
+        self.assertNotEqual(invalid.extension, ResourceType.INVALID.extension)
+    def test_from_extension(self):
+        acquired_type = ResourceType.from_extension("tlk")
+        self.assertEqual(acquired_type, ResourceType.TLK)
+        self.assertEqual("tLK", ResourceType.TLK)
+        self.assertEqual("Tlk", acquired_type)
+        self.assertEqual(ResourceType.TLK.extension, "tlk")
+        self.assertEqual(ResourceType.TLK.type_id, 2018)
+        self.assertEqual(ResourceType.TLK.contents, "binary")
+        self.assertEqual(ResourceType.TLK.category, "Talk Tables")
+        self.assertEqual(acquired_type.extension, "tlk")
+        self.assertEqual(acquired_type.type_id, 2018)
+        self.assertEqual(acquired_type.contents, "binary")
+        self.assertEqual(acquired_type.category, "Talk Tables")
 
 class TestResourceIdentifier(unittest.TestCase):
     """ These tests were created because of the many soft, hard-to-find errors that occur all over when this function ever fails."""
@@ -92,7 +114,7 @@ class TestResourceIdentifier(unittest.TestCase):
             {
                 "return_type": "invalid",
                 "file_path": "C:/path/to/invalid.",
-                "expected_resname": "invalid",
+                "expected_resname": "invalid.",
                 "expected_restype": ResourceType.INVALID,
             },
             {
@@ -114,8 +136,9 @@ class TestResourceIdentifier(unittest.TestCase):
             result = ResourceIdentifier.from_path(file_path)
 
             # Assert
-            self.assertEqual(result.resname, expected_resname)
-            self.assertEqual(result.restype, expected_restype)
+            fail_message = f"\nresname: '{result.resname}' restype: '{result.restype}'\nexpected resname: '{expected_resname}' expected restype: '{expected_restype}'"
+            self.assertEqual(result.resname, expected_resname, fail_message)
+            self.assertEqual(result.restype, expected_restype, fail_message)
             if return_type == "invalid":
                 self.assertRaises((ValueError, TypeError), ResourceIdentifier.validate, ResourceIdentifier.from_path(file_path))
 

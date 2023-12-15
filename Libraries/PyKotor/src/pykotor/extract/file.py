@@ -158,10 +158,8 @@ class ResourceIdentifier(NamedTuple):
             raise ValueError(msg)
         return self
 
-    @staticmethod
-    def from_path(
-        file_path: os.PathLike | str,
-    ) -> ResourceIdentifier:
+    @classmethod
+    def from_path(cls, file_path: os.PathLike | str) -> ResourceIdentifier:
         """Generate a ResourceIdentifier from a file path. If not valid, will return ResourceType.INVALID.
 
         Args:
@@ -170,7 +168,7 @@ class ResourceIdentifier(NamedTuple):
 
         Returns:
         -------
-            ResourceIdentifier: {Resource identifier object}
+            ResourceIdentifier: Resource identifier object
 
         Processing Logic:
         ----------------
@@ -178,19 +176,17 @@ class ResourceIdentifier(NamedTuple):
             - Determine the resource type from the extension
             - Return a ResourceIdentifier with the name and type.
         """
-        with suppress(TypeError):
-            file_path = PurePath(file_path)
-        try:
-            resname, restype_ext = file_path.split_filename(dots=1)
-            restype = ResourceType.from_extension(restype_ext)
-        except AttributeError:
-            resname = file_path.stem if file_path else ""
-            restype = ResourceType.INVALID
-        except (TypeError, ValueError):  # for things like resname.tlk.xml
-            try:
-                resname, restype_ext = file_path.split_filename(dots=2)
-                restype = ResourceType.from_extension(restype_ext)
-            except (TypeError, ValueError):
-                resname = file_path.stem
-                restype = ResourceType.INVALID
-        return ResourceIdentifier(resname, restype)
+        path_obj: PurePath = PurePath("")  #PurePath("<INVALID>")
+        with suppress(Exception), suppress(TypeError):
+            path_obj = PurePath(file_path)
+        with suppress(Exception):
+            max_dots: int = path_obj.name.count(".")
+            for dots in range(max_dots+1, 1, -1):
+                with suppress(Exception):
+                    resname, restype_ext = path_obj.split_filename(dots)
+                    return ResourceIdentifier(
+                        resname,
+                        ResourceType.from_extension(restype_ext).validate(),
+                    )
+
+        return ResourceIdentifier(path_obj.stem, ResourceType.INVALID)

@@ -1147,6 +1147,7 @@ class Installation:
                     for file in folder.rglob("*")
                     if (
                         file.stem.lower() in resnames
+                        and ResourceType.from_extension(file.suffix)
                         and ResourceType.from_extension(file.suffix) in texture_types
                         and file.safe_isfile()
                     )
@@ -1278,6 +1279,7 @@ class Installation:
                     for file in folder.rglob("*")
                     if (
                         file.stem.lower() in resnames
+                        and ResourceType.from_extension(file.suffix)
                         and ResourceType.from_extension(file.suffix) in sound_formats
                         and file.safe_isfile()
                     )

@@ -44,8 +44,7 @@ def read_resource(source: SOURCE_TYPES, resource_type: ResourceType | None = Non
     if not resource_type and isinstance(source, (os.PathLike, str)):
         source_path = source if isinstance(source, PurePath) else PurePath(source)
         _filestem, ext = source_path.split_filename(dots=2)
-        with contextlib.suppress(Exception):
-            resource_type = ResourceType.from_extension(ext)
+        resource_type = ResourceType.from_extension(ext)
     if not resource_type:
         return get_resource_from_bytes(source)
     try:

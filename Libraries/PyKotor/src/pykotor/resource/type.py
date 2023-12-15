@@ -5,7 +5,8 @@ from __future__ import annotations
 
 import os
 from enum import Enum
-from typing import NamedTuple, Union
+from typing import Iterable, NamedTuple, Union
+import uuid
 from xml.etree.ElementTree import ParseError
 
 from pykotor.common.stream import BinaryReader, BinaryWriter
@@ -47,6 +48,14 @@ class ResourceTuple(NamedTuple):
     extension: str
     category: str
     contents: str
+    is_invalid: bool = False
+
+    def __getitem__(self, key):
+        return getattr(self, key)
+
+    def keys(self) -> Iterable[str]:
+        return self._fields
+
 
 class ResourceType(Enum):
     """Represents a resource type that is used within either games.
@@ -61,7 +70,7 @@ class ResourceType(Enum):
         contents: How the resource type stores data, ie. plaintext, binary, or gff.
     """
 
-    INVALID = ResourceTuple(0, "", "Undefined", "binary")
+    INVALID = ResourceTuple(0, "", "Undefined", "binary", is_invalid=True)
     BMP = ResourceTuple(1, "bmp", "Images", "binary")
     TGA = ResourceTuple(3, "tga", "Textures", "binary")
     WAV = ResourceTuple(4, "wav", "Audio", "binary")
@@ -149,26 +158,47 @@ class ResourceType(Enum):
     TLK_JSON = ResourceTuple(50025, "tlk.json", "Talk Tables", "plaintext")
     LIP_JSON = ResourceTuple(50026, "lip.json", "Lips", "plaintext")
 
+    def __new__(cls, *args, **kwargs):
+        # Disable the read-only enforcer
+        mag_setter = cls.__setattr__
+        cls.__setattr__ = Enum.__setattr__
+        # Create a new instance of the enum member
+        obj: ResourceType = object.__new__(cls)
+        obj.__init__(*args, **kwargs)
+        obj.__setattr__ = mag_setter
+        super().__new__(cls, obj)
+        return obj
+
     def __init__(
         self,
         type_id: int,
         extension: str,
         category: str,
         contents: str,
+        is_invalid: bool = False,
     ):
-        self.type_id = type_id
-        self.extension = extension.lower()
-        self.category = category
-        self.contents = contents
+        self.type_id: int = type_id
+        self.extension: str = extension.lower()
+        self.category: str = category
+        self.contents: str = contents
+        self.is_invalid: bool = is_invalid
+        self._is_initialized = True
+
+    def __bool__(self) -> bool:
+        return not self.is_invalid
+
+    def __setattr__(self, attr_name, value):
+        if getattr(self, "_is_initialized", False):
+            # If the object is initialized, prevent modifications
+            msg: str = f"{self.__class__.__name__} is read-only and cannot be modified. Attempted {self!r}.{attr_name}={value}"
+            raise AttributeError(msg)
+        # Allow attribute setting during initialization
+        super().__setattr__(attr_name, value)
 
     def __repr__(
         self,
-    ):
-        if self is ResourceType.TwoDA:
-            return "ResourceType.TwoDA"
-        if self is ResourceType.INVALID:
-            return "ResourceType.INVALID"
-        return f"ResourceType.{self.extension.upper()}"
+    ) -> str:
+        return f"ResourceType.{type(self).__members__[self.name]}"
 
     def __str__(
         self,
@@ -192,6 +222,8 @@ class ResourceType(Enum):
         A ResourceType and a int are equal if the type_id is equal to the integer.
         """
         if isinstance(other, ResourceType):
+            if other.is_invalid and self.is_invalid:
+                return True
             return (
                 self.type_id == other.type_id
                 and self.extension == other.extension
@@ -207,7 +239,7 @@ class ResourceType(Enum):
     def __hash__(
         self,
     ):
-        return hash((self.__class__.__name__, str(self.extension)))
+        return hash(str(self.extension))
 
     @classmethod
     def from_id(
@@ -234,16 +266,36 @@ class ResourceType(Enum):
         raise ValueError(msg)
 
     def validate(self):
-        if self is ResourceType.INVALID:
-            msg = f"Invalid resource type: {self.extension}"
-            raise TypeError(msg)
+        if self == ResourceType.INVALID:
+            msg = f"Could not find resource type with extension '{self.extension}'"
+            raise ValueError(msg)
+        return self
 
     @classmethod
-    def from_extension(  # TODO: this should return ResourceType.INVALID instead of raising an error.
+    def from_invalid(
+        cls,
+        **kwargs,
+    ):
+        if not kwargs:
+            return cls.INVALID
+        instance = object.__new__(cls)
+        mag_setter = instance.__setattr__
+        instance.__setattr__ = super(cls, instance).__setattr__
+
+        instance._name_ = f"INVALID_{kwargs.get('extension', cls.INVALID.extension) or uuid.uuid4().hex}"
+        instance._value_ = ResourceTuple(**{**cls.INVALID.value, **kwargs, "is_invalid":True})
+        instance.__init__(**instance.value)
+        instance.__setattr__ = mag_setter
+        return instance
+
+    @classmethod
+    def from_extension(
         cls,
         extension: str,
     ) -> ResourceType:
         """Returns the ResourceType for the specified extension.
+
+        This will slice off the leading dot in the extension, if it exists.
 
         Args:
         ----
@@ -253,15 +305,17 @@ class ResourceType(Enum):
         -------
             The corresponding ResourceType object.
         """
-        lower_ext = extension.lower()
-        value = next(
-            (restype for restype in ResourceType.__members__.values() if lower_ext == restype.extension),
-            None,
+        lower_ext: str = extension.lower()
+        if extension.startswith("."):
+            lower_ext = lower_ext[1:]
+        return next(
+            (
+                restype
+                for restype in ResourceType.__members__.values()
+                if lower_ext == restype.extension
+            ),
+            ResourceType.from_invalid(extension=lower_ext),
         )
-        if value is not None:
-            return value
-        msg = f"Could not find resource type with extension '{extension}'."
-        raise ValueError(msg)
 
 
 def autoclose(func):
