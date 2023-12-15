@@ -66,6 +66,8 @@ class FieldValue(ABC):
             - Convert value to expected type if needed
             - Return validated value
         """
+        if isinstance(value, PureWindowsPath):
+            return value
         if field_type == GFFFieldType.ResRef and not isinstance(value, ResRef):
             value = (
                 ResRef(str(value))
@@ -221,7 +223,7 @@ class AddStructToListGFF(ModifyGFF):
         """
         list_container: GFFList | None = None
         if self.path.name == ">>##INDEXINLIST##<<":
-            self.path = self.path.parent  # idk why conditional parenting is necessary but it works
+            self.path = self.path.parent  # HACK: idk why conditional parenting is necessary but it works
         navigated_container: GFFList | GFFStruct | None = (
             self._navigate_containers(root_struct, self.path)
             if self.path.name
@@ -242,8 +244,8 @@ class AddStructToListGFF(ModifyGFF):
         if self.index_to_token is not None:
             memory.memory_2da[self.index_to_token] = str(len(list_container) - 1)
 
-        add_field: AddFieldGFF | AddStructToListGFF
-        for add_field in self.modifiers:  # type: ignore[assignment]
+        for add_field in self.modifiers:
+            assert isinstance(add_field, (AddFieldGFF, AddStructToListGFF))
             add_field.path = self.path / str(len(list_container) - 1)
             add_field.apply(root_struct, memory, logger)
 
@@ -299,7 +301,7 @@ class AddFieldGFF(ModifyGFF):
         value = self.value.value(memory, self.field_type)
 
         # if 2DAMEMORY holds a path string from !FieldPath, navigate to that field and use its value.
-        if isinstance(value, str) and self.field_type != GFFFieldType.String or isinstance(value, PureWindowsPath):
+        if isinstance(value, PureWindowsPath):
             from_path = value if isinstance(value, PureWindowsPath) else PureWindowsPath(value)
             if from_path.parent.name:
                 from_container = self._navigate_containers(root_struct, from_path.parent)
@@ -344,8 +346,8 @@ class AddFieldGFF(ModifyGFF):
         }
         func_map[self.field_type]()
 
-        add_field: AddFieldGFF | AddStructToListGFF
-        for add_field in self.modifiers:  # type: ignore[assignment]
+        for add_field in self.modifiers:
+            assert isinstance(add_field, (AddFieldGFF, AddStructToListGFF))
             newpath = PureWindowsPath("")
             for part, resolvedpart in zip_longest(add_field.path.parts, self.path.parts):
                 newpath /= resolvedpart or part
@@ -413,6 +415,7 @@ class ModifyFieldGFF(ModifyGFF):
         value = self.value.value(memory, field_type)
 
         def set_locstring() -> None:
+            assert isinstance(value, LocalizedStringDelta)
             if navigated_struct.exists(label):
                 original: LocalizedString = navigated_struct.get_locstring(label)
                 value.apply(original, memory)
