@@ -6,6 +6,8 @@ from pykotor.resource.type import ResourceType
 from PyQt5.QtWidgets import QMessageBox, QWidget
 from toolset.gui.editors.mdl import MDLEditor
 from toolset.gui.widgets.settings.installations import GlobalSettings
+from utility.error_handling import universal_simplify_exception
+from utility.path import PurePath
 
 if TYPE_CHECKING:
     import os
@@ -36,7 +38,9 @@ def openResourceEditor(
     parentwindow: QWidget | None = None,
     gff_specialized: bool | None = None,
 ) -> tuple[os.PathLike | str, Editor] | tuple[None, None]:
-    """Opens an editor for the specified resource. If the user settings have the editor set to inbuilt it will return
+    """Opens an editor for the specified resource.
+
+    If the user settings have the editor set to inbuilt it will return
     the editor, otherwise it returns None.
 
     Args:
@@ -205,13 +209,14 @@ def openResourceEditor(
         ResourceType.GUI_XML,
         ResourceType.IFO,
         ResourceType.IFO_XML,
+        ResourceType.RES,
     ]:
         editor = GFFEditor(None, installation)
 
     if restype in [ResourceType.WAV, ResourceType.MP3]:
         editor = AudioPlayer(parentwindow)
 
-    if restype in [ResourceType.MOD, ResourceType.ERF, ResourceType.RIM]:
+    if restype in [ResourceType.MOD, ResourceType.ERF, ResourceType.RIM, ResourceType.SAV]:
         editor = ERFEditor(None, installation)
 
     if restype in [ResourceType.MDL, ResourceType.MDX]:
@@ -225,7 +230,14 @@ def openResourceEditor(
             addWindow(editor)
 
         except Exception as e:
-            QMessageBox(QMessageBox.Critical, "An unknown error occured", str(e), QMessageBox.Ok, parentwindow).show()
+            etype, emsg = universal_simplify_exception(e)
+            QMessageBox(
+                QMessageBox.Critical,
+                f"An unexpected error has occurred: {etype}",
+                emsg,
+                QMessageBox.Ok,
+                parentwindow
+            ).show()
             raise
         else:
             return filepath, editor
@@ -233,7 +245,7 @@ def openResourceEditor(
         QMessageBox(
             QMessageBox.Critical,
             "Failed to open file",
-            "The selected file is not yet supported.",
+            f"The selected file format '{restype!r}' is not yet supported.",
             QMessageBox.Ok,
             parentwindow,
         ).show()

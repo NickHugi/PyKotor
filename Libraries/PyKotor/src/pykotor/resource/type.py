@@ -127,6 +127,8 @@ class ResourceType(Enum):
     TPC = ResourceTuple(3007, "tpc", "Textures", "binary")
     MDX = ResourceTuple(3008, "mdx", "Models", "binary")
     ERF = ResourceTuple(9997, "erf", "Modules", "binary")
+    RES = ResourceTuple(69420, "res", "Save Data", "gff")
+    SAV = ResourceTuple(42069, "sav", "Save Data", "erf")
 
     # For Toolset Use:
     MP3 = ResourceTuple(25014, "mp3", "Audio", "binary")

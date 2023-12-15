@@ -43,6 +43,9 @@ class GFFContent(Enum):
     BIC = "BIC "
     GUI = "GUI "
     PTH = "PTH "
+    NFO = "NFO "  # savenfo.res
+    PT  = "PT  "  # partytable.res
+    GVT = "GVT "  # GLOBALVARS.res
 
     @classmethod
     def has_value(

@@ -115,7 +115,7 @@ class ERFEditor(Editor):
         self.model.setHorizontalHeaderLabels(["ResRef", "Type", "Size"])
         self.ui.refreshButton.setEnabled(True)
 
-        if restype in [ResourceType.ERF, ResourceType.MOD]:
+        if restype in [ResourceType.ERF, ResourceType.MOD, ResourceType.SAV]:
             erf = read_erf(data)
             for resource in erf:
                 resrefItem = QStandardItem(resource.resref.get())
@@ -136,7 +136,6 @@ class ERFEditor(Editor):
                 QMessageBox.Critical,
                 "Unable to load file",
                 "The file specified is not a MOD/ERF type file.",
-                ...,
                 self,
             ).show()
 
