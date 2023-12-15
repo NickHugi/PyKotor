@@ -240,11 +240,50 @@
       }
     },
     {
+      "label": "holopatcher_compile",
+      "type": "shell",
+      "command": "${command:python.interpreterPath}",
+      "args": [
+        "-OO",
+        "-m",
+        "compileall",
+        "${workspaceFolder}/src"
+      ],
+      "problemMatcher": [],
+      "group": "build"
+    },
+    {
+      "label": "pykotor_compile",
+      "type": "shell",
+      "command": "${command:python.interpreterPath}",
+      "args": [
+        "-O",
+        "-m",
+        "compileall",
+        "${workspaceFolder}${pathSeparator}..${pathSeparator}..${pathSeparator}Libraries${pathSeparator}PyKotor${pathSeparator}src"
+      ],
+      "problemMatcher": [],
+      "group": "build"
+    },
+    {
+      "label": "utility_compile",
+      "type": "shell",
+      "command": "${command:python.interpreterPath}",
+      "args": [
+        "-OO",
+        "-m",
+        "compileall",
+        "${workspaceFolder}${pathSeparator}..${pathSeparator}..${pathSeparator}Libraries${pathSeparator}Utility${pathSeparator}src"
+      ],
+      "problemMatcher": [],
+      "group": "build"
+    },
+    {
       "label": "Build HoloPatcher - PyInstaller",
       "type": "shell",
       "dependsOn": [
         "holopatcher_requirements",
-        "install_pyinstaller"
+        "install_pyinstaller",
       ],
       "command": "${command:python.interpreterPath}",
       "args": [
@@ -263,6 +302,7 @@
       "options": {
         "cwd": "${workspaceFolder}${pathSeparator}src",
         "env": {
+          "PYTHONOPTIMIZE": "1",  // Enable optimizations
           "PYTHONPATH": "${env:PYTHONPATH};${workspaceFolder}${pathSeparator}..${pathSeparator}..${pathSeparator}Libraries${pathSeparator}PyKotor${pathSeparator}src;${workspaceFolder}${pathSeparator}..${pathSeparator}..${pathSeparator}Libraries${pathSeparator}Utility${pathSeparator}src"
         }
       },
