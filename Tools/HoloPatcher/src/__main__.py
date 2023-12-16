@@ -547,9 +547,8 @@ class App(tk.Tk):
             if not directory_path_str:
                 return
 
-            self.mod_path = directory_path_str
-
             tslpatchdata_path = CaseAwarePath(directory_path_str, "tslpatchdata")
+            self.mod_path = directory_path_str
             # handle when a user selects 'tslpatchdata' instead of mod root
             if not tslpatchdata_path.exists() and tslpatchdata_path.parent.name.lower() == "tslpatchdata":
                 tslpatchdata_path = tslpatchdata_path.parent
@@ -560,19 +559,18 @@ class App(tk.Tk):
 
             if namespace_path.exists():
                 self.load_namespace(NamespaceReader.from_filepath(namespace_path))
-                if default_directory_path_str:
-                    self.browse_button.place_forget()
             elif changes_path.exists():
                 config_reader: ConfigReader = ConfigReader.from_filepath(changes_path)
                 namespaces: list[PatcherNamespace] = [config_reader.config.as_namespace(changes_path)]
                 self.load_namespace(namespaces, config_reader)
-                if default_directory_path_str:
-                    self.browse_button.place_forget()
             else:
                 self.mod_path = ""
                 if not default_directory_path_str:  # don't show the error if the cwd was attempted
                     messagebox.showerror("Error", "Could not find a mod located at the given folder.")
                 return
+
+            if default_directory_path_str:
+                self.browse_button.place_forget()
 
             self.check_access(tslpatchdata_path, recurse=True)
         except Exception as e:  # noqa: BLE001

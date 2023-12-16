@@ -114,7 +114,7 @@ class ModificationsNSS(PatcherModifications):
         """  # noqa: D205
         nss_bytes: bytes | None = self.load(nss_source)
         if nss_bytes is None:
-            logger.add_error(f"Invalid nss source provided to ModificationsNSS.apply(), got {type(nss_source)}")
+            logger.add_error("Invalid nss source provided to ModificationsNSS.apply()")
             return b""
 
         source = MutableString(decode_bytes_with_fallbacks(nss_bytes))
@@ -147,7 +147,7 @@ class ModificationsNSS(PatcherModifications):
             if not self.nwnnsscomp_path.exists():
                 logger.add_note("nwnnsscomp.exe was not found in the 'tslpatchdata' folder, using the built-in compilers...")
             else:
-                logger.add_error(f"An error occurred while compiling {self.sourcefile} with nwnnsscomp.exe, falling back to the built-in compilers...")
+                logger.add_error(f"An error occurred while compiling '{self.sourcefile}' with nwnnsscomp.exe, falling back to the built-in compilers...")
         else:
             logger.add_note(f"Patching from a unix operating system, compiling '{self.sourcefile}' using the built-in compilers...")
 
