@@ -371,7 +371,7 @@ class ModInstaller:
                     output_container_path.mkdir(exist_ok=True, parents=True)
                     BinaryWriter.dump(output_container_path / patch.saveas, patched_bytes_data)
                 self.log.complete_patch()
-            except Exception as e:
+            except Exception as e:  # noqa: BLE001
                 self.log.add_error(str(e))
                 continue
 

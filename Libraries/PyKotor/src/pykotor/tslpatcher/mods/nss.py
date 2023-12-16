@@ -57,7 +57,7 @@ class ModificationsNCS(PatcherModifications):
             value = token_id_or_value
             if token_type == "StrRef":  # noqa: S105
                 value = memory.memory_str[value]
-            elif token_type == "2DAMemory":  # noqa: S105
+            elif token_type == "2DAMEMORY":  # noqa: S105
                 value = int(memory.memory_2da[value])
             if log:
                 log.add_verbose(f"HACKList {self.sourcefile}: writing WORD {value} at offset {offset:#X}")

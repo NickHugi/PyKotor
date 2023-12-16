@@ -11,7 +11,6 @@ from pykotor.common.stream import BinaryReader
 from pykotor.resource.formats.gff import GFFFieldType, GFFList, GFFStruct
 from pykotor.resource.formats.ssf import SSFSound
 from pykotor.resource.formats.tlk.tlk_auto import read_tlk
-from pykotor.resource.formats.tlk.tlk_data import TLK, TLKEntry
 from pykotor.tools.encoding import decode_bytes_with_fallbacks
 from pykotor.tools.path import CaseAwarePath
 from pykotor.tslpatcher.logger import PatchLogger
@@ -57,6 +56,7 @@ from utility.path import Path, PurePath, PureWindowsPath
 if TYPE_CHECKING:
     import os
 
+    from pykotor.resource.formats.tlk.tlk_data import TLK, TLKEntry
     from pykotor.tslpatcher.config import PatcherConfig
     from pykotor.tslpatcher.mods.gff import ModifyGFF
 
@@ -870,7 +870,7 @@ class ConfigReader:
         if raw_value is not None:
             ret_value: FieldValue | None = cls.field_value_from_type(raw_value, field_type)
             if ret_value is None:
-                msg = f"Could not parse fieldtype '{field_type}' in GFFList section [{identifier}]"
+                msg = f"Could not parse fieldtype '{field_type.name}' in GFFList section [{identifier}]"
                 raise ValueError(msg)
             value = ret_value
         elif field_type.return_type() == LocalizedString:
