@@ -1099,9 +1099,7 @@ class Installation:
                 ),
                 None,
             )
-            if txi_resource is not None:
-                return decode_txi(txi_resource.data())
-            return ""
+            return decode_txi(txi_resource.data()) if txi_resource is not None else ""
 
         def check_dict(values: dict[str, list[FileResource]]):
             for resources in values.values():
@@ -1154,7 +1152,7 @@ class Installation:
                 texture_data: bytes = BinaryReader.load_file(texture_file)
                 tpc = read_tpc(texture_data)
                 txi_file = CaseAwarePath(texture_file.with_suffix(".txi"))
-                if Path(txi_file) in queried_texture_files:
+                if txi_file.exists():
                     txi_data: bytes = BinaryReader.load_file(txi_file)
                     tpc.txi = decode_txi(txi_data)
                 textures[texture_file.stem] = tpc
