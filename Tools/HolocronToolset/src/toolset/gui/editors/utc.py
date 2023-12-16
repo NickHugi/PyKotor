@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from contextlib import suppress
+from copy import deepcopy
 from typing import TYPE_CHECKING, Literal
 
 from pykotor.common.language import Gender, Language
@@ -340,7 +341,7 @@ class UTCEditor(Editor):
             - Convert UTC to GFF bytes
             - Return GFF data and empty log.
         """
-        utc: UTC = self._utc
+        utc: UTC = deepcopy(self._utc)
 
         utc.first_name = self.ui.firstnameEdit.locstring()
         utc.last_name = self.ui.lastnameEdit.locstring()

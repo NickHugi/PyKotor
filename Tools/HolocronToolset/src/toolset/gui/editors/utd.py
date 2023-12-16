@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from copy import deepcopy
 from typing import TYPE_CHECKING
 
 from pykotor.common.misc import ResRef
@@ -198,7 +199,7 @@ class UTDEditor(Editor):
         - Writes the constructed UTD to a GFF bytearray
         - Returns the GFF data and any errors
         """
-        utd: UTD = self._utd
+        utd: UTD = deepcopy(self._utd)
 
         # Basic
         utd.name = self.ui.nameEdit.locstring()

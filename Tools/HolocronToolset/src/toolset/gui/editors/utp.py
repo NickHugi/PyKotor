@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from contextlib import suppress
+from copy import deepcopy
 from typing import TYPE_CHECKING
 
 from pykotor.common.misc import ResRef
@@ -210,7 +211,7 @@ class UTPEditor(Editor):
             - Writing the constructed UTP to a byte array
             - Returning the byte array and an empty byte string.
         """
-        utp = self._utp
+        utp = deepcopy(self._utp)
 
         # Basic
         utp.name = self.ui.nameEdit.locstring()
