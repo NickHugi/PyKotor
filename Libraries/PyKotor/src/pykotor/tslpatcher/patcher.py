@@ -354,26 +354,26 @@ class ModInstaller:
             output_container_path = self.game_path / patch.destination
             try:
                 exists, capsule = self.handle_capsule_and_backup(patch, output_container_path)
-            except FileNotFoundError as e:
+                if not self.should_patch(patch, exists, capsule):
+                    continue
+                data_to_patch_bytes = self.lookup_resource(patch, output_container_path, exists, capsule)
+                if data_to_patch_bytes is None:  # check None instead of `not data_to_patch_bytes` as sometimes mods will installlist empty files.
+                    self.log.add_error(f"Could not locate resource to {patch.action.lower().strip()}: '{patch.sourcefile}'")
+                    continue
+                if not data_to_patch_bytes:
+                    self.log.add_note(f"'{patch.sourcefile}' has no content/data and is completely empty.")
+
+                patched_bytes_data = patch.patch_resource(data_to_patch_bytes, memory, self.log, self.game)
+                if capsule is not None:
+                    self.handle_override_type(patch)
+                    capsule.add(*ResourceIdentifier.from_path(patch.saveas), patched_bytes_data)
+                else:
+                    output_container_path.mkdir(exist_ok=True, parents=True)
+                    BinaryWriter.dump(output_container_path / patch.saveas, patched_bytes_data)
+                self.log.complete_patch()
+            except Exception as e:
                 self.log.add_error(str(e))
                 continue
-            if not self.should_patch(patch, exists, capsule):
-                continue
-            data_to_patch_bytes = self.lookup_resource(patch, output_container_path, exists, capsule)
-            if data_to_patch_bytes is None:  # check None instead of `not data_to_patch_bytes` as sometimes mods will installlist empty files.
-                self.log.add_error(f"Could not locate resource to {patch.action.lower().strip()}: '{patch.sourcefile}'")
-                continue
-            if not data_to_patch_bytes:
-                self.log.add_note(f"'{patch.sourcefile}' has no content/data and is completely empty.")
-
-            patched_bytes_data = patch.patch_resource(data_to_patch_bytes, memory, self.log, self.game)
-            if capsule is not None:
-                self.handle_override_type(patch)
-                capsule.add(*ResourceIdentifier.from_path(patch.saveas), patched_bytes_data)
-            else:
-                output_container_path.mkdir(exist_ok=True, parents=True)
-                BinaryWriter.dump(output_container_path / patch.saveas, patched_bytes_data)
-            self.log.complete_patch()
 
         self.log.add_note(f"Successfully completed {self.log.patches_completed} total patches.")
 
