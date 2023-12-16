@@ -757,7 +757,7 @@ class ItemBuilderWorker(QThread):
                             if resource.restype() == ResourceType.UTI])
         queries.extend(
             ResourceIdentifier(resource.resname(), resource.restype())
-            for resource in self._installation.override_resources("")
+            for resource in self._installation.override_resources(".")
             if resource.restype() == ResourceType.UTI
         )
         for capsule in self._capsules:
