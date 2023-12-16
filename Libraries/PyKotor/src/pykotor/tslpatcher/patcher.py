@@ -164,6 +164,9 @@ class ModInstaller:
         """
         capsule = None
         if is_capsule_file(patch.destination):
+            if not output_container_path.safe_exists():
+                msg = f"The capsule '{patch.destination}' did not exist when attempting to {patch.action.lower().rstrip()} '{patch.sourcefile}'. Skipping file..."
+                raise FileNotFoundError(msg)
             capsule = Capsule(output_container_path)
             create_backup(self.log, output_container_path, *self.backup(), PurePath(patch.destination).parent)
             exists = capsule.exists(*ResourceIdentifier.from_path(patch.saveas))
@@ -349,7 +352,11 @@ class ModInstaller:
         memory = PatcherMemory()
         for patch in patches_list:
             output_container_path = self.game_path / patch.destination
-            exists, capsule = self.handle_capsule_and_backup(patch, output_container_path)
+            try:
+                exists, capsule = self.handle_capsule_and_backup(patch, output_container_path)
+            except FileNotFoundError as e:
+                self.log.add_error(str(e))
+                continue
             if not self.should_patch(patch, exists, capsule):
                 continue
             data_to_patch_bytes = self.lookup_resource(patch, output_container_path, exists, capsule)

@@ -294,6 +294,8 @@
         "--clean",
         "--noconfirm",
         "--name=HoloPatcher",
+        "--path=${workspaceFolder}${pathSeparator}..${pathSeparator}..${pathSeparator}Libraries${pathSeparator}PyKotor${pathSeparator}src",
+        "--path=${workspaceFolder}${pathSeparator}..${pathSeparator}..${pathSeparator}Libraries${pathSeparator}Utility${pathSeparator}src",
         "--distpath=${workspaceFolder}${pathSeparator}dist",
         "--upx-dir=${env:USERPROFILE}${pathSeparator}Documents${pathSeparator}GitHub${pathSeparator}upx-win32",
         "__main__.py"
@@ -303,7 +305,6 @@
         "cwd": "${workspaceFolder}${pathSeparator}src",
         "env": {
           "PYTHONOPTIMIZE": "1",  // Enable optimizations
-          "PYTHONPATH": "${env:PYTHONPATH};${workspaceFolder}${pathSeparator}..${pathSeparator}..${pathSeparator}Libraries${pathSeparator}PyKotor${pathSeparator}src;${workspaceFolder}${pathSeparator}..${pathSeparator}..${pathSeparator}Libraries${pathSeparator}Utility${pathSeparator}src"
         }
       },
       "group": {

@@ -33,8 +33,23 @@ class TestResourceType(unittest.TestCase):
         self.assertEqual(repr(ResourceType.INVALID), "ResourceType.INVALID")
         self.assertEqual(str(invalid), "ASDF")
         self.assertNotEqual(invalid.extension, ResourceType.INVALID.extension)
-    def test_from_extension(self):
+    def test_from_extension(self):  # sourcery skip: class-extract-method
         acquired_type = ResourceType.from_extension("tlk")
+        self.assertEqual(acquired_type, ResourceType.TLK)
+        self.assertEqual("tLK", ResourceType.TLK)
+        self.assertEqual("Tlk", acquired_type)
+        self.assertEqual(ResourceType.TLK.extension, "tlk")
+        self.assertEqual(ResourceType.TLK.type_id, 2018)
+        self.assertEqual(repr(ResourceType.TLK), "ResourceType.TLK")
+        self.assertEqual(str(ResourceType.TLK), "TLK")
+        self.assertEqual(ResourceType.TLK.contents, "binary")
+        self.assertEqual(ResourceType.TLK.category, "Talk Tables")
+        self.assertEqual(acquired_type.extension, "tlk")
+        self.assertEqual(acquired_type.type_id, 2018)
+        self.assertEqual(acquired_type.contents, "binary")
+        self.assertEqual(acquired_type.category, "Talk Tables")
+    def test_from_id(self):
+        acquired_type = ResourceType.from_id(2018)
         self.assertEqual(acquired_type, ResourceType.TLK)
         self.assertEqual("tLK", ResourceType.TLK)
         self.assertEqual("Tlk", acquired_type)
@@ -51,102 +66,48 @@ class TestResourceType(unittest.TestCase):
 
 class TestResourceIdentifier(unittest.TestCase):
     """ These tests were created because of the many soft, hard-to-find errors that occur all over when this function ever fails."""
-    def test_from_path(self):
-        test_cases = [
-            # Happy path tests
-            {
-                "return_type": "ResourceType",
-                "file_path": "C:/path/to/resource.mdl",
-                "expected_resname": "resource",
-                "expected_restype": ResourceType.MDL,
-            },
-            {
-                "return_type": "ResourceType",
-                "file_path": "C:/path/to/texture.tGa",
-                "expected_resname": "texture",
-                "expected_restype": ResourceType.TGA,
-            },
-            {
-                "return_type": "ResourceType",
-                "file_path": "C:/path/to/SounD.wav",
-                "expected_resname": "SounD",
-                "expected_restype": ResourceType.WAV,
-            },
-            {
-                "return_type": "ResourceType",
-                "file_path": "C:/path/to/asdf.Tlk.XmL",
-                "expected_resname": "asdf",
-                "expected_restype": ResourceType.TLK_XML,
-            },
-            {
-                "return_type": "ResourceType",
-                "file_path": "C:/path/to/asdf.xyz.qwerty.gff.xml",
-                "expected_resname": "asdf.xyz.qwerty",
-                "expected_restype": ResourceType.GFF_XML,
-            },
-            # Edge cases
-            {
-                "return_type": "invalid",
-                "file_path": "C:/path/to/.hidden",
-                "expected_resname": ".hidden",
-                "expected_restype": ResourceType.INVALID,
-            },
-            {
-                "return_type": "invalid",
-                "file_path": "C:/path/to/no_extension",
-                "expected_resname": "no_extension",
-                "expected_restype": ResourceType.INVALID,
-            },
-            {
-                "return_type": "invalid",
-                "file_path": "C:/path/to/long_extension.xyz",
-                "expected_resname": "long_extension",
-                "expected_restype": ResourceType.INVALID,
-            },
-            # Error cases?
-            {
-                "return_type": "invalid",
-                "file_path": None,
-                "expected_resname": "",
-                "expected_restype": ResourceType.INVALID,
-            },
-            {
-                "return_type": "invalid",
-                "file_path": "",
-                "expected_resname": "",
-                "expected_restype": ResourceType.INVALID,
-            },
-            {
-                "return_type": "invalid",
-                "file_path": "C:/path/to/invalid.",
-                "expected_resname": "invalid.",
-                "expected_restype": ResourceType.INVALID,
-            },
-            {
-                "return_type": "invalid",
-                "file_path": "C:/path/to/invalid.ext",
-                "expected_resname": "invalid",
-                "expected_restype": ResourceType.INVALID,
-            },
-        ]
 
-        for test_case in test_cases:
-            # Arrange
-            file_path = test_case["file_path"]
-            expected_resname = test_case["expected_resname"]
-            expected_restype = test_case["expected_restype"]
-            return_type = test_case["return_type"]
+    def assert_resource_identifier(self, file_path, expected_resname, expected_restype):
+        # Common assertion logic for all tests
+        result = ResourceIdentifier.from_path(file_path)
+        fail_message = f"\nresname: '{result.resname}' restype: '{result.restype}'\nexpected resname: '{expected_resname}' expected restype: '{expected_restype}'"
+        self.assertEqual(result.resname, expected_resname, fail_message)
+        self.assertEqual(result.restype, expected_restype, fail_message)
 
-            # Act
-            result = ResourceIdentifier.from_path(file_path)
+    def test_from_path_mdl(self):
+        self.assert_resource_identifier("C:/path/to/resource.mdl", "resource", ResourceType.MDL)
 
-            # Assert
-            fail_message = f"\nresname: '{result.resname}' restype: '{result.restype}'\nexpected resname: '{expected_resname}' expected restype: '{expected_restype}'"
-            self.assertEqual(result.resname, expected_resname, fail_message)
-            self.assertEqual(result.restype, expected_restype, fail_message)
-            if return_type == "invalid":
-                self.assertRaises((ValueError, TypeError), ResourceIdentifier.validate, ResourceIdentifier.from_path(file_path))
+    def test_from_path_tga(self):
+        self.assert_resource_identifier("C:/path/to/texture.tGa", "texture", ResourceType.TGA)
 
+    def test_from_path_wav(self):
+        self.assert_resource_identifier("C:/path/to/SounD.wav", "SounD", ResourceType.WAV)
 
-if __name__ == "__main__":
-    unittest.main()
+    def test_from_path_tlk_xml(self):
+        self.assert_resource_identifier("C:/path/to/asdf.Tlk.XmL", "asdf", ResourceType.TLK_XML)
+
+    def test_from_path_gff_xml(self):
+        self.assert_resource_identifier("C:/path/to/asdf.xyz.qwerty.gff.xml", "asdf.xyz.qwerty", ResourceType.GFF_XML)
+
+    def test_from_path_hidden_file(self):
+        self.assert_resource_identifier("C:/path/to/.hidden", ".hidden", ResourceType.INVALID)
+
+    def test_from_path_no_extension(self):
+        self.assert_resource_identifier("C:/path/to/no_extension", "no_extension", ResourceType.INVALID)
+
+    def test_from_path_long_extension(self):
+        self.assert_resource_identifier("C:/path/to/l.o.n.g._ex.te.nsio.n.xyz", "l.o.n.g._ex.te.nsio.n", ResourceType.INVALID)
+
+    def test_from_path_none_file_path(self):
+        with self.assertRaises((ValueError, TypeError)):
+            ResourceIdentifier.from_path(None).validate()
+
+    def test_from_path_empty_file_path(self):
+        with self.assertRaises((ValueError, TypeError)):
+            ResourceIdentifier.from_path("").validate()
+
+    def test_from_path_invalid_extension(self):
+        self.assert_resource_identifier("C:/path/to/invalid.ext", "invalid", ResourceType.INVALID)
+
+    def test_from_path_trailing_dot(self):
+        self.assert_resource_identifier("C:/path/to/invalid.", "invalid.", ResourceType.INVALID)

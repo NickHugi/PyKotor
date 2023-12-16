@@ -22,13 +22,12 @@ if UTILITY_PATH.exists():
 from pykotor.common.geometry import Vector3, Vector4
 from pykotor.common.language import LocalizedString
 from pykotor.common.misc import ResRef
-from pykotor.resource.formats.gff import GFF, GFFFieldType, GFFList
 from pykotor.resource.formats.gff.gff_auto import bytes_gff, read_gff
-from pykotor.resource.formats.gff.gff_data import GFFStruct
-from pykotor.resource.formats.ssf import SSF, SSFSound
+from pykotor.resource.formats.gff.gff_data import GFFStruct, GFF, GFFFieldType, GFFList
+from pykotor.resource.formats.ssf.ssf_data import SSF, SSFSound
 from pykotor.resource.formats.ssf.ssf_auto import bytes_ssf, read_ssf
-from pykotor.resource.formats.tlk import TLK
-from pykotor.resource.formats.twoda import TwoDA
+from pykotor.resource.formats.tlk.tlk_data import TLK
+from pykotor.resource.formats.twoda.twoda_data import TwoDA
 from pykotor.resource.formats.twoda.twoda_auto import bytes_2da, read_2da
 from pykotor.tslpatcher.logger import PatchLogger
 from pykotor.tslpatcher.memory import NoTokenUsage, PatcherMemory, TokenUsage2DA, TokenUsageTLK
@@ -65,10 +64,8 @@ from utility.path import PureWindowsPath
 
 # TODO Error, Warning tracking
 
-
-@unittest.skip("unfinished")
 class TestManipulateTLK(TestCase):
-    def test_apply(self):
+    def test_apply_append(self):
         memory = PatcherMemory()
 
         config = ModificationsTLK()
@@ -87,6 +84,33 @@ class TestManipulateTLK(TestCase):
 
         self.assertEqual(2, memory.memory_str[0])
         self.assertEqual(3, memory.memory_str[1])
+
+        # [Dialog] [Append] [Token] [Text]
+        # 0        -        -       Old1
+        # 1        -        -       Old2
+        # 2        1        0       Append2
+        # 3        0        1       Append1
+    def test_apply_replace(self):
+        memory = PatcherMemory()
+
+        config = ModificationsTLK()
+        config.modifiers.append(ModifyTLK(3, "Replace3", ResRef.from_blank(), True))
+        config.modifiers.append(ModifyTLK(2, "Replace2", ResRef.from_blank(), True))
+
+        dialog_tlk = TLK()
+        dialog_tlk.add("Old1")
+        dialog_tlk.add("Old2")
+        dialog_tlk.add("Old3")
+        dialog_tlk.add("Old4")
+
+        config.apply(dialog_tlk, memory)
+
+        self.assertEqual(4, len(dialog_tlk))
+        self.assertEqual("Replace2", dialog_tlk.get(2).text)
+        self.assertEqual("Replace3", dialog_tlk.get(3).text)
+
+        self.assertEqual(2, memory.memory_str[2])
+        self.assertEqual(3, memory.memory_str[3])
 
         # [Dialog] [Append] [Token] [Text]
         # 0        -        -       Old1

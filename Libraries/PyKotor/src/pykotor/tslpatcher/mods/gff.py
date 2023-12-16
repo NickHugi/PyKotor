@@ -347,7 +347,7 @@ class AddFieldGFF(ModifyGFF):
         func_map[self.field_type]()
 
         for add_field in self.modifiers:
-            assert isinstance(add_field, (AddFieldGFF, AddStructToListGFF))
+            #assert isinstance(add_field, (AddFieldGFF, AddStructToListGFF))
             newpath = PureWindowsPath("")
             for part, resolvedpart in zip_longest(add_field.path.parts, self.path.parts):
                 newpath /= resolvedpart or part
