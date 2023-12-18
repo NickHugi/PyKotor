@@ -673,18 +673,18 @@ class _InstanceMode(_Mode):
 
             for result in search:
                 lowercase_path_parts = [f.lower() for f in result.filepath.parts]
-                lowercase_path_parents = [str(parent).lower() for parent in result.filepath.parents]
                 if "override" in lowercase_path_parts:
                     filepath = result.filepath
                 else:
                     module_root = Module.get_root(self._editor.filepath()).lower()
 
                     # Check if module root is in path parents or is a .rim
+                    lowercase_path_parents = [str(parent).lower() for parent in result.filepath.parents]
                     if module_root in lowercase_path_parents and (filepath is None or is_rim_file(filepath)):
                         filepath = result.filepath
 
             if filepath:
-                data = getResourceFromFile(filepath, *instance.identifier())
+                data = getResourceFromFile(filepath, resname, restype)
                 openResourceEditor(filepath, resname, restype, data, self._installation, self._editor)
             else:
                 # TODO Make prompt for override/MOD
@@ -751,8 +751,7 @@ class _InstanceMode(_Mode):
         item.setData(QtCore.Qt.UserRole, instance)
         item.setToolTip(self.getInstanceTooltip(instance))
 
-        name = None
-        failedToFind = True
+        name: str | None = None
 
         if isinstance(instance, GITCamera):
             item.setText(str(instance.camera_id))
@@ -814,10 +813,8 @@ class _InstanceMode(_Mode):
             else:
                 name = instance.identifier().resname
 
-        failedToFind = name is None
-        text = instance.identifier().resname if failedToFind else name
-
-        if failedToFind:
+        text: str = instance.identifier().resname if name is None else name
+        if name is None:
             font = item.font()
             font.setItalic(True)
             item.setFont(font)

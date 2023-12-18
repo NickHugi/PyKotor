@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from typing import TYPE_CHECKING
+from pykotor.resource.formats.erf.erf_data import ERFType
 
 from pykotor.resource.type import ResourceType
 from PyQt5.QtWidgets import QMessageBox, QWidget
@@ -215,7 +216,7 @@ def openResourceEditor(
     if restype in [ResourceType.WAV, ResourceType.MP3]:
         editor = AudioPlayer(parentwindow)
 
-    if restype in [ResourceType.MOD, ResourceType.ERF, ResourceType.RIM, ResourceType.SAV]:
+    if restype in ERFType.__members__:
         editor = ERFEditor(None, installation)
 
     if restype in [ResourceType.MDL, ResourceType.MDX]:

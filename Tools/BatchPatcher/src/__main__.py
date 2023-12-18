@@ -41,7 +41,7 @@ from pykotor.extract.file import FileResource, ResourceIdentifier
 from pykotor.extract.installation import Installation
 from pykotor.font.draw import write_bitmap_fonts
 from pykotor.resource.formats.erf.erf_auto import write_erf
-from pykotor.resource.formats.erf.erf_data import ERF
+from pykotor.resource.formats.erf.erf_data import ERF, ERFType
 from pykotor.resource.formats.gff import GFF, GFFContent, GFFFieldType, GFFList, GFFStruct, read_gff
 from pykotor.resource.formats.gff.gff_auto import bytes_gff
 from pykotor.resource.formats.rim.rim_auto import write_rim
@@ -470,7 +470,7 @@ def patch_install(install_path: os.PathLike | str) -> None:
             new_rim = RIM()
             new_rim_filename = patch_erf_or_rim(resources, module_name, new_rim)
             write_rim(new_rim, k_install.path() / new_rim_filename)
-        elif restype in [ResourceType.MOD, ResourceType.ERF, ResourceType.SAV]:
+        elif restype.name in ERFType.__members__:
             new_erf = ERF()
             new_erf_filename = patch_erf_or_rim(resources, module_name, new_erf)
             write_erf(new_erf, k_install.path() / new_erf_filename, restype)
