@@ -100,7 +100,7 @@ class ERFEditor(Editor):
             - Clear existing model data
             - Set model column count to 3 and header labels
             - Enable refresh button
-            - If ERF or MOD:
+            - If ERF-type:
                 - Parse file with erf reader
                 - Add each resource as row to model
             - If RIM:
@@ -115,7 +115,7 @@ class ERFEditor(Editor):
         self.model.setHorizontalHeaderLabels(["ResRef", "Type", "Size"])
         self.ui.refreshButton.setEnabled(True)
 
-        if restype in ERFType.__members__:
+        if restype.name in ERFType.__members__:
             erf = read_erf(data)
             for resource in erf:
                 resrefItem = QStandardItem(resource.resref.get())
