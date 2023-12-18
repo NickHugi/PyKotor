@@ -216,7 +216,7 @@ def openResourceEditor(
     if restype in [ResourceType.WAV, ResourceType.MP3]:
         editor = AudioPlayer(parentwindow)
 
-    if restype in ERFType.__members__:
+    if restype in ERFType.__members__ or restype == ResourceType.RIM:
         editor = ERFEditor(None, installation)
 
     if restype in [ResourceType.MDL, ResourceType.MDX]:
