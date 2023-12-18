@@ -162,7 +162,7 @@ class ERFEditor(Editor):
                 resource = item.data()
                 rim.set_data(resource.resref.get(), resource.restype, resource.data)
             write_rim(rim, data)
-        if self._restype in ERFType.__members__:  # sourcery skip: split-or-ifs
+        if self._restype.name in ERFType.__members__:  # sourcery skip: split-or-ifs
             erf = ERF(ERFType.__members__[self._restype.name])
             for i in range(self.model.rowCount()):
                 item = self.model.item(i, 0)
