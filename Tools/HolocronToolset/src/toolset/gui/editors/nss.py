@@ -160,7 +160,7 @@ class NSSEditor(Editor):
         super().load(filepath, resref, restype, data)
 
         if restype == ResourceType.NSS:
-            self.ui.codeEdit.setPlainText(data.decode("windows-1252"))
+            self.ui.codeEdit.setPlainText(data.decode("windows-1252", errors="ignore"))
         elif restype == ResourceType.NCS:
             try:
                 source = decompileScript(data, self._installation.tsl)
@@ -212,12 +212,12 @@ class NSSEditor(Editor):
 
             filepath: Path = self._filepath if self._filepath is not None else Path.cwd() / "untitled_script.ncs"
             if is_any_erf_type_file(filepath.name):
-                savePath = Path(filepath, f"{self._resref}.{self._restype.extension}")
+                savePath = filepath / f"{self._resref}.{self._restype.extension}"
                 erf: ERF = read_erf(filepath)
                 erf.set_data(self._resref, ResourceType.NCS, data)
                 write_erf(erf, filepath)
             elif is_rim_file(filepath.name):
-                savePath = Path(filepath, f"{self._resref}.{self._restype.extension}")
+                savePath = filepath / f"{self._resref}.{self._restype.extension}"
                 rim: RIM = read_rim(filepath)
                 rim.set_data(self._resref, ResourceType.NCS, data)
                 write_rim(rim, filepath)
