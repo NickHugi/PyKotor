@@ -121,6 +121,7 @@ class UTC:
         self.disarmable: bool = False  # ???
         self.ignore_cre_path: bool = False  # KotOR 2 Only
         self.hologram: bool = False  # KotOR 2 Only
+        self.will_not_render: bool = False # Kotor 2 Only
 
         self.alignment: int = 0
         self.challenge_rating: float = 0.0
@@ -227,6 +228,7 @@ def construct_utc(
     utc.soundset_id = root.acquire("SoundSetFile", 0)
     utc.portrait_id = root.acquire("PortraitId", 0)
     utc.palette_id = root.acquire("PaletteID", 0)
+    utc.bodybag_id = root.acquire("BodyBag", 0)
 
     utc.body_variation = root.acquire("BodyVariation", 0)
     utc.texture_variation = root.acquire("TextureVar", 0)
@@ -241,6 +243,7 @@ def construct_utc(
     utc.disarmable = bool(root.acquire("Disarmable", 0))
     utc.ignore_cre_path = bool(root.acquire("IgnoreCrePath", 0))
     utc.hologram = bool(root.acquire("Hologram", 0))
+    utc.will_not_render = bool(root.acquire("WillNotRender", 0))
 
     utc.alignment = root.acquire("GoodEvil", 0)
     utc.challenge_rating = root.acquire("ChallengeRating", 0.0)
@@ -446,6 +449,7 @@ def dismantle_utc(
         root.set_uint8("MultiplierSet", utc.multiplier_set)
         root.set_uint8("IgnoreCrePath", utc.ignore_cre_path)
         root.set_uint8("Hologram", utc.hologram)
+        root.set_uint8("WillNotRender", utc.will_not_render)
 
     if use_deprecated:
         root.set_uint8("BodyBag", utc.bodybag_id)

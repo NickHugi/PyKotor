@@ -4,55 +4,57 @@ import sys
 import unittest
 from unittest import TestCase
 
-try:
-    from PyQt5.QtTest import QTest
-    from PyQt5.QtWidgets import QApplication
-except (ImportError, ModuleNotFoundError):
-    QTest, QApplication = None, None  # type: ignore[misc, assignment]
+from pykotor.common.stream import BinaryReader
+from pykotor.resource.formats.gff import read_gff
+
+from pykotor.resource.type import ResourceType
+
+from PyQt5.QtTest import QTest
+from PyQt5.QtWidgets import QApplication
 
 
-if getattr(sys, "frozen", False) is False:
-    pykotor_path = pathlib.Path(__file__).parents[6] / "Libraries" / "PyKotor" / "src" / "pykotor"
-    if pykotor_path.exists():
-        working_dir = str(pykotor_path.parent)
-        if working_dir in sys.path:
-            sys.path.remove(working_dir)
-        sys.path.insert(0, working_dir)
-    toolset_path = pathlib.Path(__file__).parents[3] / "toolset"
-    if toolset_path.exists():
-        working_dir = str(toolset_path.parent)
-        if working_dir in sys.path:
-            sys.path.remove(working_dir)
-        sys.path.insert(0, working_dir)
+K2_PATH = os.environ.get("K2_PATH")
 
-K1_PATH = os.environ.get("K1_PATH")
+PYKOTOR_PATH = next(f for f in pathlib.Path(__file__).parents if f.name == "Tools").parent / "Libraries" / "PyKotor" / "src" / "pykotor"
+sys.path.insert(0, str(PYKOTOR_PATH))
+
+HOLOCRON_TOOLSET_PATH = next(f for f in pathlib.Path(__file__).parents if f.name == "Tools") / "toolset"
+sys.path.insert(0, str(HOLOCRON_TOOLSET_PATH))
+
+TESTS_FILES_PATH = next(f for f in pathlib.Path(__file__).parents if f.name == "tests") / "files"
 
 
 @unittest.skipIf(
-    not K1_PATH or not pathlib.Path(K1_PATH).joinpath("chitin.key").exists(),
+    not K2_PATH or not pathlib.Path(K2_PATH).joinpath("chitin.key").exists(),
     "K1_PATH environment variable is not set or not found on disk.",
-)
-@unittest.skipIf(
-    QTest is None or not QApplication,
-    "PyQt5 is required, please run pip install -r requirements.txt before running this test.",
 )
 class UTCEditorTest(TestCase):
     @classmethod
     def setUpClass(cls) -> None:
         # Make sure to configure this environment path before testing!
         from toolset.data.installation import HTInstallation
-        cls.INSTALLATION = HTInstallation(K1_PATH, "", False, None)
+        cls.INSTALLATION = HTInstallation(K2_PATH, "", True, None)
 
     def setUp(self) -> None:
         from toolset.gui.editors.utc import UTCEditor
         self.app = QApplication([])
-        self.ui = UTCEditor(None, self.INSTALLATION)
+        self.editor = UTCEditor(None, self.INSTALLATION)
 
     def tearDown(self) -> None:
         self.app.deleteLater()
 
-    def test_placeholder(self):
-        ...
+    def test_save_and_load(self):
+        filepath = TESTS_FILES_PATH / "p_hk47.utc"
+
+        data = BinaryReader.load_file(filepath)
+        old = read_gff(data)
+        self.editor.load(filepath, "p_hk47", ResourceType.UTC, data)
+
+        data, _ = self.editor.build()
+        new = read_gff(data)
+
+        diff = old.compare(new)
+        self.assertTrue(diff)
 
 
 if __name__ == "__main__":
