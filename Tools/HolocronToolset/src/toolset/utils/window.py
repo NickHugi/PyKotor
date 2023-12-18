@@ -1,8 +1,8 @@
 from __future__ import annotations
 
 from typing import TYPE_CHECKING
-from pykotor.resource.formats.erf.erf_data import ERFType
 
+from pykotor.resource.formats.erf.erf_data import ERFType
 from pykotor.resource.type import ResourceType
 from PyQt5.QtWidgets import QMessageBox, QWidget
 from toolset.gui.editors.mdl import MDLEditor
