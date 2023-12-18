@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
-
 import base64
 import json
 import traceback
@@ -57,11 +55,9 @@ from utility.error_handling import assert_with_variable_trace, universal_simplif
 from utility.path import Path, PurePath
 
 if TYPE_CHECKING:
-    from pykotor.resource.formats.mdl.mdl_data import MDL
-
-if TYPE_CHECKING:
     import os
 
+    from pykotor.resource.formats.mdl.mdl_data import MDL
     from pykotor.resource.formats.tpc import TPC
     from pykotor.resource.type import SOURCE_TYPES
     from pykotor.tools.path import CaseAwarePath

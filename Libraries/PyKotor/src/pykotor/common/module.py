@@ -104,7 +104,7 @@ class Module:
         -------
             The string for the root name of a module.
         """
-        root = PurePath(filepath).name.lower().replace(".rim", "").replace(".erf", "").replace(".mod", "")
+        root = PurePath(filepath).name.lower().replace(".rim", "").replace(".erf", "").replace(".mod", "").replace(".sav", "")
         roota = root[:5]
         rootb = root[5:]
         if "_" in rootb:
