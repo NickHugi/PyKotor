@@ -1,6 +1,4 @@
-"""This module contains the ResourceType class and initializes the static list of ResourceTypes that can be found in both
-games.
-"""
+"""This module contains the ResourceType class and initializes the static list of ResourceTypes that can be found in both games."""
 from __future__ import annotations
 
 import os
@@ -265,7 +263,7 @@ class ResourceType(Enum):
             (
                 restype
                 for restype in ResourceType.__members__.values()
-                if type_id == restype.type_id
+                if type_id == restype
             ),
             ResourceType.from_invalid(type_id=type_id),
         )
@@ -285,7 +283,7 @@ class ResourceType(Enum):
             return cls.INVALID
         instance = object.__new__(cls)
         instance._name_ = f"INVALID_{kwargs.get('extension', cls.INVALID.extension) or uuid.uuid4().hex}"
-        instance._value_ = ResourceTuple(**{**cls.INVALID.value, **kwargs, "is_invalid":True})
+        instance._value_ = ResourceTuple(**{**cls.INVALID.value, **kwargs, "is_invalid": True})
         instance.__init__(**instance.value)
         return instance
 

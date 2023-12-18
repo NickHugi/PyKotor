@@ -72,7 +72,7 @@ def read_mdl(
     source_ext: SOURCE_TYPES | None = None,
     offset_ext: int = 0,
     size_ext: int = 0,
-) -> MDL | None:
+) -> MDL:
     """Returns an MDL instance from the source.
 
     The file format (MDL or MDL_ASCII) is automatically determined before parsing the data.
@@ -99,10 +99,6 @@ def read_mdl(
     """
     file_format = detect_mdl(source, offset)
 
-    if file_format is ResourceType.INVALID:
-        msg = "Failed to determine the format of the MDL file."
-        raise ValueError(msg)
-
     if file_format == ResourceType.MDL:
         return MDLBinaryReader(
             source,
@@ -114,7 +110,8 @@ def read_mdl(
         ).load()
     if file_format == ResourceType.MDL_ASCII:
         return MDLAsciiReader(source, offset, size or 0).load()
-    return None
+    msg = "Failed to determine the format of the MDL file."
+    raise ValueError(msg)
 
 
 def write_mdl(

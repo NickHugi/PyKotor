@@ -266,6 +266,7 @@
         "--path=${workspaceFolder}${pathSeparator}..${pathSeparator}..${pathSeparator}Libraries${pathSeparator}PyKotor",
         "--path=${workspaceFolder}${pathSeparator}..${pathSeparator}..${pathSeparator}Libraries${pathSeparator}PyKotorFont",
         "--path=${workspaceFolder}${pathSeparator}..${pathSeparator}..${pathSeparator}Libraries${pathSeparator}Utility",
+        "--upx-dir=${env:USERPROFILE}${pathSeparator}Documents${pathSeparator}GitHub${pathSeparator}upx-win32",
         "${workspaceFolder}${pathSeparator}src${pathSeparator}__main__.py"
       ],
       "options": {

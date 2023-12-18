@@ -14,7 +14,7 @@ from pykotor.resource.generics.uts import UTS, bytes_uts
 from pykotor.resource.generics.utt import UTT, bytes_utt
 from pykotor.resource.generics.utw import UTW, bytes_utw
 from pykotor.resource.type import ResourceType
-from pykotor.tools.misc import is_erf_or_mod_file, is_rim_file
+from pykotor.tools.misc import is_any_erf_type_file, is_rim_file
 from PyQt5 import QtCore
 from PyQt5.QtGui import QColor
 from PyQt5.QtWidgets import QDialog, QDialogButtonBox, QListWidgetItem, QWidget
@@ -29,14 +29,15 @@ if TYPE_CHECKING:
 
 class InsertInstanceDialog(QDialog):
     def __init__(self, parent: QWidget, installation: HTInstallation, module: Module, restype: ResourceType):
-        """Initialize a resource editor dialog
+        """Initialize a resource editor dialog.
+
         Args:
+        ----
             parent: QWidget - Parent widget
             installation: HTInstallation - HT installation object
             module: Module - Module object
             restype: ResourceType - Resource type
-        Returns:
-            None - Does not return anything
+
         Initializes the resource editor dialog:
             - Sets up UI elements
             - Connects signal handlers
@@ -82,8 +83,7 @@ class InsertInstanceDialog(QDialog):
         Args:
         ----
             self: The class instance
-        Returns:
-            None
+
         Processing Logic:
         ----------------
             - Loops through installation resources and adds matching type
@@ -156,7 +156,7 @@ class InsertInstanceDialog(QDialog):
                 self.data = b""
 
         if new and self.filepath:
-            if is_erf_or_mod_file(self.filepath.name):
+            if is_any_erf_type_file(self.filepath.name):
                 erf = read_erf(self.filepath)
                 erf.set_data(self.resname, self._restype, self.data)
                 write_erf(erf, self.filepath)

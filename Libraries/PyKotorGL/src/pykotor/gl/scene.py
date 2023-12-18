@@ -842,6 +842,21 @@ class Camera:
         self.fov: float = 90.0
 
     def view(self) -> mat4:
+        """Returns the view matrix for the camera.
+
+        Args:
+        ----
+            self: The camera object
+
+        Returns:
+        -------
+            mat4: The view matrix
+
+        Processing Logic:
+        ----------------
+            - Calculate camera position based on yaw, pitch and distance from origin
+            - Construct view matrix by translating to camera position and rotating by yaw and pitch
+        """
         up = vec3(0, 0, 1)
         pitch = glm.vec3(1, 0, 0)
 
@@ -856,6 +871,22 @@ class Camera:
         return glm.inverse(camera)
 
     def projection(self) -> mat4:
+        """Generate a perspective projection matrix.
+
+        Args:
+        ----
+            self: The camera object
+
+        Returns:
+        -------
+            mat4: The 4x4 perspective projection matrix
+
+        Processing Logic:
+        ----------------
+            - Calculate the aspect ratio of the viewport from the camera's width and height
+            - Use the aspect ratio and field of view to generate a perspective projection matrix using glm.perspective
+            - The projection matrix transforms world coordinates into clip coordinates and maps the scene to the viewport
+        """
         return glm.perspective(self.fov, self.width / self.height, 0.1, 5000)
 
     def translate(self, translation: vec3) -> None:
@@ -864,6 +895,23 @@ class Camera:
         self.z += translation.z
 
     def rotate(self, yaw: float, pitch: float):
+        """Rotates the object by yaw and pitch angles.
+
+        Args:
+        ----
+            yaw: float - Yaw angle in radians
+            pitch: float - Pitch angle in radians
+
+        Returns:
+        -------
+            None - Rotates object in place
+
+        Processes rotation:
+        ------------------
+            - Increments pitch by pitch argument
+            - Increments yaw by yaw argument
+            - Clips pitch to valid range between 0 and pi radians to avoid gimbal lock
+        """
         self.pitch += pitch
         self.yaw += yaw
 
@@ -873,15 +921,65 @@ class Camera:
             self.pitch = 0.001
 
     def forward(self, ignore_z: bool = True) -> vec3:
+        """Calculates the forward vector from the camera's rotation.
+
+        Args:
+        ----
+            ignore_z: Whether to ignore z component of vector {True by default}.
+
+        Returns:
+        -------
+            vec3: Normalized forward vector from camera rotation
+
+        Processing Logic:
+        ----------------
+            - Calculate x component of eye vector from yaw and pitch
+            - Calculate y component of eye vector from yaw and pitch
+            - Set z component to 0 if ignore_z is True, else calculate from pitch
+            - Return normalized negative of eye vector as forward vector.
+        """
         eye_x = math.cos(self.yaw) * math.cos(self.pitch - math.pi / 2)
         eye_y = math.sin(self.yaw) * math.cos(self.pitch - math.pi / 2)
         eye_z = 0 if ignore_z else math.sin(self.pitch - math.pi / 2)
         return glm.normalize(-vec3(eye_x, eye_y, eye_z))
 
     def sideward(self, ignore_z: bool = True) -> vec3:
+        """Returns a normalized vector perpendicular to the forward direction.
+
+        Args:
+        ----
+            ignore_z: Ignore z-component of forward vector.
+
+        Returns:
+        -------
+            vec3: Normalized sideward vector.
+
+        Processing Logic:
+        ----------------
+            - Calculate cross product of forward vector and (0,0,1) to get sideward vector
+            - Normalize sideward vector to get unit sideward vector
+            - Return normalized sideward vector
+        """
         return glm.normalize(glm.cross(self.forward(ignore_z), vec3(0.0, 0.0, 1.0)))
 
     def upward(self, ignore_xy: bool = True) -> vec3:
+        """Returns the upward vector of the entity.
+
+        Args:
+        ----
+            ignore_xy (bool): Ignore x and y components of the vector if True.
+
+        Returns:
+        -------
+            vec3: The normalized upward vector.
+
+        Processing Logic:
+        ----------------
+            - Calculate forward vector ignoring z component
+            - Calculate sideward vector ignoring z component
+            - Take cross product of forward and sideward vectors
+            - Return normalized cross product vector
+        """
         if ignore_xy:
             return glm.normalize(vec3(0, 0, 1))
         forward = self.forward(ignore_z=False)
@@ -890,6 +988,22 @@ class Camera:
         return glm.normalize(cross)
 
     def true_position(self) -> vec3:
+        """Calculates the true position of an object based on its orientation and distance from origin.
+
+        Args:
+        ----
+            self: {Object with x, y, z, yaw, pitch, and distance attributes}
+
+        Returns:
+        -------
+            vec3: {Calculated true position as a 3D vector}
+
+        Processing Logic:
+        ----------------
+            - Calculate x, y, z offsets based on orientation and distance
+            - Add offsets to base x, y, z to get true position
+            - Return true position as a 3D vector
+        """
         x, y, z = self.x, self.y, self.z
         x += math.cos(self.yaw) * math.cos(self.pitch - math.pi / 2) * self.distance
         y += math.sin(self.yaw) * math.cos(self.pitch - math.pi / 2) * self.distance

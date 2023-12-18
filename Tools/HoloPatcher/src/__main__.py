@@ -464,7 +464,10 @@ class App(tk.Tk):
         self.focus_set()
 
     def on_namespace_option_hover(self) -> str:
-        namespace_option: PatcherNamespace | None = next((x for x in self.namespaces if x.name == self.namespaces_combobox.get()), None)
+        namespace_option: PatcherNamespace | None = next(
+            (x for x in self.namespaces if x.name == self.namespaces_combobox.get()),
+            None,
+        )
         return namespace_option.description if namespace_option else ""
 
     def on_namespace_option_chosen(self, event: tk.Event, config_reader: ConfigReader | None = None) -> None:
@@ -651,7 +654,7 @@ class App(tk.Tk):
                 (
                     f"HoloPatcher needs permissions to access this folder '{directory!s}'. {os.linesep}"
                     f"{os.linesep}"
-                    f"Please ensure the folder is writeable or rerun holopatcher with elevated privileges.{os.linesep}"
+                    f"Please ensure the necessary folders are writeable or rerun holopatcher with elevated privileges.{os.linesep}"
                     "Continue with an install anyway?"
                 ),
             )

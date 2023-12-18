@@ -10,7 +10,7 @@ from pykotor.resource.formats.erf import ERFType, read_erf, write_erf
 from pykotor.resource.formats.rim import read_rim, write_rim
 from pykotor.resource.type import ResourceType
 from pykotor.tools import module
-from pykotor.tools.misc import is_bif_file, is_capsule_file, is_erf_or_mod_file, is_rim_file
+from pykotor.tools.misc import is_any_erf_type_file, is_bif_file, is_capsule_file, is_rim_file
 from PyQt5 import QtCore
 from PyQt5.QtGui import QIcon, QPixmap
 from PyQt5.QtWidgets import QFileDialog, QLineEdit, QMainWindow, QMessageBox, QPlainTextEdit, QShortcut, QWidget
@@ -184,9 +184,6 @@ class Editor(QMainWindow):
             else:
                 self._filepath = Path(filepath_str)
                 self._resref, self._restype = ResourceIdentifier.from_path(self._filepath).validate()
-                if self._restype is ResourceType.INVALID:
-                    msg = f"Invalid resource type: {self._restype.extension}"
-                    raise TypeError(msg)
             self.save()
 
             self.refreshWindowTitle()
@@ -217,7 +214,7 @@ class Editor(QMainWindow):
                 self._saveEndsWithBif(data, data_ext)
             elif is_rim_file(self._filepath.name):
                 self._saveEndsWithRim(data, data_ext)
-            elif is_erf_or_mod_file(self._filepath.name):
+            elif is_any_erf_type_file(self._filepath.name):
                 self._saveEndsWithErf(data, data_ext)
             else:
                 self._saveEndsWithOther(data, data_ext)

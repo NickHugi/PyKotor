@@ -1,13 +1,12 @@
 """This module handles classes relating to editing ERF files."""
 from __future__ import annotations
 
-from copy import copy
 from enum import Enum
 from typing import TYPE_CHECKING, Any
 
 from pykotor.common.misc import ResRef
 from pykotor.resource.type import ResourceType
-from pykotor.tools.misc import is_erf_file, is_mod_file
+from pykotor.tools.misc import is_erf_file, is_mod_file, is_sav_file
 
 if TYPE_CHECKING:
     import os
@@ -18,6 +17,7 @@ class ERFType(Enum):
 
     ERF = "ERF "
     MOD = "MOD "
+    SAV = "SAV "
 
     @staticmethod
     def from_extension(filepath: os.PathLike | str) -> ERFType:
@@ -25,6 +25,8 @@ class ERFType(Enum):
             return ERFType.ERF
         if is_mod_file(filepath):
             return ERFType.MOD
+        if is_sav_file(filepath):
+            return ERFType.SAV
         msg = f"Invalid ERF extension in filepath '{filepath}'."
         raise ValueError(msg)
 
@@ -52,9 +54,8 @@ class ERF:
     def __iter__(
         self,
     ):
-        """Iterates through the stored resources yielding a copied resource each iteration."""
-        for resource in self._resource_dict.values():
-            yield copy(resource)
+        """Iterates through the stored resources yielding a resource each iteration."""
+        yield from self._resource_dict.values()
 
     def __len__(
         self,

@@ -31,7 +31,12 @@ from pykotor.resource.generics.uts import UTS, bytes_uts, read_uts
 from pykotor.resource.generics.utt import UTT, bytes_utt, read_utt
 from pykotor.resource.generics.utw import UTW, bytes_utw, read_utw
 from pykotor.resource.type import ResourceType
-from pykotor.tools.misc import is_bif_file, is_capsule_file, is_erf_file, is_erf_or_mod_file, is_rim_file
+from pykotor.tools.misc import (
+    is_any_erf_type_file,
+    is_bif_file,
+    is_capsule_file,
+    is_rim_file,
+)
 from pykotor.tools.model import list_lightmaps, list_textures
 from utility.path import Path, PurePath
 
@@ -1264,9 +1269,9 @@ class ModuleResource(Generic[T]):
             msg = "Cannot save file to BIF."
             raise ValueError(msg)
 
-        if is_erf_or_mod_file(self._active.name):
+        if is_any_erf_type_file(self._active.name):
             erf = read_erf(self._active)
-            erf.erf_type = ERFType.ERF if is_erf_file(self._active.name) else ERFType.MOD
+            erf.erf_type = ERFType.from_extension(self._active.name)
             erf.set_data(
                 self._resname,
                 self._restype,

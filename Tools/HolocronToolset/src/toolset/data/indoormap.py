@@ -19,7 +19,7 @@ from pykotor.resource.formats.vis import VIS, bytes_vis
 from pykotor.resource.generics.are import ARE, ARENorthAxis, bytes_are
 from pykotor.resource.generics.git import GIT, GITDoor, bytes_git
 from pykotor.resource.generics.ifo import IFO, bytes_ifo
-from pykotor.resource.generics.utd import bytes_utd
+from pykotor.resource.generics.utd import UTD, bytes_utd
 from pykotor.resource.type import ResourceType
 from pykotor.tools import model
 from PyQt5 import QtCore
@@ -80,10 +80,10 @@ class IndoorMap:
 
         Processing Logic:
         ----------------
-        1. Loops through each room and connection
-        2. Determines door, rooms, hooks and positions
-        3. Checks if door already exists at point
-        4. Adds valid door insertion to return list.
+            1. Loops through each room and connection
+            2. Determines door, rooms, hooks and positions
+            3. Checks if door already exists at point
+            4. Adds valid door insertion to return list.
         """
         points = []  # Used to determine if door already exists at this point
         insertions = []
@@ -137,9 +137,9 @@ class IndoorMap:
 
         Processing Logic:
         ----------------
-        - Iterate through rooms and add component to usedRooms set
-        - Iterate through usedRooms and add mdl to scanMdls and kit to usedKits
-        - Iterate through door padding dicts and values, adding padding mdl to scanMdls.
+            - Iterate through rooms and add component to usedRooms set
+            - Iterate through usedRooms and add mdl to scanMdls and kit to usedKits
+            - Iterate through door padding dicts and values, adding padding mdl to scanMdls.
         """
         for room in self.rooms:
             self.usedRooms.add(room.component)
@@ -211,16 +211,13 @@ class IndoorMap:
             bwm = self.process_bwm(room)
             self.add_bwm_resource(modelname, bwm)
 
-    def add_static_resources(self, room):
+    def add_static_resources(self, room: IndoorMapRoom):
         """Adds static resources from a room's kit to the mod.
 
         Args:
         ----
             room: The room object containing static resources.
 
-        Returns:
-        -------
-            None: No value is returned.
         Processes static resources:
             - Loops through each static resource filename and data in the room's kit
             - Extracts the resource name and type from the filename
@@ -228,7 +225,7 @@ class IndoorMap:
         """
         for filename, data in room.component.kit.always.items():
             resname, restype = ResourceIdentifier.from_path(filename)
-            if restype is ResourceType.INVALID:
+            if restype == ResourceType.INVALID:
                 print("Invalid resource, skipping...", filename, restype)
                 continue
             self.mod.set_data(resname, restype, data)
@@ -245,6 +242,7 @@ class IndoorMap:
         -------
             mdl: str: The processed model string
             mdx: str: The processed material index string
+
         Processing Logic:
         ----------------
             - Flip the model based on room flip_x and flip_y properties
@@ -258,19 +256,24 @@ class IndoorMap:
         return mdl, mdx
 
     def process_lightmaps(self, room: IndoorMapRoom, mdl):
-        """Processes lightmaps for a room
+        """Processes lightmaps for a room.
+
         Args:
+        ----
             room (IndoorMapRoom): The room to process lightmaps for
             mdl: The model to process lightmaps on
+
         Returns:
+        -------
             mdl: The model with renamed lightmaps
+
         Processing Logic:
         ----------------
             - Renames each lightmap to a unique name prefixed with the module ID
             - Sets the renamed lightmap and txi textures in the mod
             - Returns the model with all lightmaps renamed according to the mapping.
         """
-        lm_renames = {}
+        lm_renames: dict[str, str] = {}
         for lightmap in model.list_lightmaps(mdl):
             renamed = f"{self.moduleId}_lm{self.totalLm}"
             self.totalLm += 1
@@ -280,16 +283,19 @@ class IndoorMap:
         mdl = model.change_lightmaps(mdl, lm_renames)
 
     def add_model_resources(self, modelname, mdl, mdx):
-        """Adds model resources to the mod object
+        """Adds model resources to the mod object.
+
         Args:
+        ----
             modelname: Name of the model
             mdl: MDL file data
             mdx: MDX file data
-        Returns:
-            None: Does not return anything
-        - Sets the MDL file data for the given modelname using ResourceType.MDL
-        - Sets the MDX file data for the given modelname using ResourceType.MDX
-        - Does not return anything, just adds the resources to the mod object.
+
+        Processing Logic:
+        ----------------
+            - Sets the MDL file data for the given modelname using ResourceType.MDL
+            - Sets the MDX file data for the given modelname using ResourceType.MDX
+            - Does not return anything, just adds the resources to the mod object.
         """
         self.mod.set_data(modelname, ResourceType.MDL, mdl)
         self.mod.set_data(modelname, ResourceType.MDX, mdx)
@@ -300,8 +306,11 @@ class IndoorMap:
         Args:
         ----
             room: {IndoorMapRoom}: Room object containing BWM and transform info
+
         Returns:
+        -------
             bwm: {OccupancyGridMap}: Processed BWM for the room
+
         Processing Logic:
         ----------------
             - Make a deep copy of the room BWM
@@ -309,7 +318,7 @@ class IndoorMap:
             - Remap transition indices to reference connected rooms
             - Return the processed BWM.
         """
-        bwm = deepcopy(room.component.bwm)
+        bwm: BWM = deepcopy(room.component.bwm)
         bwm.flip(room.flip_x, room.flip_y)
         bwm.rotate(room.rotation)
         bwm.translate(room.position.x, room.position.y, room.position.z)
@@ -327,11 +336,12 @@ class IndoorMap:
             bwm: BWM object containing faces
             dummyIndex: Dummy transition index to remap
             actualIndex: Actual transition index to remap to
-        Returns:
-            None: Function does not return anything
-        - Loops through each face in the BWM object
-        - Checks if the face's trans1, trans2 or trans3 attribute equals the dummy index
-        - If so, replaces it with the actual index.
+
+        Processing Logic:
+        ----------------
+            - Loops through each face in the BWM object
+            - Checks if the face's trans1, trans2 or trans3 attribute equals the dummy index
+            - If so, replaces it with the actual index.
         """
         for face in bwm.faces:
             if face.trans1 == dummyIndex:
@@ -345,19 +355,20 @@ class IndoorMap:
         self.mod.set_data(modelname, ResourceType.WOK, bytes_bwm(bwm))
 
     def _handle_door_insertions(self, installation):
-        """Handle door insertions
+        """Handle door insertions.
+
         Args:
+        ----
             self: The class instance
             installation: The installation details
-        Returns:
-            None: No value is returned
+
         Processing Logic:
         ----------------
-        1. Loops through each door insertion
-        2. Creates a door object and sets properties
-        3. Copies UTD data and sets properties
-        4. Adds door to layout and visibility graphs
-        5. Checks for height/width padding needs and adds if needed.
+            1. Loops through each door insertion
+            2. Creates a door object and sets properties
+            3. Copies UTD data and sets properties
+            4. Adds door to layout and visibility graphs
+            5. Checks for height/width padding needs and adds if needed.
         """
         paddingCount = 0
         for i, insert in enumerate(self.doorInsertions()):
@@ -367,7 +378,7 @@ class IndoorMap:
             door.tweak_color = None
             self.git.doors.append(door)
 
-            utd = deepcopy(insert.door.utdK2 if installation.tsl else insert.door.utdK1)
+            utd: UTD = deepcopy(insert.door.utdK2 if installation.tsl else insert.door.utdK1)
             utd.resref = door.resref
             utd.static = insert.static
             utd.tag = door.resref.get().title().replace("_", "")
@@ -413,14 +424,14 @@ class IndoorMap:
                         self.lyt.rooms.append(LYTRoom(paddingName, insert.position))
                         self.vis.add_room(paddingName)
                 if insert.hook1.door.width != insert.hook2.door.width:
-                    cRoom = insert.room if insert.hook1.door.height < insert.hook2.door.height else insert.room2
-                    cHook = insert.hook1 if insert.hook1.door.height < insert.hook2.door.height else insert.hook2
-                    altHook = insert.hook2 if insert.hook1.door.height < insert.hook2.door.height else insert.hook1
+                    cRoom: IndoorMapRoom = insert.room if insert.hook1.door.height < insert.hook2.door.height else insert.room2
+                    cHook: KitComponentHook = insert.hook1 if insert.hook1.door.height < insert.hook2.door.height else insert.hook2
+                    altHook: KitComponentHook = insert.hook2 if insert.hook1.door.height < insert.hook2.door.height else insert.hook1
 
-                    kit = cRoom.component.kit
-                    doorIndex = kit.doors.index(cHook.door)
-                    width = altHook.door.width * 100
-                    paddingKey = (
+                    kit: Kit = cRoom.component.kit
+                    doorIndex: int = kit.doors.index(cHook.door)
+                    width: float = altHook.door.width * 100
+                    paddingKey: int | None = (
                         min((i for i in kit.side_padding[doorIndex] if i > width), default=None)
                         if doorIndex in kit.side_padding
                         else None
@@ -435,7 +446,7 @@ class IndoorMap:
                         )
                         pad_mdl = model.convert_to_k2(pad_mdl) if installation.tsl else model.convert_to_k1(pad_mdl)
                         pad_mdl = model.change_textures(pad_mdl, self.texRenames)
-                        lmRenames = {}
+                        lmRenames: dict[str, str] = {}
                         for lightmap in model.list_lightmaps(pad_mdl):
                             renamed = f"{self.moduleId}_lm{self.totalLm}"
                             self.totalLm += 1
@@ -449,11 +460,12 @@ class IndoorMap:
                         self.vis.add_room(paddingName)
 
     def process_skybox(self, kits):
-        """Process the skybox for the module
+        """Process the skybox for the module.
+
         Args:
+        ----
             kits: List of kit objects containing skybox models
-        Returns:
-            None: No value is returned
+
         Processing Logic:
         ----------------
             - Check if a skybox is specified for the module
@@ -475,17 +487,20 @@ class IndoorMap:
                     self.vis.add_room(modelName)
 
     def generate_and_set_minimap(self):
-        """Generates and sets the minimap texture
+        """Generates and sets the minimap texture.
+
         Args:
+        ----
             self: The module object
-        Returns:
-            None: No value is returned
-        - Generates a 256x512 minimap image from the module view
-        - Converts the image to a bytearray with RGBA pixel values
-        - Creates a TPC texture from the bytearray
-        - Sets the TPC texture as the module's minimap label texture.
+
+        Processing Logic:
+        ----------------
+            - Generates a 256x512 minimap image from the module view
+            - Converts the image to a bytearray with RGBA pixel values
+            - Creates a TPC texture from the bytearray
+            - Sets the TPC texture as the module's minimap label texture.
         """
-        minimap = self.generateMinimap()
+        minimap: MinimapData = self.generateMinimap()
         tpcData = bytearray()
         for y, x in itertools.product(range(256), range(512)):
             pixel = QColor(minimap.image.pixel(x, y))
@@ -495,25 +510,27 @@ class IndoorMap:
         self.mod.set_data(f"lbl_map{self.moduleId}", ResourceType.TGA, bytes_tpc(minimapTpc, ResourceType.TGA))
 
     def handle_loadscreen(self, installation):
-        """Handles loading screen for installation
+        """Handles loading screen for installation.
+
         Args:
+        ----
             installation: The installation object
-        Returns:
-            None: Does not return anything
-        - Loads the appropriate load screen TGA file based on installation type
-        - Sets the loaded TGA as load screen data for the module.
+
+        Processing Logic:
+        ----------------
+            - Loads the appropriate load screen TGA file based on installation type
+            - Sets the loaded TGA as load screen data for the module.
         """
         loadTga = (BinaryReader.load_file("./kits/load_k2.tga") if installation.tsl else BinaryReader.load_file("./kits/load_k1.tga"))
         self.mod.set_data(f"load_{self.moduleId}", ResourceType.TGA, loadTga)
 
-    def set_area_attributes(self, minimap):
-        """Sets area attributes from minimap data
+    def set_area_attributes(self, minimap: MinimapData):
+        """Sets area attributes from minimap data.
+
         Args:
+        ----
             minimap: {Minimap object containing area bounds}.
 
-        Returns
-        -------
-            None: {No return value}
         Processing Logic:
         ----------------
             - Set area tag from module ID
@@ -535,16 +552,19 @@ class IndoorMap:
         self.are.north_axis = ARENorthAxis.NegativeY
 
     def set_ifo_attributes(self):
-        """Sets attributes of IFO object
+        """Sets attributes of IFO object.
+
         Args:
+        ----
             self: The class instance
-        Returns:
-            None: No return value
-        - Sets tag attribute of IFO object to module ID
-        - Sets area_name attribute of IFO object to module ID resource reference
-        - Sets identifier attribute of IFO object to module ID resource reference
-        - Calls set_all_visible() method on vis object to set all objects visible
-        - Sets entry_position attribute of IFO object to warpPoint.
+
+        Processing Logic:
+        ----------------
+            - Sets tag attribute of IFO object to module ID
+            - Sets area_name attribute of IFO object to module ID resource reference
+            - Sets identifier attribute of IFO object to module ID resource reference
+            - Calls set_all_visible() method on vis object to set all objects visible
+            - Sets entry_position attribute of IFO object to warpPoint.
         """
         self.ifo.tag = self.moduleId
         self.ifo.area_name = ResRef(self.moduleId)
@@ -553,11 +573,16 @@ class IndoorMap:
         self.ifo.entry_position = self.warpPoint
 
     def finalize_module_data(self, output_path: os.PathLike | str):
-        """Finalizes module data and writes it to an ERF file
+        """Finalizes module data and writes it to an ERF file.
+
         Args:
+        ----
             output_path: os.PathLike | str - Path to output ERF file
+
         Returns:
+        -------
             None - Writes module data to ERF file
+
         Processing Logic:
         ----------------
             - Sets module data for LYT, VIS, ARE, GIT resources
@@ -581,21 +606,17 @@ class IndoorMap:
             kits: list[Kit] - List of available kits.
             output_path: os.PathLike | str - Path to output the built indoor map.
 
-        Returns:
-        -------
-            None
-
         Processing Logic:
         ----------------
-        - Adds all rooms from components to the indoor map
-        - Processes room components like inserting textures and models
-        - Handles textures renaming and lightmap generation
-        - Processes skybox from kits
-        - Generates and sets minimap
-        - Handles loadscreen attributes
-        - Inserts door connections
-        - Sets area and info attributes
-        - Finalizes and saves the indoor map data
+            - Adds all rooms from components to the indoor map
+            - Processes room components like inserting textures and models
+            - Handles textures renaming and lightmap generation
+            - Processes skybox from kits
+            - Generates and sets minimap
+            - Handles loadscreen attributes
+            - Inserts door connections
+            - Sets area and info attributes
+            - Finalizes and saves the indoor map data
         """
         self.mod = ERF(ERFType.MOD)
         self.lyt = LYT()
@@ -624,15 +645,20 @@ class IndoorMap:
         self.finalize_module_data(output_path)
 
     def write(self) -> bytes:
-        """Writes module data to bytes
+        """Writes module data to bytes.
+
         Args:
+        ----
             self: The Module object
+
         Returns:
-            bytes: Serialized module data as bytes
+        -------
+            bytes: Serialized module data encoded as utf-8 bytes
+
         Writes module data to bytes:
-        - Collects module data like name, lighting, skybox etc into a dictionary
-        - Serializes room data like position, rotation etc for each room
-        - Converts dictionary to JSON and encodes to bytes.
+            - Collects module data like name, lighting, skybox etc into a dictionary
+            - Serializes room data like position, rotation etc for each room
+            - Converts dictionary to JSON and encodes to bytes.
         """
         data: dict[str, str | dict | list] = {"moduleId": self.moduleId, "name": {}}
 
@@ -660,15 +686,18 @@ class IndoorMap:
         return json.dumps(data).encode()
 
     def load(self, raw: bytes, kits: list[Kit]) -> None:
-        """Load raw data and initialize the map
+        """Load raw data and initialize the map.
+
         Args:
+        ----
             raw: Raw bytes data to load
             kits: List of available kits
-        Returns:
-            None
-        - Decode raw data from JSON format
-        - Try to load map data and initialize with available kits
-        - Raise error if corrupted data is encountered during loading.
+
+        Processing Logic:
+        ----------------
+            - Decode raw data from JSON format
+            - Try to load map data and initialize with available kits
+            - Raise error if corrupted data is encountered during loading.
         """
         self.reset()
         data = json.loads(raw)
@@ -680,12 +709,18 @@ class IndoorMap:
             raise ValueError(msg) from e
 
     def _load_data(self, data, kits):
-        """Load data into an indoor map object
+        """Load data into an indoor map object.
+
         Args:
+        ----
+            self: The indoor map object
             data: The indoor map data
             kits: Available kits
+
         Returns:
-            self: The indoor map object with data loaded
+        -------
+            None: Loads the data into the indoor map object
+
         Processing Logic:
         ----------------
             - Load name data from stringrefs
@@ -740,8 +775,11 @@ class IndoorMap:
         Args:
         ----
             self: The level object containing room data
+
         Returns:
+        -------
             MinimapData: A data object containing the minimap image and bounding points
+
         Processing Logic:
         ----------------
             1. Get the bounding box of all walkmeshes
@@ -840,8 +878,11 @@ class IndoorMapRoom:
         ----
             hook (KitComponentHook): The hook to calculate the position for
             worldOffset (bool): Whether to offset the position by the component's world position
+
         Returns:
+        -------
             Vector3: The calculated position of the hook
+
         Processing Logic:
         ----------------
             - Copies the hook's position
@@ -867,13 +908,16 @@ class IndoorMapRoom:
         return pos
 
     def rebuildConnections(self, rooms: list[IndoorMapRoom]) -> None:
-        """Rebuilds connections between rooms
+        """Rebuilds connections between rooms.
+
         Args:
+        ----
             rooms: {List of rooms to rebuild connections from}.
 
-        Returns
+        Returns:
         -------
             None: {No return value}
+
         Processing Logic:
         ----------------
             - Loops through each hook in the component's hooks
@@ -906,10 +950,13 @@ class IndoorMapRoom:
         Returns:
         -------
             bwm: A translated and rotated copy of the component's BWM.
-        - A deep copy of the component's BWM is made to avoid modifying the original.
-        - The copy is rotated by the component's rotation value.
-        - The copy is translated to the component's position.
-        - The translated and rotated copy is returned.
+
+        Processing Logic:
+        ----------------
+            - A deep copy of the component's BWM is made to avoid modifying the original.
+            - The copy is rotated by the component's rotation value.
+            - The copy is translated to the component's position.
+            - The translated and rotated copy is returned.
         """
         bwm = deepcopy(self.component.bwm)
         bwm.rotate(self.rotation)

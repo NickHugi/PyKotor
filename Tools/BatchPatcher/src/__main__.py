@@ -66,7 +66,7 @@ OUTPUT_LOG: Path
 LOGGING_ENABLED: bool
 processed_files: set[Path] = set()
 
-gff_types = [x.value.lower().strip() for x in GFFContent]
+gff_types: list[str] = [x.value.lower().strip() for x in GFFContent]
 fieldtype_to_fieldname: dict[GFFFieldType, str] = {
     GFFFieldType.UInt8: "Byte",
     GFFFieldType.Int8: "Char",
@@ -167,7 +167,7 @@ def relative_path_from_to(src: PurePath, dst: PurePath) -> Path:
         ),
         len(src_parts),
     )
-    rel_parts = dst_parts[common_length:]
+    rel_parts: list[str] = dst_parts[common_length:]
     return Path(*rel_parts)
 
 
@@ -179,7 +179,7 @@ def log_output(*args, **kwargs) -> None:
     print(*args, file=buffer, **kwargs)
 
     # Retrieve the printed content
-    msg = buffer.getvalue()
+    msg: str = buffer.getvalue()
 
     # Write the captured output to the file
     with Path("log_batch_patcher.log").open("a", errors="ignore") as f:
@@ -196,8 +196,8 @@ def visual_length(s: str, tab_length=8) -> int:
 
     # Split the string at tabs, sum the lengths of the substrings,
     # and add the necessary spaces to account for the tab stops.
-    parts = s.split("\t")
-    vis_length = sum(len(part) for part in parts)
+    parts: list[str] = s.split("\t")
+    vis_length: int = sum(len(part) for part in parts)
     for part in parts[:-1]:  # all parts except the last one
         vis_length += tab_length - (len(part) % tab_length)
     return vis_length
@@ -224,7 +224,7 @@ def patch_nested_gff(
     for label, ftype, value in gff_struct:
         if label.lower() == "mod_name":
             continue
-        child_path = current_path / label
+        child_path: PureWindowsPath = current_path / label
 
         if ftype == GFFFieldType.Struct:
             assert isinstance(value, GFFStruct)  # noqa: S101
@@ -242,7 +242,7 @@ def patch_nested_gff(
 
         if ftype == GFFFieldType.LocalizedString and SCRIPT_GLOBALS.translate:  # and gff_content.value == GFFContent.DLG.value:
             assert isinstance(value, LocalizedString)  # noqa: S101
-            new_substrings = deepcopy(value._substrings)
+            new_substrings: dict[int, str] = deepcopy(value._substrings)
             for lang, gender, text in value:
                 if SCRIPT_GLOBALS.pytranslator is not None and text is not None and text.strip():
                     log_output_with_separator(f"Translating CExoLocString at {child_path} to {SCRIPT_GLOBALS.pytranslator.to_lang.name}", above=True)
@@ -330,20 +330,20 @@ def patch_resource(resource: FileResource) -> GFF | TPC | None:
             ):
                 return gff
         except Exception as e:  # noqa: BLE001
-            log_output(f"[Error] loading GFF {resource.resname()} at {resource.filepath()}! {e!r}")
+            log_output(f"[Error] loading GFF '{resource.resname()}.{resource.restype().extension}' at '{resource.filepath()}'! {e!r}")
             #raise
             return None
 
         if not gff:
-            log_output(f"GFF resource {resource.resname()} missing in memory:\t'{resource.filepath()}'")
+            log_output(f"GFF resource '{resource.resname()}.{resource.restype().extension}' missing in memory at '{resource.filepath()}'")
             return None
     return None
 
-def patch_and_save_noncapsule(resource: FileResource):
+def patch_and_save_noncapsule(resource: FileResource, savedir: Path | None = None):
     patched_data: GFF | TPC | None = patch_resource(resource)
     if patched_data is None:
         return
-    new_path = resource.filepath()
+    new_path = savedir or resource.filepath()
     if isinstance(patched_data, GFF):
         new_data = bytes_gff(patched_data)
 
@@ -359,7 +359,6 @@ def patch_and_save_noncapsule(resource: FileResource):
             with txi_file.open() as f:
                 patched_data.txi = f.read()
         TPCTGAWriter(patched_data, new_path.with_suffix(".tpc")).write()
-        resource.filepath().unlink()
 
 def patch_capsule_file(c_file: Path):
     new_data: bytes
@@ -438,7 +437,7 @@ def patch_file(file: os.PathLike | str) -> None:
         patch_capsule_file(c_file)
     else:
         resname, restype = ResourceIdentifier.from_path(c_file)
-        if restype is ResourceType.INVALID:
+        if restype == ResourceType.INVALID:
             return
         patch_and_save_noncapsule(
             FileResource(
@@ -471,7 +470,7 @@ def patch_install(install_path: os.PathLike | str) -> None:
             new_rim = RIM()
             new_rim_filename = patch_erf_or_rim(resources, module_name, new_rim)
             write_rim(new_rim, k_install.path() / new_rim_filename)
-        elif restype in [ResourceType.MOD, ResourceType.ERF]:
+        elif restype in [ResourceType.MOD, ResourceType.ERF, ResourceType.SAV]:
             new_erf = ERF()
             new_erf_filename = patch_erf_or_rim(resources, module_name, new_erf)
             write_erf(new_erf, k_install.path() / new_erf_filename, restype)
@@ -488,6 +487,12 @@ def patch_install(install_path: os.PathLike | str) -> None:
     for folder in k_install.override_list():
         for resource in k_install.override_resources(folder):
             patch_and_save_noncapsule(resource)
+
+    # Patch bif data and save to Override
+    override_path = k_install.override_path()
+    override_path.mkdir(exist_ok=True, parents=True)
+    for resource in k_install.chitin_resources():
+        patch_and_save_noncapsule(resource, savedir=override_path)
 
     patch_file(k_install.path().joinpath("dialog.tlk"))
 

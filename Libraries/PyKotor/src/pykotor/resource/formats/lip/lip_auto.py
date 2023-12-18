@@ -98,7 +98,7 @@ def read_lip(
         return LIPXMLReader(source, offset, size or 0).load()
     if file_format == ResourceType.LIP_JSON:
         return LIPJSONReader(source, offset, size or 0).load()
-    #if file_format is ResourceType.INVALID:
+    #if file_format == ResourceType.INVALID:
     msg = "Failed to determine the format of the GFF file."
     raise ValueError(msg)
 

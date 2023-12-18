@@ -94,7 +94,7 @@ def read_ssf(
     """
     file_format = detect_ssf(source, offset)
 
-    if file_format is ResourceType.INVALID:
+    if file_format == ResourceType.INVALID:
         msg = "Failed to determine the format of the GFF file."
         raise ValueError(msg)
 

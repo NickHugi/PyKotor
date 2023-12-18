@@ -95,7 +95,7 @@ def read_tlk(
     """
     file_format: ResourceType = detect_tlk(source, offset)
 
-    if file_format is ResourceType.INVALID:
+    if file_format == ResourceType.INVALID:
         msg = "Failed to determine the format of the TLK file."
         raise ValueError(msg)
 

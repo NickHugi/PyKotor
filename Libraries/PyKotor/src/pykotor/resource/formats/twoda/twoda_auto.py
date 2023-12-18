@@ -94,7 +94,7 @@ def read_2da(
     """
     file_format: ResourceType = detect_2da(source, offset)
 
-    if file_format is ResourceType.INVALID:
+    if file_format == ResourceType.INVALID:
         msg = "Failed to determine the format of the 2DA file."
         raise ValueError(msg)
 

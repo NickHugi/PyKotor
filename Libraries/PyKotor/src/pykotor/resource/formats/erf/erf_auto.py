@@ -57,7 +57,7 @@ def write_erf(
         PermissionError: If the file could not be written to the specified destination.
         ValueError: If the specified format was unsupported.
     """
-    if file_format in [ResourceType.ERF, ResourceType.MOD]:
+    if file_format in [ResourceType.ERF, ResourceType.MOD, ResourceType.SAV]:
         ERFBinaryWriter(erf, target).write()
     else:
         msg = "Unsupported format specified; use ERF or MOD."

@@ -97,8 +97,7 @@ def read_gff(
         return GFFXMLReader(source, offset, size or 0).load()
 
     msg = "Failed to determine the format of the GFF file."
-    if file_format is ResourceType.INVALID:
-        raise ValueError(msg)
+    #if file_format == ResourceType.INVALID:
     raise ValueError(msg)
 
 

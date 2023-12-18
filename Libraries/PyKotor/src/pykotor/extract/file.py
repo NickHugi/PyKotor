@@ -94,7 +94,7 @@ class FileResource:
                 from pykotor.extract.capsule import Capsule
 
                 capsule = Capsule(self._filepath)
-                res: FileResource = capsule.info(self._resname, self._restype)
+                res: FileResource | None = capsule.info(self._resname, self._restype)
                 self._offset = res.offset()
                 self._size = res.size()
             elif not is_bif_file(self._filepath.name):
@@ -153,7 +153,7 @@ class ResourceIdentifier(NamedTuple):
 
     def validate(self):
         restype = self.restype
-        if restype is ResourceType.INVALID:
+        if restype == ResourceType.INVALID:
             msg = f"Invalid resource type: {restype.extension}"
             raise ValueError(msg)
         return self

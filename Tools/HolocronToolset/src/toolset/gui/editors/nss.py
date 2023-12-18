@@ -9,7 +9,7 @@ from pykotor.common.stream import BinaryWriter
 from pykotor.resource.formats.erf import ERF, read_erf, write_erf
 from pykotor.resource.formats.rim import RIM, read_rim, write_rim
 from pykotor.resource.type import ResourceType
-from pykotor.tools.misc import is_bif_file, is_erf_or_mod_file, is_rim_file
+from pykotor.tools.misc import is_any_erf_type_file, is_bif_file, is_rim_file
 from PyQt5 import QtCore
 from PyQt5.QtCore import QRect, QRegExp, QSize
 from PyQt5.QtGui import (
@@ -42,20 +42,21 @@ class NSSEditor(Editor):
     TAB_AS_SPACE = True
 
     def __init__(self, parent: QWidget | None, installation: HTInstallation | None):
-        """Initialize the script editor window
+        """Initialize the script editor window.
+
         Args:
+        ----
             parent: QWidget | None: The parent widget
             installation: HTInstallation | None: The installation object
-        Returns:
-            None: Does not return anything
+
         Processing Logic:
         ----------------
-        1. Call the base class initializer
-        2. Load the UI from the designer file
-        3. Set up menus and signals
-        4. Initialize member variables like length, global settings and syntax highlighter
-        5. Set the tab size for the code editor
-        6. Create a new empty script.
+            1. Call the base class initializer
+            2. Load the UI from the designer file
+            3. Set up menus and signals
+            4. Initialize member variables like length, global settings and syntax highlighter
+            5. Set the tab size for the code editor
+            6. Create a new empty script.
         """
         supported = [ResourceType.NSS, ResourceType.NCS]
         super().__init__(parent, "Script Editor", "script", supported, supported, installation)
@@ -83,10 +84,6 @@ class NSSEditor(Editor):
         ----
             self: The class instance.
 
-        Returns:
-        -------
-            None: No return value.
-
         Processing Logic:
         ----------------
             - Connect compile action to compileCurrentScript slot
@@ -113,16 +110,17 @@ class NSSEditor(Editor):
         QShortcut("Ctrl+I", self).activated.connect(self.onInsertShortcut)
 
     def setInstallation(self, installation: HTInstallation) -> None:
-        """Sets the installation for the editor
+        """Sets the installation for the editor.
+
         Args:
+        ----
             installation: {Installation}: The installation to set.
 
-        Returns
-        -------
-            None: No return value.
-        - Sets the global constants and functions based on the installation type (TSL or KOTOR)
-        - Sorts the constants and functions alphabetically by name
-        - Adds each constant and function to their respective QListWidget, storing the actual object as user data.
+        Processing Logic:
+        ----------------
+            - Sets the global constants and functions based on the installation type (TSL or KOTOR)
+            - Sorts the constants and functions alphabetically by name
+            - Adds each constant and function to their respective QListWidget, storing the actual object as user data.
         """
         self._installation = installation
 
@@ -144,17 +142,20 @@ class NSSEditor(Editor):
             self.ui.constantList.addItem(item)
 
     def load(self, filepath: os.PathLike | str, resref: str, restype: ResourceType, data: bytes) -> None:
-        """Loads a resource into the editor
+        """Loads a resource into the editor.
+
         Args:
+        ----
             filepath: The path to the resource file
             resref: The resource reference
             restype: The resource type
             data: The raw resource data
-        Returns:
-            None
-        - Decodes NSS data and sets it as the editor text
-        - Attempts to decompile NCS data and sets decompiled source as editor text
-        - Catches errors during decompilation and displays message.
+
+        Processing Logic:
+        ----------------
+            - Decodes NSS data and sets it as the editor text
+            - Attempts to decompile NCS data and sets decompiled source as editor text
+            - Catches errors during decompilation and displays message.
         """
         super().load(filepath, resref, restype, data)
 
@@ -198,23 +199,19 @@ class NSSEditor(Editor):
         ----
             self: The class instance.
 
-        Returns:
-        -------
-            None: No value is returned.
-
         Processing Logic:
         ----------------
-        1. Compiles the script source code.
-        2. Determines the file path and extension to save to.
-        3. Writes the compiled data to the file.
-        4. Displays a success or failure message.
+            1. Compiles the script source code.
+            2. Determines the file path and extension to save to.
+            3. Writes the compiled data to the file.
+            4. Displays a success or failure message.
         """
         try:
             source = self.ui.codeEdit.toPlainText()
             data = compileScript(source, self._installation.tsl)
 
             filepath: Path = self._filepath if self._filepath is not None else Path.cwd() / "untitled_script.ncs"
-            if is_erf_or_mod_file(filepath.name):
+            if is_any_erf_type_file(filepath.name):
                 savePath = Path(filepath, f"{self._resref}.{self._restype.extension}")
                 erf: ERF = read_erf(filepath)
                 erf.set_data(self._resref, ResourceType.NCS, data)
@@ -241,14 +238,14 @@ class NSSEditor(Editor):
             QMessageBox(QMessageBox.Critical, "Failed to save file", str(e)).exec_()
 
     def changeDescription(self) -> None:
-        """Change the description textbox to whatever function or constant the user has selected. This should be activated
-        whenever the tab changes or the selection changes.
+        """Change the description textbox to whatever function or constant the user has selected.
+
+        This should be activated whenever the tab changes or the selection changes.
 
         Args:
         ----
             self: The class instance
-        Returns:
-            None: Does not return anything
+
         Processing Logic:
         ----------------
             - Clears the description edit text
@@ -305,13 +302,15 @@ class NSSEditor(Editor):
         self.ui.codeEdit.setTextCursor(cursor)
 
     def onTextChanged(self) -> None:
-        """Handles text changes in the code editor
+        """Handles text changes in the code editor.
+
         This method should be connected to codeEdit's textChanged signal. Its purpose is: to detect for newly inserted
-        line breaks so as to auto-indent the new line
+        line breaks so as to auto-indent the new line.
+
         Args:
+        ----
             self: The NSSEditor instance
-        Returns:
-            None: Does not return anything
+
         Processing Logic:
         ----------------
             - Check if text was inserted not deleted
@@ -339,7 +338,8 @@ class NSSEditor(Editor):
         self._length = len(self.ui.codeEdit.toPlainText())
 
     def onInsertShortcut(self) -> None:
-        """Inserts selected shortcut based on active tab
+        """Inserts selected shortcut based on active tab.
+
         This method should be connected to the activated signal of a QShortcut. Its purpose is to insert a constant or
         function depending on which tab is currently open at the time.
 
@@ -347,9 +347,11 @@ class NSSEditor(Editor):
         ----
             self: The class instance.
 
-        - Check current index of tabWidget
-        - If index is 0, call insertSelectedFunction()
-        - If index is 1, call insertSelectedConstant()
+        Processing Logic:
+        ----------------
+            - Check current index of tabWidget
+            - If index is 0, call insertSelectedFunction()
+            - If index is 1, call insertSelectedConstant()
         """
         if self.ui.tabWidget.currentIndex() == 0:
             self.insertSelectedFunction()
@@ -399,17 +401,20 @@ class CodeEditor(QPlainTextEdit):
         self._highlightCurrentLine()
 
     def lineNumberAreaPaintEvent(self, e: QPaintEvent) -> None:
-        """Draws line numbers in the line number area
+        """Draws line numbers in the line number area.
+
         Args:
+        ----
             e (QPaintEvent): Paint event
-        Returns:
-            None
-        - Gets the painter object for the line number area
-        - Fills the rect with a light gray color
-        - Gets the first visible block and its top position
-        - Loops through visible blocks within the paint rect
-            - Draws the block number at the top position
-            - Updates the top position for the next block.
+
+        Processing Logic:
+        ----------------
+            - Gets the painter object for the line number area
+            - Fills the rect with a light gray color
+            - Gets the first visible block and its top position
+            - Loops through visible blocks within the paint rect
+                - Draws the block number at the top position
+                - Updates the top position for the next block.
         """
         painter = QPainter(self._lineNumberArea)
         painter.fillRect(e.rect(), QColor(230, 230, 230))
@@ -447,9 +452,12 @@ class CodeEditor(QPlainTextEdit):
         Returns:
         -------
             int: The width in pixels needed to display line numbers.
-        - Calculates the number of digits needed to display the maximum line number.
-        - Uses the maximum line number and digit count to calculate the minimum space needed.
-        - Returns the larger of the minimum and calculated widths.
+
+        Processing Logic:
+        ----------------
+            - Calculates the number of digits needed to display the maximum line number.
+            - Uses the maximum line number and digit count to calculate the minimum space needed.
+            - Returns the larger of the minimum and calculated widths.
         """
         digits = 1
         maximum = max(1, self.blockCount())
@@ -470,16 +478,19 @@ class CodeEditor(QPlainTextEdit):
         self.setViewportMargins(self.lineNumberAreaWidth(), 0, 0, 0)
 
     def _highlightCurrentLine(self) -> None:
-        """Highlights the current line in the text editor
+        """Highlights the current line in the text editor.
+
         Args:
+        ----
             self: The text editor widget
-        Returns:
-            None
-        - Checks if the text editor is read only
-        - Creates a selection object and sets the background color and full width selection property
-        - Sets the selection cursor to the text cursor and clears any existing selection
-        - Appends the selection to the extra selections list
-        - Sets the extra selections on the text editor.
+
+        Processing Logic:
+        ----------------
+            - Checks if the text editor is read only
+            - Creates a selection object and sets the background color and full width selection property
+            - Sets the selection cursor to the text cursor and clears any existing selection
+            - Appends the selection to the extra selections list
+            - Sets the extra selections on the text editor.
         """
         extraSelections = []
 
@@ -533,12 +544,13 @@ class SyntaxHighlighter(QSyntaxHighlighter):
     BRACES: ClassVar[list[str]] = ["\\{", "\\}", "\\(", "\\)", "\\[", "\\]"]
 
     def __init__(self, parent: QTextDocument, installation: HTInstallation):
-        """Initializes the syntax highlighter
+        """Initializes the syntax highlighter.
+
         Args:
+        ----
             parent: QTextDocument: The parent text document
             installation: HTInstallation: The installation object
-        Returns:
-            None
+
         Initializes styles and rules:
             - Initializes style formats
             - Gets keywords, functions and constants from installation
@@ -589,11 +601,13 @@ class SyntaxHighlighter(QSyntaxHighlighter):
         Returns:
         -------
             None: No value is returned.
-        {Processing Logic}:
-        1. Checks if text is None and returns if so.
-        2. Loops through rules to find expressions and apply formatting.
-        3. Sets current block state to 0.
-        4. Finds comment blocks and applies comment formatting.
+
+        Processing Logic:
+        ----------------
+            1. Checks if text is None and returns if so.
+            2. Loops through rules to find expressions and apply formatting.
+            3. Sets current block state to 0.
+            4. Finds comment blocks and applies comment formatting.
         """
         if text is None:
             print("text cannot be None", "highlightBlock")

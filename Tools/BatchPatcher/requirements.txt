@@ -6,3 +6,4 @@ notify-py==0.3.42
 playwright>=1.30.0,<1.40
 pyquery==1.4.3
 arabic-reshaper==3.0.0
+Pillow>=9.5,<11
