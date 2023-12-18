@@ -9,9 +9,9 @@ from pykotor.resource.formats.mdl import MDL, read_mdl, write_mdl
 from pykotor.resource.formats.rim import read_rim
 from pykotor.resource.type import ResourceType
 from pykotor.tools.misc import is_any_erf_type_file, is_bif_file, is_rim_file
+from pykotor.tools.path import CaseAwarePath
 from PyQt5.QtWidgets import QMessageBox, QWidget
 from toolset.gui.editor import Editor
-from utility.path import Path
 
 if TYPE_CHECKING:
     import os
@@ -67,17 +67,13 @@ class MDLEditor(Editor):
             restype: {Resource type (MDL or MDX)}
             data: {Binary data of the resource}
 
-        Returns:
-        -------
-            None
-
         Loads associated MDL/MDX data:
             - Checks file extension and loads associated data from file
             - Loads associated data from Erf, Rim or Bif files if present
             - Sets model data on renderer if both MDL and MDX found
             - Displays error if unable to find associated data.
         """
-        c_filepath = Path(filepath)
+        c_filepath = filepath if isinstance(filepath, CaseAwarePath) else CaseAwarePath(filepath)
         super().load(c_filepath, resref, restype, data)
 
         mdl_data: bytes | None = None

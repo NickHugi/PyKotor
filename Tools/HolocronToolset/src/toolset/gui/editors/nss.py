@@ -222,9 +222,10 @@ class NSSEditor(Editor):
                 rim.set_data(self._resref, ResourceType.NCS, data)
                 write_rim(rim, filepath)
             else:
-                savePath = filepath.with_suffix(".ncs")
                 if not filepath or is_bif_file(filepath.name):
                     savePath = self._installation.override_path() / f"{self._resref}.ncs"
+                else:
+                    savePath = filepath.with_suffix(".ncs")
                 BinaryWriter.dump(savePath, data)
 
             QMessageBox(

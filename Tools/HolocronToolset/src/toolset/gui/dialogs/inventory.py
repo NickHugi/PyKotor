@@ -49,8 +49,10 @@ class InventoryEditor(QDialog):
     def __init__(self, parent: QWidget, installation: HTInstallation, capsules: list[Capsule], folders: list[str],
                  inventory: list[InventoryItem], equipment: dict[EquipmentSlot, InventoryItem], droid: bool = False,
                  hide_equipment: bool = False, is_store: bool = False):
-        """Initializes the inventory dialog
+        """Initializes the inventory dialog.
+
         Args:
+        ----
             parent (QWidget): Parent widget
             installation (HTInstallation): Homeworld installation
             capsules (list[Capsule]): List of capsules
@@ -60,9 +62,9 @@ class InventoryEditor(QDialog):
             droid (bool): True if droid inventory
             hide_equipment (bool): True if equipment tab hidden
             is_store (bool): True if store inventory
-        Returns:
-            None
+
         Processes Logic:
+        ---------------
             1. Sets up UI elements
             2. Maps equipment slots to images
             3. Populates equipped items
@@ -186,13 +188,16 @@ class InventoryEditor(QDialog):
                 self.equipment[widget.slot] = InventoryItem(ResRef(widget.resname), widget.droppable, widget.infinite)
 
     def buildItems(self) -> None:
-        """Builds item trees from a dialog
+        """Builds item trees from a dialog.
+
         Args:
+        ----
             self: {The class instance}.
 
-        Returns
+        Returns:
         -------
             None: {Does not return anything}
+
         Processing Logic:
         ----------------
             - Opens an ItemBuilderDialog
@@ -224,17 +229,20 @@ class InventoryEditor(QDialog):
         ----
             resname: str - Name of the resource
             filepath: str - Path to resource file
+
         Returns:
+        -------
             filepath: str - Path to resource file
             name: str - Name of the item
             uti: UTI - Universal type identifier object
+
         Processing Logic:
         ----------------
-        - If no filepath is provided, get resource from installation
-        - If filepath ends with .rim/.mod/.erf, get resource from capsule file
-        - If filepath ends with .bif, get resource from installation searching CHITIN
-        - Else load resource directly from filepath
-        - Return filepath, name extracted from UTI, and UTI object
+            - If no filepath is provided, get resource from installation
+            - If filepath ends with .rim/.mod/.erf, get resource from capsule file
+            - If filepath ends with .bif, get resource from installation searching CHITIN
+            - Else load resource directly from filepath
+            - Return filepath, name extracted from UTI, and UTI object
         """
         uti = None
         name = ""
@@ -255,14 +263,15 @@ class InventoryEditor(QDialog):
         return filepath, name, uti
 
     def setEquipment(self, slot: EquipmentSlot, resname: str, filepath: str = "", name: str = "") -> None:
-        """Sets equipment in a given slot
+        """Sets equipment in a given slot.
+
         Args:
+        ----
             slot (EquipmentSlot): The slot to set the equipment
             resname (str): The resource name of the equipment
             filepath (str): The file path of the equipment image
             name (str): The name of the equipment
-        Returns:
-            None: No value is returned
+
         Processing Logic:
         ----------------
             - Gets the label and frame for the given slot
@@ -301,16 +310,15 @@ class InventoryEditor(QDialog):
         ----
             widget: QWidget | ItemContainer: Widget the menu is for
             point: QPoint: Point to open menu at
-        Returns:
-            None: No return value
+
         Processing Logic:
         ----------------
-        - Create a QMenu at the given point
-        - Add actions like Infinite, Droppable based on widget properties
-        - Add Remove Item action
-        - Add No Item action if no item present
-        - Add Set Item ResRef action
-        - Execute the menu.
+            - Create a QMenu at the given point
+            - Add actions like Infinite, Droppable based on widget properties
+            - Add Remove Item action
+            - Add No Item action if no item present
+            - Add Set Item ResRef action
+            - Execute the menu.
         """
         menu = QMenu(self)
 

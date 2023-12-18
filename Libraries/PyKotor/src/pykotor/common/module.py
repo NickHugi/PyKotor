@@ -737,6 +737,7 @@ class Module:
     def stores(
         self,
     ) -> list[ModuleResource[UTM]]:
+        """Returns a list of material (UTM) resources for this module."""
         return [resource for resource in self.resources.values() if resource.restype() == ResourceType.UTM]
 
     def trigger(
