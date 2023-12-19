@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import os
 import pathlib
 import sys
@@ -32,12 +34,18 @@ if getattr(sys, "frozen", False) is False:
     if toolset_path.exists():
         add_sys_path(toolset_path.parent)
 
+
 K1_PATH = os.environ.get("K1_PATH")
+K2_PATH = os.environ.get("K2_PATH")
+
+from pykotor.common.stream import BinaryReader
+from pykotor.resource.formats.twoda.twoda_auto import read_2da
+from pykotor.resource.type import ResourceType
 
 
 @unittest.skipIf(
-    not K1_PATH or not pathlib.Path(K1_PATH).joinpath("chitin.key").exists(),
-    "K1_PATH environment variable is not set or not found on disk.",
+    not K2_PATH or not pathlib.Path(K2_PATH).joinpath("chitin.key").exists(),
+    "K2_PATH environment variable is not set or not found on disk.",
 )
 @unittest.skipIf(
     QTest is None or not QApplication,
@@ -48,15 +56,52 @@ class TwoDAEditorTest(TestCase):
     def setUpClass(cls) -> None:
         # Make sure to configure this environment path before testing!
         from toolset.data.installation import HTInstallation
-        cls.INSTALLATION = HTInstallation(K1_PATH, "", False, None)
+        cls.INSTALLATION = HTInstallation(K2_PATH, "", tsl=True, mainWindow=None)
 
     def setUp(self) -> None:
         from toolset.gui.editors.twoda import TwoDAEditor
         self.app = QApplication([])
-        self.ui = TwoDAEditor(None, self.INSTALLATION)
+        self.editor = TwoDAEditor(None, self.INSTALLATION)
+        self.log_messages: list[str] = [os.linesep]
 
     def tearDown(self) -> None:
         self.app.deleteLater()
+
+    def log_func(self, message=""):
+        self.log_messages.append(message)
+
+    def test_save_and_load(self):
+        filepath = TESTS_FILES_PATH / "appearance.2da"
+
+        data = BinaryReader.load_file(filepath)
+        old = read_2da(data)
+        self.editor.load(filepath, "appearance", ResourceType.TwoDA, data)
+
+        data, _ = self.editor.build()
+        new = read_2da(data)
+
+        diff = old.compare(new, self.log_func)
+        self.assertTrue(diff)
+        self.assertDeepEqual(old, new)
+
+    def assertDeepEqual(self, obj1, obj2, context=''):
+        if isinstance(obj1, dict) and isinstance(obj2, dict):
+            self.assertEqual(set(obj1.keys()), set(obj2.keys()), context)
+            for key in obj1:
+                new_context = f"{context}.{key}" if context else str(key)
+                self.assertDeepEqual(obj1[key], obj2[key], new_context)
+
+        elif isinstance(obj1, (list, tuple)) and isinstance(obj2, (list, tuple)):
+            self.assertEqual(len(obj1), len(obj2), context)
+            for index, (item1, item2) in enumerate(zip(obj1, obj2)):
+                new_context = f"{context}[{index}]" if context else f"[{index}]"
+                self.assertDeepEqual(item1, item2, new_context)
+
+        elif hasattr(obj1, '__dict__') and hasattr(obj2, '__dict__'):
+            self.assertDeepEqual(obj1.__dict__, obj2.__dict__, context)
+
+        else:
+            self.assertEqual(obj1, obj2, context)
 
     def test_placeholder(self):
         ...

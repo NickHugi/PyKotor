@@ -67,8 +67,8 @@ class AREEditorTest(TestCase):
     def tearDown(self) -> None:
         self.app.deleteLater()
 
-    def log_func(self, message=""):
-        self.log_messages.append(message)
+    def log_func(self, *args):
+        self.log_messages.append("\t".join(args))
 
     def test_save_and_load(self):
         filepath = TESTS_FILES_PATH / "tat001.are"
