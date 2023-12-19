@@ -1039,11 +1039,11 @@ class Installation:
         def check_list(resource_list: list[FileResource]):
             for resource in resource_list:
                 resname = resource.resname()
-                if resname.lower() in resnames and resource.restype() in texture_types:
+                if resname in resnames and resource.restype() in texture_types:
                     resnames.remove(resname)
                     tpc = read_tpc(resource.data())
                     if resource.restype() == ResourceType.TGA:
-                        tpc.txi = get_txi_from_list(resname.lower(), resource_list)
+                        tpc.txi = get_txi_from_list(resname, resource_list)
                     textures[resname] = tpc
 
         def check_capsules(values: list[Capsule]):  # NOTE: This function does not support txi's in the Override folder.
@@ -1061,7 +1061,7 @@ class Installation:
                     resnames.remove(resname)
                     tpc: TPC = read_tpc(texture_data) if texture_data else TPC()
                     if tformat == ResourceType.TGA:
-                        tpc.txi = get_txi_from_list(resname.lower(), capsule.resources())
+                        tpc.txi = get_txi_from_list(resname, capsule.resources())
                     textures[resname] = tpc
 
         def check_folders(values: list[Path]):
