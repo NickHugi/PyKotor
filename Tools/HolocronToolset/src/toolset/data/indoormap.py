@@ -114,7 +114,7 @@ class IndoorMap:
 
                 if position not in points:
                     points.append(position)  # 47
-                    #if room2 is None:
+                    #if room2 is None:  # FIXME ??? why is this conditional ever hit
                     #    msg = "room2 cannot be None"
                     #    raise ValueError(msg)
 
@@ -171,7 +171,7 @@ class IndoorMap:
                         self.mod.set_data(renamed, ResourceType.TGA, kit.textures[texture])
                         self.mod.set_data(renamed, ResourceType.TXI, kit.txis[texture])
 
-    def handle_lightmaps(self, installation):
+    def handle_lightmaps(self, installation: HTInstallation):
         """Processes lightmaps for a room model.
 
         Args:
@@ -230,7 +230,7 @@ class IndoorMap:
                 continue
             self.mod.set_data(resname, restype, data)
 
-    def process_model(self, room: IndoorMapRoom, installation):
+    def process_model(self, room: IndoorMapRoom, installation: HTInstallation):
         """Processes a model based on room properties.
 
         Args:
@@ -255,7 +255,7 @@ class IndoorMap:
         mdl = model.convert_to_k2(mdl) if installation.tsl else model.convert_to_k1(mdl)
         return mdl, mdx
 
-    def process_lightmaps(self, room: IndoorMapRoom, mdl):
+    def process_lightmaps(self, room: IndoorMapRoom, mdl_data: bytes):
         """Processes lightmaps for a room.
 
         Args:
@@ -274,15 +274,15 @@ class IndoorMap:
             - Returns the model with all lightmaps renamed according to the mapping.
         """
         lm_renames: dict[str, str] = {}
-        for lightmap in model.list_lightmaps(mdl):
+        for lightmap in model.list_lightmaps(mdl_data):
             renamed = f"{self.moduleId}_lm{self.totalLm}"
             self.totalLm += 1
             lm_renames[lightmap.lower()] = renamed
             self.mod.set_data(renamed, ResourceType.TGA, room.component.kit.lightmaps[lightmap])
             self.mod.set_data(renamed, ResourceType.TXI, room.component.kit.txis[lightmap])
-        mdl = model.change_lightmaps(mdl, lm_renames)
+        mdl_data = model.change_lightmaps(mdl_data, lm_renames)  # FIXME: Should this be returned and used throughout?
 
-    def add_model_resources(self, modelname, mdl, mdx):
+    def add_model_resources(self, modelname: str, mdl_data: bytes, mdx_data: bytes):
         """Adds model resources to the mod object.
 
         Args:
@@ -297,8 +297,8 @@ class IndoorMap:
             - Sets the MDX file data for the given modelname using ResourceType.MDX
             - Does not return anything, just adds the resources to the mod object.
         """
-        self.mod.set_data(modelname, ResourceType.MDL, mdl)
-        self.mod.set_data(modelname, ResourceType.MDX, mdx)
+        self.mod.set_data(modelname, ResourceType.MDL, mdl_data)
+        self.mod.set_data(modelname, ResourceType.MDX, mdx_data)
 
     def process_bwm(self, room: IndoorMapRoom) -> BWM:
         """Processes the BWM for a room.
@@ -328,7 +328,7 @@ class IndoorMap:
             self.remap_transitions(bwm, dummyIndex, actualIndex)
         return bwm
 
-    def remap_transitions(self, bwm: BWM, dummyIndex, actualIndex):
+    def remap_transitions(self, bwm: BWM, dummyIndex: int, actualIndex: int | None):
         """Remaps dummy transition index to actual transition index in BWM faces.
 
         Args:
@@ -351,10 +351,10 @@ class IndoorMap:
             if face.trans3 == dummyIndex:
                 face.trans3 = actualIndex
 
-    def add_bwm_resource(self, modelname, bwm):
+    def add_bwm_resource(self, modelname: str, bwm: BWM):
         self.mod.set_data(modelname, ResourceType.WOK, bytes_bwm(bwm))
 
-    def _handle_door_insertions(self, installation):
+    def _handle_door_insertions(self, installation: HTInstallation):
         """Handle door insertions.
 
         Args:
@@ -459,7 +459,7 @@ class IndoorMap:
                         self.lyt.rooms.append(LYTRoom(paddingName, insert.position))
                         self.vis.add_room(paddingName)
 
-    def process_skybox(self, kits):
+    def process_skybox(self, kits: list[Kit]):
         """Process the skybox for the module.
 
         Args:

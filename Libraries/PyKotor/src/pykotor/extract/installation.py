@@ -300,8 +300,7 @@ class Installation:
         else:
             if optional:
                 return CaseAwarePath(self._path, folder_names[0])
-        errored_folder_names = "' or '".join(folder_names)
-        msg = f"Could not find the '{errored_folder_names}' folder in '{self._path}'."
+        msg = f"Could not find the '{' or '.join(folder_names)}' folder in '{self._path}'."
         raise FileNotFoundError(msg)
 
     # endregion
@@ -602,51 +601,9 @@ class Installation:
             check("miles/msssoft.m3d"),
             check("data/party.bif"),
             check("data/player.bif"),
-            check("modules/danm13_loc.mod"),
-            check("modules/danm14aa_loc.mod"),
-            check("modules/danm14ab_loc.mod"),
-            check("modules/danm14ac_loc.mod"),
-            check("modules/danm14ad_loc.mod"),
-            check("modules/danm14ae_loc.mod"),
-            check("modules/danm15_loc.mod"),
-            check("modules/danm16_loc.mod"),
-            check("modules/ebo_m12aa_loc.mod"),
-            check("modules/ebo_m40aa_loc.mod"),
-            check("modules/ebo_m40ad_loc.mod"),
-            check("modules/ebo_m41aa_loc.mod"),
-            check("modules/ebo_m46ab_loc.mod"),
-            check("modules/end_m01aa_loc.mod"),
-            check("modules/end_m01ab_loc.mod"),
             check("modules/global.mod"),
-            check("modules/kas_m22aa_loc.mod"),
-            check("modules/kas_m22ab_loc.mod"),
-            check("modules/kas_m23aa_loc.mod"),
-            check("modules/kas_m23ab_loc.mod"),
-            check("modules/kas_m23ac_loc.mod"),
-            check("modules/kas_m23ad_loc.mod"),
-            check("modules/kas_m24aa_loc.mod"),
-            check("modules/kas_m25aa_loc.mod"),
-            check("modules/korr_m33aa_loc.mod"),
-            check("modules/korr_m33ab_loc.mod"),
-            check("modules/korr_m34aa_loc.mod"),
-            check("modules/korr_m35aa_loc.mod"),
-            check("modules/korr_m36aa_loc.mod"),
-            check("modules/korr_m37aa_loc.mod"),
-            check("modules/korr_m38aa_loc.mod"),
-            check("modules/korr_m38ab_loc.mod"),
-            check("modules/korr_m39aa_loc.mod"),
             check("modules/legal.mod"),
-            check("modules/lev_m40aa_loc.mod"),
-            check("modules/lev_m40ab_loc.mod"),
-            check("modules/lev_m40ac_loc.mod"),
-            check("modules/lev_m40ad_loc.mod"),
-            check("modules/liv_m99aa_loc.mod"),
-            check("modules/M12ab_loc.mod"),
             check("modules/mainmenu.mod"),
-            check("modules/manm26aa_loc.mod"),
-            check("modules/manm26ab_loc.mod"),
-            check("modules/manm26ac_loc.mod"),
-            check("modules/STUNT_00_loc.mod"),
         ]
 
         game2_checks = [
@@ -661,23 +618,6 @@ class Installation:
             check("miles/mssdolby.flt"),
             check("miles/mssogg.asi"),
             check("data/Dialogs.bif"),
-            check("lips/001EBO_loc.mod"),
-            check("Modules/002EBO_loc.mod"),
-            check("Modules/003EBO_loc.mod"),
-            check("Modules/004EBO_loc.mod"),
-            check("Modules/005EBO_loc.mod"),
-            check("Modules/006EBO_loc.mod"),
-            check("Modules/007EBO_loc.mod"),
-            check("Modules/101per_loc.mod"),
-            check("Modules/102PER_loc.mod"),
-            check("Modules/103PER_loc.mod"),
-            check("Modules/104PER_loc.mod"),
-            check("Modules/105PER_loc.mod"),
-            check("Modules/106PER_loc.mod"),
-            check("Modules/107PER_loc.mod"),
-            check("Modules/151HAR_loc.mod"),
-            check("Modules/152HAR_loc.mod"),
-            check("Modules/153HAR_loc.mod"),
         ]
 
         # Scoring for each game

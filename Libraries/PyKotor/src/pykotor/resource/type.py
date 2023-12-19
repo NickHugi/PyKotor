@@ -225,12 +225,7 @@ class ResourceType(Enum):
         if isinstance(other, ResourceType):
             if not self or not other:
                 return self.is_invalid and other.is_invalid
-            return (
-                self.type_id == other.type_id
-                and self.extension == other.extension
-                and self.contents == other.contents
-                and self.category == other.category
-            )
+            return self.name == other.name
         if isinstance(other, str):
             return self.extension == other.lower()
         if isinstance(other, int):

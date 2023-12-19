@@ -21,7 +21,7 @@ if UTILITY_PATH.exists():
 
 from pykotor.common.misc import Game
 from pykotor.resource.formats.gff import read_gff
-from pykotor.resource.generics.ute import construct_ute, dismantle_ute
+from pykotor.resource.generics.ute import UTE, construct_ute, dismantle_ute
 
 TEST_FILE = "src/tests/files/test.ute"
 
@@ -58,7 +58,7 @@ Extra 'Int32' field found at 'GFFRoot\CreatureList\0\GuaranteedCount': '0'
         ute = construct_ute(gff)
         self.validate_io(ute)
 
-    def validate_io(self, ute):
+    def validate_io(self, ute: UTE):
         self.assertEqual("G_KATAARNGROUP01", ute.tag)
         self.assertEqual(31918, ute.name.stringref)
         self.assertEqual("g_kataarngroup01", ute.resref)
