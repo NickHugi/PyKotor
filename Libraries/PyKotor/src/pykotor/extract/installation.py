@@ -937,13 +937,13 @@ class Installation:
             for query in queries:
                 for resource in values:
                     identifier = resource.identifier()
-                    if query.resname.lower() == identifier.resname.lower() and identifier.restype == query.restype:
+                    if query == identifier:
                         location = LocationResult(
                             resource.filepath(),
                             resource.offset(),
                             resource.size(),
                         )
-                        locations[resource.identifier()].append(location)
+                        locations[identifier].append(location)
 
         def check_capsules(values: list[Capsule]):
             for capsule in values:
@@ -965,24 +965,14 @@ class Installation:
                     queried_files.update(
                         file
                         for file in folder.rglob("*")
-                        if (
-                            file.stem.lower() == query.resname.lower()
-                            and file.suffix.lower() == f".{query.restype.extension.lower()}"
-                            and file.safe_isfile()
-                        )
+                        if ResourceIdentifier.from_path(file) == query and file.safe_isfile()
                     )
             for file in queried_files:
                 identifier = ResourceIdentifier.from_path(file)
-                resource = FileResource(
-                    *identifier,
-                    file.stat().st_size,
-                    0,
-                    file,
-                )
                 location = LocationResult(
-                    resource.filepath(),
-                    resource.offset(),
-                    resource.size(),
+                    file,
+                    0,
+                    file.stat().st_size,
                 )
                 locations[identifier].append(location)
 
@@ -1143,7 +1133,6 @@ class Installation:
                     for file in folder.rglob("*")
                     if (
                         file.stem.lower() in resnames
-                        and ResourceType.from_extension(file.suffix)
                         and ResourceType.from_extension(file.suffix) in texture_types
                         and file.safe_isfile()
                     )
@@ -1275,7 +1264,6 @@ class Installation:
                     for file in folder.rglob("*")
                     if (
                         file.stem.lower() in resnames
-                        and ResourceType.from_extension(file.suffix)
                         and ResourceType.from_extension(file.suffix) in sound_formats
                         and file.safe_isfile()
                     )

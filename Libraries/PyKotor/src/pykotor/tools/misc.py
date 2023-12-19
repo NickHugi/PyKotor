@@ -33,8 +33,9 @@ def is_sav_file(filepath: os.PathLike | str) -> bool:
 
 def is_any_erf_type_file(filepath: os.PathLike | str) -> bool:
     """Returns true if the given filename has either an ERF, MOD, or SAV file extension."""
+    from pykotor.resource.formats.erf.erf_data import ERFType
     path = filepath if isinstance(filepath, PurePath) else PurePath(filepath)
-    return path.suffix.lower() in [".erf", ".mod", ".sav"]
+    return path.suffix[1:].upper() in ERFType.__members__
 
 
 def is_rim_file(filepath: os.PathLike | str) -> bool:

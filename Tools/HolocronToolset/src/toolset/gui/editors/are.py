@@ -129,12 +129,12 @@ class AREEditor(Editor):
             are: ARE - Area object
 
         Loads area data:
-        - Sets basic properties like name, tag, camera style
-        - Sets map properties like points, zoom, axis
-        - Sets weather properties like fog, lighting, wind
-        - Sets terrain properties like grass, dirt
-        - Sets script properties like onEnter, onExit
-        - Sets comment text.
+            - Sets basic properties like name, tag, camera style
+            - Sets map properties like points, zoom, axis
+            - Sets weather properties like fog, lighting, wind
+            - Sets terrain properties like grass, dirt
+            - Sets script properties like onEnter, onExit
+            - Sets comment text.
         """
         self._are = are
 
@@ -154,8 +154,11 @@ class AREEditor(Editor):
                 SearchLocation.MODULES
             ]
             self._minimap = self._installation.texture(f"lbl_map{self._resref}", order)
-            self.ui.minimapRenderer.setMinimap(are, self._minimap)
-            self.ui.minimapRenderer.centerCamera()
+            if self._minimap is None:
+                print(f"Could not find lbl_map{self._resref} to load minimap")
+            else:
+                self.ui.minimapRenderer.setMinimap(are, self._minimap)
+                self.ui.minimapRenderer.centerCamera()
 
         # Basic
         self.ui.nameEdit.setLocstring(are.name)
