@@ -1021,7 +1021,7 @@ class Installation:
         def decode_txi(txi_bytes: bytes):
             return txi_bytes.decode("ascii", errors="ignore")
 
-        def get_txi_from_list(resource_list: list[FileResource]) -> str:
+        def get_txi_from_list(resname: str, resource_list: list[FileResource]) -> str:
             txi_resource: FileResource | None = next(
                 (
                     resource
@@ -1043,7 +1043,7 @@ class Installation:
                     resnames.remove(resname)
                     tpc = read_tpc(resource.data())
                     if resource.restype() == ResourceType.TGA:
-                        tpc.txi = get_txi_from_list(resource_list)
+                        tpc.txi = get_txi_from_list(resname.lower(), resource_list)
                     textures[resname] = tpc
 
         def check_capsules(values: list[Capsule]):  # NOTE: This function does not support txi's in the Override folder.
@@ -1061,9 +1061,7 @@ class Installation:
                     resnames.remove(resname)
                     tpc: TPC = read_tpc(texture_data) if texture_data else TPC()
                     if tformat == ResourceType.TGA:
-                        txi_source: bytes | None = capsule.resource(resname, ResourceType.TXI)
-                        if txi_source is not None:
-                            tpc.txi = decode_txi(txi_source)
+                        tpc.txi = get_txi_from_list(resname.lower(), capsule.resources())
                     textures[resname] = tpc
 
         def check_folders(values: list[Path]):
