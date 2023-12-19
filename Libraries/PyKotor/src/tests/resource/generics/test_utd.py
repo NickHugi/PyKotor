@@ -19,6 +19,7 @@ if UTILITY_PATH.exists():
         sys.path.remove(working_dir)
     sys.path.insert(0, working_dir)
 
+from pykotor.common.misc import Game
 from pykotor.resource.formats.gff import read_gff
 from pykotor.resource.generics.utd import UTD, construct_utd, dismantle_utd
 from pykotor.extract.installation import Installation
@@ -46,7 +47,7 @@ class TestUTD(TestCase):
         self.installation = Installation(K1_PATH)  # type: ignore[arg-type]
         for are_resource in (resource for resource in self.installation if resource.restype() == ResourceType.UTD):
             gff: GFF = read_gff(are_resource.data())
-            reconstructed_gff: GFF = dismantle_utd(construct_utd(gff))
+            reconstructed_gff: GFF = dismantle_utd(construct_utd(gff), Game.K1)
             self.assertTrue(gff.compare(reconstructed_gff, self.log_func, ignore_default_changes=True), os.linesep.join(self.log_messages))
 
     @unittest.skipIf(
