@@ -157,15 +157,16 @@ class Installation:
         self._talktable: TalkTable = TalkTable(self._path / "dialog.tlk")
         self._female_talktable: TalkTable = TalkTable(self._path / "dialogf.tlk")
 
-        self._chitin: list[FileResource] = []
         self._modules: dict[str, list[FileResource]] = {}
         self._lips: dict[str, list[FileResource]] = {}
         self._texturepacks: dict[str, list[FileResource]] = {}
         self._override: dict[str, list[FileResource]] = {}
+        self._rims: dict[str, list[FileResource]] = {}
+
+        self._chitin: list[FileResource] = []
         self._streammusic: list[FileResource] = []
         self._streamsounds: list[FileResource] = []
         self._streamwaves: list[FileResource] = []
-        self._rims: dict[str, list[FileResource]] = {}
         self._game: Game | None = None
 
         self.load_chitin()
@@ -179,6 +180,25 @@ class Installation:
         self.load_streamwaves()
         self.load_textures()
         print(f"Finished loading the installation from {self._path!s}")
+
+    def all_resources(self):
+        def generator():
+            yield from self._chitin
+            yield from self._streammusic
+            yield from self._streamsounds
+            yield from self._streamwaves
+            for values in self._override.values():
+                yield from values
+            for values in self._modules.values():
+                yield from values
+            for values in self._lips.values():
+                yield from values
+            for values in self._texturepacks.values():
+                yield from values
+            for values in self._rims.values():
+                yield from values
+
+        return generator()
 
     # region Get Paths
     def path(self) -> CaseAwarePath:

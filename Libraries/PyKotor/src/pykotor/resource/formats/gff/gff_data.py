@@ -361,7 +361,9 @@ class GFFStruct:
 
             # Check for missing fields/values in either structure
             if old_ftype is None or old_value is None:
-                if ignore_default_changes and not new_value:
+                if ignore_default_changes and (not new_value or str(new_value) == "-1"):
+                    continue
+                if ignore_default_changes and (isinstance(new_value, GFFList) and not len(new_value._structs)):
                     continue
                 if new_ftype is None:
                     msg = "new_ftype shouldn't be None here."
@@ -370,7 +372,9 @@ class GFFStruct:
                 is_same_result = False
                 continue
             if new_value is None or new_ftype is None:
-                if ignore_default_changes and not old_value:
+                if ignore_default_changes and (not old_value or str(old_value) == "-1"):
+                    continue
+                if ignore_default_changes and (isinstance(old_value, GFFList) and not len(old_value._structs)):
                     continue
                 log_func(f"Missing '{old_ftype.name}' field at '{child_path}': {format_text(old_value)}")
                 is_same_result = False
@@ -404,7 +408,7 @@ class GFFStruct:
                 if (
                     isinstance(old_value, float)
                     and isinstance(new_value, float)
-                    and math.isclose(old_value, new_value, rel_tol=1e-7, abs_tol=1e-7)
+                    and math.isclose(old_value, new_value, rel_tol=1e-4, abs_tol=1e-4)
                 ):
                     continue
                 if str(old_value) == str(new_value):

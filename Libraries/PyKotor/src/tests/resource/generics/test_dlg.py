@@ -4,6 +4,7 @@ import sys
 import unittest
 from unittest import TestCase
 
+
 THIS_SCRIPT_PATH = pathlib.Path(__file__)
 PYKOTOR_PATH = THIS_SCRIPT_PATH.parents[3].resolve()
 UTILITY_PATH = THIS_SCRIPT_PATH.parents[5].joinpath("Utility", "src").resolve()
@@ -21,15 +22,19 @@ if UTILITY_PATH.exists():
 
 from pykotor.resource.formats.gff import GFF
 from pykotor.common.misc import Game
+from pykotor.extract.installation import Installation
 from pykotor.resource.formats.gff import read_gff
 from pykotor.resource.generics.dlg import DLG, construct_dlg, dismantle_dlg
+from pykotor.resource.type import ResourceType
 
 TEST_FILE = "src/tests/files/test.dlg"
 TEST_K1_FILE = "src/tests/files/test_k1.dlg"
+K1_PATH = os.environ.get("K1_PATH")
+K2_PATH = os.environ.get("K2_PATH")
 
 
 class TestDLG(TestCase):
-    def setUp(self):
+    def setUp(self) -> None:
         self.log_messages: list[str] = [os.linesep]
 
     def log_func(self, *args):
@@ -77,6 +82,28 @@ Extra 'Int32' field found at 'GFFRoot\ReplyList\4\PlotIndex': '-1'
         result = reconstructed_gff.compare(re_reconstructed_gff, self.log_func)
         output = os.linesep.join(self.log_messages)
         self.assertTrue(result, output)
+
+    @unittest.skipIf(
+        not K1_PATH or not pathlib.Path(K1_PATH).joinpath("chitin.key").exists(),
+        "K1_PATH environment variable is not set or not found on disk.",
+    )
+    def test_gff_reconstruct_from_k1_installation(self) -> None:
+        self.installation = Installation(K1_PATH)  # type: ignore[arg-type]
+        for are_resource in (resource for resource in self.installation.all_resources() if resource.restype() == ResourceType.DLG):
+            gff: GFF = read_gff(are_resource.data())
+            reconstructed_gff: GFF = dismantle_dlg(construct_dlg(gff))
+            self.assertTrue(gff.compare(reconstructed_gff, self.log_func, ignore_default_changes=True), os.linesep.join(self.log_messages))
+
+    @unittest.skipIf(
+        not K2_PATH or not pathlib.Path(K2_PATH).joinpath("chitin.key").exists(),
+        "K2_PATH environment variable is not set or not found on disk.",
+    )
+    def test_gff_reconstruct_from_k2_installation(self) -> None:
+        self.installation = Installation(K2_PATH)  # type: ignore[arg-type]
+        for are_resource in (resource for resource in self.installation.all_resources() if resource.restype() == ResourceType.DLG):
+            gff: GFF = read_gff(are_resource.data())
+            reconstructed_gff: GFF = dismantle_dlg(construct_dlg(gff))
+            self.assertTrue(gff.compare(reconstructed_gff, self.log_func, ignore_default_changes=True), os.linesep.join(self.log_messages))
 
     def test_io_construct(self):
         gff = read_gff(TEST_FILE)

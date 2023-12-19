@@ -22,16 +22,43 @@ if UTILITY_PATH.exists():
 from pykotor.common.misc import EquipmentSlot, Game
 from pykotor.resource.formats.gff import read_gff
 from pykotor.resource.generics.utc import UTC, construct_utc, dismantle_utc
+from pykotor.extract.installation import Installation
+from pykotor.resource.formats.gff.gff_data import GFF
+from pykotor.resource.type import ResourceType
 
 TEST_FILE = "src/tests/files/test.utc"
+K1_PATH = os.environ.get("K1_PATH")
+K2_PATH = os.environ.get("K2_PATH")
 
 
 class TestUTC(TestCase):
     def setUp(self):
         self.log_messages = [os.linesep]
 
-    def log_func(self, message=""):
-        self.log_messages.append(message)
+    def log_func(self, *msgs):
+        self.log_messages.append("\t".join(msgs))
+
+    @unittest.skipIf(
+        not K1_PATH or not pathlib.Path(K1_PATH).joinpath("chitin.key").exists(),
+        "K1_PATH environment variable is not set or not found on disk.",
+    )
+    def test_gff_reconstruct_from_k1_installation(self) -> None:
+        self.installation = Installation(K1_PATH)  # type: ignore[arg-type]
+        for are_resource in (resource for resource in self.installation.all_resources() if resource.restype() == ResourceType.UTC):
+            gff: GFF = read_gff(are_resource.data())
+            reconstructed_gff: GFF = dismantle_utc(construct_utc(gff))
+            self.assertTrue(gff.compare(reconstructed_gff, self.log_func, ignore_default_changes=True), os.linesep.join(self.log_messages))
+
+    @unittest.skipIf(
+        not K2_PATH or not pathlib.Path(K2_PATH).joinpath("chitin.key").exists(),
+        "K2_PATH environment variable is not set or not found on disk.",
+    )
+    def test_gff_reconstruct_from_k2_installation(self) -> None:
+        self.installation = Installation(K2_PATH)  # type: ignore[arg-type]
+        for are_resource in (resource for resource in self.installation.all_resources() if resource.restype() == ResourceType.UTC):
+            gff: GFF = read_gff(are_resource.data())
+            reconstructed_gff: GFF = dismantle_utc(construct_utc(gff))
+            self.assertTrue(gff.compare(reconstructed_gff, self.log_func, ignore_default_changes=True), os.linesep.join(self.log_messages))
 
     def test_gff_reconstruct(self) -> None:
         gff = read_gff(TEST_FILE)
