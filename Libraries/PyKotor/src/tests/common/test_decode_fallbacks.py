@@ -21,6 +21,11 @@ if UTILITY_PATH.exists():
 from pykotor.common.language import Language
 from pykotor.tools.encoding import decode_bytes_with_fallbacks
 
+try:
+    import charset_normalizer
+except ImportError:
+    charset_normalizer = None
+
 
 class TestDecodeBytes(unittest.TestCase):
 
@@ -117,7 +122,7 @@ class TestDecodeBytes(unittest.TestCase):
         result = byte_content.decode(errors=errors)
         self.assertEqual(result, expected_result)
         result = decode_bytes_with_fallbacks(byte_content, errors, encoding, lang, only_8bit_encodings)
-        self.assertEqual(result, exp)
+        self.assertEqual(result, exp if charset_normalizer is None else exp2)
 
     def test_8bit_encoding_only(self):
         byte_content = b"\xe4\xf6\xfc"
@@ -126,11 +131,13 @@ class TestDecodeBytes(unittest.TestCase):
         lang = None
         only_8bit_encodings = True
         expected_result = "���"
+        exp = "U6Ü"
+        exp2 = "дць"
 
         result = byte_content.decode(errors="replace")
         self.assertEqual(result, expected_result)
         result = decode_bytes_with_fallbacks(byte_content, errors, encoding, lang, only_8bit_encodings)
-        self.assertEqual(result, "U6Ü")
+        self.assertEqual(result, exp if charset_normalizer is None else exp2)
 
     def test_with_BOM_included(self):
         byte_content = b"\xef\xbb\xbfTest"
