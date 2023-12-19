@@ -1,4 +1,5 @@
 from __future__ import annotations
+from copy import copy
 
 import re
 from contextlib import suppress
@@ -1045,9 +1046,9 @@ class Installation:
                         tpc.txi = get_txi_from_list(resource_list)
                     textures[resname] = tpc
 
-        def check_capsules(values: list[Capsule]):
+        def check_capsules(values: list[Capsule]):  # NOTE: This function does not support txi's in the Override folder.
             for capsule in values:
-                for resname in resnames:
+                for resname in copy(resnames):
                     texture_data: bytes | None = None
                     tformat: ResourceType | None = None
                     for tformat in texture_types:
@@ -1058,7 +1059,7 @@ class Installation:
                         continue
 
                     resnames.remove(resname)
-                    tpc: TPC = read_tpc(texture_data)
+                    tpc: TPC = read_tpc(texture_data) if texture_data else TPC()
                     if tformat == ResourceType.TGA:
                         txi_source: bytes | None = capsule.resource(resname, ResourceType.TXI)
                         if txi_source is not None:
@@ -1078,8 +1079,9 @@ class Installation:
                     )
                 )
             for texture_file in queried_texture_files:
+                resnames.remove(texture_file.stem.lower())
                 texture_data: bytes = BinaryReader.load_file(texture_file)
-                tpc = read_tpc(texture_data)
+                tpc = read_tpc(texture_data) if texture_data else TPC()
                 txi_file = CaseAwarePath(texture_file.with_suffix(".txi"))
                 if txi_file.exists():
                     txi_data: bytes = BinaryReader.load_file(txi_file)
@@ -1180,11 +1182,12 @@ class Installation:
             for resource in values:
                 if resource.resname().lower() in resnames and resource.restype() in sound_formats:
                     resnames.remove(resource.resname())
-                    sounds[resource.resname()] = fix_audio(resource.data())
+                    sound_data = resource.data()
+                    sounds[resource.resname()] = fix_audio(sound_data) if sound_data else b""
 
         def check_capsules(values: list[Capsule]):
             for capsule in values:
-                for resname in resnames:
+                for resname in copy(resnames):
                     sound_data: bytes | None = None
                     for sformat in sound_formats:
                         sound_data = capsule.resource(resname, sformat)
@@ -1193,8 +1196,7 @@ class Installation:
                     if sound_data is None:
                         continue
                     resnames.remove(resname)
-                    sounds[resname] = fix_audio(sound_data)
-                    continue
+                    sounds[resname] = fix_audio(sound_data) if sound_data else b""
 
         def check_folders(values: list[Path]):
             queried_sound_files: set[Path] = set()
@@ -1209,8 +1211,9 @@ class Installation:
                     )
                 )
             for sound_file in queried_sound_files:
-                data = BinaryReader.load_file(sound_file)
-                sounds[sound_file.stem] = fix_audio(data)
+                resnames.remove(sound_file.stem.lower())
+                sound_data = BinaryReader.load_file(sound_file)
+                sounds[sound_file.stem] = fix_audio(sound_data) if sound_data else b""
 
         function_map = {
             SearchLocation.OVERRIDE: lambda: check_dict(self._override),
@@ -1312,7 +1315,7 @@ class Installation:
 
         name: str = root
         for module in self.modules_list():
-            if root not in module:
+            if root.lower() not in module.lower():
                 continue
 
             capsule = Capsule(self.module_path() / module)
@@ -1331,10 +1334,10 @@ class Installation:
 
                 are: GFF = read_gff(are_tag_resource)
                 locstring = are.root.get_locstring("Name")
-                if locstring.stringref > 0:
-                    name = self.talktable().string(locstring.stringref)
-                else:
+                if locstring.stringref == -1:
                     name = locstring.get(Language.ENGLISH, Gender.MALE) or name
+                else:
+                    name = self.talktable().string(locstring.stringref)
                 break
 
         return name
@@ -1374,16 +1377,18 @@ class Installation:
         mod_id = ""
 
         for module in self.modules_list():
-            if root not in module:
+            if root.lower() not in module.lower():
                 continue
 
-            capsule = Capsule(self.module_path() / module)
+            with suppress(Exception):
+                capsule = Capsule(self.module_path() / module)
 
-            if capsule.exists("module", ResourceType.IFO):
-                these_bytes = capsule.resource("module", ResourceType.IFO)
-                if these_bytes:
-                    ifo = read_gff(these_bytes)
+                module_ifo_data = capsule.resource("module", ResourceType.IFO)
+                if module_ifo_data:
+                    ifo = read_gff(module_ifo_data)
                     mod_id = ifo.root.get_resref("Mod_Entry_Area").get()
+                    if mod_id:
+                        break
 
         return mod_id
 
