@@ -162,7 +162,7 @@ def dismantle_uts(
     if use_deprecated:
         root.set_locstring("LocName", uts.name)
         root.set_uint32("Hours", uts.hours)
-        root.set_uint8("Times", uts.times)  # might be uint8 by default
+        root.set_uint32("Times", uts.times)  # some uts have this field as uint8?
 
     return gff
 
