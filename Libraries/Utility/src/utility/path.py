@@ -107,6 +107,8 @@ class BasePurePath(metaclass=PurePathType):
             if isinstance(arg, BasePurePath):
                 continue  # do nothing if already our instance type
             formatted_path_str = cls._fix_path_formatting(cls._fspath_str(arg), cls._flavour.sep)  # type: ignore[attr-defined]
+            if formatted_path_str.endswith(":"):
+                formatted_path_str = f"{formatted_path_str}{cls._flavour.sep}"  # type: ignore[attr-defined]
 
             # Create the pathlib class instance, ignore the type errors in super().__new__
             arg_pathlib_instance = super().__new__(cls, formatted_path_str)  # type: ignore[call-arg, reportGeneralTypeIssues]

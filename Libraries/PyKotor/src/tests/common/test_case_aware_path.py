@@ -66,17 +66,14 @@ class TestCaseAwarePath(unittest.TestCase):
         self.assertTrue(path.endswith(".TXT"))
         self.assertFalse(path.endswith(".doc"))
 
-    @unittest.skipIf(os.name == "nt", "see the HACK in pykotor\\tools\\path.py")
     def test_find_closest_match(self):
         items = [CaseAwarePath("test"), CaseAwarePath("TEST"), CaseAwarePath("TesT"), CaseAwarePath("teSt")]
         self.assertEqual(str(CaseAwarePath.find_closest_match("teST", items)), "teSt")  # type: ignore[generator vs list]
 
-    @unittest.skipIf(os.name == "nt", "see the HACK in pykotor\\tools\\path.py")
     def test_get_matching_characters_count(self):
         self.assertEqual(CaseAwarePath.get_matching_characters_count("test", "tesT"), 3)
         self.assertEqual(CaseAwarePath.get_matching_characters_count("test", "teat"), -1)
 
-    @unittest.skipIf(os.name == "nt", "see the HACK in pykotor\\tools\\path.py")
     def test_relative_to_case_sensitive(self):
         file_path = CaseAwarePath("TEST\\path\\to\\something.test")
         folder_path = CaseAwarePath("TesT\\Path\\")
@@ -97,13 +94,17 @@ class TestCaseAwarePath(unittest.TestCase):
         self.assertEqual(CaseAwarePath._fix_path_formatting("/path//to/dir/", "\\"), "\\path\\to\\dir")
         self.assertEqual(CaseAwarePath._fix_path_formatting("/path//to/dir/", "/"), "/path/to/dir")
 
-    @unittest.skipIf(os.name == "nt", "Test not available on Windows.")
     @patch.object(pathlib.Path, "exists", autospec=True)
     def test_should_resolve_case(self, mock_exists):
         mock_exists.side_effect = lambda x: str(x) != "/path/to/dir"
-        self.assertTrue(CaseAwarePath.should_resolve_case("/path/to/dir"))
-        self.assertTrue(CaseAwarePath.should_resolve_case(CaseAwarePath("/path/to/dir")))
-        self.assertFalse(CaseAwarePath.should_resolve_case("path/to/dir"))
+        if os.name == "nt":
+            self.assertFalse(CaseAwarePath.should_resolve_case("/path/to/dir"))
+            self.assertFalse(CaseAwarePath.should_resolve_case(CaseAwarePath("/path/to/dir")))
+            self.assertFalse(CaseAwarePath.should_resolve_case("path/to/dir"))
+        else:
+            self.assertTrue(CaseAwarePath.should_resolve_case("/path/to/dir"))
+            self.assertTrue(CaseAwarePath.should_resolve_case(CaseAwarePath("/path/to/dir")))
+            self.assertFalse(CaseAwarePath.should_resolve_case("path/to/dir"))
 
 class TestSplitFilename(unittest.TestCase):
     def test_normal(self):

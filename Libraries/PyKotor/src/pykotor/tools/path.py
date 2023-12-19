@@ -208,11 +208,8 @@ class CaseAwarePath(InternalPath):  # type: ignore[misc]
                     ),
                 )
 
-            # return a CaseAwarePath instance that resolves the case of existing items on disk, joined with the non-existing
-            # parts in their original case.
-            # if parts[1] is not found on disk, i.e. when i is 1 and base_path.exists() returns False, this will also return the original path.
             elif not next_path.safe_exists():
-                return CaseAwarePath._create_instance(base_path.joinpath(*parts[i:]))  # noqa: SLF001
+                break
 
         # return a CaseAwarePath instance
         return CaseAwarePath._create_instance(*parts)  # noqa: SLF001
@@ -245,15 +242,9 @@ class CaseAwarePath(InternalPath):  # type: ignore[misc]
         path_obj = pathlib.Path(path)
         return path_obj.is_absolute() and not path_obj.exists()
 
+create_case_insensitive_pathlib_class(CaseAwarePath)
 
-# HACK: fix later
-if os.name == "posix":
-    create_case_insensitive_pathlib_class(CaseAwarePath)
-elif os.name == "nt":
-    CaseAwarePath = InternalPath  # type: ignore[assignment, misc]
-
-
-def get_default_paths():
+def get_default_paths() -> dict[str, dict[Game, list[str]]]:
     from pykotor.common.misc import Game
 
     return {
