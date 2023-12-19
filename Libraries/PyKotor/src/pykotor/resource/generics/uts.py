@@ -162,7 +162,7 @@ def dismantle_uts(
     if use_deprecated:
         root.set_locstring("LocName", uts.name)
         root.set_uint32("Hours", uts.hours)
-        root.set_uint32("Times", uts.times)  # some uts have this field as uint8?
+        root.set_uint8("Times", uts.times)  # TODO: double check this. Some files have this field as uint8 others as uint32?
 
     return gff
 

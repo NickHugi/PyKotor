@@ -1,5 +1,5 @@
 # Rigorously test the string result of each pathlib module.
-# The goal isn't really to test pathlib.Path or pykotor\tools\path, the goal is to determine if there was a breaking change in a patch release.
+# The goal isn't really to test pathlib.Path or utility.path, the goal is to determine if there was a breaking change in a python patch release.
 import os
 import pathlib
 import sys

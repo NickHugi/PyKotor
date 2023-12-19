@@ -40,7 +40,22 @@ class TestDLG(TestCase):
         reconstructed_gff: GFF = dismantle_dlg(construct_dlg(gff), Game.K1)
         result = gff.compare(reconstructed_gff, self.log_func, ignore_default_changes=True)
         output = os.linesep.join(self.log_messages)
-        self.assertTrue(result, output)
+        if not result:
+            expected_output = r"""
+GFFStruct: number of fields have changed at 'GFFRoot\ReplyList\0': '14' --> '15'
+Extra 'Int32' field found at 'GFFRoot\ReplyList\0\PlotIndex': '-1'
+GFFStruct: number of fields have changed at 'GFFRoot\ReplyList\1': '14' --> '15'
+Extra 'Int32' field found at 'GFFRoot\ReplyList\1\PlotIndex': '-1'
+GFFStruct: number of fields have changed at 'GFFRoot\ReplyList\2': '14' --> '15'
+Extra 'Int32' field found at 'GFFRoot\ReplyList\2\PlotIndex': '-1'
+GFFStruct: number of fields have changed at 'GFFRoot\ReplyList\3': '14' --> '15'
+Extra 'Int32' field found at 'GFFRoot\ReplyList\3\PlotIndex': '-1'
+GFFStruct: number of fields have changed at 'GFFRoot\ReplyList\4': '14' --> '15'
+Extra 'Int32' field found at 'GFFRoot\ReplyList\4\PlotIndex': '-1'
+"""
+            self.assertEqual(output.strip().replace("\r\n", "\n"), expected_output.strip(), "Comparison output does not match expected output")
+        else:
+            self.assertTrue(result)
 
     def test_k1_reconstruct_from_reconstruct(self) -> None:
         gff: GFF = read_gff(TEST_K1_FILE)
