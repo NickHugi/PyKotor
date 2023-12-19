@@ -316,16 +316,20 @@ class ToolWindow(QMainWindow):
         self.ui.texturesWidget.doTerminations()
 
     def dropEvent(self, e: QtGui.QDropEvent | None) -> None:
+        if e is None:
+            return
         if e.mimeData().hasUrls():
             for url in e.mimeData().urls():
                 filepath = url.toLocalFile()
                 r_filepath = Path(filepath)
                 with r_filepath.open("rb") as file:
-                    resref, restype = ResourceIdentifier.from_path(filepath).validate()
+                    resref, restype = ResourceIdentifier.from_path(filepath)
                     data = file.read()
                     openResourceEditor(r_filepath, resref, restype, data, self.active, self)
 
     def dragEnterEvent(self, e: QtGui.QDragEnterEvent | None) -> None:
+        if e is None:
+            return
         if e.mimeData().hasUrls():
             for url in e.mimeData().urls():
                 with suppress(Exception):
