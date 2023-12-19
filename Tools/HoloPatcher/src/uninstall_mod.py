@@ -88,7 +88,7 @@ class ModUninstaller:
             - Return None if no valid backups found
             - Otherwise return the subfolder with the maximum datetime parsed from folder name.
         """
-        backup_folder_path = backup_folder if isinstance(backup_folder, Path) else Path(backup_folder)
+        backup_folder_path = Path.pathify(backup_folder)
         valid_backups: list[Path] = [
             subfolder
             for subfolder in backup_folder_path.iterdir()  # type: ignore[attr-defined]
@@ -128,12 +128,12 @@ class ModUninstaller:
             restore_backup(Path('backup'), {'file1.txt', 'file2.txt'}, [Path('backup/file1.txt'), Path('backup/file2.txt')])
         """
         for file in existing_files:
-            file_path = file if isinstance(file, Path) else Path(file)
+            file_path = Path.pathify(file)
             rel_filepath = file_path.relative_to(self.game_path)  # type: ignore[attr-defined]
             file_path.unlink(missing_ok=True)  # type: ignore[attr-defined]
             self.log.add_note(f"Removed {rel_filepath}...")
         for file in files_in_backup:
-            file_path = file if isinstance(file, Path) else Path(file)
+            file_path = Path.pathify(file)
             destination_path = self.game_path / file_path.relative_to(backup_folder)  # type: ignore[attr-defined]
             destination_path.parent.mkdir(parents=True, exist_ok=True)
             shutil.copy(file_path, destination_path)

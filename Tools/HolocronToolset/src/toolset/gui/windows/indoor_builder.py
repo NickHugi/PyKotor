@@ -1067,8 +1067,8 @@ class KitDownloader(QDialog):
         repo_path: os.PathLike | str,
     ) -> None:
         """This method should not be used due to github's api restrictions. Use download_file to get a .zip of the folder instead."""  # noqa: D404
-        repo = repo if isinstance(repo, PurePath) else PurePath(repo)
-        repo_path = repo_path if isinstance(repo_path, PurePath) else PurePath(repo_path)
+        repo = PurePath.pathify(repo)
+        repo_path = PurePath.pathify(repo_path)
         api_url = f"https://api.github.com/repos/{repo.as_posix()}/contents/{repo_path.as_posix()}"
         data = self._get_update_data(api_url)
         for item in data:

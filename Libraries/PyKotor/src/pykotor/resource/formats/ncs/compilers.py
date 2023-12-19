@@ -84,7 +84,7 @@ class ExternalNCSCompiler(NCSCompiler):
             return formatted_args
 
     def __init__(self, nwnnsscomp_path: os.PathLike | str) -> None:
-        self.nwnnsscomp_path: Path = nwnnsscomp_path if isinstance(nwnnsscomp_path, Path) else Path(nwnnsscomp_path)  # type: ignore[reportGeneralTypeIssues, assignment]
+        self.nwnnsscomp_path: Path = Path.pathify(nwnnsscomp_path)  # type: ignore[reportGeneralTypeIssues, assignment]
         self.filehash: str = generate_filehash_sha256(self.nwnnsscomp_path).upper()
         self.config: ExternalNCSCompiler.NwnnsscompConfig | None = None
 

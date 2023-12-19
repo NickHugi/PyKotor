@@ -710,7 +710,7 @@ class ToolWindow(QMainWindow):
             - Extracts textures from MDL files
             - Writes extracted data to the file path
         """
-        r_filepath: Path = filepath if isinstance(filepath, Path) else Path(filepath)
+        r_filepath: Path = Path.pathify(filepath)
         folderpath: Path = r_filepath.parent
 
         try:

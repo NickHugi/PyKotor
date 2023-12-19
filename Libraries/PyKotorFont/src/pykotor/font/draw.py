@@ -52,7 +52,7 @@ def write_bitmap_fonts(
     custom_scaling=1.0,
     font_color=None,
 ) -> None:
-    target_path = target if isinstance(target, Path) else Path(target)
+    target_path = Path.pathify(target)
     target_path = target_path if target_path.exists() else target_path.resolve()
     target_path.mkdir(parents=True, exist_ok=True)
 
@@ -84,7 +84,7 @@ def write_bitmap_font(
         msg = f"resolution must be nonzero, got {resolution}"
         raise ZeroDivisionError(msg)
 
-    font_path, target_path = ((p if isinstance(p, Path) else Path(p)).resolve() for p in (font_path, target))
+    font_path, target_path = (Path.pathify(p).resolve() for p in (font_path, target))
     charset_list: list[str] = get_charset_from_singlebyte_encoding(lang.get_encoding())
     numchars: int = len([char for char in charset_list if char])
 

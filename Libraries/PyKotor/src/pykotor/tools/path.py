@@ -114,6 +114,7 @@ def create_case_insensitive_pathlib_class(cls: type) -> None:  # TODO: move into
         "__setattr__",
         "__init__",
         "_init",
+        "pathify",
         *cls_methods,
     }
 

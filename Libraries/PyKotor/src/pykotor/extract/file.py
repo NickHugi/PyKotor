@@ -90,14 +90,14 @@ class FileResource:
             Bytes data of the resource.
         """
         if reload:
-            if is_capsule_file(self._filepath.name):
+            if is_capsule_file(self._filepath):
                 from pykotor.extract.capsule import Capsule
 
                 capsule = Capsule(self._filepath)
                 res: FileResource | None = capsule.info(self._resname, self._restype)
                 self._offset = res.offset()
                 self._size = res.size()
-            elif not is_bif_file(self._filepath.name):
+            elif not is_bif_file(self._filepath):
                 self._offset = 0
                 self._size = self._filepath.stat().st_size
 

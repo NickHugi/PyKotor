@@ -42,7 +42,7 @@ def read_resource(source: SOURCE_TYPES, resource_type: ResourceType | None = Non
     """
     source_path = None
     if not resource_type and isinstance(source, (os.PathLike, str)):
-        source_path = source if isinstance(source, PurePath) else PurePath(source)
+        source_path = PurePath.pathify(source)
         _filestem, ext = source_path.split_filename(dots=2)
         resource_type = ResourceType.from_extension(ext)
     if not resource_type:

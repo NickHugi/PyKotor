@@ -219,6 +219,10 @@ class BasePurePath(metaclass=PurePathType):
         """
         return str(key) + str(self)
 
+    @classmethod
+    def pathify(cls, path: PathElem):
+        return path if isinstance(path, cls) else cls(path)
+
     def split_filename(self, dots: int = 1) -> tuple[str, str]:
         """Splits a filename into a tuple of stem and extension.
 
@@ -328,7 +332,7 @@ class BasePurePath(metaclass=PurePathType):
                 other = other.resolve()
             resolved_self = resolved_self.resolve()
         else:
-            other = other if isinstance(other, PurePath) else PurePath(other)
+            other = PurePath.pathify(other)
 
         self_str, other_str = map(str, (resolved_self, other))
         if os.name == "nt" or not case_sensitive:

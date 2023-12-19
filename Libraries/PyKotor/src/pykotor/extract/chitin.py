@@ -25,9 +25,9 @@ class Chitin:
         key_path: os.PathLike | str,
         base_path: os.PathLike | str | None = None,
     ):
-        self._key_path: CaseAwarePath = key_path if isinstance(key_path, CaseAwarePath) else CaseAwarePath(key_path)
+        self._key_path: CaseAwarePath = CaseAwarePath.pathify(key_path)
         base_path = base_path if base_path is not None else self._key_path.parent
-        self._base_path: CaseAwarePath = base_path if isinstance(base_path, CaseAwarePath) else CaseAwarePath(base_path)
+        self._base_path: CaseAwarePath = CaseAwarePath.pathify(base_path)
 
         self._resources: list[FileResource] = []
         self._resource_dict: dict[str, list[FileResource]] = {}

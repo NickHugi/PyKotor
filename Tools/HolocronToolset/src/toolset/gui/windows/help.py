@@ -188,7 +188,7 @@ class HelpWindow(QMainWindow):
             help_zip_path.unlink()
 
     def displayFile(self, filepath: os.PathLike | str) -> None:
-        filepath = filepath if isinstance(filepath, Path) else Path(filepath)
+        filepath = Path.pathify(filepath)
         try:
             text = decode_bytes_with_fallbacks(BinaryReader.load_file(filepath))
             html = markdown.markdown(text, extensions=["tables", "fenced_code", "codehilite"]) if filepath.endswith(".md") else text

@@ -152,7 +152,7 @@ def is_instance_or_subinstance(instance, target_cls) -> bool:
 
 def generate_filehash_sha256(filepath: os.PathLike | str) -> str:
     sha1_hash = hashlib.sha256()
-    filepath = filepath if isinstance(filepath, Path) else Path(filepath)
+    filepath = Path.pathify(filepath)
     with filepath.open("rb") as f:
         data = f.read(65536)
         while data:  # read in 64k chunks
@@ -170,7 +170,9 @@ def indent(elem: Element, level=0):
     Returns
     -------
         None - Indents the element in-place
+
     Processing Logic:
+    ----------------
         - Calculate indentation string based on level
         - If element is empty, set text to indentation
         - If no tail, set tail to newline + indentation
@@ -190,8 +192,6 @@ def indent(elem: Element, level=0):
             elem.tail = i
     elif level and (not elem.tail or not elem.tail.strip()):
         elem.tail = i
-
-
 
 
 def is_int(string: str) -> bool:

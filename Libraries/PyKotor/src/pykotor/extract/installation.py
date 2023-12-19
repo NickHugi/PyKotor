@@ -1,8 +1,8 @@
 from __future__ import annotations
-from copy import copy
 
 import re
 from contextlib import suppress
+from copy import copy
 from enum import Enum, IntEnum
 from typing import TYPE_CHECKING, ClassVar, NamedTuple
 
@@ -78,7 +78,7 @@ class ItemTuple(NamedTuple):
     filepath: Path
 
 class TexturePackNames(Enum):
-    """Full list of ERF filenames containing the texture files for both games."""
+    """Full list of texturepack ERF filenames for both games."""
 
     TPA = "swpc_tex_tpa.erf"
     TPB = "swpc_tex_tpb.erf"
@@ -152,7 +152,7 @@ class Installation:
     ]
 
     def __init__(self, path: os.PathLike | str):
-        self._path: CaseAwarePath = path if isinstance(path, CaseAwarePath) else CaseAwarePath(path)
+        self._path: CaseAwarePath = CaseAwarePath.pathify(path)
 
         self._talktable: TalkTable = TalkTable(self._path / "dialog.tlk")
         self._female_talktable: TalkTable = TalkTable(self._path / "dialogf.tlk")
@@ -262,7 +262,7 @@ class Installation:
         -------
             The path to the streamvoice folder.
         """
-        return self._find_resource_folderpath(("streamwaves", "streamvoice"))
+        return self._find_resource_folderpath(("streamwaves", "streamvoice"))  #TODO: check the self.game() to determine which folder to find?
 
     def _find_resource_folderpath(
         self,
@@ -330,7 +330,7 @@ class Installation:
 
         files_list: list[CaseAwarePath] = list(path.safe_rglob("*")) if recurse else list(path.safe_iterdir())  # type: ignore[reportGeneralTypeIssues]
         for file in files_list:
-            if capsule_check and capsule_check(file.name):
+            if capsule_check and capsule_check(file):
                 resources[file.name] = list(Capsule(file))  # type: ignore[assignment, call-overload]
             else:
                 with suppress(Exception):
@@ -433,7 +433,7 @@ class Installation:
         self.load_override(directory)
 
     def reload_override_file(self, file: os.PathLike | str) -> None:
-        filepath: Path = file if isinstance(file, Path) else Path(file)  # type: ignore[reportGeneralTypeIssues, assignment]
+        filepath: Path = Path.pathify(file)  # type: ignore[reportGeneralTypeIssues, assignment]
         parent_folder = filepath.parent
         rel_folderpath = filepath.parent.relative_to(self.override_path()) if parent_folder.name else "."
         identifier = ResourceIdentifier.from_path(filepath)
@@ -584,7 +584,7 @@ class Installation:
             3. Run checks and score games
             4. Return game with highest score or None if scores are equal or all checks fail
         """
-        r_path: CaseAwarePath = path if isinstance(path, CaseAwarePath) else CaseAwarePath(path)
+        r_path: CaseAwarePath = CaseAwarePath.pathify(path)
 
         def check(x) -> bool:
             file_path: CaseAwarePath = r_path.joinpath(x)

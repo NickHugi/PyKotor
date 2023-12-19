@@ -143,7 +143,7 @@ class ModifyGFF(ABC):
             - Acquires the container at each step from the parent container
             - Returns the container at the end or None if not found along the path
         """
-        path = path if isinstance(path, PureWindowsPath) else PureWindowsPath(path)
+        path = PureWindowsPath.pathify(path)
         if not path.name:
             return root_container
         container: GFFStruct | GFFList | None = root_container
@@ -160,7 +160,7 @@ class ModifyGFF(ABC):
         root_container: GFFStruct,
         path: PureWindowsPath | str,
     ) -> _GFFField | None:
-        path = path if isinstance(path, PureWindowsPath) else PureWindowsPath(path)
+        path = PureWindowsPath.pathify(path)
         label: str = path.name
         container: GFFStruct | GFFList | None = root_container
         for step in path.parent.parts:
@@ -195,7 +195,7 @@ class AddStructToListGFF(ModifyGFF):
         """
         self.identifier: str = identifier
         self.value: FieldValue = value
-        self.path: PureWindowsPath = path if isinstance(path, PureWindowsPath) else PureWindowsPath(path)
+        self.path: PureWindowsPath = PureWindowsPath.pathify(path)
         self.index_to_token: int | None = index_to_token
 
         self.modifiers: list[ModifyGFF] = [] if modifiers is None else modifiers
@@ -264,7 +264,7 @@ class AddFieldGFF(ModifyGFF):
         self.label: str = label
         self.field_type: GFFFieldType = field_type
         self.value: FieldValue = value
-        self.path: PureWindowsPath = path if isinstance(path, PureWindowsPath) else PureWindowsPath(path)
+        self.path: PureWindowsPath = PureWindowsPath.pathify(path)
 
         self.modifiers: list[ModifyGFF] = [] if modifiers is None else modifiers
 
@@ -301,15 +301,13 @@ class AddFieldGFF(ModifyGFF):
         value = self.value.value(memory, self.field_type)
 
         # if 2DAMEMORY holds a path string from !FieldPath, navigate to that field and use its value.
-        if isinstance(value, PureWindowsPath):
-            from_path = value if isinstance(value, PureWindowsPath) else PureWindowsPath(value)
-            if from_path.parent.name:
-                from_container = self._navigate_containers(root_struct, from_path.parent)
-                if not isinstance(from_container, GFFStruct):
-                    reason = "does not exist!" if from_container is None else "is not an instance of a GFFStruct."
-                    logger.add_error(f"Unable use !FieldPath from 2DAMEMORY. Parent field at '{from_path}' {reason}")
-                    return
-                value = from_container.value(from_path.name)
+        if isinstance(value, PureWindowsPath) and value.parent.name:
+            from_container = self._navigate_containers(root_struct, value.parent)
+            if not isinstance(from_container, GFFStruct):
+                reason = "does not exist!" if from_container is None else "is not an instance of a GFFStruct."
+                logger.add_error(f"Unable use !FieldPath from 2DAMEMORY. Parent field at '{value}' {reason}")
+                return
+            value = from_container.value(value.name)
 
         def set_locstring():
             original = LocalizedString(0)
@@ -366,7 +364,7 @@ class Memory2DAModifierGFF(ModifyGFF):
     ):
         self.identifier: str = identifier
         self.twoda_index: int = twoda_index
-        self.path: PureWindowsPath = path if isinstance(path, PureWindowsPath) else PureWindowsPath(path)
+        self.path: PureWindowsPath = PureWindowsPath.pathify(path)
 
     def apply(self, container, memory: PatcherMemory, logger: PatchLogger):
         memory.memory_2da[self.twoda_index] = self.path
@@ -378,7 +376,7 @@ class ModifyFieldGFF(ModifyGFF):
         path: PureWindowsPath | str,
         value: FieldValue,
     ) -> None:
-        self.path: PureWindowsPath = path if isinstance(path, PureWindowsPath) else PureWindowsPath(path)
+        self.path: PureWindowsPath = PureWindowsPath.pathify(path)
         self.value: FieldValue = value
 
     def apply(
