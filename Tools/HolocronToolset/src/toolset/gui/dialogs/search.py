@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Callable
 
 from pykotor.resource.type import ResourceType
 from pykotor.tools.encoding import decode_bytes_with_fallbacks
@@ -23,7 +23,7 @@ class FileSearcher(QDialog):
         self.ui = search.Ui_Dialog()
         self.ui.setupUi(self)
 
-        self.results = []
+        self.results: list[FileResource] = []
         self.installation: HTInstallation | None = None
 
         self._installations: dict[str, HTInstallation] = installations
@@ -108,7 +108,7 @@ class FileSearcher(QDialog):
             - Stores results in self.results.
         """
         searchIn: list[FileResource] = []
-        results = []
+        results: list[FileResource] = []
 
         if searchCore:
             searchIn.extend(installation.chitin_resources())
@@ -129,7 +129,7 @@ class FileSearcher(QDialog):
             if name_check or (not filenamesOnly and data_check):
                 results.append(resource)
 
-        searches = [lambda resource=resource: search(resource) for resource in searchIn]
+        searches: list[Callable[[FileResource], None]] = [lambda resource=resource: search(resource) for resource in searchIn]
         AsyncBatchLoader(self, "Searching...", searches, "An error occured during the search").exec_()
 
         self.results = results
@@ -144,12 +144,13 @@ class FileResults(QDialog):
             parent (QWidget): Parent widget
             results (list[FileResource]): List of search results
             installation (HTInstallation): HT installation object
-        Returns:
-            None: Does not return anything
-        - Populate the list widget with search results
-        - Connect button click signals to accept and open actions
-        - Save search results and installation object as member variables
-        - Sort results alphabetically.
+
+        Processing Logic:
+        ----------------
+            - Populate the list widget with search results
+            - Connect button click signals to accept and open actions
+            - Save search results and installation object as member variables
+            - Sort results alphabetically.
         """
         super().__init__(parent)
 
@@ -182,6 +183,7 @@ class FileResults(QDialog):
         Returns:
         -------
             None: Does not return anything.
+
         Processes the current selection:
             - Gets the current item from the result list
             - Gets the data associated with the item if it exists
@@ -192,7 +194,7 @@ class FileResults(QDialog):
         self.selection = item.data(QtCore.Qt.UserRole) if item is not None else None
         super().accept()
 
-    def open(self):  # noqa: A003
+    def open(self) -> None:  # noqa: A003
         """Opens the current item in the result list.
 
         Args:
@@ -202,10 +204,13 @@ class FileResults(QDialog):
         Returns:
         -------
             None: Does not return anything.
-        - Gets the current item from the result list
-        - Checks if an item is selected
-        - Gets the FileResource object from the item's data
-        - Opens the resource editor window with the resource's details.
+
+        Processing Logic:
+        ----------------
+            - Gets the current item from the result list
+            - Checks if an item is selected
+            - Gets the FileResource object from the item's data
+            - Opens the resource editor window with the resource's details.
         """
         item = self.ui.resultList.currentItem()
         if item:
