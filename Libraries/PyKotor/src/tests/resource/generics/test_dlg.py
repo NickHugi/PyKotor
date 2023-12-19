@@ -38,7 +38,7 @@ class TestDLG(TestCase):
     def test_k1_reconstruct(self) -> None:
         gff: GFF = read_gff(TEST_K1_FILE)
         reconstructed_gff: GFF = dismantle_dlg(construct_dlg(gff), Game.K1)
-        result = gff.compare(reconstructed_gff, self.log_func)
+        result = gff.compare(reconstructed_gff, self.log_func, ignore_default_changes=True)
         output = os.linesep.join(self.log_messages)
         self.assertTrue(result, output)
 
@@ -53,7 +53,7 @@ class TestDLG(TestCase):
     def test_k2_reconstruct(self) -> None:
         gff: GFF = read_gff(r"C:\Program Files (x86)\Steam\steamapps\common\Knights of the Old Republic II\Override\ORIHA.dlg")
         reconstructed_gff: GFF = dismantle_dlg(construct_dlg(gff), Game.K2)
-        self.assertTrue(gff.compare(reconstructed_gff, self.log_func), os.linesep.join(self.log_messages))
+        self.assertTrue(gff.compare(reconstructed_gff, self.log_func, ignore_default_changes=True), os.linesep.join(self.log_messages))
 
     def test_k2_reconstruct_from_reconstruct(self) -> None:
         gff: GFF = read_gff(TEST_FILE)

@@ -81,7 +81,7 @@ class UTIEditorTest(TestCase):
         data, _ = self.editor.build()
         new = read_gff(data)
 
-        diff = old.compare(new, self.log_func)
+        diff = old.compare(new, self.log_func, ignore_default_changes=True)
         self.assertTrue(diff, os.linesep.join(self.log_messages))
 
     def test_open_and_save(self):

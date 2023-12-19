@@ -104,9 +104,6 @@ class TLKEditorTest(TestCase):
         else:
             self.assertEqual(obj1, obj2, context)
 
-    def test_placeholder(self):
-        ...
-
 
 if __name__ == "__main__":
     unittest.main()
