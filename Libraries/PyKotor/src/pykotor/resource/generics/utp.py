@@ -286,7 +286,7 @@ def dismantle_utp(
         item_struct: GFFStruct = item_list.add(i)
         item_struct.set_resref("InventoryRes", item.resref)
         item_struct.set_uint16("Repos_PosX", i)
-        item_struct.set_uint16("Repos_Posy", 0)
+        item_struct.set_uint16("Repos_PosY", 0)
         if item.droppable:
             item_struct.set_uint8("Dropable", value=True)
 

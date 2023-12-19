@@ -1,4 +1,5 @@
 from __future__ import annotations
+from copy import copy
 
 import re
 from contextlib import suppress
@@ -300,8 +301,7 @@ class Installation:
         else:
             if optional:
                 return CaseAwarePath(self._path, folder_names[0])
-        errored_folder_names = "' or '".join(folder_names)
-        msg = f"Could not find the '{errored_folder_names}' folder in '{self._path}'."
+        msg = f"Could not find the '{' or '.join(folder_names)}' folder in '{self._path}'."
         raise FileNotFoundError(msg)
 
     # endregion
@@ -602,51 +602,9 @@ class Installation:
             check("miles/msssoft.m3d"),
             check("data/party.bif"),
             check("data/player.bif"),
-            check("modules/danm13_loc.mod"),
-            check("modules/danm14aa_loc.mod"),
-            check("modules/danm14ab_loc.mod"),
-            check("modules/danm14ac_loc.mod"),
-            check("modules/danm14ad_loc.mod"),
-            check("modules/danm14ae_loc.mod"),
-            check("modules/danm15_loc.mod"),
-            check("modules/danm16_loc.mod"),
-            check("modules/ebo_m12aa_loc.mod"),
-            check("modules/ebo_m40aa_loc.mod"),
-            check("modules/ebo_m40ad_loc.mod"),
-            check("modules/ebo_m41aa_loc.mod"),
-            check("modules/ebo_m46ab_loc.mod"),
-            check("modules/end_m01aa_loc.mod"),
-            check("modules/end_m01ab_loc.mod"),
             check("modules/global.mod"),
-            check("modules/kas_m22aa_loc.mod"),
-            check("modules/kas_m22ab_loc.mod"),
-            check("modules/kas_m23aa_loc.mod"),
-            check("modules/kas_m23ab_loc.mod"),
-            check("modules/kas_m23ac_loc.mod"),
-            check("modules/kas_m23ad_loc.mod"),
-            check("modules/kas_m24aa_loc.mod"),
-            check("modules/kas_m25aa_loc.mod"),
-            check("modules/korr_m33aa_loc.mod"),
-            check("modules/korr_m33ab_loc.mod"),
-            check("modules/korr_m34aa_loc.mod"),
-            check("modules/korr_m35aa_loc.mod"),
-            check("modules/korr_m36aa_loc.mod"),
-            check("modules/korr_m37aa_loc.mod"),
-            check("modules/korr_m38aa_loc.mod"),
-            check("modules/korr_m38ab_loc.mod"),
-            check("modules/korr_m39aa_loc.mod"),
             check("modules/legal.mod"),
-            check("modules/lev_m40aa_loc.mod"),
-            check("modules/lev_m40ab_loc.mod"),
-            check("modules/lev_m40ac_loc.mod"),
-            check("modules/lev_m40ad_loc.mod"),
-            check("modules/liv_m99aa_loc.mod"),
-            check("modules/M12ab_loc.mod"),
             check("modules/mainmenu.mod"),
-            check("modules/manm26aa_loc.mod"),
-            check("modules/manm26ab_loc.mod"),
-            check("modules/manm26ac_loc.mod"),
-            check("modules/STUNT_00_loc.mod"),
         ]
 
         game2_checks = [
@@ -661,23 +619,6 @@ class Installation:
             check("miles/mssdolby.flt"),
             check("miles/mssogg.asi"),
             check("data/Dialogs.bif"),
-            check("lips/001EBO_loc.mod"),
-            check("Modules/002EBO_loc.mod"),
-            check("Modules/003EBO_loc.mod"),
-            check("Modules/004EBO_loc.mod"),
-            check("Modules/005EBO_loc.mod"),
-            check("Modules/006EBO_loc.mod"),
-            check("Modules/007EBO_loc.mod"),
-            check("Modules/101per_loc.mod"),
-            check("Modules/102PER_loc.mod"),
-            check("Modules/103PER_loc.mod"),
-            check("Modules/104PER_loc.mod"),
-            check("Modules/105PER_loc.mod"),
-            check("Modules/106PER_loc.mod"),
-            check("Modules/107PER_loc.mod"),
-            check("Modules/151HAR_loc.mod"),
-            check("Modules/152HAR_loc.mod"),
-            check("Modules/153HAR_loc.mod"),
         ]
 
         # Scoring for each game
@@ -937,13 +878,13 @@ class Installation:
             for query in queries:
                 for resource in values:
                     identifier = resource.identifier()
-                    if query.resname.lower() == identifier.resname.lower() and identifier.restype == query.restype:
+                    if query == identifier:
                         location = LocationResult(
                             resource.filepath(),
                             resource.offset(),
                             resource.size(),
                         )
-                        locations[resource.identifier()].append(location)
+                        locations[identifier].append(location)
 
         def check_capsules(values: list[Capsule]):
             for capsule in values:
@@ -965,24 +906,14 @@ class Installation:
                     queried_files.update(
                         file
                         for file in folder.rglob("*")
-                        if (
-                            file.stem.lower() == query.resname.lower()
-                            and file.suffix.lower() == f".{query.restype.extension.lower()}"
-                            and file.safe_isfile()
-                        )
+                        if ResourceIdentifier.from_path(file) == query and file.safe_isfile()
                     )
             for file in queried_files:
                 identifier = ResourceIdentifier.from_path(file)
-                resource = FileResource(
-                    *identifier,
-                    file.stat().st_size,
-                    0,
-                    file,
-                )
                 location = LocationResult(
-                    resource.filepath(),
-                    resource.offset(),
-                    resource.size(),
+                    file,
+                    0,
+                    file.stat().st_size,
                 )
                 locations[identifier].append(location)
 
@@ -1090,7 +1021,7 @@ class Installation:
         def decode_txi(txi_bytes: bytes):
             return txi_bytes.decode("ascii", errors="ignore")
 
-        def get_txi_from_list(resource_list: list[FileResource]) -> str:
+        def get_txi_from_list(resname: str, resource_list: list[FileResource]) -> str:
             txi_resource: FileResource | None = next(
                 (
                     resource
@@ -1108,16 +1039,16 @@ class Installation:
         def check_list(resource_list: list[FileResource]):
             for resource in resource_list:
                 resname = resource.resname()
-                if resname.lower() in resnames and resource.restype() in texture_types:
+                if resname in resnames and resource.restype() in texture_types:
                     resnames.remove(resname)
                     tpc = read_tpc(resource.data())
                     if resource.restype() == ResourceType.TGA:
-                        tpc.txi = get_txi_from_list(resource_list)
+                        tpc.txi = get_txi_from_list(resname, resource_list)
                     textures[resname] = tpc
 
-        def check_capsules(values: list[Capsule]):
+        def check_capsules(values: list[Capsule]):  # NOTE: This function does not support txi's in the Override folder.
             for capsule in values:
-                for resname in resnames:
+                for resname in copy(resnames):
                     texture_data: bytes | None = None
                     tformat: ResourceType | None = None
                     for tformat in texture_types:
@@ -1128,11 +1059,9 @@ class Installation:
                         continue
 
                     resnames.remove(resname)
-                    tpc: TPC = read_tpc(texture_data)
+                    tpc: TPC = read_tpc(texture_data) if texture_data else TPC()
                     if tformat == ResourceType.TGA:
-                        txi_source: bytes | None = capsule.resource(resname, ResourceType.TXI)
-                        if txi_source is not None:
-                            tpc.txi = decode_txi(txi_source)
+                        tpc.txi = get_txi_from_list(resname, capsule.resources())
                     textures[resname] = tpc
 
         def check_folders(values: list[Path]):
@@ -1143,14 +1072,14 @@ class Installation:
                     for file in folder.rglob("*")
                     if (
                         file.stem.lower() in resnames
-                        and ResourceType.from_extension(file.suffix)
                         and ResourceType.from_extension(file.suffix) in texture_types
                         and file.safe_isfile()
                     )
                 )
             for texture_file in queried_texture_files:
+                resnames.remove(texture_file.stem.lower())
                 texture_data: bytes = BinaryReader.load_file(texture_file)
-                tpc = read_tpc(texture_data)
+                tpc = read_tpc(texture_data) if texture_data else TPC()
                 txi_file = CaseAwarePath(texture_file.with_suffix(".txi"))
                 if txi_file.exists():
                     txi_data: bytes = BinaryReader.load_file(txi_file)
@@ -1251,11 +1180,12 @@ class Installation:
             for resource in values:
                 if resource.resname().lower() in resnames and resource.restype() in sound_formats:
                     resnames.remove(resource.resname())
-                    sounds[resource.resname()] = fix_audio(resource.data())
+                    sound_data = resource.data()
+                    sounds[resource.resname()] = fix_audio(sound_data) if sound_data else b""
 
         def check_capsules(values: list[Capsule]):
             for capsule in values:
-                for resname in resnames:
+                for resname in copy(resnames):
                     sound_data: bytes | None = None
                     for sformat in sound_formats:
                         sound_data = capsule.resource(resname, sformat)
@@ -1264,8 +1194,7 @@ class Installation:
                     if sound_data is None:
                         continue
                     resnames.remove(resname)
-                    sounds[resname] = fix_audio(sound_data)
-                    continue
+                    sounds[resname] = fix_audio(sound_data) if sound_data else b""
 
         def check_folders(values: list[Path]):
             queried_sound_files: set[Path] = set()
@@ -1275,14 +1204,14 @@ class Installation:
                     for file in folder.rglob("*")
                     if (
                         file.stem.lower() in resnames
-                        and ResourceType.from_extension(file.suffix)
                         and ResourceType.from_extension(file.suffix) in sound_formats
                         and file.safe_isfile()
                     )
                 )
             for sound_file in queried_sound_files:
-                data = BinaryReader.load_file(sound_file)
-                sounds[sound_file.stem] = fix_audio(data)
+                resnames.remove(sound_file.stem.lower())
+                sound_data = BinaryReader.load_file(sound_file)
+                sounds[sound_file.stem] = fix_audio(sound_data) if sound_data else b""
 
         function_map = {
             SearchLocation.OVERRIDE: lambda: check_dict(self._override),
@@ -1384,7 +1313,7 @@ class Installation:
 
         name: str = root
         for module in self.modules_list():
-            if root not in module:
+            if root.lower() not in module.lower():
                 continue
 
             capsule = Capsule(self.module_path() / module)
@@ -1403,10 +1332,10 @@ class Installation:
 
                 are: GFF = read_gff(are_tag_resource)
                 locstring = are.root.get_locstring("Name")
-                if locstring.stringref > 0:
-                    name = self.talktable().string(locstring.stringref)
-                else:
+                if locstring.stringref == -1:
                     name = locstring.get(Language.ENGLISH, Gender.MALE) or name
+                else:
+                    name = self.talktable().string(locstring.stringref)
                 break
 
         return name
@@ -1446,16 +1375,18 @@ class Installation:
         mod_id = ""
 
         for module in self.modules_list():
-            if root not in module:
+            if root.lower() not in module.lower():
                 continue
 
-            capsule = Capsule(self.module_path() / module)
+            with suppress(Exception):
+                capsule = Capsule(self.module_path() / module)
 
-            if capsule.exists("module", ResourceType.IFO):
-                these_bytes = capsule.resource("module", ResourceType.IFO)
-                if these_bytes:
-                    ifo = read_gff(these_bytes)
+                module_ifo_data = capsule.resource("module", ResourceType.IFO)
+                if module_ifo_data:
+                    ifo = read_gff(module_ifo_data)
                     mod_id = ifo.root.get_resref("Mod_Entry_Area").get()
+                    if mod_id:
+                        break
 
         return mod_id
 

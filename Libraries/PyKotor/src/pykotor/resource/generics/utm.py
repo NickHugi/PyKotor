@@ -74,6 +74,7 @@ def construct_utm(
     for item_struct in item_list:
         item = InventoryItem(ResRef.from_blank())
         utm.inventory.append(item)
+        item.droppable = bool(item_struct.acquire("Dropable", 0))
         item.resref = item_struct.acquire("InventoryRes", ResRef.from_blank())
         item.infinite = bool(item_struct.acquire("Infinite", 0))
 
@@ -103,7 +104,9 @@ def dismantle_utm(
         item_struct = item_list.add(i)
         item_struct.set_resref("InventoryRes", item.resref)
         item_struct.set_uint16("Repos_PosX", i)
-        item_struct.set_uint16("Repos_posy", 0)
+        item_struct.set_uint16("Repos_PosY", 0)
+        if item.droppable:
+            item_struct.set_uint8("Dropable", int(item.droppable))
         if item.infinite:
             item_struct.set_uint8("Infinite", value=True)
 

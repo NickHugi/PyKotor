@@ -159,7 +159,7 @@ class GFF:
                     )
                     self.print_tree(gff_struct, indent + 2)
 
-    def compare(self, other_gff: GFF, log_func: Callable = print, path: PureWindowsPath | None = None) -> bool:
+    def compare(self, other_gff: GFF, log_func: Callable = print, path: PureWindowsPath | None = None, ignore_default_changes: bool = False) -> bool:
         """Compare two GFF objects.
 
         Args:
@@ -181,7 +181,7 @@ class GFF:
             - Write comparison report to given path if provided
             - Return True if no differences found, False otherwise.
         """
-        return self.root.compare(other_gff.root, log_func, path)
+        return self.root.compare(other_gff.root, log_func, path, ignore_default_changes)
 
 
 
@@ -307,6 +307,7 @@ class GFFStruct:
         other_gff_struct: GFFStruct,
         log_func: Callable = print,
         current_path: PureWindowsPath | os.PathLike | str | None = None,
+        ignore_default_changes=False,
     ) -> bool:
         """Recursively compares two GFFStructs.
 
@@ -340,6 +341,9 @@ class GFFStruct:
             log_func()
             log_func(f"GFFStruct: number of fields have changed at '{current_path}': '{len(self)}' --> '{len(other_gff_struct)}'")
             is_same_result = False
+        if self.struct_id != other_gff_struct.struct_id:
+            log_func(f"Struct ID is different at '{current_path}': '{self.struct_id}' --> '{other_gff_struct.struct_id}'")
+            is_same_result = False
 
         # Create dictionaries for both old and new structures
         old_dict: dict[str, tuple[GFFFieldType, Any]] = {label or f"gffstruct({idx})": (ftype, value) for idx, (label, ftype, value) in enumerate(self) if label not in ignore_labels}
@@ -357,6 +361,8 @@ class GFFStruct:
 
             # Check for missing fields/values in either structure
             if old_ftype is None or old_value is None:
+                if ignore_default_changes and not new_value:
+                    continue
                 if new_ftype is None:
                     msg = "new_ftype shouldn't be None here."
                     raise RuntimeError(msg)
@@ -364,6 +370,8 @@ class GFFStruct:
                 is_same_result = False
                 continue
             if new_value is None or new_ftype is None:
+                if ignore_default_changes and not old_value:
+                    continue
                 log_func(f"Missing '{old_ftype.name}' field at '{child_path}': {format_text(old_value)}")
                 is_same_result = False
                 continue
@@ -382,13 +390,13 @@ class GFFStruct:
                     log_func(f"Struct ID is different at '{child_path}': '{cur_struct_this.struct_id}'-->'{new_value.struct_id}'")
                     is_same_result = False
 
-                if not cur_struct_this.compare(new_value, log_func, child_path):
+                if not cur_struct_this.compare(new_value, log_func, child_path, ignore_default_changes):
                     is_same_result = False
                     continue
 
             elif old_ftype == GFFFieldType.List:
                 gff_list: GFFList = old_value
-                if not gff_list.compare(new_value, log_func, child_path):
+                if not gff_list.compare(new_value, log_func, child_path, ignore_default_changes):
                     is_same_result = False
                     continue
 
@@ -396,7 +404,7 @@ class GFFStruct:
                 if (
                     isinstance(old_value, float)
                     and isinstance(new_value, float)
-                    and math.isclose(old_value, new_value, rel_tol=1e-9, abs_tol=1e-9)
+                    and math.isclose(old_value, new_value, rel_tol=1e-7, abs_tol=1e-7)
                 ):
                     continue
                 if str(old_value) == str(new_value):
@@ -1222,7 +1230,7 @@ class GFFList:
         self._structs.pop(index)
 
 
-    def compare(self, other_gff_list: GFFList, log_func=print, current_path: PureWindowsPath | None = None) -> bool:
+    def compare(self, other_gff_list: GFFList, log_func=print, current_path: PureWindowsPath | None = None, ignore_default_changes: bool = False) -> bool:
         """Compare two GFFLists recursively.
 
         Functionally the same as __eq__, but will also log/print the differences.
@@ -1283,14 +1291,7 @@ class GFFList:
         for list_index in common_items:
             old_child: GFFStruct = old_dict[list_index]
             new_child: GFFStruct = new_dict[list_index]
-            if old_child.struct_id != new_child.struct_id:
-                log_func(f"Struct ID is different at '{current_path / str(list_index)}': '{old_child.struct_id}'-->'{new_child.struct_id}'")
-                is_same_result = False
-
-            if not old_child.compare(new_child, log_func, current_path / str(list_index)):
-                is_same_result = False
-                continue
-            if not old_child.compare(new_child, log_func, current_path / str(list_index)):
+            if not old_child.compare(new_child, log_func, current_path / str(list_index), ignore_default_changes):
                 is_same_result = False
 
         return is_same_result

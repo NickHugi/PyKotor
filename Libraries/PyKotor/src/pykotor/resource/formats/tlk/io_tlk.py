@@ -16,11 +16,13 @@ class TLKBinaryReader(ResourceReader):
         source: SOURCE_TYPES,
         offset: int = 0,
         size: int = 0,
+        language: Language | None = None,
     ):
         super().__init__(source, offset, size)
         self._tlk: TLK
         self._texts_offset = 0
         self._text_headers: list[ArrayHead] = []
+        self._language = language
 
     @autoclose
     def load(
@@ -57,7 +59,7 @@ class TLKBinaryReader(ResourceReader):
             msg = "Invalid file version."
             raise ValueError(msg)
 
-        self._tlk.language = Language(language_id)
+        self._tlk.language = self._language if self._language is not None else Language(language_id)
         self._tlk.resize(string_count)
 
         self._texts_offset = entries_offset

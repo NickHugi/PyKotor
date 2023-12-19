@@ -20,7 +20,7 @@ if UTILITY_PATH.exists():
     sys.path.insert(0, working_dir)
 
 from pykotor.resource.formats.gff import read_gff
-from pykotor.resource.generics.utd import construct_utd, dismantle_utd
+from pykotor.resource.generics.utd import UTD, construct_utd, dismantle_utd
 
 TEST_FILE = "src/tests/files/test.utd"
 K1_SAME_TEST_FILE = "src/tests/files/k1_utd_same_test.utd"
@@ -49,7 +49,7 @@ class TestUTD(TestCase):
         utd = construct_utd(gff)
         self.validate_io(utd)
 
-    def validate_io(self, utd):
+    def validate_io(self, utd: UTD):
         self.assertEqual("TelosDoor13", utd.tag)
         self.assertEqual(123731, utd.name.stringref)
         self.assertEqual(-1, utd.description.stringref)

@@ -116,11 +116,11 @@ class TLKEditor(Editor):
 
     def change_language(self, language: Language):
 
-        tlk: TLK = read_tlk(self._revert)
-        tlk.language = language
+        tlk: TLK = read_tlk(self._revert, language=language)
         self._extracted_from_new_2()
         dialog = LoaderDialog(self, bytes_tlk(tlk), self.model)
         self._extracted_from_load_10(dialog)
+        self.language = tlk.language
 
     def load(self, filepath: os.PathLike | str, resref: str, restype: ResourceType, data: bytes) -> None:
         """Loads data into the resource from a file.
@@ -148,7 +148,7 @@ class TLKEditor(Editor):
         self._extracted_from_load_10(dialog)
 
     # TODO Rename this here and in `change_language` and `load`
-    def _extracted_from_load_10(self, dialog):
+    def _extracted_from_load_10(self, dialog: LoaderDialog):
         dialog.exec_()
         self.model = dialog.model
         self.proxyModel = QSortFilterProxyModel(self)
@@ -220,11 +220,11 @@ class TLKEditor(Editor):
 
         Processing Logic:
         ----------------
-        - Check if any rows are selected in the talk table
-        - If no rows selected, disable text and sound editors
-        - If rows selected, enable text and sound editors
-        - Get selected row data from model
-        - Populate text and sound editors with data from selected row.
+            - Check if any rows are selected in the talk table
+            - If no rows selected, disable text and sound editors
+            - If rows selected, enable text and sound editors
+            - Get selected row data from model
+            - Populate text and sound editors with data from selected row.
         """
         selected = self.ui.talkTable.selectionModel().selection()
 

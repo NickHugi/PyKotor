@@ -97,7 +97,7 @@ def construct_jrl(gff: GFF) -> JRL:
     return jrl
 
 
-def dismantle_jrl(jrl: JRL) -> GFF:
+def dismantle_jrl(jrl: JRL) -> GFF:  # TODO: store original list indices and sort.
     gff = GFF(GFFContent.JRL)
 
     category_list: GFFList = gff.root.set_list("Categories", GFFList())

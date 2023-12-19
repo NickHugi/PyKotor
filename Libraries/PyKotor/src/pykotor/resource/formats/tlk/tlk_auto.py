@@ -10,6 +10,7 @@ from pykotor.resource.formats.tlk.io_tlk_xml import TLKXMLReader, TLKXMLWriter
 from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES, ResourceType
 
 if TYPE_CHECKING:
+    from pykotor.common.language import Language
     from pykotor.resource.formats.tlk.tlk_data import TLK
 
 
@@ -71,6 +72,7 @@ def read_tlk(
     source: SOURCE_TYPES,
     offset: int = 0,
     size: int | None = None,
+    language: Language | None = None,
 ) -> TLK:
     """Returns an TLK instance from the source.
 
@@ -100,7 +102,7 @@ def read_tlk(
         raise ValueError(msg)
 
     if file_format == ResourceType.TLK:
-        return TLKBinaryReader(source, offset, size or 0).load()
+        return TLKBinaryReader(source, offset, size or 0, language).load()
     if file_format == ResourceType.TLK_XML:
         return TLKXMLReader(source, offset, size or 0).load()
     if file_format == ResourceType.TLK_JSON:

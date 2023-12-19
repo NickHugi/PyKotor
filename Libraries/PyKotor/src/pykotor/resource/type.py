@@ -159,16 +159,13 @@ class ResourceType(Enum):
     LIP_JSON = ResourceTuple(50026, "lip.json", "Lips", "plaintext")
 
     def __new__(cls, *args, **kwargs):
-        # Disable the read-only enforcer
-        mag_setter = cls.__setattr__
-        cls.__setattr__ = Enum.__setattr__
-        # Create a new instance of the enum member
         obj: ResourceType = object.__new__(cls)
-        obj._name_ = args[1].upper() or "INVALID"
+        name = args[1].upper() or "INVALID"
+        while name in cls.__members__:
+            name = f"{name}_{uuid.uuid4().hex}"
+        obj._name_ = name
         obj.__init__(*args, **kwargs)
-        obj.__setattr__ = mag_setter
-        super().__new__(cls, obj)
-        return obj
+        return super().__new__(cls, obj)
 
     def __init__(
         self,
@@ -187,14 +184,6 @@ class ResourceType(Enum):
 
     def __bool__(self) -> bool:
         return not self.is_invalid
-
-    def __setattr__(self, attr_name, value):
-        if getattr(self, "_is_initialized", False):
-            # If the object is initialized, prevent modifications
-            msg: str = f"{self.__class__.__name__} is read-only and cannot be modified. Attempted {self!r}.{attr_name}={value}"
-            raise AttributeError(msg)
-        # Allow attribute setting during initialization
-        super().__setattr__(attr_name, value)
 
     def __repr__(
         self,
@@ -225,12 +214,7 @@ class ResourceType(Enum):
         if isinstance(other, ResourceType):
             if not self or not other:
                 return self.is_invalid and other.is_invalid
-            return (
-                self.type_id == other.type_id
-                and self.extension == other.extension
-                and self.contents == other.contents
-                and self.category == other.category
-            )
+            return self.name == other.name
         if isinstance(other, str):
             return self.extension == other.lower()
         if isinstance(other, int):
@@ -282,10 +266,13 @@ class ResourceType(Enum):
         if not kwargs:
             return cls.INVALID
         instance = object.__new__(cls)
-        instance._name_ = f"INVALID_{kwargs.get('extension', cls.INVALID.extension) or uuid.uuid4().hex}"
+        name = f"INVALID_{kwargs.get('extension', cls.INVALID.extension) or uuid.uuid4().hex}"
+        while name in cls.__members__:
+            name = f"INVALID_{kwargs.get('extension', cls.INVALID.extension)}{uuid.uuid4().hex}"
+        instance._name_ = name
         instance._value_ = ResourceTuple(**{**cls.INVALID.value, **kwargs, "is_invalid": True})
         instance.__init__(**instance.value)
-        return instance
+        return super().__new__(cls, instance)
 
     @classmethod
     def from_extension(

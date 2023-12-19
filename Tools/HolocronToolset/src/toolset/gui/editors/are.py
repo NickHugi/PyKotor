@@ -94,10 +94,12 @@ class AREEditor(Editor):
         ----
             installation: {HTInstallation object}: Installation details
 
-        - Set installation object to internal variable
-        - Set installation name to name edit field
-        - Get camera styles from htinstallation and populate dropdown
-        - Show/hide dirt, grass, snow, rain, lightning UI elements.
+        Processing Logic:
+        ----------------
+            - Set installation object to internal variable
+            - Set installation name to name edit field
+            - Get camera styles from htinstallation and populate dropdown
+            - Show/hide dirt, grass, snow, rain, lightning UI elements.
         """
         self._installation = installation
 
@@ -129,12 +131,12 @@ class AREEditor(Editor):
             are: ARE - Area object
 
         Loads area data:
-        - Sets basic properties like name, tag, camera style
-        - Sets map properties like points, zoom, axis
-        - Sets weather properties like fog, lighting, wind
-        - Sets terrain properties like grass, dirt
-        - Sets script properties like onEnter, onExit
-        - Sets comment text.
+            - Sets basic properties like name, tag, camera style
+            - Sets map properties like points, zoom, axis
+            - Sets weather properties like fog, lighting, wind
+            - Sets terrain properties like grass, dirt
+            - Sets script properties like onEnter, onExit
+            - Sets comment text.
         """
         self._are = are
 
@@ -144,9 +146,7 @@ class AREEditor(Editor):
                 lyt = read_lyt(result.data)
 
                 results = self._installation.resources([ResourceIdentifier(room.model, ResourceType.WOK) for room in lyt.rooms])
-                woks = [read_bwm(result.data) for result in results.values() if result]
-
-                self.ui.minimapRenderer.setWalkmeshes(woks)
+                self.ui.minimapRenderer.setWalkmeshes([read_bwm(result.data) for result in results.values() if result])
 
             order = [
                 SearchLocation.OVERRIDE,
@@ -154,8 +154,11 @@ class AREEditor(Editor):
                 SearchLocation.MODULES
             ]
             self._minimap = self._installation.texture(f"lbl_map{self._resref}", order)
-            self.ui.minimapRenderer.setMinimap(are, self._minimap)
-            self.ui.minimapRenderer.centerCamera()
+            if self._minimap is None:
+                print(f"Could not find lbl_map{self._resref} to load minimap")
+            else:
+                self.ui.minimapRenderer.setMinimap(are, self._minimap)
+                self.ui.minimapRenderer.centerCamera()
 
         # Basic
         self.ui.nameEdit.setLocstring(are.name)
@@ -236,6 +239,7 @@ class AREEditor(Editor):
         Returns
         -------
             tuple[bytes, bytes]: The ARE data and log
+
         Processing Logic:
         ----------------
             - Reads values from UI controls like name, tag, camera style etc
@@ -246,7 +250,7 @@ class AREEditor(Editor):
         self._are = self._buildARE()
 
         data = bytearray()
-        write_gff(dismantle_are(self._are), data)
+        write_gff(dismantle_are(self._are, self._installation.game()), data)
         return data, b""
 
     def _buildARE(self) -> ARE:
@@ -341,9 +345,9 @@ class AREEditor(Editor):
 
         Processing Logic:
         ----------------
-        - Opens a QColorDialog to select a new color
-        - Converts the selected QColor to a Color object
-        - Sets the colorSpin value to the BGR integer of the selected color.
+            - Opens a QColorDialog to select a new color
+            - Converts the selected QColor to a Color object
+            - Sets the colorSpin value to the BGR integer of the selected color.
         """
         qcolor = QColorDialog.getColor(QColor(colorSpin.value()))
         color = Color.from_bgr_integer(qcolor.rgb())
@@ -359,11 +363,11 @@ class AREEditor(Editor):
 
         Processing Logic:
         ----------------
-        - Convert the integer value to a Color object 
-        - Extract the RGB values from the Color object
-        - Create a bytes object with the RGB values repeated for a 16x16 image
-        - Create a QImage from the bytes data
-        - Set the pixmap on the colorLabel from the QImage
+            - Convert the integer value to a Color object
+            - Extract the RGB values from the Color object
+            - Create a bytes object with the RGB values repeated for a 16x16 image
+            - Create a QImage from the bytes data
+            - Set the pixmap on the colorLabel from the QImage
         """
         color = Color.from_bgr_integer(value)
         r, g, b = int(color.r * 255), int(color.g * 255), int(color.b * 255)
@@ -372,7 +376,7 @@ class AREEditor(Editor):
         colorLabel.setPixmap(pixmap)
 
     def changeName(self) -> None:
-        dialog = LocalizedStringDialog(self, self._installation, self.ui.nameEdit.locstring)
+        dialog = LocalizedStringDialog(self, self._installation, self.ui.nameEdit.locstring())
         if dialog.exec_():
             self._loadLocstring(self.ui.nameEdit, dialog.locstring)
 

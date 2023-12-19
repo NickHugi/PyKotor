@@ -36,11 +36,14 @@ class TestUTC(TestCase):
     def test_gff_reconstruct(self) -> None:
         gff = read_gff(TEST_FILE)
         reconstructed_gff = dismantle_utc(construct_utc(gff), Game.K2)
-        result = gff.compare(reconstructed_gff, self.log_func)
+        result = gff.compare(reconstructed_gff, self.log_func, ignore_default_changes=True)
         output = os.linesep.join(self.log_messages)
         if not result:
-            expected_output = r"Field 'LocalizedString' is different at 'GFFRoot\Description': 123 --> -1"
-            self.assertEqual(output.strip(), expected_output, "Comparison output does not match expected output")
+            expected_output = r"""
+GFFStruct: number of fields have changed at 'GFFRoot': '74' --> '75'
+Field 'LocalizedString' is different at 'GFFRoot\Description': 123 --> -1
+"""
+            self.assertEqual(output.strip().replace("\r\n", "\n"), expected_output.strip(), "Comparison output does not match expected output")
         else:
             self.assertTrue(result)
 

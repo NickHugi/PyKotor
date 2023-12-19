@@ -20,7 +20,7 @@ if UTILITY_PATH.exists():
 
 from pykotor.common.geometry import Vector2
 from pykotor.resource.formats.gff import read_gff
-from pykotor.resource.generics.pth import construct_pth, dismantle_pth
+from pykotor.resource.generics.pth import PTH, construct_pth, dismantle_pth
 
 TEST_FILE = "src/tests/files/test.pth"
 
@@ -48,7 +48,7 @@ class TestPTH(unittest.TestCase):
         pth = construct_pth(gff)
         self.validate_io(pth)
 
-    def validate_io(self, pth):
+    def validate_io(self, pth: PTH):
         self.assertEqual(pth.get(0), Vector2(0.0, 0.0))
         self.assertEqual(pth.get(1), Vector2(0.0, 1.0))
         self.assertEqual(pth.get(2), Vector2(1.0, 1.0))

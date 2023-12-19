@@ -137,13 +137,16 @@ class CaseAwarePath(InternalPath):  # type: ignore[misc]
 
     def __hash__(self):
         """Ensures any instance of this class will be treated the same in lists etc, if they're case-insensitive matches."""
-        return hash((self.__class__.__name__, super().__str__().lower()))
+        return hash((self.__class__, super().__str__().lower()))
 
-    def __eq__(self, other: object):
+    def __eq__(self, other):
         """All pathlib classes that derive from PurePath are equal to this object if their str paths are case-insensitive equivalents."""
         if not isinstance(other, (os.PathLike, str)):
-            return NotImplemented
-        other = other.as_posix() if isinstance(other, pathlib.PurePath) else str(other)
+            if hasattr(other, "__fspath__"):
+                other = other.__fspath__()
+            else:
+                return NotImplemented
+        other = other.as_posix() if isinstance(other, InternalPurePath) else str(other)
         return self._fix_path_formatting(other).lower() == super().__str__().lower()
 
     def __repr__(self) -> str:

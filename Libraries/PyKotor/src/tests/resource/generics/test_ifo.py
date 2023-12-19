@@ -20,7 +20,7 @@ if UTILITY_PATH.exists():
     sys.path.insert(0, working_dir)
 
 from pykotor.resource.formats.gff import read_gff
-from pykotor.resource.generics.ifo import construct_ifo, dismantle_ifo
+from pykotor.resource.generics.ifo import IFO, construct_ifo, dismantle_ifo
 
 TEST_FILE = "src/tests/files/test.ifo"
 
@@ -48,7 +48,7 @@ class TestIFO(TestCase):
         ifo = construct_ifo(gff)
         self.validate_io(ifo)
 
-    def validate_io(self, ifo):
+    def validate_io(self, ifo: IFO):
         self.assertEqual(b"R:\xe5\x9e\xe3sq\x1d\x0f\xf0i\x9c\xb9a\x9f\xa7", ifo.mod_id)
         self.assertEqual(2, ifo.creator_id)
         self.assertEqual(3, ifo.version)

@@ -20,7 +20,7 @@ if UTILITY_PATH.exists():
 
 from pykotor.common.misc import Game
 from pykotor.resource.formats.gff import read_gff
-from pykotor.resource.generics.uts import construct_uts, dismantle_uts
+from pykotor.resource.generics.uts import UTS, construct_uts, dismantle_uts
 
 TEST_FILE = "src/tests/files/test.uts"
 TEST_K1_FILE = "src/tests/files/test_k1.uts"
@@ -54,7 +54,7 @@ class TestUTS(TestCase):
         uts = construct_uts(gff)
         self.validate_io(uts)
 
-    def validate_io(self, uts):
+    def validate_io(self, uts: UTS):
         self.assertEqual("3Csounds", uts.tag)
         self.assertEqual(128551, uts.name.stringref)
         self.assertEqual("3csounds", uts.resref)
