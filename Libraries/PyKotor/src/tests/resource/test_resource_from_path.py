@@ -22,6 +22,10 @@ from pykotor.extract.file import ResourceIdentifier
 from pykotor.resource.type import ResourceType
 
 class TestResourceType(unittest.TestCase):
+    def test_resource_type_hashing(self):
+        for type_name in ResourceType.__members__:
+            test_set = {ResourceType.__members__[type_name], ResourceType.__members__[type_name].extension}
+            self.assertEqual(len(test_set), 1, repr(test_set))
     def test_from_invalid(self):
         invalid = ResourceType.from_invalid(extension="aSdF")
         self.assertEqual(invalid, ResourceType.INVALID)
@@ -66,13 +70,21 @@ class TestResourceType(unittest.TestCase):
 
 class TestResourceIdentifier(unittest.TestCase):
     """ These tests were created because of the many soft, hard-to-find errors that occur all over when this function ever fails."""
-
     def assert_resource_identifier(self, file_path, expected_resname, expected_restype):
         # Common assertion logic for all tests
         result = ResourceIdentifier.from_path(file_path)
         fail_message = f"\nresname: '{result.resname}' restype: '{result.restype}'\nexpected resname: '{expected_resname}' expected restype: '{expected_restype}'"
         self.assertEqual(result.resname, expected_resname, fail_message)
         self.assertEqual(result.restype, expected_restype, fail_message)
+        test_set = {result, str(result)}
+        self.assertEqual(len(test_set), 1, repr(test_set))
+
+    def test_hashing(self):
+        test_resname = "test_resname"
+        for type_name in ResourceType.__members__:
+            test_ident = ResourceIdentifier(test_resname, ResourceType.__members__[type_name])
+            test_set = {test_ident, str(test_ident)}
+            self.assertEqual(len(test_set), 1, str(test_set))
 
     def test_from_path_mdl(self):
         self.assert_resource_identifier("C:/path/to/resource.mdl", "resource", ResourceType.MDL)

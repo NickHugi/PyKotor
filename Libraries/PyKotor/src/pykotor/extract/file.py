@@ -125,13 +125,15 @@ class LocationResult(NamedTuple):
 
 
 class ResourceIdentifier(NamedTuple):
+    """Class for storing resource name and type, facilitating case-insensitive object comparisons and hashing equal to their string representations."""
+
     resname: str
     restype: ResourceType
 
     def __hash__(
         self,
     ):
-        return hash(f"{self.resname.lower()}.{self.restype.extension}")
+        return hash(str(self))
 
     def __repr__(
         self,
@@ -141,14 +143,19 @@ class ResourceIdentifier(NamedTuple):
     def __str__(
         self,
     ):
-        return f"{self.resname.lower()}.{self.restype.extension}"
+        return f"{self.resname.lower()}{f'.{self.restype.extension.lower()}' if self.restype.extension else ''}"
 
     def __eq__(
         self,
         other: ResourceIdentifier | object,
     ):
+        if isinstance(other, str):
+            other = ResourceIdentifier.from_path(other)
         if isinstance(other, ResourceIdentifier):
-            return self.resname.lower() == other.resname.lower() and self.restype == other.restype
+            return (
+                self.resname.lower() == other.resname.lower()
+                and self.restype.extension.lower() == other.restype.extension.lower()
+            )
         return NotImplemented
 
     def validate(self):
@@ -160,21 +167,22 @@ class ResourceIdentifier(NamedTuple):
 
     @classmethod
     def from_path(cls, file_path: os.PathLike | str) -> ResourceIdentifier:
-        """Generate a ResourceIdentifier from a file path. If not valid, will return ResourceType.INVALID.
+        """Generate a ResourceIdentifier from a file path or file name. If not valid, will return an invalidated ResourceType equal to ResourceType.INVALID.
 
         Args:
         ----
-            file_path: {Path or string to the file}:
+            file_path (os.PathLike | str): The filename, or path to the file, to construct an identifier from
 
         Returns:
         -------
-            ResourceIdentifier: Resource identifier object
+            ResourceIdentifier: Determined ResourceIdentifier object.
 
         Processing Logic:
         ----------------
-            - Split the file path on the filename and extension
-            - Determine the resource type from the extension
-            - Return a ResourceIdentifier with the name and type.
+            - Splits the file path into resource name and type by filename dots, starting from maximum dots
+            - Validates the extracted resource type
+            - If splitting fails, uses stem as name and extension (from the last dot) as type
+            - Handles exceptions during processing
         """
         path_obj: PurePath = PurePath("")  #PurePath("<INVALID>")
         with suppress(Exception), suppress(TypeError):
@@ -189,4 +197,4 @@ class ResourceIdentifier(NamedTuple):
                         ResourceType.from_extension(restype_ext).validate(),
                     )
 
-        return ResourceIdentifier(path_obj.stem, ResourceType.INVALID)
+        return ResourceIdentifier(path_obj.stem, ResourceType.from_extension(path_obj.suffix))
