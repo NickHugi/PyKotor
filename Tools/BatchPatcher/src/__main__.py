@@ -429,7 +429,7 @@ def patch_erf_or_rim(resources: list[FileResource], filename: str, erf_or_rim: R
     return new_filename
 
 def patch_file(file: os.PathLike | str) -> None:
-    c_file = Path.pathify(file).resolve()
+    c_file = Path.pathify(file)
     if c_file in processed_files:
         return
 
@@ -450,7 +450,7 @@ def patch_file(file: os.PathLike | str) -> None:
         )
 
 def patch_folder(folder_path: os.PathLike | str) -> None:
-    c_folderpath = Path.pathify(folder_path).resolve()
+    c_folderpath = Path.pathify(folder_path)
     log_output_with_separator(f"Recursing through resources in the '{c_folderpath.name}' folder...", above=True)
     for file_path in c_folderpath.safe_rglob("*"):
         patch_file(file_path)

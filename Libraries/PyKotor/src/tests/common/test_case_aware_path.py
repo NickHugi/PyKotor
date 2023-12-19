@@ -97,7 +97,7 @@ class TestCaseAwarePath(unittest.TestCase):
     @patch.object(pathlib.Path, "exists", autospec=True)
     def test_should_resolve_case(self, mock_exists):
         mock_exists.side_effect = lambda x: str(x) != "/path/to/dir"
-        if os.name == "nt":
+        if os.name == "nt":  # sourcery skip: hoist-similar-statement-from-if, hoist-statement-from-if
             self.assertFalse(CaseAwarePath.should_resolve_case("/path/to/dir"))
             self.assertFalse(CaseAwarePath.should_resolve_case(CaseAwarePath("/path/to/dir")))
             self.assertFalse(CaseAwarePath.should_resolve_case("path/to/dir"))

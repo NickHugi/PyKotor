@@ -21,6 +21,7 @@ def detect_tlk(
     """Returns what format the TLK data is believed to be in.
 
     This function performs a basic check and does not guarantee accuracy of the result or integrity of the data.
+    Catch OSError to catch any exceptions this function could throw.
 
     Args:
     ----
@@ -32,6 +33,7 @@ def detect_tlk(
         FileNotFoundError: If the file could not be found.
         IsADirectoryError: If the specified path is a directory (Unix-like systems only).
         PermissionError: If the file could not be accessed.
+        OSError: Other various system-level exceptions.
 
     Returns:
     -------
@@ -49,20 +51,15 @@ def detect_tlk(
             return ResourceType.TLK_XML
         return ResourceType.INVALID
 
-    try:
-        if isinstance(source, (os.PathLike, str)):
-            with BinaryReader.from_file(source, offset) as reader:
-                file_format = check(reader.read_string(4))
-        elif isinstance(source, (bytes, bytearray)):
-            file_format = check(source[:4].decode("ascii", "ignore"))
-        elif isinstance(source, BinaryReader):
-            file_format = check(source.read_string(4))
-            source.skip(-4)
-        else:
-            file_format = ResourceType.INVALID
-    except (FileNotFoundError, PermissionError, IsADirectoryError):
-        raise
-    except OSError:
+    if isinstance(source, (os.PathLike, str)):
+        with BinaryReader.from_file(source, offset) as reader:
+            file_format = check(reader.read_string(4))
+    elif isinstance(source, (bytes, bytearray)):
+        file_format = check(source[:4].decode("ascii", "ignore"))
+    elif isinstance(source, BinaryReader):
+        file_format = check(source.read_string(4))
+        source.skip(-4)
+    else:
         file_format = ResourceType.INVALID
 
     return file_format

@@ -159,7 +159,7 @@ class ResourceType(Enum):
     LIP_JSON = ResourceTuple(50026, "lip.json", "Lips", "plaintext")
 
     def __new__(cls, *args, **kwargs):
-        obj: ResourceType = object.__new__(cls)
+        obj: ResourceType = object.__new__(cls)  # type: ignore[annotation-unchecked]
         name = args[1].upper() or "INVALID"
         while name in cls.__members__:
             name = f"{name}_{uuid.uuid4().hex}"

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+from pykotor.resource.formats.twoda import read_2da
 from pykotor.resource.type import ResourceType
 
 if TYPE_CHECKING:
@@ -31,6 +32,6 @@ def get_model(
         Returns the model name for the door.
     """
     if genericdoors is None:
-        genericdoors = installation.resource("placeables", ResourceType.TwoDA)
+        genericdoors = read_2da(installation.resource("placeables", ResourceType.TwoDA).data)
 
     return genericdoors.get_row(utd.appearance_id).get_string("modelname")

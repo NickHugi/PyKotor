@@ -337,7 +337,7 @@ class GFFStruct:
             "EditorInfo",
         }
         current_path = PureWindowsPath(current_path or "GFFRoot")
-        if len(self) != len(other_gff_struct):  # sourcery skip: class-extract-method
+        if len(self) != len(other_gff_struct) and not ignore_default_changes:  # sourcery skip: class-extract-method
             log_func()
             log_func(f"GFFStruct: number of fields have changed at '{current_path}': '{len(self)}' --> '{len(other_gff_struct)}'")
             is_same_result = False

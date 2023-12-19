@@ -44,7 +44,7 @@ class TestUTD(TestCase):
     )
     def test_gff_reconstruct_from_k1_installation(self) -> None:
         self.installation = Installation(K1_PATH)  # type: ignore[arg-type]
-        for are_resource in (resource for resource in self.installation.all_resources() if resource.restype() == ResourceType.UTD):
+        for are_resource in (resource for resource in self.installation if resource.restype() == ResourceType.UTD):
             gff: GFF = read_gff(are_resource.data())
             reconstructed_gff: GFF = dismantle_utd(construct_utd(gff))
             self.assertTrue(gff.compare(reconstructed_gff, self.log_func, ignore_default_changes=True), os.linesep.join(self.log_messages))
@@ -55,7 +55,7 @@ class TestUTD(TestCase):
     )
     def test_gff_reconstruct_from_k2_installation(self) -> None:
         self.installation = Installation(K2_PATH)  # type: ignore[arg-type]
-        for are_resource in (resource for resource in self.installation.all_resources() if resource.restype() == ResourceType.UTD):
+        for are_resource in (resource for resource in self.installation if resource.restype() == ResourceType.UTD):
             gff: GFF = read_gff(are_resource.data())
             reconstructed_gff: GFF = dismantle_utd(construct_utd(gff))
             self.assertTrue(gff.compare(reconstructed_gff, self.log_func, ignore_default_changes=True), os.linesep.join(self.log_messages))

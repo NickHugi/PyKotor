@@ -340,6 +340,7 @@ def diff_directories(dir1: os.PathLike | str, dir2: os.PathLike | str) -> bool |
 
 
 def diff_installs(install_path1: os.PathLike | str, install_path2: os.PathLike | str) -> bool | None:
+    # TODO: use pykotor.extract.installation
     install_path1 = CaseAwarePath.pathify(install_path1).resolve()
     install_path2 = CaseAwarePath.pathify(install_path2).resolve()
     log_output()
@@ -467,10 +468,7 @@ def main() -> None:
         )
 
         if profiler is not None:
-            profiler.disable()
-            profiler_output_file = Path("profiler_output.pstat").resolve()
-            profiler.dump_stats(str(profiler_output_file))
-            log_output(f"Profiler output saved to: {profiler_output_file}")
+            _stop_profiler(profiler)
         if comparison is not None:
             log_output(
                 f"'{relative_path_from_to(PARSER_ARGS.path2, PARSER_ARGS.path1)}'",
@@ -486,12 +484,15 @@ def main() -> None:
             sys.exit(3)
     except KeyboardInterrupt:
         if profiler is not None:
-            profiler.disable()
-            profiler_output_file = Path("profiler_output.pstat").resolve()
-            profiler.dump_stats(str(profiler_output_file))
-            log_output(f"Profiler output saved to: {profiler_output_file}")
+            _stop_profiler(profiler)
         log_output("KeyboardInterrupt - KotorDiff was cancelled by user.")
         raise
+
+def _stop_profiler(profiler: cProfile.Profile):
+    profiler.disable()
+    profiler_output_file = Path("profiler_output.pstat").resolve()
+    profiler.dump_stats(str(profiler_output_file))
+    log_output(f"Profiler output saved to: {profiler_output_file}")
 
 
 if __name__ == "__main__":

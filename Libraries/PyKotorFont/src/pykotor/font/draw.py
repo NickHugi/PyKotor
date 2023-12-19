@@ -84,7 +84,7 @@ def write_bitmap_font(
         msg = f"resolution must be nonzero, got {resolution}"
         raise ZeroDivisionError(msg)
 
-    font_path, target_path = (Path.pathify(p).resolve() for p in (font_path, target))
+    font_path, target_path = (Path.pathify(p) for p in (font_path, target))
     charset_list: list[str] = get_charset_from_singlebyte_encoding(lang.get_encoding())
     numchars: int = len([char for char in charset_list if char])
 

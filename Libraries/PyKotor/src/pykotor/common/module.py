@@ -1192,7 +1192,7 @@ class ModuleResource(Generic[T]):
         if filepath is None:
             self._active = self._locations[0] if self._locations else None
         else:
-            r_filepath = Path.pathify(filepath).resolve()
+            r_filepath = Path.pathify(filepath)
             if r_filepath in self._locations:
                 self._active = r_filepath
             else:

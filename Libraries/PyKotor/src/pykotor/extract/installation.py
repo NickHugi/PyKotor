@@ -4,7 +4,7 @@ import re
 from contextlib import suppress
 from copy import copy
 from enum import Enum, IntEnum
-from typing import TYPE_CHECKING, ClassVar, NamedTuple
+from typing import TYPE_CHECKING, Any, ClassVar, Generator, NamedTuple
 
 from pykotor.common.language import Gender, Language, LocalizedString
 from pykotor.common.misc import CaseInsensitiveDict, Game
@@ -160,15 +160,18 @@ class Installation:
         self._modules: dict[str, list[FileResource]] = {}
         self._lips: dict[str, list[FileResource]] = {}
         self._texturepacks: dict[str, list[FileResource]] = {}
-        self._override: dict[str, list[FileResource]] = {}
         self._rims: dict[str, list[FileResource]] = {}
+
+        self._override: dict[str, list[FileResource]] = {}
 
         self._chitin: list[FileResource] = []
         self._streammusic: list[FileResource] = []
         self._streamsounds: list[FileResource] = []
         self._streamwaves: list[FileResource] = []
         self._game: Game | None = None
+        self.load()
 
+    def load(self):
         self.load_chitin()
         self.load_lips()
         self.load_modules()
@@ -177,27 +180,34 @@ class Installation:
             self.load_rims()
         self.load_streammusic()
         self.load_streamsounds()
-        self.load_streamwaves()
+        if self.game() == Game.K1:
+            self.load_streamwaves()
+        elif self.game() == Game.K2:
+            self.load_streamvoice()
         self.load_textures()
         print(f"Finished loading the installation from {self._path!s}")
 
-    def all_resources(self):
+    def __iter__(self) -> Generator[FileResource, Any, None]:
         def generator():
             yield from self._chitin
             yield from self._streammusic
             yield from self._streamsounds
             yield from self._streamwaves
-            for values in self._override.values():
-                yield from values
-            for values in self._modules.values():
-                yield from values
-            for values in self._lips.values():
-                yield from values
-            for values in self._texturepacks.values():
-                yield from values
-            for values in self._rims.values():
-                yield from values
-
+            for resources in self._override.values():
+                yield from resources
+            for resources in self._modules.values():
+                yield from resources
+            for resources in self._lips.values():
+                yield from resources
+            for resources in self._texturepacks.values():
+                yield from resources
+            for resources in self._rims.values():
+                yield from resources
+            tlk_path = self._path / "dialog.tlk"
+            yield FileResource("dialog", ResourceType.TLK, tlk_path.stat().st_size, 0, tlk_path)
+            female_tlk_path = self._path / "dialogf.tlk"
+            if female_tlk_path.exists():
+                yield FileResource("dialogf", ResourceType.TLK, female_tlk_path.stat().st_size, 0, female_tlk_path)
         return generator()
 
     # region Get Paths
@@ -276,13 +286,26 @@ class Installation:
     def streamwaves_path(self) -> CaseAwarePath:
         """Returns the path to 'streamwaves' folder of the Installation. This method maintains the case of the foldername.
 
-        In the second game, this folder has been named 'streamvoice'.
+        In the first game, this folder is named 'streamwaves'
+        In the second game, this folder has been renamed to 'streamvoice'.
 
         Returns
         -------
-            The path to the streamvoice folder.
+            The path to the streamwaves/streamvoice folder.
         """
-        return self._find_resource_folderpath(("streamwaves", "streamvoice"))  #TODO: check the self.game() to determine which folder to find?
+        return self._find_resource_folderpath(("streamwaves", "streamvoice"))
+
+    def streamvoice_path(self) -> CaseAwarePath:
+        """Returns the path to 'streamwaves' or 'streamvoice' folder of the Installation. This method maintains the case of the foldername.
+
+        In the first game, this folder is named 'streamwaves'
+        In the second game, this folder has been renamed to 'streamvoice'.
+
+        Returns
+        -------
+            The path to the streamwaves/streamvoice folder.
+        """
+        return self._find_resource_folderpath(("streamvoice", "streamwaves"))
 
     def _find_resource_folderpath(
         self,
@@ -482,8 +505,12 @@ class Installation:
         self._streamsounds = self.load_resources(self.streamsounds_path())  # type: ignore[assignment]
 
     def load_streamwaves(self) -> None:
-        """Reloads the list of resources in the streamvoice/streamwaves folder linked to the Installation."""
-        self._streamwaves = self.load_resources(self.streamwaves_path(), recurse=True)  # type: ignore[assignment]
+        """Reloads the list of resources in the streamwaves folder linked to the Installation."""
+        self._streamwaves = self.load_resources(self._find_resource_folderpath("streamwaves"), recurse=True)  # type: ignore[assignment]
+
+    def load_streamvoice(self) -> None:
+        """Reloads the list of resources in the streamvoice folder linked to the Installation."""
+        self._streamwaves = self.load_resources(self._find_resource_folderpath("streamvoice"), recurse=True)  # type: ignore[assignment]
 
     # endregion
 

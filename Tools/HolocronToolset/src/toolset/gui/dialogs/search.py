@@ -87,8 +87,10 @@ class FileSearcher(QDialog):
 
     def search(self, installation: HTInstallation, caseSensitive: bool, filenamesOnly: bool, text: str,
                searchCore: bool, searchModules: bool, searchOverride: bool, checkTypes: list[ResourceType]) -> None:
-        """Searches files and resources for text
+        """Searches files and resources for text.
+
         Args:
+        ----
             installation: HTInstallation - Installation object
             caseSensitive: bool - Case sensitivity flag
             filenamesOnly: bool - Search filenames only flag
@@ -97,8 +99,7 @@ class FileSearcher(QDialog):
             searchModules: bool - Search modules flag
             searchOverride: bool - Search override flag
             checkTypes: list[ResourceType] - Resource types to check
-        Returns:
-            None - No return, updates results attribute
+
         Processing Logic:
         ----------------
             - Filters resources to search based on flags
