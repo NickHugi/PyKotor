@@ -159,6 +159,18 @@ class BasePurePath(metaclass=PurePathType):
         str_result = self._fix_path_formatting(super().__str__(), self._flavour.sep)  # type: ignore[_flavour exists in children]
         return "." if str_result == "" else str_result
 
+    def __eq__(self, other):
+        if isinstance(other, PurePath):
+            other_str = str(other)
+        elif isinstance(other, str):
+            other_str = other
+        else:
+            return NotImplemented
+        return str(self) == self._fix_path_formatting(other_str)
+
+    def __hash__(self):
+        return hash((BasePurePath, str(self)))
+
     def __fspath__(self) -> str:
         """Ensures any use of __fspath__ will call our __str__ method."""
         return str(self)
@@ -414,6 +426,25 @@ class PureWindowsPath(BasePurePath, pathlib.PureWindowsPath):  # type: ignore[mi
 
 class BasePath(BasePurePath):
 
+    def __hash__(self):
+        return hash((BasePath, self.as_posix().lower() if os.name == "nt" else self.as_posix()))
+
+    def __eq__(self, other):
+        if isinstance(other, PurePath):
+            other_str = other.as_posix()
+        elif isinstance(other, str):
+            other_str = other
+        elif hasattr(other, "__fspath__"):
+            other_str = other.__fspath__()
+        else:
+            return NotImplemented
+        other_str = self._fix_path_formatting(other_str, "/")
+        self_str = self.as_posix()
+        if os.name == "nt":
+            self_str = self_str.lower()
+            other_str = other_str.lower()
+        return self_str == other_str
+
     # Safe rglob operation
     def safe_rglob(self, pattern: str):
         if not isinstance(self, Path):
@@ -522,14 +553,14 @@ class BasePath(BasePurePath):
             try:
                 os.chown(path_obj, owner_uid, owner_gid)
             except Exception as e:  # noqa: BLE001
-                print(f"Error during chown for {path_obj!s}: {e}")
+                print(f"Error during chown for {path_obj!s}: {e!s}")
 
         # chmod the folder
         if not path_obj.has_access():
             try:
                 path_obj.chmod(mode)
             except Exception as e:  # noqa: BLE001
-                print(f"Error during chmod for {path_obj!s}: {e}")
+                print(f"Error during chmod for {path_obj!s}: {e!s}")
 
         # TODO: prompt the user and gain access with os-native methods.
         if not path_obj.has_access():
@@ -542,7 +573,7 @@ class BasePath(BasePurePath):
                     path_obj.request_windows_permission()
 
             except Exception as e:  # noqa: BLE001
-                print(f"Error during platform-specific permission request for {path_obj!s}: {e}")
+                print(f"Error during platform-specific permission request for {path_obj!s}: {e!s}")
 
         success: bool = path_obj.has_access()
         try:
@@ -550,7 +581,7 @@ class BasePath(BasePurePath):
                 for child in path_obj.iterdir():
                     success &= child.gain_access(mode, owner_uid, owner_gid)
         except Exception as e:  # noqa: BLE001
-            print(f"Error gaining access for children of {path_obj!s}: {e}")
+            print(f"Error gaining access for children of {path_obj!s}: {e!s}")
             success = False
 
         return success
