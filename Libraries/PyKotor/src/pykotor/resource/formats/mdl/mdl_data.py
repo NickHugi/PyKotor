@@ -421,7 +421,7 @@ class MDLLight:
 
     def __init__(
         self,
-    ):
+    ) -> None:
         # TODO: Make enums, check if bools, docs, merge flare data into class
         self.flare_radius: float = 0.0
         self.light_priority: int = 0
@@ -463,7 +463,7 @@ class MDLEmitter:
 
     def __init__(
         self,
-    ):
+    ) -> None:
         # TODO: Make enums, check if bools, docs, seperate flags into booleans
         self.dead_space: float = 0.0
         self.blast_radius: float = 0.0
@@ -497,7 +497,7 @@ class MDLReference:
 
     def __init__(
         self,
-    ):
+    ) -> None:
         # TODO: docs
         self.model: str = ""
         self.reattachable: bool = False
