@@ -764,10 +764,10 @@ class ToolWindow(QMainWindow):
 
     def _decompileMdl(self, resource: FileResource, data: SOURCE_TYPES):
         mdxData: bytes = self.active.resource(resource.resname(), ResourceType.MDX).data
-        mdl: MDL | None = read_mdl(data, 0, 0, mdxData, 0, 0)
+        mdl: MDL | None = read_mdl(data, 0, 0, mdxData, 0, 0, self.active.game())
 
         data = bytearray()
-        write_mdl(mdl, data, ResourceType.MDL_ASCII)
+        write_mdl(mdl, data, ResourceType.MDL_ASCII, self.active.game())
         return data
 
     def _extractMdlTextures(self, resource: FileResource, folderpath: Path, loader: AsyncBatchLoader, data: bytes):

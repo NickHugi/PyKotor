@@ -1564,6 +1564,7 @@ class MDLBinaryWriter:
         mdl: MDL,
         target: TARGET_TYPES,
         target_ext: TARGET_TYPES,
+        game: Game = Game.K2,
     ):
         self._mdl: MDL = mdl
 
@@ -1572,7 +1573,7 @@ class MDLBinaryWriter:
         self._writer: BinaryWriterBytearray = BinaryWriter.to_bytearray()
         self._writer_ext: BinaryWriterBytearray = BinaryWriter.to_bytearray()
 
-        self.game: Game = Game.K1
+        self.game: Game = game
 
         self._name_offsets: list[int] = []
         self._anim_offsets: list[int] = []
@@ -1628,11 +1629,10 @@ class MDLBinaryWriter:
         bin_node.header.position = mdl_node.position
         bin_node.header.orientation = mdl_node.orientation
         bin_node.header.children_count = bin_node.header.children_count2 = len(mdl_node.children)
-        bin_node.header.name_id = self._names.index(mdl_node.name)
         bin_node.header.node_id = next(
-            self._mdl_nodes.index(mdl_node)
-            for mdl_node in self._mdl_nodes
-            if self._names.index(mdl_node.name) == bin_node.header.name_id
+            self._mdl_nodes.index(mdlnode)
+            for mdlnode in self._mdl_nodes
+            if self._names.index(mdlnode.name) == self._names.index(mdl_node.name)
         )
 
         # Determine the appropriate function pointer values to write
