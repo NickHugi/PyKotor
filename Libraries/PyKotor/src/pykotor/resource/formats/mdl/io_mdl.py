@@ -33,14 +33,14 @@ class _ModelHeader:
     ):
         self.geometry: _GeometryHeader = _GeometryHeader()
         self.model_type: int = 0
-        self.unknown0: int = 0
+        self.model_subtype: int = 0
         self.padding0: int = 0
         self.fog: int = 0
-        self.unknown1: int = 0
+        self.num_child_models: int = 0
         self.offset_to_animations: int = 0
         self.animation_count: int = 0
         self.animation_count2: int = 0
-        self.unknown2: int = 0
+        self.supermodel_ref: int = 0
         self.bounding_box_min: Vector3 = Vector3.from_null()
         self.bounding_box_max: Vector3 = Vector3.from_null()
         self.radius: float = 0.0
@@ -60,14 +60,14 @@ class _ModelHeader:
     ) -> _ModelHeader:
         self.geometry = _GeometryHeader().read(reader)
         self.model_type = reader.read_uint8()
-        self.unknown0 = reader.read_uint8()
+        self.model_subtype = reader.read_uint8()
         self.padding0 = reader.read_uint8()
         self.fog = reader.read_uint8()
-        self.unknown1 = reader.read_uint32()
+        self.num_child_models = reader.read_uint32()
         self.offset_to_animations = reader.read_uint32()
         self.animation_count = reader.read_uint32()
         self.animation_count2 = reader.read_uint32()
-        self.unknown2 = reader.read_uint32()
+        self.supermodel_ref = reader.read_uint32()
         self.bounding_box_min = reader.read_vector3()
         self.bounding_box_max = reader.read_vector3()
         self.radius = reader.read_single()
@@ -88,14 +88,14 @@ class _ModelHeader:
     ) -> None:
         self.geometry.write(writer)
         writer.write_uint8(self.model_type)
-        writer.write_uint8(self.unknown0)
+        writer.write_uint8(self.model_subtype)
         writer.write_uint8(self.padding0)
-        writer.write_uint8(self.fog)
-        writer.write_uint32(self.unknown1)
+        writer.write_uint8(1 if self.fog else 0)
+        writer.write_uint32(self.num_child_models)
         writer.write_uint32(self.offset_to_animations)
         writer.write_uint32(self.animation_count)
         writer.write_uint32(self.animation_count2)
-        writer.write_uint32(self.unknown2)
+        writer.write_uint32(self.supermodel_ref)
         writer.write_vector3(self.bounding_box_min)
         writer.write_vector3(self.bounding_box_max)
         writer.write_single(self.radius)
@@ -1667,6 +1667,8 @@ class MDLBinaryWriter:
             bin_node.trimesh.total_area = mdl_node.mesh.area
             bin_node.trimesh.texture1 = mdl_node.mesh.texture_1
             bin_node.trimesh.texture2 = mdl_node.mesh.texture_2
+            bin_node.trimesh.texture3 = "".ljust(12, "\0")
+            bin_node.trimesh.texture4 = "".ljust(12, "\0")
             bin_node.trimesh.diffuse = mdl_node.mesh.diffuse.bgr_vector3()
             bin_node.trimesh.ambient = mdl_node.mesh.ambient.bgr_vector3()
             bin_node.trimesh.render = mdl_node.mesh.render
@@ -1865,9 +1867,9 @@ class MDLBinaryWriter:
         bin_node.header.offset_to_parent = self._node_offsets[0] if index != 0 else 0
 
         if bin_node.trimesh:
-            self._load_trimesh_data(node_offset, bin_node)
+            self._calc_trimesh_data(node_offset, bin_node)
 
-    def _load_trimesh_data(self, node_offset: int, bin_node: _Node) -> None:
+    def _calc_trimesh_data(self, node_offset: int, bin_node: _Node) -> None:
         bin_node.trimesh.offset_to_counters = node_offset + bin_node.inverted_counters_offset(self.game)
         bin_node.trimesh.offset_to_indices_counts = node_offset + bin_node.indices_counts_offset(self.game)
         bin_node.trimesh.offset_to_indices_offset = node_offset + bin_node.indices_offsets_offset(self.game)
@@ -1911,13 +1913,12 @@ class MDLBinaryWriter:
             for mdlnode in mdl_node.children
         ]
 
-        bin_children: list[_Node] = []
-        for child_name_id in child_name_ids:
-            bin_children.extend(
-                binnode
-                for binnode in all_nodes
-                if binnode.header.name_id == child_name_id
-            )
+        bin_children: list[_Node] = [
+            binnode
+            for binnode in all_nodes
+            for child_name_id in child_name_ids
+            if binnode.header.name_id == child_name_id
+        ]
         return bin_children
 
     def _node_type(
