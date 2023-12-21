@@ -421,9 +421,9 @@ class GFFStruct:
                     formatted_old_value, formatted_new_value = compare_and_format(old_value, new_value)
                     log_func(f"Field '{old_ftype.name}' is different at '{child_path}': {format_text(formatted_old_value)}<-vvv->{format_text(formatted_new_value)}")
                 elif newlines_in_old == 1 or newlines_in_new == 1:
-                    log_func(f"Field '{old_ftype.name}' is different at '{child_path}': {os.linesep}{old_value!s}{os.linesep}<-vvv->{os.linesep}{new_value!s}")
+                    log_func(f"Field '{old_ftype.name}' is different at '{child_path}': {os.linesep}{old_value}{os.linesep}<-vvv->{os.linesep}{new_value}")
                 else:
-                    log_func(f"Field '{old_ftype.name}' is different at '{child_path}': {old_value!s} --> {new_value!s}")
+                    log_func(f"Field '{old_ftype.name}' is different at '{child_path}': {old_value} --> {new_value}")
                 is_same_result = False
                 continue
 

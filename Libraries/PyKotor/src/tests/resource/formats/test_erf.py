@@ -3,6 +3,8 @@ import pathlib
 import sys
 import unittest
 
+from pykotor.resource.formats.erf.erf_data import ERFType
+
 THIS_SCRIPT_PATH = pathlib.Path(__file__)
 PYKOTOR_PATH = THIS_SCRIPT_PATH.parents[3].resolve()
 UTILITY_PATH = THIS_SCRIPT_PATH.parents[5].joinpath("Utility", "src").resolve()
@@ -56,10 +58,10 @@ class TestERF(TestCase):
 
     def test_write_raises(self):
         if os.name == "nt":
-            self.assertRaises(PermissionError, write_erf, ERF(), ".", ResourceType.ERF)
+            self.assertRaises(PermissionError, write_erf, ERF(ERFType.ERF), ".", ResourceType.ERF)
         else:
-            self.assertRaises(IsADirectoryError, write_erf, ERF(), ".", ResourceType.ERF)
-        self.assertRaises(ValueError, write_erf, ERF(), ".", ResourceType.INVALID)
+            self.assertRaises(IsADirectoryError, write_erf, ERF(ERFType.ERF), ".", ResourceType.ERF)
+        self.assertRaises(ValueError, write_erf, ERF(ERFType.ERF), ".", ResourceType.INVALID)
 
 
 if __name__ == "__main__":

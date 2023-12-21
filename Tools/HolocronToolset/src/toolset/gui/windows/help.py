@@ -181,7 +181,7 @@ class HelpWindow(QMainWindow):
 
         # Extract the ZIP file
         with zipfile.ZipFile(help_zip_path) as zip_file:
-            print(f"Extracting downloaded content to {help_path!s}")
+            print(f"Extracting downloaded content to {help_path}")
             zip_file.extractall(help_path)
 
         if is_frozen():
@@ -197,7 +197,7 @@ class HelpWindow(QMainWindow):
             QMessageBox(
                 QMessageBox.Critical,
                 "Failed to open help file",
-                f"Could not access '{filepath!s}'.",
+                f"Could not access '{filepath}'.",
             ).exec_()
 
     def onContentsClicked(self) -> None:

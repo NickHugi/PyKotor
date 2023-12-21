@@ -558,14 +558,14 @@ class BasePath(BasePurePath):
             try:
                 os.chown(path_obj, owner_uid, owner_gid)
             except Exception as e:  # noqa: BLE001
-                print(f"Error during chown for {path_obj!s}: {e!s}")
+                print(f"Error during chown for {path_obj}: {e}")
 
         # chmod the folder
         if not path_obj.has_access():
             try:
                 path_obj.chmod(mode)
             except Exception as e:  # noqa: BLE001
-                print(f"Error during chmod for {path_obj!s}: {e!s}")
+                print(f"Error during chmod for {path_obj}: {e}")
 
         # TODO: prompt the user and gain access with os-native methods.
         if not path_obj.has_access():
@@ -578,7 +578,7 @@ class BasePath(BasePurePath):
                     path_obj.request_windows_permission()
 
             except Exception as e:  # noqa: BLE001
-                print(f"Error during platform-specific permission request for {path_obj!s}: {e!s}")
+                print(f"Error during platform-specific permission request for {path_obj}: {e}")
 
         success: bool = path_obj.has_access()
         try:
@@ -586,7 +586,7 @@ class BasePath(BasePurePath):
                 for child in path_obj.iterdir():
                     success &= child.gain_access(mode, owner_uid, owner_gid)
         except Exception as e:  # noqa: BLE001
-            print(f"Error gaining access for children of {path_obj!s}: {e!s}")
+            print(f"Error gaining access for children of {path_obj}: {e}")
             success = False
 
         return success

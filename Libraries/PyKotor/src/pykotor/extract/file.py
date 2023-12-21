@@ -108,7 +108,7 @@ class FileResource:
 
                 capsule = Capsule(self._filepath)
                 res: FileResource | None = capsule.info(self._resname, self._restype)  # type: ignore[assignment]
-                assert res is not None, f"Resource '{self._resname}.{self._restype.extension}' not found in Capsule at '{self._filepath!s}'"
+                assert res is not None, f"Resource '{self._resname}.{self._restype.extension}' not found in Capsule at '{self._filepath}"
 
                 self._offset = res.offset()
                 self._size = res.size()
@@ -183,7 +183,7 @@ class ResourceIdentifier(NamedTuple):
     def validate(self):
         restype = self.restype
         if restype == ResourceType.INVALID:
-            msg = f"Invalid resource: '{self!s}'"
+            msg = f"Invalid resource: '{self}'"
             raise ValueError(msg)
         return self
 

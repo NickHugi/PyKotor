@@ -218,7 +218,7 @@ def patch_nested_gff(
     made_change: bool = False,
 ) -> bool:
     if gff_content != GFFContent.DLG and not SCRIPT_GLOBALS.translate:
-        print(f"Skipping file at '{current_path!s}', translate not set.")
+        print(f"Skipping file at '{current_path}', translate not set.")
         return False
     current_path = PureWindowsPath.pathify(current_path or "GFFRoot")
     for label, ftype, value in gff_struct:
@@ -281,7 +281,7 @@ def patch_resource(resource: FileResource) -> GFF | TPC | None:
             for future in concurrent.futures.as_completed(future_to_strref):
                 strref: int = future_to_strref[future]
                 try:
-                    log_output(f"Translating TLK text at {resource.filepath()!s} to {SCRIPT_GLOBALS.pytranslator.to_lang.name}")
+                    log_output(f"Translating TLK text at {resource.filepath()} to {SCRIPT_GLOBALS.pytranslator.to_lang.name}")
                     original_text, translated_text = future.result()
                     if translated_text.strip():
                         translated_text = fix_encoding(translated_text, SCRIPT_GLOBALS.pytranslator.to_lang.get_encoding())
@@ -366,7 +366,7 @@ def patch_capsule_file(c_file: Path):
     try:
         file_capsule = Capsule(c_file)
     except ValueError as e:
-        log_output(f"Could not load '{c_file!s}'. Reason: {e!r}")
+        log_output(f"Could not load '{c_file}'. Reason: {e!r}")
         return
     new_filepath: Path = c_file
     if SCRIPT_GLOBALS.translate:
@@ -471,7 +471,7 @@ def patch_install(install_path: os.PathLike | str) -> None:
             new_rim_filename = patch_erf_or_rim(resources, module_name, new_rim)
             write_rim(new_rim, k_install.path() / new_rim_filename)
         elif restype.name in ERFType.__members__:
-            new_erf = ERF()
+            new_erf = ERF(ERFType.ERF)
             new_erf_filename = patch_erf_or_rim(resources, module_name, new_erf)
             write_erf(new_erf, k_install.path() / new_erf_filename, restype)
         else:

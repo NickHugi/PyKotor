@@ -639,7 +639,7 @@ class App(tk.Tk):
         if (
             messagebox.askyesno(
                 "Permission error",
-                f"HoloPatcher does not have permissions to the path '{directory!s}', would you like to attempt to gain permission automatically?",
+                f"HoloPatcher does not have permissions to the path '{directory}', would you like to attempt to gain permission automatically?",
             )
             and not directory.gain_access()
         ):
@@ -652,7 +652,7 @@ class App(tk.Tk):
             return messagebox.askyesno(
                 "Unauthorized",
                 (
-                    f"HoloPatcher needs permissions to access this folder '{directory!s}'. {os.linesep}"
+                    f"HoloPatcher needs permissions to access this folder '{directory}'. {os.linesep}"
                     f"{os.linesep}"
                     f"Please ensure the necessary folders are writeable or rerun holopatcher with elevated privileges.{os.linesep}"
                     "Continue with an install anyway?"

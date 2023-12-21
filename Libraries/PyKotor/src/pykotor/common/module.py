@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING, Any, Callable, Generic, TypeVar
 from pykotor.common.misc import CaseInsensitiveDict
 from pykotor.common.stream import BinaryReader, BinaryWriter
 from pykotor.extract.capsule import Capsule
-from pykotor.extract.file import LocationResult, ResourceIdentifier
+from pykotor.extract.file import LocationResult, ResourceIdentifier, ResourceResult
 from pykotor.extract.installation import Installation, SearchLocation
 from pykotor.resource.formats.bwm import bytes_bwm, read_bwm
 from pykotor.resource.formats.erf import ERFType, read_erf, write_erf
@@ -81,7 +81,7 @@ class Module:
                     msg = f"Unable to locate module IFO file for '{root}'."
                     raise ValueError(msg)
                 ifo = read_gff(module_resource)
-                self._id = ifo.root.get_resref("Mod_Entry_Area").get().lower()
+                self._id = ifo.root.get_resref("Mod_Entry_Area")
                 break
         else:
             msg = f"Cannot initialize a Module from an empty capsule with root '{root}'."
@@ -204,7 +204,7 @@ class Module:
         textures: set[str] = set()
         for model in self.models():
             with suppress(Exception):
-                data: bytes | None = model.data()
+                data: bytes = model.data()
                 for texture in list_textures(data):
                     textures.add(texture)
                 for lightmap in list_lightmaps(data):
@@ -1087,7 +1087,7 @@ class ModuleResource(Generic[T]):
             return self._installation.string(res.name)
         return None
 
-    def data(self) -> bytes | None:
+    def data(self) -> bytes:
         """Opens the file at the active location and returns the data.
 
         Raises
@@ -1098,17 +1098,25 @@ class ModuleResource(Generic[T]):
         -------
             The bytes data of the active file.
         """
+        file_name: str = f"{self._resname}.{self._restype.extension}"
         if self._active is None:
-            msg = f"No file is currently active for resource '{self.resname}.{self._restype.extension}'."
+            msg = f"No file is currently active for resource '{file_name}'."
             raise ValueError(msg)
         if is_capsule_file(self._active.name):
-            return Capsule(self._active).resource(self._resname, self._restype)
+            data: bytes | None = Capsule(self._active).resource(self._resname, self._restype)
+            if data is None:
+                msg = f"Resource '{file_name}' not found in '{self._active.name}'"
+                raise ValueError(msg)
+            return data
         if is_bif_file(self._active.name):
-            return self._installation.resource(
+            resource: ResourceResult | None = self._installation.resource(
                 self._resname,
                 self._restype,
                 [SearchLocation.CHITIN],
-            ).data
+            )
+            if resource is None:
+                msg = f"Resource '{file_name}' not found in '{self._active.name}'"
+                raise ValueError(msg)
         return BinaryReader.load_file(self._active)
 
     def resource(self) -> T | None:

@@ -1093,7 +1093,7 @@ class KitDownloader(QDialog):
 
         # Extract the ZIP file
         with zipfile.ZipFile("./kits.zip") as zip_file:
-            print(f"Extracting downloaded content to {kits_path!s}")
+            print(f"Extracting downloaded content to {kits_path}")
             tempdir = None
             original_exception = None
             try:

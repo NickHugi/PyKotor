@@ -348,7 +348,7 @@ class GITCreature(GITInstance):
     def identifier(
         self,
     ) -> ResourceIdentifier | None:
-        return ResourceIdentifier(self.resref.get(), ResourceType.UTC)
+        return ResourceIdentifier(self.resref, ResourceType.UTC)
 
     def blank(
         self,
@@ -438,7 +438,7 @@ class GITDoor(GITInstance):
             - Create ResourceIdentifier object from reference and type
             - Return ResourceIdentifier or None.
         """
-        return ResourceIdentifier(self.resref.get(), ResourceType.UTD)
+        return ResourceIdentifier(self.resref, ResourceType.UTD)
 
     def classification(
         self,
@@ -517,7 +517,7 @@ class GITEncounter(GITInstance):
     def identifier(
         self,
     ) -> ResourceIdentifier | None:
-        return ResourceIdentifier(self.resref.get(), ResourceType.UTE)
+        return ResourceIdentifier(self.resref, ResourceType.UTE)
 
     def blank(
         self,
@@ -586,7 +586,7 @@ class GITPlaceable(GITInstance):
     def identifier(
         self,
     ) -> ResourceIdentifier | None:
-        return ResourceIdentifier(self.resref.get(), ResourceType.UTP)
+        return ResourceIdentifier(self.resref, ResourceType.UTP)
 
     def blank(
         self,
@@ -639,7 +639,7 @@ class GITSound(GITInstance):
     def identifier(
         self,
     ) -> ResourceIdentifier | None:
-        return ResourceIdentifier(self.resref.get(), ResourceType.UTS)
+        return ResourceIdentifier(self.resref, ResourceType.UTS)
 
     def blank(
         self,
@@ -691,7 +691,7 @@ class GITStore(GITInstance):
     def identifier(
         self,
     ) -> ResourceIdentifier | None:
-        return ResourceIdentifier(self.resref.get(), ResourceType.UTM)
+        return ResourceIdentifier(self.resref, ResourceType.UTM)
 
     def blank(
         self,
@@ -750,7 +750,7 @@ class GITTrigger(GITInstance):
     def identifier(
         self,
     ) -> ResourceIdentifier | None:
-        return ResourceIdentifier(self.resref.get(), ResourceType.UTT)
+        return ResourceIdentifier(self.resref, ResourceType.UTT)
 
     def blank(
         self,
@@ -819,7 +819,7 @@ class GITWaypoint(GITInstance):
     def identifier(
         self,
     ) -> ResourceIdentifier | None:
-        return ResourceIdentifier(self.resref.get(), ResourceType.UTW)
+        return ResourceIdentifier(self.resref, ResourceType.UTW)
 
     def blank(
         self,

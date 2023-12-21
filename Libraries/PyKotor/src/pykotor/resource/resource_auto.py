@@ -106,7 +106,7 @@ def read_resource(source: SOURCE_TYPES, resource_type: ResourceType | None = Non
         if resource_type.category == "Walkmeshes":
             return read_bwm(source)
     except Exception as e:
-        new_err = ValueError(f"Could not load resource '{source_path!s}' as resource type '{resource_type!s}'")
+        new_err = ValueError(f"Could not load resource '{source_path}' as resource type '{resource_type}")
         print(universal_simplify_exception(new_err))
         raise new_err from e
 

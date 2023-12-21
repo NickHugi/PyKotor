@@ -185,7 +185,7 @@ class Installation:
         elif self.game() == Game.K2:
             self.load_streamvoice()
         self.load_textures()
-        print(f"Finished loading the installation from {self._path!s}")
+        print(f"Finished loading the installation from {self._path}")
 
     def __iter__(self) -> Generator[FileResource, Any, None]:
         def generator():
@@ -368,7 +368,7 @@ class Installation:
         resources: dict[str, list[FileResource]] | list[FileResource] = {} if capsule_check else []
 
         if not path.exists():
-            print(f"The '{path.name}' folder did not exist at '{self.path()!s}' when loading the installation, skipping...")
+            print(f"The '{path.name}' folder did not exist at '{self.path()}' when loading the installation, skipping...")
             return resources
 
         files_list: list[CaseAwarePath] = list(path.safe_rglob("*")) if recurse else list(path.safe_iterdir())  # type: ignore[reportGeneralTypeIssues]
@@ -376,8 +376,8 @@ class Installation:
             if capsule_check and capsule_check(file):
                 resources[file.name] = list(Capsule(file))  # type: ignore[assignment, call-overload]
             else:
-                with suppress(Exception):
-                    resname, restype = ResourceIdentifier.from_path(file).validate()
+                resname, restype = ResourceIdentifier.from_path(file)
+                if restype:
                     resource = FileResource(
                         resname,
                         restype,
@@ -387,7 +387,7 @@ class Installation:
                     )
                     resources.append(resource)  # type: ignore[assignment, call-overload, union-attr]
         if not resources or not files_list:
-            print(f"No resources found at '{path!s}' when loading the installation, skipping...")
+            print(f"No resources found at '{path}' when loading the installation, skipping...")
         else:
             print(f"Loading '{path.name}' folder from installation...")
         return resources
@@ -396,7 +396,7 @@ class Installation:
         """Reloads the list of resources in the Chitin linked to the Installation."""
         chitin_path = self._path / "chitin.key"
         if not chitin_path.exists():
-            print(f"The chitin.key file did not exist at '{self._path!s}' when loading the installation, skipping...")
+            print(f"The chitin.key file did not exist at '{self._path}' when loading the installation, skipping...")
             return
         print("Load chitin...")
         self._chitin = list(Chitin(key_path=chitin_path))
@@ -449,11 +449,12 @@ class Installation:
             directory: The relative path of a subfolder to the override folder.
         """
         override_path = self.override_path()
+        target_dirs: list[CaseAwarePath]
         if directory:
             target_dirs = [override_path / directory]
             self._override[directory] = []
         else:
-            target_dirs = [f for f in override_path.safe_rglob("*") if f.safe_isdir()]
+            target_dirs = [f for f in override_path.safe_rglob("*") if f.safe_isdir()]  # type: ignore[reportGeneralTypeIssues]
             target_dirs.append(override_path)
             self._override = {}
 
@@ -478,8 +479,8 @@ class Installation:
     def reload_override_file(self, file: os.PathLike | str) -> None:
         filepath: Path = Path.pathify(file)  # type: ignore[reportGeneralTypeIssues, assignment]
         parent_folder = filepath.parent
-        rel_folderpath = filepath.parent.relative_to(self.override_path()) if parent_folder.name else "."
         identifier = ResourceIdentifier.from_path(filepath)
+        rel_folderpath: str = str(filepath.parent.relative_to(self.override_path())) if parent_folder.name else "."
         if identifier.restype == ResourceType.INVALID:
             print("Cannot reload override file. Invalid KOTOR resource:", identifier)
             return
@@ -489,9 +490,9 @@ class Installation:
             0,
             filepath,
         )
-        override_list: list[FileResource] = self._override[str(rel_folderpath)]
+        override_list: list[FileResource] = self._override[rel_folderpath]
         if resource not in override_list:
-            print(f"Cannot reload override file '{identifier!s}'. File not found in ", rel_folderpath)
+            print(f"Cannot reload override file '{identifier}'. File not found in ", rel_folderpath)
             return
         index: int = override_list.index(resource)
         override_list[index] = resource
@@ -638,7 +639,7 @@ class Installation:
             return file_path.exists()
 
         # Checks for each game
-        game1_checks = [
+        game1_checks: list[bool] = [
             check("streamwaves"),
             check("swkotor.exe"),
             check("swkotor.ini"),
@@ -654,7 +655,7 @@ class Installation:
             check("modules/mainmenu.mod"),
         ]
 
-        game2_checks = [
+        game2_checks: list[bool] = [
             check("streamvoice"),
             check("swkotor2.exe"),
             check("swkotor2.ini"),
@@ -706,7 +707,7 @@ class Installation:
         if self._game is not None:
             return self._game
 
-        game = self.determine_game(self.path())
+        game: Game | None = self.determine_game(self.path())
         if game is not None:
             self._game = game
             return game
@@ -809,21 +810,21 @@ class Installation:
         handles: dict[ResourceIdentifier, BinaryReader] = {}
 
         for query in queries:
-            location_list = locations.get(query, [])
+            location_list: list[LocationResult] = locations.get(query, [])
 
             if not location_list:
                 print(f"Resource not found: '{query}'")
                 results[query] = None
                 continue
 
-            location = location_list[0]
+            location: LocationResult = location_list[0]
 
             if query not in handles:
                 handles[query] = BinaryReader.from_file(location.filepath)
 
-            handle = handles[query]
+            handle: BinaryReader = handles[query]
             handle.seek(location.offset)
-            data = handle.read_bytes(location.size)
+            data: bytes = handle.read_bytes(location.size)
 
             results[query] = ResourceResult(
                 query.resname,
@@ -1073,7 +1074,8 @@ class Installation:
                 (
                     resource
                     for resource in resource_list
-                    if resource.resname() == resname and resource.restype() == ResourceType.TXI
+                    if resource.resname() == resname
+                    and resource.restype() == ResourceType.TXI
                 ),
                 None,
             )
@@ -1175,7 +1177,7 @@ class Installation:
         -------
             A bytes object or None.
         """
-        batch = self.sounds([resname], order, capsules=capsules, folders=folders)
+        batch: CaseInsensitiveDict[bytes | None] = self.sounds([resname], order, capsules=capsules, folders=folders)
         return batch[resname] if batch else None
 
     def sounds(
@@ -1292,7 +1294,7 @@ class Installation:
         -------
             str: text from the locstring lookup
         """
-        batch = self.strings([locstring], default)
+        batch: dict[LocalizedString, str] = self.strings([locstring], default)
         return batch[locstring]
 
     def strings(
@@ -1315,7 +1317,7 @@ class Installation:
         -------
             A dictionary mapping LocalizedString to a string.
         """
-        stringrefs = [locstring.stringref for locstring in queries]
+        stringrefs: list[int] = [locstring.stringref for locstring in queries]
 
         batch: dict[int, StringResult] = self.talktable().batch(stringrefs)
         female_batch: dict[int, StringResult] = self.female_talktable().batch(stringrefs) if self.female_talktable().path().exists() else {}
@@ -1366,7 +1368,7 @@ class Installation:
             capsule = Capsule(self.module_path() / module)
             tag = ""
 
-            capsule_info = capsule.info("module", ResourceType.IFO)
+            capsule_info: FileResource | None = capsule.info("module", ResourceType.IFO)
             if capsule_info is None:
                 return ""
 
@@ -1378,7 +1380,7 @@ class Installation:
                     return tag
 
                 are: GFF = read_gff(are_tag_resource)
-                locstring = are.root.get_locstring("Name")
+                locstring: LocalizedString = are.root.get_locstring("Name")
                 if locstring.stringref == -1:
                     name = locstring.get(Language.ENGLISH, Gender.MALE) or name
                 else:

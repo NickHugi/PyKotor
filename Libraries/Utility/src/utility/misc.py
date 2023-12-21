@@ -125,7 +125,7 @@ def is_debug_mode() -> bool:
         ret = True
     if hasattr(sys, "gettrace") and sys.gettrace() is not None:
         ret = True
-    print(f"DEBUG MODE: {ret!s}")
+    print(f"DEBUG MODE: {ret}")
     return ret
 
 def has_attr_excluding_object(cls, attr_name) -> bool:

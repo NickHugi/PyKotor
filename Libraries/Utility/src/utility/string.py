@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import os
 import re
+from typing import Iterator
+
 
 
 def ireplace(original, target, replacement):
@@ -473,3 +475,333 @@ def striprtf(text) -> str:  # noqa: C901, PLR0915, PLR0912
             elif not ignorable:
                 out.append(tchar)
     return "".join(out)
+
+
+class MutableString(str):
+
+    __slots__: tuple[()] = ()
+
+    def __init__(self, content: str = "") -> None:
+        # sourcery skip: remove-unnecessary-cast
+        if not isinstance(content, str):
+            msg = "Expected a string"
+            raise TypeError(msg)
+        self.__content: str = str(content)
+
+    def __deepcopy__(self, memo):
+        # Create a new instance with the same content
+        new_copy = type(self)(self.__content)
+        # Add the new object to the memo dictionary to handle circular references
+        memo[id(self)] = new_copy
+        return new_copy
+
+    def __repr__(self) -> str:
+        return f"{type(self).__name__}({self.__content})"
+
+    def __str__(self) -> str:
+        return str(self.__content)
+
+    def __len__(self) -> int:
+        return len(self.__content)
+
+    def __getitem__(self, key) -> str:
+        return self.__content[key]
+
+    def __iter__(self):
+        for i in range(len(self.__content)):
+            yield type(self)(self.__content[i])
+
+    def __contains__(self, item) -> bool:
+        return str(item) in self.__content
+
+    def __add__(self, other):
+        if not isinstance(other, str):
+            return NotImplemented
+        return type(self)(self.__content + str(other))
+
+    def __mul__(self, other):
+        if not isinstance(other, int):
+            return NotImplemented
+        return type(self)(self.__content * other)
+
+    def __rmul__(self, other):
+        return self.__mul__(other)
+
+    def __mod__(self, other):
+        return type(self)(self.__content % other)
+
+    def __rmod__(self, other):
+        return type(self)(other % self.__content)
+
+    def __eq__(self, other):
+        if not isinstance(other, str):
+            return NotImplemented
+        return self.__content == str(other)
+
+    def __ne__(self, other):
+        return not self.__eq__(other)
+
+    def __lt__(self, other):
+        if not isinstance(other, str):
+            return NotImplemented
+        return self.__content < str(other)
+
+    def __le__(self, other):
+        if not isinstance(other, str):
+            return NotImplemented
+        return self.__content <= str(other)
+
+    def __gt__(self, other):
+        if not isinstance(other, str):
+            return NotImplemented
+        return self.__content > str(other)
+
+    def __ge__(self, other):
+        if not isinstance(other, str):
+            return NotImplemented
+        return self.__content >= str(other)
+
+    def __hash__(self):
+        return hash(self.__content)
+
+    # String Methods
+    def capitalize(self):
+        return type(self)(self.__content.capitalize())
+
+    def casefold(self):
+        return type(self)(self.__content.casefold())
+
+    def center(self, width, fillchar=" "):
+        return type(self)(self.__content.center(width, fillchar))
+
+    def count(self, sub, start=0, end=None):
+        return self.__content.count(sub, start, end)
+
+    def encode(self, encoding="utf-8", errors="strict"):
+        return self.__content.encode(encoding, errors)
+
+    def endswith(self, suffix, start=0, end=None):
+        return self.__content.endswith(suffix, start, end)
+
+    def expandtabs(self, tabsize=8):
+        return type(self)(self.__content.expandtabs(tabsize))
+
+    def find(self, sub, start=0, end=None):
+        return self.__content.find(sub, start, end)
+
+    def format(self, *args, **kwargs):
+        return type(self)(self.__content.format(*args, **kwargs))
+
+    def format_map(self, mapping):
+        return type(self)(self.__content.format_map(mapping))
+
+    def index(self, sub, start=0, end=None):
+        return self.__content.index(sub, start, end)
+
+    def isalnum(self):
+        return self.__content.isalnum()
+
+    def isalpha(self):
+        return self.__content.isalpha()
+
+    def isascii(self):
+        return self.__content.isascii()
+
+    def isdecimal(self):
+        return self.__content.isdecimal()
+
+    def isdigit(self):
+        return self.__content.isdigit()
+
+    def isidentifier(self):
+        return self.__content.isidentifier()
+
+    def islower(self):
+        return self.__content.islower()
+
+    def isnumeric(self):
+        return self.__content.isnumeric()
+
+    def isprintable(self):
+        return self.__content.isprintable()
+
+    def isspace(self):
+        return self.__content.isspace()
+
+    def istitle(self):
+        return self.__content.istitle()
+
+    def isupper(self):
+        return self.__content.isupper()
+
+    def join(self, iterable):
+        return type(self)(self.__content.join(map(str, iterable)))
+
+    def ljust(self, width, fillchar=" "):
+        return type(self)(self.__content.ljust(width, fillchar))
+
+    def lower(self):
+        return type(self)(self.__content.lower())
+
+    def lstrip(self, chars=None):
+        return type(self)(self.__content.lstrip(chars))
+
+    def partition(self, sep):
+        a, b, c = self.__content.partition(sep)
+        return (type(self)(a), type(self)(b), type(self)(c))
+
+    def replace(self, old, new, count=-1):
+        return type(self)(self.__content.replace(old, new, count))
+
+    def rfind(self, sub, start=0, end=None):
+        return self.__content.rfind(sub, start, end)
+
+    def rindex(self, sub, start=0, end=None):
+        return self.__content.rindex(sub, start, end)
+
+    def rjust(self, width, fillchar=" "):
+        return type(self)(self.__content.rjust(width, fillchar))
+
+    def rpartition(self, sep):
+        a, b, c = self.__content.rpartition(sep)
+        return (type(self)(a), type(self)(b), type(self)(c))
+
+    def rsplit(self, sep=None, maxsplit=-1):
+        return [type(self)(s) for s in self.__content.rsplit(sep, maxsplit)]
+
+    def rstrip(self, chars=None):
+        return type(self)(self.__content.rstrip(chars))
+
+    def split(self, sep=None, maxsplit=-1):
+        return [type(self)(s) for s in self.__content.split(sep, maxsplit)]
+
+    def splitlines(self, keepends=False):
+        return [type(self)(s) for s in self.__content.splitlines(keepends)]
+
+    def startswith(self, prefix, start=0, end=None):
+        return self.__content.startswith(prefix, start, end)
+
+    def strip(self, chars=None):
+        return type(self)(self.__content.strip(chars))
+
+    def swapcase(self):
+        return type(self)(self.__content.swapcase())
+
+    def title(self):
+        return type(self)(self.__content.title())
+
+    def translate(self, table):
+        return type(self)(self.__content.translate(table))
+
+    def upper(self):
+        return type(self)(self.__content.upper())
+
+    def zfill(self, width):
+        return type(self)(self.__content.zfill(width))
+
+    # Magic methods for string representation
+    def __getnewargs__(self):
+        return (self.__content,)
+
+    def __getstate__(self):
+        return self.__content
+
+
+class CaseInsensitiveMutStr(MutableString):
+
+
+    def __contains__(self, item):
+        if isinstance(item, str):
+            return self.__content.lower().__contains__(str(item).lower())
+        return NotImplemented
+
+    def __eq__(self, other):
+        if isinstance(other, str):
+            return str(self) == str(other).lower()
+        return NotImplemented
+
+    def __ne__(self, other):
+        return not self.__eq__(other)
+
+    def __hash__(self):
+        return hash(self.__content.lower())
+
+    def find(self, sub: str, start=0, end=None):  # sourcery skip: remove-unnecessary-cast
+        return super().lower().find(str(sub).lower(), start, end)
+
+    def partition(self, sep: str):
+        # Find the position of the separator in a case-insensitive manner
+        pattern: re.Pattern[str] = re.compile(re.escape(sep), re.IGNORECASE)
+        match: re.Match[str] | None = pattern.search(self.__content.lower())
+
+        if match is not None:
+            idx: int = match.start()
+            return (
+                type(self)(self.__content[:idx]),
+                type(self)(self.__content[idx:idx+len(sep)]),
+                type(self)(self.__content[idx+len(sep):]),
+            )
+        return (type(self)(self.__content), type(self)(""), type(self)(""))
+
+    def replace(self, old: str, new: str, count=-1):
+        """Case-insensitive replace function matching the builtin str.replace's functionality."""
+        # Check for the special case where 'old' is an empty string
+        if old == "":  # sourcery skip: simplify-empty-collection-comparison
+            return super().replace("", new, count)
+
+        pattern: re.Pattern[str] = re.compile(re.escape(old), re.IGNORECASE)
+        return type(self)(pattern.sub(new, str(self), count))
+
+
+    def rpartition(self, sep: str):
+        # Find the position of the separator in a case-insensitive manner
+        pattern: re.Pattern[str] = re.compile(re.escape(sep), re.IGNORECASE)
+        matches = list(pattern.finditer(self.__content.lower()))
+
+        if matches:
+            match: re.Match[str] = matches[-1]  # Get the last match for rpartition
+            idx: int = match.start()
+            return (
+                type(self)(self.__content[:idx]),
+                type(self)(self.__content[idx:idx+len(sep)]),
+                type(self)(self.__content[idx+len(sep):]),
+            )
+
+        return (type(self)(""), type(self)(""), type(self)(self.__content))
+
+    def rfind(self, sub: str, start=None, end=None):  # sourcery skip: remove-unnecessary-cast
+        return super().lower().rfind(str(sub), start, end)
+
+    def rsplit(self, sep: str | None = None, maxsplit=-1):
+        if sep is None:
+            # Default split behavior on whitespace
+            return [type(self)(s) for s in self.__content.rsplit(sep, maxsplit)]
+
+        # Case-insensitive split using regular expression
+        pattern: re.Pattern[str] = re.compile(re.escape(str(sep)), re.IGNORECASE)
+        split_parts: list[int] = [m.start() for m in pattern.finditer(self.__content)]
+        return self._split_by_indices(split_parts, maxsplit, reverse=True)
+
+    def split(self, sep: str | None = None, maxsplit=-1):
+        if sep is None:
+            # Default split behavior on whitespace
+            return [type(self)(s) for s in self.__content.split(sep, maxsplit)]
+
+        # Case-insensitive split using regular expression
+        pattern: re.Pattern[str] = re.compile(re.escape(str(sep)), re.IGNORECASE)
+        split_parts: list[int] = [m.start() for m in pattern.finditer(self.__content)]
+        return self._split_by_indices(split_parts, maxsplit)
+
+    def _split_by_indices(self, indices, maxsplit, reverse=False):
+        # Split the string using indices from the regular expression
+        if maxsplit > 0:
+            indices = indices[-maxsplit:] if reverse else indices[:maxsplit]
+
+        last_index = 0
+        results = []
+        for index in reversed(indices) if reverse else indices:
+            results.append(type(self)(self.__content[last_index:index]))
+            last_index = index + 1
+
+        results.append(type(self)(self.__content[last_index:]))
+        return list(reversed(results)) if reverse else results

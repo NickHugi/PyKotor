@@ -607,13 +607,13 @@ class GFFEditor(Editor):
         if ftype is None and item.parent() is None:
             text = "[ROOT]"
         elif ftype is None:
-            text = f'{str(item.row()).ljust(16)} {"[Struct]".ljust(17)} = {value!s}'
+            text = f'{str(item.row()).ljust(16)} {"[Struct]".ljust(17)} = {value}'
         elif ftype is GFFFieldType.Struct:
-            text = f'{label.ljust(16)} {"[Struct]".ljust(17)} = {value!s}'
+            text = f'{label.ljust(16)} {"[Struct]".ljust(17)} = {value}'
         elif ftype is GFFFieldType.List:
-            text = f'{label.ljust(16)} {"[List]".ljust(17)} = {item.rowCount()!s}'
+            text = f'{label.ljust(16)} {"[List]".ljust(17)} = {item.rowCount()}'
         else:
-            text = f'{label.ljust(16)} {f"[{ftype.name!s}]".ljust(17)} = {value!s}'
+            text = f'{label.ljust(16)} {f"[{ftype.name}]".ljust(17)} = {value}'
 
         if ftype == GFFFieldType.Struct or ftype is None:
             item.setForeground(QBrush(QColor(0x660000)))

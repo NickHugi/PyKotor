@@ -450,11 +450,11 @@ def main() -> None:
     log_output()
     log_output(f"Using --path1='{PARSER_ARGS.path1}'")
     log_output(f"Using --path2='{PARSER_ARGS.path2}'")
-    log_output(f"Using --ignore-rims={PARSER_ARGS.ignore_rims!s}")
-    log_output(f"Using --ignore-tlk={PARSER_ARGS.ignore_tlk!s}")
-    log_output(f"Using --ignore-lips={PARSER_ARGS.ignore_lips!s}")
-    log_output(f"Using --compare-hashes={PARSER_ARGS.compare_hashes!s}")
-    log_output(f"Using --use-profiler={PARSER_ARGS.use_profiler!s}")
+    log_output(f"Using --ignore-rims={PARSER_ARGS.ignore_rims}")
+    log_output(f"Using --ignore-tlk={PARSER_ARGS.ignore_tlk}")
+    log_output(f"Using --ignore-lips={PARSER_ARGS.ignore_lips}")
+    log_output(f"Using --compare-hashes={PARSER_ARGS.compare_hashes}")
+    log_output(f"Using --use-profiler={PARSER_ARGS.use_profiler}")
 
     profiler = None
     try:

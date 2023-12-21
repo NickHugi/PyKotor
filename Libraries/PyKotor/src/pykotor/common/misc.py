@@ -4,10 +4,10 @@
 from __future__ import annotations
 
 from enum import Enum, IntEnum
-from typing import TYPE_CHECKING, Generic, Iterable, TypeVar
+from typing import TYPE_CHECKING, ClassVar, Generic, Iterable, TypeVar
 
 from pykotor.common.geometry import Vector3
-from utility.path import PurePath
+from utility.string import CaseInsensitiveMutStr
 
 if TYPE_CHECKING:
     import os
@@ -16,58 +16,53 @@ T = TypeVar("T")
 VT = TypeVar("VT")
 _unique_sentinel = object()
 
+class ResRef(CaseInsensitiveMutStr):
+    """A string reference to a game resource.
 
-class ResRef:
-    """A string reference to a game resource. ResRefs can be a maximum of 16 characters in length."""
+    ResRefs are the names of resources without the extension (the file stem).
+
+    Used in:
+    -------
+        - Encapsulated Resource Files (ERF/MOD/SAV)
+        - RIM/BIF archives
+        - Files in the Override folder
+
+    Restrictions:
+    ------------
+        - ResRefs must be in ASCII format
+        - ResRefs cannot exceed 16 characters in length.
+        - Usable in case-insensitive applications. This is because KOTOR was created for Windows, which uses a case-insensitive filesystem.
+        - Stored as case-sensitive text.
+    """
+
+    MAX_LENGTH: ClassVar[int] = 16
+
+    INVALID_CHARACTERS: ClassVar[str] = '<>:"/\\|?*'
+
+    class InvalidFormatError(ValueError):
+        """ResRefs must conform to Windows filename requirements."""
 
     class InvalidEncodingError(ValueError):
-        ...
+        """ResRefs must only contain ASCII characters."""
+
+        def __init__(self, text: str) -> None:
+            message = f"'{text}' must only contain ASCII characters."
+            super().__init__(message)
 
     class ExceedsMaxLengthError(ValueError):
-        ...
+        """ResRefs cannot exceed the maximum of 16 characters in length."""
 
-    def __init__(
-        self,
-        text: str,
-    ):
-        self._value = ""
-        self.set_data(text)
+        def __init__(self, text: str) -> None:
+            message = f"Length of '{text}' ({len(text)} characters) exceeds the maximum allowed length of {ResRef.MAX_LENGTH}."
+            super().__init__(message)
 
-    def __len__(
-        self,
-    ):
-        return len(self._value)
 
-    def __bool__(self):
-        return bool(self._value)
-
-    def __eq__(
-        self,
-        other,
-    ):
-        """A ResRef can be compared to another ResRef or a str."""
-        if isinstance(other, ResRef):
-            other_value = other.get().lower()
-        elif isinstance(other, str):
-            other_value = other.lower()
-        else:
-            return NotImplemented
-        return other_value == self._value.lower()
-
-    def __repr__(
-        self,
-    ):
-        return f"ResRef({self._value})"
-
-    def __str__(
-        self,
-    ):
-        return self._value
+    def __init__(self, content=""):
+        super().__init__(content)
+        self.set_data(content)
 
     @classmethod
-    def from_blank(
-        cls,
-    ) -> ResRef:
+    def from_blank(cls) -> ResRef:
         """Returns a blank ResRef.
 
         Returns
@@ -91,40 +86,59 @@ class ResRef:
         -------
             A new ResRef instance.
         """
-        return cls(PurePath(file_path).name)
+        from pykotor.extract.file import ResourceIdentifier  # Prevent circular imports
+        return cls(ResourceIdentifier.from_path(file_path).resname)
 
     def set_data(
         self,
         text: str,
-        truncate: bool = True,
-    ) -> None:
+        truncate: bool = False,
+    ) -> None:    # sourcery skip: remove-unnecessary-cast
         """Sets the ResRef.
 
         Args:
         ----
-            text: The reference string.
-            truncate: If true, the string will be truncated to 16 characters, otherwise it will raise an error instead.
+            text - str: The reference string.
+            truncate - bool: Whether to truncate the text to 16 characters. Default is False.
 
         Raises:
         ------
-            ValueError:
+            InvalidEncodingError - text was not in ascii format
+            ExceedsMaxLengthError - text exceeded 16 characters
+            InvalidFormatError - text starts/ends with a space or contains windows invalid filename characters.
+            All of the above exceptions inherit ValueError.
         """
-        if len(text) > 16:
-            if truncate:
-                text = text[:16]
-            else:
-                msg = "ResRef cannot exceed 16 characters."  # sourcery skip: inline-variable
-                raise ResRef.ExceedsMaxLengthError(msg)
-        if len(text) != len(text.encode(encoding="ascii", errors="ignore")):
-            msg = "ResRef must be in ASCII characters."  # sourcery skip: inline-variable
-            raise ResRef.InvalidEncodingError(msg)
+        text = str(text)
+        try:
+            parsed_text = text.encode(encoding="ascii", errors="strict").decode()
+        except UnicodeEncodeError as e:
+            raise self.InvalidEncodingError(text) from e
+        if len(parsed_text) > self.MAX_LENGTH:
+            if not truncate:
+                raise self.ExceedsMaxLengthError(parsed_text)
+            parsed_text = parsed_text[:self.MAX_LENGTH]
+        if parsed_text.startswith(" ") or parsed_text.endswith(" "):
+            msg = f"ResRef '{text}' cannot start or end with a space."
+            raise self.InvalidFormatError(msg)
+        for i in range(len(parsed_text)):
+            if parsed_text[i] in self.INVALID_CHARACTERS:
+                msg = f"ResRef '{text}' cannot contain any invalid characters in [{self.INVALID_CHARACTERS}]"
+                raise self.InvalidFormatError(msg)
+        self.__content = parsed_text
 
-        self._value = text
+    def get(self) -> str:
+        return self.__content
 
-    def get(
-        self,
-    ) -> str:
-        return self._value
+    def lower(self):
+        raise self.InvalidFormatError("ResRef's must be case-insensitive.")  # noqa: TRY003, EM101
+    def upper(self):
+        raise self.InvalidFormatError("ResRef's must be case-insensitive.")  # noqa: TRY003, EM101
+    def capitalize(self):
+        raise self.InvalidFormatError("ResRef's must be case-insensitive.")  # noqa: TRY003, EM101
+    def swapcase(self):
+        raise self.InvalidFormatError("ResRef's must be case-insensitive.")  # noqa: TRY003, EM101
+    def title(self):
+        raise self.InvalidFormatError("ResRef's must be case-insensitive.")  # noqa: TRY003, EM101
 
 
 class Game(IntEnum):
@@ -137,7 +151,6 @@ class Game(IntEnum):
 
     def is_xbox(self) -> bool:
         return self in (Game.K1_XBOX, Game.K2_XBOX)
-
 
 
 class Color:
@@ -179,7 +192,12 @@ class Color:
         if not isinstance(other, Color):
             return NotImplemented
 
-        return other.r == self.r and other.g == self.g and other.b == self.b and other.a == self.a
+        return (
+            other.r == self.r
+            and other.g == self.g
+            and other.b == self.b
+            and other.a == self.a
+        )
 
     @classmethod
     def from_rgb_integer(
@@ -410,7 +428,7 @@ class InventoryItem:
     def __str__(
         self,
     ):
-        return self.resref.get()
+        return self.resref
 
     def __eq__(
         self,
@@ -418,7 +436,10 @@ class InventoryItem:
     ):
         if not isinstance(other, InventoryItem):
             return NotImplemented
-        return self.resref == other.resref and self.droppable == other.droppable
+        return (
+            self.resref == other.resref
+            and self.droppable == other.droppable
+        )
 
 
 class EquipmentSlot(Enum):

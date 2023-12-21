@@ -65,7 +65,7 @@ class ModInstaller:
             if not self.changes_ini_path.exists():
                 self.changes_ini_path = self.mod_path / "tslpatchdata" / self.changes_ini_path.name
             if not self.changes_ini_path.exists():
-                msg = f"Could not find the changes ini file {self.changes_ini_path!s} on disk! Could not start install!"
+                msg = f"Could not find the changes ini file {self.changes_ini_path} on disk! Could not start install!"
                 raise FileNotFoundError(msg)
 
         self.game: Game | None = Installation.determine_game(self.game_path)
@@ -256,7 +256,7 @@ class ModInstaller:
                     # Handle exceptions such as permission errors or file in use.
                     self.log.add_error(f"Could not rename '{patch.saveas}' to '{renamed_file_path.name}' in the Override folder: {e!r}")
             elif override_type == OverrideType.WARN:
-                self.log.add_warning(f"A resource located at '{override_resource_path!s}' is shadowing this mod's changes in {patch.destination}!")
+                self.log.add_warning(f"A resource located at '{override_resource_path}' is shadowing this mod's changes in {patch.destination}!")
 
     def should_patch(
         self,

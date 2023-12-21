@@ -190,7 +190,7 @@ class Scene:
         """
         try:
             if utc is None:
-                utc = self.module.creature(instance.resref.get()).resource()
+                utc = self.module.creature(instance.resref).resource()
 
             head_obj = None
             mask_hook = None
@@ -284,7 +284,7 @@ class Scene:
                 if identifier.resname == placeable.resref and identifier.restype == ResourceType.UTP:
                     del self.objects[placeable]
             for door in copy(self.git.doors):
-                if door.resref.get() == identifier.resname and identifier.restype == ResourceType.UTD:
+                if door.resref == identifier.resname and identifier.restype == ResourceType.UTD:
                     del self.objects[door]
             if identifier.restype in [ResourceType.TPC, ResourceType.TGA]:
                 del self.textures[identifier.resname]
@@ -314,7 +314,7 @@ class Scene:
         for door in self.git.doors:
             if door not in self.objects:
                 try:
-                    utd = self.module.door(door.resref.get()).resource()
+                    utd = self.module.door(door.resref).resource()
                     model_name = self.table_doors.get_row(utd.appearance_id).get_string("modelname")
                 except Exception:
                     # If failed to load creature models, use an empty model instead
@@ -328,7 +328,7 @@ class Scene:
         for placeable in self.git.placeables:
             if placeable not in self.objects:
                 try:
-                    utp = self.module.placeable(placeable.resref.get()).resource()
+                    utp = self.module.placeable(placeable.resref).resource()
                     model_name = self.table_placeables.get_row(utp.appearance_id).get_string("modelname")
                 except Exception:
                     # If failed to load creature models, use an empty model instead
@@ -365,7 +365,7 @@ class Scene:
         for sound in self.git.sounds:
             if sound not in self.objects:
                 with suppress(Exception):
-                    uts = self.module.sound(sound.resref.get()).resource
+                    uts = self.module.sound(sound.resref).resource
 
                 obj = RenderObject(
                     "sound",

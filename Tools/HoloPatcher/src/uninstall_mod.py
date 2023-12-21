@@ -192,7 +192,7 @@ class ModUninstaller:
 
         if len(files_in_backup) < 6:  # noqa: PLR2004[6 represents a small number of files to display]
             for item in files_in_backup:
-                self.log.add_note(f"Would restore file '{item.relative_to(most_recent_backup_folder)!s}'")
+                self.log.add_note(f"Would restore file '{item.relative_to(most_recent_backup_folder)}'")
         if not messagebox.askyesno(
             "Confirmation",
             f"Really uninstall {len(existing_files)} files and restore the most recent backup (containing {len(files_in_backup)} files and {folder_count} folders)?",

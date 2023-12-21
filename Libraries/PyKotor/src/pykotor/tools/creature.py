@@ -56,7 +56,7 @@ def get_body_model(
             override_texture = appearance.get_row(utc.appearance_id).get_string("texa") + "01"
 
         if EquipmentSlot.ARMOR in utc.equipment:
-            armor_resref = utc.equipment[EquipmentSlot.ARMOR].resref.get()
+            armor_resref = utc.equipment[EquipmentSlot.ARMOR].resref
             armor_uti = read_uti(installation.resource(armor_resref, ResourceType.UTI).data)
             armor_variation = baseitems.get_row(armor_uti.base_item).get_string("bodyvar").lower()
 
@@ -113,8 +113,8 @@ def get_weapon_models(
     rhand_model: str | None = None
     lhand_model: str | None = None
 
-    rhand_resref: str | None = utc.equipment[EquipmentSlot.RIGHT_HAND].resref.get() if EquipmentSlot.RIGHT_HAND in utc.equipment else None
-    lhand_resref: str | None = utc.equipment[EquipmentSlot.LEFT_HAND].resref.get() if EquipmentSlot.LEFT_HAND in utc.equipment else None
+    rhand_resref: str | None = utc.equipment[EquipmentSlot.RIGHT_HAND].resref if EquipmentSlot.RIGHT_HAND in utc.equipment else None
+    lhand_resref: str | None = utc.equipment[EquipmentSlot.LEFT_HAND].resref if EquipmentSlot.LEFT_HAND in utc.equipment else None
 
     if rhand_resref is not None:
         rhand_model = _load_hand_uti(
@@ -235,7 +235,7 @@ def get_mask_model(
     model: str | None = None
 
     if EquipmentSlot.HEAD in utc.equipment:
-        resref: str = utc.equipment[EquipmentSlot.HEAD].resref.get()
+        resref = utc.equipment[EquipmentSlot.HEAD].resref
         uti: UTI = read_uti(installation.resource(resref, ResourceType.UTI).data)
         model = "I_Mask_" + str(uti.model_variation).rjust(3, "0")
 

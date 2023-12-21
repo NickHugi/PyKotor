@@ -141,7 +141,7 @@ class TLKBinaryWriter(ResourceWriter):
         entry: TLKEntry,
         previous_offset: WrappedInt,
     ) -> None:
-        sound_resref = entry.voiceover.get()
+        sound_resref = entry.voiceover
         text_offset = previous_offset.get()
         text_length = len(entry.text)
 

@@ -567,7 +567,7 @@ class Modifications2DA(PatcherModifications):
             try:
                 row.apply(twoda, memory)
             except Exception as e:  # noqa: PERF203, BLE001
-                msg = f"{e!s} when patching the file '{self.saveas}'"
+                msg = f"{e} when patching the file '{self.saveas}'"
                 if log:
                     log.add_warning(msg) if isinstance(e, WarningError) else log.add_error(msg)
                 else:

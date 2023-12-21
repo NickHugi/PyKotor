@@ -97,7 +97,7 @@ def main():
                     traceback.print_exc()
 
         else:
-            print(f"Invalid input: {input_path!s}. It's neither a file nor a directory.")
+            print(f"Invalid input: {input_path}. It's neither a file nor a directory.")
             return
         print("Completed extractions")
     except KeyboardInterrupt:
