@@ -5,6 +5,7 @@ from typing import TYPE_CHECKING, NamedTuple
 
 from pykotor.resource.type import ResourceType
 from pykotor.tools.misc import is_bif_file, is_capsule_file
+from utility.misc import generate_sha256_hash
 from utility.path import Path, PurePath
 
 if TYPE_CHECKING:
@@ -20,38 +21,50 @@ class FileResource:
         restype: ResourceType,
         size: int,
         offset: int,
-        filepath: Path,
+        filepath: os.PathLike | str,
     ):
-        self._resname: str = resname
+        self._resname: str = resname.lower()
         self._restype: ResourceType = restype
         self._size: int = size
-        self._filepath: Path = filepath
+        self._filepath: Path = Path.pathify(filepath)
         self._offset: int = offset
+        self._sha256_hash: str = ""
 
-    def __repr__(
-        self,
-    ):
-        return f"{self._resname}.{self._restype.extension}"
+    def __repr__(self) -> str:
+        return (
+            f"{self.__class__.__name__}("
+                f"resname='{self._resname}', "
+                f"restype={self._restype!r}, "
+                f"size={self._size}, "
+                f"offset={self._offset}, "
+                f"filepath={self._filepath!r}"
+            ")"
+        )
 
     def __str__(
         self,
-    ):
+    ) -> str:
         return f"{self._resname}.{self._restype.extension}"
 
     def __eq__(
         self,
-        other: FileResource | ResourceIdentifier | object,
+        other: FileResource | ResourceIdentifier | Path | bytes | bytearray | memoryview | object,
     ):
         if isinstance(other, FileResource):
-            return other._resname.lower() == self._resname.lower() and other._restype == self._restype
+            return self.get_sha256_hash() == other.get_sha256_hash()
+        if isinstance(other, (Path, bytes, bytearray, memoryview)):
+            return self.get_sha256_hash() == generate_sha256_hash(other)
         if isinstance(other, ResourceIdentifier):
-            return other.resname.lower() == self._resname.lower() and other.restype == self._restype
+            return self.identifier() == other
         return NotImplemented
+
+    def __hash__(self) -> int:
+        return hash((self.__class__, self._filepath, self._offset, self._size, self.identifier()))
 
     def resname(
         self,
     ) -> str:
-        return self._resname.lower()
+        return self._resname
 
     def restype(
         self,
@@ -90,20 +103,29 @@ class FileResource:
             Bytes data of the resource.
         """
         if reload:
-            if is_capsule_file(self._filepath.name):
-                from pykotor.extract.capsule import Capsule
+            if is_capsule_file(self._filepath):
+                from pykotor.extract.capsule import Capsule  # Prevent circular imports
 
                 capsule = Capsule(self._filepath)
-                res: FileResource | None = capsule.info(self._resname, self._restype)
+                res: FileResource | None = capsule.info(self._resname, self._restype)  # type: ignore[assignment]
+                assert res is not None, f"Resource '{self._resname}.{self._restype.extension}' not found in Capsule at '{self._filepath!s}'"
+
                 self._offset = res.offset()
                 self._size = res.size()
-            elif not is_bif_file(self._filepath.name):
+            elif not is_bif_file(self._filepath):  # bifs are read-only and there's no reason to reload them.
                 self._offset = 0
                 self._size = self._filepath.stat().st_size
 
         with self._filepath.open("rb") as file:
             file.seek(self._offset)
-            return file.read(self._size)
+            data: bytes = file.read(self._size)
+            self._sha256_hash = generate_sha256_hash(data)
+            return data
+
+    def get_sha256_hash(self):
+        if not self._sha256_hash:
+            self.data()  # Ensure that the SHA256 hash is calculated
+        return self._sha256_hash
 
     def identifier(
         self,
@@ -125,13 +147,15 @@ class LocationResult(NamedTuple):
 
 
 class ResourceIdentifier(NamedTuple):
+    """Class for storing resource name and type, facilitating case-insensitive object comparisons and hashing equal to their string representations."""
+
     resname: str
     restype: ResourceType
 
     def __hash__(
         self,
     ):
-        return hash(f"{self.resname.lower()}.{self.restype.extension}")
+        return hash(str(self))
 
     def __repr__(
         self,
@@ -141,14 +165,19 @@ class ResourceIdentifier(NamedTuple):
     def __str__(
         self,
     ):
-        return f"{self.resname.lower()}.{self.restype.extension}"
+        return f"{self.resname.lower()}{f'.{self.restype.extension.lower()}' if self.restype.extension else ''}"
 
     def __eq__(
         self,
-        other: ResourceIdentifier | object,
+        other: ResourceIdentifier | str | object,
     ):
+        if isinstance(other, str):
+            other = ResourceIdentifier.from_path(other)
         if isinstance(other, ResourceIdentifier):
-            return self.resname.lower() == other.resname.lower() and self.restype == other.restype
+            return (
+                self.resname.lower() == other.resname.lower()
+                and self.restype.extension.lower() == other.restype.extension.lower()
+            )
         return NotImplemented
 
     def validate(self):
@@ -159,22 +188,27 @@ class ResourceIdentifier(NamedTuple):
         return self
 
     @classmethod
+    def identify(cls, obj: ResourceIdentifier | os.PathLike | str):
+        return obj if isinstance(obj, (cls, ResourceIdentifier)) else cls.from_path(obj)
+
+    @classmethod
     def from_path(cls, file_path: os.PathLike | str) -> ResourceIdentifier:
-        """Generate a ResourceIdentifier from a file path. If not valid, will return ResourceType.INVALID.
+        """Generate a ResourceIdentifier from a file path or file name. If not valid, will return an invalidated ResourceType equal to ResourceType.INVALID.
 
         Args:
         ----
-            file_path: {Path or string to the file}:
+            file_path (os.PathLike | str): The filename, or path to the file, to construct an identifier from
 
         Returns:
         -------
-            ResourceIdentifier: Resource identifier object
+            ResourceIdentifier: Determined ResourceIdentifier object.
 
         Processing Logic:
         ----------------
-            - Split the file path on the filename and extension
-            - Determine the resource type from the extension
-            - Return a ResourceIdentifier with the name and type.
+            - Splits the file path into resource name and type by filename dots, starting from maximum dots
+            - Validates the extracted resource type
+            - If splitting fails, uses stem as name and extension (from the last dot) as type
+            - Handles exceptions during processing
         """
         path_obj: PurePath = PurePath("")  #PurePath("<INVALID>")
         with suppress(Exception), suppress(TypeError):
@@ -189,4 +223,4 @@ class ResourceIdentifier(NamedTuple):
                         ResourceType.from_extension(restype_ext).validate(),
                     )
 
-        return ResourceIdentifier(path_obj.stem, ResourceType.INVALID)
+        return ResourceIdentifier(path_obj.stem, ResourceType.from_extension(path_obj.suffix))

@@ -393,7 +393,7 @@ class Editor(QMainWindow):
             - Refresh window title
             - Emit loadedFile signal with load details.
         """
-        self._filepath = filepath if isinstance(filepath, Path) else Path(filepath)  # type: ignore[reportGeneralTypeIssues]
+        self._filepath = Path.pathify(filepath)  # type: ignore[reportGeneralTypeIssues]
         self._resref = resref
         self._restype = restype
         self._revert = data

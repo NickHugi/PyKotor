@@ -124,7 +124,7 @@ class ConfigReader:
         logger: PatchLogger | None = None,
     ) -> None:
         self.ini: ConfigParser = ini
-        self.mod_path: CaseAwarePath = mod_path if isinstance(mod_path, CaseAwarePath) else CaseAwarePath(mod_path)
+        self.mod_path: CaseAwarePath = CaseAwarePath.pathify(mod_path)
         self.config: PatcherConfig
         self.log: PatchLogger = logger or PatchLogger()
 
@@ -150,7 +150,7 @@ class ConfigReader:
             - Return the initialized instance
         """
         from pykotor.tslpatcher.config import PatcherConfig
-        resolved_file_path = (file_path if isinstance(file_path, Path) else Path(file_path)).resolve()
+        resolved_file_path = Path.pathify(file_path).resolve()
 
         ini = ConfigParser(
             delimiters=("="),

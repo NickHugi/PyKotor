@@ -222,7 +222,9 @@ class ERFEditor(Editor):
             for index in self.ui.tableView.selectionModel().selectedRows(0):
                 item = self.model.itemFromIndex(index)
                 resource = item.data()
-                file_path = Path(folderpath_str, f"{resource.resref}.{resource.restype.extension}").resolve()
+                file_path = Path(folderpath_str, f"{resource.resref}.{resource.restype.extension}")
+                if not file_path.exists():
+                    file_path = file_path.resolve()
                 with file_path.open("wb") as file:
                     file.write(resource.data)
 
@@ -255,7 +257,9 @@ class ERFEditor(Editor):
             - Catches any exceptions and displays an error message.
         """
         for filepath in filepaths:
-            c_filepath = Path(filepath).resolve()
+            c_filepath = Path(filepath)
+            if not c_filepath.exists():
+                c_filepath = c_filepath.resolve()
             try:
                 with c_filepath.open("rb") as file:
                     data = file.read()
@@ -421,7 +425,9 @@ class ERFEditorTable(QTableView):
         for index in [index for index in self.selectedIndexes() if index.column() == 0]:
             resource = self.model().itemData(index)[QtCore.Qt.UserRole + 1]
             file_stem, file_ext = resource.resref.get(), resource.restype.extension
-            filepath = Path(tempDir, f"{file_stem}.{file_ext}").resolve()
+            filepath = Path(tempDir, f"{file_stem}.{file_ext}")
+            if not filepath.exists():
+                filepath = filepath.resolve()
             with filepath.open("wb") as file:
                 file.write(resource.data)
             urls.append(QtCore.QUrl.fromLocalFile(str(filepath)))

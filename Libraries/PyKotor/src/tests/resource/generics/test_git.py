@@ -3,6 +3,8 @@ import pathlib
 import sys
 import unittest
 
+from pykotor.resource.type import ResourceType
+
 THIS_SCRIPT_PATH = pathlib.Path(__file__)
 PYKOTOR_PATH = THIS_SCRIPT_PATH.parents[3].resolve()
 UTILITY_PATH = THIS_SCRIPT_PATH.parents[5].joinpath("Utility", "src").resolve()
@@ -20,12 +22,15 @@ if UTILITY_PATH.exists():
 
 from pykotor.resource.formats.gff.gff_data import GFF
 from pykotor.common.misc import Color, Game
+from pykotor.extract.installation import Installation
 from pykotor.resource.formats.gff import read_gff
 from pykotor.resource.generics.git import GIT, construct_git, dismantle_git
 
 TEST_FILE = "src/tests/files/test.git"
 K1_SAME_TEST = "src/tests/files/k1_same_git_test.git"
 K1_LAST_GOOD_EXTRACT = "src/tests/files/k1_extracted_git_test.git"
+K1_PATH = os.environ.get("K1_PATH")
+K2_PATH = os.environ.get("K2_PATH")
 
 
 class TestGIT(unittest.TestCase):
@@ -34,6 +39,28 @@ class TestGIT(unittest.TestCase):
 
     def log_func(self, message=""):
         self.log_messages.append(message)
+
+    @unittest.skipIf(
+        not K1_PATH or not pathlib.Path(K1_PATH).joinpath("chitin.key").exists(),
+        "K1_PATH environment variable is not set or not found on disk.",
+    )
+    def test_gff_reconstruct_from_k1_installation(self) -> None:
+        self.installation = Installation(K1_PATH)  # type: ignore[arg-type]
+        for are_resource in (resource for resource in self.installation if resource.restype() == ResourceType.GIT):
+            gff: GFF = read_gff(are_resource.data())
+            reconstructed_gff: GFF = dismantle_git(construct_git(gff), Game.K1)
+            self.assertTrue(gff.compare(reconstructed_gff, self.log_func), os.linesep.join(self.log_messages))
+
+    @unittest.skipIf(
+        not K2_PATH or not pathlib.Path(K2_PATH).joinpath("chitin.key").exists(),
+        "K2_PATH environment variable is not set or not found on disk.",
+    )
+    def test_gff_reconstruct_from_k2_installation(self) -> None:
+        self.installation = Installation(K2_PATH)  # type: ignore[arg-type]
+        for are_resource in (resource for resource in self.installation if resource.restype() == ResourceType.GIT):
+            gff: GFF = read_gff(are_resource.data())
+            reconstructed_gff: GFF = dismantle_git(construct_git(gff))
+            self.assertTrue(gff.compare(reconstructed_gff, self.log_func, ignore_default_changes=True), os.linesep.join(self.log_messages))
 
     def test_k1_gff_reconstruct(self) -> None:
         gff: GFF = read_gff(K1_SAME_TEST)

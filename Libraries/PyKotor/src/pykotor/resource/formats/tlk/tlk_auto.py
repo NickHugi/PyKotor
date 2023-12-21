@@ -21,6 +21,7 @@ def detect_tlk(
     """Returns what format the TLK data is believed to be in.
 
     This function performs a basic check and does not guarantee accuracy of the result or integrity of the data.
+    Catch OSError to catch any exceptions this function could throw.
 
     Args:
     ----
@@ -32,6 +33,7 @@ def detect_tlk(
         FileNotFoundError: If the file could not be found.
         IsADirectoryError: If the specified path is a directory (Unix-like systems only).
         PermissionError: If the file could not be accessed.
+        OSError: Other various system-level exceptions.
 
     Returns:
     -------

@@ -222,7 +222,7 @@ class InventoryEditor(QDialog):
     def getItemImage(self, uti: UTI | None) -> QPixmap:
         return self._installation.getItemIconFromUTI(uti)
 
-    def getItem(self, resname: str, filepath: str) -> tuple[str, str, UTI]:
+    def getItem(self, resname: str, filepath: os.PathLike | str) -> tuple[str, str, UTI]:
         """Gets item resource data from filepath or installation.
 
         Args:
@@ -248,10 +248,9 @@ class InventoryEditor(QDialog):
         name = ""
         if not filepath:
             result = self._installation.resource(resname, ResourceType.UTI)
-            if result is not None:
-                uti = read_uti(result.data)
-                filepath = str(result.filepath)
-                name = self._installation.string(uti.name, "[No Name]")
+            uti = read_uti(result.data)
+            filepath = result.filepath
+            name = self._installation.string(uti.name, "[No Name]")
         elif is_capsule_file(filepath):
             uti = read_uti(Capsule(filepath).resource(resname, ResourceType.UTI))
             name = self._installation.string(uti.name, "[No Name]")
@@ -260,7 +259,7 @@ class InventoryEditor(QDialog):
             name = self._installation.string(uti.name, "[No Name]")
         else:
             uti = read_uti(BinaryReader.load_file(filepath))
-        return filepath, name, uti
+        return str(filepath), name, uti
 
     def setEquipment(self, slot: EquipmentSlot, resname: str, filepath: str = "", name: str = "") -> None:
         """Sets equipment in a given slot.
@@ -395,7 +394,7 @@ class ItemContainer:
 class DropFrame(ItemContainer, QFrame):
     itemDropped = QtCore.pyqtSignal(object, object, object)
 
-    def __init__(self, parent):
+    def __init__(self, parent) -> None:
         QFrame.__init__(self)
         ItemContainer.__init__(self)
         self.setFrameShape(QFrame.Box)
@@ -422,7 +421,7 @@ class DropFrame(ItemContainer, QFrame):
             proxyModel: QSortFilterProxyModel = tree.model()
             model: ItemModel = proxyModel.sourceModel()
             index = proxyModel.mapToSource(tree.selectedIndexes()[0])
-            item = model.itemFromIndex(index)
+            item: QStandardItem | None = model.itemFromIndex(index)
             if item.data(_SLOTS_ROLE) & self.slot.value:
                 e.accept()
 
@@ -447,7 +446,7 @@ class DropFrame(ItemContainer, QFrame):
             proxyModel: QSortFilterProxyModel = tree.model()
             model: ItemModel = proxyModel.sourceModel()
             index = proxyModel.mapToSource(tree.selectedIndexes()[0])
-            item = model.itemFromIndex(index)
+            item: QStandardItem | None = model.itemFromIndex(index)
             if item.data(_SLOTS_ROLE) & self.slot.value:
                 e.accept()
 
@@ -476,7 +475,7 @@ class DropFrame(ItemContainer, QFrame):
             proxyModel: QSortFilterProxyModel = tree.model()
             model: ItemModel = proxyModel.sourceModel()
             index = proxyModel.mapToSource(tree.selectedIndexes()[0])
-            item = model.itemFromIndex(index)
+            item: QStandardItem | None = model.itemFromIndex(index)
             if item.data(_SLOTS_ROLE) & self.slot.value:
                 e.accept()
                 self.setItem(item.data(_RESNAME_ROLE), item.data(_FILEPATH_ROLE), item.text(), False, False)
@@ -517,7 +516,7 @@ class InventoryTable(QTableWidget):
         rowID = self.rowCount()
         self.insertRow(rowID)
         filepath, name, uti = self.window().getItem(resname, "")
-        iconItem = self._set_uti(uti)
+        iconItem: QTableWidgetItem = self._set_uti(uti)
         nameItem = QTableWidgetItem(name)
         nameItem.setFlags(nameItem.flags() ^ QtCore.Qt.ItemIsEditable)
         resnameItem = InventoryTableResnameItem(resname, filepath, name, droppable, infinite)
@@ -785,11 +784,18 @@ class ItemBuilderWorker(QThread):
                 for resource in capsule
                 if resource.restype() == ResourceType.UTI
             )
-        results = self._installation.resources(queries, [SearchLocation.OVERRIDE, SearchLocation.CHITIN, SearchLocation.CUSTOM_MODULES],
-                                               capsules=self._capsules)
+        results = self._installation.resources(
+            queries,
+            [
+                SearchLocation.OVERRIDE,
+                SearchLocation.CHITIN,
+                SearchLocation.CUSTOM_MODULES
+            ],
+            capsules=self._capsules,
+        )
         for result in results.values():
             uti = None
-            with suppress(Exception):
+            with suppress(Exception):  # FIXME
                 uti = read_uti(result.data)
             self.utiLoaded.emit(uti, result)
         self.finished.emit()
@@ -803,7 +809,7 @@ class ItemModel(QStandardItemModel):
         self._proxyModel = QSortFilterProxyModel(self)
         self._proxyModel.setSourceModel(self)
         self._proxyModel.setRecursiveFilteringEnabled(True)
-        self._proxyModel.setFilterCaseSensitivity(False)
+        self._proxyModel.setFilterCaseSensitivity(False)  # type: ignore[reportGeneralTypeIssues, arg-type]
         self._proxyModel.setRecursiveFilteringEnabled(True)
         self._proxyModel.setSourceModel(self)
 

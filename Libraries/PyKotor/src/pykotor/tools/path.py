@@ -7,8 +7,8 @@ from typing import TYPE_CHECKING, Any, Callable, Generator
 
 from pykotor.tools.registry import winreg_key
 from utility.misc import is_instance_or_subinstance
+from utility.path import BasePath, PathElem
 from utility.path import Path as InternalPath
-from utility.path import PathElem
 from utility.path import PurePath as InternalPurePath
 from utility.registry import resolve_reg_key_to_path
 
@@ -96,10 +96,10 @@ def create_case_insensitive_pathlib_class(cls: type) -> None:  # TODO: move into
         5. Check if method and not wrapped before
         6. Add method to wrapped dictionary and reassign with wrapper.
     """
-    cls._original_methods = {}  # type: ignore[reportGeneralTypeIssues]
-    mro = cls.mro()  # Gets the method resolution order
-    parent_classes = mro[1:-1]  # Exclude the current class itself and the object class
-    cls_methods = [method for method in cls.__dict__ if callable(getattr(cls, method))]  # define names of methods in the cls, excluding inherited
+    cls._original_methods = {}  # type: ignore[attr-defined, reportGeneralTypeIssues]
+    mro: list[type] = cls.mro()  # Gets the method resolution order
+    parent_classes: list[type] = mro[1:-1]  # Exclude the current class itself and the object class
+    cls_methods: set[str] = {method for method in cls.__dict__ if callable(getattr(cls, method))}  # define names of methods in the cls, excluding inherited
 
     # Store already wrapped methods to avoid wrapping multiple times
     wrapped_methods = set()
@@ -114,6 +114,7 @@ def create_case_insensitive_pathlib_class(cls: type) -> None:  # TODO: move into
         "__setattr__",
         "__init__",
         "_init",
+        "pathify",
         *cls_methods,
     }
 
@@ -121,7 +122,7 @@ def create_case_insensitive_pathlib_class(cls: type) -> None:  # TODO: move into
         for attr_name, attr_value in parent.__dict__.items():
             # Check if it's a method and hasn't been wrapped before
             if callable(attr_value) and attr_name not in wrapped_methods and attr_name not in ignored_methods:
-                cls._original_methods[attr_name] = attr_value  # type: ignore[reportGeneralTypeIssues]
+                cls._original_methods[attr_name] = attr_value  # type: ignore[attr-defined, reportGeneralTypeIssues]
                 setattr(cls, attr_name, simple_wrapper(attr_name, cls))
                 wrapped_methods.add(attr_name)
 
@@ -135,19 +136,14 @@ class CaseAwarePath(InternalPath):  # type: ignore[misc]
             new_path = self.get_case_sensitive_path(new_path)
         return new_path
 
-    def __hash__(self):
-        """Ensures any instance of this class will be treated the same in lists etc, if they're case-insensitive matches."""
-        return hash((self.__class__, super().__str__().lower()))
+    def __hash__(self) -> int:
+        return hash((BasePath, self.as_posix().lower()))
 
     def __eq__(self, other):
         """All pathlib classes that derive from PurePath are equal to this object if their str paths are case-insensitive equivalents."""
         if not isinstance(other, (os.PathLike, str)):
-            if hasattr(other, "__fspath__"):
-                other = other.__fspath__()
-            else:
-                return NotImplemented
-        other = other.as_posix() if isinstance(other, InternalPurePath) else str(other)
-        return self._fix_path_formatting(other).lower() == super().__str__().lower()
+            return NotImplemented
+        return self._fix_path_formatting(str(other)).lower() == super().__str__().lower()
 
     def __repr__(self) -> str:
         return f"{self.__class__.__name__}({super().__str__().lower()})"
@@ -159,14 +155,14 @@ class CaseAwarePath(InternalPath):  # type: ignore[misc]
             else super(self.__class__, self.get_case_sensitive_path(self)).__str__()
         )
 
-    def __contains__(self, other_path: os.PathLike | str):
+    def __contains__(self, other_path: PathElem):
         return self.is_relative_to(other_path)
 
-    def is_relative_to(self, other: PathElem, case_sensitive=False) -> bool:
+    def is_relative_to(self, other: PathElem, case_sensitive=False) -> bool:  # type: ignore[override]
         return super().is_relative_to(other, case_sensitive=case_sensitive)
 
     @staticmethod
-    def get_case_sensitive_path(path: os.PathLike | str) -> CaseAwarePath:
+    def get_case_sensitive_path(path: PathElem) -> CaseAwarePath:
         """Get a case sensitive path.
 
         Args:
@@ -207,11 +203,8 @@ class CaseAwarePath(InternalPath):  # type: ignore[misc]
                     ),
                 )
 
-            # return a CaseAwarePath instance that resolves the case of existing items on disk, joined with the non-existing
-            # parts in their original case.
-            # if parts[1] is not found on disk, i.e. when i is 1 and base_path.exists() returns False, this will also return the original path.
             elif not next_path.safe_exists():
-                return CaseAwarePath._create_instance(base_path.joinpath(*parts[i:]))  # noqa: SLF001
+                break
 
         # return a CaseAwarePath instance
         return CaseAwarePath._create_instance(*parts)  # noqa: SLF001
@@ -244,15 +237,10 @@ class CaseAwarePath(InternalPath):  # type: ignore[misc]
         path_obj = pathlib.Path(path)
         return path_obj.is_absolute() and not path_obj.exists()
 
-
-# HACK: fix later
-if os.name == "posix":
+if os.name != "nt":  # wrapping is unnecessary on Windows
     create_case_insensitive_pathlib_class(CaseAwarePath)
-elif os.name == "nt":
-    CaseAwarePath = InternalPath  # type: ignore[assignment, misc]
 
-
-def get_default_paths():
+def get_default_paths() -> dict[str, dict[Game, list[str]]]:
     from pykotor.common.misc import Game
 
     return {

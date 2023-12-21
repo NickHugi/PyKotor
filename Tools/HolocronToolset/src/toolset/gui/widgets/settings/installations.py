@@ -184,11 +184,16 @@ class GlobalSettings(Settings):
         super().__init__("Global")
 
     def installations(self) -> dict[str, InstallationConfig]:
-        """Finds and records KotOR installation paths
+        """Finds and records KotOR installation paths.
+
         Args:
+        ----
             self: The class instance
+
         Returns:
+        -------
             dict: A dictionary of InstallationConfig objects keyed by installation name
+
         Finds KotOR installation paths on the system, checks for duplicates, and records the paths and metadata in the user settings.
         Paths are filtered to only existing ones. Duplicates are detected by path and the game name is incremented with a number.
         Each new installation is added to the installations dictionary with its name, path, and game (KotOR 1 or 2) specified.

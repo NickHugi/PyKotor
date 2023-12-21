@@ -132,6 +132,12 @@ class Game(IntEnum):
 
     K1 = 1
     K2 = 2
+    K1_XBOX = 3
+    K2_XBOX = 4
+
+    def is_xbox(self) -> bool:
+        return self in (Game.K1_XBOX, Game.K2_XBOX)
+
 
 
 class Color:

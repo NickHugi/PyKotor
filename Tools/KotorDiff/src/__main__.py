@@ -80,7 +80,7 @@ def compute_sha256(where: os.PathLike | str | bytes):
         return sha256_hash.hexdigest()
 
     if isinstance(where, (os.PathLike, str)):
-        file_path = where if isinstance(where, Path) else Path(where).resolve()
+        file_path = Path.pathify(where).resolve()
 
         with file_path.open("rb") as f:
             while True:
@@ -266,8 +266,8 @@ def log_output_with_separator(message, below=True, above=False, surround=False):
 
 
 def diff_files(file1: os.PathLike | str, file2: os.PathLike | str) -> bool | None:
-    c_file1 = file1 if isinstance(file1, Path) else Path(file1).resolve()
-    c_file2 = file2 if isinstance(file2, Path) else Path(file2).resolve()
+    c_file1 = Path.pathify(file1).resolve()
+    c_file2 = Path.pathify(file2).resolve()
     c_file1_rel: Path = relative_path_from_to(c_file2, c_file1)
     c_file2_rel: Path = relative_path_from_to(c_file1, c_file2)
     is_same_result: bool | None = True
@@ -319,8 +319,8 @@ def diff_files(file1: os.PathLike | str, file2: os.PathLike | str) -> bool | Non
 
 
 def diff_directories(dir1: os.PathLike | str, dir2: os.PathLike | str) -> bool | None:
-    c_dir1 = dir1 if isinstance(dir1, Path) else Path(dir1).resolve()
-    c_dir2 = dir2 if isinstance(dir2, Path) else Path(dir2).resolve()
+    c_dir1 = Path.pathify(dir1).resolve()
+    c_dir2 = Path.pathify(dir2).resolve()
 
     log_output_with_separator(f"Finding differences in the '{c_dir1.name}' folders...", above=True)
 
@@ -340,8 +340,9 @@ def diff_directories(dir1: os.PathLike | str, dir2: os.PathLike | str) -> bool |
 
 
 def diff_installs(install_path1: os.PathLike | str, install_path2: os.PathLike | str) -> bool | None:
-    install_path1 = install_path1 if isinstance(install_path1, CaseAwarePath) else CaseAwarePath(install_path1).resolve()
-    install_path2 = install_path2 if isinstance(install_path2, CaseAwarePath) else CaseAwarePath(install_path2).resolve()
+    # TODO: use pykotor.extract.installation
+    install_path1 = CaseAwarePath.pathify(install_path1).resolve()
+    install_path2 = CaseAwarePath.pathify(install_path2).resolve()
     log_output()
     log_output((max(len(str(install_path1)) + 29, len(str(install_path2)) + 30)) * "-")
     log_output("Searching first install dir:", install_path1)
@@ -380,7 +381,7 @@ def diff_installs(install_path1: os.PathLike | str, install_path2: os.PathLike |
 
 
 def is_kotor_install_dir(path: os.PathLike | str) -> bool:
-    c_path: CaseAwarePath = path if isinstance(path, CaseAwarePath) else CaseAwarePath(path)
+    c_path: CaseAwarePath = CaseAwarePath.pathify(path)
     return c_path.safe_isdir() and c_path.joinpath("chitin.key").exists()
 
 
@@ -467,10 +468,7 @@ def main() -> None:
         )
 
         if profiler is not None:
-            profiler.disable()
-            profiler_output_file = Path("profiler_output.pstat").resolve()
-            profiler.dump_stats(str(profiler_output_file))
-            log_output(f"Profiler output saved to: {profiler_output_file}")
+            _stop_profiler(profiler)
         if comparison is not None:
             log_output(
                 f"'{relative_path_from_to(PARSER_ARGS.path2, PARSER_ARGS.path1)}'",
@@ -486,12 +484,15 @@ def main() -> None:
             sys.exit(3)
     except KeyboardInterrupt:
         if profiler is not None:
-            profiler.disable()
-            profiler_output_file = Path("profiler_output.pstat").resolve()
-            profiler.dump_stats(str(profiler_output_file))
-            log_output(f"Profiler output saved to: {profiler_output_file}")
+            _stop_profiler(profiler)
         log_output("KeyboardInterrupt - KotorDiff was cancelled by user.")
         raise
+
+def _stop_profiler(profiler: cProfile.Profile):
+    profiler.disable()
+    profiler_output_file = Path("profiler_output.pstat").resolve()
+    profiler.dump_stats(str(profiler_output_file))
+    log_output(f"Profiler output saved to: {profiler_output_file}")
 
 
 if __name__ == "__main__":

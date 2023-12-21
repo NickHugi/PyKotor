@@ -220,7 +220,7 @@ def patch_nested_gff(
     if gff_content != GFFContent.DLG and not SCRIPT_GLOBALS.translate:
         print(f"Skipping file at '{current_path!s}', translate not set.")
         return False
-    current_path = current_path if isinstance(current_path, PureWindowsPath) else PureWindowsPath(current_path or "GFFRoot")
+    current_path = PureWindowsPath.pathify(current_path or "GFFRoot")
     for label, ftype, value in gff_struct:
         if label.lower() == "mod_name":
             continue
@@ -256,7 +256,7 @@ def patch_nested_gff(
 
 
 def recurse_through_list(gff_list: GFFList, gff_content: GFFContent, current_path: PureWindowsPath, made_change: bool):
-    current_path = current_path if isinstance(current_path, PureWindowsPath) else PureWindowsPath(current_path or "GFFListRoot")
+    current_path = PureWindowsPath.pathify(current_path or "GFFListRoot")
     for list_index, gff_struct in enumerate(gff_list):
         patch_nested_gff(gff_struct, gff_content, current_path / str(list_index), made_change)
 def fix_encoding(text: str, encoding: str):
@@ -429,7 +429,7 @@ def patch_erf_or_rim(resources: list[FileResource], filename: str, erf_or_rim: R
     return new_filename
 
 def patch_file(file: os.PathLike | str) -> None:
-    c_file = file if isinstance(file, Path) else Path(file).resolve()
+    c_file = Path.pathify(file)
     if c_file in processed_files:
         return
 
@@ -450,7 +450,7 @@ def patch_file(file: os.PathLike | str) -> None:
         )
 
 def patch_folder(folder_path: os.PathLike | str) -> None:
-    c_folderpath = folder_path if isinstance(folder_path, Path) else Path(folder_path).resolve()
+    c_folderpath = Path.pathify(folder_path)
     log_output_with_separator(f"Recursing through resources in the '{c_folderpath.name}' folder...", above=True)
     for file_path in c_folderpath.safe_rglob("*"):
         patch_file(file_path)

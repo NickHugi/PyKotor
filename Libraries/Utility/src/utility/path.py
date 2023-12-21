@@ -62,7 +62,11 @@ class BasePurePath(metaclass=PurePathType):
     """BasePath is a class created to fix some annoyances with pathlib, such as its refusal to resolve mixed/repeating/trailing slashes."""
 
     def __new__(cls, *args: PathElem, **kwargs):
-        return args[0] if len(args) == 1 and isinstance(args[0], cls) else super().__new__(cls, *cls.parse_args(args), **kwargs)
+        return (
+            args[0]
+            if len(args) == 1 and isinstance(args[0], cls)
+            else super().__new__(cls, *cls.parse_args(args), **kwargs)
+        )
 
     def __init__(self, *args, _called_from_pathlib=True):
         """Initializes a path object. This is used to unify python 3.7-3.11 with most of python 3.12's changes.
@@ -107,6 +111,8 @@ class BasePurePath(metaclass=PurePathType):
             if isinstance(arg, BasePurePath):
                 continue  # do nothing if already our instance type
             formatted_path_str = cls._fix_path_formatting(cls._fspath_str(arg), cls._flavour.sep)  # type: ignore[attr-defined]
+            if formatted_path_str.endswith(":"):
+                formatted_path_str = f"{formatted_path_str}{cls._flavour.sep}"  # type: ignore[attr-defined]
 
             # Create the pathlib class instance, ignore the type errors in super().__new__
             arg_pathlib_instance = super().__new__(cls, formatted_path_str)  # type: ignore[call-arg, reportGeneralTypeIssues]
@@ -148,16 +154,11 @@ class BasePurePath(metaclass=PurePathType):
         msg = f"Object '{arg}' must be str or path-like object, but instead was '{type(arg)}'"
         raise TypeError(msg)
 
-    # Call is_relative_to when using 'in' keyword
-    def __contains__(self, other_path: os.PathLike | str) -> bool:
-        return self.is_relative_to(other_path, case_sensitive=False)
-
     def __str__(self) -> str:
         """Call _fix_path_formatting before returning the pathlib class's __str__ result.
         In Python 3.12, pathlib's __str__ methods will return '' instead of '.', so we return '.' in this instance for backwards compatibility.
         """
-        str_result = self._fix_path_formatting(super().__str__(), self._flavour.sep)  # type: ignore[_flavour exists in children]
-        return "." if str_result == "" else str_result
+        return self._fix_path_formatting(super().__str__(), self._flavour.sep)  # type: ignore[_flavour exists in children]
 
     def __eq__(self, other):
         if isinstance(other, PurePath):
@@ -218,6 +219,10 @@ class BasePurePath(metaclass=PurePathType):
             key (path-like object or str path):
         """
         return str(key) + str(self)
+
+    @classmethod
+    def pathify(cls, path: PathElem):
+        return path if isinstance(path, cls) else cls(path)
 
     def split_filename(self, dots: int = 1) -> tuple[str, str]:
         """Splits a filename into a tuple of stem and extension.
@@ -328,7 +333,7 @@ class BasePurePath(metaclass=PurePathType):
                 other = other.resolve()
             resolved_self = resolved_self.resolve()
         else:
-            other = other if isinstance(other, PurePath) else PurePath(other)
+            other = PurePath.pathify(other)
 
         self_str, other_str = map(str, (resolved_self, other))
         if os.name == "nt" or not case_sensitive:
@@ -336,7 +341,6 @@ class BasePurePath(metaclass=PurePathType):
         return bool(self_str.startswith(other_str))
 
     def endswith(self, text: str | tuple[str, ...], case_sensitive: bool = False) -> bool:
-        # If case sensitivity is not required, normalize the self string and the text to lower case
         """Checks if string ends with the specified suffix.
 
         Args:
@@ -354,6 +358,7 @@ class BasePurePath(metaclass=PurePathType):
             - Normalize each string in the tuple if text is a tuple
             - Utilize Python's built-in endswith method to check for suffix.
         """
+        # If case sensitivity is not required, normalize the self string and the text to lower case
         if not case_sensitive:
             self_str = str(self).lower()
 

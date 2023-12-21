@@ -150,15 +150,31 @@ def is_instance_or_subinstance(instance, target_cls) -> bool:
     return type(instance) is target_cls or is_class_or_subclass_but_not_instance(type(instance), target_cls)
 
 
-def generate_filehash_sha256(filepath: os.PathLike | str) -> str:
-    sha1_hash = hashlib.sha256()
-    filepath = filepath if isinstance(filepath, Path) else Path(filepath)
-    with filepath.open("rb") as f:
-        data = f.read(65536)
-        while data:  # read in 64k chunks
-            sha1_hash.update(data)
-            data = f.read(65536)
-    return sha1_hash.hexdigest()
+def generate_sha256_hash(
+    data_input: bytes | bytearray | memoryview | os.PathLike | str,
+    chunk_size: int = 65536,
+) -> str:
+    sha256_hash = hashlib.sha256()
+
+    def process_chunk(data):
+        sha256_hash.update(data)
+
+    if isinstance(data_input, (bytes, bytearray, memoryview)):
+        # Process the byte-like data in chunks of 65536 bytes
+        for start in range(0, len(data_input), chunk_size):
+            end = start + chunk_size
+            process_chunk(data_input[start:end])
+    else:
+        # Handle file path input
+        if not isinstance(data_input, (os.PathLike, str)):
+            msg = "Input must be bytes, bytearray, memoryview, or a path-like object"
+            raise TypeError(msg)
+
+        with Path.pathify(data_input).open("rb") as f:
+            for chunk in iter(lambda: f.read(chunk_size), b""):
+                process_chunk(chunk)
+
+    return sha256_hash.hexdigest()
 
 
 def indent(elem: Element, level=0):
@@ -170,7 +186,9 @@ def indent(elem: Element, level=0):
     Returns
     -------
         None - Indents the element in-place
+
     Processing Logic:
+    ----------------
         - Calculate indentation string based on level
         - If element is empty, set text to indentation
         - If no tail, set tail to newline + indentation
@@ -190,8 +208,6 @@ def indent(elem: Element, level=0):
             elem.tail = i
     elif level and (not elem.tail or not elem.tail.strip()):
         elem.tail = i
-
-
 
 
 def is_int(string: str) -> bool:

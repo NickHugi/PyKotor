@@ -46,7 +46,7 @@ class Capsule:
             - Initialize self._path and self._resources attributes
             - Load resources from file.
         """
-        self._path: Path = path if isinstance(path, Path) else Path(path)
+        self._path: Path = Path.pathify(path)
         if not self._path.exists():
             self._path = self._path.resolve()
 
