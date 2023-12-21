@@ -572,6 +572,26 @@ class CaseInsensitiveDict(Generic[T]):
             return __default
         return value
 
+    def update(self, other: Iterable[tuple[str, T]] | dict[str, T]):
+        """Extend the dictionary with the key/value pairs from other, overwriting existing keys.
+
+        This method acts like the `update` method in a regular dictionary, but is case-insensitive.
+
+        Args:
+        ----
+            other (Iterable[tuple[str, T]] | dict[str, T]):
+                Key/value pairs to add to the dictionary. Can be another dictionary or an iterable of key/value pairs.
+        """
+        if isinstance(other, dict):
+            for key, value in other.items():
+                if not isinstance(key, str):
+                    msg = f"{key} must be a str, got type {type(key)}"
+                    raise TypeError(msg)
+                self[key] = value
+        else:
+            for key, value in other:
+                self[key] = value
+
     def get(self, __key: str, __default: VT = None) -> VT | T:  # type: ignore[assignment]
         key_lookup: str = self._case_map.get(__key.lower(), _unique_sentinel)  # type: ignore[arg-type]
         return (
