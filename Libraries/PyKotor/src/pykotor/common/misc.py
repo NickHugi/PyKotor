@@ -91,7 +91,10 @@ class ResRef:
         -------
             A new ResRef instance.
         """
-        return cls(PurePath(file_path).name)
+        from pykotor.extract.file import ResourceIdentifier  # Prevent circular imports
+
+        resname = ResourceIdentifier.from_path(file_path).resname
+        return cls(resname)
 
     def set_data(
         self,
