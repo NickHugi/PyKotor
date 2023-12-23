@@ -53,7 +53,7 @@ class ResRef(CaseInsensitiveMutStr):
         """ResRefs cannot exceed the maximum of 16 characters in length."""
 
         def __init__(self, text: str) -> None:
-            message = f"Length of '{text}' ({len(text)} characters) exceeds the maximum allowed length of {ResRef.MAX_LENGTH}."
+            message = f"Length of '{text}' ({len(text)} characters) exceeds the maximum allowed length ({ResRef.MAX_LENGTH})"
             super().__init__(message)
 
 
@@ -89,6 +89,14 @@ class ResRef(CaseInsensitiveMutStr):
         from pykotor.extract.file import ResourceIdentifier  # Prevent circular imports
         return cls(ResourceIdentifier.from_path(file_path).resname)
 
+    @classmethod
+    def from_invalid(
+        cls,
+        resname: str,
+    ):
+        """Create a new ResRef from a potentially invalid string, removing any non-ascii characters."""
+        return cls(resname.encode(encoding="ascii", errors="ignore").decode())
+
     def set_data(
         self,
         text: str,
@@ -109,10 +117,9 @@ class ResRef(CaseInsensitiveMutStr):
             All of the above exceptions inherit ValueError.
         """
         text = str(text)
-        try:
-            parsed_text = text.encode(encoding="ascii", errors="strict").decode()
-        except UnicodeEncodeError as e:
-            raise self.InvalidEncodingError(text) from e
+        parsed_text = text
+        if not text.isascii():
+            raise self.InvalidEncodingError(text)
         if len(parsed_text) > self.MAX_LENGTH:
             if not truncate:
                 raise self.ExceedsMaxLengthError(parsed_text)
@@ -126,19 +133,23 @@ class ResRef(CaseInsensitiveMutStr):
                 raise self.InvalidFormatError(msg)
         self.__content = parsed_text
 
-    def get(self) -> str:
-        return self.__content
+    def get(self):
+        """Returns a case-insensitive mutable string that inherits from str."""
+        parent_class: type | None = self.__class__.__base__
+        if parent_class is None:
+            raise
+        return parent_class(self.__content)
 
     def lower(self):
-        raise self.InvalidFormatError("ResRef's must be case-insensitive.")  # noqa: TRY003, EM101
+        raise NotImplementedError("ResRef's must be case-insensitive.")  # noqa: TRY003, EM101
     def upper(self):
-        raise self.InvalidFormatError("ResRef's must be case-insensitive.")  # noqa: TRY003, EM101
+        raise NotImplementedError("ResRef's must be case-insensitive.")  # noqa: TRY003, EM101
     def capitalize(self):
-        raise self.InvalidFormatError("ResRef's must be case-insensitive.")  # noqa: TRY003, EM101
+        raise NotImplementedError("ResRef's must be case-insensitive.")  # noqa: TRY003, EM101
     def swapcase(self):
-        raise self.InvalidFormatError("ResRef's must be case-insensitive.")  # noqa: TRY003, EM101
+        raise NotImplementedError("ResRef's must be case-insensitive.")  # noqa: TRY003, EM101
     def title(self):
-        raise self.InvalidFormatError("ResRef's must be case-insensitive.")  # noqa: TRY003, EM101
+        raise NotImplementedError("ResRef's must be case-insensitive.")  # noqa: TRY003, EM101
 
 
 class Game(IntEnum):
@@ -180,7 +191,7 @@ class Color:
 
     def __str__(
         self,
-    ):
+    ) -> str:
         """Returns a string of each color component separated by whitespace."""
         return f"{self.r} {self.g} {self.b} {self.a}"
 
@@ -427,8 +438,8 @@ class InventoryItem:
 
     def __str__(
         self,
-    ):
-        return self.resref
+    ) -> str:
+        return str(self.resref)
 
     def __eq__(
         self,

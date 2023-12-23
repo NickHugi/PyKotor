@@ -58,8 +58,20 @@ class PurePathType(type):
             return BasePath in mro or override_to_pathlib(cls) in override_to_pathlib(subclass).__mro__
         return cls in mro
 
-class BasePurePath(metaclass=PurePathType):
+class BasePurePath(metaclass=PurePathType):  # type: ignore[misc]
     """BasePath is a class created to fix some annoyances with pathlib, such as its refusal to resolve mixed/repeating/trailing slashes."""
+
+    def __getattr__(self, item: str):
+        """Delegate to str(self) if the attribute is not found in BasePurePath."""
+        if (  # this check is required because something in pathlib already catches AttributeError internally.
+            item in {"__mro__"}
+            or item in {s for cls in self.__mro__ for s in cls.__slots__}
+        ):
+            return getattr(super(), item)
+        try:
+            return getattr(super(), item)
+        except AttributeError:
+            return getattr(str(self), item)
 
     def __new__(cls, *args: PathElem, **kwargs):
         return (
@@ -96,7 +108,7 @@ class BasePurePath(metaclass=PurePathType):
             return
 
         # If not object, fetch the __init__ of that class
-        init_method = next_init_method_class.__init__
+        init_method = next_init_method_class.__init__  # type: ignore[misc]
 
         # Parse args if called from pathlib (Python 3.12+)
         if _called_from_pathlib:
@@ -284,7 +296,7 @@ class BasePurePath(metaclass=PurePathType):
             - Call as_posix() on the Path object to get the POSIX path string
             - Pass the result to _fix_path_formatting() to normalize the path format. This is done to fix any known bugs with the pathlib library.
         """
-        return self._fix_path_formatting(super().as_posix(), slash="/")
+        return self._fix_path_formatting(super().as_posix(), slash="/")  # type: ignore[misc]
 
     def joinpath(self, *args: PathElem):
         """Appends one or more path-like objects and/or relative paths to self.
@@ -340,7 +352,7 @@ class BasePurePath(metaclass=PurePathType):
             self_str, other_str = map(str.lower, (self_str, other_str))
         return bool(self_str.startswith(other_str))
 
-    def endswith(self, text: str | tuple[str, ...], case_sensitive: bool = False) -> bool:
+    def endswith(self, text: str | tuple[str, ...], case_sensitive: bool = False) -> bool:  # type: ignore[override]
         """Checks if string ends with the specified suffix.
 
         Args:
@@ -417,7 +429,6 @@ class BasePurePath(metaclass=PurePathType):
         # Strip any trailing slashes, don't call rstrip if the formatted path == "/"
         return formatted_path if len(formatted_path) == 1 else formatted_path.rstrip(slash)
 
-
 class PurePath(BasePurePath, pathlib.PurePath):  # type: ignore[misc]
     # pylint: disable-all
     _flavour = pathlib.PureWindowsPath._flavour if os.name == "nt" else pathlib.PurePosixPath._flavour  # type: ignore[attr-defined]
@@ -429,7 +440,7 @@ class PurePosixPath(BasePurePath, pathlib.PurePosixPath):  # type: ignore[misc]
 class PureWindowsPath(BasePurePath, pathlib.PureWindowsPath):  # type: ignore[misc]
     pass
 
-class BasePath(BasePurePath):
+class BasePath(BasePurePath):  # type: ignore[misc]
 
     def __hash__(self):
         return hash((BasePath, self.as_posix().lower() if os.name == "nt" else self.as_posix()))
