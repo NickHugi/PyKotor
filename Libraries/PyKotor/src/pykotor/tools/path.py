@@ -19,7 +19,7 @@ def simple_wrapper(fn_name, wrapped_class_type) -> Callable[..., Any]:
     """Wraps a function to handle case-sensitive pathlib.PurePath arguments.
 
     This is a hacky way of ensuring that all args to any pathlib methods have their path case-sensitively resolved.
-    This also resolves self and kwargs for ensured accuracy.
+    This also resolves self, *args, and **kwargs for ensured accuracy.
 
     Args:
     ----
@@ -134,6 +134,7 @@ class CaseAwarePath(InternalPath):  # type: ignore[misc]
         new_path = super().resolve(strict)
         if self.should_resolve_case(new_path):
             new_path = self.get_case_sensitive_path(new_path)
+            return super(type(self), new_path).resolve()
         return new_path
 
     def __hash__(self) -> int:
@@ -194,12 +195,13 @@ class CaseAwarePath(InternalPath):  # type: ignore[misc]
                 # if multiple are found, use the one that most closely matches our case
                 # A closest match is defined in this context as the file/folder's name which has the most case-sensitive positional character matches
                 # If two closest matches are identical (e.g. we're looking for TeST and we find TeSt and TesT), it's random.
+                last_part: bool = i == len(parts) - 1
                 parts[i] = CaseAwarePath.find_closest_match(
                     parts[i],
                     (
                         item
                         for item in base_path.safe_iterdir()
-                        if (i == len(parts) - 1) or item.safe_isdir()
+                        if last_part or item.safe_isdir()
                     ),
                 )
 

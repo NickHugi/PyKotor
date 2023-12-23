@@ -60,7 +60,7 @@ class TestWriteBitmapFont(unittest.TestCase):
         lang = "invalid"
 
         with self.assertRaises((AttributeError, ValueError)):
-            write_bitmap_font(target_path, FONT_PATH_FILE, resolution, lang, draw_box=True)  # type: ignore[reportGeneralTypeIssues]
+            write_bitmap_font(target_path, FONT_PATH_FILE, resolution, lang, draw_box=True)  # type: ignore[arg-type, reportGeneralTypeIssues]
 
     def test_invalid_resolution(self):
         # Test with invalid resolution

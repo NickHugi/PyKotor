@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import os
 import pathlib
 import sys
@@ -31,8 +33,8 @@ K2_PATH = os.environ.get("K2_PATH")
 
 
 class TestARE(unittest.TestCase):
-    def setUp(self):
-        self.log_messages = [os.linesep]
+    def setUp(self) -> None:
+        self.log_messages: list[str] = [os.linesep]
 
     def log_func(self, message=""):
         self.log_messages.append(message)
