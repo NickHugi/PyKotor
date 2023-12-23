@@ -7,7 +7,6 @@ from enum import Enum, IntEnum
 from typing import TYPE_CHECKING, Generic, Iterable, TypeVar
 
 from pykotor.common.geometry import Vector3
-from utility.path import PurePath
 
 if TYPE_CHECKING:
     import os

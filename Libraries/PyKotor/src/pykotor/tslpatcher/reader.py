@@ -63,6 +63,8 @@ if TYPE_CHECKING:
 SECTION_NOT_FOUND_ERROR: str = "The [{}] section was not found in the ini"
 REFERENCES_TRACEBACK_MSG = ", referenced by '{}={}' in [{}]"
 
+test_set = set()
+
 class NamespaceReader:
     """Responsible for reading and loading namespaces from the namespaces.ini file."""
 
@@ -178,15 +180,23 @@ class ConfigReader:
         self.load_compile_list()
         self.load_hack_list()
         self.load_ssf_list()
+        all_sections_set = set(self.ini.sections())
+        orphaned_sections = all_sections_set - test_set
+        if len(orphaned_sections):
+            self.log.add_note("Orphaned ini sections")
+            self.log.add_note("\n".join(orphaned_sections))
 
         return self.config
 
     def get_section_name(self, section_name: str):
         """Resolves the case-insensitive section name string if found and returns the case-sensitive correct section name."""
-        return next(
+        s = next(
             (section for section in self.ini.sections() if section.lower() == section_name.lower()),
             None,
         )
+        if s is not None:
+            test_set.add(s)
+        return s
 
     def load_settings(self) -> None:
         """Loads [Settings] from ini configuration into memory."""
