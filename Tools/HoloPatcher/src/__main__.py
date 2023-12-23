@@ -256,6 +256,9 @@ class App(tk.Tk):
         self.install_button = ttk.Button(bottom_frame, text="Install", command=self.begin_install)
         self.install_button.pack(side="right", padx=5, pady=5)
 
+        self.testreader_button = ttk.Button(bottom_frame, text="Validate INI", command=self.test_reader)
+        self.testreader_button.pack(side="right", padx=5, pady=5)
+
     def on_combobox_focus_in(self, event):
         if self.namespaces_combobox_state == 2: # no selection, fix the focus
             self.focus_set()
@@ -756,6 +759,21 @@ class App(tk.Tk):
             self._execute_mod_install(installer)
         except Exception as e:  # noqa: BLE001
             self._handle_exception_during_install(e, installer)
+        self.set_active_install(install_running=False)
+
+    def test_reader(self) -> None:
+        if not self.preinstall_validate_chosen():
+            return
+        namespace_option: PatcherNamespace = next(x for x in self.namespaces if x.name == self.namespaces_combobox.get())
+        ini_file_path = CaseAwarePath(self.mod_path, "tslpatchdata", namespace_option.changes_filepath())
+
+        self._clear_description_textbox()
+        try:
+            reader = ConfigReader.from_filepath(ini_file_path)
+            reader.log = self.logger
+            reader.load(reader.config)
+        except Exception as e:  # noqa: BLE001
+            messagebox.showerror(*universal_simplify_exception(e))
         self.set_active_install(install_running=False)
 
     def set_active_install(self, install_running: bool) -> None:
