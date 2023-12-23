@@ -18,8 +18,6 @@ from tkinter import filedialog, messagebox, ttk
 from tkinter import font as tkfont
 from typing import TYPE_CHECKING, NoReturn
 
-from pykotor.tslpatcher.config import PatcherConfig
-
 if getattr(sys, "frozen", False) is False:
     pykotor_path = pathlib.Path(__file__).parents[3] / "Libraries" / "PyKotor" / "src" / "pykotor"
     if pykotor_path.exists():
@@ -769,10 +767,10 @@ class App(tk.Tk):
         namespace_option: PatcherNamespace = next(x for x in self.namespaces if x.name == self.namespaces_combobox.get())
         ini_file_path = CaseAwarePath(self.mod_path, "tslpatchdata", namespace_option.changes_filepath())
 
+        self.set_active_install(install_running=True)
         self._clear_description_textbox()
         try:
-            reader = ConfigReader.from_filepath(ini_file_path)
-            reader.log = self.logger
+            reader = ConfigReader.from_filepath(ini_file_path, self.logger)
             reader.load(reader.config)
         except Exception as e:  # noqa: BLE001
             messagebox.showerror(*universal_simplify_exception(e))
@@ -799,7 +797,7 @@ class App(tk.Tk):
             self.browse_button.config(state=tk.DISABLED)
         else:
             self.install_running = False
-            self.logger = PatchLogger()  # reset the errors/warnings etc
+            self.initialize_logger()  # reset the errors/warnings etc
             self.install_button.config(state=tk.NORMAL)
             self.uninstall_button.config(state=tk.NORMAL)
             self.gamepaths_browse_button.config(state=tk.NORMAL)
