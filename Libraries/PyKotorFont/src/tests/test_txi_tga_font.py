@@ -1,43 +1,27 @@
-import os  # noqa: INP001
-import pathlib
-import sys
+import os
 import unittest
 from tempfile import TemporaryDirectory
 
 from PIL import Image
-
-THIS_SCRIPT_PATH = pathlib.Path(__file__)
-PYKOTOR_PATH = THIS_SCRIPT_PATH.parents[3].resolve()
-UTILITY_PATH = THIS_SCRIPT_PATH.parents[5].joinpath("Utility", "src").resolve()
-if PYKOTOR_PATH.exists():
-    working_dir = str(PYKOTOR_PATH)
-    if working_dir in sys.path:
-        sys.path.remove(working_dir)
-        os.chdir(PYKOTOR_PATH.parent)
-    sys.path.insert(0, working_dir)
-if UTILITY_PATH.exists():
-    working_dir = str(UTILITY_PATH)
-    if working_dir in sys.path:
-        sys.path.remove(working_dir)
-    sys.path.insert(0, working_dir)
-
 from pykotor.common.language import Language
 from pykotor.font.draw import write_bitmap_font, write_bitmap_fonts
 from utility.path import Path
 
+os.chdir("./Libraries/PyKotorFont")
 FONT_PATH_FILE = Path("src/tests/files/roboto/Roboto-Black.ttf")
 CHINESE_FONT_PATH_FILE = Path("src/tests/files/chinese_simplified_ttf/Unifontexmono-AL3RA.ttf")
-THAI_FONT_PATH_FILE = Path("src/tests/files/TH Sarabun New Regular/TH Sarabun New Regular.ttf")
+THAI_FONT_PATH_FILE = Path("src/tests/files/TH Sarabun New Regular/TH Sarabun New Regular.ttf").resolve()
+print(THAI_FONT_PATH_FILE)
 
 
 class TestWriteBitmapFont(unittest.TestCase):
     def setUp(self):
-        self.output_path = Path(TemporaryDirectory().name)
+        self.output_path = Path("output")
         self.output_path.mkdir(exist_ok=True)
-    def cleanUp(self):
-        self.output_path.unlink()
+    #def cleanUp(self):
+        #self.output_path.unlink()
     def test_bitmap_font(self):
-        write_bitmap_fonts(self.output_path, r"C:\Windows\Fonts\Inkfree.ttf", (2048, 2048), Language.ENGLISH, draw_box=False, custom_scaling=1.0)
+        write_bitmap_fonts(self.output_path, r"C:\Windows\Fonts\Inkfree.ttf", (2048, 2048), Language.ENGLISH, draw_box=True, custom_scaling=1.0)
     def test_bitmap_font_chinese(self):
         write_bitmap_font(self.output_path / "test_font_chinese.tga", CHINESE_FONT_PATH_FILE, (10240,10240), Language.CHINESE_SIMPLIFIED)
     def test_bitmap_font_thai(self):

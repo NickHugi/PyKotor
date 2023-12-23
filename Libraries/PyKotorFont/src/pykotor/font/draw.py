@@ -101,8 +101,23 @@ def write_bitmap_font(
     # Adjust the resolution to include the additional height
     adjusted_resolution: tuple[int, int] = (resolution[0] + total_additional_height, resolution[1] + total_additional_height)
 
+    # Calculate the multiplier
+    multiplier_width = adjusted_resolution[0] / resolution[0]
+    multiplier_height = adjusted_resolution[1] / resolution[1]
+
+    # Calculate new original resolution
+    new_original_resolution = (int(resolution[0] / multiplier_width), int(resolution[1] / multiplier_height))
+
+    # Recalculate everything with the new original resolution
+    characters_per_column, characters_per_row = math.ceil(math.sqrt(numchars)), math.ceil(math.sqrt(numchars))
+    grid_cell_size = min(new_original_resolution[0] // characters_per_column, new_original_resolution[1] // characters_per_row)
+    pil_font = ImageFont.truetype(str(font_path), grid_cell_size)
+    baseline_height, max_underhang_height, max_char_height = calculate_character_metrics(pil_font, charset_list)
+    total_additional_height = baseline_height * characters_per_column
+    final_adjusted_resolution = (new_original_resolution[0] + total_additional_height, new_original_resolution[1] + total_additional_height)
+
     # Create charset image with adjusted resolution
-    charset_image = Image.new("RGBA", adjusted_resolution, (0, 0, 0, 0))
+    charset_image = Image.new("RGBA", resolution, (0, 0, 0, 0))
     draw = ImageDraw.Draw(charset_image)
 
     # Initialize the grid position
@@ -117,20 +132,20 @@ def write_bitmap_font(
             lower_right_coords.append((0.000002, 0.000002, 0))
             continue
 
-        cell_height = adjusted_resolution[1] / characters_per_row
+        cell_height = final_adjusted_resolution[1] / characters_per_row
 
         # Calculate normalized coordinates for upper left
         norm_x1 = grid_x / characters_per_column
-        norm_y1 = (grid_y * cell_height) / adjusted_resolution[1]
+        norm_y1 = (grid_y * cell_height) / final_adjusted_resolution[1]
         # Calculate normalized coordinates for lower right
         norm_x2 = (grid_x + 1) / characters_per_row
-        norm_y2 = ((grid_y + 1) * cell_height) / adjusted_resolution[1]
+        norm_y2 = ((grid_y + 1) * cell_height) / final_adjusted_resolution[1]
 
         # Convert normalized coordinates to pixels
-        pixel_x1 = norm_x1 * adjusted_resolution[0]
-        pixel_y1 = norm_y1 * adjusted_resolution[1]
-        pixel_x2 = norm_x2 * adjusted_resolution[0]
-        pixel_y2 = norm_y2 * adjusted_resolution[1]
+        pixel_x1 = norm_x1 * final_adjusted_resolution[0]
+        pixel_y1 = norm_y1 * final_adjusted_resolution[1]
+        pixel_x2 = norm_x2 * final_adjusted_resolution[0]
+        pixel_y2 = norm_y2 * final_adjusted_resolution[1]
 
         # Calculate character height and width
         char_bbox = draw.textbbox((pixel_x1, pixel_y1), char, font=pil_font)
@@ -151,10 +166,10 @@ def write_bitmap_font(
             draw.rectangle((pixel_x1, pixel_y1, pixel_x2, pixel_y2), outline="red")
 
         # Calculate normalized coordinates
-        norm_x1 = pixel_x1 / adjusted_resolution[0]
-        norm_y1 = pixel_y1 / adjusted_resolution[1]
-        norm_x2 = pixel_x2 / adjusted_resolution[0]
-        norm_y2 = pixel_y2 / adjusted_resolution[1]
+        norm_x1 = pixel_x1 / final_adjusted_resolution[0]
+        norm_y1 = pixel_y1 / final_adjusted_resolution[1]
+        norm_x2 = pixel_x2 / final_adjusted_resolution[0]
+        norm_y2 = pixel_y2 / final_adjusted_resolution[1]
 
         # Invert Y-axis normalization
         norm_y1 = 1 - norm_y1
@@ -180,7 +195,7 @@ def write_bitmap_font(
     txi_font_info.upper_left_coords = upper_left_coords
     txi_font_info.lower_right_coords = lower_right_coords
     # Normalize and set font metrics
-    txi_font_info.set_font_metrics(adjusted_resolution, max_char_height, baseline_height, custom_scaling)
+    txi_font_info.set_font_metrics(final_adjusted_resolution, max_char_height, baseline_height, custom_scaling)
 
     target_path.parent.mkdir(parents=True, exist_ok=True)
     charset_image.save(target_path.with_suffix(".tga"), format="TGA")

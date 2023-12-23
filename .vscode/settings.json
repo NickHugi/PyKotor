@@ -47,4 +47,7 @@
   "python.analysis.diagnosticSeverityOverrides": {
       "reportOptionalMemberAccess": "none" // Ignores issues with defs that can optionally be None.
   },
+  "mypy-type-checker.args": [
+    "--check-untyped-defs"
+  ],
 }
