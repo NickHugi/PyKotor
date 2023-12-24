@@ -1,6 +1,5 @@
 {
   "version": "0.2.0",
-  "justMyCode": true,
   "preLaunchTask": "install_requirements",
   "dependsOn": "install_requirements",
   "configurations": [

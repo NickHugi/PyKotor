@@ -19,18 +19,18 @@ from tkinter import font as tkfont
 from typing import TYPE_CHECKING, NoReturn
 
 if getattr(sys, "frozen", False) is False:
+    def update_sys_path(path):
+        working_dir = str(path)
+        if working_dir in sys.path:
+            sys.path.remove(working_dir)
+        sys.path.append(working_dir)
+
     pykotor_path = pathlib.Path(__file__).parents[3] / "Libraries" / "PyKotor" / "src" / "pykotor"
     if pykotor_path.exists():
-        working_dir = str(pykotor_path.parent)
-        if working_dir in sys.path:
-            sys.path.remove(working_dir)
-        sys.path.insert(0, working_dir)
-    utility_path = pathlib.Path(__file__).parents[3] / "Libraries" / "Utility" / "src"
+        update_sys_path(pykotor_path.parent)
+    utility_path = pathlib.Path(__file__).parents[3] / "Libraries" / "Utility" / "src" / "utility"
     if utility_path.exists():
-        working_dir = str(utility_path)
-        if working_dir in sys.path:
-            sys.path.remove(working_dir)
-        sys.path.insert(0, working_dir)
+        update_sys_path(utility_path.parent)
 
 from pykotor.common.misc import Game
 from pykotor.tools.path import CaseAwarePath, find_kotor_paths_from_default

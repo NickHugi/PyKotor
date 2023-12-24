@@ -5,6 +5,12 @@ requires = [
 ]
 build-backend = "setuptools.build_meta"
 
+[tool.setuptools]
+packages = [
+    "Tools",
+    "Libraries",
+]
+
 [project]
 name="PyKotor"
 version="1.7"
