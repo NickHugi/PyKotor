@@ -1,6 +1,6 @@
 # Ensure script is running with elevated permissions
 $repoRootPath = Split-Path -Parent $MyInvocation.MyCommand.Definition
-If (-NOT ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole] "Administrator")) {
+If ($env:OS -eq "Windows_NT" -and -NOT ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole] "Administrator")) {
     Write-Warning "Please run PowerShell with administrator rights!"
     #Break
 }
