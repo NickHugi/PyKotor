@@ -1,6 +1,6 @@
 # Ensure script is running with elevated permissions
 $repoRootPath = Split-Path -Parent $MyInvocation.MyCommand.Definition
-
+Set-Item -Path "env:PYTHONPATH" -Value ""
 function Get-OS {
     if ($IsWindows) {
         return "Windows"
@@ -51,7 +51,15 @@ function Set-EnvironmentVariablesFromEnvFile {
                 ($value -split ';').ForEach({
                     $trimmedPath = $_.Trim()
                     if (-not [string]::IsNullOrWhiteSpace($trimmedPath)) {
-                        $uniquePaths[$trimmedPath] = $true
+                        Write-Debug "Trimmed Path: $trimmedPath"
+                        $absolutePath = "$repoRootPath/$trimmedPath"
+                        if ( Test-Path $absolutePath -ErrorAction SilentlyContinue )
+                        {
+                            $resolvedPath = (Resolve-Path -LiteralPath $absolutePath).Path
+                            if ($null -ne $resolvedPath) {
+                                $uniquePaths[$resolvedPath] = $true
+                            }
+                        }
                     }
                 })
                 $value = ($uniquePaths.Keys -join ';')
@@ -61,6 +69,7 @@ function Set-EnvironmentVariablesFromEnvFile {
                 # Set environment variable
                 Write-Host "Set environment variable $key from '${$env:$key}' to '$value'"
                 Set-Item -Path "env:$key" -Value $value
+                [System.Environment]::SetEnvironmentVariable("env:$key", $value, [System.EnvironmentVariableTarget]::Machine)
             }
         }
         Write-Host "Environment variables set from .env file."
