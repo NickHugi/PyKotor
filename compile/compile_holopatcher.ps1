@@ -14,7 +14,7 @@ Write-Host "Installing required packages to build holopatcher..."
 . $pythonExePath -m pip install -r "$rootPath/Libraries/PyKotor/requirements.txt" --prefer-binary --no-cache-dir
 
 if ( (Get-OS) -eq "Linux" ) {
-    & "sudo apt install python3-tkinter"
+    & "sudo apt install python3-tk"
 } elseif ( (Get-OS) -eq "Mac" ) {
     & "brew install python-tk"
 }
