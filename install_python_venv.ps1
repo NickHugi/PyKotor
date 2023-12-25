@@ -97,7 +97,8 @@ function Get-Python-Version {
     )
     $pythonVersionOutput = & $pythonPath --version 2>&1
     $pythonVersionString = $pythonVersionOutput -replace '^Python\s+'
-    $pythonVersion = [Version]$pythonVersionString
+    $numericVersionString = $pythonVersionString -replace '(\d+\.\d+\.\d+).*', '$1'
+    $pythonVersion = [Version]$numericVersionString
     return $pythonVersion
 }
 
@@ -171,6 +172,7 @@ function Find-Python {
     if ($null -ne $python3Command) {
         $global:pythonVersion = Get-Python-Version "python3"
         if ($pythonVersion -ge $minVersion -and $pythonVersion -lt $maxVersion) {
+            Write-Host "Found python3 command"
             $global:pythonInstallPath = Get-Python-Path-From-Command "python3"
         } else {
             $global:pythonInstallPath = ""
@@ -182,6 +184,7 @@ function Find-Python {
     if ($null -ne $pythonCommand) {
         $global:pythonVersion = Get-Python-Version "python"
         if ($pythonVersion -ge $minVersion -and $pythonVersion -lt $maxVersion) {
+            Write-Host "Found python command"
             $global:pythonInstallPath = Get-Python-Path-From-Command "python"
         } else {
             $global:pythonInstallPath = ""
@@ -234,7 +237,7 @@ function Find-Python {
     }
 }
 
-$venvPath = (Resolve-Path -LiteralPath "$repoRootPath/.venv" -ErrorAction SilentlyContinue).Path
+$venvPath = "$repoRootPath/.venv"
 $pythonExePath = ""
 $findVenvExecutable = $true
 if (Test-Path $venvPath -ErrorAction SilentlyContinue) {
@@ -301,15 +304,19 @@ if ( $findVenvExecutable -eq $true) {
     }
 }
 
-        
+
 $activateScriptPath = "$venvPath/Scripts/Activate.ps1"
-Write-Host "Activating venv at '$activateScriptPath'"
-. $activateScriptPath
+Write-Host "Activating venv at '$venvPath'"
+if ((Get-OS) -ne "Windows") {
+    . $venvPath/bin/Activate.ps1
+} else {
+    . $activateScriptPath
+}
 
 Initialize-Python $pythonExePath
 
 # Set environment variables from .env file
-$dotenv_path = (Resolve-Path -LiteralPath "$repoRootPath/.env").Path
+$dotenv_path = "$repoRootPath/.env"
 Write-Host "Loading project environment variables from '$dotenv_path'"
 $envFileFound = Set-EnvironmentVariablesFromEnvFile "$dotenv_path"
 if ($envFileFound) {
