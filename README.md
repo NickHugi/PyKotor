@@ -1,18 +1,40 @@
 PyKotor
 =======
-A Python library that can read and modify most file formats used by the game Knights of the Old Republic and its sequel.
+A comprehensive and exhaustive Python library that can read and modify most file formats used by the game [Knights of the Old Republic](https://en.wikipedia.org/wiki/Star_Wars:_Knights_of_the_Old_Republic_(video_game)) and its [sequel](https://en.wikipedia.org/wiki/Star_Wars_Knights_of_the_Old_Republic_II:_The_Sith_Lords).
 
 ## Installation
-Install from [PyPI](https://pypi.org/project/PyKotor/).
-```bash
+(The PyPI egg is currently in maintenance. Please check back later) Install from [PyPI](https://pypi.org/project/PyKotor/).
+```commandline
 pip install pykotor
 ```
 
 ## Requirements
 PyKotor supports any Python version within 3.8 through 3.12. See requirements.txt for additional pip dependencies.
-PyKotor is supported on most operating systems, including Mac OS and Linux.
+PyKotor is supported on most (if not all) operating systems. Yes, this includes Mac and any other case-sensitive filesystem.
 
-## Example Usage
+## Cloning the repo
+If you would like to work with the source files directly from GitHub, run the following commands to get yourself set:
+```commandline
+git clone https://github.com/NickHugi/PyKotor
+cd PyKotor
+./install_python_venv.ps1
+```
+Then, you can run any of the provided Tools, such as HoloPatcher, KotorDiff or the Toolset, like this:
+```commandline
+python Tools/HoloPatcher/src/__main__.py  # Launch HoloPatcher
+python Tools/HolocronToolset/src/toolset/__main__.py  # Launch Holocron Toolset
+```
+
+## Compiling/Building Available Tools:
+After cloning the repo, open any of the powershell scripts in the `compile` folder such as `compile_holopatcher.ps1` and `compile_toolset.ps1` with powershell. Doing so will start an automated process that results in a EXE being built/compiled to the PyKotor/dist folder. Specifically, those scripts will:
+- Install Python 3.8 (if not already installed)
+- Setup the environment (PYTHONPATH)
+- Create a virtual environment
+- Install the tool's dependencies. This is any pip packages they require from requirements.txt
+- Install PyInstaller
+- Compile to executable binary, as one file, to the PyKotor/dist folder.
+
+## Coding Example Usage:
 Simple example of loading data from a game directory, searching for a specific texture and exporting it to the TGA format.
 ```python
 from pykotor.resource.type import ResourceType
@@ -23,49 +45,7 @@ inst = Installation("C:/Program Files (x86)/Steam/steamapps/common/swkotor")
 tex = inst.texture("C_Gammorean01")
 write_tpc(tex, "./C_Gammorean01.tga", ResourceType.TGA)
 ```
-As shown, this will save C_Gammorean01.tga to the current directory.
-
-## Cloning the repo
-If you would like to work with the source files directly from GitHub, run the following commands to get yourself set:
-```bash
-git clone https://github.com/NickHugi/PyKotor
-cd PyKotor
-pip install -r requirements.txt
-pip install -r Tools/HolocronToolset/src/requirements.txt
-```
-Then, you can run any entry-point scripts, such as HoloPatcher and the Toolset, like this:
-```bash
-cd ./Tools/HoloPatcher/src
-python __main__.py
-cd ../../Tools/HolocronToolset/src
-python -m toolset
-```
-
-## Troubleshooting
-If you find yourself unable to run certain entry-point scripts on this repo in your python interpreter (e.g. HoloPatcher or Holocron Toolset), you may be missing some system-level dependencies. **These are *not* required when using the compiled releases**
-### Holocron Toolset
-Holocron Toolset requires PyQt5.
-#### Linux:
-- On Debian-based Linux distros, install `python3-pyqt5`
-```commandline
-sudo apt install python3-pyqt5
-```
-#### Mac OS:
-- If you've installed Python with HomeBrew (you should have), install PyQt5:
-```commandline
-brew install pyqt5
-```
-### HoloPatcher
-HoloPatcher requires `tkinter`
-#### Linux:
-```commandline
-sudo apt install python3-tk
-```
-#### Mac OS:
-- If you've installed Python with HomeBrew (you should have), install tkinter:
-```commandline
-brew install python-tk
-```
+As shown, this will save `C_Gammorean01.tga` to the current directory.
 
 ## Accessing the GUI Designer
 

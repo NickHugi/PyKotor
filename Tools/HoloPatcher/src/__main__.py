@@ -100,6 +100,7 @@ def parse_args() -> Namespace:
     )
     parser.add_argument("--uninstall", action="store_true", help="Uninstalls the selected mod.")
     parser.add_argument("--install", action="store_true", help="Starts an install immediately on launch.")
+    parser.add_argument("--validate", action="store_true", help="Starts validation of the selected mod.")
 
     kwargs, positional = parser.parse_known_args()
 
@@ -129,7 +130,7 @@ class App(tk.Tk):
         self.set_window(width=400, height=500)
 
         self.mod_path = ""
-        self.namespaces = []
+        self.namespaces: list[PatcherNamespace] = []
 
         self.initialize_logger()
         self.initialize_ui_menu()
@@ -232,16 +233,16 @@ class App(tk.Tk):
         text_frame.grid_rowconfigure(0, weight=1)
         text_frame.grid_columnconfigure(0, weight=1)
 
-        self.description_text = tk.Text(text_frame, wrap=tk.WORD)
-        font_obj = tkfont.Font(font=self.description_text.cget("font"))
+        self.main_text = tk.Text(text_frame, wrap=tk.WORD)
+        font_obj = tkfont.Font(font=self.main_text.cget("font"))
         font_obj.configure(size=9)
-        self.description_text.configure(font=font_obj)
-        self.description_text.grid(row=0, column=0, sticky="nsew")
+        self.main_text.configure(font=font_obj)
+        self.main_text.grid(row=0, column=0, sticky="nsew")
 
-        scrollbar = tk.Scrollbar(text_frame, command=self.description_text.yview)
+        scrollbar = tk.Scrollbar(text_frame, command=self.main_text.yview)
         scrollbar.grid(row=0, column=1, sticky="ns")
 
-        self.description_text.config(yscrollcommand=scrollbar.set)
+        self.main_text.config(yscrollcommand=scrollbar.set)
 
         # Bottom area for buttons
         bottom_frame = tk.Frame(self)
@@ -332,17 +333,20 @@ class App(tk.Tk):
             self.namespaces_combobox.set(self.namespaces_combobox["values"][cmdline_args.namespace_option_index])
         if not cmdline_args.console:
             self.hide_console()
-        if cmdline_args.install or cmdline_args.uninstall:
+
+        self.one_shot: bool = False
+        if cmdline_args.install or cmdline_args.uninstall or cmdline_args.validate:
+            self.one_shot = True
             self.withdraw()
             self.handle_console_mode()
-        self.one_shot: bool = False
         if cmdline_args.install:
-            self.one_shot = True
             self.begin_install_thread()
             sys.exit()
         if cmdline_args.uninstall:
-            self.one_shot = True
             self.uninstall_selected_mod()
+            sys.exit()
+        if cmdline_args.validate:
+            self.test_reader()
             sys.exit()
 
     def handle_console_mode(self) -> None:
@@ -425,7 +429,7 @@ class App(tk.Tk):
                 f"Could not find backup folder '{backup_parent_folder}'{os.linesep*2}Are you sure the mod is installed?",
             )
             return
-        self._clear_description_textbox()
+        self.clear_main_text()
         ModUninstaller(backup_parent_folder, Path(self.gamepaths.get()), self.logger).uninstall_selected_mod()
 
     def handle_exit_button(self) -> None:
@@ -495,7 +499,7 @@ class App(tk.Tk):
             reader.load_settings()
             game_number: int | None = reader.config.game_number
             if game_number:
-                self._handle_gamepaths_with_mod(game_number)
+                self.filter_kotor_game_paths(game_number)
             info_rtf = CaseAwarePath(self.mod_path, "tslpatchdata", namespace_option.rtf_filepath())
             if not info_rtf.exists():
                 messagebox.showwarning("No info.rtf", "Could not load the rtf for this mod, file not found on disk.")
@@ -506,7 +510,7 @@ class App(tk.Tk):
             error_name, msg = universal_simplify_exception(e)
             messagebox.showerror(
                 error_name,
-                f"An unexpected error occurred while loading the namespace option.{os.linesep*2}{msg}",
+                f"An unexpected error occurred while loading the patcher namespace.{os.linesep*2}{msg}",
             )
         else:
             self.after(10, lambda: self.move_cursor_to_end(self.namespaces_combobox))
@@ -753,7 +757,7 @@ class App(tk.Tk):
         ini_file_path = CaseAwarePath(self.mod_path, "tslpatchdata", namespace_option.changes_filepath())
         namespace_mod_path: CaseAwarePath = ini_file_path.parent
 
-        self._clear_description_textbox()
+        self.clear_main_text()
         installer = ModInstaller(namespace_mod_path, self.gamepaths.get(), ini_file_path, self.logger)
         try:
             self._execute_mod_install(installer)
@@ -768,7 +772,7 @@ class App(tk.Tk):
         ini_file_path = CaseAwarePath(self.mod_path, "tslpatchdata", namespace_option.changes_filepath())
 
         self.set_active_install(install_running=True)
-        self._clear_description_textbox()
+        self.clear_main_text()
         try:
             reader = ConfigReader.from_filepath(ini_file_path, self.logger)
             reader.load(reader.config)
@@ -803,10 +807,10 @@ class App(tk.Tk):
             self.gamepaths_browse_button.config(state=tk.NORMAL)
             self.browse_button.config(state=tk.NORMAL)
 
-    def _clear_description_textbox(self) -> None:
-        self.description_text.config(state=tk.NORMAL)
-        self.description_text.delete(1.0, tk.END)
-        self.description_text.config(state=tk.DISABLED)
+    def clear_main_text(self) -> None:
+        self.main_text.config(state=tk.NORMAL)
+        self.main_text.delete(1.0, tk.END)
+        self.main_text.config(state=tk.DISABLED)
 
     def _execute_mod_install(self, installer: ModInstaller) -> None:
         """Executes the mod installation.
@@ -851,7 +855,7 @@ class App(tk.Tk):
             f"The installation is complete with {len(installer.log.errors)} errors and {len(installer.log.warnings)} warnings. "
             f"Total install time: {time_str}",
         )
-        log_file_path: Path = Path(self.mod_path, "installlog.txt")
+        log_file_path: Path = Path.pathify(self.mod_path) / "installlog.txt"
         with log_file_path.open("w", encoding="utf-8") as log_file:
             for log in installer.log.all_logs:
                 log_file.write(f"{log.message}\n")
@@ -903,7 +907,7 @@ class App(tk.Tk):
         self.set_active_install(install_running=False)
         raise
 
-    def _handle_gamepaths_with_mod(self, game_number) -> None:
+    def filter_kotor_game_paths(self, game_number) -> None:
         """Determines what shows up in the gamepaths combobox, based on the LookupGameNumber setting."""
         game = Game(game_number)
         gamepaths_list: list[str] = [
@@ -916,10 +920,10 @@ class App(tk.Tk):
     def set_stripped_rtf_text(self, rtf: TextIOWrapper) -> None:
         """Strips the info.rtf of all RTF related text and displays it in the UI."""
         stripped_content: str = striprtf(rtf.read())
-        self.description_text.config(state=tk.NORMAL)
-        self.description_text.delete(1.0, tk.END)
-        self.description_text.insert(tk.END, stripped_content)
-        self.description_text.config(state=tk.DISABLED)
+        self.main_text.config(state=tk.NORMAL)
+        self.main_text.delete(1.0, tk.END)
+        self.main_text.insert(tk.END, stripped_content)
+        self.main_text.config(state=tk.DISABLED)
 
     def write_log(self, message: str) -> None:
         """Writes a message to the log.
@@ -934,10 +938,10 @@ class App(tk.Tk):
             - Scrolling to the end of the text
             - Making the description text widget not editable again.
         """
-        self.description_text.config(state=tk.NORMAL)
-        self.description_text.insert(tk.END, message + os.linesep)
-        self.description_text.see(tk.END)
-        self.description_text.config(state=tk.DISABLED)
+        self.main_text.config(state=tk.NORMAL)
+        self.main_text.insert(tk.END, message + os.linesep)
+        self.main_text.see(tk.END)
+        self.main_text.config(state=tk.DISABLED)
 
 
 def custom_excepthook(exc_type, exc_value, exc_traceback) -> None:

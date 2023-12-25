@@ -38,7 +38,7 @@
       "problemMatcher": []
     },
     {
-      "label": "holopatcher_requirements",
+      "label": "holopatcher_recommended",
       "type": "shell",
       "command": "${command:python.interpreterPath}",
       "args": [
@@ -46,7 +46,7 @@
         "pip",
         "install",
         "-r",
-        "Tools${pathSeparator}HoloPatcher${pathSeparator}requirements.txt"
+        "Tools${pathSeparator}HoloPatcher${pathSeparator}recommended.txt"
       ]
     },
     {
@@ -354,7 +354,7 @@
       "type": "shell",
       "command": "${command:python.interpreterPath}",
       "args": [
-        "./compile/cython_compile_script.py",
+        ".${pathSeparator}compile${pathSeparator}cython_compile_script.py",
       ],
       "problemMatcher": [],
       "options": {
@@ -371,7 +371,7 @@
       "type": "shell",
       "dependsOn": [
         "pykotor_requirements",
-        "holopatcher_requirements",
+        "holopatcher_recommended",
         "install_pyinstaller",
        // "Cython Compile All",
       ],
@@ -419,7 +419,7 @@
       "type": "shell",
       "dependsOn": [
         "pykotor_requirements",
-        "holopatcher_requirements",
+        "holopatcher_recommended",
         "install_nuitka"
       ],
       "command": "${command:python.interpreterPath}",

@@ -11,6 +11,7 @@ Write-Host "Installing required packages to build holopatcher..."
 . $pythonExePath -m pip install --upgrade pip
 . $pythonExePath -m pip install pyinstaller --prefer-binary
 . $pythonExePath -m pip install -r "$rootPath/Tools/HoloPatcher/requirements.txt" --prefer-binary
+. $pythonExePath -m pip install -r "$rootPath/Tools/HoloPatcher/recommended.txt" --prefer-binary
 . $pythonExePath -m pip install -r "$rootPath/Libraries/PyKotor/requirements.txt" --prefer-binary
 
 if ( (Get-OS) -eq "Linux" ) {

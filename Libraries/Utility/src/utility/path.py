@@ -96,7 +96,7 @@ class BasePurePath(metaclass=PurePathType):
             return
 
         # If not object, fetch the __init__ of that class
-        init_method = next_init_method_class.__init__
+        init_method = next_init_method_class.__init__  # type: ignore[misc]
 
         # Parse args if called from pathlib (Python 3.12+)
         if _called_from_pathlib:
@@ -158,7 +158,7 @@ class BasePurePath(metaclass=PurePathType):
         """Call _fix_path_formatting before returning the pathlib class's __str__ result.
         In Python 3.12, pathlib's __str__ methods will return '' instead of '.', so we return '.' in this instance for backwards compatibility.
         """
-        return self._fix_path_formatting(super().__str__(), self._flavour.sep)  # type: ignore[_flavour exists in children]
+        return self._fix_path_formatting(super().__str__(), self._flavour.sep)  # type: ignore[attr-defined]
 
     def __eq__(self, other):
         if isinstance(other, PurePath):
@@ -284,7 +284,7 @@ class BasePurePath(metaclass=PurePathType):
             - Call as_posix() on the Path object to get the POSIX path string
             - Pass the result to _fix_path_formatting() to normalize the path format. This is done to fix any known bugs with the pathlib library.
         """
-        return self._fix_path_formatting(super().as_posix(), slash="/")
+        return self._fix_path_formatting(super().as_posix(), slash="/")  # type: ignore[misc]
 
     def joinpath(self, *args: PathElem):
         """Appends one or more path-like objects and/or relative paths to self.
@@ -556,7 +556,7 @@ class BasePath(BasePurePath):
         # (Unix) Gain ownership of the folder
         if os.name != "nt" and (owner_uid != -1 or owner_gid != -1) and not path_obj.has_access():
             try:
-                os.chown(path_obj, owner_uid, owner_gid)
+                os.chown(path_obj, owner_uid, owner_gid)  # type: ignore[attr-defined]
             except Exception as e:  # noqa: BLE001
                 print(f"Error during chown for {path_obj!s}: {e!s}")
 
