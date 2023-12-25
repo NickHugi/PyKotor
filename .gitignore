@@ -1,6 +1,8 @@
 .git
 .idea
 venv
+.venv
+*.pyd
 toolset/errorlog.txt
 dist
 build
@@ -54,3 +56,4 @@ Tools/HolocronToolset/src/toolset/kits/*/*
 /Tools/HolocronToolset/toolset/kits/
 .mypy_cache
 *.egg-info*
+*.c

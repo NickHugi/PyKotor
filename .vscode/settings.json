@@ -50,4 +50,5 @@
   "mypy-type-checker.args": [
     "--check-untyped-defs"
   ],
+  "cmake.configureOnOpen": false,
 }
