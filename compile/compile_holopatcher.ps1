@@ -13,9 +13,9 @@ python -m pip install pyinstaller
 python -m pip install -r "$rootPath/Tools/HoloPatcher/requirements.txt" --prefer-binary --no-cache-dir
 python -m pip install -r "$rootPath/Libraries/PyKotor/requirements.txt" --prefer-binary --no-cache-dir
 
-if ( $env:OS -eq "Unix" ) {
+if ( (Get-OS) -eq "Unix" ) {
     & "sudo apt install python3-tkinter"
-} elseif ( $env:OS -eq "Darwin" ) {
+} elseif ( (Get-OS) -eq "Darwin" ) {
     & "brew install python-tk"
 }
 

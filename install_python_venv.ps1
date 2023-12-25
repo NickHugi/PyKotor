@@ -1,6 +1,21 @@
 # Ensure script is running with elevated permissions
 $repoRootPath = Split-Path -Parent $MyInvocation.MyCommand.Definition
-If ($env:OS -eq "Windows_NT" -and -NOT ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole] "Administrator")) {
+
+function Get-OS {
+    if ($IsWindows) {
+        return "Windows"
+    } elseif ($IsMacOS) {
+        return "Mac"
+    } elseif ($IsLinux) {
+        return "Linux"
+    } else {
+        Write-Error "Unknown Operating System"
+        Write-Host "Press any key to exit..."
+        $null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
+    }
+}
+
+If ((Get-OS) -eq "Windows_NT" -and -NOT ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole] "Administrator")) {
     Write-Warning "Please run PowerShell with administrator rights!"
     #Break
 }
@@ -129,7 +144,7 @@ function Get-PythonPaths {
         "~/.pyenv/versions/$version/bin/python"
     )
 
-    return @{ Windows_NT = $windowsPaths; Unix = $linuxAndMacPaths; Darwin = $linuxAndMacPaths }
+    return @{ Windows = $windowsPaths; Linux = $linuxAndMacPaths; Darwin = $linuxAndMacPaths }
 }
 
 function Get-Python-Path-From-Command {
@@ -177,7 +192,7 @@ function Find-Python {
     if ( $pythonInstallPath -eq "" -or ($pythonVersion -ne "" -and $pythonVersion -ge $recommendedVersion )) {
 
         foreach ($version in $validPythonVersions) {
-            $paths = (Get-PythonPaths $version)[$env:OS]
+            $paths = (Get-PythonPaths $version)[(Get-OS)]
             foreach ($path in $paths) {
                 try {
                     # Resolve potential environment variables in the path
@@ -208,12 +223,12 @@ function Find-Python {
             $null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
             exit
         }
-        if ( $env:OS -eq "Windows_NT" ) {
+        if ( (Get-OS) -eq "Windows" ) {
             Python-Install-Windows "3.8.10"
-        } elif ( $env:OS -eq "Unix" ) {
+        } elif ( (Get-OS) -eq "Linux" ) {
             & "sudo apt install python3"
             & "sudo apt install python3-dev"
-        } elif ( $env:OS -eq "Darwin" ) {
+        } elif ( (Get-OS) -eq "Mac" ) {
             & "brew install python@3.8"
         }
     }
@@ -265,16 +280,13 @@ if (Test-Path $venvPath -ErrorAction SilentlyContinue) {
 
 if ( $findVenvExecutable -eq $true) {
     # Determine the operating system
-    $osType = $null
-    switch -Regex ($env:OS) {
-        'Windows_NT' { $osType = 'Windows'; break }
-        default { $osType = 'Unix'; break }  # Assuming Unix for all non-Windows OS types
-    }
+    $osType = (Get-OS)
 
     # Define potential paths for Python executable within the virtual environment
     $pythonExePaths = switch ($osType) {
         'Windows' { @("$venvPath\Scripts\python.exe") }
-        'Unix' { @("$venvPath/bin/python3", "$venvPath/bin/python") }
+        'Linux' { @("$venvPath/bin/python3", "$venvPath/bin/python") }
+        'Mac' { @("$venvPath/bin/python3", "$venvPath/bin/python") }
     }
 
     # Find the Python executable
