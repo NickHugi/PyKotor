@@ -78,7 +78,7 @@ function Python-Install-Windows {
     try {
         # Download and install Python
         $pythonInstallerUrl = "https://www.python.org/ftp/python/$pythonVersion/python-$pythonVersion.exe"
-        $installerPath = (Resolve-Path -LiteralPath "$env:TEMP\python-$pythonVersion.exe").Path
+        $installerPath = (Resolve-Path -LiteralPath "$env:TEMP/python-$pythonVersion.exe").Path
         Invoke-WebRequest -Uri $pythonInstallerUrl -OutFile $installerPath
         Start-Process -FilePath $installerPath -Args '/quiet InstallAllUsers=1 PrependPath=1' -Wait -NoNewWindow
     
@@ -282,11 +282,8 @@ if (Test-Path $venvPath -ErrorAction SilentlyContinue) {
 }
 
 if ( $findVenvExecutable -eq $true) {
-    # Determine the operating system
-    $osType = (Get-OS)
-
     # Define potential paths for Python executable within the virtual environment
-    $pythonExePaths = switch ($osType) {
+    $pythonExePaths = switch ((Get-OS)) {
         'Windows' { @("$venvPath\Scripts\python.exe") }
         'Linux' { @("$venvPath/bin/python3", "$venvPath/bin/python") }
         'Mac' { @("$venvPath/bin/python3", "$venvPath/bin/python") }
@@ -305,12 +302,11 @@ if ( $findVenvExecutable -eq $true) {
 }
 
 
-$activateScriptPath = "$venvPath/Scripts/Activate.ps1"
 Write-Host "Activating venv at '$venvPath'"
-if ((Get-OS) -ne "Windows") {
-    . $venvPath/bin/Activate.ps1
+if ((Get-OS) -eq "Windows") {
+    . $venvPath/Scripts/Activate.ps1
 } else {
-    . $activateScriptPath
+    . $venvPath/bin/Activate.ps1
 }
 
 Initialize-Python $pythonExePath
