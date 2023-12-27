@@ -8,11 +8,11 @@ Write-Host "Initializing python virtual environment..."
 . $rootPath/install_python_venv.ps1
 
 Write-Host "Installing required packages to build holopatcher..."
-. $pythonExePath -m pip install --upgrade pip
-. $pythonExePath -m pip install pyinstaller --prefer-binary
-. $pythonExePath -m pip install -r "$rootPath/Tools/HoloPatcher/requirements.txt" --prefer-binary
-. $pythonExePath -m pip install -r "$rootPath/Tools/HoloPatcher/recommended.txt" --prefer-binary
-. $pythonExePath -m pip install -r "$rootPath/Libraries/PyKotor/requirements.txt" --prefer-binary
+. $pythonExePath -m pip install --upgrade pip --prefer-binary --progress-bar on
+. $pythonExePath -m pip install pyinstaller --prefer-binary --progress-bar on
+. $pythonExePath -m pip install -r ($rootPath + $pathSep + "Tools" + $pathSep + "HoloPatcher" + $pathSep + "requirements.txt") --prefer-binary --progress-bar on -U
+. $pythonExePath -m pip install -r ($rootPath + $pathSep + "Tools" + $pathSep + "HoloPatcher" + $pathSep + "recommended.txt") --prefer-binary --progress-bar on -U
+. $pythonExePath -m pip install -r ($rootPath + $pathSep + "Libraries" + $pathSep + "PyKotor" + $pathSep + "requirements.txt") --prefer-binary --progress-bar on -U
 
 if ( (Get-OS) -eq "Linux" ) {
     . sudo apt install python3-tk -y
@@ -21,7 +21,6 @@ if ( (Get-OS) -eq "Linux" ) {
 }
 
 Write-Host "Compiling HoloPatcher..."
-Write-Host "EXTRA PYTHONPATH: '$env:PYTHONPATH'"
 $pyInstallerArgs = @{
     'exclude-module' = @(
         '',
@@ -34,14 +33,39 @@ $pyInstallerArgs = @{
         'PyOpenGL',
         'PyGLM',
         'dl_translate',
-        'torch'
+        'torch',
+        'deep_translator',
+        'deepl-cli',
+        'playwright',
+        'pyquery',
+        'arabic-reshaper',
+        'PyQt5-Qt5',
+        'PyQt5-sip',
+        'watchdog',
+        'Markdown',
+        'pyperclip',
+        'setuptools',
+        'wheel',
+        'ruff',
+        'pylint',
+        'pykotor.gl',
+        'pykotor.font',
+        'pykotor.secure_xml',
+        'mypy-extensions',
+        'mypy',
+        'isort',
+        'install_playwright',
+        'greenlet',
+        'cssselect',
+        'beautifulsoup4 '
     )
-    'noconsole' = ""
-    'onefile' = ""
-    'noconfirm' = ""
-    'distpath' = "$rootPath/dist"
+    'clean' = $true
+    'noconsole' = $true
+    'onefile' = $true
+    'noconfirm' = $true
+    'distpath' = ($rootPath + $pathSep + "dist")
     'name' = 'HoloPatcher'
-    'upx-dir' = "$env:USERPROFILE/Documents/GitHub/upx-win32"
+    'upx-dir' = "$env:USERPROFILE\Documents\GitHub\upx-win32"
     'icon' = '../resources/icons/patcher_icon_v2.ico'
 }
 $pyInstallerArgsString = ($pyInstallerArgs.GetEnumerator() | ForEach-Object {
@@ -54,10 +78,10 @@ $pyInstallerArgsString = ($pyInstallerArgs.GetEnumerator() | ForEach-Object {
         $value = " --$key=$value "
     } else {
         # Handle key-value pair arguments
-        if ($value -ne "") {
-            "--$key=$value "
-        } else {
+        if ($value -eq $true) {
             "--$key "
+        } else {
+            "--$key=$value "
         }
     }
 }) -join ''
@@ -67,6 +91,21 @@ $pythonPaths = $env:PYTHONPATH -split ';'
 $pythonPathArgs = $pythonPaths | ForEach-Object { "--path=$_" }
 $pythonPathArgsString = $pythonPathArgs -join ' '
 
+# Determine the final executable path
+$finalExecutablePath = $null
+if ((Get-OS) -eq "Windows") {
+    $finalExecutablePath = "$rootPath\dist\HoloPatcher.exe"
+} elseif ((Get-OS) -eq "Linux") {
+    $finalExecutablePath = "$rootPath/dist/HoloPatcher"
+} elseif ((Get-OS) -eq "Mac") {
+    $finalExecutablePath = "$rootPath/dist/HoloPatcher.app"
+}
+
+# Delete the final executable if it exists
+if (Test-Path -Path $finalExecutablePath) {
+    Remove-Item -Path $finalExecutablePath -Force
+}
+
 # Combine pyInstallerArgsString with pythonPathArgsString
 $finalPyInstallerArgsString = "$pythonPathArgsString $pyInstallerArgsString"
 
@@ -74,3 +113,12 @@ Set-Location -LiteralPath (Resolve-Path -LiteralPath "$rootPath/Tools/HoloPatche
 $command = "$pythonExePath -m PyInstaller $finalPyInstallerArgsString `"__main__.py`""
 Write-Host $command
 Invoke-Expression $command
+
+# Check if the final executable exists
+if (-not (Test-Path -Path $finalExecutablePath)) {
+    Write-Error "HoloPatcher could not be compiled, scroll up to find out why"   
+} else {
+    Write-Host "HoloPatcher was compiled to '$finalExecutablePath'"
+}
+Write-Host "Press any key to exit..."
+$null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")

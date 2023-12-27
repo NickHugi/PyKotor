@@ -1,6 +1,5 @@
 # Ensure script is running with elevated permissions
 $repoRootPath = Split-Path -Parent $MyInvocation.MyCommand.Definition
-Set-Item -Path "env:PYTHONPATH" -Value ""
 function Get-OS {
     if ($IsWindows) {
         return "Windows"
@@ -8,11 +7,24 @@ function Get-OS {
         return "Mac"
     } elseif ($IsLinux) {
         return "Linux"
+    }
+    $os = (Get-WmiObject -Class Win32_OperatingSystem).Caption
+    if ($os -match "Windows") {
+        return "Windows"
+    } elseif ($os -match "Mac") {
+        return "Mac"
+    } elseif ($os -match "Linux") {
+        return "Linux"
     } else {
         Write-Error "Unknown Operating System"
         Write-Host "Press any key to exit..."
         $null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
     }
+}
+
+$pathSep = "/"
+if ((Get-OS) -eq "Windows") {
+    $pathSep = "\"
 }
 
 If ((Get-OS) -eq "Windows_NT" -and -NOT ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole] "Administrator")) {
@@ -69,7 +81,6 @@ function Set-EnvironmentVariablesFromEnvFile {
                 # Set environment variable
                 Write-Host "Set environment variable $key from '${$env:$key}' to '$value'"
                 Set-Item -Path "env:$key" -Value $value
-                [System.Environment]::SetEnvironmentVariable("env:$key", $value, [System.EnvironmentVariableTarget]::Machine)
             }
         }
         Write-Host "Environment variables set from .env file."
@@ -246,7 +257,7 @@ function Find-Python {
     }
 }
 
-$venvPath = "$repoRootPath/.venv"
+$venvPath = "$repoRootPath$pathSep.venv"
 $pythonExePath = ""
 $findVenvExecutable = $true
 if (Test-Path $venvPath -ErrorAction SilentlyContinue) {
@@ -313,7 +324,7 @@ if ( $findVenvExecutable -eq $true) {
 
 Write-Host "Activating venv at '$venvPath'"
 if ((Get-OS) -eq "Windows") {
-    . $venvPath/Scripts/Activate.ps1
+    . $venvPath\Scripts\Activate.ps1
 } else {
     . $venvPath/bin/Activate.ps1
 }
@@ -321,7 +332,7 @@ if ((Get-OS) -eq "Windows") {
 Initialize-Python $pythonExePath
 
 # Set environment variables from .env file
-$dotenv_path = "$repoRootPath/.env"
+$dotenv_path = "$repoRootPath$pathSep.env"
 Write-Host "Loading project environment variables from '$dotenv_path'"
 $envFileFound = Set-EnvironmentVariablesFromEnvFile "$dotenv_path"
 if ($envFileFound) {
