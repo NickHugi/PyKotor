@@ -95,7 +95,7 @@ class ResRef(CaseInsensitiveMutStr):
         resname: str,
     ):
         """Create a new ResRef from a potentially invalid string, removing any non-ascii characters."""
-        return cls(resname.encode(encoding="ascii", errors="ignore").decode())
+        return cls(resname.encode("ascii", "ignore").decode("ascii"))
 
     def set_data(
         self,
