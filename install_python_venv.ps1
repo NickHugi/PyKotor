@@ -27,7 +27,7 @@ if ((Get-OS) -eq "Windows") {
 }
 
 # Ensure script is running with elevated permissions
-If ((Get-OS) -eq "Windows_NT" -and -NOT ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole] "Administrator")) {
+If ((Get-OS) -eq "Windows" -and -NOT ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole] "Administrator")) {
     Write-Warning "Please run PowerShell with administrator rights!"
     #Break
 }
