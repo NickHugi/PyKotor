@@ -32,7 +32,7 @@ class TokenUsage2DA(TokenUsage):
         self.token_id: int = token_id
 
     def value(self, memory: PatcherMemory) -> str:
-        return memory.memory_2da[self.token_id]
+        return memory.memory_2da[self.token_id]  # FIXME: needs its static typing fixed (PureWindowsPath vs str)
 
 
 class TokenUsageTLK(TokenUsage):
