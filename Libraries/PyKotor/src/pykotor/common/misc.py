@@ -181,7 +181,12 @@ class Color:
         if not isinstance(other, Color):
             return NotImplemented
 
-        return other.r == self.r and other.g == self.g and other.b == self.b and other.a == self.a
+        return (
+            other.r == self.r
+            and other.g == self.g
+            and other.b == self.b
+            and other.a == self.a
+        )
 
     @classmethod
     def from_rgb_integer(
@@ -546,6 +551,7 @@ class CaseInsensitiveDict(Generic[T]):
             return NotImplemented
         other_dict = other._dictionary if isinstance(other, CaseInsensitiveDict) else other
         return {k.lower(): v for k, v in self._dictionary.items()} == {k.lower(): v for k, v in other_dict.items()}
+
     def __iter__(self) -> Generator[str, Any, None]:
         yield from self._dictionary
 

@@ -64,7 +64,7 @@ class TalkTable:  # TODO: dialogf.tlk
             if stringref >= entries_count:
                 return ""
 
-            tlkdata = self._extract_common_tlk_data(reader, stringref)
+            tlkdata: TLKData = self._extract_common_tlk_data(reader, stringref)
             reader.seek(texts_offset + tlkdata.text_offset)
             return reader.read_string(tlkdata.text_length)
 
@@ -137,7 +137,7 @@ class TalkTable:  # TODO: dialogf.tlk
             entries_count = reader.read_uint32()
             texts_offset = reader.read_uint32()
 
-            batch = {}
+            batch: dict[int, StringResult] = {}
 
             for stringref in stringrefs:
                 if stringref == -1 or stringref >= entries_count:

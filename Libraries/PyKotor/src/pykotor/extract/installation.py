@@ -1185,7 +1185,7 @@ class Installation:
         -------
             A bytes object or None.
         """
-        batch = self.sounds([resname], order, capsules=capsules, folders=folders)
+        batch: CaseInsensitiveDict[bytes | None] = self.sounds([resname], order, capsules=capsules, folders=folders)
         return batch[resname] if batch else None
 
     def sounds(
@@ -1237,7 +1237,7 @@ class Installation:
             for resource in values:
                 if resource.resname().lower() in resnames and resource.restype() in sound_formats:
                     resnames.remove(resource.resname())
-                    sound_data = resource.data()
+                    sound_data: bytes = resource.data()
                     sounds[resource.resname()] = fix_audio(sound_data) if sound_data else b""
 
         def check_capsules(values: list[Capsule]):
@@ -1267,7 +1267,7 @@ class Installation:
                 )
             for sound_file in queried_sound_files:
                 resnames.remove(sound_file.stem.lower())
-                sound_data = BinaryReader.load_file(sound_file)
+                sound_data: bytes = BinaryReader.load_file(sound_file)
                 sounds[sound_file.stem] = fix_audio(sound_data) if sound_data else b""
 
         function_map: dict[SearchLocation, Callable] = {
@@ -1302,7 +1302,7 @@ class Installation:
         -------
             str: text from the locstring lookup
         """
-        batch = self.strings([locstring], default)
+        batch: dict[LocalizedString, str] = self.strings([locstring], default)
         return batch[locstring]
 
     def strings(
@@ -1361,7 +1361,7 @@ class Installation:
         -------
             The name of the area for the module.
         """
-        root = self.replace_module_extensions(module_filename)
+        root: str = self.replace_module_extensions(module_filename)
         if use_hardcoded:
 
             for key, value in HARDCODED_MODULE_NAMES.items():
@@ -1374,7 +1374,7 @@ class Installation:
                 continue
 
             capsule = Capsule(self.module_path() / module)
-            tag = ""
+            tag: str = ""
 
             capsule_info: FileResource | None = capsule.info("module", ResourceType.IFO)
             if capsule_info is None:
@@ -1429,7 +1429,7 @@ class Installation:
                 if key.upper() in module_filename.upper():
                     return value
 
-        mod_id = ""
+        mod_id: str = ""
 
         for module in self.modules_list():
             if root.lower() not in module.lower():
@@ -1440,7 +1440,7 @@ class Installation:
 
                 module_ifo_data = capsule.resource("module", ResourceType.IFO)
                 if module_ifo_data:
-                    ifo = read_gff(module_ifo_data)
+                    ifo: GFF = read_gff(module_ifo_data)
                     mod_id = ifo.root.get_resref("Mod_Entry_Area").get()
                     if mod_id:
                         break

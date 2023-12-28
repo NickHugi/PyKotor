@@ -87,7 +87,7 @@ class Capsule:
             bytes data of the resource.
         """
         query = ResourceIdentifier(resref, restype)
-        resource = next((resource for resource in self.resources() if resource == query), None)
+        resource: FileResource | None = next((resource for resource in self.resources() if resource == query), None)
         return resource.data() if resource else None
 
     def batch(
@@ -126,7 +126,7 @@ class Capsule:
                     )
                     if resource is not None:
                         reader.seek(resource.offset())
-                        data = reader.read_bytes(resource.size())
+                        data: bytes = reader.read_bytes(resource.size())
                         results[query] = ResourceResult(
                             query.resname,
                             query.restype,
@@ -291,7 +291,7 @@ class Capsule:
             reader.skip(2)
 
         reader.seek(offset_to_resources)
-        resources = []
+        resources: list[FileResource] = []
         for i in range(entry_count):
             res_offset = reader.read_uint32()
             res_size = reader.read_uint32()
@@ -327,7 +327,7 @@ class Capsule:
         offset_to_entries = reader.read_uint32()
 
         reader.seek(offset_to_entries)
-        resources = []
+        resources: list[FileResource] = []
         for _ in range(entry_count):
             resref = reader.read_string(16)
             restype = ResourceType.from_id(reader.read_uint32())

@@ -17,7 +17,6 @@ def is_mod_file(filepath: os.PathLike | str) -> bool:
     """Returns true if the given filename has a MOD file extension."""
     return PurePath.pathify(filepath).suffix.lower() == ".mod"
 
-
 def is_erf_file(filepath: os.PathLike | str) -> bool:
     """Returns true if the given filename has a ERF file extension."""
     return PurePath.pathify(filepath).suffix.lower() == ".erf"
@@ -45,9 +44,9 @@ def is_bif_file(filepath: os.PathLike | str) -> bool:
 
 def is_capsule_file(filepath: os.PathLike | str) -> bool:
     """Returns true if the given filename has either an ERF, MOD, SAV, or RIM file extension."""
-    return PurePath.pathify(filepath).suffix.lower() in [".erf", ".mod", ".rim", ".sav"]
+    return PurePath.pathify(filepath).suffix.lower() in {".erf", ".mod", ".rim", ".sav"}
 
 
 def is_storage_file(filepath: os.PathLike | str) -> bool:
     """Returns true if the given filename has either an ERF, MOD, SAV, RIM, or BIF file extension."""
-    return PurePath.pathify(filepath).suffix.lower() in [".erf", ".mod", ".sav", ".rim", ".bif"]
+    return PurePath.pathify(filepath).suffix.lower() in {".erf", ".mod", ".sav", ".rim", ".bif"}
