@@ -1,4 +1,3 @@
-# Ensure script is running with elevated permissions
 $repoRootPath = Split-Path -Parent $MyInvocation.MyCommand.Definition
 function Get-OS {
     if ($IsWindows) {
@@ -27,6 +26,7 @@ if ((Get-OS) -eq "Windows") {
     $pathSep = "\"
 }
 
+# Ensure script is running with elevated permissions
 If ((Get-OS) -eq "Windows_NT" -and -NOT ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole] "Administrator")) {
     Write-Warning "Please run PowerShell with administrator rights!"
     #Break
@@ -136,7 +136,7 @@ function Initialize-Python {
     $pythonVersion = Get-Python-Version $pythonPath
 
     if ($pythonVersion -ge $minVersion -and $pythonVersion -le $lessThanVersion) {
-        Write-Host "Python 3.8 install detected."
+        Write-Host "Python $pythonVersion install detected."
     } elseif ($pythonVersion -ge $minVersion) {
         Write-Warning "The Python version on PATH ($pythonVersion) is not recommended, please use python 3.8. Continuing anyway..."
     }

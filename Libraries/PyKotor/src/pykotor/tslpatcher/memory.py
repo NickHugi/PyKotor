@@ -1,11 +1,15 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from utility.path import PureWindowsPath
 
 
 class PatcherMemory:
     def __init__(self) -> None:
-        self.memory_2da: dict[int, str] = {}  # 2DAMemory# (token) -> str
+        self.memory_2da: dict[int, str | PureWindowsPath] = {}  # 2DAMemory# (token) -> str
         self.memory_str: dict[int, int] = {}  # StrRef# (token) -> dialog.tlk index
 
 

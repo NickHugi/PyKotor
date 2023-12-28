@@ -558,12 +558,11 @@ class App(tk.Tk):
                 return
 
             tslpatchdata_path = CaseAwarePath(directory_path_str, "tslpatchdata")
-            self.mod_path = directory_path_str
             # handle when a user selects 'tslpatchdata' instead of mod root
             if not tslpatchdata_path.exists() and tslpatchdata_path.parent.name.lower() == "tslpatchdata":
                 tslpatchdata_path = tslpatchdata_path.parent
-                self.mod_path = str(tslpatchdata_path.parent)
 
+            self.mod_path = str(tslpatchdata_path.parent)
             namespace_path: CaseAwarePath = tslpatchdata_path / "namespaces.ini"
             changes_path: CaseAwarePath = tslpatchdata_path / "changes.ini"
 

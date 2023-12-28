@@ -1,16 +1,20 @@
 from __future__ import annotations
 
+import os
 import shutil
 from typing import TYPE_CHECKING
 
+from pykotor.common.stream import BinaryReader
 from pykotor.tslpatcher.mods.template import PatcherModifications
-from utility.path import PurePath
+from utility.path import Path, PurePath
 
 if TYPE_CHECKING:
-    import os
 
+    from pykotor.common.misc import Game
+    from pykotor.resource.type import SOURCE_TYPES
     from pykotor.tools.path import CaseAwarePath
     from pykotor.tslpatcher.logger import PatchLogger
+    from pykotor.tslpatcher.memory import PatcherMemory
 
 
 def create_backup(
@@ -39,8 +43,9 @@ def create_backup(
         - Adds file path to processed_files set.
     """
     destination_file_str = str(destination_filepath)
-    destination_file_str_lower = destination_file_str.lower()
-    subdirectory_backup_path = None
+    destination_file_str_lower: str = destination_file_str.lower()
+    subdirectory_backup_path: CaseAwarePath | None = None
+    backup_filepath: CaseAwarePath
     if subdirectory_path:
         subdirectory_backup_path = backup_folderpath / subdirectory_path
         backup_filepath = subdirectory_backup_path / destination_filepath.name
@@ -50,21 +55,21 @@ def create_backup(
     if destination_file_str_lower not in processed_files:
 
         # Write a list of files that should be removed in order to uninstall the mod
-        uninstall_folder = backup_folderpath.parent.parent.joinpath("uninstall")
-        uninstall_str_lower = str(uninstall_folder).lower()
+        uninstall_folder: CaseAwarePath = backup_folderpath.parent.parent.joinpath("uninstall")
+        uninstall_str_lower: str = str(uninstall_folder).lower()
         if uninstall_str_lower not in processed_files:
             uninstall_folder.mkdir(exist_ok=True)
 
             # Write the PowerShell/Bash uninstall scripts to the uninstall folder
-            subdir_temp = PurePath(subdirectory_path) if subdirectory_path else None
-            game_folder = destination_filepath.parents[len(subdir_temp.parts)] if subdir_temp else destination_filepath.parent
+            subdir_temp: PurePath | None = PurePath(subdirectory_path) if subdirectory_path else None
+            game_folder: CaseAwarePath = destination_filepath.parents[len(subdir_temp.parts)] if subdir_temp else destination_filepath.parent
             create_uninstall_scripts(backup_folderpath, uninstall_folder, game_folder)
             processed_files.add(uninstall_str_lower)
 
         if destination_filepath.exists():
             # Check if the backup path exists and generate a new one if necessary
             i = 2
-            filestem = backup_filepath.stem
+            filestem: str = backup_filepath.stem
             while backup_filepath.exists():
                 backup_filepath = backup_filepath.parent / f"{filestem} ({i}){backup_filepath.suffix}"
                 i += 1
@@ -79,8 +84,8 @@ def create_backup(
         else:
 
             # Write the file path to remove these files.txt in backup directory
-            removal_files_txt = backup_folderpath.joinpath("remove these files.txt")
-            line = ("\n" if removal_files_txt.exists() else "") + destination_file_str
+            removal_files_txt: CaseAwarePath = backup_folderpath.joinpath("remove these files.txt")
+            line: str = ("\n" if removal_files_txt.exists() else "") + destination_file_str
             with removal_files_txt.open("a") as f:
                 f.write(line)
 
@@ -300,9 +305,20 @@ class InstallFile(PatcherModifications):
         self.action: str = "Copy "
         self.skip_if_not_replace: bool = True
 
-    def patch_resource(self, source, *args, **kwargs) -> bytes:
-        self.apply(source, *args, **kwargs)
-        return source
+    def patch_resource(
+        self,
+        source: SOURCE_TYPES,
+        memory: PatcherMemory,
+        logger: PatchLogger,
+        game: Game,
+    ) -> bytes:
+        self.apply(source, memory, logger, game)
+        if isinstance(source, BinaryReader):
+            return source.read_all()
+        if isinstance(source, (str, os.PathLike)):
+            with Path(source).open() as f:
+                return f.read().encode()
+        return bytes(source)
 
     def apply(self, source, *args, **kwargs) -> None:
-        pass
+        ...

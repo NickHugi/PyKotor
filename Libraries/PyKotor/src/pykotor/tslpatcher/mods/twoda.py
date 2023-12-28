@@ -549,28 +549,27 @@ class Modifications2DA(PatcherModifications):
         self,
         source_2da: SOURCE_TYPES,
         memory: PatcherMemory,
-        log: PatchLogger | None = None,
-        game: Game | None = None,
+        logger: PatchLogger,
+        game: Game,
     ) -> bytes:
         twoda: TwoDA = read_2da(source_2da)
-        self.apply(twoda, memory, log, game)
+        self.apply(twoda, memory, logger, game)
         return bytes_2da(twoda)
 
     def apply(
         self,
         twoda: TwoDA,
         memory: PatcherMemory,
-        log: PatchLogger | None = None,
-        game: Game | None = None,
+        logger: PatchLogger,
+        game: Game,
     ) -> None:
         for row in self.modifiers:
             try:
                 row.apply(twoda, memory)
             except Exception as e:  # noqa: PERF203, BLE001
                 msg = f"{e!s} when patching the file '{self.saveas}'"
-                if log:
-                    log.add_warning(msg) if isinstance(e, WarningError) else log.add_error(msg)
+                if isinstance(e, WarningError):
+                    logger.add_warning(msg)
                 else:
-                    print(msg)
-                if not isinstance(e, WarningError):
+                    logger.add_error(msg)
                     break

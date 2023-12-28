@@ -12,6 +12,8 @@ from pykotor.tslpatcher.mods.template import PatcherModifications
 from utility.path import PureWindowsPath
 
 if TYPE_CHECKING:
+    import os
+
     from pykotor.resource.formats.gff.gff_data import _GFFField
     from pykotor.resource.type import SOURCE_TYPES
     from pykotor.tslpatcher.logger import PatchLogger
@@ -66,7 +68,7 @@ class FieldValue(ABC):
             - Convert value to expected type if needed
             - Return validated value
         """
-        if isinstance(value, PureWindowsPath):
+        if isinstance(value, PureWindowsPath):  # !FieldPath
             return value
         if field_type == GFFFieldType.ResRef and not isinstance(value, ResRef):
             value = (
@@ -124,7 +126,7 @@ class ModifyGFF(ABC):
     def _navigate_containers(
         self,
         root_container: GFFStruct,
-        path: PureWindowsPath,
+        path: PureWindowsPath | os.PathLike | str,
     ) -> GFFList | GFFStruct | None:
         """Navigates through gff lists/structs to find the specified path.
 
@@ -158,19 +160,15 @@ class ModifyGFF(ABC):
     def _navigate_to_field(
         self,
         root_container: GFFStruct,
-        path: PureWindowsPath | str,
+        path: PureWindowsPath | os.PathLike | str,
     ) -> _GFFField | None:
         path = PureWindowsPath.pathify(path)
+        # Use _navigate_containers to navigate to the container
+        container: GFFList | GFFStruct | None = self._navigate_containers(root_container, path.parent)
+        # Get the label from the last part of the path
         label: str = path.name
-        container: GFFStruct | GFFList | None = root_container
-        for step in path.parent.parts:
-            if isinstance(container, GFFStruct):
-                container = container.acquire(step, None, (GFFStruct, GFFList))
-            elif isinstance(container, GFFList):
-                container = container.at(int(step))
-            else:
-                return None
 
+        # Return the field if the container is a GFFStruct
         return container._fields[label] if isinstance(container, GFFStruct) else None
 
 
@@ -179,7 +177,7 @@ class AddStructToListGFF(ModifyGFF):
         self,
         identifier: str,
         value: FieldValue,
-        path: PureWindowsPath,
+        path: PureWindowsPath | os.PathLike | str,
         index_to_token: int | None = None,
         modifiers: list[ModifyGFF] | None = None,
     ):
@@ -240,12 +238,13 @@ class AddStructToListGFF(ModifyGFF):
         if not isinstance(new_struct, GFFStruct):
             logger.add_error(f"Failed to add a new struct to list '{self.path}' in [{self.identifier}]. Skipping...")
             return
+
         list_container._structs.append(new_struct)
         if self.index_to_token is not None:
             memory.memory_2da[self.index_to_token] = str(len(list_container) - 1)
 
         for add_field in self.modifiers:
-            assert isinstance(add_field, (AddFieldGFF, AddStructToListGFF))
+            assert isinstance(add_field, (AddFieldGFF, AddStructToListGFF, Memory2DAModifierGFF, ModifyFieldGFF))
             add_field.path = self.path / str(len(list_container) - 1)
             add_field.apply(root_struct, memory, logger)
 
@@ -257,7 +256,7 @@ class AddFieldGFF(ModifyGFF):
         label: str,
         field_type: GFFFieldType,
         value: FieldValue,
-        path: PureWindowsPath,
+        path: PureWindowsPath | os.PathLike | str,
         modifiers: list[ModifyGFF] | None = None,
     ):
         self.identifier: str = identifier
@@ -298,11 +297,11 @@ class AddFieldGFF(ModifyGFF):
             logger.add_error(f"Unable to add new Field '{self.label}'. Parent field at '{self.path}' {reason}")
             return
 
-        value = self.value.value(memory, self.field_type)
+        value: Any = self.value.value(memory, self.field_type)
 
-        # if 2DAMEMORY holds a path string from !FieldPath, navigate to that field and use its value.
-        if isinstance(value, PureWindowsPath) and value.parent.name:
-            from_container = self._navigate_containers(root_struct, value.parent)
+        # if 2DAMEMORY holds a path from !FieldPath, navigate to that field and use its value.
+        if isinstance(value, PureWindowsPath):
+            from_container: GFFList | GFFStruct | None = self._navigate_containers(root_struct, value.parent)
             if not isinstance(from_container, GFFStruct):
                 reason = "does not exist!" if from_container is None else "is not an instance of a GFFStruct."
                 logger.add_error(f"Unable use !FieldPath from 2DAMEMORY. Parent field at '{value}' {reason}")
@@ -345,7 +344,7 @@ class AddFieldGFF(ModifyGFF):
         func_map[self.field_type]()
 
         for add_field in self.modifiers:
-            #assert isinstance(add_field, (AddFieldGFF, AddStructToListGFF))
+            assert isinstance(add_field, (AddFieldGFF, AddStructToListGFF, ModifyFieldGFF, Memory2DAModifierGFF))
             newpath = PureWindowsPath("")
             for part, resolvedpart in zip_longest(add_field.path.parts, self.path.parts):
                 newpath /= resolvedpart or part
@@ -360,7 +359,7 @@ class Memory2DAModifierGFF(ModifyGFF):
         self,
         identifier: str,
         twoda_index: int,
-        path: PureWindowsPath,
+        path: PureWindowsPath | os.PathLike | str,
     ):
         self.identifier: str = identifier
         self.twoda_index: int = twoda_index
@@ -373,7 +372,7 @@ class Memory2DAModifierGFF(ModifyGFF):
 class ModifyFieldGFF(ModifyGFF):
     def __init__(
         self,
-        path: PureWindowsPath | str,
+        path: PureWindowsPath | os.PathLike | str,
         value: FieldValue,
     ) -> None:
         self.path: PureWindowsPath = PureWindowsPath.pathify(path)
@@ -401,7 +400,7 @@ class ModifyFieldGFF(ModifyGFF):
             - Converts the patch value to the correct type
             - Calls the corresponding setter method on the parent struct
         """
-        label = self.path.name
+        label: str = self.path.name
         navigated_container: GFFList | GFFStruct | None = self._navigate_containers(root_struct, self.path.parent)
         if not isinstance(navigated_container, GFFStruct):
             reason: str = "does not exist!" if navigated_container is None else "is not an instance of a GFFStruct."
@@ -409,8 +408,18 @@ class ModifyFieldGFF(ModifyGFF):
             return
 
         navigated_struct: GFFStruct = navigated_container
-        field_type = navigated_struct._fields[label].field_type()
-        value = self.value.value(memory, field_type)
+        field_type: GFFFieldType = navigated_struct._fields[label].field_type()
+
+        value: Any = self.value.value(memory, field_type)
+
+        # if 2DAMEMORY holds a path from !FieldPath, navigate to that field and use its value.
+        if isinstance(value, PureWindowsPath):
+            from_container: GFFList | GFFStruct | None = self._navigate_containers(root_struct, value.parent)
+            if not isinstance(from_container, GFFStruct):
+                reason = "does not exist!" if from_container is None else "is not an instance of a GFFStruct."
+                logger.add_error(f"Unable use !FieldPath from 2DAMEMORY. Parent field at '{value}' {reason}")
+                return
+            value = from_container.value(value.name)
 
         def set_locstring() -> None:
             assert isinstance(value, LocalizedStringDelta)
@@ -458,8 +467,8 @@ class ModificationsGFF(PatcherModifications):
         self,
         source_gff: SOURCE_TYPES,
         memory: PatcherMemory,
-        logger: PatchLogger | None = None,
-        game: Game | None = None,
+        logger: PatchLogger,
+        game: Game,
     ) -> bytes:
         gff: GFF = GFFBinaryReader(source_gff).load()
         self.apply(gff, memory, logger, game)
@@ -469,8 +478,8 @@ class ModificationsGFF(PatcherModifications):
         self,
         gff: GFF,
         memory: PatcherMemory,
-        logger: PatchLogger | None = None,
-        game: Game | None = None,
+        logger: PatchLogger,
+        game: Game,
     ) -> None:
         for change_field in self.modifiers:
             change_field.apply(gff.root, memory, logger)
