@@ -385,16 +385,17 @@ class Installation:
             if capsule_check and capsule_check(file):
                 resources[file.name] = list(Capsule(file))  # type: ignore[assignment, call-overload]
             else:
-                with suppress(Exception):
-                    resname, restype = ResourceIdentifier.from_path(file).validate()
-                    resource = FileResource(
-                        resname,
-                        restype,
-                        file.stat().st_size,
-                        0,
-                        file,
-                    )
-                    resources.append(resource)  # type: ignore[assignment, call-overload, union-attr]
+                resname, restype = ResourceIdentifier.from_path(file).validate()
+                if restype.is_invalid:
+                    continue
+                resource = FileResource(
+                    resname,
+                    restype,
+                    file.stat().st_size,
+                    0,
+                    file,
+                )
+                resources.append(resource)  # type: ignore[assignment, call-overload, union-attr]
         if not resources or not files_list:
             print(f"No resources found at '{path!s}' when loading the installation, skipping...")
         else:
