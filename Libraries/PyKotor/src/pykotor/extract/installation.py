@@ -749,7 +749,7 @@ class Installation:
         ]
 
         # Determine the game with the most checks passed
-        def determine_highest_scoring_game():
+        def determine_highest_scoring_game() -> Game | None:
             # Scoring for each game and platform
             scores: dict[Game, int] = {
                 Game.K1: sum(game1_pc_checks),
