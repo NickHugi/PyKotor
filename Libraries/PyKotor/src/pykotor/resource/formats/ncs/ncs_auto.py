@@ -107,9 +107,9 @@ def compile_nss(
     """
     NssLexer()
     nss_parser = NssParser(
-        functions=KOTOR_FUNCTIONS if game == Game.K1 else TSL_FUNCTIONS,
-        constants=KOTOR_CONSTANTS if game == Game.K1 else TSL_CONSTANTS,
-        library=KOTOR_LIBRARY if game == Game.K1 else TSL_LIBRARY,
+        functions=KOTOR_FUNCTIONS if game.is_k1() else TSL_FUNCTIONS,
+        constants=KOTOR_CONSTANTS if game.is_k1() else TSL_CONSTANTS,
+        library=KOTOR_LIBRARY if game.is_k1() else TSL_LIBRARY,
         library_lookup=library_lookup,
     )
 

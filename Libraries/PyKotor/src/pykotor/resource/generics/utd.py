@@ -274,7 +274,7 @@ def dismantle_utd(
     root.set_resref("OnFailToOpen", utd.on_open_failed)
     root.set_string("Comment", utd.comment)
 
-    if game == Game.K2:
+    if game.is_k2():
         root.set_uint8("OpenLockDiff", utd.unlock_diff)
         root.set_int8("OpenLockDiffMod", utd.unlock_diff_mod)
         root.set_uint8("OpenState", utd.open_state)

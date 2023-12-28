@@ -130,15 +130,37 @@ class ResRef:
 
 
 class Game(IntEnum):
-    """Represents which game."""
+    """Represents which KOTOR game."""
 
     K1 = 1
     K2 = 2
     K1_XBOX = 3
     K2_XBOX = 4
+    K1_IOS = 5
+    K2_IOS = 6
+    K1_ANDROID = 7
+    K2_ANDROID = 8
 
     def is_xbox(self) -> bool:
-        return self in (Game.K1_XBOX, Game.K2_XBOX)
+        return self in {Game.K1_XBOX, Game.K2_XBOX}
+
+    def is_pc(self) -> bool:
+        return self in {Game.K1, Game.K2}
+
+    def is_mobile(self) -> bool:
+        return self in {Game.K1_IOS, Game.K1_ANDROID, Game.K2_IOS, Game.K2_ANDROID}
+
+    def is_android(self) -> bool:
+        return self in {Game.K1_ANDROID, Game.K2_ANDROID}
+
+    def is_ios(self) -> bool:
+        return self in {Game.K1_IOS, Game.K2_IOS}
+
+    def is_k1(self) -> bool:
+        return self.value % 2 != 0
+
+    def is_k2(self) -> bool:
+        return self.value % 2 == 0
 
 
 

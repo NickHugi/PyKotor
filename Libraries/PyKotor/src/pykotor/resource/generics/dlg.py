@@ -759,7 +759,7 @@ def dismantle_dlg(
         if list_name != "StartingList":
             gff_struct.set_uint8("IsChild", int(link.is_child))
         gff_struct.set_resref("Active", link.active1)
-        if game == Game.K2:
+        if game.is_k2():
             gff_struct.set_resref("Active2", link.active2)
             gff_struct.set_int32("Logic", link.logic)
             gff_struct.set_uint8("Not", link.active1_not)
@@ -843,7 +843,7 @@ def dismantle_dlg(
         if node.fade_color is not None:
             gff_struct.set_vector3("FadeColor", node.fade_color.bgr_vector3())
 
-        if game == Game.K2:
+        if game.is_k2():
             gff_struct.set_int32("ActionParam1", node.script1_param1)
             gff_struct.set_int32("ActionParam1b", node.script2_param1)
             gff_struct.set_int32("ActionParam2", node.script1_param2)
@@ -901,7 +901,7 @@ def dismantle_dlg(
     if dlg.unequip_items:
         root.set_uint8("UnequipItems", dlg.unequip_items)
     root.set_string("VO_ID", dlg.vo_id)
-    if game == Game.K2:
+    if game.is_k2():
         root.set_int32("AlienRaceOwner", dlg.alien_race_owner)
         root.set_int32("PostProcOwner", dlg.post_proc_owner)
         root.set_int32("RecordNoVO", dlg.record_no_vo)

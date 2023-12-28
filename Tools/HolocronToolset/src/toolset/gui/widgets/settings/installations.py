@@ -211,7 +211,7 @@ class GlobalSettings(Settings):
                 if path in existing_paths:  # If the path is already recorded, skip to the next one
                     continue
 
-                game_name = "KotOR" if game == Game.K1 else "TSL"
+                game_name = "KotOR" if game.is_k1() else "TSL"
                 base_game_name = game_name  # Save the base name for potential duplicates
 
                 # Increment the counter if the game name already exists, indicating a duplicate
@@ -223,7 +223,7 @@ class GlobalSettings(Settings):
                 installations[game_name] = {
                     "name": game_name,
                     "path": str(path),
-                    "tsl": game == Game.K2,
+                    "tsl": game.is_k2(),
                 }
                 existing_paths.add(path)  # Add the new path to the set of existing paths
 

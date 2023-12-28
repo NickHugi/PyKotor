@@ -130,7 +130,7 @@ class ModificationsNSS(PatcherModifications):
         self.apply(source, memory, logger, game)
 
         is_windows = os.name == "nt"
-        if is_windows and self.nwnnsscomp_path.exists():
+        if is_windows and self.nwnnsscomp_path and self.nwnnsscomp_path.exists():
             nwnnsscompiler = ExternalNCSCompiler(self.nwnnsscomp_path)
             detected_nwnnsscomp: str = next(
                 (k for k, v in ExternalNCSCompiler.NWNNSSCOMP_SHA256_HASHES.items() if v == nwnnsscompiler.filehash),
@@ -148,7 +148,7 @@ class ModificationsNSS(PatcherModifications):
                 logger.add_error(repr(e))
 
         if is_windows:
-            if not self.nwnnsscomp_path.exists():
+            if not self.nwnnsscomp_path or not self.nwnnsscomp_path.exists():
                 logger.add_note("nwnnsscomp.exe was not found in the 'tslpatchdata' folder, using the built-in compilers...")
             else:
                 logger.add_error(f"An error occurred while compiling '{self.sourcefile}' with nwnnsscomp.exe, falling back to the built-in compilers...")

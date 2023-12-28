@@ -352,6 +352,9 @@ class ModInstaller:
 
         memory = PatcherMemory()
         for patch in patches_list:
+            if self.game.is_ios():  # TODO:
+                patch.destination = patch.destination.lower()
+                patch.saveas = patch.saveas.lower()
             output_container_path: CaseAwarePath = self.game_path / patch.destination
             try:
                 exists, capsule = self.handle_capsule_and_backup(patch, output_container_path)
@@ -376,7 +379,7 @@ class ModInstaller:
                 self.log.add_error(str(e))
                 continue
 
-        self.log.add_note(f"Successfully completed {self.log.patches_completed} total patches.")
+        self.log.add_note(f"Finished all patches in {self.log.patches_completed} total files.")
 
     def get_tlk_patches(self, config: PatcherConfig) -> list[ModificationsTLK]:
         tlk_patches: list[ModificationsTLK] = []
