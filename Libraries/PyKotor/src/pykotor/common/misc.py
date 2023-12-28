@@ -86,7 +86,16 @@ class ResRef(CaseInsensitiveMutStr):
         -------
             A new ResRef instance.
         """
-        return cls(PurePath(file_path).name)
+        from pykotor.extract.file import ResourceIdentifier  # Prevent circular imports
+        return cls(ResourceIdentifier.from_path(file_path).resname)
+
+    @classmethod
+    def from_invalid(
+        cls,
+        resname: str,
+    ):
+        """Create a new ResRef from a potentially invalid string, removing any non-ascii characters."""
+        return cls(resname.encode(encoding="ascii", errors="ignore").decode())
 
     def set_data(
         self,
