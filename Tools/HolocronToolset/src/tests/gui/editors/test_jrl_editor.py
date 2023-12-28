@@ -37,6 +37,7 @@ K1_PATH = os.environ.get("K1_PATH")
 K2_PATH = os.environ.get("K2_PATH")
 
 from pykotor.common.stream import BinaryReader
+from pykotor.extract.installation import Installation
 from pykotor.resource.formats.gff.gff_auto import read_gff
 from pykotor.resource.type import ResourceType
 
@@ -67,8 +68,8 @@ class JRLEditorTest(TestCase):
     def tearDown(self) -> None:
         self.app.deleteLater()
 
-    def log_func(self, message=""):
-        self.log_messages.append(message)
+    def log_func(self, *args):
+        self.log_messages.append("\t".join(args))
 
     def test_save_and_load(self):
         filepath = TESTS_FILES_PATH / "global.jrl"
@@ -82,6 +83,38 @@ class JRLEditorTest(TestCase):
 
         diff = old.compare(new, self.log_func)
         self.assertTrue(diff, os.linesep.join(self.log_messages))
+
+    @unittest.skipIf(
+        not K1_PATH or not pathlib.Path(K1_PATH).joinpath("chitin.key").exists(),
+        "K1_PATH environment variable is not set or not found on disk.",
+    )
+    def test_gff_reconstruct_from_k1_installation(self) -> None:
+        self.installation = Installation(K1_PATH)  # type: ignore[arg-type]
+        for jrl_resource in (resource for resource in self.installation if resource.restype() == ResourceType.JRL):
+            old = read_gff(jrl_resource.data())
+            self.editor.load(jrl_resource.filepath(), jrl_resource.resname(), jrl_resource.restype(), jrl_resource.data())
+
+            data, _ = self.editor.build()
+            new = read_gff(data)
+
+            diff = old.compare(new, self.log_func, ignore_default_changes=True)
+            self.assertTrue(diff, os.linesep.join(self.log_messages))
+
+    @unittest.skipIf(
+        not K2_PATH or not pathlib.Path(K2_PATH).joinpath("chitin.key").exists(),
+        "K2_PATH environment variable is not set or not found on disk.",
+    )
+    def test_gff_reconstruct_from_k2_installation(self) -> None:
+        self.installation = Installation(K2_PATH)  # type: ignore[arg-type]
+        for jrl_resource in (resource for resource in self.installation if resource.restype() == ResourceType.JRL):
+            old = read_gff(jrl_resource.data())
+            self.editor.load(jrl_resource.filepath(), jrl_resource.resname(), jrl_resource.restype(), jrl_resource.data())
+
+            data, _ = self.editor.build()
+            new = read_gff(data)
+
+            diff = old.compare(new, self.log_func, ignore_default_changes=True)
+            self.assertTrue(diff, os.linesep.join(self.log_messages))
 
     def test_editor_init(self):
         self.JRLEditor(None, self.K2_INSTALLATION)

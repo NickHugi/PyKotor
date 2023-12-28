@@ -39,6 +39,7 @@ K1_PATH = os.environ.get("K1_PATH")
 K2_PATH = os.environ.get("K2_PATH")
 
 from pykotor.common.stream import BinaryReader
+from pykotor.extract.installation import Installation
 from pykotor.resource.formats.erf.erf_auto import read_erf
 from pykotor.resource.type import ResourceType
 
@@ -69,8 +70,8 @@ class ERFEditorTest(TestCase):
     def tearDown(self) -> None:
         self.app.deleteLater()
 
-    def log_func(self, message=""):
-        self.log_messages.append(message)
+    def log_func(self, *args):
+        self.log_messages.append("\t".join(args))
 
     def test_save_and_load(self):
         filepath = TESTS_FILES_PATH / "001EBO_dlg.erf"
@@ -83,6 +84,36 @@ class ERFEditorTest(TestCase):
         new = read_erf(data)
 
         self.assertDeepEqual(old, new)
+
+    @unittest.skipIf(
+        not K1_PATH or not pathlib.Path(K1_PATH).joinpath("chitin.key").exists(),
+        "K1_PATH environment variable is not set or not found on disk.",
+    )
+    def test_gff_reconstruct_from_k1_installation(self) -> None:
+        self.installation = Installation(K1_PATH)  # type: ignore[arg-type]
+        for erf_resource in (resource for resource in self.installation if resource.restype() in [ResourceType.WOK, ResourceType.DWK, ResourceType.PWK]):
+            old = read_bwm(erf_resource.data())
+            self.editor.load(erf_resource.filepath(), erf_resource.resname(), erf_resource.restype(), erf_resource.data())
+
+            data, _ = self.editor.build()
+            new = read_bwm(data)
+
+            self.assertDeepEqual(old, new)
+
+    @unittest.skipIf(
+        not K2_PATH or not pathlib.Path(K2_PATH).joinpath("chitin.key").exists(),
+        "K2_PATH environment variable is not set or not found on disk.",
+    )
+    def test_gff_reconstruct_from_k2_installation(self) -> None:
+        self.installation = Installation(K2_PATH)  # type: ignore[arg-type]
+        for bwm_resource in (resource for resource in self.installation if resource.restype() in [ResourceType.WOK, ResourceType.DWK, ResourceType.PWK]):
+            old = read_bwm(bwm_resource.data())
+            self.editor.load(bwm_resource.filepath(), bwm_resource.resname(), bwm_resource.restype(), bwm_resource.data())
+
+            data, _ = self.editor.build()
+            new = read_bwm(data)
+
+            self.assertDeepEqual(old, new)
 
     def assertDeepEqual(self, obj1, obj2, context=''):
         if isinstance(obj1, dict) and isinstance(obj2, dict):

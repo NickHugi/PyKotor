@@ -22,8 +22,8 @@ dependencies = [
     "requests>=2.27,<2.32",
     "certifi==2021.10.8",
     "pyperclip~=1.8",
-    "pykotor>=1.7",
-    "pykotor[gl]>=1.7"
+#    "pykotor>=1.7",
+#    "pykotor[gl]>=1.7"
 ]
 authors = [
   {name = "NickHugi"},

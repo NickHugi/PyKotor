@@ -39,6 +39,7 @@ K1_PATH = os.environ.get("K1_PATH")
 K2_PATH = os.environ.get("K2_PATH")
 
 from pykotor.common.stream import BinaryReader
+from pykotor.extract.installation import Installation
 from pykotor.resource.formats.gff.gff_auto import read_gff
 from pykotor.resource.type import ResourceType
 
@@ -68,8 +69,8 @@ class DLGEditorTest(TestCase):
     def tearDown(self) -> None:
         self.app.deleteLater()
 
-    def log_func(self, message=""):
-        self.log_messages.append(message)
+    def log_func(self, *args):
+        self.log_messages.append("\t".join(args))
 
     def test_save_and_load(self):
         filepath = TESTS_FILES_PATH / "ORIHA.dlg"
@@ -83,6 +84,38 @@ class DLGEditorTest(TestCase):
 
         diff = old.compare(new, self.log_func, ignore_default_changes=True)
         self.assertTrue(diff, os.linesep.join(self.log_messages))
+
+    @unittest.skipIf(
+        not K1_PATH or not pathlib.Path(K1_PATH).joinpath("chitin.key").exists(),
+        "K1_PATH environment variable is not set or not found on disk.",
+    )
+    def test_gff_reconstruct_from_k1_installation(self) -> None:
+        self.installation = Installation(K1_PATH)  # type: ignore[arg-type]
+        for dlg_resource in (resource for resource in self.installation if resource.restype() in [ResourceType.DLG, ResourceType.DLG_XML]):
+            old = read_gff(dlg_resource.data())
+            self.editor.load(dlg_resource.filepath(), dlg_resource.resname(), dlg_resource.restype(), dlg_resource.data())
+
+            data, _ = self.editor.build()
+            new = read_gff(data)
+
+            diff = old.compare(new, self.log_func, ignore_default_changes=True)
+            self.assertTrue(diff, os.linesep.join(self.log_messages))
+
+    @unittest.skipIf(
+        not K2_PATH or not pathlib.Path(K2_PATH).joinpath("chitin.key").exists(),
+        "K2_PATH environment variable is not set or not found on disk.",
+    )
+    def test_gff_reconstruct_from_k2_installation(self) -> None:
+        self.installation = Installation(K2_PATH)  # type: ignore[arg-type]
+        for dlg_resource in (resource for resource in self.installation if resource.restype() in [ResourceType.DLG, ResourceType.DLG_XML]):
+            old = read_gff(dlg_resource.data())
+            self.editor.load(dlg_resource.filepath(), dlg_resource.resname(), dlg_resource.restype(), dlg_resource.data())
+
+            data, _ = self.editor.build()
+            new = read_gff(data)
+
+            diff = old.compare(new, self.log_func, ignore_default_changes=True)
+            self.assertTrue(diff, os.linesep.join(self.log_messages))
 
     def test_placeholder(self):
         ...
