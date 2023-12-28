@@ -304,7 +304,7 @@ class MutableString(str):
     def find(self, __sub, __start=0, __end=None):
         return self.__content.find(__sub, __start, __end)
 
-    def format(self, *args, **kwargs):
+    def format(self, *args, **kwargs):  # noqa: A003
         return type(self)(self.__content.format(*args, **kwargs))
 
     def format_map(self, map):  # noqa: A002
@@ -468,9 +468,9 @@ class CaseInsensitiveMutStr(MutableString):
     def lower(self):
         return type(self)(self.__lower_content)
 
-    def partition(self, sep):
+    def partition(self, __sep):
         # Find the position of the separator in a case-insensitive manner
-        pattern: re.Pattern[str] = re.compile(re.escape(self._coerce_str(sep)), re.IGNORECASE)
+        pattern: re.Pattern[str] = re.compile(re.escape(self._coerce_str(__sep)), re.IGNORECASE)
         match: re.Match[str] | None = pattern.search(self.__content)
 
         if match is None:
@@ -479,24 +479,24 @@ class CaseInsensitiveMutStr(MutableString):
         idx: int = match.start()
         return (
             type(self)(self.__content[:idx]),
-            type(self)(self.__content[idx:idx+len(sep)]),
-            type(self)(self.__content[idx+len(sep):]),
+            type(self)(self.__content[idx:idx+len(__sep)]),
+            type(self)(self.__content[idx+len(__sep):]),
         )
 
 
-    def replace(self, old: str, new: str, count=-1):
+    def replace(self, __old: str, __new: str, __count=-1):
         """Case-insensitive replace function matching the builtin str.replace's functionality."""
         # Check for the special case where 'old' is an empty string
-        if old == "":  # sourcery skip: simplify-empty-collection-comparison
-            return super().replace("", self._coerce_str(new), count)
+        if __old == "":  # sourcery skip: simplify-empty-collection-comparison
+            return super().replace("", self._coerce_str(__new), __count)
 
-        pattern: re.Pattern[str] = re.compile(re.escape(self._coerce_str(old)), re.IGNORECASE)
-        return type(self)(pattern.sub(self._coerce_str(new), self.__content, count))
+        pattern: re.Pattern[str] = re.compile(re.escape(self._coerce_str(__old)), re.IGNORECASE)
+        return type(self)(pattern.sub(self._coerce_str(__new), self.__content, __count))
 
 
-    def rpartition(self, sep: str):
+    def rpartition(self, __sep: str):
         # Find the position of the separator in a case-insensitive manner
-        pattern: re.Pattern[str] = re.compile(re.escape(self._coerce_str(sep)), re.IGNORECASE)
+        pattern: re.Pattern[str] = re.compile(re.escape(self._coerce_str(__sep)), re.IGNORECASE)
         matches = list(pattern.finditer(self.__content))
 
         if not matches:
@@ -505,12 +505,12 @@ class CaseInsensitiveMutStr(MutableString):
         idx: int = match.start()
         return (
             type(self)(self.__content[:idx]),
-            type(self)(self.__content[idx:idx+len(sep)]),
-            type(self)(self.__content[idx+len(sep):]),
+            type(self)(self.__content[idx:idx+len(__sep)]),
+            type(self)(self.__content[idx+len(__sep):]),
         )
 
-    def rfind(self, sub: str, start=None, end=None):  # sourcery skip: remove-unnecessary-cast
-        return self.__lower_content.rfind(self._coerce_obj(sub), start, end)
+    def rfind(self, __sub: str, __start=None, __end=None):  # sourcery skip: remove-unnecessary-cast
+        return self.__lower_content.rfind(self._coerce_obj(__sub), __start, __end)
 
     def rsplit(self, __sep = None, __maxsplit=-1):
         if __sep is None:
