@@ -139,6 +139,11 @@ function Initialize-Python {
         Write-Host "Python $pythonVersion install detected."
     } elseif ($pythonVersion -ge $minVersion) {
         Write-Warning "The Python version on PATH ($pythonVersion) is not recommended, please use python 3.8. Continuing anyway..."
+    } else {
+        Write-Error "Your installed Python version '$pythonVersion' is not supported. Please install a python version between '$minVersion' and '$maxVersion'"
+        Write-Host "Press any key to exit..."
+        $null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
+        exit
     }
 }
 

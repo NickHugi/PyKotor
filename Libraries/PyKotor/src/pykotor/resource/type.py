@@ -224,7 +224,7 @@ class ResourceType(Enum):
     def __hash__(
         self,
     ):
-        return hash(str(self.extension))
+        return hash(str(self.extension))  # FIXME: should be case-insensitive
 
     @classmethod
     def from_id(

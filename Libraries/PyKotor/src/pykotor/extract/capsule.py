@@ -200,12 +200,12 @@ class Capsule:
             file_type = reader.read_string(4)
             reader.skip(4)  # file version
 
-            if file_type in ("ERF ", "MOD "):
+            if file_type in {ERFType.__members__[erf_name].value for erf_name in ERFType.__members__}:
                 return self._load_erf(reader)
             if file_type == "RIM ":
                 return self._load_rim(reader)
 
-            msg = f"File '{self._path}' is not an ERF/MOD/RIM capsule."
+            msg = f"File '{self._path}' is not an ERF/MOD/SAV/RIM capsule."
             raise NotImplementedError(msg)
 
     def add(
@@ -228,7 +228,7 @@ class Capsule:
 
         Processing Logic:
         ----------------
-            - Checks if the file is RIM or ERF
+            - Checks if the file is RIM or a type of ERF
             - Reads the file as appropriate container
             - Calls set_data to add the resource
             - Writes the container back to the file.
@@ -243,7 +243,7 @@ class Capsule:
             container.set_data(resname, restype, resdata)
             write_erf(container, self._path)
         else:
-            msg = f"File '{self._path}' is not a ERF/MOD/RIM capsule."
+            msg = f"File '{self._path}' is not a ERF/MOD/SAV/RIM capsule."
             raise NotImplementedError(msg)
 
     def path(
