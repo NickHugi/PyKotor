@@ -4,7 +4,7 @@ import re
 from contextlib import suppress
 from copy import copy
 from enum import Enum, IntEnum
-from typing import TYPE_CHECKING, Any, ClassVar, Generator, NamedTuple
+from typing import TYPE_CHECKING, Any, Callable, ClassVar, Generator, NamedTuple
 
 from pykotor.common.language import Gender, Language, LocalizedString
 from pykotor.common.misc import CaseInsensitiveDict, Game
@@ -188,7 +188,7 @@ class Installation:
         print(f"Finished loading the installation from {self._path!s}")
 
     def __iter__(self) -> Generator[FileResource, Any, None]:
-        def generator():
+        def generator() -> Generator[FileResource, Any, None]:
             yield from self._chitin
             yield from self._streammusic
             yield from self._streamsounds
@@ -351,7 +351,12 @@ class Installation:
 
     # region Load Data
 
-    def load_resources(self, path: CaseAwarePath, capsule_check=None, recurse=False) -> dict[str, list[FileResource]] | list[FileResource]:
+    def load_resources(
+        self,
+        path: CaseAwarePath,
+        capsule_check: Callable | None = None,
+        recurse: bool = False,
+    ) -> dict[str, list[FileResource]] | list[FileResource]:
         """Load resources for a given path and store them in a new list/dict.
 
         Args:
@@ -371,7 +376,11 @@ class Installation:
             print(f"The '{path.name}' folder did not exist at '{self.path()!s}' when loading the installation, skipping...")
             return resources
 
-        files_list: list[CaseAwarePath] = list(path.safe_rglob("*")) if recurse else list(path.safe_iterdir())  # type: ignore[reportGeneralTypeIssues]
+        files_list: list[CaseAwarePath] = list(
+            path.safe_rglob("*")
+            if recurse
+            else path.safe_iterdir(),
+        )  # type: ignore[reportGeneralTypeIssues]
         for file in files_list:
             if capsule_check and capsule_check(file):
                 resources[file.name] = list(Capsule(file))  # type: ignore[assignment, call-overload]
@@ -394,7 +403,7 @@ class Installation:
 
     def load_chitin(self) -> None:
         """Reloads the list of resources in the Chitin linked to the Installation."""
-        chitin_path = self._path / "chitin.key"
+        chitin_path: CaseAwarePath = self._path / "chitin.key"
         if not chitin_path.exists():
             print(f"The chitin.key file did not exist at '{self._path!s}' when loading the installation, skipping...")
             return
@@ -479,7 +488,7 @@ class Installation:
         filepath: Path = Path.pathify(file)  # type: ignore[reportGeneralTypeIssues, assignment]
         parent_folder = filepath.parent
         rel_folderpath = filepath.parent.relative_to(self.override_path()) if parent_folder.name else "."
-        identifier = ResourceIdentifier.from_path(filepath)
+        identifier: ResourceIdentifier = ResourceIdentifier.from_path(filepath)
         if identifier.restype == ResourceType.INVALID:
             print("Cannot reload override file. Invalid KOTOR resource:", identifier)
             return
@@ -706,7 +715,7 @@ class Installation:
         if self._game is not None:
             return self._game
 
-        game = self.determine_game(self.path())
+        game: Game | None = self.determine_game(self.path())
         if game is not None:
             self._game = game
             return game
@@ -809,21 +818,21 @@ class Installation:
         handles: dict[ResourceIdentifier, BinaryReader] = {}
 
         for query in queries:
-            location_list = locations.get(query, [])
+            location_list: list[LocationResult] = locations.get(query, [])
 
             if not location_list:
                 print(f"Resource not found: '{query}'")
                 results[query] = None
                 continue
 
-            location = location_list[0]
+            location: LocationResult = location_list[0]
 
             if query not in handles:
                 handles[query] = BinaryReader.from_file(location.filepath)
 
-            handle = handles[query]
+            handle: BinaryReader = handles[query]
             handle.seek(location.offset)
-            data = handle.read_bytes(location.size)
+            data: bytes = handle.read_bytes(location.size)
 
             results[query] = ResourceResult(
                 query.resname,
@@ -924,7 +933,7 @@ class Installation:
         def check_list(values: list[FileResource]):
             for query in queries:
                 for resource in values:
-                    identifier = resource.identifier()
+                    identifier: ResourceIdentifier = resource.identifier()
                     if query == identifier:
                         location = LocationResult(
                             resource.filepath(),
@@ -956,7 +965,7 @@ class Installation:
                         if ResourceIdentifier.from_path(file) == query and file.safe_isfile()
                     )
             for file in queried_files:
-                identifier = ResourceIdentifier.from_path(file)
+                identifier: ResourceIdentifier = ResourceIdentifier.from_path(file)
                 location = LocationResult(
                     file,
                     0,
@@ -964,7 +973,7 @@ class Installation:
                 )
                 locations[identifier].append(location)
 
-        function_map = {
+        function_map: dict[SearchLocation, Callable] = {
             SearchLocation.OVERRIDE: lambda: check_dict(self._override),
             SearchLocation.MODULES: lambda: check_dict(self._modules),
             SearchLocation.LIPS: lambda: check_dict(self._lips),
@@ -1021,7 +1030,7 @@ class Installation:
         -------
             TPC object or None.
         """
-        batch = self.textures([resname], order, capsules=capsules, folders=folders)
+        batch: CaseInsensitiveDict[TPC | None] = self.textures([resname], order, capsules=capsules, folders=folders)
         return batch[resname] if batch else None
 
     def textures(
@@ -1088,7 +1097,7 @@ class Installation:
                 resname = resource.resname()
                 if resname in resnames and resource.restype() in texture_types:
                     resnames.remove(resname)
-                    tpc = read_tpc(resource.data())
+                    tpc: TPC = read_tpc(resource.data())
                     if resource.restype() == ResourceType.TGA:
                         tpc.txi = get_txi_from_list(resname, resource_list)
                     textures[resname] = tpc
@@ -1133,7 +1142,7 @@ class Installation:
                     tpc.txi = decode_txi(txi_data)
                 textures[texture_file.stem] = tpc
 
-        function_map = {
+        function_map: dict[SearchLocation, Callable] = {
             SearchLocation.OVERRIDE: lambda: check_dict(self._override),
             SearchLocation.MODULES: lambda: check_dict(self._modules),
             SearchLocation.RIMS: lambda: check_dict(self._rims),
@@ -1260,7 +1269,7 @@ class Installation:
                 sound_data = BinaryReader.load_file(sound_file)
                 sounds[sound_file.stem] = fix_audio(sound_data) if sound_data else b""
 
-        function_map = {
+        function_map: dict[SearchLocation, Callable] = {
             SearchLocation.OVERRIDE: lambda: check_dict(self._override),
             SearchLocation.MODULES: lambda: check_dict(self._modules),
             SearchLocation.RIMS: lambda: check_dict(self._rims),
@@ -1315,7 +1324,7 @@ class Installation:
         -------
             A dictionary mapping LocalizedString to a string.
         """
-        stringrefs = [locstring.stringref for locstring in queries]
+        stringrefs: list[int] = [locstring.stringref for locstring in queries]
 
         batch: dict[int, StringResult] = self.talktable().batch(stringrefs)
         female_batch: dict[int, StringResult] = self.female_talktable().batch(stringrefs) if self.female_talktable().path().exists() else {}
@@ -1366,7 +1375,7 @@ class Installation:
             capsule = Capsule(self.module_path() / module)
             tag = ""
 
-            capsule_info = capsule.info("module", ResourceType.IFO)
+            capsule_info: FileResource | None = capsule.info("module", ResourceType.IFO)
             if capsule_info is None:
                 return ""
 

@@ -6,7 +6,7 @@ import pathlib
 import platform
 import re
 import uuid
-from typing import Any, Generator, TypeVar, Union
+from typing import Any, Callable, Generator, TypeVar, Union
 
 PathElem = Union[str, os.PathLike]
 
@@ -148,16 +148,14 @@ class BasePurePath(metaclass=PurePathType):
         """
         if isinstance(arg, str):
             return arg
-        fspath_method = getattr(arg, "__fspath__", None)
+        fspath_method: Callable | None = getattr(arg, "__fspath__", None)
         if fspath_method is not None:
             return fspath_method()
         msg = f"Object '{arg}' must be str or path-like object, but instead was '{type(arg)}'"
         raise TypeError(msg)
 
     def __str__(self) -> str:
-        """Call _fix_path_formatting before returning the pathlib class's __str__ result.
-        In Python 3.12, pathlib's __str__ methods will return '' instead of '.', so we return '.' in this instance for backwards compatibility.
-        """
+        """Call _fix_path_formatting before returning the pathlib class's __str__ result."""
         return self._fix_path_formatting(super().__str__(), self._flavour.sep)  # type: ignore[attr-defined]
 
     def __eq__(self, other):
