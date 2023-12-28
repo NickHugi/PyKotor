@@ -6,7 +6,7 @@ import pathlib
 import platform
 import re
 import uuid
-from typing import Union
+from typing import Any, Generator, TypeVar, Union
 
 PathElem = Union[str, os.PathLike]
 
@@ -429,6 +429,7 @@ class PurePosixPath(BasePurePath, pathlib.PurePosixPath):  # type: ignore[misc]
 class PureWindowsPath(BasePurePath, pathlib.PureWindowsPath):  # type: ignore[misc]
     pass
 
+T = TypeVar("T", bound="BasePath")
 class BasePath(BasePurePath):
 
     def __hash__(self):
@@ -451,20 +452,20 @@ class BasePath(BasePurePath):
         return self_str == other_str
 
     # Safe rglob operation
-    def safe_rglob(self, pattern: str):
+    def safe_rglob(self: T, pattern: str) -> Generator[T, Any, None]:
         if not isinstance(self, Path):
             msg = f"self must be a path, got {self!r}"
             raise NotImplementedError(msg)
         with contextlib.suppress(Exception):
-            yield from self.rglob(pattern)
+            yield from self.rglob(pattern)  # type: ignore[misc]
 
     # Safe iterdir operation
-    def safe_iterdir(self):
+    def safe_iterdir(self: T) -> Generator[T, Any, None]:
         if not isinstance(self, Path):
             msg = f"self must be a path, got {self!r}"
             raise NotImplementedError(msg)
         with contextlib.suppress(Exception):
-            yield from self.iterdir()
+            yield from self.iterdir()  # type: ignore[misc]
 
     # Safe is_dir operation
     def safe_isdir(self) -> bool:
