@@ -6,7 +6,7 @@ import pathlib
 import platform
 import re
 import uuid
-from typing import Union
+from typing import Any, Callable, Generator, TypeVar, Union
 
 PathElem = Union[str, os.PathLike]
 
@@ -160,17 +160,15 @@ class BasePurePath(metaclass=PurePathType):  # type: ignore[misc]
         """
         if isinstance(arg, str):
             return arg
-        fspath_method = getattr(arg, "__fspath__", None)
+        fspath_method: Callable | None = getattr(arg, "__fspath__", None)
         if fspath_method is not None:
             return fspath_method()
         msg = f"Object '{arg}' must be str or path-like object, but instead was '{type(arg)}'"
         raise TypeError(msg)
 
     def __str__(self) -> str:
-        """Call _fix_path_formatting before returning the pathlib class's __str__ result.
-        In Python 3.12, pathlib's __str__ methods will return '' instead of '.', so we return '.' in this instance for backwards compatibility.
-        """
-        return self._fix_path_formatting(super().__str__(), self._flavour.sep)  # type: ignore[_flavour exists in children]
+        """Call _fix_path_formatting before returning the pathlib class's __str__ result."""
+        return self._fix_path_formatting(super().__str__(), self._flavour.sep)  # type: ignore[attr-defined]
 
     def __eq__(self, other):
         if isinstance(other, PurePath):
@@ -440,7 +438,8 @@ class PurePosixPath(BasePurePath, pathlib.PurePosixPath):  # type: ignore[misc]
 class PureWindowsPath(BasePurePath, pathlib.PureWindowsPath):  # type: ignore[misc]
     pass
 
-class BasePath(BasePurePath):  # type: ignore[misc]
+T = TypeVar("T", bound="BasePath")
+class BasePath(BasePurePath):
 
     def __hash__(self):
         return hash((BasePath, self.as_posix().lower() if os.name == "nt" else self.as_posix()))
@@ -462,20 +461,20 @@ class BasePath(BasePurePath):  # type: ignore[misc]
         return self_str == other_str
 
     # Safe rglob operation
-    def safe_rglob(self, pattern: str):
+    def safe_rglob(self: T, pattern: str) -> Generator[T, Any, None]:
         if not isinstance(self, Path):
             msg = f"self must be a path, got {self!r}"
             raise NotImplementedError(msg)
         with contextlib.suppress(Exception):
-            yield from self.rglob(pattern)
+            yield from self.rglob(pattern)  # type: ignore[misc]
 
     # Safe iterdir operation
-    def safe_iterdir(self):
+    def safe_iterdir(self: T) -> Generator[T, Any, None]:
         if not isinstance(self, Path):
             msg = f"self must be a path, got {self!r}"
             raise NotImplementedError(msg)
         with contextlib.suppress(Exception):
-            yield from self.iterdir()
+            yield from self.iterdir()  # type: ignore[misc]
 
     # Safe is_dir operation
     def safe_isdir(self) -> bool:
@@ -567,7 +566,7 @@ class BasePath(BasePurePath):  # type: ignore[misc]
         # (Unix) Gain ownership of the folder
         if os.name != "nt" and (owner_uid != -1 or owner_gid != -1) and not path_obj.has_access():
             try:
-                os.chown(path_obj, owner_uid, owner_gid)
+                os.chown(path_obj, owner_uid, owner_gid)  # type: ignore[attr-defined]
             except Exception as e:  # noqa: BLE001
                 print(f"Error during chown for {path_obj}: {e}")
 

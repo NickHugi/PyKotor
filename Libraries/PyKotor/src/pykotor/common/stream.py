@@ -274,10 +274,6 @@ class BinaryReader:
         self,
     ) -> bytes:
         """Read all remaining bytes from the stream.
-        - Get the length of bytes remaining from current offset to end of stream
-        - Seek the stream to the current offset
-        - Read the bytes of the given length from the stream
-        - Return the bytes read.
 
         Args:
         ----
@@ -286,6 +282,13 @@ class BinaryReader:
         Returns:
         -------
             bytes: The bytes read from the stream
+
+        Processing Logic:
+        ----------------
+            - Get the length of bytes remaining from current offset to end of stream
+            - Seek the stream to the current offset
+            - Read the bytes of the given length from the stream
+            - Return the bytes read.
         """
         length = self.size() - self._offset
         self._stream.seek(self._offset)

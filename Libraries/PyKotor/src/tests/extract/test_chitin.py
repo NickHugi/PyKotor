@@ -32,8 +32,6 @@ K2_PATH = os.environ.get("K2_PATH")
 class TestCapsule(TestCase):
     def test_nwn_chitin(self):
         chitin = Chitin(NWN_KEY_PATH, NWN_BASE_PATH)
-    def test_nwn_chitin(self):
-        chitin = Chitin(NWN_KEY_PATH, NWN_BASE_PATH)
     @unittest.skipIf(
         not K1_PATH or not pathlib.Path(K1_PATH).joinpath("chitin.key").exists(),
         "K1_PATH environment variable is not set or not found on disk.",

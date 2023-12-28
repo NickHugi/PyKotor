@@ -32,7 +32,13 @@ class PatcherModifications(ABC):
         self.skip_if_not_replace = False  # [InstallList] only
 
     @abstractmethod
-    def patch_resource(self, source: SOURCE_TYPES, memory: PatcherMemory, logger: PatchLogger, game: Game) -> bytes:
+    def patch_resource(
+        self,
+        source: SOURCE_TYPES,
+        memory: PatcherMemory,
+        logger: PatchLogger,
+        game: Game,
+    ) -> bytes:
         ...
 
     @abstractmethod
@@ -40,12 +46,12 @@ class PatcherModifications(ABC):
         self,
         mutable_data: Any,
         memory: PatcherMemory,
-        log: PatchLogger | None = None,
-        game: Game | None = None,
+        logger: PatchLogger,
+        game: Game,
     ) -> None:
         ...
 
-    def pop_tslpatcher_vars(self, file_section_dict: CaseInsensitiveDict, default_destination=None) -> None:
+    def pop_tslpatcher_vars(self, file_section_dict: CaseInsensitiveDict[str], default_destination=None) -> None:
         """All optional TSLPatcher vars that can be parsed for a given patch list."""
         self.sourcefile = file_section_dict.pop("!SourceFile", self.sourcefile)
         # !SaveAs and !Filename are the same.
@@ -53,9 +59,8 @@ class PatcherModifications(ABC):
         self.destination = file_section_dict.pop("!Destination", default_destination if default_destination is not None else self.DEFAULT_DESTINATION)
 
         # !ReplaceFile=1 is prioritized, see Stoffe's HLFP mod v2.1 for reference.
-        replace_file = file_section_dict.pop("!ReplaceFile", self.replace_file)
-        if replace_file is not None:
-            self.replace_file = bool(int(replace_file))
+        replace_file: bool | str = file_section_dict.pop("!ReplaceFile", self.replace_file)
+        self.replace_file = bool(int(replace_file))
 
         # TSLPatcher defaults to "ignore". Realistically, Override file shadowing is a major problem.
         self.override_type = file_section_dict.pop("!OverrideType", OverrideType.WARN)

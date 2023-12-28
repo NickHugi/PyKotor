@@ -4,7 +4,7 @@ import re
 from contextlib import suppress
 from copy import copy
 from enum import Enum, IntEnum
-from typing import TYPE_CHECKING, Any, ClassVar, Generator, NamedTuple
+from typing import TYPE_CHECKING, Any, Callable, ClassVar, Generator, NamedTuple
 
 from pykotor.common.language import Gender, Language, LocalizedString
 from pykotor.common.misc import CaseInsensitiveDict, Game
@@ -188,7 +188,7 @@ class Installation:
         print(f"Finished loading the installation from {self._path}")
 
     def __iter__(self) -> Generator[FileResource, Any, None]:
-        def generator():
+        def generator() -> Generator[FileResource, Any, None]:
             yield from self._chitin
             yield from self._streammusic
             yield from self._streamsounds
@@ -351,7 +351,12 @@ class Installation:
 
     # region Load Data
 
-    def load_resources(self, path: CaseAwarePath, capsule_check=None, recurse=False) -> dict[str, list[FileResource]] | list[FileResource]:
+    def load_resources(
+        self,
+        path: CaseAwarePath,
+        capsule_check: Callable | None = None,
+        recurse: bool = False,
+    ) -> dict[str, list[FileResource]] | list[FileResource]:
         """Load resources for a given path and store them in a new list/dict.
 
         Args:
@@ -371,21 +376,26 @@ class Installation:
             print(f"The '{path.name}' folder did not exist at '{self.path()}' when loading the installation, skipping...")
             return resources
 
-        files_list: list[CaseAwarePath] = list(path.safe_rglob("*")) if recurse else list(path.safe_iterdir())  # type: ignore[reportGeneralTypeIssues]
+        files_list: list[CaseAwarePath] = list(
+            path.safe_rglob("*")
+            if recurse
+            else path.safe_iterdir(),
+        )  # type: ignore[reportGeneralTypeIssues]
         for file in files_list:
             if capsule_check and capsule_check(file):
                 resources[file.name] = list(Capsule(file))  # type: ignore[assignment, call-overload]
             else:
-                resname, restype = ResourceIdentifier.from_path(file)
-                if restype:
-                    resource = FileResource(
-                        resname,
-                        restype,
-                        file.stat().st_size,
-                        0,
-                        file,
-                    )
-                    resources.append(resource)  # type: ignore[assignment, call-overload, union-attr]
+                resname, restype = ResourceIdentifier.from_path(file).validate()
+                if restype.is_invalid:
+                    continue
+                resource = FileResource(
+                    resname,
+                    restype,
+                    file.stat().st_size,
+                    0,
+                    file,
+                )
+                resources.append(resource)  # type: ignore[assignment, call-overload, union-attr]
         if not resources or not files_list:
             print(f"No resources found at '{path}' when loading the installation, skipping...")
         else:
@@ -394,7 +404,7 @@ class Installation:
 
     def load_chitin(self) -> None:
         """Reloads the list of resources in the Chitin linked to the Installation."""
-        chitin_path = self._path / "chitin.key"
+        chitin_path: CaseAwarePath = self._path / "chitin.key"
         if not chitin_path.exists():
             print(f"The chitin.key file did not exist at '{self._path}' when loading the installation, skipping...")
             return
@@ -479,8 +489,8 @@ class Installation:
     def reload_override_file(self, file: os.PathLike | str) -> None:
         filepath: Path = Path.pathify(file)  # type: ignore[reportGeneralTypeIssues, assignment]
         parent_folder = filepath.parent
-        identifier = ResourceIdentifier.from_path(filepath)
-        rel_folderpath: str = str(filepath.parent.relative_to(self.override_path())) if parent_folder.name else "."
+        rel_folderpath = filepath.parent.relative_to(self.override_path()) if parent_folder.name else "."
+        identifier: ResourceIdentifier = ResourceIdentifier.from_path(filepath)
         if identifier.restype == ResourceType.INVALID:
             print("Cannot reload override file. Invalid KOTOR resource:", identifier)
             return
@@ -925,7 +935,7 @@ class Installation:
         def check_list(values: list[FileResource]):
             for query in queries:
                 for resource in values:
-                    identifier = resource.identifier()
+                    identifier: ResourceIdentifier = resource.identifier()
                     if query == identifier:
                         location = LocationResult(
                             resource.filepath(),
@@ -957,7 +967,7 @@ class Installation:
                         if ResourceIdentifier.from_path(file) == query and file.safe_isfile()
                     )
             for file in queried_files:
-                identifier = ResourceIdentifier.from_path(file)
+                identifier: ResourceIdentifier = ResourceIdentifier.from_path(file)
                 location = LocationResult(
                     file,
                     0,
@@ -965,7 +975,7 @@ class Installation:
                 )
                 locations[identifier].append(location)
 
-        function_map = {
+        function_map: dict[SearchLocation, Callable] = {
             SearchLocation.OVERRIDE: lambda: check_dict(self._override),
             SearchLocation.MODULES: lambda: check_dict(self._modules),
             SearchLocation.LIPS: lambda: check_dict(self._lips),
@@ -1022,7 +1032,7 @@ class Installation:
         -------
             TPC object or None.
         """
-        batch = self.textures([resname], order, capsules=capsules, folders=folders)
+        batch: CaseInsensitiveDict[TPC | None] = self.textures([resname], order, capsules=capsules, folders=folders)
         return batch[resname] if batch else None
 
     def textures(
@@ -1090,7 +1100,7 @@ class Installation:
                 resname = resource.resname()
                 if resname in resnames and resource.restype() in texture_types:
                     resnames.remove(resname)
-                    tpc = read_tpc(resource.data())
+                    tpc: TPC = read_tpc(resource.data())
                     if resource.restype() == ResourceType.TGA:
                         tpc.txi = get_txi_from_list(resname, resource_list)
                     textures[resname] = tpc
@@ -1135,7 +1145,7 @@ class Installation:
                     tpc.txi = decode_txi(txi_data)
                 textures[texture_file.stem] = tpc
 
-        function_map = {
+        function_map: dict[SearchLocation, Callable] = {
             SearchLocation.OVERRIDE: lambda: check_dict(self._override),
             SearchLocation.MODULES: lambda: check_dict(self._modules),
             SearchLocation.RIMS: lambda: check_dict(self._rims),
@@ -1262,7 +1272,7 @@ class Installation:
                 sound_data = BinaryReader.load_file(sound_file)
                 sounds[sound_file.stem] = fix_audio(sound_data) if sound_data else b""
 
-        function_map = {
+        function_map: dict[SearchLocation, Callable] = {
             SearchLocation.OVERRIDE: lambda: check_dict(self._override),
             SearchLocation.MODULES: lambda: check_dict(self._modules),
             SearchLocation.RIMS: lambda: check_dict(self._rims),

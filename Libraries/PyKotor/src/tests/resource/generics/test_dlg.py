@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import os
 import pathlib
 import sys
@@ -24,7 +26,7 @@ from pykotor.resource.formats.gff import GFF
 from pykotor.common.misc import Game
 from pykotor.extract.installation import Installation
 from pykotor.resource.formats.gff import read_gff
-from pykotor.resource.generics.dlg import DLG, construct_dlg, dismantle_dlg
+from pykotor.resource.generics.dlg import DLG, DLGEntry, DLGReply, construct_dlg, dismantle_dlg
 from pykotor.resource.type import ResourceType
 
 TEST_FILE = "src/tests/files/test.dlg"
@@ -71,7 +73,7 @@ Extra 'Int32' field found at 'GFFRoot\ReplyList\4\PlotIndex': '-1'
         self.assertTrue(result, output)
 
     def test_k2_reconstruct(self) -> None:
-        gff: GFF = read_gff(r"C:\Program Files (x86)\Steam\steamapps\common\Knights of the Old Republic II\Override\ORIHA.dlg")
+        gff: GFF = read_gff(TEST_FILE)
         reconstructed_gff: GFF = dismantle_dlg(construct_dlg(gff), Game.K2)
         self.assertTrue(gff.compare(reconstructed_gff, self.log_func, ignore_default_changes=True), os.linesep.join(self.log_messages))
 
@@ -117,8 +119,8 @@ Extra 'Int32' field found at 'GFFRoot\ReplyList\4\PlotIndex': '-1'
         self.validate_io(dlg)
 
     def validate_io(self, dlg: DLG):
-        all_entries = dlg.all_entries()
-        all_replies = dlg.all_replies()
+        all_entries: list[DLGEntry] = dlg.all_entries()
+        all_replies: list[DLGReply] = dlg.all_replies()
 
         entry0 = all_entries[0]
         entry1 = all_entries[1]

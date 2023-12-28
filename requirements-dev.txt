@@ -1,9 +1,9 @@
 -r Tools/BatchPatcher/requirements.txt
 -r Tools/HolocronToolset/requirements.txt
 -r Tools/HoloPatcher/requirements.txt
+-r Tools/HoloPatcher/recommended.txt
 -r Libraries/PyKotor/requirements.txt
-defusedxml~=0.7
-charset-normalizer>=2.0,<3.4
+-r Libraries/PyKotor/recommended.txt
 -r Libraries/PyKotorGL/requirements.txt
 -r Libraries/PyKotorFont/requirements.txt
 mypy

@@ -2,6 +2,33 @@
   "version": "2.0.0",
   "tasks": [
     {
+      "label": "all_packages",
+      "type": "shell",
+      "command": "${command:python.interpreterPath}",
+      "args": [
+        "-m",
+        "pip",
+        "install",
+        "-r",
+        "${workspaceFolder}${pathSeparator}requirements-dev.txt",
+        "--progress-bar=on",
+        "--prefer-binary",
+        "--compile",
+        "-U",
+        "--upgrade-strategy=\"eager\"",
+      ],
+      "presentation": {
+        "echo": true,
+        "showReuseMessage": true,
+        "revealProblems": "onProblem",
+        "reveal": "always",
+        "panel": "shared",
+        "focus": true,
+        "close": false
+      },
+      "problemMatcher": []
+    },
+    {
       "label": "pykotor_requirements",
       "type": "shell",
       "command": "${command:python.interpreterPath}",
@@ -14,7 +41,12 @@
       ],
       "presentation": {
         "echo": true,
-        "reveal": "always"
+        "showReuseMessage": true,
+        "revealProblems": "never",
+        "reveal": "always",
+        "panel": "shared",
+        "focus": false,
+        "close": false
       },
       "problemMatcher": []
     },
@@ -31,12 +63,17 @@
       ],
       "presentation": {
         "echo": true,
-        "reveal": "always"
+        "showReuseMessage": true,
+        "revealProblems": "never",
+        "reveal": "always",
+        "panel": "shared",
+        "focus": false,
+        "close": false
       },
       "problemMatcher": []
     },
     {
-      "label": "holopatcher_requirements",
+      "label": "holopatcher_recommended",
       "type": "shell",
       "command": "${command:python.interpreterPath}",
       "args": [
@@ -44,7 +81,7 @@
         "pip",
         "install",
         "-r",
-        "Tools${pathSeparator}HoloPatcher${pathSeparator}requirements.txt"
+        "Tools${pathSeparator}HoloPatcher${pathSeparator}recommended.txt"
       ]
     },
     {
@@ -60,7 +97,12 @@
       ],
       "presentation": {
         "echo": true,
-        "reveal": "always"
+        "showReuseMessage": true,
+        "revealProblems": "never",
+        "reveal": "always",
+        "panel": "shared",
+        "focus": false,
+        "close": false
       },
       "problemMatcher": []
     },
@@ -77,7 +119,12 @@
       ],
       "presentation": {
         "echo": true,
-        "reveal": "always"
+        "showReuseMessage": true,
+        "revealProblems": "never",
+        "reveal": "always",
+        "panel": "shared",
+        "focus": false,
+        "close": false
       },
       "problemMatcher": []
     },
@@ -93,7 +140,12 @@
       ],
       "presentation": {
         "echo": true,
-        "reveal": "always"
+        "showReuseMessage": true,
+        "revealProblems": "never",
+        "reveal": "always",
+        "panel": "shared",
+        "focus": false,
+        "close": false
       },
       "problemMatcher": []
     },
@@ -109,7 +161,12 @@
       ],
       "presentation": {
         "echo": true,
-        "reveal": "always"
+        "showReuseMessage": true,
+        "revealProblems": "never",
+        "reveal": "always",
+        "panel": "shared",
+        "focus": false,
+        "close": false
       },
       "problemMatcher": []
     },
@@ -125,7 +182,12 @@
       ],
       "presentation": {
         "echo": true,
-        "reveal": "always"
+        "showReuseMessage": true,
+        "revealProblems": "never",
+        "reveal": "always",
+        "panel": "shared",
+        "focus": false,
+        "close": false
       },
       "problemMatcher": []
     },
@@ -141,7 +203,12 @@
       ],
       "presentation": {
         "echo": true,
-        "reveal": "always"
+        "showReuseMessage": true,
+        "revealProblems": "never",
+        "reveal": "always",
+        "panel": "shared",
+        "focus": false,
+        "close": false
       },
       "problemMatcher": []
     },
@@ -157,7 +224,12 @@
       ],
       "presentation": {
         "echo": true,
-        "reveal": "always"
+        "showReuseMessage": true,
+        "revealProblems": "never",
+        "reveal": "always",
+        "panel": "shared",
+        "focus": false,
+        "close": false
       },
       "problemMatcher": []
     },
@@ -173,7 +245,12 @@
       ],
       "presentation": {
         "echo": true,
-        "reveal": "always"
+        "showReuseMessage": true,
+        "revealProblems": "never",
+        "reveal": "always",
+        "panel": "shared",
+        "focus": false,
+        "close": false
       },
       "problemMatcher": []
     },
@@ -189,23 +266,31 @@
       ],
       "presentation": {
         "echo": true,
-        "reveal": "always"
+        "showReuseMessage": true,
+        "revealProblems": "never",
+        "reveal": "always",
+        "panel": "shared",
+        "focus": false,
+        "close": false
       },
       "problemMatcher": []
     },
     {
       "label": "pylint: toolset",
       "dependsOn": [
-        "pykotor_requirements",
-        "gl_requirements",
-        "toolset_requirements",
+        "all_packages",
         "install_pylint"
       ],
       "type": "shell",
       "command": "${command:python.interpreterPath} -m pylint --disable=C0301,C0302,C0115,C0116,R0913,C0114,R0903,R0902,W0212,R0914,R0904,W0613,E0611,C0415,I1101 Tools${pathSeparator}HolocronToolset${pathSeparator}src${pathSeparator}toolset",
       "presentation": {
-        "reveal": "never",
-        "panel": "shared"
+        "echo": true,
+        "showReuseMessage": true,
+        "revealProblems": "never",
+        "reveal": "always",
+        "panel": "dedicated",
+        "focus": true,
+        "close": false
       },
       "problemMatcher": []
     },
@@ -218,8 +303,13 @@
       "type": "shell",
       "command": "${command:python.interpreterPath} -m pylint --disable=C0301,C0302,C0115,C0116,R0913,C0114,R0903,R0902,W0212,R0914,R0904,W0613,E0611,C0415 pykotor",
       "presentation": {
-        "reveal": "never",
-        "panel": "shared"
+        "echo": true,
+        "showReuseMessage": true,
+        "revealProblems": "never",
+        "reveal": "always",
+        "panel": "dedicated",
+        "focus": true,
+        "close": false
       },
       "problemMatcher": []
     },
@@ -243,8 +333,13 @@
       ],
       "group": "test",
       "presentation": {
+        "echo": true,
+        "showReuseMessage": true,
+        "revealProblems": "never",
         "reveal": "always",
-        "panel": "new"
+        "panel": "dedicated",
+        "focus": true,
+        "close": false
       },
       "problemMatcher": {
         "owner": "python",
@@ -284,8 +379,13 @@
       ],
       "group": "test",
       "presentation": {
+        "echo": true,
+        "showReuseMessage": true,
+        "revealProblems": "never",
         "reveal": "always",
-        "panel": "new"
+        "panel": "dedicated",
+        "focus": true,
+        "close": false
       },
       "problemMatcher": {
         "owner": "python",
@@ -320,8 +420,13 @@
       ],
       "group": "test",
       "presentation": {
+        "echo": true,
+        "showReuseMessage": true,
+        "revealProblems": "never",
         "reveal": "always",
-        "panel": "new"
+        "panel": "dedicated",
+        "focus": true,
+        "close": false
       },
       "problemMatcher": {
         "owner": "python",
@@ -338,14 +443,35 @@
           "message": 5
         }
       }
+    },    {
+      "label": "Cython Compile All",
+      "type": "shell",
+      "command": "${command:python.interpreterPath}",
+      "args": [
+        ".${pathSeparator}compile${pathSeparator}cython_compile_script.py",
+      ],
+      "problemMatcher": [],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "presentation": {
+        "echo": true,
+        "showReuseMessage": true,
+        "revealProblems": "never",
+        "reveal": "always",
+        "panel": "shared",
+        "focus": false,
+        "close": false
+      },
     },
     {
       "label": "Build HoloPatcher - PyInstaller",
       "type": "shell",
       "dependsOn": [
         "pykotor_requirements",
-        "holopatcher_requirements",
-        "install_pyinstaller"
+        "holopatcher_recommended",
+        "install_pyinstaller",
+       // "Cython Compile All",
       ],
       "command": "${command:python.interpreterPath}",
       "args": [
@@ -353,7 +479,7 @@
         "PyInstaller",
         "--noconsole",
         "--onefile",
-        "--clean",
+        //"--clean",
         "--noconfirm",
         "--distpath=${workspaceFolder}${pathSeparator}dist",
         "--exclude-module=numpy",
@@ -366,19 +492,28 @@
         "--exclude-module=dl_translate",
         "--exclude-module=torch",
         "--name=HoloPatcher",
+        "--upx-dir=${env:USERPROFILE}${pathSeparator}Documents${pathSeparator}GitHub${pathSeparator}upx-win32",
+        "--path=${workspaceFolder}${pathSeparator}Libraries${pathSeparator}PyKotor${pathSeparator}src",
+        "--path=${workspaceFolder}${pathSeparator}Libraries${pathSeparator}Utility${pathSeparator}src",
         "--icon=..${pathSeparator}resources${pathSeparator}icons${pathSeparator}patcher_icon_v2.ico",
         "__main__.py"
       ],
       "problemMatcher": [],
       "options": {
-        "env": {
-          "PYTHONPATH": "${env:PYTHONPATH};${workspaceFolder}${pathSeparator}Libraries${pathSeparator}PyKotor${pathSeparator}src;${workspaceFolder}${pathSeparator}Libraries${pathSeparator}Utility${pathSeparator}src"
-        },
         "cwd": "${workspaceFolder}${pathSeparator}Tools${pathSeparator}HoloPatcher${pathSeparator}src"
+      },
+      "presentation": {
+        "echo": true,
+        "showReuseMessage": true,
+        "revealProblems": "never",
+        "reveal": "always",
+        "panel": "shared",
+        "focus": true,
+        "close": false
       },
       "group": {
         "kind": "build",
-        "isDefault": false
+        "isDefault": false,
       }
     },
     {
@@ -386,7 +521,7 @@
       "type": "shell",
       "dependsOn": [
         "pykotor_requirements",
-        "holopatcher_requirements",
+        "holopatcher_recommended",
         "install_nuitka"
       ],
       "command": "${command:python.interpreterPath}",
@@ -402,13 +537,26 @@
         "--enable-plugin=tk-inter",
         "__main__.py"
       ],
+      "presentation": {
+        "echo": true,
+        "showReuseMessage": true,
+        "revealProblems": "never",
+        "reveal": "always",
+        "panel": "shared",
+        "focus": true,
+        "close": false
+      },
       "options": {
         "env": {
           "PYTHONPATH": "${env:PYTHONPATH};${workspaceFolder}${pathSeparator}Libraries${pathSeparator}PyKotor${pathSeparator}src;${workspaceFolder}${pathSeparator}Libraries${pathSeparator}Utility${pathSeparator}src"
         },
         "cwd": "${workspaceFolder}${pathSeparator}Tools${pathSeparator}HoloPatcher${pathSeparator}src"
       },
-      "problemMatcher": []
+      "problemMatcher": [],
+      "group": {
+        "kind": "build",
+        "isDefault": false,
+      }
     },
     {
       "label": "Build Toolset - PyInstaller",
@@ -434,6 +582,15 @@
         "--icon=resources${pathSeparator}icons${pathSeparator}sith.ico",
         "toolset${pathSeparator}__main__.py"
       ],
+      "presentation": {
+        "echo": true,
+        "showReuseMessage": true,
+        "revealProblems": "never",
+        "reveal": "always",
+        "panel": "shared",
+        "focus": true,
+        "close": false
+      },
       "problemMatcher": [],
       "options": {
         "env": {
@@ -469,6 +626,15 @@
         "--enable-plugin=pyqt5",
         "toolset${pathSeparator}__main__.py"
       ],
+      "presentation": {
+        "echo": true,
+        "showReuseMessage": true,
+        "revealProblems": "never",
+        "reveal": "always",
+        "panel": "shared",
+        "focus": true,
+        "close": false
+      },
       "problemMatcher": [],
       "options": {
         "env": {
@@ -507,6 +673,15 @@
         "--path=${workspaceFolder}${pathSeparator}Libraries${pathSeparator}Utility${pathSeparator}src",
         "__main__.py"
       ],
+      "presentation": {
+        "echo": true,
+        "showReuseMessage": true,
+        "revealProblems": "never",
+        "reveal": "always",
+        "panel": "shared",
+        "focus": true,
+        "close": false
+      },
       "problemMatcher": [],
       "options": {
         "cwd": "${workspaceFolder}${pathSeparator}Tools${pathSeparator}KotorDiff${pathSeparator}src"
@@ -546,13 +721,28 @@
         "--path=${workspaceFolder}${pathSeparator}Libraries${pathSeparator}PyKotorFont${pathSeparator}src",
         "__main__.py"
       ],
+      "presentation": {
+        "echo": true,
+        "showReuseMessage": true,
+        "revealProblems": "never",
+        "reveal": "always",
+        "panel": "shared",
+        "focus": true,
+        "close": false
+      },
       "problemMatcher": [],
       "options": {
+        "shell": {},
+        "env": {},
         "cwd": "${workspaceFolder}${pathSeparator}Tools${pathSeparator}BatchPatcher${pathSeparator}src"
       },
       "group": {
         "kind": "build",
         "isDefault": false
+      },
+      "icon": {
+        "color":"terminal.ansiGreen",
+        "id":"alert"
       }
     },
     {
@@ -585,8 +775,19 @@
         "--path=${workspaceFolder}${pathSeparator}Libraries${pathSeparator}PyKotor${pathSeparator}src",
         "__main__.py"
       ],
+      "presentation": {
+        "echo": true,
+        "showReuseMessage": true,
+        "revealProblems": "never",
+        "reveal": "always",
+        "panel": "shared",
+        "focus": true,
+        "close": false
+      },
       "problemMatcher": [],
       "options": {
+        "shell": {},
+        "env": {},
         "cwd": "${workspaceFolder}${pathSeparator}tools${pathSeparator}GuiDuplicator${pathSeparator}src"
       }
     },
@@ -620,8 +821,19 @@
         "--path=${workspaceFolder}${pathSeparator}Libraries${pathSeparator}PyKotor${pathSeparator}src",
         "__main__.py"
       ],
+      "presentation": {
+        "echo": true,
+        "showReuseMessage": true,
+        "revealProblems": "never",
+        "reveal": "always",
+        "panel": "shared",
+        "focus": true,
+        "close": false
+      },
       "problemMatcher": [],
       "options": {
+        "shell": {},
+        "env": {},
         "cwd": "${workspaceFolder}${pathSeparator}Tools${pathSeparator}MDLDecompile${pathSeparator}src"
       }
     }

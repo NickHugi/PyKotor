@@ -15,8 +15,8 @@ def main() -> None:
         setup_params = load_toml(toml_file)
 
     # Extract project metadata
-    project_metadata = setup_params.get("project", {})
-    build_system = setup_params.get("build-system", {})
+    project_metadata: dict = setup_params.get("project", {})
+    build_system: dict = setup_params.get("build-system", {})
     AUTHORS = project_metadata.get("authors", [{"name": ""}])
     README = project_metadata.get("readme", {"file": "", "content-type": ""})
 
@@ -34,6 +34,8 @@ def main() -> None:
         EXTRA_PATHS.append(str(pykotor_src_path))
         REQUIREMENTS.update(pykotor_requirements.read_text().splitlines())
 
+    EXTRAS_REQUIRE = project_metadata.get("optional-dependencies", {})
+
     # Check if the installation is from PyPI or local source
     if len(sys.argv) < 2:
         sys.argv.append("install")
@@ -46,6 +48,7 @@ def main() -> None:
         **project_metadata,
         author=AUTHORS[0]["name"],
         install_requires=list(REQUIREMENTS),
+        extras_require=EXTRAS_REQUIRE,
         long_description=README["file"],
         long_description_content_type=README["content-type"],
         include_dirs=EXTRA_PATHS,

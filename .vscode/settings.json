@@ -1,18 +1,18 @@
 {
-  "justMyCode": true,
+  "justMyCode": false,
   "python.analysis.inlayHints.callArgumentNames": "off",
   "python.analysis.inlayHints.functionReturnTypes": true,
   "python.analysis.inlayHints.variableTypes": true,
   "python.analysis.typeCheckingMode": "basic",
   "files.eol": "\r\n",
   "launch": {
-    "configurations": [],
+  //  "configurations": [],
     "compounds": [],
-    "justMyCode": true,
-    "debugStdLib": false,
+    "justMyCode": false,
+    "debugStdLib": true,
   },
   "debug.allowBreakpointsEverywhere": false,
-  "debugStdLib": false,
+  "debugStdLib": true,
   "python.analysis.enablePytestSupport": false,
   "python.testing.pytestEnabled": false,
   "python.analysis.extraPaths": [
@@ -47,4 +47,8 @@
   "python.analysis.diagnosticSeverityOverrides": {
       "reportOptionalMemberAccess": "none" // Ignores issues with defs that can optionally be None.
   },
+  "mypy-type-checker.args": [
+    "--check-untyped-defs" // Ignores issues with defs that can optionally be None.
+  ],
+  "cmake.configureOnOpen": false,
 }
