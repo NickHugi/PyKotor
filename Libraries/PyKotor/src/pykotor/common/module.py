@@ -1099,7 +1099,7 @@ class ModuleResource(Generic[T]):
             The bytes data of the active file.
         """
         if self._active is None:
-            msg = f"No file is currently active for resource '{self.resname}.{self._restype.extension}'."
+            msg = f"No file is currently active for resource '{self._resname}.{self._restype.extension}'."
             raise ValueError(msg)
         if is_capsule_file(self._active.name):
             return Capsule(self._active).resource(self._resname, self._restype)
