@@ -920,6 +920,7 @@ class Installation:
                 SearchLocation.MODULES,
                 SearchLocation.CHITIN,
             ]
+        queries = set(queries)
         capsules = [] if capsules is None else capsules
         folders = [] if folders is None else folders
 
@@ -932,16 +933,17 @@ class Installation:
                 check_list(resources)
 
         def check_list(values: list[FileResource]):
+            # Index resources by identifier
+            resource_dict: dict[ResourceIdentifier, FileResource] = {resource.identifier(): resource for resource in values}
             for query in queries:
-                for resource in values:
-                    identifier: ResourceIdentifier = resource.identifier()
-                    if query == identifier:
-                        location = LocationResult(
-                            resource.filepath(),
-                            resource.offset(),
-                            resource.size(),
-                        )
-                        locations[identifier].append(location)
+                if query in resource_dict:
+                    resource: FileResource = resource_dict[query]
+                    location = LocationResult(
+                        resource.filepath(),
+                        resource.offset(),
+                        resource.size(),
+                    )
+                    locations[query].append(location)
 
         def check_capsules(values: list[Capsule]):
             for capsule in values:
@@ -957,22 +959,17 @@ class Installation:
 
 
         def check_folders(values: list[Path]):
-            queried_files: set[Path] = set()
-            for query in queries:
-                for folder in values:
-                    queried_files.update(
-                        file
-                        for file in folder.rglob("*")
-                        if ResourceIdentifier.from_path(file) == query and file.safe_isfile()
-                    )
-            for file in queried_files:
-                identifier: ResourceIdentifier = ResourceIdentifier.from_path(file)
-                location = LocationResult(
-                    file,
-                    0,
-                    file.stat().st_size,
-                )
-                locations[identifier].append(location)
+            for folder in values:
+                for file in folder.rglob("*"):
+                    if file.safe_isfile():
+                        identifier = ResourceIdentifier.from_path(file)
+                        if identifier in queries:
+                            location = LocationResult(
+                                file,
+                                0,
+                                file.stat().st_size,
+                            )
+                            locations[identifier].append(location)
 
         function_map: dict[SearchLocation, Callable] = {
             SearchLocation.OVERRIDE: lambda: check_dict(self._override),
