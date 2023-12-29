@@ -27,7 +27,7 @@ python Tools/HolocronToolset/src/toolset/__main__.py  # Launch Holocron Toolset
 
 ## Compiling/Building Available Tools:
 After cloning the repo, open any of the powershell scripts in the `compile` folder such as `compile_holopatcher.ps1` and `compile_toolset.ps1` with powershell. Doing so will start an automated process that results in a EXE being built/compiled to the PyKotor/dist folder. Specifically, those scripts will:
-- Install Python 3.8 (if not already installed)
+- Install Python 3.8 (only if another compatible Python version is not already installed)
 - Setup the environment (PYTHONPATH)
 - Create a virtual environment
 - Install the tool's dependencies. This is any pip packages they require from requirements.txt
