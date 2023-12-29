@@ -168,7 +168,7 @@ class BasePurePath(metaclass=PurePathType):
         return str(self) == self._fix_path_formatting(other_str)
 
     def __hash__(self):
-        return hash((BasePurePath, str(self)))
+        return hash((BasePurePath, self._fix_path_formatting(super().__str__(), "/")))
 
     def __fspath__(self) -> str:
         """Ensures any use of __fspath__ will call our __str__ method."""
