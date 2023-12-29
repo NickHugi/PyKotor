@@ -954,7 +954,7 @@ class _SkinmeshHeader:
         self.offset_to_unknown0 = reader.read_uint32()
         self.unknown0_count = reader.read_uint32()
         self.unknown0_count2 = reader.read_uint32()
-        self.bones = cast(BONE_INDICES, tuple(reader.read_uint16() for _ in range(16)))
+        self.bones = tuple(reader.read_uint16() for _ in range(16))
         self.unknown1 = reader.read_uint32()
         return self
 
@@ -1631,8 +1631,8 @@ class MDLBinaryWriter:
             bin_node.trimesh.has_shadow = mdl_node.mesh.shadow
             bin_node.trimesh.beaming = mdl_node.mesh.beaming
             bin_node.trimesh.render = mdl_node.mesh.render
-            bin_node.trimesh.dirt_enabled = mdl_node.mesh.dirt_enabled
-            bin_node.trimesh.dirt_texture = mdl_node.mesh.dirt_texture
+            bin_node.trimesh.dirt_enabled = mdl_node.mesh.dirt_enabled  # TODO: undefined??
+            bin_node.trimesh.dirt_texture = mdl_node.mesh.dirt_texture  # TODO: undefined??
             bin_node.trimesh.saber_unknowns = bytes(mdl_node.mesh.saber_unknowns)
 
             bin_node.trimesh.vertex_count = len(mdl_node.mesh.vertex_positions)
