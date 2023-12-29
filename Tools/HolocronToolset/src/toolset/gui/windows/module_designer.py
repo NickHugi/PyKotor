@@ -246,7 +246,7 @@ class ModuleDesigner(QMainWindow):
             self.ui.flatRenderer.setGit(self._module.git().resource())
             self.ui.flatRenderer.setWalkmeshes(
                 [
-                    bwm.resource()
+                    bwm.resource()  # FIXME: resource() will sometimes return None
                     for bwm in self._module.resources.values()
                     if bwm.restype() == ResourceType.WOK
                 ],
