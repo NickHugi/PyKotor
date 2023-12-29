@@ -380,7 +380,7 @@ class Installation:
             path.safe_rglob("*")
             if recurse
             else path.safe_iterdir(),
-        )  # type: ignore[reportGeneralTypeIssues]
+        )
         for file in files_list:
             if capsule_check and capsule_check(file):
                 resources[file.name] = list(Capsule(file))  # type: ignore[assignment, call-overload]

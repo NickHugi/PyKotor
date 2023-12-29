@@ -184,9 +184,9 @@ class Scene:
 
         Processing Logic:
         ----------------
-        - Gets body, head, weapon and mask models/textures based on creature appearance
-        - Creates base render object and attaches head, hands and mask sub-objects
-        - Catches exceptions and returns default "unknown" render object if model loading fails.
+            - Gets body, head, weapon and mask models/textures based on creature appearance
+            - Creates base render object and attaches head, hands and mask sub-objects
+            - Catches exceptions and returns default "unknown" render object if model loading fails.
         """
         try:
             if utc is None:
@@ -478,7 +478,7 @@ class Scene:
         self.shader.set_matrix4("view", self.camera.view())
         self.shader.set_matrix4("projection", self.camera.projection())
         self.shader.set_bool("enableLightmap", self.use_lightmap)
-        group1 = [obj for obj in self.objects.values() if obj.model not in self.SPECIAL_MODELS]
+        group1: list[RenderObject] = [obj for obj in self.objects.values() if obj.model not in self.SPECIAL_MODELS]
         for obj in group1:
             self._render_object(self.shader, obj, mat4())
 
@@ -488,7 +488,7 @@ class Scene:
         self.plain_shader.set_matrix4("view", self.camera.view())
         self.plain_shader.set_matrix4("projection", self.camera.projection())
         self.plain_shader.set_vector4("color", vec4(0.0, 0.0, 1.0, 0.4))
-        group2 = [obj for obj in self.objects.values() if obj.model in self.SPECIAL_MODELS]
+        group2: list[RenderObject] = [obj for obj in self.objects.values() if obj.model in self.SPECIAL_MODELS]
         for obj in group2:
             self._render_object(self.plain_shader, obj, mat4())
 

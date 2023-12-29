@@ -45,7 +45,7 @@ def get_body_model(
         baseitems = read_2da(installation.resource("baseitems", ResourceType.TwoDA).data)
 
     body_model: str = ""
-    override_texture = None
+    override_texture: str | None = None
 
     if appearance.get_row(utc.appearance_id).get_string("modeltype") == "B":
         body_model = appearance.get_row(utc.appearance_id).get_string("modela")
@@ -69,7 +69,7 @@ def get_body_model(
 
             model_column = f"model{armor_variation}"
             body_model = appearance.get_row(utc.appearance_id).get_string(model_column)
-            override_texture: str = (
+            override_texture = (
                 appearance.get_row(utc.appearance_id).get_string(tex_column)
                 + str(armor_uti.texture_variation).rjust(2, "0")
             )
