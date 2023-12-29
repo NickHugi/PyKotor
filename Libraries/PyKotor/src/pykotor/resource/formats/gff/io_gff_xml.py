@@ -1,15 +1,16 @@
 from __future__ import annotations
 
 import base64
-from contextlib import suppress
 from typing import Any
 
 # Try to import defusedxml, fallback to ElementTree if not available
 from xml.etree import ElementTree
 
-with suppress(ImportError):
+try:
     from defusedxml.ElementTree import fromstring as _fromstring
     ElementTree.fromstring = _fromstring
+except (ImportError, ModuleNotFoundError):
+    pass
 
 from pykotor.common.geometry import Vector3, Vector4
 from pykotor.common.language import LocalizedString

@@ -27,6 +27,7 @@ $pyInstallerArgs = @{
         'dl_translate',
         'torch '
     )
+    'clean' = $true
     'noconsole' = $true
     'onefile' = $true
     'noconfirm' = $true

@@ -1,13 +1,13 @@
 from __future__ import annotations
 
-from contextlib import suppress
-
 # Try to import defusedxml, fallback to ElementTree if not available
 from xml.etree import ElementTree
 
-with suppress(ImportError):
+try:
     from defusedxml.ElementTree import fromstring as _fromstring
     ElementTree.fromstring = _fromstring
+except (ImportError, ModuleNotFoundError):
+    pass
 
 from pykotor.common.language import Language
 from pykotor.common.misc import ResRef
