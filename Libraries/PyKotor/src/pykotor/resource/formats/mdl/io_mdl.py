@@ -355,11 +355,11 @@ class _Node:
         self.trimesh: _TrimeshHeader | None = None
         self.skin: _SkinmeshHeader | None = None
         ...
-        self.children_offsets: list[int] = []
+        self.children_offsets = []
 
         self.w_children = []
-        self.w_controllers: list[_Controller] = []
-        self.w_controller_data: list[float] = []
+        self.w_controllers = []
+        self.w_controller_data = []
 
     def read(
         self,
@@ -379,7 +379,7 @@ class _Node:
             self.skin.read_extra(reader)
 
         reader.seek(self.header.offset_to_children)
-        self.children_offsets = [reader.read_uint32() for _ in range(self.header.children_count)]
+        self.children_offsets = [reader.read_uint32() for i in range(self.header.children_count)]
         return self
 
     def write(
@@ -920,7 +920,7 @@ class _SkinmeshHeader:
         self.offset_to_unknown0: int = 0
         self.unknown0_count: int = 0
         self.unknown0_count2: int = 0
-        self.bones: tuple[int, ...] = tuple(-1 for _ in range(16))
+        self.bones: tuple[int] = tuple(-1 for _ in range(16))
         self.unknown1: int = 0
 
         self.bonemap: list[int] = []
@@ -947,7 +947,7 @@ class _SkinmeshHeader:
         self.offset_to_unknown0 = reader.read_uint32()
         self.unknown0_count = reader.read_uint32()
         self.unknown0_count2 = reader.read_uint32()
-        self.bones = tuple(reader.read_uint16() for _ in range(16))
+        self.bones = (reader.read_uint16() for _ in range(16))
         self.unknown1 = reader.read_uint32()
         return self
 
@@ -1328,7 +1328,7 @@ class MDLBinaryReader:
             node.mesh.radius = bin_node.trimesh.radius
             node.mesh.average = bin_node.trimesh.average
             node.mesh.area = bin_node.trimesh.total_area
-            node.mesh.saber_unknowns = bin_node.trimesh.saber_unknowns  # FIXME
+            node.mesh.saber_unknowns = bin_node.trimesh.saber_unknowns
 
             node.mesh.vertex_positions = bin_node.trimesh.vertices
 
@@ -1344,9 +1344,7 @@ class MDLBinaryReader:
             for i in range(len(bin_node.trimesh.vertices)):
                 if bin_node.trimesh.mdx_data_bitmap & _MDXDataFlags.NORMAL and self._reader_ext:
                     self._reader_ext.seek(
-                        mdx_offset
-                        + i * mdx_block_size
-                        + bin_node.trimesh.mdx_normal_offset,
+                        mdx_offset + i * mdx_block_size + bin_node.trimesh.mdx_normal_offset,
                     )
                     x, y, z = (
                         self._reader_ext.read_single(),
@@ -1356,9 +1354,7 @@ class MDLBinaryReader:
                     node.mesh.vertex_normals.append(Vector3(x, y, z))
                 if bin_node.trimesh.mdx_data_bitmap & _MDXDataFlags.TEXTURE1 and self._reader_ext:
                     self._reader_ext.seek(
-                        mdx_offset
-                        + i * mdx_block_size
-                        + bin_node.trimesh.mdx_texture1_offset,
+                        mdx_offset + i * mdx_block_size + bin_node.trimesh.mdx_texture1_offset,
                     )
                     u, v = (
                         self._reader_ext.read_single(),
@@ -1367,9 +1363,7 @@ class MDLBinaryReader:
                     node.mesh.vertex_uv1.append(Vector2(u, v))
                 if bin_node.trimesh.mdx_data_bitmap & _MDXDataFlags.TEXTURE2 and self._reader_ext:
                     self._reader_ext.seek(
-                        mdx_offset
-                        + i * mdx_block_size
-                        + bin_node.trimesh.mdx_texture2_offset,
+                        mdx_offset + i * mdx_block_size + bin_node.trimesh.mdx_texture2_offset,
                     )
                     u, v = (
                         self._reader_ext.read_single(),
