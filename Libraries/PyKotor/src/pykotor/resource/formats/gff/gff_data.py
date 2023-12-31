@@ -52,11 +52,15 @@ class GFFContent(Enum):
         cls,
         value,
     ):
-        return any(gff_content.value == value for gff_content in cls)
+        if isinstance(value, GFFContent):
+            value = value.value
+        elif not isinstance(value, str):
+            raise NotImplementedError(value)
+        return any(gff_content.value == value.upper() for gff_content in cls)
 
     @classmethod
-    def get_valid_types(cls):
-        return [x.value.lower().strip() for x in cls]
+    def get_valid_types(cls) -> set[str]:
+        return {x.name for x in cls}
 
 
 class GFFFieldType(IntEnum):

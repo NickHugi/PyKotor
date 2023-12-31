@@ -214,17 +214,17 @@ def log_output_with_separator(message, below=True, above=False, surround=False) 
 def patch_nested_gff(
     gff_struct: GFFStruct,
     gff_content: GFFContent,
-    current_path: PureWindowsPath | os.PathLike | str | None = None,
+    current_path: PurePath = None,  # type: ignore[pylance, assignment]
     made_change: bool = False,
 ) -> bool:
     if gff_content != GFFContent.DLG and not SCRIPT_GLOBALS.translate:
         print(f"Skipping file at '{current_path!s}', translate not set.")
         return False
-    current_path = PureWindowsPath.pathify(current_path or "GFFRoot")
+    current_path = PurePath.pathify(current_path or "GFFRoot")
     for label, ftype, value in gff_struct:
         if label.lower() == "mod_name":
             continue
-        child_path: PureWindowsPath = current_path / label
+        child_path: PurePath = current_path / label
 
         if ftype == GFFFieldType.Struct:
             assert isinstance(value, GFFStruct)  # noqa: S101
@@ -232,12 +232,12 @@ def patch_nested_gff(
                 log_output(f"Setting '{child_path}' as unskippable")
                 value.set_uint32("Skippable", 0)
                 made_change = True
-            patch_nested_gff(value, gff_content, child_path, made_change)
+            made_change &= patch_nested_gff(value, gff_content, child_path, made_change)
             continue
 
         if ftype == GFFFieldType.List:
             assert isinstance(value, GFFList)  # noqa: S101
-            recurse_through_list(value, gff_content, child_path, made_change)
+            made_change &= recurse_through_list(value, gff_content, child_path, made_change)
             continue
 
         if ftype == GFFFieldType.LocalizedString and SCRIPT_GLOBALS.translate:  # and gff_content.value == GFFContent.DLG.value:
@@ -255,10 +255,12 @@ def patch_nested_gff(
     return made_change
 
 
-def recurse_through_list(gff_list: GFFList, gff_content: GFFContent, current_path: PureWindowsPath, made_change: bool):
-    current_path = PureWindowsPath.pathify(current_path or "GFFListRoot")
+def recurse_through_list(gff_list: GFFList, gff_content: GFFContent, current_path: PurePath, made_change: bool) -> bool:
+    current_path = PurePath.pathify(current_path or "GFFListRoot")
     for list_index, gff_struct in enumerate(gff_list):
-        patch_nested_gff(gff_struct, gff_content, current_path / str(list_index), made_change)
+        made_change &= patch_nested_gff(gff_struct, gff_content, current_path / str(list_index), made_change)
+    return made_change
+
 def fix_encoding(text: str, encoding: str):
     return text.encode(encoding=encoding, errors="ignore").decode(encoding=encoding, errors="ignore").strip()
 
@@ -318,7 +320,7 @@ def patch_resource(resource: FileResource) -> GFF | TPC | None:
         log_output(f"Converting TGA at {resource.filepath()} to TPC...")
         return TPCTGAReader(resource.data()).load()
 
-    if resource.restype().extension.lower() in gff_types or f"{resource.restype().name.upper()} " in GFFContent.get_valid_types():
+    if resource.restype().name.upper() in {x.name for x in GFFContent}:
         gff: GFF | None = None
         try:
             #log_output(f"Loading {resource.resname()}.{resource.restype().extension} from '{resource.filepath().name}'")
@@ -326,16 +328,16 @@ def patch_resource(resource: FileResource) -> GFF | TPC | None:
             if patch_nested_gff(
                 gff.root,
                 gff.content,
-                f"{resource.filepath().name}/{resource.resname()}.{resource.restype().extension}",
+                resource.filepath() / str(resource.identifier())
             ):
                 return gff
         except Exception as e:  # noqa: BLE001
-            log_output(f"[Error] loading GFF '{resource.resname()}.{resource.restype().extension}' at '{resource.filepath()}'! {e!r}")
+            log_output(f"[Error] loading GFF '{resource.identifier()}' at '{resource.filepath()}'! {e!r}")
             #raise
             return None
 
         if not gff:
-            log_output(f"GFF resource '{resource.resname()}.{resource.restype().extension}' missing in memory at '{resource.filepath()}'")
+            log_output(f"GFF resource '{resource.identifier()}' missing in memory at '{resource.filepath()}'")
             return None
     return None
 
