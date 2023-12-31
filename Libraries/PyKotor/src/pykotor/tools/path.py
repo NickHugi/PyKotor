@@ -143,6 +143,7 @@ class CaseAwarePath(InternalPath):  # type: ignore[misc]
     def __eq__(self, other):
         """All pathlib classes that derive from PurePath are equal to this object if their str paths are case-insensitive equivalents."""
         if not isinstance(other, (os.PathLike, str)):
+            print(f"Cannot compare {self!r} with {other!r}")
             return NotImplemented
         return self._fix_path_formatting(str(other)).lower() == super().__str__().lower()
 

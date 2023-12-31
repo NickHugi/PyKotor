@@ -1092,7 +1092,7 @@ class Installation:
 
         def check_list(resource_list: list[FileResource]):
             for resource in resource_list:
-                resname = resource.resname()
+                resname = resource.resname().lower()
                 if resname in resnames and resource.restype() in texture_types:
                     resnames.remove(resname)
                     tpc: TPC = read_tpc(resource.data())
@@ -1232,8 +1232,9 @@ class Installation:
 
         def check_list(values: list[FileResource]):
             for resource in values:
-                if resource.resname().lower() in resnames and resource.restype() in sound_formats:
-                    resnames.remove(resource.resname())
+                lower_resname = resource.resname().lower()
+                if lower_resname in resnames and resource.restype() in sound_formats:
+                    resnames.remove(lower_resname)
                     sound_data: bytes = resource.data()
                     sounds[resource.resname()] = fix_audio(sound_data) if sound_data else b""
 

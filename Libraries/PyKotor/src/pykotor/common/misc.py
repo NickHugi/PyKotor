@@ -423,9 +423,9 @@ class InventoryItem:
         self,
         other: object,
     ):
-        if not isinstance(other, InventoryItem):
-            return NotImplemented
-        return self.resref == other.resref and self.droppable == other.droppable
+        if isinstance(other, InventoryItem):
+            return self.resref == other.resref and self.droppable == other.droppable
+        return NotImplemented
 
 
 class EquipmentSlot(Enum):
@@ -510,6 +510,11 @@ class CaseInsensitiveHashSet(set, Generic[T]):
 
 
 class CaseInsensitiveDict(Generic[T]):
+    """A class exactly like the builtin dict[str, Any], but provides case-insensitive key lookups.
+
+    The case-sensitivity of the keys themselves are always preserved.
+    """
+
     def __init__(
         self,
         initial: Iterable[tuple[str, T]] | None = None,
@@ -549,20 +554,39 @@ class CaseInsensitiveDict(Generic[T]):
     def __eq__(self, other: object) -> bool:
         if not isinstance(other, (dict, CaseInsensitiveDict)):
             return NotImplemented
-        other_dict = other._dictionary if isinstance(other, CaseInsensitiveDict) else other
-        return {k.lower(): v for k, v in self._dictionary.items()} == {k.lower(): v for k, v in other_dict.items()}
+
+        other_dict: dict[str, T] = other._dictionary if isinstance(other, CaseInsensitiveDict) else other
+
+        if len(self._dictionary) != len(other_dict):
+            return False
+
+        for key, value in self._dictionary.items():
+            other_value: T | None = other_dict.get(key.lower())
+            if other_value != value:
+                return False
+
+        return True
 
     def __iter__(self) -> Generator[str, Any, None]:
         yield from self._dictionary
 
     def __getitem__(self, key: str) -> T:
+        if not isinstance(key, str):
+            msg = f"Keys must be strings in CaseInsensitiveDict-inherited classes, got {key!r}"
+            raise KeyError(msg)
         return self._dictionary[self._case_map[key.lower()]]
 
     def __setitem__(self, key: str, value: T):
+        if not isinstance(key, str):
+            msg = f"Keys must be strings in CaseInsensitiveDict-inherited classes, got {key!r}"
+            raise KeyError(msg)
         self._case_map[key.lower()] = key
         self._dictionary[key] = value
 
     def __delitem__(self, key: str):
+        if not isinstance(key, str):
+            msg = f"Keys must be strings in CaseInsensitiveDict-inherited classes, got {key!r}"
+            raise KeyError(msg)
         lower_key = key.lower()
         del self._dictionary[self._case_map[lower_key]]
         del self._case_map[lower_key]
@@ -574,7 +598,7 @@ class CaseInsensitiveDict(Generic[T]):
         return len(self._dictionary)
 
     def __repr__(self) -> str:
-        return f"CaseInsensitiveDict.from_dict({self._dictionary!r})"
+        return f"{self.__class__.__name__}.from_dict({self._dictionary!r})"
 
     def __or__(self, other):
         if not isinstance(other, (dict, CaseInsensitiveDict)):
@@ -586,17 +610,13 @@ class CaseInsensitiveDict(Generic[T]):
     def __ror__(self, other):
         if not isinstance(other, (dict, CaseInsensitiveDict)):
             return NotImplemented
-        other_dict = other._dictionary if isinstance(other, CaseInsensitiveDict) else other
-        return CaseInsensitiveDict.from_dict(other_dict | self._dictionary)
+        other_dict: CaseInsensitiveDict[T] = (other if isinstance(other, CaseInsensitiveDict) else CaseInsensitiveDict.from_dict(other))
+        new_dict: CaseInsensitiveDict[T] = other_dict.copy()
+        new_dict.update(self)
+        return new_dict
 
     def __ior__(self, other):
-        if isinstance(other, (dict, CaseInsensitiveDict)):
-            self.update(other)
-        elif isinstance(other, Iterable):
-            for k, v in other:
-                self[k] = v
-        else:
-            return NotImplemented
+        self.update(other)
         return self
 
     def __reversed__(self) -> Iterator[str]:

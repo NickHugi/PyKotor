@@ -236,7 +236,7 @@ class GFFXMLWriter(ResourceWriter):
                 xml_field.append(subelement)
                 self._build_struct(gff_struct, subelement)
 
-    def _build_vector3(self, xml_field: ElementTree.Element, value):
+    def _build_vector3(self, xml_field: ElementTree.Element, value: Vector3):
         xml_field.tag = "vector"
         x_element = ElementTree.Element("double")
         x_element.text = str(value.x)
@@ -246,7 +246,7 @@ class GFFXMLWriter(ResourceWriter):
         z_element.text = str(value.z)
         xml_field.extend([x_element, y_element, z_element])
 
-    def _build_vector4(self, xml_field: ElementTree.Element, value):
+    def _build_vector4(self, xml_field: ElementTree.Element, value: Vector4):
         xml_field.tag = "orientation"
         x_element = ElementTree.Element("double")
         x_element.text = str(value.x)

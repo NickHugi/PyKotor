@@ -73,6 +73,9 @@ class Capsule:
     ):
         return len(self._resources)
 
+    def resources(self) -> list[FileResource]:
+        return self._resources
+
     def resource(
         self,
         resref: str,

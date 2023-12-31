@@ -167,7 +167,7 @@ class TLKEntry:
 
     def __eq__(
         self,
-        other,
+        other: TLKEntry | object,
     ):
         """Returns True if the text and voiceover match."""
         if not isinstance(other, TLKEntry):
