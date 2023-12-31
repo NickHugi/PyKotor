@@ -243,6 +243,7 @@ class ResourceType(Enum):
         """
         if isinstance(type_id, str):
             type_id = int(type_id)
+
         return next(
             (
                 restype
