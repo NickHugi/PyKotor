@@ -58,7 +58,7 @@ class TestLookupResourceFunction(unittest.TestCase):
         mock_binary_reader = MagicMock()
         mock_binary_reader.read_all.return_value = "BinaryReader read_all result"
         
-        capsule = Capsule("test.mod")
+        capsule = Capsule("test.mod", create_nonexisting=True)
         with patch("pykotor.common.stream.BinaryReader.from_auto", return_value=mock_binary_reader):
             result = self.config.lookup_resource(
                 self.patch,
@@ -106,7 +106,7 @@ class TestLookupResourceFunction(unittest.TestCase):
         mock_binary_reader = MagicMock()
         mock_binary_reader.read_all.return_value = "BinaryReader read_all result"
         
-        capsule = Capsule("test.mod")
+        capsule = Capsule("test.mod", create_nonexisting=True)
         with patch("pykotor.common.stream.BinaryReader.from_auto", return_value=mock_binary_reader):
             result = self.config.lookup_resource(
                 self.patch,
@@ -129,7 +129,7 @@ class TestLookupResourceFunction(unittest.TestCase):
     def test_lookup_resource_capsule_exists_true_no_file(self):
         # Arrange
         self.patch.replace_file = False
-        capsule = Capsule("test.mod")
+        capsule = Capsule("test.mod", create_nonexisting=True)
 
         with patch("pykotor.extract.capsule.Capsule.resource") as mock_resource:
             mock_resource.side_effect = FileNotFoundError
