@@ -11,6 +11,8 @@ from utility.path import Path, PurePath
 if TYPE_CHECKING:
     import os
 
+    from pykotor.common.misc import ResRef
+
 
 class FileResource:
     """Stores information for a resource regarding its name, type and where the data can be loaded from."""
@@ -23,12 +25,14 @@ class FileResource:
         offset: int,
         filepath: os.PathLike | str,
     ):
-        self._resname: str = resname.lower()
+        self._resname: str = resname.strip()
         self._restype: ResourceType = restype
         self._size: int = size
-        self._filepath: Path = Path.pathify(filepath)
         self._offset: int = offset
+        self._filepath: Path = Path.pathify(filepath)
+
         self._sha256_hash: str = ""
+        self._identifier = ResourceIdentifier(self._resname, self._restype)
 
     def __repr__(self) -> str:
         return (
@@ -44,7 +48,7 @@ class FileResource:
     def __str__(
         self,
     ) -> str:
-        return f"{self._resname}.{self._restype.extension}"
+        return str(self._identifier)
 
     def __eq__(
         self,
@@ -58,13 +62,18 @@ class FileResource:
             return self.identifier() == other
         return NotImplemented
 
-    def __hash__(self) -> int:
-        return hash((self.__class__, self._filepath, self._offset, self._size, self.identifier()))
-
     def resname(
         self,
     ) -> str:
         return self._resname
+
+    def resref(
+        self,
+    ) -> ResRef | None:
+        from pykotor.common.misc import ResRef
+        with suppress(ResRef.ExceedsMaxLengthError, ResRef.InvalidEncodingError):
+            return ResRef(self._resname)
+        return None
 
     def restype(
         self,
@@ -79,7 +88,7 @@ class FileResource:
     def filename(
         self,
     ) -> str:
-        return f"{self._resname}.{self.restype().extension}"
+        return str(self)
 
     def filepath(
         self,
@@ -130,7 +139,7 @@ class FileResource:
     def identifier(
         self,
     ) -> ResourceIdentifier:
-        return ResourceIdentifier(self.resname(), self.restype())
+        return self._identifier
 
 
 class ResourceResult(NamedTuple):
@@ -160,30 +169,23 @@ class ResourceIdentifier(NamedTuple):
     def __repr__(
         self,
     ):
-        return f"ResourceIdentifier({self.resname}, ResourceType.{self.restype})"
+        return f"ResourceIdentifier({self.resname}, {self.restype!r})"
 
     def __str__(
         self,
     ):
         return f"{self.resname.lower()}{f'.{self.restype.extension.lower()}' if self.restype.extension else ''}"
 
-    def __eq__(
-        self,
-        other: ResourceIdentifier | str | object,
-    ):
+    def __eq__(self, other: object):
         if isinstance(other, str):
-            other = ResourceIdentifier.from_path(other)
+            other = self.from_path(other)
         if isinstance(other, ResourceIdentifier):
-            return (
-                self.resname.lower() == other.resname.lower()
-                and self.restype.extension.lower() == other.restype.extension.lower()
-            )
+            return str(self) == str(other)
         return NotImplemented
 
     def validate(self):
-        restype = self.restype
-        if restype == ResourceType.INVALID:
-            msg = f"Invalid resource: '{self!s}'"
+        if self.restype == ResourceType.INVALID:
+            msg = f"Invalid resource: '{self}'"
             raise ValueError(msg)
         return self
 
