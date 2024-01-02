@@ -290,22 +290,43 @@ class WrappedStr:
 
     # String Methods
     def capitalize(self):
+        """Return a capitalized version of the string.
+
+        More specifically, make the first character have upper case and the rest lower case.
+        """
         return self.__class__(self.__content.capitalize())
 
     def casefold(self):
+        """Return a version of the string suitable for caseless comparisons."""
         return self.__class__(self.__content.casefold())
 
     def center(self, __width: SupportsIndex, __fillchar: WrappedStr | str = " "):
+        """Return a centered string of length width.
+
+        Padding is done using the specified fill character (default is a space).
+        """
         return self.__class__(self.__content.center(__width, self._assert_str_type(__fillchar)))
 
     def count(self, x: WrappedStr | str, __start=0, __end=None):
+        """S.count(sub[, start[, end]]) -> int
+
+        Return the number of non-overlapping occurrences of substring sub in
+        string S[start:end]. Optional arguments start and end are interpreted as in slice notation.
+        """  # noqa: D415, D402, D400
         return self.__content.count(self._assert_str_type(x), __start, __end)
 
     def encode(self, encoding: WrappedStr | str = "utf-8", errors: WrappedStr | str = "strict"):
+        """Encode the string using the codec registered for encoding.
+
+        encoding
+            The encoding in which to encode the string.
+        errors
+            The error handling scheme to use for encoding errors. The default is 'strict' meaning that encoding errors raise a UnicodeEncodeError. Other possible values are 'ignore', 'replace' and 'xmlcharrefreplace' as well as any other name registered with codecs.register_error that can handle UnicodeEncodeErrors.
+        """
         return self.__content.encode(self._assert_str_type(encoding), self._assert_str_type(errors))
 
     def endswith(self, __suffix: WrappedStr | str | tuple[WrappedStr | str, ...], __start: SupportsIndex | None = None, __end: SupportsIndex | None = None):
-        return self.__content.endswith(self._assert_str_type(__suffix), __start, __end)
+        return self.__content.endswith(self._assert_str_type(__suffix) if not isinstance(__suffix, tuple) else tuple(self._assert_str_type(s) for s in __suffix), __start, __end)
 
     def expandtabs(self, tabsize: int = 8):
         return self.__class__(self.__content.expandtabs(tabsize))
