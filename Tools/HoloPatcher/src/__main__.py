@@ -34,7 +34,7 @@ if getattr(sys, "frozen", False) is False:
 
 from pykotor.common.misc import Game
 from pykotor.tools.path import CaseAwarePath, find_kotor_paths_from_default
-from pykotor.tslpatcher.logger import PatchLogger
+from pykotor.tslpatcher.logger import PatchLog, PatchLogger
 from pykotor.tslpatcher.patcher import ModInstaller
 from pykotor.tslpatcher.reader import ConfigReader, NamespaceReader
 from tooltip import ToolTip
@@ -129,24 +129,24 @@ class App(tk.Tk):
         self.title("HoloPatcher")
         self.set_window(width=400, height=500)
 
-        self.mod_path = ""
+        self.install_running: bool = False
+        self.mod_path: str = ""
         self.namespaces: list[PatcherNamespace] = []
 
         self.initialize_logger()
         self.initialize_ui_menu()
         self.initialize_ui_controls()
 
-        self.install_running = False
         self.protocol("WM_DELETE_WINDOW", self.handle_exit_button)
 
-        cmdline_args = parse_args()
+        cmdline_args: Namespace = parse_args()
         self.open_mod(cmdline_args.tslpatchdata or Path.cwd())
         self.handle_commandline(cmdline_args)
 
     def set_window(self, width: int, height: int):
         # Get screen dimensions
-        screen_width = self.winfo_screenwidth()
-        screen_height = self.winfo_screenheight()
+        screen_width: int = self.winfo_screenwidth()
+        screen_height: int = self.winfo_screenheight()
 
         # Calculate position to center the window
         x_position = int((screen_width / 2) - (width / 2))
@@ -169,7 +169,7 @@ class App(tk.Tk):
         self.config(menu=self.menu_bar)
 
         # Version display - non-clickable
-        version_label = f"v{'.'.join(map(str, CURRENT_VERSION))}"
+        version_label: str = f"v{'.'.join(map(str, CURRENT_VERSION))}"
         self.menu_bar.add_command(label=version_label)
         self.menu_bar.entryconfig(version_label, state="disabled")
 
@@ -335,19 +335,20 @@ class App(tk.Tk):
             self.hide_console()
 
         self.one_shot: bool = False
-        if cmdline_args.install or cmdline_args.uninstall or cmdline_args.validate:
+        if sum([cmdline_args.install, cmdline_args.uninstall, cmdline_args.validate]) == 1:
             self.one_shot = True
             self.withdraw()
             self.handle_console_mode()
-        if cmdline_args.install:
-            self.begin_install_thread()
+            if cmdline_args.install:
+                self.begin_install_thread()
+            if cmdline_args.uninstall:
+                self.uninstall_selected_mod()
+            if cmdline_args.validate:
+                self.test_reader()
             sys.exit()
-        if cmdline_args.uninstall:
-            self.uninstall_selected_mod()
-            sys.exit()
-        if cmdline_args.validate:
-            self.test_reader()
-            sys.exit()
+        else:
+            messagebox.showerror("Cannot run more than one of [--install, --uninstall, --validate]")
+            sys.exit(ExitCode.NUMBER_OF_ARGS)
 
     def handle_console_mode(self) -> None:
         """Overrides message box functions for console mode. This is done for true CLI support.
@@ -391,9 +392,9 @@ class App(tk.Tk):
         messagebox.showinfo = MessageboxOverride.showinfo  # type: ignore[assignment]
         messagebox.showwarning = MessageboxOverride.showwarning  # type: ignore[assignment]
         messagebox.showerror = MessageboxOverride.showerror  # type: ignore[assignment]
-        # messagebox.askyesno = MessageboxOverride.askyesno  # noqa: ERA001
-        # messagebox.askyesnocancel = MessageboxOverride.askyesno  # noqa: ERA001
-        # messagebox.askretrycancel = MessageboxOverride.askyesno  # noqa: ERA001
+        # messagebox.askyesno = MessageboxOverride.askyesno
+        # messagebox.askyesnocancel = MessageboxOverride.askyesno
+        # messagebox.askretrycancel = MessageboxOverride.askyesno
 
     def hide_console(self) -> None:
         """Hide the console window in GUI mode."""
@@ -499,7 +500,12 @@ class App(tk.Tk):
             reader.load_settings()
             game_number: int | None = reader.config.game_number
             if game_number:
-                self.filter_kotor_game_paths(game_number)
+                game = Game(game_number)
+                self.gamepaths["values"] = [
+                    str(path)
+                    for game_key in ([game] + ([Game.K1] if game == Game.K2 else []))
+                    for path in find_kotor_paths_from_default()[game_key]
+                ]
             info_rtf = CaseAwarePath(self.mod_path, "tslpatchdata", namespace_option.rtf_filepath())
             if not info_rtf.exists():
                 messagebox.showwarning("No info.rtf", "Could not load the rtf for this mod, file not found on disk.")
@@ -553,7 +559,7 @@ class App(tk.Tk):
             - Handles errors opening the mod.
         """
         try:
-            directory_path_str = default_directory_path_str or filedialog.askdirectory()
+            directory_path_str: os.PathLike | str = default_directory_path_str or filedialog.askdirectory()
             if not directory_path_str:
                 return
 
@@ -589,7 +595,7 @@ class App(tk.Tk):
                 f"An unexpected error occurred while loading the mod info.{os.linesep*2}{msg}",
             )
 
-    def open_kotor(self, default_kotor_dir_str=None) -> None:
+    def open_kotor(self, default_kotor_dir_str: os.PathLike | str | None = None) -> None:
         """Opens the KOTOR directory.
 
         Args:
@@ -604,7 +610,7 @@ class App(tk.Tk):
             - Move cursor after a delay to end of dropdown
         """
         try:
-            directory_path_str = default_kotor_dir_str or filedialog.askdirectory()
+            directory_path_str: os.PathLike | str = default_kotor_dir_str or filedialog.askdirectory()
             if not directory_path_str:
                 return
             directory = CaseAwarePath(directory_path_str)
@@ -645,7 +651,7 @@ class App(tk.Tk):
         if (
             messagebox.askyesno(
                 "Permission error",
-                f"HoloPatcher does not have permissions to the path '{directory!s}', would you like to attempt to gain permission automatically?",
+                f"HoloPatcher does not have permissions to the path '{directory}', would you like to attempt to gain permission automatically?",
             )
             and not directory.gain_access()
         ):
@@ -658,7 +664,7 @@ class App(tk.Tk):
             return messagebox.askyesno(
                 "Unauthorized",
                 (
-                    f"HoloPatcher needs permissions to access this folder '{directory!s}'. {os.linesep}"
+                    f"HoloPatcher needs permissions to access this folder '{directory}'. {os.linesep}"
                     f"{os.linesep}"
                     f"Please ensure the necessary folders are writeable or rerun holopatcher with elevated privileges.{os.linesep}"
                     "Continue with an install anyway?"
@@ -761,7 +767,7 @@ class App(tk.Tk):
         try:
             self._execute_mod_install(installer)
         except Exception as e:  # noqa: BLE001
-            self._handle_exception_during_install(e, installer)
+            self._handle_exception_during_install(e)
         self.set_active_install(install_running=False)
 
     def test_reader(self) -> None:
@@ -850,71 +856,62 @@ class App(tk.Tk):
             f"{int(seconds)} seconds"
         )
 
-        installer.log.add_note(
-            f"The installation is complete with {len(installer.log.errors)} errors and {len(installer.log.warnings)} warnings. "
+        num_errors: int = len(self.logger.errors)
+        num_warnings: int = len(self.logger.warnings)
+        self.logger.add_note(
+            f"The installation is complete with {num_errors} errors and {num_warnings} warnings. "
             f"Total install time: {time_str}",
         )
-        log_file_path: Path = Path.pathify(self.mod_path) / "installlog.txt"
-        with log_file_path.open("w", encoding="utf-8") as log_file:
-            for log in installer.log.all_logs:
-                log_file.write(f"{log.message}\n")
-        if len(installer.log.errors) > 0:
-            messagebox.showwarning(
-                "Install completed with errors",
-                f"The install completed with {len(installer.log.errors)} errors! The installation may not have been successful, check the logs for more details. Total install time: {time_str}",
+        if num_errors > 0:
+            messagebox.showerror(
+                "Install completed with errors!",
+                f"The install completed with {num_errors} errors and {num_warnings} warnings! The installation may not have been successful, check the logs for more details.{os.linesep*2}Total install time: {time_str}",
             )
             if self.one_shot:
                 sys.exit(ExitCode.INSTALL_COMPLETED_WITH_ERRORS)
+        elif num_warnings > 0:
+            messagebox.showwarning(
+                "Install completed with warnings",
+                f"The install completed with {num_warnings} warnings! Review the logs for details. The script in the 'uninstall' folder of the mod directory will revert these changes.{os.linesep*2}Total install time: {time_str}",
+            )
         else:
             messagebox.showinfo(
                 "Install complete!",
-                f"Check the logs for details etc. Utilize the script in the 'uninstall' folder of the mod directory to revert these changes. Total install time: {time_str}",
+                f"Check the logs for details for what has been done. Utilize the script in the 'uninstall' folder of the mod directory to revert these changes.{os.linesep*2}Total install time: {time_str}",
             )
             if self.one_shot:
                 sys.exit(ExitCode.SUCCESS)
 
-    def _handle_exception_during_install(self, e: Exception, installer: ModInstaller) -> NoReturn:
+    @property
+    def log_file_path(self) -> Path:
+        return Path.pathify(self.mod_path) / "installlog.txt"
+
+    def _handle_exception_during_install(self, e: Exception) -> NoReturn:
         """Handles exceptions during installation.
 
         Args:
         ----
             e: Exception - The exception raised
-            installer: ModInstaller - The installer object
 
         Processing Logic:
         ----------------
             - Simplifies the exception for error name and message
             - Writes the error message to the log
-            - Adds an error to the installer log
             - Writes the full installer log to a file
             - Shows an error message box with the error name and message
             - Sets the install flag to False
             - Reraises the exception.
         """
-        error_name, msg = universal_simplify_exception(e)
-        self.write_log(msg)
-        installer.log.add_error("The installation was aborted with errors")
-        log_file_path = Path(self.mod_path, "installlog.txt")
-        with log_file_path.open("w", encoding="utf-8") as log_file:
-            for log in installer.log.all_logs:
-                log_file.write(f"{log.message}\n")
+        with self.log_file_path.open("a", encoding="utf-8") as log_file:
             log_file.write(f"{traceback.format_exc()}\n")
+        error_name, msg = universal_simplify_exception(e)
+        self.logger.add_error(f"{error_name}: {msg}{os.linesep}The installation was aborted with errors")
         messagebox.showerror(
             error_name,
             f"An unexpected error occurred during the installation and the installation was forced to terminate.{os.linesep*2}{msg}",
         )
         self.set_active_install(install_running=False)
         raise
-
-    def filter_kotor_game_paths(self, game_number) -> None:
-        """Determines what shows up in the gamepaths combobox, based on the LookupGameNumber setting."""
-        game = Game(game_number)
-        gamepaths_list: list[str] = [
-            str(path)
-            for game_key in ([game] + ([Game.K1] if game == Game.K2 else []))
-            for path in find_kotor_paths_from_default()[game_key]
-        ]
-        self.gamepaths["values"] = gamepaths_list
 
     def set_stripped_rtf_text(self, rtf: TextIOWrapper) -> None:
         """Strips the info.rtf of all RTF related text and displays it in the UI."""
@@ -924,7 +921,7 @@ class App(tk.Tk):
         self.main_text.insert(tk.END, stripped_content)
         self.main_text.config(state=tk.DISABLED)
 
-    def write_log(self, message: str) -> None:
+    def write_log(self, log: PatchLog) -> None:
         """Writes a message to the log.
 
         Args:
@@ -938,9 +935,11 @@ class App(tk.Tk):
             - Making the description text widget not editable again.
         """
         self.main_text.config(state=tk.NORMAL)
-        self.main_text.insert(tk.END, message + os.linesep)
+        self.main_text.insert(tk.END, log.formatted_message + os.linesep)
         self.main_text.see(tk.END)
         self.main_text.config(state=tk.DISABLED)
+        with self.log_file_path.open("a", encoding="utf-8") as log_file:
+            log_file.write(f"{log.formatted_message}\n")
 
 
 def custom_excepthook(exc_type, exc_value, exc_traceback) -> None:

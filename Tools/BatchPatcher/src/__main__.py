@@ -53,7 +53,7 @@ from pykotor.resource.formats.tpc.tpc_data import TPC
 from pykotor.resource.type import ResourceType
 from pykotor.tools.misc import is_capsule_file
 from pykotor.tools.path import CaseAwarePath, find_kotor_paths_from_default
-from pykotor.tslpatcher.logger import PatchLogger
+from pykotor.tslpatcher.logger import PatchLog, PatchLogger
 from translate.language_translator import TranslationOption, Translator
 from utility.path import Path, PurePath, PureWindowsPath
 
@@ -638,7 +638,7 @@ class KOTORPatchingToolUI:
         self.initialize_logger()
         self.setup_ui()
 
-    def write_log(self, message: str) -> None:
+    def write_log(self, log: PatchLog) -> None:
         """Writes a message to the log.
 
         Args:
@@ -655,7 +655,7 @@ class KOTORPatchingToolUI:
             - Making the description text widget not editable again.
         """
         self.description_text.config(state=tk.NORMAL)
-        self.description_text.insert(tk.END, message + os.linesep)
+        self.description_text.insert(tk.END, log.formatted_message + os.linesep)
         self.description_text.see(tk.END)
         self.description_text.config(state=tk.DISABLED)
 
