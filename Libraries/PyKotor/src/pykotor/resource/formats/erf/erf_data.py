@@ -79,7 +79,7 @@ class ERF:
 
         return NotImplemented
 
-    def set_data(
+    def set_data(  # noqa: D417
         self,
         resref: str,
         restype: ResourceType,

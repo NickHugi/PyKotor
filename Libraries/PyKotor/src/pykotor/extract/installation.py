@@ -380,12 +380,12 @@ class Installation:
             path.safe_rglob("*")
             if recurse
             else path.safe_iterdir(),
-        )  # type: ignore[reportGeneralTypeIssues]
+        )
         for file in files_list:
             if capsule_check and capsule_check(file):
                 resources[file.name] = list(Capsule(file))  # type: ignore[assignment, call-overload]
             else:
-                resname, restype = ResourceIdentifier.from_path(file).validate()
+                resname, restype = ResourceIdentifier.from_path(file)
                 if restype.is_invalid:
                     continue
                 resource = FileResource(
@@ -921,6 +921,7 @@ class Installation:
                 SearchLocation.MODULES,
                 SearchLocation.CHITIN,
             ]
+        queries = set(queries)
         capsules = [] if capsules is None else capsules
         folders = [] if folders is None else folders
 
@@ -933,16 +934,17 @@ class Installation:
                 check_list(resources)
 
         def check_list(values: list[FileResource]):
+            # Index resources by identifier
+            resource_dict: dict[ResourceIdentifier, FileResource] = {resource.identifier(): resource for resource in values}
             for query in queries:
-                for resource in values:
-                    identifier: ResourceIdentifier = resource.identifier()
-                    if query == identifier:
-                        location = LocationResult(
-                            resource.filepath(),
-                            resource.offset(),
-                            resource.size(),
-                        )
-                        locations[identifier].append(location)
+                if query in resource_dict:
+                    resource: FileResource = resource_dict[query]
+                    location = LocationResult(
+                        resource.filepath(),
+                        resource.offset(),
+                        resource.size(),
+                    )
+                    locations[query].append(location)
 
         def check_capsules(values: list[Capsule]):
             for capsule in values:
@@ -958,22 +960,17 @@ class Installation:
 
 
         def check_folders(values: list[Path]):
-            queried_files: set[Path] = set()
-            for query in queries:
-                for folder in values:
-                    queried_files.update(
-                        file
-                        for file in folder.rglob("*")
-                        if ResourceIdentifier.from_path(file) == query and file.safe_isfile()
-                    )
-            for file in queried_files:
-                identifier: ResourceIdentifier = ResourceIdentifier.from_path(file)
-                location = LocationResult(
-                    file,
-                    0,
-                    file.stat().st_size,
-                )
-                locations[identifier].append(location)
+            for folder in values:
+                for file in folder.rglob("*"):
+                    if file.safe_isfile():
+                        identifier = ResourceIdentifier.from_path(file)
+                        if identifier in queries:
+                            location = LocationResult(
+                                file,
+                                0,
+                                file.stat().st_size,
+                            )
+                            locations[identifier].append(location)
 
         function_map: dict[SearchLocation, Callable] = {
             SearchLocation.OVERRIDE: lambda: check_dict(self._override),
@@ -1097,7 +1094,7 @@ class Installation:
 
         def check_list(resource_list: list[FileResource]):
             for resource in resource_list:
-                resname = resource.resname()
+                resname = resource.resname().lower()
                 if resname in resnames and resource.restype() in texture_types:
                     resnames.remove(resname)
                     tpc: TPC = read_tpc(resource.data())
@@ -1237,9 +1234,10 @@ class Installation:
 
         def check_list(values: list[FileResource]):
             for resource in values:
-                if resource.resname().lower() in resnames and resource.restype() in sound_formats:
-                    resnames.remove(resource.resname())
-                    sound_data = resource.data()
+                lower_resname = resource.resname().lower()
+                if lower_resname in resnames and resource.restype() in sound_formats:
+                    resnames.remove(lower_resname)
+                    sound_data: bytes = resource.data()
                     sounds[resource.resname()] = fix_audio(sound_data) if sound_data else b""
 
         def check_capsules(values: list[Capsule]):
@@ -1269,7 +1267,7 @@ class Installation:
                 )
             for sound_file in queried_sound_files:
                 resnames.remove(sound_file.stem.lower())
-                sound_data = BinaryReader.load_file(sound_file)
+                sound_data: bytes = BinaryReader.load_file(sound_file)
                 sounds[sound_file.stem] = fix_audio(sound_data) if sound_data else b""
 
         function_map: dict[SearchLocation, Callable] = {
@@ -1363,7 +1361,7 @@ class Installation:
         -------
             The name of the area for the module.
         """
-        root = self.replace_module_extensions(module_filename)
+        root: str = self.replace_module_extensions(module_filename)
         if use_hardcoded:
 
             for key, value in HARDCODED_MODULE_NAMES.items():
@@ -1376,7 +1374,7 @@ class Installation:
                 continue
 
             capsule = Capsule(self.module_path() / module)
-            tag = ""
+            tag: str = ""
 
             capsule_info: FileResource | None = capsule.info("module", ResourceType.IFO)
             if capsule_info is None:
@@ -1431,7 +1429,7 @@ class Installation:
                 if key.upper() in module_filename.upper():
                     return value
 
-        mod_id = ""
+        mod_id: str = ""
 
         for module in self.modules_list():
             if root.lower() not in module.lower():
@@ -1442,7 +1440,7 @@ class Installation:
 
                 module_ifo_data = capsule.resource("module", ResourceType.IFO)
                 if module_ifo_data:
-                    ifo = read_gff(module_ifo_data)
+                    ifo: GFF = read_gff(module_ifo_data)
                     mod_id = ifo.root.get_resref("Mod_Entry_Area").get()
                     if mod_id:
                         break

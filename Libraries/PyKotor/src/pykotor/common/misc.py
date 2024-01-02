@@ -4,7 +4,7 @@
 from __future__ import annotations
 
 from enum import Enum, IntEnum
-from typing import TYPE_CHECKING, ClassVar, Generic, Iterable, TypeVar
+from typing import TYPE_CHECKING, Any, Generator, Generic, Iterable, Iterator, TypeVar
 
 from pykotor.common.geometry import Vector3
 from utility.string import CaseInsensitiveMutStr
@@ -445,12 +445,9 @@ class InventoryItem:
         self,
         other: object,
     ):
-        if not isinstance(other, InventoryItem):
-            return NotImplemented
-        return (
-            self.resref == other.resref
-            and self.droppable == other.droppable
-        )
+        if isinstance(other, InventoryItem):
+            return self.resref == other.resref and self.droppable == other.droppable
+        return NotImplemented
 
 
 class EquipmentSlot(Enum):
@@ -535,6 +532,11 @@ class CaseInsensitiveHashSet(set, Generic[T]):
 
 
 class CaseInsensitiveDict(Generic[T]):
+    """A class exactly like the builtin dict[str, Any], but provides case-insensitive key lookups.
+
+    The case-sensitivity of the keys themselves are always preserved.
+    """
+
     def __init__(
         self,
         initial: Iterable[tuple[str, T]] | None = None,
@@ -567,18 +569,46 @@ class CaseInsensitiveDict(Generic[T]):
 
         return case_insensitive_dict
 
-    def __iter__(self):
+#    @classmethod
+#    def __class_getitem__(cls, item: Any) -> GenericAlias:
+#        return GenericAlias(cls, item)
+
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, (dict, CaseInsensitiveDict)):
+            return NotImplemented
+
+        other_dict: dict[str, T] = other._dictionary if isinstance(other, CaseInsensitiveDict) else other
+
+        if len(self._dictionary) != len(other_dict):
+            return False
+
+        for key, value in self._dictionary.items():
+            other_value: T | None = other_dict.get(key.lower())
+            if other_value != value:
+                return False
+
+        return True
+
+    def __iter__(self) -> Generator[str, Any, None]:
         yield from self._dictionary
 
     def __getitem__(self, key: str) -> T:
+        if not isinstance(key, str):
+            msg = f"Keys must be strings in CaseInsensitiveDict-inherited classes, got {key!r}"
+            raise KeyError(msg)
         return self._dictionary[self._case_map[key.lower()]]
 
     def __setitem__(self, key: str, value: T):
-        lower_key = key.lower()
-        self._case_map[lower_key] = key
-        self._dictionary[key] = value  # Store the original form
+        if not isinstance(key, str):
+            msg = f"Keys must be strings in CaseInsensitiveDict-inherited classes, got {key!r}"
+            raise KeyError(msg)
+        self._case_map[key.lower()] = key
+        self._dictionary[key] = value
 
     def __delitem__(self, key: str):
+        if not isinstance(key, str):
+            msg = f"Keys must be strings in CaseInsensitiveDict-inherited classes, got {key!r}"
+            raise KeyError(msg)
         lower_key = key.lower()
         del self._dictionary[self._case_map[lower_key]]
         del self._case_map[lower_key]
@@ -590,7 +620,29 @@ class CaseInsensitiveDict(Generic[T]):
         return len(self._dictionary)
 
     def __repr__(self) -> str:
-        return repr(self._dictionary)
+        return f"{self.__class__.__name__}.from_dict({self._dictionary!r})"
+
+    def __or__(self, other):
+        if not isinstance(other, (dict, CaseInsensitiveDict)):
+            return NotImplemented
+        new_dict: CaseInsensitiveDict[T] = self.copy()
+        new_dict.update(other)
+        return new_dict
+
+    def __ror__(self, other):
+        if not isinstance(other, (dict, CaseInsensitiveDict)):
+            return NotImplemented
+        other_dict: CaseInsensitiveDict[T] = (other if isinstance(other, CaseInsensitiveDict) else CaseInsensitiveDict.from_dict(other))
+        new_dict: CaseInsensitiveDict[T] = other_dict.copy()
+        new_dict.update(self)
+        return new_dict
+
+    def __ior__(self, other):
+        self.update(other)
+        return self
+
+    def __reversed__(self) -> Iterator[str]:
+        return reversed(list(self._dictionary.keys()))
 
     def pop(self, __key: str, __default: VT = _unique_sentinel) -> VT | T:  # type: ignore[assignment]
         lower_key: str = __key.lower()
@@ -604,7 +656,7 @@ class CaseInsensitiveDict(Generic[T]):
             return __default
         return value
 
-    def update(self, other: Iterable[tuple[str, T]] | dict[str, T]):
+    def update(self, other):
         """Extend the dictionary with the key/value pairs from other, overwriting existing keys.
 
         This method acts like the `update` method in a regular dictionary, but is case-insensitive.
@@ -614,7 +666,7 @@ class CaseInsensitiveDict(Generic[T]):
             other (Iterable[tuple[str, T]] | dict[str, T]):
                 Key/value pairs to add to the dictionary. Can be another dictionary or an iterable of key/value pairs.
         """
-        if isinstance(other, dict):
+        if isinstance(other, (dict, CaseInsensitiveDict)):
             for key, value in other.items():
                 if not isinstance(key, str):
                     msg = f"{key} must be a str, got type {type(key)}"
@@ -622,6 +674,9 @@ class CaseInsensitiveDict(Generic[T]):
                 self[key] = value
         else:
             for key, value in other:
+                if not isinstance(key, str):
+                    msg = f"{key} must be a str, got type {type(key)}"
+                    raise TypeError(msg)
                 self[key] = value
 
     def get(self, __key: str, __default: VT = None) -> VT | T:  # type: ignore[assignment]
@@ -640,3 +695,6 @@ class CaseInsensitiveDict(Generic[T]):
 
     def keys(self):
         return self._dictionary.keys()
+
+    def copy(self) -> CaseInsensitiveDict[T]:
+        return self.from_dict(self._dictionary)

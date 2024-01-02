@@ -76,7 +76,7 @@ class BasePurePath(metaclass=PurePathType):  # type: ignore[misc]
     def __new__(cls, *args: PathElem, **kwargs):
         return (
             args[0]
-            if len(args) == 1 and isinstance(args[0], cls)
+            if len(args) == 1 and type(args[0]) == cls and isinstance(args[0], cls)
             else super().__new__(cls, *cls.parse_args(args), **kwargs)
         )
 
@@ -123,7 +123,7 @@ class BasePurePath(metaclass=PurePathType):  # type: ignore[misc]
             if isinstance(arg, BasePurePath):
                 continue  # do nothing if already our instance type
             formatted_path_str = cls._fix_path_formatting(cls._fspath_str(arg), cls._flavour.sep)  # type: ignore[attr-defined]
-            if formatted_path_str.endswith(":"):
+            if formatted_path_str.endswith(":") and "/" not in formatted_path_str and "\\" not in formatted_path_str:
                 formatted_path_str = f"{formatted_path_str}{cls._flavour.sep}"  # type: ignore[attr-defined]
 
             # Create the pathlib class instance, ignore the type errors in super().__new__
@@ -156,14 +156,19 @@ class BasePurePath(metaclass=PurePathType):  # type: ignore[misc]
         ----------------
             - Check if arg is already a string
             - Check if arg has a __fspath__ method and call it
+            - Check if arg somehow inherits os.PathLike despite not having __fspath__ (redundant)
             - Raise TypeError if arg is neither string nor has __fspath__ method.
         """
         if isinstance(arg, str):
             return arg
+
         fspath_method: Callable | None = getattr(arg, "__fspath__", None)
         if fspath_method is not None:
             return fspath_method()
-        msg = f"Object '{arg}' must be str or path-like object, but instead was '{type(arg)}'"
+        if isinstance(arg, os.PathLike):
+            return str(arg)
+
+        msg = f"Object '{arg!r}' must be str, or path-like object (implementing __fspath__). Instead got type '{type(arg)}'"
         raise TypeError(msg)
 
     def __str__(self) -> str:
@@ -171,16 +176,16 @@ class BasePurePath(metaclass=PurePathType):  # type: ignore[misc]
         return self._fix_path_formatting(super().__str__(), self._flavour.sep)  # type: ignore[attr-defined]
 
     def __eq__(self, other):
-        if isinstance(other, PurePath):
-            other_str = str(other)
-        elif isinstance(other, str):
-            other_str = other
+        other_str: str = ""
+        if isinstance(other, (os.PathLike, str)):
+            other_str = self._fspath_str(other)
         else:
+            print(f"Cannot compare {self!r} with {other!r}")
             return NotImplemented
         return str(self) == self._fix_path_formatting(other_str)
 
     def __hash__(self):
-        return hash((BasePurePath, str(self)))
+        return hash((BasePurePath, self._fix_path_formatting(super().__str__(), "/")))
 
     def __fspath__(self) -> str:
         """Ensures any use of __fspath__ will call our __str__ method."""
@@ -192,7 +197,7 @@ class BasePurePath(metaclass=PurePathType):  # type: ignore[misc]
 
         Args:
         ----
-            self (CaseAwarePath):
+            self: Path object
             key (path-like object or str path):
         """
         return self._create_instance(self, key)
@@ -203,7 +208,7 @@ class BasePurePath(metaclass=PurePathType):  # type: ignore[misc]
 
         Args:
         ----
-            self (CaseAwarePath):
+            self: Path object
             key (path-like object or str path):
         """
         return self._create_instance(key, self)
@@ -214,10 +219,10 @@ class BasePurePath(metaclass=PurePathType):  # type: ignore[misc]
 
         Args:
         ----
-            self (CaseAwarePath):
+            self: Path object
             key (path-like object or str path):
         """
-        return str(self) + str(key)
+        return str(self.__truediv__(key))
 
     def __radd__(self, key: PathElem) -> str:
         """Implicitly converts the path to a str when used with the addition operator '+'.
@@ -225,10 +230,10 @@ class BasePurePath(metaclass=PurePathType):  # type: ignore[misc]
 
         Args:
         ----
-            self (CaseAwarePath):
+            self: Path object
             key (path-like object or str path):
         """
-        return str(key) + str(self)
+        return str(self.__rtruediv__(key))
 
     @classmethod
     def pathify(cls, path: PathElem):
@@ -239,6 +244,7 @@ class BasePurePath(metaclass=PurePathType):  # type: ignore[misc]
 
         Args:
         ----
+            self: Path object
             dots: Number of dots to split on (default 1).
                   Negative values indicate splitting from the left.
 
@@ -274,7 +280,11 @@ class BasePurePath(metaclass=PurePathType):  # type: ignore[misc]
 
         if len(parts) <= abs(dots):
             first_dot = self_path.name.find(".")
-            return (self_path.name[:first_dot], self_path.name[first_dot + 1:]) if first_dot != -1 else (self_path.name, "")
+            return (
+                (self_path.name[:first_dot], self_path.name[first_dot + 1:])
+                if first_dot != -1
+                else (self_path.name, "")
+            )
 
         return split_func(parts)
 
@@ -303,7 +313,7 @@ class BasePurePath(metaclass=PurePathType):  # type: ignore[misc]
 
         Args:
         ----
-            self (CaseAwarePath):
+            self (Path object):
             key (path-like object or str path):
         """
         return self._create_instance(self, *args)
@@ -313,6 +323,11 @@ class BasePurePath(metaclass=PurePathType):  # type: ignore[misc]
         if not isinstance(extension, str):
             msg = f"Extension must be a str, got '{extension!r}'"
             raise TypeError(msg)
+
+        extension = extension.strip()
+        if not extension.startswith("."):
+            extension = f".{extension}"
+
         return self._create_instance(str(self) + extension)
 
     def is_relative_to(self, other: PathElem, case_sensitive: bool = True) -> bool:
@@ -339,14 +354,15 @@ class BasePurePath(metaclass=PurePathType):  # type: ignore[misc]
         if isinstance(resolved_self, Path):
             if not isinstance(other, Path):
                 other = self.__class__(other)
-            if isinstance(other, Path):
+            if isinstance(other, Path) and not other.is_absolute():
                 other = other.resolve()
-            resolved_self = resolved_self.resolve()
+            if not resolved_self.is_absolute():
+                resolved_self = resolved_self.resolve()
         else:
             other = PurePath.pathify(other)
 
         self_str, other_str = map(str, (resolved_self, other))
-        if os.name == "nt" or not case_sensitive:
+        if not case_sensitive or os.name == "nt":
             self_str, other_str = map(str.lower, (self_str, other_str))
         return bool(self_str.startswith(other_str))
 
@@ -355,6 +371,7 @@ class BasePurePath(metaclass=PurePathType):  # type: ignore[misc]
 
         Args:
         ----
+            self: Path object
             text: String or tuple of strings to check for suffix.
             case_sensitive: Whether comparison should be case sensitive.
 
@@ -453,11 +470,13 @@ class BasePath(BasePurePath):
             other_str = other.__fspath__()
         else:
             return NotImplemented
+
         other_str = self._fix_path_formatting(other_str, "/")
         self_str = self.as_posix()
         if os.name == "nt":
             self_str = self_str.lower()
             other_str = other_str.lower()
+
         return self_str == other_str
 
     # Safe rglob operation

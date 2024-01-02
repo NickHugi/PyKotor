@@ -11,7 +11,8 @@ description="A faster, multi-platform alternative to TSLPatcher written in Pytho
 version="1.7"
 requires-python = ">= 3.7"
 dependencies = [
-    "requests"                     # for 'check for updates' feature.
+    "requests",                     # for 'check for updates' feature.
+    "charset-normalizer>=2.0,<3.4"  # optional but recommended, auto-detect encoding of INI files
 #    "pykotor>=1.7"
 ]
 authors = [{name = "NickHugi"}]

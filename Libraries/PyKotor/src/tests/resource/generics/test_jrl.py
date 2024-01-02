@@ -46,8 +46,8 @@ class TestJRL(unittest.TestCase):
     )
     def test_gff_reconstruct_from_k1_installation(self) -> None:
         self.installation = Installation(K1_PATH)  # type: ignore[arg-type]
-        for are_resource in (resource for resource in self.installation if resource.restype() == ResourceType.JRL):
-            gff: GFF = read_gff(are_resource.data())
+        for jrl_resource in (resource for resource in self.installation if resource.restype() == ResourceType.JRL):
+            gff: GFF = read_gff(jrl_resource.data())
             reconstructed_gff: GFF = dismantle_jrl(construct_jrl(gff), Game.K1)
             self.assertTrue(gff.compare(reconstructed_gff, self.log_func, ignore_default_changes=True), os.linesep.join(self.log_messages))
 
@@ -57,8 +57,8 @@ class TestJRL(unittest.TestCase):
     )
     def test_gff_reconstruct_from_k2_installation(self) -> None:
         self.installation = Installation(K2_PATH)  # type: ignore[arg-type]
-        for are_resource in (resource for resource in self.installation if resource.restype() == ResourceType.JRL):
-            gff: GFF = read_gff(are_resource.data())
+        for jrl_resource in (resource for resource in self.installation if resource.restype() == ResourceType.JRL):
+            gff: GFF = read_gff(jrl_resource.data())
             reconstructed_gff: GFF = dismantle_jrl(construct_jrl(gff))
             self.assertTrue(gff.compare(reconstructed_gff, self.log_func, ignore_default_changes=True), os.linesep.join(self.log_messages))
 

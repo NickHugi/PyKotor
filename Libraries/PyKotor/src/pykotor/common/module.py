@@ -140,7 +140,7 @@ class Module:
                 self.add_locations(resname, restype, [capsule.path()])
         # Look for LYT/VIS
         for resource in self._installation.chitin_resources():
-            if resource.resname() == self._id:
+            if resource.resname().lower() == self._id:
                 self.add_locations(
                     resource.resname(),
                     resource.restype(),
@@ -148,7 +148,7 @@ class Module:
                 )
         for directory in self._installation.override_list():
             for resource in self._installation.override_resources(directory):
-                if resource.resname() == self._id:
+                if resource.resname().lower() == self._id:
                     self.add_locations(
                         resource.resname(),
                         resource.restype(),
@@ -366,7 +366,7 @@ class Module:
             (
                 resource
                 for resource in self.resources.values()
-                if (resource.resname().lower() == self._id and resource.restype() == ResourceType.ARE)
+                if resource.resname().lower() == self._id and resource.restype() == ResourceType.ARE
             ),
             None,
         )
@@ -394,7 +394,7 @@ class Module:
             (
                 resource
                 for resource in self.resources.values()
-                if (resource.resname().lower() == self._id and resource.restype() == ResourceType.GIT)
+                if resource.resname().lower() == self._id and resource.restype() == ResourceType.GIT
             ),
             None,
         )
@@ -421,7 +421,7 @@ class Module:
             (
                 resource
                 for resource in self.resources.values()
-                if (resource.resname().lower() == self._id and resource.restype() == ResourceType.PTH)
+                if resource.resname().lower() == self._id and resource.restype() == ResourceType.PTH
             ),
             None,
         )
@@ -450,7 +450,7 @@ class Module:
             (
                 resource
                 for resource in self.resources.values()
-                if (resource.resname().lower() == "module" and resource.restype() == ResourceType.IFO)
+                if resource.resname().lower() == "module" and resource.restype() == ResourceType.IFO
             ),
             None,
         )
@@ -475,11 +475,12 @@ class Module:
             - Check if resname matches resource name and type is UTC
             - Return matching resource or None if not found.
         """
+        lower_resname = resname.lower()
         return next(
             (
                 resource
                 for resource in self.resources.values()
-                if resname == resource.resname() and resource.restype() == ResourceType.UTC
+                if lower_resname == resource.resname().lower() and resource.restype() == ResourceType.UTC
             ),
             None,
         )
@@ -525,11 +526,12 @@ class Module:
             - Check if resource name matches given name and type is UTP
             - Return matching resource if found, else return None.
         """
+        lower_resname = resname.lower()
         return next(
             (
                 resource
                 for resource in self.resources.values()
-                if resname == resource.resname() and resource.restype() == ResourceType.UTP
+                if lower_resname == resource.resname().lower() and resource.restype() == ResourceType.UTP
             ),
             None,
         )
@@ -575,11 +577,12 @@ class Module:
             - Check if resname matches resource name and type is UTD
             - Return matching resource or None if not found.
         """
+        lower_resname = resname.lower()
         return next(
             (
                 resource
                 for resource in self.resources.values()
-                if resname == resource.resname() and resource.restype() == ResourceType.UTD
+                if lower_resname == resource.resname().lower() and resource.restype() == ResourceType.UTD
             ),
             None,
         )
@@ -625,11 +628,12 @@ class Module:
             - Returns the first resource where resname matches resource.resname() and resource type is UTI
             - Returns None if no matching resource found.
         """
+        lower_resname = resname.lower()
         return next(
             (
                 resource
                 for resource in self.resources.values()
-                if resname == resource.resname() and resource.restype() == ResourceType.UTI
+                if lower_resname == resource.resname().lower() and resource.restype() == ResourceType.UTI
             ),
             None,
         )
@@ -676,11 +680,12 @@ class Module:
             - Check if resname matches resource name and type is UTE
             - Return first matching resource or None.
         """
+        lower_resname = resname.lower()
         return next(
             (
                 resource
                 for resource in self.resources.values()
-                if resname == resource.resname() and resource.restype() == ResourceType.UTE
+                if lower_resname == resource.resname().lower() and resource.restype() == ResourceType.UTE
             ),
             None,
         )
@@ -725,11 +730,12 @@ class Module:
             - Returns the first matching resource
             - Returns None if no match found.
         """
+        lower_resname = resname.lower()
         return next(
             (
                 resource
                 for resource in self.resources.values()
-                if resname == resource.resname() and resource.restype() == ResourceType.UTM
+                if lower_resname == resource.resname().lower() and resource.restype() == ResourceType.UTM
             ),
             None,
         )
@@ -761,11 +767,12 @@ class Module:
             - Return first matching resource
             - Return None if no match found.
         """
+        lower_resname = resname.lower()
         return next(
             (
                 resource
                 for resource in self.resources.values()
-                if resname == resource.resname() and resource.restype() == ResourceType.UTT
+                if lower_resname == resource.resname().lower() and resource.restype() == ResourceType.UTT
             ),
             None,
         )
@@ -813,11 +820,12 @@ class Module:
             - Return first matching resource
             - Return None if no match found.
         """
+        lower_resname = resname.lower()
         return next(
             (
                 resource
                 for resource in self.resources.values()
-                if resname == resource.resname() and resource.restype() == ResourceType.UTW
+                if lower_resname == resource.resname().lower() and resource.restype() == ResourceType.UTW
             ),
             None,
         )
@@ -860,11 +868,12 @@ class Module:
             - Checks if the resource name matches the given name and the resource type is MDL
             - Returns the matching resource if found, None otherwise.
         """
+        lower_resname = resname.lower()
         return next(
             (
                 resource
                 for resource in self.resources.values()
-                if resname == resource.resname() and resource.restype() == ResourceType.MDL
+                if lower_resname == resource.resname().lower() and resource.restype() == ResourceType.MDL
             ),
             None,
         )
@@ -888,11 +897,12 @@ class Module:
             - Checks if resname matches resource.resname() and resource type is MDX
             - Returns first matching resource or None.
         """
+        lower_resname = resname.lower()
         return next(
             (
                 resource
                 for resource in self.resources.values()
-                if resname == resource.resname() and resource.restype() == ResourceType.MDX
+                if lower_resname == resource.resname().lower() and resource.restype() == ResourceType.MDX
             ),
             None,
         )
@@ -938,11 +948,12 @@ class Module:
             - Checks if the resource type is a texture format like TPC or TGA
             - Returns the first matching resource or None if not found.
         """
+        lower_resname = resname.lower()
         return next(
             (
                 resource
                 for resource in self.resources.values()
-                if resname.lower() == resource.resname().lower() and resource.restype() in [ResourceType.TPC, ResourceType.TGA]
+                if lower_resname == resource.resname().lower() and resource.restype() in [ResourceType.TPC, ResourceType.TGA]
             ),
             None,
         )
@@ -988,11 +999,12 @@ class Module:
             - Check if resname matches resource name and type is UTS
             - Return matching resource or None if not found.
         """
+        lower_resname = resname.lower()
         return next(
             (
                 resource
                 for resource in self.resources.values()
-                if resname == resource.resname() and resource.restype() == ResourceType.UTS
+                if lower_resname == resource.resname().lower() and resource.restype() == ResourceType.UTS
             ),
             None,
         )
@@ -1280,7 +1292,7 @@ class ModuleResource(Generic[T]):
 
         if is_any_erf_type_file(self._active.name):
             erf = read_erf(self._active)
-            erf.erf_type = ERFType.from_extension(self._active.name)
+            erf.erf_type = ERFType.from_extension(self._active.name)  # TODO: Is this needed? I believe the file header is more trustworthy than the extension.
             erf.set_data(
                 self._resname,
                 self._restype,

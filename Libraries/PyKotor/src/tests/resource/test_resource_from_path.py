@@ -76,15 +76,19 @@ class TestResourceIdentifier(unittest.TestCase):
         fail_message = f"\nresname: '{result.resname}' restype: '{result.restype}'\nexpected resname: '{expected_resname}' expected restype: '{expected_restype}'"
         self.assertEqual(result.resname, expected_resname, fail_message)
         self.assertEqual(result.restype, expected_restype, fail_message)
-        test_set = {result, str(result)}
+        str_result = str(result)
+        self.assertEqual(result, str_result, f"{result!r} != {str_result!r}")
+        test_set = {result, str_result}
         self.assertEqual(len(test_set), 1, repr(test_set))
 
     def test_hashing(self):
         test_resname = "test_resname"
         for type_name in ResourceType.__members__:
             test_ident = ResourceIdentifier(test_resname, ResourceType.__members__[type_name])
-            test_set = {test_ident, str(test_ident)}
-            self.assertEqual(len(test_set), 1, str(test_set))
+            str_ident_test = str(test_ident)
+            self.assertEqual(test_ident, str_ident_test, f"{test_ident!r} != {str_ident_test!r}")
+            test_set = {test_ident, str_ident_test}
+            self.assertEqual(len(test_set), 1, repr(test_set))
 
     def test_from_path_mdl(self):
         self.assert_resource_identifier("C:/path/to/resource.mdl", "resource", ResourceType.MDL)

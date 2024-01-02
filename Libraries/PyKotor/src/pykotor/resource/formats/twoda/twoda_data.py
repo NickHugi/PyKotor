@@ -496,9 +496,14 @@ class TwoDARow:
         self._row_label: str = row_label
         self._data: dict[str, str] = row_data
 
+    def __repr__(
+        self,
+    ):
+        return f"{self.__class__.__name__}(row_label={self._row_label}, row_data={self._data})"
+
     def __eq__(self, other: TwoDARow | object):
         if isinstance(other, TwoDARow):
-            return (self._row_label == other._row_label) and (self._data == other._data)
+            return self._row_label == other._row_label and self._data == other._data
         return NotImplemented
 
     def label(

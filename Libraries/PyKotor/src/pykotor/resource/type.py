@@ -176,7 +176,7 @@ class ResourceType(Enum):
         is_invalid: bool = False,
     ):
         self.type_id: int = type_id
-        self.extension: str = extension.lower()
+        self.extension: str = extension.lower().strip()
         self.category: str = category
         self.contents: str = contents
         self.is_invalid: bool = is_invalid
@@ -212,7 +212,7 @@ class ResourceType(Enum):
         A ResourceType and a int are equal if the type_id is equal to the integer.
         """
         if isinstance(other, ResourceType):
-            if not self or not other:
+            if self.is_invalid or other.is_invalid:
                 return self.is_invalid and other.is_invalid
             return self.name == other.name
         if isinstance(other, str):
@@ -224,7 +224,7 @@ class ResourceType(Enum):
     def __hash__(
         self,
     ):
-        return hash(str(self.extension))
+        return hash(str(self.extension))  # FIXME: should be case-insensitive
 
     @classmethod
     def from_id(
@@ -243,6 +243,7 @@ class ResourceType(Enum):
         """
         if isinstance(type_id, str):
             type_id = int(type_id)
+
         return next(
             (
                 restype

@@ -3,6 +3,7 @@ from __future__ import annotations
 from enum import IntEnum
 
 from pykotor.common.language import LocalizedString
+from pykotor.common.misc import Game
 from pykotor.resource.formats.gff import GFF, GFFContent, GFFList, read_gff, write_gff
 from pykotor.resource.formats.gff.gff_auto import bytes_gff
 from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES, ResourceType
@@ -97,7 +98,12 @@ def construct_jrl(gff: GFF) -> JRL:
     return jrl
 
 
-def dismantle_jrl(jrl: JRL) -> GFF:  # TODO: store original list indices and sort.
+def dismantle_jrl(  # TODO: store original list indices and sort.
+    jrl: JRL,
+    game: Game = Game.K2,
+    *,
+    use_deprecated: bool = True,
+) -> GFF:
     gff = GFF(GFFContent.JRL)
 
     category_list: GFFList = gff.root.set_list("Categories", GFFList())

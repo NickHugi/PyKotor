@@ -39,6 +39,7 @@ K1_PATH = os.environ.get("K1_PATH")
 K2_PATH = os.environ.get("K2_PATH")
 
 from pykotor.common.stream import BinaryReader
+from pykotor.extract.installation import Installation
 from pykotor.resource.formats.tlk.tlk_auto import read_tlk
 from pykotor.resource.type import ResourceType
 
@@ -68,8 +69,8 @@ class TLKEditorTest(TestCase):
     def tearDown(self) -> None:
         self.app.deleteLater()
 
-    def log_func(self, message=""):
-        self.log_messages.append(message)
+    def log_func(self, *args):
+        self.log_messages.append("\t".join(args))
 
     def test_save_and_load(self):
         filepath = TESTS_FILES_PATH / "dialog.tlk"

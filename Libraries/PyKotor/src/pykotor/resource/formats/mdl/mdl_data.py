@@ -50,11 +50,11 @@ class MDL:
             - Check each node's name against the target name.
             - Return the matching node or None if not found.
         """
-        pick: MDLNode | None = None
+        pick = None
 
-        nodes: list[MDLNode] = [self.root]
+        nodes = [self.root]
         while nodes:
-            node: MDLNode = nodes.pop()
+            node = nodes.pop()
             if node.name == node_name:
                 pick = node
             else:
@@ -114,14 +114,12 @@ class MDL:
             - If found, set the parent variable to that node
             - Return the parent node or None if not found.
         """
-        return next(
-            (
-                node
-                for node in self.all_nodes()
-                if child in node.children
-            ),
-            None,
-        )
+        all_nodes: list[MDLNode] = self.all_nodes()
+        parent: MDLNode | None = None
+        for node in all_nodes:
+            if child in node.children:
+                parent = node
+        return parent
 
     def global_position(
         self,
@@ -165,10 +163,6 @@ class MDL:
         -------
             MDLNode: The node with matching id
 
-        Raises:
-        ------
-            StopIteration: node_id not found.
-
         Processing Logic:
         ----------------
             - Iterate through all nodes in the graph
@@ -176,7 +170,10 @@ class MDL:
             - Return node if id matches
             - Raise error if no matching node found.
         """
-        return next(node for node in self.all_nodes() if node.node_id == node_id)
+        for node in self.all_nodes():
+            if node.node_id == node_id:
+                return node
+        raise ValueError
 
     def all_textures(
         self,
@@ -263,10 +260,10 @@ class MDLAnimation:
             - Repeat until scan is empty
             - Return the nodes list containing all nodes.
         """
-        nodes: list[MDLNode] = []
-        scan: list[MDLNode] = [self.root]
+        nodes = []
+        scan = [self.root]
         while scan:
-            node: MDLNode = scan.pop()
+            node = scan.pop()
             nodes.append(node)
             scan.extend(node.children)
         return nodes
@@ -421,7 +418,7 @@ class MDLLight:
 
     def __init__(
         self,
-    ) -> None:
+    ):
         # TODO: Make enums, check if bools, docs, merge flare data into class
         self.flare_radius: float = 0.0
         self.light_priority: int = 0
@@ -463,7 +460,7 @@ class MDLEmitter:
 
     def __init__(
         self,
-    ) -> None:
+    ):
         # TODO: Make enums, check if bools, docs, seperate flags into booleans
         self.dead_space: float = 0.0
         self.blast_radius: float = 0.0
@@ -497,7 +494,7 @@ class MDLReference:
 
     def __init__(
         self,
-    ) -> None:
+    ):
         # TODO: docs
         self.model: str = ""
         self.reattachable: bool = False
@@ -562,7 +559,7 @@ class MDLSkin:
         self,
     ) -> None:
         self.bone_indices: tuple[int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int] = (0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
-        self.qbones: list[Vector4] = []
+        self.qbones: list[Vector3] = []
         self.tbones: list[Vector3] = []
         self.bonemap: list[int] = []
 

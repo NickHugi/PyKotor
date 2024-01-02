@@ -27,11 +27,13 @@ $pyInstallerArgs = @{
         'dl_translate',
         'torch '
     )
+    'clean' = $true
     'noconsole' = $true
     'onefile' = $true
     'noconfirm' = $true
     'name' = "HolocronToolset"
     'distpath'=($rootPath + $pathSep + "dist")
+#    'upx-dir' = "$env:USERPROFILE\Documents\GitHub\upx-win32"
     'icon'="resources/icons/sith.ico"
 }
 $pyInstallerArgsString = ($pyInstallerArgs.GetEnumerator() | ForEach-Object {

@@ -115,17 +115,25 @@ class PTHEdge:
         source: int,
         target: int,
     ):
-        self.source = source
-        self.target = target
+        self.source: int = source
+        self.target: int = target
+
+    def __repr__(
+        self,
+    ):
+        return f"{self.__class__.__name__}(source={self.source}, target={self.target})"
 
     def __eq__(
         self,
-        other,
+        other: PTHEdge | object,
     ):
-        if not isinstance(other, PTHEdge):
-            raise NotImplementedError
+        if isinstance(other, PTHEdge):
+            return self.source == other.source and self.target == other.target
 
-        return self.source == other.source and self.target == other.target
+        msg = f"Cannot compare {self!r} with {other!r}."
+        print(msg)
+        return NotImplemented
+
 
 
 def construct_pth(

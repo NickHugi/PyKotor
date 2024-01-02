@@ -70,11 +70,12 @@ class ModelRenderer(QOpenGLWidget):
         QTimer.singleShot(33, self.loop)
 
     def paintGL(self) -> None:
-        """Renders the scene
+        """Renders the scene.
+
         Args:
+        ----
             self: The class instance
-        Returns:
-            None: Does not return anything
+
         Processing Logic:
         ----------------
             - Checks if scene is None and returns if so

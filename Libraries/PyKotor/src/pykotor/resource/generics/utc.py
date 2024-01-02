@@ -197,11 +197,21 @@ class UTCClass:
         self.class_level: int = class_level
         self.powers: list[int] = []
 
+    def __repr__(
+        self,
+    ):
+        return f"{self.__class__.__name__}(class_id={self.class_id}, class_level={self.class_level})"
+
     def __eq__(
         self,
-        other,
+        other: UTCClass | object,
     ):
-        return self.class_id == other.class_id and self.class_level == self.class_level
+        if isinstance(other, UTCClass):
+            return self.class_id == other.class_id and self.class_level == self.class_level
+
+        msg = f"Cannot compare {self!r} with {other!r}"
+        print(msg)
+        return NotImplemented
 
 
 def construct_utc(

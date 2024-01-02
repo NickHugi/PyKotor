@@ -37,7 +37,7 @@ class LYTRoom:
         model: str,
         position: Vector3,
     ):
-        self.model: str = model
+        self.model: str = model  # TODO: find out if this is case-insensitive and implement via __eq__.
         self.position: Vector3 = position
 
     def __eq__(
@@ -70,7 +70,7 @@ class LYTTrack:
         model: str,
         position: Vector3,
     ):
-        self.model: str = model
+        self.model: str = model  # TODO: find out if this is case-insensitive and implement via __eq__.
         self.position: Vector3 = position
 
     def __eq__(
@@ -98,7 +98,7 @@ class LYTObstacle:
         model: str,
         position: Vector3,
     ):
-        self.model: str = model
+        self.model: str = model  # TODO: find out if this is case-insensitive and implement via __eq__.
         self.position: Vector3 = position
 
     def __eq__(
@@ -130,8 +130,8 @@ class LYTDoorHook:
         position: Vector3,
         orientation: Vector4,
     ):
-        self.room: str = room
-        self.door: str = door
+        self.room: str = room  # TODO: find out if this is case-insensitive and implement via __eq__.
+        self.door: str = door  # TODO: find out if this is case-insensitive and implement via __eq__.
         self.position: Vector3 = position
         self.orientation: Vector4 = orientation
 
