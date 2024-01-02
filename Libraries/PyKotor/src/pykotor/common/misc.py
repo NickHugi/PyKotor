@@ -7,7 +7,7 @@ from enum import Enum, IntEnum
 from typing import TYPE_CHECKING, Any, Generator, Generic, Iterable, Iterator, TypeVar
 
 from pykotor.common.geometry import Vector3
-from utility.string import CaseInsensitiveMutStr
+from utility.string import CaseInsensitiveWrappedStr
 
 if TYPE_CHECKING:
     import os
@@ -16,7 +16,7 @@ T = TypeVar("T")
 VT = TypeVar("VT")
 _unique_sentinel = object()
 
-class ResRef(CaseInsensitiveMutStr):
+class ResRef(CaseInsensitiveWrappedStr):
     """A string reference to a game resource.
 
     ResRefs are the names of resources without the extension (the file stem).
