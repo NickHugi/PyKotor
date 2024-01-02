@@ -430,7 +430,7 @@ class WrappedStr:
     def upper(self):
         return self.__class__(self.__content.upper())
 
-    def zfill(self, __width):
+    def zfill(self, __width: SupportsIndex):
         return self.__class__(self.__content.zfill(__width))
 
     # Magic methods for string representation
@@ -448,15 +448,15 @@ class CaseInsensitiveWrappedStr(WrappedStr):
         "__lower_content",
     )
 
-    @staticmethod
-    def _coerce_str(item) -> str:
+    @classmethod
+    def _coerce_str(cls, item) -> str:
         if isinstance(item, (WrappedStr, str)):
             return str(item).lower()
         return item
 
     def __init__(self, string):
         super().__init__(string)
-        self.__lower_content = str(self).lower()
+        self.__lower_content: str = str(self).lower()
 
     def __contains__(self, item):
         return self.__lower_content.__contains__(self._coerce_str(item).lower())
@@ -499,7 +499,7 @@ class CaseInsensitiveWrappedStr(WrappedStr):
             return super().replace("", self._coerce_str(__new), __count)
 
         pattern: re.Pattern[str] = re.compile(re.escape(self._coerce_str(__old)), re.IGNORECASE)
-        return self.__class__(pattern.sub(self._coerce_str(__new), self.__content, __count))
+        return self.__class__(pattern.sub(self._coerce_str(__new), self.__content, int(__count)))
 
 
     def rpartition(self, __sep):
