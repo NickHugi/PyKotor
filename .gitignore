@@ -49,7 +49,6 @@ logs/*
 .vscode/PythonImportHelper-v2-Completion.json
 .mypy_cache
 *.egg-info*
-*.c
 /toolset/help/
 /toolset/kits/
 Tools/HolocronToolset/src/toolset/kits
