@@ -245,7 +245,7 @@ class BasePurePath(metaclass=PurePathType):  # type: ignore[misc]
             else:
                 other_compare = self._fix_path_formatting(self._fspath_str(__value), slash=self._get_sep())
 
-            if self._get_sep() == "\\":
+            if self._get_sep() == "\\" or "\\" in other_compare:
                 self_compare = self_compare.lower()
                 other_compare = other_compare.lower()
 
