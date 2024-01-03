@@ -140,7 +140,7 @@ class Module:
                 self.add_locations(resname, restype, [capsule.path()])
         # Look for LYT/VIS
         for resource in self._installation.chitin_resources():
-            if resource.resname().lower() == self._id:
+            if resource.resname() == self._id:
                 self.add_locations(
                     resource.resname(),
                     resource.restype(),
@@ -148,7 +148,7 @@ class Module:
                 )
         for directory in self._installation.override_list():
             for resource in self._installation.override_resources(directory):
-                if resource.resname().lower() == self._id:
+                if resource.resname() == self._id:
                     self.add_locations(
                         resource.resname(),
                         resource.restype(),
@@ -313,7 +313,7 @@ class Module:
             (
                 resource
                 for resource in self.resources.values()
-                if (resource.resname().lower() == self._id and resource.restype() == ResourceType.LYT)
+                if (resource.resname() == self._id and resource.restype() == ResourceType.LYT)
             ),
             None,
         )
@@ -338,7 +338,7 @@ class Module:
             (
                 resource
                 for resource in self.resources.values()
-                if (resource.resname().lower() == self._id and resource.restype() == ResourceType.VIS)
+                if (resource.resname() == self._id and resource.restype() == ResourceType.VIS)
             ),
             None,
         )
@@ -366,7 +366,7 @@ class Module:
             (
                 resource
                 for resource in self.resources.values()
-                if resource.resname().lower() == self._id and resource.restype() == ResourceType.ARE
+                if resource.resname() == self._id and resource.restype() == ResourceType.ARE
             ),
             None,
         )
@@ -394,7 +394,7 @@ class Module:
             (
                 resource
                 for resource in self.resources.values()
-                if resource.resname().lower() == self._id and resource.restype() == ResourceType.GIT
+                if resource.resname() == self._id and resource.restype() == ResourceType.GIT
             ),
             None,
         )
@@ -421,7 +421,7 @@ class Module:
             (
                 resource
                 for resource in self.resources.values()
-                if resource.resname().lower() == self._id and resource.restype() == ResourceType.PTH
+                if resource.resname() == self._id and resource.restype() == ResourceType.PTH
             ),
             None,
         )
