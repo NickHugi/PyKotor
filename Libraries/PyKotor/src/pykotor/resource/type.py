@@ -165,7 +165,7 @@ class ResourceType(Enum):
         while name in cls.__members__:
             name = f"{name}_{uuid.uuid4().hex}"
         obj._name_ = name
-        obj.__init__(*args, **kwargs)
+        obj.__init__(*args, **kwargs)  # type: ignore[misc]
         return super().__new__(cls, obj)
 
     def __init__(
@@ -270,7 +270,7 @@ class ResourceType(Enum):
             name = f"INVALID_{kwargs.get('extension', cls.INVALID.extension)}{uuid.uuid4().hex}"
         instance._name_ = name
         instance._value_ = ResourceTuple(**{**cls.INVALID.value, **kwargs, "is_invalid": True})
-        instance.__init__(**instance.value)
+        instance.__init__(**instance.value)  # type: ignore[misc]
         return super().__new__(cls, instance)
 
     @classmethod

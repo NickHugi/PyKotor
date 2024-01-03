@@ -9,6 +9,7 @@ from pykotor.resource.type import ResourceType
 from pykotor.tools.misc import is_bif_file, is_capsule_file
 from utility.misc import generate_sha256_hash
 from utility.path import Path, PurePath
+from utility.string import CaseInsensitiveWrappedStr
 
 if TYPE_CHECKING:
 
@@ -196,7 +197,7 @@ class ResourceIdentifier(NamedTuple):
     def __hash__(
         self,
     ):
-        return hash((self.__class__, str(self)))
+        return hash(CaseInsensitiveWrappedStr(str(self)))
 
     def __repr__(
         self,
