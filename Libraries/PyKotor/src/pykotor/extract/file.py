@@ -45,8 +45,10 @@ class FileResource:
         else:
             self._path_ident_obj = self._filepath
 
-        self._sha256_hash: str = self.get_sha256_hash(reload=True)
-        self._internal: bool = False
+        sha256_hash = self.get_sha256_hash(reload=True)
+        self._internal: bool = True
+        self._sha256_hash: str = sha256_hash
+        self._internal = False
 
     def __setattr__(self, __name, __value):
         if hasattr(self, __name):
