@@ -4,7 +4,7 @@
 from __future__ import annotations
 
 from enum import Enum, IntEnum
-from typing import TYPE_CHECKING, Any, ClassVar, Generator, Generic, Iterable, Iterator, TypeVar
+from typing import TYPE_CHECKING, Any, ClassVar, Generator, Generic, Iterable, Iterator, TypeVar, overload
 
 from pykotor.common.geometry import Vector3
 from utility.string import CaseInsensitiveWrappedStr
@@ -708,6 +708,13 @@ class CaseInsensitiveDict(Generic[T]):
                     msg = f"{key} must be a str, got type {type(key)}"
                     raise TypeError(msg)
                 self[key] = value
+
+    @overload
+    def get(self, __key: str) -> T:
+        ...
+    @overload
+    def get(self, __key: str, __default: VT = None) -> VT | T:
+        ...
 
     def get(self, __key: str, __default: VT = None) -> VT | T:  # type: ignore[assignment]
         key_lookup: str = self._case_map.get(__key.lower(), _unique_sentinel)  # type: ignore[arg-type]
