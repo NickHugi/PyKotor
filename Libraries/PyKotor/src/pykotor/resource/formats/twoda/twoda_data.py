@@ -276,7 +276,7 @@ class TwoDA:
             override_cells[header] = str(override_cells[header])
 
         for header in self._headers:
-            self._rows[-1][header] = override_cells[header] if header in override_cells else self.get_cell(source_index, header)
+            self._rows[-1][header] = override_cells[header] if header in override_cells else self.get_cell(source_index, header)  # FIXME: source_index cannot be None
 
         return len(self._rows) - 1
 
@@ -587,7 +587,7 @@ class TwoDARow:
         with suppress(ValueError):  # FIXME: this should not be suppressed
             cell = self._data[header]
             return int(cell, 16) if cell.startswith("0x") else int(cell)
-        return value
+        return value  # FIXME: return value cannot be None
 
     def get_float(
         self,
@@ -615,7 +615,7 @@ class TwoDARow:
 
         with suppress(ValueError):  # FIXME: this should not be suppressed
             cell = self._data[header]
-            return float(cell)
+            return float(cell)  # FIXME: return value cannot be None
 
     def get_enum(
         self,
