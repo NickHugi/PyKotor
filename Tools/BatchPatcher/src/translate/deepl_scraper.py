@@ -157,5 +157,5 @@ def deepl_tr(text: str, from_lang: str = "auto", to_lang: str = "zh", timeout: f
         print("Content get!")
 
         # remove possible attached suffix
-        return re.sub(r"[\d]+_$", "", content.strip()).strip()  # type: ignore[reportGeneralTypeIssues, reportOptionalMemberAccess]
+        return re.sub(r"[\d]+_$", "", content.strip()).strip()  # type: ignore[reportOptionalMemberAccess]
 

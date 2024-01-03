@@ -7,8 +7,8 @@ from typing import TYPE_CHECKING, Any, Callable, Generator
 
 from pykotor.tools.registry import winreg_key
 from utility.misc import is_instance_or_subinstance
-from utility.path import BasePath, PathElem
 from utility.path import Path as InternalPath
+from utility.path import PathElem
 from utility.path import PurePath as InternalPurePath
 from utility.registry import resolve_reg_key_to_path
 
@@ -96,7 +96,7 @@ def create_case_insensitive_pathlib_class(cls: type) -> None:  # TODO: move into
         5. Check if method and not wrapped before
         6. Add method to wrapped dictionary and reassign with wrapper.
     """
-    cls._original_methods = {}  # type: ignore[attr-defined, reportGeneralTypeIssues]
+    cls._original_methods = {}  # type: ignore[attr-defined]
     mro: list[type] = cls.mro()  # Gets the method resolution order
     parent_classes: list[type] = mro[1:-1]  # Exclude the current class itself and the object class
     cls_methods: set[str] = {method for method in cls.__dict__ if callable(getattr(cls, method))}  # define names of methods in the cls, excluding inherited
@@ -122,7 +122,7 @@ def create_case_insensitive_pathlib_class(cls: type) -> None:  # TODO: move into
         for attr_name, attr_value in parent.__dict__.items():
             # Check if it's a method and hasn't been wrapped before
             if callable(attr_value) and attr_name not in wrapped_methods and attr_name not in ignored_methods:
-                cls._original_methods[attr_name] = attr_value  # type: ignore[attr-defined, reportGeneralTypeIssues]
+                cls._original_methods[attr_name] = attr_value  # type: ignore[attr-defined]
                 setattr(cls, attr_name, simple_wrapper(attr_name, cls))
                 wrapped_methods.add(attr_name)
 
@@ -134,21 +134,24 @@ class CaseAwarePath(InternalPath):  # type: ignore[misc]
         new_path = super().resolve(strict)
         if self.should_resolve_case(new_path):
             new_path = self.get_case_sensitive_path(new_path)
-            return super(type(self), new_path).resolve()
+            return super(type(self), new_path).resolve(strict)
         return new_path
 
     def __hash__(self) -> int:
-        return hash((BasePath, self.as_posix().lower()))
+        return hash(self.as_posix().lower())
 
     def __eq__(self, other):
         """All pathlib classes that derive from PurePath are equal to this object if their str paths are case-insensitive equivalents."""
         if not isinstance(other, (os.PathLike, str)):
             print(f"Cannot compare {self!r} with {other!r}")
             return NotImplemented
-        return self._fix_path_formatting(str(other)).lower() == super().__str__().lower()
+        if isinstance(other, CaseAwarePath):
+            return self.as_posix().lower() == other.as_posix().lower()
+
+        return self._fix_path_formatting(str(other), slash="/").lower() == self.as_posix().lower()
 
     def __repr__(self) -> str:
-        return f"{self.__class__.__name__}({super().__str__().lower()})"
+        return f"{self.__class__.__name__}({self.as_windows()})"
 
     def __str__(self) -> str:
         return (
@@ -157,11 +160,33 @@ class CaseAwarePath(InternalPath):  # type: ignore[misc]
             else super(self.__class__, self.get_case_sensitive_path(self)).__str__()
         )
 
-    def __contains__(self, other_path: PathElem):
-        return self.is_relative_to(other_path)
+    def relative_to(self, *args, walk_up=False, **kwargs):
+        if not args or "other" in kwargs:
+            raise TypeError("relative_to() missing 1 required positional argument: 'other'")  # noqa: TRY003, EM101
 
-    def is_relative_to(self, other: PathElem, *, case_sensitive=False) -> bool:  # type: ignore[override]
-        return super().is_relative_to(other, case_sensitive=case_sensitive)
+        other, *_deprecated = args
+        parsed_other = self.with_segments(other, *_deprecated)
+        for step, path in enumerate([parsed_other, *list(parsed_other.parents)]):  # noqa: B007
+            if self.is_relative_to(path):
+                break
+            if not walk_up:
+                raise ValueError(f"{str(self)!r} is not in the subpath of {str(parsed_other)!r}")  # noqa: TRY003, EM102
+            if path.name == "..":
+                raise ValueError(f"'..' segment in {str(parsed_other)!r} cannot be walked")  # noqa: TRY003, EM102
+        else:
+            raise ValueError(f"{str(self)!r} and {str(parsed_other)!r} have different anchors")  # noqa: TRY003, EM102
+
+        parts: list[str] = [".."] * step + list(self.parts[step:])
+        return self.with_segments(*parts)
+
+    def is_relative_to(self, *args, **kwargs):
+        """Return True if the path is relative to another path or False."""
+        if not args or "other" in kwargs:
+            raise TypeError("relative_to() missing 1 required positional argument: 'other'")  # noqa: TRY003, EM101
+
+        other, *_deprecated = args
+        parsed_other = self.with_segments(other, *_deprecated)
+        return parsed_other == self or parsed_other in self.parents
 
     @staticmethod
     def get_case_sensitive_path(path: PathElem) -> CaseAwarePath:

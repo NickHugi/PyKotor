@@ -1,7 +1,9 @@
 from __future__ import annotations
 
+import os
 from contextlib import suppress
 from typing import TYPE_CHECKING, NamedTuple
+from pykotor.common.stream import BinaryReader
 
 from pykotor.resource.type import ResourceType
 from pykotor.tools.misc import is_bif_file, is_capsule_file
@@ -9,7 +11,6 @@ from utility.misc import generate_sha256_hash
 from utility.path import Path, PurePath
 
 if TYPE_CHECKING:
-    import os
 
     from pykotor.common.misc import ResRef
 
@@ -27,6 +28,8 @@ class FileResource:
     ):
         assert resname == resname.strip(), f"FileResource cannot be constructed, resource name '{resname}' cannot start/end with whitespace."
 
+        self._identifier = ResourceIdentifier(resname, restype)
+
         self._resname: str = resname
         self._restype: ResourceType = restype
         self._size: int = size
@@ -36,15 +39,13 @@ class FileResource:
         self.inside_capsule: bool = is_capsule_file(self._filepath)
         self.inside_bif: bool = is_bif_file(self._filepath)
 
-        self._sha256_hash: str = ""
-        self._identifier = ResourceIdentifier(self._resname, self._restype)
-
-        self._path_obj: Path
+        self._path_ident_obj: Path
         if self.inside_capsule or self.inside_bif:
-            self._path_obj = self._filepath / str(self._identifier)
+            self._path_ident_obj = self._filepath / str(self._identifier)
         else:
-            self._path_obj = self._filepath
+            self._path_ident_obj = self._filepath
 
+        self._sha256_hash: str = self.get_sha256_hash(reload=True)
         self._internal: bool = False
 
     def __setattr__(self, __name, __value):
@@ -69,20 +70,20 @@ class FileResource:
         )
 
     def __hash__(self):
-        return hash(self._path_obj)
+        return hash(self._path_ident_obj)
 
     def __str__(self):
-        return str(self._path_obj)
+        return str(self._path_ident_obj)
 
     def __eq__(
         self,
         __value: object,
     ):
         if isinstance(__value, FileResource):
-            return self.get_sha256_hash() == __value.get_sha256_hash()
-        if isinstance(__value, (Path, bytes, bytearray, memoryview)):
-            return self.get_sha256_hash() == generate_sha256_hash(__value)
-        if isinstance(__value, ResourceIdentifier):
+            return self._sha256_hash == __value._sha256_hash
+        if isinstance(__value, (os.PathLike, bytes, bytearray, memoryview)):
+            return self._sha256_hash == generate_sha256_hash(__value)
+        if isinstance(__value, (ResourceIdentifier, str)):
             return self.identifier() == __value
         return NotImplemented
 
@@ -118,6 +119,22 @@ class FileResource:
     ) -> int:
         return self._offset
 
+    def _index_resource(
+        self,
+    ) -> None:
+        if self.inside_capsule:
+            from pykotor.extract.capsule import Capsule  # Prevent circular imports
+
+            capsule = Capsule(self._filepath)
+            res: FileResource | None = capsule.info(self._resname, self._restype)
+            assert res is not None, f"Resource '{self._identifier}' not found in Capsule at '{self._filepath}'"
+
+            self._offset = res.offset()
+            self._size = res.size()
+        elif not self.inside_bif:  # bifs are read-only, offset/data will never change.
+            self._offset = 0
+            self._size = self._filepath.stat().st_size
+
     def data(
         self,
         *,
@@ -129,33 +146,26 @@ class FileResource:
         -------
             Bytes data of the resource.
         """
+        self._internal = True
         try:
-            self._internal = True
             if reload:
-                if self.inside_capsule:
-                    from pykotor.extract.capsule import Capsule  # Prevent circular imports
+                self._index_resource()
 
-                    capsule = Capsule(self._filepath)
-                    res: FileResource | None = capsule.info(self._resname, self._restype)
-                    assert res is not None, f"Resource '{self._identifier}' not found in Capsule at '{self._filepath}'"
-
-                    self._offset = res.offset()
-                    self._size = res.size()
-                elif not self.inside_bif:  # bifs are read-only.
-                    self._offset = 0
-                    self._size = self._filepath.stat().st_size
-
-            with self._filepath.open("rb") as file:
+            with BinaryReader.from_file(self._filepath) as file:
                 file.seek(self._offset)
-                data: bytes = file.read(self._size)
+                data: bytes = file.read_bytes(self._size)
                 self._sha256_hash = generate_sha256_hash(data)
                 return data
         finally:
             self._internal = False
 
-    def get_sha256_hash(self) -> str:
-        if not self._sha256_hash:
-            self.data()  # Ensure that the SHA256 hash is calculated
+    def get_sha256_hash(
+        self,
+        *,
+        reload: bool = False,
+    ) -> str:
+        if reload:
+            self.data()  # Recalculate SHA256 hash
         return self._sha256_hash
 
     def identifier(self) -> ResourceIdentifier:
@@ -194,9 +204,14 @@ class ResourceIdentifier(NamedTuple):
     def __str__(
         self,
     ):
-        return f"{self.resname.lower()}{f'.{self.restype.extension.lower()}' if self.restype.extension else ''}"
+        ext = self.restype.extension
+        suffix = f".{ext}" if ext else ""
+        return f"{self.resname.lower()}{suffix.lower()}"
 
-    def __eq__(self, __value: object):
+    def __eq__(
+        self,
+        __value: object,
+    ):
         if isinstance(__value, str):
             __value = self.from_path(__value)
         if isinstance(__value, ResourceIdentifier):

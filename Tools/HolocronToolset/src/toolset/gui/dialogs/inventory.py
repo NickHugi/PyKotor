@@ -812,7 +812,7 @@ class ItemModel(QStandardItemModel):
         self._proxyModel = QSortFilterProxyModel(self)
         self._proxyModel.setSourceModel(self)
         self._proxyModel.setRecursiveFilteringEnabled(True)
-        self._proxyModel.setFilterCaseSensitivity(False)  # type: ignore[reportGeneralTypeIssues, arg-type]
+        self._proxyModel.setFilterCaseSensitivity(False)  # type: ignore[arg-type]
         self._proxyModel.setRecursiveFilteringEnabled(True)
         self._proxyModel.setSourceModel(self)
 

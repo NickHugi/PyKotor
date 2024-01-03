@@ -181,7 +181,6 @@ class ResourceType(Enum):
         self.category: str = category
         self.contents: str = contents
         self.is_invalid: bool = is_invalid
-        self._is_initialized = True
 
     def __bool__(self) -> bool:
         return not self.is_invalid

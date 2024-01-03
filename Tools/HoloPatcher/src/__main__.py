@@ -454,7 +454,7 @@ class App(tk.Tk):
             self.install_thread._stop()  # type: ignore[attr-defined]
             print("force terminate of install thread succeeded")
         with contextlib.suppress(Exception):
-            ctypes.pythonapi.PyThreadState_SetAsyncExc(ctypes.c_long(self.install_thread.ident), ctypes.py_object(SystemExit))  # type: ignore[reportGeneralTypeIssues, arg-type]
+            ctypes.pythonapi.PyThreadState_SetAsyncExc(ctypes.c_long(self.install_thread.ident), ctypes.py_object(SystemExit))  # type: ignore[arg-type]
         self.destroy()
         sys.exit(ExitCode.ABORT_INSTALL_UNSAFE)
 

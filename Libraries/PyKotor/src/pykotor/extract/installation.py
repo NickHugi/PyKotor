@@ -19,6 +19,7 @@ from pykotor.resource.type import ResourceType
 from pykotor.tools.misc import is_capsule_file, is_erf_file, is_mod_file, is_rim_file
 from pykotor.tools.path import CaseAwarePath
 from pykotor.tools.sound import fix_audio
+from utility.misc import remove_duplicates
 from utility.path import Path, PurePath
 
 if TYPE_CHECKING:
@@ -375,7 +376,7 @@ class Installation:
         resources: dict[str, list[FileResource]] | list[FileResource] = {} if capsule_check else []
 
         if not path.exists():
-            print(f"The '{path.name}' folder did not exist at '{self.path()}' when loading the installation, skipping...")
+            print(f"The '{path.name}' folder did not exist at '{self._path}' when loading the installation, skipping...")
             return resources
 
         files_list: list[CaseAwarePath] = list(
@@ -489,7 +490,7 @@ class Installation:
         self.load_override(directory)
 
     def reload_override_file(self, file: os.PathLike | str) -> None:
-        filepath: Path = Path.pathify(file)  # type: ignore[reportGeneralTypeIssues, assignment]
+        filepath: Path = Path.pathify(file)  # type: ignore[assignment]
         parent_folder = filepath.parent
         rel_folderpath = str(filepath.parent.relative_to(self.override_path())) if parent_folder.name else "."
         identifier: ResourceIdentifier = ResourceIdentifier.from_path(filepath)
@@ -719,7 +720,7 @@ class Installation:
         if self._game is not None:
             return self._game
 
-        game: Game | None = self.determine_game(self.path())
+        game: Game | None = self.determine_game(self._path)
         if game is not None:
             self._game = game
             return game
@@ -783,13 +784,13 @@ class Installation:
         )
         search: ResourceResult | None = batch[query]
         if not search or not search.data:
-            print(f"Could not find '{resname}.{restype}' during resource lookup.")
+            print(f"Could not find '{query}' during resource lookup.")
             return None
         return search
 
     def resources(
         self,
-        queries: list[ResourceIdentifier],
+        queries: list[ResourceIdentifier] | set[ResourceIdentifier],
         order: list[SearchLocation] | None = None,
         *,
         capsules: list[Capsule] | None = None,
@@ -923,7 +924,6 @@ class Installation:
                 SearchLocation.MODULES,
                 SearchLocation.CHITIN,
             ]
-        queries = set(queries)
         capsules = [] if capsules is None else capsules
         folders = [] if folders is None else folders
 
@@ -1036,7 +1036,7 @@ class Installation:
 
     def textures(
         self,
-        resnames: list[str] | set[str],
+        resnames: list[str],
         order: list[SearchLocation] | None = None,
         *,
         capsules: list[Capsule] | None = None,
@@ -1065,7 +1065,7 @@ class Installation:
                 SearchLocation.TEXTURES_TPA,
                 SearchLocation.CHITIN,
             ]
-        resnames = {resname.lower() for resname in resnames}
+        resnames = remove_duplicates(resnames, case_insensitive=True)
         capsules = [] if capsules is None else capsules
         folders = [] if folders is None else folders
 
@@ -1097,12 +1097,16 @@ class Installation:
         def check_list(resource_list: list[FileResource]):
             for resource in resource_list:
                 resname = resource.resname().lower()
-                if resname in resnames and resource.restype() in texture_types:
-                    resnames.remove(resname)
-                    tpc: TPC = read_tpc(resource.data())
-                    if resource.restype() == ResourceType.TGA:
-                        tpc.txi = get_txi_from_list(resname, resource_list)
-                    textures[resname] = tpc
+                if resname not in resnames:
+                    continue
+                restype = resource.restype()
+                if restype not in texture_types:
+                    continue
+                resnames.remove(resname)
+                tpc: TPC = read_tpc(resource.data())
+                if restype == ResourceType.TGA:
+                    tpc.txi = get_txi_from_list(resname, resource_list)
+                textures[resname] = tpc
 
         def check_capsules(values: list[Capsule]):  # NOTE: This function does not support txi's in the Override folder.
             for capsule in values:

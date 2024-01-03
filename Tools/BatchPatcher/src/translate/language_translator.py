@@ -22,7 +22,7 @@ try:
 except ImportError:
     deepl_tr = None
 try:
-    from translate import Translator as TranslateTranslator  # type: ignore[reportGeneralTypeIssues, import-not-found]
+    from translate import Translator as TranslateTranslator  # type: ignore[import-not-found]
 except ImportError:
     TranslateTranslator = None
 argos_import_success = True
@@ -32,7 +32,7 @@ try:
 except Exception:  # noqa: BLE001
     argos_import_success = False
 try:
-    import deep_translator  # type: ignore[reportGeneralTypeIssues, import-not-found, import-untyped]
+    import deep_translator  # type: ignore[import-not-found, import-untyped]
 except ImportError:
     deep_translator = None
 try:
@@ -40,24 +40,24 @@ try:
 except ImportError:
     ChatGptTranslator = None
 try:
-    from googletrans import Translator as GoogleTranslator  # type: ignore[reportGeneralTypeIssues, import-not-found]
+    from googletrans import Translator as GoogleTranslator  # type: ignore[import-not-found]
 except ImportError:
     GoogleTranslator = None
 try:
-    import dl_translate as dlt  # type: ignore[reportGeneralTypeIssues, import-not-found]
+    import dl_translate as dlt  # type: ignore[import-not-found]
 except ImportError:
     dlt = None
 try:
-    from apertium_lite import ApertiumLite  # type: ignore[reportGeneralTypeIssues, import-not-found]
+    from apertium_lite import ApertiumLite  # type: ignore[import-not-found]
 except ImportError:
     ApertiumLite = None
 try:
-    from transformers import T5ForConditionalGeneration, T5Tokenizer  # type: ignore[reportGeneralTypeIssues, import-not-found]
+    from transformers import T5ForConditionalGeneration, T5Tokenizer  # type: ignore[import-not-found]
 except ImportError:
     T5ForConditionalGeneration = None
     T5Tokenizer = None
 try:
-    from textblob import TextBlob  # type: ignore[reportGeneralTypeIssues, import-not-found]
+    from textblob import TextBlob  # type: ignore[import-not-found]
 except ImportError:
     TextBlob = None
 
@@ -626,7 +626,7 @@ class Translator:
             ):
                 translated_chunk = self._translator.translate(source=from_lang_code, target=to_lang_code, domain=self.domain, text=chunk)
             else:
-                translated_chunk = self._translator.translate(chunk)  # type: ignore[misc, reportOptionalCall, reportGeneralTypeIssues, attr-defined]
+                translated_chunk = self._translator.translate(chunk)  # type: ignore[misc, reportOptionalCall, attr-defined]
             validate_translated_result(translated_chunk.strip())
             return restore_original_text(translated_chunk, replacements)
 

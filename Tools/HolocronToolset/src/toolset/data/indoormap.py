@@ -832,7 +832,7 @@ class IndoorMap:
         del painter
 
         # Minimaps are 512x256 so we need to appropriately scale down our image
-        pixmap = pixmap.scaled(435, 256, QtCore.Qt.KeepAspectRatio)  # type: ignore[attr-defined, reportGeneralTypeIssues]
+        pixmap = pixmap.scaled(435, 256, QtCore.Qt.KeepAspectRatio)  # type: ignore[attr-defined]
 
         pixmap2 = QPixmap(512, 256)
         pixmap2.fill(QColor(0))

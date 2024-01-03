@@ -35,23 +35,11 @@ from utility.path import WindowsPath as CustomWindowsPath
 
 class TestPathlibMixedSlashes(unittest.TestCase):
 
-    def test_hashing(self) -> None:
-        test_classes: list[type] = [CustomPurePosixPath, CustomPureWindowsPath, CustomPurePath]
-        for PathType in test_classes:
-            with self.subTest(PathType=PathType):
-                path1 = PathType("test\\path\\to\\nothing")
-                path2 = PathType("tesT\\PATH\\to\\noTHinG")
-
-                test_set = {path1, path2}
-                self.assertNotEqual(path1, path2)
-                self.assertNotEqual(hash(path1), hash(path2))
-                self.assertEqual(len(test_set), 2)
-
     def test_nt_case_hashing(self) -> None:
         test_classes: list[type] = (
-            [CustomPath]
+            [CustomPath, CustomPureWindowsPath]
             if os.name == "posix"
-            else [CustomWindowsPath, CustomPath]
+            else [CustomWindowsPath, CustomPureWindowsPath, CustomPath]
         )
         for PathType in test_classes:
             with self.subTest(PathType=PathType):
@@ -66,9 +54,9 @@ class TestPathlibMixedSlashes(unittest.TestCase):
 
     def test_posix_case_hashing(self) -> None:
         test_classes: list[type] = (
-            [CustomPosixPath, CustomPath]
+            [CustomPosixPath, CustomPurePosixPath]
             if os.name == "posix"
-            else [CustomPath]
+            else [CustomPurePosixPath]
         )
         for PathType in test_classes:
             with self.subTest(PathType=PathType):
@@ -80,6 +68,7 @@ class TestPathlibMixedSlashes(unittest.TestCase):
                 self.assertNotEqual(path1, path2)
                 self.assertNotEqual(hash(path1), hash(path2))
                 self.assertNotEqual(test_set, {PathType("TEST\\path\\\\to\\nothing")})
+
     def test_pathlib_path_edge_cases_posix(self):
         test_classes = [PosixPath, PurePosixPath] if os.name == "posix" else [PurePosixPath]
         for PathType in test_classes:

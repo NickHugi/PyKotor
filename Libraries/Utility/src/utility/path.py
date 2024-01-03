@@ -61,17 +61,37 @@ class PurePathType(type):
 class BasePurePath(metaclass=PurePathType):  # type: ignore[misc]
     """BasePath is a class created to fix some annoyances with pathlib, such as its refusal to resolve mixed/repeating/trailing slashes."""
 
-    def __getattr__(self, item: str):
-        """Delegate to str(self) if the attribute is not found in BasePurePath."""
-        if (  # this check is required because something in pathlib already catches AttributeError internally.
-            item in {"__mro__"}
-            or item in {s for cls in self.__mro__ for s in cls.__slots__}
-        ):
-            return getattr(super(), item)
-        try:
-            return getattr(super(), item)
-        except AttributeError:
-            return getattr(str(self), item)
+    @classmethod
+    def _get_sep(cls):
+        return cls._flavour.sep  # type: ignore[attr-defined]
+
+    @classmethod
+    def _create_super_instance(cls, *args, **kwargs):
+        # Create the pathlib class instance, ignore the type errors in super().__new__
+        arg_pathlib_instance = super().__new__(cls, *args, **kwargs)  # type: ignore[call-arg]
+        arg_pathlib_instance.__init__(*args, _called_from_pathlib=False)  # type: ignore[misc]
+        return arg_pathlib_instance
+
+    @classmethod
+    def _create_instance(cls, *args, **kwargs):
+        instance = cls.__new__(cls, *args, **kwargs)
+        instance.__init__(*args, **kwargs)
+        return instance
+
+    @classmethod
+    def parse_args(cls, args: tuple[PathElem, ...]) -> list[BasePurePath]:
+        args_list = list(args)
+        for i, arg in enumerate(args_list):
+            if isinstance(arg, BasePurePath):
+                continue  # do nothing if already our instance type
+
+            formatted_path_str = cls._fix_path_formatting(cls._fspath_str(arg), slash=cls._get_sep())
+            if formatted_path_str.endswith(":") and "/" not in formatted_path_str and "\\" not in formatted_path_str:
+                formatted_path_str = f"{formatted_path_str}{cls._get_sep()}"  # HACK: fix later
+
+            args_list[i] = formatted_path_str
+
+        return args_list  # type: ignore[return-value]
 
     def __new__(cls, *args: PathElem, **kwargs):
         return (
@@ -116,289 +136,17 @@ class BasePurePath(metaclass=PurePathType):  # type: ignore[misc]
         else:
             init_method(self, *args)
 
-    @classmethod
-    def parse_args(cls, args: tuple[PathElem, ...]) -> list[BasePurePath]:
-        args_list = list(args)
-        for i, arg in enumerate(args_list):
-            if isinstance(arg, BasePurePath):
-                continue  # do nothing if already our instance type
-            formatted_path_str = cls._fix_path_formatting(cls._fspath_str(arg), cls._flavour.sep)  # type: ignore[attr-defined]
-            if formatted_path_str.endswith(":") and "/" not in formatted_path_str and "\\" not in formatted_path_str:
-                formatted_path_str = f"{formatted_path_str}{cls._flavour.sep}"  # type: ignore[attr-defined]
-
-            # Create the pathlib class instance, ignore the type errors in super().__new__
-            arg_pathlib_instance = super().__new__(cls, formatted_path_str)  # type: ignore[call-arg, reportGeneralTypeIssues]
-            arg_pathlib_instance.__init__(formatted_path_str, _called_from_pathlib=False)  # type: ignore[misc]
-
-            args_list[i] = arg_pathlib_instance
-
-        return args_list  # type: ignore[return-value, reportGeneralTypeIssues]
-
-    @classmethod
-    def _create_instance(cls, *args, **kwargs):
-        instance = cls.__new__(cls, *args, **kwargs)  # type: ignore  # noqa: PGH003
-        instance.__init__(*args, **kwargs)
-        return instance
+        self._cache_str: str = self._fix_path_formatting(super().__str__())
+        assert not self._cache_str.startswith("C:Users")
+        self._cache_windows_str: str = self._fix_path_formatting(super().__str__().lower(), slash="\\")
+        self._cache_posix_str: str = self._fix_path_formatting(super().__str__(), slash="/")
 
     @staticmethod
-    def _fspath_str(arg: object) -> str:
-        """Convert object to a file system path string.
-
-        Args:
-        ----
-            arg: Object to convert to a file system path string
-
-        Returns:
-        -------
-            str: File system path string
-
-        Processing Logic:
-        ----------------
-            - Check if arg is already a string
-            - Check if arg has a __fspath__ method and call it
-            - Check if arg somehow inherits os.PathLike despite not having __fspath__ (redundant)
-            - Raise TypeError if arg is neither string nor has __fspath__ method.
-        """
-        if isinstance(arg, str):
-            return arg
-
-        fspath_method: Callable | None = getattr(arg, "__fspath__", None)
-        if fspath_method is not None:
-            return fspath_method()
-        if isinstance(arg, os.PathLike):
-            return str(arg)
-
-        msg = f"Object '{arg!r}' must be str, or path-like object (implementing __fspath__). Instead got type '{type(arg)}'"
-        raise TypeError(msg)
-
-    def __str__(self) -> str:
-        """Call _fix_path_formatting before returning the pathlib class's __str__ result."""
-        return self._fix_path_formatting(super().__str__(), self._flavour.sep)  # type: ignore[attr-defined]
-
-    def __eq__(self, other):
-        other_str: str = ""
-        if isinstance(other, (os.PathLike, str)):
-            other_str = self._fspath_str(other)
-        else:
-            print(f"Cannot compare {self!r} with {other!r}")
-            return NotImplemented
-        return str(self) == self._fix_path_formatting(other_str)
-
-    def __hash__(self):
-        return hash((BasePurePath, self.as_posix()))
-
-    def __fspath__(self) -> str:
-        """Ensures any use of __fspath__ will call our __str__ method."""
-        return str(self)
-
-    def __truediv__(self, key: PathElem):
-        """Appends a path part with the divider operator '/'.
-        This method is called when the left side is self.
-
-        Args:
-        ----
-            self: Path object
-            key (path-like object or str path):
-        """
-        return self._create_instance(self, key)
-
-    def __rtruediv__(self, key: PathElem):
-        """Appends a path part with the divider operator '/'.
-        This method is called when the right side is self.
-
-        Args:
-        ----
-            self: Path object
-            key (path-like object or str path):
-        """
-        return self._create_instance(key, self)
-
-    def __add__(self, key: PathElem) -> str:
-        """Implicitly converts the path to a str when used with the addition operator '+'.
-        This method is called when the left side is self.
-
-        Args:
-        ----
-            self: Path object
-            key (path-like object or str path):
-        """
-        return str(self.__truediv__(key))
-
-    def __radd__(self, key: PathElem) -> str:
-        """Implicitly converts the path to a str when used with the addition operator '+'.
-        This method is called when the right side is self.
-
-        Args:
-        ----
-            self: Path object
-            key (path-like object or str path):
-        """
-        return str(self.__rtruediv__(key))
-
-    @classmethod
-    def pathify(cls, path: PathElem):
-        return path if isinstance(path, cls) else cls(path)
-
-    def split_filename(self, dots: int = 1) -> tuple[str, str]:
-        """Splits a filename into a tuple of stem and extension.
-
-        Args:
-        ----
-            self: Path object
-            dots: Number of dots to split on (default 1).
-                  Negative values indicate splitting from the left.
-
-        Returns:
-        -------
-            tuple: A tuple containing (stem, extension)
-
-        Processing Logic:
-        ----------------
-            - The filename is split on the last N dots, where N is the dots argument
-            - For negative dots, the filename is split on the first N dots from the left
-            - If there are fewer parts than dots, the filename is split at the first dot
-            - Otherwise, the filename is split into a stem and extension part
-        """
-        if dots == 0:
-            msg = "Number of dots must not be 0"
-            raise ValueError(msg)
-
-        self_path = self
-        if not isinstance(self_path, PurePath):
-            msg = f"self must be a path, got {self_path!r}"
-            raise NotImplementedError(msg)
-
-        def split_func(parts: list[str]) -> tuple[str, str]:
-            return ".".join(parts[:-abs(dots)]), ".".join(parts[-abs(dots):])
-
-        parts: list[str]
-        if dots < 0:
-            parts = self_path.name.split(".", abs(dots))
-            parts.reverse()  # Reverse the order of parts for negative dots
-        else:
-            parts = self_path.name.rsplit(".", abs(dots) + 1)
-
-        if len(parts) <= abs(dots):
-            first_dot = self_path.name.find(".")
-            return (
-                (self_path.name[:first_dot], self_path.name[first_dot + 1:])
-                if first_dot != -1
-                else (self_path.name, "")
-            )
-
-        return split_func(parts)
-
-    def as_posix(self):
-        """Convert path to a POSIX path.
-
-        Args:
-        ----
-            self: Path object
-
-        Returns:
-        -------
-            str: POSIX representation of the path
-
-        Processing Logic:
-        ----------------
-            - Call as_posix() on the Path object to get the POSIX path string
-            - Pass the result to _fix_path_formatting() to normalize the path format. This is done to fix any known bugs with the pathlib library.
-        """
-        return self._fix_path_formatting(super().as_posix(), slash="/")  # type: ignore[misc]
-
-    def joinpath(self, *args: PathElem):
-        """Appends one or more path-like objects and/or relative paths to self.
-
-        If any path being joined is already absolute, it will override and replace self instead of join us.
-
-        Args:
-        ----
-            self (Path object):
-            key (path-like object or str path):
-        """
-        return self._create_instance(self, *args)
-
-    def add_suffix(self, extension: str):
-        """Initialize a new path object with the added extension. Similar to with_suffix, but doesn't replace existing extensions."""
-        if not isinstance(extension, str):
-            msg = f"Extension must be a str, got '{extension!r}'"
-            raise TypeError(msg)
-
-        extension = extension.strip()
-        if not extension.startswith("."):
-            extension = f".{extension}"
-
-        return self._create_instance(str(self) + extension)
-
-    def is_relative_to(self, other: PathElem, case_sensitive: bool = True) -> bool:
-        """Checks if self is relative to other.
-
-        Args:
-        ----
-            self: Path to check
-            other: Path to check against
-            case_sensitive: Whether to do case-sensitive comparison
-
-        Returns:
-        -------
-            bool: Whether self is relative to other
-
-        Processing Logic:
-        ----------------
-            - Resolve self and other if they are Path objects
-            - Convert self and other to strings
-            - Lowercase strings on Windows or if case_sensitive is False
-            - Check if self string starts with other string.
-        """
-        resolved_self = self
-        if isinstance(resolved_self, Path):
-            if not isinstance(other, Path):
-                other = self.__class__(other)
-            if isinstance(other, Path) and not other.is_absolute():
-                other = other.resolve()
-            if not resolved_self.is_absolute():
-                resolved_self = resolved_self.resolve()
-        else:
-            other = PurePath.pathify(other)
-
-        self_str, other_str = map(str, (resolved_self, other))
-        if not case_sensitive or os.name == "nt":
-            self_str, other_str = map(str.lower, (self_str, other_str))
-        return bool(self_str.startswith(other_str))
-
-    def endswith(self, text: str | tuple[str, ...], case_sensitive: bool = False) -> bool:  # type: ignore[override]
-        """Checks if string ends with the specified suffix.
-
-        Args:
-        ----
-            self: Path object
-            text: String or tuple of strings to check for suffix.
-            case_sensitive: Whether comparison should be case sensitive.
-
-        Returns:
-        -------
-            bool: True if string ends with the suffix, False otherwise.
-
-        Processing Logic:
-        ----------------
-            - If case sensitivity is not required, normalize self and text to lower case
-            - Normalize each string in the tuple if text is a tuple
-            - Utilize Python's built-in endswith method to check for suffix.
-        """
-        # If case sensitivity is not required, normalize the self string and the text to lower case
-        if not case_sensitive:
-            self_str = str(self).lower()
-
-            # Normalize each string in the tuple if text is a tuple
-            text = tuple(subtext.lower() for subtext in text) if isinstance(text, tuple) else text.lower()
-        else:
-            self_str = str(self)
-
-        # Utilize Python's built-in endswith method
-        return self_str.endswith(text)
-
-    @staticmethod
-    def _fix_path_formatting(str_path: str, slash=os.sep) -> str:
+    def _fix_path_formatting(
+        str_path: str,
+        *,
+        slash=os.sep,
+    ) -> str:
         """Formats a path string.
 
         Args:
@@ -442,42 +190,284 @@ class BasePurePath(metaclass=PurePathType):  # type: ignore[misc]
             formatted_path = re.sub(r"/{2,}", "/", formatted_path)
 
         # Strip any trailing slashes, don't call rstrip if the formatted path == "/"
-        return formatted_path if len(formatted_path) == 1 else formatted_path.rstrip(slash)
+        if len(formatted_path) != 1:
+            formatted_path = formatted_path.rstrip(slash)
+        return formatted_path
+
+    @staticmethod
+    def _fspath_str(arg: object) -> str:
+        """Convert object to a file system path string.
+
+        Args:
+        ----
+            arg: Object to convert to a file system path string
+
+        Returns:
+        -------
+            str: File system path string
+
+        Processing Logic:
+        ----------------
+            - Check if arg is already a string
+            - Check if arg has a __fspath__ method and call it
+            - Check if arg somehow inherits os.PathLike despite not having __fspath__ (redundant)
+            - Raise TypeError if arg is neither string nor has __fspath__ method.
+        """
+        if isinstance(arg, str):
+            return arg
+
+        fspath_method: Callable | None = getattr(arg, "__fspath__", None)
+        if fspath_method is not None:
+            return fspath_method()
+        if isinstance(arg, os.PathLike):
+            return str(arg)
+
+        msg = f"Object '{arg!r}' must be str, or path-like object (implementing __fspath__). Instead got type '{type(arg)}'"
+        raise TypeError(msg)
+
+    def __str__(self) -> str:
+        """Return the result from _fix_path_formatting that was initialized."""
+        return self.as_posix() if self._get_sep() == "/" else self._cache_str
+
+    def __repr__(self):
+        return f"{self.__class__.__name__}({self})"
+
+    def __eq__(self, __value):
+        if isinstance(__value, (bytes, bytearray, memoryview)):
+            return os.fsencode(self) == __value
+
+        self_compare = self
+        other_compare = __value
+        if isinstance(__value, (os.PathLike, str)):
+            self_compare = str(self)
+            if isinstance(__value, PurePath):
+                other_compare = str(__value)
+            else:
+                other_compare = self._fix_path_formatting(self._fspath_str(__value), slash=self._get_sep())
+
+            if self._get_sep() == "\\":
+                self_compare = self_compare.lower()
+                other_compare = other_compare.lower()
+
+        return self_compare == other_compare
+
+    def __hash__(self):
+        return hash(self.as_posix() if self._get_sep() == "/" else self.as_windows())
+
+    def __bytes__(self):
+        """Return the bytes representation of the path.  This is only
+        recommended to use under Unix.
+        """
+        return os.fsencode(self)
+
+    def __fspath__(self) -> str:
+        """Ensures any use of __fspath__ will call our __str__ method."""
+        return str(self)
+
+    def __truediv__(self, key: PathElem):
+        """Appends a path part when using the divider operator '/'.
+        This method is called when the left side is self.
+
+        If key is already absolute, it will override and replace self instead of join us.
+
+        Args:
+        ----
+            self: Path object
+            key (path-like object or str path):
+        """
+        return self._create_instance(self, key)
+
+    def __rtruediv__(self, key: PathElem):
+        """Appends a path part when using the divider operator '/'.
+        This method is called when the right side is self.
+
+        Returns self if self is already absolute.
+
+        Args:
+        ----
+            self: Path object
+            key (path-like object or str path):
+        """
+        return self._create_instance(key, self)
+
+    def __add__(self, key: PathElem) -> str:
+        """Implicitly converts the path to a str when used with the addition operator '+'.
+        This method is called when the left side is self.
+
+        Args:
+        ----
+            self: Path object
+            key (path-like object or str path):
+        """
+        return self._fix_path_formatting(f"{self}/{key}", slash=self._get_sep())
+
+    def __radd__(self, key: PathElem) -> str:
+        """Implicitly converts the path to a str when used with the addition operator '+'.
+        This method is called when the right side is self.
+
+        Args:
+        ----
+            self: Path object
+            key (path-like object or str path):
+        """
+        return self._fix_path_formatting(f"{key}/{self}", slash=self._get_sep())
+
+    @classmethod
+    def pathify(cls, path: PathElem):
+        return path if isinstance(path, cls) else cls(path)
+
+    def split_filename(self, dots: int = 1) -> tuple[str, str]:
+        """Splits a filename into a tuple of stem and extension.
+
+        Args:
+        ----
+            self: Path object
+            dots: Number of dots to split on (default 1).
+                  Negative values indicate splitting from the left.
+
+        Returns:
+        -------
+            tuple: A tuple containing (stem, extension)
+
+        Processing Logic:
+        ----------------
+            - The filename is split on the last N dots, where N is the dots argument
+            - For negative dots, the filename is split on the first N dots from the left
+            - If there are fewer parts than dots, the filename is split at the first dot
+            - Otherwise, the filename is split into a stem and extension part
+        """
+        if dots == 0:
+            msg = "Number of dots must not be 0"
+            raise ValueError(msg)
+
+        self_path = self
+        if not isinstance(self_path, PurePath):
+            msg = f"self must be a path, got {self_path!r}"
+            raise NotImplementedError(msg)
+
+        parts: list[str]
+        if dots < 0:
+            parts = self_path.name.split(".", abs(dots))
+            parts.reverse()  # Reverse the order of parts for negative dots
+        else:
+            parts = self_path.name.rsplit(".", abs(dots) + 1)
+
+        if len(parts) <= abs(dots):
+            first_dot = self_path.name.find(".")
+            return (
+                (self_path.name[:first_dot], self_path.name[first_dot + 1:])
+                if first_dot != -1
+                else (self_path.name, "")
+            )
+
+        return ".".join(parts[:-abs(dots)]), ".".join(parts[-abs(dots):])
+
+    def as_posix(self):
+        """Convert path to a POSIX path.
+
+        Args:
+        ----
+            self: Path object
+
+        Returns:
+        -------
+            str: POSIX representation of the path
+        """
+        return self._cache_posix_str
+
+    def as_windows(self) -> str:
+        """Convert path to a WINDOWS path, lowercasing the whole path and returning a str.
+
+        Args:
+        ----
+            self: Path object
+
+        Returns:
+        -------
+            str: POSIX representation of the path
+        """
+        return self._cache_windows_str
+
+    def joinpath(self, *args: PathElem):
+        """Appends one or more path-like objects and/or relative paths to self.
+
+        If any path being joined is already absolute, it will override and replace self instead of join us.
+
+        Args:
+        ----
+            self (Path object):
+            key (path-like object or str path):
+        """
+        return self._create_instance(self, *args)
+
+    def add_suffix(self, extension: str):
+        """Initialize a new path object with the added extension. Similar to with_suffix, but doesn't replace existing extensions."""
+        extension = extension.strip()
+        if not extension.startswith("."):
+            extension = f".{extension}"
+        return self._create_instance(str(self) + extension)
+
+    def with_segments(self, *pathsegments):
+        """Construct a new path object from any number of path-like objects.
+
+        Subclasses may override this method to customize how new path objects
+        are created from methods like `iterdir()`.
+        """
+        return self._create_instance(*pathsegments)
+
+    def with_stem(self, stem):
+        """Return a new path with the stem changed."""
+
+        self_path = self
+        if not isinstance(self_path, PurePath):
+            msg = f"self must be a path, got {self_path!r}"
+            raise NotImplementedError(msg)
+
+        return self_path.with_name(stem + self_path.suffix)
+
+    def endswith(self, text: str | tuple[str, ...], case_sensitive: bool = False) -> bool:  # type: ignore[override]
+        """Checks if string ends with the specified str or tuple of strings.
+
+        Args:
+        ----
+            self: Path object
+            text: String or tuple of strings to check.
+            case_sensitive: Whether comparison should be case sensitive.
+
+        Returns:
+        -------
+            bool: True if string ends with the text, False otherwise.
+
+        Processing Logic:
+        ----------------
+            - If case sensitivity is not required, normalize self and text to lower case
+            - Normalize each string in the tuple if text is a tuple
+            - Utilize Python's built-in endswith method to check for text.
+        """
+        # If case sensitivity is not required, normalize the self string and the text to lower case
+        if not case_sensitive:
+            self_str = str(self).lower()
+
+            # Normalize each string in the tuple if text is a tuple
+            text = tuple(subtext.lower() for subtext in text) if isinstance(text, tuple) else text.lower()
+        else:
+            self_str = str(self)
+
+        # Utilize Python's built-in endswith method
+        return self_str.endswith(text)
 
 class PurePath(BasePurePath, pathlib.PurePath):  # type: ignore[misc]
     # pylint: disable-all
     _flavour = pathlib.PureWindowsPath._flavour if os.name == "nt" else pathlib.PurePosixPath._flavour  # type: ignore[attr-defined]
 
 class PurePosixPath(BasePurePath, pathlib.PurePosixPath):  # type: ignore[misc]
-    pass
-
+    ...
 
 class PureWindowsPath(BasePurePath, pathlib.PureWindowsPath):  # type: ignore[misc]
-    pass
+    ...
 
 T = TypeVar("T", bound="BasePath")
 class BasePath(BasePurePath):
-
-    def __hash__(self):
-        return hash((BasePath, self.as_posix().lower() if os.name == "nt" else self.as_posix()))
-
-    def __eq__(self, other):
-        if isinstance(other, PurePath):
-            other_str = other.as_posix()
-        elif isinstance(other, str):
-            other_str = other
-        elif hasattr(other, "__fspath__"):
-            other_str = other.__fspath__()
-        else:
-            return NotImplemented
-
-        other_str = self._fix_path_formatting(other_str, "/")
-        self_str = self.as_posix()
-        if os.name == "nt":
-            self_str = self_str.lower()
-            other_str = other_str.lower()
-
-        return self_str == other_str
 
     # Safe rglob operation
     def safe_rglob(self: T, pattern: str) -> Generator[T, Any, None]:

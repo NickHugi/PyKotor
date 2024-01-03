@@ -77,22 +77,20 @@ class TestCaseAwarePath(unittest.TestCase):
     def test_relative_to_case_sensitive(self):
         file_path = CaseAwarePath("TEST\\path\\to\\something.test")
         folder_path = CaseAwarePath("TesT\\Path\\")
-        self.assertTrue(folder_path in file_path)
         self.assertTrue(file_path.is_relative_to(folder_path))
 
     def test_relative_to_base(self):
         file_path = CaseAwarePath("TEST\\path\\to\\something.test")
         folder_path = CaseAwarePath("TEST\\path\\")
-        self.assertTrue(folder_path in file_path)
         self.assertTrue(file_path.is_relative_to(folder_path))
 
     def test_fix_path_formatting(self):
-        self.assertEqual(CaseAwarePath._fix_path_formatting("C:/path//to/dir/", "\\"), "C:\\path\\to\\dir")
-        self.assertEqual(CaseAwarePath._fix_path_formatting("C:/path//to/dir/", "/"), "C:/path/to/dir")
-        self.assertEqual(CaseAwarePath._fix_path_formatting("\\path//to/dir/", "\\"), "\\path\\to\\dir")
-        self.assertEqual(CaseAwarePath._fix_path_formatting("\\path//to/dir/", "/"), "/path/to/dir")
-        self.assertEqual(CaseAwarePath._fix_path_formatting("/path//to/dir/", "\\"), "\\path\\to\\dir")
-        self.assertEqual(CaseAwarePath._fix_path_formatting("/path//to/dir/", "/"), "/path/to/dir")
+        self.assertEqual(CaseAwarePath._fix_path_formatting("C:/path//to/dir/", slash="\\"), "C:\\path\\to\\dir")
+        self.assertEqual(CaseAwarePath._fix_path_formatting("C:/path//to/dir/", slash="/"), "C:/path/to/dir")
+        self.assertEqual(CaseAwarePath._fix_path_formatting("\\path//to/dir/", slash="\\"), "\\path\\to\\dir")
+        self.assertEqual(CaseAwarePath._fix_path_formatting("\\path//to/dir/", slash="/"), "/path/to/dir")
+        self.assertEqual(CaseAwarePath._fix_path_formatting("/path//to/dir/", slash="\\"), "\\path\\to\\dir")
+        self.assertEqual(CaseAwarePath._fix_path_formatting("/path//to/dir/", slash="/"), "/path/to/dir")
 
     @patch.object(pathlib.Path, "exists", autospec=True)
     def test_should_resolve_case(self, mock_exists):
