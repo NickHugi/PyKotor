@@ -106,7 +106,7 @@ class FileResource:
     def filename(
         self,
     ) -> str:
-        return str(self)
+        return str(self._identifier)
 
     def filepath(
         self,
@@ -153,14 +153,12 @@ class FileResource:
         finally:
             self._internal = False
 
-    def get_sha256_hash(self):
+    def get_sha256_hash(self) -> str:
         if not self._sha256_hash:
             self.data()  # Ensure that the SHA256 hash is calculated
         return self._sha256_hash
 
-    def identifier(
-        self,
-    ) -> ResourceIdentifier:
+    def identifier(self) -> ResourceIdentifier:
         return self._identifier
 
 
