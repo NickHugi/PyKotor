@@ -22,7 +22,7 @@ class TLKBinaryReader(ResourceReader):
         self._tlk: TLK
         self._texts_offset = 0
         self._text_headers: list[ArrayHead] = []
-        self._language = language
+        self._language: Language | None = language
 
     @autoclose
     def load(

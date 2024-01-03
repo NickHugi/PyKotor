@@ -216,7 +216,7 @@ class StrType(type):
 class WrappedStr:  # (metaclass=StrType):
 
     __slots__: tuple[str, ...] = (
-        "__content",
+        "_content",
     )
 
     @staticmethod
@@ -227,47 +227,50 @@ class WrappedStr:  # (metaclass=StrType):
             raise TypeError(f"Expected str-like, got '{var}' of type {type(var)}")  # noqa: TRY003, EM102
         return str(var)
 
+    def __init__(self, __content: str | WrappedStr = "") -> None:
+        if __content is None:
+            msg = f"Cannot initialize {self.__class__.__name__}(None), expected a str-like argument"
+            raise RuntimeError(msg)
+        self._content: str = self._assert_str_type(__content)
+
     @classmethod
     def maketrans(cls, __x: WrappedStr | str, __y: WrappedStr | str, __z: WrappedStr | str) -> dict[int, int | None]:
         return str.maketrans(cls._assert_str_type(__x), cls._assert_str_type(__y), cls._assert_str_type(__z))
 
-    def __init__(self, __content: str | WrappedStr = "") -> None:
-        self.__content: str = self._assert_str_type(__content) if __content is not None else ""
-
     def __setattr__(self, __name: str, __value: Any) -> None:
-        if getattr(self, __name, None) is not None and __name in self.__slots__:
+        if hasattr(self, __name):
             msg = f"{self.__class__.__name__} is immutable, cannot evaluate `setattr({self!r}, {__name!r}, {__value!r})`"
             raise RuntimeError(msg)
         return super().__setattr__(__name, __value)
 
     def __len__(self):
-        return len(self.__content)
+        return len(self._content)
 
     def __repr__(self):
-        return f"{self.__class__.__name__}({self.__content})"
+        return f"{self.__class__.__name__}({self._content})"
 
     def __str__(self) -> str:
-        return self.__content
+        return self._content
 
     def __eq__(
         self,
         __value: object,
     ):
-        return self.__content == self._assert_str_type(__value)
+        return self._content == self._assert_str_type(__value)
 
     def __ne__(
         self,
         __value: object,
     ):
-        return self.__content != self._assert_str_type(__value)
+        return self._content != self._assert_str_type(__value)
 
     def __iter__(self):
-        for i in range(len(self.__content)):
-            yield self.__class__(self.__content[i])
+        for i in range(len(self._content)):
+            yield self.__class__(self._content[i])
 
     def __deepcopy__(self, memo: Any):
         # Create a new instance with the same content
-        new_copy = self.__class__(self.__content)
+        new_copy = self.__class__(self._content)
         # Add the new object to the memo dictionary to handle circular references
         memo[id(self)] = new_copy
         return new_copy
@@ -276,25 +279,25 @@ class WrappedStr:  # (metaclass=StrType):
         self,
         __key: SupportsIndex | slice,
     ):
-        return self.__class__(self.__content[__key])
+        return self.__class__(self._content[__key])
 
     def __contains__(
         self,
         __key: str | WrappedStr,
     ) -> bool:
-        return self._assert_str_type(__key) in self.__content
+        return self._assert_str_type(__key) in self._content
 
     def __add__(
         self,
         __value: LiteralString | str | WrappedStr,
     ):
-        return self.__class__(self.__content + self._assert_str_type(__value))
+        return self.__class__(self._content + self._assert_str_type(__value))
 
     def __radd__(
         self,
         __value: LiteralString | str | WrappedStr,
     ):
-        return self.__class__(self._assert_str_type(__value) + self.__content)
+        return self.__class__(self._assert_str_type(__value) + self._content)
 
     def __mod__(
         self,
@@ -305,46 +308,46 @@ class WrappedStr:  # (metaclass=StrType):
             if isinstance(__value, tuple)
             else self._assert_str_type(__value)
         )
-        return self.__class__(self.__content % parsed_value)
+        return self.__class__(self._content % parsed_value)
 
     def __mul__(
         self,
         __value: SupportsIndex,
     ):
-        return self.__class__(self.__content * __value)
+        return self.__class__(self._content * __value)
 
     def __rmul__(
         self,
         __value: SupportsIndex,
     ):
-        return self.__class__(__value * self.__content)
+        return self.__class__(__value * self._content)
 
     def __lt__(
         self,
         __value: str | WrappedStr,
     ):
-        return self.__content < self._assert_str_type(__value)
+        return self._content < self._assert_str_type(__value)
 
     def __le__(
         self,
         __value: str | WrappedStr,
     ):
-        return self.__content <= self._assert_str_type(__value)
+        return self._content <= self._assert_str_type(__value)
 
     def __gt__(
         self,
         __value: str | WrappedStr,
     ):
-        return self.__content > self._assert_str_type(__value)
+        return self._content > self._assert_str_type(__value)
 
     def __ge__(
         self,
         __value: str | WrappedStr,
     ):
-        return self.__content >= self._assert_str_type(__value)
+        return self._content >= self._assert_str_type(__value)
 
     def __hash__(self):
-        return hash((self.__class__, self.__content))
+        return hash((WrappedStr, self._content))
 
     # String Methods
     def capitalize(self) -> Self:
@@ -352,11 +355,11 @@ class WrappedStr:  # (metaclass=StrType):
 
         More specifically, make the first character have upper case and the rest lower case.
         """
-        return self.__class__(self.__content.capitalize())
+        return self.__class__(self._content.capitalize())
 
     def casefold(self) -> Self:
         """Return a version of the string suitable for caseless comparisons."""
-        return self.__class__(self.__content.casefold())
+        return self.__class__(self._content.casefold())
 
     def center(
         self,
@@ -367,7 +370,7 @@ class WrappedStr:  # (metaclass=StrType):
 
         Padding is done using the specified fill character (default is a space).
         """
-        return self.__class__(self.__content.center(__width, self._assert_str_type(__fillchar)))
+        return self.__class__(self._content.center(__width, self._assert_str_type(__fillchar)))
 
     def count(
         self,
@@ -380,7 +383,7 @@ class WrappedStr:  # (metaclass=StrType):
         Return the number of non-overlapping occurrences of substring sub in
         string S[start:end]. Optional arguments start and end are interpreted as in slice notation.
         """  # noqa: D415, D402, D400
-        return self.__content.count(self._assert_str_type(x), __start, __end)
+        return self._content.count(self._assert_str_type(x), __start, __end)
 
     def encode(
         self,
@@ -394,7 +397,7 @@ class WrappedStr:  # (metaclass=StrType):
         errors
             The error handling scheme to use for encoding errors. The default is 'strict' meaning that encoding errors raise a UnicodeEncodeError. Other possible values are 'ignore', 'replace' and 'xmlcharrefreplace' as well as any other name registered with codecs.register_error that can handle UnicodeEncodeErrors.
         """
-        return self.__content.encode(self._assert_str_type(encoding), self._assert_str_type(errors))
+        return self._content.encode(self._assert_str_type(encoding), self._assert_str_type(errors))
 
     def endswith(
         self,
@@ -411,7 +414,7 @@ class WrappedStr:  # (metaclass=StrType):
             if isinstance(__suffix, tuple)
             else self._assert_str_type(__suffix)
         )
-        return self.__content.endswith(parsed_suffix, __start, __end)
+        return self._content.endswith(parsed_suffix, __start, __end)
 
     def expandtabs(
         self,
@@ -421,7 +424,7 @@ class WrappedStr:  # (metaclass=StrType):
 
         If tabsize is not given, a tab size of 8 characters is assumed.
         """
-        return self.__class__(self.__content.expandtabs(tabsize))
+        return self.__class__(self._content.expandtabs(tabsize))
 
     def find(
         self,
@@ -436,7 +439,7 @@ class WrappedStr:  # (metaclass=StrType):
 
         Return -1 on failure.
         """  # noqa: D415, D400, D402
-        return self.__content.find(self._assert_str_type(__sub), __start, __end)
+        return self._content.find(self._assert_str_type(__sub), __start, __end)
 
     def format(
         self,
@@ -447,14 +450,14 @@ class WrappedStr:  # (metaclass=StrType):
 
         Return a formatted version of S, using substitutions from args and kwargs. The substitutions are identified by braces ('{' and '}').
         """  # noqa: D415, D400, D402
-        return self.__class__(self.__content.format(*args, **kwargs))
+        return self.__class__(self._content.format(*args, **kwargs))
 
     def format_map(self, map) -> Self:  # noqa: A002
         """S.format_map(mapping) -> str
 
         Return a formatted version of S, using substitutions from mapping. The substitutions are identified by braces ('{' and '}').
         """  # noqa: D415, D402, D400
-        return self.__class__(self.__content.format_map(map))
+        return self.__class__(self._content.format_map(map))
 
     def index(
         self,
@@ -469,91 +472,91 @@ class WrappedStr:  # (metaclass=StrType):
 
         Raises ValueError when the substring is not found.
         """  # noqa: D415, D400, D402
-        return self.__content.index(self._assert_str_type(__sub), __start, __end)
+        return self._content.index(self._assert_str_type(__sub), __start, __end)
 
     def isalnum(self) -> bool:
         """Return True if the string is an alpha-numeric string, False otherwise.
 
         A string is alpha-numeric if all characters in the string are alpha-numeric and there is at least one character in the string.
         """
-        return self.__content.isalnum()
+        return self._content.isalnum()
 
     def isalpha(self) -> bool:
         """Return True if the string is an alphabetic string, False otherwise.
 
         A string is alphabetic if all characters in the string are alphabetic and there is at least one character in the string.
         """
-        return self.__content.isalpha()
+        return self._content.isalpha()
 
     def isascii(self) -> bool:
         """Return True if all characters in the string are ASCII, False otherwise.
 
         ASCII characters have code points in the range U+0000-U+007F. Empty string is ASCII too.
         """
-        return self.__content.isascii()
+        return self._content.isascii()
 
     def isdecimal(self) -> bool:
         """Return True if the string is a decimal string, False otherwise.
 
         A string is a decimal string if all characters in the string are decimal and there is at least one character in the string.
         """
-        return self.__content.isdecimal()
+        return self._content.isdecimal()
 
     def isdigit(self) -> bool:
         """Return True if the string is a digit string, False otherwise.
 
         A string is a digit string if all characters in the string are digits and there is at least one character in the string.
         """
-        return self.__content.isdigit()
+        return self._content.isdigit()
 
     def isidentifier(self) -> bool:
         """Return True if the string is a valid Python identifier, False otherwise.
 
         Call keyword.iskeyword(s) to test whether string s is a reserved identifier, such as "def" or "class".
         """
-        return self.__content.isidentifier()
+        return self._content.isidentifier()
 
     def islower(self) -> bool:
         """Return True if the string is a lowercase string, False otherwise.
 
         A string is lowercase if all cased characters in the string are lowercase and there is at least one cased character in the string.
         """
-        return self.__content.islower()
+        return self._content.islower()
 
     def isnumeric(self) -> bool:
         """Return True if the string is a numeric string, False otherwise.
 
         A string is numeric if all characters in the string are numeric and there is at least one character in the string.
         """
-        return self.__content.isnumeric()
+        return self._content.isnumeric()
 
     def isprintable(self) -> bool:
         """Return True if the string is printable, False otherwise.
 
         A string is printable if all of its characters are considered printable in repr() or if it is empty.
         """
-        return self.__content.isprintable()
+        return self._content.isprintable()
 
     def isspace(self) -> bool:
         """Return True if the string is a whitespace string, False otherwise.
 
         A string is whitespace if all characters in the string are whitespace and there is at least one character in the string.
         """
-        return self.__content.isspace()
+        return self._content.isspace()
 
     def istitle(self) -> bool:
         """Return True if the string is a title-cased string, False otherwise.
 
         In a title-cased string, upper- and title-case characters may only follow uncased characters and lowercase characters only cased ones.
         """
-        return self.__content.istitle()
+        return self._content.istitle()
 
     def isupper(self) -> bool:
         """Return True if the string is an uppercase string, False otherwise.
 
         A string is uppercase if all cased characters in the string are uppercase and there is at least one cased character in the string.
         """
-        return self.__content.isupper()
+        return self._content.isupper()
 
     def join(
         self,
@@ -565,7 +568,7 @@ class WrappedStr:  # (metaclass=StrType):
 
         Example: '.'.join(['ab', 'pq', 'rs']) -> 'ab.pq.rs'
         """
-        return self.__class__(self.__content.join(self._assert_str_type(s) for s in __iterable))
+        return self.__class__(self._content.join(self._assert_str_type(s) for s in __iterable))
 
     def ljust(
         self,
@@ -576,11 +579,11 @@ class WrappedStr:  # (metaclass=StrType):
 
         Padding is done using the specified fill character (default is a space).
         """
-        return self.__class__(self.__content.ljust(__width, self._assert_str_type(__fillchar)))
+        return self.__class__(self._content.ljust(__width, self._assert_str_type(__fillchar)))
 
     def lower(self) -> Self:
         """Return a copy of the string converted to lowercase."""
-        return self.__class__(self.__content.lower())
+        return self.__class__(self._content.lower())
 
     def lstrip(
         self,
@@ -590,7 +593,7 @@ class WrappedStr:  # (metaclass=StrType):
 
         If chars is given and not None, remove characters in chars instead.
         """
-        return self.__class__(self.__content.lstrip(self._assert_str_type(__chars)))
+        return self.__class__(self._content.lstrip(self._assert_str_type(__chars)))
 
     def partition(
         self,
@@ -602,7 +605,7 @@ class WrappedStr:  # (metaclass=StrType):
 
         If the separator is not found, returns a 3-tuple containing the original string and two empty strings.
         """
-        a, b, c = self.__content.partition(self._assert_str_type(__sep))
+        a, b, c = self._content.partition(self._assert_str_type(__sep))
         return (self.__class__(a), self.__class__(b), self.__class__(c))
 
     def removeprefix(
@@ -610,18 +613,18 @@ class WrappedStr:  # (metaclass=StrType):
         __prefix: WrappedStr | str,
     ) -> Self:
         parsed_prefix: str = self._assert_str_type(__prefix)
-        if self.__content.startswith(parsed_prefix):
-            return self.__class__(self.__content[:len(parsed_prefix)])
-        return self.__class__(self.__content)
+        if self._content.startswith(parsed_prefix):
+            return self.__class__(self._content[:len(parsed_prefix)])
+        return self.__class__(self._content)
 
     def removesuffix(
         self,
         __suffix: WrappedStr | str,
     ) -> Self:
         parsed_suffix: str = self._assert_str_type(__suffix)
-        if self.__content.endswith(parsed_suffix):
-            return self.__class__(self.__content[-len(parsed_suffix):])
-        return self.__class__(self.__content)
+        if self._content.endswith(parsed_suffix):
+            return self.__class__(self._content[-len(parsed_suffix):])
+        return self.__class__(self._content)
 
     def replace(
         self,
@@ -636,7 +639,7 @@ class WrappedStr:  # (metaclass=StrType):
 
         If the optional argument count is given, only the first count occurrences are replaced.
         """
-        return self.__class__(self.__content.replace(self._assert_str_type(__old), self._assert_str_type(__new), __count))
+        return self.__class__(self._content.replace(self._assert_str_type(__old), self._assert_str_type(__new), __count))
 
     def rfind(
         self,
@@ -651,7 +654,7 @@ class WrappedStr:  # (metaclass=StrType):
 
         Return -1 on failure.
         """  # noqa: D415, D402, D400
-        return self.__content.rfind(self._assert_str_type(__sub), __start, __end)
+        return self._content.rfind(self._assert_str_type(__sub), __start, __end)
 
     def rindex(
         self,
@@ -666,7 +669,7 @@ class WrappedStr:  # (metaclass=StrType):
 
         Raises ValueError when the substring is not found.
         """  # noqa: D415, D400, D402
-        return self.__content.rindex(self._assert_str_type(__sub), __start, __end)
+        return self._content.rindex(self._assert_str_type(__sub), __start, __end)
 
     def rjust(
         self,
@@ -677,7 +680,7 @@ class WrappedStr:  # (metaclass=StrType):
 
         Padding is done using the specified fill character (default is a space).
         """
-        return self.__class__(self.__content.rjust(__width, self._assert_str_type(__fillchar)))
+        return self.__class__(self._content.rjust(__width, self._assert_str_type(__fillchar)))
 
     def rpartition(self, __sep: WrappedStr | str) -> tuple[Self, Self, Self]:
         """Partition the string into three parts using the given separator.
@@ -686,7 +689,7 @@ class WrappedStr:  # (metaclass=StrType):
 
         If the separator is not found, returns a 3-tuple containing two empty strings and the original string.
         """
-        a, b, c = self.__content.rpartition(self._assert_str_type(__sep))
+        a, b, c = self._content.rpartition(self._assert_str_type(__sep))
         return (self.__class__(a), self.__class__(b), self.__class__(c))
 
     def rsplit(
@@ -703,14 +706,14 @@ class WrappedStr:  # (metaclass=StrType):
 
         Splits are done starting at the end of the string and working to the front.
         """
-        return [self.__class__(s) for s in self.__content.rsplit(self._assert_str_type(__sep), __maxsplit)]
+        return [self.__class__(s) for s in self._content.rsplit(self._assert_str_type(__sep), __maxsplit)]
 
     def rstrip(self, __chars: WrappedStr | str | None = None) -> Self:
         """Return a copy of the string with trailing whitespace removed.
 
         If chars is given and not None, remove characters in chars instead.
         """
-        return self.__class__(self.__content.rstrip(self._assert_str_type(__chars)))
+        return self.__class__(self._content.rstrip(self._assert_str_type(__chars)))
 
     def split(
         self,
@@ -724,14 +727,14 @@ class WrappedStr:  # (metaclass=StrType):
         maxsplit
           Maximum number of splits to do. -1 (the default value) means no limit.
         """
-        return [self.__class__(s) for s in self.__content.split(self._assert_str_type(sep), maxsplit)]
+        return [self.__class__(s) for s in self._content.split(self._assert_str_type(sep), maxsplit)]
 
     def splitlines(self, keepends: bool = False) -> list[Self]:
         """Return a list of the lines in the string, breaking at line boundaries.
 
         Line breaks are not included in the resulting list unless keepends is given and true.
         """
-        return [self.__class__(s) for s in self.__content.splitlines(keepends)]
+        return [self.__class__(s) for s in self._content.splitlines(keepends)]
 
     def startswith(
         self,
@@ -743,7 +746,7 @@ class WrappedStr:  # (metaclass=StrType):
 
         Return True if S starts with the specified prefix, False otherwise. With optional start, test S beginning at that position. With optional end, stop comparing S at that position. prefix can also be a tuple of strings to try.
         """  # noqa: D415, D402, D400
-        return self.__content.startswith(self._assert_str_type(__prefix), __start, __end)
+        return self._content.startswith(self._assert_str_type(__prefix), __start, __end)
 
     def strip(
         self,
@@ -753,18 +756,18 @@ class WrappedStr:  # (metaclass=StrType):
 
         If chars is given and not None, remove characters in chars instead.
         """
-        return self.__class__(self.__content.strip(self._assert_str_type(__chars)))
+        return self.__class__(self._content.strip(self._assert_str_type(__chars)))
 
     def swapcase(self) -> Self:
         """Convert uppercase characters to lowercase and lowercase characters to uppercase."""
-        return self.__class__(self.__content.swapcase())
+        return self.__class__(self._content.swapcase())
 
     def title(self) -> Self:
         """Return a version of the string where each word is titlecased.
 
         More specifically, words start with uppercased characters and all remaining cased characters have lower case.
         """
-        return self.__class__(self.__content.title())
+        return self.__class__(self._content.title())
 
     def translate(self, __table) -> Self:
         """Replace each character in the string using the given translation table.
@@ -774,32 +777,31 @@ class WrappedStr:  # (metaclass=StrType):
 
         The table must implement lookup/indexing via __getitem__, for instance a dictionary or list. If this operation raises LookupError, the character is left untouched. Characters mapped to None are deleted.
         """
-        return self.__class__(self.__content.translate(__table))
+        return self.__class__(self._content.translate(__table))
 
     def upper(self) -> Self:
         """Return a copy of the string converted to uppercase."""
-        return self.__class__(self.__content.upper())
+        return self.__class__(self._content.upper())
 
     def zfill(self, __width: SupportsIndex):
         """Pad a numeric string with zeros on the left, to fill a field of the given width.
 
         The string is never truncated.
         """
-        return self.__class__(self.__content.zfill(__width))
+        return self.__class__(self._content.zfill(__width))
 
     # Magic methods for string representation
     def __getnewargs__(self) -> tuple[str]:
-        return (self.__content,)
+        return (self._content,)
 
     def __getstate__(self) -> str:
-        return self.__content
+        return self._content
 
 
 class CaseInsensitiveWrappedStr(WrappedStr):
 
     __slots__: tuple[str, ...] = (
-        *WrappedStr.__slots__,
-        "__lower_content",
+        "_lower_content",
     )
 
     @classmethod
@@ -810,44 +812,44 @@ class CaseInsensitiveWrappedStr(WrappedStr):
 
     def __init__(self, __content: WrappedStr | str):
         super().__init__(__content)
-        self.__lower_content: str = str(self).lower()
+        self._lower_content: str = str(self._content).lower()
 
     def __contains__(self, __key):
-        return self.__lower_content.__contains__(self._coerce_str(__key).lower())
+        return self._lower_content.__contains__(self._coerce_str(__key).lower())
 
     def __eq__(self, __value):
-        return self.__lower_content.__eq__(self._coerce_str(__value))
+        return self._lower_content.__eq__(self._coerce_str(__value))
 
     def __ne__(self, __value):
-        return self.__lower_content.__ne__(self._coerce_str(__value))
+        return self._lower_content.__ne__(self._coerce_str(__value))
 
     def __hash__(self):
-        return hash((self.__class__, self.__lower_content))
+        return hash((WrappedStr, self._lower_content))
 
     def find(
         self,
         sub,
         start=0,
         end=None,
-    ):  # sourcery skip: remove-unnecessary-cast
-        return self.__lower_content.find(self._coerce_str(sub), start, end)
+    ):
+        return self._lower_content.find(self._coerce_str(sub), start, end)
 
     def lower(self):
-        return self.__class__(self.__lower_content)
+        return self.__class__(self._lower_content)
 
     def partition(self, __sep):
         # Find the position of the separator in a case-insensitive manner
         pattern: re.Pattern[str] = re.compile(re.escape(self._coerce_str(__sep)), re.IGNORECASE)
-        match: re.Match[str] | None = pattern.search(self.__content)
+        match: re.Match[str] | None = pattern.search(self._content)
 
         if match is None:
-            return (self.__class__(self.__content), self.__class__(""), self.__class__(""))
+            return (self.__class__(self._content), self.__class__(""), self.__class__(""))
 
         idx: int = match.start()
         return (
-            self.__class__(self.__content[:idx]),
-            self.__class__(self.__content[idx:idx+len(__sep)]),
-            self.__class__(self.__content[idx+len(__sep):]),
+            self.__class__(self._content[:idx]),
+            self.__class__(self._content[idx:idx+len(__sep)]),
+            self.__class__(self._content[idx+len(__sep):]),
         )
 
     def replace(
@@ -862,21 +864,21 @@ class CaseInsensitiveWrappedStr(WrappedStr):
             return super().replace("", self._coerce_str(__new), __count)
 
         pattern: re.Pattern[str] = re.compile(re.escape(self._coerce_str(__old)), re.IGNORECASE)
-        return self.__class__(pattern.sub(self._coerce_str(__new), self.__content, int(__count)))
+        return self.__class__(pattern.sub(self._coerce_str(__new), self._content, int(__count)))
 
     def rpartition(self, __sep):
         # Find the position of the separator in a case-insensitive manner
         pattern: re.Pattern[str] = re.compile(re.escape(self._coerce_str(__sep)), re.IGNORECASE)
-        matches = list(pattern.finditer(self.__content))
+        matches = list(pattern.finditer(self._content))
 
         if not matches:
-            return (self.__class__(""), self.__class__(""), self.__class__(self.__content))
+            return (self.__class__(""), self.__class__(""), self.__class__(self._content))
         match: re.Match[str] = matches[-1]  # Get the last match for rpartition
         idx: int = match.start()
         return (
-            self.__class__(self.__content[:idx]),
-            self.__class__(self.__content[idx:idx+len(__sep)]),
-            self.__class__(self.__content[idx+len(__sep):]),
+            self.__class__(self._content[:idx]),
+            self.__class__(self._content[idx:idx+len(__sep)]),
+            self.__class__(self._content[idx+len(__sep):]),
         )
 
     def rfind(
@@ -885,7 +887,7 @@ class CaseInsensitiveWrappedStr(WrappedStr):
         __start=None,
         __end=None,
     ):  # sourcery skip: remove-unnecessary-cast
-        return self.__lower_content.rfind(self._coerce_str(__sub), __start, __end)
+        return self._lower_content.rfind(self._coerce_str(__sub), __start, __end)
 
     def rsplit(
         self,
@@ -898,7 +900,7 @@ class CaseInsensitiveWrappedStr(WrappedStr):
 
         # Case-insensitive split using regular expression
         pattern: re.Pattern[str] = re.compile(re.escape(self._coerce_str(__sep)), re.IGNORECASE)
-        split_parts: list[int] = [m.start() for m in pattern.finditer(self.__content)]
+        split_parts: list[int] = [m.start() for m in pattern.finditer(self._content)]
         return self._split_by_indices(split_parts, int(__maxsplit), reverse=True)
 
     def split(
@@ -912,7 +914,7 @@ class CaseInsensitiveWrappedStr(WrappedStr):
 
         # Case-insensitive split using regular expression
         pattern: re.Pattern[str] = re.compile(re.escape(self._coerce_str(sep)), re.IGNORECASE)
-        split_parts: list[int] = [m.start() for m in pattern.finditer(self.__content)]
+        split_parts: list[int] = [m.start() for m in pattern.finditer(self._content)]
         return self._split_by_indices(split_parts, int(maxsplit))
 
     def _split_by_indices(self, indices: list[int], maxsplit: int, reverse: bool = False) -> list[Self]:
@@ -923,8 +925,8 @@ class CaseInsensitiveWrappedStr(WrappedStr):
         last_index: int = 0
         results: list[Self] = []
         for index in reversed(indices) if reverse else indices:
-            results.append(self.__class__(self.__content[last_index:index]))
+            results.append(self.__class__(self._content[last_index:index]))
             last_index = index + 1
 
-        results.append(self.__class__(self.__content[last_index:]))
+        results.append(self.__class__(self._content[last_index:]))
         return list(reversed(results)) if reverse else results

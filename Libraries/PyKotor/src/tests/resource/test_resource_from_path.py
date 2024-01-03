@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import os
 import pathlib
 import sys
@@ -24,7 +26,8 @@ from pykotor.resource.type import ResourceType
 class TestResourceType(unittest.TestCase):
     def test_resource_type_hashing(self):
         for type_name in ResourceType.__members__:
-            test_set = {ResourceType.__members__[type_name], ResourceType.__members__[type_name].extension}
+            restype: ResourceType = ResourceType.__members__[type_name]
+            test_set = {restype, restype.extension}
             self.assertEqual(len(test_set), 1, repr(test_set))
     def test_from_invalid(self):
         invalid = ResourceType.from_invalid(extension="aSdF")
@@ -70,25 +73,26 @@ class TestResourceType(unittest.TestCase):
 
 class TestResourceIdentifier(unittest.TestCase):
     """ These tests were created because of the many soft, hard-to-find errors that occur all over when this function ever fails."""
+    def assert_hashing(self, res_ident: ResourceIdentifier):
+        lower_ident = ResourceIdentifier(res_ident.resname.swapcase(), res_ident.restype)
+        self.assertEqual(res_ident, lower_ident, f"{res_ident!r} != {lower_ident!r}")
+        test_set: set[ResourceIdentifier] = {res_ident, lower_ident}
+        self.assertEqual(len(test_set), 1, repr(test_set))
+
+
     def assert_resource_identifier(self, file_path, expected_resname, expected_restype):
         # Common assertion logic for all tests
         result = ResourceIdentifier.from_path(file_path)
         fail_message = f"\nresname: '{result.resname}' restype: '{result.restype}'\nexpected resname: '{expected_resname}' expected restype: '{expected_restype}'"
         self.assertEqual(result.resname, expected_resname, fail_message)
         self.assertEqual(result.restype, expected_restype, fail_message)
-        str_result = str(result)
-        self.assertEqual(result, str_result, f"{result!r} != {str_result!r}")
-        test_set = {result, str_result}
-        self.assertEqual(len(test_set), 1, repr(test_set))
+        self.assert_hashing(result)
 
     def test_hashing(self):
-        test_resname = "test_resname"
+        test_resname = "test_ResnamE"
         for type_name in ResourceType.__members__:
             test_ident = ResourceIdentifier(test_resname, ResourceType.__members__[type_name])
-            str_ident_test = str(test_ident)
-            self.assertEqual(test_ident, str_ident_test, f"{test_ident!r} != {str_ident_test!r}")
-            test_set = {test_ident, str_ident_test}
-            self.assertEqual(len(test_set), 1, repr(test_set))
+            self.assert_hashing(test_ident)
 
     def test_from_path_mdl(self):
         self.assert_resource_identifier("C:/path/to/resource.mdl", "resource", ResourceType.MDL)

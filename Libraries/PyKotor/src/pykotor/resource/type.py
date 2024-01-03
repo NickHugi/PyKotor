@@ -8,6 +8,7 @@ from typing import Iterable, NamedTuple, Union
 from xml.etree.ElementTree import ParseError
 
 from pykotor.common.stream import BinaryReader, BinaryWriter
+from utility.string import CaseInsensitiveWrappedStr, WrappedStr
 
 SOURCE_TYPES = Union[os.PathLike, str, bytes, bytearray, BinaryReader]
 TARGET_TYPES = Union[os.PathLike, str, bytearray, BinaryWriter]
@@ -176,7 +177,7 @@ class ResourceType(Enum):
         is_invalid: bool = False,
     ):
         self.type_id: int = type_id
-        self.extension: str = extension.lower().strip()
+        self.extension: CaseInsensitiveWrappedStr = CaseInsensitiveWrappedStr(extension.strip())
         self.category: str = category
         self.contents: str = contents
         self.is_invalid: bool = is_invalid
@@ -194,7 +195,7 @@ class ResourceType(Enum):
         self,
     ):
         """Returns the extension in all caps."""
-        return self.extension.upper()
+        return str(self.extension).upper()
 
     def __int__(
         self,
@@ -215,14 +216,14 @@ class ResourceType(Enum):
             if self.is_invalid or other.is_invalid:
                 return self.is_invalid and other.is_invalid
             return self.name == other.name
-        if isinstance(other, str):
+        if isinstance(other, (str, WrappedStr)):
             return self.extension == other.lower()
         if isinstance(other, int):
             return self.type_id == other
         return NotImplemented
 
     def __hash__(self):
-        return hash((self.__class__, str(self.extension).lower()))
+        return hash(self.extension)
 
     @classmethod
     def from_id(

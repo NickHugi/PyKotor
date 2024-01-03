@@ -3,7 +3,6 @@
 
 from __future__ import annotations
 
-from contextlib import suppress
 from enum import Enum, IntEnum
 from typing import TYPE_CHECKING, Any, ClassVar, Generator, Generic, Iterable, Iterator, TypeVar
 
@@ -57,10 +56,23 @@ class ResRef(CaseInsensitiveWrappedStr):
             message = f"Length of '{text}' ({len(text)} characters) exceeds the maximum allowed length ({ResRef.MAX_LENGTH})"
             super().__init__(message)
 
+    class CaseSensitivityError(ValueError):
+        """ResRefs cannot be converted to a different case."""
 
-    def __init__(self, content=""):
-        super().__init__(content)
-        self.set_data(content)
+        def __init__(self, resref: ResRef, func_name, *args, **kwargs) -> None:
+            super().__init__(f"ResRef's must be case-insensitive, attempted {resref!r}.{func_name}({args, kwargs})")
+
+
+    def __init__(
+        self,
+        name,
+        *,
+        _assert_blank: bool = True,
+    ):
+#        if _assert_blank:
+#            assert name, "ResRef name cannot be blank or None."
+        super().__init__(name)
+        self.set_data(name)
 
     @classmethod
     def from_blank(cls) -> ResRef:
@@ -70,7 +82,7 @@ class ResRef(CaseInsensitiveWrappedStr):
         -------
             A new ResRef instance.
         """
-        return cls("")
+        return cls("", _assert_blank=False)
 
     @classmethod
     def from_path(
@@ -99,11 +111,8 @@ class ResRef(CaseInsensitiveWrappedStr):
         return cls(resname.encode("ascii", "ignore").decode()[:cls.MAX_LENGTH])
 
     @classmethod
-    def is_valid(cls, filestem: str):
-        with suppress(Exception):
-            cls(filestem)
-            return True
-        return False
+    def is_valid(cls, filestem) -> bool:
+        return filestem == cls.from_invalid(filestem)
 
     def set_data(
         self,
@@ -124,40 +133,47 @@ class ResRef(CaseInsensitiveWrappedStr):
             InvalidFormatError - text starts/ends with a space or contains windows invalid filename characters.
             All of the above exceptions inherit ValueError.
         """
-        text = str(text)
-        parsed_text = text
+        parsed_text: str = str(text)
+
+        # Ensure text only contains ASCII characters.
         if not text.isascii():
             raise self.InvalidEncodingError(text)
+
+        # Validate text length.
         if len(parsed_text) > self.MAX_LENGTH:
             if not truncate:
                 raise self.ExceedsMaxLengthError(parsed_text)
             parsed_text = parsed_text[:self.MAX_LENGTH]
-        if parsed_text.startswith(" ") or parsed_text.endswith(" "):
+
+        # Ensure text doesn't start/end with whitespace.
+        if parsed_text != parsed_text.strip():
             msg = f"ResRef '{text}' cannot start or end with a space."
             raise self.InvalidFormatError(msg)
+
+        # Ensure text doesn't contain any invalid ASCII characters.
         for i in range(len(parsed_text)):
             if parsed_text[i] in self.INVALID_CHARACTERS:
                 msg = f"ResRef '{text}' cannot contain any invalid characters in [{self.INVALID_CHARACTERS}]"
                 raise self.InvalidFormatError(msg)
-        self.__content = parsed_text
 
-    def get(self):
+        # bypass the immutability enforcers
+        object.__setattr__(self, "_content", parsed_text)
+        object.__setattr__(self, "_lowercontent", parsed_text.lower())
+
+    def get(self) -> CaseInsensitiveWrappedStr:
         """Returns a case-insensitive wrapped string."""
-        parent_class: type | None = self.__class__.__base__
-        if parent_class is None:
-            raise
-        return parent_class(self.__content)
+        return CaseInsensitiveWrappedStr(self._content)
 
-    def lower(self):
-        raise NotImplementedError("ResRef's must be case-insensitive.")  # noqa: TRY003, EM101
-    def upper(self):
-        raise NotImplementedError("ResRef's must be case-insensitive.")  # noqa: TRY003, EM101
     def capitalize(self):
-        raise NotImplementedError("ResRef's must be case-insensitive.")  # noqa: TRY003, EM101
+        raise self.CaseSensitivityError(self, "capitalize")
+    def lower(self):
+        raise self.CaseSensitivityError(self, "lower")
     def swapcase(self):
-        raise NotImplementedError("ResRef's must be case-insensitive.")  # noqa: TRY003, EM101
+        raise self.CaseSensitivityError(self, "swapcase")
     def title(self):
-        raise NotImplementedError("ResRef's must be case-insensitive.")  # noqa: TRY003, EM101
+        raise self.CaseSensitivityError(self, "title")
+    def upper(self):
+        raise self.CaseSensitivityError(self, "upper")
 
 
 class Game(IntEnum):

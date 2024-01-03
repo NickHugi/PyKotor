@@ -25,16 +25,39 @@ class FileResource:
         offset: int,
         filepath: os.PathLike | str,
     ):
-        self._resname: str = resname.strip()
+        assert resname == resname.strip(), f"FileResource cannot be constructed, resource name '{resname}' cannot start/end with whitespace."
+
+        self._resname: str = resname
         self._restype: ResourceType = restype
         self._size: int = size
         self._offset: int = offset
         self._filepath: Path = Path.pathify(filepath)
 
+        self.inside_capsule: bool = is_capsule_file(self._filepath)
+        self.inside_bif: bool = is_bif_file(self._filepath)
+
         self._sha256_hash: str = ""
         self._identifier = ResourceIdentifier(self._resname, self._restype)
 
-    def __repr__(self) -> str:
+        self._path_obj: Path
+        if self.inside_capsule or self.inside_bif:
+            self._path_obj = self._filepath / str(self._identifier)
+        else:
+            self._path_obj = self._filepath
+
+        self._internal: bool = False
+
+    def __setattr__(self, __name, __value):
+        if hasattr(self, __name):
+            if __name == "_internal" or self._internal:
+                return super().__setattr__(__name, __value)
+
+            msg = f"Cannot modify immutable FileResource instance, attempted `setattr({self!r}, {__name!r}, {__value!r})`"
+            raise RuntimeError(msg)
+
+        return super().__setattr__(__name, __value)
+
+    def __repr__(self):
         return (
             f"{self.__class__.__name__}("
                 f"resname='{self._resname}', "
@@ -45,12 +68,15 @@ class FileResource:
             ")"
         )
 
-    def __str__(self) -> str:
-        return str(self._identifier)
+    def __hash__(self):
+        return hash(self._path_obj)
+
+    def __str__(self):
+        return str(self._path_obj)
 
     def __eq__(
         self,
-        __value: FileResource | ResourceIdentifier | Path | bytes | bytearray | memoryview | object,
+        __value: object,
     ):
         if isinstance(__value, FileResource):
             return self.get_sha256_hash() == __value.get_sha256_hash()
@@ -60,18 +86,12 @@ class FileResource:
             return self.identifier() == __value
         return NotImplemented
 
-    def resname(
-        self,
-    ) -> str:
+    def resname(self) -> str:
         return self._resname
 
-    def resref(
-        self,
-    ) -> ResRef | None:
+    def resref(self) -> ResRef:
         from pykotor.common.misc import ResRef
-        with suppress(ResRef.ExceedsMaxLengthError, ResRef.InvalidEncodingError):
-            return ResRef(self._resname)
-        return None
+        return ResRef.from_invalid(self._resname)
 
     def restype(
         self,
@@ -109,25 +129,29 @@ class FileResource:
         -------
             Bytes data of the resource.
         """
-        if reload:
-            if is_capsule_file(self._filepath):
-                from pykotor.extract.capsule import Capsule  # Prevent circular imports
+        try:
+            self._internal = True
+            if reload:
+                if self.inside_capsule:
+                    from pykotor.extract.capsule import Capsule  # Prevent circular imports
 
-                capsule = Capsule(self._filepath)
-                res: FileResource | None = capsule.info(self._resname, self._restype)
-                assert res is not None, f"Resource '{self._resname}.{self._restype.extension}' not found in Capsule at '{self._filepath}"
+                    capsule = Capsule(self._filepath)
+                    res: FileResource | None = capsule.info(self._resname, self._restype)
+                    assert res is not None, f"Resource '{self._identifier}' not found in Capsule at '{self._filepath}'"
 
-                self._offset = res.offset()
-                self._size = res.size()
-            elif not is_bif_file(self._filepath):  # bifs are read-only and there's no reason to reload them.
-                self._offset = 0
-                self._size = self._filepath.stat().st_size
+                    self._offset = res.offset()
+                    self._size = res.size()
+                elif not self.inside_bif:  # bifs are read-only.
+                    self._offset = 0
+                    self._size = self._filepath.stat().st_size
 
-        with self._filepath.open("rb") as file:
-            file.seek(self._offset)
-            data: bytes = file.read(self._size)
-            self._sha256_hash = generate_sha256_hash(data)
-            return data
+            with self._filepath.open("rb") as file:
+                file.seek(self._offset)
+                data: bytes = file.read(self._size)
+                self._sha256_hash = generate_sha256_hash(data)
+                return data
+        finally:
+            self._internal = False
 
     def get_sha256_hash(self):
         if not self._sha256_hash:
@@ -167,7 +191,7 @@ class ResourceIdentifier(NamedTuple):
     def __repr__(
         self,
     ):
-        return f"{self.__class__.__name__}({self.resname}, {self.restype!r})"
+        return f"{self.__class__.__name__}(resname={self.resname}, restype={self.restype!r})"
 
     def __str__(
         self,
