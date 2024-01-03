@@ -27,7 +27,7 @@ TEST_RIM_FILE = "src/tests/files/capsule.rim"
 
 
 class TestCapsule(TestCase):
-    def test_erf_capsule(self):
+    def test_erf_capsule(self):  # sourcery skip: class-extract-method
         erf_capsule = Capsule(TEST_ERF_FILE)
 
         self.assertEqual(3, len(erf_capsule))

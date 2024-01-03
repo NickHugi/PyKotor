@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING, Any, Callable, Generator
 
 from pykotor.tools.registry import winreg_key
 from utility.misc import is_instance_or_subinstance
-from utility.path import Path as InternalPath
+from utility.path import BasePath, Path as InternalPath
 from utility.path import PathElem
 from utility.path import PurePath as InternalPurePath
 from utility.registry import resolve_reg_key_to_path
@@ -134,11 +134,11 @@ class CaseAwarePath(InternalPath):  # type: ignore[misc]
         new_path = super().resolve(strict)
         if self.should_resolve_case(new_path):
             new_path = self.get_case_sensitive_path(new_path)
-            return super(type(self), new_path).resolve(strict)
+            return super(CaseAwarePath, new_path).resolve(strict)
         return new_path
 
     def __hash__(self) -> int:
-        return hash(self.as_posix().lower())
+        return hash(self.as_windows())
 
     def __eq__(self, other):
         """All pathlib classes that derive from PurePath are equal to this object if their str paths are case-insensitive equivalents."""
@@ -154,10 +154,11 @@ class CaseAwarePath(InternalPath):  # type: ignore[misc]
         return f"{self.__class__.__name__}({self.as_windows()})"
 
     def __str__(self) -> str:
+        path_obj = pathlib.Path(self)
         return (
-            super().__str__()
-            if pathlib.Path(self).exists()
-            else super(self.__class__, self.get_case_sensitive_path(self)).__str__()
+            self._fix_path_formatting(str(path_obj))
+            if self.should_resolve_case(path_obj)
+            else super(CaseAwarePath, self.get_case_sensitive_path(path_obj)).__str__()
         )
 
     def relative_to(self, *args, walk_up=False, **kwargs):

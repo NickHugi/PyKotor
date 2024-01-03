@@ -136,11 +136,6 @@ class BasePurePath(metaclass=PurePathType):  # type: ignore[misc]
         else:
             init_method(self, *args)
 
-        self._cache_str: str = self._fix_path_formatting(super().__str__())
-        assert not self._cache_str.startswith("C:Users")
-        self._cache_windows_str: str = self._fix_path_formatting(super().__str__().lower(), slash="\\")
-        self._cache_posix_str: str = self._fix_path_formatting(super().__str__(), slash="/")
-
     @staticmethod
     def _fix_path_formatting(
         str_path: str,
@@ -227,7 +222,7 @@ class BasePurePath(metaclass=PurePathType):  # type: ignore[misc]
 
     def __str__(self) -> str:
         """Return the result from _fix_path_formatting that was initialized."""
-        return self.as_posix() if self._get_sep() == "/" else self._cache_str
+        return self.as_posix() if self._get_sep() == "/" else self._fix_path_formatting(super().__str__(), slash="\\")
 
     def __repr__(self):
         return f"{self.__class__.__name__}({self})"
@@ -373,7 +368,7 @@ class BasePurePath(metaclass=PurePathType):  # type: ignore[misc]
         -------
             str: POSIX representation of the path
         """
-        return self._cache_posix_str
+        return self._fix_path_formatting(super().__str__(), slash="/")
 
     def as_windows(self) -> str:
         """Convert path to a WINDOWS path, lowercasing the whole path and returning a str.
@@ -386,7 +381,7 @@ class BasePurePath(metaclass=PurePathType):  # type: ignore[misc]
         -------
             str: POSIX representation of the path
         """
-        return self._cache_windows_str
+        return self._fix_path_formatting(super().__str__(), slash="\\").lower()
 
     def joinpath(self, *args: PathElem):
         """Appends one or more path-like objects and/or relative paths to self.
@@ -417,7 +412,6 @@ class BasePurePath(metaclass=PurePathType):  # type: ignore[misc]
 
     def with_stem(self, stem):
         """Return a new path with the stem changed."""
-
         self_path = self
         if not isinstance(self_path, PurePath):
             msg = f"self must be a path, got {self_path!r}"
