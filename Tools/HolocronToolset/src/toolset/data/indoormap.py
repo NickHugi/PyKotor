@@ -381,11 +381,12 @@ class IndoorMap:
             utd: UTD = deepcopy(insert.door.utdK2 if installation.tsl else insert.door.utdK1)
             utd.resref = door.resref
             utd.static = insert.static
-            utd.tag = door.resref.get().title().replace("_", "")
-            self.mod.set_data(door.resref.get(), ResourceType.UTD, bytes_utd(utd))
+            door_resname = str(door.resref)
+            utd.tag = door_resname.title().replace("_", "")
+            self.mod.set_data(door_resname, ResourceType.UTD, bytes_utd(utd))
 
             orientation = Vector4.from_euler(0, 0, math.radians(door.bearing))
-            self.lyt.doorhooks.append(LYTDoorHook(self.roomNames[insert.room], door.resref.get(), insert.position, orientation))
+            self.lyt.doorhooks.append(LYTDoorHook(self.roomNames[insert.room], door_resname, insert.position, orientation))
 
             if insert.hook1 and insert.hook2:
                 if insert.hook1.door.height != insert.hook2.door.height:

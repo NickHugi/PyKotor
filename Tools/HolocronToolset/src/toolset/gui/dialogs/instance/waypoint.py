@@ -22,7 +22,7 @@ class WaypointDialog(QDialog):
         self.setWindowTitle("Edit Waypoint")
         self.setWindowIcon(QIcon(QPixmap(":/images/icons/k1/waypoint.png")))
 
-        self.ui.resrefEdit.setText(waypoint.resref.get())
+        self.ui.resrefEdit.setText(str(waypoint.resref))
         self.ui.tagEdit.setText(waypoint.tag)
         self.ui.nameEdit.setLocstring(waypoint.name)
         self.ui.xPosSpin.setValue(waypoint.position.x)
@@ -30,7 +30,7 @@ class WaypointDialog(QDialog):
         self.ui.zPosSpin.setValue(waypoint.position.z)
         self.ui.bearingSpin.setValue(math.degrees(waypoint.bearing))
 
-        self.ui.mapNoteEdit.setLocstring(waypoint.map_note)
+        self.ui.mapNoteEdit.setLocstring(waypoint.map_note)  # FIXME: map_note is typed as Locstring | None
         self.ui.hasMapNoteCheck.setChecked(waypoint.has_map_note)
         self.ui.mapNoteEnableCheck.setChecked(waypoint.map_note_enabled)
 

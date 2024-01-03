@@ -268,7 +268,7 @@ class SSFEditor(Editor):
 
         for pair, stringref in pairs.items():
             text, sound = batch[stringref]
-            pair[0].setText(sound.get())
+            pair[0].setText(str(sound))
             pair[1].setText(text)
 
     def selectTalkTable(self) -> None:

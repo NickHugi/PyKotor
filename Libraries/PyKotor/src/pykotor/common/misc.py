@@ -3,8 +3,9 @@
 
 from __future__ import annotations
 
+from contextlib import suppress
 from enum import Enum, IntEnum
-from typing import TYPE_CHECKING, Any, Generator, Generic, Iterable, Iterator, TypeVar
+from typing import TYPE_CHECKING, Any, ClassVar, Generator, Generic, Iterable, Iterator, TypeVar
 
 from pykotor.common.geometry import Vector3
 from utility.string import CaseInsensitiveWrappedStr
@@ -25,14 +26,14 @@ class ResRef(CaseInsensitiveWrappedStr):
     -------
         - Encapsulated Resource Files (ERF/MOD/SAV)
         - RIM/BIF archives
-        - Files in the Override folder
+        - Filenames in the Override folder
 
     Restrictions:
     ------------
         - ResRefs must be in ASCII format
         - ResRefs cannot exceed 16 characters in length.
         - Usable in case-insensitive applications. This is because KOTOR was created for Windows, which uses a case-insensitive filesystem.
-        - Stored as case-sensitive text.
+        - (recommended) Stored as case-sensitive text.
     """
 
     MAX_LENGTH: ClassVar[int] = 16
@@ -94,8 +95,15 @@ class ResRef(CaseInsensitiveWrappedStr):
         cls,
         resname: str,
     ):
-        """Create a new ResRef from a potentially invalid string, removing any non-ascii characters."""
-        return cls(resname.encode("ascii", "ignore").decode("ascii"))
+        """Create a new ResRef from a string, removing any non-ascii characters."""
+        return cls(resname.encode("ascii", "ignore").decode()[:cls.MAX_LENGTH])
+
+    @classmethod
+    def is_valid(cls, filestem: str):
+        with suppress(Exception):
+            cls(filestem)
+            return True
+        return False
 
     def set_data(
         self,
@@ -134,7 +142,7 @@ class ResRef(CaseInsensitiveWrappedStr):
         self.__content = parsed_text
 
     def get(self):
-        """Returns a case-insensitive mutable string that inherits from str."""
+        """Returns a case-insensitive wrapped string."""
         parent_class: type | None = self.__class__.__base__
         if parent_class is None:
             raise

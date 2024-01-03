@@ -143,9 +143,9 @@ class UTDEditor(Editor):
         # Basic
         self.ui.nameEdit.setLocstring(utd.name)
         self.ui.tagEdit.setText(utd.tag)
-        self.ui.resrefEdit.setText(utd.resref.get())
+        self.ui.resrefEdit.setText(str(utd.resref))
         self.ui.appearanceSelect.setCurrentIndex(utd.appearance_id)
-        self.ui.conversationEdit.setText(utd.conversation.get())
+        self.ui.conversationEdit.setText(str(utd.conversation))
 
         # Advanced
         self.ui.min1HpCheckbox.setChecked(utd.min1_hp)
@@ -171,17 +171,17 @@ class UTDEditor(Editor):
         self.ui.difficultyModSpin.setValue(utd.unlock_diff_mod)
 
         # Scripts
-        self.ui.onClickEdit.setText(utd.on_click.get())
-        self.ui.onClosedEdit.setText(utd.on_closed.get())
-        self.ui.onDamagedEdit.setText(utd.on_damaged.get())
-        self.ui.onDeathEdit.setText(utd.on_death.get())
-        self.ui.onOpenFailedEdit.setText(utd.on_open_failed.get())
-        self.ui.onHeartbeatEdit.setText(utd.on_heartbeat.get())
-        self.ui.onMeleeAttackEdit.setText(utd.on_melee.get())
-        self.ui.onSpellEdit.setText(utd.on_power.get())
-        self.ui.onOpenEdit.setText(utd.on_open.get())
-        self.ui.onUnlockEdit.setText(utd.on_unlock.get())
-        self.ui.onUserDefinedEdit.setText(utd.on_user_defined.get())
+        self.ui.onClickEdit.setText(str(utd.on_click))
+        self.ui.onClosedEdit.setText(str(utd.on_closed))
+        self.ui.onDamagedEdit.setText(str(utd.on_damaged))
+        self.ui.onDeathEdit.setText(str(utd.on_death))
+        self.ui.onOpenFailedEdit.setText(str(utd.on_open_failed))
+        self.ui.onHeartbeatEdit.setText(str(utd.on_heartbeat))
+        self.ui.onMeleeAttackEdit.setText(str(utd.on_melee))
+        self.ui.onSpellEdit.setText(str(utd.on_power))
+        self.ui.onOpenEdit.setText(str(utd.on_open))
+        self.ui.onUnlockEdit.setText(str(utd.on_unlock))
+        self.ui.onUserDefinedEdit.setText(str(utd.on_user_defined))
 
         # Comments
         self.ui.commentsEdit.setPlainText(utd.comment)

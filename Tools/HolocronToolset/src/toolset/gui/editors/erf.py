@@ -118,7 +118,7 @@ class ERFEditor(Editor):
         if restype.name in ERFType.__members__:
             erf = read_erf(data)
             for resource in erf:
-                resrefItem = QStandardItem(resource.resref.get())
+                resrefItem = QStandardItem(str(resource.resref))
                 resrefItem.setData(resource)
                 restypeItem = QStandardItem(resource.restype.extension.upper())
                 sizeItem = QStandardItem(str(len(resource.data)))
@@ -126,7 +126,7 @@ class ERFEditor(Editor):
         elif restype == ResourceType.RIM:
             rim = read_rim(data)
             for resource in rim:
-                resrefItem = QStandardItem(resource.resref.get())
+                resrefItem = QStandardItem(str(resource.resref))
                 resrefItem.setData(resource)
                 restypeItem = QStandardItem(resource.restype.extension.upper())
                 sizeItem = QStandardItem(str(len(resource.data)))
@@ -267,7 +267,7 @@ class ERFEditor(Editor):
                     resref, restype = ResourceIdentifier.from_path(c_filepath.parent).validate()
                     resource = ERFResource(ResRef(resref), restype, data)
 
-                    resrefItem = QStandardItem(resource.resref.get())
+                    resrefItem = QStandardItem(str(resource.resref))
                     resrefItem.setData(resource)
                     restypeItem = QStandardItem(resource.restype.extension.upper())
                     sizeItem = QStandardItem(str(len(resource.data)))

@@ -56,7 +56,7 @@ class TLKJSONWriter(ResourceWriter):
             self._json["strings"].append(string)
             string["_index"] = str(stringref)
             string["text"] = entry.text
-            string["soundResRef"] = entry.voiceover.get()
+            string["soundResRef"] = str(entry.voiceover)
 
         json_dump = json.dumps(self._json, indent=4)
         self._writer.write_bytes(json_dump.encode())

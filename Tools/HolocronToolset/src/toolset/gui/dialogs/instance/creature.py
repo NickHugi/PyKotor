@@ -18,7 +18,7 @@ class CreatureDialog(QDialog):
         self.setWindowTitle("Edit Creature")
         self.setWindowIcon(QIcon(QPixmap(":/images/icons/k1/creature.png")))
 
-        self.ui.resrefEdit.setText(creature.resref.get())
+        self.ui.resrefEdit.setText(str(creature.resref))
         self.ui.xPosSpin.setValue(creature.position.x)
         self.ui.yPosSpin.setValue(creature.position.y)
         self.ui.zPosSpin.setValue(creature.position.z)

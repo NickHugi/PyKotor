@@ -163,14 +163,14 @@ class Module:
             self.git().resource()
             git: GIT | None = self.git().resource()
             look_for.extend(
-                [ResourceIdentifier(creature.resref.get(), ResourceType.UTC) for creature in git.creatures]
-                + [ResourceIdentifier(placeable.resref.get(), ResourceType.UTP) for placeable in git.placeables]
-                + [ResourceIdentifier(door.resref.get(), ResourceType.UTD) for door in git.doors]
-                + [ResourceIdentifier(sound.resref.get(), ResourceType.UTS) for sound in git.sounds]
-                + [ResourceIdentifier(waypoint.resref.get(), ResourceType.UTW) for waypoint in git.waypoints]
-                + [ResourceIdentifier(encounter.resref.get(), ResourceType.UTE) for encounter in git.encounters]
-                + [ResourceIdentifier(trigger.resref.get(), ResourceType.UTT) for trigger in git.triggers]
-                + [ResourceIdentifier(store.resref.get(), ResourceType.UTM) for store in git.stores],
+                [ResourceIdentifier(str(creature.resref), ResourceType.UTC) for creature in git.creatures]
+                + [ResourceIdentifier(str(placeable.resref), ResourceType.UTP) for placeable in git.placeables]
+                + [ResourceIdentifier(str(door.resref), ResourceType.UTD) for door in git.doors]
+                + [ResourceIdentifier(str(sound.resref), ResourceType.UTS) for sound in git.sounds]
+                + [ResourceIdentifier(str(waypoint.resref), ResourceType.UTW) for waypoint in git.waypoints]
+                + [ResourceIdentifier(str(encounter.resref), ResourceType.UTE) for encounter in git.encounters]
+                + [ResourceIdentifier(str(trigger.resref), ResourceType.UTT) for trigger in git.triggers]
+                + [ResourceIdentifier(str(store.resref), ResourceType.UTM) for store in git.stores],
             )
         self.git().activate(original)
 

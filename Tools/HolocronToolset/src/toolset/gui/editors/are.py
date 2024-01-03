@@ -164,7 +164,7 @@ class AREEditor(Editor):
         self.ui.nameEdit.setLocstring(are.name)
         self.ui.tagEdit.setText(are.tag)
         self.ui.cameraStyleSelect.setCurrentIndex(are.camera_style)
-        self.ui.envmapEdit.setText(are.default_envmap.get())
+        self.ui.envmapEdit.setText(str(are.default_envmap))
         self.ui.disableTransitCheck.setChecked(are.disable_transit)
         self.ui.unescapableCheck.setChecked(are.unescapable)
         self.ui.alphaTestSpin.setValue(are.alpha_test)
@@ -201,7 +201,7 @@ class AREEditor(Editor):
         self.ui.shadowsSpin.setValue(are.shadow_opacity)
 
         # Terrain
-        self.ui.grassTextureEdit.setText(are.grass_texture.get())
+        self.ui.grassTextureEdit.setText(str(are.grass_texture))
         self.ui.grassDiffuseEdit.setColor(are.grass_diffuse)
         self.ui.grassAmbientEdit.setColor(are.grass_ambient)
         self.ui.grassEmissiveEdit.setColor(are.grass_emissive)
@@ -225,10 +225,10 @@ class AREEditor(Editor):
         self.ui.dirtSize3Spin.setValue(are.dirty_size_3)
 
         # Scripts
-        self.ui.onEnterEdit.setText(are.on_enter.get())
-        self.ui.onExitEdit.setText(are.on_exit.get())
-        self.ui.onHeartbeatEdit.setText(are.on_heartbeat.get())
-        self.ui.onUserDefinedEdit.setText(are.on_user_defined.get())
+        self.ui.onEnterEdit.setText(str(are.on_enter))
+        self.ui.onExitEdit.setText(str(are.on_exit))
+        self.ui.onHeartbeatEdit.setText(str(are.on_heartbeat))
+        self.ui.onUserDefinedEdit.setText(str(are.on_user_defined))
 
         # Comments
         self.ui.commentsEdit.setPlainText(are.comment)

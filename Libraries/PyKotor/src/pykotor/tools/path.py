@@ -160,7 +160,7 @@ class CaseAwarePath(InternalPath):  # type: ignore[misc]
     def __contains__(self, other_path: PathElem):
         return self.is_relative_to(other_path)
 
-    def is_relative_to(self, other: PathElem, case_sensitive=False) -> bool:  # type: ignore[override]
+    def is_relative_to(self, other: PathElem, *, case_sensitive=False) -> bool:  # type: ignore[override]
         return super().is_relative_to(other, case_sensitive=case_sensitive)
 
     @staticmethod
@@ -210,7 +210,7 @@ class CaseAwarePath(InternalPath):  # type: ignore[misc]
                 break
 
         # return a CaseAwarePath instance
-        return CaseAwarePath._create_instance(*parts)  # noqa: SLF001
+        return CaseAwarePath._create_instance(*parts)
 
     @classmethod
     def find_closest_match(cls, target: str, candidates: Generator[InternalPath, None, None]) -> str:

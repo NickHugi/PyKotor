@@ -164,10 +164,10 @@ class InventoryEditor(QDialog):
             self._slotMap[slot].label.setPixmap(QPixmap(image))
 
         for slot, item in self.equipment.items():
-            self.setEquipment(slot, item.resref.get())
+            self.setEquipment(slot, str(item.resref))
 
         for item in self.inventory:
-            self.ui.contentsTable.addItem(item.resref.get(), item.droppable, item.infinite)
+            self.ui.contentsTable.addItem(str(item.resref), item.droppable, item.infinite)
 
         self.ui.tabWidget_2.setVisible(not hide_equipment)
 
@@ -181,7 +181,8 @@ class InventoryEditor(QDialog):
             self.inventory.append(InventoryItem(ResRef(tableItem.resname), tableItem.droppable, tableItem.infinite))
 
         self.equipment = {}
-        for widget in self.ui.standardEquipmentTab.children() + self.ui.naturalEquipmentTab.children():
+        widget: DropFrame
+        for widget in self.ui.standardEquipmentTab.children() + self.ui.naturalEquipmentTab.children():  # type: ignore[reportGeneralTypeIssues]
             # HACK: isinstance is not working (possibly due to how DropFrame is imported in _ui.py file.
             # Also make sure there is an item in the slot otherwise the GFF will create a struct for each slot.
             if "DropFrame" in str(type(widget)) and widget.resname:
@@ -244,15 +245,17 @@ class InventoryEditor(QDialog):
             - Else load resource directly from filepath
             - Return filepath, name extracted from UTI, and UTI object
         """
-        uti = None
-        name = ""
+        uti: UTI | None = None
+        name: str = ""
         if not filepath:
             result = self._installation.resource(resname, ResourceType.UTI)
             uti = read_uti(result.data)
             filepath = result.filepath
             name = self._installation.string(uti.name, "[No Name]")
         elif is_capsule_file(filepath):
-            uti = read_uti(Capsule(filepath).resource(resname, ResourceType.UTI))
+            uti_resource: bytes | None = Capsule(filepath).resource(resname, ResourceType.UTI)
+            assert uti_resource is not None, f"capsule resource lookup failed in {filepath}"
+            uti = read_uti(uti_resource)
             name = self._installation.string(uti.name, "[No Name]")
         elif is_bif_file(filepath):
             uti = read_uti(self._installation.resource(resname, ResourceType.UTI, [SearchLocation.CHITIN]).data)

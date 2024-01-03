@@ -198,11 +198,11 @@ class DLGEditor(Editor):
         self._loadDLG(dlg)
         self.refreshStuntList()
 
-        self.ui.onAbortEdit.setText(dlg.on_abort.get())
-        self.ui.onEndEdit.setText(dlg.on_end.get())
+        self.ui.onAbortEdit.setText(str(dlg.on_abort))
+        self.ui.onEndEdit.setText(str(dlg.on_end))
         self.ui.voIdEdit.setText(dlg.vo_id)
-        self.ui.ambientTrackEdit.setText(dlg.ambient_track.get())
-        self.ui.cameraModelEdit.setText(dlg.camera_model.get())
+        self.ui.ambientTrackEdit.setText(str(dlg.ambient_track))
+        self.ui.cameraModelEdit.setText(str(dlg.camera_model))
         self.ui.conversationSelect.setCurrentIndex(dlg.conversation_type.value)
         self.ui.computerSelect.setCurrentIndex(dlg.computer_type.value)
         self.ui.skippableCheckbox.setChecked(dlg.skippable)
@@ -937,7 +937,7 @@ class DLGEditor(Editor):
             self.ui.listenerEdit.setText(node.listener)
             self._loadLocstring(self.ui.textEdit, node.text)
 
-            self.ui.script1ResrefEdit.setText(node.script1.get())
+            self.ui.script1ResrefEdit.setText(str(node.script1))
             self.ui.script1Param1Spin.setValue(node.script1_param1)
             self.ui.script1Param2Spin.setValue(node.script1_param2)
             self.ui.script1Param3Spin.setValue(node.script1_param3)
@@ -945,7 +945,7 @@ class DLGEditor(Editor):
             self.ui.script1Param5Spin.setValue(node.script1_param5)
             self.ui.script1Param6Edit.setText(node.script1_param6)
 
-            self.ui.script2ResrefEdit.setText(node.script2.get())
+            self.ui.script2ResrefEdit.setText(str(node.script2))
             self.ui.script2Param1Spin.setValue(node.script2_param1)
             self.ui.script2Param2Spin.setValue(node.script2_param2)
             self.ui.script2Param3Spin.setValue(node.script2_param3)
@@ -953,7 +953,7 @@ class DLGEditor(Editor):
             self.ui.script2Param5Spin.setValue(node.script2_param5)
             self.ui.script2Param6Edit.setText(node.script2_param6)
 
-            self.ui.condition1ResrefEdit.setText(link.active1.get())
+            self.ui.condition1ResrefEdit.setText(str(link.active1))
             self.ui.condition1Param1Spin.setValue(link.active1_param1)
             self.ui.condition1Param2Spin.setValue(link.active1_param2)
             self.ui.condition1Param3Spin.setValue(link.active1_param3)
@@ -962,7 +962,7 @@ class DLGEditor(Editor):
             self.ui.condition1Param6Edit.setText(link.active1_param6)
             self.ui.condition1NotCheckbox.setChecked(link.active1_not)
 
-            self.ui.condition2ResrefEdit.setText(link.active2.get())
+            self.ui.condition2ResrefEdit.setText(str(link.active2))
             self.ui.condition2Param1Spin.setValue(link.active2_param1)
             self.ui.condition2Param2Spin.setValue(link.active2_param2)
             self.ui.condition2Param3Spin.setValue(link.active2_param3)
@@ -974,9 +974,9 @@ class DLGEditor(Editor):
             self.refreshAnimList()
             self.ui.emotionSelect.setCurrentIndex(node.emotion_id)
             self.ui.expressionSelect.setCurrentIndex(node.facial_id)
-            self.ui.soundEdit.setText(node.sound.get())
+            self.ui.soundEdit.setText(str(node.sound))
             self.ui.soundCheckbox.setChecked(node.sound_exists)
-            self.ui.voiceEdit.setText(node.vo_resref.get())
+            self.ui.voiceEdit.setText(str(node.vo_resref))
 
             self.ui.plotIndexSpin.setValue(node.plot_index)
             self.ui.plotXpSpin.setValue(node.plot_xp_percentage)

@@ -310,6 +310,7 @@ class Installation:
     def _find_resource_folderpath(
         self,
         folder_names: tuple[str, ...] | str,
+        *,
         optional: bool = False,
     ) -> CaseAwarePath:
         """Finds the path to a resource folder.
@@ -355,6 +356,7 @@ class Installation:
         self,
         path: CaseAwarePath,
         capsule_check: Callable | None = None,
+        *,
         recurse: bool = False,
     ) -> dict[str, list[FileResource]] | list[FileResource]:
         """Load resources for a given path and store them in a new list/dict.
@@ -469,7 +471,7 @@ class Installation:
             self._override = {}
 
         for folder in target_dirs:
-            relative_folder = folder.relative_to(override_path).as_posix()  # '.' if folder is the same as override_path
+            relative_folder: str = folder.relative_to(override_path).as_posix()  # '.' if folder is the same as override_path
             self._override[relative_folder] = self.load_resources(folder)  # type: ignore[assignment]
 
     def reload_override(self, directory: str) -> None:
@@ -489,7 +491,7 @@ class Installation:
     def reload_override_file(self, file: os.PathLike | str) -> None:
         filepath: Path = Path.pathify(file)  # type: ignore[reportGeneralTypeIssues, assignment]
         parent_folder = filepath.parent
-        rel_folderpath = filepath.parent.relative_to(self.override_path()) if parent_folder.name else "."
+        rel_folderpath = str(filepath.parent.relative_to(self.override_path())) if parent_folder.name else "."
         identifier: ResourceIdentifier = ResourceIdentifier.from_path(filepath)
         if identifier.restype == ResourceType.INVALID:
             print("Cannot reload override file. Invalid KOTOR resource:", identifier)
@@ -1347,7 +1349,7 @@ class Installation:
         return results
 
 
-    def module_name(self, module_filename: str, use_hardcoded: bool = True) -> str:
+    def module_name(self, module_filename: str, *, use_hardcoded: bool = True) -> str:
         """Returns the name of the area for a module from the installations module list.
 
         The name is taken from the LocalizedString "Name" in the relevant module file's ARE resource.
@@ -1382,8 +1384,8 @@ class Installation:
 
             with suppress(Exception):
                 ifo: GFF = read_gff(capsule_info.data())
-                tag = ifo.root.get_resref("Mod_Entry_Area").get()
-                are_tag_resource = capsule.resource(tag, ResourceType.ARE)
+                tag = str(ifo.root.get_resref("Mod_Entry_Area"))
+                are_tag_resource: bytes | None = capsule.resource(tag, ResourceType.ARE)
                 if are_tag_resource is None:
                     return tag
 
@@ -1409,7 +1411,7 @@ class Installation:
         return {module: self.module_name(module) for module in self.modules_list()}
 
 
-    def module_id(self, module_filename: str, use_hardcoded: bool = True) -> str:
+    def module_id(self, module_filename: str, *, use_hardcoded: bool = True) -> str:
         """Returns the ID of the area for a module from the installations module list.
 
         The ID is taken from the ResRef field "Mod_Entry_Area" in the relevant module file's IFO resource.
@@ -1438,10 +1440,10 @@ class Installation:
             with suppress(Exception):
                 capsule = Capsule(self.module_path() / module)
 
-                module_ifo_data = capsule.resource("module", ResourceType.IFO)
+                module_ifo_data: bytes | None = capsule.resource("module", ResourceType.IFO)
                 if module_ifo_data:
                     ifo: GFF = read_gff(module_ifo_data)
-                    mod_id = ifo.root.get_resref("Mod_Entry_Area").get()
+                    mod_id = str(ifo.root.get_resref("Mod_Entry_Area"))
                     if mod_id:
                         break
 

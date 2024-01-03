@@ -333,7 +333,7 @@ class LoaderWorker(QThread):
 
         batch = []
         for _stringref, entry in tlk:
-            batch.append([QStandardItem(entry.text), QStandardItem(entry.voiceover.get())])
+            batch.append([QStandardItem(entry.text), QStandardItem(str(entry.voiceover))])
             if len(batch) > 200:
                 self.batch.emit(batch)
                 batch = []

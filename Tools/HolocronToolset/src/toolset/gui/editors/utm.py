@@ -96,11 +96,11 @@ class UTMEditor(Editor):
         # Basic
         self.ui.nameEdit.setLocstring(utm.name)
         self.ui.tagEdit.setText(utm.tag)
-        self.ui.resrefEdit.setText(utm.resref.get())
+        self.ui.resrefEdit.setText(str(utm.resref))
         self.ui.idSpin.setValue(utm.id)
         self.ui.markUpSpin.setValue(utm.mark_up)
         self.ui.markDownSpin.setValue(utm.mark_down)
-        self.ui.onOpenEdit.setText(utm.on_open.get())
+        self.ui.onOpenEdit.setText(str(utm.on_open))
         self.ui.storeFlagSelect.setCurrentIndex((int(utm.can_buy) + int(utm.can_sell) * 2) - 1)
 
         # Comments

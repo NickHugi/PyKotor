@@ -2,24 +2,24 @@ from __future__ import annotations
 
 import os
 import re
-from typing import TYPE_CHECKING, Iterable
+from typing import TYPE_CHECKING, Any, Iterable
 
 if TYPE_CHECKING:
-    from typing_extensions import SupportsIndex
+    from typing_extensions import LiteralString, Self, SupportsIndex
 
 
 def ireplace(original: str, target: str, replacement: str) -> str:
     if not original or not target:
         return original
     # Initialize an empty result string and a pointer to traverse the original string
-    result = ""
+    result: str = ""
     i = 0
 
     # Length of the target string
-    target_length = len(target)
+    target_length: int = len(target)
 
     # Convert the target to lowercase for case-insensitive comparison
-    target_lower = target.lower()
+    target_lower: str = target.lower()
 
     while i < len(original):
         # If a potential match is found
@@ -41,7 +41,7 @@ def format_text(text, max_chars_before_newline: int = 20) -> str:
         return f'"""{os.linesep}{text_str}{os.linesep}"""'
     return f"'{text_str}'"
 
-def first_char_diff_index(str1, str2) -> int:
+def first_char_diff_index(str1: str, str2: str) -> int:
     """Find the index of the first differing character in two strings."""
     min_length = min(len(str1), len(str2))
     for i in range(min_length):
@@ -51,7 +51,7 @@ def first_char_diff_index(str1, str2) -> int:
         return min_length  # Difference due to length
     return -1  # No difference
 
-def generate_diff_marker_line(index, length) -> str:
+def generate_diff_marker_line(index: int, length: int) -> str:
     """Generate a line of spaces with a '^' at the specified index."""
     if index == -1:
         return ""
@@ -191,18 +191,33 @@ def striprtf(text) -> str:  # noqa: C901, PLR0915, PLR0912
                 out.append(tchar)
     return "".join(out)
 
-class WrappedStr:
+def is_string_like(obj) -> bool:  # sourcery skip: use-fstring-for-concatenation
+    try:
+        _ = obj + ""
+    except Exception:  # noqa: BLE001
+        return False
+    else:
+        return True
+
+class StrType(type):
+    def __instancecheck__(cls, instance): # sourcery skip: instance-method-first-arg-name
+        instance_type = type(instance)
+        mro = instance_type.__mro__
+        if cls in (str, WrappedStr):
+            return instance_type in (WrappedStr, str) or WrappedStr in mro or str in mro
+        return cls in mro
+
+    def __subclasscheck__(cls, subclass): # sourcery skip: instance-method-first-arg-name
+        mro = subclass.__mro__
+        if cls in (str, WrappedStr):
+            return subclass in (WrappedStr, str) or WrappedStr in mro or str in mro
+        return cls in mro
+
+class WrappedStr:  # (metaclass=StrType):
 
     __slots__: tuple[str, ...] = (
         "__content",
     )
-
-    @classmethod
-    def maketrans(cls, __x: WrappedStr | str, __y: WrappedStr | str, __z: WrappedStr | str) -> dict[int, int | None]:
-        return str.maketrans(cls._assert_str_type(__x), cls._assert_str_type(__y), cls._assert_str_type(__z))
-
-    def __init__(self, content: str = "") -> None:
-        self.__content: str = self._assert_str_type(content) if content is not None else ""
 
     @staticmethod
     def _assert_str_type(var) -> str:
@@ -212,102 +227,154 @@ class WrappedStr:
             raise TypeError(f"Expected str-like, got '{var}' of type {type(var)}")  # noqa: TRY003, EM102
         return str(var)
 
-    def __deepcopy__(self, memo):
+    @classmethod
+    def maketrans(cls, __x: WrappedStr | str, __y: WrappedStr | str, __z: WrappedStr | str) -> dict[int, int | None]:
+        return str.maketrans(cls._assert_str_type(__x), cls._assert_str_type(__y), cls._assert_str_type(__z))
+
+    def __init__(self, __content: str | WrappedStr = "") -> None:
+        self.__content: str = self._assert_str_type(__content) if __content is not None else ""
+
+    def __setattr__(self, __name: str, __value: Any) -> None:
+        if getattr(self, __name, None) is not None and __name in self.__slots__:
+            msg = f"{self.__class__.__name__} is immutable, cannot evaluate `setattr({self!r}, {__name!r}, {__value!r})`"
+            raise RuntimeError(msg)
+        return super().__setattr__(__name, __value)
+
+    def __len__(self):
+        return len(self.__content)
+
+    def __repr__(self):
+        return f"{self.__class__.__name__}({self.__content})"
+
+    def __str__(self) -> str:
+        return self.__content
+
+    def __eq__(
+        self,
+        __value: object,
+    ):
+        return self.__content == self._assert_str_type(__value)
+
+    def __ne__(
+        self,
+        __value: object,
+    ):
+        return self.__content != self._assert_str_type(__value)
+
+    def __iter__(self):
+        for i in range(len(self.__content)):
+            yield self.__class__(self.__content[i])
+
+    def __deepcopy__(self, memo: Any):
         # Create a new instance with the same content
         new_copy = self.__class__(self.__content)
         # Add the new object to the memo dictionary to handle circular references
         memo[id(self)] = new_copy
         return new_copy
 
-    def __repr__(self) -> str:
-        return f"{self.__class__.__name__}({self.__content})"
+    def __getitem__(
+        self,
+        __key: SupportsIndex | slice,
+    ):
+        return self.__class__(self.__content[__key])
 
-    def __str__(self) -> str:
-        return self.__content
+    def __contains__(
+        self,
+        __key: str | WrappedStr,
+    ) -> bool:
+        return self._assert_str_type(__key) in self.__content
 
-    def __len__(self):
-        return len(self.__content)
+    def __add__(
+        self,
+        __value: LiteralString | str | WrappedStr,
+    ):
+        return self.__class__(self.__content + self._assert_str_type(__value))
 
-    def __getitem__(self, key):
-        return self.__class__(self.__content[key])
+    def __radd__(
+        self,
+        __value: LiteralString | str | WrappedStr,
+    ):
+        return self.__class__(self._assert_str_type(__value) + self.__content)
 
-    def __iter__(self):
-        for i in range(len(self.__content)):
-            yield self.__class__(self.__content[i])
+    def __mod__(
+        self,
+        __value: LiteralString | str | WrappedStr | tuple[LiteralString, ...] | tuple[str, ...] | tuple[WrappedStr, ...],
+    ):
+        parsed_value: tuple[str, ...] | str = (
+            tuple(self._assert_str_type(s) for s in __value)
+            if isinstance(__value, tuple)
+            else self._assert_str_type(__value)
+        )
+        return self.__class__(self.__content % parsed_value)
 
-    def __contains__(self, item) -> bool:
-        return item in self.__content
+    def __mul__(
+        self,
+        __value: SupportsIndex,
+    ):
+        return self.__class__(self.__content * __value)
 
-    def __add__(self, other):
-        if not isinstance(other, (WrappedStr, str)):
-            return NotImplemented
-        return self.__class__(self.__content + str(other))
+    def __rmul__(
+        self,
+        __value: SupportsIndex,
+    ):
+        return self.__class__(__value * self.__content)
 
-    def __mul__(self, other):
-        if not isinstance(other, int):
-            return NotImplemented
-        return self.__class__(self.__content * other)
+    def __lt__(
+        self,
+        __value: str | WrappedStr,
+    ):
+        return self.__content < self._assert_str_type(__value)
 
-    def __rmul__(self, other):
-        return self.__mul__(other)
+    def __le__(
+        self,
+        __value: str | WrappedStr,
+    ):
+        return self.__content <= self._assert_str_type(__value)
 
-    def __mod__(self, other):
-        return self.__class__(self.__content % other)
+    def __gt__(
+        self,
+        __value: str | WrappedStr,
+    ):
+        return self.__content > self._assert_str_type(__value)
 
-    def __rmod__(self, other):
-        return self.__class__(other % self.__content)
-
-    def __eq__(self, other):
-        if not isinstance(other, (WrappedStr, str)):
-            return NotImplemented
-        return self.__content == str(other)
-
-    def __ne__(self, other):
-        return self != other
-
-    def __lt__(self, other):
-        if not isinstance(other, (WrappedStr, str)):
-            return NotImplemented
-        return self.__content < str(other)
-
-    def __le__(self, other):
-        if not isinstance(other, (WrappedStr, str)):
-            return NotImplemented
-        return self.__content <= str(other)
-
-    def __gt__(self, other):
-        if not isinstance(other, (WrappedStr, str)):
-            return NotImplemented
-        return self.__content > str(other)
-
-    def __ge__(self, other):
-        if not isinstance(other, str):
-            return NotImplemented
-        return self.__content >= str(other)
+    def __ge__(
+        self,
+        __value: str | WrappedStr,
+    ):
+        return self.__content >= self._assert_str_type(__value)
 
     def __hash__(self):
         return hash((self.__class__, self.__content))
 
     # String Methods
-    def capitalize(self):
+    def capitalize(self) -> Self:
         """Return a capitalized version of the string.
 
         More specifically, make the first character have upper case and the rest lower case.
         """
         return self.__class__(self.__content.capitalize())
 
-    def casefold(self):
+    def casefold(self) -> Self:
         """Return a version of the string suitable for caseless comparisons."""
         return self.__class__(self.__content.casefold())
 
-    def center(self, __width: SupportsIndex, __fillchar: WrappedStr | str = " "):
+    def center(
+        self,
+        __width: SupportsIndex,
+        __fillchar: WrappedStr | str = " ",
+    ) -> Self:
         """Return a centered string of length width.
 
         Padding is done using the specified fill character (default is a space).
         """
         return self.__class__(self.__content.center(__width, self._assert_str_type(__fillchar)))
 
-    def count(self, x: WrappedStr | str, __start=0, __end=None):
+    def count(
+        self,
+        x: WrappedStr | str,
+        __start: SupportsIndex | None = None,
+        __end: SupportsIndex | None = None,
+    ) -> int:
         """S.count(sub[, start[, end]]) -> int
 
         Return the number of non-overlapping occurrences of substring sub in
@@ -315,7 +382,11 @@ class WrappedStr:
         """  # noqa: D415, D402, D400
         return self.__content.count(self._assert_str_type(x), __start, __end)
 
-    def encode(self, encoding: WrappedStr | str = "utf-8", errors: WrappedStr | str = "strict"):
+    def encode(
+        self,
+        encoding: WrappedStr | str = "utf-8",
+        errors: WrappedStr | str = "strict",
+    ) -> bytes:
         """Encode the string using the codec registered for encoding.
 
         encoding
@@ -325,140 +396,402 @@ class WrappedStr:
         """
         return self.__content.encode(self._assert_str_type(encoding), self._assert_str_type(errors))
 
-    def endswith(self, __suffix: WrappedStr | str | tuple[WrappedStr | str, ...], __start: SupportsIndex | None = None, __end: SupportsIndex | None = None):
-        return self.__content.endswith(self._assert_str_type(__suffix) if not isinstance(__suffix, tuple) else tuple(self._assert_str_type(s) for s in __suffix), __start, __end)
+    def endswith(
+        self,
+        __suffix: WrappedStr | str | tuple[WrappedStr | str, ...],
+        __start: SupportsIndex | None = None,
+        __end: SupportsIndex | None = None,
+    ) -> bool:
+        """S.endswith(suffix[, start[, end]]) -> bool
 
-    def expandtabs(self, tabsize: int = 8):
+        Return True if S ends with the specified suffix, False otherwise. With optional start, test S beginning at that position. With optional end, stop comparing S at that position. suffix can also be a tuple of strings to try.
+        """  # noqa: D415, D400, D402
+        parsed_suffix: tuple[str, ...] | str = (
+            tuple(self._assert_str_type(s) for s in __suffix)
+            if isinstance(__suffix, tuple)
+            else self._assert_str_type(__suffix)
+        )
+        return self.__content.endswith(parsed_suffix, __start, __end)
+
+    def expandtabs(
+        self,
+        tabsize: int = 8,
+    ) -> Self:
+        """Return a copy where all tab characters are expanded using spaces.
+
+        If tabsize is not given, a tab size of 8 characters is assumed.
+        """
         return self.__class__(self.__content.expandtabs(tabsize))
 
-    def find(self, __sub: WrappedStr | str, __start: SupportsIndex | None = None, __end: SupportsIndex | None = None):
+    def find(
+        self,
+        __sub: WrappedStr | str,
+        __start: SupportsIndex | None = None,
+        __end: SupportsIndex | None = None,
+    ) -> int:
+        """S.find(sub[, start[, end]]) -> int
+
+        Return the lowest index in S where substring sub is found,
+        such that sub is contained within S[start:end]. Optional arguments start and end are interpreted as in slice notation.
+
+        Return -1 on failure.
+        """  # noqa: D415, D400, D402
         return self.__content.find(self._assert_str_type(__sub), __start, __end)
 
-    def format(self, *args, **kwargs):  # noqa: A003
+    def format(
+        self,
+        *args: object,
+        **kwargs: object,
+    ) -> Self:
+        """S.format(*args, **kwargs) -> str
+
+        Return a formatted version of S, using substitutions from args and kwargs. The substitutions are identified by braces ('{' and '}').
+        """  # noqa: D415, D400, D402
         return self.__class__(self.__content.format(*args, **kwargs))
 
-    def format_map(self, map):  # noqa: A002
+    def format_map(self, map) -> Self:  # noqa: A002
+        """S.format_map(mapping) -> str
+
+        Return a formatted version of S, using substitutions from mapping. The substitutions are identified by braces ('{' and '}').
+        """  # noqa: D415, D402, D400
         return self.__class__(self.__content.format_map(map))
 
-    def index(self, __sub: WrappedStr | str, __start: SupportsIndex | None = None, __end: SupportsIndex | None = None):
+    def index(
+        self,
+        __sub: WrappedStr | str,
+        __start: SupportsIndex | None = None,
+        __end: SupportsIndex | None = None,
+    ) -> int:
+        """S.index(sub[, start[, end]]) -> int
+
+        Return the lowest index in S where substring sub is found,
+        such that sub is contained within S[start:end]. Optional arguments start and end are interpreted as in slice notation.
+
+        Raises ValueError when the substring is not found.
+        """  # noqa: D415, D400, D402
         return self.__content.index(self._assert_str_type(__sub), __start, __end)
 
-    def isalnum(self):
+    def isalnum(self) -> bool:
+        """Return True if the string is an alpha-numeric string, False otherwise.
+
+        A string is alpha-numeric if all characters in the string are alpha-numeric and there is at least one character in the string.
+        """
         return self.__content.isalnum()
 
-    def isalpha(self):
+    def isalpha(self) -> bool:
+        """Return True if the string is an alphabetic string, False otherwise.
+
+        A string is alphabetic if all characters in the string are alphabetic and there is at least one character in the string.
+        """
         return self.__content.isalpha()
 
-    def isascii(self):
+    def isascii(self) -> bool:
+        """Return True if all characters in the string are ASCII, False otherwise.
+
+        ASCII characters have code points in the range U+0000-U+007F. Empty string is ASCII too.
+        """
         return self.__content.isascii()
 
-    def isdecimal(self):
+    def isdecimal(self) -> bool:
+        """Return True if the string is a decimal string, False otherwise.
+
+        A string is a decimal string if all characters in the string are decimal and there is at least one character in the string.
+        """
         return self.__content.isdecimal()
 
-    def isdigit(self):
+    def isdigit(self) -> bool:
+        """Return True if the string is a digit string, False otherwise.
+
+        A string is a digit string if all characters in the string are digits and there is at least one character in the string.
+        """
         return self.__content.isdigit()
 
-    def isidentifier(self):
+    def isidentifier(self) -> bool:
+        """Return True if the string is a valid Python identifier, False otherwise.
+
+        Call keyword.iskeyword(s) to test whether string s is a reserved identifier, such as "def" or "class".
+        """
         return self.__content.isidentifier()
 
-    def islower(self):
+    def islower(self) -> bool:
+        """Return True if the string is a lowercase string, False otherwise.
+
+        A string is lowercase if all cased characters in the string are lowercase and there is at least one cased character in the string.
+        """
         return self.__content.islower()
 
-    def isnumeric(self):
+    def isnumeric(self) -> bool:
+        """Return True if the string is a numeric string, False otherwise.
+
+        A string is numeric if all characters in the string are numeric and there is at least one character in the string.
+        """
         return self.__content.isnumeric()
 
-    def isprintable(self):
+    def isprintable(self) -> bool:
+        """Return True if the string is printable, False otherwise.
+
+        A string is printable if all of its characters are considered printable in repr() or if it is empty.
+        """
         return self.__content.isprintable()
 
-    def isspace(self):
+    def isspace(self) -> bool:
+        """Return True if the string is a whitespace string, False otherwise.
+
+        A string is whitespace if all characters in the string are whitespace and there is at least one character in the string.
+        """
         return self.__content.isspace()
 
-    def istitle(self):
+    def istitle(self) -> bool:
+        """Return True if the string is a title-cased string, False otherwise.
+
+        In a title-cased string, upper- and title-case characters may only follow uncased characters and lowercase characters only cased ones.
+        """
         return self.__content.istitle()
 
-    def isupper(self):
+    def isupper(self) -> bool:
+        """Return True if the string is an uppercase string, False otherwise.
+
+        A string is uppercase if all cased characters in the string are uppercase and there is at least one cased character in the string.
+        """
         return self.__content.isupper()
 
-    def join(self, __iterable: Iterable[str] | Iterable[WrappedStr] | Iterable[str | WrappedStr]):
+    def join(
+        self,
+        __iterable: Iterable[str] | Iterable[WrappedStr] | Iterable[str | WrappedStr],
+    ) -> Self:
+        """Concatenate any number of strings.
+
+        The string whose method is called is inserted in between each given string. The result is returned as a new string.
+
+        Example: '.'.join(['ab', 'pq', 'rs']) -> 'ab.pq.rs'
+        """
         return self.__class__(self.__content.join(self._assert_str_type(s) for s in __iterable))
 
-    def ljust(self, __width: SupportsIndex, __fillchar: WrappedStr | str = " "):
+    def ljust(
+        self,
+        __width: SupportsIndex,
+        __fillchar: WrappedStr | str = " ",
+    ) -> Self:
+        """Return a left-justified string of length width.
+
+        Padding is done using the specified fill character (default is a space).
+        """
         return self.__class__(self.__content.ljust(__width, self._assert_str_type(__fillchar)))
 
-    def lower(self):
+    def lower(self) -> Self:
+        """Return a copy of the string converted to lowercase."""
         return self.__class__(self.__content.lower())
 
-    def lstrip(self, __chars: WrappedStr | str | None = None):
+    def lstrip(
+        self,
+        __chars: WrappedStr | str | None = None,
+    ) -> Self:
+        """Return a copy of the string with leading whitespace removed.
+
+        If chars is given and not None, remove characters in chars instead.
+        """
         return self.__class__(self.__content.lstrip(self._assert_str_type(__chars)))
 
-    def partition(self, __sep: WrappedStr | str):
+    def partition(
+        self,
+        __sep: WrappedStr | str,
+    ) -> tuple[Self, Self, Self]:
+        """Partition the string into three parts using the given separator.
+
+        This will search for the separator in the string. If the separator is found, returns a 3-tuple containing the part before the separator, the separator itself, and the part after it.
+
+        If the separator is not found, returns a 3-tuple containing the original string and two empty strings.
+        """
         a, b, c = self.__content.partition(self._assert_str_type(__sep))
         return (self.__class__(a), self.__class__(b), self.__class__(c))
 
-    def removeprefix(self, __prefix: WrappedStr | str):
-        if self.__content.startswith(self._assert_str_type(__prefix)):
-            return self.__class__(self.__content[:len(__prefix)])
+    def removeprefix(
+        self,
+        __prefix: WrappedStr | str,
+    ) -> Self:
+        parsed_prefix: str = self._assert_str_type(__prefix)
+        if self.__content.startswith(parsed_prefix):
+            return self.__class__(self.__content[:len(parsed_prefix)])
         return self.__class__(self.__content)
 
-    def removesuffix(self, __suffix: WrappedStr | str):
-        if self.__content.endswith(self._assert_str_type(__suffix)):
-            return self.__class__(self.__content[-len(__suffix):])
+    def removesuffix(
+        self,
+        __suffix: WrappedStr | str,
+    ) -> Self:
+        parsed_suffix: str = self._assert_str_type(__suffix)
+        if self.__content.endswith(parsed_suffix):
+            return self.__class__(self.__content[-len(parsed_suffix):])
         return self.__class__(self.__content)
 
-    def replace(self, __old: WrappedStr | str, __new: WrappedStr | str, __count: SupportsIndex = -1):
+    def replace(
+        self,
+        __old: WrappedStr | str,
+        __new: WrappedStr | str,
+        __count: SupportsIndex = -1,
+    ) -> Self:
+        """Return a copy with all occurrences of substring old replaced by new.
+
+        count
+            Maximum number of occurrences to replace. -1 (the default value) means replace all occurrences.
+
+        If the optional argument count is given, only the first count occurrences are replaced.
+        """
         return self.__class__(self.__content.replace(self._assert_str_type(__old), self._assert_str_type(__new), __count))
 
-    def rfind(self, __sub: WrappedStr | str, __start: SupportsIndex | None = None, __end: SupportsIndex | None = None) -> int:
+    def rfind(
+        self,
+        __sub: WrappedStr | str,
+        __start: SupportsIndex | None = None,
+        __end: SupportsIndex | None = None,
+    ) -> int:
+        """S.rfind(sub[, start[, end]]) -> int
+
+        Return the highest index in S where substring sub is found,
+        such that sub is contained within S[start:end]. Optional arguments start and end are interpreted as in slice notation.
+
+        Return -1 on failure.
+        """  # noqa: D415, D402, D400
         return self.__content.rfind(self._assert_str_type(__sub), __start, __end)
 
-    def rindex(self, __sub: WrappedStr | str, __start: SupportsIndex | None = None, __end: SupportsIndex | None = None) -> int:
+    def rindex(
+        self,
+        __sub: WrappedStr | str,
+        __start: SupportsIndex | None = None,
+        __end: SupportsIndex | None = None,
+    ) -> int:
+        """S.rindex(sub[, start[, end]]) -> int
+
+        Return the highest index in S where substring sub is found,
+        such that sub is contained within S[start:end]. Optional arguments start and end are interpreted as in slice notation.
+
+        Raises ValueError when the substring is not found.
+        """  # noqa: D415, D400, D402
         return self.__content.rindex(self._assert_str_type(__sub), __start, __end)
 
-    def rjust(self, __width: SupportsIndex, __fillchar: WrappedStr | str = " "):
+    def rjust(
+        self,
+        __width: SupportsIndex,
+        __fillchar: WrappedStr | str = " ",
+    ) -> Self:
+        """Return a right-justified string of length width.
+
+        Padding is done using the specified fill character (default is a space).
+        """
         return self.__class__(self.__content.rjust(__width, self._assert_str_type(__fillchar)))
 
-    def rpartition(self, __sep: WrappedStr | str):
+    def rpartition(self, __sep: WrappedStr | str) -> tuple[Self, Self, Self]:
+        """Partition the string into three parts using the given separator.
+
+        This will search for the separator in the string, starting at the end. If the separator is found, returns a 3-tuple containing the part before the separator, the separator itself, and the part after it.
+
+        If the separator is not found, returns a 3-tuple containing two empty strings and the original string.
+        """
         a, b, c = self.__content.rpartition(self._assert_str_type(__sep))
         return (self.__class__(a), self.__class__(b), self.__class__(c))
 
-    def rsplit(self, __sep: WrappedStr | str | None = None, __maxsplit: SupportsIndex = -1):
+    def rsplit(
+        self,
+        __sep: WrappedStr | str | None = None,
+        __maxsplit: SupportsIndex = -1,
+    ) -> list[Self]:
+        """Return a list of the words in the string, using sep as the delimiter string.
+
+        sep
+            The delimiter according which to split the string. None (the default value) means split according to any whitespace, and discard empty strings from the result.
+        maxsplit
+            Maximum number of splits to do. -1 (the default value) means no limit.
+
+        Splits are done starting at the end of the string and working to the front.
+        """
         return [self.__class__(s) for s in self.__content.rsplit(self._assert_str_type(__sep), __maxsplit)]
 
-    def rstrip(self, __chars: WrappedStr | str | None = None):
+    def rstrip(self, __chars: WrappedStr | str | None = None) -> Self:
+        """Return a copy of the string with trailing whitespace removed.
+
+        If chars is given and not None, remove characters in chars instead.
+        """
         return self.__class__(self.__content.rstrip(self._assert_str_type(__chars)))
 
-    def split(self, sep: WrappedStr | str | None = None, maxsplit: SupportsIndex = -1):
+    def split(
+        self,
+        sep: WrappedStr | str | None = None,
+        maxsplit: SupportsIndex = -1,
+    ) -> list[Self]:
+        """Return a list of the words in the string, using sep as the delimiter string.
+
+        sep
+          The delimiter according which to split the string. None (the default value) means split according to any whitespace, and discard empty strings from the result.
+        maxsplit
+          Maximum number of splits to do. -1 (the default value) means no limit.
+        """
         return [self.__class__(s) for s in self.__content.split(self._assert_str_type(sep), maxsplit)]
 
-    def splitlines(self, keepends: bool = False):
+    def splitlines(self, keepends: bool = False) -> list[Self]:
+        """Return a list of the lines in the string, breaking at line boundaries.
+
+        Line breaks are not included in the resulting list unless keepends is given and true.
+        """
         return [self.__class__(s) for s in self.__content.splitlines(keepends)]
 
-    def startswith(self, __prefix: WrappedStr | str, __start: SupportsIndex | None = None, __end: SupportsIndex | None = None):
+    def startswith(
+        self,
+        __prefix: WrappedStr | str,
+        __start: SupportsIndex | None = None,
+        __end: SupportsIndex | None = None,
+    ) -> bool:
+        """S.startswith(prefix[, start[, end]]) -> bool
+
+        Return True if S starts with the specified prefix, False otherwise. With optional start, test S beginning at that position. With optional end, stop comparing S at that position. prefix can also be a tuple of strings to try.
+        """  # noqa: D415, D402, D400
         return self.__content.startswith(self._assert_str_type(__prefix), __start, __end)
 
-    def strip(self, __chars: WrappedStr | str | None = None):
+    def strip(
+        self,
+        __chars: WrappedStr | str | None = None,
+    ) -> Self:
+        """Return a copy of the string with leading and trailing whitespace removed.
+
+        If chars is given and not None, remove characters in chars instead.
+        """
         return self.__class__(self.__content.strip(self._assert_str_type(__chars)))
 
-    def swapcase(self):
+    def swapcase(self) -> Self:
+        """Convert uppercase characters to lowercase and lowercase characters to uppercase."""
         return self.__class__(self.__content.swapcase())
 
-    def title(self):
+    def title(self) -> Self:
+        """Return a version of the string where each word is titlecased.
+
+        More specifically, words start with uppercased characters and all remaining cased characters have lower case.
+        """
         return self.__class__(self.__content.title())
 
-    def translate(self, __table):
+    def translate(self, __table) -> Self:
+        """Replace each character in the string using the given translation table.
+
+        table
+            Translation table, which must be a mapping of Unicode ordinals to Unicode ordinals, strings, or None.
+
+        The table must implement lookup/indexing via __getitem__, for instance a dictionary or list. If this operation raises LookupError, the character is left untouched. Characters mapped to None are deleted.
+        """
         return self.__class__(self.__content.translate(__table))
 
-    def upper(self):
+    def upper(self) -> Self:
+        """Return a copy of the string converted to uppercase."""
         return self.__class__(self.__content.upper())
 
     def zfill(self, __width: SupportsIndex):
+        """Pad a numeric string with zeros on the left, to fill a field of the given width.
+
+        The string is never truncated.
+        """
         return self.__class__(self.__content.zfill(__width))
 
     # Magic methods for string representation
-    def __getnewargs__(self):
+    def __getnewargs__(self) -> tuple[str]:
         return (self.__content,)
 
-    def __getstate__(self):
+    def __getstate__(self) -> str:
         return self.__content
 
 
@@ -475,23 +808,28 @@ class CaseInsensitiveWrappedStr(WrappedStr):
             return str(item).lower()
         return item
 
-    def __init__(self, string):
-        super().__init__(string)
+    def __init__(self, __content: WrappedStr | str):
+        super().__init__(__content)
         self.__lower_content: str = str(self).lower()
 
-    def __contains__(self, item):
-        return self.__lower_content.__contains__(self._coerce_str(item).lower())
+    def __contains__(self, __key):
+        return self.__lower_content.__contains__(self._coerce_str(__key).lower())
 
-    def __eq__(self, other):
-        return self.__lower_content.__eq__(self._coerce_str(other))
+    def __eq__(self, __value):
+        return self.__lower_content.__eq__(self._coerce_str(__value))
 
-    def __ne__(self, other):
-        return self.__lower_content.__ne__(self._coerce_str(other))
+    def __ne__(self, __value):
+        return self.__lower_content.__ne__(self._coerce_str(__value))
 
     def __hash__(self):
         return hash((self.__class__, self.__lower_content))
 
-    def find(self, sub, start=0, end=None):  # sourcery skip: remove-unnecessary-cast
+    def find(
+        self,
+        sub,
+        start=0,
+        end=None,
+    ):  # sourcery skip: remove-unnecessary-cast
         return self.__lower_content.find(self._coerce_str(sub), start, end)
 
     def lower(self):
@@ -512,8 +850,12 @@ class CaseInsensitiveWrappedStr(WrappedStr):
             self.__class__(self.__content[idx+len(__sep):]),
         )
 
-
-    def replace(self, __old, __new, __count=-1):
+    def replace(
+        self,
+        __old,
+        __new,
+        __count=-1,
+    ):
         """Case-insensitive replace function matching the builtin str.replace's functionality."""
         # Check for the special case where 'old' is an empty string
         if __old == "":  # sourcery skip: simplify-empty-collection-comparison
@@ -521,7 +863,6 @@ class CaseInsensitiveWrappedStr(WrappedStr):
 
         pattern: re.Pattern[str] = re.compile(re.escape(self._coerce_str(__old)), re.IGNORECASE)
         return self.__class__(pattern.sub(self._coerce_str(__new), self.__content, int(__count)))
-
 
     def rpartition(self, __sep):
         # Find the position of the separator in a case-insensitive manner
@@ -538,10 +879,19 @@ class CaseInsensitiveWrappedStr(WrappedStr):
             self.__class__(self.__content[idx+len(__sep):]),
         )
 
-    def rfind(self, __sub, __start=None, __end=None):  # sourcery skip: remove-unnecessary-cast
+    def rfind(
+        self,
+        __sub,
+        __start=None,
+        __end=None,
+    ):  # sourcery skip: remove-unnecessary-cast
         return self.__lower_content.rfind(self._coerce_str(__sub), __start, __end)
 
-    def rsplit(self, __sep = None, __maxsplit=-1):
+    def rsplit(
+        self,
+        __sep = None,
+        __maxsplit=-1,
+    ):
         if __sep is None:
             # Default split behavior on whitespace
             return super().rsplit(None, __maxsplit)
@@ -549,9 +899,13 @@ class CaseInsensitiveWrappedStr(WrappedStr):
         # Case-insensitive split using regular expression
         pattern: re.Pattern[str] = re.compile(re.escape(self._coerce_str(__sep)), re.IGNORECASE)
         split_parts: list[int] = [m.start() for m in pattern.finditer(self.__content)]
-        return self._split_by_indices(split_parts, __maxsplit, reverse=True)
+        return self._split_by_indices(split_parts, int(__maxsplit), reverse=True)
 
-    def split(self, sep = None, maxsplit=-1):
+    def split(
+        self,
+        sep = None,
+        maxsplit=-1,
+    ):
         if sep is None:
             # Default split behavior on whitespace
             return super().split(None, maxsplit)
@@ -559,15 +913,15 @@ class CaseInsensitiveWrappedStr(WrappedStr):
         # Case-insensitive split using regular expression
         pattern: re.Pattern[str] = re.compile(re.escape(self._coerce_str(sep)), re.IGNORECASE)
         split_parts: list[int] = [m.start() for m in pattern.finditer(self.__content)]
-        return self._split_by_indices(split_parts, maxsplit)
+        return self._split_by_indices(split_parts, int(maxsplit))
 
-    def _split_by_indices(self, indices, maxsplit, reverse=False):
+    def _split_by_indices(self, indices: list[int], maxsplit: int, reverse: bool = False) -> list[Self]:
         # Split the string using indices from the regular expression
         if maxsplit > 0:
             indices = indices[-maxsplit:] if reverse else indices[:maxsplit]
 
-        last_index = 0
-        results = []
+        last_index: int = 0
+        results: list[Self] = []
         for index in reversed(indices) if reverse else indices:
             results.append(self.__class__(self.__content[last_index:index]))
             last_index = index + 1

@@ -144,7 +144,7 @@ class UTIEditor(Editor):
         self.ui.nameEdit.setLocstring(uti.name)
         self.ui.descEdit.setLocstring(uti.description)
         self.ui.tagEdit.setText(uti.tag)
-        self.ui.resrefEdit.setText(uti.resref.get())
+        self.ui.resrefEdit.setText(str(uti.resref))
         self.ui.baseSelect.setCurrentIndex(uti.base_item)
         self.ui.costSpin.setValue(uti.cost)
         self.ui.additionalCostSpin.setValue(uti.add_cost)

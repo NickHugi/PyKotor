@@ -116,7 +116,7 @@ class UTEEditor(Editor):
         # Basic
         self.ui.nameEdit.setLocstring(ute.name)
         self.ui.tagEdit.setText(ute.tag)
-        self.ui.resrefEdit.setText(ute.resref.get())
+        self.ui.resrefEdit.setText(str(ute.resref))
         self.ui.difficultySelect.setCurrentIndex(ute.difficulty_id)
         self.ui.spawnSelect.setCurrentIndex(int(ute.single_shot))
         self.ui.minCreatureSpin.setValue(ute.rec_creatures)
@@ -135,14 +135,14 @@ class UTEEditor(Editor):
         for _ in range(self.ui.creatureTable.rowCount()):
             self.ui.creatureTable.removeRow(0)
         for creature in ute.creatures:
-            self.addCreature(creature.resref.get(), creature.appearance_id, creature.challenge_rating, creature.single_spawn)
+            self.addCreature(str(creature.resref), creature.appearance_id, creature.challenge_rating, creature.single_spawn)
 
         # Scripts
-        self.ui.onEnterEdit.setText(ute.on_entered.get())
-        self.ui.onExitEdit.setText(ute.on_exit.get())
-        self.ui.onExhaustedEdit.setText(ute.on_exhausted.get())
-        self.ui.onHeartbeatEdit.setText(ute.on_heartbeat.get())
-        self.ui.onUserDefinedEdit.setText(ute.on_user_defined.get())
+        self.ui.onEnterEdit.setText(str(ute.on_entered))
+        self.ui.onExitEdit.setText(str(ute.on_exit))
+        self.ui.onExhaustedEdit.setText(str(ute.on_exhausted))
+        self.ui.onHeartbeatEdit.setText(str(ute.on_heartbeat))
+        self.ui.onUserDefinedEdit.setText(str(ute.on_user_defined))
 
         # Comments
         self.ui.commentsEdit.setPlainText(ute.comment)

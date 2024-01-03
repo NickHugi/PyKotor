@@ -45,21 +45,19 @@ class FileResource:
             ")"
         )
 
-    def __str__(
-        self,
-    ) -> str:
+    def __str__(self) -> str:
         return str(self._identifier)
 
     def __eq__(
         self,
-        other: FileResource | ResourceIdentifier | Path | bytes | bytearray | memoryview | object,
+        __value: FileResource | ResourceIdentifier | Path | bytes | bytearray | memoryview | object,
     ):
-        if isinstance(other, FileResource):
-            return self.get_sha256_hash() == other.get_sha256_hash()
-        if isinstance(other, (Path, bytes, bytearray, memoryview)):
-            return self.get_sha256_hash() == generate_sha256_hash(other)
-        if isinstance(other, ResourceIdentifier):
-            return self.identifier() == other
+        if isinstance(__value, FileResource):
+            return self.get_sha256_hash() == __value.get_sha256_hash()
+        if isinstance(__value, (Path, bytes, bytearray, memoryview)):
+            return self.get_sha256_hash() == generate_sha256_hash(__value)
+        if isinstance(__value, ResourceIdentifier):
+            return self.identifier() == __value
         return NotImplemented
 
     def resname(
@@ -116,7 +114,7 @@ class FileResource:
                 from pykotor.extract.capsule import Capsule  # Prevent circular imports
 
                 capsule = Capsule(self._filepath)
-                res: FileResource | None = capsule.info(self._resname, self._restype)  # type: ignore[assignment]
+                res: FileResource | None = capsule.info(self._resname, self._restype)
                 assert res is not None, f"Resource '{self._resname}.{self._restype.extension}' not found in Capsule at '{self._filepath}"
 
                 self._offset = res.offset()
@@ -164,30 +162,35 @@ class ResourceIdentifier(NamedTuple):
     def __hash__(
         self,
     ):
-        return hash(str(self))
+        return hash((self.__class__, str(self)))
 
     def __repr__(
         self,
     ):
-        return f"ResourceIdentifier({self.resname}, {self.restype!r})"
+        return f"{self.__class__.__name__}({self.resname}, {self.restype!r})"
 
     def __str__(
         self,
     ):
         return f"{self.resname.lower()}{f'.{self.restype.extension.lower()}' if self.restype.extension else ''}"
 
-    def __eq__(self, other: object):
-        if isinstance(other, str):
-            other = self.from_path(other)
-        if isinstance(other, ResourceIdentifier):
-            return str(self) == str(other)
+    def __eq__(self, __value: object):
+        if isinstance(__value, str):
+            __value = self.from_path(__value)
+        if isinstance(__value, ResourceIdentifier):
+            return str(self) == str(__value)
         return NotImplemented
 
-    def validate(self):
-        if self.restype == ResourceType.INVALID:
-            msg = f"Invalid resource: '{self}'"
+    def validate(self, *, strict=False):
+        from pykotor.common.misc import ResRef
+        if self.restype == ResourceType.INVALID or strict and not ResRef.is_valid(self.resname):
+            msg = f"Invalid resource: '{self!r}'"
             raise ValueError(msg)
         return self
+
+    def as_resref_compatible(self):
+        from pykotor.common.misc import ResRef
+        return self.__class__(str(ResRef.from_invalid(self.resname)), self.restype)
 
     @classmethod
     def identify(cls, obj: ResourceIdentifier | os.PathLike | str):
@@ -214,7 +217,7 @@ class ResourceIdentifier(NamedTuple):
         """
         path_obj: PurePath = PurePath("")  #PurePath("<INVALID>")
         with suppress(Exception), suppress(TypeError):
-            path_obj = PurePath(file_path)
+            path_obj = PurePath.pathify(file_path)
         with suppress(Exception):
             max_dots: int = path_obj.name.count(".")
             for dots in range(max_dots+1, 1, -1):

@@ -81,7 +81,7 @@ class UTWEditor(Editor):
         # Basic
         self.ui.nameEdit.setLocstring(utw.name)
         self.ui.tagEdit.setText(utw.tag)
-        self.ui.resrefEdit.setText(utw.resref.get())
+        self.ui.resrefEdit.setText(str(utw.resref))
 
         # Advanced
         self.ui.isNoteCheckbox.setChecked(utw.has_map_note)

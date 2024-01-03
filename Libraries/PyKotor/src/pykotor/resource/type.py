@@ -221,10 +221,8 @@ class ResourceType(Enum):
             return self.type_id == other
         return NotImplemented
 
-    def __hash__(
-        self,
-    ):
-        return hash(str(self.extension))  # FIXME: should be case-insensitive
+    def __hash__(self):
+        return hash((self.__class__, str(self.extension).lower()))
 
     @classmethod
     def from_id(

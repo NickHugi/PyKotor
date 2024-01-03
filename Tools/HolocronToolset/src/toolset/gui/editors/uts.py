@@ -118,7 +118,7 @@ class UTSEditor(Editor):
         # Basic
         self.ui.nameEdit.setLocstring(uts.name)
         self.ui.tagEdit.setText(uts.tag)
-        self.ui.resrefEdit.setText(uts.resref.get())
+        self.ui.resrefEdit.setText(str(uts.resref))
         self.ui.volumeSlider.setValue(uts.volume)
         self.ui.activeCheckbox.setChecked(uts.active)
 
@@ -144,7 +144,7 @@ class UTSEditor(Editor):
         # Sounds
         self.ui.soundList.clear()
         for sound in uts.sounds:
-            item = QListWidgetItem(sound.get())
+            item = QListWidgetItem(str(sound))
             item.setFlags(item.flags() | QtCore.Qt.ItemIsEditable)
             self.ui.soundList.addItem(item)
 

@@ -89,7 +89,7 @@ class UTTEditor(Editor):
         # Basic
         self.ui.nameEdit.setLocstring(utt.name)
         self.ui.tagEdit.setText(utt.tag)
-        self.ui.resrefEdit.setText(utt.resref.get())
+        self.ui.resrefEdit.setText(str(utt.resref))
         self.ui.cursorSelect.setCurrentIndex(utt.cursor_id)
         self.ui.typeSelect.setCurrentIndex(utt.type_id)
 
@@ -109,13 +109,13 @@ class UTTEditor(Editor):
         self.ui.trapSelect.setCurrentIndex(utt.trap_type)
 
         # Scripts
-        self.ui.onClickEdit.setText(utt.on_click.get())
-        self.ui.onDisarmEdit.setText(utt.on_disarm.get())
-        self.ui.onEnterEdit.setText(utt.on_enter.get())
-        self.ui.onExitEdit.setText(utt.on_exit.get())
-        self.ui.onHeartbeatEdit.setText(utt.on_heartbeat.get())
-        self.ui.onTrapTriggeredEdit.setText(utt.on_trap_triggered.get())
-        self.ui.onUserDefinedEdit.setText(utt.on_user_defined.get())
+        self.ui.onClickEdit.setText(str(utt.on_click))
+        self.ui.onDisarmEdit.setText(str(utt.on_disarm))
+        self.ui.onEnterEdit.setText(str(utt.on_enter))
+        self.ui.onExitEdit.setText(str(utt.on_exit))
+        self.ui.onHeartbeatEdit.setText(str(utt.on_heartbeat))
+        self.ui.onTrapTriggeredEdit.setText(str(utt.on_trap_triggered))
+        self.ui.onUserDefinedEdit.setText(str(utt.on_user_defined))
 
         # Comments
         self.ui.commentsEdit.setPlainText(utt.comment)

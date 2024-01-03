@@ -157,7 +157,7 @@ class ERF:
 
         rim = RIM()
         for resource in self._resources:
-            rim.set_data(resource.resref.get(), resource.restype, resource.data)
+            rim.set_data(str(resource.resref), resource.restype, resource.data)
         return rim
 
 

@@ -16,7 +16,7 @@ class EncounterDialog(QDialog):
         self.setWindowTitle("Edit Encounter")
         self.setWindowIcon(QIcon(QPixmap(":/images/icons/k1/encounter.png")))
 
-        self.ui.resrefEdit.setText(encounter.resref.get())
+        self.ui.resrefEdit.setText(str(encounter.resref))
         self.ui.xPosSpin.setValue(encounter.position.x)
         self.ui.yPosSpin.setValue(encounter.position.y)
         self.ui.zPosSpin.setValue(encounter.position.z)

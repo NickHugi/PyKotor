@@ -76,7 +76,7 @@ class BasePurePath(metaclass=PurePathType):  # type: ignore[misc]
     def __new__(cls, *args: PathElem, **kwargs):
         return (
             args[0]
-            if len(args) == 1 and type(args[0]) == cls and isinstance(args[0], cls)
+            if len(args) == 1 and args[0].__class__ == cls and isinstance(args[0], cls)
             else super().__new__(cls, *cls.parse_args(args), **kwargs)
         )
 
@@ -185,7 +185,7 @@ class BasePurePath(metaclass=PurePathType):  # type: ignore[misc]
         return str(self) == self._fix_path_formatting(other_str)
 
     def __hash__(self):
-        return hash((BasePurePath, self._fix_path_formatting(super().__str__(), "/")))
+        return hash((BasePurePath, self.as_posix()))
 
     def __fspath__(self) -> str:
         """Ensures any use of __fspath__ will call our __str__ method."""

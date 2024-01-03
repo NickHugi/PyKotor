@@ -13,7 +13,7 @@ class CutsceneModelDialog(QDialog):
         self.ui.setupUi(self)
 
         self.ui.participantEdit.setText(stunt.participant)
-        self.ui.stuntEdit.setText(stunt.stunt_model.get())
+        self.ui.stuntEdit.setText(str(stunt.stunt_model))
 
     def stunt(self) -> DLGStunt:
         stunt = DLGStunt()
