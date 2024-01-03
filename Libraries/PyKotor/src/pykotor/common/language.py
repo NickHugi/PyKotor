@@ -463,9 +463,6 @@ class LocalizedString:
             return False
         return other._substrings == self._substrings
 
-    def __hash__(self):
-        return hash(self.stringref)
-
     @classmethod
     def from_invalid(cls):
         return cls(-1)

@@ -125,7 +125,7 @@ class PTHEdge:
 
     def __eq__(
         self,
-        other: PTHEdge | object,
+        other: PTHEdge,
     ):
         if isinstance(other, PTHEdge):
             return self.source == other.source and self.target == other.target

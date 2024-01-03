@@ -188,7 +188,17 @@ class ResourceType(Enum):
     def __repr__(
         self,
     ) -> str:
-        return f"ResourceType.{self.name}"
+        return (
+            f"{self.__class__.__name__}({self.name})"
+            if not self.is_invalid
+            else (
+                f"{self.__class__.__name__}.from_invalid("
+                f"{f'type_id={self.type_id}, ' if self.type_id else ''}"
+                f"{f'extension={self.extension}, ' if self.extension else ''}"
+                f"{f'category={self.category}, ' if self.category else ''}"
+                f"contents={self.contents})"
+            )
+        )
 
     def __str__(
         self,
@@ -204,7 +214,7 @@ class ResourceType(Enum):
 
     def __eq__(
         self,
-        other: ResourceType | str | int | object,
+        other: ResourceType | str | int,
     ):
         """Two ResourceTypes are equal if they are the same.
 

@@ -258,6 +258,9 @@ class WrappedStr:  # (metaclass=StrType):
     ):
         return self._content == self._assert_str_type(__value)
 
+    def __hash__(self):
+        return hash((WrappedStr, self._content))
+
     def __ne__(
         self,
         __value: object,
@@ -345,9 +348,6 @@ class WrappedStr:  # (metaclass=StrType):
         __value: str | WrappedStr,
     ):
         return self._content >= self._assert_str_type(__value)
-
-    def __hash__(self):
-        return hash((WrappedStr, self._content))
 
     # String Methods
     def capitalize(self) -> Self:

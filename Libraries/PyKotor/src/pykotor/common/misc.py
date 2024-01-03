@@ -211,7 +211,7 @@ class Color:
     def __repr__(
         self,
     ):
-        return f"Color({self.r}, {self.g}, {self.b}, {self.g})"
+        return f"Color({self})"
 
     def __str__(
         self,
@@ -221,18 +221,18 @@ class Color:
 
     def __eq__(
         self,
-        other: Color | object,
+        other: Color,
     ):
         """Two Color instances are equal if their color components are equal."""
         if not isinstance(other, Color):
             return NotImplemented
 
-        return (
-            other.r == self.r
-            and other.g == self.g
-            and other.b == self.b
-            and other.a == self.a
-        )
+        return hash(self) == hash(other)
+
+    def __hash__(
+        self,
+    ):
+        return hash((self.r, self.g, self.b, self.a))
 
     @classmethod
     def from_rgb_integer(
@@ -470,8 +470,14 @@ class InventoryItem:
         other: object,
     ):
         if isinstance(other, InventoryItem):
-            return self.resref == other.resref and self.droppable == other.droppable
+            return self.resref == other.resref and self.droppable == other.droppable  # and self.infinite == other.infinite
         return NotImplemented
+
+    def __hash__(
+        self,
+        other,
+    ):
+        return hash(self.resref)
 
 
 class EquipmentSlot(Enum):

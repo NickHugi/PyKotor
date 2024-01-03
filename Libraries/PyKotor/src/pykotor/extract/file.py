@@ -213,12 +213,12 @@ class ResourceIdentifier(NamedTuple):
 
     def __eq__(
         self,
-        __value: object,
+        __value: str | ResourceIdentifier,
     ):
         if isinstance(__value, str):
             __value = self.from_path(__value)
         if isinstance(__value, ResourceIdentifier):
-            return str(self) == str(__value)
+            return hash(self) == hash(__value)
         return NotImplemented
 
     def validate(self, *, strict=False):

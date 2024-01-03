@@ -607,7 +607,7 @@ class StackObject:
     def __repr__(self):
         return f"{self.data_type.name}={self.value}"
 
-    def __eq__(self, other):
+    def __eq__(self, other: StackObject | object):
         if isinstance(other, StackObject):
             return self.value == other.value
         return self.value == other
