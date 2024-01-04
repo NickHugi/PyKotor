@@ -19,51 +19,54 @@ class ProcessorArchitecture(Enum):
     BIT_64 = "64bit"
 
     def __str__(self):
-        return f"{self.value}bit"
+        return self.value
+
+    def __int__(self):
+        return self.get_int() or -1
 
     @classmethod
     def from_os(cls):
-        return ProcessorArchitecture(platform.architecture()[0])
+        return cls(platform.architecture()[0])
 
     @classmethod
     def from_python(cls):
-        return ProcessorArchitecture.BIT_64 if sys.maxsize > 2**32 else ProcessorArchitecture.BIT_32
+        return cls.BIT_64 if sys.maxsize > 2**32 else cls.BIT_32
 
     def get_machine_repr(self):
-        if ProcessorArchitecture.BIT_32:
+        if self == self.BIT_32:
             return "x86"
-        if ProcessorArchitecture.BIT_64:
+        if self == self.BIT_64:
             return "x64"
         return None
 
     def get_int(self):
-        if ProcessorArchitecture.BIT_32:
+        if self == self.BIT_32:
             return 32
-        if ProcessorArchitecture.BIT_64:
+        if self == self.BIT_64:
             return 64
         return None
 
     def get_dashed_bitness(self):
-        if ProcessorArchitecture.BIT_32:
+        if self == self.BIT_32:
             return "32-bit"
-        if ProcessorArchitecture.BIT_64:
+        if self == self.BIT_64:
             return "64-bit"
         return None
 
     def supports_64_bit(self) -> bool:
         """Check if the architecture supports 64-bit processing."""
-        return self == ProcessorArchitecture.BIT_64
+        return self == self.BIT_64
 
 def format_gpu_info(info, headers):
     # Determine the maximum width for each column
-    column_widths = [max(len(str(row[i])) for row in [headers, *info]) for i in range(len(headers))]
+    column_widths: list[int] = [max(len(str(row[i])) for row in [headers, *info]) for i in range(len(headers))]
 
     # Function to format a single row
     def format_row(row):
         return " | ".join(f"{str(item).ljust(column_widths[i])}" for i, item in enumerate(row))
 
     # Build the output string
-    output = format_row(headers) + "\n"
+    output: str = format_row(headers) + "\n"
     output += "-" * (sum(column_widths) + len(headers) * 3 - 1) + "\n"  # Add a separator line
 
     # Append each row of GPU details to the output string
