@@ -188,8 +188,10 @@ class ResourceType(Enum):
     def __repr__(
         self,
     ) -> str:
+        if self.name == "INVALID":
+            return "ResourceType.INVALID"
         return (
-            f"{self.__class__.__name__}({self.name})"
+            f"{self.__class__.__name__}.{self.name}"
             if not self.is_invalid
             else (
                 f"{self.__class__.__name__}.from_invalid("
