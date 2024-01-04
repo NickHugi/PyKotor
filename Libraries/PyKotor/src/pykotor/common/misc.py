@@ -542,27 +542,15 @@ class CaseInsensitiveHashSet(set, Generic[T]):
     def __contains__(self, item) -> bool:
         return super().__contains__(self._normalize_key(item))
 
-    def __le__(self, other) -> bool:
-        return super().__le__({self._normalize_key(item) for item in other})
-
-    def __lt__(self, other) -> bool:
-        return super().__lt__({self._normalize_key(item) for item in other})
-
     def __eq__(self, other) -> bool:
         return super().__eq__({self._normalize_key(item) for item in other})
 
     def __ne__(self, other) -> bool:
         return super().__ne__({self._normalize_key(item) for item in other})
 
-    def __gt__(self, other) -> bool:
-        return super().__gt__({self._normalize_key(item) for item in other})
-
-    def __ge__(self, other) -> bool:
-        return super().__ge__({self._normalize_key(item) for item in other})
-
 
 class CaseInsensitiveDict(Generic[T]):
-    """A class exactly like the builtin dict[str, Any], but provides case-insensitive key lookups.
+    """A class exactly like the builtin dict[str, T], but provides case-insensitive key lookups.
 
     The case-sensitivity of the keys themselves are always preserved.
     """
@@ -632,9 +620,12 @@ class CaseInsensitiveDict(Generic[T]):
         if not isinstance(key, str):
             msg = f"Keys must be strings in CaseInsensitiveDict-inherited classes, got {key!r}"
             raise KeyError(msg)
-        if key in self:
-            self.__delitem__(key)
-        self._case_map[key.lower()] = key
+
+        lower_key: str = key.lower()
+        case_sens_key: str | None = self._case_map.get(lower_key)
+        if case_sens_key is not None:  # delete old item if it exists
+            del self._dictionary[case_sens_key]
+        self._case_map[lower_key] = key
         self._dictionary[key] = value
 
     def __delitem__(self, key: str):
@@ -646,6 +637,9 @@ class CaseInsensitiveDict(Generic[T]):
         del self._case_map[lower_key]
 
     def __contains__(self, key: str) -> bool:
+        if not isinstance(key, str):
+            msg = f"Keys must be strings in CaseInsensitiveDict-inherited classes, got {key!r}"
+            raise KeyError(msg)
         return key.lower() in self._case_map
 
     def __len__(self) -> int:
