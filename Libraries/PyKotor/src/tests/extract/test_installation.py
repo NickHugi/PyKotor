@@ -35,9 +35,10 @@ K1_PATH = os.environ.get("K1_PATH")
     "K1_PATH environment variable is not set or not found on disk.",
 )
 class TestInstallation(TestCase):
-    def setUp(self) -> None:
+    @classmethod
+    def setUpClass(cls) -> None:
         assert K1_PATH  # noqa: S101
-        self.installation = Installation(K1_PATH)
+        cls.installation = Installation(K1_PATH)
 
     def test_resource(self):
         installation = self.installation
