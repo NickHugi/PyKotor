@@ -157,7 +157,7 @@ class CaseAwarePath(InternalPath):  # type: ignore[misc]
         path_obj = pathlib.Path(self)
         return (
             self._fix_path_formatting(str(path_obj))
-            if self.should_resolve_case(path_obj)
+            if not self.should_resolve_case(path_obj)
             else super(CaseAwarePath, self.get_case_sensitive_path(path_obj)).__str__()
         )
 
