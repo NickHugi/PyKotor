@@ -580,6 +580,8 @@ class CaseInsensitiveDict(Generic[T]):
         if not isinstance(key, str):
             msg = f"Keys must be strings in CaseInsensitiveDict-inherited classes, got {key!r}"
             raise KeyError(msg)
+        if key in self:
+            self.__delitem__(key)
         self._case_map[key.lower()] = key
         self._dictionary[key] = value
 
