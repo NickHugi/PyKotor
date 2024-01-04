@@ -62,7 +62,7 @@ def format_gpu_info(info, headers):
     column_widths: list[int] = [max(len(str(row[i])) for row in [headers, *info]) for i in range(len(headers))]
 
     # Function to format a single row
-    def format_row(row):
+    def format_row(row) -> str:
         return " | ".join(f"{str(item).ljust(column_widths[i])}" for i, item in enumerate(row))
 
     # Build the output string
@@ -209,7 +209,7 @@ def indent(elem: Element, level=0):
         - If no tail after children, set tail to indentation
         - If level and no tail, set tail to indentation.
     """
-    i = "\n" + level * "  "
+    i: str = "\n" + level * "  "
     if len(elem):
         if not elem.text or not elem.text.strip():
             elem.text = f"{i}  "
