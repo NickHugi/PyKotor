@@ -441,6 +441,9 @@ class LocalizedString:
         """Returns the number of substrings."""
         return len(self._substrings)
 
+    def __hash__(self):
+        return hash(self.stringref)
+
     def __str__(self):
         """If the stringref is valid, it will return it as a string. Otherwise it will return one of the substrings,
         prioritizing the english substring if it exists. If no substring exists and the stringref is invalid, "-1" is
