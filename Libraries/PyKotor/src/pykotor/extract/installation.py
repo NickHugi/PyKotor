@@ -170,9 +170,10 @@ class Installation:
         self._streamsounds: list[FileResource] = []
         self._streamwaves: list[FileResource] = []
         self._game: Game | None = None
-        self.load()
 
-    def load(self):
+        self._initialized = False
+
+    def reload_all(self):
         self.load_chitin()
         self.load_lips()
         self.load_modules()
@@ -187,8 +188,11 @@ class Installation:
             self.load_streamvoice()
         self.load_textures()
         print(f"Finished loading the installation from {self._path}")
+        self._initialized = True
 
     def __iter__(self) -> Generator[FileResource, Any, None]:
+        if not self._initialized:
+            self.reload_all()
         def generator() -> Generator[FileResource, Any, None]:
             yield from self._chitin
             yield from self._streammusic
@@ -431,6 +435,8 @@ class Installation:
         ----
             module: The filename of the module.
         """
+        if not self._modules or module not in self._modules:
+            self.load_modules()
         self._modules[module] = list(Capsule(self.module_path() / module))
 
     def load_rims(
@@ -438,6 +444,7 @@ class Installation:
     ) -> None:
         """Reloads the list of module files in the rims folder linked to the Installation."""
         self._rims = self.load_resources(self.rims_path(), capsule_check=is_rim_file)  # type: ignore[assignment]
+        #self._rims.extend(self.load_resources(self.module_path(), capsule_check=is_rim_file))  # type: ignore[assignment]
 
     def load_textures(
         self,
@@ -490,9 +497,12 @@ class Installation:
         self.load_override(directory)
 
     def reload_override_file(self, file: os.PathLike | str) -> None:
-        filepath: Path = Path.pathify(file)  # type: ignore[assignment]
+        filepath: Path = Path.pathify(file)
         parent_folder = filepath.parent
         rel_folderpath: str = str(filepath.parent.relative_to(self.override_path())) if parent_folder.name else "."
+        if rel_folderpath not in self._override:
+            self.load_override(rel_folderpath)
+
         identifier: ResourceIdentifier = ResourceIdentifier.from_path(filepath)
         if identifier.restype == ResourceType.INVALID:
             print("Cannot reload override file. Invalid KOTOR resource:", identifier)
@@ -503,12 +513,12 @@ class Installation:
             0,
             filepath,
         )
+
         override_list: list[FileResource] = self._override[rel_folderpath]
         if resource not in override_list:
-            print(f"Cannot reload override file '{identifier}'. File not found in ", rel_folderpath)
-            return
-        index: int = override_list.index(resource)
-        override_list[index] = resource
+            override_list.append(resource)
+        else:
+            override_list[override_list.index(resource)] = resource
 
     def load_streammusic(self) -> None:
         """Reloads the list of resources in the streammusic folder linked to the Installation."""
@@ -536,6 +546,8 @@ class Installation:
         -------
             A list of FileResources.
         """
+        if not self._chitin:
+            self.load_chitin()
         return self._chitin[:]
 
     def modules_list(self) -> list[str]:
@@ -547,18 +559,30 @@ class Installation:
         -------
             A list of filenames.
         """
+        if not self._modules:
+            self.load_modules()
         return list(self._modules.keys())
 
-    def module_resources(self, filename: str) -> list[FileResource]:
+    def module_resources(
+        self,
+        filename: str | None = None,
+    ) -> list[FileResource]:
         """Returns a list of FileResources stored in the specified module file located in the modules folder linked to the Installation.
 
-        Module resources are cached and require a reload after the contents have been modified.
+        Module resources are cached and require a reload after the contents have been modified on disk.
 
         Returns
         -------
             A list of FileResources.
         """
-        return self._modules[filename][:]
+        if not self._modules or filename and filename not in self._modules:
+            self.load_modules()
+
+        return (
+            self._modules[filename][:]
+            if filename
+            else [module_resource for module_filename in self._modules for module_resource in self._modules[module_filename]]
+        )
 
     def lips_list(self) -> list[str]:
         """Returns the list of module filenames located in the lips folder linked to the Installation.
@@ -569,18 +593,97 @@ class Installation:
         -------
             A list of filenames.
         """
+        if not self._lips:
+            self.load_lips()
         return list(self._lips.keys())
 
-    def lip_resources(self, filename: str) -> list[FileResource]:
+    def lip_resources(
+        self,
+        filename: str | None = None,
+    ) -> list[FileResource]:
         """Returns a list of FileResources stored in the specified module file located in the lips folder linked to the Installation.
 
-        Module resources are cached and require a reload after the contents have been modified.
+        Module resources are cached and require a reload after the contents have been modified on disk.
 
         Returns
         -------
             A list of FileResources.
         """
-        return self._lips[filename][:]
+        if not self._lips or filename and filename not in self._lips:
+            self.load_lips()
+
+        return (
+            self._lips[filename][:]
+            if filename
+            else [lip_resource for lip_filename in self._lips for lip_resource in self._lips[lip_filename]]
+        )
+
+    def rims_list(self) -> list[str]:
+        """Returns the list of rim filenames located in the 'rims' and 'modules' folders linked to the Installation.
+
+        Rim filenames are cached and require to be refreshed after a file is added, deleted or renamed.
+
+        Returns
+        -------
+            A list of filenames.
+        """
+        if not self._rims and self.game() == Game.K1:
+            self.load_rims()
+        if not self._modules:
+            self.load_modules()
+
+        return [
+            *self._rims.keys(),
+            *[modules_rim_filename for modules_rim_filename in self._modules if is_rim_file(modules_rim_filename)],
+        ]
+
+    def rim_resources(
+        self,
+        filename: str | None = None,
+    ) -> list[FileResource]:
+        """Returns a list of FileResources stored in the specified module file located in the 'rims' and 'modules' folders linked to the Installation.
+
+        RIM resources are cached and require a reload after the contents have been modified on disk.
+
+        Returns
+        -------
+            A list of FileResources.
+        """
+        queried_rim_resources: list[FileResource] = []
+        queried_module_rim_resources: list[FileResource] = []
+
+        if self.game() == Game.K1 and (
+            not self._rims
+            or filename and filename not in self._rims
+        ):
+            self.load_rims()
+
+            queried_rim_resources = (
+                self._rims[filename][:]
+                if filename
+                else [resource for rim_filename in self._rims if is_rim_file(rim_filename) for resource in self._rims[rim_filename]]
+            )
+
+        if filename and is_rim_file(filename):
+            if not self._modules:
+                self.load_modules()
+
+            queried_module_rim_resources = self._modules[filename][:]
+
+        elif not filename:
+            if not self._modules:
+                self.load_modules()
+
+            queried_module_rim_resources = [
+                resource
+                for modules_rim_filename in self._modules if is_rim_file(modules_rim_filename)
+                for resource in self._modules[modules_rim_filename]
+            ]
+
+        return [
+            *queried_rim_resources,
+            *queried_module_rim_resources,
+        ]
 
     def texturepacks_list(self) -> list[str]:
         """Returns the list of texture-pack filenames located in the texturepacks folder linked to the Installation.
@@ -589,18 +692,58 @@ class Installation:
         -------
             A list of filenames.
         """
+        if not self._texturepacks:
+            self.load_textures()
         return list(self._texturepacks.keys())
 
-    def texturepack_resources(self, filename: str) -> list[FileResource]:
+    def texturepack_resources(
+        self,
+        filename: str | None = None,
+    ) -> list[FileResource]:
         """Returns a list of FileResources stored in the specified module file located in the texturepacks folder linked to the Installation.
 
-        Texturepacks resources are cached and require a reload after the contents have been modified.
+        Texturepacks resources are cached and require a reload after the contents have been modified on disk.
 
         Returns
         -------
             A list of FileResources.
         """
-        return self._texturepacks[filename][:]
+        if not self._texturepacks or filename and filename not in self._texturepacks:
+            self.load_textures()
+
+        return (
+            self._texturepacks[filename][:]
+            if filename
+            else [texture_resource for texture_filename in self._texturepacks for texture_resource in self._texturepacks[texture_filename]]
+        )
+
+    def streamwaves_resources(self) -> list[FileResource]:
+        """Returns a list of FileResources stored in the streamwaves folder linked to the Installation.
+
+        Streamwaves resources are cached and require a reload after the contents have been modified on disk.
+        In the first game, this folder is named 'streamwaves'
+        In the second game, this folder has been renamed to 'streamvoice'.
+
+        Returns
+        -------
+            A list of FileResources from either the 'streamwaves' or 'streamvoice' folder, depending on the detected game.
+        """
+        if not self._streamwaves:
+            self.load_streamwaves()
+        return self._streamwaves
+
+    def streammusic_resources(self) -> list[FileResource]:
+        """Returns a list of FileResources stored in the streammusic folder linked to the Installation.
+
+        Streammusic resources are cached and require a reload after the contents have been modified on disk.
+
+        Returns
+        -------
+            A list of FileResources from either the 'streamwaves' or 'streamvoice' folder, depending on the detected game.
+        """
+        if not self._streammusic:
+            self.load_streammusic()
+        return self._streammusic
 
     def override_list(self) -> list[str]:
         """Returns the list of subdirectories located in override folder linked to the Installation.
@@ -609,20 +752,32 @@ class Installation:
 
         Returns
         -------
-            A list of subdirectories.
+            A list of subfolder names in Override.
         """
+        if not self._override:
+            self.load_override()
         return list(self._override.keys())
 
-    def override_resources(self, directory: str) -> list[FileResource]:
+    def override_resources(
+        self,
+        directory: str | None = None,
+    ) -> list[FileResource]:
         """Returns a list of FileResources stored in the specified subdirectory located in the override folder linked to the Installation.
 
-        Override resources are cached and require a reload after the contents have been modified.
+        Override resources are cached and require a reload after the contents have been modified on disk.
 
         Returns
         -------
             A list of FileResources.
         """
-        return self._override[directory]
+        if not self._override or directory and directory not in self._override:
+            self.load_override()
+
+        return (
+            self._override[directory]
+            if directory
+            else [override_resource for ov_subfolder_name in self._override for override_resource in self._override[ov_subfolder_name]]
+        )
 
     # endregion
 
@@ -916,6 +1071,8 @@ class Installation:
         -------
             A dictionary mapping a resource identifier to a list of locations.
         """
+        if not self._initialized:
+            self.reload_all()
         if order is None:
             order = [
                 SearchLocation.CUSTOM_FOLDERS,
@@ -1057,6 +1214,8 @@ class Installation:
         -------
             A dictionary mapping case-insensitive strings to TPC objects or None.
         """
+        if not self._initialized:
+            self.reload_all()
         if order is None:
             order = [
                 SearchLocation.CUSTOM_FOLDERS,
@@ -1216,6 +1375,8 @@ class Installation:
         -------
             A dictionary mapping a case-insensitive string to a bytes object or None.
         """
+        if not self._initialized:
+            self.reload_all()
         resnames = remove_duplicates(resnames, case_insensitive=True)
         capsules = [] if capsules is None else capsules
         folders = [] if folders is None else folders

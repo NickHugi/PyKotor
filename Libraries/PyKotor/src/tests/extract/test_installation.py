@@ -39,6 +39,7 @@ class TestInstallation(TestCase):
     def setUpClass(cls) -> None:
         assert K1_PATH  # noqa: S101
         cls.installation = Installation(K1_PATH)
+        #cls.installation.reload_all()
 
     def test_resource(self):
         installation = self.installation
