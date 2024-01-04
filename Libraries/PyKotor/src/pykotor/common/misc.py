@@ -664,7 +664,7 @@ class CaseInsensitiveDict(Generic[T]):
     def __ror__(self, other):
         if not isinstance(other, (dict, CaseInsensitiveDict)):
             return NotImplemented
-        other_dict: CaseInsensitiveDict[T] = (other if isinstance(other, CaseInsensitiveDict) else CaseInsensitiveDict.from_dict(other))
+        other_dict: CaseInsensitiveDict[T] = other if isinstance(other, CaseInsensitiveDict) else CaseInsensitiveDict.from_dict(other)
         new_dict: CaseInsensitiveDict[T] = other_dict.copy()
         new_dict.update(self)
         return new_dict
