@@ -275,9 +275,9 @@ class ResourceType(Enum):
         if not kwargs:
             return cls.INVALID
         instance = object.__new__(cls)
-        name = f"INVALID_{kwargs.get('extension', cls.INVALID.extension) or uuid.uuid4().hex}"
+        name = f"INVALID_{kwargs.get('extension', kwargs.get('type_id', cls.INVALID.extension)) or uuid.uuid4().hex}"
         while name in cls.__members__:
-            name = f"INVALID_{kwargs.get('extension', cls.INVALID.extension)}{uuid.uuid4().hex}"
+            name = f"INVALID_{kwargs.get('extension', kwargs.get('type_id', cls.INVALID.extension))}{uuid.uuid4().hex}"
         instance._name_ = name
         instance._value_ = ResourceTuple(**{**cls.INVALID.value, **kwargs, "is_invalid": True})
         instance.__init__(**instance.value)  # type: ignore[misc]
