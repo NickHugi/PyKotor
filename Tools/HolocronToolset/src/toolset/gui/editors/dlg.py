@@ -396,7 +396,7 @@ class DLGEditor(Editor):
         self.ui.cameraEffectSelect.clear()
         self.ui.cameraEffectSelect.addItem("[None]", None)
 
-        videoEffects: TwoDA = installation.htGetCache2DA(HTInstallation.TwoDA_VIDEO_EFFECTS)
+        videoEffects: TwoDA | None = installation.htGetCache2DA(HTInstallation.TwoDA_VIDEO_EFFECTS)
         for i, label in enumerate(videoEffects.get_column("label")):
             self.ui.cameraEffectSelect.addItem(label.replace("VIDEO_EFFECT_", "").replace("_" , " ").title(), i)
 

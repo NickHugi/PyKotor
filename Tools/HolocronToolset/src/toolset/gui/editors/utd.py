@@ -20,6 +20,8 @@ from toolset.utils.window import openResourceEditor
 if TYPE_CHECKING:
     import os
 
+    from pykotor.resource.formats.twoda.twoda_data import TwoDA
+
 
 class UTDEditor(Editor):
     def __init__(self, parent: QWidget | None, installation: HTInstallation | None = None, *, mainwindow=None):
@@ -104,11 +106,11 @@ class UTDEditor(Editor):
         self.ui.previewRenderer.installation = installation
 
         # Load required 2da files if they have not been loaded already
-        required = [HTInstallation.TwoDA_DOORS, HTInstallation.TwoDA_FACTIONS]
+        required: list[str] = [HTInstallation.TwoDA_DOORS, HTInstallation.TwoDA_FACTIONS]
         installation.htBatchCache2DA(required)
 
-        appearances = installation.htGetCache2DA(HTInstallation.TwoDA_DOORS)
-        factions = installation.htGetCache2DA(HTInstallation.TwoDA_FACTIONS)
+        appearances: TwoDA = installation.htGetCache2DA(HTInstallation.TwoDA_DOORS)
+        factions: TwoDA = installation.htGetCache2DA(HTInstallation.TwoDA_FACTIONS)
 
         self.ui.appearanceSelect.setItems(appearances.get_column("label"))
         self.ui.factionSelect.setItems(factions.get_column("label"))

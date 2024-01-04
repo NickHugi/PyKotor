@@ -259,7 +259,7 @@ class WrappedStr:  # (metaclass=StrType):
         return self._content == self._assert_str_type(__value)
 
     def __hash__(self):
-        return hash((WrappedStr, self._content))
+        return hash(self._content)
 
     def __ne__(
         self,
@@ -824,7 +824,7 @@ class CaseInsensitiveWrappedStr(WrappedStr):
         return self._lower_content.__ne__(self._coerce_str(__value))
 
     def __hash__(self):
-        return hash((WrappedStr, self._lower_content))
+        return hash(self._lower_content)
 
     def find(
         self,

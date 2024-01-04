@@ -4,7 +4,7 @@ from typing import TYPE_CHECKING
 
 from pykotor.common.geometry import SurfaceMaterial, Vector2
 from pykotor.common.misc import Color, ResRef
-from pykotor.extract.file import ResourceIdentifier
+from pykotor.extract.file import ResourceIdentifier, ResourceResult
 from pykotor.extract.installation import SearchLocation
 from pykotor.resource.formats.bwm import read_bwm
 from pykotor.resource.formats.gff import write_gff
@@ -20,6 +20,9 @@ from toolset.gui.editor import Editor
 if TYPE_CHECKING:
     import os
 
+    from pykotor.resource.formats.bwm.bwm_data import BWM
+    from pykotor.resource.formats.lyt.lyt_data import LYT
+    from pykotor.resource.formats.tpc.tpc_data import TPC
     from toolset.gui.widgets.long_spinbox import LongSpinBox
 
 
@@ -108,7 +111,8 @@ class AREEditor(Editor):
         cameras = installation.htGetCache2DA(HTInstallation.TwoDA_CAMERAS)
 
         self.ui.cameraStyleSelect.clear()
-        [self.ui.cameraStyleSelect.addItem(label.title()) for label in cameras.get_column("name")]
+        for label in cameras.get_column("name"):
+            self.ui.cameraStyleSelect.addItem(label.title())
 
         self.ui.dirtGroup.setVisible(installation.tsl)
         self.ui.grassEmissiveEdit.setVisible(installation.tsl)
@@ -141,24 +145,34 @@ class AREEditor(Editor):
         self._are = are
 
         if self._resref:
-            result = self._installation.resource(self._resref, ResourceType.LYT)
-            if result:
-                lyt = read_lyt(result.data)
+            res_result_lyt: ResourceResult | None = self._installation.resource(self._resref, ResourceType.LYT)
+            if res_result_lyt:
+                lyt: LYT = read_lyt(res_result_lyt.data)
+                queries: list[ResourceIdentifier] = [
+                    ResourceIdentifier(room.model, ResourceType.WOK)
+                    for room in lyt.rooms
+                ]
 
-                results = self._installation.resources([ResourceIdentifier(room.model, ResourceType.WOK) for room in lyt.rooms])
-                self.ui.minimapRenderer.setWalkmeshes([read_bwm(result.data) for result in results.values() if result])
+                wok_results: dict[ResourceIdentifier, ResourceResult | None] = self._installation.resources(queries)
+                walkmeshes: list[BWM] = [
+                    read_bwm(result.data)
+                    for result in wok_results.values() if result
+                ]
+                self.ui.minimapRenderer.setWalkmeshes(walkmeshes)
 
-            order = [
+            order: list[SearchLocation] = [
                 SearchLocation.OVERRIDE,
                 SearchLocation.TEXTURES_GUI,
                 SearchLocation.MODULES
             ]
-            self._minimap = self._installation.texture(f"lbl_map{self._resref}", order)
+            self._minimap: TPC | None = self._installation.texture(f"lbl_map{self._resref}", order)
             if self._minimap is None:
-                print(f"Could not find lbl_map{self._resref} to load minimap")
+                print(f"Could not find texture 'lbl_map{self._resref}' required for minimap")
             else:
                 self.ui.minimapRenderer.setMinimap(are, self._minimap)
                 self.ui.minimapRenderer.centerCamera()
+
+        max_value: int = 100
 
         # Basic
         self.ui.nameEdit.setLocstring(are.name)
@@ -194,9 +208,9 @@ class AREEditor(Editor):
         self.ui.diffuseColorEdit.setColor(are.sun_diffuse)
         self.ui.dynamicColorEdit.setColor(are.dynamic_light)
         self.ui.windPowerSelect.setCurrentIndex(are.wind_power)
-        self.ui.rainCheck.setChecked(are.chance_rain == 100)
-        self.ui.snowCheck.setChecked(are.chance_snow == 100)
-        self.ui.lightningCheck.setChecked(are.chance_lightning == 100)
+        self.ui.rainCheck.setChecked(are.chance_rain == max_value)
+        self.ui.snowCheck.setChecked(are.chance_snow == max_value)
+        self.ui.lightningCheck.setChecked(are.chance_lightning == max_value)
         self.ui.shadowsCheck.setChecked(are.shadows)
         self.ui.shadowsSpin.setValue(are.shadow_opacity)
 

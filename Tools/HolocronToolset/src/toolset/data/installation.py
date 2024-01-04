@@ -1,14 +1,16 @@
 from __future__ import annotations
 
 from contextlib import suppress
-from typing import TYPE_CHECKING, List
+from typing import TYPE_CHECKING
 
-from pykotor.extract.file import ResourceIdentifier
+from pykotor.common.misc import CaseInsensitiveDict
+from pykotor.extract.file import ResourceIdentifier, ResourceResult
 from pykotor.extract.installation import Installation, SearchLocation
 from pykotor.resource.formats.tpc import TPC, TPCTextureFormat
 from pykotor.resource.formats.twoda import TwoDA, read_2da
 from pykotor.resource.type import ResourceType
 from PyQt5.QtGui import QImage, QPixmap, QStandardItemModel, QTransform
+from utility.error_handling import assert_with_variable_trace
 
 if TYPE_CHECKING:
     from pykotor.resource.generics.uti import UTI
@@ -63,17 +65,17 @@ class HTInstallation(Installation):
     def __init__(self, path: str, name: str, tsl: bool, mainWindow: QWidget):
         super().__init__(path)
 
-        self.name = name
-        self.tsl = tsl
+        self.name: str = name
+        self.tsl: bool = tsl
 
         self.mainWindow: QWidget = mainWindow
         self.cacheCoreItems: QStandardItemModel | None = None
 
-        self._cache2da: dict[str, TwoDA] = {}
-        self._cacheTpc: dict[str, TPC] = {}
+        self._cache2da: CaseInsensitiveDict[TwoDA] = CaseInsensitiveDict()
+        self._cacheTpc: CaseInsensitiveDict[TPC] = CaseInsensitiveDict()
 
     # region Cache 2DA
-    def htGetCache2DA(self, resname: str):
+    def htGetCache2DA(self, resname: str) -> TwoDA:
         """Gets a 2DA resource from the cache or loads it if not present.
 
         Args:
@@ -83,21 +85,29 @@ class HTInstallation(Installation):
         Returns:
         -------
             2DA: The retrieved 2DA data
-
-        Processing Logic:
-        ----------------
-            - Check if the 2DA is already cached
-            - If not cached, retrieve the 2DA data from the resource system
-            - Parse and cache the retrieved 2DA data
-            - Return the cached 2DA data.
         """
-        resname = resname.lower()
+        twoda_resource: TwoDA | None = None
         if resname not in self._cache2da:
-            result = self.resource(resname, ResourceType.TwoDA, [SearchLocation.OVERRIDE, SearchLocation.CHITIN])
-            self._cache2da[resname] = read_2da(result.data)
-        return self._cache2da[resname]
+            twoda_result: ResourceResult | None = self.resource(
+                resname,
+                ResourceType.TwoDA,
+                [SearchLocation.OVERRIDE, SearchLocation.CHITIN]
+            )
+            if twoda_result is not None:
+                self._cache2da[resname] = read_2da(twoda_result.data)
+        else:
+            twoda_resource = self._cache2da[resname]
+        if twoda_resource is None:
+            assert_with_variable_trace(twoda_resource is None, f"videoEffects lookup of '{HTInstallation.TwoDA_VIDEO_EFFECTS}' cannot be None in {self!r}._setupInstallation()")
+            assert twoda_resource is not None
+        return twoda_resource
 
-    def htBatchCache2DA(self, resnames: List[str], reload: bool = False):
+    def htBatchCache2DA(
+        self,
+        resnames: list[str],
+        *,
+        reload: bool = False
+    ):
         """Cache 2D array resources in batch.
 
         Args:
@@ -111,21 +121,22 @@ class HTInstallation(Installation):
             2. Query the resources from override and chitin locations
             3. Read and cache the 2DA data for each queried resource.
         """
-        if reload:
-            queries = [ResourceIdentifier(resname, ResourceType.TwoDA) for resname in resnames]
-        else:
-            queries = [ResourceIdentifier(resname, ResourceType.TwoDA) for resname in resnames if resname not in self._cache2da]
+        queries: list[ResourceIdentifier] = [
+            ResourceIdentifier(resname, ResourceType.TwoDA)
+            for resname in resnames
+            if not reload or resname not in self._cache2da
+        ]
 
         if not queries:
             return
 
-        resources = self.resources(queries, [SearchLocation.OVERRIDE, SearchLocation.CHITIN])
-        for iden, resource in resources.items():
+        resources: dict[ResourceIdentifier, ResourceResult | None] = self.resources(queries, [SearchLocation.OVERRIDE, SearchLocation.CHITIN])
+        for res_ident, resource in resources.items():
             if resource:
-                self._cache2da[iden.resname] = read_2da(resource.data)
+                self._cache2da[res_ident.resname] = read_2da(resource.data)
 
     def htClearCache2DA(self):
-        self._cache2da = {}
+        self._cache2da = CaseInsensitiveDict()
     # endregion
 
     # region Cache TPC
@@ -147,11 +158,21 @@ class HTInstallation(Installation):
             - Cache loaded texture in _cacheTpc dict
             - Return cached texture or None if not found.
         """
+        tex_result: TPC | None = None
         if resname not in self._cacheTpc:
-            self._cacheTpc[resname] = self.texture(resname, [SearchLocation.TEXTURES_TPA, SearchLocation.TEXTURES_GUI])
-        return self._cacheTpc[resname] if resname in self._cacheTpc else None
+            tex_result = self.texture(resname, [SearchLocation.TEXTURES_TPA, SearchLocation.TEXTURES_GUI])
+            if tex_result is not None:
+                self._cacheTpc[resname] = tex_result
+        else:
+            tex_result = self._cacheTpc[resname]
+        return tex_result
 
-    def htBatchCacheTPC(self, names: List[str], reload: bool = False):
+    def htBatchCacheTPC(
+        self,
+        names: list[str],
+        *,
+        reload: bool = False
+    ):
         """Cache textures for batch queries.
 
         Args:
@@ -165,16 +186,20 @@ class HTInstallation(Installation):
             - Filter names not already in cache
             - Loop through remaining names and cache textures from sources.
         """
-        queries = list(names) if reload else [name for name in names if name not in self._cache2da]
+        queries: list[str] = list(names) if reload else [name for name in names if name not in self._cache2da]
 
         if not queries:
             return
 
         for resname in queries:
-            self._cacheTpc[resname] = self.texture(resname, [SearchLocation.TEXTURES_TPA, SearchLocation.TEXTURES_GUI])
+            tex_result = self.texture(resname, [SearchLocation.TEXTURES_TPA, SearchLocation.TEXTURES_GUI])
+            if tex_result is None:
+                assert_with_variable_trace(tex_result is None, f"{self!r}.htBatchCacheTPC({names!r}, reload={reload!r}) failed, texture name '{resname}' not found in installation.")
+                return
+            self._cacheTpc[resname] = tex_result
 
     def htClearCacheTPC(self):
-        self._cacheTpc = {}
+        self._cacheTpc = CaseInsensitiveDict()
     # endregion
 
     def getItemIconFromUTI(self, uti: UTI) -> QPixmap:

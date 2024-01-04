@@ -3,8 +3,8 @@ from __future__ import annotations
 import os
 from contextlib import suppress
 from typing import TYPE_CHECKING, NamedTuple
-from pykotor.common.stream import BinaryReader
 
+from pykotor.common.stream import BinaryReader
 from pykotor.resource.type import ResourceType
 from pykotor.tools.misc import is_bif_file, is_capsule_file
 from utility.misc import generate_sha256_hash
@@ -12,7 +12,6 @@ from utility.path import Path, PurePath
 from utility.string import CaseInsensitiveWrappedStr
 
 if TYPE_CHECKING:
-
     from pykotor.common.misc import ResRef
 
 
@@ -46,9 +45,7 @@ class FileResource:
         else:
             self._path_ident_obj = self._filepath
 
-        sha256_hash = self.get_sha256_hash(reload=True)
-        self._internal: bool = True
-        self._sha256_hash: str = sha256_hash
+        self._sha256_hash: str = ""
         self._internal = False
 
     def __setattr__(self, __name, __value):
@@ -83,9 +80,9 @@ class FileResource:
         __value: object,
     ):
         if isinstance(__value, FileResource):
-            return self._sha256_hash == __value._sha256_hash
+            return self.get_sha256_hash() == __value.get_sha256_hash()
         if isinstance(__value, (os.PathLike, bytes, bytearray, memoryview)):
-            return self._sha256_hash == generate_sha256_hash(__value)
+            return self.get_sha256_hash() == generate_sha256_hash(__value)
         if isinstance(__value, (ResourceIdentifier, str)):
             return self.identifier() == __value
         return NotImplemented
@@ -167,7 +164,7 @@ class FileResource:
         *,
         reload: bool = False,
     ) -> str:
-        if reload:
+        if reload or not self._sha256_hash:
             self.data()  # Recalculate SHA256 hash
         return self._sha256_hash
 

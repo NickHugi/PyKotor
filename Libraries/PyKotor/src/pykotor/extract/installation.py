@@ -7,7 +7,7 @@ from enum import Enum, IntEnum
 from typing import TYPE_CHECKING, Any, Callable, ClassVar, Generator, NamedTuple
 
 from pykotor.common.language import Gender, Language, LocalizedString
-from pykotor.common.misc import CaseInsensitiveDict, Game
+from pykotor.common.misc import CaseInsensitiveDict, Game, ResRef
 from pykotor.common.stream import BinaryReader
 from pykotor.extract.capsule import Capsule
 from pykotor.extract.chitin import Chitin
@@ -158,10 +158,10 @@ class Installation:
         self._talktable: TalkTable = TalkTable(self._path / "dialog.tlk")
         self._female_talktable: TalkTable = TalkTable(self._path / "dialogf.tlk")
 
-        self._modules: dict[str, list[FileResource]] = {}
-        self._lips: dict[str, list[FileResource]] = {}
-        self._texturepacks: dict[str, list[FileResource]] = {}
-        self._rims: dict[str, list[FileResource]] = {}
+        self._modules: CaseInsensitiveDict[list[FileResource]] = CaseInsensitiveDict()
+        self._lips: CaseInsensitiveDict[list[FileResource]] = CaseInsensitiveDict()
+        self._texturepacks: CaseInsensitiveDict[list[FileResource]] = CaseInsensitiveDict()
+        self._rims: CaseInsensitiveDict[list[FileResource]] = CaseInsensitiveDict()
 
         self._override: dict[str, list[FileResource]] = {}
 
@@ -359,7 +359,7 @@ class Installation:
         capsule_check: Callable | None = None,
         *,
         recurse: bool = False,
-    ) -> dict[str, list[FileResource]] | list[FileResource]:
+    ) -> CaseInsensitiveDict[list[FileResource]] | list[FileResource]:
         """Load resources for a given path and store them in a new list/dict.
 
         Args:
@@ -371,12 +371,12 @@ class Installation:
         -------
             list[FileResource]: The list where resources at the path have been stored.
              or
-            dict[str, list[FileResource]]: A dict keyed by filename to the encapsulated resources
+            CaseInsensitiveDict[list[FileResource]]: A dict keyed by filename to the encapsulated resources
         """
-        resources: dict[str, list[FileResource]] | list[FileResource] = {} if capsule_check else []
+        resources: CaseInsensitiveDict[list[FileResource]] | list[FileResource] = CaseInsensitiveDict() if capsule_check else []
 
         if not path.exists():
-            print(f"The '{path.name}' folder did not exist at '{self._path}' when loading the installation, skipping...")
+            print(f"The '{path.name}' folder did not exist when loading the installation at '{self._path}', skipping...")
             return resources
 
         files_list: list[CaseAwarePath] = list(
@@ -492,7 +492,7 @@ class Installation:
     def reload_override_file(self, file: os.PathLike | str) -> None:
         filepath: Path = Path.pathify(file)  # type: ignore[assignment]
         parent_folder = filepath.parent
-        rel_folderpath = str(filepath.parent.relative_to(self.override_path())) if parent_folder.name else "."
+        rel_folderpath: str = str(filepath.parent.relative_to(self.override_path())) if parent_folder.name else "."
         identifier: ResourceIdentifier = ResourceIdentifier.from_path(filepath)
         if identifier.restype == ResourceType.INVALID:
             print("Cannot reload override file. Invalid KOTOR resource:", identifier)
@@ -931,7 +931,7 @@ class Installation:
         for qinden in queries:
             locations[qinden] = []
 
-        def check_dict(values: dict[str, list[FileResource]]):
+        def check_dict(values: dict[str, list[FileResource]] | CaseInsensitiveDict[list[FileResource]]):
             for resources in values.values():
                 check_list(resources)
 
@@ -1065,7 +1065,7 @@ class Installation:
                 SearchLocation.TEXTURES_TPA,
                 SearchLocation.CHITIN,
             ]
-        resnames = remove_duplicates(resnames, case_insensitive=True)
+        resrefs: list[ResRef] = [ResRef(resname) for resname in resnames]
         capsules = [] if capsules is None else capsules
         folders = [] if folders is None else folders
 
@@ -1075,7 +1075,7 @@ class Installation:
         for resname in resnames:
             textures[resname] = None
 
-        def decode_txi(txi_bytes: bytes):
+        def decode_txi(txi_bytes: bytes) -> str:
             return txi_bytes.decode("ascii", errors="ignore")
 
         def get_txi_from_list(resname: str, resource_list: list[FileResource]) -> str:
@@ -1090,19 +1090,19 @@ class Installation:
             )
             return decode_txi(txi_resource.data()) if txi_resource is not None else ""
 
-        def check_dict(values: dict[str, list[FileResource]]):
+        def check_dict(values: dict[str, list[FileResource]] | CaseInsensitiveDict[list[FileResource]]):
             for resources in values.values():
                 check_list(resources)
 
         def check_list(resource_list: list[FileResource]):
             for resource in resource_list:
-                resname = resource.resname().lower()
-                if resname not in resnames:
+                resname = resource.resname()
+                if resname not in resrefs:
                     continue
                 restype = resource.restype()
                 if restype not in texture_types:
                     continue
-                resnames.remove(resname)
+                resrefs.remove(ResRef(resname))
                 tpc: TPC = read_tpc(resource.data())
                 if restype == ResourceType.TGA:
                     tpc.txi = get_txi_from_list(resname, resource_list)
@@ -1120,7 +1120,7 @@ class Installation:
                     if texture_data is None:
                         continue
 
-                    resnames.remove(resname)
+                    resrefs.remove(ResRef(resname))
                     tpc: TPC = read_tpc(texture_data) if texture_data else TPC()
                     if tformat == ResourceType.TGA:
                         tpc.txi = get_txi_from_list(resname, capsule.resources())
@@ -1133,13 +1133,13 @@ class Installation:
                     file
                     for file in folder.rglob("*")
                     if (
-                        file.stem.lower() in resnames
+                        ResRef(file.stem) in resrefs
                         and ResourceType.from_extension(file.suffix) in texture_types
                         and file.safe_isfile()
                     )
                 )
             for texture_file in queried_texture_files:
-                resnames.remove(texture_file.stem.lower())
+                resrefs.remove(ResRef(texture_file.stem))
                 texture_data: bytes = BinaryReader.load_file(texture_file)
                 tpc = read_tpc(texture_data) if texture_data else TPC()
                 txi_file = CaseAwarePath(texture_file.with_suffix(".txi"))
@@ -1195,7 +1195,7 @@ class Installation:
 
     def sounds(
         self,
-        resnames: list[str] | set[str],
+        resnames: list[str],
         order: list[SearchLocation] | None = None,
         *,
         capsules: list[Capsule] | None = None,
@@ -1216,7 +1216,7 @@ class Installation:
         -------
             A dictionary mapping a case-insensitive string to a bytes object or None.
         """
-        resnames = {resname.lower() for resname in resnames}
+        resnames = remove_duplicates(resnames, case_insensitive=True)
         capsules = [] if capsules is None else capsules
         folders = [] if folders is None else folders
         if order is None:
@@ -1234,7 +1234,7 @@ class Installation:
         for resname in resnames:
             sounds[resname] = None
 
-        def check_dict(values: dict[str, list[FileResource]]):
+        def check_dict(values: dict[str, list[FileResource]] | CaseInsensitiveDict[list[FileResource]]):
             for resources in values.values():
                 check_list(resources)
 
@@ -1459,6 +1459,7 @@ class Installation:
         result = re.sub(r"\.mod$", "", module_filename, flags=re.IGNORECASE)
         result = re.sub(r"\.erf$", "", result, flags=re.IGNORECASE)
         result = re.sub(r"\.rim$", "", result, flags=re.IGNORECASE)
+        result = re.sub(r"\.sav$", "", result, flags=re.IGNORECASE)
         result = result[:-2] if result.lower().endswith("_s") else result
         result = result[:-4] if result.lower().endswith("_dlg") else result
         return result  # noqa: RET504
