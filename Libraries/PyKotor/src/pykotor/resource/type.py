@@ -176,7 +176,7 @@ class ResourceType(Enum):
         contents: str,
         is_invalid: bool = False,
     ):
-        self.type_id: int = type_id
+        self.type_id: int = type_id  # type: ignore[misc]
         self.extension: CaseInsensitiveWrappedStr = CaseInsensitiveWrappedStr(extension.strip())
         self.category: str = category
         self.contents: str = contents
@@ -188,18 +188,15 @@ class ResourceType(Enum):
     def __repr__(
         self,
     ) -> str:
-        if self.name == "INVALID":
-            return "ResourceType.INVALID"
-        return (
-            f"{self.__class__.__name__}.{self.name}"
-            if not self.is_invalid
-            else (
-                f"{self.__class__.__name__}.from_invalid("
-                f"{f'type_id={self.type_id}, ' if self.type_id else ''}"
-                f"{f'extension={self.extension}, ' if self.extension else ''}"
-                f"{f'category={self.category}, ' if self.category else ''}"
-                f"contents={self.contents})"
-            )
+        if self.name == "INVALID" or not self.is_invalid:
+            return f"{self.__class__.__name__}.{self.name}"
+
+        return (  # For dynamically constructed invalid members
+            f"{self.__class__.__name__}.from_invalid("
+            f"{f'type_id={self.type_id}, ' if self.type_id else ''}"
+            f"{f'extension={self.extension}, ' if self.extension else ''}"
+            f"{f'category={self.category}, ' if self.category else ''}"
+            f"contents={self.contents})"
         )
 
     def __str__(
