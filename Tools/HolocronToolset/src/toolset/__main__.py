@@ -1,18 +1,23 @@
+from __future__ import annotations
+
 import multiprocessing
 import os
 import pathlib
 import sys
 import tempfile
-from types import TracebackType
+from typing import TYPE_CHECKING
 
 from PyQt5.QtCore import QThread
 from PyQt5.QtWidgets import QApplication
 
+if TYPE_CHECKING:
+    from types import TracebackType
 
-def onAppCrash(e: BaseException, value: str, tback: TracebackType):
+
+def onAppCrash(etype: type[BaseException], e: BaseException, value: str, tback: TracebackType):
     from utility.error_handling import format_exception_with_variables
     with pathlib.Path("errorlog.txt").open("a") as file:
-        file.writelines(format_exception_with_variables(e, None, tback, value))
+        file.writelines(format_exception_with_variables(e, etype, tback, value))
         file.write("\n----------------------\n")
     raise e
 
