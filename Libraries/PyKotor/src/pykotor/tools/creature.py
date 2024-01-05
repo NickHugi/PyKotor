@@ -57,7 +57,7 @@ def get_body_model(
 
         if EquipmentSlot.ARMOR in utc.equipment:
             armor_resref = utc.equipment[EquipmentSlot.ARMOR].resref
-            armor_uti = read_uti(installation.resource(armor_resref, ResourceType.UTI).data)
+            armor_uti = read_uti(installation.resource(str(armor_resref), ResourceType.UTI).data)
             armor_variation = baseitems.get_row(armor_uti.base_item).get_string("bodyvar").lower()
 
             normal_tex_column = f"tex{armor_variation}"
@@ -113,19 +113,19 @@ def get_weapon_models(
     rhand_model: str | None = None
     lhand_model: str | None = None
 
-    rhand_resref: str | None = utc.equipment[EquipmentSlot.RIGHT_HAND].resref if EquipmentSlot.RIGHT_HAND in utc.equipment else None
-    lhand_resref: str | None = utc.equipment[EquipmentSlot.LEFT_HAND].resref if EquipmentSlot.LEFT_HAND in utc.equipment else None
+    rhand_resname: str | None = str(utc.equipment[EquipmentSlot.RIGHT_HAND].resref) if EquipmentSlot.RIGHT_HAND in utc.equipment else None
+    lhand_resname: str | None = str(utc.equipment[EquipmentSlot.LEFT_HAND].resref) if EquipmentSlot.LEFT_HAND in utc.equipment else None
 
-    if rhand_resref is not None:
+    if rhand_resname is not None:
         rhand_model = _load_hand_uti(
             installation,
-            rhand_resref,
+            rhand_resname,
             baseitems,
         )
-    if lhand_resref is not None:
+    if lhand_resname is not None:
         lhand_model = _load_hand_uti(
             installation,
-            lhand_resref,
+            lhand_resname,
             baseitems,
         )
     return rhand_model, lhand_model
@@ -236,7 +236,7 @@ def get_mask_model(
 
     if EquipmentSlot.HEAD in utc.equipment:
         resref = utc.equipment[EquipmentSlot.HEAD].resref
-        uti: UTI = read_uti(installation.resource(resref, ResourceType.UTI).data)
+        uti: UTI = read_uti(installation.resource(str(resref), ResourceType.UTI).data)
         model = "I_Mask_" + str(uti.model_variation).rjust(3, "0")
 
     return model

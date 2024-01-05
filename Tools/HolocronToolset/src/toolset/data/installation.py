@@ -98,7 +98,7 @@ class HTInstallation(Installation):
         else:
             twoda_resource = self._cache2da[resname]
         if twoda_resource is None:
-            assert_with_variable_trace(twoda_resource is not None, f"videoEffects lookup of '{HTInstallation.TwoDA_VIDEO_EFFECTS}' cannot be None in {self!r}._setupInstallation()")
+            assert_with_variable_trace(twoda_resource is not None, f"lookup of '{HTInstallation.TwoDA_VIDEO_EFFECTS}' cannot be None in {self!r}._setupInstallation()")
             assert twoda_resource is not None
         return twoda_resource
 

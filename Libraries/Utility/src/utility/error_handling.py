@@ -68,10 +68,10 @@ def format_exception_with_variables(
 
     # Check if the arguments are of the correct type
     if not issubclass(___etype___, BaseException):
-        msg = "___etype___ is not an exception class"
+        msg = f"{___etype___!r} is not an exception class"
         raise TypeError(msg)
     if not isinstance(___value___, BaseException):
-        msg = "___value___ is not an exception instance"
+        msg = f"{___value___!r} is not an exception instance"
         raise TypeError(msg)
     if not isinstance(___tb___, ___types___.TracebackType):
         msg = "___tb___ is not a traceback object"
