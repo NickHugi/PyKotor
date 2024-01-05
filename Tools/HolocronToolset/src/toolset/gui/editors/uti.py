@@ -379,7 +379,7 @@ class UTIEditor(Editor):
             costtableList = installation.htGetCache2DA(HTInstallation.TwoDA_IPRP_COSTTABLE)
             costtable = installation.htGetCache2DA(costtableList.get_cell(cost, "name"))
             stringref = costtable.get_row(value).get_integer("name")
-            return installation.talktable().string(stringref)
+            return installation.talktable().string(stringref)  # FIXME: stringref is None in many occasions
         except Exception as e:
             print(format_exception_with_variables(e, ___message___="This exception has been suppressed"))
         return None
