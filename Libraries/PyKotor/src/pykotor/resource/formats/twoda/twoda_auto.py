@@ -112,7 +112,7 @@ def write_2da(
     twoda: TwoDA,
     target: TARGET_TYPES,
     file_format: ResourceType = ResourceType.TwoDA,
-) -> None:
+):
     """Writes the TwoDA data to the target location with the specified format.
 
     Currently, the supported formats are: TwoDA, TwoDA_CSV and TwoDA_JSON.

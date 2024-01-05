@@ -26,7 +26,7 @@ class GIT:
 
     def __init__(
         self,
-    ) -> None:
+    ):
         self.ambient_sound_id: int = 0
         self.ambient_volume: int = 0
         self.env_audio: int = 0
@@ -133,7 +133,7 @@ class GIT:
     def add(
         self,
         instance: GITInstance,
-    ) -> None:
+    ):
         """Adds instance to the relevant list in the GIT.
 
         Args:
@@ -213,7 +213,7 @@ class GITInstance(ABC):
         x: float,
         y: float,
         z: float,
-    ) -> None:
+    ):
         """Moves the instance to the specified position.
 
         Args:
@@ -229,7 +229,7 @@ class GITInstance(ABC):
         yaw: float,
         pitch: float,
         roll: float,
-    ) -> None:
+    ):
         ...
 
     @abstractmethod
@@ -276,7 +276,7 @@ class GITCamera(GITInstance):
         x: float,
         y: float,
         z: float,
-    ) -> None:
+    ):
         self.position.x += x
         self.position.y += y
         self.position.z += z
@@ -286,7 +286,7 @@ class GITCamera(GITInstance):
         yaw: float,
         pitch: float,
         roll: float,
-    ) -> None:
+    ):
         rotation = self.orientation.to_euler()
         rotation.x += yaw
         rotation.y += roll
@@ -332,7 +332,7 @@ class GITCreature(GITInstance):
         x: float,
         y: float,
         z: float,
-    ) -> None:
+    ):
         self.position.x += x
         self.position.y += y
         self.position.z += z
@@ -342,7 +342,7 @@ class GITCreature(GITInstance):
         yaw: float,
         pitch: float,
         roll: float,
-    ) -> None:
+    ):
         self.bearing += yaw
 
     def identifier(
@@ -401,7 +401,7 @@ class GITDoor(GITInstance):
         x: float,
         y: float,
         z: float,
-    ) -> None:
+    ):
         self.position.x += x
         self.position.y += y
         self.position.z += z
@@ -411,7 +411,7 @@ class GITDoor(GITInstance):
         yaw: float,
         pitch: float,
         roll: float,
-    ) -> None:
+    ):
         self.bearing += yaw
 
     def blank(
@@ -485,7 +485,7 @@ class GITEncounter(GITInstance):
         x: float,
         y: float,
         z: float,
-    ) -> None:
+    ):
         """Moves an object to a new position.
 
         Args:
@@ -510,7 +510,7 @@ class GITEncounter(GITInstance):
         yaw: float,
         pitch: float,
         roll: float,
-    ) -> None:
+    ):
         msg = "Encounters cannot be rotated."
         raise ValueError(msg)
 
@@ -555,7 +555,7 @@ class GITPlaceable(GITInstance):
         x: float,
         y: float,
         z: float,
-    ) -> None:
+    ):
         """Moves an object to a new position.
 
         Args:
@@ -580,7 +580,7 @@ class GITPlaceable(GITInstance):
         yaw: float,
         pitch: float,
         roll: float,
-    ) -> None:
+    ):
         self.bearing += yaw
 
     def identifier(
@@ -622,7 +622,7 @@ class GITSound(GITInstance):
         x: float,
         y: float,
         z: float,
-    ) -> None:
+    ):
         self.position.x += x
         self.position.y += y
         self.position.z += z
@@ -632,7 +632,7 @@ class GITSound(GITInstance):
         yaw: float,
         pitch: float,
         roll: float,
-    ) -> None:
+    ):
         msg = "Sounds cannot be rotated."
         raise ValueError(msg)
 
@@ -675,7 +675,7 @@ class GITStore(GITInstance):
         x: float,
         y: float,
         z: float,
-    ) -> None:
+    ):
         self.position.x += x
         self.position.y += y
         self.position.z += z
@@ -685,7 +685,7 @@ class GITStore(GITInstance):
         yaw: float,
         pitch: float,
         roll: float,
-    ) -> None:
+    ):
         self.bearing += yaw
 
     def identifier(
@@ -733,7 +733,7 @@ class GITTrigger(GITInstance):
         x: float,
         y: float,
         z: float,
-    ) -> None:
+    ):
         self.position.x += x
         self.position.y += y
         self.position.z += z
@@ -743,7 +743,7 @@ class GITTrigger(GITInstance):
         yaw: float,
         pitch: float,
         roll: float,
-    ) -> None:
+    ):
         msg = "Triggers cannot be rotated."
         raise ValueError(msg)
 
@@ -803,7 +803,7 @@ class GITWaypoint(GITInstance):
         x: float,
         y: float,
         z: float,
-    ) -> None:
+    ):
         self.position.x += x
         self.position.y += y
         self.position.z += z
@@ -813,7 +813,7 @@ class GITWaypoint(GITInstance):
         yaw: float,
         pitch: float,
         roll: float,
-    ) -> None:
+    ):
         self.bearing += yaw
 
     def identifier(
@@ -1220,7 +1220,7 @@ def write_git(
     file_format: ResourceType = ResourceType.GFF,
     *,
     use_deprecated: bool = True,
-) -> None:
+):
     gff = dismantle_git(git, game, use_deprecated=use_deprecated)
     write_gff(gff, target, file_format)
 

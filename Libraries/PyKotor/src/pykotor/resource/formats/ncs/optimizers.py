@@ -9,7 +9,7 @@ class RemoveNopOptimizer(NCSOptimizer):
     compiled script.
     """
 
-    def optimize(self, ncs: NCS) -> None:
+    def optimize(self, ncs: NCS):
         """Optimizes a neural circuit specification by removing NOP instructions.
 
         Args:
@@ -38,7 +38,7 @@ class RemoveMoveSPEqualsZeroOptimizer(NCSOptimizer):
     def __init__(self):
         super().__init__()
 
-    def optimize(self, ncs: NCS) -> None:
+    def optimize(self, ncs: NCS):
         """Optimizes an NCS script by removing unnecessary MOVSP=0 instructions.
 
         Args:
@@ -67,17 +67,17 @@ class RemoveMoveSPEqualsZeroOptimizer(NCSOptimizer):
 
 
 class MergeAdjacentMoveSPOptimizer(NCSOptimizer):
-    def optimize(self, ncs: NCS) -> None:
+    def optimize(self, ncs: NCS):
         raise NotImplementedError
 
 
 class RemoveJMPToAdjacentOptimizer(NCSOptimizer):
-    def optimize(self, ncs: NCS) -> None:
+    def optimize(self, ncs: NCS):
         raise NotImplementedError
 
 
 class RemoveUnusedBlocksOptimizer(NCSOptimizer):
-    def optimize(self, ncs: NCS) -> None:
+    def optimize(self, ncs: NCS):
         """Optimizes the NCS by removing unreachable instructions.
 
         Args:
@@ -126,5 +126,5 @@ class RemoveUnusedBlocksOptimizer(NCSOptimizer):
 
 
 class RemoveUnusedGlobalsInStackOptimizer(NCSOptimizer):
-    def optimize(self, ncs: NCS) -> None:
+    def optimize(self, ncs: NCS):
         raise NotImplementedError

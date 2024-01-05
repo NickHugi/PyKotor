@@ -49,10 +49,10 @@ class TPCEditor(Editor):
 
         self.new()
 
-    def _setupSignals(self) -> None:
+    def _setupSignals(self):
         ...
 
-    def load(self, filepath: os.PathLike | str, resref: str, restype: ResourceType, data: bytes) -> None:
+    def load(self, filepath: os.PathLike | str, resref: str, restype: ResourceType, data: bytes):
         """Load a resource into the editor
         Args:
             filepath: The path to the resource file
@@ -90,7 +90,7 @@ class TPCEditor(Editor):
         self.ui.textureImage.setPixmap(pixmap)
         self.ui.txiEdit.setPlainText(self._tpc.txi)
 
-    def new(self) -> None:
+    def new(self):
         """Set texture image from TPC texture.
 
         Args:

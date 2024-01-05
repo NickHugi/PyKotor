@@ -73,7 +73,7 @@ class TwoDACSVWriter(ResourceWriter):
     def write(
         self,
         auto_close: bool = True,
-    ) -> None:
+    ):
         headers: list[str] = self._twoda.get_headers()
 
         insert: list[str] = [""]

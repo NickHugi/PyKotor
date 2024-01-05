@@ -242,7 +242,7 @@ class TPCTGAWriter(ResourceWriter):
     def write(
         self,
         auto_close: bool = True,
-    ) -> None:
+    ):
         """Writes the TPC texture to a BMP file.
 
         Args:

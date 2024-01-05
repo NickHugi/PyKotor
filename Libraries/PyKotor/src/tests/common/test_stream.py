@@ -23,7 +23,7 @@ from pykotor.common.stream import BinaryReader
 
 
 class TestBinaryReader(TestCase):
-    def setUp(self) -> None:
+    def setUp(self):
         self.data1 = b"\x01" + b"\x02\x00" + b"\x03\x00\x00\x00" + b"\x04\x00\x00\x00\x00\x00\x00\x00"
         self.data2 = b"helloworld\x00"
         self.data3 = b"\xFF" + b"\xFE\xFF" + b"\xFD\xFF\xFF\xFF" + b"\xFC\xFF\xFF\xFF\xFF\xFF\xFF\xFF"

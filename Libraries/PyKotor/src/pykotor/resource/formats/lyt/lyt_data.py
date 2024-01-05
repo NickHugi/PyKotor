@@ -16,7 +16,7 @@ class LYT:
 
     def __init__(
         self,
-    ) -> None:
+    ):
         self.rooms: list[LYTRoom] = []
         self.tracks: list[LYTTrack] = []
         self.obstacles: list[LYTObstacle] = []

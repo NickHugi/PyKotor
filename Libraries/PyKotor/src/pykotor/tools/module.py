@@ -46,7 +46,7 @@ def clone_module(
     keep_placeables: bool = False,
     keep_sounds: bool = False,
     keep_pathing: bool = False,
-) -> None:
+):
     """Clones a module.
 
     Args:
@@ -216,7 +216,7 @@ def clone_module(
     write_erf(new_module, filepath)
 
 
-def rim_to_mod(filepath: os.PathLike | str) -> None:
+def rim_to_mod(filepath: os.PathLike | str):
     """Creates a MOD file at the given filepath and copies the resources from the corresponding RIM files.
 
     Raises:

@@ -19,7 +19,7 @@ from toolset.gui.dialogs.save.to_bif import BifSaveDialog, BifSaveOption
 from toolset.gui.dialogs.save.to_module import SaveToModuleDialog
 from toolset.gui.dialogs.save.to_rim import RimSaveDialog, RimSaveOption
 from toolset.gui.widgets.settings.installations import GlobalSettings
-from utility.error_handling import format_exception_with_variables
+from utility.error_handling import format_exception_with_variables, universal_simplify_exception
 from utility.path import Path
 
 if TYPE_CHECKING:
@@ -99,7 +99,7 @@ class Editor(QMainWindow):
             self._openFilter += f"{resource.category} File (*.{resource.extension});;"
         self._openFilter += "Load from module (*.erf *.mod *.rim)"
 
-    def _setupMenus(self) -> None:
+    def _setupMenus(self):
         """Sets up menu actions and keyboard shortcuts.
 
         Processing Logic:
@@ -130,12 +130,12 @@ class Editor(QMainWindow):
         QShortcut("Ctrl+R", self).activated.connect(self.revert)
         QShortcut("Ctrl+Q", self).activated.connect(self.exit)
 
-    def _setupIcon(self, iconName: str) -> None:
+    def _setupIcon(self, iconName: str):
         iconVersion = "x" if self._installation is None else "2" if self._installation.tsl else "1"
         iconPath = f":/images/icons/k{iconVersion}/{iconName}.png"
         self.setWindowIcon(QIcon(QPixmap(iconPath)))
 
-    def refreshWindowTitle(self) -> None:
+    def refreshWindowTitle(self):
         """Refreshes the window title based on the current state.
 
         Processing Logic:
@@ -156,7 +156,7 @@ class Editor(QMainWindow):
             folder = folders[-2] if len(folders) >= 2 else ""
             self.setWindowTitle(f"{folder}/{self._resref}.{self._restype.extension} - {installationName} - {self._editorTitle}")
 
-    def saveAs(self) -> None:
+    def saveAs(self):
         """Saves the file with the selected filepath.
 
         Processing Logic:
@@ -191,7 +191,7 @@ class Editor(QMainWindow):
                 if action.text() == "Revert":
                     action.setEnabled(True)
 
-    def save(self) -> None:
+    def save(self):
         """Saves the current data to file.
 
         Processing Logic:
@@ -220,10 +220,10 @@ class Editor(QMainWindow):
                 self._saveEndsWithOther(data, data_ext)
         except Exception as e:  # noqa: BLE001
             with Path("errorlog.txt").open("a") as file:
-                lines = format_exception_with_variables(type(e), e, e.__traceback__)
+                lines = format_exception_with_variables(e)
                 file.writelines(lines)
                 file.write("\n----------------------\n")
-            QMessageBox(QMessageBox.Critical, "Failed to write to file", str(e)).exec_()
+            QMessageBox(QMessageBox.Critical, "Failed to write to file", str(universal_simplify_exception(e))).exec_()
 
     def _saveEndsWithBif(self, data: bytes, data_ext: bytes):
         """Saves data if dialog returns specific options.
@@ -375,7 +375,7 @@ class Editor(QMainWindow):
     def build(self) -> tuple[bytes, bytes]:
         ...
 
-    def load(self, filepath: os.PathLike | str, resref: str, restype: ResourceType, data: bytes) -> None:
+    def load(self, filepath: os.PathLike | str, resref: str, restype: ResourceType, data: bytes):
         """Load a resource from a file.
 
         Args:
@@ -403,10 +403,10 @@ class Editor(QMainWindow):
         self.refreshWindowTitle()
         self.loadedFile.emit(str(self._filepath), self._resref, self._restype, data)
 
-    def exit(self) -> None:  # noqa: A003
+    def exit(self):  # noqa: A003
         self.close()
 
-    def new(self) -> None:
+    def new(self):
         self._revert = None
         self._filepath = None
         for action in self.menuBar().actions()[0].menu().actions():
@@ -415,11 +415,11 @@ class Editor(QMainWindow):
         self.refreshWindowTitle()
         self.newFile.emit()
 
-    def revert(self) -> None:
+    def revert(self):
         if self._revert is not None:
             self.load(self._filepath, self._resref, self._restype, self._revert)
 
-    def _loadLocstring(self, textbox: QLineEdit | QPlainTextEdit, locstring: LocalizedString) -> None:
+    def _loadLocstring(self, textbox: QLineEdit | QPlainTextEdit, locstring: LocalizedString):
         """Loads a LocalizedString into a textbox.
 
         Args:

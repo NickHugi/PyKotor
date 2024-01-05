@@ -33,7 +33,7 @@ class TriggerDialog(QDialog):
 
         self.trigger: GITTrigger = trigger
 
-    def accept(self) -> None:
+    def accept(self):
         super().accept()
         self.trigger.resref = ResRef(self.ui.resrefEdit.text())
         self.trigger.tag = self.ui.tagEdit.text()

@@ -109,7 +109,7 @@ def write_ssf(
     ssf: SSF,
     target: TARGET_TYPES,
     file_format: ResourceType = ResourceType.SSF,
-) -> None:
+):
     """Writes the SSF data to the target location with the specified format (SSF or SSF_XML).
 
     Args:

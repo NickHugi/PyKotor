@@ -57,7 +57,15 @@ def universal_simplify_exception(e) -> tuple[str, str]:
     return error_name, repr(e)
 
 
-def format_exception_with_variables(___etype___, ___value___, ___tb___, ___message___: str = "Assertion with Exception Trace") -> str:
+def format_exception_with_variables(
+    ___value___: BaseException,
+    ___etype___: type[BaseException] | None = None,
+    ___tb___: ___types___.TracebackType | None = None,
+    ___message___: str = "Assertion with Exception Trace",
+) -> str:
+    ___etype___ = ___etype___ if ___etype___ is not None else type(___value___)
+    ___tb___ = ___tb___ if ___tb___ is not None else ___value___.__traceback__
+
     # Check if the arguments are of the correct type
     if not issubclass(___etype___, BaseException):
         msg = "___etype___ is not an exception class"

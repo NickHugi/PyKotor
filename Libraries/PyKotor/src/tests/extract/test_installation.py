@@ -27,7 +27,7 @@ from pykotor.extract.file import ResourceIdentifier, ResourceResult
 from pykotor.extract.installation import Installation, SearchLocation
 from pykotor.resource.type import ResourceType
 
-K1_PATH = os.environ.get("K1_PATH")
+K1_PATH: str | None = os.environ.get("K1_PATH")
 
 
 @unittest.skipIf(
@@ -36,13 +36,13 @@ K1_PATH = os.environ.get("K1_PATH")
 )
 class TestInstallation(TestCase):
     @classmethod
-    def setUpClass(cls) -> None:
-        assert K1_PATH  # noqa: S101
-        cls.installation = Installation(K1_PATH)
-        #cls.installation.reload_all()
+    def setUpClass(cls):
+        assert K1_PATH
+        cls.installation = Installation(K1_PATH)  # type: ignore[attr-defined]
+        # cls.installation.reload_all()
 
     def test_resource(self):
-        installation = self.installation
+        installation: Installation = self.installation  # type: ignore[attr-defined]
 
         self.assertIsNone(installation.resource("c_bantha", ResourceType.UTC, []))
         self.assertIsNotNone(installation.resource("c_bantha", ResourceType.UTC))
@@ -80,8 +80,8 @@ class TestInstallation(TestCase):
         self.assertIsNotNone(resource)
         self.assertIsNotNone(resource.data)  # type: ignore
 
-    def test_resources(self) -> None:
-        installation = self.installation
+    def test_resources(self):
+        installation: Installation = self.installation  # type: ignore[attr-defined]
 
         chitin_resources = [
             ResourceIdentifier.from_path("c_bantha.utc"),
@@ -179,8 +179,8 @@ class TestInstallation(TestCase):
         )
         self._assert_from_path_tests(capsules_results, "m13aa.are", "xyz.ifo")
 
-    def test_location(self) -> None:
-        installation: Installation = self.installation
+    def test_location(self):
+        installation: Installation = self.installation  # type: ignore[attr-defined]
 
         self.assertFalse(installation.location("m13aa", ResourceType.ARE, []))
         self.assertTrue(installation.location("m13aa", ResourceType.ARE))
@@ -212,7 +212,7 @@ class TestInstallation(TestCase):
         self.assertFalse(installation.location("xxx", ResourceType.TPC, [SearchLocation.TEXTURES_GUI]))
 
     def test_locations(self):
-        installation = self.installation
+        installation: Installation = self.installation  # type: ignore[attr-defined]
 
         chitin_resources = [
             ResourceIdentifier.from_path("c_bantha.utc"),
@@ -295,7 +295,7 @@ class TestInstallation(TestCase):
         self.assertEqual(2, len(arg0))
 
     def test_texture(self):
-        installation = self.installation
+        installation: Installation = self.installation  # type: ignore[attr-defined]
 
         self.assertIsNotNone(installation.texture("m03ae_03a_lm4", [SearchLocation.CHITIN]))
         self.assertIsNone(installation.texture("x", [SearchLocation.CHITIN]))
@@ -313,7 +313,7 @@ class TestInstallation(TestCase):
         self.assertIsNone(installation.texture("x", [SearchLocation.TEXTURES_GUI]))
 
     def test_textures(self):
-        installation = self.installation
+        installation: Installation = self.installation  # type: ignore[attr-defined]
 
         chitin_textures = ["m03ae_03a_lm4", "x"]
         chitin_results = installation.textures(chitin_textures, [SearchLocation.CHITIN])
@@ -346,7 +346,7 @@ class TestInstallation(TestCase):
         self.assertEqual(2, len(gui_results))
 
     def test_sounds(self):
-        installation = self.installation
+        installation: Installation = self.installation  # type: ignore[attr-defined]
 
         chitin_sounds = ["as_an_dantext_01", "x"]
         chitin_results = installation.sounds(chitin_sounds, [SearchLocation.CHITIN])
@@ -373,8 +373,9 @@ class TestInstallation(TestCase):
         self.assertIsNotNone(voice_results["n_gengamm_scrm"])
         self.assertIsNone(voice_results["x"])
 
-    def test_string(self):  # this test will fail on non-english versions of the game
-        installation = self.installation
+    def test_string(self):
+        """This test will fail on non-english versions of the game"""
+        installation: Installation = self.installation  # type: ignore[attr-defined]
 
         locstring1 = LocalizedString.from_invalid()
         locstring2 = LocalizedString.from_english("Some text.")
@@ -388,7 +389,8 @@ class TestInstallation(TestCase):
         )
 
     def test_strings(self):
-        installation = self.installation
+        """This test will fail on non-english versions of the game"""
+        installation: Installation = self.installation  # type: ignore[attr-defined]
 
         locstring1 = LocalizedString.from_invalid()
         locstring2 = LocalizedString.from_english("Some text.")
@@ -397,9 +399,7 @@ class TestInstallation(TestCase):
         results = installation.strings([locstring1, locstring2, locstring3], "default text")
         self.assertEqual("default text", results[locstring1])
         self.assertEqual("Some text.", results[locstring2])
-        self.assertEqual(
-            "ERROR: FATAL COMPILER ERROR", results[locstring3]
-        )  # this test will fail on non-english versions of the game
+        self.assertEqual("ERROR: FATAL COMPILER ERROR", results[locstring3])  # This test will fail on non-english versions of the game
 
 
 if __name__ == "__main__":

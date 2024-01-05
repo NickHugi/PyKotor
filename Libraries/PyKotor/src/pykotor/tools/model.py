@@ -442,7 +442,7 @@ def convert_to_k2(
     # First, we build a dictionary of every offset in the file plus a list of the mesh nodes
     with BinaryReader.from_bytes(data, 12) as reader:
 
-        def node_recursive(offset_to_root_offset: int) -> None:
+        def node_recursive(offset_to_root_offset: int):
             nodes: list[int] = [offset_to_root_offset]
             while nodes:
                 offset_to_node_offset = nodes.pop()

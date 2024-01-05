@@ -39,7 +39,7 @@ class ResourceWriter:
 
     def close(
         self,
-    ) -> None:
+    ):
         self._writer.close()
 
 class ResourceTuple(NamedTuple):
@@ -174,7 +174,7 @@ class ResourceType(Enum):
         extension: str,
         category: str,
         contents: str,
-        is_invalid: bool = False,
+        is_invalid: bool = False,  # noqa: FBT001, FBT002
     ):
         self.type_id: int = type_id  # type: ignore[misc]
         self.extension: str = extension.strip().lower()
@@ -278,7 +278,7 @@ class ResourceType(Enum):
             The corresponding ResourceType object.
         """
         lower_ext: str = extension.lower()
-        if extension.startswith("."):
+        if lower_ext.startswith("."):
             lower_ext = lower_ext[1:]
         return next(
             (

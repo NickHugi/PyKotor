@@ -11,7 +11,7 @@ class LTRBinaryReader(ResourceReader):
         source: SOURCE_TYPES,
         offset: int = 0,
         size: int = 0,
-    ) -> None:
+    ):
         super().__init__(source, offset, size)
         self._lip: LTR | None = None
 
@@ -70,7 +70,7 @@ class LTRBinaryWriter(ResourceWriter):
     def write(
         self,
         auto_close: bool = True,
-    ) -> None:
+    ):
         self._writer.write_string("LTR V1.0")
         self._writer.write_uint8(28)
 

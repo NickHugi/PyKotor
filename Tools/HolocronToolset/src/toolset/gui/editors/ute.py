@@ -46,7 +46,7 @@ class UTEEditor(Editor):
 
         self.new()
 
-    def _setupSignals(self) -> None:
+    def _setupSignals(self):
         """Connects UI signals to handler functions.
 
         Processing Logic:
@@ -91,13 +91,13 @@ class UTEEditor(Editor):
         self.ui.factionSelect.clear()
         self.ui.difficultySelect.setItems(factions.get_column("label"))
 
-    def load(self, filepath: os.PathLike | str, resref: str, restype: ResourceType, data: bytes) -> None:
+    def load(self, filepath: os.PathLike | str, resref: str, restype: ResourceType, data: bytes):
         super().load(filepath, resref, restype, data)
 
         ute = read_ute(data)
         self._loadUTE(ute)
 
-    def _loadUTE(self, ute: UTE) -> None:
+    def _loadUTE(self, ute: UTE):
         """Loads UTE data into UI elements.
 
         Args:
@@ -211,21 +211,21 @@ class UTEEditor(Editor):
 
         return data, b""
 
-    def new(self) -> None:
+    def new(self):
         super().new()
         self._loadUTE(UTE())
 
-    def changeName(self) -> None:
+    def changeName(self):
         dialog = LocalizedStringDialog(self, self._installation, self.ui.nameEdit.locstring)
         if dialog.exec_():
             self._loadLocstring(self.ui.nameEdit, dialog.locstring)
 
-    def generateTag(self) -> None:
+    def generateTag(self):
         if self.ui.resrefEdit.text() == "":
             self.generateResref()
         self.ui.tagEdit.setText(self.ui.resrefEdit.text())
 
-    def generateResref(self) -> None:
+    def generateResref(self):
         if self._resref is not None and self._resref != "":
             self.ui.resrefEdit.setText(self._resref)
         else:

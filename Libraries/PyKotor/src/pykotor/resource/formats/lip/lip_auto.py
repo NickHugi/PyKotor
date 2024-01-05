@@ -107,7 +107,7 @@ def write_lip(
     lip: LIP,
     target: TARGET_TYPES,
     file_format: ResourceType = ResourceType.LIP,
-) -> None:
+):
     """Writes the LIP data to the target location with the specified format (LIP or LIP_XML).
 
     Args:

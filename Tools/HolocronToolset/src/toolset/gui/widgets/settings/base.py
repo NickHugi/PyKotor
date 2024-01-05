@@ -18,10 +18,10 @@ class SettingsWidget(QWidget):
         self.colours: list = []
         self.settings = None
 
-    def _registerBind(self, widget: SetBindWidget, bindName: str) -> None:
+    def _registerBind(self, widget: SetBindWidget, bindName: str):
         widget.setBind(getattr(self.settings, bindName))
         self.binds.append((widget, bindName))
 
-    def _registerColour(self, widget: ColorEdit, colourName: str) -> None:
+    def _registerColour(self, widget: ColorEdit, colourName: str):
         widget.setColor(Color.from_rgba_integer(getattr(self.settings, colourName)))
         self.colours.append((widget, colourName))

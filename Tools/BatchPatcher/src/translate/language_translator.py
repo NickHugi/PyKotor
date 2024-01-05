@@ -378,7 +378,7 @@ class Translator:
         self,
         to_lang: Language,
         translation_option: TranslationOption = TranslationOption.GOOGLE_TRANSLATE,
-    ) -> None:
+    ):
         self.from_lang: Language
 
         self.to_lang: Language = to_lang
@@ -393,7 +393,7 @@ class Translator:
         self.server_url: str | None = None
         self.use_free_api: bool = False
 
-    def initialize(self) -> None:
+    def initialize(self):
         """Initializes the translator.
 
         Args:

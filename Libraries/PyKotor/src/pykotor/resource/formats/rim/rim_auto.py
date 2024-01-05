@@ -41,7 +41,7 @@ def write_rim(
     rim: RIM,
     target: TARGET_TYPES,
     file_format: ResourceType = ResourceType.RIM,
-) -> None:
+):
     """Writes the RIM data to the target location with the specified format (RIM only).
 
     Args:

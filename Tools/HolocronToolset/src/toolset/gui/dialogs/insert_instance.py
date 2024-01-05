@@ -62,14 +62,14 @@ class InsertInstanceDialog(QDialog):
         self._setupLocationSelect()
         self._setupResourceList()
 
-    def _setupSignals(self) -> None:
+    def _setupSignals(self):
         self.ui.createResourceRadio.toggled.connect(self.onResourceRadioToggled)
         self.ui.reuseResourceRadio.toggled.connect(self.onResourceRadioToggled)
         self.ui.copyResourceRadio.toggled.connect(self.onResourceRadioToggled)
         self.ui.resrefEdit.textEdited.connect(self.onResRefEdited)
         self.ui.resourceFilter.textChanged.connect(self.onResourceFilterChanged)
 
-    def _setupLocationSelect(self) -> None:
+    def _setupLocationSelect(self):
         self.ui.locationSelect.addItem(str(self._installation.override_path()), self._installation.override_path())
         for capsule in self._module.capsules():
             if is_rim_file(capsule.path()) and GlobalSettings().disableRIMSaving:
@@ -77,7 +77,7 @@ class InsertInstanceDialog(QDialog):
             self.ui.locationSelect.addItem(str(capsule.path()), capsule.path())
         self.ui.locationSelect.setCurrentIndex(self.ui.locationSelect.count() - 1)
 
-    def _setupResourceList(self) -> None:
+    def _setupResourceList(self):
         """Populates a resource list widget with available resources.
 
         Args:
@@ -109,7 +109,7 @@ class InsertInstanceDialog(QDialog):
         if self.ui.resourceList.count() > 0:
             self.ui.resourceList.item(0).setSelected(True)
 
-    def accept(self) -> None:
+    def accept(self):
         """Accepts resource selection and updates module accordingly.
 
         Processing Logic:
@@ -170,7 +170,7 @@ class InsertInstanceDialog(QDialog):
 
         self._module.add_locations(self.resname, self._restype, [self.filepath])
 
-    def onResourceRadioToggled(self) -> None:
+    def onResourceRadioToggled(self):
         self.ui.resourceList.setEnabled(not self.ui.createResourceRadio.isChecked())
         self.ui.resourceFilter.setEnabled(not self.ui.createResourceRadio.isChecked())
         self.ui.resrefEdit.setEnabled(not self.ui.reuseResourceRadio.isChecked())
@@ -184,10 +184,10 @@ class InsertInstanceDialog(QDialog):
         if self.ui.createResourceRadio.isChecked():
             self.ui.buttonBox.button(QDialogButtonBox.Ok).setEnabled(self.isValidResref(self.ui.resrefEdit.text()))
 
-    def onResRefEdited(self, text: str) -> None:
+    def onResRefEdited(self, text: str):
         self.ui.buttonBox.button(QDialogButtonBox.Ok).setEnabled(self.isValidResref(text))
 
-    def onResourceFilterChanged(self) -> None:
+    def onResourceFilterChanged(self):
         text = self.ui.resourceFilter.text()
         for row in range(self.ui.resourceList.count()):
             item = self.ui.resourceList.item(row)

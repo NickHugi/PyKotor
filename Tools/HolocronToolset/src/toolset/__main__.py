@@ -12,7 +12,7 @@ from PyQt5.QtWidgets import QApplication
 def onAppCrash(e: BaseException, value: str, tback: TracebackType):
     from utility.error_handling import format_exception_with_variables
     with pathlib.Path("errorlog.txt").open("a") as file:
-        file.writelines(format_exception_with_variables(e, value, tback))
+        file.writelines(format_exception_with_variables(e, None, tback, value))
         file.write("\n----------------------\n")
     raise e
 

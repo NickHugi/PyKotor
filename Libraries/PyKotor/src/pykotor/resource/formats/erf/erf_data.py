@@ -2,9 +2,10 @@
 from __future__ import annotations
 
 from enum import Enum
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
 
 from pykotor.common.misc import ResRef
+from pykotor.extract.file import ResourceIdentifier
 from pykotor.resource.type import ResourceType
 from pykotor.tools.misc import is_erf_file, is_mod_file, is_sav_file
 
@@ -51,11 +52,16 @@ class ERF:
         # used for faster lookups
         self._resource_dict: dict[tuple[str, ResourceType], ERFResource] = {}
 
+    def __repr__(
+        self,
+    ):
+        return f"{self.__class__.__name__}({self.erf_type!r})"
+
     def __iter__(
         self,
     ):
         """Iterates through the stored resources yielding a resource each iteration."""
-        yield from self._resource_dict.values()
+        yield from self._resources
 
     def __len__(
         self,
@@ -65,31 +71,33 @@ class ERF:
 
     def __getitem__(
         self,
-        item: int | str | Any,
+        item: int | str | ResourceIdentifier | object,
     ):
         """Returns a resource at the specified index or with the specified resref."""
         if isinstance(item, int):
             return self._resources[item]
-        if isinstance(item, str):
+        if isinstance(item, (ResourceIdentifier, str)):
+            if isinstance(item, str):
+                item = item.lower()
             try:
-                return self._resource_dict[next(key for key in self._resource_dict if key[0] == item.casefold())]
+                return self._resource_dict[next(key for key in self._resource_dict if key[0] == item)]
             except StopIteration as e:
-                msg = f"{item} not found"
+                msg = f"{item} not found in {self!r}"
                 raise KeyError(msg) from e
 
         return NotImplemented
 
     def set_data(  # noqa: D417
         self,
-        resref: str,
+        resname: str,
         restype: ResourceType,
         data: bytes,
-    ) -> None:
+    ):
         """Sets resource data in the ERF file.
 
         Args:
         ----
-            resref: str - Resource reference identifier
+            resname: str - Resource reference filename
             restype: ResourceType - Resource type enumeration
             data: bytes - Resource data bytes
 
@@ -101,37 +109,38 @@ class ERF:
             - If existing resource, update its properties
             - Add/update resource to internal lists and dict
         """
-        key: tuple[str, ResourceType] = (resref.casefold(), restype)
-        resource: ERFResource | None = self._resource_dict.get(key)
+        ident: ResourceIdentifier = ResourceIdentifier(resname, restype).as_resref_compatible()
+        resource: ERFResource | None = self._resource_dict.get(ident)
+        resref = ResRef(ident.resname)
         if resource is None:
-            resource = ERFResource(ResRef(resref), restype, data)
+            resource = ERFResource(resref, restype, data)
             self._resources.append(resource)
-            self._resource_dict[key] = resource
+            self._resource_dict[ident] = resource
         else:
-            resource.resref = ResRef(resref)
+            resource.resref = resref
             resource.restype = restype
             resource.data = data
 
-    def get(self, resref: str, restype: ResourceType) -> bytes | None:
+    def get(self, resname: str, restype: ResourceType) -> bytes | None:
         """Returns the data of the resource with the specified resref/restype pair if it exists, otherwise returns None.
 
         Args:
         ----
-            resref: The resref.
+            resname: The resref str.
             restype: The resource type.
 
         Returns:
         -------
             The bytes data of the resource or None.
         """
-        resource: ERFResource | None = self._resource_dict.get((resref.casefold(), restype))
+        resource: ERFResource | None = self._resource_dict.get(ResourceIdentifier(resname, restype).as_resref_compatible())
         return resource.data if resource is not None else None
 
     def remove(
         self,
-        resref: str,
+        resname: str,
         restype: ResourceType,
-    ) -> None:
+    ):
         """Removes the resource with the given resref/restype pair if it exists.
 
         Args:
@@ -139,7 +148,7 @@ class ERF:
             resref: The resref.
             restype: The resource type.
         """
-        key: tuple[str, ResourceType] = (resref.casefold(), restype)
+        key = ResourceIdentifier(resname, restype).as_resref_compatible()
         resource: ERFResource | None = self._resource_dict.pop(key, None)
         if resource:  # FIXME: should raise here
             self._resources.remove(resource)

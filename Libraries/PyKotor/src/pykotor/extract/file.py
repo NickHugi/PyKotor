@@ -121,7 +121,7 @@ class FileResource:
 
     def _index_resource(
         self,
-    ) -> None:
+    ):
         if self.inside_capsule:
             from pykotor.extract.capsule import Capsule  # Prevent circular imports
 

@@ -3,11 +3,12 @@ from __future__ import annotations
 import os
 import sys
 from pathlib import Path
+from typing import Any
 
 from setuptools import setup
 
 
-def main() -> None:
+def main():
     HERE = Path(__file__).parent
 
     # Load information from pyproject.toml
@@ -15,10 +16,10 @@ def main() -> None:
         setup_params = load_toml(toml_file)
 
     # Extract project metadata
-    project_metadata = setup_params.get("project", {})
-    build_system = setup_params.get("build-system", {})
-    AUTHORS = project_metadata.get("authors", [{"name": ""}])
-    README = project_metadata.get("readme", {"file": "", "content-type": ""})
+    project_metadata: dict[str, Any] = setup_params.get("project", {})
+    build_system: dict[str, dict] = setup_params.get("build-system", {})
+    AUTHORS: list[dict[str, str]] = project_metadata.get("authors", [{"name": ""}])
+    README: dict[str, str] = project_metadata.get("readme", {"file": "", "content-type": ""})
 
     # Extract and extend requirements
     REQUIREMENTS = {*build_system.get("requires", [])}
@@ -31,7 +32,7 @@ def main() -> None:
         sys.argv.append("install")
 
 
-    for key in ["authors", "readme"]:  # Remove keys that are not needed in setup()
+    for key in ("authors", "readme"):  # Remove keys that are not needed in setup()
         if key in project_metadata:
             project_metadata.pop(key)
 
@@ -41,7 +42,7 @@ def main() -> None:
         install_requires=list(REQUIREMENTS),
         long_description=README["file"],
         long_description_content_type=README["content-type"],
-        include_dirs=HERE,
+        include_dirs=[str(HERE)],
     )
 
 

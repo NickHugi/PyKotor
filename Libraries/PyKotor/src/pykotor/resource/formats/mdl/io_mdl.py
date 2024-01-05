@@ -84,7 +84,7 @@ class _ModelHeader:
     def write(
         self,
         writer: BinaryWriter,
-    ) -> None:
+    ):
         self.geometry.write(writer)
         writer.write_uint8(self.model_type)
         writer.write_uint8(self.unknown0)
@@ -154,7 +154,7 @@ class _GeometryHeader:
     def write(
         self,
         writer: BinaryWriter,
-    ) -> None:
+    ):
         writer.write_uint32(self.function_pointer0)
         writer.write_uint32(self.function_pointer1)
         writer.write_string(self.model_name, string_length=32)
@@ -197,7 +197,7 @@ class _AnimationHeader:
     def write(
         self,
         writer: BinaryWriter,
-    ) -> None:
+    ):
         self.geometry.write(writer)
         writer.write_single(self.duration)
         writer.write_single(self.transition)
@@ -229,7 +229,7 @@ class _Animation:
         self,
         writer: BinaryWriter,
         game: Game,
-    ) -> None:
+    ):
         self.header.write(writer)
         for event in self.events:
             event.write(writer)
@@ -285,7 +285,7 @@ class _EventStructure:
     def write(
         self,
         writer: BinaryWriter,
-    ) -> None:
+    ):
         writer.write_single(self.activation_time)
         writer.write_string(self.event_name, string_length=32)
 
@@ -320,7 +320,7 @@ class _Controller:
     def write(
         self,
         writer: BinaryWriter,
-    ) -> None:
+    ):
         writer.write_uint32(self.type_id)
         writer.write_uint16(self.unknown0)
         writer.write_uint16(self.row_count)
@@ -386,7 +386,7 @@ class _Node:
         self,
         writer: BinaryWriter,
         game: Game,
-    ) -> None:
+    ):
         self.header.write(writer)
 
         if self.trimesh:
@@ -581,7 +581,7 @@ class _NodeHeader:
     def write(
         self,
         writer: BinaryWriter,
-    ) -> None:
+    ):
         writer.write_uint16(self.type_id)
         writer.write_uint16(self.node_id)
         writer.write_uint16(self.name_id)
@@ -772,7 +772,7 @@ class _TrimeshHeader:
     def read_extra(
         self,
         reader: BinaryReader,
-    ) -> None:
+    ):
         reader.seek(self.vertices_offset)
         self.vertices = [reader.read_vector3() for _ in range(self.vertex_count)]
 
@@ -783,7 +783,7 @@ class _TrimeshHeader:
         self,
         writer: BinaryWriter,
         game: Game,
-    ) -> None:
+    ):
         writer.write_uint32(self.function_pointer0)
         writer.write_uint32(self.function_pointer1)
         writer.write_uint32(self.offset_to_faces)
@@ -890,7 +890,7 @@ class _DanglymeshHeader:
     def write(
         self,
         writer: BinaryWriter,
-    ) -> None:
+    ):
         writer.write_uint32(self.offset_to_contraints)
         writer.write_uint32(self.constraints_count)
         writer.write_uint32(self.constraints_count2)
@@ -963,7 +963,7 @@ class _SkinmeshHeader:
     def write(
         self,
         writer: BinaryWriter,
-    ) -> None:
+    ):
         writer.write_int32(self.unknown2)
         writer.write_int32(self.unknown3)
         writer.write_int32(self.unknown4)
@@ -1007,7 +1007,7 @@ class _SaberHeader:
     def write(
         self,
         writer: BinaryWriter,
-    ) -> None:
+    ):
         writer.write_uint32(self.offset_to_vertices)
         writer.write_uint32(self.offset_to_texcoords)
         writer.write_uint32(self.offset_to_normals)
@@ -1073,7 +1073,7 @@ class _LightHeader:
     def write(
         self,
         writer: BinaryWriter,
-    ) -> None:
+    ):
         writer.write_uint32(self.offset_to_unknown0)
         writer.write_uint32(self.unknown0_count)
         writer.write_uint32(self.unknown0_count2)
@@ -1149,7 +1149,7 @@ class _EmitterHeader:
     def write(
         self,
         writer: BinaryWriter,
-    ) -> None:
+    ):
         writer.write_single(self.dead_space)
         writer.write_single(self.blast_radius)
         writer.write_single(self.blast_length)
@@ -1188,7 +1188,7 @@ class _ReferenceHeader:
     def write(
         self,
         writer: BinaryWriter,
-    ) -> None:
+    ):
         writer.write_string(self.model, string_length=32)
         writer.write_uint32(self.reattachable)
 
@@ -1227,7 +1227,7 @@ class _Face:
     def write(
         self,
         writer: BinaryWriter,
-    ) -> None:
+    ):
         writer.write_vector3(self.normal)
         writer.write_single(self.plane_coefficient)
         writer.write_uint32(self.material)
@@ -1527,7 +1527,7 @@ class MDLBinaryWriter:
     def write(
         self,
         auto_close: bool = True,
-    ) -> None:
+    ):
         self._mdl_nodes = self._mdl.all_nodes()
         self._bin_nodes = [_Node() for node in self._mdl_nodes]
         self._bin_anims = [_Animation() for anim in self._mdl.anims]

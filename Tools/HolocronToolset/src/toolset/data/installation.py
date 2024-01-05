@@ -98,7 +98,7 @@ class HTInstallation(Installation):
         else:
             twoda_resource = self._cache2da[resname]
         if twoda_resource is None:
-            assert_with_variable_trace(twoda_resource is None, f"videoEffects lookup of '{HTInstallation.TwoDA_VIDEO_EFFECTS}' cannot be None in {self!r}._setupInstallation()")
+            assert_with_variable_trace(twoda_resource is not None, f"videoEffects lookup of '{HTInstallation.TwoDA_VIDEO_EFFECTS}' cannot be None in {self!r}._setupInstallation()")
             assert twoda_resource is not None
         return twoda_resource
 
@@ -223,7 +223,7 @@ class HTInstallation(Installation):
         pixmap = QPixmap(":/images/inventory/unknown.png")
         baseitems = self.htGetCache2DA(HTInstallation.TwoDA_BASEITEMS)
 
-        with suppress(Exception):
+        try:
             itemClass = baseitems.get_cell(uti.base_item, "itemclass")
             variation = uti.model_variation if uti.model_variation != 0 else uti.texture_variation
             textureResname = f'i{itemClass}_{str(variation).rjust(3, "0")}'

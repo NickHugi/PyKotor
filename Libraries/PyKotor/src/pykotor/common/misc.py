@@ -4,7 +4,7 @@
 from __future__ import annotations
 
 from enum import Enum, IntEnum
-from typing import TYPE_CHECKING, Any, ClassVar, Generator, Generic, Iterable, Iterator, TypeVar, overload
+from typing import TYPE_CHECKING, Any, ClassVar, Generator, Generic, ItemsView, Iterable, Iterator, Mapping, TypeVar, overload
 
 from pykotor.common.geometry import Vector3
 from utility.string import CaseInsensitiveWrappedStr
@@ -45,21 +45,21 @@ class ResRef(CaseInsensitiveWrappedStr):
     class InvalidEncodingError(ValueError):
         """ResRefs must only contain ASCII characters."""
 
-        def __init__(self, text: str) -> None:
+        def __init__(self, text: str):
             message = f"'{text}' must only contain ASCII characters."
             super().__init__(message)
 
     class ExceedsMaxLengthError(ValueError):
         """ResRefs cannot exceed the maximum of 16 characters in length."""
 
-        def __init__(self, text: str) -> None:
+        def __init__(self, text: str):
             message = f"Length of '{text}' ({len(text)} characters) exceeds the maximum allowed length ({ResRef.MAX_LENGTH})"
             super().__init__(message)
 
     class CaseSensitivityError(ValueError):
         """ResRefs cannot be converted to a different case."""
 
-        def __init__(self, resref: ResRef, func_name, *args, **kwargs) -> None:
+        def __init__(self, resref: ResRef, func_name, *args, **kwargs):
             super().__init__(f"ResRef's must be case-insensitive, attempted {resref!r}.{func_name}({args, kwargs})")
 
 
@@ -118,7 +118,7 @@ class ResRef(CaseInsensitiveWrappedStr):
         self,
         text: str,
         truncate: bool = False,
-    ) -> None:    # sourcery skip: remove-unnecessary-cast
+    ):    # sourcery skip: remove-unnecessary-cast
         """Sets the ResRef.
 
         Args:
@@ -440,7 +440,7 @@ class WrappedInt:
     def set(
         self,
         value: int,
-    ) -> None:
+    ):
         self._value = value
 
     def get(
@@ -557,15 +557,28 @@ class CaseInsensitiveDict(Generic[T]):
 
     def __init__(
         self,
-        initial: Iterable[tuple[str, T]] | None = None,
+        initial: Mapping[str, T] | Iterable[tuple[str, T]] | ItemsView[str, T] | None = None,
     ):
         self._dictionary: dict[str, T] = {}
         self._case_map: dict[str, str] = {}
 
         if initial:
+            # If initial is a mapping, use its items method.
+            items: Iterable[tuple[str, T]] | ItemsView[str, T] | ItemsView[tuple[str, T], T] = (
+                initial.items()
+                if isinstance(initial, Mapping)
+                else initial
+            )
+
             # Iterate over initial items directly, avoiding the creation of an interim dict
-            for key, value in initial:
-                self[key] = value  # Utilize the __setitem__ method for setting items
+            for key, value in items:
+                assert not isinstance(key, tuple), f"key '{key!r}' and value '{value!r}' are not expected types."
+                if isinstance(key, tuple):
+                    # Unpack key-value tuple
+                    k, v = key
+                    self[k] = v
+                else:
+                    self[key] = value
 
     @classmethod
     def from_dict(cls, initial: dict[str, T]) -> CaseInsensitiveDict[T]:
@@ -669,6 +682,13 @@ class CaseInsensitiveDict(Generic[T]):
 
     def __reversed__(self) -> Iterator[str]:
         return reversed(list(self._dictionary.keys()))
+
+    @overload
+    def pop(self, __key: str) -> T:
+        ...
+    @overload
+    def pop(self, __key: str, __default: VT = None) -> VT | T:
+        ...
 
     def pop(self, __key: str, __default: VT = _unique_sentinel) -> VT | T:  # type: ignore[assignment]
         lower_key: str = __key.lower()

@@ -34,18 +34,18 @@ class SettingsDialog(QDialog):
             "Module Designer": self.ui.moduleDesignerPage,
         }
 
-    def _setupSignals(self) -> None:
+    def _setupSignals(self):
         self.ui.installationsWidget.edited.connect(self.onInstallationEdited)
         self.ui.settingsTree.itemClicked.connect(self.pageChanged)
 
-    def pageChanged(self, pageTreeItem: QTreeWidgetItem) -> None:
+    def pageChanged(self, pageTreeItem: QTreeWidgetItem):
         newPage = self.pageDict[pageTreeItem.text(0)]
         self.ui.settingsStack.setCurrentWidget(newPage)
 
-    def onInstallationEdited(self) -> None:
+    def onInstallationEdited(self):
         self.installationEdited = True
 
-    def accept(self) -> None:
+    def accept(self):
         super().accept()
 
         self.ui.miscWidget.save()

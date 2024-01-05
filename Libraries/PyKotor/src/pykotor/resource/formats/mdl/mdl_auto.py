@@ -119,7 +119,7 @@ def write_mdl(
     target: TARGET_TYPES,
     file_format: ResourceType = ResourceType.MDL,
     target_ext: TARGET_TYPES | None = None,
-) -> None:
+):
     """Writes the MDL data to the target location with the specified format (MDL or MDL_ASCII).
 
     Args:

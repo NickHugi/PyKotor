@@ -19,7 +19,7 @@ class ModificationsTLK(PatcherModifications):
     DEFAULT_SOURCEFILE  = "append.tlk"
     DEFAULT_SOURCEFILE_F = "appendf.tlk"
     DEFAULT_SAVEAS_FILE = "dialog.tlk"
-    def __init__(self, filename=DEFAULT_SOURCEFILE, replace=None, modifiers=None) -> None:
+    def __init__(self, filename=DEFAULT_SOURCEFILE, replace=None, modifiers=None):
         super().__init__(filename)
         self.destination = self.DEFAULT_DESTINATION
         self.modifiers: list[ModifyTLK] = modifiers if modifiers is not None else []
@@ -31,7 +31,7 @@ class ModificationsTLK(PatcherModifications):
         memory: PatcherMemory,
         logger: PatchLogger,
         game: Game,
-    ) -> None:
+    ):
         for modifier in self.modifiers:
             if modifier.is_replacement:
                 modifier.replace(dialog, memory)
@@ -79,10 +79,10 @@ class ModifyTLK:
         self.sound: ResRef = sound
         self.is_replacement: bool = is_replacement
 
-    def insert(self, dialog: TLK, memory: PatcherMemory) -> None:
+    def insert(self, dialog: TLK, memory: PatcherMemory):
         dialog.add(self.text, self.sound)
         memory.memory_str[self.token_id] = len(dialog.entries) - 1
 
-    def replace(self, dialog: TLK, memory: PatcherMemory) -> None:
+    def replace(self, dialog: TLK, memory: PatcherMemory):
         dialog.replace(self.token_id, self.text, self.sound)
         memory.memory_str[self.token_id] = self.token_id

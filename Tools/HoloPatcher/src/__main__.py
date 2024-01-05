@@ -117,7 +117,8 @@ def parse_args() -> Namespace:
     if kwargs.namespace_option_index:
         try:
             kwargs.namespace_option_index = int(kwargs.namespace_option_index)
-        except ValueError:
+        except ValueError as e:
+            print(universal_simplify_exception(e))
             print("Invalid namespace_option_index. It should be an integer.")
             sys.exit(ExitCode.NAMESPACE_INDEX_OUT_OF_RANGE)
 
@@ -188,7 +189,7 @@ class App(tk.Tk):
         discord_menu.add_command(label="DeadlyStream", command=self.open_deadlystream_discord)
         discord_menu.add_command(label="r/kotor", command=self.open_kotor_discord)
 
-    def initialize_ui_controls(self) -> None:
+    def initialize_ui_controls(self):
         # Use grid layout for main window
         self.grid_rowconfigure(1, weight=1)
         self.grid_columnconfigure(0, weight=1)
@@ -271,7 +272,7 @@ class App(tk.Tk):
         if self.namespaces_combobox_state == 1:
             self.namespaces_combobox_state = 2  # no selection
 
-    def check_for_updates(self) -> None:
+    def check_for_updates(self):
         try:
             import requests
             req = requests.get("https://api.github.com/repos/NickHugi/PyKotor/contents/update_info.json", timeout=15)
@@ -297,7 +298,7 @@ class App(tk.Tk):
             messagebox.showerror(
                 "Unable to fetch latest version.",
                 (
-                    f"Error: {e!r}\n"
+                    f"{universal_simplify_exception(e)}\n"
                     "Check if you are connected to the internet."
                 ),
             )
@@ -311,7 +312,7 @@ class App(tk.Tk):
     def open_kotor_discord(self):
         webbrowser.open_new("https://discord.com/invite/kotor")
 
-    def handle_commandline(self, cmdline_args: Namespace) -> None:
+    def handle_commandline(self, cmdline_args: Namespace):
         """Handle command line arguments passed to the application.
 
         Args:
@@ -349,7 +350,7 @@ class App(tk.Tk):
             self.test_reader()
             sys.exit()
 
-    def handle_console_mode(self) -> None:
+    def handle_console_mode(self):
         """Overrides message box functions for console mode. This is done for true CLI support.
 
         Args:
@@ -395,7 +396,7 @@ class App(tk.Tk):
         # messagebox.askyesnocancel = MessageboxOverride.askyesno  # noqa: ERA001
         # messagebox.askretrycancel = MessageboxOverride.askyesno  # noqa: ERA001
 
-    def hide_console(self) -> None:
+    def hide_console(self):
         """Hide the console window in GUI mode."""
         # Windows
         if os.name == "nt":
@@ -403,7 +404,7 @@ class App(tk.Tk):
 
             ctypes.windll.user32.ShowWindow(ctypes.windll.kernel32.GetConsoleWindow(), 0)
 
-    def uninstall_selected_mod(self) -> None:
+    def uninstall_selected_mod(self):
         """Uninstalls the selected mod using the most recent backup folder created during the last install.
 
         Processing Logic:
@@ -432,7 +433,7 @@ class App(tk.Tk):
         self.clear_main_text()
         ModUninstaller(backup_parent_folder, Path(self.gamepaths.get()), self.logger).uninstall_selected_mod()
 
-    def handle_exit_button(self) -> None:
+    def handle_exit_button(self):
         """Handle exit button click during installation.
 
         Processing Logic:
@@ -458,11 +459,11 @@ class App(tk.Tk):
         self.destroy()
         sys.exit(ExitCode.ABORT_INSTALL_UNSAFE)
 
-    def on_gamepaths_chosen(self, event: tk.Event) -> None:
+    def on_gamepaths_chosen(self, event: tk.Event):
         """Adjust the combobox after a short delay."""
         self.after(10, lambda: self.move_cursor_to_end(event.widget))
 
-    def move_cursor_to_end(self, combobox: ttk.Combobox) -> None:
+    def move_cursor_to_end(self, combobox: ttk.Combobox):
         """Shows the rightmost portion of the specified combobox as that's the most relevant."""
         combobox.focus_set()
         position: int = len(combobox.get())
@@ -477,7 +478,7 @@ class App(tk.Tk):
         )
         return namespace_option.description if namespace_option else ""
 
-    def on_namespace_option_chosen(self, event: tk.Event, config_reader: ConfigReader | None = None) -> None:
+    def on_namespace_option_chosen(self, event: tk.Event, config_reader: ConfigReader | None = None):
         """Handles the namespace option being chosen from the combobox.
 
         Args:
@@ -515,7 +516,7 @@ class App(tk.Tk):
         else:
             self.after(10, lambda: self.move_cursor_to_end(self.namespaces_combobox))
 
-    def load_namespace(self, namespaces: list[PatcherNamespace], config_reader: ConfigReader | None = None) -> None:
+    def load_namespace(self, namespaces: list[PatcherNamespace], config_reader: ConfigReader | None = None):
         """Loads namespaces into the UI.
 
         Args:
@@ -535,7 +536,7 @@ class App(tk.Tk):
         self.namespaces = namespaces
         self.on_namespace_option_chosen(tk.Event(), config_reader)
 
-    def open_mod(self, default_directory_path_str: os.PathLike | str | None = None) -> None:
+    def open_mod(self, default_directory_path_str: os.PathLike | str | None = None):
         """Opens a mod directory.
 
         Args:
@@ -589,7 +590,7 @@ class App(tk.Tk):
                 f"An unexpected error occurred while loading the mod info.{os.linesep*2}{msg}",
             )
 
-    def open_kotor(self, default_kotor_dir_str=None) -> None:
+    def open_kotor(self, default_kotor_dir_str=None):
         """Opens the KOTOR directory.
 
         Args:
@@ -621,7 +622,12 @@ class App(tk.Tk):
                 f"An unexpected error occurred while loading the game directory.{os.linesep*2}{msg}",
             )
 
-    def check_access(self, directory: Path, recurse=False) -> bool:
+    def check_access(
+        self,
+        directory: Path,
+        *,
+        recurse=False,
+    ) -> bool:
         """Check access to a directory.
 
         Args:
@@ -710,7 +716,7 @@ class App(tk.Tk):
             )
         return self.check_access(Path(self.gamepaths.get()))
 
-    def begin_install(self) -> None:
+    def begin_install(self):
         """Starts the installation process in a background thread.
 
         Note: This function is not called when utilizing the CLI due to the thread creation - for passthrough purposes.
@@ -733,7 +739,7 @@ class App(tk.Tk):
             )
             sys.exit(ExitCode.EXCEPTION_DURING_INSTALL)
 
-    def begin_install_thread(self) -> None:
+    def begin_install_thread(self):
         """Starts the mod installation thread. This function is called directly when utilizing the CLI.
 
         Args:
@@ -764,7 +770,7 @@ class App(tk.Tk):
             self._handle_exception_during_install(e, installer)
         self.set_active_install(install_running=False)
 
-    def test_reader(self) -> None:
+    def test_reader(self):
         if not self.preinstall_validate_chosen():
             return
         namespace_option: PatcherNamespace = next(x for x in self.namespaces if x.name == self.namespaces_combobox.get())
@@ -779,7 +785,7 @@ class App(tk.Tk):
             messagebox.showerror(*universal_simplify_exception(e))
         self.set_active_install(install_running=False)
 
-    def set_active_install(self, install_running: bool) -> None:
+    def set_active_install(self, install_running: bool):
         """Sets the active install state.
 
         Args:
@@ -806,12 +812,12 @@ class App(tk.Tk):
             self.gamepaths_browse_button.config(state=tk.NORMAL)
             self.browse_button.config(state=tk.NORMAL)
 
-    def clear_main_text(self) -> None:
+    def clear_main_text(self):
         self.main_text.config(state=tk.NORMAL)
         self.main_text.delete(1.0, tk.END)
         self.main_text.config(state=tk.DISABLED)
 
-    def _execute_mod_install(self, installer: ModInstaller) -> None:
+    def _execute_mod_install(self, installer: ModInstaller):
         """Executes the mod installation.
 
         Args:
@@ -906,7 +912,7 @@ class App(tk.Tk):
         self.set_active_install(install_running=False)
         raise
 
-    def filter_kotor_game_paths(self, game_number) -> None:
+    def filter_kotor_game_paths(self, game_number):
         """Determines what shows up in the gamepaths combobox, based on the LookupGameNumber setting."""
         game = Game(game_number)
         gamepaths_list: list[str] = [
@@ -916,7 +922,7 @@ class App(tk.Tk):
         ]
         self.gamepaths["values"] = gamepaths_list
 
-    def set_stripped_rtf_text(self, rtf: TextIOWrapper) -> None:
+    def set_stripped_rtf_text(self, rtf: TextIOWrapper):
         """Strips the info.rtf of all RTF related text and displays it in the UI."""
         stripped_content: str = striprtf(rtf.read())
         self.main_text.config(state=tk.NORMAL)
@@ -924,7 +930,7 @@ class App(tk.Tk):
         self.main_text.insert(tk.END, stripped_content)
         self.main_text.config(state=tk.DISABLED)
 
-    def write_log(self, message: str) -> None:
+    def write_log(self, message: str):
         """Writes a message to the log.
 
         Args:
@@ -943,7 +949,7 @@ class App(tk.Tk):
         self.main_text.config(state=tk.DISABLED)
 
 
-def custom_excepthook(exc_type, exc_value, exc_traceback) -> None:
+def custom_excepthook(exc_type, exc_value, exc_traceback):
     """Custom exception hook to display errors in message box.
 
     When pyinstaller compiled in --console mode, this will match the same error message behavior of --noconsole.

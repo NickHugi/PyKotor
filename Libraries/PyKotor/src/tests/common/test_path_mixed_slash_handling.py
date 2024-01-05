@@ -35,9 +35,9 @@ from utility.path import WindowsPath as CustomWindowsPath
 
 class TestPathlibMixedSlashes(unittest.TestCase):
 
-    def test_nt_case_hashing(self) -> None:
+    def test_nt_case_hashing(self):
         test_classes: list[type] = (
-            [CustomPath, CustomPureWindowsPath]
+            [CustomPureWindowsPath]
             if os.name == "posix"
             else [CustomWindowsPath, CustomPureWindowsPath, CustomPath]
         )
@@ -52,9 +52,9 @@ class TestPathlibMixedSlashes(unittest.TestCase):
                 self.assertEqual(hash(path1), hash(path2))
                 self.assertSetEqual(test_set, {PathType("TEST\\path\\to\\\\nothing")})
 
-    def test_posix_case_hashing(self) -> None:
+    def test_posix_case_hashing(self):
         test_classes: list[type] = (
-            [CustomPosixPath, CustomPurePosixPath]
+            [CustomPosixPath, CustomPurePosixPath, CustomPath]
             if os.name == "posix"
             else [CustomPurePosixPath]
         )
@@ -209,7 +209,7 @@ class TestPathlibMixedSlashes(unittest.TestCase):
                 else:
                     self.assertEqual(str(PathType("//")), "\\\\")
                 self.assertEqual(str(PathType("C:")), "C:")
-                if sys.version_info < (3, 12) or sys.version_info >= (3, 12) and os.name != "nt":
+                if sys.version_info < (3, 12) or os.name != "nt":
                     self.assertEqual(str(PathType("///")), "/".replace("/", os.sep))
                 else:
                     self.assertEqual(str(PathType("///")), "///".replace("/", os.sep))

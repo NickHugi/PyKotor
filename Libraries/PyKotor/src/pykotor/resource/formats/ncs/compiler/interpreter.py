@@ -351,12 +351,12 @@ class StackV2:
     def state(self) -> bytearray:
         return copy(self._stack)
 
-    def copy_down(self, offset: int, size: int) -> None:
+    def copy_down(self, offset: int, size: int):
         stacksize = len(self._stack)
         copied = self._stack[stacksize - size : stacksize]
         self._stack[stacksize - offset : stacksize - offset + size] = copied
 
-    def copy_to_top(self, offset: int, size: int) -> None:
+    def copy_to_top(self, offset: int, size: int):
         stacksize = len(self._stack)
         copied = self._stack[stacksize - offset : stacksize - offset + size]
         self._stack.extend(copied)
@@ -379,7 +379,7 @@ class Stack:
     def state(self) -> list:
         return copy(self._stack)
 
-    def add(self, data_type: DataType, value: Any) -> None:
+    def add(self, data_type: DataType, value: Any):
         self._stack.append(StackObject(data_type, value))
 
     def _stack_index(self, offset: int) -> int:
@@ -413,11 +413,11 @@ class Stack:
         real_index = self._stack_index(offset)
         return self._stack[real_index]
 
-    def copy_to_top(self, offset: int, size: int) -> None:
+    def copy_to_top(self, offset: int, size: int):
         for _i in range(size // 4):
             self._stack.append(self.peek(offset))
 
-    def copy_down(self, offset: int, size: int) -> None:
+    def copy_down(self, offset: int, size: int):
         if size % 4 != 0:
             msg = "Size must be divisible by 4"
             raise ValueError(msg)
@@ -446,7 +446,7 @@ class Stack:
     def pop(self) -> Any:
         return self._stack.pop()
 
-    def move(self, offset: int) -> None:
+    def move(self, offset: int):
         if offset > 0:
             raise ValueError
         if offset == 0:
@@ -454,23 +454,23 @@ class Stack:
         remove_to = self._stack_index(offset)
         self._stack = self._stack[:remove_to]
 
-    def copy_down_bp(self, offset: int, size: int) -> None:
+    def copy_down_bp(self, offset: int, size: int):
         # Copy from the top of the stack down to the bp adjusted w/ offset?
         top_value = self._stack[-1]
         to_index = self._stack_index_bp(offset)
         self._stack[to_index] = top_value
 
-    def copy_top_bp(self, offset: int, size: int) -> None:
+    def copy_top_bp(self, offset: int, size: int):
         # Copy value relative to base pointer to the top of the stack
         copy_index = self._stack_index_bp(offset)
         top_value = self._stack[copy_index]
         self._stack.append(top_value)
 
-    def save_bp(self) -> None:
+    def save_bp(self):
         self._bp_buffer.append(self.base_pointer())
         self._bp = self.stack_pointer()
 
-    def restore_bp(self) -> None:
+    def restore_bp(self):
         self._bp = self._bp_buffer.pop()
 
     def increment(self, offset: int):

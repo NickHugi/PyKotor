@@ -21,11 +21,11 @@ if TYPE_CHECKING:
 
 
 class LocalizedStringDelta(LocalizedString):
-    def __init__(self, stringref: FieldValue | None = None) -> None:
+    def __init__(self, stringref: FieldValue | None = None):
         super().__init__(0)
         self.stringref: FieldValue | None = stringref
 
-    def apply(self, locstring: LocalizedString, memory: PatcherMemory) -> None:
+    def apply(self, locstring: LocalizedString, memory: PatcherMemory):
         """Applies a LocalizedString patch to a LocalizedString object.
 
         Args:
@@ -120,7 +120,7 @@ class ModifyGFF(ABC):
         root_container: GFFStruct | GFFList,
         memory: PatcherMemory,
         logger: PatchLogger,
-    ) -> None:
+    ):
         ...
 
     def _navigate_containers(
@@ -203,7 +203,7 @@ class AddStructToListGFF(ModifyGFF):
         root_struct,
         memory: PatcherMemory,
         logger: PatchLogger,
-    ) -> None:
+    ):
         """Adds a new struct to a list.
 
         Args:
@@ -259,6 +259,7 @@ class AddFieldGFF(ModifyGFF):
         path: PureWindowsPath | os.PathLike | str,
         modifiers: list[ModifyGFF] | None = None,
     ):
+
         self.identifier: str = identifier
         self.label: str = label
         self.field_type: GFFFieldType = field_type
@@ -272,7 +273,7 @@ class AddFieldGFF(ModifyGFF):
         root_struct,
         memory: PatcherMemory,
         logger: PatchLogger,
-    ) -> None:
+    ):
         """Adds a new field to a GFF struct.
 
         Args:
@@ -358,15 +359,15 @@ class Memory2DAModifierGFF(ModifyGFF):
     def __init__(
         self,
         identifier: str,
-        twoda_index: int,
+        index_2damemory: int,
         path: PureWindowsPath | os.PathLike | str,
     ):
         self.identifier: str = identifier
-        self.twoda_index: int = twoda_index
+        self.index_2damemory: int = index_2damemory
         self.path: PureWindowsPath = PureWindowsPath.pathify(path)
 
     def apply(self, container, memory: PatcherMemory, logger: PatchLogger):
-        memory.memory_2da[self.twoda_index] = self.path
+        memory.memory_2da[self.index_2damemory] = self.path
 
 
 class ModifyFieldGFF(ModifyGFF):
@@ -374,7 +375,7 @@ class ModifyFieldGFF(ModifyGFF):
         self,
         path: PureWindowsPath | os.PathLike | str,
         value: FieldValue,
-    ) -> None:
+    ):
         self.path: PureWindowsPath = PureWindowsPath.pathify(path)
         self.value: FieldValue = value
 
@@ -383,7 +384,7 @@ class ModifyFieldGFF(ModifyGFF):
         root_struct,
         memory: PatcherMemory,
         logger: PatchLogger,
-    ) -> None:
+    ):
         """Applies a patch to an existing field in a GFF structure.
 
         Args:
@@ -421,7 +422,7 @@ class ModifyFieldGFF(ModifyGFF):
                 return
             value = from_container.value(value.name)
 
-        def set_locstring() -> None:
+        def set_locstring():
             assert isinstance(value, LocalizedStringDelta)
             if navigated_struct.exists(label):
                 original: LocalizedString = navigated_struct.get_locstring(label)
@@ -459,7 +460,7 @@ class ModificationsGFF(PatcherModifications):
         filename: str,
         replace: bool,
         modifiers: list[ModifyGFF] | None = None,
-    ) -> None:
+    ):
         super().__init__(filename, replace)
         self.modifiers: list[ModifyGFF] = modifiers if modifiers is not None else []
 
@@ -480,7 +481,7 @@ class ModificationsGFF(PatcherModifications):
         memory: PatcherMemory,
         logger: PatchLogger,
         game: Game,
-    ) -> None:
+    ):
         for change_field in self.modifiers:
             change_field.apply(gff.root, memory, logger)
 

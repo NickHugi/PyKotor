@@ -10,23 +10,24 @@ from io import StringIO
 from typing import TYPE_CHECKING
 
 if getattr(sys, "frozen", False) is False:
-    pykotor_path = pathlib.Path(__file__).parents[3] / "Libraries/PyKotor/src"
+    def update_sys_path(path):
+        working_dir = str(path)
+        if working_dir in sys.path:
+            sys.path.remove(working_dir)
+        sys.path.append(working_dir)
+
+    pykotor_path = pathlib.Path(__file__).parents[3] / "Libraries" / "PyKotor" / "src" / "pykotor"
     if pykotor_path.exists():
-        working_dir = str(pykotor_path)
-        if pykotor_path in sys.path:
-            sys.path.remove(working_dir)
-        sys.path.insert(0, working_dir)
-    utility_path = pathlib.Path(__file__).parents[3] / "Libraries/Utility/src"
+        update_sys_path(pykotor_path.parent)
+    utility_path = pathlib.Path(__file__).parents[3] / "Libraries" / "Utility" / "src" / "utility"
     if utility_path.exists():
-        working_dir = str(utility_path)
-        if pykotor_path in sys.path:
-            sys.path.remove(working_dir)
-        sys.path.insert(0, working_dir)
+        update_sys_path(utility_path.parent)
 
 from pykotor.extract.capsule import Capsule
 from pykotor.resource.formats import gff, lip, tlk, twoda
 from pykotor.tools.misc import is_capsule_file
 from pykotor.tools.path import CaseAwarePath
+from utility.error_handling import universal_simplify_exception
 from utility.path import Path, PureWindowsPath
 
 if TYPE_CHECKING:
@@ -37,7 +38,7 @@ LOGGING_ENABLED: bool | None = None
 PARSER_ARGS = None
 PARSER = None
 
-def log_output(*args, **kwargs) -> None:
+def log_output(*args, **kwargs):
     global OUTPUT_LOG  # noqa: PLW0603
     # Create an in-memory text stream
     buffer = StringIO()
@@ -151,12 +152,12 @@ def diff_data(
         gff2: gff.GFF | None = None
         try:
             gff1 = gff.read_gff(data1)
-        except Exception:  # noqa: BLE001
-            return log_output(f"[Error] loading GFF {file1_rel.parent / where}!")  # type: ignore[func-returns-value]
+        except Exception as e:  # noqa: BLE001
+            return log_output(f"[Error] loading GFF {file1_rel.parent / where}!\n{universal_simplify_exception(e)}")  # type: ignore[func-returns-value]
         try:
             gff2 = gff.read_gff(data2)
-        except Exception:  # noqa: BLE001
-            return log_output(f"[Error] loading GFF {file2_rel.parent / where}!")  # type: ignore[func-returns-value]
+        except Exception as e:  # noqa: BLE001
+            return log_output(f"[Error] loading GFF {file2_rel.parent / where}!\n{universal_simplify_exception(e)}")  # type: ignore[func-returns-value]
         if gff1 and not gff2:
             return log_output(f"GFF resource missing in memory:\t'{file1_rel.parent / where}'")  # type: ignore[func-returns-value]
         if not gff1 and gff2:
@@ -173,16 +174,16 @@ def diff_data(
         twoda2: twoda.TwoDA | None = None
         try:
             twoda1 = twoda.read_2da(data1)
-        except Exception:  # noqa: BLE001
+        except Exception as e:  # noqa: BLE001
             if file1_rel.parent.name.lower() == "rims" and (file1_rel.name.lower() == "global.rim" or file1_rel.name == "miniglobal.rim"):
                 return True
-            return log_output(f"Error loading 2DA {file1_rel.parent / where}!")  # type: ignore[func-returns-value]
+            return log_output(f"Error loading 2DA {file1_rel.parent / where}!\n{universal_simplify_exception(e)}")  # type: ignore[func-returns-value]
         try:
             twoda2 = twoda.read_2da(data2)
-        except Exception:  # noqa: BLE001
+        except Exception as e:  # noqa: BLE001
             if file1_rel.parent.name.lower() == "rims" and (file1_rel.name.lower() == "global.rim" or file1_rel.name == "miniglobal.rim"):
                 return True
-            return log_output(f"Error loading 2DA {file2_rel.parent / where}!")  # type: ignore[func-returns-value]
+            return log_output(f"Error loading 2DA {file2_rel.parent / where}!\n{universal_simplify_exception(e)}")  # type: ignore[func-returns-value]
         if twoda1 and not twoda2:
             message = f"2DA resource missing in memory:\t'{file1_rel.parent / where}'"
             return log_output(message)  # type: ignore[func-returns-value]
@@ -203,13 +204,13 @@ def diff_data(
         try:
             log_output(f"Loading TLK '{file1_rel.parent / where}'")
             tlk1 = tlk.read_tlk(data1)
-        except Exception:  # noqa: BLE001
-            return log_output(f"Error loading TLK {file1_rel.parent / where}!")  # type: ignore[func-returns-value]
+        except Exception as e:  # noqa: BLE001
+            return log_output(f"Error loading TLK {file1_rel.parent / where}!\n{universal_simplify_exception(e)}")  # type: ignore[func-returns-value]
         try:
             log_output(f"Loading TLK '{file2_rel.parent / where}'")
             tlk2 = tlk.read_tlk(data2)
-        except Exception:  # noqa: BLE001
-            return log_output(f"Error loading TLK {file2_rel.parent / where}!")  # type: ignore[func-returns-value]
+        except Exception as e:  # noqa: BLE001
+            return log_output(f"Error loading TLK {file2_rel.parent / where}!\n{universal_simplify_exception(e)}")  # type: ignore[func-returns-value]
         if tlk1 and not tlk2:
             message = f"TLK resource missing in memory:\t'{file1_rel.parent / where}'"
             return log_output(message)  # type: ignore[func-returns-value]
@@ -229,12 +230,12 @@ def diff_data(
         lip2: lip.LIP | None = None
         try:
             lip1 = lip.read_lip(data1)
-        except Exception:  # noqa: BLE001
-            return log_output(f"Error loading LIP {file1_rel.parent / where}!")  # type: ignore[func-returns-value]
+        except Exception as e:  # noqa: BLE001
+            return log_output(f"Error loading LIP {file1_rel.parent / where}!\n{universal_simplify_exception(e)}")  # type: ignore[func-returns-value]
         try:
             lip2 = lip.read_lip(data2)
-        except Exception:  # noqa: BLE001
-            return log_output(f"Error loading LIP {file2_rel.parent / where}!")  # type: ignore[func-returns-value]
+        except Exception as e:  # noqa: BLE001
+            return log_output(f"Error loading LIP {file2_rel.parent / where}!\n{universal_simplify_exception(e)}")  # type: ignore[func-returns-value]
         if lip1 and not lip2:
             message = f"LIP resource missing in memory:\t'{file1_rel.parent / where}'"
             return log_output(message)  # type: ignore[func-returns-value]
@@ -283,12 +284,12 @@ def diff_files(file1: os.PathLike | str, file2: os.PathLike | str) -> bool | Non
         try:
             file1_capsule = Capsule(file1)
         except ValueError as e:
-            log_output(f"Could not load '{c_file1_rel}'. Reason: {e}")
+            log_output(f"Could not load '{c_file1_rel}'. Reason: {universal_simplify_exception(e)}")
             return None
         try:
             file2_capsule = Capsule(file2)
         except ValueError as e:
-            log_output(f"Could not load '{c_file2_rel}'. Reason: {e}")
+            log_output(f"Could not load '{c_file2_rel}'. Reason: {universal_simplify_exception(e)}")
             return None
 
         # Build dict of resources
@@ -401,7 +402,7 @@ def run_differ_from_args(path1: Path, path2: Path) -> bool | None:
     msg = f"--path1='{path1.name}' and --path2='{path2.name}' must be the same type"
     raise ValueError(msg)
 
-def main() -> None:
+def main():
     global PARSER_ARGS
     global PARSER
     global LOGGING_ENABLED

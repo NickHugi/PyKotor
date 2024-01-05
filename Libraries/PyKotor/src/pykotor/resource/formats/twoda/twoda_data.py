@@ -69,7 +69,7 @@ class TwoDA:
     def add_column(
         self,
         header: str,
-    ) -> None:
+    ):
         """Adds a new column with the specified header and populates it with blank cells for each row.
 
         Args:
@@ -91,7 +91,7 @@ class TwoDA:
     def remove_column(
         self,
         header: str,
-    ) -> None:
+    ):
         """Removes a column from the table with the specified column header.
 
         If no such column header exists it is ignored; no error is thrown.
@@ -137,7 +137,7 @@ class TwoDA:
         self,
         row_index: int,
         value: str,
-    ) -> None:
+    ):
         """Sets the row label at the given index.
 
         Args:
@@ -308,7 +308,7 @@ class TwoDA:
         row_index: int,
         column: str,
         value: Any,
-    ) -> None:
+    ):
         """Sets the value of a cell at the specified row under the specified column. If the value is none, it will output a blank string.
 
         Args:
@@ -350,7 +350,7 @@ class TwoDA:
     def resize(
         self,
         row_count: int,
-    ) -> None:
+    ):
         """Sets the number of rows in the table.
 
         Use with caution; specifying a height less than the current height will result in a loss of data.
@@ -652,7 +652,7 @@ class TwoDARow:
         self,
         header: str,
         value: str | None,
-    ) -> None:
+    ):
         """Sets the value of a cell under the specified header. If the value is None it will default to a empty string.
 
         Args:
@@ -670,7 +670,7 @@ class TwoDARow:
         self,
         header: str,
         value: int | None,
-    ) -> None:
+    ):
         """Sets the value of a cell under the specified header, converting the integer into a string. If the value is None it will default to a empty string.
 
         Args:
@@ -688,7 +688,7 @@ class TwoDARow:
         self,
         header: str,
         value: float | None,
-    ) -> None:
+    ):
         """Sets the value of a cell under the specified header, converting the float into a string. If the value is None it will default to a empty string.
 
         Args:

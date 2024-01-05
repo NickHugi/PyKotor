@@ -36,7 +36,7 @@ class WaypointDialog(QDialog):
 
         self.waypoint: GITWaypoint = waypoint
 
-    def accept(self) -> None:
+    def accept(self):
         super().accept()
         self.waypoint.resref = ResRef(self.ui.resrefEdit.text())
         self.waypoint.tag = self.ui.tagEdit.text()

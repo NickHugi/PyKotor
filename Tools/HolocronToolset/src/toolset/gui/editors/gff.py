@@ -13,6 +13,7 @@ from PyQt5.QtCore import QItemSelectionRange, QModelIndex, QSortFilterProxyModel
 from PyQt5.QtGui import QBrush, QColor, QStandardItem, QStandardItemModel
 from PyQt5.QtWidgets import QFileDialog, QListWidgetItem, QMenu, QShortcut, QWidget
 from toolset.gui.editor import Editor
+from utility.error_handling import format_exception_with_variables
 
 if TYPE_CHECKING:
     import os
@@ -70,7 +71,7 @@ class GFFEditor(Editor):
 
         self.new()
 
-    def _setupSignals(self) -> None:
+    def _setupSignals(self):
         """Sets up signals and connections for the GUI.
 
         Args:
@@ -119,7 +120,7 @@ class GFFEditor(Editor):
 
         QShortcut("Del", self).activated.connect(self.removeSelectedNodes)
 
-    def load(self, filepath: os.PathLike | str, resref: str, restype: ResourceType, data: bytes) -> None:
+    def load(self, filepath: os.PathLike | str, resref: str, restype: ResourceType, data: bytes):
         """Loads resource data from a file into the model.
 
         Args:
@@ -153,7 +154,7 @@ class GFFEditor(Editor):
         proxyIndex = self.proxyModel.mapFromSource(sourceIndex)
         self.ui.treeView.expand(proxyIndex)
 
-    def _load_struct(self, node: QStandardItem, gffStruct: GFFStruct) -> None:
+    def _load_struct(self, node: QStandardItem, gffStruct: GFFStruct):
         """Loads a GFFStruct into a QStandardItem node.
 
         Args:
@@ -187,7 +188,7 @@ class GFFEditor(Editor):
             self.refreshItemText(childNode)
             node.appendRow(childNode)
 
-    def _load_list(self, node: QStandardItem, gffList: GFFList) -> None:
+    def _load_list(self, node: QStandardItem, gffList: GFFList):
         """Load GFF data into a tree view.
 
         Args:
@@ -233,7 +234,8 @@ class GFFEditor(Editor):
         """
         try:
             content = GFFContent(f"{self._restype.extension.upper()} ")
-        except ValueError:
+        except ValueError as e:
+            print(format_exception_with_variables(e))
             content = GFFContent.GFF
 
         gff = GFF(content)
@@ -244,7 +246,7 @@ class GFFEditor(Editor):
         write_gff(gff, data)
         return data, b""
 
-    def _build_struct(self, item: QStandardItem, gffStruct: GFFStruct) -> None:
+    def _build_struct(self, item: QStandardItem, gffStruct: GFFStruct):
         """Builds a GFF structure from a QStandardItem model.
 
         Args:
@@ -260,7 +262,7 @@ class GFFEditor(Editor):
             - Recursively builds child structures and lists.
         """
         for i in range(item.rowCount()):
-            child = item.child(i, 0)
+            child: QStandardItem | None = item.child(i, 0)
             label = child.data(_LABEL_NODE_ROLE)
             value = child.data(_VALUE_NODE_ROLE)
             ftype = child.data(_TYPE_NODE_ROLE)
@@ -329,7 +331,7 @@ class GFFEditor(Editor):
             gffStruct = gffList.add(struct_id)
             self._build_struct(child, gffStruct)
 
-    def new(self) -> None:
+    def new(self):
         super().new()
         self.model.clear()
         self.model.setColumnCount(1)
@@ -338,7 +340,7 @@ class GFFEditor(Editor):
         rootNode.setForeground(QBrush(QColor(0x660000)))
         self.model.appendRow(rootNode)
 
-    def selectionChanged(self, selected: QItemSelectionRange) -> None:
+    def selectionChanged(self, selected: QItemSelectionRange):
         """Updates UI when selection changes in view.
 
         Args:
@@ -442,7 +444,7 @@ class GFFEditor(Editor):
                     item.setData(_ID_SUBSTRING_ROLE, LocalizedString.substring_id(language, gender))
                     self.ui.substringList.addItem(item)
 
-    def updateData(self) -> None:
+    def updateData(self):
         """Updates data in the GFF tree model.
 
         Args:
@@ -499,7 +501,7 @@ class GFFEditor(Editor):
 
         self.refreshItemText(item)
 
-    def substringSelected(self) -> None:
+    def substringSelected(self):
         if len(self.ui.substringList.selectedItems()) > 0:
             item = self.ui.substringList.selectedItems()[0]
             self.ui.substringEdit.setEnabled(True)
@@ -507,7 +509,7 @@ class GFFEditor(Editor):
         else:
             self.ui.substringEdit.setEnabled(False)
 
-    def substringEdited(self) -> None:
+    def substringEdited(self):
         """Edits the selected substring in the list.
 
         Args:
@@ -533,7 +535,7 @@ class GFFEditor(Editor):
         locstring: LocalizedString = locstringItem.data(_VALUE_NODE_ROLE)
         locstring.set_data(language, gender, text)
 
-    def addSubstring(self) -> None:
+    def addSubstring(self):
         """Adds a substring to the selected localized string.
 
         Processing Logic:
@@ -563,7 +565,7 @@ class GFFEditor(Editor):
         locstring: LocalizedString = locstringItem.data(_VALUE_NODE_ROLE)
         locstring.set_data(language, gender, "")
 
-    def removeSubstring(self) -> None:
+    def removeSubstring(self):
         """Removes a substring from a localized string.
 
         Args:
@@ -624,7 +626,7 @@ class GFFEditor(Editor):
 
         item.setText(text)
 
-    def typeChanged(self, ftypeId: int) -> None:
+    def typeChanged(self, ftypeId: int):
         """Changes the type of a selected node.
 
         Args:
@@ -681,7 +683,7 @@ class GFFEditor(Editor):
         self.loadItem(item)
         self.refreshItemText(item)
 
-    def insertNode(self, parent: QStandardItem, label: str, ftype: GFFFieldType, value: Any) -> None:
+    def insertNode(self, parent: QStandardItem, label: str, ftype: GFFFieldType, value: Any):
         """Inserts a new child node under the given parent node.
 
         Args:
@@ -705,7 +707,7 @@ class GFFEditor(Editor):
         parent.appendRow(item)
         self.refreshItemText(item)
 
-    def removeNode(self, item: QStandardItem) -> None:
+    def removeNode(self, item: QStandardItem):
         """Remove a node from the tree model.
 
         Args:
@@ -720,7 +722,7 @@ class GFFEditor(Editor):
         """
         item.parent().removeRow(item.row())
 
-    def removeSelectedNodes(self) -> None:
+    def removeSelectedNodes(self):
         """Removes selected nodes from the tree.
 
         Args:
@@ -815,7 +817,7 @@ class GFFEditor(Editor):
         menu.addAction("Add List").triggered.connect(lambda: self.insertNode(item, "New List", GFFFieldType.List, GFFList()))
         menu.addSeparator()
 
-    def selectTalkTable(self) -> None:
+    def selectTalkTable(self):
         """Select a TLK file using a file dialog.
 
         Args:
@@ -832,7 +834,7 @@ class GFFEditor(Editor):
         if filepath:
             self._talktable = TalkTable(filepath)
 
-    def changeLocstringText(self) -> None:
+    def changeLocstringText(self):
         """Changes the text displayed based on the selected string reference.
 
         Args:

@@ -65,34 +65,34 @@ class WalkmeshCamera:
     def zoom(self) -> float:
         return self._zoom
 
-    def setPosition(self, x: float, y: float) -> None:
+    def setPosition(self, x: float, y: float):
         self._position.x = x
         self._position.y = y
 
-    def nudgePosition(self, x: float, y: float) -> None:
+    def nudgePosition(self, x: float, y: float):
         self._position.x += x
         self._position.y += y
 
-    def setRotation(self, rotation: float) -> None:
+    def setRotation(self, rotation: float):
         self._rotation = rotation
 
-    def nudgeRotation(self, rotation: float) -> None:
+    def nudgeRotation(self, rotation: float):
         self._rotation += rotation
 
-    def setZoom(self, zoom: float) -> None:
+    def setZoom(self, zoom: float):
         self._zoom = clamp(zoom, 0.1, 100)
 
-    def nudgeZoom(self, zoomFactor: float) -> None:
+    def nudgeZoom(self, zoomFactor: float):
         newZoom = self._zoom * zoomFactor
         self._zoom = clamp(newZoom, 0.1, 100)
 
 
 
 class WalkmeshSelection(Generic[T]):
-    def __init__(self) -> None:
+    def __init__(self):
         self._selection: list[T] = []
 
-    def remove(self, element: T) -> None:
+    def remove(self, element: T):
         self._selection.remove(element)
 
     def last(self) -> T | None:
@@ -110,10 +110,10 @@ class WalkmeshSelection(Generic[T]):
     def get(self, index: int) -> T:
         return self._selection[index]
 
-    def clear(self) -> None:
+    def clear(self):
         self._selection.clear()
 
-    def select(self, elements: list[T], clearExisting: bool = True) -> None:
+    def select(self, elements: list[T], clearExisting: bool = True):
         if clearExisting:
             self._selection.clear()
         self._selection.extend(elements)
@@ -217,12 +217,12 @@ class WalkmeshRenderer(QWidget):
 
         self._loop()
 
-    def _loop(self) -> None:
+    def _loop(self):
         """The render loop."""
         self.repaint()
         QTimer.singleShot(33, self._loop)
 
-    def setWalkmeshes(self, walkmeshes: list[BWM]) -> None:
+    def setWalkmeshes(self, walkmeshes: list[BWM]):
         """Sets the list of walkmeshes to be rendered.
 
         Args:
@@ -252,7 +252,7 @@ class WalkmeshRenderer(QWidget):
         # Erase the cache so it will be rebuilt
         self._walkmeshFaceCache = None
 
-    def setGit(self, git: GIT) -> None:
+    def setGit(self, git: GIT):
         """Sets the GIT object used by the render to draw icons for the various git instances.
 
         Args:
@@ -261,17 +261,17 @@ class WalkmeshRenderer(QWidget):
         """
         self._git = git
 
-    def setPth(self, pth: PTH) -> None:
+    def setPth(self, pth: PTH):
         self._pth = pth
 
-    def setMinimap(self, are: ARE, tpc: TPC) -> None:
+    def setMinimap(self, are: ARE, tpc: TPC):
         self._are = are
 
         image = QImage(tpc.convert(TPCTextureFormat.RGB).data, tpc.get().width, tpc.get().height, QImage.Format_RGB888)
         crop = QRect(0, 0, 435, 256)
         self._minimapImage = image.copy(crop)
 
-    def snapCameraToPoint(self, point: Vector2 | Vector3, zoom: int = 8) -> None:
+    def snapCameraToPoint(self, point: Vector2 | Vector3, zoom: int = 8):
         self.camera.setPosition(point.x, point.y)
         self.camera.setZoom(zoom)
 
@@ -460,7 +460,7 @@ class WalkmeshRenderer(QWidget):
             return self._pixmapMerchant
         return None
 
-    def centerCamera(self) -> None:
+    def centerCamera(self):
         """Centers the camera on the bounding box of the world.
 
         Args:
@@ -563,7 +563,7 @@ class WalkmeshRenderer(QWidget):
         painter.restore()
 
     # region Events
-    def paintEvent(self, e: QPaintEvent) -> None:
+    def paintEvent(self, e: QPaintEvent):
         """Renders the scene by drawing walkmesh faces, instances and selected objects.
 
         Args:
@@ -811,10 +811,10 @@ class WalkmeshRenderer(QWidget):
             painter.setPen(QtCore.Qt.NoPen)
             painter.drawEllipse(QPointF(point.x, point.y), 4 / self.camera.zoom(), 4 / self.camera.zoom())
 
-    def wheelEvent(self, e: QWheelEvent) -> None:
+    def wheelEvent(self, e: QWheelEvent):
         self.mouseScrolled.emit(Vector2(e.angleDelta().x(), e.angleDelta().y()), self._mouseDown, self._keysDown)
 
-    def mouseMoveEvent(self, e: QMouseEvent) -> None:  # TODO: something here is causing the camera to continually zoom out while middlemouse is held down.
+    def mouseMoveEvent(self, e: QMouseEvent):  # TODO: something here is causing the camera to continually zoom out while middlemouse is held down.
         """Handles mouse move events.
 
         Args:
@@ -857,23 +857,23 @@ class WalkmeshRenderer(QWidget):
                 if point.distance(world) <= self._pathNodeSize:
                     self._pathNodesUnderMouse.append(point)
 
-    def mousePressEvent(self, e: QMouseEvent) -> None:
+    def mousePressEvent(self, e: QMouseEvent):
         self._mouseDown.add(e.button())
         coords = Vector2(e.x(), e.y())
         self.mousePressed.emit(coords, self._mouseDown, self._keysDown)
 
-    def mouseReleaseEvent(self, e: QMouseEvent) -> None:
+    def mouseReleaseEvent(self, e: QMouseEvent):
         self._mouseDown.discard(e.button())
 
         coords = Vector2(e.x(), e.y())
         self.mouseReleased.emit(coords, e.buttons(), self._keysDown)
 
-    def keyPressEvent(self, e: QKeyEvent) -> None:
+    def keyPressEvent(self, e: QKeyEvent):
         self._keysDown.add(e.key())
         if self.underMouse():
             self.keyPressed.emit(self._mouseDown, self._keysDown)
 
-    def keyReleaseEvent(self, e: QKeyEvent) -> None:
+    def keyReleaseEvent(self, e: QKeyEvent):
         self._keysDown.discard(e.key())
         if self.underMouse():
             self.keyReleased.emit(self._mouseDown, self._keysDown)

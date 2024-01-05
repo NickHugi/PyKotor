@@ -15,7 +15,7 @@ if TYPE_CHECKING:
 
 
 class InbuiltNCSCompiler(NCSCompiler):
-    def compile_script(self, source_path: str, output_path: str, game: Game) -> None:
+    def compile_script(self, source_path: str, output_path: str, game: Game):
         source = BinaryReader.load_file(source_path).decode(errors="ignore")
         ncs = compile_nss(source, game)
         write_ncs(ncs, output_path)
@@ -32,7 +32,7 @@ class ExternalNCSCompiler(NCSCompiler):
     class NwnnsscompConfig:
         """Unifies the arguments passed to each different version of nwnnsscomp. No versions offer backwards-compatibility with each other."""
 
-        def __init__(self, sha256_hash: str, source: Path, output: Path, game_value: Game) -> None:
+        def __init__(self, sha256_hash: str, source: Path, output: Path, game_value: Game):
             self.sha256_hash: str = sha256_hash
             self.source: Path = source
             self.output: Path = output
@@ -49,7 +49,7 @@ class ExternalNCSCompiler(NCSCompiler):
         def get_decompile_args(self, executable: str) -> list[str]:
             return self._format_args(self.decompile_args, executable)
 
-        def _configure_based_on_hash(self) -> None:
+        def _configure_based_on_hash(self):
             arg_configurations: dict[str, dict[str, list[str]]] = {
                 ExternalNCSCompiler.NWNNSSCOMP_SHA256_HASHES["TSLPatcher"]: {
                     "compile": ["-c", "{source}", "-o", "{output}"],
@@ -83,7 +83,7 @@ class ExternalNCSCompiler(NCSCompiler):
             formatted_args.insert(0, executable)
             return formatted_args
 
-    def __init__(self, nwnnsscomp_path: os.PathLike | str) -> None:
+    def __init__(self, nwnnsscomp_path: os.PathLike | str):
         self.nwnnsscomp_path: Path = Path.pathify(nwnnsscomp_path)  # type: ignore[assignment]
         self.filehash: str = generate_sha256_hash(self.nwnnsscomp_path).upper()
         self.config: ExternalNCSCompiler.NwnnsscompConfig | None = None

@@ -44,7 +44,7 @@ class MDLAsciiWriter:
     def write(
         self,
         auto_close: bool = True,
-    ) -> None:
+    ):
         """Writes a 3D model to a .mdl file.
 
         Args:

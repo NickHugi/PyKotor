@@ -24,10 +24,10 @@ class BifSaveDialog(QDialog):
 
         self.option: BifSaveOption = BifSaveOption.Nothing
 
-    def saveAsMod(self) -> None:
+    def saveAsMod(self):
         self.option = BifSaveOption.MOD
         self.accept()
 
-    def saveAsOverride(self) -> None:
+    def saveAsOverride(self):
         self.option = BifSaveOption.Override
         self.accept()

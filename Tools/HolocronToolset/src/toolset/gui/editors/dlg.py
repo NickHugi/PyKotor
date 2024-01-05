@@ -93,7 +93,7 @@ class DLGEditor(Editor):
 
         self.new()
 
-    def _setupSignals(self) -> None:
+    def _setupSignals(self):
         """Connects UI signals to update node/link on change.
 
         Args:
@@ -176,7 +176,7 @@ class DLGEditor(Editor):
 
         QShortcut("Del", self).activated.connect(self.deleteSelectedNode)
 
-    def load(self, filepath: os.PathLike | str, resref: str, restype: ResourceType, data: bytes) -> None:
+    def load(self, filepath: os.PathLike | str, resref: str, restype: ResourceType, data: bytes):
         """Loads a dialogue file.
 
         Args:
@@ -213,7 +213,7 @@ class DLGEditor(Editor):
         self.ui.entryDelaySpin.setValue(dlg.delay_entry)
         self.ui.replyDelaySpin.setValue(dlg.delay_reply)
 
-    def _loadDLG(self, dlg: DLG) -> None:
+    def _loadDLG(self, dlg: DLG):
         """Loads a dialog tree into the UI view.
 
         Args:
@@ -246,7 +246,7 @@ class DLGEditor(Editor):
         link: DLGLink,
         seenLinks: list[DLGLink],
         seenNodes: list[DLGNode],
-    ) -> None:
+    ):
         """Don't call this function directly.
 
         Loads a DLG node recursively into the tree model
@@ -320,7 +320,7 @@ class DLGEditor(Editor):
         write_dlg(self._dlg, data, self._installation.game())
         return data, b""
 
-    def new(self) -> None:
+    def new(self):
         super().new()
         self._loadDLG(DLG())
 
@@ -426,7 +426,7 @@ class DLGEditor(Editor):
         for label in expressions.get_column("label"):
             self.ui.expressionSelect.addItem(label)
 
-    def editText(self, e) -> None:
+    def editText(self, e):
         """Edits the text of the selected dialog node.
 
         Args:
@@ -453,7 +453,7 @@ class DLGEditor(Editor):
                 item.setText(self._installation.string(node.text, "(continue)"))
                 self._loadLocstring(self.ui.textEdit, node.text)
 
-    def _loadLocstring(self, textbox: QPlainTextEdit, locstring: LocalizedString) -> None:
+    def _loadLocstring(self, textbox: QPlainTextEdit, locstring: LocalizedString):
         """Load a localized string into a text box.
 
         Args:
@@ -471,7 +471,7 @@ class DLGEditor(Editor):
             textbox.setPlainText(text)
             textbox.setStyleSheet("QPlainTextEdit {background-color: #fffded;}")
 
-    def addNode(self, item: QStandardItem | None, node: DLGNode) -> None:
+    def addNode(self, item: QStandardItem | None, node: DLGNode):
         """Adds a node to the dialog tree.
 
         Args:
@@ -490,7 +490,7 @@ class DLGEditor(Editor):
         newNode: DLGNode = DLGEntry() if isinstance(node, DLGReply) else DLGReply()
         self._add_node_main(newNode, node.links, False, item)
 
-    def addRootNode(self) -> None:
+    def addRootNode(self):
         """Adds a root node to the dialog graph.
 
         Args:
@@ -508,7 +508,7 @@ class DLGEditor(Editor):
         """
         self._add_node_main(DLGEntry(), self._dlg.starters, False, self.model)
 
-    def addCopyLink(self, item: QStandardItem | None, target: DLGNode, source: DLGNode) -> None:
+    def addCopyLink(self, item: QStandardItem | None, target: DLGNode, source: DLGNode):
         self._add_node_main(source, target.links, True, item)
 
     def _add_node_main(
@@ -517,7 +517,7 @@ class DLGEditor(Editor):
         target_links: list[DLGLink],
         _copy_role_data: bool,
         item: QStandardItem | QStandardItemModel | None
-    ) -> None:
+    ):
         newLink = DLGLink(source)
         target_links.append(newLink)
         newItem = QStandardItem()
@@ -526,7 +526,7 @@ class DLGEditor(Editor):
         self.refreshItem(newItem)
         item.appendRow(newItem)
 
-    def addCopy(self, item: QStandardItem, target: DLGNode, source: DLGNode) -> None:
+    def addCopy(self, item: QStandardItem, target: DLGNode, source: DLGNode):
         """Adds a copy of a node to a target node.
 
         Args:
@@ -554,7 +554,7 @@ class DLGEditor(Editor):
         self._copy = node
         self.copyPath(node)
 
-    def copyPath(self, node: DLGNode) -> None:
+    def copyPath(self, node: DLGNode):
         path: str = ""
         if isinstance(node, DLGEntry):
             path = f"EntryList\\{node.list_index}"
@@ -563,7 +563,7 @@ class DLGEditor(Editor):
         if path:
             pyperclip.copy(path)
 
-    def deleteNode(self, item: QStandardItem | None) -> None:
+    def deleteNode(self, item: QStandardItem | None):
         """Deletes a node from the diagram.
 
         Args:
@@ -598,7 +598,7 @@ class DLGEditor(Editor):
                     parentNode.links.remove(link)
             parentItem.removeRow(item.row())
 
-    def deleteSelectedNode(self) -> None:
+    def deleteSelectedNode(self):
         """Deletes the currently selected node from the tree.
 
         Args:
@@ -692,7 +692,7 @@ class DLGEditor(Editor):
         if color is not None:
             item.setForeground(QBrush(color))
 
-    def playSound(self, resname: str) -> None:
+    def playSound(self, resname: str):
         """Plays a sound resource.
 
         Args:
@@ -767,7 +767,7 @@ class DLGEditor(Editor):
         self.model.appendRow(item)
         return item
 
-    def shiftItem(self, item: QStandardItem, amount: int) -> None:
+    def shiftItem(self, item: QStandardItem, amount: int):
         """Shifts an item in the tree by a given amount.
 
         Args:
@@ -802,7 +802,7 @@ class DLGEditor(Editor):
         link: DLGLink = links.pop(oldRow)
         links.insert(newRow, link)
 
-    def onTreeContextMenu(self, point: QPoint) -> None:
+    def onTreeContextMenu(self, point: QPoint):
         """Displays context menu for tree items.
 
         Args:
@@ -828,7 +828,7 @@ class DLGEditor(Editor):
 
             menu.popup(self.ui.dialogTree.viewport().mapToGlobal(point))
 
-    def _set_context_menu_actions(self, item: QStandardItem, point: QPoint) -> None:
+    def _set_context_menu_actions(self, item: QStandardItem, point: QPoint):
         """Sets context menu actions for a dialog tree item.
 
         Args:
@@ -903,7 +903,7 @@ class DLGEditor(Editor):
                 self.focusOnNode(link)
         super().mouseDoubleClickEvent(event)
 
-    def onSelectionChanged(self, selection: QItemSelection) -> None:
+    def onSelectionChanged(self, selection: QItemSelection):
         """Updates UI fields based on selected dialog node.
 
         Args:
@@ -1000,7 +1000,7 @@ class DLGEditor(Editor):
             self.ui.commentsEdit.setPlainText(node.comment)
         self.acceptUpdates = True
 
-    def onNodeUpdate(self) -> None:
+    def onNodeUpdate(self):
         """Updates node properties based on UI selections.
 
         Args:
@@ -1094,20 +1094,20 @@ class DLGEditor(Editor):
         # Comments
         node.comment = self.ui.commentsEdit.toPlainText()
 
-    def onAddStuntClicked(self) -> None:
+    def onAddStuntClicked(self):
         dialog = CutsceneModelDialog(self)
         if dialog.exec_():
             self._dlg.stunts.append(dialog.stunt())
             self.refreshStuntList()
 
-    def onRemoveStuntClicked(self) -> None:
+    def onRemoveStuntClicked(self):
         if self.ui.stuntList.selectedItems():
             item: QListWidgetItem = self.ui.stuntList.selectedItems()[0]
             stunt: DLGStunt = item.data(QtCore.Qt.UserRole)
             self._dlg.stunts.remove(stunt)
             self.refreshStuntList()
 
-    def onEditStuntClicked(self) -> None:
+    def onEditStuntClicked(self):
         if self.ui.stuntList.selectedItems():
             item: QListWidgetItem = self.ui.stuntList.selectedItems()[0]
             stunt: DLGStunt = item.data(QtCore.Qt.UserRole)
@@ -1117,7 +1117,7 @@ class DLGEditor(Editor):
                 stunt.participant = dialog.stunt().participant
                 self.refreshStuntList()
 
-    def refreshStuntList(self) -> None:
+    def refreshStuntList(self):
         self.ui.stuntList.clear()
         for stunt in self._dlg.stunts:
             text = f"{stunt.stunt_model} ({stunt.participant})"
@@ -1125,7 +1125,7 @@ class DLGEditor(Editor):
             item.setData(QtCore.Qt.UserRole, stunt)
             self.ui.stuntList.addItem(item)
 
-    def onAddAnimClicked(self) -> None:
+    def onAddAnimClicked(self):
         if self.ui.dialogTree.selectedIndexes():
             index: QModelIndex = self.ui.dialogTree.selectedIndexes()[0]
             item: QStandardItem | None = self.model.itemFromIndex(index)
@@ -1136,7 +1136,7 @@ class DLGEditor(Editor):
                 node.animations.append(dialog.animation())
                 self.refreshAnimList()
 
-    def onRemoveAnimClicked(self) -> None:
+    def onRemoveAnimClicked(self):
         if self.ui.animsList.selectedItems():
             index: QModelIndex = self.ui.dialogTree.selectedIndexes()[0]
             item: QStandardItem | None = self.model.itemFromIndex(index)
@@ -1147,7 +1147,7 @@ class DLGEditor(Editor):
             node.animations.remove(anim)
             self.refreshAnimList()
 
-    def onEditAnimClicked(self) -> None:
+    def onEditAnimClicked(self):
         if self.ui.animsList.selectedItems():
             animItem: QListWidgetItem = self.ui.animsList.selectedItems()[0]
             anim: DLGAnimation = animItem.data(QtCore.Qt.UserRole)
@@ -1157,7 +1157,7 @@ class DLGEditor(Editor):
                 anim.participant = dialog.animation().participant
                 self.refreshAnimList()
 
-    def refreshAnimList(self) -> None:
+    def refreshAnimList(self):
         """Refreshes the animations list.
 
         Args:

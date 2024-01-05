@@ -77,7 +77,7 @@ class AREEditor(Editor):
 
         self.new()
 
-    def _setupSignals(self) -> None:
+    def _setupSignals(self):
         self.ui.tagGenerateButton.clicked.connect(self.generateTag)
 
         self.ui.mapAxisSelect.currentIndexChanged.connect(self.redoMinimap)
@@ -90,7 +90,7 @@ class AREEditor(Editor):
         self.ui.mapImageY1Spin.valueChanged.connect(self.redoMinimap)
         self.ui.mapImageY2Spin.valueChanged.connect(self.redoMinimap)
 
-    def _setupInstallation(self, installation: HTInstallation) -> None:
+    def _setupInstallation(self, installation: HTInstallation):
         """Set up installation details.
 
         Args:
@@ -121,13 +121,13 @@ class AREEditor(Editor):
         self.ui.rainCheck.setVisible(installation.tsl)
         self.ui.lightningCheck.setVisible(installation.tsl)
 
-    def load(self, filepath: os.PathLike | str, resref: str, restype: ResourceType, data: bytes) -> None:
+    def load(self, filepath: os.PathLike | str, resref: str, restype: ResourceType, data: bytes):
         super().load(filepath, resref, restype, data)
 
         are = read_are(data)
         self._loadARE(are)
 
-    def _loadARE(self, are: ARE) -> None:
+    def _loadARE(self, are: ARE):
         """Loads area data into UI widgets.
 
         Args:
@@ -341,16 +341,16 @@ class AREEditor(Editor):
 
         return are
 
-    def new(self) -> None:
+    def new(self):
         super().new()
         self._loadARE(ARE())
 
-    def redoMinimap(self) -> None:
+    def redoMinimap(self):
         if self._minimap:
             are = self._buildARE()
             self.ui.minimapRenderer.setMinimap(are, self._minimap)
 
-    def changeColor(self, colorSpin: LongSpinBox) -> None:
+    def changeColor(self, colorSpin: LongSpinBox):
         """Changes the color selection.
 
         Args:
@@ -367,7 +367,7 @@ class AREEditor(Editor):
         color = Color.from_bgr_integer(qcolor.rgb())
         colorSpin.setValue(color.bgr_integer())
 
-    def redoColorImage(self, value: int, colorLabel: QLabel) -> None:
+    def redoColorImage(self, value: int, colorLabel: QLabel):
         """Redraws a color image based on a value.
 
         Args:
@@ -389,10 +389,10 @@ class AREEditor(Editor):
         pixmap = QPixmap.fromImage(QImage(data, 16, 16, QImage.Format_RGB888))
         colorLabel.setPixmap(pixmap)
 
-    def changeName(self) -> None:
+    def changeName(self):
         dialog = LocalizedStringDialog(self, self._installation, self.ui.nameEdit.locstring())
         if dialog.exec_():
             self._loadLocstring(self.ui.nameEdit, dialog.locstring)
 
-    def generateTag(self) -> None:
+    def generateTag(self):
         self.ui.tagEdit.setText("newarea" if self._resref is None or self._resref == "" else self._resref)

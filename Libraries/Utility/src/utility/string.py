@@ -227,7 +227,7 @@ class WrappedStr:  # (metaclass=StrType):
             raise TypeError(f"Expected str-like, got '{var}' of type {type(var)}")  # noqa: TRY003, EM102
         return str(var)
 
-    def __init__(self, __content: str | WrappedStr = "") -> None:
+    def __init__(self, __content: str | WrappedStr = ""):
         if __content is None:
             msg = f"Cannot initialize {self.__class__.__name__}(None), expected a str-like argument"
             raise RuntimeError(msg)
@@ -237,7 +237,7 @@ class WrappedStr:  # (metaclass=StrType):
     def maketrans(cls, __x: WrappedStr | str, __y: WrappedStr | str, __z: WrappedStr | str) -> dict[int, int | None]:
         return str.maketrans(cls._assert_str_type(__x), cls._assert_str_type(__y), cls._assert_str_type(__z))
 
-    def __setattr__(self, __name: str, __value: Any) -> None:
+    def __setattr__(self, __name: str, __value: Any):
         if hasattr(self, __name):
             msg = f"{self.__class__.__name__} is immutable, cannot evaluate `setattr({self!r}, {__name!r}, {__value!r})`"
             raise RuntimeError(msg)

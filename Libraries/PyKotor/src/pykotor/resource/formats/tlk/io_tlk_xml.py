@@ -61,7 +61,7 @@ class TLKXMLWriter(ResourceWriter):
     def write(
         self,
         auto_close: bool = True,
-    ) -> None:
+    ):
         self._xml.tag = "tlk"
         self._xml.set("language", str(self._tlk.language.value))
 

@@ -52,10 +52,10 @@ class IndoorMapSettings(QDialog):
                 self.ui.skyboxSelect.addItem(skybox, skybox)
         self.ui.skyboxSelect.setCurrentText(indoorMap.skybox)
 
-    def _setupSignals(self) -> None:
+    def _setupSignals(self):
         ...
 
-    def accept(self) -> None:
+    def accept(self):
         super().accept()
 
         self._indoorMap.name = self.ui.nameEdit.locstring()
