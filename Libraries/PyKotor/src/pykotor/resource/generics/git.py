@@ -1083,7 +1083,7 @@ def dismantle_git(
         door_struct.set_single("X", door.position.x)
         door_struct.set_single("Y", door.position.y)
         door_struct.set_single("Z", door.position.z)
-        if game is Game.K2:
+        if game.is_k2():
             tweak_color = door.tweak_color.bgr_integer() if door.tweak_color is not None else 0
             door_struct.set_uint32("TweakColor", tweak_color)
             door_struct.set_uint8("UseTweakColor", 0 if door.tweak_color is None else 1)
@@ -1119,7 +1119,7 @@ def dismantle_git(
         placeable_struct.set_single("X", placeable.position.x)
         placeable_struct.set_single("Y", placeable.position.y)
         placeable_struct.set_single("Z", placeable.position.z)
-        if game is Game.K2:
+        if game.is_k2():
             tweak_color = placeable.tweak_color.bgr_integer() if placeable.tweak_color is not None else 0
             placeable_struct.set_uint32("TweakColor", tweak_color)
             placeable_struct.set_uint8(

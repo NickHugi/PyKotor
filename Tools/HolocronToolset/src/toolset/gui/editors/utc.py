@@ -429,7 +429,7 @@ class UTCEditor(Editor):
                 powers.append(item.data(QtCore.Qt.UserRole))
 
         data = bytearray()
-        version: Literal[Game.K2, Game.K1] = Game.K2 if self.settings.alwaysSaveK2Fields or self._installation.tsl else Game.K1
+        version = Game.K2 if self.settings.alwaysSaveK2Fields or self._installation.tsl else Game.K1
         gff = dismantle_utc(utc, version, use_deprecated=self.settings.saveUnusedFields)
         write_gff(gff, data)
 

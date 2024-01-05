@@ -176,13 +176,13 @@ class Installation:
         self.load_lips()
         self.load_modules()
         self.load_override()
-        if self.game() == Game.K1:
+        if self.game().is_k1():
             self.load_rims()
         self.load_streammusic()
         self.load_streamsounds()
-        if self.game() == Game.K1:
+        if self.game().is_k1():
             self.load_streamwaves()
-        elif self.game() == Game.K2:
+        elif self.game().is_k2():
             self.load_streamvoice()
         self.load_textures()
         print(f"Finished loading the installation from {self._path!s}")
@@ -648,7 +648,7 @@ class Installation:
             return file_path.exists()
 
         # Checks for each game
-        game1_checks = [
+        game1_pc_checks: list[bool] = [
             check("streamwaves"),
             check("swkotor.exe"),
             check("swkotor.ini"),
@@ -664,7 +664,52 @@ class Installation:
             check("modules/mainmenu.mod"),
         ]
 
-        game2_checks = [
+        game1_xbox_checks: list[bool] = [  # TODO:
+
+        ]
+
+        game1_ios_checks: list[bool] = [
+            check("override/ios_action_bg.tga"),
+            check("override/ios_action_bg2.tga"),
+            check("override/ios_action_x.tga"),
+            check("override/ios_action_x2.tga"),
+            check("override/ios_button_a.tga"),
+            check("override/ios_button_x.tga"),
+            check("override/ios_button_y.tga"),
+            check("override/ios_edit_box.tga"),
+            check("override/ios_enemy_plus.tga"),
+            check("override/ios_gpad_bg.tga"),
+            check("override/ios_gpad_gen.tga"),
+            check("override/ios_gpad_gen2.tga"),
+            check("override/ios_gpad_help.tga"),
+            check("override/ios_gpad_help2.tga"),
+            check("override/ios_gpad_map.tga"),
+            check("override/ios_gpad_map2.tga"),
+            check("override/ios_gpad_save.tga"),
+            check("override/ios_gpad_save2.tga"),
+            check("override/ios_gpad_solo.tga"),
+            check("override/ios_gpad_solo2.tga"),
+            check("override/ios_gpad_solox.tga"),
+            check("override/ios_gpad_solox2.tga"),
+            check("override/ios_gpad_ste.tga"),
+            check("override/ios_gpad_ste2.tga"),
+            check("override/ios_gpad_ste3.tga"),
+            check("override/ios_help.tga"),
+            check("override/ios_help2.tga"),
+            check("override/ios_help_1.tga"),
+            check("KOTOR"),
+            check("KOTOR.entitlements"),
+            check("kotorios-Info.plist"),
+            check("AppIcon29x29.png"),
+            check("AppIcon50x50@2x~ipad.png"),
+            check("AppIcon50x50~ipad.png"),
+        ]
+
+        game1_android_checks: list[bool] = [  # TODO:
+
+        ]
+
+        game2_pc_checks: list[bool] = [
             check("streamvoice"),
             check("swkotor2.exe"),
             check("swkotor2.ini"),
@@ -678,22 +723,67 @@ class Installation:
             check("data/Dialogs.bif"),
         ]
 
-        # Scoring for each game
-        game1_score = sum(game1_checks)
-        game2_score = sum(game2_checks)
+        game2_xbox_checks: list[bool] = [  # TODO:
+
+        ]
+
+        game2_ios_checks: list[bool] = [
+            check("override/ios_mfi_deu.tga"),
+            check("override/ios_mfi_eng.tga"),
+            check("override/ios_mfi_esp.tga"),
+            check("override/ios_mfi_fre.tga"),
+            check("override/ios_mfi_ita.tga"),
+            check("override/ios_self_box_r.tga"),
+            check("override/ios_self_expand2.tga"),
+            check("override/ipho_forfeit.tga"),
+            check("override/ipho_forfeit2.tga"),
+            check("override/kotor2logon.tga"),
+            check("override/lbl_miscroll_open_f.tga"),
+            check("override/lbl_miscroll_open_f2.tga"),
+            check("override/ydialog.gui"),
+            check("KOTOR II"),
+            check("KOTOR2-Icon-20-Apple.png"),
+            check("KOTOR2-Icon-29-Apple.png"),
+            check("KOTOR2-Icon-40-Apple.png"),
+            check("KOTOR2-Icon-58-apple.png"),
+            check("KOTOR2-Icon-60-apple.png"),
+            check("KOTOR2-Icon-76-apple.png"),
+            check("KOTOR2-Icon-80-apple.png"),
+            check("KOTOR2_LaunchScreen.storyboardc"),
+            check("KOTOR2_LaunchScreen.storyboardc/Info.plist"),
+            check("GoogleService-Info.plist"),
+        ]
+
+        game2_android_checks: list[bool] = [  # TODO:
+
+        ]
 
         # Determine the game with the most checks passed
-        if game1_score > game2_score:
-            return Game(1)
-        if game2_score > game1_score:
-            return Game(2)
+        def determine_highest_scoring_game() -> Game | None:
+            # Scoring for each game and platform
+            scores: dict[Game, int] = {
+                Game.K1: sum(game1_pc_checks),
+                Game.K2: sum(game2_pc_checks),
+                Game.K1_XBOX: sum(game1_xbox_checks),
+                Game.K2_XBOX: sum(game2_xbox_checks),
+                Game.K1_IOS: sum(game1_ios_checks),
+                Game.K2_IOS: sum(game2_ios_checks),
+                Game.K1_ANDROID: sum(game1_android_checks),
+                Game.K2_ANDROID: sum(game2_android_checks),
+            }
 
-        # No checks passed
-        if game1_score == 0 and game2_score == 0:
-            return None
+            highest_scoring_game: Game | None = None
+            highest_score: int = 0
 
-        # Same score
-        return None
+            for game, score in scores.items():
+                if score > highest_score:
+                    highest_score = score
+                    highest_scoring_game = game
+
+            return highest_scoring_game
+
+
+        return determine_highest_scoring_game()
 
     def game(self) -> Game:
         """Determines the game (K1 or K2) for the given HTInstallation.
