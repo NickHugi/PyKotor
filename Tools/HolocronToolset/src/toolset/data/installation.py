@@ -86,7 +86,6 @@ class HTInstallation(Installation):
         -------
             2DA: The retrieved 2DA data
         """
-        twoda_resource: TwoDA | None = None
         if resname not in self._cache2da:
             twoda_result: ResourceResult | None = self.resource(
                 resname,
@@ -96,7 +95,7 @@ class HTInstallation(Installation):
             if twoda_result is not None:
                 self._cache2da[resname] = read_2da(twoda_result.data)
 
-        twoda_resource = self._cache2da[resname]
+        twoda_resource: TwoDA | None = self._cache2da.get(resname)
         if twoda_resource is None:
             assert_with_variable_trace(twoda_resource is not None, f"Lookup of resname '{resname}' cannot be None in {self!r}.htGetCache2DA(resname)")
             assert twoda_resource is not None

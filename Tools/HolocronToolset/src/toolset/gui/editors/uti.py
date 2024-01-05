@@ -17,6 +17,7 @@ if TYPE_CHECKING:
     import os
 
     from pykotor.resource.formats.twoda.twoda_data import TwoDA
+    from typing_extensions import Literal
 
 
 class UTIEditor(Editor):
@@ -185,7 +186,7 @@ class UTIEditor(Editor):
             - Write GFF to byte array
             - Return byte array and empty string
         """
-        uti = self._uti
+        uti: UTI = self._uti
 
         # Basic
         uti.name = self.ui.nameEdit.locstring()
@@ -274,7 +275,7 @@ class UTIEditor(Editor):
             - Adds a summary of the property to the assigned properties list widget.
             - Sets the UTIProperty as user data on the list item.
         """
-        itemprops = self._installation.htGetCache2DA(HTInstallation.TwoDA_ITEM_PROPERTIES)
+        itemprops: TwoDA = self._installation.htGetCache2DA(HTInstallation.TwoDA_ITEM_PROPERTIES)
 
         utiProperty = UTIProperty()
         utiProperty.property_name = propertyId
@@ -285,7 +286,7 @@ class UTIEditor(Editor):
         utiProperty.param1_value = 0
         utiProperty.chance_appear = 100
 
-        text = self.propertySummary(utiProperty)
+        text: str = self.propertySummary(utiProperty)
         item = QListWidgetItem(text)
         item.setData(QtCore.Qt.UserRole, utiProperty)
         self.ui.assignedPropertiesList.addItem(item)
@@ -361,13 +362,13 @@ class UTIEditor(Editor):
             - Gets the name string reference from the subproperty row
             - Returns the string from the talktable or the label if name is None
         """
-        properties = installation.htGetCache2DA(HTInstallation.TwoDA_ITEM_PROPERTIES)
-        subtypeResname = properties.get_cell(prop, "subtyperesref")
-        if subtypeResname  == "":
+        properties: TwoDA = installation.htGetCache2DA(HTInstallation.TwoDA_ITEM_PROPERTIES)
+        subtypeResname: str = properties.get_cell(prop, "subtyperesref")
+        if not subtypeResname:
             return None
-        subproperties = installation.htGetCache2DA(subtypeResname)
-        headerStrref = "name" if "name" in subproperties.get_headers() else "string_ref"
-        nameStrref = subproperties.get_row(subprop).get_integer(headerStrref)
+        subproperties: TwoDA = installation.htGetCache2DA(subtypeResname)
+        headerStrref: Literal['name', 'string_ref'] = "name" if "name" in subproperties.get_headers() else "string_ref"
+        nameStrref: int | None = subproperties.get_row(subprop).get_integer(headerStrref)
         return (
             installation.talktable().string(nameStrref)
             if nameStrref is not None
@@ -428,7 +429,7 @@ class PropertyEditor(QDialog):
         self._utiProperty: UTIProperty = utiProperty
 
         costtableList = installation.htGetCache2DA(HTInstallation.TwoDA_IPRP_COSTTABLE)
-        if utiProperty.cost_table != 255:
+        if utiProperty.cost_table != 0xFF:
             costtable = installation.htGetCache2DA(costtableList.get_cell(utiProperty.cost_table, "name"))
             for i in range(costtable.get_height()):
                 item = QListWidgetItem(UTIEditor.costName(installation, utiProperty.cost_table, i))
@@ -455,16 +456,16 @@ class PropertyEditor(QDialog):
 
     def reloadTextboxes(self):
         """Reloads textboxes with property names."""
-        propertyName = UTIEditor.propertyName(self._installation, self._utiProperty.property_name)
+        propertyName: str = UTIEditor.propertyName(self._installation, self._utiProperty.property_name)
         self.ui.propertyEdit.setText(propertyName or "")
 
-        subpropertyName = UTIEditor.subpropertyName(self._installation, self._utiProperty.property_name, self._utiProperty.subtype)
+        subpropertyName: str | None = UTIEditor.subpropertyName(self._installation, self._utiProperty.property_name, self._utiProperty.subtype)
         self.ui.subpropertyEdit.setText(subpropertyName or "")
 
-        costName = UTIEditor.costName(self._installation, self._utiProperty.cost_table, self._utiProperty.cost_value)
+        costName: str | None = UTIEditor.costName(self._installation, self._utiProperty.cost_table, self._utiProperty.cost_value)
         self.ui.costEdit.setText(costName or "")
 
-        paramName = UTIEditor.paramName(self._installation, self._utiProperty.param1, self._utiProperty.param1_value)
+        paramName: str | None = UTIEditor.paramName(self._installation, self._utiProperty.param1, self._utiProperty.param1_value)
         self.ui.parameterEdit.setText(paramName or "")
 
     def selectCost(self):
