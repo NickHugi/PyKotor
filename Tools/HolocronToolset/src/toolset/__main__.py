@@ -14,10 +14,10 @@ if TYPE_CHECKING:
     from types import TracebackType
 
 
-def onAppCrash(etype: type[BaseException], e: BaseException, value: str, tback: TracebackType):
+def onAppCrash(etype: type[BaseException], e: BaseException, tback: TracebackType):
     from utility.error_handling import format_exception_with_variables
     with pathlib.Path("errorlog.txt").open("a") as file:
-        file.writelines(format_exception_with_variables(e, etype, tback, value))
+        file.writelines(format_exception_with_variables(e, etype, tback))
         file.write("\n----------------------\n")
     raise e
 
