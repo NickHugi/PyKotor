@@ -212,7 +212,7 @@ class Installation:
             tlk_path = self._path / "dialog.tlk"
             yield FileResource("dialog", ResourceType.TLK, tlk_path.stat().st_size, 0, tlk_path)
             female_tlk_path = self._path / "dialogf.tlk"
-            if female_tlk_path.exists():
+            if female_tlk_path.safe_exists():
                 yield FileResource("dialogf", ResourceType.TLK, female_tlk_path.stat().st_size, 0, female_tlk_path)
         return generator()
 
@@ -380,7 +380,7 @@ class Installation:
         """
         resources: CaseInsensitiveDict[list[FileResource]] | list[FileResource] = CaseInsensitiveDict() if capsule_check else []
 
-        if not path.exists():
+        if not path.safe_exists():
             print(f"The '{path.name}' folder did not exist when loading the installation at '{self._path}', skipping...")
             return resources
 
@@ -413,7 +413,7 @@ class Installation:
     def load_chitin(self):
         """Reloads the list of resources in the Chitin linked to the Installation."""
         chitin_path: CaseAwarePath = self._path / "chitin.key"
-        if not chitin_path.exists():
+        if not chitin_path.safe_exists():
             print(f"The chitin.key file did not exist at '{self._path}' when loading the installation, skipping...")
             return
         print("Load chitin...")
@@ -557,7 +557,7 @@ class Installation:
 
     # region Get FileResources
     def chitin_resources(self) -> list[FileResource]:
-        """Returns the list of FileResources stored in the Chitin linked to the Installation.
+        """Returns a shallow copy of the list of FileResources stored in the Chitin linked to the Installation.
 
         Returns
         -------
@@ -584,7 +584,7 @@ class Installation:
         self,
         filename: str | None = None,
     ) -> list[FileResource]:
-        """Returns a list of FileResources stored in the specified module file located in the modules folder linked to the Installation.
+        """Returns a a shallow copy of the list of FileResources stored in the specified module file located in the modules folder linked to the Installation.
 
         Module resources are cached and require a reload after the contents have been modified on disk.
 
@@ -618,7 +618,7 @@ class Installation:
         self,
         filename: str | None = None,
     ) -> list[FileResource]:
-        """Returns a list of FileResources stored in the specified module file located in the lips folder linked to the Installation.
+        """Returns a shallow copy of the list of FileResources stored in the specified module file located in the lips folder linked to the Installation.
 
         Module resources are cached and require a reload after the contents have been modified on disk.
 
@@ -658,7 +658,7 @@ class Installation:
         self,
         filename: str | None = None,
     ) -> list[FileResource]:
-        """Returns a list of FileResources stored in the specified module file located in the 'rims' and 'modules' folders linked to the Installation.
+        """Returns a shallow copy of the list of FileResources stored in the specified module file located in the 'rims' and 'modules' folders linked to the Installation.
 
         RIM resources are cached and require a reload after the contents have been modified on disk.
 
@@ -717,7 +717,7 @@ class Installation:
         self,
         filename: str | None = None,
     ) -> list[FileResource]:
-        """Returns a list of FileResources stored in the specified module file located in the texturepacks folder linked to the Installation.
+        """Returns a shallow copy of the list of FileResources stored in the specified module file located in the texturepacks folder linked to the Installation.
 
         Texturepacks resources are cached and require a reload after the contents have been modified on disk.
 
@@ -821,7 +821,7 @@ class Installation:
 
         def check(x) -> bool:
             file_path: CaseAwarePath = r_path.joinpath(x)
-            return file_path.exists()
+            return file_path.safe_exists()
 
         # Checks for each game
         game1_pc_checks: list[bool] = [
@@ -1157,6 +1157,31 @@ class Installation:
             folders=folders,
         )[query]
 
+    def load_search_locations(self, order: list[SearchLocation]):
+        if SearchLocation.OVERRIDE in order and not self._override:
+            self.load_override()
+        if SearchLocation.CHITIN in order and not self._chitin:
+            self.load_chitin()
+        if SearchLocation.LIPS in order and not self._lips:
+            self.load_lips()
+        if (SearchLocation.MODULES in order or SearchLocation.RIMS in order) and not self._modules:
+            self.load_modules()
+        if SearchLocation.MUSIC in order and not self._streammusic:
+            self.load_streammusic()
+        if SearchLocation.RIMS in order and not self._rims and self.game().is_k1():
+            self.load_rims()
+        if SearchLocation.SOUND in order and not self._streamsounds:
+            self.load_streamsounds()
+        if (
+            SearchLocation.TEXTURES_GUI in order
+            or SearchLocation.TEXTURES_TPA in order
+            or SearchLocation.TEXTURES_TPB in order
+            or SearchLocation.TEXTURES_TPC in order
+        ) and not self._texturepacks:
+            self.load_textures()
+        if SearchLocation.VOICE in order and not self._streamwaves:
+            self.load_streamvoice()
+
     def locations(
         self,
         queries: list[ResourceIdentifier] | set[ResourceIdentifier],
@@ -1178,8 +1203,6 @@ class Installation:
         -------
             A dictionary mapping a resource identifier to a list of locations.
         """
-        if not self._initialized:
-            self.reload_all()
         if order is None:
             order = [
                 SearchLocation.CUSTOM_FOLDERS,
@@ -1188,6 +1211,7 @@ class Installation:
                 SearchLocation.MODULES,
                 SearchLocation.CHITIN,
             ]
+        self.load_search_locations(order)
         capsules = [] if capsules is None else capsules
         folders = [] if folders is None else folders
 
@@ -1321,8 +1345,6 @@ class Installation:
         -------
             A dictionary mapping case-insensitive strings to TPC objects or None.
         """
-        if not self._initialized:
-            self.reload_all()
         if order is None:
             order = [
                 SearchLocation.CUSTOM_FOLDERS,
@@ -1331,6 +1353,7 @@ class Installation:
                 SearchLocation.TEXTURES_TPA,
                 SearchLocation.CHITIN,
             ]
+        self.load_search_locations(order)
         resrefs: list[ResRef] = [ResRef(resname) for resname in resnames]
         capsules = [] if capsules is None else capsules
         folders = [] if folders is None else folders
@@ -1397,7 +1420,7 @@ class Installation:
             for folder in values:
                 queried_texture_files.update(
                     file
-                    for file in folder.rglob("*")
+                    for file in folder.safe_rglob("*")
                     if (
                         ResRef(file.stem) in resrefs
                         and ResourceType.from_extension(file.suffix) in texture_types
@@ -1409,7 +1432,7 @@ class Installation:
                 texture_data: bytes = BinaryReader.load_file(texture_file)
                 tpc = read_tpc(texture_data) if texture_data else TPC()
                 txi_file = CaseAwarePath(texture_file.with_suffix(".txi"))
-                if txi_file.exists():
+                if txi_file.safe_exists():
                     txi_data: bytes = BinaryReader.load_file(txi_file)
                     tpc.txi = decode_txi(txi_data)
                 textures[texture_file.stem] = tpc
@@ -1482,8 +1505,6 @@ class Installation:
         -------
             A dictionary mapping a case-insensitive string to a bytes object or None.
         """
-        if not self._initialized:
-            self.reload_all()
         resnames = remove_duplicates(resnames, case_insensitive=True)
         capsules = [] if capsules is None else capsules
         folders = [] if folders is None else folders
@@ -1495,6 +1516,7 @@ class Installation:
                 SearchLocation.SOUND,
                 SearchLocation.CHITIN,
             ]
+        self.load_search_locations(order)
 
         sounds: CaseInsensitiveDict[bytes | None] = CaseInsensitiveDict()
         sound_formats: list[ResourceType] = [ResourceType.WAV, ResourceType.MP3]
@@ -1532,7 +1554,7 @@ class Installation:
             for folder in values:
                 queried_sound_files.update(
                     file
-                    for file in folder.rglob("*")
+                    for file in folder.safe_rglob("*")
                     if (
                         file.stem.lower() in resnames
                         and ResourceType.from_extension(file.suffix) in sound_formats
@@ -1668,7 +1690,7 @@ class Installation:
                 else:
                     name = self.talktable().string(locstring.stringref)
                 break
-            except Exception as e:
+            except Exception as e:  # noqa: BLE001
                 print(format_exception_with_variables(e, ___message___="This exception has been suppressed in pykotor.extract.installation."))
 
         return name
@@ -1723,17 +1745,6 @@ class Installation:
 
         return mod_id
 
-    @staticmethod
-    def replace_module_extensions(module_filepath: os.PathLike | str) -> str:
-        module_filename: str = PurePath(module_filepath).name
-        result = re.sub(r"\.mod$", "", module_filename, flags=re.IGNORECASE)
-        result = re.sub(r"\.erf$", "", result, flags=re.IGNORECASE)
-        result = re.sub(r"\.rim$", "", result, flags=re.IGNORECASE)
-        result = re.sub(r"\.sav$", "", result, flags=re.IGNORECASE)
-        result = result[:-2] if result.lower().endswith("_s") else result
-        result = result[:-4] if result.lower().endswith("_dlg") else result
-        return result  # noqa: RET504
-
     def module_ids(self) -> dict[str, str]:
         """Returns a dictionary mapping module filename to the ID of the module.
 
@@ -1744,3 +1755,14 @@ class Installation:
             A dictionary mapping module filename to in-game module id.
         """
         return {module: self.module_id(module) for module in self.modules_list()}
+
+    @staticmethod
+    def replace_module_extensions(module_filepath: os.PathLike | str) -> str:
+        module_filename: str = PurePath(module_filepath).name
+        result = re.sub(r"\.mod$", "", module_filename, flags=re.IGNORECASE)
+        result = re.sub(r"\.erf$", "", result, flags=re.IGNORECASE)
+        result = re.sub(r"\.rim$", "", result, flags=re.IGNORECASE)
+        result = re.sub(r"\.sav$", "", result, flags=re.IGNORECASE)
+        result = result[:-2] if result.lower().endswith("_s") else result
+        result = result[:-4] if result.lower().endswith("_dlg") else result
+        return result  # noqa: RET504

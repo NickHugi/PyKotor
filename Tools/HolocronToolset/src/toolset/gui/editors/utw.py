@@ -113,7 +113,7 @@ class UTWEditor(Editor):
         utw.resref = ResRef(self.ui.resrefEdit.text())
         utw.has_map_note = self.ui.isNoteCheckbox.isChecked()
         utw.map_note_enabled = self.ui.noteEnabledCheckbox.isChecked()
-        utw.map_note = self.ui.noteEdit.locstring
+        utw.map_note = self.ui.noteEdit.locstring()
         utw.comment = self.ui.commentsEdit.toPlainText()
 
         data = bytearray()
@@ -127,12 +127,12 @@ class UTWEditor(Editor):
         self._loadUTW(UTW())
 
     def changeName(self):
-        dialog = LocalizedStringDialog(self, self._installation, self.ui.nameEdit.locstring)
+        dialog = LocalizedStringDialog(self, self._installation, self.ui.nameEdit.locstring())
         if dialog.exec_():
             self._loadLocstring(self.ui.nameEdit, dialog.locstring)
 
     def changeNote(self):
-        dialog = LocalizedStringDialog(self, self._installation, self.ui.noteEdit.locstring)
+        dialog = LocalizedStringDialog(self, self._installation, self.ui.noteEdit.locstring())
         if dialog.exec_():
             self._loadLocstring(self.ui.noteEdit, dialog.locstring)
 

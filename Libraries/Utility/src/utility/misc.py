@@ -59,7 +59,7 @@ class ProcessorArchitecture(Enum):
 
 def format_gpu_info(info, headers):
     # Determine the maximum width for each column
-    column_widths: list[int] = [max(len(str(row[i])) for row in [headers, *info]) for i in range(len(headers))]
+    column_widths: list[int] = [max(len(str(row[i])) for row in (headers, *info)) for i in range(len(headers))]
 
     # Function to format a single row
     def format_row(row) -> str:

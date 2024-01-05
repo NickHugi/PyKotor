@@ -113,7 +113,7 @@ class TPC:
         raw_data: bytes = self._mipmaps[mipmap]
         data = bytearray()
 
-        if convert_format in [TPCTextureFormat.DXT1, TPCTextureFormat.DXT5]:
+        if convert_format in {TPCTextureFormat.DXT1, TPCTextureFormat.DXT5}:
             raise NotImplementedError
 
         if convert_format == TPCTextureFormat.Greyscale:
@@ -192,7 +192,7 @@ class TPC:
     def is_compressed(
         self,
     ) -> bool:
-        return self._texture_format in [TPCTextureFormat.DXT1, TPCTextureFormat.DXT5]
+        return self._texture_format in {TPCTextureFormat.DXT1, TPCTextureFormat.DXT5}
 
     def _mipmap_size(
         self,
@@ -291,8 +291,8 @@ class TPC:
                 alpha_code.extend(
                     (int((1.0 * alpha0 + 4.0 * alpha1 + 2) / 5), 0, 255),
                 )
-            for y in [3, 2, 1, 0]:
-                for x in [0, 1, 2, 3]:
+            for y in (3, 2, 1, 0):
+                for x in (0, 1, 2, 3):
                     pixelc_code = dxt_pixels & 3
                     dxt_pixels >>= 2
 
@@ -353,8 +353,8 @@ class TPC:
             else:
                 cc.extend([TPC._interpolate_rgb(0.5555555, c0, c1), (0, 0, 0)])
 
-            for y in [3, 2, 1, 0]:
-                for x in [0, 1, 2, 3]:
+            for y in (3, 2, 1, 0):
+                for x in (0, 1, 2, 3):
                     pixelc_code = dxt_pixels & 3
                     dxt_pixels >>= 2
 
@@ -460,8 +460,8 @@ class TPC:
             else:
                 cc.extend([TPC._interpolate_rgb(0.5555555, c0, c1), (0, 0, 0)])
 
-            for y in [3, 2, 1, 0]:
-                for x in [0, 1, 2, 3]:
+            for y in (3, 2, 1, 0):
+                for x in (0, 1, 2, 3):
                     pixelc_code = dxt_pixels & 3
                     dxt_pixels >>= 2
 
@@ -499,8 +499,8 @@ class TPC:
             else:
                 cc.extend([TPC._interpolate_rgb(0.5555555, c0, c1), (0, 0, 0)])
 
-            for y in [3, 2, 1, 0]:
-                for x in [0, 1, 2, 3]:
+            for y in (3, 2, 1, 0):
+                for x in (0, 1, 2, 3):
                     pixelc_code = dxt_pixels & 3
                     dxt_pixels >>= 2
 

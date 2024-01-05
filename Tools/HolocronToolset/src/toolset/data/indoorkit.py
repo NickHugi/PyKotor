@@ -87,7 +87,7 @@ def load_kits(path: os.PathLike | str) -> list[Kit]:
     kits_path = Path(path)
     if not kits_path.exists():
         kits_path.mkdir(parents=True)
-    for file in [file for file in kits_path.iterdir() if file.endswith(".json")]:
+    for file in (file for file in kits_path.iterdir() if file.endswith(".json")):
         kit_json = json.loads(BinaryReader.load_file(file))
         kit = Kit(kit_json["name"])
         kit_identifier = kit_json["id"]
@@ -98,14 +98,14 @@ def load_kits(path: os.PathLike | str) -> list[Kit]:
                 kit.always[always_file] = BinaryReader.load_file(always_file)
 
         textures_path = kits_path / file.stem / "textures"
-        for texture_file in [file for file in textures_path.iterdir() if file.endswith(".tga")]:
+        for texture_file in (file for file in textures_path.iterdir() if file.suffix.lower() == ".tga"):
             texture = texture_file.stem.upper()
             kit.textures[texture] = BinaryReader.load_file(textures_path / f"{texture}.tga")
             txi_path = textures_path / f"{texture}.txi"
             kit.txis[texture] = BinaryReader.load_file(txi_path) if txi_path.exists() else b""
 
         lightmaps_path = kits_path / file.stem / "lightmaps"
-        for lightmap_file in [file for file in lightmaps_path.iterdir() if file.endswith(".tga")]:
+        for lightmap_file in (file for file in lightmaps_path.iterdir() if file.suffix.lower() == ".tga"):
             lightmap = lightmap_file.stem.upper()
             kit.lightmaps[lightmap] = BinaryReader.load_file(lightmaps_path / f"{lightmap}.tga")
             txi_path = lightmaps_path / f"{lightmap_file.stem}.txi"
@@ -113,7 +113,7 @@ def load_kits(path: os.PathLike | str) -> list[Kit]:
 
         skyboxes_path = kits_path / file.stem / "skyboxes"
         if skyboxes_path.exists():
-            for skybox_name in {file.stem.upper() for file in skyboxes_path.iterdir() if file.endswith(".mdl")}:
+            for skybox_name in (file.stem.upper() for file in skyboxes_path.safe_iterdir() if file.suffix.lower() == ".mdl"):
                 mdl_path = skyboxes_path / f"{skybox_name}.mdl"
                 mdx_path = skyboxes_path / f"{skybox_name}.mdx"
                 mdl, mdx = BinaryReader.load_file(mdl_path), BinaryReader.load_file(mdx_path)
@@ -121,7 +121,7 @@ def load_kits(path: os.PathLike | str) -> list[Kit]:
 
         doorway_path = kits_path / file.stem / "doorway"
         if doorway_path.exists():
-            for padding_id in {file.stem for file in doorway_path.iterdir() if file.endswith(".mdl")}:
+            for padding_id in (file.stem for file in doorway_path.safe_iterdir() if file.suffix.lower() == ".mdl"):
                 mdl_path = doorway_path / f"{padding_id}.mdl"
                 mdx_path = doorway_path / f"{padding_id}.mdx"
                 mdl, mdx = BinaryReader.load_file(mdl_path), BinaryReader.load_file(mdx_path)

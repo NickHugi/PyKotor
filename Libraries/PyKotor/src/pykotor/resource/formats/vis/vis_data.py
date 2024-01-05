@@ -197,5 +197,5 @@ class VIS:
             - Set the visibility between the current room and other room to True.
         """
         for when_inside in self._rooms:
-            for show in [room for room in self._rooms if room != when_inside]:
+            for show in (room for room in self._rooms if room != when_inside):
                 self.set_visible(when_inside, show, visible=True)

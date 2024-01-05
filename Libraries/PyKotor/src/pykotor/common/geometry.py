@@ -1078,7 +1078,7 @@ class SurfaceMaterial(IntEnum):
         self,
     ) -> bool:
         """Returns True if the surface material is walkable, False otherwise."""
-        return self in [
+        return self in {
             SurfaceMaterial.DIRT,
             SurfaceMaterial.GRASS,
             SurfaceMaterial.STONE,
@@ -1092,7 +1092,7 @@ class SurfaceMaterial(IntEnum):
             SurfaceMaterial.LEAVES,
             SurfaceMaterial.DOOR,
             SurfaceMaterial.TRIGGER,
-        ]
+        }
 
 
 class Face:

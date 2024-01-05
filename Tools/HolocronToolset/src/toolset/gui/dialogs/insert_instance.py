@@ -98,7 +98,7 @@ class InsertInstanceDialog(QDialog):
                 self.ui.resourceList.addItem(item)
 
         for capsule in self._module.capsules():
-            for resource in [resource for resource in capsule if resource.restype() == self._restype]:
+            for resource in (resource for resource in capsule if resource.restype() == self._restype):
                 if resource.restype() == self._restype:
                     item = QListWidgetItem(resource.resname())
                     item.setToolTip(str(resource.filepath()))

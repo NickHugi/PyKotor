@@ -91,7 +91,7 @@ class DLGEditorTest(TestCase):
     )
     def test_gff_reconstruct_from_k1_installation(self):
         self.installation = Installation(K1_PATH)  # type: ignore[arg-type]
-        for dlg_resource in (resource for resource in self.installation if resource.restype() in [ResourceType.DLG, ResourceType.DLG_XML]):
+        for dlg_resource in (resource for resource in self.installation if resource.restype() in {ResourceType.DLG, ResourceType.DLG_XML}):
             old = read_gff(dlg_resource.data())
             self.editor.load(dlg_resource.filepath(), dlg_resource.resname(), dlg_resource.restype(), dlg_resource.data())
 
@@ -107,7 +107,7 @@ class DLGEditorTest(TestCase):
     )
     def test_gff_reconstruct_from_k2_installation(self):
         self.installation = Installation(K2_PATH)  # type: ignore[arg-type]
-        for dlg_resource in (resource for resource in self.installation if resource.restype() in [ResourceType.DLG, ResourceType.DLG_XML]):
+        for dlg_resource in (resource for resource in self.installation if resource.restype() in {ResourceType.DLG, ResourceType.DLG_XML}):
             old = read_gff(dlg_resource.data())
             self.editor.load(dlg_resource.filepath(), dlg_resource.resname(), dlg_resource.restype(), dlg_resource.data())
 

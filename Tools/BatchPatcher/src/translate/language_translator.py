@@ -212,13 +212,13 @@ class TranslationOption(Enum):
             msg, attr = check("secret_key")
             if msg:
                 return msg
-        if self in [
+        if self in {
             self.DEEPL,
             self.QCRI_TRANSLATOR,
             self.YANDEX_TRANSLATOR,
             self.MICROSOFT_TRANSLATOR,
             self.CHATGPT_TRANSLATOR,
-        ]:
+        }:
             msg, attr = check("api_key")
             if msg:
                 return msg
@@ -251,22 +251,22 @@ class TranslationOption(Enum):
                 "descriptor_label2": lambda root: ttk.Label(root, text="Secret key:"),
                 "secret_key": lambda root: ttk.Entry(root),
             }
-        if self in [
+        if self in {
             self.DEEPL,
-        ]:
+        }:
             return {
                 "descriptor_label": lambda root: ttk.Label(root, text="API Key:"),
                 "api_key": lambda root: ttk.Entry(root),
                 "descriptor_label2": lambda root: ttk.Label(root, text="Use Free API:"),
                 "use_free_api": lambda root: ttk.Checkbutton(root),
             }
-        if self in [
+        if self in {
             self.DEEPL,
             self.QCRI_TRANSLATOR,
             self.YANDEX_TRANSLATOR,
             self.MICROSOFT_TRANSLATOR,
             self.CHATGPT_TRANSLATOR,
-        ]:
+        }:
             return {
                 "descriptor_label": lambda root: ttk.Label(root, text="API Key:"),
                 "api_key": lambda root: ttk.Entry(root),
@@ -276,18 +276,17 @@ class TranslationOption(Enum):
     def max_chunk_length(self):
         if self == TranslationOption.TRANSLATE:
             return 500
-        if self in [TranslationOption.MY_MEMORY_TRANSLATOR, TranslationOption.PONS_TRANSLATOR]:
+        if self in {TranslationOption.MY_MEMORY_TRANSLATOR, TranslationOption.PONS_TRANSLATOR}:
             return 50
-        if self == TranslationOption.GOOGLE_TRANSLATE:
+        if self == TranslationOption.GOOGLE_TRANSLATE:  # sourcery skip: remove-redundant-if
             return 5000
         if self == TranslationOption.DL_TRANSLATE:  # sourcery skip: hoist-statement-from-if
             return 1024
         return 1024
 
     def get_lang_code(self, lang: Language):
-        if self is TranslationOption.MY_MEMORY_TRANSLATOR:
-            if lang is Language.ENGLISH:
-                return "english us"
+        if self is TranslationOption.MY_MEMORY_TRANSLATOR and lang is Language.ENGLISH:
+            return "english us"
         return {
             Language.ENGLISH: "en",
             Language.FRENCH: "fr",
@@ -340,12 +339,12 @@ class TranslationOption(Enum):
         }.get(lang, lang.get_bcp47_code())
 
     @staticmethod
-    def get_available_translators() -> list[TranslationOption]:
-        return [
+    def get_available_translators() -> set[TranslationOption]:
+        return {
             translator
             for translator in TranslationOption
             if translator.value is not None
-        ]
+        }
 
 def replace_with_placeholder(match, replaced_text: list[str], counter: int) -> str:
     replaced_text.append(match.group(0))  # Store the original text
@@ -418,22 +417,22 @@ class Translator:
         if self.translation_option == TranslationOption.TRANSLATE:
             self._translator = self.translation_option.value(to_lang=to_lang_code, from_lang=from_lang_code)  # type: ignore[misc]
 
-        elif self.translation_option in [
+        elif self.translation_option in {
             TranslationOption.PONS_TRANSLATOR,
             TranslationOption.GOOGLE_TRANSLATE,
             TranslationOption.APERTIUM,
-        ]:
+        }:
             self._translator = self.translation_option.value(from_lang_code, to_lang_code)
 
-        elif self.translation_option in [
+        elif self.translation_option in {
             TranslationOption.LINGUEE_TRANSLATOR,
             TranslationOption.MY_MEMORY_TRANSLATOR,
-        ]:
+        }:
             self._translator = self.translation_option.value(self.from_lang.name.lower(), self.to_lang.name.lower())
 
-        elif self.translation_option in [
+        elif self.translation_option in {
             TranslationOption.LIBRE_TRANSLATOR,
-        ]:
+        }:
             self._translator = self.translation_option.value(
                 source=from_lang_code,
                 target=to_lang_code,
@@ -441,19 +440,19 @@ class Translator:
                 api_key=self.api_key,
             )
 
-        elif self.translation_option in [
+        elif self.translation_option in {
             TranslationOption.TATOEBA,
-        ]:
+        }:
             self._translator = self.translation_option.value(local_db_path=self.database_path)
 
-        elif self.translation_option in [
+        elif self.translation_option in {
             TranslationOption.BERGAMOT,
-        ]:
+        }:
             self._translator = self.translation_option.value(local_server_url=self.server_url)
 
-        elif self.translation_option in [
+        elif self.translation_option in {
             TranslationOption.DEEPL,
-        ]:
+        }:
             self._translator = self.translation_option.value(
                 api_key=self.api_key,
                 source=from_lang_code,
@@ -461,17 +460,17 @@ class Translator:
                 use_free_api=self.use_free_api,
             )
 
-        elif self.translation_option in [
+        elif self.translation_option in {
             TranslationOption.YANDEX_TRANSLATOR,
             TranslationOption.QCRI_TRANSLATOR,
             TranslationOption.CHATGPT_TRANSLATOR,
-        ]:
+        }:
             self._translator = self.translation_option.value(api_key=self.api_key)
 
-        elif self.translation_option in [
+        elif self.translation_option in {
             TranslationOption.CHATGPT_TRANSLATOR,
             TranslationOption.MICROSOFT_TRANSLATOR,
-        ]:
+        }:
             self._translator = self.translation_option.value(
                 api_key=self.api_key,
                 target=to_lang_code,

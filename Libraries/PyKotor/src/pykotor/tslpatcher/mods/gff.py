@@ -71,7 +71,7 @@ class FieldValue(ABC):
         if isinstance(value, PureWindowsPath):  # !FieldPath
             return value
         if field_type == GFFFieldType.ResRef and not isinstance(value, ResRef):
-            value = (
+            value = (  # This is here to support literal statements like 'resref=' in ini (allow_no_entries=True in configparser)
                 ResRef(str(value))
                 if not isinstance(value, str) or value.strip()
                 else ResRef.from_blank()

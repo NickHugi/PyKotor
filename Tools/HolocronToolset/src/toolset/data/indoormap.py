@@ -163,7 +163,7 @@ class IndoorMap:
             - Replace texture references in kit textures and txis with new renamed texture.
         """
         for mdl in self.scanMdls:
-            for texture in [texture for texture in model.list_textures(mdl) if texture not in self.texRenames]:
+            for texture in (texture for texture in model.list_textures(mdl) if texture not in self.texRenames):
                 renamed = f"{self.moduleId}_tex{len(self.texRenames.keys())}"
                 self.texRenames[texture] = renamed
                 for kit in self.usedKits:
@@ -208,7 +208,7 @@ class IndoorMap:
             self.add_model_resources(modelname, mdl, mdx)
 
             # Process BWM
-            bwm = self.process_bwm(room)
+            bwm: BWM = self.process_bwm(room)
             self.add_bwm_resource(modelname, bwm)
 
     def add_static_resources(self, room: IndoorMapRoom):
@@ -323,8 +323,8 @@ class IndoorMap:
         bwm.rotate(room.rotation)
         bwm.translate(room.position.x, room.position.y, room.position.z)
         for hookIndex, connection in enumerate(room.hooks):
-            dummyIndex = room.component.hooks[hookIndex].edge
-            actualIndex = self.rooms.index(connection) if connection is not None else None
+            dummyIndex: int = room.component.hooks[hookIndex].edge
+            actualIndex: int | None = self.rooms.index(connection) if connection is not None else None
             self.remap_transitions(bwm, dummyIndex, actualIndex)
         return bwm
 
@@ -569,7 +569,7 @@ class IndoorMap:
         """
         self.ifo.tag = self.moduleId
         self.ifo.area_name = ResRef(self.moduleId)
-        self.ifo.identifier = ResRef(self.moduleId)
+        self.ifo.resref = ResRef(self.moduleId)
         self.vis.set_all_visible()
         self.ifo.entry_position = self.warpPoint
 
@@ -732,7 +732,7 @@ class IndoorMap:
                 - Create room with position, rotation, flips.
         """
         self.name = LocalizedString(data["name"]["stringref"])
-        for stringid in [key for key in data["name"] if key.isnumeric()]:
+        for stringid in (key for key in data["name"] if key.isnumeric()):
             language, gender = LocalizedString.substring_pair(int(stringid))
             self.name.set_data(language, gender, data["name"][stringid])
 
@@ -935,7 +935,7 @@ class IndoorMapRoom:
         for hook in self.component.hooks:
             hookIndex = self.component.hooks.index(hook)
             hookPos = self.hookPosition(hook)
-            for otherRoom in [room for room in rooms if room is not self]:
+            for otherRoom in (room for room in rooms if room is not self):
                 for otherHook in otherRoom.component.hooks:
                     otherHookPos = otherRoom.hookPosition(otherHook)
                     if hookPos.distance(otherHookPos) < 0.001:

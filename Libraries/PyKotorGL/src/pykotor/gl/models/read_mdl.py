@@ -235,7 +235,7 @@ def gl_load_stitched_model(scene, mdl: BinaryReader, mdx: BinaryReader) -> Model
             if render:
                 offsets.append((offset, transform))
 
-        if names[name_id].lower() in ["headhook", "rhand", "lhand", "gogglehook", "maskhook"]:
+        if names[name_id].lower() in {"headhook", "rhand", "lhand", "gogglehook", "maskhook"}:
             node = Node(scene, root, names[name_id])
             root.children.append(node)
             glm.decompose(transform, vec3(), node._rotation, node._position, vec3(), vec4())

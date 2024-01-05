@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, Generator
 
 from pykotor.common.stream import BinaryReader
 from pykotor.extract.file import FileResource, ResourceIdentifier, ResourceResult
@@ -24,6 +24,7 @@ class Capsule:
     def __init__(
         self,
         path: os.PathLike | str,
+        *,
         create_nonexisting: bool = False,
     ):
         """Initialize a Capsule object.
@@ -49,23 +50,21 @@ class Capsule:
         self._path: Path = Path.pathify(path)  # type: ignore[assignment]
         self._resources: list[FileResource] = []
 
-        str_path = str(self._path)
-
-        if not is_capsule_file(str_path):
-            msg = f"Invalid file extension in capsule filepath '{str_path}'."
+        if not is_capsule_file(self._path):
+            msg = f"Invalid file extension in capsule filepath '{self._path}'."
             raise ValueError(msg)
 
         if create_nonexisting and not self._path.exists():  # type: ignore[reportGeneralTypeIssues]
-            if is_rim_file(str_path):
+            if is_rim_file(self._path):
                 write_rim(RIM(), self._path)
-            elif is_any_erf_type_file(str_path):
-                write_erf(ERF(ERFType.from_extension(str_path)), str_path)
+            elif is_any_erf_type_file(self._path):
+                write_erf(ERF(ERFType.from_extension(self._path.suffix)), self._path)
 
         self.reload()
 
     def __iter__(
         self,
-    ):
+    ) -> Generator[FileResource, Any, None]:
         yield from self._resources
 
     def __len__(
@@ -80,6 +79,7 @@ class Capsule:
         self,
         resref: str,
         restype: ResourceType,
+        *,
         reload: bool = False,
     ) -> bytes | None:
         """Returns the bytes data of the specified resource. If the resource does not exist then returns None instead.
@@ -104,6 +104,7 @@ class Capsule:
     def batch(
         self,
         queries: list[ResourceIdentifier],
+        *,
         reload: bool = False,
     ) -> dict[ResourceIdentifier, ResourceResult | None]:
         """Batches queries against a capsule.
@@ -189,15 +190,16 @@ class Capsule:
         self,
         resref: str,
         restype: ResourceType,
+        *,
         reload: bool = False,
-    ) -> FileResource:
+    ) -> FileResource | None:
         """Get file resource by reference and type.
 
         Args:
         ----
             resref: Resource reference as string
             restype: Resource type
-            reload: Reload resources if True
+            reload: Reload resources if True (kwarg)
 
         Returns:
         -------

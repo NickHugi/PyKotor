@@ -327,6 +327,7 @@ class GFFEditor(Editor):
         """
         for i in range(item.rowCount()):
             child = item.child(i, 0)
+            assert child is not None
             struct_id = child.data(_VALUE_NODE_ROLE)
             gffStruct = gffList.add(struct_id)
             self._build_struct(child, gffStruct)
@@ -356,6 +357,7 @@ class GFFEditor(Editor):
         proxyIndex = selected.indexes()[0]
         sourceIndex = self.proxyModel.mapToSource(proxyIndex)
         item = self.model.itemFromIndex(sourceIndex)
+        assert item is not None
         self.loadItem(item)
 
     def loadItem(self, item: QListWidgetItem):
@@ -400,10 +402,7 @@ class GFFEditor(Editor):
                 set_widget(0, 0xFFFFFFFF, item)
             elif item.data(_TYPE_NODE_ROLE) == GFFFieldType.UInt64:
                 set_widget(0, 0xFFFFFFFFFFFFFFFF, item)
-            elif item.data(_TYPE_NODE_ROLE) in [
-                GFFFieldType.Double,
-                GFFFieldType.Single,
-            ]:
+            elif item.data(_TYPE_NODE_ROLE) in {GFFFieldType.Double, GFFFieldType.Single}:
                 self.ui.pages.setCurrentWidget(self.ui.floatPage)
                 self.ui.floatSpin.setValue(item.data(_VALUE_NODE_ROLE))
             elif item.data(_TYPE_NODE_ROLE) == GFFFieldType.ResRef:
@@ -431,7 +430,7 @@ class GFFEditor(Editor):
                 self.ui.wVec4Spin.setValue(vec4.w)
             elif item.data(_TYPE_NODE_ROLE) == GFFFieldType.Binary:
                 self.ui.pages.setCurrentWidget(self.ui.blankPage)
-                ...
+                ...  # TODO: Why is this here?
             elif item.data(_TYPE_NODE_ROLE) == GFFFieldType.LocalizedString:
                 locstring: LocalizedString = item.data(_VALUE_NODE_ROLE)
                 self.ui.pages.setCurrentWidget(self.ui.substringPage)
@@ -466,7 +465,7 @@ class GFFEditor(Editor):
 
         item.setData(self.ui.labelEdit.text(), _LABEL_NODE_ROLE)
 
-        if item.data(_TYPE_NODE_ROLE) in [
+        if item.data(_TYPE_NODE_ROLE) in {
             GFFFieldType.UInt8,
             GFFFieldType.Int8,
             GFFFieldType.UInt16,
@@ -475,18 +474,18 @@ class GFFEditor(Editor):
             GFFFieldType.Int32,
             GFFFieldType.UInt64,
             GFFFieldType.Int64,
-        ]:
+        }:
             item.setData(self.ui.intSpin.value(), _VALUE_NODE_ROLE)
-        elif item.data(_TYPE_NODE_ROLE) in [GFFFieldType.Single, GFFFieldType.Double]:
+        elif item.data(_TYPE_NODE_ROLE) in {GFFFieldType.Single, GFFFieldType.Double}:
             item.setData(self.ui.floatSpin.value(), _VALUE_NODE_ROLE)
-        elif item.data(_TYPE_NODE_ROLE) in [GFFFieldType.ResRef]:
+        elif item.data(_TYPE_NODE_ROLE) == GFFFieldType.ResRef:
             item.setData(ResRef(self.ui.lineEdit.text()), _VALUE_NODE_ROLE)
-        elif item.data(_TYPE_NODE_ROLE) in [GFFFieldType.String]:
+        elif item.data(_TYPE_NODE_ROLE) == GFFFieldType.String:
             item.setData(self.ui.textEdit.toPlainText(), _VALUE_NODE_ROLE)
-        elif item.data(_TYPE_NODE_ROLE) in [GFFFieldType.Vector3]:
+        elif item.data(_TYPE_NODE_ROLE) == GFFFieldType.Vector3:
             vec3 = Vector3(self.ui.xVec3Spin.value(), self.ui.yVec3Spin.value(), self.ui.zVec3Spin.value())
             item.setData(vec3, _VALUE_NODE_ROLE)
-        elif item.data(_TYPE_NODE_ROLE) in [GFFFieldType.Vector4]:
+        elif item.data(_TYPE_NODE_ROLE) == GFFFieldType.Vector4:
             vec4 = Vector4(
                 self.ui.xVec4Spin.value(),
                 self.ui.yVec4Spin.value(),
@@ -494,16 +493,17 @@ class GFFEditor(Editor):
                 self.ui.wVec4Spin.value(),
             )
             item.setData(vec4, _VALUE_NODE_ROLE)
-        elif item.data(_TYPE_NODE_ROLE) in [GFFFieldType.LocalizedString]:
+        elif item.data(_TYPE_NODE_ROLE) == GFFFieldType.LocalizedString:
             item.data(_VALUE_NODE_ROLE).stringref = self.ui.stringrefSpin.value()
-        elif item.data(_TYPE_NODE_ROLE) in [GFFFieldType.Struct] or item.data(_TYPE_NODE_ROLE) is None:
+        elif item.data(_TYPE_NODE_ROLE) == GFFFieldType.Struct or item.data(_TYPE_NODE_ROLE) is None:
             item.setData(self.ui.intSpin.value(), _VALUE_NODE_ROLE)
 
+        assert item is not None
         self.refreshItemText(item)
 
     def substringSelected(self):
         if len(self.ui.substringList.selectedItems()) > 0:
-            item = self.ui.substringList.selectedItems()[0]
+            item: QListWidgetItem = self.ui.substringList.selectedItems()[0]
             self.ui.substringEdit.setEnabled(True)
             self.ui.substringEdit.setPlainText(item.data(_TEXT_SUBSTRING_ROLE))
         else:
@@ -525,13 +525,13 @@ class GFFEditor(Editor):
             - Get the selected localization string item
             - Set the edited text on the localization string
         """
-        item = self.ui.substringList.selectedItems()[0]
-        text = self.ui.substringEdit.toPlainText()
+        item: QListWidgetItem = self.ui.substringList.selectedItems()[0]
+        text: str = self.ui.substringEdit.toPlainText()
         item.setData(_TEXT_SUBSTRING_ROLE, text)
 
-        substringItem = self.ui.substringList.selectedItems()[0]
+        substringItem: QListWidgetItem = self.ui.substringList.selectedItems()[0]
         language, gender = LocalizedString.substring_pair(substringItem.data(_ID_SUBSTRING_ROLE))
-        locstringItem = self.ui.treeView.selectedIndexes()[0]
+        locstringItem: QModelIndex = self.ui.treeView.selectedIndexes()[0]
         locstring: LocalizedString = locstringItem.data(_VALUE_NODE_ROLE)
         locstring.set_data(language, gender, text)
 
@@ -680,7 +680,8 @@ class GFFEditor(Editor):
         elif ftype == GFFFieldType.List:
             item.setData(GFFList(), _VALUE_NODE_ROLE)
 
-        self.loadItem(item)
+        assert item is not None
+        self.loadItem(item)  # type: ignore[]
         self.refreshItemText(item)
 
     def insertNode(self, parent: QStandardItem, label: str, ftype: GFFFieldType, value: Any):
@@ -739,6 +740,7 @@ class GFFEditor(Editor):
         for proxyIndex in self.ui.treeView.selectedIndexes():
             sourceIndex = self.proxyModel.mapToSource(proxyIndex)
             item = self.model.itemFromIndex(sourceIndex)
+            assert item is not None
             self.removeNode(item)
 
     def requestContextMenu(self, point):
@@ -764,11 +766,9 @@ class GFFEditor(Editor):
             menu = QMenu(self)
 
             if item.data(_TYPE_NODE_ROLE) == GFFFieldType.List:
-                menu.addAction("Add Struct").triggered.connect()
+                menu.addAction("Add Struct").triggered.connect(lambda: None)  # FIXME: call self.addStruct or whatever the method name is
             elif item.data(_TYPE_NODE_ROLE) in [GFFFieldType.Struct, None]:
                 self._build_context_menu_gff_struct(menu, item)
-            else:
-                ...
 
             if item.data(_TYPE_NODE_ROLE) is not None:
                 menu.addAction("Remove").triggered.connect(lambda: self.removeNode(item))

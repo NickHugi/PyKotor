@@ -161,7 +161,7 @@ class InventoryEditor(QDialog):
 
         self.ui.contentsTable.setColumnWidth(0, 64)
 
-        for slot in [slot for slot in EquipmentSlot if slot in self._slotMap]:
+        for slot in (slot for slot in EquipmentSlot if slot in self._slotMap):
             image = self._slotMap[slot].emptyImage.format("droid" if droid else "human")
             self._slotMap[slot].label.setPixmap(QPixmap(image))
 
@@ -179,7 +179,7 @@ class InventoryEditor(QDialog):
         super().accept()
         self.inventory = []
         for i in range(self.ui.contentsTable.rowCount()):
-            tableItem: ItemContainer = self.ui.contentsTable.item(i, 1)
+            tableItem: ItemContainer = self.ui.contentsTable.item(i, 1)  # FIXME: QTableWidgetItem | None cannot be assigned to ItemContainer, needs a .data(role) call.
             self.inventory.append(InventoryItem(ResRef(tableItem.resname), tableItem.droppable, tableItem.infinite))
 
         self.equipment = {}
@@ -215,7 +215,7 @@ class InventoryEditor(QDialog):
                 self._installation.cacheCoreItems = coreModel
             else:
                 coreModel = self._installation.cacheCoreItems
-            self.ui.coreTree.setModel(coreModel.proxyModel())
+            self.ui.coreTree.setModel(coreModel.proxyModel())  # FIXME: coreModel.proxyModel() needs a .data(role) call.
 
             self.ui.modulesTree.setModel(itemBuilderDialog.modulesModel.proxyModel())
             self.ui.overrideTree.setModel(itemBuilderDialog.overrideModel.proxyModel())
@@ -422,11 +422,10 @@ class DropFrame(ItemContainer, QFrame):
             - Accept drag if item slots match receiver slot.
         """
         if isinstance(event.source(), QTreeView):
-            tree: QTreeView = event.source()
+            tree: QTreeView | None = event.source()
             proxyModel: QSortFilterProxyModel = tree.model()
             index = proxyModel.mapToSource(tree.selectedIndexes()[0])
             model: ItemModel = proxyModel.sourceModel()
-            assert model is not None, f"model == proxyModel.sourceModel() == None in dragEnterEvent({event!r})"
             item: QStandardItem | None = model.itemFromIndex(index)
             if item.data(_SLOTS_ROLE) & self.slot.value:
                 event.accept()
@@ -451,7 +450,6 @@ class DropFrame(ItemContainer, QFrame):
             tree: QTreeView = event.source()
             proxyModel: QSortFilterProxyModel = tree.model()
             model: ItemModel = proxyModel.sourceModel()
-            assert model is not None, f"model == proxyModel.sourceModel() == None in dragMoveEvent({event!r})"
             index = proxyModel.mapToSource(tree.selectedIndexes()[0])
             item: QStandardItem | None = model.itemFromIndex(index)
             if item.data(_SLOTS_ROLE) & self.slot.value:
@@ -478,12 +476,10 @@ class DropFrame(ItemContainer, QFrame):
         if isinstance(event.source(), QTreeView):
             event.setDropAction(QtCore.Qt.CopyAction)
 
-            tree: QTreeView | None = event.source()
-            assert tree is not None, f"tree == event.source() == None in dropEvent({event!r})"
+            tree: QTreeView | None = event.source()  # type: ignore[]
             proxyModel: QSortFilterProxyModel = tree.model()
             index = proxyModel.mapToSource(tree.selectedIndexes()[0])
-            model: ItemModel | None = proxyModel.sourceModel()
-            assert model is not None, f"model == proxyModel.sourceModel() == None in dropEvent({event!r})"
+            model: ItemModel | None = proxyModel.sourceModel()  # FIXME: needs a .data(role) call
             item: QStandardItem | None = model.itemFromIndex(index)
             if item.data(_SLOTS_ROLE) & self.slot.value:
                 event.accept()
@@ -687,6 +683,7 @@ class ItemBuilderDialog(QDialog):
         name = self._installation.string(uti.name, result.resname) if uti is not None else result.resname
 
         # Split category by base item:
+        # TODO: What is this?
         #  categoryNameID = baseitems.get_row(uti.base_item).get_integer("name")
         #  categoryLabel = baseitems.get_cell(uti.base_item, "label")
         #  category = self._tlk.get(categoryNameID).text if self._tlk.get(categoryNameID) is not None else categoryLabel
@@ -733,7 +730,7 @@ class ItemBuilderDialog(QDialog):
             return "Implants"
         if slots & EquipmentSlot.GAUNTLET.value and not droid:
             return "Gauntlets"
-        if slots & EquipmentSlot.IMPLANT.value and droid:
+        if slots & EquipmentSlot.IMPLANT.value and droid:  # is the check for 'droid' unnecessary here?
             return "Droid Utilities"
         if slots & EquipmentSlot.LEFT_ARM.value:
             return "Droid Special Weapons" if droid else "Shields"
@@ -747,7 +744,7 @@ class ItemBuilderDialog(QDialog):
             return "Droid Shields" if droid else "Belts"
         if slots & EquipmentSlot.HIDE.value:
             return "Creature Hide"
-        if slots == 0:
+        if slots == 0:  # sourcery skip: assign-if-exp, reintroduce-else
             return "Miscellaneous"
         return "Unknown"
 
@@ -758,8 +755,8 @@ class ItemBuilderWorker(QThread):
 
     def __init__(self, installation: HTInstallation, capsules: list[Capsule]):
         super().__init__()
-        self._installation = installation
-        self._capsules = capsules
+        self._installation: HTInstallation = installation
+        self._capsules: list[Capsule] = capsules
 
     def run(self):
         """Runs the resource loading process.
@@ -784,7 +781,7 @@ class ItemBuilderWorker(QThread):
                             if resource.restype() == ResourceType.UTI])
         queries.extend(
             ResourceIdentifier(resource.resname(), resource.restype())
-            for resource in self._installation.override_resources(".")
+            for resource in self._installation.override_resources()
             if resource.restype() == ResourceType.UTI
         )
         for capsule in self._capsules:

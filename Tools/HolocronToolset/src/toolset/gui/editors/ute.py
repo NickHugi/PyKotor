@@ -1,5 +1,4 @@
 from __future__ import annotations
-from contextlib import suppress
 
 from typing import TYPE_CHECKING
 
@@ -83,17 +82,15 @@ class UTEEditor(Editor):
         self._installation = installation
         self.ui.nameEdit.setInstallation(installation)
 
-        try:
-            factions = installation.htGetCache2DA(HTInstallation.TwoDA_FACTIONS)
-            difficulties = installation.htGetCache2DA(HTInstallation.TwoDA_ENC_DIFFICULTIES)
+        factions = installation.htGetCache2DA(HTInstallation.TwoDA_FACTIONS)
+        difficulties = installation.htGetCache2DA(HTInstallation.TwoDA_ENC_DIFFICULTIES)
 
-            self.ui.difficultySelect.clear()
-            self.ui.difficultySelect.setItems(difficulties.get_column("label"))
+        self.ui.difficultySelect.clear()
+        self.ui.difficultySelect.setItems(difficulties.get_column("label"))
 
-            self.ui.factionSelect.clear()
-            self.ui.difficultySelect.setItems(factions.get_column("label"))
-        except Exception as e:
-            print(e)
+        self.ui.factionSelect.clear()
+        self.ui.difficultySelect.setItems(factions.get_column("label"))
+
 
     def load(self, filepath: os.PathLike | str, resref: str, restype: ResourceType, data: bytes):
         super().load(filepath, resref, restype, data)
@@ -220,12 +217,12 @@ class UTEEditor(Editor):
         self._loadUTE(UTE())
 
     def changeName(self):
-        dialog = LocalizedStringDialog(self, self._installation, self.ui.nameEdit.locstring)
+        dialog = LocalizedStringDialog(self, self._installation, self.ui.nameEdit.locstring())
         if dialog.exec_():
             self._loadLocstring(self.ui.nameEdit, dialog.locstring)
 
     def generateTag(self):
-        if self.ui.resrefEdit.text() == "":
+        if not self.ui.resrefEdit.text():
             self.generateResref()
         self.ui.tagEdit.setText(self.ui.resrefEdit.text())
 
@@ -237,15 +234,14 @@ class UTEEditor(Editor):
 
     def setInfiniteRespawn(self):
         if self.ui.infiniteRespawnCheckbox.isChecked():
-            self._extracted_from_setInfiniteRespawn_3(-1, False)
+            self._setInfiniteRespawnMain(val=-1, enabled=False)
         else:
-            self._extracted_from_setInfiniteRespawn_3(0, True)
+            self._setInfiniteRespawnMain(val=0, enabled=True)
 
-    # TODO Rename this here and in `setInfiniteRespawn`
-    def _extracted_from_setInfiniteRespawn_3(self, arg0, boolean):
-        self.ui.respawnCountSpin.setMinimum(arg0)
-        self.ui.respawnCountSpin.setValue(arg0)
-        self.ui.respawnCountSpin.setEnabled(boolean)
+    def _setInfiniteRespawnMain(self, val: int, enabled: bool):
+        self.ui.respawnCountSpin.setMinimum(val)
+        self.ui.respawnCountSpin.setValue(val)
+        self.ui.respawnCountSpin.setEnabled(enabled)
 
     def setContinuous(self):
         isContinuous = self.ui.spawnSelect.currentIndex() == 1

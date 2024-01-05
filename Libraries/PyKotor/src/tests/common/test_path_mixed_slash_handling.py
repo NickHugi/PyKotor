@@ -36,10 +36,10 @@ from utility.path import WindowsPath as CustomWindowsPath
 class TestPathlibMixedSlashes(unittest.TestCase):
 
     def test_nt_case_hashing(self):
-        test_classes: list[type] = (
-            [CustomPureWindowsPath]
+        test_classes: tuple[type, ...] = (
+            (CustomPureWindowsPath)
             if os.name == "posix"
-            else [CustomWindowsPath, CustomPureWindowsPath, CustomPath]
+            else (CustomWindowsPath, CustomPureWindowsPath, CustomPath)
         )
         for PathType in test_classes:
             with self.subTest(PathType=PathType):
@@ -70,7 +70,7 @@ class TestPathlibMixedSlashes(unittest.TestCase):
                 self.assertNotEqual(test_set, {PathType("TEST\\path\\\\to\\nothing")})
 
     def test_pathlib_path_edge_cases_posix(self):
-        test_classes = [PosixPath, PurePosixPath] if os.name == "posix" else [PurePosixPath]
+        test_classes = (PosixPath, PurePosixPath) if os.name == "posix" else (PurePosixPath)
         for PathType in test_classes:
             with self.subTest(PathType=PathType):
                 # Absolute vs Relative Paths
@@ -109,7 +109,7 @@ class TestPathlibMixedSlashes(unittest.TestCase):
                 self.assertEqual(str(PathType("~/folder/")), "~/folder")
 
     def test_pathlib_path_edge_cases_windows(self):
-        test_classes = [WindowsPath, PureWindowsPath] if os.name == "nt" else [PureWindowsPath]
+        test_classes = (WindowsPath, PureWindowsPath) if os.name == "nt" else (PureWindowsPath)
         for PathType in test_classes:
             with self.subTest(PathType=PathType):
                 # Absolute vs Relative Paths
@@ -157,7 +157,7 @@ class TestPathlibMixedSlashes(unittest.TestCase):
                 self.assertEqual(str(PathType("~/folder/")), "~\\folder")
 
     def test_pathlib_path_edge_cases_os_specific(self):
-        for PathType in [Path, PurePath]:
+        for PathType (Path, PurePath):
             with self.subTest(PathType=PathType):
                 # Absolute vs Relative Paths
                 self.assertEqual(str(PathType("C:\\")), "C:\\")

@@ -455,7 +455,7 @@ class WrappedInt:
     ):
         if isinstance(other, WrappedInt):
             return self.get() == other.get()
-        if isinstance(other, int):
+        if isinstance(other, int):  # sourcery skip: assign-if-exp
             return self.get() == other
         return NotImplemented
 
@@ -475,8 +475,8 @@ class InventoryItem:
     def __init__(
         self,
         resref: ResRef,
-        droppable: bool = False,
-        infinite: bool = False,
+        droppable: bool = False,  # noqa: FBT001, FBT002
+        infinite: bool = False,  # noqa: FBT001, FBT002
     ):
         self.resref: ResRef = resref
         self.droppable: bool = droppable

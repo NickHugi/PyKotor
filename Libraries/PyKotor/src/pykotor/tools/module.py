@@ -3,6 +3,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from pykotor.common.language import LocalizedString
+from pykotor.common.misc import ResRef
 from pykotor.common.module import Module
 from pykotor.extract.installation import Installation, SearchLocation
 from pykotor.resource.formats.erf import ERF, ERFType, write_erf
@@ -52,7 +53,7 @@ def clone_module(
     Args:
     ----
         root: str - The path to the module root
-        identifier: str - The identifier for the new module
+        identifier: str - The resref str for the new module
         prefix: str - Prefix for generated textures and lightmaps
         name: str - Name for the new ARE file
         installation: Installation - The installation context
@@ -68,18 +69,20 @@ def clone_module(
     new_module = ERF(ERFType.MOD)
 
     ifo: IFO | None = old_module.info().resource()
-    old_identifier = ifo.identifier
-    ifo.identifier.set_data(identifier)
+    old_resref: ResRef = ifo.resref
+    ifo.resref.set_data(identifier)
     ifo.mod_name = LocalizedString.from_english(identifier.upper())
     ifo.tag = identifier.upper()
     ifo.area_name.set_data(identifier)
     ifo_data = bytearray()
+    assert ifo is not None, f"ifo {ifo!r} cannot be None in clone_module"
     write_gff(dismantle_ifo(ifo), ifo_data)
     new_module.set_data("module", ResourceType.IFO, ifo_data)
 
     are: ARE | None = old_module.are().resource()
     are.name = LocalizedString.from_english(name)
     are_data = bytearray()
+    assert are is not None, f"are {are!r} cannot be None in clone_module"
     write_gff(dismantle_are(are), are_data)
     new_module.set_data(identifier, ResourceType.ARE, are_data)
 
@@ -90,6 +93,7 @@ def clone_module(
     if keep_pathing:
         pth = old_module.pth().resource()
         pth_data = bytearray()
+        assert pth is not None, f"pth {pth!r} cannot be None in clone_module"
         write_gff(dismantle_pth(pth), pth_data)
         new_module.set_data(identifier, ResourceType.PTH, pth_data)
 
@@ -102,13 +106,14 @@ def clone_module(
 
     if keep_doors:
         for i, door in enumerate(git.doors):
-            old_resname = door.resref
+            old_resname = str(door.resref)
             new_resname = f"{identifier}_dor{i}"
             door.resref.set_data(new_resname)
             door.tag = new_resname
 
             utd = old_module.door(old_resname).resource()
             data = bytearray()
+            assert utd is not None, f"utd {utd!r} cannot be None in clone_module"
             write_gff(dismantle_utd(utd), data)
             new_module.set_data(new_resname, ResourceType.UTD, data)
     else:
@@ -116,13 +121,14 @@ def clone_module(
 
     if keep_placeables:
         for i, placeable in enumerate(git.placeables):
-            old_resname = placeable.resref
+            old_resname = str(placeable.resref)
             new_resname = f"{identifier}_plc{i}"
             placeable.resref.set_data(new_resname)
             placeable.tag = new_resname
 
             utp = old_module.placeable(old_resname).resource()
             data = bytearray()
+            assert utp is not None, f"utp {utp!r} cannot be None in clone_module"
             write_gff(dismantle_utp(utp), data)
             new_module.set_data(new_resname, ResourceType.UTP, data)
     else:
@@ -130,19 +136,21 @@ def clone_module(
 
     if keep_sounds:
         for i, sound in enumerate(git.sounds):
-            old_resname = sound.resref
+            old_resname = str(sound.resref)
             new_resname = f"{identifier}_snd{i}"
             sound.resref.set_data(new_resname)
             sound.tag = new_resname
 
             uts = old_module.sound(old_resname).resource()
             data = bytearray()
+            assert uts is not None, f"uts {uts!r} cannot be None in clone_module"
             write_gff(dismantle_uts(uts), data)
             new_module.set_data(new_resname, ResourceType.UTS, data)
     else:
         git.sounds = []
 
     git_data = bytearray()
+    assert git is not None, f"git {git!r} cannot be None in clone_module"
     write_gff(dismantle_git(git), git_data)
     new_module.set_data(identifier, ResourceType.GIT, git_data)
 
@@ -150,7 +158,7 @@ def clone_module(
     new_textures: dict[str, str] = {}
     for room in lyt.rooms:
         old_model_name = room.model
-        new_model_name = ireplace(old_model_name, old_identifier, identifier)
+        new_model_name = ireplace(old_model_name, str(old_resref), identifier)
 
         room.model = new_model_name
         if vis.room_exists(old_model_name):
@@ -171,6 +179,7 @@ def clone_module(
                     rgba: TPCConvertResult = tpc.convert(TPCTextureFormat.RGBA)
 
                     tga = TPC()
+                    assert rgba.data is not None, f"{rgba!r}.data cannot be None in clone_module"
                     tga.set_data(rgba.width, rgba.height, [rgba.data], TPCTextureFormat.RGBA)
 
                     tga_data = bytearray()
@@ -192,6 +201,7 @@ def clone_module(
                     rgba = tpc.convert(TPCTextureFormat.RGBA)
 
                     tga = TPC()
+                    assert rgba.data is not None, f"{rgba!r}.data cannot be None in clone_module"
                     tga.set_data(rgba.width, rgba.height, [rgba.data], TPCTextureFormat.RGBA)
 
                     tga_data = bytearray()
@@ -204,10 +214,12 @@ def clone_module(
         new_module.set_data(new_model_name, ResourceType.MDX, mdx_data)
         new_module.set_data(new_model_name, ResourceType.WOK, wok_data)
 
+    assert vis is not None, "vis cannot be None in clone_module"
     vis_data = bytearray()
     write_vis(vis, vis_data)
     new_module.set_data(identifier, ResourceType.VIS, vis_data)
 
+    assert lyt is not None, "lyt cannot be None in clone_module"
     lyt_data = bytearray()
     write_lyt(lyt, lyt_data)
     new_module.set_data(identifier, ResourceType.LYT, lyt_data)
@@ -242,12 +254,12 @@ def rim_to_mod(filepath: os.PathLike | str):
     filepath_rim_s: CaseAwarePath = resolved_file_path.parent / (resolved_file_path.stem + file_ext_rim_s)
 
     rim = read_rim(filepath_rim)
-    rim_s = read_rim(filepath_rim_s) if filepath_rim_s.exists() else RIM()
+    rim_s = read_rim(filepath_rim_s) if filepath_rim_s.safe_exists() else RIM()
 
     mod = ERF(ERFType.MOD)
     for res in rim:
-        mod.set_data(res.resref, res.restype, res.data)
+        mod.set_data(str(res.resref), res.restype, res.data)
     for res in rim_s:
-        mod.set_data(res.resref, res.restype, res.data)
+        mod.set_data(str(res.resref), res.restype, res.data)
 
     write_erf(mod, filepath, ResourceType.ERF)

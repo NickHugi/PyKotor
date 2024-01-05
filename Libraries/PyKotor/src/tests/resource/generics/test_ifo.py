@@ -86,7 +86,7 @@ class TestIFO(TestCase):
         self.assertEqual("262TEL", ifo.tag)
         self.assertEqual("", ifo.hak)
         self.assertEqual(-1, ifo.description.stringref)
-        self.assertEqual("262tel", ifo.identifier)
+        self.assertEqual("262tel", ifo.resref)
         self.assertEqual(2.5811009407043457, ifo.entry_position.x)
         self.assertEqual(41.46979522705078, ifo.entry_position.y)
         self.assertEqual(21.372770309448242, ifo.entry_position.z)

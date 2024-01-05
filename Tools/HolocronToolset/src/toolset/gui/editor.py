@@ -365,7 +365,7 @@ class Editor(QMainWindow):
             if is_capsule_file(c_filepath.name) and "Load from module (*.erf *.mod *.rim)" in self._openFilter:
                 dialog = LoadFromModuleDialog(Capsule(c_filepath), self._readSupported)
                 if dialog.exec_():
-                    self.load(c_filepath, dialog.resref(), dialog.restype(), dialog.data())
+                    self.load(c_filepath, dialog.resname(), dialog.restype(), dialog.data())
             else:
                 with c_filepath.open("rb") as file:
                     data = file.read()

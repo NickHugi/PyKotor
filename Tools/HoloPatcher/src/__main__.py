@@ -9,7 +9,6 @@ import pathlib
 import sys
 import tkinter as tk
 import traceback
-from types import TracebackType
 import webbrowser
 from argparse import ArgumentParser, Namespace
 from datetime import datetime, timedelta, timezone
@@ -46,6 +45,7 @@ from utility.string import striprtf
 
 if TYPE_CHECKING:
     from io import TextIOWrapper
+    from types import TracebackType
 
     from pykotor.tslpatcher.namespaces import PatcherNamespace
 
@@ -295,7 +295,7 @@ class App(tk.Tk):
                     "No updates available.",
                     f"You are already running the latest version of HoloPatcher ({updateInfoData['holopatcherLatestVersion']})",
                 )
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             messagebox.showerror(
                 "Unable to fetch latest version.",
                 (
@@ -338,19 +338,22 @@ class App(tk.Tk):
 
         self.one_shot: bool = False
         if sum([cmdline_args.install, cmdline_args.uninstall, cmdline_args.validate]) == 1:
-            self.one_shot = True
-            self.withdraw()
-            self.handle_console_mode()
-            if cmdline_args.install:
-                self.begin_install_thread()
-            if cmdline_args.uninstall:
-                self.uninstall_selected_mod()
-            if cmdline_args.validate:
-                self.test_reader()
-            sys.exit()
+            self._begin_oneshot(cmdline_args)
         else:
             messagebox.showerror("Cannot run more than one of [--install, --uninstall, --validate]")
             sys.exit(ExitCode.NUMBER_OF_ARGS)
+
+    def _begin_oneshot(self, cmdline_args: Namespace):
+        self.one_shot = True
+        self.withdraw()
+        self.handle_console_mode()
+        if cmdline_args.install:
+            self.begin_install_thread()
+        if cmdline_args.uninstall:
+            self.uninstall_selected_mod()
+        if cmdline_args.validate:
+            self.test_reader()
+        sys.exit()
 
     def handle_console_mode(self):
         """Overrides message box functions for console mode. This is done for true CLI support.
@@ -510,7 +513,7 @@ class App(tk.Tk):
                 ]
             info_rtf = CaseAwarePath(self.mod_path, "tslpatchdata", namespace_option.rtf_filepath())
             if not info_rtf.exists():
-                messagebox.showwarning("No info.rtf", "Could not load the rtf for this mod, file not found on disk.")
+                messagebox.showwarning("No info.rtf", f"Could not load the rtf for this mod, file not found on disk: {info_rtf}")
                 return
             with info_rtf.open("r") as rtf:
                 self.set_stripped_rtf_text(rtf)
@@ -671,7 +674,7 @@ class App(tk.Tk):
             return messagebox.askyesno(
                 "Unauthorized",
                 (
-                    f"HoloPatcher needs permissions to access this folder '{directory}'. {os.linesep}"
+                    f"HoloPatcher needs permissions to access '{directory}'. {os.linesep}"
                     f"{os.linesep}"
                     f"Please ensure the necessary folders are writeable or rerun holopatcher with elevated privileges.{os.linesep}"
                     "Continue with an install anyway?"
@@ -769,6 +772,7 @@ class App(tk.Tk):
         ini_file_path = CaseAwarePath(self.mod_path, "tslpatchdata", namespace_option.changes_filepath())
         namespace_mod_path: CaseAwarePath = ini_file_path.parent
 
+        self.set_active_install(install_running=True)
         self.clear_main_text()
         installer = ModInstaller(namespace_mod_path, self.gamepaths.get(), ini_file_path, self.logger)
         try:
@@ -842,7 +846,6 @@ class App(tk.Tk):
             7. Shows success or error message based on install result
             8. If CLI, exit regardless of success or error.
         """
-        self.set_active_install(install_running=True)
         #profiler = cProfile.Profile()
         #profiler.enable()
         install_start_time: datetime = datetime.now(timezone.utc).astimezone()
@@ -980,7 +983,7 @@ def custom_excepthook(etype: type[BaseException], e: BaseException, tback: Trace
     error_msg = "".join(traceback.format_exception(etype, e, tback))
     root = tk.Tk()
     root.withdraw()  # Hide the main window
-    messagebox.showerror("Error", error_msg)
+    messagebox.showerror("Critical Exception", error_msg)
     root.destroy()
     sys.exit()
 

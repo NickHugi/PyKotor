@@ -79,7 +79,7 @@ def read_resource(source: SOURCE_TYPES, resource_type: ResourceType | None = Non
         resource_ext = ext_obj.stem.lower() if "." in ext_obj.name else ext_obj.suffix.lower()[1:]
         if resource_type.category == "Talk Tables":
             return read_tlk(source)
-        if resource_type in [ResourceType.TGA, ResourceType.TPC]:
+        if resource_type in {ResourceType.TGA, ResourceType.TPC}:
             return read_tpc(source)
         if resource_ext == "ssf":
             return read_ssf(source)

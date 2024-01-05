@@ -5,7 +5,7 @@ import re
 import tempfile
 from typing import TYPE_CHECKING
 
-from pykotor.common.stream import BinaryReader, BinaryWriter, BinaryWriterBytearray
+from pykotor.common.stream import BinaryReader, BinaryWriter
 from pykotor.resource.formats.ncs import bytes_ncs
 from pykotor.resource.formats.ncs import compile_nss as compile_with_builtin
 from pykotor.resource.formats.ncs.compilers import ExternalNCSCompiler
@@ -25,57 +25,6 @@ class MutableString:
         self.value: str = value
     def __str__(self):
         return self.value
-
-
-class ModificationsNCS(PatcherModifications):
-    def __init__(self, filename, replace=None, modifiers=None):
-        super().__init__(filename, replace, modifiers)
-        self.action: str = "Hack "
-        self.hackdata: list[tuple[str, int, int]] = []
-
-    def patch_resource(
-        self,
-        ncs_source: SOURCE_TYPES,
-        memory: PatcherMemory,
-        logger: PatchLogger,
-        game: Game,
-    ) -> bytes:
-        if isinstance(ncs_source, (bytes, bytearray)):
-            ncs_bytes = bytearray(ncs_source)
-        else:
-            msg = "ncs source must be bytes due to a current bug with the read_ncs method."
-            raise TypeError(msg)
-        self.apply(ncs_bytes, memory, logger, game)
-        return ncs_bytes
-
-    def apply(
-        self,
-        ncs_bytes: bytearray,
-        memory: PatcherMemory,
-        logger: PatchLogger,
-        game: Game,
-    ):
-        writer: BinaryWriterBytearray = BinaryWriter.to_bytearray(ncs_bytes)
-        for this_data in self.hackdata:
-            token_type, offset, token_id_or_value = this_data
-            logger.add_verbose(f"HACKList {self.sourcefile}: seeking to offset {offset:#X}")
-            writer.seek(offset)
-            value: int = token_id_or_value
-            if token_type == "StrRef":  # noqa: S105
-                value = memory.memory_str[value]
-            elif token_type == "2DAMEMORY":  # noqa: S105
-                memory_val: str | PureWindowsPath = memory.memory_2da[value]
-                if isinstance(memory_val, PureWindowsPath):
-                    msg = f"Memory value cannot be !FieldPath, got '{memory_val!r}'"
-                    raise ValueError(msg)
-                value = int(memory_val)
-            logger.add_verbose(f"HACKList {self.sourcefile}: writing WORD {value} at offset {offset:#X}")
-            writer.write_int16(value)
-
-    def pop_tslpatcher_vars(self, file_section_dict, default_destination=PatcherModifications.DEFAULT_DESTINATION):
-        super().pop_tslpatcher_vars(file_section_dict, default_destination)
-        replace_file: bool | str = file_section_dict.pop("ReplaceFile", self.replace_file)
-        self.replace_file = bool(int(replace_file))  # tslpatcher's hacklist doesn't prefix with an exclamation point.
 
 class ModificationsNSS(PatcherModifications):
     def __init__(self, filename, replace=None, modifiers=None):
@@ -131,7 +80,8 @@ class ModificationsNSS(PatcherModifications):
         self.apply(source, memory, logger, game)
 
         is_windows = os.name == "nt"
-        if is_windows and self.nwnnsscomp_path and self.nwnnsscomp_path.exists():
+        nwnnsscomp_exists = self.nwnnsscomp_path.safe_exists()
+        if is_windows and self.nwnnsscomp_path and nwnnsscomp_exists:
             nwnnsscompiler = ExternalNCSCompiler(self.nwnnsscomp_path)
             detected_nwnnsscomp: str = next(
                 (k for k, v in ExternalNCSCompiler.NWNNSSCOMP_SHA256_HASHES.items() if v == nwnnsscompiler.filehash),
@@ -149,7 +99,7 @@ class ModificationsNSS(PatcherModifications):
                 logger.add_error(str(universal_simplify_exception(e)))
 
         if is_windows:
-            if not self.nwnnsscomp_path or not self.nwnnsscomp_path.exists():
+            if not self.nwnnsscomp_path or not nwnnsscomp_exists:
                 logger.add_note("nwnnsscomp.exe was not found in the 'tslpatchdata' folder, using the built-in compilers...")
             else:
                 logger.add_error(f"An error occurred while compiling '{self.sourcefile}' with nwnnsscomp.exe, falling back to the built-in compilers...")

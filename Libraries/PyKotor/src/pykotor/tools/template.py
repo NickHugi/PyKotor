@@ -18,9 +18,9 @@ def extract_name(data: bytes) -> LocalizedString:
         - Return localized name string.
     """
     gff = read_gff(data)
-    if gff.content in [GFFContent.UTC]:
+    if gff.content == GFFContent.UTC:
         return gff.root.get_locstring("FirstName")
-    if gff.content in [GFFContent.UTT, GFFContent.UTW]:
+    if gff.content in {GFFContent.UTT, GFFContent.UTW}:
         return gff.root.get_locstring("LocalizedName")
     return gff.root.get_locstring("LocName")
 

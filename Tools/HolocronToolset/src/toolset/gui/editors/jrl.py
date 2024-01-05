@@ -199,7 +199,7 @@ class JRLEditor(Editor):
 
     def changeEntryText(self):
         """Opens a LocalizedStringDialog for editing the text of the selected entry."""
-        dialog = LocalizedStringDialog(self, self._installation, self.ui.entryTextEdit.locstring)
+        dialog = LocalizedStringDialog(self, self._installation, self.ui.entryTextEdit.locstring())
         if dialog.exec_():
             self._loadLocstring(self.ui.entryTextEdit, dialog.locstring)
             self.onValueUpdated()
@@ -288,7 +288,7 @@ class JRLEditor(Editor):
             data.priority = JRLQuestPriority(self.ui.categoryPrioritySelect.currentIndex())
             data.comment = self.ui.categoryCommentEdit.toPlainText()
         elif isinstance(data, JRLEntry):
-            data.text = self.ui.entryTextEdit.locstring
+            data.text = self.ui.entryTextEdit.locstring()
             data.end = self.ui.entryEndCheck.isChecked()
             data.xp_percentage = self.ui.entryXpSpin.value()
             data.entry_id = self.ui.entryIdSpin.value()

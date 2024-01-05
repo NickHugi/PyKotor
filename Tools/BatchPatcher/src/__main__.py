@@ -505,7 +505,7 @@ def patch_install(install_path: os.PathLike | str):
 
 def is_kotor_install_dir(path: os.PathLike | str) -> bool:
     c_path: CaseAwarePath = CaseAwarePath(path)
-    return c_path.safe_isdir() and c_path.joinpath("chitin.key").exists()
+    return bool(c_path.safe_isdir() and c_path.joinpath("chitin.key").safe_exists())
 
 
 def determine_input_path(path: Path):
@@ -945,7 +945,7 @@ class KOTORPatchingToolUI:
             except OSError as e:
                 return messagebox.showerror("Error", f"Invalid path '{SCRIPT_GLOBALS.path}'\n{universal_simplify_exception(e)}")
             else:
-                if not path.exists():
+                if not path.safe_exists():
                     return messagebox.showerror("Error", "Invalid path")
             SCRIPT_GLOBALS.pytranslator = Translator(Language.ENGLISH)
             SCRIPT_GLOBALS.pytranslator.translation_option = TranslationOption[self.translation_option.get()]

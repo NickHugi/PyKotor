@@ -175,7 +175,7 @@ class TPCTGAReader(ResourceReader):
         elif datatype_code == _DataTypes.UNCOMPRESSED_RGB:
             self._reader.skip(colormap_length * colormap_depth // 8)
 
-            if bits_per_pixel not in [24, 32]:
+            if bits_per_pixel not in {24, 32}:
                 ValueError("The image must store 24 or 32 bits per pixel.")
 
             pixel_rows: list[bytearray] = []
@@ -215,7 +215,7 @@ class TPCTGAReader(ResourceReader):
             data = self._process_rle_data(width, height, bits_per_pixel, is_direct_rgb=True)
         elif datatype_code == _DataTypes.COMPRESSED_BLACK_WHITE:
             data = self._process_rle_data(width, height, bits_per_pixel)
-        elif datatype_code in [_DataTypes.COMPRESSED_COLOR_MAPPED_A, _DataTypes.COMPRESSED_COLOR_MAPPED_B]:
+        elif datatype_code in {_DataTypes.COMPRESSED_COLOR_MAPPED_A, _DataTypes.COMPRESSED_COLOR_MAPPED_B}:
             if color_map is None:
                 msg = "Expected color map not found for compressed color-mapped data"
                 raise ValueError(msg)
@@ -267,7 +267,7 @@ class TPCTGAWriter(ResourceWriter):
         self._writer.write_uint16(width)
         self._writer.write_uint16(height)
 
-        if self._tpc.format() in [TPCTextureFormat.RGB or TPCTextureFormat.DXT1]:
+        if self._tpc.format() in {TPCTextureFormat.RGB or TPCTextureFormat.DXT1}:
             self._writer.write_uint8(32)  # bits_per_pixel, image_descriptor
             self._writer.write_uint8(0)
             data: bytes | None = self._tpc.convert(TPCTextureFormat.RGB, 0).data

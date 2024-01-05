@@ -19,7 +19,7 @@ if UTILITY_PATH.exists():
     sys.path.insert(0, working_dir)
 
 from pykotor.resource.formats.gff import read_gff
-from pykotor.resource.generics.utm import construct_utm, dismantle_utm
+from pykotor.resource.generics.utm import UTM, construct_utm, dismantle_utm
 
 TEST_FILE = "src/tests/files/test.utm"
 
@@ -34,7 +34,7 @@ class TestUTM(unittest.TestCase):
         utm = construct_utm(gff)
         self.validate_io(utm)
 
-    def validate_io(self, utm):
+    def validate_io(self, utm: UTM):
         self.assertEqual("dan_droid", utm.resref)
         self.assertEqual(33399, utm.name.stringref)
         self.assertEqual("dan_droid", utm.tag)

@@ -92,7 +92,7 @@ class BWMEditorTest(TestCase):
     )
     def test_bwm_reconstruct_from_k1_installation(self):
         self.installation = Installation(K1_PATH)  # type: ignore[arg-type]
-        for bwm_resource in (resource for resource in self.installation if resource.restype() in [ResourceType.WOK, ResourceType.DWK, ResourceType.PWK]):
+        for bwm_resource in (resource for resource in self.installation if resource.restype() in {ResourceType.WOK, ResourceType.DWK, ResourceType.PWK}):
             old = read_bwm(bwm_resource.data())
             self.editor.load(bwm_resource.filepath(), bwm_resource.resname(), bwm_resource.restype(), bwm_resource.data())
 
@@ -107,7 +107,7 @@ class BWMEditorTest(TestCase):
     )
     def test_bwm_reconstruct_from_k2_installation(self):
         self.installation = Installation(K2_PATH)  # type: ignore[arg-type]
-        for bwm_resource in (resource for resource in self.installation if resource.restype() in [ResourceType.WOK, ResourceType.DWK, ResourceType.PWK]):
+        for bwm_resource in (resource for resource in self.installation if resource.restype() in {ResourceType.WOK, ResourceType.DWK, ResourceType.PWK}):
             old = read_bwm(bwm_resource.data())
             self.editor.load(bwm_resource.filepath(), bwm_resource.resname(), bwm_resource.restype(), bwm_resource.data())
 

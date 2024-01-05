@@ -10,7 +10,6 @@ from pykotor.common.misc import CaseInsensitiveDict, ResRef
 from pykotor.common.stream import BinaryReader
 from pykotor.resource.formats.gff import GFFFieldType, GFFList, GFFStruct
 from pykotor.resource.formats.ssf import SSFSound
-from pykotor.resource.formats.tlk.tlk_auto import read_tlk
 from pykotor.tools.encoding import decode_bytes_with_fallbacks
 from pykotor.tools.path import CaseAwarePath
 from pykotor.tslpatcher.logger import PatchLogger
@@ -28,7 +27,8 @@ from pykotor.tslpatcher.mods.gff import (
     ModifyFieldGFF,
 )
 from pykotor.tslpatcher.mods.install import InstallFile
-from pykotor.tslpatcher.mods.nss import ModificationsNCS, ModificationsNSS
+from pykotor.tslpatcher.mods.ncs import ModificationsNCS
+from pykotor.tslpatcher.mods.nss import ModificationsNSS
 from pykotor.tslpatcher.mods.ssf import ModificationsSSF, ModifySSF
 from pykotor.tslpatcher.mods.tlk import ModificationsTLK, ModifyTLK
 from pykotor.tslpatcher.mods.twoda import (
@@ -56,7 +56,6 @@ from utility.path import Path, PurePath, PureWindowsPath
 if TYPE_CHECKING:
     import os
 
-    from pykotor.resource.formats.tlk.tlk_data import TLK, TLKEntry
     from pykotor.tslpatcher.config import PatcherConfig
     from pykotor.tslpatcher.mods.gff import ModifyGFF
     from typing_extensions import Literal
@@ -852,10 +851,10 @@ class ConfigReader:
         if not label and field_type == GFFFieldType.Struct:
             return AddStructToListGFF(identifier, value, path, index_in_list_token, modifiers)
 
-        # if label and field_type == GFFFieldType.Struct:
+        # if field_type == GFFFieldType.Struct:
         #     msg = f"Label={label} cannot be used when FieldType={GFFFieldType.Struct.value}. Error happened in [{identifier}] section in ini."
         #     raise ValueError(msg)
-        if not label and field_type != GFFFieldType.Struct:
+        if not label:
             msg = f"Label must be set for {field_type!r} (FieldType={field_type.value}). Error happened in [{identifier}] section in ini."
             raise ValueError(msg)
         return AddFieldGFF(identifier, label, field_type, value, path, modifiers)
@@ -1303,7 +1302,7 @@ class ConfigReader:
 
             is_store_2da:  bool = lower_modifier.startswith("2damemory")
             is_store_tlk:  bool = lower_modifier.startswith("strref") and len(lower_modifier) > len("strref")
-            is_row_label:  bool = lower_modifier in ["rowlabel", "newrowlabel"]
+            is_row_label:  bool = lower_modifier in {"rowlabel", "newrowlabel"}
 
             row_value: RowValue | None = None
             if lower_value.startswith("2damemory"):

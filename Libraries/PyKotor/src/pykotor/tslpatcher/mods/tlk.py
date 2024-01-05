@@ -79,9 +79,9 @@ class ModifyTLK:
     def apply(self, dialog: TLK, memory: PatcherMemory) -> None:
         self.load()
         if not self.is_replacement:
-            memory.memory_str[self.token_id] = dialog.add(self.text, self.sound.get())
+            memory.memory_str[self.token_id] = dialog.add(self.text, str(self.sound))
         else:
-            dialog.replace(self.token_id, self.text, self.sound.get())
+            dialog.replace(self.token_id, self.text, str(self.sound))
             memory.memory_str[self.token_id] = self.token_id
 
     def load(self):

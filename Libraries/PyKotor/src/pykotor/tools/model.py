@@ -871,13 +871,13 @@ def flip(
             if node_id & 32:
                 reader.seek(node_offset + 80)
                 fp = reader.read_uint32()
-                tsl = fp not in [
+                tsl = fp not in (
                     _MESH_FP0_K1,
                     _SKIN_FP0_K1,
                     _DANGLY_FP0_K2,
                     _AABB_FP0_K1,
                     _SABER_FP0_K1,
-                ]
+                )
 
                 reader.seek(node_offset + 80 + 8)
                 faces_offset = reader.read_uint32()

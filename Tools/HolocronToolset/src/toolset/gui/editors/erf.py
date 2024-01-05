@@ -9,7 +9,7 @@ from pykotor.resource.formats.rim import RIM, read_rim, write_rim
 from pykotor.resource.type import ResourceType
 from PyQt5 import QtCore, QtGui
 from PyQt5.QtCore import QMimeData
-from PyQt5.QtGui import QStandardItem, QStandardItemModel
+from PyQt5.QtGui import QDragEnterEvent, QDragMoveEvent, QDropEvent, QStandardItem, QStandardItemModel
 from PyQt5.QtWidgets import QFileDialog, QMessageBox, QShortcut, QTableView, QWidget
 from toolset.gui.editor import Editor
 from toolset.gui.widgets.settings.installations import GlobalSettings
@@ -161,14 +161,14 @@ class ERFEditor(Editor):
             for i in range(self.model.rowCount()):
                 item = self.model.item(i, 0)
                 resource = item.data()
-                rim.set_data(resource.resref.get(), resource.restype, resource.data)
+                rim.set_data(str(resource.resref), resource.restype, resource.data)
             write_rim(rim, data)
         if self._restype.name in ERFType.__members__:  # sourcery skip: split-or-ifs
             erf = ERF(ERFType.__members__[self._restype.name])
             for i in range(self.model.rowCount()):
                 item = self.model.item(i, 0)
                 resource = item.data()
-                erf.set_data(resource.resref.get(), resource.restype, resource.data)
+                erf.set_data(str(resource.resref), resource.restype, resource.data)
             write_erf(erf, data)
 
         return data, b""
@@ -224,8 +224,6 @@ class ERFEditor(Editor):
                 item = self.model.itemFromIndex(index)
                 resource = item.data()
                 file_path = Path(folderpath_str, f"{resource.resref}.{resource.restype.extension}")
-                if not file_path.exists():
-                    file_path = file_path.resolve()
                 with file_path.open("wb") as file:
                     file.write(resource.data)
 
@@ -259,8 +257,6 @@ class ERFEditor(Editor):
         """
         for filepath in filepaths:
             c_filepath = Path(filepath)
-            if not c_filepath.exists():
-                c_filepath = c_filepath.resolve()
             try:
                 with c_filepath.open("rb") as file:
                     data = file.read()
@@ -277,7 +273,7 @@ class ERFEditor(Editor):
                 QMessageBox(
                     QMessageBox.Critical,
                     "Failed to add resource",
-                    f"Could not add resource at {c_filepath}:\n{universal_simplify_exception(e)}",
+                    f"Could not add resource at {c_filepath.absolute()}:\n{universal_simplify_exception(e)}",
                 ).exec_()
 
     def selectFilesToAdd(self):
@@ -315,7 +311,7 @@ class ERFEditor(Editor):
 
             tempPath, editor = openResourceEditor(
                 self._filepath,
-                resource.resref.get(),
+                str(resource.resref),
                 resource.restype,
                 resource.data,
                 self._installation,
@@ -347,13 +343,13 @@ class ERFEditor(Editor):
         self.ui.openButton.setEnabled(state)
         self.ui.unloadButton.setEnabled(state)
 
-    def resourceSaved(self, filepath: str, resref: str, restype: ResourceType, data: bytes):
+    def resourceSaved(self, filepath: str, resname: str, restype: ResourceType, data: bytes):
         """Saves resource data to the UI table.
 
         Args:
         ----
             filepath: Filepath of the resource being saved
-            resref: Reference of the resource being saved
+            resname: Filestem Reference of the resource being saved
             restype: Type of the resource being saved
             data: Data being saved for the resource
 
@@ -362,7 +358,7 @@ class ERFEditor(Editor):
             - Check if filepath matches internal filepath
             - Iterate through selected rows in table view
             - Get item from selected index
-            - Check if item resref and restype match parameters
+            - Check if item resref/resname and restype match parameters
             - Set item data to passed in data.
         """
         if filepath != self._filepath:
@@ -370,7 +366,7 @@ class ERFEditor(Editor):
 
         for index in self.ui.tableView.selectionModel().selectedRows(0):
             item = self.model.itemFromIndex(index)
-            if item.data().resref == resref and item.data().restype == restype:
+            if item.data().resref == resname and item.data().restype == restype:
                 item.data().data = data
 
 
@@ -380,24 +376,24 @@ class ERFEditorTable(QTableView):
     def __init__(self, parent: QWidget):
         super().__init__(parent)
 
-    def dragEnterEvent(self, event):
+    def dragEnterEvent(self, event: QDragEnterEvent):
         if event.mimeData().hasUrls:
             event.accept()
         else:
             event.ignore()
 
-    def dragMoveEvent(self, event):
+    def dragMoveEvent(self, event: QDragMoveEvent):
         if event.mimeData().hasUrls:
             event.setDropAction(QtCore.Qt.CopyAction)
             event.accept()
         else:
             event.ignore()
 
-    def dropEvent(self, event):
+    def dropEvent(self, event: QDropEvent):
         if event.mimeData().hasUrls:
             event.setDropAction(QtCore.Qt.CopyAction)
             event.accept()
-            links = [str(url.toLocalFile()) for url in event.mimeData().urls()]
+            links: list[str] = [str(url.toLocalFile()) for url in event.mimeData().urls()]
             self.resourceDropped.emit(links)
         else:
             event.ignore()
@@ -423,9 +419,9 @@ class ERFEditorTable(QTableView):
             return
 
         urls = []
-        for index in [index for index in self.selectedIndexes() if index.column() == 0]:
+        for index in (index for index in self.selectedIndexes() if index.column() == 0):
             resource = self.model().itemData(index)[QtCore.Qt.UserRole + 1]
-            file_stem, file_ext = resource.resref.get(), resource.restype.extension
+            file_stem, file_ext = str(resource.resref), resource.restype.extension
             filepath = Path(tempDir, f"{file_stem}.{file_ext}")
             if not filepath.exists():
                 filepath = filepath.resolve()

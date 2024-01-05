@@ -110,7 +110,7 @@ def format_exception_with_variables(
             for ___var___, ___val___ in ___frame___.f_locals.items()
             if ___var___ not in ___default_attrs___
             and ___sys___.getsizeof(___val___) <= (1024 * 1024)
-            and ___var___ not in [
+            and ___var___ not in {
                 "___var___",
                 "___detailed_message___",
                 "___formatted_traceback___",
@@ -133,7 +133,7 @@ def format_exception_with_variables(
                 "___frame___",
                 "___traceback___",
                 "___types___",
-            ]
+            }
         )
 
     return "\n".join(___detailed_message___)

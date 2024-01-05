@@ -96,8 +96,6 @@ class BinaryReader:
             A new BinaryReader instance.
         """
         resolved_path = Path.pathify(path)
-        if not resolved_path.exists():
-            resolved_path = resolved_path.resolve()
         stream = resolved_path.open("rb")
         return BinaryReader(stream, offset, size)
 
@@ -161,8 +159,6 @@ class BinaryReader:
             The bytes of the file.
         """
         resolved_path = Path.pathify(path)
-        if not resolved_path.exists():
-            resolved_path = resolved_path.resolve()
         with resolved_path.open("rb") as reader:
             reader.seek(offset)
             return reader.read() if size == -1 else reader.read(size)
@@ -698,8 +694,6 @@ class BinaryWriter(ABC):
             A new BinaryWriter instance.
         """
         resolved_path = Path.pathify(path)
-        if not resolved_path.exists():
-            resolved_path = resolved_path.resolve()
         return BinaryWriterFile(resolved_path.open("wb"))
 
     @classmethod
@@ -751,8 +745,6 @@ class BinaryWriter(ABC):
             data: The data to write to the file.
         """
         resolved_path = Path.pathify(path)
-        if not resolved_path.exists():
-            resolved_path = resolved_path.resolve()
         with resolved_path.open("wb") as file:
             file.write(data)
 

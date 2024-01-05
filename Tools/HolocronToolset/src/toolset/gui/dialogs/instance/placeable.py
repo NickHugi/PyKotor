@@ -31,7 +31,7 @@ class PlaceableDialog(QDialog):
 
         self.placeable: GITPlaceable = placeable
 
-        for widget in [getattr(self.ui, attr) for attr in dir(self.ui)]:
+        for widget in (getattr(self.ui, attr) for attr in dir(self.ui)):
             if isinstance(widget, QDoubleSpinBox):
                 widget.setDecimals(8)
 

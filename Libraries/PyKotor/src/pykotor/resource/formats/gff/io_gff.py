@@ -308,7 +308,7 @@ class GFFBinaryWriter(ResourceWriter):
             elif field_type is GFFFieldType.String:
                 self._field_data_writer.write_string(value, prefix_length=4)
             elif field_type is GFFFieldType.ResRef:
-                self._field_data_writer.write_string(value.get(), prefix_length=1)
+                self._field_data_writer.write_string(str(value), prefix_length=1)
             elif field_type is GFFFieldType.LocalizedString:
                 self._field_data_writer.write_locstring(value)
             elif field_type is GFFFieldType.Binary:

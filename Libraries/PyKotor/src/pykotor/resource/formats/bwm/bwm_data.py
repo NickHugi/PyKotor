@@ -154,7 +154,7 @@ class BWM:
         bbmax = Vector3(-100000.0, -100000.0, -100000.0)
         bbcentre = Vector3.from_null()
         for face in faces:
-            for vertex in [face.v1, face.v2, face.v3]:
+            for vertex in (face.v1, face.v2, face.v3):
                 for axis in range(3):
                     bbmin[axis] = min(bbmin[axis], vertex[axis])
                     bbmax[axis] = max(bbmax[axis], vertex[axis])
