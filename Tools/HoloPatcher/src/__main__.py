@@ -9,6 +9,7 @@ import pathlib
 import sys
 import tkinter as tk
 import traceback
+from types import TracebackType
 import webbrowser
 from argparse import ArgumentParser, Namespace
 from datetime import datetime, timedelta, timezone
@@ -949,7 +950,7 @@ class App(tk.Tk):
         self.main_text.config(state=tk.DISABLED)
 
 
-def custom_excepthook(exc_type, exc_value, exc_traceback):
+def custom_excepthook(etype: type[BaseException], e: BaseException, tback: TracebackType | None):
     """Custom exception hook to display errors in message box.
 
     When pyinstaller compiled in --console mode, this will match the same error message behavior of --noconsole.
@@ -967,12 +968,12 @@ def custom_excepthook(exc_type, exc_value, exc_traceback):
         - Show error message in message box
         - Destroy the root window.
     """
-    error_msg = "".join(traceback.format_exception(exc_type, exc_value, exc_traceback))
+    error_msg = "".join(traceback.format_exception(etype, e, tback))
     root = tk.Tk()
     root.withdraw()  # Hide the main window
     messagebox.showerror("Error", error_msg)
     root.destroy()
-
+    sys.exit()
 
 sys.excepthook = custom_excepthook
 
