@@ -64,12 +64,13 @@ def format_exception_with_variables(
     ___message___: str = "Assertion with Exception Trace",
 ) -> str:
     ___etype___ = ___etype___ if ___etype___ is not None else type(___value___)
+    ___etype___ = ___etype___ if issubclass(___etype___, BaseException) else BaseException
     ___tb___ = ___tb___ if ___tb___ is not None else ___value___.__traceback__
 
     # Check if the arguments are of the correct type
-    if not issubclass(___etype___, BaseException):
-        msg = f"{___etype___!r} is not an exception class"
-        raise TypeError(msg)
+    if not issubclass(___etype___, BaseException): ...
+        # msg = f"{___etype___!r} is not an exception class"
+        # raise TypeError(msg)
     if not isinstance(___value___, BaseException):
         msg = f"{___value___!r} is not an exception instance"
         raise TypeError(msg)
