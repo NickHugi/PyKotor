@@ -1,4 +1,5 @@
 from __future__ import annotations
+from contextlib import suppress
 
 from typing import TYPE_CHECKING
 
@@ -74,22 +75,23 @@ class UTEEditor(Editor):
 
         Processing Logic:
         ----------------
-        - Sets the internal installation object reference
-        - Populates the name field with the installation details
-        - Fetches the faction and difficulty data from the installation
-        - Clears and populates the dropdowns with the faction and difficulty labels
+            - Sets the internal installation object reference
+            - Populates the name field with the installation details
+            - Fetches the faction and difficulty data from the installation
+            - Clears and populates the dropdowns with the faction and difficulty labels
         """
         self._installation = installation
         self.ui.nameEdit.setInstallation(installation)
 
-        factions = installation.htGetCache2DA(HTInstallation.TwoDA_FACTIONS)
-        difficulties = installation.htGetCache2DA(HTInstallation.TwoDA_ENC_DIFFICULTIES)
+        with suppress(Exception):
+            factions = installation.htGetCache2DA(HTInstallation.TwoDA_FACTIONS)
+            difficulties = installation.htGetCache2DA(HTInstallation.TwoDA_ENC_DIFFICULTIES)
 
-        self.ui.difficultySelect.clear()
-        self.ui.difficultySelect.setItems(difficulties.get_column("label"))
+            self.ui.difficultySelect.clear()
+            self.ui.difficultySelect.setItems(difficulties.get_column("label"))
 
-        self.ui.factionSelect.clear()
-        self.ui.difficultySelect.setItems(factions.get_column("label"))
+            self.ui.factionSelect.clear()
+            self.ui.difficultySelect.setItems(factions.get_column("label"))
 
     def load(self, filepath: os.PathLike | str, resref: str, restype: ResourceType, data: bytes):
         super().load(filepath, resref, restype, data)
