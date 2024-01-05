@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from contextlib import suppress
 from typing import TYPE_CHECKING
 
 from pykotor.common.misc import ResRef
@@ -16,6 +15,8 @@ from utility.error_handling import format_exception_with_variables
 
 if TYPE_CHECKING:
     import os
+
+    from pykotor.resource.formats.twoda.twoda_data import TwoDA
 
 
 class UTIEditor(Editor):
@@ -92,11 +93,11 @@ class UTIEditor(Editor):
         self.ui.nameEdit.setInstallation(installation)
         self.ui.descEdit.setInstallation(installation)
 
-        required = [HTInstallation.TwoDA_BASEITEMS, HTInstallation.TwoDA_ITEM_PROPERTIES]
+        required: list[str] = [HTInstallation.TwoDA_BASEITEMS, HTInstallation.TwoDA_ITEM_PROPERTIES]
         installation.htBatchCache2DA(required)
 
-        baseitems = installation.htGetCache2DA(HTInstallation.TwoDA_BASEITEMS)
-        itemProperties = installation.htGetCache2DA(HTInstallation.TwoDA_ITEM_PROPERTIES)
+        baseitems: TwoDA = installation.htGetCache2DA(HTInstallation.TwoDA_BASEITEMS)
+        itemProperties: TwoDA = installation.htGetCache2DA(HTInstallation.TwoDA_ITEM_PROPERTIES)
 
         self.ui.baseSelect.clear()
         self.ui.baseSelect.setItems(baseitems.get_column("label"))
@@ -268,10 +269,10 @@ class UTIEditor(Editor):
 
         Processing Logic:
         ----------------
-        - Gets the item properties table from the installation.
-        - Creates a UTIProperty object and populates it with data from the table.
-        - Adds a summary of the property to the assigned properties list widget.
-        - Sets the UTIProperty as user data on the list item.
+            - Gets the item properties table from the installation.
+            - Creates a UTIProperty object and populates it with data from the table.
+            - Adds a summary of the property to the assigned properties list widget.
+            - Sets the UTIProperty as user data on the list item.
         """
         itemprops = self._installation.htGetCache2DA(HTInstallation.TwoDA_ITEM_PROPERTIES)
 
@@ -299,8 +300,8 @@ class UTIEditor(Editor):
 
         Processing Logic:
         ----------------
-        - It returns a formatted string combining the retrieved names.
-        - If a cost or subproperty is not present, it is omitted from the returned string.
+            - It returns a formatted string combining the retrieved names.
+            - If a cost or subproperty is not present, it is omitted from the returned string.
         """
         propName = UTIEditor.propertyName(self._installation, utiProperty.property_name)
         subpropName = UTIEditor.subpropertyName(self._installation, utiProperty.property_name, utiProperty.subtype)
@@ -315,9 +316,9 @@ class UTIEditor(Editor):
         return f"{propName}"
 
     def onUpdateIcon(self):
-        baseItem = self.ui.baseSelect.currentIndex()
-        modelVariation = self.ui.modelVarSpin.value()
-        textureVariation = self.ui.textureVarSpin.value()
+        baseItem: int = self.ui.baseSelect.currentIndex()
+        modelVariation: int = self.ui.modelVarSpin.value()
+        textureVariation: int = self.ui.textureVarSpin.value()
         self.ui.iconLabel.setPixmap(self._installation.getItemIcon(baseItem, modelVariation, textureVariation))
 
     def onAvaialblePropertyListDoubleClicked(self):
@@ -334,8 +335,8 @@ class UTIEditor(Editor):
 
     @staticmethod
     def propertyName(installation: HTInstallation, prop: int):
-        properties = installation.htGetCache2DA(HTInstallation.TwoDA_ITEM_PROPERTIES)
-        stringref = properties.get_row(prop).get_integer("name")
+        properties: TwoDA = installation.htGetCache2DA(HTInstallation.TwoDA_ITEM_PROPERTIES)
+        stringref: int | None = properties.get_row(prop).get_integer("name")
         return installation.talktable().string(stringref)
 
     @staticmethod
@@ -354,11 +355,11 @@ class UTIEditor(Editor):
 
         Processing Logic:
         ----------------
-        - Gets the item properties 2DA from the cache
-        - Gets the subtype resource reference from the property row
-        - Gets the subproperties 2DA from the subtype resource
-        - Gets the name string reference from the subproperty row
-        - Returns the string from the talktable or the label if name is None
+            - Gets the item properties 2DA from the cache
+            - Gets the subtype resource reference from the property row
+            - Gets the subproperties 2DA from the subtype resource
+            - Gets the name string reference from the subproperty row
+            - Returns the string from the talktable or the label if name is None
         """
         properties = installation.htGetCache2DA(HTInstallation.TwoDA_ITEM_PROPERTIES)
         subtypeResname = properties.get_cell(prop, "subtyperesref")
@@ -388,8 +389,8 @@ class UTIEditor(Editor):
     def paramName(installation: HTInstallation, paramtable: int, param: int):
         try:
             paramtableList = installation.htGetCache2DA(HTInstallation.TwoDA_IPRP_PARAMTABLE)
-            paramtable = installation.htGetCache2DA(paramtableList.get_cell(paramtable, "tableresref"))  # FIXME:
-            stringref = paramtable.get_row(param).get_integer("name")
+            paramtable_twoda = installation.htGetCache2DA(paramtableList.get_cell(paramtable, "tableresref"))
+            stringref = paramtable_twoda.get_row(param).get_integer("name")
             return installation.talktable().string(stringref)
         except Exception as e:
             print(format_exception_with_variables(e, ___message___="This exception has been suppressed."))
