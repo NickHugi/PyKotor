@@ -7,7 +7,7 @@ from pathlib import Path
 from setuptools import setup
 
 
-def main() -> None:
+def main():
     HERE = Path(__file__).parent
 
     # Load information from pyproject.toml

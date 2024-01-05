@@ -117,7 +117,7 @@ def write_tlk(
     tlk: TLK,
     target: TARGET_TYPES,
     file_format: ResourceType = ResourceType.TLK,
-) -> None:
+):
     """Writes the TLK data to the target location with the specified format (TLK, TLK_XML or TLK_JSON).
 
     Args:

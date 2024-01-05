@@ -1215,7 +1215,7 @@ class TestManipulateGFF(TestCase):
         self.assertEqual("123", gff.root.get_string("String"))
         self.assertEqual(123, gff.root.get_uint8("Integer"))
 
-    def test_add_field_locstring(self) -> None:
+    def test_add_field_locstring(self):
         """Adds a localized string field to a GFF using a 2DA memory reference
 
         Processing Logic:
@@ -1269,7 +1269,7 @@ class TestManipulateGFF(TestCase):
         self.assertEqual(3, patched_gff_list.at(1).struct_id)  # type: ignore
         self.assertEqual(1, patched_gff_list.at(2).struct_id)  # type: ignore
 
-    def test_addlist_store_2damemory(self) -> None:
+    def test_addlist_store_2damemory(self):
         gff = GFF()
         gff.root.set_list("List", GFFList())
 

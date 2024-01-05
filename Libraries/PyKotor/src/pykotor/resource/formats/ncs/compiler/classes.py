@@ -29,7 +29,7 @@ class CompileException(Exception):
 
 class TopLevelObject(ABC):
     @abstractmethod
-    def compile(self, ncs: NCS, root: CodeRoot) -> None:
+    def compile(self, ncs: NCS, root: CodeRoot):
         ...
 
 
@@ -45,7 +45,7 @@ class GlobalVariableInitialization(TopLevelObject):
         self.data_type: DynamicDataType = data_type
         self.expression: Expression = value
 
-    def compile(self, ncs: NCS, root: CodeRoot) -> None:
+    def compile(self, ncs: NCS, root: CodeRoot):
         block = CodeBlock()
         expression_type = self.expression.compile(ncs, root, block)
         if expression_type != self.data_type:
@@ -60,7 +60,7 @@ class GlobalVariableDeclaration(TopLevelObject):
         self.identifier: Identifier = identifier
         self.data_type: DynamicDataType = data_type
 
-    def compile(self, ncs: NCS, root: CodeRoot) -> None:
+    def compile(self, ncs: NCS, root: CodeRoot):
         if self.data_type.builtin == DataType.INT:
             ncs.add(NCSInstructionType.RSADDI)
         elif self.data_type.builtin == DataType.FLOAT:
@@ -97,7 +97,7 @@ class Identifier:
     def __init__(self, label: str):
         self.label: str = label
 
-    def __eq__(self, other: Identifier | str | object):
+    def __eq__(self, other: Identifier | str):
         if isinstance(other, Identifier):
             return self.label == other.label
         if isinstance(other, str):
@@ -191,7 +191,7 @@ class Struct:
         self.identifier: Identifier = identifier
         self.members: list[StructMember] = members
 
-    def initialize(self, ncs: NCS, root: CodeRoot) -> None:
+    def initialize(self, ncs: NCS, root: CodeRoot):
         for member in self.members:
             member.initialize(ncs, root)
 
@@ -224,7 +224,7 @@ class StructMember:
         self.datatype: DynamicDataType = datatype
         self.identifier: Identifier = identifier
 
-    def initialize(self, ncs: NCS, root: CodeRoot) -> None:
+    def initialize(self, ncs: NCS, root: CodeRoot):
         if self.datatype.builtin == DataType.INT:
             ncs.add(NCSInstructionType.RSADDI, args=[])
         elif self.datatype.builtin == DataType.FLOAT:
@@ -383,7 +383,7 @@ class CodeRoot:
 
         return definition.return_type
 
-    def add_scoped(self, identifier: Identifier, datatype: DynamicDataType) -> None:
+    def add_scoped(self, identifier: Identifier, datatype: DynamicDataType):
         self._global_scope.insert(0, ScopedValue(identifier, datatype))
 
     def get_scoped(self, identifier: Identifier, root: CodeRoot) -> GetScopedResult:
@@ -503,7 +503,7 @@ class CodeBlock:
             size += self._parent.break_scope_size(root)
         return size
 
-    def mark_break_scope(self) -> None:
+    def mark_break_scope(self):
         self._break_scope = True
 
 
@@ -650,7 +650,7 @@ class IncludeScript(TopLevelObject):
         self.file: StringExpression = file
         self.library: dict[str, bytes] = library if library is not None else {}
 
-    def compile(self, ncs: NCS, root: CodeRoot) -> None:
+    def compile(self, ncs: NCS, root: CodeRoot):
         for folder in root.library_lookup:
             filepath = folder / f"{self.file.value}.nss"
             if filepath.exists():
@@ -682,7 +682,7 @@ class StructDefinition(TopLevelObject):
         self.identifier: Identifier = identifier
         self.members: list[StructMember] = members
 
-    def compile(self, ncs: NCS, root: CodeRoot) -> None:
+    def compile(self, ncs: NCS, root: CodeRoot):
         if len(self.members) == 0:
             msg = "Struct cannot be empty."
             raise CompileException(msg)
@@ -775,7 +775,7 @@ class IdentifierExpression(Expression):
         super().__init__()
         self.identifier: Identifier = value
 
-    def __eq__(self, other: IdentifierExpression | object):
+    def __eq__(self, other: IdentifierExpression):
         if isinstance(other, IdentifierExpression):
             return self.identifier == other.identifier
         return NotImplemented
@@ -831,7 +831,7 @@ class StringExpression(Expression):
         super().__init__()
         self.value: str = value
 
-    def __eq__(self, other):
+    def __eq__(self, other: StringExpression):
         if isinstance(other, StringExpression):
             return self.value == other.value
         return NotImplemented
@@ -849,7 +849,7 @@ class IntExpression(Expression):
         super().__init__()
         self.value: int = value
 
-    def __eq__(self, other: IntExpression | object):
+    def __eq__(self, other: IntExpression):
         if isinstance(other, IntExpression):
             return self.value == other.value
         return NotImplemented
@@ -867,7 +867,7 @@ class ObjectExpression(Expression):
         super().__init__()
         self.value: int = value
 
-    def __eq__(self, other: ObjectExpression | object):
+    def __eq__(self, other: ObjectExpression):
         if isinstance(other, ObjectExpression):
             return self.value == other.value
         return NotImplemented
@@ -885,7 +885,7 @@ class FloatExpression(Expression):
         super().__init__()
         self.value: float = value
 
-    def __eq__(self, other: FloatExpression | object):
+    def __eq__(self, other: FloatExpression):
         if isinstance(other, FloatExpression):
             return self.value == other.value
         return NotImplemented
@@ -905,7 +905,7 @@ class VectorExpression(Expression):
         self.y: FloatExpression = y
         self.z: FloatExpression = z
 
-    def __eq__(self, other):
+    def __eq__(self, other: VectorExpression):
         if isinstance(other, VectorExpression):
             return self.x == other.x and self.y == other.y and self.z == other.z
         else:
@@ -1986,7 +1986,7 @@ class DynamicDataType:
         self.builtin: DataType = datatype
         self._struct: str | None = struct_name
 
-    def __eq__(self, other) -> bool:
+    def __eq__(self, other: DynamicDataType | DataType) -> bool:
         if isinstance(other, DynamicDataType):
             if self.builtin == other.builtin:
                 return self.builtin != DataType.STRUCT or (self.builtin == DataType.STRUCT and self._struct == other._struct)

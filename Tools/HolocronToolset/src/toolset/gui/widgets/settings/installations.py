@@ -39,7 +39,7 @@ class InstallationsWidget(QWidget):
         self.setupValues()
         self.setupSignals()
 
-    def setupValues(self) -> None:
+    def setupValues(self):
         """Sets up installation values in the model
         Args:
             self: The class instance
@@ -57,7 +57,7 @@ class InstallationsWidget(QWidget):
             item.setData({"path": installation.path, "tsl": installation.tsl})
             self.installationsModel.appendRow(item)
 
-    def setupSignals(self) -> None:
+    def setupSignals(self):
         """Set up signal connections for installation management UI.
 
         Args:
@@ -84,7 +84,7 @@ class InstallationsWidget(QWidget):
         self.ui.pathTslCheckbox.stateChanged.connect(self.updateInstallation)
         self.ui.pathList.selectionModel().selectionChanged.connect(self.installationSelected)
 
-    def save(self) -> None:
+    def save(self):
         installations = {}
 
         for row in range(self.installationsModel.rowCount()):
@@ -94,13 +94,13 @@ class InstallationsWidget(QWidget):
 
         self.settings.settings.setValue("installations", installations)
 
-    def addNewInstallation(self) -> None:
+    def addNewInstallation(self):
         item = QStandardItem("New")
         item.setData({"path": "", "tsl": False})
         self.installationsModel.appendRow(item)
         self.edited.emit()
 
-    def removeSelectedInstallation(self) -> None:
+    def removeSelectedInstallation(self):
         if len(self.ui.pathList.selectedIndexes()) > 0:
             index = self.ui.pathList.selectedIndexes()[0]
             item = self.installationsModel.itemFromIndex(index)
@@ -110,7 +110,7 @@ class InstallationsWidget(QWidget):
         if len(self.ui.pathList.selectedIndexes()) == 0:
             self.ui.pathFrame.setEnabled(False)
 
-    def updateInstallation(self) -> None:
+    def updateInstallation(self):
         index = self.ui.pathList.selectedIndexes()[0]
         item = self.installationsModel.itemFromIndex(index)
 
@@ -123,7 +123,7 @@ class InstallationsWidget(QWidget):
 
         self.edited.emit()
 
-    def installationSelected(self) -> None:
+    def installationSelected(self):
         if len(self.ui.pathList.selectedIndexes()) > 0:
             self.ui.pathFrame.setEnabled(True)
 
@@ -145,7 +145,7 @@ class InstallationConfig:
         return self._name
 
     @name.setter
-    def name(self, value: str) -> None:
+    def name(self, value: str):
         installations = self._settings.value("installations", {}, dict[str, Any])
         installation = installations[self._name]
 
@@ -162,7 +162,7 @@ class InstallationConfig:
         return installation["path"]
 
     @path.setter
-    def path(self, value: str) -> None:
+    def path(self, value: str):
         installations = self._settings.value("installations", {})
         installations[self._name]["path"] = value
         self._settings.setValue("installations", installations)
@@ -173,7 +173,7 @@ class InstallationConfig:
         return installation["tsl"]
 
     @tsl.setter
-    def tsl(self, value: bool) -> None:
+    def tsl(self, value: bool):
         installations = self._settings.value("installations", {})
         installations[self._name]["tsl"] = value
         self._settings.setValue("installations", installations)

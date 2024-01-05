@@ -6,7 +6,7 @@ import traceback as ___traceback___
 import types as ___types___
 
 
-def universal_simplify_exception(e) -> tuple[str, str]:
+def universal_simplify_exception(e: BaseException) -> tuple[str, str]:
     """Simplify exceptions into a standardized format
     Args:
         e: Exception - The exception to simplify
@@ -19,7 +19,7 @@ def universal_simplify_exception(e) -> tuple[str, str]:
     - Try common exception attributes for a message
     - Return (error_name, repr(e)) if nothing else.
     """
-    error_name = type(e).__name__
+    error_name: str = type(e).__name__
 
     # Handle FileNotFoundError, which has 'filename' attribute
     if isinstance(e, FileNotFoundError):
@@ -52,28 +52,36 @@ def universal_simplify_exception(e) -> tuple[str, str]:
     for attr in ["strerror", "message", "reason", "filename", "filename1", "filename2"]:
         msg = getattr(e, attr, None)
         if msg:
-            return error_name, f"{error_name}: {msg}"
+            return error_name, f"{e}: {msg}"
 
-    return error_name, repr(e)
+    return error_name, str(e) + getattr(e, "args", "")
 
 
-def format_exception_with_variables(___etype___, ___value___, ___tb___, ___message___: str = "Assertion with Exception Trace") -> str:
+def format_exception_with_variables(
+    ___value___: BaseException,
+    ___etype___: type[BaseException] | None = None,
+    ___tb___: ___types___.TracebackType | None = None,
+    ___message___: str = "Assertion with Exception Trace",
+) -> str:
+    ___etype___ = ___etype___ if ___etype___ is not None else type(___value___)
+    ___tb___ = ___tb___ if ___tb___ is not None else ___value___.__traceback__
+
     # Check if the arguments are of the correct type
     if not issubclass(___etype___, BaseException):
-        msg = "___etype___ is not an exception class"
+        msg = f"{___etype___!r} is not an exception class"
         raise TypeError(msg)
     if not isinstance(___value___, BaseException):
-        msg = "___value___ is not an exception instance"
+        msg = f"{___value___!r} is not an exception instance"
         raise TypeError(msg)
     if not isinstance(___tb___, ___types___.TracebackType):
         msg = "___tb___ is not a traceback object"
         raise TypeError(msg)
 
     # Construct the stack trace using traceback
-    ___formatted_traceback___ = "".join(___traceback___.format_exception(___etype___, ___value___, ___tb___))
+    ___formatted_traceback___: str = "".join(___traceback___.format_exception(___etype___, ___value___, ___tb___))
 
     # Capture the current stack trace
-    ___frames___ = ___inspect___.getinnerframes(___tb___, context=5)
+    ___frames___: list[___inspect___.FrameInfo] = ___inspect___.getinnerframes(___tb___, context=5)
 
     # Get default module attributes to filter out built-ins
     ___default_attrs___: set[str] = set(dir(___sys___.modules["builtins"]))
@@ -138,7 +146,7 @@ def assert_with_variable_trace(___condition___: bool, ___message___: str = "Asse
     ___frames___: list[___inspect___.FrameInfo] = ___inspect___.getouterframes(___inspect___.currentframe())
 
     # Get the line of code calling assert_with_variable_trace
-    ___calling_frame_record___ = ___frames___[1]
+    ___calling_frame_record___: ___inspect___.FrameInfo = ___frames___[1]
     (
         ___unused_frame_type___,
         ___filename_errorhandler___,

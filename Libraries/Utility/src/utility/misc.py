@@ -6,7 +6,7 @@ import platform
 import sys
 from contextlib import suppress
 from enum import Enum
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, TypeVar
 
 from utility.path import Path
 
@@ -62,7 +62,7 @@ def format_gpu_info(info, headers):
     column_widths: list[int] = [max(len(str(row[i])) for row in [headers, *info]) for i in range(len(headers))]
 
     # Function to format a single row
-    def format_row(row):
+    def format_row(row) -> str:
         return " | ".join(f"{str(item).ljust(column_widths[i])}" for i, item in enumerate(row))
 
     # Build the output string
@@ -75,7 +75,17 @@ def format_gpu_info(info, headers):
 
     return output
 
+T = TypeVar("T")
+def remove_duplicates(my_list: list[T], *, case_insensitive=False) -> list[T]:
+    seen = set()
+    return [
+        x.lower() if case_insensitive and isinstance(x, str) else x
+        for x in my_list
+        if not (x in seen or seen.add(x))
+    ]
+
 def get_system_info():
+    # sourcery skip: extract-method, list-comprehension, merge-dict-assign
     info = {}
 
     # Basic OS information
@@ -128,7 +138,7 @@ def is_debug_mode() -> bool:
         ret = True
     if hasattr(sys, "gettrace") and sys.gettrace() is not None:
         ret = True
-    print(f"DEBUG MODE: {ret!s}")
+    print(f"DEBUG MODE: {ret}")
     return ret
 
 def has_attr_excluding_object(cls, attr_name) -> bool:
@@ -199,7 +209,7 @@ def indent(elem: Element, level=0):
         - If no tail after children, set tail to indentation
         - If level and no tail, set tail to indentation.
     """
-    i = "\n" + level * "  "
+    i: str = "\n" + level * "  "
     if len(elem):
         if not elem.text or not elem.text.strip():
             elem.text = f"{i}  "

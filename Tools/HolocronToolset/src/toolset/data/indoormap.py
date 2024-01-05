@@ -53,7 +53,7 @@ class MinimapData(NamedTuple):
 
 
 class IndoorMap:
-    def __init__(self) -> None:
+    def __init__(self):
         self.rooms: list[IndoorMapRoom] = []
         self.moduleId: str = "test01"
         self.name: LocalizedString = LocalizedString.from_english("New Module")
@@ -61,7 +61,7 @@ class IndoorMap:
         self.skybox: str = ""
         self.warpPoint: Vector3 = Vector3.from_null()
 
-    def rebuildRoomConnections(self) -> None:
+    def rebuildRoomConnections(self):
         for room in self.rooms:
             room.rebuildConnections(self.rooms)
 
@@ -381,11 +381,12 @@ class IndoorMap:
             utd: UTD = deepcopy(insert.door.utdK2 if installation.tsl else insert.door.utdK1)
             utd.resref = door.resref
             utd.static = insert.static
-            utd.tag = door.resref.get().title().replace("_", "")
-            self.mod.set_data(door.resref.get(), ResourceType.UTD, bytes_utd(utd))
+            door_resname = str(door.resref)
+            utd.tag = door_resname.title().replace("_", "")
+            self.mod.set_data(door_resname, ResourceType.UTD, bytes_utd(utd))
 
             orientation = Vector4.from_euler(0, 0, math.radians(door.bearing))
-            self.lyt.doorhooks.append(LYTDoorHook(self.roomNames[insert.room], door.resref.get(), insert.position, orientation))
+            self.lyt.doorhooks.append(LYTDoorHook(self.roomNames[insert.room], door_resname, insert.position, orientation))
 
             if insert.hook1 and insert.hook2:
                 if insert.hook1.door.height != insert.hook2.door.height:
@@ -597,7 +598,7 @@ class IndoorMap:
 
         write_erf(self.mod, output_path)
 
-    def build(self, installation: HTInstallation, kits: list[Kit], output_path: os.PathLike | str) -> None:
+    def build(self, installation: HTInstallation, kits: list[Kit], output_path: os.PathLike | str):
         """Builds the indoor map from room components and kits.
 
         Args:
@@ -685,7 +686,7 @@ class IndoorMap:
 
         return json.dumps(data).encode()
 
-    def load(self, raw: bytes, kits: list[Kit]) -> None:
+    def load(self, raw: bytes, kits: list[Kit]):
         """Load raw data and initialize the map.
 
         Args:
@@ -763,7 +764,7 @@ class IndoorMap:
             room = IndoorMapRoom(sComponent, position, rotation, flip_x, flip_y)
             self.rooms.append(room)
 
-    def reset(self) -> None:
+    def reset(self):
         self.rooms.clear()
         self.moduleId = "test01"
         self.name = LocalizedString.from_english("New Module")
@@ -831,7 +832,7 @@ class IndoorMap:
         del painter
 
         # Minimaps are 512x256 so we need to appropriately scale down our image
-        pixmap = pixmap.scaled(435, 256, QtCore.Qt.KeepAspectRatio)  # type: ignore[attr-defined, reportGeneralTypeIssues]
+        pixmap = pixmap.scaled(435, 256, QtCore.Qt.KeepAspectRatio)  # type: ignore[attr-defined]
 
         pixmap2 = QPixmap(512, 256)
         pixmap2.fill(QColor(0))
@@ -907,7 +908,7 @@ class IndoorMapRoom:
 
         return pos
 
-    def rebuildConnections(self, rooms: list[IndoorMapRoom]) -> None:
+    def rebuildConnections(self, rooms: list[IndoorMapRoom]):
         """Rebuilds connections between rooms.
 
         Args:

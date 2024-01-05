@@ -12,6 +12,7 @@ from pykotor.resource.type import ResourceType
 from toolset.gui.dialogs.edit.locstring import LocalizedStringDialog
 from toolset.gui.dialogs.inventory import InventoryEditor
 from toolset.gui.editor import Editor
+from utility.error_handling import format_exception_with_variables
 
 if TYPE_CHECKING:
     import os
@@ -31,10 +32,10 @@ class UTMEditor(Editor):
 
         Processing Logic:
         ----------------
-        - Sets up the UI from the designer file
-        - Initializes menus and signals
-        - Loads data from the provided installation if given
-        - Calls new() to start with a blank merchant
+            - Sets up the UI from the designer file
+            - Initializes menus and signals
+            - Loads data from the provided installation if given
+            - Calls new() to start with a blank merchant
         """
         supported = [ResourceType.UTM]
         super().__init__(parent, "Merchant Editor", "merchant", supported, supported, installation)
@@ -50,8 +51,8 @@ class UTMEditor(Editor):
 
         self.new()
 
-    def _setupSignals(self) -> None:
-        """Sets up signal connections for UI buttons"""
+    def _setupSignals(self):
+        """Sets up signal connections for UI buttons."""
         self.ui.tagGenerateButton.clicked.connect(self.generateTag)
         self.ui.resrefGenerateButton.clicked.connect(self.generateResref)
         self.ui.inventoryButton.clicked.connect(self.openInventory)
@@ -72,13 +73,13 @@ class UTMEditor(Editor):
         self._installation = installation
         self.ui.nameEdit.setInstallation(installation)
 
-    def load(self, filepath: os.PathLike | str, resref: str, restype: ResourceType, data: bytes) -> None:
+    def load(self, filepath: os.PathLike | str, resref: str, restype: ResourceType, data: bytes):
         super().load(filepath, resref, restype, data)
 
         utm = read_utm(data)
         self._loadUTM(utm)
 
-    def _loadUTM(self, utm: UTM) -> None:
+    def _loadUTM(self, utm: UTM):
         """Loads UTM data into UI elements.
 
         Args:
@@ -96,11 +97,11 @@ class UTMEditor(Editor):
         # Basic
         self.ui.nameEdit.setLocstring(utm.name)
         self.ui.tagEdit.setText(utm.tag)
-        self.ui.resrefEdit.setText(utm.resref.get())
+        self.ui.resrefEdit.setText(str(utm.resref))
         self.ui.idSpin.setValue(utm.id)
         self.ui.markUpSpin.setValue(utm.mark_up)
         self.ui.markDownSpin.setValue(utm.mark_down)
-        self.ui.onOpenEdit.setText(utm.on_open.get())
+        self.ui.onOpenEdit.setText(str(utm.on_open))
         self.ui.storeFlagSelect.setCurrentIndex((int(utm.can_buy) + int(utm.can_sell) * 2) - 1)
 
         # Comments
@@ -143,33 +144,35 @@ class UTMEditor(Editor):
 
         return data, b""
 
-    def new(self) -> None:
+    def new(self):
         super().new()
         self._loadUTM(UTM())
 
-    def changeName(self) -> None:
-        dialog = LocalizedStringDialog(self, self._installation, self.ui.nameEdit.locstring)
+    def changeName(self):
+        dialog = LocalizedStringDialog(self, self._installation, self.ui.nameEdit.locstring())
         if dialog.exec_():
             self._loadLocstring(self.ui.nameEdit, dialog.locstring)
 
-    def generateTag(self) -> None:
+    def generateTag(self):
         if self.ui.resrefEdit.text() == "":
             self.generateResref()
         self.ui.tagEdit.setText(self.ui.resrefEdit.text())
 
-    def generateResref(self) -> None:
+    def generateResref(self):
         if self._resref is not None and self._resref != "":
             self.ui.resrefEdit.setText(self._resref)
         else:
             self.ui.resrefEdit.setText("m00xx_mer_000")
 
-    def openInventory(self) -> None:
-        capsules = []
+    def openInventory(self):
+        capsules: list[Capsule] = []
 
-        with suppress(Exception):
-            root = Module.get_root(self._filepath)
-            capsulesPaths = [path for path in self._installation.module_names() if root in path and path != self._filepath]
+        try:
+            root: str = Module.get_root(self._filepath)
+            capsulesPaths: list[str] = [path for path in self._installation.module_names() if root in path and path != self._filepath]
             capsules.extend([Capsule(self._installation.module_path() / path) for path in capsulesPaths])
+        except Exception as e:
+            print(format_exception_with_variables(e, ___message___="This exception has been suppressed."))
 
         inventoryEditor = InventoryEditor(self, self._installation, capsules, [], self._utm.inventory, {}, False, True, True)
         if inventoryEditor.exec_():

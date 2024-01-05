@@ -20,7 +20,7 @@ class PatcherModifications(ABC):
     DEFAULT_DESTINATION = "Override"
 
     @abstractmethod
-    def __init__(self, sourcefile: str, replace: bool | None = None, modifiers: list | None = None) -> None:
+    def __init__(self, sourcefile: str, replace: bool | None = None, modifiers: list | None = None):
         self.sourcefile: str = sourcefile
         self.sourcefolder: str = "."
         self.saveas: str = sourcefile
@@ -48,10 +48,10 @@ class PatcherModifications(ABC):
         memory: PatcherMemory,
         logger: PatchLogger,
         game: Game,
-    ) -> None:
+    ):
         ...
 
-    def pop_tslpatcher_vars(self, file_section_dict: CaseInsensitiveDict[str], default_destination=None) -> None:
+    def pop_tslpatcher_vars(self, file_section_dict: CaseInsensitiveDict[str], default_destination=None):
         """All optional TSLPatcher vars that can be parsed for a given patch list."""
         self.sourcefile = file_section_dict.pop("!SourceFile", self.sourcefile)
         # !SaveAs and !Filename are the same.

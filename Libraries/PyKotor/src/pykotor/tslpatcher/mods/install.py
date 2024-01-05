@@ -6,6 +6,7 @@ from typing import TYPE_CHECKING
 
 from pykotor.common.stream import BinaryReader
 from pykotor.tslpatcher.mods.template import PatcherModifications
+from utility.error_handling import universal_simplify_exception
 from utility.path import Path, PurePath
 
 if TYPE_CHECKING:
@@ -23,7 +24,7 @@ def create_backup(
     backup_folderpath: CaseAwarePath,
     processed_files: set,
     subdirectory_path: os.PathLike | str | None = None,
-):  # sourcery skip: extract-method
+):
     """Creates a backup of the provided file.
 
     Args:
@@ -77,10 +78,10 @@ def create_backup(
             log.add_note(f"Backing up '{destination_file_str}'...")
             if subdirectory_backup_path:
                 subdirectory_backup_path.mkdir(exist_ok=True, parents=True)
-            try:
+            try:  # sourcery skip: remove-redundant-exception
                 shutil.copy(destination_filepath, backup_filepath)
-            except PermissionError as e:
-                log.add_warning(f"Failed to create backup of '{destination_file_str}': {e}")
+            except (OSError, PermissionError) as e:
+                log.add_warning(f"Failed to create backup of '{destination_file_str}': {universal_simplify_exception(e)}")
         else:
 
             # Write the file path to remove these files.txt in backup directory
@@ -299,7 +300,12 @@ read -rp "Press enter to continue..."
 
 
 class InstallFile(PatcherModifications):
-    def __init__(self, filename: str, replace_existing: bool) -> None:
+    def __init__(
+        self,
+        filename: str,
+        *,
+        replace_existing: bool,
+    ):
         super().__init__(filename, replace_existing)
 
         self.action: str = "Copy "
@@ -320,5 +326,5 @@ class InstallFile(PatcherModifications):
                 return f.read().encode()
         return bytes(source)
 
-    def apply(self, source, *args, **kwargs) -> None:
+    def apply(self, source, *args, **kwargs):
         ...

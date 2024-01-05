@@ -18,7 +18,7 @@ if TYPE_CHECKING:
 windows: list[QWidget] = []
 
 
-def addWindow(window: QWidget) -> None:
+def addWindow(window: QWidget):
     def removeFromList(a0):
         QWidget.closeEvent(window, a0)
         if window in windows:
@@ -230,11 +230,10 @@ def openResourceEditor(
             addWindow(editor)
 
         except Exception as e:
-            etype, emsg = universal_simplify_exception(e)
             QMessageBox(
                 QMessageBox.Critical,
-                f"An unexpected error has occurred: {etype}",
-                emsg,
+                "An unexpected error has occurred",
+                str(universal_simplify_exception(e)),
                 QMessageBox.Ok,
                 parentwindow
             ).show()
@@ -245,7 +244,7 @@ def openResourceEditor(
         QMessageBox(
             QMessageBox.Critical,
             "Failed to open file",
-            f"The selected file format '{restype!r}' is not yet supported.",
+            f"The selected file format '{restype}' is not yet supported.",
             QMessageBox.Ok,
             parentwindow,
         ).show()

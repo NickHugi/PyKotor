@@ -12,7 +12,7 @@ class TPCBMPWriter(ResourceWriter):
         self,
         tpc: TPC,
         target: TARGET_TYPES,
-    ) -> None:
+    ):
         super().__init__(target)
         self._tpc: TPC = tpc
 
@@ -20,7 +20,7 @@ class TPCBMPWriter(ResourceWriter):
     def write(
         self,
         auto_close: bool = True,
-    ) -> None:
+    ):
         """Writes the texture to a bitmap file.
 
         Args:

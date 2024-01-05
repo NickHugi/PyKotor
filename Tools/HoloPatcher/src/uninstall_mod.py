@@ -31,11 +31,11 @@ class ModUninstaller:
             Check if a folder name is a valid backup folder name based on a datetime pattern.
         get_most_recent_backup(backup_folder_path: Path) -> Path | None:
             Returns the most recent valid backup folder.
-        restore_backup(backup_folder: Path, existing_files: set[str], files_in_backup: list[Path]) -> None:
+        restore_backup(backup_folder: Path, existing_files: set[str], files_in_backup: list[Path]):
             Restores a game backup folder to the existing game files.
         get_backup_info() -> tuple[Path | None, set[str], list[Path], int]:
             Get information about the most recent valid backup.
-        uninstall_selected_mod() -> None:
+        uninstall_selected_mod():
             Uninstalls the selected mod using the most recent backup folder created during the last install.
     """
 
@@ -108,7 +108,7 @@ class ModUninstaller:
         backup_folder: Path,
         existing_files,
         files_in_backup,
-    ) -> None:
+    ):
         """Restores a game backup folder to the existing game files.
 
         Args:
@@ -168,7 +168,7 @@ class ModUninstaller:
 
         return most_recent_backup_folder, existing_files, files_in_backup, folder_count
 
-    def uninstall_selected_mod(self) -> None:
+    def uninstall_selected_mod(self):
         """Uninstalls the selected mod using the most recent backup folder created during the last install.
 
         Processing Logic:
@@ -192,7 +192,7 @@ class ModUninstaller:
 
         if len(files_in_backup) < 6:  # noqa: PLR2004[6 represents a small number of files to display]
             for item in files_in_backup:
-                self.log.add_note(f"Would restore file '{item.relative_to(most_recent_backup_folder)!s}'")
+                self.log.add_note(f"Would restore file '{item.relative_to(most_recent_backup_folder)}'")
         if not messagebox.askyesno(
             "Confirmation",
             f"Really uninstall {len(existing_files)} files and restore the most recent backup (containing {len(files_in_backup)} files and {folder_count} folders)?",

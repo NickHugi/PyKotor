@@ -142,7 +142,7 @@ class Shader:
         fragment_shader = shaders.compileShader(fshader, GL_FRAGMENT_SHADER)
         self._id: int = shaders.compileProgram(vertex_shader, fragment_shader)
 
-    def use(self) -> None:
+    def use(self):
         glUseProgram(self._id)
 
     def uniform(self, uniform_name: str):
@@ -208,5 +208,5 @@ class Texture:
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR)
         return Texture(gl_id)
 
-    def use(self) -> None:
+    def use(self):
         glBindTexture(GL_TEXTURE_2D, self._id)

@@ -73,7 +73,7 @@ class AsyncLoader(QDialog):
         self._worker.failed.connect(self._onFailed)
         self._worker.start()
 
-    def closeEvent(self, e: QCloseEvent) -> None:
+    def closeEvent(self, e: QCloseEvent):
         self._worker.terminate()
 
     def updateInfo(self, text: str):
@@ -97,7 +97,7 @@ class AsyncLoader(QDialog):
             QMessageBox(QMessageBox.Critical, self.errorTitle, str(error)).exec_()
 
         with Path("errorlog.txt").open("a") as file:
-            lines = format_exception_with_variables(type(self.error), self.error, self.error.__traceback__)
+            lines = format_exception_with_variables(self.error)
             file.writelines(lines)
             file.write("\n----------------------\n")
 
@@ -120,14 +120,15 @@ class AsyncWorker(QThread):
 class AsyncBatchLoader(QDialog):
     def __init__(self, parent: QWidget, title: str, tasks: list[Callable], errorTitle: str | None = None, *,
                  cascade: bool = False):
-        """Initializes a progress dialog for running multiple tasks asynchronously
+        """Initializes a progress dialog for running multiple tasks asynchronously.
+
         Args:
+        ----
             parent (QWidget): Parent widget
             title (str): Title of the progress dialog
             tasks (list[Callable]): List of tasks to run
             errorTitle (str | None): Title for error dialog, if any
-        Returns:
-            None: Does not return anything
+
         Processing Logic:
         ----------------
             - Sets up progress bar, info text and layout
@@ -166,10 +167,10 @@ class AsyncBatchLoader(QDialog):
         self._worker.completed.connect(self._onAllCompleted)
         self._worker.start()
 
-    def closeEvent(self, e: QCloseEvent) -> None:
+    def closeEvent(self, e: QCloseEvent):
         self._worker.terminate()
 
-    def addTask(self, task: Callable) -> None:
+    def addTask(self, task: Callable):
         self._worker.addTask(task)
         self._progressBar.setMaximum(self._worker.numTasks())
 
@@ -199,9 +200,10 @@ class AsyncBatchLoader(QDialog):
                 errorStrings = [str(error)+"\n" for error in self.errors]
                 QMessageBox(QMessageBox.Critical, self.errorTitle, "".join(errorStrings)).exec_()
             with Path("errorlog.txt").open("a") as file:
-                lines = []
+                lines: list[str] = []
                 for e in self.errors:
-                    lines.extend(format_exception_with_variables(type(e), e, e.__traceback__).split("\n"))
+                    lines.extend(format_exception_with_variables(e).split("\n"))
+
                 file.writelines(lines)
                 file.write("\n----------------------\n")
         else:
@@ -229,7 +231,7 @@ class AsyncBatchWorker(QThread):
                     break
         self.completed.emit()
 
-    def addTask(self, task: Callable) -> None:
+    def addTask(self, task: Callable):
         self._tasks.append(task)
 
     def numTasks(self) -> int:

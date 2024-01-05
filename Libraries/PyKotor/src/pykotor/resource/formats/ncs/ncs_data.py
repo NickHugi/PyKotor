@@ -218,10 +218,10 @@ class NCS:
 
         Processing Logic:
         ----------------
-        - Create a new NCSInstruction object from the parameters
-        - Insert the instruction into the instructions list at the given index if provided
-        - Otherwise append the instruction to the end of the list
-        - Return the added instruction.
+            - Create a new NCSInstruction object from the parameters
+            - Insert the instruction into the instructions list at the given index if provided
+            - Otherwise append the instruction to the end of the list
+            - Return the added instruction.
         """
         instruction = NCSInstruction(instruction_type, args, jump)
         self.instructions.insert(
@@ -238,7 +238,7 @@ class NCS:
             if inst.jump is target
         ]
 
-    def optimize(self, optimizers: list[NCSOptimizer]) -> None:
+    def optimize(self, optimizers: list[NCSOptimizer]):
         """Optimize the model using the provided optimizers.
 
         Args:
@@ -254,7 +254,7 @@ class NCS:
         for optimizer in optimizers:
             optimizer.optimize(self)
 
-    def merge(self, other: NCS) -> None:
+    def merge(self, other: NCS):
         """Merge instructions from another NCS object into this one.
 
         Args:
@@ -310,10 +310,10 @@ class NCSOptimizer(ABC):
         self.instructions_cleared: int = 0
 
     @abstractmethod
-    def optimize(self, ncs: NCS) -> None:
+    def optimize(self, ncs: NCS):
         ...
 
-    def reset(self) -> None:
+    def reset(self):
         """Reset stats counter."""
         self.instructions_cleared = 0
 

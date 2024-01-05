@@ -8,6 +8,7 @@ from typing import Iterable, NamedTuple, Union
 from xml.etree.ElementTree import ParseError
 
 from pykotor.common.stream import BinaryReader, BinaryWriter
+from utility.string import WrappedStr
 
 SOURCE_TYPES = Union[os.PathLike, str, bytes, bytearray, BinaryReader]
 TARGET_TYPES = Union[os.PathLike, str, bytearray, BinaryWriter]
@@ -38,7 +39,7 @@ class ResourceWriter:
 
     def close(
         self,
-    ) -> None:
+    ):
         self._writer.close()
 
 class ResourceTuple(NamedTuple):
@@ -164,7 +165,7 @@ class ResourceType(Enum):
         while name in cls.__members__:
             name = f"{name}_{uuid.uuid4().hex}"
         obj._name_ = name
-        obj.__init__(*args, **kwargs)
+        obj.__init__(*args, **kwargs)  # type: ignore[misc]
         return super().__new__(cls, obj)
 
     def __init__(
@@ -173,14 +174,13 @@ class ResourceType(Enum):
         extension: str,
         category: str,
         contents: str,
-        is_invalid: bool = False,
+        is_invalid: bool = False,  # noqa: FBT001, FBT002
     ):
-        self.type_id: int = type_id
-        self.extension: str = extension.lower().strip()
+        self.type_id: int = type_id  # type: ignore[misc]
+        self.extension: str = extension.strip().lower()
         self.category: str = category
         self.contents: str = contents
         self.is_invalid: bool = is_invalid
-        self._is_initialized = True
 
     def __bool__(self) -> bool:
         return not self.is_invalid
@@ -188,7 +188,16 @@ class ResourceType(Enum):
     def __repr__(
         self,
     ) -> str:
-        return f"ResourceType.{self.name}"
+        if self.name == "INVALID" or not self.is_invalid:
+            return f"{self.__class__.__name__}.{self.name}"
+
+        return (  # For dynamically constructed invalid members
+            f"{self.__class__.__name__}.from_invalid("
+            f"{f'type_id={self.type_id}, ' if self.type_id else ''}"
+            f"{f'extension={self.extension}, ' if self.extension else ''}"
+            f"{f'category={self.category}, ' if self.category else ''}"
+            f"contents={self.contents})"
+        )
 
     def __str__(
         self,
@@ -204,7 +213,7 @@ class ResourceType(Enum):
 
     def __eq__(
         self,
-        other: ResourceType | str | int | object,
+        other: ResourceType | str | int,
     ):
         """Two ResourceTypes are equal if they are the same.
 
@@ -215,16 +224,14 @@ class ResourceType(Enum):
             if self.is_invalid or other.is_invalid:
                 return self.is_invalid and other.is_invalid
             return self.name == other.name
-        if isinstance(other, str):
+        if isinstance(other, (str, WrappedStr)):
             return self.extension == other.lower()
         if isinstance(other, int):
             return self.type_id == other
         return NotImplemented
 
-    def __hash__(
-        self,
-    ):
-        return hash(str(self.extension))  # FIXME: should be case-insensitive
+    def __hash__(self):
+        return hash(self.extension)
 
     @classmethod
     def from_id(
@@ -253,11 +260,34 @@ class ResourceType(Enum):
             ResourceType.from_invalid(type_id=type_id),
         )
 
-    def validate(self):
-        if not self:
-            msg = f"Could not find resource type with extension '{self.extension}' ID '{self.type_id}'"
-            raise ValueError(msg)
-        return self
+    @classmethod
+    def from_extension(
+        cls,
+        extension: str,
+    ) -> ResourceType:
+        """Returns the ResourceType for the specified extension.
+
+        This will slice off the leading dot in the extension, if it exists.
+
+        Args:
+        ----
+            extension: The resource's extension. This is case-insensitive
+
+        Returns:
+        -------
+            The corresponding ResourceType object.
+        """
+        lower_ext: str = extension.lower()
+        if lower_ext.startswith("."):
+            lower_ext = lower_ext[1:]
+        return next(
+            (
+                restype
+                for restype in ResourceType.__members__.values()
+                if lower_ext == restype.extension
+            ),
+            ResourceType.from_invalid(extension=lower_ext),
+        )
 
     @classmethod
     def from_invalid(
@@ -272,37 +302,14 @@ class ResourceType(Enum):
             name = f"INVALID_{kwargs.get('extension', kwargs.get('type_id', cls.INVALID.extension))}{uuid.uuid4().hex}"
         instance._name_ = name
         instance._value_ = ResourceTuple(**{**cls.INVALID.value, **kwargs, "is_invalid": True})
-        instance.__init__(**instance.value)
+        instance.__init__(**instance.value)  # type: ignore[misc]
         return super().__new__(cls, instance)
 
-    @classmethod
-    def from_extension(
-        cls,
-        extension: str,
-    ) -> ResourceType:
-        """Returns the ResourceType for the specified extension.
-
-        This will slice off the leading dot in the extension, if it exists.
-
-        Args:
-        ----
-            extension: The resource extension.
-
-        Returns:
-        -------
-            The corresponding ResourceType object.
-        """
-        lower_ext: str = extension.lower()
-        if extension.startswith("."):
-            lower_ext = lower_ext[1:]
-        return next(
-            (
-                restype
-                for restype in ResourceType.__members__.values()
-                if lower_ext == restype.extension
-            ),
-            ResourceType.from_invalid(extension=lower_ext),
-        )
+    def validate(self):
+        if not self:
+            msg = f"Invalid ResourceType: '{self!r}'"
+            raise ValueError(msg)
+        return self
 
 
 def autoclose(func):

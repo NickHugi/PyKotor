@@ -16,7 +16,7 @@ class LYT:
 
     def __init__(
         self,
-    ) -> None:
+    ):
         self.rooms: list[LYTRoom] = []
         self.tracks: list[LYTTrack] = []
         self.obstacles: list[LYTObstacle] = []
@@ -42,7 +42,7 @@ class LYTRoom:
 
     def __eq__(
         self,
-        other,
+        other: LYTRoom,
     ):
         if not isinstance(other, LYTRoom):
             return NotImplemented
@@ -75,7 +75,7 @@ class LYTTrack:
 
     def __eq__(
         self,
-        other,
+        other: LYTTrack,
     ):
         if not isinstance(other, LYTTrack):
             return NotImplemented
@@ -103,7 +103,7 @@ class LYTObstacle:
 
     def __eq__(
         self,
-        other,
+        other: LYTObstacle,
     ):
         if not isinstance(other, LYTObstacle):
             return NotImplemented
@@ -137,7 +137,7 @@ class LYTDoorHook:
 
     def __eq__(
         self,
-        other,
+        other: LYTDoorHook,
     ):
         if not isinstance(other, LYTDoorHook):
             return NotImplemented

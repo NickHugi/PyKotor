@@ -45,25 +45,25 @@ class SetBindWidget(QWidget):
         self.ui.mouseCombo.setItemData(3, {})
         self.ui.mouseCombo.setItemData(4, None)
 
-    def startRecording(self) -> None:
+    def startRecording(self):
         self.recordBind = True
         self.keybind.clear()
         self.updateKeybindText()
         self.ui.setKeysEdit.setPlaceholderText("enter a key...")
 
-    def clearKeybind(self) -> None:
+    def clearKeybind(self):
         self.keybind.clear()
         self.ui.setKeysEdit.setPlaceholderText("none")
 
-    def keyPressed(self, event: QKeyEvent) -> None:
+    def keyPressed(self, event: QKeyEvent):
         if self.recordBind:
             self.keybind.add(event.key())
             self.updateKeybindText()
 
-    def keyReleased(self, event: QKeyEvent) -> None:
+    def keyReleased(self, event: QKeyEvent):
         self.recordBind = False
 
-    def setBind(self, bind: Bind) -> None:
+    def setBind(self, bind: Bind):
         if bind[1] == {QtCore.Qt.MouseButton.LeftButton}:
             self.ui.mouseCombo.setCurrentIndex(0)
         if bind[1] == {QtCore.Qt.MouseButton.MiddleButton}:
@@ -82,7 +82,7 @@ class SetBindWidget(QWidget):
         mousebind: set[int] = self.ui.mouseCombo.currentData()
         return self.keybind, mousebind
 
-    def updateKeybindText(self) -> None:
+    def updateKeybindText(self):
         text = ""
         for i, key in enumerate(sorted(self.keybind, reverse=True)):
             text += getStringFromKey(key)

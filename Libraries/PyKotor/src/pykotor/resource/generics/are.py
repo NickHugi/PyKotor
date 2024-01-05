@@ -94,7 +94,7 @@ class ARE:
 
     def __init__(
         self,
-    ) -> None:
+    ):
         self.alpha_test: float = 0.0
         self.camera_style: int = 0
 
@@ -522,7 +522,7 @@ def write_are(
     file_format: ResourceType = ResourceType.GFF,
     *,
     use_deprecated: bool = True,
-) -> None:
+):
     """Writes an ARE resource to a target file format.
 
     Args:

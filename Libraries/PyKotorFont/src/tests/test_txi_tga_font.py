@@ -25,7 +25,7 @@ class TestWriteBitmapFont(unittest.TestCase):
     #    write_bitmap_font(self.output_path / "test_font_chinese.tga", CHINESE_FONT_PATH_FILE, (10240,10240), Language.CHINESE_SIMPLIFIED, draw_box=True)
     def test_bitmap_font_thai(self):
         write_bitmap_font(self.output_path / "test_font_thai.tga", THAI_FONT_PATH_FILE, (2048,2048), Language.THAI, draw_box=True)
-    def test_valid_inputs(self) -> None:
+    def test_valid_inputs(self):
         # Test with valid inputs
         target_path = Path("output/font2.tga").resolve()
         resolution = (1024, 1024)
@@ -60,7 +60,7 @@ class TestWriteBitmapFont(unittest.TestCase):
         lang = "invalid"
 
         with self.assertRaises((AttributeError, ValueError)):
-            write_bitmap_font(target_path, FONT_PATH_FILE, resolution, lang, draw_box=True)  # type: ignore[arg-type, reportGeneralTypeIssues]
+            write_bitmap_font(target_path, FONT_PATH_FILE, resolution, lang, draw_box=True)  # type: ignore[arg-type]
 
     def test_invalid_resolution(self):
         # Test with invalid resolution

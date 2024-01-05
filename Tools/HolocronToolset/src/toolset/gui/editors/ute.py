@@ -1,4 +1,5 @@
 from __future__ import annotations
+from contextlib import suppress
 
 from typing import TYPE_CHECKING
 
@@ -46,7 +47,7 @@ class UTEEditor(Editor):
 
         self.new()
 
-    def _setupSignals(self) -> None:
+    def _setupSignals(self):
         """Connects UI signals to handler functions.
 
         Processing Logic:
@@ -74,30 +75,33 @@ class UTEEditor(Editor):
 
         Processing Logic:
         ----------------
-        - Sets the internal installation object reference
-        - Populates the name field with the installation details
-        - Fetches the faction and difficulty data from the installation
-        - Clears and populates the dropdowns with the faction and difficulty labels
+            - Sets the internal installation object reference
+            - Populates the name field with the installation details
+            - Fetches the faction and difficulty data from the installation
+            - Clears and populates the dropdowns with the faction and difficulty labels
         """
         self._installation = installation
         self.ui.nameEdit.setInstallation(installation)
 
-        factions = installation.htGetCache2DA(HTInstallation.TwoDA_FACTIONS)
-        difficulties = installation.htGetCache2DA(HTInstallation.TwoDA_ENC_DIFFICULTIES)
+        try:
+            factions = installation.htGetCache2DA(HTInstallation.TwoDA_FACTIONS)
+            difficulties = installation.htGetCache2DA(HTInstallation.TwoDA_ENC_DIFFICULTIES)
 
-        self.ui.difficultySelect.clear()
-        self.ui.difficultySelect.setItems(difficulties.get_column("label"))
+            self.ui.difficultySelect.clear()
+            self.ui.difficultySelect.setItems(difficulties.get_column("label"))
 
-        self.ui.factionSelect.clear()
-        self.ui.difficultySelect.setItems(factions.get_column("label"))
+            self.ui.factionSelect.clear()
+            self.ui.difficultySelect.setItems(factions.get_column("label"))
+        except Exception as e:
+            print(e)
 
-    def load(self, filepath: os.PathLike | str, resref: str, restype: ResourceType, data: bytes) -> None:
+    def load(self, filepath: os.PathLike | str, resref: str, restype: ResourceType, data: bytes):
         super().load(filepath, resref, restype, data)
 
         ute = read_ute(data)
         self._loadUTE(ute)
 
-    def _loadUTE(self, ute: UTE) -> None:
+    def _loadUTE(self, ute: UTE):
         """Loads UTE data into UI elements.
 
         Args:
@@ -116,7 +120,7 @@ class UTEEditor(Editor):
         # Basic
         self.ui.nameEdit.setLocstring(ute.name)
         self.ui.tagEdit.setText(ute.tag)
-        self.ui.resrefEdit.setText(ute.resref.get())
+        self.ui.resrefEdit.setText(str(ute.resref))
         self.ui.difficultySelect.setCurrentIndex(ute.difficulty_id)
         self.ui.spawnSelect.setCurrentIndex(int(ute.single_shot))
         self.ui.minCreatureSpin.setValue(ute.rec_creatures)
@@ -135,14 +139,14 @@ class UTEEditor(Editor):
         for _ in range(self.ui.creatureTable.rowCount()):
             self.ui.creatureTable.removeRow(0)
         for creature in ute.creatures:
-            self.addCreature(creature.resref.get(), creature.appearance_id, creature.challenge_rating, creature.single_spawn)
+            self.addCreature(str(creature.resref), creature.appearance_id, creature.challenge_rating, creature.single_spawn)
 
         # Scripts
-        self.ui.onEnterEdit.setText(ute.on_entered.get())
-        self.ui.onExitEdit.setText(ute.on_exit.get())
-        self.ui.onExhaustedEdit.setText(ute.on_exhausted.get())
-        self.ui.onHeartbeatEdit.setText(ute.on_heartbeat.get())
-        self.ui.onUserDefinedEdit.setText(ute.on_user_defined.get())
+        self.ui.onEnterEdit.setText(str(ute.on_entered))
+        self.ui.onExitEdit.setText(str(ute.on_exit))
+        self.ui.onExhaustedEdit.setText(str(ute.on_exhausted))
+        self.ui.onHeartbeatEdit.setText(str(ute.on_heartbeat))
+        self.ui.onUserDefinedEdit.setText(str(ute.on_user_defined))
 
         # Comments
         self.ui.commentsEdit.setPlainText(ute.comment)
@@ -211,21 +215,21 @@ class UTEEditor(Editor):
 
         return data, b""
 
-    def new(self) -> None:
+    def new(self):
         super().new()
         self._loadUTE(UTE())
 
-    def changeName(self) -> None:
+    def changeName(self):
         dialog = LocalizedStringDialog(self, self._installation, self.ui.nameEdit.locstring)
         if dialog.exec_():
             self._loadLocstring(self.ui.nameEdit, dialog.locstring)
 
-    def generateTag(self) -> None:
+    def generateTag(self):
         if self.ui.resrefEdit.text() == "":
             self.generateResref()
         self.ui.tagEdit.setText(self.ui.resrefEdit.text())
 
-    def generateResref(self) -> None:
+    def generateResref(self):
         if self._resref is not None and self._resref != "":
             self.ui.resrefEdit.setText(self._resref)
         else:

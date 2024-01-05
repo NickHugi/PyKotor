@@ -26,7 +26,7 @@ class GIT:
 
     def __init__(
         self,
-    ) -> None:
+    ):
         self.ambient_sound_id: int = 0
         self.ambient_volume: int = 0
         self.env_audio: int = 0
@@ -133,7 +133,7 @@ class GIT:
     def add(
         self,
         instance: GITInstance,
-    ) -> None:
+    ):
         """Adds instance to the relevant list in the GIT.
 
         Args:
@@ -213,7 +213,7 @@ class GITInstance(ABC):
         x: float,
         y: float,
         z: float,
-    ) -> None:
+    ):
         """Moves the instance to the specified position.
 
         Args:
@@ -229,7 +229,7 @@ class GITInstance(ABC):
         yaw: float,
         pitch: float,
         roll: float,
-    ) -> None:
+    ):
         ...
 
     @abstractmethod
@@ -276,7 +276,7 @@ class GITCamera(GITInstance):
         x: float,
         y: float,
         z: float,
-    ) -> None:
+    ):
         self.position.x += x
         self.position.y += y
         self.position.z += z
@@ -286,7 +286,7 @@ class GITCamera(GITInstance):
         yaw: float,
         pitch: float,
         roll: float,
-    ) -> None:
+    ):
         rotation = self.orientation.to_euler()
         rotation.x += yaw
         rotation.y += roll
@@ -332,7 +332,7 @@ class GITCreature(GITInstance):
         x: float,
         y: float,
         z: float,
-    ) -> None:
+    ):
         self.position.x += x
         self.position.y += y
         self.position.z += z
@@ -342,13 +342,13 @@ class GITCreature(GITInstance):
         yaw: float,
         pitch: float,
         roll: float,
-    ) -> None:
+    ):
         self.bearing += yaw
 
     def identifier(
         self,
     ) -> ResourceIdentifier | None:
-        return ResourceIdentifier(self.resref.get(), ResourceType.UTC)
+        return ResourceIdentifier(self.resref, ResourceType.UTC)
 
     def blank(
         self,
@@ -401,7 +401,7 @@ class GITDoor(GITInstance):
         x: float,
         y: float,
         z: float,
-    ) -> None:
+    ):
         self.position.x += x
         self.position.y += y
         self.position.z += z
@@ -411,7 +411,7 @@ class GITDoor(GITInstance):
         yaw: float,
         pitch: float,
         roll: float,
-    ) -> None:
+    ):
         self.bearing += yaw
 
     def blank(
@@ -438,7 +438,7 @@ class GITDoor(GITInstance):
             - Create ResourceIdentifier object from reference and type
             - Return ResourceIdentifier or None.
         """
-        return ResourceIdentifier(self.resref.get(), ResourceType.UTD)
+        return ResourceIdentifier(self.resref, ResourceType.UTD)
 
     def classification(
         self,
@@ -485,7 +485,7 @@ class GITEncounter(GITInstance):
         x: float,
         y: float,
         z: float,
-    ) -> None:
+    ):
         """Moves an object to a new position.
 
         Args:
@@ -510,14 +510,14 @@ class GITEncounter(GITInstance):
         yaw: float,
         pitch: float,
         roll: float,
-    ) -> None:
+    ):
         msg = "Encounters cannot be rotated."
         raise ValueError(msg)
 
     def identifier(
         self,
     ) -> ResourceIdentifier | None:
-        return ResourceIdentifier(self.resref.get(), ResourceType.UTE)
+        return ResourceIdentifier(self.resref, ResourceType.UTE)
 
     def blank(
         self,
@@ -555,7 +555,7 @@ class GITPlaceable(GITInstance):
         x: float,
         y: float,
         z: float,
-    ) -> None:
+    ):
         """Moves an object to a new position.
 
         Args:
@@ -580,13 +580,13 @@ class GITPlaceable(GITInstance):
         yaw: float,
         pitch: float,
         roll: float,
-    ) -> None:
+    ):
         self.bearing += yaw
 
     def identifier(
         self,
     ) -> ResourceIdentifier | None:
-        return ResourceIdentifier(self.resref.get(), ResourceType.UTP)
+        return ResourceIdentifier(self.resref, ResourceType.UTP)
 
     def blank(
         self,
@@ -622,7 +622,7 @@ class GITSound(GITInstance):
         x: float,
         y: float,
         z: float,
-    ) -> None:
+    ):
         self.position.x += x
         self.position.y += y
         self.position.z += z
@@ -632,14 +632,14 @@ class GITSound(GITInstance):
         yaw: float,
         pitch: float,
         roll: float,
-    ) -> None:
+    ):
         msg = "Sounds cannot be rotated."
         raise ValueError(msg)
 
     def identifier(
         self,
     ) -> ResourceIdentifier | None:
-        return ResourceIdentifier(self.resref.get(), ResourceType.UTS)
+        return ResourceIdentifier(self.resref, ResourceType.UTS)
 
     def blank(
         self,
@@ -675,7 +675,7 @@ class GITStore(GITInstance):
         x: float,
         y: float,
         z: float,
-    ) -> None:
+    ):
         self.position.x += x
         self.position.y += y
         self.position.z += z
@@ -685,13 +685,13 @@ class GITStore(GITInstance):
         yaw: float,
         pitch: float,
         roll: float,
-    ) -> None:
+    ):
         self.bearing += yaw
 
     def identifier(
         self,
     ) -> ResourceIdentifier | None:
-        return ResourceIdentifier(self.resref.get(), ResourceType.UTM)
+        return ResourceIdentifier(self.resref, ResourceType.UTM)
 
     def blank(
         self,
@@ -733,7 +733,7 @@ class GITTrigger(GITInstance):
         x: float,
         y: float,
         z: float,
-    ) -> None:
+    ):
         self.position.x += x
         self.position.y += y
         self.position.z += z
@@ -743,14 +743,14 @@ class GITTrigger(GITInstance):
         yaw: float,
         pitch: float,
         roll: float,
-    ) -> None:
+    ):
         msg = "Triggers cannot be rotated."
         raise ValueError(msg)
 
     def identifier(
         self,
     ) -> ResourceIdentifier | None:
-        return ResourceIdentifier(self.resref.get(), ResourceType.UTT)
+        return ResourceIdentifier(self.resref, ResourceType.UTT)
 
     def blank(
         self,
@@ -803,7 +803,7 @@ class GITWaypoint(GITInstance):
         x: float,
         y: float,
         z: float,
-    ) -> None:
+    ):
         self.position.x += x
         self.position.y += y
         self.position.z += z
@@ -813,13 +813,13 @@ class GITWaypoint(GITInstance):
         yaw: float,
         pitch: float,
         roll: float,
-    ) -> None:
+    ):
         self.bearing += yaw
 
     def identifier(
         self,
     ) -> ResourceIdentifier | None:
-        return ResourceIdentifier(self.resref.get(), ResourceType.UTW)
+        return ResourceIdentifier(self.resref, ResourceType.UTW)
 
     def blank(
         self,
@@ -1220,7 +1220,7 @@ def write_git(
     file_format: ResourceType = ResourceType.GFF,
     *,
     use_deprecated: bool = True,
-) -> None:
+):
     gff = dismantle_git(git, game, use_deprecated=use_deprecated)
     write_gff(gff, target, file_format)
 

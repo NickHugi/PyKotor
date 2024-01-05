@@ -53,7 +53,7 @@ from pykotor.resource.type import ResourceType
 )
 class UTPEditorTest(TestCase):
     @classmethod
-    def setUpClass(cls) -> None:
+    def setUpClass(cls):
         # Make sure to configure this environment path before testing!
         from toolset.data.installation import HTInstallation
         from toolset.gui.editors.utp import UTPEditor
@@ -61,12 +61,12 @@ class UTPEditorTest(TestCase):
         #cls.K1_INSTALLATION = HTInstallation(K1_PATH, "", tsl=False, mainWindow=None)
         cls.K2_INSTALLATION = HTInstallation(K2_PATH, "", tsl=True, mainWindow=None)
 
-    def setUp(self) -> None:
+    def setUp(self):
         self.app = QApplication([])
         self.editor = self.UTPEditor(None, self.K2_INSTALLATION)
         self.log_messages: list[str] = [os.linesep]
 
-    def tearDown(self) -> None:
+    def tearDown(self):
         self.app.deleteLater()
 
     def log_func(self, *args):
@@ -89,7 +89,7 @@ class UTPEditorTest(TestCase):
         not K1_PATH or not pathlib.Path(K1_PATH).joinpath("chitin.key").exists(),
         "K1_PATH environment variable is not set or not found on disk.",
     )
-    def test_gff_reconstruct_from_k1_installation(self) -> None:
+    def test_gff_reconstruct_from_k1_installation(self):
         self.installation = Installation(K1_PATH)  # type: ignore[arg-type]
         for utp_resource in (resource for resource in self.installation if resource.restype() == ResourceType.UTP):
             old = read_gff(utp_resource.data())
@@ -105,7 +105,7 @@ class UTPEditorTest(TestCase):
         not K2_PATH or not pathlib.Path(K2_PATH).joinpath("chitin.key").exists(),
         "K2_PATH environment variable is not set or not found on disk.",
     )
-    def test_gff_reconstruct_from_k2_installation(self) -> None:
+    def test_gff_reconstruct_from_k2_installation(self):
         self.installation = Installation(K2_PATH)  # type: ignore[arg-type]
         for utp_resource in (resource for resource in self.installation if resource.restype() == ResourceType.UTP):
             old = read_gff(utp_resource.data())

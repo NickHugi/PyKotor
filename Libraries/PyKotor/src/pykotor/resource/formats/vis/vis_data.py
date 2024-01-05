@@ -14,7 +14,7 @@ class VIS:
 
     def __init__(
         self,
-    ) -> None:
+    ):
         self._rooms: set[str] = set()
         self._visibility: dict[str, set[str]] = {}
 
@@ -49,7 +49,7 @@ class VIS:
     def add_room(
         self,
         model: str,
-    ) -> None:
+    ):
         """Adds a room. If an room already exists, it is ignored; no error is thrown.
 
         Args:
@@ -66,7 +66,7 @@ class VIS:
     def remove_room(
         self,
         model: str,
-    ) -> None:
+    ):
         """Removes a room. If a room does not exist, it is ignored; no error is thrown.
 
         Args:
@@ -86,7 +86,7 @@ class VIS:
         self,
         old: str,
         new: str,
-    ) -> None:
+    ):
         """Renames a room.
 
         Args:
@@ -139,7 +139,7 @@ class VIS:
         when_inside: str,
         show: str,
         visible: bool,
-    ) -> None:
+    ):
         """Sets the visibility of a specified room based off when viewing from another specified room.
 
         Args:
@@ -187,7 +187,7 @@ class VIS:
 
     def set_all_visible(
         self,
-    ) -> None:
+    ):
         """Sets all rooms visible from each other.
 
         Processing Logic:

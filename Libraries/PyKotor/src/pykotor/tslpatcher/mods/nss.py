@@ -11,6 +11,7 @@ from pykotor.resource.formats.ncs import compile_nss as compile_with_builtin
 from pykotor.resource.formats.ncs.compilers import ExternalNCSCompiler
 from pykotor.tools.encoding import decode_bytes_with_fallbacks
 from pykotor.tslpatcher.mods.template import PatcherModifications
+from utility.error_handling import universal_simplify_exception
 from utility.path import Path, PurePath, PureWindowsPath
 
 if TYPE_CHECKING:
@@ -27,7 +28,7 @@ class MutableString:
 
 
 class ModificationsNCS(PatcherModifications):
-    def __init__(self, filename, replace=None, modifiers=None) -> None:
+    def __init__(self, filename, replace=None, modifiers=None):
         super().__init__(filename, replace, modifiers)
         self.action: str = "Hack "
         self.hackdata: list[tuple[str, int, int]] = []
@@ -53,7 +54,7 @@ class ModificationsNCS(PatcherModifications):
         memory: PatcherMemory,
         logger: PatchLogger,
         game: Game,
-    ) -> None:
+    ):
         writer: BinaryWriterBytearray = BinaryWriter.to_bytearray(ncs_bytes)
         for this_data in self.hackdata:
             token_type, offset, token_id_or_value = this_data
@@ -77,7 +78,7 @@ class ModificationsNCS(PatcherModifications):
         self.replace_file = bool(int(replace_file))  # tslpatcher's hacklist doesn't prefix with an exclamation point.
 
 class ModificationsNSS(PatcherModifications):
-    def __init__(self, filename, replace=None, modifiers=None) -> None:
+    def __init__(self, filename, replace=None, modifiers=None):
         super().__init__(filename, replace, modifiers)
         self.saveas = str(PurePath(filename).with_suffix(".ncs"))
         self.action: str = "Compile"
@@ -145,7 +146,7 @@ class ModificationsNSS(PatcherModifications):
             try:
                 return self._compile_with_external(source.value, nwnnsscompiler, logger, game)
             except Exception as e:  # noqa: BLE001
-                logger.add_error(repr(e))
+                logger.add_error(str(universal_simplify_exception(e)))
 
         if is_windows:
             if not self.nwnnsscomp_path or not self.nwnnsscomp_path.exists():
@@ -164,7 +165,7 @@ class ModificationsNSS(PatcherModifications):
         memory: PatcherMemory,
         logger: PatchLogger,
         game: Game,
-    ) -> None:
+    ):
         """Applies memory patches to the source script.
 
         Args:

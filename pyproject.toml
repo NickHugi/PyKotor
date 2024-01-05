@@ -129,6 +129,8 @@ ignore = [
 #    "S605",     # Starting a process with a shell, possible injection detected
     "SLF001",   # Private member accessed
 #    "T201",     # `print` found
+    "TRY003",    # Avoid specifying long messages outside the exception class
+    "EM102",     # Exception must not use an f-string literal, assign to variable first
 ]
 unfixable = ["N815", "F841", "ERA001"]
 

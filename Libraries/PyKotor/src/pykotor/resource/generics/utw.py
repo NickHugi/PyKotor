@@ -33,7 +33,7 @@ class UTW:
 
     def __init__(
         self,
-    ) -> None:
+    ):
         self.resref: ResRef = ResRef.from_blank()
         self.comment: str = ""
         self.tag: str = ""
@@ -113,7 +113,7 @@ def write_utw(
     file_format: ResourceType = ResourceType.GFF,
     *,
     use_deprecated: bool = True,
-) -> None:
+):
     gff: GFF = dismantle_utw(utw, game, use_deprecated=use_deprecated)
     write_gff(gff, target, file_format)
 

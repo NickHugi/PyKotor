@@ -3,14 +3,14 @@ from __future__ import annotations
 
 from contextlib import suppress
 from copy import copy
-from typing import TYPE_CHECKING, Any, Callable
+from typing import TYPE_CHECKING, Any, Callable, TypeVar
 
 from pykotor.resource.type import ResourceType
 
 if TYPE_CHECKING:
     from enum import Enum
 
-
+T = TypeVar("T")
 class TwoDA:
     """Represents a 2DA file."""
 
@@ -69,7 +69,7 @@ class TwoDA:
     def add_column(
         self,
         header: str,
-    ) -> None:
+    ):
         """Adds a new column with the specified header and populates it with blank cells for each row.
 
         Args:
@@ -91,7 +91,7 @@ class TwoDA:
     def remove_column(
         self,
         header: str,
-    ) -> None:
+    ):
         """Removes a column from the table with the specified column header.
 
         If no such column header exists it is ignored; no error is thrown.
@@ -137,7 +137,7 @@ class TwoDA:
         self,
         row_index: int,
         value: str,
-    ) -> None:
+    ):
         """Sets the row label at the given index.
 
         Args:
@@ -276,7 +276,7 @@ class TwoDA:
             override_cells[header] = str(override_cells[header])
 
         for header in self._headers:
-            self._rows[-1][header] = override_cells[header] if header in override_cells else self.get_cell(source_index, header)
+            self._rows[-1][header] = override_cells[header] if header in override_cells else self.get_cell(source_index, header)  # FIXME: source_index cannot be None
 
         return len(self._rows) - 1
 
@@ -308,7 +308,7 @@ class TwoDA:
         row_index: int,
         column: str,
         value: Any,
-    ) -> None:
+    ):
         """Sets the value of a cell at the specified row under the specified column. If the value is none, it will output a blank string.
 
         Args:
@@ -350,7 +350,7 @@ class TwoDA:
     def resize(
         self,
         row_count: int,
-    ) -> None:
+    ):
         """Sets the number of rows in the table.
 
         Use with caution; specifying a height less than the current height will result in a loss of data.
@@ -501,7 +501,7 @@ class TwoDARow:
     ):
         return f"{self.__class__.__name__}(row_label={self._row_label}, row_data={self._data})"
 
-    def __eq__(self, other: TwoDARow | object):
+    def __eq__(self, other: TwoDARow):
         if isinstance(other, TwoDARow):
             return self._row_label == other._row_label and self._data == other._data
         return NotImplemented
@@ -562,8 +562,8 @@ class TwoDARow:
     def get_integer(
         self,
         header: str,
-        default: int | None = None,
-    ) -> int:
+        default: int | T = None,
+    ) -> int | T:
         """Returns the integer value for the cell under the specified header. If the value of the cell is an invalid integer then a default value is used instead.
 
         Args:
@@ -583,7 +583,7 @@ class TwoDARow:
             msg = f"The header '{header}' does not exist."
             raise KeyError(msg)
 
-        value = default
+        value: int | T = default
         with suppress(ValueError):  # FIXME: this should not be suppressed
             cell = self._data[header]
             return int(cell, 16) if cell.startswith("0x") else int(cell)
@@ -592,8 +592,8 @@ class TwoDARow:
     def get_float(
         self,
         header: str,
-        default: int | None = None,
-    ) -> float:
+        default: int | T = None,
+    ) -> float | T:
         """Returns the float value for the cell under the specified header. If the value of the cell is an invalid float then a default value is used instead.
 
         Args:
@@ -616,13 +616,14 @@ class TwoDARow:
         with suppress(ValueError):  # FIXME: this should not be suppressed
             cell = self._data[header]
             return float(cell)
+        return default
 
     def get_enum(
         self,
         header: str,
         enum_type: type[Enum],
-        default: Enum | None,
-    ) -> Enum | None:
+        default: Enum | T = None,
+    ) -> Enum | T:
         """Returns the enum value for the cell under the specified header.
 
         Args:
@@ -643,7 +644,7 @@ class TwoDARow:
             msg = f"The header '{header}' does not exist."
             raise KeyError(msg)
 
-        value = default
+        value: Enum | T = default
         if enum_type(self._data[header]) != "":
             value = enum_type(self._data[header])
         return value
@@ -652,7 +653,7 @@ class TwoDARow:
         self,
         header: str,
         value: str | None,
-    ) -> None:
+    ):
         """Sets the value of a cell under the specified header. If the value is None it will default to a empty string.
 
         Args:
@@ -670,7 +671,7 @@ class TwoDARow:
         self,
         header: str,
         value: int | None,
-    ) -> None:
+    ):
         """Sets the value of a cell under the specified header, converting the integer into a string. If the value is None it will default to a empty string.
 
         Args:
@@ -688,7 +689,7 @@ class TwoDARow:
         self,
         header: str,
         value: float | None,
-    ) -> None:
+    ):
         """Sets the value of a cell under the specified header, converting the float into a string. If the value is None it will default to a empty string.
 
         Args:
@@ -718,9 +719,9 @@ class TwoDARow:
         ------
             KeyError: If the specified header does not exist.
         """
-        self._set_value(header, value)
+        self._set_value(header, value.value if value is not None else None)
 
-    def _set_value(self, header: str, value: object):
+    def _set_value(self, header: str, value: Enum | float | str | None):
         if header not in self._data:
             msg = f"The header '{header}' does not exist."
             raise KeyError(msg)

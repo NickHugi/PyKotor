@@ -20,7 +20,7 @@ class BWM:
 
     def __init__(
         self,
-    ) -> None:
+    ):
         self.walkmesh_type: BWMType = BWMType.AreaModel
         self.faces: list[BWMFace] = []
 
@@ -121,7 +121,7 @@ class BWM:
         aabbs: list[BWMNodeAABB],
         faces: list[BWMFace],
         rlevel=0,
-    ) -> None:
+    ):
         """Recursively build an axis aligned bounding box tree from a list of faces.
 
         Args:
@@ -439,7 +439,7 @@ class BWM:
         x: float,
         y: float,
         z: float,
-    ) -> None:
+    ):
         """Shifts the position of the walkmesh.
 
         Args:
@@ -456,7 +456,7 @@ class BWM:
     def rotate(
         self,
         degrees: float,
-    ) -> None:
+    ):
         """Rotates the walkmesh around the Z-axis counter-clockwise.
 
         Args:
@@ -476,7 +476,7 @@ class BWM:
         self,
         old: int,
         new: int | None,
-    ) -> None:
+    ):
         """Changes layout indexes in faces.
 
         Args:
@@ -504,7 +504,7 @@ class BWM:
         self,
         x: bool,
         y: bool,
-    ) -> None:
+    ):
         """Flips the walkmesh around the specified axes.
 
         Args:

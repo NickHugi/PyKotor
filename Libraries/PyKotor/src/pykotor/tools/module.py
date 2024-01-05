@@ -46,7 +46,7 @@ def clone_module(
     keep_placeables: bool = False,
     keep_sounds: bool = False,
     keep_pathing: bool = False,
-) -> None:
+):
     """Clones a module.
 
     Args:
@@ -68,7 +68,7 @@ def clone_module(
     new_module = ERF(ERFType.MOD)
 
     ifo: IFO | None = old_module.info().resource()
-    old_identifier: str = ifo.identifier.get()
+    old_identifier = ifo.identifier
     ifo.identifier.set_data(identifier)
     ifo.mod_name = LocalizedString.from_english(identifier.upper())
     ifo.tag = identifier.upper()
@@ -102,7 +102,7 @@ def clone_module(
 
     if keep_doors:
         for i, door in enumerate(git.doors):
-            old_resname = door.resref.get()
+            old_resname = door.resref
             new_resname = f"{identifier}_dor{i}"
             door.resref.set_data(new_resname)
             door.tag = new_resname
@@ -116,7 +116,7 @@ def clone_module(
 
     if keep_placeables:
         for i, placeable in enumerate(git.placeables):
-            old_resname = placeable.resref.get()
+            old_resname = placeable.resref
             new_resname = f"{identifier}_plc{i}"
             placeable.resref.set_data(new_resname)
             placeable.tag = new_resname
@@ -130,7 +130,7 @@ def clone_module(
 
     if keep_sounds:
         for i, sound in enumerate(git.sounds):
-            old_resname = sound.resref.get()
+            old_resname = sound.resref
             new_resname = f"{identifier}_snd{i}"
             sound.resref.set_data(new_resname)
             sound.tag = new_resname
@@ -216,7 +216,7 @@ def clone_module(
     write_erf(new_module, filepath)
 
 
-def rim_to_mod(filepath: os.PathLike | str) -> None:
+def rim_to_mod(filepath: os.PathLike | str):
     """Creates a MOD file at the given filepath and copies the resources from the corresponding RIM files.
 
     Raises:
@@ -246,8 +246,8 @@ def rim_to_mod(filepath: os.PathLike | str) -> None:
 
     mod = ERF(ERFType.MOD)
     for res in rim:
-        mod.set_data(res.resref.get(), res.restype, res.data)
+        mod.set_data(res.resref, res.restype, res.data)
     for res in rim_s:
-        mod.set_data(res.resref.get(), res.restype, res.data)
+        mod.set_data(res.resref, res.restype, res.data)
 
     write_erf(mod, filepath, ResourceType.ERF)

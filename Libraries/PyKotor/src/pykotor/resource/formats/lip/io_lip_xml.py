@@ -62,7 +62,7 @@ class LIPXMLWriter(ResourceWriter):
     def write(
         self,
         auto_close: bool = True,
-    ) -> None:
+    ):
         self._xml_root.set("duration", str(self._lip.length))
 
         for keyframe in self._lip:

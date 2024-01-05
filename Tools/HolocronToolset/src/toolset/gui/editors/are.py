@@ -4,7 +4,7 @@ from typing import TYPE_CHECKING
 
 from pykotor.common.geometry import SurfaceMaterial, Vector2
 from pykotor.common.misc import Color, ResRef
-from pykotor.extract.file import ResourceIdentifier
+from pykotor.extract.file import ResourceIdentifier, ResourceResult
 from pykotor.extract.installation import SearchLocation
 from pykotor.resource.formats.bwm import read_bwm
 from pykotor.resource.formats.gff import write_gff
@@ -20,6 +20,9 @@ from toolset.gui.editor import Editor
 if TYPE_CHECKING:
     import os
 
+    from pykotor.resource.formats.bwm.bwm_data import BWM
+    from pykotor.resource.formats.lyt.lyt_data import LYT
+    from pykotor.resource.formats.tpc.tpc_data import TPC
     from toolset.gui.widgets.long_spinbox import LongSpinBox
 
 
@@ -74,7 +77,7 @@ class AREEditor(Editor):
 
         self.new()
 
-    def _setupSignals(self) -> None:
+    def _setupSignals(self):
         self.ui.tagGenerateButton.clicked.connect(self.generateTag)
 
         self.ui.mapAxisSelect.currentIndexChanged.connect(self.redoMinimap)
@@ -87,7 +90,7 @@ class AREEditor(Editor):
         self.ui.mapImageY1Spin.valueChanged.connect(self.redoMinimap)
         self.ui.mapImageY2Spin.valueChanged.connect(self.redoMinimap)
 
-    def _setupInstallation(self, installation: HTInstallation) -> None:
+    def _setupInstallation(self, installation: HTInstallation):
         """Set up installation details.
 
         Args:
@@ -108,7 +111,8 @@ class AREEditor(Editor):
         cameras = installation.htGetCache2DA(HTInstallation.TwoDA_CAMERAS)
 
         self.ui.cameraStyleSelect.clear()
-        [self.ui.cameraStyleSelect.addItem(label.title()) for label in cameras.get_column("name")]
+        for label in cameras.get_column("name"):
+            self.ui.cameraStyleSelect.addItem(label.title())
 
         self.ui.dirtGroup.setVisible(installation.tsl)
         self.ui.grassEmissiveEdit.setVisible(installation.tsl)
@@ -117,13 +121,13 @@ class AREEditor(Editor):
         self.ui.rainCheck.setVisible(installation.tsl)
         self.ui.lightningCheck.setVisible(installation.tsl)
 
-    def load(self, filepath: os.PathLike | str, resref: str, restype: ResourceType, data: bytes) -> None:
+    def load(self, filepath: os.PathLike | str, resref: str, restype: ResourceType, data: bytes):
         super().load(filepath, resref, restype, data)
 
         are = read_are(data)
         self._loadARE(are)
 
-    def _loadARE(self, are: ARE) -> None:
+    def _loadARE(self, are: ARE):
         """Loads area data into UI widgets.
 
         Args:
@@ -141,30 +145,40 @@ class AREEditor(Editor):
         self._are = are
 
         if self._resref:
-            result = self._installation.resource(self._resref, ResourceType.LYT)
-            if result:
-                lyt = read_lyt(result.data)
+            res_result_lyt: ResourceResult | None = self._installation.resource(self._resref, ResourceType.LYT)
+            if res_result_lyt:
+                lyt: LYT = read_lyt(res_result_lyt.data)
+                queries: list[ResourceIdentifier] = [
+                    ResourceIdentifier(room.model, ResourceType.WOK)
+                    for room in lyt.rooms
+                ]
 
-                results = self._installation.resources([ResourceIdentifier(room.model, ResourceType.WOK) for room in lyt.rooms])
-                self.ui.minimapRenderer.setWalkmeshes([read_bwm(result.data) for result in results.values() if result])
+                wok_results: dict[ResourceIdentifier, ResourceResult | None] = self._installation.resources(queries)
+                walkmeshes: list[BWM] = [
+                    read_bwm(result.data)
+                    for result in wok_results.values() if result
+                ]
+                self.ui.minimapRenderer.setWalkmeshes(walkmeshes)
 
-            order = [
+            order: list[SearchLocation] = [
                 SearchLocation.OVERRIDE,
                 SearchLocation.TEXTURES_GUI,
                 SearchLocation.MODULES
             ]
-            self._minimap = self._installation.texture(f"lbl_map{self._resref}", order)
+            self._minimap: TPC | None = self._installation.texture(f"lbl_map{self._resref}", order)
             if self._minimap is None:
-                print(f"Could not find lbl_map{self._resref} to load minimap")
+                print(f"Could not find texture 'lbl_map{self._resref}' required for minimap")
             else:
                 self.ui.minimapRenderer.setMinimap(are, self._minimap)
                 self.ui.minimapRenderer.centerCamera()
+
+        max_value: int = 100
 
         # Basic
         self.ui.nameEdit.setLocstring(are.name)
         self.ui.tagEdit.setText(are.tag)
         self.ui.cameraStyleSelect.setCurrentIndex(are.camera_style)
-        self.ui.envmapEdit.setText(are.default_envmap.get())
+        self.ui.envmapEdit.setText(str(are.default_envmap))
         self.ui.disableTransitCheck.setChecked(are.disable_transit)
         self.ui.unescapableCheck.setChecked(are.unescapable)
         self.ui.alphaTestSpin.setValue(are.alpha_test)
@@ -194,14 +208,14 @@ class AREEditor(Editor):
         self.ui.diffuseColorEdit.setColor(are.sun_diffuse)
         self.ui.dynamicColorEdit.setColor(are.dynamic_light)
         self.ui.windPowerSelect.setCurrentIndex(are.wind_power)
-        self.ui.rainCheck.setChecked(are.chance_rain == 100)
-        self.ui.snowCheck.setChecked(are.chance_snow == 100)
-        self.ui.lightningCheck.setChecked(are.chance_lightning == 100)
+        self.ui.rainCheck.setChecked(are.chance_rain == max_value)
+        self.ui.snowCheck.setChecked(are.chance_snow == max_value)
+        self.ui.lightningCheck.setChecked(are.chance_lightning == max_value)
         self.ui.shadowsCheck.setChecked(are.shadows)
         self.ui.shadowsSpin.setValue(are.shadow_opacity)
 
         # Terrain
-        self.ui.grassTextureEdit.setText(are.grass_texture.get())
+        self.ui.grassTextureEdit.setText(str(are.grass_texture))
         self.ui.grassDiffuseEdit.setColor(are.grass_diffuse)
         self.ui.grassAmbientEdit.setColor(are.grass_ambient)
         self.ui.grassEmissiveEdit.setColor(are.grass_emissive)
@@ -225,10 +239,10 @@ class AREEditor(Editor):
         self.ui.dirtSize3Spin.setValue(are.dirty_size_3)
 
         # Scripts
-        self.ui.onEnterEdit.setText(are.on_enter.get())
-        self.ui.onExitEdit.setText(are.on_exit.get())
-        self.ui.onHeartbeatEdit.setText(are.on_heartbeat.get())
-        self.ui.onUserDefinedEdit.setText(are.on_user_defined.get())
+        self.ui.onEnterEdit.setText(str(are.on_enter))
+        self.ui.onExitEdit.setText(str(are.on_exit))
+        self.ui.onHeartbeatEdit.setText(str(are.on_heartbeat))
+        self.ui.onUserDefinedEdit.setText(str(are.on_user_defined))
 
         # Comments
         self.ui.commentsEdit.setPlainText(are.comment)
@@ -327,16 +341,16 @@ class AREEditor(Editor):
 
         return are
 
-    def new(self) -> None:
+    def new(self):
         super().new()
         self._loadARE(ARE())
 
-    def redoMinimap(self) -> None:
+    def redoMinimap(self):
         if self._minimap:
             are = self._buildARE()
             self.ui.minimapRenderer.setMinimap(are, self._minimap)
 
-    def changeColor(self, colorSpin: LongSpinBox) -> None:
+    def changeColor(self, colorSpin: LongSpinBox):
         """Changes the color selection.
 
         Args:
@@ -353,7 +367,7 @@ class AREEditor(Editor):
         color = Color.from_bgr_integer(qcolor.rgb())
         colorSpin.setValue(color.bgr_integer())
 
-    def redoColorImage(self, value: int, colorLabel: QLabel) -> None:
+    def redoColorImage(self, value: int, colorLabel: QLabel):
         """Redraws a color image based on a value.
 
         Args:
@@ -375,10 +389,10 @@ class AREEditor(Editor):
         pixmap = QPixmap.fromImage(QImage(data, 16, 16, QImage.Format_RGB888))
         colorLabel.setPixmap(pixmap)
 
-    def changeName(self) -> None:
+    def changeName(self):
         dialog = LocalizedStringDialog(self, self._installation, self.ui.nameEdit.locstring())
         if dialog.exec_():
             self._loadLocstring(self.ui.nameEdit, dialog.locstring)
 
-    def generateTag(self) -> None:
+    def generateTag(self):
         self.ui.tagEdit.setText("newarea" if self._resref is None or self._resref == "" else self._resref)

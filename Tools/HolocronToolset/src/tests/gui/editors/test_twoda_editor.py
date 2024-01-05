@@ -54,18 +54,18 @@ from pykotor.resource.type import ResourceType
 )
 class TwoDAEditorTest(TestCase):
     @classmethod
-    def setUpClass(cls) -> None:
+    def setUpClass(cls):
         # Make sure to configure this environment path before testing!
         from toolset.data.installation import HTInstallation
         cls.INSTALLATION = HTInstallation(K2_PATH, "", tsl=True, mainWindow=None)
 
-    def setUp(self) -> None:
+    def setUp(self):
         from toolset.gui.editors.twoda import TwoDAEditor
         self.app = QApplication([])
         self.editor = TwoDAEditor(None, self.INSTALLATION)
         self.log_messages: list[str] = [os.linesep]
 
-    def tearDown(self) -> None:
+    def tearDown(self):
         self.app.deleteLater()
 
     def log_func(self, *args):
@@ -89,7 +89,7 @@ class TwoDAEditorTest(TestCase):
         not K1_PATH or not pathlib.Path(K1_PATH).joinpath("chitin.key").exists(),
         "K1_PATH environment variable is not set or not found on disk.",
     )
-    def test_2da_save_load_from_k1_installation(self) -> None:
+    def test_2da_save_load_from_k1_installation(self):
         self.installation = Installation(K1_PATH)  # type: ignore[arg-type]
         for twoda_resource in (resource for resource in self.installation if resource.restype() == ResourceType.TwoDA):
             old = read_2da(twoda_resource.data())
@@ -105,7 +105,7 @@ class TwoDAEditorTest(TestCase):
         not K2_PATH or not pathlib.Path(K2_PATH).joinpath("chitin.key").exists(),
         "K2_PATH environment variable is not set or not found on disk.",
     )
-    def test_2da_save_load_from_k2_installation(self) -> None:
+    def test_2da_save_load_from_k2_installation(self):
         self.installation = Installation(K2_PATH)  # type: ignore[arg-type]
         for twoda_resource in (resource for resource in self.installation if resource.restype() == ResourceType.TwoDA):
             old = read_2da(twoda_resource.data())

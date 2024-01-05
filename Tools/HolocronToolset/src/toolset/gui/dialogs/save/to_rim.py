@@ -24,10 +24,10 @@ class RimSaveDialog(QDialog):
 
         self.option: RimSaveOption = RimSaveOption.Nothing
 
-    def saveAsMod(self) -> None:
+    def saveAsMod(self):
         self.option = RimSaveOption.MOD
         self.accept()
 
-    def saveAsOverride(self) -> None:
+    def saveAsOverride(self):
         self.option = RimSaveOption.Override
         self.accept()

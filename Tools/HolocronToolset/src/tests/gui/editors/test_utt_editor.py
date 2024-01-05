@@ -53,7 +53,7 @@ from pykotor.resource.type import ResourceType
 )
 class UTTEditorTest(TestCase):
     @classmethod
-    def setUpClass(cls) -> None:
+    def setUpClass(cls):
         # Make sure to configure this environment path before testing!
         from toolset.data.installation import HTInstallation
         from toolset.gui.editors.utt import UTTEditor
@@ -61,13 +61,13 @@ class UTTEditorTest(TestCase):
         #cls.K1_INSTALLATION = HTInstallation(K1_PATH, "", tsl=False, mainWindow=None)
         cls.K2_INSTALLATION = HTInstallation(K2_PATH, "", tsl=False, mainWindow=None)
 
-    def setUp(self) -> None:
+    def setUp(self):
         from toolset.gui.editors.utt import UTTEditor
         self.app = QApplication([])
         self.editor = UTTEditor(None, self.K2_INSTALLATION)
         self.log_messages: list[str] = [os.linesep]
 
-    def tearDown(self) -> None:
+    def tearDown(self):
         self.app.deleteLater()
 
     def log_func(self, *args):
@@ -90,7 +90,7 @@ class UTTEditorTest(TestCase):
         not K1_PATH or not pathlib.Path(K1_PATH).joinpath("chitin.key").exists(),
         "K1_PATH environment variable is not set or not found on disk.",
     )
-    def test_gff_reconstruct_from_k1_installation(self) -> None:
+    def test_gff_reconstruct_from_k1_installation(self):
         self.installation = Installation(K1_PATH)  # type: ignore[arg-type]
         for utt_resource in (resource for resource in self.installation if resource.restype() == ResourceType.UTT):
             old = read_gff(utt_resource.data())
@@ -106,7 +106,7 @@ class UTTEditorTest(TestCase):
         not K2_PATH or not pathlib.Path(K2_PATH).joinpath("chitin.key").exists(),
         "K2_PATH environment variable is not set or not found on disk.",
     )
-    def test_gff_reconstruct_from_k2_installation(self) -> None:
+    def test_gff_reconstruct_from_k2_installation(self):
         self.installation = Installation(K2_PATH)  # type: ignore[arg-type]
         for utt_resource in (resource for resource in self.installation if resource.restype() == ResourceType.UTT):
             old = read_gff(utt_resource.data())

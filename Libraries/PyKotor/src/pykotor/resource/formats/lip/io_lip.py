@@ -59,7 +59,7 @@ class LIPBinaryWriter(ResourceWriter):
     def write(
         self,
         auto_close: bool = True,
-    ) -> None:
+    ):
         self._writer.write_string("LIP ")
         self._writer.write_string("V1.0")
         self._writer.write_single(self._lip.length)

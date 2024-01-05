@@ -45,7 +45,7 @@ class Chitin:
 
     def load(
         self,
-    ) -> None:
+    ):
         """Reload the list of resource info linked from the chitin.key file."""
         self._resources = []
         self._resource_dict = {}
@@ -80,7 +80,7 @@ class Chitin:
                     self._resources.append(resource)
                     self._resource_dict[bif].append(resource)
 
-    def save(self) -> None:
+    def save(self):
         """(unfinished) Writes the list of resource info to the chitin.key file and associated .bif files."""
         keys, bifs = self._get_chitin_data()
         resource_lookup: dict[str, tuple[PurePath, FileResource]] = {

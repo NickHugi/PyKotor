@@ -85,7 +85,7 @@ class UTP:
 
     def __init__(
         self,
-    ) -> None:
+    ):
         self.resref: ResRef = ResRef.from_blank()
         self.conversation: ResRef = ResRef.from_blank()
         self.tag: str = ""
@@ -336,7 +336,7 @@ def write_utp(
     file_format: ResourceType = ResourceType.GFF,
     *,
     use_deprecated: bool = True,
-) -> None:
+):
     gff: GFF = dismantle_utp(utp, game, use_deprecated=use_deprecated)
     write_gff(gff, target, file_format)
 

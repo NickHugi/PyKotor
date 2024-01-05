@@ -47,7 +47,7 @@ class UTWEditor(Editor):
 
         self.new()
 
-    def _setupSignals(self) -> None:
+    def _setupSignals(self):
         self.ui.tagGenerateButton.clicked.connect(self.generateTag)
         self.ui.resrefGenerateButton.clicked.connect(self.generateResref)
         self.ui.noteChangeButton.clicked.connect(self.changeNote)
@@ -56,7 +56,7 @@ class UTWEditor(Editor):
         self._installation = installation
         self.ui.nameEdit.setInstallation(installation)
 
-    def load(self, filepath: os.PathLike | str, resref: str, restype: ResourceType, data: bytes) -> None:
+    def load(self, filepath: os.PathLike | str, resref: str, restype: ResourceType, data: bytes):
         super().load(filepath, resref, restype, data)
 
         utw = read_utw(data)
@@ -81,7 +81,7 @@ class UTWEditor(Editor):
         # Basic
         self.ui.nameEdit.setLocstring(utw.name)
         self.ui.tagEdit.setText(utw.tag)
-        self.ui.resrefEdit.setText(utw.resref.get())
+        self.ui.resrefEdit.setText(str(utw.resref))
 
         # Advanced
         self.ui.isNoteCheckbox.setChecked(utw.has_map_note)
@@ -122,26 +122,26 @@ class UTWEditor(Editor):
 
         return data, b""
 
-    def new(self) -> None:
+    def new(self):
         super().new()
         self._loadUTW(UTW())
 
-    def changeName(self) -> None:
+    def changeName(self):
         dialog = LocalizedStringDialog(self, self._installation, self.ui.nameEdit.locstring)
         if dialog.exec_():
             self._loadLocstring(self.ui.nameEdit, dialog.locstring)
 
-    def changeNote(self) -> None:
+    def changeNote(self):
         dialog = LocalizedStringDialog(self, self._installation, self.ui.noteEdit.locstring)
         if dialog.exec_():
             self._loadLocstring(self.ui.noteEdit, dialog.locstring)
 
-    def generateTag(self) -> None:
+    def generateTag(self):
         if self.ui.resrefEdit.text() == "":
             self.generateResref()
         self.ui.tagEdit.setText(self.ui.resrefEdit.text())
 
-    def generateResref(self) -> None:
+    def generateResref(self):
         if self._resref is not None and self._resref != "":
             self.ui.resrefEdit.setText(self._resref)
         else:

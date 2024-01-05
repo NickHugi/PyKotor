@@ -18,7 +18,7 @@ from pykotor.tslpatcher.logger import PatchLogger
 from pykotor.tslpatcher.memory import PatcherMemory
 from pykotor.tslpatcher.mods.install import InstallFile, create_backup
 from pykotor.tslpatcher.mods.template import OverrideType, PatcherModifications
-from utility.error_handling import universal_simplify_exception
+from utility.error_handling import format_exception_with_variables, universal_simplify_exception
 from utility.path import PurePath
 
 if TYPE_CHECKING:
@@ -26,6 +26,7 @@ if TYPE_CHECKING:
     from pykotor.common.misc import Game
     from pykotor.resource.type import SOURCE_TYPES
     from pykotor.tslpatcher.mods.tlk import ModificationsTLK
+    from typing_extensions import Literal
 
 class ModInstaller:
     def __init__(
@@ -34,7 +35,7 @@ class ModInstaller:
         game_path: os.PathLike | str,
         changes_ini_path: os.PathLike | str,
         logger: PatchLogger | None = None,
-    ) -> None:
+    ):
         """Initialize a Patcher instance.
 
         Args:
@@ -64,7 +65,7 @@ class ModInstaller:
             if not self.changes_ini_path.exists():
                 self.changes_ini_path = self.mod_path / "tslpatchdata" / self.changes_ini_path.name
             if not self.changes_ini_path.exists():
-                msg = f"Could not find the changes ini file {self.changes_ini_path!s} on disk! Could not start install!"
+                msg = f"Could not find the changes ini file {self.changes_ini_path} on disk! Could not start install!"
                 raise FileNotFoundError(msg)
 
         self.game: Game | None = Installation.determine_game(self.game_path)
@@ -124,16 +125,16 @@ class ModInstaller:
         while not backup_dir.joinpath("tslpatchdata").exists() and backup_dir.parent.name:
             backup_dir = backup_dir.parent
         uninstall_dir: CaseAwarePath = backup_dir.joinpath("uninstall")
-        try:
+        try:  # sourcery skip: remove-redundant-exception
             if uninstall_dir.exists():
                 shutil.rmtree(uninstall_dir)
-        except PermissionError as e:
-            self.log.add_warning(f"Could not initialize backup folder: {e!r}")
+        except (PermissionError, OSError) as e:
+            self.log.add_warning(f"Could not initialize backup folder: {universal_simplify_exception(e)}")
         backup_dir = backup_dir / "backup" / timestamp
-        try:
+        try:  # sourcery skip: remove-redundant-exception
             backup_dir.mkdir(parents=True, exist_ok=True)
-        except PermissionError as e:
-            self.log.add_warning(f"Could not create backup folder: {e!r}")
+        except (PermissionError, OSError) as e:
+            self.log.add_warning(f"Could not create backup folder: {universal_simplify_exception(e)}")
         self.log.add_note(f"Using backup directory: '{backup_dir}'")
         self._backup = backup_dir
         self._processed_backup_files = set()
@@ -255,9 +256,9 @@ class ModInstaller:
                     shutil.move(str(override_resource_path), str(renamed_file_path))
                 except Exception as e:  # noqa: BLE001
                     # Handle exceptions such as permission errors or file in use.
-                    self.log.add_error(f"Could not rename '{patch.saveas}' to '{renamed_file_path.name}' in the Override folder: {e!r}")
+                    self.log.add_error(f"Could not rename '{patch.saveas}' to '{renamed_file_path.name}' in the Override folder: {universal_simplify_exception(e)}")
             elif override_type == OverrideType.WARN:
-                self.log.add_warning(f"A resource located at '{override_resource_path!s}' is shadowing this mod's changes in {patch.destination}!")
+                self.log.add_warning(f"A resource located at '{override_resource_path}' is shadowing this mod's changes in {patch.destination}!")
 
     def should_patch(
         self,
@@ -289,7 +290,7 @@ class ModInstaller:
             - Returns True if the patch should be applied.
         """  # noqa: D205
         local_folder: str = self.game_path.name if patch.destination.strip("\\").strip("/") == "." else patch.destination
-        container_type = "folder" if capsule is None else "archive"
+        container_type: Literal["folder", "archive"] = "folder" if capsule is None else "archive"
 
         if patch.replace_file and exists:
             saveas_str: str = f"'{patch.saveas}' in" if patch.saveas != patch.sourcefile else "in"
@@ -315,7 +316,7 @@ class ModInstaller:
         self.log.add_note(f"{patch.action[:-1]}ing '{patch.sourcefile}' and {save_type} {saving_as_str} the '{local_folder}' {container_type}")
         return True
 
-    def install(self) -> None:
+    def install(self):
         """Install patches from the config file.
 
         Processing Logic:
@@ -346,7 +347,7 @@ class ModInstaller:
 
         # Move nwscript.nss to Override if there are any nss patches to do
         if len(config.patches_nss) > 0:
-            file_install = InstallFile("nwscript.nss", replace_existing=True)
+            file_install = InstallFile("nwscript.nss", replace_existing=False)
             if file_install not in config.install_list:
                 config.install_list.append(file_install)
 
@@ -360,26 +361,28 @@ class ModInstaller:
                 exists, capsule = self.handle_capsule_and_backup(patch, output_container_path)
                 if not self.should_patch(patch, exists, capsule):
                     continue
-                data_to_patch_bytes: bytes | None = self.lookup_resource(patch, output_container_path, exists, capsule)
-                if data_to_patch_bytes is None:  # check None instead of `not data_to_patch_bytes` as sometimes mods will installlist empty files.
+
+                data_to_patch: bytes | None = self.lookup_resource(patch, output_container_path, exists, capsule)
+                if data_to_patch is None:
                     self.log.add_error(f"Could not locate resource to {patch.action.lower().strip()}: '{patch.sourcefile}'")
                     continue
-                if not data_to_patch_bytes:
+                if not data_to_patch:
                     self.log.add_note(f"'{patch.sourcefile}' has no content/data and is completely empty.")
 
-                patched_bytes_data: bytes = patch.patch_resource(data_to_patch_bytes, memory, self.log, self.game)
+                patched_data: bytes = patch.patch_resource(data_to_patch, memory, self.log, self.game)
                 if capsule is not None:
                     self.handle_override_type(patch)
-                    capsule.add(*ResourceIdentifier.from_path(patch.saveas), patched_bytes_data)
+                    capsule.add(*ResourceIdentifier.from_path(patch.saveas), patched_data)
                 else:
-                    output_container_path.mkdir(exist_ok=True, parents=True)  # Create non-existing folders if needed.
-                    BinaryWriter.dump(output_container_path / patch.saveas, patched_bytes_data)
+                    output_container_path.mkdir(exist_ok=True, parents=True)  # Create non-existing folders when the patch demands it.
+                    BinaryWriter.dump(output_container_path / patch.saveas, patched_data)
                 self.log.complete_patch()
             except Exception as e:  # noqa: BLE001
-                self.log.add_error(str(e))
+                self.log.add_error(str(universal_simplify_exception(e)))
+                print(format_exception_with_variables(e))
                 continue
 
-        self.log.add_note(f"Finished all patches in {self.log.patches_completed} total files.")
+        self.log.add_note(f"Successfully completed {config.patch_count()} total patches.")
 
     def get_tlk_patches(self, config: PatcherConfig) -> list[ModificationsTLK]:
         tlk_patches: list[ModificationsTLK] = []

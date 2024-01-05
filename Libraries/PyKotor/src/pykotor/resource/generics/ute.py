@@ -41,7 +41,7 @@ class UTE:
 
     def __init__(
         self,
-    ) -> None:
+    ):
         self.resref: ResRef = ResRef.from_blank()
         self.tag: str = ""
         self.comment: str = ""
@@ -87,7 +87,7 @@ class UTECreature:
 
     def __init__(
         self,
-    ) -> None:
+    ):
         self.appearance_id: int = 0
         self.challenge_rating: float = 0.0
         self.resref: ResRef = ResRef.from_blank()
@@ -210,7 +210,7 @@ def write_ute(
     file_format: ResourceType = ResourceType.GFF,
     *,
     use_deprecated: bool = True,
-) -> None:
+):
     gff = dismantle_ute(ute, game, use_deprecated=use_deprecated)
     write_gff(gff, target, file_format)
 

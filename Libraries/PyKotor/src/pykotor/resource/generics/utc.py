@@ -89,7 +89,7 @@ class UTC:
 
     def __init__(
         self,
-    ) -> None:
+    ):
         self.resref: ResRef = ResRef.from_blank()
         self.conversation: ResRef = ResRef.from_blank()
         self.tag: str = ""
@@ -204,7 +204,7 @@ class UTCClass:
 
     def __eq__(
         self,
-        other: UTCClass | object,
+        other: UTCClass,
     ):
         if isinstance(other, UTCClass):
             return self.class_id == other.class_id and self.class_level == self.class_level
@@ -491,7 +491,7 @@ def write_utc(
     file_format: ResourceType = ResourceType.GFF,
     *,
     use_deprecated: bool = True,
-) -> None:
+):
     gff: GFF = dismantle_utc(utc, game, use_deprecated=use_deprecated)
     write_gff(gff, target, file_format)
 

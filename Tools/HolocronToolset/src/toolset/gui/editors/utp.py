@@ -62,7 +62,7 @@ class UTPEditor(Editor):
         self.update3dPreview()
         self.new()
 
-    def _setupSignals(self) -> None:
+    def _setupSignals(self):
         """Connect UI buttons to their respective methods.
 
         Processing Logic:
@@ -117,7 +117,7 @@ class UTPEditor(Editor):
         self.ui.difficultyLabel.setVisible(installation.tsl)
         self.ui.difficultyModLabel.setVisible(installation.tsl)
 
-    def load(self, filepath: os.PathLike | str, resref: str, restype: ResourceType, data: bytes) -> None:
+    def load(self, filepath: os.PathLike | str, resref: str, restype: ResourceType, data: bytes):
         super().load(filepath, resref, restype, data)
 
         utp = read_utp(data)
@@ -143,9 +143,9 @@ class UTPEditor(Editor):
         # Basic
         self.ui.nameEdit.setLocstring(utp.name)
         self.ui.tagEdit.setText(utp.tag)
-        self.ui.resrefEdit.setText(utp.resref.get())
+        self.ui.resrefEdit.setText(str(utp.resref))
         self.ui.appearanceSelect.setCurrentIndex(utp.appearance_id)
-        self.ui.conversationEdit.setText(utp.conversation.get())
+        self.ui.conversationEdit.setText(str(utp.conversation))
 
         # Advanced
         self.ui.hasInventoryCheckbox.setChecked(utp.has_inventory)
@@ -174,20 +174,20 @@ class UTPEditor(Editor):
         self.ui.difficultyModSpin.setValue(utp.unlock_diff_mod)
 
         # Scripts
-        self.ui.onClosedEdit.setText(utp.on_closed.get())
-        self.ui.onDamagedEdit.setText(utp.on_damaged.get())
-        self.ui.onDeathEdit.setText(utp.on_death.get())
-        self.ui.onEndConversationEdit.setText(utp.on_end_dialog.get())
-        self.ui.onOpenFailedEdit.setText(utp.on_open_failed.get())
-        self.ui.onHeartbeatEdit.setText(utp.on_heartbeat.get())
-        self.ui.onInventoryEdit.setText(utp.on_inventory.get())
-        self.ui.onMeleeAttackEdit.setText(utp.on_melee_attack.get())
-        self.ui.onSpellEdit.setText(utp.on_force_power.get())
-        self.ui.onOpenEdit.setText(utp.on_open.get())
-        self.ui.onLockEdit.setText(utp.on_lock.get())
-        self.ui.onUnlockEdit.setText(utp.on_unlock.get())
-        self.ui.onUsedEdit.setText(utp.on_used.get())
-        self.ui.onUserDefinedEdit.setText(utp.on_user_defined.get())
+        self.ui.onClosedEdit.setText(str(utp.on_closed))
+        self.ui.onDamagedEdit.setText(str(utp.on_damaged))
+        self.ui.onDeathEdit.setText(str(utp.on_death))
+        self.ui.onEndConversationEdit.setText(str(utp.on_end_dialog))
+        self.ui.onOpenFailedEdit.setText(str(utp.on_open_failed))
+        self.ui.onHeartbeatEdit.setText(str(utp.on_heartbeat))
+        self.ui.onInventoryEdit.setText(str(utp.on_inventory))
+        self.ui.onMeleeAttackEdit.setText(str(utp.on_melee_attack))
+        self.ui.onSpellEdit.setText(str(utp.on_force_power))
+        self.ui.onOpenEdit.setText(str(utp.on_open))
+        self.ui.onLockEdit.setText(str(utp.on_lock))
+        self.ui.onUnlockEdit.setText(str(utp.on_unlock))
+        self.ui.onUsedEdit.setText(str(utp.on_used))
+        self.ui.onUserDefinedEdit.setText(str(utp.on_user_defined))
 
         # Comments
         self.ui.commentsEdit.setPlainText(utp.comment)
@@ -271,30 +271,30 @@ class UTPEditor(Editor):
 
         return data, b""
 
-    def new(self) -> None:
+    def new(self):
         super().new()
         self._loadUTP(UTP())
 
-    def updateItemCount(self) -> None:
+    def updateItemCount(self):
         self.ui.inventoryCountLabel.setText(f"Total Items: {len(self._utp.inventory)}")
 
-    def changeName(self) -> None:
+    def changeName(self):
         dialog = LocalizedStringDialog(self, self._installation, self.ui.nameEdit.locstring)
         if dialog.exec_():
             self._loadLocstring(self.ui.nameEdit, dialog.locstring)
 
-    def generateTag(self) -> None:
+    def generateTag(self):
         if self.ui.resrefEdit.text() == "":
             self.generateResref()
         self.ui.tagEdit.setText(self.ui.resrefEdit.text())
 
-    def generateResref(self) -> None:
+    def generateResref(self):
         if self._resref is not None and self._resref != "":
             self.ui.resrefEdit.setText(self._resref)
         else:
             self.ui.resrefEdit.setText("m00xx_plc_000")
 
-    def editConversation(self) -> None:
+    def editConversation(self):
         """Edits a conversation.
 
         Processing Logic:
@@ -332,7 +332,7 @@ class UTPEditor(Editor):
         if data is not None:
             openResourceEditor(filepath, resname, ResourceType.DLG, data, self._installation, self)
 
-    def openInventory(self) -> None:
+    def openInventory(self):
         """Opens inventory editor for the module.
 
         Processing Logic:
@@ -355,11 +355,11 @@ class UTPEditor(Editor):
             self._utp.inventory = inventoryEditor.inventory
             self.updateItemCount()
 
-    def togglePreview(self) -> None:
+    def togglePreview(self):
         self.globalSettings.showPreviewUTP = not self.globalSettings.showPreviewUTP
         self.update3dPreview()
 
-    def update3dPreview(self) -> None:
+    def update3dPreview(self):
         """Updates the model preview.
 
         Processing Logic:

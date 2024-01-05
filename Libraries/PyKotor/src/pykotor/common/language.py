@@ -441,6 +441,9 @@ class LocalizedString:
         """Returns the number of substrings."""
         return len(self._substrings)
 
+    def __hash__(self):  # FIXME: LocalizedString is currently partially mutable and partially immutable. Need to either remove __hash__ and don't use it in lists/sets/keys, or fully make it immutable (don't allow stringref to change after initialization, and remove set_data method)
+        return hash(self.stringref)
+
     def __str__(self):
         """If the stringref is valid, it will return it as a string. Otherwise it will return one of the substrings,
         prioritizing the english substring if it exists. If no substring exists and the stringref is invalid, "-1" is
@@ -462,9 +465,6 @@ class LocalizedString:
         if other.stringref != self.stringref:
             return False
         return other._substrings == self._substrings
-
-    def __hash__(self):
-        return hash(self.stringref)
 
     @classmethod
     def from_invalid(cls):

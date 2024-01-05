@@ -4,12 +4,18 @@ import sys
 import traceback
 
 if getattr(sys, "frozen", False) is False:
-    pykotor_path = pathlib.Path(__file__).parents[2] / "pykotor"
-    if pykotor_path.exists():
-        working_dir = str(pykotor_path.parent)
+    def update_sys_path(path):
+        working_dir = str(path)
         if working_dir in sys.path:
             sys.path.remove(working_dir)
-        sys.path.insert(0, working_dir)
+        sys.path.append(working_dir)
+
+    pykotor_path = pathlib.Path(__file__).parents[3] / "Libraries" / "PyKotor" / "src" / "pykotor"
+    if pykotor_path.exists():
+        update_sys_path(pykotor_path.parent)
+    utility_path = pathlib.Path(__file__).parents[3] / "Libraries" / "Utility" / "src" / "utility"
+    if utility_path.exists():
+        update_sys_path(utility_path.parent)
 
 from pykotor.resource.formats.mdl import read_mdl, write_mdl
 from pykotor.resource.type import ResourceType
@@ -85,7 +91,7 @@ def main():
             process_file(input_path, parser_args.output, parser_args.compile)
 
         elif input_path.is_dir():
-            for gui_file in input_path.rglob("*.gui", case_sensitive=False):
+            for gui_file in input_path.rglob("*.gui"):
                 try:
                     relative_path = gui_file.relative_to(input_path)
                     new_output_dir = parser_args.output / relative_path.parent / gui_file.stem
@@ -93,16 +99,16 @@ def main():
                     process_file(gui_file, new_output_dir, parser_args.compile)
                 except KeyboardInterrupt:  # noqa: PERF203
                     raise
-                except Exception:
+                except Exception:  # noqa: BLE001
                     traceback.print_exc()
 
         else:
-            print(f"Invalid input: {input_path!s}. It's neither a file nor a directory.")
+            print(f"Invalid input: {input_path}. It's neither a file nor a directory.")
             return
         print("Completed extractions")
     except KeyboardInterrupt:
         print("Goodbye")
-    except Exception:
+    except Exception:  # noqa: BLE001
         traceback.print_exc()
 
 

@@ -42,7 +42,7 @@ def write_lyt(
     lyt: LYT,
     target: TARGET_TYPES,
     file_format: ResourceType = ResourceType.LYT,
-) -> None:
+):
     """Writes the LYT data to the target location with the specified format (LYT only).
 
     Args:

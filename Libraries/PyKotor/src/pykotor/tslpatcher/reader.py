@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from configparser import ConfigParser
 from itertools import tee
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
 
 from pykotor.common.geometry import Vector3, Vector4
 from pykotor.common.language import LocalizedString
@@ -59,18 +59,18 @@ if TYPE_CHECKING:
     from pykotor.resource.formats.tlk.tlk_data import TLK, TLKEntry
     from pykotor.tslpatcher.config import PatcherConfig
     from pykotor.tslpatcher.mods.gff import ModifyGFF
+    from typing_extensions import Literal
 
 SECTION_NOT_FOUND_ERROR: str = "The [{}] section was not found in the ini"
 REFERENCES_TRACEBACK_MSG = ", referenced by '{}={}' in [{}]"
-
-test_set = set()
 
 class NamespaceReader:
     """Responsible for reading and loading namespaces from the namespaces.ini file."""
 
     def __init__(self, ini: ConfigParser):
-        self.ini = ini
+        self.ini: ConfigParser = ini
         self.namespaces: list[PatcherNamespace] = []
+
 
     @classmethod
     def from_filepath(cls, path: os.PathLike | str) -> list[PatcherNamespace]:
@@ -84,14 +84,15 @@ class NamespaceReader:
         ini.optionxform = lambda optionstr: optionstr.lower()  # type: ignore[method-assign]
 
         ini.read_string(decode_bytes_with_fallbacks(BinaryReader.load_file(path)))
-
         return NamespaceReader(ini).load()
 
+
     def load(self) -> list[PatcherNamespace]:  # Case-insensitive access to section
-        namespaces_section_name = next((section for section in self.ini.sections() if section.lower() == "namespaces"), None)
+        namespaces_section_name: str | None = next((section for section in self.ini.sections() if section.lower() == "namespaces"), None)
         if namespaces_section_name is None:
             raise KeyError(SECTION_NOT_FOUND_ERROR.format("Namespaces"))
-        namespace_ids: CaseInsensitiveDict[str] = CaseInsensitiveDict(self.ini[namespaces_section_name].items())
+
+        namespace_ids: CaseInsensitiveDict[str] = CaseInsensitiveDict(self.ini[namespaces_section_name])
         namespaces: list[PatcherNamespace] = []
 
         for key, namespace_id in namespace_ids.items():
@@ -101,11 +102,11 @@ class NamespaceReader:
                 msg = f"The '[{namespace_id}]' section was not found in the 'namespaces.ini' file, referenced by '{key}={namespace_id}' in [{namespaces_section_name}]."
                 raise KeyError(msg)
 
-            this_namespace_section = CaseInsensitiveDict(self.ini[namespace_section_key].items())
+            this_namespace_section = CaseInsensitiveDict(self.ini[namespace_section_key])
 
             # required
-            ini_filename = this_namespace_section["IniName"]
-            info_filename = this_namespace_section["InfoName"]
+            ini_filename: str = this_namespace_section["IniName"]
+            info_filename: str = this_namespace_section["InfoName"]
             namespace = PatcherNamespace(ini_filename, info_filename)
 
             # optional
@@ -124,11 +125,13 @@ class ConfigReader:
         ini: ConfigParser,
         mod_path: os.PathLike | str,
         logger: PatchLogger | None = None,
-    ) -> None:
+    ):
+        self.previously_parsed_sections = set()
         self.ini: ConfigParser = ini
         self.mod_path: CaseAwarePath = CaseAwarePath.pathify(mod_path)
         self.config: PatcherConfig
         self.log: PatchLogger = logger or PatchLogger()
+
 
     @classmethod
     def from_filepath(cls, file_path: os.PathLike | str, logger: PatchLogger | None = None):
@@ -160,17 +163,19 @@ class ConfigReader:
             strict=False,
             interpolation=None,
         )
-        # use case-sensitive keys
+
+        # Use case-sensitive keys
         ini.optionxform = lambda optionstr: optionstr  #  type: ignore[method-assign]
         ini.read_string(decode_bytes_with_fallbacks(BinaryReader.load_file(resolved_file_path)))
 
-        config = PatcherConfig()
         instance = cls(ini, resolved_file_path.parent, logger)
-        instance.config = config
+        instance.config = PatcherConfig()
         return instance
+
 
     def load(self, config: PatcherConfig) -> PatcherConfig:
         self.config = config
+        self.previously_parsed_sections = set()
 
         self.load_settings()
         self.load_tlk_list()
@@ -180,13 +185,16 @@ class ConfigReader:
         self.load_compile_list()
         self.load_hack_list()
         self.load_ssf_list()
+
+        # Print orphaned INI sections.
         all_sections_set = set(self.ini.sections())
-        orphaned_sections: set[str] = all_sections_set - test_set
+        orphaned_sections: set[str] = all_sections_set - self.previously_parsed_sections
         if len(orphaned_sections):
-            self.log.add_note("Orphaned ini sections")
-            self.log.add_note("\n".join(orphaned_sections))
+            orphaned_sections_str: str = "\n".join(orphaned_sections)
+            self.log.add_warning(f"Orphaned ini sections found in changes ini:\n{orphaned_sections_str}")
 
         return self.config
+
 
     def get_section_name(self, section_name: str):
         """Resolves the case-insensitive section name string if found and returns the case-sensitive correct section name."""
@@ -195,10 +203,11 @@ class ConfigReader:
             None,
         )
         if s is not None:
-            test_set.add(s)
+            self.previously_parsed_sections.add(s)
         return s
 
-    def load_settings(self) -> None:
+
+    def load_settings(self):
         """Loads [Settings] from ini configuration into memory."""
         settings_section: str | None = self.get_section_name("settings")
         if settings_section is None:
@@ -206,27 +215,28 @@ class ConfigReader:
             return
 
         self.log.add_note("Loading [Settings] section from ini...")
-        settings_ini = CaseInsensitiveDict(self.ini[settings_section].items())
+        settings_ini = CaseInsensitiveDict(self.ini[settings_section])
 
         self.config.window_title = settings_ini.get("WindowCaption", "")
         self.config.confirm_message = settings_ini.get("ConfirmMessage", "")
         self.config.required_file = settings_ini.get("Required")
         self.config.required_message = settings_ini.get("RequiredMsg", "")
 
-        # hp optional
+        # HoloPatcher optional
         self.config.ignore_file_extensions = bool(settings_ini.get("IgnoreExtensions")) or False
 
         lookup_game_number: str | None = settings_ini.get("LookupGameNumber")
         if lookup_game_number:
             lookup_game_number = lookup_game_number.strip()
-            if not is_int(lookup_game_number) or lookup_game_number not in {"1", "2"}:
+            if lookup_game_number not in ("1", "2"):
                 msg = f"Invalid: 'LookupGameNumber={lookup_game_number}' in [Settings], must be 1 or 2 representing the KOTOR game."
                 raise ValueError(msg)
             self.config.game_number = int(lookup_game_number)
         else:
             self.config.game_number = None
 
-    def load_install_list(self) -> None:
+
+    def load_install_list(self):
         """Loads [InstallList] from ini configuration into memory.
 
         Processing Logic:
@@ -244,27 +254,29 @@ class ConfigReader:
             return
 
         self.log.add_note("Loading [InstallList] patches from ini...")
-        for key, foldername in self.ini[install_list_section].items():
-            foldername_section: str | None = self.get_section_name(key)
+        for folder_key, foldername in self.ini[install_list_section].items():
+            foldername_section: str | None = self.get_section_name(folder_key)
             if foldername_section is None:
-                raise KeyError(SECTION_NOT_FOUND_ERROR.format(foldername) + REFERENCES_TRACEBACK_MSG.format(key, foldername, install_list_section))
+                raise KeyError(SECTION_NOT_FOUND_ERROR.format(foldername) + REFERENCES_TRACEBACK_MSG.format(folder_key, foldername, install_list_section))
 
-            folder_section_dict = CaseInsensitiveDict(self.ini[foldername_section].items())
+            folder_section_dict = CaseInsensitiveDict(self.ini[foldername_section])
             sourcefolder: str = folder_section_dict.pop("!SourceFolder", ".")
-            for key2, filename in folder_section_dict.items():
-                replace_existing: bool = key2.lower().startswith("replace")
-                file_install = InstallFile(filename, replace_existing)
+            for file_key, filename in folder_section_dict.items():
+                file_install = InstallFile(
+                    filename,
+                    replace_existing=file_key.lower().startswith("replace"),
+                )
                 file_install.destination = foldername
                 file_install.sourcefolder = sourcefolder
                 self.config.install_list.append(file_install)
 
-                # optional according to tslpatcher readme
+                # Optional according to TSLPatcher readme
                 file_section_name: str | None = self.get_section_name(filename)
                 if file_section_name is not None:
-                    file_section_dict = CaseInsensitiveDict(self.ini[file_section_name].items())
+                    file_section_dict = CaseInsensitiveDict(self.ini[file_section_name])
                     file_install.pop_tslpatcher_vars(file_section_dict, foldername)
 
-    def load_tlk_list(self) -> None:
+    def load_tlk_list(self):
         """Loads TLK patches from the ini file into memory.
 
         Processing Logic:
@@ -280,12 +292,12 @@ class ConfigReader:
             return
 
         self.log.add_note("Loading [TLKList] patches from ini...")
-        tlk_list_edits = CaseInsensitiveDict(self.ini[tlk_list_section].items())
+        tlk_list_edits = CaseInsensitiveDict(self.ini[tlk_list_section])
 
         default_destination = tlk_list_edits.pop("!DefaultDestination", ModificationsTLK.DEFAULT_DESTINATION)
         self.config.patches_tlk.pop_tslpatcher_vars(tlk_list_edits, default_destination)
 
-        modifier_dict: dict[int, dict[str, str | ResRef]] = {}
+        modifier_dict: dict[int, dict[str, str]] = {}
         range_delims: list[str] = [":", "-", "to"]
         syntax_error_caught = False
 
@@ -306,14 +318,19 @@ class ConfigReader:
                 - Converts start and end parts to integers if present
                 - Returns start and end as a tuple of integers or integer and None
             """
-            if range_str.lower().startswith("strref") or range_str.lower().startswith("ignore"):
+            lower_range_str = range_str.lower()
+            if lower_range_str.startswith(("strref", "ignore")):
                 range_str = range_str[6:]
+
             for delim in range_delims:
-                if delim in range_str:
-                    parts: list[str] = range_str.split(delim)
-                    start: int = int(parts[0].strip()) if parts[0].strip() else 0
-                    end: int | None = int(parts[1].strip()) if parts[1].strip() else None
-                    return start, end
+                if delim.lower() not in range_str:
+                    continue
+
+                parts: list[str]  = range_str.split(delim)
+                start: int        = int(parts[0].strip()) if parts[0].strip() else 0
+                end:   int | None = int(parts[1].strip()) if parts[1].strip() else None
+                return start, end
+
             return int(range_str), None
 
         def parse_range(range_str: str) -> range:
@@ -337,9 +354,11 @@ class ConfigReader:
             start, end = extract_range_parts(range_str)
             if end is None:
                 return range(int(start), int(start) + 1)
+
             if end < start:
                 msg = f"start of range '{start}' must be less than end of range '{end}'."
                 raise ValueError(msg)
+
             return range(start, end + 1)
 
         tlk_list_ignored_indices: set[int] = set()
@@ -348,8 +367,9 @@ class ConfigReader:
             tlk_filename: str,
             dialog_tlk_keys,
             modifications_tlk_keys,
+            *,
             is_replacement: bool,
-        ) -> None:
+        ):
             """Processes TLK entries based on provided modifications.
 
             Args:
@@ -373,7 +393,7 @@ class ConfigReader:
                 modifications_tlk_keys,
             ):
                 change_indices: range = mod_key if isinstance(mod_key, range) else parse_range(str(mod_key))
-                value_range = parse_range(str(mod_value)) if not isinstance(mod_value, range) and mod_value != "" else mod_key
+                value_range: range = parse_range(str(mod_value)) if not isinstance(mod_value, range) and mod_value != "" else mod_key
 
                 change_iter, value_iter = tee(change_indices)
                 value_iter = iter(value_range)
@@ -395,14 +415,14 @@ class ConfigReader:
                 raise ValueError(msg) from e
 
         for key, value in tlk_list_edits.items():
-            lowercase_key: str = key.lower()
-            replace_file = lowercase_key.startswith("replace")
-            append_file = lowercase_key.startswith("append")
+            lower_key: str = key.lower()
+            replace_file: bool = lower_key.startswith("replace")
+            append_file: bool = lower_key.startswith("append")
             try:
-                if lowercase_key.startswith("ignore"):
+                if lower_key.startswith("ignore"):
                     continue
-                if lowercase_key.startswith("strref"):
-                    strref_range = parse_range(lowercase_key[6:])
+                if lower_key.startswith("strref"):
+                    strref_range = parse_range(lower_key[6:])
                     token_id_range = parse_range(value)
                     process_tlk_entries(
                         self.config.patches_tlk.sourcefile,
@@ -416,7 +436,7 @@ class ConfigReader:
                         syntax_error_caught = True
                         raise ValueError(SECTION_NOT_FOUND_ERROR.format(value) + REFERENCES_TRACEBACK_MSG.format(key, value, tlk_list_section))  # noqa: TRY301
 
-                    next_section_dict = CaseInsensitiveDict(self.ini[next_section_name].items())
+                    next_section_dict = CaseInsensitiveDict(self.ini[next_section_name])
                     self.config.patches_tlk.pop_tslpatcher_vars(next_section_dict, default_destination)
 
                     process_tlk_entries(
@@ -425,9 +445,9 @@ class ConfigReader:
                         self.ini[next_section_name].values(),
                         is_replacement=replace_file,
                     )
-                elif "\\" in lowercase_key or "/" in lowercase_key:
-                    delimiter = "\\" if "\\" in lowercase_key else "/"
-                    token_id_str, property_name = lowercase_key.split(delimiter)
+                elif "\\" in lower_key or "/" in lower_key:
+                    delimiter: Literal["\\", "/"] = "\\" if "\\" in lower_key else "/"
+                    token_id_str, property_name = lower_key.split(delimiter)
                     token_id = int(token_id_str)
 
                     if token_id not in modifier_dict:
@@ -452,13 +472,15 @@ class ConfigReader:
                     syntax_error_caught = True
                     msg = f"Invalid syntax found in [TLKList] '{key}={value}'! Expected '{key}' to be one of ['AppendFile', 'ReplaceFile', '!SourceFile', 'StrRef', 'Text', 'Sound']"
                     raise ValueError(msg)  # noqa: TRY301
+
             except ValueError as e:
                 if syntax_error_caught:
                     raise
                 msg = f"Could not parse '{key}={value}' in [TLKList]"
                 raise ValueError(msg) from e
 
-    def load_2da_list(self) -> None:
+
+    def load_2da_list(self):
         """Load 2D array patches from ini file into memory.
 
         Processing Logic:
@@ -483,7 +505,7 @@ class ConfigReader:
 
         self.log.add_note("Loading [2DAList] patches from ini...")
 
-        twoda_section_dict = CaseInsensitiveDict(self.ini[twoda_section_name].items())
+        twoda_section_dict = CaseInsensitiveDict(self.ini[twoda_section_name])
         default_destination: str = twoda_section_dict.pop("!DefaultDestination", Modifications2DA.DEFAULT_DESTINATION)
         for identifier, file in twoda_section_dict.items():
             file_section: str | None = self.get_section_name(file)
@@ -491,9 +513,10 @@ class ConfigReader:
                 raise KeyError(SECTION_NOT_FOUND_ERROR.format(file) + REFERENCES_TRACEBACK_MSG.format(identifier, file, twoda_section_name))
 
             modifications = Modifications2DA(file)
-            file_section_dict = CaseInsensitiveDict(self.ini[file_section].items())
+            file_section_dict = CaseInsensitiveDict(self.ini[file_section])
             modifications.pop_tslpatcher_vars(file_section_dict)
-            if modifications.destination == modifications.DEFAULT_DESTINATION:
+
+            if modifications.destination.capitalize() == modifications.DEFAULT_DESTINATION:
                 modifications.destination = default_destination
             self.config.patches_2da.append(modifications)
 
@@ -502,17 +525,14 @@ class ConfigReader:
                 if next_section_name is None:
                     raise KeyError(SECTION_NOT_FOUND_ERROR.format(modification_id) + REFERENCES_TRACEBACK_MSG.format(key, modification_id, file_section))
 
-                modification_ids_dict = CaseInsensitiveDict(self.ini[modification_id].items())
-                manipulation: Modify2DA | None = self.discern_2da(
-                    key,
-                    modification_id,
-                    modification_ids_dict,
-                )
+                modification_ids_dict = CaseInsensitiveDict(self.ini[modification_id])
+                manipulation: Modify2DA | None = self.discern_2da(key, modification_id, modification_ids_dict)
                 if not manipulation:  # TODO: Does this denote an error occurred? If so we should raise.
                     continue
                 modifications.modifiers.append(manipulation)
 
-    def load_ssf_list(self) -> None:
+
+    def load_ssf_list(self):
         """Loads SSF patches from the ini file into memory.
 
         Processing Logic:
@@ -533,7 +553,7 @@ class ConfigReader:
 
         self.log.add_note("Loading [SSFList] patches from ini...")
 
-        ssf_section_dict = CaseInsensitiveDict(self.ini[ssf_list_section].items())
+        ssf_section_dict = CaseInsensitiveDict(self.ini[ssf_list_section])
         default_destination: str = ssf_section_dict.pop("!DefaultDestination", ModificationsSSF.DEFAULT_DESTINATION)
 
         for identifier, file in ssf_section_dict.items():
@@ -545,15 +565,16 @@ class ConfigReader:
             modifications = ModificationsSSF(file, replace)
             self.config.patches_ssf.append(modifications)
 
-            file_section_dict = CaseInsensitiveDict(self.ini[ssf_file_section].items())
+            file_section_dict = CaseInsensitiveDict(self.ini[ssf_file_section])
             modifications.pop_tslpatcher_vars(file_section_dict, default_destination)
 
             for name, value in file_section_dict.items():
                 new_value: TokenUsage
-                if value.lower().startswith("2damemory"):
+                lower_value: str = value.lower()
+                if lower_value.startswith("2damemory"):
                     token_id = int(value[9:])
                     new_value = TokenUsage2DA(token_id)
-                elif value.lower().startswith("strref"):
+                elif lower_value.startswith("strref"):
                     token_id = int(value[6:])
                     new_value = TokenUsageTLK(token_id)
                 else:
@@ -563,7 +584,8 @@ class ConfigReader:
                 modifier = ModifySSF(sound, new_value)
                 modifications.modifiers.append(modifier)
 
-    def load_gff_list(self) -> None:
+
+    def load_gff_list(self):
         """Loads GFF patches from the ini file into memory.
 
         Processing Logic:
@@ -584,11 +606,9 @@ class ConfigReader:
             return
 
         self.log.add_note("Loading [GFFList] patches from ini...")
-        modifier: ModifyGFF | None = None
-
-        gff_section_dict = CaseInsensitiveDict(self.ini[gff_list_section].items())
-
+        gff_section_dict = CaseInsensitiveDict(self.ini[gff_list_section])
         default_destination: str = gff_section_dict.pop("!DefaultDestination", ModificationsGFF.DEFAULT_DESTINATION)
+
         for identifier, file in gff_section_dict.items():
             file_section_name: str | None = self.get_section_name(file)
             if file_section_name is None:
@@ -598,22 +618,26 @@ class ConfigReader:
             modifications = ModificationsGFF(file, replace)
             self.config.patches_gff.append(modifications)
 
-            file_section_dict = CaseInsensitiveDict(self.ini[file_section_name].items())
+            file_section_dict = CaseInsensitiveDict(self.ini[file_section_name])
             modifications.pop_tslpatcher_vars(file_section_dict, default_destination)
 
             for key, value in file_section_dict.items():
+                modifier: ModifyGFF | None
+
                 lowercase_key: str = key.lower()
                 if lowercase_key.startswith("addfield"):
                     next_gff_section: str | None = self.get_section_name(value)
                     if next_gff_section is None:
                         raise KeyError(SECTION_NOT_FOUND_ERROR.format(value) + REFERENCES_TRACEBACK_MSG.format(key, value, file_section_name))
 
-                    next_section_dict = CaseInsensitiveDict(self.ini[next_gff_section].items())
+                    next_section_dict = CaseInsensitiveDict(self.ini[next_gff_section])
                     modifier = self.add_field_gff(next_gff_section, next_section_dict)
+
                 elif lowercase_key.startswith("2damemory"):
                     if value.lower() != "!fieldpath" and not value.lower().startswith("2damemory"):
-                        msg = f"Cannot parse '{key}={value}' in [{identifier}]. GFFList only supports 2DAMEMORY#=!FieldPath assignments"
+                        msg = f"Cannot parse '{key}={value}' in [{identifier}]. GFFList only supports 2DAMEMORY#=!FieldPath and 2DAMEMORY#=2DAMEMORY# assignments"
                         raise ValueError(msg)
+
                     modifier = Memory2DAModifierGFF(
                         file,
                         int(key[9:]),
@@ -624,7 +648,8 @@ class ConfigReader:
 
                 modifications.modifiers.append(modifier)
 
-    def load_compile_list(self) -> None:
+
+    def load_compile_list(self):
         """Loads patches from the [CompileList] section of the ini file.
 
         Processing Logic:
@@ -643,7 +668,7 @@ class ConfigReader:
             return
 
         self.log.add_note("Loading [CompileList] patches from ini...")
-        compilelist_section_dict = CaseInsensitiveDict(self.ini[compilelist_section].items())
+        compilelist_section_dict = CaseInsensitiveDict(self.ini[compilelist_section])
         default_destination: str = compilelist_section_dict.pop("!DefaultDestination", ModificationsNSS.DEFAULT_DESTINATION)
 
         for identifier, file in compilelist_section_dict.items():
@@ -653,11 +678,13 @@ class ConfigReader:
 
             optional_file_section_name: str | None = self.get_section_name(file)
             if optional_file_section_name is not None:
-                file_section_dict = CaseInsensitiveDict(self.ini[optional_file_section_name].items())
+                file_section_dict = CaseInsensitiveDict(self.ini[optional_file_section_name])
                 modifications.pop_tslpatcher_vars(file_section_dict, default_destination)
+
             self.config.patches_nss.append(modifications)
 
-    def load_hack_list(self) -> None:
+
+    def load_hack_list(self):
         """Loads [HACKList] patches from ini file into memory.
 
         Processing Logic:
@@ -674,7 +701,7 @@ class ConfigReader:
             return
 
         self.log.add_note("Loading [HACKList] patches from ini...")
-        compilelist_section_dict = CaseInsensitiveDict(self.ini[hacklist_section].items())
+        compilelist_section_dict = CaseInsensitiveDict(self.ini[hacklist_section])
         default_destination: str = compilelist_section_dict.pop("!DefaultDestination", ModificationsNCS.DEFAULT_DESTINATION)
 
         for identifier, file in compilelist_section_dict.items():
@@ -684,8 +711,10 @@ class ConfigReader:
             optional_file_section_name: str | None = self.get_section_name(file)
             if optional_file_section_name is None:
                 raise KeyError(SECTION_NOT_FOUND_ERROR.format(file) + REFERENCES_TRACEBACK_MSG.format(identifier, file, hacklist_section))
-            file_section_dict = CaseInsensitiveDict(self.ini[optional_file_section_name].items())
+
+            file_section_dict = CaseInsensitiveDict(self.ini[optional_file_section_name])
             modifications.pop_tslpatcher_vars(file_section_dict, default_destination)
+
             for offset_str, value_str in file_section_dict.items():
                 lower_value: str = value_str.lower()
                 if lower_value.startswith("strref"):
@@ -700,7 +729,7 @@ class ConfigReader:
     #################
 
     @classmethod
-    def modify_field_gff(cls, identifier: str, key: str, string_value: str) -> ModifyFieldGFF:
+    def modify_field_gff(cls, identifier: str, key: str, str_value: str) -> ModifyFieldGFF:
         """Modifies a field in a GFF based on the key(path) and string value.
 
         Args:
@@ -719,26 +748,29 @@ class ConfigReader:
             2. Handles special cases for keys containing "(strref)", "(lang)" or starting with "2damemory"
             3. Returns a ModifyFieldGFF object representing the modification.
         """
-        value: FieldValue = cls.field_value_from_unknown(string_value)
-        key_lower: str = key.lower()
-        if "(strref)" in key_lower:
+        value: FieldValue = cls.field_value_from_unknown(str_value)
+        lower_key: str = key.lower()
+        if "(strref)" in lower_key:
             value = FieldValueConstant(LocalizedStringDelta(value))
-            key = key[: key_lower.index("(strref)")]
-        elif "(lang" in key_lower:
-            substring_id = int(key[key_lower.index("(lang") + 5 : -1])
+            key = key[: lower_key.index("(strref)")]
+
+        elif "(lang" in lower_key:
+            substring_id = int(key[lower_key.index("(lang") + 5 : -1])
             language, gender = LocalizedString.substring_pair(substring_id)
             locstring = LocalizedStringDelta()
-            locstring.set_data(language, gender, string_value)
+            locstring.set_data(language, gender, str_value)
             value = FieldValueConstant(locstring)
-            key = key[: key_lower.index("(lang")]
-        elif key_lower.startswith("2damemory"):
-            string_value_lower: str = string_value.lower()
-            if string_value_lower != "!fieldpath" and not string_value_lower.startswith("2damemory"):
+            key = key[: lower_key.index("(lang")]
+
+        elif lower_key.startswith("2damemory"):
+            lower_str_value: str = str_value.lower()
+            if lower_str_value != "!fieldpath" and not lower_str_value.startswith("2damemory"):
                 msg = f"Cannot parse '{key}={value}' in [{identifier}]. GFFList only supports 2DAMEMORY#=!FieldPath assignments"
                 raise ValueError(msg)
             value = FieldValueConstant(PureWindowsPath(""))  # no path at the root
 
         return ModifyFieldGFF(PureWindowsPath(key), value)
+
 
     def add_field_gff(
         self,
@@ -767,8 +799,8 @@ class ConfigReader:
             4. Returns an AddFieldGFF or AddStructToListGFF object based on whether a label is provided.
         """
         # Parse required values
-        raw_field_type: str = ini_data.pop("FieldType")  # type: ignore[reportGeneralTypeIssues]
-        label: str = ini_data.pop("Label").strip()  # type: ignore[reportGeneralTypeIssues]
+        raw_field_type: str = ini_data.pop("FieldType")
+        label: str = ini_data.pop("Label").strip()
 
         # Resolve TSLPatcher -> PyKotor GFFFieldType
         field_type: GFFFieldType = self.resolve_tslpatcher_gff_field_type(raw_field_type)
@@ -778,23 +810,22 @@ class ConfigReader:
         path: PureWindowsPath = PureWindowsPath(raw_path)
         if not path.name and current_path and current_path.name:  # use current recursion path if section doesn't override with Path=
             path = current_path
-        if field_type.return_type() == GFFStruct:
+        if field_type == GFFFieldType.Struct:
             path /= ">>##INDEXINLIST##<<"
 
         modifiers: list[ModifyGFF] = []
         index_in_list_token = None
+
         for key, iterated_value in ini_data.items():
+
             lower_key: str = key.lower()
             if lower_key.startswith("2damemory"):
+
                 lower_iterated_value: str = iterated_value.lower()
                 if lower_iterated_value == "listindex":
                     index_in_list_token = int(key[9:])
                 elif lower_iterated_value == "!fieldpath":
-                    modifier = Memory2DAModifierGFF(
-                        identifier,
-                        int(key[9:]),
-                        path,
-                    )
+                    modifier = Memory2DAModifierGFF(identifier, int(key[9:]), path)
                     modifiers.insert(0, modifier)
 
             # Handle nested AddField's and recurse
@@ -802,36 +833,33 @@ class ConfigReader:
                 next_section_name: str | None = self.get_section_name(iterated_value)
                 if next_section_name is None:
                     raise KeyError(SECTION_NOT_FOUND_ERROR.format(iterated_value) + REFERENCES_TRACEBACK_MSG.format(key, iterated_value, identifier))
-                next_nested_section = CaseInsensitiveDict(self.ini[next_section_name].items())
+
+                next_nested_section = CaseInsensitiveDict(self.ini[next_section_name])
                 nested_modifier: ModifyGFF = self.add_field_gff(
                     next_section_name,
                     next_nested_section,
                     current_path=path / label,
                 )
+
                 modifiers.append(nested_modifier)
 
         # get AddField value based on this recursion level
         value: FieldValue = self._get_addfield_value(ini_data, field_type, identifier)
 
         # Check if label unset to determine if current ini section is a struct inside a list.
-        if not label and field_type.return_type() is GFFStruct:
-            return AddStructToListGFF(
-                identifier,
-                value,
-                path,
-                index_in_list_token,
-                modifiers,
-            )
+        # NOTE: The `field_type == GFFFieldType.Struct` check below is unnecessary but provided
+        # for clarity.  Label should never be defined in gfflist struct sections.
+        if not label and field_type == GFFFieldType.Struct:
+            return AddStructToListGFF(identifier, value, path, index_in_list_token, modifiers)
 
-        # Default to adding field
-        return AddFieldGFF(
-            identifier,
-            label,
-            field_type,
-            value,
-            path,
-            modifiers,
-        )
+        # if label and field_type == GFFFieldType.Struct:
+        #     msg = f"Label={label} cannot be used when FieldType={GFFFieldType.Struct.value}. Error happened in [{identifier}] section in ini."
+        #     raise ValueError(msg)
+        if not label and field_type != GFFFieldType.Struct:
+            msg = f"Label must be set for {field_type!r} (FieldType={field_type.value}). Error happened in [{identifier}] section in ini."
+            raise ValueError(msg)
+        return AddFieldGFF(identifier, label, field_type, value, path, modifiers)
+
 
     @classmethod
     def _get_addfield_value(
@@ -868,22 +896,27 @@ class ConfigReader:
                 msg = f"Could not parse fieldtype '{field_type.name}' in GFFList section [{identifier}]"
                 raise ValueError(msg)
             value = ret_value
-        elif field_type.return_type() == LocalizedString:
+
+        elif field_type == GFFFieldType.LocalizedString:
             value = cls.field_value_from_localized_string(ini_section_dict)
-        elif field_type.return_type() == GFFList:
+
+        elif field_type == GFFFieldType.List:
             value = FieldValueConstant(GFFList())
-        elif field_type.return_type() == GFFStruct:
+
+        elif field_type == GFFFieldType.Struct:
             raw_struct_id: str = ini_section_dict.pop("TypeId", "0").strip()  # 0 is the default struct id.
             if not is_int(raw_struct_id):
                 msg = f"Invalid TypeId: expected int but got '{raw_struct_id}' in [{identifier}]"
                 raise ValueError(msg)
-
             struct_id = int(raw_struct_id)
             value = FieldValueConstant(GFFStruct(struct_id))
+
         if value is None:
             msg = f"Could not find valid field return type in [{identifier}] matching field type '{field_type.name}'"
             raise ValueError(msg)
+
         return value
+
 
     @classmethod
     def field_value_from_localized_string(cls, ini_section_dict: CaseInsensitiveDict) -> FieldValueConstant:
@@ -906,21 +939,21 @@ class ConfigReader:
             5. Normalize the text and set it in the string delta
             6. Return a FieldValueConstant containing the parsed string delta.
         """
-        text: str
-        raw_stringref: str = ini_section_dict.pop("StrRef")  # type: ignore[reportGeneralTypeIssues]
-        stringref: FieldValue | None = cls.field_value_from_memory(raw_stringref)
-        if stringref is None:
-            stringref = FieldValueConstant(int(raw_stringref))
+        raw_stringref: str = ini_section_dict.pop("StrRef")
+        stringref: FieldValue = cls.field_value_from_memory(raw_stringref) or FieldValueConstant(int(raw_stringref))
         l_string_delta = LocalizedStringDelta(stringref)
 
         for substring, text in ini_section_dict.items():
             if not substring.lower().startswith("lang"):
                 continue
+
             substring_id = int(substring[4:])
             language, gender = l_string_delta.substring_pair(substring_id)
             formatted_text: str = cls.normalize_tslpatcher_crlf(text)
             l_string_delta.set_data(language, gender, formatted_text)
+
         return FieldValueConstant(l_string_delta)
+
 
     @staticmethod
     def field_value_from_memory(raw_value: str) -> FieldValue | None:
@@ -941,17 +974,21 @@ class ConfigReader:
             - Check if it starts with "2damemory" and extract token ID
             - Return FieldValue memory object with token ID, or None if no match
         """
-        lower_str_value = raw_value.lower()
-        if lower_str_value.startswith("strref"):
+        lower_value: str = raw_value.lower()
+
+        if lower_value.startswith("strref"):
             token_id = int(raw_value[6:])
             return FieldValueTLKMemory(token_id)
-        if lower_str_value.startswith("2damemory"):
+
+        if lower_value.startswith("2damemory"):
             token_id = int(raw_value[9:])
             return FieldValue2DAMemory(token_id)
+
         return None
 
+
     @staticmethod
-    def field_value_from_unknown(string_value: str) -> FieldValue:
+    def field_value_from_unknown(raw_value: str) -> FieldValue:
         """Extracts a field value from an unknown string representation.
 
             This section determines how to parse ini key/value pairs in gfflist such as:
@@ -974,25 +1011,51 @@ class ConfigReader:
             - Falls back to returning as string if no other type matches
             - Returns a FieldValueConstant wrapping the extracted value
         """
-        field_value_memory: FieldValue | None = ConfigReader.field_value_from_memory(string_value)
-        if field_value_memory is not None:  # strref/2damemory
+        # StrRef or 2DAMemory
+        field_value_memory: FieldValue | None = ConfigReader.field_value_from_memory(raw_value)
+        if field_value_memory is not None:
             return field_value_memory
 
-        value: Any
-        if is_int(string_value):  # int
-            return FieldValueConstant(int(string_value))
+        # Int
+        if is_int(raw_value):
+            return FieldValueConstant(int(raw_value))
 
-        parsed_float: str = ConfigReader.normalize_tslpatcher_float(string_value)
-        if is_float(parsed_float):  # float
-            value = float(parsed_float)
-        elif string_value.count("|") == 2:
-            value = Vector3(*[float(x) for x in parsed_float.split("|")])
-        elif string_value.count("|") == 3:
-            value = Vector4(*[float(x) for x in parsed_float.split("|")])
-        else:  # string
-            value = ConfigReader.normalize_tslpatcher_crlf(string_value)
+        # Float
+        parsed_float_str: str = ConfigReader.normalize_tslpatcher_float(raw_value)
+        if is_float(parsed_float_str):  # float
+            return FieldValueConstant(float(parsed_float_str))
 
-        return FieldValueConstant(value)
+        num_pipe_seps: int = raw_value.count("|")
+
+        # String
+        if not num_pipe_seps:
+            return FieldValueConstant(ConfigReader.normalize_tslpatcher_crlf(raw_value))
+
+        # Vector
+        not_a_vector: bool = False
+        components: list[float] = []
+        for x in parsed_float_str.split("|"):
+            if is_float(x):
+                components.append(float(x))
+                continue
+            not_a_vector = True
+            break
+
+        # String containing the character '|'
+        if not_a_vector:
+            return FieldValueConstant(ConfigReader.normalize_tslpatcher_crlf(raw_value))
+
+        # Three floats
+        if num_pipe_seps == 2:
+            return FieldValueConstant(Vector3(*components))
+
+        # Four floats
+        if num_pipe_seps == 3:
+            return FieldValueConstant(Vector4(*components))
+
+        msg = f"Cannot determine type/value from '{raw_value}'"
+        raise ValueError(msg)
+
 
     @staticmethod
     def field_value_from_type(raw_value: str, field_type: GFFFieldType) -> FieldValue | None:
@@ -1018,23 +1081,31 @@ class ConfigReader:
             return field_value_memory
 
         components: list[float]
-        value: Any = None
+        value: ResRef | str | int | float | Vector3 | Vector4 | None = None
+
         if field_type.return_type() == ResRef:
             value = ResRef(raw_value)
+
         elif field_type.return_type() == str:
             value = ConfigReader.normalize_tslpatcher_crlf(raw_value)
+
         elif field_type.return_type() == int:
             value = int(raw_value)
+
         elif field_type.return_type() == float:
             value = float(ConfigReader.normalize_tslpatcher_float(raw_value))
+
         elif field_type.return_type() == Vector3:
             components = [float(ConfigReader.normalize_tslpatcher_float(axis)) for axis in raw_value.split("|")]
             value = Vector3(*components)
+
         elif field_type.return_type() == Vector4:
             components = [float(ConfigReader.normalize_tslpatcher_float(axis)) for axis in raw_value.split("|")]
             value = Vector4(*components)
+
         if value is None:
             return None
+
         return FieldValueConstant(value)
 
     #################
@@ -1079,25 +1150,14 @@ class ConfigReader:
             if target is None:
                 return None
             cells, store_2da, store_tlk = self.cells_2da(identifier, modifiers)
-            modification = ChangeRow2DA(
-                identifier,
-                target,
-                cells,
-                store_2da,
-                store_tlk,
-            )
+            modification = ChangeRow2DA(identifier, target, cells, store_2da, store_tlk)
+
         elif lowercase_key.startswith("addrow"):
             exclusive_column = modifiers.pop("ExclusiveColumn", None)
             row_label = self.row_label_2da(identifier, modifiers)
             cells, store_2da, store_tlk = self.cells_2da(identifier, modifiers)
-            modification = AddRow2DA(
-                identifier,
-                exclusive_column,
-                row_label,
-                cells,
-                store_2da,
-                store_tlk,
-            )
+            modification = AddRow2DA(identifier, exclusive_column, row_label, cells, store_2da, store_tlk)
+
         elif lowercase_key.startswith("copyrow"):
             target = self.target_2da(identifier, modifiers)
             if not target:
@@ -1105,24 +1165,19 @@ class ConfigReader:
             exclusive_column = modifiers.pop("ExclusiveColumn", None)
             row_label = self.row_label_2da(identifier, modifiers)
             cells, store_2da, store_tlk = self.cells_2da(identifier, modifiers)
-            modification = CopyRow2DA(
-                identifier,
-                target,
-                exclusive_column,
-                row_label,
-                cells,
-                store_2da,
-                store_tlk,
-            )
+            modification = CopyRow2DA(identifier, target, exclusive_column, row_label, cells, store_2da, store_tlk)
+
         elif lowercase_key.startswith("addcolumn"):
             modification = self._read_add_column(modifiers, identifier)
+
         else:
             msg = (f"Could not parse key '{key}={identifier}', expecting one of ['ChangeRow=', 'AddColumn=', 'AddRow=', 'CopyRow=']")
             raise KeyError(msg)
 
         return modification
 
-    def _read_add_column(self, modifiers: CaseInsensitiveDict[str], identifier: str):
+
+    def _read_add_column(self, modifiers: CaseInsensitiveDict[str], identifier: str) -> AddColumn2DA:
         """Loads the add new column to be added to the 2D array.
 
         Args:
@@ -1168,7 +1223,12 @@ class ConfigReader:
             store_2da,
         )
 
-    def target_2da(self, identifier: str, modifiers: CaseInsensitiveDict[str]) -> Target | None:
+
+    def target_2da(
+        self,
+        identifier: str,
+        modifiers: CaseInsensitiveDict[str],
+    ) -> Target | None:
         """Gets or creates a 2D target from modifiers.
 
         Args:
@@ -1186,10 +1246,15 @@ class ConfigReader:
             - Calls get_target() to create Target object
             - Returns None if no valid key found with warning
         """
-        def get_target(target_type: TargetType, key: str, is_int: bool = False) -> Target:
+        def get_target(
+            target_type: TargetType,
+            key: str,
+            *,
+            is_int: bool = False,
+        ) -> Target:
             raw_value: str | None = modifiers.pop(key, None)
             if raw_value is None:
-                msg = f"'{key}' missing from [{identifier}] in ini."
+                msg = f"[2DAList] parse error: '{key}' missing from [{identifier}] in ini."
                 raise ValueError(msg)
             value: str | int = int(raw_value) if is_int else raw_value
             return Target(target_type, value)
@@ -1203,6 +1268,7 @@ class ConfigReader:
 
         self.log.add_warning(f"No line set to be modified in [{identifier}].")  # TODO: should raise an exception?
         return None
+
 
     def cells_2da(
         self,
@@ -1227,29 +1293,30 @@ class ConfigReader:
             3. Creates appropriate RowValue for cell/store value
             4. Adds cell/store value to return dictionaries
         """
-        cells: dict[str, RowValue] = {}
+        cells:     dict[str, RowValue] = {}
         store_2da: dict[int, RowValue] = {}
         store_tlk: dict[int, RowValue] = {}
 
         for modifier, value in modifiers.items():
-            modifier_lowercase = modifier.lower().strip()
-            value_lowercase = value.lower()
-            is_store_2da = modifier_lowercase.startswith("2damemory")
-            is_store_tlk = modifier_lowercase.startswith("strref") and len(modifier_lowercase) > 6  # noqa: PLR2004
-            is_row_label = modifier_lowercase in ["rowlabel", "newrowlabel"]
+            lower_modifier: str = modifier.lower().strip()
+            lower_value:    str = value.lower()
+
+            is_store_2da:  bool = lower_modifier.startswith("2damemory")
+            is_store_tlk:  bool = lower_modifier.startswith("strref") and len(lower_modifier) > len("strref")
+            is_row_label:  bool = lower_modifier in ["rowlabel", "newrowlabel"]
 
             row_value: RowValue | None = None
-            if value_lowercase.startswith("2damemory"):
+            if lower_value.startswith("2damemory"):
                 token_id = int(value[9:])
                 row_value = RowValue2DAMemory(token_id)
-            elif value_lowercase.startswith("strref"):
+            elif lower_value.startswith("strref"):
                 token_id = int(value[6:])
                 row_value = RowValueTLKMemory(token_id)
-            elif value_lowercase == "high()":
+            elif lower_value == "high()":
                 row_value = RowValueHigh(None) if modifier == "rowlabel" else RowValueHigh(modifier)
-            elif value_lowercase == "rowindex":
+            elif lower_value == "rowindex":
                 row_value = RowValueRowIndex()
-            elif value_lowercase == "rowlabel":
+            elif lower_value == "rowlabel":
                 row_value = RowValueRowLabel()
             elif is_store_2da or is_store_tlk:
                 row_value = RowValueRowCell(value)
@@ -1269,13 +1336,30 @@ class ConfigReader:
 
         return cells, store_2da, store_tlk
 
+
     def row_label_2da(self, identifier: str, modifiers: CaseInsensitiveDict[str]) -> str | None:
-        # sourcery skip: assign-if-exp, reintroduce-else
-        if "RowLabel" in modifiers:
-            return modifiers.pop("RowLabel")  # type: ignore[reportGeneralTypeIssues]
-        if "NewRowLabel" in modifiers:
-            return modifiers.pop("NewRowLabel")  # type: ignore[reportGeneralTypeIssues]
-        return None
+        """Returns the row label for a 2D array based on modifiers.
+
+        Args:
+        ----
+            identifier: Identifier for the 2D array
+            modifiers: CaseInsensitiveDict of modifiers for the 2D array
+
+        Returns:
+        -------
+            str | None: The row label or None if not found
+
+        Processing Logic:
+        ----------------
+            - Check if 'RowLabel' exists as a key in modifiers
+            - If not present, check if 'NewRowLabel' exists as a key
+            - Return the value of the key if present, else return None.
+        """
+        return modifiers.pop(
+           "RowLabel",
+           modifiers.pop("NewRowLabel", None),
+        )
+
 
     def column_inserts_2da(
         self,
@@ -1346,13 +1430,9 @@ class ConfigReader:
         Returns:
         -------
             str: Normalized string value with commas replaced with periods
-
-        Replace commas with periods in the input string value:
-            - Split the string on commas
-            - Join the string using periods instead of commas
-            - Return the normalized string
         """
         return value_str.replace(",", ".")
+
 
     @staticmethod
     def normalize_tslpatcher_crlf(value_str: str) -> str:
@@ -1373,8 +1453,9 @@ class ConfigReader:
         """
         return value_str.replace("<#LF#>", "\n").replace("<#CR#>", "\r")
 
+
     @staticmethod
-    def resolve_tslpatcher_ssf_sound(name: str):
+    def resolve_tslpatcher_ssf_sound(name: str) -> SSFSound:
         """Resolves a config string to an SSFSound enum value.
 
         Args:
@@ -1423,6 +1504,7 @@ class ConfigReader:
             }.items(),
         )
         return configstr_to_ssfsound[name]
+
 
     @staticmethod
     def resolve_tslpatcher_gff_field_type(field_type_num_str: str) -> GFFFieldType:

@@ -28,7 +28,7 @@ class SSF:
 
     def reset(
         self,
-    ) -> None:
+    ):
         """Sets all the sound stringrefs to -1."""
         for i in range(28):
             self._sounds[i] = -1
@@ -37,7 +37,7 @@ class SSF:
         self,
         sound: SSFSound,
         stringref: int,
-    ) -> None:
+    ):
         """Set the stringref for the specified sound.
 
         Args:

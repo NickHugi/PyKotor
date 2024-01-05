@@ -20,6 +20,8 @@ from toolset.utils.window import openResourceEditor
 if TYPE_CHECKING:
     import os
 
+    from pykotor.resource.formats.twoda.twoda_data import TwoDA
+
 
 class UTDEditor(Editor):
     def __init__(self, parent: QWidget | None, installation: HTInstallation | None = None, *, mainwindow=None):
@@ -61,7 +63,7 @@ class UTDEditor(Editor):
         self.update3dPreview()
         self.new()
 
-    def _setupSignals(self) -> None:
+    def _setupSignals(self):
         """Connect GUI buttons and signals to methods.
 
         Args:
@@ -104,11 +106,11 @@ class UTDEditor(Editor):
         self.ui.previewRenderer.installation = installation
 
         # Load required 2da files if they have not been loaded already
-        required = [HTInstallation.TwoDA_DOORS, HTInstallation.TwoDA_FACTIONS]
+        required: list[str] = [HTInstallation.TwoDA_DOORS, HTInstallation.TwoDA_FACTIONS]
         installation.htBatchCache2DA(required)
 
-        appearances = installation.htGetCache2DA(HTInstallation.TwoDA_DOORS)
-        factions = installation.htGetCache2DA(HTInstallation.TwoDA_FACTIONS)
+        appearances: TwoDA = installation.htGetCache2DA(HTInstallation.TwoDA_DOORS)
+        factions: TwoDA = installation.htGetCache2DA(HTInstallation.TwoDA_FACTIONS)
 
         self.ui.appearanceSelect.setItems(appearances.get_column("label"))
         self.ui.factionSelect.setItems(factions.get_column("label"))
@@ -119,13 +121,13 @@ class UTDEditor(Editor):
         self.ui.difficultyLabel.setVisible(installation.tsl)
         self.ui.difficultyModLabel.setVisible(installation.tsl)
 
-    def load(self, filepath: os.PathLike | str, resref: str, restype: ResourceType, data: bytes) -> None:
+    def load(self, filepath: os.PathLike | str, resref: str, restype: ResourceType, data: bytes):
         super().load(filepath, resref, restype, data)
 
         utd = read_utd(data)
         self._loadUTD(utd)
 
-    def _loadUTD(self, utd: UTD) -> None:
+    def _loadUTD(self, utd: UTD):
         """Loads UTD data into UI elements.
 
         Args:
@@ -134,18 +136,18 @@ class UTDEditor(Editor):
 
         Processing Logic:
         ----------------
-        - Sets UI element values from UTD object attributes
-        - Divides loading into sections for Basic, Advanced, Lock, Scripts, and Comments
-        - Handles different UI element types like checkboxes, dropdowns, text fields, etc.
+            - Sets UI element values from UTD object attributes
+            - Divides loading into sections for Basic, Advanced, Lock, Scripts, and Comments
+            - Handles different UI element types like checkboxes, dropdowns, text fields, etc.
         """
         self._utd = utd
 
         # Basic
         self.ui.nameEdit.setLocstring(utd.name)
         self.ui.tagEdit.setText(utd.tag)
-        self.ui.resrefEdit.setText(utd.resref.get())
+        self.ui.resrefEdit.setText(str(utd.resref))
         self.ui.appearanceSelect.setCurrentIndex(utd.appearance_id)
-        self.ui.conversationEdit.setText(utd.conversation.get())
+        self.ui.conversationEdit.setText(str(utd.conversation))
 
         # Advanced
         self.ui.min1HpCheckbox.setChecked(utd.min1_hp)
@@ -171,17 +173,17 @@ class UTDEditor(Editor):
         self.ui.difficultyModSpin.setValue(utd.unlock_diff_mod)
 
         # Scripts
-        self.ui.onClickEdit.setText(utd.on_click.get())
-        self.ui.onClosedEdit.setText(utd.on_closed.get())
-        self.ui.onDamagedEdit.setText(utd.on_damaged.get())
-        self.ui.onDeathEdit.setText(utd.on_death.get())
-        self.ui.onOpenFailedEdit.setText(utd.on_open_failed.get())
-        self.ui.onHeartbeatEdit.setText(utd.on_heartbeat.get())
-        self.ui.onMeleeAttackEdit.setText(utd.on_melee.get())
-        self.ui.onSpellEdit.setText(utd.on_power.get())
-        self.ui.onOpenEdit.setText(utd.on_open.get())
-        self.ui.onUnlockEdit.setText(utd.on_unlock.get())
-        self.ui.onUserDefinedEdit.setText(utd.on_user_defined.get())
+        self.ui.onClickEdit.setText(str(utd.on_click))
+        self.ui.onClosedEdit.setText(str(utd.on_closed))
+        self.ui.onDamagedEdit.setText(str(utd.on_damaged))
+        self.ui.onDeathEdit.setText(str(utd.on_death))
+        self.ui.onOpenFailedEdit.setText(str(utd.on_open_failed))
+        self.ui.onHeartbeatEdit.setText(str(utd.on_heartbeat))
+        self.ui.onMeleeAttackEdit.setText(str(utd.on_melee))
+        self.ui.onSpellEdit.setText(str(utd.on_power))
+        self.ui.onOpenEdit.setText(str(utd.on_open))
+        self.ui.onUnlockEdit.setText(str(utd.on_unlock))
+        self.ui.onUserDefinedEdit.setText(str(utd.on_user_defined))
 
         # Comments
         self.ui.commentsEdit.setPlainText(utd.comment)
@@ -195,9 +197,9 @@ class UTDEditor(Editor):
 
         Processing Logic:
         ----------------
-        - Sets UTD properties from UI elements like name, tag, resrefs etc
-        - Writes the constructed UTD to a GFF bytearray
-        - Returns the GFF data and any errors
+            - Sets UTD properties from UI elements like name, tag, resrefs etc
+            - Writes the constructed UTD to a GFF bytearray
+            - Returns the GFF data and any errors
         """
         utd: UTD = deepcopy(self._utd)
 
@@ -253,27 +255,27 @@ class UTDEditor(Editor):
 
         return data, b""
 
-    def new(self) -> None:
+    def new(self):
         super().new()
         self._loadUTD(UTD())
 
-    def changeName(self) -> None:
+    def changeName(self):
         dialog = LocalizedStringDialog(self, self._installation, self.ui.nameEdit.locstring())
         if dialog.exec_():
             self._loadLocstring(self.ui.nameEdit, dialog.locstring)
 
-    def generateTag(self) -> None:
+    def generateTag(self):
         if self.ui.resrefEdit.text() == "":
             self.generateResref()
         self.ui.tagEdit.setText(self.ui.resrefEdit.text())
 
-    def generateResref(self) -> None:
+    def generateResref(self):
         if self._resref is not None and self._resref != "":
             self.ui.resrefEdit.setText(self._resref)
         else:
             self.ui.resrefEdit.setText("m00xx_dor_000")
 
-    def editConversation(self) -> None:
+    def editConversation(self):
         """Edits a conversation.
 
         Processing Logic:
@@ -310,18 +312,18 @@ class UTDEditor(Editor):
         if data is not None:
             openResourceEditor(filepath, resname, ResourceType.DLG, data, self._installation, self)
 
-    def togglePreview(self) -> None:
+    def togglePreview(self):
         self.globalSettings.showPreviewUTP = not self.globalSettings.showPreviewUTP
         self.update3dPreview()
 
-    def update3dPreview(self) -> None:
+    def update3dPreview(self):
         """Updates the 3D preview renderer visibility and size.
 
         Processing Logic:
         ----------------
-        - Checks if the global setting for showing preview is True
-        - If True, calls _update_model() to update the 3D model preview
-        - If False, sets the fixed size of the window without leaving space for preview.
+            - Checks if the global setting for showing preview is True
+            - If True, calls _update_model() to update the 3D model preview
+            - If False, sets the fixed size of the window without leaving space for preview.
         """
         self.ui.previewRenderer.setVisible(self.globalSettings.showPreviewUTP)
         self.ui.actionShowPreview.setChecked(self.globalSettings.showPreviewUTP)

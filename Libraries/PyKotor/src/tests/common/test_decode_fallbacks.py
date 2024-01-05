@@ -1,6 +1,9 @@
+from __future__ import annotations
+
 import os
 import pathlib
 import sys
+from types import ModuleType
 import unittest
 
 THIS_SCRIPT_PATH = pathlib.Path(__file__)
@@ -21,6 +24,7 @@ if UTILITY_PATH.exists():
 from pykotor.common.language import Language
 from pykotor.tools.encoding import decode_bytes_with_fallbacks
 
+charset_normalizer: None | ModuleType
 try:
     import charset_normalizer
 except ImportError:
@@ -122,7 +126,7 @@ class TestDecodeBytes(unittest.TestCase):
         result = byte_content.decode(errors=errors)
         self.assertEqual(result, expected_result)
         result = decode_bytes_with_fallbacks(byte_content, errors, encoding, lang, only_8bit_encodings)
-        self.assertEqual(result, exp if charset_normalizer is None else exp2)
+        self.assertEqual(result, exp2 if charset_normalizer is None else exp)
 
     def test_8bit_encoding_only(self):
         byte_content = b"\xe4\xf6\xfc"
@@ -137,7 +141,7 @@ class TestDecodeBytes(unittest.TestCase):
         result = byte_content.decode(errors="replace")
         self.assertEqual(result, expected_result)
         result = decode_bytes_with_fallbacks(byte_content, errors, encoding, lang, only_8bit_encodings)
-        self.assertEqual(result, exp if charset_normalizer is None else exp2)
+        self.assertEqual(result, exp2 if charset_normalizer is None else exp)
 
     def test_with_BOM_included(self):
         byte_content = b"\xef\xbb\xbfTest"

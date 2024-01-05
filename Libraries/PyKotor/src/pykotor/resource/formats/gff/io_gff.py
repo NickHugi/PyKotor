@@ -26,7 +26,7 @@ class GFFBinaryReader(ResourceReader):
         source: SOURCE_TYPES,
         offset: int = 0,
         size: int = 0,
-    ) -> None:
+    ):
         super().__init__(source, offset, size)
         self._gff: GFF | None = None
 
@@ -81,7 +81,7 @@ class GFFBinaryReader(ResourceReader):
         self,
         gff_struct: GFFStruct,
         struct_index: int,
-    ) -> None:
+    ):
         self._reader.seek(self._struct_offset + struct_index * 12)
         struct_id, data, field_count = (
             self._reader.read_int32(),
@@ -103,7 +103,7 @@ class GFFBinaryReader(ResourceReader):
         self,
         gff_struct: GFFStruct,
         field_index: int,
-    ) -> None:
+    ):
         self._reader.seek(self._field_offset + field_index * 12)
         field_type_id = self._reader.read_uint32()
         label_id = self._reader.read_uint32()
@@ -125,7 +125,7 @@ class GFFBinaryReader(ResourceReader):
                 gff_struct.set_string(label, self._reader.read_string(length))
             elif field_type is GFFFieldType.ResRef:
                 length = self._reader.read_uint8()
-                resref = ResRef(self._reader.read_string(length))
+                resref = ResRef(self._reader.read_string(length).strip())
                 gff_struct.set_resref(label, resref)
             elif field_type is GFFFieldType.LocalizedString:
                 gff_struct.set_locstring(label, self._reader.read_locstring())
@@ -158,7 +158,7 @@ class GFFBinaryReader(ResourceReader):
         elif field_type is GFFFieldType.Single:
             gff_struct.set_single(label, self._reader.read_single())
 
-    def _load_list(self, gff_struct: GFFStruct, label: str) -> None:
+    def _load_list(self, gff_struct: GFFStruct, label: str):
         offset = self._reader.read_uint32()  # relative to list indices
         self._reader.seek(self._list_indices_offset + offset)
         value = GFFList()
@@ -176,7 +176,7 @@ class GFFBinaryWriter(ResourceWriter):
         self,
         gff: GFF,
         target: TARGET_TYPES,
-    ) -> None:
+    ):
         super().__init__(target)
         self._gff: GFF = gff
 
@@ -195,7 +195,7 @@ class GFFBinaryWriter(ResourceWriter):
     def write(
         self,
         auto_close: bool = True,
-    ) -> None:
+    ):
         self._build_struct(self._gff.root)
 
         struct_offset = 56
@@ -237,7 +237,7 @@ class GFFBinaryWriter(ResourceWriter):
     def _build_struct(
         self,
         gff_struct: GFFStruct,
-    ) -> None:
+    ):
         self._struct_count += 1
         struct_id = gff_struct.struct_id
         field_count = len(gff_struct)
@@ -272,7 +272,7 @@ class GFFBinaryWriter(ResourceWriter):
     def _build_list(
         self,
         gff_list: GFFList,
-    ) -> None:
+    ):
         self._list_indices_writer.end()
         self._list_indices_writer.write_uint32(len(gff_list))
         pos = self._list_indices_writer.position()
@@ -287,7 +287,7 @@ class GFFBinaryWriter(ResourceWriter):
         label: str,
         value: Any,
         field_type: GFFFieldType,
-    ) -> None:
+    ):
         self._field_count += 1
         field_type_id = field_type.value
         label_index = self._label_index(label)

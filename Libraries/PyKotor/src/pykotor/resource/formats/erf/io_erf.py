@@ -103,7 +103,7 @@ class ERFBinaryWriter(ResourceWriter):
     def write(
         self,
         auto_close: bool = True,
-    ) -> None:
+    ):
         entry_count = len(self.erf)
         offset_to_keys = ERFBinaryWriter.FILE_HEADER_SIZE
         offset_to_resources = offset_to_keys + ERFBinaryWriter.KEY_ELEMENT_SIZE * entry_count
@@ -122,7 +122,7 @@ class ERFBinaryWriter(ResourceWriter):
         self._writer.write_bytes(b"\0" * 116)
 
         for resid, resource in enumerate(self.erf):
-            self._writer.write_string(resource.resref.get(), string_length=16)
+            self._writer.write_string(resource.resref, string_length=16)
             self._writer.write_uint32(resid)
             self._writer.write_uint16(resource.restype.type_id)
             self._writer.write_uint16(0)

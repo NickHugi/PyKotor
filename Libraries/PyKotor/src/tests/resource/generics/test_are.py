@@ -33,13 +33,13 @@ K2_PATH = os.environ.get("K2_PATH")
 
 
 class TestARE(unittest.TestCase):
-    def setUp(self) -> None:
+    def setUp(self):
         self.log_messages: list[str] = [os.linesep]
 
     def log_func(self, message=""):
         self.log_messages.append(message)
 
-    def test_gff_reconstruct(self) -> None:
+    def test_gff_reconstruct(self):
         gff: GFF = read_gff(TEST_FILE)
         reconstructed_gff: GFF = dismantle_are(construct_are(gff), Game.K1)
         self.assertTrue(gff.compare(reconstructed_gff, self.log_func), os.linesep.join(self.log_messages))
@@ -48,7 +48,7 @@ class TestARE(unittest.TestCase):
         not K1_PATH or not pathlib.Path(K1_PATH).joinpath("chitin.key").exists(),
         "K1_PATH environment variable is not set or not found on disk.",
     )
-    def test_gff_reconstruct_from_k1_installation(self) -> None:
+    def test_gff_reconstruct_from_k1_installation(self):
         self.installation = Installation(K1_PATH)  # type: ignore[arg-type]
         for are_resource in (resource for resource in self.installation if resource.restype() == ResourceType.ARE):
             gff: GFF = read_gff(are_resource.data())
@@ -59,7 +59,7 @@ class TestARE(unittest.TestCase):
         not K2_PATH or not pathlib.Path(K2_PATH).joinpath("chitin.key").exists(),
         "K2_PATH environment variable is not set or not found on disk.",
     )
-    def test_gff_reconstruct_from_k2_installation(self) -> None:
+    def test_gff_reconstruct_from_k2_installation(self):
         self.installation = Installation(K2_PATH)  # type: ignore[arg-type]
         for are_resource in (resource for resource in self.installation if resource.restype() == ResourceType.ARE):
             gff: GFF = read_gff(are_resource.data())
@@ -77,7 +77,7 @@ class TestARE(unittest.TestCase):
         are = construct_are(gff)
         self.validate_io(are)
 
-    def validate_io(self, are: ARE) -> None:
+    def validate_io(self, are: ARE):
         self.assertEqual(0, are.unused_id)
         self.assertEqual(0, are.creator_id)
         self.assertEqual("Untitled", are.tag)

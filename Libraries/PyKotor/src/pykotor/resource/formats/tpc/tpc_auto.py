@@ -108,7 +108,7 @@ def write_tpc(
     tpc: TPC,
     target: TARGET_TYPES,
     file_format: ResourceType = ResourceType.TPC,
-) -> None:
+):
     """Writes the TPC data to the target location with the specified format (TPC, TGA or BMP).
 
     Args:

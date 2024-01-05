@@ -22,7 +22,7 @@ class PlaceableDialog(QDialog):
         self.ui.colorButton.clicked.connect(lambda: self.changeColor(self.ui.colorSpin))
         self.ui.colorSpin.valueChanged.connect(lambda value: self.redoColorImage(value, self.ui.color))
 
-        self.ui.resrefEdit.setText(placeable.resref.get())
+        self.ui.resrefEdit.setText(str(placeable.resref))
         self.ui.xPosSpin.setValue(placeable.position.x)
         self.ui.yPosSpin.setValue(placeable.position.y)
         self.ui.zPosSpin.setValue(placeable.position.z)
@@ -35,7 +35,7 @@ class PlaceableDialog(QDialog):
             if isinstance(widget, QDoubleSpinBox):
                 widget.setDecimals(8)
 
-    def accept(self) -> None:
+    def accept(self):
         super().accept()
         self.placeable.resref = ResRef(self.ui.resrefEdit.text())
         self.placeable.position.x = self.ui.xPosSpin.value()
@@ -44,12 +44,12 @@ class PlaceableDialog(QDialog):
         self.placeable.bearing = math.radians(self.ui.bearingSpin.value())
         self.placeable.tweak_color = Color.from_rgb_integer(self.ui.colorSpin.value()) if self.ui.colorSpin.value() != 0 else None
 
-    def changeColor(self, colorSpin: LongSpinBox) -> None:
+    def changeColor(self, colorSpin: LongSpinBox):
         qcolor = QColorDialog.getColor(QColor(colorSpin.value()))
         color = Color.from_rgb_integer(qcolor.rgb())
         colorSpin.setValue(color.rgb_integer())
 
-    def redoColorImage(self, value: int, colorLabel: QLabel) -> None:
+    def redoColorImage(self, value: int, colorLabel: QLabel):
         color = Color.from_bgr_integer(value)
         r, g, b = int(color.r * 255), int(color.g * 255), int(color.b * 255)
         data = bytes([r, g, b] * 16 * 16)

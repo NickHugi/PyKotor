@@ -113,7 +113,7 @@ class LYTAsciiWriter(ResourceWriter):
     def write(
         self,
         auto_close: bool = True,
-    ) -> None:
+    ):
         roomcount = len(self._lyt.rooms)
         trackcount = len(self._lyt.tracks)
         obstaclecount = len(self._lyt.obstacles)

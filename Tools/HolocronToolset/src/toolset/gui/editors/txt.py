@@ -44,21 +44,21 @@ class TXTEditor(Editor):
 
         self.new()
 
-    def _setupSignals(self) -> None:
+    def _setupSignals(self):
         self.ui.actionWord_Wrap.triggered.connect(self.toggleWordWrap)
 
-    def load(self, filepath: os.PathLike | str, resref: str, restype: ResourceType, data: bytes) -> None:
+    def load(self, filepath: os.PathLike | str, resref: str, restype: ResourceType, data: bytes):
         super().load(filepath, resref, restype, data)
         self.ui.textEdit.setPlainText(decode_bytes_with_fallbacks(data))
 
     def build(self) -> tuple[bytes, bytes]:
         return self.ui.textEdit.toPlainText().replace("\r\n", os.linesep).replace("\n", os.linesep).encode(), b""
 
-    def new(self) -> None:
+    def new(self):
         super().new()
         self.ui.textEdit.setPlainText("")
 
-    def toggleWordWrap(self) -> None:
+    def toggleWordWrap(self):
         self._wordWrap = not self._wordWrap
         self.ui.actionWord_Wrap.setChecked(self._wordWrap)
         self.ui.textEdit.setLineWrapMode(QPlainTextEdit.WidgetWidth if self._wordWrap else QPlainTextEdit.NoWrap)

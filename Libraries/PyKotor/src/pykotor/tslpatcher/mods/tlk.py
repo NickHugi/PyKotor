@@ -21,7 +21,7 @@ class ModificationsTLK(PatcherModifications):
     DEFAULT_DESTINATION = "."
     DEFAULT_SOURCEFILE  = "append.tlk"
     DEFAULT_SAVEAS_FILE = "dialog.tlk"
-    def __init__(self, filename=DEFAULT_SOURCEFILE, replace=None, modifiers=None) -> None:
+    def __init__(self, filename=DEFAULT_SOURCEFILE, replace=None, modifiers=None):
         super().__init__(filename)
         self.destination = self.DEFAULT_DESTINATION
         self.modifiers: list[ModifyTLK] = modifiers if modifiers is not None else []

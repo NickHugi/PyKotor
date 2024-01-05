@@ -54,19 +54,19 @@ from pykotor.resource.type import ResourceType
 )
 class TLKEditorTest(TestCase):
     @classmethod
-    def setUpClass(cls) -> None:
+    def setUpClass(cls):
         # Make sure to configure this environment path before testing!
         from toolset.gui.editors.tlk import TLKEditor
         cls.TLKEditor = TLKEditor
         from toolset.data.installation import HTInstallation
         cls.INSTALLATION = HTInstallation(K2_PATH, "", tsl=True, mainWindow=None)
 
-    def setUp(self) -> None:
+    def setUp(self):
         self.app = QApplication([])
         self.editor = self.TLKEditor(None, self.INSTALLATION)
         self.log_messages: list[str] = [os.linesep]
 
-    def tearDown(self) -> None:
+    def tearDown(self):
         self.app.deleteLater()
 
     def log_func(self, *args):

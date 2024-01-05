@@ -16,8 +16,8 @@ if TYPE_CHECKING:
 
     from toolset.data.installation import HTInstallation
 
-_TRANS_FACE_ROLE = QtCore.Qt.UserRole + 1  # type: ignore[reportGeneralTypeIssues, attr-defined]
-_TRANS_EDGE_ROLE = QtCore.Qt.UserRole + 2  # type: ignore[reportGeneralTypeIssues, attr-defined]
+_TRANS_FACE_ROLE = QtCore.Qt.UserRole + 1  # type: ignore[attr-defined]
+_TRANS_EDGE_ROLE = QtCore.Qt.UserRole + 2  # type: ignore[attr-defined]
 
 
 class BWMEditor(Editor):
@@ -79,14 +79,14 @@ class BWMEditor(Editor):
 
         self.new()
 
-    def _setupSignals(self) -> None:
+    def _setupSignals(self):
         self.ui.renderArea.mouseMoved.connect(self.onMouseMoved)
         self.ui.renderArea.mouseScrolled.connect(self.onMouseScrolled)
 
         QShortcut("+", self).activated.connect(lambda: self.ui.renderArea.camera.setZoom(2))
         QShortcut("-", self).activated.connect(lambda: self.ui.renderArea.camera.setZoom(-2))
 
-    def rebuildMaterials(self) -> None:
+    def rebuildMaterials(self):
         """Rebuild the material list.
 
         Processing Logic:
@@ -105,10 +105,10 @@ class BWMEditor(Editor):
             icon = QIcon(QPixmap(image))
             text = material.name.replace("_", " ").title()
             item = QListWidgetItem(icon, text)
-            item.setData(QtCore.Qt.UserRole, material)  # type: ignore[reportGeneralTypeIssues, attr-defined]
+            item.setData(QtCore.Qt.UserRole, material)  # type: ignore[attr-defined]
             self.ui.materialList.addItem(item)
 
-    def load(self, filepath: os.PathLike | str, resref: str, restype: ResourceType, data: bytes) -> None:
+    def load(self, filepath: os.PathLike | str, resref: str, restype: ResourceType, data: bytes):
         """Loads a resource into the editor.
 
         Args:
@@ -148,10 +148,10 @@ class BWMEditor(Editor):
         write_bwm(self._bwm, data)
         return bytes(data), b""
 
-    def new(self) -> None:
+    def new(self):
         super().new()
 
-    def onMouseMoved(self, screen: Vector2, delta: Vector2, buttons: set[int], keys: set[int]) -> None:
+    def onMouseMoved(self, screen: Vector2, delta: Vector2, buttons: set[int], keys: set[int]):
         """Handles mouse movement events in the viewer.
 
         Args:
@@ -172,11 +172,11 @@ class BWMEditor(Editor):
         worldData: Vector2 = self.ui.renderArea.toWorldDelta(delta.x, delta.y)
         face: BWMFace | None = self._bwm.faceAt(world.x, world.y)
 
-        if QtCore.Qt.LeftButton in buttons and QtCore.Qt.Key_Control in keys:  # type: ignore[reportGeneralTypeIssues, attr-defined]
+        if QtCore.Qt.LeftButton in buttons and QtCore.Qt.Key_Control in keys:  # type: ignore[attr-defined]
             self.ui.renderArea.camera.nudgePosition(-worldData.x, -worldData.y)
-        elif QtCore.Qt.MiddleButton in buttons and QtCore.Qt.Key_Control in keys:  # type: ignore[reportGeneralTypeIssues, attr-defined]
+        elif QtCore.Qt.MiddleButton in buttons and QtCore.Qt.Key_Control in keys:  # type: ignore[attr-defined]
             self.ui.renderArea.camera.nudgeRotation(delta.x / 50)
-        elif QtCore.Qt.LeftButton in buttons:  # type: ignore[reportGeneralTypeIssues, attr-defined]
+        elif QtCore.Qt.LeftButton in buttons:  # type: ignore[attr-defined]
             self.changeFaceMaterial(face)
 
         coordsText = f"x: {world.x:.2f}, {world.y:.2f}"
@@ -187,8 +187,8 @@ class BWMEditor(Editor):
 
         self.statusBar().showMessage(coordsText + faceText + xy)
 
-    def onMouseScrolled(self, delta: Vector2, buttons: set[int], keys: set[int]) -> None:
-        if QtCore.Qt.Key_Control in keys:  # type: ignore[reportGeneralTypeIssues, attr-defined]
+    def onMouseScrolled(self, delta: Vector2, buttons: set[int], keys: set[int]):
+        if QtCore.Qt.Key_Control in keys:  # type: ignore[attr-defined]
             zoomInFactor = 1.1
             zoomOutFactor = 0.90
 
@@ -209,11 +209,11 @@ class BWMEditor(Editor):
         - Check if the current face material is different than the selected material
         - Assign the selected material to the provided face.
         """
-        newMaterial = self.ui.materialList.currentItem().data(QtCore.Qt.UserRole)  # type: ignore[reportGeneralTypeIssues, attr-defined]
+        newMaterial = self.ui.materialList.currentItem().data(QtCore.Qt.UserRole)  # type: ignore[attr-defined]
         if face and face.material != newMaterial:
             face.material = newMaterial
 
-    def onTransitionSelect(self) -> None:
+    def onTransitionSelect(self):
         """Select currently highlighted transition in list.
 
         Processing Logic:

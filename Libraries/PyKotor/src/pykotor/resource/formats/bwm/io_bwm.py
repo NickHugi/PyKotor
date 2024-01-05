@@ -13,7 +13,7 @@ class BWMBinaryReader(ResourceReader):
         source: SOURCE_TYPES,
         offset: int = 0,
         size: int = 0,
-    ) -> None:
+    ):
         """Initializes a Wok object.
 
         Args:
@@ -163,7 +163,7 @@ class BWMBinaryWriter(ResourceWriter):
     def write(
         self,
         auto_close: bool = True,
-    ) -> None:
+    ):
         """Writes the walkmesh data to a binary file.
 
         Args:

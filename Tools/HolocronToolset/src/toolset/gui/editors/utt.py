@@ -47,7 +47,7 @@ class UTTEditor(Editor):
 
         self.new()
 
-    def _setupSignals(self) -> None:
+    def _setupSignals(self):
         self.ui.tagGenerateButton.clicked.connect(self.generateTag)
         self.ui.resrefGenerateButton.clicked.connect(self.generateResref)
 
@@ -63,13 +63,13 @@ class UTTEditor(Editor):
         self.ui.factionSelect.setItems(factions.get_column("label"))
         self.ui.trapSelect.setItems(traps.get_column("label"))
 
-    def load(self, filepath: os.PathLike | str, resref: str, restype: ResourceType, data: bytes) -> None:
+    def load(self, filepath: os.PathLike | str, resref: str, restype: ResourceType, data: bytes):
         super().load(filepath, resref, restype, data)
 
         utt = read_utt(data)
         self._loadUTT(utt)
 
-    def _loadUTT(self, utt: UTT) -> None:
+    def _loadUTT(self, utt: UTT):
         """Loads UTT data into UI elements.
 
         Args:
@@ -89,7 +89,7 @@ class UTTEditor(Editor):
         # Basic
         self.ui.nameEdit.setLocstring(utt.name)
         self.ui.tagEdit.setText(utt.tag)
-        self.ui.resrefEdit.setText(utt.resref.get())
+        self.ui.resrefEdit.setText(str(utt.resref))
         self.ui.cursorSelect.setCurrentIndex(utt.cursor_id)
         self.ui.typeSelect.setCurrentIndex(utt.type_id)
 
@@ -109,13 +109,13 @@ class UTTEditor(Editor):
         self.ui.trapSelect.setCurrentIndex(utt.trap_type)
 
         # Scripts
-        self.ui.onClickEdit.setText(utt.on_click.get())
-        self.ui.onDisarmEdit.setText(utt.on_disarm.get())
-        self.ui.onEnterEdit.setText(utt.on_enter.get())
-        self.ui.onExitEdit.setText(utt.on_exit.get())
-        self.ui.onHeartbeatEdit.setText(utt.on_heartbeat.get())
-        self.ui.onTrapTriggeredEdit.setText(utt.on_trap_triggered.get())
-        self.ui.onUserDefinedEdit.setText(utt.on_user_defined.get())
+        self.ui.onClickEdit.setText(str(utt.on_click))
+        self.ui.onDisarmEdit.setText(str(utt.on_disarm))
+        self.ui.onEnterEdit.setText(str(utt.on_enter))
+        self.ui.onExitEdit.setText(str(utt.on_exit))
+        self.ui.onHeartbeatEdit.setText(str(utt.on_heartbeat))
+        self.ui.onTrapTriggeredEdit.setText(str(utt.on_trap_triggered))
+        self.ui.onUserDefinedEdit.setText(str(utt.on_user_defined))
 
         # Comments
         self.ui.commentsEdit.setPlainText(utt.comment)
@@ -175,21 +175,21 @@ class UTTEditor(Editor):
 
         return data, b""
 
-    def new(self) -> None:
+    def new(self):
         super().new()
         self._loadUTT(UTT())
 
-    def changeName(self) -> None:
+    def changeName(self):
         dialog = LocalizedStringDialog(self, self._installation, self.ui.nameEdit.locstring)
         if dialog.exec_():
             self._loadLocstring(self.ui.nameEdit, dialog.locstring)
 
-    def generateTag(self) -> None:
+    def generateTag(self):
         if self.ui.resrefEdit.text() == "":
             self.generateResref()
         self.ui.tagEdit.setText(self.ui.resrefEdit.text())
 
-    def generateResref(self) -> None:
+    def generateResref(self):
         if self._resref is not None and self._resref != "":
             self.ui.resrefEdit.setText(self._resref)
         else:

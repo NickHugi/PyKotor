@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from contextlib import suppress
 from copy import copy
 
 from pykotor.common.geometry import Vector2
@@ -8,6 +7,7 @@ from pykotor.common.misc import Game
 from pykotor.resource.formats.gff import GFF, GFFContent, GFFList, read_gff, write_gff
 from pykotor.resource.formats.gff.gff_auto import bytes_gff
 from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES, ResourceType
+from utility.error_handling import format_exception_with_variables
 
 
 class PTH:
@@ -34,7 +34,7 @@ class PTH:
     def __getitem__(
         self,
         item: int,
-    ):
+    ) -> Vector2:
         return self._points[item]
 
     def add(
@@ -48,7 +48,7 @@ class PTH:
     def remove(
         self,
         index: int,
-    ) -> None:
+    ):
         self._points.pop(index)
 
         self._connections = [x for x in self._connections if index not in (x.source, x.target)]
@@ -61,8 +61,10 @@ class PTH:
         self,
         index: int,
     ) -> Vector2 | None:
-        with suppress(Exception):
+        try:
             return self._points[index]
+        except Exception as e:
+            print(format_exception_with_variables(e, ___message___="This exception has been suppressed."))
         return None
 
     def find(
@@ -75,14 +77,14 @@ class PTH:
         self,
         source: int,
         target: int,
-    ) -> None:
+    ):
         self._connections.append(PTHEdge(source, target))
 
     def disconnect(
         self,
         source: int,
         target: int,
-    ) -> None:
+    ):
         for edge in copy(self._connections):
             has_source = edge.source in [source, target]
             has_target = edge.target in [source, target]
@@ -125,7 +127,7 @@ class PTHEdge:
 
     def __eq__(
         self,
-        other: PTHEdge | object,
+        other: PTHEdge,
     ):
         if isinstance(other, PTHEdge):
             return self.source == other.source and self.target == other.target
@@ -201,7 +203,7 @@ def write_pth(
     file_format: ResourceType = ResourceType.GFF,
     *,
     use_deprecated: bool = True,
-) -> None:
+):
     gff: GFF = dismantle_pth(pth, game, use_deprecated=use_deprecated)
     write_gff(gff, target, file_format)
 
