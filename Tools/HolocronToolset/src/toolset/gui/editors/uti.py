@@ -388,7 +388,7 @@ class UTIEditor(Editor):
     def paramName(installation: HTInstallation, paramtable: int, param: int):
         try:
             paramtableList = installation.htGetCache2DA(HTInstallation.TwoDA_IPRP_PARAMTABLE)
-            paramtable = installation.htGetCache2DA(paramtableList.get_cell(paramtable, "tableresref"))
+            paramtable = installation.htGetCache2DA(paramtableList.get_cell(paramtable, "tableresref"))  # FIXME:
             stringref = paramtable.get_row(param).get_integer("name")
             return installation.talktable().string(stringref)
         except Exception as e:
