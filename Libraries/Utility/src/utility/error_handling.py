@@ -6,7 +6,7 @@ import traceback as ___traceback___
 import types as ___types___
 
 
-def universal_simplify_exception(e) -> tuple[str, str]:
+def universal_simplify_exception(e: BaseException) -> tuple[str, str]:
     """Simplify exceptions into a standardized format
     Args:
         e: Exception - The exception to simplify
@@ -54,7 +54,7 @@ def universal_simplify_exception(e) -> tuple[str, str]:
         if msg:
             return error_name, f"{error_name}: {msg}"
 
-    return error_name, repr(e)
+    return error_name, str(e) + getattr(e, "args", "")
 
 
 def format_exception_with_variables(
@@ -78,10 +78,10 @@ def format_exception_with_variables(
         raise TypeError(msg)
 
     # Construct the stack trace using traceback
-    ___formatted_traceback___ = "".join(___traceback___.format_exception(___etype___, ___value___, ___tb___))
+    ___formatted_traceback___: str = "".join(___traceback___.format_exception(___etype___, ___value___, ___tb___))
 
     # Capture the current stack trace
-    ___frames___ = ___inspect___.getinnerframes(___tb___, context=5)
+    ___frames___: list[___inspect___.FrameInfo] = ___inspect___.getinnerframes(___tb___, context=5)
 
     # Get default module attributes to filter out built-ins
     ___default_attrs___: set[str] = set(dir(___sys___.modules["builtins"]))
@@ -146,7 +146,7 @@ def assert_with_variable_trace(___condition___: bool, ___message___: str = "Asse
     ___frames___: list[___inspect___.FrameInfo] = ___inspect___.getouterframes(___inspect___.currentframe())
 
     # Get the line of code calling assert_with_variable_trace
-    ___calling_frame_record___ = ___frames___[1]
+    ___calling_frame_record___: ___inspect___.FrameInfo = ___frames___[1]
     (
         ___unused_frame_type___,
         ___filename_errorhandler___,
