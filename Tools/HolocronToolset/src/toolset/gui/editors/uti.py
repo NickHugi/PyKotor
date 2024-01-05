@@ -220,12 +220,12 @@ class UTIEditor(Editor):
         self._loadUTI(UTI())
 
     def changeName(self):
-        dialog = LocalizedStringDialog(self, self._installation, self.ui.nameEdit.locstring)
+        dialog = LocalizedStringDialog(self, self._installation, self.ui.nameEdit.locstring())
         if dialog.exec_():
             self._loadLocstring(self.ui.nameEdit, dialog.locstring)
 
     def changeDesc(self):
-        dialog = LocalizedStringDialog(self, self._installation, self.ui.descEdit.locstring)
+        dialog = LocalizedStringDialog(self, self._installation, self.ui.descEdit.locstring())
         if dialog.exec_():
             self._loadLocstring(self.ui.descEdit, dialog.locstring)
 
