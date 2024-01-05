@@ -6,7 +6,6 @@ from contextlib import suppress
 from datetime import datetime, timedelta, timezone
 from tempfile import TemporaryDirectory
 from typing import TYPE_CHECKING, ClassVar
-from typing_extensions import Literal
 
 import requests
 from pykotor.common.stream import BinaryReader
@@ -61,6 +60,7 @@ if TYPE_CHECKING:
     from pykotor.resource.type import SOURCE_TYPES
     from pykotor.tools.path import CaseAwarePath
     from toolset.gui.widgets.main_widgets import ResourceList
+    from typing_extensions import Literal
 
 
 class ToolWindow(QMainWindow):
@@ -127,8 +127,10 @@ class ToolWindow(QMainWindow):
             self.settings.firstTime = False
 
             # Create a directory used for dumping temp files
-            with suppress(Exception):
+            try:
                 self.settings.extractPath = str(Path(str(TemporaryDirectory().name)))
+            except Exception as e:
+                print(f"Could not create temp directory: {universal_simplify_exception(e)}")
 
         self.checkForUpdates(True)
 
