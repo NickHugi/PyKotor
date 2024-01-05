@@ -381,7 +381,7 @@ class UTIEditor(Editor):
             stringref = costtable.get_row(value).get_integer("name")
             return installation.talktable().string(stringref)
         except Exception as e:
-            print(format_exception_with_variables(e, ___message___="This exception has been suppressed."))
+            print(format_exception_with_variables(e, ___message___="This exception has been suppressed"))
         return None
 
     @staticmethod

@@ -3,14 +3,14 @@ from __future__ import annotations
 
 from contextlib import suppress
 from copy import copy
-from typing import TYPE_CHECKING, Any, Callable
+from typing import TYPE_CHECKING, Any, Callable, TypeVar
 
 from pykotor.resource.type import ResourceType
 
 if TYPE_CHECKING:
     from enum import Enum
 
-
+T = TypeVar("T")
 class TwoDA:
     """Represents a 2DA file."""
 
@@ -562,8 +562,8 @@ class TwoDARow:
     def get_integer(
         self,
         header: str,
-        default: int | None = None,
-    ) -> int:
+        default: int | T = None,
+    ) -> int | T:
         """Returns the integer value for the cell under the specified header. If the value of the cell is an invalid integer then a default value is used instead.
 
         Args:
@@ -583,17 +583,17 @@ class TwoDARow:
             msg = f"The header '{header}' does not exist."
             raise KeyError(msg)
 
-        value = default
+        value: int | T = default
         with suppress(ValueError):  # FIXME: this should not be suppressed
             cell = self._data[header]
             return int(cell, 16) if cell.startswith("0x") else int(cell)
-        return value  # FIXME: return value cannot be None
+        return value
 
     def get_float(
         self,
         header: str,
-        default: int | None = None,
-    ) -> float:
+        default: int | T = None,
+    ) -> float | T:
         """Returns the float value for the cell under the specified header. If the value of the cell is an invalid float then a default value is used instead.
 
         Args:
@@ -615,14 +615,15 @@ class TwoDARow:
 
         with suppress(ValueError):  # FIXME: this should not be suppressed
             cell = self._data[header]
-            return float(cell)  # FIXME: return value cannot be None
+            return float(cell)
+        return default
 
     def get_enum(
         self,
         header: str,
         enum_type: type[Enum],
-        default: Enum | None,
-    ) -> Enum | None:
+        default: Enum | T = None,
+    ) -> Enum | T:
         """Returns the enum value for the cell under the specified header.
 
         Args:
@@ -643,7 +644,7 @@ class TwoDARow:
             msg = f"The header '{header}' does not exist."
             raise KeyError(msg)
 
-        value = default
+        value: Enum | T = default
         if enum_type(self._data[header]) != "":
             value = enum_type(self._data[header])
         return value
@@ -718,9 +719,9 @@ class TwoDARow:
         ------
             KeyError: If the specified header does not exist.
         """
-        self._set_value(header, value)
+        self._set_value(header, value.value if value is not None else None)
 
-    def _set_value(self, header: str, value: object):
+    def _set_value(self, header: str, value: Enum | float | str | None):
         if header not in self._data:
             msg = f"The header '{header}' does not exist."
             raise KeyError(msg)
