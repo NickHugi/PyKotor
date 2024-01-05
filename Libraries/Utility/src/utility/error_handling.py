@@ -19,7 +19,7 @@ def universal_simplify_exception(e: BaseException) -> tuple[str, str]:
     - Try common exception attributes for a message
     - Return (error_name, repr(e)) if nothing else.
     """
-    error_name = type(e).__name__
+    error_name: str = type(e).__name__
 
     # Handle FileNotFoundError, which has 'filename' attribute
     if isinstance(e, FileNotFoundError):
@@ -52,7 +52,7 @@ def universal_simplify_exception(e: BaseException) -> tuple[str, str]:
     for attr in ["strerror", "message", "reason", "filename", "filename1", "filename2"]:
         msg = getattr(e, attr, None)
         if msg:
-            return error_name, f"{error_name}: {msg}"
+            return error_name, f"{e}: {msg}"
 
     return error_name, str(e) + getattr(e, "args", "")
 
