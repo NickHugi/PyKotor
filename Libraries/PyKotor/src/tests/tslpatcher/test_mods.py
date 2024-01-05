@@ -69,8 +69,16 @@ class TestManipulateTLK(TestCase):
         memory = PatcherMemory()
 
         config = ModificationsTLK()
-        config.modifiers.append(ModifyTLK(0, "Append2", ResRef.from_blank()))
-        config.modifiers.append(ModifyTLK(1, "Append1", ResRef.from_blank()))
+
+        m1 = ModifyTLK(0)
+        m1.text = "Append2"
+        m1.sound = ResRef.from_blank()
+        m2 = ModifyTLK(1)
+        m2.text = "Append1"
+        m2.sound = ResRef.from_blank()
+
+        config.modifiers.append(m1)
+        config.modifiers.append(m2)
 
         dialog_tlk = TLK()
         dialog_tlk.add("Old1")
