@@ -260,11 +260,34 @@ class ResourceType(Enum):
             ResourceType.from_invalid(type_id=type_id),
         )
 
-    def validate(self):
-        if not self:
-            msg = f"Could not find resource type with extension '{self.extension}' ID '{self.type_id}'"
-            raise ValueError(msg)
-        return self
+    @classmethod
+    def from_extension(
+        cls,
+        extension: str,
+    ) -> ResourceType:
+        """Returns the ResourceType for the specified extension.
+
+        This will slice off the leading dot in the extension, if it exists.
+
+        Args:
+        ----
+            extension: The resource's extension. This is case-insensitive
+
+        Returns:
+        -------
+            The corresponding ResourceType object.
+        """
+        lower_ext: str = extension.lower()
+        if extension.startswith("."):
+            lower_ext = lower_ext[1:]
+        return next(
+            (
+                restype
+                for restype in ResourceType.__members__.values()
+                if lower_ext == restype.extension
+            ),
+            ResourceType.from_invalid(extension=lower_ext),
+        )
 
     @classmethod
     def from_invalid(
@@ -282,34 +305,11 @@ class ResourceType(Enum):
         instance.__init__(**instance.value)  # type: ignore[misc]
         return super().__new__(cls, instance)
 
-    @classmethod
-    def from_extension(
-        cls,
-        extension: str,
-    ) -> ResourceType:
-        """Returns the ResourceType for the specified extension.
-
-        This will slice off the leading dot in the extension, if it exists.
-
-        Args:
-        ----
-            extension: The resource extension.
-
-        Returns:
-        -------
-            The corresponding ResourceType object.
-        """
-        lower_ext: str = extension.lower()
-        if extension.startswith("."):
-            lower_ext = lower_ext[1:]
-        return next(
-            (
-                restype
-                for restype in ResourceType.__members__.values()
-                if lower_ext == restype.extension
-            ),
-            ResourceType.from_invalid(extension=lower_ext),
-        )
+    def validate(self):
+        if not self:
+            msg = f"Invalid ResourceType: '{self!r}'"
+            raise ValueError(msg)
+        return self
 
 
 def autoclose(func):
