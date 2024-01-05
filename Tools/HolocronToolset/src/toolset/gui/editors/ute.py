@@ -83,7 +83,7 @@ class UTEEditor(Editor):
         self._installation = installation
         self.ui.nameEdit.setInstallation(installation)
 
-        with suppress(Exception):
+        try:
             factions = installation.htGetCache2DA(HTInstallation.TwoDA_FACTIONS)
             difficulties = installation.htGetCache2DA(HTInstallation.TwoDA_ENC_DIFFICULTIES)
 
@@ -92,6 +92,8 @@ class UTEEditor(Editor):
 
             self.ui.factionSelect.clear()
             self.ui.difficultySelect.setItems(factions.get_column("label"))
+        except Exception as e:
+            print(e)
 
     def load(self, filepath: os.PathLike | str, resref: str, restype: ResourceType, data: bytes):
         super().load(filepath, resref, restype, data)
