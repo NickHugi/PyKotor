@@ -15,6 +15,7 @@ if TYPE_CHECKING:
 PathElem = Union[str, os.PathLike]
 
 def override_to_pathlib(cls: type):
+    # sourcery skip: assign-if-exp, reintroduce-else
     if cls == PurePath:
         return pathlib.PurePath
     if cls == PureWindowsPath:

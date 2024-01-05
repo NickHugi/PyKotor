@@ -1,5 +1,6 @@
 import os
 
+from pykotor.tools.path import CaseAwarePath
 from utility.path import Path
 
 UI_TARGET_DIR = "../../../toolset/uic/"
@@ -7,7 +8,7 @@ QRC_TARGET_DIR = "../../../toolset/"
 
 
 def get_ui_files():
-    return list(Path(".").safe_rglob("*.ui"))
+    return list(CaseAwarePath(".").safe_rglob("*.ui"))
 
 
 def compile_ui(ignore_timestamp: bool = False):

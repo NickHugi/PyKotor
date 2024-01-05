@@ -14,6 +14,7 @@ from pykotor.tools.misc import is_any_erf_type_file, is_bif_file, is_capsule_fil
 from PyQt5 import QtCore
 from PyQt5.QtGui import QIcon, QPixmap
 from PyQt5.QtWidgets import QFileDialog, QLineEdit, QMainWindow, QMessageBox, QPlainTextEdit, QShortcut, QWidget
+from pykotor.tools.path import CaseAwarePath
 from toolset.gui.dialogs.load_from_module import LoadFromModuleDialog
 from toolset.gui.dialogs.save.to_bif import BifSaveDialog, BifSaveOption
 from toolset.gui.dialogs.save.to_module import SaveToModuleDialog
@@ -344,7 +345,7 @@ class Editor(QMainWindow):
 
         # MDL is a special case - we need to save the MDX file with the MDL file.
         if self._restype == ResourceType.MDL:
-            with self._filepath.with_suffix(".mdx").open("wb") as file:
+            with CaseAwarePath.pathify(self._filepath).with_suffix(".mdx").open("wb") as file:
                 file.write(data_ext)
 
         self.savedFile.emit(self._filepath, self._resref, self._restype, data)
@@ -362,7 +363,7 @@ class Editor(QMainWindow):
         filepath_str, filter = QFileDialog.getOpenFileName(self, "Open file", "", self._openFilter)
         if filepath_str:
             c_filepath = Path(filepath_str)
-            if is_capsule_file(c_filepath.name) and "Load from module (*.erf *.mod *.rim)" in self._openFilter:
+            if is_capsule_file(c_filepath.name) and "Load from module (*.erf *.mod *.rim *.sav)" in self._openFilter:
                 dialog = LoadFromModuleDialog(Capsule(c_filepath), self._readSupported)
                 if dialog.exec_():
                     self.load(c_filepath, dialog.resname(), dialog.restype(), dialog.data())

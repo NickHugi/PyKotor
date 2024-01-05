@@ -9,7 +9,6 @@ from pykotor.resource.type import ResourceType
 from pykotor.tools.misc import is_bif_file, is_capsule_file
 from utility.misc import generate_sha256_hash
 from utility.path import Path, PurePath
-from utility.string import CaseInsensitiveWrappedStr
 
 if TYPE_CHECKING:
     from pykotor.common.misc import ResRef
@@ -83,9 +82,7 @@ class FileResource:
             return self.get_sha256_hash() == __value.get_sha256_hash()
         if isinstance(__value, (os.PathLike, bytes, bytearray, memoryview)):
             return self.get_sha256_hash() == generate_sha256_hash(__value)
-        if isinstance(__value, (ResourceIdentifier, str)):
-            return self.identifier() == __value
-        return NotImplemented
+        return self.identifier() == __value
 
     def resname(self) -> str:
         return self._resname
@@ -194,7 +191,7 @@ class ResourceIdentifier(NamedTuple):
     def __hash__(
         self,
     ):
-        return hash(CaseInsensitiveWrappedStr(str(self)))
+        return hash(str(self))
 
     def __repr__(
         self,
@@ -204,8 +201,8 @@ class ResourceIdentifier(NamedTuple):
     def __str__(
         self,
     ):
-        ext = self.restype.extension
-        suffix = f".{ext}" if ext else ""
+        ext: str = self.restype.extension
+        suffix: str = f".{ext}" if ext else ""
         return f"{self.resname.lower()}{suffix.lower()}"
 
     def __eq__(
@@ -214,15 +211,16 @@ class ResourceIdentifier(NamedTuple):
     ):
         if isinstance(__value, str):
             __value = self.from_path(__value)
-        if isinstance(__value, ResourceIdentifier):
-            return hash(self) == hash(__value)
-        return NotImplemented
+        return hash(self) == hash(__value)
 
     def validate(self, *, strict=False):
         from pykotor.common.misc import ResRef
-        if self.restype == ResourceType.INVALID or strict and not ResRef.is_valid(self.resname):
+        _ = strict and ResRef(self.resname)
+
+        if self.restype == ResourceType.INVALID:
             msg = f"Invalid resource: '{self!r}'"
             raise ValueError(msg)
+
         return self
 
     def as_resref_compatible(self):
