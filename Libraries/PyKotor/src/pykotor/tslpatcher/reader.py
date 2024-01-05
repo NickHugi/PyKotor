@@ -265,7 +265,7 @@ class ConfigReader:
                     file_install.pop_tslpatcher_vars(file_section_dict, foldername)
 
     def load_tlk_list(self) -> None:
-        """Loads TLK patches from the ini file.
+        """Loads TLK patches from the ini file into memory.
 
         Processing Logic:
         ----------------
@@ -274,7 +274,7 @@ class ConfigReader:
             - Builds ModifyTLK objects for each patch and adds to the patch list
             - Raises errors for invalid syntax or missing files
         """
-        tlk_list_section: str | None = self.get_section_name("TLKList")
+        tlk_list_section: str | None = self.get_section_name("tlklist")
         if tlk_list_section is None:
             self.log.add_note("[TLKList] section missing from ini.")
             return
@@ -282,12 +282,11 @@ class ConfigReader:
         self.log.add_note("Loading [TLKList] patches from ini...")
         tlk_list_edits = CaseInsensitiveDict(self.ini[tlk_list_section].items())
 
-        default_destination: str = tlk_list_edits.pop("!DefaultDestination", ModificationsTLK.DEFAULT_DESTINATION)
+        default_destination = tlk_list_edits.pop("!DefaultDestination", ModificationsTLK.DEFAULT_DESTINATION)
         self.config.patches_tlk.pop_tslpatcher_vars(tlk_list_edits, default_destination)
 
         modifier_dict: dict[int, dict[str, str | ResRef]] = {}
         range_delims: list[str] = [":", "-", "to"]
-        append_tlk_edits: TLK | None = None
         syntax_error_caught = False
 
         def extract_range_parts(range_str: str) -> tuple[int, int | None]:
@@ -346,7 +345,7 @@ class ConfigReader:
         tlk_list_ignored_indices: set[int] = set()
 
         def process_tlk_entries(
-            tlk_data: TLK,
+            tlk_filename: str,
             dialog_tlk_keys,
             modifications_tlk_keys,
             is_replacement: bool,
@@ -379,12 +378,12 @@ class ConfigReader:
                 change_iter, value_iter = tee(change_indices)
                 value_iter = iter(value_range)
 
-                for mod_index in change_iter:
-                    if mod_index in tlk_list_ignored_indices:
+                for token_id in change_iter:
+                    if token_id in tlk_list_ignored_indices:
                         continue
-                    token_id: int = next(value_iter)
-                    entry: TLKEntry = tlk_data[token_id]
-                    modifier = ModifyTLK(mod_index, entry.text, entry.voiceover, is_replacement)
+                    modifier = ModifyTLK(token_id, is_replacement)
+                    modifier.mod_index = next(value_iter)
+                    modifier.tlk_filepath = self.mod_path / tlk_filename
                     self.config.patches_tlk.modifiers.append(modifier)
 
         for i in tlk_list_edits:
@@ -397,36 +396,23 @@ class ConfigReader:
 
         for key, value in tlk_list_edits.items():
             lowercase_key: str = key.lower()
-            replace_file: bool = lowercase_key.startswith("replace")
-            append_file: bool = lowercase_key.startswith("append")
+            replace_file = lowercase_key.startswith("replace")
+            append_file = lowercase_key.startswith("append")
             try:
                 if lowercase_key.startswith("ignore"):
                     continue
                 if lowercase_key.startswith("strref"):
-                    if append_tlk_edits is None:  # load append.tlk only if it's needed.
-                        append_tlk_edits = read_tlk(self.mod_path / self.config.patches_tlk.sourcefile)
-                    if len(append_tlk_edits) == 0:
-                        syntax_error_caught = True
-                        msg = f"'{self.config.patches_tlk.sourcefile}' in mod directory is empty, but is required to perform modifier '{key}={value}' in [TLKList]"
-                        raise ValueError(msg)  # noqa: TRY301
                     strref_range = parse_range(lowercase_key[6:])
                     token_id_range = parse_range(value)
                     process_tlk_entries(
-                        append_tlk_edits,
+                        self.config.patches_tlk.sourcefile,
                         strref_range,
                         token_id_range,
                         is_replacement=False,
                     )
                 elif replace_file or append_file:
-                    tlk_modifications_path: CaseAwarePath = self.mod_path / value
-                    modifications_tlk_data: TLK = read_tlk(tlk_modifications_path)
-                    if len(modifications_tlk_data) == 0:
-                        syntax_error_caught = True
-                        msg = f"'{value}' file in mod directory is empty, but is required to perform modifier '{key}={value}' in [TLKList]"
-                        raise ValueError(msg)  # noqa: TRY301
-
-                    next_section_name: str | None = self.get_section_name(value)
-                    if not next_section_name:
+                    next_section_name = self.get_section_name(value)
+                    if next_section_name is None:
                         syntax_error_caught = True
                         raise ValueError(SECTION_NOT_FOUND_ERROR.format(value) + REFERENCES_TRACEBACK_MSG.format(key, value, tlk_list_section))  # noqa: TRY301
 
@@ -434,7 +420,7 @@ class ConfigReader:
                     self.config.patches_tlk.pop_tslpatcher_vars(next_section_dict, default_destination)
 
                     process_tlk_entries(
-                        modifications_tlk_data,
+                        value,
                         self.ini[next_section_name].keys(),
                         self.ini[next_section_name].values(),
                         is_replacement=replace_file,
@@ -451,20 +437,17 @@ class ConfigReader:
                         }
 
                     if property_name == "text":
-                        modifier_dict[token_id]["text"] = value
+                        modifier = ModifyTLK(token_id, is_replacement=True)
+                        modifier.text = value
+                        self.config.patches_tlk.modifiers.append(modifier)
                     elif property_name == "sound":
-                        modifier_dict[token_id]["voiceover"] = ResRef(value)
+                        modifier = ModifyTLK(token_id, is_replacement=True)
+                        modifier.sound = ResRef(value)
+                        self.config.patches_tlk.modifiers.append(modifier)
                     else:
                         syntax_error_caught = True
                         msg = f"Invalid [TLKList] syntax: '{key}={value}'! Expected '{key}' to be one of ['Sound', 'Text']"
                         raise ValueError(msg)  # noqa: TRY301
-
-                    text: str | ResRef | None = modifier_dict[token_id].get("text")
-                    voiceover: str | ResRef = modifier_dict[token_id].get("voiceover", ResRef.from_blank())
-
-                    if isinstance(text, str) and isinstance(voiceover, ResRef):
-                        modifier = ModifyTLK(token_id, text, voiceover, is_replacement=True)
-                        self.config.patches_tlk.modifiers.append(modifier)
                 else:
                     syntax_error_caught = True
                     msg = f"Invalid syntax found in [TLKList] '{key}={value}'! Expected '{key}' to be one of ['AppendFile', 'ReplaceFile', '!SourceFile', 'StrRef', 'Text', 'Sound']"
