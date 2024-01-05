@@ -78,14 +78,15 @@ class ModifyTLK:
 
     def apply(self, dialog: TLK, memory: PatcherMemory) -> None:
         self.load()
-        if self.is_replacement:
+        if not self.is_replacement:
             memory.memory_str[self.token_id] = dialog.add(self.text, self.sound.get())
         else:
             dialog.replace(self.token_id, self.text, self.sound.get())
             memory.memory_str[self.token_id] = self.token_id
 
     def load(self):
-        if self.tlk_filepath is not None:
-            lookup_tlk = TalkTable(self.tlk_filepath)
-            self.text = self.text or lookup_tlk.string(self.mod_index)
-            self.sound = self.sound or lookup_tlk.sound(self.mod_index)
+        if self.tlk_filepath is None:
+            return
+        lookup_tlk = TalkTable(self.tlk_filepath)
+        self.text = self.text or lookup_tlk.string(self.mod_index)
+        self.sound = self.sound or lookup_tlk.sound(self.mod_index)
