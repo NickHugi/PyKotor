@@ -10,7 +10,7 @@ from pykotor.resource.formats.tpc import TPC, TPCTextureFormat
 from pykotor.resource.formats.twoda import TwoDA, read_2da
 from pykotor.resource.type import ResourceType
 from PyQt5.QtGui import QImage, QPixmap, QStandardItemModel, QTransform
-from utility.error_handling import assert_with_variable_trace
+from utility.error_handling import assert_with_variable_trace, format_exception_with_variables
 
 if TYPE_CHECKING:
     from pykotor.resource.generics.uti import UTI
@@ -231,6 +231,8 @@ class HTInstallation(Installation):
 
             if texture is not None:
                 return self._get_icon(texture)
+        except Exception as e:
+            print(format_exception_with_variables(e))
         return pixmap
 
     def getItemIcon(self, baseItem: int, modelVariation: int, textureVariation: int) -> QPixmap:

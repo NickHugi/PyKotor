@@ -5,7 +5,6 @@ import shutil
 from copy import deepcopy
 from datetime import datetime, timezone
 from typing import TYPE_CHECKING
-from typing_extensions import Literal
 
 from pykotor.common.stream import BinaryReader, BinaryWriter
 from pykotor.extract.capsule import Capsule
@@ -27,6 +26,7 @@ if TYPE_CHECKING:
     from pykotor.common.misc import Game
     from pykotor.resource.type import SOURCE_TYPES
     from pykotor.tslpatcher.mods.tlk import ModificationsTLK
+    from typing_extensions import Literal
 
 class ModInstaller:
     def __init__(

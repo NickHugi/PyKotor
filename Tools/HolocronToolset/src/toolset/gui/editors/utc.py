@@ -1,8 +1,6 @@
 from __future__ import annotations
 
-from contextlib import suppress
 from copy import deepcopy
-import traceback
 from typing import TYPE_CHECKING
 
 from pykotor.common.language import Gender, Language, LocalizedString
@@ -10,11 +8,10 @@ from pykotor.common.misc import Game, ResRef
 from pykotor.common.module import Module
 from pykotor.extract.capsule import Capsule
 from pykotor.extract.installation import SearchLocation
-from pykotor.resource.formats.gff import write_gff
 from pykotor.resource.formats.ltr import read_ltr
 from pykotor.resource.formats.tpc import TPCTextureFormat
 from pykotor.resource.generics.dlg import DLG, write_dlg
-from pykotor.resource.generics.utc import UTC, UTCClass, dismantle_utc, read_utc, write_utc
+from pykotor.resource.generics.utc import UTC, UTCClass, read_utc, write_utc
 from pykotor.resource.type import ResourceType
 from PyQt5 import QtCore
 from PyQt5.QtCore import QSettings

@@ -406,7 +406,7 @@ class DropFrame(ItemContainer, QFrame):
         self.setAcceptDrops(True)
         self.slot: EquipmentSlot = EquipmentSlot.HIDE
 
-    def dragEnterEvent(self, e: QDragEnterEvent):
+    def dragEnterEvent(self, event: QDragEnterEvent):
         """Handle drag enter events for slots.
 
         Args:
@@ -421,14 +421,15 @@ class DropFrame(ItemContainer, QFrame):
             - Get item from source model index
             - Accept drag if item slots match receiver slot.
         """
-        if isinstance(e.source(), QTreeView):
-            tree: QTreeView = e.source()
+        if isinstance(event.source(), QTreeView):
+            tree: QTreeView = event.source()
             proxyModel: QSortFilterProxyModel = tree.model()
-            model: ItemModel = proxyModel.sourceModel()
             index = proxyModel.mapToSource(tree.selectedIndexes()[0])
+            model: ItemModel = proxyModel.sourceModel()
+            assert model is not None, f"model == proxyModel.sourceModel() == None in dragEnterEvent({event!r})"
             item: QStandardItem | None = model.itemFromIndex(index)
             if item.data(_SLOTS_ROLE) & self.slot.value:
-                e.accept()
+                event.accept()
 
     def dragMoveEvent(self, event: QDragMoveEvent):
         """Moves an item between slots if the drag and drop events match.
