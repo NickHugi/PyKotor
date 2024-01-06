@@ -509,7 +509,7 @@ class Installation:
     ):
         filepath: Path = Path.pathify(file)
         parent_folder = filepath.parent
-        rel_folderpath: str = str(filepath.parent.relative_to(self.override_path())) if parent_folder.name else "."
+        rel_folderpath: str = str(filepath.parent.relative_to(self.override_path())) if parent_folder.name and filepath != self.override_path() else "."
         if rel_folderpath not in self._override:
             self.load_override(rel_folderpath)
 
