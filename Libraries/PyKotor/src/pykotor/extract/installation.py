@@ -22,6 +22,7 @@ from pykotor.tools.sound import fix_audio
 from utility.error_handling import format_exception_with_variables
 from utility.misc import remove_duplicates
 from utility.path import Path, PurePath
+from utility.string import CaseInsensitiveWrappedStr
 
 if TYPE_CHECKING:
     import os
@@ -1354,7 +1355,8 @@ class Installation:
                 SearchLocation.CHITIN,
             ]
         self.load_search_locations(order)
-        resrefs: list[ResRef] = [ResRef(resname) for resname in resnames]
+        resnames = remove_duplicates(resnames, case_insensitive=True)
+        resnames = [CaseInsensitiveWrappedStr(resname) for resname in resnames]
         capsules = [] if capsules is None else capsules
         folders = [] if folders is None else folders
 
@@ -1386,12 +1388,12 @@ class Installation:
         def check_list(resource_list: list[FileResource]):
             for resource in resource_list:
                 resname = resource.resname()
-                if resname not in resrefs:
+                if resname not in resnames:
                     continue
                 restype = resource.restype()
                 if restype not in texture_types:
                     continue
-                resrefs.remove(ResRef(resname))
+                resnames.remove(resname)
                 tpc: TPC = read_tpc(resource.data())
                 if restype == ResourceType.TGA:
                     tpc.txi = get_txi_from_list(resname, resource_list)
@@ -1409,30 +1411,30 @@ class Installation:
                     if texture_data is None:
                         continue
 
-                    resrefs.remove(ResRef(resname))
+                    resnames.remove(resname)
                     tpc: TPC = read_tpc(texture_data) if texture_data else TPC()
                     if tformat == ResourceType.TGA:
-                        tpc.txi = get_txi_from_list(resname, capsule.resources())
-                    textures[resname] = tpc
+                        tpc.txi = get_txi_from_list(str(resname), capsule.resources())
+                    textures[str(resname)] = tpc
 
         def check_folders(values: list[Path]):
             queried_texture_files: set[Path] = set()
             for folder in values:
                 queried_texture_files.update(
                     file
-                    for file in folder.safe_rglob("*")
+                    for file in folder.rglob("*")
                     if (
-                        ResRef(file.stem) in resrefs
+                        file.stem in resnames
                         and ResourceType.from_extension(file.suffix) in texture_types
-                        and file.safe_isfile()
+                        and file.is_file()
                     )
                 )
             for texture_file in queried_texture_files:
-                resrefs.remove(ResRef(texture_file.stem))
+                resnames.remove(texture_file.stem)
                 texture_data: bytes = BinaryReader.load_file(texture_file)
                 tpc = read_tpc(texture_data) if texture_data else TPC()
                 txi_file = CaseAwarePath(texture_file.with_suffix(".txi"))
-                if txi_file.safe_exists():
+                if txi_file.exists():
                     txi_data: bytes = BinaryReader.load_file(txi_file)
                     tpc.txi = decode_txi(txi_data)
                 textures[texture_file.stem] = tpc
@@ -1506,6 +1508,7 @@ class Installation:
             A dictionary mapping a case-insensitive string to a bytes object or None.
         """
         resnames = remove_duplicates(resnames, case_insensitive=True)
+        resnames = [CaseInsensitiveWrappedStr(resname) for resname in resnames]
         capsules = [] if capsules is None else capsules
         folders = [] if folders is None else folders
         if order is None:
@@ -1547,22 +1550,22 @@ class Installation:
                     if sound_data is None:
                         continue
                     resnames.remove(resname)
-                    sounds[resname] = fix_audio(sound_data) if sound_data else b""
+                    sounds[str(resname)] = fix_audio(sound_data) if sound_data else b""
 
         def check_folders(values: list[Path]):
             queried_sound_files: set[Path] = set()
             for folder in values:
                 queried_sound_files.update(
                     file
-                    for file in folder.safe_rglob("*")
+                    for file in folder.rglob("*")
                     if (
-                        file.stem.lower() in resnames
+                        file.stem in resnames
                         and ResourceType.from_extension(file.suffix) in sound_formats
-                        and file.safe_isfile()
+                        and file.is_file()
                     )
                 )
             for sound_file in queried_sound_files:
-                resnames.remove(sound_file.stem.lower())
+                resnames.remove(sound_file.stem)
                 sound_data: bytes = BinaryReader.load_file(sound_file)
                 sounds[sound_file.stem] = fix_audio(sound_data) if sound_data else b""
 
