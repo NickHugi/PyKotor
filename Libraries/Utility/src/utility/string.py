@@ -904,12 +904,15 @@ class CaseInsensitiveWrappedStr(WrappedStr):
         __count=-1,
     ):
         """Case-insensitive replace function matching the builtin str.replace's functionality."""
+        # Replace each backslash in __new with two backslashes
+        __new_escaped = self._coerce_str(__new).replace("\\", "\\\\")
+
         # Check for the special case where 'old' is an empty string
         if not __old:
             return super().replace("", self._coerce_str(__new), __count)
 
         pattern: re.Pattern[str] = re.compile(re.escape(self._coerce_str(__old)), re.IGNORECASE)
-        return self.__class__(pattern.sub(self._coerce_str(__new), self._content, int(__count)))
+        return self.__class__(pattern.sub(__new_escaped, self._content, int(__count)))
 
     def rpartition(
         self,
