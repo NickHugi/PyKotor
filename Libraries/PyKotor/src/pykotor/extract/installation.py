@@ -1356,7 +1356,6 @@ class Installation:
             ]
         self.load_search_locations(order)
         resnames = remove_duplicates(resnames, case_insensitive=True)
-        resnames = [CaseInsensitiveWrappedStr(resname) for resname in resnames]
         capsules = [] if capsules is None else capsules
         folders = [] if folders is None else folders
 
@@ -1365,6 +1364,7 @@ class Installation:
 
         for resname in resnames:
             textures[resname] = None
+        resnames = [CaseInsensitiveWrappedStr(resname) for resname in resnames]
 
         def decode_txi(txi_bytes: bytes) -> str:
             return txi_bytes.decode("ascii", errors="ignore")
@@ -1508,7 +1508,6 @@ class Installation:
             A dictionary mapping a case-insensitive string to a bytes object or None.
         """
         resnames = remove_duplicates(resnames, case_insensitive=True)
-        resnames = [CaseInsensitiveWrappedStr(resname) for resname in resnames]
         capsules = [] if capsules is None else capsules
         folders = [] if folders is None else folders
         if order is None:
@@ -1526,6 +1525,7 @@ class Installation:
 
         for resname in resnames:
             sounds[resname] = None
+        resnames = [CaseInsensitiveWrappedStr(resname) for resname in resnames]
 
         def check_dict(values: dict[str, list[FileResource]] | CaseInsensitiveDict[list[FileResource]]):
             for resources in values.values():
