@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import os
 import re
-from typing import TYPE_CHECKING, Any, Iterable
+from typing import TYPE_CHECKING, Any, Iterable, Protocol, TypeVar, runtime_checkable
 
 if TYPE_CHECKING:
     from typing_extensions import LiteralString, Self, SupportsIndex
@@ -19,11 +19,11 @@ def ireplace(original: str, target: str, replacement: str) -> str:
     target_length: int = len(target)
 
     # Convert the target to lowercase for case-insensitive comparison
-    target_lower: str = target.lower()
+    target_lower: str = target.casefold()
 
     while i < len(original):
         # If a potential match is found
-        if original[i : i + target_length].lower() == target_lower:
+        if original[i : i + target_length].casefold() == target_lower:
             # Add the replacement to the result
             result += replacement
             # Skip the characters of the target
@@ -213,7 +213,15 @@ class StrType(type):
             return subclass in (WrappedStr, str) or WrappedStr in mro or str in mro
         return cls in mro
 
-class WrappedStr:  # (metaclass=StrType):
+@runtime_checkable
+class StrictStrProtocol(Protocol):
+    @classmethod
+    def __subclasshook__(cls, subclass):
+        return subclass is str
+
+StrictStr = TypeVar("StrictStr", bound=str)
+
+class WrappedStr(str):  # (metaclass=StrType):
 
     __slots__: tuple[str, ...] = (
         "_content",
@@ -224,22 +232,34 @@ class WrappedStr:  # (metaclass=StrType):
         if var is None:
             return None  # type: ignore[return-value]
         if not isinstance(var, (WrappedStr, str)):
-            raise TypeError(f"Expected str-like, got '{var}' of type {type(var)}")  # noqa: TRY003, EM102
+            raise TypeError(f"Expected str-like, got '{var}' of type {type(var)}")
         return str(var)
+
+    @classmethod
+    def cast(
+        cls: type[Self],
+        unk_str: str,
+    ) -> Self:
+        return unk_str if isinstance(unk_str, cls) else cls(unk_str)
 
     def __init__(self, __content: str | WrappedStr = ""):
         if __content is None:
             msg = f"Cannot initialize {self.__class__.__name__}(None), expected a str-like argument"
             raise RuntimeError(msg)
-        self._content: str = self._assert_str_type(__content)
+        self._content: str = str(__content)
 
     @classmethod
-    def maketrans(cls, __x: WrappedStr | str, __y: WrappedStr | str, __z: WrappedStr | str) -> dict[int, int | None]:
-        return str.maketrans(cls._assert_str_type(__x), cls._assert_str_type(__y), cls._assert_str_type(__z))
+    def maketrans(  # type: ignore[override]
+        cls,
+        __x: WrappedStr | str,
+        __y: WrappedStr | str,
+        __z: WrappedStr | str,
+    ) -> dict[int, int | None]:
+        return super().maketrans(cls._assert_str_type(__x), cls._assert_str_type(__y), cls._assert_str_type(__z))
 
     def __setattr__(self, __name: str, __value: Any):
         if hasattr(self, __name):
-            msg = f"{self.__class__.__name__} is immutable, cannot evaluate `setattr({self!r}, {__name!r}, {__value!r})`"
+            msg = f"{self.__class__.__name__} is immutable, cannot evaluate `{self!r}.setattr({__name!r}, {__value!r})`"
             raise RuntimeError(msg)
         return super().__setattr__(__name, __value)
 
@@ -271,7 +291,10 @@ class WrappedStr:  # (metaclass=StrType):
         for i in range(len(self._content)):
             yield self.__class__(self._content[i])
 
-    def __deepcopy__(self, memo: Any):
+    def __deepcopy__(
+        self,
+        memo: Any,
+    ):
         # Create a new instance with the same content
         new_copy = self.__class__(self._content)
         # Add the new object to the memo dictionary to handle circular references
@@ -286,7 +309,7 @@ class WrappedStr:  # (metaclass=StrType):
 
     def __contains__(
         self,
-        __key: str | WrappedStr,
+        __key: str | WrappedStr,  # type: ignore[override]
     ) -> bool:
         return self._assert_str_type(__key) in self._content
 
@@ -418,7 +441,7 @@ class WrappedStr:  # (metaclass=StrType):
 
     def expandtabs(
         self,
-        tabsize: int = 8,
+        tabsize: SupportsIndex = 8,
     ) -> Self:
         """Return a copy where all tab characters are expanded using spaces.
 
@@ -452,7 +475,10 @@ class WrappedStr:  # (metaclass=StrType):
         """  # noqa: D415, D400, D402
         return self.__class__(self._content.format(*args, **kwargs))
 
-    def format_map(self, map) -> Self:  # noqa: A002
+    def format_map(
+        self,
+        map,  # noqa: A002
+    ) -> Self:
         """S.format_map(mapping) -> str
 
         Return a formatted version of S, using substitutions from mapping. The substitutions are identified by braces ('{' and '}').
@@ -682,7 +708,10 @@ class WrappedStr:  # (metaclass=StrType):
         """
         return self.__class__(self._content.rjust(__width, self._assert_str_type(__fillchar)))
 
-    def rpartition(self, __sep: WrappedStr | str) -> tuple[Self, Self, Self]:
+    def rpartition(
+        self,
+        __sep: WrappedStr | str,
+    ) -> tuple[Self, Self, Self]:
         """Partition the string into three parts using the given separator.
 
         This will search for the separator in the string, starting at the end. If the separator is found, returns a 3-tuple containing the part before the separator, the separator itself, and the part after it.
@@ -692,7 +721,7 @@ class WrappedStr:  # (metaclass=StrType):
         a, b, c = self._content.rpartition(self._assert_str_type(__sep))
         return (self.__class__(a), self.__class__(b), self.__class__(c))
 
-    def rsplit(
+    def rsplit(  # type: ignore[override]
         self,
         __sep: WrappedStr | str | None = None,
         __maxsplit: SupportsIndex = -1,
@@ -706,16 +735,20 @@ class WrappedStr:  # (metaclass=StrType):
 
         Splits are done starting at the end of the string and working to the front.
         """
-        return [self.__class__(s) for s in self._content.rsplit(self._assert_str_type(__sep), __maxsplit)]
+        cls: type[Self] = self.__class__
+        return [cls(s) for s in self._content.rsplit(self._assert_str_type(__sep), __maxsplit)]
 
-    def rstrip(self, __chars: WrappedStr | str | None = None) -> Self:
+    def rstrip(
+        self,
+        __chars: WrappedStr | str | None = None,
+    ) -> Self:
         """Return a copy of the string with trailing whitespace removed.
 
         If chars is given and not None, remove characters in chars instead.
         """
         return self.__class__(self._content.rstrip(self._assert_str_type(__chars)))
 
-    def split(
+    def split(  # type: ignore[override]
         self,
         sep: WrappedStr | str | None = None,
         maxsplit: SupportsIndex = -1,
@@ -729,7 +762,10 @@ class WrappedStr:  # (metaclass=StrType):
         """
         return [self.__class__(s) for s in self._content.split(self._assert_str_type(sep), maxsplit)]
 
-    def splitlines(self, keepends: bool = False) -> list[Self]:
+    def splitlines(  # type: ignore[override]
+        self,
+        keepends: bool = False,
+    ) -> list[Self]:
         """Return a list of the lines in the string, breaking at line boundaries.
 
         Line breaks are not included in the resulting list unless keepends is given and true.
@@ -738,7 +774,7 @@ class WrappedStr:  # (metaclass=StrType):
 
     def startswith(
         self,
-        __prefix: WrappedStr | str,
+        __prefix: WrappedStr | str | tuple[WrappedStr | str, ...],
         __start: SupportsIndex | None = None,
         __end: SupportsIndex | None = None,
     ) -> bool:
@@ -769,7 +805,10 @@ class WrappedStr:  # (metaclass=StrType):
         """
         return self.__class__(self._content.title())
 
-    def translate(self, __table) -> Self:
+    def translate(
+        self,
+        __table,
+    ) -> Self:
         """Replace each character in the string using the given translation table.
 
         table
@@ -783,7 +822,10 @@ class WrappedStr:  # (metaclass=StrType):
         """Return a copy of the string converted to uppercase."""
         return self.__class__(self._content.upper())
 
-    def zfill(self, __width: SupportsIndex):
+    def zfill(
+        self,
+        __width: SupportsIndex,
+    ) -> Self:
         """Pad a numeric string with zeros on the left, to fill a field of the given width.
 
         The string is never truncated.
@@ -807,15 +849,15 @@ class CaseInsensitiveWrappedStr(WrappedStr):
     @classmethod
     def _coerce_str(cls, item) -> str:
         if isinstance(item, (WrappedStr, str)):
-            return str(item).lower()
+            return str(item).casefold()
         return item
 
     def __init__(self, __content: WrappedStr | str):
         super().__init__(__content)
-        self._lower_content: str = str(self._content).lower()
+        self._lower_content: str = str(self._content).casefold()
 
     def __contains__(self, __key):
-        return self._lower_content.__contains__(self._coerce_str(__key).lower())
+        return self._lower_content.__contains__(self._coerce_str(__key))
 
     def __eq__(self, __value):
         return self._lower_content.__eq__(self._coerce_str(__value))
@@ -835,9 +877,12 @@ class CaseInsensitiveWrappedStr(WrappedStr):
         return self._lower_content.find(self._coerce_str(sub), start, end)
 
     def lower(self):
-        return self.__class__(self._lower_content)
+        return self.__class__(self._content.lower())
 
-    def partition(self, __sep):
+    def partition(
+        self,
+        __sep,
+    ):
         # Find the position of the separator in a case-insensitive manner
         pattern: re.Pattern[str] = re.compile(re.escape(self._coerce_str(__sep)), re.IGNORECASE)
         match: re.Match[str] | None = pattern.search(self._content)
@@ -860,13 +905,16 @@ class CaseInsensitiveWrappedStr(WrappedStr):
     ):
         """Case-insensitive replace function matching the builtin str.replace's functionality."""
         # Check for the special case where 'old' is an empty string
-        if __old == "":  # sourcery skip: simplify-empty-collection-comparison
+        if not __old:
             return super().replace("", self._coerce_str(__new), __count)
 
         pattern: re.Pattern[str] = re.compile(re.escape(self._coerce_str(__old)), re.IGNORECASE)
         return self.__class__(pattern.sub(self._coerce_str(__new), self._content, int(__count)))
 
-    def rpartition(self, __sep):
+    def rpartition(
+        self,
+        __sep,
+    ):
         # Find the position of the separator in a case-insensitive manner
         pattern: re.Pattern[str] = re.compile(re.escape(self._coerce_str(__sep)), re.IGNORECASE)
         matches = list(pattern.finditer(self._content))
@@ -891,7 +939,7 @@ class CaseInsensitiveWrappedStr(WrappedStr):
 
     def rsplit(
         self,
-        __sep = None,
+        __sep=None,
         __maxsplit=-1,
     ):
         if __sep is None:
@@ -905,7 +953,7 @@ class CaseInsensitiveWrappedStr(WrappedStr):
 
     def split(
         self,
-        sep = None,
+        sep=None,
         maxsplit=-1,
     ):
         if sep is None:

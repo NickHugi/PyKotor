@@ -39,6 +39,7 @@ from pykotor.tools.misc import (
 from pykotor.tools.model import list_lightmaps, list_textures
 from utility.error_handling import format_exception_with_variables
 from utility.path import Path, PurePath
+from utility.string import CaseInsensitiveWrappedStr
 
 if TYPE_CHECKING:
     import os
@@ -73,7 +74,7 @@ class Module:
         self._capsules: list[Capsule] = [
             Capsule(installation.module_path() / module)
             for module in installation.module_names()
-            if root in module.lower()
+            if root in module
         ]
         # Append the custom capsule if provided
         if custom_capsule is not None:
@@ -101,7 +102,7 @@ class Module:
     @staticmethod
     def get_root(
         filepath: os.PathLike | str,
-    ) -> str:
+    ) -> str:  # sourcery skip: inline-immediately-returned-variable
         """Returns the root name for a module from the given filepath (or filename). For example "danm13_s.rim" would become "danm13".
 
         Args:
@@ -113,7 +114,7 @@ class Module:
             The string for the root name of a module.
         """
         root: str = PurePath.pathify(filepath).stem
-        lower_root: str = root.lower()
+        lower_root: str = root.casefold()
         root = root[:-2] if lower_root.endswith("_s") else root
         root = root[:-4] if lower_root.endswith("_dlg") else root
         return root  # noqa: RET504
@@ -284,7 +285,7 @@ class Module:
         """
         # In order to store TGA resources in the same ModuleResource as their TPC counterpart, we use the .TPC extension
         # instead of the .TGA for the dictionary key.
-        filename_ext = (ResourceType.TPC if restype == ResourceType.TGA else restype).extension
+        filename_ext: CaseInsensitiveWrappedStr = (ResourceType.TPC if restype == ResourceType.TGA else restype).extension
         filename: str = f"{resname}.{filename_ext}"
         if filename not in self.resources:
             self.resources[filename] = ModuleResource(

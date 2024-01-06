@@ -26,7 +26,7 @@ class ModelRenderer(QOpenGLWidget):
         self.scene: Scene | None = None
         self.installation: Installation | None = None
         self._modelToLoad = None
-        self._creatureToLoad = None
+        self._creatureToLoad: UTC | None = None
 
         self._keysDown: set[int] = set()
         self._mouseDown: set[int] = set()
@@ -116,7 +116,7 @@ class ModelRenderer(QOpenGLWidget):
 
     def resetCamera(self):
         if "model" in self.scene.objects:
-            model = self.scene.objects["model"]
+            model: RenderObject = self.scene.objects["model"]
             self.scene.camera.x = 0
             self.scene.camera.y = 0
             self.scene.camera.z = (model.cube(self.scene).max_point.z - model.cube(self.scene).min_point.z) / 2
@@ -134,11 +134,11 @@ class ModelRenderer(QOpenGLWidget):
 
     def wheelEvent(self, e: QWheelEvent):
         if self.zoomCamera.satisfied(self._mouseDown, self._keysDown):
-            strength = self.settings.zoomCameraSensitivity3d / 2000
+            strength: float = self.settings.zoomCameraSensitivity3d / 2000
             self.scene.camera.distance += -e.angleDelta().y() * strength
 
         if self.moveZCamera.satisfied(self._mouseDown, self._keysDown):
-            strength = self.settings.moveCameraSensitivity3d / 10000
+            strength: float = self.settings.moveCameraSensitivity3d / 10000
             self.scene.camera.z -= -e.angleDelta().y() * strength
 
     def mouseMoveEvent(self, e: QMouseEvent):

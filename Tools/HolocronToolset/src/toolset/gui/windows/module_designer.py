@@ -705,7 +705,7 @@ class ModuleDesigner(QMainWindow):
 
     def onInstanceListDoubleClicked(self):
         if self.ui.instanceList.selectedItems():
-            item = self.ui.instanceList.selectedItems()[0]
+            item: QListWidgetItem = self.ui.instanceList.selectedItems()[0]
             instance: GITInstance = item.data(QtCore.Qt.UserRole)
             self.setSelection([instance])
             self.ui.mainRenderer.snapCameraToPoint(instance.position)

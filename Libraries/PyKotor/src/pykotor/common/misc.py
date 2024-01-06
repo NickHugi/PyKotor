@@ -581,7 +581,7 @@ class CaseInsensitiveDict(Generic[T]):
         self,
         initial: Mapping[str, T] | Iterable[tuple[str, T]] | ItemsView[str, T] | None = None,
     ):
-        self._dictionary: dict[str, T] = {}
+        self._dictionary: dict[CaseInsensitiveWrappedStr, T] = {}
         self._case_map: dict[str, str] = {}
 
         if initial:
@@ -603,7 +603,7 @@ class CaseInsensitiveDict(Generic[T]):
                     self[key] = value
 
     @classmethod
-    def from_dict(cls, initial: dict[str, T]) -> CaseInsensitiveDict[T]:
+    def from_dict(cls, initial: dict[str | CaseInsensitiveWrappedStr, T]) -> CaseInsensitiveDict[T]:
         """Class method to create a CaseInsensitiveDict instance from a dictionary.
 
         Args:
@@ -661,7 +661,7 @@ class CaseInsensitiveDict(Generic[T]):
         if case_sens_key is not None:  # delete old item if it exists
             del self._dictionary[case_sens_key]
         self._case_map[lower_key] = key
-        self._dictionary[key] = value
+        self._dictionary[CaseInsensitiveWrappedStr(key)] = value
 
     def __delitem__(self, key: str):
         if not isinstance(key, str):

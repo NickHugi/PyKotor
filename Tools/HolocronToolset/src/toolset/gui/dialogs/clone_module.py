@@ -22,7 +22,12 @@ class ModuleOption(NamedTuple):
 
 
 class CloneModuleDialog(QDialog):
-    def __init__(self, parent: QWidget, active: HTInstallation, installations: dict[str, HTInstallation]):
+    def __init__(
+        self,
+        parent: QWidget,
+        active: HTInstallation,
+        installations: dict[str, HTInstallation],
+    ):
         """Initializes the dialog for cloning a module.
 
         Args:
@@ -52,7 +57,7 @@ class CloneModuleDialog(QDialog):
         self._installations: dict[str, HTInstallation] = {active.name: active}
 
         self.ui.createButton.clicked.connect(self.ok)
-        self.ui.cancelButton.clicked.connect(self.close)
+        self.ui.cancelButton.clicked.connect(self.close)  # type: ignore[]
         self.ui.filenameEdit.textChanged.connect(self.setPrefixFromFilename)
         self.ui.moduleSelect.currentIndexChanged.connect(self.changedModule)
 
@@ -60,6 +65,7 @@ class CloneModuleDialog(QDialog):
 
     def ok(self):
         """Clones a module once user accepted the dialog query.
+
         Clones a module from the selected root module with the given identifier, prefix, and name.
         Copies textures, lightmaps, and other assets based on checkbox selections.
         Displays status and success/failure messages.
@@ -68,17 +74,13 @@ class CloneModuleDialog(QDialog):
         ----
             self: The class instance.
 
-        Returns:
-        -------
-            None: No return value.
-
         Processing Logic:
         ----------------
-        - Gets module cloning parameters from UI elements
-        - Defines cloning function
-        - Warns user if copying textures selected due to longer wait time
-        - Runs cloning asynchronously and displays status
-        - Shows success message if clone completed.
+            - Gets module cloning parameters from UI elements
+            - Defines cloning function
+            - Warns user if copying textures selected due to longer wait time
+            - Runs cloning asynchronously and displays status
+            - Shows success message if clone completed.
         """
         installation = self.ui.moduleSelect.currentData().installation
         root = self.ui.moduleSelect.currentData().root
@@ -94,9 +96,9 @@ class CloneModuleDialog(QDialog):
         keepPathing = self.ui.keepPathingCheckbox.isChecked()
 
         def task():
-            return module.clone_module(root, identifier, prefix, name, installation, copy_textures=copyTextures,
-                                        copy_lightmaps=copyLightmaps, keep_doors=keepDoors, keep_placeables=keepPlaceables,
-                                        keep_sounds=keepSounds, keep_pathing=keepPathing)
+            return module.clone_module(root, identifier, prefix, name, installation,
+                                        copy_textures=copyTextures, copy_lightmaps=copyLightmaps,
+                                        keep_doors=keepDoors, keep_placeables=keepPlaceables, keep_sounds=keepSounds, keep_pathing=keepPathing)
 
         if copyTextures:
             QMessageBox(QMessageBox.Information, "This may take a while", "You have selected to create copies of the "
@@ -104,20 +106,26 @@ class CloneModuleDialog(QDialog):
 
         if not AsyncLoader(self, "Creating module", task, "Failed to create module").exec_():
             return
-        QMessageBox(QMessageBox.Information, "Clone Successful",
-                    f"You can now warp to the cloned module '{identifier}'.").exec_()
+
+        QMessageBox(
+            QMessageBox.Information,
+            "Clone Successful", f"You can now warp to the cloned module '{identifier}'."
+        ).exec_()
 
     def loadModules(self):
-        """Loads module options from installed modules
+        """Loads module options from installed modules.
+
         Args:
+        ----
             self: The class instance
-        Returns:
-            None: No value is returned
-        - Loops through all installed modules
-        - Extracts module name and root path for each file
-        - Creates a ModuleOption for each unique root
-        - Adds file paths to the ModuleOption
-        - Adds the ModuleOption to the module selection UI.
+
+        Processing Logic:
+        ----------------
+            - Loops through all installed modules
+            - Extracts module name and root path for each file
+            - Creates a ModuleOption for each unique root
+            - Adds file paths to the ModuleOption
+            - Adds the ModuleOption to the module selection UI.
         """
         options: dict[str, ModuleOption] = {}
         for installation in self._installations.values():

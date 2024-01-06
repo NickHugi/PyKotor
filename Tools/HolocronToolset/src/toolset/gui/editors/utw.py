@@ -33,7 +33,7 @@ class UTWEditor(Editor):
             - Initialize UTW object
             - Create new empty waypoint by default.
         """
-        supported = [ResourceType.UTW]
+        supported: list[ResourceType] = [ResourceType.UTW]
         super().__init__(parent, "Waypoint Editor", "waypoint", supported, supported, installation)
 
         from toolset.uic.editors.utw import Ui_MainWindow
@@ -102,11 +102,14 @@ class UTWEditor(Editor):
         -------
             data: The serialized UTWSave object as bytes.
             b"": An empty bytes object.
-        - Populate UTW object from UI control values
-        - Serialize UTW to bytes using GFF format
-        - Return bytes and empty bytes
+
+        Processing Logic:
+        ----------------
+            - Populate UTW object from UI control values
+            - Serialize UTW to bytes using GFF format
+            - Return bytes and empty bytes
         """
-        utw = self._utw
+        utw: UTW = self._utw
 
         utw.name = self.ui.nameEdit.locstring()
         utw.tag = self.ui.tagEdit.text()
@@ -137,12 +140,12 @@ class UTWEditor(Editor):
             self._loadLocstring(self.ui.noteEdit, dialog.locstring)
 
     def generateTag(self):
-        if self.ui.resrefEdit.text() == "":
+        if not self.ui.resrefEdit.text():
             self.generateResref()
         self.ui.tagEdit.setText(self.ui.resrefEdit.text())
 
     def generateResref(self):
-        if self._resref is not None and self._resref != "":
-            self.ui.resrefEdit.setText(self._resref)
+        if self._resname:
+            self.ui.resrefEdit.setText(self._resname)
         else:
             self.ui.resrefEdit.setText("m00xx_way_000")

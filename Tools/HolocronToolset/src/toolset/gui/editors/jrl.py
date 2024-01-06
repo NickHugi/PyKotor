@@ -46,7 +46,7 @@ class JRLEditor(Editor):
             - Sets the installation if provided
             - Displays an empty new journal by default.
         """
-        supported = [ResourceType.JRL]
+        supported: list[ResourceType] = [ResourceType.JRL]
         super().__init__(parent, "Journal Editor", "journal", supported, supported, installation)
         self.resize(400, 250)
 
@@ -199,7 +199,7 @@ class JRLEditor(Editor):
 
     def changeEntryText(self):
         """Opens a LocalizedStringDialog for editing the text of the selected entry."""
-        dialog = LocalizedStringDialog(self, self._installation, self.ui.entryTextEdit.locstring())
+        dialog = LocalizedStringDialog(self, self._installation, self.ui.entryTextEdit.locstring)  # FIXME: locstring or locstring()?
         if dialog.exec_():
             self._loadLocstring(self.ui.entryTextEdit, dialog.locstring)
             self.onValueUpdated()

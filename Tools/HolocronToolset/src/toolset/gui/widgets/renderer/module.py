@@ -90,10 +90,12 @@ class ModuleRenderer(QOpenGLWidget):
         ----
             self: The object instance
 
-        - Calls repaint() to redraw the canvas
-        - Checks if mouse is over object and keyboard keys are pressed
-        - Emits keyboardPressed signal with mouse/key info
-        - Schedules next loop call after delay to maintain ~30fps
+        Processing Logic:
+        ----------------
+            - Calls repaint() to redraw the canvas
+            - Checks if mouse is over object and keyboard keys are pressed
+            - Emits keyboardPressed signal with mouse/key info
+            - Schedules next loop call after delay to maintain ~30fps
         """
         self.repaint()
         if self.underMouse() and self.freeCam and len(self._keysDown) > 0:
@@ -110,11 +112,16 @@ class ModuleRenderer(QOpenGLWidget):
             x: float - The x coordinate of the point
             y: float - The y coordinate of the point
             default_z: float = 0.0 - The default z height if no face is found
+
         Returns:
+        -------
             Vector3 - The (x, y, z) position on the walkmesh
-        - Iterates through walkmesh resources to find the face at the given (x,y) coordinates
-        - Checks if the found face is walkable, and overrides any previous less walkable face
-        - Returns a Vector3 with the input x,y coords and either the face z height or default z if no face.
+
+        Processing Logic:
+        ----------------
+            - Iterates through walkmesh resources to find the face at the given (x,y) coordinates
+            - Checks if the found face is walkable, and overrides any previous less walkable face
+            - Returns a Vector3 with the input x,y coords and either the face z height or default z if no face.
         """
         face: BWMFace | None = None
         for walkmesh in [res.resource() for res in self._module.resources.values() if

@@ -59,7 +59,7 @@ class NSSEditor(Editor):
             5. Set the tab size for the code editor
             6. Create a new empty script.
         """
-        supported = [ResourceType.NSS, ResourceType.NCS]
+        supported: list[ResourceType] = [ResourceType.NSS, ResourceType.NCS]
         super().__init__(parent, "Script Editor", "script", supported, supported, installation)
 
         from toolset.uic.editors.nss import Ui_MainWindow
@@ -208,23 +208,23 @@ class NSSEditor(Editor):
             4. Displays a success or failure message.
         """
         try:
-            source = self.ui.codeEdit.toPlainText()
-            data = compileScript(source, self._installation.tsl)
+            source: str = self.ui.codeEdit.toPlainText()
+            data: bytes = compileScript(source, self._installation.tsl)
 
             filepath: Path = self._filepath if self._filepath is not None else Path.cwd() / "untitled_script.ncs"
             if is_any_erf_type_file(filepath.name):
-                savePath = filepath / f"{self._resref}.{self._restype.extension}"
+                savePath = filepath / f"{self._resname}.{self._restype.extension}"
                 erf: ERF = read_erf(filepath)
-                erf.set_data(self._resref, ResourceType.NCS, data)
+                erf.set_data(self._resname, ResourceType.NCS, data)
                 write_erf(erf, filepath)
             elif is_rim_file(filepath.name):
-                savePath = filepath / f"{self._resref}.{self._restype.extension}"
+                savePath = filepath / f"{self._resname}.{self._restype.extension}"
                 rim: RIM = read_rim(filepath)
-                rim.set_data(self._resref, ResourceType.NCS, data)
+                rim.set_data(self._resname, ResourceType.NCS, data)
                 write_rim(rim, filepath)
             else:
                 if not filepath or is_bif_file(filepath.name):
-                    savePath = self._installation.override_path() / f"{self._resref}.ncs"
+                    savePath = self._installation.override_path() / f"{self._resname}.ncs"
                 else:
                     savePath = filepath.with_suffix(".ncs")
                 BinaryWriter.dump(savePath, data)
@@ -615,11 +615,11 @@ class SyntaxHighlighter(QSyntaxHighlighter):
             print("text cannot be None", "highlightBlock")
             return
         for expression, nth, format in self.rules:
-            index = expression.indexIn(text, 0)
+            index: int = expression.indexIn(text, 0)
 
             while index >= 0:
                 index = expression.pos(nth)
-                length = len(expression.cap(nth))
+                length: int = len(expression.cap(nth))
                 self.setFormat(index, length, format)
                 index = expression.indexIn(text, index + length)
 

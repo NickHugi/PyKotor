@@ -58,8 +58,8 @@ class ERFEditor(Editor):
         self.ui.tableView.selectionModel().selectionChanged.connect(self.selectionChanged)
 
         # Disable saving file into module
-        self._saveFilter = self._saveFilter.replace(";;Save into module (*.erf *.mod *.rim)", "")
-        self._openFilter = self._openFilter.replace(";;Load from module (*.erf *.mod *.rim)", "")
+        self._saveFilter = self._saveFilter.replace(";;Save into module (*.erf *.mod *.rim *.sav)", "")
+        self._openFilter = self._openFilter.replace(";;Load from module (*.erf *.mod *.rim *.sav)", "")
 
         self.new()
 
@@ -297,7 +297,7 @@ class ERFEditor(Editor):
 
         for index in self.ui.tableView.selectionModel().selectedRows(0):
             item = self.model.itemFromIndex(index)
-            resource = item.data()
+            resource: ERFResource = item.data()
 
             if resource.restype.name in ERFType.__members__:
                 QMessageBox(
@@ -321,8 +321,8 @@ class ERFEditor(Editor):
 
     def refresh(self):
         with self._filepath.open("rb") as file:
-            data = file.read()
-            self.load(self._filepath, self._resref, self._restype, data)
+            data: bytes = file.read()
+            self.load(self._filepath, self._resname, self._restype, data)
 
     def selectionChanged(self):
         """Updates UI controls based on table selection.
@@ -365,9 +365,9 @@ class ERFEditor(Editor):
             return
 
         for index in self.ui.tableView.selectionModel().selectedRows(0):
-            item = self.model.itemFromIndex(index)
-            if item.data().resref == resname and item.data().restype == restype:
-                item.data().data = data
+            item: ERFResource = self.model.itemFromIndex(index).data()
+            if item.resref == resname and item.restype == restype:
+                item.data = data
 
 
 class ERFEditorTable(QTableView):
@@ -413,18 +413,17 @@ class ERFEditorTable(QTableView):
             - Creates a drag object with the mime data
             - Executes the drag with the allowed actions.
         """
-        tempDir = Path(GlobalSettings().extractPath).resolve()
+        tempDir = Path(GlobalSettings().extractPath)
 
         if not tempDir or not tempDir.is_dir():
+            print(f"Temp directory not valid: {tempDir}")
             return
 
-        urls = []
+        urls: list[QtCore.QUrl] = []
         for index in (index for index in self.selectedIndexes() if index.column() == 0):
             resource = self.model().itemData(index)[QtCore.Qt.UserRole + 1]
             file_stem, file_ext = str(resource.resref), resource.restype.extension
             filepath = Path(tempDir, f"{file_stem}.{file_ext}")
-            if not filepath.exists():
-                filepath = filepath.resolve()
             with filepath.open("wb") as file:
                 file.write(resource.data)
             urls.append(QtCore.QUrl.fromLocalFile(str(filepath)))

@@ -105,12 +105,14 @@ class UTEEditor(Editor):
         ----
             ute (UTE): UTE object to load
 
-        Loads UTE:
-        - Sets basic UTE properties like name, tag, etc.
-        - Sets advanced properties like active, faction, respawning
-        - Loads creatures and adds them to creature table
-        - Sets script fields
-        - Sets comment text.
+
+        Processing Logic:
+        ----------------
+            - Sets basic UTE properties like name, tag, etc.
+            - Sets advanced properties like active, faction, respawning
+            - Loads creatures and adds them to creature table
+            - Sets script fields
+            - Sets comment text.
         """
         self._ute = ute
 
@@ -163,7 +165,7 @@ class UTEEditor(Editor):
             - Adding comment text
             - Encoding the UTE object into bytes.
         """
-        ute = self._ute
+        ute: UTE = self._ute
 
         # Basic
         ute.name = self.ui.nameEdit.locstring()
@@ -227,8 +229,8 @@ class UTEEditor(Editor):
         self.ui.tagEdit.setText(self.ui.resrefEdit.text())
 
     def generateResref(self):
-        if self._resref is not None and self._resref != "":
-            self.ui.resrefEdit.setText(self._resref)
+        if self._resname is not None and self._resname != "":
+            self.ui.resrefEdit.setText(self._resname)
         else:
             self.ui.resrefEdit.setText("m00xx_enc_000")
 
@@ -269,7 +271,7 @@ class UTEEditor(Editor):
             - Sets the widgets as the cell widgets in the appropriate columns
             - Sets the creature name as the item in the name column.
         """
-        rowId = self.ui.creatureTable.rowCount()
+        rowId: int = self.ui.creatureTable.rowCount()
         self.ui.creatureTable.insertRow(rowId)
 
         singleCheckbox = QCheckBox()
@@ -286,5 +288,5 @@ class UTEEditor(Editor):
 
     def removeSelectedCreature(self):
         if self.ui.creatureTable.selectedItems():
-            item = self.ui.creatureTable.selectedItems()[0]
+            item: QTableWidgetItem = self.ui.creatureTable.selectedItems()[0]
             self.ui.creatureTable.removeRow(item.row())

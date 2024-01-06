@@ -501,6 +501,7 @@ class UTCEditor(Editor):
         Returns:
         -------
             pixmap: A QPixmap of the character portrait
+
         Builds the portrait pixmap by:
             1. Getting the character's alignment value
             2. Looking up the character's portrait reference in the portraits 2DA based on alignment
@@ -535,10 +536,10 @@ class UTCEditor(Editor):
 
         Processing Logic:
         ----------------
-        1. Gets the conversation name from the UI text field
-        2. Searches the installation for the conversation resource
-        3. If not found, prompts to create a new file in the override folder
-        4. Opens the resource editor with the conversation data.
+            1. Gets the conversation name from the UI text field
+            2. Searches the installation for the conversation resource
+            3. If not found, prompts to create a new file in the override folder
+            4. Opens the resource editor with the conversation data.
         """
         resname: str = self.ui.conversationEdit.text()
 

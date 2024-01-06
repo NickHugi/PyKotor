@@ -17,16 +17,19 @@ class InstallationsWidget(QWidget):
     edited = QtCore.pyqtSignal()
 
     def __init__(self, parent: QWidget):
-        """Initialize the Installations widget
+        """Initialize the Installations widget.
+
         Args:
+        ----
             parent: Parent widget
-        Returns:
-            None
-        - Set up model to hold installation data
-        - Load global settings
-        - Set up UI from designer file
-        - Populate UI with initial values
-        - Connect signal handlers.
+
+        Processing Logic:
+        ----------------
+            - Set up model to hold installation data
+            - Load global settings
+            - Set up UI from designer file
+            - Populate UI with initial values
+            - Connect signal handlers.
         """
         super().__init__(parent)
 
@@ -40,16 +43,19 @@ class InstallationsWidget(QWidget):
         self.setupSignals()
 
     def setupValues(self):
-        """Sets up installation values in the model
+        """Sets up installation values in the model.
+
         Args:
+        ----
             self: The class instance
-        Returns:
-            None: Does not return anything
-        - Clears existing items from the installations model
-        - Loops through installations from settings
-        - Creates a QStandardItem for each installation
-        - Sets data like path and tsl on the item
-        - Appends the item to the installations model.
+
+        Processing Logic:
+        ----------------
+            - Clears existing items from the installations model
+            - Loops through installations from settings
+            - Creates a QStandardItem for each installation
+            - Sets data like path and tsl on the item
+            - Appends the item to the installations model.
         """
         self.installationsModel.clear()
         for installation in self.settings.installations().values():
@@ -64,9 +70,6 @@ class InstallationsWidget(QWidget):
         ----
             self: {The class instance}
 
-        Returns:
-        -------
-            None: {No return value}
         Processing Logic:
         ----------------
             - Connect add path button click to add new installation slot
@@ -85,7 +88,7 @@ class InstallationsWidget(QWidget):
         self.ui.pathList.selectionModel().selectionChanged.connect(self.installationSelected)
 
     def save(self):
-        installations = {}
+        installations: dict[str, dict[str, str]] = {}
 
         for row in range(self.installationsModel.rowCount()):
             item = self.installationsModel.item(row, 0)
@@ -146,7 +149,7 @@ class InstallationConfig:
 
     @name.setter
     def name(self, value: str):
-        installations = self._settings.value("installations", {}, dict[str, Any])
+        installations = self._settings.value("installations", {}, dict)
         installation = installations[self._name]
 
         del installations[self._name]
@@ -203,8 +206,8 @@ class GlobalSettings(Settings):
         if installations is None:
             installations = {}
 
-        counters = {Game.K1: 1, Game.K2: 1}
-        existing_paths = {Path(inst["path"]) for inst in installations.values()}  # Create a set of existing paths
+        counters: dict[Game, int] = {Game.K1: 1, Game.K2: 1}
+        existing_paths: set[Path] = {Path(inst["path"]) for inst in installations.values()}  # Create a set of existing paths
 
         for game, paths in find_kotor_paths_from_default().items():
             for path in filter(Path.exists, paths):

@@ -12,6 +12,7 @@ from utility.path import Path, PurePath
 
 if TYPE_CHECKING:
     from pykotor.common.misc import ResRef
+    from utility.string import CaseInsensitiveWrappedStr
 
 
 class FileResource:
@@ -170,7 +171,7 @@ class FileResource:
 
 
 class ResourceResult(NamedTuple):
-    resname: str
+    resname: CaseInsensitiveWrappedStr | str
     restype: ResourceType
     filepath: Path
     data: bytes
@@ -185,8 +186,12 @@ class LocationResult(NamedTuple):
 class ResourceIdentifier(NamedTuple):
     """Class for storing resource name and type, facilitating case-insensitive object comparisons and hashing equal to their string representations."""
 
-    resname: str
+    resname: CaseInsensitiveWrappedStr | str
     restype: ResourceType
+
+    def __new__(cls, resname: str, restype: ResourceType):
+        resname = CaseInsensitiveWrappedStr.cast(resname)
+        return super().__new__(cls, (resname, restype))
 
     def __hash__(
         self,

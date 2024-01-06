@@ -13,6 +13,7 @@ from toolset.gui.editor import Editor
 if TYPE_CHECKING:
     import os
 
+    from pykotor.resource.formats.twoda.twoda_data import TwoDA
     from PyQt5.QtWidgets import QWidget
 
 
@@ -43,7 +44,7 @@ class UTTEditor(Editor):
         self._setupSignals()
         self._setupInstallation(installation)
 
-        self._utt = UTT()
+        self._utt: UTT = UTT()
 
         self.new()
 
@@ -55,9 +56,9 @@ class UTTEditor(Editor):
         self._installation = installation
         self.ui.nameEdit.setInstallation(installation)
 
-        cursors = installation.htGetCache2DA(HTInstallation.TwoDA_CURSORS)
-        factions = installation.htGetCache2DA(HTInstallation.TwoDA_FACTIONS)
-        traps = installation.htGetCache2DA(HTInstallation.TwoDA_TRAPS)
+        cursors: TwoDA = installation.htGetCache2DA(HTInstallation.TwoDA_CURSORS)
+        factions: TwoDA = installation.htGetCache2DA(HTInstallation.TwoDA_FACTIONS)
+        traps: TwoDA = installation.htGetCache2DA(HTInstallation.TwoDA_TRAPS)
 
         self.ui.cursorSelect.setItems(cursors.get_column("label"))
         self.ui.factionSelect.setItems(factions.get_column("label"))
@@ -66,7 +67,7 @@ class UTTEditor(Editor):
     def load(self, filepath: os.PathLike | str, resref: str, restype: ResourceType, data: bytes):
         super().load(filepath, resref, restype, data)
 
-        utt = read_utt(data)
+        utt: UTT = read_utt(data)
         self._loadUTT(utt)
 
     def _loadUTT(self, utt: UTT):
@@ -133,7 +134,7 @@ class UTTEditor(Editor):
         - Serializes the UTT to GFF format
         - Returns the GFF data and any errors
         """
-        utt = self._utt
+        utt: UTT = self._utt
 
         # Basic
         utt.name = self.ui.nameEdit.locstring()
@@ -185,12 +186,12 @@ class UTTEditor(Editor):
             self._loadLocstring(self.ui.nameEdit, dialog.locstring)
 
     def generateTag(self):
-        if self.ui.resrefEdit.text() == "":
+        if not self.ui.resrefEdit.text():
             self.generateResref()
         self.ui.tagEdit.setText(self.ui.resrefEdit.text())
 
     def generateResref(self):
-        if self._resref is not None and self._resref != "":
-            self.ui.resrefEdit.setText(self._resref)
+        if self._resname:
+            self.ui.resrefEdit.setText(self._resname)
         else:
             self.ui.resrefEdit.setText("m00xx_trg_000")

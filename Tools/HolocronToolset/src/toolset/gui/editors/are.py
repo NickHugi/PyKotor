@@ -144,8 +144,8 @@ class AREEditor(Editor):
         """
         self._are = are
 
-        if self._resref:
-            res_result_lyt: ResourceResult | None = self._installation.resource(self._resref, ResourceType.LYT)
+        if self._resname:
+            res_result_lyt: ResourceResult | None = self._installation.resource(self._resname, ResourceType.LYT)
             if res_result_lyt:
                 lyt: LYT = read_lyt(res_result_lyt.data)
                 queries: list[ResourceIdentifier] = [
@@ -165,9 +165,9 @@ class AREEditor(Editor):
                 SearchLocation.TEXTURES_GUI,
                 SearchLocation.MODULES
             ]
-            self._minimap: TPC | None = self._installation.texture(f"lbl_map{self._resref}", order)
+            self._minimap: TPC | None = self._installation.texture(f"lbl_map{self._resname}", order)
             if self._minimap is None:
-                print(f"Could not find texture 'lbl_map{self._resref}' required for minimap")
+                print(f"Could not find texture 'lbl_map{self._resname}' required for minimap")
             else:
                 self.ui.minimapRenderer.setMinimap(are, self._minimap)
                 self.ui.minimapRenderer.centerCamera()
@@ -395,4 +395,4 @@ class AREEditor(Editor):
             self._loadLocstring(self.ui.nameEdit, dialog.locstring)
 
     def generateTag(self):
-        self.ui.tagEdit.setText("newarea" if self._resref is None or self._resref == "" else self._resref)
+        self.ui.tagEdit.setText("newarea" if self._resname is None or self._resname == "" else self._resname)

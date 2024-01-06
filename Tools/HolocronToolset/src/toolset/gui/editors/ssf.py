@@ -16,14 +16,13 @@ if TYPE_CHECKING:
 
 class SSFEditor(Editor):
     def __init__(self, parent: QWidget | None, installation: Installation | None = None):
-        """Initialize Soundset Editor window
+        """Initialize Soundset Editor window.
+
         Args:
+        ----
             parent: {Parent widget}
             installation: {Installation object}.
 
-        Returns
-        -------
-            None
         Processing Logic:
         ----------------
             - Call super().__init__ to initialize base editor
@@ -53,9 +52,6 @@ class SSFEditor(Editor):
         ----
             self: The class instance.
 
-        Returns:
-        -------
-            None
         Processing Logic:
         ----------------
             - Connects valueChanged signals from spin boxes to updateTextBoxes method
@@ -93,18 +89,19 @@ class SSFEditor(Editor):
         self.ui.actionSetTLK.triggered.connect(self.selectTalkTable)
 
     def load(self, filepath: os.PathLike | str, resref: str, restype: ResourceType, data: bytes):
-        """Loads sound data from an SSF file
+        """Loads sound data from an SSF file.
+
         Args:
+        ----
             filepath: {PathLike or string}: Path to SSF file
             resref: {string}: Resource reference
             restype: {ResourceType}: Resource type
             data: {bytes}: SSF data
-        Returns:
-            None: No return value
+
         Loads sound data from an SSF file and sets values of UI spin boxes:
-        - Reads SSF data from file
-        - Sets values of spin boxes for different sound events like battlecries, attacks, abilities etc
-        - Populates UI with sound data from file.
+            - Reads SSF data from file
+            - Sets values of spin boxes for different sound events like battlecries, attacks, abilities etc
+            - Populates UI with sound data from file.
         """
         super().load(filepath, resref, restype, data)
         ssf = read_ssf(data)
@@ -139,11 +136,16 @@ class SSFEditor(Editor):
         self.ui.poisonedStrrefSpin.setValue(ssf.get(SSFSound.POISONED))
 
     def build(self) -> tuple[bytes, bytes]:
-        """Builds sound data from UI values
+        """Builds sound data from UI values.
+
         Args:
+        ----
             self: {The class instance}: Provides UI element values
+
         Returns:
+        -------
             tuple[bytes, bytes]: {The built sound data and empty string}
+
         Processing Logic:
         ----------------
             - Initialize SSF object
@@ -219,11 +221,12 @@ class SSFEditor(Editor):
         self.ui.poisonedStrrefSpin.setValue(0)
 
     def updateTextBoxes(self):
-        """Updates text boxes with sound and text from talktable
+        """Updates text boxes with sound and text from talktable.
+
         Args:
+        ----
             self: The class instance
-        Returns:
-            None: Does not return anything
+
         Processing Logic:
         ----------------
             - Gets stringref values from UI elements

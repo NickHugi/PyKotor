@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import multiprocessing
 from abc import abstractmethod
-from contextlib import suppress
 from time import sleep
 from typing import TYPE_CHECKING
 
@@ -13,14 +12,13 @@ from PyQt5 import QtCore
 from PyQt5.QtCore import QModelIndex, QPoint, QSortFilterProxyModel, QThread, QTimer
 from PyQt5.QtGui import QIcon, QImage, QPixmap, QResizeEvent, QStandardItem, QStandardItemModel, QTransform
 from PyQt5.QtWidgets import QHeaderView, QMenu, QWidget
-
 from utility.error_handling import format_exception_with_variables
 
 if TYPE_CHECKING:
     from pykotor.extract.file import FileResource
     from toolset.data.installation import HTInstallation
 
-GFF_TYPES = [ResourceType.GFF, ResourceType.UTC, ResourceType.UTP, ResourceType.UTD, ResourceType.UTI,
+GFF_TYPES: list[ResourceType] = [ResourceType.GFF, ResourceType.UTC, ResourceType.UTP, ResourceType.UTD, ResourceType.UTI,
              ResourceType.UTM, ResourceType.UTE, ResourceType.UTT, ResourceType.UTW, ResourceType.UTS,
              ResourceType.DLG, ResourceType.GUI, ResourceType.ARE, ResourceType.IFO, ResourceType.GIT,
              ResourceType.JRL, ResourceType.ITP]
@@ -44,11 +42,12 @@ class ResourceList(MainWindowList):
     requestRefresh = QtCore.pyqtSignal()
 
     def __init__(self, parent: QWidget):
-        """Initializes the ResourceList widget
+        """Initializes the ResourceList widget.
+
         Args:
+        ----
             parent (QWidget): The parent widget
-        Returns:
-            None: Does not return anything
+
         Processing Logic:
         ----------------
             - Initializes the UI from the designer file
@@ -102,13 +101,14 @@ class ResourceList(MainWindowList):
         Args:
         ----
             resources: {list[FileResource]}: List of FileResource objects to set
-        Returns:
-            None: No return value
-        - Loops through allResources and resources to find matching resources and update references
-        - Loops through allResources to find non-matching resources and removes them
-        - Removes any unused categories from the model.
+
+        Processing Logic:
+        ----------------
+            - Loops through allResources and resources to find matching resources and update references
+            - Loops through allResources to find non-matching resources and removes them
+            - Removes any unused categories from the model.
         """
-        allResources = self.modulesModel.allResourcesItems()
+        allResources: list[QStandardItem] = self.modulesModel.allResourcesItems()
 
         # Add any missing resources to the list
         for resource in resources:
@@ -140,11 +140,12 @@ class ResourceList(MainWindowList):
         Args:
         ----
             resource (FileResource): The resource to select
-        Returns:
-            None
-        - Loops through all resources in the model to find matching resource
-        - Expands the parent item in the tree
-        - Scrolls to and selects the matching child item.
+
+        Processing Logic:
+        ----------------
+            - Loops through all resources in the model to find matching resource
+            - Expands the parent item in the tree
+            - Scrolls to and selects the matching child item.
         """
         model = self.ui.resourceTree.model().sourceModel()
 
@@ -175,11 +176,12 @@ class ResourceList(MainWindowList):
         self.requestRefresh.emit()
 
     def onResourceContextMenu(self, point: QPoint):
-        """Shows context menu for selected resources
+        """Shows context menu for selected resources.
+
         Args:
+        ----
             point: QPoint - Mouse position for context menu
-        Returns:
-            None
+
         Processing Logic:
         ----------------
             - Create QMenu at mouse position
@@ -214,8 +216,9 @@ class ResourceList(MainWindowList):
 
 
 class ResourceModel(QStandardItemModel):
-    """A data model used by the different trees (Core, Modules, Override). This class provides an easy way to add resources
-    while sorting the into categories.
+    """A data model used by the different trees (Core, Modules, Override).
+
+    This class provides an easy way to add resources while sorting them into categories.
     """
 
     def __init__(self):
@@ -361,8 +364,8 @@ class TextureList(MainWindowList):
         if self.texturesModel.rowCount() == 0:
             return []
 
-        scanWidth = self.parent().width()
-        scanHeight = self.parent().height()
+        scanWidth: int = self.parent().width()  # please type these
+        scanHeight: int = self.parent().height()
 
         proxyModel = self.texturesProxyModel
         model = self.texturesModel
@@ -380,18 +383,18 @@ class TextureList(MainWindowList):
                     firstIndex = proxyIndex
                     break
 
-        items = []
+        items: list[QStandardItem] = []
 
         if firstItem:
-            _startRow = firstItem.row()  # TODO: why is this unused
-            widthCount = scanWidth // 92
-            heightCount = scanHeight // 92 + 2
-            numVisible = min(proxyModel.rowCount(), widthCount * heightCount)
+            _startRow: int = firstItem.row()
+            widthCount: int = scanWidth // 92
+            heightCount: int = scanHeight // 92 + 2
+            numVisible: int = min(proxyModel.rowCount(), widthCount * heightCount)
 
             for i in range(numVisible):
-                proxyIndex = proxyModel.index(firstIndex.row() + i, 0)
-                sourceIndex = proxyModel.mapToSource(proxyIndex)
-                item = model.itemFromIndex(sourceIndex)
+                proxyIndex: QModelIndex = proxyModel.index(firstIndex.row() + i, 0)
+                sourceIndex: QModelIndex = proxyModel.mapToSource(proxyIndex)
+                item: QStandardItem | None = model.itemFromIndex(sourceIndex)
                 if item is not None:
                     items.append(item)
 
@@ -409,7 +412,7 @@ class TextureList(MainWindowList):
             sleep(0.1)
 
     def onFilterStringUpdated(self):
-        self.texturesProxyModel.setFilterFixedString(self.ui.searchEdit.text().lower())
+        self.texturesProxyModel.setFilterFixedString(self.ui.searchEdit.text().casefold())
 
     def onSectionChanged(self):
         self.sectionChanged.emit(self.ui.sectionCombo.currentData(QtCore.Qt.UserRole))
@@ -423,14 +426,14 @@ class TextureList(MainWindowList):
     def onTextureListScrolled(self):
         # Note: Avoid redundantly loading textures that have already been loaded
         textures = self._installation.textures(
-            [item.text() for item in self.visibleItems() if item.text() not in self._scannedTextures],
+            [item.text() for item in self.visibleItems() if item.text().casefold() not in self._scannedTextures],
             [SearchLocation.TEXTURES_GUI, SearchLocation.TEXTURES_TPA],
         )
 
         # Emit signals to load textures that have not had their icons assigned
-        for item in [item for item in self.visibleItems() if item.text() not in self._scannedTextures]:
+        for item in [item for item in self.visibleItems() if item.text().casefold() not in self._scannedTextures]:
             # Avoid trying to load the same texture multiple times.
-            self._scannedTextures.add(item.text())
+            self._scannedTextures.add(item.text().casefold())
 
             hasTPC: bool = item.text() in textures and textures[item.text()] is not None
             tpc: TPC | None = textures[item.text()] if hasTPC else TPC()

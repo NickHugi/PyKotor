@@ -7,7 +7,7 @@ from enum import Enum, IntEnum
 from typing import TYPE_CHECKING, Any, Callable, ClassVar, Generator, NamedTuple
 
 from pykotor.common.language import Gender, Language, LocalizedString
-from pykotor.common.misc import CaseInsensitiveDict, Game, ResRef
+from pykotor.common.misc import CaseInsensitiveDict, Game
 from pykotor.common.stream import BinaryReader
 from pykotor.extract.capsule import Capsule
 from pykotor.extract.chitin import Chitin
@@ -381,14 +381,14 @@ class Installation:
         """
         resources: CaseInsensitiveDict[list[FileResource]] | list[FileResource] = CaseInsensitiveDict() if capsule_check else []
 
-        if not path.safe_exists():
+        if not path.exists():
             print(f"The '{path.name}' folder did not exist when loading the installation at '{self._path}', skipping...")
             return resources
 
         files_list: list[CaseAwarePath] = list(
-            path.safe_rglob("*")
+            path.rglob("*")
             if recurse
-            else path.safe_iterdir(),
+            else path.iterdir(),
         )
         for file in files_list:
             if capsule_check and capsule_check(file):
@@ -476,7 +476,7 @@ class Installation:
             target_dirs = [override_path / directory]
             self._override[directory] = []
         else:
-            target_dirs = [f for f in override_path.safe_rglob("*") if f.safe_isdir()]  # type: ignore[reportGeneralTypeIssues]
+            target_dirs = [f for f in override_path.rglob("*") if f.is_dir()]
             target_dirs.append(override_path)
             self._override = {}
 
@@ -509,7 +509,7 @@ class Installation:
     ):
         filepath: Path = Path.pathify(file)
         parent_folder = filepath.parent
-        rel_folderpath: str = str(filepath.parent.relative_to(self.override_path())) if parent_folder.name and filepath != self.override_path() else "."
+        rel_folderpath: str = str(filepath.parent.relative_to(self.override_path())) if parent_folder.name else "."
         if rel_folderpath not in self._override:
             self.load_override(rel_folderpath)
 
@@ -822,7 +822,7 @@ class Installation:
 
         def check(x) -> bool:
             file_path: CaseAwarePath = r_path.joinpath(x)
-            return file_path.safe_exists()
+            return bool(file_path.safe_exists())
 
         # Checks for each game
         game1_pc_checks: list[bool] = [
@@ -1448,7 +1448,7 @@ class Installation:
             SearchLocation.TEXTURES_TPC: lambda: check_list(self._texturepacks[TexturePackNames.TPC.value]),
             SearchLocation.TEXTURES_GUI: lambda: check_list(self._texturepacks[TexturePackNames.GUI.value]),
             SearchLocation.CHITIN: lambda: check_list(self._chitin),
-            SearchLocation.CUSTOM_MODULES: lambda: check_capsules(capsules),  # type: ignore[arg-type]
+            SearchLocation.CUSTOM_MODULES: lambda: check_capsules(capsules),
             SearchLocation.CUSTOM_FOLDERS: lambda: check_folders(folders),  # type: ignore[arg-type]
         }
 
@@ -1577,7 +1577,7 @@ class Installation:
             SearchLocation.MUSIC: lambda: check_list(self._streammusic),
             SearchLocation.SOUND: lambda: check_list(self._streamsounds),
             SearchLocation.VOICE: lambda: check_list(self._streamwaves),
-            SearchLocation.CUSTOM_MODULES: lambda: check_capsules(capsules),  # type: ignore[arg-type]
+            SearchLocation.CUSTOM_MODULES: lambda: check_capsules(capsules),
             SearchLocation.CUSTOM_FOLDERS: lambda: check_folders(folders),  # type: ignore[arg-type]
         }
 
@@ -1587,7 +1587,11 @@ class Installation:
 
         return sounds
 
-    def string(self, locstring: LocalizedString, default: str = "") -> str:
+    def string(
+        self,
+        locstring: LocalizedString,
+        default: str = "",
+    ) -> str:
         """Returns the string for the LocalizedString provided.
 
         This is a wrapper of the strings() method provided to make searching for a single string more convenient.
@@ -1646,7 +1650,12 @@ class Installation:
         return results
 
 
-    def module_name(self, module_filename: str, *, use_hardcoded: bool = True) -> str:
+    def module_name(
+        self,
+        module_filename: str,
+        *,
+        use_hardcoded: bool = True,
+    ) -> str:
         """Returns the name of the area for a module from the installations module list.
 
         The name is taken from the LocalizedString "Name" in the relevant module file's ARE resource.
@@ -1669,11 +1678,10 @@ class Installation:
 
         name: str = root
         for module in self.modules_list():
-            if root.lower() not in module.lower():
+            if root.casefold() not in module.casefold():
                 continue
 
             capsule = Capsule(self.module_path() / module)
-            tag: str = ""
 
             capsule_info: FileResource | None = capsule.info("module", ResourceType.IFO)
             if capsule_info is None:
@@ -1681,7 +1689,7 @@ class Installation:
 
             try:
                 ifo: GFF = read_gff(capsule_info.data())
-                tag = str(ifo.root.get_resref("Mod_Entry_Area"))
+                tag: str = str(ifo.root.get_resref("Mod_Entry_Area"))
                 are_tag_resource: bytes | None = capsule.resource(tag, ResourceType.ARE)
                 if are_tag_resource is None:
                     return tag
@@ -1698,7 +1706,7 @@ class Installation:
 
         return name
 
-    def module_names(self) -> dict[str, str]:
+    def module_names(self) -> CaseInsensitiveDict[str]:
         """Returns a dictionary mapping module filename to the name of the area.
 
         The name is taken from the LocalizedString "Name" in the relevant module file's ARE resource.
@@ -1707,10 +1715,15 @@ class Installation:
         -------
             A dictionary mapping module filename to in-game module area name.
         """
-        return {module: self.module_name(module) for module in self.modules_list()}
+        return CaseInsensitiveDict.from_dict({module: self.module_name(module) for module in self.modules_list()})
 
 
-    def module_id(self, module_filename: str, *, use_hardcoded: bool = True) -> str:
+    def module_id(
+        self,
+        module_filename: str,
+        *,
+        use_hardcoded: bool = True,
+    ) -> str:
         """Returns the ID of the area for a module from the installations module list.
 
         The ID is taken from the ResRef field "Mod_Entry_Area" in the relevant module file's IFO resource.
@@ -1733,7 +1746,7 @@ class Installation:
         mod_id: str = ""
 
         for module in self.modules_list():
-            if root.lower() not in module.lower():
+            if root.casefold() not in module.casefold():
                 continue
 
             with suppress(Exception):

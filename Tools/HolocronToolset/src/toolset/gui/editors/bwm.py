@@ -163,10 +163,10 @@ class BWMEditor(Editor):
 
         Processing Logic:
         ----------------
-        - Converts mouse position to world and render coordinates
-        - Pans/rotates camera if Ctrl + mouse buttons pressed
-        - Changes face material if left button pressed
-        - Displays coordinates, face index in status bar.
+            - Converts mouse position to world and render coordinates
+            - Pans/rotates camera if Ctrl + mouse buttons pressed
+            - Changes face material if left button pressed
+            - Displays coordinates, face index in status bar.
         """
         world: Vector3 = self.ui.renderArea.toWorldCoords(screen.x, screen.y)
         worldData: Vector2 = self.ui.renderArea.toWorldDelta(delta.x, delta.y)
@@ -205,9 +205,9 @@ class BWMEditor(Editor):
 
         Processing Logic:
         ----------------
-        - Check if a face is provided. Perhaps this can be called from an ambiguous/generalized function/event somewhere.
-        - Check if the current face material is different than the selected material
-        - Assign the selected material to the provided face.
+            - Check if a face is provided. Perhaps this can be called from an ambiguous/generalized function/event somewhere.
+            - Check if the current face material is different than the selected material
+            - Assign the selected material to the provided face.
         """
         newMaterial = self.ui.materialList.currentItem().data(QtCore.Qt.UserRole)  # type: ignore[attr-defined]
         if face and face.material != newMaterial:
@@ -225,6 +225,6 @@ class BWMEditor(Editor):
         """
         if self.ui.transList.currentItem():
             item: QListWidgetItem | None = self.ui.transList.currentItem()
-            self.ui.renderArea.setHighlightedTrans(item.data(_TRANS_FACE_ROLE))
+            self.ui.renderArea.setHighlightedTrans(item.data(_TRANS_FACE_ROLE))  # FIXME: no function 'setHighlightedTrans'
         else:
             self.ui.renderArea.setHighlightedTrans(None)

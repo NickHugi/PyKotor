@@ -13,11 +13,12 @@ if TYPE_CHECKING:
 
 class SetBindWidget(QWidget):
     def __init__(self, parent: QWidget):
-        """Initializes the widget for setting keybinds
+        """Initializes the widget for setting keybinds.
+
         Args:
+        ----
             parent (QWidget): Parent widget
-        Returns:
-            None
+
         Processing Logic:
         ----------------
             - Sets up initial keybind set as empty
@@ -83,7 +84,7 @@ class SetBindWidget(QWidget):
         return self.keybind, mousebind
 
     def updateKeybindText(self):
-        text = ""
+        text: str = ""
         for i, key in enumerate(sorted(self.keybind, reverse=True)):
             text += getStringFromKey(key)
             if i != len(self.keybind) - 1:

@@ -39,9 +39,10 @@ from PyQt5.QtWidgets import (
     QPushButton,
     QWidget,
 )
+from pykotor.resource.formats.bwm.bwm_data import BWM
 from toolset.__main__ import is_frozen
 from toolset.config import UPDATE_INFO_LINK
-from toolset.data.indoorkit import Kit, KitComponent, load_kits
+from toolset.data.indoorkit import Kit, KitComponent, KitComponentHook, load_kits
 from toolset.data.indoormap import IndoorMap, IndoorMapRoom
 from toolset.gui.dialogs.asyncloader import AsyncLoader
 from toolset.gui.dialogs.indoor_settings import IndoorMapSettings
@@ -296,7 +297,7 @@ class IndoorMapBuilder(QMainWindow):
             - Rebuild room connections.
         """
         self._refreshStatusBar()
-        worldDelta = self.ui.mapRenderer.toWorldDelta(delta.x, delta.y)
+        worldDelta: Vector2 = self.ui.mapRenderer.toWorldDelta(delta.x, delta.y)
 
         if QtCore.Qt.LeftButton in buttons and QtCore.Qt.Key_Control in keys:
             # LMB + CTRL
@@ -306,10 +307,10 @@ class IndoorMapBuilder(QMainWindow):
             self.ui.mapRenderer.rotateCamera(delta.x / 50)
         elif QtCore.Qt.LeftButton in buttons and QtCore.Qt.Key_Control not in keys:
             # LMB
-            rooms = self.ui.mapRenderer.selectedRooms()
-            if len(rooms) == 0:
+            rooms: list[IndoorMapRoom] = self.ui.mapRenderer.selectedRooms()
+            if not rooms:
                 return
-            active = rooms[-1]
+            active: IndoorMapRoom = rooms[-1]
             for room in rooms:
                 room.position.x += worldDelta.x
                 room.position.y += worldDelta.y
@@ -346,7 +347,7 @@ class IndoorMapBuilder(QMainWindow):
         """
         if QtCore.Qt.LeftButton in buttons and QtCore.Qt.Key_Control not in keys:
             if self.ui.mapRenderer._cursorComponent is not None:
-                component = self.selectedComponent()
+                component: KitComponent | None = self.selectedComponent()
                 if component is not None:
                     self._build_indoor_map_room_and_refresh(component)
                 if QtCore.Qt.Key_Shift not in keys:
@@ -354,8 +355,8 @@ class IndoorMapBuilder(QMainWindow):
                     self.ui.componentList.clearSelection()
                     self.ui.componentList.setCurrentItem(None)
             else:
-                clearExisting = QtCore.Qt.Key_Shift not in keys
-                room = self.ui.mapRenderer.roomUnderMouse()
+                clearExisting: bool = QtCore.Qt.Key_Shift not in keys
+                room: IndoorMapRoom | None = self.ui.mapRenderer.roomUnderMouse()
                 if room:
                     self.ui.mapRenderer.selectRoom(self.ui.mapRenderer.roomUnderMouse(), clearExisting)
                 else:
@@ -417,7 +418,7 @@ class IndoorMapBuilder(QMainWindow):
     def keyReleaseEvent(self, e: QKeyEvent):
         self.ui.mapRenderer.keyReleaseEvent(e)
 
-    def addConnectedToSelection(self, room):
+    def addConnectedToSelection(self, room: IndoorMapRoom):
         self.ui.mapRenderer.selectRoom(room, False)
         for hookIndex, _hook in enumerate(room.component.hooks):
             if room.hooks[hookIndex] is not None and room.hooks[hookIndex] not in self.ui.mapRenderer.selectedRooms():
@@ -504,7 +505,7 @@ class IndoorMapRenderer(QWidget):
     def clearSelectedRooms(self):
         self._selectedRooms.clear()
 
-    def toRenderCoords(self, x, y) -> Vector2:
+    def toRenderCoords(self, x: float, y: float) -> Vector2:
         """Returns a screen-space coordinates coverted from the specified world-space coordinates.
 
         The origin of the
@@ -519,15 +520,15 @@ class IndoorMapRenderer(QWidget):
         -------
             A vector representing a point on the widget.
         """
-        cos = math.cos(self._camRotation)
-        sin = math.sin(self._camRotation)
+        cos: float = math.cos(self._camRotation)
+        sin: float = math.sin(self._camRotation)
         x -= self._camPosition.x
         y -= self._camPosition.y
-        x2 = (x * cos - y * sin) * self._camScale + self.width() / 2
-        y2 = (x * sin + y * cos) * self._camScale + self.height() / 2
+        x2: float = (x * cos - y * sin) * self._camScale + self.width() / 2
+        y2: float = (x * sin + y * cos) * self._camScale + self.height() / 2
         return Vector2(x2, y2)
 
-    def toWorldCoords(self, x, y) -> Vector3:
+    def toWorldCoords(self, x: float, y: float) -> Vector3:
         """Returns the world-space coordinates converted from the specified screen-space coordinates.
 
         The Z component is calculated using the X/Y components and
@@ -543,15 +544,15 @@ class IndoorMapRenderer(QWidget):
         -------
             A vector representing a point in the world.
         """
-        cos = math.cos(-self._camRotation)
-        sin = math.sin(-self._camRotation)
+        cos: float = math.cos(-self._camRotation)
+        sin: float = math.sin(-self._camRotation)
         x = (x - self.width() / 2) / self._camScale
         y = (y - self.height() / 2) / self._camScale
-        x2 = x * cos - y * sin + self._camPosition.x
-        y2 = x * sin + y * cos + self._camPosition.y
+        x2: float = x * cos - y * sin + self._camPosition.x
+        y2: float = x * sin + y * cos + self._camPosition.y
         return Vector3(x2, y2, 0)
 
-    def toWorldDelta(self, x, y) -> Vector2:
+    def toWorldDelta(self, x: float, y: float) -> Vector2:
         """Returns the coordinates representing a change in world-space.
 
         This is converted from coordinates representing
@@ -574,7 +575,7 @@ class IndoorMapRenderer(QWidget):
         y2 = x * sin + y * cos
         return Vector2(x2, y2)
 
-    def getConnectedHooks(self, room1: IndoorMapRoom, room2: IndoorMapRoom) -> tuple:
+    def getConnectedHooks(self, room1: IndoorMapRoom, room2: IndoorMapRoom) -> tuple[KitComponentHook | None, KitComponentHook | None]:
         """Get connected hooks between two rooms.
 
         Args:
@@ -593,14 +594,14 @@ class IndoorMapRenderer(QWidget):
             - Check distance between each hook pair and return the closest pair if < 1 unit apart
             - Return a tuple of the connected hooks or None if no connection found.
         """
-        hook1 = None
-        hook2 = None
+        hook1: KitComponentHook | None = None
+        hook2: KitComponentHook | None = None
 
         for hook in room1.component.hooks:
-            hookPos = room1.hookPosition(hook)
+            hookPos: Vector3 = room1.hookPosition(hook)
             for otherHook in room2.component.hooks:
-                otherHookPos = room2.hookPosition(otherHook)
-                distance_2d = Vector2.from_vector3(hookPos).distance(Vector2.from_vector3(otherHookPos))
+                otherHookPos: Vector3 = room2.hookPosition(otherHook)
+                distance_2d: float = Vector2.from_vector3(hookPos).distance(Vector2.from_vector3(otherHookPos))
                 if distance_2d < 1:
                     hook1 = hook
                     hook2 = otherHook
@@ -726,12 +727,12 @@ class IndoorMapRenderer(QWidget):
             - Draws the image onto the painter using the transformed coordinates
             - Restores original painter transformation after drawing.
         """
-        original = painter.transform()
+        original: QTransform = painter.transform()
 
         trueWidth, trueHeight = image.width(), image.height()
         width, height = image.width() / 10, image.height() / 10
 
-        transform = self._apply_transformation()
+        transform: QTransform = self._apply_transformation()
         transform.translate(coords.x, coords.y)
         transform.rotate(rotation)
         transform.scale(-1.0 if flip_x else 1.0, -1.0 if flip_y else 1.0)
@@ -746,14 +747,14 @@ class IndoorMapRenderer(QWidget):
         painter.setTransform(original)
 
     def _drawRoomHighlight(self, painter: QPainter, room: IndoorMapRoom, alpha: int):
-        bwm = deepcopy(room.component.bwm)
+        bwm: BWM = deepcopy(room.component.bwm)
         bwm.flip(room.flip_x, room.flip_y)
         bwm.rotate(room.rotation)
         bwm.translate(*room.position)
         painter.setBrush(QColor(255, 255, 255, alpha))
         painter.setPen(QtCore.Qt.NoPen)
         for face in bwm.faces:
-            path = self._buildFace(face)
+            path: QPainterPath = self._buildFace(face)
             painter.drawPath(path)
 
     def _drawCircle(self, painter: QPainter, coords: Vector2):
@@ -898,7 +899,7 @@ class IndoorMapRenderer(QWidget):
         self._mousePrev = coords
         self.mouseMoved.emit(coords, coordsDelta, self._mouseDown, self._keysDown)
 
-        world = self.toWorldCoords(coords.x, coords.y)
+        world: Vector3 = self.toWorldCoords(coords.x, coords.y)
         self._cursorPoint = world
 
         if self._cursorComponent:
@@ -914,7 +915,7 @@ class IndoorMapRenderer(QWidget):
 
         self._underMouseRoom = None
         for room in self._map.rooms:
-            walkmesh = room.walkmesh()
+            walkmesh: BWM = room.walkmesh()
             if walkmesh.faceAt(world.x, world.y):
                 self._underMouseRoom = room
                 break
@@ -931,7 +932,7 @@ class IndoorMapRenderer(QWidget):
         self.mouseReleased.emit(coords, self._mouseDown, self._keysDown)
 
     def mouseDoubleClickEvent(self, e: QMouseEvent | None):
-        mouseDown = copy(self._mouseDown)
+        mouseDown: set[int] = copy(self._mouseDown)
         mouseDown.add(e.button())  # Called after release event so we need to manually include it
         self.mouseDoubleClicked.emit(Vector2(e.x(), e.y()), mouseDown, self._keysDown)
 
@@ -1045,7 +1046,7 @@ class KitDownloader(QDialog):
             owner, repo = PurePath(url_or_repo).parts[-2:]
             api_url = f"https://api.github.com/repos/{owner}/{repo}/contents/{PurePath(repo_path).as_posix()}"
 
-            file_info = self._get_update_data(api_url)
+            file_info: dict[str, str | bytes] = self._get_update_data(api_url)
             # Check if it's a file and get the download URL
             if file_info["type"] == "file":
                 download_url = file_info["download_url"]

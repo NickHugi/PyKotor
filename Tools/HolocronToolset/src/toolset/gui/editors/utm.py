@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from contextlib import suppress
 from typing import TYPE_CHECKING
 
 from pykotor.common.misc import ResRef
@@ -37,10 +36,10 @@ class UTMEditor(Editor):
             - Loads data from the provided installation if given
             - Calls new() to start with a blank merchant
         """
-        supported = [ResourceType.UTM]
+        supported: list[ResourceType] = [ResourceType.UTM]
         super().__init__(parent, "Merchant Editor", "merchant", supported, supported, installation)
 
-        self._utm = UTM()
+        self._utm: UTM = UTM()
 
         from toolset.uic.editors.utm import Ui_MainWindow
         self.ui = Ui_MainWindow()
@@ -66,9 +65,9 @@ class UTMEditor(Editor):
 
         Processing Logic:
         ----------------
-        - Sets the internal installation reference to the passed in installation
-        - Sets the installation on the UI name edit to the passed installation
-        - Allows editing of the installation details in the UI.
+            - Sets the internal installation reference to the passed in installation
+            - Sets the installation on the UI name edit to the passed installation
+            - Allows editing of the installation details in the UI.
         """
         self._installation = installation
         self.ui.nameEdit.setInstallation(installation)
@@ -76,7 +75,7 @@ class UTMEditor(Editor):
     def load(self, filepath: os.PathLike | str, resref: str, restype: ResourceType, data: bytes):
         super().load(filepath, resref, restype, data)
 
-        utm = read_utm(data)
+        utm: UTM = read_utm(data)
         self._loadUTM(utm)
 
     def _loadUTM(self, utm: UTM):
@@ -117,12 +116,12 @@ class UTMEditor(Editor):
 
         Processing Logic:
         ----------------
-        - Populate UTM object fields from UI elements
-        - Convert UTM to GFF format
-        - Write GFF to bytearray
-        - Return bytearray and empty bytes
+            - Populate UTM object fields from UI elements
+            - Convert UTM to GFF format
+            - Write GFF to bytearray
+            - Return bytearray and empty bytes
         """
-        utm = self._utm
+        utm: UTM = self._utm
 
         # Basic
         utm.name = self.ui.nameEdit.locstring()
@@ -154,13 +153,13 @@ class UTMEditor(Editor):
             self._loadLocstring(self.ui.nameEdit, dialog.locstring)
 
     def generateTag(self):
-        if self.ui.resrefEdit.text() == "":
+        if not self.ui.resrefEdit.text():
             self.generateResref()
         self.ui.tagEdit.setText(self.ui.resrefEdit.text())
 
     def generateResref(self):
-        if self._resref is not None and self._resref != "":
-            self.ui.resrefEdit.setText(self._resref)
+        if self._resname:
+            self.ui.resrefEdit.setText(self._resname)
         else:
             self.ui.resrefEdit.setText("m00xx_mer_000")
 
@@ -169,7 +168,7 @@ class UTMEditor(Editor):
 
         try:
             root: str = Module.get_root(self._filepath)
-            capsulesPaths: list[str] = [path for path in self._installation.module_names() if root in path and path != self._filepath]
+            capsulesPaths: list[str] = [path for path in self._installation.module_names() if root.casefold() in path.casefold() and path.casefold() != self._filepath]
             capsules.extend([Capsule(self._installation.module_path() / path) for path in capsulesPaths])
         except Exception as e:
             print(format_exception_with_variables(e, ___message___="This exception has been suppressed."))

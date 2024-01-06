@@ -8,6 +8,7 @@ from typing import TYPE_CHECKING
 from pykotor.common.geometry import SurfaceMaterial, Vector2, Vector3
 from pykotor.common.misc import Color
 from pykotor.common.module import Module
+from pykotor.extract.file import LocationResult
 from pykotor.extract.installation import SearchLocation
 from pykotor.resource.formats.bwm import read_bwm
 from pykotor.resource.formats.lyt import LYT, read_lyt
@@ -47,6 +48,7 @@ from toolset.gui.widgets.renderer.walkmesh import GeomPoint
 from toolset.gui.widgets.settings.git import GITSettings
 from toolset.utils.misc import getResourceFromFile
 from toolset.utils.window import openResourceEditor
+from utility.path import Path
 
 if TYPE_CHECKING:
     import os
@@ -85,12 +87,13 @@ class GITEditor(Editor):
     settingsUpdated = QtCore.pyqtSignal(object)
 
     def __init__(self, parent: QWidget | None, installation: HTInstallation | None = None):
-        """Initializes the GIT editor
+        """Initializes the GIT editor.
+
         Args:
+        ----
             parent: QWidget | None: The parent widget
             installation: HTInstallation | None: The installation
-        Returns:
-            None
+
         Initializes the editor UI and connects signals. Loads default settings. Initializes rendering area and mode. Clears any existing geometry.
         """
         supported = [ResourceType.GIT]
@@ -153,11 +156,12 @@ class GITEditor(Editor):
         self.ui.actionZoomOut.setShortcut(QKeySequence("-"))
 
     def _setupSignals(self):
-        """Connect signals to UI elements
+        """Connect signals to UI elements.
+
         Args:
+        ----
             self: The class instance
-        Returns:
-            None
+
         Processing Logic:
         ----------------
             - Connect mouse/key events to handlers
@@ -258,20 +262,21 @@ class GITEditor(Editor):
         self.ui.actionUseTriggerName.triggered.connect(self.updateVisibility)
 
     def load(self, filepath: os.PathLike | str, resref: str, restype: ResourceType, data: bytes):
-        """Load a resource from a file
+        """Load a resource from a file.
+
         Args:
+        ----
             filepath: {Path or filename to load from}
             resref: {Unique identifier for the resource}
             restype: {The type of the resource}
             data: {The raw data of the resource}.
 
-        Returns
-        -------
-            None
-        - Call super().load() to load base resource
-        - Define search order for layout files
-        - Load layout if found in search locations
-        - Parse git data and call _loadGIT()
+        Processing Logic:
+        ----------------
+            - Call super().load() to load base resource
+            - Define search order for layout files
+            - Load layout if found in search locations
+            - Parse git data and call _loadGIT()
         """
         super().load(filepath, resref, restype, data)
 
@@ -284,16 +289,19 @@ class GITEditor(Editor):
         self._loadGIT(git)
 
     def _loadGIT(self, git: GIT):
-        """Load a GIT instance
+        """Load a GIT instance.
+
         Args:
+        ----
             git: The GIT instance to load
-        Returns:
-            None: This function does not return anything
-        - Load the provided GIT instance into the application
-        - Set the GIT instance on the render area
-        - Center the camera on the render area
-        - Create an InstanceMode for interaction based on the loaded GIT and installation
-        - Update the visibility of UI elements.
+
+        Processing Logic:
+        ----------------
+            - Load the provided GIT instance into the application
+            - Set the GIT instance on the render area
+            - Center the camera on the render area
+            - Create an InstanceMode for interaction based on the loaded GIT and installation
+            - Update the visibility of UI elements.
         """
         self._git = git
         self.ui.renderArea.setGit(self._git)
@@ -308,15 +316,18 @@ class GITEditor(Editor):
         super().new()
 
     def loadLayout(self, layout: LYT):
-        """Load layout walkmeshes into the UI renderer
+        """Load layout walkmeshes into the UI renderer.
+
         Args:
+        ----
             layout (LYT): Layout to load walkmeshes from
-        Returns:
-            None: Does not return anything
-        - Iterate through each room in the layout
-        - Get the highest priority walkmesh asset for the room from the installation
-        - If a walkmesh asset is found, read it and add it to a list
-        - Set the list of walkmeshes on the UI renderer.
+
+        Processing Logic:
+        ----------------
+            - Iterate through each room in the layout
+            - Get the highest priority walkmesh asset for the room from the installation
+            - If a walkmesh asset is found, read it and add it to a list
+            - Set the list of walkmeshes on the UI renderer.
         """
         walkmeshes = []
         for room in layout.rooms:
@@ -339,12 +350,11 @@ class GITEditor(Editor):
         Args:
         ----
             checkbox (QCheckBox): Checkbox for instance type visibility
-        Returns:
-            None: No return value
+
         Processing Logic:
         ----------------
-        - Uncheck all other instance type checkboxes
-        - Check the checkbox that was double clicked
+            - Uncheck all other instance type checkboxes
+            - Check the checkbox that was double clicked
         """
         self.ui.viewCreatureCheck.setChecked(False)
         self.ui.viewPlaceableCheck.setChecked(False)
@@ -359,17 +369,24 @@ class GITEditor(Editor):
         checkbox.setChecked(True)
 
     def getInstanceExternalName(self, instance: GITInstance) -> str | None:
-        """Get external name of a GIT instance
+        """Get external name of a GIT instance.
+
         Args:
+        ----
             instance: The GIT instance object
+
         Returns:
+        -------
             name: The external name of the instance or None
-        - Extract identifier from instance
-        - Check if identifier is present in name buffer
-        - If not present, get resource from installation using identifier
-        - Extract name from resource data
-        - Save name in buffer
-        - Return name from buffer.
+
+        Processing Logic:
+        ----------------
+            - Extract identifier from instance
+            - Check if identifier is present in name buffer
+            - If not present, get resource from installation using identifier
+            - Extract name from resource data
+            - Save name in buffer
+            - Return name from buffer.
         """
         resid = instance.identifier()
         if resid not in self.nameBuffer:
@@ -378,17 +395,24 @@ class GITEditor(Editor):
         return self.nameBuffer[resid]
 
     def getInstanceExternalTag(self, instance: GITInstance) -> str | None:
-        """Gets external tag for the given instance
+        """Gets external tag for the given instance.
+
         Args:
+        ----
             instance: The instance to get tag for
+
         Returns:
+        -------
             tag: The external tag associated with the instance or None
-        - Get resource identifier from instance
-        - Check if tag is already cached for this identifier
-        - If not cached, call installation to get resource and extract tag from resource data
-        - Cache tag in buffer and return cached tag.
+
+        Processing Logic:
+        ----------------
+            - Get resource identifier from instance
+            - Check if tag is already cached for this identifier
+            - If not cached, call installation to get resource and extract tag from resource data
+            - Cache tag in buffer and return cached tag.
         """
-        resid = instance.identifier()
+        resid: ResourceIdentifier | None = instance.identifier()
         if resid not in self.tagBuffer:
             res = self._installation.resource(resid.resname, resid.restype)
             self.tagBuffer[resid] = None if res is None else extract_tag(res.data)
@@ -475,8 +499,7 @@ class GITEditor(Editor):
         Args:
         ----
             point: Point of context menu click
-        Returns:
-            None
+
         Processes context menu click:
             - Maps local point to global coordinate system
             - Gets current list item
@@ -661,30 +684,30 @@ class _InstanceMode(_Mode):
             - Checks if the path contains "override" or is in the module root
             - Opens the resource editor with the file if a path is found.
         """
-        selection = self._ui.renderArea.instanceSelection.all()
+        selection: list[GITInstance] = self._ui.renderArea.instanceSelection.all()
 
         if selection:
-            instance = selection[-1]
+            instance: GITInstance = selection[-1]
             resname, restype = instance.identifier()
             filepath = None
 
-            order = [SearchLocation.CHITIN, SearchLocation.MODULES, SearchLocation.OVERRIDE]
-            search = self._installation.location(resname, restype, order)
+            order: list[SearchLocation] = [SearchLocation.CHITIN, SearchLocation.MODULES, SearchLocation.OVERRIDE]
+            search: list[LocationResult] = self._installation.location(resname, restype, order)
 
             for result in search:
-                lowercase_path_parts = [f.lower() for f in result.filepath.parts]
+                lowercase_path_parts: list[str] = [f.lower() for f in result.filepath.parts]
                 if "override" in lowercase_path_parts:
-                    filepath = result.filepath
+                    filepath: Path = result.filepath
                 else:
                     module_root = Module.get_root(self._editor.filepath()).lower()
 
                     # Check if module root is in path parents or is a .rim
-                    lowercase_path_parents = [str(parent).lower() for parent in result.filepath.parents]
+                    lowercase_path_parents: list[str] = [str(parent).lower() for parent in result.filepath.parents]
                     if module_root in lowercase_path_parents and (filepath is None or is_rim_file(filepath)):
                         filepath = result.filepath
 
             if filepath:
-                data = getResourceFromFile(filepath, resname, restype)
+                data: bytes = getResourceFromFile(filepath, resname, restype)
                 openResourceEditor(filepath, resname, restype, data, self._installation, self._editor)
             else:
                 # TODO Make prompt for override/MOD
@@ -870,7 +893,7 @@ class _InstanceMode(_Mode):
             - Adds instance actions to selected instance if single selection
             - Adds deselect action for instances under mouse
         """
-        underMouse = self._ui.renderArea.instancesUnderMouse()
+        underMouse: list[GITInstance] = self._ui.renderArea.instancesUnderMouse()
 
         menu = QMenu(self._ui.listWidget)
 
@@ -912,7 +935,7 @@ class _InstanceMode(_Mode):
         self._ui.listWidget.clear()
 
         def instanceSort(inst: GITInstance):
-            textToSort = str(inst.camera_id) if isinstance(inst, GITCamera) else inst.identifier().resname.lower()
+            textToSort = str(inst.camera_id) if isinstance(inst, GITCamera) else inst.identifier().resname
             return textToSort.rjust(9, "0") if isinstance(inst, GITCamera) else inst.identifier().restype.extension + textToSort
 
         instances: list[GITInstance] = sorted(self._git.instances(), key=instanceSort)
@@ -940,8 +963,8 @@ class _InstanceMode(_Mode):
         self.buildList()
 
     def selectUnderneath(self):
-        underMouse = self._ui.renderArea.instancesUnderMouse()
-        selection = self._ui.renderArea.instanceSelection.all()
+        underMouse: list[GITInstance] = self._ui.renderArea.instancesUnderMouse()
+        selection: list[GITInstance] = self._ui.renderArea.instanceSelection.all()
 
         # Do not change the selection if the selected instance if its still underneath the mouse
         if selection and selection[0] in underMouse:
@@ -960,7 +983,7 @@ class _InstanceMode(_Mode):
 
     def duplicateSelected(self, position: Vector3):
         if self._ui.renderArea.instanceSelection.all():
-            instance = deepcopy(self._ui.renderArea.instanceSelection.all()[-1])
+            instance: GITInstance = deepcopy(self._ui.renderArea.instanceSelection.all()[-1])
             instance.position = position
             self._git.add(instance)
             self.buildList()
@@ -1013,11 +1036,11 @@ class _GeometryMode(_Mode):
         self._ui.renderArea.hideGeomPoints = False
 
     def insertPointAtMouse(self):
-        screen = self._ui.renderArea.mapFromGlobal(self._editor.cursor().pos())
-        world = self._ui.renderArea.toWorldCoords(screen.x(), screen.y())
+        screen: QPoint = self._ui.renderArea.mapFromGlobal(self._editor.cursor().pos())
+        world: Vector3 = self._ui.renderArea.toWorldCoords(screen.x(), screen.y())
 
-        instance = self._ui.renderArea.instanceSelection.get(0)
-        point = world - instance.position
+        instance: GITInstance = self._ui.renderArea.instanceSelection.get(0)
+        point: Vector3 = world - instance.position
         self._ui.renderArea.geomPointsUnderMouse().append(GeomPoint(instance, point))
 
     # region Interface Methods

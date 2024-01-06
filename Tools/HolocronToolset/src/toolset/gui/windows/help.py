@@ -4,7 +4,6 @@ import base64
 import json
 import xml.etree.ElementTree as ElemTree
 import zipfile
-from contextlib import suppress
 from typing import TYPE_CHECKING
 
 import markdown
@@ -192,7 +191,7 @@ class HelpWindow(QMainWindow):
         filepath = Path.pathify(filepath)
         try:
             text: str = decode_bytes_with_fallbacks(BinaryReader.load_file(filepath))
-            html: str = markdown.markdown(text, extensions=["tables", "fenced_code", "codehilite"]) if filepath.endswith(".md") else text
+            html: str = markdown.markdown(text, extensions=["tables", "fenced_code", "codehilite"]) if filepath.suffix.lower() == ".md" else text
             self.ui.textDisplay.setHtml(html)
         except OSError as e:
             QMessageBox(

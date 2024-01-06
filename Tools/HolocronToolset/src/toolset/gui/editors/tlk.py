@@ -179,11 +179,11 @@ class TLKEditor(Editor):
 
         Processing Logic:
         ----------------
-        - Iterate through each row in the model
-        - Extract the text and sound from each item
-        - Add an entry to the TLK object with the text and sound
-        - Write the TLK object to a byte array
-        - Return the byte array and an empty bytes object as a tuple.
+            - Iterate through each row in the model
+            - Extract the text and sound from each item
+            - Add an entry to the TLK object with the text and sound
+            - Write the TLK object to a byte array
+            - Return the byte array and an empty bytes object as a tuple.
         """
         tlk = TLK()
         tlk.language = self.language
@@ -327,11 +327,11 @@ class LoaderWorker(QThread):
 
     def load_data(self):
         """Load tlk data from file."""
-        tlk = read_tlk(self._fileData)
+        tlk: TLK = read_tlk(self._fileData)
         self.entryCount.emit(len(tlk))
         self.language.emit(tlk.language)
 
-        batch = []
+        batch: list[list[QStandardItem]] = []
         for _stringref, entry in tlk:
             batch.append([QStandardItem(entry.text), QStandardItem(str(entry.voiceover))])
             if len(batch) > 200:

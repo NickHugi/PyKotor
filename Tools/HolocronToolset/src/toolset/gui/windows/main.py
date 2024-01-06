@@ -55,6 +55,7 @@ from watchdog.observers import Observer
 if TYPE_CHECKING:
     import os
 
+    from pykotor.common.misc import CaseInsensitiveDict
     from pykotor.resource.formats.mdl.mdl_data import MDL
     from pykotor.resource.formats.tpc import TPC
     from pykotor.resource.type import SOURCE_TYPES
@@ -287,7 +288,7 @@ class ToolWindow(QMainWindow):
         """
         if len(resources) == 1:
             # Player saves resource with a specific name
-            default = f"{resources[0].resname()}.{resources[0].restype().extension}"
+            default: str = f"{resources[0].resname()}.{resources[0].restype().extension}"
             filepath: str = QFileDialog.getSaveFileName(self, "Save resource", default)[0]
 
             if filepath:
@@ -495,7 +496,7 @@ class ToolWindow(QMainWindow):
                 ).exec_()
 
     def _check_toolset_update(self, silent: bool):
-        req = requests.get(UPDATE_INFO_LINK, timeout=15)
+        req: requests.Response = requests.get(UPDATE_INFO_LINK, timeout=15)
         req.raise_for_status()
         file_data = req.json()
         base64_content = file_data["content"]
@@ -549,7 +550,7 @@ class ToolWindow(QMainWindow):
         if reload:
             self.active.load_modules()
 
-        areaNames: dict[str, str] = self.active.module_names()
+        areaNames: CaseInsensitiveDict[str] = self.active.module_names()
         sortedKeys: list[str] = sorted(areaNames, key=lambda key: areaNames.get(key).lower())
 
         modules: list[QStandardItem] = []
@@ -586,7 +587,7 @@ class ToolWindow(QMainWindow):
         if reload:
             self.active.load_textures()
 
-        sections = []
+        sections: list[QStandardItem] = []
         for texturepack in self.active.texturepacks_list():
             section = QStandardItem(texturepack)
             section.setData(texturepack, QtCore.Qt.UserRole)
@@ -597,8 +598,8 @@ class ToolWindow(QMainWindow):
     def changeModule(self, module: str):
         # Some users may choose to merge their RIM files under one option in the Modules tab; if this is the case we
         # need to account for this.
-        if self.settings.joinRIMsTogether and module.lower().endswith("_s.rim"):
-            module = f"{module.lower()[:-6]}.rim"
+        if self.settings.joinRIMsTogether and module.casefold().endswith("_s.rim"):
+            module = f"{module.casefold()[:-6]}.rim"
 
         self.ui.modulesWidget.changeSection(module)
 
@@ -608,13 +609,13 @@ class ToolWindow(QMainWindow):
             self.ui.coreWidget.setResourceSelection(resource)
         elif tree == self.ui.modulesWidget:
             self.ui.resourceTabs.setCurrentWidget(self.ui.modulesTab)
-            filename = resource.filepath().name
+            filename: str = resource.filepath().name
             self.changeModule(filename)
             self.ui.modulesWidget.setResourceSelection(resource)
         elif tree == self.ui.overrideWidget:
             self.ui.resourceTabs.setCurrentWidget(self.ui.overrideTab)
             self.ui.overrideWidget.setResourceSelection(resource)
-            subfolder = ""
+            subfolder: str = ""
             for folder_name in self.active.override_list():
                 folder_path: CaseAwarePath = self.active.override_path() / folder_name
                 if resource.filepath().is_relative_to(folder_path) and len(subfolder) < len(folder_path.name):
@@ -788,24 +789,27 @@ class ToolWindow(QMainWindow):
                     tpc: TPC | None = self.active.texture(texture)
                     if self.ui.tpcTxiCheckbox.isChecked():
                         self._extractTxi(tpc, folderpath.joinpath(f"{texture}.tpc"))
-                    file_format = ResourceType.TGA if self.ui.tpcDecompileCheckbox.isChecked() else ResourceType.TPC
-                    extension = "tga" if file_format == ResourceType.TGA else "tpc"
-                    write_tpc(tpc, folderpath.joinpath(f"{texture}.{extension}"), file_format)
+
+                    file_format: Literal[ResourceType.TGA, ResourceType.TPC] = ResourceType.TGA if self.ui.tpcDecompileCheckbox.isChecked() else ResourceType.TPC
+                    extension: Literal['.tga', '.tpc'] = ".tga" if file_format == ResourceType.TGA else ".tpc"
+                    write_tpc(tpc, folderpath.joinpath(f"{texture}{extension}"), file_format)
+
                 except Exception as e:  # noqa: PERF203
                     etype, msg = universal_simplify_exception(e)
                     loader.errors.append(type(e)(f"Could not find or extract tpc: '{texture}'\nReason ({etype}): {msg}"))
+
         except Exception as e:
             etype, msg = universal_simplify_exception(e)
             loader.errors.append(type(e)(f"Could not determine textures used in model: '{resource.resname()}'\nReason ({etype}): {msg}"))
 
     def openFromFile(self):
-        filepaths = QFileDialog.getOpenFileNames(self, "Select files to open")[:-1][0]
+        filepaths: list[str] = QFileDialog.getOpenFileNames(self, "Select files to open")[:-1][0]
 
         for filepath in filepaths:
             r_filepath = Path(filepath)
             try:
                 with r_filepath.open("rb") as file:
-                    data = file.read()
+                    data: bytes = file.read()
                 openResourceEditor(filepath, *ResourceIdentifier.from_path(r_filepath).validate(), data, self.active, self)
             except ValueError as e:
                 QMessageBox(QMessageBox.Critical, "Failed to open file", str(universal_simplify_exception(e))).exec_()

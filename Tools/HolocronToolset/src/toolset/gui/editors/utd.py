@@ -70,14 +70,13 @@ class UTDEditor(Editor):
         ----
             self: The class instance.
 
-        Returns:
-        -------
-            None
-        - Connect tagGenerateButton click signal to generateTag method
-        - Connect resrefGenerateButton click signal to generateResref method
-        - Connect conversationModifyButton click signal to editConversation method
-        - Connect appearanceSelect currentIndexChanged signal to update3dPreview method
-        - Connect actionShowPreview triggered signal to togglePreview method.
+        Processing Logic:
+        ----------------
+            - Connect tagGenerateButton click signal to generateTag method
+            - Connect resrefGenerateButton click signal to generateResref method
+            - Connect conversationModifyButton click signal to editConversation method
+            - Connect appearanceSelect currentIndexChanged signal to update3dPreview method
+            - Connect actionShowPreview triggered signal to togglePreview method.
         """
         self.ui.tagGenerateButton.clicked.connect(self.generateTag)
         self.ui.resrefGenerateButton.clicked.connect(self.generateResref)
@@ -93,13 +92,12 @@ class UTDEditor(Editor):
         ----
             installation: {HTInstallation}: The installation to set up for editing.
 
-        Returns:
-        -------
-            None
-        - Sets the internal installation reference and updates UI elements
-        - Loads required 2da files if not already loaded
-        - Populates appearance and faction dropdowns from loaded 2da files
-        - Shows/hides TSL-specific UI elements based on installation type.
+        Processing Logic:
+        ----------------
+            - Sets the internal installation reference and updates UI elements
+            - Loads required 2da files if not already loaded
+            - Populates appearance and faction dropdowns from loaded 2da files
+            - Shows/hides TSL-specific UI elements based on installation type.
         """
         self._installation = installation
         self.ui.nameEdit.setInstallation(installation)
@@ -270,8 +268,8 @@ class UTDEditor(Editor):
         self.ui.tagEdit.setText(self.ui.resrefEdit.text())
 
     def generateResref(self):
-        if self._resref is not None and self._resref != "":
-            self.ui.resrefEdit.setText(self._resref)
+        if self._resname is not None and self._resname != "":
+            self.ui.resrefEdit.setText(self._resname)
         else:
             self.ui.resrefEdit.setText("m00xx_dor_000")
 

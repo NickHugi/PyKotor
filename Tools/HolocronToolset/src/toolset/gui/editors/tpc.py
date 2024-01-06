@@ -53,23 +53,24 @@ class TPCEditor(Editor):
         ...
 
     def load(self, filepath: os.PathLike | str, resref: str, restype: ResourceType, data: bytes):
-        """Load a resource into the editor
+        """Load a resource into the editor.
+
         Args:
+        ----
             filepath: The path to the resource file
             resref: The resource reference
             restype: The resource type
             data: The raw resource data
-        Returns:
-            None
+
         Load resource:
-        - Read TPC data directly if type is TPC or TGA
-        - Otherwise open as PIL Image, convert to RGBA, flip vertically
-        - Extract TPC data from PIL image
-        - Convert TPC to RGB format
-        - Create QImage from RGB data
-        - Create QPixmap from QImage with y-axis flip
-        - Set pixmap on texture image label
-        - Set TXI data on editor.
+            - Read TPC data directly if type is TPC or TGA
+            - Otherwise open as PIL Image, convert to RGBA, flip vertically
+            - Extract TPC data from PIL image
+            - Convert TPC to RGB format
+            - Create QImage from RGB data
+            - Create QPixmap from QImage with y-axis flip
+            - Set pixmap on texture image label
+            - Set TXI data on editor.
         """
         super().load(filepath, resref, restype, data)
 
@@ -96,8 +97,7 @@ class TPCEditor(Editor):
         Args:
         ----
             self: The class instance
-        Returns:
-            None: No return value
+
         Processing Logic:
         ----------------
             1. Call super().new() to initialize parent class
@@ -134,16 +134,23 @@ class TPCEditor(Editor):
 
     # TODO Rename this here and in `build`
     def extract_tpc_jpeg_bytes(self):
-        """Extracts image from TPC texture and returns JPEG bytes
+        """Extracts image from TPC texture and returns JPEG bytes.
+
         Args:
+        ----
             self: The class instance
+
         Returns:
+        -------
             bytes: JPEG image bytes
-        - Converts TPC texture to RGB pixel data
-        - Creates PIL Image from pixel data
-        - Flips the image vertically
-        - Saves image to BytesIO as JPEG with 80% quality
-        - Returns JPEG bytes from BytesIO.
+
+        Processing Logic:
+        ----------------
+            - Converts TPC texture to RGB pixel data
+            - Creates PIL Image from pixel data
+            - Flips the image vertically
+            - Saves image to BytesIO as JPEG with 80% quality
+            - Returns JPEG bytes from BytesIO
         """
         width, height, pixeldata = self._tpc.convert(TPCTextureFormat.RGB, 0)
         image = Image.frombuffer("RGB", (width, height), bytes(pixeldata))
@@ -155,16 +162,23 @@ class TPCEditor(Editor):
 
     # TODO Rename this here and in `build`
     def extract_png_bmp_bytes(self):
-        """Extracts texture data from a TPC texture
+        """Extracts texture data from a TPC texture.
+
         Args:
+        ----
             self: The TPC texture object
+
         Returns:
+        -------
             bytes: Texture image data as bytes
-        - Converts TPC texture to RGBA format
-        - Creates PIL Image from texture pixel data
-        - Flips the image vertically
-        - Saves image to BytesIO stream as PNG or BMP
-        - Returns bytes of image data.
+
+        Processing Logic:
+        ----------------
+            - Converts TPC texture to RGBA format
+            - Creates PIL Image from texture pixel data
+            - Flips the image vertically
+            - Saves image to BytesIO stream as PNG or BMP
+            - Returns bytes of image data.
         """
         width, height, pixeldata = self._tpc.convert(TPCTextureFormat.RGBA, 0)
         image = Image.frombuffer("RGBA", (width, height), pixeldata)

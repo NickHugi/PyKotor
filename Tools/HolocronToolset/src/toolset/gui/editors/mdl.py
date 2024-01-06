@@ -81,7 +81,7 @@ class MDLEditor(Editor):
 
         if restype == ResourceType.MDL:
             mdl_data = data
-            if c_filepath.endswith(".mdl"):
+            if c_filepath.suffix.lower() == ".mdl":
                 mdx_data = BinaryReader.load_file(c_filepath.with_suffix(".mdx"))
             elif is_any_erf_type_file(c_filepath.name):
                 erf = read_erf(filepath)

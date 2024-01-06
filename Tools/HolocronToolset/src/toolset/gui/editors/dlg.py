@@ -4,12 +4,6 @@ from copy import copy, deepcopy
 from typing import TYPE_CHECKING
 
 import pyperclip
-from PyQt5 import QtCore
-from PyQt5.QtCore import QModelIndex, QBuffer, QIODevice, QItemSelection, QItemSelectionModel, QPoint
-from PyQt5.QtGui import QBrush, QColor, QKeyEvent, QMouseEvent, QStandardItem, QStandardItemModel
-from PyQt5.QtMultimedia import QMediaContent, QMediaPlayer
-from PyQt5.QtWidgets import QListWidgetItem, QMenu, QMessageBox, QPlainTextEdit, QShortcut, QWidget
-
 from pykotor.common.misc import ResRef
 from pykotor.extract.installation import SearchLocation
 from pykotor.resource.generics.dlg import (
@@ -26,12 +20,18 @@ from pykotor.resource.generics.dlg import (
     write_dlg,
 )
 from pykotor.resource.type import ResourceType
+from PyQt5 import QtCore
+from PyQt5.QtCore import QBuffer, QIODevice, QItemSelection, QItemSelectionModel, QModelIndex, QPoint
+from PyQt5.QtGui import QBrush, QColor, QKeyEvent, QMouseEvent, QStandardItem, QStandardItemModel
+from PyQt5.QtMultimedia import QMediaContent, QMediaPlayer
+from PyQt5.QtWidgets import QListWidgetItem, QMenu, QMessageBox, QPlainTextEdit, QShortcut, QWidget
 from toolset.data.installation import HTInstallation
 from toolset.gui.dialogs.edit.dialog_animation import EditAnimationDialog
 from toolset.gui.dialogs.edit.dialog_model import CutsceneModelDialog
 from toolset.gui.dialogs.edit.locstring import LocalizedStringDialog
 from toolset.gui.editor import Editor
 from toolset.utils.misc import QtKey
+from utility.error_handling import assert_with_variable_trace
 
 if TYPE_CHECKING:
     import os
@@ -266,7 +266,9 @@ class DLGEditor(Editor):
             - Refreshes the item
             - Loops through child links and loads recursively if not seen.
         """
-        node: DLGNode = link.node
+        node: DLGNode | None = link.node
+        assert_with_variable_trace(node is not None, "link.node cannot be None.")
+        assert node is not None
         item.setData(link, _LINK_ROLE)
 
         alreadyListed: bool = link in seenLinks or node in seenNodes
@@ -446,7 +448,8 @@ class DLGEditor(Editor):
             item: QStandardItem | None = self.model.itemFromIndex(indexes[0])
             link: DLGLink = item.data(_LINK_ROLE)
             isCopy: bool = item.data(_COPY_ROLE)
-            node: DLGNode = link.node
+            node: DLGNode | None = link.node
+            assert_with_variable_trace(node is not None, "node cannot be None")
             dialog = LocalizedStringDialog(self, self._installation, node.text)
             if dialog.exec_() and not isCopy:
                 node.text = dialog.locstring
@@ -467,7 +470,7 @@ class DLGEditor(Editor):
             textbox.setPlainText(text if text != "-1" else "")
             textbox.setStyleSheet("QPlainTextEdit {background-color: white;}")
         else:
-            text = self._installation.talktable().string(locstring.stringref)
+            text: str = self._installation.talktable().string(locstring.stringref)
             textbox.setPlainText(text)
             textbox.setStyleSheet("QPlainTextEdit {background-color: #fffded;}")
 

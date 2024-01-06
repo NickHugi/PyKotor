@@ -9,11 +9,12 @@ class GITWidget(SettingsWidget):
     editedSignal = QtCore.pyqtSignal()
 
     def __init__(self, parent: QWidget):
-        """Initializes the GIT settings widget
+        """Initializes the GIT settings widget.
+
         Args:
+        ----
             parent (QWidget): The parent widget
-        Returns:
-            None
+
         Processing Logic:
         ----------------
             - Calls the parent __init__ method

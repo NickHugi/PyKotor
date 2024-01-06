@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+from typing import TYPE_CHECKING
 
 from pykotor.common.misc import Game
 from pykotor.common.stream import BinaryReader, BinaryWriter
@@ -11,10 +12,12 @@ from toolset.gui.widgets.settings.installations import GlobalSettings, NoConfigu
 from utility.error_handling import format_exception_with_variables
 from utility.path import Path
 
+if TYPE_CHECKING:
+    from typing_extensions import Literal
+
 
 def decompileScript(compiled: bytes, tsl: bool) -> str:
-    """Returns the NSS bytes of a decompiled script. If no NCS Decompiler is selected, prompts the user to find the
-    executable.
+    """Returns the NSS bytes of a decompiled script. If no NCS Decompiler is selected, prompts the user to find the executable.
 
     Current implementation copies the NCS to a temporary directory (configured in settings), decompiles it there,
     then returns the bytes of the new file. If no temporary directory has been configured, the user is prompted to
@@ -64,7 +67,7 @@ def decompileScript(compiled: bytes, tsl: bool) -> str:
         game = Game.K2 if tsl else Game.K1
         ExternalNCSCompiler(ncs_decompiler_path).decompile_script(tempCompiledPath, tempDecompiledPath, game)
         return BinaryReader.load_file(tempDecompiledPath).decode(encoding="windows-1252")
-    except Exception:
+    except Exception as e:
         #global_settings.ncsDecompilerPath = None
         print(format_exception_with_variables(e))
 
@@ -104,17 +107,17 @@ def compileScript(source: str, tsl: bool) -> bytes:
 
     if os.name == "nt":
         returnValue: int = _prompt_user_for_compiler_option()
-    if os.name == "posix" or returnValue == QMessageBox.No:
+    if returnValue == QMessageBox.No:
         return _compile_windows(global_settings, extract_path, source, tsl)
     if os.name == "posix" or returnValue == QMessageBox.Yes:
         return bytes_ncs(compile_nss(source, Game.K2 if tsl else Game.K1))
 
-    raise ValueError("Could not get the NCS bytes.")
+    raise ValueError("Could not get the NCS bytes.")  # noqa: TRY003, EM101
 
 def _compile_windows(global_settings, extract_path, source, tsl):
     nss_compiler_path = Path(global_settings.nssCompilerPath)
     if not nss_compiler_path.exists():
-        lookup_paths = QFileDialog.getOpenFileName(None, "Select the NCS Compiler executable")
+        lookup_paths: tuple[str, str] = QFileDialog.getOpenFileName(None, "Select the NCS Compiler executable")
         nss_compiler_path = Path(lookup_paths[0] if isinstance(lookup_paths, tuple) else lookup_paths)
         if not nss_compiler_path.exists():
             msg = "NCS Compiler has not been set or is invalid."
@@ -127,7 +130,7 @@ def _compile_windows(global_settings, extract_path, source, tsl):
     tempCompiledPath = extract_path / "tempscript.ncs"
     BinaryWriter.dump(tempSourcePath, source.encode(encoding="windows-1252"))
 
-    gameIndex = Game.K2 if tsl else Game.K1
+    gameIndex: Literal[Game.K2, Game.K1] = Game.K2 if tsl else Game.K1
     ExternalNCSCompiler(global_settings.nssCompilerPath).compile_script(tempSourcePath, tempCompiledPath, gameIndex)
 
     # TODO(Cortisol): The version of nwnnsscomp bundled with the windows toolset uses registry key lookups.

@@ -27,8 +27,8 @@ class AudioPlayer(QMainWindow):
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
 
-        self.player = QMediaPlayer(self)
-        self.buffer = QBuffer(self)
+        self.player: QMediaPlayer = QMediaPlayer(self)
+        self.buffer: QBuffer = QBuffer(self)
 
         self.ui.actionOpen.triggered.connect(self.open)
         self.ui.stopButton.clicked.connect(self.player.stop)
@@ -50,19 +50,19 @@ class AudioPlayer(QMainWindow):
             QtCore.QTimer.singleShot(0, self.player.play)
 
     def open(self):
-        filepath = QFileDialog.getOpenFileName(self, "Select an audio file")[0]
+        filepath: str = QFileDialog.getOpenFileName(self, "Select an audio file")[0]
         if filepath != "":
             resname, restype = ResourceIdentifier.from_path(filepath).validate()
-            data = BinaryReader.load_file(filepath)
+            data: bytes = BinaryReader.load_file(filepath)
             self.load(filepath, resname, restype, data)
 
     def durationChanged(self, duration: int):
-        totalTime = time.strftime("%H:%M:%S", time.gmtime(duration // 1000))
+        totalTime: str = time.strftime("%H:%M:%S", time.gmtime(duration // 1000))
         self.ui.totalTimeLabel.setText(totalTime)
         self.ui.timeSlider.setMaximum(duration)
 
     def positionChanged(self, position: int):
-        currentTime = time.strftime("%H:%M:%S", time.gmtime(position // 1000))
+        currentTime: str = time.strftime("%H:%M:%S", time.gmtime(position // 1000))
         self.ui.currentTimeLabel.setText(currentTime)
 
         # sometimes QMediaPlayer does not accurately calculate the duration of the audio
@@ -72,7 +72,7 @@ class AudioPlayer(QMainWindow):
         self.ui.timeSlider.setValue(position)
 
     def changePosition(self):
-        position = self.ui.timeSlider.value()
+        position: int = self.ui.timeSlider.value()
         self.player.setPosition(position)
 
     def closeEvent(self, e: QCloseEvent | None):

@@ -20,8 +20,7 @@ class ComboBox2DA(QComboBox):
         self._sortAlphabetically = False
 
     def addItem(self, text: str, row: int | None = None):
-        """Adds the 2DA row into the combobox. If the row index is not specified, then the value will be set to the number
-        of items in the combobox.
+        """Adds the 2DA row into the combobox. If the row index is not specified, then the value will be set to the number of items in the combobox.
 
         Args:
         ----
