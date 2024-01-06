@@ -54,7 +54,7 @@ def universal_simplify_exception(e: BaseException) -> tuple[str, str]:
         if msg:
             return error_name, f"{e}: {msg}"
 
-    return error_name, str(e) + getattr(e, "args", "")
+    return error_name, str(e) + str(getattr(e, "args", ""))
 
 
 def format_exception_with_variables(

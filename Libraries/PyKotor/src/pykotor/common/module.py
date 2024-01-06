@@ -1123,11 +1123,7 @@ class ModuleResource(Generic[T]):
 
 
     def __eq__(self, other):
-        if isinstance(other, ResourceIdentifier):
-            return self._identifier == other
-        if isinstance(other, ModuleResource):
-            return self._identifier == other._identifier
-        return NotImplemented
+        return hash(self) == hash(other)
 
 
     def __hash__(self):

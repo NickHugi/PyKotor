@@ -20,15 +20,15 @@ class ERFType(Enum):
     MOD = "MOD "
     SAV = "SAV "
 
-    @staticmethod
-    def from_extension(filepath: os.PathLike | str) -> ERFType:
-        if is_erf_file(filepath):
-            return ERFType.ERF
-        if is_mod_file(filepath):
-            return ERFType.MOD
-        if is_sav_file(filepath):
-            return ERFType.SAV
-        msg = f"Invalid ERF extension in filepath '{filepath}'."
+    @classmethod
+    def from_extension(cls, ext_or_filepath: os.PathLike | str) -> ERFType:
+        if is_erf_file(ext_or_filepath):
+            return cls.ERF
+        if is_mod_file(ext_or_filepath):
+            return cls.MOD
+        if is_sav_file(ext_or_filepath):
+            return cls.SAV
+        msg = f"Invalid ERF extension in filepath '{ext_or_filepath}'."
         raise ValueError(msg)
 
 

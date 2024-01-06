@@ -407,7 +407,7 @@ class GFFEditor(Editor):
                 self.ui.floatSpin.setValue(item.data(_VALUE_NODE_ROLE))
             elif item.data(_TYPE_NODE_ROLE) == GFFFieldType.ResRef:
                 self.ui.pages.setCurrentWidget(self.ui.linePage)
-                self.ui.lineEdit.setText(item.data(_VALUE_NODE_ROLE).get())
+                self.ui.lineEdit.setText(str(item.data(_VALUE_NODE_ROLE)))
             elif item.data(_TYPE_NODE_ROLE) == GFFFieldType.String:
                 self.ui.pages.setCurrentWidget(self.ui.textPage)
                 self.ui.textEdit.setPlainText(item.data(_VALUE_NODE_ROLE))

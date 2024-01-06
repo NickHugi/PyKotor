@@ -6,12 +6,14 @@ import platform
 import sys
 from contextlib import suppress
 from enum import Enum
-from typing import TYPE_CHECKING, TypeVar
+from typing import TYPE_CHECKING, SupportsFloat, SupportsInt, TypeVar
 
 from utility.path import Path
 
 if TYPE_CHECKING:
     from xml.etree.ElementTree import Element
+
+    from typing_extensions import Buffer, SupportsIndex
 
 
 class ProcessorArchitecture(Enum):
@@ -33,6 +35,7 @@ class ProcessorArchitecture(Enum):
         return cls.BIT_64 if sys.maxsize > 2**32 else cls.BIT_32
 
     def get_machine_repr(self):
+        # sourcery skip: assign-if-exp, reintroduce-else
         if self == self.BIT_32:
             return "x86"
         if self == self.BIT_64:
@@ -40,6 +43,7 @@ class ProcessorArchitecture(Enum):
         return None
 
     def get_int(self):
+        # sourcery skip: assign-if-exp, reintroduce-else
         if self == self.BIT_32:
             return 32
         if self == self.BIT_64:
@@ -47,6 +51,7 @@ class ProcessorArchitecture(Enum):
         return None
 
     def get_dashed_bitness(self):
+        # sourcery skip: assign-if-exp, reintroduce-else
         if self == self.BIT_32:
             return "32-bit"
         if self == self.BIT_64:
@@ -223,32 +228,38 @@ def indent(elem: Element, level=0):
         elem.tail = i
 
 
-def is_int(string: str) -> bool:
+def is_int(val: str | int | Buffer | SupportsInt | SupportsIndex | 'SupportsTrunc') -> bool:
     """Can be cast to an int without raising an error.
 
     Args:
     ----
-        string (str):
+        val (ConvertableToInt): The value to try to convert
 
+    Returns:
+    -------
+        True if val can be converted else False
     """
     try:
-        _ = int(string)
+        _ = int(val)
     except ValueError:
         return False
     else:
         return True
 
 
-def is_float(string: str) -> bool:
+def is_float(val: str | float | Buffer | SupportsFloat | SupportsIndex) -> bool:
     """Can be cast to a float without raising an error.
 
     Args:
     ----
-        string (str):
+        val (ConvertableToFloat): The value to try to convert
 
+    Returns:
+    -------
+        True if val can be converted else False
     """
     try:
-        _ = float(string)
+        _ = float(val)
     except ValueError:
         return False
     else:
