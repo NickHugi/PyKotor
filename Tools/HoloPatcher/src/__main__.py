@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import base64
+import chardet
 import contextlib
 import ctypes
 import json
@@ -477,6 +478,11 @@ class App(tk.Tk):
         )
         return namespace_option.description if namespace_option else ""
 
+    def detect_encoding(self, file_path : CaseAwarePath):
+        with file_path.open("rb") as f:
+            raw_data = f.read(1024) 
+        return chardet.detect(raw_data)['encoding']
+
     def on_namespace_option_chosen(self, event: tk.Event, config_reader: ConfigReader | None = None) -> None:
         """Handles the namespace option being chosen from the combobox.
 
@@ -504,8 +510,15 @@ class App(tk.Tk):
             if not info_rtf.exists():
                 messagebox.showwarning("No info.rtf", "Could not load the rtf for this mod, file not found on disk.")
                 return
-            with info_rtf.open("r") as rtf:
+            
+            file_encoding = self.detect_encoding(info_rtf)
+            # Set fallback encoding if encoding could not be detected
+            if file_encoding == None:
+                file_encoding = "utf-8"
+
+            with info_rtf.open("r", encoding=file_encoding) as rtf:
                 self.set_stripped_rtf_text(rtf)
+
         except Exception as e:  # noqa: BLE001
             error_name, msg = universal_simplify_exception(e)
             messagebox.showerror(
