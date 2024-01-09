@@ -1,3 +1,7 @@
+param (
+  [switch]$noprompt
+)
+
 $repoRootPath = Split-Path -Parent $MyInvocation.MyCommand.Definition
 function Get-OS {
     if ($IsWindows) {
@@ -17,7 +21,10 @@ function Get-OS {
     } else {
         Write-Error "Unknown Operating System"
         Write-Host "Press any key to exit..."
-        $null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
+        if (-not $noprompt) {
+            $null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
+        }
+        exit
     }
 }
 
@@ -93,12 +100,12 @@ function Set-EnvironmentVariablesFromEnvFile {
 
 function Python-Install-Windows {
     Param (
-        [string]$pythonVersion
+        [string]$global:pythonVersion
     )
     try {
         # Download and install Python
-        $pythonInstallerUrl = "https://www.python.org/ftp/python/$pythonVersion/python-$pythonVersion.exe"
-        $installerPath = (Resolve-Path -LiteralPath "$env:TEMP/python-$pythonVersion.exe").Path
+        $pythonInstallerUrl = "https://www.python.org/ftp/python/$global:pythonVersion/python-$global:pythonVersion.exe"
+        $installerPath = (Resolve-Path -LiteralPath "$env:TEMP/python-$global:pythonVersion.exe").Path
         Invoke-WebRequest -Uri $pythonInstallerUrl -OutFile $installerPath
         Start-Process -FilePath $installerPath -Args '/quiet InstallAllUsers=1 PrependPath=1' -Wait -NoNewWindow
     
@@ -115,11 +122,11 @@ function Get-Python-Version {
     Param (
         [string]$pythonPath
     )
-    $pythonVersionOutput = & $pythonPath --version 2>&1
-    $pythonVersionString = $pythonVersionOutput -replace '^Python\s+'
-    $numericVersionString = $pythonVersionString -replace '(\d+\.\d+\.\d+).*', '$1'
-    $pythonVersion = [Version]$numericVersionString
-    return $pythonVersion
+    $global:pythonVersionOutput = & $pythonPath --version 2>&1
+    $global:pythonVersionString = $global:pythonVersionOutput -replace '^Python\s+'
+    $numericVersionString = $global:pythonVersionString -replace '(\d+\.\d+\.\d+).*', '$1'
+    $global:pythonVersion = [Version]$numericVersionString
+    return $global:pythonVersion
 }
 
 $minVersion = [Version]"3.8.0"
@@ -133,16 +140,18 @@ function Initialize-Python {
     )
 
     # Check Python version
-    $pythonVersion = Get-Python-Version $pythonPath
+    $global:pythonVersion = Get-Python-Version $pythonPath
 
-    if ($pythonVersion -ge $minVersion -and $pythonVersion -le $lessThanVersion) {
-        Write-Host "Python $pythonVersion install detected."
-    } elseif ($pythonVersion -ge $minVersion) {
-        Write-Warning "The Python version on PATH ($pythonVersion) is not recommended, please use python 3.8. Continuing anyway..."
+    if ($global:pythonVersion -ge $minVersion -and $global:pythonVersion -le $lessThanVersion) {
+        Write-Host "Python $global:pythonVersion install detected."
+    } elseif ($global:pythonVersion -ge $minVersion) {
+        Write-Warning "The Python version on PATH ($global:pythonVersion) is not recommended, please use python 3.8. Continuing anyway..."
     } else {
-        Write-Error "Your installed Python version '$pythonVersion' is not supported. Please install a python version between '$minVersion' and '$maxVersion'"
+        Write-Error "Your installed Python version '$global:pythonVersion' is not supported. Please install a python version between '$minVersion' and '$maxVersion'"
         Write-Host "Press any key to exit..."
-        $null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
+        if (-not $noprompt) {
+            $null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
+        }
         exit
     }
 }
@@ -173,11 +182,11 @@ function Get-PythonPaths {
     return @{ Windows = $windowsPaths; Linux = $linuxAndMacPaths; Darwin = $linuxAndMacPaths }
 }
 
-function Get-Python-Path-From-Command {
+function Get-Path-From-Command {
     Param(
         [string]$command
     )
-    $pythonCommand = Get-Command -Name python3 -ErrorAction SilentlyContinue
+    $pythonCommand = Get-Command -Name $command -ErrorAction SilentlyContinue
 
     if ($null -ne $pythonCommand) {
         $pythonPath = $pythonCommand.Source
@@ -188,17 +197,20 @@ function Get-Python-Path-From-Command {
     }
 }
 
-$pythonInstallPath = ""
-$pythonVersion = ""
+$global:pythonInstallPath = ""
+$global:pythonVersion = ""
 
 function Find-Python {
+    Param (
+        [switch]$intrnal
+    )
     # Check for Python 3 command and version
     $python3Command = Get-Command -Name python3 -ErrorAction SilentlyContinue
     if ($null -ne $python3Command) {
         $global:pythonVersion = Get-Python-Version "python3"
-        if ($pythonVersion -ge $minVersion -and $pythonVersion -lt $maxVersion) {
+        if ($global:pythonVersion -ge $minVersion -and $global:pythonVersion -lt $maxVersion) {
             Write-Host "Found python3 command"
-            $global:pythonInstallPath = Get-Python-Path-From-Command "python3"
+            $global:pythonInstallPath = Get-Path-From-Command "python3"
         } else {
             $global:pythonInstallPath = ""
             $global:pythonVersion = ""
@@ -208,16 +220,16 @@ function Find-Python {
     $pythonCommand = Get-Command -Name python -ErrorAction SilentlyContinue
     if ($null -ne $pythonCommand) {
         $global:pythonVersion = Get-Python-Version "python"
-        if ($pythonVersion -ge $minVersion -and $pythonVersion -lt $maxVersion) {
-            Write-Host "Found python command"
-            $global:pythonInstallPath = Get-Python-Path-From-Command "python"
+        if ($global:pythonVersion -ge $minVersion -and $global:pythonVersion -lt $maxVersion) {
+            Write-Host "Found python command with version $global:pythonVersion"
+            $global:pythonInstallPath = Get-Path-From-Command "python"
         } else {
             $global:pythonInstallPath = ""
             $global:pythonVersion = ""
         }
     }
 
-    if ( $pythonInstallPath -eq "" -or ($pythonVersion -ne "" -and $pythonVersion -ge $recommendedVersion )) {
+    if ( $global:pythonInstallPath -eq "" -or ($global:pythonVersion -ne "" -and $global:pythonVersion -ge $recommendedVersion )) {
 
         foreach ($version in $validPythonVersions) {
             $paths = (Get-PythonPaths $version)[(Get-OS)]
@@ -229,7 +241,8 @@ function Find-Python {
                         $thisVersion = Get-Python-Version $resolvedPath
                         if ($thisVersion -ge $minVersion -and $thisVersion -le $maxVersion) {
                             # Valid path or better recommended path found.
-                            if ($pythonInstallPath -eq "" -or $thisVersion -le $recommendedVersion) {
+                            if ($global:pythonInstallPath -eq "" -or $thisVersion -le $recommendedVersion) {
+                                Write-Host "Found python install path with version $thisVersion at path '$resolvedPath'"
                                 $global:pythonInstallPath = $resolvedPath
                                 $global:pythonVersion = $thisVersion
                             }
@@ -242,22 +255,29 @@ function Find-Python {
         }
     }
 
-    if ( $pythonInstallPath -eq "") {
+    if ( $global:pythonInstallPath -eq "") {
         Write-Host "A supported Python version was not detected on your system. Install $recommendedVersion now automatically?"
-        $userInput = Read-Host "(Y/N)"
-        if ( $userInput -ne "Y" -and $userInput -ne "y" ) {
-            Write-Host "A python install between versions $minVersion and $maxVersion is required for PyKotor."
-            Write-Host "Press any key to exit..."
-            $null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
-            exit
+        if (-not $noprompt) {
+            $userInput = Read-Host "(Y/N)"
+            if ( $userInput -ne "Y" -and $userInput -ne "y" ) {
+                Write-Host "A python install between versions $minVersion and $maxVersion is required for PyKotor."
+                Write-Host "Press any key to exit..."
+                $null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
+                exit
+            }
         }
-        if ( (Get-OS) -eq "Windows" ) {
-            Python-Install-Windows "3.8.10"
-        } elif ( (Get-OS) -eq "Linux" ) {
-            & "sudo apt install python3"
-            & "sudo apt install python3-dev"
-        } elif ( (Get-OS) -eq "Mac" ) {
-            & "brew install python@3.8"
+        if (-not $intrnal) {
+            if ( (Get-OS) -eq "Windows" ) {
+                Python-Install-Windows "3.8.10"
+            } elseif ( (Get-OS) -eq "Linux" ) {
+                & bash -c "sudo apt install python3 -y" 2>&1 | Write-Output
+                & bash -c "sudo apt install python3-dev -y" 2>&1 | Write-Output
+            } elseif ( (Get-OS) -eq "Mac" ) {
+                & bash -c "brew install python@3.8 -y" 2>&1 | Write-Output
+            }
+        } else {
+            Write-Host "Find python again now that it's been installed."
+            Find-Python -intrnal
         }
     }
 }
@@ -269,36 +289,43 @@ if (Test-Path $venvPath -ErrorAction SilentlyContinue) {
     Write-Host "Found existing .venv at '$venvPath'"
 } else {
     Find-Python
-    if ( $pythonInstallPath -eq "" ) {
-        Write-Warning "Could not find path to python. Try again?"
-        $userInput = Read-Host "(Y/N)"
-        if ( $userInput -ne "Y" -and $userInput -ne "y" ) {
-            $userInput = Read-Host "Enter the path to python executable:"
-            if ( Test-Path -Path $userInput -ErrorAction SilentlyContinue ) {
-                $pythonInstallPath = $userInput
+    if ( $global:pythonInstallPath -eq "" ) {
+        if ( -not $noprompt ) {
+            Write-Warning "Could not find path to python. Try again?"
+            $userInput = Read-Host "(Y/N)"
+            if ( $userInput -ne "Y" -and $userInput -ne "y" ) {
+                $userInput = Read-Host "Enter the path to python executable:"
+                if ( Test-Path -Path $userInput -ErrorAction SilentlyContinue ) {
+                    $global:pythonInstallPath = $userInput
+                } else {
+                    Write-Error "Python executable not found at '$userInput'"
+                    Write-Host "Press any key to exit..."
+                    $null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
+                    exit
+                }
             } else {
-                Write-Error "Python executable not found at '$userInput'"
+                Find-Python
+            }
+        } else {
+            Write-Error "Could not find path to python."
+            exit
+        }
+    }
+    # Attempt to create a virtual environment
+    $pythonVenvCreation = & $global:pythonInstallPath -m venv $venvPath
+    if ($pythonVenvCreation -like "*Error*") {
+        Write-Error $pythonVenvCreation
+        Write-Error "Failed to create virtual environment. Ensure Python 3.8 is installed correctly."
+        Write-Warning "Attempt to use main python install at $global:pythonInstallPath instead of a venv? (not recommended but is usually fine)"
+        if (-not $noprompt) {
+            $userInput = Read-Host "(Y/N)"
+            if ( $userInput -ne "Y" -and $userInput -ne "y" ) {
                 Write-Host "Press any key to exit..."
                 $null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
                 exit
             }
-        } else {
-            Find-Python
         }
-    }
-    # Attempt to create a virtual environment
-    $pythonVenvCreation = & $pythonInstallPath -m venv $venvPath
-    if ($pythonVenvCreation -like "*Error*") {
-        Write-Error $pythonVenvCreation
-        Write-Error "Failed to create virtual environment. Ensure Python 3.8 is installed correctly."
-        Write-Warning "Attempt to use main python install at $pythonInstallPath instead of a venv? (not recommended but is usually fine)"
-        $userInput = Read-Host "(Y/N)"
-        if ( $userInput -ne "Y" -and $userInput -ne "y" ) {
-            Write-Host "Press any key to exit..."
-            $null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
-            exit
-        }
-        $pythonExePath = $pythonInstallPath
+        $pythonExePath = $global:pythonInstallPath
         $findVenvExecutable = $false
     } else {
         #Write-Host $pythonVenvCreation
@@ -322,7 +349,10 @@ if ( $findVenvExecutable -eq $true) {
         Write-Error "No python executables found in virtual environment."
         Write-Error "Not found: [$pythonExePaths]"
         Write-Host "Press any key to exit..."
-        $null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
+        if (-not $noprompt) {
+            $null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
+        }
+        exit
     }
 }
 
@@ -345,6 +375,8 @@ if ($envFileFound) {
 } else {
     Write-Warning "'$dotenv_path' file not found, this may mean you need to fetch the repo's latest changes. Please resolve this problem and try again."
     Write-Host "Press any key to exit..."
-    $null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
+    if (-not $noprompt) {
+        $null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
+    }
     exit
 }

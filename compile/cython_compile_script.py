@@ -12,7 +12,7 @@ def find_extra_files(root_dir: Path) -> list[str]:
     return [
         str(file) for file in root_dir.rglob("*")
         if (
-            file.suffix.lower() in [".py", ".pyd", ".so"]
+            file.suffix.lower() in {".py", ".pyd", ".so"}
             and file.is_file()
             and "cython" not in file.name.lower()
         )
