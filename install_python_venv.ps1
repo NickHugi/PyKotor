@@ -201,6 +201,9 @@ $pythonInstallPath = ""
 $pythonVersion = ""
 
 function Find-Python {
+    Param (
+        [switch]$internal
+    )
     # Check for Python 3 command and version
     $python3Command = Get-Command -Name python3 -ErrorAction SilentlyContinue
     if ($null -ne $python3Command) {
@@ -265,10 +268,14 @@ function Find-Python {
         if ( (Get-OS) -eq "Windows" ) {
             Python-Install-Windows "3.8.10"
         } elseif ( (Get-OS) -eq "Linux" ) {
-            & bash -c "sudo apt install python3"
-            & bash -c "sudo apt install python3-dev"
+            & bash -c "sudo apt install python3 -y"
+            & bash -c "sudo apt install python3-dev -y"
         } elseif ( (Get-OS) -eq "Mac" ) {
-            & bash -c "brew install python@3.8"
+            & bash -c "brew install python@3.8 -y"
+        }
+        # Find python again now that it's been installed.
+        if (-not $internal) {
+            Find-Python -internal
         }
     }
 }
