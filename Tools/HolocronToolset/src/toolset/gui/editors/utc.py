@@ -147,7 +147,7 @@ class UTCEditor(Editor):
         self.ui.subraceSelect.setItems(subraces.get_column("label"))
         self.ui.speedSelect.setItems(speeds.get_column("label"))
         self.ui.factionSelect.setItems(factions.get_column("label"))
-        self.ui.genderSelect.setItems(label.replace("_", " ").title().replace("Gender ", "") for label in genders.get_column("constant"))
+        self.ui.genderSelect.setItems([label.replace("_", " ").title().replace("Gender ", "") for label in genders.get_column("constant")])
         self.ui.perceptionSelect.setItems(perceptions.get_column("label"))
         self.ui.class1Select.setItems(classes.get_column("label"))
 

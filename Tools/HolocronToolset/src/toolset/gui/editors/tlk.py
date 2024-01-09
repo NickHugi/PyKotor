@@ -115,12 +115,14 @@ class TLKEditor(Editor):
             self.change_language(Language.UNKNOWN)
 
     def change_language(self, language: Language):
+        self.language = language
+        if not self._revert:
+            return
 
         tlk: TLK = read_tlk(self._revert, language=language)
         self._extracted_from_new_2()
         dialog = LoaderDialog(self, bytes_tlk(tlk), self.model)
         self._extracted_from_load_10(dialog)
-        self.language = tlk.language
 
     def load(self, filepath: os.PathLike | str, resref: str, restype: ResourceType, data: bytes) -> None:
         """Loads data into the resource from a file.
@@ -194,7 +196,7 @@ class TLKEditor(Editor):
             tlk.entries.append(TLKEntry(text, sound))
 
         data = bytearray()
-        write_tlk(tlk, data, self._restype)
+        write_tlk(tlk, data, self._restype or ResourceType.TLK)
         return data, b""
 
     def insert(self) -> None:
@@ -331,7 +333,7 @@ class LoaderWorker(QThread):
         self.entryCount.emit(len(tlk))
         self.language.emit(tlk.language)
 
-        batch = []
+        batch: list[list[QStandardItem]] = []
         for _stringref, entry in tlk:
             batch.append([QStandardItem(entry.text), QStandardItem(entry.voiceover.get())])
             if len(batch) > 200:

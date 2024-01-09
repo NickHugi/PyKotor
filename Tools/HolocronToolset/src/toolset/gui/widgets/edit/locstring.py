@@ -15,15 +15,18 @@ class LocalizedStringLineEdit(QWidget):
     editingFinished = QtCore.pyqtSignal()
 
     def __init__(self, parent: QWidget):
-        """Initialize a locstring edit widget
+        """Initialize a locstring edit widget.
+
         Args:
+        ----
             parent: QWidget - Parent widget
-        Returns:
-            None
-        - Initialize UI from designer file
-        - Set initial locstring to invalid
-        - Connect edit button to editLocstring method
-        - Connect double click on text to editLocstring.
+
+        Processing Logic:
+        ----------------
+            - Initialize UI from designer file
+            - Set initial locstring to invalid
+            - Connect edit button to editLocstring method
+            - Connect double click on text to editLocstring.
         """
         super().__init__(parent)
 
@@ -47,9 +50,6 @@ class LocalizedStringLineEdit(QWidget):
         ----
             locstring: {Localized string object to set}
 
-        Returns:
-        -------
-            None: {No return value}
         Processing Logic:
         ----------------
             - Sets the internal locstring property to the passed in value

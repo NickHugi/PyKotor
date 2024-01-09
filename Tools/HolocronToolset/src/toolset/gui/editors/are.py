@@ -4,11 +4,14 @@ from typing import TYPE_CHECKING
 
 from pykotor.common.geometry import SurfaceMaterial, Vector2
 from pykotor.common.misc import Color, ResRef
-from pykotor.extract.file import ResourceIdentifier
+from pykotor.extract.file import ResourceIdentifier, ResourceResult
 from pykotor.extract.installation import SearchLocation
 from pykotor.resource.formats.bwm import read_bwm
+from pykotor.resource.formats.bwm.bwm_data import BWM
 from pykotor.resource.formats.gff import write_gff
 from pykotor.resource.formats.lyt import read_lyt
+from pykotor.resource.formats.lyt.lyt_data import LYT
+from pykotor.resource.formats.tpc.tpc_data import TPC
 from pykotor.resource.generics.are import ARE, ARENorthAxis, AREWindPower, dismantle_are, read_are
 from pykotor.resource.type import ResourceType
 from PyQt5.QtGui import QColor, QImage, QPixmap
@@ -141,21 +144,29 @@ class AREEditor(Editor):
         self._are = are
 
         if self._resref:
-            result = self._installation.resource(self._resref, ResourceType.LYT)
-            if result:
-                lyt = read_lyt(result.data)
+            res_result_lyt: ResourceResult | None = self._installation.resource(self._resref, ResourceType.LYT)
+            if res_result_lyt:
+                lyt: LYT = read_lyt(res_result_lyt.data)
+                queries: list[ResourceIdentifier] = [
+                    ResourceIdentifier(room.model, ResourceType.WOK)
+                    for room in lyt.rooms
+                ]
 
-                results = self._installation.resources([ResourceIdentifier(room.model, ResourceType.WOK) for room in lyt.rooms])
-                self.ui.minimapRenderer.setWalkmeshes([read_bwm(result.data) for result in results.values() if result])
+                wok_results: dict[ResourceIdentifier, ResourceResult | None] = self._installation.resources(queries)
+                walkmeshes: list[BWM] = [
+                    read_bwm(result.data)
+                    for result in wok_results.values() if result
+                ]
+                self.ui.minimapRenderer.setWalkmeshes(walkmeshes)
 
-            order = [
+            order: list[SearchLocation] = [
                 SearchLocation.OVERRIDE,
                 SearchLocation.TEXTURES_GUI,
                 SearchLocation.MODULES
             ]
-            self._minimap = self._installation.texture(f"lbl_map{self._resref}", order)
+            self._minimap: TPC | None = self._installation.texture(f"lbl_map{self._resref}", order)
             if self._minimap is None:
-                print(f"Could not find lbl_map{self._resref} to load minimap")
+                print(f"Could not find texture 'lbl_map{self._resref}' required for minimap")
             else:
                 self.ui.minimapRenderer.setMinimap(are, self._minimap)
                 self.ui.minimapRenderer.centerCamera()

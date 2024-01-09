@@ -15,6 +15,7 @@ from PyQt5.QtGui import QIcon, QImage, QPixmap, QResizeEvent, QStandardItem, QSt
 from PyQt5.QtWidgets import QHeaderView, QMenu, QWidget
 
 if TYPE_CHECKING:
+    from pykotor.common.misc import CaseInsensitiveDict
     from pykotor.extract.file import FileResource
     from toolset.data.installation import HTInstallation
 
@@ -42,11 +43,12 @@ class ResourceList(MainWindowList):
     requestRefresh = QtCore.pyqtSignal()
 
     def __init__(self, parent: QWidget):
-        """Initializes the ResourceList widget
+        """Initializes the ResourceList widget.
+
         Args:
+        ----
             parent (QWidget): The parent widget
-        Returns:
-            None: Does not return anything
+
         Processing Logic:
         ----------------
             - Initializes the UI from the designer file
@@ -111,7 +113,8 @@ class ResourceList(MainWindowList):
         # Add any missing resources to the list
         for resource in resources:
             for item in allResources:
-                if item.resource == resource:
+                resource_from_item: FileResource = item.resource
+                if resource_from_item == resource:
                     # Update the resource reference. Important when to a new module that share a resource
                     # with the same name and restype with the old one.
                     item.resource = resource
@@ -152,7 +155,8 @@ class ResourceList(MainWindowList):
             self.ui.resourceTree.setCurrentIndex(child)
 
         for item in model.allResourcesItems():
-            if item.resource.resname() == resource.resname() and item.resource.restype() == resource.restype():
+            resource_from_item: FileResource = item.resource
+            if resource_from_item.resname() == resource.resname() and resource_from_item.restype() == resource.restype():
                 _parentIndex = model.proxyModel().mapFromSource(item.parent().index())  # TODO: why is this unused
                 itemIndex = model.proxyModel().mapFromSource(item.index())
                 QTimer.singleShot(1, lambda index=itemIndex, item=item: select(item.parent().index(), index))
@@ -173,11 +177,12 @@ class ResourceList(MainWindowList):
         self.requestRefresh.emit()
 
     def onResourceContextMenu(self, point: QPoint) -> None:
-        """Shows context menu for selected resources
+        """Shows context menu for selected resources.
+
         Args:
+        ----
             point: QPoint - Mouse position for context menu
-        Returns:
-            None
+
         Processing Logic:
         ----------------
             - Create QMenu at mouse position
@@ -212,9 +217,7 @@ class ResourceList(MainWindowList):
 
 
 class ResourceModel(QStandardItemModel):
-    """A data model used by the different trees (Core, Modules, Override). This class provides an easy way to add resources
-    while sorting the into categories.
-    """
+    """A data model used by the different trees (Core, Modules, Override). This class provides an easy way to add resources while sorting the into categories."""
 
     def __init__(self):
         super().__init__()
@@ -407,7 +410,7 @@ class TextureList(MainWindowList):
             sleep(0.1)
 
     def onFilterStringUpdated(self) -> None:
-        self.texturesProxyModel.setFilterFixedString(self.ui.searchEdit.text().lower())
+        self.texturesProxyModel.setFilterFixedString(self.ui.searchEdit.text().casefold())
 
     def onSectionChanged(self) -> None:
         self.sectionChanged.emit(self.ui.sectionCombo.currentData(QtCore.Qt.UserRole))
@@ -420,15 +423,15 @@ class TextureList(MainWindowList):
 
     def onTextureListScrolled(self) -> None:
         # Note: Avoid redundantly loading textures that have already been loaded
-        textures = self._installation.textures(
-            [item.text() for item in self.visibleItems() if item.text() not in self._scannedTextures],
+        textures: CaseInsensitiveDict[TPC | None] = self._installation.textures(
+            [item.text() for item in self.visibleItems() if item.text().casefold() not in self._scannedTextures],
             [SearchLocation.TEXTURES_GUI, SearchLocation.TEXTURES_TPA],
         )
 
         # Emit signals to load textures that have not had their icons assigned
-        for item in [item for item in self.visibleItems() if item.text() not in self._scannedTextures]:
+        for item in [item for item in self.visibleItems() if item.text().casefold() not in self._scannedTextures]:
             # Avoid trying to load the same texture multiple times.
-            self._scannedTextures.add(item.text())
+            self._scannedTextures.add(item.text().casefold())
 
             hasTPC = item.text() in textures and textures[item.text()] is not None
             tpc = textures[item.text()] if hasTPC else TPC()
