@@ -3,14 +3,14 @@ from __future__ import annotations
 
 from contextlib import suppress
 from copy import copy
-from typing import TYPE_CHECKING, Any, Callable
+from typing import TYPE_CHECKING, Any, Callable, TypeVar
 
 from pykotor.resource.type import ResourceType
 
 if TYPE_CHECKING:
     from enum import Enum
 
-
+T = TypeVar("T")
 class TwoDA:
     """Represents a 2DA file."""
 
@@ -592,7 +592,7 @@ class TwoDARow:
     def get_float(
         self,
         header: str,
-        default: int | None = None,
+        default: int | T = None,
     ) -> float:
         """Returns the float value for the cell under the specified header. If the value of the cell is an invalid float then a default value is used instead.
 
@@ -616,6 +616,7 @@ class TwoDARow:
         with suppress(ValueError):  # FIXME: this should not be suppressed
             cell = self._data[header]
             return float(cell)
+        return default
 
     def get_enum(
         self,
@@ -718,7 +719,7 @@ class TwoDARow:
         ------
             KeyError: If the specified header does not exist.
         """
-        self._set_value(header, value)
+        self._set_value(header, value.value if value is not None else None)
 
     def _set_value(self, header: str, value: object):
         if header not in self._data:

@@ -125,7 +125,7 @@ class GFFBinaryReader(ResourceReader):
                 gff_struct.set_string(label, self._reader.read_string(length))
             elif field_type is GFFFieldType.ResRef:
                 length = self._reader.read_uint8()
-                resref = ResRef(self._reader.read_string(length))
+                resref = ResRef(self._reader.read_string(length).strip())
                 gff_struct.set_resref(label, resref)
             elif field_type is GFFFieldType.LocalizedString:
                 gff_struct.set_locstring(label, self._reader.read_locstring())

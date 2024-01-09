@@ -6,7 +6,7 @@ import platform
 import sys
 from contextlib import suppress
 from enum import Enum
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, TypeVar
 
 from utility.path import Path
 
@@ -120,6 +120,16 @@ def get_system_info():
         info["GPU Details"] = format_gpu_info(gpu_info, headers=("id", "name", "total memory", "used memory", "free memory", "driver", "temperature"))
 
     return info
+
+T = TypeVar("T")
+def remove_duplicates(my_list: list[T], *, case_insensitive=False) -> list[T]:
+    seen = set()
+    return [
+        x.lower() if case_insensitive and isinstance(x, str) else x
+        for x in my_list
+        if not (x in seen or seen.add(x))
+    ]
+
 def is_debug_mode() -> bool:
     ret = False
     if os.getenv("PYTHONDEBUG", None):

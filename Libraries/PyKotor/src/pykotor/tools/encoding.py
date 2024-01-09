@@ -72,9 +72,9 @@ def decode_bytes_with_fallbacks(
         if only_8bit_encodings:
             max_8bit_characters = 256
             detected_8bit_encodings = [
-                enc
-                for enc in detected_encodings
-                if len(enc.alphabets) <= max_8bit_characters
+                enc_match
+                for enc_match in detected_encodings
+                if len(enc_match.alphabets) <= max_8bit_characters
             ]
             best_match = detected_8bit_encodings[0]
             best_8bit_encoding: str = best_match.encoding or "windows-1252"
@@ -82,8 +82,11 @@ def decode_bytes_with_fallbacks(
 
         result_detect = detected_encodings.best()
         if not result_detect:
-            # Final fallback (utf-8) if no encoding is detected
-            return byte_content.decode(errors=attempt_errors)
+            # Semi-Final fallback (utf-8) if no encoding is detected
+            with contextlib.suppress(UnicodeDecodeError):
+                return byte_content.decode(encoding="utf-8", errors=attempt_errors)
+            # Final fallback (latin1) if no encoding is detected
+            return byte_content.decode(encoding="latin1", errors=attempt_errors)
 
         best_encoding: str = result_detect.encoding
         # Special handling for BOM

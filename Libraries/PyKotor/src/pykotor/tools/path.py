@@ -133,8 +133,7 @@ class CaseAwarePath(InternalPath):  # type: ignore[misc]
     def resolve(self, strict=False):
         new_path = super().resolve(strict)
         if self.should_resolve_case(new_path):
-            new_path = self.get_case_sensitive_path(new_path)
-            return super(type(self), new_path).resolve()
+            return self.get_case_sensitive_path(new_path)
         return new_path
 
     def __hash__(self) -> int:
@@ -163,8 +162,8 @@ class CaseAwarePath(InternalPath):  # type: ignore[misc]
     def is_relative_to(self, other: PathElem, case_sensitive=False) -> bool:  # type: ignore[override]
         return super().is_relative_to(other, case_sensitive=case_sensitive)
 
-    @staticmethod
-    def get_case_sensitive_path(path: PathElem) -> CaseAwarePath:
+    @classmethod
+    def get_case_sensitive_path(cls, path: PathElem) -> CaseAwarePath:
         """Get a case sensitive path.
 
         Args:
@@ -194,35 +193,59 @@ class CaseAwarePath(InternalPath):  # type: ignore[misc]
             if not next_path.safe_isdir() and base_path.safe_isdir():
 
                 # if multiple are found, use the one that most closely matches our case
-                # A closest match is defined in this context as the file/folder's name which has the most case-sensitive positional character matches
-                # If two closest matches are identical (e.g. we're looking for TeST and we find TeSt and TesT), it's random.
+                # A closest match is defined, in this context, as the file/folder's name that contains the most case-sensitive positional character matches
+                # If two closest matches are identical (e.g. we're looking for TeST and we find TeSt and TesT), it's probably random.
                 last_part: bool = i == len(parts) - 1
-                parts[i] = CaseAwarePath.find_closest_match(
+                parts[i] = cls.find_closest_match(
                     parts[i],
                     (
                         item
                         for item in base_path.safe_iterdir()
-                        if last_part or item.safe_isdir()
+                        if item.name.lower() == parts[i].lower() and (last_part or item.safe_isdir())
                     ),
                 )
 
             elif not next_path.safe_exists():
                 break
 
-        # return a CaseAwarePath instance
-        return CaseAwarePath._create_instance(*parts)  # noqa: SLF001
+        # return a new case-resolved instance
+        return cls._create_instance(*parts)
 
     @classmethod
     def find_closest_match(cls, target: str, candidates: Generator[InternalPath, None, None]) -> str:
+        """Finds the closest match from candidates to the target string.
+
+        Args:
+        ----
+            target: str - The target string to find closest match for
+            candidates: Generator[pathlib.Path, None, None] - Generator of candidate paths
+
+        Returns:
+        -------
+            str - The closest matching candidate's file/folder name from the candidates
+
+        Processing Logic:
+        ----------------
+            - Initialize max_matching_chars to -1
+            - Iterate through each candidate
+            - Get the matching character count between candidate and target using get_matching_characters_count method
+            - Update closest_match and max_matching_chars if new candidate has more matches
+            - Return closest_match after full iteration.
+            - If no exact match found, return target which will of course be nonexistent.
+        """
         max_matching_chars: int = -1
-        closest_match: str = target
+        closest_match: str | None = None
+
         for candidate in candidates:
             matching_chars: int = cls.get_matching_characters_count(candidate.name, target)
             if matching_chars > max_matching_chars:
                 closest_match = candidate.name
-                if matching_chars == len(target):  # break if exact match
-                    break
+                if matching_chars == len(target):
+                    break  # Exit the loop early if exact match (faster)
                 max_matching_chars = matching_chars
+
+        if not closest_match:
+            return target
         return closest_match
 
     @staticmethod
@@ -240,7 +263,7 @@ class CaseAwarePath(InternalPath):  # type: ignore[misc]
         path_obj = pathlib.Path(path)
         return path_obj.is_absolute() and not path_obj.exists()
 
-if os.name != "nt":  # wrapping is unnecessary on Windows
+if os.name != "nt":  # Wrapping is unnecessary on Windows
     create_case_insensitive_pathlib_class(CaseAwarePath)
 
 def get_default_paths() -> dict[str, dict[Game, list[str]]]:
@@ -332,7 +355,7 @@ def find_kotor_paths_from_default() -> dict[Game, list[CaseAwarePath]]:
         game: {
             case_path
             for case_path in (CaseAwarePath(path).resolve() for path in paths)
-            if case_path.exists()
+            if case_path.safe_exists()
         }
         for game, paths in raw_locations.get(os_str, {}).items()
     }
@@ -343,7 +366,7 @@ def find_kotor_paths_from_default() -> dict[Game, list[CaseAwarePath]]:
             for reg_key, reg_valname in possible_game_paths:
                 path_str = resolve_reg_key_to_path(reg_key, reg_valname)
                 path = CaseAwarePath(path_str).resolve() if path_str else None
-                if path and path.name and path.exists():
+                if path and path.name and path.safe_exists():
                     locations[game].add(path)
 
     # don't return nested sets, return as lists.

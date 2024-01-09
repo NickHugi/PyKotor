@@ -71,7 +71,7 @@ class FieldValue(ABC):
         if isinstance(value, PureWindowsPath):  # !FieldPath
             return value
         if field_type == GFFFieldType.ResRef and not isinstance(value, ResRef):
-            value = (
+            value = (  # This is here to support literal statements like 'resref=' in ini (allow_no_entries=True in configparser)
                 ResRef(str(value))
                 if not isinstance(value, str) or value.strip()
                 else ResRef.from_blank()
@@ -358,15 +358,15 @@ class Memory2DAModifierGFF(ModifyGFF):
     def __init__(
         self,
         identifier: str,
-        twoda_index: int,
+        index_2damemory: int,
         path: PureWindowsPath | os.PathLike | str,
     ):
         self.identifier: str = identifier
-        self.twoda_index: int = twoda_index
+        self.index_2damemory: int = index_2damemory
         self.path: PureWindowsPath = PureWindowsPath.pathify(path)
 
     def apply(self, container, memory: PatcherMemory, logger: PatchLogger):
-        memory.memory_2da[self.twoda_index] = self.path
+        memory.memory_2da[self.index_2damemory] = self.path
 
 
 class ModifyFieldGFF(ModifyGFF):

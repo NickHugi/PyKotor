@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING
 
 from pykotor.common.stream import BinaryReader
 from pykotor.tslpatcher.mods.template import PatcherModifications
-from utility.path import Path, PurePath
+from utility.path import PurePath
 
 if TYPE_CHECKING:
 
@@ -316,9 +316,10 @@ class InstallFile(PatcherModifications):
         if isinstance(source, BinaryReader):
             return source.read_all()
         if isinstance(source, (str, os.PathLike)):
-            with Path(source).open(mode="rb") as f:
-                return f.read()
-        return bytes(source)
+            return BinaryReader.load_file(source)
+        if isinstance(source, bytearray):
+            return bytes(source)
+        return source
 
     def apply(self, source, *args, **kwargs) -> None:
         ...

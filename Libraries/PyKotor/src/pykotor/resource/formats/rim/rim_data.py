@@ -69,7 +69,7 @@ class RIM:
 
     def set_data(
         self,
-        resref: str,
+        resname: str,
         restype: ResourceType,
         data: bytes,
     ) -> None:
@@ -79,31 +79,31 @@ class RIM:
 
         Args:
         ----
-            resref: The resref.
+            resname: The resource reference filename.
             restype: The resource type.
             data: The new resource data.
         """
-        resource = next(
-            (resource for resource in self._resources if resource.resref == resref and resource.restype == restype),
+        resource: RIMResource | None = next(
+            (resource for resource in self._resources if resource.resref == resname and resource.restype == restype),
             None,
         )
         if resource is None:
-            self._resources.append(RIMResource(ResRef(resref), restype, data))
+            self._resources.append(RIMResource(ResRef(resname), restype, data))
         else:
-            resource.resref = ResRef(resref)
+            resource.resref = ResRef(resname)
             resource.restype = restype
             resource.data = data
 
     def get(
         self,
-        resref: str,
+        resname: str,
         restype: ResourceType,
     ) -> bytes | None:
         """Returns the data of the resource with the specified resref/restype pair if it exists, otherwise returns None.
 
         Args:
         ----
-            resref: The resref.
+            resname: The resource reference filename.
             restype: The resource type.
 
         Returns:
@@ -111,27 +111,27 @@ class RIM:
             The bytes data of the resource or None.
         """
         resource: RIMResource | None = next(
-            (resource for resource in self._resources if resource.resref == resref and resource.restype == restype),
+            (resource for resource in self._resources if resource.resref == resname and resource.restype == restype),
             None,
         )
         return None if resource is None else resource.data
 
     def remove(
         self,
-        resref: str,
+        resname: str,
         restype: ResourceType,
     ) -> None:
         """Removes the resource with the given resref/restype pair if it exists.
 
         Args:
         ----
-            resref: The resref.
+            resname: The resource reference filename.
             restype: The resource type.
         """
         self._resources = [
             res
             for res in self._resources
-            if res.resref != resref and res.restype != restype
+            if res.resref != resname and res.restype != restype
         ]
 
     def to_erf(

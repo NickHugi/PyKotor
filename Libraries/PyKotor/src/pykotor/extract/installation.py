@@ -1062,7 +1062,7 @@ class Installation:
                 SearchLocation.TEXTURES_TPA,
                 SearchLocation.CHITIN,
             ]
-        resnames = {resname.lower() for resname in resnames}
+        case_resnames: list[str] = [resname.lower() for resname in resnames]
         capsules = [] if capsules is None else capsules
         folders = [] if folders is None else folders
 
@@ -1092,31 +1092,31 @@ class Installation:
 
         def check_list(resource_list: list[FileResource]):
             for resource in resource_list:
-                resname = resource.resname().lower()
-                if resname in resnames and resource.restype() in texture_types:
-                    resnames.remove(resname)
+                case_resname = resource.resname().casefold()
+                if case_resname in case_resnames and resource.restype() in texture_types:
+                    case_resnames.remove(case_resname)
                     tpc: TPC = read_tpc(resource.data())
                     if resource.restype() == ResourceType.TGA:
-                        tpc.txi = get_txi_from_list(resname, resource_list)
-                    textures[resname] = tpc
+                        tpc.txi = get_txi_from_list(case_resname, resource_list)
+                    textures[case_resname] = tpc
 
         def check_capsules(values: list[Capsule]):  # NOTE: This function does not support txi's in the Override folder.
             for capsule in values:
-                for resname in copy(resnames):
+                for case_resname in copy(case_resnames):
                     texture_data: bytes | None = None
                     tformat: ResourceType | None = None
                     for tformat in texture_types:
-                        texture_data = capsule.resource(resname, tformat)
+                        texture_data = capsule.resource(case_resname, tformat)
                         if texture_data is not None:
                             break
                     if texture_data is None:
                         continue
 
-                    resnames.remove(resname)
+                    case_resnames.remove(case_resname)
                     tpc: TPC = read_tpc(texture_data) if texture_data else TPC()
                     if tformat == ResourceType.TGA:
-                        tpc.txi = get_txi_from_list(resname, capsule.resources())
-                    textures[resname] = tpc
+                        tpc.txi = get_txi_from_list(case_resname, capsule.resources())
+                    textures[case_resname] = tpc
 
         def check_folders(values: list[Path]):
             queried_texture_files: set[Path] = set()
@@ -1125,13 +1125,13 @@ class Installation:
                     file
                     for file in folder.rglob("*")
                     if (
-                        file.stem.lower() in resnames
+                        file.stem.casefold() in case_resnames
                         and ResourceType.from_extension(file.suffix) in texture_types
-                        and file.safe_isfile()
+                        and file.is_file()
                     )
                 )
             for texture_file in queried_texture_files:
-                resnames.remove(texture_file.stem.lower())
+                case_resnames.remove(texture_file.stem.casefold())
                 texture_data: bytes = BinaryReader.load_file(texture_file)
                 tpc = read_tpc(texture_data) if texture_data else TPC()
                 txi_file = CaseAwarePath(texture_file.with_suffix(".txi"))
@@ -1149,7 +1149,7 @@ class Installation:
             SearchLocation.TEXTURES_TPC: lambda: check_list(self._texturepacks[TexturePackNames.TPC.value]),
             SearchLocation.TEXTURES_GUI: lambda: check_list(self._texturepacks[TexturePackNames.GUI.value]),
             SearchLocation.CHITIN: lambda: check_list(self._chitin),
-            SearchLocation.CUSTOM_MODULES: lambda: check_capsules(capsules),  # type: ignore[arg-type]
+            SearchLocation.CUSTOM_MODULES: lambda: check_capsules(capsules),
             SearchLocation.CUSTOM_FOLDERS: lambda: check_folders(folders),  # type: ignore[arg-type]
         }
 
@@ -1187,7 +1187,7 @@ class Installation:
 
     def sounds(
         self,
-        resnames: list[str] | set[str],
+        resnames: list[str],
         order: list[SearchLocation] | None = None,
         *,
         capsules: list[Capsule] | None = None,
@@ -1208,7 +1208,7 @@ class Installation:
         -------
             A dictionary mapping a case-insensitive string to a bytes object or None.
         """
-        resnames = {resname.lower() for resname in resnames}
+        case_resnames: list[str] = [resname.casefold() for resname in resnames]
         capsules = [] if capsules is None else capsules
         folders = [] if folders is None else folders
         if order is None:
@@ -1232,24 +1232,24 @@ class Installation:
 
         def check_list(values: list[FileResource]):
             for resource in values:
-                lower_resname = resource.resname().lower()
-                if lower_resname in resnames and resource.restype() in sound_formats:
-                    resnames.remove(lower_resname)
+                case_resname: str = resource.resname().casefold()
+                if case_resname in case_resnames and resource.restype() in sound_formats:
+                    case_resnames.remove(case_resname)
                     sound_data: bytes = resource.data()
                     sounds[resource.resname()] = fix_audio(sound_data) if sound_data else b""
 
         def check_capsules(values: list[Capsule]):
             for capsule in values:
-                for resname in copy(resnames):
+                for case_resname in copy(case_resnames):
                     sound_data: bytes | None = None
                     for sformat in sound_formats:
-                        sound_data = capsule.resource(resname, sformat)
+                        sound_data = capsule.resource(case_resname, sformat)
                         if sound_data is not None:
                             break
                     if sound_data is None:
                         continue
-                    resnames.remove(resname)
-                    sounds[resname] = fix_audio(sound_data) if sound_data else b""
+                    case_resnames.remove(case_resname)
+                    sounds[case_resname] = fix_audio(sound_data) if sound_data else b""
 
         def check_folders(values: list[Path]):
             queried_sound_files: set[Path] = set()
@@ -1258,13 +1258,13 @@ class Installation:
                     file
                     for file in folder.rglob("*")
                     if (
-                        file.stem.lower() in resnames
+                        file.stem.casefold() in case_resnames
                         and ResourceType.from_extension(file.suffix) in sound_formats
-                        and file.safe_isfile()
+                        and file.is_file()
                     )
                 )
             for sound_file in queried_sound_files:
-                resnames.remove(sound_file.stem.lower())
+                case_resnames.remove(sound_file.stem.casefold())
                 sound_data: bytes = BinaryReader.load_file(sound_file)
                 sounds[sound_file.stem] = fix_audio(sound_data) if sound_data else b""
 
@@ -1366,7 +1366,7 @@ class Installation:
                 if key.upper() in root.upper():
                     return value
 
-        name: str = root
+        name: str | None = None
         for module in self.modules_list():
             if root.lower() not in module.lower():
                 continue
@@ -1388,12 +1388,12 @@ class Installation:
                 are: GFF = read_gff(are_tag_resource)
                 locstring = are.root.get_locstring("Name")
                 if locstring.stringref == -1:
-                    name = locstring.get(Language.ENGLISH, Gender.MALE) or name
+                    name = locstring.get(Language.ENGLISH, Gender.MALE)
                 else:
                     name = self.talktable().string(locstring.stringref)
                 break
 
-        return name
+        return name or root
 
     def module_names(self) -> dict[str, str]:
         """Returns a dictionary mapping module filename to the name of the area.
@@ -1451,6 +1451,7 @@ class Installation:
         result = re.sub(r"\.mod$", "", module_filename, flags=re.IGNORECASE)
         result = re.sub(r"\.erf$", "", result, flags=re.IGNORECASE)
         result = re.sub(r"\.rim$", "", result, flags=re.IGNORECASE)
+        result = re.sub(r"\.sav$", "", result, flags=re.IGNORECASE)
         result = result[:-2] if result.lower().endswith("_s") else result
         result = result[:-4] if result.lower().endswith("_dlg") else result
         return result  # noqa: RET504

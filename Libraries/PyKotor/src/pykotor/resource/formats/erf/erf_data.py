@@ -19,15 +19,15 @@ class ERFType(Enum):
     MOD = "MOD "
     SAV = "SAV "
 
-    @staticmethod
-    def from_extension(filepath: os.PathLike | str) -> ERFType:
-        if is_erf_file(filepath):
-            return ERFType.ERF
-        if is_mod_file(filepath):
-            return ERFType.MOD
-        if is_sav_file(filepath):
-            return ERFType.SAV
-        msg = f"Invalid ERF extension in filepath '{filepath}'."
+    @classmethod
+    def from_extension(cls, ext_or_filepath: os.PathLike | str) -> ERFType:
+        if is_erf_file(ext_or_filepath):
+            return cls.ERF
+        if is_mod_file(ext_or_filepath):
+            return cls.MOD
+        if is_sav_file(ext_or_filepath):
+            return cls.SAV
+        msg = f"Invalid ERF extension in filepath '{ext_or_filepath}'."
         raise ValueError(msg)
 
 
@@ -81,7 +81,7 @@ class ERF:
 
     def set_data(  # noqa: D417
         self,
-        resref: str,
+        resname: str,
         restype: ResourceType,
         data: bytes,
     ) -> None:
@@ -89,7 +89,7 @@ class ERF:
 
         Args:
         ----
-            resref: str - Resource reference identifier
+            resname: str - Resource reference filename
             restype: ResourceType - Resource type enumeration
             data: bytes - Resource data bytes
 
@@ -101,45 +101,45 @@ class ERF:
             - If existing resource, update its properties
             - Add/update resource to internal lists and dict
         """
-        key: tuple[str, ResourceType] = (resref.casefold(), restype)
+        key: tuple[str, ResourceType] = (resname.casefold(), restype)
         resource: ERFResource | None = self._resource_dict.get(key)
         if resource is None:
-            resource = ERFResource(ResRef(resref), restype, data)
+            resource = ERFResource(ResRef(resname), restype, data)
             self._resources.append(resource)
             self._resource_dict[key] = resource
         else:
-            resource.resref = ResRef(resref)
+            resource.resref = ResRef(resname)
             resource.restype = restype
             resource.data = data
 
-    def get(self, resref: str, restype: ResourceType) -> bytes | None:
+    def get(self, resname: str, restype: ResourceType) -> bytes | None:
         """Returns the data of the resource with the specified resref/restype pair if it exists, otherwise returns None.
 
         Args:
         ----
-            resref: The resref.
+            resname: The resource reference filename.
             restype: The resource type.
 
         Returns:
         -------
             The bytes data of the resource or None.
         """
-        resource: ERFResource | None = self._resource_dict.get((resref.casefold(), restype))
+        resource: ERFResource | None = self._resource_dict.get((resname.casefold(), restype))
         return resource.data if resource is not None else None
 
     def remove(
         self,
-        resref: str,
+        resname: str,
         restype: ResourceType,
     ) -> None:
         """Removes the resource with the given resref/restype pair if it exists.
 
         Args:
         ----
-            resref: The resref.
+            resname: The resource reference filename.
             restype: The resource type.
         """
-        key: tuple[str, ResourceType] = (resref.casefold(), restype)
+        key: tuple[str, ResourceType] = (resname.casefold(), restype)
         resource: ERFResource | None = self._resource_dict.pop(key, None)
         if resource:  # FIXME: should raise here
             self._resources.remove(resource)
