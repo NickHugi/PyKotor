@@ -9,6 +9,7 @@ on:
 jobs:
   merge:
     runs-on: ubuntu-latest
+    if: contains(github.event.head_commit.message, '[skip-edge]') == false
 
     steps:
     - name: Checkout Repository
