@@ -245,16 +245,26 @@ class ToolWindow(QMainWindow):
     def onOverrideChanged(self, newDirectory: str) -> None:
         self.ui.overrideWidget.setResources(self.active.override_resources(newDirectory))
 
-    def onOverrideReload(self, file: str) -> None:
+    def onOverrideReload(self, file: str):
         file_path = Path(file)
         if not file_path.name:
             print(f"Cannot reload '{file}': no file loaded")
             return
         if not file_path.is_relative_to(self.active.override_path()):
-            print(f"{file_path!s} is not relative to the override folder, cannot reload")
+            print(f"{file_path} is not relative to the override folder, cannot reload")
             return
-        self.active.reload_override_file(file_path)
-        self.ui.overrideWidget.setResources(self.active.override_resources(str(file_path.parent)))
+        if file_path.is_file():
+            self.active.reload_override_file(file_path)
+            folder_path = file_path.parent
+        else:
+            folder_path = file_path
+        self.ui.overrideWidget.setResources(
+            self.active.override_resources(
+                Path._fix_path_formatting(str(folder_path.relative_to(self.active.override_path())).replace(str(self.active.override_path()), ""))
+                if folder_path not in self.active.override_path().parents
+                else "."
+            )
+        )
 
     def onOverrideRefresh(self) -> None:
         self.refreshOverrideList()
@@ -333,7 +343,7 @@ class ToolWindow(QMainWindow):
         if e.mimeData().hasUrls():
             for url in e.mimeData().urls():
                 with suppress(Exception):
-                    _resref, restype = ResourceIdentifier.from_path(url.toLocalFile()).validate()
+                    _resref, _restype = ResourceIdentifier.from_path(url.toLocalFile()).validate()
                     e.accept()
 
     # endregion

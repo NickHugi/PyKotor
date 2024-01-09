@@ -191,7 +191,7 @@ class HelpWindow(QMainWindow):
         filepath = Path.pathify(filepath)
         try:
             text = decode_bytes_with_fallbacks(BinaryReader.load_file(filepath))
-            html = markdown.markdown(text, extensions=["tables", "fenced_code", "codehilite"]) if filepath.endswith(".md") else text
+            html = markdown.markdown(text, extensions=["tables", "fenced_code", "codehilite"]) if filepath.suffix.lower() == ".md" else text
             self.ui.textDisplay.setHtml(html)
         except OSError:
             QMessageBox(
