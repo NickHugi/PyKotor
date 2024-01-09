@@ -551,20 +551,20 @@ class ToolWindow(QMainWindow):
             self.active.load_modules()
 
         areaNames: CaseInsensitiveDict[str] = self.active.module_names()
-        sortedKeys: list[str] = sorted(areaNames, key=lambda key: areaNames.get(key).lower())
+        sortedKeys: list[str] = sorted(areaNames, key=lambda key: areaNames.get(key))
 
         modules: list[QStandardItem] = []
         for module in sortedKeys:
             # Some users may choose to have their RIM files for the same module merged into a single option for the
             # dropdown menu.
-            if self.settings.joinRIMsTogether and module.lower().endswith("_s.rim"):
+            if self.settings.joinRIMsTogether and module.endswith("_s.rim"):
                 continue
 
             item = QStandardItem(f"{areaNames[module]} [{module}]")
             item.setData(module, QtCore.Qt.UserRole)
 
             # Some users may choose to have items representing RIM files to have grey text.
-            if self.settings.greyRIMText and module.lower().endswith(".rim"):
+            if self.settings.greyRIMText and module.endswith(".rim"):
                 item.setForeground(self.palette().shadow())
 
             modules.append(item)
@@ -576,7 +576,7 @@ class ToolWindow(QMainWindow):
         if reload:
             self.active.load_override()
 
-        sections = []
+        sections: list[QStandardItem] = []
         for directory in self.active.override_list():
             section = QStandardItem(directory if directory.strip() else "[Root]")
             section.setData(directory, QtCore.Qt.UserRole)
@@ -598,8 +598,9 @@ class ToolWindow(QMainWindow):
     def changeModule(self, module: str):
         # Some users may choose to merge their RIM files under one option in the Modules tab; if this is the case we
         # need to account for this.
-        if self.settings.joinRIMsTogether and module.casefold().endswith("_s.rim"):
-            module = f"{module.casefold()[:-6]}.rim"
+        casefold_module = module.casefold()
+        if self.settings.joinRIMsTogether and casefold_module.endswith("_s.rim"):
+            module = f"{casefold_module[:-6]}.rim"
 
         self.ui.modulesWidget.changeSection(module)
 

@@ -81,7 +81,7 @@ class SelectModuleDialog(QDialog):
             self,
             "Select module to open",
             str(self._installation.module_path()),
-            "Module File (*.mod *.rim *.erf)",
+            "Module File (*.mod *.rim *.erf *.sav)",
         )
 
         if filepath:

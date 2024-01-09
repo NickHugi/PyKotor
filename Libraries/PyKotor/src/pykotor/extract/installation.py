@@ -1676,7 +1676,7 @@ class Installation:
                 if key.upper() in root.upper():
                     return value
 
-        name: str = root
+        name: str | None = root
         for module in self.modules_list():
             if root.casefold() not in module.casefold():
                 continue
@@ -1697,14 +1697,14 @@ class Installation:
                 are: GFF = read_gff(are_tag_resource)
                 locstring: LocalizedString = are.root.get_locstring("Name")
                 if locstring.stringref == -1:
-                    name = locstring.get(Language.ENGLISH, Gender.MALE) or name
+                    name = locstring.get(Language.ENGLISH, Gender.MALE)
                 else:
                     name = self.talktable().string(locstring.stringref)
                 break
             except Exception as e:  # noqa: BLE001
                 print(format_exception_with_variables(e, ___message___="This exception has been suppressed in pykotor.extract.installation."))
 
-        return name
+        return name or root
 
     def module_names(self) -> CaseInsensitiveDict[str]:
         """Returns a dictionary mapping module filename to the name of the area.
@@ -1749,7 +1749,7 @@ class Installation:
             if root.casefold() not in module.casefold():
                 continue
 
-            with suppress(Exception):
+            try:
                 capsule = Capsule(self.module_path() / module)
 
                 module_ifo_data: bytes | None = capsule.resource("module", ResourceType.IFO)
@@ -1758,10 +1758,12 @@ class Installation:
                     mod_id = str(ifo.root.get_resref("Mod_Entry_Area"))
                     if mod_id:
                         break
+            except Exception as e:  # noqa: BLE001
+                print(format_exception_with_variables(e, ___message___="This exception has been suppressed in pykotor.extract.installation."))
 
         return mod_id
 
-    def module_ids(self) -> dict[str, str]:
+    def module_ids(self) -> CaseInsensitiveDict[str]:
         """Returns a dictionary mapping module filename to the ID of the module.
 
         The ID is taken from the ResRef field "Mod_Entry_Area" in the relevant module file's IFO resource.
@@ -1770,7 +1772,7 @@ class Installation:
         -------
             A dictionary mapping module filename to in-game module id.
         """
-        return {module: self.module_id(module) for module in self.modules_list()}
+        return CaseInsensitiveDict.from_dict({module: self.module_id(module) for module in self.modules_list()})
 
     @staticmethod
     def replace_module_extensions(module_filepath: os.PathLike | str) -> str:

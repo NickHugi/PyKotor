@@ -279,8 +279,8 @@ class UTSEditor(Editor):
         if not self.ui.soundList.currentItem().text():
             return
 
-        resname = self.ui.soundList.currentItem().text()
-        data = self._installation.sound(resname)
+        resname: str = self.ui.soundList.currentItem().text()
+        data: bytes | None = self._installation.sound(resname)
 
         if data:
             self.buffer = QBuffer(self)
@@ -304,23 +304,23 @@ class UTSEditor(Editor):
     def moveSoundUp(self):
         if self.ui.soundList.currentRow() == -1:
             return
-        resname = self.ui.soundList.currentItem().text()
-        row = self.ui.soundList.currentRow()
+        resname: str = self.ui.soundList.currentItem().text()
+        row: int = self.ui.soundList.currentRow()
         self.ui.soundList.takeItem(self.ui.soundList.currentRow())
         self.ui.soundList.insertItem(row - 1, resname)
         self.ui.soundList.setCurrentRow(row - 1)
-        item = self.ui.soundList.item(row - 1)
+        item: QListWidgetItem | None = self.ui.soundList.item(row - 1)
         item.setFlags(item.flags() | QtCore.Qt.ItemIsEditable)
 
     def moveSoundDown(self):
         if self.ui.soundList.currentRow() == -1:
             return
-        resname = self.ui.soundList.currentItem().text()
-        row = self.ui.soundList.currentRow()
+        resname: str = self.ui.soundList.currentItem().text()
+        row: int = self.ui.soundList.currentRow()
         self.ui.soundList.takeItem(self.ui.soundList.currentRow())
         self.ui.soundList.insertItem(row + 1, resname)
         self.ui.soundList.setCurrentRow(row + 1)
-        item = self.ui.soundList.item(row + 1)
+        item: QListWidgetItem | None = self.ui.soundList.item(row + 1)
         item.setFlags(item.flags() | QtCore.Qt.ItemIsEditable)
 
     def closeEvent(self, e: QCloseEvent):

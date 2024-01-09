@@ -227,11 +227,14 @@ class WrappedStr(str):  # (metaclass=StrType):
         "_content",
     )
 
-    @staticmethod
-    def _assert_str_type(var) -> str:
+    @classmethod
+    def _assert_str_type(
+        cls: type[Self],
+        var,
+    ) -> str:
         if var is None:
             return None  # type: ignore[return-value]
-        if not isinstance(var, (WrappedStr, str)):
+        if not isinstance(var, (cls, str)):
             raise TypeError(f"Expected str-like, got '{var}' of type {type(var)}")
         return str(var)
 
@@ -242,22 +245,29 @@ class WrappedStr(str):  # (metaclass=StrType):
     ) -> Self:
         return unk_str if isinstance(unk_str, cls) else cls(unk_str)
 
-    def __init__(self, __content: str | WrappedStr = ""):
+    def __init__(
+        self,
+        __content: Self | str = "",
+    ):
         if __content is None:
             msg = f"Cannot initialize {self.__class__.__name__}(None), expected a str-like argument"
             raise RuntimeError(msg)
         self._content: str = str(__content)
 
     @classmethod
-    def maketrans(  # type: ignore[override]
+    def maketrans(
         cls,
-        __x: WrappedStr | str,
-        __y: WrappedStr | str,
-        __z: WrappedStr | str,
+        __x: Self | str,
+        __y: Self | str,
+        __z: Self | str,
     ) -> dict[int, int | None]:
         return super().maketrans(cls._assert_str_type(__x), cls._assert_str_type(__y), cls._assert_str_type(__z))
 
-    def __setattr__(self, __name: str, __value: Any):
+    def __setattr__(
+        self,
+        __name: str,
+        __value: Any,
+    ):
         if hasattr(self, __name):
             msg = f"{self.__class__.__name__} is immutable, cannot evaluate `{self!r}.setattr({__name!r}, {__value!r})`"
             raise RuntimeError(msg)
@@ -269,7 +279,7 @@ class WrappedStr(str):  # (metaclass=StrType):
     def __repr__(self):
         return f"{self.__class__.__name__}({self._content})"
 
-    def __str__(self) -> str:
+    def __str__(self):
         return self._content
 
     def __eq__(
@@ -441,7 +451,7 @@ class WrappedStr(str):  # (metaclass=StrType):
 
     def expandtabs(
         self,
-        tabsize: SupportsIndex = 8,
+        tabsize: int = 8,
     ) -> Self:
         """Return a copy where all tab characters are expanded using spaces.
 
@@ -665,7 +675,13 @@ class WrappedStr(str):  # (metaclass=StrType):
 
         If the optional argument count is given, only the first count occurrences are replaced.
         """
-        return self.__class__(self._content.replace(self._assert_str_type(__old), self._assert_str_type(__new), __count))
+        return self.__class__(
+            self._content.replace(
+                self._assert_str_type(__old),
+                self._assert_str_type(__new),
+                __count,
+            ),
+        )
 
     def rfind(
         self,
@@ -847,22 +863,37 @@ class CaseInsensitiveWrappedStr(WrappedStr):
     )
 
     @classmethod
-    def _coerce_str(cls, item) -> str:
+    def _coerce_str(
+        cls,
+        item,
+    ) -> str:
         if isinstance(item, (WrappedStr, str)):
             return str(item).casefold()
         return item
 
-    def __init__(self, __content: WrappedStr | str):
+    def __init__(
+        self,
+        __content: WrappedStr | str,
+    ):
         super().__init__(__content)
         self._lower_content: str = str(self._content).casefold()
 
-    def __contains__(self, __key):
+    def __contains__(
+        self,
+        __key,
+    ):
         return self._lower_content.__contains__(self._coerce_str(__key))
 
-    def __eq__(self, __value):
+    def __eq__(
+        self,
+        __value,
+    ):
         return self._lower_content.__eq__(self._coerce_str(__value))
 
-    def __ne__(self, __value):
+    def __ne__(
+        self,
+        __value,
+    ):
         return self._lower_content.__ne__(self._coerce_str(__value))
 
     def __hash__(self):
@@ -875,9 +906,6 @@ class CaseInsensitiveWrappedStr(WrappedStr):
         end=None,
     ):
         return self._lower_content.find(self._coerce_str(sub), start, end)
-
-    def lower(self):
-        return self.__class__(self._content.lower())
 
     def partition(
         self,

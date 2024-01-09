@@ -4,6 +4,7 @@ import os
 from contextlib import suppress
 from typing import TYPE_CHECKING, NamedTuple
 
+from pykotor.common.misc import ResRef
 from pykotor.common.stream import BinaryReader
 from pykotor.resource.type import ResourceType
 from pykotor.tools.misc import is_bif_file, is_capsule_file
@@ -11,7 +12,6 @@ from utility.misc import generate_sha256_hash
 from utility.path import Path, PurePath
 
 if TYPE_CHECKING:
-    from pykotor.common.misc import ResRef
     from utility.string import CaseInsensitiveWrappedStr
 
 
@@ -186,12 +186,8 @@ class LocationResult(NamedTuple):
 class ResourceIdentifier(NamedTuple):
     """Class for storing resource name and type, facilitating case-insensitive object comparisons and hashing equal to their string representations."""
 
-    resname: CaseInsensitiveWrappedStr | str
+    resname: str
     restype: ResourceType
-
-    def __new__(cls, resname: str, restype: ResourceType):
-        resname = CaseInsensitiveWrappedStr.cast(resname)
-        return super().__new__(cls, (resname, restype))
 
     def __hash__(
         self,
@@ -212,13 +208,13 @@ class ResourceIdentifier(NamedTuple):
 
     def __eq__(
         self,
-        __value: str | ResourceIdentifier,
+        __value: object,
     ):
-        if isinstance(__value, str):
+        if isinstance(__value, str) and not isinstance(__value, ResRef):
             __value = self.from_path(__value)
         return hash(self) == hash(__value)
 
-    def validate(self, *, strict=False):
+    def validate(self, *, strict: bool = False):
         from pykotor.common.misc import ResRef
         _ = strict and ResRef(self.resname)
 

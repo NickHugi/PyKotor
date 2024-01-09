@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from pykotor.extract.talktable import TalkTable
+from pykotor.extract.talktable import StringResult, TalkTable
 from pykotor.resource.formats.ssf import SSF, SSFSound, read_ssf, write_ssf
 from pykotor.resource.type import ResourceType
 from PyQt5.QtWidgets import QFileDialog, QWidget
@@ -267,7 +267,7 @@ class SSFEditor(Editor):
             (self.ui.poisonedSoundEdit, self.ui.poisonedTextEdit): self.ui.poisonedStrrefSpin.value(),
         }
 
-        batch = self._talktable.batch(list(pairs.values()))
+        batch: dict[int, StringResult] = self._talktable.batch(list(pairs.values()))
 
         for pair, stringref in pairs.items():
             text, sound = batch[stringref]

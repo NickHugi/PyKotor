@@ -124,7 +124,7 @@ class AREEditor(Editor):
     def load(self, filepath: os.PathLike | str, resref: str, restype: ResourceType, data: bytes):
         super().load(filepath, resref, restype, data)
 
-        are = read_are(data)
+        are: ARE = read_are(data)
         self._loadARE(are)
 
     def _loadARE(self, are: ARE):

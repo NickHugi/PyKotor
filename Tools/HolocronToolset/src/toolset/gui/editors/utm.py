@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from pykotor.common.misc import ResRef
+from pykotor.common.misc import CaseInsensitiveDict, ResRef
 from pykotor.common.module import Module
 from pykotor.extract.capsule import Capsule
 from pykotor.resource.formats.gff import write_gff
@@ -168,7 +168,8 @@ class UTMEditor(Editor):
 
         try:
             root: str = Module.get_root(self._filepath)
-            capsulesPaths: list[str] = [path for path in self._installation.module_names() if root.casefold() in path.casefold() and path.casefold() != self._filepath]
+            module_names: CaseInsensitiveDict[str] = self._installation.module_names()
+            capsulesPaths: list[str] = [path for path in module_names if root.casefold() in path.casefold() and path.casefold() != self._filepath]
             capsules.extend([Capsule(self._installation.module_path() / path) for path in capsulesPaths])
         except Exception as e:
             print(format_exception_with_variables(e, ___message___="This exception has been suppressed."))
