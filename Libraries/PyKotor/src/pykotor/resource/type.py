@@ -177,7 +177,7 @@ class ResourceType(Enum):
         is_invalid: bool = False,  # noqa: FBT001, FBT002
     ):
         self.type_id: int = type_id  # type: ignore[misc]
-        self.extension: CaseInsensitiveWrappedStr = CaseInsensitiveWrappedStr(extension.strip().lower())
+        self.extension: CaseInsensitiveWrappedStr = CaseInsensitiveWrappedStr.cast(extension.strip().lower())
         self.category: str = category
         self.contents: str = contents
         self.is_invalid: bool = is_invalid

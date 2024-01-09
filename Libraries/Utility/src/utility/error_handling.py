@@ -7,17 +7,23 @@ import types as ___types___
 
 
 def universal_simplify_exception(e: BaseException) -> tuple[str, str]:
-    """Simplify exceptions into a standardized format
+    """Simplify exceptions into a standardized format.
+
     Args:
+    ----
         e: Exception - The exception to simplify
+
     Returns:
+    -------
         error_name: str - The name of the exception
         error_message: str - A human-readable message for the exception
+
     Processing Logic:
-    - Extract the exception name from the type
-    - Handle specific exception types differently
-    - Try common exception attributes for a message
-    - Return (error_name, repr(e)) if nothing else.
+    ----------------
+        - Extract the exception name from the type
+        - Handle specific exception types differently
+        - Try common exception attributes for a message
+        - Return a general fallback if nothing else better was determined.
     """
     error_name: str = type(e).__name__
 
@@ -178,11 +184,11 @@ def assert_with_variable_trace(___condition___: bool, ___message___: str = "Asse
 
         # Filter out built-in and imported names
         ___detailed_message___.extend(
-            f"  {var} = {val}"
-            for var, val in ___frame___.f_locals.items()
+            f"  {var} = {___val___}"
+            for var, ___val___ in ___frame___.f_locals.items()
             if var not in ___default_attrs___
-            and var
-            not in [
+            and ___sys___.getsizeof(___val___) <= (1024 * 1024)
+            and var not in [
                 "___detailed_message___",
                 "___default_attrs___",
                 "___line_of_code___",

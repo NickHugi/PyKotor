@@ -11,10 +11,10 @@ from pykotor.resource.formats.rim import read_rim, write_rim
 from pykotor.resource.type import ResourceType
 from pykotor.tools import module
 from pykotor.tools.misc import is_any_erf_type_file, is_bif_file, is_capsule_file, is_rim_file
+from pykotor.tools.path import CaseAwarePath
 from PyQt5 import QtCore
 from PyQt5.QtGui import QIcon, QPixmap
 from PyQt5.QtWidgets import QFileDialog, QLineEdit, QMainWindow, QMessageBox, QPlainTextEdit, QShortcut, QWidget
-from pykotor.tools.path import CaseAwarePath
 from toolset.gui.dialogs.load_from_module import LoadFromModuleDialog
 from toolset.gui.dialogs.save.to_bif import BifSaveDialog, BifSaveOption
 from toolset.gui.dialogs.save.to_module import SaveToModuleDialog
@@ -78,27 +78,27 @@ class Editor(QMainWindow):
         self._writeSupported: list[ResourceType] = writeSupported
         self._global_settings: GlobalSettings = GlobalSettings()
         self._installation: HTInstallation = installation
-        self._mainwindow = mainwindow
+        self._mainwindow: QMainWindow | None = mainwindow
 
-        self._editorTitle = title
+        self._editorTitle: str = title
         self.setWindowTitle(title)
         self._setupIcon(iconName)
 
         self._saveFilter: str = "All valid files ("
         for resource in writeSupported:
             self._saveFilter += f'*.{resource.extension}{"" if writeSupported[-1] == resource else " "}'
-        self._saveFilter += " *.erf *.mod *.rim);;"
+        self._saveFilter += " *.erf *.mod *.rim *.sav);;"
         for resource in writeSupported:
             self._saveFilter += f"{resource.category} File (*.{resource.extension});;"
-        self._saveFilter += "Save into module (*.erf *.mod *.rim)"
+        self._saveFilter += "Save into module (*.erf *.mod *.rim *.sav)"
 
         self._openFilter: str = "All valid files ("
         for resource in readSupported:
             self._openFilter += f'*.{resource.extension}{"" if readSupported[-1] == resource else " "}'
-        self._openFilter += " *.erf *.mod *.rim);;"
+        self._openFilter += " *.erf *.mod *.rim *.sav);;"
         for resource in readSupported:
             self._openFilter += f"{resource.category} File (*.{resource.extension});;"
-        self._openFilter += "Load from module (*.erf *.mod *.rim)"
+        self._openFilter += "Load from module (*.erf *.mod *.rim *.sav)"
 
     def _setupMenus(self):
         """Sets up menu actions and keyboard shortcuts.
@@ -123,7 +123,7 @@ class Editor(QMainWindow):
             if action.text() == "Revert":
                 action.setEnabled(False)
             if action.text() == "Exit":
-                action.triggered.connect(self.close)
+                action.triggered.connect(self.close)  # type: ignore[]
         QShortcut("Ctrl+N", self).activated.connect(self.new)
         QShortcut("Ctrl+O", self).activated.connect(self.open)
         QShortcut("Ctrl+S", self).activated.connect(self.save)
@@ -153,9 +153,9 @@ class Editor(QMainWindow):
         elif is_capsule_file(self._filepath.name):
             self.setWindowTitle(f"{self._filepath.name}/{self._resname}.{self._restype.extension} - {installationName} - {self._editorTitle}")
         else:
-            folders = self._filepath.parts
-            folder = folders[-2] if len(folders) >= 2 else ""
-            self.setWindowTitle(f"{folder}/{self._resname}.{self._restype.extension} - {installationName} - {self._editorTitle}")
+            hierarchy: tuple[str, ...] = self._filepath.parts
+            folder = f"{hierarchy[-2]}/" if len(hierarchy) >= 2 else ""
+            self.setWindowTitle(f"{folder}{self._resname}.{self._restype.extension} - {installationName} - {self._editorTitle}")
 
     def saveAs(self):
         """Saves the file with the selected filepath.
@@ -174,7 +174,7 @@ class Editor(QMainWindow):
         if not filepath_str:
             return
 
-        if is_capsule_file(filepath_str) and "Save into module (*.erf *.mod *.rim)" in self._saveFilter:
+        if is_capsule_file(filepath_str) and "Save into module (*.erf *.mod *.rim *.sav)" in self._saveFilter:
             if self._resname is None:
                 self._resname = "new"
                 self._restype = self._writeSupported[0]
@@ -276,8 +276,8 @@ class Editor(QMainWindow):
             dialog = RimSaveDialog(self)
             dialog.exec_()
             if dialog.option == RimSaveOption.MOD:
-                folderpath = self._filepath.parent
-                filename = f"{Module.get_root(self._filepath)}.mod"
+                folderpath: Path = self._filepath.parent
+                filename: str = f"{Module.get_root(self._filepath)}.mod"
                 self._filepath = folderpath / filename
                 # Re-save with the updated filepath
                 self.save()
