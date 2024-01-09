@@ -265,10 +265,10 @@ function Find-Python {
         if ( (Get-OS) -eq "Windows" ) {
             Python-Install-Windows "3.8.10"
         } elseif ( (Get-OS) -eq "Linux" ) {
-            & "sudo apt install python3"
-            & "sudo apt install python3-dev"
+            & bash -c "sudo apt install python3"
+            & bash -c "sudo apt install python3-dev"
         } elseif ( (Get-OS) -eq "Mac" ) {
-            & "brew install python@3.8"
+            & bash -c "brew install python@3.8"
         }
     }
 }
