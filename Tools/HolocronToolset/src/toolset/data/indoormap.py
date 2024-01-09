@@ -373,7 +373,8 @@ class IndoorMap:
         paddingCount = 0
         for i, insert in enumerate(self.doorInsertions()):
             door = GITDoor(*insert.position)
-            door.resref = ResRef(f"{self.moduleId}_dor{i:02}")
+            door_resname: str = f"{self.moduleId}_dor{i:02}"
+            door.resref = ResRef(door_resname)
             door.bearing = math.radians(insert.rotation)
             door.tweak_color = None
             self.git.doors.append(door)
@@ -381,7 +382,6 @@ class IndoorMap:
             utd: UTD = deepcopy(insert.door.utdK2 if installation.tsl else insert.door.utdK1)
             utd.resref = door.resref
             utd.static = insert.static
-            door_resname = str(door.resref)
             utd.tag = door_resname.title().replace("_", "")
             self.mod.set_data(door_resname, ResourceType.UTD, bytes_utd(utd))
 
