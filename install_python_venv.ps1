@@ -1,3 +1,7 @@
+param (
+  [switch]$noprompt
+)
+
 $repoRootPath = Split-Path -Parent $MyInvocation.MyCommand.Definition
 function Get-OS {
     if ($IsWindows) {
@@ -17,7 +21,10 @@ function Get-OS {
     } else {
         Write-Error "Unknown Operating System"
         Write-Host "Press any key to exit..."
-        $null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
+        if (-not $noprompt) {
+            $null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
+        }
+        exit
     }
 }
 
@@ -142,7 +149,9 @@ function Initialize-Python {
     } else {
         Write-Error "Your installed Python version '$pythonVersion' is not supported. Please install a python version between '$minVersion' and '$maxVersion'"
         Write-Host "Press any key to exit..."
-        $null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
+        if (-not $noprompt) {
+            $null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
+        }
         exit
     }
 }
@@ -244,12 +253,14 @@ function Find-Python {
 
     if ( $pythonInstallPath -eq "") {
         Write-Host "A supported Python version was not detected on your system. Install $recommendedVersion now automatically?"
-        $userInput = Read-Host "(Y/N)"
-        if ( $userInput -ne "Y" -and $userInput -ne "y" ) {
-            Write-Host "A python install between versions $minVersion and $maxVersion is required for PyKotor."
-            Write-Host "Press any key to exit..."
-            $null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
-            exit
+        if (-not $noprompt) {
+            $userInput = Read-Host "(Y/N)"
+            if ( $userInput -ne "Y" -and $userInput -ne "y" ) {
+                Write-Host "A python install between versions $minVersion and $maxVersion is required for PyKotor."
+                Write-Host "Press any key to exit..."
+                $null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
+                exit
+            }
         }
         if ( (Get-OS) -eq "Windows" ) {
             Python-Install-Windows "3.8.10"
@@ -270,20 +281,25 @@ if (Test-Path $venvPath -ErrorAction SilentlyContinue) {
 } else {
     Find-Python
     if ( $pythonInstallPath -eq "" ) {
-        Write-Warning "Could not find path to python. Try again?"
-        $userInput = Read-Host "(Y/N)"
-        if ( $userInput -ne "Y" -and $userInput -ne "y" ) {
-            $userInput = Read-Host "Enter the path to python executable:"
-            if ( Test-Path -Path $userInput -ErrorAction SilentlyContinue ) {
-                $pythonInstallPath = $userInput
+        if ( -not $noprompt ) {
+            Write-Warning "Could not find path to python. Try again?"
+            $userInput = Read-Host "(Y/N)"
+            if ( $userInput -ne "Y" -and $userInput -ne "y" ) {
+                $userInput = Read-Host "Enter the path to python executable:"
+                if ( Test-Path -Path $userInput -ErrorAction SilentlyContinue ) {
+                    $pythonInstallPath = $userInput
+                } else {
+                    Write-Error "Python executable not found at '$userInput'"
+                    Write-Host "Press any key to exit..."
+                    $null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
+                    exit
+                }
             } else {
-                Write-Error "Python executable not found at '$userInput'"
-                Write-Host "Press any key to exit..."
-                $null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
-                exit
+                Find-Python
             }
         } else {
-            Find-Python
+            Write-Error "Could not find path to python."
+            exit
         }
     }
     # Attempt to create a virtual environment
@@ -292,11 +308,13 @@ if (Test-Path $venvPath -ErrorAction SilentlyContinue) {
         Write-Error $pythonVenvCreation
         Write-Error "Failed to create virtual environment. Ensure Python 3.8 is installed correctly."
         Write-Warning "Attempt to use main python install at $pythonInstallPath instead of a venv? (not recommended but is usually fine)"
-        $userInput = Read-Host "(Y/N)"
-        if ( $userInput -ne "Y" -and $userInput -ne "y" ) {
-            Write-Host "Press any key to exit..."
-            $null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
-            exit
+        if (-not $noprompt) {
+            $userInput = Read-Host "(Y/N)"
+            if ( $userInput -ne "Y" -and $userInput -ne "y" ) {
+                Write-Host "Press any key to exit..."
+                $null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
+                exit
+            }
         }
         $pythonExePath = $pythonInstallPath
         $findVenvExecutable = $false
@@ -322,7 +340,10 @@ if ( $findVenvExecutable -eq $true) {
         Write-Error "No python executables found in virtual environment."
         Write-Error "Not found: [$pythonExePaths]"
         Write-Host "Press any key to exit..."
-        $null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
+        if (-not $noprompt) {
+            $null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
+        }
+        exit
     }
 }
 
@@ -345,6 +366,8 @@ if ($envFileFound) {
 } else {
     Write-Warning "'$dotenv_path' file not found, this may mean you need to fetch the repo's latest changes. Please resolve this problem and try again."
     Write-Host "Press any key to exit..."
-    $null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
+    if (-not $noprompt) {
+        $null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
+    }
     exit
 }

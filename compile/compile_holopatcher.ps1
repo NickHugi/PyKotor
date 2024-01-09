@@ -1,3 +1,6 @@
+param (
+  [switch]$noprompt
+)
 
 $scriptPath = Split-Path -Parent $MyInvocation.MyCommand.Definition
 $rootPath = (Resolve-Path -LiteralPath "$scriptPath/..").Path
@@ -120,5 +123,7 @@ if (-not (Test-Path -Path $finalExecutablePath)) {
 } else {
     Write-Host "HoloPatcher was compiled to '$finalExecutablePath'"
 }
-Write-Host "Press any key to exit..."
-$null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
+if (-not $noprompt) {
+    Write-Host "Press any key to exit..."
+    $null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
+}
