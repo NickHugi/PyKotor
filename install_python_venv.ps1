@@ -100,12 +100,12 @@ function Set-EnvironmentVariablesFromEnvFile {
 
 function Python-Install-Windows {
     Param (
-        [string]$pythonVersion
+        [string]$global:pythonVersion
     )
     try {
         # Download and install Python
-        $pythonInstallerUrl = "https://www.python.org/ftp/python/$pythonVersion/python-$pythonVersion.exe"
-        $installerPath = (Resolve-Path -LiteralPath "$env:TEMP/python-$pythonVersion.exe").Path
+        $pythonInstallerUrl = "https://www.python.org/ftp/python/$global:pythonVersion/python-$global:pythonVersion.exe"
+        $installerPath = (Resolve-Path -LiteralPath "$env:TEMP/python-$global:pythonVersion.exe").Path
         Invoke-WebRequest -Uri $pythonInstallerUrl -OutFile $installerPath
         Start-Process -FilePath $installerPath -Args '/quiet InstallAllUsers=1 PrependPath=1' -Wait -NoNewWindow
     
@@ -122,11 +122,11 @@ function Get-Python-Version {
     Param (
         [string]$pythonPath
     )
-    $pythonVersionOutput = & $pythonPath --version 2>&1
-    $pythonVersionString = $pythonVersionOutput -replace '^Python\s+'
-    $numericVersionString = $pythonVersionString -replace '(\d+\.\d+\.\d+).*', '$1'
-    $pythonVersion = [Version]$numericVersionString
-    return $pythonVersion
+    $global:pythonVersionOutput = & $pythonPath --version 2>&1
+    $global:pythonVersionString = $global:pythonVersionOutput -replace '^Python\s+'
+    $numericVersionString = $global:pythonVersionString -replace '(\d+\.\d+\.\d+).*', '$1'
+    $global:pythonVersion = [Version]$numericVersionString
+    return $global:pythonVersion
 }
 
 $minVersion = [Version]"3.8.0"
@@ -140,14 +140,14 @@ function Initialize-Python {
     )
 
     # Check Python version
-    $pythonVersion = Get-Python-Version $pythonPath
+    $global:pythonVersion = Get-Python-Version $pythonPath
 
-    if ($pythonVersion -ge $minVersion -and $pythonVersion -le $lessThanVersion) {
-        Write-Host "Python $pythonVersion install detected."
-    } elseif ($pythonVersion -ge $minVersion) {
-        Write-Warning "The Python version on PATH ($pythonVersion) is not recommended, please use python 3.8. Continuing anyway..."
+    if ($global:pythonVersion -ge $minVersion -and $global:pythonVersion -le $lessThanVersion) {
+        Write-Host "Python $global:pythonVersion install detected."
+    } elseif ($global:pythonVersion -ge $minVersion) {
+        Write-Warning "The Python version on PATH ($global:pythonVersion) is not recommended, please use python 3.8. Continuing anyway..."
     } else {
-        Write-Error "Your installed Python version '$pythonVersion' is not supported. Please install a python version between '$minVersion' and '$maxVersion'"
+        Write-Error "Your installed Python version '$global:pythonVersion' is not supported. Please install a python version between '$minVersion' and '$maxVersion'"
         Write-Host "Press any key to exit..."
         if (-not $noprompt) {
             $null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
@@ -197,8 +197,8 @@ function Get-Python-Path-From-Command {
     }
 }
 
-$pythonInstallPath = ""
-$pythonVersion = ""
+$global:pythonInstallPath = ""
+$global:pythonVersion = ""
 
 function Find-Python {
     Param (
@@ -208,7 +208,7 @@ function Find-Python {
     $python3Command = Get-Command -Name python3 -ErrorAction SilentlyContinue
     if ($null -ne $python3Command) {
         $global:pythonVersion = Get-Python-Version "python3"
-        if ($pythonVersion -ge $minVersion -and $pythonVersion -lt $maxVersion) {
+        if ($global:pythonVersion -ge $minVersion -and $global:pythonVersion -lt $maxVersion) {
             Write-Host "Found python3 command"
             $global:pythonInstallPath = Get-Python-Path-From-Command "python3"
         } else {
@@ -220,8 +220,8 @@ function Find-Python {
     $pythonCommand = Get-Command -Name python -ErrorAction SilentlyContinue
     if ($null -ne $pythonCommand) {
         $global:pythonVersion = Get-Python-Version "python"
-        if ($pythonVersion -ge $minVersion -and $pythonVersion -lt $maxVersion) {
-            Write-Host "Found python command with version $pythonVersion"
+        if ($global:pythonVersion -ge $minVersion -and $global:pythonVersion -lt $maxVersion) {
+            Write-Host "Found python command with version $global:pythonVersion"
             $global:pythonInstallPath = Get-Python-Path-From-Command "python"
         } else {
             $global:pythonInstallPath = ""
@@ -229,7 +229,7 @@ function Find-Python {
         }
     }
 
-    if ( $pythonInstallPath -eq "" -or ($pythonVersion -ne "" -and $pythonVersion -ge $recommendedVersion )) {
+    if ( $global:pythonInstallPath -eq "" -or ($global:pythonVersion -ne "" -and $global:pythonVersion -ge $recommendedVersion )) {
 
         foreach ($version in $validPythonVersions) {
             $paths = (Get-PythonPaths $version)[(Get-OS)]
@@ -241,8 +241,8 @@ function Find-Python {
                         $thisVersion = Get-Python-Version $resolvedPath
                         if ($thisVersion -ge $minVersion -and $thisVersion -le $maxVersion) {
                             # Valid path or better recommended path found.
-                            if ($pythonInstallPath -eq "" -or $thisVersion -le $recommendedVersion) {
-                                Write-Host "Found python install path with version $thisVersion at path $pythonInstallPath"
+                            if ($global:pythonInstallPath -eq "" -or $thisVersion -le $recommendedVersion) {
+                                Write-Host "Found python install path with version $thisVersion at path '$resolvedPath'"
                                 $global:pythonInstallPath = $resolvedPath
                                 $global:pythonVersion = $thisVersion
                             }
@@ -255,7 +255,7 @@ function Find-Python {
         }
     }
 
-    if ( $pythonInstallPath -eq "") {
+    if ( $global:pythonInstallPath -eq "") {
         Write-Host "A supported Python version was not detected on your system. Install $recommendedVersion now automatically?"
         if (-not $noprompt) {
             $userInput = Read-Host "(Y/N)"
