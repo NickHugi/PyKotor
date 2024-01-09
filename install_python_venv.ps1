@@ -242,7 +242,7 @@ function Find-Python {
                         if ($thisVersion -ge $minVersion -and $thisVersion -le $maxVersion) {
                             # Valid path or better recommended path found.
                             if ($pythonInstallPath -eq "" -or $thisVersion -le $recommendedVersion) {
-                                Write-Host "Found python install path with version $thisVersion"
+                                Write-Host "Found python install path with version $thisVersion at path $pythonInstallPath"
                                 $global:pythonInstallPath = $resolvedPath
                                 $global:pythonVersion = $thisVersion
                             }
@@ -278,7 +278,6 @@ function Find-Python {
         } else {
             Write-Host "Find python again now that it's been installed."
             Find-Python -intrnal
-            & bash -c "python3" 2>&1 | Write-Output
         }
     }
 }
@@ -290,14 +289,14 @@ if (Test-Path $venvPath -ErrorAction SilentlyContinue) {
     Write-Host "Found existing .venv at '$venvPath'"
 } else {
     Find-Python
-    if ( $pythonInstallPath -eq "" ) {
+    if ( $global:pythonInstallPath -eq "" ) {
         if ( -not $noprompt ) {
             Write-Warning "Could not find path to python. Try again?"
             $userInput = Read-Host "(Y/N)"
             if ( $userInput -ne "Y" -and $userInput -ne "y" ) {
                 $userInput = Read-Host "Enter the path to python executable:"
                 if ( Test-Path -Path $userInput -ErrorAction SilentlyContinue ) {
-                    $pythonInstallPath = $userInput
+                    $global:pythonInstallPath = $userInput
                 } else {
                     Write-Error "Python executable not found at '$userInput'"
                     Write-Host "Press any key to exit..."
@@ -313,11 +312,11 @@ if (Test-Path $venvPath -ErrorAction SilentlyContinue) {
         }
     }
     # Attempt to create a virtual environment
-    $pythonVenvCreation = & $pythonInstallPath -m venv $venvPath
+    $pythonVenvCreation = & $global:pythonInstallPath -m venv $venvPath
     if ($pythonVenvCreation -like "*Error*") {
         Write-Error $pythonVenvCreation
         Write-Error "Failed to create virtual environment. Ensure Python 3.8 is installed correctly."
-        Write-Warning "Attempt to use main python install at $pythonInstallPath instead of a venv? (not recommended but is usually fine)"
+        Write-Warning "Attempt to use main python install at $global:pythonInstallPath instead of a venv? (not recommended but is usually fine)"
         if (-not $noprompt) {
             $userInput = Read-Host "(Y/N)"
             if ( $userInput -ne "Y" -and $userInput -ne "y" ) {
@@ -326,7 +325,7 @@ if (Test-Path $venvPath -ErrorAction SilentlyContinue) {
                 exit
             }
         }
-        $pythonExePath = $pythonInstallPath
+        $pythonExePath = $global:pythonInstallPath
         $findVenvExecutable = $false
     } else {
         #Write-Host $pythonVenvCreation
