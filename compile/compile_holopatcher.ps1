@@ -113,6 +113,7 @@ if (Test-Path -Path $finalExecutablePath) {
 # Combine pyInstallerArgsString with pythonPathArgsString
 $finalPyInstallerArgsString = "$pythonPathArgsString $pyInstallerArgsString"
 
+$current_working_dir = (Get-Location).Path
 Set-Location -LiteralPath (Resolve-Path -LiteralPath "$rootPath/Tools/HoloPatcher/src").Path
 $command = "$pythonExePath -m PyInstaller $finalPyInstallerArgsString `"__main__.py`""
 Write-Host $command
@@ -124,6 +125,8 @@ if (-not (Test-Path -Path $finalExecutablePath)) {
 } else {
     Write-Host "HoloPatcher was compiled to '$finalExecutablePath'"
 }
+Set-Location -LiteralPath $current_working_dir
+
 if (-not $this_noprompt) {
     Write-Host "Press any key to exit..."
     $null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
