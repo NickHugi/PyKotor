@@ -268,11 +268,11 @@ function Find-Python {
         if ( (Get-OS) -eq "Windows" ) {
             Python-Install-Windows "3.8.10"
         } elseif ( (Get-OS) -eq "Linux" ) {
-            & bash -c "sudo apt install python3 -y"
-            & bash -c "sudo apt install python3-dev -y"
+            & bash -c "sudo apt install python3 -y" 2>&1 | Write-Output
+            & bash -c "sudo apt install python3-dev -y" 2>&1 | Write-Output
         } elseif ( (Get-OS) -eq "Mac" ) {
-            & bash -c "brew install python@3.8 -y"
-        }
+            & bash -c "brew install python@3.8 -y" 2>&1 | Write-Output
+        }        
         # Find python again now that it's been installed.
         if (-not $internal) {
             Find-Python -internal
