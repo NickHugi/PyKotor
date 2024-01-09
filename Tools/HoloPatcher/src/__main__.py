@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import base64
-import chardet
 import contextlib
 import ctypes
 import json
@@ -34,6 +33,7 @@ if getattr(sys, "frozen", False) is False:
         update_sys_path(utility_path.parent)
 
 from pykotor.common.misc import Game
+from pykotor.tools.encoding import decode_bytes_with_fallbacks
 from pykotor.tools.path import CaseAwarePath, find_kotor_paths_from_default
 from pykotor.tslpatcher.logger import PatchLogger
 from pykotor.tslpatcher.patcher import ModInstaller
@@ -45,7 +45,6 @@ from utility.path import Path
 from utility.string import striprtf
 
 if TYPE_CHECKING:
-    from io import TextIOWrapper
 
     from pykotor.tslpatcher.namespaces import PatcherNamespace
 
@@ -478,11 +477,6 @@ class App(tk.Tk):
         )
         return namespace_option.description if namespace_option else ""
 
-    def detect_encoding(self, file_path : CaseAwarePath):
-        with file_path.open("rb") as f:
-            raw_data = f.read(1024) 
-        return chardet.detect(raw_data)['encoding']
-
     def on_namespace_option_chosen(self, event: tk.Event, config_reader: ConfigReader | None = None) -> None:
         """Handles the namespace option being chosen from the combobox.
 
@@ -510,15 +504,10 @@ class App(tk.Tk):
             if not info_rtf.exists():
                 messagebox.showwarning("No info.rtf", "Could not load the rtf for this mod, file not found on disk.")
                 return
-            
-            file_encoding = self.detect_encoding(info_rtf)
-            # Set fallback encoding if encoding could not be detected
-            if file_encoding == None:
-                file_encoding = "utf-8"
-
-            with info_rtf.open("r", encoding=file_encoding) as rtf:
-                self.set_stripped_rtf_text(rtf)
-
+            with info_rtf.open("rb") as f:
+                data: bytes = f.read()
+                rtf_text: str = decode_bytes_with_fallbacks(data)
+                self.set_stripped_rtf_text(rtf_text)
         except Exception as e:  # noqa: BLE001
             error_name, msg = universal_simplify_exception(e)
             messagebox.showerror(
@@ -929,9 +918,9 @@ class App(tk.Tk):
         ]
         self.gamepaths["values"] = gamepaths_list
 
-    def set_stripped_rtf_text(self, rtf: TextIOWrapper) -> None:
+    def set_stripped_rtf_text(self, rtf_text: str) -> None:
         """Strips the info.rtf of all RTF related text and displays it in the UI."""
-        stripped_content: str = striprtf(rtf.read())
+        stripped_content: str = striprtf(rtf_text)
         self.main_text.config(state=tk.NORMAL)
         self.main_text.delete(1.0, tk.END)
         self.main_text.insert(tk.END, stripped_content)
