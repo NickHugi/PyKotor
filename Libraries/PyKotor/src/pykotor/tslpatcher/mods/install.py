@@ -322,8 +322,8 @@ class InstallFile(PatcherModifications):
         if isinstance(source, BinaryReader):
             return source.read_all()
         if isinstance(source, (str, os.PathLike)):
-            with Path(source).open() as f:
-                return f.read().encode()
+            with Path(source).open(mode="rb") as f:
+                return f.read()
         return bytes(source)
 
     def apply(self, source, *args, **kwargs):

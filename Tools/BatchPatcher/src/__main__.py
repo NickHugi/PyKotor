@@ -53,6 +53,7 @@ from pykotor.resource.formats.tpc.io_tga import TPCTGAReader, TPCTGAWriter
 from pykotor.resource.formats.tpc.tpc_auto import bytes_tpc
 from pykotor.resource.formats.tpc.tpc_data import TPC
 from pykotor.resource.type import ResourceType
+from pykotor.tools.encoding import decode_bytes_with_fallbacks
 from pykotor.tools.misc import is_capsule_file
 from pykotor.tools.path import CaseAwarePath, find_kotor_paths_from_default
 from pykotor.tslpatcher.logger import PatchLog, PatchLogger
@@ -362,8 +363,10 @@ def patch_and_save_noncapsule(resource: FileResource, savedir: Path | None = Non
         txi_file = resource.filepath().with_suffix(".txi")
         if txi_file.exists():
             log_output("Embedding TXI information...")
-            with txi_file.open() as f:
-                patched_data.txi = f.read()
+            with txi_file.open(mode="rb") as f:
+                data: bytes = f.read()
+                txi_text: str = decode_bytes_with_fallbacks(data)
+                patched_data.txi = txi_text
         TPCTGAWriter(patched_data, new_path.with_suffix(".tpc")).write()
 
 def patch_capsule_file(c_file: Path):
@@ -585,7 +588,7 @@ def create_font_pack(lang: Language):
     )
 
 
-def assign_to_globals(instance):
+def assign_to_globals(instance: KOTORPatchingToolUI):
     for attr, value in instance.__dict__.items():
         # Convert tkinter variables to their respective Python types
         if isinstance(value, tk.StringVar):
