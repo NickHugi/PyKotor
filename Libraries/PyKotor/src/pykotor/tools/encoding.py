@@ -20,6 +20,7 @@ def decode_bytes_with_fallbacks(
     errors="strict",
     encoding: str | None = None,
     lang: Language | None = None,
+    *,
     only_8bit_encodings: bool | None = False,
 ) -> str:
     """A well rounded decoding function used to decode byte content with provided language/encoding information.
@@ -72,9 +73,9 @@ def decode_bytes_with_fallbacks(
         if only_8bit_encodings:
             max_8bit_characters = 256
             detected_8bit_encodings = [
-                enc
-                for enc in detected_encodings
-                if len(enc.alphabets) <= max_8bit_characters
+                enc_match
+                for enc_match in detected_encodings
+                if len(enc_match.alphabets) <= max_8bit_characters
             ]
             best_match = detected_8bit_encodings[0]
             best_8bit_encoding: str = best_match.encoding or "windows-1252"
@@ -82,10 +83,14 @@ def decode_bytes_with_fallbacks(
 
         result_detect = detected_encodings.best()
         if not result_detect:
-            # Final fallback (utf-8) if no encoding is detected
-            return byte_content.decode(errors=attempt_errors)
+            # Semi-Final fallback (utf-8) if no encoding is detected
+            with contextlib.suppress(UnicodeDecodeError):
+                return byte_content.decode(encoding="utf-8", errors=attempt_errors)
+            # Final fallback (latin1) if no encoding is detected
+            return byte_content.decode(encoding="latin1", errors=attempt_errors)
 
         best_encoding: str = result_detect.encoding
+
         # Special handling for BOM
         aliases: list[str] = result_detect.encoding_aliases
         if result_detect.bom:
@@ -195,6 +200,7 @@ def get_cp949_charset() -> list[str]:
     return charset
 
 def get_cp936_charset() -> list[str]:
+    # sourcery skip: merge-duplicate-blocks, remove-redundant-if
     charset: list[str] = []
     for i in range(256):
         if 0x00 <= i <= 0x7F:

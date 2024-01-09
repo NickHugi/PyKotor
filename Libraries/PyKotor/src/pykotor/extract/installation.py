@@ -567,7 +567,7 @@ class Installation:
             self.load_chitin()
         return self._chitin[:]
 
-    def modules_list(self) -> list[str]:
+    def modules_list(self) -> list[CaseInsensitiveWrappedStr]:
         """Returns the list of module filenames located in the modules folder linked to the Installation.
 
         Module filenames are cached and require to be refreshed after a file is added, deleted or renamed.
@@ -601,7 +601,7 @@ class Installation:
             else [module_resource for module_filename in self._modules for module_resource in self._modules[module_filename]]
         )
 
-    def lips_list(self) -> list[str]:
+    def lips_list(self) -> list[CaseInsensitiveWrappedStr]:
         """Returns the list of module filenames located in the lips folder linked to the Installation.
 
         Module filenames are cached and require to be refreshed after a file is added, deleted or renamed.
@@ -635,7 +635,7 @@ class Installation:
             else [lip_resource for lip_filename in self._lips for lip_resource in self._lips[lip_filename]]
         )
 
-    def rims_list(self) -> list[str]:
+    def rims_list(self) -> list[CaseInsensitiveWrappedStr]:
         """Returns the list of rim filenames located in the 'rims' and 'modules' folders linked to the Installation.
 
         Rim filenames are cached and require to be refreshed after a file is added, deleted or renamed.
@@ -702,7 +702,7 @@ class Installation:
             *queried_module_rim_resources,
         ]
 
-    def texturepacks_list(self) -> list[str]:
+    def texturepacks_list(self) -> list[CaseInsensitiveWrappedStr]:
         """Returns the list of texture-pack filenames located in the texturepacks folder linked to the Installation.
 
         Returns

@@ -105,6 +105,7 @@ def compileScript(source: str, tsl: bool) -> bytes:
             msg = "Temp directory has not been set or is invalid."
             raise NoConfigurationSetError(msg)
 
+    returnValue = None
     if os.name == "nt":
         returnValue: int = _prompt_user_for_compiler_option()
     if returnValue == QMessageBox.No:

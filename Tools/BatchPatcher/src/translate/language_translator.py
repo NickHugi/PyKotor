@@ -523,23 +523,27 @@ class Translator:
 
 
         # Function to chunk the text into segments with a maximum of 500 characters
-        def chunk_text(text: str, size):
+        def chunk_text(text: str, size) -> list[str]:
             """Splits a text into chunks of given size.
 
             Args:
             ----
                 text: str - The text to split
                 size: int - The maximum size of each chunk
+
             Returns:
+            -------
                 chunks: list - A list of text chunks with each chunk <= size
+
             Processing Logic:
-            - Initialize an empty list to hold chunks
-            - Loop through text while there is still text remaining
-            - Check if remaining text is <= size, if so add to chunks and break
-            - Otherwise find cut off point (last space or period within size limit)
-            - Add chunk to list and remove processed text from original.
+            ----------------
+                - Initialize an empty list to hold chunks
+                - Loop through text while there is still text remaining
+                - Check if remaining text is <= size, if so add to chunks and break
+                - Otherwise find cut off point (last space or period within size limit)
+                - Add chunk to list and remove processed text from original.
             """
-            chunks = []
+            chunks: list[str] = []
             while text:
                 if len(text) <= size:
                     chunks.append(text)

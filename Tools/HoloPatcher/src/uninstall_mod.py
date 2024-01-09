@@ -4,8 +4,8 @@ import os
 import shutil
 from datetime import datetime
 from tkinter import messagebox
-from pykotor.tools.encoding import decode_bytes_with_fallbacks
 
+from pykotor.tools.encoding import decode_bytes_with_fallbacks
 from pykotor.tslpatcher.logger import PatchLogger
 from utility.error_handling import universal_simplify_exception
 from utility.path import Path
@@ -107,8 +107,8 @@ class ModUninstaller:
     def restore_backup(
         self,
         backup_folder: Path,
-        existing_files,
-        files_in_backup,
+        existing_files: set[str],
+        files_in_backup: list[Path],
     ):
         """Restores a game backup folder to the existing game files.
 
@@ -128,9 +128,9 @@ class ModUninstaller:
         --------
             restore_backup(Path('backup'), {'file1.txt', 'file2.txt'}, [Path('backup/file1.txt'), Path('backup/file2.txt')])
         """
-        for file in existing_files:
-            file_path = Path.pathify(file)
-            rel_filepath = file_path.relative_to(self.game_path)  # type: ignore[attr-defined]
+        for file_str in existing_files:
+            file_path = Path.pathify(file_str)
+            rel_filepath: Path = file_path.relative_to(self.game_path)  # type: ignore[attr-defined]
             file_path.unlink(missing_ok=True)  # type: ignore[attr-defined]
             self.log.add_note(f"Removed {rel_filepath}...")
         for file in files_in_backup:
@@ -142,7 +142,7 @@ class ModUninstaller:
 
     def get_backup_info(self) -> tuple[Path | None, set[str], list[Path], int]:
         """Get info about the most recent valid backup."""
-        most_recent_backup_folder = self.get_most_recent_backup(self.backups_location_path)
+        most_recent_backup_folder: Path | None = self.get_most_recent_backup(self.backups_location_path)
         if not most_recent_backup_folder:
             return None, set(), [], 0
 

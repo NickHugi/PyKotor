@@ -719,7 +719,7 @@ class App(tk.Tk):
                 "No mod chosen",
                 "Select your mod directory first.",
             )
-        game_path = self.gamepaths.get()
+        game_path: str = self.gamepaths.get()
         if not game_path or not CaseAwarePath(game_path).exists():
             return _if_missing(
                 "No KOTOR directory chosen",
@@ -782,7 +782,7 @@ class App(tk.Tk):
             self._handle_exception_during_install(e)
         self.set_active_install(install_running=False)
 
-    def test_reader(self):
+    def test_reader(self):  # sourcery skip: no-conditionals-in-tests
         if not self.preinstall_validate_chosen():
             return
         namespace_option: PatcherNamespace = next(x for x in self.namespaces if x.name == self.namespaces_combobox.get())
