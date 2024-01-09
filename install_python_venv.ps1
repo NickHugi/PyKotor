@@ -278,6 +278,7 @@ function Find-Python {
         } else {
             Write-Host "Find python again now that it's been installed."
             Find-Python -intrnal
+            & bash -c "python3" 2>&1 | Write-Output
         }
     }
 }
