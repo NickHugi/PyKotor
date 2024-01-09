@@ -20,7 +20,6 @@ def decode_bytes_with_fallbacks(
     errors="strict",
     encoding: str | None = None,
     lang: Language | None = None,
-    *,
     only_8bit_encodings: bool | None = False,
 ) -> str:
     """A well rounded decoding function used to decode byte content with provided language/encoding information.
