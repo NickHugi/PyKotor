@@ -182,11 +182,11 @@ function Get-PythonPaths {
     return @{ Windows = $windowsPaths; Linux = $linuxAndMacPaths; Darwin = $linuxAndMacPaths }
 }
 
-function Get-Python-Path-From-Command {
+function Get-Path-From-Command {
     Param(
         [string]$command
     )
-    $pythonCommand = Get-Command -Name python3 -ErrorAction SilentlyContinue
+    $pythonCommand = Get-Command -Name $command -ErrorAction SilentlyContinue
 
     if ($null -ne $pythonCommand) {
         $pythonPath = $pythonCommand.Source
@@ -210,7 +210,7 @@ function Find-Python {
         $global:pythonVersion = Get-Python-Version "python3"
         if ($global:pythonVersion -ge $minVersion -and $global:pythonVersion -lt $maxVersion) {
             Write-Host "Found python3 command"
-            $global:pythonInstallPath = Get-Python-Path-From-Command "python3"
+            $global:pythonInstallPath = Get-Path-From-Command "python3"
         } else {
             $global:pythonInstallPath = ""
             $global:pythonVersion = ""
@@ -222,7 +222,7 @@ function Find-Python {
         $global:pythonVersion = Get-Python-Version "python"
         if ($global:pythonVersion -ge $minVersion -and $global:pythonVersion -lt $maxVersion) {
             Write-Host "Found python command with version $global:pythonVersion"
-            $global:pythonInstallPath = Get-Python-Path-From-Command "python"
+            $global:pythonInstallPath = Get-Path-From-Command "python"
         } else {
             $global:pythonInstallPath = ""
             $global:pythonVersion = ""
