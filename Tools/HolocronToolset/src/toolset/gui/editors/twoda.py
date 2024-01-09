@@ -451,7 +451,7 @@ class SortFilterProxyModel(QSortFilterProxyModel):
         - If no cells match, return False
         """
         pattern: str = self.filterRegExp().pattern().lower()
-        if self.filterRegExp().pattern() == "":
+        if not self.filterRegExp().pattern():
             return True
         for i in range(self.sourceModel().columnCount()):
             index = self.sourceModel().index(sourceRow, i, sourceParent)

@@ -397,7 +397,7 @@ class CopyRow2DA(Modify2DA):
         super().__init__()
         self.identifier: str = identifier
         self.target: Target = target
-        self.exclusive_column: str | None = exclusive_column if exclusive_column != "" else None
+        self.exclusive_column: str | None = exclusive_column or None
         self.row_label: str | None = row_label
         self.cells: dict[str, RowValue] = cells
         self.store_2da: dict[int, RowValue] = {} if store_2da is None else store_2da

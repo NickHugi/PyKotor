@@ -645,7 +645,7 @@ class TwoDARow:
             raise KeyError(msg)
 
         value: Enum | T = default
-        if enum_type(self._data[header]) != "":
+        if enum_type(self._data[header]):
             value = enum_type(self._data[header])
         return value
 

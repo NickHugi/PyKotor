@@ -3,7 +3,6 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from pykotor.common.language import LocalizedString
-from pykotor.common.misc import ResRef
 from pykotor.common.module import Module
 from pykotor.extract.installation import Installation, SearchLocation
 from pykotor.resource.formats.erf import ERF, ERFType, write_erf
@@ -15,10 +14,10 @@ from pykotor.resource.formats.vis import write_vis
 from pykotor.resource.generics.are import dismantle_are
 from pykotor.resource.generics.git import GIT, dismantle_git
 from pykotor.resource.generics.ifo import dismantle_ifo
-from pykotor.resource.generics.pth import dismantle_pth
-from pykotor.resource.generics.utd import dismantle_utd
-from pykotor.resource.generics.utp import dismantle_utp
-from pykotor.resource.generics.uts import dismantle_uts
+from pykotor.resource.generics.pth import PTH, dismantle_pth
+from pykotor.resource.generics.utd import UTD, dismantle_utd
+from pykotor.resource.generics.utp import UTP, dismantle_utp
+from pykotor.resource.generics.uts import UTS, dismantle_uts
 from pykotor.resource.type import ResourceType
 from pykotor.tools import model
 from pykotor.tools.path import CaseAwarePath
@@ -27,6 +26,7 @@ from utility.string import ireplace
 if TYPE_CHECKING:
     import os
 
+    from pykotor.common.misc import ResRef
     from pykotor.resource.formats.lyt import LYT
     from pykotor.resource.formats.tpc.tpc_data import TPCConvertResult
     from pykotor.resource.formats.vis import VIS
@@ -91,7 +91,7 @@ def clone_module(
     git: GIT | None = old_module.git().resource()
 
     if keep_pathing:
-        pth = old_module.pth().resource()
+        pth: PTH | None = old_module.pth().resource()
         pth_data = bytearray()
         assert pth is not None, f"pth {pth!r} cannot be None in clone_module"
         write_gff(dismantle_pth(pth), pth_data)
@@ -111,7 +111,7 @@ def clone_module(
             door.resref.set_data(new_resname)
             door.tag = new_resname
 
-            utd = old_module.door(old_resname).resource()
+            utd: UTD | None = old_module.door(old_resname).resource()
             data = bytearray()
             assert utd is not None, f"utd {utd!r} cannot be None in clone_module"
             write_gff(dismantle_utd(utd), data)
@@ -126,7 +126,7 @@ def clone_module(
             placeable.resref.set_data(new_resname)
             placeable.tag = new_resname
 
-            utp = old_module.placeable(old_resname).resource()
+            utp: UTP | None = old_module.placeable(old_resname).resource()
             data = bytearray()
             assert utp is not None, f"utp {utp!r} cannot be None in clone_module"
             write_gff(dismantle_utp(utp), data)
@@ -141,7 +141,7 @@ def clone_module(
             sound.resref.set_data(new_resname)
             sound.tag = new_resname
 
-            uts = old_module.sound(old_resname).resource()
+            uts: UTS | None = old_module.sound(old_resname).resource()
             data = bytearray()
             assert uts is not None, f"uts {uts!r} cannot be None in clone_module"
             write_gff(dismantle_uts(uts), data)
@@ -253,8 +253,8 @@ def rim_to_mod(filepath: os.PathLike | str):
     filepath_rim: CaseAwarePath = resolved_file_path.with_suffix(file_ext_rim)
     filepath_rim_s: CaseAwarePath = resolved_file_path.parent / (resolved_file_path.stem + file_ext_rim_s)
 
-    rim = read_rim(filepath_rim)
-    rim_s = read_rim(filepath_rim_s) if filepath_rim_s.safe_exists() else RIM()
+    rim: RIM = read_rim(filepath_rim)
+    rim_s: RIM = read_rim(filepath_rim_s) if filepath_rim_s.exists() else RIM()
 
     mod = ERF(ERFType.MOD)
     for res in rim:
@@ -262,4 +262,4 @@ def rim_to_mod(filepath: os.PathLike | str):
     for res in rim_s:
         mod.set_data(str(res.resref), res.restype, res.data)
 
-    write_erf(mod, filepath, ResourceType.ERF)
+    write_erf(mod, filepath, ResourceType.MOD)

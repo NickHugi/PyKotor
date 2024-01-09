@@ -121,7 +121,7 @@ class SelectModuleDialog(QDialog):
             - Hide item if filter text is not present in item text
             - This will filter and show only matching items.
         """
-        text = self.ui.filterEdit.text()
+        text: str = self.ui.filterEdit.text()
         for row in range(self.ui.moduleList.count()):
-            item = self.ui.moduleList.item(row)
-            item.setHidden(text.lower() not in item.text().lower())
+            item: QListWidgetItem | None = self.ui.moduleList.item(row)
+            item.setHidden(text.casefold() not in item.text().casefold())

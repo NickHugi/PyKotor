@@ -220,13 +220,13 @@ class HTInstallation(Installation):
             - Returns the icon pixmap if a texture is found, otherwise returns a default icon.
         """
         pixmap = QPixmap(":/images/inventory/unknown.png")
-        baseitems = self.htGetCache2DA(HTInstallation.TwoDA_BASEITEMS)
+        baseitems: TwoDA = self.htGetCache2DA(HTInstallation.TwoDA_BASEITEMS)
 
         try:
             itemClass = baseitems.get_cell(uti.base_item, "itemclass")
             variation = uti.model_variation if uti.model_variation != 0 else uti.texture_variation
             textureResname = f'i{itemClass}_{str(variation).rjust(3, "0")}'
-            texture = self.htGetCacheTPC(textureResname.lower())
+            texture: TPC | None = self.htGetCacheTPC(textureResname.lower())
 
             if texture is not None:
                 return self._get_icon(texture)
@@ -255,13 +255,13 @@ class HTInstallation(Installation):
             4. Return icon pixmap from texture if found, else return default.
         """
         pixmap = QPixmap(":/images/inventory/unknown.png")
-        baseitems = self.htGetCache2DA(HTInstallation.TwoDA_BASEITEMS)
+        baseitems: TwoDA = self.htGetCache2DA(HTInstallation.TwoDA_BASEITEMS)
 
         with suppress(Exception):
             itemClass = baseitems.get_cell(baseItem, "itemclass")
-            variation = modelVariation if modelVariation != 0 else textureVariation
+            variation = modelVariation or textureVariation
             textureResname = f'i{itemClass}_{str(variation).rjust(3, "0")}'
-            texture = self.htGetCacheTPC(textureResname.lower())
+            texture: TPC | None = self.htGetCacheTPC(textureResname.lower())
 
             if texture is not None:
                 return self._get_icon(texture)

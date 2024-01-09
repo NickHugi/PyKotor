@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import re
-from contextlib import suppress
 from copy import copy
 from enum import Enum, IntEnum
 from typing import TYPE_CHECKING, Any, Callable, ClassVar, Generator, NamedTuple
@@ -1362,14 +1361,15 @@ class Installation:
         textures: CaseInsensitiveDict[TPC | None] = CaseInsensitiveDict()
         texture_types: list[ResourceType] = [ResourceType.TPC, ResourceType.TGA]
 
+        case_resnames: list[CaseInsensitiveWrappedStr] = []
         for resname in resnames:
             textures[resname] = None
-        resnames = [CaseInsensitiveWrappedStr(resname) for resname in resnames]
+            case_resnames.append(CaseInsensitiveWrappedStr.cast(resname))
 
         def decode_txi(txi_bytes: bytes) -> str:
             return txi_bytes.decode("ascii", errors="ignore")
 
-        def get_txi_from_list(resname: str, resource_list: list[FileResource]) -> str:
+        def get_txi_from_list(resname: CaseInsensitiveWrappedStr, resource_list: list[FileResource]) -> str:
             txi_resource: FileResource | None = next(
                 (
                     resource
@@ -1387,21 +1387,21 @@ class Installation:
 
         def check_list(resource_list: list[FileResource]):
             for resource in resource_list:
-                resname = resource.resname()
-                if resname not in resnames:
+                case_resname: CaseInsensitiveWrappedStr = CaseInsensitiveWrappedStr.cast(resource.resname())
+                if case_resname not in case_resnames:
                     continue
-                restype = resource.restype()
+                restype: ResourceType = resource.restype()
                 if restype not in texture_types:
                     continue
-                resnames.remove(resname)
+                case_resnames.remove(case_resname)
                 tpc: TPC = read_tpc(resource.data())
                 if restype == ResourceType.TGA:
-                    tpc.txi = get_txi_from_list(resname, resource_list)
-                textures[resname] = tpc
+                    tpc.txi = get_txi_from_list(case_resname, resource_list)
+                textures[case_resname] = tpc
 
         def check_capsules(values: list[Capsule]):  # NOTE: This function does not support txi's in the Override folder.
             for capsule in values:
-                for resname in copy(resnames):
+                for resname in copy(case_resnames):
                     texture_data: bytes | None = None
                     tformat: ResourceType | None = None
                     for tformat in texture_types:
@@ -1411,11 +1411,11 @@ class Installation:
                     if texture_data is None:
                         continue
 
-                    resnames.remove(resname)
+                    case_resnames.remove(resname)
                     tpc: TPC = read_tpc(texture_data) if texture_data else TPC()
                     if tformat == ResourceType.TGA:
-                        tpc.txi = get_txi_from_list(str(resname), capsule.resources())
-                    textures[str(resname)] = tpc
+                        tpc.txi = get_txi_from_list(resname, capsule.resources())
+                    textures[resname] = tpc
 
         def check_folders(values: list[Path]):
             queried_texture_files: set[Path] = set()
@@ -1424,20 +1424,21 @@ class Installation:
                     file
                     for file in folder.rglob("*")
                     if (
-                        file.stem in resnames
+                        file.stem in case_resnames
                         and ResourceType.from_extension(file.suffix) in texture_types
                         and file.is_file()
                     )
                 )
             for texture_file in queried_texture_files:
-                resnames.remove(texture_file.stem)
+                case_resname: CaseInsensitiveWrappedStr = CaseInsensitiveWrappedStr.cast(texture_file.stem)
+                case_resnames.remove(case_resname)
                 texture_data: bytes = BinaryReader.load_file(texture_file)
                 tpc = read_tpc(texture_data) if texture_data else TPC()
                 txi_file = CaseAwarePath(texture_file.with_suffix(".txi"))
                 if txi_file.exists():
                     txi_data: bytes = BinaryReader.load_file(txi_file)
                     tpc.txi = decode_txi(txi_data)
-                textures[texture_file.stem] = tpc
+                textures[case_resname] = tpc
 
         function_map: dict[SearchLocation, Callable] = {
             SearchLocation.OVERRIDE: lambda: check_dict(self._override),
@@ -1449,7 +1450,7 @@ class Installation:
             SearchLocation.TEXTURES_GUI: lambda: check_list(self._texturepacks[TexturePackNames.GUI.value]),
             SearchLocation.CHITIN: lambda: check_list(self._chitin),
             SearchLocation.CUSTOM_MODULES: lambda: check_capsules(capsules),
-            SearchLocation.CUSTOM_FOLDERS: lambda: check_folders(folders),  # type: ignore[arg-type]
+            SearchLocation.CUSTOM_FOLDERS: lambda: check_folders(folders),
         }
 
         for item in order:
@@ -1507,7 +1508,6 @@ class Installation:
         -------
             A dictionary mapping a case-insensitive string to a bytes object or None.
         """
-        resnames = remove_duplicates(resnames, case_insensitive=True)
         capsules = [] if capsules is None else capsules
         folders = [] if folders is None else folders
         if order is None:
@@ -1523,9 +1523,11 @@ class Installation:
         sounds: CaseInsensitiveDict[bytes | None] = CaseInsensitiveDict()
         sound_formats: list[ResourceType] = [ResourceType.WAV, ResourceType.MP3]
 
+        case_resnames: list[CaseInsensitiveWrappedStr] = []
+        resnames = remove_duplicates(resnames, case_insensitive=True)
         for resname in resnames:
             sounds[resname] = None
-        resnames = [CaseInsensitiveWrappedStr(resname) for resname in resnames]
+            case_resnames.append(CaseInsensitiveWrappedStr.cast(resname))
 
         def check_dict(values: dict[str, list[FileResource]] | CaseInsensitiveDict[list[FileResource]]):
             for resources in values.values():
@@ -1533,15 +1535,15 @@ class Installation:
 
         def check_list(values: list[FileResource]):
             for resource in values:
-                lower_resname = resource.resname().lower()
-                if lower_resname in resnames and resource.restype() in sound_formats:
-                    resnames.remove(lower_resname)
+                resname: str = resource.resname()
+                if resname in case_resnames and resource.restype() in sound_formats:
+                    case_resnames.remove(resname)
                     sound_data: bytes = resource.data()
-                    sounds[resource.resname()] = fix_audio(sound_data) if sound_data else b""
+                    sounds[resname] = fix_audio(sound_data) if sound_data else b""
 
         def check_capsules(values: list[Capsule]):
             for capsule in values:
-                for resname in copy(resnames):
+                for resname in copy(case_resnames):
                     sound_data: bytes | None = None
                     for sformat in sound_formats:
                         sound_data = capsule.resource(resname, sformat)
@@ -1549,8 +1551,8 @@ class Installation:
                             break
                     if sound_data is None:
                         continue
-                    resnames.remove(resname)
-                    sounds[str(resname)] = fix_audio(sound_data) if sound_data else b""
+                    case_resnames.remove(CaseInsensitiveWrappedStr.cast(resname))
+                    sounds[resname] = fix_audio(sound_data) if sound_data else b""
 
         def check_folders(values: list[Path]):
             queried_sound_files: set[Path] = set()
@@ -1559,15 +1561,16 @@ class Installation:
                     file
                     for file in folder.rglob("*")
                     if (
-                        file.stem in resnames
+                        file.stem in case_resnames
                         and ResourceType.from_extension(file.suffix) in sound_formats
                         and file.is_file()
                     )
                 )
             for sound_file in queried_sound_files:
-                resnames.remove(sound_file.stem)
+                case_resname: CaseInsensitiveWrappedStr = CaseInsensitiveWrappedStr(sound_file.stem)
+                case_resnames.remove(case_resname)
                 sound_data: bytes = BinaryReader.load_file(sound_file)
-                sounds[sound_file.stem] = fix_audio(sound_data) if sound_data else b""
+                sounds[case_resname] = fix_audio(sound_data) if sound_data else b""
 
         function_map: dict[SearchLocation, Callable] = {
             SearchLocation.OVERRIDE: lambda: check_dict(self._override),

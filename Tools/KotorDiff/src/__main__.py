@@ -175,13 +175,19 @@ def diff_data(
         try:
             twoda1 = twoda.read_2da(data1)
         except Exception as e:  # noqa: BLE001
-            if file1_rel.parent.name.lower() == "rims" and (file1_rel.name.lower() == "global.rim" or file1_rel.name == "miniglobal.rim"):
+            if (
+                file1_rel.parent.name.lower() == "rims"
+                and file1_rel.name.lower() in {"global.rim", "miniglobal.rim"}
+            ):
                 return True
             return log_output(f"Error loading 2DA {file1_rel.parent / where}!\n{universal_simplify_exception(e)}")  # type: ignore[func-returns-value]
         try:
             twoda2 = twoda.read_2da(data2)
         except Exception as e:  # noqa: BLE001
-            if file1_rel.parent.name.lower() == "rims" and (file1_rel.name.lower() == "global.rim" or file1_rel.name == "miniglobal.rim"):
+            if (
+                file1_rel.parent.name.lower() == "rims"
+                and file1_rel.name.lower() in {"global.rim", "miniglobal.rim"}
+            ):
                 return True
             return log_output(f"Error loading 2DA {file2_rel.parent / where}!\n{universal_simplify_exception(e)}")  # type: ignore[func-returns-value]
         if twoda1 and not twoda2:
@@ -326,11 +332,11 @@ def diff_directories(dir1: os.PathLike | str, dir2: os.PathLike | str) -> bool |
     log_output_with_separator(f"Finding differences in the '{c_dir1.name}' folders...", above=True)
 
     # Store relative paths instead of just filenames
-    files_path1 = {f.relative_to(c_dir1).as_posix().lower() for f in c_dir1.safe_rglob("*") if f.safe_isfile()}
-    files_path2 = {f.relative_to(c_dir2).as_posix().lower() for f in c_dir2.safe_rglob("*") if f.safe_isfile()}
+    files_path1: set[str] = {f.relative_to(c_dir1).as_posix().lower() for f in c_dir1.safe_rglob("*") if f.safe_isfile()}
+    files_path2: set[str] = {f.relative_to(c_dir2).as_posix().lower() for f in c_dir2.safe_rglob("*") if f.safe_isfile()}
 
     # Merge both sets to iterate over unique relative paths
-    all_files = files_path1.union(files_path2)
+    all_files: set[str] = files_path1.union(files_path2)
 
     is_same_result: bool | None = True
     for rel_path in all_files:
@@ -342,48 +348,48 @@ def diff_directories(dir1: os.PathLike | str, dir2: os.PathLike | str) -> bool |
 
 def diff_installs(install_path1: os.PathLike | str, install_path2: os.PathLike | str) -> bool | None:
     # TODO: use pykotor.extract.installation
-    install_path1 = CaseAwarePath.pathify(install_path1).resolve()
-    install_path2 = CaseAwarePath.pathify(install_path2).resolve()
+    rinstall_path1: CaseAwarePath = CaseAwarePath.pathify(install_path1).resolve()
+    rinstall_path2: CaseAwarePath = CaseAwarePath.pathify(install_path2).resolve()
     log_output()
-    log_output((max(len(str(install_path1)) + 29, len(str(install_path2)) + 30)) * "-")
-    log_output("Searching first install dir:", install_path1)
-    log_output("Searching second install dir:", install_path2)
+    log_output((max(len(str(rinstall_path1)) + 29, len(str(rinstall_path2)) + 30)) * "-")
+    log_output("Searching first install dir:", rinstall_path1)
+    log_output("Searching second install dir:", rinstall_path2)
     log_output()
 
-    is_same_result = diff_files(install_path1.joinpath("dialog.tlk"), install_path2 / "dialog.tlk")
-    modules_path1: CaseAwarePath = install_path1 / "Modules"
-    modules_path2: CaseAwarePath = install_path2 / "Modules"
+    is_same_result = diff_files(rinstall_path1.joinpath("dialog.tlk"), rinstall_path2 / "dialog.tlk")
+    modules_path1: CaseAwarePath = rinstall_path1 / "Modules"
+    modules_path2: CaseAwarePath = rinstall_path2 / "Modules"
     is_same_result = diff_directories(modules_path1, modules_path2) and is_same_result
 
-    override_path1: CaseAwarePath = install_path1 / "Override"
-    override_path2: CaseAwarePath = install_path2 / "Override"
+    override_path1: CaseAwarePath = rinstall_path1 / "Override"
+    override_path2: CaseAwarePath = rinstall_path2 / "Override"
     is_same_result = diff_directories(override_path1, override_path2) and is_same_result
 
-    rims_path1: CaseAwarePath = install_path1 / "rims"
-    rims_path2: CaseAwarePath = install_path2 / "rims"
+    rims_path1: CaseAwarePath = rinstall_path1 / "rims"
+    rims_path2: CaseAwarePath = rinstall_path2 / "rims"
     is_same_result = diff_directories(rims_path1, rims_path2) and is_same_result
 
-    lips_path1: CaseAwarePath = install_path1 / "Lips"
-    lips_path2: CaseAwarePath = install_path2 / "Lips"
+    lips_path1: CaseAwarePath = rinstall_path1 / "Lips"
+    lips_path2: CaseAwarePath = rinstall_path2 / "Lips"
     is_same_result = diff_directories(lips_path1, lips_path2) and is_same_result
 
     streamwaves_path1: CaseAwarePath = (
-        install_path1.joinpath("streamwaves")
-        if install_path1.joinpath("streamwaves").exists()
-        else install_path1.joinpath("streamvoice")
+        rinstall_path1.joinpath("streamwaves")
+        if rinstall_path1.joinpath("streamwaves").exists()
+        else rinstall_path1.joinpath("streamvoice")
     )
     streamwaves_path2: CaseAwarePath = (
-        install_path2.joinpath("streamwaves")
-        if install_path2.joinpath("streamwaves").exists()
-        else install_path2.joinpath("streamvoice")
+        rinstall_path2.joinpath("streamwaves")
+        if rinstall_path2.joinpath("streamwaves").exists()
+        else rinstall_path2.joinpath("streamvoice")
     )
     is_same_result = diff_directories(streamwaves_path1, streamwaves_path2) and is_same_result
     return is_same_result  # noqa: RET504
 
 
-def is_kotor_install_dir(path: os.PathLike | str) -> bool:
+def is_kotor_install_dir(path: os.PathLike | str) -> bool | None:
     c_path: CaseAwarePath = CaseAwarePath.pathify(path)
-    return c_path.safe_isdir() and c_path.joinpath("chitin.key").exists()
+    return c_path.safe_isdir() and c_path.joinpath("chitin.key").safe_exists()
 
 
 def run_differ_from_args(path1: Path, path2: Path) -> bool | None:
@@ -491,7 +497,7 @@ def main():
 
 def _stop_profiler(profiler: cProfile.Profile):
     profiler.disable()
-    profiler_output_file = Path("profiler_output.pstat").resolve()
+    profiler_output_file = Path("profiler_output.pstat")
     profiler.dump_stats(str(profiler_output_file))
     log_output(f"Profiler output saved to: {profiler_output_file}")
 

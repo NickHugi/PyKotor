@@ -518,14 +518,14 @@ class CaseInsensitiveHashSet(set, Generic[T]):
                 self.add(item)
 
     def _normalize_key(self, item: T):
-        return item.lower() if isinstance(item, str) else item
+        return item.casefold() if isinstance(item, str) else item
 
     def add(self, item: T):
         """Add an element to a set.
 
         This has no effect if the element is already present.
         """
-        key = self._normalize_key(item)
+        key: str | object = self._normalize_key(item)
         if key not in self:
             super().add(item)
 
@@ -559,7 +559,7 @@ class CaseInsensitiveHashSet(set, Generic[T]):
         return super().__ne__({self._normalize_key(item) for item in other})
 
 
-class CaseInsensitiveDict(Generic[T]):
+class CaseInsensitiveDict(dict, Generic[T]):
     """A class exactly like the builtin dict[str, T], but provides case-insensitive key lookups.
 
     The case-sensitivity of the keys themselves are always preserved.
@@ -623,7 +623,7 @@ class CaseInsensitiveDict(Generic[T]):
             return False
 
         for key, value in self._dictionary.items():
-            other_value: T | None = other_dict.get(key.casefold())
+            other_value: T | None = other_dict.get(key)
             if other_value != value:
                 return False
 
@@ -735,7 +735,7 @@ class CaseInsensitiveDict(Generic[T]):
 
     def get(self, __key: str, __default: VT = None) -> VT | T:  # type: ignore[assignment]
         key_lookup: CaseInsensitiveWrappedStr = self._dictionary.get(CaseInsensitiveWrappedStr.cast(__key), _unique_sentinel)  # type: ignore[arg-type]
-        return (
+        return (  # type: ignore[]
             __default
             if key_lookup is _unique_sentinel
             else key_lookup

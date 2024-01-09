@@ -95,15 +95,15 @@ def list_textures(
         - Reads texture names and adds unique names to the textures list
         - Returns the list of unique textures.
     """
-    textures = []
+    textures: list[str] = []
 
     with BinaryReader.from_bytes(data, 12) as reader:
         reader.seek(168)
         root_offset = reader.read_uint32()
 
-        nodes = [root_offset]
+        nodes: list[int] = [root_offset]
         while nodes:
-            node_offset = nodes.pop()
+            node_offset: int = nodes.pop()
             reader.seek(node_offset)
             node_id = reader.read_uint32()
 
@@ -112,11 +112,11 @@ def list_textures(
             child_offsets_count = reader.read_uint32()
 
             reader.seek(child_offsets_offset)
-            nodes.extend(reader.read_uint32() for _i in range(child_offsets_count))
+            nodes.extend(reader.read_uint32() for _ in range(child_offsets_count))
             if node_id & 32:
                 reader.seek(node_offset + 168)
                 texture = reader.read_string(32)
-                if texture != "" and texture != "NULL" and texture.lower() not in textures:
+                if texture and texture != "NULL" and texture.lower() not in textures:
                     textures.append(texture.lower())
 
     return textures
@@ -134,18 +134,21 @@ def list_lightmaps(
     Returns:
     -------
         lightmaps: {A list of unique lightmap names}
-    - The function reads the lightmap data file using a BinaryReader
-    - It parses the node tree to extract all lightmap names
-    - Duplicate and empty names are filtered out
-    - The unique lightmap names are returned as a list.
+
+    Processing Logic:
+    ----------------
+        - The function reads the lightmap data file using a BinaryReader
+        - It parses the node tree to extract all lightmap names
+        - Duplicate and empty names are filtered out
+        - The unique lightmap names are returned as a list.
     """
-    lightmaps = []
+    lightmaps: list[str] = []
 
     with BinaryReader.from_bytes(data, 12) as reader:
         reader.seek(168)
         root_offset = reader.read_uint32()
 
-        nodes = [root_offset]
+        nodes: list[int] = [root_offset]
         while nodes:
             node_offset = nodes.pop()
             reader.seek(node_offset)
@@ -156,11 +159,11 @@ def list_lightmaps(
             child_offsets_count = reader.read_uint32()
 
             reader.seek(child_offsets_offset)
-            nodes.extend(reader.read_uint32() for _i in range(child_offsets_count))
+            nodes.extend(reader.read_uint32() for _ in range(child_offsets_count))
             if node_id & 32:
                 reader.seek(node_offset + 200)
                 lightmap = reader.read_string(32)
-                if lightmap != "" and lightmap != "NULL" and lightmap.lower() not in lightmaps:
+                if lightmap and lightmap != "NULL" and lightmap.lower() not in lightmaps:
                     lightmaps.append(lightmap.lower())
 
     return lightmaps
@@ -188,9 +191,9 @@ def change_textures(
         3. Returns updated game file data with new textures.
     """
     data = bytearray(data)
-    offsets = {}
+    offsets: dict[str, list[int]] = {}
 
-    textures_ins = {old_texture.lower(): new_texture.lower() for old_texture, new_texture in textures.items()}
+    textures_ins: dict[str, str] = {old_texture.lower(): new_texture.lower() for old_texture, new_texture in textures.items()}
     textures = textures_ins
 
     with BinaryReader.from_bytes(data, 12) as reader:
@@ -208,7 +211,7 @@ def change_textures(
             child_offsets_count = reader.read_uint32()
 
             reader.seek(child_offsets_offset)
-            nodes.extend(reader.read_uint32() for _i in range(child_offsets_count))
+            nodes.extend(reader.read_uint32() for _ in range(child_offsets_count))
             if node_id & 32:
                 reader.seek(node_offset + 168)
                 texture = reader.read_string(32).lower()
@@ -259,7 +262,7 @@ def change_lightmaps(
     data = bytearray(data)
     offsets: dict[str, list[int]] = {}
 
-    textures_ins = {old_texture.lower(): new_texture.lower() for old_texture, new_texture in textures.items()}
+    textures_ins: dict[str, str] = {old_texture.lower(): new_texture.lower() for old_texture, new_texture in textures.items()}
     textures = textures_ins
 
     with BinaryReader.from_bytes(data, 12) as reader:
@@ -350,13 +353,13 @@ def convert_to_k1(
     if detect_version(data) == Game.K1:
         return data
 
-    trim = []
+    trim: list[tuple[int, int]] = []
 
     with BinaryReader.from_bytes(data, 12) as reader:
         reader.seek(168)
         root_offset = reader.read_uint32()
 
-        nodes = [root_offset]
+        nodes: list[int] = [root_offset]
         while nodes:
             node_offset = nodes.pop()
             reader.seek(node_offset)
@@ -370,7 +373,7 @@ def convert_to_k1(
             child_offsets_count = reader.read_uint32()
 
             reader.seek(child_offsets_offset)
-            nodes.extend(reader.read_uint32() for _i in range(child_offsets_count))
+            nodes.extend(reader.read_uint32() for _ in range(child_offsets_count))
     start = data[:12]
     data = bytearray(data[12:])
 
@@ -405,7 +408,7 @@ def convert_to_k1(
             data[mesh_start : mesh_start + 4] = struct.pack("I", _AABB_FP0_K1)
             data[mesh_start + 4 : mesh_start + 8] = struct.pack("I", _AABB_FP1_K1)
 
-        shifting = data[offset_start : offset_start + offset_size]
+        shifting: bytearray = data[offset_start : offset_start + offset_size]
         data[offset_start - 8 : offset_start - 8 + offset_size] = shifting
 
     return bytes(start + data)
@@ -533,7 +536,7 @@ def convert_to_k2(
                     reader.seek(base_offset + 0)
                     offsets[base_offset + 0] = reader.read_uint32()  # Node header -> AABB root node
 
-                    aabbs = [offsets[base_offset + 0]]
+                    aabbs: list[int] = [offsets[base_offset + 0]]
                     while aabbs:
                         aabb = aabbs.pop()
 
@@ -835,7 +838,7 @@ def flip(
         reader.seek(168)
         root_offset = reader.read_uint32()
 
-        nodes = [root_offset]
+        nodes: list[int] = [root_offset]
         while nodes:
             node_offset = nodes.pop()
             reader.seek(node_offset)

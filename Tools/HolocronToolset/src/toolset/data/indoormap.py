@@ -476,16 +476,17 @@ class IndoorMap:
             - Add room to layout with model
             - Add room to visibility graph.
         """
-        if self.skybox != "":
-            for kit in kits:
-                if self.skybox in kit.skyboxes:
-                    mdl, mdx = kit.skyboxes[self.skybox]
-                    modelName = f"{self.moduleId}_sky"
-                    mdl = model.change_textures(mdl, self.texRenames)
-                    self.mod.set_data(modelName, ResourceType.MDL, mdl)
-                    self.mod.set_data(modelName, ResourceType.MDX, mdx)
-                    self.lyt.rooms.append(LYTRoom(modelName, Vector3.from_null()))
-                    self.vis.add_room(modelName)
+        if not self.skybox:
+            return
+        for kit in kits:
+            if self.skybox in kit.skyboxes:
+                mdl, mdx = kit.skyboxes[self.skybox]
+                modelName = f"{self.moduleId}_sky"
+                mdl = model.change_textures(mdl, self.texRenames)
+                self.mod.set_data(modelName, ResourceType.MDL, mdl)
+                self.mod.set_data(modelName, ResourceType.MDX, mdx)
+                self.lyt.rooms.append(LYTRoom(modelName, Vector3.from_null()))
+                self.vis.add_room(modelName)
 
     def generate_and_set_minimap(self):
         """Generates and sets the minimap texture.

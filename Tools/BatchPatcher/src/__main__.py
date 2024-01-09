@@ -13,7 +13,7 @@ from io import StringIO
 from threading import Thread
 from tkinter import colorchooser, filedialog, messagebox, ttk
 from tkinter import font as tkfont
-from typing import TYPE_CHECKING, Callable
+from typing import TYPE_CHECKING, Any, Callable
 
 from utility.error_handling import format_exception_with_variables, universal_simplify_exception
 
@@ -57,7 +57,7 @@ from pykotor.tools.misc import is_capsule_file
 from pykotor.tools.path import CaseAwarePath, find_kotor_paths_from_default
 from pykotor.tslpatcher.logger import PatchLog, PatchLogger
 from translate.language_translator import TranslationOption, Translator
-from utility.path import Path, PurePath, PureWindowsPath
+from utility.path import Path, PurePath
 
 if TYPE_CHECKING:
 
@@ -120,11 +120,11 @@ class Globals:
 SCRIPT_GLOBALS = Globals()
 
 def get_font_paths_linux() -> list[Path]:
-    font_dirs = [Path("/usr/share/fonts/"), Path("/usr/local/share/fonts/"), Path.home() / ".fonts"]
+    font_dirs: list[Path] = [Path("/usr/share/fonts/"), Path("/usr/local/share/fonts/"), Path.home() / ".fonts"]
     return [font for font_dir in font_dirs for font in font_dir.glob("**/*.ttf")]
 
 def get_font_paths_macos() -> list[Path]:
-    font_dirs = [Path("/Library/Fonts/"), Path("/System/Library/Fonts/"), Path.home() / "Library/Fonts"]
+    font_dirs: list[Path] = [Path("/Library/Fonts/"), Path("/System/Library/Fonts/"), Path.home() / "Library/Fonts"]
     return [font for font_dir in font_dirs for font in font_dir.glob("**/*.ttf")]
 
 def get_font_paths_windows() -> list[Path]:
@@ -135,7 +135,7 @@ def get_font_paths_windows() -> list[Path]:
 
     with winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, font_registry_path) as key:
         for i in range(winreg.QueryInfoKey(key)[1]):  # Number of values in the key
-            value = winreg.EnumValue(key, i)
+            value: tuple[str, Any, int] = winreg.EnumValue(key, i)
             font_path: Path = fonts_dir / value[1]
             if font_path.suffix.lower() == ".ttf":  # Filtering for .ttf files
                 font_paths.add(font_path)

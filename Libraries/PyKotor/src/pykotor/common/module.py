@@ -68,7 +68,7 @@ class Module:
     ):
         self.resources: CaseInsensitiveDict[ModuleResource] = CaseInsensitiveDict()
         self._installation: Installation = installation
-        self._root: str = root.lower()
+        self._root: CaseInsensitiveWrappedStr = CaseInsensitiveWrappedStr.cast(root)
 
         # Build list of capsules from all .mods' in the provided installation
         self._capsules: list[Capsule] = [

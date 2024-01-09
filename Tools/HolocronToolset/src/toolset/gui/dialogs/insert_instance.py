@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from typing import TYPE_CHECKING
+from pykotor.common.misc import ResRef
 
 from pykotor.common.stream import BinaryWriter
 from pykotor.resource.formats.erf import read_erf, write_erf
@@ -194,4 +195,4 @@ class InsertInstanceDialog(QDialog):
             item.setHidden(text not in item.text())
 
     def isValidResref(self, text: str) -> bool:
-        return self._module.resource(text, self._restype) is None and text != ""
+        return self._module.resource(text, self._restype) is None and ResRef.is_valid(text)

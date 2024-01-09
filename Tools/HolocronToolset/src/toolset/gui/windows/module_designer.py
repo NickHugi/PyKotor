@@ -775,7 +775,7 @@ class ModuleDesigner(QMainWindow):
             locationAction.triggered.connect(lambda _, loc=location: self.activateResourceFile(data, loc))
             if location == data.active():
                 locationAction.setEnabled(False)
-            lowercase_parts = [part.lower for part in location.parts]
+            lowercase_parts: list[str] = [part.lower() for part in location.parts]
             if "override" in lowercase_parts:
                 copyToOverrideAction.setEnabled(False)
             menu.addAction(locationAction)
@@ -878,9 +878,9 @@ class ModuleDesigner(QMainWindow):
         self.updateToggles()
 
     def on2dMouseMoved(self, screen: Vector2, delta: Vector2, buttons: set[int], keys: set[int]):
-        worldDelta = self.ui.flatRenderer.toWorldDelta(delta.x, delta.y)
-        world = self.ui.flatRenderer.toWorldCoords(screen.x, screen.y)
-        self._controls2d.onMouseMoved(screen, delta, world, worldDelta, buttons, keys)
+        worldDelta: Vector2 = self.ui.flatRenderer.toWorldDelta(delta.x, delta.y)
+        world: Vector3 = self.ui.flatRenderer.toWorldCoords(screen.x, screen.y)
+        self._controls2d.onMouseMoved(screen, delta, Vector2.from_vector3(world), worldDelta, buttons, keys)
 
     def on2dMouseScrolled(self, delta: Vector2, buttons: set[int], keys: set[int]):
         self._controls2d.onMouseScrolled(delta, buttons, keys)
@@ -1049,15 +1049,16 @@ class ModuleDesignerControls3d:
             self.renderer.doSelect = True
 
         if self.duplicateSelected.satisfied(buttons, keys) and self.editor.selectedInstances:
-            instance = deepcopy(self.editor.selectedInstances[-1])
-            instance.position = self.renderer.scene.cursor.position()
+            instance: GITInstance = deepcopy(self.editor.selectedInstances[-1])
+            vect3 = self.renderer.scene.cursor.position()
+            instance.position = Vector3(vect3.x, vect3.y, vect3.z)
             self.editor.git().add(instance)
             self.editor.rebuildInstanceList()
             self.editor.setSelection([instance])
 
         if self.openContextMenu.satisfied(buttons, keys):
             world = Vector3(*self.renderer.scene.cursor.position())
-            self.editor.onContextMenu(world, self.renderer.mapToGlobal(QPoint(screen.x, screen.y)))
+            self.editor.onContextMenu(world, self.renderer.mapToGlobal(QPoint(int(screen.x), int(screen.y))))
 
     def onMouseReleased(self, screen: Vector2, buttons: set[int], keys: set[int]):
         ...
@@ -1174,9 +1175,9 @@ class ModuleDesignerControlsFreeCam:
 
     def onMouseMoved(self, screen: Vector2, screenDelta: Vector2, world: Vector3, buttons: set[int], keys: set[int]):
         rendererPos = self.renderer.mapToGlobal(self.renderer.pos())
-        mouseX = rendererPos.x() + self.renderer.width() // 2
-        mouseY = rendererPos.y() + self.renderer.height() // 2
-        strength = self.settings.rotateCameraSensitivityFC / 10000
+        mouseX: int = rendererPos.x() + self.renderer.width() // 2
+        mouseY: int = rendererPos.y() + self.renderer.height() // 2
+        strength: float = self.settings.rotateCameraSensitivityFC / 10000
 
         self.renderer.rotateCamera(-screenDelta.x * strength, screenDelta.y * strength, snapRotations=False)
         self.renderer.cursor().setPos(mouseX, mouseY)
@@ -1256,11 +1257,11 @@ class ModuleDesignerControls2d:
             - Nudges camera zoom by calculated amount.
         """
         if self.zoomCamera.satisfied(buttons, keys):
-            strength = self.settings.moveCameraSensitivity2d / 100 / 50
+            strength: float = self.settings.moveCameraSensitivity2d / 100 / 50
             zoomInFactor = 1.1
             zoomOutFactor = 0.90
 
-            zoomFactor = zoomInFactor if delta.y > 0 else zoomOutFactor
+            zoomFactor: float = zoomInFactor if delta.y > 0 else zoomOutFactor
             self.renderer.camera.nudgeZoom(delta.y * zoomFactor)
 
     def onMouseMoved(
@@ -1303,7 +1304,7 @@ class ModuleDesignerControls2d:
 
         if self.rotateSelected.satisfied(buttons, keys):
             for instance in self.editor.selectedInstances:
-                rotation = -math.atan2(world.x - instance.position.x, world.y - instance.position.y)
+                rotation: float = -math.atan2(world.x - instance.position.x, world.y - instance.position.y)
                 if isinstance(instance, GITCamera):
                     instance.rotate(instance.yaw() - rotation, 0, 0)
                 else:
@@ -1333,12 +1334,12 @@ class ModuleDesignerControls2d:
         if self.duplicateSelected.satisfied(buttons, keys) and self.editor.selectedInstances:
             self._duplicate_instance()
         if self.openContextMenu.satisfied(buttons, keys):
-            world = self.renderer.toWorldCoords(screen.x, screen.y)
-            self.editor.onContextMenu(world, self.renderer.mapToGlobal(QPoint(screen.x, screen.y)))
+            world: Vector3 = self.renderer.toWorldCoords(screen.x, screen.y)
+            self.editor.onContextMenu(world, self.renderer.mapToGlobal(QPoint(int(screen.x), int(screen.y))))
 
     # TODO Rename this here and in `onMousePressed`
     def _duplicate_instance(self):
-        instance = deepcopy(self.editor.selectedInstances[-1])
+        instance: GITInstance = deepcopy(self.editor.selectedInstances[-1])
         result = self.renderer.mapFromGlobal(self.renderer.cursor().pos())
         instance.position = self.renderer.toWorldCoords(result.x(), result.y())
         self.editor.git().add(instance)

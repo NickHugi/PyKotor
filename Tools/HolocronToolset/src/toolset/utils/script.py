@@ -114,7 +114,12 @@ def compileScript(source: str, tsl: bool) -> bytes:
 
     raise ValueError("Could not get the NCS bytes.")  # noqa: TRY003, EM101
 
-def _compile_windows(global_settings, extract_path, source, tsl):
+def _compile_windows(
+    global_settings: GlobalSettings,
+    extract_path: Path,
+    source: str,
+    tsl: bool,
+) -> bytes:
     nss_compiler_path = Path(global_settings.nssCompilerPath)
     if not nss_compiler_path.exists():
         lookup_paths: tuple[str, str] = QFileDialog.getOpenFileName(None, "Select the NCS Compiler executable")

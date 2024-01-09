@@ -699,11 +699,11 @@ class _InstanceMode(_Mode):
                 if "override" in lowercase_path_parts:
                     filepath: Path = result.filepath
                 else:
-                    module_root = Module.get_root(self._editor.filepath()).lower()
+                    module_root = Module.get_root(self._editor.filepath())
 
                     # Check if module root is in path parents or is a .rim
                     lowercase_path_parents: list[str] = [str(parent).lower() for parent in result.filepath.parents]
-                    if module_root in lowercase_path_parents and (filepath is None or is_rim_file(filepath)):
+                    if module_root.lower() in lowercase_path_parents and (filepath is None or is_rim_file(filepath)):
                         filepath = result.filepath
 
             if filepath:
@@ -935,14 +935,14 @@ class _InstanceMode(_Mode):
         self._ui.listWidget.clear()
 
         def instanceSort(inst: GITInstance):
-            textToSort = str(inst.camera_id) if isinstance(inst, GITCamera) else inst.identifier().resname
+            textToSort: str = str(inst.camera_id) if isinstance(inst, GITCamera) else inst.identifier().resname
             return textToSort.rjust(9, "0") if isinstance(inst, GITCamera) else inst.identifier().restype.extension + textToSort
 
         instances: list[GITInstance] = sorted(self._git.instances(), key=instanceSort)
         for instance in instances:
-            filterSource = str(instance.camera_id) if isinstance(instance, GITCamera) else instance.identifier().resname
-            isVisible = self._ui.renderArea.isInstanceVisible(instance)
-            isFiltered = self._ui.filterEdit.text() in filterSource
+            filterSource: str = str(instance.camera_id) if isinstance(instance, GITCamera) else instance.identifier().resname
+            isVisible: bool | None = self._ui.renderArea.isInstanceVisible(instance)
+            isFiltered: bool = self._ui.filterEdit.text() in filterSource
 
             if isVisible and isFiltered:
                 icon = QIcon(self._ui.renderArea.instancePixmap(instance))
@@ -1002,7 +1002,7 @@ class _InstanceMode(_Mode):
 
     def rotateSelectedToPoint(self, x: float, y: float):
         for instance in self._ui.renderArea.instanceSelection.all():
-            rotation = -math.atan2(x - instance.position.x, y - instance.position.y)
+            rotation: float = -math.atan2(x - instance.position.x, y - instance.position.y)
             if isinstance(instance, GITCamera):
                 instance.rotate(instance.yaw() - rotation, 0, 0)
             else:

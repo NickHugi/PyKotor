@@ -125,7 +125,7 @@ class TLK:
                 extra_old += 1
                 continue
             if old_entry != new_entry:
-                text_mismatch: bool = old_entry.text.lower() != new_entry.text.lower()
+                text_mismatch: bool = old_entry.text != new_entry.text
                 vo_mismatch: bool = old_entry.voiceover != new_entry.voiceover
                 if not text_mismatch and not vo_mismatch:
                     log_func("TLK entries are not equal, but no differences could be found?")

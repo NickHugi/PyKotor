@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING
 from pykotor.common.misc import ResRef
 from pykotor.extract.file import ResourceIdentifier
 from pykotor.resource.formats.erf import ERF, ERFResource, ERFType, read_erf, write_erf
-from pykotor.resource.formats.rim import RIM, read_rim, write_rim
+from pykotor.resource.formats.rim import RIM, RIMResource, read_rim, write_rim
 from pykotor.resource.type import ResourceType
 from PyQt5 import QtCore, QtGui
 from PyQt5.QtCore import QMimeData
@@ -117,15 +117,16 @@ class ERFEditor(Editor):
         self.ui.refreshButton.setEnabled(True)
 
         if restype.name in ERFType.__members__:
-            erf = read_erf(data)
+            erf: ERF = read_erf(data)
             for resource in erf:
                 resrefItem = QStandardItem(str(resource.resref))
                 resrefItem.setData(resource)
                 restypeItem = QStandardItem(resource.restype.extension.upper())
                 sizeItem = QStandardItem(str(len(resource.data)))
                 self.model.appendRow([resrefItem, restypeItem, sizeItem])
+
         elif restype == ResourceType.RIM:
-            rim = read_rim(data)
+            rim: RIM = read_rim(data)
             for resource in rim:
                 resrefItem = QStandardItem(str(resource.resref))
                 resrefItem.setData(resource)
@@ -155,6 +156,7 @@ class ERFEditor(Editor):
             - Returns the built data and an empty bytes object.
         """
         data = bytearray()
+        resource: ERFResource | RIMResource
 
         if self._restype == ResourceType.RIM:
             rim = RIM()
@@ -163,7 +165,8 @@ class ERFEditor(Editor):
                 resource = item.data()
                 rim.set_data(str(resource.resref), resource.restype, resource.data)
             write_rim(rim, data)
-        if self._restype.name in ERFType.__members__:  # sourcery skip: split-or-ifs
+
+        elif self._restype.name in ERFType.__members__:  # sourcery skip: split-or-ifs
             erf = ERF(ERFType.__members__[self._restype.name])
             for i in range(self.model.rowCount()):
                 item = self.model.item(i, 0)
@@ -198,8 +201,8 @@ class ERFEditor(Editor):
 
         self.ui.refreshButton.setEnabled(True)
 
-        data = self.build()
-        self._revert = data
+        data: tuple[bytes, bytes] = self.build()
+        self._revert = data[0]
 
         with self._filepath.open("wb") as file:
             file.write(data[0])
@@ -218,14 +221,15 @@ class ERFEditor(Editor):
         """
         folderpath_str = QFileDialog.getExistingDirectory(self, "Extract to folder")
 
-        if folderpath_str != "":
-            self.ui.tableView.selectionModel().selectedRows()
-            for index in self.ui.tableView.selectionModel().selectedRows(0):
-                item = self.model.itemFromIndex(index)
-                resource = item.data()
-                file_path = Path(folderpath_str, f"{resource.resref}.{resource.restype.extension}")
-                with file_path.open("wb") as file:
-                    file.write(resource.data)
+        if not folderpath_str:
+            return
+        self.ui.tableView.selectionModel().selectedRows()
+        for index in self.ui.tableView.selectionModel().selectedRows(0):
+            item = self.model.itemFromIndex(index)
+            resource: ERFResource = item.data()
+            file_path = Path(folderpath_str, f"{resource.resref}.{resource.restype.extension}")
+            with file_path.open("wb") as file:
+                file.write(resource.data)
 
     def removeSelected(self):
         """Removes selected rows from table view.
@@ -235,8 +239,8 @@ class ERFEditor(Editor):
             - Reversing the list to remove from last to first
             - Removing the row from model using row number.
         """
-        for index in reversed([index for index in self.ui.tableView.selectedIndexes() if index.column() == 0]):
-            item = self.model.itemFromIndex(index)
+        for index in reversed([index for index in self.ui.tableView.selectedIndexes() if not index.column()]):
+            item: QStandardItem | None = self.model.itemFromIndex(index)
             self.model.removeRow(item.row())
 
     def addResources(self, filepaths: list[str]):
@@ -420,8 +424,8 @@ class ERFEditorTable(QTableView):
             return
 
         urls: list[QtCore.QUrl] = []
-        for index in (index for index in self.selectedIndexes() if index.column() == 0):
-            resource = self.model().itemData(index)[QtCore.Qt.UserRole + 1]
+        for index in (index for index in self.selectedIndexes() if not index.column()):
+            resource: ERFResource = self.model().itemData(index)[QtCore.Qt.UserRole + 1]
             file_stem, file_ext = str(resource.resref), resource.restype.extension
             filepath = Path(tempDir, f"{file_stem}.{file_ext}")
             with filepath.open("wb") as file:

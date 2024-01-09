@@ -253,7 +253,7 @@ def main():
     elif input_path.is_dir():
         for gui_file in input_path.rglob("*.gui"):
             relative_path = gui_file.relative_to(input_path)
-            new_output_dir = parser_args.output / relative_path.parent / gui_file.stem
+            new_output_dir: CaseAwarePath = parser_args.output / relative_path.parent / gui_file.stem
             new_output_dir.mkdir(parents=True, exist_ok=True)
             process_file(gui_file, new_output_dir)
 

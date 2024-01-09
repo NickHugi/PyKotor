@@ -171,26 +171,28 @@ class Editor(QMainWindow):
             - Enables the Revert menu item
         """
         filepath_str, _filter = QFileDialog.getSaveFileName(self, "Save As", "", self._saveFilter, "")
-        if filepath_str != "":
-            if is_capsule_file(filepath_str) and "Save into module (*.erf *.mod *.rim)" in self._saveFilter:
-                if self._resname is None:
-                    self._resname = "new"
-                    self._restype = self._writeSupported[0]
+        if not filepath_str:
+            return
 
-                dialog2 = SaveToModuleDialog(self._resname, self._restype, self._writeSupported)
-                if dialog2.exec_():
-                    self._resname = dialog2.resref()
-                    self._restype = dialog2.restype()
-                    self._filepath = Path(filepath_str)
-            else:
+        if is_capsule_file(filepath_str) and "Save into module (*.erf *.mod *.rim)" in self._saveFilter:
+            if self._resname is None:
+                self._resname = "new"
+                self._restype = self._writeSupported[0]
+
+            dialog2 = SaveToModuleDialog(self._resname, self._restype, self._writeSupported)
+            if dialog2.exec_():
+                self._resname = dialog2.resref()
+                self._restype = dialog2.restype()
                 self._filepath = Path(filepath_str)
-                self._resname, self._restype = ResourceIdentifier.from_path(self._filepath).validate()
-            self.save()
+        else:
+            self._filepath = Path(filepath_str)
+            self._resname, self._restype = ResourceIdentifier.from_path(self._filepath).validate()
+        self.save()
 
-            self.refreshWindowTitle()
-            for action in self.menuBar().actions()[0].menu().actions():
-                if action.text() == "Revert":
-                    action.setEnabled(True)
+        self.refreshWindowTitle()
+        for action in self.menuBar().actions()[0].menu().actions():
+            if action.text() == "Revert":
+                action.setEnabled(True)
 
     def save(self):
         """Saves the current data to file.
