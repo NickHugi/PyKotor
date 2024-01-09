@@ -202,7 +202,7 @@ $pythonVersion = ""
 
 function Find-Python {
     Param (
-        [switch]$internal
+        [switch]$intrnal
     )
     # Check for Python 3 command and version
     $python3Command = Get-Command -Name python3 -ErrorAction SilentlyContinue
@@ -221,7 +221,7 @@ function Find-Python {
     if ($null -ne $pythonCommand) {
         $global:pythonVersion = Get-Python-Version "python"
         if ($pythonVersion -ge $minVersion -and $pythonVersion -lt $maxVersion) {
-            Write-Host "Found python command"
+            Write-Host "Found python command with version $pythonVersion"
             $global:pythonInstallPath = Get-Python-Path-From-Command "python"
         } else {
             $global:pythonInstallPath = ""
@@ -242,6 +242,7 @@ function Find-Python {
                         if ($thisVersion -ge $minVersion -and $thisVersion -le $maxVersion) {
                             # Valid path or better recommended path found.
                             if ($pythonInstallPath -eq "" -or $thisVersion -le $recommendedVersion) {
+                                Write-Host "Found python install path with version $thisVersion"
                                 $global:pythonInstallPath = $resolvedPath
                                 $global:pythonVersion = $thisVersion
                             }
@@ -265,17 +266,18 @@ function Find-Python {
                 exit
             }
         }
-        if ( (Get-OS) -eq "Windows" ) {
-            Python-Install-Windows "3.8.10"
-        } elseif ( (Get-OS) -eq "Linux" ) {
-            & bash -c "sudo apt install python3 -y" 2>&1 | Write-Output
-            & bash -c "sudo apt install python3-dev -y" 2>&1 | Write-Output
-        } elseif ( (Get-OS) -eq "Mac" ) {
-            & bash -c "brew install python@3.8 -y" 2>&1 | Write-Output
-        }        
-        # Find python again now that it's been installed.
-        if (-not $internal) {
-            Find-Python -internal
+        if (-not $intrnal) {
+            if ( (Get-OS) -eq "Windows" ) {
+                Python-Install-Windows "3.8.10"
+            } elseif ( (Get-OS) -eq "Linux" ) {
+                & bash -c "sudo apt install python3 -y" 2>&1 | Write-Output
+                & bash -c "sudo apt install python3-dev -y" 2>&1 | Write-Output
+            } elseif ( (Get-OS) -eq "Mac" ) {
+                & bash -c "brew install python@3.8 -y" 2>&1 | Write-Output
+            }
+        } else {
+            Write-Host "Find python again now that it's been installed."
+            Find-Python -intrnal
         }
     }
 }
