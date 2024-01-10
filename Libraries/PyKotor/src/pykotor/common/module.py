@@ -229,7 +229,7 @@ class Module:
                 for lightmap in list_lightmaps(data):
                     textures.add(lightmap)
             except Exception as e:  # noqa: PERF203
-                print(format_exception_with_variables(e, ___message___=f"Exception occurred when executing {self!r}.reload_resources()"))
+                print(format_exception_with_variables(e, ___message___=f"Exception occurred when executing {self!r}.reload_resources() with model '{model}'"))
 
         for texture in textures:
             look_for.extend(
@@ -258,8 +258,8 @@ class Module:
                 [location.filepath for location in locations],
             )
 
-        for resource in self.resources.values():
-            resource.activate()
+        for module_resource in self.resources.values():
+            module_resource.activate()
 
 
     def add_locations(
