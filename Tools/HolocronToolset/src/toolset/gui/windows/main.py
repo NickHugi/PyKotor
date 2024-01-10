@@ -421,8 +421,8 @@ class ToolWindow(QMainWindow):
 
         If there is no active information, show a message box instead.
         """
-        filepath = self.active.path() / "dialog.tlk"
-        data = BinaryReader.load_file(filepath)
+        filepath: CaseAwarePath = self.active.path() / "dialog.tlk"
+        data: bytes = BinaryReader.load_file(filepath)
         openResourceEditor(filepath, "dialog", ResourceType.TLK, data, self.active, self)
 
     def openActiveJournal(self):

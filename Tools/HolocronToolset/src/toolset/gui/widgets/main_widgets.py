@@ -4,7 +4,6 @@ import multiprocessing
 from abc import abstractmethod
 from time import sleep
 from typing import TYPE_CHECKING
-from pykotor.common.misc import CaseInsensitiveDict
 
 from pykotor.extract.installation import SearchLocation
 from pykotor.resource.formats.tpc import TPC, TPCTextureFormat
@@ -16,6 +15,7 @@ from PyQt5.QtWidgets import QHeaderView, QMenu, QWidget
 from utility.error_handling import format_exception_with_variables
 
 if TYPE_CHECKING:
+    from pykotor.common.misc import CaseInsensitiveDict
     from pykotor.extract.file import FileResource
     from toolset.data.installation import HTInstallation
 

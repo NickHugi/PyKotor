@@ -76,6 +76,7 @@ def clone_module(
     ifo.area_name.set_data(identifier)
     ifo_data = bytearray()
     assert ifo is not None, f"ifo {ifo!r} cannot be None in clone_module"
+
     write_gff(dismantle_ifo(ifo), ifo_data)
     new_module.set_data("module", ResourceType.IFO, ifo_data)
 
@@ -83,6 +84,7 @@ def clone_module(
     are.name = LocalizedString.from_english(name)
     are_data = bytearray()
     assert are is not None, f"are {are!r} cannot be None in clone_module"
+
     write_gff(dismantle_are(are), are_data)
     new_module.set_data(identifier, ResourceType.ARE, are_data)
 
@@ -94,6 +96,7 @@ def clone_module(
         pth: PTH | None = old_module.pth().resource()
         pth_data = bytearray()
         assert pth is not None, f"pth {pth!r} cannot be None in clone_module"
+
         write_gff(dismantle_pth(pth), pth_data)
         new_module.set_data(identifier, ResourceType.PTH, pth_data)
 
@@ -114,6 +117,7 @@ def clone_module(
             utd: UTD | None = old_module.door(old_resname).resource()
             data = bytearray()
             assert utd is not None, f"utd {utd!r} cannot be None in clone_module"
+
             write_gff(dismantle_utd(utd), data)
             new_module.set_data(new_resname, ResourceType.UTD, data)
     else:
@@ -129,6 +133,7 @@ def clone_module(
             utp: UTP | None = old_module.placeable(old_resname).resource()
             data = bytearray()
             assert utp is not None, f"utp {utp!r} cannot be None in clone_module"
+
             write_gff(dismantle_utp(utp), data)
             new_module.set_data(new_resname, ResourceType.UTP, data)
     else:
@@ -144,6 +149,7 @@ def clone_module(
             uts: UTS | None = old_module.sound(old_resname).resource()
             data = bytearray()
             assert uts is not None, f"uts {uts!r} cannot be None in clone_module"
+
             write_gff(dismantle_uts(uts), data)
             new_module.set_data(new_resname, ResourceType.UTS, data)
     else:
@@ -151,6 +157,7 @@ def clone_module(
 
     git_data = bytearray()
     assert git is not None, f"git {git!r} cannot be None in clone_module"
+
     write_gff(dismantle_git(git), git_data)
     new_module.set_data(identifier, ResourceType.GIT, git_data)
 
@@ -242,16 +249,13 @@ def rim_to_mod(filepath: os.PathLike | str):
     ----
         filepath: The filepath of the MOD file you would like to create.
     """
-    resolved_file_path = CaseAwarePath(filepath)
+    resolved_file_path: CaseAwarePath = CaseAwarePath.pathify(filepath)
     if resolved_file_path.suffix.lower() != ".mod":
         msg = "Specified file must end with the .mod extension"
         raise ValueError(msg)
 
-    file_ext_rim: str = resolved_file_path.suffix.lower().replace(".mod", ".rim")
-    file_ext_rim_s: str = resolved_file_path.suffix.lower().replace(".mod", "_s.rim")
-
-    filepath_rim: CaseAwarePath = resolved_file_path.with_suffix(file_ext_rim)
-    filepath_rim_s: CaseAwarePath = resolved_file_path.parent / (resolved_file_path.stem + file_ext_rim_s)
+    filepath_rim: CaseAwarePath = resolved_file_path.with_suffix(".rim")
+    filepath_rim_s: CaseAwarePath = resolved_file_path.parent / (resolved_file_path.stem + "_s.rim")
 
     rim: RIM = read_rim(filepath_rim)
     rim_s: RIM = read_rim(filepath_rim_s) if filepath_rim_s.exists() else RIM()

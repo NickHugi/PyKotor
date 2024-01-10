@@ -133,6 +133,7 @@ class ERFEditor(Editor):
                 restypeItem = QStandardItem(resource.restype.extension.upper())
                 sizeItem = QStandardItem(str(len(resource.data)))
                 self.model.appendRow([resrefItem, restypeItem, sizeItem])
+
         else:
             QMessageBox(
                 QMessageBox.Critical,
@@ -220,9 +221,9 @@ class ERFEditor(Editor):
             - Write the resource data to a file in the target folder.
         """
         folderpath_str = QFileDialog.getExistingDirectory(self, "Extract to folder")
-
         if not folderpath_str:
             return
+
         self.ui.tableView.selectionModel().selectedRows()
         for index in self.ui.tableView.selectionModel().selectedRows(0):
             item = self.model.itemFromIndex(index)

@@ -222,6 +222,7 @@ def patch_nested_gff(
     if gff_content != GFFContent.DLG and not SCRIPT_GLOBALS.translate:
         print(f"Skipping file at '{current_path}', translate not set.")
         return False
+
     current_path = PurePath.pathify(current_path or "GFFRoot")
     for label, ftype, value in gff_struct:
         if label.lower() == "mod_name":
@@ -304,6 +305,7 @@ def patch_resource(resource: FileResource) -> GFF | TPC | None:
             log_output(f"Error loading TLK {resource.filepath()}! {universal_simplify_exception(e)}")
             print(format_exception_with_variables(e))
             return None
+
         if not tlk:
             message = f"TLK resource missing in memory:\t'{resource.filepath()}'"
             log_output(message)
@@ -356,6 +358,7 @@ def patch_and_save_noncapsule(resource: FileResource, savedir: Path | None = Non
         new_gff_filename = resource.filename()
         if SCRIPT_GLOBALS.translate:
             new_gff_filename = f"{resource.resname()}_{SCRIPT_GLOBALS.pytranslator.to_lang.get_bcp47_code()}.{resource.restype().extension}"
+
         new_path = new_path.parent / new_gff_filename
         BinaryWriter.dump(new_path, new_data)
     elif isinstance(patched_data, TPC):
@@ -397,6 +400,7 @@ def patch_capsule_file(c_file: Path):
             if txi_resource is not None:
                 patched_data.txi = txi_resource.decode("ascii", errors="ignore")
                 omitted_resources.append(ResourceIdentifier(resource.resname(), ResourceType.TXI))
+
             new_data = bytes_tpc(patched_data)
             log_output(f"Adding patched TPC resource '{resource.resname()}' to capsule {c_file.name}")
             new_capsule.add(resource.resname(), ResourceType.TPC, new_data)
@@ -411,6 +415,7 @@ def patch_erf_or_rim(resources: list[FileResource], filename: str, erf_or_rim: R
     new_filename = PurePath(filename)
     if SCRIPT_GLOBALS.translate:
         new_filename = PurePath(f"{new_filename.stem}_{SCRIPT_GLOBALS.pytranslator.to_lang.name}{new_filename.suffix}")
+
     for resource in resources:
         patched_data: GFF | TPC | None = patch_resource(resource)
         if isinstance(patched_data, GFF):
@@ -418,6 +423,7 @@ def patch_erf_or_rim(resources: list[FileResource], filename: str, erf_or_rim: R
             new_data: bytes = bytes_gff(patched_data) if patched_data else resource.data()
             erf_or_rim.set_data(resource.resname(), resource.restype(), new_data)
             omitted_resources.append(resource.identifier())
+
         elif isinstance(patched_data, TPC):
             log_output(f"Adding patched TPC resource '{resource.resname()}' to {new_filename}")
             txi_resource: FileResource | None = next(
@@ -432,6 +438,7 @@ def patch_erf_or_rim(resources: list[FileResource], filename: str, erf_or_rim: R
             if txi_resource:
                 patched_data.txi = txi_resource.data().decode("ascii", errors="ignore")
                 omitted_resources.append(txi_resource.identifier())
+
             new_data = bytes_tpc(patched_data)
             erf_or_rim.set_data(resource.resname(), ResourceType.TPC, new_data)
             omitted_resources.append(resource.identifier())
@@ -447,10 +454,12 @@ def patch_file(file: os.PathLike | str):
 
     if is_capsule_file(c_file):
         patch_capsule_file(c_file)
+
     else:
         resname, restype = ResourceIdentifier.from_path(c_file)
         if restype == ResourceType.INVALID:
             return
+
         patch_and_save_noncapsule(
             FileResource(
                 resname,
@@ -482,10 +491,12 @@ def patch_install(install_path: os.PathLike | str):
             new_rim = RIM()
             new_rim_filename = patch_erf_or_rim(resources, module_name, new_rim)
             write_rim(new_rim, k_install.path() / new_rim_filename)
+
         elif restype.name in ERFType.__members__:
             new_erf = ERF(ERFType.ERF)
             new_erf_filename = patch_erf_or_rim(resources, module_name, new_erf)
             write_erf(new_erf, k_install.path() / new_erf_filename, restype)
+
         else:
             log_output("Unsupported module:", module_name, " - cannot patch")
 
@@ -767,15 +778,16 @@ class KOTORPatchingToolUI:
         row += 1
 
         def choose_color():
-            color_code = colorchooser.askcolor(title="Choose a color")
+            color_code: tuple[None, None] | tuple[tuple[float, float, float], str] = colorchooser.askcolor(title="Choose a color")
             if color_code[1]:
                 self.font_color.set(color_code[1])
 
-        self.font_color = tk.StringVar()
-        ttk.Label(self.root, text="Font Color:").grid(row=row, column=0)
-        ttk.Entry(self.root, textvariable=self.font_color).grid(row=row, column=1)
-        tk.Button(self.root, text="Choose Color", command=choose_color).grid(row=row, column=2)
-        row += 1
+        # TODO: parse the .gui or wherever the actual color is stored.
+        #self.font_color = tk.StringVar()
+        #ttk.Label(self.root, text="Font Color:").grid(row=row, column=0)
+        #ttk.Entry(self.root, textvariable=self.font_color).grid(row=row, column=1)
+        #tk.Button(self.root, text="Choose Color", command=choose_color).grid(row=row, column=2)
+        #row += 1
 
         # Font Scaling
         ttk.Label(self.root, text="Font Scaling:").grid(row=row, column=0)

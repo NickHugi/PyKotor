@@ -134,8 +134,8 @@ class Chitin:
 
     def _get_chitin_data(self) -> tuple[dict[int, str], list[str]]:
         with BinaryReader.from_file(self._key_path) as reader:
-            #_key_file_type = reader.read_string(4)
-            #_key_file_version = reader.read_string(4)
+            #_key_file_type = reader.read_string(4)  # noqa: ERA001
+            #_key_file_version = reader.read_string(4)  # noqa: ERA001
             reader.skip(8)
             bif_count = reader.read_uint32()
             key_count = reader.read_uint32()
