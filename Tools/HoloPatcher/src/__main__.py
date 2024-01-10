@@ -336,10 +336,11 @@ class App(tk.Tk):
             self.hide_console()
 
         self.one_shot: bool = False
-        if sum([cmdline_args.install, cmdline_args.uninstall, cmdline_args.validate]) == 1:
+        num_cmdline_actions = sum([cmdline_args.install, cmdline_args.uninstall, cmdline_args.validate])
+        if num_cmdline_actions == 1:
             self._begin_oneshot(cmdline_args)
-        else:
-            messagebox.showerror("Cannot run more than one of [--install, --uninstall, --validate]")
+        elif num_cmdline_actions:
+            messagebox.showerror("Invalid cmdline args passed", "Cannot run more than one of [--install, --uninstall, --validate]")
             sys.exit(ExitCode.NUMBER_OF_ARGS)
 
     def _begin_oneshot(self, cmdline_args: Namespace):
