@@ -6,6 +6,7 @@ import platform
 import sys
 from contextlib import suppress
 from enum import Enum
+import tempfile
 from typing import TYPE_CHECKING, SupportsFloat, SupportsInt, TypeVar
 
 from utility.path import Path
@@ -145,6 +146,15 @@ def is_debug_mode() -> bool:
         ret = True
     print(f"DEBUG MODE: {ret}")
     return ret
+
+def is_frozen() -> bool:  # sourcery skip: assign-if-exp, boolean-if-exp-identity, reintroduce-else, remove-unnecessary-cast
+    # Check for sys.frozen attribute
+    if getattr(sys, "frozen", False):
+        return True
+    # Check if the executable is in a temp directory (common for frozen apps)
+    if tempfile.gettempdir() in sys.executable:
+        return True
+    return False
 
 def has_attr_excluding_object(cls, attr_name) -> bool:
     # Exclude the built-in 'object' class

@@ -1,10 +1,7 @@
 from __future__ import annotations
 
-import base64
 import contextlib
 import ctypes
-import json
-import multiprocessing
 import os
 import pathlib
 import platform
@@ -45,16 +42,93 @@ from pykotor.tslpatcher.patcher import ModInstaller
 from pykotor.tslpatcher.reader import ConfigReader, NamespaceReader
 from tooltip import ToolTip
 from uninstall_mod import ModUninstaller
-from utility.error_handling import universal_simplify_exception
+from utility.error_handling import format_exception_with_variables, universal_simplify_exception
 from utility.path import Path
 from utility.string import striprtf
 
 if TYPE_CHECKING:
 
+    from types import TracebackType
+
     from pykotor.tslpatcher.namespaces import PatcherNamespace
 
 CURRENT_VERSION: tuple[int, ...] = (1, 4, 2)
+VERSION_LABEL: str = f"v{'.'.join(map(str, CURRENT_VERSION))}"
 
+
+def updater_process(
+    holopatcher_filepath: Path,
+    new_exe_data: bytes,
+    main_process_id: int,
+):
+    try:
+        _write_update_after_main_closes(
+            holopatcher_filepath,
+            new_exe_data,
+            main_process_id,
+        )
+    except Exception as e:
+        with Path("errorlog.txt").open("a") as f:
+            f.write(format_exception_with_variables(e, ___message___="Updater process encountered an error"))
+    finally:
+        sys.exit()
+
+def _write_update_after_main_closes(
+    holopatcher_filepath: Path,
+    new_exe_data: bytes,
+    main_process_id: int,
+):
+    print("Writing to temp dir")
+    temp_dir = tempfile.TemporaryDirectory()
+    temp_filepath: Path = Path(temp_dir.name) / holopatcher_filepath.name
+
+    # Write the new executable data to a temporary file
+    with temp_filepath.open("wb") as file:
+        file.write(new_exe_data)
+        print("temp exe written")
+
+    # Set executable permissions (important for Unix-like systems)
+    print(f"Gaining access to {temp_filepath}")
+    temp_filepath.gain_access(mode=0o7, recurse=platform.system()=="Darwin" or temp_filepath.is_dir())
+    with temp_filepath.parent.joinpath("old_path.txt").open("w") as file_writer:
+        file_writer.write(str(holopatcher_filepath))
+    with temp_filepath.parent.joinpath("original_pid.txt").open("w") as file_writer:
+        file_writer.write(str(main_process_id))
+
+    # Restart the application
+    print("Restarting newly-updated holopatcher application.")
+    if platform.system() == "Windows":
+        subprocess.Popen([str(holopatcher_filepath)])
+    else:
+        subprocess.Popen(["/bin/sh", "-c", str(holopatcher_filepath)])
+
+    # Replace the old executable with the new one
+    temp_filepath.replace(holopatcher_filepath)
+    sys.exit()
+
+def is_process_running(process_id: int) -> bool:
+    if os.name == "nt" or platform.system() == "Windows":
+        # On Windows, os.waitpid does not support non-blocking calls
+        try:
+            print("call os.waitpid")
+            os.waitpid(process_id, 0)
+            print("os.waitpid did not exception")
+        except ChildProcessError as e:
+            print(f"childprocesserror while calling os.waitpid: {e}")
+            # Process is still running
+            return True
+        else:
+            # If os.waitpid does not raise an exception, the process has ended
+            return False
+    else:
+        # On Unix-like systems, use WNOHANG for a non-blocking call
+        try:
+            pid, status = os.waitpid(process_id, os.WNOHANG)
+        except ChildProcessError:
+            # Process is still running
+            return True
+        else:
+            return pid == 0
 
 class ExitCode(IntEnum):
     SUCCESS = 0
@@ -176,9 +250,8 @@ class App(tk.Tk):
         self.config(menu=self.menu_bar)
 
         # Version display - non-clickable
-        version_label: str = f"v{'.'.join(map(str, CURRENT_VERSION))}"
-        self.menu_bar.add_command(label=version_label)
-        self.menu_bar.entryconfig(version_label, state="disabled")
+        self.menu_bar.add_command(label=VERSION_LABEL)
+        self.menu_bar.entryconfig(VERSION_LABEL, state="disabled")
 
         # About menu
         about_menu = tk.Menu(self.menu_bar, tearoff=0)
@@ -278,55 +351,49 @@ class App(tk.Tk):
         if self.namespaces_combobox_state == 1:
             self.namespaces_combobox_state = 2  # no selection
 
-    def is_process_running(self, process_id: int) -> bool:
-        try:
-            # os.kill with a signal of 0 checks for the existence of the process without actually killing it
-            os.kill(process_id, 0)
-        except OSError:
-            return False
-        else:
-            return True
-
     def check_for_updates(self):  # sourcery skip: extract-method
         try:
             import requests
-            req: requests.Response = requests.get("https://api.github.com/repos/NickHugi/PyKotor/contents/update_info.json?ref=bleeding-edge", timeout=15)
+            req: requests.Response = requests.get("https://raw.githubusercontent.com/NickHugi/PyKotor/bleeding-edge/update_info.json", timeout=15)
             req.raise_for_status()
             file_data = req.json()
-            base64_content = file_data["content"]
-            decoded_content: bytes = base64.b64decode(base64_content)  # Correctly decoding the base64 content
-            updateInfoData = json.loads(decoded_content.decode("utf-8"))
 
-            new_version = tuple(map(int, str(updateInfoData["holopatcherLatestVersion"]).split(".")))
+            new_version = tuple(map(int, str(file_data["holopatcherLatestVersion"]).split(".")))
             if new_version > CURRENT_VERSION:
                 if messagebox.askyesno(
                     "Update available",
                     "A newer version of HoloPatcher is available, would you like to download it now?",
                 ):
-                    #webbrowser.open_new(updateInfoData["holopatcherDownloadLink"])
 
-                    holopatcher_filepath: Path = Path(__file__).resolve()
-                    code: requests.Response = requests.get(
-                        f"{updateInfoData['holopatcherRawDownloadLink']}/{holopatcher_filepath.name.lower()}?ref=bleeding-edge",
-                        allow_redirects = False,
-                        timeout=60,
-                    )
+                    if platform.system() == "Windows":
+                        exename = "holopatcher.exe"
+                    elif platform.system() == "Linux":
+                        exename = "holopatcher"
+                    elif platform.system() == "Darwin":
+                        exename = "holopatcher.app"
+                    else:
+                        msg = f"Unsupported Platform: {platform.system()}"
+                        raise RuntimeError(msg)  # noqa: TRY301
+
+                    holopatcher_filepath: Path = CaseAwarePath(__file__).parent.joinpath(exename).resolve()
+                    download_link = f"https://raw.githubusercontent.com/NickHugi/PyKotor/bleeding-edge/updated_binaries/{holopatcher_filepath.name.lower()}"
+
+                    code: requests.Response = requests.get(download_link, allow_redirects = False, timeout=60)
                     code.raise_for_status()
-                    acquired_json = code.json()
-                    new_exe_data: bytes = base64.b64decode(acquired_json["content"])
                     main_process_id: int = os.getpid()
 
                     # Start the updater process and exit the main application
-                    p = multiprocessing.Process(target=self.updater_process, args=(holopatcher_filepath, new_exe_data, main_process_id))
-                    p.start()
+                    updater_process(holopatcher_filepath, code.content, main_process_id)
                     self.destroy()
                     sys.exit()
             else:
                 messagebox.showinfo(
                     "No updates available.",
-                    f"You are already running the latest version of HoloPatcher ({updateInfoData['holopatcherLatestVersion']})",
+                    f"You are already running the latest version of HoloPatcher ({VERSION_LABEL})",
                 )
         except Exception as e:  # noqa: BLE001
+            with Path("errorlog.txt").open("w") as f:
+                f.write(format_exception_with_variables(e, ___message___="Main process encountered an error during update process."))
             messagebox.showerror(
                 "Unable to fetch latest version.",
                 (
@@ -334,53 +401,6 @@ class App(tk.Tk):
                     "Check if you are connected to the internet."
                 ),
             )
-
-    def updater_process(
-        self,
-        holopatcher_filepath: Path,
-        new_exe_data: bytes,
-        main_process_id: int,
-    ):
-        self._write_update_after_main_closes(
-            holopatcher_filepath,
-            new_exe_data,
-            main_process_id,
-        )
-        # Restart the application
-        if platform.system() == "Windows":
-            subprocess.Popen([str(holopatcher_filepath)])
-        else:
-            subprocess.Popen(["/bin/sh", "-c", str(holopatcher_filepath)])
-
-        sys.exit()
-
-    def _write_update_after_main_closes(
-        self,
-        holopatcher_filepath: Path,
-        new_exe_data: bytes,
-        main_process_id: int,
-    ):
-        with tempfile.TemporaryDirectory() as temp_str_dir_path:
-            temp_filepath: Path = Path(temp_str_dir_path) / holopatcher_filepath.name
-
-            # Write the new executable data to a temporary file
-            with temp_filepath.open("wb") as file:
-                file.write(new_exe_data)
-
-            # Set executable permissions (important for Unix-like systems)
-            temp_filepath.gain_access(mode=0o7, recurse=platform.system()=="Darwin")
-
-            # Wait for the main application to close
-            waited_time: int = 0
-            while self.is_process_running(main_process_id):
-                time.sleep(1)  # Wait before checking again.
-                waited_time += 1
-                if waited_time >= 60:
-                    messagebox.showerror("Error during update process", "Main process still running after a full minute, could not update.")
-                    sys.exit(ExitCode.UPDATE_FAILED)
-
-            # Replace the old executable with the new one
-            temp_filepath.replace(holopatcher_filepath)
 
     def open_homepage(self):
         webbrowser.open_new("https://deadlystream.com/files/file/2243-holopatcher")
@@ -1078,7 +1098,45 @@ sys.excepthook = custom_excepthook
 def main():
     app = App()
     app.mainloop()
+    print("main loop stopped")
 
 
 if __name__ == "__main__":
+    cwd = Path.cwd()
+    old_path_pointer: Path = cwd.joinpath("old_path.txt")
+    old_path: Path | None = None
+    holopatcher_filepath: Path | None = None
+    if old_path_pointer.exists():  # finish the updater.
+        for holopatcher_filepath in cwd.iterdir():
+            if holopatcher_filepath.stem.lower() == "holopatcher":
+                break
+        with old_path_pointer.open() as f:
+            old_path = Path(f.readline().strip())
+
+    original_pid_store_path = cwd.joinpath("original_pid.txt")
+    original_pid: int | None = None
+    if original_pid_store_path.exists():  # finish the updater.
+        with original_pid_store_path.open() as f:
+            original_pid = int(f.readline().strip())
+
+        if old_path is None:
+            messagebox.showerror("Could not complete update!", "Could not find holopatcher path to update.")
+            sys.exit()
+
+        while is_process_running(original_pid):
+            time.sleep(1)
+
+        # Replace the old executable with the new one
+        holopatcher_filepath.replace(old_path)
+
+        # Restart the application
+        print("Restarting newly-updated holopatcher application.")
+        if platform.system() == "Windows" or os.name == "nt":
+            subprocess.Popen([str(holopatcher_filepath)])
+        else:
+            subprocess.Popen(["/bin/sh", "-c", str(holopatcher_filepath)])
+
+        print(f"Holopatcher successfully updated and saved to {holopatcher_filepath}")
+        sys.exit()
+
     main()
