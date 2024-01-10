@@ -80,7 +80,7 @@ class ModificationsNSS(PatcherModifications):
         self.apply(source, memory, logger, game)
 
         is_windows = os.name == "nt"
-        nwnnsscomp_exists = self.nwnnsscomp_path.safe_exists()
+        nwnnsscomp_exists: bool | None = self.nwnnsscomp_path.safe_exists()
         if is_windows and self.nwnnsscomp_path and nwnnsscomp_exists:
             nwnnsscompiler = ExternalNCSCompiler(self.nwnnsscomp_path)
             detected_nwnnsscomp: str = next(

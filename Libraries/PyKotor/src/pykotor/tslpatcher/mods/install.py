@@ -319,12 +319,18 @@ class InstallFile(PatcherModifications):
         game: Game,
     ) -> bytes:
         self.apply(source, memory, logger, game)
+
         if isinstance(source, BinaryReader):
             return source.read_all()
         if isinstance(source, (str, os.PathLike)):
-            with Path(source).open(mode="rb") as f:
-                return f.read()
-        return bytes(source)
+            return BinaryReader.load_file(source)
+        if isinstance(source, (bytearray, memoryview)):
+            return bytes(source)
+        if isinstance(source, bytes):
+            return source
+
+        msg = f"The `source` arg was not an expected type (e.g. not a filepath, bytes object, or binary reader). Instead got type '{type(source)}'"
+        raise TypeError(msg)
 
     def apply(self, source, *args, **kwargs):
         ...

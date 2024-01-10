@@ -7,6 +7,7 @@ from typing import TYPE_CHECKING, Any
 from pykotor.resource.formats.twoda import bytes_2da, read_2da
 from pykotor.tslpatcher.mods.template import PatcherModifications
 from utility.error_handling import universal_simplify_exception
+from utility.path import PureWindowsPath
 
 if TYPE_CHECKING:
     from pykotor.common.misc import Game
@@ -95,7 +96,11 @@ class RowValue2DAMemory(RowValue):
         self.token_id = token_id
 
     def value(self, memory: PatcherMemory, twoda: TwoDA, row: TwoDARow | None) -> str:
-        return memory.memory_2da[self.token_id]
+        memory_val = memory.memory_2da[self.token_id]
+        if isinstance(memory_val, PureWindowsPath):
+            msg = f"!FieldPath cannot be used in 2DAList patches, got '{memory_val!r}'"
+            raise TypeError(msg)
+        return memory_val
 
 
 class RowValueTLKMemory(RowValue):
