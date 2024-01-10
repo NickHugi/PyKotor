@@ -105,9 +105,9 @@ def compileScript(source: str, tsl: bool) -> bytes:
             msg = "Temp directory has not been set or is invalid."
             raise NoConfigurationSetError(msg)
 
-    returnValue = None
+    returnValue: int | None = None
     if os.name == "nt":
-        returnValue: int = _prompt_user_for_compiler_option()
+        returnValue = _prompt_user_for_compiler_option()
     if returnValue == QMessageBox.No:
         return _compile_windows(global_settings, extract_path, source, tsl)
     if os.name == "posix" or returnValue == QMessageBox.Yes:
@@ -136,8 +136,8 @@ def _compile_windows(
     tempCompiledPath = extract_path / "tempscript.ncs"
     BinaryWriter.dump(tempSourcePath, source.encode(encoding="windows-1252"))
 
-    gameIndex: Literal[Game.K2, Game.K1] = Game.K2 if tsl else Game.K1
-    ExternalNCSCompiler(global_settings.nssCompilerPath).compile_script(tempSourcePath, tempCompiledPath, gameIndex)
+    gameEnum: Game = Game.K2 if tsl else Game.K1
+    ExternalNCSCompiler(global_settings.nssCompilerPath).compile_script(tempSourcePath, tempCompiledPath, gameEnum)
 
     # TODO(Cortisol): The version of nwnnsscomp bundled with the windows toolset uses registry key lookups.
     # I do not think this version matches the versions used by Mac/Linux.
