@@ -97,13 +97,19 @@ def _write_update_after_main_closes(
 
     # Restart the application
     print("Restarting newly-updated holopatcher application.")
-    if platform.system() == "Windows":
-        subprocess.Popen([str(holopatcher_filepath)])
+    pid = None
+    if platform.system() == "Windows" or os.name == "nt":
+        command = f'start "" "{str(temp_filepath)}"'
+        os.system(command)
     else:
-        subprocess.Popen(["/bin/sh", "-c", str(holopatcher_filepath)])
+        proc = subprocess.Popen(["/bin/sh", "-c", str(holopatcher_filepath)], preexec_fn=os.setsid)
+        pid = proc.pid
 
-    # Replace the old executable with the new one
-    temp_filepath.replace(holopatcher_filepath)
+    time.sleep(2)
+    while not is_process_running(pid):
+        print("Waiting for holopatcher updater to start...")
+        time.sleep(1)
+    print("Exiting")
     sys.exit()
 
 def is_process_running(process_id: int) -> bool:
@@ -1107,6 +1113,7 @@ if __name__ == "__main__":
     old_path: Path | None = None
     holopatcher_filepath: Path | None = None
     if old_path_pointer.exists():  # finish the updater.
+        messagebox.showinfo("test", "test")
         for holopatcher_filepath in cwd.iterdir():
             if holopatcher_filepath.stem.lower() == "holopatcher":
                 break
@@ -1136,7 +1143,7 @@ if __name__ == "__main__":
         else:
             subprocess.Popen(["/bin/sh", "-c", str(holopatcher_filepath)])
 
-        print(f"Holopatcher successfully updated and saved to {holopatcher_filepath}")
+        messagebox.showinfo("test", f"Holopatcher successfully updated and saved to {holopatcher_filepath}")
         sys.exit()
 
     main()
