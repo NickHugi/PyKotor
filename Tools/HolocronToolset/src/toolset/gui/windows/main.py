@@ -557,14 +557,15 @@ class ToolWindow(QMainWindow):
         for module in sortedKeys:
             # Some users may choose to have their RIM files for the same module merged into a single option for the
             # dropdown menu.
-            if self.settings.joinRIMsTogether and module.endswith("_s.rim"):
+            lower_module_name = module.lower()
+            if self.settings.joinRIMsTogether and lower_module_name.endswith("_s.rim"):
                 continue
 
             item = QStandardItem(f"{areaNames[module]} [{module}]")
             item.setData(module, QtCore.Qt.UserRole)
 
             # Some users may choose to have items representing RIM files to have grey text.
-            if self.settings.greyRIMText and module.endswith(".rim"):
+            if self.settings.greyRIMText and lower_module_name.endswith(".rim"):
                 item.setForeground(self.palette().shadow())
 
             modules.append(item)
@@ -600,7 +601,7 @@ class ToolWindow(QMainWindow):
         # need to account for this.
         casefold_module = module.casefold()
         if self.settings.joinRIMsTogether and casefold_module.endswith("_s.rim"):
-            module = f"{casefold_module[:-6]}.rim"
+            module = f"{module[:-6]}.rim"
 
         self.ui.modulesWidget.changeSection(module)
 
@@ -608,11 +609,13 @@ class ToolWindow(QMainWindow):
         if tree == self.ui.coreWidget:
             self.ui.resourceTabs.setCurrentWidget(self.ui.coreTab)
             self.ui.coreWidget.setResourceSelection(resource)
+
         elif tree == self.ui.modulesWidget:
             self.ui.resourceTabs.setCurrentWidget(self.ui.modulesTab)
             filename: str = resource.filepath().name
             self.changeModule(filename)
             self.ui.modulesWidget.setResourceSelection(resource)
+
         elif tree == self.ui.overrideWidget:
             self.ui.resourceTabs.setCurrentWidget(self.ui.overrideTab)
             self.ui.overrideWidget.setResourceSelection(resource)
@@ -678,41 +681,42 @@ class ToolWindow(QMainWindow):
         # If the user still has not set a path, then return them to the [None] option.
         if not path:
             self.ui.gameCombo.setCurrentIndex(0)
+            return
+
+        # If the installation had not already been loaded previously this session, load it now
+        if name not in self.installations:
+
+            def task() -> HTInstallation:
+                return HTInstallation(path, name, tsl, self)
+
+            self.settings.installations()[name].path = path
+            loader = AsyncLoader(self, "Loading Installation", task, "Failed to load installation")
+            if loader.exec_():
+                self.installations[name] = loader.value
+
+        # If the data has been successfully been loaded, dump the data into the models
+        if name in self.installations:
+            self.active = self.installations[name]
+
+            assert_with_variable_trace(isinstance(self.active, HTInstallation))
+            assert isinstance(self.active, HTInstallation)  # noqa: S101
+
+
+            print("Loading installation resources into UI...")
+            self.ui.coreWidget.setResources(self.active.chitin_resources())
+            self.refreshModuleList(reload=True)  # TODO: Modules/Override/Textures are loaded twice when HT is first initialized.
+            self.refreshOverrideList(reload=True)
+            self.refreshTexturePackList(reload=True)
+            self.ui.texturesWidget.setInstallation(self.active)
+
+            print("Updating menus...")
+            self.updateMenus()
+            print("Setting up watchdog observer...")
+            self.dogObserver = Observer()
+            self.dogObserver.schedule(self.dogHandler, self.active.path(), recursive=True)
+            self.dogObserver.start()
         else:
-            # If the installation had not already been loaded previously this session, load it now
-            if name not in self.installations:
-
-                def task() -> HTInstallation:
-                    return HTInstallation(path, name, tsl, self)
-
-                self.settings.installations()[name].path = path
-                loader = AsyncLoader(self, "Loading Installation", task, "Failed to load installation")
-                if loader.exec_():
-                    self.installations[name] = loader.value
-
-            # If the data has been successfully been loaded, dump the data into the models
-            if name in self.installations:
-                self.active = self.installations[name]
-
-                assert_with_variable_trace(isinstance(self.active, HTInstallation))
-                assert isinstance(self.active, HTInstallation)  # noqa: S101
-
-
-                print("Loading installation resources into UI...")
-                self.ui.coreWidget.setResources(self.active.chitin_resources())
-                self.refreshModuleList(reload=True)  # TODO: Modules/Override/Textures are loaded twice when HT is first initialized.
-                self.refreshOverrideList(reload=True)
-                self.refreshTexturePackList(reload=True)
-                self.ui.texturesWidget.setInstallation(self.active)
-
-                print("Updating menus...")
-                self.updateMenus()
-                print("Setting up watchdog observer...")
-                self.dogObserver = Observer()
-                self.dogObserver.schedule(self.dogHandler, self.active.path(), recursive=True)
-                self.dogObserver.start()
-            else:
-                self.ui.gameCombo.setCurrentIndex(0)
+            self.ui.gameCombo.setCurrentIndex(0)
 
     def _extractResource(self, resource: FileResource, filepath: os.PathLike | str, loader: AsyncBatchLoader):
         """Extracts a resource file from a FileResource object.

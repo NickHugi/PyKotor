@@ -4,6 +4,7 @@ import multiprocessing
 from abc import abstractmethod
 from time import sleep
 from typing import TYPE_CHECKING
+from pykotor.common.misc import CaseInsensitiveDict
 
 from pykotor.extract.installation import SearchLocation
 from pykotor.resource.formats.tpc import TPC, TPCTextureFormat
@@ -425,20 +426,22 @@ class TextureList(MainWindowList):
 
     def onTextureListScrolled(self):
         # Note: Avoid redundantly loading textures that have already been loaded
-        textures = self._installation.textures(
+        textures: CaseInsensitiveDict[TPC | None] = self._installation.textures(
             [item.text() for item in self.visibleItems() if item.text().casefold() not in self._scannedTextures],
             [SearchLocation.TEXTURES_GUI, SearchLocation.TEXTURES_TPA],
         )
 
         # Emit signals to load textures that have not had their icons assigned
         for item in [item for item in self.visibleItems() if item.text().casefold() not in self._scannedTextures]:
+            item_text = item.text()
+
             # Avoid trying to load the same texture multiple times.
-            self._scannedTextures.add(item.text().casefold())
+            self._scannedTextures.add(item_text.casefold())
 
-            hasTPC: bool = item.text() in textures and textures[item.text()] is not None
-            tpc: TPC | None = textures[item.text()] if hasTPC else TPC()
+            cache_tpc: TPC | None = textures.get(item_text)
+            tpc: TPC = cache_tpc if cache_tpc is not None else TPC()
 
-            task = TextureListTask(item.row(), tpc, item.text())
+            task = TextureListTask(item.row(), tpc, item_text)
             self._taskQueue.put(task)
             item.setData(True, QtCore.Qt.UserRole)
 

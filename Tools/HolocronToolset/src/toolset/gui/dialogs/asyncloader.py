@@ -96,7 +96,7 @@ class AsyncLoader(QDialog):
         if self.errorTitle:
             QMessageBox(QMessageBox.Critical, self.errorTitle, str(error)).exec_()
 
-        with Path("errorlog.txt").open("a") as file:
+        with Path("errorlog.txt").open("a", encoding="utf-8") as file:
             lines = format_exception_with_variables(self.error)
             file.writelines(lines)
             file.write("\n----------------------\n")
@@ -199,7 +199,7 @@ class AsyncBatchLoader(QDialog):
             if self.errorTitle:
                 errorStrings = [str(error)+"\n" for error in self.errors]
                 QMessageBox(QMessageBox.Critical, self.errorTitle, "".join(errorStrings)).exec_()
-            with Path("errorlog.txt").open("a") as file:
+            with Path("errorlog.txt").open("a", encoding="utf-8") as file:
                 lines: list[str] = []
                 for e in self.errors:
                     lines.extend(format_exception_with_variables(e).split("\n"))

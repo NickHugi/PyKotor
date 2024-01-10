@@ -350,9 +350,12 @@ class UTPEditor(Editor):
 
         with suppress(Exception):
             root = Module.get_root(self._filepath)
-            capsulesPaths: list[str] = [path for path in self._installation.module_names() if
-                             root.casefold() in path.casefold() and path.casefold() != self._filepath]
-            capsules.extend([Capsule(self._installation.module_path() / path) for path in capsulesPaths])
+            moduleNames: list[str] = [
+                path for path in self._installation.module_names()
+                if root in path and path != self._filepath
+            ]
+            newCapsules: list[Capsule] = [Capsule(self._installation.module_path() / mod_filename) for mod_filename in moduleNames]
+            capsules.extend(newCapsules)
 
         inventoryEditor = InventoryEditor(self, self._installation, capsules, [], self._utp.inventory, {}, False, True)
         if inventoryEditor.exec_():

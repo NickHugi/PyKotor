@@ -184,7 +184,7 @@ def log_output(*args, **kwargs):
     msg: str = buffer.getvalue()
 
     # Write the captured output to the file
-    with Path("log_batch_patcher.log").open("a", errors="ignore") as f:
+    with Path("log_batch_patcher.log").open("a", encoding="utf-8", errors="ignore") as f:
         f.write(msg)
 
     # Print the captured output to console
@@ -376,18 +376,22 @@ def patch_capsule_file(c_file: Path):
     except ValueError as e:
         log_output(f"Could not load '{c_file}'. Reason: {universal_simplify_exception(e)}")
         return
+
     new_filepath: Path = c_file
     if SCRIPT_GLOBALS.translate:
         new_filepath = c_file.parent / f"{c_file.stem}_{SCRIPT_GLOBALS.pytranslator.to_lang.get_bcp47_code()}{c_file.suffix}"
+
     new_capsule = Capsule(new_filepath, create_nonexisting=True)
     omitted_resources: list[ResourceIdentifier] = []
     for resource in file_capsule:
+
         patched_data: GFF | TPC | None = patch_resource(resource)
         if isinstance(patched_data, GFF):
             new_data = bytes_gff(patched_data) if patched_data else resource.data()
             log_output(f"Adding patched GFF resource '{resource.resname()}' to capsule {c_file.name}")
             new_capsule.add(resource.resname(), resource.restype(), new_data)
             omitted_resources.append(resource.identifier())
+
         elif isinstance(patched_data, TPC):
             txi_resource = file_capsule.resource(resource.resname(), ResourceType.TXI)
             if txi_resource is not None:

@@ -72,7 +72,13 @@ class Capsule:
     ):
         return len(self._resources)
 
-    def resources(self) -> list[FileResource]:
+    def resources(
+        self,
+        *,
+        reload: bool = False,
+    ) -> list[FileResource]:
+        if reload:
+            self.reload()
         return self._resources
 
     def resource(
@@ -98,7 +104,10 @@ class Capsule:
             self.reload()
 
         query = ResourceIdentifier(resref, restype)
-        resource = next((resource for resource in self._resources if resource == query), None)
+        resource: FileResource | None = next(
+            (resource for resource in self._resources if resource == query),
+            None,
+        )
         return resource.data() if resource else None
 
     def batch(
@@ -137,26 +146,29 @@ class Capsule:
         with BinaryReader.from_file(self._path) as reader:
             for query in queries:
                 results[query] = None
-                if self.exists(query.resname, query.restype):
-                    resource: FileResource | None = next(
-                        (resource for resource in self._resources if resource == query),
-                        None,
-                    )
-                    if resource is not None:
-                        reader.seek(resource.offset())
-                        data: bytes = reader.read_bytes(resource.size())
-                        results[query] = ResourceResult(
-                            query.resname,
-                            query.restype,
-                            self._path,
-                            data,
-                        )
+
+                resource: FileResource | None = next(
+                    (resource for resource in self._resources if resource == query),
+                    None,
+                )
+                if resource is None:
+                    continue
+
+                reader.seek(resource.offset())
+                data: bytes = reader.read_bytes(resource.size())
+                results[query] = ResourceResult(
+                    query.resname,
+                    query.restype,
+                    self._path,
+                    data,
+                )
         return results
 
     def exists(
         self,
         resref: str,
         restype: ResourceType,
+        *,
         reload: bool = False,
     ) -> bool:
         """Check if a resource exists.
@@ -247,7 +259,7 @@ class Capsule:
             if file_type == "RIM ":
                 return self._load_rim(reader)
 
-            msg = f"File '{self._path}' is not an ERF/MOD/SAV/RIM capsule."
+            msg = f"File '{self._path}' must be a ERF/MOD/SAV/RIM capsule."
             raise NotImplementedError(msg)
 
     def add(
@@ -334,8 +346,8 @@ class Capsule:
 
         reader.seek(offset_to_resources)
         for i in range(entry_count):
-            res_offset = reader.read_uint32()
-            res_size = reader.read_uint32()
+            res_offset: int = reader.read_uint32()
+            res_size:   int = reader.read_uint32()
             self._resources.append(FileResource(resrefs[i], restypes[i], res_size, res_offset, self._path))
 
     def _load_rim(

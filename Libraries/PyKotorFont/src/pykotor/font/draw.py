@@ -199,5 +199,5 @@ def write_bitmap_font(
 
     # Generate and save the TXI data
     txi_target = target_path.with_suffix(".txi")
-    with txi_target.open("w") as txi_file:
+    with txi_target.open("w", encoding="utf-8") as txi_file:
         txi_file.write(str(txi_font_info))

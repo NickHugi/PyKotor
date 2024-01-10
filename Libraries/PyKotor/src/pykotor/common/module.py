@@ -114,9 +114,9 @@ class Module:
             The string for the root name of a module.
         """
         root: str = PurePath.pathify(filepath).stem
-        lower_root: str = root.casefold()
-        root = root[:-2] if lower_root.endswith("_s") else root
-        root = root[:-4] if lower_root.endswith("_dlg") else root
+        case_root: str = root.casefold()
+        root = root[:-2] if case_root.endswith("_s") else root
+        root = root[:-4] if case_root.endswith("_dlg") else root
         return root  # noqa: RET504
 
     def capsules(self) -> list[Capsule]:
@@ -228,7 +228,7 @@ class Module:
                     textures.add(texture)
                 for lightmap in list_lightmaps(data):
                     textures.add(lightmap)
-            except Exception as e:  # noqa: PERF203
+            except Exception as e:
                 print(format_exception_with_variables(e, ___message___=f"Exception occurred when executing {self!r}.reload_resources() with model '{model}'"))
 
         for texture in textures:

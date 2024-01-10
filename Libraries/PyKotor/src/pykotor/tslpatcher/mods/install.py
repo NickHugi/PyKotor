@@ -87,7 +87,7 @@ def create_backup(
             # Write the file path to remove these files.txt in backup directory
             removal_files_txt: CaseAwarePath = backup_folderpath.joinpath("remove these files.txt")
             line: str = ("\n" if removal_files_txt.exists() else "") + destination_file_str
-            with removal_files_txt.open("a") as f:
+            with removal_files_txt.open(mode="a", encoding="utf-8") as f:
                 f.write(line)
 
         # Add the lowercased path string to the processed_files set
@@ -95,7 +95,7 @@ def create_backup(
 
 
 def create_uninstall_scripts(backup_dir: CaseAwarePath, uninstall_folder: CaseAwarePath, main_folder: CaseAwarePath):
-    with uninstall_folder.joinpath("uninstall.ps1").open("w") as f:
+    with uninstall_folder.joinpath("uninstall.ps1").open("w", encoding="utf-8") as f:
         f.write(
             rf"""
 #!/usr/bin/env pwsh
@@ -205,7 +205,7 @@ foreach ($file in $filesInBackup) {{
 Pause
 """,
         )
-    with uninstall_folder.joinpath("uninstall.sh").open("w", newline="\n") as f:
+    with uninstall_folder.joinpath("uninstall.sh").open("w", encoding="utf-8", newline="\n") as f:
         f.write(
             rf"""
 #!/bin/bash

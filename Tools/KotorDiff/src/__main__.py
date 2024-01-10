@@ -69,7 +69,7 @@ def log_output(*args, **kwargs):
             PARSER.print_help()
 
     # Write the captured output to the file
-    with OUTPUT_LOG.open("a") as f:
+    with OUTPUT_LOG.open("a", encoding="utf-8") as f:
         f.write(msg)
 
 

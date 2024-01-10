@@ -651,7 +651,7 @@ class Installation:
 
         return [
             *self._rims.keys(),
-            *[modules_rim_filename for modules_rim_filename in self._modules if is_rim_file(modules_rim_filename)],
+            *[modules_rim_filename for modules_rim_filename in self._modules if is_rim_file(modules_rim_filename)],  # type: ignore[]
         ]
 
     def rim_resources(
@@ -1366,8 +1366,8 @@ class Installation:
             textures[resname] = None
             case_resnames.append(CaseInsensitiveWrappedStr.cast(resname))
 
-        def decode_txi(txi_bytes: bytes) -> str:
-            return txi_bytes.decode("ascii", errors="ignore")
+        def decode_txi(txi_data: bytes) -> str:
+            return txi_data.decode("ascii", errors="ignore")
 
         def get_txi_from_list(resname: CaseInsensitiveWrappedStr, resource_list: list[FileResource]) -> str:
             txi_resource: FileResource | None = next(
@@ -1681,7 +1681,7 @@ class Installation:
 
         name: str | None = root
         for module in self.modules_list():
-            if root.casefold() not in module.casefold():
+            if root not in module:
                 continue
 
             capsule = Capsule(self.module_path() / module)
@@ -1740,7 +1740,7 @@ class Installation:
         -------
             The ID of the area for the module.
         """
-        root = self.replace_module_extensions(module_filename)
+        root: str = self.replace_module_extensions(module_filename)
         if use_hardcoded:
             for key, value in HARDCODED_MODULE_IDS.items():
                 if key.upper() in module_filename.upper():
@@ -1749,7 +1749,7 @@ class Installation:
         mod_id: str = ""
 
         for module in self.modules_list():
-            if root.casefold() not in module.casefold():
+            if root not in module:
                 continue
 
             try:

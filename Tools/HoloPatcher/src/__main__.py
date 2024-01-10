@@ -46,9 +46,12 @@ from utility.string import striprtf
 
 if TYPE_CHECKING:
 
+    from types import TracebackType
+
     from pykotor.tslpatcher.namespaces import PatcherNamespace
 
 CURRENT_VERSION: tuple[int, ...] = (1, 4, 3)
+VERSION_LABEL = f"v{'.'.join(map(str, CURRENT_VERSION))}"
 
 
 class ExitCode(IntEnum):
@@ -144,7 +147,11 @@ class App(tk.Tk):
         self.open_mod(cmdline_args.tslpatchdata or Path.cwd())
         self.handle_commandline(cmdline_args)
 
-    def set_window(self, width: int, height: int):
+    def set_window(
+        self,
+        width: int,
+        height: int,
+    ):
         # Get screen dimensions
         screen_width: int = self.winfo_screenwidth()
         screen_height: int = self.winfo_screenheight()
@@ -170,9 +177,8 @@ class App(tk.Tk):
         self.config(menu=self.menu_bar)
 
         # Version display - non-clickable
-        version_label: str = f"v{'.'.join(map(str, CURRENT_VERSION))}"
-        self.menu_bar.add_command(label=version_label)
-        self.menu_bar.entryconfig(version_label, state="disabled")
+        self.menu_bar.add_command(label=VERSION_LABEL)
+        self.menu_bar.entryconfig(VERSION_LABEL, state="disabled")
 
         # About menu
         about_menu = tk.Menu(self.menu_bar, tearoff=0)
@@ -261,14 +267,20 @@ class App(tk.Tk):
         self.testreader_button = ttk.Button(bottom_frame, text="Validate INI", command=self.test_reader)
         self.testreader_button.pack(side="right", padx=5, pady=5)
 
-    def on_combobox_focus_in(self, event):
+    def on_combobox_focus_in(
+        self,
+        event: tk.Event,
+    ):
         if self.namespaces_combobox_state == 2: # no selection, fix the focus
             self.focus_set()
             self.namespaces_combobox_state = 0  # base status
         else:
             self.namespaces_combobox_state = 1  # combobox clicked
 
-    def on_combobox_focus_out(self, event):
+    def on_combobox_focus_out(
+        self,
+        event: tk.Event,
+    ):
         if self.namespaces_combobox_state == 1:
             self.namespaces_combobox_state = 2  # no selection
 
@@ -292,7 +304,7 @@ class App(tk.Tk):
             else:
                 messagebox.showinfo(
                     "No updates available.",
-                    f"You are already running the latest version of HoloPatcher ({updateInfoData['holopatcherLatestVersion']})",
+                    f"You are already running the latest version of HoloPatcher ({VERSION_LABEL})",
                 )
         except Exception as e:  # noqa: BLE001
             messagebox.showerror(
@@ -312,7 +324,10 @@ class App(tk.Tk):
     def open_kotor_discord(self):
         webbrowser.open_new("https://discord.com/invite/kotor")
 
-    def handle_commandline(self, cmdline_args: Namespace):
+    def handle_commandline(
+        self,
+        cmdline_args: Namespace,
+    ):
         """Handle command line arguments passed to the application.
 
         Args:
@@ -336,14 +351,18 @@ class App(tk.Tk):
             self.hide_console()
 
         self.one_shot: bool = False
-        num_cmdline_actions = sum([cmdline_args.install, cmdline_args.uninstall, cmdline_args.validate])
+        num_cmdline_actions: int = sum([cmdline_args.install, cmdline_args.uninstall, cmdline_args.validate])
         if num_cmdline_actions == 1:
             self._begin_oneshot(cmdline_args)
-        elif num_cmdline_actions:
+        elif num_cmdline_actions > 1:
             messagebox.showerror("Invalid cmdline args passed", "Cannot run more than one of [--install, --uninstall, --validate]")
             sys.exit(ExitCode.NUMBER_OF_ARGS)
 
-    def _begin_oneshot(self, cmdline_args: Namespace):
+
+    def _begin_oneshot(
+        self,
+        cmdline_args: Namespace,
+    ):
         self.one_shot = True
         self.withdraw()
         self.handle_console_mode()
@@ -451,6 +470,8 @@ class App(tk.Tk):
         """
         if not self.install_running:
             sys.exit(ExitCode.SUCCESS)
+
+        # Handle unsafe exit.
         if not messagebox.askyesno(
             "Really cancel the current installation? ",
             "CONTINUING WILL BREAK YOUR GAME AND REQUIRE A FULL KOTOR REINSTALL!",
@@ -464,11 +485,17 @@ class App(tk.Tk):
         self.destroy()
         sys.exit(ExitCode.ABORT_INSTALL_UNSAFE)
 
-    def on_gamepaths_chosen(self, event: tk.Event):
+    def on_gamepaths_chosen(
+        self,
+        event: tk.Event,
+    ):
         """Adjust the combobox after a short delay."""
         self.after(10, lambda: self.move_cursor_to_end(event.widget))
 
-    def move_cursor_to_end(self, combobox: ttk.Combobox):
+    def move_cursor_to_end(
+        self,
+        combobox: ttk.Combobox,
+    ):
         """Shows the rightmost portion of the specified combobox as that's the most relevant."""
         combobox.focus_set()
         position: int = len(combobox.get())
@@ -477,13 +504,18 @@ class App(tk.Tk):
         self.focus_set()
 
     def on_namespace_option_hover(self) -> str:
+        """Show the expanded description from namespaces.ini when hovering over an option."""
         namespace_option: PatcherNamespace | None = next(
             (x for x in self.namespaces if x.name == self.namespaces_combobox.get()),
             None,
         )
         return namespace_option.description if namespace_option else ""
 
-    def on_namespace_option_chosen(self, event: tk.Event, config_reader: ConfigReader | None = None):
+    def on_namespace_option_chosen(
+        self,
+        event: tk.Event,
+        config_reader: ConfigReader | None = None,
+    ):
         """Handles the namespace option being chosen from the combobox.
 
         Args:
@@ -499,10 +531,13 @@ class App(tk.Tk):
             5. Loading the info.rtf file as defined.
         """
         try:
+            # Load the settings from the ini changes file.
             namespace_option: PatcherNamespace = next(x for x in self.namespaces if x.name == self.namespaces_combobox.get())
             changes_ini_path = CaseAwarePath(self.mod_path, "tslpatchdata", namespace_option.changes_filepath())
             reader: ConfigReader = config_reader or ConfigReader.from_filepath(changes_ini_path)
             reader.load_settings()
+
+            # Filter the listed games in the combobox with the mod's supported ones.
             game_number: int | None = reader.config.game_number
             if game_number:
                 game = Game(game_number)
@@ -511,6 +546,8 @@ class App(tk.Tk):
                     for game_key in ([game] + ([Game.K1] if game == Game.K2 else []))
                     for path in find_kotor_paths_from_default()[game_key]
                 ]
+
+            # Strip info.rtf and display in the main window frame.
             info_rtf = CaseAwarePath(self.mod_path, "tslpatchdata", namespace_option.rtf_filepath())
             if not info_rtf.exists():
                 messagebox.showwarning("No info.rtf", f"Could not load the rtf for this mod, file not found on disk: {info_rtf}")
@@ -528,7 +565,11 @@ class App(tk.Tk):
         else:
             self.after(10, lambda: self.move_cursor_to_end(self.namespaces_combobox))
 
-    def load_namespace(self, namespaces: list[PatcherNamespace], config_reader: ConfigReader | None = None):
+    def load_namespace(
+        self,
+        namespaces: list[PatcherNamespace],
+        config_reader: ConfigReader | None = None,
+    ):
         """Loads namespaces into the UI.
 
         Args:
@@ -548,7 +589,10 @@ class App(tk.Tk):
         self.namespaces = namespaces
         self.on_namespace_option_chosen(tk.Event(), config_reader)
 
-    def open_mod(self, default_directory_path_str: os.PathLike | str | None = None):
+    def open_mod(
+        self,
+        default_directory_path_str: os.PathLike | str | None = None,
+    ):
         """Opens a mod directory.
 
         Args:
@@ -602,7 +646,10 @@ class App(tk.Tk):
                 f"An unexpected error occurred while loading the mod info.{os.linesep*2}{msg}",
             )
 
-    def open_kotor(self, default_kotor_dir_str: os.PathLike | str | None = None) -> None:
+    def open_kotor(
+        self,
+        default_kotor_dir_str: os.PathLike | str | None = None,
+    ) -> None:
         """Opens the KOTOR directory.
 
         Args:
@@ -638,7 +685,7 @@ class App(tk.Tk):
         self,
         directory: Path,
         *,
-        recurse=False,
+        recurse: bool = False,
     ) -> bool:
         """Check access to a directory.
 
@@ -658,21 +705,21 @@ class App(tk.Tk):
             - If access cannot be gained, show error
             - If no access after trying, prompt user to continue with an install anyway.
         """
-        if directory.has_access(recurse):
+        if directory.has_access(recurse=recurse):
             return True
         if (
             messagebox.askyesno(
                 "Permission error",
                 f"HoloPatcher does not have permissions to the path '{directory}', would you like to attempt to gain permission automatically?",
             )
-            and not directory.gain_access()
+            and not directory.gain_access(recurse=recurse)
         ):
             messagebox.showerror(
                 "Could not gain permission!",
                 "Please run HoloPatcher with elevated permissions, and ensure the selected folder exists and is writeable.",
             )
             return False
-        if not directory.has_access(recurse):
+        if not directory.has_access(recurse=recurse):
             return messagebox.askyesno(
                 "Unauthorized",
                 (
@@ -798,7 +845,10 @@ class App(tk.Tk):
             messagebox.showerror(*universal_simplify_exception(e))
         self.set_active_install(install_running=False)
 
-    def set_active_install(self, install_running: bool):
+    def set_active_install(
+        self,
+        install_running: bool,
+    ):
         """Sets the active install state.
 
         Args:
@@ -830,7 +880,10 @@ class App(tk.Tk):
         self.main_text.delete(1.0, tk.END)
         self.main_text.config(state=tk.DISABLED)
 
-    def _execute_mod_install(self, installer: ModInstaller):
+    def _execute_mod_install(
+        self,
+        installer: ModInstaller,
+    ):
         """Executes the mod installation.
 
         Args:
@@ -898,7 +951,10 @@ class App(tk.Tk):
     def log_file_path(self) -> Path:
         return Path.pathify(self.mod_path) / "installlog.txt"
 
-    def _handle_exception_during_install(self, e: Exception) -> NoReturn:
+    def _handle_exception_during_install(
+        self,
+        e: Exception,
+    ) -> NoReturn:
         """Handles exceptions during installation.
 
         Args:
@@ -925,17 +981,10 @@ class App(tk.Tk):
         self.set_active_install(install_running=False)
         raise
 
-    def filter_kotor_game_paths(self, game_number):
-        """Determines what shows up in the gamepaths combobox, based on the LookupGameNumber setting."""
-        game = Game(game_number)
-        gamepaths_list: list[str] = [
-            str(path)
-            for game_key in ([game] + ([Game.K1] if game == Game.K2 else []))
-            for path in find_kotor_paths_from_default()[game_key]
-        ]
-        self.gamepaths["values"] = gamepaths_list
-
-    def set_stripped_rtf_text(self, rtf_text: str) -> None:
+    def set_stripped_rtf_text(
+        self,
+        rtf_text: str,
+    ) -> None:
         """Strips the info.rtf of all RTF related text and displays it in the UI."""
         stripped_content: str = striprtf(rtf_text)
         self.main_text.config(state=tk.NORMAL)
@@ -943,7 +992,10 @@ class App(tk.Tk):
         self.main_text.insert(tk.END, stripped_content)
         self.main_text.config(state=tk.DISABLED)
 
-    def write_log(self, log: PatchLog) -> None:
+    def write_log(
+        self,
+        log: PatchLog,
+    ) -> None:
         """Writes a message to the log.
 
         Args:
@@ -964,7 +1016,11 @@ class App(tk.Tk):
             log_file.write(f"{log.formatted_message}\n")
 
 
-def custom_excepthook(etype: type[BaseException], e: BaseException, tback: TracebackType | None):
+def custom_excepthook(
+    etype: type[BaseException],
+    e: BaseException,
+    tback: TracebackType | None,
+):
     """Custom exception hook to display errors in message box.
 
     When pyinstaller compiled in --console mode, this will match the same error message behavior of --noconsole.
@@ -982,7 +1038,7 @@ def custom_excepthook(etype: type[BaseException], e: BaseException, tback: Trace
         - Show error message in message box
         - Destroy the root window.
     """
-    error_msg = "".join(traceback.format_exception(etype, e, tback))
+    error_msg: str = "".join(traceback.format_exception(etype, e, tback))
     root = tk.Tk()
     root.withdraw()  # Hide the main window
     messagebox.showerror("Critical Exception", error_msg)

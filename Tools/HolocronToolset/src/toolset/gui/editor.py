@@ -222,7 +222,7 @@ class Editor(QMainWindow):
             else:
                 self._saveEndsWithOther(data, data_ext)
         except Exception as e:  # noqa: BLE001
-            with Path("errorlog.txt").open("a") as file:
+            with Path("errorlog.txt").open("a", encoding="utf-8") as file:
                 lines = format_exception_with_variables(e)
                 file.writelines(lines)
                 file.write("\n----------------------\n")

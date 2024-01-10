@@ -19,11 +19,12 @@ def ireplace(original: str, target: str, replacement: str) -> str:
     target_length: int = len(target)
 
     # Convert the target to lowercase for case-insensitive comparison
-    target_lower: str = target.casefold()
+    target_lower: str = target.lower()
+    original_lower: str = original.lower()
 
     while i < len(original):
         # If a potential match is found
-        if original[i : i + target_length].casefold() == target_lower:
+        if original_lower[i : i + target_length] == target_lower:
             # Add the replacement to the result
             result += replacement
             # Skip the characters of the target

@@ -122,6 +122,7 @@ class SelectModuleDialog(QDialog):
             - This will filter and show only matching items.
         """
         text: str = self.ui.filterEdit.text()
+        text_nocase = text.casefold()
         for row in range(self.ui.moduleList.count()):
             item: QListWidgetItem | None = self.ui.moduleList.item(row)
-            item.setHidden(text.casefold() not in item.text().casefold())
+            item.setHidden(text_nocase not in item.text().casefold())

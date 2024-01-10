@@ -52,7 +52,7 @@ def log(message: str):
     """Function to log messages both on console and to a file if logging is enabled."""
     print(message)
     if LOGGING_ENABLED:
-        with parser_args.output.joinpath("output.log").open("a") as log_file:
+        with parser_args.output.joinpath("output.log").open("a", encoding="utf-8") as log_file:
             log_file.write(message + "\n")
 
 

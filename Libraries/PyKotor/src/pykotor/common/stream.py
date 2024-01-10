@@ -95,7 +95,7 @@ class BinaryReader:
         -------
             A new BinaryReader instance.
         """
-        stream = Path.pathify(path).open("rb")
+        stream: BinaryIO = Path.pathify(path).open("rb")
         return BinaryReader(stream, offset, size)
 
     @classmethod
