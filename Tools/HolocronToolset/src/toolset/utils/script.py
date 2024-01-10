@@ -99,9 +99,9 @@ def compileScript(source: str, tsl: bool) -> bytes:
     global_settings = GlobalSettings()
     extract_path = Path(global_settings.extractPath)
 
-    if not extract_path.exists():
+    if not extract_path.safe_exists():
         extract_path = Path(QFileDialog.getExistingDirectory(None, "Select a temp directory"))
-        if not extract_path.exists():
+        if not extract_path.safe_exists():
             msg = "Temp directory has not been set or is invalid."
             raise NoConfigurationSetError(msg)
 
@@ -122,10 +122,10 @@ def _compile_windows(
     tsl: bool,
 ) -> bytes:
     nss_compiler_path = Path(global_settings.nssCompilerPath)
-    if not nss_compiler_path.exists():
+    if not nss_compiler_path.safe_exists():
         lookup_paths: tuple[str, str] = QFileDialog.getOpenFileName(None, "Select the NCS Compiler executable")
         nss_compiler_path = Path(lookup_paths[0] if isinstance(lookup_paths, tuple) else lookup_paths)
-        if not nss_compiler_path.exists():
+        if not nss_compiler_path.safe_exists():
             msg = "NCS Compiler has not been set or is invalid."
             raise NoConfigurationSetError(msg)
 
