@@ -167,7 +167,7 @@ class ModInstaller:
         exists: bool
         if is_capsule_file(patch.destination):
             if not output_container_path.safe_exists():
-                msg = f"The capsule '{patch.destination}' did not exist when attempting to {patch.action.lower().rstrip()} '{patch.sourcefile}'. Skipping file..."
+                msg = f"The capsule '{patch.destination}' did not exist, or permission issues occurred, when attempting to {patch.action.lower().rstrip()} '{patch.sourcefile}'. Skipping file..."
                 raise FileNotFoundError(msg)
             capsule = Capsule(output_container_path)
             create_backup(self.log, output_container_path, *self.backup(), PurePath(patch.destination).parent)
@@ -380,7 +380,8 @@ class ModInstaller:
                 print(format_exception_with_variables(e))
                 continue
 
-        self.log.add_note(f"Successfully completed {config.patch_count()} total patches.")
+        num_patches_completed = config.patch_count()
+        self.log.add_note(f"Successfully completed {num_patches_completed} {'patch' if num_patches_completed == 1 else 'total patches'}.")
 
     def get_tlk_patches(self, config: PatcherConfig) -> list[ModificationsTLK]:
         tlk_patches: list[ModificationsTLK] = []
