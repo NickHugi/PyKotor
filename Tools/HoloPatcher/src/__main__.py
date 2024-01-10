@@ -79,8 +79,8 @@ def _write_update_after_main_closes(
     main_process_id: int,
 ):
     print("Writing to temp dir")
-    temp_dir = tempfile.TemporaryDirectory()
-    temp_filepath: Path = Path(temp_dir.name) / holopatcher_filepath.name
+    temp_dir = tempfile.mkdtemp()
+    temp_filepath: Path = Path(temp_dir) / holopatcher_filepath.name
 
     # Write the new executable data to a temporary file
     with temp_filepath.open("wb") as file:
