@@ -4,9 +4,14 @@ import base64
 import contextlib
 import ctypes
 import json
+import multiprocessing
 import os
 import pathlib
+import platform
+import subprocess
 import sys
+import tempfile
+import time
 import tkinter as tk
 import traceback
 import webbrowser
@@ -48,7 +53,7 @@ if TYPE_CHECKING:
 
     from pykotor.tslpatcher.namespaces import PatcherNamespace
 
-CURRENT_VERSION: tuple[int, ...] = (1, 4, 3)
+CURRENT_VERSION: tuple[int, ...] = (1, 4, 2)
 
 
 class ExitCode(IntEnum):
@@ -61,6 +66,7 @@ class ExitCode(IntEnum):
     ABORT_INSTALL_UNSAFE = 6
     EXCEPTION_DURING_INSTALL = 7
     INSTALL_COMPLETED_WITH_ERRORS = 8
+    UPDATE_FAILED = 9
 
 
 # Please be careful modifying this functionality as 3rd parties depend on this syntax.
@@ -272,14 +278,23 @@ class App(tk.Tk):
         if self.namespaces_combobox_state == 1:
             self.namespaces_combobox_state = 2  # no selection
 
-    def check_for_updates(self):
+    def is_process_running(self, process_id: int) -> bool:
+        try:
+            # os.kill with a signal of 0 checks for the existence of the process without actually killing it
+            os.kill(process_id, 0)
+        except OSError:
+            return False
+        else:
+            return True
+
+    def check_for_updates(self):  # sourcery skip: extract-method
         try:
             import requests
-            req = requests.get("https://api.github.com/repos/NickHugi/PyKotor/contents/update_info.json", timeout=15)
+            req: requests.Response = requests.get("https://api.github.com/repos/NickHugi/PyKotor/contents/update_info.json", timeout=15)
             req.raise_for_status()
             file_data = req.json()
             base64_content = file_data["content"]
-            decoded_content = base64.b64decode(base64_content)  # Correctly decoding the base64 content
+            decoded_content: bytes = base64.b64decode(base64_content)  # Correctly decoding the base64 content
             updateInfoData = json.loads(decoded_content.decode("utf-8"))
 
             new_version = tuple(map(int, str(updateInfoData["holopatcherLatestVersion"]).split(".")))
@@ -288,7 +303,24 @@ class App(tk.Tk):
                     "Update available",
                     "A newer version of HoloPatcher is available, would you like to download it now?",
                 ):
-                    webbrowser.open_new(updateInfoData["holopatcherDownloadLink"])
+                    #webbrowser.open_new(updateInfoData["holopatcherDownloadLink"])
+
+                    holopatcher_filepath: Path = Path(__file__).resolve()
+                    code: requests.Response = requests.get(
+                        f"{updateInfoData['holopatcherRawDownloadLink']}/{holopatcher_filepath.name.lower()}?ref=bleeding-edge",
+                        allow_redirects = False,
+                        timeout=60,
+                    )
+                    code.raise_for_status()
+                    acquired_json = code.json()
+                    new_exe_data: bytes = base64.b64decode(acquired_json["content"])
+                    main_process_id: int = os.getpid()
+
+                    # Start the updater process and exit the main application
+                    p = multiprocessing.Process(target=self.updater_process, args=(holopatcher_filepath, new_exe_data, main_process_id))
+                    p.start()
+                    self.destroy()
+                    sys.exit()
             else:
                 messagebox.showinfo(
                     "No updates available.",
@@ -302,6 +334,53 @@ class App(tk.Tk):
                     "Check if you are connected to the internet."
                 ),
             )
+
+    def updater_process(
+        self,
+        holopatcher_filepath: Path,
+        new_exe_data: bytes,
+        main_process_id: int,
+    ):
+        self._write_update_after_main_closes(
+            holopatcher_filepath,
+            new_exe_data,
+            main_process_id,
+        )
+        # Restart the application
+        if platform.system() == "Windows":
+            subprocess.Popen([str(holopatcher_filepath)])
+        else:
+            subprocess.Popen(["/bin/sh", "-c", str(holopatcher_filepath)])
+
+        sys.exit()
+
+    def _write_update_after_main_closes(
+        self,
+        holopatcher_filepath: Path,
+        new_exe_data: bytes,
+        main_process_id: int,
+    ):
+        with tempfile.TemporaryDirectory() as temp_str_dir_path:
+            temp_filepath: Path = Path(temp_str_dir_path) / holopatcher_filepath.name
+
+            # Write the new executable data to a temporary file
+            with temp_filepath.open("wb") as file:
+                file.write(new_exe_data)
+
+            # Set executable permissions (important for Unix-like systems)
+            temp_filepath.gain_access(mode=0o7, recurse=platform.system()=="Darwin")
+
+            # Wait for the main application to close
+            waited_time: int = 0
+            while self.is_process_running(main_process_id):
+                time.sleep(1)  # Wait before checking again.
+                waited_time += 1
+                if waited_time >= 60:
+                    messagebox.showerror("Error during update process", "Main process still running after a full minute, could not update.")
+                    sys.exit(ExitCode.UPDATE_FAILED)
+
+            # Replace the old executable with the new one
+            temp_filepath.replace(holopatcher_filepath)
 
     def open_homepage(self):
         webbrowser.open_new("https://deadlystream.com/files/file/2243-holopatcher")
@@ -621,7 +700,7 @@ class App(tk.Tk):
             if not directory_path_str:
                 return
             directory = CaseAwarePath(directory_path_str)
-            self.check_access(directory)
+            self.check_access(directory, recurse=True)
             directory_str = str(directory)
             self.gamepaths.set(str(directory))
             if directory_str not in self.gamepaths["values"]:
@@ -658,6 +737,10 @@ class App(tk.Tk):
             - If access cannot be gained, show error
             - If no access after trying, prompt user to continue with an install anyway.
         """
+        from pykotor.resource.type import ResourceType
+        def kotorFilter(path):
+            return not ResourceType.from_extension(path).is_invalid
+
         if directory.has_access(recurse):
             return True
         if (
@@ -726,7 +809,7 @@ class App(tk.Tk):
                 "No KOTOR directory chosen",
                 "Select your KOTOR directory first.",
             )
-        return self.check_access(Path(self.gamepaths.get()))
+        return self.check_access(Path(self.gamepaths.get()), recurse=True)
 
     def begin_install(self):
         """Starts the installation process in a background thread.

@@ -3,6 +3,7 @@
 	"holopatcherLatestVersion": "1.4.3",
 	"toolsetDownloadLink": "https://deadlystream.com/files/file/1982-holocron-toolset/",
 	"holopatcherDownloadLink": "https://deadlystream.com/files/file/2243-holopatcher",
+	"holopatcherRawDownloadLink": "https://api.github.com/repos/NickHugi/PyKotor/contents/updated_binaries",
 	"kits": {
 		"Black Vulkar Base": { "version": 1, "id": "blackvulkar" },
 		"Endar Spire": { "version": 1, "id": "endarspire" },
