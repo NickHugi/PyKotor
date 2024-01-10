@@ -87,7 +87,7 @@ class TalkTable:  # TODO: dialogf.tlk
         with BinaryReader.from_file(self._path) as reader:
             reader.seek(12)
             entries_count = reader.read_uint32()
-            _texts_offset = reader.read_uint32()
+            reader.skip(4)
 
             if stringref >= entries_count:
                 return ResRef.from_blank()

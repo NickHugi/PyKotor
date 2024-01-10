@@ -18,21 +18,20 @@ from typing import TYPE_CHECKING, Any, Callable
 from utility.error_handling import format_exception_with_variables, universal_simplify_exception
 
 if getattr(sys, "frozen", False) is False:
+    def add_sys_path(path: pathlib.Path):
+        working_dir = str(path)
+        if working_dir not in sys.path:
+            sys.path.append(working_dir)
+
     pykotor_font_path = pathlib.Path(__file__).parents[3] / "Libraries" / "PyKotorFont" / "src" / "pykotor"
     if pykotor_font_path.exists():
-        if pykotor_font_path in sys.path:
-            sys.path.remove(str(pykotor_font_path))
-        sys.path.insert(0, str(pykotor_font_path.parent))
+        add_sys_path(pykotor_font_path.parent)
     pykotor_path = pathlib.Path(__file__).parents[3] / "Libraries" / "PyKotor" / "src" / "pykotor"
     if pykotor_path.exists():
-        if pykotor_path in sys.path:
-            sys.path.remove(str(pykotor_path))
-        sys.path.insert(0, str(pykotor_path.parent))
-    utility_path = pathlib.Path(__file__).parents[3] / "Libraries" / "Utility" / "src"
+        add_sys_path(pykotor_path.parent)
+    utility_path = pathlib.Path(__file__).parents[3] / "Libraries" / "Utility" / "src" / "utility"
     if utility_path.exists():
-        if utility_path in sys.path:
-            sys.path.remove(str(utility_path))
-        sys.path.insert(0, str(utility_path))
+        add_sys_path(utility_path.parent)
 
 
 

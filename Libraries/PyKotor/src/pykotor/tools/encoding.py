@@ -16,7 +16,7 @@ except ImportError:
     charset_normalizer = None
 
 def decode_bytes_with_fallbacks(
-    byte_content: bytes,
+    byte_content: bytes | bytearray,
     errors="strict",
     encoding: str | None = None,
     lang: Language | None = None,

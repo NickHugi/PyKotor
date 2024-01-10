@@ -129,7 +129,7 @@ class BinaryReader:
     ):
         if isinstance(source, (os.PathLike, str)):  # is path
             reader = BinaryReader.from_file(source, offset, size)
-        elif isinstance(source, (bytes, bytearray)):  # is binary data
+        elif isinstance(source, (bytes, bytearray, memoryview)):  # is binary data
             reader = BinaryReader.from_bytes(source, offset, size)
         elif isinstance(source, BinaryReader):
             reader = BinaryReader(source._stream, source._offset, source._size)
@@ -724,7 +724,7 @@ class BinaryWriter(ABC):
             return BinaryWriter.to_file(source)
         if isinstance(source, bytearray):  # is mutable binary data
             return BinaryWriter.to_bytearray(source)
-        if isinstance(source, bytes):  # is immutable binary data
+        if isinstance(source, (bytes, memoryview)):  # is immutable binary data
             return BinaryWriter.to_bytearray(bytearray(source))
         if isinstance(source, BinaryWriter):
             return source
@@ -1088,6 +1088,7 @@ class BinaryWriterFile(BinaryWriter):
         self._stream: BinaryIO = stream
         self.offset: int = offset
         self.auto_close: bool = True
+
         self._stream.seek(offset)
 
     def __enter__(
@@ -1355,7 +1356,7 @@ class BinaryWriterFile(BinaryWriter):
         value: Vector3,
         *,
         big: bool = False,
-    ):
+    ):  # sourcery skip: class-extract-method
         """Writes three 32-bit floating point numbers to the stream.
 
         Args:
@@ -1363,7 +1364,9 @@ class BinaryWriterFile(BinaryWriter):
             value: The value to be written.
             big: Write bytes as big endian.
         """
-        self._write_generic_vector(big, value)
+        self._stream.write(struct.pack(f"{_endian_char(big)}f", value.x))
+        self._stream.write(struct.pack(f"{_endian_char(big)}f", value.y))
+        self._stream.write(struct.pack(f"{_endian_char(big)}f", value.z))
 
     def write_vector4(
         self,
@@ -1378,13 +1381,10 @@ class BinaryWriterFile(BinaryWriter):
             value: The value to be written.
             big: Write bytes as big endian.
         """
-        self._write_generic_vector(big, value)
-        self._stream.write(struct.pack(f"{_endian_char(big)}f", value.w))
-
-    def _write_generic_vector(self, big: bool, value: Vector3 | Vector4):
         self._stream.write(struct.pack(f"{_endian_char(big)}f", value.x))
         self._stream.write(struct.pack(f"{_endian_char(big)}f", value.y))
         self._stream.write(struct.pack(f"{_endian_char(big)}f", value.z))
+        self._stream.write(struct.pack(f"{_endian_char(big)}f", value.w))
 
     def write_bytes(
         self,
@@ -1440,7 +1440,7 @@ class BinaryWriterFile(BinaryWriter):
                 raise ValueError(msg)
             self.write_uint32(len(value), big=big)
         else:
-            msg = "An invalid prefix length was provided."
+            msg = f"An invalid prefix length '{prefix_length}' was provided."
             raise ValueError(msg)
 
         if string_length != -1:
@@ -1466,7 +1466,7 @@ class BinaryWriterFile(BinaryWriter):
             indent: Level of indentation.
             *args: Values to write.
         """
-        line = "  " * indent
+        line: str = "  " * indent
         for arg in args:
             line += str(round(arg, 7)) if isinstance(arg, float) else str(arg)
             line += " "
@@ -1949,7 +1949,12 @@ class BinaryWriterBytearray(BinaryWriter):
 
         self._encode_val_and_update_position(line, "ascii")
 
-    def _encode_val_and_update_position(self, value: str, encoding: str | None, errors: str = "strict"):
+    def _encode_val_and_update_position(
+        self,
+        value: str,
+        encoding: str | None,
+        errors: str = "strict",
+    ):
         encoded: bytes = value.encode(encoding or "windows-1252", errors=errors)
         self._ba[self._position : self._position + len(encoded)] = encoded
         self._position += len(encoded)
@@ -1977,7 +1982,7 @@ class BinaryWriterBytearray(BinaryWriter):
             string_id: int = LocalizedString.substring_id(language, gender)
             bw.write_uint32(string_id, big=big)
             bw.write_string(substring, prefix_length=4, encoding=language.get_encoding())
-        locstring_data: bytes = bw.data()
 
+        locstring_data: bytes = bw.data()
         self.write_uint32(len(locstring_data))
         self.write_bytes(locstring_data)

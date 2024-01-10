@@ -49,10 +49,7 @@ class FileResource:
         self._internal = False
 
     def __setattr__(self, __name, __value):
-        if hasattr(self, __name):
-            if __name == "_internal" or self._internal:
-                return super().__setattr__(__name, __value)
-
+        if hasattr(self, __name) and __name != "_internal" and not self._internal:
             msg = f"Cannot modify immutable FileResource instance, attempted `setattr({self!r}, {__name!r}, {__value!r})`"
             raise RuntimeError(msg)
 
@@ -83,7 +80,11 @@ class FileResource:
             return self.get_sha256_hash() == __value.get_sha256_hash()
         if isinstance(__value, (os.PathLike, bytes, bytearray, memoryview)):
             return self.get_sha256_hash() == generate_sha256_hash(__value)
-        return self.identifier() == __value
+        if isinstance(__value, (ResRef, ResourceIdentifier)):
+            return hash(self._identifier) == hash(__value)
+        if isinstance(__value, str):
+            return hash(self._identifier) == hash(__value.lower())
+        return hash(self._identifier) == hash(__value)
 
     def resname(self) -> str:
         return self._resname
@@ -140,7 +141,11 @@ class FileResource:
     ) -> bytes:
         """Opens the file the resource is located at and returns the bytes data of the resource.
 
-        Returns
+        Args:
+        ----
+            reload (bool, kwarg): Whether to reload the file from disk or use the cache. Default is False
+
+        Returns:
         -------
             Bytes data of the resource.
         """
