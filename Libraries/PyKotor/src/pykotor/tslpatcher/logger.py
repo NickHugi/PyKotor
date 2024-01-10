@@ -29,7 +29,7 @@ class PatchLogger:
 
     @property
     def verbose_logs(self) -> list[PatchLog]:
-        return [pl for pl in self.all_logs if pl.log_type == LogType.NOTE]
+        return [pl for pl in self.all_logs if pl.log_type == LogType.VERBOSE]
 
     @property
     def notes(self) -> list[PatchLog]:
@@ -37,11 +37,11 @@ class PatchLogger:
 
     @property
     def warnings(self) -> list[PatchLog]:
-        return [pl for pl in self.all_logs if pl.log_type == LogType.NOTE]
+        return [pl for pl in self.all_logs if pl.log_type == LogType.WARNING]
 
     @property
     def errors(self) -> list[PatchLog]:
-        return [pl for pl in self.all_logs if pl.log_type == LogType.NOTE]
+        return [pl for pl in self.all_logs if pl.log_type == LogType.ERROR]
 
     def complete_patch(self) -> None:
         self.patches_completed += 1
