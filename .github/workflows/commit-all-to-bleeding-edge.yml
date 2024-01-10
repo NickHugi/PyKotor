@@ -1,0 +1,21 @@
+name: Forward Commits to Bleeding-Edge
+
+on:
+  push:
+    branches:
+      - '*'
+      - '!bleeding-edge'
+
+jobs:
+  merge:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout Repository
+      uses: actions/checkout@v2
+
+    - name: Merge to Bleeding-Edge
+      run: |
+        git checkout bleeding-edge
+        git merge ${{ github.ref }}
+        git push origin bleeding-edge
