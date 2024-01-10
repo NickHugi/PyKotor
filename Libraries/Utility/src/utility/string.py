@@ -746,7 +746,11 @@ class WrappedStr:  # (metaclass=StrType):
 
         Return True if S starts with the specified prefix, False otherwise. With optional start, test S beginning at that position. With optional end, stop comparing S at that position. prefix can also be a tuple of strings to try.
         """  # noqa: D415, D402, D400
-        return self._content.startswith(self._assert_str_type(__prefix), __start, __end)
+        if isinstance(__prefix, tuple):
+            __prefix = tuple(self._assert_str_type(item) for item in __prefix)
+        else:
+            __prefix = self._assert_str_type(__prefix)
+        return self._content.startswith(__prefix, __start, __end)
 
     def strip(
         self,
