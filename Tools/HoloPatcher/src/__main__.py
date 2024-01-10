@@ -290,7 +290,7 @@ class App(tk.Tk):
     def check_for_updates(self):  # sourcery skip: extract-method
         try:
             import requests
-            req: requests.Response = requests.get("https://api.github.com/repos/NickHugi/PyKotor/contents/update_info.json", timeout=15)
+            req: requests.Response = requests.get("https://api.github.com/repos/NickHugi/PyKotor/contents/update_info.json?ref=bleeding-edge", timeout=15)
             req.raise_for_status()
             file_data = req.json()
             base64_content = file_data["content"]
