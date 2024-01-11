@@ -127,7 +127,7 @@ class FileSearcher(QDialog):
                 results.append(resource)
                 return
             if not filenamesOnly:
-                resource_data = decode_bytes_with_fallbacks(resource.data(), errors="ignore", only_8bit_encodings=True)
+                resource_data = resource.data().decode(encoding="windows-1252", errors="ignore")
                 data_check: bool = text in resource_data if caseSensitive else text.lower() in resource_data.lower()
                 if data_check:
                     results.append(resource)
