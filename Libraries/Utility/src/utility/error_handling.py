@@ -117,7 +117,7 @@ def format_exception_with_variables(
             f"  {___var___} = {___val___!r}"
             for ___var___, ___val___ in ___frame___.f_locals.items()
             if ___var___ not in ___default_attrs___
-            and ___sys___.getsizeof(___val___) <= (1024 * 1024)
+            and ___sys___.getsizeof(___val___) <= 10240
             and ___var___ not in {
                 "___var___",
                 "___detailed_message___",
@@ -189,7 +189,7 @@ def assert_with_variable_trace(___condition___: bool, ___message___: str = "Asse
             f"  {var} = {___val___}"
             for var, ___val___ in ___frame___.f_locals.items()
             if var not in ___default_attrs___
-            and ___sys___.getsizeof(___val___) <= (1024 * 1024)
+            and ___sys___.getsizeof(___val___) <= 10240
             and var not in [
                 "___detailed_message___",
                 "___default_attrs___",
@@ -264,7 +264,7 @@ def with_variable_trace(
                         f"  {var} = {___val___}"
                         for var, ___val___ in ___frame___.f_locals.items()
                         if var not in ___default_attrs___
-                        and ___sys___.getsizeof(___val___) <= (1024 * 1024)
+                        and ___sys___.getsizeof(___val___) <= 10240
                         and var not in [
                             "___detailed_message___",
                             "___default_attrs___",

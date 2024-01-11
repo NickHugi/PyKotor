@@ -229,7 +229,7 @@ class Module:
                 for lightmap in list_lightmaps(data):
                     textures.add(lightmap)
             except Exception as e:
-                print(format_exception_with_variables(e, ___message___=f"Exception occurred when executing {self!r}.reload_resources() with model '{model}'"))
+                print(format_exception_with_variables(e, ___message___=f"Exception occurred when executing {self!r}.reload_resources() with model '{model.resname()}.{model.restype()}'"))
 
         for texture in textures:
             look_for.extend(
