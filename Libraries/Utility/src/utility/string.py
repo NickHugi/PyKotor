@@ -881,7 +881,7 @@ class CaseInsensitiveWrappedStr(WrappedStr):
         __content: WrappedStr | str,
     ):
         super().__init__(__content)
-        self._lower_content: str = str(self._content).casefold()
+        self._lower_content: str = str(__content).casefold()
 
     def __contains__(
         self,
