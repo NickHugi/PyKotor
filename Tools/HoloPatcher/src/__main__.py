@@ -130,7 +130,7 @@ def parse_args() -> Namespace:
 class App(tk.Tk):
     def __init__(self):
         super().__init__()
-        self.title("HoloPatcher")
+        self.title(f"HoloPatcher {VERSION_LABEL}")
         self.set_window(width=400, height=500)
 
         self.install_running: bool = False
@@ -138,7 +138,7 @@ class App(tk.Tk):
         self.namespaces: list[PatcherNamespace] = []
 
         self.initialize_logger()
-        self.initialize_ui_menu()
+        self.initialize_top_menu()
         self.initialize_ui_controls()
 
         self.protocol("WM_DELETE_WINDOW", self.handle_exit_button)
@@ -171,29 +171,45 @@ class App(tk.Tk):
         self.logger.warning_observable.subscribe(self.write_log)
         self.logger.error_observable.subscribe(self.write_log)
 
-    def initialize_ui_menu(self):
+    def initialize_top_menu(self):
         # Initialize top menu bar
         self.menu_bar = tk.Menu(self)
         self.config(menu=self.menu_bar)
 
-        # Version display - non-clickable
-        self.menu_bar.add_command(label=VERSION_LABEL)
-        self.menu_bar.entryconfig(VERSION_LABEL, state="disabled")
+        # Tools menu
+        tools_menu = tk.Menu(self.menu_bar, tearoff=0)
+        tools_menu.add_command(label="Validate INI", command=self.test_reader)
+        tools_menu.add_command(label="Uninstall Mod / Restore Backup", command=self.uninstall_selected_mod)
+        self.menu_bar.add_cascade(label="Tools", menu=tools_menu)
+
+        # Help menu
+        help_menu = tk.Menu(self.menu_bar, tearoff=0)
+        self.menu_bar.add_cascade(label="Help", menu=help_menu)
+
+        # DeadlyStream submenu
+        deadlystream_menu = tk.Menu(help_menu, tearoff=0)
+        deadlystream_menu.add_command(label="Discord", command=self.open_deadlystream_discord)
+        deadlystream_menu.add_command(label="Website", command=self.open_deadlystream_website)
+        help_menu.add_cascade(label="DeadlyStream", menu=deadlystream_menu)
+
+        # Neocities submenu
+        neocities_menu = tk.Menu(help_menu, tearoff=0)
+        neocities_menu.add_command(label="Discord", command=self.open_neocities_discord)
+        neocities_menu.add_command(label="Website", command=self.open_neocities_website)
+        help_menu.add_cascade(label="KOTOR Community Portal", menu=neocities_menu)
+
+        # PCGamingWiki submenu
+        pcgamingwiki_menu = tk.Menu(help_menu, tearoff=0)
+        pcgamingwiki_menu.add_command(label="KOTOR 1", command=self.open_pcgamingwiki_kotor1)
+        pcgamingwiki_menu.add_command(label="KOTOR 2: TSL", command=self.open_pcgamingwiki_kotor2)
+        help_menu.add_cascade(label="PCGamingWiki", menu=pcgamingwiki_menu)
 
         # About menu
         about_menu = tk.Menu(self.menu_bar, tearoff=0)
-        self.menu_bar.add_cascade(label="About", menu=about_menu)
-
-        # Adding items to About menu
         about_menu.add_command(label="Check for Updates", command=self.check_for_updates)
-        about_menu.add_command(label="Homepage", command=self.open_homepage)
+        about_menu.add_command(label="HoloPatcher Home", command=self.open_hp_homepage)
         about_menu.add_command(label="GitHub Source", command=self.open_github)
-
-        # Discord submenu
-        discord_menu = tk.Menu(about_menu, tearoff=0)
-        about_menu.add_cascade(label="Discord", menu=discord_menu)
-        discord_menu.add_command(label="DeadlyStream", command=self.open_deadlystream_discord)
-        discord_menu.add_command(label="r/kotor", command=self.open_kotor_discord)
+        self.menu_bar.add_cascade(label="About", menu=about_menu)
 
     def initialize_ui_controls(self):
         # Use grid layout for main window
@@ -201,36 +217,35 @@ class App(tk.Tk):
         self.grid_columnconfigure(0, weight=1)
 
         # Configure style for Combobox
-        style = ttk.Style(self)
-        style.configure("TCombobox", font=("Helvetica", 10), padding=4)
+        ttk.Style(self).configure("TCombobox", font=("Helvetica", 10), padding=4)
 
         # Top area for comboboxes and buttons
-        top_frame = tk.Frame(self)
+        top_frame: tk.Frame = tk.Frame(self)
         top_frame.grid(row=0, column=0, sticky="ew")
         top_frame.grid_columnconfigure(0, weight=1)  # Make comboboxes expand
         top_frame.grid_columnconfigure(1, weight=0)  # Keep buttons fixed size
 
-        self.namespaces_combobox = ttk.Combobox(top_frame, state="readonly", style="TCombobox")
-        self.namespaces_combobox.set("Select the mod to install")
+        # Setup the namespaces/changes ini combobox (selected mod)
+        self.namespaces_combobox: ttk.Combobox = ttk.Combobox(top_frame, state="readonly", style="TCombobox")
         self.namespaces_combobox.grid(row=0, column=0, padx=5, pady=2, sticky="ew")
+        self.namespaces_combobox.set("Select the mod to install")
+        ToolTip(self.namespaces_combobox, lambda: self.on_namespace_option_hover())
         self.namespaces_combobox.bind("<<ComboboxSelected>>", self.on_namespace_option_chosen)
-
-        # used for handling focus events
+        # Handle annoyances with Focus Events
         self.namespaces_combobox.bind("<FocusIn>", self.on_combobox_focus_in)
         self.namespaces_combobox.bind("<FocusOut>", self.on_combobox_focus_out)
-        self.namespaces_combobox_state = 0
-
-        ToolTip(self.namespaces_combobox, lambda: self.on_namespace_option_hover())
-
-        self.browse_button = ttk.Button(top_frame, text="Browse", command=self.open_mod)
+        self.namespaces_combobox_state: int = 0
+        # Browse for a tslpatcher mod
+        self.browse_button: ttk.Button = ttk.Button(top_frame, text="Browse", command=self.open_mod)
         self.browse_button.grid(row=0, column=1, padx=5, pady=2, sticky="e")
 
+        # Store all discovered KOTOR install paths
         self.gamepaths = ttk.Combobox(top_frame, style="TCombobox")
         self.gamepaths.set("Select your KOTOR directory path")
         self.gamepaths.grid(row=1, column=0, padx=5, pady=2, sticky="ew")
         self.gamepaths["values"] = [str(path) for game in find_kotor_paths_from_default().values() for path in game]
         self.gamepaths.bind("<<ComboboxSelected>>", self.on_gamepaths_chosen)
-
+        # Browse for a KOTOR path
         self.gamepaths_browse_button = ttk.Button(top_frame, text="Browse", command=self.open_kotor)
         self.gamepaths_browse_button.grid(row=1, column=1, padx=5, pady=2, sticky="e")
 
@@ -240,15 +255,14 @@ class App(tk.Tk):
         text_frame.grid_rowconfigure(0, weight=1)
         text_frame.grid_columnconfigure(0, weight=1)
 
+        # Configure the text
         self.main_text = tk.Text(text_frame, wrap=tk.WORD)
-        font_obj = tkfont.Font(font=self.main_text.cget("font"))
-        font_obj.configure(size=9)
-        self.main_text.configure(font=font_obj)
         self.main_text.grid(row=0, column=0, sticky="nsew")
+        self.set_text_font(self.main_text)
 
+        # Create scrollbar for main frame
         scrollbar = tk.Scrollbar(text_frame, command=self.main_text.yview)
         scrollbar.grid(row=0, column=1, sticky="ns")
-
         self.main_text.config(yscrollcommand=scrollbar.set)
 
         # Bottom area for buttons
@@ -257,15 +271,16 @@ class App(tk.Tk):
 
         self.exit_button = ttk.Button(bottom_frame, text="Exit", command=self.handle_exit_button)
         self.exit_button.pack(side="left", padx=5, pady=5)
-
-        self.uninstall_button = ttk.Button(bottom_frame, text="Uninstall", command=self.uninstall_selected_mod)
-        #self.uninstall_button.pack(side="right", padx=5, pady=5)
-
         self.install_button = ttk.Button(bottom_frame, text="Install", command=self.begin_install)
         self.install_button.pack(side="right", padx=5, pady=5)
 
-        self.testreader_button = ttk.Button(bottom_frame, text="Validate INI", command=self.test_reader)
-        self.testreader_button.pack(side="right", padx=5, pady=5)
+    def set_text_font(
+        self,
+        text_frame: tk.Text,
+    ):
+        font_obj = tkfont.Font(font=self.main_text.cget("font"))
+        font_obj.configure(size=9)
+        text_frame.configure(font=font_obj)
 
     def on_combobox_focus_in(
         self,
@@ -315,14 +330,22 @@ class App(tk.Tk):
                 ),
             )
 
-    def open_homepage(self):
+    def open_hp_homepage(self):
         webbrowser.open_new("https://deadlystream.com/files/file/2243-holopatcher")
     def open_github(self):
         webbrowser.open_new("https://github.com/NickHugi/PyKotor")
     def open_deadlystream_discord(self):
-        webbrowser.open_new("https://discord.gg/HBwVCpAA")
-    def open_kotor_discord(self):
+        webbrowser.open_new("https://discord.gg/nDkHXfc36s")
+    def open_neocities_discord(self):
         webbrowser.open_new("https://discord.com/invite/kotor")
+    def open_deadlystream_website(self):
+        webbrowser.open_new("https://deadlystream.com")
+    def open_neocities_website(self):
+        webbrowser.open_new("https://kotor.neocities.org")
+    def open_pcgamingwiki_kotor1(self):
+        webbrowser.open_new("https://www.pcgamingwiki.com/wiki/Star_Wars:_Knights_of_the_Old_Republic")
+    def open_pcgamingwiki_kotor2(self):
+        webbrowser.open_new("https://www.pcgamingwiki.com/wiki/Star_Wars:_Knights_of_the_Old_Republic_II_-_The_Sith_Lords")
 
     def handle_commandline(
         self,

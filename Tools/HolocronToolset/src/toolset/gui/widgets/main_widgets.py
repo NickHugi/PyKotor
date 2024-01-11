@@ -476,15 +476,15 @@ class TextureListConsumer(multiprocessing.Process):
 
 
 class TextureListTask:
-    def __init__(self, row, tpc, resname):
-        self.row = row
-        self.tpc = tpc
-        self.resname = resname
+    def __init__(self, row: int, tpc: TPC, resname: str):
+        self.row: int = row
+        self.tpc: TPC = tpc
+        self.resname: str = resname
 
     def __repr__(self):
         return str(self.row)
 
-    def __call__(self, *args, **kwargs):
+    def __call__(self, *args, **kwargs) -> tuple[int, str, int, int, bytes | None]:
         width, height, data = self.tpc.convert(TPCTextureFormat.RGB, self.bestMipmap(self.tpc))
         return self.row, self.resname, width, height, data
 
