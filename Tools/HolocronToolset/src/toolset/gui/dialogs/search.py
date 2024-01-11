@@ -110,6 +110,8 @@ class FileSearcher(QDialog):
         searchIn: list[FileResource] = []
         results: list[FileResource] = []
 
+        lowercase_text = text.lower()
+
         if searchCore:
             searchIn.extend(installation.chitin_resources())
         if searchModules:
@@ -122,13 +124,13 @@ class FileSearcher(QDialog):
         def search(resource: FileResource):
             resource_name: str = resource.resname()
 
-            name_check: bool = text in resource_name if caseSensitive else text.lower() in resource_name.lower()
+            name_check: bool = text in resource_name if caseSensitive else lowercase_text in resource_name.lower()
             if name_check:
                 results.append(resource)
                 return
             if not filenamesOnly:
                 resource_data = resource.data().decode(encoding="windows-1252", errors="ignore")
-                data_check: bool = text in resource_data if caseSensitive else text.lower() in resource_data.lower()
+                data_check: bool = text in resource_data if caseSensitive else lowercase_text in resource_data.lower()
                 if data_check:
                     results.append(resource)
 
