@@ -72,8 +72,8 @@ class ModificationsNCS(PatcherModifications):
                 value = int(memory_val)
             else:
                 value = token_id_or_value
-            logger.add_verbose(f"HACKList {self.sourcefile}: writing WORD {value} at offset {offset:#X}")
-            writer.write_int16(value)  # TODO: This might need to be uint16, needs testing.
+            logger.add_verbose(f"HACKList {self.sourcefile}: writing unsigned WORD {value} at offset {offset:#X}")
+            writer.write_uint16(value, big=True)
 
     def pop_tslpatcher_vars(self, file_section_dict, default_destination=PatcherModifications.DEFAULT_DESTINATION):
         super().pop_tslpatcher_vars(file_section_dict, default_destination)
