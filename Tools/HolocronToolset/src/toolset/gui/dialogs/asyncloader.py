@@ -118,7 +118,7 @@ class AsyncWorker(QThread):
 
 
 class AsyncBatchLoader(QDialog):
-    def __init__(self, parent: QWidget, title: str, tasks: list[Callable], errorTitle: str | None = None, *,
+    def __init__(self, parent: QWidget | None, title: str, tasks: list[Callable], errorTitle: str | None = None, *,
                  cascade: bool = False):
         """Initializes a progress dialog for running multiple tasks asynchronously.
 

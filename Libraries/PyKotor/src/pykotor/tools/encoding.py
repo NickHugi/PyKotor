@@ -97,8 +97,10 @@ def decode_bytes_with_fallbacks(
             for alias in aliases:
                 normalized_alias: str = alias.replace("_", "-")
                 if normalized_alias.startswith("utf-8"):
-                    best_encoding=f"{best_encoding}-sig"
+                    best_encoding="utf-8-sig"
                     break
+                if normalized_alias.startswith("utf-16"):
+                    best_encoding="UTF-16LE"
 
         return byte_content.decode(encoding=best_encoding, errors=attempt_errors)
 
