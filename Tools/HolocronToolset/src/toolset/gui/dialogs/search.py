@@ -128,14 +128,14 @@ class FileSearcher(QDialog):
                 results.append(resource)
                 return
             if not filenamesOnly:
-                resource_data = resource.data().decode(encoding="windows-1252", errors="ignore")
+                resource_data: str = resource.data().decode(encoding="windows-1252", errors="ignore")
                 data_check: bool = text in resource_data if caseSensitive else lowercase_text in resource_data.lower()
                 if data_check:
                     results.append(resource)
 
         searchIn: Generator[FileResource, Any, None] = search_generator()
         searches: list[Callable[[FileResource], None]] = [lambda resource=resource: search(resource) for resource in searchIn]
-        AsyncBatchLoader(self, "Searching...", searches, "An error occured during the search").exec_()
+        AsyncBatchLoader(None, "Searching...", searches, "An error occured during the search").exec_()
 
         self.results = results
 
