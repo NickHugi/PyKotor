@@ -16,6 +16,7 @@ from utility.error_handling import format_exception_with_variables
 if TYPE_CHECKING:
     import os
 
+    from pykotor.resource.formats.gff.gff_data import GFF
     from PyQt5.QtWidgets import QWidget
     from toolset.data.installation import HTInstallation
 
@@ -138,7 +139,7 @@ class UTMEditor(Editor):
         utm.comment = self.ui.commentsEdit.toPlainText()
 
         data = bytearray()
-        gff = dismantle_utm(utm)
+        gff: GFF = dismantle_utm(utm)
         write_gff(gff, data)
 
         return data, b""
@@ -168,8 +169,9 @@ class UTMEditor(Editor):
 
         try:
             root: str = Module.get_root(self._filepath)
+            case_root = root.casefold()
             module_names: CaseInsensitiveDict[str] = self._installation.module_names()
-            capsulesPaths: list[str] = [path for path in module_names if root.casefold() in path.casefold() and path.casefold() != self._filepath]
+            capsulesPaths: list[str] = [path for path in module_names if case_root in path and path != self._filepath]
             capsules.extend([Capsule(self._installation.module_path() / path) for path in capsulesPaths])
         except Exception as e:
             print(format_exception_with_variables(e, ___message___="This exception has been suppressed."))

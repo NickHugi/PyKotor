@@ -284,6 +284,9 @@ class ResourceModel(QStandardItemModel):
 
 
 class TextureList(MainWindowList):
+    requestReload = QtCore.pyqtSignal(object)  # TODO:
+
+    requestRefresh = QtCore.pyqtSignal()  # TODO:
     iconUpdate = QtCore.pyqtSignal(object, object)
 
     def __init__(self, parent: QWidget):
@@ -354,7 +357,7 @@ class TextureList(MainWindowList):
             self.sectionModel.insertRow(self.sectionModel.rowCount(), section)
 
     def selectedResources(self) -> list[FileResource]:
-        resources = []
+        resources: list[FileResource] = []
         for proxyIndex in self.ui.resourceList.selectedIndexes():
             sourceIndex = self.texturesProxyModel.mapToSource(proxyIndex)
             item = self.texturesModel.item(sourceIndex.row())
@@ -365,7 +368,7 @@ class TextureList(MainWindowList):
         if self.texturesModel.rowCount() == 0:
             return []
 
-        scanWidth: int = self.parent().width()  # please type these
+        scanWidth: int = self.parent().width()
         scanHeight: int = self.parent().height()
 
         proxyModel = self.texturesProxyModel

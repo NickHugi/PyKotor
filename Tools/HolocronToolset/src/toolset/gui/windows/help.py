@@ -4,7 +4,7 @@ import base64
 import json
 import xml.etree.ElementTree as ElemTree
 import zipfile
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Callable
 
 import markdown
 import requests
@@ -76,10 +76,10 @@ class HelpWindow(QMainWindow):
                 self._setupContentsRecJSON(item, data["structure"][title])
 
     def _setupContentsRecXML(self, parent: QTreeWidgetItem | None, element: ElemTree.Element):
-        add = self.ui.contentsTree.addTopLevelItem if parent is None else parent.addChild
+        add: Callable[..., None] = self.ui.contentsTree.addTopLevelItem if parent is None else parent.addChild
 
         for child in element:
-            item = QTreeWidgetItem([child.get("name")])
+            item = QTreeWidgetItem([child.get("name")])  # FIXME: typing
             item.setData(0, QtCore.Qt.UserRole, child.get("file"))  # type: ignore[attr-defined]
             add(item)
             self._setupContentsRecXML(item, child)

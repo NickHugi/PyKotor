@@ -1,8 +1,8 @@
 from __future__ import annotations
 
 from typing import TYPE_CHECKING
-from pykotor.common.misc import ResRef
 
+from pykotor.common.misc import ResRef
 from pykotor.common.stream import BinaryWriter
 from pykotor.resource.formats.erf import read_erf, write_erf
 from pykotor.resource.formats.rim import read_rim, write_rim

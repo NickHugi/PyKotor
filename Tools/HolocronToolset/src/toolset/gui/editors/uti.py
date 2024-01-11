@@ -11,7 +11,7 @@ from PyQt5.QtWidgets import QDialog, QListWidgetItem, QShortcut, QTreeWidgetItem
 from toolset.data.installation import HTInstallation
 from toolset.gui.dialogs.edit.locstring import LocalizedStringDialog
 from toolset.gui.editor import Editor
-from utility.error_handling import format_exception_with_variables
+from utility.error_handling import assert_with_variable_trace, format_exception_with_variables
 
 if TYPE_CHECKING:
     import os
@@ -304,9 +304,9 @@ class UTIEditor(Editor):
             - It returns a formatted string combining the retrieved names.
             - If a cost or subproperty is not present, it is omitted from the returned string.
         """
-        propName = UTIEditor.propertyName(self._installation, utiProperty.property_name)
-        subpropName = UTIEditor.subpropertyName(self._installation, utiProperty.property_name, utiProperty.subtype)
-        costName = UTIEditor.costName(self._installation, utiProperty.cost_table, utiProperty.cost_value)
+        propName: str = UTIEditor.propertyName(self._installation, utiProperty.property_name)
+        subpropName: str | None = UTIEditor.subpropertyName(self._installation, utiProperty.property_name, utiProperty.subtype)
+        costName: str | None = UTIEditor.costName(self._installation, utiProperty.cost_table, utiProperty.cost_value)
 
         if costName and subpropName:
             return f"{propName}: {subpropName} [{costName}]"
@@ -335,9 +335,10 @@ class UTIEditor(Editor):
             self.removeSelectedProperty()
 
     @staticmethod
-    def propertyName(installation: HTInstallation, prop: int):
+    def propertyName(installation: HTInstallation, prop: int) -> str:
         properties: TwoDA = installation.htGetCache2DA(HTInstallation.TwoDA_ITEM_PROPERTIES)
         stringref: int | None = properties.get_row(prop).get_integer("name")
+        assert stringref is not None, assert_with_variable_trace(stringref is not None)
         return installation.talktable().string(stringref)
 
     @staticmethod
@@ -378,9 +379,9 @@ class UTIEditor(Editor):
     @staticmethod
     def costName(installation: HTInstallation, cost: int, value: int):
         try:
-            costtableList = installation.htGetCache2DA(HTInstallation.TwoDA_IPRP_COSTTABLE)
-            costtable = installation.htGetCache2DA(costtableList.get_cell(cost, "name"))
-            stringref = costtable.get_row(value).get_integer("name")
+            costtableList: TwoDA = installation.htGetCache2DA(HTInstallation.TwoDA_IPRP_COSTTABLE)
+            costtable: TwoDA = installation.htGetCache2DA(costtableList.get_cell(cost, "name"))
+            stringref: int | None = costtable.get_row(value).get_integer("name")
             return installation.talktable().string(stringref)  # FIXME: stringref is None in many occasions
         except Exception as e:
             print(format_exception_with_variables(e, ___message___="This exception has been suppressed"))
@@ -389,9 +390,9 @@ class UTIEditor(Editor):
     @staticmethod
     def paramName(installation: HTInstallation, paramtable: int, param: int):
         try:
-            paramtableList = installation.htGetCache2DA(HTInstallation.TwoDA_IPRP_PARAMTABLE)
-            paramtable_twoda = installation.htGetCache2DA(paramtableList.get_cell(paramtable, "tableresref"))
-            stringref = paramtable_twoda.get_row(param).get_integer("name")
+            paramtableList: TwoDA = installation.htGetCache2DA(HTInstallation.TwoDA_IPRP_PARAMTABLE)
+            paramtable_twoda: TwoDA = installation.htGetCache2DA(paramtableList.get_cell(paramtable, "tableresref"))
+            stringref: int | None = paramtable_twoda.get_row(param).get_integer("name")
             return installation.talktable().string(stringref)
         except Exception as e:
             print(format_exception_with_variables(e, ___message___="This exception has been suppressed."))
@@ -429,14 +430,14 @@ class PropertyEditor(QDialog):
         self._utiProperty: UTIProperty = utiProperty
 
         costtableList = installation.htGetCache2DA(HTInstallation.TwoDA_IPRP_COSTTABLE)
-        if utiProperty.cost_table != 0xFF:
+        if utiProperty.cost_table != 0xFF:  # noqa: PLR2004
             costtable = installation.htGetCache2DA(costtableList.get_cell(utiProperty.cost_table, "name"))
             for i in range(costtable.get_height()):
                 item = QListWidgetItem(UTIEditor.costName(installation, utiProperty.cost_table, i))
                 item.setData(QtCore.Qt.UserRole, i)
                 self.ui.costList.addItem(item)
 
-        if utiProperty.param1 != 0xFF:
+        if utiProperty.param1 != 0xFF:  # noqa: PLR2004
             paramList = installation.htGetCache2DA(HTInstallation.TwoDA_IPRP_PARAMTABLE)
             paramtable = installation.htGetCache2DA(paramList.get_cell(utiProperty.param1, "tableresref"))
             for i in range(paramtable.get_height()):

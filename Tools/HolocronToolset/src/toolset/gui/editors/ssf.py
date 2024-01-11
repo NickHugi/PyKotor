@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING
 from pykotor.extract.talktable import StringResult, TalkTable
 from pykotor.resource.formats.ssf import SSF, SSFSound, read_ssf, write_ssf
 from pykotor.resource.type import ResourceType
-from PyQt5.QtWidgets import QFileDialog, QWidget
+from PyQt5.QtWidgets import QFileDialog, QLineEdit, QWidget
 from toolset.gui.editor import Editor
 
 if TYPE_CHECKING:
@@ -31,7 +31,7 @@ class SSFEditor(Editor):
             - Setup menus and signals
             - Call new() to start with empty soundset
         """
-        supported = [ResourceType.SSF]
+        supported: list[ResourceType] = [ResourceType.SSF]
         super().__init__(parent, "Soundset Editor", "soundset", supported, supported, installation)
 
         self._talktable: TalkTable | None = installation.talktable() if installation else None
@@ -104,7 +104,7 @@ class SSFEditor(Editor):
             - Populates UI with sound data from file.
         """
         super().load(filepath, resref, restype, data)
-        ssf = read_ssf(data)
+        ssf: SSF = read_ssf(data)
 
         self.ui.battlecry1StrrefSpin.setValue(ssf.get(SSFSound.BATTLE_CRY_1))
         self.ui.battlecry2StrrefSpin.setValue(ssf.get(SSFSound.BATTLE_CRY_2))
@@ -236,7 +236,7 @@ class SSFEditor(Editor):
         if self._talktable is None:
             return
 
-        pairs = {
+        pairs: dict[tuple[QLineEdit, QLineEdit], int] = {
             (self.ui.battlecry1SoundEdit, self.ui.battlecry1TextEdit): self.ui.battlecry1StrrefSpin.value(),
             (self.ui.battlecry2SoundEdit, self.ui.battlecry2TextEdit): self.ui.battlecry2StrrefSpin.value(),
             (self.ui.battlecry3SoundEdit, self.ui.battlecry3TextEdit): self.ui.battlecry3StrrefSpin.value(),

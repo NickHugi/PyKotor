@@ -29,7 +29,7 @@ from pykotor.resource.type import ResourceType
 from pykotor.tools import module
 from PyQt5 import QtCore
 from PyQt5.QtCore import QPoint, QTimer
-from PyQt5.QtGui import QColor, QIcon, QKeyEvent, QPixmap
+from PyQt5.QtGui import QColor, QFont, QIcon, QKeyEvent, QPixmap
 from PyQt5.QtWidgets import QAction, QCheckBox, QListWidgetItem, QMainWindow, QMenu, QMessageBox, QTreeWidgetItem, QWidget
 from toolset.data.misc import ControlItem
 from toolset.gui.dialogs.insert_instance import InsertInstanceDialog
@@ -40,11 +40,16 @@ from toolset.gui.widgets.settings.module_designer import ModuleDesignerSettings
 from toolset.gui.windows.help import HelpWindow
 from toolset.utils.misc import QtMouse
 from toolset.utils.window import openResourceEditor
+from utility.error_handling import with_variable_trace
 
 if TYPE_CHECKING:
+    from glm import vec3
+    from pykotor.gl.scene import Camera
     from pykotor.resource.generics.are import ARE
     from pykotor.resource.generics.ifo import IFO
+    from pykotor.tools.path import CaseAwarePath
     from toolset.data.installation import HTInstallation
+    from toolset.gui.editor import Editor
     from toolset.gui.widgets.renderer.module import ModuleRenderer
     from toolset.gui.widgets.renderer.walkmesh import WalkmeshRenderer
 
@@ -90,7 +95,7 @@ class ModuleDesigner(QMainWindow):
         self.ui.setupUi(self)
         self._setupSignals()
 
-        def intColorToQColor(intvalue):
+        def intColorToQColor(intvalue) -> QColor:
             """Converts an integer color value to a QColor object.
 
             Args:
@@ -181,15 +186,15 @@ class ModuleDesigner(QMainWindow):
         self.ui.lightmapCheck.toggled.connect(self.updateToggles)
         self.ui.cursorCheck.toggled.connect(self.updateToggles)
 
-        self.ui.viewCreatureCheck.mouseDoubleClickEvent = lambda _: self.onInstanceVisibilityDoubleClick(self.ui.viewCreatureCheck)
-        self.ui.viewPlaceableCheck.mouseDoubleClickEvent = lambda _: self.onInstanceVisibilityDoubleClick(self.ui.viewPlaceableCheck)
-        self.ui.viewDoorCheck.mouseDoubleClickEvent = lambda _: self.onInstanceVisibilityDoubleClick(self.ui.viewDoorCheck)
-        self.ui.viewSoundCheck.mouseDoubleClickEvent = lambda _: self.onInstanceVisibilityDoubleClick(self.ui.viewSoundCheck)
-        self.ui.viewTriggerCheck.mouseDoubleClickEvent = lambda _: self.onInstanceVisibilityDoubleClick(self.ui.viewTriggerCheck)
-        self.ui.viewEncounterCheck.mouseDoubleClickEvent = lambda _: self.onInstanceVisibilityDoubleClick(self.ui.viewEncounterCheck)
-        self.ui.viewWaypointCheck.mouseDoubleClickEvent = lambda _: self.onInstanceVisibilityDoubleClick(self.ui.viewWaypointCheck)
-        self.ui.viewCameraCheck.mouseDoubleClickEvent = lambda _: self.onInstanceVisibilityDoubleClick(self.ui.viewCameraCheck)
-        self.ui.viewStoreCheck.mouseDoubleClickEvent = lambda _: self.onInstanceVisibilityDoubleClick(self.ui.viewStoreCheck)
+        self.ui.viewCreatureCheck.mouseDoubleClickEvent = lambda a0: self.onInstanceVisibilityDoubleClick(self.ui.viewCreatureCheck)  # noqa: ARG005
+        self.ui.viewPlaceableCheck.mouseDoubleClickEvent = lambda a0: self.onInstanceVisibilityDoubleClick(self.ui.viewPlaceableCheck)  # noqa: ARG005
+        self.ui.viewDoorCheck.mouseDoubleClickEvent = lambda a0: self.onInstanceVisibilityDoubleClick(self.ui.viewDoorCheck)  # noqa: ARG005
+        self.ui.viewSoundCheck.mouseDoubleClickEvent = lambda a0: self.onInstanceVisibilityDoubleClick(self.ui.viewSoundCheck)  # noqa: ARG005
+        self.ui.viewTriggerCheck.mouseDoubleClickEvent = lambda a0: self.onInstanceVisibilityDoubleClick(self.ui.viewTriggerCheck)  # noqa: ARG005
+        self.ui.viewEncounterCheck.mouseDoubleClickEvent = lambda a0: self.onInstanceVisibilityDoubleClick(self.ui.viewEncounterCheck)  # noqa: ARG005
+        self.ui.viewWaypointCheck.mouseDoubleClickEvent = lambda a0: self.onInstanceVisibilityDoubleClick(self.ui.viewWaypointCheck)  # noqa: ARG005
+        self.ui.viewCameraCheck.mouseDoubleClickEvent = lambda a0: self.onInstanceVisibilityDoubleClick(self.ui.viewCameraCheck)  # noqa: ARG005
+        self.ui.viewStoreCheck.mouseDoubleClickEvent = lambda a0: self.onInstanceVisibilityDoubleClick(self.ui.viewStoreCheck)  # noqa: ARG005
 
         self.ui.instanceList.doubleClicked.connect(self.onInstanceListDoubleClicked)
         self.ui.instanceList.customContextMenuRequested.connect(self.onContextMenuSelectionExists)
@@ -213,6 +218,7 @@ class ModuleDesigner(QMainWindow):
             title = f"{self._module._id} - {self._installation.name} - Module Designer"
         self.setWindowTitle(title)
 
+    @with_variable_trace(Exception)
     def openModule(self):
         """Opens a module.
 
@@ -243,7 +249,9 @@ class ModuleDesigner(QMainWindow):
             self._module = Module(dialog.module, self._installation)
             self.ui.mainRenderer.init(self._installation, self._module)
 
-            self.ui.flatRenderer.setGit(self._module.git().resource())
+            git: GIT | None = self._module.git().resource()
+
+            self.ui.flatRenderer.setGit(git)
             self.ui.flatRenderer.setWalkmeshes(
                 [
                     bwm.resource()  # FIXME: resource() will sometimes return None
@@ -262,12 +270,14 @@ class ModuleDesigner(QMainWindow):
         window = HelpWindow(self, "./help/tools/1-moduleEditor.md")
         window.show()
 
+    @with_variable_trace((Exception, OSError))
     def git(self) -> GIT:
         return self._module.git().resource()
 
+    @with_variable_trace(Exception)
     def are(self) -> ARE:
         return self._module.are().resource()
-
+    @with_variable_trace(Exception)
     def ifo(self) -> IFO:
         return self._module.info().resource()
 
@@ -338,7 +348,7 @@ class ModuleDesigner(QMainWindow):
         self.ui.resourceTree.setSortingEnabled(True)
 
     def openModuleResource(self, resource: ModuleResource):
-        editor = openResourceEditor(resource.active(), resource.resname(), resource.restype(), resource.data(),
+        editor: Editor | None = openResourceEditor(resource.active(), resource.resname(), resource.restype(), resource.data(),
                                     self._installation, self)[1]
 
         if editor is None:
@@ -351,7 +361,7 @@ class ModuleDesigner(QMainWindow):
             editor.savedFile.connect(lambda: self._onSavedResource(resource))
 
     def copyResourceToOverride(self, resource: ModuleResource):
-        location = self._installation.override_path() / f"{resource.resname()}.{resource.restype().extension}"
+        location: CaseAwarePath = self._installation.override_path() / f"{resource.resname()}.{resource.restype().extension}"
         BinaryWriter.dump(location, resource.data())
         resource.add_locations([location])
         resource.activate(location)
@@ -380,7 +390,7 @@ class ModuleDesigner(QMainWindow):
             self.ui.resourceTree.clearSelection()
 
         for i in range(self.ui.resourceTree.topLevelItemCount()):
-            parent = self.ui.resourceTree.topLevelItem(i)
+            parent: QTreeWidgetItem | None = self.ui.resourceTree.topLevelItem(i)
             for j in range(parent.childCount()):
                 item = parent.child(j)
                 res: ModuleResource = item.data(0, QtCore.Qt.UserRole)
@@ -446,40 +456,40 @@ class ModuleDesigner(QMainWindow):
             if visibleMapping[type(instance)]:
                 continue
 
-            struct_index = self._module.git().resource().index(instance)
+            struct_index: int = self._module.git().resource().index(instance)
 
             icon = QIcon(iconMapping[type(instance)])
             item = QListWidgetItem(icon, "")
-            font = item.font()
+            font: QFont = item.font()
 
             if isinstance(instance, GITCamera):
                 item.setText(f"Camera #{instance.camera_id}")
                 item.setToolTip(f"Struct Index: {struct_index}\nCamera ID: {instance.camera_id}\nFOV: {instance.fov}")
                 item.setData(QtCore.Qt.UserRole + 1, "cam" + str(instance.camera_id).rjust(10, "0"))
             else:
-                resource = self._module.resource(instance.identifier().resname, instance.identifier().restype)
-                resourceExists = resource is not None and resource.resource() is not None
-                resref = instance.identifier().resname
-                name = resref
-                tag = ""
+                resource: ModuleResource[ARE] | None = self._module.resource(instance.identifier().resname, instance.identifier().restype)
+                filename: str = instance.identifier().resname
+                name: str = filename
+                tag: str = ""
 
+                resourceExists: bool = resource is not None and resource.resource() is not None
                 if isinstance(instance, GITDoor) or isinstance(instance, GITTrigger) and resourceExists:
                     # Tag is stored in the GIT
-                    name = resource.localized_name()
+                    name = resource.localized_name() or filename
                     tag = instance.tag
                 elif isinstance(instance, GITWaypoint):
                     # Name and tag are stored in the GIT
                     name = self._installation.string(instance.name)
                     tag = instance.tag
                 elif resourceExists:
-                    name = resource.localized_name()
+                    name = resource.localized_name() or filename
                     tag = resource.resource().tag
 
                 if resource is None:
                     font.setItalic(True)
 
                 item.setText(name)
-                item.setToolTip(f"Struct Index: {struct_index}\nResRef: {resref}\nName: {name}\nTag: {tag}")
+                item.setToolTip(f"Struct Index: {struct_index}\nResRef: {filename}\nName: {name}\nTag: {tag}")
                 item.setData(QtCore.Qt.UserRole + 1, instance.identifier().restype.extension + name)
 
             item.setFont(font)
@@ -505,7 +515,7 @@ class ModuleDesigner(QMainWindow):
         """
         self.ui.instanceList.clearSelection()
         for i in range(self.ui.instanceList.count()):
-            item = self.ui.instanceList.item(i)
+            item: QListWidgetItem | None = self.ui.instanceList.item(i)
             data: GITInstance = item.data(QtCore.Qt.UserRole)
             if data is instance:
                 item.setSelected(True)
@@ -528,6 +538,7 @@ class ModuleDesigner(QMainWindow):
 
         self.rebuildInstanceList()
 
+    @with_variable_trace(Exception)
     def addInstance(self, instance: GITInstance, walkmeshSnap: bool = True):
         """Adds a GIT instance to the editor.
 
@@ -575,6 +586,7 @@ class ModuleDesigner(QMainWindow):
             self._module.git().resource().add(instance)
         self.rebuildInstanceList()
 
+    @with_variable_trace()
     def addInstanceAtCursor(self, instance: GITInstance):
         """Adds instance at cursor position.
 
@@ -604,6 +616,7 @@ class ModuleDesigner(QMainWindow):
             self._module.git().resource().add(instance)
         self.rebuildInstanceList()
 
+    @with_variable_trace()
     def editInstance(self, instance: GITInstance):
         if openInstanceDialog(self, instance, self._installation):
             if not isinstance(instance, GITCamera):
@@ -611,16 +624,16 @@ class ModuleDesigner(QMainWindow):
             self.rebuildInstanceList()
 
     def snapCameraToView(self, instance: GITCamera):
-        view = self.ui.mainRenderer.scene.camera.true_position()
-        rot = self.ui.mainRenderer.scene.camera
+        view: vec3 = self.ui.mainRenderer.scene.camera.true_position()
+        rot: Camera = self.ui.mainRenderer.scene.camera
         instance.pitch = 0
         instance.height = 0
         instance.position = Vector3(view.x, view.y, view.z)
         instance.orientation = Vector4.from_euler(math.pi / 2 - rot.yaw, 0, math.pi - rot.pitch)
 
     def snapViewToCamera(self, instance: GITCamera):
-        camera = self.ui.mainRenderer.scene.camera
-        euler = instance.orientation.to_euler()
+        camera: Camera = self.ui.mainRenderer.scene.camera
+        euler: Vector3 = instance.orientation.to_euler()
         camera.pitch = math.pi - euler.z - math.radians(instance.pitch)
         camera.yaw = math.pi / 2 - euler.x
         camera.x = instance.position.x

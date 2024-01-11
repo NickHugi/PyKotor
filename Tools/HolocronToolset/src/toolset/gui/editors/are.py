@@ -23,6 +23,7 @@ if TYPE_CHECKING:
     from pykotor.resource.formats.bwm.bwm_data import BWM
     from pykotor.resource.formats.lyt.lyt_data import LYT
     from pykotor.resource.formats.tpc.tpc_data import TPC
+    from pykotor.resource.formats.twoda.twoda_data import TwoDA
     from toolset.gui.widgets.long_spinbox import LongSpinBox
 
 
@@ -47,7 +48,7 @@ class AREEditor(Editor):
             - Configure color editors
             - Create new empty ARE.
         """
-        supported = [ResourceType.ARE]
+        supported: list[ResourceType] = [ResourceType.ARE]
         super().__init__(parent, "ARE Editor", "none", supported, supported, installation)
         self.resize(400, 250)
 
@@ -108,7 +109,7 @@ class AREEditor(Editor):
 
         self.ui.nameEdit.setInstallation(installation)
 
-        cameras = installation.htGetCache2DA(HTInstallation.TwoDA_CAMERAS)
+        cameras: TwoDA = installation.htGetCache2DA(HTInstallation.TwoDA_CAMERAS)
 
         self.ui.cameraStyleSelect.clear()
         for label in cameras.get_column("name"):
@@ -347,7 +348,7 @@ class AREEditor(Editor):
 
     def redoMinimap(self):
         if self._minimap:
-            are = self._buildARE()
+            are: ARE = self._buildARE()
             self.ui.minimapRenderer.setMinimap(are, self._minimap)
 
     def changeColor(self, colorSpin: LongSpinBox):
@@ -363,7 +364,7 @@ class AREEditor(Editor):
             - Converts the selected QColor to a Color object
             - Sets the colorSpin value to the BGR integer of the selected color.
         """
-        qcolor = QColorDialog.getColor(QColor(colorSpin.value()))
+        qcolor: QColor = QColorDialog.getColor(QColor(colorSpin.value()))
         color = Color.from_bgr_integer(qcolor.rgb())
         colorSpin.setValue(color.bgr_integer())
 

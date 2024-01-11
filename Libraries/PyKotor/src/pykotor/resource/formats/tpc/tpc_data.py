@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-import itertools
+import itertools as tpc_itertools
 from enum import IntEnum
 from typing import NamedTuple
 
@@ -254,7 +254,7 @@ class TPC:
         dxt_reader: BinaryReader = BinaryReader.from_bytes(data)
         new_data = bytearray(width * height * 4)
 
-        for ty, tx in itertools.product(range(4, height + 4, 4), range(0, width, 4)):
+        for ty, tx in tpc_itertools.product(range(4, height + 4, 4), range(0, width, 4)):
             alpha0 = dxt_reader.read_uint8()
             alpha1 = dxt_reader.read_uint8()
             dxt_alpha = TPC._integer48(dxt_reader.read_bytes(6))
@@ -335,7 +335,7 @@ class TPC:
         dxt_reader: BinaryReader = BinaryReader.from_bytes(data)
         new_data = bytearray(width * height * 4)
 
-        for ty, tx in itertools.product(range(4, height + 4, 4), range(0, width, 4)):
+        for ty, tx in tpc_itertools.product(range(4, height + 4, 4), range(0, width, 4)):
             x = dxt_reader.read_int16()
             y = dxt_reader.read_int16()
             c0: tuple[int, int, int] = TPC._rgba565_to_rgb(x)
@@ -375,7 +375,7 @@ class TPC:
         new_data = bytearray()
         rgb_reader = BinaryReader.from_bytes(data)
 
-        for _ty, _x in itertools.product(range(4, height + 4, 4), range(width)):
+        for _ty, _x in tpc_itertools.product(range(4, height + 4, 4), range(width)):
             new_data.extend(
                 [
                     rgb_reader.read_uint8(),
@@ -396,7 +396,7 @@ class TPC:
         new_data = bytearray()
         rgb_reader = BinaryReader.from_bytes(data)
 
-        for _y, _x in itertools.product(range(height), range(width)):
+        for _y, _x in tpc_itertools.product(range(height), range(width)):
             brightness = rgb_reader.read_uint8()
             new_data.extend([brightness, brightness, brightness, 255])
 
@@ -414,7 +414,7 @@ class TPC:
         new_data = bytearray()
         rgb_reader = BinaryReader.from_bytes(data)
 
-        for _y, _x in itertools.product(range(height), range(width)):
+        for _y, _x in tpc_itertools.product(range(height), range(width)):
             r = rgb_reader.read_uint8()
             g = rgb_reader.read_uint8()
             b = rgb_reader.read_uint8()
@@ -440,7 +440,7 @@ class TPC:
         dxt_reader = BinaryReader.from_bytes(data)
         new_data = bytearray(width * height * 3)
 
-        for ty, tx in itertools.product(range(4, height + 4, 4), range(0, width, 4)):
+        for ty, tx in tpc_itertools.product(range(4, height + 4, 4), range(0, width, 4)):
             dxt_reader.skip(8)
 
             x = dxt_reader.read_int16()
@@ -481,7 +481,7 @@ class TPC:
         dxt_reader = BinaryReader.from_bytes(data)
         new_data = bytearray(width * height * 3)
 
-        for ty, tx in itertools.product(range(4, height + 4, 4), range(0, width, 4)):
+        for ty, tx in tpc_itertools.product(range(4, height + 4, 4), range(0, width, 4)):
             x = dxt_reader.read_int16()
             y = dxt_reader.read_int16()
             c0: tuple[int, int, int] = TPC._rgba565_to_rgb(x)
@@ -520,7 +520,7 @@ class TPC:
         new_data = bytearray()
         rgb_reader: BinaryReader = BinaryReader.from_bytes(data)
 
-        for _y, _x in itertools.product(range(height), range(width)):
+        for _y, _x in tpc_itertools.product(range(height), range(width)):
             new_data.extend(
                 [
                     rgb_reader.read_uint8(),

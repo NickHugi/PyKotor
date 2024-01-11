@@ -20,6 +20,7 @@ from toolset.utils.window import openResourceEditor
 if TYPE_CHECKING:
     import os
 
+    from pykotor.extract.file import ResourceResult
     from pykotor.resource.formats.twoda.twoda_data import TwoDA
 
 
@@ -46,12 +47,12 @@ class UTDEditor(Editor):
             6. Set up menus, signals and installation.
             7. Update 3D preview and call new() to initialize editor.
         """
-        supported = [ResourceType.UTD]
+        supported: list[ResourceType] = [ResourceType.UTD]
         super().__init__(parent, "Door Editor", "door", supported, supported, installation, mainwindow)
 
         self.globalSettings: GlobalSettings = GlobalSettings()
-        self._genericdoors2DA = installation.htGetCache2DA("genericdoors")
-        self._utd = UTD()
+        self._genericdoors2DA: TwoDA = installation.htGetCache2DA("genericdoors")
+        self._utd: UTD = UTD()
 
         from toolset.uic.editors.utd import Ui_MainWindow
         self.ui = Ui_MainWindow()
@@ -345,10 +346,10 @@ class UTDEditor(Editor):
         self.setFixedSize(674, 457)
 
         data, _ = self.build()
-        modelname = door.get_model(read_utd(data), self._installation, genericdoors=self._genericdoors2DA)
-        mdl = self._installation.resource(modelname, ResourceType.MDL)
-        mdx = self._installation.resource(modelname, ResourceType.MDX)
-        if mdl and mdx:
+        modelname: str = door.get_model(read_utd(data), self._installation, genericdoors=self._genericdoors2DA)
+        mdl: ResourceResult | None = self._installation.resource(modelname, ResourceType.MDL)
+        mdx: ResourceResult | None = self._installation.resource(modelname, ResourceType.MDX)
+        if mdl is not None and mdx is not None:
             self.ui.previewRenderer.setModel(mdl.data, mdx.data)
         else:
             self.ui.previewRenderer.clearModel()

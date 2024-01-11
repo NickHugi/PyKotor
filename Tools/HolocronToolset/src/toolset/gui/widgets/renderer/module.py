@@ -7,11 +7,13 @@ from typing import TYPE_CHECKING
 
 from pykotor.common.geometry import Vector2, Vector3
 from pykotor.gl.scene import Scene
+from pykotor.resource.formats.bwm.bwm_data import BWM
 from pykotor.resource.generics.git import GITInstance
 from pykotor.resource.type import ResourceType
 from PyQt5 import QtCore
 from PyQt5.QtCore import QTimer
 from PyQt5.QtWidgets import QOpenGLWidget, QWidget
+from utility.error_handling import assert_with_variable_trace
 
 if TYPE_CHECKING:
     from glm import vec3
@@ -124,14 +126,22 @@ class ModuleRenderer(QOpenGLWidget):
             - Returns a Vector3 with the input x,y coords and either the face z height or default z if no face.
         """
         face: BWMFace | None = None
-        for walkmesh in [res.resource() for res in self._module.resources.values() if
-                         res.restype() == ResourceType.WOK]:
-            if walkmesh is None:
+        for module_resource in self._module.resources.values():
+            if module_resource.restype() != ResourceType.WOK:
                 continue
-            over = walkmesh.faceAt(x, y)
-            if over and (face is None or not face.material.walkable() and over.material.walkable()):
+            walkmesh_resource = module_resource.resource()
+            if walkmesh_resource is None:
+                continue
+            assert isinstance(walkmesh_resource, BWM), assert_with_variable_trace(isinstance(walkmesh_resource, BWM))
+            over: BWMFace | None = walkmesh_resource.faceAt(x, y)
+            if over is None:
+                continue
+            if face is None:  # noqa: SIM114
                 face = over
-        z = default_z if face is None else face.determine_z(x, y)
+            elif not face.material.walkable() and over.material.walkable():
+                face = over
+
+        z: float = default_z if face is None else face.determine_z(x, y)
         return Vector3(x, y, z)
 
     def initializeGL(self):

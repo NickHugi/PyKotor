@@ -30,7 +30,7 @@ _TEXT_SUBSTRING_ROLE = QtCore.Qt.UserRole + 2
 
 class GFFEditor(Editor):
     def __init__(self, parent: QWidget | None, installation: Installation | None = None):
-        supported = [
+        supported: list[ResourceType] = [
             ResourceType.GFF,
             ResourceType.UTC,
             ResourceType.UTP,
@@ -140,7 +140,7 @@ class GFFEditor(Editor):
             - Expands root node in tree view after loading.
         """
         super().load(filepath, resref, restype, data)
-        gff = read_gff(data)
+        gff: GFF = read_gff(data)
 
         self.model.clear()
         self.model.setColumnCount(1)
@@ -327,9 +327,9 @@ class GFFEditor(Editor):
         """
         for i in range(item.rowCount()):
             child = item.child(i, 0)
-            assert child is not None
+            assert child is not None, f"child cannot be None in {self!r}_build_list({item!r}, {gffList!r})"
             struct_id = child.data(_VALUE_NODE_ROLE)
-            gffStruct = gffList.add(struct_id)
+            gffStruct: GFFStruct = gffList.add(struct_id)
             self._build_struct(child, gffStruct)
 
     def new(self):

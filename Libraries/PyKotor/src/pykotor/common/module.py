@@ -287,12 +287,11 @@ class Module:
         # instead of the .TGA for the dictionary key.
         filename_ext: CaseInsensitiveWrappedStr = (ResourceType.TPC if restype == ResourceType.TGA else restype).extension
         filename: str = f"{resname}.{filename_ext}"
-        if filename not in self.resources:
-            self.resources[filename] = ModuleResource(
-                resname,
-                restype,
-                self._installation,
-            )
+        module_resource: ModuleResource = self.resources.get(filename)
+        if module_resource is None:
+            module_resource = ModuleResource(resname, restype, self._installation)
+            self.resources[filename] = module_resource
+
         self.resources[filename].add_locations(locations)
 
 
@@ -1265,7 +1264,7 @@ class ModuleResource(Generic[T]):
                 self._resource_obj = None
 
             elif is_capsule_file(self._active.name):
-                data = Capsule(self._active).resource(self._resname, self._restype)
+                data: bytes | None = Capsule(self._active).resource(self._resname, self._restype)
                 if data is None:
                     msg = f"Resource '{file_name}' not found in '{self._active}'"
                     raise ValueError(msg)

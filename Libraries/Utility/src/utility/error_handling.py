@@ -4,6 +4,8 @@ import inspect as ___inspect___
 import sys as ___sys___
 import traceback as ___traceback___
 import types as ___types___
+from pathlib import Path
+from typing import Callable, TypeVar
 
 
 def universal_simplify_exception(e: BaseException) -> tuple[str, str]:
@@ -216,3 +218,92 @@ def assert_with_variable_trace(___condition___: bool, ___message___: str = "Asse
 
     # Raise an exception with the detailed message
     raise AssertionError(full_message)
+
+RT = TypeVar("RT")
+
+def with_variable_trace(
+    exception_types: type[Exception] | tuple[type[Exception], ...] = Exception,
+    return_type: type[RT] | None = None,
+    action="log",
+) -> Callable[[Callable[..., RT]], Callable[..., RT | None]]:
+    # Set default to Exception if no specific types are provided
+    if not exception_types:
+        exception_types = (Exception,)
+    if not isinstance(exception_types, tuple):
+        exception_types = (exception_types,)
+    exception_types = (*exception_types, AssertionError)
+
+    def decorator(f: Callable[..., RT]) -> Callable[..., RT | None]:
+        def wrapper(*args, **kwargs) -> RT | None:
+            try:
+                result: RT = f(*args, **kwargs)
+                if return_type is not None:
+                    assert isinstance(result, return_type), f"Return type of '{f.__name__}' must be {return_type.__name__}, got {type(result): {result!r}: {result}}"  # noqa: S101
+            except exception_types as e:
+                # Capture the current stack trace
+                ___frames___: list[___inspect___.FrameInfo] = ___inspect___.getouterframes(___inspect___.currentframe())
+
+                # Get default module attributes to filter out built-ins
+                ___default_attrs___ = set(dir(___sys___.modules["builtins"]))
+
+                # Construct a detailed message with variables from all stack frames
+                ___detailed_message___: list[str] = [
+                    f"Exception caught in function '{f.__name__}': {universal_simplify_exception(e)}",
+                    "Stack Trace Variables:",
+                ]
+                for ___frame_info___ in ___frames___:
+                    ___frame___, ___filename___, ___line_no___, ___function___, ___code_context___, _ = ___frame_info___
+                    if ___function___ != f.__name__:
+                        continue
+
+                    ___code_context___ = f"Context {___code_context___} " if ___code_context___ else ""
+                    ___detailed_message___.append(f"\n{___code_context___}Function '{___function___}' at {___filename___}:{___line_no___}:")
+
+                    # Filter out built-in and imported names
+                    ___detailed_message___.extend(
+                        f"  {var} = {___val___}"
+                        for var, ___val___ in ___frame___.f_locals.items()
+                        if var not in ___default_attrs___
+                        and ___sys___.getsizeof(___val___) <= (1024 * 1024)
+                        and var not in [
+                            "___detailed_message___",
+                            "___default_attrs___",
+                            "___line_of_code___",
+                            "___calling_frame_record___",
+                            "___code_context___",
+                            "___frames___",
+                            "___filename_errorhandler___",
+                            "___line_no___",
+                            "___function___",
+                            "___frame_info___",
+                            "__builtins__",
+                            "___inspect___",
+                            "___sys___",
+                            "with_variable_trace",
+                            "___condition___",
+                            "___frame___",
+                            "___message___",
+                            "___value___",
+                            "___unused_str_thing___",
+                            "___unused_index___",
+                            "___unused_frame_type___",
+                        ]
+                    )
+                full_message: str = "\n".join(___detailed_message___)
+
+                if action == "stderr":
+                    print(full_message, ___sys___.stderr)  # noqa: T201
+                elif action == "print":
+                    print(full_message)  # noqa: T201
+                elif action == "log":
+                    with Path("errorlog.txt").open("w") as outfile:
+                        outfile.write(full_message)
+                elif action == "raise":
+                    raise Exception(full_message) from None
+
+                return None
+            else:
+                return result
+
+        return wrapper
+    return decorator

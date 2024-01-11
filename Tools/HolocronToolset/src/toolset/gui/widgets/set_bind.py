@@ -56,12 +56,12 @@ class SetBindWidget(QWidget):
         self.keybind.clear()
         self.ui.setKeysEdit.setPlaceholderText("none")
 
-    def keyPressed(self, event: QKeyEvent):
+    def keyPressed(self, a0: QKeyEvent):
         if self.recordBind:
-            self.keybind.add(event.key())
+            self.keybind.add(a0.key())
             self.updateKeybindText()
 
-    def keyReleased(self, event: QKeyEvent):
+    def keyReleased(self, e: QKeyEvent):
         self.recordBind = False
 
     def setBind(self, bind: Bind):

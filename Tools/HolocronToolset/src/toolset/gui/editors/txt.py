@@ -13,7 +13,7 @@ if TYPE_CHECKING:
 
 
 class TXTEditor(Editor):
-    def __init__(self, parent: QWidget | None, installation: HTInstallation = None):
+    def __init__(self, parent: QWidget | None, installation: HTInstallation | None = None):
         """Initialize the text editor.
 
         Args:
@@ -30,7 +30,7 @@ class TXTEditor(Editor):
             - Connects signals
             - Opens new empty document.
         """
-        supported = [ResourceType.TXT, ResourceType.TXI, ResourceType.LYT, ResourceType.VIS, ResourceType.NSS]
+        supported: list[ResourceType] = [ResourceType.TXT, ResourceType.TXI, ResourceType.LYT, ResourceType.VIS, ResourceType.NSS]
         super().__init__(parent, "Text Editor", "none", supported, supported, installation)
         self.resize(400, 250)
 

@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import os
-from typing import Any
 
 from pykotor.common.misc import Game
 from pykotor.tools.path import find_kotor_paths_from_default
@@ -166,7 +165,7 @@ class InstallationConfig:
 
     @path.setter
     def path(self, value: str):
-        installations = self._settings.value("installations", {})
+        installations: dict[str, dict[str, str]] = self._settings.value("installations", {})
         installations[self._name]["path"] = value
         self._settings.setValue("installations", installations)
 

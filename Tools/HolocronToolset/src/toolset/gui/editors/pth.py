@@ -4,12 +4,9 @@ from typing import TYPE_CHECKING
 
 from pykotor.common.geometry import SurfaceMaterial, Vector2, Vector3
 from pykotor.common.misc import Color
-from pykotor.extract.file import ResourceResult
 from pykotor.extract.installation import SearchLocation
 from pykotor.resource.formats.bwm import read_bwm
-from pykotor.resource.formats.bwm.bwm_data import BWM
 from pykotor.resource.formats.lyt import LYT, read_lyt
-from pykotor.resource.generics.git import GITInstance
 from pykotor.resource.generics.pth import PTH, bytes_pth, read_pth
 from pykotor.resource.type import ResourceType
 from PyQt5.QtGui import QColor, QKeyEvent
@@ -17,18 +14,21 @@ from PyQt5.QtWidgets import QMenu, QWidget
 from toolset.data.misc import ControlItem
 from toolset.gui.editor import Editor
 from toolset.gui.widgets.settings.git import GITSettings
+from utility.error_handling import assert_with_variable_trace
 
 if TYPE_CHECKING:
     import os
 
-    from pykotor.extract.file import ResourceIdentifier
+    from pykotor.extract.file import ResourceIdentifier, ResourceResult
+    from pykotor.resource.formats.bwm.bwm_data import BWM
+    from pykotor.resource.generics.git import GITInstance
     from PyQt5.QtCore import QPoint
     from toolset.data.installation import HTInstallation
 
 
 class PTHEditor(Editor):
     def __init__(self, parent: QWidget | None, installation: HTInstallation | None = None):
-        supported = [ResourceType.PTH]
+        supported: list[ResourceType] = [ResourceType.PTH]
         super().__init__(parent, "PTH Editor", "pth", supported, supported, installation)
 
         from toolset.uic.editors.pth import Ui_MainWindow
@@ -230,7 +230,7 @@ class PTHControlScheme:
 
     def onKeyboardPressed(self, buttons: set[int], keys: set[int]):
         if self.deleteSelected.satisfied(buttons, keys):
-            self.editor.deleteSelected()
+            self.editor.deleteSelected()  # FIXME: undefined
 
     def onKeyboardReleased(self, buttons: set[int], keys: set[int]):
         ...
@@ -240,6 +240,7 @@ class PTHControlScheme:
         targetIndex: int | None = self.editor.pth().find(targetNode) if targetNode else None
 
         sourceNode: Vector2 | None = self.editor.selectedNodes()[0] if self.editor.pointsUnderMouse() else None
+        assert sourceNode is not None, assert_with_variable_trace(sourceNode is not None)
         sourceIndex: int | None = self.editor.pth().find(sourceNode) if targetNode else None
 
         menu = QMenu(self.editor)

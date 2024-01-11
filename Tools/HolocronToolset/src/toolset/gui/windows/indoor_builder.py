@@ -39,7 +39,6 @@ from PyQt5.QtWidgets import (
     QPushButton,
     QWidget,
 )
-from pykotor.resource.formats.bwm.bwm_data import BWM
 from toolset.__main__ import is_frozen
 from toolset.config import UPDATE_INFO_LINK
 from toolset.data.indoorkit import Kit, KitComponent, KitComponentHook, load_kits
@@ -47,7 +46,7 @@ from toolset.data.indoormap import IndoorMap, IndoorMapRoom
 from toolset.gui.dialogs.asyncloader import AsyncLoader
 from toolset.gui.dialogs.indoor_settings import IndoorMapSettings
 from toolset.gui.windows.help import HelpWindow
-from utility.error_handling import format_exception_with_variables, universal_simplify_exception
+from utility.error_handling import assert_with_variable_trace, format_exception_with_variables, universal_simplify_exception
 from utility.misc import is_debug_mode
 from utility.path import Path, PurePath
 
@@ -55,6 +54,7 @@ if TYPE_CHECKING:
     import os
 
     from pykotor.resource.formats.bwm import BWMFace
+    from pykotor.resource.formats.bwm.bwm_data import BWM
     from toolset.data.installation import HTInstallation
 
 
@@ -78,7 +78,7 @@ class IndoorMapBuilder(QMainWindow):
         """
         super().__init__(parent)
 
-        self._installation: HTInstallation = installation
+        self._installation: HTInstallation | None = installation
         self._kits: list[Kit] = []
         self._map: IndoorMap = IndoorMap()
         self._filepath: str = ""
@@ -317,7 +317,8 @@ class IndoorMapBuilder(QMainWindow):
             for room in [room for room in self._map.rooms if room not in rooms]:
                 hook1, hook2 = self.ui.mapRenderer.getConnectedHooks(active, room)
                 if hook1 is not None:
-                    shift = (
+                    assert hook2 is not None, assert_with_variable_trace(hook2 is not None)
+                    shift: Vector3 = (
                         room.position - active.hookPosition(hook1, False) + room.hookPosition(hook2, False)
                     ) - active.position
                     for snapping in rooms:
@@ -357,8 +358,8 @@ class IndoorMapBuilder(QMainWindow):
             else:
                 clearExisting: bool = QtCore.Qt.Key_Shift not in keys
                 room: IndoorMapRoom | None = self.ui.mapRenderer.roomUnderMouse()
-                if room:
-                    self.ui.mapRenderer.selectRoom(self.ui.mapRenderer.roomUnderMouse(), clearExisting)
+                if room is not None:
+                    self.ui.mapRenderer.selectRoom(room, clearExisting)
                 else:
                     self.ui.mapRenderer.clearSelectedRooms()
 
@@ -400,9 +401,10 @@ class IndoorMapBuilder(QMainWindow):
             self.ui.mapRenderer._cursorRotation += math.copysign(5, delta.y)
 
     def onMouseDoubleClicked(self, delta: Vector2, buttons: set[int], keys: set[int]):
-        if QtCore.Qt.LeftButton in buttons and self.ui.mapRenderer.roomUnderMouse():
+        room: IndoorMapRoom | None = self.ui.mapRenderer.roomUnderMouse()
+        if QtCore.Qt.LeftButton in buttons and room:
             self.ui.mapRenderer.clearSelectedRooms()
-            self.addConnectedToSelection(self.ui.mapRenderer.roomUnderMouse())
+            self.addConnectedToSelection(room)
 
     def onContextMenu(self, point: QPoint):
         world: Vector3 = self.ui.mapRenderer.toWorldCoords(point.x(), point.y())
@@ -421,8 +423,9 @@ class IndoorMapBuilder(QMainWindow):
     def addConnectedToSelection(self, room: IndoorMapRoom):
         self.ui.mapRenderer.selectRoom(room, False)
         for hookIndex, _hook in enumerate(room.component.hooks):
-            if room.hooks[hookIndex] is not None and room.hooks[hookIndex] not in self.ui.mapRenderer.selectedRooms():
-                self.addConnectedToSelection(room.hooks[hookIndex])
+            hook: IndoorMapRoom | None = room.hooks[hookIndex]
+            if hook is not None and hook not in self.ui.mapRenderer.selectedRooms():
+                self.addConnectedToSelection(hook)
 
 
 class IndoorMapRenderer(QWidget):
@@ -569,8 +572,8 @@ class IndoorMapRenderer(QWidget):
         """
         cos = math.cos(-self._camRotation)
         sin = math.sin(-self._camRotation)
-        x = x / self._camScale
-        y = y / self._camScale
+        x /= self._camScale
+        y /= self._camScale
         x2 = x * cos - y * sin
         y2 = x * sin + y * cos
         return Vector2(x2, y2)
@@ -1046,7 +1049,7 @@ class KitDownloader(QDialog):
             owner, repo = PurePath(url_or_repo).parts[-2:]
             api_url = f"https://api.github.com/repos/{owner}/{repo}/contents/{PurePath(repo_path).as_posix()}"
 
-            file_info: dict[str, str | bytes] = self._get_update_data(api_url)
+            file_info: dict = self._get_update_data(api_url)
             # Check if it's a file and get the download URL
             if file_info["type"] == "file":
                 download_url = file_info["download_url"]

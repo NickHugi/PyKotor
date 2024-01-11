@@ -59,7 +59,7 @@ class UTCEditor(Editor):
             - Updates 3D preview
             - Creates new empty creature.
         """
-        supported = [ResourceType.UTC]
+        supported: list[ResourceType] = [ResourceType.UTC]
         super().__init__(parent, "Creature Editor", "creature", supported, supported, installation, mainwindow)
 
         self.settings: UTCSettings = UTCSettings()
@@ -165,8 +165,8 @@ class UTCEditor(Editor):
 
         self.ui.featList.clear()
         for feat in feats:
-            stringref = feat.get_integer("name", 0)
-            text = installation.talktable().string(stringref) if stringref else feat.get_string("label")
+            stringref: int = feat.get_integer("name", 0)
+            text: str = installation.talktable().string(stringref) if stringref else feat.get_string("label")
             text = text or f"[Unused Feat ID: {feat.label()}]"
             item = QListWidgetItem(text)
             item.setData(QtCore.Qt.UserRole, int(feat.label()))

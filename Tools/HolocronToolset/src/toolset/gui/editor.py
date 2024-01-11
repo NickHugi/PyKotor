@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from abc import abstractmethod
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Callable
 
 from pykotor.common.module import Module
 from pykotor.extract.capsule import Capsule
@@ -20,13 +20,14 @@ from toolset.gui.dialogs.save.to_bif import BifSaveDialog, BifSaveOption
 from toolset.gui.dialogs.save.to_module import SaveToModuleDialog
 from toolset.gui.dialogs.save.to_rim import RimSaveDialog, RimSaveOption
 from toolset.gui.widgets.settings.installations import GlobalSettings
-from utility.error_handling import format_exception_with_variables, universal_simplify_exception
+from utility.error_handling import assert_with_variable_trace, format_exception_with_variables, universal_simplify_exception
 from utility.path import Path
 
 if TYPE_CHECKING:
     import os
 
     from pykotor.common.language import LocalizedString
+    from pykotor.resource.formats.rim.rim_data import RIM
     from toolset.data.installation import HTInstallation
 
 
@@ -276,17 +277,23 @@ class Editor(QMainWindow):
             dialog = RimSaveDialog(self)
             dialog.exec_()
             if dialog.option == RimSaveOption.MOD:
+                assert self._filepath is not None, assert_with_variable_trace(self._filepath is not None)
                 folderpath: Path = self._filepath.parent
                 filename: str = f"{Module.get_root(self._filepath)}.mod"
                 self._filepath = folderpath / filename
                 # Re-save with the updated filepath
                 self.save()
             elif dialog.option == RimSaveOption.Override:
+                assert self._filepath is not None, assert_with_variable_trace(self._filepath is not None)
                 self._filepath = self._installation.override_path() / f"{self._resname}.{self._restype.extension}"
                 self.save()
             return
 
-        rim = read_rim(self._filepath)
+        assert self._filepath is not None, assert_with_variable_trace(self._filepath is not None)  # sourcery skip: class-extract-method
+        assert self._resname is not None, assert_with_variable_trace(self._resname is not None)
+        assert self._restype is not None, assert_with_variable_trace(self._restype is not None)
+
+        rim: RIM = read_rim(self._filepath)
 
         # MDL is a special case - we need to save the MDX file with the MDL file.
         if self._restype == ResourceType.MDL:
@@ -299,8 +306,7 @@ class Editor(QMainWindow):
 
         # Update installation cache
         if self._installation is not None:
-            basename = self._filepath.name
-            self._installation.reload_module(basename)
+            self._installation.reload_module(self._filepath.name)
 
     def _saveEndsWithErf(self, data: bytes, data_ext: bytes):
         # Create the mod file if it does not exist.
@@ -322,6 +328,10 @@ class Editor(QMainWindow):
             - Emit a signal that a file was saved
             - Reload the module in the installation cache.
         """
+        assert self._filepath is not None, assert_with_variable_trace(self._filepath is not None)
+        assert self._resname is not None, assert_with_variable_trace(self._resname is not None)
+        assert self._restype is not None, assert_with_variable_trace(self._restype is not None)
+
         if not self._filepath.exists():
             module.rim_to_mod(self._filepath)
 
@@ -342,6 +352,8 @@ class Editor(QMainWindow):
             self._installation.reload_module(self._filepath.name)
 
     def _saveEndsWithOther(self, data: bytes, data_ext: bytes):
+        assert self._filepath is not None, assert_with_variable_trace(self._filepath is not None)
+
         with self._filepath.open("wb") as file:
             file.write(data)
 
@@ -352,7 +364,7 @@ class Editor(QMainWindow):
 
         self.savedFile.emit(self._filepath, self._resname, self._restype, data)
 
-    def open(self):  # noqa: A003
+    def open(self):    # noqa: A003
         """Opens a file dialog to select a file to open.
 
         Processing Logic:
@@ -363,16 +375,26 @@ class Editor(QMainWindow):
             - Otherwise, directly load the file by path, reference, type and content
         """
         filepath_str, filter = QFileDialog.getOpenFileName(self, "Open file", "", self._openFilter)
-        if filepath_str:
+        if filepath_str.strip():
             c_filepath = Path(filepath_str)
             if is_capsule_file(c_filepath.name) and "Load from module (*.erf *.mod *.rim *.sav)" in self._openFilter:
                 dialog = LoadFromModuleDialog(Capsule(c_filepath), self._readSupported)
                 if dialog.exec_():
-                    self.load(c_filepath, dialog.resname(), dialog.restype(), dialog.data())
+                    self.load_dialog_data(dialog, c_filepath)
             else:
                 with c_filepath.open("rb") as file:
-                    data = file.read()
+                    data: bytes = file.read()
                 self.load(c_filepath, *ResourceIdentifier.from_path(c_filepath).validate(), data)
+
+    def load_dialog_data(self, dialog: LoadFromModuleDialog, c_filepath: Path):
+        resname: str | None = dialog.resname()
+        restype: ResourceType | None = dialog.restype()
+        data: bytes | None = dialog.data()
+        assert resname is not None, assert_with_variable_trace(resname is not None)
+        assert restype is not None, assert_with_variable_trace(resname is not None)
+        assert data is not None, assert_with_variable_trace(resname is not None)
+
+        self.load(c_filepath, resname, restype, data)
 
     @abstractmethod
     def build(self) -> tuple[bytes, bytes]:
@@ -420,6 +442,9 @@ class Editor(QMainWindow):
 
     def revert(self):
         if self._revert is not None:
+            assert self._filepath is not None, assert_with_variable_trace(self._filepath is not None)
+            assert self._resname is not None, assert_with_variable_trace(self._resname is not None)
+            assert self._restype is not None, assert_with_variable_trace(self._restype is not None)
             self.load(self._filepath, self._resname, self._restype, self._revert)
 
     def _loadLocstring(self, textbox: QLineEdit | QPlainTextEdit, locstring: LocalizedString):
@@ -438,7 +463,7 @@ class Editor(QMainWindow):
             - Checks if locstring has stringref or not
             - Sets textbox text and style accordingly.
         """
-        setText = textbox.setPlainText if isinstance(textbox, QPlainTextEdit) else textbox.setText
+        setText: Callable[..., None] = textbox.setPlainText if isinstance(textbox, QPlainTextEdit) else textbox.setText
         className = "QLineEdit" if isinstance(textbox, QLineEdit) else "QPlainTextEdit"
 
         textbox.locstring = locstring

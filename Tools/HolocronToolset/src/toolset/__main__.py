@@ -6,7 +6,6 @@ import os
 import pathlib
 import sys
 import tempfile
-from datetime import datetime, timedelta, timezone
 from typing import TYPE_CHECKING
 
 from PyQt5.QtCore import QThread
@@ -84,8 +83,8 @@ if __name__ == "__main__":
 
     debug_mode_enabled: bool = is_debug_mode()
 
-    if not debug_mode_enabled or is_frozen(): ...
-        #multiprocessing.freeze_support()
+    if not debug_mode_enabled or is_frozen():
+        multiprocessing.freeze_support()
 
 
     app = QApplication(sys.argv)
@@ -105,25 +104,14 @@ if __name__ == "__main__":
     window = ToolWindow()
     window.show()
 
-    # Start profiling
-    if debug_mode_enabled:
+
+    profiler = True  # Set to False or None to disable profiler
+    if profiler:
         profiler = cProfile.Profile()
         profiler.enable()
-    run_start_time: datetime = datetime.now(timezone.utc).astimezone()
 
-    # Start application event loop
     app.exec_()
 
-    # Calculate total run time
-    total_run_time: timedelta = datetime.now(timezone.utc).astimezone() - run_start_time
-
-    # Stop profiling after the event loop ends
-    if debug_mode_enabled:
+    if profiler:
         profiler.disable()
-
-        # Save profile data
-        profiler_output_file = Path("profiler_output.pstat").resolve()
-        profiler.dump_stats(str(profiler_output_file))
-
-    # Optionally print total run time
-    print(f"Total run time: {total_run_time}")
+        profiler.dump_stats(str(Path("profiler_output.pstat")))

@@ -8,6 +8,7 @@ from pykotor.resource.formats.tpc import TPC, TPCTextureFormat, read_tpc, write_
 from pykotor.resource.type import ResourceType
 from PyQt5.QtGui import QImage, QPixmap, QTransform
 from toolset.gui.editor import Editor
+from utility.error_handling import assert_with_variable_trace
 
 if TYPE_CHECKING:
     import os
@@ -34,7 +35,7 @@ class TPCEditor(Editor):
             - Creates a default 256x256 RGBA texture
             - Calls new() to display the default texture.
         """
-        supported = [ResourceType.TPC, ResourceType.TGA, ResourceType.JPG, ResourceType.PNG, ResourceType.BMP]
+        supported: list[ResourceType] = [ResourceType.TPC, ResourceType.TGA, ResourceType.JPG, ResourceType.PNG, ResourceType.BMP]
         super().__init__(parent, "Texture Viewer", "none", supported, supported, installation)
 
         from toolset.uic.editors.tpc import Ui_MainWindow
@@ -77,16 +78,16 @@ class TPCEditor(Editor):
         if restype in [ResourceType.TPC, ResourceType.TGA]:
             self._tpc = read_tpc(data)
         else:
-            pillow = Image.open(io.BytesIO(data))
+            pillow: Image.Image = Image.open(io.BytesIO(data))
             pillow = pillow.convert("RGBA")
             pillow = ImageOps.flip(pillow)
             self._tpc = TPC()
             self._tpc.set_single(pillow.width, pillow.height, pillow.tobytes(), TPCTextureFormat.RGBA)
 
         width, height, rgba = self._tpc.convert(TPCTextureFormat.RGB, 0)
-
+        assert rgba is not None, assert_with_variable_trace(rgba is not None)
         image = QImage(rgba, width, height, QImage.Format_RGB888)
-        pixmap = QPixmap.fromImage(image).transformed(QTransform().scale(1, -1))
+        pixmap: QPixmap = QPixmap.fromImage(image).transformed(QTransform().scale(1, -1))
 
         self.ui.textureImage.setPixmap(pixmap)
         self.ui.txiEdit.setPlainText(self._tpc.txi)
@@ -122,11 +123,13 @@ class TPCEditor(Editor):
     def build(self) -> tuple[bytes, bytes]:
         self._tpc.txi = self.ui.txiEdit.toPlainText()
 
-        data = bytearray()
+        data: bytes | bytearray = bytearray()
 
         if self._restype in [ResourceType.TPC, ResourceType.TGA]:
             write_tpc(self._tpc, data, self._restype)
-        elif self._restype in [ResourceType.PNG, ResourceType.BMP]:
+            return bytes(data), b""
+
+        if self._restype in [ResourceType.PNG, ResourceType.BMP]:
             data = self.extract_png_bmp_bytes()
         elif self._restype in [ResourceType.JPG]:
             data = self.extract_tpc_jpeg_bytes()

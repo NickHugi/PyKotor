@@ -37,7 +37,7 @@ class MDLEditor(Editor):
             - Set the installation on the model renderer
             - Call new() to start with a blank state.
         """
-        supported = [ResourceType.MDL]
+        supported: list[ResourceType] = [ResourceType.MDL]
         super().__init__(parent, "Model Viewer", "none", supported, supported, installation)
 
         self._mdl: MDL = MDL()

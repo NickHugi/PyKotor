@@ -60,7 +60,7 @@ if TYPE_CHECKING:
     from pykotor.resource.formats.tpc import TPC
     from pykotor.resource.type import SOURCE_TYPES
     from pykotor.tools.path import CaseAwarePath
-    from toolset.gui.widgets.main_widgets import ResourceList
+    from toolset.gui.widgets.main_widgets import ResourceList, TextureList
     from typing_extensions import Literal
 
 
@@ -108,7 +108,7 @@ class ToolWindow(QMainWindow):
 
         self.dogObserver = None
         self.dogHandler = FolderObserver(self)
-        self.active: HTInstallation = None
+        self.active: HTInstallation | None = None
         self.settings: GlobalSettings = GlobalSettings()
         self.installations: dict[str, HTInstallation] = {}
 
@@ -332,12 +332,10 @@ class ToolWindow(QMainWindow):
             return
         if e.mimeData().hasUrls():
             for url in e.mimeData().urls():
-                filepath = url.toLocalFile()
-                r_filepath = Path(filepath)
-                with r_filepath.open("rb") as file:
-                    resref, restype = ResourceIdentifier.from_path(filepath)
-                    data = file.read()
-                    openResourceEditor(r_filepath, resref, restype, data, self.active, self)
+                filepath: str = url.toLocalFile()
+                data = BinaryReader.load_file(filepath)
+                resref, restype = ResourceIdentifier.from_path(filepath)
+                openResourceEditor(filepath, resref, restype, data, self.active, self)
 
     def dragEnterEvent(self, e: QtGui.QDragEnterEvent | None):
         if e is None:
@@ -407,6 +405,7 @@ class ToolWindow(QMainWindow):
         self.ui.actionCloneModule.setEnabled(self.active is not None)
 
     def openModuleDesigner(self):
+        assert self.active is not None, assert_with_variable_trace(self.active is not None)
         designer = ModuleDesigner(None, self.active)
         addWindow(designer)
 
@@ -449,6 +448,7 @@ class ToolWindow(QMainWindow):
         """
         searchDialog = FileSearcher(self, self.installations)
         if searchDialog.exec_():
+            assert searchDialog.installation is not None, assert_with_variable_trace(searchDialog.installation is not None)
             resultsDialog = FileResults(self, searchDialog.results, searchDialog.installation)
             if resultsDialog.exec_() and resultsDialog.selection:
                 selection: FileResource = resultsDialog.selection
@@ -456,12 +456,12 @@ class ToolWindow(QMainWindow):
                 # Open relevant tab then select resource in the tree
                 if selection.filepath().is_relative_to(self.active.module_path()):
                     self.ui.resourceTabs.setCurrentIndex(1)
-                    self.selectResource(self.ui.modulesWidget, selection)
+                    self.selectResource(self.ui.modulesWidget, selection)  # FIXME: ResourceList vs QTreeView?
                 elif selection.filepath().is_relative_to(self.active.override_path()):
                     self.ui.resourceTabs.setCurrentIndex(2)
-                    self.selectResource(self.ui.overrideWidget, selection)
+                    self.selectResource(self.ui.overrideWidget, selection)  # FIXME: ResourceList vs QTreeView?
                 elif is_bif_file(selection.filepath().name):
-                    self.selectResource(self.ui.coreWidget, selection)
+                    self.selectResource(self.ui.coreWidget, selection)  # FIXME: ResourceList vs QTreeView?
 
     def openIndoorMapBuilder(self):
         IndoorMapBuilder(self, self.active).show()
@@ -529,7 +529,7 @@ class ToolWindow(QMainWindow):
     def reloadSettings(self):
         self.reloadInstallations()
 
-    def getActiveResourceWidget(self) -> ResourceList | None:
+    def getActiveResourceWidget(self) -> TextureList | ResourceList | None:
         if self.ui.resourceTabs.currentWidget() is self.ui.coreTab:
             return self.ui.coreWidget
         if self.ui.resourceTabs.currentWidget() is self.ui.modulesTab:
@@ -599,8 +599,7 @@ class ToolWindow(QMainWindow):
     def changeModule(self, module: str):
         # Some users may choose to merge their RIM files under one option in the Modules tab; if this is the case we
         # need to account for this.
-        casefold_module = module.casefold()
-        if self.settings.joinRIMsTogether and casefold_module.endswith("_s.rim"):
+        if self.settings.joinRIMsTogether and module.casefold().endswith("_s.rim"):
             module = f"{module[:-6]}.rim"
 
         self.ui.modulesWidget.changeSection(module)

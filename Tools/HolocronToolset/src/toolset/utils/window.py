@@ -7,7 +7,7 @@ from pykotor.resource.type import ResourceType
 from PyQt5.QtWidgets import QMessageBox, QWidget
 from toolset.gui.editors.mdl import MDLEditor
 from toolset.gui.widgets.settings.installations import GlobalSettings
-from utility.error_handling import universal_simplify_exception
+from utility.error_handling import assert_with_variable_trace, universal_simplify_exception
 
 if TYPE_CHECKING:
     import os
@@ -214,6 +214,7 @@ def openResourceEditor(
         editor = GFFEditor(None, installation)
 
     if restype in [ResourceType.WAV, ResourceType.MP3]:
+        assert parentwindow is not None, assert_with_variable_trace(parentwindow is not None)
         editor = AudioPlayer(parentwindow)
 
     if restype.name in ERFType.__members__ or restype == ResourceType.RIM:
@@ -239,7 +240,7 @@ def openResourceEditor(
             ).show()
             raise
         else:
-            return filepath, editor
+            return filepath, editor  # type: ignore[]
     else:
         QMessageBox(
             QMessageBox.Critical,

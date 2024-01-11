@@ -1375,8 +1375,8 @@ class Polygon3:
 
     def __getitem__(
         self,
-        item: int,
-    ) -> Vector3 | list[Vector3]:
+        item: int | slice,
+    ):
         if isinstance(item, int):
             return self.points[item]
         if isinstance(item, slice):

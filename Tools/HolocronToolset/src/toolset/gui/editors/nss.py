@@ -20,6 +20,7 @@ from PyQt5.QtGui import (
     QPaintEvent,
     QResizeEvent,
     QSyntaxHighlighter,
+    QTextBlock,
     QTextCharFormat,
     QTextDocument,
     QTextFormat,
@@ -271,7 +272,7 @@ class NSSEditor(Editor):
     def insertSelectedConstant(self):
         """Inserts the selected constant on the constant list into the code textbox at the cursors location. The cursor is
         then shifted to the end of the newly inserted constant.
-        """
+        """  # noqa: D205
         if self.ui.constantList.selectedItems():
             constant = self.ui.constantList.selectedItems()[0].data(QtCore.Qt.UserRole)
             insert = constant.name
@@ -280,7 +281,7 @@ class NSSEditor(Editor):
     def insertSelectedFunction(self):
         """Inserts the selected function on the function list into the code textbox at the cursors location. The cursor is
         then shifted to the start of the first parameter of the inserted function.
-        """
+        """  # noqa: D205
         if self.ui.functionList.selectedItems():
             function: ScriptFunction = self.ui.functionList.selectedItems()[0].data(QtCore.Qt.UserRole)
             insert = f"{function.name}()"
@@ -294,7 +295,7 @@ class NSSEditor(Editor):
         ----
             insert: Text to insert.
             offset: Amount of characters to shift the cursor.
-        """
+        """  # noqa: D205
         cursor = self.ui.codeEdit.textCursor()
         index = cursor.position()
         text = self.ui.codeEdit.toPlainText()
@@ -421,10 +422,10 @@ class CodeEditor(QPlainTextEdit):
         painter = QPainter(self._lineNumberArea)
         painter.fillRect(e.rect(), QColor(230, 230, 230))
 
-        block = self.firstVisibleBlock()
-        blockNumber = block.blockNumber()
-        top = self.blockBoundingGeometry(block).translated(self.contentOffset()).top()
-        bottom = top + self.blockBoundingRect(block).height()
+        block: QTextBlock = self.firstVisibleBlock()
+        blockNumber: int = block.blockNumber()
+        top: float = self.blockBoundingGeometry(block).translated(self.contentOffset()).top()
+        bottom: float = top + self.blockBoundingRect(block).height()
 
         while block.isValid() and top <= e.rect().bottom():
             if block.isVisible() and bottom >= e.rect().top():
@@ -462,7 +463,7 @@ class CodeEditor(QPlainTextEdit):
             - Returns the larger of the minimum and calculated widths.
         """
         digits = 1
-        maximum = max(1, self.blockCount())
+        maximum: int = max(1, self.blockCount())
         while maximum >= 10:
             maximum /= 10  # type: ignore[assignment]
             digits += 1
@@ -473,7 +474,7 @@ class CodeEditor(QPlainTextEdit):
     def resizeEvent(self, e: QResizeEvent):
         super().resizeEvent(e)
 
-        cr = self.contentsRect()
+        cr: QRect = self.contentsRect()
         self._lineNumberArea.setGeometry(QRect(cr.left(), cr.top(), self.lineNumberAreaWidth(), cr.height()))
 
     def _updateLineNumberAreaWidth(self, newBlockCount: int):
@@ -572,8 +573,8 @@ class SyntaxHighlighter(QSyntaxHighlighter):
             "constant": self.getCharFormat("darkBlue"),
         }
 
-        functions = [function.name for function in (TSL_FUNCTIONS if installation.tsl else KOTOR_FUNCTIONS)]
-        constants = [function.name for function in (TSL_CONSTANTS if installation.tsl else TSL_CONSTANTS)]
+        functions: list[str] = [function.name for function in (TSL_FUNCTIONS if installation.tsl else KOTOR_FUNCTIONS)]
+        constants: list[str] = [function.name for function in (TSL_CONSTANTS if installation.tsl else TSL_CONSTANTS)]
 
         rules = []
         rules += [(r"\b%s\b" % w, 0, self.styles["keyword"]) for w in SyntaxHighlighter.KEYWORDS]
@@ -640,9 +641,10 @@ class SyntaxHighlighter(QSyntaxHighlighter):
             startIndex = SyntaxHighlighter.COMMENT_BLOCK_START.indexIn(text, startIndex + commentLength + 2)
 
     def getCharFormat(self, color: str | int, bold: bool = False, italic: bool = False) -> QTextCharFormat:
-        color = QColor(color)
+        int_color = int(color)
+        qcolor_obj = QColor(int_color)
         textFormat = QTextCharFormat()
-        textFormat.setForeground(color)
+        textFormat.setForeground(qcolor_obj)
         textFormat.setFontWeight(QFont.Bold if bold else QFont.Normal)
         textFormat.setFontItalic(italic)
         return textFormat

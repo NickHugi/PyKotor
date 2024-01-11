@@ -10,6 +10,7 @@ from PyQt5 import QtCore
 from PyQt5.QtGui import QColor, QIcon, QImage, QPixmap
 from PyQt5.QtWidgets import QListWidgetItem, QShortcut, QWidget
 from toolset.gui.editor import Editor
+from utility.error_handling import assert_with_variable_trace
 
 if TYPE_CHECKING:
     import os
@@ -74,7 +75,7 @@ class BWMEditor(Editor):
             SurfaceMaterial.NON_WALK_GRASS: QColor(0xB3FFB3),
             SurfaceMaterial.TRIGGER: QColor(0x4D0033),
         }
-        self.ui.renderArea.materialColors = self.materialColors  # TODO: fix the QColor\int typing here
+        self.ui.renderArea.materialColors = self.materialColors
         self.rebuildMaterials()
 
         self.new()
@@ -145,6 +146,7 @@ class BWMEditor(Editor):
 
     def build(self) -> tuple[bytes, bytes]:
         data = bytearray()
+        assert self._bwm is not None, assert_with_variable_trace(self._bwm is not None)
         write_bwm(self._bwm, data)
         return bytes(data), b""
 
@@ -177,6 +179,7 @@ class BWMEditor(Editor):
         elif QtCore.Qt.MiddleButton in buttons and QtCore.Qt.Key_Control in keys:  # type: ignore[attr-defined]
             self.ui.renderArea.camera.nudgeRotation(delta.x / 50)
         elif QtCore.Qt.LeftButton in buttons:  # type: ignore[attr-defined]
+            assert face is not None, assert_with_variable_trace(face is not None)
             self.changeFaceMaterial(face)
 
         coordsText = f"x: {world.x:.2f}, {world.y:.2f}"
@@ -218,7 +221,7 @@ class BWMEditor(Editor):
 
         Processing Logic:
         ----------------
-            - Check if a transition is selected in the list 
+            - Check if a transition is selected in the list
             - If selected, get the selected item and extract the transition data
             - Pass the transition data to the render area to highlight
             - If no item selected, clear any existing highlight.

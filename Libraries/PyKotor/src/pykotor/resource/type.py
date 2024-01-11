@@ -313,7 +313,7 @@ class ResourceType(Enum):
 
 R = TypeVar("R")
 def autoclose(func: Callable[..., R]) -> Callable[..., R]:
-    def _autoclose(self: ResourceReader | ResourceWriter, auto_close: bool = True) -> R:
+    def _autoclose(self: ResourceReader | ResourceWriter, auto_close: bool = True) -> R:  # noqa: FBT002, FBT001
         try:
             resource: R = func(self, auto_close)
         except (OSError, ParseError, ValueError, IndexError, StopIteration) as e:

@@ -62,7 +62,7 @@ class FileSearcher(QDialog):
         searchModules = self.ui.modulesCheck.isChecked()
         searchOverride = self.ui.overrideCheck.isChecked()
 
-        checkTypes = []
+        checkTypes: list[ResourceType] = []
         if self.ui.typeARECheck.isChecked(): checkTypes.append(ResourceType.ARE)
         if self.ui.typeGITCheck.isChecked(): checkTypes.append(ResourceType.GIT)
         if self.ui.typeIFOCheck.isChecked(): checkTypes.append(ResourceType.IFO)

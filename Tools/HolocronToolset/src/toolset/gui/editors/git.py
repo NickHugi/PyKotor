@@ -8,9 +8,9 @@ from typing import TYPE_CHECKING
 from pykotor.common.geometry import SurfaceMaterial, Vector2, Vector3
 from pykotor.common.misc import Color
 from pykotor.common.module import Module
-from pykotor.extract.file import LocationResult
 from pykotor.extract.installation import SearchLocation
 from pykotor.resource.formats.bwm import read_bwm
+from pykotor.resource.formats.bwm.bwm_data import BWM
 from pykotor.resource.formats.lyt import LYT, read_lyt
 from pykotor.resource.generics.git import (
     GIT,
@@ -48,14 +48,14 @@ from toolset.gui.widgets.renderer.walkmesh import GeomPoint
 from toolset.gui.widgets.settings.git import GITSettings
 from toolset.utils.misc import getResourceFromFile
 from toolset.utils.window import openResourceEditor
-from utility.path import Path
 
 if TYPE_CHECKING:
     import os
 
-    from pykotor.extract.file import ResourceIdentifier
+    from pykotor.extract.file import LocationResult, ResourceIdentifier, ResourceResult
     from PyQt5.QtCore import QPoint
     from toolset.data.installation import HTInstallation
+    from utility.path import Path
 
 
 def openInstanceDialog(parent: QWidget, instance: GITInstance, installation: HTInstallation):
@@ -190,15 +190,15 @@ class GITEditor(Editor):
         self.ui.viewCameraCheck.toggled.connect(self.updateVisibility)
         self.ui.viewStoreCheck.toggled.connect(self.updateVisibility)
 
-        self.ui.viewCreatureCheck.mouseDoubleClickEvent = lambda _: self.onInstanceVisibilityDoubleClick( self.ui.viewCreatureCheck)
-        self.ui.viewPlaceableCheck.mouseDoubleClickEvent = lambda _: self.onInstanceVisibilityDoubleClick( self.ui.viewPlaceableCheck)
-        self.ui.viewDoorCheck.mouseDoubleClickEvent = lambda _: self.onInstanceVisibilityDoubleClick(self.ui.viewDoorCheck)
-        self.ui.viewSoundCheck.mouseDoubleClickEvent = lambda _: self.onInstanceVisibilityDoubleClick(self.ui.viewSoundCheck)
-        self.ui.viewTriggerCheck.mouseDoubleClickEvent = lambda _: self.onInstanceVisibilityDoubleClick(self.ui.viewTriggerCheck)
-        self.ui.viewEncounterCheck.mouseDoubleClickEvent = lambda _: self.onInstanceVisibilityDoubleClick( self.ui.viewEncounterCheck)
-        self.ui.viewWaypointCheck.mouseDoubleClickEvent = lambda _: self.onInstanceVisibilityDoubleClick( self.ui.viewWaypointCheck)
-        self.ui.viewCameraCheck.mouseDoubleClickEvent = lambda _: self.onInstanceVisibilityDoubleClick(self.ui.viewCameraCheck)
-        self.ui.viewStoreCheck.mouseDoubleClickEvent = lambda _: self.onInstanceVisibilityDoubleClick(self.ui.viewStoreCheck)
+        self.ui.viewCreatureCheck.mouseDoubleClickEvent = lambda a0: self.onInstanceVisibilityDoubleClick( self.ui.viewCreatureCheck)  # noqa: ARG005
+        self.ui.viewPlaceableCheck.mouseDoubleClickEvent = lambda a0: self.onInstanceVisibilityDoubleClick( self.ui.viewPlaceableCheck)  # noqa: ARG005
+        self.ui.viewDoorCheck.mouseDoubleClickEvent = lambda a0: self.onInstanceVisibilityDoubleClick(self.ui.viewDoorCheck)  # noqa: ARG005
+        self.ui.viewSoundCheck.mouseDoubleClickEvent = lambda a0: self.onInstanceVisibilityDoubleClick(self.ui.viewSoundCheck)  # noqa: ARG005
+        self.ui.viewTriggerCheck.mouseDoubleClickEvent = lambda a0: self.onInstanceVisibilityDoubleClick(self.ui.viewTriggerCheck)  # noqa: ARG005
+        self.ui.viewEncounterCheck.mouseDoubleClickEvent = lambda a0: self.onInstanceVisibilityDoubleClick( self.ui.viewEncounterCheck)  # noqa: ARG005
+        self.ui.viewWaypointCheck.mouseDoubleClickEvent = lambda a0: self.onInstanceVisibilityDoubleClick( self.ui.viewWaypointCheck)  # noqa: ARG005
+        self.ui.viewCameraCheck.mouseDoubleClickEvent = lambda a0: self.onInstanceVisibilityDoubleClick(self.ui.viewCameraCheck)  # noqa: ARG005
+        self.ui.viewStoreCheck.mouseDoubleClickEvent = lambda a0: self.onInstanceVisibilityDoubleClick(self.ui.viewStoreCheck)  # noqa: ARG005
 
         # View
         self.ui.actionZoomIn.triggered.connect(lambda: self.ui.renderArea.camera.nudgeZoom(1))
@@ -280,8 +280,8 @@ class GITEditor(Editor):
         """
         super().load(filepath, resref, restype, data)
 
-        order = [SearchLocation.OVERRIDE, SearchLocation.CHITIN, SearchLocation.MODULES]
-        result = self._installation.resource(resref, ResourceType.LYT, order)
+        order: list[SearchLocation] = [SearchLocation.OVERRIDE, SearchLocation.CHITIN, SearchLocation.MODULES]
+        result: ResourceResult | None = self._installation.resource(resref, ResourceType.LYT, order)
         if result:
             self.loadLayout(read_lyt(result.data))
 
@@ -329,10 +329,10 @@ class GITEditor(Editor):
             - If a walkmesh asset is found, read it and add it to a list
             - Set the list of walkmeshes on the UI renderer.
         """
-        walkmeshes = []
+        walkmeshes: list[BWM] = []
         for room in layout.rooms:
-            order = [SearchLocation.OVERRIDE, SearchLocation.CHITIN, SearchLocation.MODULES]
-            findBWM = self._installation.resource(room.model, ResourceType.WOK, order)
+            order: list[SearchLocation] = [SearchLocation.OVERRIDE, SearchLocation.CHITIN, SearchLocation.MODULES]
+            findBWM: ResourceResult | None = self._installation.resource(room.model, ResourceType.WOK, order)
             if findBWM is not None:
                 walkmeshes.append(read_bwm(findBWM.data))
 
@@ -388,9 +388,9 @@ class GITEditor(Editor):
             - Save name in buffer
             - Return name from buffer.
         """
-        resid = instance.identifier()
+        resid: ResourceIdentifier | None = instance.identifier()
         if resid not in self.nameBuffer:
-            res = self._installation.resource(resid.resname, resid.restype)
+            res: ResourceResult | None = self._installation.resource(resid.resname, resid.restype)
             self.nameBuffer[resid] = None if res is None else self._installation.string(extract_name(res.data))
         return self.nameBuffer[resid]
 
@@ -413,8 +413,9 @@ class GITEditor(Editor):
             - Cache tag in buffer and return cached tag.
         """
         resid: ResourceIdentifier | None = instance.identifier()
+        assert resid is not None, f"resid cannot be None in getInstanceExternalTag({instance!r})"
         if resid not in self.tagBuffer:
-            res = self._installation.resource(resid.resname, resid.restype)
+            res: ResourceResult | None = self._installation.resource(resid.resname, resid.restype)
             self.tagBuffer[resid] = None if res is None else extract_tag(res.data)
         return self.tagBuffer[resid]
 
@@ -483,9 +484,9 @@ class GITEditor(Editor):
             - Converts point from local to world coordinates
         - Passes world point and global point to mode for context menu handling
         """
-        globalPoint = self.ui.renderArea.mapToGlobal(point)
-        world = self.ui.renderArea.toWorldCoords(point.x(), point.y())
-        self._mode.onRenderContextMenu(world, globalPoint)
+        globalPoint: QPoint = self.ui.renderArea.mapToGlobal(point)
+        world: Vector3 = self.ui.renderArea.toWorldCoords(point.x(), point.y())
+        self._mode.onRenderContextMenu(Vector2.from_vector3(world), globalPoint)
 
     def onFilterEdited(self):
         self._mode.onFilterEdited(self.ui.filterEdit.text())
@@ -505,8 +506,9 @@ class GITEditor(Editor):
             - Gets current list item
         - Opens context menu through mode manager
         """
-        globalPoint = self.ui.listWidget.mapToGlobal(point)
-        item = self.ui.listWidget.currentItem()
+        globalPoint: QPoint = self.ui.listWidget.mapToGlobal(point)
+        item: QListWidgetItem | None = self.ui.listWidget.currentItem()
+        assert item is not None, f"item cannot be None in {self!r}.onItemContextMenu({point!r})"
         self._mode.openListContextMenu(item, globalPoint)
 
     def onMouseMoved(self, screen: Vector2, delta: Vector2, buttons: set[int], keys: set[int]):
@@ -525,10 +527,11 @@ class GITEditor(Editor):
             - Pass mouse event to controls handler
             - Update status bar with world mouse position.
         """
-        worldDelta = self.ui.renderArea.toWorldDelta(delta.x, delta.y)
-        world = self.ui.renderArea.toWorldCoords(screen.x, screen.y)
-        self._controls.onMouseMoved(screen, delta, world, worldDelta, buttons, keys)
-        self._mode.updateStatusBar(world)
+        worldDelta: Vector2 = self.ui.renderArea.toWorldDelta(delta.x, delta.y)
+        world: Vector3 = self.ui.renderArea.toWorldCoords(screen.x, screen.y)
+        self._controls.onMouseMoved(screen, delta, Vector2.from_vector3(world), worldDelta, buttons, keys)
+        mode: _InstanceMode = self._mode
+        mode.updateStatusBar(Vector2.from_vector3(world))
 
     def onMouseScrolled(self, delta: Vector2, buttons: set[int], keys: set[int]):
         self._controls.onMouseScrolled(delta, buttons, keys)
@@ -666,10 +669,10 @@ class _InstanceMode(_Mode):
             - Opens an instance dialog to edit the selected instance properties
             - Rebuilds the instance list after editing.
         """
-        selection = self._ui.renderArea.instanceSelection.all()
+        selection: list[GITInstance] = self._ui.renderArea.instanceSelection.all()
 
         if selection:
-            instance = selection[-1]
+            instance: GITInstance = selection[-1]
             openInstanceDialog(self._editor, instance, self._installation)
             self.buildList()
 
@@ -689,7 +692,7 @@ class _InstanceMode(_Mode):
         if selection:
             instance: GITInstance = selection[-1]
             resname, restype = instance.identifier()
-            filepath = None
+            filepath: Path | None = None
 
             order: list[SearchLocation] = [SearchLocation.CHITIN, SearchLocation.MODULES, SearchLocation.OVERRIDE]
             search: list[LocationResult] = self._installation.location(resname, restype, order)
@@ -697,9 +700,9 @@ class _InstanceMode(_Mode):
             for result in search:
                 lowercase_path_parts: list[str] = [f.lower() for f in result.filepath.parts]
                 if "override" in lowercase_path_parts:
-                    filepath: Path = result.filepath
+                    filepath = result.filepath
                 else:
-                    module_root = Module.get_root(self._editor.filepath())
+                    module_root: str = Module.get_root(self._editor.filepath())
 
                     # Check if module root is in path parents or is a .rim
                     lowercase_path_parents: list[str] = [str(parent).lower() for parent in result.filepath.parents]

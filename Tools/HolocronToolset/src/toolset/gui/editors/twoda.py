@@ -118,7 +118,7 @@ class TwoDAEditor(Editor):
             self.proxyModel.setSourceModel(self.model)
             self.new()
 
-    def _load_main(self, data):
+    def _load_main(self, data: bytes):
         """Loads data from a 2DA file into the main table.
 
         Args:
@@ -355,9 +355,9 @@ class TwoDAEditor(Editor):
             - Resets the vertical headers of the table.
         """
         if self.ui.twodaTable.selectedIndexes():
-            copyRow = self.ui.twodaTable.selectedIndexes()[0].row()
+            copyRow: int = self.ui.twodaTable.selectedIndexes()[0].row()
 
-            rowIndex = self.model.rowCount()
+            rowIndex: int = self.model.rowCount()
             self.model.appendRow([QStandardItem(self.model.item(copyRow, i)) for i in range(self.model.columnCount())])
             self.model.setItem(rowIndex, 0, QStandardItem(str(rowIndex)))
             font = self.model.item(rowIndex, 0).font()

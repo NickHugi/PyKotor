@@ -397,10 +397,10 @@ class UTPEditor(Editor):
         self.setFixedSize(674, 457)
 
         data, _ = self.build()
-        modelname = placeable.get_model(read_utp(data), self._installation, placeables=self._placeables2DA)
-        mdl = self._installation.resource(modelname, ResourceType.MDL)
-        mdx = self._installation.resource(modelname, ResourceType.MDX)
-        if mdl and mdx:
+        modelname: str = placeable.get_model(read_utp(data), self._installation, placeables=self._placeables2DA)
+        mdl: ResourceResult | None = self._installation.resource(modelname, ResourceType.MDL)
+        mdx: ResourceResult | None = self._installation.resource(modelname, ResourceType.MDX)
+        if mdl is not None and mdx is not None:
             self.ui.previewRenderer.setModel(mdl.data, mdx.data)
         else:
             self.ui.previewRenderer.clearModel()

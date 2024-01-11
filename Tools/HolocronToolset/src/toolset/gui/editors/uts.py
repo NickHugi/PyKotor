@@ -38,10 +38,10 @@ class UTSEditor(Editor):
             - Load UI from designer file
             - Set up menus, signals and installation.
         """
-        supported = [ResourceType.UTS]
+        supported: list[ResourceType] = [ResourceType.UTS]
         super().__init__(parent, "Sound Editor", "sound", supported, supported, installation)
 
-        self._uts = UTS()
+        self._uts: UTS = UTS()
 
         self.player = QMediaPlayer(self)
         self.buffer = QBuffer(self)
@@ -95,7 +95,7 @@ class UTSEditor(Editor):
     def load(self, filepath: os.PathLike | str, resref: str, restype: ResourceType, data: bytes):
         super().load(filepath, resref, restype, data)
 
-        uts = read_uts(data)
+        uts: UTS = read_uts(data)
         self._loadUTS(uts)
 
     def _loadUTS(self, uts: UTS):

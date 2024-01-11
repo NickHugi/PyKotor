@@ -121,8 +121,8 @@ def parse_args() -> Namespace:
         try:
             kwargs.namespace_option_index = int(kwargs.namespace_option_index)
         except ValueError as e:
-            print(universal_simplify_exception(e))
-            print("Invalid namespace_option_index. It should be an integer.")
+            print(universal_simplify_exception(e), file=sys.stderr)  # noqa: T201
+            print(f"Invalid namespace_option_index. It should be an integer, got {kwargs.namespace_option_index}", file=sys.stderr)  # noqa: T201
             sys.exit(ExitCode.NAMESPACE_INDEX_OUT_OF_RANGE)
 
     return kwargs
@@ -414,27 +414,27 @@ class App(tk.Tk):
         class MessageboxOverride:
             @staticmethod
             def showinfo(title, message):
-                print(f"[Note] - {title}: {message}")
+                print(f"[Note] - {title}: {message}")  # noqa: T201
 
             @staticmethod
             def showwarning(title, message):
-                print(f"[Warning] - {title}: {message}")
+                print(f"[Warning] - {title}: {message}")  # noqa: T201
 
             @staticmethod
             def showerror(title, message):
-                print(f"[Error] - {title}: {message}")
+                print(f"[Error] - {title}: {message}")  # noqa: T201
 
             @staticmethod
             def askyesno(title, message):
                 """Console-based replacement for messagebox.askyesno and similar."""
-                print(f"{title}\n{message}")
+                print(f"{title}\n{message}")  # noqa: T201
                 while True:
                     response = input("(y/N)").lower().strip()
                     if response in ["yes", "y"]:
                         return True
                     if response in ["no", "n"]:
                         return False
-                    print("Invalid input. Please enter 'yes' or 'no'")
+                    print("Invalid input. Please enter 'yes' or 'no'")  # noqa: T201
 
         messagebox.showinfo = MessageboxOverride.showinfo  # type: ignore[assignment]
         messagebox.showwarning = MessageboxOverride.showwarning  # type: ignore[assignment]
@@ -502,7 +502,7 @@ class App(tk.Tk):
             return
         with contextlib.suppress(Exception):
             self.install_thread._stop()  # type: ignore[attr-defined]
-            print("force terminate of install thread succeeded")
+            print("force terminate of install thread succeeded", sys.stdout)  # noqa: T201
         with contextlib.suppress(Exception):
             ctypes.pythonapi.PyThreadState_SetAsyncExc(ctypes.c_long(self.install_thread.ident), ctypes.py_object(SystemExit))  # type: ignore[arg-type]
         self.destroy()

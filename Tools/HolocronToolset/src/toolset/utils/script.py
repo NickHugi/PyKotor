@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import os
-from typing import TYPE_CHECKING
+import sys
 
 from pykotor.common.misc import Game
 from pykotor.common.stream import BinaryReader, BinaryWriter
@@ -11,9 +11,6 @@ from PyQt5.QtWidgets import QFileDialog, QMessageBox
 from toolset.gui.widgets.settings.installations import GlobalSettings, NoConfigurationSetError
 from utility.error_handling import format_exception_with_variables
 from utility.path import Path
-
-if TYPE_CHECKING:
-    from typing_extensions import Literal
 
 
 def decompileScript(compiled: bytes, tsl: bool) -> str:
@@ -67,9 +64,11 @@ def decompileScript(compiled: bytes, tsl: bool) -> str:
         game = Game.K2 if tsl else Game.K1
         ExternalNCSCompiler(ncs_decompiler_path).decompile_script(tempCompiledPath, tempDecompiledPath, game)
         return BinaryReader.load_file(tempDecompiledPath).decode(encoding="windows-1252")
-    except Exception as e:
-        #global_settings.ncsDecompilerPath = None
-        print(format_exception_with_variables(e))
+    except Exception as e:  # noqa: BLE001
+        with Path("errorlog.txt").open("w") as f:
+            msg = format_exception_with_variables(e)
+            print(msg, sys.stderr)  # noqa: T201
+            f.write(msg)
 
     return ""
 

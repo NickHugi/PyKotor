@@ -25,7 +25,7 @@ class LongSpinBox(QAbstractSpinBox):
         self.setValue(self.value() + steps * 1)
 
     def text(self) -> str:
-        return str(self._value)
+        return str(self.lineEdit().text())
 
     def setRange(self, min_value: int, max_value: int):
         self._min = min_value
@@ -56,5 +56,5 @@ class LongSpinBox(QAbstractSpinBox):
         except ValueError:
             return 0
 
-    def stepEnabled(self):
+    def stepEnabled(self) -> QAbstractSpinBox.StepEnabled:
         return self.StepUpEnabled | self.StepDownEnabled
