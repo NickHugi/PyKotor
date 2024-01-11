@@ -641,10 +641,10 @@ class SyntaxHighlighter(QSyntaxHighlighter):
             startIndex = SyntaxHighlighter.COMMENT_BLOCK_START.indexIn(text, startIndex + commentLength + 2)
 
     def getCharFormat(self, color: str | int, bold: bool = False, italic: bool = False) -> QTextCharFormat:
-        int_color = int(color)
-        qcolor_obj = QColor(int_color)
+        color = QColor(color)
         textFormat = QTextCharFormat()
-        textFormat.setForeground(qcolor_obj)
+        textFormat.setForeground(color)
         textFormat.setFontWeight(QFont.Bold if bold else QFont.Normal)
         textFormat.setFontItalic(italic)
         return textFormat
+
