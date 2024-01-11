@@ -1,9 +1,8 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Callable
+from typing import TYPE_CHECKING, Any, Callable, Generator
 
 from pykotor.resource.type import ResourceType
-from pykotor.tools.encoding import decode_bytes_with_fallbacks
 from PyQt5 import QtCore
 from PyQt5.QtWidgets import QDialog, QListWidgetItem, QWidget
 from toolset.gui.dialogs.asyncloader import AsyncBatchLoader
@@ -107,19 +106,19 @@ class FileSearcher(QDialog):
             - Applies search function asynchronously to resources
             - Stores results in self.results.
         """
-        searchIn: list[FileResource] = []
         results: list[FileResource] = []
 
-        lowercase_text = text.lower()
+        def search_generator() -> Generator[FileResource, Any, None]:
+            if searchCore:
+                yield from installation.chitin_resources()
+            if searchModules:
+                for module in installation.modules_list():
+                    yield from installation.module_resources(module)
+            if searchOverride:
+                for folder in installation.override_list():
+                    yield from installation.override_resources(folder)
 
-        if searchCore:
-            searchIn.extend(installation.chitin_resources())
-        if searchModules:
-            for module in installation.modules_list():
-                searchIn.extend(installation.module_resources(module))
-        if searchOverride:
-            for folder in installation.override_list():
-                searchIn.extend(installation.override_resources(folder))
+        lowercase_text = text.lower()
 
         def search(resource: FileResource):
             resource_name: str = resource.resname()
@@ -134,6 +133,7 @@ class FileSearcher(QDialog):
                 if data_check:
                     results.append(resource)
 
+        searchIn: Generator[FileResource, Any, None] = search_generator()
         searches: list[Callable[[FileResource], None]] = [lambda resource=resource: search(resource) for resource in searchIn]
         AsyncBatchLoader(self, "Searching...", searches, "An error occured during the search").exec_()
 
