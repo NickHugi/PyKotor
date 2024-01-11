@@ -248,12 +248,14 @@ class WrappedStr(str):  # (metaclass=StrType):
 
     def __init__(
         self,
-        __content: Self | str = "",
+        content: Self | str = "",
     ):
-        if __content is None:
+        if content is None:
             msg = f"Cannot initialize {self.__class__.__name__}(None), expected a str-like argument"
             raise RuntimeError(msg)
-        self._content: str = str(__content)
+        if isinstance(content, WrappedStr):
+            content = content._content
+        self._content: str = content
 
     @classmethod
     def maketrans(
@@ -872,16 +874,18 @@ class CaseInsensitiveWrappedStr(WrappedStr):
         cls,
         item,
     ) -> str:
-        if isinstance(item, (WrappedStr, str)):
+        if isinstance(item, WrappedStr):
+            return str(item._content).casefold()
+        if isinstance(item, str):
             return str(item).casefold()
         return item
 
     def __init__(
         self,
-        __content: WrappedStr | str,
+        content: str | WrappedStr,
     ):
-        super().__init__(__content)
-        self._lower_content: str = str(__content).casefold()
+        super().__init__(content)
+        self._lower_content: str = str(content).casefold()
 
     def __contains__(
         self,

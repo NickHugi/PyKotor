@@ -201,9 +201,9 @@ class ResourceType(Enum):
 
     def __str__(
         self,
-    ):
+    ) -> str:
         """Returns the extension in all caps."""
-        return self.extension.upper()
+        return str(self.extension.upper())
 
     def __int__(
         self,
