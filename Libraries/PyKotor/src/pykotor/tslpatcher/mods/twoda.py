@@ -184,65 +184,6 @@ class Modify2DA(ABC):
     ) -> dict[str, str]:
         return {column: value.value(memory, twoda, row) for column, value in cells.items()}
 
-    def _split_modifiers(
-        self,
-        modifiers: dict[str, str],
-        memory: PatcherMemory,
-        twoda: TwoDA,
-    ) -> tuple[dict[str, str], dict[int, str], str | None, str | None]:
-        """Splits modifiers into categories.
-
-        Args:
-        ----
-            modifiers: dict[str, str]: Modifiers dictionary
-            memory: PatcherMemory: Patcher memory object
-            twoda: TwoDA: TwoDA object
-
-        Returns:
-        -------
-            new_values: dict[str, str]: Split modifiers
-            memory_values: dict[int, str]: 2DA memory values
-            row_label: str|None: Row label value
-            new_row_label: str|None: New row label value
-
-        Processing Logic:
-        ----------------
-            - Updates special value references like StrRef and 2DAMEMORY
-            - Breaks apart values into new_values, memory_values, row_label, new_row_label categories
-            - new_values contains normal modifiers
-            - memory_values contains 2DA memory references
-            - row_label and new_row_label contain those single values.
-        """
-        new_values: dict[str, str] = {}
-        memory_values: dict[int, str] = {}
-        row_label: str | None = None
-        new_row_label: str | None = None
-
-        # Update special values
-        for header, value in modifiers.items():
-            if value.startswith("StrRef"):
-                token_id = int(value[6:])
-                modifiers[header] = str(memory.memory_str[token_id])
-            elif value.startswith("2DAMEMORY"):
-                token_id = int(value[9:])
-                modifiers[header] = str(memory.memory_2da[token_id])
-            elif value == "high()":
-                modifiers[header] = str(twoda.column_max(header))
-
-        # Break apart values into more manageable categories
-        for header, value in modifiers.items():
-            if header.startswith("2DAMEMORY"):
-                memory_index = int(header.replace("2DAMEMORY", ""))
-                memory_values[memory_index] = value
-            elif header == "RowLabel":
-                row_label = value
-            elif header == "NewRowLabel":
-                new_row_label = value
-            else:
-                new_values[header] = value
-
-        return new_values, memory_values, row_label, new_row_label
-
     def _check_memory(
         self,
         value: str,
@@ -346,7 +287,7 @@ class AddRow2DA(Modify2DA):
             - The cells are unpacked and applied to the target row
             - Any stored values are updated in the memory context.
         """
-        target_row = None
+        target_row: TwoDARow | None = None
 
         if self.exclusive_column is not None:
             if self.exclusive_column not in self.cells:
@@ -363,12 +304,12 @@ class AddRow2DA(Modify2DA):
                     target_row = row
 
         if target_row is None:
-            row_label = str(twoda.get_height()) if self.row_label is None else self.row_label
-            index = twoda.add_row(row_label, {})
+            row_label: str = str(twoda.get_height()) if self.row_label is None else self.row_label
+            index: int = twoda.add_row(row_label, {})
             self._row = target_row = twoda.get_row(index)
             target_row.update_values(self._unpack(self.cells, memory, twoda, target_row))
         else:
-            cells = self._unpack(self.cells, memory, twoda, target_row)
+            cells: dict[str, str] = self._unpack(self.cells, memory, twoda, target_row)
             target_row.update_values(cells)
 
         for token_id, value in self.store_2da.items():
@@ -425,8 +366,8 @@ class CopyRow2DA(Modify2DA):
             3. Unpacks the cell values and updates/adds the target row
             4. Stores any 2DA or TLK values in the memory context.
         """
-        source_row = self.target.search(twoda)
-        target_row = None
+        source_row: TwoDARow | None = self.target.search(twoda)
+        target_row: TwoDARow | None = None
         row_label = str(twoda.get_height()) if self.row_label is None else self.row_label
 
         if source_row is None:
@@ -454,7 +395,7 @@ class CopyRow2DA(Modify2DA):
             self._row = target_row
         else:
             # Otherwise, we add the new row instead.
-            index = twoda.copy_row(source_row, row_label, {})
+            index: int = twoda.copy_row(source_row, row_label, {})
             self._row = target_row = twoda.get_row(index)
             cells = self._unpack(self.cells, memory, twoda, target_row)
             target_row.update_values(cells)
@@ -507,8 +448,7 @@ class AddColumn2DA(Modify2DA):
         ----------------
             - Adds a column to the TwoDA with the patcher header
             - Sets the default value for all rows in the new column
-            - Sets values in the new column based on index lookups
-            - Sets values in the new column based on label lookups
+            - Sets values in the new column based on index/label lookups
             - Stores values from the TwoDA in the memory based on token IDs.
         """
         twoda.add_column(self.header)
@@ -526,7 +466,7 @@ class AddColumn2DA(Modify2DA):
 
         for row_label, row_value in self.label_insert.items():
             label_str: str = row_value.value(memory, twoda, None)
-            this_row = twoda.find_row(row_label)
+            this_row: TwoDARow | None = twoda.find_row(row_label)
             if this_row:
                 this_row.set_string(self.header, label_str)
             else:

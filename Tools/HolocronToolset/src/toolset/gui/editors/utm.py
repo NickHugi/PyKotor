@@ -1,4 +1,5 @@
 from __future__ import annotations
+from copy import deepcopy
 
 from typing import TYPE_CHECKING
 
@@ -122,7 +123,7 @@ class UTMEditor(Editor):
             - Write GFF to bytearray
             - Return bytearray and empty bytes
         """
-        utm: UTM = self._utm
+        utm: UTM = deepcopy(self._utm)
 
         # Basic
         utm.name = self.ui.nameEdit.locstring()
@@ -151,7 +152,7 @@ class UTMEditor(Editor):
     def changeName(self):
         dialog = LocalizedStringDialog(self, self._installation, self.ui.nameEdit.locstring())
         if dialog.exec_():
-            self._loadLocstring(self.ui.nameEdit, dialog.locstring)
+            self._loadLocstring(self.ui.nameEdit.ui.locstringText, dialog.locstring)
 
     def generateTag(self):
         if not self.ui.resrefEdit.text():
@@ -171,7 +172,8 @@ class UTMEditor(Editor):
             root: str = Module.get_root(self._filepath)
             case_root = root.casefold()
             module_names: CaseInsensitiveDict[str] = self._installation.module_names()
-            capsulesPaths: list[str] = [path for path in module_names if case_root in path and path != self._filepath]
+            filepath_str = str(self._filepath)
+            capsulesPaths: list[str] = [path for path in module_names if case_root in path and path != filepath_str]
             capsules.extend([Capsule(self._installation.module_path() / path) for path in capsulesPaths])
         except Exception as e:
             print(format_exception_with_variables(e, ___message___="This exception has been suppressed."))

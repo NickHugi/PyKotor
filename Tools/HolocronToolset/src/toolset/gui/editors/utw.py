@@ -1,4 +1,5 @@
 from __future__ import annotations
+from copy import deepcopy
 
 from typing import TYPE_CHECKING
 
@@ -109,7 +110,7 @@ class UTWEditor(Editor):
             - Serialize UTW to bytes using GFF format
             - Return bytes and empty bytes
         """
-        utw: UTW = self._utw
+        utw: UTW = deepcopy(self._utw)
 
         utw.name = self.ui.nameEdit.locstring()
         utw.tag = self.ui.tagEdit.text()
@@ -132,7 +133,7 @@ class UTWEditor(Editor):
     def changeName(self):
         dialog = LocalizedStringDialog(self, self._installation, self.ui.nameEdit.locstring())
         if dialog.exec_():
-            self._loadLocstring(self.ui.nameEdit, dialog.locstring)
+            self._loadLocstring(self.ui.nameEdit.ui.locstringText, dialog.locstring)
 
     def changeNote(self):
         dialog = LocalizedStringDialog(self, self._installation, self.ui.noteEdit.locstring)

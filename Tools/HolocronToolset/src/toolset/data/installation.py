@@ -191,7 +191,7 @@ class HTInstallation(Installation):
             return
 
         for resname in queries:
-            tex_result = self.texture(resname, [SearchLocation.TEXTURES_TPA, SearchLocation.TEXTURES_GUI])
+            tex_result: TPC | None = self.texture(resname, [SearchLocation.TEXTURES_TPA, SearchLocation.TEXTURES_GUI])
             if tex_result is None:
                 assert_with_variable_trace(tex_result is None, f"{self!r}.htBatchCacheTPC({names!r}, reload={reload!r}) failed, texture name '{resname}' not found in installation.")
                 return
@@ -223,8 +223,8 @@ class HTInstallation(Installation):
         baseitems: TwoDA = self.htGetCache2DA(HTInstallation.TwoDA_BASEITEMS)
 
         try:
-            itemClass = baseitems.get_cell(uti.base_item, "itemclass")
-            variation = uti.model_variation if uti.model_variation != 0 else uti.texture_variation
+            itemClass: str = baseitems.get_cell(uti.base_item, "itemclass")
+            variation: int = uti.model_variation if uti.model_variation != 0 else uti.texture_variation
             textureResname = f'i{itemClass}_{str(variation).rjust(3, "0")}'
             texture: TPC | None = self.htGetCacheTPC(textureResname.lower())
 
@@ -258,8 +258,8 @@ class HTInstallation(Installation):
         baseitems: TwoDA = self.htGetCache2DA(HTInstallation.TwoDA_BASEITEMS)
 
         with suppress(Exception):
-            itemClass = baseitems.get_cell(baseItem, "itemclass")
-            variation = modelVariation or textureVariation
+            itemClass: str = baseitems.get_cell(baseItem, "itemclass")
+            variation: int = modelVariation or textureVariation
             textureResname = f'i{itemClass}_{str(variation).rjust(3, "0")}'
             texture: TPC | None = self.htGetCacheTPC(textureResname.lower())
 

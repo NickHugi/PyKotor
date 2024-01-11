@@ -17,7 +17,7 @@ class SaveToModuleDialog(QDialog):
         self.ui.typeCombo.addItems([restype.extension.upper() for restype in supported])
         self.ui.typeCombo.setCurrentIndex(supported.index(restype))
 
-    def resref(self) -> str:
+    def resname(self) -> str:  # resref filename stem
         return self.ui.resrefEdit.text()
 
     def restype(self) -> ResourceType:

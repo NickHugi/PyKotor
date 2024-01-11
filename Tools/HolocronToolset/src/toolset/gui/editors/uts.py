@@ -1,4 +1,5 @@
 from __future__ import annotations
+from copy import deepcopy
 
 from typing import TYPE_CHECKING
 
@@ -182,7 +183,7 @@ class UTSEditor(Editor):
             - Writes _uts to bytearray using dismantle_uts and write_gff
             - Returns bytearray tuple.
         """
-        uts = self._uts
+        uts: UTS = deepcopy(self._uts)
 
         # Basic
         uts.name = self.ui.nameEdit.locstring()
@@ -232,7 +233,7 @@ class UTSEditor(Editor):
     def changeName(self):
         dialog = LocalizedStringDialog(self, self._installation, self.ui.nameEdit.locstring())
         if dialog.exec_():
-            self._loadLocstring(self.ui.nameEdit, dialog.locstring)
+            self._loadLocstring(self.ui.nameEdit.ui.locstringText, dialog.locstring)
 
     def generateTag(self):
         if self.ui.resrefEdit.text() == "":

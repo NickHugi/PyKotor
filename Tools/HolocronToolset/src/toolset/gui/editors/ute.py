@@ -1,4 +1,5 @@
 from __future__ import annotations
+from copy import deepcopy
 
 from typing import TYPE_CHECKING
 
@@ -168,7 +169,7 @@ class UTEEditor(Editor):
             - Adding comment text
             - Encoding the UTE object into bytes.
         """
-        ute: UTE = self._ute
+        ute: UTE = deepcopy(self._ute)
 
         # Basic
         ute.name = self.ui.nameEdit.locstring()
@@ -224,7 +225,7 @@ class UTEEditor(Editor):
     def changeName(self):
         dialog = LocalizedStringDialog(self, self._installation, self.ui.nameEdit.locstring())
         if dialog.exec_():
-            self._loadLocstring(self.ui.nameEdit, dialog.locstring)
+            self._loadLocstring(self.ui.nameEdit.ui.locstringText, dialog.locstring)
 
     def generateTag(self):
         if not self.ui.resrefEdit.text():

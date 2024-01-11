@@ -33,10 +33,10 @@ def universal_simplify_exception(e: BaseException) -> tuple[str, str]:
     if isinstance(e, FileNotFoundError):
         if len(e.args) > 1:
             return error_name, f"{e.args[1]}: {e.args[0]}"
-        if len(e.args) == 1:
-            return error_name, f"Could not find the file: '{e.args[0]}'"
         if hasattr(e, "filename"):
             return error_name, f"Could not find the file: '{e.filename}'"
+        if len(e.args) == 1:
+            return error_name, f"Could not find the file: '{e.args[0]}'"
 
     # Handle PermissionError, which may have a 'filename' attribute
     if isinstance(e, PermissionError):
@@ -62,7 +62,7 @@ def universal_simplify_exception(e: BaseException) -> tuple[str, str]:
         if msg:
             return error_name, f"{e}: {msg}"
 
-    return error_name, str(e) + str(getattr(e, "args", ""))
+    return error_name, str(e)
 
 
 def format_exception_with_variables(

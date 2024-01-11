@@ -393,7 +393,7 @@ class AREEditor(Editor):
     def changeName(self):
         dialog = LocalizedStringDialog(self, self._installation, self.ui.nameEdit.locstring())
         if dialog.exec_():
-            self._loadLocstring(self.ui.nameEdit, dialog.locstring)
+            self._loadLocstring(self.ui.nameEdit.ui.locstringText, dialog.locstring)
 
     def generateTag(self):
         self.ui.tagEdit.setText("newarea" if self._resname is None or self._resname == "" else self._resname)

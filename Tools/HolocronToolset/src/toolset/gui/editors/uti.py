@@ -1,4 +1,5 @@
 from __future__ import annotations
+from copy import deepcopy
 
 from typing import TYPE_CHECKING
 
@@ -186,7 +187,7 @@ class UTIEditor(Editor):
             - Write GFF to byte array
             - Return byte array and empty string
         """
-        uti: UTI = self._uti
+        uti: UTI = deepcopy(self._uti)
 
         # Basic
         uti.name = self.ui.nameEdit.locstring()
@@ -224,12 +225,12 @@ class UTIEditor(Editor):
     def changeName(self):
         dialog = LocalizedStringDialog(self, self._installation, self.ui.nameEdit.locstring())
         if dialog.exec_():
-            self._loadLocstring(self.ui.nameEdit, dialog.locstring)
+            self._loadLocstring(self.ui.nameEdit.ui.locstringText, dialog.locstring)
 
     def changeDesc(self):
         dialog = LocalizedStringDialog(self, self._installation, self.ui.descEdit.locstring())
         if dialog.exec_():
-            self._loadLocstring(self.ui.descEdit, dialog.locstring)
+            self._loadLocstring(self.ui.descEdit.ui.locstringText, dialog.locstring)
 
     def generateTag(self):
         if self.ui.resrefEdit.text() == "":

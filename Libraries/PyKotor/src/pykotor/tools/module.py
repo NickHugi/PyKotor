@@ -255,7 +255,7 @@ def rim_to_mod(filepath: os.PathLike | str):
         raise ValueError(msg)
 
     filepath_rim: CaseAwarePath = resolved_file_path.with_suffix(".rim")
-    filepath_rim_s: CaseAwarePath = resolved_file_path.parent / (resolved_file_path.stem + "_s.rim")
+    filepath_rim_s: CaseAwarePath = resolved_file_path.parent / f"{resolved_file_path.stem}_s.rim"
 
     rim: RIM = read_rim(filepath_rim)
     rim_s: RIM = read_rim(filepath_rim_s) if filepath_rim_s.exists() else RIM()

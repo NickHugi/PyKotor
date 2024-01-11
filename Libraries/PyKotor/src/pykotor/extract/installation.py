@@ -384,12 +384,14 @@ class Installation:
             print(f"The '{path.name}' folder did not exist when loading the installation at '{self._path}', skipping...")
             return resources
 
-        files_list: list[CaseAwarePath] = list(
+        print(f"Loading '{path.name}' folder from installation...")
+        files_iter: Generator[CaseAwarePath, None, None] = (
             path.rglob("*")
             if recurse
-            else path.iterdir(),
+            else path.iterdir()
         )
-        for file in files_list:
+        file = None
+        for file in files_iter:
             if capsule_check and capsule_check(file):
                 resources[file.name] = list(Capsule(file))  # type: ignore[assignment, call-overload]
             else:
@@ -404,10 +406,8 @@ class Installation:
                     file,
                 )
                 resources.append(resource)  # type: ignore[assignment, call-overload, union-attr]
-        if not resources or not files_list:
+        if not resources or file is None:
             print(f"No resources found at '{path}' when loading the installation, skipping...")
-        else:
-            print(f"Loading '{path.name}' folder from installation...")
         return resources
 
     def load_chitin(self):
@@ -434,7 +434,7 @@ class Installation:
 
         Args:
         ----
-            module: The filename of the module.
+            module: The case-insensitive filename of the module, including the extension.
         """
         if not self._modules or module not in self._modules:
             self.load_modules()
@@ -1359,27 +1359,13 @@ class Installation:
         folders = [] if folders is None else folders
 
         textures: CaseInsensitiveDict[TPC | None] = CaseInsensitiveDict()
-        texture_types: list[ResourceType] = [ResourceType.TPC, ResourceType.TGA]
+        txis: CaseInsensitiveDict[bytes | None] = CaseInsensitiveDict()
+        texture_types: list[ResourceType] = [ResourceType.TPC, ResourceType.TGA, ResourceType.TXI]
 
         case_resnames: list[CaseInsensitiveWrappedStr] = []
         for resname in resnames:
             textures[resname] = None
             case_resnames.append(CaseInsensitiveWrappedStr.cast(resname))
-
-        def decode_txi(txi_data: bytes) -> str:
-            return txi_data.decode("ascii", errors="ignore")
-
-        def get_txi_from_list(resname: CaseInsensitiveWrappedStr, resource_list: list[FileResource]) -> str:
-            txi_resource: FileResource | None = next(
-                (
-                    resource
-                    for resource in resource_list
-                    if resource.resname() == resname
-                    and resource.restype() == ResourceType.TXI
-                ),
-                None,
-            )
-            return decode_txi(txi_resource.data()) if txi_resource is not None else ""
 
         def check_dict(values: dict[str, list[FileResource]] | CaseInsensitiveDict[list[FileResource]]):
             for resources in values.values():
@@ -1393,29 +1379,31 @@ class Installation:
                 restype: ResourceType = resource.restype()
                 if restype not in texture_types:
                     continue
-                case_resnames.remove(case_resname)
-                tpc: TPC = read_tpc(resource.data())
-                if restype == ResourceType.TGA:
-                    tpc.txi = get_txi_from_list(case_resname, resource_list)
-                textures[case_resname] = tpc
 
-        def check_capsules(values: list[Capsule]):  # NOTE: This function does not support txi's in the Override folder.
+                texture_data: bytes = resource.data()
+                if restype == ResourceType.TXI:
+                    txis[case_resname] = texture_data
+                else:
+                    case_resnames.remove(case_resname)
+                    tpc: TPC = read_tpc(texture_data)
+                    textures[case_resname] = tpc
+
+        def check_capsules(values: list[Capsule]):
             for capsule in values:
-                for resname in copy(case_resnames):
+                for resname in case_resnames.copy():
                     texture_data: bytes | None = None
                     tformat: ResourceType | None = None
                     for tformat in texture_types:
                         texture_data = capsule.resource(resname, tformat)
-                        if texture_data is not None:
-                            break
-                    if texture_data is None:
-                        continue
+                        if texture_data is None:
+                            continue
 
-                    case_resnames.remove(resname)
-                    tpc: TPC = read_tpc(texture_data) if texture_data else TPC()
-                    if tformat == ResourceType.TGA:
-                        tpc.txi = get_txi_from_list(resname, capsule.resources())
-                    textures[resname] = tpc
+                        if tformat == ResourceType.TXI:
+                            txis[resname] = texture_data
+                        else:
+                            case_resnames.remove(resname)
+                            tpc: TPC = read_tpc(texture_data) if texture_data else TPC()
+                            textures[resname] = tpc
 
         def check_folders(values: list[Path]):
             queried_texture_files: set[Path] = set()
@@ -1431,14 +1419,14 @@ class Installation:
                 )
             for texture_file in queried_texture_files:
                 case_resname: CaseInsensitiveWrappedStr = CaseInsensitiveWrappedStr.cast(texture_file.stem)
-                case_resnames.remove(case_resname)
+                restype: ResourceType = ResourceType.from_extension(texture_file.suffix)
                 texture_data: bytes = BinaryReader.load_file(texture_file)
-                tpc = read_tpc(texture_data) if texture_data else TPC()
-                txi_file = CaseAwarePath(texture_file.with_suffix(".txi"))
-                if txi_file.exists():
-                    txi_data: bytes = BinaryReader.load_file(txi_file)
-                    tpc.txi = decode_txi(txi_data)
-                textures[case_resname] = tpc
+                if restype == ResourceType.TXI:
+                    txis[texture_file.stem] = texture_data
+                else:
+                    case_resnames.remove(case_resname)
+                    tpc: TPC = read_tpc(texture_data) if texture_data else TPC()
+                    textures[case_resname] = tpc
 
         function_map: dict[SearchLocation, Callable] = {
             SearchLocation.OVERRIDE: lambda: check_dict(self._override),
@@ -1456,6 +1444,10 @@ class Installation:
         for item in order:
             assert isinstance(item, SearchLocation)
             function_map.get(item, lambda: None)()
+
+        for resname, data in txis.items():
+            if resname in textures:
+                textures[resname].txi = data.decode("ascii", errors="ignore")
 
         return textures
 
