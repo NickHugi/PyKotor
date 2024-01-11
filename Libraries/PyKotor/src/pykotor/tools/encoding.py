@@ -96,7 +96,7 @@ def decode_bytes_with_fallbacks(
             aliases.append(best_encoding)
             for alias in aliases:
                 normalized_alias: str = alias.replace("_", "-")
-                if normalized_alias.startswith("utf-"):
+                if normalized_alias.startswith("utf-8"):
                     best_encoding=f"{best_encoding}-sig"
                     break
 
