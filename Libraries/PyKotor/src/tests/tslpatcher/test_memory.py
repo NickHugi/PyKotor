@@ -7,7 +7,7 @@ from unittest import TestCase
 THIS_SCRIPT_PATH = Path(__file__)
 PYKOTOR_PATH = THIS_SCRIPT_PATH.parents[2]
 UTILITY_PATH = THIS_SCRIPT_PATH.parents[4].joinpath("Utility", "src")
-def add_sys_path(p: pathlib.Path):
+def add_sys_path(p: Path):
     working_dir = str(p)
     if working_dir not in sys.path:
         sys.path.append(working_dir)
