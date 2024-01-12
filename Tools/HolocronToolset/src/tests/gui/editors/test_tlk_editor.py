@@ -39,7 +39,6 @@ K1_PATH = os.environ.get("K1_PATH")
 K2_PATH = os.environ.get("K2_PATH")
 
 from pykotor.common.stream import BinaryReader
-from pykotor.extract.installation import Installation
 from pykotor.resource.formats.tlk.tlk_auto import read_tlk
 from pykotor.resource.type import ResourceType
 

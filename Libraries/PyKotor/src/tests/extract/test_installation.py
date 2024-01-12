@@ -21,7 +21,7 @@ if UTILITY_PATH.joinpath("utility").exists():
 
 from pykotor.common.language import LocalizedString
 from pykotor.extract.capsule import Capsule
-from pykotor.extract.file import ResourceIdentifier, ResourceResult
+from pykotor.extract.file import ResourceIdentifier
 from pykotor.extract.installation import Installation, SearchLocation
 from pykotor.resource.type import ResourceType
 
