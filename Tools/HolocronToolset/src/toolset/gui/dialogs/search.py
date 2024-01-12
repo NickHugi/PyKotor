@@ -16,7 +16,7 @@ if TYPE_CHECKING:
 class FileSearcher(QDialog):
 
     def __init__(self, parent: QWidget, installations: dict[str, HTInstallation]):
-        super().__init__(parent)
+        super().__init__(self)
 
         from toolset.uic.dialogs import search
         self.ui = search.Ui_Dialog()
@@ -135,7 +135,7 @@ class FileSearcher(QDialog):
 
         searchIn: Generator[FileResource, Any, None] = search_generator()
         searches: list[Callable[[FileResource], None]] = [lambda resource=resource: search(resource) for resource in searchIn]
-        AsyncBatchLoader(None, "Searching...", searches, "An error occured during the search").exec_()
+        AsyncBatchLoader(self, "Searching...", searches, "An error occured during the search").exec_()
 
         self.results = results
 
@@ -157,7 +157,7 @@ class FileResults(QDialog):
             - Save search results and installation object as member variables
             - Sort results alphabetically.
         """
-        super().__init__(parent)
+        super().__init__(self)
 
         from toolset.uic.dialogs.search_result import Ui_Dialog
         self.ui = Ui_Dialog()
