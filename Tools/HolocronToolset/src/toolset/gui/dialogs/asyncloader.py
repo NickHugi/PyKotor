@@ -6,7 +6,7 @@ from PyQt5 import QtCore
 from PyQt5.QtCore import QThread
 from PyQt5.QtWidgets import QDialog, QLabel, QMessageBox, QProgressBar, QVBoxLayout, QWidget
 from toolset.__main__ import is_frozen
-from utility.error_handling import format_exception_with_variables
+from utility.error_handling import format_exception_with_variables, universal_simplify_exception
 from utility.misc import is_debug_mode
 from utility.path import Path
 
@@ -16,7 +16,7 @@ if TYPE_CHECKING:
 
 class AsyncLoader(QDialog):
 
-    def exec_(self, *args, **kwargs):
+    def exec_(self, *args, **kwargs) -> int:
         if is_debug_mode() and not is_frozen():
             self.value = self._debug_task()
             return 1
@@ -94,7 +94,7 @@ class AsyncLoader(QDialog):
         self.reject()
 
         if self.errorTitle:
-            QMessageBox(QMessageBox.Critical, self.errorTitle, str(error)).exec_()
+            QMessageBox(QMessageBox.Critical, self.errorTitle, str(universal_simplify_exception(error))).exec_()
 
         with Path("errorlog.txt").open("a", encoding="utf-8") as file:
             lines = format_exception_with_variables(self.error)
