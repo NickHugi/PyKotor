@@ -1180,7 +1180,10 @@ class Installation:
         ) and not self._texturepacks:
             self.load_textures()
         if SearchLocation.VOICE in order and not self._streamwaves:
-            self.load_streamvoice()
+            if self.game().is_k1():
+                self.load_streamwaves()
+            elif self.game().is_k2():
+                self.load_streamvoice()
 
     def locations(
         self,

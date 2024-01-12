@@ -68,7 +68,7 @@ class TestPathlibMixedSlashes(unittest.TestCase):
                 self.assertNotEqual(test_set, {PathType("TEST\\path\\\\to\\nothing")})
 
     def test_pathlib_path_edge_cases_posix(self):
-        test_classes = (PosixPath, PurePosixPath) if os.name == "posix" else (PurePosixPath)
+        test_classes = (PosixPath, PurePosixPath) if os.name == "posix" else (PurePosixPath,)
         for PathType in test_classes:
             with self.subTest(PathType=PathType):
                 # Absolute vs Relative Paths
