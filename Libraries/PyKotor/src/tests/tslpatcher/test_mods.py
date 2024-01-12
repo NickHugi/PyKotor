@@ -100,8 +100,18 @@ class TestManipulateTLK(TestCase):
         memory = PatcherMemory()
 
         config = ModificationsTLK()
-        config.modifiers.append(ModifyTLK(3, "Replace3", ResRef.from_blank(), True))
-        config.modifiers.append(ModifyTLK(2, "Replace2", ResRef.from_blank(), True))
+
+        m1 = ModifyTLK(1)
+        m1.text = "Replace2"
+        m1.sound = ResRef.from_blank()
+        m1.is_replacement = True
+        m2 = ModifyTLK(2)
+        m2.text = "Replace3"
+        m2.sound = ResRef.from_blank()
+        m2.is_replacement = True
+
+        config.modifiers.append(m1)
+        config.modifiers.append(m2)
 
         dialog_tlk = TLK()
         dialog_tlk.add("Old1")
@@ -112,11 +122,11 @@ class TestManipulateTLK(TestCase):
         config.apply(dialog_tlk, memory, PatchLogger(), Game.K1)
 
         self.assertEqual(4, len(dialog_tlk))
-        self.assertEqual("Replace2", dialog_tlk.get(2).text)
-        self.assertEqual("Replace3", dialog_tlk.get(3).text)
+        self.assertEqual("Replace2", dialog_tlk.get(1).text)
+        self.assertEqual("Replace3", dialog_tlk.get(2).text)
 
+        self.assertEqual(1, memory.memory_str[1])
         self.assertEqual(2, memory.memory_str[2])
-        self.assertEqual(3, memory.memory_str[3])
 
         # [Dialog] [Append] [Token] [Text]
         # 0        -        -       Old1

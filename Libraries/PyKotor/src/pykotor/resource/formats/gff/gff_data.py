@@ -341,7 +341,7 @@ class GFFStruct:
             "EditorInfo",
         }
         def is_ignorable_value(v) -> bool:
-            return bool(v and len(v) and str(v) not in ("0", "-1"))
+            return not v or str(v) in {"0", "-1"}
 
         def is_ignorable_comparison(
             old_value,
@@ -394,7 +394,17 @@ class GFFStruct:
                 continue
 
             # Compare values depending on their types
-            if old_ftype == GFFFieldType.List:
+            if old_ftype == GFFFieldType.Struct:
+                assert isinstance(new_value, GFFStruct)
+                cur_struct_this: GFFStruct = old_value
+                if cur_struct_this.struct_id != new_value.struct_id:
+                    log_func(f"Struct ID is different at '{child_path}': '{cur_struct_this.struct_id}'-->'{new_value.struct_id}'")
+                    is_same = False
+
+                if not cur_struct_this.compare(new_value, log_func, child_path, ignore_default_changes):
+                    is_same = False
+                    continue
+            elif old_ftype == GFFFieldType.List:
                 gff_list: GFFList = old_value
                 if not gff_list.compare(new_value, log_func, child_path, ignore_default_changes=ignore_default_changes):
                     is_same = False
