@@ -9,7 +9,7 @@ pip install pykotor
 ```
 
 ## Requirements
-PyKotor supports any Python version within 3.8 through 3.12. See requirements.txt for additional pip dependencies.
+PyKotor supports any Python version between 3.8 and 3.12. See requirements-dev.txt and pyproject.toml for additional pip dependencies.
 PyKotor is supported on most (if not all) operating systems. Yes, this includes Mac and any other case-sensitive filesystem.
 
 ## Cloning the repo
@@ -20,24 +20,27 @@ cd PyKotor
 ./install_python_venv.ps1
 ```
 Note: if the command `./install_python_venv.ps1` fails with something like 'not found', you may need to instead run `pwsh ./install_python_venv.ps1`.
-If you are on linux/mac and do not have powershell installed, simply run the command `/bin/bash ./install_powershell.sh` first, then try to run install_python_venv.ps1 again.
-Once 'install_python_venv.ps1' finishes, you can run any of the provided Tools, such as HoloPatcher, KotorDiff or the Toolset, like this:
+If you are on Linux/Mac and do not have Powershell installed, simply run the command `/bin/bash ./install_powershell.sh` first, then try to run install_python_venv.ps1 again.
+
+Once 'install_python_venv.ps1' finishes, you can run any of the provided Tools, such as HoloPatcher, KotorDiff, or the Toolset, like this:
 ```commandline
 python Tools/HoloPatcher/src/__main__.py  # Launch HoloPatcher
 python Tools/HolocronToolset/src/toolset/__main__.py  # Launch Holocron Toolset
 ```
 
 ## Compiling/Building Available Tools:
-After cloning the repo, open any of the powershell scripts in the `compile` folder such as `compile_holopatcher.ps1` and `compile_toolset.ps1` with powershell. Doing so will start an automated process that results in a EXE being built/compiled to the PyKotor/dist folder. Specifically, those scripts will:
+After cloning the repo, open any of the powershell scripts in the `compile` folder such as `compile_holopatcher.ps1` and `compile_toolset.ps1` with PowerShell. Doing so will start an automated process that results in a EXE being built/compiled to the PyKotor/dist folder. Specifically, those scripts will:
 - Install Python 3.8 (only if another compatible Python version is not already installed)
 - Setup the environment (PYTHONPATH)
-- Create a virtual environment
+- Create a python virtual environment
 - Install the tool's dependencies. This is any pip packages they require from requirements.txt
 - Install PyInstaller
 - Compile to executable binary, as one file, to the PyKotor/dist folder.
 
+The compiling scripts rely on Powershell being installed, on Unix you may not have this installed and you'll need to run `/bin/bash install_powershell.sh` first. Otherwise, see https://learn.microsoft.com/en-us/powershell/scripting/install/installing-powershell?view=powershell-7.4 to learn how to install PowerShell on your system or install Python manually from https://www.python.org/ and setup the python venv yourself.
+
 ## Coding Example Usage:
-Simple example of loading data from a game directory, searching for a specific texture and exporting it to the TGA format.
+Simple example of loading data from a game directory, searching for a specific texture, and exporting it to the TGA format.
 ```python
 from pykotor.resource.type import ResourceType
 from pykotor.extract.installation import Installation
