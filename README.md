@@ -19,7 +19,9 @@ git clone https://github.com/NickHugi/PyKotor
 cd PyKotor
 ./install_python_venv.ps1
 ```
-Then, you can run any of the provided Tools, such as HoloPatcher, KotorDiff or the Toolset, like this:
+Note: if the command `./install_python_venv.ps1` fails with something like 'not found', you may need to instead run `pwsh ./install_python_venv.ps1`.
+If you are on linux/mac and do not have powershell installed, simply run the command `/bin/bash ./install_powershell.sh` first, then try to run install_python_venv.ps1 again.
+Once 'install_python_venv.ps1' finishes, you can run any of the provided Tools, such as HoloPatcher, KotorDiff or the Toolset, like this:
 ```commandline
 python Tools/HoloPatcher/src/__main__.py  # Launch HoloPatcher
 python Tools/HolocronToolset/src/toolset/__main__.py  # Launch Holocron Toolset
