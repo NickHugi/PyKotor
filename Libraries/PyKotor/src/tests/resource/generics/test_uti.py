@@ -21,9 +21,9 @@ if UTILITY_PATH.joinpath("utility").exists():
     add_sys_path(UTILITY_PATH)
 
 from pykotor.common.misc import Game
+from pykotor.extract.installation import Installation
 from pykotor.resource.formats.gff import read_gff
 from pykotor.resource.generics.uti import UTI, construct_uti, dismantle_uti
-from pykotor.extract.installation import Installation
 
 TEST_FILE = "src/tests/files/test.uti"
 

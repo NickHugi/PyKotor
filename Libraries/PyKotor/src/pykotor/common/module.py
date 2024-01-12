@@ -30,12 +30,7 @@ from pykotor.resource.generics.uts import UTS, bytes_uts, read_uts
 from pykotor.resource.generics.utt import UTT, bytes_utt, read_utt
 from pykotor.resource.generics.utw import UTW, bytes_utw, read_utw
 from pykotor.resource.type import ResourceType
-from pykotor.tools.misc import (
-    is_any_erf_type_file,
-    is_bif_file,
-    is_capsule_file,
-    is_rim_file,
-)
+from pykotor.tools.misc import is_any_erf_type_file, is_bif_file, is_capsule_file, is_rim_file
 from pykotor.tools.model import list_lightmaps, list_textures
 from utility.error_handling import format_exception_with_variables
 from utility.path import Path, PurePath

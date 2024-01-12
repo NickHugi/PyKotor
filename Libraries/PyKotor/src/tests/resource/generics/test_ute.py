@@ -3,8 +3,8 @@ import pathlib
 import sys
 import unittest
 from unittest import TestCase
-from pykotor.resource.formats.gff.gff_data import GFF
 
+from pykotor.resource.formats.gff.gff_data import GFF
 from pykotor.resource.type import ResourceType
 
 THIS_SCRIPT_PATH = pathlib.Path(__file__)
@@ -21,9 +21,9 @@ if UTILITY_PATH.joinpath("utility").exists():
     add_sys_path(UTILITY_PATH)
 
 from pykotor.common.misc import Game
+from pykotor.extract.installation import Installation
 from pykotor.resource.formats.gff import read_gff
 from pykotor.resource.generics.ute import UTE, construct_ute, dismantle_ute
-from pykotor.extract.installation import Installation
 
 TEST_FILE = "src/tests/files/test.ute"
 K1_PATH = os.environ.get("K1_PATH")

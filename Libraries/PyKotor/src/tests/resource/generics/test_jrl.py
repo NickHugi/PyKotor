@@ -19,11 +19,9 @@ if UTILITY_PATH.joinpath("utility").exists():
     add_sys_path(UTILITY_PATH)
 
 from pykotor.common.misc import Game
-from pykotor.resource.formats.gff import read_gff
-from pykotor.resource.generics.jrl import JRL, JRLEntry, construct_jrl, dismantle_jrl
-from pykotor.resource.formats.gff import GFF
 from pykotor.extract.installation import Installation
-from pykotor.resource.formats.gff import read_gff
+from pykotor.resource.formats.gff import GFF, read_gff
+from pykotor.resource.generics.jrl import JRL, JRLEntry, construct_jrl, dismantle_jrl
 from pykotor.resource.type import ResourceType
 
 TEST_FILE = "src/tests/files/test.jrl"

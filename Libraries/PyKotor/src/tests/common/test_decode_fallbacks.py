@@ -3,8 +3,8 @@ from __future__ import annotations
 import os
 import pathlib
 import sys
-from types import ModuleType
 import unittest
+from types import ModuleType
 
 THIS_SCRIPT_PATH = pathlib.Path(__file__)
 PYKOTOR_PATH = THIS_SCRIPT_PATH.parents[2]

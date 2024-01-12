@@ -18,10 +18,10 @@ if UTILITY_PATH.joinpath("utility").exists():
     add_sys_path(UTILITY_PATH)
 
 from pykotor.common.misc import Game
-from pykotor.resource.formats.gff import read_gff
-from pykotor.resource.generics.utd import UTD, construct_utd, dismantle_utd
 from pykotor.extract.installation import Installation
+from pykotor.resource.formats.gff import read_gff
 from pykotor.resource.formats.gff.gff_data import GFF
+from pykotor.resource.generics.utd import UTD, construct_utd, dismantle_utd
 from pykotor.resource.type import ResourceType
 
 TEST_FILE = "src/tests/files/test.utd"

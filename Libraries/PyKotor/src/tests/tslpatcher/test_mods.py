@@ -21,12 +21,12 @@ from pykotor.common.geometry import Vector3, Vector4
 from pykotor.common.language import LocalizedString
 from pykotor.common.misc import Game, ResRef
 from pykotor.resource.formats.gff.gff_auto import bytes_gff, read_gff
-from pykotor.resource.formats.gff.gff_data import GFFStruct, GFF, GFFFieldType, GFFList
-from pykotor.resource.formats.ssf.ssf_data import SSF, SSFSound
+from pykotor.resource.formats.gff.gff_data import GFF, GFFFieldType, GFFList, GFFStruct
 from pykotor.resource.formats.ssf.ssf_auto import bytes_ssf, read_ssf
+from pykotor.resource.formats.ssf.ssf_data import SSF, SSFSound
 from pykotor.resource.formats.tlk.tlk_data import TLK
-from pykotor.resource.formats.twoda.twoda_data import TwoDA
 from pykotor.resource.formats.twoda.twoda_auto import bytes_2da, read_2da
+from pykotor.resource.formats.twoda.twoda_data import TwoDA
 from pykotor.tslpatcher.logger import PatchLogger
 from pykotor.tslpatcher.memory import NoTokenUsage, PatcherMemory, TokenUsage2DA, TokenUsageTLK
 from pykotor.tslpatcher.mods.gff import (

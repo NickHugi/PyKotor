@@ -4,8 +4,8 @@ from configparser import ConfigParser
 from copy import copy, deepcopy
 from enum import IntEnum
 from typing import TYPE_CHECKING
-from pykotor.tslpatcher.mods.gff import Memory2DAModifierGFF
 
+from pykotor.tslpatcher.mods.gff import Memory2DAModifierGFF
 from pykotor.tslpatcher.mods.tlk import ModificationsTLK
 from pykotor.tslpatcher.namespaces import PatcherNamespace
 from pykotor.tslpatcher.reader import ConfigReader

@@ -1,6 +1,6 @@
 from __future__ import annotations
-from copy import deepcopy
 
+from copy import deepcopy
 from typing import TYPE_CHECKING
 
 from pykotor.common.misc import CaseInsensitiveDict, ResRef

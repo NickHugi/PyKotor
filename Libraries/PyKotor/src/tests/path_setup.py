@@ -1,5 +1,6 @@
 import sys
 from pathlib import Path
+
 print()
 print("TEST","PATH SETUP","TEST")
 TESTS_FOLDER = Path(__file__).parent

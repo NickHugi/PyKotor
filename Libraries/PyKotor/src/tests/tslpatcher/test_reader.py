@@ -1,12 +1,12 @@
 from __future__ import annotations
 
 import os
+import pathlib
 import shutil
 import sys
 import tempfile
 import unittest
 from configparser import ConfigParser
-import pathlib
 from typing import TYPE_CHECKING
 
 THIS_SCRIPT_PATH = pathlib.Path(__file__)
