@@ -170,8 +170,7 @@ class FileResults(QDialog):
         self.installation: HTInstallation = installation
 
         for result in results:
-            filename = f"{result.resname()}.{result.restype().extension}"
-            item = QListWidgetItem(filename)
+            item = QListWidgetItem(result.filename())
             item.setData(QtCore.Qt.UserRole, result)
             item.setToolTip(str(result.filepath()))
             self.ui.resultList.addItem(item)
