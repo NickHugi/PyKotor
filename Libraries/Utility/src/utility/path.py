@@ -499,25 +499,6 @@ class BasePath(BasePurePath):
             print(format_exception_with_variables(e,  ___message___="This exception has been suppressed and is only relevant for debug purposes."))
         return None
 
-    def relative_to(self: Path, *args, walk_up=False, **kwargs) -> Self:  # type: ignore[misc]
-        if not args or "other" in kwargs:
-            raise TypeError("relative_to() missing 1 required positional argument: 'other'")  # noqa: EM101
-
-        other, *_deprecated = args
-        parsed_other = self.with_segments(other, *_deprecated)
-        for step, path in enumerate([parsed_other, *list(parsed_other.parents)]):  # noqa: B007
-            if self.is_relative_to(path):
-                break
-            if not walk_up:
-                raise ValueError(f"{str(self)!r} is not in the subpath of {str(parsed_other)!r}")
-            if path.name == "..":
-                raise ValueError(f"'..' segment in {str(parsed_other)!r} cannot be walked")
-        else:
-            raise ValueError(f"{str(self)!r} and {str(parsed_other)!r} have different anchors")
-
-        parts: list[str] = [".."] * step + list(self.parts[step:])
-        return self.with_segments(*parts)  # type: ignore[return-value]
-
     def is_relative_to(self: Path, *args, **kwargs) -> bool:  # type: ignore[misc]
         """Return True if the path is relative to another path or False."""
         if not args or "other" in kwargs:
