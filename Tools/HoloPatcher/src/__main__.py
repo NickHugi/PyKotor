@@ -48,7 +48,7 @@ if TYPE_CHECKING:
 
     from pykotor.tslpatcher.namespaces import PatcherNamespace
 
-CURRENT_VERSION: tuple[int, ...] = (1, 4, 3)
+CURRENT_VERSION: tuple[int, ...] = (1, 4, 4)
 
 
 class ExitCode(IntEnum):
@@ -252,7 +252,7 @@ class App(tk.Tk):
         self.exit_button.pack(side="left", padx=5, pady=5)
 
         self.uninstall_button = ttk.Button(bottom_frame, text="Uninstall", command=self.uninstall_selected_mod)
-        #self.uninstall_button.pack(side="right", padx=5, pady=5)
+        self.uninstall_button.pack(side="right", padx=5, pady=5)
 
         self.install_button = ttk.Button(bottom_frame, text="Install", command=self.begin_install)
         self.install_button.pack(side="right", padx=5, pady=5)
