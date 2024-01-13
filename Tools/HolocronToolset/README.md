@@ -29,18 +29,8 @@ PYTHONPATH=$PWD python toolset/__main__.py
 
 ## Local Development
 
-- Clone [PyKotor](https://github.com/NickHugi/PyKotor) and [PyKotorGL](https://github.com/NickHugi/PyKotorGL) repositories
-- Create symbolic link to `PyKotorGL/pykotor/gl` directory in `PyKotor/pykotor`
-- Create symbolic link to `PyKotor/pykotor` directory in `HolocronToolset`
+- Clone [PyKotor](https://github.com/NickHugi/PyKotor) and run the `install_python_venv.ps1` script in your powershell terminal. That's it!
 
-### Windows
-
-```
-cd %SOURCE_DIR%\PyKotor\pykotor
-mklink gl /D %SOURCE_DIR%\PyKotorGL\pykotor\gl
-cd %SOURCE_DIR%\HolocronToolset
-mklink pykotor /D %SOURCE_DIR%\PyKotor\pykotor
-```
 
 ## Accessing the GUI Designer
 
