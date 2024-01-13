@@ -338,11 +338,10 @@ class Installation:
             - Raises FileNotFoundError if no path is found and optional is False.
         """
         try:
-            resource_path = self._path
             if isinstance(folder_names, str):  # make a tuple
                 folder_names = (folder_names,)
             for folder_name in folder_names:
-                resource_path = CaseAwarePath(self._path, folder_name)
+                resource_path: CaseAwarePath = self._path / folder_name
                 if resource_path.is_dir():
                     return resource_path
         except Exception as e:  # noqa: BLE001
@@ -380,15 +379,16 @@ class Installation:
         """
         resources: CaseInsensitiveDict[list[FileResource]] | list[FileResource] = CaseInsensitiveDict() if capsule_check else []
 
-        if not path.exists():
-            print(f"The '{path.name}' folder did not exist when loading the installation at '{self._path}', skipping...")
+        r_path = Path(str(path))
+        if not r_path.exists():
+            print(f"The '{r_path.name}' folder did not exist when loading the installation at '{self._path}', skipping...")
             return resources
 
-        print(f"Loading '{path.name}' folder from installation...")
-        files_iter: Generator[CaseAwarePath, None, None] = (
-            path.rglob("*")
+        print(f"Loading '{r_path.name}' folder from installation...")
+        files_iter: Generator[Path, None, None] = (
+            r_path.rglob("*")
             if recurse
-            else path.iterdir()
+            else r_path.iterdir()
         )
         file = None
         for file in files_iter:
@@ -407,7 +407,7 @@ class Installation:
                 )
                 resources.append(resource)  # type: ignore[assignment, call-overload, union-attr]
         if not resources or file is None:
-            print(f"No resources found at '{path}' when loading the installation, skipping...")
+            print(f"No resources found at '{r_path}' when loading the installation, skipping...")
         return resources
 
     def load_chitin(self):
@@ -1713,7 +1713,7 @@ class Installation:
         -------
             A dictionary mapping module filename to in-game module area name.
         """
-        return CaseInsensitiveDict.from_dict({module: self.module_name(module) for module in self.modules_list()})
+        return CaseInsensitiveDict((module, self.module_name(module)) for module in self.modules_list())
 
 
     def module_id(

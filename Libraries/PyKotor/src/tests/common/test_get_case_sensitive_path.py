@@ -127,8 +127,8 @@ class TestCaseAwarePath(TestCase):
         self.assertFalse(case_aware_path.exists())
 
     def test_joinpath_chain(self):
-        path_chain = ["dirA", "dirB", "dirC", "file.txt"]
-        case_insensitive_chain = ["DIRa", "DirB", "dirc", "FILE.txt"]
+        path_chain: list[str] = ["dirA", "dirB", "dirC", "file.txt"]
+        case_insensitive_chain: list[str] = ["DIRa", "DirB", "dirc", "FILE.txt"]
 
         # Create actual path chain
         current_path = self.temp_path
@@ -173,7 +173,6 @@ class TestCaseAwarePath(TestCase):
 
         self.assertTrue(case_aware_cascading_file.exists())
 
-    @unittest.skip("unfinished")
     def test_relative_to(self):
         dir_path = self.temp_path / "someDir"
         file_path: pathlib.Path = dir_path / "someFile.txt"

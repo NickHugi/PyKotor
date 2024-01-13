@@ -87,7 +87,7 @@ def load_kits(path: os.PathLike | str) -> list[Kit]:
     kits_path = Path(path)
     if not kits_path.exists():
         kits_path.mkdir(parents=True)
-    for file in (file for file in kits_path.iterdir() if file.endswith(".json")):
+    for file in (file for file in kits_path.iterdir() if file.suffix.lower() == ".json"):
         kit_json = json.loads(BinaryReader.load_file(file))
         kit = Kit(kit_json["name"])
         kit_identifier = kit_json["id"]

@@ -131,39 +131,38 @@ class CaseAwarePath(InternalPath):  # type: ignore[misc]
     """A class capable of resolving case-sensitivity in a path. Absolutely essential for working with KOTOR files on Unix filesystems."""
 
     def resolve(self, strict=False):  # noqa: FBT002
-        new_path = super().resolve(strict)
-        if self.should_resolve_case(new_path):
+        if self.should_resolve_case(self):
             new_path = self.get_case_sensitive_path(self)
             return super(CaseAwarePath, new_path).resolve(strict)
-        return new_path
+        return super().resolve(strict)
 
-    def relative_to(self, *args, walk_up=False, **kwargs):
+    def relative_to(self, *args, walk_up=False, **kwargs) -> InternalPath:
         if not args or "other" in kwargs:
             raise TypeError("relative_to() missing 1 required positional argument: 'other'")  # noqa: TRY003, EM101
 
         other, *_deprecated = args
-        parsed_other = self.with_segments(other, *_deprecated)
-        for step, path in enumerate([parsed_other, *list(parsed_other.parents)]):  # noqa: B007
-            if self.is_relative_to(path):
-                break
-            if not walk_up:
-                raise ValueError(f"{str(self)!r} is not in the subpath of {str(parsed_other)!r}")  # noqa: TRY003, EM102
-            if path.name == "..":
-                raise ValueError(f"'..' segment in {str(parsed_other)!r} cannot be walked")  # noqa: TRY003, EM102
+        resolved_self = self
+        if isinstance(resolved_self, InternalPath):
+            if not isinstance(other, InternalPath):
+                other = self.__class__(other)
+            parsed_other = self.with_segments(other, *_deprecated).absolute()
+            resolved_self = resolved_self.absolute()
         else:
-            raise ValueError(f"{str(self)!r} and {str(parsed_other)!r} have different anchors")  # noqa: TRY003, EM102
+            parsed_other = other if isinstance(other, InternalPurePath) else InternalPurePath(other)
+            parsed_other = other.with_segments(other, *_deprecated)
 
-        parts: list[str] = [".."] * step + list(self.parts[step:])
-        return self.with_segments(*parts)
+        self_str, other_str = map(str, (resolved_self, parsed_other))
+        if isinstance(self, (pathlib.PureWindowsPath, pathlib.WindowsPath)) or os.name == "nt":
+            self_str, other_str = map(str.lower, (self_str, other_str))
 
-    def is_relative_to(self, *args, **kwargs):
-        """Return True if the path is relative to another path or False."""
-        if not args or "other" in kwargs:
-            raise TypeError("relative_to() missing 1 required positional argument: 'other'")  # noqa: TRY003, EM101
+        if other_str not in self_str:
+            msg = f"self '{self_str}' is not relative to other '{other_str}'"
+            raise ValueError(msg)
 
-        other, *_deprecated = args
-        parsed_other = self.with_segments(other, *_deprecated)
-        return parsed_other == self or parsed_other in self.parents
+        replacement = self_str.replace(other_str, "").lstrip("\\").lstrip("/")
+        if isinstance(self, CaseAwarePath):  # CaseAwarePath's are always absolute.
+            return InternalPath(replacement)
+        return self.__class__(replacement)
 
     @classmethod
     def get_case_sensitive_path(cls, path: PathElem):

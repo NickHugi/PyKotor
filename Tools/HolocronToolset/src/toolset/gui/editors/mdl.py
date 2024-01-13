@@ -93,7 +93,7 @@ class MDLEditor(Editor):
                 mdx_data = self._installation.resource(resref, ResourceType.MDX, [SearchLocation.CHITIN]).data
         elif restype == ResourceType.MDX:
             mdx_data = data
-            if c_filepath.endswith(".mdx"):
+            if c_filepath.suffix.lower() == ".mdx":
                 mdl_data = BinaryReader.load_file(c_filepath.with_suffix(".mdl"))
             elif is_any_erf_type_file(c_filepath.name):
                 erf = read_erf(filepath)

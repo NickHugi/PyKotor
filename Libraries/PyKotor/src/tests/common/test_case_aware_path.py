@@ -76,6 +76,9 @@ class TestCaseAwarePath(unittest.TestCase):
         file_path = CaseAwarePath("TEST\\path\\to\\something.test")
         folder_path = CaseAwarePath("TesT\\Path\\")
         self.assertTrue(file_path.is_relative_to(folder_path))
+        relative_path = file_path.relative_to(folder_path)
+        self.assertIsInstance(relative_path, pathlib.Path)
+        self.assertEqual(relative_path, "to\\something.test")
 
     def test_relative_to_base(self):
         file_path = CaseAwarePath("TEST\\path\\to\\something.test")

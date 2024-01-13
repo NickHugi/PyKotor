@@ -382,13 +382,14 @@ class BasePurePath(metaclass=PurePathType):  # type: ignore[misc]
             extension = f".{extension}"
         return self._create_instance(str(self) + extension)
 
-    def with_segments(self, *pathsegments) -> Self:
+    @classmethod
+    def with_segments(cls, *pathsegments) -> Self:
         """Construct a new path object from any number of path-like objects.
 
         Subclasses may override this method to customize how new path objects
         are created from methods like `iterdir()`.
         """
-        return self._create_instance(*pathsegments)
+        return cls._create_instance(*pathsegments)
 
     def with_stem(self: PurePath, stem) -> Self:  # type: ignore[type-var, misc]
         """Return a new path with the stem changed."""
@@ -520,7 +521,7 @@ class BasePath(BasePurePath):
     def is_relative_to(self: Path, *args, **kwargs) -> bool:  # type: ignore[misc]
         """Return True if the path is relative to another path or False."""
         if not args or "other" in kwargs:
-            raise TypeError("relative_to() missing 1 required positional argument: 'other'")  # noqa: EM101
+            raise TypeError(f"{type(self)}.is_relative_to() missing 1 required positional argument: 'other'")
 
         other, *_deprecated = args
         parsed_other = self.with_segments(other, *_deprecated)
@@ -635,7 +636,8 @@ class BasePath(BasePurePath):
                 except OSError as e:
                     print(format_exception_with_variables(e, ___message___=f"Error accessing file information at path '{home_path}'"))
                     raise
-                os.chown(self, stat_info.st_uid, stat_info.st_gid)  # type: ignore[attr-defined]
+                else:
+                    os.chown(self, stat_info.st_uid, stat_info.st_gid)  # type: ignore[attr-defined]
             except OSError as exc:
                 if e is not None:
                     exc.__cause__ = e
