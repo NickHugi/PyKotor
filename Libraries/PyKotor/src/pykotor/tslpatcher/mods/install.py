@@ -313,7 +313,8 @@ class InstallFile(PatcherModifications):
         game: Game,
     ) -> bytes:
         self.apply(source, memory, logger, game)
-        return BinaryReader.from_auto(source).read_all()
+        with BinaryReader.from_auto(source) as reader:
+            return reader.read_all()
 
     def apply(self, source, *args, **kwargs) -> None:
         ...

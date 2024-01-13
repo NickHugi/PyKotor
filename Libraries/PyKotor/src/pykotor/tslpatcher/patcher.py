@@ -179,7 +179,8 @@ class ModInstaller:
     def load_resource_file(self, source: SOURCE_TYPES) -> bytes:
         #if self._config and self._config.ignore_file_extensions:
         #    return read_resource(source)
-        return BinaryReader.from_auto(source).read_all()
+        with BinaryReader.from_auto(source) as reader:
+            return reader.read_all()
 
     def lookup_resource(
         self,
