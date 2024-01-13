@@ -313,13 +313,7 @@ class InstallFile(PatcherModifications):
         game: Game,
     ) -> bytes:
         self.apply(source, memory, logger, game)
-        if isinstance(source, BinaryReader):
-            return source.read_all()
-        if isinstance(source, (str, os.PathLike)):
-            return BinaryReader.load_file(source)
-        if isinstance(source, bytearray):
-            return bytes(source)
-        return source
+        return BinaryReader.from_auto(source).read_all()
 
     def apply(self, source, *args, **kwargs) -> None:
         ...
