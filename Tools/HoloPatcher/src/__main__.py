@@ -133,7 +133,7 @@ class App(tk.Tk):
         self.namespaces: list[PatcherNamespace] = []
 
         self.initialize_logger()
-        self.initialize_ui_menu()
+        self.initialize_top_menu()
         self.initialize_ui_controls()
 
         self.install_running = False
@@ -163,7 +163,7 @@ class App(tk.Tk):
         self.logger.warning_observable.subscribe(self.write_log)
         self.logger.error_observable.subscribe(self.write_log)
 
-    def initialize_ui_menu(self):
+    def initialize_top_menu(self):
         # Initialize top menu bar
         self.menu_bar = tk.Menu(self)
         self.config(menu=self.menu_bar)
@@ -301,15 +301,30 @@ class App(tk.Tk):
                     "Check if you are connected to the internet."
                 ),
             )
+    def set_text_font(
+        self,
+        text_frame: tk.Text,
+    ):
+        font_obj = tkfont.Font(font=self.main_text.cget("font"))
+        font_obj.configure(size=9)
+        text_frame.configure(font=font_obj)
 
-    def open_homepage(self):
+    def open_hp_homepage(self):
         webbrowser.open_new("https://deadlystream.com/files/file/2243-holopatcher")
     def open_github(self):
         webbrowser.open_new("https://github.com/NickHugi/PyKotor")
     def open_deadlystream_discord(self):
-        webbrowser.open_new("https://discord.gg/HBwVCpAA")
-    def open_kotor_discord(self):
+        webbrowser.open_new("https://discord.gg/nDkHXfc36s")
+    def open_neocities_discord(self):
         webbrowser.open_new("https://discord.com/invite/kotor")
+    def open_deadlystream_website(self):
+        webbrowser.open_new("https://deadlystream.com")
+    def open_neocities_website(self):
+        webbrowser.open_new("https://kotor.neocities.org")
+    def open_pcgamingwiki_kotor1(self):
+        webbrowser.open_new("https://www.pcgamingwiki.com/wiki/Star_Wars:_Knights_of_the_Old_Republic")
+    def open_pcgamingwiki_kotor2(self):
+        webbrowser.open_new("https://www.pcgamingwiki.com/wiki/Star_Wars:_Knights_of_the_Old_Republic_II_-_The_Sith_Lords")
 
     def handle_commandline(self, cmdline_args: Namespace) -> None:
         """Handle command line arguments passed to the application.
