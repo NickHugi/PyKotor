@@ -4,7 +4,7 @@ A PyQt5 application that can edit the files used by the KotOR game engine.
 
 ## Requirements
 
-- Python 3
+- Python 3.8 through 3.12
 
 ## Local Run
 
