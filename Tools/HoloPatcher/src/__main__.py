@@ -818,14 +818,12 @@ class App(tk.Tk):
         if install_running:
             self.install_running = True
             self.install_button.config(state=tk.DISABLED)
-            self.uninstall_button.config(state=tk.DISABLED)
             self.gamepaths_browse_button.config(state=tk.DISABLED)
             self.browse_button.config(state=tk.DISABLED)
         else:
             self.install_running = False
             self.initialize_logger()  # reset the errors/warnings etc
             self.install_button.config(state=tk.NORMAL)
-            self.uninstall_button.config(state=tk.NORMAL)
             self.gamepaths_browse_button.config(state=tk.NORMAL)
             self.browse_button.config(state=tk.NORMAL)
 
