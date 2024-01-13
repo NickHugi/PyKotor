@@ -180,12 +180,12 @@ class ConfigReader:
         self.load_compile_list()
         self.load_hack_list()
         self.load_ssf_list()
+        self.log.add_note("The ConfigReader finished loading the INI")
         all_sections_set = set(self.ini.sections())
         orphaned_sections: set[str] = all_sections_set - test_set
         if len(orphaned_sections):
             self.log.add_note("Orphaned ini sections")
             self.log.add_note("\n".join(orphaned_sections))
-
         return self.config
 
     def get_section_name(self, section_name: str):
