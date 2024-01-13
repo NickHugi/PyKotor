@@ -604,10 +604,11 @@ class BasePath(BasePurePath):
                 if not recurse:
                     return True
 
-                return all(
-                    file_or_folder.has_access(mode, recurse=recurse) >= mode
-                    for file_or_folder in self.rglob("*")
-                )
+                for file_or_folder in self.rglob("*"):
+                    cur_access: bool = file_or_folder.has_access(mode, recurse=recurse)
+                    if not cur_access:
+                        return False
+                return True
 
         except OSError as os_exc:
             print(format_exception_with_variables(os_exc))
