@@ -69,7 +69,7 @@ class ModificationsNCS(PatcherModifications):
                     raise ValueError(msg)
                 value = int(memory_val)
             logger.add_verbose(f"HACKList {self.sourcefile}: writing WORD {value} at offset {offset:#X}")
-            writer.write_int16(value)
+            writer.write_uint16(value)
 
     def pop_tslpatcher_vars(self, file_section_dict, default_destination=PatcherModifications.DEFAULT_DESTINATION):
         super().pop_tslpatcher_vars(file_section_dict, default_destination)
