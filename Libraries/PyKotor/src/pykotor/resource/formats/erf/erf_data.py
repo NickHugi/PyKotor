@@ -145,7 +145,7 @@ class ERF:
 
         Args:
         ----
-            resref: The resref.
+            resname: The resource reference filename.
             restype: The resource type.
         """
         key = ResourceIdentifier(resname, restype).as_resref_compatible()

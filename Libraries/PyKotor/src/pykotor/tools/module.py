@@ -12,7 +12,7 @@ from pykotor.resource.formats.rim import RIM, read_rim
 from pykotor.resource.formats.tpc import TPC, TPCTextureFormat, write_tpc
 from pykotor.resource.formats.vis import write_vis
 from pykotor.resource.generics.are import dismantle_are
-from pykotor.resource.generics.git import GIT, dismantle_git
+from pykotor.resource.generics.git import dismantle_git
 from pykotor.resource.generics.ifo import dismantle_ifo
 from pykotor.resource.generics.pth import PTH, dismantle_pth
 from pykotor.resource.generics.utd import UTD, dismantle_utd
@@ -31,6 +31,7 @@ if TYPE_CHECKING:
     from pykotor.resource.formats.tpc.tpc_data import TPCConvertResult
     from pykotor.resource.formats.vis import VIS
     from pykotor.resource.generics.are import ARE
+    from pykotor.resource.generics.git import GIT
     from pykotor.resource.generics.ifo import IFO
 
 

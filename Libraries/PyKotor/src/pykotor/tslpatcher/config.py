@@ -17,7 +17,8 @@ if TYPE_CHECKING:
     from pykotor.tslpatcher.logger import PatchLogger
     from pykotor.tslpatcher.mods.gff import ModificationsGFF, ModifyGFF
     from pykotor.tslpatcher.mods.install import InstallFile
-    from pykotor.tslpatcher.mods.nss import ModificationsNCS, ModificationsNSS
+    from pykotor.tslpatcher.mods.ncs import ModificationsNCS
+    from pykotor.tslpatcher.mods.nss import ModificationsNSS
     from pykotor.tslpatcher.mods.ssf import ModificationsSSF
     from pykotor.tslpatcher.mods.twoda import Modifications2DA
 
@@ -118,9 +119,7 @@ class PatcherConfig:
         reader.load_settings()
 
         namespace: PatcherNamespace = PatcherNamespace.from_default()
-        namespace.name = reader.config.window_title
-        if not namespace.name:
-            namespace.name = filepath.parents[1].name.strip() or "<< Untitled Mod Loaded >>"
+        namespace.name = reader.config.window_title or filepath.parents[1].name.strip() or "<< Untitled Mod Loaded >>"
 
         return namespace
 

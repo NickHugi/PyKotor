@@ -114,7 +114,8 @@ class ResourceList(MainWindowList):
         # Add any missing resources to the list
         for resource in resources:
             for item in allResources:
-                if item.resource == resource:
+                resource_from_item: FileResource = item.resource
+                if resource_from_item == resource:
                     # Update the resource reference. Important when to a new module that share a resource
                     # with the same name and restype with the old one.
                     item.resource = resource
@@ -156,7 +157,8 @@ class ResourceList(MainWindowList):
             self.ui.resourceTree.setCurrentIndex(child)
 
         for item in model.allResourcesItems():
-            if item.resource.resname() == resource.resname() and item.resource.restype() == resource.restype():
+            resource_from_item: FileResource = item.resource
+            if resource_from_item.resname() == resource.resname() and resource_from_item.restype() == resource.restype():
                 _parentIndex = model.proxyModel().mapFromSource(item.parent().index())  # TODO: why is this unused
                 itemIndex = model.proxyModel().mapFromSource(item.index())
                 QTimer.singleShot(1, lambda index=itemIndex, item=item: select(item.parent().index(), index))

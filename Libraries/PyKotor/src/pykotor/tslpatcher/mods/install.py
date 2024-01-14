@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import os
 import shutil
 from typing import TYPE_CHECKING
 
@@ -10,6 +9,7 @@ from utility.error_handling import universal_simplify_exception
 from utility.path import PurePath
 
 if TYPE_CHECKING:
+    import os
 
     from pykotor.common.misc import Game
     from pykotor.resource.type import SOURCE_TYPES

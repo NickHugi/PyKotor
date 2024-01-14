@@ -105,7 +105,7 @@ class MDLEditor(Editor):
                 mdl_data = self._installation.resource(resref, ResourceType.MDL, [SearchLocation.CHITIN]).data
 
         if mdl_data is None or mdx_data is None:
-            QMessageBox(QMessageBox.Critical, f"Could not find the {c_filepath.stem} MDL/MDX", "").exec_()
+            QMessageBox(QMessageBox.Critical, f"Could not find the '{c_filepath.stem}' MDL/MDX", "").exec_()
             return
 
         self.ui.modelRenderer.setModel(mdl_data, mdx_data)

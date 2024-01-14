@@ -19,7 +19,7 @@ if TYPE_CHECKING:
 
 
 def _endian_char(
-    big: bool,
+    big: bool,  # noqa: FBT001
 ) -> str:
     """Returns the character that represents either big endian or small endian in struct unpack.
 
@@ -384,7 +384,7 @@ class BinaryReader:
         self.exceed_check(4)
         unpacked = struct.unpack(f"{_endian_char(big)}I", self._stream.read(4))[0]
 
-        if unpacked == 0xFFFFFFFF and max_neg1:
+        if unpacked == 0xFFFFFFFF and max_neg1:  # noqa: PLR2004
             unpacked = -1
 
         return unpacked

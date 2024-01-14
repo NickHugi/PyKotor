@@ -64,7 +64,6 @@ def write_erf(
         msg = f"Unsupported format specified: '{file_format!r}'; expected one of {', '.join(member.name for member in ERFType)}."
         raise ValueError(msg)
 
-
 def bytes_erf(
     erf: ERF,
     file_format: ResourceType = ResourceType.ERF,

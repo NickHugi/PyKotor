@@ -184,8 +184,7 @@ class ConfigReader:
         self.load_compile_list()
         self.load_hack_list()
         self.load_ssf_list()
-
-        # Print orphaned INI sections.
+        self.log.add_note("The ConfigReader finished loading the INI")
         all_sections_set = set(self.ini.sections())
         orphaned_sections: set[str] = all_sections_set - self.previously_parsed_sections
         if len(orphaned_sections):
