@@ -13,6 +13,7 @@ if TYPE_CHECKING:
     from pykotor.resource.type import SOURCE_TYPES
     from pykotor.tslpatcher.logger import PatchLogger
     from pykotor.tslpatcher.memory import PatcherMemory
+    from utility.path import PureWindowsPath
 
 
 class CriticalError(Exception):
@@ -93,7 +94,7 @@ class RowValue2DAMemory(RowValue):
     def __init__(self, token_id: int):
         self.token_id = token_id
 
-    def value(self, memory: PatcherMemory, twoda: TwoDA, row: TwoDARow | None) -> str:
+    def value(self, memory: PatcherMemory, twoda: TwoDA, row: TwoDARow | None) -> str | PureWindowsPath:
         return memory.memory_2da[self.token_id]
 
 

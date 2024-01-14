@@ -4,7 +4,7 @@ import os
 import re
 from typing import TYPE_CHECKING
 
-from pykotor.common.stream import BinaryReader, BinaryWriter, BinaryWriterBytearray
+from pykotor.common.stream import BinaryReader, BinaryWriter
 from pykotor.resource.formats.ncs import bytes_ncs
 from pykotor.resource.formats.ncs import compile_nss as compile_with_builtin
 from pykotor.resource.formats.ncs.compilers import ExternalNCSCompiler

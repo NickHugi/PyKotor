@@ -31,8 +31,8 @@ class TokenUsage2DA(TokenUsage):
     def __init__(self, token_id: int):
         self.token_id: int = token_id
 
-    def value(self, memory: PatcherMemory) -> str:
-        return memory.memory_2da[self.token_id]  # FIXME: needs its static typing fixed (PureWindowsPath vs str)
+    def value(self, memory: PatcherMemory) -> str | PureWindowsPath:  # type: ignore[override]
+        return memory.memory_2da[self.token_id]
 
 
 class TokenUsageTLK(TokenUsage):
