@@ -13,11 +13,13 @@ from pykotor.tools.encoding import decode_bytes_with_fallbacks
 from utility.path import Path
 
 if TYPE_CHECKING:
+    from types import TracebackType
+
     from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES
 
 
 def _endian_char(
-    big: bool,
+    big: bool,  # noqa: FBT001
 ) -> str:
     """Returns the character that represents either big endian or small endian in struct unpack.
 
@@ -69,9 +71,9 @@ class BinaryReader:
 
     def __exit__(
         self,
-        exc_type,
-        exc_val,
-        exc_tb,
+        exc_type: type[BaseException] | None,
+        exc_val: BaseException | None,
+        exc_tb: TracebackType | None,
     ):
         if self.auto_close:
             self.close()
@@ -389,7 +391,7 @@ class BinaryReader:
         self.exceed_check(4)
         unpacked = struct.unpack(f"{_endian_char(big)}I", self._stream.read(4))[0]
 
-        if unpacked == 0xFFFFFFFF and max_neg1:
+        if unpacked == 0xFFFFFFFF and max_neg1:  # noqa: PLR2004
             unpacked = -1
 
         return unpacked

@@ -28,7 +28,8 @@ from pykotor.tslpatcher.mods.gff import (
     ModifyFieldGFF,
 )
 from pykotor.tslpatcher.mods.install import InstallFile
-from pykotor.tslpatcher.mods.nss import ModificationsNCS, ModificationsNSS
+from pykotor.tslpatcher.mods.ncs import ModificationsNCS
+from pykotor.tslpatcher.mods.nss import ModificationsNSS
 from pykotor.tslpatcher.mods.ssf import ModificationsSSF, ModifySSF
 from pykotor.tslpatcher.mods.tlk import ModificationsTLK, ModifyTLK
 from pykotor.tslpatcher.mods.twoda import (

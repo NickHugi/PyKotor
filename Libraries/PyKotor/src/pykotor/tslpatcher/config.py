@@ -15,7 +15,8 @@ if TYPE_CHECKING:
     from pykotor.tslpatcher.logger import PatchLogger
     from pykotor.tslpatcher.mods.gff import ModificationsGFF
     from pykotor.tslpatcher.mods.install import InstallFile
-    from pykotor.tslpatcher.mods.nss import ModificationsNCS, ModificationsNSS
+    from pykotor.tslpatcher.mods.ncs import ModificationsNCS
+    from pykotor.tslpatcher.mods.nss import ModificationsNSS
     from pykotor.tslpatcher.mods.ssf import ModificationsSSF
     from pykotor.tslpatcher.mods.twoda import Modifications2DA
 
