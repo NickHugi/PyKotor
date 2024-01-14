@@ -262,8 +262,8 @@ class ToolWindow(QMainWindow):
             folder_path = file_path
         self.ui.overrideWidget.setResources(
             self.active.override_resources(
-                Path._fix_path_formatting(str(folder_path.relative_to(self.active.override_path())).replace(str(self.active.override_path()), ""))
-                if folder_path not in self.active.override_path().parents
+                str(folder_path.relative_to(str(self.active.override_path())))
+                if folder_path != self.active.override_path()
                 else "."
             )
         )
