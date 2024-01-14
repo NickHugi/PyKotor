@@ -1,9 +1,8 @@
 from __future__ import annotations
 
-import os
 from typing import TYPE_CHECKING
 
-from pykotor.common.stream import BinaryReader, BinaryWriter, BinaryWriterBytearray
+from pykotor.common.stream import BinaryReader, BinaryWriter
 from pykotor.tslpatcher.mods.template import PatcherModifications
 from utility.path import PureWindowsPath
 
@@ -33,47 +32,36 @@ class ModificationsNCS(PatcherModifications):
         logger: PatchLogger,
         game: Game,
     ) -> bytes:
-        ncs_bytearray: bytearray
-        if isinstance(ncs_source, bytes):
-            ncs_bytearray = bytearray(ncs_source)
-        elif isinstance(ncs_source, bytearray):
-            ncs_bytearray = ncs_source
-        elif isinstance(ncs_source, (os.PathLike, str)):
-            ncs_bytearray = bytearray(BinaryReader.load_file(ncs_source))
-        elif isinstance(ncs_source, BinaryReader):
-            ncs_bytearray = bytearray(ncs_source.read_all())
-        else:
-            msg = f"Unexpected source type passed to ModificationsNCS.patch_resource, got source type of {type(ncs_source)}"
-            raise TypeError(msg)
-
+        with BinaryReader.from_auto(ncs_source) as reader:
+            ncs_bytearray: bytearray = bytearray(reader.read_all())
         self.apply(ncs_bytearray, memory, logger, game)
         return bytes(ncs_bytearray)
 
     def apply(
         self,
-        ncs_bytes: bytearray,
+        ncs_bytearray: bytearray,
         memory: PatcherMemory,
         logger: PatchLogger,
         game: Game,
     ):
-        writer: BinaryWriterBytearray = BinaryWriter.to_bytearray(ncs_bytes)
-        for patch in self.hackdata:
-            token_type, offset, token_id_or_value = patch
-            logger.add_verbose(f"HACKList {self.sourcefile}: seeking to offset {offset:#X}")
-            writer.seek(offset)
-            value: int
-            if token_type.lower() == "strref":
-                value = memory.memory_str[token_id_or_value]
-            elif token_type.lower() == "2damemory":
-                memory_val: str | PureWindowsPath = memory.memory_2da[token_id_or_value]
-                if isinstance(memory_val, PureWindowsPath):
-                    msg = f"Memory value cannot be !FieldPath in [HACKList] patches, got '{memory_val!r}'"
-                    raise ValueError(msg)
-                value = int(memory_val)
-            else:
-                value = token_id_or_value
-            logger.add_verbose(f"HACKList {self.sourcefile}: writing unsigned WORD {value} at offset {offset:#X}")
-            writer.write_uint16(value, big=True)
+        with BinaryWriter.to_bytearray(ncs_bytearray) as writer:
+            for patch in self.hackdata:
+                token_type, offset, token_id_or_value = patch
+                logger.add_verbose(f"HACKList {self.sourcefile}: seeking to offset {offset:#X}")
+                writer.seek(offset)
+                value: int
+                if token_type.lower() == "strref":
+                    value = memory.memory_str[token_id_or_value]
+                elif token_type.lower() == "2damemory":
+                    memory_val: str | PureWindowsPath = memory.memory_2da[token_id_or_value]
+                    if isinstance(memory_val, PureWindowsPath):
+                        msg = f"Memory value cannot be !FieldPath in [HACKList] patches, got '{memory_val!r}'"
+                        raise ValueError(msg)
+                    value = int(memory_val)
+                else:
+                    value = token_id_or_value
+                logger.add_verbose(f"HACKList {self.sourcefile}: writing unsigned WORD {value} at offset {offset:#X}")
+                writer.write_uint16(value, big=True)
 
     def pop_tslpatcher_vars(self, file_section_dict, default_destination=PatcherModifications.DEFAULT_DESTINATION):
         super().pop_tslpatcher_vars(file_section_dict, default_destination)
