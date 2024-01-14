@@ -1397,7 +1397,7 @@ class Installation:
                     name = locstring.get(Language.ENGLISH, Gender.MALE)
                 else:
                     name = self.talktable().string(locstring.stringref)
-                break
+            break
 
         return name or root
 
@@ -1446,8 +1446,8 @@ class Installation:
                 if module_ifo_data:
                     ifo: GFF = read_gff(module_ifo_data)
                     mod_id = ifo.root.get_resref("Mod_Entry_Area").get()
-                    if mod_id:
-                        break
+
+            break
 
         return mod_id
 
