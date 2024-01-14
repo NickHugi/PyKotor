@@ -50,7 +50,7 @@ class ModificationsTLK(PatcherModifications):
         if not isinstance(source_tlk, TLK):
             dialog = TLKBinaryReader(source_tlk).load()
         assert isinstance(dialog, TLK)
-        self.apply(dialog, memory, logger, game)  # TODO: fix the type checks. Not sure why it thinks load() returns unknown?
+        self.apply(dialog, memory, logger, game)
         return bytes_tlk(dialog)
 
     def pop_tslpatcher_vars(self, file_section_dict, default_destination=DEFAULT_DESTINATION):
