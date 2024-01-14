@@ -408,7 +408,7 @@ class Installation:
                         file,
                     )
                     resources.append(resource)  # type: ignore[assignment, call-overload, union-attr]
-            except Exception as e:
+            except Exception as e:  # noqa: BLE001
                 with Path("errorlog.txt").open("a") as f:
                     f.write(format_exception_with_variables(e))
         if not resources or file is None:
