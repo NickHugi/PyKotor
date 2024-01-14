@@ -13,6 +13,8 @@ from pykotor.tools.encoding import decode_bytes_with_fallbacks
 from utility.path import Path
 
 if TYPE_CHECKING:
+    from types import TracebackType
+
     from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES
 
 
@@ -53,14 +55,14 @@ class BinaryReader:
     ):
         self._stream: BinaryIO = stream
         self._offset: int = offset
-        self.auto_close: bool = True
         self._stream.seek(offset)
 
-        available = self.true_size() - offset
-        self._size: int = available if size is None else size
-        if available > self.true_size():
+        true_size = self.true_size()
+        available = true_size - offset
+        if available > true_size:
             msg = "Specified size is greater than the number of available bytes."
             raise OSError(msg)
+        self._size: int = available if size is None else size
 
     def __enter__(
         self,
@@ -726,7 +728,10 @@ class BinaryWriter(ABC):
         if isinstance(source, (bytes, memoryview)):  # is immutable binary data
             return BinaryWriter.to_bytearray(bytearray(source))
         if isinstance(source, BinaryWriter):
-            return source
+            if isinstance(source, BinaryWriterFile):
+                return BinaryWriterFile(source._stream, source.offset)  # noqa: SLF001
+            if isinstance(source, BinaryWriterBytearray):
+                return BinaryWriterBytearray(source._ba, source._offset)  # noqa: SLF001
         msg = "Must specify a path, bytes object or an existing BinaryWriter instance."
         raise NotImplementedError(msg)
 
