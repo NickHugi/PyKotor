@@ -69,12 +69,11 @@ class BinaryReader:
 
     def __exit__(
         self,
-        exc_type,
-        exc_val,
-        exc_tb,
+        exc_type: type[BaseException] | None,
+        exc_val: BaseException | None,
+        exc_tb: TracebackType | None,
     ):
-        if self.auto_close:
-            self.close()
+        self.close()
 
     @classmethod
     def from_file(
@@ -132,9 +131,9 @@ class BinaryReader:
         elif isinstance(source, (bytes, bytearray, memoryview)):  # is binary data
             reader = BinaryReader.from_bytes(source, offset, size)
         elif isinstance(source, BinaryReader):
-            reader = BinaryReader(source._stream, source._offset, source._size)
+            reader = BinaryReader(source._stream, source._offset, source._size)  # noqa: SLF001
         else:
-            msg = "Must specify a path, bytes-like object or an existing BinaryReader instance."
+            msg = f"Must specify a path, bytes-like object or an existing BinaryReader instance, got type ({type(source)})."
             raise NotImplementedError(msg)
 
         return reader
@@ -369,11 +368,11 @@ class BinaryReader:
         """Reads an unsigned 32-bit integer from the stream.
 
         If max_is_neg1 flag is set to true and the bytes read off the stream are equal to 0xFFFFFFFF then the method
-        will return a value of -1 instead of 4294967295.
+        will return a value of -1 instead of 4294967295 (hex 0xFFFFFFFF).
 
         Args:
         ----
-            max_neg1: Return -1 when the value of the stream equals 0xFFFFFFFF.
+            max_neg1: Return -1 when the value of the stream equals 0xFFFFFFFF (dec 4294967295).
             big: Read int bytes as big endian.
 
         Returns:
@@ -604,8 +603,8 @@ class BinaryReader:
         -------
             A string read from the stream.
         """
-        string = ""
-        char = ""
+        string: str = ""
+        char: str = ""
         while char != terminator:
             string += char
             self.exceed_check(1)
@@ -660,7 +659,7 @@ class BinaryReader:
 
         Raises:
         ------
-            OSError: Iset_datahe given number sex exceeds the number of remaining bytes.
+            OSError: When the attempted read operation exceeds the number of remaining bytes.
         """
         if self.position() + num > self.size():
             msg = "This operation would exceed the streams boundaries."
@@ -1491,12 +1490,13 @@ class BinaryWriterFile(BinaryWriter):
         bw: BinaryWriterBytearray = BinaryWriter.to_bytearray()
         bw.write_uint32(value.stringref, big=big, max_neg1=True)
         bw.write_uint32(len(value), big=big)
+
         for language, gender, substring in value:
             string_id: int = LocalizedString.substring_id(language, gender)
             bw.write_uint32(string_id, big=big)
             bw.write_string(substring, prefix_length=4, encoding=language.get_encoding())
-        locstring_data: bytes = bw.data()
 
+        locstring_data: bytes = bw.data()
         self.write_uint32(len(locstring_data))
         self.write_bytes(locstring_data)
 
