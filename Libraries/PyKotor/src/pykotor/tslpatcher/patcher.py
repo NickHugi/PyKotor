@@ -335,6 +335,7 @@ class ModInstaller:
 
         config: PatcherConfig = self.config()
         tlk_patches: list[ModificationsTLK] = self.get_tlk_patches(config)
+        temp_script_folder = self._prepare_compilelist(config)
         patches_list: list[PatcherModifications] = [
             *config.install_list,  # Note: TSLPatcher executes [InstallList] after [TLKList]
             *tlk_patches,
@@ -344,12 +345,6 @@ class ModInstaller:
             *config.patches_ncs,   # Note: TSLPatcher executes [CompileList] after [HACKList]
             *config.patches_ssf,
         ]
-
-        # Move nwscript.nss to Override if there are any nss patches to do
-        if len(config.patches_nss) > 0:
-            file_install = InstallFile("nwscript.nss", replace_existing=True)
-            if file_install not in config.install_list:
-                config.install_list.append(file_install)
 
         memory = PatcherMemory()
         for patch in patches_list:
@@ -366,6 +361,8 @@ class ModInstaller:
                     self.log.add_note(f"'{patch.sourcefile}' has no content/data and is completely empty.")
 
                 patched_bytes_data: bytes = patch.patch_resource(data_to_patch_bytes, memory, self.log, self.game)
+                if patched_bytes_data is True:  # for nwnnsscomp
+                    continue
                 if capsule is not None:
                     self.handle_override_type(patch)
                     capsule.add(*ResourceIdentifier.from_path(patch.saveas), patched_bytes_data)
@@ -376,8 +373,33 @@ class ModInstaller:
             except Exception as e:  # noqa: BLE001
                 self.log.add_error(str(e))
                 continue
+        if temp_script_folder is not None and temp_script_folder.exists():
+            self.log.add_note(f"Cleaning temporary script folder at {temp_script_folder}")
+            shutil.rmtree(temp_script_folder)
 
         self.log.add_note(f"Successfully completed {self.log.patches_completed} total patches.")
+
+    def _prepare_compilelist(self, config: PatcherConfig) -> CaseAwarePath | None:
+        """tslpatchdata should be read-only, this allows us to replace memory tokens while ensuring include scripts work correctly."""  # noqa: D403
+        if len(config.patches_nss) <= 0:
+            return None
+
+        # Move nwscript.nss to Override if there are any nss patches to do
+        file_install = InstallFile("nwscript.nss", replace_existing=True)
+        if file_install not in config.install_list:
+            config.install_list.append(file_install)
+
+        temp_script_folder: CaseAwarePath = self.mod_path / "temp_nss_working_dir"
+        if not temp_script_folder.exists():
+            temp_script_folder.mkdir(exist_ok=True, parents=True)
+        for file in self.mod_path.iterdir():
+            if file.suffix.lower() != ".nss" or not file.safe_isfile():
+                continue
+            shutil.copy(file, temp_script_folder)
+
+        for nss_patch in config.patches_nss:
+            nss_patch.temp_script_folder = temp_script_folder
+        return temp_script_folder
 
     def get_tlk_patches(self, config: PatcherConfig) -> list[ModificationsTLK]:
         tlk_patches: list[ModificationsTLK] = []

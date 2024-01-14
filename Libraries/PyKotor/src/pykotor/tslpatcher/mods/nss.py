@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import os
 import re
-import tempfile
 from typing import TYPE_CHECKING
 
 from pykotor.common.stream import BinaryReader, BinaryWriter, BinaryWriterBytearray
@@ -10,7 +9,9 @@ from pykotor.resource.formats.ncs import bytes_ncs
 from pykotor.resource.formats.ncs import compile_nss as compile_with_builtin
 from pykotor.resource.formats.ncs.compilers import ExternalNCSCompiler
 from pykotor.tools.encoding import decode_bytes_with_fallbacks
+from pykotor.tools.path import CaseAwarePath
 from pykotor.tslpatcher.mods.template import PatcherModifications
+from utility.error_handling import universal_simplify_exception
 from utility.path import Path, PurePath, PureWindowsPath
 
 if TYPE_CHECKING:
@@ -82,16 +83,12 @@ class ModificationsNSS(PatcherModifications):
         self.saveas = str(PurePath(filename).with_suffix(".ncs"))
         self.action: str = "Compile"
         self.nwnnsscomp_path: Path
+        self.temp_script_folder: Path
 
     @staticmethod
     def load(nss_source: SOURCE_TYPES) -> bytes | None:
-        if isinstance(nss_source, (bytearray, memoryview)):
-            return bytes(nss_source)
-        if isinstance(nss_source, bytes):
-            return nss_source
-        if isinstance(nss_source, (os.PathLike, str)):
-            return BinaryReader.load_file(nss_source)
-        return None
+        with BinaryReader.from_auto(nss_source) as reader:
+            return reader.read_all()
 
     def patch_resource(
         self,
@@ -128,6 +125,8 @@ class ModificationsNSS(PatcherModifications):
 
         source = MutableString(decode_bytes_with_fallbacks(nss_bytes))
         self.apply(source, memory, logger, game)
+        temp_script_file = self.temp_script_folder / self.sourcefile
+        BinaryWriter.dump(temp_script_file, source.value.encode(encoding="windows-1252", errors="ignore"))
 
         is_windows = os.name == "nt"
         if is_windows and self.nwnnsscomp_path.exists():
@@ -143,9 +142,9 @@ class ModificationsNSS(PatcherModifications):
                     "PyKotor will compile regardless, but this may not yield the expected result.",
                 )
             try:
-                return self._compile_with_external(source.value, nwnnsscompiler, logger, game)
+                return self._compile_with_external(temp_script_file, nwnnsscompiler, logger, game)
             except Exception as e:  # noqa: BLE001
-                logger.add_error(repr(e))
+                logger.add_error(str(universal_simplify_exception(e)))
 
         if is_windows:
             if not self.nwnnsscomp_path.exists():
@@ -156,7 +155,7 @@ class ModificationsNSS(PatcherModifications):
             logger.add_note(f"Patching from a unix operating system, compiling '{self.sourcefile}' using the built-in compilers...")
 
         # Compile using built-in script compiler if external compiler fails.
-        return bytes_ncs(compile_with_builtin(source.value, game))
+        return bytes(bytes_ncs(compile_with_builtin(source.value, game, library_lookup=[CaseAwarePath.pathify(self.temp_script_folder)])))
 
     def apply(
         self,
@@ -204,20 +203,13 @@ class ModificationsNSS(PatcherModifications):
 
     def _compile_with_external(
         self,
-        nss_script: str,
+        temp_script_file: Path,
         nwnnsscompiler: ExternalNCSCompiler,
         logger: PatchLogger,
         game: Game,
     ) -> bytes:
-        # Get a temporary filename.
-        temp_source_script: Path
-        with tempfile.NamedTemporaryFile(mode="w+t", suffix=".nss", dir=self.nwnnsscomp_path.parent) as temp_file:
-            temp_source_script = Path(temp_file.name)
-
-        # Dump the script to a tempfile, then send to the external compiler.
-        BinaryWriter.dump(temp_source_script, nss_script.encode(encoding="windows-1252", errors="ignore"))
         tempcompiled_filepath: Path = self.nwnnsscomp_path.parent / "temp_script.ncs"
-        stdout, stderr = nwnnsscompiler.compile_script(temp_source_script, tempcompiled_filepath, game)
+        stdout, stderr = nwnnsscompiler.compile_script(temp_script_file, tempcompiled_filepath, game)
 
         # Parse the output.
         if stdout.strip():
@@ -225,10 +217,10 @@ class ModificationsNSS(PatcherModifications):
                 if line.strip():
                     logger.add_verbose(line)
         if stderr.strip():
-            for line in stdout.split("\n"):
+            for line in stderr.split("\n"):
                 if line.strip():
                     logger.add_error(line)
-            raise ValueError(stderr)
-
+        if "File is an include file, ignored" in stdout:
+            return True
         # Return the compiled bytes
         return BinaryReader.load_file(tempcompiled_filepath)
