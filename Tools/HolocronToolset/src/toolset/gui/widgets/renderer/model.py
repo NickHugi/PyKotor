@@ -27,7 +27,7 @@ class ModelRenderer(QOpenGLWidget):
 
         self.scene: Scene | None = None
         self.installation: Installation | None = None
-        self._modelToLoad = None
+        self._modelToLoad: tuple[BinaryReader, BinaryReader] | None = None
         self._creatureToLoad: UTC | None = None
 
         self._keysDown: set[int] = set()
