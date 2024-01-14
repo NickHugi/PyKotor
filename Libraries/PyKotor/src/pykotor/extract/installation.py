@@ -1760,10 +1760,10 @@ class Installation:
                 if module_ifo_data:
                     ifo: GFF = read_gff(module_ifo_data)
                     mod_id = str(ifo.root.get_resref("Mod_Entry_Area"))
+                    if mod_id:
+                        break
             except Exception as e:  # noqa: BLE001
                 print(format_exception_with_variables(e, ___message___="This exception has been suppressed in pykotor.extract.installation."))
-            else:
-                break
         return mod_id
 
     def module_ids(self) -> CaseInsensitiveDict[str]:
