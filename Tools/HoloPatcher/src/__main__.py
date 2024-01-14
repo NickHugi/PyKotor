@@ -297,13 +297,13 @@ class App(tk.Tk):
             else:
                 messagebox.showinfo(
                     "No updates available.",
-                    f"You are already running the latest version of HoloPatcher ({updateInfoData['holopatcherLatestVersion']})",
+                    f"You are already running the latest version of HoloPatcher ({VERSION_LABEL})",
                 )
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             messagebox.showerror(
                 "Unable to fetch latest version.",
                 (
-                    f"Error: {e!r}\n"
+                    f"{universal_simplify_exception(e)}\n"
                     "Check if you are connected to the internet."
                 ),
             )
