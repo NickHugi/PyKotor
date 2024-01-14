@@ -47,11 +47,11 @@ def detect_mdl(
         #    return ResourceType.MDL_CSV
         #return ResourceType.INVALID
     try:
-        if isinstance(source, (str, os.PathLike)):
+        if isinstance(source, (os.PathLike, str)):
             with BinaryReader.from_file(source, offset) as reader:
                 file_format = check(reader.read_bytes(4))
-        elif isinstance(source, (bytes, bytearray)):
-            file_format = check(source[:4])
+        elif isinstance(source, (memoryview, bytes, bytearray)):
+            file_format = check(bytes(source[:4]))
         elif isinstance(source, BinaryReader):
             file_format = check(source.read_bytes(4))
             source.skip(-4)

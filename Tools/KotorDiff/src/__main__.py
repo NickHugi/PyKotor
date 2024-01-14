@@ -1,11 +1,9 @@
 from __future__ import annotations
 
 import cProfile
-import os
 import pathlib
 import sys
 from argparse import ArgumentParser
-from hashlib import sha256
 from io import StringIO
 from typing import TYPE_CHECKING
 
@@ -27,10 +25,14 @@ from pykotor.extract.capsule import Capsule
 from pykotor.resource.formats import gff, lip, tlk, twoda
 from pykotor.tools.misc import is_capsule_file
 from pykotor.tools.path import CaseAwarePath
+from utility.misc import generate_sha256_hash
 from utility.path import Path, PureWindowsPath
 
 if TYPE_CHECKING:
+    import os
+
     from pykotor.extract.file import FileResource
+
 OUTPUT_LOG: Path | None = None
 LOGGING_ENABLED: bool | None = None
 
@@ -72,27 +74,6 @@ def log_output(*args, **kwargs) -> None:
         f.write(msg)
 
 
-def compute_sha256(where: os.PathLike | str | bytes):
-    """Compute the SHA-256 hash of the data."""
-    sha256_hash = sha256()
-    if isinstance(where, bytes):
-        sha256_hash.update(where)
-        return sha256_hash.hexdigest()
-
-    if isinstance(where, (os.PathLike, str)):
-        file_path = Path.pathify(where).resolve()
-
-        with file_path.open("rb") as f:
-            while True:
-                data = f.read(0x10000)  # read in 64k chunks
-                if not data:
-                    break
-                sha256_hash.update(data)
-
-        return sha256_hash.hexdigest()
-    return None
-
-
 def relative_path_from_to(src, dst) -> Path:
     src_parts = list(src.parts)
     dst_parts = list(dst.parts)
@@ -111,14 +92,14 @@ def visual_length(s: str, tab_length=8) -> int:
 
     # Split the string at tabs, sum the lengths of the substrings,
     # and add the necessary spaces to account for the tab stops.
-    parts = s.split("\t")
-    vis_length = sum(len(part) for part in parts)
+    parts: list[str] = s.split("\t")
+    vis_length: int = sum(len(part) for part in parts)
     for part in parts[:-1]:  # all parts except the last one
         vis_length += tab_length - (len(part) % tab_length)
     return vis_length
 
 
-gff_types = [x.value.lower().strip() for x in gff.GFFContent]
+gff_types: list[str] = [x.value.lower().strip() for x in gff.GFFContent]
 
 
 def diff_data(
@@ -251,7 +232,7 @@ def diff_data(
             return log_output_with_separator(message)
         return True
 
-    if PARSER_ARGS.compare_hashes and compute_sha256(data1) != compute_sha256(data2):
+    if PARSER_ARGS.compare_hashes and generate_sha256_hash(data1) != generate_sha256_hash(data2):
         log_output(f"'{where}': SHA256 is different")
         return False
     return True
@@ -403,8 +384,8 @@ def run_differ_from_args(path1: Path, path2: Path) -> bool | None:
 
 def main() -> None:
     global PARSER_ARGS
-    global PARSER
-    global LOGGING_ENABLED
+    global PARSER  # noqa: PLW0603
+    global LOGGING_ENABLED  # noqa: PLW0603
     PARSER = ArgumentParser(description="Finds differences between two KOTOR installations")
     PARSER.add_argument("--path1", type=str, help="Path to the first K1/TSL install, file, or directory to diff.")
     PARSER.add_argument("--path2", type=str, help="Path to the second K1/TSL install, file, or directory to diff.")

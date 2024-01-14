@@ -85,11 +85,6 @@ class ModificationsNSS(PatcherModifications):
         self.nwnnsscomp_path: Path
         self.temp_script_folder: Path
 
-    @staticmethod
-    def load(nss_source: SOURCE_TYPES) -> bytes | None:
-        with BinaryReader.from_auto(nss_source) as reader:
-            return reader.read_all()
-
     def patch_resource(
         self,
         nss_source: SOURCE_TYPES,
@@ -118,16 +113,19 @@ class ModificationsNSS(PatcherModifications):
             3. Attempts to compile with external NWN compiler if on Windows
             4. Falls back to built-in compiler if external isn't available, fails, or not on Windows
         """  # noqa: D205
-        nss_bytes: bytes | None = self.load(nss_source)
+        with BinaryReader.from_auto(nss_source) as reader:
+            nss_bytes: bytes = reader.read_all()
         if nss_bytes is None:
             logger.add_error("Invalid nss source provided to ModificationsNSS.apply()")
             return b""
 
+        # Replace memory tokens in the script, and save to the file.
         source = MutableString(decode_bytes_with_fallbacks(nss_bytes))
         self.apply(source, memory, logger, game)
         temp_script_file = self.temp_script_folder / self.sourcefile
         BinaryWriter.dump(temp_script_file, source.value.encode(encoding="windows-1252", errors="ignore"))
 
+        # Compile with external on windows, fall back to built-in if mac/linux or if external fails.
         is_windows = os.name == "nt"
         if is_windows and self.nwnnsscomp_path.exists():
             nwnnsscompiler = ExternalNCSCompiler(self.nwnnsscomp_path)
@@ -220,10 +218,8 @@ class ModificationsNSS(PatcherModifications):
             for line in stderr.split("\n"):
                 if line.strip():
                     logger.add_error(line)
-        if "File is an include file, ignored" in stdout:  # noqa: SIM108
-            data = True
-        else:
-            # Return the compiled bytes
-            data = BinaryReader.load_file(tempcompiled_filepath)
-            tempcompiled_filepath.unlink()
-        return data
+
+        if "File is an include file, ignored" in stdout:
+            return True
+        # Return the compiled bytes
+        return BinaryReader.load_file(tempcompiled_filepath)

@@ -390,9 +390,10 @@ class ModInstaller:
             config.install_list.append(file_install)
 
         temp_script_folder: CaseAwarePath = self.mod_path / "temp_nss_working_dir"
-        if not temp_script_folder.exists():
-            temp_script_folder.mkdir(exist_ok=True, parents=True)
-        for file in self.mod_path.iterdir():
+        if temp_script_folder.safe_isfile():
+            temp_script_folder.unlink()
+        temp_script_folder.mkdir(exist_ok=True, parents=True)
+        for file in self.mod_path.safe_iterdir():
             if file.suffix.lower() != ".nss" or not file.safe_isfile():
                 continue
             shutil.copy(file, temp_script_folder)

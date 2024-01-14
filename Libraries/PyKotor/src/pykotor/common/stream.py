@@ -104,7 +104,7 @@ class BinaryReader:
     @classmethod
     def from_bytes(
         cls,
-        data: bytes,
+        data: bytes | memoryview | bytearray,
         offset: int = 0,
         size: int | None = None,
     ) -> BinaryReader:
@@ -129,13 +129,13 @@ class BinaryReader:
         source: SOURCE_TYPES,
         offset: int = 0,
         size: int | None = None,
-    ):
+    ) -> BinaryReader:
         if isinstance(source, (os.PathLike, str)):  # is path
             reader = BinaryReader.from_file(source, offset, size)
-        elif isinstance(source, (bytes, bytearray)):  # is binary data
+        elif isinstance(source, (memoryview, bytes, bytearray)):  # is binary data
             reader = BinaryReader.from_bytes(source, offset, size)
-        elif isinstance(source, BinaryReader):
-            reader = BinaryReader(source._stream, source._offset, source._size)
+        elif isinstance(source, BinaryReader):  # is reader
+            reader = BinaryReader(source._stream, source._offset, source._size)  # noqa: SLF001
         else:
             msg = "Must specify a path, bytes-like object or an existing BinaryReader instance."
             raise NotImplementedError(msg)
