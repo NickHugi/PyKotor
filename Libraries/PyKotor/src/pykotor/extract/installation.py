@@ -19,6 +19,7 @@ from pykotor.resource.type import ResourceType
 from pykotor.tools.misc import is_capsule_file, is_erf_file, is_mod_file, is_rim_file
 from pykotor.tools.path import CaseAwarePath
 from pykotor.tools.sound import fix_audio
+from utility.error_handling import format_exception_with_variables
 from utility.path import Path, PurePath
 
 if TYPE_CHECKING:
@@ -382,20 +383,25 @@ class Installation:
             else path.safe_iterdir(),
         )
         for file in files_list:
-            if capsule_check and capsule_check(file):
-                resources[file.name] = list(Capsule(file))  # type: ignore[assignment, call-overload]
-            else:
-                resname, restype = ResourceIdentifier.from_path(file)
-                if restype.is_invalid:
-                    continue
-                resource = FileResource(
-                    resname,
-                    restype,
-                    file.stat().st_size,
-                    0,
-                    file,
-                )
-                resources.append(resource)  # type: ignore[assignment, call-overload, union-attr]
+            try:
+                if capsule_check:
+                    if capsule_check(file):
+                        resources[file.name] = list(Capsule(file))  # type: ignore[assignment, call-overload]
+                else:
+                    resname, restype = ResourceIdentifier.from_path(file)
+                    if restype.is_invalid:
+                        continue
+                    resource = FileResource(
+                        resname,
+                        restype,
+                        file.stat().st_size,
+                        0,
+                        file,
+                    )
+                    resources.append(resource)  # type: ignore[assignment, call-overload, union-attr]
+            except Exception as e:
+                with Path("errorlog.txt").open("a") as f:
+                    f.write(format_exception_with_variables(e))
         if not resources or not files_list:
             print(f"No resources found at '{path!s}' when loading the installation, skipping...")
         else:
