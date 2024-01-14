@@ -428,6 +428,8 @@ class TextureList(MainWindowList):
         self.requestRefresh.emit()
 
     def onTextureListScrolled(self):
+        if self._installation is None:
+            return
         # Note: Avoid redundantly loading textures that have already been loaded
         textures: CaseInsensitiveDict[TPC | None] = self._installation.textures(
             [item.text() for item in self.visibleItems() if item.text().casefold() not in self._scannedTextures],
