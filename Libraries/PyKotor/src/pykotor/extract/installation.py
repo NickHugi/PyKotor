@@ -392,8 +392,9 @@ class Installation:
         )
         file = None
         for file in files_iter:
-            if capsule_check and capsule_check(file):
-                resources[file.name] = list(Capsule(file))  # type: ignore[assignment, call-overload]
+            if capsule_check:
+                if capsule_check(file):
+                    resources[file.name] = list(Capsule(file))  # type: ignore[assignment, call-overload]
             else:
                 resname, restype = ResourceIdentifier.from_path(file)
                 if restype.is_invalid:
