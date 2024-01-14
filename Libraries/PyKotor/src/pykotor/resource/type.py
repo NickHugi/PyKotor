@@ -4,7 +4,7 @@ from __future__ import annotations
 import os
 import uuid
 from enum import Enum
-from typing import Iterable, NamedTuple, Union
+from typing import Callable, Iterable, NamedTuple, TypeVar, Union
 from xml.etree.ElementTree import ParseError
 
 from pykotor.common.stream import BinaryReader, BinaryWriter
@@ -304,11 +304,11 @@ class ResourceType(Enum):
             ResourceType.from_invalid(extension=lower_ext),
         )
 
-
-def autoclose(func):
-    def _autoclose(self: ResourceReader | ResourceWriter, auto_close: bool = True):
+R = TypeVar("R")
+def autoclose(func: Callable[..., R]) -> Callable[..., R]:
+    def _autoclose(self: ResourceReader | ResourceWriter, auto_close: bool = True) -> R:  # noqa: FBT002, FBT001
         try:
-            resource = func(self, auto_close)
+            resource: R = func(self, auto_close)
         except (OSError, ParseError, ValueError, IndexError, StopIteration) as e:
             msg = "Tried to load an unsupported or corrupted file."
             raise ValueError(msg) from e
