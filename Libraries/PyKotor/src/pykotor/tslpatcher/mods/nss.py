@@ -207,7 +207,7 @@ class ModificationsNSS(PatcherModifications):
         nwnnsscompiler: ExternalNCSCompiler,
         logger: PatchLogger,
         game: Game,
-    ) -> bytes:
+    ) -> bytes | bool:
         tempcompiled_filepath: Path = self.nwnnsscomp_path.parent / "temp_script.ncs"
         stdout, stderr = nwnnsscompiler.compile_script(temp_script_file, tempcompiled_filepath, game)
 
@@ -220,7 +220,10 @@ class ModificationsNSS(PatcherModifications):
             for line in stderr.split("\n"):
                 if line.strip():
                     logger.add_error(line)
-        if "File is an include file, ignored" in stdout:
-            return True
-        # Return the compiled bytes
-        return BinaryReader.load_file(tempcompiled_filepath)
+        if "File is an include file, ignored" in stdout:  # noqa: SIM108
+            data = True
+        else:
+            # Return the compiled bytes
+            data = BinaryReader.load_file(tempcompiled_filepath)
+            tempcompiled_filepath.unlink()
+        return data
