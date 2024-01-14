@@ -135,7 +135,7 @@ class ModificationsNSS(PatcherModifications):
             token_id = int(nss_source.value[match.start() + 10 : match.end() - 1])
             memory_val: str | PureWindowsPath = memory.memory_2da[token_id]
             if isinstance(memory_val, PureWindowsPath):
-                logger.add_error(str(TypeError(f"memory_2da lookup cannot be !FieldPath, got '{memory_val!r}'")))
+                logger.add_error(str(TypeError(f"memory_2da lookup cannot be !FieldPath, got '2DAMEMORY{token_id}={memory_val!r}'")))
                 match = re.search(r"#2DAMEMORY\d+#", nss_source.value)
                 continue
 
