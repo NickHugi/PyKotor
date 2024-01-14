@@ -8,8 +8,11 @@ from pykotor.common.stream import BinaryReader, BinaryWriter
 from pykotor.resource.formats.ncs import bytes_ncs
 from pykotor.resource.formats.ncs import compile_nss as compile_with_builtin
 from pykotor.resource.formats.ncs.compilers import ExternalNCSCompiler
-from pykotor.resource.formats.ncs.ncs_data import NCS
-from pykotor.resource.formats.ncs.optimizers import RemoveMoveSPEqualsZeroOptimizer, RemoveNopOptimizer, RemoveUnusedBlocksOptimizer
+from pykotor.resource.formats.ncs.optimizers import (
+    RemoveMoveSPEqualsZeroOptimizer,
+    RemoveNopOptimizer,
+    RemoveUnusedBlocksOptimizer,
+)
 from pykotor.tools.encoding import decode_bytes_with_fallbacks
 from pykotor.tools.path import CaseAwarePath
 from pykotor.tslpatcher.mods.template import PatcherModifications
@@ -18,6 +21,7 @@ from utility.path import Path, PurePath, PureWindowsPath
 
 if TYPE_CHECKING:
     from pykotor.common.misc import Game
+    from pykotor.resource.formats.ncs.ncs_data import NCS
     from pykotor.resource.type import SOURCE_TYPES
     from pykotor.tslpatcher.logger import PatchLogger
     from pykotor.tslpatcher.memory import PatcherMemory
