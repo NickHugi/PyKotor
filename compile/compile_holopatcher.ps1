@@ -107,7 +107,7 @@ if ((Get-OS) -eq "Windows") {
 
 # Delete the final executable if it exists
 if (Test-Path -Path $finalExecutablePath) {
-    Remove-Item -Path $finalExecutablePath -Force
+    Remove-Item -Path $finalExecutablePath -Recurse -Force
 }
 
 # Combine pyInstallerArgsString with pythonPathArgsString

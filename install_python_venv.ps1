@@ -270,8 +270,67 @@ function Find-Python {
             if ( (Get-OS) -eq "Windows" ) {
                 Python-Install-Windows "3.8.10"
             } elseif ( (Get-OS) -eq "Linux" ) {
-                & bash -c "sudo apt install python3 -y" 2>&1 | Write-Output
-                & bash -c "sudo apt install python3-dev -y" 2>&1 | Write-Output
+                if (Test-Path "/etc/os-release") {
+                    $osInfo = Get-Content "/etc/os-release" -Raw
+                    if ($osInfo -match 'ID=(.*)') {
+                        $distro = $Matches[1].Trim('"')
+                    }
+                    if ($osInfo -match 'VERSION_ID=(.*)') {
+                        $versionId = $Matches[1].Trim('"')
+                    }
+
+                    switch ($distro) {
+                        "debian" {
+                            . sudo apt update
+                            . sudo apt install python3 -y
+                            . sudo apt install python3-dev -y
+                            . sudo apt install python3-venv -y
+                            . sudo apt install python3-pip -y
+                            break
+                         }
+                        "ubuntu" {
+                            . sudo apt install python3 -y
+                            . sudo apt install python3-dev -y
+                            . sudo apt install python3-venv -y
+                            . sudo apt install python3-pip -y
+                            break
+                        }
+                        "alpine" {
+                            . sudo apk update
+                            . sudo apk add --update --no-cache python3
+                            . ln -sf python3 /usr/bin/python
+                            . python3 -m ensurepip
+                            . pip3 install --no-cache --upgrade pip setuptools
+                            break
+                        }
+                        "fedora" {
+                            . sudo dnf update
+                            . sudo dnf install python3 -y
+                            . sudo dnf install python3-pip -y
+                            . sudo dnf install python3-venv -y
+                            break
+                        }
+                        "centos" {
+                            . sudo yum update
+                            if ( $versionId -eq "7" ) {
+                                . sudo yum install epel-release -y
+                            }
+                            . sudo yum install python3 -y
+                            . sudo yum install python3-pip
+                            . sudo yum install python3-venv
+                            break
+                        }
+                        default {
+                            Write-Error "Unsupported Linux distribution"
+                            Write-Host "Press any key to exit..."
+                            $null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
+                            exit 1
+                        }
+                    }
+                } else {
+                    Write-Host "Cannot determine Linux distribution."
+                    exit 1
+                }
             } elseif ( (Get-OS) -eq "Mac" ) {
                 & bash -c "brew install python@3.8 -y" 2>&1 | Write-Output
             }
