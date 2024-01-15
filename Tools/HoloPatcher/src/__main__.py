@@ -850,6 +850,8 @@ class App(tk.Tk):
             7. Shows success or error message based on install result
             8. If CLI, exit regardless of success or error.
         """
+        if installer.config().confirm_message and not messagebox.askokcancel("This mod requires confirmation", installer.config().confirm_message):
+            return
         self.set_active_install(install_running=True)
         #profiler = cProfile.Profile()
         #profiler.enable()
