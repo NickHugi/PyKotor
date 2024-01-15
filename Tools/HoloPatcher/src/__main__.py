@@ -18,6 +18,8 @@ from tkinter import filedialog, messagebox, ttk
 from tkinter import font as tkfont
 from typing import TYPE_CHECKING, NoReturn
 
+from pykotor.common.stream import BinaryReader
+
 if getattr(sys, "frozen", False) is False:
     def update_sys_path(path):
         working_dir = str(path)
@@ -571,14 +573,13 @@ class App(tk.Tk):
                 ]
 
             # Strip info.rtf and display in the main window frame.
-            info_rtf = CaseAwarePath(self.mod_path, "tslpatchdata", namespace_option.rtf_filepath())
-            if not info_rtf.exists():
-                messagebox.showwarning("No info.rtf", f"Could not load the rtf for this mod, file not found on disk: {info_rtf}")
+            info_rtf_path = CaseAwarePath(self.mod_path, "tslpatchdata", namespace_option.rtf_filepath())
+            if not info_rtf_path.exists():
+                messagebox.showwarning("No info.rtf", f"Could not load the rtf for this mod, file not found on disk: {info_rtf_path}")
                 return
-            with info_rtf.open("rb") as f:
-                data: bytes = f.read()
-                rtf_text: str = decode_bytes_with_fallbacks(data)
-                self.set_stripped_rtf_text(rtf_text)
+            data: bytes = BinaryReader.load_file(info_rtf_path)
+            rtf_text: str = decode_bytes_with_fallbacks(data)
+            self.set_stripped_rtf_text(rtf_text)
         except Exception as e:  # noqa: BLE001
             error_name, msg = universal_simplify_exception(e)
             messagebox.showerror(

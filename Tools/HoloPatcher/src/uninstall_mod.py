@@ -5,6 +5,7 @@ import shutil
 from datetime import datetime
 from tkinter import messagebox
 
+from pykotor.common.stream import BinaryReader
 from pykotor.tools.encoding import decode_bytes_with_fallbacks
 from pykotor.tslpatcher.logger import PatchLogger
 from utility.error_handling import universal_simplify_exception
@@ -150,10 +151,10 @@ class ModUninstaller:
         files_to_delete: set[str] = set()
         existing_files: set[str] = set()
         if delete_list_file.exists():
-            with delete_list_file.open("rb") as f:
-                lines: list[str] = decode_bytes_with_fallbacks(f.read()).split("\n")
-                files_to_delete = {line.strip() for line in lines if line.strip()}
-                existing_files = {line.strip() for line in files_to_delete if line.strip() and Path(line.strip()).is_file()}
+            with BinaryReader.from_file(delete_list_file) as f:
+                lines: list[str] = decode_bytes_with_fallbacks(f.read_all()).split("\n")
+            files_to_delete = {line.strip() for line in lines if line.strip()}
+            existing_files = {line.strip() for line in files_to_delete if line.strip() and Path(line.strip()).is_file()}
             if len(existing_files) < len(files_to_delete) and not messagebox.askyesno(
                     "Backup out of date or mismatched",
                     (

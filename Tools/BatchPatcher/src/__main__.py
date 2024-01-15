@@ -36,7 +36,7 @@ if getattr(sys, "frozen", False) is False:
 
 
 from pykotor.common.language import Language, LocalizedString
-from pykotor.common.stream import BinaryWriter
+from pykotor.common.stream import BinaryReader, BinaryWriter
 from pykotor.extract.capsule import Capsule
 from pykotor.extract.file import FileResource, ResourceIdentifier
 from pykotor.extract.installation import Installation
@@ -365,10 +365,9 @@ def patch_and_save_noncapsule(resource: FileResource, savedir: Path | None = Non
         txi_file = resource.filepath().with_suffix(".txi")
         if txi_file.exists():
             log_output("Embedding TXI information...")
-            with txi_file.open(mode="rb") as f:
-                data: bytes = f.read()
-                txi_text: str = decode_bytes_with_fallbacks(data)
-                patched_data.txi = txi_text
+            data: bytes = BinaryReader.load_file(txi_file)
+            txi_text: str = decode_bytes_with_fallbacks(data)
+            patched_data.txi = txi_text
         TPCTGAWriter(patched_data, new_path.with_suffix(".tpc")).write()
 
 def patch_capsule_file(c_file: Path):

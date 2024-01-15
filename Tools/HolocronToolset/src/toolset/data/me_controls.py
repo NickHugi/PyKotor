@@ -7,6 +7,7 @@ from typing import TYPE_CHECKING, Any
 
 from jsmin import jsmin
 from pykotor.common.geometry import Vector2, Vector3
+from pykotor.common.stream import BinaryReader
 from pykotor.gl.scene import Camera
 from pykotor.tools.encoding import decode_bytes_with_fallbacks
 from PyQt5 import QtCore
@@ -232,8 +233,8 @@ class DynamicModuleEditorControls(ModuleEditorControls):
         self.keyReleaseEvents = []
 
         r_filepath = Path(filepath)
-        f = r_filepath.open("rb")
-        rootJSON = json.loads(jsmin(decode_bytes_with_fallbacks(f.read())))
+        data = BinaryReader.load_file(r_filepath)
+        rootJSON = json.loads(jsmin(decode_bytes_with_fallbacks(data)))
 
         self.name = rootJSON["name"]
         self.cameraStyle = rootJSON["style"]

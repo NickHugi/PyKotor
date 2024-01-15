@@ -3,6 +3,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from pykotor.common.misc import ResRef
+from pykotor.common.stream import BinaryReader
 from pykotor.extract.file import ResourceIdentifier
 from pykotor.resource.formats.erf import ERF, ERFResource, ERFType, read_erf, write_erf
 from pykotor.resource.formats.rim import RIM, RIMResource, read_rim, write_rim
@@ -263,17 +264,15 @@ class ERFEditor(Editor):
         for filepath in filepaths:
             c_filepath = Path(filepath)
             try:
-                with c_filepath.open("rb") as file:
-                    data = file.read()
+                resref, restype = ResourceIdentifier.from_path(c_filepath.parent).validate()
+                data = BinaryReader.load_file(c_filepath)
+                resource = ERFResource(ResRef(resref), restype, data)
 
-                    resref, restype = ResourceIdentifier.from_path(c_filepath.parent).validate()
-                    resource = ERFResource(ResRef(resref), restype, data)
-
-                    resrefItem = QStandardItem(str(resource.resref))
-                    resrefItem.setData(resource)
-                    restypeItem = QStandardItem(resource.restype.extension.upper())
-                    sizeItem = QStandardItem(str(len(resource.data)))
-                    self.model.appendRow([resrefItem, restypeItem, sizeItem])
+                resrefItem = QStandardItem(str(resource.resref))
+                resrefItem.setData(resource)
+                restypeItem = QStandardItem(resource.restype.extension.upper())
+                sizeItem = QStandardItem(str(len(resource.data)))
+                self.model.appendRow([resrefItem, restypeItem, sizeItem])
             except Exception as e:
                 QMessageBox(
                     QMessageBox.Critical,
@@ -325,9 +324,8 @@ class ERFEditor(Editor):
             editor.savedFile.connect(self.resourceSaved)
 
     def refresh(self):
-        with self._filepath.open("rb") as file:
-            data: bytes = file.read()
-            self.load(self._filepath, self._resname, self._restype, data)
+        data: bytes = BinaryReader.load_file(self._filepath)
+        self.load(self._filepath, self._resname, self._restype, data)
 
     def selectionChanged(self):
         """Updates UI controls based on table selection.

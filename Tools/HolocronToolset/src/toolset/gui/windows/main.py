@@ -810,12 +810,15 @@ class ToolWindow(QMainWindow):
         filepaths: list[str] = QFileDialog.getOpenFileNames(self, "Select files to open")[:-1][0]
 
         for filepath in filepaths:
-            r_filepath = Path(filepath)
             try:
-                with r_filepath.open("rb") as file:
-                    data: bytes = file.read()
-                openResourceEditor(filepath, *ResourceIdentifier.from_path(r_filepath).validate(), data, self.active, self)
-            except ValueError as e:
+                openResourceEditor(
+                    filepath,
+                    *ResourceIdentifier.from_path(filepath).validate(),
+                    BinaryReader.load_file(filepath),
+                    self.active,
+                    self,
+                )
+            except ValueError as e:  # noqa: PERF203
                 QMessageBox(QMessageBox.Critical, "Failed to open file", str(universal_simplify_exception(e))).exec_()
 
     # endregion
