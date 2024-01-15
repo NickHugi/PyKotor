@@ -256,14 +256,14 @@ class ModInstaller:
                     shutil.move(str(override_resource_path), str(renamed_file_path))
                 except Exception as e:  # noqa: BLE001
                     # Handle exceptions such as permission errors or file in use.
-                    self.log.add_error(f"Could not rename '{patch.saveas}' to '{renamed_file_path.name}' in the Override folder: {e!r}")
+                    self.log.add_error(f"Could not rename '{patch.saveas}' to '{renamed_file_path.name}' in the Override folder: {e}")
             elif override_type == OverrideType.WARN:
                 self.log.add_warning(f"A resource located at '{override_resource_path!s}' is shadowing this mod's changes in {patch.destination}!")
 
     def should_patch(
         self,
         patch: PatcherModifications,
-        exists: bool | None = False,
+        exists: bool | None = False,  # noqa: FBT002
         capsule: Capsule | None = None,
     ) -> bool:
         """The name of this function is misleading, it only returns False if the capsule was not found (error)
@@ -334,11 +334,10 @@ class ModInstaller:
             raise RuntimeError(msg)
 
         config: PatcherConfig = self.config()
-        tlk_patches: list[ModificationsTLK] = self.get_tlk_patches(config)
         temp_script_folder = self._prepare_compilelist(config)
         patches_list: list[PatcherModifications] = [
             *config.install_list,  # Note: TSLPatcher executes [InstallList] after [TLKList]
-            *tlk_patches,
+            *self.get_tlk_patches(config),
             *config.patches_2da,
             *config.patches_gff,
             *config.patches_nss,
@@ -373,7 +372,7 @@ class ModInstaller:
             except Exception as e:  # noqa: BLE001
                 self.log.add_error(str(e))
                 continue
-        if config.save_processed_scripts == 0 and temp_script_folder is not None and temp_script_folder.exists():
+        if config.save_processed_scripts == 0 and temp_script_folder is not None and temp_script_folder.safe_exists():
             self.log.add_note(f"Cleaning temporary script folder at {temp_script_folder}")
             shutil.rmtree(temp_script_folder)
 
