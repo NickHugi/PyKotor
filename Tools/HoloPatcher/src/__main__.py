@@ -774,7 +774,7 @@ class App(tk.Tk):
             - Check write access to the KOTOR install directory.
         """
 
-        def _if_missing(title, message):
+        def _if_missing(title: str, message: str):
             messagebox.showinfo(title, message)
             if self.one_shot:
                 sys.exit(ExitCode.NUMBER_OF_ARGS)
@@ -786,18 +786,26 @@ class App(tk.Tk):
                 "Wait for the previous task to finish.",
             )
             return False
-        if not self.mod_path or not CaseAwarePath(self.mod_path).exists():
+        if not self.mod_path or not CaseAwarePath(self.mod_path).safe_exists():
             return _if_missing(
                 "No mod chosen",
                 "Select your mod directory first.",
             )
         game_path: str = self.gamepaths.get()
-        if not game_path or not CaseAwarePath(game_path).exists():
+        if not game_path:
             return _if_missing(
                 "No KOTOR directory chosen",
                 "Select your KOTOR directory first.",
             )
-        return self.check_access(Path(self.gamepaths.get()))
+        case_game_path = CaseAwarePath(game_path)
+        if not case_game_path.safe_exists():
+            return _if_missing(
+                "Invalid KOTOR directory chosen",
+                "Select a valid path to your KOTOR install.",
+            )
+        game_path_str = str(case_game_path)
+        self.gamepaths.set(game_path_str)
+        return self.check_access(Path(game_path_str))
 
     def begin_install(self):
         """Starts the installation process in a background thread.
@@ -847,8 +855,8 @@ class App(tk.Tk):
 
         self.set_active_install(install_running=True)
         self.clear_main_text()
-        installer = ModInstaller(namespace_mod_path, self.gamepaths.get(), ini_file_path, self.logger)
         try:
+            installer = ModInstaller(namespace_mod_path, self.gamepaths.get(), ini_file_path, self.logger)
             self._execute_mod_install(installer)
         except Exception as e:  # noqa: BLE001
             self._handle_exception_during_install(e)

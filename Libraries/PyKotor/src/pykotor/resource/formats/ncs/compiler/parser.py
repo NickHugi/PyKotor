@@ -116,7 +116,7 @@ class NssParser:
     )
 
     def p_error(self, p: LexToken):
-        msg = f"Syntax error at line {p.lineno}, position {p.lexpos}, token='{p.value}'"  # type: ignore
+        msg = f"Syntax error at line {p.lineno}, position {p.lexpos}, token='{p.value}'"  # type: ignore[]
         raise CompileException(msg)
 
     def p_code_root(self, p):

@@ -331,11 +331,10 @@ class ModInstaller:
             raise RuntimeError(msg)
 
         config: PatcherConfig = self.config()
-        tlk_patches: list[ModificationsTLK] = self.get_tlk_patches(config)
-        temp_script_folder = self._prepare_compilelist(config)
+        temp_script_folder: CaseAwarePath | None = self._prepare_compilelist(config)
         patches_list: list[PatcherModifications] = [
             *config.install_list,  # Note: TSLPatcher executes [InstallList] after [TLKList]
-            *tlk_patches,
+            *self.get_tlk_patches(config),
             *config.patches_2da,
             *config.patches_gff,
             *config.patches_nss,
@@ -375,11 +374,12 @@ class ModInstaller:
                 self.log.add_error(str(universal_simplify_exception(e)))
                 print(format_exception_with_variables(e))
                 continue
+
         if temp_script_folder is not None and temp_script_folder.exists():
             self.log.add_note(f"Cleaning temporary script folder at {temp_script_folder}")
             shutil.rmtree(temp_script_folder)
 
-        num_patches_completed = config.patch_count()
+        num_patches_completed: int = config.patch_count()
         self.log.add_note(f"Successfully completed {num_patches_completed} {'patch' if num_patches_completed == 1 else 'total patches'}.")
 
     def _prepare_compilelist(self, config: PatcherConfig) -> CaseAwarePath | None:

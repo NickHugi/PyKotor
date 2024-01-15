@@ -60,7 +60,7 @@ if TYPE_CHECKING:
     from pykotor.tslpatcher.mods.gff import ModifyGFF
     from typing_extensions import Literal
 
-SECTION_NOT_FOUND_ERROR: str = "The [{}] section was not found in the ini"
+SECTION_NOT_FOUND_ERROR = "The [{}] section was not found in the ini"
 REFERENCES_TRACEBACK_MSG = ", referenced by '{}={}' in [{}]"
 
 class NamespaceReader:
@@ -699,18 +699,18 @@ class ConfigReader:
             return
 
         self.log.add_note("Loading [HACKList] patches from ini...")
-        compilelist_section_dict = CaseInsensitiveDict(self.ini[hacklist_section])
-        default_destination: str = compilelist_section_dict.pop("!DefaultDestination", ModificationsNCS.DEFAULT_DESTINATION)
+        hacklist_section_dict = CaseInsensitiveDict(self.ini[hacklist_section])
+        default_destination: str = hacklist_section_dict.pop("!DefaultDestination", ModificationsNCS.DEFAULT_DESTINATION)
 
-        for identifier, file in compilelist_section_dict.items():
+        for identifier, file in hacklist_section_dict.items():
             replace: bool = identifier.lower().startswith("replace")
             modifications = ModificationsNCS(file, replace)
 
-            optional_file_section_name: str | None = self.get_section_name(file)
-            if optional_file_section_name is None:
+            file_section_name: str | None = self.get_section_name(file)
+            if file_section_name is None:
                 raise KeyError(SECTION_NOT_FOUND_ERROR.format(file) + REFERENCES_TRACEBACK_MSG.format(identifier, file, hacklist_section))
 
-            file_section_dict = CaseInsensitiveDict(self.ini[optional_file_section_name])
+            file_section_dict = CaseInsensitiveDict(self.ini[file_section_name])
             modifications.pop_tslpatcher_vars(file_section_dict, default_destination)
 
             for offset_str, value_str in file_section_dict.items():
