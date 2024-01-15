@@ -129,7 +129,7 @@ class ModInstaller:
             if uninstall_dir.exists():
                 shutil.rmtree(uninstall_dir)
         except (PermissionError, OSError) as e:
-            self.log.add_warning(f"Could not initialize backup folder: {universal_simplify_exception(e)}")
+            self.log.add_warning(f"Could not initialize uninstall directory: {universal_simplify_exception(e)}")
         backup_dir = backup_dir / "backup" / timestamp
         try:  # sourcery skip: remove-redundant-exception
             backup_dir.mkdir(parents=True, exist_ok=True)
@@ -346,7 +346,6 @@ class ModInstaller:
         for patch in patches_list:
             if self.game.is_ios():  # TODO:
                 patch.destination = patch.destination.lower()
-                patch.saveas = patch.saveas.lower()
             output_container_path: CaseAwarePath = self.game_path / patch.destination
             try:
                 exists, capsule = self.handle_capsule_and_backup(patch, output_container_path)
@@ -367,16 +366,18 @@ class ModInstaller:
                     self.handle_override_type(patch)
                     capsule.add(*ResourceIdentifier.from_path(patch.saveas), patched_data)
                 else:
+                    if self.game.is_ios():  # TODO:
+                        patch.saveas = patch.saveas.lower()
                     output_container_path.mkdir(exist_ok=True, parents=True)  # Create non-existing folders when the patch demands it.
                     BinaryWriter.dump(output_container_path / patch.saveas, patched_data)
                 self.log.complete_patch()
             except Exception as e:  # noqa: BLE001
                 self.log.add_error(str(universal_simplify_exception(e)))
                 print(format_exception_with_variables(e))
-                continue
+
         if config.save_processed_scripts == 0 and temp_script_folder is not None and temp_script_folder.safe_exists():
             self.log.add_note(f"Cleaning temporary script folder at {temp_script_folder}")
-            shutil.rmtree(temp_script_folder)
+            shutil.rmtree(temp_script_folder, ignore_errors=True)
 
         num_patches_completed: int = config.patch_count()
         self.log.add_note(f"Successfully completed {num_patches_completed} {'patch' if num_patches_completed == 1 else 'total patches'}.")

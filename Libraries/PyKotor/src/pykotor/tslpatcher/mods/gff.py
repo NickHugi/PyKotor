@@ -458,7 +458,7 @@ class ModificationsGFF(PatcherModifications):
     def __init__(
         self,
         filename: str,
-        replace: bool,
+        replace: bool,  # noqa: FBT001
         modifiers: list[ModifyGFF] | None = None,
     ):
         super().__init__(filename, replace)
