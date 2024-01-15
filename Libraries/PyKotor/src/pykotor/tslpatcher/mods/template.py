@@ -55,7 +55,7 @@ class PatcherModifications(ABC):
         """All optional TSLPatcher vars that can be parsed for a given patch list."""
         self.sourcefile = file_section_dict.pop("!SourceFile", self.sourcefile)
         # !SaveAs and !Filename are the same.
-        self.saveas = file_section_dict.pop("!Filename", file_section_dict.pop("!SaveAs", self.sourcefile))
+        self.saveas = file_section_dict.pop("!Filename", file_section_dict.pop("!SaveAs", self.saveas))
         self.destination = file_section_dict.pop("!Destination", default_destination if default_destination is not None else self.DEFAULT_DESTINATION)
 
         # !ReplaceFile=1 is prioritized, see Stoffe's HLFP mod v2.1 for reference.
