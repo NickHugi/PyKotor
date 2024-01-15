@@ -445,7 +445,7 @@ class BasePath(BasePurePath):
     ) -> Generator[Self, Any, None]:  # type: ignore[reportGeneralTypeIssues]
         try:
             iterator: Generator[Self, Any, None] = self.rglob(pattern)  # type: ignore[assignment, reportGeneralTypeIssues]
-        except Exception:  # noqa: BLE001
+        except Exception as e:  # noqa: BLE001
             print(format_exception_with_variables(e,  ___message___="This exception has been suppressed and is only relevant for debug purposes."))
             return
         while True:
@@ -463,7 +463,7 @@ class BasePath(BasePurePath):
     ) -> Generator[Self, Any, None]:  # type: ignore[reportGeneralTypeIssues]
         try:
             iterator: Generator[Self, Any, None] = self.iterdir()  # type: ignore[assignment, reportGeneralTypeIssues]
-        except Exception:  # noqa: BLE001
+        except Exception as e:  # noqa: BLE001
             print(format_exception_with_variables(e,  ___message___="This exception has been suppressed and is only relevant for debug purposes."))
             return
         while True:
