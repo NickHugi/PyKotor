@@ -373,7 +373,7 @@ class ModInstaller:
             except Exception as e:  # noqa: BLE001
                 self.log.add_error(str(e))
                 continue
-        if temp_script_folder is not None and temp_script_folder.exists():
+        if config.save_processed_scripts == 0 and temp_script_folder is not None and temp_script_folder.exists():
             self.log.add_note(f"Cleaning temporary script folder at {temp_script_folder}")
             shutil.rmtree(temp_script_folder)
 

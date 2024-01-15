@@ -213,6 +213,7 @@ class ConfigReader:
         self.config.confirm_message = settings_ini.get("ConfirmMessage", "")
         self.config.required_file = settings_ini.get("Required")
         self.config.required_message = settings_ini.get("RequiredMsg", "")
+        self.config.save_processed_scripts = int(settings_ini.get("SaveProcessedScripts", 0))
 
         # hp optional
         self.config.ignore_file_extensions = bool(settings_ini.get("IgnoreExtensions")) or False
