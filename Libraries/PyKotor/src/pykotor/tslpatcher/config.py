@@ -53,6 +53,7 @@ class PatcherConfig:
 
         self.required_file: str | None = None
         self.required_message: str = ""
+        self.save_processed_scripts: int = 0
 
         # optional hp features
         self.ignore_file_extensions: bool = False
