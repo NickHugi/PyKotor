@@ -58,6 +58,7 @@ class ModInstaller:
         """
         self.log: PatchLogger = logger or PatchLogger()
         self.game_path: CaseAwarePath = CaseAwarePath.pathify(game_path)
+        self.game: Game | None = Installation.determine_game(self.game_path)
         self.mod_path: CaseAwarePath = CaseAwarePath.pathify(mod_path)
         self.changes_ini_path: CaseAwarePath = CaseAwarePath.pathify(changes_ini_path)
         if not self.changes_ini_path.exists():  # handle legacy syntax
@@ -68,7 +69,6 @@ class ModInstaller:
                 msg = f"Could not find the changes ini file {self.changes_ini_path} on disk! Could not start install!"
                 raise FileNotFoundError(msg)
 
-        self.game: Game | None = Installation.determine_game(self.game_path)
         self._config: PatcherConfig | None = None
         self._backup: CaseAwarePath | None = None
         self._processed_backup_files: set = set()
@@ -245,13 +245,11 @@ class ModInstaller:
             if override_type == OverrideType.RENAME:
                 renamed_file_path: CaseAwarePath = override_dir / f"old_{patch.saveas}"
                 i = 2
-                while renamed_file_path.exists():  # tslpatcher does not do this loop.
-                    stem: str = renamed_file_path.stem if i == 2 else renamed_file_path.stem[:4]
-                    next_filename: str = f"{stem} ({i}){renamed_file_path.suffix}"
-                    renamed_file_path = renamed_file_path.parent / next_filename
+                filestem: str = renamed_file_path.stem
+                while renamed_file_path.exists():
+                    renamed_file_path = renamed_file_path.parent / f"{filestem} ({i}){renamed_file_path.suffix}"
                     i += 1
                 try:
-                    renamed_file_path = renamed_file_path.resolve()
                     shutil.move(str(override_resource_path), str(renamed_file_path))
                 except Exception as e:  # noqa: BLE001
                     # Handle exceptions such as permission errors or file in use.
@@ -262,7 +260,7 @@ class ModInstaller:
     def should_patch(
         self,
         patch: PatcherModifications,
-        exists: bool | None = False,
+        exists: bool | None = False,  # noqa: FBT002
         capsule: Capsule | None = None,
     ) -> bool:
         """The name of this function is misleading, it only returns False if the capsule was not found (error)
