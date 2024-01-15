@@ -135,6 +135,8 @@ class ModUninstaller:
             self.log.add_note(f"Removed {rel_filepath}...")
         for file in files_in_backup:
             file_path = Path.pathify(file)
+            if file_path.name == "remove these files.txt":
+                continue
             destination_path = self.game_path / file_path.relative_to(backup_folder)  # type: ignore[attr-defined]
             destination_path.parent.mkdir(parents=True, exist_ok=True)
             shutil.copy(file_path, destination_path)
