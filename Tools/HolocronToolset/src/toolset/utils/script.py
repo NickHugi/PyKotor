@@ -8,6 +8,7 @@ from pykotor.common.stream import BinaryReader, BinaryWriter
 from pykotor.resource.formats.ncs.compilers import ExternalNCSCompiler
 from pykotor.resource.formats.ncs.ncs_auto import bytes_ncs, compile_nss
 from PyQt5.QtWidgets import QFileDialog, QMessageBox
+from pykotor.tools.path import CaseAwarePath
 from toolset.gui.widgets.settings.installations import GlobalSettings, NoConfigurationSetError
 from utility.error_handling import format_exception_with_variables
 from utility.path import Path
@@ -110,7 +111,7 @@ def compileScript(source: str, tsl: bool) -> bytes | None:
 
     if os.name == "posix" or returnValue == QMessageBox.Yes:
         print("user chose Yes, compiling with builtin")
-        return bytes_ncs(compile_nss(source, Game.K2 if tsl else Game.K1))
+        return bytes_ncs(compile_nss(source, Game.K2 if tsl else Game.K1, library_lookup=[CaseAwarePath(extract_path)]))
     if returnValue == QMessageBox.No:
         print("user chose No, compiling with nwnnsscomp")
         return _compile_windows(global_settings, extract_path, source, tsl)
