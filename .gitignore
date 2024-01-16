@@ -3,6 +3,7 @@
 venv
 .venv
 .venv_wsl
+.venv_win
 errorlog.txt
 dist
 build
