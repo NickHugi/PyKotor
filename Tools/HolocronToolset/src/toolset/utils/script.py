@@ -156,7 +156,7 @@ def _compile_windows(
     compiled_bytes = BinaryReader.load_file(tempCompiledPath)
     if not compiled_bytes:
         raise FileNotFoundError(f"Could not find temp compiled script at {tempCompiledPath}")  # noqa: TRY003, EM102
-    raise RuntimeError(f"Unknown error occurred during compilation of {tempSourcePath}")
+    raise RuntimeError(f"Unknown error occurred during compilation of {tempSourcePath}")  # noqa: TRY003, EM102
 
 def _prompt_user_for_compiler_option() -> int:
     # Create the message box
