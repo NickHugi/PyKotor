@@ -263,7 +263,7 @@ class CaseAwarePath(InternalPath):  # type: ignore[misc]
         if os.name == "nt":
             return False
         path_obj = pathlib.Path(path)
-        return path_obj.is_absolute() and not path_obj.safe_exists()
+        return path_obj.is_absolute() and not path_obj.exists()
 
     def __hash__(self):
         return hash(self.as_windows())
