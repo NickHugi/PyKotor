@@ -932,7 +932,7 @@ class App(tk.Tk):
             8. If CLI, exit regardless of success or error.
         """
         confirm_msg: str = installer.config().confirm_message.strip()
-        if confirm_msg and not messagebox.askokcancel("This mod requires confirmation", confirm_msg):
+        if confirm_msg and confirm_msg != "N/A" and not messagebox.askokcancel("This mod requires confirmation", confirm_msg):
             return
         #profiler = cProfile.Profile()
         #profiler.enable()
