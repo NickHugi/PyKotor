@@ -423,9 +423,9 @@ class ModifyFieldGFF(ModifyGFF):
             value = from_container.value(value.name)
 
         def set_locstring():
-            assert isinstance(value, LocalizedStringDelta)
             if navigated_struct.exists(label):
                 original: LocalizedString = navigated_struct.get_locstring(label)
+                assert isinstance(value, LocalizedStringDelta)
                 value.apply(original, memory)
                 navigated_struct.set_locstring(label, original)
             else:
