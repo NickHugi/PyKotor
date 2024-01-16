@@ -692,20 +692,24 @@ class ToolWindow(QMainWindow):
             loader = AsyncLoader(self, "Loading Installation", task, "Failed to load installation")
             if loader.exec_():
                 self.installations[name] = loader.value
+                self.active = loader.value
+                self.refreshModuleList(reload=False)
+                self.refreshOverrideList(reload=False)
+                self.refreshTexturePackList(reload=False)
+        else:
+            self.active = self.installations[name]
+            self.refreshModuleList(reload=True)
+            self.refreshOverrideList(reload=True)
+            self.refreshTexturePackList(reload=True)
 
         # If the data has been successfully been loaded, dump the data into the models
         if name in self.installations:
-            self.active = self.installations[name]
 
             assert_with_variable_trace(isinstance(self.active, HTInstallation))
             assert isinstance(self.active, HTInstallation)  # noqa: S101
 
-
             print("Loading installation resources into UI...")
             self.ui.coreWidget.setResources(self.active.chitin_resources())
-            self.refreshModuleList(reload=True)  # TODO: Modules/Override/Textures are loaded twice when HT is first initialized.
-            self.refreshOverrideList(reload=True)
-            self.refreshTexturePackList(reload=True)
             self.ui.texturesWidget.setInstallation(self.active)
 
             print("Updating menus...")

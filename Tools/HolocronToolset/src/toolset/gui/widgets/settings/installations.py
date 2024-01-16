@@ -3,7 +3,7 @@ from __future__ import annotations
 import os
 
 from pykotor.common.misc import Game
-from pykotor.tools.path import find_kotor_paths_from_default
+from pykotor.tools.path import CaseAwarePath, find_kotor_paths_from_default
 from PyQt5 import QtCore
 from PyQt5.QtCore import QSettings
 from PyQt5.QtGui import QStandardItem, QStandardItemModel
@@ -206,10 +206,10 @@ class GlobalSettings(Settings):
             installations = {}
 
         counters: dict[Game, int] = {Game.K1: 1, Game.K2: 1}
-        existing_paths: set[Path] = {Path(inst["path"]) for inst in installations.values()}  # Create a set of existing paths
+        existing_paths: set[CaseAwarePath] = {CaseAwarePath(inst["path"]) for inst in installations.values()}  # Create a set of existing paths
 
         for game, paths in find_kotor_paths_from_default().items():
-            for path in filter(Path.exists, paths):
+            for path in filter(CaseAwarePath.exists, paths):
                 if path in existing_paths:  # If the path is already recorded, skip to the next one
                     continue
 
