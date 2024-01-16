@@ -64,7 +64,6 @@ $pyInstallerArgs = @{
     'distpath' = ($rootPath + $pathSep + "dist")
     'name' = 'KotorDiff'
     'upx-dir' = "$env:USERPROFILE\Documents\GitHub\upx-win32"
-    'icon' = '../resources/icons/patcher_icon_v2.ico'
 }
 $pyInstallerArgsString = ($pyInstallerArgs.GetEnumerator() | ForEach-Object {
     $key = $_.Key
