@@ -471,10 +471,11 @@ def main():
             log_output("Completed with errors found during comparison")
             sys.exit(3)
     except KeyboardInterrupt:
-        if profiler is not None:
-            _stop_profiler(profiler)
         log_output("KeyboardInterrupt - KotorDiff was cancelled by user.")
         raise
+    finally:
+        if profiler is not None:
+            _stop_profiler(profiler)
 
 def _stop_profiler(profiler: cProfile.Profile):
     profiler.disable()
