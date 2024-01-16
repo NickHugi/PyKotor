@@ -465,7 +465,8 @@ class App(tk.Tk):
         self.set_active_install(install_running=True)
         self.clear_main_text()
         try:
-            ModUninstaller(backup_parent_folder, Path(self.gamepaths.get()), self.logger).uninstall_selected_mod()
+            uninstaller = ModUninstaller(backup_parent_folder, Path(self.gamepaths.get()), self.logger)
+            uninstaller.uninstall_selected_mod()
         except Exception as e:  # noqa: BLE001
             self._handle_exception_during_install(e)
         finally:
