@@ -1484,8 +1484,8 @@ class ConditionalBlock(Statement):
         break_instruction: NCSInstruction | None,
         continue_instruction: NCSInstruction | None,
     ):
-        jump_count = 1 + len(self.if_blocks)
-        jump_tos = [NCSInstruction(NCSInstructionType.NOP, args=[]) for i in range(jump_count)]
+        jump_count: int = 1 + len(self.if_blocks)
+        jump_tos: list[NCSInstruction] = [NCSInstruction(NCSInstructionType.NOP, args=[]) for _ in range(jump_count)]
 
         for i, else_if in enumerate(self.if_blocks):
             else_if.condition.compile(ncs, root, block)

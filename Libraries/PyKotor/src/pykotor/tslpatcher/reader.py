@@ -846,12 +846,10 @@ class ConfigReader:
         value: FieldValue = self._get_addfield_value(ini_data, field_type, identifier)
 
         # Check if label unset to determine if current ini section is a struct inside a list.
-        # NOTE: The `field_type == GFFFieldType.Struct` check below is unnecessary but provided
-        # for clarity.  Label should never be defined in gfflist struct sections.
         if not label and field_type == GFFFieldType.Struct:
             return AddStructToListGFF(identifier, value, path, index_in_list_token, modifiers)
 
-        # if field_type == GFFFieldType.Struct:
+        # if field_type == GFFFieldType.Struct:  # not sure if this is invalid syntax or not.
         #     msg = f"Label={label} cannot be used when FieldType={GFFFieldType.Struct.value}. Error happened in [{identifier}] section in ini."
         #     raise ValueError(msg)
         if not label:
