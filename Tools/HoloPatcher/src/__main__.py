@@ -190,27 +190,27 @@ class App(tk.Tk):
 
         # DeadlyStream submenu
         deadlystream_menu = tk.Menu(help_menu, tearoff=0)
-        deadlystream_menu.add_command(label="Discord", command=self.open_deadlystream_discord)
-        deadlystream_menu.add_command(label="Website", command=self.open_deadlystream_website)
+        deadlystream_menu.add_command(label="Discord", command=lambda: webbrowser.open_new("https://discord.gg/nDkHXfc36s"))
+        deadlystream_menu.add_command(label="Website", command=lambda: webbrowser.open_new("https://deadlystream.com"))
         help_menu.add_cascade(label="DeadlyStream", menu=deadlystream_menu)
 
         # Neocities submenu
         neocities_menu = tk.Menu(help_menu, tearoff=0)
-        neocities_menu.add_command(label="Discord", command=self.open_neocities_discord)
-        neocities_menu.add_command(label="Website", command=self.open_neocities_website)
+        neocities_menu.add_command(label="Discord", command=lambda: webbrowser.open_new("https://discord.com/invite/kotor"))
+        neocities_menu.add_command(label="Website", command=lambda: webbrowser.open_new("https://kotor.neocities.org"))
         help_menu.add_cascade(label="KOTOR Community Portal", menu=neocities_menu)
 
         # PCGamingWiki submenu
         pcgamingwiki_menu = tk.Menu(help_menu, tearoff=0)
-        pcgamingwiki_menu.add_command(label="KOTOR 1", command=self.open_pcgamingwiki_kotor1)
-        pcgamingwiki_menu.add_command(label="KOTOR 2: TSL", command=self.open_pcgamingwiki_kotor2)
+        pcgamingwiki_menu.add_command(label="KOTOR 1", command=lambda: webbrowser.open_new("https://www.pcgamingwiki.com/wiki/Star_Wars:_Knights_of_the_Old_Republic"))
+        pcgamingwiki_menu.add_command(label="KOTOR 2: TSL", command=lambda: webbrowser.open_new("https://www.pcgamingwiki.com/wiki/Star_Wars:_Knights_of_the_Old_Republic_II_-_The_Sith_Lords"))
         help_menu.add_cascade(label="PCGamingWiki", menu=pcgamingwiki_menu)
 
         # About menu
         about_menu = tk.Menu(self.menu_bar, tearoff=0)
         about_menu.add_command(label="Check for Updates", command=self.check_for_updates)
-        about_menu.add_command(label="HoloPatcher Home", command=self.open_hp_homepage)
-        about_menu.add_command(label="GitHub Source", command=self.open_github)
+        about_menu.add_command(label="HoloPatcher Home", command=lambda: webbrowser.open_new("https://deadlystream.com/files/file/2243-holopatcher"))
+        about_menu.add_command(label="GitHub Source", command=lambda: webbrowser.open_new("https://github.com/NickHugi/PyKotor"))
         self.menu_bar.add_cascade(label="About", menu=about_menu)
 
     def initialize_ui_controls(self):
@@ -331,23 +331,6 @@ class App(tk.Tk):
                     "Check if you are connected to the internet."
                 ),
             )
-
-    def open_hp_homepage(self):
-        webbrowser.open_new("https://deadlystream.com/files/file/2243-holopatcher")
-    def open_github(self):
-        webbrowser.open_new("https://github.com/NickHugi/PyKotor")
-    def open_deadlystream_discord(self):
-        webbrowser.open_new("https://discord.gg/nDkHXfc36s")
-    def open_neocities_discord(self):
-        webbrowser.open_new("https://discord.com/invite/kotor")
-    def open_deadlystream_website(self):
-        webbrowser.open_new("https://deadlystream.com")
-    def open_neocities_website(self):
-        webbrowser.open_new("https://kotor.neocities.org")
-    def open_pcgamingwiki_kotor1(self):
-        webbrowser.open_new("https://www.pcgamingwiki.com/wiki/Star_Wars:_Knights_of_the_Old_Republic")
-    def open_pcgamingwiki_kotor2(self):
-        webbrowser.open_new("https://www.pcgamingwiki.com/wiki/Star_Wars:_Knights_of_the_Old_Republic_II_-_The_Sith_Lords")
 
     def handle_commandline(
         self,
@@ -479,8 +462,14 @@ class App(tk.Tk):
                 f"Could not find backup folder '{backup_parent_folder}'{os.linesep*2}Are you sure the mod is installed?",
             )
             return
+        self.set_active_install(install_running=True)
         self.clear_main_text()
-        ModUninstaller(backup_parent_folder, Path(self.gamepaths.get()), self.logger).uninstall_selected_mod()
+        try:
+            ModUninstaller(backup_parent_folder, Path(self.gamepaths.get()), self.logger).uninstall_selected_mod()
+        except Exception as e:  # noqa: BLE001
+            self._handle_exception_during_install(e)
+        finally:
+            self.set_active_install(install_running=False)
 
     def handle_exit_button(self):
         """Handle exit button click during installation.
@@ -499,7 +488,7 @@ class App(tk.Tk):
         # Handle unsafe exit.
         if not messagebox.askyesno(
             "Really cancel the current installation? ",
-            "CONTINUING WILL BREAK YOUR GAME AND REQUIRE A FULL KOTOR REINSTALL!",
+            "CONTINUING WILL MOST LIKELY BREAK YOUR GAME AND REQUIRE A FULL KOTOR REINSTALL!",
         ):
             return
         with contextlib.suppress(Exception):
@@ -860,7 +849,8 @@ class App(tk.Tk):
             self._execute_mod_install(installer)
         except Exception as e:  # noqa: BLE001
             self._handle_exception_during_install(e)
-        self.set_active_install(install_running=False)
+        finally:
+            self.set_active_install(install_running=False)
 
     def test_reader(self):  # sourcery skip: no-conditionals-in-tests
         if not self.preinstall_validate_chosen():
@@ -875,7 +865,8 @@ class App(tk.Tk):
             reader.load(reader.config)
         except Exception as e:  # noqa: BLE001
             messagebox.showerror(*universal_simplify_exception(e))
-        self.set_active_install(install_running=False)
+        finally:
+            self.set_active_install(install_running=False)
 
     def set_active_install(
         self,
@@ -1011,7 +1002,6 @@ class App(tk.Tk):
             error_name,
             f"An unexpected error occurred during the installation and the installation was forced to terminate.{os.linesep*2}{msg}",
         )
-        self.set_active_install(install_running=False)
         raise
 
     def set_stripped_rtf_text(
