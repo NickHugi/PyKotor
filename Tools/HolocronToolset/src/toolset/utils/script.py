@@ -7,8 +7,8 @@ from pykotor.common.misc import Game
 from pykotor.common.stream import BinaryReader, BinaryWriter
 from pykotor.resource.formats.ncs.compilers import ExternalNCSCompiler
 from pykotor.resource.formats.ncs.ncs_auto import bytes_ncs, compile_nss
-from PyQt5.QtWidgets import QFileDialog, QMessageBox
 from pykotor.tools.path import CaseAwarePath
+from PyQt5.QtWidgets import QFileDialog, QMessageBox
 from toolset.gui.widgets.settings.installations import GlobalSettings, NoConfigurationSetError
 from utility.error_handling import format_exception_with_variables
 from utility.path import Path
