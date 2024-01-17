@@ -89,9 +89,10 @@ class InstallationsWidget(QWidget):
         installations: dict[str, dict[str, str]] = {}
 
         for row in range(self.installationsModel.rowCount()):
-            item = self.installationsModel.item(row, 0)
-            installations[item.text()] = item.data()
-            installations[item.text()]["name"] = item.text()
+            item: QStandardItem = self.installationsModel.item(row, 0)
+            item_text: str = item.text()
+            installations[item_text] = item.data()
+            installations[item_text]["name"] = item_text
 
         self.settings.settings.setValue("installations", installations)
 
