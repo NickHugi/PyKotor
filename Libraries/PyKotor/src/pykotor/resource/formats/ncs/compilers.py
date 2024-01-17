@@ -7,21 +7,69 @@ from pykotor.common.misc import Game
 from pykotor.common.stream import BinaryReader
 from pykotor.resource.formats.ncs.ncs_auto import compile_nss, write_ncs
 from pykotor.resource.formats.ncs.ncs_data import NCSCompiler
+from pykotor.tools.path import CaseAwarePath
 from utility.misc import generate_sha256_hash
 from utility.path import Path
 
 if TYPE_CHECKING:
     import os
 
+    from pykotor.resource.formats.ncs.ncs_data import NCS
+
 
 class InbuiltNCSCompiler(NCSCompiler):
-    def compile_script(self, source_path: str, output_path: str, game: Game) -> None:
-        source = BinaryReader.load_file(source_path).decode(errors="ignore")
-        ncs = compile_nss(source, game)
+    """A class representing an inbuilt NCS compiler.
+
+    This class provides functionality to compile a NSS script into NCS using an inbuilt compiler.
+
+    Methods:
+    -------
+        compile_script(source_path, output_path, game): Compiles a NSS script into NCS.
+
+    Args:
+    ----
+        source_path (os.PathLike | str): The path to the source file to compile.
+        output_path (os.PathLike | str): The path to the output file to generate.
+        game (Game): The Game enum value.
+    """
+
+    def compile_script(self, source_path: os.PathLike | str, output_path: os.PathLike | str, game: Game) -> None:
+        """Compiles a NSS script into NCS.
+
+        Args:
+        ----
+            source_path: The path to the source file to compile.
+            output_path: The path to the output file to generate.
+            game: The Game enum value.
+        """
+        source_path_obj = CaseAwarePath(source_path)
+        source = BinaryReader.load_file(source_path_obj).decode(errors="ignore")
+        ncs: NCS = compile_nss(source, game, library_lookup=[source_path_obj.parent])
         write_ncs(ncs, output_path)
 
 
 class ExternalNCSCompiler(NCSCompiler):
+    """A class representing an external NCS compiler.
+
+    This class provides functionality to configure and use an external NCS compiler for compiling and decompiling NSS scripts.
+
+    Args:
+    ----
+        nwnnsscomp_path: The path to the nwnnsscomp executable.
+
+    Attributes:
+    ----------
+        nwnnsscomp_path (Path): The path to the nwnnsscomp executable.
+        filehash (str): The SHA256 hash of the nwnnsscomp executable.
+        config (NwnnsscompConfig | None): The configuration object for the NCS compiler.
+
+    Methods:
+    -------
+        configure(source_file, output_file, game): Configures a Nwnnsscomp run.
+        compile_script(source_file, output_file, game, timeout=5): Compiles a NSS script into NCS using the external compiler.
+        decompile_script(source_file, output_file, game, timeout=5): Decompiles a script file into C# source code.
+    """
+
     NWNNSSCOMP_SHA256_HASHES: ClassVar[dict[str, str]] = {
         "TSLPatcher": "539EB689D2E0D3751AEED273385865278BEF6696C46BC0CAB116B40C3B2FE820",  # TSLPatcher (2009)
         "Kotor Tool": "E36AA3172173B654AE20379888EDDC9CF45C62FBEB7AB05061C57B52961C824D",  # KotorTool (2005)
@@ -30,7 +78,31 @@ class ExternalNCSCompiler(NCSCompiler):
     }
 
     class NwnnsscompConfig:
-        """Unifies the arguments passed to each different version of nwnnsscomp. No versions offer backwards-compatibility with each other."""
+        """Unifies the arguments passed to each different version of nwnnsscomp. No versions offer backwards-compatibility with each other.
+
+        Args:
+        ----
+            sha256_hash (str): The SHA256 hash of the nwnnsscomp executable.
+            source (Path): The path to the source file to compile.
+            output (Path): The path to the output file to generate.
+            game_value (Game): The Game enum value.
+
+        Attributes:
+        ----------
+            sha256_hash (str): The SHA256 hash of the nwnnsscomp executable.
+            source (Path): The path to the source file to compile.
+            output (Path): The path to the output file to generate.
+            output_dir (Path): The parent directory of the output file.
+            output_name (str): The name of the output file.
+            game_value (Game): The Game enum value.
+            compile_args (list[str]): The arguments for compilation.
+            decompile_args (list[str]): The arguments for decompilation.
+
+        Methods:
+        -------
+            get_compile_args(executable): Returns the formatted compilation arguments.
+            get_decompile_args(executable): Returns the formatted decompilation arguments.
+        """
 
         def __init__(self, sha256_hash: str, source: Path, output: Path, game_value: Game) -> None:
             self.sha256_hash: str = sha256_hash
@@ -65,8 +137,8 @@ class ExternalNCSCompiler(NCSCompiler):
                 },
             }
 
-            config = arg_configurations.get(self.sha256_hash)
-            if not config:
+            config: dict[str, list[str]] | None = arg_configurations.get(self.sha256_hash)
+            if config is None:
                 msg = "Unknown NWNNSSCOMP hash"
                 raise ValueError(msg)
             self.compile_args = config["compile"]
