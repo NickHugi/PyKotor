@@ -153,10 +153,9 @@ def _compile_windows(
     # Need to try unify this so each platform uses the same version and try
     # move away from registry keys (I don't even know how Mac/Linux determine KotOR's installation path).
 
-    compiled_bytes = BinaryReader.load_file(tempCompiledPath)
-    if not compiled_bytes:
+    if not tempCompiledPath.exists():
         raise FileNotFoundError(f"Could not find temp compiled script at {tempCompiledPath}")  # noqa: TRY003, EM102
-    raise RuntimeError(f"Unknown error occurred during compilation of {tempSourcePath}")  # noqa: TRY003, EM102
+    return BinaryReader.load_file(tempCompiledPath)
 
 def _prompt_user_for_compiler_option() -> int:
     # Create the message box
