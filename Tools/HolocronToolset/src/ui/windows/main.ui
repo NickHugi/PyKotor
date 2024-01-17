@@ -641,7 +641,7 @@
   </action>
   <action name="actionDiscordKotOR">
    <property name="text">
-    <string>r/KotOR</string>
+    <string>KOTOR Community Portal</string>
    </property>
   </action>
   <action name="actionDiscordDeadlyStream">

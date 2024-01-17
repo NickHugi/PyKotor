@@ -388,7 +388,7 @@ class Ui_MainWindow(object):
         self.actionEditModule.setText(_translate("MainWindow", "Edit Module"))
         self.actionInstructions.setText(_translate("MainWindow", "Instructions"))
         self.actionDiscordHolocronToolset.setText(_translate("MainWindow", "Holocron Toolset"))
-        self.actionDiscordKotOR.setText(_translate("MainWindow", "r/KotOR"))
+        self.actionDiscordKotOR.setText(_translate("MainWindow", "KOTOR Community Portal"))
         self.actionDiscordDeadlyStream.setText(_translate("MainWindow", "Deadly Stream"))
         self.actionModuleDesigner.setText(_translate("MainWindow", "Module Designer"))
 import toolset.resources_rc
