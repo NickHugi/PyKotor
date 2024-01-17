@@ -967,7 +967,7 @@ class App(tk.Tk):
         else:
             messagebox.showinfo(
                 "Install complete!",
-                f"Check the logs for details for what has been done. Utilize the script in the 'uninstall' folder of the mod directory to revert these changes.{os.linesep*2}Total install time: {time_str}",
+                f"Check the logs for details on what has been done. Utilize the script in the 'uninstall' folder of the mod directory to revert these changes.{os.linesep*2}Total install time: {time_str}",
             )
             if self.one_shot:
                 sys.exit(ExitCode.SUCCESS)
