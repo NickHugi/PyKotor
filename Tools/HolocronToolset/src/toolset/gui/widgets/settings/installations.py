@@ -9,7 +9,6 @@ from PyQt5.QtCore import QSettings
 from PyQt5.QtGui import QStandardItem, QStandardItemModel
 from PyQt5.QtWidgets import QWidget
 from toolset.data.settings import Settings
-from utility.path import Path
 
 
 class InstallationsWidget(QWidget):

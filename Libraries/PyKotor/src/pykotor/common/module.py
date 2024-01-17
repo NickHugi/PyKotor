@@ -9,7 +9,7 @@ from pykotor.extract.capsule import Capsule
 from pykotor.extract.file import LocationResult, ResourceIdentifier, ResourceResult
 from pykotor.extract.installation import Installation, SearchLocation
 from pykotor.resource.formats.bwm import bytes_bwm, read_bwm
-from pykotor.resource.formats.erf import ERFType, read_erf, write_erf
+from pykotor.resource.formats.erf import read_erf, write_erf
 from pykotor.resource.formats.gff import read_gff
 from pykotor.resource.formats.lyt import bytes_lyt, read_lyt
 from pykotor.resource.formats.rim import read_rim, write_rim
