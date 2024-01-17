@@ -21,7 +21,6 @@ if UTILITY_PATH.joinpath("utility").exists():
 
 from pykotor.extract.chitin import Chitin
 
-
 NWN_BASE_PATH = r"C:\Program Files (x86)\Steam\steamapps\common\Neverwinter Nights"
 NWN_KEY_PATH = r"C:\Program Files (x86)\Steam\steamapps\common\Neverwinter Nights\data\nwn_base.key"
 K1_PATH = os.environ.get("K1_PATH")

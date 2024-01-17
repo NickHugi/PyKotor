@@ -7,7 +7,7 @@ from typing import NamedTuple
 from pykotor.common.script import DataType, ScriptConstant, ScriptFunction
 from pykotor.common.stream import BinaryReader
 from pykotor.resource.formats.ncs import NCS, NCSInstruction, NCSInstructionType
-from pykotor.tools.path import CaseAwarePath
+from utility.path import Path
 
 
 def get_logical_equality_instruction(
@@ -236,7 +236,8 @@ class StructMember:
         elif self.datatype.builtin == DataType.STRUCT:
             root.struct_map[self.identifier.label].initialize(ncs, root)
         else:
-            raise CompileException
+            msg = f"Unknown datatype: {self.datatype.builtin}"
+            raise CompileException(msg)
 
     def size(self, root: CodeRoot):
         return self.datatype.size(root)
@@ -247,7 +248,7 @@ class CodeRoot:
         self,
         constants: list[ScriptConstant],
         functions: list[ScriptFunction],
-        library_lookup: list[str] | list[CaseAwarePath] | str | CaseAwarePath | None,
+        library_lookup: list[str] | list[Path] | list[Path | str] | str | Path | None,
         library: dict[str, bytes],
     ):
         self.objects: list[TopLevelObject] = []
@@ -255,19 +256,11 @@ class CodeRoot:
         self.library: dict[str, bytes] = library
         self.functions: list[ScriptFunction] = functions
         self.constants: list[ScriptConstant] = constants
-        self.library_lookup: list[CaseAwarePath] = []
-        if not library_lookup:
-            pass
-        elif isinstance(library_lookup, list):
-            for library_path in library_lookup:
-                if isinstance(library_path, CaseAwarePath):
-                    self.library_lookup.append(library_path)
-                elif library_path:
-                    self.library_lookup.append(CaseAwarePath(library_path))
-        elif isinstance(library_lookup, CaseAwarePath):
-            self.library_lookup = [library_lookup]
-        else:
-            self.library_lookup = [CaseAwarePath(library_lookup)]
+        self.library_lookup: list[Path] = []
+        if library_lookup:
+            if not isinstance(library_lookup, list):
+                library_lookup = [library_lookup]
+            self.library_lookup = [Path.pathify(item) for item in library_lookup]
 
         self.function_map: dict[str, FunctionReference] = {}
         self._global_scope: list[ScopedValue] = []
@@ -279,13 +272,13 @@ class CodeRoot:
 
         included: list[IncludeScript] = []
         while [obj for obj in self.objects if isinstance(obj, IncludeScript)]:
-            includes = [obj for obj in self.objects if isinstance(obj, IncludeScript)]
-            include = includes.pop()
+            includes: list[IncludeScript] = [obj for obj in self.objects if isinstance(obj, IncludeScript)]
+            include: IncludeScript = includes.pop()
             self.objects.remove(include)
             included.append(include)
             include.compile(ncs, self)
 
-        script_globals = [
+        script_globals: list[GlobalVariableDeclaration | GlobalVariableInitialization | StructDefinition] = [
             obj
             for obj in self.objects
             if isinstance(
@@ -293,13 +286,13 @@ class CodeRoot:
                 (GlobalVariableDeclaration, GlobalVariableInitialization, StructDefinition),
             )
         ]
-        others = [obj for obj in self.objects if obj not in included and obj not in script_globals]
+        others: list[TopLevelObject] = [obj for obj in self.objects if obj not in included and obj not in script_globals]
 
         if script_globals:
             for global_def in script_globals:
                 global_def.compile(ncs, self)
             ncs.add(NCSInstructionType.SAVEBP, args=[])
-        entry_index = len(ncs.instructions)
+        entry_index: int = len(ncs.instructions)
 
         for obj in others:
             obj.compile(ncs, self)
@@ -329,9 +322,9 @@ class CodeRoot:
     ) -> DynamicDataType:
         args_list = list(args)
 
-        func_map = self.function_map[name]
-        definition = func_map.definition
-        start_instruction = func_map.instruction
+        func_map: FunctionReference = self.function_map[name]
+        definition: FunctionForwardDeclaration | FunctionDefinition = func_map.definition
+        start_instruction: NCSInstruction = func_map.instruction
 
         if definition.return_type == DynamicDataType.INT:
             ncs.add(NCSInstructionType.RSADDI, args=[])
@@ -372,7 +365,7 @@ class CodeRoot:
 
         offset = 0
         for param, arg in zip(definition.parameters, args_list):
-            arg_datatype = arg.compile(ncs, self, block)
+            arg_datatype: DynamicDataType = arg.compile(ncs, self, block)
             offset += arg_datatype.size(self)
             block.temp_stack += arg_datatype.size(self)
             if param.data_type != arg_datatype:
@@ -424,16 +417,25 @@ class CodeBlock:
         self._parent = block
 
         for statement in self._statements:
-            if isinstance(statement, ReturnStatement):
-                scope_size = self.full_scope_size(root)
-
-                return_type = statement.compile(
+            if not isinstance(statement, ReturnStatement):
+                statement.compile(
                     ncs,
                     root,
                     self,
                     return_instruction,
-                    None,
-                    None,
+                    break_instruction,
+                    continue_instruction,
+                )
+            else:
+                scope_size = self.full_scope_size(root)
+
+                return_type: DynamicDataType = statement.compile(
+                    ncs,
+                    root,
+                    self,
+                    return_instruction,
+                    break_instruction=None,
+                    continue_instruction=None,
                 )
                 if return_type != DynamicDataType.VOID:
                     ncs.add(
@@ -445,15 +447,6 @@ class CodeBlock:
                 ncs.add(NCSInstructionType.MOVSP, args=[-scope_size])
                 ncs.add(NCSInstructionType.JMP, jump=return_instruction)
                 return
-            else:
-                statement.compile(
-                    ncs,
-                    root,
-                    self,
-                    return_instruction,
-                    break_instruction,
-                    continue_instruction,
-                )
         ncs.instructions.append(
             NCSInstruction(NCSInstructionType.MOVSP, [-self.scope_size(root)]),
         )
@@ -481,7 +474,7 @@ class CodeBlock:
             if self._parent is not None:
                 return self._parent.get_scoped(identifier, root, offset)
             return root.get_scoped(identifier, root)
-        return GetScopedResult(False, scoped.data_type, offset)
+        return GetScopedResult(is_global=False, datatype=scoped.data_type, offset=offset)
 
     def scope_size(self, root: CodeRoot) -> int:
         """Returns size of local scope."""
@@ -499,7 +492,7 @@ class CodeBlock:
         """Returns size of scope up to the nearest loop/switch statement."""
         size = 0
         size += self.scope_size(root)
-        if self._parent is not None and not self._parent._break_scope:
+        if self._parent is not None and not self._parent._break_scope:  # noqa: SLF001
             size += self._parent.break_scope_size(root)
         return size
 
@@ -568,17 +561,14 @@ class FunctionDefinition(TopLevelObject):
 
         # Make sure params are all constant values
         for param in self.parameters:
-            if isinstance(
-                param.default,
-                IdentifierExpression,
-            ) and not param.default.is_constant(root):
+            if isinstance(param.default, IdentifierExpression) and not param.default.is_constant(root):
                 msg = f"Non-constant default value specified for function prototype parameter '{param.identifier}'."
                 raise CompileException(msg)
 
         if name in root.function_map and not root.function_map[name].is_prototype():
             msg = f"Function '{name}' has already been defined."
             raise CompileException(msg)
-        elif name in root.function_map and root.function_map[name].is_prototype():
+        if name in root.function_map and root.function_map[name].is_prototype():
             self._compile_function(root, name, ncs)
         else:
             retn = NCSInstruction(NCSInstructionType.RETN)
@@ -589,22 +579,23 @@ class FunctionDefinition(TopLevelObject):
 
             root.function_map[name] = FunctionReference(function_start, self)
 
-    def _compile_function(self, root, name, ncs):
-        """
-        Compiles a function definition
+    def _compile_function(self, root: CodeRoot, name: str, ncs: NCS):
+        """Compiles a function definition.
+
         Args:
+        ----
             self: The compiler instance
             root: The root node of the AST
             name: The name of the function
             ncs: The NCS block to insert the compiled code into
-        Returns:
-            None: Does not return anything
+
         Processing Logic:
         ----------------
-        1. Checks if the function signature matches the definition
-        2. Creates a temporary NCS block to hold the compiled code
-        3. Compiles the function body into the temporary block
-        4. Inserts the compiled code after the forward declaration in the original block"""
+            1. Checks if the function signature matches the definition
+            2. Creates a temporary NCS block to hold the compiled code
+            3. Compiles the function body into the temporary block
+            4. Inserts the compiled code after the forward declaration in the original block
+        """
         if not self.is_matching_signature(root.function_map[name].definition):
             msg = f"Prototype of function '{name}' does not match definition."
             raise CompileException(msg)
@@ -615,10 +606,10 @@ class FunctionDefinition(TopLevelObject):
         self.block.compile(temp, root, None, retn, None, None)
         temp.instructions.append(retn)
 
-        stub_index = ncs.instructions.index(root.function_map[name].instruction)
+        stub_index: int = ncs.instructions.index(root.function_map[name].instruction)
         ncs.instructions[stub_index + 1 : stub_index + 1] = temp.instructions
 
-    def is_matching_signature(self, prototype: FunctionForwardDeclaration) -> bool:
+    def is_matching_signature(self, prototype: FunctionForwardDeclaration | FunctionDefinition) -> bool:
         if self.return_type != prototype.return_type:
             return False
         if len(self.parameters) != len(prototype.parameters):
@@ -727,11 +718,11 @@ class FieldAccess:
             msg = "len(self.identifiers) == 0"
             raise CompileException(msg)
 
-        first = self.identifiers[0]
-        scoped = block.get_scoped(first, root)
+        first: Identifier = self.identifiers[0]
+        scoped: GetScopedResult = block.get_scoped(first, root)
 
-        is_global = scoped.is_global
-        offset = scoped.offset
+        is_global: bool = scoped.is_global
+        offset: int = scoped.offset
         datatype: DynamicDataType = scoped.datatype
 
         for next_ident in self.identifiers[1:]:
@@ -748,11 +739,12 @@ class FieldAccess:
                     msg = f"Attempting to access unknown member '{next_ident}' on datatype '{datatype}'."
                     raise CompileException(msg)
             elif datatype.builtin == DataType.STRUCT:
-                offset += root.struct_map[datatype._struct].child_offset(
+                assert datatype._struct is not None  # noqa: SLF001
+                offset += root.struct_map[datatype._struct].child_offset(  # noqa: SLF001
                     root,
                     next_ident,
                 )
-                datatype = root.struct_map[datatype._struct].child_type(
+                datatype = root.struct_map[datatype._struct].child_type(  # noqa: SLF001
                     root,
                     next_ident,
                 )
@@ -782,10 +774,7 @@ class IdentifierExpression(Expression):
 
     def compile(self, ncs: NCS, root: CodeRoot, block: CodeBlock) -> DynamicDataType:
         # Scan for any constants that are stored as part of the compiler (from nwscript).
-        constant = next(
-            (constant for constant in root.constants if constant.name == self.identifier.label),
-            None,
-        )
+        constant: ScriptConstant | None = self.get_constant(root)
         if constant is not None:
             if constant.datatype == DataType.INT:
                 ncs.add(NCSInstructionType.CONSTI, args=[int(constant.value)])
@@ -794,19 +783,20 @@ class IdentifierExpression(Expression):
             elif constant.datatype == DataType.STRING:
                 ncs.add(NCSInstructionType.CONSTS, args=[str(constant.value)])
             return DynamicDataType(constant.datatype)
+
         is_global, datatype, stack_index = block.get_scoped(self.identifier, root)
         instruction_type = NCSInstructionType.CPTOPBP if is_global else NCSInstructionType.CPTOPSP
         ncs.add(instruction_type, args=[stack_index, datatype.size(root)])
         return datatype
 
-    def is_constant(self, root: CodeRoot) -> bool:
-        return (
-            next(
-                (constant for constant in root.constants if constant.name == self.identifier.label),
-                None,
-            )
-            is not None
+    def get_constant(self, root: CodeRoot) -> ScriptConstant | None:
+        return next(
+            (constant for constant in root.constants if constant.name == self.identifier.label),
+            None,
         )
+
+    def is_constant(self, root: CodeRoot) -> bool:
+        return self.get_constant(root) is not None
 
 
 class FieldAccessExpression(Expression):
@@ -908,8 +898,7 @@ class VectorExpression(Expression):
     def __eq__(self, other: VectorExpression):
         if isinstance(other, VectorExpression):
             return self.x == other.x and self.y == other.y and self.z == other.z
-        else:
-            return NotImplemented
+        return NotImplemented
 
     def data_type(self) -> DynamicDataType:
         return DynamicDataType.FLOAT
@@ -946,7 +935,7 @@ class EngineCallExpression(Expression):
                 if param.default is None:
                     msg = f"Not enough arguments passed to '{self._function.name}'."
                     raise CompileException(msg)
-                constant = next(
+                constant: ScriptConstant | None = next(
                     (constant for constant in root.constants if constant.name == param.default),
                     None,
                 )

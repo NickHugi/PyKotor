@@ -59,8 +59,9 @@ class ERFEditor(Editor):
         self.ui.tableView.selectionModel().selectionChanged.connect(self.selectionChanged)
 
         # Disable saving file into module
-        self._saveFilter = self._saveFilter.replace(";;Save into module (*.erf *.mod *.rim *.sav)", "")
-        self._openFilter = self._openFilter.replace(";;Load from module (*.erf *.mod *.rim *.sav)", "")
+        capsule_types = " ".join(f"*.{e.name.lower()}" for e in ERFType) + " *.rim"
+        self._saveFilter = self._saveFilter.replace(f";;Save into module ({capsule_types})", "")
+        self._openFilter = self._openFilter.replace(f";;Load from module ({capsule_types})", "")
 
         self.new()
 

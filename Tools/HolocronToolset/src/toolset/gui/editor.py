@@ -87,21 +87,22 @@ class Editor(QMainWindow):
         self.setWindowTitle(title)
         self._setupIcon(iconName)
 
+        capsule_types = " ".join(f"*.{e.name.lower()}" for e in ERFType) + " *.rim"
         self._saveFilter: str = "All valid files ("
         for resource in writeSupported:
             self._saveFilter += f'*.{resource.extension}{"" if writeSupported[-1] == resource else " "}'
-        self._saveFilter += " *.erf *.mod *.rim *.sav);;"
+        self._saveFilter += f" {capsule_types});;"
         for resource in writeSupported:
             self._saveFilter += f"{resource.category} File (*.{resource.extension});;"
-        self._saveFilter += "Save into module (*.erf *.mod *.rim *.sav)"
+        self._saveFilter += f"Save into module ({capsule_types})"
 
         self._openFilter: str = "All valid files ("
         for resource in readSupported:
             self._openFilter += f'*.{resource.extension}{"" if readSupported[-1] == resource else " "}'
-        self._openFilter += " *.erf *.mod *.rim *.sav);;"
+        self._openFilter += f" {capsule_types});;"
         for resource in readSupported:
             self._openFilter += f"{resource.category} File (*.{resource.extension});;"
-        self._openFilter += "Load from module (*.erf *.mod *.rim *.sav)"
+        self._openFilter += f"Load from module ({capsule_types})"
 
     def _setupMenus(self):
         """Sets up menu actions and keyboard shortcuts.
@@ -177,7 +178,8 @@ class Editor(QMainWindow):
         if not filepath_str:
             return
 
-        if is_capsule_file(filepath_str) and "Save into module (*.erf *.mod *.rim *.sav)" in self._saveFilter:
+        capsule_types = " ".join(f"*.{e.name.lower()}" for e in ERFType) + " *.rim"
+        if is_capsule_file(filepath_str) and f"Save into module ({capsule_types})" in self._saveFilter:
             if self._resname is None:
                 self._resname = "new"
                 self._restype = self._writeSupported[0]
@@ -398,7 +400,9 @@ class Editor(QMainWindow):
         if not filepath_str.strip():
             return
         r_filepath = Path(filepath_str)
-        if is_capsule_file(r_filepath) and "Load from module (*.erf *.mod *.rim *.sav)" in self._openFilter:
+
+        capsule_types = " ".join(f"*.{e.name.lower()}" for e in ERFType) + " *.rim"
+        if is_capsule_file(r_filepath) and f"Load from module ({capsule_types})" in self._openFilter:
             dialog = LoadFromModuleDialog(Capsule(r_filepath), self._readSupported)
             if dialog.exec_():
                 self.load_module_from_dialog_info(dialog, r_filepath)

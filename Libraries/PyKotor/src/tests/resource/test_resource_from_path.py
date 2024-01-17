@@ -21,6 +21,7 @@ if UTILITY_PATH.joinpath("utility").exists():
 from pykotor.extract.file import ResourceIdentifier
 from pykotor.resource.type import ResourceType
 
+
 class TestResourceType(unittest.TestCase):
     def test_resource_type_hashing(self):
         for type_name in ResourceType.__members__:

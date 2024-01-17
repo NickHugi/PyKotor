@@ -3,6 +3,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from pykotor.common.module import Module
+from pykotor.resource.formats.erf.erf_data import ERFType
 from PyQt5 import QtCore
 from PyQt5.QtWidgets import QDialog, QFileDialog, QListWidgetItem, QWidget
 
@@ -77,11 +78,12 @@ class SelectModuleDialog(QDialog):
             self.ui.moduleList.addItem(item)
 
     def browse(self):
+        capsule_types = " ".join(f"*.{e.name.lower()}" for e in ERFType) + " *.rim"
         filepath, _ = QFileDialog.getOpenFileName(
             self,
             "Select module to open",
             str(self._installation.module_path()),
-            "Module File (*.mod *.rim *.erf *.sav)",
+            f"Module File ({capsule_types})",
         )
 
         if filepath:

@@ -1151,12 +1151,12 @@ class Face:
     ) -> float:
         return -1.0 * (self.normal().dot(self.v1))
 
-    def centre(  # TODO: fix return type
+    def centre(
         self,
     ) -> Vector3:
         return (self.v1 + self.v2 + self.v3) / 3
 
-    def average(  # TODO: fix return type
+    def average(
         self,
     ) -> Vector3:
         """Returns the average point of the face.

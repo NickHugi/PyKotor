@@ -65,7 +65,7 @@ class ResRef(CaseInsensitiveWrappedStr):
 
     def __init__(
         self,
-        name,
+        name: str,
     ):
         super().__init__(name)
         self.set_data(name)
@@ -89,7 +89,7 @@ class ResRef(CaseInsensitiveWrappedStr):
 
         Args:
         ----
-            path: The filepath.
+            file_path (os.PathLike | str): The path to the file.
 
         Returns:
         -------
@@ -110,9 +110,10 @@ class ResRef(CaseInsensitiveWrappedStr):
     def is_valid(cls, filestem) -> bool:
         return filestem == cls.from_invalid(filestem)
 
-    def set_data(
+    def set_data(  # noqa: D417
         self,
         text: str,
+        *,
         truncate: bool = False,
     ):    # sourcery skip: remove-unnecessary-cast
         """Sets the ResRef.
@@ -485,7 +486,6 @@ class InventoryItem:
 
     def __hash__(
         self,
-        other,
     ):
         return hash(self.resref)
 
@@ -513,7 +513,7 @@ class EquipmentSlot(Enum):
 class CaseInsensitiveHashSet(set, Generic[T]):
     def __init__(self, iterable: Iterable[T] | None = None):
         super().__init__()
-        if iterable:
+        if iterable is not None:
             for item in iterable:
                 self.add(item)
 

@@ -9,3 +9,5 @@
 mypy
 ruff
 pylint
+snakeviz
+autoflake

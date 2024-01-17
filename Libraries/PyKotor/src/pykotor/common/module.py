@@ -1404,7 +1404,6 @@ class ModuleResource(Generic[T]):
 
         if is_any_erf_type_file(self._active.name):
             erf: ERF = read_erf(self._active)
-            erf.erf_type = ERFType.from_extension(self._active.name)  # TODO: Is this needed? I believe the file header is more trustworthy than the extension.
             erf.set_data(
                 self._resname,
                 self._restype,

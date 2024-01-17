@@ -7,7 +7,6 @@ from enum import Enum
 from typing import TYPE_CHECKING, Any, Callable
 
 import requests
-
 from pykotor.common.language import Language
 from utility.path import Path
 

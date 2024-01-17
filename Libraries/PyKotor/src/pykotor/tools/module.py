@@ -8,7 +8,7 @@ from pykotor.extract.installation import Installation, SearchLocation
 from pykotor.resource.formats.erf import ERF, ERFType, write_erf
 from pykotor.resource.formats.gff import write_gff
 from pykotor.resource.formats.lyt import write_lyt
-from pykotor.resource.formats.rim import RIM, read_rim
+from pykotor.resource.formats.rim import read_rim
 from pykotor.resource.formats.tpc import TPC, TPCTextureFormat, write_tpc
 from pykotor.resource.formats.vis import write_vis
 from pykotor.resource.generics.are import dismantle_are
@@ -20,6 +20,7 @@ from pykotor.resource.generics.utp import UTP, dismantle_utp
 from pykotor.resource.generics.uts import UTS, dismantle_uts
 from pykotor.resource.type import ResourceType
 from pykotor.tools import model
+from pykotor.tools.misc import is_mod_file
 from pykotor.tools.path import CaseAwarePath
 from utility.string import ireplace
 
@@ -251,20 +252,18 @@ def rim_to_mod(filepath: os.PathLike | str):
         filepath: The filepath of the MOD file you would like to create.
     """
     resolved_file_path: CaseAwarePath = CaseAwarePath.pathify(filepath)
-    if resolved_file_path.suffix.lower() != ".mod":
+    if not is_mod_file(resolved_file_path):
         msg = "Specified file must end with the .mod extension"
         raise ValueError(msg)
 
     filepath_rim: CaseAwarePath = resolved_file_path.with_suffix(".rim")
     filepath_rim_s: CaseAwarePath = resolved_file_path.parent / f"{resolved_file_path.stem}_s.rim"
 
-    rim: RIM = read_rim(filepath_rim)
-    rim_s: RIM = read_rim(filepath_rim_s) if filepath_rim_s.exists() else RIM()
-
     mod = ERF(ERFType.MOD)
-    for res in rim:
+    for res in read_rim(filepath_rim):
         mod.set_data(str(res.resref), res.restype, res.data)
-    for res in rim_s:
-        mod.set_data(str(res.resref), res.restype, res.data)
+    if filepath_rim_s.exists():
+        for res in read_rim(filepath_rim_s):
+            mod.set_data(str(res.resref), res.restype, res.data)
 
     write_erf(mod, filepath, ResourceType.MOD)

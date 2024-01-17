@@ -12,6 +12,7 @@ from pykotor.extract.capsule import Capsule
 from pykotor.extract.chitin import Chitin
 from pykotor.extract.file import FileResource, LocationResult, ResourceIdentifier, ResourceResult
 from pykotor.extract.talktable import StringResult, TalkTable
+from pykotor.resource.formats.erf.erf_data import ERFType
 from pykotor.resource.formats.gff import read_gff
 from pykotor.resource.formats.tpc import TPC, read_tpc
 from pykotor.resource.type import ResourceType
@@ -1775,15 +1776,14 @@ class Installation:
         -------
             A dictionary mapping module filename to in-game module id.
         """
-        return CaseInsensitiveDict.from_dict({module: self.module_id(module) for module in self.modules_list()})
+        return CaseInsensitiveDict((module, self.module_id(module)) for module in self.modules_list())
 
     @staticmethod
     def replace_module_extensions(module_filepath: os.PathLike | str) -> str:
         module_filename: str = PurePath(module_filepath).name
-        result = re.sub(r"\.mod$", "", module_filename, flags=re.IGNORECASE)
-        result = re.sub(r"\.erf$", "", result, flags=re.IGNORECASE)
-        result = re.sub(r"\.rim$", "", result, flags=re.IGNORECASE)
-        result = re.sub(r"\.sav$", "", result, flags=re.IGNORECASE)
+        result = re.sub(r"\.rim$", "", module_filename, flags=re.IGNORECASE)
+        for erftype_name in ERFType.__members__:
+            result = re.sub(rf"\.{erftype_name}$", "", result, flags=re.IGNORECASE)
         result = result[:-2] if result.lower().endswith("_s") else result
         result = result[:-4] if result.lower().endswith("_dlg") else result
         return result  # noqa: RET504
