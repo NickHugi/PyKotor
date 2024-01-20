@@ -456,7 +456,7 @@ class App(tk.Tk):
         if not self.preinstall_validate_chosen():
             return
         backup_parent_folder = Path(self.mod_path, "backup")
-        if not backup_parent_folder.exists():
+        if not backup_parent_folder.safe_exists():
             messagebox.showerror(
                 "Backup folder empty/missing.",
                 f"Could not find backup folder '{backup_parent_folder}'{os.linesep*2}Are you sure the mod is installed?",
@@ -564,7 +564,7 @@ class App(tk.Tk):
 
             # Strip info.rtf and display in the main window frame.
             info_rtf_path = CaseAwarePath(self.mod_path, "tslpatchdata", namespace_option.rtf_filepath())
-            if not info_rtf_path.exists():
+            if not info_rtf_path.safe_exists():
                 messagebox.showwarning("No info.rtf", f"Could not load the rtf for this mod, file not found on disk: {info_rtf_path}")
                 return
             data: bytes = BinaryReader.load_file(info_rtf_path)
@@ -630,16 +630,16 @@ class App(tk.Tk):
 
             tslpatchdata_path = CaseAwarePath(directory_path_str, "tslpatchdata")
             # handle when a user selects 'tslpatchdata' instead of mod root
-            if not tslpatchdata_path.exists() and tslpatchdata_path.parent.name.lower() == "tslpatchdata":
+            if not tslpatchdata_path.safe_exists() and tslpatchdata_path.parent.name.lower() == "tslpatchdata":
                 tslpatchdata_path = tslpatchdata_path.parent
 
             self.mod_path = str(tslpatchdata_path.parent)
             namespace_path: CaseAwarePath = tslpatchdata_path / "namespaces.ini"
             changes_path: CaseAwarePath = tslpatchdata_path / "changes.ini"
 
-            if namespace_path.exists():
+            if namespace_path.safe_exists():
                 self.load_namespace(NamespaceReader.from_filepath(namespace_path))
-            elif changes_path.exists():
+            elif changes_path.safe_exists():
                 config_reader: ConfigReader = ConfigReader.from_filepath(changes_path)
                 namespaces: list[PatcherNamespace] = [config_reader.config.as_namespace(changes_path)]
                 self.load_namespace(namespaces, config_reader)

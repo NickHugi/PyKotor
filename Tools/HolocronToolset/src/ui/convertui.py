@@ -26,13 +26,13 @@ def compile_ui(ignore_timestamp: bool = False):
         subdir_ui_target = Path(UI_TARGET_DIR, directory)
         ui_target: Path = subdir_ui_target / filename
 
-        if not subdir_ui_target.exists():
+        if not subdir_ui_target.safe_exists():
             subdir_ui_target.mkdir(exist_ok=True, parents=True)
             print("mkdir", subdir_ui_target)
 
         # If the target file does not yet exist, use timestamp=0 as this will force the timestamp check to pass
         source_timestamp: float = ui_source.stat().st_mtime
-        target_timestamp: float = ui_target.stat().st_mtime if ui_target.exists() else 0.0
+        target_timestamp: float = ui_target.stat().st_mtime if ui_target.safe_exists() else 0.0
 
         # Only recompile if source file is newer than the existing target file or ignore_timestamp is set to True
         if source_timestamp > target_timestamp or ignore_timestamp:
@@ -47,7 +47,7 @@ def compile_qrc(ignore_timestamp: bool = False):
 
     # If the target file does not yet exist, use timestamp=0 as this will force the timestamp check to pass
     source_timestamp: float = qrc_source.stat().st_mtime
-    target_timestamp: float = qrc_target.stat().st_mtime if qrc_target.exists() else 0.0
+    target_timestamp: float = qrc_target.stat().st_mtime if qrc_target.safe_exists() else 0.0
 
     # Only recompile if source file is newer than the existing target file or ignore_timestamp is set to True
     if source_timestamp > target_timestamp or ignore_timestamp:

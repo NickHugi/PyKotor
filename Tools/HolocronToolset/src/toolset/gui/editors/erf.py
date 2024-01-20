@@ -419,7 +419,7 @@ class ERFEditorTable(QTableView):
         """
         tempDir = Path(GlobalSettings().extractPath)
 
-        if not tempDir or not tempDir.is_dir():
+        if not tempDir or not tempDir.safe_isdir():
             print(f"Temp directory not valid: {tempDir}")
             return
 

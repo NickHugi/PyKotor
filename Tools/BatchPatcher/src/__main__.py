@@ -139,8 +139,8 @@ def get_font_paths_windows() -> list[Path]:
             font_path: Path = fonts_dir / value[1]
             if font_path.suffix.lower() == ".ttf":  # Filtering for .ttf files
                 font_paths.add(font_path)
-    for file in fonts_dir.rglob("*"):
-        if file.suffix.lower() == ".ttf" and file.is_file():
+    for file in fonts_dir.safe_rglob("*"):
+        if file.suffix.lower() == ".ttf" and file.safe_isfile():
             font_paths.add(file)
 
     return list(font_paths)
@@ -532,10 +532,10 @@ def determine_input_path(path: Path):
     if is_kotor_install_dir(path):
         return patch_install(path)
 
-    if path.is_dir():
+    if path.safe_isdir():
         return patch_folder(path)
 
-    if path.is_file():
+    if path.safe_isfile():
         return patch_file(path)
     return None
 

@@ -65,7 +65,7 @@ def log_output(*args, **kwargs):
                 or "log_install_differ.log"
             )
             OUTPUT_LOG = Path(chosen_log_file_path).resolve()
-            if OUTPUT_LOG.parent.exists():
+            if OUTPUT_LOG.parent.safe_exists():
                 break
             print("Invalid path:", OUTPUT_LOG)
             PARSER.print_help()
@@ -260,10 +260,10 @@ def diff_files(file1: os.PathLike | str, file2: os.PathLike | str) -> bool | Non
     c_file2_rel: Path = relative_path_from_to(c_file1, c_file2)
     is_same_result: bool | None = True
 
-    if not c_file1.exists():
+    if not c_file1.safe_exists():
         log_output(f"Missing file:\t{c_file1_rel}")
         return False
-    if not c_file2.exists():
+    if not c_file2.safe_exists():
         log_output(f"Missing file:\t{c_file2_rel}")
         return False
 
@@ -356,12 +356,12 @@ def diff_installs(install_path1: os.PathLike | str, install_path2: os.PathLike |
 
     streamwaves_path1: CaseAwarePath = (
         rinstall_path1.joinpath("streamwaves")
-        if rinstall_path1.joinpath("streamwaves").exists()
+        if rinstall_path1.joinpath("streamwaves").safe_exists()
         else rinstall_path1.joinpath("streamvoice")
     )
     streamwaves_path2: CaseAwarePath = (
         rinstall_path2.joinpath("streamwaves")
-        if rinstall_path2.joinpath("streamwaves").exists()
+        if rinstall_path2.joinpath("streamwaves").safe_exists()
         else rinstall_path2.joinpath("streamvoice")
     )
     is_same_result = diff_directories(streamwaves_path1, streamwaves_path2) and is_same_result
@@ -374,10 +374,10 @@ def is_kotor_install_dir(path: os.PathLike | str) -> bool | None:
 
 
 def run_differ_from_args(path1: Path, path2: Path) -> bool | None:
-    if not path1.exists():
+    if not path1.safe_exists():
         log_output(f"--path1='{path1}' does not exist on disk, cannot diff")
         return None
-    if not path2.exists():
+    if not path2.safe_exists():
         log_output(f"--path2='{path2}' does not exist on disk, cannot diff")
         return None
     if is_kotor_install_dir(path1) and is_kotor_install_dir(path2):
@@ -412,7 +412,7 @@ def main():
             or (unknown[0] if len(unknown) > 0 else None)
             or input("Path to the first K1/TSL install, file, or directory to diff: "),
         ).resolve()
-        if PARSER_ARGS.path1.exists():
+        if PARSER_ARGS.path1.safe_exists():
             break
         print("Invalid path:", PARSER_ARGS.path1)
         PARSER.print_help()
@@ -423,7 +423,7 @@ def main():
             or (unknown[1] if len(unknown) > 1 else None)
             or input("Path to the second K1/TSL install, file, or directory to diff: "),
         ).resolve()
-        if PARSER_ARGS.path2.exists():
+        if PARSER_ARGS.path2.safe_exists():
             break
         print("Invalid path:", PARSER_ARGS.path2)
         PARSER.print_help()

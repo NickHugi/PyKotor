@@ -343,7 +343,7 @@ class Installation:
                 folder_names = (folder_names,)
             for folder_name in folder_names:
                 resource_path: CaseAwarePath = self._path / folder_name
-                if resource_path.is_dir():
+                if resource_path.safe_isdir():
                     return resource_path
         except Exception as e:  # noqa: BLE001
             msg = f"An error occurred while finding the '{' or '.join(folder_names)}' folder in '{self._path}'."
@@ -381,7 +381,7 @@ class Installation:
         resources: CaseInsensitiveDict[list[FileResource]] | list[FileResource] = CaseInsensitiveDict() if capsule_check else []
 
         r_path = Path(str(path))
-        if not r_path.exists():
+        if not r_path.safe_exists():
             print(f"The '{r_path.name}' folder did not exist when loading the installation at '{self._path}', skipping...")
             return resources
 
@@ -487,7 +487,7 @@ class Installation:
             target_dirs = [override_path / directory]
             self._override[directory] = []
         else:
-            target_dirs = [f for f in override_path.rglob("*") if f.is_dir()]
+            target_dirs = [f for f in override_path.safe_rglob("*") if f.safe_isdir()]
             target_dirs.append(override_path)
             self._override = {}
 
@@ -1271,7 +1271,7 @@ class Installation:
 
         def check_folders(values: list[Path]):
             for folder in values:
-                for file in folder.rglob("*"):
+                for file in folder.safe_rglob("*"):
                     if not file.safe_isfile():
                         continue
                     identifier = ResourceIdentifier.from_path(file)
@@ -1653,7 +1653,7 @@ class Installation:
         stringrefs: list[int] = [locstring.stringref for locstring in queries]
 
         batch: dict[int, StringResult] = self.talktable().batch(stringrefs)
-        female_batch: dict[int, StringResult] = self.female_talktable().batch(stringrefs) if self.female_talktable().path().exists() else {}
+        female_batch: dict[int, StringResult] = self.female_talktable().batch(stringrefs) if self.female_talktable().path().safe_exists() else {}
 
         results: dict[LocalizedString, str] = {}
         for locstring in queries:

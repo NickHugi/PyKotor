@@ -262,7 +262,7 @@ def rim_to_mod(filepath: os.PathLike | str):
     mod = ERF(ERFType.MOD)
     for res in read_rim(filepath_rim):
         mod.set_data(str(res.resref), res.restype, res.data)
-    if filepath_rim_s.exists():
+    if filepath_rim_s.safe_exists():
         for res in read_rim(filepath_rim_s):
             mod.set_data(str(res.resref), res.restype, res.data)
 

@@ -108,7 +108,7 @@ class ExternalNCSCompiler(NCSCompiler):
             - Converts game arg to Game enum if integer
             - Returns NwnnsscompConfig object configured with args useable with the compile_script and decompile_script functions.
         """
-        source_filepath, output_filepath = (p if p.exists() else p.resolve() for p in map(Path, (source_file, output_file)))
+        source_filepath, output_filepath = (p if p.safe_exists() else p.resolve() for p in map(Path, (source_file, output_file)))
         if not isinstance(game, Game):
             game = Game(game)
         return self.NwnnsscompConfig(self.filehash, source_filepath, output_filepath, game)

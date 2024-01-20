@@ -28,10 +28,10 @@ def uninstall_all_mods(installation: Installation):
     write_tlk(dialog_tlk, dialog_tlk_path)
 
     # Remove all override files
-    for file_path in override_path.iterdir():
+    for file_path in override_path.safe_iterdir():
         file_path.unlink()
 
     # Remove any .MOD files
-    for file_path in modules_path.iterdir():
+    for file_path in modules_path.safe_iterdir():
         if is_mod_file(file_path.name):
             file_path.unlink()

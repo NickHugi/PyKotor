@@ -67,11 +67,11 @@ def create_backup(
             create_uninstall_scripts(backup_folderpath, uninstall_folder, game_folder)
             processed_files.add(uninstall_str_lower)
 
-        if destination_filepath.exists():
+        if destination_filepath.safe_exists():
             # Check if the backup path exists and generate a new one if necessary
             i = 2
             filestem: str = backup_filepath.stem
-            while backup_filepath.exists():
+            while backup_filepath.safe_exists():
                 backup_filepath = backup_filepath.parent / f"{filestem} ({i}){backup_filepath.suffix}"
                 i += 1
 
@@ -86,7 +86,7 @@ def create_backup(
 
             # Write the file path to remove these files.txt in backup directory
             removal_files_txt: CaseAwarePath = backup_folderpath.joinpath("remove these files.txt")
-            line: str = ("\n" if removal_files_txt.exists() else "") + destination_file_str
+            line: str = ("\n" if removal_files_txt.safe_exists() else "") + destination_file_str
             with removal_files_txt.open(mode="a", encoding="utf-8") as f:
                 f.write(line)
 

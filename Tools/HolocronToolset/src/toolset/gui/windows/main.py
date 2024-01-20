@@ -255,7 +255,7 @@ class ToolWindow(QMainWindow):
         if not file_path.is_relative_to(self.active.override_path()):
             print(f"{file_path} is not relative to the override folder, cannot reload")
             return
-        if file_path.is_file():
+        if file_path.safe_isfile():
             self.active.reload_override_file(file_path)
             folder_path = file_path.parent
         else:
@@ -841,7 +841,7 @@ class FolderObserver(FileSystemEventHandler):
 
         self.lastModified = rightnow
         modified_path: Path = Path(event.src_path)
-        if not modified_path.is_dir():
+        if not modified_path.safe_isdir():
             return
 
         module_path: Path = self.window.active.module_path()

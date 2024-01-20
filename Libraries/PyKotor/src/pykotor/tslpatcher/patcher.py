@@ -61,11 +61,11 @@ class ModInstaller:
         self.game: Game | None = Installation.determine_game(self.game_path)
         self.mod_path: CaseAwarePath = CaseAwarePath.pathify(mod_path)
         self.changes_ini_path: CaseAwarePath = CaseAwarePath.pathify(changes_ini_path)
-        if not self.changes_ini_path.exists():  # handle legacy syntax
+        if not self.changes_ini_path.safe_exists():  # handle legacy syntax
             self.changes_ini_path = self.mod_path / self.changes_ini_path.name
-            if not self.changes_ini_path.exists():
+            if not self.changes_ini_path.safe_exists():
                 self.changes_ini_path = self.mod_path / "tslpatchdata" / self.changes_ini_path.name
-            if not self.changes_ini_path.exists():
+            if not self.changes_ini_path.safe_exists():
                 msg = f"Could not find the changes ini file {self.changes_ini_path} on disk! Could not start install!"
                 raise FileNotFoundError(msg)
 
@@ -241,12 +241,12 @@ class ModInstaller:
 
         override_dir: CaseAwarePath = self.game_path / "Override"
         override_resource_path: CaseAwarePath = override_dir / patch.saveas
-        if override_resource_path.exists():
+        if override_resource_path.safe_exists():
             if override_type == OverrideType.RENAME:
                 renamed_file_path: CaseAwarePath = override_dir / f"old_{patch.saveas}"
                 i = 2
                 filestem: str = renamed_file_path.stem
-                while renamed_file_path.exists():
+                while renamed_file_path.safe_exists():
                     renamed_file_path = renamed_file_path.parent / f"{filestem} ({i}){renamed_file_path.suffix}"
                     i += 1
                 try:
@@ -302,7 +302,7 @@ class ModInstaller:
             self.log.add_note(f"'{patch.saveas}' already exists in the '{local_folder}' {container_type}. Skipping file...")
             return False
 
-        if capsule is not None and not capsule.path().exists():
+        if capsule is not None and not capsule.path().safe_exists():
             self.log.add_error(f"The capsule '{patch.destination}' did not exist when attempting to {patch.action.lower().rstrip()} '{patch.sourcefile}'. Skipping file...")
             return False
 

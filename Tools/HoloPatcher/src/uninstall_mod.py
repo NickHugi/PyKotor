@@ -93,8 +93,8 @@ class ModUninstaller:
         backup_folder_path = Path.pathify(backup_folder)
         valid_backups: list[Path] = [
             subfolder
-            for subfolder in backup_folder_path.iterdir()  # type: ignore[attr-defined]
-            if subfolder.is_dir() and ModUninstaller.is_valid_backup_folder(subfolder)
+            for subfolder in backup_folder_path.safe_iterdir()  # type: ignore[attr-defined]
+            if subfolder.safe_isdir() and ModUninstaller.is_valid_backup_folder(subfolder)
         ]
         if not valid_backups:
             messagebox.showerror(
@@ -152,11 +152,11 @@ class ModUninstaller:
         delete_list_file = most_recent_backup_folder / "remove these files.txt"
         files_to_delete: set[str] = set()
         existing_files: set[str] = set()
-        if delete_list_file.exists():
+        if delete_list_file.safe_exists():
             with BinaryReader.from_file(delete_list_file) as f:
                 lines: list[str] = decode_bytes_with_fallbacks(f.read_all()).split("\n")
             files_to_delete = {line.strip() for line in lines if line.strip()}
-            existing_files = {line.strip() for line in files_to_delete if line.strip() and Path(line.strip()).is_file()}
+            existing_files = {line.strip() for line in files_to_delete if line.strip() and Path(line.strip()).safe_isfile()}
             if len(existing_files) < len(files_to_delete) and not messagebox.askyesno(
                     "Backup out of date or mismatched",
                     (
@@ -168,8 +168,8 @@ class ModUninstaller:
             ):
                 return None, set(), [], 0
 
-        files_in_backup = list(filter(Path.is_file, most_recent_backup_folder.rglob("*")))
-        folder_count: int = len(list(most_recent_backup_folder.rglob("*"))) - len(files_in_backup)
+        files_in_backup = list(filter(Path.safe_isfile, most_recent_backup_folder.safe_rglob("*")))
+        folder_count: int = len(list(most_recent_backup_folder.safe_rglob("*"))) - len(files_in_backup)
 
         return most_recent_backup_folder, existing_files, files_in_backup, folder_count
 

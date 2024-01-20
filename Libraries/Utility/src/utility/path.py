@@ -632,17 +632,17 @@ class BasePath(BasePurePath):
                 print(format_exception_with_variables(e, ___message___=f"Error during chmod at path '{self}'"))
 
         # TODO: prompt the user and gain access with os-native methods (UAC for windows, etc)
-        if not self.has_access(mode, recurse=recurse):
-            try:
-                if platform.system() == "Darwin":
-                    self.request_mac_permission()
-                elif platform.system() == "Linux":
-                    self.request_linux_permission()
-                elif platform.system() == "Windows":
-                    self.request_windows_permission()
+        #if not self.has_access(mode, recurse=recurse):
+        #    try:
+        #        if platform.system() == "Darwin":
+        #            self.request_mac_permission()
+        #        elif platform.system() == "Linux":
+        #            self.request_linux_permission()
+        #        elif platform.system() == "Windows":
+        #            self.request_windows_permission()
 
-            except Exception as e:
-                print(format_exception_with_variables(e, ___message___=f"Error during platform-specific permission request at path '{self}'"))
+        #    except Exception as e:
+        #        print(format_exception_with_variables(e, ___message___=f"Error during platform-specific permission request at path '{self}'"))
 
         success: bool = self.has_access(mode, recurse=recurse)
         try:

@@ -262,8 +262,11 @@ class CaseAwarePath(InternalPath):  # type: ignore[misc]
     def should_resolve_case(path: os.PathLike | str) -> bool:
         if os.name == "nt":
             return False
-        path_obj = pathlib.Path(path)
-        return path_obj.is_absolute() and not path_obj.exists()
+        try:
+            path_obj = pathlib.Path(path)
+            return path_obj.is_absolute() and not path_obj.exists()
+        except Exception:  # noqa: BLE001
+            return False
 
     def __hash__(self):
         return hash(self.as_windows())

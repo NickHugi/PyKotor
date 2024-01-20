@@ -247,11 +247,11 @@ def process_file(gui_file: CaseAwarePath, output_dir: CaseAwarePath):
 def main():
     input_path: CaseAwarePath = parser_args.input
 
-    if input_path.is_file():
+    if input_path.safe_isfile():
         process_file(input_path, parser_args.output)
 
-    elif input_path.is_dir():
-        for gui_file in input_path.rglob("*.gui"):
+    elif input_path.safe_isdir():
+        for gui_file in input_path.safe_rglob("*.gui"):
             relative_path = gui_file.relative_to(input_path)
             new_output_dir: CaseAwarePath = parser_args.output / relative_path.parent / gui_file.stem
             new_output_dir.mkdir(parents=True, exist_ok=True)

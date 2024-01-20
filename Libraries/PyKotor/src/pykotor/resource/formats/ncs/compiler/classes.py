@@ -644,7 +644,7 @@ class IncludeScript(TopLevelObject):
     def compile(self, ncs: NCS, root: CodeRoot):
         for folder in root.library_lookup:
             filepath = folder / f"{self.file.value}.nss"
-            if filepath.exists():
+            if filepath.safe_isfile():
                 source = BinaryReader.load_file(filepath).decode(errors="ignore")
                 break
         else:

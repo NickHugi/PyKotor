@@ -33,7 +33,7 @@ while True:
         or (unknown[0] if len(unknown) > 0 else None)
         or input("Path to the MDL/MDX file/folder of MDL files: "),
     ).resolve()
-    if parser_args.input.exists():
+    if parser_args.input.safe_exists():
         break
     print("Invalid path:", parser_args.input)
     parser.print_help()
@@ -42,7 +42,7 @@ while True:
     parser_args.output = Path(
         parser_args.output or (unknown[1] if len(unknown) > 1 else None) or input("Output directory: "),
     ).resolve()
-    if parser_args.output.parent.exists():
+    if parser_args.output.parent.safe_exists():
         parser_args.output.mkdir(exist_ok=True, parents=True)
         break
     print("Invalid path:", parser_args.output)
@@ -87,11 +87,11 @@ def main():
     try:
         input_path: Path = parser_args.input
 
-        if input_path.is_file():
+        if input_path.safe_isfile():
             process_file(input_path, parser_args.output, parser_args.compile)
 
-        elif input_path.is_dir():
-            for gui_file in input_path.rglob("*.gui"):
+        elif input_path.safe_isdir():
+            for gui_file in input_path.safe_rglob("*.gui"):
                 try:
                     relative_path: Path = gui_file.relative_to(input_path)
                     new_output_dir: Path = parser_args.output / relative_path.parent / gui_file.stem

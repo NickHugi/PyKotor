@@ -39,17 +39,17 @@ def decompileScript(compiled: bytes, tsl: bool) -> str:
     global_settings = GlobalSettings()
     extract_path = Path(global_settings.extractPath)
 
-    if not extract_path.exists():
+    if not extract_path.safe_exists():
         extract_path = Path(QFileDialog.getExistingDirectory(None, "Select a temp directory"))
-        if not extract_path.exists():
+        if not extract_path.safe_exists():
             msg = "Temp directory has not been set or is invalid."
             raise NoConfigurationSetError(msg)
 
     ncs_decompiler_path = Path(global_settings.ncsDecompilerPath)
-    if not ncs_decompiler_path.name or ncs_decompiler_path.suffix.lower() != ".exe" or not ncs_decompiler_path.exists():
+    if not ncs_decompiler_path.name or ncs_decompiler_path.suffix.lower() != ".exe" or not ncs_decompiler_path.safe_exists():
         ncs_decompiler_path, _ = QFileDialog.getOpenFileName(None, "Select the NCS Decompiler executable")
         ncs_decompiler_path = Path(ncs_decompiler_path)
-        if not ncs_decompiler_path.exists():
+        if not ncs_decompiler_path.safe_exists():
             global_settings.ncsDecompilerPath = ""
             msg = "NCS Decompiler has not been set or is invalid."
             raise NoConfigurationSetError(msg)
@@ -153,7 +153,7 @@ def _compile_windows(
     # Need to try unify this so each platform uses the same version and try
     # move away from registry keys (I don't even know how Mac/Linux determine KotOR's installation path).
 
-    if not tempCompiledPath.exists():
+    if not tempCompiledPath.safe_exists():
         raise FileNotFoundError(f"Could not find temp compiled script at {tempCompiledPath}")  # noqa: TRY003, EM102
     return BinaryReader.load_file(tempCompiledPath)
 
