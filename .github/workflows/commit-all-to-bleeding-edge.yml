@@ -25,5 +25,11 @@ jobs:
     - name: Cherry-Pick to Bleeding-Edge
       run: |
         git checkout bleeding-edge
-        git cherry-pick ${{ github.sha }}
+        # Attempt to cherry-pick and resolve conflicts by favoring incoming changes
+        git cherry-pick ${{ github.sha }} || true
+        # If there were conflicts, add all and continue
+        if git status | grep -q 'Unmerged paths'; then
+          git add .
+          git cherry-pick --continue
+        fi
         git push origin bleeding-edge
