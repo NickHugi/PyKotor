@@ -126,12 +126,13 @@ class FileSearcher(QDialog):
             name_check: bool = text in resource_name if caseSensitive else lowercase_text in resource_name.lower()
             if name_check:
                 results.append(resource)
+            if name_check or filenamesOnly:
                 return
-            if not filenamesOnly:
-                resource_data: str = resource.data().decode(encoding="windows-1252", errors="ignore")
-                data_check: bool = text in resource_data if caseSensitive else lowercase_text in resource_data.lower()
-                if data_check:
-                    results.append(resource)
+
+            resource_data: str = resource.data().decode(encoding="utf-8", errors="ignore")  # TODO: use a library to find strings in binary file data.
+            data_check: bool = text in resource_data if caseSensitive else lowercase_text in resource_data.lower()
+            if data_check:
+                results.append(resource)
 
         searchIn: Generator[FileResource, Any, None] = search_generator()
         searches: list[Callable[[FileResource], None]] = [lambda resource=resource: search(resource) for resource in searchIn]
@@ -204,10 +205,6 @@ class FileResults(QDialog):
         Args:
         ----
             self: The class instance.
-
-        Returns:
-        -------
-            None: Does not return anything.
 
         Processing Logic:
         ----------------

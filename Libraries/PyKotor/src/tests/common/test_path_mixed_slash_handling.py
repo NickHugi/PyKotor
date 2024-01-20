@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import os
 import pathlib
+import platform
 import sys
 import unittest
 from pathlib import Path, PosixPath, PurePath, PurePosixPath, PureWindowsPath, WindowsPath
@@ -35,7 +36,7 @@ class TestPathlibMixedSlashes(unittest.TestCase):
 
     def test_nt_case_hashing(self):
         test_classes: tuple[type, ...] = (
-            (CustomPureWindowsPath)
+            (CustomPureWindowsPath,)
             if os.name == "posix"
             else (CustomWindowsPath, CustomPureWindowsPath, CustomPath)
         )
@@ -49,6 +50,57 @@ class TestPathlibMixedSlashes(unittest.TestCase):
                 self.assertEqual(path1, path2)
                 self.assertEqual(hash(path1), hash(path2))
                 self.assertSetEqual(test_set, {PathType("TEST\\path\\to\\\\nothing")})
+
+    def test_posix_is_dir(self):
+        test_classes: tuple[type, ...] = (Path, CustomPath, CaseAwarePath)
+        test_path = "/" if platform.system() != "Windows" else "C:\\WINDOWS\\System32\\config"
+        for PathType in test_classes:
+            self.assertTrue(self.list_files_recursive_scandir(test_path, set(), PathType))
+    def list_files_recursive_scandir(self, path: str, seen: set, PathType: type[pathlib.Path] | type[CustomPath] | type[CaseAwarePath]):
+        if "/mnt/c" in path.lower():
+            print("Skipping /mnt/c (wsl)")
+            return True
+        try:
+            it = os.scandir(path)
+        except Exception:
+            return
+        try:
+            for entry in it:
+                path_entry: str = entry.path
+                if path_entry.count("/") > 5 or path_entry in seen:  # Handle links
+                    continue
+                else:
+                    seen.add(path_entry)
+                try:
+                    is_dir_check = PathType(path_entry).is_dir()
+                    assert is_dir_check is True or is_dir_check is False, f"is_file_check returned nonbool '{is_dir_check}' at '{path_entry}'"
+                    if is_dir_check:
+                        print(f"Directory: {path_entry}")
+                        self.list_files_recursive_scandir(path_entry, seen, PathType)  # Recursively list subdirectories
+                    is_file_check = PathType(path_entry).is_file()
+                    assert is_file_check is True or is_file_check is False, f"is_file_check returned nonbool '{is_file_check}' at '{path_entry}'"
+                    if is_file_check:
+                        ...
+                        #print(f"File: {path_entry}")
+                    if is_file_check or is_dir_check:
+                        continue
+
+                    exist_check = PathType(path_entry).exists()
+                    if exist_check is True:
+                        print(f"exists: True but no permissions to {path_entry}")
+                        raise RuntimeError(f"exists: True but no permissions to {path_entry}")
+                    elif exist_check is False:
+                        print(f"exists: False but no permissions to {path_entry}")
+                        #raise RuntimeError(f"exists: False but no permissions to {path_entry}")
+                    else:
+                        raise ValueError(f"Unexpected ret value of exist_check at {path_entry}: {exist_check}")
+                except Exception as e:
+                    print(f"Exception encountered during is_dir() call on {path_entry}: {e}")
+                    raise
+        except Exception as e:
+            print(f"Exception encountered while scanning {path}: {e}")
+            raise
+        return True
 
     def test_posix_case_hashing(self):
         test_classes: list[type] = (

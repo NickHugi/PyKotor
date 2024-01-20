@@ -8,8 +8,7 @@ from pykotor.common.geometry import Polygon3, Vector2, Vector3, Vector4
 from pykotor.common.language import LocalizedString
 from pykotor.common.misc import Color, Game, ResRef
 from pykotor.extract.file import ResourceIdentifier
-from pykotor.resource.formats.gff import GFF, GFFContent, GFFList, GFFStruct, read_gff, write_gff
-from pykotor.resource.formats.gff.gff_auto import bytes_gff
+from pykotor.resource.formats.gff import GFF, GFFContent, GFFList, GFFStruct, bytes_gff, read_gff, write_gff
 from pykotor.resource.generics.utc import UTC, bytes_utc
 from pykotor.resource.generics.utd import UTD, bytes_utd
 from pykotor.resource.generics.ute import UTE, bytes_ute
@@ -260,7 +259,7 @@ class GITCamera(GITInstance):
         camera_id: int = 0,
     ):
         super().__init__(x, y, z)
-        self.camera_id = camera_id
+        self.camera_id: int = camera_id
         self.fov: float = 45
         self.height: float = 0.0
         self.mic_range: float = 0.0
@@ -287,7 +286,7 @@ class GITCamera(GITInstance):
         pitch: float,
         roll: float,
     ):
-        rotation = self.orientation.to_euler()
+        rotation: Vector3 = self.orientation.to_euler()
         rotation.x += yaw
         rotation.y += roll
         rotation.z += pitch
@@ -458,9 +457,9 @@ class GITEncounterSpawnPoint:
         y: float = 0.0,
         z: float = 0.0,
     ):
-        self.x = x
-        self.y = y
-        self.z = z
+        self.x: float = x
+        self.y: float = y
+        self.z: float = z
         self.orientation: float = 0.0
 
 
