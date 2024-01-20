@@ -17,6 +17,12 @@ jobs:
       with:
         fetch-depth: 0  # Fetches all history for all branches and tags
 
+
+    - name: Configure Git Identity
+      run: |
+        git config --global user.name "GitHub Action"
+        git config --global user.email "action@github.com"
+
     - name: Merge to Bleeding-Edge
       run: |
         git checkout bleeding-edge
