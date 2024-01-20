@@ -223,10 +223,10 @@ def assert_with_variable_trace(___condition___: bool, ___message___: str = "Asse
     raise AssertionError(full_message)
 
 RT = TypeVar("RT")
-
+unique_sentinel = object()
 def with_variable_trace(
     exception_types: type[Exception] | tuple[type[Exception], ...] = Exception,
-    return_type: type[RT] | None = None,
+    return_type: type[RT] = unique_sentinel,  # type: ignore[reportGeneralTypeIssues, assignment]
     action="log",
 ) -> Callable[[Callable[..., RT]], Callable[..., RT | None]]:
     # Set default to Exception if no specific types are provided
@@ -240,7 +240,7 @@ def with_variable_trace(
         def wrapper(*args, **kwargs) -> RT | None:
             try:
                 result: RT = f(*args, **kwargs)
-                if return_type is not None:
+                if return_type is unique_sentinel:
                     assert isinstance(result, return_type), f"Return type of '{f.__name__}' must be {return_type.__name__}, got {type(result): {result!r}: {result}}"  # noqa: S101
             except exception_types as e:
                 # Capture the current stack trace
