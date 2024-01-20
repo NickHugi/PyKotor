@@ -29,8 +29,6 @@ jobs:
         git cherry-pick ${{ github.sha }} || true
         # If there were conflicts, add all and continue
         if git status | grep -q 'Unmerged paths'; then
-          # Resolve conflicts by favoring the cherry-picked commit's changes
-          git checkout --theirs .
           git add .
           git cherry-pick --continue
         fi
