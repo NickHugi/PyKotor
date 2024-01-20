@@ -14,6 +14,8 @@ jobs:
     steps:
     - name: Checkout Repository
       uses: actions/checkout@v2
+      with:
+        fetch-depth: 0  # Fetches all history for all branches and tags
 
     - name: Merge to Bleeding-Edge
       run: |
