@@ -215,6 +215,8 @@ class ResourceIdentifier(NamedTuple):
         path_obj: PurePath = PurePath("")  #PurePath("<INVALID>")
         with suppress(Exception), suppress(TypeError):
             path_obj = PurePath(file_path)
+        with suppress(Exception), suppress(TypeError):
+            path_obj = PurePath(file_path)
         with suppress(Exception):
             max_dots: int = path_obj.name.count(".")
             for dots in range(max_dots+1, 1, -1):
