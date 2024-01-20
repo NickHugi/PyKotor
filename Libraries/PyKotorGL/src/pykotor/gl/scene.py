@@ -340,7 +340,7 @@ class Scene:
             self.objects[placeable].set_rotation(0, 0, placeable.bearing)
 
         for git_creature in self.git.creatures:
-            if creature not in self.objects:
+            if git_creature not in self.objects:
                 self.objects[git_creature] = self.getCreatureRenderObject(git_creature)
 
             self.objects[git_creature].set_position(git_creature.position.x, git_creature.position.y, git_creature.position.z)
