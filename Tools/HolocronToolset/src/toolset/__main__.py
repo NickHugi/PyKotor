@@ -54,16 +54,16 @@ def fix_sys_and_cwd_path():
         sys.path.append(working_dir)
 
     pykotor_path = pathlib.Path(__file__).parents[4] / "Libraries" / "PyKotor" / "src" / "pykotor"
-    if pykotor_path.safe_exists():
+    if pykotor_path.exists():
         update_sys_path(pykotor_path.parent)
     pykotor_gl_path = pathlib.Path(__file__).parents[4] / "Libraries" / "PyKotorGL" / "src" / "pykotor"
-    if pykotor_gl_path.safe_exists():
+    if pykotor_gl_path.exists():
         update_sys_path(pykotor_gl_path.parent)
     utility_path = pathlib.Path(__file__).parents[4] / "Libraries" / "Utility" / "src"
-    if utility_path.safe_exists():
+    if utility_path.exists():
         update_sys_path(utility_path)
     toolset_path = pathlib.Path(__file__).parents[1] / "toolset"
-    if toolset_path.safe_exists():
+    if toolset_path.exists():
         update_sys_path(toolset_path.parent)
         os.chdir(toolset_path)
 
