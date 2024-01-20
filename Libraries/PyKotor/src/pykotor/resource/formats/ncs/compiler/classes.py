@@ -976,6 +976,8 @@ class EngineCallExpression(Expression):
                 )
                 ncs.add(NCSInstructionType.JMP, jump=after_command)
                 arg.compile(ncs, root, block)
+                ncs.add(NCSInstructionType.RETN)
+
                 ncs.instructions.append(after_command)
             else:
                 added = arg.compile(ncs, root, block)
