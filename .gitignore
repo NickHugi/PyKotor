@@ -56,11 +56,17 @@ Tools/HolocronToolset/src/toolset/kits/*/door0_k1.utd
 Tools/HolocronToolset/src/toolset/kits/*/*
 /Tools/HolocronToolset/toolset/kits/
 <<<<<<< HEAD
+<<<<<<< HEAD
 .idea/misc.xml
 .idea/PyKotor.iml
 =======
+=======
+>>>>>>> 9f46435d (Update .gitignore)
 .mypy_cache
 *.egg-info*
 .venv
 .venv_wsl
+<<<<<<< HEAD
 >>>>>>> c33dbc26 (Update .gitignore)
+=======
+>>>>>>> 9f46435d (Update .gitignore)
