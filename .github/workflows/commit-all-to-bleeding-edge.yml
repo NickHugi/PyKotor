@@ -9,13 +9,27 @@ on:
 jobs:
   merge:
     runs-on: ubuntu-latest
+    if: contains(github.event.head_commit.message, '[skip-edge]') == false
 
     steps:
     - name: Checkout Repository
       uses: actions/checkout@v2
+      with:
+        fetch-depth: 0  # Fetches all history for all branches and tags
 
-    - name: Merge to Bleeding-Edge
+    - name: Configure Git Identity
+      run: |
+        git config --global user.name "GitHub Action"
+        git config --global user.email "action@github.com"
+
+    - name: Cherry-Pick to Bleeding-Edge
       run: |
         git checkout bleeding-edge
-        git merge ${{ github.ref }}
+        # Attempt to cherry-pick and resolve conflicts by favoring incoming changes
+        git cherry-pick ${{ github.sha }} || true
+        # If there were conflicts, add all and continue
+        if git status | grep -q 'Unmerged paths'; then
+          git add .
+          git cherry-pick --continue
+        fi
         git push origin bleeding-edge
