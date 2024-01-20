@@ -53,7 +53,7 @@ class TestPathlibMixedSlashes(unittest.TestCase):
 
     def test_posix_is_dir(self):
         test_classes: tuple[type, ...] = (Path, CustomPath, CaseAwarePath)
-        test_path = "/" if platform.system() != "Windows" else "C:\\WINDOWS\\System32\\config"
+        test_path = "/" if platform.system() != "Windows" else "C:\\"
         for PathType in test_classes:
             self.assertTrue(self.list_files_recursive_scandir(test_path, set(), PathType))
     def list_files_recursive_scandir(self, path: str, seen: set, PathType: type[pathlib.Path] | type[CustomPath] | type[CaseAwarePath]):
@@ -91,7 +91,6 @@ class TestPathlibMixedSlashes(unittest.TestCase):
                         raise RuntimeError(f"exists: True but no permissions to {path_entry}")
                     elif exist_check is False:
                         print(f"exists: False but no permissions to {path_entry}")
-                        #raise RuntimeError(f"exists: False but no permissions to {path_entry}")
                     else:
                         raise ValueError(f"Unexpected ret value of exist_check at {path_entry}: {exist_check}")
                 except Exception as e:
