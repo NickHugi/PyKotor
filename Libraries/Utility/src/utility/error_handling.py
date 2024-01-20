@@ -240,7 +240,7 @@ def with_variable_trace(
         def wrapper(*args, **kwargs) -> RT | None:
             try:
                 result: RT = f(*args, **kwargs)
-                if return_type is unique_sentinel:
+                if return_type is not unique_sentinel and not isinstance(result, return_type):
                     assert isinstance(result, return_type), f"Return type of '{f.__name__}' must be {return_type.__name__}, got {type(result): {result!r}: {result}}"  # noqa: S101
             except exception_types as e:
                 # Capture the current stack trace
