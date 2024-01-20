@@ -241,7 +241,7 @@ def with_variable_trace(
             try:
                 result: RT = f(*args, **kwargs)
                 if return_type is not unique_sentinel and not isinstance(result, return_type):
-                    assert isinstance(result, return_type), f"Return type of '{f.__name__}' must be {return_type.__name__}, got {type(result): {result!r}: {result}}"  # noqa: S101
+                    raise AssertionError(f"Return type of '{f.__name__}' must be {return_type.__name__}, got {type(result)}: {result!r}: {result}")
             except exception_types as e:
                 # Capture the current stack trace
                 ___frames___: list[___inspect___.FrameInfo] = ___inspect___.getouterframes(___inspect___.currentframe())
