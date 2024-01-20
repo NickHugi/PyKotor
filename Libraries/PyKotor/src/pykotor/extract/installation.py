@@ -1272,7 +1272,7 @@ class Installation:
         def check_folders(values: list[Path]):
             for folder in values:
                 for file in folder.rglob("*"):
-                    if not file.is_file():
+                    if not file.safe_isfile():
                         continue
                     identifier = ResourceIdentifier.from_path(file)
                     if identifier not in queries:
