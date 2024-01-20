@@ -202,7 +202,7 @@ class ResourceIdentifier(NamedTuple):
     def __repr__(
         self,
     ):
-        return f"{self.__class__.__name__}(resname={self.resname}, restype={self.restype!r})"
+        return f"{self.__class__.__name__}(resname='{self.resname}', restype={self.restype!r})"
 
     def __str__(
         self,
