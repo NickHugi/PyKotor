@@ -110,14 +110,15 @@ def format_exception_with_variables(
             ___code_context___,
             ___index___,
         ) = ___frame_info___
-        ___detailed_message___.append(f"\nFunction '{___function___}' at {___filename___}:{___line_no___}:")
+        ___code_context___ = f"\nContext [{', '.join(___code_context___)}] " if ___code_context___ else ""  # type: ignore[assignment]
+        ___detailed_message___.append(f"\nFunction '{___function___}' at {___filename___}:{___line_no___}:{___code_context___}")
 
         # Filter out built-in and imported names
         ___detailed_message___.extend(
             f"  {___var___} = {___val___!r}"
             for ___var___, ___val___ in ___frame___.f_locals.items()
             if ___var___ not in ___default_attrs___
-            and ___sys___.getsizeof(___val___) <= 10240
+            and ___sys___.getsizeof(___val___) <= 10240  # vars over 10KB shouldn't be logged  # noqa: PLR2004
             and ___var___ not in {
                 "___var___",
                 "___detailed_message___",
@@ -182,14 +183,16 @@ def assert_with_variable_trace(___condition___: bool, ___message___: str = "Asse
             ___code_context___,
             ___unused_index___,
         ) = ___frame_info___
-        ___detailed_message___.append(f"\nFunction '{___function___}' at {___filename_errorhandler___}:{___line_no___}:")
+
+        ___code_context___ = f"\nContext [{', '.join(___code_context___)}] " if ___code_context___ else ""  # type: ignore[assignment]
+        ___detailed_message___.append(f"\nFunction '{___function___}' at {___filename_errorhandler___}:{___line_no___}:{___code_context___}")
 
         # Filter out built-in and imported names
         ___detailed_message___.extend(
             f"  {var} = {___val___}"
             for var, ___val___ in ___frame___.f_locals.items()
             if var not in ___default_attrs___
-            and ___sys___.getsizeof(___val___) <= 10240
+            and ___sys___.getsizeof(___val___) <= 10240  # vars over 10KB shouldn't be logged  # noqa: PLR2004
             and var not in [
                 "___detailed_message___",
                 "___default_attrs___",
@@ -256,15 +259,15 @@ def with_variable_trace(
                     if ___function___ != f.__name__:
                         continue
 
-                    ___code_context___ = f"Context {___code_context___} " if ___code_context___ else ""
-                    ___detailed_message___.append(f"\n{___code_context___}Function '{___function___}' at {___filename___}:{___line_no___}:")
+                    ___code_context___ = f"\nContext [{', '.join(___code_context___)}] " if ___code_context___ else ""  # type: ignore[assignment]
+                    ___detailed_message___.append(f"\nFunction '{___function___}' at {___filename___}:{___line_no___}:{___code_context___}")
 
                     # Filter out built-in and imported names
                     ___detailed_message___.extend(
                         f"  {var} = {___val___}"
                         for var, ___val___ in ___frame___.f_locals.items()
                         if var not in ___default_attrs___
-                        and ___sys___.getsizeof(___val___) <= 10240
+                        and ___sys___.getsizeof(___val___) <= 10240  # vars over 10KB shouldn't be logged  # noqa: PLR2004
                         and var not in [
                             "___detailed_message___",
                             "___default_attrs___",

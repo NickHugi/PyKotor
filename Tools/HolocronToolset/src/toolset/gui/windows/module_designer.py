@@ -242,7 +242,7 @@ class ModuleDesigner(QMainWindow):
             self.unloadModule()
 
             mod_filepath = self._installation.module_path().joinpath(f"{dialog.module}.mod")
-            if not mod_filepath.exists() and GlobalSettings().disableRIMSaving:
+            if GlobalSettings().disableRIMSaving and not mod_filepath.exists():
                 module.rim_to_mod(mod_filepath)
                 self._installation.load_modules()
 
