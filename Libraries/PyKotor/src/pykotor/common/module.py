@@ -1186,7 +1186,6 @@ class ModuleResource(Generic[T]):
         print(f"Could not find res of type {type(res)}")
         return None
 
-
     def data(self) -> bytes:
         """Opens the file at the active location and returns the data.
 
@@ -1219,6 +1218,7 @@ class ModuleResource(Generic[T]):
             if resource is None:
                 msg = f"Resource '{file_name}' not found in '{self._active}'"
                 raise ValueError(msg)
+            return resource.data
 
         return BinaryReader.load_file(self._active)
 
