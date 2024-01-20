@@ -287,9 +287,9 @@ class CaseAwarePath(InternalPath):  # type: ignore[misc]
     def __str__(self):
         path_obj = pathlib.Path(self)
         return (
-            self._fix_path_formatting(str(path_obj))
-            if not self.should_resolve_case(path_obj)
-            else super(CaseAwarePath, self.get_case_sensitive_path(path_obj)).__str__()
+            super(CaseAwarePath, self.get_case_sensitive_path(path_obj)).__str__()
+            if self.should_resolve_case(path_obj)
+            else self._fix_path_formatting(str(path_obj))
         )
 
 if os.name != "nt":  # Wrapping is unnecessary on Windows
