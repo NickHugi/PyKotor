@@ -57,6 +57,8 @@ Tools/HolocronToolset/src/toolset/kits/*/*
 /Tools/HolocronToolset/toolset/kits/
 .idea/misc.xml
 .idea/PyKotor.iml
+.idea/misc.xml
+.idea/PyKotor.iml
 .mypy_cache
 *.egg-info*
 .venv
