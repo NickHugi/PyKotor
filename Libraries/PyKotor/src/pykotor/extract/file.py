@@ -209,7 +209,7 @@ class ResourceIdentifier(NamedTuple):
     ):
         ext: str = self.restype.extension
         suffix: str = f".{ext}" if ext else ""
-        return f"{self.resname.lower()}{suffix.lower()}"
+        return f"{self.resname}{suffix}".lower()
 
     def __eq__(
         self,
