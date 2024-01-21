@@ -117,7 +117,7 @@ class ModificationsNSS(PatcherModifications):
                 [RemoveNopOptimizer(), RemoveMoveSPEqualsZeroOptimizer(), RemoveUnusedBlocksOptimizer()],  # TODO: ncs optimizers need testing
                 library_lookup=[CaseAwarePath.pathify(self.temp_script_folder)],
             )
-        except CompileException:
+        except Exception:
             return True
         return bytes(bytes_ncs(ncs))
 
