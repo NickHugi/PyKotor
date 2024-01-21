@@ -4,7 +4,7 @@
 from __future__ import annotations
 
 from enum import Enum, IntEnum
-from typing import TYPE_CHECKING, Any, ClassVar, Generator, Generic, Iterable, Iterator, TypeVar, overload
+from typing import TYPE_CHECKING, Any, Generator, Generic, Iterable, Iterator, TypeVar
 
 from pykotor.common.geometry import Vector3
 
@@ -15,52 +15,15 @@ T = TypeVar("T")
 VT = TypeVar("VT")
 _unique_sentinel = object()
 
+
 class ResRef:
-    """A string reference to a game resource.
-
-    ResRefs are the names of resources without the extension (the file stem).
-
-    Used in:
-    -------
-        - Encapsulated Resource Files (ERF/MOD/SAV)
-        - RIM/BIF archives
-        - Filenames in the Override folder
-
-    Restrictions:
-    ------------
-        - ResRefs must be in ASCII format
-        - ResRefs cannot exceed 16 characters in length.
-        - Usable in case-insensitive applications. This is because KOTOR was created for Windows, which uses a case-insensitive filesystem.
-        - (recommended) Stored as case-sensitive text.
-    """
-
-    MAX_LENGTH: ClassVar[int] = 16
-
-    INVALID_CHARACTERS: ClassVar[str] = '<>:"/\\|?*'
-
-    class InvalidFormatError(ValueError):
-        """ResRefs must conform to Windows filename requirements."""
+    """A string reference to a game resource. ResRefs can be a maximum of 16 characters in length."""
 
     class InvalidEncodingError(ValueError):
-        """ResRefs must only contain ASCII characters."""
-
-        def __init__(self, text: str):
-            message = f"'{text}' must only contain ASCII characters."
-            super().__init__(message)
+        ...
 
     class ExceedsMaxLengthError(ValueError):
-        """ResRefs cannot exceed the maximum of 16 characters in length."""
-
-        def __init__(self, text: str):
-            message = f"Length of '{text}' ({len(text)} characters) exceeds the maximum allowed length ({ResRef.MAX_LENGTH})"
-            super().__init__(message)
-
-    class CaseSensitivityError(ValueError):
-        """ResRefs cannot be converted to a different case."""
-
-        def __init__(self, resref: ResRef, func_name, *args, **kwargs):
-            super().__init__(f"ResRef's must be case-insensitive, attempted {resref!r}.{func_name}({args, kwargs})")
-
+        ...
 
     def __init__(
         self,
@@ -101,7 +64,9 @@ class ResRef:
         return self._value
 
     @classmethod
-    def from_blank(cls) -> ResRef:
+    def from_blank(
+        cls,
+    ) -> ResRef:
         """Returns a blank ResRef.
 
         Returns
@@ -119,7 +84,7 @@ class ResRef:
 
         Args:
         ----
-            file_path (os.PathLike | str): The path to the file.
+            path: The filepath.
 
         Returns:
         -------
@@ -133,53 +98,36 @@ class ResRef:
     def set_data(
         self,
         text: str,
-        *,
-        truncate: bool = False,
-    ):    # sourcery skip: remove-unnecessary-cast
+        truncate: bool = True,
+    ) -> None:
         """Sets the ResRef.
 
         Args:
         ----
-            text - str: The reference string.
-            truncate - bool: Whether to truncate the text to 16 characters. Default is False.
+            text: The reference string.
+            truncate: If true, the string will be truncated to 16 characters, otherwise it will raise an error instead.
 
         Raises:
         ------
-            InvalidEncodingError - text was not in ascii format
-            ExceedsMaxLengthError - text exceeded 16 characters
-            InvalidFormatError - text starts/ends with a space or contains windows invalid filename characters.
-            All of the above exceptions inherit ValueError.
+            ValueError:
         """
-        parsed_text: str = str(text)
+        if len(text) > 16:
+            if truncate:
+                text = text[:16]
+            else:
+                msg = "ResRef cannot exceed 16 characters."  # sourcery skip: inline-variable
+                raise ResRef.ExceedsMaxLengthError(msg)
+        if len(text) != len(text.encode(encoding="ascii", errors="ignore")):
+            msg = "ResRef must be in ASCII characters."  # sourcery skip: inline-variable
+            raise ResRef.InvalidEncodingError(msg)
 
-        # Ensure text only contains ASCII characters.
-        if not text.isascii():
-            raise self.InvalidEncodingError(text)
+        self._value = text
 
-        # Validate text length.
-        if len(parsed_text) > self.MAX_LENGTH:
-            if not truncate:
-                raise self.ExceedsMaxLengthError(parsed_text)
-            parsed_text = parsed_text[:self.MAX_LENGTH]
-
-        # Ensure text doesn't start/end with whitespace.
-        if parsed_text != parsed_text.strip():
-            msg = f"ResRef '{text}' cannot start or end with a space."
-            raise self.InvalidFormatError(msg)
-
-        # Ensure text doesn't contain any invalid ASCII characters.
-        for i in range(len(parsed_text)):
-            if parsed_text[i] in self.INVALID_CHARACTERS:
-                msg = f"ResRef '{text}' cannot contain any invalid characters in [{self.INVALID_CHARACTERS}]"
-                raise self.InvalidFormatError(msg)
-
-        # bypass the immutability enforcers
-        object.__setattr__(self, "_content", parsed_text)
-        object.__setattr__(self, "_lowercontent", parsed_text.casefold())
-
-    def get(self) -> str:
-        """Returns the string representation of this resref filename."""
+    def get(
+        self,
+    ) -> str:
         return self._value
+
 
 class Game(IntEnum):
     """Represents which game."""
@@ -439,14 +387,14 @@ class WrappedInt:
     ):
         if isinstance(other, WrappedInt):
             return self.get() == other.get()
-        if isinstance(other, int):  # sourcery skip: assign-if-exp
+        if isinstance(other, int):
             return self.get() == other
         return NotImplemented
 
     def set(
         self,
         value: int,
-    ):
+    ) -> None:
         self._value = value
 
     def get(
@@ -459,8 +407,8 @@ class InventoryItem:
     def __init__(
         self,
         resref: ResRef,
-        droppable: bool = False,  # noqa: FBT001, FBT002
-        infinite: bool = False,  # noqa: FBT001, FBT002
+        droppable: bool = False,
+        infinite: bool = False,
     ):
         self.resref: ResRef = resref
         self.droppable: bool = droppable
@@ -468,15 +416,15 @@ class InventoryItem:
 
     def __str__(
         self,
-    ) -> str:
-        return str(self.resref)
+    ):
+        return self.resref.get()
 
     def __eq__(
         self,
         other: object,
     ):
         if isinstance(other, InventoryItem):
-            return self.resref == other.resref and self.droppable == other.droppable  # and self.infinite == other.infinite
+            return self.resref == other.resref and self.droppable == other.droppable
         return NotImplemented
 
 
@@ -503,19 +451,19 @@ class EquipmentSlot(Enum):
 class CaseInsensitiveHashSet(set, Generic[T]):
     def __init__(self, iterable: Iterable[T] | None = None):
         super().__init__()
-        if iterable is not None:
+        if iterable:
             for item in iterable:
                 self.add(item)
 
     def _normalize_key(self, item: T):
-        return item.casefold() if isinstance(item, str) else item
+        return item.lower() if isinstance(item, str) else item
 
     def add(self, item: T):
         """Add an element to a set.
 
         This has no effect if the element is already present.
         """
-        key: str | object = self._normalize_key(item)
+        key = self._normalize_key(item)
         if key not in self:
             super().add(item)
 
@@ -542,15 +490,27 @@ class CaseInsensitiveHashSet(set, Generic[T]):
     def __contains__(self, item) -> bool:
         return super().__contains__(self._normalize_key(item))
 
+    def __le__(self, other) -> bool:
+        return super().__le__({self._normalize_key(item) for item in other})
+
+    def __lt__(self, other) -> bool:
+        return super().__lt__({self._normalize_key(item) for item in other})
+
     def __eq__(self, other) -> bool:
         return super().__eq__({self._normalize_key(item) for item in other})
 
     def __ne__(self, other) -> bool:
         return super().__ne__({self._normalize_key(item) for item in other})
 
+    def __gt__(self, other) -> bool:
+        return super().__gt__({self._normalize_key(item) for item in other})
+
+    def __ge__(self, other) -> bool:
+        return super().__ge__({self._normalize_key(item) for item in other})
+
 
 class CaseInsensitiveDict(Generic[T]):
-    """A class exactly like the builtin dict[str, T], but provides case-insensitive key lookups.
+    """A class exactly like the builtin dict[str, Any], but provides case-insensitive key lookups.
 
     The case-sensitivity of the keys themselves are always preserved.
     """
@@ -611,17 +571,24 @@ class CaseInsensitiveDict(Generic[T]):
         yield from self._dictionary
 
     def __getitem__(self, key: str) -> T:
+        if not isinstance(key, str):
+            msg = f"Keys must be strings in CaseInsensitiveDict-inherited classes, got {key!r}"
+            raise KeyError(msg)
         return self._dictionary[self._case_map[key.lower()]]
 
     def __setitem__(self, key: str, value: T):
-        case_key: str = key.lower()
-        old_key: str | None = self._case_map.get(case_key)
-        if old_key is not None:
-            del self._dictionary[old_key]
-        self._case_map[case_key] = key
+        if not isinstance(key, str):
+            msg = f"Keys must be strings in CaseInsensitiveDict-inherited classes, got {key!r}"
+            raise KeyError(msg)
+        if key in self:
+            self.__delitem__(key)
+        self._case_map[key.lower()] = key
         self._dictionary[key] = value
 
     def __delitem__(self, key: str):
+        if not isinstance(key, str):
+            msg = f"Keys must be strings in CaseInsensitiveDict-inherited classes, got {key!r}"
+            raise KeyError(msg)
         lower_key = key.lower()
         del self._dictionary[self._case_map[lower_key]]
         del self._case_map[lower_key]
@@ -645,7 +612,7 @@ class CaseInsensitiveDict(Generic[T]):
     def __ror__(self, other):
         if not isinstance(other, (dict, CaseInsensitiveDict)):
             return NotImplemented
-        other_dict: CaseInsensitiveDict[T] = other if isinstance(other, CaseInsensitiveDict) else CaseInsensitiveDict.from_dict(other)
+        other_dict: CaseInsensitiveDict[T] = (other if isinstance(other, CaseInsensitiveDict) else CaseInsensitiveDict.from_dict(other))
         new_dict: CaseInsensitiveDict[T] = other_dict.copy()
         new_dict.update(self)
         return new_dict
@@ -656,13 +623,6 @@ class CaseInsensitiveDict(Generic[T]):
 
     def __reversed__(self) -> Iterator[str]:
         return reversed(list(self._dictionary.keys()))
-
-    @overload
-    def pop(self, __key: str) -> T:
-        ...
-    @overload
-    def pop(self, __key: str, __default: VT = None) -> VT | T:
-        ...
 
     def pop(self, __key: str, __default: VT = _unique_sentinel) -> VT | T:  # type: ignore[assignment]
         lower_key: str = __key.lower()
@@ -699,18 +659,11 @@ class CaseInsensitiveDict(Generic[T]):
                     raise TypeError(msg)
                 self[key] = value
 
-    @overload
-    def get(self, __key: str) -> T:
-        ...
-    @overload
-    def get(self, __key: str, __default: VT = None) -> VT | T:
-        ...
-
     def get(self, __key: str, __default: VT = None) -> VT | T:  # type: ignore[assignment]
         key_lookup: str = self._case_map.get(__key.lower(), _unique_sentinel)  # type: ignore[arg-type]
-        return (  # sourcery skip: compare-via-equals
+        return (
             __default
-            if key_lookup is _unique_sentinel
+            if key_lookup == _unique_sentinel
             else self._dictionary.get(key_lookup, __default)
         )
 

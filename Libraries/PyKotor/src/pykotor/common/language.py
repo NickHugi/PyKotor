@@ -432,7 +432,7 @@ class LocalizedString:
         self._substrings: dict[int, str] = {}
 
     def __iter__(self):
-        """Iterates through the list of substrings. Yields a tuple containing (language, gender, text)."""
+        """Iterates through the list of substrings. Yields a tuple containing [language, gender, text]."""
         for substring_id, text in self._substrings.items():
             language, gender = LocalizedString.substring_pair(substring_id)
             yield language, gender, text
@@ -523,12 +523,7 @@ class LocalizedString:
         gender = Gender(substring_id % 2)
         return language, gender
 
-    def set_data(
-        self,
-        language: Language,
-        gender: Gender,
-        string: str,
-    ) -> None:
+    def set_data(self, language: Language, gender: Gender, string: str) -> None:
         """Sets the text of the substring with the corresponding language/gender pair.
 
         Note: The substring is created if it does not exist.
@@ -539,14 +534,10 @@ class LocalizedString:
             gender: The gender.
             string: The new text for the new substring.
         """
-        substring_id: int = LocalizedString.substring_id(language, gender)
+        substring_id = LocalizedString.substring_id(language, gender)
         self._substrings[substring_id] = string
 
-    def get(
-        self,
-        language: Language,
-        gender: Gender,
-    ) -> str | None:
+    def get(self, language: Language, gender: Gender) -> str | None:
         """Gets the substring text with the corresponding language/gender pair.
 
         Args:
@@ -558,14 +549,10 @@ class LocalizedString:
         -------
             The text of the substring if a matching pair is found, otherwise returns None.
         """
-        substring_id: int = LocalizedString.substring_id(language, gender)
+        substring_id = LocalizedString.substring_id(language, gender)
         return self._substrings[substring_id] if substring_id in self._substrings else None
 
-    def remove(
-        self,
-        language: Language,
-        gender: Gender,
-    ) -> None:
+    def remove(self, language: Language, gender: Gender) -> None:
         """Removes the existing substring with the respective language/gender pair if it exists.
 
         Note: No error is thrown if it does not find a corresponding pair.
@@ -575,14 +562,10 @@ class LocalizedString:
             language: The language.
             gender: The gender.
         """
-        substring_id: int = LocalizedString.substring_id(language, gender)
+        substring_id = LocalizedString.substring_id(language, gender)
         self._substrings.pop(substring_id)
 
-    def exists(
-        self,
-        language: Language,
-        gender: Gender,
-    ) -> bool:
+    def exists(self, language: Language, gender: Gender) -> bool:
         """Returns whether or not a substring exists with the respective language/gender pair.
 
         Args:
@@ -594,5 +577,5 @@ class LocalizedString:
         -------
             True if the corresponding substring exists.
         """
-        substring_id: int = LocalizedString.substring_id(language, gender)
+        substring_id = LocalizedString.substring_id(language, gender)
         return substring_id in self._substrings

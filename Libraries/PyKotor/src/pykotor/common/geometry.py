@@ -233,7 +233,7 @@ class Vector2:
         self,
         x: float,
         y: float,
-    ):
+    ) -> None:
         """Sets the components of the vector.
 
         Args:
@@ -246,7 +246,7 @@ class Vector2:
 
     def normalize(
         self,
-    ):
+    ) -> None:
         """Normalizes the vector so that the magnitude is equal to one while maintaining the same angle."""
         magnitude = self.magnitude()
         if magnitude == 0:
@@ -542,7 +542,7 @@ class Vector3:
         x: float,
         y: float,
         z: float,
-    ):
+    ) -> None:
         """Sets the components of the vector.
 
         Args:
@@ -557,7 +557,7 @@ class Vector3:
 
     def normalize(
         self,
-    ):
+    ) -> None:
         """Normalizes the vector so that the magnitude is equal to one while maintaining the same angle."""
         magnitude = self.magnitude()
         if magnitude == 0:
@@ -959,7 +959,7 @@ class Vector4:
         y: float,
         z: float,
         w: float,
-    ):
+    ) -> None:
         """Sets the components of the vector.
 
         Args:
@@ -1078,7 +1078,7 @@ class SurfaceMaterial(IntEnum):
         self,
     ) -> bool:
         """Returns True if the surface material is walkable, False otherwise."""
-        return self in {
+        return self in [
             SurfaceMaterial.DIRT,
             SurfaceMaterial.GRASS,
             SurfaceMaterial.STONE,
@@ -1092,7 +1092,7 @@ class SurfaceMaterial(IntEnum):
             SurfaceMaterial.LEAVES,
             SurfaceMaterial.DOOR,
             SurfaceMaterial.TRIGGER,
-        }
+        ]
 
 
 class Face:
@@ -1151,12 +1151,12 @@ class Face:
     ) -> float:
         return -1.0 * (self.normal().dot(self.v1))
 
-    def centre(
+    def centre(  # TODO: fix return type
         self,
     ) -> Vector3:
         return (self.v1 + self.v2 + self.v3) / 3
 
-    def average(
+    def average(  # TODO: fix return type
         self,
     ) -> Vector3:
         """Returns the average point of the face.
@@ -1329,19 +1329,19 @@ class Polygon2:
     def append(
         self,
         point: Vector2,
-    ):
+    ) -> None:
         self.points.append(point)
 
     def extend(
         self,
         points: list[Vector2],
-    ):
+    ) -> None:
         self.points.extend(points)
 
     def remove(
         self,
         point: Vector2,
-    ):
+    ) -> None:
         self.points.remove(point)
 
     def index(
@@ -1375,8 +1375,8 @@ class Polygon3:
 
     def __getitem__(
         self,
-        item: int | slice,
-    ):
+        item: int,
+    ) -> Vector3 | list[Vector3]:
         if isinstance(item, int):
             return self.points[item]
         if isinstance(item, slice):
@@ -1415,19 +1415,19 @@ class Polygon3:
     def append(
         self,
         point: Vector3,
-    ):
+    ) -> None:
         self.points.append(point)
 
     def extend(
         self,
         points: list[Vector3],
-    ):
+    ) -> None:
         self.points.extend(points)
 
     def remove(
         self,
         point: Vector3,
-    ):
+    ) -> None:
         self.points.remove(point)
 
     def index(
