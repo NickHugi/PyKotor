@@ -69,8 +69,8 @@ $pyInstallerArgs = @{
     'noconfirm' = $true
     'distpath' = ($rootPath + $pathSep + "dist")
     'name' = 'HoloPatcher'
-    'upx-dir' = "$env:USERPROFILE\Documents\GitHub\upx-win32"
-    'icon' = '../resources/icons/patcher_icon_v2.ico'
+    'upx-dir' = "C:\GitHub\upx-win32"
+    'icon' = "..$pathSep" + "resources$pathSep" + "icons$pathSep" + "patcher_icon_v2.ico"
 }
 $pyInstallerArgsString = ($pyInstallerArgs.GetEnumerator() | ForEach-Object {
     $key = $_.Key
