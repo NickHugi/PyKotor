@@ -1,10 +1,8 @@
 from __future__ import annotations
 
-import os
 from contextlib import suppress
 from typing import TYPE_CHECKING, NamedTuple
 
-from pykotor.common.misc import ResRef
 from pykotor.common.stream import BinaryReader
 from pykotor.resource.type import ResourceType
 from pykotor.tools.misc import is_bif_file, is_capsule_file
@@ -12,6 +10,9 @@ from utility.misc import generate_hash
 from utility.path import Path, PurePath
 
 if TYPE_CHECKING:
+    import os
+
+    from pykotor.common.misc import ResRef
     from utility.string import CaseInsensitiveWrappedStr
 
 
@@ -239,7 +240,9 @@ class ResourceIdentifier(NamedTuple):
 
     def __eq__(self, other: object):
         if isinstance(other, str):
-            return hash(self) == hash(other.lower())
+            if other.__class__ == str:  # check for wrappedstr inheritors
+                return hash(self) == hash(other.lower())
+            return hash(self) == hash(other)
         if isinstance(other, ResourceIdentifier):
             return hash(self) == hash(other)
         return NotImplemented
