@@ -7,6 +7,7 @@ from typing import TYPE_CHECKING
 from pykotor.common.stream import BinaryReader, BinaryWriter
 from pykotor.resource.formats.ncs import bytes_ncs
 from pykotor.resource.formats.ncs import compile_nss as compile_with_builtin
+from pykotor.resource.formats.ncs.compiler.classes import CompileException
 from pykotor.resource.formats.ncs.compilers import ExternalNCSCompiler
 from pykotor.resource.formats.ncs.ncs_data import NCS
 from pykotor.resource.formats.ncs.optimizers import RemoveNopOptimizer, RemoveUnusedBlocksOptimizer
@@ -104,12 +105,15 @@ class ModificationsNSS(PatcherModifications):
             logger.add_note(f"Patching from a unix operating system, compiling '{self.sourcefile}' using the built-in compilers...")
 
         # Compile using built-in script compiler if external compiler fails.
-        ncs: NCS = compile_with_builtin(
-            source.value,
-            game,
-            #[RemoveNopOptimizer(), RemoveMoveSPEqualsZeroOptimizer(), RemoveUnusedBlocksOptimizer()],  # TODO: ncs optimizers need testing
-            library_lookup=[CaseAwarePath.pathify(self.temp_script_folder)],
-        )
+        try:
+            ncs: NCS = compile_with_builtin(
+                source.value,
+                game,
+                #[RemoveNopOptimizer(), RemoveMoveSPEqualsZeroOptimizer(), RemoveUnusedBlocksOptimizer()],  # TODO: ncs optimizers need testing
+                library_lookup=[CaseAwarePath.pathify(self.temp_script_folder)],
+            )
+        except CompileException:
+            return True
         return bytes(bytes_ncs(ncs))
 
     def apply(
