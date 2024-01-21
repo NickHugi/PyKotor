@@ -142,7 +142,7 @@ def is_debug_mode() -> bool:
         ret = True
     if os.getenv("DEBUG_MODE", "0") == "1":
         ret = True
-    if hasattr(sys, "gettrace") and sys.gettrace() is not None:
+    if getattr(sys, "gettrace", None) is not None:
         ret = True
     print(f"DEBUG MODE: {ret}")
     return ret
@@ -169,31 +169,38 @@ def is_instance_or_subinstance(instance, target_cls) -> bool:
     return type(instance) is target_cls or is_class_or_subclass_but_not_instance(type(instance), target_cls)
 
 
-def generate_sha256_hash(
+def generate_hash(
     data_input: bytes | bytearray | memoryview | os.PathLike | str,
-    chunk_size: int = 65536,
+    hash_algo: str = "sha1",  # sha1 is faster than md5 in python somehow
+    chunk_size: int = 262144, # 256KB default
+    always_chunk: bool = False,  # Don't unnecessarily chunk bytes/bytearray inputs.
 ) -> str:
-    sha256_hash = hashlib.sha256()
-
-    def process_chunk(data):
-        sha256_hash.update(data)
+    # Create a hash object for the specified algorithm
+    try:
+        hasher = hashlib.new(hash_algo)
+    except ValueError as e:
+        available_algos = ", ".join(sorted(hashlib.algorithms_available))
+        msg = f"Invalid hash algorithm. Available algorithms are: [{available_algos}]"
+        raise ValueError(msg) from e
 
     if isinstance(data_input, (bytes, bytearray, memoryview)):
-        # Process the byte-like data in chunks of 65536 bytes
-        for start in range(0, len(data_input), chunk_size):
-            end = start + chunk_size
-            process_chunk(data_input[start:end])
+        # Process the byte-like data in chunks
+        if always_chunk or isinstance(data_input, memoryview):
+            for start in range(0, len(data_input), chunk_size):
+                end = start + chunk_size
+                hasher.update(data_input[start:end])
+        else:
+            hasher.update(data_input)
     else:
-        # Handle file path input
-        if not isinstance(data_input, (os.PathLike, str)):
-            msg = "Input must be bytes, bytearray, memoryview, or a path-like object"
-            raise TypeError(msg)
-
         with Path.pathify(data_input).open("rb") as f:
             for chunk in iter(lambda: f.read(chunk_size), b""):
-                process_chunk(chunk)
+                hasher.update(chunk)
 
-    return sha256_hash.hexdigest()
+    # Special handling for SHAKE algorithms which require a digest length
+    if "shake" in hash_algo:
+        # Producing a 64-byte (512 bits) output
+        return hasher.hexdigest(64) # type: ignore[]
+    return hasher.hexdigest()
 
 
 def indent(elem: Element, level=0):

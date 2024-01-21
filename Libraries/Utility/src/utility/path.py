@@ -210,6 +210,8 @@ class BasePurePath(metaclass=PurePathType):  # type: ignore[misc]
         return f"{self.__class__.__name__}({self})"
 
     def __eq__(self, __value):
+        if self is __value:
+            return True
         if isinstance(__value, (bytes, bytearray, memoryview)):
             return os.fsencode(self) == __value
 

@@ -8,7 +8,7 @@ from pykotor.common.stream import BinaryReader
 from pykotor.resource.formats.ncs.ncs_auto import compile_nss, write_ncs
 from pykotor.resource.formats.ncs.ncs_data import NCSCompiler
 from pykotor.tools.path import CaseAwarePath
-from utility.misc import generate_sha256_hash
+from utility.misc import generate_hash
 from utility.path import Path
 
 if TYPE_CHECKING:
@@ -84,9 +84,9 @@ class ExternalNCSCompiler(NCSCompiler):
             formatted_args.insert(0, executable)
             return formatted_args
 
-    def __init__(self, nwnnsscomp_path: os.PathLike | str):
-        self.nwnnsscomp_path: Path = Path.pathify(nwnnsscomp_path)  # type: ignore[assignment]
-        self.filehash: str = generate_sha256_hash(self.nwnnsscomp_path).upper()
+    def __init__(self, nwnnsscomp_path: os.PathLike | str) -> None:
+        self.nwnnsscomp_path: Path = Path.pathify(nwnnsscomp_path)  # type: ignore[reportGeneralTypeIssues, assignment]
+        self.filehash: str = generate_hash(self.nwnnsscomp_path, hash_algo="sha256").upper()
         self.config: ExternalNCSCompiler.NwnnsscompConfig | None = None
 
     def configure(self, source_file: os.PathLike | str, output_file: os.PathLike | str, game: Game | int) -> NwnnsscompConfig:
