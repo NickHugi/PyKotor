@@ -451,6 +451,8 @@ class BasePath(BasePurePath):
         return hash((BasePath, self.as_posix().lower() if os.name == "nt" else self.as_posix()))
 
     def __eq__(self, other):
+        if self is other:
+            return True
         if isinstance(other, PurePath):
             other_str = other.as_posix()
         elif isinstance(other, str):

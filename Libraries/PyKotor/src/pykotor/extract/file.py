@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING, NamedTuple
 
 from pykotor.resource.type import ResourceType
 from pykotor.tools.misc import is_bif_file, is_capsule_file
-from utility.misc import generate_sha256_hash
+from utility.misc import generate_hash
 from utility.path import Path, PurePath
 
 if TYPE_CHECKING:
@@ -31,7 +31,7 @@ class FileResource:
         self._offset: int = offset
         self._filepath: Path = Path.pathify(filepath)
 
-        self._sha256_hash: str = ""
+        self._file_hash: str = self.get_hash(reload=True)
         self._identifier = ResourceIdentifier(self._resname, self._restype)
 
     def __repr__(self) -> str:
@@ -50,17 +50,35 @@ class FileResource:
     ) -> str:
         return str(self._identifier)
 
-    def __eq__(
+    def __eq__(  # Checks are ordered from fastest to slowest.
         self,
-        other: FileResource | ResourceIdentifier | Path | bytes | bytearray | memoryview | object,
+        other: FileResource | ResourceIdentifier | bytes | bytearray | memoryview | object,
     ):
-        if isinstance(other, FileResource):
-            return self.get_sha256_hash() == other.get_sha256_hash()
-        if isinstance(other, (Path, bytes, bytearray, memoryview)):
-            return self.get_sha256_hash() == generate_sha256_hash(other)
         if isinstance(other, ResourceIdentifier):
             return self.identifier() == other
-        return NotImplemented
+        if isinstance(other, FileResource):
+            if self is other:
+                return True
+            if (
+                self._offset == other._offset
+                and self._resname == other._resname
+                and self._restype == other._restype
+                and self._filepath == other._filepath
+            ):
+                return True
+
+        self_hash = self.get_hash(reload=False)
+        if not self_hash:
+            return False
+
+        other_hash: str | None = None
+        if isinstance(other, FileResource):
+            other_hash = other.get_hash(reload=False)
+        if isinstance(other, (bytes, bytearray, memoryview)):
+            other_hash = generate_hash(other)
+        if other_hash is None:
+            return NotImplemented
+        return self_hash == other_hash
 
     def resname(
         self,
@@ -110,6 +128,10 @@ class FileResource:
         Returns
         -------
             Bytes data of the resource.
+
+        Raises
+        ------
+            FileNotFoundError: File not found on disk.
         """
         if reload:
             if is_capsule_file(self._filepath):
@@ -122,19 +144,28 @@ class FileResource:
                 self._offset = res.offset()
                 self._size = res.size()
             elif not is_bif_file(self._filepath):  # bifs are read-only and there's no reason to reload them.
+                # Regular file on disk.
                 self._offset = 0
                 self._size = self._filepath.stat().st_size
 
         with self._filepath.open("rb") as file:
             file.seek(self._offset)
             data: bytes = file.read(self._size)
-            self._sha256_hash = generate_sha256_hash(data)
+            self._file_hash = generate_hash(data)
             return data
 
-    def get_sha256_hash(self):
-        if not self._sha256_hash:
-            self.data()  # Ensure that the SHA256 hash is calculated
-        return self._sha256_hash
+    def get_hash(
+        self,
+        *,
+        reload: bool = False,
+    ) -> str:
+        """Returns a lowercase hex string sha1 hash. If FileResource doesn't exist this returns an empty str."""
+        if reload:
+            if self._filepath.safe_exists():
+                self.data()  # Ensure that the hash is calculated
+            else:
+                return ""
+        return self._file_hash
 
     def identifier(
         self,
@@ -164,7 +195,7 @@ class ResourceIdentifier(NamedTuple):
     def __hash__(
         self,
     ):
-        return hash(str(self))
+        return hash(str(self).lower())
 
     def __repr__(
         self,
@@ -174,13 +205,13 @@ class ResourceIdentifier(NamedTuple):
     def __str__(
         self,
     ):
-        return f"{self.resname.lower()}{f'.{self.restype.extension.lower()}' if self.restype.extension else ''}"
+        return f"{self.resname}{f'.{self.restype.extension}' if self.restype.extension else ''}"
 
     def __eq__(self, other: object):
         if isinstance(other, str):
-            other = self.from_path(other)
+            return hash(self) == hash(other.lower())
         if isinstance(other, ResourceIdentifier):
-            return str(self) == str(other)
+            return hash(self) == hash(other)
         return NotImplemented
 
     def validate(self):
@@ -212,17 +243,19 @@ class ResourceIdentifier(NamedTuple):
             - If splitting fails, uses stem as name and extension (from the last dot) as type
             - Handles exceptions during processing
         """
-        path_obj: PurePath = PurePath("")  #PurePath("<INVALID>")
-        with suppress(Exception), suppress(TypeError):
+        try:
             path_obj = PurePath(file_path)
-        with suppress(Exception):
-            max_dots: int = path_obj.name.count(".")
-            for dots in range(max_dots+1, 1, -1):
-                with suppress(Exception):
-                    resname, restype_ext = path_obj.split_filename(dots)
-                    return ResourceIdentifier(
-                        resname,
-                        ResourceType.from_extension(restype_ext).validate(),
-                    )
+        except Exception:
+            return ResourceIdentifier("", ResourceType.from_extension(""))
 
+        max_dots: int = path_obj.name.count(".")
+        for dots in range(max_dots+1, 1, -1):
+            with suppress(Exception):
+                resname, restype_ext = path_obj.split_filename(dots)
+                return ResourceIdentifier(
+                    resname,
+                    ResourceType.from_extension(restype_ext).validate(),
+                )
+
+        # ResourceType is invalid at this point.
         return ResourceIdentifier(path_obj.stem, ResourceType.from_extension(path_obj.suffix))

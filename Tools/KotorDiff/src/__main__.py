@@ -25,7 +25,7 @@ from pykotor.extract.capsule import Capsule
 from pykotor.resource.formats import gff, lip, tlk, twoda
 from pykotor.tools.misc import is_capsule_file
 from pykotor.tools.path import CaseAwarePath
-from utility.misc import generate_sha256_hash
+from utility.misc import generate_hash
 from utility.path import Path, PureWindowsPath
 
 if TYPE_CHECKING:
@@ -232,7 +232,7 @@ def diff_data(
             return log_output_with_separator(message)
         return True
 
-    if PARSER_ARGS.compare_hashes and generate_sha256_hash(data1) != generate_sha256_hash(data2):
+    if PARSER_ARGS.compare_hashes and generate_hash(data1) != generate_hash(data2):
         log_output(f"'{where}': SHA256 is different")
         return False
     return True

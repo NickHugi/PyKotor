@@ -176,7 +176,7 @@ class ResourceType(Enum):
         is_invalid: bool = False,
     ):
         self.type_id: int = type_id
-        self.extension: str = extension.lower().strip()
+        self.extension: str = extension.lower()
         self.category: str = category
         self.contents: str = contents
         self.is_invalid: bool = is_invalid
@@ -224,7 +224,7 @@ class ResourceType(Enum):
     def __hash__(
         self,
     ):
-        return hash(str(self.extension))  # FIXME: should be case-insensitive
+        return hash(self.extension)
 
     @classmethod
     def from_id(
