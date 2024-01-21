@@ -43,7 +43,15 @@
           "-Xdev"
         ],
         "console": "integratedTerminal",
-        "env": {"PYTHONPATH": "${workspaceFolder}/Libraries/PyKotor/src${pathSeparator}${env:PYTHONPATH}"}
+        },
+    {
+      "name": "Run HoloPatcher",
+      "type": "python",
+      "request": "launch",
+      "program": "${workspaceFolder}${pathSeparator}Tools${pathSeparator}HoloPatcher${pathSeparator}src${pathSeparator}__main__.py",
+      "cwd": "${workspaceFolder}/Tools/HoloPatcher/src/",
+      "console": "integratedTerminal",
+      "env": {"PYTHONPATH": "${workspaceFolder}/Libraries/PyKotor/src;${workspaceFolder}/Libraries/Utility/src;${env:PYTHONPATH}"}
       },
   ]
 }
