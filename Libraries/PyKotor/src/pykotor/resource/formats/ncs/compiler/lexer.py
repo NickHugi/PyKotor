@@ -129,77 +129,77 @@ class NssLexer:
         return t
 
     def t_OBJECTSELF_VALUE(self, t):
-        "OBJECT_SELF"  # noqa: D300, D400, D415
+        r"OBJECT_SELF\b"  # noqa: D300, D400, D415
         t.value = ObjectExpression(0)
         return t
 
     def t_OBJECTINVALID_VALUE(self, t):
-        "OBJECT_INVALID"  # noqa: D300, D400, D415
+        r"OBJECT_INVALID\b"  # noqa: D300, D400, D415
         t.value = ObjectExpression(1)
         return t
 
     def t_TRUE_VALUE(self, t):
-        "TRUE"  # noqa: D300, D400, D415
+        r"TRUE\b"  # noqa: D300, D400, D415
         t.value = IntExpression(1)
         return t
 
     def t_FALSE_VALUE(self, t):
-        "FALSE"  # noqa: D300, D400, D415
+        r"FALSE\b"  # noqa: D300, D400, D415
         t.value = IntExpression(0)
         return t
 
     # region Control Tokens
     def t_BREAK_CONTROL(self, t):
-        "break"  # noqa: D300, D400, D415, D403
+        r"break\b"  # noqa: D300, D400, D415, D403
         t.value = ControlKeyword.BREAK
         return t
 
     def t_CONTINUE_CONTROL(self, t):
-        "continue"  # noqa: D300, D400, D415, D403
+        r"continue\b"  # noqa: D300, D400, D415, D403
         return t
 
     def t_CASE_CONTROL(self, t):
-        "case"  # noqa: D300, D400, D415, D403
+        r"case\b"  # noqa: D300, D400, D415, D403
         t.value = ControlKeyword.CASE
         return t
 
     def t_DEFAULT_CONTROL(self, t):
-        "default"  # noqa: D300, D400, D415, D403
+        r"default\b"  # noqa: D300, D400, D415, D403
         t.value = ControlKeyword.DEFAULT
         return t
 
     def t_DO_CONTROL(self, t):
-        "do"  # noqa: D300, D400, D415, D403
+        r"do\b"  # noqa: D300, D400, D415, D403
         t.value = ControlKeyword.DO
         return t
 
     def t_ELSE_CONTROL(self, t):
-        "else"  # noqa: D300, D400, D415, D403
+        r"else\b"  # noqa: D300, D400, D415, D403
         t.value = ControlKeyword.ELSE
         return t
 
     def t_SWITCH_CONTROL(self, t):
-        "switch"  # noqa: D300, D400, D415, D403
+        r"switch\b"  # noqa: D300, D400, D415, D403
         t.value = ControlKeyword.SWITCH
         return t
 
     def t_WHILE_CONTROL(self, t):
-        "while"  # noqa: D300, D400, D415, D403
+        r"while\b"  # noqa: D300, D400, D415, D403
         t.value = ControlKeyword.WHILE
         return t
 
     def t_FOR_CONTROL(self, t):
-        "for"  # noqa: D300, D400, D415, D403
+        r"for\b"  # noqa: D300, D400, D415, D403
         t.value = ControlKeyword.FOR
         return t
 
     def t_IF_CONTROL(self, t):
-        "if"  # noqa: D300, D400, D415, D403
+        r"if\b"  # noqa: D300, D400, D415, D403
         t.value = ControlKeyword.IF
         return t
 
     def t_RETURN(self, t):
-        "return"  # noqa: D300, D400, D415, D403
+        r"return\b"  # noqa: D300, D400, D415, D403
         t.value = ControlKeyword.RETURN
         return t
 
@@ -207,67 +207,67 @@ class NssLexer:
 
     # region Type Tokens
     def t_STRUCT(self, t):
-        "struct"  # noqa: D300, D400, D415, D403
+        r"struct\b"  # noqa: D300, D400, D415, D403
         t.value = DataType.STRUCT
         return t
 
     def t_INT_TYPE(self, t):
-        "int"  # noqa: D300, D400, D415, D403
+        r"int\b"  # noqa: D300, D400, D415, D403
         t.value = DataType.INT
         return t
 
     def t_FLOAT_TYPE(self, t):
-        "float"  # noqa: D300, D400, D415, D403
+        r"float\b"  # noqa: D300, D400, D415, D403
         t.value = DataType.FLOAT
         return t
 
     def t_OBJECT_TYPE(self, t):
-        "object"  # noqa: D300, D400, D415, D403
+        r"object\b"  # noqa: D300, D400, D415, D403
         t.value = DataType.OBJECT
         return t
 
     def t_VOID_TYPE(self, t):
-        "void"  # noqa: D300, D400, D415, D403
+        r"void\b"  # noqa: D300, D400, D415, D403
         t.value = DataType.VOID
         return t
 
     def t_EVENT_TYPE(self, t):
-        "event"  # noqa: D300, D400, D415, D403
+        r"event\b"  # noqa: D300, D400, D415, D403
         t.value = DataType.EVENT
         return t
 
     def t_EFFECT_TYPE(self, t):
-        "effect"  # noqa: D300, D400, D415, D403
+        r"effect\b"  # noqa: D300, D400, D415, D403
         t.value = DataType.EFFECT
         return t
 
     def t_ITEMPROPERTY_TYPE(self, t):
-        "itemproperty"  # noqa: D300, D400, D415, D403
+        r"itemproperty\b"  # noqa: D300, D400, D415, D403
         t.value = DataType.ITEMPROPERTY
         return t
 
     def t_LOCATION_TYPE(self, t):
-        "location"  # noqa: D300, D400, D415, D403
+        r"location\b"  # noqa: D300, D400, D415, D403
         t.value = DataType.LOCATION
         return t
 
     def t_STRING_TYPE(self, t):
-        "string"  # noqa: D300, D400, D415, D403
+        r"string\b"  # noqa: D300, D400, D415, D403
         t.value = DataType.STRING
         return t
 
     def t_TALENT_TYPE(self, t):
-        "talent"  # noqa: D300, D400, D415, D403
+        r"talent\b"  # noqa: D300, D400, D415, D403
         t.value = DataType.TALENT
         return t
 
     def t_ACTION_TYPE(self, t):
-        "action"  # noqa: D300, D400, D415, D403
+        r"action\b"  # noqa: D300, D400, D415, D403
         t.value = DataType.ACTION
         return t
 
     def t_VECTOR_TYPE(self, t):
-        "vector"  # noqa: D300, D400, D415, D403
+        r"vector\b"  # noqa: D300, D400, D415, D403
         t.value = DataType.VECTOR
         return t
 
