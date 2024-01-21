@@ -374,7 +374,7 @@ class NssLexer:
         return t
 
     def t_MINUS(self, t):
-        "-"  # noqa: D300
+        "-"  # noqa: D300, D415, D400
         t.value = OperatorMapping(
             unary=[
                 UnaryOperatorMapping(NCSInstructionType.NEGI, DataType.INT),

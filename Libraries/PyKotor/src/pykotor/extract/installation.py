@@ -369,8 +369,9 @@ class Installation:
 
         Args:
         ----
-            path_method (os.PathLike | str): path for lookup.
+            path (os.PathLike | str): path for lookup.
             recurse (bool): whether to recurse into subfolders (default is False)
+            capsule_check (Callable returns bool or None): Determines whether to use a resource dict or resource list. If the check doesn't pass, the resource isn't added.
 
         Returns:
         -------
