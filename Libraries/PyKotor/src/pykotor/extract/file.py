@@ -73,7 +73,7 @@ class FileResource:
         return hash(self._path_ident_obj)
 
     def __str__(self):
-        return str(self._path_ident_obj)
+        return str(self._identifier)
 
     def __eq__(  # Checks are ordered from fastest to slowest.
         self,
