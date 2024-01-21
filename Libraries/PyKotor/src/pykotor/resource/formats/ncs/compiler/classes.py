@@ -312,6 +312,8 @@ class CodeRoot:
                 index=entry_index,
             )
             ncs.add(NCSInstructionType.RSADDI, args=[], index=entry_index)
+        else:
+            raise CompileException("This file has no entry point and cannot be compiled (Most likely an include file).")
 
     def compile_jsr(
         self,
