@@ -150,100 +150,56 @@ class NssLexer:
 
     # region Control Tokens
     def t_BREAK_CONTROL(self, t):
-<<<<<<< HEAD
         r"break\b"  # noqa: D300, D400, D415, D403
-=======
-        r"break\b"  # noqa: D300, D400, D415
->>>>>>> f30f4749 (Fix keywords interfering with user variable names)
         t.value = ControlKeyword.BREAK
         return t
 
     def t_CONTINUE_CONTROL(self, t):
-<<<<<<< HEAD
         r"continue\b"  # noqa: D300, D400, D415, D403
         return t
 
     def t_CASE_CONTROL(self, t):
         r"case\b"  # noqa: D300, D400, D415, D403
-=======
-        r"continue\b"  # noqa: D300, D400, D415
-        return t
-
-    def t_CASE_CONTROL(self, t):
-        r"case\b"  # noqa: D300, D400, D415
->>>>>>> f30f4749 (Fix keywords interfering with user variable names)
         t.value = ControlKeyword.CASE
         return t
 
     def t_DEFAULT_CONTROL(self, t):
-<<<<<<< HEAD
         r"default\b"  # noqa: D300, D400, D415, D403
-=======
-        r"default\b"  # noqa: D300, D400, D415
->>>>>>> f30f4749 (Fix keywords interfering with user variable names)
         t.value = ControlKeyword.DEFAULT
         return t
 
     def t_DO_CONTROL(self, t):
-<<<<<<< HEAD
         r"do\b"  # noqa: D300, D400, D415, D403
-=======
-        r"do\b"  # noqa: D300, D400, D415
->>>>>>> f30f4749 (Fix keywords interfering with user variable names)
         t.value = ControlKeyword.DO
         return t
 
     def t_ELSE_CONTROL(self, t):
-<<<<<<< HEAD
         r"else\b"  # noqa: D300, D400, D415, D403
-=======
-        r"else\b"  # noqa: D300, D400, D415
->>>>>>> f30f4749 (Fix keywords interfering with user variable names)
         t.value = ControlKeyword.ELSE
         return t
 
     def t_SWITCH_CONTROL(self, t):
-<<<<<<< HEAD
         r"switch\b"  # noqa: D300, D400, D415, D403
-=======
-        r"switch\b"  # noqa: D300, D400, D415
->>>>>>> f30f4749 (Fix keywords interfering with user variable names)
         t.value = ControlKeyword.SWITCH
         return t
 
     def t_WHILE_CONTROL(self, t):
-<<<<<<< HEAD
         r"while\b"  # noqa: D300, D400, D415, D403
-=======
-        r"while\b"  # noqa: D300, D400, D415
->>>>>>> f30f4749 (Fix keywords interfering with user variable names)
         t.value = ControlKeyword.WHILE
         return t
 
     def t_FOR_CONTROL(self, t):
-<<<<<<< HEAD
         r"for\b"  # noqa: D300, D400, D415, D403
-=======
-        r"for\b"  # noqa: D300, D400, D415
->>>>>>> f30f4749 (Fix keywords interfering with user variable names)
         t.value = ControlKeyword.FOR
         return t
 
     def t_IF_CONTROL(self, t):
-<<<<<<< HEAD
         r"if\b"  # noqa: D300, D400, D415, D403
-=======
-        r"if\b"  # noqa: D300, D400, D415
->>>>>>> f30f4749 (Fix keywords interfering with user variable names)
         t.value = ControlKeyword.IF
         return t
 
     def t_RETURN(self, t):
-<<<<<<< HEAD
         r"return\b"  # noqa: D300, D400, D415, D403
-=======
-        r"return\b"  # noqa: D300, D400, D415
->>>>>>> f30f4749 (Fix keywords interfering with user variable names)
         t.value = ControlKeyword.RETURN
         return t
 
@@ -251,119 +207,67 @@ class NssLexer:
 
     # region Type Tokens
     def t_STRUCT(self, t):
-<<<<<<< HEAD
         r"struct\b"  # noqa: D300, D400, D415, D403
-=======
-        r"struct\b"  # noqa: D300, D400, D415
->>>>>>> f30f4749 (Fix keywords interfering with user variable names)
         t.value = DataType.STRUCT
         return t
 
     def t_INT_TYPE(self, t):
-<<<<<<< HEAD
         r"int\b"  # noqa: D300, D400, D415, D403
-=======
-        r"int\b"  # noqa: D300, D400, D415
->>>>>>> f30f4749 (Fix keywords interfering with user variable names)
         t.value = DataType.INT
         return t
 
     def t_FLOAT_TYPE(self, t):
-<<<<<<< HEAD
         r"float\b"  # noqa: D300, D400, D415, D403
-=======
-        r"float\b"  # noqa: D300, D400, D415
->>>>>>> f30f4749 (Fix keywords interfering with user variable names)
         t.value = DataType.FLOAT
         return t
 
     def t_OBJECT_TYPE(self, t):
-<<<<<<< HEAD
         r"object\b"  # noqa: D300, D400, D415, D403
-=======
-        r"object\b"  # noqa: D300, D400, D415
->>>>>>> f30f4749 (Fix keywords interfering with user variable names)
         t.value = DataType.OBJECT
         return t
 
     def t_VOID_TYPE(self, t):
-<<<<<<< HEAD
         r"void\b"  # noqa: D300, D400, D415, D403
-=======
-        r"void\b"  # noqa: D300, D400, D415
->>>>>>> f30f4749 (Fix keywords interfering with user variable names)
         t.value = DataType.VOID
         return t
 
     def t_EVENT_TYPE(self, t):
-<<<<<<< HEAD
         r"event\b"  # noqa: D300, D400, D415, D403
-=======
-        r"event\b"  # noqa: D300, D400, D415
->>>>>>> f30f4749 (Fix keywords interfering with user variable names)
         t.value = DataType.EVENT
         return t
 
     def t_EFFECT_TYPE(self, t):
-<<<<<<< HEAD
         r"effect\b"  # noqa: D300, D400, D415, D403
-=======
-        r"effect\b"  # noqa: D300, D400, D415
->>>>>>> f30f4749 (Fix keywords interfering with user variable names)
         t.value = DataType.EFFECT
         return t
 
     def t_ITEMPROPERTY_TYPE(self, t):
-<<<<<<< HEAD
         r"itemproperty\b"  # noqa: D300, D400, D415, D403
-=======
-        r"itemproperty\b"  # noqa: D300, D400, D415
->>>>>>> f30f4749 (Fix keywords interfering with user variable names)
         t.value = DataType.ITEMPROPERTY
         return t
 
     def t_LOCATION_TYPE(self, t):
-<<<<<<< HEAD
         r"location\b"  # noqa: D300, D400, D415, D403
-=======
-        r"location\b"  # noqa: D300, D400, D415
->>>>>>> f30f4749 (Fix keywords interfering with user variable names)
         t.value = DataType.LOCATION
         return t
 
     def t_STRING_TYPE(self, t):
-<<<<<<< HEAD
         r"string\b"  # noqa: D300, D400, D415, D403
-=======
-        r"string\b"  # noqa: D300, D400, D415
->>>>>>> f30f4749 (Fix keywords interfering with user variable names)
         t.value = DataType.STRING
         return t
 
     def t_TALENT_TYPE(self, t):
-<<<<<<< HEAD
         r"talent\b"  # noqa: D300, D400, D415, D403
-=======
-        r"talent\b"  # noqa: D300, D400, D415
->>>>>>> f30f4749 (Fix keywords interfering with user variable names)
         t.value = DataType.TALENT
         return t
 
     def t_ACTION_TYPE(self, t):
-<<<<<<< HEAD
         r"action\b"  # noqa: D300, D400, D415, D403
-=======
-        r"action\b"  # noqa: D300, D400, D415
->>>>>>> f30f4749 (Fix keywords interfering with user variable names)
         t.value = DataType.ACTION
         return t
 
     def t_VECTOR_TYPE(self, t):
-<<<<<<< HEAD
         r"vector\b"  # noqa: D300, D400, D415, D403
-=======
-        r"vector\b"  # noqa: D300, D400, D415
->>>>>>> f30f4749 (Fix keywords interfering with user variable names)
         t.value = DataType.VECTOR
         return t
 
