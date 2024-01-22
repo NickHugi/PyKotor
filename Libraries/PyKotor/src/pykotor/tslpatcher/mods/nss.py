@@ -9,15 +9,11 @@ from pykotor.resource.formats.ncs import bytes_ncs
 from pykotor.resource.formats.ncs import compile_nss as compile_with_builtin
 from pykotor.resource.formats.ncs.compiler.classes import EntryPointError
 from pykotor.resource.formats.ncs.compilers import ExternalNCSCompiler
-<<<<<<< HEAD
 from pykotor.resource.formats.ncs.optimizers import (
     RemoveMoveSPEqualsZeroOptimizer,
     RemoveNopOptimizer,
     RemoveUnusedBlocksOptimizer,
 )
-=======
-from pykotor.resource.formats.ncs.optimizers import RemoveNopOptimizer, RemoveUnusedBlocksOptimizer  # noqa: F401
->>>>>>> 3463af34 (cleanup new nss code.)
 from pykotor.tools.encoding import decode_bytes_with_fallbacks
 from pykotor.tools.path import CaseAwarePath
 from pykotor.tslpatcher.mods.template import PatcherModifications
@@ -176,7 +172,7 @@ class ModificationsNSS(PatcherModifications):
         nwnnsscompiler: ExternalNCSCompiler,
         logger: PatchLogger,
         game: Game,
-    ) -> bytes | bool:
+    ) -> bytes | Literal[True]:
         tempcompiled_filepath: Path = self.nwnnsscomp_path.parent / "temp_script.ncs"
         stdout, stderr = nwnnsscompiler.compile_script(temp_script_file, tempcompiled_filepath, game)
 

@@ -15,11 +15,8 @@ if TYPE_CHECKING:
     from pykotor.resource.type import SOURCE_TYPES
     from pykotor.tslpatcher.logger import PatchLogger
     from pykotor.tslpatcher.memory import PatcherMemory
-<<<<<<< HEAD
-=======
     from typing_extensions import Literal
     from utility.path import PureWindowsPath
->>>>>>> 3463af34 (cleanup new nss code.)
 
 
 class CriticalError(Exception):
@@ -518,11 +515,7 @@ class Modifications2DA(PatcherModifications):
             try:
                 row.apply(twoda, memory)
             except Exception as e:  # noqa: PERF203, BLE001
-<<<<<<< HEAD
                 msg = f"{universal_simplify_exception(e)} when patching the file '{self.saveas}'"
-=======
-                msg = f"{e} when patching the file '{self.saveas}'"
->>>>>>> 3463af34 (cleanup new nss code.)
                 if isinstance(e, WarningError):
                     logger.add_warning(msg)
                 else:
