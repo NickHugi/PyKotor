@@ -18,6 +18,7 @@ if TYPE_CHECKING:
     from pykotor.resource.type import SOURCE_TYPES
     from pykotor.tslpatcher.logger import PatchLogger
     from pykotor.tslpatcher.memory import PatcherMemory
+    from typing_extensions import Literal
 
 
 class LocalizedStringDelta(LocalizedString):
@@ -470,7 +471,7 @@ class ModificationsGFF(PatcherModifications):
         memory: PatcherMemory,
         logger: PatchLogger,
         game: Game,
-    ) -> bytes:
+    ) -> bytes | Literal[True]:
         gff: GFF = GFFBinaryReader(source_gff).load()
         self.apply(gff, memory, logger, game)
         return bytes_gff(gff)

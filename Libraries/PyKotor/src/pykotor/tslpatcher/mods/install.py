@@ -16,6 +16,7 @@ if TYPE_CHECKING:
     from pykotor.tools.path import CaseAwarePath
     from pykotor.tslpatcher.logger import PatchLogger
     from pykotor.tslpatcher.memory import PatcherMemory
+    from typing_extensions import Literal
 
 
 def create_backup(
@@ -320,7 +321,7 @@ class InstallFile(PatcherModifications):
         memory: PatcherMemory,
         logger: PatchLogger,
         game: Game,
-    ) -> bytes:
+    ) -> bytes | Literal[True]:
         self.apply(source, memory, logger, game)
         with BinaryReader.from_auto(source) as reader:
             return reader.read_all()

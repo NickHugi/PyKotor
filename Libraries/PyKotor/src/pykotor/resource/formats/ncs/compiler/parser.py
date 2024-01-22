@@ -10,7 +10,7 @@ from pykotor.resource.formats.ncs.compiler.classes import (
     BreakStatement,
     CodeBlock,
     CodeRoot,
-    CompileException,
+    CompileError,
     ConditionalBlock,
     ConditionAndBlock,
     ContinueStatement,
@@ -58,7 +58,10 @@ from pykotor.resource.formats.ncs.compiler.lexer import NssLexer
 from utility.path import Path
 
 if TYPE_CHECKING:
+<<<<<<< HEAD
     from ply.lex import LexToken
+=======
+>>>>>>> 3463af34 (cleanup new nss code.)
     from pykotor.common.script import ScriptConstant, ScriptFunction
 
 
@@ -106,9 +109,15 @@ class NssParser:
         ("left", "INCREMENT", "DECREMENT"),
     )
 
+<<<<<<< HEAD
     def p_error(self, p: LexToken):
         msg = f"Syntax error at line {p.lineno}, position {p.lexpos}, token='{p.value}'"  # type: ignore[]
         raise CompileException(msg)
+=======
+    def p_error(self, p):
+        msg = f"Syntax error at line {p.lineno}, position {p.lexpos}, token='{p.value}'"
+        raise CompileError(msg)
+>>>>>>> 3463af34 (cleanup new nss code.)
 
     def p_code_root(self, p: LexToken):
         """

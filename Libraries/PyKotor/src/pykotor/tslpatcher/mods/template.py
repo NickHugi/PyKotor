@@ -8,6 +8,7 @@ if TYPE_CHECKING:
     from pykotor.resource.type import SOURCE_TYPES
     from pykotor.tslpatcher.logger import PatchLogger
     from pykotor.tslpatcher.memory import PatcherMemory
+    from typing_extensions import Literal
 
 class OverrideType:
     """Possible actions for how the patcher should behave when patching a file to a ERF/MOD/RIM while that filename already exists in the Override folder."""
@@ -38,7 +39,8 @@ class PatcherModifications(ABC):
         memory: PatcherMemory,
         logger: PatchLogger,
         game: Game,
-    ) -> bytes:
+    ) -> bytes | Literal[True]:
+        """If bytes is returned, patch the resource. If True is returned, skip this resource."""
         ...
 
     @abstractmethod

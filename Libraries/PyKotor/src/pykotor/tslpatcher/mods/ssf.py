@@ -12,6 +12,7 @@ if TYPE_CHECKING:
     from pykotor.resource.type import SOURCE_TYPES
     from pykotor.tslpatcher.logger import PatchLogger
     from pykotor.tslpatcher.memory import PatcherMemory, TokenUsage
+    from typing_extensions import Literal
 
 
 class ModifySSF:
@@ -41,7 +42,7 @@ class ModificationsSSF(PatcherModifications):
         memory: PatcherMemory,
         logger: PatchLogger,
         game: Game,
-    ) -> bytes:
+    ) -> bytes | Literal[True]:
         ssf: SSF = SSFBinaryReader(source_ssf).load()
         self.apply(ssf, memory, logger, game)
         return bytes_ssf(ssf)

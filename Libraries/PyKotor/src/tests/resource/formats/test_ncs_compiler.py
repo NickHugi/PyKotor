@@ -17,9 +17,9 @@ if UTILITY_PATH.joinpath("utility").exists():
     add_sys_path(UTILITY_PATH)
 
 from pykotor.common.geometry import Vector3
-from pykotor.common.scriptdefs import KOTOR_CONSTANTS, KOTOR_FUNCTIONS
+from pykotor.common.scriptdefs import KOTOR_CONSTANTS, KOTCompileError
 from pykotor.resource.formats.ncs import NCS, NCSInstructionType
-from pykotor.resource.formats.ncs.compiler.classes import CompileException
+from pykotor.resource.formats.ncs.compiler.classes import CompileError
 from pykotor.resource.formats.ncs.compiler.interpreter import Interpreter
 from pykotor.resource.formats.ncs.compiler.lexer import NssLexer
 from pykotor.resource.formats.ncs.compiler.parser import NssParser
@@ -116,9 +116,9 @@ class TestNSSCompiler(unittest.TestCase):
                 string tag = "something";
                 object oSomething = GetObjectByTag();
             }
-        """
+        """CompileError
 
-        self.assertRaises(CompileException, self.compile, script)
+        self.assertRaises(CompileError, self.compile, script)
 
     def test_enginecall_with_too_many_params(self):
         script = """
@@ -127,9 +127,9 @@ class TestNSSCompiler(unittest.TestCase):
                 string tag = "something";
                 object oSomething = GetObjectByTag("", 0, "shouldnotbehere");
             }
-        """
+        """CompileError
 
-        self.assertRaises(CompileException, self.compile, script)
+        self.assertRaises(CompileError, self.compile, script)
 
     def test_enginecall_delay_command_1(self):
         ncs = self.compile(
@@ -1940,9 +1940,9 @@ class TestNSSCompiler(unittest.TestCase):
             {
                 TestFunc();
             }
-        """
+        """CompileError
 
-        self.assertRaises(CompileException, self.compile, source)
+        self.assertRaises(CompileError, self.compile, source)
 
     def test_global_int_addition_assignment(self):
         ncs = self.compile(
@@ -2251,9 +2251,9 @@ class TestNSSCompiler(unittest.TestCase):
                 struct ABC abc;
                 PrintFloat(abc.value4);
             }
-        """
+        """CompileError
 
-        self.assertRaises(CompileException, self.compile, source)
+        self.assertRaises(CompileError, self.compile, source)
 
     def test_struct_set_members(self):
         ncs = self.compile(
@@ -2630,9 +2630,9 @@ class TestNSSCompiler(unittest.TestCase):
             {
                 PrintInteger(value);
             }
-        """
+        """CompileError
 
-        self.assertRaises(CompileException, self.compile, source)
+        self.assertRaises(CompileError, self.compile, source)
 
     def test_prototype_missing_arg_and_default(self):
         source = """
@@ -2647,9 +2647,9 @@ class TestNSSCompiler(unittest.TestCase):
             {
                 PrintInteger(value1);
             }
-        """
+        """CompileError
 
-        self.assertRaises(CompileException, self.compile, source)
+        self.assertRaises(CompileError, self.compile, source)
 
     def test_prototype_default_before_required(self):
         source = """
@@ -2664,9 +2664,9 @@ class TestNSSCompiler(unittest.TestCase):
             {
                 PrintInteger(value1);
             }
-        """
+        """CompileError
 
-        self.assertRaises(CompileException, self.compile, source)
+        self.assertRaises(CompileError, self.compile, source)
 
     def test_redefine_function(self):
         script = """
@@ -2678,16 +2678,16 @@ class TestNSSCompiler(unittest.TestCase):
             void test()
             {
 
-            }
+            }CompileError
         """
-        self.assertRaises(CompileException, self.compile, script)
+        self.assertRaises(CompileError, self.compile, script)
 
     def test_double_prototype(self):
         script = """
             void test();
-            void test();
+            void test();CompileError
         """
-        self.assertRaises(CompileException, self.compile, script)
+        self.assertRaises(CompileError, self.compile, script)
 
     def test_prototype_after_definition(self):
         script = """
@@ -2696,9 +2696,9 @@ class TestNSSCompiler(unittest.TestCase):
 
             }
 
-            void test();
+            void test();CompileError
         """
-        self.assertRaises(CompileException, self.compile, script)
+        self.assertRaises(CompileError, self.compile, script)
 
     def test_prototype_and_definition_param_mismatch(self):
         script = """
@@ -2707,9 +2707,9 @@ class TestNSSCompiler(unittest.TestCase):
             void test()
             {
 
-            }
+            }CompileError
         """
-        self.assertRaises(CompileException, self.compile, script)
+        self.assertRaises(CompileError, self.compile, script)
 
     def test_prototype_and_definition_default_param_mismatch(self):
         """This test is disabled for now."""
@@ -2719,9 +2719,9 @@ class TestNSSCompiler(unittest.TestCase):
         #     void test(int a = 2)
         #     {
         #
-        #     }
+        #     }CompileError
         # """
-        # self.assertRaises(CompileException, self.compile, script)
+        # self.assertRaises(CompileError, self.compile, script)
 
     def test_prototype_and_definition_return_mismatch(self):
         script = """
@@ -2730,9 +2730,9 @@ class TestNSSCompiler(unittest.TestCase):
             int test(int a)
             {
 
-            }
+            }CompileError
         """
-        self.assertRaises(CompileException, self.compile, script)
+        self.assertRaises(CompileError, self.compile, script)
 
     def test_call_undefined(self):
         script = """
@@ -2740,9 +2740,9 @@ class TestNSSCompiler(unittest.TestCase):
             {
                 test(0);
             }
-        """
+        """CompileError
 
-        self.assertRaises(CompileException, self.compile, script)
+        self.assertRaises(CompileError, self.compile, script)
 
     def test_call_void_with_no_args(self):
         ncs = self.compile(
@@ -2866,9 +2866,9 @@ class TestNSSCompiler(unittest.TestCase):
             {
                 test("123");
             }
-        """
+        """CompileError
 
-        self.assertRaises(CompileException, self.compile, source)
+        self.assertRaises(CompileError, self.compile, source)
 
     # endregion
 

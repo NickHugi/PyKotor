@@ -7,13 +7,17 @@ from typing import TYPE_CHECKING
 from pykotor.common.stream import BinaryReader, BinaryWriter
 from pykotor.resource.formats.ncs import bytes_ncs
 from pykotor.resource.formats.ncs import compile_nss as compile_with_builtin
-from pykotor.resource.formats.ncs.compiler.classes import CompileException
+from pykotor.resource.formats.ncs.compiler.classes import EntryPointError
 from pykotor.resource.formats.ncs.compilers import ExternalNCSCompiler
+<<<<<<< HEAD
 from pykotor.resource.formats.ncs.optimizers import (
     RemoveMoveSPEqualsZeroOptimizer,
     RemoveNopOptimizer,
     RemoveUnusedBlocksOptimizer,
 )
+=======
+from pykotor.resource.formats.ncs.optimizers import RemoveNopOptimizer, RemoveUnusedBlocksOptimizer  # noqa: F401
+>>>>>>> 3463af34 (cleanup new nss code.)
 from pykotor.tools.encoding import decode_bytes_with_fallbacks
 from pykotor.tools.path import CaseAwarePath
 from pykotor.tslpatcher.mods.template import PatcherModifications
@@ -26,6 +30,7 @@ if TYPE_CHECKING:
     from pykotor.resource.type import SOURCE_TYPES
     from pykotor.tslpatcher.logger import PatchLogger
     from pykotor.tslpatcher.memory import PatcherMemory
+    from typing_extensions import Literal
 
 class MutableString:
     def __init__(self, value: str):
@@ -47,7 +52,7 @@ class ModificationsNSS(PatcherModifications):
         memory: PatcherMemory,
         logger: PatchLogger,
         game: Game,
-    ) -> bytes:
+    ) -> bytes | Literal[True]:
         """Takes the source nss bytes and replaces instances of 2DAMEMORY# and StrRef# with the values in patcher memory. Compiles the
         source bytes and returns the ncs compiled script as a bytes object.
 
@@ -73,7 +78,7 @@ class ModificationsNSS(PatcherModifications):
             nss_bytes: bytes = reader.read_all()
         if nss_bytes is None:
             logger.add_error("Invalid nss source provided to ModificationsNSS.apply()")
-            return b""
+            return True
 
         # Replace memory tokens in the script, and save to the file.
         source = MutableString(decode_bytes_with_fallbacks(nss_bytes))
@@ -117,7 +122,7 @@ class ModificationsNSS(PatcherModifications):
                 [RemoveNopOptimizer(), RemoveMoveSPEqualsZeroOptimizer(), RemoveUnusedBlocksOptimizer()],  # TODO: ncs optimizers need testing
                 library_lookup=[CaseAwarePath.pathify(self.temp_script_folder)],
             )
-        except Exception:
+        except EntryPointError:
             return True
         return bytes(bytes_ncs(ncs))
 

@@ -11,6 +11,7 @@ if TYPE_CHECKING:
     from pykotor.resource.type import SOURCE_TYPES
     from pykotor.tslpatcher.logger import PatchLogger
     from pykotor.tslpatcher.memory import PatcherMemory
+    from typing_extensions import Literal
 
 
 class ModificationsNCS(PatcherModifications):
@@ -25,7 +26,7 @@ class ModificationsNCS(PatcherModifications):
         memory: PatcherMemory,
         logger: PatchLogger,
         game: Game,
-    ) -> bytes:
+    ) -> bytes | Literal[True]:
         with BinaryReader.from_auto(ncs_source) as reader:
             ncs_bytearray: bytearray = bytearray(reader.read_all())
         self.apply(ncs_bytearray, memory, logger, game)

@@ -19,13 +19,14 @@ def get_logical_equality_instruction(
     if type1 == DataType.FLOAT and type2 == DataType.FLOAT:
         return NCSInstructionType.EQUALFF
     msg = f"Tried an unsupported comparison between '{type1}' '{type2}'."
-    raise CompileException(msg)
+    raise CompileError(msg)
 
-
-class CompileException(Exception):
+class CompileError(Exception):
     def __init__(self, message: str):
         super().__init__(message)
 
+class EntryPointError(CompileError):
+    ...
 
 class TopLevelObject(ABC):
     @abstractmethod
@@ -50,7 +51,7 @@ class GlobalVariableInitialization(TopLevelObject):
         expression_type = self.expression.compile(ncs, root, block)
         if expression_type != self.data_type:
             msg = f"Tried to declare '{self.identifier}' a new variable with incorrect type '{expression_type}'."
-            raise CompileException(msg)
+            raise CompileError(msg)
         root.add_scoped(self.identifier, self.data_type)
 
 
@@ -85,10 +86,10 @@ class GlobalVariableDeclaration(TopLevelObject):
             root.struct_map[self.data_type._struct].initialize(ncs, root)
         elif self.data_type.builtin == DataType.VOID:
             msg = "Cannot declare a variable of void type."
-            raise CompileException(msg)
+            raise CompileError(msg)
         else:
             msg = "Tried to compile a variable of unknown type."
-            raise CompileException(msg)
+            raise CompileError(msg)
 
         root.add_scoped(self.identifier, self.data_type)
 
@@ -207,7 +208,7 @@ class Struct:
             size += member.size(root)
         else:
             msg = f"Trying to access unknown variable '{identifier}' on '{self.identifier}'."
-            raise CompileException(msg)
+            raise CompileError(msg)
         return size
 
     def child_type(self, root: CodeRoot, identifier: Identifier) -> DynamicDataType:
@@ -216,7 +217,7 @@ class Struct:
             if member.identifier == identifier:
                 return member.datatype
         msg = f"member identifier not found: {identifier}"
-        raise CompileException(msg)
+        raise CompileError(msg)
 
 
 class StructMember:
@@ -236,8 +237,12 @@ class StructMember:
         elif self.datatype.builtin == DataType.STRUCT:
             root.struct_map[self.identifier.label].initialize(ncs, root)
         else:
+<<<<<<< HEAD
             msg = f"Unknown datatype: {self.datatype.builtin}"
             raise CompileException(msg)
+=======
+            raise CompileError
+>>>>>>> 3463af34 (cleanup new nss code.)
 
     def size(self, root: CodeRoot):
         return self.datatype.size(root)
@@ -358,7 +363,7 @@ class CodeRoot:
         # Make sure the minimal number of arguments were passed through
         if len(required_params) > len(args_list):
             msg = f"Required argument missing in call to '{name}'."
-            raise CompileException(msg)
+            raise CompileError(msg)
 
         # If some optional parameters were not specified, add the defaults to the arguments list
         while len(definition.parameters) > len(args_list):
@@ -372,7 +377,7 @@ class CodeRoot:
             block.temp_stack += arg_datatype.size(self)
             if param.data_type != arg_datatype:
                 msg = f"Wrong parameter type was past to '{param.identifier}' in function '{definition.identifier}'."
-                raise CompileException(msg)
+                raise CompileError(msg)
         block.temp_stack -= offset
         ncs.add(NCSInstructionType.JSR, jump=start_instruction)
 
@@ -389,7 +394,7 @@ class CodeRoot:
                 break
         else:
             msg = f"Could not find variable '{identifier}'."
-            raise CompileException(msg)
+            raise CompileError(msg)
         return GetScopedResult(is_global=True, datatype=scoped.data_type, offset=offset)
 
     def scope_size(self):
@@ -524,7 +529,7 @@ class FunctionForwardDeclaration(TopLevelObject):
 
         if self.identifier.label in root.function_map:
             msg = f"Function '{function_name}' already has a prototype or been defined."
-            raise CompileException(msg)
+            raise CompileError(msg)
 
         root.function_map[self.identifier.label] = FunctionReference(
             ncs.add(NCSInstructionType.NOP, args=[]),
@@ -558,19 +563,24 @@ class FunctionDefinition(TopLevelObject):
             is_default = param.default is not None
             if previous_is_default and not is_default:
                 msg = "Function parameter without a default value can't follow one with a default value."
-                raise CompileException(msg)
+                raise CompileError(msg)
             previous_is_default = is_default
 
         # Make sure params are all constant values
         for param in self.parameters:
             if isinstance(param.default, IdentifierExpression) and not param.default.is_constant(root):
                 msg = f"Non-constant default value specified for function prototype parameter '{param.identifier}'."
-                raise CompileException(msg)
+                raise CompileError(msg)
 
         if name in root.function_map and not root.function_map[name].is_prototype():
             msg = f"Function '{name}' has already been defined."
+<<<<<<< HEAD
             raise CompileException(msg)
         if name in root.function_map and root.function_map[name].is_prototype():
+=======
+            raise CompileError(msg)
+        elif name in root.function_map and root.function_map[name].is_prototype():
+>>>>>>> 3463af34 (cleanup new nss code.)
             self._compile_function(root, name, ncs)
         else:
             retn = NCSInstruction(NCSInstructionType.RETN)
@@ -600,7 +610,7 @@ class FunctionDefinition(TopLevelObject):
         """
         if not self.is_matching_signature(root.function_map[name].definition):
             msg = f"Prototype of function '{name}' does not match definition."
-            raise CompileException(msg)
+            raise CompileError(msg)
 
         # Function has forward declaration, insert the compiled definition after the stub
         temp = NCS()
@@ -654,7 +664,7 @@ class IncludeScript(TopLevelObject):
                 source = self.library[self.file.value].decode(errors="ignore")
             else:
                 msg = f"Could not find included script '{self.file.value}.nss'."
-                raise CompileException(msg)
+                raise CompileError(msg)
 
         from pykotor.resource.formats.ncs.compiler.parser import NssParser
 
@@ -678,7 +688,7 @@ class StructDefinition(TopLevelObject):
     def compile(self, ncs: NCS, root: CodeRoot):
         if len(self.members) == 0:
             msg = "Struct cannot be empty."
-            raise CompileException(msg)
+            raise CompileError(msg)
         root.struct_map[self.identifier.label] = Struct(self.identifier, self.members)
 
 
@@ -718,7 +728,7 @@ class FieldAccess:
     def get_scoped(self, block: CodeBlock, root: CodeRoot) -> GetScopedResult:
         if len(self.identifiers) == 0:
             msg = "len(self.identifiers) == 0"
-            raise CompileException(msg)
+            raise CompileError(msg)
 
         first: Identifier = self.identifiers[0]
         scoped: GetScopedResult = block.get_scoped(first, root)
@@ -739,7 +749,7 @@ class FieldAccess:
                     offset += 8
                 else:
                     msg = f"Attempting to access unknown member '{next_ident}' on datatype '{datatype}'."
-                    raise CompileException(msg)
+                    raise CompileError(msg)
             elif datatype.builtin == DataType.STRUCT:
                 assert datatype._struct is not None  # noqa: SLF001
                 offset += root.struct_map[datatype._struct].child_offset(  # noqa: SLF001
@@ -752,7 +762,7 @@ class FieldAccess:
                 )
             else:
                 msg = f"Attempting to access unknown member '{next_ident}' on datatype '{datatype}'."
-                raise CompileException(msg)
+                raise CompileError(msg)
 
         return GetScopedResult(is_global, datatype, offset)
 
@@ -930,14 +940,19 @@ class EngineCallExpression(Expression):
 
         if arg_count > len(self._function.params):
             msg = f"Too many arguments passed to '{self._function.name}'."
-            raise CompileException(msg)
+            raise CompileError(msg)
 
         for i, param in enumerate(self._function.params):
             if i >= arg_count:
                 if param.default is None:
                     msg = f"Not enough arguments passed to '{self._function.name}'."
+<<<<<<< HEAD
                     raise CompileException(msg)
                 constant: ScriptConstant | None = next(
+=======
+                    raise CompileError(msg)
+                constant = next(
+>>>>>>> 3463af34 (cleanup new nss code.)
                     (constant for constant in root.constants if constant.name == param.default),
                     None,
                 )
@@ -957,7 +972,7 @@ class EngineCallExpression(Expression):
                         self._args.append(ObjectExpression(int(param.default)))
                     else:
                         msg = f"Unexpected compilation error at '{self._function.name}' call."
-                        raise CompileException(msg)
+                        raise CompileError(msg)
 
                 elif constant.datatype == DataType.INT:
                     self._args.append(IntExpression(int(constant.value)))
@@ -988,7 +1003,7 @@ class EngineCallExpression(Expression):
 
                 if added != param_type:
                     msg = f"Tried to pass an argument of the incorrect type to '{self._function.name}'."
-                    raise CompileException(msg)
+                    raise CompileError(msg)
 
         ncs.instructions.append(
             NCSInstruction(
@@ -1009,7 +1024,7 @@ class FunctionCallExpression(Expression):
     def compile(self, ncs: NCS, root: CodeRoot, block: CodeBlock) -> DynamicDataType:
         if self._function.label not in root.function_map:
             msg = f"Function '{self._function.label}' has not been defined."
-            raise CompileException(msg)
+            raise CompileError(msg)
 
         block.temp_stack += root.function_map[self._function.label].definition.return_type.size(root)
         x = root.compile_jsr(ncs, block, self._function.label, *self._args)
@@ -1043,7 +1058,7 @@ class BinaryOperatorExpression(Expression):
                 break
         else:
             msg = f"Cannot compare {type1.builtin.name.lower()} against {type2.builtin.name.lower()}"
-            raise CompileException(msg)
+            raise CompileError(msg)
 
         block.temp_stack -= 8
         return DynamicDataType(x.result)
@@ -1066,7 +1081,7 @@ class UnaryOperatorExpression(Expression):
                 break
         else:
             msg = f"Cannot negate {type1.name.lower()}"
-            raise CompileException(msg)
+            raise CompileError(msg)
 
         block.temp_stack -= 4
         return type1
@@ -1085,7 +1100,7 @@ class LogicalNotExpression(Expression):
             ncs.add(NCSInstructionType.NOTI)
         else:
             msg = f"Cannot get the logical NOT of {type1.name.lower()}"
-            raise CompileException(msg)
+            raise CompileError(msg)
 
         block.temp_stack -= 4
         return DynamicDataType.INT
@@ -1104,7 +1119,7 @@ class BitwiseNotExpression(Expression):
             ncs.add(NCSInstructionType.COMPI)
         else:
             msg = f"Cannot get one's complement of {type1.name.lower()}"
-            raise CompileException(msg)
+            raise CompileError(msg)
 
         block.temp_stack -= 4
         return type1
@@ -1129,7 +1144,7 @@ class Assignment(Expression):
 
         if variable_type != expression_type:
             msg = f"Wrong type was assigned to symbol {self.field_access.identifiers[-1]}."
-            raise CompileException(msg)
+            raise CompileError(msg)
 
         # Copy the value that the expression has already been placed on the stack to where the identifiers position is
         ncs.instructions.append(
@@ -1172,7 +1187,7 @@ class AdditionAssignment(Expression):
             arthimetic_instruction = NCSInstructionType.ADDSS
         else:
             msg = f"Wrong type was assigned to symbol {self.field_access.identifiers[-1]}."
-            raise CompileException(msg)
+            raise CompileError(msg)
 
         # Add the expression and our temp variable copy together
         ncs.add(arthimetic_instruction, args=[])
@@ -1215,7 +1230,7 @@ class SubtractionAssignment(Expression):
             arthimetic_instruction = NCSInstructionType.SUBFI
         else:
             msg = f"Wrong type was assigned to symbol {self.field_access.identifiers[-1]}."
-            raise CompileException(msg)
+            raise CompileError(msg)
 
         # Add the expression and our temp variable copy together
         ncs.add(arthimetic_instruction)
@@ -1258,7 +1273,7 @@ class MultiplicationAssignment(Expression):
             arthimetic_instruction = NCSInstructionType.MULFI
         else:
             msg = f"Wrong type was assigned to symbol {self.field_access.identifiers[-1]}."
-            raise CompileException(msg)
+            raise CompileError(msg)
 
         # Add the expression and our temp variable copy together
         ncs.add(arthimetic_instruction)
@@ -1301,7 +1316,7 @@ class DivisionAssignment(Expression):
             arthimetic_instruction = NCSInstructionType.DIVFI
         else:
             msg = f"Wrong type was assigned to symbol {self.field_access.identifiers[-1]}."
-            raise CompileException(msg)
+            raise CompileError(msg)
 
         # Add the expression and our temp variable copy together
         ncs.add(arthimetic_instruction)
@@ -1430,10 +1445,10 @@ class VariableDeclarator:
             root.struct_map[data_type._struct].initialize(ncs, root)
         elif data_type.builtin == DataType.VOID:
             msg = "Cannot declare a variable of void type."
-            raise CompileException(msg)
+            raise CompileError(msg)
         else:
             msg = "Tried to compile a variable of unknown type."
-            raise CompileException(msg)
+            raise CompileError(msg)
 
         block.add_scoped(self.identifier, data_type)
 
@@ -1453,7 +1468,7 @@ class VariableInitializer:
         expression_type = self.expression.compile(ncs, root, block)
         if expression_type != data_type:
             msg = f"Tried to declare '{self.identifier}' a new variable with incorrect type '{expression_type.builtin}'."
-            raise CompileException(msg)
+            raise CompileError(msg)
         block.add_scoped(self.identifier, data_type)
 
 
@@ -1566,7 +1581,7 @@ class WhileLoopBlock(Statement):
 
         if condition_type != DynamicDataType.INT:
             msg = "Condition must be int type."
-            raise CompileException(msg)
+            raise CompileError(msg)
 
         ncs.add(NCSInstructionType.JZ, jump=loopend)
         self.block.compile(ncs, root, block, return_instruction, loopend, loopstart)
@@ -1610,7 +1625,7 @@ class DoWhileLoopBlock(Statement):
         condition_type = self.condition.compile(ncs, root, block)
         if condition_type != DynamicDataType.INT:
             msg = "Condition must be int type."
-            raise CompileException(msg)
+            raise CompileError(msg)
 
         ncs.add(NCSInstructionType.JZ, jump=loopend)
         ncs.add(NCSInstructionType.JMP, jump=loopstart)
@@ -1653,7 +1668,7 @@ class ForLoopBlock(Statement):
         condition_type = self.condition.compile(ncs, root, block)
         if condition_type != DynamicDataType.INT:
             msg = "Condition must be int type."
-            raise CompileException(msg)
+            raise CompileError(msg)
 
         ncs.add(NCSInstructionType.JZ, jump=loopend)
         self.block.compile(ncs, root, block, return_instruction, loopend, updatestart)
@@ -1708,7 +1723,7 @@ class BreakStatement(Statement):
     ):
         if break_instruction is None:
             msg = "Nothing to break out of."
-            raise CompileException(msg)
+            raise CompileError(msg)
         ncs.add(NCSInstructionType.MOVSP, args=[-block.break_scope_size(root)])
         ncs.add(NCSInstructionType.JMP, jump=break_instruction)
 
@@ -1728,7 +1743,7 @@ class ContinueStatement(Statement):
     ):
         if continue_instruction is None:
             msg = "Nothing to continue out of."
-            raise CompileException(msg)
+            raise CompileError(msg)
         ncs.add(NCSInstructionType.MOVSP, args=[-block.break_scope_size(root)])
         ncs.add(NCSInstructionType.JMP, jump=continue_instruction)
 
@@ -1742,7 +1757,7 @@ class PrefixIncrementExpression(Expression):
 
         if variable_type != DynamicDataType.INT:
             msg = "Operator (++) not valid for specified types"
-            raise CompileException(msg)
+            raise CompileError(msg)
 
         isglobal, variable_type, stack_index = self.field_access.get_scoped(block, root)
         ncs.add(NCSInstructionType.INCISP, args=[-4])
@@ -1771,7 +1786,7 @@ class PostfixIncrementExpression(Expression):
 
         if variable_type != DynamicDataType.INT:
             msg = "Operator (++) not valid for specified types"
-            raise CompileException(msg)
+            raise CompileError(msg)
 
         isglobal, variable_type, stack_index = self.field_access.get_scoped(block, root)
         if isglobal:
@@ -1792,7 +1807,7 @@ class PrefixDecrementExpression(Expression):
 
         if variable_type != DynamicDataType.INT:
             msg = "Operator (++) not valid for specified types"
-            raise CompileException(msg)
+            raise CompileError(msg)
 
         isglobal, variable_type, stack_index = self.field_access.get_scoped(block, root)
         ncs.add(NCSInstructionType.DECISP, args=[-4])
@@ -1821,7 +1836,7 @@ class PostfixDecrementExpression(Expression):
 
         if variable_type != DynamicDataType.INT:
             msg = "Operator (++) not valid for specified types"
-            raise CompileException(msg)
+            raise CompileError(msg)
 
         isglobal, variable_type, stack_index = self.field_access.get_scoped(block, root)
         if isglobal:
