@@ -38,11 +38,11 @@ from pykotor.tools.path import CaseAwarePath, find_kotor_paths_from_default
 from pykotor.tslpatcher.logger import PatchLogger
 from pykotor.tslpatcher.patcher import ModInstaller
 from pykotor.tslpatcher.reader import ConfigReader, NamespaceReader
-from tooltip import ToolTip
-from uninstall_mod import ModUninstaller
+from pykotor.tslpatcher.uninstall import ModUninstaller
 from utility.error_handling import universal_simplify_exception
 from utility.path import Path
 from utility.string import striprtf
+from utility.tkinter.tooltip import ToolTip
 
 if TYPE_CHECKING:
 
