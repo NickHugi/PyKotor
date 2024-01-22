@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import os
 import pathlib
-import platform
 import re
 import subprocess
 import uuid
@@ -493,7 +492,7 @@ class BasePath(BasePurePath):
     # Safe exists operation
     def safe_exists(self: Path) -> bool | None:  # type: ignore[misc]
         try:
-            return self.exists()
+            return self.exists()  # TODO: don't use pathlib.Path.exists as it's unreliable when we don't have permission to the path.
         except OSError as e:
             print(format_exception_with_variables(e,  ___message___="This exception has been suppressed and is only relevant for debug purposes."))
         return None

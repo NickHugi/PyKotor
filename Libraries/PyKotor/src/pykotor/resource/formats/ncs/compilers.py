@@ -144,7 +144,7 @@ class ExternalNCSCompiler(NCSCompiler):
         if not self.config:
             self.config = self.configure(source_file, output_file, game)
 
-        result = subprocess.run(
+        result: subprocess.CompletedProcess[str] = subprocess.run(
             args=self.config.get_compile_args(str(self.nwnnsscomp_path)),
             capture_output=True,  # Capture stdout and stderr
             text=True,
@@ -181,7 +181,7 @@ class ExternalNCSCompiler(NCSCompiler):
         if not self.config:
             self.config = self.configure(source_file, output_file, game)
 
-        result = subprocess.run(
+        result: subprocess.CompletedProcess[str] = subprocess.run(
             args=self.config.get_decompile_args(str(self.nwnnsscomp_path)),
             capture_output=True,  # Capture stdout and stderr
             text=True,
