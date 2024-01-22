@@ -24,12 +24,12 @@ if UTILITY_PATH.joinpath("utility").exists():
     add_sys_path(UTILITY_PATH)
 
 from pykotor.tools.path import CaseAwarePath
-from utility.path import Path as CustomPath
-from utility.path import PosixPath as CustomPosixPath
-from utility.path import PurePath as CustomPurePath
-from utility.path import PurePosixPath as CustomPurePosixPath
-from utility.path import PureWindowsPath as CustomPureWindowsPath
-from utility.path import WindowsPath as CustomWindowsPath
+from utility.system.path import Path as CustomPath
+from utility.system.path import PosixPath as CustomPosixPath
+from utility.system.path import PurePath as CustomPurePath
+from utility.system.path import PurePosixPath as CustomPurePosixPath
+from utility.system.path import PureWindowsPath as CustomPureWindowsPath
+from utility.system.path import WindowsPath as CustomWindowsPath
 
 
 class TestPathlibMixedSlashes(unittest.TestCase):

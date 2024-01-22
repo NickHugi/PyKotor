@@ -20,7 +20,7 @@ if UTILITY_PATH.joinpath("utility").exists():
 from pykotor.common.stream import BinaryReader
 from pykotor.resource.formats.ncs import NCS, NCSBinaryReader
 from pykotor.resource.formats.ncs.ncs_auto import bytes_ncs, read_ncs, write_ncs
-from utility.path import Path
+from utility.system.path import Path
 
 BINARY_TEST_FILE = "src/tests/files/test.ncs"
 

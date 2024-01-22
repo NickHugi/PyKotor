@@ -20,7 +20,7 @@ from pykotor.resource.formats.twoda import bytes_2da, read_2da
 from pykotor.resource.formats.vis import bytes_vis, read_vis
 from pykotor.resource.type import SOURCE_TYPES, ResourceType
 from utility.error_handling import universal_simplify_exception
-from utility.path import PurePath
+from utility.system.path import PurePath
 
 
 def read_resource(source: SOURCE_TYPES, resource_type: ResourceType | None = None) -> bytes:  # noqa: C901, PLR0911, PLR0912

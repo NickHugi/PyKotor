@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING, Any, Callable
 
 import requests
 from pykotor.common.language import Language
-from utility.path import Path
+from utility.system.path import Path
 
 if TYPE_CHECKING:
     import os

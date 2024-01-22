@@ -55,7 +55,7 @@ from pykotor.resource.formats.ncs.compiler.classes import (
     WhileLoopBlock,
 )
 from pykotor.resource.formats.ncs.compiler.lexer import NssLexer
-from utility.path import Path
+from utility.system.path import Path
 
 if TYPE_CHECKING:
     from ply.lex import LexToken

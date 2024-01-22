@@ -48,7 +48,7 @@ from toolset.gui.windows.module_designer import ModuleDesigner
 from toolset.utils.misc import openLink
 from toolset.utils.window import addWindow, openResourceEditor
 from utility.error_handling import assert_with_variable_trace, format_exception_with_variables, universal_simplify_exception
-from utility.path import Path, PurePath
+from utility.system.path import Path, PurePath
 from watchdog.events import FileSystemEventHandler
 from watchdog.observers import Observer
 

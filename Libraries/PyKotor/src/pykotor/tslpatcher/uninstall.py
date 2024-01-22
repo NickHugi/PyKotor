@@ -14,7 +14,7 @@ from pykotor.tools.misc import is_mod_file
 from pykotor.tools.path import CaseAwarePath
 from pykotor.tslpatcher.logger import PatchLogger
 from utility.error_handling import universal_simplify_exception
-from utility.path import Path
+from utility.system.path import Path
 
 if TYPE_CHECKING:
     from pykotor.extract.installation import Installation
@@ -145,7 +145,7 @@ class ModUninstaller:
             return None
         return max(valid_backups, key=lambda x: datetime.strptime(x.name, "%Y-%m-%d_%H.%M.%S").astimezone())
 
-    def restore_backup(
+    def restore_backup(  # noqa: D417
         self,
         backup_folder: Path,
         existing_files: set[str],

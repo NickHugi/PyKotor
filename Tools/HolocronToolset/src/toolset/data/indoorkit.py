@@ -10,7 +10,7 @@ from pykotor.resource.formats.bwm import BWM, read_bwm
 from pykotor.resource.generics.utd import UTD, read_utd
 from PyQt5.QtGui import QImage
 from toolset.utils.misc import get_nums
-from utility.path import Path
+from utility.system.path import Path
 
 if TYPE_CHECKING:
     import os

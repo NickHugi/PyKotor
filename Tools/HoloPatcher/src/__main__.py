@@ -43,8 +43,8 @@ from pykotor.tslpatcher.patcher import ModInstaller
 from pykotor.tslpatcher.reader import ConfigReader, NamespaceReader
 from pykotor.tslpatcher.uninstall import ModUninstaller
 from utility.error_handling import universal_simplify_exception
-from utility.path import Path
 from utility.string import striprtf
+from utility.system.path import Path
 from utility.tkinter.tooltip import ToolTip
 
 if TYPE_CHECKING:

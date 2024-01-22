@@ -33,8 +33,8 @@ from pykotor.resource.type import ResourceType
 from pykotor.tools.misc import is_any_erf_type_file, is_bif_file, is_capsule_file, is_rim_file
 from pykotor.tools.model import list_lightmaps, list_textures
 from utility.error_handling import format_exception_with_variables
-from utility.path import Path, PurePath
 from utility.string import CaseInsensitiveWrappedStr
+from utility.system.path import Path, PurePath
 
 if TYPE_CHECKING:
     import os

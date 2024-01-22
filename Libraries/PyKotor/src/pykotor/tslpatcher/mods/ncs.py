@@ -4,7 +4,7 @@ from typing import TYPE_CHECKING
 
 from pykotor.common.stream import BinaryReader, BinaryWriter
 from pykotor.tslpatcher.mods.template import PatcherModifications
-from utility.path import PureWindowsPath
+from utility.system.path import PureWindowsPath
 
 if TYPE_CHECKING:
     from pykotor.common.misc import Game

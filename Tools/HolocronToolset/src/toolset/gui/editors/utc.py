@@ -33,7 +33,7 @@ if TYPE_CHECKING:
     from pykotor.resource.formats.twoda.twoda_data import TwoDA
     from pykotor.tools.path import CaseAwarePath
     from typing_extensions import Literal
-    from utility.path import Path
+    from utility.system.path import Path
 
 
 class UTCEditor(Editor):

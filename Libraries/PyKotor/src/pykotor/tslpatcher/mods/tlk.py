@@ -15,7 +15,7 @@ if TYPE_CHECKING:
     from pykotor.tslpatcher.logger import PatchLogger
     from pykotor.tslpatcher.memory import PatcherMemory
     from typing_extensions import Literal
-    from utility.path import Path
+    from utility.system.path import Path
 
 
 class ModificationsTLK(PatcherModifications):

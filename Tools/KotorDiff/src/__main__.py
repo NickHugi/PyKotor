@@ -27,7 +27,7 @@ from pykotor.tools.misc import is_capsule_file
 from pykotor.tools.path import CaseAwarePath
 from utility.error_handling import universal_simplify_exception
 from utility.misc import generate_hash
-from utility.path import Path, PureWindowsPath
+from utility.system.path import Path, PureWindowsPath
 
 if TYPE_CHECKING:
     import os

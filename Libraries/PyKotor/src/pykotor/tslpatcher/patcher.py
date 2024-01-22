@@ -19,7 +19,7 @@ from pykotor.tslpatcher.memory import PatcherMemory
 from pykotor.tslpatcher.mods.install import InstallFile, create_backup
 from pykotor.tslpatcher.mods.template import OverrideType, PatcherModifications
 from utility.error_handling import format_exception_with_variables, universal_simplify_exception
-from utility.path import PurePath
+from utility.system.path import PurePath
 
 if TYPE_CHECKING:
 

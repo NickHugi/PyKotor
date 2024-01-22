@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING
 from pykotor.common.stream import BinaryReader
 from pykotor.tslpatcher.mods.template import PatcherModifications
 from utility.error_handling import universal_simplify_exception
-from utility.path import PurePath
+from utility.system.path import PurePath
 
 if TYPE_CHECKING:
     import os

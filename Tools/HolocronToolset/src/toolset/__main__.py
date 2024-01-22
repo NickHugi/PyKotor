@@ -72,7 +72,7 @@ if __name__ == "__main__":
         fix_sys_and_cwd_path()
 
     from utility.misc import is_debug_mode
-    from utility.path import Path
+    from utility.system.path import Path
 
     os.environ["QT_MULTIMEDIA_PREFERRED_PLUGINS"] = "windowsmediafoundation"
     os.environ["QT_DEBUG_PLUGINS"] = "1"

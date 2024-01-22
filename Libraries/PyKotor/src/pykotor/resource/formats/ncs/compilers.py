@@ -9,7 +9,7 @@ from pykotor.resource.formats.ncs.ncs_auto import compile_nss, write_ncs
 from pykotor.resource.formats.ncs.ncs_data import NCSCompiler
 from pykotor.tools.path import CaseAwarePath
 from utility.misc import generate_hash
-from utility.path import Path
+from utility.system.path import Path
 
 if TYPE_CHECKING:
     import os

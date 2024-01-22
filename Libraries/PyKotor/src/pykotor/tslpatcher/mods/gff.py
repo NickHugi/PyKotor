@@ -9,7 +9,7 @@ from pykotor.common.misc import Game, ResRef
 from pykotor.resource.formats.gff import GFF, GFFFieldType, GFFList, GFFStruct, bytes_gff
 from pykotor.resource.formats.gff.io_gff import GFFBinaryReader
 from pykotor.tslpatcher.mods.template import PatcherModifications
-from utility.path import PureWindowsPath
+from utility.system.path import PureWindowsPath
 
 if TYPE_CHECKING:
     import os

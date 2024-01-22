@@ -3,7 +3,7 @@ from __future__ import annotations
 import os
 
 from pykotor.tools.path import CaseAwarePath
-from utility.path import Path
+from utility.system.path import Path
 
 # working dir should always be 'toolset' when running this script.
 this_script_path = Path(__file__)

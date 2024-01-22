@@ -19,7 +19,7 @@ if UTILITY_PATH.joinpath("utility").exists():
 
 from pykotor.extract.capsule import Capsule
 from pykotor.tslpatcher.patcher import ModInstaller
-from utility.path import Path
+from utility.system.path import Path
 
 
 class TestLookupResourceFunction(unittest.TestCase):

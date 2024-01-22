@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from utility.path import PurePath
+from utility.system.path import PurePath
 
 if TYPE_CHECKING:
     import os

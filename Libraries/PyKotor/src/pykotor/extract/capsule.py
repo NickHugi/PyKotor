@@ -8,7 +8,7 @@ from pykotor.resource.formats.erf import ERF, ERFType, read_erf, write_erf
 from pykotor.resource.formats.rim import RIM, read_rim, write_rim
 from pykotor.resource.type import ResourceType
 from pykotor.tools.misc import is_any_erf_type_file, is_capsule_file, is_rim_file
-from utility.path import Path
+from utility.system.path import Path
 
 if TYPE_CHECKING:
     import os

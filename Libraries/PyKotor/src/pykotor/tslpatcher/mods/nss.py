@@ -18,7 +18,7 @@ from pykotor.tools.encoding import decode_bytes_with_fallbacks
 from pykotor.tools.path import CaseAwarePath
 from pykotor.tslpatcher.mods.template import PatcherModifications
 from utility.error_handling import universal_simplify_exception
-from utility.path import Path, PurePath, PureWindowsPath
+from utility.system.path import Path, PurePath, PureWindowsPath
 
 if TYPE_CHECKING:
     from pykotor.common.misc import Game

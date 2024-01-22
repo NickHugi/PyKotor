@@ -51,7 +51,7 @@ from pykotor.tslpatcher.mods.twoda import (
 )
 from pykotor.tslpatcher.namespaces import PatcherNamespace
 from utility.misc import is_float, is_int
-from utility.path import Path, PurePath, PureWindowsPath
+from utility.system.path import Path, PurePath, PureWindowsPath
 
 if TYPE_CHECKING:
     import os

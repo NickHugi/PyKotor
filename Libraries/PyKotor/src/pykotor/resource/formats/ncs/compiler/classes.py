@@ -7,7 +7,7 @@ from typing import NamedTuple
 from pykotor.common.script import DataType, ScriptConstant, ScriptFunction
 from pykotor.common.stream import BinaryReader
 from pykotor.resource.formats.ncs import NCS, NCSInstruction, NCSInstructionType
-from utility.path import Path
+from utility.system.path import Path
 
 
 def get_logical_equality_instruction(

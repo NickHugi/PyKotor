@@ -55,7 +55,7 @@ if TYPE_CHECKING:
     from pykotor.extract.file import LocationResult, ResourceIdentifier, ResourceResult
     from PyQt5.QtCore import QPoint
     from toolset.data.installation import HTInstallation
-    from utility.path import Path
+    from utility.system.path import Path
 
 
 def openInstanceDialog(parent: QWidget, instance: GITInstance, installation: HTInstallation):

@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING, Any
 from pykotor.resource.formats.twoda import bytes_2da, read_2da
 from pykotor.tslpatcher.mods.template import PatcherModifications
 from utility.error_handling import universal_simplify_exception
-from utility.path import PureWindowsPath
+from utility.system.path import PureWindowsPath
 
 if TYPE_CHECKING:
     from pykotor.common.misc import Game
@@ -16,7 +16,6 @@ if TYPE_CHECKING:
     from pykotor.tslpatcher.logger import PatchLogger
     from pykotor.tslpatcher.memory import PatcherMemory
     from typing_extensions import Literal
-    from utility.path import PureWindowsPath
 
 
 class CriticalError(Exception):

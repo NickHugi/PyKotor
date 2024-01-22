@@ -11,7 +11,7 @@ from pykotor.tools.path import CaseAwarePath
 from PyQt5.QtWidgets import QFileDialog, QMessageBox
 from toolset.gui.widgets.settings.installations import GlobalSettings, NoConfigurationSetError
 from utility.error_handling import format_exception_with_variables
-from utility.path import Path
+from utility.system.path import Path
 
 
 def decompileScript(compiled: bytes, tsl: bool) -> str:

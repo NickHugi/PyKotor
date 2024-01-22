@@ -14,7 +14,7 @@ from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES, ResourceType
 if TYPE_CHECKING:
     from pykotor.common.misc import Game
     from pykotor.resource.formats.ncs.ncs_data import NCSOptimizer
-    from utility.path import Path
+    from utility.system.path import Path
 
 
 def read_ncs(
