@@ -304,12 +304,12 @@ class App(tk.Tk):
     def check_for_updates(self):
         try:
             import requests
-            req = requests.get("https://api.github.com/repos/NickHugi/PyKotor/contents/update_info.json", timeout=15)
+            req: requests.Response = requests.get("https://api.github.com/repos/NickHugi/PyKotor/contents/update_info.json", timeout=15)
             req.raise_for_status()
-            file_data = req.json()
-            base64_content = file_data["content"]
-            decoded_content = base64.b64decode(base64_content)  # Correctly decoding the base64 content
-            updateInfoData = json.loads(decoded_content.decode("utf-8"))
+            file_data: dict = req.json()
+            base64_content: bytes = file_data["content"]
+            decoded_content: bytes = base64.b64decode(base64_content)  # Correctly decoding the base64 content
+            updateInfoData: dict = json.loads(decoded_content.decode("utf-8"))
 
             new_version = tuple(map(int, str(updateInfoData["holopatcherLatestVersion"]).split(".")))
             if new_version > CURRENT_VERSION:
@@ -327,7 +327,7 @@ class App(tk.Tk):
             messagebox.showerror(
                 "Unable to fetch latest version.",
                 (
-                    f"{universal_simplify_exception(e)}\n"
+                    f"{universal_simplify_exception(e)}\n\n"
                     "Check if you are connected to the internet."
                 ),
             )
@@ -380,7 +380,7 @@ class App(tk.Tk):
             self.uninstall_selected_mod()
         if cmdline_args.validate:
             self.test_reader()
-        sys.exit()
+        sys.exit(ExitCode.SUCCESS)
 
     def handle_console_mode(self):
         """Overrides message box functions for console mode. This is done for true CLI support.
