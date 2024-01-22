@@ -20,7 +20,7 @@ class ToolTip:
         if not text:
             return
         bbox: tuple[int, int, int, int] | None = self.widget.bbox("insert")
-        if not bbox:
+        if bbox is None:
             return
 
         x, y, _, _ = bbox

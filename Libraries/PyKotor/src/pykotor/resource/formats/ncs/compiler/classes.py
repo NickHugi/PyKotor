@@ -237,12 +237,8 @@ class StructMember:
         elif self.datatype.builtin == DataType.STRUCT:
             root.struct_map[self.identifier.label].initialize(ncs, root)
         else:
-<<<<<<< HEAD
             msg = f"Unknown datatype: {self.datatype.builtin}"
-            raise CompileException(msg)
-=======
-            raise CompileError
->>>>>>> 3463af34 (cleanup new nss code.)
+            raise CompileError(msg)
 
     def size(self, root: CodeRoot):
         return self.datatype.size(root)
@@ -574,13 +570,8 @@ class FunctionDefinition(TopLevelObject):
 
         if name in root.function_map and not root.function_map[name].is_prototype():
             msg = f"Function '{name}' has already been defined."
-<<<<<<< HEAD
-            raise CompileException(msg)
-        if name in root.function_map and root.function_map[name].is_prototype():
-=======
             raise CompileError(msg)
-        elif name in root.function_map and root.function_map[name].is_prototype():
->>>>>>> 3463af34 (cleanup new nss code.)
+        if name in root.function_map and root.function_map[name].is_prototype():
             self._compile_function(root, name, ncs)
         else:
             retn = NCSInstruction(NCSInstructionType.RETN)
@@ -946,13 +937,8 @@ class EngineCallExpression(Expression):
             if i >= arg_count:
                 if param.default is None:
                     msg = f"Not enough arguments passed to '{self._function.name}'."
-<<<<<<< HEAD
-                    raise CompileException(msg)
-                constant: ScriptConstant | None = next(
-=======
                     raise CompileError(msg)
-                constant = next(
->>>>>>> 3463af34 (cleanup new nss code.)
+                constant: ScriptConstant | None = next(
                     (constant for constant in root.constants if constant.name == param.default),
                     None,
                 )
@@ -1046,7 +1032,7 @@ class BinaryOperatorExpression(Expression):
         self.expression2: Expression = expression2
         self.compatibility: list[BinaryOperatorMapping] = mapping
 
-    def compile(self, ncs: NCS, root: CodeRoot, block: CodeBlock) -> DynamicDataType:
+    def compile(self, ncs: NCS, root: CodeRoot, block: CodeBlock) -> DynamicDataType:  # noqa: A003
         type1 = self.expression1.compile(ncs, root, block)
         block.temp_stack += 4
         type2 = self.expression2.compile(ncs, root, block)
@@ -1070,7 +1056,7 @@ class UnaryOperatorExpression(Expression):
         self.expression1: Expression = expression1
         self.compatibility: list[UnaryOperatorMapping] = mapping
 
-    def compile(self, ncs: NCS, root: CodeRoot, block: CodeBlock) -> DynamicDataType:
+    def compile(self, ncs: NCS, root: CodeRoot, block: CodeBlock) -> DynamicDataType:  # noqa: A003
         type1 = self.expression1.compile(ncs, root, block)
 
         block.temp_stack += 4
