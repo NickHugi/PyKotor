@@ -3,6 +3,7 @@ from __future__ import annotations
 import base64
 import contextlib
 import ctypes
+import io
 import json
 import os
 import pathlib
@@ -42,7 +43,7 @@ from pykotor.tslpatcher.logger import PatchLog, PatchLogger
 from pykotor.tslpatcher.patcher import ModInstaller
 from pykotor.tslpatcher.reader import ConfigReader, NamespaceReader
 from pykotor.tslpatcher.uninstall import ModUninstaller
-from utility.error_handling import universal_simplify_exception
+from utility.error_handling import format_exception_with_variables, universal_simplify_exception
 from utility.string import striprtf
 from utility.system.path import Path
 from utility.tkinter.tooltip import ToolTip
@@ -67,6 +68,9 @@ class ExitCode(IntEnum):
     ABORT_INSTALL_UNSAFE = 6
     EXCEPTION_DURING_INSTALL = 7
     INSTALL_COMPLETED_WITH_ERRORS = 8
+
+class HoloPatcherError(Exception):
+    ...
 
 
 # Please be careful modifying this functionality as 3rd parties depend on this syntax.
@@ -185,7 +189,8 @@ class App(tk.Tk):
         tools_menu = tk.Menu(self.menu_bar, tearoff=0)
         tools_menu.add_command(label="Validate INI", command=self.test_reader)
         tools_menu.add_command(label="Uninstall Mod / Restore Backup", command=self.uninstall_selected_mod)
-        tools_menu.add_command(label="Fix permissions to folder...", command=self.fix_permissions)
+        tools_menu.add_command(label="Fix permissions to file/folder...", command=self.fix_permissions)
+        tools_menu.add_command(label="Create info.rte...", command=self.create_rte_content)
         self.menu_bar.add_cascade(label="Tools", menu=tools_menu)
 
         # Help menu
@@ -292,7 +297,7 @@ class App(tk.Tk):
         self,
         event: tk.Event,
     ):
-        if self.namespaces_combobox_state == 2: # no selection, fix the focus
+        if self.namespaces_combobox_state == 2: # no selection, fix the focus  # noqa: PLR2004
             self.focus_set()
             self.namespaces_combobox_state = 0  # base status
         else:
@@ -328,13 +333,7 @@ class App(tk.Tk):
                     f"You are already running the latest version of HoloPatcher ({VERSION_LABEL})",
                 )
         except Exception as e:  # noqa: BLE001
-            messagebox.showerror(
-                "Unable to fetch latest version.",
-                (
-                    f"{universal_simplify_exception(e)}\n\n"
-                    "Check if you are connected to the internet."
-                ),
-            )
+            self._handle_general_exception(e, title="Unable to fetch latest version")
 
     def handle_commandline(
         self,
@@ -566,20 +565,34 @@ class App(tk.Tk):
 
             # Strip info.rtf and display in the main window frame.
             info_rtf_path = CaseAwarePath(self.mod_path, "tslpatchdata", namespace_option.rtf_filepath())
-            if not info_rtf_path.safe_exists():
-                messagebox.showwarning("No info.rtf", f"Could not load the rtf for this mod, file not found on disk: {info_rtf_path}")
+            info_rte_path = CaseAwarePath(self.mod_path, "tslpatchdata", namespace_option.rtf_filepath()).with_suffix("rte")
+            if not info_rtf_path.safe_exists() and not info_rte_path.safe_exists():
+                messagebox.showwarning("No info.rtf", f"Could not load the info rtf for this mod, file '{info_rtf_path}' not found on disk.")
                 return
-            data: bytes = BinaryReader.load_file(info_rtf_path)
-            rtf_text: str = decode_bytes_with_fallbacks(data)
-            self.set_stripped_rtf_text(rtf_text)
+            if info_rte_path.safe_exists():
+                data: bytes = BinaryReader.load_file(info_rte_path)
+                rtf_text: str = decode_bytes_with_fallbacks(data)
+                self.load_rte_content(rtf_text)
+            elif info_rtf_path.safe_exists():
+                data = BinaryReader.load_file(info_rtf_path)
+                rtf_text = decode_bytes_with_fallbacks(data)
+                self.set_stripped_rtf_text(rtf_text)
+                #self.load_rtf_file(info_rtf_path)
         except Exception as e:  # noqa: BLE001
-            error_name, msg = universal_simplify_exception(e)
-            messagebox.showerror(
-                error_name,
-                f"An unexpected error occurred while loading the patcher namespace.{os.linesep*2}{msg}",
-            )
+            self._handle_general_exception(e, "An unexpected error occurred while loading the patcher namespace.")
         else:
             self.after(10, lambda: self.move_cursor_to_end(self.namespaces_combobox))
+
+    def _handle_general_exception(self, exc: BaseException, custom_msg: str = "Unexpected error.", title: str = ""):
+        detailed_msg = format_exception_with_variables(exc)
+        print(detailed_msg)
+        with Path.cwd().joinpath("errorlog.txt").open("a") as f:
+            f.write(detailed_msg)
+        error_name, msg = universal_simplify_exception(exc)
+        messagebox.showerror(
+            title or error_name,
+            f"{(error_name + os.linesep*2) if title else ''}{custom_msg}.{os.linesep*2}{msg}",
+        )
 
     def load_namespace(
         self,
@@ -650,17 +663,12 @@ class App(tk.Tk):
                 if not default_directory_path_str:  # don't show the error if the cwd was attempted
                     messagebox.showerror("Error", "Could not find a mod located at the given folder.")
                 return
-
-            if default_directory_path_str:
-                self.browse_button.place_forget()
-
             self.check_access(tslpatchdata_path, recurse=True)
         except Exception as e:  # noqa: BLE001
-            error_name, msg = universal_simplify_exception(e)
-            messagebox.showerror(
-                error_name,
-                f"An unexpected error occurred while loading the mod info.{os.linesep*2}{msg}",
-            )
+            self._handle_general_exception(e, "An unexpected error occurred while loading the mod info.")
+        else:
+            if default_directory_path_str:
+                self.browse_button.place_forget()
 
     def open_kotor(
         self,
@@ -691,11 +699,7 @@ class App(tk.Tk):
                 self.gamepaths["values"] = (*self.gamepaths["values"], directory_str)
             self.after(10, self.move_cursor_to_end)
         except Exception as e:  # noqa: BLE001
-            error_name, msg = universal_simplify_exception(e)
-            messagebox.showerror(
-                error_name,
-                f"An unexpected error occurred while loading the game directory.{os.linesep*2}{msg}",
-            )
+            self._handle_general_exception(e, "An unexpected error occurred while loading the game directory.")
 
     def fix_permissions(self):
         path_str = filedialog.askdirectory()
@@ -1014,6 +1018,48 @@ class App(tk.Tk):
         )
         raise
 
+    def create_rte_content(self, event: tk.Tk | None = None):
+        from utility.tkinter.rte_editor import main as start_rte_editor
+        start_rte_editor()
+
+    def load_rte_content(self, rte_content: str | bytes | bytearray | None = None):
+        from utility.tkinter.rte_editor import tag_types
+        if rte_content is None:
+            file_path_str = filedialog.askopenfilename()
+            if not file_path_str:
+                return
+            with Path(file_path_str).open("rb") as f:
+                rte_encoded_data: bytes = f.read()
+            rte_content = decode_bytes_with_fallbacks(rte_encoded_data)
+
+        document = json.loads(rte_content)
+
+        # Clear existing content in the Text widget
+        self.main_text.delete("1.0", tk.END)
+
+        # Insert new content
+        self.main_text.insert("1.0", document["content"])
+
+        # Apply styles
+        for tag_name, positions in document["tags"].items():
+            for start_pos, end_pos in positions:
+                self.main_text.tag_add(tag_name, start_pos, end_pos)
+
+        # Configure tags based on tag_types
+        for tag, config in tag_types.items():
+            self.main_text.tag_configure(tag.lower(), **config)
+
+    def load_rtf_file(self, file_path: os.PathLike | str):
+        from utility.pyth3.plugins.plaintext.writer import PlaintextWriter
+        from utility.pyth3.plugins.rtf15.reader import Rtf15Reader
+        with open(file_path, "rb") as file:
+            rtf_contents_as_utf8_encoded: bytes = decode_bytes_with_fallbacks(file.read()).encode()
+            doc = Rtf15Reader.read(io.BytesIO(rtf_contents_as_utf8_encoded))
+        self.main_text.config(state=tk.NORMAL)
+        self.main_text.delete(1.0, tk.END)
+        self.main_text.insert(tk.END, PlaintextWriter.write(doc).getvalue())
+        self.main_text.config(state=tk.DISABLED)
+
     def set_stripped_rtf_text(
         self,
         rtf_text: str,
@@ -1049,37 +1095,24 @@ class App(tk.Tk):
             log_file.write(f"{log.formatted_message}\n")
 
 
-def custom_excepthook(
+def on_app_crash(
     etype: type[BaseException],
     e: BaseException,
     tback: TracebackType | None,
 ):
-    """Custom exception hook to display errors in message box.
+    title, short_msg = universal_simplify_exception(e)
+    detailed_msg = format_exception_with_variables(e, etype, tback)
+    print(detailed_msg)
+    with Path.cwd().joinpath("errorlog.txt").open("a") as f:
+        f.write(f"\n{detailed_msg}")
 
-    When pyinstaller compiled in --console mode, this will match the same error message behavior of --noconsole.
-
-    Args:
-    ----
-        exc_type: Exception type
-        exc_value: Exception value
-        exc_traceback: Exception traceback
-
-    Processing Logic:
-    ----------------
-        - Format the exception using traceback
-        - Create a hidden root Tk window
-        - Show error message in message box
-        - Destroy the root window.
-    """
-    error_msg: str = "".join(traceback.format_exception(etype, e, tback))
     root = tk.Tk()
-    root.withdraw()  # Hide the main window
-    messagebox.showerror("Critical Exception", error_msg)
+    root.withdraw()  # Hide
+    messagebox.showerror(title, short_msg)
     root.destroy()
     sys.exit()
 
-sys.excepthook = custom_excepthook
-
+sys.excepthook = on_app_crash
 
 def main():
     app = App()
