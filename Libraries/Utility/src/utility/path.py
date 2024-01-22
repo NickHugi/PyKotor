@@ -730,11 +730,17 @@ class BasePath(BasePurePath):
             except Exception as e:
                 print(format_exception_with_variables(e, ___message___=f"Error during platform-specific permission request at path '{self}'"))
 
+        if not self.has_access(mode, recurse=recurse):
+            try:
+                self.request_native_access(elevate=True)
+            except Exception as e:
+                print(format_exception_with_variables(e, ___message___=f"Error during elevated platform-specific permission request at path '{self}'"))
+
         success: bool = self.has_access(mode, recurse=recurse)
         if success:
             return success
         try:
-            if recurse and self.is_dir():
+            if recurse and self.safe_isdir():
                 for child in self.iterdir():
                     success &= child.gain_access(mode, recurse=recurse)
         except OSError as e:
@@ -744,12 +750,17 @@ class BasePath(BasePurePath):
         return success
 
     if os.name == "posix":
-        def request_native_access(self):
-            chmod_args = ["chmod", "-R", "777", f"{self}"]
-            chmod_result = subprocess.Popen(chmod_args, shell=True)
+        # Inspired by the C# code provided by KOTORModSync's source code at https://github.com/th3w1zard1/KOTORModSync
+        def request_native_access(self, elevate: bool = False):
+            if elevate:
+                chmod_args = ["sudo", "-n", "true", "chmod", "-R", "777", f"{self}"]
+                chown_args = ["sudo", "-n", "true", "chown", "-R", "$(whoami)", f"{self}"]
+            else:
+                chmod_args = ["chmod", "-R", "777", f"{self}"]
+                chown_args = ["chown", "-R", "$(whoami)", f"{self}"]
 
-            chown_args = ["chown", "-R", "$(whoami)", f"{self}"]
-            chown_result = subprocess.Popen(chown_args, shell=True)
+            chmod_result = subprocess.run(chmod_args, timeout=60, check=False, capture_output=True, text=True)
+            chown_result = subprocess.run(chown_args, timeout=60, check=False, capture_output=True, text=True)
 
             if chmod_result.returncode != 0:
                 print(
@@ -771,34 +782,47 @@ class BasePath(BasePurePath):
             print(chown_result.stdout)
 
     if os.name == "nt":
-        def request_native_access(self):
+        # Inspired by the C# code provided by KOTORModSync's source code at https://github.com/th3w1zard1/KOTORModSync
+        def request_native_access(self, elevate: bool = False):
             print(f"Step 1: Attempt to take ownership of the target '{self}'...")
+            if elevate:  # sourcery skip: extract-duplicate-method
+                takeown_command = f'takeown /F "{self}" /R /SKIPSL /D Y'
+                pwsh_wrapped_cmd = f"Powershell -Command \"& {{Start-Process cmd.exe -ArgumentList '/c {takeown_command}' -Verb RunAs}}\""
+                print(pwsh_wrapped_cmd)
+                os.system(pwsh_wrapped_cmd)
+            else:
+                takeown_args: list[str] = ["takeown", "/F", f"{self}", "/R", "/SKIPSL", "/D", "Y"]
+                takeown_result = subprocess.run(takeown_args, timeout=60, check=False, capture_output=True, text=True)
 
-            takeown_args: list[str] = ["takeown", "/F", f'"{self}"', "/R", "/SKIPSL", "/D", "Y"]
-            takeown_result = subprocess.Popen( takeown_args, shell=True)
-
-            if takeown_result.returncode != 0:
-                print(
-                    f"Failed to take ownership of '{self}':\n"
-                    f"exit code: {takeown_result.returncode}\n"
-                    f"stdout: {takeown_result.stdout}\n"
-                    f"stderr: {takeown_result.stderr}",
-                )
+                if takeown_result.returncode != 0:
+                    print(
+                        f"Failed to take ownership of '{self}':\n"
+                        f"exit code: {takeown_result.returncode}\n"
+                        f"stdout: {takeown_result.stdout}\n"
+                        f"stderr: {takeown_result.stderr}",
+                    )
+                else:
+                    print(takeown_result.stdout)
 
             print(f"Step 2: Attempting to set access rights of the target '{self}' using icacls...")
-            icacls_args: list[str] = ["icacls", f'"{self}"', "/grant", "*S-1-1-0:(OI)(CI)F", "/T", "/C", "/L"]
-            icacls_result = subprocess.Popen( icacls_args, shell=True)
+            if elevate:
+                icacls_command = f'icacls "{self}" /grant *S-1-1-0:(OI)(CI)F /T /C /L'
+                pwsh_wrapped_cmd = f"Powershell -Command \"& {{Start-Process cmd.exe -ArgumentList '/c {icacls_command}' -Verb RunAs}}\""
+                print(pwsh_wrapped_cmd)
+                os.system(pwsh_wrapped_cmd)
+            else:
+                icacls_args = ["icacls", f"{self}", "/grant", "*S-1-1-0:(OI)(CI)F", "/T", "/C", "/L"]
+                icacls_result = subprocess.run(icacls_args, timeout=60, check=False, capture_output=True, text=True)
 
-            if icacls_result.returncode != 0:
-                print(
-                    f"Could not set Windows icacls permissions at '{self}':\n"
-                    f"exit code: {icacls_result.returncode}\n"
-                    f"stdout: {icacls_result.stdout}\n"
-                    f"stderr: {icacls_result.stderr}",
-                )
-
-            print(takeown_result.stdout)
-            print(icacls_result.stdout)
+                if icacls_result.returncode != 0:
+                    print(
+                        f"Could not set Windows icacls permissions at '{self}':\n"
+                        f"exit code: {icacls_result.returncode}\n"
+                        f"stdout: {icacls_result.stdout}\n"
+                        f"stderr: {icacls_result.stderr}"
+                    )
+                else:
+                    print(f"Permissions set successfully. Output:\n{icacls_result.stdout}")
 
 
 class Path(BasePath, pathlib.Path):  # type: ignore[misc]

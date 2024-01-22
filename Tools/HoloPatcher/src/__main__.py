@@ -185,6 +185,7 @@ class App(tk.Tk):
         tools_menu = tk.Menu(self.menu_bar, tearoff=0)
         tools_menu.add_command(label="Validate INI", command=self.test_reader)
         tools_menu.add_command(label="Uninstall Mod / Restore Backup", command=self.uninstall_selected_mod)
+        tools_menu.add_command(label="Fix permissions to folder...", command=self.fix_permissions)
         self.menu_bar.add_cascade(label="Tools", menu=tools_menu)
 
         # Help menu
@@ -695,6 +696,13 @@ class App(tk.Tk):
                 error_name,
                 f"An unexpected error occurred while loading the game directory.{os.linesep*2}{msg}",
             )
+
+    def fix_permissions(self):
+        path_str = filedialog.askdirectory()
+        if not path_str:
+            return
+        path = Path(path_str)
+        path.gain_access(recurse=True)
 
     def check_access(
         self,
