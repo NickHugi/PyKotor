@@ -30,7 +30,7 @@ class EntryPointError(CompileError):
 
 class TopLevelObject(ABC):
     @abstractmethod
-    def compile(self, ncs: NCS, root: CodeRoot):
+    def compile(self, ncs: NCS, root: CodeRoot):  # noqa: A003
         ...
 
 
@@ -61,7 +61,7 @@ class GlobalVariableDeclaration(TopLevelObject):
         self.identifier: Identifier = identifier
         self.data_type: DynamicDataType = data_type
 
-    def compile(self, ncs: NCS, root: CodeRoot):
+    def compile(self, ncs: NCS, root: CodeRoot):  # noqa: A003
         if self.data_type.builtin == DataType.INT:
             ncs.add(NCSInstructionType.RSADDI)
         elif self.data_type.builtin == DataType.FLOAT:
@@ -267,7 +267,7 @@ class CodeRoot:
         self._global_scope: list[ScopedValue] = []
         self.struct_map: dict[str, Struct] = {}
 
-    def compile(self, ncs: NCS):
+    def compile(self, ncs: NCS):  # noqa: A003
         # nwnnsscomp processes the includes and global variable declarations before functions regardless if they are
         # placed before or after function definitions. We will replicate this behavior.
 
@@ -408,7 +408,7 @@ class CodeBlock:
     def add(self, statement: Statement):
         self._statements.append(statement)
 
-    def compile(
+    def compile(  # noqa: A003
         self,
         ncs: NCS,
         root: CodeRoot,
@@ -520,7 +520,7 @@ class FunctionForwardDeclaration(TopLevelObject):
         self.identifier: Identifier = identifier
         self.parameters: list[FunctionDefinitionParam] = parameters
 
-    def compile(self, ncs: NCS, root: CodeRoot):
+    def compile(self, ncs: NCS, root: CodeRoot):  # noqa: A003
         function_name = self.identifier.label
 
         if self.identifier.label in root.function_map:
@@ -550,7 +550,7 @@ class FunctionDefinition(TopLevelObject):
         for param in parameters:
             block.add_scoped(param.identifier, param.data_type)
 
-    def compile(self, ncs: NCS, root: CodeRoot):
+    def compile(self, ncs: NCS, root: CodeRoot):  # noqa: A003
         name = self.identifier.label
 
         # Make sure all default parameters appear after the required parameters
@@ -582,7 +582,7 @@ class FunctionDefinition(TopLevelObject):
 
             root.function_map[name] = FunctionReference(function_start, self)
 
-    def _compile_function(self, root: CodeRoot, name: str, ncs: NCS):
+    def _compile_function(self, root: CodeRoot, name: str, ncs: NCS):  # noqa: D417
         """Compiles a function definition.
 
         Args:
@@ -644,7 +644,7 @@ class IncludeScript(TopLevelObject):
         self.file: StringExpression = file
         self.library: dict[str, bytes] = library if library is not None else {}
 
-    def compile(self, ncs: NCS, root: CodeRoot):
+    def compile(self, ncs: NCS, root: CodeRoot):  # noqa: A003
         for folder in root.library_lookup:
             filepath = folder / f"{self.file.value}.nss"
             if filepath.safe_isfile():
@@ -676,7 +676,7 @@ class StructDefinition(TopLevelObject):
         self.identifier: Identifier = identifier
         self.members: list[StructMember] = members
 
-    def compile(self, ncs: NCS, root: CodeRoot):
+    def compile(self, ncs: NCS, root: CodeRoot):  # noqa: A003
         if len(self.members) == 0:
             msg = "Struct cannot be empty."
             raise CompileError(msg)
@@ -742,7 +742,7 @@ class FieldAccess:
                     msg = f"Attempting to access unknown member '{next_ident}' on datatype '{datatype}'."
                     raise CompileError(msg)
             elif datatype.builtin == DataType.STRUCT:
-                assert datatype._struct is not None  # noqa: SLF001
+                assert datatype._struct is not None, "datatype._struct cannot be None in FieldAccess.get_scoped()"  # noqa: SLF001
                 offset += root.struct_map[datatype._struct].child_offset(  # noqa: SLF001
                     root,
                     next_ident,
@@ -757,7 +757,7 @@ class FieldAccess:
 
         return GetScopedResult(is_global, datatype, offset)
 
-    def compile(self, ncs: NCS, root: CodeRoot, block: CodeBlock) -> DynamicDataType:
+    def compile(self, ncs: NCS, root: CodeRoot, block: CodeBlock) -> DynamicDataType:  # noqa: A003
         is_global, variable_type, stack_index = self.get_scoped(block, root)
         instruction_type = NCSInstructionType.CPTOPBP if is_global else NCSInstructionType.CPTOPSP
         ncs.add(instruction_type, args=[stack_index, variable_type.size(root)])
@@ -775,7 +775,7 @@ class IdentifierExpression(Expression):
             return self.identifier == other.identifier
         return NotImplemented
 
-    def compile(self, ncs: NCS, root: CodeRoot, block: CodeBlock) -> DynamicDataType:
+    def compile(self, ncs: NCS, root: CodeRoot, block: CodeBlock) -> DynamicDataType:  # noqa: A003
         # Scan for any constants that are stored as part of the compiler (from nwscript).
         constant: ScriptConstant | None = self.get_constant(root)
         if constant is not None:
@@ -807,7 +807,7 @@ class FieldAccessExpression(Expression):
         super().__init__()
         self.field_access: FieldAccess = field_access
 
-    def compile(self, ncs: NCS, root: CodeRoot, block: CodeBlock) -> DynamicDataType:
+    def compile(self, ncs: NCS, root: CodeRoot, block: CodeBlock) -> DynamicDataType:  # noqa: A003
         scoped = self.field_access.get_scoped(block, root)
         instruction_type = NCSInstructionType.CPTOPBP if scoped.is_global else NCSInstructionType.CPTOPSP
         ncs.instructions.append(
@@ -832,7 +832,7 @@ class StringExpression(Expression):
     def data_type(self) -> DynamicDataType:
         return DynamicDataType.STRING
 
-    def compile(self, ncs: NCS, root: CodeRoot, block: CodeBlock) -> DynamicDataType:
+    def compile(self, ncs: NCS, root: CodeRoot, block: CodeBlock) -> DynamicDataType:  # noqa: A003
         ncs.instructions.append(NCSInstruction(NCSInstructionType.CONSTS, [self.value]))
         return DynamicDataType.STRING
 
@@ -850,7 +850,7 @@ class IntExpression(Expression):
     def data_type(self) -> DynamicDataType:
         return DynamicDataType.INT
 
-    def compile(self, ncs: NCS, root: CodeRoot, block: CodeBlock) -> DynamicDataType:
+    def compile(self, ncs: NCS, root: CodeRoot, block: CodeBlock) -> DynamicDataType:  # noqa: A003
         ncs.instructions.append(NCSInstruction(NCSInstructionType.CONSTI, [self.value]))
         return DynamicDataType.INT
 
@@ -868,7 +868,7 @@ class ObjectExpression(Expression):
     def data_type(self) -> DynamicDataType:
         return DynamicDataType.OBJECT
 
-    def compile(self, ncs: NCS, root: CodeRoot, block: CodeBlock) -> DynamicDataType:
+    def compile(self, ncs: NCS, root: CodeRoot, block: CodeBlock) -> DynamicDataType:  # noqa: A003
         ncs.instructions.append(NCSInstruction(NCSInstructionType.CONSTO, [self.value]))
         return DynamicDataType.OBJECT
 
@@ -886,7 +886,7 @@ class FloatExpression(Expression):
     def data_type(self) -> DynamicDataType:
         return DynamicDataType.FLOAT
 
-    def compile(self, ncs: NCS, root: CodeRoot, block: CodeBlock) -> DynamicDataType:
+    def compile(self, ncs: NCS, root: CodeRoot, block: CodeBlock) -> DynamicDataType:  # noqa: A003
         ncs.instructions.append(NCSInstruction(NCSInstructionType.CONSTF, [self.value]))
         return DynamicDataType.FLOAT
 
@@ -906,7 +906,7 @@ class VectorExpression(Expression):
     def data_type(self) -> DynamicDataType:
         return DynamicDataType.FLOAT
 
-    def compile(self, ncs: NCS, root: CodeRoot, block: CodeBlock) -> DynamicDataType:
+    def compile(self, ncs: NCS, root: CodeRoot, block: CodeBlock) -> DynamicDataType:  # noqa: A003
         self.x.compile(ncs, root, block)
         self.y.compile(ncs, root, block)
         self.z.compile(ncs, root, block)
@@ -926,7 +926,7 @@ class EngineCallExpression(Expression):
         self._routine_id: int = routine_id
         self._args: list[Expression] = args
 
-    def compile(self, ncs: NCS, root: CodeRoot, block: CodeBlock) -> DynamicDataType:
+    def compile(self, ncs: NCS, root: CodeRoot, block: CodeBlock) -> DynamicDataType:  # noqa: A003
         arg_count = len(self._args)
 
         if arg_count > len(self._function.params):
