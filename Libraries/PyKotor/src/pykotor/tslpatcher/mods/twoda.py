@@ -13,6 +13,7 @@ if TYPE_CHECKING:
     from pykotor.resource.type import SOURCE_TYPES
     from pykotor.tslpatcher.logger import PatchLogger
     from pykotor.tslpatcher.memory import PatcherMemory
+    from typing_extensions import Literal
     from utility.path import PureWindowsPath
 
 
@@ -84,7 +85,7 @@ class RowValue(ABC):
 
 class RowValueConstant(RowValue):
     def __init__(self, string: str):
-        self.string = string
+        self.string: str = string
 
     def value(self, memory: PatcherMemory, twoda: TwoDA, row: TwoDARow | None) -> str:
         return self.string
@@ -92,7 +93,7 @@ class RowValueConstant(RowValue):
 
 class RowValue2DAMemory(RowValue):
     def __init__(self, token_id: int):
-        self.token_id = token_id
+        self.token_id: int = token_id
 
     def value(self, memory: PatcherMemory, twoda: TwoDA, row: TwoDARow | None) -> str | PureWindowsPath:
         return memory.memory_2da[self.token_id]
@@ -100,7 +101,7 @@ class RowValue2DAMemory(RowValue):
 
 class RowValueTLKMemory(RowValue):
     def __init__(self, token_id: int):
-        self.token_id = token_id
+        self.token_id: int = token_id
 
     def value(self, memory: PatcherMemory, twoda: TwoDA, row: TwoDARow | None) -> str:
         return str(memory.memory_str[self.token_id])
@@ -552,7 +553,7 @@ class Modifications2DA(PatcherModifications):
         memory: PatcherMemory,
         logger: PatchLogger,
         game: Game,
-    ) -> bytes:
+    ) -> bytes | Literal[True]:
         twoda: TwoDA = read_2da(source_2da)
         self.apply(twoda, memory, logger, game)
         return bytes_2da(twoda)
@@ -568,7 +569,7 @@ class Modifications2DA(PatcherModifications):
             try:
                 row.apply(twoda, memory)
             except Exception as e:  # noqa: PERF203, BLE001
-                msg = f"{e!s} when patching the file '{self.saveas}'"
+                msg = f"{e} when patching the file '{self.saveas}'"
                 if isinstance(e, WarningError):
                     logger.add_warning(msg)
                 else:

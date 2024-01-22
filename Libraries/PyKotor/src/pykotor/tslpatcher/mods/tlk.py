@@ -12,6 +12,7 @@ if TYPE_CHECKING:
     from pykotor.resource.type import SOURCE_TYPES
     from pykotor.tslpatcher.logger import PatchLogger
     from pykotor.tslpatcher.memory import PatcherMemory
+    from typing_extensions import Literal
 
 
 class ModificationsTLK(PatcherModifications):
@@ -45,7 +46,7 @@ class ModificationsTLK(PatcherModifications):
         memory: PatcherMemory,
         logger: PatchLogger,
         game: Game,
-    ) -> bytes:
+    ) -> bytes | Literal[True]:
         dialog: TLK | SOURCE_TYPES = source_tlk
         if not isinstance(source_tlk, TLK):
             dialog = TLKBinaryReader(source_tlk).load()

@@ -3,7 +3,6 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from ply import yacc
-
 from pykotor.resource.formats.ncs.compiler.classes import (
     AdditionAssignment,
     Assignment,
@@ -11,7 +10,7 @@ from pykotor.resource.formats.ncs.compiler.classes import (
     BreakStatement,
     CodeBlock,
     CodeRoot,
-    CompileException,
+    CompileError,
     ConditionalBlock,
     ConditionAndBlock,
     ContinueStatement,
@@ -59,8 +58,6 @@ from pykotor.resource.formats.ncs.compiler.lexer import NssLexer
 from pykotor.tools.path import CaseAwarePath
 
 if TYPE_CHECKING:
-    from ply.lex import LexToken
-
     from pykotor.common.script import ScriptConstant, ScriptFunction
 
 
@@ -115,9 +112,9 @@ class NssParser:
         ("left", "INCREMENT", "DECREMENT"),
     )
 
-    def p_error(self, p: LexToken):
-        msg = f"Syntax error at line {p.lineno}, position {p.lexpos}, token='{p.value}'"  # type: ignore
-        raise CompileException(msg)
+    def p_error(self, p):
+        msg = f"Syntax error at line {p.lineno}, position {p.lexpos}, token='{p.value}'"
+        raise CompileError(msg)
 
     def p_code_root(self, p):
         """
