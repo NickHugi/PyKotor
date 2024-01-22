@@ -4,6 +4,7 @@ import os
 import pathlib
 import platform
 import re
+import subprocess
 import uuid
 from typing import TYPE_CHECKING, Any, Callable, Generator, Union
 
@@ -14,21 +15,17 @@ if TYPE_CHECKING:
 
 PathElem = Union[str, os.PathLike]
 
-def override_to_pathlib(cls: type):
-    # sourcery skip: assign-if-exp, reintroduce-else
-    if cls == PurePath:
-        return pathlib.PurePath
-    if cls == PureWindowsPath:
-        return pathlib.PureWindowsPath
-    if cls == PurePosixPath:
-        return pathlib.PurePosixPath
-    if cls == Path:
-        return pathlib.Path
-    if cls == WindowsPath:
-        return pathlib.WindowsPath
-    if cls == PosixPath:
-        return pathlib.PosixPath
-    return cls
+def override_to_pathlib(cls: type) -> type:
+    class_map: dict[type, type] = {
+        PurePath: pathlib.PurePath,
+        PureWindowsPath: pathlib.PureWindowsPath,
+        PurePosixPath: pathlib.PurePosixPath,
+        Path: pathlib.Path,
+        WindowsPath: pathlib.WindowsPath,
+        PosixPath: pathlib.PosixPath,
+    }
+
+    return class_map.get(cls, cls)
 
 class PurePathType(type):
     def __instancecheck__(cls, instance: object) -> bool: # sourcery skip: instance-method-first-arg-name
@@ -481,7 +478,7 @@ class BasePath(BasePurePath):
     def safe_isdir(self: Path) -> bool | None:  # type: ignore[misc]
         try:
             return self.is_dir()
-        except Exception as e:  # noqa: BLE001
+        except OSError as e:
             print(format_exception_with_variables(e,  ___message___="This exception has been suppressed and is only relevant for debug purposes."))
         return None
 
@@ -489,7 +486,7 @@ class BasePath(BasePurePath):
     def safe_isfile(self: Path) -> bool | None:  # type: ignore[misc]
         try:
             return self.is_file()
-        except Exception as e:  # noqa: BLE001
+        except OSError as e:
             print(format_exception_with_variables(e,  ___message___="This exception has been suppressed and is only relevant for debug purposes."))
         return None
 
@@ -497,9 +494,58 @@ class BasePath(BasePurePath):
     def safe_exists(self: Path) -> bool | None:  # type: ignore[misc]
         try:
             return self.exists()
-        except Exception as e:  # noqa: BLE001
+        except OSError as e:
             print(format_exception_with_variables(e,  ___message___="This exception has been suppressed and is only relevant for debug purposes."))
         return None
+
+    def walk(
+        self: Path,  # type: ignore[misc]
+        top_down=True,
+        on_error=None,
+        follow_symlinks=False,
+    ) -> Generator[tuple[Self, list[str], list[str]], Any, None]:  # type: ignore[reportGeneralTypeIssues]
+        """Walk the directory tree from this directory, similar to os.walk()."""  # noqa: D402
+        paths = [self]
+
+        while paths:
+            path = paths.pop()
+            if isinstance(path, tuple):
+                yield path
+                continue
+
+            # We may not have read permission for self, in which case we can't
+            # get a list of the files the directory contains. os.walk()
+            # always suppressed the exception in that instance, rather than
+            # blow up for a minor reason when (say) a thousand readable
+            # directories are still left to visit. That logic is copied here.
+            try:
+                scandir_it = os.scandir(self)
+            except OSError as error:
+                if on_error is not None:
+                    on_error(error)
+                continue
+
+            with scandir_it:
+                dirnames: list[str] = []
+                filenames: list[str] = []
+                for entry in scandir_it:
+                    try:
+                        is_dir = entry.is_dir(follow_symlinks=follow_symlinks)
+                    except OSError:
+                        # Carried over from os.path.isdir().
+                        is_dir = False
+
+                    if is_dir:
+                        dirnames.append(entry.name)
+                    else:
+                        filenames.append(entry.name)
+
+            if top_down:
+                yield path, dirnames, filenames  # type: ignore[reportGeneralTypeIssues]
+            else:
+                paths.append((path, dirnames, filenames))  # type: ignore[reportGeneralTypeIssues]
+
+            paths += [path.joinpath(d) for d in reversed(dirnames)]
 
     def is_relative_to(self: Path, *args, **kwargs) -> bool:  # type: ignore[misc]
         """Return True if the path is relative to another path or False."""
@@ -510,53 +556,58 @@ class BasePath(BasePurePath):
         parsed_other = self.with_segments(other, *_deprecated)
         return parsed_other == self or parsed_other in self.parents
 
-    def get_highest_permission(
+    def get_highest_posix_permission(
         self: Path,  # type: ignore[reportGeneralTypeIssues]
         uid: int | None = None,
         gid: int | None = None,
     ) -> int:
-        if os.name == "posix":
-            # Retrieve the current user's UID and GID
-            current_uid = uid if uid is not None else os.getuid()
-            current_gid = gid if gid is not None else os.getgid()
-
-            # Retrieve the UID and GID of the owner of the path_obj
-            stat_info = self.stat()
-            owner_uid: int = stat_info.st_uid
-            owner_gid: int = stat_info.st_gid
-
-            # Extract user, group, and other permissions from mode
-            mode: int = stat_info.st_mode
-            group_perms: int = (mode >> 3) & 0o7
-            other_perms: int = mode & 0o7
-
-            # Determine the highest permission level
-            if owner_uid == current_uid:
-                user_perms: int = (mode >> 6) & 0o7
-                if owner_gid == current_gid:
-                    return max(user_perms, group_perms, other_perms)
-                return max(user_perms, other_perms)
-            if owner_gid == current_gid:
-                return max(group_perms, other_perms)
-
+        """Similar to get_highest_permission but will not take runtime elevation (e.g. sudo) into account."""
         if os.name == "nt":
-            read_permission: bool = os.access(self, os.R_OK)
-            write_permission: bool = os.access(self, os.W_OK)
-            execute_permission: bool = os.access(self, os.X_OK)
-            permission_value = 0
+            msg = "Not supported on Windows."
+            raise OSError(msg)
 
-            if read_permission:
-                permission_value += 4  # Add 4 for read permission (100 in binary)
+        highest_perm: int = 0
+        # Retrieve the current user's UID and GID
+        current_uid = uid if uid is not None else os.getuid()
+        current_gid = gid if gid is not None else os.getgid()
 
-            if write_permission:
-                permission_value += 2  # Add 2 for write permission (010 in binary)
+        # Retrieve the UID and GID of the owner of the path_obj
+        stat_info = self.stat()
+        owner_uid: int = stat_info.st_uid
+        owner_gid: int = stat_info.st_gid
 
-            if execute_permission:
-                permission_value += 1  # Add 1 for execute permission (001 in binary)
+        # Extract user, group, and other permissions from mode
+        mode: int = stat_info.st_mode
+        user_perms: int = (mode >> 6) & 0o7  # sourcery skip: move-assign
+        group_perms: int = (mode >> 3) & 0o7
+        other_perms: int = mode & 0o7
 
-            return permission_value
+        # If the user is the owner, user_perms apply
+        if current_uid == owner_uid:
+            highest_perm = user_perms
 
-        raise RuntimeError(f"Unsupported operating system: {os.name}")
+        # If the user's group matches the file's group, check group_perms
+        if current_gid == owner_gid:
+            highest_perm = max(highest_perm, group_perms)
+
+        # Check against other_perms
+        return max(highest_perm, other_perms)
+
+    def get_highest_permission(
+        self: Path,  # type: ignore[reportGeneralTypeIssues]
+    ) -> int:
+        read_permission: bool = os.access(self, os.R_OK)
+        write_permission: bool = os.access(self, os.W_OK)
+        execute_permission: bool = os.access(self, os.X_OK)
+
+        permission_value: int = 0o0
+        if read_permission:
+            permission_value += 0o4  # Add 4 for read permission (100 in binary)
+        if write_permission:
+            permission_value += 0o2  # Add 2 for write permission (010 in binary)
+        if execute_permission:
+            permission_value += 0o1  # Add 1 for execute permission (001 in binary)
+        return permission_value
 
 
     def has_access(  # type: ignore[misc]
@@ -565,24 +616,33 @@ class BasePath(BasePurePath):
         *,
         recurse: bool = False,
     ) -> bool:
-        """Check if we have access to the path.
+        """Check if the path has the specified access permissions.
 
         Args:
         ----
-            recurse (bool): check access for all files inside of self. Only valid if self is a folder (default is False)
+            mode (int): The permissions to check for. Defaults to 0o6.
+            recurse (bool): Whether to recursively check permissions for all child paths. Defaults to False.
 
         Returns:
         -------
-            True if path can be modified, False otherwise.
+            bool: True if the path has the specified access permissions, False otherwise.
+
+        Examples:
+        --------
+            >>> path = Path('/my/path')
+            >>> path.has_access(mode=0o6, recurse=False)
         """
         try:
+            if not self.safe_exists():
+                return False
+
             if self.is_file():
                 return self.get_highest_permission() >= mode
 
             if self.is_dir():  # sourcery skip: extract-method
                 test_path: Path = self / f"temp_test_file_{uuid.uuid4().hex}.tmp"
-                with test_path.open("w") as f:
-                    f.write("test")
+                with test_path.open("w") as test_writer:
+                    test_writer.write("")
                 test_path.unlink()
 
                 if not recurse:
@@ -593,7 +653,6 @@ class BasePath(BasePurePath):
                     if not cur_access:
                         return False
                 return True
-
         except OSError as os_exc:
             print(format_exception_with_variables(os_exc))
         except Exception as exc:
@@ -606,11 +665,34 @@ class BasePath(BasePurePath):
         mode: int = 0o7,
         *,
         recurse: bool = True,
+        resolve_symlinks: bool = False,
     ) -> bool:
+        """Gain access to the path by changing its permissions.
+
+        Args:
+        ----
+            mode (int): The permissions to set for the path. Defaults to 0o7. Checks against self.get_highest_permission()
+                        Note: `mode` specifically sets the 'other' permission for chmod if chmod is necessary.
+            recurse (bool): Whether to recursively change permissions for all child paths. Defaults to True.
+            resolve_symlinks (bool): Whether to resolve symlinks when changing permissions. Defaults to False.
+
+        Returns:
+        -------
+            bool: True if access is gained successfully, False otherwise.
+
+        Raises:
+        ------
+            AssertionError: If self is not an instance of Path.
+
+        Examples:
+        --------
+            >>> path = Path('/my/path')
+            >>> path.gain_access(mode=0o7, recurse=True, resolve_symlinks=False)
+        """
         assert isinstance(self, Path), f"self of '{self}' must inherit from BasePath not be literal BasePath instance."
 
-        # (Unix) Gain ownership of the folder
-        if os.name != "nt" and not self.has_access(mode, recurse=recurse):
+        # (Unix) Gain ownership of the folder with os.chown()
+        if os.name == "posix" and not self.has_access(mode, recurse=recurse):
             e = None
             try:
                 home_path = Path.home()
@@ -622,31 +704,35 @@ class BasePath(BasePurePath):
                 else:
                     os.chown(self, stat_info.st_uid, stat_info.st_gid)  # type: ignore[attr-defined]
             except OSError as exc:
-                if e is not None:
-                    exc.__cause__ = e
                 print(format_exception_with_variables(exc, ___message___=f"Error during chown for '{self}'"))
 
         # (Any OS) chmod the folder
         if not self.has_access(mode, recurse=recurse):
             try:
-                self.chmod(mode * 100)
+                # Get the current permissions
+                current_permissions: int = self.stat().st_mode
+                # Extract owner and group permissions
+                owner_permissions: int = current_permissions & 0o700  # Extracts the first number of the octal (e.g. 0o7 in 0o750)
+                group_permissions: int = current_permissions & 0o70   # Extracts the second number of the octal (e.g. 0o5 in 0o750)
+                # Combine them with the new 'other' permissions
+                new_permissions: int = owner_permissions | group_permissions | mode
+                # Apply the new permissions
+                if resolve_symlinks:
+                    self.chmod(new_permissions)
+                else:
+                    self.lchmod(new_permissions)
             except OSError as e:
                 print(format_exception_with_variables(e, ___message___=f"Error during chmod at path '{self}'"))
 
-        # TODO: prompt the user and gain access with os-native methods (UAC for windows, etc)
-        #if not self.has_access(mode, recurse=recurse):
-        #    try:
-        #        if platform.system() == "Darwin":
-        #            self.request_mac_permission()
-        #        elif platform.system() == "Linux":
-        #            self.request_linux_permission()
-        #        elif platform.system() == "Windows":
-        #            self.request_windows_permission()
-
-        #    except Exception as e:
-        #        print(format_exception_with_variables(e, ___message___=f"Error during platform-specific permission request at path '{self}'"))
+        if not self.has_access(mode, recurse=recurse):
+            try:
+                self.request_native_access()
+            except Exception as e:
+                print(format_exception_with_variables(e, ___message___=f"Error during platform-specific permission request at path '{self}'"))
 
         success: bool = self.has_access(mode, recurse=recurse)
+        if success:
+            return success
         try:
             if recurse and self.is_dir():
                 for child in self.iterdir():
@@ -656,6 +742,63 @@ class BasePath(BasePurePath):
             success = False
 
         return success
+
+    if os.name == "posix":
+        def request_native_access(self):
+            chmod_args = ["chmod", "-R", "777", f"{self}"]
+            chmod_result = subprocess.Popen(chmod_args, shell=True)
+
+            chown_args = ["chown", "-R", "$(whoami)", f"{self}"]
+            chown_result = subprocess.Popen(chown_args, shell=True)
+
+            if chmod_result.returncode != 0:
+                print(
+                    f"Could not set unix chmod permissions at '{self}':\n"
+                    f"exit code: {chmod_result.returncode}\n"
+                    f"stdout: {chmod_result.stdout}\n"
+                    f"stderr: {chmod_result.stderr}",
+                )
+
+            if chown_result.returncode != 0:
+                print(
+                    f"Could not set unix chmod permissions at '{self}':\n"
+                    f"exit code: {chown_result.returncode}\n"
+                    f"stdout: {chown_result.stdout}\n"
+                    f"stderr: {chown_result.stderr}",
+                )
+
+            print(chmod_result.stdout)
+            print(chown_result.stdout)
+
+    if os.name == "nt":
+        def request_native_access(self):
+            print(f"Step 1: Attempt to take ownership of the target '{self}'...")
+
+            takeown_args: list[str] = ["takeown", "/F", f'"{self}"', "/R", "/SKIPSL", "/D", "Y"]
+            takeown_result = subprocess.Popen( takeown_args, shell=True)
+
+            if takeown_result.returncode != 0:
+                print(
+                    f"Failed to take ownership of '{self}':\n"
+                    f"exit code: {takeown_result.returncode}\n"
+                    f"stdout: {takeown_result.stdout}\n"
+                    f"stderr: {takeown_result.stderr}",
+                )
+
+            print(f"Step 2: Attempting to set access rights of the target '{self}' using icacls...")
+            icacls_args: list[str] = ["icacls", f'"{self}"', "/grant", "*S-1-1-0:(OI)(CI)F", "/T", "/C", "/L"]
+            icacls_result = subprocess.Popen( icacls_args, shell=True)
+
+            if icacls_result.returncode != 0:
+                print(
+                    f"Could not set Windows icacls permissions at '{self}':\n"
+                    f"exit code: {icacls_result.returncode}\n"
+                    f"stdout: {icacls_result.stdout}\n"
+                    f"stderr: {icacls_result.stderr}",
+                )
+
+            print(takeown_result.stdout)
+            print(icacls_result.stdout)
 
 
 class Path(BasePath, pathlib.Path):  # type: ignore[misc]

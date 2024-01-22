@@ -23,16 +23,17 @@ from pykotor.common.stream import BinaryReader
 if getattr(sys, "frozen", False) is False:
     def update_sys_path(path):
         working_dir = str(path)
-        if working_dir in sys.path:
-            sys.path.remove(working_dir)
-        sys.path.append(working_dir)
+        if working_dir not in sys.path:
+            sys.path.append(working_dir)
 
-    pykotor_path = pathlib.Path(__file__).parents[3] / "Libraries" / "PyKotor" / "src" / "pykotor"
-    if pykotor_path.exists():
-        update_sys_path(pykotor_path.parent)
-    utility_path = pathlib.Path(__file__).parents[3] / "Libraries" / "Utility" / "src" / "utility"
-    if utility_path.exists():
-        update_sys_path(utility_path.parent)
+    with contextlib.suppress(Exception):
+        pykotor_path = pathlib.Path(__file__).parents[3] / "Libraries" / "PyKotor" / "src" / "pykotor"
+        if pykotor_path.exists():
+            update_sys_path(pykotor_path.parent)
+    with contextlib.suppress(Exception):
+        utility_path = pathlib.Path(__file__).parents[3] / "Libraries" / "Utility" / "src" / "utility"
+        if utility_path.exists():
+            update_sys_path(utility_path.parent)
 
 from pykotor.common.misc import Game
 from pykotor.tools.encoding import decode_bytes_with_fallbacks
@@ -143,6 +144,8 @@ class App(tk.Tk):
         self.initialize_top_menu()
         self.initialize_ui_controls()
 
+        # Map the title bar's X button to our handle_exit_button function.
+        # This probably also means this will be called when attempting to 'End Task' in e.g. task manager.
         self.protocol("WM_DELETE_WINDOW", self.handle_exit_button)
 
         cmdline_args: Namespace = parse_args()
@@ -432,8 +435,6 @@ class App(tk.Tk):
         """Hide the console window in GUI mode."""
         # Windows
         if os.name == "nt":
-            import ctypes
-
             ctypes.windll.user32.ShowWindow(ctypes.windll.kernel32.GetConsoleWindow(), 0)
 
     def uninstall_selected_mod(self):
@@ -492,10 +493,10 @@ class App(tk.Tk):
             "CONTINUING WILL MOST LIKELY BREAK YOUR GAME AND REQUIRE A FULL KOTOR REINSTALL!",
         ):
             return
-        with contextlib.suppress(Exception):
+        with contextlib.suppress(BaseException):
             self.install_thread._stop()  # type: ignore[attr-defined]
             print("force terminate of install thread succeeded", sys.stdout)  # noqa: T201
-        with contextlib.suppress(Exception):
+        with contextlib.suppress(BaseException):
             ctypes.pythonapi.PyThreadState_SetAsyncExc(ctypes.c_long(self.install_thread.ident), ctypes.py_object(SystemExit))  # type: ignore[arg-type]
         self.destroy()
         sys.exit(ExitCode.ABORT_INSTALL_UNSAFE)
