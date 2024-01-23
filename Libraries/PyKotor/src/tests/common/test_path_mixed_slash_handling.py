@@ -244,7 +244,7 @@ class TestPathlibMixedSlashes(unittest.TestCase):
                 self.assertEqual(str(PathType("~/folder/")), "~/folder")
 
     def test_pathlib_path_edge_cases_windows(self):
-        test_classes = (WindowsPath, PureWindowsPath) if os.name == "nt" else (PureWindowsPath)
+        test_classes = (WindowsPath, PureWindowsPath) if os.name == "nt" else (PureWindowsPath,)
         for PathType in test_classes:
             with self.subTest(PathType=PathType):
                 # Absolute vs Relative Paths
