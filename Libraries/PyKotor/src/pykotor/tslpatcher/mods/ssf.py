@@ -20,7 +20,7 @@ class ModifySSF:
         self.sound: SSFSound = sound
         self.stringref: TokenUsage = stringref
 
-    def apply(self, ssf: SSF, memory: PatcherMemory) -> None:
+    def apply(self, ssf: SSF, memory: PatcherMemory):
         ssf.set_data(self.sound, int(self.stringref.value(memory)))
 
 
@@ -53,6 +53,6 @@ class ModificationsSSF(PatcherModifications):
         memory: PatcherMemory,
         logger: PatchLogger,
         game: Game,
-    ) -> None:
+    ):
         for modifier in self.modifiers:
             modifier.apply(ssf, memory)

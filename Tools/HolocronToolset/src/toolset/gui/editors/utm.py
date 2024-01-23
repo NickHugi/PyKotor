@@ -50,7 +50,7 @@ class UTMEditor(Editor):
 
         self.new()
 
-    def _setupSignals(self) -> None:
+    def _setupSignals(self):
         """Sets up signal connections for UI buttons"""
         self.ui.tagGenerateButton.clicked.connect(self.generateTag)
         self.ui.resrefGenerateButton.clicked.connect(self.generateResref)
@@ -72,13 +72,13 @@ class UTMEditor(Editor):
         self._installation = installation
         self.ui.nameEdit.setInstallation(installation)
 
-    def load(self, filepath: os.PathLike | str, resref: str, restype: ResourceType, data: bytes) -> None:
+    def load(self, filepath: os.PathLike | str, resref: str, restype: ResourceType, data: bytes):
         super().load(filepath, resref, restype, data)
 
         utm = read_utm(data)
         self._loadUTM(utm)
 
-    def _loadUTM(self, utm: UTM) -> None:
+    def _loadUTM(self, utm: UTM):
         """Loads UTM data into UI elements.
 
         Args:
@@ -143,27 +143,27 @@ class UTMEditor(Editor):
 
         return data, b""
 
-    def new(self) -> None:
+    def new(self):
         super().new()
         self._loadUTM(UTM())
 
-    def changeName(self) -> None:
+    def changeName(self):
         dialog = LocalizedStringDialog(self, self._installation, self.ui.nameEdit.locstring)
         if dialog.exec_():
             self._loadLocstring(self.ui.nameEdit, dialog.locstring)
 
-    def generateTag(self) -> None:
+    def generateTag(self):
         if self.ui.resrefEdit.text() == "":
             self.generateResref()
         self.ui.tagEdit.setText(self.ui.resrefEdit.text())
 
-    def generateResref(self) -> None:
+    def generateResref(self):
         if self._resref is not None and self._resref != "":
             self.ui.resrefEdit.setText(self._resref)
         else:
             self.ui.resrefEdit.setText("m00xx_mer_000")
 
-    def openInventory(self) -> None:
+    def openInventory(self):
         capsules = []
 
         with suppress(Exception):

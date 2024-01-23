@@ -196,7 +196,7 @@ class LTRBlock:
         self,
         char: str,
         chance: float,
-    ) -> None:
+    ):
         """Sets the chance of a specified character at the start of the block.
 
         Args:
@@ -226,7 +226,7 @@ class LTRBlock:
         self,
         char: str,
         chance: float,
-    ) -> None:
+    ):
         """Sets the chance of a specified character at the middle of the block.
 
         Args:
@@ -256,7 +256,7 @@ class LTRBlock:
         self,
         char: str,
         chance: float,
-    ) -> None:
+    ):
         """Sets the chance of a specified character at the end of the block.
 
         Args:

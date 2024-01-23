@@ -36,13 +36,13 @@ K2_PATH = os.environ.get("K2_PATH")
 
 
 class TestDLG(TestCase):
-    def setUp(self) -> None:
+    def setUp(self):
         self.log_messages: list[str] = [os.linesep]
 
     def log_func(self, *args):
         self.log_messages.extend(args)
 
-    def test_k1_reconstruct(self) -> None:
+    def test_k1_reconstruct(self):
         gff: GFF = read_gff(TEST_K1_FILE)
         reconstructed_gff: GFF = dismantle_dlg(construct_dlg(gff), Game.K1)
         result = gff.compare(reconstructed_gff, self.log_func, ignore_default_changes=True)
@@ -64,7 +64,7 @@ Extra 'Int32' field found at 'GFFRoot\ReplyList\4\PlotIndex': '-1'
         else:
             self.assertTrue(result)
 
-    def test_k1_reconstruct_from_reconstruct(self) -> None:
+    def test_k1_reconstruct_from_reconstruct(self):
         gff: GFF = read_gff(TEST_K1_FILE)
         reconstructed_gff: GFF = dismantle_dlg(construct_dlg(gff), Game.K1)
         re_reconstructed_gff: GFF = dismantle_dlg(construct_dlg(reconstructed_gff), Game.K1)
@@ -72,12 +72,12 @@ Extra 'Int32' field found at 'GFFRoot\ReplyList\4\PlotIndex': '-1'
         output = os.linesep.join(self.log_messages)
         self.assertTrue(result, output)
 
-    def test_k2_reconstruct(self) -> None:
+    def test_k2_reconstruct(self):
         gff: GFF = read_gff(TEST_FILE)
         reconstructed_gff: GFF = dismantle_dlg(construct_dlg(gff), Game.K2)
         self.assertTrue(gff.compare(reconstructed_gff, self.log_func, ignore_default_changes=True), os.linesep.join(self.log_messages))
 
-    def test_k2_reconstruct_from_reconstruct(self) -> None:
+    def test_k2_reconstruct_from_reconstruct(self):
         gff: GFF = read_gff(TEST_FILE)
         reconstructed_gff: GFF = dismantle_dlg(construct_dlg(gff), Game.K2)
         re_reconstructed_gff: GFF = dismantle_dlg(construct_dlg(reconstructed_gff), Game.K2)
@@ -89,7 +89,7 @@ Extra 'Int32' field found at 'GFFRoot\ReplyList\4\PlotIndex': '-1'
         not K1_PATH or not pathlib.Path(K1_PATH).joinpath("chitin.key").exists(),
         "K1_PATH environment variable is not set or not found on disk.",
     )
-    def test_gff_reconstruct_from_k1_installation(self) -> None:
+    def test_gff_reconstruct_from_k1_installation(self):
         self.installation = Installation(K1_PATH)  # type: ignore[arg-type]
         for dlg_resource in (resource for resource in self.installation if resource.restype() == ResourceType.DLG):
             gff: GFF = read_gff(dlg_resource.data())
@@ -100,7 +100,7 @@ Extra 'Int32' field found at 'GFFRoot\ReplyList\4\PlotIndex': '-1'
         not K2_PATH or not pathlib.Path(K2_PATH).joinpath("chitin.key").exists(),
         "K2_PATH environment variable is not set or not found on disk.",
     )
-    def test_gff_reconstruct_from_k2_installation(self) -> None:
+    def test_gff_reconstruct_from_k2_installation(self):
         self.installation = Installation(K2_PATH)  # type: ignore[arg-type]
         for dlg_resource in (resource for resource in self.installation if resource.restype() == ResourceType.DLG):
             gff: GFF = read_gff(dlg_resource.data())

@@ -58,7 +58,7 @@ class CloneModuleDialog(QDialog):
 
         self.loadModules()
 
-    def ok(self) -> None:
+    def ok(self):
         """Clones a module once user accepted the dialog query.
         Clones a module from the selected root module with the given identifier, prefix, and name.
         Copies textures, lightmaps, and other assets based on checkbox selections.
@@ -107,7 +107,7 @@ class CloneModuleDialog(QDialog):
         QMessageBox(QMessageBox.Information, "Clone Successful",
                     f"You can now warp to the cloned module '{identifier}'.").exec_()
 
-    def loadModules(self) -> None:
+    def loadModules(self):
         """Loads module options from installed modules
         Args:
             self: The class instance
@@ -134,5 +134,5 @@ class CloneModuleDialog(QDialog):
         root = self.ui.moduleSelect.currentData().root
         self.ui.moduleRootEdit.setText(root)
 
-    def setPrefixFromFilename(self) -> None:
+    def setPrefixFromFilename(self):
         self.ui.prefixEdit.setText(self.ui.filenameEdit.text().upper()[:3])

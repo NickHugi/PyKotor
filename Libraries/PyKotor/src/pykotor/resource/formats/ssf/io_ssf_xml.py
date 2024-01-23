@@ -60,7 +60,7 @@ class SSFXMLWriter(ResourceWriter):
     def write(
         self,
         auto_close: bool = True,
-    ) -> None:
+    ):
         for sound_name, sound in SSFSound.__members__.items():
             ElementTree.SubElement(
                 self.xml_root,

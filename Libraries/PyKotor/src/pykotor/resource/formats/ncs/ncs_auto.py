@@ -45,7 +45,7 @@ def write_ncs(
     ncs: NCS,
     target: TARGET_TYPES,
     file_format: ResourceType = ResourceType.NCS,
-) -> None:
+):
     """Writes the NCS data to the target location with the specified format (NCS only).
 
     Args:

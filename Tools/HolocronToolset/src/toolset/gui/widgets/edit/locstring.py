@@ -40,10 +40,10 @@ class LocalizedStringLineEdit(QWidget):
         self.ui.editButton.clicked.connect(self.editLocstring)
         self.ui.locstringText.mouseDoubleClickEvent = lambda _: self.editLocstring()
 
-    def setInstallation(self, installation: HTInstallation) -> None:
+    def setInstallation(self, installation: HTInstallation):
         self._installation = installation
 
-    def setLocstring(self, locstring: LocalizedString) -> None:
+    def setLocstring(self, locstring: LocalizedString):
         """Sets the localized string for a UI element.
 
         Args:
@@ -66,7 +66,7 @@ class LocalizedStringLineEdit(QWidget):
             self.ui.locstringText.setText(self._installation.talktable().string(locstring.stringref))
             self.ui.locstringText.setStyleSheet("QLineEdit {background-color: #fffded;}")
 
-    def editLocstring(self) -> None:
+    def editLocstring(self):
         dialog = LocalizedStringDialog(self, self._installation, self._locstring)
         if dialog.exec_():
             self.setLocstring(dialog.locstring)

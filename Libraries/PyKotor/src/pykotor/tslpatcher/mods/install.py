@@ -300,7 +300,7 @@ read -rp "Press enter to continue..."
 
 
 class InstallFile(PatcherModifications):
-    def __init__(self, filename: str, replace_existing: bool) -> None:
+    def __init__(self, filename: str, replace_existing: bool):
         super().__init__(filename, replace_existing)
 
         self.action: str = "Copy "
@@ -320,5 +320,5 @@ class InstallFile(PatcherModifications):
         with BinaryReader.from_auto(source) as reader:
             return reader.read_all()
 
-    def apply(self, source, *args, **kwargs) -> None:
+    def apply(self, source, *args, **kwargs):
         ...

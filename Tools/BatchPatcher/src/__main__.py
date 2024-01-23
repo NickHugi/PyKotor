@@ -88,7 +88,7 @@ fieldtype_to_fieldname: dict[GFFFieldType, str] = {
 }
 
 class Globals:
-    def __init__(self) -> None:
+    def __init__(self):
         self.chosen_languages: list[Language] = []
         self.create_fonts: bool = False
         self.convert_tga: bool = False
@@ -172,7 +172,7 @@ def relative_path_from_to(src: PurePath, dst: PurePath) -> Path:
     return Path(*rel_parts)
 
 
-def log_output(*args, **kwargs) -> None:
+def log_output(*args, **kwargs):
     # Create an in-memory text stream
     buffer = StringIO()
 
@@ -204,7 +204,7 @@ def visual_length(s: str, tab_length=8) -> int:
     return vis_length
 
 
-def log_output_with_separator(message, below=True, above=False, surround=False) -> None:
+def log_output_with_separator(message, below=True, above=False, surround=False):
     if above or surround:
         log_output(visual_length(message) * "-")
     log_output(message)
@@ -276,7 +276,7 @@ def patch_resource(resource: FileResource) -> GFF | TPC | None:
             return text, text
         return text, SCRIPT_GLOBALS.pytranslator.translate(text, from_lang=from_lang)
 
-    def process_translations(tlk: TLK, from_lang) -> None:
+    def process_translations(tlk: TLK, from_lang):
         with concurrent.futures.ThreadPoolExecutor(max_workers=SCRIPT_GLOBALS.max_threads) as executor:
             # Create a future for each translation task
             future_to_strref: dict[concurrent.futures.Future[tuple[str, str]], int] = {executor.submit(translate_entry, tlkentry, from_lang): strref for strref, tlkentry in tlk}
@@ -433,7 +433,7 @@ def patch_erf_or_rim(resources: list[FileResource], filename: str, erf_or_rim: R
             erf_or_rim.set_data(resource.resname(), resource.restype(), resource.data())
     return new_filename
 
-def patch_file(file: os.PathLike | str) -> None:
+def patch_file(file: os.PathLike | str):
     c_file = Path.pathify(file)
     if c_file in processed_files:
         return
@@ -454,13 +454,13 @@ def patch_file(file: os.PathLike | str) -> None:
             ),
         )
 
-def patch_folder(folder_path: os.PathLike | str) -> None:
+def patch_folder(folder_path: os.PathLike | str):
     c_folderpath = Path.pathify(folder_path)
     log_output_with_separator(f"Recursing through resources in the '{c_folderpath.name}' folder...", above=True)
     for file_path in c_folderpath.safe_rglob("*"):
         patch_file(file_path)
 
-def patch_install(install_path: os.PathLike | str) -> None:
+def patch_install(install_path: os.PathLike | str):
     log_output()
     log_output_with_separator(f"Patching install dir:\t{install_path}", above=True)
     log_output()
@@ -603,7 +603,7 @@ def assign_to_globals(instance: KOTORPatchingToolUI):
 
 
 class KOTORPatchingToolUI:
-    def __init__(self, root) -> None:
+    def __init__(self, root):
         self.root = root
         root.title("KOTOR Translate Tool")
 
@@ -641,7 +641,7 @@ class KOTORPatchingToolUI:
         self.initialize_logger()
         self.setup_ui()
 
-    def write_log(self, message: str) -> None:
+    def write_log(self, message: str):
         """Writes a message to the log.
 
         Args:
@@ -668,11 +668,11 @@ class KOTORPatchingToolUI:
         SCRIPT_GLOBALS.patchlogger.warning_observable.subscribe(self.write_log)
         SCRIPT_GLOBALS.patchlogger.error_observable.subscribe(self.write_log)
 
-    def on_gamepaths_chosen(self, event: tk.Event) -> None:
+    def on_gamepaths_chosen(self, event: tk.Event):
         """Adjust the combobox after a short delay."""
         self.root.after(10, lambda: self.move_cursor_to_end(event.widget))
 
-    def move_cursor_to_end(self, combobox: ttk.Combobox) -> None:
+    def move_cursor_to_end(self, combobox: ttk.Combobox):
         """Shows the rightmost portion of the specified combobox as that's the most relevant."""
         combobox.focus_set()
         position: int = len(combobox.get())
@@ -809,7 +809,7 @@ class KOTORPatchingToolUI:
         self.install_button = ttk.Button(self.root, text="Run All Operations", command=self.start_patching)
         self.install_button.grid(row=row, column=1)
 
-    def on_translation_option_chosen(self, event) -> None:
+    def on_translation_option_chosen(self, event):
         """Create Checkbuttons for each translator option and assign them to the translator.
         Needs rewriting or cleaning, difficult readability lies ahead if you're reading this.
         """
@@ -836,7 +836,7 @@ class KOTORPatchingToolUI:
         else:
             self.translation_applied = True
 
-    def apply_translation_option(self, varname, value) -> None:
+    def apply_translation_option(self, varname, value):
         setattr(SCRIPT_GLOBALS.pytranslator, varname, value)  # TODO: add all the variable names to __init__ of Translator class
         self.write_log(f"Applied Options for {self.translation_option.get()}: {varname} = {value}")
         cur_toption: TranslationOption = TranslationOption.__members__[self.translation_option.get()]
@@ -846,7 +846,7 @@ class KOTORPatchingToolUI:
             return
         self.translation_applied = True
 
-    def create_language_checkbuttons(self, row) -> None:
+    def create_language_checkbuttons(self, row):
 
         # Show/Hide Languages
         self.show_hide_language = tk.BooleanVar(value=False)

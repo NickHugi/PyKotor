@@ -51,7 +51,7 @@ def write_bitmap_fonts(
     draw_box=False,
     custom_scaling=1.0,
     font_color=None,
-) -> None:
+):
     target_path = Path.pathify(target)
     target_path = target_path if target_path.exists() else target_path.resolve()
     target_path.mkdir(parents=True, exist_ok=True)
@@ -78,7 +78,7 @@ def write_bitmap_font(
     draw_box: bool = False,
     custom_scaling: float = 1.0,
     font_color=None,
-) -> None:
+):
     """Generates a bitmap font (TGA and TXI) from a TTF font file. Note the default 'draw_boxes', none of these boxes show up in the game (just outside the coords)."""
     if any(resolution) == 0:
         msg = f"resolution must be nonzero, got {resolution}"

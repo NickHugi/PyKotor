@@ -86,7 +86,7 @@ class TLKBinaryReader(ResourceReader):
     def _load_text(
         self,
         stringref: int,
-    ) -> None:
+    ):
         text_header: ArrayHead = self._text_headers[stringref]
 
         self._reader.seek(text_header.offset + self._texts_offset)
@@ -107,7 +107,7 @@ class TLKBinaryWriter(ResourceWriter):
     def write(
         self,
         auto_close: bool = True,
-    ) -> None:
+    ):
         self._write_file_header()
 
         text_offset = WrappedInt(0)
@@ -125,7 +125,7 @@ class TLKBinaryWriter(ResourceWriter):
 
     def _write_file_header(
         self,
-    ) -> None:
+    ):
         language_id: int = self._tlk.language.value
         string_count: int = len(self._tlk)
         entries_offset: int = self._calculate_entries_offset()
@@ -140,7 +140,7 @@ class TLKBinaryWriter(ResourceWriter):
         self,
         entry: TLKEntry,
         previous_offset: WrappedInt,
-    ) -> None:
+    ):
         sound_resref = entry.voiceover.get()
         text_offset = previous_offset.get()
         text_length = len(entry.text)

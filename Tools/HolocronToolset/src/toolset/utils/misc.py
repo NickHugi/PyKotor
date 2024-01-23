@@ -44,7 +44,7 @@ def get_nums(string_input: str) -> list[int]:
     return nums
 
 
-def openLink(link: str) -> None:
+def openLink(link: str):
     url = QUrl(link)
     QDesktopServices.openUrl(url)
 

@@ -45,18 +45,18 @@ K1_PATH = os.environ.get("K1_PATH")
 )
 class TPCEditorTest(TestCase):
     @classmethod
-    def setUpClass(cls) -> None:
+    def setUpClass(cls):
         # Make sure to configure this environment path before testing!
         from toolset.gui.editors.tpc import TPCEditor
         cls.TPCEditor = TPCEditor
         from toolset.data.installation import HTInstallation
         cls.INSTALLATION = HTInstallation(K1_PATH, "", False, None)
 
-    def setUp(self) -> None:
+    def setUp(self):
         self.app = QApplication([])
         self.ui = self.TPCEditor(None, self.INSTALLATION)
 
-    def tearDown(self) -> None:
+    def tearDown(self):
         self.app.deleteLater()
 
     def test_placeholder(self):

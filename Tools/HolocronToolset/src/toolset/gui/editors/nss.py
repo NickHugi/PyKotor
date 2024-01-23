@@ -77,7 +77,7 @@ class NSSEditor(Editor):
 
         self.new()
 
-    def _setupSignals(self) -> None:
+    def _setupSignals(self):
         """Sets up signals and slots for the GUI.
 
         Args:
@@ -109,7 +109,7 @@ class NSSEditor(Editor):
         QShortcut("Ctrl+Shift+S", self).activated.connect(self.compileCurrentScript)
         QShortcut("Ctrl+I", self).activated.connect(self.onInsertShortcut)
 
-    def setInstallation(self, installation: HTInstallation) -> None:
+    def setInstallation(self, installation: HTInstallation):
         """Sets the installation for the editor.
 
         Args:
@@ -141,7 +141,7 @@ class NSSEditor(Editor):
             item.setData(QtCore.Qt.UserRole, constant)
             self.ui.constantList.addItem(item)
 
-    def load(self, filepath: os.PathLike | str, resref: str, restype: ResourceType, data: bytes) -> None:
+    def load(self, filepath: os.PathLike | str, resref: str, restype: ResourceType, data: bytes):
         """Loads a resource into the editor.
 
         Args:
@@ -180,12 +180,12 @@ class NSSEditor(Editor):
         msg = "Could not convert to bytes"
         raise ValueError(msg)
 
-    def new(self) -> None:
+    def new(self):
         super().new()
 
         self.ui.codeEdit.setPlainText("\n\nvoid main()\n{\n    \n}\n")
 
-    def compileCurrentScript(self) -> None:
+    def compileCurrentScript(self):
         """Compiles the current script.
 
         Attempts to compile the source code. If successful it will create a NCS file at the same location as the source
@@ -238,7 +238,7 @@ class NSSEditor(Editor):
         except OSError as e:
             QMessageBox(QMessageBox.Critical, "Failed to save file", str(e)).exec_()
 
-    def changeDescription(self) -> None:
+    def changeDescription(self):
         """Change the description textbox to whatever function or constant the user has selected.
 
         This should be activated whenever the tab changes or the selection changes.
@@ -267,7 +267,7 @@ class NSSEditor(Editor):
             constant = item.data(QtCore.Qt.UserRole)
             self.ui.descriptionEdit.setPlainText(str(constant))
 
-    def insertSelectedConstant(self) -> None:
+    def insertSelectedConstant(self):
         """Inserts the selected constant on the constant list into the code textbox at the cursors location. The cursor is
         then shifted to the end of the newly inserted constant.
         """
@@ -276,7 +276,7 @@ class NSSEditor(Editor):
             insert = constant.name
             self.insertTextAtCursor(insert)
 
-    def insertSelectedFunction(self) -> None:
+    def insertSelectedFunction(self):
         """Inserts the selected function on the function list into the code textbox at the cursors location. The cursor is
         then shifted to the start of the first parameter of the inserted function.
         """
@@ -285,7 +285,7 @@ class NSSEditor(Editor):
             insert = f"{function.name}()"
             self.insertTextAtCursor(insert, insert.index("(") + 1)
 
-    def insertTextAtCursor(self, insert: str, offset: int | None = None) -> None:
+    def insertTextAtCursor(self, insert: str, offset: int | None = None):
         """Inserts the given text at the cursors location and then shifts the cursor position by the offset specified. If
         no offset is specified then the cursor is moved to the end of the inserted text.
 
@@ -302,7 +302,7 @@ class NSSEditor(Editor):
         cursor.setPosition(index + offset)
         self.ui.codeEdit.setTextCursor(cursor)
 
-    def onTextChanged(self) -> None:
+    def onTextChanged(self):
         """Handles text changes in the code editor.
 
         This method should be connected to codeEdit's textChanged signal. Its purpose is: to detect for newly inserted
@@ -338,7 +338,7 @@ class NSSEditor(Editor):
 
         self._length = len(self.ui.codeEdit.toPlainText())
 
-    def onInsertShortcut(self) -> None:
+    def onInsertShortcut(self):
         """Inserts selected shortcut based on active tab.
 
         This method should be connected to the activated signal of a QShortcut. Its purpose is to insert a constant or
@@ -359,13 +359,13 @@ class NSSEditor(Editor):
         elif self.ui.tabWidget.currentIndex() == 1:
             self.insertSelectedConstant()
 
-    def onFunctionSearch(self) -> None:
+    def onFunctionSearch(self):
         string = self.ui.functionSearchEdit.text()
         for i in range(self.ui.functionList.count()):
             item = self.ui.functionList.item(i)
             item.setHidden(string not in item.text())
 
-    def onConstantSearch(self) -> None:
+    def onConstantSearch(self):
         string = self.ui.constantSearchEdit.text()
         for i in range(self.ui.constantList.count()):
             item = self.ui.constantList.item(i)
@@ -401,7 +401,7 @@ class CodeEditor(QPlainTextEdit):
         self._updateLineNumberAreaWidth(0)
         self._highlightCurrentLine()
 
-    def lineNumberAreaPaintEvent(self, e: QPaintEvent) -> None:
+    def lineNumberAreaPaintEvent(self, e: QPaintEvent):
         """Draws line numbers in the line number area.
 
         Args:
@@ -469,16 +469,16 @@ class CodeEditor(QPlainTextEdit):
         minSpace = 10 + self.fontMetrics().width("9") * 3
         return max(minSpace, space)
 
-    def resizeEvent(self, e: QResizeEvent) -> None:
+    def resizeEvent(self, e: QResizeEvent):
         super().resizeEvent(e)
 
         cr = self.contentsRect()
         self._lineNumberArea.setGeometry(QRect(cr.left(), cr.top(), self.lineNumberAreaWidth(), cr.height()))
 
-    def _updateLineNumberAreaWidth(self, newBlockCount: int) -> None:
+    def _updateLineNumberAreaWidth(self, newBlockCount: int):
         self.setViewportMargins(self.lineNumberAreaWidth(), 0, 0, 0)
 
-    def _highlightCurrentLine(self) -> None:
+    def _highlightCurrentLine(self):
         """Highlights the current line in the text editor.
 
         Args:
@@ -506,7 +506,7 @@ class CodeEditor(QPlainTextEdit):
 
         self.setExtraSelections(extraSelections)
 
-    def _updateLineNumberArea(self, rect: QRect, dy: int) -> None:
+    def _updateLineNumberArea(self, rect: QRect, dy: int):
         if dy:
             self._lineNumberArea.scroll(0, dy)
         else:
@@ -592,7 +592,7 @@ class SyntaxHighlighter(QSyntaxHighlighter):
 
         self.rules = [(QtCore.QRegExp(pat), index, fmt) for (pat, index, fmt) in rules]
 
-    def highlightBlock(self, text: str | None) -> None:
+    def highlightBlock(self, text: str | None):
         """Highlights blocks of text.
 
         Args:

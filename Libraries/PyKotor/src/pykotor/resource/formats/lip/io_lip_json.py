@@ -57,7 +57,7 @@ class LIPJSONWriter(ResourceWriter):
     def write(
         self,
         auto_close: bool = True,
-    ) -> None:
+    ):
         # Populate the dictionary with keyframe data
         for keyframe in self._lip:
             self._json["keyframes"].append(

@@ -34,7 +34,7 @@ class TPC:
 
     def __init__(
         self,
-    ) -> None:
+    ):
         self._texture_format: TPCTextureFormat = TPCTextureFormat.RGB
         self._mipmaps: list[bytes] = [bytes(0 for _ in range(4 * 4 * 3))]
         self._width: int = 4
@@ -153,7 +153,7 @@ class TPC:
         height: int,
         data: bytes,
         texture_format: TPCTextureFormat,
-    ) -> None:
+    ):
         """Sets the texture data but only for a single mipmap.
 
         Args:
@@ -171,7 +171,7 @@ class TPC:
         height: int,
         mipmaps: list[bytes],
         texture_format: TPCTextureFormat,
-    ) -> None:
+    ):
         """Sets the new texture data.
 
         Args:

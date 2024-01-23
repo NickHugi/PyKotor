@@ -523,7 +523,7 @@ class LocalizedString:
         gender = Gender(substring_id % 2)
         return language, gender
 
-    def set_data(self, language: Language, gender: Gender, string: str) -> None:
+    def set_data(self, language: Language, gender: Gender, string: str):
         """Sets the text of the substring with the corresponding language/gender pair.
 
         Note: The substring is created if it does not exist.
@@ -552,7 +552,7 @@ class LocalizedString:
         substring_id = LocalizedString.substring_id(language, gender)
         return self._substrings[substring_id] if substring_id in self._substrings else None
 
-    def remove(self, language: Language, gender: Gender) -> None:
+    def remove(self, language: Language, gender: Gender):
         """Removes the existing substring with the respective language/gender pair if it exists.
 
         Note: No error is thrown if it does not find a corresponding pair.

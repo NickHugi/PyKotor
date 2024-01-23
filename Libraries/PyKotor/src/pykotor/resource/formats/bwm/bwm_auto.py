@@ -39,7 +39,7 @@ def write_bwm(
     wok: BWM,
     target: TARGET_TYPES,
     file_format: ResourceType = ResourceType.WOK,
-) -> None:
+):
     """Writes the WOK data to the target location with the specified format (WOK only).
 
     Args:

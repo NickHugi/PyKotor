@@ -65,7 +65,7 @@ if TYPE_CHECKING:
 
 
 class TestConfigReader(unittest.TestCase):
-    def setUp(self) -> None:
+    def setUp(self):
         self.config = PatcherConfig()
         self.ini = ConfigParser(
             delimiters=("="),
@@ -240,7 +240,7 @@ class TestConfigReader(unittest.TestCase):
             },
         )
 
-    def test_tlk_complex_changes(self) -> None:
+    def test_tlk_complex_changes(self):
         # sourcery skip: extract-duplicate-method, remove-dict-keys, use-dict-items
         ini_text = """
         [TLKList]

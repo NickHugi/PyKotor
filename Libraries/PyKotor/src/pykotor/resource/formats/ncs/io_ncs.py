@@ -191,7 +191,7 @@ class NCSBinaryWriter(ResourceWriter):
     def write(
         self,
         auto_close: bool = True,
-    ) -> None:
+    ):
         """Writes the NCS file.
 
         Args:
@@ -289,7 +289,7 @@ class NCSBinaryWriter(ResourceWriter):
 
         return size
 
-    def _write_instruction(self, instruction: NCSInstruction) -> None:  # TODO
+    def _write_instruction(self, instruction: NCSInstruction):  # TODO
         """Writes an instruction to the NCS binary stream. This function is unfinished and is missing defs.
 
         Args:

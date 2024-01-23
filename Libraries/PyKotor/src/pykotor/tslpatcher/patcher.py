@@ -34,7 +34,7 @@ class ModInstaller:
         game_path: os.PathLike | str,
         changes_ini_path: os.PathLike | str,
         logger: PatchLogger | None = None,
-    ) -> None:
+    ):
         """Initialize a Patcher instance.
 
         Args:
@@ -316,7 +316,7 @@ class ModInstaller:
         self.log.add_note(f"{patch.action[:-1]}ing '{patch.sourcefile}' and {save_type} {saving_as_str} the '{local_folder}' {container_type}")
         return True
 
-    def install(self) -> None:
+    def install(self):
         """Install patches from the config file.
 
         Processing Logic:

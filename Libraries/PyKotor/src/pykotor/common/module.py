@@ -120,7 +120,7 @@ class Module:
         """
         return copy(self._capsules)
 
-    def reload_resources(self) -> None:
+    def reload_resources(self):
         """Reload resources from modules, LYT/VIS and overrides.
 
         Processing Logic:
@@ -242,7 +242,7 @@ class Module:
         resname: str,
         restype: ResourceType,
         locations: list[Path],
-    ) -> None:
+    ):
         """Adds resource locations to a ModuleResource.
 
         Args:
@@ -1171,7 +1171,7 @@ class ModuleResource(Generic[T]):
                 self._resource = conversions[self._restype](data)
         return self._resource
 
-    def add_locations(self, filepaths: list[Path]) -> None:
+    def add_locations(self, filepaths: list[Path]):
         """Adds a list of filepaths to the list of locations stored for the resource.
 
         If a filepath already exists, it is ignored.
@@ -1189,7 +1189,7 @@ class ModuleResource(Generic[T]):
     ) -> list[Path]:
         return self._locations
 
-    def activate(self, filepath: os.PathLike | str | None = None) -> None:
+    def activate(self, filepath: os.PathLike | str | None = None):
         """Sets the active file to the specified path. Calling this method will reset the loaded resource.
 
         Raises:
@@ -1211,11 +1211,11 @@ class ModuleResource(Generic[T]):
                 msg = f"The filepath '{self._active}' is not being tracked as a location for the resource."
                 raise ValueError(msg)
 
-    def unload(self) -> None:
+    def unload(self):
         """Clears the cached resource object from memory."""
         self._resource = None
 
-    def reload(self) -> None:
+    def reload(self):
         """Reloads the resource object from the active location."""
         self._resource = None
         self.resource()
@@ -1235,7 +1235,7 @@ class ModuleResource(Generic[T]):
 
     def save(
         self,
-    ) -> None:
+    ):
         """Saves the resource to the active file.
 
         Args:

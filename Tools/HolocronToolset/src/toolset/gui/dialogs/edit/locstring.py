@@ -29,7 +29,7 @@ class LocalizedStringDialog(QDialog):
         self.locstring = deepcopy(locstring)
         self.ui.stringrefSpin.setValue(locstring.stringref)
 
-    def accept(self) -> None:
+    def accept(self):
         if self.locstring.stringref != -1:
             tlk_path = CaseAwarePath(self._installation.path(), "dialog.tlk")
             tlk = read_tlk(tlk_path)
@@ -39,10 +39,10 @@ class LocalizedStringDialog(QDialog):
             write_tlk(tlk, tlk_path)
         super().accept()
 
-    def reject(self) -> None:
+    def reject(self):
         super().reject()
 
-    def stringrefChanged(self, stringref: int) -> None:
+    def stringrefChanged(self, stringref: int):
         self.ui.substringFrame.setVisible(stringref == -1)
         self.locstring.stringref = stringref
 
@@ -54,10 +54,10 @@ class LocalizedStringDialog(QDialog):
     def newTlkString(self):
         self.ui.stringrefSpin.setValue(self._installation.talktable().size())
 
-    def noTlkString(self) -> None:
+    def noTlkString(self):
         self.ui.stringrefSpin.setValue(-1)
 
-    def substringChanged(self) -> None:
+    def substringChanged(self):
         self._update_text()
 
     def _update_text(self):
@@ -70,7 +70,7 @@ class LocalizedStringDialog(QDialog):
         )
         self.ui.stringEdit.setPlainText(text)
 
-    def stringEdited(self) -> None:
+    def stringEdited(self):
         if self.locstring.stringref == -1:
             language = Language(self.ui.languageSelect.currentIndex())
             gender = Gender(int(self.ui.femaleRadio.isChecked()))

@@ -53,7 +53,7 @@ class MinimapData(NamedTuple):
 
 
 class IndoorMap:
-    def __init__(self) -> None:
+    def __init__(self):
         self.rooms: list[IndoorMapRoom] = []
         self.moduleId: str = "test01"
         self.name: LocalizedString = LocalizedString.from_english("New Module")
@@ -61,7 +61,7 @@ class IndoorMap:
         self.skybox: str = ""
         self.warpPoint: Vector3 = Vector3.from_null()
 
-    def rebuildRoomConnections(self) -> None:
+    def rebuildRoomConnections(self):
         for room in self.rooms:
             room.rebuildConnections(self.rooms)
 
@@ -597,7 +597,7 @@ class IndoorMap:
 
         write_erf(self.mod, output_path)
 
-    def build(self, installation: HTInstallation, kits: list[Kit], output_path: os.PathLike | str) -> None:
+    def build(self, installation: HTInstallation, kits: list[Kit], output_path: os.PathLike | str):
         """Builds the indoor map from room components and kits.
 
         Args:
@@ -685,7 +685,7 @@ class IndoorMap:
 
         return json.dumps(data).encode()
 
-    def load(self, raw: bytes, kits: list[Kit]) -> None:
+    def load(self, raw: bytes, kits: list[Kit]):
         """Load raw data and initialize the map.
 
         Args:
@@ -763,7 +763,7 @@ class IndoorMap:
             room = IndoorMapRoom(sComponent, position, rotation, flip_x, flip_y)
             self.rooms.append(room)
 
-    def reset(self) -> None:
+    def reset(self):
         self.rooms.clear()
         self.moduleId = "test01"
         self.name = LocalizedString.from_english("New Module")
@@ -907,7 +907,7 @@ class IndoorMapRoom:
 
         return pos
 
-    def rebuildConnections(self, rooms: list[IndoorMapRoom]) -> None:
+    def rebuildConnections(self, rooms: list[IndoorMapRoom]):
         """Rebuilds connections between rooms.
 
         Args:

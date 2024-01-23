@@ -131,7 +131,7 @@ class GFFXMLWriter(ResourceWriter):
         self,
         gff: GFF,
         target: TARGET_TYPES,
-    ) -> None:
+    ):
         super().__init__(target)
         self.xml_root = ElementTree.Element("xml")
         self.gff: GFF = gff
@@ -140,7 +140,7 @@ class GFFXMLWriter(ResourceWriter):
     def write(
         self,
         auto_close: bool = True,
-    ) -> None:
+    ):
         self.xml_root.tag = "gff3"
 
         xml_struct = ElementTree.Element("struct")
@@ -154,7 +154,7 @@ class GFFXMLWriter(ResourceWriter):
         self,
         gff_struct: GFFStruct,
         xml_struct: ElementTree.Element,
-    ) -> None:
+    ):
         xml_struct.set("id", str(gff_struct.struct_id))
 
         for label, field_type, value in gff_struct:
@@ -166,7 +166,7 @@ class GFFXMLWriter(ResourceWriter):
         value: Any,
         field_type: GFFFieldType,
         xml_struct: ElementTree.Element,
-    ) -> None:
+    ):
         xml_field = ElementTree.Element("")
         xml_field.set("label", label)
         xml_struct.append(xml_field)

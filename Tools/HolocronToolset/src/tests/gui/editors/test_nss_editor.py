@@ -53,7 +53,7 @@ from pykotor.resource.type import ResourceType
 )
 class NSSEditorTest(TestCase):
     @classmethod
-    def setUpClass(cls) -> None:
+    def setUpClass(cls):
         # Make sure to configure this environment path before testing!
         from toolset.gui.editors.nss import NSSEditor
         cls.NSSEditor = NSSEditor
@@ -61,12 +61,12 @@ class NSSEditorTest(TestCase):
         #cls.INSTALLATION = HTInstallation(K1_PATH, "", False, None)
         cls.INSTALLATION = HTInstallation(K2_PATH, "", tsl=True, mainWindow=None)
 
-    def setUp(self) -> None:
+    def setUp(self):
         self.app = QApplication([])
         self.editor = self.NSSEditor(None, self.INSTALLATION)
         self.log_messages: list[str] = [os.linesep]
 
-    def tearDown(self) -> None:
+    def tearDown(self):
         self.app.deleteLater()
 
     def log_func(self, *args):

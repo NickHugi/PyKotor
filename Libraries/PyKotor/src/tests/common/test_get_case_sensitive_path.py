@@ -148,7 +148,7 @@ class TestCaseAwarePath(TestCase):
 
         self.assertTrue(case_aware_path.exists())
 
-    def test_deep_directory_truediv(self) -> None:
+    def test_deep_directory_truediv(self):
         base_path = self.temp_path
         deep_path: pathlib.Path = base_path / "a" / "b" / "c" / "d" / "e"
         deep_path.mkdir(parents=True)
@@ -158,7 +158,7 @@ class TestCaseAwarePath(TestCase):
         case_aware_deep_path = CaseAwarePath(self.temp_path) / "A" / "B" / "C" / "D" / "E"
         self.assertTrue(case_aware_deep_path.exists())
 
-    def test_recursive_directory_creation(self) -> None:
+    def test_recursive_directory_creation(self):
         recursive_path: pathlib.Path = self.temp_path / "x" / "y" / "z"
         recursive_path.mkdir(parents=True)
         self.assertTrue(recursive_path.exists())
@@ -166,7 +166,7 @@ class TestCaseAwarePath(TestCase):
         actual_path = CaseAwarePath(f"{str(self.temp_path)}/X/Y/Z")
         self.assertTrue(actual_path.exists())
 
-    def test_cascading_file_creation(self) -> None:
+    def test_cascading_file_creation(self):
         cascading_file: pathlib.Path = self.temp_path / "dir" / "subdir" / "file.txt"
         case_aware_cascading_file = CaseAwarePath(f"{str(self.temp_path)}/DIR/SUBDIR/FILE.TXT")
 
@@ -176,7 +176,7 @@ class TestCaseAwarePath(TestCase):
         self.assertTrue(case_aware_cascading_file.exists())
 
     @unittest.skip("unfinished")
-    def test_relative_to(self) -> None:
+    def test_relative_to(self):
         dir_path = self.temp_path / "someDir"
         file_path: pathlib.Path = dir_path / "someFile.txt"
         case_aware_file_path = CaseAwarePath(dir_path, "SOMEfile.TXT")
@@ -194,7 +194,7 @@ class TestCaseAwarePath(TestCase):
             self.assertEqual(str(relative).lower(), "somedir\\somefile.txt")
 
     @unittest.skip("unfinished")
-    def test_chmod(self) -> None:
+    def test_chmod(self):
         file_path: pathlib.Path = self.temp_path / "file.txt"
         case_aware_file_path = CaseAwarePath(f"{str(self.temp_path)}/FILE.txt")
 
@@ -206,7 +206,7 @@ class TestCaseAwarePath(TestCase):
         modified_permissions = file_path.stat().st_mode
         self.assertNotEqual(original_permissions, modified_permissions)
 
-    def test_open_read_write(self) -> None:
+    def test_open_read_write(self):
         file_path: pathlib.Path = self.temp_path / "file.txt"
         case_aware_file_path = CaseAwarePath(f"{str(self.temp_path)}/FILE.txt")
 

@@ -57,7 +57,7 @@ class UTIEditor(Editor):
 
         self.new()
 
-    def _setupSignals(self) -> None:
+    def _setupSignals(self):
         """Set up signal connections for UI elements."""
         self.ui.tagGenerateButton.clicked.connect(self.generateTag)
         self.ui.resrefGenerateButton.clicked.connect(self.generateResref)
@@ -121,7 +121,7 @@ class UTIEditor(Editor):
                 child.setData(0, QtCore.Qt.UserRole + 1, j)
                 item.addChild(child)
 
-    def load(self, filepath: os.PathLike | str, resref: str, restype: ResourceType, data: bytes) -> None:
+    def load(self, filepath: os.PathLike | str, resref: str, restype: ResourceType, data: bytes):
         super().load(filepath, resref, restype, data)
 
         uti = read_uti(data)
@@ -214,32 +214,32 @@ class UTIEditor(Editor):
 
         return data, b""
 
-    def new(self) -> None:
+    def new(self):
         super().new()
         self._loadUTI(UTI())
 
-    def changeName(self) -> None:
+    def changeName(self):
         dialog = LocalizedStringDialog(self, self._installation, self.ui.nameEdit.locstring)
         if dialog.exec_():
             self._loadLocstring(self.ui.nameEdit, dialog.locstring)
 
-    def changeDesc(self) -> None:
+    def changeDesc(self):
         dialog = LocalizedStringDialog(self, self._installation, self.ui.descEdit.locstring)
         if dialog.exec_():
             self._loadLocstring(self.ui.descEdit, dialog.locstring)
 
-    def generateTag(self) -> None:
+    def generateTag(self):
         if self.ui.resrefEdit.text() == "":
             self.generateResref()
         self.ui.tagEdit.setText(self.ui.resrefEdit.text())
 
-    def generateResref(self) -> None:
+    def generateResref(self):
         if self._resref is not None and self._resref != "":
             self.ui.resrefEdit.setText(self._resref)
         else:
             self.ui.resrefEdit.setText("m00xx_itm_000")
 
-    def editSelectedProperty(self) -> None:
+    def editSelectedProperty(self):
         if self.ui.assignedPropertiesList.selectedItems():
             utiProperty = self.ui.assignedPropertiesList.selectedItems()[0].data(QtCore.Qt.UserRole)
             dialog = PropertyEditor(self._installation, utiProperty)
@@ -247,7 +247,7 @@ class UTIEditor(Editor):
                 self.ui.assignedPropertiesList.selectedItems()[0].setData(QtCore.Qt.UserRole, dialog.utiProperty())
                 self.ui.assignedPropertiesList.selectedItems()[0].setText(self.propertySummary(dialog.utiProperty()))
 
-    def addSelectedProperty(self) -> None:
+    def addSelectedProperty(self):
         if not self.ui.availablePropertyList.selectedItems():
             return
         item = self.ui.availablePropertyList.selectedItems()[0]
@@ -288,7 +288,7 @@ class UTIEditor(Editor):
         item.setData(QtCore.Qt.UserRole, utiProperty)
         self.ui.assignedPropertiesList.addItem(item)
 
-    def removeSelectedProperty(self) -> None:
+    def removeSelectedProperty(self):
         if self.ui.assignedPropertiesList.selectedItems():
             index = self.ui.assignedPropertiesList.selectedIndexes()[0]
             self.ui.assignedPropertiesList.takeItem(index.row())
@@ -313,21 +313,21 @@ class UTIEditor(Editor):
             return f"{propName}: [{costName}]"
         return f"{propName}"
 
-    def onUpdateIcon(self) -> None:
+    def onUpdateIcon(self):
         baseItem = self.ui.baseSelect.currentIndex()
         modelVariation = self.ui.modelVarSpin.value()
         textureVariation = self.ui.textureVarSpin.value()
         self.ui.iconLabel.setPixmap(self._installation.getItemIcon(baseItem, modelVariation, textureVariation))
 
-    def onAvaialblePropertyListDoubleClicked(self) -> None:
+    def onAvaialblePropertyListDoubleClicked(self):
         for item in self.ui.availablePropertyList.selectedItems():
             if item.childCount() == 0:
                 self.addSelectedProperty()
 
-    def onAssignedPropertyListDoubleClicked(self) -> None:
+    def onAssignedPropertyListDoubleClicked(self):
         self.editSelectedProperty()
 
-    def onDelShortcut(self) -> None:
+    def onDelShortcut(self):
         if self.ui.assignedPropertiesList.hasFocus():
             self.removeSelectedProperty()
 
@@ -447,7 +447,7 @@ class PropertyEditor(QDialog):
 
         self.reloadTextboxes()
 
-    def reloadTextboxes(self) -> None:
+    def reloadTextboxes(self):
         """Reloads textboxes with property names."""
         propertyName = UTIEditor.propertyName(self._installation, self._utiProperty.property_name)
         self.ui.propertyEdit.setText(propertyName or "")
@@ -461,14 +461,14 @@ class PropertyEditor(QDialog):
         paramName = UTIEditor.paramName(self._installation, self._utiProperty.param1, self._utiProperty.param1_value)
         self.ui.parameterEdit.setText(paramName or "")
 
-    def selectCost(self) -> None:
+    def selectCost(self):
         if not self.ui.costList.currentItem():
             return
 
         self._utiProperty.cost_value = self.ui.costList.currentItem().data(QtCore.Qt.UserRole)
         self.reloadTextboxes()
 
-    def selectParam(self) -> None:
+    def selectParam(self):
         if not self.ui.parameterList.currentItem():
             return
 

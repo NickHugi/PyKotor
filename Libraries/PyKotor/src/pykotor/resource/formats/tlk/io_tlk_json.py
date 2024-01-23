@@ -50,7 +50,7 @@ class TLKJSONWriter(ResourceWriter):
     def write(
         self,
         auto_close: bool = True,
-    ) -> None:
+    ):
         for stringref, entry in self._tlk:
             string: dict = {}
             self._json["strings"].append(string)

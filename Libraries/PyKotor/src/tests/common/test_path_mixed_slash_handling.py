@@ -35,7 +35,7 @@ from utility.path import WindowsPath as CustomWindowsPath
 
 class TestPathlibMixedSlashes(unittest.TestCase):
 
-    def test_hashing(self) -> None:
+    def test_hashing(self):
         test_classes: list[type] = [CustomPurePosixPath, CustomPureWindowsPath, CustomPurePath]
         for PathType in test_classes:
             with self.subTest(PathType=PathType):
@@ -47,7 +47,7 @@ class TestPathlibMixedSlashes(unittest.TestCase):
                 self.assertNotEqual(hash(path1), hash(path2))
                 self.assertEqual(len(test_set), 2)
 
-    def test_nt_case_hashing(self) -> None:
+    def test_nt_case_hashing(self):
         test_classes: list[type] = (
             [CustomPath]
             if os.name == "posix"
@@ -64,7 +64,7 @@ class TestPathlibMixedSlashes(unittest.TestCase):
                 self.assertEqual(hash(path1), hash(path2))
                 self.assertSetEqual(test_set, {PathType("TEST\\path\\to\\\\nothing")})
 
-    def test_posix_case_hashing(self) -> None:
+    def test_posix_case_hashing(self):
         test_classes: list[type] = (
             [CustomPosixPath, CustomPath]
             if os.name == "posix"

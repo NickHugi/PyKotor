@@ -125,7 +125,7 @@ class ConfigReader:
         ini: ConfigParser,
         mod_path: os.PathLike | str,
         logger: PatchLogger | None = None,
-    ) -> None:
+    ):
         self.ini: ConfigParser = ini
         self.mod_path: CaseAwarePath = CaseAwarePath.pathify(mod_path)
         self.config: PatcherConfig
@@ -199,7 +199,7 @@ class ConfigReader:
             test_set.add(s)
         return s
 
-    def load_settings(self) -> None:
+    def load_settings(self):
         """Loads [Settings] from ini configuration into memory."""
         settings_section: str | None = self.get_section_name("settings")
         if settings_section is None:
@@ -228,7 +228,7 @@ class ConfigReader:
         else:
             self.config.game_number = None
 
-    def load_install_list(self) -> None:
+    def load_install_list(self):
         """Loads [InstallList] from ini configuration into memory.
 
         Processing Logic:
@@ -266,7 +266,7 @@ class ConfigReader:
                     file_section_dict = CaseInsensitiveDict(self.ini[file_section_name].items())
                     file_install.pop_tslpatcher_vars(file_section_dict, foldername)
 
-    def load_tlk_list(self) -> None:
+    def load_tlk_list(self):
         """Loads TLK patches from the ini file.
 
         Processing Logic:
@@ -352,7 +352,7 @@ class ConfigReader:
             dialog_tlk_keys,
             modifications_tlk_keys,
             is_replacement: bool,
-        ) -> None:
+        ):
             """Processes TLK entries based on provided modifications.
 
             Args:
@@ -477,7 +477,7 @@ class ConfigReader:
                 msg = f"Could not parse '{key}={value}' in [TLKList]"
                 raise ValueError(msg) from e
 
-    def load_2da_list(self) -> None:
+    def load_2da_list(self):
         """Load 2D array patches from ini file into memory.
 
         Processing Logic:
@@ -531,7 +531,7 @@ class ConfigReader:
                     continue
                 modifications.modifiers.append(manipulation)
 
-    def load_ssf_list(self) -> None:
+    def load_ssf_list(self):
         """Loads SSF patches from the ini file into memory.
 
         Processing Logic:
@@ -582,7 +582,7 @@ class ConfigReader:
                 modifier = ModifySSF(sound, new_value)
                 modifications.modifiers.append(modifier)
 
-    def load_gff_list(self) -> None:
+    def load_gff_list(self):
         """Loads GFF patches from the ini file into memory.
 
         Processing Logic:
@@ -643,7 +643,7 @@ class ConfigReader:
 
                 modifications.modifiers.append(modifier)
 
-    def load_compile_list(self) -> None:
+    def load_compile_list(self):
         """Loads patches from the [CompileList] section of the ini file.
 
         Processing Logic:
@@ -676,7 +676,7 @@ class ConfigReader:
                 modifications.pop_tslpatcher_vars(file_section_dict, default_destination)
             self.config.patches_nss.append(modifications)
 
-    def load_hack_list(self) -> None:
+    def load_hack_list(self):
         """Loads [HACKList] patches from ini file into memory.
 
         Processing Logic:

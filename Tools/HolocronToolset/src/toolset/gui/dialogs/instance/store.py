@@ -23,7 +23,7 @@ class StoreDialog(QDialog):
 
         self.store: GITStore = store
 
-    def accept(self) -> None:
+    def accept(self):
         super().accept()
         self.store.resref = ResRef(self.ui.resrefEdit.text())
         self.store.position.x = self.ui.xPosSpin.value()

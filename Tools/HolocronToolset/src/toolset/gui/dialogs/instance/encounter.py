@@ -23,7 +23,7 @@ class EncounterDialog(QDialog):
 
         self.encounter: GITEncounter = encounter
 
-    def accept(self) -> None:
+    def accept(self):
         super().accept()
         self.encounter.resref = ResRef(self.ui.resrefEdit.text())
         self.encounter.position.x = self.ui.xPosSpin.value()

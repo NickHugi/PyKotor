@@ -22,11 +22,11 @@ if TYPE_CHECKING:
 
 
 class LocalizedStringDelta(LocalizedString):
-    def __init__(self, stringref: FieldValue | None = None) -> None:
+    def __init__(self, stringref: FieldValue | None = None):
         super().__init__(0)
         self.stringref: FieldValue | None = stringref
 
-    def apply(self, locstring: LocalizedString, memory: PatcherMemory) -> None:
+    def apply(self, locstring: LocalizedString, memory: PatcherMemory):
         """Applies a LocalizedString patch to a LocalizedString object.
 
         Args:
@@ -121,7 +121,7 @@ class ModifyGFF(ABC):
         root_container: GFFStruct | GFFList,
         memory: PatcherMemory,
         logger: PatchLogger,
-    ) -> None:
+    ):
         ...
 
     def _navigate_containers(
@@ -204,7 +204,7 @@ class AddStructToListGFF(ModifyGFF):
         root_struct,
         memory: PatcherMemory,
         logger: PatchLogger,
-    ) -> None:
+    ):
         """Adds a new struct to a list.
 
         Args:
@@ -273,7 +273,7 @@ class AddFieldGFF(ModifyGFF):
         root_struct,
         memory: PatcherMemory,
         logger: PatchLogger,
-    ) -> None:
+    ):
         """Adds a new field to a GFF struct.
 
         Args:
@@ -375,7 +375,7 @@ class ModifyFieldGFF(ModifyGFF):
         self,
         path: PureWindowsPath | os.PathLike | str,
         value: FieldValue,
-    ) -> None:
+    ):
         self.path: PureWindowsPath = PureWindowsPath.pathify(path)
         self.value: FieldValue = value
 
@@ -384,7 +384,7 @@ class ModifyFieldGFF(ModifyGFF):
         root_struct,
         memory: PatcherMemory,
         logger: PatchLogger,
-    ) -> None:
+    ):
         """Applies a patch to an existing field in a GFF structure.
 
         Args:
@@ -422,7 +422,7 @@ class ModifyFieldGFF(ModifyGFF):
                 return
             value = from_container.value(value.name)
 
-        def set_locstring() -> None:
+        def set_locstring():
             assert isinstance(value, LocalizedStringDelta)
             if navigated_struct.exists(label):
                 original: LocalizedString = navigated_struct.get_locstring(label)
@@ -460,7 +460,7 @@ class ModificationsGFF(PatcherModifications):
         filename: str,
         replace: bool,
         modifiers: list[ModifyGFF] | None = None,
-    ) -> None:
+    ):
         super().__init__(filename, replace)
         self.modifiers: list[ModifyGFF] = modifiers if modifiers is not None else []
 
@@ -481,7 +481,7 @@ class ModificationsGFF(PatcherModifications):
         memory: PatcherMemory,
         logger: PatchLogger,
         game: Game,
-    ) -> None:
+    ):
         for change_field in self.modifiers:
             change_field.apply(gff.root, memory, logger)
 

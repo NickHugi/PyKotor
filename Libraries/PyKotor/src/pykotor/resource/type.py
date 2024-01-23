@@ -38,7 +38,7 @@ class ResourceWriter:
 
     def close(
         self,
-    ) -> None:
+    ):
         self._writer.close()
 
 class ResourceTuple(NamedTuple):

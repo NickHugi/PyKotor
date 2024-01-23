@@ -233,7 +233,7 @@ def write_ifo(
     file_format: ResourceType = ResourceType.GFF,
     *,
     use_deprecated: bool = True,
-) -> None:
+):
     gff = dismantle_ifo(ifo, game, use_deprecated=use_deprecated)
     write_gff(gff, target, file_format)
 

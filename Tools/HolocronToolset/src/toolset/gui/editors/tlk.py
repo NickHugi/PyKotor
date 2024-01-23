@@ -62,7 +62,7 @@ class TLKEditor(Editor):
 
         self.new()
 
-    def _setupSignals(self) -> None:
+    def _setupSignals(self):
         """Set up signal connections for UI actions and widgets.
 
         Processing Logic:
@@ -106,7 +106,7 @@ class TLKEditor(Editor):
             action.triggered.connect(lambda _checked, lang=language: self.onLanguageSelected(lang))
             self.ui.menuLanguage.addAction(action)
 
-    def onLanguageSelected(self, language) -> None:
+    def onLanguageSelected(self, language):
         if isinstance(language, Language):
             print(f"Language selected: {language.name}")
             self.change_language(language)
@@ -124,7 +124,7 @@ class TLKEditor(Editor):
         dialog = LoaderDialog(self, bytes_tlk(tlk), self.model)
         self._extracted_from_load_10(dialog)
 
-    def load(self, filepath: os.PathLike | str, resref: str, restype: ResourceType, data: bytes) -> None:
+    def load(self, filepath: os.PathLike | str, resref: str, restype: ResourceType, data: bytes):
         """Loads data into the resource from a file.
 
         Args:
@@ -159,7 +159,7 @@ class TLKEditor(Editor):
         self.ui.talkTable.selectionModel().selectionChanged.connect(self.selectionChanged)
         self.ui.jumpSpinbox.setMaximum(self.model.rowCount())
 
-    def new(self) -> None:
+    def new(self):
         super().new()
 
         self._extracted_from_new_2()
@@ -199,25 +199,25 @@ class TLKEditor(Editor):
         write_tlk(tlk, data, self._restype or ResourceType.TLK)
         return data, b""
 
-    def insert(self) -> None:
+    def insert(self):
         self.model.appendRow([QStandardItem(""), QStandardItem("")])
 
-    def doFilter(self, text: str) -> None:
+    def doFilter(self, text: str):
         self.proxyModel.setFilterFixedString(text)
 
-    def toggleFilterBox(self) -> None:
+    def toggleFilterBox(self):
         self.ui.searchBox.setVisible(not self.ui.searchBox.isVisible())
 
-    def gotoLine(self, line: int) -> None:
+    def gotoLine(self, line: int):
         index = self.model.index(line, 0)
         proxyIndex = self.proxyModel.mapFromSource(index)
         self.ui.talkTable.scrollTo(proxyIndex)
         self.ui.talkTable.setCurrentIndex(proxyIndex)
 
-    def toggleGotoBox(self) -> None:
+    def toggleGotoBox(self):
         self.ui.jumpBox.setVisible(not self.ui.jumpBox.isVisible())
 
-    def selectionChanged(self) -> None:
+    def selectionChanged(self):
         """Handle selection changes in the talk table.
 
         Processing Logic:
@@ -248,7 +248,7 @@ class TLKEditor(Editor):
         self.ui.textEdit.setPlainText(text)
         self.ui.soundEdit.setText(sound)
 
-    def updateEntry(self) -> None:
+    def updateEntry(self):
         proxyIndex = self.ui.talkTable.selectedIndexes()[0]
         sourceIndex = self.proxyModel.mapToSource(proxyIndex)
 
@@ -322,7 +322,7 @@ class LoaderWorker(QThread):
     loaded = QtCore.pyqtSignal()
     language = QtCore.pyqtSignal(object)
 
-    def __init__(self, fileData, model) -> None:
+    def __init__(self, fileData, model):
         super().__init__()
         self._fileData: bytes = fileData
         self._model: QStandardItemModel = model

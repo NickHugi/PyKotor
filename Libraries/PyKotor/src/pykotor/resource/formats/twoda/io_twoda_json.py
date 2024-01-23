@@ -53,7 +53,7 @@ class TwoDAJSONWriter(ResourceWriter):
     def write(
         self,
         auto_close: bool = True,
-    ) -> None:
+    ):
         for row in self._twoda:
             json_row: dict[str, str] = {"_id": row.label()}
             self._json["rows"].append(json_row)

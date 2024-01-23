@@ -163,7 +163,7 @@ class Scene:
         self.use_lightmap: bool = True
         self.show_cursor: bool = True
 
-    def setInstallation(self, installation: Installation) -> None:
+    def setInstallation(self, installation: Installation):
         self.table_doors = read_2da(installation.resource("genericdoors", ResourceType.TwoDA, SEARCH_ORDER_2DA).data)
         self.table_placeables = read_2da(installation.resource("placeables", ResourceType.TwoDA, SEARCH_ORDER_2DA).data)
         self.table_creatures = read_2da(installation.resource("appearance", ResourceType.TwoDA, SEARCH_ORDER_2DA).data)
@@ -256,7 +256,7 @@ class Scene:
         rhand_obj.set_transform(arg1.global_transform())
         obj.children.append(rhand_obj)
 
-    def buildCache(self, clear_cache: bool = False) -> None:
+    def buildCache(self, clear_cache: bool = False):
         """Builds and caches game objects from the module.
 
         Args:
@@ -440,7 +440,7 @@ class Scene:
         if isinstance(obj, GITSound) and obj not in self.git.sounds:
             del self.objects[obj]
 
-    def render(self) -> None:
+    def render(self):
         """Renders the scene.
 
         Args:
@@ -515,7 +515,7 @@ class Scene:
             self.plain_shader.set_vector4("color", vec4(1.0, 0.0, 0.0, 0.4))
             self._render_object(self.plain_shader, self.cursor, mat4())
 
-    def _render_object(self, shader: Shader, obj: RenderObject, transform: mat4) -> None:
+    def _render_object(self, shader: Shader, obj: RenderObject, transform: mat4):
         if isinstance(obj.data, GITCreature) and self.hide_creatures:
             return
         if isinstance(obj.data, GITPlaceable) and self.hide_placeables:
@@ -542,7 +542,7 @@ class Scene:
         for child in obj.children:
             self._render_object(shader, child, transform)
 
-    def picker_render(self) -> None:
+    def picker_render(self):
         glClearColor(1.0, 1.0, 1.0, 1.0)
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
 
@@ -565,7 +565,7 @@ class Scene:
 
             self._picker_render_object(obj, mat4())
 
-    def _picker_render_object(self, obj: RenderObject, transform: mat4) -> None:
+    def _picker_render_object(self, obj: RenderObject, transform: mat4):
         if isinstance(obj.data, GITCreature) and self.hide_creatures:
             return
         if isinstance(obj.data, GITPlaceable) and self.hide_placeables:
@@ -713,7 +713,7 @@ class Scene:
             self.models[name] = model
         return self.models[name]
 
-    def jump_to_entry_location(self) -> None:
+    def jump_to_entry_location(self):
         if self.module is None:
             self.camera.x = 0
             self.camera.y = 0
@@ -752,20 +752,20 @@ class RenderObject:
     def transform(self) -> mat4:
         return self._transform
 
-    def set_transform(self, transform: mat4) -> None:
+    def set_transform(self, transform: mat4):
         self._transform = transform
         rotation = quat()
         glm.decompose(transform, vec3(), rotation, self._position, vec3(), vec4())
         self._rotation = glm.eulerAngles(rotation)
 
-    def _recalc_transform(self) -> None:
+    def _recalc_transform(self):
         self._transform = mat4() * glm.translate(self._position)
         self._transform = self._transform * glm.mat4_cast(quat(self._rotation))
 
     def position(self) -> vec3:
         return copy(self._position)
 
-    def set_position(self, x: float, y: float, z: float) -> None:
+    def set_position(self, x: float, y: float, z: float):
         if self._position.x == x and self._position.y == y and self._position.z == z:
             return
 
@@ -775,14 +775,14 @@ class RenderObject:
     def rotation(self) -> vec3:
         return copy(self._rotation)
 
-    def set_rotation(self, x: float, y: float, z: float) -> None:
+    def set_rotation(self, x: float, y: float, z: float):
         if self._rotation.x == x and self._rotation.y == y and self._rotation.z == z:
             return
 
         self._rotation = vec3(x, y, z)
         self._recalc_transform()
 
-    def reset_cube(self) -> None:
+    def reset_cube(self):
         self._cube = None
 
     def cube(self, scene: Scene) -> Cube:
@@ -804,7 +804,7 @@ class RenderObject:
             abs(cube.max_point.z),
         )
 
-    def _cube_rec(self, scene: Scene, transform: mat4, obj: RenderObject, min_point: vec3, max_point: vec3) -> None:
+    def _cube_rec(self, scene: Scene, transform: mat4, obj: RenderObject, min_point: vec3, max_point: vec3):
         obj_min, obj_max = scene.model(obj.model).box()
         obj_min = transform * obj_min
         obj_max = transform * obj_max
@@ -817,7 +817,7 @@ class RenderObject:
         for child in obj.children:
             self._cube_rec(scene, transform * child.transform(), child, min_point, max_point)
 
-    def reset_boundary(self) -> None:
+    def reset_boundary(self):
         self._boundary = None
 
     def boundary(self, scene: Scene) -> Boundary | Empty:
@@ -889,7 +889,7 @@ class Camera:
         """
         return glm.perspective(self.fov, self.width / self.height, 0.1, 5000)
 
-    def translate(self, translation: vec3) -> None:
+    def translate(self, translation: vec3):
         self.x += translation.x
         self.y += translation.y
         self.z += translation.z

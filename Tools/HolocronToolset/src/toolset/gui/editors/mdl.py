@@ -54,10 +54,10 @@ class MDLEditor(Editor):
 
         self.new()
 
-    def _setupSignals(self) -> None:
+    def _setupSignals(self):
         ...
 
-    def load(self, filepath: os.PathLike | str, resref: str, restype: ResourceType, data: bytes) -> None:
+    def load(self, filepath: os.PathLike | str, resref: str, restype: ResourceType, data: bytes):
         """Loads a model resource and its associated data.
 
         Args:
@@ -111,7 +111,7 @@ class MDLEditor(Editor):
         self.ui.modelRenderer.setModel(mdl_data, mdx_data)
         self._mdl = read_mdl(mdl_data, 0, 0, mdx_data, 0, 0)
 
-    def _loadMDL(self, mdl: MDL) -> None:
+    def _loadMDL(self, mdl: MDL):
         self._mdl = mdl
 
     def build(self) -> tuple[bytes, bytes]:
@@ -120,7 +120,7 @@ class MDLEditor(Editor):
         write_mdl(self._mdl, data, ResourceType.MDL, data_ext)
         return data, data_ext
 
-    def new(self) -> None:
+    def new(self):
         super().new()
         self._mdl = MDL()
         self.ui.modelRenderer.clearModel()

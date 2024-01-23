@@ -251,7 +251,7 @@ class Modify2DA(ABC):
         self,
         twoda: TwoDA,
         memory: PatcherMemory,
-    ) -> None:
+    ):
         ...
 
 
@@ -283,7 +283,7 @@ class ChangeRow2DA(Modify2DA):
 
         self._row: TwoDARow | None = None
 
-    def apply(self, twoda: TwoDA, memory: PatcherMemory) -> None:
+    def apply(self, twoda: TwoDA, memory: PatcherMemory):
         source_row = self.target.search(twoda)
 
         if source_row is None:
@@ -327,7 +327,7 @@ class AddRow2DA(Modify2DA):
 
         self._row: TwoDARow | None = None
 
-    def apply(self, twoda: TwoDA, memory: PatcherMemory) -> None:
+    def apply(self, twoda: TwoDA, memory: PatcherMemory):
         """Applies an AddRow patch to a TwoDA.
 
         Args:
@@ -406,7 +406,7 @@ class CopyRow2DA(Modify2DA):
 
         self._row: TwoDARow | None = None
 
-    def apply(self, twoda: TwoDA, memory: PatcherMemory) -> None:
+    def apply(self, twoda: TwoDA, memory: PatcherMemory):
         """Applies a CopyRow patch to a TwoDA.
 
         Args:
@@ -491,7 +491,7 @@ class AddColumn2DA(Modify2DA):
         self.label_insert: dict[str, RowValue] = label_insert
         self.store_2da: dict[int, str] = {} if store_2da is None else store_2da
 
-    def apply(self, twoda: TwoDA, memory: PatcherMemory) -> None:
+    def apply(self, twoda: TwoDA, memory: PatcherMemory):
         """Applies a AddColumn patch to a TwoDA.
 
         Args:
@@ -564,7 +564,7 @@ class Modifications2DA(PatcherModifications):
         memory: PatcherMemory,
         logger: PatchLogger,
         game: Game,
-    ) -> None:
+    ):
         for row in self.modifiers:
             try:
                 row.apply(twoda, memory)

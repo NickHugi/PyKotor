@@ -99,7 +99,7 @@ class TwoDABinaryWriter(ResourceWriter):
     def write(
         self,
         auto_close: bool = True,
-    ) -> None:
+    ):
         """Writes the 2DA data to a binary file.
 
         Args:

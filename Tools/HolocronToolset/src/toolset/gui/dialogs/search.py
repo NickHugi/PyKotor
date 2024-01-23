@@ -30,7 +30,7 @@ class FileSearcher(QDialog):
         for name, installation in installations.items():
             self.ui.installationSelect.addItem(name, installation)
 
-    def accept(self) -> None:
+    def accept(self):
         """Submits search parameters and starts search.
 
         Implicit Args:
@@ -86,7 +86,7 @@ class FileSearcher(QDialog):
         super().accept()
 
     def search(self, installation: HTInstallation, caseSensitive: bool, filenamesOnly: bool, text: str,
-               searchCore: bool, searchModules: bool, searchOverride: bool, checkTypes: list[ResourceType]) -> None:
+               searchCore: bool, searchModules: bool, searchOverride: bool, checkTypes: list[ResourceType]):
         """Searches files and resources for text.
 
         Args:
@@ -119,7 +119,7 @@ class FileSearcher(QDialog):
             for folder in installation.override_list():
                 searchIn.extend(installation.override_resources(folder))
 
-        def search(resource: FileResource) -> None:
+        def search(resource: FileResource):
             resource_name = resource.resname()
             resource_data = decode_bytes_with_fallbacks(resource.data())
 
@@ -173,7 +173,7 @@ class FileResults(QDialog):
 
         self.ui.resultList.sortItems(QtCore.Qt.AscendingOrder)
 
-    def accept(self) -> None:
+    def accept(self):
         """Accepts the current selection from the result list.
 
         Args:
@@ -194,7 +194,7 @@ class FileResults(QDialog):
         self.selection = item.data(QtCore.Qt.UserRole) if item is not None else None
         super().accept()
 
-    def open(self) -> None:  # noqa: A003
+    def open(self):  # noqa: A003
         """Opens the current item in the result list.
 
         Args:

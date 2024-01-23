@@ -23,7 +23,7 @@ class MDL:
 
     def __init__(
         self,
-    ) -> None:
+    ):
         self.root: MDLNode = MDLNode()
         self.anims: list[MDLAnimation] = []
         self.name: str = ""
@@ -231,7 +231,7 @@ class MDL:
 class MDLAnimation:
     def __init__(
         self,
-    ) -> None:
+    ):
         self.name: str = ""
         self.root_model: str = ""
         self.anim_length: float = 0.0
@@ -272,7 +272,7 @@ class MDLAnimation:
 class MDLEvent:
     def __init__(
         self,
-    ) -> None:
+    ):
         self.activation_time: float = 0.0
         self.name: str = ""
 
@@ -315,7 +315,7 @@ class MDLNode:
 
     def __init__(
         self,
-    ) -> None:
+    ):
         """Initializes a MDLNode object.
 
         Args:
@@ -505,7 +505,7 @@ class MDLMesh:
 
     def __init__(
         self,
-    ) -> None:
+    ):
         # TODO: look at mesh inverted counter array, rename boolean flags
         self.faces: list[MDLFace] = []
         self.diffuse: Color = Color.WHITE
@@ -557,7 +557,7 @@ class MDLSkin:
 
     def __init__(
         self,
-    ) -> None:
+    ):
         self.bone_indices: tuple[int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int] = (0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
         self.qbones: list[Vector3] = []
         self.tbones: list[Vector3] = []
@@ -585,7 +585,7 @@ class MDLSaber:
 class MDLBoneVertex:
     def __init__(
         self,
-    ) -> None:
+    ):
         self.vertex_weights: tuple[float, float, float, float] = (0.0, 0.0, 0.0, 0.0)
         self.vertex_indices: tuple[float, float, float, float] = (-1.0, -1.0, -1.0, -1.0)
 
@@ -593,7 +593,7 @@ class MDLBoneVertex:
 class MDLFace:
     def __init__(
         self,
-    ) -> None:
+    ):
         self.v1: int = 0
         self.v2: int = 0
         self.v3: int = 0
@@ -626,7 +626,7 @@ class MDLController:
 
     def __init__(
         self,
-    ) -> None:
+    ):
         self.controller_type: MDLControllerType = MDLControllerType.INVALID
         self.rows: list[MDLControllerRow] = []
 
@@ -636,7 +636,7 @@ class MDLControllerRow:
         self,
         time,
         data,
-    ) -> None:
+    ):
         self.time: float = time
         self.data: list[float] = data
 

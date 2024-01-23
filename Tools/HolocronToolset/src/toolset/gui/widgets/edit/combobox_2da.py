@@ -19,7 +19,7 @@ class ComboBox2DA(QComboBox):
 
         self._sortAlphabetically = False
 
-    def addItem(self, text: str, row: int | None = None) -> None:
+    def addItem(self, text: str, row: int | None = None):
         """Adds the 2DA row into the combobox. If the row index is not specified, then the value will be set to the number
         of items in the combobox.
 
@@ -33,7 +33,7 @@ class ComboBox2DA(QComboBox):
         super().addItem(text, row)
 
     def setItems(self, values: list[str], sortAlphabetically: bool = True, cleanupStrings: bool = True,
-                 ignoreBlanks: bool = False) -> None:
+                 ignoreBlanks: bool = False):
         self._sortAlphabetically = sortAlphabetically
         self.clear()
 
@@ -49,14 +49,14 @@ class ComboBox2DA(QComboBox):
 
         self.enableSort() if self._sortAlphabetically else self.disableSort()
 
-    def toggleSort(self) -> None:
+    def toggleSort(self):
         self.disableSort() if self._sortAlphabetically else self.enableSort()
 
-    def enableSort(self) -> None:
+    def enableSort(self):
         self._sortAlphabetically = True
         self.model().sort(0)
 
-    def disableSort(self) -> None:
+    def disableSort(self):
         self._sortAlphabetically = False
         selected = self.currentData()
 
@@ -70,7 +70,7 @@ class ComboBox2DA(QComboBox):
             self.addItem(text, index)
         self.setCurrentIndex(selected)
 
-    def setCurrentIndex(self, rowIn2DA: int) -> None:
+    def setCurrentIndex(self, rowIn2DA: int):
         """Selects the item with the specified row index: This is NOT the index into the combobox like it would be with a
         normal QCombobox. If the index cannot be found, it will create an item with the matching index.
 
@@ -98,13 +98,13 @@ class ComboBox2DA(QComboBox):
         """
         return 0 if self.currentData() is None else self.currentData()
 
-    def onContextMenu(self, point: QPoint) -> None:
+    def onContextMenu(self, point: QPoint):
         menu = QMenu(self)
         menu.addAction("Set Modded Value").triggered.connect(self.openModdedValueDialog)
         menu.addAction("Toggle Sorting").triggered.connect(self.toggleSort)
         menu.popup(self.mapToGlobal(point))
 
-    def openModdedValueDialog(self) -> None:
+    def openModdedValueDialog(self):
         """Opens a dialog where the player can manually set the index into the 2DA file."""
         dialog = ModdedValueSpinboxDialog(self)
         if dialog.exec_():

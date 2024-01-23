@@ -79,14 +79,14 @@ class BWMEditor(Editor):
 
         self.new()
 
-    def _setupSignals(self) -> None:
+    def _setupSignals(self):
         self.ui.renderArea.mouseMoved.connect(self.onMouseMoved)
         self.ui.renderArea.mouseScrolled.connect(self.onMouseScrolled)
 
         QShortcut("+", self).activated.connect(lambda: self.ui.renderArea.camera.setZoom(2))
         QShortcut("-", self).activated.connect(lambda: self.ui.renderArea.camera.setZoom(-2))
 
-    def rebuildMaterials(self) -> None:
+    def rebuildMaterials(self):
         """Rebuild the material list.
 
         Processing Logic:
@@ -108,7 +108,7 @@ class BWMEditor(Editor):
             item.setData(QtCore.Qt.UserRole, material)  # type: ignore[reportGeneralTypeIssues, attr-defined]
             self.ui.materialList.addItem(item)
 
-    def load(self, filepath: os.PathLike | str, resref: str, restype: ResourceType, data: bytes) -> None:
+    def load(self, filepath: os.PathLike | str, resref: str, restype: ResourceType, data: bytes):
         """Loads a resource into the editor.
 
         Args:
@@ -148,10 +148,10 @@ class BWMEditor(Editor):
         write_bwm(self._bwm, data)
         return bytes(data), b""
 
-    def new(self) -> None:
+    def new(self):
         super().new()
 
-    def onMouseMoved(self, screen: Vector2, delta: Vector2, buttons: set[int], keys: set[int]) -> None:
+    def onMouseMoved(self, screen: Vector2, delta: Vector2, buttons: set[int], keys: set[int]):
         """Handles mouse movement events in the viewer.
 
         Args:
@@ -187,7 +187,7 @@ class BWMEditor(Editor):
 
         self.statusBar().showMessage(coordsText + faceText + xy)
 
-    def onMouseScrolled(self, delta: Vector2, buttons: set[int], keys: set[int]) -> None:
+    def onMouseScrolled(self, delta: Vector2, buttons: set[int], keys: set[int]):
         if QtCore.Qt.Key_Control in keys:  # type: ignore[reportGeneralTypeIssues, attr-defined]
             zoomInFactor = 1.1
             zoomOutFactor = 0.90
@@ -213,7 +213,7 @@ class BWMEditor(Editor):
         if face and face.material != newMaterial:
             face.material = newMaterial
 
-    def onTransitionSelect(self) -> None:
+    def onTransitionSelect(self):
         """Select currently highlighted transition in list.
 
         Processing Logic:

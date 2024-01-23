@@ -84,7 +84,7 @@ class ERF:
         resname: str,
         restype: ResourceType,
         data: bytes,
-    ) -> None:
+    ):
         """Sets resource data in the ERF file.
 
         Args:
@@ -131,7 +131,7 @@ class ERF:
         self,
         resname: str,
         restype: ResourceType,
-    ) -> None:
+    ):
         """Removes the resource with the given resref/restype pair if it exists.
 
         Args:

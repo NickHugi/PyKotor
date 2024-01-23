@@ -18,7 +18,7 @@ if TYPE_CHECKING:
 windows: list[QWidget] = []
 
 
-def addWindow(window: QWidget) -> None:
+def addWindow(window: QWidget):
     def removeFromList(a0):
         QWidget.closeEvent(window, a0)
         if window in windows:

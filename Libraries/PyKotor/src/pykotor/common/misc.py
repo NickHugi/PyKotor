@@ -99,7 +99,7 @@ class ResRef:
         self,
         text: str,
         truncate: bool = True,
-    ) -> None:
+    ):
         """Sets the ResRef.
 
         Args:
@@ -394,7 +394,7 @@ class WrappedInt:
     def set(
         self,
         value: int,
-    ) -> None:
+    ):
         self._value = value
 
     def get(

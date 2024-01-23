@@ -16,7 +16,7 @@ class TLK:
     def __init__(
         self,
         language: Language = Language.ENGLISH,
-    ) -> None:
+    ):
         self.entries: list[TLKEntry] = []
         self.language: Language = language  # game does not use this field
 
@@ -77,7 +77,7 @@ class TLK:
         self.entries.append(entry)
         return len(self.entries) - 1
 
-    def replace(self, stringref: int, text: str, sound_resref: str = "") -> None:
+    def replace(self, stringref: int, text: str, sound_resref: str = ""):
         """Replaces an entry at the specified stringref with the provided text and sound resref.
 
         Args:
@@ -96,7 +96,7 @@ class TLK:
     def resize(
         self,
         size: int,
-    ) -> None:
+    ):
         """Resizes the number of entries to the specified size.
 
         Args:

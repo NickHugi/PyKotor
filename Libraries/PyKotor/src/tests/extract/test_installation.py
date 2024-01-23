@@ -36,7 +36,7 @@ K1_PATH = os.environ.get("K1_PATH")
 )
 class TestInstallation(TestCase):
     @classmethod
-    def setUpClass(cls) -> None:
+    def setUpClass(cls):
         assert K1_PATH  # noqa: S101
         cls.installation = Installation(K1_PATH)
 
@@ -79,7 +79,7 @@ class TestInstallation(TestCase):
         self.assertIsNotNone(resource)
         self.assertIsNotNone(resource.data)  # type: ignore
 
-    def test_resources(self) -> None:
+    def test_resources(self):
         installation = self.installation
 
         chitin_resources = [
@@ -178,7 +178,7 @@ class TestInstallation(TestCase):
         )
         self._assert_from_path_tests(capsules_results, "m13aa.are", "xyz.ifo")
 
-    def test_location(self) -> None:
+    def test_location(self):
         installation: Installation = self.installation
 
         self.assertFalse(installation.location("m13aa", ResourceType.ARE, []))

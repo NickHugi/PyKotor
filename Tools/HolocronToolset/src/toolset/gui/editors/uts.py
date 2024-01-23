@@ -56,7 +56,7 @@ class UTSEditor(Editor):
 
         self.new()
 
-    def _setupSignals(self) -> None:
+    def _setupSignals(self):
         """Sets up signal connections for UI buttons and radio buttons.
 
         Processing Logic:
@@ -88,11 +88,11 @@ class UTSEditor(Editor):
         self.ui.playSpecificRadio.toggled.connect(self.changePlay)
         self.ui.playEverywhereRadio.toggled.connect(self.changePlay)
 
-    def _setupInstallation(self, installation: HTInstallation) -> None:
+    def _setupInstallation(self, installation: HTInstallation):
         self._installation = installation
         self.ui.nameEdit.setInstallation(installation)
 
-    def load(self, filepath: os.PathLike | str, resref: str, restype: ResourceType, data: bytes) -> None:
+    def load(self, filepath: os.PathLike | str, resref: str, restype: ResourceType, data: bytes):
         super().load(filepath, resref, restype, data)
 
         uts = read_uts(data)
@@ -225,27 +225,27 @@ class UTSEditor(Editor):
 
         return data, b""
 
-    def new(self) -> None:
+    def new(self):
         super().new()
         self._loadUTS(UTS())
 
-    def changeName(self) -> None:
+    def changeName(self):
         dialog = LocalizedStringDialog(self, self._installation, self.ui.nameEdit.locstring)
         if dialog.exec_():
             self._loadLocstring(self.ui.nameEdit, dialog.locstring)
 
-    def generateTag(self) -> None:
+    def generateTag(self):
         if self.ui.resrefEdit.text() == "":
             self.generateResref()
         self.ui.tagEdit.setText(self.ui.resrefEdit.text())
 
-    def generateResref(self) -> None:
+    def generateResref(self):
         if self._resref is not None and self._resref != "":
             self.ui.resrefEdit.setText(self._resref)
         else:
             self.ui.resrefEdit.setText("m00xx_trg_000")
 
-    def changeStyle(self) -> None:
+    def changeStyle(self):
         def _set_ui_style_groups(boolean: bool):
             self.ui.intervalGroup.setEnabled(boolean)
             self.ui.orderGroup.setEnabled(boolean)
@@ -258,7 +258,7 @@ class UTSEditor(Editor):
         elif self.ui.styleOnceRadio.isChecked():
             self.ui.intervalGroup.setEnabled(False)
 
-    def changePlay(self) -> None:
+    def changePlay(self):
         def _set_ui_play_groups(boolean: bool):
             self.ui.rangeGroup.setEnabled(boolean)
             self.ui.heightGroup.setEnabled(boolean)
@@ -273,7 +273,7 @@ class UTSEditor(Editor):
         elif self.ui.playEverywhereRadio.isChecked():
             _set_ui_play_groups(False)
 
-    def playSound(self) -> None:
+    def playSound(self):
         self.player.stop()
 
         if not self.ui.soundList.currentItem().text():
@@ -291,17 +291,17 @@ class UTSEditor(Editor):
         else:
             QMessageBox(QMessageBox.Critical, "Could not find audio file", f"Could not find audio resource '{resname}'.")
 
-    def addSound(self) -> None:
+    def addSound(self):
         item = QListWidgetItem("new sound")
         item.setFlags(item.flags() | QtCore.Qt.ItemIsEditable)
         self.ui.soundList.addItem(item)
 
-    def removeSound(self) -> None:
+    def removeSound(self):
         if self.ui.soundList.currentRow() == -1:
             return
         self.ui.soundList.takeItem(self.ui.soundList.currentRow())
 
-    def moveSoundUp(self) -> None:
+    def moveSoundUp(self):
         if self.ui.soundList.currentRow() == -1:
             return
         resname = self.ui.soundList.currentItem().text()
@@ -312,7 +312,7 @@ class UTSEditor(Editor):
         item = self.ui.soundList.item(row - 1)
         item.setFlags(item.flags() | QtCore.Qt.ItemIsEditable)
 
-    def moveSoundDown(self) -> None:
+    def moveSoundDown(self):
         if self.ui.soundList.currentRow() == -1:
             return
         resname = self.ui.soundList.currentItem().text()
@@ -323,5 +323,5 @@ class UTSEditor(Editor):
         item = self.ui.soundList.item(row + 1)
         item.setFlags(item.flags() | QtCore.Qt.ItemIsEditable)
 
-    def closeEvent(self, e: QCloseEvent) -> None:
+    def closeEvent(self, e: QCloseEvent):
         self.player.stop()

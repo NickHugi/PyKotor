@@ -238,7 +238,7 @@ class NCS:
             if inst.jump is target
         ]
 
-    def optimize(self, optimizers: list[NCSOptimizer]) -> None:
+    def optimize(self, optimizers: list[NCSOptimizer]):
         """Optimize the model using the provided optimizers.
 
         Args:
@@ -254,7 +254,7 @@ class NCS:
         for optimizer in optimizers:
             optimizer.optimize(self)
 
-    def merge(self, other: NCS) -> None:
+    def merge(self, other: NCS):
         """Merge instructions from another NCS object into this one.
 
         Args:
@@ -310,10 +310,10 @@ class NCSOptimizer(ABC):
         self.instructions_cleared: int = 0
 
     @abstractmethod
-    def optimize(self, ncs: NCS) -> None:
+    def optimize(self, ncs: NCS):
         ...
 
-    def reset(self) -> None:
+    def reset(self):
         """Reset stats counter."""
         self.instructions_cleared = 0
 

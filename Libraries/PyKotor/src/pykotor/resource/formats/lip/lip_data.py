@@ -60,7 +60,7 @@ class LIP:
         self,
         time: float,
         shape: LIPShape,
-    ) -> None:
+    ):
         """Adds a new keyframe.
 
         Args:

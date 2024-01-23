@@ -105,7 +105,7 @@ def write_gff(
     gff: GFF,
     target: TARGET_TYPES,
     file_format: ResourceType = ResourceType.GFF,
-) -> None:
+):
     """Writes the GFF data to the target location with the specified format (GFF or GFF_XML).
 
     Args:

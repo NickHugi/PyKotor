@@ -79,7 +79,7 @@ def simple_wrapper(fn_name, wrapped_class_type) -> Callable[..., Any]:
     return wrapped
 
 
-def create_case_insensitive_pathlib_class(cls: type) -> None:  # TODO: move into CaseAwarePath.__getattr__
+def create_case_insensitive_pathlib_class(cls: type):  # TODO: move into CaseAwarePath.__getattr__
     # Create a dictionary that'll hold the original methods for this class
     """Wraps methods of a pathlib class to be case insensitive.
 

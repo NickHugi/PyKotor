@@ -43,7 +43,7 @@ class DLG:
     def __init__(
         self,
         blank_node: bool = True,
-    ) -> None:
+    ):
         """Initializes a DLGNode object.
 
         Args:
@@ -94,7 +94,7 @@ class DLG:
 
     def print_tree(
         self,
-    ) -> None:
+    ):
         """Prints all the nodes (one per line) in the dialog tree with appropriate indentation."""
         self._print_tree(self.starters, 0, [], [])
 
@@ -104,7 +104,7 @@ class DLG:
         indent: int,
         seen_links: list[DLGLink],
         seen_nodes: list[DLGNode],
-    ) -> None:
+    ):
         for link in links:
             if link.node not in seen_nodes:
                 print(f'{" " * indent}-> {link.node.text}')
@@ -294,7 +294,7 @@ class DLGNode:
 
     def __init__(
         self,
-    ) -> None:
+    ):
         """Initializes a DLGNode object.
 
         Processing Logic:
@@ -372,7 +372,7 @@ class DLGReply(DLGNode):
 
     def __init__(
         self,
-    ) -> None:
+    ):
         super().__init__()
 
 
@@ -381,7 +381,7 @@ class DLGEntry(DLGNode):
 
     def __init__(
         self,
-    ) -> None:
+    ):
         super().__init__()
         self.speaker: str = ""
 
@@ -391,7 +391,7 @@ class DLGAnimation:
 
     def __init__(
         self,
-    ) -> None:
+    ):
         self.animation_id: int = 6
         self.participant: str = ""
 
@@ -425,7 +425,7 @@ class DLGLink:
     def __init__(
         self,
         node: DLGNode | None = None,
-    ) -> None:
+    ):
         self.active1: ResRef = ResRef.from_blank()
         self.node: DLGNode | None = node
         self.link_index: int = -1
@@ -465,7 +465,7 @@ class DLGStunt:
 
     def __init__(
         self,
-    ) -> None:
+    ):
         self.participant: str = ""
         self.stunt_model: ResRef = ResRef.from_blank()
 
@@ -493,7 +493,7 @@ def construct_dlg(
     def construct_node(
         gff_struct: GFFStruct,
         node: DLGNode,
-    ) -> None:
+    ):
         """Constructs a DLGNode from a GFFStruct.
 
         Args:
@@ -583,7 +583,7 @@ def construct_dlg(
     def construct_link(
         gff_struct: GFFStruct,
         link: DLGLink,
-    ) -> None:
+    ):
         """Constructs a DLGLink from a GFFStruct.
 
         Args:
@@ -733,7 +733,7 @@ def dismantle_dlg(
         link: DLGLink,
         nodes: list,
         list_name: str,
-    ) -> None:
+    ):
         """Disassembles a link into a GFFStruct.
 
         Args:
@@ -782,7 +782,7 @@ def dismantle_dlg(
         node: DLGNode,
         nodes: list,
         list_name: str,
-    ) -> None:
+    ):
         """Disassembles a DLGNode into a GFFStruct.
 
         Args:
@@ -980,7 +980,7 @@ def write_dlg(
     file_format: ResourceType = ResourceType.GFF,
     *,
     use_deprecated: bool = True,
-) -> None:
+):
     """Writes a dialogue to a target file format.
 
     Args:

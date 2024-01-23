@@ -16,7 +16,7 @@ class JRL:
 
     def __init__(
         self,
-    ) -> None:
+    ):
         self.quests: list[JRLQuest] = []
 
 
@@ -36,7 +36,7 @@ class JRLQuest:
 
     def __init__(
         self,
-    ) -> None:
+    ):
         self.comment: str = ""
         self.name: LocalizedString = LocalizedString.from_invalid()
         self.planet_id: int = 0
@@ -59,7 +59,7 @@ class JRLEntry:
 
     def __init__(
         self,
-    ) -> None:
+    ):
         self.end: bool = False
         self.entry_id: int = 0
         self.text: LocalizedString = LocalizedString.from_invalid()
@@ -140,7 +140,7 @@ def write_jrl(
     jrl: JRL,
     target: TARGET_TYPES,
     file_format: ResourceType = ResourceType.GFF,
-) -> None:
+):
     gff: GFF = dismantle_jrl(jrl)
     write_gff(gff, target, file_format)
 

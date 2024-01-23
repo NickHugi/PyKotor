@@ -137,7 +137,7 @@ class GFF:
         root: GFFStruct | None = None,
         indent: int = 0,
         column_len: int = 40,
-    ) -> None:
+    ):
         if root is None:
             root = self.root
 
@@ -280,7 +280,7 @@ class GFFStruct:
     def remove(
         self,
         label: str,
-    ) -> None:
+    ):
         """Removes the field with the specified label.
 
         Args:
@@ -478,7 +478,7 @@ class GFFStruct:
         self,
         label: str,
         value: int,
-    ) -> None:
+    ):
         """Sets the value and field type of the field with the specified label.
 
         Args:
@@ -492,7 +492,7 @@ class GFFStruct:
         self,
         label: str,
         value: int,
-    ) -> None:
+    ):
         """Sets the value and field type of the field with the specified label.
 
         Args:
@@ -506,7 +506,7 @@ class GFFStruct:
         self,
         label: str,
         value: int,
-    ) -> None:
+    ):
         """Sets the value and field type of the field with the specified label.
 
         Args:
@@ -520,7 +520,7 @@ class GFFStruct:
         self,
         label: str,
         value: int,
-    ) -> None:
+    ):
         """Sets the value and field type of the field with the specified label.
 
         Args:
@@ -534,7 +534,7 @@ class GFFStruct:
         self,
         label: str,
         value: int,
-    ) -> None:
+    ):
         """Sets the value and field type of the field with the specified label.
 
         Args:
@@ -548,7 +548,7 @@ class GFFStruct:
         self,
         label: str,
         value: int,
-    ) -> None:
+    ):
         """Sets the value and field type of the field with the specified label.
 
         Args:
@@ -562,7 +562,7 @@ class GFFStruct:
         self,
         label: str,
         value: int,
-    ) -> None:
+    ):
         """Sets the value and field type of the field with the specified label.
 
         Args:
@@ -576,7 +576,7 @@ class GFFStruct:
         self,
         label: str,
         value: int,
-    ) -> None:
+    ):
         """Sets the value and field type of the field with the specified label.
 
         Args:
@@ -590,7 +590,7 @@ class GFFStruct:
         self,
         label: str,
         value: float,
-    ) -> None:
+    ):
         """Sets the value and field type of the field with the specified label.
 
         Args:
@@ -604,7 +604,7 @@ class GFFStruct:
         self,
         label: str,
         value: float,
-    ) -> None:
+    ):
         """Sets the value and field type of the field with the specified label.
 
         Args:
@@ -618,7 +618,7 @@ class GFFStruct:
         self,
         label: str,
         value: ResRef,
-    ) -> None:
+    ):
         """Sets the value and field type of the field with the specified label.
 
         Args:
@@ -632,7 +632,7 @@ class GFFStruct:
         self,
         label: str,
         value: str,
-    ) -> None:
+    ):
         """Sets the value and field type of the field with the specified label.
 
         Args:
@@ -646,7 +646,7 @@ class GFFStruct:
         self,
         label: str,
         value: LocalizedString,
-    ) -> None:
+    ):
         """Sets the value and field type of the field with the specified label.
 
         Args:
@@ -660,7 +660,7 @@ class GFFStruct:
         self,
         label: str,
         value: bytes,
-    ) -> None:
+    ):
         """Sets the value and field type of the field with the specified label.
 
         Args:
@@ -674,7 +674,7 @@ class GFFStruct:
         self,
         label: str,
         value: Vector3,
-    ) -> None:
+    ):
         """Sets the value and field type of the field with the specified label.
 
         Args:
@@ -688,7 +688,7 @@ class GFFStruct:
         self,
         label: str,
         value: Vector4,
-    ) -> None:
+    ):
         """Sets the value and field type of the field with the specified label.
 
         Args:
@@ -1173,7 +1173,7 @@ class GFFList:
 
     def __init__(
         self,
-    ) -> None:
+    ):
         self._structs: list[GFFStruct] = []
 
     def __len__(
@@ -1228,7 +1228,7 @@ class GFFList:
     def remove(
         self,
         index: int,
-    ) -> None:
+    ):
         """Removes the struct at the specified index.
 
         Args:

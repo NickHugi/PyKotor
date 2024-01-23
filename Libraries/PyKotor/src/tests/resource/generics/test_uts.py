@@ -45,7 +45,7 @@ class TestUTS(TestCase):
         not K1_PATH or not pathlib.Path(K1_PATH).joinpath("chitin.key").exists(),
         "K1_PATH environment variable is not set or not found on disk.",
     )
-    def test_gff_reconstruct_from_k1_installation(self) -> None:
+    def test_gff_reconstruct_from_k1_installation(self):
         self.installation = Installation(K1_PATH)  # type: ignore[arg-type]
         for are_resource in (resource for resource in self.installation if resource.restype() == ResourceType.UTS):
             gff: GFF = read_gff(are_resource.data())
@@ -56,19 +56,19 @@ class TestUTS(TestCase):
         not K2_PATH or not pathlib.Path(K2_PATH).joinpath("chitin.key").exists(),
         "K2_PATH environment variable is not set or not found on disk.",
     )
-    def test_gff_reconstruct_from_k2_installation(self) -> None:
+    def test_gff_reconstruct_from_k2_installation(self):
         self.installation = Installation(K2_PATH)  # type: ignore[arg-type]
         for are_resource in (resource for resource in self.installation if resource.restype() == ResourceType.UTS):
             gff: GFF = read_gff(are_resource.data())
             reconstructed_gff: GFF = dismantle_uts(construct_uts(gff))
             self.assertTrue(gff.compare(reconstructed_gff, self.log_func, ignore_default_changes=True), os.linesep.join(self.log_messages))
 
-    def test_gff_reconstruct(self) -> None:
+    def test_gff_reconstruct(self):
         gff = read_gff(TEST_FILE)
         reconstructed_gff = dismantle_uts(construct_uts(gff))
         self.assertTrue(gff.compare(reconstructed_gff, self.log_func), os.linesep.join(self.log_messages))
 
-    def test_k1_gff_reconstruct(self) -> None:
+    def test_k1_gff_reconstruct(self):
         gff = read_gff(TEST_K1_FILE)
         reconstructed_gff = dismantle_uts(construct_uts(gff), Game.K1)
         self.assertTrue(gff.compare(reconstructed_gff, self.log_func), os.linesep.join(self.log_messages))

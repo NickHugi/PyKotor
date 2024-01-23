@@ -48,7 +48,7 @@ class PTH:
     def remove(
         self,
         index: int,
-    ) -> None:
+    ):
         self._points.pop(index)
 
         self._connections = [x for x in self._connections if index not in (x.source, x.target)]
@@ -75,14 +75,14 @@ class PTH:
         self,
         source: int,
         target: int,
-    ) -> None:
+    ):
         self._connections.append(PTHEdge(source, target))
 
     def disconnect(
         self,
         source: int,
         target: int,
-    ) -> None:
+    ):
         for edge in copy(self._connections):
             has_source = edge.source in [source, target]
             has_target = edge.target in [source, target]
@@ -201,7 +201,7 @@ def write_pth(
     file_format: ResourceType = ResourceType.GFF,
     *,
     use_deprecated: bool = True,
-) -> None:
+):
     gff: GFF = dismantle_pth(pth, game, use_deprecated=use_deprecated)
     write_gff(gff, target, file_format)
 

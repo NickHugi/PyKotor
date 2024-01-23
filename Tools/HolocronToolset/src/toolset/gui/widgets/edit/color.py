@@ -17,7 +17,7 @@ class ColorEdit(QWidget):
         self.ui.editButton.clicked.connect(self.openColorDialog)
         self.ui.colorSpin.valueChanged.connect(self._onColorChange)
 
-    def openColorDialog(self) -> None:
+    def openColorDialog(self):
         initColor = Color.from_rgba_integer(self.ui.colorSpin.value())
         initQColor = QColor(int(initColor.r*255), int(initColor.g*255), int(initColor.b*255), int(initColor.a*255))
 
@@ -33,7 +33,7 @@ class ColorEdit(QWidget):
                 color = Color(qcolor.redF(), qcolor.greenF(), qcolor.blueF())
                 self.ui.colorSpin.setValue(color.rgb_integer())
 
-    def _onColorChange(self, value: int) -> None:
+    def _onColorChange(self, value: int):
         color = Color.from_rgba_integer(value)
         self._color.r, self._color.g, self._color.b, self._color.a = color.r, color.g, color.b, color.a
         if not self.allowAlpha:
@@ -43,7 +43,7 @@ class ColorEdit(QWidget):
         pixmap = QPixmap.fromImage(QImage(data, 16, 16, QImage.Format_BGR888))
         self.ui.colorLabel.setPixmap(pixmap)
 
-    def setColor(self, color: Color) -> None:
+    def setColor(self, color: Color):
         self._color: Color = color
         self.ui.colorSpin.setValue(color.rgba_integer() if self.allowAlpha else color.rgb_integer())
 

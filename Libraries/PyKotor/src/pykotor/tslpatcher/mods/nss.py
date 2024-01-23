@@ -31,7 +31,7 @@ class MutableString:
         return self.value
 
 class ModificationsNSS(PatcherModifications):
-    def __init__(self, filename, replace=None, modifiers=None) -> None:
+    def __init__(self, filename, replace=None, modifiers=None):
         super().__init__(filename, replace, modifiers)
         self.saveas = str(PurePath(filename).with_suffix(".ncs"))
         self.action: str = "Compile"
@@ -123,7 +123,7 @@ class ModificationsNSS(PatcherModifications):
         memory: PatcherMemory,
         logger: PatchLogger,
         game: Game,
-    ) -> None:
+    ):
         """Applies memory patches to the source script.
 
         Args:

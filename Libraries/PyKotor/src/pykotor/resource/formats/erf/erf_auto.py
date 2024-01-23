@@ -43,7 +43,7 @@ def write_erf(
     erf: ERF,
     target: TARGET_TYPES,
     file_format: ResourceType = ResourceType.ERF,
-) -> None:
+):
     """Writes the ERF data to the target location with the specified format (ERF or MOD).
 
     Args:

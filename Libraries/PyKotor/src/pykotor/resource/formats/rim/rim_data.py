@@ -72,7 +72,7 @@ class RIM:
         resname: str,
         restype: ResourceType,
         data: bytes,
-    ) -> None:
+    ):
         """Sets the data of the resource with the specified resref/restype pair.
 
         If it does not exists, a resource is appended to the resource list.
@@ -120,7 +120,7 @@ class RIM:
         self,
         resname: str,
         restype: ResourceType,
-    ) -> None:
+    ):
         """Removes the resource with the given resref/restype pair if it exists.
 
         Args:

@@ -86,7 +86,7 @@ class Model:
 
         return min_point, max_point
 
-    def _box_rec(self, node: Node, transform: mat4, min_point: vec3, max_point: vec3) -> None:
+    def _box_rec(self, node: Node, transform: mat4, min_point: vec3, max_point: vec3):
         """Calculates bounding box of node and its children recursively.
 
         Call the 'box' function to get started here, don't call this directly.
@@ -185,20 +185,20 @@ class Node:
     def transform(self) -> mat4:
         return copy(self._transform)
 
-    def _recalc_transform(self) -> None:
+    def _recalc_transform(self):
         self._transform = glm.translate(self._position) * glm.mat4_cast(quat(self._rotation))
 
     def position(self) -> vec3:
         return copy(self._position)
 
-    def set_position(self, x: float, y: float, z: float) -> None:
+    def set_position(self, x: float, y: float, z: float):
         self._position = vec3(x, y, z)
         self._recalc_transform()
 
     def rotation(self) -> quat:
         return copy(self._rotation)
 
-    def set_rotation(self, pitch: float, yaw: float, roll: float) -> None:
+    def set_rotation(self, pitch: float, yaw: float, roll: float):
         self._rotation = quat(vec3(pitch, yaw, roll))
         self._recalc_transform()
 

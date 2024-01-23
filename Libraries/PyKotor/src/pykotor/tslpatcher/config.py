@@ -44,7 +44,7 @@ class LogLevel(IntEnum):
 
 
 class PatcherConfig:
-    def __init__(self) -> None:
+    def __init__(self):
         self.window_title: str = ""
         self.confirm_message: str = ""
         self.game_number: int | None = None
@@ -64,7 +64,7 @@ class PatcherConfig:
         self.patches_ncs: list[ModificationsNCS] = []
         self.patches_tlk: ModificationsTLK = ModificationsTLK()
 
-    def load(self, ini_text: str, mod_path: os.PathLike | str, logger: PatchLogger | None = None) -> None:
+    def load(self, ini_text: str, mod_path: os.PathLike | str, logger: PatchLogger | None = None):
         """Loads configuration from a TSLPatcher changes ini text string.
 
         Args:

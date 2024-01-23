@@ -73,7 +73,7 @@ class AsyncLoader(QDialog):
         self._worker.failed.connect(self._onFailed)
         self._worker.start()
 
-    def closeEvent(self, e: QCloseEvent) -> None:
+    def closeEvent(self, e: QCloseEvent):
         self._worker.terminate()
 
     def updateInfo(self, text: str):
@@ -166,10 +166,10 @@ class AsyncBatchLoader(QDialog):
         self._worker.completed.connect(self._onAllCompleted)
         self._worker.start()
 
-    def closeEvent(self, e: QCloseEvent) -> None:
+    def closeEvent(self, e: QCloseEvent):
         self._worker.terminate()
 
-    def addTask(self, task: Callable) -> None:
+    def addTask(self, task: Callable):
         self._worker.addTask(task)
         self._progressBar.setMaximum(self._worker.numTasks())
 
@@ -229,7 +229,7 @@ class AsyncBatchWorker(QThread):
                     break
         self.completed.emit()
 
-    def addTask(self, task: Callable) -> None:
+    def addTask(self, task: Callable):
         self._tasks.append(task)
 
     def numTasks(self) -> int:

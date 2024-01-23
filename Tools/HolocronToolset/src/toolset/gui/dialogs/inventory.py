@@ -173,7 +173,7 @@ class InventoryEditor(QDialog):
 
         self.buildItems()
 
-    def accept(self) -> None:
+    def accept(self):
         super().accept()
         self.inventory = []
         for i in range(self.ui.contentsTable.rowCount()):
@@ -187,7 +187,7 @@ class InventoryEditor(QDialog):
             if "DropFrame" in str(type(widget)) and widget.resname:
                 self.equipment[widget.slot] = InventoryItem(ResRef(widget.resname), widget.droppable, widget.infinite)
 
-    def buildItems(self) -> None:
+    def buildItems(self):
         """Builds item trees from a dialog.
 
         Args:
@@ -261,7 +261,7 @@ class InventoryEditor(QDialog):
             uti = read_uti(BinaryReader.load_file(filepath))
         return str(filepath), name, uti
 
-    def setEquipment(self, slot: EquipmentSlot, resname: str, filepath: str = "", name: str = "") -> None:
+    def setEquipment(self, slot: EquipmentSlot, resname: str, filepath: str = "", name: str = ""):
         """Sets equipment in a given slot.
 
         Args:
@@ -302,7 +302,7 @@ class InventoryEditor(QDialog):
         self.ui.modulesTree.model().setFilterFixedString(text)
         self.ui.overrideTree.model().setFilterFixedString(text)
 
-    def openItemContextMenu(self, widget: QWidget | ItemContainer, point: QPoint) -> None:
+    def openItemContextMenu(self, widget: QWidget | ItemContainer, point: QPoint):
         """Opens an item context menu at a given point.
 
         Args:
@@ -352,7 +352,7 @@ class InventoryEditor(QDialog):
 
         menu.exec_(widget.mapToGlobal(point))
 
-    def promptSetItemResRefDialog(self, widget: DropFrame) -> None:
+    def promptSetItemResRefDialog(self, widget: DropFrame):
         dialog = SetItemResRefDialog()
 
         if dialog.exec_():
@@ -394,14 +394,14 @@ class ItemContainer:
 class DropFrame(ItemContainer, QFrame):
     itemDropped = QtCore.pyqtSignal(object, object, object)
 
-    def __init__(self, parent) -> None:
+    def __init__(self, parent):
         QFrame.__init__(self)
         ItemContainer.__init__(self)
         self.setFrameShape(QFrame.Box)
         self.setAcceptDrops(True)
         self.slot: EquipmentSlot = EquipmentSlot.HIDE
 
-    def dragEnterEvent(self, e: QDragEnterEvent) -> None:
+    def dragEnterEvent(self, e: QDragEnterEvent):
         """Handle drag enter events for slots.
 
         Args:
@@ -450,7 +450,7 @@ class DropFrame(ItemContainer, QFrame):
             if item.data(_SLOTS_ROLE) & self.slot.value:
                 e.accept()
 
-    def dropEvent(self, e: QDropEvent) -> None:
+    def dropEvent(self, e: QDropEvent):
         """Handles dropped items from a tree view onto the widget.
 
         Args:
@@ -522,7 +522,7 @@ class InventoryTable(QTableWidget):
         resnameItem = InventoryTableResnameItem(resname, filepath, name, droppable, infinite)
         self._set_row(rowID, iconItem, resnameItem, nameItem)
 
-    def dropEvent(self, e: QDropEvent | None) -> None:
+    def dropEvent(self, e: QDropEvent | None):
         """Handles drag and drop events on the inventory table.
 
         Args:
@@ -673,7 +673,7 @@ class ItemBuilderDialog(QDialog):
         self._worker.finished.connect(self.finished)
         self._worker.start()
 
-    def utiLoaded(self, uti: UTI, result: ResourceResult) -> None:
+    def utiLoaded(self, uti: UTI, result: ResourceResult):
         baseitems = self._installation.htGetCache2DA(HTInstallation.TwoDA_BASEITEMS)
         name = self._installation.string(uti.name, result.resname) if uti is not None else result.resname
 
@@ -692,7 +692,7 @@ class ItemBuilderDialog(QDialog):
         else:
             self.overrideModel.addItem(result.resname, category, result.filepath, name, slots)
 
-    def finished(self) -> None:
+    def finished(self):
         self.accept()
 
     def getCategory(self, uti: UTI | None) -> str:
@@ -752,7 +752,7 @@ class ItemBuilderWorker(QThread):
         self._installation = installation
         self._capsules = capsules
 
-    def run(self) -> None:
+    def run(self):
         """Runs the resource loading process.
 
         Args:
@@ -824,7 +824,7 @@ class ItemModel(QStandardItemModel):
             self.appendRow(categoryItem)
         return self._categoryItems[category]
 
-    def addItem(self, resname: str, category: str, filepath: os.PathLike | str, name: str, slots: int) -> None:
+    def addItem(self, resname: str, category: str, filepath: os.PathLike | str, name: str, slots: int):
         """Adds an item to the resource list.
 
         Args:

@@ -408,7 +408,7 @@ class Installation:
             print(f"Loading '{path.name}' folder from installation...")
         return resources
 
-    def load_chitin(self) -> None:
+    def load_chitin(self):
         """Reloads the list of resources in the Chitin linked to the Installation."""
         chitin_path: CaseAwarePath = self._path / "chitin.key"
         if not chitin_path.exists():
@@ -419,15 +419,15 @@ class Installation:
 
     def load_lips(
         self,
-    ) -> None:
+    ):
         """Reloads the list of modules in the lips folder linked to the Installation."""
         self._lips = self.load_resources(self.lips_path(), capsule_check=is_mod_file)  # type: ignore[assignment]
 
-    def load_modules(self) -> None:
+    def load_modules(self):
         """Reloads the list of modules files in the modules folder linked to the Installation."""
         self._modules = self.load_resources(self.module_path(), capsule_check=is_capsule_file)  # type: ignore[assignment]
 
-    def reload_module(self, module: str) -> None:
+    def reload_module(self, module: str):
         """Reloads the list of resources in specified module in the modules folder linked to the Installation.
 
         Args:
@@ -438,17 +438,17 @@ class Installation:
 
     def load_rims(
         self,
-    ) -> None:
+    ):
         """Reloads the list of module files in the rims folder linked to the Installation."""
         self._rims = self.load_resources(self.rims_path(), capsule_check=is_rim_file)  # type: ignore[assignment]
 
     def load_textures(
         self,
-    ) -> None:
+    ):
         """Reloads the list of modules files in the texturepacks folder linked to the Installation."""
         self._texturepacks = self.load_resources(self.texturepacks_path(), capsule_check=is_erf_file)  # type: ignore[assignment]
 
-    def load_override(self, directory: str | None = None) -> None:
+    def load_override(self, directory: str | None = None):
         """Loads the list of resources in a specific subdirectory of the override folder linked to the Installation.
 
         If a directory argument is not passed, this will reload all subdirectories in the Override folder.
@@ -477,7 +477,7 @@ class Installation:
             relative_folder = folder.relative_to(override_path).as_posix()  # '.' if folder is the same as override_path
             self._override[relative_folder] = self.load_resources(folder)  # type: ignore[assignment]
 
-    def reload_override(self, directory: str) -> None:
+    def reload_override(self, directory: str):
         """Reload the resources in the specified override subdirectory.
 
         Args:
@@ -491,7 +491,7 @@ class Installation:
         """
         self.load_override(directory)
 
-    def reload_override_file(self, file: os.PathLike | str) -> None:
+    def reload_override_file(self, file: os.PathLike | str):
         filepath: Path = Path.pathify(file)  # type: ignore[reportGeneralTypeIssues, assignment]
         parent_folder = filepath.parent
         rel_folderpath = filepath.parent.relative_to(self.override_path()) if parent_folder.name else "."
@@ -512,19 +512,19 @@ class Installation:
         index: int = override_list.index(resource)
         override_list[index] = resource
 
-    def load_streammusic(self) -> None:
+    def load_streammusic(self):
         """Reloads the list of resources in the streammusic folder linked to the Installation."""
         self._streammusic = self.load_resources(self.streammusic_path())  # type: ignore[assignment]
 
-    def load_streamsounds(self) -> None:
+    def load_streamsounds(self):
         """Reloads the list of resources in the streamsounds folder linked to the Installation."""
         self._streamsounds = self.load_resources(self.streamsounds_path())  # type: ignore[assignment]
 
-    def load_streamwaves(self) -> None:
+    def load_streamwaves(self):
         """Reloads the list of resources in the streamwaves folder linked to the Installation."""
         self._streamwaves = self.load_resources(self._find_resource_folderpath("streamwaves"), recurse=True)  # type: ignore[assignment]
 
-    def load_streamvoice(self) -> None:
+    def load_streamvoice(self):
         """Reloads the list of resources in the streamvoice folder linked to the Installation."""
         self._streamwaves = self.load_resources(self._find_resource_folderpath("streamvoice"), recurse=True)  # type: ignore[assignment]
 

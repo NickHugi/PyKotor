@@ -18,7 +18,7 @@ if TYPE_CHECKING:
 
 
 class TwoDAEditor(Editor):
-    def __init__(self, parent: QWidget | None, installation: HTInstallation | None = None) -> None:
+    def __init__(self, parent: QWidget | None, installation: HTInstallation | None = None):
         """Initializes the 2DA editor
         Args:
             parent: QWidget: The parent widget
@@ -55,7 +55,7 @@ class TwoDAEditor(Editor):
 
         self.new()
 
-    def _setupSignals(self) -> None:
+    def _setupSignals(self):
         """Set up signal connections for UI actions and edits.
 
         Args:
@@ -87,7 +87,7 @@ class TwoDAEditor(Editor):
         self.ui.actionRemoveRows.triggered.connect(self.removeSelectedRows)
         self.ui.actionRedoRowLabels.triggered.connect(self.redoRowLabels)
 
-    def load(self, filepath: os.PathLike | str, resref: str, restype: ResourceType, data: bytes) -> None:
+    def load(self, filepath: os.PathLike | str, resref: str, restype: ResourceType, data: bytes):
         """Loads data from a file into the model.
 
         Args:
@@ -117,7 +117,7 @@ class TwoDAEditor(Editor):
             self.proxyModel.setSourceModel(self.model)
             self.new()
 
-    def _load_main(self, data) -> None:
+    def _load_main(self, data):
         """Loads data from a 2DA file into the main table
         Args:
             data: The 2DA data to load
@@ -210,16 +210,16 @@ class TwoDAEditor(Editor):
         write_2da(twoda, data, self._restype)
         return data, b""
 
-    def new(self) -> None:
+    def new(self):
         super().new()
 
         self.model.clear()
         self.model.setRowCount(0)
 
-    def doFilter(self, text: str) -> None:
+    def doFilter(self, text: str):
         self.proxyModel.setFilterFixedString(text)
 
-    def toggleFilter(self) -> None:
+    def toggleFilter(self):
         visible = not self.ui.filterBox.isVisible()
         self.ui.filterBox.setVisible(visible)
         if visible:
@@ -227,7 +227,7 @@ class TwoDAEditor(Editor):
         else:
             self.doFilter("")
 
-    def copySelection(self) -> None:
+    def copySelection(self):
         """Copies the selected cells to the clipboard.
 
         Args:
@@ -266,7 +266,7 @@ class TwoDAEditor(Editor):
 
         pyperclip.copy(clipboard)
 
-    def pasteSelection(self) -> None:
+    def pasteSelection(self):
         """Pastes the clipboard contents into the selected table cells.
 
         Args:
@@ -300,7 +300,7 @@ class TwoDAEditor(Editor):
             x = left
             y += 1
 
-    def insertRow(self) -> None:
+    def insertRow(self):
         """Inserts a new row at the end of the table.
 
         Args:
@@ -324,7 +324,7 @@ class TwoDAEditor(Editor):
         self.model.item(rowIndex, 0).setBackground(self.palette().midlight())
         self.resetVerticalHeaders()
 
-    def duplicateRow(self) -> None:
+    def duplicateRow(self):
         """Duplicates the selected row in the table.
 
         Inserts a new row, copying values of the selected row, at the end of the table.
@@ -358,23 +358,23 @@ class TwoDAEditor(Editor):
             self.model.item(rowIndex, 0).setBackground(self.palette().midlight())
             self.resetVerticalHeaders()
 
-    def removeSelectedRows(self) -> None:
+    def removeSelectedRows(self):
         """Removes the rows the user has selected."""
         rows = {index.row() for index in self.ui.twodaTable.selectedIndexes()}
         for row in sorted(rows, reverse=True):
             self.model.removeRow(row)
 
-    def redoRowLabels(self) -> None:
+    def redoRowLabels(self):
         """Iterates through every row setting the row label to match the row index."""
         for i in range(self.model.rowCount()):
             self.model.item(i, 0).setText(str(i))
 
-    def setVerticalHeaderOption(self, option: VerticalHeaderOption, column: str | None = None) -> None:
+    def setVerticalHeaderOption(self, option: VerticalHeaderOption, column: str | None = None):
         self.verticalHeaderOption = option
         self.verticalHeaderColumn = column
         self.resetVerticalHeaders()
 
-    def resetVerticalHeaders(self) -> None:
+    def resetVerticalHeaders(self):
         """Resets the vertical headers of the two-dimensional table.
 
         Args:
@@ -415,7 +415,7 @@ class TwoDAEditor(Editor):
 
 
 class SortFilterProxyModel(QSortFilterProxyModel):
-    def __init__(self, parent) -> None:
+    def __init__(self, parent):
         super().__init__(parent)
         self._filterString: str = ""
 

@@ -188,7 +188,7 @@ class BinaryReader:
     def set_offset(
         self,
         offset: int,
-    ) -> None:
+    ):
         self.seek(self.position() + offset)
         self._offset = offset
 
@@ -231,14 +231,14 @@ class BinaryReader:
 
     def close(
         self,
-    ) -> None:
+    ):
         """Closes the stream."""
         self._stream.close()
 
     def skip(
         self,
         length: int,
-    ) -> None:
+    ):
         """Skips ahead in the stream the specified number of bytes.
 
         Args:
@@ -262,7 +262,7 @@ class BinaryReader:
     def seek(
         self,
         position: int,
-    ) -> None:
+    ):
         """Moves the stream pointer to the byte offset.
 
         Args:
@@ -659,7 +659,7 @@ class BinaryReader:
     def exceed_check(
         self,
         num: int,
-    ) -> None:
+    ):
         """Raises an error if the specified number exceeds the number of remaining bytes.
 
         Args:
@@ -744,7 +744,7 @@ class BinaryWriter(ABC):
     def dump(
         path: os.PathLike | str,
         data: bytes,
-    ) -> None:
+    ):
         """Convenience method used to write the specified data to the specified file.
 
         Args:
@@ -761,7 +761,7 @@ class BinaryWriter(ABC):
     @abstractmethod
     def close(
         self,
-    ) -> None:
+    ):
         """Closes the stream."""
 
     @abstractmethod
@@ -789,14 +789,14 @@ class BinaryWriter(ABC):
     @abstractmethod
     def clear(
         self,
-    ) -> None:
+    ):
         """Clears all the data in the file."""
 
     @abstractmethod
     def seek(
         self,
         position: int,
-    ) -> None:
+    ):
         """Moves the stream pointer to the byte offset.
 
         Args:
@@ -807,7 +807,7 @@ class BinaryWriter(ABC):
     @abstractmethod
     def end(
         self,
-    ) -> None:
+    ):
         """Moves the pointer for the stream to the end."""
 
     @abstractmethod
@@ -827,7 +827,7 @@ class BinaryWriter(ABC):
         value: int,
         *,
         big: bool = False,
-    ) -> None:
+    ):
         """Writes an unsigned 8-bit integer to the stream.
 
         Args:
@@ -842,7 +842,7 @@ class BinaryWriter(ABC):
         value: int,
         *,
         big: bool = False,
-    ) -> None:
+    ):
         """Writes a signed 8-bit integer to the stream.
 
         Args:
@@ -857,7 +857,7 @@ class BinaryWriter(ABC):
         value: int,
         *,
         big: bool = False,
-    ) -> None:
+    ):
         """Writes an unsigned 16-bit integer to the stream.
 
         Args:
@@ -872,7 +872,7 @@ class BinaryWriter(ABC):
         value: int,
         *,
         big: bool = False,
-    ) -> None:
+    ):
         """Writes a signed 16-bit integer to the stream.
 
         Args:
@@ -888,7 +888,7 @@ class BinaryWriter(ABC):
         *,
         max_neg1: bool = False,
         big: bool = False,
-    ) -> None:
+    ):
         """Writes an unsigned 32-bit integer to the stream.
 
         If the max_neg1 flag is set to true and the specified value is equal to -1 then the stream will accept the value
@@ -907,7 +907,7 @@ class BinaryWriter(ABC):
         value: int,
         *,
         big: bool = False,
-    ) -> None:
+    ):
         """Writes a signed 32-bit integer to the stream.
 
         Args:
@@ -922,7 +922,7 @@ class BinaryWriter(ABC):
         value: int,
         *,
         big: bool = False,
-    ) -> None:
+    ):
         """Writes an unsigned 64-bit integer to the stream.
 
         Args:
@@ -937,7 +937,7 @@ class BinaryWriter(ABC):
         value: int,
         *,
         big: bool = False,
-    ) -> None:
+    ):
         """Writes a signed 64-bit integer to the stream.
 
         Args:
@@ -952,7 +952,7 @@ class BinaryWriter(ABC):
         value: float,
         *,
         big: bool = False,
-    ) -> None:
+    ):
         """Writes an 32-bit floating point number to the stream.
 
         Args:
@@ -967,7 +967,7 @@ class BinaryWriter(ABC):
         value: int,
         *,
         big: bool = False,
-    ) -> None:
+    ):
         """Writes a 64-bit floating point number to the stream.
 
         Args:
@@ -982,7 +982,7 @@ class BinaryWriter(ABC):
         value: Vector2,
         *,
         big: bool = False,
-    ) -> None:
+    ):
         """Writes two 32-bit floating point numbers to the stream.
 
         Args:
@@ -997,7 +997,7 @@ class BinaryWriter(ABC):
         value: Vector3,
         *,
         big: bool = False,
-    ) -> None:
+    ):
         """Writes three 32-bit floating point numbers to the stream.
 
         Args:
@@ -1012,7 +1012,7 @@ class BinaryWriter(ABC):
         value: Vector4,
         *,
         big: bool = False,
-    ) -> None:
+    ):
         """Writes four 32-bit floating point numbers to the stream.
 
         Args:
@@ -1025,7 +1025,7 @@ class BinaryWriter(ABC):
     def write_bytes(
         self,
         value: bytes,
-    ) -> None:
+    ):
         """Writes the specified bytes to the stream.
 
         Args:
@@ -1044,7 +1044,7 @@ class BinaryWriter(ABC):
         prefix_length: int = 0,
         string_length: int = -1,
         padding: str = "\0",
-    ) -> None:
+    ):
         """Writes the specified string to the stream.
 
         The string can also be prefixed by an integer specifying the strings length.
@@ -1064,7 +1064,7 @@ class BinaryWriter(ABC):
         self,
         indent: int,
         *args,
-    ) -> None:
+    ):
         """Writes a line with specified indentation and array of values that are separated by whitespace.
 
         Args:
@@ -1118,7 +1118,7 @@ class BinaryWriterFile(BinaryWriter):
 
     def close(
         self,
-    ) -> None:
+    ):
         """Closes the stream."""
         self._stream.close()
 
@@ -1154,7 +1154,7 @@ class BinaryWriterFile(BinaryWriter):
 
     def clear(
         self,
-    ) -> None:
+    ):
         """Clears all the data in the file."""
         self._stream.seek(0)
         self._stream.truncate()
@@ -1162,7 +1162,7 @@ class BinaryWriterFile(BinaryWriter):
     def seek(
         self,
         position: int,
-    ) -> None:
+    ):
         """Moves the stream pointer to the byte offset.
 
         Args:
@@ -1173,7 +1173,7 @@ class BinaryWriterFile(BinaryWriter):
 
     def end(
         self,
-    ) -> None:
+    ):
         """Moves the pointer for the stream to the end."""
         self._stream.seek(0, 2)
 
@@ -1193,7 +1193,7 @@ class BinaryWriterFile(BinaryWriter):
         value: int,
         *,
         big: bool = False,
-    ) -> None:
+    ):
         """Writes an unsigned 8-bit integer to the stream.
 
         Args:
@@ -1208,7 +1208,7 @@ class BinaryWriterFile(BinaryWriter):
         value: int,
         *,
         big: bool = False,
-    ) -> None:
+    ):
         """Writes a signed 8-bit integer to the stream.
 
         Args:
@@ -1223,7 +1223,7 @@ class BinaryWriterFile(BinaryWriter):
         value: int,
         *,
         big: bool = False,
-    ) -> None:
+    ):
         """Writes an unsigned 16-bit integer to the stream.
 
         Args:
@@ -1238,7 +1238,7 @@ class BinaryWriterFile(BinaryWriter):
         value: int,
         *,
         big: bool = False,
-    ) -> None:
+    ):
         """Writes a signed 16-bit integer to the stream.
 
         Args:
@@ -1254,7 +1254,7 @@ class BinaryWriterFile(BinaryWriter):
         *,
         max_neg1: bool = False,
         big: bool = False,
-    ) -> None:
+    ):
         """Writes an unsigned 32-bit integer to the stream.
 
         If the max_neg1 flag is set to true and the specified value is equal to -1 then the stream will accept the value
@@ -1276,7 +1276,7 @@ class BinaryWriterFile(BinaryWriter):
         value: int,
         *,
         big: bool = False,
-    ) -> None:
+    ):
         """Writes a signed 32-bit integer to the stream.
 
         Args:
@@ -1291,7 +1291,7 @@ class BinaryWriterFile(BinaryWriter):
         value: int,
         *,
         big: bool = False,
-    ) -> None:
+    ):
         """Writes an unsigned 64-bit integer to the stream.
 
         Args:
@@ -1306,7 +1306,7 @@ class BinaryWriterFile(BinaryWriter):
         value: int,
         *,
         big: bool = False,
-    ) -> None:
+    ):
         """Writes a signed 64-bit integer to the stream.
 
         Args:
@@ -1321,7 +1321,7 @@ class BinaryWriterFile(BinaryWriter):
         value: float,
         *,
         big: bool = False,
-    ) -> None:
+    ):
         """Writes an 32-bit floating point number to the stream.
 
         Args:
@@ -1336,7 +1336,7 @@ class BinaryWriterFile(BinaryWriter):
         value: int,
         *,
         big: bool = False,
-    ) -> None:
+    ):
         """Writes a 64-bit floating point number to the stream.
 
         Args:
@@ -1351,7 +1351,7 @@ class BinaryWriterFile(BinaryWriter):
         value: Vector2,
         *,
         big: bool = False,
-    ) -> None:
+    ):
         """Writes two 32-bit floating point numbers to the stream.
 
         Args:
@@ -1367,7 +1367,7 @@ class BinaryWriterFile(BinaryWriter):
         value: Vector3,
         *,
         big: bool = False,
-    ) -> None:
+    ):
         """Writes three 32-bit floating point numbers to the stream.
 
         Args:
@@ -1382,7 +1382,7 @@ class BinaryWriterFile(BinaryWriter):
         value: Vector4,
         *,
         big: bool = False,
-    ) -> None:
+    ):
         """Writes four 32-bit floating point numbers to the stream.
 
         Args:
@@ -1401,7 +1401,7 @@ class BinaryWriterFile(BinaryWriter):
     def write_bytes(
         self,
         value: bytes,
-    ) -> None:
+    ):
         """Writes the specified bytes to the stream.
 
         Args:
@@ -1420,7 +1420,7 @@ class BinaryWriterFile(BinaryWriter):
         prefix_length: int = 0,
         string_length: int = -1,
         padding: str = "\0",
-    ) -> None:  # sourcery skip: inline-variable, switch
+    ):  # sourcery skip: inline-variable, switch
         """Writes the specified string to the stream.
 
         The string can also be prefixed by an integer specifying the strings length.
@@ -1468,7 +1468,7 @@ class BinaryWriterFile(BinaryWriter):
         self,
         indent: int,
         *args: float | str,
-    ) -> None:
+    ):
         """Writes a line with specified indentation and array of values that are separated by whitespace.
 
         Args:
@@ -1536,7 +1536,7 @@ class BinaryWriterBytearray(BinaryWriter):
 
     def close(
         self,
-    ) -> None:
+    ):
         """Closes the stream."""
 
     def size(
@@ -1563,14 +1563,14 @@ class BinaryWriterBytearray(BinaryWriter):
 
     def clear(
         self,
-    ) -> None:
+    ):
         """Clears all the data in the file."""
         self._ba.clear()
 
     def seek(
         self,
         position: int,
-    ) -> None:
+    ):
         """Moves the stream pointer to the byte offset.
 
         Args:
@@ -1581,7 +1581,7 @@ class BinaryWriterBytearray(BinaryWriter):
 
     def end(
         self,
-    ) -> None:
+    ):
         """Moves the pointer for the stream to the end."""
         self._position = len(self._ba)
 
@@ -1601,7 +1601,7 @@ class BinaryWriterBytearray(BinaryWriter):
         value: int,
         *,
         big: bool = False,
-    ) -> None:
+    ):
         """Writes an unsigned 8-bit integer to the stream.
 
         Args:
@@ -1620,7 +1620,7 @@ class BinaryWriterBytearray(BinaryWriter):
         value: int,
         *,
         big: bool = False,
-    ) -> None:
+    ):
         """Writes a signed 8-bit integer to the stream.
 
         Args:
@@ -1639,7 +1639,7 @@ class BinaryWriterBytearray(BinaryWriter):
         value: int,
         *,
         big: bool = False,
-    ) -> None:
+    ):
         """Writes an unsigned 16-bit integer to the stream.
 
         Args:
@@ -1658,7 +1658,7 @@ class BinaryWriterBytearray(BinaryWriter):
         value: int,
         *,
         big: bool = False,
-    ) -> None:
+    ):
         """Writes a signed 16-bit integer to the stream.
 
         Args:
@@ -1678,7 +1678,7 @@ class BinaryWriterBytearray(BinaryWriter):
         *,
         max_neg1: bool = False,
         big: bool = False,
-    ) -> None:
+    ):
         """Writes an unsigned 32-bit integer to the stream.
 
         If the max_neg1 flag is set to true and the specified value is equal to -1 then the stream will accept the value
@@ -1703,7 +1703,7 @@ class BinaryWriterBytearray(BinaryWriter):
         value: int,
         *,
         big: bool = False,
-    ) -> None:
+    ):
         """Writes a signed 32-bit integer to the stream.
 
         Args:
@@ -1722,7 +1722,7 @@ class BinaryWriterBytearray(BinaryWriter):
         value: int,
         *,
         big: bool = False,
-    ) -> None:
+    ):
         """Writes an unsigned 64-bit integer to the stream.
 
         Args:
@@ -1741,7 +1741,7 @@ class BinaryWriterBytearray(BinaryWriter):
         value: int,
         *,
         big: bool = False,
-    ) -> None:
+    ):
         """Writes a signed 64-bit integer to the stream.
 
         Args:
@@ -1760,7 +1760,7 @@ class BinaryWriterBytearray(BinaryWriter):
         value: float,
         *,
         big: bool = False,
-    ) -> None:
+    ):
         """Writes an 32-bit floating point number to the stream.
 
         Args:
@@ -1779,7 +1779,7 @@ class BinaryWriterBytearray(BinaryWriter):
         value: int,
         *,
         big: bool = False,
-    ) -> None:
+    ):
         """Writes a 64-bit floating point number to the stream.
 
         Args:
@@ -1798,7 +1798,7 @@ class BinaryWriterBytearray(BinaryWriter):
         value: Vector2,
         *,
         big: bool = False,
-    ) -> None:
+    ):
         """Writes two 32-bit floating point numbers to the stream.
 
         Args:
@@ -1821,7 +1821,7 @@ class BinaryWriterBytearray(BinaryWriter):
         value: Vector3,
         *,
         big: bool = False,
-    ) -> None:  # sourcery skip: class-extract-method
+    ):  # sourcery skip: class-extract-method
         """Writes three 32-bit floating point numbers to the stream.
 
         Args:
@@ -1848,7 +1848,7 @@ class BinaryWriterBytearray(BinaryWriter):
         value: Vector4,
         *,
         big: bool = False,
-    ) -> None:
+    ):
         """Writes four 32-bit floating point numbers to the stream.
 
         Args:
@@ -1877,7 +1877,7 @@ class BinaryWriterBytearray(BinaryWriter):
     def write_bytes(
         self,
         value: bytes,
-    ) -> None:
+    ):
         """Writes the specified bytes to the stream.
 
         Args:
@@ -1897,7 +1897,7 @@ class BinaryWriterBytearray(BinaryWriter):
         prefix_length: int = 0,
         string_length: int = -1,
         padding: str = "\0",
-    ) -> None:  # sourcery skip: inline-variable, switch
+    ):  # sourcery skip: inline-variable, switch
         """Writes the specified string to the stream.
 
         The string can also be prefixed by an integer specifying the strings length.
@@ -1943,7 +1943,7 @@ class BinaryWriterBytearray(BinaryWriter):
         self,
         indent: int,
         *args: list[float] | list[str],
-    ) -> None:
+    ):
         """Writes a line with specified indentation and array of values that are separated by whitespace.
 
         Args:
@@ -1972,7 +1972,7 @@ class BinaryWriterBytearray(BinaryWriter):
         value: LocalizedString,
         *,
         big: bool = False,
-    ) -> None:
+    ):
         """Writes the specified localized string to the stream.
 
         The binary data structure that is read follows the structure found in the GFF format specification.

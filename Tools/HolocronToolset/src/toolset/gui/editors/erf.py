@@ -62,7 +62,7 @@ class ERFEditor(Editor):
 
         self.new()
 
-    def _setupSignals(self) -> None:
+    def _setupSignals(self):
         """Setup signal connections for UI elements.
 
         Processing Logic:
@@ -86,7 +86,7 @@ class ERFEditor(Editor):
 
         QShortcut("Del", self).activated.connect(self.removeSelected)
 
-    def load(self, filepath: os.PathLike | str, resref: str, restype: ResourceType, data: bytes) -> None:
+    def load(self, filepath: os.PathLike | str, resref: str, restype: ResourceType, data: bytes):
         """Load resource file.
 
         Args:
@@ -172,14 +172,14 @@ class ERFEditor(Editor):
 
         return data, b""
 
-    def new(self) -> None:
+    def new(self):
         super().new()
         self.model.clear()
         self.model.setColumnCount(3)
         self.model.setHorizontalHeaderLabels(["ResRef", "Type", "Size"])
         self.ui.refreshButton.setEnabled(False)
 
-    def save(self) -> None:
+    def save(self):
         """Saves the current state of the editor to the file path.
 
         Processing Logic:
@@ -203,7 +203,7 @@ class ERFEditor(Editor):
         with self._filepath.open("wb") as file:
             file.write(data[0])
 
-    def extractSelected(self) -> None:
+    def extractSelected(self):
         """Extract selected resources to a folder.
 
         Processing Logic:
@@ -228,7 +228,7 @@ class ERFEditor(Editor):
                 with file_path.open("wb") as file:
                     file.write(resource.data)
 
-    def removeSelected(self) -> None:
+    def removeSelected(self):
         """Removes selected rows from table view.
 
         Removes selected rows from table view by:
@@ -240,7 +240,7 @@ class ERFEditor(Editor):
             item = self.model.itemFromIndex(index)
             self.model.removeRow(item.row())
 
-    def addResources(self, filepaths: list[str]) -> None:
+    def addResources(self, filepaths: list[str]):
         """Adds resource files to the project.
 
         Args:
@@ -279,11 +279,11 @@ class ERFEditor(Editor):
                     f"Could not add resource at {c_filepath}.",
                 ).exec_()
 
-    def selectFilesToAdd(self) -> None:
+    def selectFilesToAdd(self):
         filepaths = QFileDialog.getOpenFileNames(self, "Load files into module")[:-1][0]
         self.addResources(filepaths)
 
-    def openSelected(self) -> None:
+    def openSelected(self):
         """Opens the selected resource in the editor.
 
         Processing Logic:
@@ -322,12 +322,12 @@ class ERFEditor(Editor):
             )
             editor.savedFile.connect(self.resourceSaved)
 
-    def refresh(self) -> None:
+    def refresh(self):
         with self._filepath.open("rb") as file:
             data = file.read()
             self.load(self._filepath, self._resref, self._restype, data)
 
-    def selectionChanged(self) -> None:
+    def selectionChanged(self):
         """Updates UI controls based on table selection.
 
         Processing Logic:
@@ -346,7 +346,7 @@ class ERFEditor(Editor):
         self.ui.openButton.setEnabled(state)
         self.ui.unloadButton.setEnabled(state)
 
-    def resourceSaved(self, filepath: str, resref: str, restype: ResourceType, data: bytes) -> None:
+    def resourceSaved(self, filepath: str, resref: str, restype: ResourceType, data: bytes):
         """Saves resource data to the UI table.
 
         Args:
@@ -401,7 +401,7 @@ class ERFEditorTable(QTableView):
         else:
             event.ignore()
 
-    def startDrag(self, actions: QtCore.Qt.DropActions | QtCore.Qt.DropAction) -> None:
+    def startDrag(self, actions: QtCore.Qt.DropActions | QtCore.Qt.DropAction):
         """Starts a drag operation with the selected items.
 
         Args:

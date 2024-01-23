@@ -76,7 +76,7 @@ class UTCEditor(Editor):
 
         self.new()
 
-    def _setupSignals(self) -> None:
+    def _setupSignals(self):
         """Connect signals to slots.
 
         Processing Logic:
@@ -190,7 +190,7 @@ class UTCEditor(Editor):
         self.ui.hologramCheckbox.setVisible(installation.tsl)
         self.ui.k2onlyBox.setVisible(installation.tsl)
 
-    def load(self, filepath: os.PathLike | str, resref: str, restype: ResourceType, data: bytes) -> None:
+    def load(self, filepath: os.PathLike | str, resref: str, restype: ResourceType, data: bytes):
         super().load(filepath, resref, restype, data)
 
         utc = read_utc(data)
@@ -435,12 +435,12 @@ class UTCEditor(Editor):
 
         return data, b""
 
-    def new(self) -> None:
+    def new(self):
         super().new()
         self._loadUTC(UTC())
         self.updateItemCount()
 
-    def randomizeFirstname(self) -> None:
+    def randomizeFirstname(self):
         ltr_resname = "humanf" if self.ui.genderSelect.currentIndex() == 1 else "humanm"
         locstring = self.ui.firstnameEdit.locstring()
         ltr = read_ltr(self._installation.resource(ltr_resname, ResourceType.LTR).data)
@@ -448,17 +448,17 @@ class UTCEditor(Editor):
         locstring.set_data(Language.ENGLISH, Gender.MALE, ltr.generate())
         self.ui.firstnameEdit.setLocstring(locstring)
 
-    def randomizeLastname(self) -> None:
+    def randomizeLastname(self):
         locstring = self.ui.lastnameEdit.locstring()
         ltr = read_ltr(self._installation.resource("humanl", ResourceType.LTR).data)
         locstring.stringref = -1
         locstring.set_data(Language.ENGLISH, Gender.MALE, ltr.generate())
         self.ui.lastnameEdit.setLocstring(locstring)
 
-    def generateTag(self) -> None:
+    def generateTag(self):
         self.ui.tagEdit.setText(self.ui.resrefEdit.text())
 
-    def portraitChanged(self, index: int) -> None:
+    def portraitChanged(self, index: int):
         """Updates the portrait picture based on the selected index.
 
         Args:
@@ -514,7 +514,7 @@ class UTCEditor(Editor):
         image = QImage(bytes(0 for _ in range(64 * 64 * 3)), 64, 64, QImage.Format_RGB888)
         return QPixmap.fromImage(image)
 
-    def editConversation(self) -> None:
+    def editConversation(self):
         """Edits a conversation.
 
         Processing Logic:
@@ -551,7 +551,7 @@ class UTCEditor(Editor):
         if data is not None:
             openResourceEditor(filepath, resname, ResourceType.DLG, data, self._installation, self)
 
-    def openInventory(self) -> None:
+    def openInventory(self):
         """Opens the inventory editor.
 
         Processing Logic:
@@ -576,7 +576,7 @@ class UTCEditor(Editor):
             self.updateItemCount()
             self.update3dPreview()
 
-    def updateItemCount(self) -> None:
+    def updateItemCount(self):
         self.ui.inventoryCountLabel.setText(f"Total Items: {len(self._utc.inventory)}")
 
     def getFeatItem(self, featId: int) -> QListWidgetItem | None:
@@ -593,11 +593,11 @@ class UTCEditor(Editor):
                 return item
         return None
 
-    def togglePreview(self) -> None:
+    def togglePreview(self):
         self.globalSettings.showPreviewUTC = not self.globalSettings.showPreviewUTC
         self.update3dPreview()
 
-    def updateFeatSummary(self) -> None:
+    def updateFeatSummary(self):
         """Updates the feats summary text.
 
         Processing Logic:
@@ -614,7 +614,7 @@ class UTCEditor(Editor):
                 summary += item.text() + "\n"
         self.ui.featSummaryEdit.setPlainText(summary)
 
-    def updatePowerSummary(self) -> None:
+    def updatePowerSummary(self):
         """Updates the power summary text with checked items from the power list.
 
         Processing Logic:
@@ -631,7 +631,7 @@ class UTCEditor(Editor):
                 summary += item.text() + "\n"
         self.ui.powerSummaryEdit.setPlainText(summary)
 
-    def update3dPreview(self) -> None:
+    def update3dPreview(self):
         """Updates the 3D preview based on global settings.
 
         Processing Logic:
@@ -665,7 +665,7 @@ class UTCSettings:
         return self.settings.value("saveUnusedFields", True, bool)
 
     @saveUnusedFields.setter
-    def saveUnusedFields(self, value: bool) -> None:
+    def saveUnusedFields(self, value: bool):
         self.settings.setValue("saveUnusedFields", value)
 
     @property
@@ -673,5 +673,5 @@ class UTCSettings:
         return self.settings.value("alwaysSaveK2Fields", False, bool)
 
     @alwaysSaveK2Fields.setter
-    def alwaysSaveK2Fields(self, value: bool) -> None:
+    def alwaysSaveK2Fields(self, value: bool):
         self.settings.setValue("alwaysSaveK2Fields", value)

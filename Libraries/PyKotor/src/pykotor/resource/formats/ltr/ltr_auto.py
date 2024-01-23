@@ -41,7 +41,7 @@ def write_ltr(
     ltr: LTR,
     target: TARGET_TYPES,
     file_format: ResourceType = ResourceType.LTR,
-) -> None:
+):
     """Writes the LTR data to the target location with the specified format (LTR only).
 
     Args:
