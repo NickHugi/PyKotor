@@ -978,7 +978,7 @@ class KitDownloader(QDialog):
             kitPath = Path(f"kits/{kitId}.json")
             if kitPath.exists():
                 button = QPushButton("Already Downloaded")
-                button.setEnabled(False)
+                button.setEnabled(True)
                 localKitDict = None
                 try:
                     localKitDict = json.loads(BinaryReader.load_file(kitPath))
