@@ -182,8 +182,8 @@ def format_exception_with_variables(
     for frame_info in frames:
         detailed_message.extend(format_frame_info(frame_info))
     if value.__cause__ is not None:
-        detailed_message.append("Causing Exception's Stack Trace Variables:")
-        detailed_message.extend(format_exception_with_variables(value.__cause__).split("\n"))
+        detailed_message.append("This is the original exception:")
+        detailed_message.extend(format_exception_with_variables(value.__cause__, message="Causing Exception's Stack Trace Variables:").split("\n"))
 
     return "\n".join(detailed_message)
 
@@ -265,6 +265,9 @@ def with_variable_trace(
                     #if frame_info.function != f.__name__:  # Why did I add this?
                     #    continue
                     detailed_message.extend(format_frame_info(frame_info))
+                if e.__cause__ is not None:
+                    detailed_message.append("This is the original exception:")
+                    detailed_message.extend(format_exception_with_variables(e.__cause__, message="Causing Exception's Stack Trace Variables:").split("\n"))
 
                 full_message: str = "\n".join(detailed_message)
 
