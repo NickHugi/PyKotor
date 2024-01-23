@@ -289,7 +289,7 @@ class TestShouldPatchFunction(unittest.TestCase):
     def test_capsule_not_exist(self):
         patch = MagicMock(destination="capsule", action="Patching", sourcefile="file1")
         capsule = MagicMock()
-        capsule.path().exists.return_value = False
+        capsule.path().safe_exists.return_value = False
         result = self.patcher.should_patch(patch, capsule=capsule)
         self.assertFalse(result)
 
