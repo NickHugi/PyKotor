@@ -177,6 +177,12 @@ class Editor(QMainWindow):
         filepath_str, _filter = QFileDialog.getSaveFileName(self, "Save As", "", self._saveFilter, "")
         if not filepath_str:
             return
+        try:
+            identifier = ResourceIdentifier.from_path(filepath_str).validate()
+        except ValueError as e:
+            print(format_exception_with_variables(e))
+            QMessageBox(QMessageBox.Critical, "Invalid filename/extension", f"Check the filename and try again. Could not save!{os.linesep*2}{universal_simplify_exception(e)}").exec_()
+            return
 
         capsule_types = " ".join(f"*.{e.name.lower()}" for e in ERFType) + " *.rim"
         if is_capsule_file(filepath_str) and f"Save into module ({capsule_types})" in self._saveFilter:
@@ -191,7 +197,7 @@ class Editor(QMainWindow):
                 self._filepath = Path(filepath_str)
         else:
             self._filepath = Path(filepath_str)
-            self._resname, self._restype = ResourceIdentifier.from_path(self._filepath).validate()
+            self._resname, self._restype = identifier
         self.save()
 
         self.refreshWindowTitle()
