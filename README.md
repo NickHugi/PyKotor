@@ -14,30 +14,42 @@ PyKotor is supported on most (if not all) operating systems. Yes, this includes 
 
 ## Cloning the repo
 If you would like to work with the source files directly from GitHub, run the following commands to get yourself set:
+Note: Linux/Mac users need to instead execute `pwsh ./install_python_venv.ps1`.
 ```commandline
 git clone https://github.com/NickHugi/PyKotor
 cd PyKotor
 ./install_python_venv.ps1
 ```
-Note: if the command `./install_python_venv.ps1` fails with something like 'not found', you may need to instead run `pwsh ./install_python_venv.ps1`.
 If you are on Linux/Mac and do not have Powershell installed, simply run the command `/bin/bash ./install_powershell.sh` first, then try to run install_python_venv.ps1 again.
+
+Otherwise, see https://learn.microsoft.com/en-us/powershell/scripting/install/installing-powershell?view=powershell-7.4 to learn how to install PowerShell on your system or install Python manually from https://www.python.org/, then set your environment variable PYTHONPATH manually by looking inside the '.env' file in the root of this repo.
+
 
 Once 'install_python_venv.ps1' finishes, you can run any of the provided Tools, such as HoloPatcher, KotorDiff, or the Toolset, like this:
 ```commandline
-python Tools/HoloPatcher/src/__main__.py  # Launch HoloPatcher
-python Tools/HolocronToolset/src/toolset/__main__.py  # Launch Holocron Toolset
+pip install -r Tools/HoloPatcher/requirements.txt --prefer-binary
+python ./Tools/HoloPatcher/src/__main__.py
+pip install -r Tools/HolocronToolset/requirements.txt --prefer-binary
+python Tools/HolocronToolset/src/toolset/__main__.py
+python Tools/KotorDiff/__main__.py
 ```
+
+Install requirements-dev.txt to get all pip packages in one shot:
+```commandline
+pip install -r requirements-dev.txt --prefer-binary
+```
+Note: Most tools on here will automatically create the PYTHONPATH paths needed, but this is a generosity that will not reliably continue through commits. Common errors like 'import not found <utility.Path>' or 'import not found <pykotor>' may result. Just run the powershell script ./install_python_venv.ps1 to automatically configure all of this. PRs are welcome to port this powershell code to e.g. bash or another pre-installed language.
 
 ## Compiling/Building Available Tools:
 After cloning the repo, open any of the powershell scripts in the `compile` folder such as `compile_holopatcher.ps1` and `compile_toolset.ps1` with PowerShell. Doing so will start an automated process that results in a EXE being built/compiled to the PyKotor/dist folder. Specifically, those scripts will:
-- Install Python 3.8 (only if another compatible Python version is not already installed)
-- Setup the environment (PYTHONPATH)
-- Create a python virtual environment
-- Install the tool's dependencies. This is any pip packages they require from requirements.txt
+- Find a compatible Python interpreter, otherwise will install Python 3.8
+- Setup the environment (the venv and PYTHONPATH)
+- Install the tool's dependencies. This is any pip packages they require from requirements.txt and recommended.txt
 - Install PyInstaller
-- Compile to executable binary, as one file, to the PyKotor/dist folder.
+- Compile to executable binary, as one file, to the dist folder in the root level of the repository.
 
-The compiling scripts rely on Powershell being installed, on Unix you may not have this installed and you'll need to run `/bin/bash install_powershell.sh` first. Otherwise, see https://learn.microsoft.com/en-us/powershell/scripting/install/installing-powershell?view=powershell-7.4 to learn how to install PowerShell on your system or install Python manually from https://www.python.org/ and setup the python venv yourself.
+The compiling scripts rely on Powershell being installed, on Unix you may not have this installed and you'll need to run `/bin/bash install_powershell.sh` first. See `Cloning the Repo` above for more information.
+
 
 ## Coding Example Usage:
 Simple example of loading data from a game directory, searching for a specific texture, and exporting it to the TGA format.
