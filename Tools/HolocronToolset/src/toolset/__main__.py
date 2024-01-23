@@ -48,9 +48,8 @@ def fix_sys_and_cwd_path():
     """
     def update_sys_path(path: pathlib.Path):
         working_dir = str(path)
-        if working_dir in sys.path:
-            sys.path.remove(working_dir)
-        sys.path.insert(0, working_dir)
+        if working_dir not in sys.path:
+            sys.path.append(working_dir)
 
     pykotor_path = pathlib.Path(__file__).parents[4] / "Libraries" / "PyKotor" / "src" / "pykotor"
     if pykotor_path.exists():
