@@ -658,7 +658,7 @@ class KOTORPatchingToolUI:
         self.initialize_logger()
         self.setup_ui()
 
-    def write_log(self, log: PatchLog) -> None:
+    def write_log(self, log: PatchLog):
         """Writes a message to the log.
 
         Args:

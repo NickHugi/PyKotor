@@ -6,7 +6,7 @@ from utility.system.path import PurePath
 class PatcherNamespace:
     DEFAULT_INI_FILENAME = "changes.ini"
     DEFAULT_INFO_FILENAME = "info.rtf"
-    def __init__(self, ini_filename: str, info_filename: str) -> None:  # noqa: D417
+    def __init__(self, ini_filename: str, info_filename: str):  # noqa: D417
         """Initialize configuration from ini and info files.
 
         Args:

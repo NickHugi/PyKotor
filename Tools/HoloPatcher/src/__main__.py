@@ -673,7 +673,7 @@ class App(tk.Tk):
     def open_kotor(
         self,
         default_kotor_dir_str: os.PathLike | str | None = None,
-    ) -> None:
+    ):
         """Opens the KOTOR directory.
 
         Args:
@@ -1063,7 +1063,7 @@ class App(tk.Tk):
     def set_stripped_rtf_text(
         self,
         rtf_text: str,
-    ) -> None:
+    ):
         """Strips the info.rtf of all RTF related text and displays it in the UI."""
         stripped_content: str = striprtf(rtf_text)
         self.main_text.config(state=tk.NORMAL)
@@ -1074,7 +1074,7 @@ class App(tk.Tk):
     def write_log(
         self,
         log: PatchLog,
-    ) -> None:
+    ):
         """Writes a message to the log.
 
         Args:
