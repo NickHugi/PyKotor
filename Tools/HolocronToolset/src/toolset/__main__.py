@@ -67,10 +67,6 @@ def fix_sys_and_cwd_path():
         os.chdir(toolset_path)
 
 if __name__ == "__main__":
-    if is_frozen() is False:
-        fix_sys_and_cwd_path()
-
-    from utility.misc import is_debug_mode
 
     os.environ["QT_MULTIMEDIA_PREFERRED_PLUGINS"] = "windowsmediafoundation"
     os.environ["QT_DEBUG_PLUGINS"] = "1"
@@ -79,9 +75,10 @@ if __name__ == "__main__":
     # os.environ["QT_SCALE_FACTOR_ROUNDING_POLICY"] = "PassThrough"
     # os.environ["QT_SCALE_FACTOR"] = "1"
 
-    if not is_debug_mode() or is_frozen():
+    if is_frozen():
         multiprocessing.freeze_support()
-
+    else:
+        fix_sys_and_cwd_path()
 
     app = QApplication(sys.argv)
 
