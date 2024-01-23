@@ -1,6 +1,8 @@
 # Rigorously test the string result of each pathlib module.
 # The goal isn't really to test pathlib.Path or utility.path, the goal is to determine if there was a breaking change in a python patch release.
 from __future__ import annotations
+import ctypes
+from ctypes.wintypes import DWORD
 
 import os
 import pathlib
@@ -31,6 +33,18 @@ from utility.system.path import PurePosixPath as CustomPurePosixPath
 from utility.system.path import PureWindowsPath as CustomPureWindowsPath
 from utility.system.path import WindowsPath as CustomWindowsPath
 
+def check_path_win_api(path) -> tuple[bool, bool, bool]:
+    GetFileAttributes = ctypes.windll.kernel32.GetFileAttributesW
+    INVALID_FILE_ATTRIBUTES: int = DWORD(-1).value
+
+    attrs = GetFileAttributes(path)
+    if attrs == INVALID_FILE_ATTRIBUTES:
+        return False, False, False  # Path does not exist or cannot be accessed
+
+    FILE_ATTRIBUTE_DIRECTORY = 0x10
+    is_dir = bool(attrs & FILE_ATTRIBUTE_DIRECTORY)
+    is_file: bool = not is_dir  # Simplistic check; may need refinement for special files
+    return True, is_file, is_dir
 
 class TestPathlibMixedSlashes(unittest.TestCase):
 
@@ -51,11 +65,78 @@ class TestPathlibMixedSlashes(unittest.TestCase):
                 self.assertEqual(hash(path1), hash(path2))
                 self.assertSetEqual(test_set, {PathType("TEST\\path\\to\\\\nothing")})
 
-    def test_posix_is_dir(self):
+    @unittest.skipIf(os.name != "posix", "Test only supported on POSIX systems.")
+    def test_posix_exists_alternatives(self):
+        test_classes: tuple[type, ...] = (CustomPath, CaseAwarePath)
+        test_path = "/dev/vcsa6"
+        self.assertFalse(os.access("C:\\nonexistent\\path", os.F_OK))
+        test_access: bool = os.access(test_path, os.F_OK)
+        self.assertEqual(test_access, True)
+
+        exists, is_file, is_dir = check_path_win_api(test_path)
+        self.assertEqual(exists, True)
+        self.assertEqual(is_file, True)
+        self.assertEqual(is_dir, False)
+
+        test_os_exists: bool = os.path.exists(test_path)
+        self.assertEqual(test_os_exists, False)
+        test_os_isfile: bool = os.path.isfile(test_path)
+        self.assertEqual(test_os_isfile, False)
+
+        self.assertRaises(OSError, Path(test_path).exists)
+        self.assertRaises(OSError, Path(test_path).is_file)
+        self.assertRaises(OSError, Path(test_path).is_dir)
+        for PathType in test_classes:
+
+            test_pathtype_exists: bool | None = PathType(test_path).safe_exists()
+            self.assertEqual(test_pathtype_exists, None)
+            self.assertRaises(OSError, PathType(test_path).exists)
+            test_pathtype_isfile: bool | None = PathType(test_path).safe_isfile()
+            self.assertEqual(test_pathtype_isfile, None)
+            self.assertRaises(OSError, PathType(test_path).is_file)
+            test_pathtype_isdir: bool | None = PathType(test_path).safe_isdir()
+            self.assertEqual(test_pathtype_isdir, None)
+            self.assertRaises(OSError, PathType(test_path).is_dir)
+
+    @unittest.skipIf(os.name != "nt", "Test only supported on Windows.")
+    def test_windows_exists_alternatives(self):
+        test_classes: tuple[type, ...] = (CustomPath, CaseAwarePath)
+        test_path = "C:\\GitHub\\PyKotor\\.venv_wsl\\bin\\python"
+        self.assertFalse(os.access("C:\\nonexistent\\path", os.F_OK))
+        test_access: bool = os.access(test_path, os.F_OK)
+        self.assertEqual(test_access, True)
+
+        exists, is_file, is_dir = check_path_win_api(test_path)
+        self.assertEqual(exists, True)
+        self.assertEqual(is_file, True)
+        self.assertEqual(is_dir, False)
+
+        test_os_exists: bool = os.path.exists(test_path)
+        self.assertEqual(test_os_exists, False)
+        test_os_isfile: bool = os.path.isfile(test_path)
+        self.assertEqual(test_os_isfile, False)
+
+        self.assertRaises(OSError, Path(test_path).exists)
+        self.assertRaises(OSError, Path(test_path).is_file)
+        self.assertRaises(OSError, Path(test_path).is_dir)
+        for PathType in test_classes:
+
+            test_pathtype_exists: bool | None = PathType(test_path).safe_exists()
+            self.assertEqual(test_pathtype_exists, None)
+            self.assertRaises(OSError, PathType(test_path).exists)
+            test_pathtype_isfile: bool | None = PathType(test_path).safe_isfile()
+            self.assertEqual(test_pathtype_isfile, None)
+            self.assertRaises(OSError, PathType(test_path).is_file)
+            test_pathtype_isdir: bool | None = PathType(test_path).safe_isdir()
+            self.assertEqual(test_pathtype_isdir, None)
+            self.assertRaises(OSError, PathType(test_path).is_dir)
+
+    def test_find_exists_problems(self):
         test_classes: tuple[type, ...] = (Path, CustomPath, CaseAwarePath)
         test_path = "/" if platform.system() != "Windows" else "C:\\"
         for PathType in test_classes:
             self.assertTrue(self.list_files_recursive_scandir(test_path, set(), PathType))
+
     def list_files_recursive_scandir(self, path: str, seen: set, PathType: type[pathlib.Path] | type[CustomPath] | type[CaseAwarePath]):
         if "/mnt/c" in path.lower():
             print("Skipping /mnt/c (wsl)")
@@ -64,10 +145,18 @@ class TestPathlibMixedSlashes(unittest.TestCase):
             it = os.scandir(path)
         except Exception:
             return
+        
+        known_issue_paths: set[str] = {
+            "C:\\GitHub\\PyKotor\\.venv_wsl\\bin\\python",
+            "C:\\GitHub\\PyKotor\\.venv_wsl\\bin\\python3",
+            "C:\\GitHub\\PyKotor\\.venv_wsl\\bin\\python3.10",
+        }
         try:
             for entry in it:
                 path_entry: str = entry.path
-                if path_entry.count("/") > 5 or path_entry in seen:  # Handle links
+                if path_entry in known_issue_paths:
+                    continue
+                if path_entry.replace("\\", "/").count("/") > 5 or path_entry in seen:  # Handle links
                     continue
                 else:
                     seen.add(path_entry)

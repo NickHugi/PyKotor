@@ -176,7 +176,7 @@ class UTMEditor(Editor):
             capsulesPaths: list[str] = [path for path in module_names if case_root in path and path != filepath_str]
             capsules.extend([Capsule(self._installation.module_path() / path) for path in capsulesPaths])
         except Exception as e:
-            print(format_exception_with_variables(e, ___message___="This exception has been suppressed."))
+            print(format_exception_with_variables(e, message="This exception has been suppressed."))
 
         inventoryEditor = InventoryEditor(self, self._installation, capsules, [], self._utm.inventory, {}, False, True, True)
         if inventoryEditor.exec_():

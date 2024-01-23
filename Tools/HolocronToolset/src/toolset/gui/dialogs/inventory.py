@@ -815,7 +815,7 @@ class ItemBuilderWorker(QThread):
             try:  # FIXME
                 uti = read_uti(result.data)
             except Exception as e:  # noqa: BLE001
-                print(format_exception_with_variables(e, ___message___="This exception has been suppressed but needs to be fixed."))
+                print(format_exception_with_variables(e, message="This exception has been suppressed but needs to be fixed."))
             else:
                 self.utiLoaded.emit(uti, result)
         self.finished.emit()

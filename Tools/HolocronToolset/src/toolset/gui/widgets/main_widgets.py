@@ -456,7 +456,7 @@ class TextureList(MainWindowList):
         try:
             item.setIcon(icon)
         except RuntimeError as e:
-            print(format_exception_with_variables(e, ___message___="This exception has been suppressed."))
+            print(format_exception_with_variables(e, message="This exception has been suppressed."))
 
     def onResourceDoubleClicked(self):
         self.requestOpenResource.emit(self.selectedResources(), None)

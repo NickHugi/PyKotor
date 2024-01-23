@@ -594,7 +594,7 @@ class UTCEditor(Editor):
             capsulesPaths: list[str] = [path for path in self._installation.module_names() if root in path and path != self._filepath]
             capsules.extend([Capsule(self._installation.module_path() / path) for path in capsulesPaths])
         except Exception as e:  # noqa: BLE001
-            print(format_exception_with_variables(e, ___message___="This exception has been suppressed by default."))
+            print(format_exception_with_variables(e, message="This exception has been suppressed by default."))
 
         inventoryEditor = InventoryEditor(self, self._installation, capsules, [], self._utc.inventory, self._utc.equipment, droid=droid)
         if inventoryEditor.exec_():

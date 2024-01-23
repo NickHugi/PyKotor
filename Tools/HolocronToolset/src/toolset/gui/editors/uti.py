@@ -385,7 +385,7 @@ class UTIEditor(Editor):
             stringref: int | None = costtable.get_row(value).get_integer("name")
             return installation.talktable().string(stringref)  # FIXME: stringref is None in many occasions
         except Exception as e:
-            print(format_exception_with_variables(e, ___message___="This exception has been suppressed"))
+            print(format_exception_with_variables(e, message="This exception has been suppressed"))
         return None
 
     @staticmethod
@@ -396,7 +396,7 @@ class UTIEditor(Editor):
             stringref: int | None = paramtable_twoda.get_row(param).get_integer("name")
             return installation.talktable().string(stringref)
         except Exception as e:
-            print(format_exception_with_variables(e, ___message___="This exception has been suppressed."))
+            print(format_exception_with_variables(e, message="This exception has been suppressed."))
         return None
 
 

@@ -1029,7 +1029,7 @@ class KitDownloader(QDialog):
                 button.setText("Download Complete")
             except Exception as e:
                 # Handle exception or log error
-                print(format_exception_with_variables(e, ___message___="Error downloading kit"))
+                print(format_exception_with_variables(e, message="Error downloading kit"))
                 button.setText("Download Failed")
                 button.setEnabled(True)
         else:

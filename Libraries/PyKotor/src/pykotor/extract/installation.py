@@ -1724,7 +1724,7 @@ class Installation:
                 else:
                     name = self.talktable().string(locstring.stringref)
             except Exception as e:  # noqa: BLE001
-                print(format_exception_with_variables(e, ___message___="This exception has been suppressed in pykotor.extract.installation."))
+                print(format_exception_with_variables(e, message="This exception has been suppressed in pykotor.extract.installation."))
             else:
                 break
 
@@ -1783,7 +1783,7 @@ class Installation:
                     if mod_id:
                         break
             except Exception as e:  # noqa: BLE001
-                print(format_exception_with_variables(e, ___message___="This exception has been suppressed in pykotor.extract.installation."))
+                print(format_exception_with_variables(e, message="This exception has been suppressed in pykotor.extract.installation."))
         return mod_id
 
     def module_ids(self) -> CaseInsensitiveDict[str]:

@@ -5,7 +5,7 @@ import pathlib
 import re
 import subprocess
 import uuid
-from typing import TYPE_CHECKING, Any, Callable, Generator, Union
+from typing import TYPE_CHECKING, Any, Callable, ClassVar, Generator, Union
 
 from utility.error_handling import format_exception_with_variables
 
@@ -444,7 +444,7 @@ class BasePath(BasePurePath):
         try:
             iterator: Generator[Self, Any, None] = self.rglob(pattern)  # type: ignore[assignment, reportGeneralTypeIssues]
         except Exception as e:  # noqa: BLE001
-            print(format_exception_with_variables(e,  ___message___="This exception has been suppressed and is only relevant for debug purposes."))
+            print(format_exception_with_variables(e,  message="This exception has been suppressed and is only relevant for debug purposes."))
             return
         while True:
             try:
@@ -452,7 +452,7 @@ class BasePath(BasePurePath):
             except StopIteration:  # noqa: PERF203
                 break  # StopIteration means there are no more files to iterate over
             except Exception as e:  # noqa: BLE001
-                print(format_exception_with_variables(e,  ___message___="This exception has been suppressed and is only relevant for debug purposes."))
+                print(format_exception_with_variables(e,  message="This exception has been suppressed and is only relevant for debug purposes."))
                 continue  # Ignore the file that caused an exception and move to the next
 
     # Safe iterdir operation
@@ -462,7 +462,7 @@ class BasePath(BasePurePath):
         try:
             iterator: Generator[Self, Any, None] = self.iterdir()  # type: ignore[assignment, reportGeneralTypeIssues]
         except Exception as e:  # noqa: BLE001
-            print(format_exception_with_variables(e,  ___message___="This exception has been suppressed and is only relevant for debug purposes."))
+            print(format_exception_with_variables(e,  message="This exception has been suppressed and is only relevant for debug purposes."))
             return
         while True:
             try:
@@ -470,32 +470,94 @@ class BasePath(BasePurePath):
             except StopIteration:  # noqa: PERF203
                 break  # StopIteration means there are no more files to iterate over
             except Exception as e:  # noqa: BLE001
-                print(format_exception_with_variables(e,  ___message___="This exception has been suppressed and is only relevant for debug purposes."))
+                print(format_exception_with_variables(e,  message="This exception has been suppressed and is only relevant for debug purposes."))
                 continue  # Ignore the file that caused an exception and move to the next
 
     # Safe is_dir operation
     def safe_isdir(self: Path) -> bool | None:  # type: ignore[misc]
         try:
-            return self.is_dir()
+            reg_isdir: bool = self.is_dir()
+            if reg_isdir:
+                return True
         except OSError as e:
-            print(format_exception_with_variables(e,  ___message___="This exception has been suppressed and is only relevant for debug purposes."))
+            print(format_exception_with_variables(e,  message="This exception has been suppressed and is only relevant for debug purposes."))
+            if os.name == "posix":
+                return None  # unknown
+
+        if os.name == "posix":
+            return False
+        try:
+            exists, is_file, is_dir = self._check_path_win_api()
+        except Exception as e3:
+            print(format_exception_with_variables(e3,  message="This exception has been suppressed and is only relevant for debug purposes."))
+        else:
+            return is_dir
         return None
 
     # Safe is_file operation
     def safe_isfile(self: Path) -> bool | None:  # type: ignore[misc]
         try:
-            return self.is_file()
+            reg_isfile: bool = self.is_file()
+            if reg_isfile:
+                return True
         except OSError as e:
-            print(format_exception_with_variables(e,  ___message___="This exception has been suppressed and is only relevant for debug purposes."))
+            print(format_exception_with_variables(e,  message="This exception has been suppressed and is only relevant for debug purposes."))
+            if os.name == "posix":
+                return None  # unknown
+
+        if os.name == "posix":
+            return False
+        try:
+            exists, is_file, is_dir = self._check_path_win_api()
+        except Exception as e3:
+            print(format_exception_with_variables(e3,  message="This exception has been suppressed and is only relevant for debug purposes."))
+        else:
+            return is_file
         return None
 
     # Safe exists operation
     def safe_exists(self: Path) -> bool | None:  # type: ignore[misc]
+        self_str: str | None = None
         try:
-            return self.exists()  # TODO: don't use pathlib.Path.exists as it's unreliable when we don't have permission to the path.
-        except OSError as e:
-            print(format_exception_with_variables(e,  ___message___="This exception has been suppressed and is only relevant for debug purposes."))
+            reg_exists = self.exists()
+            if reg_exists:
+                return True
+            self_str = str(self)
+            return os.access(self_str, os.F_OK)
+        except Exception as e:
+            print(format_exception_with_variables(e,  message="This exception has been suppressed and is only relevant for debug purposes."))
+            try:
+                self_str = str(self) if self_str is None else self_str
+                return os.access(self_str, os.F_OK)
+            except Exception as e2:
+                print(format_exception_with_variables(e2,  message="This exception has been suppressed and is only relevant for debug purposes."))
+                if os.name == "posix":
+                    return None
+                try:
+                    exists, is_file, is_dir = self._check_path_win_api(self_str)
+                except Exception as e3:
+                    print(format_exception_with_variables(e3,  message="This exception has been suppressed and is only relevant for debug purposes."))
+                else:
+                    return exists
         return None
+
+
+    def _check_path_win_api(self, cached_self_str: str | None = None) -> tuple[bool, bool, bool]:
+        import ctypes
+        from ctypes.wintypes import DWORD
+        GetFileAttributes = ctypes.windll.kernel32.GetFileAttributesW
+        INVALID_FILE_ATTRIBUTES: int = DWORD(-1).value
+
+        self_str = str(self) if cached_self_str is None else cached_self_str
+        attrs: int = GetFileAttributes(self_str)
+        if attrs == INVALID_FILE_ATTRIBUTES:
+            return False, False, False  # Path does not exist or cannot be accessed
+
+        FILE_ATTRIBUTE_DIRECTORY = 0x10
+        is_dir = bool(attrs & FILE_ATTRIBUTE_DIRECTORY)
+        is_file: bool = not is_dir  # Simplistic check; may need refinement for special files
+
+        return True, is_file, is_dir
 
     def walk(
         self: Path,  # type: ignore[misc]
@@ -698,12 +760,12 @@ class BasePath(BasePurePath):
                 try:
                     stat_info = home_path.stat()
                 except OSError as e:
-                    print(format_exception_with_variables(e, ___message___=f"Error accessing file information at path '{home_path}'"))
+                    print(format_exception_with_variables(e, message=f"Error accessing file information at path '{home_path}'"))
                     raise
                 else:
                     os.chown(self, stat_info.st_uid, stat_info.st_gid)  # type: ignore[attr-defined]
             except OSError as exc:
-                print(format_exception_with_variables(exc, ___message___=f"Error during chown for '{self}'"))
+                print(format_exception_with_variables(exc, message=f"Error during chown for '{self}'"))
 
         # (Any OS) chmod the folder
         if not self.has_access(mode, recurse=recurse):
@@ -721,19 +783,19 @@ class BasePath(BasePurePath):
                 else:
                     self.lchmod(new_permissions)
             except OSError as e:
-                print(format_exception_with_variables(e, ___message___=f"Error during chmod at path '{self}'"))
+                print(format_exception_with_variables(e, message=f"Error during chmod at path '{self}'"))
 
         if not self.has_access(mode, recurse=recurse):
             try:
                 self.request_native_access(elevate=False, recurse=recurse)
             except Exception as e:
-                print(format_exception_with_variables(e, ___message___=f"Error during platform-specific permission request at path '{self}'"))
+                print(format_exception_with_variables(e, message=f"Error during platform-specific permission request at path '{self}'"))
 
         if not self.has_access(mode, recurse=recurse):
             try:
                 self.request_native_access(elevate=True, recurse=recurse)
             except Exception as e:
-                print(format_exception_with_variables(e, ___message___=f"Error during elevated platform-specific permission request at path '{self}'"))
+                print(format_exception_with_variables(e, message=f"Error during elevated platform-specific permission request at path '{self}'"))
 
         success: bool = self.has_access(mode, recurse=recurse)
         if success:
@@ -743,7 +805,7 @@ class BasePath(BasePurePath):
                 for child in self.iterdir():
                     success &= child.gain_access(mode, recurse=recurse)
         except OSError as e:
-            print(format_exception_with_variables(e, ___message___=f"Error gaining access for children of path '{self}'"))
+            print(format_exception_with_variables(e, message=f"Error gaining access for children of path '{self}'"))
             success = False
 
         return success

@@ -39,8 +39,11 @@ class FileResource:
 
         self.inside_capsule: bool = is_capsule_file(self._filepath)
         self.inside_bif: bool = is_bif_file(self._filepath)
-        self._file_hash: str = self.get_hash(reload=True)
-        self._identifier = ResourceIdentifier(self._resname, self._restype)
+
+#        filehash = self.get_hash(reload=True)
+#        self._internal = True
+#        self._file_hash: str = filehash
+#        self._identifier = ResourceIdentifier(self._resname, self._restype)
 
         self._path_ident_obj: Path
         if self.inside_capsule or self.inside_bif:
@@ -77,7 +80,7 @@ class FileResource:
 
     def __eq__(  # Checks are ordered from fastest to slowest.
         self,
-        other: FileResource | ResourceIdentifier | bytes | bytearray | memoryview | object,
+        other: FileResource | ResourceIdentifier #| bytes | bytearray | memoryview | object,
     ):
         if isinstance(other, ResourceIdentifier):
             return self.identifier() == other
@@ -92,18 +95,19 @@ class FileResource:
             ):
                 return True
 
-        self_hash = self.get_hash(reload=False)
-        if not self_hash:
-            return False
+        return NotImplemented
+#        self_hash = self.get_hash(reload=False)
+#        if not self_hash:
+#            return False
 
-        other_hash: str | None = None
-        if isinstance(other, FileResource):
-            other_hash = other.get_hash(reload=False)
-        if isinstance(other, (bytes, bytearray, memoryview)):
-            other_hash = generate_hash(other)
-        if other_hash is None:
-            return NotImplemented
-        return self_hash == other_hash
+#        other_hash: str | None = None
+#        if isinstance(other, FileResource):
+#            other_hash = other.get_hash(reload=False)
+#        if isinstance(other, (bytes, bytearray, memoryview)):
+#            other_hash = generate_hash(other)
+#        if other_hash is None:
+#            return NotImplemented
+#        return self_hash == other_hash
 
     def resname(self) -> str:
         return self._resname
@@ -180,7 +184,7 @@ class FileResource:
             with BinaryReader.from_file(self._filepath) as file:
                 file.seek(self._offset)
                 data: bytes = file.read_bytes(self._size)
-                self._file_hash = generate_hash(data)
+                #self._file_hash = generate_hash(data)
                 return data
         finally:
             self._internal = False
