@@ -68,14 +68,7 @@ def fix_sys_and_cwd_path():
         os.chdir(toolset_path)
 
 if __name__ == "__main__":
-<<<<<<< HEAD
-    if is_frozen() is False:
-        fix_sys_and_cwd_path()
-
-    from utility.misc import is_debug_mode
     from utility.system.path import Path
-=======
->>>>>>> bc43c14d (call `multiprocessing.freeze_support()` only if running in frozen code.)
 
     os.environ["QT_MULTIMEDIA_PREFERRED_PLUGINS"] = "windowsmediafoundation"
     os.environ["QT_DEBUG_PLUGINS"] = "1"
@@ -84,13 +77,7 @@ if __name__ == "__main__":
     # os.environ["QT_SCALE_FACTOR_ROUNDING_POLICY"] = "PassThrough"
     # os.environ["QT_SCALE_FACTOR"] = "1"
 
-<<<<<<< HEAD
-    debug_mode_enabled: bool = is_debug_mode()
-
-    if not debug_mode_enabled or is_frozen():
-=======
     if is_frozen():
->>>>>>> bc43c14d (call `multiprocessing.freeze_support()` only if running in frozen code.)
         multiprocessing.freeze_support()
     else:
         fix_sys_and_cwd_path()
