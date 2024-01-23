@@ -70,7 +70,6 @@ def fix_sys_and_cwd_path():
         os.chdir(toolset_path)
 
 if __name__ == "__main__":
-    from utility.system.path import Path
 
     os.environ["QT_MULTIMEDIA_PREFERRED_PLUGINS"] = "windowsmediafoundation"
     os.environ["QT_DEBUG_PLUGINS"] = "1"
@@ -82,6 +81,7 @@ if __name__ == "__main__":
     if is_frozen():
         multiprocessing.freeze_support()
     fix_sys_and_cwd_path()
+    from utility.system.path import Path
 
     app = QApplication(sys.argv)
 
