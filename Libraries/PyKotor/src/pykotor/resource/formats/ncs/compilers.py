@@ -1,13 +1,14 @@
 from __future__ import annotations
 
 import subprocess
-from typing import TYPE_CHECKING, ClassVar
+from datetime import date
+from enum import Enum
+from typing import TYPE_CHECKING, NamedTuple
 
 from pykotor.common.misc import Game
 from pykotor.common.stream import BinaryReader
 from pykotor.resource.formats.ncs.ncs_auto import compile_nss, write_ncs
-from pykotor.resource.formats.ncs.ncs_data import NCSCompiler
-from pykotor.tools.path import CaseAwarePath
+from pykotor.resource.formats.ncs.ncs_data import NCS, NCSCompiler, NCSOptimizer
 from utility.misc import generate_hash
 from utility.system.path import Path
 
@@ -16,80 +17,169 @@ if TYPE_CHECKING:
 
 
 class InbuiltNCSCompiler(NCSCompiler):
-    def compile_script(self, source_path: str, output_path: str, game: Game):
-        source = BinaryReader.load_file(source_path).decode(errors="ignore")
-        ncs = compile_nss(source, game, library_lookup=[CaseAwarePath(source_path).parent])
+    def compile_script(
+        self,
+        source_path: os.PathLike | str,
+        output_path: str,
+        game: Game,
+        optimizers: list[NCSOptimizer] | None = None,
+    ):
+        source_filepath: Path = Path.pathify(source_path)
+        nss_data: bytes = BinaryReader.load_file(source_filepath)
+        nss_contents: str = nss_data.decode("windows-1252", errors="ignore")
+        ncs: NCS = compile_nss(nss_contents, game, optimizers, library_lookup=[source_filepath.parent])
         write_ncs(ncs, output_path)
 
 
+class ExternalCompilerFeatures(NamedTuple):
+    can_compile: bool
+    can_decompile: bool
+
+class ExternalCompilerConfig(NamedTuple):
+    sha256: str
+    name: str
+    release_date: date
+    author: str
+    features: ExternalCompilerFeatures
+    commandline: dict[str, list[str]]
+
+class KnownExternalCompilers(Enum):
+    TSLPATCHER = ExternalCompilerConfig(
+        sha256="539EB689D2E0D3751AEED273385865278BEF6696C46BC0CAB116B40C3B2FE820",
+        name="TSLPatcher",
+        release_date=date(2009, 1, 1),
+        author="todo",
+        features=ExternalCompilerFeatures(can_compile=True, can_decompile=True),
+        commandline={
+            "compile": ["-c", "{source}", "-o", "{output}"],
+            "decompile": ["-d", "{source}", "-o", "{output}"],
+        },
+    )
+    KOTOR_TOOL = ExternalCompilerConfig(
+        sha256="E36AA3172173B654AE20379888EDDC9CF45C62FBEB7AB05061C57B52961C824D",
+        name="KOTOR Tool",
+        release_date=date(2005, 1, 1),
+        author="Fred Tetra",
+        features=ExternalCompilerFeatures(can_compile=True, can_decompile=True),
+        commandline={
+            "compile": ["-c", "--outputdir", "{output_dir}", "-o", "{output_name}", "-g", "{game_value}", "--optimize", "{source}"],
+            "decompile": ["-d", "--outputdir", "{output_dir}", "-o", "{output_name}", "-g", "{game_value}", "{source}"],
+        },
+    )
+    V1 = ExternalCompilerConfig(
+        sha256="EC3E657C18A32AD13D28DA0AA3A77911B32D9661EA83CF0D9BCE02E1C4D8499D",
+        name="v1",
+        release_date=date(2004, 1, 1),
+        author="todo",
+        features=ExternalCompilerFeatures(can_compile=True, can_decompile=True),
+        commandline={
+            "compile": ["-c", "-o", "{source}", "{output}"],
+            "decompile": ["-d", "{source}", "{output}"],
+        },
+    )
+    DENCS = ExternalCompilerConfig(
+        sha256="539EB689D2E0D3751AEED273385865278BEF6696C46BC0CAB116B40C3B2FE820",
+        name="DeNCS",
+        release_date=date(2006, 5, 30),
+        author="todo",
+        features=ExternalCompilerFeatures(can_compile=True, can_decompile=True),
+        commandline={},
+    )
+    XOREOS = ExternalCompilerConfig(
+        sha256="todo",
+        name="Xoreos Tools",
+        release_date=date(1, 1, 1),
+        author="todo",
+        features=ExternalCompilerFeatures(can_compile=False, can_decompile=True),
+        commandline={},
+    )
+    KNSSCOMP = ExternalCompilerConfig(  # TODO: add hash and look for this in tslpatcher.reader.ConfigReader.load_compile_list()
+        sha256="todo",
+        name="knsscomp",
+        release_date=date(1, 1, 1),  # 2022?
+        author="Nick Hugi",
+        features=ExternalCompilerFeatures(can_compile=True, can_decompile=False),
+        commandline={},
+    )
+
+    @classmethod
+    def from_sha256(cls: type[KnownExternalCompilers], sha256: str) -> KnownExternalCompilers:
+        uppercase_sha256: str = sha256.upper()
+
+        if cls.TSLPATCHER.value.sha256 == uppercase_sha256:
+            return cls.TSLPATCHER
+        if cls.KOTOR_TOOL.value.sha256 == uppercase_sha256:
+            return cls.KOTOR_TOOL
+        if cls.V1.value.sha256 == uppercase_sha256:
+            return cls.V1
+        if cls.DENCS.value.sha256 == uppercase_sha256:
+            return cls.DENCS
+        if cls.XOREOS.value.sha256 == uppercase_sha256:
+            return cls.XOREOS
+        if cls.KNSSCOMP.value.sha256 == uppercase_sha256:
+            return cls.KNSSCOMP
+
+        msg = f"No compilers found with sha256 hash '{uppercase_sha256}'"
+        raise ValueError(msg)
+
+
+class NwnnsscompConfig:
+    """Unifies the arguments passed to each different version of nwnnsscomp, since no versions offer backwards-compatibility with each other."""
+
+    def __init__(
+        self,
+        sha256_hash: str,
+        sourcefile: Path,
+        outputfile: Path,
+        game_value: Game,
+    ):
+        self.sha256_hash: str = sha256_hash
+        self.source_file: Path = sourcefile
+        self.output_file: Path = outputfile
+        self.output_dir: Path = outputfile.parent
+        self.output_name: str = outputfile.name
+        self.game_value: Game = game_value
+
+        self.chosen_compiler: KnownExternalCompilers = KnownExternalCompilers.from_sha256(self.sha256_hash)
+
+    def get_compile_args(self, executable: str) -> list[str]:
+        return self._format_args(self.chosen_compiler.value.commandline["compile"], executable)
+
+    def get_decompile_args(self, executable: str) -> list[str]:
+        return self._format_args(self.chosen_compiler.value.commandline["decompile"], executable)
+
+    def _format_args(self, args_list: list[str], executable: str) -> list[str]:
+        formatted_args: list[str] = [arg.format(
+            source=self.source_file,
+            output=self.output_file,
+            output_dir=self.output_dir,
+            output_name=self.output_name,
+            game_value=self.game_value,
+        ) for arg in args_list]
+        formatted_args.insert(0, executable)
+        return formatted_args
+
+
 class ExternalNCSCompiler(NCSCompiler):
-    NWNNSSCOMP_SHA256_HASHES: ClassVar[dict[str, str]] = {
-        "TSLPatcher": "539EB689D2E0D3751AEED273385865278BEF6696C46BC0CAB116B40C3B2FE820",  # TSLPatcher (2009)
-        "Kotor Tool": "E36AA3172173B654AE20379888EDDC9CF45C62FBEB7AB05061C57B52961C824D",  # KotorTool (2005)
-        "v1": "EC3E657C18A32AD13D28DA0AA3A77911B32D9661EA83CF0D9BCE02E1C4D8499D",          # v1 (2004)
-        "DeNCS": "DD1ECD396AAB6F4C731DED70A7BA91299F0F2159ECBDF10F2E54A15C5D0888BC",       # DeNCS.jar Beta 2 (May 30 2006)
-    }
-
-    class NwnnsscompConfig:
-        """Unifies the arguments passed to each different version of nwnnsscomp. No versions offer backwards-compatibility with each other."""
-
-        def __init__(self, sha256_hash: str, source: Path, output: Path, game_value: Game):
-            self.sha256_hash: str = sha256_hash
-            self.source: Path = source
-            self.output: Path = output
-            self.output_dir: Path = output.parent
-            self.output_name: str = output.name
-            self.game_value: Game = game_value
-            self.compile_args: list[str] = []
-            self.decompile_args: list[str] = []
-            self._configure_based_on_hash()
-
-        def get_compile_args(self, executable: str) -> list[str]:
-            return self._format_args(self.compile_args, executable)
-
-        def get_decompile_args(self, executable: str) -> list[str]:
-            return self._format_args(self.decompile_args, executable)
-
-        def _configure_based_on_hash(self):
-            arg_configurations: dict[str, dict[str, list[str]]] = {
-                ExternalNCSCompiler.NWNNSSCOMP_SHA256_HASHES["TSLPatcher"]: {
-                    "compile": ["-c", "{source}", "-o", "{output}"],
-                    "decompile": ["-d", "{source}", "-o", "{output}"],
-                },
-                ExternalNCSCompiler.NWNNSSCOMP_SHA256_HASHES["Kotor Tool"]: {
-                    "compile": ["-c", "--outputdir", "{output_dir}", "-o", "{output_name}", "-g", "{game_value}", "--optimize", "{source}"],
-                    "decompile": ["-d", "--outputdir", "{output_dir}", "-o", "{output_name}", "-g", "{game_value}", "{source}"],
-                },
-                ExternalNCSCompiler.NWNNSSCOMP_SHA256_HASHES["v1"]: {
-                    "compile": ["-c", "-o", "{source}", "{output}"],
-                    "decompile": ["-d", "{source}", "{output}"],
-                },
-            }
-
-            config = arg_configurations.get(self.sha256_hash)
-            if not config:
-                msg = "Unknown NWNNSSCOMP hash"
-                raise ValueError(msg)
-            self.compile_args = config["compile"]
-            self.decompile_args = config["decompile"]
-
-        def _format_args(self, args_list: list[str], executable: str) -> list[str]:
-            formatted_args: list[str] = [arg.format(
-                source=self.source,
-                output=self.output,
-                output_dir=self.output_dir,
-                output_name=self.output_name,
-                game_value=self.game_value,
-            ) for arg in args_list]
-            formatted_args.insert(0, executable)
-            return formatted_args
 
     def __init__(self, nwnnsscomp_path: os.PathLike | str):
-        self.nwnnsscomp_path: Path = Path.pathify(nwnnsscomp_path)  # type: ignore[reportGeneralTypeIssues, assignment]
-        self.filehash: str = generate_hash(self.nwnnsscomp_path, hash_algo="sha256").upper()
-        self.config: ExternalNCSCompiler.NwnnsscompConfig | None = None
+        self.nwnnsscomp_path: Path
+        self.filehash: str
+        self.change_nwnnsscomp_path(nwnnsscomp_path)
 
-    def configure(self, source_file: os.PathLike | str, output_file: os.PathLike | str, game: Game | int) -> NwnnsscompConfig:
+    def get_info(self) -> ExternalCompilerConfig:
+        return KnownExternalCompilers.from_sha256(self.filehash).value
+
+    def change_nwnnsscomp_path(self, nwnnsscomp_path: os.PathLike | str):
+        self.nwnnsscomp_path: Path = Path.pathify(nwnnsscomp_path)
+        self.filehash: str = generate_hash(self.nwnnsscomp_path, hash_algo="sha256").upper()
+
+    def config(
+        self,
+        source_file: os.PathLike | str,
+        output_file: os.PathLike | str,
+        game: Game | int,
+    ) -> NwnnsscompConfig:
         """Configures a Nwnnsscomp run.
 
         Args:
@@ -108,10 +198,10 @@ class ExternalNCSCompiler(NCSCompiler):
             - Converts game arg to Game enum if integer
             - Returns NwnnsscompConfig object configured with args useable with the compile_script and decompile_script functions.
         """
-        source_filepath, output_filepath = (p if p.safe_exists() else p.resolve() for p in map(Path, (source_file, output_file)))
+        source_filepath, output_filepath = map(Path.pathify, (source_file, output_file))
         if not isinstance(game, Game):
             game = Game(game)
-        return self.NwnnsscompConfig(self.filehash, source_filepath, output_filepath, game)
+        return NwnnsscompConfig(self.filehash, source_filepath, output_filepath, game)
 
     def compile_script(
         self,
@@ -129,7 +219,7 @@ class ExternalNCSCompiler(NCSCompiler):
             source_file: The path or name of the script source file to compile.
             output_file: The path or name of the compiled module file to output.
             game: The Game object or game ID to configure the compiler for.
-            timeout: The timeout in seconds for the compilation process.
+            timeout: The timeout in seconds to wait for compilation to finish before aborting.
 
         Returns:
         -------
@@ -141,11 +231,10 @@ class ExternalNCSCompiler(NCSCompiler):
             - Runs the compiler process, capturing stdout and stderr.
             - Returns a tuple of the stdout and stderr strings on completion.
         """
-        if not self.config:
-            self.config = self.configure(source_file, output_file, game)
+        config: NwnnsscompConfig = self.config(source_file, output_file, game)
 
         result: subprocess.CompletedProcess[str] = subprocess.run(
-            args=self.config.get_compile_args(str(self.nwnnsscomp_path)),
+            args=config.get_compile_args(str(self.nwnnsscomp_path)),
             capture_output=True,  # Capture stdout and stderr
             text=True,
             timeout=timeout,
@@ -156,7 +245,7 @@ class ExternalNCSCompiler(NCSCompiler):
         return result.stdout, stderr_message if result.returncode != 0 else result.stderr
 
 
-    def decompile_script(
+    def decompile_script(  # noqa: D417
         self,
         source_file: os.PathLike | str,
         output_file: os.PathLike | str,
@@ -167,10 +256,10 @@ class ExternalNCSCompiler(NCSCompiler):
 
         Args:
         ----
-            source_file: Path to the script file to decompile.
-            output_file: Path to output the decompiled C# source code.
-            game: The Game object containing configuration.
-            timeout - int | None: How long to wait for decompiling to finish. Defaults to 5 seconds.
+            source_file: (os.PathLike | str) - Path to the script file to decompile.
+            output_file: (os.PathLike | str) - Path to output the decompiled C# source code.
+            game: (Game) - The Game object containing configuration.
+            timeout: (int) - How long to wait for decompiling to finish before aborting. Defaults to 5 seconds.
 
         Processing Logic:
         ----------------
@@ -178,11 +267,10 @@ class ExternalNCSCompiler(NCSCompiler):
             - Calls nwnnsscomp subprocess to decompile script file using configuration
             - Waits up to the provided timeout seconds for decompilation process to complete.
         """
-        if not self.config:
-            self.config = self.configure(source_file, output_file, game)
+        config: NwnnsscompConfig = self.config(source_file, output_file, game)
 
         result: subprocess.CompletedProcess[str] = subprocess.run(
-            args=self.config.get_decompile_args(str(self.nwnnsscomp_path)),
+            args=config.get_decompile_args(str(self.nwnnsscomp_path)),
             capture_output=True,  # Capture stdout and stderr
             text=True,
             timeout=timeout,
