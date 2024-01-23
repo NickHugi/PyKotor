@@ -493,11 +493,15 @@ class App(tk.Tk):
             "CONTINUING WILL MOST LIKELY BREAK YOUR GAME AND REQUIRE A FULL KOTOR REINSTALL!",
         ):
             return
-        with contextlib.suppress(BaseException):
+        try:
             self.install_thread._stop()  # type: ignore[attr-defined]
             print("force terminate of install thread succeeded", sys.stdout)  # noqa: T201
-        with contextlib.suppress(BaseException):
+        except BaseException as e:  # noqa: BLE001
+            self._handle_general_exception(e, "Error using self.install_thread._stop()", msgbox=False)
+        try:
             ctypes.pythonapi.PyThreadState_SetAsyncExc(ctypes.c_long(self.install_thread.ident), ctypes.py_object(SystemExit))  # type: ignore[arg-type]
+        except BaseException as e:  # noqa: BLE001
+            self._handle_general_exception(e, "Error using internal ctypes to close the install_thread", msgbox=False)
         self.destroy()
         sys.exit(ExitCode.ABORT_INSTALL_UNSAFE)
 
@@ -565,7 +569,7 @@ class App(tk.Tk):
 
             # Strip info.rtf and display in the main window frame.
             info_rtf_path = CaseAwarePath(self.mod_path, "tslpatchdata", namespace_option.rtf_filepath())
-            info_rte_path = CaseAwarePath(self.mod_path, "tslpatchdata", namespace_option.rtf_filepath()).with_suffix("rte")
+            info_rte_path = CaseAwarePath(self.mod_path, "tslpatchdata", namespace_option.rtf_filepath()).with_suffix(".rte")
             if not info_rtf_path.safe_exists() and not info_rte_path.safe_exists():
                 messagebox.showwarning("No info.rtf", f"Could not load the info rtf for this mod, file '{info_rtf_path}' not found on disk.")
                 return
@@ -583,16 +587,23 @@ class App(tk.Tk):
         else:
             self.after(10, lambda: self.move_cursor_to_end(self.namespaces_combobox))
 
-    def _handle_general_exception(self, exc: BaseException, custom_msg: str = "Unexpected error.", title: str = ""):
+    def _handle_general_exception(
+        self,
+        exc: BaseException,
+        custom_msg: str = "Unexpected error.",
+        title: str = "",
+        msgbox: bool = True,
+    ):
         detailed_msg = format_exception_with_variables(exc)
         print(detailed_msg)
         with Path.cwd().joinpath("errorlog.txt").open("a") as f:
             f.write(detailed_msg)
         error_name, msg = universal_simplify_exception(exc)
-        messagebox.showerror(
-            title or error_name,
-            f"{(error_name + os.linesep*2) if title else ''}{custom_msg}.{os.linesep*2}{msg}",
-        )
+        if msgbox:
+            messagebox.showerror(
+                title or error_name,
+                f"{(error_name + os.linesep*2) if title else ''}{custom_msg}.{os.linesep*2}{msg}",
+            )
 
     def load_namespace(
         self,
@@ -826,11 +837,7 @@ class App(tk.Tk):
             self.install_thread = Thread(target=self.begin_install_thread)
             self.install_thread.start()
         except Exception as e:  # noqa: BLE001
-            error_name, msg = universal_simplify_exception(e)
-            messagebox.showerror(
-                error_name,
-                f"An unexpected error occurred during the installation and the program was forced to exit.{os.linesep*2}{msg}",
-            )
+            self._handle_general_exception(e, "An unexpected error occurred during the installation and the program was forced to exit")
             sys.exit(ExitCode.EXCEPTION_DURING_INSTALL)
 
     def begin_install_thread(self):
@@ -878,7 +885,7 @@ class App(tk.Tk):
             reader = ConfigReader.from_filepath(ini_file_path, self.logger)
             reader.load(reader.config)
         except Exception as e:  # noqa: BLE001
-            messagebox.showerror(*universal_simplify_exception(e))
+            self._handle_general_exception(e, "An unexpected error occurred while testing the config ini reader")
         finally:
             self.set_active_install(install_running=False)
 
