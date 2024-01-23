@@ -3,8 +3,6 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, Any
 
-from pykotor.tslpatcher.mods.install import InstallFile
-
 if TYPE_CHECKING:
     from pykotor.common.misc import CaseInsensitiveDict, Game
     from pykotor.resource.type import SOURCE_TYPES
