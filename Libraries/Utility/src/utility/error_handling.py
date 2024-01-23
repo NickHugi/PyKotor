@@ -101,6 +101,7 @@ def format_var_str(
         return None
 
     exc = None
+    exc2 = None
     unique_sentinel = object()
     try:
         val_str = str(val)
@@ -116,7 +117,7 @@ def format_var_str(
             val_repr = f"{val_repr[:max_length]}...<truncated>"
     except Exception as e2:
         val_repr = None
-        exc = e2
+        exc2 = e2
 
     display_value: str | None = val_repr
     if display_value is unique_sentinel:
