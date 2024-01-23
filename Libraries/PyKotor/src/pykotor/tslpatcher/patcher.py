@@ -2,10 +2,10 @@ from __future__ import annotations
 
 import os
 import shutil
+import sys
 from copy import deepcopy
 from datetime import datetime, timezone
-from threading import Event
-from typing import TYPE_CHECKING, Callable
+from typing import TYPE_CHECKING
 
 from pykotor.common.stream import BinaryReader, BinaryWriter
 from pykotor.extract.capsule import Capsule
@@ -23,6 +23,7 @@ from utility.error_handling import format_exception_with_variables, universal_si
 from utility.system.path import PurePath
 
 if TYPE_CHECKING:
+    from threading import Event
 
     from pykotor.common.misc import Game
     from pykotor.resource.type import SOURCE_TYPES
@@ -347,7 +348,7 @@ class ModInstaller:
         for patch in patches_list:
             if should_cancel is not None and should_cancel.is_set():
                 print("ModInstaller.install() received termination request, cancelling...")
-                return
+                sys.exit()
             print("No cancellation requested... continuing...")
             if self.game.is_ios():  # TODO:
                 patch.destination = patch.destination.lower()

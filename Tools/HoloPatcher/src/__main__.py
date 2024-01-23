@@ -6,9 +6,9 @@ import ctypes
 import inspect
 import io
 import json
-import multiprocessing
 import os
 import pathlib
+import subprocess
 import sys
 import tempfile
 import time
@@ -22,8 +22,6 @@ from threading import Event, Thread
 from tkinter import filedialog, messagebox, ttk
 from tkinter import font as tkfont
 from typing import TYPE_CHECKING, Callable, NoReturn
-
-from pykotor.common.stream import BinaryReader
 
 if getattr(sys, "frozen", False) is False:
     def update_sys_path(path):
@@ -40,7 +38,9 @@ if getattr(sys, "frozen", False) is False:
         if utility_path.exists():
             update_sys_path(utility_path.parent)
 
+
 from pykotor.common.misc import Game
+from pykotor.common.stream import BinaryReader
 from pykotor.tools.encoding import decode_bytes_with_fallbacks
 from pykotor.tools.path import CaseAwarePath, find_kotor_paths_from_default
 from pykotor.tslpatcher.logger import PatchLog, PatchLogger
@@ -516,8 +516,8 @@ class App(tk.Tk):
             return
 
         self.force_stop_thread.set()
-        time.sleep(3)
-        print("Install thread is still alive after 3 seconds, attempting force close...")
+        time.sleep(1)
+        print("Install thread is still alive, attempting force close...")
         i = 0
         while self.install_thread.is_alive():
             try:
@@ -532,7 +532,7 @@ class App(tk.Tk):
             print(f"Install thread is still alive after {i} seconds, waiting...")
             time.sleep(1)
             i += 1
-            if i == 10:
+            if i == 2:
                 break
         if self.install_thread.is_alive():
             print("Failed to stop thread!")
@@ -540,7 +540,18 @@ class App(tk.Tk):
         print("Destroying self")
         self.destroy()
         print("Goodbye! (sys.exit abort unsafe)")
-        sys.exit(ExitCode.ABORT_INSTALL_UNSAFE)
+        print("Nevermind, Forcefully kill this process (taskkill or kill command in subprocess)")
+        pid = os.getpid()
+        try:
+            if sys.platform == "win32":
+                subprocess.run(["taskkill", "/F", "/PID", str(pid)], check=True)
+            else:
+                subprocess.run(["kill", "-9", str(pid)], check=True)
+        except Exception as e:
+            self._handle_general_exception(e, "Failed to kill process", msgbox=False)
+        finally:
+            # This code might not be reached, but it's here for completeness
+            os._exit(ExitCode.ABORT_INSTALL_UNSAFE)
 
     def on_gamepaths_chosen(
         self,
@@ -1170,8 +1181,8 @@ def is_frozen() -> bool:  # sourcery skip: assign-if-exp, boolean-if-exp-identit
     return False
 
 def main():
-    if is_frozen():
-        multiprocessing.freeze_support()
+    #if is_frozen():
+    #    multiprocessing.freeze_support()
     app = App()
     app.mainloop()
 
