@@ -81,9 +81,9 @@ class PatcherModifications(ABC):
         self.replace_file:  bool = bool(replace)
         self.destination:   str  = self.DEFAULT_DESTINATION
 
-        self.action: str = "Patch" + " "
-        self.override_type: str = OverrideType.WARN
-        self.skip_if_not_replace = False  # [InstallList] only
+        self.action:        str  = "Patch" + " "
+        self.override_type: str  = OverrideType.WARN
+        self.skip_if_not_replace: bool = isinstance(self, InstallFile)  # [InstallList] only
 
     @abstractmethod
     def patch_resource(
