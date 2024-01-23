@@ -181,6 +181,9 @@ def format_exception_with_variables(
     ]
     for frame_info in frames:
         detailed_message.extend(format_frame_info(frame_info))
+    if value.__cause__ is not None:
+        detailed_message.append("Causing Exception's Stack Trace Variables:")
+        detailed_message.extend(format_exception_with_variables(value.__cause__).split("\n"))
 
     return "\n".join(detailed_message)
 
