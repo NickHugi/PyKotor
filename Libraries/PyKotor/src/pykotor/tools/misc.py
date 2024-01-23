@@ -9,7 +9,7 @@ if TYPE_CHECKING:
 
 def normalize_ext(str_repr: os.PathLike | str) -> os.PathLike | str:
     if isinstance(str_repr, str):
-        if str_repr[1] == ".":
+        if str_repr[0] == ".":
             str_repr = f"stem{str_repr}"
         if "." not in str_repr:
             str_repr = f"stem.{str_repr}"

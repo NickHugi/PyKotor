@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import os
 import pathlib
 import sys
@@ -23,8 +25,8 @@ from pykotor.extract.chitin import Chitin
 
 NWN_BASE_PATH = r"C:\Program Files (x86)\Steam\steamapps\common\Neverwinter Nights"
 NWN_KEY_PATH = r"C:\Program Files (x86)\Steam\steamapps\common\Neverwinter Nights\data\nwn_base.key"
-K1_PATH = os.environ.get("K1_PATH")
-K2_PATH = os.environ.get("K2_PATH")
+K1_PATH: str | None = os.environ.get("K1_PATH")
+K2_PATH: str | None = os.environ.get("K2_PATH")
 
 class TestChitin(TestCase):
     def test_nwn_chitin(self):
