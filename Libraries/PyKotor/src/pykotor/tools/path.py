@@ -152,7 +152,7 @@ class CaseAwarePath(InternalPath):  # type: ignore[misc]
             parsed_other = other.with_segments(other, *_deprecated)
 
         self_str, other_str = map(str, (resolved_self, parsed_other))
-        if isinstance(self, (pathlib.PureWindowsPath, pathlib.WindowsPath)) or os.name == "nt":
+        if isinstance(self, (pathlib.PureWindowsPath, pathlib.WindowsPath)) or type(self).__name__ == "CaseAwarePath" or os.name == "nt":  # HACK: maybe import CaseAwarePath or have an attribute set over there (might need to set __slots__ too)
             self_str, other_str = map(str.lower, (self_str, other_str))
 
         if other_str not in self_str:
