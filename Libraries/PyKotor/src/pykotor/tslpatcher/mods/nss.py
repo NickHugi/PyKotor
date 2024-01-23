@@ -1,7 +1,9 @@
+"""Represents patches specific to [CompileList] logic."""
 from __future__ import annotations
 
 import os
 import re
+from tempfile import TemporaryDirectory
 from typing import TYPE_CHECKING
 
 from pykotor.common.stream import BinaryReader, BinaryWriter
@@ -173,8 +175,13 @@ class ModificationsNSS(PatcherModifications):
         logger: PatchLogger,
         game: Game,
     ) -> bytes | Literal[True]:
-        tempcompiled_filepath: Path = self.nwnnsscomp_path.parent / "temp_script.ncs"
-        stdout, stderr = nwnnsscompiler.compile_script(temp_script_file, tempcompiled_filepath, game)
+        with TemporaryDirectory() as tempdir:
+            tempcompiled_filepath: Path = Path(tempdir) / "temp_script.ncs"
+            stdout, stderr = nwnnsscompiler.compile_script(temp_script_file, tempcompiled_filepath, game)
+            result: bool | bytes = "File is an include file, ignored" in stdout
+            if not result:
+                # Return the compiled bytes
+                result = BinaryReader.load_file(tempcompiled_filepath)
 
         # Parse the output.
         if stdout.strip():
@@ -186,7 +193,4 @@ class ModificationsNSS(PatcherModifications):
                 if line.strip():
                     logger.add_error(line)
 
-        if "File is an include file, ignored" in stdout:
-            return True
-        # Return the compiled bytes
-        return BinaryReader.load_file(tempcompiled_filepath)
+        return result
