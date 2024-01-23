@@ -3,21 +3,25 @@ from __future__ import annotations
 import base64
 import contextlib
 import ctypes
+import inspect
 import io
 import json
+import multiprocessing
 import os
 import pathlib
 import sys
+import tempfile
+import time
 import tkinter as tk
 import traceback
 import webbrowser
 from argparse import ArgumentParser, Namespace
 from datetime import datetime, timedelta, timezone
 from enum import IntEnum
-from threading import Thread
+from threading import Event, Thread
 from tkinter import filedialog, messagebox, ttk
 from tkinter import font as tkfont
-from typing import TYPE_CHECKING, NoReturn
+from typing import TYPE_CHECKING, Callable, NoReturn
 
 from pykotor.common.stream import BinaryReader
 
@@ -284,6 +288,7 @@ class App(tk.Tk):
         self.exit_button.pack(side="left", padx=5, pady=5)
         self.install_button = ttk.Button(bottom_frame, text="Install", command=self.begin_install)
         self.install_button.pack(side="right", padx=5, pady=5)
+        self.force_stop_thread: Event = Event()
 
     def set_text_font(
         self,
@@ -473,6 +478,21 @@ class App(tk.Tk):
         finally:
             self.set_active_install(install_running=False)
 
+    def async_raise(self, tid, exctype):
+        """Raises an exception in the threads with id tid."""
+        if not inspect.isclass(exctype):
+            raise TypeError("Only types can be raised (not instances)")
+        res = ctypes.pythonapi.PyThreadState_SetAsyncExc(ctypes.c_long(tid),
+                                                        ctypes.py_object(exctype))
+        if res == 0:
+            raise ValueError("invalid thread id")
+        if res != 1:
+            # "if it returns a number greater than one, you're in trouble,
+            # and you should call it again with exc=NULL to revert the effect"
+            ctypes.pythonapi.PyThreadState_SetAsyncExc(ctypes.c_long(tid), None)
+            raise SystemError("PyThreadState_SetAsyncExc failed")
+        print("success")
+
     def handle_exit_button(self):
         """Handle exit button click during installation.
 
@@ -484,7 +504,8 @@ class App(tk.Tk):
             - If stopping fails, force terminate install thread
             - Destroy window and exit with abort code.
         """
-        if not self.install_running:
+        if not self.install_running or not self.install_thread.is_alive():
+            print("Goodbye!")
             sys.exit(ExitCode.SUCCESS)
 
         # Handle unsafe exit.
@@ -493,16 +514,32 @@ class App(tk.Tk):
             "CONTINUING WILL MOST LIKELY BREAK YOUR GAME AND REQUIRE A FULL KOTOR REINSTALL!",
         ):
             return
-        try:
-            self.install_thread._stop()  # type: ignore[attr-defined]
-            print("force terminate of install thread succeeded", sys.stdout)  # noqa: T201
-        except BaseException as e:  # noqa: BLE001
-            self._handle_general_exception(e, "Error using self.install_thread._stop()", msgbox=False)
-        try:
-            ctypes.pythonapi.PyThreadState_SetAsyncExc(ctypes.c_long(self.install_thread.ident), ctypes.py_object(SystemExit))  # type: ignore[arg-type]
-        except BaseException as e:  # noqa: BLE001
-            self._handle_general_exception(e, "Error using internal ctypes to close the install_thread", msgbox=False)
+
+        self.force_stop_thread.set()
+        time.sleep(3)
+        print("Install thread is still alive after 3 seconds, attempting force close...")
+        i = 0
+        while self.install_thread.is_alive():
+            try:
+                self.install_thread._stop()  # type: ignore[attr-defined]
+                print("force terminate of install thread succeeded", sys.stdout)  # noqa: T201
+            except BaseException as e:  # noqa: BLE001
+                self._handle_general_exception(e, "Error using self.install_thread._stop()", msgbox=False)
+            try:
+                self.async_raise(self.install_thread.ident, SystemExit)
+            except BaseException as e:  # noqa: BLE001
+                self._handle_general_exception(e, "Error using async_raise(self.install_thread.ident, SystemExit)", msgbox=False)
+            print(f"Install thread is still alive after {i} seconds, waiting...")
+            time.sleep(1)
+            i += 1
+            if i == 10:
+                break
+        if self.install_thread.is_alive():
+            print("Failed to stop thread!")
+
+        print("Destroying self")
         self.destroy()
+        print("Goodbye! (sys.exit abort unsafe)")
         sys.exit(ExitCode.ABORT_INSTALL_UNSAFE)
 
     def on_gamepaths_chosen(
@@ -594,7 +631,7 @@ class App(tk.Tk):
         title: str = "",
         msgbox: bool = True,
     ):
-        detailed_msg = format_exception_with_variables(exc)
+        detailed_msg = format_exception_with_variables(exc, message=custom_msg)
         print(detailed_msg)
         with Path.cwd().joinpath("errorlog.txt").open("a") as f:
             f.write(detailed_msg)
@@ -708,7 +745,7 @@ class App(tk.Tk):
             self.gamepaths.set(str(directory))
             if directory_str not in self.gamepaths["values"]:
                 self.gamepaths["values"] = (*self.gamepaths["values"], directory_str)
-            self.after(10, self.move_cursor_to_end)
+            self.after(10, self.move_cursor_to_end, self.namespaces_combobox)
         except Exception as e:  # noqa: BLE001
             self._handle_general_exception(e, "An unexpected error occurred while loading the game directory.")
 
@@ -834,13 +871,13 @@ class App(tk.Tk):
 
         """
         try:
-            self.install_thread = Thread(target=self.begin_install_thread)
+            self.install_thread = Thread(target=self.begin_install_thread, args=(self.force_stop_thread,))
             self.install_thread.start()
         except Exception as e:  # noqa: BLE001
             self._handle_general_exception(e, "An unexpected error occurred during the installation and the program was forced to exit")
             sys.exit(ExitCode.EXCEPTION_DURING_INSTALL)
 
-    def begin_install_thread(self):
+    def begin_install_thread(self, should_cancel_thread: Callable[..., bool]):
         """Starts the mod installation thread. This function is called directly when utilizing the CLI.
 
         Args:
@@ -867,7 +904,7 @@ class App(tk.Tk):
         self.clear_main_text()
         try:
             installer = ModInstaller(namespace_mod_path, self.gamepaths.get(), ini_file_path, self.logger)
-            self._execute_mod_install(installer)
+            self._execute_mod_install(installer, should_cancel_thread)
         except Exception as e:  # noqa: BLE001
             self._handle_exception_during_install(e)
         finally:
@@ -925,6 +962,7 @@ class App(tk.Tk):
     def _execute_mod_install(
         self,
         installer: ModInstaller,
+        should_cancel_thread,
     ):
         """Executes the mod installation.
 
@@ -949,7 +987,7 @@ class App(tk.Tk):
         #profiler = cProfile.Profile()
         #profiler.enable()
         install_start_time: datetime = datetime.now(timezone.utc).astimezone()
-        installer.install()
+        installer.install(should_cancel_thread)
         total_install_time: timedelta = datetime.now(timezone.utc).astimezone() - install_start_time
         #profiler.disable()
         #profiler_output_file = Path("profiler_output.pstat").resolve()
@@ -1121,7 +1159,19 @@ def on_app_crash(
 
 sys.excepthook = on_app_crash
 
+
+def is_frozen() -> bool:  # sourcery skip: assign-if-exp, boolean-if-exp-identity, reintroduce-else, remove-unnecessary-cast
+    # Check for sys.frozen attribute
+    if getattr(sys, "frozen", False):
+        return True
+    # Check if the executable is in a temp directory (common for frozen apps)
+    if tempfile.gettempdir() in sys.executable:
+        return True
+    return False
+
 def main():
+    if is_frozen():
+        multiprocessing.freeze_support()
     app = App()
     app.mainloop()
 

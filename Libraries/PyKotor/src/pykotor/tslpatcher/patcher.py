@@ -4,7 +4,8 @@ import os
 import shutil
 from copy import deepcopy
 from datetime import datetime, timezone
-from typing import TYPE_CHECKING
+from threading import Event
+from typing import TYPE_CHECKING, Callable
 
 from pykotor.common.stream import BinaryReader, BinaryWriter
 from pykotor.extract.capsule import Capsule
@@ -313,7 +314,7 @@ class ModInstaller:
         self.log.add_note(f"{patch.action[:-1]}ing '{patch.sourcefile}' and {save_type} {saving_as_str} the '{local_folder}' {container_type}")
         return True
 
-    def install(self):
+    def install(self, should_cancel: Event | None = None):
         """Install patches from the config file.
 
         Processing Logic:
@@ -344,6 +345,10 @@ class ModInstaller:
 
         memory = PatcherMemory()
         for patch in patches_list:
+            if should_cancel is not None and should_cancel.is_set():
+                print("ModInstaller.install() received termination request, cancelling...")
+                return
+            print("No cancellation requested... continuing...")
             if self.game.is_ios():  # TODO:
                 patch.destination = patch.destination.lower()
             output_container_path: CaseAwarePath = self.game_path / patch.destination
