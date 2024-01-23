@@ -31,7 +31,7 @@ class FileResource:
         self._offset: int = offset
         self._filepath: Path = Path.pathify(filepath)
 
-        self._file_hash: str = self.get_hash(reload=True)
+        #self._file_hash: str = self.get_hash(reload=True)
         self._identifier = ResourceIdentifier(self._resname, self._restype)
 
     def __repr__(self) -> str:
@@ -67,18 +67,19 @@ class FileResource:
             ):
                 return True
 
-        self_hash = self.get_hash(reload=False)
-        if not self_hash:
-            return False
+        #self_hash = self.get_hash(reload=False)
+        #if not self_hash:
+        #    return False
 
-        other_hash: str | None = None
-        if isinstance(other, FileResource):
-            other_hash = other.get_hash(reload=False)
-        if isinstance(other, (bytes, bytearray, memoryview)):
-            other_hash = generate_hash(other)
-        if other_hash is None:
-            return NotImplemented
-        return self_hash == other_hash
+        #other_hash: str | None = None
+        #if isinstance(other, FileResource):
+        #    other_hash = other.get_hash(reload=False)
+        #if isinstance(other, (bytes, bytearray, memoryview)):
+        #    other_hash = generate_hash(other)
+        #if other_hash is None:
+        #    return NotImplemented
+        #return self_hash == other_hash
+        return NotImplemented
 
     def resname(
         self,
@@ -151,7 +152,7 @@ class FileResource:
         with self._filepath.open("rb") as file:
             file.seek(self._offset)
             data: bytes = file.read(self._size)
-            self._file_hash = generate_hash(data)
+#            self._file_hash = generate_hash(data)
             return data
 
     def get_hash(
