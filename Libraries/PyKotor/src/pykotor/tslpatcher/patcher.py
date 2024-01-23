@@ -22,10 +22,10 @@ from utility.error_handling import universal_simplify_exception
 from utility.path import PurePath
 
 if TYPE_CHECKING:
-
     from pykotor.common.misc import Game
     from pykotor.resource.type import SOURCE_TYPES
     from pykotor.tslpatcher.mods.tlk import ModificationsTLK
+    from typing_extensions import Literal
 
 class ModInstaller:
     def __init__(
@@ -266,19 +266,24 @@ class ModInstaller:
         exists: bool | None = False,  # noqa: FBT002
         capsule: Capsule | None = None,
     ) -> bool:
-        """The name of this function is misleading, it only returns False if the capsule was not found (error)
+        """Log information about the patch, including source and destination.
+
+        The name of this function can be misleading, it only returns False if the capsule was not found (error)
         or an InstallList patch already exists at the output location without the Replace#= prefix. Otherwise, it is
         mostly used for logging purposes.
 
         Args:
         ----
-            patch: PatcherModifications - The patch details
-            exists: bool | None - Whether the target file already exists
-            capsule: Capsule | None - The target capsule if patching one
+            patch (PatcherModifications): - The patch details
+            exists (bool | None): - Whether the target file already exists
+            capsule (Capsule | None): - The target capsule if patching one
 
         Returns:
         -------
             bool - Whether the patch should be applied
+                False if the capsule was not found (error)
+                False if an InstallList patch already exists at destination and patch configured to replace existing file or not (!ReplaceFile/#Replace=filename)
+                True otherwise.
 
         Processing Logic:
         ----------------
@@ -352,22 +357,22 @@ class ModInstaller:
                 exists, capsule = self.handle_capsule_and_backup(patch, output_container_path)
                 if not self.should_patch(patch, exists, capsule):
                     continue
-                data_to_patch_bytes: bytes | None = self.lookup_resource(patch, output_container_path, exists, capsule)
-                if data_to_patch_bytes is None:  # check None instead of `not data_to_patch_bytes` as sometimes mods will installlist empty files.
+                data_to_patch: bytes | None = self.lookup_resource(patch, output_container_path, exists, capsule)
+                if data_to_patch is None:  # check None instead of `not data_to_patch` as sometimes mods will installlist empty files.
                     self.log.add_error(f"Could not locate resource to {patch.action.lower().strip()}: '{patch.sourcefile}'")
                     continue
-                if not data_to_patch_bytes:
+                if not data_to_patch:
                     self.log.add_note(f"'{patch.sourcefile}' has no content/data and is completely empty.")
 
-                patched_bytes_data: bytes = patch.patch_resource(data_to_patch_bytes, memory, self.log, self.game)
-                if patched_bytes_data is True:  # for nwnnsscomp
-                    continue
+                patched_data: bytes | Literal[True] = patch.patch_resource(data_to_patch, memory, self.log, self.game)
+                if patched_data is True:
+                    continue  # patch_resource determined that this file can be skipped. e.g. if nwnnsscomp tries to compile an Include script with no entrypoint
                 if capsule is not None:
                     self.handle_override_type(patch)
-                    capsule.add(*ResourceIdentifier.from_path(patch.saveas), patched_bytes_data)
+                    capsule.add(*ResourceIdentifier.from_path(patch.saveas), patched_data)
                 else:
                     output_container_path.mkdir(exist_ok=True, parents=True)  # Create non-existing folders if needed.
-                    BinaryWriter.dump(output_container_path / patch.saveas, patched_bytes_data)
+                    BinaryWriter.dump(output_container_path / patch.saveas, patched_data)
                 self.log.complete_patch()
             except Exception as e:  # noqa: BLE001
                 self.log.add_error(str(e))
