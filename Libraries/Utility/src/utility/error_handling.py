@@ -100,21 +100,31 @@ def format_var_str(
     if var in default_attrs or var in ignore_attrs:
         return None
 
+    exc = None
+    unique_sentinel = object()
     try:
         val_str = str(val)
         if len(val_str) > max_length:
             val_str = f"{val_str[:max_length]}...<truncated>"
     except Exception as e:
-        val_str = f"<Error in str({var}): {e}>"
+        val_str = None
+        exc = e
 
     try:
         val_repr = repr(val)
         if len(val_repr) > max_length:
             val_repr = f"{val_repr[:max_length]}...<truncated>"
-    except Exception as e:
-        val_repr = f"<Error in repr({var}): {e}>"
+    except Exception as e2:
+        val_repr = None
+        exc = e2
 
-    return f"  {var} = {val_repr} {{{val_str}}}"
+    display_value: str | None = val_repr
+    if display_value is unique_sentinel:
+        display_value = val_str
+    if display_value is unique_sentinel:
+        display_value = f"<Error in repr({var}): {exc}>"
+
+    return f"  {var} = {display_value}"
 
 def format_frame_info(frame_info: inspect.FrameInfo) -> list[str]:
     """Extract and format information from a frame."""
