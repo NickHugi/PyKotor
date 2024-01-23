@@ -186,8 +186,7 @@ def enforce_instance_cast(obj: object, type_: type[IT]) -> IT:
         return obj  # type: ignore[return-value]
 
     assert_with_variable_trace(isinstance(obj, type_), "enforce_is_instance failed.")
-    # This will never be reached, assert_with_variable_trace always raises an AssertionError exception.
-    return  # type: ignore[return-value]  # noqa: RET502
+    return obj # type: ignore[return-value]
 
 def assert_with_variable_trace(condition: bool, message: str = "Assertion Failed"):
     if condition:
