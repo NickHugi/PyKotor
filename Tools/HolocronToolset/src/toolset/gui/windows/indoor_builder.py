@@ -173,7 +173,7 @@ class IndoorMapBuilder(QMainWindow):
 
     def save(self):
         self._map.generateMinimap()
-        if self._filepath == "":
+        if not self._filepath:
             self.saveAs()
         else:
             BinaryWriter.dump(self._filepath, self._map.write())
@@ -912,9 +912,7 @@ class IndoorMapRenderer(QWidget):
             for room in self._map.rooms:
                 hook1, hook2 = self.getConnectedHooks(fakeCursorRoom, room)
                 if hook1 is not None:
-                    self._cursorPoint = (
-                        room.position - fakeCursorRoom.hookPosition(hook1, False) + room.hookPosition(hook2, False)
-                    )
+                    self._cursorPoint = ( room.position - fakeCursorRoom.hookPosition(hook1, False) + room.hookPosition(hook2, False) )
 
         self._underMouseRoom = None
         for room in self._map.rooms:

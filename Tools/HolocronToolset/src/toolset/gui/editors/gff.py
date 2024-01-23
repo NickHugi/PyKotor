@@ -456,7 +456,7 @@ class GFFEditor(Editor):
             - Integer, float, string, vector, etc
         - Refreshes the item text
         """
-        if len(self.ui.treeView.selectedIndexes()) == 0:
+        if not self.ui.treeView.selectedIndexes():
             return
 
         proxyIndex = self.ui.treeView.selectedIndexes()[0]
@@ -486,12 +486,7 @@ class GFFEditor(Editor):
             vec3 = Vector3(self.ui.xVec3Spin.value(), self.ui.yVec3Spin.value(), self.ui.zVec3Spin.value())
             item.setData(vec3, _VALUE_NODE_ROLE)
         elif item.data(_TYPE_NODE_ROLE) == GFFFieldType.Vector4:
-            vec4 = Vector4(
-                self.ui.xVec4Spin.value(),
-                self.ui.yVec4Spin.value(),
-                self.ui.zVec4Spin.value(),
-                self.ui.wVec4Spin.value(),
-            )
+            vec4 = Vector4(self.ui.xVec4Spin.value(), self.ui.yVec4Spin.value(), self.ui.zVec4Spin.value(), self.ui.wVec4Spin.value())
             item.setData(vec4, _VALUE_NODE_ROLE)
         elif item.data(_TYPE_NODE_ROLE) == GFFFieldType.LocalizedString:
             item.data(_VALUE_NODE_ROLE).stringref = self.ui.stringrefSpin.value()

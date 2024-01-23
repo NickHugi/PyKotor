@@ -47,7 +47,7 @@ from toolset.gui.windows.indoor_builder import IndoorMapBuilder
 from toolset.gui.windows.module_designer import ModuleDesigner
 from toolset.utils.misc import openLink
 from toolset.utils.window import addWindow, openResourceEditor
-from utility.error_handling import assert_with_variable_trace, format_exception_with_variables, universal_simplify_exception
+from utility.error_handling import assert_with_variable_trace, enforce_instance_cast, format_exception_with_variables, universal_simplify_exception
 from utility.system.path import Path, PurePath
 from watchdog.events import FileSystemEventHandler
 from watchdog.observers import Observer
@@ -705,13 +705,10 @@ class ToolWindow(QMainWindow):
 
         # If the data has been successfully been loaded, dump the data into the models
         if name in self.installations:
-
-            assert_with_variable_trace(isinstance(self.active, HTInstallation))
-            assert isinstance(self.active, HTInstallation)  # noqa: S101
-
+            active_resource: HTInstallation = enforce_instance_cast(self.active, HTInstallation)
             print("Loading installation resources into UI...")
-            self.ui.coreWidget.setResources(self.active.chitin_resources())
-            self.ui.texturesWidget.setInstallation(self.active)
+            self.ui.coreWidget.setResources(active_resource.chitin_resources())
+            self.ui.texturesWidget.setInstallation(active_resource)
 
             print("Updating menus...")
             self.updateMenus()

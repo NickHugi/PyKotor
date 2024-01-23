@@ -18,7 +18,10 @@ if TYPE_CHECKING:
 def onAppCrash(etype: type[BaseException], e: BaseException, tback: TracebackType | None):
     from utility.error_handling import format_exception_with_variables
     with pathlib.Path("errorlog.txt").open("a", encoding="utf-8") as file:
-        file.writelines(format_exception_with_variables(e, etype, tback))
+        try:  # sourcery skip: do-not-use-bare-except
+            file.writelines(format_exception_with_variables(e, etype, tback))
+        except:  # noqa: E722
+            file.writelines(str(e))
         file.write("\n----------------------\n")
     raise e
 
@@ -49,9 +52,8 @@ def fix_sys_and_cwd_path():
     """
     def update_sys_path(path: pathlib.Path):
         working_dir = str(path)
-        if working_dir in sys.path:
-            sys.path.remove(working_dir)
-        sys.path.append(working_dir)
+        if working_dir not in sys.path:
+            sys.path.append(working_dir)
 
     pykotor_path = pathlib.Path(__file__).parents[4] / "Libraries" / "PyKotor" / "src" / "pykotor"
     if pykotor_path.exists():
@@ -79,8 +81,7 @@ if __name__ == "__main__":
 
     if is_frozen():
         multiprocessing.freeze_support()
-    else:
-        fix_sys_and_cwd_path()
+    fix_sys_and_cwd_path()
 
     app = QApplication(sys.argv)
 
