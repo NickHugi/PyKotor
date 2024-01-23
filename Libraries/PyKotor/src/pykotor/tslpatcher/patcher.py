@@ -265,19 +265,24 @@ class ModInstaller:
         exists: bool | None = False,  # noqa: FBT002
         capsule: Capsule | None = None,
     ) -> bool:
-        """The name of this function is misleading, it only returns False if the capsule was not found (error)
+        """Log information about the patch, including source and destination.
+
+        The name of this function can be misleading, it only returns False if the capsule was not found (error)
         or an InstallList patch already exists at the output location without the Replace#= prefix. Otherwise, it is
         mostly used for logging purposes.
 
         Args:
         ----
-            patch: PatcherModifications - The patch details
-            exists: bool | None - Whether the target file already exists
-            capsule: Capsule | None - The target capsule if patching one
+            patch (PatcherModifications): - The patch details
+            exists (bool | None): - Whether the target file already exists
+            capsule (Capsule | None): - The target capsule if patching one
 
         Returns:
         -------
             bool - Whether the patch should be applied
+                False if the capsule was not found (error)
+                False if an InstallList patch already exists at destination and patch configured to replace existing file or not (!ReplaceFile/#Replace=filename)
+                True otherwise.
 
         Processing Logic:
         ----------------
@@ -365,9 +370,9 @@ class ModInstaller:
                 if not data_to_patch:
                     self.log.add_note(f"'{patch.sourcefile}' has no content/data and is completely empty.")
 
-                patched_data: bytes = patch.patch_resource(data_to_patch, memory, self.log, self.game)
-                if patched_data is True:  # for nwnnsscomp
-                    continue
+                patched_data: bytes | Literal[True] = patch.patch_resource(data_to_patch, memory, self.log, self.game)
+                if patched_data is True:
+                    continue  # patch_resource determined that this file can be skipped. e.g. if nwnnsscomp tries to compile an Include script with no entrypoint
                 if capsule is not None:
                     self.handle_override_type(patch)
                     capsule.add(*ResourceIdentifier.from_path(patch.saveas), patched_data)
