@@ -23,7 +23,7 @@ if TYPE_CHECKING:
     from pykotor.tslpatcher.mods.twoda import Modifications2DA
 
 
-class LogLevel(IntEnum):
+class LogLevel(IntEnum):  # TODO: implement into HoloPatcher
     # Docstrings taken from ChangeEdit docs
 
     NOTHING = 0

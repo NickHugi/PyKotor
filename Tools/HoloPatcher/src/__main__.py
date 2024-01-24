@@ -1025,26 +1025,34 @@ class App(tk.Tk):
 
         num_errors: int = len(self.logger.errors)
         num_warnings: int = len(self.logger.warnings)
+        num_patches: int = installer.config().patch_count()
         self.logger.add_note(
-            f"The installation is complete with {num_errors} errors and {num_warnings} warnings. "
-            f"Total install time: {time_str}",
+            f"The installation is complete with {num_errors} errors and {num_warnings} warnings.{os.linesep}"
+            f"Total install time: {time_str}{os.linesep}"
+            f"Total patches: {num_patches}",
         )
         if num_errors > 0:
             messagebox.showerror(
                 "Install completed with errors!",
-                f"The install completed with {num_errors} errors and {num_warnings} warnings! The installation may not have been successful, check the logs for more details.{os.linesep*2}Total install time: {time_str}",
+                f"The install completed with {num_errors} errors and {num_warnings} warnings! The installation may not have been successful, check the logs for more details."
+                f"{os.linesep*2}Total install time: {time_str}"
+                f"{os.linesep}Total patches: {num_patches}",
             )
             if self.one_shot:
                 sys.exit(ExitCode.INSTALL_COMPLETED_WITH_ERRORS)
         elif num_warnings > 0:
             messagebox.showwarning(
                 "Install completed with warnings",
-                f"The install completed with {num_warnings} warnings! Review the logs for details. The script in the 'uninstall' folder of the mod directory will revert these changes.{os.linesep*2}Total install time: {time_str}",
+                f"The install completed with {num_warnings} warnings! Review the logs for details. The script in the 'uninstall' folder of the mod directory will revert these changes."
+                f"{os.linesep*2}Total install time: {time_str}"
+                f"{os.linesep}Total patches: {num_patches}",
             )
         else:
             messagebox.showinfo(
                 "Install complete!",
-                f"Check the logs for details on what has been done. Utilize the script in the 'uninstall' folder of the mod directory to revert these changes.{os.linesep*2}Total install time: {time_str}",
+                f"Check the logs for details on what has been done. Utilize the script in the 'uninstall' folder of the mod directory to revert these changes."
+                f"{os.linesep*2}Total install time: {time_str}"
+                f"{os.linesep}Total patches: {num_patches}",
             )
             if self.one_shot:
                 sys.exit(ExitCode.SUCCESS)
