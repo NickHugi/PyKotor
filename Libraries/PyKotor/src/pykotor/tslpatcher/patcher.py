@@ -354,9 +354,8 @@ class ModInstaller:
             if should_cancel is not None and should_cancel.is_set():
                 print("ModInstaller.install() received termination request, cancelling...")
                 sys.exit()
-            print("No cancellation requested... continuing...")
-            if self.game.is_ios():  # TODO:
-                patch.destination = patch.destination.lower()
+            #if self.game.is_ios():  # TODO:
+            #    patch.destination = patch.destination.lower()
             output_container_path: CaseAwarePath = self.game_path / patch.destination
             try:
                 exists, capsule = self.handle_capsule_and_backup(patch, output_container_path)
@@ -372,13 +371,15 @@ class ModInstaller:
 
                 patched_data: bytes | Literal[True] = patch.patch_resource(data_to_patch, memory, self.log, self.game)
                 if patched_data is True:
-                    continue  # patch_resource determined that this file can be skipped. e.g. if nwnnsscomp tries to compile an Include script with no entrypoint
+                    self.log.add_verbose(f"Skipping '{patch.sourcefile}' - patch_resource determined that this file can be skipped.")
+                    continue  # e.g. if nwnnsscomp tries to compile an Include script with no entrypoint
+
                 if capsule is not None:
                     self.handle_override_type(patch)
                     capsule.add(*ResourceIdentifier.from_path(patch.saveas), patched_data)
                 else:
-                    if self.game.is_ios():  # TODO:
-                        patch.saveas = patch.saveas.lower()
+                    #if self.game.is_ios():  # TODO:
+                    #    patch.saveas = patch.saveas.lower()
                     output_container_path.mkdir(exist_ok=True, parents=True)  # Create non-existing folders when the patch demands it.
                     BinaryWriter.dump(output_container_path / patch.saveas, patched_data)
                 self.log.complete_patch()
@@ -387,7 +388,7 @@ class ModInstaller:
                 print(format_exception_with_variables(e))
 
         if config.save_processed_scripts == 0 and temp_script_folder is not None and temp_script_folder.safe_isdir():
-            self.log.add_note(f"Cleaning temporary script folder at {temp_script_folder} (set 'SaveProcessedScripts=1' in [Settings] to keep these scripts)")
+            self.log.add_note(f"Cleaning temporary script folder at '{temp_script_folder}' (hint: use 'SaveProcessedScripts=1' in [Settings] to keep these scripts)")
             shutil.rmtree(temp_script_folder, ignore_errors=True)
 
         num_patches_completed: int = config.patch_count()

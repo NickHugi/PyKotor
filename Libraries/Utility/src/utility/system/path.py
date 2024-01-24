@@ -446,14 +446,15 @@ class BasePath(BasePurePath):
         except Exception as e:  # noqa: BLE001
             print(format_exception_with_variables(e,  message="This exception has been suppressed and is only relevant for debug purposes."))
             return
-        while True:
-            try:
-                yield next(iterator)  # type: ignore[misc, reportGeneralTypeIssues]
-            except StopIteration:  # noqa: PERF203
-                break  # StopIteration means there are no more files to iterate over
-            except Exception as e:  # noqa: BLE001
-                print(format_exception_with_variables(e,  message="This exception has been suppressed and is only relevant for debug purposes."))
-                continue  # Ignore the file that caused an exception and move to the next
+        else:
+            while True:
+                try:
+                    yield next(iterator)  # type: ignore[misc, reportGeneralTypeIssues]
+                except StopIteration:  # noqa: PERF203
+                    break  # StopIteration means there are no more files to iterate over
+                except Exception as e:  # noqa: BLE001
+                    print(format_exception_with_variables(e,  message="This exception has been suppressed and is only relevant for debug purposes."))
+                    continue  # Ignore the file that caused an exception and move to the next
 
     # Safe iterdir operation
     def safe_iterdir(  # type: ignore[misc]
@@ -464,14 +465,15 @@ class BasePath(BasePurePath):
         except Exception as e:  # noqa: BLE001
             print(format_exception_with_variables(e,  message="This exception has been suppressed and is only relevant for debug purposes."))
             return
-        while True:
-            try:
-                yield next(iterator)  # type: ignore[misc, reportGeneralTypeIssues]
-            except StopIteration:  # noqa: PERF203
-                break  # StopIteration means there are no more files to iterate over
-            except Exception as e:  # noqa: BLE001
-                print(format_exception_with_variables(e,  message="This exception has been suppressed and is only relevant for debug purposes."))
-                continue  # Ignore the file that caused an exception and move to the next
+        else:
+            while True:
+                try:
+                    yield next(iterator)  # type: ignore[misc, reportGeneralTypeIssues]
+                except StopIteration:  # noqa: PERF203
+                    break  # StopIteration means there are no more files to iterate over
+                except Exception as e:  # noqa: BLE001
+                    print(format_exception_with_variables(e,  message="This exception has been suppressed and is only relevant for debug purposes."))
+                    continue  # Ignore the file that caused an exception and move to the next
 
     # Safe is_dir operation
     def safe_isdir(self: Path) -> bool | None:  # type: ignore[misc]
@@ -483,8 +485,8 @@ class BasePath(BasePurePath):
                 return False
             try:
                 exists, is_file, is_dir = self._check_path_win_api()
-            except Exception as e3:
-                print(format_exception_with_variables(e3,  message="This exception has been suppressed and is only relevant for debug purposes."))
+            except Exception as e2:
+                print(format_exception_with_variables(e2,  message="This exception has been suppressed and is only relevant for debug purposes."))
             else:
                 return is_dir
         return None
@@ -499,8 +501,8 @@ class BasePath(BasePurePath):
                 return False
             try:
                 exists, is_file, is_dir = self._check_path_win_api()
-            except Exception as e3:
-                print(format_exception_with_variables(e3,  message="This exception has been suppressed and is only relevant for debug purposes."))
+            except Exception as e2:
+                print(format_exception_with_variables(e2,  message="This exception has been suppressed and is only relevant for debug purposes."))
             else:
                 return is_file
         return None
@@ -509,18 +511,22 @@ class BasePath(BasePurePath):
     def safe_exists(self: Path) -> bool | None:  # type: ignore[misc]
         self_str: str | None = None
         try:
-            self_str = str(self)
-            return os.access(self_str, os.F_OK)
+            return self.exists()
         except Exception as e:
             print(format_exception_with_variables(e,  message="This exception has been suppressed and is only relevant for debug purposes."))
-            if os.name == "posix":
-                return None
             try:
-                exists, is_file, is_dir = self._check_path_win_api(self_str)
-            except Exception as e3:
-                print(format_exception_with_variables(e3,  message="This exception has been suppressed and is only relevant for debug purposes."))
-            else:
-                return exists
+                self_str = str(self)  # caching as variable for performance reasons (such as CaseAwarePath)
+                return os.access(self_str, os.F_OK)
+            except Exception as e2:
+                print(format_exception_with_variables(e2,  message="This exception has been suppressed and is only relevant for debug purposes."))
+                if os.name == "posix":
+                    return None
+                try:
+                    exists, is_file, is_dir = self._check_path_win_api(self_str)
+                except Exception as e3:
+                    print(format_exception_with_variables(e3,  message="This exception has been suppressed and is only relevant for debug purposes."))
+                else:
+                    return exists
         return None
 
 
@@ -530,7 +536,7 @@ class BasePath(BasePurePath):
         GetFileAttributes = ctypes.windll.kernel32.GetFileAttributesW
         INVALID_FILE_ATTRIBUTES: int = DWORD(-1).value
 
-        self_str = str(self) if cached_self_str is None else cached_self_str
+        self_str: str = str(self) if cached_self_str is None else cached_self_str
         attrs: int = GetFileAttributes(self_str)
         if attrs == INVALID_FILE_ATTRIBUTES:
             return False, False, False  # Path does not exist or cannot be accessed
@@ -548,7 +554,7 @@ class BasePath(BasePurePath):
         follow_symlinks=False,
     ) -> Generator[tuple[Self, list[str], list[str]], Any, None]:  # type: ignore[reportGeneralTypeIssues]
         """Walk the directory tree from this directory, similar to os.walk()."""  # noqa: D402
-        paths = [self]
+        paths: list[Self] = [self]
 
         while paths:
             path = paths.pop()
@@ -609,7 +615,6 @@ class BasePath(BasePurePath):
             msg = "Not supported on Windows."
             raise OSError(msg)
 
-        highest_perm: int = 0
         # Retrieve the current user's UID and GID
         current_uid = uid if uid is not None else os.getuid()
         current_gid = gid if gid is not None else os.getgid()
@@ -624,6 +629,7 @@ class BasePath(BasePurePath):
         user_perms: int = (mode >> 6) & 0o7  # sourcery skip: move-assign
         group_perms: int = (mode >> 3) & 0o7
         other_perms: int = mode & 0o7
+        highest_perm: int = 0
 
         # If the user is the owner, user_perms apply
         if current_uid == owner_uid:

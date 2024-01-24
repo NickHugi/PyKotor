@@ -383,7 +383,7 @@ class App(tk.Tk):
         self.withdraw()
         self.handle_console_mode()
         if cmdline_args.install:
-            self.begin_install_thread()
+            self.begin_install_thread(self.force_stop_thread)
         if cmdline_args.uninstall:
             self.uninstall_selected_mod()
         if cmdline_args.validate:
@@ -470,13 +470,16 @@ class App(tk.Tk):
             return
         self.set_active_install(install_running=True)
         self.clear_main_text()
+        fully_ran: bool = True
         try:
             uninstaller = ModUninstaller(backup_parent_folder, Path(self.gamepaths.get()), self.logger)
-            uninstaller.uninstall_selected_mod()
+            fully_ran = uninstaller.uninstall_selected_mod()
         except Exception as e:  # noqa: BLE001
             self._handle_exception_during_install(e)
         finally:
             self.set_active_install(install_running=False)
+        if not fully_ran:
+            self.on_namespace_option_chosen(tk.Event())
 
     def async_raise(self, tid, exctype):
         """Raises an exception in the threads with id tid."""
@@ -698,9 +701,12 @@ class App(tk.Tk):
             - Handles errors opening the mod.
         """
         try:
-            directory_path_str: os.PathLike | str = default_directory_path_str or filedialog.askdirectory()
-            if not directory_path_str:
-                return
+            if default_directory_path_str is None:
+                directory_path_str: os.PathLike | str = filedialog.askdirectory()
+                if not directory_path_str:
+                    return
+            else:
+                directory_path_str = default_directory_path_str
 
             tslpatchdata_path = CaseAwarePath(directory_path_str, "tslpatchdata")
             # handle when a user selects 'tslpatchdata' instead of mod root
@@ -728,6 +734,8 @@ class App(tk.Tk):
         else:
             if default_directory_path_str:
                 self.browse_button.place_forget()
+            if not namespace_path.safe_isfile():
+                self.namespaces_combobox.place_forget()
 
     def open_kotor(
         self,
@@ -888,7 +896,7 @@ class App(tk.Tk):
             self._handle_general_exception(e, "An unexpected error occurred during the installation and the program was forced to exit")
             sys.exit(ExitCode.EXCEPTION_DURING_INSTALL)
 
-    def begin_install_thread(self, should_cancel_thread: Callable[..., bool]):
+    def begin_install_thread(self, should_cancel_thread: Event):
         """Starts the mod installation thread. This function is called directly when utilizing the CLI.
 
         Args:
@@ -903,7 +911,7 @@ class App(tk.Tk):
             - Create a ModInstaller instance
             - Try to execute the installation
             - Handle any exceptions during installation
-            - Set the install status to not running.
+            - Finally set the install status to not running.
         """
         if not self.preinstall_validate_chosen():
             return
@@ -973,7 +981,7 @@ class App(tk.Tk):
     def _execute_mod_install(
         self,
         installer: ModInstaller,
-        should_cancel_thread,
+        should_cancel_thread: Event,
     ):
         """Executes the mod installation.
 

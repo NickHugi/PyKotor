@@ -213,7 +213,7 @@ class ModUninstaller:
 
         return most_recent_backup_folder, existing_files, files_in_backup, folder_count
 
-    def uninstall_selected_mod(self):
+    def uninstall_selected_mod(self) -> bool:
         """Uninstalls the selected mod using the most recent backup folder created during the last install.
 
         Processing Logic:
@@ -232,7 +232,7 @@ class ModUninstaller:
         """
         most_recent_backup_folder, existing_files, files_in_backup, folder_count = self.get_backup_info()
         if not most_recent_backup_folder:
-            return
+            return False
         self.log.add_note(f"Using backup folder '{most_recent_backup_folder}'")
 
         if len(files_in_backup) < 6:  # noqa: PLR2004[6 represents a small number of files to display]
@@ -242,7 +242,7 @@ class ModUninstaller:
             "Confirmation",
             f"Really uninstall {len(existing_files)} files and restore the most recent backup (containing {len(files_in_backup)} files and {folder_count} folders)?",
         ):
-            return
+            return False
         try:
             self.restore_backup(most_recent_backup_folder, existing_files, files_in_backup)
         except Exception as e:  # noqa: BLE001
@@ -253,16 +253,25 @@ class ModUninstaller:
             )
         while messagebox.askyesno(
             "Uninstall completed!",
-            f"Deleted {len(existing_files)} files and successfully restored backup {most_recent_backup_folder.name}{os.linesep*2}"
-            f"Would you like to delete the backup {most_recent_backup_folder.name} now that it's been restored?",
+            f"Deleted {len(existing_files)} files and successfully restored backup created on {most_recent_backup_folder.name}{os.linesep*2}"
+            f"Would you like to delete the backup created on {most_recent_backup_folder.name} since it now has been restored?",
         ):
             try:
                 shutil.rmtree(most_recent_backup_folder)
                 self.log.add_note(f"Deleted restored backup '{most_recent_backup_folder.name}'")
             except PermissionError:  # noqa: PERF203
-                messagebox.showerror(
+                result: bool | None = messagebox.askyesnocancel(
                     "Permission Error",
-                    "Unable to delete the restored backup due to permission issues. Please try again.",
+                    "Unable to delete the restored backup due to permission issues. Would you like to gain permission and try again?",
                 )
+                if result is True:
+                    print("Gaining permission, please wait...")
+                    most_recent_backup_folder.gain_access(recurse=True)
+                    continue
+                if result is False:
+                    continue
+                if result is None:
+                    break
             else:
                 break
+        return True
