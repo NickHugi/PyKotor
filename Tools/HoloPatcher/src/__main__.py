@@ -462,7 +462,7 @@ class App(tk.Tk):
         if not self.preinstall_validate_chosen():
             return
         backup_parent_folder = Path(self.mod_path, "backup")
-        if not backup_parent_folder.safe_exists():
+        if not backup_parent_folder.safe_isdir():
             messagebox.showerror(
                 "Backup folder empty/missing.",
                 f"Could not find backup folder '{backup_parent_folder}'{os.linesep*2}Are you sure the mod is installed?",
@@ -618,14 +618,14 @@ class App(tk.Tk):
             # Strip info.rtf and display in the main window frame.
             info_rtf_path = CaseAwarePath(self.mod_path, "tslpatchdata", namespace_option.rtf_filepath())
             info_rte_path = CaseAwarePath(self.mod_path, "tslpatchdata", namespace_option.rtf_filepath()).with_suffix(".rte")
-            if not info_rtf_path.safe_exists() and not info_rte_path.safe_exists():
+            if not info_rtf_path.safe_isfile() and not info_rte_path.safe_isfile():
                 messagebox.showwarning("No info.rtf", f"Could not load the info rtf for this mod, file '{info_rtf_path}' not found on disk.")
                 return
-            if info_rte_path.safe_exists():
+            if info_rte_path.safe_isfile():
                 data: bytes = BinaryReader.load_file(info_rte_path)
                 rtf_text: str = decode_bytes_with_fallbacks(data)
                 self.load_rte_content(rtf_text)
-            elif info_rtf_path.safe_exists():
+            elif info_rtf_path.safe_isfile():
                 data = BinaryReader.load_file(info_rtf_path)
                 rtf_text = decode_bytes_with_fallbacks(data)
                 self.set_stripped_rtf_text(rtf_text)
@@ -704,16 +704,16 @@ class App(tk.Tk):
 
             tslpatchdata_path = CaseAwarePath(directory_path_str, "tslpatchdata")
             # handle when a user selects 'tslpatchdata' instead of mod root
-            if not tslpatchdata_path.safe_exists() and tslpatchdata_path.parent.name.lower() == "tslpatchdata":
+            if not tslpatchdata_path.safe_isdir() and tslpatchdata_path.parent.name.lower() == "tslpatchdata":
                 tslpatchdata_path = tslpatchdata_path.parent
 
             self.mod_path = str(tslpatchdata_path.parent)
             namespace_path: CaseAwarePath = tslpatchdata_path / "namespaces.ini"
             changes_path: CaseAwarePath = tslpatchdata_path / "changes.ini"
 
-            if namespace_path.safe_exists():
+            if namespace_path.safe_isfile():
                 self.load_namespace(NamespaceReader.from_filepath(namespace_path))
-            elif changes_path.safe_exists():
+            elif changes_path.safe_isfile():
                 config_reader: ConfigReader = ConfigReader.from_filepath(changes_path)
                 namespaces: list[PatcherNamespace] = [config_reader.config.as_namespace(changes_path)]
                 self.load_namespace(namespaces, config_reader)
@@ -848,7 +848,7 @@ class App(tk.Tk):
                 "Wait for the previous task to finish.",
             )
             return False
-        if not self.mod_path or not CaseAwarePath(self.mod_path).safe_exists():
+        if not self.mod_path or not CaseAwarePath(self.mod_path).safe_isdir():
             return _if_missing(
                 "No mod chosen",
                 "Select your mod directory first.",
@@ -860,7 +860,7 @@ class App(tk.Tk):
                 "Select your KOTOR directory first.",
             )
         case_game_path = CaseAwarePath(game_path)
-        if not case_game_path.safe_exists():
+        if not case_game_path.safe_isdir():
             return _if_missing(
                 "Invalid KOTOR directory chosen",
                 "Select a valid path to your KOTOR install.",

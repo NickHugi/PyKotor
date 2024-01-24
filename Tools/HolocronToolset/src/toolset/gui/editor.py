@@ -354,9 +354,9 @@ class Editor(QMainWindow):
 
         erftype: ERFType = ERFType.from_extension(self._filepath)
         c_filepath: CaseAwarePath = CaseAwarePath.pathify(self._filepath)
-        if c_filepath.exists():
+        if c_filepath.is_file():
             erf: ERF = read_erf(c_filepath)
-        elif c_filepath.with_suffix("rim").exists():
+        elif c_filepath.with_suffix(".rim").is_file():
             module.rim_to_mod(c_filepath)
             erf = read_erf(c_filepath)
         else:  # originally in a bif, user chose to save into erf/mod.

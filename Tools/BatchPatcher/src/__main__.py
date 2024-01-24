@@ -24,13 +24,13 @@ if getattr(sys, "frozen", False) is False:
             sys.path.append(working_dir)
 
     pykotor_font_path = pathlib.Path(__file__).parents[3] / "Libraries" / "PyKotorFont" / "src" / "pykotor"
-    if pykotor_font_path.exists():
+    if pykotor_font_path.is_dir():
         add_sys_path(pykotor_font_path.parent)
     pykotor_path = pathlib.Path(__file__).parents[3] / "Libraries" / "PyKotor" / "src" / "pykotor"
-    if pykotor_path.exists():
+    if pykotor_path.is_dir():
         add_sys_path(pykotor_path.parent)
     utility_path = pathlib.Path(__file__).parents[3] / "Libraries" / "Utility" / "src" / "utility"
-    if utility_path.exists():
+    if utility_path.is_dir():
         add_sys_path(utility_path.parent)
 
 
@@ -363,7 +363,7 @@ def patch_and_save_noncapsule(resource: FileResource, savedir: Path | None = Non
         BinaryWriter.dump(new_path, new_data)
     elif isinstance(patched_data, TPC):
         txi_file = resource.filepath().with_suffix(".txi")
-        if txi_file.exists():
+        if txi_file.is_file():
             log_output("Embedding TXI information...")
             data: bytes = BinaryReader.load_file(txi_file)
             txi_text: str = decode_bytes_with_fallbacks(data)
@@ -521,10 +521,11 @@ def patch_install(install_path: os.PathLike | str):
 
 def is_kotor_install_dir(path: os.PathLike | str) -> bool:
     c_path: CaseAwarePath = CaseAwarePath(path)
-    return bool(c_path.safe_isdir() and c_path.joinpath("chitin.key").safe_exists())
+    return bool(c_path.safe_isdir() and c_path.joinpath("chitin.key").safe_isfile())
 
 
 def determine_input_path(path: Path):
+    # sourcery skip: assign-if-exp, reintroduce-else
     if not path.safe_exists() or path.resolve() == Path.cwd().resolve():
         msg = "Path does not exist"
         raise FileNotFoundError(msg)
@@ -558,7 +559,7 @@ def do_main_patchloop():
             return messagebox.showwarning("No language chosen", "Select a language first if you want to translate")
         if SCRIPT_GLOBALS.create_fonts:
             return messagebox.showwarning("No language chosen", "Select a language first to create fonts.")
-    if SCRIPT_GLOBALS.create_fonts and (not Path(SCRIPT_GLOBALS.font_path).name or not Path(SCRIPT_GLOBALS.font_path).safe_exists()):
+    if SCRIPT_GLOBALS.create_fonts and (not Path(SCRIPT_GLOBALS.font_path).name or not Path(SCRIPT_GLOBALS.font_path).safe_isfile()):
         return messagebox.showwarning(f"Font path not found {SCRIPT_GLOBALS.font_path}", "Please set your font path to a valid TTF font file.")
     if SCRIPT_GLOBALS.translate and not SCRIPT_GLOBALS.translation_applied:
         return messagebox.showwarning("Bad translation args", "Cannot start translation, you have not applied your translation options. (api key, db path, server url etc)")

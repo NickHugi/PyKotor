@@ -158,6 +158,7 @@ class ResourceType(Enum):
     TwoDA_JSON = ResourceTuple(50024, "2da.json", "2D Arrays", "plaintext")
     TLK_JSON = ResourceTuple(50025, "tlk.json", "Talk Tables", "plaintext")
     LIP_JSON = ResourceTuple(50026, "lip.json", "Lips", "plaintext")
+    RES_XML = ResourceTuple(50027, "res.xml", "Save Data", "plaintext")
 
     def __new__(cls, *args, **kwargs):
         obj: ResourceType = object.__new__(cls)  # type: ignore[annotation-unchecked]

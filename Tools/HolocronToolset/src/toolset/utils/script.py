@@ -5,6 +5,7 @@ import sys
 
 from pykotor.common.misc import Game
 from pykotor.common.stream import BinaryReader, BinaryWriter
+from pykotor.resource.formats.ncs.compiler.classes import CompileError
 from pykotor.resource.formats.ncs.compilers import ExternalNCSCompiler
 from pykotor.resource.formats.ncs.ncs_auto import bytes_ncs, compile_nss
 from pykotor.tools.path import CaseAwarePath
@@ -39,17 +40,17 @@ def decompileScript(compiled: bytes, tsl: bool) -> str:
     global_settings = GlobalSettings()
     extract_path = Path(global_settings.extractPath)
 
-    if not extract_path.safe_exists():
+    if not extract_path.safe_isdir():
         extract_path = Path(QFileDialog.getExistingDirectory(None, "Select a temp directory"))
-        if not extract_path.safe_exists():
+        if not extract_path.safe_isdir():
             msg = "Temp directory has not been set or is invalid."
             raise NoConfigurationSetError(msg)
 
     ncs_decompiler_path = Path(global_settings.ncsDecompilerPath)
-    if not ncs_decompiler_path.name or ncs_decompiler_path.suffix.lower() != ".exe" or not ncs_decompiler_path.safe_exists():
+    if not ncs_decompiler_path.name or ncs_decompiler_path.suffix.lower() != ".exe" or not ncs_decompiler_path.safe_isfile():
         ncs_decompiler_path, _ = QFileDialog.getOpenFileName(None, "Select the NCS Decompiler executable")
         ncs_decompiler_path = Path(ncs_decompiler_path)
-        if not ncs_decompiler_path.safe_exists():
+        if not ncs_decompiler_path.safe_isfile():
             global_settings.ncsDecompilerPath = ""
             msg = "NCS Decompiler has not been set or is invalid."
             raise NoConfigurationSetError(msg)
@@ -63,7 +64,10 @@ def decompileScript(compiled: bytes, tsl: bool) -> str:
 
     try:
         game = Game.K2 if tsl else Game.K1
-        ExternalNCSCompiler(ncs_decompiler_path).decompile_script(tempCompiledPath, tempDecompiledPath, game)
+        stdout, stderr = ExternalNCSCompiler(ncs_decompiler_path).decompile_script(tempCompiledPath, tempDecompiledPath, game)
+        print(stdout, "\n", stderr)
+        if stderr:
+            raise CompileError(stderr)  # noqa: TRY301
         return BinaryReader.load_file(tempDecompiledPath).decode(encoding="windows-1252")
     except Exception as e:  # noqa: BLE001
         with Path("errorlog.txt").open("w") as f:
@@ -75,6 +79,7 @@ def decompileScript(compiled: bytes, tsl: bool) -> str:
 
 
 def compileScript(source: str, tsl: bool) -> bytes | None:
+    # sourcery skip: assign-if-exp, introduce-default-else
     """Returns the NCS bytes of compiled source script using either nwnnsscomp.exe (Windows only) or our built-in compiler. If no NSS Compiler is selected, prompts the user to find the executable.
 
     Current implementation copies the NSS to a temporary directory (configured in settings), compiles it there,
@@ -99,9 +104,9 @@ def compileScript(source: str, tsl: bool) -> bytes | None:
     global_settings = GlobalSettings()
     extract_path = Path(global_settings.extractPath)
 
-    if not extract_path.safe_exists():
+    if not extract_path.safe_isdir():
         extract_path = Path(QFileDialog.getExistingDirectory(None, "Select a temp directory"))
-        if not extract_path.safe_exists():
+        if not extract_path.safe_isdir():
             msg = "Temp directory has not been set or is invalid."
             raise NoConfigurationSetError(msg)
 
@@ -128,10 +133,10 @@ def _compile_windows(
     tsl: bool,
 ) -> bytes:
     nss_compiler_path = Path(global_settings.nssCompilerPath)
-    if not nss_compiler_path.safe_exists():
+    if not nss_compiler_path.safe_isfile():
         lookup_path, _ = QFileDialog.getOpenFileName(None, "Select the NCS Compiler executable")
         nss_compiler_path = Path(lookup_path)
-        if not nss_compiler_path.safe_exists():
+        if not nss_compiler_path.safe_isfile():
             msg = "NCS Compiler has not been set or is invalid."
             raise NoConfigurationSetError(msg)
 
@@ -153,7 +158,7 @@ def _compile_windows(
     # Need to try unify this so each platform uses the same version and try
     # move away from registry keys (I don't even know how Mac/Linux determine KotOR's installation path).
 
-    if not tempCompiledPath.safe_exists():
+    if not tempCompiledPath.safe_isfile():
         raise FileNotFoundError(f"Could not find temp compiled script at {tempCompiledPath}")  # noqa: TRY003, EM102
     return BinaryReader.load_file(tempCompiledPath)
 

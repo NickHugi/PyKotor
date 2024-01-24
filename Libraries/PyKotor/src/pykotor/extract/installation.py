@@ -213,7 +213,7 @@ class Installation:
             tlk_path = self._path / "dialog.tlk"
             yield FileResource("dialog", ResourceType.TLK, tlk_path.stat().st_size, 0, tlk_path)
             female_tlk_path = self._path / "dialogf.tlk"
-            if female_tlk_path.safe_exists():
+            if female_tlk_path.safe_isfile():
                 yield FileResource("dialogf", ResourceType.TLK, female_tlk_path.stat().st_size, 0, female_tlk_path)
         return generator()
 
@@ -382,7 +382,7 @@ class Installation:
         resources: CaseInsensitiveDict[list[FileResource]] | list[FileResource] = CaseInsensitiveDict() if capsule_check else []
 
         r_path = Path(str(path))
-        if not r_path.safe_exists():
+        if not r_path.safe_isdir():
             print(f"The '{r_path.name}' folder did not exist when loading the installation at '{self._path}', skipping...")
             return resources
 
@@ -423,7 +423,7 @@ class Installation:
     def load_chitin(self):
         """Reloads the list of resources in the Chitin linked to the Installation."""
         chitin_path: CaseAwarePath = self._path / "chitin.key"
-        chitin_exists: bool | None = chitin_path.safe_exists()
+        chitin_exists: bool | None = chitin_path.safe_isfile()
         if chitin_exists:
             print(f"Loading BIFs from chitin.key at '{self._path}'...")
             self._chitin = list(Chitin(key_path=chitin_path))
@@ -1654,7 +1654,7 @@ class Installation:
         stringrefs: list[int] = [locstring.stringref for locstring in queries]
 
         batch: dict[int, StringResult] = self.talktable().batch(stringrefs)
-        female_batch: dict[int, StringResult] = self.female_talktable().batch(stringrefs) if self.female_talktable().path().safe_exists() else {}
+        female_batch: dict[int, StringResult] = self.female_talktable().batch(stringrefs) if self.female_talktable().path().safe_isfile() else {}
 
         results: dict[LocalizedString, str] = {}
         for locstring in queries:

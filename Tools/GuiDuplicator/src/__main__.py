@@ -8,7 +8,7 @@ from fractions import Fraction
 
 if getattr(sys, "frozen", False) is False:
     pykotor_path = pathlib.Path(__file__).parents[2] / "pykotor"
-    if pykotor_path.exists():
+    if pykotor_path.is_dir():
         working_dir = str(pykotor_path.parent)
         if working_dir in sys.path:
             sys.path.remove(working_dir)

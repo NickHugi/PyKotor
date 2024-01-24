@@ -979,7 +979,7 @@ class KitDownloader(QDialog):
         for kitName, kitDict in updateInfoData["kits"].items():
             kitId = kitDict["id"]
             kitPath = Path(f"kits/{kitId}.json")
-            if kitPath.safe_exists():
+            if kitPath.safe_isfile():
                 button = QPushButton("Already Downloaded")
                 button.setEnabled(True)
                 localKitDict = None
@@ -1107,15 +1107,15 @@ class KitDownloader(QDialog):
                     zip_file.extractall(tempdir)
                     src_path = str(tempdir_path / kitId)
                     this_kit_dst_path = kits_path / kitId
-                    print(f"Copying {src_path} to {this_kit_dst_path}...")
-                    if this_kit_dst_path.safe_exists():
+                    print(f"Copying '{src_path}' to '{this_kit_dst_path}'...")
+                    if this_kit_dst_path.is_dir():
                         print(f"Deleting old {kitId} kit folder/files...")
                         shutil.rmtree(this_kit_dst_path)
                     shutil.copytree(src_path, str(this_kit_dst_path))
                     this_kit_json_filename = f"{kitId}.json"
                     src_kit_json_path = tempdir_path / this_kit_json_filename
-                    if not src_kit_json_path.safe_exists():
-                        msg = f"Kit {kitId} is missing the {this_kit_json_filename} file, cannot complete download"
+                    if not src_kit_json_path.safe_isfile():
+                        msg = f"Kit '{kitId}' is missing the '{this_kit_json_filename}' file, cannot complete download"
                         print(msg)
                         return False
                     shutil.copy(src_kit_json_path, kits_path / this_kit_json_filename)
@@ -1129,6 +1129,6 @@ class KitDownloader(QDialog):
                 except Exception as exc:  # noqa: BLE001
                     print(format_exception_with_variables(exc))
 
-        if kits_zip_path.exists():
+        if kits_zip_path.is_file():
             kits_zip_path.unlink()
         return True

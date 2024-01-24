@@ -476,69 +476,51 @@ class BasePath(BasePurePath):
     # Safe is_dir operation
     def safe_isdir(self: Path) -> bool | None:  # type: ignore[misc]
         try:
-            reg_isdir: bool = self.is_dir()
-            if reg_isdir:
-                return True
+            return self.is_dir()
         except OSError as e:
             print(format_exception_with_variables(e,  message="This exception has been suppressed and is only relevant for debug purposes."))
             if os.name == "posix":
-                return None  # unknown
-
-        if os.name == "posix":
-            return False
-        try:
-            exists, is_file, is_dir = self._check_path_win_api()
-        except Exception as e3:
-            print(format_exception_with_variables(e3,  message="This exception has been suppressed and is only relevant for debug purposes."))
-        else:
-            return is_dir
+                return False
+            try:
+                exists, is_file, is_dir = self._check_path_win_api()
+            except Exception as e3:
+                print(format_exception_with_variables(e3,  message="This exception has been suppressed and is only relevant for debug purposes."))
+            else:
+                return is_dir
         return None
 
     # Safe is_file operation
     def safe_isfile(self: Path) -> bool | None:  # type: ignore[misc]
         try:
-            reg_isfile: bool = self.is_file()
-            if reg_isfile:
-                return True
+            return self.is_file()
         except OSError as e:
             print(format_exception_with_variables(e,  message="This exception has been suppressed and is only relevant for debug purposes."))
             if os.name == "posix":
-                return None  # unknown
-
-        if os.name == "posix":
-            return False
-        try:
-            exists, is_file, is_dir = self._check_path_win_api()
-        except Exception as e3:
-            print(format_exception_with_variables(e3,  message="This exception has been suppressed and is only relevant for debug purposes."))
-        else:
-            return is_file
+                return False
+            try:
+                exists, is_file, is_dir = self._check_path_win_api()
+            except Exception as e3:
+                print(format_exception_with_variables(e3,  message="This exception has been suppressed and is only relevant for debug purposes."))
+            else:
+                return is_file
         return None
 
     # Safe exists operation
     def safe_exists(self: Path) -> bool | None:  # type: ignore[misc]
         self_str: str | None = None
         try:
-            reg_exists = self.exists()
-            if reg_exists:
-                return True
             self_str = str(self)
             return os.access(self_str, os.F_OK)
         except Exception as e:
             print(format_exception_with_variables(e,  message="This exception has been suppressed and is only relevant for debug purposes."))
+            if os.name == "posix":
+                return None
             try:
-                self_str = str(self) if self_str is None else self_str
-                return os.access(self_str, os.F_OK)
-            except Exception as e2:
-                print(format_exception_with_variables(e2,  message="This exception has been suppressed and is only relevant for debug purposes."))
-                if os.name == "posix":
-                    return None
-                try:
-                    exists, is_file, is_dir = self._check_path_win_api(self_str)
-                except Exception as e3:
-                    print(format_exception_with_variables(e3,  message="This exception has been suppressed and is only relevant for debug purposes."))
-                else:
-                    return exists
+                exists, is_file, is_dir = self._check_path_win_api(self_str)
+            except Exception as e3:
+                print(format_exception_with_variables(e3,  message="This exception has been suppressed and is only relevant for debug purposes."))
+            else:
+                return exists
         return None
 
 

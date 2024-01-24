@@ -65,7 +65,7 @@ def log_output(*args, **kwargs):
                 or "log_install_differ.log"
             )
             OUTPUT_LOG = Path(chosen_log_file_path).resolve()
-            if OUTPUT_LOG.parent.safe_exists():
+            if OUTPUT_LOG.parent.safe_isdir():
                 break
             print("Invalid path:", OUTPUT_LOG)
             PARSER.print_help()
@@ -260,10 +260,10 @@ def diff_files(file1: os.PathLike | str, file2: os.PathLike | str) -> bool | Non
     c_file2_rel: Path = relative_path_from_to(c_file1, c_file2)
     is_same_result: bool | None = True
 
-    if not c_file1.safe_exists():
+    if not c_file1.safe_isfile():
         log_output(f"Missing file:\t{c_file1_rel}")
         return False
-    if not c_file2.safe_exists():
+    if not c_file2.safe_isfile():
         log_output(f"Missing file:\t{c_file2_rel}")
         return False
 
@@ -356,12 +356,12 @@ def diff_installs(install_path1: os.PathLike | str, install_path2: os.PathLike |
 
     streamwaves_path1: CaseAwarePath = (
         rinstall_path1.joinpath("streamwaves")
-        if rinstall_path1.joinpath("streamwaves").safe_exists()
+        if rinstall_path1.joinpath("streamwaves").safe_isdir()
         else rinstall_path1.joinpath("streamvoice")
     )
     streamwaves_path2: CaseAwarePath = (
         rinstall_path2.joinpath("streamwaves")
-        if rinstall_path2.joinpath("streamwaves").safe_exists()
+        if rinstall_path2.joinpath("streamwaves").safe_isdir()
         else rinstall_path2.joinpath("streamvoice")
     )
     is_same_result = diff_directories(streamwaves_path1, streamwaves_path2) and is_same_result
@@ -370,7 +370,7 @@ def diff_installs(install_path1: os.PathLike | str, install_path2: os.PathLike |
 
 def is_kotor_install_dir(path: os.PathLike | str) -> bool | None:
     c_path: CaseAwarePath = CaseAwarePath.pathify(path)
-    return c_path.safe_isdir() and c_path.joinpath("chitin.key").safe_exists()
+    return c_path.safe_isdir() and c_path.joinpath("chitin.key").safe_isfile()
 
 
 def run_differ_from_args(path1: Path, path2: Path) -> bool | None:

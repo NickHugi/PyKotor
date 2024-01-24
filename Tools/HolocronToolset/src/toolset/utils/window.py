@@ -210,6 +210,9 @@ def openResourceEditor(
         ResourceType.IFO,
         ResourceType.IFO_XML,
         ResourceType.RES,
+        ResourceType.RES_XML,
+        ResourceType.FAC,
+        ResourceType.FAC_XML,
     ]:
         editor = GFFEditor(None, installation)
 

@@ -203,7 +203,7 @@ class CaseAwarePath(InternalPath):  # type: ignore[misc]
                     (
                         item
                         for item in base_path.safe_iterdir()
-                        if item.name.lower() == parts[i].lower() and (last_part or item.safe_isdir())
+                        if last_part or item.safe_isdir()
                     ),
                 )
 
@@ -384,7 +384,7 @@ def find_kotor_paths_from_default() -> dict[Game, list[CaseAwarePath]]:
         game: {
             case_path
             for case_path in (CaseAwarePath(path).resolve() for path in paths)
-            if case_path.safe_exists()
+            if case_path.safe_isdir()
         }
         for game, paths in raw_locations.get(os_str, {}).items()
     }
@@ -395,7 +395,7 @@ def find_kotor_paths_from_default() -> dict[Game, list[CaseAwarePath]]:
             for reg_key, reg_valname in possible_game_paths:
                 path_str = resolve_reg_key_to_path(reg_key, reg_valname)
                 path = CaseAwarePath(path_str).resolve() if path_str else None
-                if path and path.name and path.safe_exists():
+                if path and path.name and path.safe_isdir():
                     locations[game].add(path)
 
     # don't return nested sets, return as lists.

@@ -41,7 +41,7 @@ class ModificationsNSS(PatcherModifications):
         super().__init__(filename, replace, modifiers)
         self.saveas = str(PurePath(filename).with_suffix(".ncs"))
         self.action: str = "Compile"
-        self.nwnnsscomp_path: Path
+        self.nwnnsscomp_path: Path  # TODO: fix type. Default None or Path?
         self.temp_script_folder: Path
 
     def patch_resource(
@@ -86,13 +86,13 @@ class ModificationsNSS(PatcherModifications):
 
         # Compile with external on windows, fall back to built-in if mac/linux or if external fails.
         is_windows = os.name == "nt"
-        nwnnsscomp_exists: bool | None = self.nwnnsscomp_path.safe_exists()
+        nwnnsscomp_exists: bool | None = self.nwnnsscomp_path.safe_isfile()
         if is_windows and self.nwnnsscomp_path and nwnnsscomp_exists:
             nwnnsscompiler = ExternalNCSCompiler(self.nwnnsscomp_path)
-            detected_nwnnsscomp: str = next(
-                (k for k, v in ExternalNCSCompiler.NWNNSSCOMP_SHA256_HASHES.items() if v == nwnnsscompiler.filehash),
-                "UNKNOWN/INVALID",
-            )
+            try:
+                detected_nwnnsscomp: str = nwnnsscompiler.get_info().name
+            except ValueError:
+                detected_nwnnsscomp: str = "<UNKNOWN>"
             if detected_nwnnsscomp != "TSLPatcher":
                 logger.add_warning(
                     "The nwnnsscomp.exe in the tslpatchdata folder is not the expected TSLPatcher version.\n"
