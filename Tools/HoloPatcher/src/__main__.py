@@ -21,7 +21,7 @@ from enum import IntEnum
 from threading import Event, Thread
 from tkinter import filedialog, messagebox, ttk
 from tkinter import font as tkfont
-from typing import TYPE_CHECKING, Callable, NoReturn
+from typing import TYPE_CHECKING, NoReturn
 
 if getattr(sys, "frozen", False) is False:
     def update_sys_path(path):
@@ -194,6 +194,7 @@ class App(tk.Tk):
         tools_menu.add_command(label="Validate INI", command=self.test_reader)
         tools_menu.add_command(label="Uninstall Mod / Restore Backup", command=self.uninstall_selected_mod)
         tools_menu.add_command(label="Fix permissions to file/folder...", command=self.fix_permissions)
+        tools_menu.add_command(label="Fix iOS Case Sensitivity", command=self.lowercase_files_and_folders)
         tools_menu.add_command(label="Create info.rte...", command=self.create_rte_content)
         self.menu_bar.add_cascade(label="Tools", menu=tools_menu)
 
@@ -244,7 +245,7 @@ class App(tk.Tk):
         self.namespaces_combobox: ttk.Combobox = ttk.Combobox(top_frame, state="readonly", style="TCombobox")
         self.namespaces_combobox.grid(row=0, column=0, padx=5, pady=2, sticky="ew")
         self.namespaces_combobox.set("Select the mod to install")
-        ToolTip(self.namespaces_combobox, lambda: self.on_namespace_option_hover())
+        ToolTip(self.namespaces_combobox, lambda: self.get_namespace_description())
         self.namespaces_combobox.bind("<<ComboboxSelected>>", self.on_namespace_option_chosen)
         # Handle annoyances with Focus Events
         self.namespaces_combobox.bind("<FocusIn>", self.on_combobox_focus_in)
@@ -574,13 +575,54 @@ class App(tk.Tk):
         combobox.xview(position)
         self.focus_set()
 
-    def on_namespace_option_hover(self) -> str:
+    def get_namespace_description(self) -> str:
         """Show the expanded description from namespaces.ini when hovering over an option."""
         namespace_option: PatcherNamespace | None = next(
             (x for x in self.namespaces if x.name == self.namespaces_combobox.get()),
             None,
         )
         return namespace_option.description if namespace_option else ""
+
+    def lowercase_files_and_folders(self, directory: os.PathLike | str | None = None):
+        directory = directory or filedialog.askdirectory()
+        if not directory:
+            return
+
+        try:
+            def task():
+                self.logger.add_note("Please wait, this may take awhile...")
+                self.set_active_install(install_running=True)
+                self.clear_main_text()
+                try:
+                    for root, dirs, files in os.walk(directory, topdown=False):
+                        # Renaming files
+                        for name in files:
+                            file_path: Path = Path(root, name)
+                            new_file_path: Path = Path(root, name.lower())
+                            str_file_path = str(file_path)
+                            str_new_file_path = str(new_file_path)
+                            if str_file_path != str_new_file_path:
+                                self.logger.add_note(f"Renaming {str_file_path} to '{new_file_path.name}'")
+                                file_path.rename(new_file_path)
+
+                        # Renaming directories
+                        for name in dirs:
+                            dir_path: Path = Path(root, name)
+                            new_dir_path: Path = Path(root, name.lower())
+                            str_dir_path = str(dir_path)
+                            str_new_dir_path = str(new_dir_path)
+                            if str_dir_path != str_new_dir_path:
+                                self.logger.add_note(f"Renaming {str_dir_path} to '{new_dir_path.name}'")
+                                dir_path.rename(str_new_dir_path)
+                except Exception as e:
+                    self._handle_general_exception(e)
+                finally:
+                    self.set_active_install(install_running=False)
+
+            self.install_thread = Thread(target=task)
+            self.install_thread.start()
+        except Exception as e2:
+            self._handle_general_exception(e2)
 
     def on_namespace_option_chosen(
         self,
@@ -772,8 +814,23 @@ class App(tk.Tk):
         path_str = filedialog.askdirectory()
         if not path_str:
             return
-        path = Path(path_str)
-        path.gain_access(recurse=True)
+
+        try:
+            def task():
+                self.set_active_install(install_running=True)
+                self.clear_main_text()
+                self.logger.add_note("Please wait, this may take awhile...")
+                try:
+                    path = Path(path_str)
+                    path.gain_access(recurse=True)
+                except Exception as e:
+                    self._handle_general_exception(e)
+                finally:
+                    self.set_active_install(install_running=False)
+            self.install_thread = Thread(target=task)
+            self.install_thread.start()
+        except Exception as e2:
+            self._handle_general_exception(e2)
 
     def check_access(
         self,
@@ -937,13 +994,15 @@ class App(tk.Tk):
 
         self.set_active_install(install_running=True)
         self.clear_main_text()
-        try:
-            reader = ConfigReader.from_filepath(ini_file_path, self.logger)
-            reader.load(reader.config)
-        except Exception as e:  # noqa: BLE001
-            self._handle_general_exception(e, "An unexpected error occurred while testing the config ini reader")
-        finally:
-            self.set_active_install(install_running=False)
+        def task():
+            try:
+                reader = ConfigReader.from_filepath(ini_file_path, self.logger)
+                reader.load(reader.config)
+            except Exception as e:  # noqa: BLE001
+                self._handle_general_exception(e, "An unexpected error occurred while testing the config ini reader")
+            finally:
+                self.set_active_install(install_running=False)
+        Thread(target=task).start()
 
     def set_active_install(
         self,

@@ -554,7 +554,7 @@ class BasePath(BasePurePath):
         follow_symlinks=False,
     ) -> Generator[tuple[Self, list[str], list[str]], Any, None]:  # type: ignore[reportGeneralTypeIssues]
         """Walk the directory tree from this directory, similar to os.walk()."""  # noqa: D402
-        paths: list[Self] = [self]
+        paths: list[Self] = [self]  # type: ignore[reportGeneralTypeIssues]
 
         while paths:
             path = paths.pop()
