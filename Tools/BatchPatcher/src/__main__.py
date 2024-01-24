@@ -231,9 +231,9 @@ def patch_nested_gff(
 
         if ftype == GFFFieldType.Struct:
             assert isinstance(value, GFFStruct)  # noqa: S101
-            if SCRIPT_GLOBALS.set_unskippable and gff_content == GFFContent.DLG and current_path.parent == "RepliesList":
+            if SCRIPT_GLOBALS.set_unskippable and gff_content == GFFContent.DLG:
                 log_output(f"Setting '{child_path}' as unskippable")
-                value.set_uint32("Skippable", 0)
+                value.set_uint8("Skippable", 0)
                 made_change = True
             made_change &= patch_nested_gff(value, gff_content, child_path, made_change)
             continue
