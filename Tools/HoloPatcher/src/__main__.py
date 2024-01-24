@@ -515,19 +515,19 @@ class App(tk.Tk):
             sys.exit(ExitCode.SUCCESS)
 
         # Handle unsafe exit.
-        if self.install_running:
-            if not messagebox.askyesno(
+        if (
+            self.install_running
+            and not messagebox.askyesno(
                 "Really cancel the current installation? ",
                 "CONTINUING WILL MOST LIKELY BREAK YOUR GAME AND REQUIRE A FULL KOTOR REINSTALL!",
-            ):
-                return
-        else:
-            if not messagebox.askyesno(
+            )
+            or self.task_running
+            and not messagebox.askyesno(
                 "Really cancel the current task?",
                 "A task is currently running. Exiting now may not be safe. Really continue?",
-            ):
-                return
-
+            )
+        ):
+            return
         self.simple_thread_event.set()
         time.sleep(1)
         print("Install thread is still alive, attempting force close...")
