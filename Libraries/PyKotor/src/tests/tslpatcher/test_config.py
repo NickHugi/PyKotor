@@ -1,6 +1,7 @@
 import os
 import pathlib
 import sys
+from tempfile import NamedTemporaryFile, TemporaryFile
 import unittest
 from unittest.mock import MagicMock, Mock, patch
 
@@ -28,7 +29,9 @@ class TestLookupResourceFunction(unittest.TestCase):
         self.patch.sourcefile = "test_filename"
         self.patch.sourcefolder = "."
         self.patch.saveas = "test_filename"
-        self.config = ModInstaller("", "", "")
+        with NamedTemporaryFile() as tmpfile:
+            tmpfile_path = Path(tmpfile.name)
+            self.config = ModInstaller("", "", tmpfile_path)
         self.config.mod_path = Path("test_mod_path")
         self.output_container_path = Path("test_output_container_path")
 
@@ -173,7 +176,9 @@ class TestLookupResourceFunction(unittest.TestCase):
 
 class TestShouldPatchFunction(unittest.TestCase):
     def setUp(self):
-        self.patcher = ModInstaller("", "", "")
+        with NamedTemporaryFile() as tmpfile:
+            tmpfile_path = Path(tmpfile.name)
+            self.patcher = ModInstaller("", "", tmpfile_path)
         self.patcher.game_path = MagicMock()
         self.patcher.game_path.name = "swkotor"
         self.patcher.log = MagicMock()
@@ -289,7 +294,7 @@ class TestShouldPatchFunction(unittest.TestCase):
     def test_capsule_not_exist(self):
         patch = MagicMock(destination="capsule", action="Patching", sourcefile="file1")
         capsule = MagicMock()
-        capsule.path().safe_exists.return_value = False
+        capsule.path().safe_isfile.return_value = False
         result = self.patcher.should_patch(patch, capsule=capsule)
         self.assertFalse(result)
 
