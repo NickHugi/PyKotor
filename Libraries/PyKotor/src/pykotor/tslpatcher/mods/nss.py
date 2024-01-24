@@ -43,6 +43,7 @@ class ModificationsNSS(PatcherModifications):
         self.action: str = "Compile"
         self.nwnnsscomp_path: Path  # TODO: fix type. Default None or Path?
         self.temp_script_folder: Path
+        self.skip_if_not_replace = True
 
     def patch_resource(
         self,

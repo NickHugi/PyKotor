@@ -38,8 +38,8 @@ class PatcherModifications(ABC):
         action (str): The action for this patch, purely used for logging purposes.
         override_type (str): The override type, see `class OverrideType` above.
         skip_if_not_replace (bool): Determines how !ReplaceFile will be handled.
-            TSLPatcher's InstallList is the only patchlist that handles this differently.
-            in InstallList, if this is True and !ReplaceFile is False or File#=file_to_install.ext, the resource will be skipped if the resource already exists.
+            TSLPatcher's InstallList and CompileList are the only patchlists that handle replace behavior differently.
+            in InstallList/CompileList, if this is True and !ReplaceFile is False or File#=file_to_install.ext, the resource will be skipped if the resource already exists.
 
     Methods:
     -------
@@ -81,7 +81,7 @@ class PatcherModifications(ABC):
 
         self.action:        str  = "Patch" + " "
         self.override_type: str  = OverrideType.WARN
-        self.skip_if_not_replace: bool = False  # [InstallList] only
+        self.skip_if_not_replace: bool = False  # [InstallList] and [CompileList] only
 
     @abstractmethod
     def patch_resource(
