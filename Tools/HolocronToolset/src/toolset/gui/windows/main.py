@@ -696,11 +696,11 @@ class ToolWindow(QMainWindow):
             def task() -> HTInstallation:
                 self.active = HTInstallation(path, name, tsl, self)
                 self.active.reload_all()
-                print("Refreshing module list...")
+                print("Loading module list into ui...")
                 self.refreshModuleList(reload=False)
-                print("Refreshing Override list...")
+                print("Loading Override list into ui...")
                 self.refreshOverrideList(reload=False)
-                print("Refreshing texturepacks...")
+                print("Loading texturepacks list into ui...")
                 self.refreshTexturePackList(reload=False)
                 return self.active
 
@@ -711,11 +711,11 @@ class ToolWindow(QMainWindow):
             def task2() -> HTInstallation:
                 self.active = self.installations[name]
                 #should_reload: bool = old_active is not None and self.active.path() != old_active.path()
-                print("Reloading module list..")
+                print("Refreshing module list..")
                 self.refreshModuleList(reload=False)
-                print("Reloading Override list...")
+                print("Refreshing Override list...")
                 self.refreshOverrideList(reload=False)
-                print("Reloading texturepacks list...")
+                print("Refreshing texturepacks list...")
                 self.refreshTexturePackList(reload=False)
                 return self.active
             loader_task = task2
