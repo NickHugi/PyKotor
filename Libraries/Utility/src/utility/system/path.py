@@ -715,6 +715,8 @@ class BasePath(BasePurePath):
         *,
         recurse: bool = True,
         resolve_symlinks: bool = False,
+        log_func: Callable[[str], Any] = lambda s: s,
+        _is_child=None,
     ) -> bool:
         """Gain access to the path by changing its permissions.
 
@@ -740,8 +742,8 @@ class BasePath(BasePurePath):
         """
         assert isinstance(self, Path), f"self of '{self}' must inherit from BasePath not be literal BasePath instance."
 
-        # (Unix) Gain ownership of the folder with os.chown()
-        if os.name == "posix" and not self.has_access(mode, recurse=recurse):
+        if os.name == "posix":
+            print("(Unix) Gain ownership of the folder with os.chown()")
             e = None
             try:
                 home_path = Path.home()
@@ -752,47 +754,58 @@ class BasePath(BasePurePath):
                     raise
                 else:
                     os.chown(self, stat_info.st_uid, stat_info.st_gid)  # type: ignore[attr-defined]
-            except OSError as exc:
-                print(format_exception_with_variables(exc, message=f"Error during chown for '{self}'"))
+            except (OSError, NotImplementedError) as e:
+                print(format_exception_with_variables(e, message=f"Error during chown for '{self}'"))
 
         # (Any OS) chmod the folder
-        if not self.has_access(mode, recurse=recurse):
-            try:
-                # Get the current permissions
-                current_permissions: int = self.stat().st_mode
-                # Extract owner and group permissions
-                owner_permissions: int = current_permissions & 0o700  # Extracts the first number of the octal (e.g. 0o7 in 0o750)
-                group_permissions: int = current_permissions & 0o70   # Extracts the second number of the octal (e.g. 0o5 in 0o750)
-                # Combine them with the new 'other' permissions
-                new_permissions: int = owner_permissions | group_permissions | mode
-                # Apply the new permissions
-                if resolve_symlinks:
-                    self.chmod(new_permissions)
-                else:
+        print("Attempting pathlib.Path.chmod(self)...")
+        try:
+            # Get the current permissions
+            current_permissions: int = self.stat().st_mode
+            # Extract owner and group permissions
+            owner_permissions: int = current_permissions & 0o700  # Extracts the first number of the octal (e.g. 0o7 in 0o750)
+            group_permissions: int = current_permissions & 0o70   # Extracts the second number of the octal (e.g. 0o5 in 0o750)
+            # Combine them with the new 'other' permissions
+            new_permissions: int = owner_permissions | group_permissions | mode
+            # Apply the new permissions
+            if resolve_symlinks:
+                self.chmod(new_permissions)
+            else:
+                try:
                     self.lchmod(new_permissions)
-            except OSError as e:
-                print(format_exception_with_variables(e, message=f"Error during chmod at path '{self}'"))
+                except NotImplementedError as e2:
+                    self.chmod(new_permissions)
+        except (OSError, NotImplementedError) as e:
+            print(format_exception_with_variables(e, message=f"Error during chmod at path '{self}'"))
 
-        if not self.has_access(mode, recurse=recurse):
+        print("Attempting native access fix...")
+        if _is_child is None:
             try:
                 self.request_native_access(elevate=False, recurse=recurse)
             except Exception as e:
                 print(format_exception_with_variables(e, message=f"Error during platform-specific permission request at path '{self}'"))
 
-        if not self.has_access(mode, recurse=recurse):
-            try:
-                self.request_native_access(elevate=True, recurse=recurse)
-            except Exception as e:
-                print(format_exception_with_variables(e, message=f"Error during elevated platform-specific permission request at path '{self}'"))
+            print("Checking access before attempting elevated native access fix...")
+            if not self.has_access(mode, recurse=False):
+                print("Attempting to elevate the native access fix...")
+                try:
+                    self.request_native_access(elevate=True, recurse=recurse)
+                except Exception as e:
+                    print(format_exception_with_variables(e, message=f"Error during elevated platform-specific permission request at path '{self}'"))
 
-        success: bool = self.has_access(mode, recurse=recurse)
-        if success:
-            return success
+        print("Verifying the operations were successful...")
+        success: bool = self.has_access(mode, recurse=False)
         try:
             if recurse and self.safe_isdir():
                 for child in self.iterdir():
-                    success &= child.gain_access(mode, recurse=recurse)
-        except OSError as e:
+                    log_func(f"Acquiring permissions to '{child}'... this may take some time...")
+                    result: bool = child.gain_access(mode, recurse=recurse, _is_child=True)
+                    if result:
+                        log_func(f"Successfully acquired permission to '{child.name}'")
+                    else:
+                        log_func(f"FAILED to gain access to '{child}'!")
+                    success &= result
+        except (OSError, NotImplementedError) as e:
             print(format_exception_with_variables(e, message=f"Error gaining access for children of path '{self}'"))
             success = False
 
@@ -841,19 +854,21 @@ class BasePath(BasePurePath):
 
     if os.name == "nt":
         # Inspired by the C# code provided by KOTORModSync's source code at https://github.com/th3w1zard1/KOTORModSync
-        def request_native_access(self, elevate: bool = False, recurse: bool = True):
+        def request_native_access(self: Path, elevate: bool = False, recurse: bool = True):
             print(f"Step 1: Attempt to take ownership of the target '{self}'...")
+            takeown_args: list[str] = ["takeown", "/F", f"{self}", "/SKIPSL"]
+            if self.safe_isdir():
+                if recurse:
+                    takeown_args.extend(["/R"])
+                takeown_args.extend(("/D", "Y"))
             if elevate:  # sourcery skip: extract-duplicate-method
-                takeown_command = f'takeown /F "{self}"{" /R" if recurse else ""} /SKIPSL /D Y'
+                takeown_command = " ".join(takeown_args)
                 pwsh_wrapped_cmd = f"Powershell -Command \"& {{Start-Process cmd.exe -ArgumentList '/c {takeown_command}' -Verb RunAs}}\""
                 print(pwsh_wrapped_cmd)
                 os.system(pwsh_wrapped_cmd)
             else:
-                if recurse:
-                    takeown_args = ["takeown", "/F", f"{self}", "/R", "/SKIPSL", "/D", "Y"]
-                else:
-                    takeown_args = ["takeown", "/F", f"{self}", "/SKIPSL", "/D", "Y"]
-                takeown_result: subprocess.CompletedProcess[str] = subprocess.run(takeown_args, timeout=60, check=False, capture_output=True, text=True)
+                takeown_result: subprocess.CompletedProcess[str] = subprocess.run(takeown_args, timeout=60, check=False,
+                                                                                  capture_output=True, text=True)
 
                 if takeown_result.returncode != 0:
                     print(

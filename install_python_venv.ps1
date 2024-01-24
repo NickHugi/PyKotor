@@ -370,7 +370,7 @@ if (Test-Path $venvPath -ErrorAction SilentlyContinue) {
             exit
         }
     }
-    # Attempt to create a virtual environment
+    Write-Host "Attempting to create a python virtual environment. This might take a while..."
     $pythonVenvCreation = & $global:pythonInstallPath -m venv $venvPath
     if ($pythonVenvCreation -like "*Error*") {
         Write-Error $pythonVenvCreation

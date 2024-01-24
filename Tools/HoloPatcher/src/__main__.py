@@ -145,6 +145,7 @@ class App(tk.Tk):
         self.set_window(width=400, height=500)
 
         self.install_running: bool = False
+        self.task_running: bool = False
         self.mod_path: str = ""
         self.namespaces: list[PatcherNamespace] = []
 
@@ -289,7 +290,7 @@ class App(tk.Tk):
         self.exit_button.pack(side="left", padx=5, pady=5)
         self.install_button = ttk.Button(bottom_frame, text="Install", command=self.begin_install)
         self.install_button.pack(side="right", padx=5, pady=5)
-        self.force_stop_thread: Event = Event()
+        self.simple_thread_event: Event = Event()
 
     def set_text_font(
         self,
@@ -384,7 +385,7 @@ class App(tk.Tk):
         self.withdraw()
         self.handle_console_mode()
         if cmdline_args.install:
-            self.begin_install_thread(self.force_stop_thread)
+            self.begin_install_thread(self.simple_thread_event)
         if cmdline_args.uninstall:
             self.uninstall_selected_mod()
         if cmdline_args.validate:
@@ -469,7 +470,7 @@ class App(tk.Tk):
                 f"Could not find backup folder '{backup_parent_folder}'{os.linesep*2}Are you sure the mod is installed?",
             )
             return
-        self.set_active_install(install_running=True)
+        self.set_state(state=True)
         self.clear_main_text()
         fully_ran: bool = True
         try:
@@ -478,7 +479,8 @@ class App(tk.Tk):
         except Exception as e:  # noqa: BLE001
             self._handle_exception_during_install(e)
         finally:
-            self.set_active_install(install_running=False)
+            self.set_state(state=False)
+            self.logger.add_note("Mod uninstaller/backup restore task completed.")
         if not fully_ran:
             self.on_namespace_option_chosen(tk.Event())
 
@@ -508,18 +510,25 @@ class App(tk.Tk):
             - If stopping fails, force terminate install thread
             - Destroy window and exit with abort code.
         """
-        if not self.install_running or not self.install_thread.is_alive():
+        if not self.task_running or not self.install_thread.is_alive():
             print("Goodbye!")
             sys.exit(ExitCode.SUCCESS)
 
         # Handle unsafe exit.
-        if not messagebox.askyesno(
-            "Really cancel the current installation? ",
-            "CONTINUING WILL MOST LIKELY BREAK YOUR GAME AND REQUIRE A FULL KOTOR REINSTALL!",
-        ):
-            return
+        if self.install_running:
+            if not messagebox.askyesno(
+                "Really cancel the current installation? ",
+                "CONTINUING WILL MOST LIKELY BREAK YOUR GAME AND REQUIRE A FULL KOTOR REINSTALL!",
+            ):
+                return
+        else:
+            if not messagebox.askyesno(
+                "Really cancel the current task?",
+                "A task is currently running. Exiting now may not be safe. Really continue?",
+            ):
+                return
 
-        self.force_stop_thread.set()
+        self.simple_thread_event.set()
         time.sleep(1)
         print("Install thread is still alive, attempting force close...")
         i = 0
@@ -583,7 +592,11 @@ class App(tk.Tk):
         )
         return namespace_option.description if namespace_option else ""
 
-    def lowercase_files_and_folders(self, directory: os.PathLike | str | None = None):
+    def lowercase_files_and_folders(
+        self,
+        directory: os.PathLike | str | None = None,
+        reset_namespace: bool = False,
+    ):
         directory = directory or filedialog.askdirectory()
         if not directory:
             return
@@ -591,7 +604,7 @@ class App(tk.Tk):
         try:
             def task():
                 self.logger.add_note("Please wait, this may take awhile...")
-                self.set_active_install(install_running=True)
+                self.set_state(state=True)
                 self.clear_main_text()
                 try:
                     for root, dirs, files in os.walk(directory, topdown=False):
@@ -617,12 +630,17 @@ class App(tk.Tk):
                 except Exception as e:
                     self._handle_general_exception(e)
                 finally:
-                    self.set_active_install(install_running=False)
+                    self.set_state(state=False)
+                    self.logger.add_note("iOS case rename task completed.")
 
             self.install_thread = Thread(target=task)
             self.install_thread.start()
         except Exception as e2:
             self._handle_general_exception(e2)
+        finally:
+            if reset_namespace and self.mod_path:
+                self.on_namespace_option_chosen(tk.Event())
+            self.logger.add_verbose("iOS case rename task started.")
 
     def on_namespace_option_chosen(
         self,
@@ -810,27 +828,40 @@ class App(tk.Tk):
         except Exception as e:  # noqa: BLE001
             self._handle_general_exception(e, "An unexpected error occurred while loading the game directory.")
 
-    def fix_permissions(self):
-        path_str = filedialog.askdirectory()
-        if not path_str:
+    def fix_permissions(
+        self,
+        directory: os.PathLike | str | None = None,
+        reset_namespace: bool = False,
+    ):
+        path_arg = filedialog.askdirectory() if directory is None else directory
+        if not path_arg:
             return
 
         try:
+            path: Path = Path.pathify(path_arg)
             def task():
-                self.set_active_install(install_running=True)
+                self.set_state(state=True)
                 self.clear_main_text()
                 self.logger.add_note("Please wait, this may take awhile...")
                 try:
-                    path = Path(path_str)
-                    path.gain_access(recurse=True)
+                    access = path.gain_access(recurse=True, log_func=self.logger.add_note)
+                    if access:
+                        messagebox.showinfo("Successfully acquired permission", "The operation was successful.")
+                    else:
+                        messagebox.showerror("Could not acquire permission!", "Permissions denied! Check the logs for more details.")
                 except Exception as e:
                     self._handle_general_exception(e)
                 finally:
-                    self.set_active_install(install_running=False)
+                    self.set_state(state=False)
+                    self.logger.add_note("File/Folder permissions fixer task completed.")
             self.install_thread = Thread(target=task)
             self.install_thread.start()
         except Exception as e2:
             self._handle_general_exception(e2)
+        finally:
+            if reset_namespace and self.mod_path:
+                self.on_namespace_option_chosen(tk.Event())
+            self.logger.add_verbose("Started the File/Folder permissions fixer task.")
 
     def check_access(
         self,
@@ -862,8 +893,7 @@ class App(tk.Tk):
             messagebox.askyesno(
                 "Permission error",
                 f"HoloPatcher does not have permissions to the path '{directory}', would you like to attempt to gain permission automatically?",
-            )
-            and not directory.gain_access(recurse=recurse)
+            ) or not self.fix_permissions(directory, reset_namespace=True)
         ):
             messagebox.showerror(
                 "Could not gain permission!",
@@ -907,9 +937,9 @@ class App(tk.Tk):
                 sys.exit(ExitCode.NUMBER_OF_ARGS)
             return False
 
-        if self.install_running:
+        if self.task_running:
             messagebox.showinfo(
-                "Install already running",
+                "Task already running",
                 "Wait for the previous task to finish.",
             )
             return False
@@ -947,7 +977,9 @@ class App(tk.Tk):
 
         """
         try:
-            self.install_thread = Thread(target=self.begin_install_thread, args=(self.force_stop_thread,))
+            if not self.preinstall_validate_chosen():
+                return
+            self.install_thread = Thread(target=self.begin_install_thread, args=(self.simple_thread_event,))
             self.install_thread.start()
         except Exception as e:  # noqa: BLE001
             self._handle_general_exception(e, "An unexpected error occurred during the installation and the program was forced to exit")
@@ -970,13 +1002,12 @@ class App(tk.Tk):
             - Handle any exceptions during installation
             - Finally set the install status to not running.
         """
-        if not self.preinstall_validate_chosen():
-            return
         namespace_option: PatcherNamespace = next(x for x in self.namespaces if x.name == self.namespaces_combobox.get())
         ini_file_path = CaseAwarePath(self.mod_path, "tslpatchdata", namespace_option.changes_filepath())
         namespace_mod_path: CaseAwarePath = ini_file_path.parent
 
-        self.set_active_install(install_running=True)
+        self.set_state(state=True)
+        self.install_running = True
         self.clear_main_text()
         try:
             installer = ModInstaller(namespace_mod_path, self.gamepaths.get(), ini_file_path, self.logger)
@@ -984,7 +1015,8 @@ class App(tk.Tk):
         except Exception as e:  # noqa: BLE001
             self._handle_exception_during_install(e)
         finally:
-            self.set_active_install(install_running=False)
+            self.set_state(state=False)
+            self.install_running = False
 
     def test_reader(self):  # sourcery skip: no-conditionals-in-tests
         if not self.preinstall_validate_chosen():
@@ -992,7 +1024,7 @@ class App(tk.Tk):
         namespace_option: PatcherNamespace = next(x for x in self.namespaces if x.name == self.namespaces_combobox.get())
         ini_file_path = CaseAwarePath(self.mod_path, "tslpatchdata", namespace_option.changes_filepath())
 
-        self.set_active_install(install_running=True)
+        self.set_state(state=True)
         self.clear_main_text()
         def task():
             try:
@@ -1001,32 +1033,33 @@ class App(tk.Tk):
             except Exception as e:  # noqa: BLE001
                 self._handle_general_exception(e, "An unexpected error occurred while testing the config ini reader")
             finally:
-                self.set_active_install(install_running=False)
+                self.set_state(state=False)
+                self.logger.add_note("Config reader test is complete.")
         Thread(target=task).start()
 
-    def set_active_install(
+    def set_state(
         self,
-        install_running: bool,
+        state: bool,
     ):
-        """Sets the active install state.
+        """Sets the active thread task state. Disables UI controls until this function is called again with run=False.
 
         Args:
         ----
-            install_running: Whether the install is running or not
+            run: Whether the task is starting/running or not
 
         Processing Logic:
         ----------------
-            - Sets the install_running attribute based on the install_running argument
-            - Configures the state of relevant buttons to disabled if install is running, normal otherwise
-            - Handles enabling/disabling buttons during install process.
+            - Sets the task_running attribute based on the run argument
+            - Configures the state of relevant buttons to disabled if a thread task is running, normal otherwise
+            - Handles enabling/disabling buttons during task process.
         """
-        if install_running:
-            self.install_running = True
+        if state:
+            self.task_running = True
             self.install_button.config(state=tk.DISABLED)
             self.gamepaths_browse_button.config(state=tk.DISABLED)
             self.browse_button.config(state=tk.DISABLED)
         else:
-            self.install_running = False
+            self.task_running = False
             self.initialize_logger()  # reset the errors/warnings etc
             self.install_button.config(state=tk.NORMAL)
             self.gamepaths_browse_button.config(state=tk.NORMAL)
@@ -1226,7 +1259,7 @@ class App(tk.Tk):
             log_file.write(f"{log.formatted_message}\n")
 
 
-def on_app_crash(
+def onAppCrash(
     etype: type[BaseException],
     e: BaseException,
     tback: TracebackType | None,
@@ -1243,7 +1276,7 @@ def on_app_crash(
     root.destroy()
     sys.exit()
 
-sys.excepthook = on_app_crash
+sys.excepthook = onAppCrash
 
 
 def is_frozen() -> bool:  # sourcery skip: assign-if-exp, boolean-if-exp-identity, reintroduce-else, remove-unnecessary-cast
