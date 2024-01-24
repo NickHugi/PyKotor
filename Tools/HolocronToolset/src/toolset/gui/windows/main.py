@@ -5,7 +5,7 @@ import json
 from contextlib import suppress
 from datetime import datetime, timedelta, timezone
 from tempfile import TemporaryDirectory
-from typing import TYPE_CHECKING, ClassVar
+from typing import TYPE_CHECKING, Callable, ClassVar
 
 import requests
 from pykotor.common.stream import BinaryReader
@@ -657,6 +657,7 @@ class ToolWindow(QMainWindow):
 
         self.ui.resourceTabs.setEnabled(False)
         self.ui.sidebar.setEnabled(False)
+        old_active = self.active
         self.active = None
         self.updateMenus()
 
@@ -683,25 +684,42 @@ class ToolWindow(QMainWindow):
             return
 
         # If the installation had not already been loaded previously this session, load it now
+        loader_task: Callable[[], HTInstallation]
         if name not in self.installations:
 
             def task() -> HTInstallation:
-                return HTInstallation(path, name, tsl, self)
+                self.active = HTInstallation(path, name, tsl, self)
+                should_reload: bool | None = old_active is not None and self.active.path() != old_active.path()
+                if should_reload:
+                    self.active.reload_all()
+                print("Refreshing module list...")
+                self.refreshModuleList(reload=should_reload)
+                print("Refreshing Override list...")
+                self.refreshOverrideList(reload=should_reload)
+                print("Refreshing texturepacks...")
+                self.refreshTexturePackList(reload=should_reload)
+                return self.active
+
+            loader_task = task
 
             self.settings.installations()[name].path = path
-            loader = AsyncLoader(self, "Loading Installation", task, "Failed to load installation")
-            if loader.exec_():
-                self.installations[name] = loader.value
-                self.active: HTInstallation | None = loader.value
-                self.active.reload_all()
-                self.refreshModuleList(reload=False)
-                self.refreshOverrideList(reload=False)
-                self.refreshTexturePackList(reload=False)
         else:
-            self.active = self.installations[name]
-            self.refreshModuleList(reload=True)
-            self.refreshOverrideList(reload=True)
-            self.refreshTexturePackList(reload=True)
+            def task2() -> HTInstallation:
+                self.active = self.installations[name]
+                should_reload: bool = old_active is not None and self.active.path() != old_active.path()
+                print("Reloading module list..")
+                self.refreshModuleList(reload=should_reload)
+                print("Reloading Override list...")
+                self.refreshOverrideList(reload=should_reload)
+                print("Reloading texturepacks list...")
+                self.refreshTexturePackList(reload=should_reload)
+                return self.active
+            loader_task = task2
+        loader = AsyncLoader(self, "Loading Installation", loader_task, "Failed to load installation")
+        if loader.exec_():
+            if name not in self.installations:
+                self.installations[name] = loader.value
+            self.active: HTInstallation | None = loader.value
 
         # If the data has been successfully been loaded, dump the data into the models
         if name in self.installations:

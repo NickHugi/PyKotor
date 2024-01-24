@@ -54,6 +54,7 @@ $pyInstallerArgs = @{
         'pylint',
         'pykotor.gl',
         'pykotor.font',
+        'pykotorfont'
         'pykotor.secure_xml',
         'mypy-extensions',
         'mypy',
@@ -69,7 +70,7 @@ $pyInstallerArgs = @{
     'noconfirm' = $true
     'distpath' = ($rootPath + $pathSep + "dist")
     'name' = 'HoloPatcher'
-    'upx-dir' = "C:\GitHub\upx-win32"
+    'upx-dir' = "C:\Users\boden\OneDrive\Documents\GitHub\upx-4.2.2-win32"
     'icon' = "..$pathSep" + "resources$pathSep" + "icons$pathSep" + "patcher_icon_v2.ico"
 }
 $pyInstallerArgsString = ($pyInstallerArgs.GetEnumerator() | ForEach-Object {

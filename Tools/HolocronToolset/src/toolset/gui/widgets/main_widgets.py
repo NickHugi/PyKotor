@@ -7,7 +7,6 @@ from typing import TYPE_CHECKING
 
 from pykotor.extract.installation import SearchLocation
 from pykotor.resource.formats.tpc import TPC, TPCTextureFormat
-from pykotor.resource.type import ResourceType
 from PyQt5 import QtCore
 from PyQt5.QtCore import QModelIndex, QPoint, QSortFilterProxyModel, QThread, QTimer
 from PyQt5.QtGui import QIcon, QImage, QPixmap, QResizeEvent, QStandardItem, QStandardItemModel, QTransform
@@ -17,12 +16,8 @@ from utility.error_handling import format_exception_with_variables
 if TYPE_CHECKING:
     from pykotor.common.misc import CaseInsensitiveDict
     from pykotor.extract.file import FileResource
+    from pykotor.resource.type import ResourceType
     from toolset.data.installation import HTInstallation
-
-GFF_TYPES: list[ResourceType] = [ResourceType.GFF, ResourceType.UTC, ResourceType.UTP, ResourceType.UTD, ResourceType.UTI,
-             ResourceType.UTM, ResourceType.UTE, ResourceType.UTT, ResourceType.UTW, ResourceType.UTS,
-             ResourceType.DLG, ResourceType.GUI, ResourceType.ARE, ResourceType.IFO, ResourceType.GIT,
-             ResourceType.JRL, ResourceType.ITP]
 
 
 class MainWindowList(QWidget):
@@ -195,10 +190,10 @@ class ResourceList(MainWindowList):
         """
         menu = QMenu(self)
 
-        resources = self.selectedResources()
+        resources: list[FileResource] = self.selectedResources()
         if len(resources) == 1:
-            resource = resources[0]
-            if resource.restype() in GFF_TYPES:
+            resource: FileResource = resources[0]
+            if resource.restype().contents == "gff":
                 def open1():
                     return self.requestOpenResource.emit(resources, False)
                 def open2():
@@ -312,8 +307,10 @@ class TextureList(MainWindowList):
 
         self._taskQueue = multiprocessing.JoinableQueue()
         self._resultQueue = multiprocessing.Queue()
-        self._consumers: list[TextureListConsumer] = [TextureListConsumer(self._taskQueue, self._resultQueue) for i in
-                                                      range(multiprocessing.cpu_count())]
+        self._consumers: list[TextureListConsumer] = [
+            TextureListConsumer(self._taskQueue, self._resultQueue)
+            for _ in range(multiprocessing.cpu_count())
+        ]
         for consumer in self._consumers:
             consumer.start()
 
