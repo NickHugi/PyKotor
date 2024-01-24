@@ -53,7 +53,6 @@ from utility.system.path import Path
 from utility.tkinter.tooltip import ToolTip
 
 if TYPE_CHECKING:
-
     from types import TracebackType
 
     from pykotor.tslpatcher.namespaces import PatcherNamespace

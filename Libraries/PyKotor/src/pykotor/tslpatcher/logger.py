@@ -75,5 +75,5 @@ class PatchLog:
         print(self.formatted_message)
 
     @property
-    def formatted_message(self) -> str:
+    def formatted_message(self) -> str:  # REM: log_type should be first for kotormodsync support.
         return f"[{self.log_type}] [{self.timestamp.strftime('%H:%M:%S')}] {self.message}"
