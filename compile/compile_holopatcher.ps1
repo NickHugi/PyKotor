@@ -53,6 +53,7 @@ $pyInstallerArgs = @{
         'ruff',
         'pylint',
         'pykotor.gl',
+        'pykotorgl',
         'pykotor.font',
         'pykotorfont'
         'pykotor.secure_xml',
