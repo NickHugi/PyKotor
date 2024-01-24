@@ -47,7 +47,13 @@ from toolset.gui.windows.indoor_builder import IndoorMapBuilder
 from toolset.gui.windows.module_designer import ModuleDesigner
 from toolset.utils.misc import openLink
 from toolset.utils.window import addWindow, openResourceEditor
-from utility.error_handling import assert_with_variable_trace, enforce_instance_cast, format_exception_with_variables, universal_simplify_exception
+from utility.error_handling import (
+    assert_with_variable_trace,
+    enforce_instance_cast,
+    format_exception_with_variables,
+    universal_simplify_exception,
+)
+from utility.misc import is_debug_mode
 from utility.system.path import Path, PurePath
 from watchdog.events import FileSystemEventHandler
 from watchdog.observers import Observer
@@ -689,15 +695,13 @@ class ToolWindow(QMainWindow):
 
             def task() -> HTInstallation:
                 self.active = HTInstallation(path, name, tsl, self)
-                should_reload: bool | None = old_active is not None and self.active.path() != old_active.path()
-                if should_reload:
-                    self.active.reload_all()
+                self.active.reload_all()
                 print("Refreshing module list...")
-                self.refreshModuleList(reload=should_reload)
+                self.refreshModuleList(reload=False)
                 print("Refreshing Override list...")
-                self.refreshOverrideList(reload=should_reload)
+                self.refreshOverrideList(reload=False)
                 print("Refreshing texturepacks...")
-                self.refreshTexturePackList(reload=should_reload)
+                self.refreshTexturePackList(reload=False)
                 return self.active
 
             loader_task = task
@@ -706,20 +710,22 @@ class ToolWindow(QMainWindow):
         else:
             def task2() -> HTInstallation:
                 self.active = self.installations[name]
-                should_reload: bool = old_active is not None and self.active.path() != old_active.path()
+                #should_reload: bool = old_active is not None and self.active.path() != old_active.path()
                 print("Reloading module list..")
-                self.refreshModuleList(reload=should_reload)
+                self.refreshModuleList(reload=False)
                 print("Reloading Override list...")
-                self.refreshOverrideList(reload=should_reload)
+                self.refreshOverrideList(reload=False)
                 print("Reloading texturepacks list...")
-                self.refreshTexturePackList(reload=should_reload)
+                self.refreshTexturePackList(reload=False)
                 return self.active
             loader_task = task2
-        loader = AsyncLoader(self, "Loading Installation", loader_task, "Failed to load installation")
-        if loader.exec_():
-            if name not in self.installations:
-                self.installations[name] = loader.value
-            self.active: HTInstallation | None = loader.value
+        #if is_debug_mode():
+        #    if loader_task() and name not in self.installations:
+        #        self.installations[name] = self.active
+        #else:
+        loader = AsyncLoader(self, "Loading Installation" if name not in self.installations else "Refreshing Installation", loader_task, "Failed to load installation")
+        if loader.exec_() and name not in self.installations:
+            self.installations[name] = loader.value
 
         # If the data has been successfully been loaded, dump the data into the models
         if name in self.installations:
