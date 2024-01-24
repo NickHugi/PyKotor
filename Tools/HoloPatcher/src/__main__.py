@@ -603,34 +603,40 @@ class App(tk.Tk):
 
         try:
             def task():
-                self.logger.add_note("Please wait, this may take awhile...")
                 self.set_state(state=True)
                 self.clear_main_text()
+                self.logger.add_note("Please wait, this may take awhile...")
+                made_change = False
                 try:
                     for root, dirs, files in os.walk(directory, topdown=False):
                         # Renaming files
-                        for name in files:
-                            file_path: Path = Path(root, name)
-                            new_file_path: Path = Path(root, name.lower())
+                        for file_name in files:
+                            file_path: Path = Path(root, file_name)
+                            new_file_path: Path = Path(root, file_name.lower())
                             str_file_path = str(file_path)
                             str_new_file_path = str(new_file_path)
                             if str_file_path != str_new_file_path:
                                 self.logger.add_note(f"Renaming {str_file_path} to '{new_file_path.name}'")
                                 file_path.rename(new_file_path)
+                                made_change = True
 
                         # Renaming directories
-                        for name in dirs:
-                            dir_path: Path = Path(root, name)
-                            new_dir_path: Path = Path(root, name.lower())
+                        for folder_name in dirs:
+                            dir_path: Path = Path(root, folder_name)
+                            new_dir_path: Path = Path(root, folder_name.lower())
                             str_dir_path = str(dir_path)
                             str_new_dir_path = str(new_dir_path)
                             if str_dir_path != str_new_dir_path:
                                 self.logger.add_note(f"Renaming {str_dir_path} to '{new_dir_path.name}'")
                                 dir_path.rename(str_new_dir_path)
+                                made_change = True
+                    Path(directory).rename(Path._fix_path_formatting(str(directory).lower()))
                 except Exception as e:
                     self._handle_general_exception(e)
                 finally:
                     self.set_state(state=False)
+                    if not made_change:
+                        self.logger.add_note("Nothing to change - all files/folders already correct case.")
                     self.logger.add_note("iOS case rename task completed.")
 
             self.install_thread = Thread(target=task)
