@@ -150,10 +150,6 @@ function Compress-Zip {
 try {
     
     New-Item -Name "publish" -ItemType Directory -ErrorAction SilentlyContinue
-    # Remove old builds if they exist.
-    Get-ChildItem -Path "publish" -File | ForEach-Object {
-        Remove-Item -Path $_.FullName -Force -Confirm:$false
-    }
     foreach ($item in $sourceFolder) {
         Write-Host ""
         Write-Host "Zipping '$item' for release..."
