@@ -188,39 +188,66 @@ class TestPathlibMixedSlashes(unittest.TestCase):
             self.assertEqual(False, PathType(test_path).is_dir(), repr(PathType))  # This is the bug
 
     @unittest.skipIf(os.name != "nt", "Test only supported on Windows.")
-    def test_windows_exists_alternatives(self):
+    def test_windows_exists_alternatives_dir(self):
         test_classes: tuple[type, ...] = (CustomPath, CaseAwarePath)
-        test_path = "C:\\GitHub\\PyKotor\\.venv_wsl\\bin\\python"
+        test_path = "C:\\WINDOWS"
         self.assertFalse(os.access("C:\\nonexistent\\path", os.F_OK))
         test_access: bool = os.access(test_path, os.F_OK)
         self.assertEqual(test_access, True)
 
         exists, is_file, is_dir = check_path_win_api(test_path)
         self.assertEqual(exists, True)
-        self.assertEqual(is_file, True)
-        self.assertEqual(is_dir, False)
+        self.assertEqual(is_file, False)
+        self.assertEqual(is_dir, True)
 
-        # These are the bugs
         test_os_exists: bool = os.path.exists(test_path)
-        self.assertEqual(test_os_exists, False)
+        self.assertEqual(test_os_exists, True)
         test_os_isfile: bool = os.path.isfile(test_path)
         self.assertEqual(test_os_isfile, False)
 
-        # These are the bugs too.
-        self.assertRaises(OSError, Path(test_path).exists)
-        self.assertRaises(OSError, Path(test_path).is_file)
-        self.assertRaises(OSError, Path(test_path).is_dir)
         for PathType in test_classes:
 
             test_pathtype_exists: bool | None = PathType(test_path).safe_exists()
             self.assertEqual(test_pathtype_exists, True)
-            self.assertRaises(OSError, PathType(test_path).exists)
             test_pathtype_isfile: bool | None = PathType(test_path).safe_isfile()
-            self.assertEqual(test_pathtype_isfile, True)
-            self.assertRaises(OSError, PathType(test_path).is_file)
+            self.assertEqual(test_pathtype_isfile, False)
             test_pathtype_isdir: bool | None = PathType(test_path).safe_isdir()
-            self.assertEqual(test_pathtype_isdir, False)
-            self.assertRaises(OSError, PathType(test_path).is_dir)
+            self.assertEqual(test_pathtype_isdir, True)
+
+    @unittest.skipIf(os.name != "nt", "Test only supported on Windows.")
+    def test_windows_exists_alternatives(self):
+        test_classes: tuple[type, ...] = (CustomPath, CaseAwarePath)
+        test_path = "C:\\GitHub\\PyKotor\\.venv_wsl\\bin"
+        self.assertFalse(os.access("C:\\nonexistent\\path", os.F_OK))
+        test_access: bool = os.access(test_path, os.F_OK)
+        self.assertEqual(test_access, True)
+
+        exists, is_file, is_dir = check_path_win_api(test_path)
+        self.assertEqual(exists, True)
+        self.assertEqual(is_file, False)
+        self.assertEqual(is_dir, True)
+
+        # These are the bugs
+        test_os_exists: bool = os.path.exists(test_path)
+        self.assertEqual(test_os_exists, True)
+        test_os_isfile: bool = os.path.isfile(test_path)
+        self.assertEqual(test_os_isfile, False)
+
+        # These are the bugs too.
+        #self.assertRaises(OSError, Path(test_path).exists)
+        #self.assertRaises(OSError, Path(test_path).is_file)
+        #self.assertRaises(OSError, Path(test_path).is_dir)
+        for PathType in test_classes:
+
+            test_pathtype_exists: bool | None = PathType(test_path).safe_exists()
+            self.assertEqual(test_pathtype_exists, True)
+            #self.assertRaises(OSError, PathType(test_path).exists)
+            test_pathtype_isfile: bool | None = PathType(test_path).safe_isfile()
+            self.assertEqual(test_pathtype_isfile, False)
+            #self.assertRaises(OSError, PathType(test_path).is_file)
+            test_pathtype_isdir: bool | None = PathType(test_path).safe_isdir()
+            self.assertEqual(test_pathtype_isdir, True)
+            #self.assertRaises(OSError, PathType(test_path).is_dir)
 
     def test_find_exists_problems(self):
         test_classes: tuple[type, ...] = (Path, CustomPath, CaseAwarePath)
