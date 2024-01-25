@@ -956,7 +956,7 @@ class BasePath(BasePurePath):
             isdir_check: bool | None = self.safe_isdir()
             commands = []
 
-            log_func(f"Step 1: Resetting permissions and re-enabling inheritance for {self_path_str}...")
+            print(f"Step 1: Resetting permissions and re-enabling inheritance for {self_path_str}...")
             icacls_reset_args: list[str] = ["icacls", self_path_str, "/reset", "/Q"]
             if isdir_check and recurse:
                 icacls_reset_args.append("/T")
@@ -975,7 +975,7 @@ class BasePath(BasePurePath):
                 elif icacls_reset_result.stdout.strip():
                     log_func(icacls_reset_result.stdout)
 
-            log_func(f"Step 2: Attempt to take ownership of the target {self_path_str}...")
+            print(f"Step 2: Attempt to take ownership of the target {self_path_str}...")
             takeown_args: list[str] = ["takeown", "/F", self_path_str, "/SKIPSL"]
             if isdir_check:
                 takeown_args.extend(("/D", "Y"))
@@ -996,7 +996,7 @@ class BasePath(BasePurePath):
                 elif takeown_result.stdout.strip():
                     log_func(takeown_result.stdout)
 
-            log_func(f"Step 3: Attempting to set access rights of the target {self_path_str} using icacls...")
+            print(f"Step 3: Attempting to set access rights of the target {self_path_str} using icacls...")
             icacls_args: list[str] = ["icacls", self_path_str, "/grant", "*S-1-1-0:(OI)(CI)F", "/C", "/L", "/Q"]
             if recurse:
                 icacls_args.append("/T")
@@ -1015,7 +1015,7 @@ class BasePath(BasePurePath):
                 else:
                     log_func(f"Permissions set successfully. Output:\n{icacls_result.stdout}")
 
-            log_func(f"Step 4: Removing system/hidden/read-only attribute from '{self_path_str}'...")
+            print(f"Step 4: Removing system/hidden/read-only attribute from '{self_path_str}'...")
             is_read_only, is_hidden, is_system = self.get_win_attrs(self_path_str.replace('"', ""))
             attrib_args: list[str] = ["attrib", "-R", self_path_str]
             if is_system:
@@ -1042,7 +1042,7 @@ class BasePath(BasePurePath):
                     log_func(f"Permissions set successfully. Output:\n{attrib_result.stdout}")
 
             if is_hidden:
-                log_func(f"Step 4.5: Re-apply the hidden attribute to {self_path_str}...")
+                print(f"Step 4.5: Re-apply the hidden attribute to {self_path_str}...")
                 rehide_args: list[str] = ["attrib", "+H", self_path_str]
                 if isdir_check:
                     rehide_args.append("/D")

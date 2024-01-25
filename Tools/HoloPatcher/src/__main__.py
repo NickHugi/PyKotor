@@ -859,6 +859,8 @@ class App(tk.Tk):
         path_arg = filedialog.askdirectory() if directory is None else directory
         if not path_arg:
             return
+        if not directory and not messagebox.askyesno("Warning!", "This is not a toy. Really continue?"):
+            return
 
         try:
             path: Path = Path.pathify(path_arg)
@@ -943,12 +945,11 @@ class App(tk.Tk):
         if directory.has_access(recurse=recurse, filter_results=filter_results):
             return True
         if messagebox.askyesno(
-                "Permission error",
-                f"HoloPatcher does not have permissions to the path '{directory}', would you like to attempt to gain permission automatically?",
+            "Permission error",
+            f"HoloPatcher does not have permissions to the path '{directory}', would you like to attempt to gain permission automatically?",
         ):
-            result = directory.gain_access(log_func=self.logger.add_note)
-            if result:
-                self.on_namespace_option_chosen(tk.Event())
+            directory.gain_access(recurse=recurse)
+            self.on_namespace_option_chosen(tk.Event())
         if not directory.has_access(recurse=recurse):
             return messagebox.askyesno(
                 "Unauthorized",
@@ -1248,7 +1249,7 @@ class App(tk.Tk):
         document = json.loads(rte_content)
 
         # Clear existing content in the Text widget
-        self.main_text.delete("1.0", tk.END)
+        self.main_text.delete(1.0, tk.END)
 
         # Insert new content
         self.main_text.insert("1.0", document["content"])
@@ -1261,6 +1262,7 @@ class App(tk.Tk):
         # Configure tags based on tag_types
         for tag, config in tag_types.items():
             self.main_text.tag_configure(tag.lower(), **config)
+        self.main_text.config(state=tk.DISABLED)
 
     def load_rtf_file(self, file_path: os.PathLike | str):
         from utility.pyth3.plugins.plaintext.writer import PlaintextWriter
