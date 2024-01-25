@@ -3,13 +3,19 @@
 from __future__ import annotations
 import ctypes
 from ctypes.wintypes import DWORD
+import getpass
 
 import os
 import pathlib
 import platform
+import shutil
+import subprocess
 import sys
+import tempfile
+import time
 import unittest
 from pathlib import Path, PosixPath, PurePath, PurePosixPath, PureWindowsPath, WindowsPath
+from tempfile import TemporaryDirectory
 from unittest import mock
 
 THIS_SCRIPT_PATH = pathlib.Path(__file__)
@@ -48,6 +54,92 @@ def check_path_win_api(path) -> tuple[bool, bool, bool]:
 
 class TestPathlibMixedSlashes(unittest.TestCase):
 
+    def create_and_run_batch_script(self, cmd: list[str], pause_after_command: bool = True):
+        with TemporaryDirectory() as tempdir:
+            # Ensure the script path is absolute
+            script_path = str(Path(tempdir, "temp_script.bat").absolute())
+
+            # Write the commands to a batch file
+            with open(script_path, 'w') as file:
+                for command in cmd:
+                    file.write(command + '\n')
+                if pause_after_command:
+                    file.write('pause\nexit\n')
+
+            # Determine the CMD switch to use
+            cmd_switch = '/K' if pause_after_command else '/C'
+
+            # Construct the command to run the batch script with elevated privileges
+            run_script_cmd: list[str] = [
+                "Powershell",
+                "-Command",
+                f"Start-Process cmd.exe -ArgumentList '{cmd_switch} \"{script_path}\"' -Verb RunAs -Wait"
+            ]
+
+            # Execute the batch script
+            subprocess.run(run_script_cmd, check=False)
+
+            # Optionally, delete the batch script after execution
+            try:
+                os.remove(script_path)
+            except Exception:
+                ...
+
+    def remove_permissions(self, path_str: str):
+        is_file = os.path.isfile(path_str)
+
+        # Define the commands
+        combined_commands: list[str] = [
+            f"icacls \"{path_str}\" /reset",
+            f"attrib +S \"{path_str}\"",
+            f"icacls \"{path_str}\" /inheritance:r",
+            f"icacls \"{path_str}\" /deny Everyone:(F)"
+        ]
+
+        # Create and run the batch script
+        self.create_and_run_batch_script(combined_commands)
+
+        #self.run_command(isfile_or_dir_args(["icacls", path_str, "/setowner", "dummy_user"]))
+        #self.run_command(isfile_or_dir_args(["icacls", path_str, "/deny", "dummy_user:(D,WDAC,WO)"]))
+        #self.run_command(["cipher", "/e", path_str])
+
+    def run_command(self, cmd):
+        cmd_with_admin: list[str] = self.get_admin_command(cmd)
+        result: subprocess.CompletedProcess[str] = subprocess.run(cmd_with_admin, check=False, capture_output=True, text=True)
+        assert not result.stderr.strip(), result.stderr
+        print(f"stdout: {result.stdout} stderr: {result.stderr}")
+
+
+    def test_gain_file_access(self):  # sourcery skip: extract-method
+        test_file = Path("this file has no permissions.txt").absolute()
+        try:
+            with test_file.open("w") as f:
+                f.write("test")
+        except PermissionError as e:
+            ...
+            # raise e
+        self.remove_permissions(str(test_file))
+        try:
+
+            # Remove all permissions from the file
+
+            test_filepath = CustomPath(test_file)
+            #self.assertFalse(os.access(test_file, os.W_OK), "Write access should be denied")  # this only checks attrs on windows
+            #self.assertFalse(os.access(test_file, os.R_OK), "Read access should be denied")   # this only checks attrs on windows
+
+            self.assertEqual(test_filepath.has_access(mode=0o1), True)  # this is a bug with os.access
+            self.assertEqual(test_filepath.has_access(mode=0o7), False)
+
+            self.assertEqual(test_filepath.gain_access(mode=0o6), True)
+            self.assertEqual(test_filepath.has_access(mode=0o6), True)
+
+            #self.assertFalse(os.access(test_file, os.R_OK), "Read access should be denied")   # this only checks attrs on windows
+            #self.assertFalse(os.access(test_file, os.W_OK), "Write access should be denied")  # this only checks attrs on windows
+        finally:
+            # Clean up: Delete the temporary file
+            #test_file.unlink()
+            ...
+
     def test_nt_case_hashing(self):
         test_classes: tuple[type, ...] = (
             (CustomPureWindowsPath,)
@@ -59,7 +151,7 @@ class TestPathlibMixedSlashes(unittest.TestCase):
                 path1 = PathType("test\\path\\to\\nothing")
                 path2 = PathType("tesT\\PATH\\\\to\\noTHinG\\")
 
-            with mock.patch('os.name', "nt"):
+            with mock.patch("os.name", "nt"):
                 test_set = {path1, path2}
                 self.assertEqual(path1, path2)
                 self.assertEqual(hash(path1), hash(path2))
@@ -108,24 +200,26 @@ class TestPathlibMixedSlashes(unittest.TestCase):
         self.assertEqual(is_file, True)
         self.assertEqual(is_dir, False)
 
+        # These are the bugs
         test_os_exists: bool = os.path.exists(test_path)
         self.assertEqual(test_os_exists, False)
         test_os_isfile: bool = os.path.isfile(test_path)
         self.assertEqual(test_os_isfile, False)
 
+        # These are the bugs too.
         self.assertRaises(OSError, Path(test_path).exists)
         self.assertRaises(OSError, Path(test_path).is_file)
         self.assertRaises(OSError, Path(test_path).is_dir)
         for PathType in test_classes:
 
             test_pathtype_exists: bool | None = PathType(test_path).safe_exists()
-            self.assertEqual(test_pathtype_exists, None)
+            self.assertEqual(test_pathtype_exists, True)
             self.assertRaises(OSError, PathType(test_path).exists)
             test_pathtype_isfile: bool | None = PathType(test_path).safe_isfile()
-            self.assertEqual(test_pathtype_isfile, None)
+            self.assertEqual(test_pathtype_isfile, True)
             self.assertRaises(OSError, PathType(test_path).is_file)
             test_pathtype_isdir: bool | None = PathType(test_path).safe_isdir()
-            self.assertEqual(test_pathtype_isdir, None)
+            self.assertEqual(test_pathtype_isdir, False)
             self.assertRaises(OSError, PathType(test_path).is_dir)
 
     def test_find_exists_problems(self):
@@ -198,7 +292,7 @@ class TestPathlibMixedSlashes(unittest.TestCase):
                 path1 = PathType("test\\\\path\\to\\nothing\\")
                 path2 = PathType("tesT\\PATH\\to\\\\noTHinG")
 
-            with mock.patch('os.name', "posix"):
+            with mock.patch("os.name", "posix"):
                 test_set = {path1, path2}
                 self.assertNotEqual(path1, path2)
                 self.assertNotEqual(hash(path1), hash(path2))

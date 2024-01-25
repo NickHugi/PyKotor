@@ -4,10 +4,12 @@ import os
 import pathlib
 import re
 import subprocess
+from tempfile import TemporaryDirectory
 import uuid
 from typing import TYPE_CHECKING, Any, Callable, ClassVar, Generator, Union
 
 from utility.error_handling import format_exception_with_variables
+import contextlib
 
 if TYPE_CHECKING:
     from typing_extensions import Self
@@ -477,57 +479,63 @@ class BasePath(BasePurePath):
 
     # Safe is_dir operation
     def safe_isdir(self: Path) -> bool | None:  # type: ignore[misc]
+        check: bool | None = None
         try:
-            return self.is_dir()
+            check = self.is_dir()
         except OSError as e:
             print(format_exception_with_variables(e,  message="This exception has been suppressed and is only relevant for debug purposes."))
             if os.name == "posix":
-                return False
-            try:
-                exists, is_file, is_dir = self._check_path_win_api()
-            except Exception as e2:
-                print(format_exception_with_variables(e2,  message="This exception has been suppressed and is only relevant for debug purposes."))
-            else:
-                return is_dir
+                return None
+        if check:
+            return True
+        try:
+            exists, is_file, is_dir = self._check_path_win_api()
+        except Exception as e2:
+            print(format_exception_with_variables(e2,  message="This exception has been suppressed and is only relevant for debug purposes."))
+        else:
+            return is_dir
         return None
 
     # Safe is_file operation
     def safe_isfile(self: Path) -> bool | None:  # type: ignore[misc]
+        check: bool | None = None
         try:
-            return self.is_file()
+            check = self.is_file()
         except OSError as e:
             print(format_exception_with_variables(e,  message="This exception has been suppressed and is only relevant for debug purposes."))
             if os.name == "posix":
-                return False
-            try:
-                exists, is_file, is_dir = self._check_path_win_api()
-            except Exception as e2:
-                print(format_exception_with_variables(e2,  message="This exception has been suppressed and is only relevant for debug purposes."))
-            else:
-                return is_file
+                return None
+        if check:
+            return True
+        try:
+            exists, is_file, is_dir = self._check_path_win_api()
+        except Exception as e2:
+            print(format_exception_with_variables(e2,  message="This exception has been suppressed and is only relevant for debug purposes."))
+        else:
+            return is_file
         return None
 
     # Safe exists operation
     def safe_exists(self: Path) -> bool | None:  # type: ignore[misc]
-        self_str: str | None = None
+        self_path_str: str | None = None  # caching for performance
+        check: bool | None = None
         try:
-            return self.exists()
+            check = self.exists()
         except Exception as e:
             print(format_exception_with_variables(e,  message="This exception has been suppressed and is only relevant for debug purposes."))
+            if os.name == "posix":
+                return os.access(self_path_str, os.F_OK)
             try:
-                self_str = str(self)  # caching as variable for performance reasons (such as CaseAwarePath)
-                return os.access(self_str, os.F_OK)
-            except Exception as e2:
-                print(format_exception_with_variables(e2,  message="This exception has been suppressed and is only relevant for debug purposes."))
-                if os.name == "posix":
-                    return None
-                try:
-                    exists, is_file, is_dir = self._check_path_win_api(self_str)
-                except Exception as e3:
-                    print(format_exception_with_variables(e3,  message="This exception has been suppressed and is only relevant for debug purposes."))
-                else:
-                    return exists
-        return None
+                self_path_str = str(self)
+                exists, is_file, is_dir = self._check_path_win_api(self_path_str)
+            except Exception as e3:
+                print(format_exception_with_variables(e3,  message="This exception has been suppressed and is only relevant for debug purposes."))
+                return os.access(str(self), os.F_OK)
+            else:
+                return exists
+        else:
+            self_path_str = str(self) if self_path_str is None else self_path_str
+            return check or os.access(self_path_str, os.F_OK) or check
 
 
     def _check_path_win_api(self, cached_self_str: str | None = None) -> tuple[bool, bool, bool]:
@@ -664,8 +672,11 @@ class BasePath(BasePurePath):
         mode: int = 0o6,
         *,
         recurse: bool = False,
+        filter_results: Callable[[Path], bool] | None = None,
     ) -> bool:
         """Check if the path has the specified access permissions.
+
+        This function will catch and log all exceptions. Therefore this function is always safe.
 
         Args:
         ----
@@ -681,24 +692,42 @@ class BasePath(BasePurePath):
             >>> path = Path('/my/path')
             >>> path.has_access(mode=0o6, recurse=False)
         """
+        mode_to_str: dict[int, str | None] = {
+            0o0: None,   # No permissions
+            0o1: None,   # Execute only
+            0o2: "w",    # Write only
+            0o3: "w",    # Write and execute
+            0o4: "r",    # Read only
+            0o5: "r",    # Read and execute
+            0o6: "r+",   # Read and write
+            0o7: "r+",   # Read, write, and execute
+        }
         try:
+            if filter_results and not filter_results(self):
+                return True  # ignore anything the filter deems ignorable.
             if not self.safe_exists():
                 return False
 
+            open_mode: str | None = mode_to_str[mode]
             if self.is_file():
-                return self.get_highest_permission() >= mode
+                if open_mode is not None:
+                    with self.open(open_mode) as _:  # on windows this will fail if the file has system/read-only attributes.
+                        ...
+                return self.get_highest_permission() >= mode  # check against os.access
 
             if self.is_dir():  # sourcery skip: extract-method
-                test_path: Path = self / f"temp_test_file_{uuid.uuid4().hex}.tmp"
-                with test_path.open("w") as test_writer:
-                    test_writer.write("")
+                test_path: Path = self / f"pyk_{uuid.uuid4().hex}.tmp"
+                test_path.touch()
+                if open_mode is not None:
+                    with test_path.open(open_mode) as _:  # on windows this will fail if the file has system/read-only attributes.
+                        ...
                 test_path.unlink()
 
                 if not recurse:
                     return True
 
                 for file_or_folder in self.rglob("*"):
-                    cur_access: bool = file_or_folder.has_access(mode, recurse=recurse)
+                    cur_access: bool = file_or_folder.has_access(mode, recurse=recurse, filter_results=filter_results)
                     if not cur_access:
                         return False
                 return True
@@ -709,6 +738,7 @@ class BasePath(BasePurePath):
             #raise
         return False
 
+    unique_sentinel = object()
     def gain_access(
         self,
         mode: int = 0o7,
@@ -716,7 +746,6 @@ class BasePath(BasePurePath):
         recurse: bool = True,
         resolve_symlinks: bool = False,
         log_func: Callable[[str], Any] = lambda s: s,
-        _is_child=None,
     ) -> bool:
         """Gain access to the path by changing its permissions.
 
@@ -726,6 +755,7 @@ class BasePath(BasePurePath):
                         Note: `mode` specifically sets the 'other' permission for chmod if chmod is necessary.
             recurse (bool): Whether to recursively change permissions for all child paths. Defaults to True.
             resolve_symlinks (bool): Whether to resolve symlinks when changing permissions. Defaults to False.
+            log_func (Callable[[str], Any]): a custom optional function to use for logging purposes. must take a single str arg representing the message.
 
         Returns:
         -------
@@ -778,31 +808,31 @@ class BasePath(BasePurePath):
         except (OSError, NotImplementedError) as e:
             print(format_exception_with_variables(e, message=f"Error during chmod at path '{self}'"))
 
-        print("Attempting native access fix...")
-        if _is_child is None:
+        success: bool = True
+        if not self.has_access(mode, recurse=False):
+            log_func(f"No permissions to {self}, attempting native access fix...")
             try:
-                self.request_native_access(elevate=False, recurse=recurse)
+                self.request_native_access(elevate=False, recurse=recurse, log_func=log_func)
             except Exception as e:
                 print(format_exception_with_variables(e, message=f"Error during platform-specific permission request at path '{self}'"))
 
-            print("Checking access before attempting elevated native access fix...")
-            if not self.has_access(mode, recurse=False):
-                print("Attempting to elevate the native access fix...")
+            log_func("Checking access again before attempting elevated native access fix...")
+            success = self.has_access(mode, recurse=False)
+            if not success:
+                log_func("Attempting to elevate the native access fix...")
                 try:
-                    self.request_native_access(elevate=True, recurse=recurse)
+                    self.request_native_access(elevate=True, recurse=recurse, log_func=log_func)
                 except Exception as e:
                     print(format_exception_with_variables(e, message=f"Error during elevated platform-specific permission request at path '{self}'"))
 
-        print("Verifying the operations were successful...")
-        success: bool = self.has_access(mode, recurse=False)
+        log_func("Verifying the operations were successful...")
+        if not success:
+            success= self.has_access(mode, recurse=False)
         try:
             if recurse and self.safe_isdir():
                 for child in self.iterdir():
-                    log_func(f"Acquiring permissions to '{child}'... this may take some time...")
-                    result: bool = child.gain_access(mode, recurse=recurse, _is_child=True)
-                    if result:
-                        log_func(f"Successfully acquired permission to '{child.name}'")
-                    else:
+                    result: bool = child.gain_access(mode, recurse=recurse, resolve_symlinks=resolve_symlinks, log_func=log_func)
+                    if not result:
                         log_func(f"FAILED to gain access to '{child}'!")
                     success &= result
         except (OSError, NotImplementedError) as e:
@@ -852,56 +882,188 @@ class BasePath(BasePurePath):
             print(chmod_result.stdout)
             print(chown_result.stdout)
 
+
     if os.name == "nt":
-        # Inspired by the C# code provided by KOTORModSync's source code at https://github.com/th3w1zard1/KOTORModSync
-        def request_native_access(self: Path, elevate: bool = False, recurse: bool = True):
-            print(f"Step 1: Attempt to take ownership of the target '{self}'...")
-            takeown_args: list[str] = ["takeown", "/F", f"{self}", "/SKIPSL"]
-            if self.safe_isdir():
-                if recurse:
-                    takeown_args.extend(["/R"])
+
+        # TODO: move to utility.system
+        @staticmethod
+        def get_win_attrs(file_path):
+            import ctypes
+            # Constants for file attributes
+            FILE_ATTRIBUTE_READONLY = 0x1
+            FILE_ATTRIBUTE_HIDDEN = 0x2
+            FILE_ATTRIBUTE_SYSTEM = 0x4
+            # GetFileAttributesW is a Windows API function
+            attrs = ctypes.windll.kernel32.GetFileAttributesW(file_path)
+
+            # If the function fails, it returns INVALID_FILE_ATTRIBUTES
+            if attrs == -1:
+                raise FileNotFoundError(f"Cannot access attributes of file: {file_path}")
+
+            # Check for specific attributes
+            is_read_only = bool(attrs & FILE_ATTRIBUTE_READONLY)
+            is_hidden = bool(attrs & FILE_ATTRIBUTE_HIDDEN)
+            is_system = bool(attrs & FILE_ATTRIBUTE_SYSTEM)
+
+            return is_read_only, is_hidden, is_system
+
+        # TODO: move to utility.system
+        def run_commands_as_admin(self, cmd: list[str], pause_after_command: bool = True):
+            # sourcery skip: extract-method
+            with TemporaryDirectory() as tempdir:
+                # Ensure the script path is absolute
+                script_path_obj: Path = self.__class__(tempdir, "temp_script.bat")  # type: ignore[reportGeneralTypeIssues]
+                script_path_obj = script_path_obj.absolute()
+                script_path = str(script_path_obj)
+
+                # Write the commands to a batch file
+                with script_path_obj.open("w") as file:
+                    for command in cmd:
+                        file.write(command + "\n")
+                    if pause_after_command:
+                        file.write("pause\nexit\n")
+
+                # Determine the CMD switch to use
+                cmd_switch = "/K" if pause_after_command else "/C"
+
+                # Construct the command to run the batch script with elevated privileges
+                run_script_cmd: list[str] = [
+                    "Powershell",
+                    "-Command",
+                    f"Start-Process cmd.exe -ArgumentList '{cmd_switch} \"{script_path}\"' -Verb RunAs -Wait"
+                ]
+
+                # Execute the batch script
+                subprocess.run(run_script_cmd, check=False)
+
+            # Delete the batch script after execution
+            with contextlib.suppress(Exception):
+                if script_path_obj.safe_isfile():
+                    script_path_obj.unlink()
+
+        # Inspired by the C# code provided by KOTORModSync at https://github.com/th3w1zard1/KOTORModSync
+        def request_native_access(
+            self: Path,  # type: ignore[reportGeneralTypeIssues]
+            elevate: bool = False,
+            recurse: bool = True,
+            log_func: Callable[[str], Any] | None = None,
+        ):
+            if log_func is None:
+                log_func = print
+            self_path_str = str(self.absolute())
+            if elevate:
+                self_path_str = f'"{self_path_str}"'
+            isdir_check: bool | None = self.safe_isdir()
+            commands = []
+
+            log_func(f"Step 1: Resetting permissions and re-enabling inheritance for {self_path_str}...")
+            icacls_reset_args: list[str] = ["icacls", self_path_str, "/reset", "/Q"]
+            if isdir_check and recurse:
+                icacls_reset_args.append("/T")
+            if elevate:
+                commands.append(" ".join(icacls_reset_args))
+            else:
+                icacls_reset_result: subprocess.CompletedProcess[str] = subprocess.run(icacls_reset_args, timeout=60, check=False,
+                                                                                  capture_output=True, text=True)
+                if icacls_reset_result.returncode != 0:
+                    log_func(
+                        f"Failed reset permissions of {self_path_str}:\n"
+                        f"exit code: {icacls_reset_result.returncode}\n"
+                        f"stdout: {icacls_reset_result.stdout}\n"
+                        f"stderr: {icacls_reset_result.stderr}",
+                    )
+                elif icacls_reset_result.stdout.strip():
+                    log_func(icacls_reset_result.stdout)
+
+            log_func(f"Step 2: Attempt to take ownership of the target {self_path_str}...")
+            takeown_args: list[str] = ["takeown", "/F", self_path_str, "/SKIPSL"]
+            if isdir_check:
                 takeown_args.extend(("/D", "Y"))
+                if recurse:
+                    takeown_args.append("/R")
             if elevate:  # sourcery skip: extract-duplicate-method
-                takeown_command = " ".join(takeown_args)
-                pwsh_wrapped_cmd = f"Powershell -Command \"& {{Start-Process cmd.exe -ArgumentList '/c {takeown_command}' -Verb RunAs}}\""
-                print(pwsh_wrapped_cmd)
-                os.system(pwsh_wrapped_cmd)
+                commands.append(" ".join(takeown_args))
             else:
                 takeown_result: subprocess.CompletedProcess[str] = subprocess.run(takeown_args, timeout=60, check=False,
                                                                                   capture_output=True, text=True)
-
                 if takeown_result.returncode != 0:
-                    print(
-                        f"Failed to take ownership of '{self}':\n"
+                    log_func(
+                        f"Failed to take ownership of {self_path_str}:\n"
                         f"exit code: {takeown_result.returncode}\n"
                         f"stdout: {takeown_result.stdout}\n"
                         f"stderr: {takeown_result.stderr}",
                     )
-                else:
-                    print(takeown_result.stdout)
+                elif takeown_result.stdout.strip():
+                    log_func(takeown_result.stdout)
 
-            print(f"Step 2: Attempting to set access rights of the target '{self}' using icacls...")
+            log_func(f"Step 3: Attempting to set access rights of the target {self_path_str} using icacls...")
+            icacls_args: list[str] = ["icacls", self_path_str, "/grant", "*S-1-1-0:(OI)(CI)F", "/C", "/L", "/Q"]
+            if recurse:
+                icacls_args.append("/T")
             if elevate:
-                icacls_command = f'icacls "{self}" /grant *S-1-1-0:(OI)(CI)F{" /T" if recurse else ""} /C /L'
-                pwsh_wrapped_cmd = f"Powershell -Command \"& {{Start-Process cmd.exe -ArgumentList '/c {icacls_command}' -Verb RunAs}}\""
-                print(pwsh_wrapped_cmd)
-                os.system(pwsh_wrapped_cmd)
+                commands.append(" ".join(icacls_args))
             else:
-                if recurse:
-                    icacls_args = ["icacls", f"{self}", "/grant", "*S-1-1-0:(OI)(CI)F", "/T", "/C", "/L"]
-                else:
-                    icacls_args = ["icacls", f"{self}", "/grant", "*S-1-1-0:(OI)(CI)F", "/C", "/L"]
-                icacls_result: subprocess.CompletedProcess[str] = subprocess.run(icacls_args, timeout=60, check=False, capture_output=True, text=True)
-
+                icacls_result: subprocess.CompletedProcess[str] = subprocess.run(icacls_args, timeout=60, check=False,
+                                                                                  capture_output=True, text=True)
                 if icacls_result.returncode != 0:
-                    print(
-                        f"Could not set Windows icacls permissions at '{self}':\n"
+                    log_func(
+                        f"Could not set Windows icacls permissions at '{self_path_str}':\n"
                         f"exit code: {icacls_result.returncode}\n"
                         f"stdout: {icacls_result.stdout}\n"
                         f"stderr: {icacls_result.stderr}",
                     )
                 else:
-                    print(f"Permissions set successfully. Output:\n{icacls_result.stdout}")
+                    log_func(f"Permissions set successfully. Output:\n{icacls_result.stdout}")
+
+            log_func(f"Step 4: Removing system/hidden/read-only attribute from '{self_path_str}'...")
+            is_read_only, is_hidden, is_system = self.get_win_attrs(self_path_str.replace('"', ""))
+            attrib_args: list[str] = ["attrib", "-R", self_path_str]
+            if is_system:
+                attrib_args.insert(1, "-S")
+            elif is_hidden:
+                attrib_args.insert(1, "-H")
+            if isdir_check:
+                attrib_args.append("/D")
+                if recurse:
+                    attrib_args.append("/S")
+            if elevate:
+                commands.append(" ".join(attrib_args))
+            else:
+                attrib_result: subprocess.CompletedProcess[str] = subprocess.run(attrib_args, timeout=60, check=False,
+                                                                                    capture_output=True, text=True)
+                if attrib_result.returncode != 0:
+                    log_func(
+                        f"Could not set Windows icacls permissions at '{self_path_str}':\n"
+                        f"exit code: {attrib_result.returncode}\n"
+                        f"stdout: {attrib_result.stdout}\n"
+                        f"stderr: {attrib_result.stderr}",
+                    )
+                else:
+                    log_func(f"Permissions set successfully. Output:\n{attrib_result.stdout}")
+
+            if is_hidden:
+                log_func(f"Step 4.5: Re-apply the hidden attribute to {self_path_str}...")
+                rehide_args: list[str] = ["attrib", "+H", self_path_str]
+                if isdir_check:
+                    rehide_args.append("/D")
+                    if recurse:
+                        rehide_args.append("/S")
+                if elevate:
+                    commands.append(" ".join(rehide_args))
+                else:
+                    rehide_result: subprocess.CompletedProcess[str] = subprocess.run(rehide_args, timeout=60, check=False,
+                                                                                        capture_output=True, text=True)
+                    if rehide_result.returncode != 0:
+                        log_func(
+                            f"Could not set Windows icacls permissions at '{self_path_str}':\n"
+                            f"exit code: {rehide_result.returncode}\n"
+                            f"stdout: {rehide_result.stdout}\n"
+                            f"stderr: {rehide_result.stderr}",
+                        )
+
+            if elevate:
+                self.run_commands_as_admin(commands)
+                return
 
 
 class Path(BasePath, pathlib.Path):  # type: ignore[misc]

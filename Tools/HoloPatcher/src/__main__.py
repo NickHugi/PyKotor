@@ -21,7 +21,7 @@ from enum import IntEnum
 from threading import Event, Thread
 from tkinter import filedialog, messagebox, ttk
 from tkinter import font as tkfont
-from typing import TYPE_CHECKING, NoReturn
+from typing import TYPE_CHECKING, Any, Callable, NoReturn
 
 if getattr(sys, "frozen", False) is False:
     def update_sys_path(path):
@@ -41,6 +41,7 @@ if getattr(sys, "frozen", False) is False:
 
 from pykotor.common.misc import Game
 from pykotor.common.stream import BinaryReader
+from pykotor.extract.file import ResourceIdentifier
 from pykotor.tools.encoding import decode_bytes_with_fallbacks
 from pykotor.tools.path import CaseAwarePath, find_kotor_paths_from_default
 from pykotor.tslpatcher.logger import PatchLog, PatchLogger
@@ -145,6 +146,7 @@ class App(tk.Tk):
 
         self.install_running: bool = False
         self.task_running: bool = False
+        self.task_thread: Thread | None = None
         self.mod_path: str = ""
         self.namespaces: list[PatcherNamespace] = []
 
@@ -509,9 +511,10 @@ class App(tk.Tk):
             - If stopping fails, force terminate install thread
             - Destroy window and exit with abort code.
         """
-        if not self.task_running or not self.install_thread.is_alive():
+        if not self.task_running or not self.task_thread or not self.task_thread.is_alive():
             print("Goodbye!")
             sys.exit(ExitCode.SUCCESS)
+            return  # leave here for the static type checkers
 
         # Handle unsafe exit.
         if (
@@ -531,14 +534,14 @@ class App(tk.Tk):
         time.sleep(1)
         print("Install thread is still alive, attempting force close...")
         i = 0
-        while self.install_thread.is_alive():
+        while self.task_thread.is_alive():
             try:
-                self.install_thread._stop()  # type: ignore[attr-defined]
+                self.task_thread._stop()  # type: ignore[attr-defined]
                 print("force terminate of install thread succeeded", sys.stdout)  # noqa: T201
             except BaseException as e:  # noqa: BLE001
                 self._handle_general_exception(e, "Error using self.install_thread._stop()", msgbox=False)
             try:
-                self.async_raise(self.install_thread.ident, SystemExit)
+                self.async_raise(self.task_thread.ident, SystemExit)
             except BaseException as e:  # noqa: BLE001
                 self._handle_general_exception(e, "Error using async_raise(self.install_thread.ident, SystemExit)", msgbox=False)
             print(f"Install thread is still alive after {i} seconds, waiting...")
@@ -546,7 +549,7 @@ class App(tk.Tk):
             i += 1
             if i == 2:
                 break
-        if self.install_thread.is_alive():
+        if self.task_thread.is_alive():
             print("Failed to stop thread!")
 
         print("Destroying self")
@@ -638,8 +641,8 @@ class App(tk.Tk):
                         self.logger.add_note("Nothing to change - all files/folders already correct case.")
                     self.logger.add_note("iOS case rename task completed.")
 
-            self.install_thread = Thread(target=task)
-            self.install_thread.start()
+            self.task_thread = Thread(target=task)
+            self.task_thread.start()
         except Exception as e2:
             self._handle_general_exception(e2)
         finally:
@@ -793,7 +796,7 @@ class App(tk.Tk):
                 if not default_directory_path_str:  # don't show the error if the cwd was attempted
                     messagebox.showerror("Error", "Could not find a mod located at the given folder.")
                 return
-            self.check_access(tslpatchdata_path, recurse=True)
+            self.check_access(tslpatchdata_path, recurse=True, should_filter=True)
         except Exception as e:  # noqa: BLE001
             self._handle_general_exception(e, "An unexpected error occurred while loading the mod info.")
         else:
@@ -833,10 +836,25 @@ class App(tk.Tk):
         except Exception as e:  # noqa: BLE001
             self._handle_general_exception(e, "An unexpected error occurred while loading the game directory.")
 
+    @staticmethod
+    def play_complete_sound():
+        if os.name == "nt":
+            import winsound
+            # Play the system "exclamation" sound
+            winsound.MessageBeep(winsound.MB_ICONEXCLAMATION)
+
+    @staticmethod
+    def play_error_sound():
+        if os.name == "nt":
+            import winsound
+        # Play the system 'error' sound
+            winsound.MessageBeep(winsound.MB_ICONHAND)
+
     def fix_permissions(
         self,
         directory: os.PathLike | str | None = None,
         reset_namespace: bool = False,
+        check: bool = False,
     ):
         path_arg = filedialog.askdirectory() if directory is None else directory
         if not path_arg:
@@ -844,23 +862,48 @@ class App(tk.Tk):
 
         try:
             path: Path = Path.pathify(path_arg)
-            def task():
+            def task() -> bool:
+                extra_msg: str = ""
                 self.set_state(state=True)
                 self.clear_main_text()
                 self.logger.add_note("Please wait, this may take awhile...")
                 try:
-                    access = path.gain_access(recurse=True, log_func=self.logger.add_note)
-                    if access:
-                        messagebox.showinfo("Successfully acquired permission", "The operation was successful.")
-                    else:
-                        messagebox.showerror("Could not acquire permission!", "Permissions denied! Check the logs for more details.")
+                    access: bool = path.gain_access(recurse=True, log_func=self.logger.add_note)
+                    #self.play_complete_sound()
+                    if not access:
+                        if not directory:
+                            messagebox.showerror("Could not acquire permission!", "Permissions denied! Check the logs for more details.")
+                        else:
+                            messagebox.showerror(
+                                "Could not gain permission!",
+                                f"Permission denied to {directory}. Please run HoloPatcher with elevated permissions, and ensure the selected folder exists and is writeable.",
+                            )
+                        return False
+                    check_isdir: bool = path.is_dir()
+                    num_files = 0
+                    num_folders = 0
+                    if check_isdir:
+                        for entry in path.rglob("*"):
+                            if entry.is_file():
+                                num_files += 1
+                            elif entry.is_dir():
+                                num_folders += 1
+
+                    if check_isdir:
+                        extra_msg = f"{num_files} files and {num_folders} folders finished processing."
+                        self.logger.add_note(extra_msg)
+                    messagebox.showinfo("Successfully acquired permission", f"The operation was successful. {extra_msg}")
+
                 except Exception as e:
                     self._handle_general_exception(e)
+                    return False
+                else:
+                    return True
                 finally:
                     self.set_state(state=False)
                     self.logger.add_note("File/Folder permissions fixer task completed.")
-            self.install_thread = Thread(target=task)
-            self.install_thread.start()
+            self.task_thread = Thread(target=task)
+            self.task_thread.start()
         except Exception as e2:
             self._handle_general_exception(e2)
         finally:
@@ -873,6 +916,7 @@ class App(tk.Tk):
         directory: Path,
         *,
         recurse: bool = False,
+        should_filter = False,
     ) -> bool:
         """Check access to a directory.
 
@@ -892,19 +936,19 @@ class App(tk.Tk):
             - If access cannot be gained, show error
             - If no access after trying, prompt user to continue with an install anyway.
         """
-        if directory.has_access(recurse=recurse):
+        filter_results: Callable[[Path], bool] | None = None  # type: ignore[reportGeneralTypeIssues]
+        if should_filter:
+            def filter_results(x: Path) -> bool:
+                return not ResourceIdentifier.from_path(x).restype.is_invalid
+        if directory.has_access(recurse=recurse, filter_results=filter_results):
             return True
-        if (
-            messagebox.askyesno(
+        if messagebox.askyesno(
                 "Permission error",
                 f"HoloPatcher does not have permissions to the path '{directory}', would you like to attempt to gain permission automatically?",
-            ) or not self.fix_permissions(directory, reset_namespace=True)
         ):
-            messagebox.showerror(
-                "Could not gain permission!",
-                "Please run HoloPatcher with elevated permissions, and ensure the selected folder exists and is writeable.",
-            )
-            return False
+            result = directory.gain_access(log_func=self.logger.add_note)
+            if result:
+                self.on_namespace_option_chosen(tk.Event())
         if not directory.has_access(recurse=recurse):
             return messagebox.askyesno(
                 "Unauthorized",
@@ -984,8 +1028,8 @@ class App(tk.Tk):
         try:
             if not self.preinstall_validate_chosen():
                 return
-            self.install_thread = Thread(target=self.begin_install_thread, args=(self.simple_thread_event,))
-            self.install_thread.start()
+            self.task_thread = Thread(target=self.begin_install_thread, args=(self.simple_thread_event,))
+            self.task_thread.start()
         except Exception as e:  # noqa: BLE001
             self._handle_general_exception(e, "An unexpected error occurred during the installation and the program was forced to exit")
             sys.exit(ExitCode.EXCEPTION_DURING_INSTALL)
@@ -1294,8 +1338,6 @@ def is_frozen() -> bool:  # sourcery skip: assign-if-exp, boolean-if-exp-identit
     return False
 
 def main():
-    #if is_frozen():
-    #    multiprocessing.freeze_support()
     app = App()
     app.mainloop()
 
