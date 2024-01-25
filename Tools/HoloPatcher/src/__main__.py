@@ -385,6 +385,8 @@ class App(tk.Tk):
         self.one_shot = True
         self.withdraw()
         self.handle_console_mode()
+        if not self.preinstall_validate_chosen():
+            return
         if cmdline_args.install:
             self.begin_install_thread(self.simple_thread_event)
         if cmdline_args.uninstall:
