@@ -868,7 +868,7 @@ class App(tk.Tk):
                 self.clear_main_text()
                 self.logger.add_note("Please wait, this may take awhile...")
                 try:
-                    access: bool = path.gain_access(recurse=True, log_func=self.logger.add_note)
+                    access: bool = path.gain_access(recurse=True, log_func=self.logger.add_verbose)
                     #self.play_complete_sound()
                     if not access:
                         if not directory:

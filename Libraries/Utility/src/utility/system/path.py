@@ -825,8 +825,8 @@ class BasePath(BasePurePath):
                 except Exception as e:
                     print(format_exception_with_variables(e, message=f"Error during elevated platform-specific permission request at path '{self}'"))
 
-        log_func("Verifying the operations were successful...")
         if not success:
+            log_func("Verifying the operations were successful...")
             success= self.has_access(mode, recurse=False)
         try:
             if recurse and self.safe_isdir():
