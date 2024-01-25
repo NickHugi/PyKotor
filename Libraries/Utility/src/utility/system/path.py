@@ -484,17 +484,9 @@ class BasePath(BasePurePath):
             check = self.is_dir()
         except OSError as e:
             print(format_exception_with_variables(e,  message="This exception has been suppressed and is only relevant for debug purposes."))
-            if os.name == "posix":
-                return None
-        if check:
-            return True
-        try:
-            exists, is_file, is_dir = self._check_path_win_api()
-        except Exception as e2:
-            print(format_exception_with_variables(e2,  message="This exception has been suppressed and is only relevant for debug purposes."))
+            return None
         else:
-            return is_dir
-        return None
+            return check
 
     # Safe is_file operation
     def safe_isfile(self: Path) -> bool | None:  # type: ignore[misc]
@@ -503,57 +495,20 @@ class BasePath(BasePurePath):
             check = self.is_file()
         except OSError as e:
             print(format_exception_with_variables(e,  message="This exception has been suppressed and is only relevant for debug purposes."))
-            if os.name == "posix":
-                return None
-        if check:
-            return True
-        try:
-            exists, is_file, is_dir = self._check_path_win_api()
-        except Exception as e2:
-            print(format_exception_with_variables(e2,  message="This exception has been suppressed and is only relevant for debug purposes."))
+            return None
         else:
-            return is_file
-        return None
+            return check
 
     # Safe exists operation
     def safe_exists(self: Path) -> bool | None:  # type: ignore[misc]
-        self_path_str: str | None = None  # caching for performance
         check: bool | None = None
         try:
             check = self.exists()
         except Exception as e:
             print(format_exception_with_variables(e,  message="This exception has been suppressed and is only relevant for debug purposes."))
-            if os.name == "posix":
-                return os.access(self_path_str, os.F_OK)
-            try:
-                self_path_str = str(self)
-                exists, is_file, is_dir = self._check_path_win_api(self_path_str)
-            except Exception as e3:
-                print(format_exception_with_variables(e3,  message="This exception has been suppressed and is only relevant for debug purposes."))
-                return os.access(str(self), os.F_OK)
-            else:
-                return exists
+            return None
         else:
-            self_path_str = str(self) if self_path_str is None else self_path_str
-            return check or os.access(self_path_str, os.F_OK) or check
-
-
-    def _check_path_win_api(self, cached_self_str: str | None = None) -> tuple[bool, bool, bool]:
-        import ctypes
-        from ctypes.wintypes import DWORD
-        GetFileAttributes = ctypes.windll.kernel32.GetFileAttributesW
-        INVALID_FILE_ATTRIBUTES: int = DWORD(-1).value
-
-        self_str: str = str(self) if cached_self_str is None else cached_self_str
-        attrs: int = GetFileAttributes(self_str)
-        if attrs == INVALID_FILE_ATTRIBUTES:
-            return False, False, False  # Path does not exist or cannot be accessed
-
-        FILE_ATTRIBUTE_DIRECTORY = 0x10
-        is_dir = bool(attrs & FILE_ATTRIBUTE_DIRECTORY)
-        is_file: bool = not is_dir  # Simplistic check; may need refinement for special files
-
-        return True, is_file, is_dir
+            return check
 
     def walk(
         self: Path,  # type: ignore[misc]

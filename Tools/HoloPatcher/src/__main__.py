@@ -21,7 +21,7 @@ from enum import IntEnum
 from threading import Event, Thread
 from tkinter import filedialog, messagebox, ttk
 from tkinter import font as tkfont
-from typing import TYPE_CHECKING, Any, Callable, NoReturn
+from typing import TYPE_CHECKING, Callable, NoReturn
 
 if getattr(sys, "frozen", False) is False:
     def update_sys_path(path):
