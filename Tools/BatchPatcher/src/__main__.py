@@ -231,10 +231,6 @@ def patch_nested_gff(
 
         if ftype == GFFFieldType.Struct:
             assert isinstance(value, GFFStruct)  # noqa: S101
-            if SCRIPT_GLOBALS.set_unskippable and gff_content == GFFContent.DLG:
-                log_output(f"Setting '{child_path}' as unskippable")
-                value.set_uint8("Skippable", 0)
-                made_change = True
             made_change &= patch_nested_gff(value, gff_content, child_path, made_change)
             continue
 
@@ -331,11 +327,15 @@ def patch_resource(resource: FileResource) -> GFF | TPC | None:
         try:
             #log_output(f"Loading {resource.resname()}.{resource.restype().extension} from '{resource.filepath().name}'")
             gff = read_gff(resource.data())
+            made_change = False
+            if gff.content == GFFContent.DLG and SCRIPT_GLOBALS.set_unskippable:
+                made_change = True
+                gff.root.set_uint8("Skippable", 0)
             if patch_nested_gff(
                 gff.root,
                 gff.content,
                 resource.filepath() / str(resource.identifier())
-            ):
+            ) or made_change:
                 return gff
         except Exception as e:  # noqa: BLE001
             log_output(f"[Error] loading GFF '{resource.identifier()}' at '{resource.filepath()}'! {universal_simplify_exception(e)}")
