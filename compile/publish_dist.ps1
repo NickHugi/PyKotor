@@ -117,7 +117,7 @@ function Compress-Zip {
     if ($null -ne (Get-Command "wsl" -ErrorAction SilentlyContinue)) {
         $parentDir = [System.IO.Path]::GetDirectoryName($archiveSource)
         $originalDir = Get-Location
-        $archiveFile = [System.IO.Path]::GetFullPath((Join-Path $originalDir $archiveFile))
+        $archiveFile = [System.IO.Path]::GetFullPath((Join-Path $originalDir $archiveFile.Name))
         $unixArchivePath = Convert-WindowsPathToUnix -path $archiveFile
         $command = "cd '$parentDir'; & wsl zip -q -r -9 '$unixArchivePath' '$([System.IO.Path]::GetFileName($archiveSource))'; cd '$originalDir'"
         Write-Host $command
@@ -165,7 +165,7 @@ try {
 
         # Determine compression method
         if ($null -ne (Get-Command "wsl" -ErrorAction SilentlyContinue)) {
-            $archiveFile = Join-Path -Path "publish" -ChildPath "$item.zip"
+            $archiveFile = "$item.zip"
             Compress-Zip -archiveFile $archiveFile -archiveSource $item.FullName
         } else {
             Write-Warning "Creating .tar.gz instead of .zip archives to preserve file attributes, please run on unix or wsl if you want zips."
