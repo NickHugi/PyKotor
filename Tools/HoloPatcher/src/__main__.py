@@ -386,7 +386,7 @@ class App(tk.Tk):
         self.withdraw()
         self.handle_console_mode()
         if not self.preinstall_validate_chosen():
-            return
+            sys.exit(ExitCode.NUMBER_OF_ARGS)
         if cmdline_args.install:
             self.begin_install_thread(self.simple_thread_event)
         if cmdline_args.uninstall:
@@ -982,13 +982,6 @@ class App(tk.Tk):
             - Check if a KOTOR install path is selected
             - Check write access to the KOTOR install directory.
         """
-
-        def _if_missing(title: str, message: str):
-            messagebox.showinfo(title, message)
-            if self.one_shot:
-                sys.exit(ExitCode.NUMBER_OF_ARGS)
-            return False
-
         if self.task_running:
             messagebox.showinfo(
                 "Task already running",
@@ -996,22 +989,25 @@ class App(tk.Tk):
             )
             return False
         if not self.mod_path or not CaseAwarePath(self.mod_path).safe_isdir():
-            return _if_missing(
+            messagebox.showinfo(
                 "No mod chosen",
                 "Select your mod directory first.",
             )
+            return False
         game_path: str = self.gamepaths.get()
         if not game_path:
-            return _if_missing(
+            messagebox.showinfo(
                 "No KOTOR directory chosen",
                 "Select your KOTOR directory first.",
             )
+            return False
         case_game_path = CaseAwarePath(game_path)
         if not case_game_path.safe_isdir():
-            return _if_missing(
+            messagebox.showinfo(
                 "Invalid KOTOR directory chosen",
                 "Select a valid path to your KOTOR install.",
             )
+            return False
         game_path_str = str(case_game_path)
         self.gamepaths.set(game_path_str)
         return self.check_access(Path(game_path_str))
