@@ -371,7 +371,7 @@ class ModInstaller:
 
                 patched_data: bytes | Literal[True] = patch.patch_resource(data_to_patch, memory, self.log, self.game)
                 if patched_data is True:
-                    self.log.add_verbose(f"Skipping '{patch.sourcefile}' - patch_resource determined that this file can be skipped.")
+                    self.log.add_note(f"Skipping '{patch.sourcefile}' - patch_resource determined that this file can be skipped.")
                     continue  # e.g. if nwnnsscomp tries to compile an Include script with no entrypoint
 
                 if capsule is not None:
