@@ -842,6 +842,7 @@ class App(tk.Tk):
     def play_complete_sound():
         if os.name == "nt":
             import winsound
+
             # Play the system "exclamation" sound
             winsound.MessageBeep(winsound.MB_ICONEXCLAMATION)
 

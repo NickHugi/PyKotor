@@ -2,8 +2,8 @@
 Write Pyth documents straight in Python, a la Nevow's Stan.
 """
 
-from utility.pyth3.format import PythReader
 from utility.pyth3.document import *
+from utility.pyth3.format import PythReader
 
 
 def _convert(content):

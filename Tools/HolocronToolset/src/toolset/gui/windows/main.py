@@ -53,7 +53,6 @@ from utility.error_handling import (
     format_exception_with_variables,
     universal_simplify_exception,
 )
-from utility.misc import is_debug_mode
 from utility.system.path import Path, PurePath
 from watchdog.events import FileSystemEventHandler
 from watchdog.observers import Observer

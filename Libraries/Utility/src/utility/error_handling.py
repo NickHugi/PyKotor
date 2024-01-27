@@ -8,7 +8,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Callable, TypeVar
 
 if TYPE_CHECKING:
-    from typing_extensions import Literal, TypeGuard
+    from typing_extensions import Literal
 
 
 def universal_simplify_exception(e: BaseException) -> tuple[str, str]:

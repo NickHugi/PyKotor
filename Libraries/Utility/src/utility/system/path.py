@@ -1,15 +1,15 @@
 from __future__ import annotations
 
+import contextlib
 import os
 import pathlib
 import re
 import subprocess
-from tempfile import TemporaryDirectory
 import uuid
-from typing import TYPE_CHECKING, Any, Callable, ClassVar, Generator, Union
+from tempfile import TemporaryDirectory
+from typing import TYPE_CHECKING, Any, Callable, Generator, Union
 
 from utility.error_handling import format_exception_with_variables
-import contextlib
 
 if TYPE_CHECKING:
     from typing_extensions import Self
@@ -844,6 +844,7 @@ class BasePath(BasePurePath):
         @staticmethod
         def get_win_attrs(file_path):
             import ctypes
+
             # Constants for file attributes
             FILE_ATTRIBUTE_READONLY = 0x1
             FILE_ATTRIBUTE_HIDDEN = 0x2

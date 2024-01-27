@@ -1,8 +1,8 @@
 import os
 import pathlib
 import sys
-from tempfile import NamedTemporaryFile, TemporaryFile
 import unittest
+from tempfile import NamedTemporaryFile
 from unittest.mock import MagicMock, Mock, patch
 
 THIS_SCRIPT_PATH = pathlib.Path(__file__)

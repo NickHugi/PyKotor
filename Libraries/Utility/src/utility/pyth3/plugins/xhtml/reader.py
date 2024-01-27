@@ -3,7 +3,6 @@ Read documents from xhtml
 """
 
 import BeautifulSoup
-
 from utility.pyth3 import document
 from utility.pyth3.format import PythReader
 from utility.pyth3.plugins.xhtml.css import CSS
