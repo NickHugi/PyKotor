@@ -981,12 +981,6 @@ class App(tk.Tk):
                 "Select a valid path to your KOTOR install.",
             )
             return False
-        if case_game_path == case_tsl_path:
-            messagebox.showinfo(
-                "Please select two different KOTOR paths",
-                "Please set the first gamepath to be k1 and the second to be tsl.",
-            )
-            return False
         game_path_str = str(case_game_path)
         tsl_path_str = str(case_tsl_path)
         self.gamepaths.set(game_path_str)
