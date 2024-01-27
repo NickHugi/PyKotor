@@ -612,7 +612,7 @@ class App(tk.Tk):
                 self.logger.add_note("Please wait, this may take awhile...")
                 made_change = False
                 try:
-                    for root, dirs, files in os.walk(directory, topdown=False):
+                    for root, dirs, files in os.walk(str(directory), topdown=False):
                         # Renaming files
                         for file_name in files:
                             file_path: Path = Path(root, file_name)
