@@ -100,26 +100,26 @@ def format_var_str(
     if var in default_attrs or var in ignore_attrs:
         return None
 
+    val_repr: str | object
+    val_str: str | object
     exc = None
-    exc2 = None
     unique_sentinel = object()
     try:
         val_str = str(val)
         if len(val_str) > max_length:
             val_str = f"{val_str[:max_length]}...<truncated>"
     except Exception as e:
-        val_str = None
+        val_str = unique_sentinel
         exc = e
 
     try:
         val_repr = repr(val)
         if len(val_repr) > max_length:
             val_repr = f"{val_repr[:max_length]}...<truncated>"
-    except Exception as e2:
-        val_repr = None
-        exc2 = e2
+    except Exception:
+        val_repr = unique_sentinel
 
-    display_value: str | None = val_repr
+    display_value: str | object = val_repr
     if display_value is unique_sentinel:
         display_value = val_str
     if display_value is unique_sentinel:

@@ -886,7 +886,7 @@ class BasePath(BasePurePath):
                 run_script_cmd: list[str] = [
                     "Powershell",
                     "-Command",
-                    f"Start-Process cmd.exe -ArgumentList '{cmd_switch} \"{script_path}\"' -Verb RunAs -Wait"
+                    f"Start-Process cmd.exe -ArgumentList '{cmd_switch} \"{script_path}\"' -Verb RunAs -Wait",
                 ]
 
                 # Execute the batch script
@@ -910,7 +910,7 @@ class BasePath(BasePurePath):
             if elevate:
                 self_path_str = f'"{self_path_str}"'
             isdir_check: bool | None = self.safe_isdir()
-            commands = []
+            commands: list[str] = []
 
             print(f"Step 1: Resetting permissions and re-enabling inheritance for {self_path_str}...")
             icacls_reset_args: list[str] = ["icacls", self_path_str, "/reset", "/Q"]
