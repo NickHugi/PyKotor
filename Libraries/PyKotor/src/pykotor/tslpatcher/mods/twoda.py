@@ -42,6 +42,9 @@ class Target:
             msg = "Target value must be int if type is row index."
             raise ValueError(msg)
 
+    def __repr__(self):
+        return f"{self.__class__.__name__}(target_type={self.target_type.__class__.__name__}.{self.target_type.name}, value={self.value!r})"
+
     def search(self, twoda: TwoDA) -> TwoDARow | None:
         """Searches a TwoDA for a row matching the target.
 
@@ -89,6 +92,9 @@ class RowValueConstant(RowValue):
     def __init__(self, string: str):
         self.string: str = string
 
+    def __repr__(self):
+        return f"{self.__class__.__name__}(string='{self.string}')"
+
     def value(self, memory: PatcherMemory, twoda: TwoDA, row: TwoDARow | None) -> str:
         return self.string
 
@@ -96,6 +102,9 @@ class RowValueConstant(RowValue):
 class RowValue2DAMemory(RowValue):
     def __init__(self, token_id: int):
         self.token_id: int = token_id
+
+    def __repr__(self):
+        return f"{self.__class__.__name__}(token_id={self.token_id})"
 
     def value(self, memory: PatcherMemory, twoda: TwoDA, row: TwoDARow | None) -> str:
         memory_val: str | PureWindowsPath | None = memory.memory_2da.get(self.token_id)
@@ -111,6 +120,9 @@ class RowValue2DAMemory(RowValue):
 class RowValueTLKMemory(RowValue):
     def __init__(self, token_id: int):
         self.token_id: int = token_id
+
+    def __repr__(self):
+        return f"{self.__class__.__name__}(token_id={self.token_id})"
 
     def value(self, memory: PatcherMemory, twoda: TwoDA, row: TwoDARow | None) -> str:
         memory_val: int | None = memory.memory_str.get(self.token_id)
@@ -129,6 +141,9 @@ class RowValueHigh(RowValue):
 
     def __init__(self, column: str | None):
         self.column: str | None = column
+
+    def __repr__(self):
+        return f"{self.__class__.__name__}(column='{self.column}')"
 
     def value(self, memory: PatcherMemory, twoda: TwoDA, row: TwoDARow | None) -> str:
         """Returns the maximum value in a column or overall label.
@@ -170,6 +185,9 @@ class RowValueRowLabel(RowValue):
 class RowValueRowCell(RowValue):
     def __init__(self, column: str):
         self.column: str = column
+
+    def __repr__(self):
+        return f"{self.__class__.__name__}(column='{self.column}')"
 
     def value(self, memory: PatcherMemory, twoda: TwoDA, row: TwoDARow | None) -> str:
         return row.get_string(self.column) if row is not None else ""
@@ -228,7 +246,6 @@ class ChangeRow2DA(Modify2DA):
         store_2da: dict[int, RowValue] | None = None,
         store_tlk: dict[int, RowValue] | None = None,
     ):
-        super().__init__()
         self.identifier: str = identifier
         self.target: Target = target
         self.cells: dict[str, RowValue] = cells
@@ -236,6 +253,13 @@ class ChangeRow2DA(Modify2DA):
         self.store_tlk: dict[int, RowValue] = {} if store_tlk is None else store_tlk
 
         self._row: TwoDARow | None = None
+
+    def __repr__(self):
+        return (
+            f"{self.__class__.__name__}(identifier={self.identifier!r}, "
+            f"target={self.target!r}, cells={self.cells!r}, "
+            f"store_2da={self.store_2da!r}, store_tlk={self.store_tlk!r})"
+        )
 
     def apply(self, twoda: TwoDA, memory: PatcherMemory):
         source_row: TwoDARow | None = self.target.search(twoda)
@@ -271,7 +295,6 @@ class AddRow2DA(Modify2DA):
         store_2da: dict[int, RowValue] | None = None,
         store_tlk: dict[int, RowValue] | None = None,
     ):
-        super().__init__()
         self.identifier: str = identifier
         self.exclusive_column: str | None = exclusive_column if exclusive_column != "" else None
         self.row_label: str | None = row_label
@@ -280,6 +303,14 @@ class AddRow2DA(Modify2DA):
         self.store_tlk: dict[int, RowValue] = {} if store_tlk is None else store_tlk
 
         self._row: TwoDARow | None = None
+
+    def __repr__(self):
+        return (
+            f"{self.__class__.__name__}(identifier={self.identifier!r}, "
+            f"exclusive_column={self.exclusive_column!r}, row_label={self.row_label!r}, "
+            f"cells={self.cells!r}, store_2da={self.store_2da!r}, "
+            f"store_tlk={self.store_tlk!r})"
+        )
 
     def apply(self, twoda: TwoDA, memory: PatcherMemory):
         """Applies an AddRow patch to a TwoDA.
@@ -358,6 +389,14 @@ class CopyRow2DA(Modify2DA):
         self.store_tlk: dict[int, RowValue] = {} if store_tlk is None else store_tlk
 
         self._row: TwoDARow | None = None
+
+    def __repr__(self):
+        return (
+            f"{self.__class__.__name__}(identifier={self.identifier!r}, "
+            f"target={self.target!r}, exclusive_column={self.exclusive_column!r}, "
+            f"row_label={self.row_label!r}, cells={self.cells!r}, "
+            f"store_2da={self.store_2da!r}, store_tlk={self.store_tlk!r})"
+        )
 
     def apply(self, twoda: TwoDA, memory: PatcherMemory):
         """Applies a CopyRow patch to a TwoDA.
@@ -442,6 +481,14 @@ class AddColumn2DA(Modify2DA):
         self.index_insert: dict[int, RowValue] = index_insert
         self.label_insert: dict[str, RowValue] = label_insert
         self.store_2da: dict[int, str] = {} if store_2da is None else store_2da
+
+    def __repr__(self):
+        return (
+            f"{self.__class__.__name__}(identifier={self.identifier!r}, "
+            f"header={self.header!r}, default={self.default!r}, "
+            f"index_insert={self.index_insert}, label_insert={self.label_insert}, "
+            f"store_2da={self.store_2da})"
+        )
 
     def apply(self, twoda: TwoDA, memory: PatcherMemory):
         """Applies a AddColumn patch to a TwoDA.
