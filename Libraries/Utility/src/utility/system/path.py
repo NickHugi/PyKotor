@@ -68,6 +68,8 @@ class BasePurePath(metaclass=PurePathType):  # type: ignore[misc]
             formatted_path_str: str = cls._fix_path_formatting(cls._fspath_str(arg), slash=cls._get_sep())
             if formatted_path_str.endswith(":") and "/" not in formatted_path_str and "\\" not in formatted_path_str:
                 formatted_path_str = f"{formatted_path_str}{cls._get_sep()}"  # HACK: cleanup later
+            if i > 0 and formatted_path_str.startswith("\\"):
+                formatted_path_str = formatted_path_str.lstrip("\\")  # HACK: cleanup later
 
             args_list[i] = formatted_path_str
 
