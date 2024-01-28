@@ -525,7 +525,10 @@ class App(tk.Tk):
                 "Really cancel the current installation? ",
                 "CONTINUING WILL MOST LIKELY BREAK YOUR GAME AND REQUIRE A FULL KOTOR REINSTALL!",
             )
-            or self.task_running
+        ):
+            return
+        if (
+            self.task_running
             and not messagebox.askyesno(
                 "Really cancel the current task?",
                 "A task is currently running. Exiting now may not be safe. Really continue?",
