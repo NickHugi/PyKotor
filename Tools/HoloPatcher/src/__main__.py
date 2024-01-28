@@ -8,6 +8,7 @@ import io
 import json
 import os
 import pathlib
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -39,7 +40,6 @@ if getattr(sys, "frozen", False) is False:
             update_sys_path(utility_path.parent)
 
 
-from pykotor.common.misc import Game
 from pykotor.common.stream import BinaryReader
 from pykotor.extract.file import ResourceIdentifier
 from pykotor.tools.encoding import decode_bytes_with_fallbacks
@@ -47,7 +47,6 @@ from pykotor.tools.path import CaseAwarePath, find_kotor_paths_from_default
 from pykotor.tslpatcher.logger import PatchLog, PatchLogger
 from pykotor.tslpatcher.patcher import ModInstaller
 from pykotor.tslpatcher.reader import ConfigReader, NamespaceReader
-from pykotor.tslpatcher.uninstall import ModUninstaller
 from utility.error_handling import format_exception_with_variables, universal_simplify_exception
 from utility.string import striprtf
 from utility.system.path import Path
@@ -244,7 +243,7 @@ class App(tk.Tk):
 
         # Setup the namespaces/changes ini combobox (selected mod)
         self.namespaces_combobox: ttk.Combobox = ttk.Combobox(top_frame, state="readonly", style="TCombobox")
-        self.namespaces_combobox.grid(row=0, column=0, padx=5, pady=2, sticky="ew")
+        #self.namespaces_combobox.grid(row=0, column=0, padx=5, pady=2, sticky="ew")
         self.namespaces_combobox.set("Select the mod to install")
         ToolTip(self.namespaces_combobox, lambda: self.get_namespace_description())
         self.namespaces_combobox.bind("<<ComboboxSelected>>", self.on_namespace_option_chosen)
@@ -254,27 +253,27 @@ class App(tk.Tk):
         self.namespaces_combobox_state: int = 0
         # Browse for a tslpatcher mod
         self.browse_button: ttk.Button = ttk.Button(top_frame, text="Browse", command=self.open_mod)
-        self.browse_button.grid(row=0, column=1, padx=5, pady=2, sticky="e")
+        #self.browse_button.grid(row=0, column=1, padx=5, pady=2, sticky="e")
 
         # Store all discovered KOTOR install paths
         self.gamepaths = ttk.Combobox(top_frame, style="TCombobox")
         self.gamepaths.set("Select your KOTOR directory path")
-        self.gamepaths.grid(row=1, column=0, padx=5, pady=2, sticky="ew")
+        self.gamepaths.grid(row=0, column=0, padx=5, pady=2, sticky="ew")
         self.gamepaths["values"] = [str(path) for game in find_kotor_paths_from_default().values() for path in game]
         self.gamepaths.bind("<<ComboboxSelected>>", self.on_gamepaths_chosen)
         # Browse for a KOTOR path
         self.gamepaths_browse_button = ttk.Button(top_frame, text="Browse", command=lambda: self.open_kotor(box=self.gamepaths))
-        self.gamepaths_browse_button.grid(row=1, column=1, padx=5, pady=2, sticky="e")
+        self.gamepaths_browse_button.grid(row=0, column=1, padx=5, pady=2, sticky="e")
 
         # Store all discovered KOTOR install paths
         self.gamepaths2 = ttk.Combobox(top_frame, style="TCombobox")
         self.gamepaths2.set("Select your TSL directory path")
-        self.gamepaths2.grid(row=2, column=0, padx=5, pady=2, sticky="ew")
+        self.gamepaths2.grid(row=1, column=0, padx=5, pady=2, sticky="ew")
         self.gamepaths2["values"] = [str(path) for game in find_kotor_paths_from_default().values() for path in game]
         self.gamepaths2.bind("<<ComboboxSelected>>", self.on_gamepaths_chosen)
         # Browse for a KOTOR path
         self.gamepaths_browse_button2 = ttk.Button(top_frame, text="Browse", command=lambda: self.open_kotor(box=self.gamepaths2))
-        self.gamepaths_browse_button2.grid(row=2, column=1, padx=5, pady=2, sticky="e")
+        self.gamepaths_browse_button2.grid(row=1, column=1, padx=5, pady=2, sticky="e")
 
         # Middle area for text and scrollbar
         text_frame = tk.Frame(self)
@@ -1007,11 +1006,54 @@ class App(tk.Tk):
         try:
             if not self.preinstall_validate_chosen():
                 return
+            self.begin_edge_preinstall_logic()
             self.task_thread = Thread(target=self.begin_install_thread, args=(self.simple_thread_event,))
             self.task_thread.start()
         except Exception as e:  # noqa: BLE001
             self._handle_general_exception(e, "An unexpected error occurred during the installation and the program was forced to exit")
             sys.exit(ExitCode.EXCEPTION_DURING_INSTALL)
+
+    def begin_edge_preinstall_logic(self):
+        case_k1_path = CaseAwarePath(self.gamepaths.get())
+        case_k2_path = CaseAwarePath(self.gamepaths2.get())
+        # Rename files
+        case_k2_path.joinpath("StreamMusic", "mus_a_503.wav").rename(case_k2_path.parent / "mus_a_503.wav.main")
+        case_k2_path.joinpath("StreamMusic", "mus_sion.wav").rename(case_k2_path.parent / "mus_sion.wav.main")
+
+        # Copy specific files
+        shutil.copy2(str(case_k1_path.joinpath("StreamMusic", "mus_theme_cult.wav")), str(case_k2_path.joinpath("StreamMusic", "mus_sion.wav")))
+
+        # Process file lists
+        file_lists: dict[str, str] = {
+            "lips": "tslpatchdata/lips-file-list.txt",
+            "movies": "tslpatchdata/movies-file-list.txt",
+            "streammusic": "tslpatchdata/streammusic-file-list.txt",
+            "streamsounds": "tslpatchdata/streamsounds-file-list.txt",
+            "streamwaves": "tslpatchdata/streamwaves-file-list.txt",
+            "missing": "tslpatchdata/missing-file-list.txt",
+            "override": "tslpatchdata/port-file-list.txt",
+        }
+        for key, file_list in file_lists.items():
+            with CaseAwarePath(file_list).open("r") as file:
+                for line in file:
+                    formatted_line = line.strip()
+                    if not formatted_line:
+                        continue
+                    shutil.copy2(str(case_k1_path / key / formatted_line), (case_k2_path / key / Path(formatted_line).name))
+
+        # Additional file operations
+        case_k2_path.joinpath("movies", "ObsidianEnt.bik").rename(case_k2_path.parent / "ObsidianEnt.bik.main")
+        case_k2_path.joinpath("lips", "001EBO_loc.mod").rename(case_k2_path.parent / "001EBO_loc.mod.main")
+        case_k2_path.joinpath("Modules", "001ebo.mod").rename(case_k2_path.parent / "001ebo.mod.main")
+
+        shutil.copy2(str(case_k1_path.joinpath("movies", "biologo.bik")), case_k2_path.joinpath("movies", "ObsidianEnt.bik"))
+        shutil.copy2(str(case_k1_path.joinpath("lips", "end_m01aa_loc.mod")), case_k2_path.joinpath("lips", "001EBO_loc.mod"))
+
+        shutil.copy2(str(CaseAwarePath("tslpatchdata/port-file-list.txt")), str(case_k2_path / "port-file-list.txt"))
+        shutil.copy2(str(CaseAwarePath("tslpatchdata/launcher.bat")), str(case_k2_path / "launcher.bat"))
+        shutil.copy2(str(CaseAwarePath("port-patch-notes.rtf")), str(case_k2_path / "port-patch-notes.rtf"))
+        shutil.copy2(str(CaseAwarePath("port-readme.rtf")), str(case_k2_path / "port-readme.rtf"))
+        shutil.copy2(str(case_k2_path / "dialog.tlk"), str(case_k2_path / "dialog.tlk.main"))
 
     def begin_install_thread(self, should_cancel_thread: Event):
         """Starts the mod installation thread. This function is called directly when utilizing the CLI.
