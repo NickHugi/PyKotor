@@ -487,7 +487,7 @@ class App(tk.Tk):
         if not fully_ran:
             self.on_namespace_option_chosen(tk.Event())
 
-    def async_raise(self, tid, exctype):
+    def async_raise(self, tid: int, exctype: type):
         """Raises an exception in the threads with id tid."""
         if not inspect.isclass(exctype):
             raise TypeError("Only types can be raised (not instances)")
@@ -543,6 +543,9 @@ class App(tk.Tk):
             except BaseException as e:  # noqa: BLE001
                 self._handle_general_exception(e, "Error using self.install_thread._stop()", msgbox=False)
             try:
+                if self.task_thread.ident is None:
+                    msg = "task ident is None, expected an int."
+                    raise ValueError(msg)
                 self.async_raise(self.task_thread.ident, SystemExit)
             except BaseException as e:  # noqa: BLE001
                 self._handle_general_exception(e, "Error using async_raise(self.install_thread.ident, SystemExit)", msgbox=False)
