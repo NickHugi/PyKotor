@@ -244,7 +244,7 @@ class App(tk.Tk):
 
         # Setup the namespaces/changes ini combobox (selected mod)
         self.namespaces_combobox: ttk.Combobox = ttk.Combobox(top_frame, state="readonly", style="TCombobox")
-        self.namespaces_combobox.grid(row=0, column=0, padx=5, pady=2, sticky="ew")
+        #self.namespaces_combobox.grid(row=0, column=0, padx=5, pady=2, sticky="ew")
         self.namespaces_combobox.set("Select the mod to install")
         ToolTip(self.namespaces_combobox, lambda: self.get_namespace_description())
         self.namespaces_combobox.bind("<<ComboboxSelected>>", self.on_namespace_option_chosen)
@@ -254,27 +254,27 @@ class App(tk.Tk):
         self.namespaces_combobox_state: int = 0
         # Browse for a tslpatcher mod
         self.browse_button: ttk.Button = ttk.Button(top_frame, text="Browse", command=self.open_mod)
-        self.browse_button.grid(row=0, column=1, padx=5, pady=2, sticky="e")
+        #self.browse_button.grid(row=0, column=1, padx=5, pady=2, sticky="e")
 
         # Store all discovered KOTOR install paths
         self.gamepaths = ttk.Combobox(top_frame, style="TCombobox")
         self.gamepaths.set("Select your KOTOR directory path")
-        self.gamepaths.grid(row=1, column=0, padx=5, pady=2, sticky="ew")
+        self.gamepaths.grid(row=0, column=0, padx=5, pady=2, sticky="ew")
         self.gamepaths["values"] = [str(path) for game in find_kotor_paths_from_default().values() for path in game]
         self.gamepaths.bind("<<ComboboxSelected>>", self.on_gamepaths_chosen)
         # Browse for a KOTOR path
         self.gamepaths_browse_button = ttk.Button(top_frame, text="Browse", command=lambda: self.open_kotor(box=self.gamepaths))
-        self.gamepaths_browse_button.grid(row=1, column=1, padx=5, pady=2, sticky="e")
+        self.gamepaths_browse_button.grid(row=0, column=1, padx=5, pady=2, sticky="e")
 
         # Store all discovered KOTOR install paths
         self.gamepaths2 = ttk.Combobox(top_frame, style="TCombobox")
         self.gamepaths2.set("Select your TSL directory path")
-        self.gamepaths2.grid(row=2, column=0, padx=5, pady=2, sticky="ew")
+        self.gamepaths2.grid(row=1, column=0, padx=5, pady=2, sticky="ew")
         self.gamepaths2["values"] = [str(path) for game in find_kotor_paths_from_default().values() for path in game]
         self.gamepaths2.bind("<<ComboboxSelected>>", self.on_gamepaths_chosen)
         # Browse for a KOTOR path
         self.gamepaths_browse_button2 = ttk.Button(top_frame, text="Browse", command=lambda: self.open_kotor(box=self.gamepaths2))
-        self.gamepaths_browse_button2.grid(row=2, column=1, padx=5, pady=2, sticky="e")
+        self.gamepaths_browse_button2.grid(row=1, column=1, padx=5, pady=2, sticky="e")
 
         # Middle area for text and scrollbar
         text_frame = tk.Frame(self)
