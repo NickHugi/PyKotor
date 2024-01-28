@@ -11,6 +11,10 @@ class PatcherMemory:
     def __init__(self):
         self.memory_2da: dict[int, str | PureWindowsPath] = {}  # 2DAMemory# (token) -> str
         self.memory_str: dict[int, int] = {}  # StrRef# (token) -> dialog.tlk index
+    def __repr__(self):
+        memory_2da_repr: dict[int, str] = {key: repr(value) for key, value in self.memory_2da.items()}
+        memory_str_repr: dict[int, str] = {key: repr(value) for key, value in self.memory_str.items()}
+        return f"PatcherMemory(memory_2da={memory_2da_repr}, memory_str={memory_str_repr})"
 
 
 class TokenUsage(ABC):

@@ -384,7 +384,7 @@ class ModInstaller:
                     BinaryWriter.dump(output_container_path / patch.saveas, patched_data)
                 self.log.complete_patch()
             except Exception as e:  # noqa: BLE001
-                self.log.add_error(str(universal_simplify_exception(e)))
+                self.log.add_error(str(e))
                 print(format_exception_with_variables(e))
 
         if config.save_processed_scripts == 0 and temp_script_folder is not None and temp_script_folder.safe_isdir():
