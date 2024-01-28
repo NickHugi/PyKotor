@@ -1087,6 +1087,13 @@ class App(tk.Tk):
                 continue
             src = case_k2_path / "Override" / Path(formatted_line).name
             dst = src.add_suffix(".main")
+            if src.suffix.lower() == ".2da":
+                self.logger.add_note(f"src {src} has a 2da extension, copying to {dst} instead of renaming...")
+                try:
+                    shutil.copy2(str(src), str(dst))
+                except (FileNotFoundError, FileExistsError) as e:
+                    self._handle_general_exception(e, "Required file not found, cannot move to destination.")
+                continue
             self.logger.add_note(f"Renaming 'port-file-list.txt' file with .main extension '{src}' to '{dst.name}'")
             if dst.exists():
                 if not src.exists():
@@ -1100,17 +1107,23 @@ class App(tk.Tk):
                 self._handle_general_exception(e, "Required file not found, cannot move to destination.")
 
         # Additional file operations
-        case_k2_path.joinpath("movies", "ObsidianEnt.bik").rename(case_k2_path.parent / "ObsidianEnt.bik.main")
-        case_k2_path.joinpath("lips", "001EBO_loc.mod").rename(case_k2_path.parent / "001EBO_loc.mod.main")
-        case_k2_path.joinpath("Modules", "001ebo.mod").rename(case_k2_path.parent / "001ebo.mod.main")
+        try:
+            case_k2_path.joinpath("movies", "ObsidianEnt.bik").rename(case_k2_path / "movies/ObsidianEnt.bik.main")
+        except (FileExistsError, FileNotFoundError) as e:
+            self.logger.add_warning(str(universal_simplify_exception(e)))
+        try:
+            case_k2_path.joinpath("lips", "001EBO_loc.mod").rename(case_k2_path / "lips/001EBO_loc.mod.main")
+        except (FileExistsError, FileNotFoundError) as e:
+            self.logger.add_warning(str(universal_simplify_exception(e)))
+        try:
+            case_k2_path.joinpath("Modules", "001ebo.mod").rename(case_k2_path / "Modules/001ebo.mod.main")
+        except (FileExistsError, FileNotFoundError) as e:
+            self.logger.add_warning(str(universal_simplify_exception(e)))
 
-        shutil.copy2(str(case_k1_path.joinpath("movies", "biologo.bik")), case_k2_path.joinpath("movies", "ObsidianEnt.bik"))
-        shutil.copy2(str(case_k1_path.joinpath("lips", "end_m01aa_loc.mod")), case_k2_path.joinpath("lips", "001EBO_loc.mod"))
+        shutil.copy2(str(case_k1_path.joinpath("movies", "biologo.bik")), str(case_k2_path.joinpath("movies", "ObsidianEnt.bik")))
+        shutil.copy2(str(case_k1_path.joinpath("lips", "end_m01aa_loc.mod")), str(case_k2_path.joinpath("lips", "001EBO_loc.mod")))
 
         shutil.copy2(str(CaseAwarePath(self.mod_path, "tslpatchdata/port-file-list.txt")), str(case_k2_path / "port-file-list.txt"))
-        shutil.copy2(str(CaseAwarePath(self.mod_path, "tslpatchdata/launcher.bat")), str(case_k2_path / "launcher.bat"))
-        shutil.copy2(str(CaseAwarePath(self.mod_path, "port-patch-notes.rtf")), str(case_k2_path / "port-patch-notes.rtf"))
-        shutil.copy2(str(CaseAwarePath(self.mod_path, "port-readme.rtf")), str(case_k2_path / "port-readme.rtf"))
         shutil.copy2(str(case_k2_path / "dialog.tlk"), str(case_k2_path / "dialog.tlk.main"))
 
     def begin_install_thread(self, should_cancel_thread: Event):
