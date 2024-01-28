@@ -5,8 +5,9 @@ from enum import IntEnum
 from typing import TYPE_CHECKING, Any
 
 from pykotor.resource.formats.twoda import bytes_2da, read_2da
+from pykotor.tools.path import CaseAwarePath
 from pykotor.tslpatcher.mods.template import PatcherModifications
-from utility.error_handling import universal_simplify_exception
+from utility.error_handling import format_exception_with_variables, universal_simplify_exception
 from utility.system.path import PureWindowsPath
 
 if TYPE_CHECKING:
@@ -97,7 +98,10 @@ class RowValue2DAMemory(RowValue):
         self.token_id: int = token_id
 
     def value(self, memory: PatcherMemory, twoda: TwoDA, row: TwoDARow | None) -> str:
-        memory_val = memory.memory_2da[self.token_id]
+        memory_val: str | PureWindowsPath | None = memory.memory_2da.get(self.token_id)
+        if memory_val is None:
+            msg = f"2DAMEMORY{self.token_id} does not exist!"
+            raise KeyError(msg)
         if isinstance(memory_val, PureWindowsPath):
             msg = f"!FieldPath cannot be used in 2DAList patches, got '{memory_val!r}'"
             raise TypeError(msg)
@@ -109,7 +113,11 @@ class RowValueTLKMemory(RowValue):
         self.token_id: int = token_id
 
     def value(self, memory: PatcherMemory, twoda: TwoDA, row: TwoDARow | None) -> str:
-        return str(memory.memory_str[self.token_id])
+        memory_val: int | None = memory.memory_str.get(self.token_id)
+        if memory_val is None:
+            msg = f"StrRef{self.token_id} does not exist!"
+            raise KeyError(msg)
+        return str(memory_val)
 
 
 class RowValueHigh(RowValue):
@@ -230,13 +238,13 @@ class ChangeRow2DA(Modify2DA):
         self._row: TwoDARow | None = None
 
     def apply(self, twoda: TwoDA, memory: PatcherMemory):
-        source_row = self.target.search(twoda)
+        source_row: TwoDARow | None = self.target.search(twoda)
 
         if source_row is None:
             msg = f"The source row was not found during the search: ({self.target.target_type.name}, {self.target.value})"
             raise WarningError(msg)
 
-        cells = self._unpack(self.cells, memory, twoda, source_row)
+        cells: dict[str, str] = self._unpack(self.cells, memory, twoda, source_row)
         source_row.update_values(cells)
 
         for token_id, value in self.store_2da.items():
@@ -341,7 +349,6 @@ class CopyRow2DA(Modify2DA):
         store_2da: dict[int, RowValue] | None = None,
         store_tlk: dict[int, RowValue] | None = None,
     ):
-        super().__init__()
         self.identifier: str = identifier
         self.target: Target = target
         self.exclusive_column: str | None = exclusive_column or None
@@ -429,7 +436,6 @@ class AddColumn2DA(Modify2DA):
         label_insert: dict[str, RowValue],
         store_2da: dict[int, str] | None = None,
     ):
-        super().__init__()
         self.identifier: str = identifier
         self.header: str = header
         self.default: str = default
