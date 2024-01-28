@@ -385,7 +385,9 @@ class ModInstaller:
                 self.log.complete_patch()
             except Exception as e:  # noqa: BLE001
                 self.log.add_error(str(e))
-                print(format_exception_with_variables(e))
+                detailed_error = format_exception_with_variables(e)
+                with CaseAwarePath.cwd().joinpath("errorlog.txt").open("a") as f:
+                    f.write(f"\n{detailed_error}")
 
         if config.save_processed_scripts == 0 and temp_script_folder is not None and temp_script_folder.safe_isdir():
             self.log.add_note(f"Cleaning temporary script folder at '{temp_script_folder}' (hint: use 'SaveProcessedScripts=1' in [Settings] to keep these scripts)")
