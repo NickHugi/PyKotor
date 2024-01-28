@@ -53,9 +53,9 @@ from utility.system.path import Path
 from utility.tkinter.tooltip import ToolTip
 
 if TYPE_CHECKING:
-    from pykotor.common.misc import Game
     from types import TracebackType
 
+    from pykotor.common.misc import Game
     from pykotor.tslpatcher.namespaces import PatcherNamespace
 
 CURRENT_VERSION: tuple[int, ...] = (1, 5, 0)
