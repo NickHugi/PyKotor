@@ -142,7 +142,7 @@ def parse_args() -> Namespace:
 class App(tk.Tk):
     def __init__(self):
         super().__init__()
-        self.title(f"HoloPatcher {VERSION_LABEL}")
+        self.title(f"Expanded Galaxy Hood Installer {VERSION_LABEL}")
         self.set_window(width=400, height=500)
 
         self.install_running: bool = False
@@ -1126,73 +1126,54 @@ class App(tk.Tk):
         self.main_text.delete(1.0, tk.END)
         self.main_text.config(state=tk.DISABLED)
 
-    @staticmethod
-    def rename_files_ext_pattern(path: CaseAwarePath, original_ext: str, new_ext: str):
-        for file in path.glob(f'*{original_ext}'):
-            file.rename(file.with_suffix(new_ext))
-
-    @staticmethod
-    def process_port_files(kotor_path: CaseAwarePath, port_file_list: CaseAwarePath):
-        override_path = kotor_path / 'Override'
-        with open(port_file_list, 'rb') as file_list:
+    @classmethod
+    def process_files_from_list(cls, kotor_path: CaseAwarePath, file_list_path: CaseAwarePath, extension: str):
+        with file_list_path.open("rb") as file_list:
             lines = decode_bytes_with_fallbacks(file_list.read())
         for line in lines:
-            original_file = override_path / line.strip()
-            if original_file.exists():
-                original_file.rename(original_file.with_name(f'{original_file.stem}.main'))
+            file_name = line.strip()
+            original_file = kotor_path / "Override" / file_name
+            new_name = f"{file_name}{extension}"
+            original_file.rename(original_file.with_name(new_name))
 
-    @staticmethod
-    def process_main_files(kotor_path: CaseAwarePath, port_file_list: CaseAwarePath):
-        override_path = kotor_path / 'Override'
-        with open(port_file_list, 'rb') as file_list:
-            lines = decode_bytes_with_fallbacks(file_list.read())
-        for line in lines:
-            port_file = override_path / f'{line.strip()}.port'
-            if port_file.exists():
-                port_file.rename(override_path / line.strip())
+    def begin_hood_preinstall_logic(self):
+        def rename_file(file_path: CaseAwarePath, new_name: str):
+            file_path.rename(file_path.with_name(new_name))
 
-    @staticmethod
-    def copy_and_rename_files(source_path: CaseAwarePath, kotor_path: CaseAwarePath):
-        files_to_copy = [
-            'k_pkor_33arenter.ncs',
-            'k_ptat17af_enter.ncs',
-            'k_ptat17_enter.ncs',
-            'k_ptat18ac_enter.ncs'
+        case_k2_path = CaseAwarePath(self.gamepaths.get())
+        source_path = CaseAwarePath(self.mod_path, "source", "template")
+        port_filelist_path = case_k2_path / "port_file_list.txt"
+
+        # Renaming main files
+        rename_file(case_k2_path / "Movies" / "ObsidianEnt.bik", "ObsidianEnt.bik.main")
+        rename_file(case_k2_path / "dialog.tlk", "dialog.tlk.main")
+        rename_file(case_k2_path / "lips" / "001EBO_loc.mod", "001EBO_loc.mod.main")
+        rename_file(case_k2_path / "Modules" / "001ebo.mod", "001ebo.mod.main")
+        rename_file(case_k2_path / "StreamMusic" / "mus_sion.wav", "mus_sion.wav.main")
+        self.process_files_from_list(case_k2_path, port_filelist_path, ".main")
+
+        # Renaming port files
+        rename_file(case_k2_path / "Movies" / "ObsidianEnt.bik.port", "ObsidianEnt.bik")
+        rename_file(case_k2_path / "dialog.tlk.port", "dialog.tlk")
+        rename_file(case_k2_path / "lips" / "001EBO_loc.mod.port", "001EBO_loc.mod")
+        rename_file(case_k2_path / "Modules" / "001ebo.mod.port", "001ebo.mod")
+        rename_file(case_k2_path / "StreamMusic" / "mus_sion.wav.port", "mus_sion.wav")
+        self.process_files_from_list(case_k2_path, port_filelist_path, "")
+
+        # Copying required files and renaming port intro movie
+        files_to_copy: list[str] = [
+            "k_pkor_33arenter.ncs",
+            "k_ptat17af_enter.ncs",
+            "k_ptat17_enter.ncs",
+            "k_ptat18ac_enter.ncs",
         ]
         for file_name in files_to_copy:
             source_file = source_path / file_name
-            destination_file = kotor_path / 'Override' / f'{file_name}.port'
+            destination_file = case_k2_path / "Override" / f"{file_name}.port"
             shutil.copy2(str(source_file), str(destination_file))
 
-        obsidian_ent_movie = kotor_path / 'Movies' / 'ObsidianEnt.bik'
-        if obsidian_ent_movie.exists():
-            obsidian_ent_movie.rename(obsidian_ent_movie.with_name('ObsidianEnt.bik.port'))
-
-    def begin_hood_preinstall_logic(self):
-        case_k2_path = CaseAwarePath(self.gamepaths.get())
-        source_path = CaseAwarePath(self.mod_path, "source")
-        port_filelist_path = case_k2_path / 'port_file_list.txt'
-
-        # Renaming main files
-        self.rename_files_ext_pattern(case_k2_path / 'Movies', '.bik', '.bik.main')
-        self.rename_files_ext_pattern(case_k2_path, '.tlk', '.tlk.main')
-        self.rename_files_ext_pattern(case_k2_path / 'lips', '_loc.mod', '_loc.mod.main')
-        self.rename_files_ext_pattern(case_k2_path / 'Modules', '.mod', '.mod.main')
-        self.rename_files_ext_pattern(case_k2_path / 'StreamMusic', '.wav', '.wav.main')
-
-        self.process_main_files(case_k2_path, port_filelist_path)
-
-        # Renaming port files
-        self.rename_files_ext_pattern(case_k2_path / 'Movies', '.bik.port', '.bik')
-        self.rename_files_ext_pattern(case_k2_path, '.tlk.port', '.tlk')
-        self.rename_files_ext_pattern(case_k2_path / 'lips', '_loc.mod.port', '_loc.mod')
-        self.rename_files_ext_pattern(case_k2_path / 'Modules', '.mod.port', '.mod')
-        self.rename_files_ext_pattern(case_k2_path / 'StreamMusic', '.wav.port', '.wav')
-
-        self.process_port_files(case_k2_path, port_filelist_path)
-
-        # Copying required files and renaming port intro movie
-        self.copy_and_rename_files(source_path, case_k2_path)
+        obsidian_ent_movie = case_k2_path / "Movies" / "ObsidianEnt.bik"
+        obsidian_ent_movie.rename(obsidian_ent_movie.with_name("ObsidianEnt.bik.port"))
 
     def _execute_mod_install(
         self,
