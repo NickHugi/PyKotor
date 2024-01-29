@@ -198,7 +198,7 @@ class App(tk.Tk):
         #tools_menu.add_command(label="Uninstall Mod / Restore Backup", command=self.uninstall_selected_mod)
         tools_menu.add_command(label="Fix permissions to file/folder...", command=self.fix_permissions)
         tools_menu.add_command(label="Fix iOS Case Sensitivity", command=self.lowercase_files_and_folders)
-        tools_menu.add_command(label="Create info.rte...", command=self.create_rte_content)
+        #tools_menu.add_command(label="Create info.rte...", command=self.create_rte_content)
         self.menu_bar.add_cascade(label="Tools", menu=tools_menu)
 
         # Help menu
