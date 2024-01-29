@@ -1127,7 +1127,7 @@ class App(tk.Tk):
         self.main_text.config(state=tk.DISABLED)
 
     @staticmethod
-    def rename_files(path: CaseAwarePath, original_ext: str, new_ext: str):
+    def rename_files_ext_pattern(path: CaseAwarePath, original_ext: str, new_ext: str):
         for file in path.glob(f'*{original_ext}'):
             file.rename(file.with_suffix(new_ext))
 
@@ -1174,20 +1174,20 @@ class App(tk.Tk):
         port_filelist_path = case_k2_path / 'port_file_list.txt'
 
         # Renaming main files
-        self.rename_files(case_k2_path / 'Movies', '.bik', '.bik.main')
-        self.rename_files(case_k2_path, '.tlk', '.tlk.main')
-        self.rename_files(case_k2_path / 'lips', '_loc.mod', '_loc.mod.main')
-        self.rename_files(case_k2_path / 'Modules', '.mod', '.mod.main')
-        self.rename_files(case_k2_path / 'StreamMusic', '.wav', '.wav.main')
+        self.rename_files_ext_pattern(case_k2_path / 'Movies', '.bik', '.bik.main')
+        self.rename_files_ext_pattern(case_k2_path, '.tlk', '.tlk.main')
+        self.rename_files_ext_pattern(case_k2_path / 'lips', '_loc.mod', '_loc.mod.main')
+        self.rename_files_ext_pattern(case_k2_path / 'Modules', '.mod', '.mod.main')
+        self.rename_files_ext_pattern(case_k2_path / 'StreamMusic', '.wav', '.wav.main')
 
         self.process_main_files(case_k2_path, port_filelist_path)
 
         # Renaming port files
-        self.rename_files(case_k2_path / 'Movies', '.bik.port', '.bik')
-        self.rename_files(case_k2_path, '.tlk.port', '.tlk')
-        self.rename_files(case_k2_path / 'lips', '_loc.mod.port', '_loc.mod')
-        self.rename_files(case_k2_path / 'Modules', '.mod.port', '.mod')
-        self.rename_files(case_k2_path / 'StreamMusic', '.wav.port', '.wav')
+        self.rename_files_ext_pattern(case_k2_path / 'Movies', '.bik.port', '.bik')
+        self.rename_files_ext_pattern(case_k2_path, '.tlk.port', '.tlk')
+        self.rename_files_ext_pattern(case_k2_path / 'lips', '_loc.mod.port', '_loc.mod')
+        self.rename_files_ext_pattern(case_k2_path / 'Modules', '.mod.port', '.mod')
+        self.rename_files_ext_pattern(case_k2_path / 'StreamMusic', '.wav.port', '.wav')
 
         self.process_port_files(case_k2_path, port_filelist_path)
 
