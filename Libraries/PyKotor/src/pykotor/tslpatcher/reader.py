@@ -273,7 +273,7 @@ class ConfigReader:
                 file_section_name: str | None = self.get_section_name(filename)
                 if file_section_name is not None:
                     file_section_dict = CaseInsensitiveDict(self.ini[file_section_name])
-                    file_install.pop_tslpatcher_vars(file_section_dict, foldername)
+                    file_install.pop_tslpatcher_vars(file_section_dict, foldername, sourcefolder)
 
     def load_tlk_list(self):
         """Loads TLK patches from the ini file into memory.
@@ -677,6 +677,8 @@ class ConfigReader:
             replace: bool = identifier.lower().startswith("replace")
             modifications = ModificationsNSS(file, replace)
             modifications.nwnnsscomp_path = self.mod_path / "nwnnsscomp.exe"
+            modifications.destination = default_destination
+            modifications.sourcefolder = default_source_folder
 
             optional_file_section_name: str | None = self.get_section_name(file)
             if optional_file_section_name is not None:
