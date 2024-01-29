@@ -58,7 +58,7 @@ if TYPE_CHECKING:
 
     from pykotor.tslpatcher.namespaces import PatcherNamespace
 
-CURRENT_VERSION: tuple[int, ...] = (1, 5, 0)
+CURRENT_VERSION: tuple[int, ...] = (1, 5, 1)
 VERSION_LABEL = f"v{'.'.join(map(str, CURRENT_VERSION))}"
 
 
