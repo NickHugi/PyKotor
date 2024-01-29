@@ -108,6 +108,7 @@ class PatcherModifications(ABC):
         self,
         file_section_dict: CaseInsensitiveDict[str],
         default_destination: str | None = None,
+        default_sourcefolder: str = ".",
     ):
         """All optional TSLPatcher vars that can be parsed for a given patch list."""
         ####
@@ -128,6 +129,7 @@ class PatcherModifications(ABC):
         # TSLPatcher defaults to "ignore". However realistically, Override file shadowing is
         # a major problem, so HoloPatcher defaults to "warn"
         self.override_type = file_section_dict.pop("!OverrideType", OverrideType.WARN).lower()
+        self.sourcefolder = file_section_dict.pop("!SourceFolder", default_sourcefolder)
 
 def convert_to_bool(value: bool | str) -> bool:
     # sourcery skip: assign-if-exp, reintroduce-else

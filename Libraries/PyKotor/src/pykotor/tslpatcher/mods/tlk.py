@@ -36,7 +36,12 @@ class ModificationsTLK(PatcherModifications):
         self.sourcefile_f: str = self.DEFAULT_SOURCEFILE_F  # Polish version of k1
         self.saveas = self.DEFAULT_SAVEAS_FILE
 
-    def pop_tslpatcher_vars(self, file_section_dict, default_destination=DEFAULT_DESTINATION):
+    def pop_tslpatcher_vars(
+        self,
+        file_section_dict,
+        default_destination=DEFAULT_DESTINATION,
+        default_sourcefolder=".",
+    ):
         if "!ReplaceFile" in file_section_dict:
             msg = "!ReplaceFile is not supported in [TLKList]"
             raise ValueError(msg)
@@ -45,7 +50,7 @@ class ModificationsTLK(PatcherModifications):
             raise ValueError(msg)
 
         self.sourcefile_f = file_section_dict.pop("!SourceFileF", self.DEFAULT_SOURCEFILE_F)
-        super().pop_tslpatcher_vars(file_section_dict, default_destination)
+        super().pop_tslpatcher_vars(file_section_dict, default_destination, default_sourcefolder)
 
     def patch_resource(
         self,

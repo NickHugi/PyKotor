@@ -65,7 +65,12 @@ class ModificationsNCS(PatcherModifications):
                 logger.add_verbose(f"HACKList {self.sourcefile}: writing unsigned WORD {value} at offset {offset:#X}")
                 writer.write_uint16(value, big=True)
 
-    def pop_tslpatcher_vars(self, file_section_dict, default_destination=PatcherModifications.DEFAULT_DESTINATION):
-        super().pop_tslpatcher_vars(file_section_dict, default_destination)
+    def pop_tslpatcher_vars(
+        self,
+        file_section_dict,
+        default_destination=PatcherModifications.DEFAULT_DESTINATION,
+        default_sourcefolder=".",
+    ):
+        super().pop_tslpatcher_vars(file_section_dict, default_destination, default_sourcefolder)
         replace_file: bool | str = file_section_dict.pop("ReplaceFile", self.replace_file)
         self.replace_file = bool(int(replace_file))  # NOTE: tslpatcher's hacklist does NOT prefix with an exclamation point.
