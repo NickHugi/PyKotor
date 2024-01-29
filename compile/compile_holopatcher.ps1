@@ -117,7 +117,7 @@ if (Test-Path -Path $finalExecutablePath) {
 $finalPyInstallerArgsString = "$pythonPathArgsString $pyInstallerArgsString"
 
 $current_working_dir = (Get-Location).Path
-Set-Location -LiteralPath (Resolve-Path -LiteralPath "$rootPath/Tools/HoodInstaller/src").Path
+Set-Location -LiteralPath (Resolve-Path -LiteralPath "$rootPath/Tools/HoloPatcher/src").Path
 $command = "$pythonExePath -m PyInstaller $finalPyInstallerArgsString `"__main__.py`""
 Write-Host $command
 Invoke-Expression $command
