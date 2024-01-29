@@ -1149,8 +1149,9 @@ class App(tk.Tk):
 
         # Renaming main files
         obsidian_ent_main_bik_path = case_k2_path / "Movies" / "ObsidianEnt.bik"
-        should_do_main_patch = obsidian_ent_main_bik_path.with_name("ObsidianEnt.bik.main").exists()
+        should_do_main_patch = not obsidian_ent_main_bik_path.with_name("ObsidianEnt.bik.main").exists()
         if should_do_main_patch:
+            self.logger.add_note("EG Main is currently active, disabling...")
             rename_file(case_k2_path / "Movies" / "ObsidianEnt.bik", "ObsidianEnt.bik.main")
             rename_file(case_k2_path / "dialog.tlk", "dialog.tlk.main")
             rename_file(case_k2_path / "lips" / "001EBO_loc.mod", "001EBO_loc.mod.main")
@@ -1162,6 +1163,7 @@ class App(tk.Tk):
         obsidian_ent_port_bik_path = case_k2_path / "Movies" / "ObsidianEnt.bik"
         should_do_port_patch = obsidian_ent_port_bik_path.with_name("ObsidianEnt.bik.port").exists()
         if should_do_port_patch:
+            self.logger.add_note("EG Port is currently active, disabling...")
             rename_file(case_k2_path / "Movies" / "ObsidianEnt.bik.port", "ObsidianEnt.bik")
             rename_file(case_k2_path / "dialog.tlk.port", "dialog.tlk")
             rename_file(case_k2_path / "lips" / "001EBO_loc.mod.port", "001EBO_loc.mod")
