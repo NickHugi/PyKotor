@@ -195,7 +195,7 @@ class App(tk.Tk):
         # Tools menu
         tools_menu = tk.Menu(self.menu_bar, tearoff=0)
         tools_menu.add_command(label="Validate INI", command=self.test_reader)
-        tools_menu.add_command(label="Uninstall Mod / Restore Backup", command=self.uninstall_selected_mod)
+        #tools_menu.add_command(label="Uninstall Mod / Restore Backup", command=self.uninstall_selected_mod)
         tools_menu.add_command(label="Fix permissions to file/folder...", command=self.fix_permissions)
         tools_menu.add_command(label="Fix iOS Case Sensitivity", command=self.lowercase_files_and_folders)
         tools_menu.add_command(label="Create info.rte...", command=self.create_rte_content)
