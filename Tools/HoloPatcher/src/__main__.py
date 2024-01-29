@@ -8,6 +8,7 @@ import io
 import json
 import os
 import pathlib
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -1125,6 +1126,74 @@ class App(tk.Tk):
         self.main_text.delete(1.0, tk.END)
         self.main_text.config(state=tk.DISABLED)
 
+    @staticmethod
+    def rename_files(path: CaseAwarePath, original_ext: str, new_ext: str):
+        for file in path.glob(f'*{original_ext}'):
+            file.rename(file.with_suffix(new_ext))
+
+    @staticmethod
+    def process_port_files(kotor_path: CaseAwarePath, port_file_list: CaseAwarePath):
+        override_path = kotor_path / 'Override'
+        with open(port_file_list, 'rb') as file_list:
+            lines = decode_bytes_with_fallbacks(file_list.read())
+        for line in lines:
+            original_file = override_path / line.strip()
+            if original_file.exists():
+                original_file.rename(original_file.with_name(f'{original_file.stem}.main'))
+
+    @staticmethod
+    def process_main_files(kotor_path: CaseAwarePath, port_file_list: CaseAwarePath):
+        override_path = kotor_path / 'Override'
+        with open(port_file_list, 'rb') as file_list:
+            lines = decode_bytes_with_fallbacks(file_list.read())
+        for line in lines:
+            port_file = override_path / f'{line.strip()}.port'
+            if port_file.exists():
+                port_file.rename(override_path / line.strip())
+
+    @staticmethod
+    def copy_and_rename_files(source_path: CaseAwarePath, kotor_path: CaseAwarePath):
+        files_to_copy = [
+            'k_pkor_33arenter.ncs',
+            'k_ptat17af_enter.ncs',
+            'k_ptat17_enter.ncs',
+            'k_ptat18ac_enter.ncs'
+        ]
+        for file_name in files_to_copy:
+            source_file = source_path / file_name
+            destination_file = kotor_path / 'Override' / f'{file_name}.port'
+            shutil.copy2(str(source_file), str(destination_file))
+
+        obsidian_ent_movie = kotor_path / 'Movies' / 'ObsidianEnt.bik'
+        if obsidian_ent_movie.exists():
+            obsidian_ent_movie.rename(obsidian_ent_movie.with_name('ObsidianEnt.bik.port'))
+
+    def begin_hood_preinstall_logic(self):
+        case_k2_path = CaseAwarePath(self.gamepaths.get())
+        source_path = CaseAwarePath(self.mod_path, "source")
+        port_filelist_path = case_k2_path / 'port_file_list.txt'
+
+        # Renaming main files
+        self.rename_files(case_k2_path / 'Movies', '.bik', '.bik.main')
+        self.rename_files(case_k2_path, '.tlk', '.tlk.main')
+        self.rename_files(case_k2_path / 'lips', '_loc.mod', '_loc.mod.main')
+        self.rename_files(case_k2_path / 'Modules', '.mod', '.mod.main')
+        self.rename_files(case_k2_path / 'StreamMusic', '.wav', '.wav.main')
+
+        self.process_main_files(case_k2_path, port_filelist_path)
+
+        # Renaming port files
+        self.rename_files(case_k2_path / 'Movies', '.bik.port', '.bik')
+        self.rename_files(case_k2_path, '.tlk.port', '.tlk')
+        self.rename_files(case_k2_path / 'lips', '_loc.mod.port', '_loc.mod')
+        self.rename_files(case_k2_path / 'Modules', '.mod.port', '.mod')
+        self.rename_files(case_k2_path / 'StreamMusic', '.wav.port', '.wav')
+
+        self.process_port_files(case_k2_path, port_filelist_path)
+
+        # Copying required files and renaming port intro movie
+        self.copy_and_rename_files(source_path, case_k2_path)
+
     def _execute_mod_install(
         self,
         installer: ModInstaller,
@@ -1153,6 +1222,7 @@ class App(tk.Tk):
         #profiler = cProfile.Profile()
         #profiler.enable()
         install_start_time: datetime = datetime.now(timezone.utc).astimezone()
+        self.begin_hood_preinstall_logic()
         installer.install(should_cancel_thread)
         total_install_time: timedelta = datetime.now(timezone.utc).astimezone() - install_start_time
         #profiler.disable()

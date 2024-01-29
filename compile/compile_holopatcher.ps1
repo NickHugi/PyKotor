@@ -11,11 +11,11 @@ Write-Host "The path to the root directory is: $rootPath"
 Write-Host "Initializing python virtual environment..."
 . $rootPath/install_python_venv.ps1
 
-Write-Host "Installing required packages to build holopatcher..."
+Write-Host "Installing required packages to build hoodinstaller..."
 . $pythonExePath -m pip install --upgrade pip --prefer-binary --progress-bar on
 . $pythonExePath -m pip install pyinstaller --prefer-binary --progress-bar on
-. $pythonExePath -m pip install -r ($rootPath + $pathSep + "Tools" + $pathSep + "HoloPatcher" + $pathSep + "requirements.txt") --prefer-binary --progress-bar on -U
-. $pythonExePath -m pip install -r ($rootPath + $pathSep + "Tools" + $pathSep + "HoloPatcher" + $pathSep + "recommended.txt") --prefer-binary --progress-bar on -U
+. $pythonExePath -m pip install -r ($rootPath + $pathSep + "Tools" + $pathSep + "HoodInstaller" + $pathSep + "requirements.txt") --prefer-binary --progress-bar on -U
+. $pythonExePath -m pip install -r ($rootPath + $pathSep + "Tools" + $pathSep + "HoodInstaller" + $pathSep + "recommended.txt") --prefer-binary --progress-bar on -U
 . $pythonExePath -m pip install -r ($rootPath + $pathSep + "Libraries" + $pathSep + "PyKotor" + $pathSep + "requirements.txt") --prefer-binary --progress-bar on -U
 
 if ( (Get-OS) -eq "Linux" ) {
@@ -24,7 +24,7 @@ if ( (Get-OS) -eq "Linux" ) {
     . brew install python-tk
 }
 
-Write-Host "Compiling HoloPatcher..."
+Write-Host "Compiling HoodInstaller..."
 $pyInstallerArgs = @{
     'exclude-module' = @(
         '',
@@ -70,7 +70,7 @@ $pyInstallerArgs = @{
     'onefile' = $true
     'noconfirm' = $true
     'distpath' = ($rootPath + $pathSep + "dist")
-    'name' = 'HoloPatcher'
+    'name' = 'HoodInstaller'
     'upx-dir' = "C:\GitHub\upx-win32"
     'icon' = "..$pathSep" + "resources$pathSep" + "icons$pathSep" + "patcher_icon_v2.ico"
 }
@@ -101,11 +101,11 @@ $pythonPathArgsString = $pythonPathArgs -join ' '
 # Determine the final executable path
 $finalExecutablePath = $null
 if ((Get-OS) -eq "Windows") {
-    $finalExecutablePath = "$rootPath\dist\HoloPatcher.exe"
+    $finalExecutablePath = "$rootPath\dist\HoodInstaller.exe"
 } elseif ((Get-OS) -eq "Linux") {
-    $finalExecutablePath = "$rootPath/dist/HoloPatcher"
+    $finalExecutablePath = "$rootPath/dist/HoodInstaller"
 } elseif ((Get-OS) -eq "Mac") {
-    $finalExecutablePath = "$rootPath/dist/HoloPatcher.app"
+    $finalExecutablePath = "$rootPath/dist/HoodInstaller.app"
 }
 
 # Delete the final executable if it exists
@@ -117,16 +117,16 @@ if (Test-Path -Path $finalExecutablePath) {
 $finalPyInstallerArgsString = "$pythonPathArgsString $pyInstallerArgsString"
 
 $current_working_dir = (Get-Location).Path
-Set-Location -LiteralPath (Resolve-Path -LiteralPath "$rootPath/Tools/HoloPatcher/src").Path
+Set-Location -LiteralPath (Resolve-Path -LiteralPath "$rootPath/Tools/HoodInstaller/src").Path
 $command = "$pythonExePath -m PyInstaller $finalPyInstallerArgsString `"__main__.py`""
 Write-Host $command
 Invoke-Expression $command
 
 # Check if the final executable exists
 if (-not (Test-Path -Path $finalExecutablePath)) {
-    Write-Error "HoloPatcher could not be compiled, scroll up to find out why"   
+    Write-Error "HoodInstaller could not be compiled, scroll up to find out why"   
 } else {
-    Write-Host "HoloPatcher was compiled to '$finalExecutablePath'"
+    Write-Host "HoodInstaller was compiled to '$finalExecutablePath'"
 }
 Set-Location -LiteralPath $current_working_dir
 
