@@ -22,6 +22,12 @@ cd PyKotor
 ```
 If you are on Linux/Mac and do not have Powershell installed, simply run the command `/bin/bash ./install_powershell.sh` first, then try to run install_python_venv.ps1 again.
 
+On windows, if you get the error:
+```
+install_python_venv.ps1 is not digitally signed. You cannot run this script on the current system.
+```
+you can bypass this error by running `PowerShell.exe -ExecutionPolicy Bypass -File .\compile_holopatcher.ps1`
+
 Otherwise, see https://learn.microsoft.com/en-us/powershell/scripting/install/installing-powershell?view=powershell-7.4 to learn how to install PowerShell on your system or install Python manually from https://www.python.org/, then set your environment variable PYTHONPATH manually by looking inside the '.env' file in the root of this repo.
 
 
