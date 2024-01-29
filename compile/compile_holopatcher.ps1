@@ -14,8 +14,8 @@ Write-Host "Initializing python virtual environment..."
 Write-Host "Installing required packages to build hoodinstaller..."
 . $pythonExePath -m pip install --upgrade pip --prefer-binary --progress-bar on
 . $pythonExePath -m pip install pyinstaller --prefer-binary --progress-bar on
-. $pythonExePath -m pip install -r ($rootPath + $pathSep + "Tools" + $pathSep + "HoodInstaller" + $pathSep + "requirements.txt") --prefer-binary --progress-bar on -U
-. $pythonExePath -m pip install -r ($rootPath + $pathSep + "Tools" + $pathSep + "HoodInstaller" + $pathSep + "recommended.txt") --prefer-binary --progress-bar on -U
+. $pythonExePath -m pip install -r ($rootPath + $pathSep + "Tools" + $pathSep + "HoloPatcher" + $pathSep + "requirements.txt") --prefer-binary --progress-bar on -U
+. $pythonExePath -m pip install -r ($rootPath + $pathSep + "Tools" + $pathSep + "HoloPatcher" + $pathSep + "recommended.txt") --prefer-binary --progress-bar on -U
 . $pythonExePath -m pip install -r ($rootPath + $pathSep + "Libraries" + $pathSep + "PyKotor" + $pathSep + "requirements.txt") --prefer-binary --progress-bar on -U
 
 if ( (Get-OS) -eq "Linux" ) {
