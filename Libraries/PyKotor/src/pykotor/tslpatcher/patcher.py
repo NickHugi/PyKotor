@@ -402,9 +402,10 @@ class ModInstaller:
             return None
 
         # Move nwscript.nss to Override if there are any nss patches to do
-        file_install = InstallFile("nwscript.nss", replace_existing=True)
-        if file_install not in config.install_list:
-            config.install_list.append(file_install)
+        if (self.mod_path / "nwscript.nss").safe_isfile():
+            file_install = InstallFile("nwscript.nss", replace_existing=True)
+            if file_install not in config.install_list:
+                config.install_list.append(file_install)
 
         temp_script_folder: CaseAwarePath = self.mod_path / "temp_nss_working_dir"
         if temp_script_folder.safe_isdir():
