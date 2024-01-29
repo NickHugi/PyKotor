@@ -167,8 +167,11 @@ function Get-PythonPaths {
 
     $windowsPaths = @(
         "C:\Program Files (x86)\Python$windowsVersion\python.exe",
+        "C:\Program Files (x86)\Python$windowsVersion-32\python.exe",
         "C:\Program Files\Python$windowsVersion\python.exe",
+        "C:\Program Files\Python$windowsVersion-32\python.exe",
         "$env:USERPROFILE\AppData\Local\Programs\Python\Python$windowsVersion\python.exe"
+        "$env:USERPROFILE\AppData\Local\Programs\Python\Python$windowsVersion-32\python.exe"
     )
 
     $linuxAndMacPaths = @(
