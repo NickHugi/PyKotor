@@ -65,7 +65,7 @@ $pyInstallerArgs = @{
         'cssselect',
         'beautifulsoup4 '
     )
-    'clean' = $true
+    'clean' = $false
     'noconsole' = $true
     'onefile' = $true
     'noconfirm' = $true
