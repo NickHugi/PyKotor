@@ -1148,20 +1148,26 @@ class App(tk.Tk):
         port_filelist_path = case_k2_path / "port_file_list.txt"
 
         # Renaming main files
-        rename_file(case_k2_path / "Movies" / "ObsidianEnt.bik", "ObsidianEnt.bik.main")
-        rename_file(case_k2_path / "dialog.tlk", "dialog.tlk.main")
-        rename_file(case_k2_path / "lips" / "001EBO_loc.mod", "001EBO_loc.mod.main")
-        rename_file(case_k2_path / "Modules" / "001ebo.mod", "001ebo.mod.main")
-        rename_file(case_k2_path / "StreamMusic" / "mus_sion.wav", "mus_sion.wav.main")
-        self.process_files_from_list(case_k2_path, port_filelist_path, ".main")
+        obsidian_ent_main_bik_path = case_k2_path / "Movies" / "ObsidianEnt.bik"
+        should_do_main_patch = obsidian_ent_main_bik_path.with_name("ObsidianEnt.bik.main").exists()
+        if should_do_main_patch:
+            rename_file(case_k2_path / "Movies" / "ObsidianEnt.bik", "ObsidianEnt.bik.main")
+            rename_file(case_k2_path / "dialog.tlk", "dialog.tlk.main")
+            rename_file(case_k2_path / "lips" / "001EBO_loc.mod", "001EBO_loc.mod.main")
+            rename_file(case_k2_path / "Modules" / "001ebo.mod", "001ebo.mod.main")
+            rename_file(case_k2_path / "StreamMusic" / "mus_sion.wav", "mus_sion.wav.main")
+            self.process_files_from_list(case_k2_path, port_filelist_path, ".main")
 
         # Renaming port files
-        rename_file(case_k2_path / "Movies" / "ObsidianEnt.bik.port", "ObsidianEnt.bik")
-        rename_file(case_k2_path / "dialog.tlk.port", "dialog.tlk")
-        rename_file(case_k2_path / "lips" / "001EBO_loc.mod.port", "001EBO_loc.mod")
-        rename_file(case_k2_path / "Modules" / "001ebo.mod.port", "001ebo.mod")
-        rename_file(case_k2_path / "StreamMusic" / "mus_sion.wav.port", "mus_sion.wav")
-        self.process_files_from_list(case_k2_path, port_filelist_path, "")
+        obsidian_ent_port_bik_path = case_k2_path / "Movies" / "ObsidianEnt.bik"
+        should_do_port_patch = obsidian_ent_port_bik_path.with_name("ObsidianEnt.bik.port").exists()
+        if should_do_port_patch:
+            rename_file(case_k2_path / "Movies" / "ObsidianEnt.bik.port", "ObsidianEnt.bik")
+            rename_file(case_k2_path / "dialog.tlk.port", "dialog.tlk")
+            rename_file(case_k2_path / "lips" / "001EBO_loc.mod.port", "001EBO_loc.mod")
+            rename_file(case_k2_path / "Modules" / "001ebo.mod.port", "001ebo.mod")
+            rename_file(case_k2_path / "StreamMusic" / "mus_sion.wav.port", "mus_sion.wav")
+            self.process_files_from_list(case_k2_path, port_filelist_path, "")
 
         # Copying required files and renaming port intro movie
         files_to_copy: list[str] = [
