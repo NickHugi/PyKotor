@@ -109,10 +109,10 @@ class RowValue2DAMemory(RowValue):
     def value(self, memory: PatcherMemory, twoda: TwoDA, row: TwoDARow | None) -> str:
         memory_val: str | PureWindowsPath | None = memory.memory_2da.get(self.token_id)
         if memory_val is None:
-            msg = f"2DAMEMORY{self.token_id} does not exist!"
+            msg = f"2DAMEMORY{self.token_id} was not defined before use."
             raise KeyError(msg)
         if isinstance(memory_val, PureWindowsPath):
-            msg = f"!FieldPath cannot be used in 2DAList patches, got '{memory_val!r}'"
+            msg = f"!FieldPath cannot be used in 2DAList patches, got '{memory_val}'"
             raise TypeError(msg)
         return memory_val
 
@@ -127,7 +127,7 @@ class RowValueTLKMemory(RowValue):
     def value(self, memory: PatcherMemory, twoda: TwoDA, row: TwoDARow | None) -> str:
         memory_val: int | None = memory.memory_str.get(self.token_id)
         if memory_val is None:
-            msg = f"StrRef{self.token_id} does not exist!"
+            msg = f"StrRef{self.token_id} was not defined before use."
             raise KeyError(msg)
         return str(memory_val)
 
@@ -296,7 +296,7 @@ class AddRow2DA(Modify2DA):
         store_tlk: dict[int, RowValue] | None = None,
     ):
         self.identifier: str = identifier
-        self.exclusive_column: str | None = exclusive_column if exclusive_column != "" else None
+        self.exclusive_column: str | None = exclusive_column if exclusive_column else None
         self.row_label: str | None = row_label
         self.cells: dict[str, RowValue] = cells
         self.store_2da: dict[int, RowValue] = {} if store_2da is None else store_2da

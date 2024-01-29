@@ -46,9 +46,16 @@ class ModificationsNCS(PatcherModifications):
                 writer.seek(offset)
                 value: int
                 if token_type.lower() == "strref":
+                    memory_strval: int | None = memory.memory_str.get(token_id_or_value, None)
+                    if memory_strval is None:
+                        msg = f"StrRef{token_id_or_value} was not defined before use"
+                        raise KeyError(msg)
                     value = memory.memory_str[token_id_or_value]
                 elif token_type.lower() == "2damemory":
-                    memory_val: str | PureWindowsPath = memory.memory_2da[token_id_or_value]
+                    memory_val: str | PureWindowsPath | None = memory.memory_2da.get(token_id_or_value, None)
+                    if memory_val is None:
+                        msg = f"2DAMEMORY{token_id_or_value} was not defined before use"
+                        raise KeyError(msg)
                     if isinstance(memory_val, PureWindowsPath):
                         msg = f"Memory value cannot be !FieldPath in [HACKList] patches, got '{memory_val!r}'"
                         raise ValueError(msg)
