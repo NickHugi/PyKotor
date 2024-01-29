@@ -225,9 +225,9 @@ class App(tk.Tk):
 
         # About menu
         about_menu = tk.Menu(self.menu_bar, tearoff=0)
-        about_menu.add_command(label="Check for Updates", command=self.check_for_updates)
-        about_menu.add_command(label="HoloPatcher Home", command=lambda: webbrowser.open_new("https://deadlystream.com/files/file/2243-holopatcher"))
-        about_menu.add_command(label="GitHub Source", command=lambda: webbrowser.open_new("https://github.com/NickHugi/PyKotor"))
+        about_menu.add_command(label="Expanded Galaxy Main", command=lambda: webbrowser.open_new("https://github.com/Thor110/Expanded-Galaxy-Main"))
+        about_menu.add_command(label="Expanded Galaxy Port", command=lambda: webbrowser.open_new("https://github.com/Thor110/Expanded-Galaxy-Port"))
+        about_menu.add_command(label="Expanded Galaxy Hood", command=lambda: webbrowser.open_new("https://github.com/Thor110/Expanded-Galaxy-Hood"))
         self.menu_bar.add_cascade(label="About", menu=about_menu)
 
     def initialize_ui_controls(self):
