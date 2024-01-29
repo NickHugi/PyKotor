@@ -1138,7 +1138,10 @@ class App(tk.Tk):
 
     def begin_hood_preinstall_logic(self):
         def rename_file(file_path: CaseAwarePath, new_name: str):
-            file_path.rename(file_path.with_name(new_name))
+            new_path = file_path.with_name(new_name)
+            if new_path.exists():
+                self.logger.add_warning(f"Skipping '{file_path}' because '{new_name}' already exists!")
+            file_path.rename(new_path)
 
         case_k2_path = CaseAwarePath(self.gamepaths.get())
         source_path = CaseAwarePath(self.mod_path, "source", "template")
