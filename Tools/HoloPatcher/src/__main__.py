@@ -1163,7 +1163,7 @@ class App(tk.Tk):
         obsidian_ent_port_bik_path = case_k2_path / "Movies" / "ObsidianEnt.bik"
         should_do_port_patch = obsidian_ent_port_bik_path.with_name("ObsidianEnt.bik.port").exists()
         if should_do_port_patch:
-            self.logger.add_note("EG Port is currently active, disabling...")
+            self.logger.add_note("EG Port is currently deactivated, enabling...")
             rename_file(case_k2_path / "Movies" / "ObsidianEnt.bik.port", "ObsidianEnt.bik")
             rename_file(case_k2_path / "dialog.tlk.port", "dialog.tlk")
             rename_file(case_k2_path / "lips" / "001EBO_loc.mod.port", "001EBO_loc.mod")
