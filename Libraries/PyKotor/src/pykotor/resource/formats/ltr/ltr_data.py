@@ -39,7 +39,7 @@ class LTR:
     def generate(
         self,
         seed: int | None = None,
-    ) -> str | None:
+    ) -> str:
         """Returns a randomly generated name based on the LTR instance data.
 
         This method was ported from the C code that can be found on GitHub:
@@ -106,7 +106,9 @@ class LTR:
                     attempts += 1
                     if len(name) < 4 or attempts > 100:
                         break
-        return None
+
+        msg = f"Unknown problem generating LTR from seed {seed}"
+        raise RuntimeError(msg)
 
     def set_singles_start(
         self,
