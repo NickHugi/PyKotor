@@ -288,54 +288,103 @@ function Find-Python {
                     if ($osInfo -match 'VERSION_ID=(.*)') {
                         $versionId = $Matches[1].Trim('"')
                     }
-
-                    switch ($distro) {
-                        "debian" {
-                            . sudo apt update
-                            . sudo apt install python3 -y
-                            . sudo apt install python3-dev -y
-                            . sudo apt install python3-venv -y
-                            . sudo apt install python3-pip -y
-                            break
-                         }
-                        "ubuntu" {
-                            . sudo apt install python3 -y
-                            . sudo apt install python3-dev -y
-                            . sudo apt install python3-venv -y
-                            . sudo apt install python3-pip -y
-                            break
-                        }
-                        "alpine" {
-                            . sudo apk update
-                            . sudo apk add --update --no-cache python3
-                            . ln -sf python3 /usr/bin/python
-                            . python3 -m ensurepip
-                            . pip3 install --no-cache --upgrade pip setuptools
-                            break
-                        }
-                        "fedora" {
-                            . sudo dnf update
-                            . sudo dnf install python3 -y
-                            . sudo dnf install python3-pip -y
-                            . sudo dnf install python3-venv -y
-                            break
-                        }
-                        "centos" {
-                            . sudo yum update
-                            if ( $versionId -eq "7" ) {
-                                . sudo yum install epel-release -y
+                    
+                    try {
+                        switch ($distro) {
+                            "debian" {
+                                sudo apt update
+                                sudo apt install python3 -y
+                                sudo apt install python3-dev -y
+                                sudo apt install python3-venv -y
+                                sudo apt install python3-pip -y
+                                break
                             }
-                            . sudo yum install python3 -y
-                            . sudo yum install python3-pip
-                            . sudo yum install python3-venv
-                            break
+                            "ubuntu" {
+                                sudo apt install python3 -y
+                                sudo apt install python3-dev -y
+                                sudo apt install python3-venv -y
+                                sudo apt install python3-pip -y
+                                break
+                            }
+                            "alpine" {
+                                sudo apk update
+                                sudo apk add --update --no-cache python3
+                                ln -sf python3 /usr/bin/python
+                                python3 -m ensurepip
+                                pip3 install --no-cache --upgrade pip setuptools
+                                break
+                            }
+                            "fedora" {
+                                sudo dnf update
+                                sudo dnf install python3 -y
+                                sudo dnf install python3-pip -y
+                                sudo dnf install python3-venv -y
+                                break
+                            }
+                            "centos" {
+                                sudo yum update
+                                if ( $versionId -eq "7" ) {
+                                    sudo yum install epel-release -y
+                                }
+                                sudo yum install python3 -y
+                                sudo yum install python3-pip
+                                sudo yum install python3-venv
+                                break
+                            }
+                            default {
+                                Write-Error "Unsupported Linux distribution"
+                                Write-Host "Press any key to exit..."
+                                $null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
+                                exit 1
+                            }
                         }
-                        default {
-                            Write-Error "Unsupported Linux distribution"
+                        Find-Python -intrnal
+                        if ( $global:pythonInstallPath -eq "" ) {
+                            throw "Python not found/installed"
+                        }
+                    } catch {
+                        $userInput = Read-Host "Could not install python from your package manager, would you like to attempt to build from source instead? (y/N)"
+                        if ( $userInput -ne "Y" -and $userInput -ne "y" ) {
                             Write-Host "Press any key to exit..."
                             $null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
                             exit 1
                         }
+                        # Fallback mechanism for each distribution
+                        switch ($distro) {
+                            "debian" {
+                                sudo apt update
+                                sudo apt install build-essential zlib1g-dev libncurses5-dev libgdbm-dev libssl-dev libreadline-dev libffi-dev libsqlite3-dev wget libbz2-dev tk-dev -y
+                            }
+                            "ubuntu" {
+                                sudo apt update
+                                sudo apt install build-essential zlib1g-dev libncurses5-dev libgdbm-dev libssl-dev libreadline-dev libffi-dev libsqlite3-dev wget libbz2-dev tk-dev -y
+                            }
+                            "alpine" {
+                                sudo apk add --update --no-cache alpine-sdk linux-headers zlib-dev bzip2-dev readline-dev sqlite-dev openssl-dev tk-dev libffi-dev
+                            }
+                            "fedora" {
+                                sudo yum groupinstall "Development Tools" -y
+                                sudo yum install zlib-devel bzip2-devel readline-devel sqlite-devel openssl-devel tk-devel libffi-devel -y
+                            }
+                            "centos" {
+                                sudo yum groupinstall "Development Tools" -y
+                                sudo yum install zlib-devel bzip2-devel readline-devel sqlite-devel openssl-devel tk-devel libffi-devel -y
+                            }
+                            default {
+                                Write-Error "Unsupported Linux distribution for building Python"
+                                exit 1
+                            }
+                        }
+                        wget https://www.python.org/ftp/python/3.8.18/Python-3.8.18.tgz
+                        tar -xvf Python-3.8.18.tgz
+                        $current_working_dir = (Get-Location).Path
+                        Set-Location -LiteralPath "Python-3.8.18" -ErrorAction Stop
+                        sudo ./configure --enable-optimizations
+                        sudo make -j $(nproc)
+                        sudo make altinstall
+                        Set-Location -LiteralPath $current_working_dir
+                        Write-Host "Find python again now that it's been installed."
+                        Find-Python -intrnal
                     }
                 } else {
                     Write-Host "Cannot determine Linux distribution."
