@@ -241,7 +241,7 @@ def with_variable_trace(
     return_type: type[RT] = unique_sentinel,  # type: ignore[reportGeneralTypeIssues, assignment]
     action="print",
     log: bool = True,
-    rethrow: bool = True,
+    rethrow: bool = False,
 ) -> Callable[[Callable[..., RT]], Callable[..., RT | None]]:
     # Set default to Exception if no specific types are provided
     if not exception_types:

@@ -774,7 +774,7 @@ class BasePath(BasePurePath):
             log_func("Checking access again before attempting elevated native access fix...")
             success = self.has_access(mode, recurse=False)
             if not success:
-                log_func("Attempting to elevate the native access fix...")
+                log_func("Still no access permitted, attempting to elevate the native access fix...")
                 try:
                     self.request_native_access(elevate=True, recurse=recurse, log_func=log_func)
                 except Exception as e:
