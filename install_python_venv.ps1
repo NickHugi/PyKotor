@@ -110,7 +110,8 @@ function Python-Install-Windows {
         Invoke-WebRequest -Uri $pythonInstallerUrl -OutFile $installerPath
         Write-Host "Download completed."
         Write-Host "Installing 'python-$global:pythonVersion.exe', please wait..."
-        Start-Process -FilePath $installerPath -Args 'InstallAllUsers=0 PrependPath=1 InstallLauncherAllUsers=0' -Wait -NoNewWindow
+        Start-Process -FilePath $installerPath -Args '/quiet InstallAllUsers=0 PrependPath=1 InstallLauncherAllUsers=0' -Wait -NoNewWindow
+        Write-Host "Python install process has finished."
     
         # Refresh environment variables to detect new Python installation
         $env:Path = [System.Environment]::GetEnvironmentVariable("Path", "Machine")
@@ -269,22 +270,25 @@ function Find-Python {
     }
 
     if ( $global:pythonInstallPath -eq "") {
-        Write-Host "A supported Python version was not detected on your system. Install $recommendedVersion now automatically?"
-        if (-not $noprompt) {
-            $userInput = Read-Host "(Y/N)"
-            if ( $userInput -ne "Y" -and $userInput -ne "y" ) {
-                Write-Host "A python install between versions $minVersion and $maxVersion is required for PyKotor."
-                Write-Host "Press any key to exit..."
-                $null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
-                exit
-            }
-        }
         if (-not $intrnal) {
             if ( (Get-OS) -eq "Windows" ) {
-                $installAttempted = Python-Install-Windows "3.8.10"
-                if ( $installAttempted -eq $true) {
-                    Write-Host "Find python again now that it's been installed."
-                    Find-Python -intrnal
+                if (-not $noprompt) {
+                    Write-Host "A supported Python version was not detected on your system. Install Python version $recommendedVersion now automatically?"
+                    $userInput = Read-Host "(Y/N)"
+                    if ( $userInput -ne "Y" -and $userInput -ne "y" ) {
+                        Write-Host "A python install between versions $minVersion and $maxVersion is required for PyKotor."
+                        Write-Host "Press any key to exit..."
+                        $null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
+                        exit
+                    }
+                    $installAttempted = Python-Install-Windows "3.8.10"
+                    if ( $installAttempted -eq $false) {
+                        Write-Host "The Python install either failed or has been cancelled."
+                        Write-Host "A python install between versions $minVersion and $maxVersion is required for PyKotor."
+                        Write-Host "Press any key to exit..."
+                        $null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
+                        exit
+                    }
                 }
             } elseif ( (Get-OS) -eq "Linux" ) {
                 if (Test-Path "/etc/os-release") {
@@ -339,10 +343,7 @@ function Find-Python {
                                 break
                             }
                             default {
-                                Write-Error "Unsupported Linux distribution"
-                                Write-Host "Press any key to exit..."
-                                $null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
-                                exit 1
+                                Write-Error "Unsupported Linux distribution for package manager install of Python."
                             }
                         }
                         Find-Python -intrnal
@@ -360,11 +361,11 @@ function Find-Python {
                         switch ($distro) {
                             "debian" {
                                 sudo apt update
-                                sudo apt install build-essential zlib1g-dev libncurses5-dev libgdbm-dev libssl-dev libreadline-dev libffi-dev libsqlite3-dev wget libbz2-dev tk-dev -y
+                                sudo apt install build-essential zlib1g-dev libncurses5-dev libgdbm-dev libssl-dev libreadline-dev libffi-dev libsqlite3-dev libbz2-dev tk-dev -y
                             }
                             "ubuntu" {
                                 sudo apt update
-                                sudo apt install build-essential zlib1g-dev libncurses5-dev libgdbm-dev libssl-dev libreadline-dev libffi-dev libsqlite3-dev wget libbz2-dev tk-dev -y
+                                sudo apt install build-essential zlib1g-dev libncurses5-dev libgdbm-dev libssl-dev libreadline-dev libffi-dev libsqlite3-dev libbz2-dev tk-dev -y
                             }
                             "alpine" {
                                 sudo apk add --update --no-cache alpine-sdk linux-headers zlib-dev bzip2-dev readline-dev sqlite-dev openssl-dev tk-dev libffi-dev
@@ -382,7 +383,7 @@ function Find-Python {
                                 exit 1
                             }
                         }
-                        wget https://www.python.org/ftp/python/3.8.18/Python-3.8.18.tgz
+                        Invoke-WebRequest -Uri https://www.python.org/ftp/python/3.8.18/Python-3.8.18.tgz
                         tar -xvf Python-3.8.18.tgz
                         $current_working_dir = (Get-Location).Path
                         Set-Location -LiteralPath "Python-3.8.18" -ErrorAction Stop
@@ -390,8 +391,6 @@ function Find-Python {
                         sudo make -j $(nproc)
                         sudo make altinstall
                         Set-Location -LiteralPath $current_working_dir
-                        Write-Host "Find python again now that it's been installed."
-                        Find-Python -intrnal
                     }
                 } else {
                     Write-Host "Cannot determine Linux distribution."
@@ -400,6 +399,8 @@ function Find-Python {
             } elseif ( (Get-OS) -eq "Mac" ) {
                 & bash -c "brew install python@3.8 -y" 2>&1 | Write-Output
             }
+            Write-Host "Find python again now that it's been installed."
+            Find-Python -intrnal
         } else {
             Write-Host "Find python again now that it's been installed."
             Find-Python -intrnal
