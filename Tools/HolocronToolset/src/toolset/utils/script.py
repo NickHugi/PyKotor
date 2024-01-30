@@ -70,7 +70,7 @@ def decompileScript(compiled: bytes, tsl: bool) -> str:
             raise CompileError(stderr)  # noqa: TRY301
         return BinaryReader.load_file(tempDecompiledPath).decode(encoding="windows-1252")
     except Exception as e:  # noqa: BLE001
-        with Path("errorlog.txt").open("w") as f:
+        with Path("errorlog.txt").open("a") as f:
             msg = format_exception_with_variables(e)
             print(msg, sys.stderr)  # noqa: T201
             f.write(msg)
