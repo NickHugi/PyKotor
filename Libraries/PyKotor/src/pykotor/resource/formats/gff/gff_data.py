@@ -340,54 +340,57 @@ class GFFStruct:
             "KTInfoVersion",
             "EditorInfo",
         }
+        def is_ignorable_value(v) -> bool:
+            return not v or str(v) in {"0", "-1"}
+
+        def is_ignorable_comparison(
+            old_value,
+            new_value,
+        ) -> bool:
+            return is_ignorable_value(old_value) and is_ignorable_value(new_value)
+
+        is_same: bool = True
         current_path = PureWindowsPath(current_path or "GFFRoot")
         if len(self) != len(other_gff_struct) and not ignore_default_changes:  # sourcery skip: class-extract-method
             log_func()
             log_func(f"GFFStruct: number of fields have changed at '{current_path}': '{len(self)}' --> '{len(other_gff_struct)}'")
-            is_same_result = False
+            is_same = False
         if self.struct_id != other_gff_struct.struct_id:
             log_func(f"Struct ID is different at '{current_path}': '{self.struct_id}' --> '{other_gff_struct.struct_id}'")
-            is_same_result = False
+            is_same = False
 
         # Create dictionaries for both old and new structures
         old_dict: dict[str, tuple[GFFFieldType, Any]] = {label or f"gffstruct({idx})": (ftype, value) for idx, (label, ftype, value) in enumerate(self) if label not in ignore_labels}
         new_dict: dict[str, tuple[GFFFieldType, Any]] = {label or f"gffstruct({idx})": (ftype, value) for idx, (label, ftype, value) in enumerate(other_gff_struct) if label not in ignore_labels}
 
         # Union of labels from both old and new structures
-        all_labels = set(old_dict.keys()) | set(new_dict.keys())
-
-        is_same_result = True
+        all_labels: set[str] = set(old_dict.keys()) | set(new_dict.keys())
 
         for label in all_labels:
-            child_path = current_path / str(label)
+            child_path: PureWindowsPath = current_path / str(label)
             old_ftype, old_value = old_dict.get(label, (None, None))
             new_ftype, new_value = new_dict.get(label, (None, None))
 
+            if ignore_default_changes and is_ignorable_comparison(old_value, new_value):
+                continue
+
             # Check for missing fields/values in either structure
             if old_ftype is None or old_value is None:
-                if ignore_default_changes and (not new_value or str(new_value) == "-1"):
-                    continue
-                if ignore_default_changes and (isinstance(new_value, GFFList) and not len(new_value._structs)):
-                    continue
                 if new_ftype is None:
-                    msg = "new_ftype shouldn't be None here."
+                    msg = f"new_ftype shouldn't be None here. Relevance: old_ftype={old_ftype!r}, old_value={old_value!r}, new_value={new_value!r}"
                     raise RuntimeError(msg)
                 log_func(f"Extra '{new_ftype.name}' field found at '{child_path}': {format_text(new_value)}" )
-                is_same_result = False
+                is_same = False
                 continue
             if new_value is None or new_ftype is None:
-                if ignore_default_changes and (not old_value or str(old_value) == "-1"):
-                    continue
-                if ignore_default_changes and (isinstance(old_value, GFFList) and not len(old_value._structs)):
-                    continue
                 log_func(f"Missing '{old_ftype.name}' field at '{child_path}': {format_text(old_value)}")
-                is_same_result = False
+                is_same = False
                 continue
 
             # Check if field types have changed
             if old_ftype != new_ftype:
                 log_func(f"Field type is different at '{child_path}': '{old_ftype.name}'-->'{new_ftype.name}'")
-                is_same_result = False
+                is_same = False
                 continue
 
             # Compare values depending on their types
@@ -396,16 +399,15 @@ class GFFStruct:
                 cur_struct_this: GFFStruct = old_value
                 if cur_struct_this.struct_id != new_value.struct_id:
                     log_func(f"Struct ID is different at '{child_path}': '{cur_struct_this.struct_id}'-->'{new_value.struct_id}'")
-                    is_same_result = False
+                    is_same = False
 
                 if not cur_struct_this.compare(new_value, log_func, child_path, ignore_default_changes):
-                    is_same_result = False
+                    is_same = False
                     continue
-
             elif old_ftype == GFFFieldType.List:
                 gff_list: GFFList = old_value
-                if not gff_list.compare(new_value, log_func, child_path, ignore_default_changes):
-                    is_same_result = False
+                if not gff_list.compare(new_value, log_func, child_path, ignore_default_changes=ignore_default_changes):
+                    is_same = False
                     continue
 
             elif old_value != new_value:
@@ -415,23 +417,28 @@ class GFFStruct:
                     and math.isclose(old_value, new_value, rel_tol=1e-4, abs_tol=1e-4)
                 ):
                     continue
+
+                is_same = False
                 if str(old_value) == str(new_value):
-                    is_same_result = False
                     log_func(f"Field '{old_ftype.name}' is different at '{child_path}': String representations match, but have other properties that don't (such as a lang id difference).")
                     continue
-                formatted_old_value, formatted_new_value = map(str, (old_value, new_value))
-                newlines_in_old, newlines_in_new = (x.count("\n") for x in (formatted_old_value, formatted_new_value))
-                if newlines_in_old > 1 or newlines_in_new > 1:
-                    formatted_old_value, formatted_new_value = compare_and_format(old_value, new_value)
-                    log_func(f"Field '{old_ftype.name}' is different at '{child_path}': {format_text(formatted_old_value)}<-vvv->{format_text(formatted_new_value)}")
-                elif newlines_in_old == 1 or newlines_in_new == 1:
-                    log_func(f"Field '{old_ftype.name}' is different at '{child_path}': {os.linesep}{old_value!s}{os.linesep}<-vvv->{os.linesep}{new_value!s}")
-                else:
-                    log_func(f"Field '{old_ftype.name}' is different at '{child_path}': {old_value!s} --> {new_value!s}")
-                is_same_result = False
-                continue
 
-        return is_same_result
+                formatted_old_value, formatted_new_value = map(str, (old_value, new_value))
+                newlines_in_old: int = formatted_old_value.count("\n")
+                newlines_in_new: int = formatted_new_value.count("\n")
+
+                if newlines_in_old > 1 or newlines_in_new > 1:
+                    formatted_old_value, formatted_new_value = compare_and_format(formatted_old_value, formatted_new_value)
+                    log_func(f"Field '{old_ftype.name}' is different at '{child_path}': {format_text(formatted_old_value)}<-vvv->{format_text(formatted_new_value)}")
+                    continue
+
+                if newlines_in_old == 1 or newlines_in_new == 1:
+                    log_func(f"Field '{old_ftype.name}' is different at '{child_path}': {os.linesep}{formatted_old_value}{os.linesep}<-vvv->{os.linesep}{formatted_new_value}")
+                    continue
+
+                log_func(f"Field '{old_ftype.name}' is different at '{child_path}': {formatted_old_value} --> {formatted_new_value}")
+
+        return is_same
 
     def what_type(
         self,
@@ -457,7 +464,7 @@ class GFFStruct:
         -------
             The field value. If the field does not exist or the value type does not match the specified type then the default is returned instead.
         """
-        value = default
+        value: T = default
         if object_type is None:
             object_type = type(default)
         if (
@@ -1238,7 +1245,14 @@ class GFFList:
         self._structs.pop(index)
 
 
-    def compare(self, other_gff_list: GFFList, log_func=print, current_path: PureWindowsPath | None = None, ignore_default_changes: bool = False) -> bool:
+    def compare(
+        self,
+        other_gff_list: GFFList,
+        log_func=print,
+        current_path: PureWindowsPath | None = None,
+        *,
+        ignore_default_changes: bool = False,
+    ) -> bool:
         """Compare two GFFLists recursively.
 
         Functionally the same as __eq__, but will also log/print the differences.
