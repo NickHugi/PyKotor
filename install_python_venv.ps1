@@ -105,8 +105,11 @@ function Python-Install-Windows {
     try {
         # Download and install Python
         $pythonInstallerUrl = "https://www.python.org/ftp/python/$global:pythonVersion/python-$global:pythonVersion.exe"
-        $installerPath = (Resolve-Path -LiteralPath "$env:TEMP/python-$global:pythonVersion.exe").Path
+        $installerPath = "$env:TEMP/python-$global:pythonVersion.exe"
+        Write-Host "Downloading 'python-$global:pythonVersion.exe' to '$env:TEMP', please wait..."
         Invoke-WebRequest -Uri $pythonInstallerUrl -OutFile $installerPath
+        Write-Host "Download completed."
+        Write-Host "Installing 'python-$global:pythonVersion.exe', please wait..."
         Start-Process -FilePath $installerPath -Args '/quiet InstallAllUsers=0 PrependPath=1' -Wait -NoNewWindow
     
         # Refresh environment variables to detect new Python installation
@@ -166,10 +169,10 @@ function Get-PythonPaths {
     $windowsVersion = $version -replace '\.', ''  # "3.8" becomes "38"
 
     $windowsPaths = @(
-        "C:\Program Files (x86)\Python$windowsVersion\python.exe",
-        "C:\Program Files (x86)\Python$windowsVersion-32\python.exe",
         "C:\Program Files\Python$windowsVersion\python.exe",
+        "C:\Program Files (x86)\Python$windowsVersion\python.exe",
         "C:\Program Files\Python$windowsVersion-32\python.exe",
+        "C:\Program Files (x86)\Python$windowsVersion-32\python.exe",
         "$env:USERPROFILE\AppData\Local\Programs\Python\Python$windowsVersion\python.exe",
         "$env:USERPROFILE\AppData\Local\Programs\Python\Python$windowsVersion-32\python.exe",
         "$env:LOCALAPPDATA\Programs\Python\Python$windowsVersion\python.exe",
@@ -278,7 +281,11 @@ function Find-Python {
         }
         if (-not $intrnal) {
             if ( (Get-OS) -eq "Windows" ) {
-                Python-Install-Windows "3.8.10"
+                $installAttempted = Python-Install-Windows "3.8.10"
+                if ( $installAttempted -eq $true) {
+                    Write-Host "Find python again now that it's been installed."
+                    Find-Python -intrnal
+                }
             } elseif ( (Get-OS) -eq "Linux" ) {
                 if (Test-Path "/etc/os-release") {
                     $osInfo = Get-Content "/etc/os-release" -Raw
