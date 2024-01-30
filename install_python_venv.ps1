@@ -170,16 +170,23 @@ function Get-PythonPaths {
         "C:\Program Files (x86)\Python$windowsVersion-32\python.exe",
         "C:\Program Files\Python$windowsVersion\python.exe",
         "C:\Program Files\Python$windowsVersion-32\python.exe",
-        "$env:USERPROFILE\AppData\Local\Programs\Python\Python$windowsVersion\python.exe"
-        "$env:USERPROFILE\AppData\Local\Programs\Python\Python$windowsVersion-32\python.exe"
+        "$env:USERPROFILE\AppData\Local\Programs\Python\Python$windowsVersion\python.exe",
+        "$env:USERPROFILE\AppData\Local\Programs\Python\Python$windowsVersion-32\python.exe",
+        "$env:LOCALAPPDATA\Programs\Python\Python$windowsVersion\python.exe",
+        "$env:LOCALAPPDATA\Programs\Python\Python$windowsVersion-32\python.exe"
     )
 
     $linuxAndMacPaths = @(
         "/usr/bin/python$version",
         "/usr/local/bin/python$version",
+        "/bin/python$version",
+        "/sbin/python$version",
         "~/.local/bin/python$version",
         "~/.pyenv/versions/$version/bin/python3",
-        "~/.pyenv/versions/$version/bin/python"
+        "~/.pyenv/versions/$version/bin/python",
+        "/usr/local/Cellar/python/$version/bin/python3",  # Homebrew on macOS
+        "/opt/local/bin/python$version",                  # MacPorts on macOS
+        "/opt/python$version"                             # Custom installations
     )
 
     return @{ Windows = $windowsPaths; Linux = $linuxAndMacPaths; Darwin = $linuxAndMacPaths }
