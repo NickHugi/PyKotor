@@ -58,11 +58,12 @@ class BinaryReader:
         self.auto_close: bool = True
         self._stream.seek(offset)
 
-        available = self.true_size() - offset
-        self._size: int = available if size is None else size
-        if available > self.true_size():
+        true_size = self.true_size()
+        available = true_size - offset
+        if available > true_size:
             msg = "Specified size is greater than the number of available bytes."
             raise OSError(msg)
+        self._size: int = available if size is None else size
 
     def __enter__(
         self,
@@ -97,10 +98,7 @@ class BinaryReader:
         -------
             A new BinaryReader instance.
         """
-        resolved_path = Path.pathify(path)
-        if not resolved_path.exists():
-            resolved_path = resolved_path.resolve()
-        stream = resolved_path.open("rb")
+        stream: BinaryIO = Path.pathify(path).open("rb")
         return BinaryReader(stream, offset, size)
 
     @classmethod
@@ -139,7 +137,7 @@ class BinaryReader:
         elif isinstance(source, BinaryReader):  # is reader
             reader = BinaryReader(source._stream, source._offset, source._size)  # noqa: SLF001
         else:
-            msg = "Must specify a path, bytes-like object or an existing BinaryReader instance."
+            msg = f"Must specify a path, bytes-like object or an existing BinaryReader instance, got type ({type(source)})."
             raise NotImplementedError(msg)
 
         return reader
@@ -162,10 +160,7 @@ class BinaryReader:
         -------
             The bytes of the file.
         """
-        resolved_path = Path.pathify(path)
-        if not resolved_path.exists():
-            resolved_path = resolved_path.resolve()
-        with resolved_path.open("rb") as reader:
+        with Path.pathify(path).open("rb") as reader:
             reader.seek(offset)
             return reader.read() if size == -1 else reader.read(size)
 
@@ -212,9 +207,9 @@ class BinaryReader:
         -------
             The total file size.
         """
-        pos = self._stream.tell()
+        pos: int = self._stream.tell()
         self._stream.seek(0, 2)
-        size = self._stream.tell()
+        size: int = self._stream.tell()
         self._stream.seek(pos)
         return size
 
@@ -377,11 +372,11 @@ class BinaryReader:
         """Reads an unsigned 32-bit integer from the stream.
 
         If max_is_neg1 flag is set to true and the bytes read off the stream are equal to 0xFFFFFFFF then the method
-        will return a value of -1 instead of 4294967295.
+        will return a value of -1 instead of 4294967295 (hex 0xFFFFFFFF).
 
         Args:
         ----
-            max_neg1: Return -1 when the value of the stream equals 0xFFFFFFFF.
+            max_neg1: Return -1 when the value of the stream equals 0xFFFFFFFF (dec 4294967295).
             big: Read int bytes as big endian.
 
         Returns:
@@ -612,8 +607,8 @@ class BinaryReader:
         -------
             A string read from the stream.
         """
-        string = ""
-        char = ""
+        string: str = ""
+        char: str = ""
         while char != terminator:
             string += char
             self.exceed_check(1)
@@ -668,7 +663,7 @@ class BinaryReader:
 
         Raises:
         ------
-            OSError: Iset_datahe given number sex exceeds the number of remaining bytes.
+            OSError: When the attempted read operation exceeds the number of remaining bytes.
         """
         if self.position() + num > self.size():
             msg = "This operation would exceed the streams boundaries."
@@ -699,10 +694,7 @@ class BinaryWriter(ABC):
         -------
             A new BinaryWriter instance.
         """
-        resolved_path = Path.pathify(path)
-        if not resolved_path.exists():
-            resolved_path = resolved_path.resolve()
-        return BinaryWriterFile(resolved_path.open("wb"))
+        return BinaryWriterFile(Path.pathify(path).open("wb"))
 
     @classmethod
     def to_bytearray(
@@ -733,10 +725,15 @@ class BinaryWriter(ABC):
     ) -> BinaryWriter:
         if isinstance(source, (os.PathLike, str)):  # is path
             return BinaryWriter.to_file(source)
-        if isinstance(source, bytearray):  # is binary data
+        if isinstance(source, bytearray):  # is mutable binary data
             return BinaryWriter.to_bytearray(source)
+        if isinstance(source, (bytes, memoryview)):  # is immutable binary data
+            return BinaryWriter.to_bytearray(bytearray(source))
         if isinstance(source, BinaryWriter):
-            return source
+            if isinstance(source, BinaryWriterFile):
+                return BinaryWriterFile(source._stream, source.offset)  # noqa: SLF001
+            if isinstance(source, BinaryWriterBytearray):
+                return BinaryWriterBytearray(source._ba, source._offset)  # noqa: SLF001
         msg = "Must specify a path, bytes object or an existing BinaryWriter instance."
         raise NotImplementedError(msg)
 
@@ -752,10 +749,7 @@ class BinaryWriter(ABC):
             path: The filepath of the file.
             data: The data to write to the file.
         """
-        resolved_path = Path.pathify(path)
-        if not resolved_path.exists():
-            resolved_path = resolved_path.resolve()
-        with resolved_path.open("wb") as file:
+        with Path.pathify(path).open("wb") as file:
             file.write(data)
 
     @abstractmethod
@@ -1100,6 +1094,7 @@ class BinaryWriterFile(BinaryWriter):
         self._stream: BinaryIO = stream
         self.offset: int = offset
         self.auto_close: bool = True
+
         self._stream.seek(offset)
 
     def __enter__(
@@ -1131,9 +1126,9 @@ class BinaryWriterFile(BinaryWriter):
         -------
             The total file size.
         """
-        pos = self._stream.tell()
+        pos: int = self._stream.tell()
         self._stream.seek(0, 2)
-        size = self._stream.tell()
+        size: int = self._stream.tell()
         self._stream.seek(pos)
         return size
 
@@ -1146,9 +1141,9 @@ class BinaryWriterFile(BinaryWriter):
         -------
             The full file data.
         """
-        pos = self._stream.tell()
+        pos: int = self._stream.tell()
         self._stream.seek(0)
-        data = self._stream.read()
+        data: bytes = self._stream.read()
         self._stream.seek(pos)
         return data
 
@@ -1367,7 +1362,7 @@ class BinaryWriterFile(BinaryWriter):
         value: Vector3,
         *,
         big: bool = False,
-    ):
+    ):  # sourcery skip: class-extract-method
         """Writes three 32-bit floating point numbers to the stream.
 
         Args:
@@ -1375,7 +1370,9 @@ class BinaryWriterFile(BinaryWriter):
             value: The value to be written.
             big: Write bytes as big endian.
         """
-        self._write_generic_vector(big, value)
+        self._stream.write(struct.pack(f"{_endian_char(big)}f", value.x))
+        self._stream.write(struct.pack(f"{_endian_char(big)}f", value.y))
+        self._stream.write(struct.pack(f"{_endian_char(big)}f", value.z))
 
     def write_vector4(
         self,
@@ -1390,13 +1387,10 @@ class BinaryWriterFile(BinaryWriter):
             value: The value to be written.
             big: Write bytes as big endian.
         """
-        self._write_generic_vector(big, value)
-        self._stream.write(struct.pack(f"{_endian_char(big)}f", value.w))
-
-    def _write_generic_vector(self, big: bool, value: Vector3 | Vector4):
         self._stream.write(struct.pack(f"{_endian_char(big)}f", value.x))
         self._stream.write(struct.pack(f"{_endian_char(big)}f", value.y))
         self._stream.write(struct.pack(f"{_endian_char(big)}f", value.z))
+        self._stream.write(struct.pack(f"{_endian_char(big)}f", value.w))
 
     def write_bytes(
         self,
@@ -1428,7 +1422,7 @@ class BinaryWriterFile(BinaryWriter):
         Args:
         ----
             value: The string to be written.
-            encoding: The encoding of the string to be written. If not set, will default to "windows-1252". If set to None, will autodetect using charset_normalizer.
+            encoding: The encoding of the string to be written. If not set, will default to "windows-1252".
             prefix_length: The number of bytes for the string length prefix. Valid options are 0, 1, 2 and 4.
             big: Write the prefix length integer as big endian.
             string_length: Fixes the string length to this size, truncating or padding where necessary. Ignores if -1.
@@ -1452,7 +1446,7 @@ class BinaryWriterFile(BinaryWriter):
                 raise ValueError(msg)
             self.write_uint32(len(value), big=big)
         else:
-            msg = "An invalid prefix length was provided."
+            msg = f"An invalid prefix length '{prefix_length}' was provided."
             raise ValueError(msg)
 
         if string_length != -1:
@@ -1471,12 +1465,14 @@ class BinaryWriterFile(BinaryWriter):
     ):
         """Writes a line with specified indentation and array of values that are separated by whitespace.
 
+        The data will be written with utf-8 encoding.
+
         Args:
         ----
             indent: Level of indentation.
             *args: Values to write.
         """
-        line = "  " * indent
+        line: str = "  " * indent
         for arg in args:
             line += str(round(arg, 7)) if isinstance(arg, float) else str(arg)
             line += " "
@@ -1498,15 +1494,16 @@ class BinaryWriterFile(BinaryWriter):
             value: The localized string to be written.
             big: Write any integers as big endian.
         """
-        bw = BinaryWriter.to_bytearray()
+        bw: BinaryWriterBytearray = BinaryWriter.to_bytearray()
         bw.write_uint32(value.stringref, big=big, max_neg1=True)
         bw.write_uint32(len(value), big=big)
+
         for language, gender, substring in value:
-            string_id = LocalizedString.substring_id(language, gender)
+            string_id: int = LocalizedString.substring_id(language, gender)
             bw.write_uint32(string_id, big=big)
             bw.write_string(substring, prefix_length=4, encoding=language.get_encoding())
-        locstring_data = bw.data()
 
+        locstring_data: bytes = bw.data()
         self.write_uint32(len(locstring_data))
         self.write_bytes(locstring_data)
 
@@ -1517,7 +1514,7 @@ class BinaryWriterBytearray(BinaryWriter):
         ba: bytearray,
         offset: int = 0,
     ):
-        self._ba = ba
+        self._ba: bytearray = ba
         self._offset: int = offset
         self._position: int = 0
 
@@ -1905,7 +1902,7 @@ class BinaryWriterBytearray(BinaryWriter):
         Args:
         ----
             value: The string to be written.
-            encoding: The encoding to convert to bytes. Defaults to "windows-1252". If None, will autodetect the best 8-bit encoding.
+            encoding: The encoding to convert to bytes. Defaults to "windows-1252".
             prefix_length: The number of bytes for the string length prefix. Valid options are 0, 1, 2 and 4.
             big: Write the prefix length integer as big endian.
             string_length: Fixes the string length to this size, truncating or padding where necessary. Ignores if -1.
@@ -1951,7 +1948,7 @@ class BinaryWriterBytearray(BinaryWriter):
             indent: Level of indentation.
             *args: Values to write.
         """
-        line = "  " * indent
+        line: str = "  " * indent
         for arg in args:
             line += str(round(arg, 7)) if isinstance(arg, float) else str(arg)
             line += " "
@@ -1959,11 +1956,13 @@ class BinaryWriterBytearray(BinaryWriter):
 
         self._encode_val_and_update_position(line, "ascii")
 
-    def _encode_val_and_update_position(self, value: str, encoding: str | None, errors: str = "strict"):
-        if encoding is None:
-            encoded = value.encode(value or "windows-1252", errors=errors)
-        else:
-            encoded = value.encode(encoding, errors=errors)
+    def _encode_val_and_update_position(
+        self,
+        value: str,
+        encoding: str | None,
+        errors: str = "strict",
+    ):
+        encoded: bytes = value.encode(encoding or "windows-1252", errors=errors)
         self._ba[self._position : self._position + len(encoded)] = encoded
         self._position += len(encoded)
 
@@ -1982,15 +1981,15 @@ class BinaryWriterBytearray(BinaryWriter):
             value: The localized string to be written.
             big: Write any integers as big endian.
         """
-        bw = BinaryWriter.to_bytearray()
+        bw: BinaryWriterBytearray = BinaryWriter.to_bytearray()
         bw.write_uint32(value.stringref, big=big, max_neg1=True)
         bw.write_uint32(len(value), big=big)
 
         for language, gender, substring in value:
-            string_id = LocalizedString.substring_id(language, gender)
+            string_id: int = LocalizedString.substring_id(language, gender)
             bw.write_uint32(string_id, big=big)
             bw.write_string(substring, prefix_length=4, encoding=language.get_encoding())
-        locstring_data = bw.data()
 
+        locstring_data: bytes = bw.data()
         self.write_uint32(len(locstring_data))
         self.write_bytes(locstring_data)
