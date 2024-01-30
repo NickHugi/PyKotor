@@ -107,7 +107,7 @@ function Python-Install-Windows {
         $pythonInstallerUrl = "https://www.python.org/ftp/python/$global:pythonVersion/python-$global:pythonVersion.exe"
         $installerPath = (Resolve-Path -LiteralPath "$env:TEMP/python-$global:pythonVersion.exe").Path
         Invoke-WebRequest -Uri $pythonInstallerUrl -OutFile $installerPath
-        Start-Process -FilePath $installerPath -Args '/quiet InstallAllUsers=1 PrependPath=1' -Wait -NoNewWindow
+        Start-Process -FilePath $installerPath -Args '/quiet InstallAllUsers=0 PrependPath=1' -Wait -NoNewWindow
     
         # Refresh environment variables to detect new Python installation
         $env:Path = [System.Environment]::GetEnvironmentVariable("Path", "Machine")
