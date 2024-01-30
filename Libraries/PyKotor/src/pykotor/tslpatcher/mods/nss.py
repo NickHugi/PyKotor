@@ -118,7 +118,7 @@ class ModificationsNSS(PatcherModifications):
             ncs: NCS = compile_with_builtin(
                 source.value,
                 game,
-                [RemoveNopOptimizer(), RemoveMoveSPEqualsZeroOptimizer(), RemoveUnusedBlocksOptimizer()],  # TODO: ncs optimizers need testing
+                [], #[RemoveNopOptimizer(), RemoveMoveSPEqualsZeroOptimizer(), RemoveUnusedBlocksOptimizer()],  # TODO: ncs optimizers need testing
                 library_lookup=[CaseAwarePath.pathify(self.temp_script_folder)],
             )
         except EntryPointError as e:
