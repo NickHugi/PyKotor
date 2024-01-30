@@ -558,13 +558,13 @@ class Installation:
         self,
     ):
         """Reloads the list of resources in the streamwaves folder linked to the Installation."""
-        self._streamwaves = self.load_resources(self._find_resource_folderpath("streamwaves", "streamvoice"), recurse=True)  # type: ignore[assignment]
+        self._streamwaves = self.load_resources(self._find_resource_folderpath(("streamwaves", "streamvoice")), recurse=True)  # type: ignore[assignment]
 
     def load_streamvoice(
         self,
     ):
         """Reloads the list of resources in the streamvoice folder linked to the Installation."""
-        self._streamwaves = self.load_resources(self._find_resource_folderpath("streamvoice", "streamwaves"), recurse=True)  # type: ignore[assignment]
+        self._streamwaves = self.load_resources(self._find_resource_folderpath(("streamvoice", "streamwaves")), recurse=True)  # type: ignore[assignment]
 
     # endregion
 
