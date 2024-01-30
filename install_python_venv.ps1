@@ -110,7 +110,7 @@ function Python-Install-Windows {
         Invoke-WebRequest -Uri $pythonInstallerUrl -OutFile $installerPath
         Write-Host "Download completed."
         Write-Host "Installing 'python-$global:pythonVersion.exe', please wait..."
-        Start-Process -FilePath $installerPath -Args '/quiet InstallAllUsers=0 PrependPath=1' -Wait -NoNewWindow
+        Start-Process -FilePath $installerPath -Args 'InstallAllUsers=0 PrependPath=1 InstallLauncherAllUsers=0' -Wait -NoNewWindow
     
         # Refresh environment variables to detect new Python installation
         $env:Path = [System.Environment]::GetEnvironmentVariable("Path", "Machine")
