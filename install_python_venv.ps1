@@ -251,7 +251,7 @@ function Find-Python {
                         $thisVersion = Get-Python-Version $resolvedPath
                         if ($thisVersion -ge $minVersion -and $thisVersion -le $maxVersion) {
                             # Valid path or better recommended path found.
-                            if ($global:pythonInstallPath -eq "" -or $thisVersion -eq $recommendedVersion) {
+                            if ($global:pythonInstallPath -eq "" -or $thisVersion -le $recommendedVersion) {
                                 Write-Host "Found python install path with version $thisVersion at path '$resolvedPath'"
                                 $global:pythonInstallPath = $resolvedPath
                                 $global:pythonVersion = $thisVersion
