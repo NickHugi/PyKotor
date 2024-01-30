@@ -134,12 +134,13 @@ class Chitin:
 
     def _get_chitin_data(self) -> tuple[dict[int, str], list[str]]:
         with BinaryReader.from_file(self._key_path) as reader:
-            _key_file_type = reader.read_string(4)
-            _key_file_version = reader.read_string(4)
+            #_key_file_type = reader.read_string(4)  # noqa: ERA001
+            #_key_file_version = reader.read_string(4)  # noqa: ERA001
+            reader.skip(8)
             bif_count = reader.read_uint32()
             key_count = reader.read_uint32()
             file_table_offset = reader.read_uint32()
-            _key_table_offset = reader.read_uint32()
+            reader.skip(4)  # key table offset uint32
 
             files = []
             reader.seek(file_table_offset)
@@ -159,7 +160,7 @@ class Chitin:
             keys: dict[int, str] = {}
             for _ in range(key_count):
                 resref = reader.read_string(16)
-                _restype_id = reader.read_uint16()
+                reader.skip(2)  # restype_id uint16
                 res_id = reader.read_uint32()
                 keys[res_id] = resref
 
