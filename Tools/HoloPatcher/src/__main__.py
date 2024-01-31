@@ -1127,11 +1127,10 @@ class App(tk.Tk):
         shutil.copy2(str(case_k1_path.joinpath("movies", "biologo.bik")), str(case_k2_path.joinpath("movies", "ObsidianEnt.bik")))
         shutil.copy2(str(case_k1_path.joinpath("lips", "end_m01aa_loc.mod")), str(case_k2_path.joinpath("lips", "001EBO_loc.mod")))
 
-
-        # Rename k2's streammusic/mus_sion.wav to streammusic/mus_sion.wav.main
+        # Rename k2/streammusic/mus_sion.wav --> k2/streammusic/mus_sion.wav.main
         sion_wav_path = case_k2_path.joinpath("streammusic", "mus_sion.wav")
         sion_wav_path.rename(sion_wav_path.add_suffix(".main"))
-        # Copy streammusic/mus_theme_cult.wav from k1 to streammusic/mus_sion.wav k2
+        # Copy k1/streammusic/mus_theme_cult.wav --> k2/streammusic/mus_sion.wav
         theme_cult_wav_path = case_k1_path.joinpath("streammusic", "mus_theme_cult.wav")
         shutil.copy2(str(theme_cult_wav_path), str(sion_wav_path))
 
