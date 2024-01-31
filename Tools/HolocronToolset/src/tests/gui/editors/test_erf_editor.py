@@ -6,7 +6,6 @@ import sys
 import unittest
 from unittest import TestCase
 
-from pykotor.resource.formats.erf.erf_data import ERFType
 
 try:
     from PyQt5.QtTest import QTest
