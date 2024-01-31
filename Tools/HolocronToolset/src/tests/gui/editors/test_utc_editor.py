@@ -6,7 +6,11 @@ import sys
 import unittest
 from unittest import TestCase
 
-from PyQt5.QtWidgets import QApplication
+try:
+    from PyQt5.QtTest import QTest
+    from PyQt5.QtWidgets import QApplication
+except (ImportError, ModuleNotFoundError):
+    QTest, QApplication = None, None  # type: ignore[misc, assignment]
 
 PYKOTOR_PATH = next(f for f in pathlib.Path(__file__).parents if f.name == "Tools").parent / "Libraries" / "PyKotor" / "src" / "pykotor"
 sys.path.insert(0, str(PYKOTOR_PATH))
@@ -49,6 +53,10 @@ from pykotor.resource.type import ResourceType
 @unittest.skipIf(
     not K2_PATH or not pathlib.Path(K2_PATH).joinpath("chitin.key").exists(),
     "K2_PATH environment variable is not set or not found on disk.",
+)
+@unittest.skipIf(
+    QTest is None or not QApplication,
+    "PyQt5 is required, please run pip install -r requirements.txt before running this test.",
 )
 class UTCEditorTest(TestCase):
     @classmethod
