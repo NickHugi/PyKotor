@@ -1,9 +1,7 @@
 .git
 .idea
 venv
-.venv
-.venv_wsl
-.venv_win
+.venv*
 errorlog.txt
 dist
 build
