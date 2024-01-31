@@ -33,23 +33,23 @@ if getattr(sys, "frozen", False) is False:
         update_sys_path(utility_path.parent)
 
 from pykotor.common.misc import Game
-from pykotor.tools.encoding import decode_bytes_with_fallbacks
 from pykotor.tools.path import CaseAwarePath, find_kotor_paths_from_default
-from pykotor.tslpatcher.logger import PatchLogger
+from pykotor.tslpatcher.logger import PatchLog, PatchLogger
 from pykotor.tslpatcher.patcher import ModInstaller
 from pykotor.tslpatcher.reader import ConfigReader, NamespaceReader
-from pykotor.tslpatcher.uninstall import ModUninstaller
+from tooltip import ToolTip
+from uninstall_mod import ModUninstaller
 from utility.error_handling import universal_simplify_exception
 from utility.path import Path
 from utility.string import striprtf
-from utility.tkinter.tooltip import ToolTip
 
 if TYPE_CHECKING:
+    from io import TextIOWrapper
 
     from pykotor.tslpatcher.namespaces import PatcherNamespace
 
-CURRENT_VERSION: tuple[int, ...] = (1, 4, 4)
-VERSION_LABEL = f"v{'.'.join(map(str, CURRENT_VERSION))}"
+CURRENT_VERSION: tuple[int, ...] = (1, 4, 3)
+
 
 class ExitCode(IntEnum):
     SUCCESS = 0
@@ -126,27 +126,27 @@ def parse_args() -> Namespace:
 class App(tk.Tk):
     def __init__(self):
         super().__init__()
-        self.title(f"HoloPatcher {VERSION_LABEL}")
+        self.title("HoloPatcher")
         self.set_window(width=400, height=500)
 
-        self.mod_path = ""
+        self.install_running: bool = False
+        self.mod_path: str = ""
         self.namespaces: list[PatcherNamespace] = []
 
         self.initialize_logger()
-        self.initialize_top_menu()
+        self.initialize_ui_menu()
         self.initialize_ui_controls()
 
-        self.install_running = False
         self.protocol("WM_DELETE_WINDOW", self.handle_exit_button)
 
-        cmdline_args = parse_args()
+        cmdline_args: Namespace = parse_args()
         self.open_mod(cmdline_args.tslpatchdata or Path.cwd())
         self.handle_commandline(cmdline_args)
 
     def set_window(self, width: int, height: int):
         # Get screen dimensions
-        screen_width = self.winfo_screenwidth()
-        screen_height = self.winfo_screenheight()
+        screen_width: int = self.winfo_screenwidth()
+        screen_height: int = self.winfo_screenheight()
 
         # Calculate position to center the window
         x_position = int((screen_width / 2) - (width / 2))
@@ -163,81 +163,67 @@ class App(tk.Tk):
         self.logger.warning_observable.subscribe(self.write_log)
         self.logger.error_observable.subscribe(self.write_log)
 
-    def initialize_top_menu(self):
+    def initialize_ui_menu(self):
         # Initialize top menu bar
         self.menu_bar = tk.Menu(self)
         self.config(menu=self.menu_bar)
 
-        # Tools menu
-        tools_menu = tk.Menu(self.menu_bar, tearoff=0)
-        tools_menu.add_command(label="Validate INI", command=self.test_reader)
-        tools_menu.add_command(label="Uninstall Mod / Restore Backup", command=self.uninstall_selected_mod)
-        self.menu_bar.add_cascade(label="Tools", menu=tools_menu)
-
-        # Help menu
-        help_menu = tk.Menu(self.menu_bar, tearoff=0)
-        self.menu_bar.add_cascade(label="Help", menu=help_menu)
-
-        # DeadlyStream submenu
-        deadlystream_menu = tk.Menu(help_menu, tearoff=0)
-        deadlystream_menu.add_command(label="Discord", command=self.open_deadlystream_discord)
-        deadlystream_menu.add_command(label="Website", command=self.open_deadlystream_website)
-        help_menu.add_cascade(label="DeadlyStream", menu=deadlystream_menu)
-
-        # Neocities submenu
-        neocities_menu = tk.Menu(help_menu, tearoff=0)
-        neocities_menu.add_command(label="Discord", command=self.open_neocities_discord)
-        neocities_menu.add_command(label="Website", command=self.open_neocities_website)
-        help_menu.add_cascade(label="KOTOR Community Portal", menu=neocities_menu)
-
-        # PCGamingWiki submenu
-        pcgamingwiki_menu = tk.Menu(help_menu, tearoff=0)
-        pcgamingwiki_menu.add_command(label="KOTOR 1", command=self.open_pcgamingwiki_kotor1)
-        pcgamingwiki_menu.add_command(label="KOTOR 2: TSL", command=self.open_pcgamingwiki_kotor2)
-        help_menu.add_cascade(label="PCGamingWiki", menu=pcgamingwiki_menu)
+        # Version display - non-clickable
+        version_label: str = f"v{'.'.join(map(str, CURRENT_VERSION))}"
+        self.menu_bar.add_command(label=version_label)
+        self.menu_bar.entryconfig(version_label, state="disabled")
 
         # About menu
         about_menu = tk.Menu(self.menu_bar, tearoff=0)
-        about_menu.add_command(label="Check for Updates", command=self.check_for_updates)
-        about_menu.add_command(label="HoloPatcher Home", command=self.open_hp_homepage)
-        about_menu.add_command(label="GitHub Source", command=self.open_github)
         self.menu_bar.add_cascade(label="About", menu=about_menu)
 
-    def initialize_ui_controls(self):
+        # Adding items to About menu
+        about_menu.add_command(label="Check for Updates", command=self.check_for_updates)
+        about_menu.add_command(label="Homepage", command=self.open_homepage)
+        about_menu.add_command(label="GitHub Source", command=self.open_github)
+
+        # Discord submenu
+        discord_menu = tk.Menu(about_menu, tearoff=0)
+        about_menu.add_cascade(label="Discord", menu=discord_menu)
+        discord_menu.add_command(label="DeadlyStream", command=self.open_deadlystream_discord)
+        discord_menu.add_command(label="r/kotor", command=self.open_kotor_discord)
+
+    def initialize_ui_controls(self) -> None:
         # Use grid layout for main window
         self.grid_rowconfigure(1, weight=1)
         self.grid_columnconfigure(0, weight=1)
 
         # Configure style for Combobox
-        ttk.Style(self).configure("TCombobox", font=("Helvetica", 10), padding=4)
+        style = ttk.Style(self)
+        style.configure("TCombobox", font=("Helvetica", 10), padding=4)
 
         # Top area for comboboxes and buttons
-        top_frame: tk.Frame = tk.Frame(self)
+        top_frame = tk.Frame(self)
         top_frame.grid(row=0, column=0, sticky="ew")
         top_frame.grid_columnconfigure(0, weight=1)  # Make comboboxes expand
         top_frame.grid_columnconfigure(1, weight=0)  # Keep buttons fixed size
 
-        # Setup the namespaces/changes ini combobox (selected mod)
-        self.namespaces_combobox: ttk.Combobox = ttk.Combobox(top_frame, state="readonly", style="TCombobox")
-        self.namespaces_combobox.grid(row=0, column=0, padx=5, pady=2, sticky="ew")
+        self.namespaces_combobox = ttk.Combobox(top_frame, state="readonly", style="TCombobox")
         self.namespaces_combobox.set("Select the mod to install")
-        ToolTip(self.namespaces_combobox, lambda: self.on_namespace_option_hover())
+        self.namespaces_combobox.grid(row=0, column=0, padx=5, pady=2, sticky="ew")
         self.namespaces_combobox.bind("<<ComboboxSelected>>", self.on_namespace_option_chosen)
-        # Handle annoyances with Focus Events
+
+        # used for handling focus events
         self.namespaces_combobox.bind("<FocusIn>", self.on_combobox_focus_in)
         self.namespaces_combobox.bind("<FocusOut>", self.on_combobox_focus_out)
-        self.namespaces_combobox_state: int = 0
-        # Browse for a tslpatcher mod
-        self.browse_button: ttk.Button = ttk.Button(top_frame, text="Browse", command=self.open_mod)
+        self.namespaces_combobox_state = 0
+
+        ToolTip(self.namespaces_combobox, lambda: self.on_namespace_option_hover())
+
+        self.browse_button = ttk.Button(top_frame, text="Browse", command=self.open_mod)
         self.browse_button.grid(row=0, column=1, padx=5, pady=2, sticky="e")
 
-        # Store all discovered KOTOR install paths
         self.gamepaths = ttk.Combobox(top_frame, style="TCombobox")
         self.gamepaths.set("Select your KOTOR directory path")
         self.gamepaths.grid(row=1, column=0, padx=5, pady=2, sticky="ew")
         self.gamepaths["values"] = [str(path) for game in find_kotor_paths_from_default().values() for path in game]
         self.gamepaths.bind("<<ComboboxSelected>>", self.on_gamepaths_chosen)
-        # Browse for a KOTOR path
+
         self.gamepaths_browse_button = ttk.Button(top_frame, text="Browse", command=self.open_kotor)
         self.gamepaths_browse_button.grid(row=1, column=1, padx=5, pady=2, sticky="e")
 
@@ -247,14 +233,15 @@ class App(tk.Tk):
         text_frame.grid_rowconfigure(0, weight=1)
         text_frame.grid_columnconfigure(0, weight=1)
 
-        # Configure the text
         self.main_text = tk.Text(text_frame, wrap=tk.WORD)
+        font_obj = tkfont.Font(font=self.main_text.cget("font"))
+        font_obj.configure(size=9)
+        self.main_text.configure(font=font_obj)
         self.main_text.grid(row=0, column=0, sticky="nsew")
-        self.set_text_font(self.main_text)
 
-        # Create scrollbar for main frame
         scrollbar = tk.Scrollbar(text_frame, command=self.main_text.yview)
         scrollbar.grid(row=0, column=1, sticky="ns")
+
         self.main_text.config(yscrollcommand=scrollbar.set)
 
         # Bottom area for buttons
@@ -263,8 +250,15 @@ class App(tk.Tk):
 
         self.exit_button = ttk.Button(bottom_frame, text="Exit", command=self.handle_exit_button)
         self.exit_button.pack(side="left", padx=5, pady=5)
+
+        self.uninstall_button = ttk.Button(bottom_frame, text="Uninstall", command=self.uninstall_selected_mod)
+        #self.uninstall_button.pack(side="right", padx=5, pady=5)
+
         self.install_button = ttk.Button(bottom_frame, text="Install", command=self.begin_install)
         self.install_button.pack(side="right", padx=5, pady=5)
+
+        self.testreader_button = ttk.Button(bottom_frame, text="Validate INI", command=self.test_reader)
+        self.testreader_button.pack(side="right", padx=5, pady=5)
 
     def on_combobox_focus_in(self, event):
         if self.namespaces_combobox_state == 2: # no selection, fix the focus
@@ -277,7 +271,7 @@ class App(tk.Tk):
         if self.namespaces_combobox_state == 1:
             self.namespaces_combobox_state = 2  # no selection
 
-    def check_for_updates(self):
+    def check_for_updates(self) -> None:
         try:
             import requests
             req = requests.get("https://api.github.com/repos/NickHugi/PyKotor/contents/update_info.json", timeout=15)
@@ -297,42 +291,27 @@ class App(tk.Tk):
             else:
                 messagebox.showinfo(
                     "No updates available.",
-                    f"You are already running the latest version of HoloPatcher ({VERSION_LABEL})",
+                    f"You are already running the latest version of HoloPatcher ({updateInfoData['holopatcherLatestVersion']})",
                 )
-        except Exception as e:  # noqa: BLE001
+        except Exception as e:
             messagebox.showerror(
                 "Unable to fetch latest version.",
                 (
-                    f"{universal_simplify_exception(e)}\n"
+                    f"Error: {e!r}\n"
                     "Check if you are connected to the internet."
                 ),
             )
-    def set_text_font(
-        self,
-        text_frame: tk.Text,
-    ):
-        font_obj = tkfont.Font(font=self.main_text.cget("font"))
-        font_obj.configure(size=9)
-        text_frame.configure(font=font_obj)
 
-    def open_hp_homepage(self):
+    def open_homepage(self):
         webbrowser.open_new("https://deadlystream.com/files/file/2243-holopatcher")
     def open_github(self):
         webbrowser.open_new("https://github.com/NickHugi/PyKotor")
     def open_deadlystream_discord(self):
-        webbrowser.open_new("https://discord.gg/nDkHXfc36s")
-    def open_neocities_discord(self):
+        webbrowser.open_new("https://discord.gg/HBwVCpAA")
+    def open_kotor_discord(self):
         webbrowser.open_new("https://discord.com/invite/kotor")
-    def open_deadlystream_website(self):
-        webbrowser.open_new("https://deadlystream.com")
-    def open_neocities_website(self):
-        webbrowser.open_new("https://kotor.neocities.org")
-    def open_pcgamingwiki_kotor1(self):
-        webbrowser.open_new("https://www.pcgamingwiki.com/wiki/Star_Wars:_Knights_of_the_Old_Republic")
-    def open_pcgamingwiki_kotor2(self):
-        webbrowser.open_new("https://www.pcgamingwiki.com/wiki/Star_Wars:_Knights_of_the_Old_Republic_II_-_The_Sith_Lords")
 
-    def handle_commandline(self, cmdline_args: Namespace):
+    def handle_commandline(self, cmdline_args: Namespace) -> None:
         """Handle command line arguments passed to the application.
 
         Args:
@@ -356,21 +335,22 @@ class App(tk.Tk):
             self.hide_console()
 
         self.one_shot: bool = False
-        if cmdline_args.install or cmdline_args.uninstall or cmdline_args.validate:
+        if sum([cmdline_args.install, cmdline_args.uninstall, cmdline_args.validate]) == 1:
             self.one_shot = True
             self.withdraw()
             self.handle_console_mode()
-        if cmdline_args.install:
-            self.begin_install_thread()
+            if cmdline_args.install:
+                self.begin_install_thread()
+            if cmdline_args.uninstall:
+                self.uninstall_selected_mod()
+            if cmdline_args.validate:
+                self.test_reader()
             sys.exit()
-        if cmdline_args.uninstall:
-            self.uninstall_selected_mod()
-            sys.exit()
-        if cmdline_args.validate:
-            self.test_reader()
-            sys.exit()
+        else:
+            messagebox.showerror("Cannot run more than one of [--install, --uninstall, --validate]")
+            sys.exit(ExitCode.NUMBER_OF_ARGS)
 
-    def handle_console_mode(self):
+    def handle_console_mode(self) -> None:
         """Overrides message box functions for console mode. This is done for true CLI support.
 
         Args:
@@ -412,11 +392,11 @@ class App(tk.Tk):
         messagebox.showinfo = MessageboxOverride.showinfo  # type: ignore[assignment]
         messagebox.showwarning = MessageboxOverride.showwarning  # type: ignore[assignment]
         messagebox.showerror = MessageboxOverride.showerror  # type: ignore[assignment]
-        # messagebox.askyesno = MessageboxOverride.askyesno  # noqa: ERA001
-        # messagebox.askyesnocancel = MessageboxOverride.askyesno  # noqa: ERA001
-        # messagebox.askretrycancel = MessageboxOverride.askyesno  # noqa: ERA001
+        # messagebox.askyesno = MessageboxOverride.askyesno
+        # messagebox.askyesnocancel = MessageboxOverride.askyesno
+        # messagebox.askretrycancel = MessageboxOverride.askyesno
 
-    def hide_console(self):
+    def hide_console(self) -> None:
         """Hide the console window in GUI mode."""
         # Windows
         if os.name == "nt":
@@ -424,7 +404,7 @@ class App(tk.Tk):
 
             ctypes.windll.user32.ShowWindow(ctypes.windll.kernel32.GetConsoleWindow(), 0)
 
-    def uninstall_selected_mod(self):
+    def uninstall_selected_mod(self) -> None:
         """Uninstalls the selected mod using the most recent backup folder created during the last install.
 
         Processing Logic:
@@ -453,7 +433,7 @@ class App(tk.Tk):
         self.clear_main_text()
         ModUninstaller(backup_parent_folder, Path(self.gamepaths.get()), self.logger).uninstall_selected_mod()
 
-    def handle_exit_button(self):
+    def handle_exit_button(self) -> None:
         """Handle exit button click during installation.
 
         Processing Logic:
@@ -479,11 +459,11 @@ class App(tk.Tk):
         self.destroy()
         sys.exit(ExitCode.ABORT_INSTALL_UNSAFE)
 
-    def on_gamepaths_chosen(self, event: tk.Event):
+    def on_gamepaths_chosen(self, event: tk.Event) -> None:
         """Adjust the combobox after a short delay."""
         self.after(10, lambda: self.move_cursor_to_end(event.widget))
 
-    def move_cursor_to_end(self, combobox: ttk.Combobox):
+    def move_cursor_to_end(self, combobox: ttk.Combobox) -> None:
         """Shows the rightmost portion of the specified combobox as that's the most relevant."""
         combobox.focus_set()
         position: int = len(combobox.get())
@@ -498,7 +478,7 @@ class App(tk.Tk):
         )
         return namespace_option.description if namespace_option else ""
 
-    def on_namespace_option_chosen(self, event: tk.Event, config_reader: ConfigReader | None = None):
+    def on_namespace_option_chosen(self, event: tk.Event, config_reader: ConfigReader | None = None) -> None:
         """Handles the namespace option being chosen from the combobox.
 
         Args:
@@ -520,15 +500,18 @@ class App(tk.Tk):
             reader.load_settings()
             game_number: int | None = reader.config.game_number
             if game_number:
-                self.filter_kotor_game_paths(game_number)
+                game = Game(game_number)
+                self.gamepaths["values"] = [
+                    str(path)
+                    for game_key in ([game] + ([Game.K1] if game == Game.K2 else []))
+                    for path in find_kotor_paths_from_default()[game_key]
+                ]
             info_rtf = CaseAwarePath(self.mod_path, "tslpatchdata", namespace_option.rtf_filepath())
             if not info_rtf.exists():
                 messagebox.showwarning("No info.rtf", "Could not load the rtf for this mod, file not found on disk.")
                 return
-            with info_rtf.open("rb") as f:
-                data: bytes = f.read()
-                rtf_text: str = decode_bytes_with_fallbacks(data)
-                self.set_stripped_rtf_text(rtf_text)
+            with info_rtf.open("r") as rtf:
+                self.set_stripped_rtf_text(rtf)
         except Exception as e:  # noqa: BLE001
             error_name, msg = universal_simplify_exception(e)
             messagebox.showerror(
@@ -538,7 +521,7 @@ class App(tk.Tk):
         else:
             self.after(10, lambda: self.move_cursor_to_end(self.namespaces_combobox))
 
-    def load_namespace(self, namespaces: list[PatcherNamespace], config_reader: ConfigReader | None = None):
+    def load_namespace(self, namespaces: list[PatcherNamespace], config_reader: ConfigReader | None = None) -> None:
         """Loads namespaces into the UI.
 
         Args:
@@ -558,7 +541,7 @@ class App(tk.Tk):
         self.namespaces = namespaces
         self.on_namespace_option_chosen(tk.Event(), config_reader)
 
-    def open_mod(self, default_directory_path_str: os.PathLike | str | None = None):
+    def open_mod(self, default_directory_path_str: os.PathLike | str | None = None) -> None:
         """Opens a mod directory.
 
         Args:
@@ -576,7 +559,7 @@ class App(tk.Tk):
             - Handles errors opening the mod.
         """
         try:
-            directory_path_str = default_directory_path_str or filedialog.askdirectory()
+            directory_path_str: os.PathLike | str = default_directory_path_str or filedialog.askdirectory()
             if not directory_path_str:
                 return
 
@@ -612,7 +595,7 @@ class App(tk.Tk):
                 f"An unexpected error occurred while loading the mod info.{os.linesep*2}{msg}",
             )
 
-    def open_kotor(self, default_kotor_dir_str=None):
+    def open_kotor(self, default_kotor_dir_str: os.PathLike | str | None = None) -> None:
         """Opens the KOTOR directory.
 
         Args:
@@ -627,7 +610,7 @@ class App(tk.Tk):
             - Move cursor after a delay to end of dropdown
         """
         try:
-            directory_path_str = default_kotor_dir_str or filedialog.askdirectory()
+            directory_path_str: os.PathLike | str = default_kotor_dir_str or filedialog.askdirectory()
             if not directory_path_str:
                 return
             directory = CaseAwarePath(directory_path_str)
@@ -668,7 +651,7 @@ class App(tk.Tk):
         if (
             messagebox.askyesno(
                 "Permission error",
-                f"HoloPatcher does not have permissions to the path '{directory!s}', would you like to attempt to gain permission automatically?",
+                f"HoloPatcher does not have permissions to the path '{directory}', would you like to attempt to gain permission automatically?",
             )
             and not directory.gain_access()
         ):
@@ -681,7 +664,7 @@ class App(tk.Tk):
             return messagebox.askyesno(
                 "Unauthorized",
                 (
-                    f"HoloPatcher needs permissions to access this folder '{directory!s}'. {os.linesep}"
+                    f"HoloPatcher needs permissions to access this folder '{directory}'. {os.linesep}"
                     f"{os.linesep}"
                     f"Please ensure the necessary folders are writeable or rerun holopatcher with elevated privileges.{os.linesep}"
                     "Continue with an install anyway?"
@@ -733,7 +716,7 @@ class App(tk.Tk):
             )
         return self.check_access(Path(self.gamepaths.get()))
 
-    def begin_install(self):
+    def begin_install(self) -> None:
         """Starts the installation process in a background thread.
 
         Note: This function is not called when utilizing the CLI due to the thread creation - for passthrough purposes.
@@ -756,7 +739,7 @@ class App(tk.Tk):
             )
             sys.exit(ExitCode.EXCEPTION_DURING_INSTALL)
 
-    def begin_install_thread(self):
+    def begin_install_thread(self) -> None:
         """Starts the mod installation thread. This function is called directly when utilizing the CLI.
 
         Args:
@@ -784,10 +767,10 @@ class App(tk.Tk):
         try:
             self._execute_mod_install(installer)
         except Exception as e:  # noqa: BLE001
-            self._handle_exception_during_install(e, installer)
+            self._handle_exception_during_install(e)
         self.set_active_install(install_running=False)
 
-    def test_reader(self):
+    def test_reader(self) -> None:
         if not self.preinstall_validate_chosen():
             return
         namespace_option: PatcherNamespace = next(x for x in self.namespaces if x.name == self.namespaces_combobox.get())
@@ -802,7 +785,7 @@ class App(tk.Tk):
             messagebox.showerror(*universal_simplify_exception(e))
         self.set_active_install(install_running=False)
 
-    def set_active_install(self, install_running: bool):
+    def set_active_install(self, install_running: bool) -> None:
         """Sets the active install state.
 
         Args:
@@ -818,21 +801,23 @@ class App(tk.Tk):
         if install_running:
             self.install_running = True
             self.install_button.config(state=tk.DISABLED)
+            self.uninstall_button.config(state=tk.DISABLED)
             self.gamepaths_browse_button.config(state=tk.DISABLED)
             self.browse_button.config(state=tk.DISABLED)
         else:
             self.install_running = False
             self.initialize_logger()  # reset the errors/warnings etc
             self.install_button.config(state=tk.NORMAL)
+            self.uninstall_button.config(state=tk.NORMAL)
             self.gamepaths_browse_button.config(state=tk.NORMAL)
             self.browse_button.config(state=tk.NORMAL)
 
-    def clear_main_text(self):
+    def clear_main_text(self) -> None:
         self.main_text.config(state=tk.NORMAL)
         self.main_text.delete(1.0, tk.END)
         self.main_text.config(state=tk.DISABLED)
 
-    def _execute_mod_install(self, installer: ModInstaller):
+    def _execute_mod_install(self, installer: ModInstaller) -> None:
         """Executes the mod installation.
 
         Args:
@@ -850,9 +835,6 @@ class App(tk.Tk):
             7. Shows success or error message based on install result
             8. If CLI, exit regardless of success or error.
         """
-        confirm_msg: str = installer.config().confirm_message.strip()
-        if confirm_msg and not self.one_shot and confirm_msg != "N/A" and not messagebox.askokcancel("This mod requires confirmation", confirm_msg):
-            return
         self.set_active_install(install_running=True)
         #profiler = cProfile.Profile()
         #profiler.enable()
@@ -874,55 +856,56 @@ class App(tk.Tk):
             f"{int(seconds)} seconds"
         )
 
-        installer.log.add_note(
-            f"The installation is complete with {len(installer.log.errors)} errors and {len(installer.log.warnings)} warnings. "
+        num_errors: int = len(self.logger.errors)
+        num_warnings: int = len(self.logger.warnings)
+        self.logger.add_note(
+            f"The installation is complete with {num_errors} errors and {num_warnings} warnings. "
             f"Total install time: {time_str}",
         )
-        log_file_path: Path = Path.pathify(self.mod_path) / "installlog.txt"
-        with log_file_path.open("w", encoding="utf-8") as log_file:
-            for log in installer.log.all_logs:
-                log_file.write(f"{log.message}\n")
-        if len(installer.log.errors) > 0:
-            messagebox.showwarning(
-                "Install completed with errors",
-                f"The install completed with {len(installer.log.errors)} errors! The installation may not have been successful, check the logs for more details. Total install time: {time_str}",
+        if num_errors > 0:
+            messagebox.showerror(
+                "Install completed with errors!",
+                f"The install completed with {num_errors} errors and {num_warnings} warnings! The installation may not have been successful, check the logs for more details.{os.linesep*2}Total install time: {time_str}",
             )
             if self.one_shot:
                 sys.exit(ExitCode.INSTALL_COMPLETED_WITH_ERRORS)
+        elif num_warnings > 0:
+            messagebox.showwarning(
+                "Install completed with warnings",
+                f"The install completed with {num_warnings} warnings! Review the logs for details. The script in the 'uninstall' folder of the mod directory will revert these changes.{os.linesep*2}Total install time: {time_str}",
+            )
         else:
             messagebox.showinfo(
                 "Install complete!",
-                f"Check the logs for details etc. Utilize the script in the 'uninstall' folder of the mod directory to revert these changes. Total install time: {time_str}",
+                f"Check the logs for details for what has been done. Utilize the script in the 'uninstall' folder of the mod directory to revert these changes.{os.linesep*2}Total install time: {time_str}",
             )
             if self.one_shot:
                 sys.exit(ExitCode.SUCCESS)
 
-    def _handle_exception_during_install(self, e: Exception, installer: ModInstaller) -> NoReturn:
+    @property
+    def log_file_path(self) -> Path:
+        return Path.pathify(self.mod_path) / "installlog.txt"
+
+    def _handle_exception_during_install(self, e: Exception) -> NoReturn:
         """Handles exceptions during installation.
 
         Args:
         ----
             e: Exception - The exception raised
-            installer: ModInstaller - The installer object
 
         Processing Logic:
         ----------------
             - Simplifies the exception for error name and message
             - Writes the error message to the log
-            - Adds an error to the installer log
             - Writes the full installer log to a file
             - Shows an error message box with the error name and message
             - Sets the install flag to False
             - Reraises the exception.
         """
-        error_name, msg = universal_simplify_exception(e)
-        self.write_log(msg)
-        installer.log.add_error("The installation was aborted with errors")
-        log_file_path = Path(self.mod_path, "installlog.txt")
-        with log_file_path.open("w", encoding="utf-8") as log_file:
-            for log in installer.log.all_logs:
-                log_file.write(f"{log.message}\n")
+        with self.log_file_path.open("a", encoding="utf-8") as log_file:
             log_file.write(f"{traceback.format_exc()}\n")
+        error_name, msg = universal_simplify_exception(e)
+        self.logger.add_error(f"{error_name}: {msg}{os.linesep}The installation was aborted with errors")
         messagebox.showerror(
             error_name,
             f"An unexpected error occurred during the installation and the installation was forced to terminate.{os.linesep*2}{msg}",
@@ -930,25 +913,15 @@ class App(tk.Tk):
         self.set_active_install(install_running=False)
         raise
 
-    def filter_kotor_game_paths(self, game_number):
-        """Determines what shows up in the gamepaths combobox, based on the LookupGameNumber setting."""
-        game = Game(game_number)
-        gamepaths_list: list[str] = [
-            str(path)
-            for game_key in ([game] + ([Game.K1] if game == Game.K2 else []))
-            for path in find_kotor_paths_from_default()[game_key]
-        ]
-        self.gamepaths["values"] = gamepaths_list
-
-    def set_stripped_rtf_text(self, rtf_text: str):
+    def set_stripped_rtf_text(self, rtf: TextIOWrapper) -> None:
         """Strips the info.rtf of all RTF related text and displays it in the UI."""
-        stripped_content: str = striprtf(rtf_text)
+        stripped_content: str = striprtf(rtf.read())
         self.main_text.config(state=tk.NORMAL)
         self.main_text.delete(1.0, tk.END)
         self.main_text.insert(tk.END, stripped_content)
         self.main_text.config(state=tk.DISABLED)
 
-    def write_log(self, message: str):
+    def write_log(self, log: PatchLog) -> None:
         """Writes a message to the log.
 
         Args:
@@ -962,12 +935,14 @@ class App(tk.Tk):
             - Making the description text widget not editable again.
         """
         self.main_text.config(state=tk.NORMAL)
-        self.main_text.insert(tk.END, message + os.linesep)
+        self.main_text.insert(tk.END, log.formatted_message + os.linesep)
         self.main_text.see(tk.END)
         self.main_text.config(state=tk.DISABLED)
+        with self.log_file_path.open("a", encoding="utf-8") as log_file:
+            log_file.write(f"{log.formatted_message}\n")
 
 
-def custom_excepthook(exc_type, exc_value, exc_traceback):
+def custom_excepthook(exc_type, exc_value, exc_traceback) -> None:
     """Custom exception hook to display errors in message box.
 
     When pyinstaller compiled in --console mode, this will match the same error message behavior of --noconsole.

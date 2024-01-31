@@ -51,12 +51,11 @@ from pykotor.resource.formats.tpc.io_tga import TPCTGAReader, TPCTGAWriter
 from pykotor.resource.formats.tpc.tpc_auto import bytes_tpc
 from pykotor.resource.formats.tpc.tpc_data import TPC
 from pykotor.resource.type import ResourceType
-from pykotor.tools.encoding import decode_bytes_with_fallbacks
 from pykotor.tools.misc import is_capsule_file
 from pykotor.tools.path import CaseAwarePath, find_kotor_paths_from_default
-from pykotor.tslpatcher.logger import PatchLogger
+from pykotor.tslpatcher.logger import PatchLog, PatchLogger
 from translate.language_translator import TranslationOption, Translator
-from utility.path import Path, PurePath
+from utility.path import Path, PurePath, PureWindowsPath
 
 if TYPE_CHECKING:
 
@@ -88,7 +87,7 @@ fieldtype_to_fieldname: dict[GFFFieldType, str] = {
 }
 
 class Globals:
-    def __init__(self):
+    def __init__(self) -> None:
         self.chosen_languages: list[Language] = []
         self.create_fonts: bool = False
         self.convert_tga: bool = False
@@ -172,7 +171,7 @@ def relative_path_from_to(src: PurePath, dst: PurePath) -> Path:
     return Path(*rel_parts)
 
 
-def log_output(*args, **kwargs):
+def log_output(*args, **kwargs) -> None:
     # Create an in-memory text stream
     buffer = StringIO()
 
@@ -204,7 +203,7 @@ def visual_length(s: str, tab_length=8) -> int:
     return vis_length
 
 
-def log_output_with_separator(message, below=True, above=False, surround=False):
+def log_output_with_separator(message, below=True, above=False, surround=False) -> None:
     if above or surround:
         log_output(visual_length(message) * "-")
     log_output(message)
@@ -276,7 +275,7 @@ def patch_resource(resource: FileResource) -> GFF | TPC | None:
             return text, text
         return text, SCRIPT_GLOBALS.pytranslator.translate(text, from_lang=from_lang)
 
-    def process_translations(tlk: TLK, from_lang):
+    def process_translations(tlk: TLK, from_lang) -> None:
         with concurrent.futures.ThreadPoolExecutor(max_workers=SCRIPT_GLOBALS.max_threads) as executor:
             # Create a future for each translation task
             future_to_strref: dict[concurrent.futures.Future[tuple[str, str]], int] = {executor.submit(translate_entry, tlkentry, from_lang): strref for strref, tlkentry in tlk}
@@ -359,10 +358,8 @@ def patch_and_save_noncapsule(resource: FileResource, savedir: Path | None = Non
         txi_file = resource.filepath().with_suffix(".txi")
         if txi_file.exists():
             log_output("Embedding TXI information...")
-            with txi_file.open(mode="rb") as f:
-                data: bytes = f.read()
-                txi_text: str = decode_bytes_with_fallbacks(data)
-                patched_data.txi = txi_text
+            with txi_file.open() as f:
+                patched_data.txi = f.read()
         TPCTGAWriter(patched_data, new_path.with_suffix(".tpc")).write()
 
 def patch_capsule_file(c_file: Path):
@@ -433,7 +430,7 @@ def patch_erf_or_rim(resources: list[FileResource], filename: str, erf_or_rim: R
             erf_or_rim.set_data(resource.resname(), resource.restype(), resource.data())
     return new_filename
 
-def patch_file(file: os.PathLike | str):
+def patch_file(file: os.PathLike | str) -> None:
     c_file = Path.pathify(file)
     if c_file in processed_files:
         return
@@ -454,13 +451,13 @@ def patch_file(file: os.PathLike | str):
             ),
         )
 
-def patch_folder(folder_path: os.PathLike | str):
+def patch_folder(folder_path: os.PathLike | str) -> None:
     c_folderpath = Path.pathify(folder_path)
     log_output_with_separator(f"Recursing through resources in the '{c_folderpath.name}' folder...", above=True)
     for file_path in c_folderpath.safe_rglob("*"):
         patch_file(file_path)
 
-def patch_install(install_path: os.PathLike | str):
+def patch_install(install_path: os.PathLike | str) -> None:
     log_output()
     log_output_with_separator(f"Patching install dir:\t{install_path}", above=True)
     log_output()
@@ -584,7 +581,7 @@ def create_font_pack(lang: Language):
     )
 
 
-def assign_to_globals(instance: KOTORPatchingToolUI):
+def assign_to_globals(instance):
     for attr, value in instance.__dict__.items():
         # Convert tkinter variables to their respective Python types
         if isinstance(value, tk.StringVar):
@@ -603,7 +600,7 @@ def assign_to_globals(instance: KOTORPatchingToolUI):
 
 
 class KOTORPatchingToolUI:
-    def __init__(self, root):
+    def __init__(self, root) -> None:
         self.root = root
         root.title("KOTOR Translate Tool")
 
@@ -641,7 +638,7 @@ class KOTORPatchingToolUI:
         self.initialize_logger()
         self.setup_ui()
 
-    def write_log(self, message: str):
+    def write_log(self, log: PatchLog) -> None:
         """Writes a message to the log.
 
         Args:
@@ -658,7 +655,7 @@ class KOTORPatchingToolUI:
             - Making the description text widget not editable again.
         """
         self.description_text.config(state=tk.NORMAL)
-        self.description_text.insert(tk.END, message + os.linesep)
+        self.description_text.insert(tk.END, log.formatted_message + os.linesep)
         self.description_text.see(tk.END)
         self.description_text.config(state=tk.DISABLED)
 
@@ -668,11 +665,11 @@ class KOTORPatchingToolUI:
         SCRIPT_GLOBALS.patchlogger.warning_observable.subscribe(self.write_log)
         SCRIPT_GLOBALS.patchlogger.error_observable.subscribe(self.write_log)
 
-    def on_gamepaths_chosen(self, event: tk.Event):
+    def on_gamepaths_chosen(self, event: tk.Event) -> None:
         """Adjust the combobox after a short delay."""
         self.root.after(10, lambda: self.move_cursor_to_end(event.widget))
 
-    def move_cursor_to_end(self, combobox: ttk.Combobox):
+    def move_cursor_to_end(self, combobox: ttk.Combobox) -> None:
         """Shows the rightmost portion of the specified combobox as that's the most relevant."""
         combobox.focus_set()
         position: int = len(combobox.get())
@@ -809,7 +806,7 @@ class KOTORPatchingToolUI:
         self.install_button = ttk.Button(self.root, text="Run All Operations", command=self.start_patching)
         self.install_button.grid(row=row, column=1)
 
-    def on_translation_option_chosen(self, event):
+    def on_translation_option_chosen(self, event) -> None:
         """Create Checkbuttons for each translator option and assign them to the translator.
         Needs rewriting or cleaning, difficult readability lies ahead if you're reading this.
         """
@@ -836,7 +833,7 @@ class KOTORPatchingToolUI:
         else:
             self.translation_applied = True
 
-    def apply_translation_option(self, varname, value):
+    def apply_translation_option(self, varname, value) -> None:
         setattr(SCRIPT_GLOBALS.pytranslator, varname, value)  # TODO: add all the variable names to __init__ of Translator class
         self.write_log(f"Applied Options for {self.translation_option.get()}: {varname} = {value}")
         cur_toption: TranslationOption = TranslationOption.__members__[self.translation_option.get()]
@@ -846,7 +843,7 @@ class KOTORPatchingToolUI:
             return
         self.translation_applied = True
 
-    def create_language_checkbuttons(self, row):
+    def create_language_checkbuttons(self, row) -> None:
 
         # Show/Hide Languages
         self.show_hide_language = tk.BooleanVar(value=False)
