@@ -254,10 +254,15 @@ class Mesh:
         glBindVertexArray(self._vao)
 
         glBindBuffer(GL_ARRAY_BUFFER, self._vbo)
-        glBufferData(GL_ARRAY_BUFFER, len(vertex_data), vertex_data, GL_STATIC_DRAW)
+        # Convert vertex_data bytearray to MemoryView
+        vertex_data_mv = memoryview(vertex_data)
+        glBufferData(GL_ARRAY_BUFFER, len(vertex_data), vertex_data_mv, GL_STATIC_DRAW)
 
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, self._ebo)
-        glBufferData(GL_ELEMENT_ARRAY_BUFFER, len(element_data), element_data, GL_STATIC_DRAW)
+        # Convert element_data bytearray to MemoryView
+        element_data_mv = memoryview(element_data)
+        glBufferData(GL_ELEMENT_ARRAY_BUFFER, len(element_data), element_data_mv, GL_STATIC_DRAW)
+
         self._face_count = len(element_data) // 2
 
         if data_bitflags & 0x0001:
