@@ -56,7 +56,7 @@ $pyInstallerArgs = @{
     'noconfirm' = $true
     'name' = "HolocronToolset"
     'distpath'=($rootPath + $pathSep + "dist")
-    'upx-dir' = "C:\GitHub\upx-win64"
+#    'upx-dir' = "C:\GitHub\upx-win64"
     'icon'="resources/icons/sith.ico"
 }
 
