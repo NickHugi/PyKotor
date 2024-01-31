@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import contextlib
 import os
 
 from pykotor.common.misc import Game
@@ -34,33 +35,23 @@ KOTOR_REG_PATHS = {
 }
 
 # amazon's k1 reg key can be found using the below code. Doesn't store it in HKLM for some reason.
-#def find_software_key(software_name):
-#    software_keys = []
-#    with winreg.ConnectRegistry(None, winreg.HKEY_USERS) as hkey_users:
-#        i = 0
-#        while True:
-#            try:
-#                # Enumerate through the SIDs
-#                sid = winreg.EnumKey(hkey_users, i)
-#                software_path = f"{sid}\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\{software_name}"
-#                try:
-#                    with winreg.OpenKey(hkey_users, software_path) as software_key:
-#                        # If this point is reached, the software is installed under this SID
-#                        software_keys.append(software_path)
-#                except FileNotFoundError:
-#                    pass
-#                i += 1
-#            except OSError:
-#                break
-#
-#    return software_keys
+def find_software_key(software_name: str) -> str | None:
+    import winreg
+    with winreg.ConnectRegistry(None, winreg.HKEY_USERS) as hkey_users:
+        i = 0
+        while True:
+            try:
+                # Enumerate through the SIDs
+                sid: str = winreg.EnumKey(hkey_users, i)
+                software_path = f"{sid}\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\{software_name}"
+                with contextlib.suppress(FileNotFoundError), winreg.OpenKey(hkey_users, software_path) as software_key:
+                    # If this point is reached, the software is installed under this SID
+                    return winreg.QueryValue(software_key, "InstallLocation")
+                i += 1
+            except OSError:  # TODO: except OSError after confirming it doesn't crash.  # noqa: PERF203, BLE001
+                break
 
-#software_name = "AmazonGames/Star Wars - Knights of the Old"
-#found_keys = find_software_key(software_name)
-#for key in found_keys:
-#    print("Found key:", key)
-#    print(f"Found amazon kotor path: {winreg.QueryValueEx(key, "InstallLocation")}")
-
+    return None
 
 def winreg_key(game: Game) -> list[tuple[str, str]]:
     """Returns a list of registry keys that are utilized by KOTOR.

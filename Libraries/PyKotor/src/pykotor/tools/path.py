@@ -5,7 +5,7 @@ import pathlib
 import platform
 from typing import TYPE_CHECKING, Any, Callable, Generator
 
-from pykotor.tools.registry import winreg_key
+from pykotor.tools.registry import find_software_key, winreg_key
 from utility.misc import is_instance_or_subinstance
 from utility.system.path import Path as InternalPath
 from utility.system.path import PathElem
@@ -398,6 +398,9 @@ def find_kotor_paths_from_default() -> dict[Game, list[CaseAwarePath]]:
                 path = CaseAwarePath(path_str).resolve() if path_str else None
                 if path and path.name and path.safe_isdir():
                     locations[game].add(path)
+        amazon_k1_path_str: str | None = find_software_key("AmazonGames/Star Wars - Knights of the Old")
+        if amazon_k1_path_str is not None:
+            locations[Game.K1].add(CaseAwarePath(amazon_k1_path_str))
 
     # don't return nested sets, return as lists.
     return {Game.K1: [*locations[Game.K1]], Game.K2: [*locations[Game.K2]]}
