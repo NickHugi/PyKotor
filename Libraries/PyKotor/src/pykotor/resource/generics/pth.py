@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from contextlib import suppress
 from copy import copy
 
 from pykotor.common.geometry import Vector2
@@ -8,6 +7,7 @@ from pykotor.common.misc import Game
 from pykotor.resource.formats.gff import GFF, GFFContent, GFFList, read_gff, write_gff
 from pykotor.resource.formats.gff.gff_auto import bytes_gff
 from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES, ResourceType
+from utility.error_handling import format_exception_with_variables
 
 
 class PTH:
@@ -34,7 +34,7 @@ class PTH:
     def __getitem__(
         self,
         item: int,
-    ):
+    ) -> Vector2:
         return self._points[item]
 
     def add(
@@ -61,8 +61,10 @@ class PTH:
         self,
         index: int,
     ) -> Vector2 | None:
-        with suppress(Exception):
+        try:
             return self._points[index]
+        except Exception as e:
+            print(format_exception_with_variables(e, message="This exception has been suppressed."))
         return None
 
     def find(
@@ -84,8 +86,9 @@ class PTH:
         target: int,
     ):
         for edge in copy(self._connections):
-            has_source = edge.source in [source, target]
-            has_target = edge.target in [source, target]
+            tuple_check: tuple[int, int] = (source, target)
+            has_source: bool = edge.source in tuple_check
+            has_target: bool = edge.target in tuple_check
             if has_source and has_target:
                 self._connections.remove(edge)
 
@@ -125,7 +128,7 @@ class PTHEdge:
 
     def __eq__(
         self,
-        other: PTHEdge | object,
+        other: PTHEdge,
     ):
         if isinstance(other, PTHEdge):
             return self.source == other.source and self.target == other.target

@@ -204,7 +204,7 @@ class UTCClass:
 
     def __eq__(
         self,
-        other: UTCClass | object,
+        other: UTCClass,
     ):
         if isinstance(other, UTCClass):
             return self.class_id == other.class_id and self.class_level == self.class_level
@@ -454,7 +454,7 @@ def dismantle_utc(
         if item.droppable:
             item_struct.set_uint8("Dropable", value=True)
 
-    if game == Game.K2:
+    if game.is_k2():
         root.set_single("BlindSpot", utc.blindspot)
         root.set_uint8("MultiplierSet", utc.multiplier_set)
         root.set_uint8("IgnoreCrePath", utc.ignore_cre_path)

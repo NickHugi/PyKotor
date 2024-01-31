@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-from copy import copy
-
 from pykotor.resource.formats.ncs.ncs_data import NCS, NCSInstruction, NCSInstructionType, NCSOptimizer
 
 
@@ -62,7 +60,7 @@ class RemoveMoveSPEqualsZeroOptimizer(NCSOptimizer):
                 link.jump = ncs.instructions[nop_index + 1]
 
         # It is now safe to remove all MOVSP=0 instructions
-        for inst in copy(ncs.instructions):
+        for inst in ncs.instructions.copy():
             if inst.ins_type == NCSInstructionType.MOVSP and inst.args[0] == 0:
                 ncs.instructions.remove(inst)
                 self.instructions_cleared += 1

@@ -61,9 +61,9 @@ class RIM:
 
         combined_rim = RIM()
         for resource in self:
-            combined_rim.set_data(resource.resref.get(), resource.restype, resource.data)
+            combined_rim.set_data(str(resource.resref), resource.restype, resource.data)
         for resource in other:
-            combined_rim.set_data(resource.resref.get(), resource.restype, resource.data)
+            combined_rim.set_data(str(resource.resref), resource.restype, resource.data)
 
         return combined_rim
 
@@ -147,7 +147,7 @@ class RIM:
 
         erf = ERF()
         for resource in self._resources:
-            erf.set_data(resource.resref.get(), resource.restype, resource.data)
+            erf.set_data(str(resource.resref), resource.restype, resource.data)
         return erf
 
 

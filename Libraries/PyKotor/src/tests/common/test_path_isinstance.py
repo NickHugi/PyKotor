@@ -3,7 +3,7 @@ import pathlib
 import sys
 import unittest
 
-from utility.path import Path, PosixPath, PurePath, PurePosixPath, PureWindowsPath, WindowsPath
+from utility.system.path import Path, PosixPath, PurePath, PurePosixPath, PureWindowsPath, WindowsPath
 
 THIS_SCRIPT_PATH = pathlib.Path(__file__)
 PYKOTOR_PATH = THIS_SCRIPT_PATH.parents[2].resolve()

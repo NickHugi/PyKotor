@@ -28,7 +28,7 @@ from PyQt5.QtWidgets import QListWidgetItem, QMessageBox, QPlainTextEdit, QShort
 from toolset.gui.editor import Editor
 from toolset.gui.widgets.settings.installations import GlobalSettings, NoConfigurationSetError
 from toolset.utils.script import compileScript, decompileScript
-from utility.path import Path
+from utility.system.path import Path
 
 if TYPE_CHECKING:
     import os

@@ -23,11 +23,11 @@ if UTILITY_PATH.exists():
 
 from pykotor.common.language import LocalizedString
 from pykotor.extract.capsule import Capsule
-from pykotor.extract.file import ResourceIdentifier, ResourceResult
+from pykotor.extract.file import ResourceIdentifier
 from pykotor.extract.installation import Installation, SearchLocation
 from pykotor.resource.type import ResourceType
 
-K1_PATH = os.environ.get("K1_PATH")
+K1_PATH: str | None = os.environ.get("K1_PATH")
 
 
 @unittest.skipIf(
@@ -37,11 +37,12 @@ K1_PATH = os.environ.get("K1_PATH")
 class TestInstallation(TestCase):
     @classmethod
     def setUpClass(cls):
-        assert K1_PATH  # noqa: S101
-        cls.installation = Installation(K1_PATH)
+        assert K1_PATH
+        cls.installation = Installation(K1_PATH)  # type: ignore[attr-defined]
+        # cls.installation.reload_all()
 
     def test_resource(self):
-        installation = self.installation
+        installation: Installation = self.installation  # type: ignore[attr-defined]
 
         self.assertIsNone(installation.resource("c_bantha", ResourceType.UTC, []))
         self.assertIsNotNone(installation.resource("c_bantha", ResourceType.UTC))
@@ -80,7 +81,7 @@ class TestInstallation(TestCase):
         self.assertIsNotNone(resource.data)  # type: ignore
 
     def test_resources(self):
-        installation = self.installation
+        installation: Installation = self.installation  # type: ignore[attr-defined]
 
         chitin_resources = [
             ResourceIdentifier.from_path("c_bantha.utc"),
@@ -88,98 +89,98 @@ class TestInstallation(TestCase):
         ]
         chitin_results = installation.resources(chitin_resources, [SearchLocation.CHITIN])
         self._assert_from_path_tests(chitin_results, "c_bantha.utc", "x.utc")
-        modules_resources: list[ResourceIdentifier] = [
+        modules_resources = [
             ResourceIdentifier.from_path("m01aa.are"),
             ResourceIdentifier.from_path("x.tpc"),
         ]
-        modules_results: dict[ResourceIdentifier, ResourceResult | None] = installation.resources(
+        modules_results = installation.resources(
             modules_resources, [SearchLocation.MODULES]
         )
         self._assert_from_path_tests(modules_results, "m01aa.are", "x.tpc")
-        voices_resources: list[ResourceIdentifier] = [
+        voices_resources = [
             ResourceIdentifier.from_path("NM17AE04NI04008_.wav"),
             ResourceIdentifier.from_path("x.mp3"),
         ]
-        voices_results: dict[ResourceIdentifier, ResourceResult | None] = installation.resources(
+        voices_results = installation.resources(
             voices_resources, [SearchLocation.VOICE]
         )
         self._assert_from_path_tests(voices_results, "NM17AE04NI04008_.wav", "x.mp3")
-        music_resources: list[ResourceIdentifier] = [
+        music_resources = [
             ResourceIdentifier.from_path("mus_theme_carth.wav"),
             ResourceIdentifier.from_path("x.mp3"),
         ]
-        music_results: dict[ResourceIdentifier, ResourceResult | None] = installation.resources(
+        music_results= installation.resources(
             music_resources, [SearchLocation.MUSIC]
         )
         self._assert_from_path_tests(music_results, "mus_theme_carth.wav", "x.mp3")
-        sounds_resources: list[ResourceIdentifier] = [
+        sounds_resources = [
             ResourceIdentifier.from_path("P_ZAALBAR_POIS.wav"),
             ResourceIdentifier.from_path("x.mp3"),
         ]
-        sounds_results: dict[ResourceIdentifier, ResourceResult | None] = installation.resources(
+        sounds_results = installation.resources(
             sounds_resources, [SearchLocation.SOUND]
         )
         self._assert_from_path_tests(sounds_results, "P_ZAALBAR_POIS.wav", "x.mp3")
-        lips_resources: list[ResourceIdentifier] = [
+        lips_resources = [
             ResourceIdentifier.from_path("n_gendro_coms1.lip"),
             ResourceIdentifier.from_path("x.lip"),
         ]
-        lips_results: dict[ResourceIdentifier, ResourceResult | None] = installation.resources(
+        lips_results = installation.resources(
             lips_resources, [SearchLocation.LIPS]
         )
         self._assert_from_path_tests(lips_results, "n_gendro_coms1.lip", "x.lip")
-        rims_resources: list[ResourceIdentifier] = [
+        rims_resources = [
             ResourceIdentifier.from_path("darkjedi.ssf"),
             ResourceIdentifier.from_path("x.ssf"),
         ]
-        rims_results: dict[ResourceIdentifier, ResourceResult | None] = installation.resources(
+        rims_results = installation.resources(
             rims_resources, [SearchLocation.RIMS]
         )
         self._assert_from_path_tests(rims_results, "darkjedi.ssf", "x.ssf")
-        texa_resources: list[ResourceIdentifier] = [
+        texa_resources = [
             ResourceIdentifier.from_path("blood.tpc"),
             ResourceIdentifier.from_path("x.tpc"),
         ]
-        texa_results: dict[ResourceIdentifier, ResourceResult | None] = installation.resources(
+        texa_results = installation.resources(
             texa_resources, [SearchLocation.TEXTURES_TPA]
         )
         self._assert_from_path_tests(texa_results, "blood.tpc", "x.tpc")
-        texb_resources: list[ResourceIdentifier] = [
+        texb_resources = [
             ResourceIdentifier.from_path("blood.tpc"),
             ResourceIdentifier.from_path("x.tpc"),
         ]
-        texb_results: dict[ResourceIdentifier, ResourceResult | None] = installation.resources(
+        texb_results = installation.resources(
             texb_resources, [SearchLocation.TEXTURES_TPB]
         )
         self._assert_from_path_tests(texb_results, "blood.tpc", "x.tpc")
-        texc_resources: list[ResourceIdentifier] = [
+        texc_resources = [
             ResourceIdentifier.from_path("blood.tpc"),
             ResourceIdentifier.from_path("x.tpc"),
         ]
-        texc_results: dict[ResourceIdentifier, ResourceResult | None] = installation.resources(
+        texc_results = installation.resources(
             texc_resources, [SearchLocation.TEXTURES_TPC]
         )
         self._assert_from_path_tests(texc_results, "blood.tpc", "x.tpc")
-        texg_resources: list[ResourceIdentifier] = [
+        texg_resources = [
             ResourceIdentifier.from_path("1024x768back.tpc"),
             ResourceIdentifier.from_path("x.tpc"),
         ]
-        texg_results: dict[ResourceIdentifier, ResourceResult | None] = installation.resources(
+        texg_results = installation.resources(
             texg_resources, [SearchLocation.TEXTURES_GUI]
         )
         self._assert_from_path_tests(texg_results, "1024x768back.tpc", "x.tpc")
         capsules: list[Capsule] = [Capsule(installation.module_path() / "danm13.rim")]
-        capsules_resources: list[ResourceIdentifier] = [
+        capsules_resources = [
             ResourceIdentifier.from_path("m13aa.are"),
             ResourceIdentifier.from_path("xyz.ifo"),
         ]
-        capsules_results: dict[ResourceIdentifier, ResourceResult | None] = installation.resources(
+        capsules_results = installation.resources(
             capsules_resources, [SearchLocation.CUSTOM_MODULES], capsules=capsules
         )
         self._assert_from_path_tests(capsules_results, "m13aa.are", "xyz.ifo")
 
     def test_location(self):
-        installation: Installation = self.installation
+        installation: Installation = self.installation  # type: ignore[attr-defined]
 
         self.assertFalse(installation.location("m13aa", ResourceType.ARE, []))
         self.assertTrue(installation.location("m13aa", ResourceType.ARE))
@@ -211,7 +212,7 @@ class TestInstallation(TestCase):
         self.assertFalse(installation.location("xxx", ResourceType.TPC, [SearchLocation.TEXTURES_GUI]))
 
     def test_locations(self):
-        installation = self.installation
+        installation: Installation = self.installation  # type: ignore[attr-defined]
 
         chitin_resources = [
             ResourceIdentifier.from_path("c_bantha.utc"),
@@ -294,7 +295,7 @@ class TestInstallation(TestCase):
         self.assertEqual(2, len(arg0))
 
     def test_texture(self):
-        installation = self.installation
+        installation: Installation = self.installation  # type: ignore[attr-defined]
 
         self.assertIsNotNone(installation.texture("m03ae_03a_lm4", [SearchLocation.CHITIN]))
         self.assertIsNone(installation.texture("x", [SearchLocation.CHITIN]))
@@ -312,7 +313,7 @@ class TestInstallation(TestCase):
         self.assertIsNone(installation.texture("x", [SearchLocation.TEXTURES_GUI]))
 
     def test_textures(self):
-        installation = self.installation
+        installation: Installation = self.installation  # type: ignore[attr-defined]
 
         chitin_textures = ["m03ae_03a_lm4", "x"]
         chitin_results = installation.textures(chitin_textures, [SearchLocation.CHITIN])
@@ -345,7 +346,7 @@ class TestInstallation(TestCase):
         self.assertEqual(2, len(gui_results))
 
     def test_sounds(self):
-        installation = self.installation
+        installation: Installation = self.installation  # type: ignore[attr-defined]
 
         chitin_sounds = ["as_an_dantext_01", "x"]
         chitin_results = installation.sounds(chitin_sounds, [SearchLocation.CHITIN])
@@ -372,8 +373,9 @@ class TestInstallation(TestCase):
         self.assertIsNotNone(voice_results["n_gengamm_scrm"])
         self.assertIsNone(voice_results["x"])
 
-    def test_string(self):  # this test will fail on non-english versions of the game
-        installation = self.installation
+    def test_string(self):
+        """This test will fail on non-english versions of the game"""
+        installation: Installation = self.installation  # type: ignore[attr-defined]
 
         locstring1 = LocalizedString.from_invalid()
         locstring2 = LocalizedString.from_english("Some text.")
@@ -387,7 +389,8 @@ class TestInstallation(TestCase):
         )
 
     def test_strings(self):
-        installation = self.installation
+        """This test will fail on non-english versions of the game"""
+        installation: Installation = self.installation  # type: ignore[attr-defined]
 
         locstring1 = LocalizedString.from_invalid()
         locstring2 = LocalizedString.from_english("Some text.")
@@ -396,9 +399,7 @@ class TestInstallation(TestCase):
         results = installation.strings([locstring1, locstring2, locstring3], "default text")
         self.assertEqual("default text", results[locstring1])
         self.assertEqual("Some text.", results[locstring2])
-        self.assertEqual(
-            "ERROR: FATAL COMPILER ERROR", results[locstring3]
-        )  # this test will fail on non-english versions of the game
+        self.assertEqual("ERROR: FATAL COMPILER ERROR", results[locstring3])  # This test will fail on non-english versions of the game
 
 
 if __name__ == "__main__":

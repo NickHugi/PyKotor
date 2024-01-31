@@ -7,30 +7,28 @@ import unittest
 from unittest import TestCase
 
 THIS_SCRIPT_PATH = pathlib.Path(__file__)
-PYKOTOR_PATH = THIS_SCRIPT_PATH.parents[2].resolve()
-UTILITY_PATH = THIS_SCRIPT_PATH.parents[4].joinpath("Utility", "src").resolve()
-if PYKOTOR_PATH.exists():
-    working_dir = str(PYKOTOR_PATH)
-    if working_dir in sys.path:
-        sys.path.remove(working_dir)
-        os.chdir(PYKOTOR_PATH.parent)
-    sys.path.insert(0, working_dir)
-if UTILITY_PATH.exists():
-    working_dir = str(UTILITY_PATH)
-    if working_dir in sys.path:
-        sys.path.remove(working_dir)
-    sys.path.insert(0, working_dir)
+PYKOTOR_PATH = THIS_SCRIPT_PATH.parents[2]
+UTILITY_PATH = THIS_SCRIPT_PATH.parents[4].joinpath("Utility", "src")
+def add_sys_path(p: pathlib.Path):
+    working_dir = str(p)
+    if working_dir not in sys.path:
+        sys.path.append(working_dir)
+if PYKOTOR_PATH.joinpath("pykotor").exists():
+    add_sys_path(PYKOTOR_PATH)
+    os.chdir(PYKOTOR_PATH.parent)
+if UTILITY_PATH.joinpath("utility").exists():
+    add_sys_path(UTILITY_PATH)
 
 from pykotor.common.geometry import Vector3, Vector4
 from pykotor.common.language import LocalizedString
 from pykotor.common.misc import Game, ResRef
 from pykotor.resource.formats.gff.gff_auto import bytes_gff, read_gff
-from pykotor.resource.formats.gff.gff_data import GFFStruct, GFF, GFFFieldType, GFFList
-from pykotor.resource.formats.ssf.ssf_data import SSF, SSFSound
+from pykotor.resource.formats.gff.gff_data import GFF, GFFFieldType, GFFList, GFFStruct
 from pykotor.resource.formats.ssf.ssf_auto import bytes_ssf, read_ssf
+from pykotor.resource.formats.ssf.ssf_data import SSF, SSFSound
 from pykotor.resource.formats.tlk.tlk_data import TLK
-from pykotor.resource.formats.twoda.twoda_data import TwoDA
 from pykotor.resource.formats.twoda.twoda_auto import bytes_2da, read_2da
+from pykotor.resource.formats.twoda.twoda_data import TwoDA
 from pykotor.tslpatcher.logger import PatchLogger
 from pykotor.tslpatcher.memory import NoTokenUsage, PatcherMemory, TokenUsage2DA, TokenUsageTLK
 from pykotor.tslpatcher.mods.gff import (
@@ -62,7 +60,7 @@ from pykotor.tslpatcher.mods.twoda import (
     Target,
     TargetType,
 )
-from utility.path import PureWindowsPath
+from utility.system.path import PureWindowsPath
 
 # TODO Error, Warning tracking
 
@@ -71,8 +69,16 @@ class TestManipulateTLK(TestCase):
         memory = PatcherMemory()
 
         config = ModificationsTLK()
-        config.modifiers.append(ModifyTLK(0, "Append2", ResRef.from_blank()))
-        config.modifiers.append(ModifyTLK(1, "Append1", ResRef.from_blank()))
+
+        m1 = ModifyTLK(0)
+        m1.text = "Append2"
+        m1.sound = ResRef.from_blank()
+        m2 = ModifyTLK(1)
+        m2.text = "Append1"
+        m2.sound = ResRef.from_blank()
+
+        config.modifiers.append(m1)
+        config.modifiers.append(m2)
 
         dialog_tlk = TLK()
         dialog_tlk.add("Old1")
@@ -96,8 +102,18 @@ class TestManipulateTLK(TestCase):
         memory = PatcherMemory()
 
         config = ModificationsTLK()
-        config.modifiers.append(ModifyTLK(3, "Replace3", ResRef.from_blank(), True))
-        config.modifiers.append(ModifyTLK(2, "Replace2", ResRef.from_blank(), True))
+
+        m1 = ModifyTLK(1)
+        m1.text = "Replace2"
+        m1.sound = ResRef.from_blank()
+        m1.is_replacement = True
+        m2 = ModifyTLK(2)
+        m2.text = "Replace3"
+        m2.sound = ResRef.from_blank()
+        m2.is_replacement = True
+
+        config.modifiers.append(m1)
+        config.modifiers.append(m2)
 
         dialog_tlk = TLK()
         dialog_tlk.add("Old1")
@@ -108,11 +124,11 @@ class TestManipulateTLK(TestCase):
         config.apply(dialog_tlk, memory, PatchLogger(), Game.K1)
 
         self.assertEqual(4, len(dialog_tlk))
-        self.assertEqual("Replace2", dialog_tlk.get(2).text)
-        self.assertEqual("Replace3", dialog_tlk.get(3).text)
+        self.assertEqual("Replace2", dialog_tlk.get(1).text)
+        self.assertEqual("Replace3", dialog_tlk.get(2).text)
 
+        self.assertEqual(1, memory.memory_str[1])
         self.assertEqual(2, memory.memory_str[2])
-        self.assertEqual(3, memory.memory_str[3])
 
         # [Dialog] [Append] [Token] [Text]
         # 0        -        -       Old1

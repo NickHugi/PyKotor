@@ -27,7 +27,7 @@ TEST_RIM_FILE = "src/tests/files/capsule.rim"
 
 
 class TestCapsule(TestCase):
-    def test_erf_capsule(self):
+    def test_erf_capsule(self):  # sourcery skip: class-extract-method
         erf_capsule = Capsule(TEST_ERF_FILE)
 
         self.assertEqual(3, len(erf_capsule))
@@ -36,11 +36,11 @@ class TestCapsule(TestCase):
         self.assertEqual(4865, len(erf_capsule.resource("001ebo", ResourceType.ARE)))
         self.assertEqual("ARE ", erf_capsule.resource("001ebo", ResourceType.ARE)[:4].decode())
 
-        self.assertTrue(erf_capsule.exists("001ebo", ResourceType.GIT))
+        self.assertTrue(erf_capsule.info("001ebo", ResourceType.GIT))
         self.assertEqual(42565, len(erf_capsule.resource("001ebo", ResourceType.GIT)))
         self.assertEqual("GIT ", erf_capsule.resource("001ebo", ResourceType.GIT)[:4].decode())
 
-        self.assertTrue(erf_capsule.exists("001ebo", ResourceType.PTH))
+        self.assertTrue(erf_capsule.info("001ebo", ResourceType.PTH, reload=True))
         self.assertEqual(19788, len(erf_capsule.resource("001ebo", ResourceType.PTH)))
         self.assertEqual("PTH ", erf_capsule.resource("001ebo", ResourceType.PTH)[:4].decode())
 
@@ -53,11 +53,11 @@ class TestCapsule(TestCase):
         self.assertEqual(4096, len(rim_capsule.resource("m13aa", ResourceType.ARE)))
         self.assertEqual("ARE ", rim_capsule.resource("m13aa", ResourceType.ARE)[:4].decode())
 
-        self.assertTrue(rim_capsule.exists("m13aa", ResourceType.GIT))
+        self.assertTrue(rim_capsule.info("m13aa", ResourceType.GIT))
         self.assertEqual(51747, len(rim_capsule.resource("m13aa", ResourceType.GIT)))
         self.assertEqual("GIT ", rim_capsule.resource("m13aa", ResourceType.GIT)[:4].decode())
 
-        self.assertTrue(rim_capsule.exists("module", ResourceType.IFO))
+        self.assertTrue(rim_capsule.exists("module", ResourceType.IFO, reload=True))
         self.assertEqual(1655, len(rim_capsule.resource("module", ResourceType.IFO)))
         self.assertEqual("IFO ", rim_capsule.resource("module", ResourceType.IFO)[:4].decode())
 

@@ -4,7 +4,7 @@ import unittest
 from PIL import Image
 from pykotor.common.language import Language
 from pykotor.font.draw import write_bitmap_font, write_bitmap_fonts
-from utility.path import Path
+from utility.system.path import Path
 
 os.chdir("./Libraries/PyKotorFont")
 FONT_PATH_FILE = Path("src/tests/files/roboto/Roboto-Black.ttf")
@@ -60,7 +60,7 @@ class TestWriteBitmapFont(unittest.TestCase):
         lang = "invalid"
 
         with self.assertRaises((AttributeError, ValueError)):
-            write_bitmap_font(target_path, FONT_PATH_FILE, resolution, lang, draw_box=True)  # type: ignore[arg-type, reportGeneralTypeIssues]
+            write_bitmap_font(target_path, FONT_PATH_FILE, resolution, lang, draw_box=True)  # type: ignore[arg-type]
 
     def test_invalid_resolution(self):
         # Test with invalid resolution

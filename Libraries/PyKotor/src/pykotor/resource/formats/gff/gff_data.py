@@ -10,7 +10,7 @@ from pykotor.common.geometry import Vector3, Vector4
 from pykotor.common.language import LocalizedString
 from pykotor.common.misc import ResRef
 from pykotor.resource.type import ResourceType
-from utility.path import PureWindowsPath
+from utility.system.path import PureWindowsPath
 from utility.string import compare_and_format, format_text
 
 if TYPE_CHECKING:

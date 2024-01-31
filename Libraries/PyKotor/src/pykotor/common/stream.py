@@ -10,7 +10,7 @@ from typing import TYPE_CHECKING, BinaryIO
 from pykotor.common.geometry import Vector2, Vector3, Vector4
 from pykotor.common.language import LocalizedString
 from pykotor.tools.encoding import decode_bytes_with_fallbacks
-from utility.path import Path
+from utility.system.path import Path
 
 if TYPE_CHECKING:
     from types import TracebackType

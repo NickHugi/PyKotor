@@ -5,7 +5,8 @@ from typing import TYPE_CHECKING
 
 from pykotor.common.stream import BinaryReader
 from pykotor.tslpatcher.mods.template import PatcherModifications
-from utility.path import PurePath
+from utility.error_handling import universal_simplify_exception
+from utility.system.path import PurePath
 
 if TYPE_CHECKING:
     import os
@@ -24,7 +25,7 @@ def create_backup(
     backup_folderpath: CaseAwarePath,
     processed_files: set,
     subdirectory_path: os.PathLike | str | None = None,
-):  # sourcery skip: extract-method
+):
     """Creates a backup of the provided file.
 
     Args:
@@ -67,27 +68,27 @@ def create_backup(
             create_uninstall_scripts(backup_folderpath, uninstall_folder, game_folder)
             processed_files.add(uninstall_str_lower)
 
-        if destination_filepath.exists():
+        if destination_filepath.is_file():
             # Check if the backup path exists and generate a new one if necessary
             i = 2
             filestem: str = backup_filepath.stem
-            while backup_filepath.exists():
+            while backup_filepath.safe_exists():
                 backup_filepath = backup_filepath.parent / f"{filestem} ({i}){backup_filepath.suffix}"
                 i += 1
 
             log.add_note(f"Backing up '{destination_file_str}'...")
             if subdirectory_backup_path:
                 subdirectory_backup_path.mkdir(exist_ok=True, parents=True)
-            try:
+            try:  # sourcery skip: remove-redundant-exception
                 shutil.copy(destination_filepath, backup_filepath)
-            except PermissionError as e:
-                log.add_warning(f"Failed to create backup of '{destination_file_str}': {e}")
+            except (OSError, PermissionError) as e:
+                log.add_warning(f"Failed to create backup of '{destination_file_str}': {universal_simplify_exception(e)}")
         else:
 
             # Write the file path to remove these files.txt in backup directory
             removal_files_txt: CaseAwarePath = backup_folderpath.joinpath("remove these files.txt")
-            line: str = ("\n" if removal_files_txt.exists() else "") + destination_file_str
-            with removal_files_txt.open("a") as f:
+            line: str = ("\n" if removal_files_txt.is_file() else "") + destination_file_str
+            with removal_files_txt.open(mode="a", encoding="utf-8") as f:
                 f.write(line)
 
         # Add the lowercased path string to the processed_files set
@@ -95,7 +96,7 @@ def create_backup(
 
 
 def create_uninstall_scripts(backup_dir: CaseAwarePath, uninstall_folder: CaseAwarePath, main_folder: CaseAwarePath):
-    with uninstall_folder.joinpath("uninstall.ps1").open("w") as f:
+    with uninstall_folder.joinpath("uninstall.ps1").open("w", encoding="utf-8") as f:
         f.write(
             rf"""
 #!/usr/bin/env pwsh
@@ -205,7 +206,7 @@ foreach ($file in $filesInBackup) {{
 Pause
 """,
         )
-    with uninstall_folder.joinpath("uninstall.sh").open("w", newline="\n") as f:
+    with uninstall_folder.joinpath("uninstall.sh").open("w", encoding="utf-8", newline="\n") as f:
         f.write(
             rf"""
 #!/bin/bash
@@ -300,13 +301,18 @@ read -rp "Press enter to continue..."
 
 
 class InstallFile(PatcherModifications):
-    def __init__(self, filename: str, replace_existing: bool):
+    def __init__(
+        self,
+        filename: str,
+        *,
+        replace_existing: bool,
+    ):
         super().__init__(filename, replace_existing)
 
         self.action: str = "Copy "
         self.skip_if_not_replace: bool = True
 
-    def __hash__(self):
+    def __hash__(self):  # HACK: organize this into PatcherModifications class later, this is only used for nwscript.nss currently.
         return hash((self.destination, self.saveas, self.replace_file))
 
     def patch_resource(

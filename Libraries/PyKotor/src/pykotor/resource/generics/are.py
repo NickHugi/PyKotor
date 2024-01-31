@@ -440,11 +440,11 @@ def dismantle_are(
         room_struct.set_single("AmbientScale", room.ambient_scale)
         room_struct.set_int32("EnvAudio", room.env_audio)
         room_struct.set_string("RoomName", room.name)
-        if game == Game.K2:
+        if game.is_k2():
             room_struct.set_uint8("DisableWeather", room.weather)
             room_struct.set_int32("ForceRating", room.force_rating)
 
-    if game == Game.K2:
+    if game.is_k2():
         root.set_int32("DirtyARGBOne", are.dirty_argb_1.rgb_integer())
         root.set_int32("DirtyARGBTwo", are.dirty_argb_2.rgb_integer())
         root.set_int32("DirtyARGBThree", are.dirty_argb_3.rgb_integer())

@@ -1,24 +1,29 @@
 from __future__ import annotations
 
 import tkinter as tk
+from tkinter import ttk
+from typing import Callable
 
 
 class ToolTip:
-    def __init__(self, widget, callable_returns_text):
-        self.widget = widget
-        self.text = callable_returns_text
-        self.tip_window = None
-        self.id = None
-        self.x = self.y = 0
+    def __init__(self, widget: ttk.Widget, callable_returns_text: Callable[..., str]):
+        self.widget: ttk.Widget = widget
+        self.get_tooltip_text: Callable[..., str] = callable_returns_text
+        self.tip_window: tk.Toplevel | None = None
+
         self.widget.bind("<Enter>", self.show_tip)
         self.widget.bind("<Leave>", self.hide_tip)
 
-    def show_tip(self, event=None):
+    def show_tip(self, event: tk.Event | None = None):
         """Display text in a tooltip window."""
-        text = self.text().strip()
+        text = self.get_tooltip_text().strip()
         if not text:
             return
-        x, y, _, _ = self.widget.bbox("insert")
+        bbox: tuple[int, int, int, int] | None = self.widget.bbox("insert")
+        if bbox is None:
+            return
+
+        x, y, _, _ = bbox
         x += self.widget.winfo_rootx() + 25
         y += self.widget.winfo_rooty() + 20
         self.tip_window = tk.Toplevel(self.widget)
@@ -29,9 +34,9 @@ class ToolTip:
                          font=("tahoma", "8", "normal"))
         label.pack(ipadx=1)
 
-    def hide_tip(self, event=None):
+    def hide_tip(self, event: tk.Event | None = None):
         """Destroy the tooltip window."""
-        tw = self.tip_window
+        tw: tk.Toplevel | None = self.tip_window
         self.tip_window = None
         if tw:
             tw.destroy()

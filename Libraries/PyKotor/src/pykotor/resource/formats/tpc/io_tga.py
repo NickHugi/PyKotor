@@ -175,7 +175,7 @@ class TPCTGAReader(ResourceReader):
         elif datatype_code == _DataTypes.UNCOMPRESSED_RGB:
             self._reader.skip(colormap_length * colormap_depth // 8)
 
-            if bits_per_pixel not in [24, 32]:
+            if bits_per_pixel not in {24, 32}:
                 ValueError("The image must store 24 or 32 bits per pixel.")
 
             pixel_rows: list[bytearray] = []

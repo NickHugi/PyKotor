@@ -218,10 +218,10 @@ class NCS:
 
         Processing Logic:
         ----------------
-        - Create a new NCSInstruction object from the parameters
-        - Insert the instruction into the instructions list at the given index if provided
-        - Otherwise append the instruction to the end of the list
-        - Return the added instruction.
+            - Create a new NCSInstruction object from the parameters
+            - Insert the instruction into the instructions list at the given index if provided
+            - Otherwise append the instruction to the end of the list
+            - Return the added instruction.
         """
         instruction = NCSInstruction(instruction_type, args, jump)
         self.instructions.insert(

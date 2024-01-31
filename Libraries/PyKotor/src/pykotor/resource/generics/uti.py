@@ -169,7 +169,7 @@ def dismantle_uti(
     root.set_uint8("BodyVariation", uti.body_variation)
     root.set_uint8("TextureVar", uti.texture_variation)
 
-    if game == Game.K2:
+    if game.is_k2():
         root.set_uint8("UpgradeLevel", uti.upgrade_level)
 
     if use_deprecated:

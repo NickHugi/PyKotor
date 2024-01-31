@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import os
 import shutil
+import sys
 from copy import deepcopy
 from datetime import datetime, timezone
 from typing import TYPE_CHECKING
@@ -18,10 +19,12 @@ from pykotor.tslpatcher.logger import PatchLogger
 from pykotor.tslpatcher.memory import PatcherMemory
 from pykotor.tslpatcher.mods.install import InstallFile, create_backup
 from pykotor.tslpatcher.mods.template import OverrideType, PatcherModifications
-from utility.error_handling import universal_simplify_exception
-from utility.path import PurePath
+from utility.error_handling import format_exception_with_variables, universal_simplify_exception
+from utility.system.path import PurePath
 
 if TYPE_CHECKING:
+    from threading import Event
+
     from pykotor.common.misc import Game
     from pykotor.resource.type import SOURCE_TYPES
     from pykotor.tslpatcher.mods.tlk import ModificationsTLK
@@ -55,19 +58,19 @@ class ModInstaller:
             - Handle legacy changes ini path syntax (changes_ini_path used to just be a filename)
             - Initialize other attributes.
         """
-        self.log: PatchLogger = logger or PatchLogger()
         self.game_path: CaseAwarePath = CaseAwarePath.pathify(game_path)
         self.mod_path: CaseAwarePath = CaseAwarePath.pathify(mod_path)
         self.changes_ini_path: CaseAwarePath = CaseAwarePath.pathify(changes_ini_path)
-        if not self.changes_ini_path.exists():  # handle legacy syntax
+        self.log: PatchLogger = logger or PatchLogger()
+        self.game: Game | None = Installation.determine_game(self.game_path)
+        if not self.changes_ini_path.safe_isfile():  # handle legacy syntax
             self.changes_ini_path = self.mod_path / self.changes_ini_path.name
-            if not self.changes_ini_path.exists():
+            if not self.changes_ini_path.safe_isfile():
                 self.changes_ini_path = self.mod_path / "tslpatchdata" / self.changes_ini_path.name
-            if not self.changes_ini_path.exists():
-                msg = f"Could not find the changes ini file {self.changes_ini_path!s} on disk! Could not start install!"
+            if not self.changes_ini_path.safe_isfile():
+                msg = f"Could not find the changes ini file '{self.changes_ini_path}' on disk."
                 raise FileNotFoundError(msg)
 
-        self.game: Game | None = Installation.determine_game(self.game_path)
         self._config: PatcherConfig | None = None
         self._backup: CaseAwarePath | None = None
         self._processed_backup_files: set = set()
@@ -93,7 +96,7 @@ class ModInstaller:
 
         if self._config.required_file:
             requiredfile_path: CaseAwarePath = self.game_path / "Override" / self._config.required_file
-            if not requiredfile_path.exists():
+            if not requiredfile_path.safe_isfile():
                 raise ImportError(self._config.required_message.strip() or "cannot install - missing a required mod")
         return self._config
 
@@ -121,19 +124,19 @@ class ModInstaller:
             return (self._backup, self._processed_backup_files)
         backup_dir: CaseAwarePath = self.mod_path
         timestamp: str = datetime.now(tz=timezone.utc).astimezone().strftime("%Y-%m-%d_%H.%M.%S")
-        while not backup_dir.joinpath("tslpatchdata").exists() and backup_dir.parent.name:
+        while not backup_dir.joinpath("tslpatchdata").is_dir() and backup_dir.parent.name:
             backup_dir = backup_dir.parent
         uninstall_dir: CaseAwarePath = backup_dir.joinpath("uninstall")
-        try:
-            if uninstall_dir.exists():
+        try:  # sourcery skip: remove-redundant-exception
+            if uninstall_dir.is_dir():
                 shutil.rmtree(uninstall_dir)
-        except PermissionError as e:
-            self.log.add_warning(f"Could not initialize backup folder: {e!r}")
+        except (PermissionError, OSError) as e:
+            self.log.add_warning(f"Could not initialize uninstall directory: {universal_simplify_exception(e)}")
         backup_dir = backup_dir / "backup" / timestamp
-        try:
+        try:  # sourcery skip: remove-redundant-exception
             backup_dir.mkdir(parents=True, exist_ok=True)
-        except PermissionError as e:
-            self.log.add_warning(f"Could not create backup folder: {e!r}")
+        except (PermissionError, OSError) as e:
+            self.log.add_warning(f"Could not create backup folder: {universal_simplify_exception(e)}")
         self.log.add_note(f"Using backup directory: '{backup_dir}'")
         self._backup = backup_dir
         self._processed_backup_files = set()
@@ -165,15 +168,15 @@ class ModInstaller:
         capsule: Capsule | None = None
         exists: bool
         if is_capsule_file(patch.destination):
-            if not output_container_path.safe_exists():
-                msg = f"The capsule '{patch.destination}' did not exist when attempting to {patch.action.lower().rstrip()} '{patch.sourcefile}'. Skipping file..."
+            if not output_container_path.safe_isfile():
+                msg = f"The capsule '{patch.destination}' did not exist, or permission issues occurred, when attempting to {patch.action.lower().rstrip()} '{patch.sourcefile}'. Skipping file..."
                 raise FileNotFoundError(msg)
             capsule = Capsule(output_container_path)
             create_backup(self.log, output_container_path, *self.backup(), PurePath(patch.destination).parent)
             exists = capsule.exists(*ResourceIdentifier.from_path(patch.saveas))
         else:
             create_backup(self.log, output_container_path.joinpath(patch.saveas), *self.backup(), patch.destination)
-            exists = output_container_path.joinpath(patch.saveas).exists()
+            exists = output_container_path.joinpath(patch.saveas).is_file()
         return (exists, capsule)
 
     def load_resource_file(self, source: SOURCE_TYPES) -> bytes:
@@ -240,25 +243,21 @@ class ModInstaller:
 
         override_dir: CaseAwarePath = self.game_path / "Override"
         override_resource_path: CaseAwarePath = override_dir / patch.saveas
-        if not override_resource_path.exists():
-            override_resource_path = override_resource_path.resolve()
-        if override_resource_path.exists():
+        if override_resource_path.safe_isfile():
             if override_type == OverrideType.RENAME:
                 renamed_file_path: CaseAwarePath = override_dir / f"old_{patch.saveas}"
                 i = 2
-                while renamed_file_path.exists():  # tslpatcher does not do this loop.
-                    stem: str = renamed_file_path.stem if i == 2 else renamed_file_path.stem[:4]
-                    next_filename: str = f"{stem} ({i}){renamed_file_path.suffix}"
-                    renamed_file_path = renamed_file_path.parent / next_filename
+                filestem: str = renamed_file_path.stem
+                while renamed_file_path.safe_isfile():
+                    renamed_file_path = renamed_file_path.parent / f"{filestem} ({i}){renamed_file_path.suffix}"
                     i += 1
                 try:
-                    renamed_file_path = renamed_file_path.resolve()
                     shutil.move(str(override_resource_path), str(renamed_file_path))
                 except Exception as e:  # noqa: BLE001
                     # Handle exceptions such as permission errors or file in use.
-                    self.log.add_error(f"Could not rename '{patch.saveas}' to '{renamed_file_path.name}' in the Override folder: {e}")
+                    self.log.add_error(f"Could not rename '{patch.saveas}' to '{renamed_file_path.name}' in the Override folder: {universal_simplify_exception(e)}")
             elif override_type == OverrideType.WARN:
-                self.log.add_warning(f"A resource located at '{override_resource_path!s}' is shadowing this mod's changes in {patch.destination}!")
+                self.log.add_warning(f"A resource located at '{override_resource_path}' is shadowing this mod's changes in {patch.destination}!")
 
     def should_patch(
         self,
@@ -295,7 +294,7 @@ class ModInstaller:
             - Returns True if the patch should be applied.
         """  # noqa: D205
         local_folder: str = self.game_path.name if patch.destination.strip("\\").strip("/") == "." else patch.destination
-        container_type = "folder" if capsule is None else "archive"
+        container_type: Literal["folder", "archive"] = "folder" if capsule is None else "archive"
 
         if patch.replace_file and exists:
             saveas_str: str = f"'{patch.saveas}' in" if patch.saveas != patch.sourcefile else "in"
@@ -310,7 +309,7 @@ class ModInstaller:
             self.log.add_note(f"'{patch.saveas}' already exists in the '{local_folder}' {container_type}. Skipping file...")
             return False
 
-        if capsule is not None and not capsule.path().exists():
+        if capsule is not None and not capsule.path().safe_isfile():
             self.log.add_error(f"The capsule '{patch.destination}' did not exist when attempting to {patch.action.lower().rstrip()} '{patch.sourcefile}'. Skipping file...")
             return False
 
@@ -321,7 +320,7 @@ class ModInstaller:
         self.log.add_note(f"{patch.action[:-1]}ing '{patch.sourcefile}' and {save_type} {saving_as_str} the '{local_folder}' {container_type}")
         return True
 
-    def install(self):
+    def install(self, should_cancel: Event | None = None):
         """Install patches from the config file.
 
         Processing Logic:
@@ -339,7 +338,7 @@ class ModInstaller:
             raise RuntimeError(msg)
 
         config: PatcherConfig = self.config()
-        temp_script_folder = self._prepare_compilelist(config)
+        temp_script_folder: CaseAwarePath | None = self._prepare_compilelist(config)
         patches_list: list[PatcherModifications] = [
             *config.install_list,  # Note: TSLPatcher executes [InstallList] after [TLKList]
             *self.get_tlk_patches(config),
@@ -352,13 +351,19 @@ class ModInstaller:
 
         memory = PatcherMemory()
         for patch in patches_list:
+            if should_cancel is not None and should_cancel.is_set():
+                print("ModInstaller.install() received termination request, cancelling...")
+                sys.exit()
+            #if self.game.is_ios():  # TODO:
+            #    patch.destination = patch.destination.lower()
             output_container_path: CaseAwarePath = self.game_path / patch.destination
             try:
                 exists, capsule = self.handle_capsule_and_backup(patch, output_container_path)
                 if not self.should_patch(patch, exists, capsule):
                     continue
+
                 data_to_patch: bytes | None = self.lookup_resource(patch, output_container_path, exists, capsule)
-                if data_to_patch is None:  # check None instead of `not data_to_patch` as sometimes mods will installlist empty files.
+                if data_to_patch is None:
                     self.log.add_error(f"Could not locate resource to {patch.action.lower().strip()}: '{patch.sourcefile}'")
                     continue
                 if not data_to_patch:
@@ -366,36 +371,45 @@ class ModInstaller:
 
                 patched_data: bytes | Literal[True] = patch.patch_resource(data_to_patch, memory, self.log, self.game)
                 if patched_data is True:
-                    continue  # patch_resource determined that this file can be skipped. e.g. if nwnnsscomp tries to compile an Include script with no entrypoint
+                    self.log.add_note(f"Skipping '{patch.sourcefile}' - patch_resource determined that this file can be skipped.")
+                    continue  # e.g. if nwnnsscomp tries to compile an Include script with no entrypoint
+
                 if capsule is not None:
                     self.handle_override_type(patch)
                     capsule.add(*ResourceIdentifier.from_path(patch.saveas), patched_data)
                 else:
-                    output_container_path.mkdir(exist_ok=True, parents=True)  # Create non-existing folders if needed.
+                    #if self.game.is_ios():  # TODO:
+                    #    patch.saveas = patch.saveas.lower()
+                    output_container_path.mkdir(exist_ok=True, parents=True)  # Create non-existing folders when the patch demands it.
                     BinaryWriter.dump(output_container_path / patch.saveas, patched_data)
                 self.log.complete_patch()
             except Exception as e:  # noqa: BLE001
                 self.log.add_error(str(e))
-                continue
-        if config.save_processed_scripts == 0 and temp_script_folder is not None and temp_script_folder.safe_exists():
-            self.log.add_note(f"Cleaning temporary script folder at {temp_script_folder}")
-            shutil.rmtree(temp_script_folder)
+                detailed_error = format_exception_with_variables(e)
+                with CaseAwarePath.cwd().joinpath("errorlog.txt").open("a") as f:
+                    f.write(f"\n{detailed_error}")
 
-        self.log.add_note(f"Successfully completed {self.log.patches_completed} total patches.")
+        if config.save_processed_scripts == 0 and temp_script_folder is not None and temp_script_folder.safe_isdir():
+            self.log.add_note(f"Cleaning temporary script folder at '{temp_script_folder}' (hint: use 'SaveProcessedScripts=1' in [Settings] to keep these scripts)")
+            shutil.rmtree(temp_script_folder, ignore_errors=True)
+
+        num_patches_completed: int = config.patch_count()
+        self.log.add_note(f"Successfully completed {num_patches_completed} {'patch' if num_patches_completed == 1 else 'total patches'}.")
 
     def _prepare_compilelist(self, config: PatcherConfig) -> CaseAwarePath | None:
         """tslpatchdata should be read-only, this allows us to replace memory tokens while ensuring include scripts work correctly."""  # noqa: D403
-        if len(config.patches_nss) <= 0:
+        if not config.patches_nss:
             return None
 
         # Move nwscript.nss to Override if there are any nss patches to do
-        file_install = InstallFile("nwscript.nss", replace_existing=True)
-        if file_install not in config.install_list:
-            config.install_list.append(file_install)
+        if (self.mod_path / "nwscript.nss").safe_isfile():
+            file_install = InstallFile("nwscript.nss", replace_existing=True)
+            if file_install not in config.install_list:
+                config.install_list.append(file_install)
 
         temp_script_folder: CaseAwarePath = self.mod_path / "temp_nss_working_dir"
-        if temp_script_folder.safe_isfile():
-            temp_script_folder.unlink()
+        if temp_script_folder.safe_isdir():
+            shutil.rmtree(temp_script_folder, ignore_errors=True)
         temp_script_folder.mkdir(exist_ok=True, parents=True)
         for file in self.mod_path.safe_iterdir():
             if file.suffix.lower() != ".nss" or not file.safe_isfile():
@@ -418,11 +432,11 @@ class ModInstaller:
         female_dialog_filename = "dialogf.tlk"
         female_dialog_file: CaseAwarePath = self.game_path / female_dialog_filename
 
-        if female_dialog_file.exists():
+        if female_dialog_file.is_file():
             female_tlk_patches: ModificationsTLK = deepcopy(patches_tlk)
             female_tlk_patches.sourcefile = (
                 female_tlk_patches.sourcefile_f
-                if (self.mod_path / female_tlk_patches.sourcefile_f).exists()
+                if (self.mod_path / female_tlk_patches.sourcefile_f).is_file()
                 else patches_tlk.sourcefile
             )
             female_tlk_patches.saveas = female_dialog_filename

@@ -585,15 +585,28 @@ class CaseInsensitiveDict(Generic[T]):
 
     def __init__(
         self,
-        initial: Iterable[tuple[str, T]] | None = None,
+        initial: Mapping[str, T] | Iterable[tuple[str, T]] | ItemsView[str, T] | None = None,
     ):
         self._dictionary: dict[str, T] = {}
-        self._case_map: dict[str, str] = {}
+        self._case_map: dict[str, T] = {}
 
         if initial:
+            # If initial is a mapping, use its items method.
+            items: Iterable[tuple[str, T]] | ItemsView[str, T] | ItemsView[tuple[str, T], T] = (
+                initial.items()
+                if isinstance(initial, Mapping)
+                else initial
+            )
+
             # Iterate over initial items directly, avoiding the creation of an interim dict
-            for key, value in initial:
-                self[key] = value  # Utilize the __setitem__ method for setting items
+            for key, value in items:
+                assert not isinstance(key, tuple), f"key '{key!r}' and value '{value!r}' are not expected types."
+                if isinstance(key, tuple):
+                    # Unpack key-value tuple
+                    k, v = key
+                    self[k] = v
+                else:
+                    self[key] = value
 
     @classmethod
     def from_dict(cls, initial: dict[str, T]) -> CaseInsensitiveDict[T]:

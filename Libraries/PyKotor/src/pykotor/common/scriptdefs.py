@@ -15496,8 +15496,8 @@ TSL_FUNCTIONS = [
             ScriptParam(DataType.INT, "nIndex", None),
             ScriptParam(DataType.INT, "nValue", None),
         ],
-        "// 682. SetLocalNumber\r\n// This sets a number on an object\r\n// currently the index is a range between 12 and 28\r\n// the value range is 0 to 255\r\nvoid SetLocalNumber( object oObject, int nIndex, int nValue );",
-        "// 682. SetLocalNumber\r\n// This sets a number on an object\r\n// currently the index is a range between 12 and 28\r\n// the value range is 0 to 255\r\nvoid SetLocalNumber( object oObject, int nIndex, int nValue );",
+        "// 682. SetLocalNumber\r\n// This sets a number on an object\r\n// currently the index is a range between 12 and 28\r\n// local numbers can have a value in the range -128..+127, but the value is stored as an unsigned int! Any negative value in the range is converted using the formula 256 + X, where X is the negative value. So, -1 is stored as 255, -127 is stored as 129, -128 becomes 128. And any positive value greater than +127 becomes 0.\r\nvoid SetLocalNumber( object oObject, int nIndex, int nValue );",
+        "// 682. SetLocalNumber\r\n// This sets a number on an object\r\n// currently the index is a range between 12 and 28\r\n// local numbers can have a value in the range -128..+127, but the value is stored as an unsigned int! Any negative value in the range is converted using the formula 256 + X, where X is the negative value. So, -1 is stored as 255, -127 is stored as 129, -128 becomes 128. And any positive value greater than +127 becomes 0.\r\nvoid SetLocalNumber( object oObject, int nIndex, int nValue );",
     ),
     ScriptFunction(
         DataType.INT,

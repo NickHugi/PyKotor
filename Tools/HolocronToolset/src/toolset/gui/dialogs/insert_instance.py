@@ -19,7 +19,7 @@ from PyQt5 import QtCore
 from PyQt5.QtGui import QColor
 from PyQt5.QtWidgets import QDialog, QDialogButtonBox, QListWidgetItem, QWidget
 from toolset.gui.widgets.settings.installations import GlobalSettings
-from utility.path import Path
+from utility.system.path import Path
 
 if TYPE_CHECKING:
     from pykotor.common.module import Module

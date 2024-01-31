@@ -2,26 +2,25 @@ import os
 import pathlib
 import sys
 import unittest
+from tempfile import NamedTemporaryFile
 from unittest.mock import MagicMock, Mock, patch
 
 THIS_SCRIPT_PATH = pathlib.Path(__file__)
-PYKOTOR_PATH = THIS_SCRIPT_PATH.parents[2].resolve()
-UTILITY_PATH = THIS_SCRIPT_PATH.parents[4].joinpath("Utility", "src").resolve()
-if PYKOTOR_PATH.exists():
-    working_dir = str(PYKOTOR_PATH)
-    if working_dir in sys.path:
-        sys.path.remove(working_dir)
-        os.chdir(PYKOTOR_PATH.parent)
-    sys.path.insert(0, working_dir)
-if UTILITY_PATH.exists():
-    working_dir = str(UTILITY_PATH)
-    if working_dir in sys.path:
-        sys.path.remove(working_dir)
-    sys.path.insert(0, working_dir)
+PYKOTOR_PATH = THIS_SCRIPT_PATH.parents[2]
+UTILITY_PATH = THIS_SCRIPT_PATH.parents[4].joinpath("Utility", "src")
+def add_sys_path(p: pathlib.Path):
+    working_dir = str(p)
+    if working_dir not in sys.path:
+        sys.path.append(working_dir)
+if PYKOTOR_PATH.joinpath("pykotor").exists():
+    add_sys_path(PYKOTOR_PATH)
+    os.chdir(PYKOTOR_PATH.parent)
+if UTILITY_PATH.joinpath("utility").exists():
+    add_sys_path(UTILITY_PATH)
 
 from pykotor.extract.capsule import Capsule
 from pykotor.tslpatcher.patcher import ModInstaller
-from utility.path import Path
+from utility.system.path import Path
 
 
 class TestLookupResourceFunction(unittest.TestCase):
@@ -30,7 +29,9 @@ class TestLookupResourceFunction(unittest.TestCase):
         self.patch.sourcefile = "test_filename"
         self.patch.sourcefolder = "."
         self.patch.saveas = "test_filename"
-        self.config = ModInstaller("", "", "")
+        with NamedTemporaryFile() as tmpfile:
+            tmpfile_path = Path(tmpfile.name)
+            self.config = ModInstaller("", "", tmpfile_path)
         self.config.mod_path = Path("test_mod_path")
         self.output_container_path = Path("test_output_container_path")
 
@@ -175,7 +176,9 @@ class TestLookupResourceFunction(unittest.TestCase):
 
 class TestShouldPatchFunction(unittest.TestCase):
     def setUp(self):
-        self.patcher = ModInstaller("", "", "")
+        with NamedTemporaryFile() as tmpfile:
+            tmpfile_path = Path(tmpfile.name)
+            self.patcher = ModInstaller("", "", tmpfile_path)
         self.patcher.game_path = MagicMock()
         self.patcher.game_path.name = "swkotor"
         self.patcher.log = MagicMock()
@@ -291,7 +294,7 @@ class TestShouldPatchFunction(unittest.TestCase):
     def test_capsule_not_exist(self):
         patch = MagicMock(destination="capsule", action="Patching", sourcefile="file1")
         capsule = MagicMock()
-        capsule.path().exists.return_value = False
+        capsule.path().safe_isfile.return_value = False
         result = self.patcher.should_patch(patch, capsule=capsule)
         self.assertFalse(result)
 

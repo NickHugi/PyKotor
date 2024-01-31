@@ -21,7 +21,7 @@ from toolset.gui.dialogs.save.to_module import SaveToModuleDialog
 from toolset.gui.dialogs.save.to_rim import RimSaveDialog, RimSaveOption
 from toolset.gui.widgets.settings.installations import GlobalSettings
 from utility.error_handling import format_exception_with_variables
-from utility.path import Path
+from utility.system.path import Path
 
 if TYPE_CHECKING:
     import os

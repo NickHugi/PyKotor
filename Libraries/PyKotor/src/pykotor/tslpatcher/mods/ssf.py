@@ -28,7 +28,7 @@ class ModificationsSSF(PatcherModifications):
     def __init__(
         self,
         filename: str,
-        replace_file: bool,
+        replace_file: bool,  # noqa: FBT001
         modifiers: list[ModifySSF] | None = None,
     ):
         super().__init__(filename)

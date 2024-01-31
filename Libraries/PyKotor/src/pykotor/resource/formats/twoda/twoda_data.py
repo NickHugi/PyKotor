@@ -276,7 +276,7 @@ class TwoDA:
             override_cells[header] = str(override_cells[header])
 
         for header in self._headers:
-            self._rows[-1][header] = override_cells[header] if header in override_cells else self.get_cell(source_index, header)
+            self._rows[-1][header] = override_cells[header] if header in override_cells else self.get_cell(source_index, header)  # FIXME: source_index cannot be None
 
         return len(self._rows) - 1
 

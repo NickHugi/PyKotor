@@ -30,7 +30,7 @@ class EntryPointError(CompileError):
 
 class TopLevelObject(ABC):
     @abstractmethod
-    def compile(self, ncs: NCS, root: CodeRoot):
+    def compile(self, ncs: NCS, root: CodeRoot):  # noqa: A003
         ...
 
 

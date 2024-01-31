@@ -25,7 +25,7 @@ from pykotor.resource.formats.ncs.compiler.classes import CompileError
 from pykotor.resource.formats.ncs.compiler.interpreter import Interpreter
 from pykotor.resource.formats.ncs.compiler.lexer import NssLexer
 from pykotor.resource.formats.ncs.compiler.parser import NssParser
-from utility.path import Path
+from utility.system.path import Path
 
 
 class TestNSSCompiler(unittest.TestCase):

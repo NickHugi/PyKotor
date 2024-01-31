@@ -7,19 +7,20 @@ from tkinter import messagebox
 from typing import TYPE_CHECKING
 
 from pykotor.common.misc import Game
+from pykotor.common.stream import BinaryReader
 from pykotor.resource.formats.tlk import read_tlk, write_tlk
 from pykotor.tools.encoding import decode_bytes_with_fallbacks
 from pykotor.tools.misc import is_mod_file
 from pykotor.tools.path import CaseAwarePath
 from pykotor.tslpatcher.logger import PatchLogger
 from utility.error_handling import universal_simplify_exception
-from utility.path import Path
+from utility.system.path import Path
 
 if TYPE_CHECKING:
     from pykotor.extract.installation import Installation
 
 
-# TODO: the Aspyr patch contains some required files in the override folder, hardcode them and ignore those here.
+# TODO: the aspyr patch contains some required files in the override folder, hardcode them and ignore those here.
 def uninstall_all_mods(installation: Installation):
     """Uninstalls all mods from the game.
 
@@ -36,17 +37,17 @@ def uninstall_all_mods(installation: Installation):
     dialog_tlk = read_tlk(dialog_tlk_path)
     dialog_tlk.entries = dialog_tlk.entries[:49265] if installation.game() == Game.K1 else dialog_tlk.entries[:136329]
     # TODO: With the new Replace TLK syntax, the above TLK reinstall isn't possible anymore.
-    # Here, we could write the dialog.tlk and then check it's sha1 hash compared to vanilla.
+    # Here, we should write the dialog.tlk and then check it's sha1 hash compared to vanilla.
     # We could keep the vanilla TLK entries in a tlkdefs.py file, similar to our nwscript.nss defs.
     # This implementation would be required regardless in K2 anyway as this function currently isn't determining if the Aspyr patch and/or TSLRCM is installed.
     write_tlk(dialog_tlk, dialog_tlk_path)
 
     # Remove all override files
-    for file_path in override_path.iterdir():
+    for file_path in override_path.safe_iterdir():
         file_path.unlink()
 
     # Remove any .MOD files
-    for file_path in modules_path.iterdir():
+    for file_path in modules_path.safe_iterdir():
         if is_mod_file(file_path.name):
             file_path.unlink()
 
@@ -133,7 +134,7 @@ class ModUninstaller:
         valid_backups: list[Path] = [
             subfolder
             for subfolder in backup_folder_path.iterdir()  # type: ignore[attr-defined]
-            if subfolder.is_dir() and ModUninstaller.is_valid_backup_folder(subfolder)
+            if subfolder.iterdir() and ModUninstaller.is_valid_backup_folder(subfolder)
         ]
         if not valid_backups:
             messagebox.showerror(
@@ -144,11 +145,11 @@ class ModUninstaller:
             return None
         return max(valid_backups, key=lambda x: datetime.strptime(x.name, "%Y-%m-%d_%H.%M.%S").astimezone())
 
-    def restore_backup(
+    def restore_backup(  # noqa: D417
         self,
         backup_folder: Path,
-        existing_files,
-        files_in_backup,
+        existing_files: set[str],
+        files_in_backup: list[Path],
     ):
         """Restores a game backup folder to the existing game files.
 
@@ -168,9 +169,9 @@ class ModUninstaller:
         --------
             restore_backup(Path('backup'), {'file1.txt', 'file2.txt'}, [Path('backup/file1.txt'), Path('backup/file2.txt')])
         """
-        for file in existing_files:
-            file_path = Path.pathify(file)
-            rel_filepath = file_path.relative_to(self.game_path)  # type: ignore[attr-defined]
+        for file_str in existing_files:
+            file_path = Path.pathify(file_str)
+            rel_filepath: Path = file_path.relative_to(self.game_path)  # type: ignore[attr-defined]
             file_path.unlink(missing_ok=True)  # type: ignore[attr-defined]
             self.log.add_note(f"Removed {rel_filepath}...")
         for file in files_in_backup:
@@ -184,18 +185,18 @@ class ModUninstaller:
 
     def get_backup_info(self) -> tuple[Path | None, set[str], list[Path], int]:
         """Get info about the most recent valid backup."""
-        most_recent_backup_folder = self.get_most_recent_backup(self.backups_location_path)
+        most_recent_backup_folder: Path | None = self.get_most_recent_backup(self.backups_location_path)
         if not most_recent_backup_folder:
             return None, set(), [], 0
 
         delete_list_file = most_recent_backup_folder / "remove these files.txt"
         files_to_delete: set[str] = set()
         existing_files: set[str] = set()
-        if delete_list_file.exists():
-            with delete_list_file.open("rb") as f:
-                lines: list[str] = decode_bytes_with_fallbacks(f.read()).split("\n")
-                files_to_delete = {line.strip() for line in lines if line.strip()}
-                existing_files = {line.strip() for line in files_to_delete if line.strip() and Path(line.strip()).is_file()}
+        if delete_list_file.is_file():
+            with BinaryReader.from_file(delete_list_file) as f:
+                lines: list[str] = decode_bytes_with_fallbacks(f.read_all()).split("\n")
+            files_to_delete = {line.strip() for line in lines if line.strip()}
+            existing_files = {line.strip() for line in files_to_delete if line.strip() and Path(line.strip()).is_file()}
             if len(existing_files) < len(files_to_delete) and not messagebox.askyesno(
                     "Backup out of date or mismatched",
                     (
@@ -212,7 +213,7 @@ class ModUninstaller:
 
         return most_recent_backup_folder, existing_files, files_in_backup, folder_count
 
-    def uninstall_selected_mod(self):
+    def uninstall_selected_mod(self) -> bool:
         """Uninstalls the selected mod using the most recent backup folder created during the last install.
 
         Processing Logic:
@@ -231,17 +232,17 @@ class ModUninstaller:
         """
         most_recent_backup_folder, existing_files, files_in_backup, folder_count = self.get_backup_info()
         if not most_recent_backup_folder:
-            return
+            return False
         self.log.add_note(f"Using backup folder '{most_recent_backup_folder}'")
 
         if len(files_in_backup) < 6:  # noqa: PLR2004[6 represents a small number of files to display]
             for item in files_in_backup:
-                self.log.add_note(f"Would restore file '{item.relative_to(most_recent_backup_folder)!s}'")
+                self.log.add_note(f"Would restore file '{item.relative_to(most_recent_backup_folder)}'")
         if not messagebox.askyesno(
             "Confirmation",
             f"Really uninstall {len(existing_files)} files and restore the most recent backup (containing {len(files_in_backup)} files and {folder_count} folders)?",
         ):
-            return
+            return False
         try:
             self.restore_backup(most_recent_backup_folder, existing_files, files_in_backup)
         except Exception as e:  # noqa: BLE001
@@ -252,16 +253,25 @@ class ModUninstaller:
             )
         while messagebox.askyesno(
             "Uninstall completed!",
-            f"Deleted {len(existing_files)} files and successfully restored backup {most_recent_backup_folder.name}{os.linesep*2}"
-            f"Would you like to delete the backup {most_recent_backup_folder.name} now that it's been restored?",
+            f"Deleted {len(existing_files)} files and successfully restored backup created on {most_recent_backup_folder.name}{os.linesep*2}"
+            f"Would you like to delete the backup created on {most_recent_backup_folder.name} since it now has been restored?",
         ):
             try:
                 shutil.rmtree(most_recent_backup_folder)
                 self.log.add_note(f"Deleted restored backup '{most_recent_backup_folder.name}'")
             except PermissionError:  # noqa: PERF203
-                messagebox.showerror(
+                result: bool | None = messagebox.askyesnocancel(
                     "Permission Error",
-                    "Unable to delete the restored backup due to permission issues. Please try again.",
+                    "Unable to delete the restored backup due to permission issues. Would you like to gain permission and try again?",
                 )
+                if result is True:
+                    print("Gaining permission, please wait...")
+                    most_recent_backup_folder.gain_access(recurse=True)
+                    continue
+                if result is False:
+                    continue
+                if result is None:
+                    break
             else:
                 break
+        return True

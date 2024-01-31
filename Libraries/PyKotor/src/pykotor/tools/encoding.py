@@ -95,7 +95,7 @@ def decode_bytes_with_fallbacks(
         if result_detect.bom:
             aliases.append(best_encoding)
             for alias in aliases:
-                normalized_alias: str = alias.replace("_", "-").lower()
+                normalized_alias: str = alias.replace("_", "-")
                 if normalized_alias.startswith("utf-8"):
                     best_encoding="utf-8-sig"
                     break
@@ -201,6 +201,7 @@ def get_cp949_charset() -> list[str]:
     return charset
 
 def get_cp936_charset() -> list[str]:
+    # sourcery skip: merge-duplicate-blocks, remove-redundant-if
     charset: list[str] = []
     for i in range(256):
         if 0x00 <= i <= 0x7F:

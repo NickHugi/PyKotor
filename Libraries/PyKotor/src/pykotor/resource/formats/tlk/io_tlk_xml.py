@@ -70,7 +70,7 @@ class TLKXMLWriter(ResourceWriter):
             element.text = entry.text
             element.set("id", str(stringref))
             if entry.voiceover:
-                element.set("sound", entry.voiceover.get())
+                element.set("sound", str(entry.voiceover))
             self._xml.append(element)
 
         indent(self._xml)

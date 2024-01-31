@@ -26,7 +26,7 @@ from pykotor.resource.formats import gff, lip, tlk, twoda
 from pykotor.tools.misc import is_capsule_file
 from pykotor.tools.path import CaseAwarePath
 from utility.misc import generate_hash
-from utility.path import Path, PureWindowsPath
+from utility.system.path import Path, PureWindowsPath
 
 if TYPE_CHECKING:
     import os

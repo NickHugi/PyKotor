@@ -14,7 +14,7 @@ from PyQt5.QtWidgets import QFileDialog, QMessageBox, QShortcut, QTableView, QWi
 from toolset.gui.editor import Editor
 from toolset.gui.widgets.settings.installations import GlobalSettings
 from toolset.utils.window import openResourceEditor
-from utility.path import Path
+from utility.system.path import Path
 
 if TYPE_CHECKING:
     import os

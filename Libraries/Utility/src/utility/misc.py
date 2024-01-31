@@ -6,12 +6,14 @@ import platform
 import sys
 from contextlib import suppress
 from enum import Enum
-from typing import TYPE_CHECKING, TypeVar
+from typing import TYPE_CHECKING, SupportsFloat, SupportsInt, TypeVar
 
-from utility.path import Path
+from utility.system.path import Path
 
 if TYPE_CHECKING:
     from xml.etree.ElementTree import Element
+
+    from typing_extensions import Buffer, SupportsIndex
 
 
 class ProcessorArchitecture(Enum):
@@ -33,24 +35,20 @@ class ProcessorArchitecture(Enum):
         return cls.BIT_64 if sys.maxsize > 2**32 else cls.BIT_32
 
     def get_machine_repr(self):
-        if self == self.BIT_32:
-            return "x86"
-        if self == self.BIT_64:
-            return "x64"
-        return None
+        return self._get("x86", "x64")
 
     def get_int(self):
-        if self == self.BIT_32:
-            return 32
-        if self == self.BIT_64:
-            return 64
-        return None
+        return self._get(32, 64)
 
     def get_dashed_bitness(self):
+        return self._get("32-bit", "64-bit")
+
+    # TODO Rename this here and in `get_machine_repr`, `get_int` and `get_dashed_bitness`
+    def _get(self, arg0, arg1):
         if self == self.BIT_32:
-            return "32-bit"
+            return arg0
         if self == self.BIT_64:
-            return "64-bit"
+            return arg1
         return None
 
     def supports_64_bit(self) -> bool:
@@ -59,10 +57,10 @@ class ProcessorArchitecture(Enum):
 
 def format_gpu_info(info, headers):
     # Determine the maximum width for each column
-    column_widths: list[int] = [max(len(str(row[i])) for row in [headers, *info]) for i in range(len(headers))]
+    column_widths: list[int] = [max(len(str(row[i])) for row in (headers, *info)) for i in range(len(headers))]
 
     # Function to format a single row
-    def format_row(row):
+    def format_row(row) -> str:
         return " | ".join(f"{str(item).ljust(column_widths[i])}" for i, item in enumerate(row))
 
     # Build the output string
@@ -139,17 +137,17 @@ def is_debug_mode() -> bool:
         ret = True
     if getattr(sys, "gettrace", None) is not None:
         ret = True
-    print(f"DEBUG MODE: {ret!s}")
+    print(f"DEBUG MODE: {ret}")
     return ret
 
-def has_attr_excluding_object(cls, attr_name) -> bool:
+def has_attr_excluding_object(cls: type, attr_name: str) -> bool:
     # Exclude the built-in 'object' class
     mro_classes = [c for c in cls.mro() if c != object]
 
     return any(attr_name in base_class.__dict__ for base_class in mro_classes)
 
 
-def is_class_or_subclass_but_not_instance(cls, target_cls) -> bool:
+def is_class_or_subclass_but_not_instance(cls: type, target_cls: type) -> bool:
     if cls is target_cls:
         return True
     if not hasattr(cls, "__bases__"):
@@ -157,7 +155,7 @@ def is_class_or_subclass_but_not_instance(cls, target_cls) -> bool:
     return any(is_class_or_subclass_but_not_instance(base, target_cls) for base in cls.__bases__)
 
 
-def is_instance_or_subinstance(instance, target_cls) -> bool:
+def is_instance_or_subinstance(instance: object, target_cls: type) -> bool:
     if hasattr(instance, "__bases__"):  # instance is a class
         return False  # if instance is a class type, always return False
     # instance is not a class
@@ -198,7 +196,10 @@ def generate_hash(
     return hasher.hexdigest()
 
 
-def indent(elem: Element, level=0):
+def indent(
+    elem: Element,
+    level: int = 0,
+):
     """Indents the XML element by the given level
     Args:
         elem: Element - The element to indent
@@ -217,7 +218,7 @@ def indent(elem: Element, level=0):
         - If no tail after children, set tail to indentation
         - If level and no tail, set tail to indentation.
     """
-    i = "\n" + level * "  "
+    i: str = "\n" + level * "  "
     if len(elem):
         if not elem.text or not elem.text.strip():
             elem.text = f"{i}  "
@@ -231,32 +232,38 @@ def indent(elem: Element, level=0):
         elem.tail = i
 
 
-def is_int(string: str) -> bool:
+def is_int(val: str | int | Buffer | SupportsInt | SupportsIndex) -> bool:
     """Can be cast to an int without raising an error.
 
     Args:
     ----
-        string (str):
+        val (ConvertableToInt): The value to try to convert
 
+    Returns:
+    -------
+        True if val can be converted else False
     """
     try:
-        _ = int(string)
+        _ = int(val)
     except ValueError:
         return False
     else:
         return True
 
 
-def is_float(string: str) -> bool:
+def is_float(val: str | float | Buffer | SupportsFloat | SupportsIndex) -> bool:
     """Can be cast to a float without raising an error.
 
     Args:
     ----
-        string (str):
+        val (ConvertableToFloat): The value to try to convert
 
+    Returns:
+    -------
+        True if val can be converted else False
     """
     try:
-        _ = float(string)
+        _ = float(val)
     except ValueError:
         return False
     else:
