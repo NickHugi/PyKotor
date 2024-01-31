@@ -69,27 +69,27 @@ class ResourceType(Enum):
     """
 
     INVALID = ResourceTuple(0, "", "Undefined", "binary", is_invalid=True)
-    BMP = ResourceTuple(1, "bmp", "Images", "binary")
+    BMP = ResourceTuple(1, "bmp", "Images", "binary")  # ???
     TGA = ResourceTuple(3, "tga", "Textures", "binary")
     WAV = ResourceTuple(4, "wav", "Audio", "binary")
-    INI = ResourceTuple(7, "ini", "Text Files", "plaintext")
+    INI = ResourceTuple(7, "ini", "Text Files", "plaintext")  # swkotor.ini
     TXT = ResourceTuple(10, "txt", "Text Files", "plaintext")
     MDL = ResourceTuple(2002, "mdl", "Models", "binary")
     NSS = ResourceTuple(2009, "nss", "Scripts", "plaintext")
     NCS = ResourceTuple(2010, "ncs", "Scripts", "binary")
     MOD = ResourceTuple(2011, "mod", "Modules", "binary")
     ARE = ResourceTuple(2012, "are", "Module Data", "gff")
-    SET = ResourceTuple(2013, "set", "Unused", "binary")
+    SET = ResourceTuple(2013, "set", "Unused", "binary")  # From NWN
     IFO = ResourceTuple(2014, "ifo", "Module Data", "gff")
-    BIC = ResourceTuple(2015, "bic", "Creatures", "binary")
+    BIC = ResourceTuple(2015, "bic", "Creatures", "binary")  # ???
     WOK = ResourceTuple(2016, "wok", "Walkmeshes", "binary")
     TwoDA = ResourceTuple(2017, "2da", "2D Arrays", "binary")
     TLK = ResourceTuple(2018, "tlk", "Talk Tables", "binary")
     TXI = ResourceTuple(2022, "txi", "Textures", "plaintext")
     GIT = ResourceTuple(2023, "git", "Module Data", "gff")
-    BTI = ResourceTuple(2024, "bti", "Items", "gff")
+    BTI = ResourceTuple(2024, "bti", "Items", "gff")  # ???
     UTI = ResourceTuple(2025, "uti", "Items", "gff")
-    BTC = ResourceTuple(2026, "btc", "Creatures", "gff")
+    BTC = ResourceTuple(2026, "btc", "Creatures", "gff")  # ???
     UTC = ResourceTuple(2027, "utc", "Creatures", "gff")
     DLG = ResourceTuple(2029, "dlg", "Dialogs", "gff")
     UTT = ResourceTuple(2032, "utt", "Triggers", "gff")
@@ -101,8 +101,8 @@ class ResourceType(Enum):
     UTE = ResourceTuple(2040, "ute", "Encounters", "gff")
     UTD = ResourceTuple(2042, "utd", "Doors", "gff")
     UTP = ResourceTuple(2044, "utp", "Placeables", "gff")
-    DFT = ResourceTuple(2045, "dft", "Other", "binary")
-    GIC = ResourceTuple(2046, "gic", "Module Data", "gff")
+    DFT = ResourceTuple(2045, "dft", "Other", "binary")  # ???
+    GIC = ResourceTuple(2046, "gic", "Module Data", "gff")  # ???
     GUI = ResourceTuple(2047, "gui", "GUIs", "gff")
     UTM = ResourceTuple(2051, "utm", "Merchants", "gff")
     DWK = ResourceTuple(2052, "dwk", "Walkmeshes", "binary")
@@ -110,9 +110,9 @@ class ResourceType(Enum):
     JRL = ResourceTuple(2056, "jrl", "Journals", "gff")
     UTW = ResourceTuple(2058, "utw", "Waypoints", "gff")
     SSF = ResourceTuple(2060, "ssf", "Soundsets", "binary")
-    NDB = ResourceTuple(2064, "ndb", "Other", "binary")
-    PTM = ResourceTuple(2065, "ptm", "Other", "binary")
-    PTT = ResourceTuple(2066, "ptt", "Other", "binary")
+    NDB = ResourceTuple(2064, "ndb", "Other", "binary")  # ???
+    PTM = ResourceTuple(2065, "ptm", "Other", "binary")  # ???
+    PTT = ResourceTuple(2066, "ptt", "Other", "binary")  # ???
     JPG = ResourceTuple(2076, "jpg", "Images", "binary")
     PNG = ResourceTuple(2110, "png", "Images", "binary")
     LYT = ResourceTuple(3000, "lyt", "Module Data", "plaintext")
