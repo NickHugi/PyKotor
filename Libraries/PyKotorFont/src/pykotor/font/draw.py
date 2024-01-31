@@ -53,7 +53,6 @@ def write_bitmap_fonts(
     font_color=None,
 ):
     target_path = Path.pathify(target)
-    target_path = target_path if target_path.exists() else target_path.resolve()
     target_path.mkdir(parents=True, exist_ok=True)
 
     for font_name in TXIFontInformation.FONT_TEXTURES:

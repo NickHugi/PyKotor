@@ -7,10 +7,10 @@ from typing import TYPE_CHECKING, Any, Callable, Generator
 
 from pykotor.tools.registry import winreg_key
 from utility.misc import is_instance_or_subinstance
-from utility.system.path import BasePath, PathElem
 from utility.system.path import Path as InternalPath
+from utility.system.path import PathElem
 from utility.system.path import PurePath as InternalPurePath
-from utility.registry import resolve_reg_key_to_path
+from utility.system.registry import resolve_reg_key_to_path
 
 if TYPE_CHECKING:
     from pykotor.common.misc import Game
@@ -137,7 +137,7 @@ class CaseAwarePath(InternalPath):  # type: ignore[misc]
             return super(CaseAwarePath, new_path).resolve(strict)
         return super().resolve(strict)
 
-    def relative_to(self: InternalPath, *args, walk_up=False, **kwargs) -> Self | InternalPath:  # type: ignore[reportGeneralTypeIssues]
+    def relative_to(self, *args, walk_up=False, **kwargs) -> InternalPath | Self:
         if not args or "other" in kwargs:
             raise TypeError("relative_to() missing 1 required positional argument: 'other'")  # noqa: TRY003, EM101
 

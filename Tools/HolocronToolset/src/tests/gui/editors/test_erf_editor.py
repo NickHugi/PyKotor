@@ -6,6 +6,8 @@ import sys
 import unittest
 from unittest import TestCase
 
+from pykotor.resource.formats.erf.erf_data import ERFType
+
 try:
     from PyQt5.QtTest import QTest
     from PyQt5.QtWidgets import QApplication
@@ -20,7 +22,7 @@ if getattr(sys, "frozen", False) is False:
         working_dir = str(p)
         if working_dir in sys.path:
             sys.path.remove(working_dir)
-        sys.path.insert(0, working_dir)
+        sys.path.append(working_dir)
     pykotor_path = pathlib.Path(__file__).parents[6] / "Libraries" / "PyKotor" / "src" / "pykotor"
     if pykotor_path.exists():
         add_sys_path(pykotor_path.parent)

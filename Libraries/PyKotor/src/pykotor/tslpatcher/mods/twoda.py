@@ -17,7 +17,6 @@ if TYPE_CHECKING:
     from pykotor.tslpatcher.logger import PatchLogger
     from pykotor.tslpatcher.memory import PatcherMemory
     from typing_extensions import Literal
-    from utility.system.path import PureWindowsPath
 
 
 class CriticalError(Exception):

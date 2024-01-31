@@ -501,7 +501,7 @@ class TwoDARow:
     ):
         return f"{self.__class__.__name__}(row_label={self._row_label}, row_data={self._data})"
 
-    def __eq__(self, other: TwoDARow | object):
+    def __eq__(self, other: TwoDARow):
         if isinstance(other, TwoDARow):
             return self._row_label == other._row_label and self._data == other._data
         return NotImplemented
@@ -562,8 +562,8 @@ class TwoDARow:
     def get_integer(
         self,
         header: str,
-        default: int | None = None,
-    ) -> int:
+        default: int | T = None,
+    ) -> int | T:
         """Returns the integer value for the cell under the specified header. If the value of the cell is an invalid integer then a default value is used instead.
 
         Args:
@@ -583,7 +583,7 @@ class TwoDARow:
             msg = f"The header '{header}' does not exist."
             raise KeyError(msg)
 
-        value = default
+        value: int | T = default
         with suppress(ValueError):  # FIXME: this should not be suppressed
             cell = self._data[header]
             return int(cell, 16) if cell.startswith("0x") else int(cell)
@@ -593,7 +593,7 @@ class TwoDARow:
         self,
         header: str,
         default: int | T = None,
-    ) -> float:
+    ) -> float | T:
         """Returns the float value for the cell under the specified header. If the value of the cell is an invalid float then a default value is used instead.
 
         Args:
@@ -622,8 +622,8 @@ class TwoDARow:
         self,
         header: str,
         enum_type: type[Enum],
-        default: Enum | None,
-    ) -> Enum | None:
+        default: Enum | T = None,
+    ) -> Enum | T:
         """Returns the enum value for the cell under the specified header.
 
         Args:
@@ -644,8 +644,8 @@ class TwoDARow:
             msg = f"The header '{header}' does not exist."
             raise KeyError(msg)
 
-        value = default
-        if enum_type(self._data[header]) != "":
+        value: Enum | T = default
+        if enum_type(self._data[header]):
             value = enum_type(self._data[header])
         return value
 
@@ -721,7 +721,7 @@ class TwoDARow:
         """
         self._set_value(header, value.value if value is not None else None)
 
-    def _set_value(self, header: str, value: object):
+    def _set_value(self, header: str, value: Enum | float | str | None):
         if header not in self._data:
             msg = f"The header '{header}' does not exist."
             raise KeyError(msg)
