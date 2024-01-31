@@ -7,6 +7,8 @@ import unittest
 from tempfile import TemporaryDirectory
 from typing import TYPE_CHECKING
 
+from pykotor.tools.encoding import decode_bytes_with_fallbacks
+
 THIS_SCRIPT_PATH = pathlib.Path(__file__)
 PYKOTOR_PATH = THIS_SCRIPT_PATH.parents[3].resolve()
 UTILITY_PATH = THIS_SCRIPT_PATH.parents[5].joinpath("Utility", "src").resolve()
@@ -69,9 +71,10 @@ class TestCompileInstallation(unittest.TestCase):
     def setUpClass(cls):
         ...
         #if K1_PATH is not None:
-        #    cls.k1_installation = Installation(K1_PATH)  # type: ignore[attr-defined]
+        #    cls.k1_installation = cls.load_installation('K1_PATH', 'k1_installation.pkl')  # type: ignore[attr-defined]
         #if K2_PATH is not None:
-        #    cls.k2_installation = Installation(K2_PATH)  # type: ignore[attr-defined]
+        #    cls.k2_installation = cls.load_installation('K2_PATH', 'k2_installation.pkl')  # type: ignore[attr-defined]
+
 
     def compile(
         self,
@@ -103,24 +106,43 @@ class TestCompileInstallation(unittest.TestCase):
         game: Game,
     ):
         assert NWNNSSCOMP_PATH is not None
-        nwnnsscomp_result: tuple[str, str] = ExternalNCSCompiler(NWNNSSCOMP_PATH).compile_script(temp_nss_path, temp_ncs_path, game)
+        ext_compiler = ExternalNCSCompiler(NWNNSSCOMP_PATH)
+        nwnnsscomp_result: tuple[str, str] = ext_compiler.compile_script(temp_nss_path, temp_ncs_path, game)
         stdout, stderr = nwnnsscomp_result
         print("nwnnsscomp.exe", "path:", temp_nss_path, "stdout:", stdout, f"stderr:\t{stderr}" if stderr else "")
         if stderr.strip() or not temp_ncs_path.is_file():
             return False
 
-        InbuiltNCSCompiler().compile_script(temp_nss_path, temp_ncs_path, game)
-        assert temp_ncs_path.is_file(), f"{temp_ncs_path} not found on disk!"
-        return True
+        inbuilt_compiler = InbuiltNCSCompiler()
+        inbuilt_compiler.compile_script(temp_nss_path, temp_ncs_path, game)
+        try:
+            assert temp_ncs_path.is_file(), f"{temp_ncs_path} not found on disk!"
+        except AssertionError as e:
+            print("#2 (InbuiltNCSCompiler's `Path.is_file()` failed)", e)
+            return False
+        else:
+            return True
 
     def compile_and_compare(
         self,
         resource: FileResource,
         game: Game,
+        script_folderpath: Path,
     ):
-        nss_source_str: str = resource.data().decode("windows-1252", errors="strict")
-        pykotor_compiled_result: NCS = compile_nss(nss_source_str, game)
-        test2_result: NCS = self.compile(nss_source_str, KOTOR_LIBRARY)
+        nss_source_str: str = decode_bytes_with_fallbacks(resource.data())
+        pykotor_compiled_result: NCS | None = None
+        try:
+            pykotor_compiled_result = compile_nss(nss_source_str, game, library_lookup=script_folderpath)
+        except CompileError as e:
+            print(f"#3 (compile_nss): Add '{resource.identifier()}' to incompatible")
+            with Path("pykotor_incompatible.txt").open("a") as f:
+                f.write(f"\n{resource.identifier()}")
+        test2_result: NCS | None = None
+        try:
+            test2_result = self.compile(nss_source_str, KOTOR_LIBRARY, script_folderpath)
+        except CompileError as e:
+            print("#5 (self.compile): Add '{resource.identifier()}' to incompatible")
+            return
         error_msg: str = (
             f"Script '{resource.identifier()}' failed to compile consistently (from {resource.filepath()}):{os.linesep*2}"
             #f"{pykotor_compiled_result.print()} != {test2_result.print()}"
@@ -129,9 +151,9 @@ class TestCompileInstallation(unittest.TestCase):
             assert pykotor_compiled_result == test2_result, error_msg
         except AssertionError as e:
             print(e)
-            print(f"Add '{resource.identifier()}' to incompatible")
-            with Path("incompatible.txt").open("a") as f:
-                f.write(f"\n{resource.identifier()}")
+            print(f"#1 (eq check failed between compiled scripts): Add '{resource.identifier()}' to incompatible")
+            #with Path("pykotor_incompatible.txt").open("a") as f:
+            #    f.write(f"\n{resource.identifier()}")
 
     def compile_entire_install(
         self,
@@ -139,24 +161,34 @@ class TestCompileInstallation(unittest.TestCase):
         installation: Installation,
     ):
         assert NWNNSSCOMP_PATH is not None
-        for resource in installation:
-            if resource.identifier() in KNOWN_PROBLEM_NSS[game]:
-                print(f"Skipping {resource.identifier()}, known incompatible...")
-                continue
-            if resource.restype() == ResourceType.NSS:
-                with TemporaryDirectory() as tempdir:
-                    temp_dirpath = Path(tempdir)
-                    temp_nss_path: Path = temp_dirpath.joinpath("temp_script.nss")
-                    temp_ncs_path: Path = temp_nss_path.with_suffix(".ncs")
-                    with temp_nss_path.open("wb") as f:
-                        f.write(resource.data())
+        extracted_scripts: list[tuple[Path, Path]] = []
+        with TemporaryDirectory() as tempdir:
+            temp_dirpath = Path(tempdir)
+            for resource in installation:
+                if resource.identifier() in KNOWN_PROBLEM_NSS[game]:
+                    print(f"Skipping {resource.identifier()}, known incompatible...")
+                    continue
+                if resource.restype() != ResourceType.NSS:
+                    continue
 
-                    if not self.compile_script_and_assert_existence(temp_nss_path, temp_ncs_path, game):
-                        with Path("nwnnsscomp_incompatible.txt").open("a") as f:
-                            f.write(f"\n{resource.identifier()}")
-                        continue
+                temp_nss_path: Path = temp_dirpath.joinpath(str(resource.identifier()))
+                temp_ncs_path: Path = temp_nss_path.with_suffix(".ncs")
+                with temp_nss_path.open("w") as f:
+                    str_script: str = decode_bytes_with_fallbacks(resource.data())
+                    lines: list[str] = str_script.replace("\r", "").split("\n")
+                    f.writelines(lines)
 
-                    self.compile_and_compare(resource, game)
+                extracted_scripts.append((temp_nss_path, temp_ncs_path))
+
+            for this_script in extracted_scripts:
+                this_script_nss, this_script_ncs = this_script
+                if not self.compile_script_and_assert_existence(this_script_nss, this_script_ncs, game):
+                    print("#4 (nwnnsscomp.exe)", f"{resource.identifier()} is incompatible.")
+                    with Path("nwnnsscomp_incompatible.txt").open("a") as f:
+                        f.write(f"\n{resource.identifier()}")
+                    continue
+
+                self.compile_and_compare(resource, game, temp_dirpath)
 
 
     @unittest.skipIf(
@@ -165,7 +197,7 @@ class TestCompileInstallation(unittest.TestCase):
     )
     def test_k1_compile_entire_install(self):
         assert K1_PATH is not None
-        self.compile_entire_install(Game.K1, Installation(K1_PATH))
+        self.compile_entire_install(Game.K1, Installation(K1_PATH))  # type: ignore[attr-defined]
 
     @unittest.skipIf(
         not K2_PATH or not pathlib.Path(K2_PATH).joinpath("chitin.key").is_file(),
@@ -173,7 +205,7 @@ class TestCompileInstallation(unittest.TestCase):
     )
     def test_k2_compile_entire_install(self):
         assert K2_PATH is not None
-        self.compile_entire_install(Game.K2, Installation(K2_PATH))
+        self.compile_entire_install(Game.K2, Installation(K2_PATH))  # type: ignore[attr-defined]
 
 if __name__ == "__main__":
     unittest.main()
