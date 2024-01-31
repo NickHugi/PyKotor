@@ -19,7 +19,7 @@ if UTILITY_PATH.exists():
     sys.path.insert(0, working_dir)
 
 from pykotor.common.geometry import Vector3
-from pykotor.common.scriptdefs import KOTOR_CONSTANTS, KOTCompileError
+from pykotor.common.scriptdefs import KOTOR_CONSTANTS, KOTOR_FUNCTIONS
 from pykotor.resource.formats.ncs import NCS, NCSInstructionType
 from pykotor.resource.formats.ncs.compiler.classes import CompileError
 from pykotor.resource.formats.ncs.compiler.interpreter import Interpreter
@@ -118,7 +118,7 @@ class TestNSSCompiler(unittest.TestCase):
                 string tag = "something";
                 object oSomething = GetObjectByTag();
             }
-        """CompileError
+        """
 
         self.assertRaises(CompileError, self.compile, script)
 
@@ -129,7 +129,7 @@ class TestNSSCompiler(unittest.TestCase):
                 string tag = "something";
                 object oSomething = GetObjectByTag("", 0, "shouldnotbehere");
             }
-        """CompileError
+        """
 
         self.assertRaises(CompileError, self.compile, script)
 
@@ -1942,7 +1942,7 @@ class TestNSSCompiler(unittest.TestCase):
             {
                 TestFunc();
             }
-        """CompileError
+        """
 
         self.assertRaises(CompileError, self.compile, source)
 
@@ -2253,7 +2253,7 @@ class TestNSSCompiler(unittest.TestCase):
                 struct ABC abc;
                 PrintFloat(abc.value4);
             }
-        """CompileError
+        """
 
         self.assertRaises(CompileError, self.compile, source)
 
@@ -2632,7 +2632,7 @@ class TestNSSCompiler(unittest.TestCase):
             {
                 PrintInteger(value);
             }
-        """CompileError
+        """
 
         self.assertRaises(CompileError, self.compile, source)
 
@@ -2649,7 +2649,7 @@ class TestNSSCompiler(unittest.TestCase):
             {
                 PrintInteger(value1);
             }
-        """CompileError
+        """
 
         self.assertRaises(CompileError, self.compile, source)
 
@@ -2666,7 +2666,7 @@ class TestNSSCompiler(unittest.TestCase):
             {
                 PrintInteger(value1);
             }
-        """CompileError
+        """
 
         self.assertRaises(CompileError, self.compile, source)
 
@@ -2680,14 +2680,14 @@ class TestNSSCompiler(unittest.TestCase):
             void test()
             {
 
-            }CompileError
+            }
         """
         self.assertRaises(CompileError, self.compile, script)
 
     def test_double_prototype(self):
         script = """
             void test();
-            void test();CompileError
+            void test();
         """
         self.assertRaises(CompileError, self.compile, script)
 
@@ -2709,7 +2709,7 @@ class TestNSSCompiler(unittest.TestCase):
             void test()
             {
 
-            }CompileError
+            }
         """
         self.assertRaises(CompileError, self.compile, script)
 
@@ -2721,7 +2721,7 @@ class TestNSSCompiler(unittest.TestCase):
         #     void test(int a = 2)
         #     {
         #
-        #     }CompileError
+        #     }
         # """
         # self.assertRaises(CompileError, self.compile, script)
 
@@ -2732,7 +2732,7 @@ class TestNSSCompiler(unittest.TestCase):
             int test(int a)
             {
 
-            }CompileError
+            }
         """
         self.assertRaises(CompileError, self.compile, script)
 
@@ -2742,7 +2742,7 @@ class TestNSSCompiler(unittest.TestCase):
             {
                 test(0);
             }
-        """CompileError
+        """
 
         self.assertRaises(CompileError, self.compile, script)
 
@@ -2868,7 +2868,7 @@ class TestNSSCompiler(unittest.TestCase):
             {
                 test("123");
             }
-        """CompileError
+        """
 
         self.assertRaises(CompileError, self.compile, source)
 

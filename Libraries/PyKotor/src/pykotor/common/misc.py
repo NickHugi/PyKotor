@@ -173,9 +173,7 @@ class ResRef:
                 msg = f"ResRef '{text}' cannot contain any invalid characters in [{self.INVALID_CHARACTERS}]"
                 raise self.InvalidFormatError(msg)
 
-        # bypass the immutability enforcers
-        object.__setattr__(self, "_content", parsed_text)
-        object.__setattr__(self, "_lowercontent", parsed_text.casefold())
+        self._value = parsed_text
 
     def get(self) -> str:
         """Returns a case-insensitive wrapped string."""

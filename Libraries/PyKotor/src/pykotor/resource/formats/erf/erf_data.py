@@ -133,7 +133,7 @@ class ERF:
         -------
             The bytes data of the resource or None.
         """
-        resource: ERFResource | None = self._resource_dict.get(ResourceIdentifier(resname, restype).as_resref_compatible())
+        resource: ERFResource | None = self._resource_dict.get(ResourceIdentifier(resname, restype))
         return resource.data if resource is not None else None
 
     def remove(
