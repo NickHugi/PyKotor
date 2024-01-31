@@ -16,7 +16,7 @@ except ImportError:
     charset_normalizer = None
 
 def decode_bytes_with_fallbacks(
-    byte_content: bytes,
+    byte_content: bytes | bytearray,
     errors="strict",
     encoding: str | None = None,
     lang: Language | None = None,
@@ -89,15 +89,18 @@ def decode_bytes_with_fallbacks(
             return byte_content.decode(encoding="latin1", errors=attempt_errors)
 
         best_encoding: str = result_detect.encoding
+
         # Special handling for BOM
         aliases: list[str] = result_detect.encoding_aliases
         if result_detect.bom:
             aliases.append(best_encoding)
             for alias in aliases:
-                normalized_alias: str = alias.replace("_", "-")
-                if normalized_alias.startswith("utf-"):
-                    best_encoding=f"{best_encoding}-sig"
+                normalized_alias: str = alias.replace("_", "-").lower()
+                if normalized_alias.startswith("utf-8"):
+                    best_encoding="utf-8-sig"
                     break
+                if normalized_alias.startswith("utf-16"):
+                    best_encoding="UTF-16LE"
 
         return byte_content.decode(encoding=best_encoding, errors=attempt_errors)
 
