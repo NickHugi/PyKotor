@@ -160,7 +160,7 @@ class App(tk.Tk):
 
         cmdline_args: Namespace = parse_args()
         self.open_mod(cmdline_args.tslpatchdata or Path.cwd())
-        self.handle_commandline(cmdline_args)
+        self.execute_commandline(cmdline_args)
 
     def set_window(
         self,
@@ -343,7 +343,7 @@ class App(tk.Tk):
         except Exception as e:  # noqa: BLE001
             self._handle_general_exception(e, title="Unable to fetch latest version")
 
-    def handle_commandline(
+    def execute_commandline(
         self,
         cmdline_args: Namespace,
     ):
@@ -384,7 +384,7 @@ class App(tk.Tk):
     ):
         self.one_shot = True
         self.withdraw()
-        self.handle_console_mode()
+        self.setup_cli_messagebox_overrides()
         if not self.preinstall_validate_chosen():
             sys.exit(ExitCode.NUMBER_OF_ARGS)
         if cmdline_args.install:
@@ -395,7 +395,7 @@ class App(tk.Tk):
             self.test_reader()
         sys.exit(ExitCode.SUCCESS)
 
-    def handle_console_mode(self):
+    def setup_cli_messagebox_overrides(self):
         """Overrides message box functions for console mode. This is done for true CLI support.
 
         Args:
@@ -490,16 +490,19 @@ class App(tk.Tk):
     def async_raise(self, tid: int, exctype: type):
         """Raises an exception in the threads with id tid."""
         if not inspect.isclass(exctype):
-            raise TypeError("Only types can be raised (not instances)")
+            msg = "Only types can be raised (not instances)"
+            raise TypeError(msg)
         res = ctypes.pythonapi.PyThreadState_SetAsyncExc(ctypes.c_long(tid),
                                                         ctypes.py_object(exctype))
         if res == 0:
-            raise ValueError("invalid thread id")
+            msg = "invalid thread id"
+            raise ValueError(msg)
         if res != 1:
             # "if it returns a number greater than one, you're in trouble,
             # and you should call it again with exc=NULL to revert the effect"
             ctypes.pythonapi.PyThreadState_SetAsyncExc(ctypes.c_long(tid), None)
-            raise SystemError("PyThreadState_SetAsyncExc failed")
+            msg = "PyThreadState_SetAsyncExc failed"
+            raise SystemError(msg)
         print("success")
 
     def handle_exit_button(self):
@@ -719,6 +722,7 @@ class App(tk.Tk):
         exc: BaseException,
         custom_msg: str = "Unexpected error.",
         title: str = "",
+        *,
         msgbox: bool = True,
     ):
         detailed_msg = format_exception_with_variables(exc, message=custom_msg)
