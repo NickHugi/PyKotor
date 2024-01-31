@@ -72,7 +72,6 @@ class ResourceType(Enum):
     BMP = ResourceTuple(1, "bmp", "Images", "binary")
     TGA = ResourceTuple(3, "tga", "Textures", "binary")
     WAV = ResourceTuple(4, "wav", "Audio", "binary")
-    PLT = ResourceTuple(6, "plt", "Other", "binary")
     INI = ResourceTuple(7, "ini", "Text Files", "plaintext")
     TXT = ResourceTuple(10, "txt", "Text Files", "plaintext")
     MDL = ResourceTuple(2002, "mdl", "Models", "binary")
@@ -93,7 +92,6 @@ class ResourceType(Enum):
     BTC = ResourceTuple(2026, "btc", "Creatures", "gff")
     UTC = ResourceTuple(2027, "utc", "Creatures", "gff")
     DLG = ResourceTuple(2029, "dlg", "Dialogs", "gff")
-    ITP = ResourceTuple(2030, "itp", "Palettes", "binary")
     UTT = ResourceTuple(2032, "utt", "Triggers", "gff")
     DDS = ResourceTuple(2033, "dds", "Textures", "binary")
     UTS = ResourceTuple(2035, "uts", "Sounds", "gff")
@@ -125,10 +123,12 @@ class ResourceType(Enum):
     TPC = ResourceTuple(3007, "tpc", "Textures", "binary")
     MDX = ResourceTuple(3008, "mdx", "Models", "binary")
     ERF = ResourceTuple(9997, "erf", "Modules", "binary")
-    RES = ResourceTuple(69420, "res", "Save Data", "gff")
-    SAV = ResourceTuple(42069, "sav", "Save Data", "erf")
+    RES = ResourceTuple(69420, "res", "Save Data", "gff")  # unknown type_id
+    SAV = ResourceTuple(42069, "sav", "Save Data", "erf")  # unknown type_id
 
     # For Toolset Use:
+    PLT = ResourceTuple(6, "plt", "Other", "binary")
+    ITP = ResourceTuple(2030, "itp", "Palettes", "binary")
     MP3 = ResourceTuple(25014, "mp3", "Audio", "binary")
     TLK_XML = ResourceTuple(50001, "tlk.xml", "Talk Tables", "plaintext")
     MDL_ASCII = ResourceTuple(50002, "mdl.ascii", "Models", "plaintext")
