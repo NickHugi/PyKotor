@@ -312,7 +312,7 @@ class InstallFile(PatcherModifications):
         self.action: str = "Copy "
         self.skip_if_not_replace: bool = True
 
-    def __hash__(self):
+    def __hash__(self):  # HACK: organize this into PatcherModifications class later, this is only used for nwscript.nss currently.
         return hash((self.destination, self.saveas, self.replace_file))
 
     def patch_resource(

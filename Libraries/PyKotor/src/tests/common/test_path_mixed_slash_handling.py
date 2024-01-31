@@ -1,19 +1,15 @@
 # Rigorously test the string result of each pathlib module.
 # The goal isn't really to test pathlib.Path or utility.path, the goal is to determine if there was a breaking change in a python patch release.
 from __future__ import annotations
-import ctypes
-from ctypes.wintypes import DWORD
-import getpass
 
+import ctypes
 import os
 import pathlib
 import platform
-import shutil
 import subprocess
 import sys
-import tempfile
-import time
 import unittest
+from ctypes.wintypes import DWORD
 from pathlib import Path, PosixPath, PurePath, PurePosixPath, PureWindowsPath, WindowsPath
 from tempfile import TemporaryDirectory
 from unittest import mock
@@ -38,6 +34,7 @@ from utility.system.path import PurePath as CustomPurePath
 from utility.system.path import PurePosixPath as CustomPurePosixPath
 from utility.system.path import PureWindowsPath as CustomPureWindowsPath
 from utility.system.path import WindowsPath as CustomWindowsPath
+
 
 def check_path_win_api(path) -> tuple[bool, bool, bool]:
     GetFileAttributes = ctypes.windll.kernel32.GetFileAttributesW

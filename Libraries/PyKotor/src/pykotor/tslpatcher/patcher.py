@@ -371,7 +371,7 @@ class ModInstaller:
 
                 patched_data: bytes | Literal[True] = patch.patch_resource(data_to_patch, memory, self.log, self.game)
                 if patched_data is True:
-                    self.log.add_verbose(f"Skipping '{patch.sourcefile}' - patch_resource determined that this file can be skipped.")
+                    self.log.add_note(f"Skipping '{patch.sourcefile}' - patch_resource determined that this file can be skipped.")
                     continue  # e.g. if nwnnsscomp tries to compile an Include script with no entrypoint
 
                 if capsule is not None:
@@ -384,8 +384,10 @@ class ModInstaller:
                     BinaryWriter.dump(output_container_path / patch.saveas, patched_data)
                 self.log.complete_patch()
             except Exception as e:  # noqa: BLE001
-                self.log.add_error(str(universal_simplify_exception(e)))
-                print(format_exception_with_variables(e))
+                self.log.add_error(str(e))
+                detailed_error = format_exception_with_variables(e)
+                with CaseAwarePath.cwd().joinpath("errorlog.txt").open("a") as f:
+                    f.write(f"\n{detailed_error}")
 
         if config.save_processed_scripts == 0 and temp_script_folder is not None and temp_script_folder.safe_isdir():
             self.log.add_note(f"Cleaning temporary script folder at '{temp_script_folder}' (hint: use 'SaveProcessedScripts=1' in [Settings] to keep these scripts)")
@@ -400,9 +402,10 @@ class ModInstaller:
             return None
 
         # Move nwscript.nss to Override if there are any nss patches to do
-        file_install = InstallFile("nwscript.nss", replace_existing=True)
-        if file_install not in config.install_list:
-            config.install_list.append(file_install)
+        if (self.mod_path / "nwscript.nss").safe_isfile():
+            file_install = InstallFile("nwscript.nss", replace_existing=True)
+            if file_install not in config.install_list:
+                config.install_list.append(file_install)
 
         temp_script_folder: CaseAwarePath = self.mod_path / "temp_nss_working_dir"
         if temp_script_folder.safe_isdir():

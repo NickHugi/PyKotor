@@ -77,7 +77,6 @@ class NssParser:
             errorlog=errorlog,
             write_tables=False,
             debug=debug,
-            debuglog="yacc_debuglog.txt",
         )
         self.functions: list[ScriptFunction] = functions
         self.constants: list[ScriptConstant] = constants

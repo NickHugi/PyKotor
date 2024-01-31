@@ -28,7 +28,15 @@ NWN_KEY_PATH = r"C:\Program Files (x86)\Steam\steamapps\common\Neverwinter Night
 K1_PATH: str | None = os.environ.get("K1_PATH")
 K2_PATH: str | None = os.environ.get("K2_PATH")
 
+<<<<<<< HEAD
 class TestChitin(TestCase):
+=======
+class TestCapsule(TestCase):
+    @unittest.skipIf(
+        not NWN_KEY_PATH or not NWN_BASE_PATH or not pathlib.Path(NWN_KEY_PATH).exists(),
+        "K1_PATH environment variable is not set or not found on disk.",
+    )
+>>>>>>> ce6f3984 (skip nwn test if not installed)
     def test_nwn_chitin(self):
         chitin = Chitin(NWN_KEY_PATH, NWN_BASE_PATH)
     @unittest.skipIf(

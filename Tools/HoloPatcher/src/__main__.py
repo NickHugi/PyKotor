@@ -58,7 +58,7 @@ if TYPE_CHECKING:
     from pykotor.common.misc import Game
     from pykotor.tslpatcher.namespaces import PatcherNamespace
 
-CURRENT_VERSION: tuple[int, ...] = (1, 5, 0)
+CURRENT_VERSION: tuple[int, ...] = (1, 5, 2)
 VERSION_LABEL = f"v{'.'.join(map(str, CURRENT_VERSION))}"
 
 
@@ -513,6 +513,9 @@ class App(tk.Tk):
             except BaseException as e:  # noqa: BLE001
                 self._handle_general_exception(e, "Error using self.install_thread._stop()", msgbox=False)
             try:
+                if self.task_thread.ident is None:
+                    msg = "task ident is None, expected an int."
+                    raise ValueError(msg)
                 self.async_raise(self.task_thread.ident, SystemExit)
             except BaseException as e:  # noqa: BLE001
                 self._handle_general_exception(e, "Error using async_raise(self.install_thread.ident, SystemExit)", msgbox=False)
@@ -804,6 +807,7 @@ class App(tk.Tk):
     def play_complete_sound():
         if os.name == "nt":
             import winsound
+
             # Play the system "exclamation" sound
             winsound.MessageBeep(winsound.MB_ICONEXCLAMATION)
 

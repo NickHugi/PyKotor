@@ -4,11 +4,10 @@ Render documents as XHTML fragments
 
 
 
-from utility.pyth3 import document
-from utility.pyth3.format import PythWriter
-
 from io import StringIO
 
+from utility.pyth3 import document
+from utility.pyth3.format import PythWriter
 
 _tagNames = {
     'bold': 'strong',

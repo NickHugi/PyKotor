@@ -46,9 +46,16 @@ class ModificationsNCS(PatcherModifications):
                 writer.seek(offset)
                 value: int
                 if token_type.lower() == "strref":
+                    memory_strval: int | None = memory.memory_str.get(token_id_or_value, None)
+                    if memory_strval is None:
+                        msg = f"StrRef{token_id_or_value} was not defined before use"
+                        raise KeyError(msg)
                     value = memory.memory_str[token_id_or_value]
                 elif token_type.lower() == "2damemory":
-                    memory_val: str | PureWindowsPath = memory.memory_2da[token_id_or_value]
+                    memory_val: str | PureWindowsPath | None = memory.memory_2da.get(token_id_or_value, None)
+                    if memory_val is None:
+                        msg = f"2DAMEMORY{token_id_or_value} was not defined before use"
+                        raise KeyError(msg)
                     if isinstance(memory_val, PureWindowsPath):
                         msg = f"Memory value cannot be !FieldPath in [HACKList] patches, got '{memory_val!r}'"
                         raise ValueError(msg)
@@ -58,7 +65,12 @@ class ModificationsNCS(PatcherModifications):
                 logger.add_verbose(f"HACKList {self.sourcefile}: writing unsigned WORD {value} at offset {offset:#X}")
                 writer.write_uint16(value, big=True)
 
-    def pop_tslpatcher_vars(self, file_section_dict, default_destination=PatcherModifications.DEFAULT_DESTINATION):
-        super().pop_tslpatcher_vars(file_section_dict, default_destination)
+    def pop_tslpatcher_vars(
+        self,
+        file_section_dict,
+        default_destination=PatcherModifications.DEFAULT_DESTINATION,
+        default_sourcefolder=".",
+    ):
+        super().pop_tslpatcher_vars(file_section_dict, default_destination, default_sourcefolder)
         replace_file: bool | str = file_section_dict.pop("ReplaceFile", self.replace_file)
         self.replace_file = bool(int(replace_file))  # NOTE: tslpatcher's hacklist does NOT prefix with an exclamation point.

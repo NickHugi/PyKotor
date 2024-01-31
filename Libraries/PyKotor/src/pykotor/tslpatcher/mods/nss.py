@@ -118,10 +118,11 @@ class ModificationsNSS(PatcherModifications):
             ncs: NCS = compile_with_builtin(
                 source.value,
                 game,
-                [RemoveNopOptimizer(), RemoveMoveSPEqualsZeroOptimizer(), RemoveUnusedBlocksOptimizer()],  # TODO: ncs optimizers need testing
+                [], #[RemoveNopOptimizer(), RemoveMoveSPEqualsZeroOptimizer(), RemoveUnusedBlocksOptimizer()],  # TODO: ncs optimizers need testing
                 library_lookup=[CaseAwarePath.pathify(self.temp_script_folder)],
             )
-        except EntryPointError:
+        except EntryPointError as e:
+            logger.add_note(str(e))
             return True
         return bytes(bytes_ncs(ncs))
 
@@ -152,19 +153,25 @@ class ModificationsNSS(PatcherModifications):
         while match:
             token_id = int(nss_source.value[match.start() + 10 : match.end() - 1])
             memory_val: str | PureWindowsPath = memory.memory_2da[token_id]
+            if memory_val is None:
+                msg = f"2DAMEMORY{token_id} was not defined before use."
+                raise KeyError(msg)
             if isinstance(memory_val, PureWindowsPath):
-                logger.add_error(str(TypeError(f"memory_2da lookup cannot be !FieldPath, got '2DAMEMORY{token_id}={memory_val!r}'")))
+                logger.add_error(str(TypeError(f"memory_2da lookup cannot be !FieldPath for [CompileList] patches, got '2DAMEMORY{token_id}={memory_val!r}'")))
                 match = re.search(r"#2DAMEMORY\d+#", nss_source.value)
                 continue
 
-            value_str: str = memory_val
-            nss_source.value = nss_source.value[: match.start()] + value_str + nss_source.value[match.end() :]
+            nss_source.value = nss_source.value[: match.start()] + memory_val + nss_source.value[match.end() :]
             match = re.search(r"#2DAMEMORY\d+#", nss_source.value)
 
         match = re.search(r"#StrRef\d+#", nss_source.value)
         while match:
             token_id = int(nss_source.value[match.start() + 7 : match.end() - 1])
-            value: int = memory.memory_str[token_id]
+            memory_strval: int | None = memory.memory_str.get(token_id, None)
+            if memory_strval is None:
+                msg = f"StrRef{token_id} was not defined before use."
+                raise KeyError(msg)
+            value: int = memory_strval
             nss_source.value = nss_source.value[: match.start()] + str(value) + nss_source.value[match.end() :]
             match = re.search(r"#StrRef\d+#", nss_source.value)
 

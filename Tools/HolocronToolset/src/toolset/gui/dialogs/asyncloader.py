@@ -5,9 +5,7 @@ from typing import TYPE_CHECKING, Any, Callable
 from PyQt5 import QtCore
 from PyQt5.QtCore import QThread
 from PyQt5.QtWidgets import QDialog, QLabel, QMessageBox, QProgressBar, QVBoxLayout, QWidget
-from toolset.__main__ import is_frozen
 from utility.error_handling import format_exception_with_variables, universal_simplify_exception
-from utility.misc import is_debug_mode
 from utility.system.path import Path
 
 if TYPE_CHECKING:

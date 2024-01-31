@@ -8,7 +8,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Callable, TypeVar
 
 if TYPE_CHECKING:
-    from typing_extensions import Literal, TypeGuard
+    from typing_extensions import Literal
 
 
 def universal_simplify_exception(e: BaseException) -> tuple[str, str]:
@@ -101,26 +101,26 @@ def format_var_str(
     if var in default_attrs or var in ignore_attrs:
         return None
 
+    val_repr: str | object
+    val_str: str | object
     exc = None
-    exc2 = None
     unique_sentinel = object()
     try:
         val_str = str(val)
         if len(val_str) > max_length:
             val_str = f"{val_str[:max_length]}...<truncated>"
     except Exception as e:
-        val_str = None
+        val_str = unique_sentinel
         exc = e
 
     try:
         val_repr = repr(val)
         if len(val_repr) > max_length:
             val_repr = f"{val_repr[:max_length]}...<truncated>"
-    except Exception as e2:
-        val_repr = None
-        exc2 = e2
+    except Exception:
+        val_repr = unique_sentinel
 
-    display_value: str | None = val_repr
+    display_value: str | object = val_repr
     if display_value is unique_sentinel:
         display_value = val_str
     if display_value is unique_sentinel:
@@ -241,7 +241,7 @@ def with_variable_trace(
     return_type: type[RT] = unique_sentinel,  # type: ignore[reportGeneralTypeIssues, assignment]
     action="print",
     log: bool = True,
-    rethrow: bool = True,
+    rethrow: bool = False,
 ) -> Callable[[Callable[..., RT]], Callable[..., RT | None]]:
     # Set default to Exception if no specific types are provided
     if not exception_types:
@@ -277,7 +277,7 @@ def with_variable_trace(
                 elif action == "print":
                     print(full_message)  # noqa: T201
                 if log:
-                    with Path("errorlog.txt").open("w") as outfile:
+                    with Path("errorlog.txt").open("a") as outfile:
                         outfile.write(full_message)
                 if rethrow:
                     # Raise an exception with the detailed message

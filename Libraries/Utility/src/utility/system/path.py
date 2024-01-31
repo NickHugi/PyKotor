@@ -1,15 +1,15 @@
 from __future__ import annotations
 
+import contextlib
 import os
 import pathlib
 import re
 import subprocess
-from tempfile import TemporaryDirectory
 import uuid
-from typing import TYPE_CHECKING, Any, Callable, ClassVar, Generator, Union
+from tempfile import TemporaryDirectory
+from typing import TYPE_CHECKING, Any, Callable, Generator, Union
 
 from utility.error_handling import format_exception_with_variables
-import contextlib
 
 if TYPE_CHECKING:
     from typing_extensions import Self
@@ -776,7 +776,7 @@ class BasePath(BasePurePath):
             log_func("Checking access again before attempting elevated native access fix...")
             success = self.has_access(mode, recurse=False)
             if not success:
-                log_func("Attempting to elevate the native access fix...")
+                log_func("Still no access permitted, attempting to elevate the native access fix...")
                 try:
                     self.request_native_access(elevate=True, recurse=recurse, log_func=log_func)
                 except Exception as e:
@@ -846,6 +846,7 @@ class BasePath(BasePurePath):
         @staticmethod
         def get_win_attrs(file_path):
             import ctypes
+
             # Constants for file attributes
             FILE_ATTRIBUTE_READONLY = 0x1
             FILE_ATTRIBUTE_HIDDEN = 0x2
@@ -887,7 +888,7 @@ class BasePath(BasePurePath):
                 run_script_cmd: list[str] = [
                     "Powershell",
                     "-Command",
-                    f"Start-Process cmd.exe -ArgumentList '{cmd_switch} \"{script_path}\"' -Verb RunAs -Wait"
+                    f"Start-Process cmd.exe -ArgumentList '{cmd_switch} \"{script_path}\"' -Verb RunAs -Wait",
                 ]
 
                 # Execute the batch script
@@ -911,7 +912,7 @@ class BasePath(BasePurePath):
             if elevate:
                 self_path_str = f'"{self_path_str}"'
             isdir_check: bool | None = self.safe_isdir()
-            commands = []
+            commands: list[str] = []
 
             print(f"Step 1: Resetting permissions and re-enabling inheritance for {self_path_str}...")
             icacls_reset_args: list[str] = ["icacls", self_path_str, "/reset", "/Q"]

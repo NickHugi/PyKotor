@@ -4,11 +4,10 @@ Render documents as RTF 1.5
 http://www.biblioscape.com/rtf15_spec.htm
 """
 
-from utility.pyth3 import document
-from utility.pyth3.format import PythWriter
-
 from io import StringIO
 
+from utility.pyth3 import document
+from utility.pyth3.format import PythWriter
 
 # XXX Todo -- Make these parameters
 PARAGRAPH_SPACING = 150

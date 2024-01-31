@@ -2,10 +2,10 @@
 Render documents as reStructuredText.
 """
 
+from io import StringIO
+
 from utility.pyth3 import document
 from utility.pyth3.format import PythWriter
-
-from io import StringIO
 
 
 class RSTWriter(PythWriter):

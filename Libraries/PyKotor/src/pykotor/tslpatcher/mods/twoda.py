@@ -5,8 +5,9 @@ from enum import IntEnum
 from typing import TYPE_CHECKING, Any
 
 from pykotor.resource.formats.twoda import bytes_2da, read_2da
+from pykotor.tools.path import CaseAwarePath
 from pykotor.tslpatcher.mods.template import PatcherModifications
-from utility.error_handling import universal_simplify_exception
+from utility.error_handling import format_exception_with_variables, universal_simplify_exception
 from utility.system.path import PureWindowsPath
 
 if TYPE_CHECKING:
@@ -40,6 +41,9 @@ class Target:
         if target_type == TargetType.ROW_INDEX and isinstance(value, str):
             msg = "Target value must be int if type is row index."
             raise ValueError(msg)
+
+    def __repr__(self):
+        return f"{self.__class__.__name__}(target_type={self.target_type.__class__.__name__}.{self.target_type.name}, value={self.value!r})"
 
     def search(self, twoda: TwoDA) -> TwoDARow | None:
         """Searches a TwoDA for a row matching the target.
@@ -88,6 +92,9 @@ class RowValueConstant(RowValue):
     def __init__(self, string: str):
         self.string: str = string
 
+    def __repr__(self):
+        return f"{self.__class__.__name__}(string='{self.string}')"
+
     def value(self, memory: PatcherMemory, twoda: TwoDA, row: TwoDARow | None) -> str:
         return self.string
 
@@ -96,10 +103,16 @@ class RowValue2DAMemory(RowValue):
     def __init__(self, token_id: int):
         self.token_id: int = token_id
 
+    def __repr__(self):
+        return f"{self.__class__.__name__}(token_id={self.token_id})"
+
     def value(self, memory: PatcherMemory, twoda: TwoDA, row: TwoDARow | None) -> str:
-        memory_val = memory.memory_2da[self.token_id]
+        memory_val: str | PureWindowsPath | None = memory.memory_2da.get(self.token_id)
+        if memory_val is None:
+            msg = f"2DAMEMORY{self.token_id} was not defined before use."
+            raise KeyError(msg)
         if isinstance(memory_val, PureWindowsPath):
-            msg = f"!FieldPath cannot be used in 2DAList patches, got '{memory_val!r}'"
+            msg = f"!FieldPath cannot be used in 2DAList patches, got '{memory_val}'"
             raise TypeError(msg)
         return memory_val
 
@@ -108,8 +121,15 @@ class RowValueTLKMemory(RowValue):
     def __init__(self, token_id: int):
         self.token_id: int = token_id
 
+    def __repr__(self):
+        return f"{self.__class__.__name__}(token_id={self.token_id})"
+
     def value(self, memory: PatcherMemory, twoda: TwoDA, row: TwoDARow | None) -> str:
-        return str(memory.memory_str[self.token_id])
+        memory_val: int | None = memory.memory_str.get(self.token_id)
+        if memory_val is None:
+            msg = f"StrRef{self.token_id} was not defined before use."
+            raise KeyError(msg)
+        return str(memory_val)
 
 
 class RowValueHigh(RowValue):
@@ -121,6 +141,9 @@ class RowValueHigh(RowValue):
 
     def __init__(self, column: str | None):
         self.column: str | None = column
+
+    def __repr__(self):
+        return f"{self.__class__.__name__}(column='{self.column}')"
 
     def value(self, memory: PatcherMemory, twoda: TwoDA, row: TwoDARow | None) -> str:
         """Returns the maximum value in a column or overall label.
@@ -162,6 +185,9 @@ class RowValueRowLabel(RowValue):
 class RowValueRowCell(RowValue):
     def __init__(self, column: str):
         self.column: str = column
+
+    def __repr__(self):
+        return f"{self.__class__.__name__}(column='{self.column}')"
 
     def value(self, memory: PatcherMemory, twoda: TwoDA, row: TwoDARow | None) -> str:
         return row.get_string(self.column) if row is not None else ""
@@ -220,7 +246,6 @@ class ChangeRow2DA(Modify2DA):
         store_2da: dict[int, RowValue] | None = None,
         store_tlk: dict[int, RowValue] | None = None,
     ):
-        super().__init__()
         self.identifier: str = identifier
         self.target: Target = target
         self.cells: dict[str, RowValue] = cells
@@ -229,14 +254,21 @@ class ChangeRow2DA(Modify2DA):
 
         self._row: TwoDARow | None = None
 
+    def __repr__(self):
+        return (
+            f"{self.__class__.__name__}(identifier={self.identifier!r}, "
+            f"target={self.target!r}, cells={self.cells!r}, "
+            f"store_2da={self.store_2da!r}, store_tlk={self.store_tlk!r})"
+        )
+
     def apply(self, twoda: TwoDA, memory: PatcherMemory):
-        source_row = self.target.search(twoda)
+        source_row: TwoDARow | None = self.target.search(twoda)
 
         if source_row is None:
             msg = f"The source row was not found during the search: ({self.target.target_type.name}, {self.target.value})"
             raise WarningError(msg)
 
-        cells = self._unpack(self.cells, memory, twoda, source_row)
+        cells: dict[str, str] = self._unpack(self.cells, memory, twoda, source_row)
         source_row.update_values(cells)
 
         for token_id, value in self.store_2da.items():
@@ -263,15 +295,22 @@ class AddRow2DA(Modify2DA):
         store_2da: dict[int, RowValue] | None = None,
         store_tlk: dict[int, RowValue] | None = None,
     ):
-        super().__init__()
         self.identifier: str = identifier
-        self.exclusive_column: str | None = exclusive_column if exclusive_column != "" else None
+        self.exclusive_column: str | None = exclusive_column if exclusive_column else None
         self.row_label: str | None = row_label
         self.cells: dict[str, RowValue] = cells
         self.store_2da: dict[int, RowValue] = {} if store_2da is None else store_2da
         self.store_tlk: dict[int, RowValue] = {} if store_tlk is None else store_tlk
 
         self._row: TwoDARow | None = None
+
+    def __repr__(self):
+        return (
+            f"{self.__class__.__name__}(identifier={self.identifier!r}, "
+            f"exclusive_column={self.exclusive_column!r}, row_label={self.row_label!r}, "
+            f"cells={self.cells!r}, store_2da={self.store_2da!r}, "
+            f"store_tlk={self.store_tlk!r})"
+        )
 
     def apply(self, twoda: TwoDA, memory: PatcherMemory):
         """Applies an AddRow patch to a TwoDA.
@@ -341,7 +380,6 @@ class CopyRow2DA(Modify2DA):
         store_2da: dict[int, RowValue] | None = None,
         store_tlk: dict[int, RowValue] | None = None,
     ):
-        super().__init__()
         self.identifier: str = identifier
         self.target: Target = target
         self.exclusive_column: str | None = exclusive_column or None
@@ -351,6 +389,14 @@ class CopyRow2DA(Modify2DA):
         self.store_tlk: dict[int, RowValue] = {} if store_tlk is None else store_tlk
 
         self._row: TwoDARow | None = None
+
+    def __repr__(self):
+        return (
+            f"{self.__class__.__name__}(identifier={self.identifier!r}, "
+            f"target={self.target!r}, exclusive_column={self.exclusive_column!r}, "
+            f"row_label={self.row_label!r}, cells={self.cells!r}, "
+            f"store_2da={self.store_2da!r}, store_tlk={self.store_tlk!r})"
+        )
 
     def apply(self, twoda: TwoDA, memory: PatcherMemory):
         """Applies a CopyRow patch to a TwoDA.
@@ -429,13 +475,20 @@ class AddColumn2DA(Modify2DA):
         label_insert: dict[str, RowValue],
         store_2da: dict[int, str] | None = None,
     ):
-        super().__init__()
         self.identifier: str = identifier
         self.header: str = header
         self.default: str = default
         self.index_insert: dict[int, RowValue] = index_insert
         self.label_insert: dict[str, RowValue] = label_insert
         self.store_2da: dict[int, str] = {} if store_2da is None else store_2da
+
+    def __repr__(self):
+        return (
+            f"{self.__class__.__name__}(identifier={self.identifier!r}, "
+            f"header={self.header!r}, default={self.default!r}, "
+            f"index_insert={self.index_insert}, label_insert={self.label_insert}, "
+            f"store_2da={self.store_2da})"
+        )
 
     def apply(self, twoda: TwoDA, memory: PatcherMemory):
         """Applies a AddColumn patch to a TwoDA.
@@ -515,6 +568,9 @@ class Modifications2DA(PatcherModifications):
                 row.apply(twoda, memory)
             except Exception as e:  # noqa: PERF203, BLE001
                 msg = f"{universal_simplify_exception(e)} when patching the file '{self.saveas}'"
+                detailed_msg = format_exception_with_variables(e)
+                with CaseAwarePath.cwd().joinpath("errorlog.txt").open("a") as f:
+                    f.write(f"\n{detailed_msg}")
                 if isinstance(e, WarningError):
                     logger.add_warning(msg)
                 else:
