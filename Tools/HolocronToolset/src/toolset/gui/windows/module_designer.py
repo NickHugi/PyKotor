@@ -218,7 +218,7 @@ class ModuleDesigner(QMainWindow):
             title = f"{self._module._id} - {self._installation.name} - Module Designer"
         self.setWindowTitle(title)
 
-    @with_variable_trace(Exception)
+#    @with_variable_trace(Exception)
     def openModule(self):
         """Opens a module.
 
@@ -270,14 +270,14 @@ class ModuleDesigner(QMainWindow):
         window = HelpWindow(self, "./help/tools/1-moduleEditor.md")
         window.show()
 
-    @with_variable_trace((Exception, OSError))
+#    @with_variable_trace((Exception, OSError))
     def git(self) -> GIT:
         return self._module.git().resource()
 
-    @with_variable_trace(Exception)
+#    @with_variable_trace(Exception)
     def are(self) -> ARE:
         return self._module.are().resource()
-    @with_variable_trace(Exception)
+#    @with_variable_trace(Exception)
     def ifo(self) -> IFO:
         return self._module.info().resource()
 
@@ -538,7 +538,7 @@ class ModuleDesigner(QMainWindow):
 
         self.rebuildInstanceList()
 
-    @with_variable_trace(Exception)
+#    @with_variable_trace(Exception)
     def addInstance(self, instance: GITInstance, walkmeshSnap: bool = True):
         """Adds a GIT instance to the editor.
 
@@ -586,7 +586,7 @@ class ModuleDesigner(QMainWindow):
             self._module.git().resource().add(instance)
         self.rebuildInstanceList()
 
-    @with_variable_trace()
+#    @with_variable_trace()
     def addInstanceAtCursor(self, instance: GITInstance):
         """Adds instance at cursor position.
 
@@ -616,7 +616,7 @@ class ModuleDesigner(QMainWindow):
             self._module.git().resource().add(instance)
         self.rebuildInstanceList()
 
-    @with_variable_trace()
+#    @with_variable_trace()
     def editInstance(self, instance: GITInstance):
         if openInstanceDialog(self, instance, self._installation):
             if not isinstance(instance, GITCamera):

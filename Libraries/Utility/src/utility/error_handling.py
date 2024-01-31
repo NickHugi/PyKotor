@@ -241,7 +241,7 @@ def with_variable_trace(
     return_type: type[RT] = unique_sentinel,  # type: ignore[reportGeneralTypeIssues, assignment]
     action="print",
     log: bool = True,
-    rethrow: bool = True,
+    rethrow: bool = False,
 ) -> Callable[[Callable[..., RT]], Callable[..., RT | None]]:
     # Set default to Exception if no specific types are provided
     if not exception_types:
@@ -277,7 +277,7 @@ def with_variable_trace(
                 elif action == "print":
                     print(full_message)  # noqa: T201
                 if log:
-                    with Path("errorlog.txt").open("w") as outfile:
+                    with Path("errorlog.txt").open("a") as outfile:
                         outfile.write(full_message)
                 if rethrow:
                     # Raise an exception with the detailed message
