@@ -1,7 +1,10 @@
+from __future__ import annotations
+
 import os
 import pathlib
 import sys
 import unittest
+from tempfile import TemporaryDirectory
 
 THIS_SCRIPT_PATH = pathlib.Path(__file__)
 PYKOTOR_PATH = THIS_SCRIPT_PATH.parents[3].resolve()
@@ -17,20 +20,38 @@ if UTILITY_PATH.joinpath("utility").exists():
     add_sys_path(UTILITY_PATH)
 
 from pykotor.common.geometry import Vector3
+from pykotor.common.misc import Game
 from pykotor.common.scriptdefs import KOTOR_CONSTANTS, KOTOR_FUNCTIONS
+from pykotor.common.scriptlib import KOTOR_LIBRARY
+from pykotor.extract.installation import Installation
 from pykotor.resource.formats.ncs import NCS, NCSInstructionType
 from pykotor.resource.formats.ncs.compiler.classes import CompileError
 from pykotor.resource.formats.ncs.compiler.interpreter import Interpreter
 from pykotor.resource.formats.ncs.compiler.lexer import NssLexer
 from pykotor.resource.formats.ncs.compiler.parser import NssParser
+from pykotor.resource.formats.ncs.compilers import ExternalNCSCompiler, InbuiltNCSCompiler
+from pykotor.resource.formats.ncs.ncs_auto import compile_nss
+from pykotor.resource.type import ResourceType
 from utility.system.path import Path
 
+K1_PATH: str | None = os.environ.get("K1_PATH")
+K2_PATH: str | None = os.environ.get("K2_PATH")
 
 class TestNSSCompiler(unittest.TestCase):
-    def compile(self, script: str, library=None, library_lookup=None) -> NCS:
+    def compile(
+        self,
+        script: str,
+        library: dict[str, bytes] | None = None,
+        library_lookup: list[str | Path] | list[str] | list[Path] | str | Path | None = None,
+    ) -> NCS:
+        if library is None:
+            library = {}
         nssLexer = NssLexer()
         nssParser = NssParser(
-            library=library, constants=KOTOR_CONSTANTS, functions=KOTOR_FUNCTIONS, library_lookup=library_lookup
+            library=library,
+            constants=KOTOR_CONSTANTS,
+            functions=KOTOR_FUNCTIONS,
+            library_lookup=library_lookup
         )
 
         parser = nssParser.parser
@@ -39,6 +60,7 @@ class TestNSSCompiler(unittest.TestCase):
         ncs = NCS()
         t.compile(ncs)
         return ncs
+
 
     # region Engine Call
     def test_enginecall(self):

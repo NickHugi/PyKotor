@@ -20,7 +20,7 @@ class InbuiltNCSCompiler(NCSCompiler):
     def compile_script(
         self,
         source_path: os.PathLike | str,
-        output_path: str,
+        output_path: os.PathLike | str,
         game: Game,
         optimizers: list[NCSOptimizer] | None = None,
     ):
@@ -77,6 +77,17 @@ class KnownExternalCompilers(Enum):
             "decompile": ["-d", "{source}", "{output}"],
         },
     )
+    KOTOR_SCRIPTING_TOOL = ExternalCompilerConfig(
+        sha256="B7344408A47BE8780816CF68F5A171A09640AB47AD1A905B7F87DE30A50A0A92",
+        name="KOTOR Scripting Tool",
+        release_date=date(2016, 5, 18),
+        author="James Goad",  # TODO: double check
+        features=ExternalCompilerFeatures(can_compile=True, can_decompile=True),
+        commandline={
+            "compile": ["-c", "--outputdir", "{output_dir}", "-o", "{output_name}", "-g", "{game_value}", "--optimize", "{source}"],
+            "decompile": ["-d", "--outputdir", "{output_dir}", "-o", "{output_name}", "-g", "{game_value}", "{source}"],
+        },
+    )
     DENCS = ExternalCompilerConfig(
         sha256="539EB689D2E0D3751AEED273385865278BEF6696C46BC0CAB116B40C3B2FE820",
         name="DeNCS",
@@ -118,6 +129,8 @@ class KnownExternalCompilers(Enum):
             return cls.XOREOS
         if cls.KNSSCOMP.value.sha256 == uppercase_sha256:
             return cls.KNSSCOMP
+        if cls.KOTOR_SCRIPTING_TOOL.value.sha256 == uppercase_sha256:
+            return cls.KOTOR_SCRIPTING_TOOL
 
         msg = f"No compilers found with sha256 hash '{uppercase_sha256}'"
         raise ValueError(msg)
