@@ -1128,12 +1128,12 @@ class App(tk.Tk):
         shutil.copy2(str(case_k1_path.joinpath("lips", "end_m01aa_loc.mod")), str(case_k2_path.joinpath("lips", "001EBO_loc.mod")))
 
 
-        # Rename streammusic/mus_theme_cult.wav to streammusic/mus_theme_cult.wav.main
+        # Rename k2's streammusic/mus_sion.wav to streammusic/mus_sion.wav.main
+        sion_wav_path = case_k2_path.joinpath("streammusic", "mus_sion.wav")
+        sion_wav_path.rename(sion_wav_path.add_suffix(".main"))
+        # Copy streammusic/mus_theme_cult.wav from k1 to streammusic/mus_sion.wav k2
         theme_cult_wav_path = case_k1_path.joinpath("streammusic", "mus_theme_cult.wav")
-        theme_cult_main_ext_path = case_k1_path.joinpath("streammusic", "mus_theme_cult.wav.main")
-        theme_cult_wav_path.rename(theme_cult_main_ext_path)
-        # Copy streammusic/mus_theme_cult.wav.main from k1 to streammusic/mus_sion.wav k2
-        shutil.copy2(str(theme_cult_main_ext_path), str(case_k2_path.joinpath("streammusic", "mus_sion.wav")))
+        shutil.copy2(str(theme_cult_wav_path), str(sion_wav_path))
 
         shutil.copy2(str(CaseAwarePath(self.mod_path, "tslpatchdata/port-file-list.txt")), str(case_k2_path / "port-file-list.txt"))
         shutil.copy2(str(case_k2_path / "dialog.tlk"), str(case_k2_path / "dialog.tlk.main"))
