@@ -54,6 +54,7 @@ CANNOT_COMPILE_EXT: dict[Game, set[str]] = {
     },
     Game.K2: {
         "nwscript.nss"
+        "a_262imprison_ext3.ncs"  # tslpatcher's nwnnsscomp.exe fails
     },
 }
 CANNOT_COMPILE_BUILTIN: dict[Game, set[str]] = {
@@ -61,22 +62,28 @@ CANNOT_COMPILE_BUILTIN: dict[Game, set[str]] = {
         "nwscript.nss",
         "e3_scripts.nss",
         "k_act_bandatt.nss",
+        # AddPartyMember takes two arguments but only one was provided:
         "k_act_bastadd.nss",
-        "k_act_bastrmv.nss",
         "k_act_canderadd.nss",
-        "k_act_canderrmv.nss",
         "k_act_carthadd.nss",
-        "k_act_carthrmv.nss",
         "k_act_hk47add.nss",
-        "k_act_hk47rmv.nss",
         "k_act_juhaniadd.nss",
-        "k_act_juhanirmv.nss",
+        "k_act_joleeadd.nss",
         "k_act_missionadd.nss",
-        "k_act_missionrmv.nss",
         "k_act_t3m3add.nss",
-        "k_act_t3m3rmv.nss",
         "k_act_zaaladd.nss",
+        # Wrong type passed to RemovePartyMember:
+        "k_act_bastrmv.nss",
+        "k_act_canderrmv.nss",
+        "k_act_carthrmv.nss",
+        "k_act_hki47rmv.nss",
+        "k_act_juhanirmv.nss",
+        "k_act_joleermv.nss",
+        "k_act_missionrmv.nss",
+        "k_act_t3m3rmv.nss",
         "k_act_zaalrmv.nss",
+        "k_act_makeitem.nss",  # Function 'EBO_BastilaStartConversation2' already has a prototype or been defined.
+        "k_con_makeitem.nss",  # Function 'EBO_BastilaStartConversation2' already has a prototype or been defined.
     },
     Game.K2: {
         "nwscript.nss",
@@ -252,7 +259,8 @@ class TestCompileInstallation(unittest.TestCase):
 
             existence_status: list[bool] = [path.exists() for path in compiled_paths]
             assert all(status == existence_status[0] for status in existence_status), \
-                f"Mismatch in compilation results: {[path for path, exists in zip(compiled_paths, existence_status) if not exists]}"  # noqa: S101
+                    f"Mismatch in compilation results: {[path for path, exists in zip(compiled_paths, existence_status) if not exists]}"  # noqa: S101
+            assert all(existence_status), f"Compilation failed: {[path for path, exists in zip(compiled_paths, existence_status) if not exists]}"
 
     def _test_inbuilt_compiler(self, game: Game):
         for script_info in self.all_scripts[game]:
@@ -306,7 +314,10 @@ class TestCompileInstallation(unittest.TestCase):
                 ...
             except CompileError as e:
                 #self.log_file(nss_path.name, filepath="bizarre_incompatible.txt")
-                self.fail(f"Could not compile {nss_path.name} with bizarre compiler!{os.linesep*2} {format_exception_with_variables(e)}")
+                self.fail(f"Could not compile {nss_path.name} with compile_nss!{os.linesep*2} {format_exception_with_variables(e)}")
+            except Exception as e:
+                #self.log_file(nss_path.name, filepath="bizarre_incompatible.txt")
+                self.fail(f"Unexpected exception besides CompileError thrown while compiling {nss_path.name} with compile_nss!{os.linesep*2} {format_exception_with_variables(e)}")
             else:
                 #if not isinstance(ncs_result, NCS):
                 #    self.log_file(nss_path.name, filepath="bizarre_incompatible.txt")
@@ -353,7 +364,7 @@ class TestCompileInstallation(unittest.TestCase):
         "K2_PATH environment variable is not set or not found on disk.",
     )
     def test_k2_bizarre_compiler(self):
-        self._test_bizarre_compiler(Game.K1)
+        self._test_bizarre_compiler(Game.K2)
 
     @unittest.skipIf(
         not K1_PATH or not pathlib.Path(K1_PATH).joinpath("chitin.key").is_file(),
