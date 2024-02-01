@@ -646,15 +646,16 @@ class IncludeScript(TopLevelObject):
 
     def compile(self, ncs: NCS, root: CodeRoot):  # noqa: A003
         for folder in root.library_lookup:
-            filepath = folder / f"{self.file.value}.nss"
+            filepath: Path = folder / f"{self.file.value}.nss"
             if filepath.safe_isfile():
-                source = BinaryReader.load_file(filepath).decode(errors="ignore")
+                source: str = BinaryReader.load_file(filepath).decode(errors="ignore")
                 break
         else:
-            if self.file.value in self.library:
-                source = self.library[self.file.value].decode(errors="ignore")
+            lower_include_filename = self.file.value.lower()
+            if lower_include_filename in self.library:
+                source = self.library[lower_include_filename].decode(errors="ignore")
             else:
-                msg = f"Could not find included script '{self.file.value}.nss'."
+                msg = f"Could not find included script '{lower_include_filename}.nss'."
                 raise CompileError(msg)
 
         from pykotor.resource.formats.ncs.compiler.parser import NssParser
