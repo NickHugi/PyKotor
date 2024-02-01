@@ -24,7 +24,6 @@ if UTILITY_PATH.joinpath("utility").exists():
 from pykotor.common.misc import Game
 from pykotor.common.scriptdefs import KOTOR_CONSTANTS, KOTOR_FUNCTIONS
 from pykotor.common.scriptlib import KOTOR_LIBRARY, TSL_LIBRARY
-from pykotor.extract.file import ResourceIdentifier
 from pykotor.extract.installation import Installation
 from pykotor.resource.formats.ncs import NCS
 from pykotor.resource.formats.ncs.compiler.classes import CompileError, EntryPointError
@@ -49,24 +48,38 @@ NWNNSSCOMP_PATH3: str | None = r"C:\Users\boden\Documents\k1 mods\KillCzerkaJerk
 LOG_FILENAME = "test_ncs_compilers_install"
 ORIG_LOGSTEM = "test_ncs_compilers_install"
 
-CANNOT_COMPILE_EXT: dict[Game, set[ResourceIdentifier]] = {
+CANNOT_COMPILE_EXT: dict[Game, set[str]] = {
     Game.K1: {
-        ResourceIdentifier("nwscript", ResourceType.NSS),
+        "nwscript.nss"
     },
     Game.K2: {
-        ResourceIdentifier("nwscript", ResourceType.NSS),
+        "nwscript.nss"
     },
 }
-CANNOT_COMPILE_BUILTIN: dict[Game, set[ResourceIdentifier]] = {
+CANNOT_COMPILE_BUILTIN: dict[Game, set[str]] = {
     Game.K1: {
-        ResourceIdentifier("a_102attattack", ResourceType.NSS),
-        ResourceIdentifier("k_act_atkonend", ResourceType.NSS),
-        ResourceIdentifier("k_act_bandatt", ResourceType.NSS),
-        ResourceIdentifier("e3_scripts", ResourceType.NSS),
-        ResourceIdentifier("nwscript", ResourceType.NSS),
+        "nwscript.nss",
+        "e3_scripts.nss",
+        "k_act_bandatt.nss",
+        "k_act_bastadd.nss",
+        "k_act_bastrmv.nss",
+        "k_act_canderadd.nss",
+        "k_act_canderrmv.nss",
+        "k_act_carthadd.nss",
+        "k_act_carthrmv.nss",
+        "k_act_hk47add.nss",
+        "k_act_hk47rmv.nss",
+        "k_act_juhaniadd.nss",
+        "k_act_juhanirmv.nss",
+        "k_act_missionadd.nss",
+        "k_act_missionrmv.nss",
+        "k_act_t3m3add.nss",
+        "k_act_t3m3rmv.nss",
+        "k_act_zaaladd.nss",
+        "k_act_zaalrmv.nss",
     },
     Game.K2: {
-        ResourceIdentifier("nwscript", ResourceType.NSS),
+        "nwscript.nss",
     },
 }
 
@@ -125,7 +138,7 @@ class TestCompileInstallation(unittest.TestCase):
         Game.K1: Path(TemporaryDirectory().name),
         Game.K2: Path(TemporaryDirectory().name)
     }
-    installations: dict[Game, Installation] = {}
+    installations: ClassVar[dict[Game, Installation]] = {}
 
     @classmethod
     def setUpClass(cls):
@@ -175,8 +188,7 @@ class TestCompileInstallation(unittest.TestCase):
             temp_ncs_path: Path = temp_nss_path.with_suffix(".ncs")
             with temp_nss_path.open("w") as f:
                 str_script: str = decode_bytes_with_fallbacks(resource.data())
-                lines: list[str] = str_script.replace("\r", "").split("\n")
-                f.writelines(lines)
+                f.write(str_script)
 
             cls.all_scripts[game].append((resource, temp_nss_path, temp_ncs_path))
 
@@ -219,7 +231,7 @@ class TestCompileInstallation(unittest.TestCase):
             stdout, stderr = compiler.compile_script(nss_path, ncs_path, game)
             self.log_file(game, compiler.nwnnsscomp_path, "path:", nss_path, "stdout:", stdout, f"stderr:\t{stderr}" if stderr else "")
         else:
-            compiler.compile_script(nss_path, ncs_path, game)
+            compiler.compile_script(nss_path, ncs_path, game, debug=True)
         return ncs_path
 
     def _test_nwnnsscomp_compiles(self, game):
@@ -240,7 +252,7 @@ class TestCompileInstallation(unittest.TestCase):
 
             existence_status: list[bool] = [path.exists() for path in compiled_paths]
             assert all(status == existence_status[0] for status in existence_status), \
-                f"Mismatch in compilation results: {[path for path, exists in zip(compiled_paths, existence_status) if not exists]}"
+                f"Mismatch in compilation results: {[path for path, exists in zip(compiled_paths, existence_status) if not exists]}"  # noqa: S101
 
     def _test_inbuilt_compiler(self, game: Game):
         for script_info in self.all_scripts[game]:
@@ -259,7 +271,46 @@ class TestCompileInstallation(unittest.TestCase):
             else:
                 #if not compiled_path.exists():
                 #    self.log_file(nss_path.name, filepath="inbuilt_incompatible.txt")
-                assert compiled_path.exists(), f"{compiled_path} could not be found on disk, inbuilt compiler failed."
+                assert compiled_path.exists(), f"{compiled_path} could not be found on disk, inbuilt compiler failed."  # noqa: S101
+
+    def _test_bizarre_compiler(self, game: Game):
+        for script_info in self.all_scripts[game]:
+            file_res, nss_path, ncs_path = script_info
+            if file_res.identifier() in CANNOT_COMPILE_BUILTIN[game]:
+                self.log_file(f"Skipping {file_res.identifier()}, known incompatible with inbuilt...")
+                continue
+
+            try:
+                nss_source_str: str = decode_bytes_with_fallbacks(file_res.data())
+                ncs_result: NCS = bizarre_compiler(nss_source_str, game, library_lookup=nss_path.parent)
+            except EntryPointError as e:
+                ...
+            except CompileError as e:
+                #self.log_file(nss_path.name, filepath="bizarre_incompatible.txt")
+                self.fail(f"Could not compile {nss_path.name} with bizarre compiler!{os.linesep*2} {format_exception_with_variables(e)}")
+            else:
+                #if not isinstance(ncs_result, NCS):
+                #    self.log_file(nss_path.name, filepath="bizarre_incompatible.txt")
+                assert isinstance(ncs_result, NCS), f"{nss_path.name} was compiled and return as {type(ncs_result)} instead of NCS."  # noqa: S101
+
+    def _test_builtin_compile_nss(self, game: Game):
+        for script_info in self.all_scripts[game]:
+            file_res, nss_path, ncs_path = script_info
+            if file_res.identifier() in CANNOT_COMPILE_BUILTIN[game]:
+                self.log_file(f"Skipping {file_res.identifier()}, known incompatible with inbuilt...")
+                continue
+            try:
+                nss_source_str: str = decode_bytes_with_fallbacks(file_res.data())
+                ncs_result: NCS = compile_nss(nss_source_str, game, library_lookup=nss_path.parent, debug=True)
+            except EntryPointError as e:
+                ...
+            except CompileError as e:
+                #self.log_file(nss_path.name, filepath="bizarre_incompatible.txt")
+                self.fail(f"Could not compile {nss_path.name} with bizarre compiler!{os.linesep*2} {format_exception_with_variables(e)}")
+            else:
+                #if not isinstance(ncs_result, NCS):
+                #    self.log_file(nss_path.name, filepath="bizarre_incompatible.txt")
+                assert isinstance(ncs_result, NCS), f"{nss_path.name} was compiled and return as {type(ncs_result)} instead of NCS."  # noqa: S101
 
     @unittest.skipIf(
         not K1_PATH or not pathlib.Path(K1_PATH).joinpath("chitin.key").is_file(),
@@ -288,6 +339,35 @@ class TestCompileInstallation(unittest.TestCase):
     )
     def test_k2_inbuilt_compiler(self):
         self._test_inbuilt_compiler(Game.K2)
+
+
+    @unittest.skipIf(
+        not K1_PATH or not pathlib.Path(K1_PATH).joinpath("chitin.key").is_file(),
+        "K1_PATH environment variable is not set or not found on disk.",
+    )
+    def test_k1_bizarre_compiler(self):
+        self._test_bizarre_compiler(Game.K1)
+
+    @unittest.skipIf(
+        not K2_PATH or not pathlib.Path(K2_PATH).joinpath("chitin.key").is_file(),
+        "K2_PATH environment variable is not set or not found on disk.",
+    )
+    def test_k2_bizarre_compiler(self):
+        self._test_bizarre_compiler(Game.K1)
+
+    @unittest.skipIf(
+        not K1_PATH or not pathlib.Path(K1_PATH).joinpath("chitin.key").is_file(),
+        "K1_PATH environment variable is not set or not found on disk.",
+    )
+    def test_k1_compile_nss(self):
+        self._test_builtin_compile_nss(Game.K1)
+
+    @unittest.skipIf(
+        not K2_PATH or not pathlib.Path(K2_PATH).joinpath("chitin.key").is_file(),
+        "K2_PATH environment variable is not set or not found on disk.",
+    )
+    def test_k2_compile_nss(self):
+        self._test_builtin_compile_nss(Game.K2)
 
 
 if __name__ == "__main__":

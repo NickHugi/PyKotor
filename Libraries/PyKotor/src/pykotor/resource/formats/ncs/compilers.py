@@ -9,6 +9,7 @@ from pykotor.common.misc import Game
 from pykotor.common.stream import BinaryReader
 from pykotor.resource.formats.ncs.ncs_auto import compile_nss, write_ncs
 from pykotor.resource.formats.ncs.ncs_data import NCS, NCSCompiler, NCSOptimizer
+from pykotor.tools.encoding import decode_bytes_with_fallbacks
 from utility.misc import generate_hash
 from utility.system.path import Path
 
@@ -17,17 +18,19 @@ if TYPE_CHECKING:
 
 
 class InbuiltNCSCompiler(NCSCompiler):
-    def compile_script(
+    def compile_script(  # noqa: PLR0913
         self,
         source_path: os.PathLike | str,
         output_path: os.PathLike | str,
         game: Game,
         optimizers: list[NCSOptimizer] | None = None,
+        *,
+        debug: bool = False,
     ):
         source_filepath: Path = Path.pathify(source_path)
         nss_data: bytes = BinaryReader.load_file(source_filepath)
-        nss_contents: str = nss_data.decode("windows-1252", errors="ignore")
-        ncs: NCS = compile_nss(nss_contents, game, optimizers, library_lookup=[source_filepath.parent])
+        nss_contents: str = decode_bytes_with_fallbacks(nss_data)#.replace('#include "k_inc_debug"', "")
+        ncs: NCS = compile_nss(nss_contents, game, optimizers, library_lookup=[source_filepath.parent], debug=debug)
         write_ncs(ncs, output_path)
 
 
@@ -192,6 +195,8 @@ class ExternalNCSCompiler(NCSCompiler):
         source_file: os.PathLike | str,
         output_file: os.PathLike | str,
         game: Game | int,
+        *,
+        debug: bool = False,
     ) -> NwnnsscompConfig:
         """Configures a Nwnnsscomp run.
 
@@ -216,12 +221,14 @@ class ExternalNCSCompiler(NCSCompiler):
             game = Game(game)
         return NwnnsscompConfig(self.filehash, source_filepath, output_filepath, game)
 
-    def compile_script(
+    def compile_script(  # noqa: PLR0913
         self,
         source_file: os.PathLike | str,
         output_file: os.PathLike | str,
         game: Game | int,
         timeout: int=5,
+        *,
+        debug: bool = False,
     ) -> tuple[str, str]:
         """Compiles a NSS script into NCS using the external compiler.
 
