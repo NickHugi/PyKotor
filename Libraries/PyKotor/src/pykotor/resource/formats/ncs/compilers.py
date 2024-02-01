@@ -254,8 +254,7 @@ class ExternalNCSCompiler(NCSCompiler):
             check=False,
         )
 
-        stderr_message = result.stderr or f"no error provided but return code is nonzero: {result.returncode}"
-        return result.stdout, stderr_message if result.returncode != 0 else result.stderr
+        return self._get_output(result)
 
 
     def decompile_script(  # noqa: D417
@@ -290,5 +289,14 @@ class ExternalNCSCompiler(NCSCompiler):
             check=False,
         )
 
-        stderr_message = result.stderr or f"no error provided but return code is nonzero: {result.returncode}"
-        return result.stdout, stderr_message if result.returncode != 0 else result.stderr
+        return self._get_output(result)
+
+    def _get_output(self, result):
+        return (
+            result.stdout,
+            (
+                f"no error provided but return code is nonzero: {result.returncode}"
+                if result.returncode != 0 and ( not result.stderr or not result.stderr.strip() )
+                else result.stderr
+            )
+        )

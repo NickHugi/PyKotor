@@ -391,8 +391,9 @@ class BasePurePath(metaclass=PurePathType):  # type: ignore[misc]
         """
         return cls._create_instance(*pathsegments)
 
-    def with_stem(self: PurePath, stem) -> Self:  # type: ignore[type-var, misc]
+    def with_stem(self, stem: str) -> Self:  # type: ignore[type-var, misc]
         """Return a new path with the stem changed."""
+        self: PurePath = self  # type: ignore[] # noqa: PLW0127
         return self.with_name(stem + self.suffix)  # type: ignore[return-value]
 
     def endswith(self, text: str | tuple[str, ...], case_sensitive: bool = False) -> bool:  # type: ignore[override]
