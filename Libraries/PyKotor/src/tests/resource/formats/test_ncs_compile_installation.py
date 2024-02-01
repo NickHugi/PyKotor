@@ -204,7 +204,7 @@ class TestCompileInstallation(unittest.TestCase):
             else Path.pathify(filepath)
         )
         with filepath.open(mode="a", encoding="utf-8", errors="strict") as f:
-            f.write(msg + os.linesep)
+            f.write(msg)
 
     def compile_with_abstract_compatible(
         self,
@@ -251,12 +251,15 @@ class TestCompileInstallation(unittest.TestCase):
 
             try:
                 compiled_path: Path | None =  self.compile_with_abstract_compatible(self.inbuilt_compiler, nss_path, ncs_path.with_stem(f"{ncs_path.stem}_inbuilt"), game)
+            except EntryPointError as e:
+                ...
             except CompileError as e:
-                self.log_file(nss_path.name, filepath="inbuilt_incompatible.txt")
-                #self.fail(f"Could not compile {nss_path.name} with inbuilt!{os.linesep*2} {format_exception_with_variables(e)}")
+                #self.log_file(nss_path.name, filepath="inbuilt_incompatible.txt")
+                self.fail(f"Could not compile {nss_path.name} with inbuilt!{os.linesep*2} {format_exception_with_variables(e)}")
             else:
-                self.log_file(nss_path.name, filepath="inbuilt_incompatible.txt")
-                #assert compiled_path.exists(), f"{compiled_path} could not be found on disk, inbuilt compiler failed."
+                #if not compiled_path.exists():
+                #    self.log_file(nss_path.name, filepath="inbuilt_incompatible.txt")
+                assert compiled_path.exists(), f"{compiled_path} could not be found on disk, inbuilt compiler failed."
 
     @unittest.skipIf(
         not K1_PATH or not pathlib.Path(K1_PATH).joinpath("chitin.key").is_file(),
