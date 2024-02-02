@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from enum import Enum, IntEnum
+import os
 from typing import TYPE_CHECKING, Any, NamedTuple
 
 if TYPE_CHECKING:
@@ -320,5 +321,5 @@ class NCSOptimizer(ABC):
 
 class NCSCompiler(ABC):
     @abstractmethod
-    def compile_script(self, source_filepath: str, output_filepath: str, game: Game, *, debug: bool):
+    def compile_script(self, source_filepath: os.PathLike | str, output_filepath: os.PathLike | str, game: Game, *, debug: bool):
         ...
