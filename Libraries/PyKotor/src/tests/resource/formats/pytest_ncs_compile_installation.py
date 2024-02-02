@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import logging
 import os
 import pathlib
 import sys
@@ -10,7 +9,6 @@ from typing import TYPE_CHECKING
 
 import pytest
 from pykotor.resource.formats.ncs.ncs_auto import compile_nss
-from utility.error_handling import format_exception_with_variables
 
 THIS_SCRIPT_PATH = pathlib.Path(__file__)
 PYKOTOR_PATH = THIS_SCRIPT_PATH.parents[3].resolve()
@@ -34,9 +32,8 @@ from pykotor.resource.formats.ncs.compiler.classes import CompileError, EntryPoi
 from pykotor.resource.formats.ncs.compiler.lexer import NssLexer
 from pykotor.resource.formats.ncs.compiler.parser import NssParser
 from pykotor.resource.formats.ncs.compilers import ExternalNCSCompiler, InbuiltNCSCompiler
-from pykotor.resource.formats.ncs.ncs_data import NCS, NCSCompiler, NCSOptimizer
+from pykotor.resource.formats.ncs.ncs_data import NCS, NCSCompiler
 from pykotor.resource.type import ResourceType
-from pykotor.tools.encoding import decode_bytes_with_fallbacks
 from utility.system.path import Path
 
 if TYPE_CHECKING:
@@ -89,8 +86,8 @@ CANNOT_COMPILE_EXT: dict[Game, set[str]] = {
 ALL_INSTALLATIONS: dict[Game, Installation] = {}
 if K1_PATH and Path(K1_PATH).joinpath("chitin.key").exists():
     ALL_INSTALLATIONS[Game.K1] = Installation(K1_PATH)
-#if K2_PATH and Path(K2_PATH).joinpath("chitin.key").exists():
-#    ALL_INSTALLATIONS[Game.K2] = Installation(K2_PATH)
+if K2_PATH and Path(K2_PATH).joinpath("chitin.key").exists():
+    ALL_INSTALLATIONS[Game.K2] = Installation(K2_PATH)
 
 ALL_SCRIPTS: dict[Game, list[tuple[FileResource, Path, Path]]] = {Game.K1: [], Game.K2: []}
 TEMP_NSS_DIRS: dict[Game, TemporaryDirectory[str]] = {
@@ -145,7 +142,9 @@ def compile_with_abstract_compatible(
 ) -> Path | None:
     if isinstance(compiler, ExternalNCSCompiler):
         stdout, stderr = compiler.compile_script(nss_path, ncs_path, game)
-        log_file(f"{game} {compiler.nwnnsscomp_path} path: {nss_path} stdout: {stdout} stderr: {stderr}")
+        #log_file(f"{game} {compiler.nwnnsscomp_path} path: {nss_path} stdout: {stdout} stderr: {stderr}")
+        if stderr:
+            pytest.fail(f"External nwnnsscomp.exe compilation failed: {ncs_path.name}")
     else:
         try:
             compiler.compile_script(nss_path, ncs_path, game, debug=True)
@@ -161,7 +160,7 @@ def compile_with_abstract_compatible(
             if not ncs_path.exists():
                 log_file(f"{ncs_path} could not be found on disk, inbuilt compiler failed.", "fallback_out.txt")
                 pytest.fail(f"{ncs_path} could not be found on disk, inbuilt compiler failed.")
-        return ncs_path if ncs_path.exists() else None
+    return ncs_path if ncs_path.exists() else None
 
 @pytest.mark.parametrize(
     "script_data",
@@ -185,9 +184,7 @@ def test_external_compiler_compiles(
     for compiler_path, compiler in compilers.items():
         if compiler is None or compiler_path is None:
             continue
-        compiled_path: Path | None = compile_with_abstract_compatible(compiler, nss_path, ncs_path.with_stem(f"{ncs_path.stem}_{Path(compiler_path).stem}"), game)
-        if not compiled_path.exists():
-            pytest.fail(f"Compilation failed: {compiled_path}")
+        compile_with_abstract_compatible(compiler, nss_path, ncs_path.with_stem(f"{ncs_path.stem}_{Path(compiler_path).stem}"), game)
 
 @pytest.mark.parametrize(
     "script_data",
@@ -276,7 +273,7 @@ def test_pykotor_compile_nss_function(
             pytest.fail(f"{ncs_path} could not be found on disk, bizarre compiler failed.")
 
 if __name__ == "__main__":
-    result = pytest.main([__file__, "-ra", f"--log-file={LOG_FILENAME}.txt", "-n", "6"])
+    result = pytest.main([__file__, "-ra", f"--log-file={LOG_FILENAME}.txt", "-n", "4"])
     sys.exit(result)
     # Cleanup temporary directories after use
     #for temp_dir in temp_dirs.values():
