@@ -119,21 +119,9 @@ class KnownExternalCompilers(Enum):
     @classmethod
     def from_sha256(cls: type[KnownExternalCompilers], sha256: str) -> KnownExternalCompilers:
         uppercase_sha256: str = sha256.upper()
-
-        if cls.TSLPATCHER.value.sha256 == uppercase_sha256:
-            return cls.TSLPATCHER
-        if cls.KOTOR_TOOL.value.sha256 == uppercase_sha256:
-            return cls.KOTOR_TOOL
-        if cls.V1.value.sha256 == uppercase_sha256:
-            return cls.V1
-        if cls.DENCS.value.sha256 == uppercase_sha256:
-            return cls.DENCS
-        if cls.XOREOS.value.sha256 == uppercase_sha256:
-            return cls.XOREOS
-        if cls.KNSSCOMP.value.sha256 == uppercase_sha256:
-            return cls.KNSSCOMP
-        if cls.KOTOR_SCRIPTING_TOOL.value.sha256 == uppercase_sha256:
-            return cls.KOTOR_SCRIPTING_TOOL
+        for known_ext_compiler in cls:
+            if known_ext_compiler.value.sha256 == uppercase_sha256:
+                return known_ext_compiler
 
         msg = f"No compilers found with sha256 hash '{uppercase_sha256}'"
         raise ValueError(msg)
