@@ -137,24 +137,6 @@ def bizarre_compiler(
     t.compile(ncs)
     return ncs
 
-@pytest.fixture(scope="session", autouse=True)
-def configure_logging(request: type[pytest.FixtureRequest]):
-    """Configure logging to append to a file for all tests."""
-    logging.basicConfig(level=logging.INFO,
-                        format='%(asctime)s - %(levelname)s - %(message)s',
-                        filename='test_output.log',  # Log filename
-                        filemode='a')  # Append mode
-    # This logger will now append to 'test_output.log' for all logging calls during the session
-
-def pytest_runtest_logreport(report):
-    """Hook to append a custom log message after each test."""
-    if report.when == 'call':
-        logger = logging.getLogger(__name__)
-        if report.failed:
-            logger.error("TEST FAILED", extra=dict(report.nodeid))
-        else:
-            logger.info("TEST PASSED", extra=dict(report.nodeid))
-
 def compile_with_abstract_compatible(
     compiler: NCSCompiler,
     nss_path: Path,
@@ -170,13 +152,16 @@ def compile_with_abstract_compatible(
         except EntryPointError as e:
             ...  # these can always be ignored.
         except CompileError as e:
-            pytest.fail(f"Could not compile '{nss_path.name}' with inbuilt!{os.linesep*2} {format_exception_with_variables(e)}")
+            log_file(f"Could not compile '{nss_path.name}' with inbuilt compiler!", "fallback_out.txt")
+            pytest.fail(f"Could not compile '{nss_path.name}' with inbuilt compiler!")
         except Exception as e:
-            pytest.fail(f"Unexpected exception compiling '{nss_path.name}' with inbuilt!{os.linesep*2} {format_exception_with_variables(e)}")
+            log_file(f"Unexpected exception compiling '{nss_path.name}' with inbuilt compiler!", "fallback_out.txt")
+            pytest.fail(f"Unexpected exception compiling '{nss_path.name}' with inbuilt compiler!")
         else:
             if not ncs_path.exists():
+                log_file(f"{ncs_path} could not be found on disk, inbuilt compiler failed.", "fallback_out.txt")
                 pytest.fail(f"{ncs_path} could not be found on disk, inbuilt compiler failed.")
-    return ncs_path if ncs_path.exists() else None
+        return ncs_path if ncs_path.exists() else None
 
 @pytest.mark.parametrize(
     "script_data",
@@ -243,13 +228,17 @@ def test_bizarre_compiler_compiles(
     except EntryPointError as e:
         ...  # these can always be ignored.
     except CompileError as e:
-        pytest.fail(f"Could not compile '{nss_path.name}' with bizarre!{os.linesep*2} {format_exception_with_variables(e)}")
+        log_file(f"Could not compile '{nss_path.name}' with bizarre_compiler!", "fallback_out.txt")
+        pytest.fail(f"Could not compile '{nss_path.name}' with bizarre_compiler!")
     except Exception as e:
-        pytest.fail(f"Unexpected exception compiling '{nss_path.name}' with bizarre!{os.linesep*2} {format_exception_with_variables(e)}")
+        log_file(f"Unexpected exception compiling '{nss_path.name}' with bizarre_compiler!", "fallback_out.txt")
+        pytest.fail(f"Unexpected exception compiling '{nss_path.name}' with bizarre_compiler!")
     else:
         if not isinstance(ncs_result, NCS):
+            log_file(f"Failed bizarre compilation, no NCS returned: {nss_path}", "fallback_out.txt")
             pytest.fail(f"Failed bizarre compilation, no NCS returned: {nss_path}")
         if not ncs_path.exists():
+            log_file(f"{ncs_path} could not be found on disk, bizarre compiler failed.", "fallback_out.txt")
             pytest.fail(f"{ncs_path} could not be found on disk, bizarre compiler failed.")
 
 
@@ -273,17 +262,22 @@ def test_pykotor_compile_nss_function(
     except EntryPointError as e:
         ...  # these can always be ignored.
     except CompileError as e:
-        pytest.fail(f"Could not compile '{nss_path.name}' with compile_nss!{os.linesep*2} {format_exception_with_variables(e)}")
+        log_file(f"Could not compile '{nss_path.name}' with compile_nss!", "fallback_out.txt")
+        pytest.fail(f"Could not compile '{nss_path.name}' with compile_nss!")
     except Exception as e:
-        pytest.fail(f"Unexpected exception compiling '{nss_path.name}' with compile_nss!{os.linesep*2} {format_exception_with_variables(e)}")
+        log_file(f"Unexpected exception compiling '{nss_path.name}' with compile_nss!", "fallback_out.txt")
+        pytest.fail(f"Unexpected exception compiling '{nss_path.name}' with compile_nss!")
     else:
         if not isinstance(ncs_result, NCS):
+            log_file(f"Failed bizarre compilation, no NCS returned: {nss_path}", "fallback_out.txt")
             pytest.fail(f"Failed bizarre compilation, no NCS returned: {nss_path}")
         if not ncs_path.exists():
+            log_file(f"{ncs_path} could not be found on disk, bizarre compiler failed.", "fallback_out.txt")
             pytest.fail(f"{ncs_path} could not be found on disk, bizarre compiler failed.")
 
 if __name__ == "__main__":
-    sys.exit(pytest.main([__file__, "-ra", "--continue-on-collection-errors", f"--log-file={LOG_FILENAME}.txt", "-o", "log_cli=true", "-n", "10"]))
+    result = pytest.main([__file__, "-ra", f"--log-file={LOG_FILENAME}.txt", "-n", "6"])
+    sys.exit(result)
     # Cleanup temporary directories after use
     #for temp_dir in temp_dirs.values():
     #    temp_dir.cleanup()
