@@ -17,10 +17,10 @@ def add_sys_path(p: pathlib.Path):
     working_dir = str(p)
     if working_dir not in sys.path:
         sys.path.append(working_dir)
-if PYKOTOR_PATH.joinpath("pykotor").exists():
+if PYKOTOR_PATH.joinpath("pykotor").is_dir():
     add_sys_path(PYKOTOR_PATH)
     os.chdir(PYKOTOR_PATH.parent)
-if UTILITY_PATH.joinpath("utility").exists():
+if UTILITY_PATH.joinpath("utility").is_dir():
     add_sys_path(UTILITY_PATH)
 
 from pykotor.common.misc import Game
@@ -84,9 +84,9 @@ CANNOT_COMPILE_EXT: dict[Game, set[str]] = {
 }
 
 ALL_INSTALLATIONS: dict[Game, Installation] = {}
-if K1_PATH and Path(K1_PATH).joinpath("chitin.key").exists():
+if K1_PATH and Path(K1_PATH).joinpath("chitin.key").is_file():
     ALL_INSTALLATIONS[Game.K1] = Installation(K1_PATH)
-if K2_PATH and Path(K2_PATH).joinpath("chitin.key").exists():
+if K2_PATH and Path(K2_PATH).joinpath("chitin.key").is_file():
     ALL_INSTALLATIONS[Game.K2] = Installation(K2_PATH)
 
 ALL_SCRIPTS: dict[Game, list[tuple[FileResource, Path, Path]]] = {Game.K1: [], Game.K2: []}
@@ -149,7 +149,7 @@ def compile_with_abstract_compatible(
         try:
             compiler.compile_script(nss_path, ncs_path, game, debug=True)
         except EntryPointError as e:
-            ...  # these can always be ignored.
+            return None  # these can always be ignored.
         except CompileError as e:
             log_file(f"Could not compile '{nss_path.name}' with inbuilt compiler!", "fallback_out.txt")
             pytest.fail(f"Could not compile '{nss_path.name}' with inbuilt compiler!")
@@ -157,10 +157,10 @@ def compile_with_abstract_compatible(
             log_file(f"Unexpected exception compiling '{nss_path.name}' with inbuilt compiler!", "fallback_out.txt")
             pytest.fail(f"Unexpected exception compiling '{nss_path.name}' with inbuilt compiler!")
         else:
-            if not ncs_path.exists():
+            if not ncs_path.is_file():
                 log_file(f"{ncs_path} could not be found on disk, inbuilt compiler failed.", "fallback_out.txt")
                 pytest.fail(f"{ncs_path} could not be found on disk, inbuilt compiler failed.")
-    return ncs_path if ncs_path.exists() else None
+    return ncs_path if ncs_path.is_file() else None
 
 @pytest.mark.parametrize(
     "script_data",
@@ -175,9 +175,9 @@ def test_external_compiler_compiles(
     script_data: tuple[Game, tuple[FileResource, Path, Path]]
 ):
     compilers: dict[str | None, ExternalNCSCompiler | None] = {
-        NWNNSSCOMP_PATH: ExternalNCSCompiler(NWNNSSCOMP_PATH) if NWNNSSCOMP_PATH and Path(NWNNSSCOMP_PATH).exists() else None,
-        NWNNSSCOMP_PATH2: ExternalNCSCompiler(NWNNSSCOMP_PATH2) if NWNNSSCOMP_PATH2 and Path(NWNNSSCOMP_PATH2).exists() else None,
-        NWNNSSCOMP_PATH3: ExternalNCSCompiler(NWNNSSCOMP_PATH3) if NWNNSSCOMP_PATH3 and Path(NWNNSSCOMP_PATH3).exists() else None,
+        NWNNSSCOMP_PATH: ExternalNCSCompiler(NWNNSSCOMP_PATH) if NWNNSSCOMP_PATH and Path(NWNNSSCOMP_PATH).is_file() else None,
+        NWNNSSCOMP_PATH2: ExternalNCSCompiler(NWNNSSCOMP_PATH2) if NWNNSSCOMP_PATH2 and Path(NWNNSSCOMP_PATH2).is_file() else None,
+        NWNNSSCOMP_PATH3: ExternalNCSCompiler(NWNNSSCOMP_PATH3) if NWNNSSCOMP_PATH3 and Path(NWNNSSCOMP_PATH3).is_file() else None,
     }
     game, script_info = script_data
     file_res, nss_path, ncs_path = script_info
@@ -185,6 +185,7 @@ def test_external_compiler_compiles(
         if compiler is None or compiler_path is None:
             continue
         compile_with_abstract_compatible(compiler, nss_path, ncs_path.with_stem(f"{ncs_path.stem}_{Path(compiler_path).stem}"), game)
+        # TODO: save result of above and compare.
 
 @pytest.mark.parametrize(
     "script_data",
@@ -202,7 +203,8 @@ def test_inbuilt_compiler_compiles(
     game, script_info = script_data
     file_res, nss_path, ncs_path = script_info
     compiled_path: Path | None = compile_with_abstract_compatible(compiler, nss_path, ncs_path.with_stem(f"{ncs_path.stem}_inbuilt"), game)
-    if not compiled_path.exists():
+    if compiled_path and not compiled_path.is_file():
+        log_file(f"Inbuilt compilation failed: {compiled_path}")
         pytest.fail(f"Inbuilt compilation failed: {compiled_path}")
 
 @pytest.mark.parametrize(
@@ -223,19 +225,19 @@ def test_bizarre_compiler_compiles(
         nss_source_str: str = file_res.data().decode(encoding="windows-1252", errors="ignore")
         ncs_result: NCS = bizarre_compiler(nss_source_str, game, library_lookup=nss_path.parent)
     except EntryPointError as e:
-        ...  # these can always be ignored.
+        return  # these can always be ignored.
     except CompileError as e:
-        log_file(f"Could not compile '{nss_path.name}' with bizarre_compiler!", "fallback_out.txt")
+        log_file(f"Could not compile '{nss_path.name}' with bizarre_compiler!", filepath="fallback_out.txt")
         pytest.fail(f"Could not compile '{nss_path.name}' with bizarre_compiler!")
     except Exception as e:
-        log_file(f"Unexpected exception compiling '{nss_path.name}' with bizarre_compiler!", "fallback_out.txt")
+        log_file(f"Unexpected exception compiling '{nss_path.name}' with bizarre_compiler!", filepath="fallback_out.txt")
         pytest.fail(f"Unexpected exception compiling '{nss_path.name}' with bizarre_compiler!")
     else:
         if not isinstance(ncs_result, NCS):
-            log_file(f"Failed bizarre compilation, no NCS returned: {nss_path}", "fallback_out.txt")
+            log_file(f"Failed bizarre compilation, no NCS returned: {nss_path}", filepath="fallback_out.txt")
             pytest.fail(f"Failed bizarre compilation, no NCS returned: {nss_path}")
-        if not ncs_path.exists():
-            log_file(f"{ncs_path} could not be found on disk, bizarre compiler failed.", "fallback_out.txt")
+        if not ncs_path.is_file():
+            log_file(f"{ncs_path} could not be found on disk, bizarre compiler failed.", filepath="fallback_out.txt")
             pytest.fail(f"{ncs_path} could not be found on disk, bizarre compiler failed.")
 
 
@@ -259,17 +261,17 @@ def test_pykotor_compile_nss_function(
     except EntryPointError as e:
         ...  # these can always be ignored.
     except CompileError as e:
-        log_file(f"Could not compile '{nss_path.name}' with compile_nss!", "fallback_out.txt")
+        log_file(f"Could not compile '{nss_path.name}' with compile_nss!", filepath="fallback_out.txt")
         pytest.fail(f"Could not compile '{nss_path.name}' with compile_nss!")
     except Exception as e:
-        log_file(f"Unexpected exception compiling '{nss_path.name}' with compile_nss!", "fallback_out.txt")
+        log_file(f"Unexpected exception compiling '{nss_path.name}' with compile_nss!", filepath="fallback_out.txt")
         pytest.fail(f"Unexpected exception compiling '{nss_path.name}' with compile_nss!")
     else:
         if not isinstance(ncs_result, NCS):
-            log_file(f"Failed bizarre compilation, no NCS returned: {nss_path}", "fallback_out.txt")
+            log_file(f"Failed bizarre compilation, no NCS returned: {nss_path}", filepath="fallback_out.txt")
             pytest.fail(f"Failed bizarre compilation, no NCS returned: {nss_path}")
-        if not ncs_path.exists():
-            log_file(f"{ncs_path} could not be found on disk, bizarre compiler failed.", "fallback_out.txt")
+        if not ncs_path.is_file():
+            log_file(f"{ncs_path} could not be found on disk, bizarre compiler failed.", filepath="fallback_out.txt")
             pytest.fail(f"{ncs_path} could not be found on disk, bizarre compiler failed.")
 
 if __name__ == "__main__":
