@@ -1,11 +1,12 @@
 from __future__ import annotations
 
+import logging
 import os
 import pathlib
 import sys
 from io import StringIO
 from tempfile import TemporaryDirectory
-from typing import TYPE_CHECKING, Any, Generator
+from typing import TYPE_CHECKING
 
 import pytest
 from pykotor.resource.formats.ncs.ncs_auto import compile_nss
@@ -118,6 +119,18 @@ def bizarre_compiler(
     t.compile(ncs)
     return ncs
 
+@pytest.fixture(scope='session', autouse=True)
+def setup_logging():
+    logging.basicConfig(level=logging.INFO,
+                        format='%(asctime)s - %(levelname)s - %(message)s',
+                        handlers=[
+                            logging.FileHandler("test_output.log"),
+                            logging.StreamHandler()
+                        ])
+
+    logger = logging.getLogger()
+    logger.info("Starting tests")
+
 def log_file(
     *args,
     filepath: os.PathLike | str | None = None,
@@ -192,7 +205,7 @@ def compile_with_abstract_compatible(
         for game, scripts in ALL_SCRIPTS.items()
         for script in scripts
     ],
-    ids=[f"{game}_{script[0].identifier}_nwnnsscomp" for game, scripts in ALL_SCRIPTS.items() for script in scripts],
+    ids=[f"{'K1' if game == Game.K1 else 'TSL'}_{script[0].identifier}_nwnnsscomp" for game, scripts in ALL_SCRIPTS.items() for script in scripts],
 )
 def test_external_compiler_compiles(
     script_data: tuple[Game, tuple[FileResource, Path, Path]]
@@ -218,7 +231,7 @@ def test_external_compiler_compiles(
         for game, scripts in ALL_SCRIPTS.items()
         for script in scripts
     ],
-    ids=[f"{game}_{script[0].identifier()}_inbuilt" for game, scripts in ALL_SCRIPTS.items() for script in scripts],
+    ids=[f"{'K1' if game == Game.K1 else 'TSL'}_{script[0].identifier()}_inbuilt" for game, scripts in ALL_SCRIPTS.items() for script in scripts],
 )
 def test_inbuilt_compiler_compiles(
     script_data: tuple[Game, tuple[FileResource, Path, Path]]
@@ -239,7 +252,7 @@ def test_inbuilt_compiler_compiles(
         for game, scripts in ALL_SCRIPTS.items()
         for script in scripts
     ],
-    ids=[f"{game}_{script[0].identifier()}_bizarre" for game, scripts in ALL_SCRIPTS.items() for script in scripts],
+    ids=[f"{'K1' if game == Game.K1 else 'TSL'}_{script[0].identifier()}_bizarre" for game, scripts in ALL_SCRIPTS.items() for script in scripts],
 )
 def test_bizarre_compiler_compiles(
     script_data: tuple[Game, tuple[FileResource, Path, Path]]
@@ -275,7 +288,7 @@ def test_bizarre_compiler_compiles(
         for game, scripts in ALL_SCRIPTS.items()
         for script in scripts
     ],
-    ids=[f"{game}_{script[0].identifier()}_compile_nss" for game, scripts in ALL_SCRIPTS.items() for script in scripts],
+    ids=[f"{'K1' if game == Game.K1 else 'TSL'}_{script[0].identifier()}_compile_nss" for game, scripts in ALL_SCRIPTS.items() for script in scripts],
 )
 def test_pykotor_compile_nss_function(
     script_data: tuple[Game, tuple[FileResource, Path, Path]]
@@ -290,14 +303,10 @@ def test_pykotor_compile_nss_function(
     except EntryPointError as e:
         ...  # these can always be ignored.
     except CompileError as e:
-        #self.log_file(nss_path.name, filepath="inbuilt_incompatible.txt")
         pytest.fail(f"Could not compile '{nss_path.name}' with compile_nss!{os.linesep*2} {format_exception_with_variables(e)}")
     except Exception as e:
-        #self.log_file(nss_path.name, filepath="inbuilt_incompatible.txt")
         pytest.fail(f"Unexpected exception compiling '{nss_path.name}' with compile_nss!{os.linesep*2} {format_exception_with_variables(e)}")
     else:
-        #if not ncs_path.exists():
-        #    self.log_file(nss_path.name, filepath="compile_nss_incompatible.txt")
         if not isinstance(ncs_result, NCS):
             pytest.fail(f"Failed bizarre compilation, no NCS returned: {nss_path}")
         if not ncs_path.exists():
