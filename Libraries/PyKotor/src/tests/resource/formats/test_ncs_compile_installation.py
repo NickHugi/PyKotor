@@ -31,6 +31,7 @@ from pykotor.resource.formats.ncs.compiler.lexer import NssLexer
 from pykotor.resource.formats.ncs.compiler.parser import NssParser
 from pykotor.resource.formats.ncs.compilers import ExternalNCSCompiler, InbuiltNCSCompiler
 from pykotor.resource.formats.ncs.ncs_auto import compile_nss
+from pykotor.resource.formats.ncs.ncs_data import NCSCompiler
 from pykotor.resource.type import ResourceType
 from pykotor.tools.encoding import decode_bytes_with_fallbacks
 from utility.error_handling import format_exception_with_variables
@@ -82,8 +83,11 @@ CANNOT_COMPILE_BUILTIN: dict[Game, set[str]] = {
         "k_act_missionrmv.nss",
         "k_act_t3m3rmv.nss",
         "k_act_zaalrmv.nss",
-        "k_act_makeitem.nss",  # Function 'EBO_BastilaStartConversation2' already has a prototype or been defined.
-        "k_con_makeitem.nss",  # Function 'EBO_BastilaStartConversation2' already has a prototype or been defined.
+        # Function 'EBO_BastilaStartConversation2' already has a prototype or been defined.
+        "k_act_makeitem.nss",
+        "k_con_makeitem.nss",
+        "k_inc_ebonhawk.nss",
+        "k_pebn_galaxy.nss",
     },
     Game.K2: {
         "nwscript.nss",
@@ -227,7 +231,7 @@ class TestCompileInstallation(unittest.TestCase):
 
     def compile_with_abstract_compatible(
         self,
-        compiler: ExternalNCSCompiler | InbuiltNCSCompiler | None,
+        compiler: NCSCompiler | None,
         nss_path: Path,
         ncs_path: Path,
         game: Game,
@@ -238,7 +242,7 @@ class TestCompileInstallation(unittest.TestCase):
             stdout, stderr = compiler.compile_script(nss_path, ncs_path, game)
             self.log_file(game, compiler.nwnnsscomp_path, "path:", nss_path, "stdout:", stdout, f"stderr:\t{stderr}" if stderr else "")
         else:
-            compiler.compile_script(nss_path, ncs_path, game, debug=True)
+            compiler.compile_script(nss_path, ncs_path, game, debug=False)
         return ncs_path
 
     def _test_nwnnsscomp_compiles(self, game):
@@ -276,6 +280,9 @@ class TestCompileInstallation(unittest.TestCase):
             except CompileError as e:
                 #self.log_file(nss_path.name, filepath="inbuilt_incompatible.txt")
                 self.fail(f"Could not compile {nss_path.name} with inbuilt!{os.linesep*2} {format_exception_with_variables(e)}")
+            except Exception as e:
+                #self.log_file(nss_path.name, filepath="inbuilt_incompatible.txt")
+                self.fail(f"Unexpected exception compiling '{nss_path.name}' with inbuilt!{os.linesep*2} {format_exception_with_variables(e)}")
             else:
                 #if not compiled_path.exists():
                 #    self.log_file(nss_path.name, filepath="inbuilt_incompatible.txt")
@@ -309,7 +316,7 @@ class TestCompileInstallation(unittest.TestCase):
                 continue
             try:
                 nss_source_str: str = decode_bytes_with_fallbacks(file_res.data())
-                ncs_result: NCS = compile_nss(nss_source_str, game, library_lookup=nss_path.parent, debug=True)
+                ncs_result: NCS = compile_nss(nss_source_str, game, library_lookup=nss_path.parent, debug=False)
             except EntryPointError as e:
                 ...
             except CompileError as e:
