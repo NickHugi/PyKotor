@@ -42,7 +42,6 @@ from utility.system.path import Path
 if TYPE_CHECKING:
     from ply import yacc
     from pykotor.extract.file import FileResource
-    from typing_extensions import Literal
 
 K1_PATH: str | None = os.environ.get("K1_PATH")
 K2_PATH: str | None = os.environ.get("K2_PATH")
@@ -51,85 +50,6 @@ NWNNSSCOMP_PATH2: str | None = r"C:\Program Files (x86)\Kotor Tool\nwnnsscomp.ex
 NWNNSSCOMP_PATH3: str | None = r"C:\Users\boden\Documents\k1 mods\KillCzerkaJerk\tslpatchdata\nwnnsscomp.exe"
 LOG_FILENAME = "test_ncs_compilers_install"
 ORIG_LOGSTEM = "test_ncs_compilers_install"
-
-CANNOT_COMPILE_EXT: dict[Game, set[str]] = {
-    Game.K1: {
-        "nwscript.nss"
-    },
-    Game.K2: {
-        "nwscript.nss"
-        "a_262imprison_ext3.ncs"  # tslpatcher's nwnnsscomp.exe fails
-    },
-}
-CANNOT_COMPILE_BUILTIN: dict[Game, set[str]] = {
-    Game.K1: {
-        "nwscript.nss",
-        "e3_scripts.nss",
-        "k_act_bandatt.nss",
-        # AddPartyMember takes two arguments but only one was provided:
-        "k_act_bastadd.nss",
-        "k_act_canderadd.nss",
-        "k_act_carthadd.nss",
-        "k_act_hk47add.nss",
-        "k_act_juhaniadd.nss",
-        "k_act_joleeadd.nss",
-        "k_act_missionadd.nss",
-        "k_act_t3m3add.nss",
-        "k_act_zaaladd.nss",
-        # Wrong type passed to RemovePartyMember:
-        "k_act_bastrmv.nss",
-        "k_act_canderrmv.nss",
-        "k_act_carthrmv.nss",
-        "k_act_hki47rmv.nss",
-        "k_act_juhanirmv.nss",
-        "k_act_joleermv.nss",
-        "k_act_missionrmv.nss",
-        "k_act_t3m3rmv.nss",
-        "k_act_zaalrmv.nss",
-        # Function 'EBO_BastilaStartConversation2' already has a prototype or been defined.
-        "k_act_makeitem.nss",
-        "k_con_makeitem.nss",
-        "k_inc_ebonhawk.nss",
-    },
-    Game.K2: {
-        "nwscript.nss",
-    },
-}
-
-def bizarre_compiler(
-    script: str,
-    game: Game,
-    library: dict[str, bytes] | None = None,
-    library_lookup: list[str | Path] | list[str] | list[Path] | str | Path | None = None,
-) -> NCS:
-    if not library:
-        library = KOTOR_LIBRARY if game == Game.K1 else TSL_LIBRARY
-    _nssLexer = NssLexer()
-    nssParser = NssParser(
-        library=library,
-        constants=KOTOR_CONSTANTS,
-        functions=KOTOR_FUNCTIONS,
-        library_lookup=library_lookup
-    )
-
-    parser: yacc.LRParser = nssParser.parser
-    t = parser.parse(script, tracking=True)
-
-    ncs = NCS()
-    t.compile(ncs)
-    return ncs
-
-@pytest.fixture(scope='session', autouse=True)
-def setup_logging():
-    logging.basicConfig(level=logging.INFO,
-                        format='%(asctime)s - %(levelname)s - %(message)s',
-                        handlers=[
-                            logging.FileHandler("test_output.log"),
-                            logging.StreamHandler()
-                        ])
-
-    logger = logging.getLogger()
-    logger.info("Starting tests")
 
 def log_file(
     *args,
@@ -156,6 +76,15 @@ def log_file(
     with filepath.open(mode="a", encoding="utf-8", errors="strict") as f:
         f.write(msg)
 
+CANNOT_COMPILE_EXT: dict[Game, set[str]] = {
+    Game.K1: {
+        "nwscript.nss"
+    },
+    Game.K2: {
+        "nwscript.nss"
+        "a_262imprison_ext3.ncs"  # tslpatcher's nwnnsscomp.exe fails
+    },
+}
 
 ALL_INSTALLATIONS: dict[Game, Installation] = {}
 if K1_PATH and Path(K1_PATH).joinpath("chitin.key").exists():
@@ -185,6 +114,47 @@ for game, installation in ALL_INSTALLATIONS.items():
             f.write(resource.data())
         ALL_SCRIPTS[game].append((resource, nss_path, ncs_path))
 
+def bizarre_compiler(
+    script: str,
+    game: Game,
+    library: dict[str, bytes] | None = None,
+    library_lookup: list[str | Path] | list[str] | list[Path] | str | Path | None = None,
+) -> NCS:
+    if not library:
+        library = KOTOR_LIBRARY if game == Game.K1 else TSL_LIBRARY
+    _nssLexer = NssLexer()
+    nssParser = NssParser(
+        library=library,
+        constants=KOTOR_CONSTANTS,
+        functions=KOTOR_FUNCTIONS,
+        library_lookup=library_lookup
+    )
+
+    parser: yacc.LRParser = nssParser.parser
+    t = parser.parse(script, tracking=True)
+
+    ncs = NCS()
+    t.compile(ncs)
+    return ncs
+
+@pytest.fixture(scope="session", autouse=True)
+def configure_logging(request: type[pytest.FixtureRequest]):
+    """Configure logging to append to a file for all tests."""
+    logging.basicConfig(level=logging.INFO,
+                        format='%(asctime)s - %(levelname)s - %(message)s',
+                        filename='test_output.log',  # Log filename
+                        filemode='a')  # Append mode
+    # This logger will now append to 'test_output.log' for all logging calls during the session
+
+def pytest_runtest_logreport(report):
+    """Hook to append a custom log message after each test."""
+    if report.when == 'call':
+        logger = logging.getLogger(__name__)
+        if report.failed:
+            logger.error("TEST FAILED", extra=dict(report.nodeid))
+        else:
+            logger.info("TEST PASSED", extra=dict(report.nodeid))
+
 def compile_with_abstract_compatible(
     compiler: NCSCompiler,
     nss_path: Path,
@@ -195,7 +165,17 @@ def compile_with_abstract_compatible(
         stdout, stderr = compiler.compile_script(nss_path, ncs_path, game)
         log_file(f"{game} {compiler.nwnnsscomp_path} path: {nss_path} stdout: {stdout} stderr: {stderr}")
     else:
-        compiler.compile_script(nss_path, ncs_path, game, debug=True)
+        try:
+            compiler.compile_script(nss_path, ncs_path, game, debug=True)
+        except EntryPointError as e:
+            ...  # these can always be ignored.
+        except CompileError as e:
+            pytest.fail(f"Could not compile '{nss_path.name}' with inbuilt!{os.linesep*2} {format_exception_with_variables(e)}")
+        except Exception as e:
+            pytest.fail(f"Unexpected exception compiling '{nss_path.name}' with inbuilt!{os.linesep*2} {format_exception_with_variables(e)}")
+        else:
+            if not ncs_path.exists():
+                pytest.fail(f"{ncs_path} could not be found on disk, inbuilt compiler failed.")
     return ncs_path if ncs_path.exists() else None
 
 @pytest.mark.parametrize(
@@ -205,7 +185,7 @@ def compile_with_abstract_compatible(
         for game, scripts in ALL_SCRIPTS.items()
         for script in scripts
     ],
-    ids=[f"{'K1' if game == Game.K1 else 'TSL'}_{script[0].identifier}_nwnnsscomp" for game, scripts in ALL_SCRIPTS.items() for script in scripts],
+    ids=[f"{'K1' if game == Game.K1 else 'TSL'}_{script[0].identifier()}_nwnnsscomp" for game, scripts in ALL_SCRIPTS.items() for script in scripts],
 )
 def test_external_compiler_compiles(
     script_data: tuple[Game, tuple[FileResource, Path, Path]]
@@ -239,8 +219,6 @@ def test_inbuilt_compiler_compiles(
     compiler = InbuiltNCSCompiler()
     game, script_info = script_data
     file_res, nss_path, ncs_path = script_info
-    if file_res.identifier() in CANNOT_COMPILE_BUILTIN[game]:
-        return
     compiled_path: Path | None = compile_with_abstract_compatible(compiler, nss_path, ncs_path.with_stem(f"{ncs_path.stem}_inbuilt"), game)
     if not compiled_path.exists():
         pytest.fail(f"Inbuilt compilation failed: {compiled_path}")
@@ -259,22 +237,16 @@ def test_bizarre_compiler_compiles(
 ):
     game, script_info = script_data
     file_res, nss_path, ncs_path = script_info
-    if file_res.identifier() in CANNOT_COMPILE_BUILTIN[game]:
-        return
     try:
-        nss_source_str: str = decode_bytes_with_fallbacks(file_res.data())
+        nss_source_str: str = file_res.data().decode(encoding="windows-1252", errors="ignore")
         ncs_result: NCS = bizarre_compiler(nss_source_str, game, library_lookup=nss_path.parent)
     except EntryPointError as e:
         ...  # these can always be ignored.
     except CompileError as e:
-        #self.log_file(nss_path.name, filepath="bizarre_incompatible.txt")
         pytest.fail(f"Could not compile '{nss_path.name}' with bizarre!{os.linesep*2} {format_exception_with_variables(e)}")
     except Exception as e:
-        #self.log_file(nss_path.name, filepath="bizarre_incompatible.txt")
         pytest.fail(f"Unexpected exception compiling '{nss_path.name}' with bizarre!{os.linesep*2} {format_exception_with_variables(e)}")
     else:
-        #if not ncs_path.exists():
-        #    self.log_file(nss_path.name, filepath="bizarre_incompatible.txt")
         if not isinstance(ncs_result, NCS):
             pytest.fail(f"Failed bizarre compilation, no NCS returned: {nss_path}")
         if not ncs_path.exists():
@@ -295,10 +267,8 @@ def test_pykotor_compile_nss_function(
 ):
     game, script_info = script_data
     file_res, nss_path, ncs_path = script_info
-    if file_res.identifier() in CANNOT_COMPILE_BUILTIN[game]:
-        return
     try:
-        nss_source_str: str = decode_bytes_with_fallbacks(file_res.data())
+        nss_source_str: str = file_res.data().decode(encoding="windows-1252", errors="ignore")
         ncs_result: NCS = compile_nss(nss_source_str, game, library_lookup=nss_path.parent)
     except EntryPointError as e:
         ...  # these can always be ignored.
@@ -313,7 +283,7 @@ def test_pykotor_compile_nss_function(
             pytest.fail(f"{ncs_path} could not be found on disk, bizarre compiler failed.")
 
 if __name__ == "__main__":
-    sys.exit(pytest.main([__file__, "-vv"]))
+    sys.exit(pytest.main([__file__, "-ra", "--continue-on-collection-errors", f"--log-file={LOG_FILENAME}.txt", "-o", "log_cli=true", "-n", "10"]))
     # Cleanup temporary directories after use
     #for temp_dir in temp_dirs.values():
     #    temp_dir.cleanup()
