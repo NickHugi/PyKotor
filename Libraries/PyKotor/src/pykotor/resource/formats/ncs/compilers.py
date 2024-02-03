@@ -7,6 +7,7 @@ from typing import TYPE_CHECKING, NamedTuple
 
 from pykotor.common.misc import Game
 from pykotor.common.stream import BinaryReader
+from pykotor.resource.formats.ncs.compiler.classes import EntryPointError
 from pykotor.resource.formats.ncs.ncs_auto import compile_nss, write_ncs
 from pykotor.resource.formats.ncs.ncs_data import NCS, NCSCompiler, NCSOptimizer
 from pykotor.tools.encoding import decode_bytes_with_fallbacks
@@ -135,14 +136,14 @@ class NwnnsscompConfig:
         sha256_hash: str,
         sourcefile: Path,
         outputfile: Path,
-        game_value: Game,
+        game: Game,
     ):
         self.sha256_hash: str = sha256_hash
         self.source_file: Path = sourcefile
         self.output_file: Path = outputfile
         self.output_dir: Path = outputfile.parent
         self.output_name: str = outputfile.name
-        self.game_value: Game = game_value
+        self.game: Game = game
 
         self.chosen_compiler: KnownExternalCompilers = KnownExternalCompilers.from_sha256(self.sha256_hash)
 
@@ -158,7 +159,7 @@ class NwnnsscompConfig:
             output=self.output_file,
             output_dir=self.output_dir,
             output_name=self.output_name,
-            game_value=self.game_value,
+            game_value="1" if self.game.is_k1() else "2",
         ) for arg in args_list]
         formatted_args.insert(0, executable)
         return formatted_args
@@ -193,6 +194,7 @@ class ExternalNCSCompiler(NCSCompiler):
             source_file: Path to the source file to compile
             output_file: Path to output file to generate
             game: Game enum or integer to configure in one line
+            debug - bool (kwarg): Whether to debug Ply and verbosely output more information. Defaults to False.
 
         Returns:
         -------
@@ -209,7 +211,7 @@ class ExternalNCSCompiler(NCSCompiler):
             game = Game(game)
         return NwnnsscompConfig(self.filehash, source_filepath, output_filepath, game)
 
-    def compile_script(  # noqa: PLR0913
+    def compile_script(
         self,
         source_file: os.PathLike | str,
         output_file: os.PathLike | str,
@@ -228,6 +230,7 @@ class ExternalNCSCompiler(NCSCompiler):
             output_file: The path or name of the compiled module file to output.
             game: The Game object or game ID to configure the compiler for.
             timeout: The timeout in seconds to wait for compilation to finish before aborting.
+            debug - bool (kwarg): (does nothing for external compilers)
 
         Returns:
         -------
@@ -238,6 +241,10 @@ class ExternalNCSCompiler(NCSCompiler):
             - Configures the compiler based on the nwnnsscomp.exe used.
             - Runs the compiler process, capturing stdout and stderr.
             - Returns a tuple of the stdout and stderr strings on completion.
+
+        Raises:
+        ------
+            - EntryPointError: File has no entry point and is an include file, so it could not be compiled.
         """
         config: NwnnsscompConfig = self.config(source_file, output_file, game)
 
@@ -249,10 +256,14 @@ class ExternalNCSCompiler(NCSCompiler):
             check=False,
         )
 
-        return self._get_output(result)
+        stdout, stderr = self._get_output(result)
+        if "File is an include file, ignored" in stdout:
+            msg = "This file has no entry point and cannot be compiled (Most likely an include file)."
+            raise EntryPointError(msg)
+        return stdout, stderr
 
 
-    def decompile_script(  # noqa: D417
+    def decompile_script(
         self,
         source_file: os.PathLike | str,
         output_file: os.PathLike | str,

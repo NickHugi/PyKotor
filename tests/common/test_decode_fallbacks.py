@@ -4,7 +4,12 @@ import os
 import pathlib
 import sys
 import unittest
-from types import ModuleType
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from types import ModuleType
+
+    import charset_normalizer
 
 THIS_SCRIPT_PATH = pathlib.Path(__file__)
 PYKOTOR_PATH = THIS_SCRIPT_PATH.parents[2]
@@ -19,8 +24,8 @@ if PYKOTOR_PATH.joinpath("pykotor").exists():
 if UTILITY_PATH.joinpath("utility").exists():
     add_sys_path(UTILITY_PATH)
 
-from pykotor.common.language import Language
-from pykotor.tools.encoding import decode_bytes_with_fallbacks
+from pykotor.common.language import Language  # noqa: E402
+from pykotor.tools.encoding import decode_bytes_with_fallbacks  # noqa: E402
 
 charset_normalizer: None | ModuleType
 try:
