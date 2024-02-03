@@ -121,8 +121,8 @@ def _setup_and_profile_installation():
 
     if K1_PATH and Path(K1_PATH).joinpath("chitin.key").is_file():
         ALL_INSTALLATIONS[Game.K1] = Installation(K1_PATH)
-    #if K2_PATH and Path(K2_PATH).joinpath("chitin.key").is_file():
-    #    ALL_INSTALLATIONS[Game.K2] = Installation(K2_PATH)
+    if K2_PATH and Path(K2_PATH).joinpath("chitin.key").is_file():
+        ALL_INSTALLATIONS[Game.K2] = Installation(K2_PATH)
 
     if profiler:
         save_profiler_output(profiler, "installation_class_profile.pstat")

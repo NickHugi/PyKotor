@@ -110,8 +110,6 @@ def log_file(
     with filepath.open(mode="a", encoding="utf-8", errors="strict") as f:
         f.write(msg)
 
-    logger.log(level=2, msg=msg)
-
 def bizarre_compiler(
     script: str,
     game: Game,
@@ -136,7 +134,7 @@ def bizarre_compiler(
     return ncs
 
 # Don't trust pytest's logger, use fallbacks to ensure information isn't lost.
-def _handle_compile_exc(e: Exception, nss_path: Path, compiler_id_str: str):
+def _handle_compile_exc(e: Exception, nss_path: Path, compiler_id_str: str, game: Game):
     exc_type_name, exc_basic_info_str = universal_simplify_exception(e)
     exc_debug_info_str = format_exception_with_variables(e)
 
@@ -147,9 +145,10 @@ def _handle_compile_exc(e: Exception, nss_path: Path, compiler_id_str: str):
     msg_info_level = os.linesep.join((msg, exc_basic_info_str, exc_separator_str))
     msg_debug_level = os.linesep.join((msg, exc_debug_info_str, exc_separator_str))
 
-    log_file(msg_info_level, filepath="fallback_level_info.txt")
-    log_file(msg_debug_level, filepath="fallback_level_debug.txt")
-    log_file(f'"{nss_path.name}",', filepath=f"{compiler_id_str}_incompatible.txt")  # for quick copy/paste into the known_issues hashset
+    log_file(msg_info_level, filepath=f"fallback_level_info_{game}.txt")
+    log_file(msg_debug_level, filepath=f"fallback_level_debug_{game}.txt")
+    log_file(f'"{nss_path.name}",', filepath=f"{compiler_id_str}_incompatible_{game}.txt")  # for quick copy/paste into the known_issues hashset
+    logger.log(level=40, msg=msg_debug_level)
     pytest.fail(msg_info_level)
 
 def compile_with_abstract_compatible(
@@ -162,9 +161,13 @@ def compile_with_abstract_compatible(
     try:
         if isinstance(compiler, ExternalNCSCompiler):
             compiler_id_str = "nwnnsscomp.exe"
-            stdout, stderr = compiler.compile_script(nss_path, ncs_path, game)
-            if stderr:
-                pytest.fail(f"{compiler_id_str}.exe compilation failed: {ncs_path.name}")
+            try:
+                stdout, stderr = compiler.compile_script(nss_path, ncs_path, game)
+            except EntryPointError as e:
+                pytest.xfail(f"Inbuilt: No entry point in with '{nss_path.name}': {e}")
+            else:
+                if stderr:
+                    raise CompileError(f"{stdout}: {stderr}")
         else:
             try:
                 compiler.compile_script(nss_path, ncs_path, game, debug=False)
@@ -178,7 +181,7 @@ def compile_with_abstract_compatible(
             raise new_exc  # noqa: TRY301
 
     except Exception as e:  # noqa: BLE001
-        _handle_compile_exc(e, nss_path, compiler_id_str)
+        _handle_compile_exc(e, nss_path, compiler_id_str, game)
 
 def test_external_compiler_compiles(
     script_data: tuple[Game, tuple[FileResource, Path, Path]]
@@ -222,7 +225,7 @@ def test_bizarre_compiler_compiles(
     except EntryPointError as e:
         pytest.xfail(f"Bizarre Compiler: No entry point in with '{nss_path.name}': {e}")
     except Exception as e:
-        _handle_compile_exc(e, nss_path, "Bizarre Compiler")
+        _handle_compile_exc(e, nss_path, "Bizarre Compiler", game)
 
 
 def test_pykotor_compile_nss_function(
@@ -243,7 +246,7 @@ def test_pykotor_compile_nss_function(
     except EntryPointError as e:
         pytest.xfail(f"compile_nss: No entry point in with '{nss_path.name}': {e}")
     except Exception as e:  # noqa: BLE001
-        _handle_compile_exc(e, nss_path, "compile_nss")
+        _handle_compile_exc(e, nss_path, "compile_nss", game)
 
 
 def save_profiler_output(profiler: cProfile.Profile, filepath: os.PathLike | str):

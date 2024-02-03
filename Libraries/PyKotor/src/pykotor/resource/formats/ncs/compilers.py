@@ -260,6 +260,7 @@ class ExternalNCSCompiler(NCSCompiler):
         if "File is an include file, ignored" in stdout:
             msg = "This file has no entry point and cannot be compiled (Most likely an include file)."
             raise EntryPointError(msg)
+
         return stdout, stderr
 
 
@@ -297,12 +298,32 @@ class ExternalNCSCompiler(NCSCompiler):
 
         return self._get_output(result)
 
-    def _get_output(self, result):
-        return (
-            result.stdout,
-            (
-                f"no error provided but return code is nonzero: {result.returncode}"
-                if result.returncode != 0 and ( not result.stderr or not result.stderr.strip() )
-                else result.stderr
-            )
+    def _get_output(self, result: subprocess.CompletedProcess[str]) -> tuple[str, str]:
+        stdout: str = result.stdout
+        stderr: str = (
+            f"no error provided but return code is nonzero: ({result.returncode})"
+            if result.returncode != 0 and ( not result.stderr or not result.stderr.strip() )
+            else result.stderr
         )
+
+        if "Error:" in stdout:
+            stdout_lines: list[str] = stdout.split("\n")
+            error_line: str | None = None
+            # Find and remove the line with 'Error:'
+            filtered_stdout_lines: list[str] = []
+            for line in stdout_lines:
+                if "Error:" in line:
+                    error_line = line
+                else:
+                    filtered_stdout_lines.append(line)
+
+            # Reconstruct stdout without the error line
+            stdout = "\n".join(filtered_stdout_lines)
+
+            # Append the error line to stderr if it was found
+            if error_line is not None:
+                if stderr:  # If there's already content in stderr, add a newline before appending
+                    stderr += "\n" + error_line
+                else:
+                    stderr = error_line
+        return stdout, stderr
