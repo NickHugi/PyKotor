@@ -209,12 +209,13 @@ class Installation:
                 yield from resources
             for resources in self._rims.values():
                 yield from resources
-            tlk_path = self._path / "dialog.tlk"
-            yield FileResource("dialog", ResourceType.TLK, tlk_path.stat().st_size, 0, tlk_path)
-            female_tlk_path = self._path / "dialogf.tlk"
-            if female_tlk_path.exists():
-                yield FileResource("dialogf", ResourceType.TLK, female_tlk_path.stat().st_size, 0, female_tlk_path)
-        return generator()
+        yield from generator()
+
+        tlk_path = self._path / "dialog.tlk"
+        yield FileResource("dialog", ResourceType.TLK, tlk_path.stat().st_size, 0, tlk_path)
+        female_tlk_path = self._path / "dialogf.tlk"
+        if female_tlk_path.safe_isfile():
+            yield FileResource("dialogf", ResourceType.TLK, female_tlk_path.stat().st_size, 0, female_tlk_path)
 
     # region Get Paths
     def path(self) -> CaseAwarePath:
@@ -1472,7 +1473,137 @@ class Installation:
 
         return sounds
 
-    def string(self, locstring: LocalizedString, default: str = "") -> str:
+
+    def script(
+        self,
+        resname: str,
+        order: list[SearchLocation] | None = None,
+        *,
+        capsules: list[Capsule] | None = None,
+        folders: list[Path] | None = None,
+    ) -> bytes | None:
+        """Returns the bytes of a script resource if it can be found, otherwise returns None.
+
+        This is a wrapper of the scripts() method provided to make searching for a single resource more convenient.
+
+        Args:
+        ----
+            resname: The case-insensitive name of the script (without the extension) to look for.
+            order: The ordered list of locations to check.
+            capsules: An extra list of capsules to search in.
+            folders: An extra list of folders to search in.
+
+        Returns:
+        -------
+            A bytes object or None.
+        """
+        batch: CaseInsensitiveDict[bytes | None] = self.scripts([resname], order, capsules=capsules, folders=folders)
+        return batch[resname] if batch else None
+
+    def scripts(
+        self,
+        resnames: list[str],
+        order: list[SearchLocation] | None = None,
+        *,
+        capsules: list[Capsule] | None = None,
+        folders: list[Path] | None = None,
+    ) -> CaseInsensitiveDict[bytes | None]:
+        """Returns a dictionary mapping the items provided in the resnames argument to a bytes object if the respective sound resource could be found.
+
+        If the script could not be found the value will return None.
+
+        Args:
+        ----
+            resnames: A list of case-insensitive script names (without the extensions) to try locate.
+            order: The ordered list of locations to check.
+            capsules: An extra list of capsules to search in.
+            folders: An extra list of folders to search in.
+
+        Returns:
+        -------
+            A dictionary mapping a case-insensitive string to a bytes object or None.
+        """
+        case_resnames: list[str] = [resname.casefold() for resname in resnames]
+        capsules = [] if capsules is None else capsules
+        folders = [] if folders is None else folders
+        if order is None:
+            order = [
+                SearchLocation.CUSTOM_FOLDERS,
+                SearchLocation.CUSTOM_MODULES,
+                SearchLocation.OVERRIDE,
+                SearchLocation.MODULES,
+                SearchLocation.RIMS,
+                SearchLocation.CHITIN,
+            ]
+
+        scripts: CaseInsensitiveDict[bytes | None] = CaseInsensitiveDict()
+        script_formats: list[ResourceType] = [ResourceType.NSS, ResourceType.NCS]
+
+        for resname in resnames:
+            scripts[resname] = None
+
+        def check_dict(resource_dict: dict[str, list[FileResource]]):
+            for resources in resource_dict.values():
+                check_list(resources)
+
+        def check_list(resource_list: list[FileResource]):
+            for resource in resource_list:
+                case_resname: str = resource.resname().casefold()
+                if case_resname in case_resnames and resource.restype() in script_formats:
+                    case_resnames.remove(case_resname)
+                    script_data: bytes = resource.data()
+                    scripts[resource.resname()] = script_data if script_data is not None else b""
+
+        def check_capsules(capsule_list: list[Capsule]):
+            for capsule in capsule_list:
+                for case_resname in copy(case_resnames):
+                    script_data: bytes | None = None
+                    for sformat in script_formats:
+                        script_data = capsule.resource(case_resname, sformat)
+                        if script_data is not None:
+                            break
+                    if script_data is None:
+                        continue
+                    case_resnames.remove(case_resname)
+                    scripts[case_resname] = script_data if script_data is not None else b""
+
+        def check_folders(folder_list: list[Path]):
+            queried_script_files: set[Path] = set()
+            for folder in folder_list:
+                queried_script_files.update(
+                    file
+                    for file in folder.rglob("*")
+                    if (
+                        file.stem.casefold() in case_resnames
+                        and ResourceType.from_extension(file.suffix) in script_formats
+                        and file.is_file()
+                    )
+                )
+            for script_file in queried_script_files:
+                case_resnames.remove(script_file.stem.casefold())
+                script_data: bytes = BinaryReader.load_file(script_file)
+                scripts[script_file.stem] = script_data if script_data is not None else b""
+
+        function_map: dict[SearchLocation, Callable] = {
+            SearchLocation.OVERRIDE: lambda: check_dict(self._override),
+            SearchLocation.MODULES: lambda: check_dict(self._modules),
+            SearchLocation.RIMS: lambda: check_dict(self._rims),
+            SearchLocation.CHITIN: lambda: check_list(self._chitin),
+            SearchLocation.CUSTOM_MODULES: lambda: check_capsules(capsules),
+            SearchLocation.CUSTOM_FOLDERS: lambda: check_folders(folders),  # type: ignore[arg-type]
+        }
+
+        for item in order:
+            assert isinstance(item, SearchLocation)
+            function_map.get(item, lambda: None)()
+
+        return scripts
+
+    def string(
+        self,
+        locstring: LocalizedString,
+        default: str = "",
+    ) -> str:
         """Returns the string for the LocalizedString provided.
 
         This is a wrapper of the strings() method provided to make searching for a single string more convenient.
