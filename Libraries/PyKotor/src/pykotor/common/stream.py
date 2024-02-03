@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import io
+import mmap
 import os
 import struct
 from abc import ABC, abstractmethod
@@ -98,8 +99,9 @@ class BinaryReader:
         -------
             A new BinaryReader instance.
         """
-        stream: BinaryIO = Path.pathify(path).open("rb")
-        return BinaryReader(stream, offset, size)
+        stream = Path(path).open("rb")
+        mmap_stream = mmap.mmap(stream.fileno(), length=0, access=mmap.ACCESS_READ)
+        return cls(mmap_stream, offset, size)
 
     @classmethod
     def from_bytes(
@@ -121,7 +123,7 @@ class BinaryReader:
             A new BinaryReader instance.
         """
         stream = io.BytesIO(data)
-        return BinaryReader(stream, offset, size)
+        return cls(stream, offset, size)
 
     @classmethod
     def from_auto(
@@ -207,10 +209,13 @@ class BinaryReader:
         -------
             The total file size.
         """
-        pos: int = self._stream.tell()
-        self._stream.seek(0, 2)
-        size: int = self._stream.tell()
-        self._stream.seek(pos)
+        if isinstance(self._stream, mmap.mmap):
+            return self._stream.size()
+
+        current = self._stream.tell()
+        self._stream.seek(0, os.SEEK_END)
+        size = self._stream.tell()
+        self._stream.seek(current)
         return size
 
     def remaining(

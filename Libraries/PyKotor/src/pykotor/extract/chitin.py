@@ -43,9 +43,7 @@ class Chitin:
     ):
         return len(self._resources)
 
-    def load(
-        self,
-    ):
+    def load(self):
         """Reload the list of resource info linked from the chitin.key file."""
         self._resources = []
         self._resource_dict = {}
@@ -55,10 +53,9 @@ class Chitin:
             self._resource_dict[bif] = []
             absolute_bif_path = self._base_path / bif
             with BinaryReader.from_file(absolute_bif_path) as reader:
-                _bif_file_type = reader.read_string(4)
-                _bif_file_version = reader.read_string(4)
+                reader.skip(8)  # bif_file_type str length 4, bif_file_version str length 4
                 resource_count = reader.read_uint32()
-                reader.skip(4)  # padding (always 0x00000000?) fixed resource count, unimplemented
+                reader.skip(4)  # fixed resource count, unimplemented. Or is this padding (always 0x00000000?)
                 resource_offset = reader.read_uint32()  # 0x10 always 20
 
                 reader.seek(resource_offset)  # 0x20
@@ -68,10 +65,10 @@ class Chitin:
                     size = reader.read_uint32()
                     restype_id = reader.read_uint32()
 
-                    resref = keys[res_id]
+                    resname = keys[res_id]  # resref str
                     restype = ResourceType.from_id(restype_id)
                     resource = FileResource(
-                        resref,
+                        resname,
                         restype,
                         size,
                         offset,
