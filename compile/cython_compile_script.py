@@ -1,4 +1,4 @@
-from __future__ import annotations
+from __future__ import annotations  # noqa: INP001
 
 from distutils.core import setup
 from pathlib import Path
