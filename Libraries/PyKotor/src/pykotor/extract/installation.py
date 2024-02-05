@@ -24,7 +24,6 @@ from pykotor.tools.path import CaseAwarePath
 from pykotor.tools.sound import fix_audio
 from utility.error_handling import format_exception_with_variables
 from utility.misc import remove_duplicates
-from utility.path import Path, PurePath
 from utility.system.path import Path, PurePath
 
 if TYPE_CHECKING:
@@ -1850,8 +1849,6 @@ class Installation:
                 print(format_exception_with_variables(e, message="This exception has been suppressed in pykotor.extract.installation."))
             else:
                 break
-            except Exception as e:
-                print(format_exception_with_variables(e, ___message___="This exception has been suppressed in pykotor.extract.installation."))
 
         return name or root
 

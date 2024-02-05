@@ -1,17 +1,17 @@
 from __future__ import annotations
 
+import lzma
+import os
 from concurrent.futures import ThreadPoolExecutor
 from contextlib import suppress
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING, NamedTuple
-import lzma
-import os
 from typing import TYPE_CHECKING, Any, NamedTuple
 
 from pykotor.common.stream import BinaryReader
 from pykotor.resource.type import ResourceType
 from pykotor.tools.misc import is_bif_file, is_bzf_file, is_capsule_file
 from utility.misc import generate_hash
+from utility.string import CaseInsensitiveWrappedStr
 from utility.system.path import Path, PurePath
 
 if TYPE_CHECKING:
@@ -44,7 +44,6 @@ class FileResource:
         self.inside_bzf = is_bzf_file(self._filepath)
 
         self._file_hash: str = ""
-        self._identifier = ResourceIdentifier(self._resname, self._restype)
 
         self._path_ident_obj: Path = (
             self._filepath / str(self._identifier)
