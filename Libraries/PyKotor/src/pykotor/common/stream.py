@@ -46,15 +46,15 @@ class ArrayHead:
 
 
 class BinaryReader:
-    """Used for easy reading of binary files."""
+    """Provides easier reading of binary objects that abstracts uniformly to all different stream/data types."""
 
     def __init__(
         self,
-        stream: BinaryIO,
+        stream: io.IOBase | mmap.mmap,
         offset: int = 0,
         size: int | None = None,
     ):
-        self._stream: BinaryIO = stream
+        self._stream: io.IOBase | mmap.mmap = stream
         self._offset: int = offset
         self.auto_close: bool = True
         self._stream.seek(offset)
@@ -79,6 +79,40 @@ class BinaryReader:
     ):
         if self.auto_close:
             self.close()
+
+    @classmethod
+    def from_stream(
+        cls,
+        stream: io.IOBase,
+        offset: int = 0,
+        size: int | None = None,
+    ) -> BinaryReader:
+        """Returns a new BinaryReader with a stream.
+
+        Args:
+        ----
+            stream: An object of any stream type derived from io.IOBase.
+            offset: Number of bytes into the stream to consider as position 0.
+            size: Number of bytes allowed to read from the stream. If not specified, uses the whole stream.
+
+        Returns:
+        -------
+            A new BinaryReader instance.
+        """
+        if not isinstance(stream, io.IOBase):
+            msg = "The provided stream must be an instance of io.IOBase or its subclasses."
+            raise TypeError(msg)
+
+        # If the stream supports mmap, you might want to set up mmap here.
+        # However, not all streams will support fileno(), so this is conditional.
+        try:
+            initialized_stream = mmap.mmap(stream.fileno(), length=0, access=mmap.ACCESS_READ)
+        except (AttributeError, ValueError):
+            # For streams that do not support fileno() or where mmap cannot be used,
+            # fall back to using the stream directly.
+            initialized_stream = stream
+
+        return cls(initialized_stream, offset, size)
 
     @classmethod
     def from_file(
@@ -136,8 +170,13 @@ class BinaryReader:
             reader = BinaryReader.from_file(source, offset, size)
         elif isinstance(source, (memoryview, bytes, bytearray)):  # is binary data
             reader = BinaryReader.from_bytes(source, offset, size)
+        elif isinstance(source, io.IOBase):  # is any stream type
+            reader = cls.from_stream(source, offset, size)
         elif isinstance(source, BinaryReader):  # is reader
-            reader = BinaryReader(source._stream, source._offset, source._size)  # noqa: SLF001
+            reader = BinaryReader(source._stream, source.offset(), source.size())  # noqa: SLF001
+        elif isinstance(source, BinaryReader):  # is already a BinaryReader instance
+            # Clone or create a new instance based on the existing one
+            reader = cls(source._stream, source._offset, source._size)
         else:
             msg = f"Must specify a path, bytes-like object or an existing BinaryReader instance, got type ({type(source)})."
             raise NotImplementedError(msg)
@@ -178,7 +217,6 @@ class BinaryReader:
         Returns:
         -------
             int: The offset value
-        Retrieves and returns the internally stored offset value.
         """
         return self._offset
 
@@ -192,7 +230,7 @@ class BinaryReader:
     def size(
         self,
     ) -> int:
-        """Returns the total number of bytes accessible.
+        """Returns the total number of bytes remaining in the stream.
 
         Returns
         -------
@@ -232,7 +270,7 @@ class BinaryReader:
     def close(
         self,
     ):
-        """Closes the stream."""
+        """Closes the underlying stream and releases any resources."""
         self._stream.close()
 
     def skip(
@@ -293,7 +331,7 @@ class BinaryReader:
             - Return the bytes read.
         """
         length = self.size() - self._offset
-        self._stream.seek(self._offset)
+        self._stream.seek(self._offset + self.position())
         return self._stream.read(length)
 
     def read_uint8(
