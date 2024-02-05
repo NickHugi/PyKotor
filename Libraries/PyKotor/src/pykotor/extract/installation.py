@@ -1420,7 +1420,7 @@ class Installation:
 
         def check_capsules(values: list[Capsule]):  # NOTE: This function does not support txi's in the Override folder.
             for capsule in values:
-                for case_resname in copy(case_resnames):
+                for case_resname in copy(resnames):
                     texture_data: bytes | None = None
                     tformat: ResourceType | None = None
                     for tformat in texture_types:
@@ -1553,14 +1553,14 @@ class Installation:
         def check_list(values: list[FileResource]):
             for resource in values:
                 case_resname: str = resource.resname().casefold()
-                if case_resname in case_resnames and resource.restype() in sound_formats:
-                    case_resnames.remove(case_resname)
+                if case_resname in resnames and resource.restype() in sound_formats:
+                    resnames.remove(case_resname)
                     sound_data: bytes = resource.data()
                     sounds[resource.resname()] = fix_audio(sound_data) if sound_data else b""
 
         def check_capsules(values: list[Capsule]):
             for capsule in values:
-                for case_resname in copy(case_resnames):
+                for case_resname in copy(resnames):
                     sound_data: bytes | None = None
                     for sformat in sound_formats:
                         sound_data = capsule.resource(case_resname, sformat)
@@ -1568,7 +1568,7 @@ class Installation:
                             break
                     if sound_data is None:
                         continue
-                    case_resnames.remove(case_resname)
+                    resnames.remove(case_resname)
                     sounds[case_resname] = fix_audio(sound_data) if sound_data else b""
 
         def check_folders(values: list[Path]):
@@ -1578,13 +1578,13 @@ class Installation:
                     file
                     for file in folder.rglob("*")
                     if (
-                        file.stem.casefold() in case_resnames
+                        file.stem.casefold() in resnames
                         and ResourceType.from_extension(file.suffix) in sound_formats
                         and file.is_file()
                     )
                 )
             for sound_file in queried_sound_files:
-                case_resnames.remove(sound_file.stem.casefold())
+                resnames.remove(sound_file.stem.casefold())
                 sound_data: bytes = BinaryReader.load_file(sound_file)
                 sounds[sound_file.stem] = fix_audio(sound_data) if sound_data else b""
 
