@@ -6,10 +6,11 @@ HoloPatcher is a rewrite of TSLPatcher written in Python, utilizing the PyKotor 
 
 TSLPatcher is a Delphi utility designed for modifying game files for "Star Wars: Knights of the Old Republic" and its sequel. It allows for the seamless integration of mods, ensuring compatibility and minimizing conflicts between different mods.
 
-## Goals
-
-TSLPatcher is over 20 years old now and many qol features, bugs, and highly popular features were never added.
+However, TSLPatcher is over 20 years old now and many qol features, bugs, and highly popular features were never added over the years.
 TSLPatcher, additionally, is closed source, making it difficult to determine its logic or why it may be failing to install a specific mod.
+
+
+## Goals
 
 - **Backwards Compatibility**: Match TSLPatcher's output and behavior as closely as possible.
 - **Cross-platform compatible**: Function platform-agnostically on windows/mac/linux.
@@ -29,25 +30,6 @@ TSLPatcher, additionally, is closed source, making it difficult to determine its
 
 HoloPatcher can be used both as a command-line tool and through its graphical user interface.
 
-### Command-Line Interface
-
-```bash
-python __main__.py <path to game> <path to tslpatchdata> [options]
-```
-
-Required arguments:
-
-- **--game-dir**: Path to the KOTOR install folder. This will be `mtslrcm` folder or the unpackaged ipa if using one of the mobile games. This is implicit as first argument.
-- **--tslpatchdata**: Path to the tslpatchdata folder of the TSLPatcher mod. Can be the parent of tslpatchdata optionally. This is implicit as the second argument.
-
-Options:
-
-- **--install**: Start an immediate install, and do not show a ui window.
-- **--console**: Show a console window for extra debug output of HoloPatcher. Using this flag will run HoloPatcher in the current terminal.
-- **--uninstall**: Start an uninstall using the most recent backup folder provided in the tslpatchdata argument.
-- **--validate**: Validates the specified tslpatchdata mod. More specifically, this runs reader.py to determine if there's any errors in your ini files.
-
-
 ### Requirements
 
 First, see the main readme.md for instructions on how to setup the python venv. You will need to first install PyKotor's requirements. The easiest way to do this is running the `install_python_venv.ps1` script at the top level of this repo.
@@ -61,6 +43,24 @@ Optionally (but recommended), install `recommended.txt`
 ```bash
 pip install -r recommended.txt
 ```
+
+### Command-Line Interface
+
+```bash
+python __main__.py <path to game> <path to tslpatchdata> [options]
+```
+required arguments:
+
+- **--game-dir**: Path to the KOTOR install folder. This will be `mtslrcm` folder or the unpackaged ipa if using one of the mobile games. This is implicit as first argument.
+- **--tslpatchdata**: Path to the tslpatchdata folder of the TSLPatcher mod. Can be the parent of tslpatchdata optionally. This is implicit as the second argument.
+
+Options:
+
+- **--install**: Start an immediate install, and do not show a ui window.
+- **--console**: Show a console window for extra debug output of HoloPatcher. Using this flag will run HoloPatcher in the current terminal.
+- **--uninstall**: Start an uninstall using the most recent backup folder provided in the tslpatchdata argument.
+- **--validate**: Validates the specified tslpatchdata mod. More specifically, this runs reader.py to determine if there's any errors in your ini files.
+
 
 ### Graphical User Interface
 
