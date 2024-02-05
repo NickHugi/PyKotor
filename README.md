@@ -20,13 +20,7 @@ git clone https://github.com/NickHugi/PyKotor
 cd PyKotor
 ./install_python_venv.ps1
 ```
-If you are on Linux/Mac and do not have Powershell installed, simply run the command `/bin/bash ./install_powershell.sh` first, then try to run install_python_venv.ps1 again.
-
-On windows, if you get the error:
-```
-install_python_venv.ps1 is not digitally signed. You cannot run this script on the current system.
-```
-you can bypass this error by running `PowerShell.exe -ExecutionPolicy Bypass -File .\compile_holopatcher.ps1`
+For more information on running our Powershell scripts, please see [POWERSHELL.md](./POWERSHELL.md)
 
 Otherwise, see https://learn.microsoft.com/en-us/powershell/scripting/install/installing-powershell?view=powershell-7.4 to learn how to install PowerShell on your system or install Python manually from https://www.python.org/, then set your environment variable PYTHONPATH manually by looking inside the '.env' file in the root of this repo.
 
@@ -39,12 +33,12 @@ pip install -r Tools/HolocronToolset/requirements.txt --prefer-binary
 python Tools/HolocronToolset/src/toolset/__main__.py
 python Tools/KotorDiff/__main__.py
 ```
+see HoloPatcher and HolocronToolset's readme.md for more information.
 
 Install requirements-dev.txt to get all pip packages in one shot:
 ```commandline
 pip install -r requirements-dev.txt --prefer-binary
 ```
-Note: Most tools on here will automatically create the PYTHONPATH paths needed, but this is a generosity that will not reliably continue through commits. Common errors like 'import not found <utility.Path>' or 'import not found <pykotor>' may result. Just run the powershell script ./install_python_venv.ps1 to automatically configure all of this. PRs are welcome to port this powershell code to e.g. bash or another pre-installed language.
 
 ## Compiling/Building Available Tools:
 After cloning the repo, open any of the powershell scripts in the `compile` folder such as `compile_holopatcher.ps1` and `compile_toolset.ps1` with PowerShell. Doing so will start an automated process that results in a EXE being built/compiled to the PyKotor/dist folder. Specifically, those scripts will:
@@ -54,10 +48,8 @@ After cloning the repo, open any of the powershell scripts in the `compile` fold
 - Install PyInstaller
 - Compile to executable binary, as one file, to the dist folder in the root level of the repository.
 
-The compiling scripts rely on Powershell being installed, on Unix you may not have this installed and you'll need to run `/bin/bash install_powershell.sh` first. See `Cloning the Repo` above for more information.
 
-
-## Coding Example Usage:
+## Development Example Usage:
 Simple example of loading data from a game directory, searching for a specific texture, and exporting it to the TGA format.
 ```python
 from pykotor.resource.type import ResourceType
@@ -69,23 +61,6 @@ tex = inst.texture("C_Gammorean01")
 write_tpc(tex, "./C_Gammorean01.tga", ResourceType.TGA)
 ```
 As shown, this will save `C_Gammorean01.tga` to the current directory.
-
-## Accessing the GUI Designer
-
-Run the command from your terminal:
-
-```commandline
-pip install qt5-applications
-```
-
-You will then need to navigate to your Python's site-packages folder. You can determine its location through your terminal
-with the following commands:
-
-```commandline
-python -m site --user-site
-```
-
-Then navigate to ```./qt5_applications/Qt/bin``` and open the ```designer.exe``` file.
 
 ## License
 This repository falls under the [MIT License](https://github.com/NickHugi/PyKotor/blob/master/README.md).
