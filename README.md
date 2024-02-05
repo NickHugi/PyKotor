@@ -39,7 +39,7 @@ see [HoloPatcher's readme](https://github.com/NickHugi/PyKotor/tree/master/Tools
 
 see [HolocronToolset's readme](https://github.com/NickHugi/PyKotor/tree/master/Tools/HolocronToolset#readme) for more information
 
-Install requirements-dev.txt to get all pip packages in one shot:
+Optionally, install requirements-dev.txt to get all pip packages in one shot:
 ```commandline
 pip install -r requirements-dev.txt --prefer-binary
 ```
