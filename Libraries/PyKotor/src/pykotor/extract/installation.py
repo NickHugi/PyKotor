@@ -1,7 +1,9 @@
 from __future__ import annotations
 
+import os
 import re
 from contextlib import suppress
+from concurrent.futures import ThreadPoolExecutor
 from copy import copy
 from enum import Enum, IntEnum
 from typing import TYPE_CHECKING, Any, Callable, ClassVar, Generator, NamedTuple
@@ -358,6 +360,36 @@ class Installation:
     # endregion
 
     # region Load Data
+    def load_single_resource(
+        self,
+        filepath: Path | CaseAwarePath,
+        capsule_check: Callable | None = None,
+    ) -> tuple[Path, list[FileResource] | FileResource | None]:
+        # sourcery skip: extract-method
+        try:
+            if capsule_check:
+                if not capsule_check(filepath):
+                    return filepath, None
+                return filepath, list(Capsule(filepath))
+
+            resname: str
+            restype: ResourceType
+            resname, restype = ResourceIdentifier.from_path(filepath)
+            if restype.is_invalid:
+                return filepath, None
+
+            return filepath, FileResource(
+                resname,
+                restype,
+                filepath.stat().st_size,
+                offset=0,
+                filepath=filepath,
+            )
+        except Exception as e:  # noqa: BLE001
+            with Path("errorlog.txt").open("a") as f:
+                f.write(format_exception_with_variables(e))
+        return filepath, None
+
 
     def load_resources(
         self,
@@ -385,30 +417,41 @@ class Installation:
             print(f"The '{path.name}' folder did not exist when loading the installation at '{self._path}', skipping...")
             return resources
 
-        files_list: list[CaseAwarePath] = list(
+        files_iter = (
             path.safe_rglob("*")
             if recurse
-            else path.safe_iterdir(),
+            else path.safe_iterdir()
         )
-        for file in files_list:
-            if capsule_check and capsule_check(file):
-                resources[file.name] = list(Capsule(file))  # type: ignore[assignment, call-overload]
+
+        # Determine number of workers dynamically based on available CPUs
+        num_cores = os.cpu_count() or 1  # Ensure at least one core is returned
+        max_workers = num_cores * 4  # Use 4x the number of cores
+        with ThreadPoolExecutor(max_workers=max_workers) as executor:
+            # Submit tasks to the executor
+            futures = [
+                executor.submit(self.load_single_resource, file, capsule_check)
+                for file in files_iter
+            ]
+
+            # Gather resources and omit `None` values (errors or skips)
+            if isinstance(resources, CaseInsensitiveDict):
+                for f in futures:
+                    filepath, resource = f.result()
+                    if resource is None:
+                        continue
+                    if not isinstance(resource, list):
+                        continue
+                    resources[filepath.name] = resource
             else:
-                resname, restype = ResourceIdentifier.from_path(file)
-                if restype.is_invalid:
-                    continue
-                resource = FileResource(
-                    resname,
-                    restype,
-                    file.stat().st_size,
-                    0,
-                    file,
-                )
-                resources.append(resource)  # type: ignore[assignment, call-overload, union-attr]
-        if not resources or not files_list:
-            print(f"No resources found at '{path}' when loading the installation, skipping...")
-        else:
-            print(f"Loading '{path.name}' folder from installation...")
+                for f in futures:
+                    filepath, resource = f.result()
+                    if resource is None:
+                        continue
+                    if isinstance(resource, FileResource):
+                        resources.append(resource)
+
+        if not resources:
+            print(f"No resources found at '{r_path}' when loading the installation, skipping...")
         return resources
 
     def load_chitin(self):
