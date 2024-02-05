@@ -14,18 +14,18 @@ PyKotor is supported on most (if not all) operating systems. Yes, this includes 
 
 ## Cloning the repo
 If you would like to work with the source files directly from GitHub, run the following commands to get yourself set:
-Note: Linux/Mac users need to instead execute `pwsh ./install_python_venv.ps1`.
+**Note**: Linux/Mac users should use `pwsh ./install_python_venv.ps1`.
 ```commandline
 git clone https://github.com/NickHugi/PyKotor
 cd PyKotor
 ./install_python_venv.ps1
 ```
-For more information on running our Powershell scripts, please see [POWERSHELL.md](./POWERSHELL.md)
+For more information on running our Powershell scripts, please see [POWERSHELL.md](https://github.com/NickHugi/PyKotor/blob/master/POWERSHELL.md)
 
 Otherwise, see https://learn.microsoft.com/en-us/powershell/scripting/install/installing-powershell?view=powershell-7.4 to learn how to install PowerShell on your system or install Python manually from https://www.python.org/, then set your environment variable PYTHONPATH manually by looking inside the '.env' file in the root of this repo.
 
 
-Once 'install_python_venv.ps1' finishes, you can run any of the provided Tools, such as HoloPatcher, KotorDiff, or the Toolset, like this:
+Once 'install_python_venv.ps1' finishes, you can run any of the provided tools, such as HoloPatcher, KotorDiff, or the Toolset, like this:
 ```commandline
 pip install -r Tools/HoloPatcher/requirements.txt --prefer-binary
 python ./Tools/HoloPatcher/src/__main__.py
@@ -33,7 +33,8 @@ pip install -r Tools/HolocronToolset/requirements.txt --prefer-binary
 python Tools/HolocronToolset/src/toolset/__main__.py
 python Tools/KotorDiff/__main__.py
 ```
-see HoloPatcher and HolocronToolset's readme.md for more information.
+see [HoloPatcher's readme](https://github.com/NickHugi/PyKotor/tree/master/Tools/HoloPatcher#readme) for more information
+see [HolocronToolset's readme](https://github.com/NickHugi/PyKotor/tree/master/Tools/HolocronToolset#readme) for more information
 
 Install requirements-dev.txt to get all pip packages in one shot:
 ```commandline
