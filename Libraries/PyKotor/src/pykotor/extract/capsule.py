@@ -245,8 +245,8 @@ class Capsule:
             if file_type == "RIM ":
                 return self._load_rim(reader)
 
-            msg = f"File '{self._path}' is not an ERF/MOD/SAV/RIM capsule."
-            raise NotImplementedError(msg)
+        msg = f"File '{self._path}' must be a ERF/MOD/SAV/RIM capsule."
+        raise NotImplementedError(msg)
 
     def add(
         self,

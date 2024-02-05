@@ -6,7 +6,7 @@ from contextlib import suppress
 from concurrent.futures import ThreadPoolExecutor
 from copy import copy
 from enum import Enum, IntEnum
-from typing import TYPE_CHECKING, Any, Callable, ClassVar, Generator, NamedTuple
+from typing import TYPE_CHECKING, Any, Callable, ClassVar, Generator, Generic, NamedTuple, TypeVar
 
 from pykotor.common.language import Gender, Language, LocalizedString
 from pykotor.common.misc import CaseInsensitiveDict, Game, ResRef
@@ -26,8 +26,6 @@ from utility.misc import remove_duplicates
 from utility.path import Path, PurePath
 
 if TYPE_CHECKING:
-    import os
-
     from pykotor.resource.formats.gff import GFF
 
 
@@ -451,13 +449,17 @@ class Installation:
                         resources.append(resource)
 
         if not resources:
-            print(f"No resources found at '{r_path}' when loading the installation, skipping...")
+            print(f"No resources found at '{path}' when loading the installation, skipping...")
         return resources
 
     def load_chitin(self):
         """Reloads the list of resources in the Chitin linked to the Installation."""
         chitin_path: CaseAwarePath = self._path / "chitin.key"
-        if not chitin_path.exists():
+        chitin_exists: bool | None = chitin_path.safe_isfile()
+        if chitin_exists:
+            print(f"Loading BIFs from chitin.key at '{self._path}'...")
+            self._chitin = list(Chitin(key_path=chitin_path, game=self.game()))
+        elif chitin_exists is False:
             print(f"The chitin.key file did not exist at '{self._path}' when loading the installation, skipping...")
             return
         print("Load chitin...")

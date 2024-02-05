@@ -1,15 +1,18 @@
 from __future__ import annotations
 
-import os
+from concurrent.futures import ThreadPoolExecutor
 from contextlib import suppress
+from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, NamedTuple
+import lzma
+import os
+from typing import TYPE_CHECKING, Any, NamedTuple
 
 from pykotor.common.stream import BinaryReader
 from pykotor.resource.type import ResourceType
-from pykotor.tools.misc import is_bif_file, is_capsule_file
-from utility.misc import generate_sha256_hash
-from utility.path import Path, PurePath
-from utility.string import CaseInsensitiveWrappedStr
+from pykotor.tools.misc import is_bif_file, is_bzf_file, is_capsule_file
+from utility.misc import generate_hash
+from utility.system.path import Path, PurePath
 
 if TYPE_CHECKING:
     from pykotor.common.misc import ResRef
@@ -28,8 +31,6 @@ class FileResource:
     ):
         assert resname == resname.strip(), f"FileResource cannot be constructed, resource name '{resname}' cannot start/end with whitespace."
 
-        self._identifier = ResourceIdentifier(resname, restype)
-
         self._resname: str = resname
         self._restype: ResourceType = restype
         self._size: int = size
@@ -38,12 +39,16 @@ class FileResource:
 
         self.inside_capsule: bool = is_capsule_file(self._filepath)
         self.inside_bif: bool = is_bif_file(self._filepath)
+        self.inside_bzf = is_bzf_file(self._filepath)
 
-        self._path_ident_obj: Path
-        if self.inside_capsule or self.inside_bif:
-            self._path_ident_obj = self._filepath / str(self._identifier)
-        else:
-            self._path_ident_obj = self._filepath
+        self._file_hash: str = ""
+        self._identifier = ResourceIdentifier(self._resname, self._restype)
+
+        self._path_ident_obj: Path = (
+            self._filepath / str(self._identifier)
+            if self.inside_capsule or self.inside_bif
+            else self._filepath
+        )
 
         self._sha256_hash: str = ""
         self._internal = False
@@ -77,14 +82,21 @@ class FileResource:
 
     def __eq__(
         self,
-        __value: object,
+        other: FileResource | ResourceIdentifier | bytes | bytearray | memoryview | object,
     ):
-        if isinstance(__value, FileResource):
-            return self.get_sha256_hash() == __value.get_sha256_hash()
-        if isinstance(__value, (os.PathLike, bytes, bytearray, memoryview)):
-            return self.get_sha256_hash() == generate_sha256_hash(__value)
-        if isinstance(__value, (ResourceIdentifier, str)):
-            return self.identifier() == __value
+        if isinstance(other, ResourceIdentifier):
+            return self.identifier() == other
+        if isinstance(other, FileResource):
+            if self is other:
+                return True
+            return self._path_ident_obj == other._path_ident_obj
+
+        if not self._file_hash:
+            return False
+
+        if isinstance(other, (os.PathLike, bytes, bytearray, memoryview)):
+            return self._file_hash == generate_hash(other)
+
         return NotImplemented
 
     def resname(self) -> str:
@@ -135,6 +147,75 @@ class FileResource:
             self._offset = 0
             self._size = self._filepath.stat().st_size
 
+    def decompress_lzma1(  # TODO: move to a utility class or perhaps the chitin.py?
+        self,
+        data: bytes,
+        output_size: int,
+        no_end_marker: bool = False,  # From xoreos but idk what this implies
+    ) -> bytes:
+        temp_filepath = Path.cwd().joinpath(str(self.identifier()))
+        with temp_filepath.open("wb") as f:
+            print(f"Temporarily writing compressed data to '{temp_filepath}'")
+            f.write(data)  # temporarily store the data, remove later once lzma decompress is working.
+
+        props_size = 5  # For LZMA1, the properties size is usually 5 bytes.
+        if len(data) < props_size:
+            msg = "Input data too short to contain LZMA1 properties."
+            raise ValueError(msg)
+
+        # Extract properties and prepare the filter chain.
+        props = data[:props_size]
+        lzma_filter = {
+            'id': lzma.FILTER_LZMA1,
+            'dict_size': 1 << 23,  # You might need to adjust this based on actual properties.
+            'lc': props[0] % 9,
+            'lp': (props[0] // 9) % 5,
+            'pb': props[0] // (9 * 5),
+        }
+        filter_chain = [lzma_filter]
+
+        # Adjust data to exclude the properties bytes.
+        data = data[props_size:]
+
+        try:
+            # Decompress using FORMAT_RAW with the specified filter chain.
+            decompressed_data = lzma.decompress(data, format=lzma.FORMAT_RAW, filters=filter_chain)
+
+            # Check if the decompressed data matches the expected output size, if specified.
+            if len(decompressed_data) != output_size:
+                if no_end_marker and len(decompressed_data) <= output_size:
+                    # Allow for no end marker and data being smaller than expected.
+                    pass
+                else:
+                    msg = "Decompressed data size does not match the expected output size."
+                    raise ValueError(msg)
+
+        except lzma.LZMAError as e:
+            msg = "Failed to decompress LZMA1 data."
+            raise ValueError(msg) from e
+
+        return decompressed_data
+
+        try:
+            # Attempt to decompress using the LZMA alone format, which is used for LZMA1 data.
+            # This assumes the data starts with the LZMA properties header.
+            decompressed_data = lzma.decompress(data, format=lzma.FORMAT_ALONE)
+
+            # If no_end_marker is True and decompression was successful, but we expect no end marker,
+            # we would typically check if the entire output buffer was filled. However, Python's lzma
+            # module does not give us a straightforward way to enforce or check this directly.
+
+            # Check if the decompressed data matches the expected output size if specified.
+            if output_size is not None and len(decompressed_data) != output_size:
+                msg = "Decompressed data size does not match the expected output size."
+                raise ValueError(msg)
+
+        except lzma.LZMAError as e:
+            msg = "Failed to decompress LZMA1 data."
+            raise ValueError(msg) from e
+        else:
+            return decompressed_data
+
     def data(
         self,
         *,
@@ -150,12 +231,16 @@ class FileResource:
         try:
             if reload:
                 self._index_resource()
-
             with BinaryReader.from_file(self._filepath) as file:
                 file.seek(self._offset)
                 data: bytes = file.read_bytes(self._size)
-                self._sha256_hash = generate_sha256_hash(data)
-                return data
+                if self.inside_bzf:
+                    data = self.decompress_lzma1(data, self._size)
+
+                with ThreadPoolExecutor(thread_name_prefix="background_fileresource_sha1hash_calculation") as executor:
+                    future = executor.submit(generate_hash, data)
+                    self._file_hash = future.result()
+            return data
         finally:
             self._internal = False
 
@@ -164,9 +249,12 @@ class FileResource:
         *,
         reload: bool = False,
     ) -> str:
-        if reload or not self._sha256_hash:
-            self.data()  # Recalculate SHA256 hash
-        return self._sha256_hash
+        """Returns a lowercase hex string sha1 hash. If FileResource doesn't exist this returns an empty str."""
+        if reload or not self._file_hash:
+            if not self._filepath.safe_isfile():
+                return ""  # FileResource or the capsule doesn't exist on disk.
+            self.data()  # Calculate the sha1 hash
+        return self._file_hash
 
     def identifier(self) -> ResourceIdentifier:
         return self._identifier
@@ -184,8 +272,8 @@ class LocationResult(NamedTuple):
     offset: int
     size: int
 
-
-class ResourceIdentifier(NamedTuple):
+@dataclass(frozen=True)
+class ResourceIdentifier:
     """Class for storing resource name and type, facilitating case-insensitive object comparisons and hashing equal to their string representations."""
 
     resname: str
