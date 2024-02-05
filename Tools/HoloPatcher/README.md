@@ -88,4 +88,4 @@ Contributions to the PyKotor's HoloPatcher are welcome. Whether it's adding new 
 
 ## License
 
-HoloPatcher is released under the [MIT License](LICENSE).
+HoloPatcher is released under the [MIT License](https://github.com/NickHugi/PyKotor/blob/master/LICENSE).
