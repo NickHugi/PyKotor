@@ -65,12 +65,8 @@ class ResRef(CaseInsensitiveWrappedStr):
 
     def __init__(
         self,
-        name,
-        *,
-        _assert_blank: bool = True,
+        name: str,
     ):
-#        if _assert_blank:
-#            assert name, "ResRef name cannot be blank or None."
         super().__init__(name)
         self.set_data(name)
 
@@ -82,7 +78,7 @@ class ResRef(CaseInsensitiveWrappedStr):
         -------
             A new ResRef instance.
         """
-        return cls("", _assert_blank=False)
+        return cls("")
 
     @classmethod
     def from_path(
@@ -114,7 +110,7 @@ class ResRef(CaseInsensitiveWrappedStr):
     def is_valid(cls, filestem) -> bool:
         return filestem == cls.from_invalid(filestem)
 
-    def set_data(
+    def set_data(  # noqa: D417
         self,
         text: str,
         *,
@@ -159,22 +155,11 @@ class ResRef(CaseInsensitiveWrappedStr):
 
         # bypass the immutability enforcers
         object.__setattr__(self, "_content", parsed_text)
-        object.__setattr__(self, "_lowercontent", parsed_text.lower())
+        object.__setattr__(self, "_lowercontent", parsed_text.casefold())
 
     def get(self) -> CaseInsensitiveWrappedStr:
         """Returns a case-insensitive wrapped string."""
         return CaseInsensitiveWrappedStr(self._content)
-
-    def capitalize(self):
-        raise self.CaseSensitivityError(self, "capitalize")
-    def lower(self):
-        raise self.CaseSensitivityError(self, "lower")
-    def swapcase(self):
-        raise self.CaseSensitivityError(self, "swapcase")
-    def title(self):
-        raise self.CaseSensitivityError(self, "title")
-    def upper(self):
-        raise self.CaseSensitivityError(self, "upper")
 
 
 class Game(IntEnum):
@@ -209,6 +194,7 @@ class Game(IntEnum):
 
     def is_k2(self) -> bool:
         return self.value % 2 == 0
+
 
 class Color:
     # Listed here for hinting purposes
@@ -573,7 +559,7 @@ class CaseInsensitiveHashSet(set, Generic[T]):
         return super().__ne__({self._normalize_key(item) for item in other})
 
 
-class CaseInsensitiveDict(Generic[T]):
+class CaseInsensitiveDict(dict, Generic[T]):
     """A class exactly like the builtin dict[str, T], but provides case-insensitive key lookups.
 
     The case-sensitivity of the keys themselves are always preserved.
@@ -604,7 +590,7 @@ class CaseInsensitiveDict(Generic[T]):
                     self[key] = value
 
     @classmethod
-    def from_dict(cls, initial: dict[str, T]) -> CaseInsensitiveDict[T]:
+    def from_dict(cls, initial: dict[str, T] | dict[CaseInsensitiveWrappedStr, T]) -> CaseInsensitiveDict[T]:
         """Class method to create a CaseInsensitiveDict instance from a dictionary.
 
         Args:
@@ -631,13 +617,13 @@ class CaseInsensitiveDict(Generic[T]):
         if not isinstance(other, (dict, CaseInsensitiveDict)):
             return NotImplemented
 
-        other_dict: dict[str, T] = other._dictionary if isinstance(other, CaseInsensitiveDict) else other
+        other_dict: dict[CaseInsensitiveWrappedStr, T] = other._dictionary if isinstance(other, CaseInsensitiveDict) else other
 
         if len(self._dictionary) != len(other_dict):
             return False
 
         for key, value in self._dictionary.items():
-            other_value: T | None = other_dict.get(key.lower())
+            other_value: T | None = other_dict.get(key)
             if other_value != value:
                 return False
 
@@ -656,21 +642,20 @@ class CaseInsensitiveDict(Generic[T]):
         if not isinstance(key, str):
             msg = f"Keys must be strings in CaseInsensitiveDict-inherited classes, got {key!r}"
             raise KeyError(msg)
-        if key in self:
-            self.__delitem__(key)
+
         self._dictionary[CaseInsensitiveWrappedStr.cast(key)] = value
 
     def __delitem__(self, key: str):
         if not isinstance(key, str):
             msg = f"Keys must be strings in CaseInsensitiveDict-inherited classes, got {key!r}"
             raise KeyError(msg)
-        del self._dictionary[key]
+        del self._dictionary[CaseInsensitiveWrappedStr.cast(key)]
 
     def __contains__(self, key: str) -> bool:
         if not isinstance(key, str):
             msg = f"Keys must be strings in CaseInsensitiveDict-inherited classes, got {key!r}"
             raise KeyError(msg)
-        return CaseInsensitiveWrappedStr.cast(key) in self
+        return CaseInsensitiveWrappedStr.cast(key) in self._dictionary
 
     def __len__(self) -> int:
         return len(self._dictionary)
@@ -708,10 +693,9 @@ class CaseInsensitiveDict(Generic[T]):
         ...
 
     def pop(self, __key: str, __default: VT = _unique_sentinel) -> VT | T:  # type: ignore[assignment]
-        lower_key: str = CaseInsensitiveWrappedStr.cast(__key)
         try:
             # Attempt to pop the value using the case-insensitive key.
-            value: T = self._dictionary.pop(lower_key)
+            value: T = self._dictionary.pop(CaseInsensitiveWrappedStr.cast(__key))
         except KeyError:
             if __default is _unique_sentinel:
                 raise
@@ -750,11 +734,11 @@ class CaseInsensitiveDict(Generic[T]):
         ...
 
     def get(self, __key: str, __default: VT = None) -> VT | T:  # type: ignore[assignment]
-        key_lookup: str = self.get(CaseInsensitiveWrappedStr.cast(__key), _unique_sentinel)  # type: ignore[arg-type]
-        return (
+        key_lookup: CaseInsensitiveWrappedStr = self._dictionary.get(CaseInsensitiveWrappedStr.cast(__key), _unique_sentinel)  # type: ignore[arg-type]
+        return (  # type: ignore[]
             __default
             if key_lookup is _unique_sentinel
-            else self._dictionary.get(key_lookup, __default)
+            else key_lookup
         )
 
     def items(self):
