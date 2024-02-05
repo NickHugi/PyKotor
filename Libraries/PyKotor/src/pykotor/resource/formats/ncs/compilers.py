@@ -72,8 +72,8 @@ class KnownExternalCompilers(Enum):
     )
     V1 = ExternalCompilerConfig(
         sha256="EC3E657C18A32AD13D28DA0AA3A77911B32D9661EA83CF0D9BCE02E1C4D8499D",
-        name="v1",
-        release_date=date(2004, 1, 1),
+        name="v1.3 first public release",
+        release_date=date(2003, 12, 31),
         author="todo",
         features=ExternalCompilerFeatures(can_compile=True, can_decompile=True),
         commandline={
