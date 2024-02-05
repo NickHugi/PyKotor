@@ -5,6 +5,7 @@ import os
 from concurrent.futures import ThreadPoolExecutor
 from contextlib import suppress
 from dataclasses import dataclass, field
+import time
 from typing import TYPE_CHECKING, Any, NamedTuple
 
 from pykotor.common.stream import BinaryReader
@@ -53,9 +54,10 @@ class FileResource:
 
         self._sha256_hash: str = ""
         self._internal = False
+        self._task_running = False
 
     def __setattr__(self, __name, __value):
-        if hasattr(self, __name) and __name != "_internal" and not self._internal:
+        if hasattr(self, __name) and __name not in {"_internal", "_task_running"} and not self._internal and not self._task_running:
             msg = f"Cannot modify immutable FileResource instance, attempted `setattr({self!r}, {__name!r}, {__value!r})`"
             raise RuntimeError(msg)
 
@@ -218,6 +220,7 @@ class FileResource:
         self,
         *,
         reload: bool = False,
+        _internal: bool = False,
     ) -> bytes:
         """Opens the file the resource is located at and returns the bytes data of the resource.
 
@@ -243,9 +246,19 @@ class FileResource:
                 if self.inside_bzf:
                     data = self.decompress_lzma1(data, self._size)
 
-                with ThreadPoolExecutor(thread_name_prefix="background_fileresource_sha1hash_calculation") as executor:
-                    future = executor.submit(generate_hash, data)
-                    self._file_hash = future.result()
+                if not _internal and not self._task_running:
+                    def background_task(res: FileResource, sentdata: bytes):
+                        print(f"Calculating hash for {self._path_ident_obj} ")
+                        self._task_running = True
+                        start_time = time.time()
+                        res._file_hash = generate_hash(sentdata)  # noqa: SLF001
+                        end_time = time.time()
+                        self._task_running = False
+                        duration = end_time - start_time  # Calculate the duration of the hashing operation
+                        print(f"Finished calculating hash for {self._path_ident_obj}. Duration: {duration:.4f} seconds")
+
+                    with ThreadPoolExecutor(thread_name_prefix="background_fileresource_sha1hash_calculation") as executor:
+                        executor.submit(background_task, self, data)
             return data
         finally:
             self._internal = False
@@ -259,7 +272,7 @@ class FileResource:
         if reload or not self._file_hash:
             if not self._filepath.safe_isfile():
                 return ""  # FileResource or the capsule doesn't exist on disk.
-            self.data()  # Calculate the sha1 hash
+            self._file_hash = generate_hash(self.data())  # Calculate the sha1 hash
         return self._file_hash
 
     def identifier(self) -> ResourceIdentifier:
