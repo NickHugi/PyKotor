@@ -14,6 +14,7 @@ PyKotor is supported on most (if not all) operating systems. Yes, this includes 
 
 ## Cloning the repo
 If you would like to work with the source files directly from GitHub, run the following commands to get yourself set:
+
 **Note**: Linux/Mac users should use `pwsh ./install_python_venv.ps1`.
 ```commandline
 git clone https://github.com/NickHugi/PyKotor
@@ -22,7 +23,7 @@ cd PyKotor
 ```
 For more information on running our Powershell scripts, please see [POWERSHELL.md](https://github.com/NickHugi/PyKotor/blob/master/POWERSHELL.md)
 
-Otherwise, see https://learn.microsoft.com/en-us/powershell/scripting/install/installing-powershell?view=powershell-7.4 to learn how to install PowerShell on your system or install Python manually from https://www.python.org/, then set your environment variable PYTHONPATH manually by looking inside the '.env' file in the root of this repo.
+If powershell is not an option for you, you can install Python manually from https://www.python.org/, and set your environment variable PYTHONPATH manually by looking inside the '.env' file in the root of this repo.
 
 
 Once 'install_python_venv.ps1' finishes, you can run any of the provided tools, such as HoloPatcher, KotorDiff, or the Toolset, like this:
