@@ -2,58 +2,46 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+from pykotor.common.misc import ResRef
+from pykotor.extract.talktable import TalkTable
 from pykotor.resource.formats.tlk.io_tlk import TLKBinaryReader
 from pykotor.resource.formats.tlk.tlk_auto import bytes_tlk
-from pykotor.resource.formats.tlk.tlk_data import TLK
 from pykotor.tslpatcher.mods.template import PatcherModifications
 
 if TYPE_CHECKING:
-    from pykotor.common.misc import Game, ResRef
+    from pykotor.common.misc import Game
+    from pykotor.resource.formats.tlk import TLK
     from pykotor.resource.type import SOURCE_TYPES
     from pykotor.tslpatcher.logger import PatchLogger
     from pykotor.tslpatcher.memory import PatcherMemory
+    from typing_extensions import Literal
+    from utility.system.path import Path
 
 
 class ModificationsTLK(PatcherModifications):
-    DEFAULT_DESTINATION = "."
-    DEFAULT_SOURCEFILE  = "append.tlk"
-    DEFAULT_SOURCEFILE_F = "appendf.tlk"
-    DEFAULT_SAVEAS_FILE = "dialog.tlk"
-    def __init__(self, filename=DEFAULT_SOURCEFILE, replace=None, modifiers=None):
+    DEFAULT_DESTINATION   = "."
+    DEFAULT_SOURCEFILE    = "append.tlk"
+    DEFAULT_SOURCEFILE_F  = "appendf.tlk"
+    DEFAULT_SAVEAS_FILE   = "dialog.tlk"
+    DEFAULT_SAVEAS_FILE_F = "dialogf.tlk"
+    def __init__(
+        self,
+        filename: str=DEFAULT_SOURCEFILE,
+        replace: bool | None =None,
+        modifiers=None,
+    ):
         super().__init__(filename)
         self.destination = self.DEFAULT_DESTINATION
         self.modifiers: list[ModifyTLK] = modifiers if modifiers is not None else []
         self.sourcefile_f: str = self.DEFAULT_SOURCEFILE_F  # Polish version of k1
+        self.saveas = self.DEFAULT_SAVEAS_FILE
 
-    def apply(
+    def pop_tslpatcher_vars(
         self,
-        dialog: TLK,
-        memory: PatcherMemory,
-        logger: PatchLogger,
-        game: Game,
+        file_section_dict,
+        default_destination=DEFAULT_DESTINATION,
+        default_sourcefolder=".",
     ):
-        for modifier in self.modifiers:
-            if modifier.is_replacement:
-                modifier.replace(dialog, memory)
-            else:
-                modifier.insert(dialog, memory)
-            logger.complete_patch()
-
-    def patch_resource(
-        self,
-        source_tlk: SOURCE_TYPES,
-        memory: PatcherMemory,
-        logger: PatchLogger,
-        game: Game,
-    ) -> bytes:
-        dialog: TLK | SOURCE_TYPES = source_tlk
-        if not isinstance(source_tlk, TLK):
-            dialog = TLKBinaryReader(source_tlk).load()
-        assert isinstance(dialog, TLK)
-        self.apply(dialog, memory, logger, game)  # TODO: fix the type checks. Not sure why it thinks load() returns unknown?
-        return bytes_tlk(dialog)
-
-    def pop_tslpatcher_vars(self, file_section_dict, default_destination=DEFAULT_DESTINATION):
         if "!ReplaceFile" in file_section_dict:
             msg = "!ReplaceFile is not supported in [TLKList]"
             raise ValueError(msg)
@@ -61,28 +49,57 @@ class ModificationsTLK(PatcherModifications):
             msg = "!OverrideType is not supported in [TLKList]"
             raise ValueError(msg)
 
-        self.sourcefile_f = file_section_dict.pop("!SourceFileF", self.DEFAULT_SOURCEFILE_F)  # Polish only?
-        super().pop_tslpatcher_vars(file_section_dict, default_destination)
-        self.saveas = self.saveas if self.saveas != self.sourcefile else self.DEFAULT_SAVEAS_FILE
+        self.sourcefile_f = file_section_dict.pop("!SourceFileF", self.DEFAULT_SOURCEFILE_F)
+        super().pop_tslpatcher_vars(file_section_dict, default_destination, default_sourcefolder)
+
+    def patch_resource(
+        self,
+        source: SOURCE_TYPES,
+        memory: PatcherMemory,
+        log: PatchLogger,
+        game: Game,
+    ) -> bytes | Literal[True]:
+        dialog: TLK = TLKBinaryReader(source).load()
+        self.apply(dialog, memory, log, game)
+        return bytes_tlk(dialog)
+
+    def apply(
+        self,
+        dialog: TLK,
+        memory: PatcherMemory,
+        log: PatchLogger,
+        game: Game,
+    ):
+        for modifier in self.modifiers:
+            modifier.apply(dialog, memory)
+            log.complete_patch()
 
 
 class ModifyTLK:
     def __init__(
         self,
         token_id: int,
-        text: str,
-        sound: ResRef,
-        is_replacement: bool = False,
+        is_replacement: bool = False,  # noqa: FBT001, FBT002
     ):
+        self.tlk_filepath: Path | None = None
+        self.text: str = ""
+        self.sound: ResRef = ResRef.from_blank()
+
+        self.mod_index: int = token_id
         self.token_id: int = token_id
-        self.text: str = text
-        self.sound: ResRef = sound
         self.is_replacement: bool = is_replacement
 
-    def insert(self, dialog: TLK, memory: PatcherMemory):
-        dialog.add(self.text, self.sound)
-        memory.memory_str[self.token_id] = len(dialog.entries) - 1
+    def apply(self, dialog: TLK, memory: PatcherMemory):
+        self.load()
+        if self.is_replacement:
+            dialog.replace(self.token_id, self.text, str(self.sound))
+            memory.memory_str[self.token_id] = self.token_id
+        else:
+            memory.memory_str[self.token_id] = dialog.add(self.text, str(self.sound))
 
-    def replace(self, dialog: TLK, memory: PatcherMemory):
-        dialog.replace(self.token_id, self.text, self.sound)
-        memory.memory_str[self.token_id] = self.token_id
+    def load(self):
+        if self.tlk_filepath is None:
+            return
+        lookup_tlk = TalkTable(self.tlk_filepath)
+        self.text = self.text or lookup_tlk.string(self.mod_index)
+        self.sound = self.sound or lookup_tlk.sound(self.mod_index)

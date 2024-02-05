@@ -31,6 +31,8 @@ class FileResource:
     ):
         assert resname == resname.strip(), f"FileResource cannot be constructed, resource name '{resname}' cannot start/end with whitespace."
 
+        self._identifier = ResourceIdentifier(resname, restype)
+
         self._resname: str = resname
         self._restype: ResourceType = restype
         self._size: int = size
@@ -54,10 +56,7 @@ class FileResource:
         self._internal = False
 
     def __setattr__(self, __name, __value):
-        if hasattr(self, __name):
-            if __name == "_internal" or self._internal:
-                return super().__setattr__(__name, __value)
-
+        if hasattr(self, __name) and __name != "_internal" and not self._internal:
             msg = f"Cannot modify immutable FileResource instance, attempted `setattr({self!r}, {__name!r}, {__value!r})`"
             raise RuntimeError(msg)
 
@@ -78,9 +77,9 @@ class FileResource:
         return hash(self._path_ident_obj)
 
     def __str__(self):
-        return str(self._path_ident_obj)
+        return str(self._identifier)
 
-    def __eq__(
+    def __eq__(  # Checks are ordered from fastest to slowest.
         self,
         other: FileResource | ResourceIdentifier | bytes | bytearray | memoryview | object,
     ):
@@ -223,9 +222,17 @@ class FileResource:
     ) -> bytes:
         """Opens the file the resource is located at and returns the bytes data of the resource.
 
-        Returns
+        Args:
+        ----
+            reload (bool, kwarg): Whether to reload the file from disk or use the cache. Default is False
+
+        Returns:
         -------
             Bytes data of the resource.
+
+        Raises:
+        ------
+            FileNotFoundError: File not found on disk.
         """
         self._internal = True
         try:
@@ -287,23 +294,20 @@ class ResourceIdentifier:
     def __repr__(
         self,
     ):
-        return f"{self.__class__.__name__}(resname={self.resname}, restype={self.restype!r})"
+        return f"{self.__class__.__name__}(resname='{self.resname}', restype={self.restype!r})"
 
     def __str__(
         self,
     ):
-        ext = self.restype.extension
-        suffix = f".{ext}" if ext else ""
-        return f"{self.resname.lower()}{suffix.lower()}"
+        ext: str = self.restype.extension
+        suffix: str = f".{ext}" if ext else ""
+        return f"{self.resname}{suffix}".lower()
 
-    def __eq__(
-        self,
-        __value: str | ResourceIdentifier,
-    ):
-        if isinstance(__value, str):
-            __value = self.from_path(__value)
-        if isinstance(__value, ResourceIdentifier):
-            return hash(self) == hash(__value)
+    def __eq__(self, other: object):
+        if isinstance(other, str):
+            return hash(self) == hash(other.lower())
+        if isinstance(other, ResourceIdentifier):
+            return hash(self) == hash(other)
         return NotImplemented
 
     def validate(self, *, strict=False):
@@ -340,17 +344,19 @@ class ResourceIdentifier:
             - If splitting fails, uses stem as name and extension (from the last dot) as type
             - Handles exceptions during processing
         """
-        path_obj: PurePath = PurePath("")  #PurePath("<INVALID>")
-        with suppress(Exception), suppress(TypeError):
-            path_obj = PurePath.pathify(file_path)
-        with suppress(Exception):
-            max_dots: int = path_obj.name.count(".")
-            for dots in range(max_dots+1, 1, -1):
-                with suppress(Exception):
-                    resname, restype_ext = path_obj.split_filename(dots)
-                    return ResourceIdentifier(
-                        resname,
-                        ResourceType.from_extension(restype_ext).validate(),
-                    )
+        try:
+            path_obj = PurePath(file_path)
+        except Exception:
+            return ResourceIdentifier("", ResourceType.from_extension(""))
 
+        max_dots: int = path_obj.name.count(".")
+        for dots in range(max_dots+1, 1, -1):
+            with suppress(Exception):
+                resname, restype_ext = path_obj.split_filename(dots)
+                return ResourceIdentifier(
+                    resname,
+                    ResourceType.from_extension(restype_ext).validate(),
+                )
+
+        # ResourceType is invalid at this point.
         return ResourceIdentifier(path_obj.stem, ResourceType.from_extension(path_obj.suffix))

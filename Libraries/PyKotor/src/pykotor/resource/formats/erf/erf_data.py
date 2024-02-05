@@ -20,15 +20,15 @@ class ERFType(Enum):
     MOD = "MOD "
     SAV = "SAV "
 
-    @staticmethod
-    def from_extension(filepath: os.PathLike | str) -> ERFType:
-        if is_erf_file(filepath):
-            return ERFType.ERF
-        if is_mod_file(filepath):
-            return ERFType.MOD
-        if is_sav_file(filepath):
-            return ERFType.SAV
-        msg = f"Invalid ERF extension in filepath '{filepath}'."
+    @classmethod
+    def from_extension(cls, ext_or_filepath: os.PathLike | str) -> ERFType:
+        if is_erf_file(ext_or_filepath):
+            return cls.ERF
+        if is_mod_file(ext_or_filepath):
+            return cls.MOD
+        if is_sav_file(ext_or_filepath):
+            return cls.SAV
+        msg = f"Invalid ERF extension in filepath '{ext_or_filepath}'."
         raise ValueError(msg)
 
 
@@ -50,7 +50,12 @@ class ERF:
         self._resources: list[ERFResource] = []
 
         # used for faster lookups
-        self._resource_dict: dict[tuple[str, ResourceType], ERFResource] = {}
+        self._resource_dict: dict[ResourceIdentifier, ERFResource] = {}
+
+    def __repr__(
+        self,
+    ):
+        return f"{self.__class__.__name__}({self.erf_type!r})"
 
     def __repr__(
         self,
@@ -126,7 +131,7 @@ class ERF:
 
         Args:
         ----
-            resname: The resref str.
+            resname: The resource reference filename stem.
             restype: The resource type.
 
         Returns:
@@ -145,7 +150,7 @@ class ERF:
 
         Args:
         ----
-            resref: The resref.
+            resname: The resource reference filename.
             restype: The resource type.
         """
         key = ResourceIdentifier(resname, restype).as_resref_compatible()

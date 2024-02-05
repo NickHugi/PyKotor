@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from contextlib import suppress
 from typing import TYPE_CHECKING
 
 from pykotor.common.misc import ResRef
@@ -11,13 +12,9 @@ from PyQt5.QtWidgets import QDialog, QListWidgetItem, QShortcut, QTreeWidgetItem
 from toolset.data.installation import HTInstallation
 from toolset.gui.dialogs.edit.locstring import LocalizedStringDialog
 from toolset.gui.editor import Editor
-from utility.error_handling import format_exception_with_variables
 
 if TYPE_CHECKING:
     import os
-
-    from pykotor.resource.formats.twoda.twoda_data import TwoDA
-    from typing_extensions import Literal
 
 
 class UTIEditor(Editor):
@@ -94,11 +91,11 @@ class UTIEditor(Editor):
         self.ui.nameEdit.setInstallation(installation)
         self.ui.descEdit.setInstallation(installation)
 
-        required: list[str] = [HTInstallation.TwoDA_BASEITEMS, HTInstallation.TwoDA_ITEM_PROPERTIES]
+        required = [HTInstallation.TwoDA_BASEITEMS, HTInstallation.TwoDA_ITEM_PROPERTIES]
         installation.htBatchCache2DA(required)
 
-        baseitems: TwoDA = installation.htGetCache2DA(HTInstallation.TwoDA_BASEITEMS)
-        itemProperties: TwoDA = installation.htGetCache2DA(HTInstallation.TwoDA_ITEM_PROPERTIES)
+        baseitems = installation.htGetCache2DA(HTInstallation.TwoDA_BASEITEMS)
+        itemProperties = installation.htGetCache2DA(HTInstallation.TwoDA_ITEM_PROPERTIES)
 
         self.ui.baseSelect.clear()
         self.ui.baseSelect.setItems(baseitems.get_column("label"))
@@ -147,7 +144,7 @@ class UTIEditor(Editor):
         self.ui.nameEdit.setLocstring(uti.name)
         self.ui.descEdit.setLocstring(uti.description)
         self.ui.tagEdit.setText(uti.tag)
-        self.ui.resrefEdit.setText(str(uti.resref))
+        self.ui.resrefEdit.setText(uti.resref.get())
         self.ui.baseSelect.setCurrentIndex(uti.base_item)
         self.ui.costSpin.setValue(uti.cost)
         self.ui.additionalCostSpin.setValue(uti.add_cost)
@@ -186,7 +183,7 @@ class UTIEditor(Editor):
             - Write GFF to byte array
             - Return byte array and empty string
         """
-        uti: UTI = self._uti
+        uti = self._uti
 
         # Basic
         uti.name = self.ui.nameEdit.locstring()
@@ -222,12 +219,12 @@ class UTIEditor(Editor):
         self._loadUTI(UTI())
 
     def changeName(self):
-        dialog = LocalizedStringDialog(self, self._installation, self.ui.nameEdit.locstring())
+        dialog = LocalizedStringDialog(self, self._installation, self.ui.nameEdit.locstring)
         if dialog.exec_():
             self._loadLocstring(self.ui.nameEdit, dialog.locstring)
 
     def changeDesc(self):
-        dialog = LocalizedStringDialog(self, self._installation, self.ui.descEdit.locstring())
+        dialog = LocalizedStringDialog(self, self._installation, self.ui.descEdit.locstring)
         if dialog.exec_():
             self._loadLocstring(self.ui.descEdit, dialog.locstring)
 
@@ -270,12 +267,12 @@ class UTIEditor(Editor):
 
         Processing Logic:
         ----------------
-            - Gets the item properties table from the installation.
-            - Creates a UTIProperty object and populates it with data from the table.
-            - Adds a summary of the property to the assigned properties list widget.
-            - Sets the UTIProperty as user data on the list item.
+        - Gets the item properties table from the installation.
+        - Creates a UTIProperty object and populates it with data from the table.
+        - Adds a summary of the property to the assigned properties list widget.
+        - Sets the UTIProperty as user data on the list item.
         """
-        itemprops: TwoDA = self._installation.htGetCache2DA(HTInstallation.TwoDA_ITEM_PROPERTIES)
+        itemprops = self._installation.htGetCache2DA(HTInstallation.TwoDA_ITEM_PROPERTIES)
 
         utiProperty = UTIProperty()
         utiProperty.property_name = propertyId
@@ -286,7 +283,7 @@ class UTIEditor(Editor):
         utiProperty.param1_value = 0
         utiProperty.chance_appear = 100
 
-        text: str = self.propertySummary(utiProperty)
+        text = self.propertySummary(utiProperty)
         item = QListWidgetItem(text)
         item.setData(QtCore.Qt.UserRole, utiProperty)
         self.ui.assignedPropertiesList.addItem(item)
@@ -301,8 +298,8 @@ class UTIEditor(Editor):
 
         Processing Logic:
         ----------------
-            - It returns a formatted string combining the retrieved names.
-            - If a cost or subproperty is not present, it is omitted from the returned string.
+        - It returns a formatted string combining the retrieved names.
+        - If a cost or subproperty is not present, it is omitted from the returned string.
         """
         propName = UTIEditor.propertyName(self._installation, utiProperty.property_name)
         subpropName = UTIEditor.subpropertyName(self._installation, utiProperty.property_name, utiProperty.subtype)
@@ -317,9 +314,9 @@ class UTIEditor(Editor):
         return f"{propName}"
 
     def onUpdateIcon(self):
-        baseItem: int = self.ui.baseSelect.currentIndex()
-        modelVariation: int = self.ui.modelVarSpin.value()
-        textureVariation: int = self.ui.textureVarSpin.value()
+        baseItem = self.ui.baseSelect.currentIndex()
+        modelVariation = self.ui.modelVarSpin.value()
+        textureVariation = self.ui.textureVarSpin.value()
         self.ui.iconLabel.setPixmap(self._installation.getItemIcon(baseItem, modelVariation, textureVariation))
 
     def onAvaialblePropertyListDoubleClicked(self):
@@ -336,8 +333,8 @@ class UTIEditor(Editor):
 
     @staticmethod
     def propertyName(installation: HTInstallation, prop: int):
-        properties: TwoDA = installation.htGetCache2DA(HTInstallation.TwoDA_ITEM_PROPERTIES)
-        stringref: int | None = properties.get_row(prop).get_integer("name")
+        properties = installation.htGetCache2DA(HTInstallation.TwoDA_ITEM_PROPERTIES)
+        stringref = properties.get_row(prop).get_integer("name")
         return installation.talktable().string(stringref)
 
     @staticmethod
@@ -356,19 +353,19 @@ class UTIEditor(Editor):
 
         Processing Logic:
         ----------------
-            - Gets the item properties 2DA from the cache
-            - Gets the subtype resource reference from the property row
-            - Gets the subproperties 2DA from the subtype resource
-            - Gets the name string reference from the subproperty row
-            - Returns the string from the talktable or the label if name is None
+        - Gets the item properties 2DA from the cache
+        - Gets the subtype resource reference from the property row
+        - Gets the subproperties 2DA from the subtype resource
+        - Gets the name string reference from the subproperty row
+        - Returns the string from the talktable or the label if name is None
         """
-        properties: TwoDA = installation.htGetCache2DA(HTInstallation.TwoDA_ITEM_PROPERTIES)
-        subtypeResname: str = properties.get_cell(prop, "subtyperesref")
-        if not subtypeResname:
+        properties = installation.htGetCache2DA(HTInstallation.TwoDA_ITEM_PROPERTIES)
+        subtypeResname = properties.get_cell(prop, "subtyperesref")
+        if subtypeResname  == "":
             return None
-        subproperties: TwoDA = installation.htGetCache2DA(subtypeResname)
-        headerStrref: Literal['name', 'string_ref'] = "name" if "name" in subproperties.get_headers() else "string_ref"
-        nameStrref: int | None = subproperties.get_row(subprop).get_integer(headerStrref)
+        subproperties = installation.htGetCache2DA(subtypeResname)
+        headerStrref = "name" if "name" in subproperties.get_headers() else "string_ref"
+        nameStrref = subproperties.get_row(subprop).get_integer(headerStrref)
         return (
             installation.talktable().string(nameStrref)
             if nameStrref is not None
@@ -377,24 +374,20 @@ class UTIEditor(Editor):
 
     @staticmethod
     def costName(installation: HTInstallation, cost: int, value: int):
-        try:
+        with suppress(Exception):
             costtableList = installation.htGetCache2DA(HTInstallation.TwoDA_IPRP_COSTTABLE)
             costtable = installation.htGetCache2DA(costtableList.get_cell(cost, "name"))
             stringref = costtable.get_row(value).get_integer("name")
-            return installation.talktable().string(stringref)  # FIXME: stringref is None in many occasions
-        except Exception as e:
-            print(format_exception_with_variables(e, ___message___="This exception has been suppressed"))
+            return installation.talktable().string(stringref)
         return None
 
     @staticmethod
     def paramName(installation: HTInstallation, paramtable: int, param: int):
-        try:
+        with suppress(Exception):
             paramtableList = installation.htGetCache2DA(HTInstallation.TwoDA_IPRP_PARAMTABLE)
-            paramtable_twoda = installation.htGetCache2DA(paramtableList.get_cell(paramtable, "tableresref"))
-            stringref = paramtable_twoda.get_row(param).get_integer("name")
+            paramtable = installation.htGetCache2DA(paramtableList.get_cell(paramtable, "tableresref"))
+            stringref = paramtable.get_row(param).get_integer("name")
             return installation.talktable().string(stringref)
-        except Exception as e:
-            print(format_exception_with_variables(e, ___message___="This exception has been suppressed."))
         return None
 
 
@@ -429,7 +422,7 @@ class PropertyEditor(QDialog):
         self._utiProperty: UTIProperty = utiProperty
 
         costtableList = installation.htGetCache2DA(HTInstallation.TwoDA_IPRP_COSTTABLE)
-        if utiProperty.cost_table != 0xFF:
+        if utiProperty.cost_table != 255:
             costtable = installation.htGetCache2DA(costtableList.get_cell(utiProperty.cost_table, "name"))
             for i in range(costtable.get_height()):
                 item = QListWidgetItem(UTIEditor.costName(installation, utiProperty.cost_table, i))
@@ -456,16 +449,16 @@ class PropertyEditor(QDialog):
 
     def reloadTextboxes(self):
         """Reloads textboxes with property names."""
-        propertyName: str = UTIEditor.propertyName(self._installation, self._utiProperty.property_name)
+        propertyName = UTIEditor.propertyName(self._installation, self._utiProperty.property_name)
         self.ui.propertyEdit.setText(propertyName or "")
 
-        subpropertyName: str | None = UTIEditor.subpropertyName(self._installation, self._utiProperty.property_name, self._utiProperty.subtype)
+        subpropertyName = UTIEditor.subpropertyName(self._installation, self._utiProperty.property_name, self._utiProperty.subtype)
         self.ui.subpropertyEdit.setText(subpropertyName or "")
 
-        costName: str | None = UTIEditor.costName(self._installation, self._utiProperty.cost_table, self._utiProperty.cost_value)
+        costName = UTIEditor.costName(self._installation, self._utiProperty.cost_table, self._utiProperty.cost_value)
         self.ui.costEdit.setText(costName or "")
 
-        paramName: str | None = UTIEditor.paramName(self._installation, self._utiProperty.param1, self._utiProperty.param1_value)
+        paramName = UTIEditor.paramName(self._installation, self._utiProperty.param1, self._utiProperty.param1_value)
         self.ui.parameterEdit.setText(paramName or "")
 
     def selectCost(self):

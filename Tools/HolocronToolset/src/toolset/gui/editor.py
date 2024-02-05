@@ -14,13 +14,14 @@ from pykotor.tools.misc import is_any_erf_type_file, is_bif_file, is_capsule_fil
 from PyQt5 import QtCore
 from PyQt5.QtGui import QIcon, QPixmap
 from PyQt5.QtWidgets import QFileDialog, QLineEdit, QMainWindow, QMessageBox, QPlainTextEdit, QShortcut, QWidget
+from pykotor.tools.path import CaseAwarePath
 from toolset.gui.dialogs.load_from_module import LoadFromModuleDialog
 from toolset.gui.dialogs.save.to_bif import BifSaveDialog, BifSaveOption
 from toolset.gui.dialogs.save.to_module import SaveToModuleDialog
 from toolset.gui.dialogs.save.to_rim import RimSaveDialog, RimSaveOption
 from toolset.gui.widgets.settings.installations import GlobalSettings
-from utility.error_handling import format_exception_with_variables, universal_simplify_exception
-from utility.path import Path
+from utility.error_handling import format_exception_with_variables
+from utility.system.path import Path
 
 if TYPE_CHECKING:
     import os
@@ -86,18 +87,18 @@ class Editor(QMainWindow):
         self._saveFilter: str = "All valid files ("
         for resource in writeSupported:
             self._saveFilter += f'*.{resource.extension}{"" if writeSupported[-1] == resource else " "}'
-        self._saveFilter += " *.erf *.mod *.rim);;"
+        self._saveFilter += " *.erf *.mod *.rim *.sav);;"
         for resource in writeSupported:
             self._saveFilter += f"{resource.category} File (*.{resource.extension});;"
-        self._saveFilter += "Save into module (*.erf *.mod *.rim)"
+        self._saveFilter += "Save into module (*.erf *.mod *.rim *.sav)"
 
         self._openFilter: str = "All valid files ("
         for resource in readSupported:
             self._openFilter += f'*.{resource.extension}{"" if readSupported[-1] == resource else " "}'
-        self._openFilter += " *.erf *.mod *.rim);;"
+        self._openFilter += " *.erf *.mod *.rim *.sav);;"
         for resource in readSupported:
             self._openFilter += f"{resource.category} File (*.{resource.extension});;"
-        self._openFilter += "Load from module (*.erf *.mod *.rim)"
+        self._openFilter += "Load from module (*.erf *.mod *.rim *.sav)"
 
     def _setupMenus(self):
         """Sets up menu actions and keyboard shortcuts.
@@ -122,7 +123,7 @@ class Editor(QMainWindow):
             if action.text() == "Revert":
                 action.setEnabled(False)
             if action.text() == "Exit":
-                action.triggered.connect(self.close)
+                action.triggered.connect(self.close)  # type: ignore[]
         QShortcut("Ctrl+N", self).activated.connect(self.new)
         QShortcut("Ctrl+O", self).activated.connect(self.open)
         QShortcut("Ctrl+S", self).activated.connect(self.save)
@@ -171,7 +172,7 @@ class Editor(QMainWindow):
         """
         filepath_str, _filter = QFileDialog.getSaveFileName(self, "Save As", "", self._saveFilter, "")
         if filepath_str != "":
-            if is_capsule_file(filepath_str) and "Save into module (*.erf *.mod *.rim)" in self._saveFilter:
+            if is_capsule_file(filepath_str) and "Save into module (*.erf *.mod *.rim *.sav)" in self._saveFilter:
                 if self._resref is None:
                     self._resref = "new"
                     self._restype = self._writeSupported[0]
@@ -220,10 +221,10 @@ class Editor(QMainWindow):
                 self._saveEndsWithOther(data, data_ext)
         except Exception as e:  # noqa: BLE001
             with Path("errorlog.txt").open("a") as file:
-                lines = format_exception_with_variables(e)
+                lines = format_exception_with_variables(e, e.__class__, e.__traceback__)
                 file.writelines(lines)
                 file.write("\n----------------------\n")
-            QMessageBox(QMessageBox.Critical, "Failed to write to file", str(universal_simplify_exception(e))).exec_()
+            QMessageBox(QMessageBox.Critical, "Failed to write to file", str(e)).exec_()
 
     def _saveEndsWithBif(self, data: bytes, data_ext: bytes):
         """Saves data if dialog returns specific options.
@@ -344,7 +345,7 @@ class Editor(QMainWindow):
 
         # MDL is a special case - we need to save the MDX file with the MDL file.
         if self._restype == ResourceType.MDL:
-            with self._filepath.with_suffix(".mdx").open("wb") as file:
+            with CaseAwarePath.pathify(self._filepath).with_suffix(".mdx").open("wb") as file:
                 file.write(data_ext)
 
         self.savedFile.emit(self._filepath, self._resref, self._restype, data)
@@ -362,7 +363,7 @@ class Editor(QMainWindow):
         filepath_str, filter = QFileDialog.getOpenFileName(self, "Open file", "", self._openFilter)
         if filepath_str:
             c_filepath = Path(filepath_str)
-            if is_capsule_file(c_filepath.name) and "Load from module (*.erf *.mod *.rim)" in self._openFilter:
+            if is_capsule_file(c_filepath.name) and "Load from module (*.erf *.mod *.rim *.sav)" in self._openFilter:
                 dialog = LoadFromModuleDialog(Capsule(c_filepath), self._readSupported)
                 if dialog.exec_():
                     self.load(c_filepath, dialog.resref(), dialog.restype(), dialog.data())

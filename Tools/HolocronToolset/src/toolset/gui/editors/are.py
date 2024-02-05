@@ -7,8 +7,11 @@ from pykotor.common.misc import Color, ResRef
 from pykotor.extract.file import ResourceIdentifier, ResourceResult
 from pykotor.extract.installation import SearchLocation
 from pykotor.resource.formats.bwm import read_bwm
+from pykotor.resource.formats.bwm.bwm_data import BWM
 from pykotor.resource.formats.gff import write_gff
 from pykotor.resource.formats.lyt import read_lyt
+from pykotor.resource.formats.lyt.lyt_data import LYT
+from pykotor.resource.formats.tpc.tpc_data import TPC
 from pykotor.resource.generics.are import ARE, ARENorthAxis, AREWindPower, dismantle_are, read_are
 from pykotor.resource.type import ResourceType
 from PyQt5.QtGui import QColor, QImage, QPixmap

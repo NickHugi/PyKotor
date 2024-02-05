@@ -9,7 +9,7 @@ from pykotor.tools.misc import is_any_erf_type_file, is_rim_file
 from PyQt5 import QtCore
 from PyQt5.QtCore import QUrl
 from PyQt5.QtGui import QDesktopServices, QKeySequence
-from utility.path import Path
+from utility.system.path import Path
 
 if TYPE_CHECKING:
     import os

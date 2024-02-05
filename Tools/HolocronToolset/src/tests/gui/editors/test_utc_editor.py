@@ -6,13 +6,17 @@ import sys
 import unittest
 from unittest import TestCase
 
-from PyQt5.QtWidgets import QApplication
+try:
+    from PyQt5.QtTest import QTest
+    from PyQt5.QtWidgets import QApplication
+except (ImportError, ModuleNotFoundError):
+    QTest, QApplication = None, None  # type: ignore[misc, assignment]
 
 PYKOTOR_PATH = next(f for f in pathlib.Path(__file__).parents if f.name == "Tools").parent / "Libraries" / "PyKotor" / "src" / "pykotor"
-sys.path.insert(0, str(PYKOTOR_PATH))
+sys.path.append(str(PYKOTOR_PATH))
 
 HOLOCRON_TOOLSET_PATH = next(f for f in pathlib.Path(__file__).parents if f.name == "Tools") / "toolset"
-sys.path.insert(0, str(HOLOCRON_TOOLSET_PATH))
+sys.path.append(str(HOLOCRON_TOOLSET_PATH))
 
 TESTS_FILES_PATH = next(f for f in pathlib.Path(__file__).parents if f.name == "tests") / "files"
 
@@ -20,9 +24,8 @@ TESTS_FILES_PATH = next(f for f in pathlib.Path(__file__).parents if f.name == "
 if getattr(sys, "frozen", False) is False:
     def add_sys_path(p):
         working_dir = str(p)
-        if working_dir in sys.path:
-            sys.path.remove(working_dir)
-        sys.path.insert(0, working_dir)
+        if working_dir not in sys.path:
+            sys.path.append(working_dir)
     pykotor_path = pathlib.Path(__file__).parents[6] / "Libraries" / "PyKotor" / "src" / "pykotor"
     if pykotor_path.exists():
         add_sys_path(pykotor_path.parent)
@@ -49,6 +52,10 @@ from pykotor.resource.type import ResourceType
 @unittest.skipIf(
     not K2_PATH or not pathlib.Path(K2_PATH).joinpath("chitin.key").exists(),
     "K2_PATH environment variable is not set or not found on disk.",
+)
+@unittest.skipIf(
+    QTest is None or not QApplication,
+    "PyQt5 is required, please run pip install -r requirements.txt before running this test.",
 )
 class UTCEditorTest(TestCase):
     @classmethod

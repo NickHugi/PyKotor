@@ -28,8 +28,7 @@ from PyQt5.QtWidgets import QListWidgetItem, QMessageBox, QPlainTextEdit, QShort
 from toolset.gui.editor import Editor
 from toolset.gui.widgets.settings.installations import GlobalSettings, NoConfigurationSetError
 from toolset.utils.script import compileScript, decompileScript
-from utility.error_handling import universal_simplify_exception
-from utility.path import Path
+from utility.system.path import Path
 
 if TYPE_CHECKING:
     import os
@@ -167,10 +166,10 @@ class NSSEditor(Editor):
                 source = decompileScript(data, self._installation.tsl)
                 self.ui.codeEdit.setPlainText(source)
             except ValueError as e:
-                QMessageBox(QMessageBox.Critical, "Decompilation Failed", str(universal_simplify_exception(e))).exec_()
+                QMessageBox(QMessageBox.Critical, "Decompilation Failed", str(e)).exec_()
                 self.new()
             except NoConfigurationSetError as e:
-                QMessageBox(QMessageBox.Critical, "Filepath is not set", str(universal_simplify_exception(e))).exec_()
+                QMessageBox(QMessageBox.Critical, "Filepath is not set", str(e)).exec_()
                 self.new()
 
     def build(self) -> tuple[bytes, bytes]:
@@ -235,9 +234,9 @@ class NSSEditor(Editor):
                 f"Compiled script successfully saved to:\n {savePath}.",
             ).exec_()
         except ValueError as e:
-            QMessageBox(QMessageBox.Critical, "Failed to compile", str(universal_simplify_exception(e))).exec_()
+            QMessageBox(QMessageBox.Critical, "Failed to compile", str(e)).exec_()
         except OSError as e:
-            QMessageBox(QMessageBox.Critical, "Failed to save file", str(universal_simplify_exception(e))).exec_()
+            QMessageBox(QMessageBox.Critical, "Failed to save file", str(e)).exec_()
 
     def changeDescription(self):
         """Change the description textbox to whatever function or constant the user has selected.

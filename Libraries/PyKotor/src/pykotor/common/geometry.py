@@ -1078,7 +1078,7 @@ class SurfaceMaterial(IntEnum):
         self,
     ) -> bool:
         """Returns True if the surface material is walkable, False otherwise."""
-        return self in [
+        return self in {
             SurfaceMaterial.DIRT,
             SurfaceMaterial.GRASS,
             SurfaceMaterial.STONE,
@@ -1092,7 +1092,7 @@ class SurfaceMaterial(IntEnum):
             SurfaceMaterial.LEAVES,
             SurfaceMaterial.DOOR,
             SurfaceMaterial.TRIGGER,
-        ]
+        }
 
 
 class Face:
@@ -1151,12 +1151,12 @@ class Face:
     ) -> float:
         return -1.0 * (self.normal().dot(self.v1))
 
-    def centre(  # TODO: fix return type
+    def centre(
         self,
     ) -> Vector3:
         return (self.v1 + self.v2 + self.v3) / 3
 
-    def average(  # TODO: fix return type
+    def average(
         self,
     ) -> Vector3:
         """Returns the average point of the face.
@@ -1375,8 +1375,8 @@ class Polygon3:
 
     def __getitem__(
         self,
-        item: int,
-    ) -> Vector3 | list[Vector3]:
+        item: int | slice,
+    ):
         if isinstance(item, int):
             return self.points[item]
         if isinstance(item, slice):

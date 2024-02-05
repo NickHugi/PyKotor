@@ -2,23 +2,27 @@ from __future__ import annotations
 
 import base64
 import json
+import traceback
 from contextlib import suppress
 from datetime import datetime, timedelta, timezone
 from tempfile import TemporaryDirectory
 from typing import TYPE_CHECKING, ClassVar
 
 import requests
+from PyQt5 import QtCore, QtGui
+from PyQt5.QtGui import QCloseEvent, QIcon, QPixmap, QStandardItem
+from PyQt5.QtWidgets import QFileDialog, QMainWindow, QMessageBox, QTreeView
+from watchdog.events import FileSystemEventHandler
+from watchdog.observers import Observer
+
 from pykotor.common.stream import BinaryReader
-from pykotor.extract.file import FileResource, ResourceIdentifier, ResourceResult
+from pykotor.extract.file import FileResource, ResourceIdentifier
 from pykotor.extract.installation import SearchLocation
 from pykotor.resource.formats.mdl import read_mdl, write_mdl
 from pykotor.resource.formats.tpc import read_tpc, write_tpc
 from pykotor.resource.type import ResourceType
 from pykotor.tools import model
 from pykotor.tools.misc import is_bif_file, is_rim_file
-from PyQt5 import QtCore, QtGui
-from PyQt5.QtGui import QCloseEvent, QIcon, QPixmap, QStandardItem
-from PyQt5.QtWidgets import QFileDialog, QMainWindow, QMessageBox, QTreeView
 from toolset.config import PROGRAM_VERSION, UPDATE_INFO_LINK
 from toolset.data.installation import HTInstallation
 from toolset.gui.dialogs.about import About
@@ -47,10 +51,8 @@ from toolset.gui.windows.indoor_builder import IndoorMapBuilder
 from toolset.gui.windows.module_designer import ModuleDesigner
 from toolset.utils.misc import openLink
 from toolset.utils.window import addWindow, openResourceEditor
-from utility.error_handling import assert_with_variable_trace, format_exception_with_variables, universal_simplify_exception
-from utility.path import Path, PurePath
-from watchdog.events import FileSystemEventHandler
-from watchdog.observers import Observer
+from utility.error_handling import assert_with_variable_trace, universal_simplify_exception
+from utility.system.path import Path, PurePath
 
 if TYPE_CHECKING:
     import os
@@ -60,7 +62,6 @@ if TYPE_CHECKING:
     from pykotor.resource.type import SOURCE_TYPES
     from pykotor.tools.path import CaseAwarePath
     from toolset.gui.widgets.main_widgets import ResourceList
-    from typing_extensions import Literal
 
 
 class ToolWindow(QMainWindow):
@@ -127,10 +128,8 @@ class ToolWindow(QMainWindow):
             self.settings.firstTime = False
 
             # Create a directory used for dumping temp files
-            try:
+            with suppress(Exception):
                 self.settings.extractPath = str(Path(str(TemporaryDirectory().name)))
-            except Exception as e:
-                print(f"Could not create temp directory: {universal_simplify_exception(e)}")
 
         self.checkForUpdates(True)
 
@@ -254,8 +253,18 @@ class ToolWindow(QMainWindow):
         if not file_path.is_relative_to(self.active.override_path()):
             print(f"{file_path} is not relative to the override folder, cannot reload")
             return
-        self.active.reload_override_file(file_path)
-        self.ui.overrideWidget.setResources(self.active.override_resources(str(file_path.parent)))
+        if file_path.is_file():
+            self.active.reload_override_file(file_path)
+            folder_path = file_path.parent
+        else:
+            folder_path = file_path
+        self.ui.overrideWidget.setResources(
+            self.active.override_resources(
+                Path._fix_path_formatting(str(folder_path.relative_to(self.active.override_path())).replace(str(self.active.override_path()), ""))
+                if folder_path not in self.active.override_path().parents
+                else "."
+            )
+        )
 
     def onOverrideRefresh(self):
         self.refreshOverrideList()
@@ -341,7 +350,7 @@ class ToolWindow(QMainWindow):
 
     # region Menu Bar
     def updateMenus(self):
-        version: Literal['x', '2', '1'] = "x" if self.active is None else "2" if self.active.tsl else "1"
+        version = "x" if self.active is None else "2" if self.active.tsl else "1"
 
         dialogIconPath = f":/images/icons/k{version}/dialog.png"
         self.ui.actionNewDLG.setIcon(QIcon(QPixmap(dialogIconPath)))
@@ -416,7 +425,7 @@ class ToolWindow(QMainWindow):
 
     def openActiveJournal(self):
         self.active.load_override(".")
-        res: ResourceResult | None = self.active.resource(
+        res = self.active.resource(
             "global",
             ResourceType.JRL,
             [SearchLocation.OVERRIDE, SearchLocation.CHITIN],
@@ -750,7 +759,7 @@ class ToolWindow(QMainWindow):
                 file.write(data)
 
         except Exception as e:
-            print(format_exception_with_variables(e))
+            traceback.print_exc()
             msg = f"Failed to extract resource: {resource.resname()}.{resource.restype().extension}"
             raise RuntimeError(msg) from e
 
@@ -798,7 +807,8 @@ class ToolWindow(QMainWindow):
                     data = file.read()
                 openResourceEditor(filepath, *ResourceIdentifier.from_path(r_filepath).validate(), data, self.active, self)
             except ValueError as e:
-                QMessageBox(QMessageBox.Critical, "Failed to open file", str(universal_simplify_exception(e))).exec_()
+                etype, msg = universal_simplify_exception(e)
+                QMessageBox(QMessageBox.Critical, f"Failed to open file ({etype})", msg).exec_()
 
     # endregion
 

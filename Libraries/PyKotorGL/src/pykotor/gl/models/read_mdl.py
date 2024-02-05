@@ -153,7 +153,7 @@ def gl_load_mdl(scene, mdl: BinaryReader, mdx: BinaryReader) -> Model:
     name_count = mdl.read_uint32()
 
     mdl.seek(offset_to_name_offsets)
-    name_offsets = [mdl.read_uint32() for i in range(name_count)]
+    name_offsets = [mdl.read_uint32() for _ in range(name_count)]
     names = []
     for name_offset in name_offsets:
         mdl.seek(name_offset)
@@ -196,7 +196,7 @@ def gl_load_stitched_model(scene, mdl: BinaryReader, mdx: BinaryReader) -> Model
     name_count = mdl.read_uint32()
 
     mdl.seek(offset_to_name_offsets)
-    name_offsets = [mdl.read_uint32() for i in range(name_count)]
+    name_offsets = [mdl.read_uint32() for _ in range(name_count)]
     names = []
     for name_offset in name_offsets:
         mdl.seek(name_offset)
@@ -235,7 +235,7 @@ def gl_load_stitched_model(scene, mdl: BinaryReader, mdx: BinaryReader) -> Model
             if render:
                 offsets.append((offset, transform))
 
-        if names[name_id].lower() in ["headhook", "rhand", "lhand", "gogglehook", "maskhook"]:
+        if names[name_id].lower() in {"headhook", "rhand", "lhand", "gogglehook", "maskhook"}:
             node = Node(scene, root, names[name_id])
             root.children.append(node)
             glm.decompose(transform, vec3(), node._rotation, node._position, vec3(), vec4())

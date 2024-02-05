@@ -58,12 +58,11 @@ def write_erf(
         PermissionError: If the file could not be written to the specified destination.
         ValueError: If the specified format was unsupported.
     """
-    if file_format.name in ERFType.__members__:
+    if hasattr(file_format, "name") and file_format.name in ERFType.__members__:
         ERFBinaryWriter(erf, target).write()
     else:
-        msg = "Unsupported format specified; use ERF or MOD."
+        msg = f"Unsupported format specified: '{file_format!r}'; expected one of {', '.join(f'ResourceType.{member.name}' for member in ERFType)}."
         raise ValueError(msg)
-
 
 def bytes_erf(
     erf: ERF,
@@ -86,6 +85,10 @@ def bytes_erf(
     -------
         The ERF data.
     """
-    data = bytearray()
-    write_erf(erf, data, file_format)
-    return data
+    if hasattr(file_format, "name") and file_format.name in ERFType.__members__:
+        data = bytearray()
+        write_erf(erf, data, file_format)
+        return data
+
+    msg = f"Unsupported format specified: '{file_format!r}'; expected one of {', '.join(member.name for member in ERFType)}."
+    raise ValueError(msg)

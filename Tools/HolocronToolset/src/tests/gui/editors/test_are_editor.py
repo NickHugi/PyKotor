@@ -20,7 +20,7 @@ if getattr(sys, "frozen", False) is False:
         working_dir = str(p)
         if working_dir in sys.path:
             sys.path.remove(working_dir)
-        sys.path.insert(0, working_dir)
+        sys.path.append(working_dir)
     pykotor_path = pathlib.Path(__file__).parents[6] / "Libraries" / "PyKotor" / "src" / "pykotor"
     if pykotor_path.exists():
         add_sys_path(pykotor_path.parent)
@@ -42,6 +42,7 @@ from pykotor.common.stream import BinaryReader
 from pykotor.extract.installation import Installation
 from pykotor.resource.formats.gff.gff_auto import read_gff
 from pykotor.resource.type import ResourceType
+
 
 @unittest.skipIf(
     not K2_PATH or not pathlib.Path(K2_PATH).joinpath("chitin.key").exists(),

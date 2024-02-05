@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, Generator
 
 from pykotor.common.stream import BinaryReader
 from pykotor.extract.file import FileResource, ResourceIdentifier, ResourceResult
@@ -8,7 +8,7 @@ from pykotor.resource.formats.erf import ERF, ERFType, read_erf, write_erf
 from pykotor.resource.formats.rim import RIM, read_rim, write_rim
 from pykotor.resource.type import ResourceType
 from pykotor.tools.misc import is_any_erf_type_file, is_capsule_file, is_rim_file
-from utility.path import Path
+from utility.system.path import Path
 
 if TYPE_CHECKING:
     import os
@@ -24,6 +24,7 @@ class Capsule:
     def __init__(
         self,
         path: os.PathLike | str,
+        *,
         create_nonexisting: bool = False,
     ):
         """Initialize a Capsule object.
@@ -49,23 +50,21 @@ class Capsule:
         self._path: Path = Path.pathify(path)  # type: ignore[assignment]
         self._resources: list[FileResource] = []
 
-        str_path = str(self._path)
-
-        if not is_capsule_file(str_path):
-            msg = f"Invalid file extension in capsule filepath '{str_path}'."
+        if not is_capsule_file(self._path):
+            msg = f"Invalid file extension in capsule filepath '{self._path}'."
             raise ValueError(msg)
 
-        if create_nonexisting and not self._path.exists():  # type: ignore[reportGeneralTypeIssues]
-            if is_rim_file(str_path):
+        if create_nonexisting and not self._path.safe_isfile():  # type: ignore[reportGeneralTypeIssues]
+            if is_rim_file(self._path):
                 write_rim(RIM(), self._path)
-            elif is_any_erf_type_file(str_path):
-                write_erf(ERF(ERFType.from_extension(str_path)), str_path)
+            elif is_any_erf_type_file(self._path):
+                write_erf(ERF(ERFType.from_extension(self._path.suffix)), self._path)
 
         self.reload()
 
     def __iter__(
         self,
-    ):
+    ) -> Generator[FileResource, Any, None]:
         yield from self._resources
 
     def __len__(
@@ -73,13 +72,20 @@ class Capsule:
     ):
         return len(self._resources)
 
-    def resources(self) -> list[FileResource]:
+    def resources(
+        self,
+        *,
+        reload: bool = False,
+    ) -> list[FileResource]:
+        if reload:
+            self.reload()
         return self._resources
 
     def resource(
         self,
         resref: str,
         restype: ResourceType,
+        *,
         reload: bool = False,
     ) -> bytes | None:
         """Returns the bytes data of the specified resource. If the resource does not exist then returns None instead.
@@ -98,12 +104,16 @@ class Capsule:
             self.reload()
 
         query = ResourceIdentifier(resref, restype)
-        resource = next((resource for resource in self._resources if resource == query), None)
+        resource: FileResource | None = next(
+            (resource for resource in self._resources if resource == query),
+            None,
+        )
         return resource.data() if resource else None
 
     def batch(
         self,
         queries: list[ResourceIdentifier],
+        *,
         reload: bool = False,
     ) -> dict[ResourceIdentifier, ResourceResult | None]:
         """Batches queries against a capsule.
@@ -136,26 +146,29 @@ class Capsule:
         with BinaryReader.from_file(self._path) as reader:
             for query in queries:
                 results[query] = None
-                if self.exists(query.resname, query.restype):
-                    resource: FileResource | None = next(
-                        (resource for resource in self._resources if resource == query),
-                        None,
-                    )
-                    if resource is not None:
-                        reader.seek(resource.offset())
-                        data: bytes = reader.read_bytes(resource.size())
-                        results[query] = ResourceResult(
-                            query.resname,
-                            query.restype,
-                            self._path,
-                            data,
-                        )
+
+                resource: FileResource | None = next(
+                    (resource for resource in self._resources if resource == query),
+                    None,
+                )
+                if resource is None:
+                    continue
+
+                reader.seek(resource.offset())
+                data: bytes = reader.read_bytes(resource.size())
+                results[query] = ResourceResult(
+                    query.resname,
+                    query.restype,
+                    self._path,
+                    data,
+                )
         return results
 
     def exists(
         self,
         resref: str,
         restype: ResourceType,
+        *,
         reload: bool = False,
     ) -> bool:
         """Check if a resource exists.
@@ -189,15 +202,16 @@ class Capsule:
         self,
         resref: str,
         restype: ResourceType,
+        *,
         reload: bool = False,
-    ) -> FileResource:
+    ) -> FileResource | None:
         """Get file resource by reference and type.
 
         Args:
         ----
             resref: Resource reference as string
             restype: Resource type
-            reload: Reload resources if True
+            reload: Reload resources if True (kwarg)
 
         Returns:
         -------
@@ -332,8 +346,8 @@ class Capsule:
 
         reader.seek(offset_to_resources)
         for i in range(entry_count):
-            res_offset = reader.read_uint32()
-            res_size = reader.read_uint32()
+            res_offset: int = reader.read_uint32()
+            res_size:   int = reader.read_uint32()
             self._resources.append(FileResource(resrefs[i], restypes[i], res_size, res_offset, self._path))
 
     def _load_rim(

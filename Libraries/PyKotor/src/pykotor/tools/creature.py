@@ -153,8 +153,8 @@ def _load_hand_uti(
         - It replaces the "001" placeholder in the default model with the zero padded model variation from the UTI
         - The formatted default model is returned.
     """
-    hand_uti = read_uti(installation.resource(hand_resref, ResourceType.UTI).data)
-    default_model = baseitems.get_row(hand_uti.base_item).get_string("defaultmodel")
+    hand_uti: UTI = read_uti(installation.resource(hand_resref, ResourceType.UTI).data)
+    default_model: str = baseitems.get_row(hand_uti.base_item).get_string("defaultmodel")
     return default_model.replace(
         "001",
         str(hand_uti.model_variation).rjust(3, "0"),
@@ -191,7 +191,7 @@ def get_head_model(
     if heads is None:
         heads = read_2da(installation.resource("heads", ResourceType.TwoDA).data)
 
-    model = None
+    model: str | None = None
     texture = None
 
     head_id = appearance.get_row(utc.appearance_id).get_integer("normalhead")

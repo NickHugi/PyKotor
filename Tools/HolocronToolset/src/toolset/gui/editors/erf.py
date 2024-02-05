@@ -14,8 +14,7 @@ from PyQt5.QtWidgets import QFileDialog, QMessageBox, QShortcut, QTableView, QWi
 from toolset.gui.editor import Editor
 from toolset.gui.widgets.settings.installations import GlobalSettings
 from toolset.utils.window import openResourceEditor
-from utility.error_handling import universal_simplify_exception
-from utility.path import Path
+from utility.system.path import Path
 
 if TYPE_CHECKING:
     import os
@@ -119,7 +118,7 @@ class ERFEditor(Editor):
         if restype.name in ERFType.__members__:
             erf = read_erf(data)
             for resource in erf:
-                resrefItem = QStandardItem(str(resource.resref))
+                resrefItem = QStandardItem(resource.resref.get())
                 resrefItem.setData(resource)
                 restypeItem = QStandardItem(resource.restype.extension.upper())
                 sizeItem = QStandardItem(str(len(resource.data)))
@@ -127,7 +126,7 @@ class ERFEditor(Editor):
         elif restype == ResourceType.RIM:
             rim = read_rim(data)
             for resource in rim:
-                resrefItem = QStandardItem(str(resource.resref))
+                resrefItem = QStandardItem(resource.resref.get())
                 resrefItem.setData(resource)
                 restypeItem = QStandardItem(resource.restype.extension.upper())
                 sizeItem = QStandardItem(str(len(resource.data)))
@@ -268,20 +267,20 @@ class ERFEditor(Editor):
                     resref, restype = ResourceIdentifier.from_path(c_filepath.parent).validate()
                     resource = ERFResource(ResRef(resref), restype, data)
 
-                    resrefItem = QStandardItem(str(resource.resref))
+                    resrefItem = QStandardItem(resource.resref.get())
                     resrefItem.setData(resource)
                     restypeItem = QStandardItem(resource.restype.extension.upper())
                     sizeItem = QStandardItem(str(len(resource.data)))
                     self.model.appendRow([resrefItem, restypeItem, sizeItem])
-            except Exception as e:
+            except Exception:
                 QMessageBox(
                     QMessageBox.Critical,
                     "Failed to add resource",
-                    f"Could not add resource at {c_filepath}:\n{universal_simplify_exception(e)}",
+                    f"Could not add resource at {c_filepath}.",
                 ).exec_()
 
     def selectFilesToAdd(self):
-        filepaths: list[str] = QFileDialog.getOpenFileNames(self, "Load files into module")[:-1][0]
+        filepaths = QFileDialog.getOpenFileNames(self, "Load files into module")[:-1][0]
         self.addResources(filepaths)
 
     def openSelected(self):

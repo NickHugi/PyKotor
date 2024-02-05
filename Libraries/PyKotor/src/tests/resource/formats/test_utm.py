@@ -6,20 +6,18 @@ import unittest
 THIS_SCRIPT_PATH = pathlib.Path(__file__)
 PYKOTOR_PATH = THIS_SCRIPT_PATH.parents[3].resolve()
 UTILITY_PATH = THIS_SCRIPT_PATH.parents[5].joinpath("Utility", "src").resolve()
-if PYKOTOR_PATH.exists():
-    working_dir = str(PYKOTOR_PATH)
-    if working_dir in sys.path:
-        sys.path.remove(working_dir)
-        os.chdir(PYKOTOR_PATH.parent)
-    sys.path.insert(0, working_dir)
-if UTILITY_PATH.exists():
-    working_dir = str(UTILITY_PATH)
-    if working_dir in sys.path:
-        sys.path.remove(working_dir)
-    sys.path.insert(0, working_dir)
+def add_sys_path(p: pathlib.Path):
+    working_dir = str(p)
+    if working_dir not in sys.path:
+        sys.path.append(working_dir)
+if PYKOTOR_PATH.joinpath("pykotor").exists():
+    add_sys_path(PYKOTOR_PATH)
+    os.chdir(PYKOTOR_PATH.parent)
+if UTILITY_PATH.joinpath("utility").exists():
+    add_sys_path(UTILITY_PATH)
 
 from pykotor.resource.formats.gff import read_gff
-from pykotor.resource.generics.utm import construct_utm, dismantle_utm
+from pykotor.resource.generics.utm import UTM, construct_utm, dismantle_utm
 
 TEST_FILE = "src/tests/files/test.utm"
 
@@ -34,7 +32,7 @@ class TestUTM(unittest.TestCase):
         utm = construct_utm(gff)
         self.validate_io(utm)
 
-    def validate_io(self, utm):
+    def validate_io(self, utm: UTM):
         self.assertEqual("dan_droid", utm.resref)
         self.assertEqual(33399, utm.name.stringref)
         self.assertEqual("dan_droid", utm.tag)

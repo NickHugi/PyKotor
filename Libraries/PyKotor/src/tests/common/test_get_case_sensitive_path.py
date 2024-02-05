@@ -6,19 +6,17 @@ import unittest
 from unittest import TestCase
 
 THIS_SCRIPT_PATH = pathlib.Path(__file__)
-PYKOTOR_PATH = THIS_SCRIPT_PATH.parents[2].resolve()
-UTILITY_PATH = THIS_SCRIPT_PATH.parents[4].joinpath("Utility", "src").resolve()
-if PYKOTOR_PATH.exists():
-    working_dir = str(PYKOTOR_PATH)
-    if working_dir in sys.path:
-        sys.path.remove(working_dir)
-        os.chdir(PYKOTOR_PATH.parent)
-    sys.path.insert(0, working_dir)
-if UTILITY_PATH.exists():
-    working_dir = str(UTILITY_PATH)
-    if working_dir in sys.path:
-        sys.path.remove(working_dir)
-    sys.path.insert(0, working_dir)
+PYKOTOR_PATH = THIS_SCRIPT_PATH.parents[2]
+UTILITY_PATH = THIS_SCRIPT_PATH.parents[4].joinpath("Utility", "src")
+def add_sys_path(p: pathlib.Path):
+    working_dir = str(p)
+    if working_dir not in sys.path:
+        sys.path.append(working_dir)
+if PYKOTOR_PATH.joinpath("pykotor").exists():
+    add_sys_path(PYKOTOR_PATH)
+    os.chdir(PYKOTOR_PATH.parent)
+if UTILITY_PATH.joinpath("utility").exists():
+    add_sys_path(UTILITY_PATH)
 
 from pykotor.tools.path import CaseAwarePath
 
@@ -129,8 +127,8 @@ class TestCaseAwarePath(TestCase):
         self.assertFalse(case_aware_path.exists())
 
     def test_joinpath_chain(self):
-        path_chain = ["dirA", "dirB", "dirC", "file.txt"]
-        case_insensitive_chain = ["DIRa", "DirB", "dirc", "FILE.txt"]
+        path_chain: list[str] = ["dirA", "dirB", "dirC", "file.txt"]
+        case_insensitive_chain: list[str] = ["DIRa", "DirB", "dirc", "FILE.txt"]
 
         # Create actual path chain
         current_path = self.temp_path
@@ -175,7 +173,6 @@ class TestCaseAwarePath(TestCase):
 
         self.assertTrue(case_aware_cascading_file.exists())
 
-    @unittest.skip("unfinished")
     def test_relative_to(self):
         dir_path = self.temp_path / "someDir"
         file_path: pathlib.Path = dir_path / "someFile.txt"

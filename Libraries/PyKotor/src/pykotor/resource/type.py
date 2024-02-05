@@ -4,7 +4,7 @@ from __future__ import annotations
 import os
 import uuid
 from enum import Enum
-from typing import Iterable, NamedTuple, Union
+from typing import Callable, Iterable, NamedTuple, TypeVar, Union
 from xml.etree.ElementTree import ParseError
 
 from pykotor.common.stream import BinaryReader, BinaryWriter
@@ -70,31 +70,29 @@ class ResourceType(Enum):
     """
 
     INVALID = ResourceTuple(0, "", "Undefined", "binary", is_invalid=True)
-    BMP = ResourceTuple(1, "bmp", "Images", "binary")
+    BMP = ResourceTuple(1, "bmp", "Images", "binary")  # ???
     TGA = ResourceTuple(3, "tga", "Textures", "binary")
     WAV = ResourceTuple(4, "wav", "Audio", "binary")
-    PLT = ResourceTuple(6, "plt", "Other", "binary")
-    INI = ResourceTuple(7, "ini", "Text Files", "plaintext")
+    INI = ResourceTuple(7, "ini", "Text Files", "plaintext")  # swkotor.ini
     TXT = ResourceTuple(10, "txt", "Text Files", "plaintext")
     MDL = ResourceTuple(2002, "mdl", "Models", "binary")
     NSS = ResourceTuple(2009, "nss", "Scripts", "plaintext")
     NCS = ResourceTuple(2010, "ncs", "Scripts", "binary")
     MOD = ResourceTuple(2011, "mod", "Modules", "binary")
     ARE = ResourceTuple(2012, "are", "Module Data", "gff")
-    SET = ResourceTuple(2013, "set", "Unused", "binary")
+    SET = ResourceTuple(2013, "set", "Unused", "binary")  # From NWN
     IFO = ResourceTuple(2014, "ifo", "Module Data", "gff")
-    BIC = ResourceTuple(2015, "bic", "Creatures", "binary")
+    BIC = ResourceTuple(2015, "bic", "Creatures", "binary")  # ???
     WOK = ResourceTuple(2016, "wok", "Walkmeshes", "binary")
     TwoDA = ResourceTuple(2017, "2da", "2D Arrays", "binary")
     TLK = ResourceTuple(2018, "tlk", "Talk Tables", "binary")
     TXI = ResourceTuple(2022, "txi", "Textures", "plaintext")
     GIT = ResourceTuple(2023, "git", "Module Data", "gff")
-    BTI = ResourceTuple(2024, "bti", "Items", "gff")
+    BTI = ResourceTuple(2024, "bti", "Items", "gff")  # ???
     UTI = ResourceTuple(2025, "uti", "Items", "gff")
-    BTC = ResourceTuple(2026, "btc", "Creatures", "gff")
+    BTC = ResourceTuple(2026, "btc", "Creatures", "gff")  # ???
     UTC = ResourceTuple(2027, "utc", "Creatures", "gff")
     DLG = ResourceTuple(2029, "dlg", "Dialogs", "gff")
-    ITP = ResourceTuple(2030, "itp", "Palettes", "binary")
     UTT = ResourceTuple(2032, "utt", "Triggers", "gff")
     DDS = ResourceTuple(2033, "dds", "Textures", "binary")
     UTS = ResourceTuple(2035, "uts", "Sounds", "gff")
@@ -104,8 +102,8 @@ class ResourceType(Enum):
     UTE = ResourceTuple(2040, "ute", "Encounters", "gff")
     UTD = ResourceTuple(2042, "utd", "Doors", "gff")
     UTP = ResourceTuple(2044, "utp", "Placeables", "gff")
-    DFT = ResourceTuple(2045, "dft", "Other", "binary")
-    GIC = ResourceTuple(2046, "gic", "Module Data", "gff")
+    DFT = ResourceTuple(2045, "dft", "Other", "binary")  # ???
+    GIC = ResourceTuple(2046, "gic", "Module Data", "gff")  # ???
     GUI = ResourceTuple(2047, "gui", "GUIs", "gff")
     UTM = ResourceTuple(2051, "utm", "Merchants", "gff")
     DWK = ResourceTuple(2052, "dwk", "Walkmeshes", "binary")
@@ -113,9 +111,9 @@ class ResourceType(Enum):
     JRL = ResourceTuple(2056, "jrl", "Journals", "gff")
     UTW = ResourceTuple(2058, "utw", "Waypoints", "gff")
     SSF = ResourceTuple(2060, "ssf", "Soundsets", "binary")
-    NDB = ResourceTuple(2064, "ndb", "Other", "binary")
-    PTM = ResourceTuple(2065, "ptm", "Other", "binary")
-    PTT = ResourceTuple(2066, "ptt", "Other", "binary")
+    NDB = ResourceTuple(2064, "ndb", "Other", "binary")  # ???
+    PTM = ResourceTuple(2065, "ptm", "Other", "binary")  # ???
+    PTT = ResourceTuple(2066, "ptt", "Other", "binary")  # ???
     JPG = ResourceTuple(2076, "jpg", "Images", "binary")
     PNG = ResourceTuple(2110, "png", "Images", "binary")
     LYT = ResourceTuple(3000, "lyt", "Module Data", "plaintext")
@@ -126,10 +124,12 @@ class ResourceType(Enum):
     TPC = ResourceTuple(3007, "tpc", "Textures", "binary")
     MDX = ResourceTuple(3008, "mdx", "Models", "binary")
     ERF = ResourceTuple(9997, "erf", "Modules", "binary")
-    RES = ResourceTuple(69420, "res", "Save Data", "gff")
-    SAV = ResourceTuple(42069, "sav", "Save Data", "erf")
+    RES = ResourceTuple(69420, "res", "Save Data", "gff")  # unknown type_id
+    SAV = ResourceTuple(42069, "sav", "Save Data", "erf")  # unknown type_id
 
     # For Toolset Use:
+    PLT = ResourceTuple(6, "plt", "Other", "binary")
+    ITP = ResourceTuple(2030, "itp", "Palettes", "binary")
     MP3 = ResourceTuple(25014, "mp3", "Audio", "binary")
     TLK_XML = ResourceTuple(50001, "tlk.xml", "Talk Tables", "plaintext")
     MDL_ASCII = ResourceTuple(50002, "mdl.ascii", "Models", "plaintext")
@@ -158,6 +158,7 @@ class ResourceType(Enum):
     TwoDA_JSON = ResourceTuple(50024, "2da.json", "2D Arrays", "plaintext")
     TLK_JSON = ResourceTuple(50025, "tlk.json", "Talk Tables", "plaintext")
     LIP_JSON = ResourceTuple(50026, "lip.json", "Lips", "plaintext")
+    RES_XML = ResourceTuple(50027, "res.xml", "Save Data", "plaintext")
 
     def __new__(cls, *args, **kwargs):
         obj: ResourceType = object.__new__(cls)  # type: ignore[annotation-unchecked]
@@ -201,7 +202,7 @@ class ResourceType(Enum):
 
     def __str__(
         self,
-    ):
+    ) -> str:
         """Returns the extension in all caps."""
         return self.extension.upper()
 
@@ -311,11 +312,11 @@ class ResourceType(Enum):
             raise ValueError(msg)
         return self
 
-
-def autoclose(func):
-    def _autoclose(self: ResourceReader | ResourceWriter, auto_close: bool = True):
+R = TypeVar("R")
+def autoclose(func: Callable[..., R]) -> Callable[..., R]:
+    def _autoclose(self: ResourceReader | ResourceWriter, auto_close: bool = True) -> R:  # noqa: FBT002, FBT001
         try:
-            resource = func(self, auto_close)
+            resource: R = func(self, auto_close)
         except (OSError, ParseError, ValueError, IndexError, StopIteration) as e:
             msg = "Tried to load an unsupported or corrupted file."
             raise ValueError(msg) from e

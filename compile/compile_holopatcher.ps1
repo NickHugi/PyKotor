@@ -1,3 +1,7 @@
+param (
+  [switch]$noprompt
+)
+$this_noprompt = $noprompt
 
 $scriptPath = Split-Path -Parent $MyInvocation.MyCommand.Definition
 $rootPath = (Resolve-Path -LiteralPath "$scriptPath/..").Path
@@ -18,6 +22,24 @@ if ( (Get-OS) -eq "Linux" ) {
     . sudo apt install python3-tk -y
 } elseif ( (Get-OS) -eq "Mac" ) {
     . brew install python-tk
+}
+
+$current_working_dir = (Get-Location).Path
+Set-Location -LiteralPath (Resolve-Path -LiteralPath "$rootPath/Tools/HoloPatcher/src").Path
+
+# Determine the final executable path
+$finalExecutablePath = $null
+if ((Get-OS) -eq "Windows") {
+    $finalExecutablePath = "$rootPath\dist\HoloPatcher.exe"
+} elseif ((Get-OS) -eq "Linux") {
+    $finalExecutablePath = "$rootPath/dist/HoloPatcher"
+} elseif ((Get-OS) -eq "Mac") {
+    $finalExecutablePath = "$rootPath/dist/HoloPatcher.app"
+}
+
+# Delete the final executable if it exists
+if (Test-Path -Path $finalExecutablePath) {
+    Remove-Item -Path $finalExecutablePath -Force
 }
 
 Write-Host "Compiling HoloPatcher..."
@@ -65,54 +87,50 @@ $pyInstallerArgs = @{
     'noconfirm' = $true
     'distpath' = ($rootPath + $pathSep + "dist")
     'name' = 'HoloPatcher'
-    'upx-dir' = "$env:USERPROFILE\Documents\GitHub\upx-win32"
-    'icon' = '../resources/icons/patcher_icon_v2.ico'
+    'upx-dir' = "C:\GitHub\upx-win64"
+    'icon' = "..$pathSep" + "resources$pathSep" + "icons$pathSep" + "patcher_icon_v2.ico"
 }
-$pyInstallerArgsString = ($pyInstallerArgs.GetEnumerator() | ForEach-Object {
+
+$pyInstallerArgs = $pyInstallerArgs.GetEnumerator() | ForEach-Object {
     $key = $_.Key
     $value = $_.Value
 
     if ($value -is [System.Array]) {
         # Handle array values
-        $value -join " --$key="
-        $value = " --$key=$value "
+        $value -join "--$key="
+        $value = "--$key=$value"
     } else {
         # Handle key-value pair arguments
         if ($value -eq $true) {
-            "--$key "
+            "--$key"
+        } elseif ($value -eq $false) {
         } else {
-            "--$key=$value "
+            "--$key=$value"
         }
     }
-}) -join ''
-
-# Format PYTHONPATH paths and add them to the pyInstallerArgsString
-$pythonPaths = $env:PYTHONPATH -split ';'
-$pythonPathArgs = $pythonPaths | ForEach-Object { "--path=$_" }
-$pythonPathArgsString = $pythonPathArgs -join ' '
-
-# Determine the final executable path
-$finalExecutablePath = $null
-if ((Get-OS) -eq "Windows") {
-    $finalExecutablePath = "$rootPath\dist\HoloPatcher.exe"
-} elseif ((Get-OS) -eq "Linux") {
-    $finalExecutablePath = "$rootPath/dist/HoloPatcher"
-} elseif ((Get-OS) -eq "Mac") {
-    $finalExecutablePath = "$rootPath/dist/HoloPatcher.app"
 }
 
-# Delete the final executable if it exists
-if (Test-Path -Path $finalExecutablePath) {
-    Remove-Item -Path $finalExecutablePath -Force
+# Add PYTHONPATH paths as arguments
+$env:PYTHONPATH -split ';' | ForEach-Object {
+    $pyInstallerArgs += "--path=$_"
 }
 
-# Combine pyInstallerArgsString with pythonPathArgsString
-$finalPyInstallerArgsString = "$pythonPathArgsString $pyInstallerArgsString"
+# Define each argument as an element in an array
+$argumentsArray = @(
+    "-m",
+    "PyInstaller"
+)
+# Unpack $pyInstallerArgs into $argumentsArray
+foreach ($arg in $pyInstallerArgs) {
+    $argumentsArray += $arg
+}
 
-Set-Location -LiteralPath (Resolve-Path -LiteralPath "$rootPath/Tools/HoloPatcher/src").Path
-$command = "$pythonExePath -m PyInstaller $finalPyInstallerArgsString `"__main__.py`""
-Write-Host $command
-Invoke-Expression $command
+# Append the final script path
+$argumentsArray += "__main__.py"
+
+# Use the call operator with the arguments array
+Write-Host "Executing command: $pythonExePath $argumentsArray"
+& $pythonExePath $argumentsArray
 
 # Check if the final executable exists
 if (-not (Test-Path -Path $finalExecutablePath)) {
@@ -120,5 +138,9 @@ if (-not (Test-Path -Path $finalExecutablePath)) {
 } else {
     Write-Host "HoloPatcher was compiled to '$finalExecutablePath'"
 }
-Write-Host "Press any key to exit..."
-$null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
+Set-Location -LiteralPath $current_working_dir
+
+if (-not $this_noprompt) {
+    Write-Host "Press any key to exit..."
+    $null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
+}

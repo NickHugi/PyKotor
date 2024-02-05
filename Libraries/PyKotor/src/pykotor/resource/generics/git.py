@@ -8,8 +8,7 @@ from pykotor.common.geometry import Polygon3, Vector2, Vector3, Vector4
 from pykotor.common.language import LocalizedString
 from pykotor.common.misc import Color, Game, ResRef
 from pykotor.extract.file import ResourceIdentifier
-from pykotor.resource.formats.gff import GFF, GFFContent, GFFList, GFFStruct, read_gff, write_gff
-from pykotor.resource.formats.gff.gff_auto import bytes_gff
+from pykotor.resource.formats.gff import GFF, GFFContent, GFFList, GFFStruct, bytes_gff, read_gff, write_gff
 from pykotor.resource.generics.utc import UTC, bytes_utc
 from pykotor.resource.generics.utd import UTD, bytes_utd
 from pykotor.resource.generics.ute import UTE, bytes_ute
@@ -260,7 +259,7 @@ class GITCamera(GITInstance):
         camera_id: int = 0,
     ):
         super().__init__(x, y, z)
-        self.camera_id = camera_id
+        self.camera_id: int = camera_id
         self.fov: float = 45
         self.height: float = 0.0
         self.mic_range: float = 0.0
@@ -287,7 +286,7 @@ class GITCamera(GITInstance):
         pitch: float,
         roll: float,
     ):
-        rotation = self.orientation.to_euler()
+        rotation: Vector3 = self.orientation.to_euler()
         rotation.x += yaw
         rotation.y += roll
         rotation.z += pitch
@@ -348,7 +347,7 @@ class GITCreature(GITInstance):
     def identifier(
         self,
     ) -> ResourceIdentifier | None:
-        return ResourceIdentifier(self.resref, ResourceType.UTC)
+        return ResourceIdentifier(str(self.resref), ResourceType.UTC)
 
     def blank(
         self,
@@ -438,7 +437,7 @@ class GITDoor(GITInstance):
             - Create ResourceIdentifier object from reference and type
             - Return ResourceIdentifier or None.
         """
-        return ResourceIdentifier(self.resref, ResourceType.UTD)
+        return ResourceIdentifier(str(self.resref), ResourceType.UTD)
 
     def classification(
         self,
@@ -458,9 +457,9 @@ class GITEncounterSpawnPoint:
         y: float = 0.0,
         z: float = 0.0,
     ):
-        self.x = x
-        self.y = y
-        self.z = z
+        self.x: float = x
+        self.y: float = y
+        self.z: float = z
         self.orientation: float = 0.0
 
 
@@ -517,7 +516,7 @@ class GITEncounter(GITInstance):
     def identifier(
         self,
     ) -> ResourceIdentifier | None:
-        return ResourceIdentifier(self.resref, ResourceType.UTE)
+        return ResourceIdentifier(str(self.resref), ResourceType.UTE)
 
     def blank(
         self,
@@ -586,7 +585,7 @@ class GITPlaceable(GITInstance):
     def identifier(
         self,
     ) -> ResourceIdentifier | None:
-        return ResourceIdentifier(self.resref, ResourceType.UTP)
+        return ResourceIdentifier(str(self.resref), ResourceType.UTP)
 
     def blank(
         self,
@@ -639,7 +638,7 @@ class GITSound(GITInstance):
     def identifier(
         self,
     ) -> ResourceIdentifier | None:
-        return ResourceIdentifier(self.resref, ResourceType.UTS)
+        return ResourceIdentifier(str(self.resref), ResourceType.UTS)
 
     def blank(
         self,
@@ -691,7 +690,7 @@ class GITStore(GITInstance):
     def identifier(
         self,
     ) -> ResourceIdentifier | None:
-        return ResourceIdentifier(self.resref, ResourceType.UTM)
+        return ResourceIdentifier(str(self.resref), ResourceType.UTM)
 
     def blank(
         self,
@@ -750,7 +749,7 @@ class GITTrigger(GITInstance):
     def identifier(
         self,
     ) -> ResourceIdentifier | None:
-        return ResourceIdentifier(self.resref, ResourceType.UTT)
+        return ResourceIdentifier(str(self.resref), ResourceType.UTT)
 
     def blank(
         self,
@@ -819,7 +818,7 @@ class GITWaypoint(GITInstance):
     def identifier(
         self,
     ) -> ResourceIdentifier | None:
-        return ResourceIdentifier(self.resref, ResourceType.UTW)
+        return ResourceIdentifier(str(self.resref), ResourceType.UTW)
 
     def blank(
         self,
@@ -1083,7 +1082,7 @@ def dismantle_git(
         door_struct.set_single("X", door.position.x)
         door_struct.set_single("Y", door.position.y)
         door_struct.set_single("Z", door.position.z)
-        if game is Game.K2:
+        if game.is_k2():
             tweak_color = door.tweak_color.bgr_integer() if door.tweak_color is not None else 0
             door_struct.set_uint32("TweakColor", tweak_color)
             door_struct.set_uint8("UseTweakColor", 0 if door.tweak_color is None else 1)
@@ -1119,7 +1118,7 @@ def dismantle_git(
         placeable_struct.set_single("X", placeable.position.x)
         placeable_struct.set_single("Y", placeable.position.y)
         placeable_struct.set_single("Z", placeable.position.z)
-        if game is Game.K2:
+        if game.is_k2():
             tweak_color = placeable.tweak_color.bgr_integer() if placeable.tweak_color is not None else 0
             placeable_struct.set_uint32("TweakColor", tweak_color)
             placeable_struct.set_uint8(

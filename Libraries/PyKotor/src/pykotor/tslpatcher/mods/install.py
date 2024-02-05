@@ -1,21 +1,22 @@
 from __future__ import annotations
 
-import os
 import shutil
 from typing import TYPE_CHECKING
 
 from pykotor.common.stream import BinaryReader
 from pykotor.tslpatcher.mods.template import PatcherModifications
 from utility.error_handling import universal_simplify_exception
-from utility.path import Path, PurePath
+from utility.system.path import PurePath
 
 if TYPE_CHECKING:
+    import os
 
     from pykotor.common.misc import Game
     from pykotor.resource.type import SOURCE_TYPES
     from pykotor.tools.path import CaseAwarePath
     from pykotor.tslpatcher.logger import PatchLogger
     from pykotor.tslpatcher.memory import PatcherMemory
+    from typing_extensions import Literal
 
 
 def create_backup(
@@ -67,11 +68,11 @@ def create_backup(
             create_uninstall_scripts(backup_folderpath, uninstall_folder, game_folder)
             processed_files.add(uninstall_str_lower)
 
-        if destination_filepath.exists():
+        if destination_filepath.is_file():
             # Check if the backup path exists and generate a new one if necessary
             i = 2
             filestem: str = backup_filepath.stem
-            while backup_filepath.exists():
+            while backup_filepath.safe_exists():
                 backup_filepath = backup_filepath.parent / f"{filestem} ({i}){backup_filepath.suffix}"
                 i += 1
 
@@ -86,8 +87,8 @@ def create_backup(
 
             # Write the file path to remove these files.txt in backup directory
             removal_files_txt: CaseAwarePath = backup_folderpath.joinpath("remove these files.txt")
-            line: str = ("\n" if removal_files_txt.exists() else "") + destination_file_str
-            with removal_files_txt.open("a") as f:
+            line: str = ("\n" if removal_files_txt.is_file() else "") + destination_file_str
+            with removal_files_txt.open(mode="a", encoding="utf-8") as f:
                 f.write(line)
 
         # Add the lowercased path string to the processed_files set
@@ -95,7 +96,7 @@ def create_backup(
 
 
 def create_uninstall_scripts(backup_dir: CaseAwarePath, uninstall_folder: CaseAwarePath, main_folder: CaseAwarePath):
-    with uninstall_folder.joinpath("uninstall.ps1").open("w") as f:
+    with uninstall_folder.joinpath("uninstall.ps1").open("w", encoding="utf-8") as f:
         f.write(
             rf"""
 #!/usr/bin/env pwsh
@@ -205,7 +206,7 @@ foreach ($file in $filesInBackup) {{
 Pause
 """,
         )
-    with uninstall_folder.joinpath("uninstall.sh").open("w", newline="\n") as f:
+    with uninstall_folder.joinpath("uninstall.sh").open("w", encoding="utf-8", newline="\n") as f:
         f.write(
             rf"""
 #!/bin/bash
@@ -311,20 +312,19 @@ class InstallFile(PatcherModifications):
         self.action: str = "Copy "
         self.skip_if_not_replace: bool = True
 
+    def __hash__(self):  # HACK: organize this into PatcherModifications class later, this is only used for nwscript.nss currently.
+        return hash((self.destination, self.saveas, self.replace_file))
+
     def patch_resource(
         self,
         source: SOURCE_TYPES,
         memory: PatcherMemory,
         logger: PatchLogger,
         game: Game,
-    ) -> bytes:
+    ) -> bytes | Literal[True]:
         self.apply(source, memory, logger, game)
-        if isinstance(source, BinaryReader):
-            return source.read_all()
-        if isinstance(source, (str, os.PathLike)):
-            with Path(source).open() as f:
-                return f.read().encode()
-        return bytes(source)
+        with BinaryReader.from_auto(source) as reader:
+            return reader.read_all()
 
     def apply(self, source, *args, **kwargs):
         ...

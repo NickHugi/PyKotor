@@ -291,15 +291,15 @@ class Scene:
             for door in copy(self.git.doors):
                 if door.resref == identifier.resname and identifier.restype == ResourceType.UTD:
                     del self.objects[door]
-            if identifier.restype in [ResourceType.TPC, ResourceType.TGA]:
+            if identifier.restype in (ResourceType.TPC, ResourceType.TGA):
                 del self.textures[identifier.resname]
-            if identifier.restype in [ResourceType.MDL, ResourceType.MDX]:
+            if identifier.restype in (ResourceType.MDL, ResourceType.MDX):
                 del self.models[identifier.resname]
-            if identifier.restype in [ResourceType.GIT]:
+            if identifier.restype == ResourceType.GIT:
                 for instance in self.git.instances():
                     del self.objects[instance]
                 self.git = self.module.git().resource()
-            if identifier.restype in [ResourceType.LYT]:
+            if identifier.restype == ResourceType.LYT:
                 for room in self.layout.rooms:
                     del self.objects[room]
                 self.layout = self.module.layout().resource()
@@ -347,7 +347,7 @@ class Scene:
             self.objects[placeable].set_rotation(0, 0, placeable.bearing)
 
         for git_creature in self.git.creatures:
-            if creature not in self.objects:
+            if git_creature not in self.objects:
                 self.objects[git_creature] = self.getCreatureRenderObject(git_creature)
 
             self.objects[git_creature].set_position(git_creature.position.x, git_creature.position.y, git_creature.position.z)
@@ -518,11 +518,11 @@ class Scene:
             obj.boundary(self).draw(self.plain_shader, obj.transform())
 
         # Draw non-selected boundaries
-        for obj in [obj for obj in self.objects.values() if obj.model == "sound" and not self.hide_sound_boundaries]:
+        for obj in (obj for obj in self.objects.values() if obj.model == "sound" and not self.hide_sound_boundaries):
             obj.boundary(self).draw(self.plain_shader, obj.transform())
-        for obj in [obj for obj in self.objects.values() if obj.model == "encounter" and not self.hide_encounter_boundaries]:
+        for obj in (obj for obj in self.objects.values() if obj.model == "encounter" and not self.hide_encounter_boundaries):
             obj.boundary(self).draw(self.plain_shader, obj.transform())
-        for obj in [obj for obj in self.objects.values() if obj.model == "trigger" and not self.hide_trigger_boundaries]:
+        for obj in (obj for obj in self.objects.values() if obj.model == "trigger" and not self.hide_trigger_boundaries):
             obj.boundary(self).draw(self.plain_shader, obj.transform())
 
         if self.show_cursor:
@@ -712,7 +712,7 @@ class Scene:
                 capsules: list[Capsule] = [] if self.module is None else self.module.capsules()
                 mdl_search: ResourceResult | None = self.installation.resource(name, ResourceType.MDL, SEARCH_ORDER, capsules=capsules)
                 mdx_search: ResourceResult | None = self.installation.resource(name, ResourceType.MDX, SEARCH_ORDER, capsules=capsules)
-                if mdl_search and mdx_search:
+                if mdl_search is not None and mdx_search is not None:
                     mdl_data: bytes = mdl_search.data
                     mdx_data: bytes = mdx_search.data
 

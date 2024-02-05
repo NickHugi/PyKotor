@@ -1,37 +1,38 @@
 from __future__ import annotations
 
 import cProfile
-import os
 import pathlib
 import sys
 from argparse import ArgumentParser
-from hashlib import sha256
 from io import StringIO
 from typing import TYPE_CHECKING
 
 if getattr(sys, "frozen", False) is False:
-    def update_sys_path(path):
-        working_dir = str(path)
-        if working_dir in sys.path:
-            sys.path.remove(working_dir)
-        sys.path.append(working_dir)
-
-    pykotor_path = pathlib.Path(__file__).parents[3] / "Libraries" / "PyKotor" / "src" / "pykotor"
+    pykotor_path = pathlib.Path(__file__).parents[3] / "Libraries/PyKotor/src"
     if pykotor_path.exists():
-        update_sys_path(pykotor_path.parent)
-    utility_path = pathlib.Path(__file__).parents[3] / "Libraries" / "Utility" / "src" / "utility"
+        working_dir = str(pykotor_path)
+        if pykotor_path in sys.path:
+            sys.path.remove(working_dir)
+        sys.path.insert(0, working_dir)
+    utility_path = pathlib.Path(__file__).parents[3] / "Libraries/Utility/src"
     if utility_path.exists():
-        update_sys_path(utility_path.parent)
+        working_dir = str(utility_path)
+        if pykotor_path in sys.path:
+            sys.path.remove(working_dir)
+        sys.path.insert(0, working_dir)
 
 from pykotor.extract.capsule import Capsule
 from pykotor.resource.formats import gff, lip, tlk, twoda
 from pykotor.tools.misc import is_capsule_file
 from pykotor.tools.path import CaseAwarePath
-from utility.error_handling import universal_simplify_exception
-from utility.path import Path, PureWindowsPath
+from utility.misc import generate_hash
+from utility.system.path import Path, PureWindowsPath
 
 if TYPE_CHECKING:
+    import os
+
     from pykotor.extract.file import FileResource
+
 OUTPUT_LOG: Path | None = None
 LOGGING_ENABLED: bool | None = None
 
@@ -73,27 +74,6 @@ def log_output(*args, **kwargs):
         f.write(msg)
 
 
-def compute_sha256(where: os.PathLike | str | bytes):
-    """Compute the SHA-256 hash of the data."""
-    sha256_hash = sha256()
-    if isinstance(where, bytes):
-        sha256_hash.update(where)
-        return sha256_hash.hexdigest()
-
-    if isinstance(where, (os.PathLike, str)):
-        file_path = Path.pathify(where).resolve()
-
-        with file_path.open("rb") as f:
-            while True:
-                data = f.read(0x10000)  # read in 64k chunks
-                if not data:
-                    break
-                sha256_hash.update(data)
-
-        return sha256_hash.hexdigest()
-    return None
-
-
 def relative_path_from_to(src, dst) -> Path:
     src_parts = list(src.parts)
     dst_parts = list(dst.parts)
@@ -112,14 +92,14 @@ def visual_length(s: str, tab_length=8) -> int:
 
     # Split the string at tabs, sum the lengths of the substrings,
     # and add the necessary spaces to account for the tab stops.
-    parts = s.split("\t")
-    vis_length = sum(len(part) for part in parts)
+    parts: list[str] = s.split("\t")
+    vis_length: int = sum(len(part) for part in parts)
     for part in parts[:-1]:  # all parts except the last one
         vis_length += tab_length - (len(part) % tab_length)
     return vis_length
 
 
-gff_types = [x.value.lower().strip() for x in gff.GFFContent]
+gff_types: list[str] = [x.value.lower().strip() for x in gff.GFFContent]
 
 
 def diff_data(
@@ -152,12 +132,12 @@ def diff_data(
         gff2: gff.GFF | None = None
         try:
             gff1 = gff.read_gff(data1)
-        except Exception as e:  # noqa: BLE001
-            return log_output(f"[Error] loading GFF {file1_rel.parent / where}!\n{universal_simplify_exception(e)}")  # type: ignore[func-returns-value]
+        except Exception:  # noqa: BLE001
+            return log_output(f"[Error] loading GFF {file1_rel.parent / where}!")  # type: ignore[func-returns-value]
         try:
             gff2 = gff.read_gff(data2)
-        except Exception as e:  # noqa: BLE001
-            return log_output(f"[Error] loading GFF {file2_rel.parent / where}!\n{universal_simplify_exception(e)}")  # type: ignore[func-returns-value]
+        except Exception:  # noqa: BLE001
+            return log_output(f"[Error] loading GFF {file2_rel.parent / where}!")  # type: ignore[func-returns-value]
         if gff1 and not gff2:
             return log_output(f"GFF resource missing in memory:\t'{file1_rel.parent / where}'")  # type: ignore[func-returns-value]
         if not gff1 and gff2:
@@ -174,16 +154,16 @@ def diff_data(
         twoda2: twoda.TwoDA | None = None
         try:
             twoda1 = twoda.read_2da(data1)
-        except Exception as e:  # noqa: BLE001
+        except Exception:  # noqa: BLE001
             if file1_rel.parent.name.lower() == "rims" and (file1_rel.name.lower() == "global.rim" or file1_rel.name == "miniglobal.rim"):
                 return True
-            return log_output(f"Error loading 2DA {file1_rel.parent / where}!\n{universal_simplify_exception(e)}")  # type: ignore[func-returns-value]
+            return log_output(f"Error loading 2DA {file1_rel.parent / where}!")  # type: ignore[func-returns-value]
         try:
             twoda2 = twoda.read_2da(data2)
-        except Exception as e:  # noqa: BLE001
+        except Exception:  # noqa: BLE001
             if file1_rel.parent.name.lower() == "rims" and (file1_rel.name.lower() == "global.rim" or file1_rel.name == "miniglobal.rim"):
                 return True
-            return log_output(f"Error loading 2DA {file2_rel.parent / where}!\n{universal_simplify_exception(e)}")  # type: ignore[func-returns-value]
+            return log_output(f"Error loading 2DA {file2_rel.parent / where}!")  # type: ignore[func-returns-value]
         if twoda1 and not twoda2:
             message = f"2DA resource missing in memory:\t'{file1_rel.parent / where}'"
             return log_output(message)  # type: ignore[func-returns-value]
@@ -204,13 +184,13 @@ def diff_data(
         try:
             log_output(f"Loading TLK '{file1_rel.parent / where}'")
             tlk1 = tlk.read_tlk(data1)
-        except Exception as e:  # noqa: BLE001
-            return log_output(f"Error loading TLK {file1_rel.parent / where}!\n{universal_simplify_exception(e)}")  # type: ignore[func-returns-value]
+        except Exception:  # noqa: BLE001
+            return log_output(f"Error loading TLK {file1_rel.parent / where}!")  # type: ignore[func-returns-value]
         try:
             log_output(f"Loading TLK '{file2_rel.parent / where}'")
             tlk2 = tlk.read_tlk(data2)
-        except Exception as e:  # noqa: BLE001
-            return log_output(f"Error loading TLK {file2_rel.parent / where}!\n{universal_simplify_exception(e)}")  # type: ignore[func-returns-value]
+        except Exception:  # noqa: BLE001
+            return log_output(f"Error loading TLK {file2_rel.parent / where}!")  # type: ignore[func-returns-value]
         if tlk1 and not tlk2:
             message = f"TLK resource missing in memory:\t'{file1_rel.parent / where}'"
             return log_output(message)  # type: ignore[func-returns-value]
@@ -230,12 +210,12 @@ def diff_data(
         lip2: lip.LIP | None = None
         try:
             lip1 = lip.read_lip(data1)
-        except Exception as e:  # noqa: BLE001
-            return log_output(f"Error loading LIP {file1_rel.parent / where}!\n{universal_simplify_exception(e)}")  # type: ignore[func-returns-value]
+        except Exception:  # noqa: BLE001
+            return log_output(f"Error loading LIP {file1_rel.parent / where}!")  # type: ignore[func-returns-value]
         try:
             lip2 = lip.read_lip(data2)
-        except Exception as e:  # noqa: BLE001
-            return log_output(f"Error loading LIP {file2_rel.parent / where}!\n{universal_simplify_exception(e)}")  # type: ignore[func-returns-value]
+        except Exception:  # noqa: BLE001
+            return log_output(f"Error loading LIP {file2_rel.parent / where}!")  # type: ignore[func-returns-value]
         if lip1 and not lip2:
             message = f"LIP resource missing in memory:\t'{file1_rel.parent / where}'"
             return log_output(message)  # type: ignore[func-returns-value]
@@ -252,7 +232,7 @@ def diff_data(
             return log_output_with_separator(message)
         return True
 
-    if PARSER_ARGS.compare_hashes and compute_sha256(data1) != compute_sha256(data2):
+    if PARSER_ARGS.compare_hashes and generate_hash(data1) != generate_hash(data2):
         log_output(f"'{where}': SHA256 is different")
         return False
     return True
@@ -284,12 +264,12 @@ def diff_files(file1: os.PathLike | str, file2: os.PathLike | str) -> bool | Non
         try:
             file1_capsule = Capsule(file1)
         except ValueError as e:
-            log_output(f"Could not load '{c_file1_rel}'. Reason: {universal_simplify_exception(e)}")
+            log_output(f"Could not load '{c_file1_rel}'. Reason: {e}")
             return None
         try:
             file2_capsule = Capsule(file2)
         except ValueError as e:
-            log_output(f"Could not load '{c_file2_rel}'. Reason: {universal_simplify_exception(e)}")
+            log_output(f"Could not load '{c_file2_rel}'. Reason: {e}")
             return None
 
         # Build dict of resources
@@ -404,8 +384,8 @@ def run_differ_from_args(path1: Path, path2: Path) -> bool | None:
 
 def main():
     global PARSER_ARGS
-    global PARSER
-    global LOGGING_ENABLED
+    global PARSER  # noqa: PLW0603
+    global LOGGING_ENABLED  # noqa: PLW0603
     PARSER = ArgumentParser(description="Finds differences between two KOTOR installations")
     PARSER.add_argument("--path1", type=str, help="Path to the first K1/TSL install, file, or directory to diff.")
     PARSER.add_argument("--path2", type=str, help="Path to the second K1/TSL install, file, or directory to diff.")
@@ -451,11 +431,11 @@ def main():
     log_output()
     log_output(f"Using --path1='{PARSER_ARGS.path1}'")
     log_output(f"Using --path2='{PARSER_ARGS.path2}'")
-    log_output(f"Using --ignore-rims={PARSER_ARGS.ignore_rims}")
-    log_output(f"Using --ignore-tlk={PARSER_ARGS.ignore_tlk}")
-    log_output(f"Using --ignore-lips={PARSER_ARGS.ignore_lips}")
-    log_output(f"Using --compare-hashes={PARSER_ARGS.compare_hashes}")
-    log_output(f"Using --use-profiler={PARSER_ARGS.use_profiler}")
+    log_output(f"Using --ignore-rims={PARSER_ARGS.ignore_rims!s}")
+    log_output(f"Using --ignore-tlk={PARSER_ARGS.ignore_tlk!s}")
+    log_output(f"Using --ignore-lips={PARSER_ARGS.ignore_lips!s}")
+    log_output(f"Using --compare-hashes={PARSER_ARGS.compare_hashes!s}")
+    log_output(f"Using --use-profiler={PARSER_ARGS.use_profiler!s}")
 
     profiler = None
     try:

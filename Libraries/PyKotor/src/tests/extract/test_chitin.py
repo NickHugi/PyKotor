@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import os
 import pathlib
 import sys
@@ -7,29 +9,31 @@ from unittest import TestCase
 from pykotor.tools.path import CaseAwarePath
 
 THIS_SCRIPT_PATH = pathlib.Path(__file__)
-PYKOTOR_PATH = THIS_SCRIPT_PATH.parents[2].resolve()
-UTILITY_PATH = THIS_SCRIPT_PATH.parents[4].joinpath("Utility", "src").resolve()
-if PYKOTOR_PATH.exists():
-    working_dir = str(PYKOTOR_PATH)
-    if working_dir in sys.path:
-        sys.path.remove(working_dir)
-        os.chdir(PYKOTOR_PATH.parent)
-    sys.path.insert(0, working_dir)
-if UTILITY_PATH.exists():
-    working_dir = str(UTILITY_PATH)
-    if working_dir in sys.path:
-        sys.path.remove(working_dir)
-    sys.path.insert(0, working_dir)
+PYKOTOR_PATH = THIS_SCRIPT_PATH.parents[2]
+UTILITY_PATH = THIS_SCRIPT_PATH.parents[4].joinpath("Utility", "src")
+def add_sys_path(p: pathlib.Path):
+    working_dir = str(p)
+    if working_dir not in sys.path:
+        sys.path.append(working_dir)
+if PYKOTOR_PATH.joinpath("pykotor").exists():
+    add_sys_path(PYKOTOR_PATH)
+    os.chdir(PYKOTOR_PATH.parent)
+if UTILITY_PATH.joinpath("utility").exists():
+    add_sys_path(UTILITY_PATH)
 
 from pykotor.extract.chitin import Chitin
 
 
 NWN_BASE_PATH = r"C:\Program Files (x86)\Steam\steamapps\common\Neverwinter Nights"
 NWN_KEY_PATH = r"C:\Program Files (x86)\Steam\steamapps\common\Neverwinter Nights\data\nwn_base.key"
-K1_PATH = os.environ.get("K1_PATH")
-K2_PATH = os.environ.get("K2_PATH")
+K1_PATH: str | None = os.environ.get("K1_PATH")
+K2_PATH: str | None = os.environ.get("K2_PATH")
 
 class TestCapsule(TestCase):
+    @unittest.skipIf(
+        not NWN_KEY_PATH or not NWN_BASE_PATH or not pathlib.Path(NWN_KEY_PATH).exists(),
+        "K1_PATH environment variable is not set or not found on disk.",
+    )
     def test_nwn_chitin(self):
         chitin = Chitin(NWN_KEY_PATH, NWN_BASE_PATH)
     @unittest.skipIf(

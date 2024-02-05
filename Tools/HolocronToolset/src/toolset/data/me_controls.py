@@ -12,7 +12,7 @@ from pykotor.tools.encoding import decode_bytes_with_fallbacks
 from PyQt5 import QtCore
 from PyQt5.QtCore import QPoint
 from PyQt5.QtGui import QKeySequence
-from utility.path import Path
+from utility.system.path import Path
 
 if TYPE_CHECKING:
     from pykotor.resource.generics.git import GITInstance
@@ -202,17 +202,16 @@ class DynamicModuleEditorControls(ModuleEditorControls):
             self.load(filepath)
 
     def load(self, filepath: str):
-        """Load a filepath into the editor.
-
+        """Load a filepath into the editor
         Args:
-        ----
             filepath (str): Path to JSON file
-
+        Returns:
+            None
         Loads data from JSON file:
-            - Parses JSON file and extracts data
-            - Initializes variables from JSON
-            - Initializes control events from JSON
-            - Raises errors for invalid data.
+        - Parses JSON file and extracts data
+        - Initializes variables from JSON
+        - Initializes control events from JSON
+        - Raises errors for invalid data.
         """
         self.variables: list[DCVariable] = []
         self.mouseMoveEvents = []
@@ -233,7 +232,7 @@ class DynamicModuleEditorControls(ModuleEditorControls):
             data_type = variableJSON["type"]
             default = variableJSON["default"]
 
-            var: DCVariable | None = None
+            var = None
             if data_type == "STRING":
                 var = DCVariableString(name, default, variableJSON["allowed"])
             elif data_type == "INT":
@@ -243,12 +242,10 @@ class DynamicModuleEditorControls(ModuleEditorControls):
             elif data_type == "BOOL":
                 var = DCVariableBool(name, default)
             else:
-                msg = f"Unknown data type '{data_type}'."
-                raise ValueError(msg)
+                ValueError(f"Unknown data type '{data_type}'.")
 
             self.variables.append(var)
 
-        array: list[DCItem]
         for controlJSON in rootJSON["controls"]:
             if controlJSON["event"] == "MOUSE_MOVE":
                 array = self.mouseMoveEvents
@@ -282,7 +279,7 @@ class DynamicModuleEditorControls(ModuleEditorControls):
                     key = mouseJSON if isinstance(mouseJSON, int) else getMouseCode(mouseJSON)
                     mouse.add(key)
 
-            effects: list[dict[str, Any]] = []
+            effects = []
             for effectsJSON in controlJSON["effects"]:
                 for effectJSON in effectsJSON:
                     args = effectsJSON[effectJSON]

@@ -880,7 +880,7 @@ class ModuleDesigner(QMainWindow):
     def on2dMouseMoved(self, screen: Vector2, delta: Vector2, buttons: set[int], keys: set[int]):
         worldDelta = self.ui.flatRenderer.toWorldDelta(delta.x, delta.y)
         world = self.ui.flatRenderer.toWorldCoords(screen.x, screen.y)
-        self._controls2d.onMouseMoved(screen, delta, world, worldDelta, buttons, keys)
+        self._controls2d.onMouseMoved(screen, delta, Vector2.from_vector3(world), worldDelta, buttons, keys)
 
     def on2dMouseScrolled(self, delta: Vector2, buttons: set[int], keys: set[int]):
         self._controls2d.onMouseScrolled(delta, buttons, keys)
@@ -1049,15 +1049,16 @@ class ModuleDesignerControls3d:
             self.renderer.doSelect = True
 
         if self.duplicateSelected.satisfied(buttons, keys) and self.editor.selectedInstances:
-            instance = deepcopy(self.editor.selectedInstances[-1])
-            instance.position = self.renderer.scene.cursor.position()
+            instance: GITInstance = deepcopy(self.editor.selectedInstances[-1])
+            vect3 = self.renderer.scene.cursor.position()
+            instance.position = Vector3(vect3.x, vect3.y, vect3.z)
             self.editor.git().add(instance)
             self.editor.rebuildInstanceList()
             self.editor.setSelection([instance])
 
         if self.openContextMenu.satisfied(buttons, keys):
             world = Vector3(*self.renderer.scene.cursor.position())
-            self.editor.onContextMenu(world, self.renderer.mapToGlobal(QPoint(screen.x, screen.y)))
+            self.editor.onContextMenu(world, self.renderer.mapToGlobal(QPoint(int(screen.x), int(screen.y))))
 
     def onMouseReleased(self, screen: Vector2, buttons: set[int], keys: set[int]):
         ...
@@ -1334,7 +1335,7 @@ class ModuleDesignerControls2d:
             self._duplicate_instance()
         if self.openContextMenu.satisfied(buttons, keys):
             world = self.renderer.toWorldCoords(screen.x, screen.y)
-            self.editor.onContextMenu(world, self.renderer.mapToGlobal(QPoint(screen.x, screen.y)))
+            self.editor.onContextMenu(world, self.renderer.mapToGlobal(QPoint(int(screen.x), int(screen.y))))
 
     # TODO Rename this here and in `onMousePressed`
     def _duplicate_instance(self):

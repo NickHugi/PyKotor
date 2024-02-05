@@ -6,6 +6,7 @@ from enum import IntEnum
 from typing import TYPE_CHECKING
 from pykotor.tslpatcher.mods.gff import Memory2DAModifierGFF
 
+from pykotor.tslpatcher.mods.gff import Memory2DAModifierGFF
 from pykotor.tslpatcher.mods.tlk import ModificationsTLK
 from pykotor.tslpatcher.namespaces import PatcherNamespace
 from pykotor.tslpatcher.reader import ConfigReader
@@ -17,12 +18,13 @@ if TYPE_CHECKING:
     from pykotor.tslpatcher.logger import PatchLogger
     from pykotor.tslpatcher.mods.gff import ModificationsGFF, ModifyGFF
     from pykotor.tslpatcher.mods.install import InstallFile
-    from pykotor.tslpatcher.mods.nss import ModificationsNCS, ModificationsNSS
+    from pykotor.tslpatcher.mods.ncs import ModificationsNCS
+    from pykotor.tslpatcher.mods.nss import ModificationsNSS
     from pykotor.tslpatcher.mods.ssf import ModificationsSSF
     from pykotor.tslpatcher.mods.twoda import Modifications2DA
 
 
-class LogLevel(IntEnum):
+class LogLevel(IntEnum):  # TODO: implement into HoloPatcher
     # Docstrings taken from ChangeEdit docs
 
     NOTHING = 0
@@ -52,6 +54,7 @@ class PatcherConfig:
 
         self.required_file: str | None = None
         self.required_message: str = ""
+        self.save_processed_scripts: int = 0
 
         # optional hp features
         self.ignore_file_extensions: bool = False
@@ -118,9 +121,7 @@ class PatcherConfig:
         reader.load_settings()
 
         namespace: PatcherNamespace = PatcherNamespace.from_default()
-        namespace.name = reader.config.window_title
-        if not namespace.name:
-            namespace.name = filepath.parents[1].name.strip() or "<< Untitled Mod Loaded >>"
+        namespace.name = reader.config.window_title or filepath.parents[1].name.strip() or "<< Untitled Mod Loaded >>"
 
         return namespace
 

@@ -292,7 +292,7 @@ def dismantle_utp(
 
     root.set_uint8("PaletteID", utp.palette_id)
 
-    if game == Game.K2:
+    if game.is_k2():
         root.set_uint8("NotBlastable", utp.not_blastable)
         root.set_uint8("OpenLockDiff", utp.unlock_diff)
         root.set_int8("OpenLockDiffMod", utp.unlock_diff_mod)

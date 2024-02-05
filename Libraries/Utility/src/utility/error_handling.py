@@ -1,34 +1,46 @@
 from __future__ import annotations
 
-import inspect as ___inspect___
-import sys as ___sys___
-import traceback as ___traceback___
-import types as ___types___
+import inspect
+import sys
+import traceback
+import types
+from pathlib import Path
+from typing import TYPE_CHECKING, Callable, TypeVar
+
+if TYPE_CHECKING:
+    from typing_extensions import Literal
 
 
 def universal_simplify_exception(e: BaseException) -> tuple[str, str]:
-    """Simplify exceptions into a standardized format
+    """Simplify exceptions into a standardized format.
+
     Args:
+    ----
         e: Exception - The exception to simplify
+
     Returns:
+    -------
         error_name: str - The name of the exception
         error_message: str - A human-readable message for the exception
+
     Processing Logic:
-    - Extract the exception name from the type
-    - Handle specific exception types differently
-    - Try common exception attributes for a message
-    - Return (error_name, repr(e)) if nothing else.
+    ----------------
+        - Extract the exception name from the type
+        - Handle specific exception types differently
+        - Try common exception attributes for a message
+        - Return a general fallback if nothing else better was determined.
     """
     error_name: str = type(e).__name__
 
     # Handle FileNotFoundError, which has 'filename' attribute
     if isinstance(e, FileNotFoundError):
-        if len(e.args) > 1:
-            return error_name, f"{e.args[1]}: {e.args[0]}"
+        filename = getattr(e, "filename", getattr(e, "filename2", None))
+        if filename:
+            return error_name, f"Could not find the file: '{filename}'"
         if len(e.args) == 1:
             return error_name, f"Could not find the file: '{e.args[0]}'"
-        if hasattr(e, "filename"):
-            return error_name, f"Could not find the file: '{e.filename}'"
+        if len(e.args) > 1:
+            return error_name, f"{e.args[1]}: {e.args[0]}"
 
     # Handle PermissionError, which may have a 'filename' attribute
     if isinstance(e, PermissionError):
@@ -54,159 +66,229 @@ def universal_simplify_exception(e: BaseException) -> tuple[str, str]:
         if msg:
             return error_name, f"{e}: {msg}"
 
-    return error_name, str(e) + getattr(e, "args", "")
+    err_str = str(e)
+    args = getattr(e, "args", [])
+    if args and isinstance(args, list):
+        err_msg_index: int | Literal[False] = err_str in args and args.index(err_str)
+        if err_msg_index:
+            del args[err_msg_index]
+        if args:
+            err_str += "\n  Information:"
+            for arg in args:
+                err_str += f"\n    {arg}"
+    return error_name, err_str
 
+# Get default module attributes to filter out built-ins
+default_attrs: set[str] = set(dir(sys.modules["builtins"]))
+
+ignore_attrs: set[str] = {
+    "__file__",
+    "__cached__",
+    "__builtins__",
+}
+
+class CustomAssertionError(AssertionError):
+    def __init__(self, *args, **kwargs):
+        self.message: str = kwargs.get("message", args[0])
+        super().__init__(*args, **kwargs)
+
+def format_var_str(
+    var,
+    val,
+    max_length=512,
+) -> str | None:
+    """Format variable and its value into a string, handling exceptions and length."""
+    if var in default_attrs or var in ignore_attrs:
+        return None
+
+    val_repr: str | object
+    val_str: str | object
+    exc = None
+    unique_sentinel = object()
+    try:
+        val_str = str(val)
+        if len(val_str) > max_length:
+            val_str = f"{val_str[:max_length]}...<truncated>"
+    except Exception as e:
+        val_str = unique_sentinel
+        exc = e
+
+    try:
+        val_repr = repr(val)
+        if len(val_repr) > max_length:
+            val_repr = f"{val_repr[:max_length]}...<truncated>"
+    except Exception:
+        val_repr = unique_sentinel
+
+    display_value: str | object = val_repr
+    if display_value is unique_sentinel:
+        display_value = val_str
+    if display_value is unique_sentinel:
+        display_value = f"<Error in repr({var}): {exc}>"
+
+    return f"  {var} = {display_value}"
+
+def format_frame_info(frame_info: inspect.FrameInfo) -> list[str]:
+    """Extract and format information from a frame."""
+    (
+        frame,
+        filename,
+        line_no,
+        function,
+        code_context,
+        index,
+    ) = frame_info
+    code_context = ""  # type: ignore[assignment]
+    #code_context = f"\nContext [{', '.join(code_context)}] " if code_context else ""  # type: ignore[assignment]
+    detailed_message: list[str] = [f"\nFunction '{function}' at {filename}:{line_no}:{code_context}"]
+    for var, val in frame.f_locals.items():
+        formatted_var: str | None = format_var_str(var, val)
+        if formatted_var:
+            detailed_message.append(formatted_var)
+    return detailed_message
 
 def format_exception_with_variables(
-    ___value___: BaseException,
-    ___etype___: type[BaseException] | None = None,
-    ___tb___: ___types___.TracebackType | None = None,
-    ___message___: str = "Assertion with Exception Trace",
+    value: BaseException,
+    etype: type[BaseException] | None = None,
+    tb: types.TracebackType | None = None,
+    message: str = "Assertion with Exception Trace",
 ) -> str:
-    ___etype___ = ___etype___ if ___etype___ is not None else type(___value___)
-    ___tb___ = ___tb___ if ___tb___ is not None else ___value___.__traceback__
+    etype = etype if etype is not None else type(value)
+    tb = tb if tb is not None else value.__traceback__
 
     # Check if the arguments are of the correct type
-    if not issubclass(___etype___, BaseException):
-        msg = f"{___etype___!r} is not an exception class"
+    if not issubclass(etype, BaseException):
+        msg = f"{etype!r} is not an exception class"
         raise TypeError(msg)
-    if not isinstance(___value___, BaseException):
-        msg = f"{___value___!r} is not an exception instance"
+    if not isinstance(value, BaseException):
+        msg = f"{value!r} is not an exception instance"
         raise TypeError(msg)
-    if not isinstance(___tb___, ___types___.TracebackType):
-        msg = "___tb___ is not a traceback object"
+    if not isinstance(tb, types.TracebackType):
+        msg = "tb is not a traceback object"
         raise TypeError(msg)
 
     # Construct the stack trace using traceback
-    ___formatted_traceback___: str = "".join(___traceback___.format_exception(___etype___, ___value___, ___tb___))
+    formatted_traceback: str = "".join(traceback.format_exception(etype, value, tb))
 
     # Capture the current stack trace
-    ___frames___: list[___inspect___.FrameInfo] = ___inspect___.getinnerframes(___tb___, context=5)
-
-    # Get default module attributes to filter out built-ins
-    ___default_attrs___: set[str] = set(dir(___sys___.modules["builtins"]))
+    frames: list[inspect.FrameInfo] = inspect.getinnerframes(tb, context=5)
 
     # Construct a detailed message with variables from all stack frames
-    ___detailed_message___: list[str] = [
-        f"{___message___}: Exception '{___value___}' of type '{___etype___}' occurred.",
+    detailed_message: list[str] = [
+        f"{message}: Exception '{value}' of type '{etype}' occurred.",
         "Formatted Traceback:",
-        ___formatted_traceback___,
+        formatted_traceback,
         "Stack Trace Variables:",
     ]
-    for ___frame_info___ in ___frames___:
-        (
-            ___frame___,
-            ___filename___,
-            ___line_no___,
-            ___function___,
-            ___code_context___,
-            ___index___,
-        ) = ___frame_info___
-        ___detailed_message___.append(f"\nFunction '{___function___}' at {___filename___}:{___line_no___}:")
+    for frame_info in frames:
+        detailed_message.extend(format_frame_info(frame_info))
+    if value.__cause__ is not None:
+        detailed_message.append("This is the original exception:")
+        detailed_message.extend(format_exception_with_variables(value.__cause__, message="Causing Exception's Stack Trace Variables:").split("\n"))
 
-        # Filter out built-in and imported names
-        ___detailed_message___.extend(
-            f"  {___var___} = {___val___!r}"
-            for ___var___, ___val___ in ___frame___.f_locals.items()
-            if ___var___ not in ___default_attrs___
-            and ___sys___.getsizeof(___val___) <= (1024 * 1024)
-            and ___var___ not in [
-                "___var___",
-                "___detailed_message___",
-                "___formatted_traceback___",
-                "___message___",
-                "___default_attrs___",
-                "___frames___",
-                "___filename___",
-                "___line_no___",
-                "___function___",
-                "___frame_info___",
-                "__builtins__",
-                "___inspect___",
-                "___sys___",
-                "format_exception_with_variables",
-                "___etype___",
-                "___value___",
-                "___tb___",
-                "___index___",
-                "___code_context___",
-                "___frame___",
-                "___traceback___",
-                "___types___",
-            ]
-        )
+    return "\n".join(detailed_message)
 
-    return "\n".join(___detailed_message___)
+def is_assertion_removal_enabled() -> bool:
+    return sys.flags.optimize >= 1
 
+IT = TypeVar("IT")
+def enforce_instance_cast(obj: object, type_: type[IT]) -> IT:
+    instance_check: bool = isinstance(obj, type_)
+    if is_assertion_removal_enabled():
+        # don't enforce the instance check if the assertion optimizers are being used.
+        if not instance_check:
+            print(format_exception_with_variables(AssertionError("isinstance(obj, type_)")))  # noqa: T201
+        return obj  # type: ignore[return-value]
 
-def assert_with_variable_trace(___condition___: bool, ___message___: str = "Assertion Failed"):
-    if ___condition___:
+    assert_with_variable_trace(isinstance(obj, type_), "enforce_is_instance failed.")
+    return obj # type: ignore[return-value]
+
+def assert_with_variable_trace(condition: bool, message: str = "Assertion Failed"):
+    if condition:
         return
     # Capture the current stack trace
-    ___frames___: list[___inspect___.FrameInfo] = ___inspect___.getouterframes(___inspect___.currentframe())
+    frames: list[inspect.FrameInfo] = inspect.getouterframes(inspect.currentframe())
 
     # Get the line of code calling assert_with_variable_trace
-    ___calling_frame_record___: ___inspect___.FrameInfo = ___frames___[1]
+    calling_frame_record: inspect.FrameInfo = frames[1]
     (
-        ___unused_frame_type___,
-        ___filename_errorhandler___,
-        ___line_no___,
-        ___unused_str_thing___,
-        ___code_context___,
-        ___unused_frame_type___,
-    ) = ___calling_frame_record___
-    ___line_of_code___ = ___code_context___[0].strip() if ___code_context___ else "Unknown condition"
-
-    # Get default module attributes to filter out built-ins
-    ___default_attrs___: set[str] = set(dir(___sys___.modules["builtins"]))
+        frame,
+        filename,
+        line_no,
+        function,
+        code_context,
+        frame_type,
+    ) = calling_frame_record
+    line_of_code: str = code_context[0].strip() if code_context else "Unknown condition"
 
     # Construct a detailed message with variables from all stack frames
-    ___detailed_message___: list[str] = [
-        f"{___message___}: Expected condition '{___line_of_code___}' failed at {___filename_errorhandler___}:{___line_no___}.",
+    detailed_message: list[str] = [
+        f"{message}: Expected condition '{line_of_code}' failed at {filename}:{line_no}.",
         "Stack Trace Variables:",
     ]
-    for ___frame_info___ in ___frames___:
-        (
-            ___frame___,
-            ___filename_errorhandler___,
-            ___line_no___,
-            ___function___,
-            ___code_context___,
-            ___unused_index___,
-        ) = ___frame_info___
-        ___detailed_message___.append(f"\nFunction '{___function___}' at {___filename_errorhandler___}:{___line_no___}:")
+    for frame_info in frames:
+        detailed_message.extend(format_frame_info(frame_info))
 
-        # Filter out built-in and imported names
-        ___detailed_message___.extend(
-            f"  {var} = {val}"
-            for var, val in ___frame___.f_locals.items()
-            if var not in ___default_attrs___
-            and var
-            not in [
-                "___detailed_message___",
-                "___default_attrs___",
-                "___line_of_code___",
-                "___calling_frame_record___",
-                "___code_context___",
-                "___frames___",
-                "___filename_errorhandler___",
-                "___line_no___",
-                "___function___",
-                "___frame_info___",
-                "__builtins__",
-                "___inspect___",
-                "___sys___",
-                "assert_with_variable_trace",
-                "___condition___",
-                "___frame___",
-                "___message___",
-                "___value___",
-                "___unused_str_thing___",
-                "___unused_index___",
-                "___unused_frame_type___",
-            ]
-        )
-    full_message: str = "\n".join(___detailed_message___)
+    full_message: str = "\n".join(detailed_message)
 
     # Raise an exception with the detailed message
     raise AssertionError(full_message)
+
+RT = TypeVar("RT")
+unique_sentinel = object()
+def with_variable_trace(
+    exception_types: type[Exception] | tuple[type[Exception], ...] = Exception,
+    return_type: type[RT] = unique_sentinel,  # type: ignore[reportGeneralTypeIssues, assignment]
+    action="print",
+    log: bool = True,
+    rethrow: bool = False,
+) -> Callable[[Callable[..., RT]], Callable[..., RT | None]]:
+    # Set default to Exception if no specific types are provided
+    if not exception_types:
+        exception_types = (Exception,)
+    if not isinstance(exception_types, tuple):
+        exception_types = (exception_types,)
+    exception_types = (*exception_types, CustomAssertionError)
+
+    def decorator(f: Callable[..., RT]) -> Callable[..., RT | None]:
+        def wrapper(*args, **kwargs) -> RT | None:
+            try:
+                result: RT = f(*args, **kwargs)
+                if return_type is not unique_sentinel and not isinstance(result, return_type):
+                    raise CustomAssertionError(f"Return type of '{f.__name__}' must be {return_type.__name__}, got {type(result)}: {result!r}: {result}")
+            except exception_types as e:
+
+                detailed_message: list[str] = [
+                    f"Exception caught in function '{f.__name__}': {e}",
+                    "Stack Trace Variables:",
+                ]
+                for frame_info in inspect.getouterframes(inspect.currentframe()):
+                    #if frame_info.function != f.__name__:  # Why did I add this?
+                    #    continue
+                    detailed_message.extend(format_frame_info(frame_info))
+                if e.__cause__ is not None:
+                    detailed_message.append("This is the original exception:")
+                    detailed_message.extend(format_exception_with_variables(e.__cause__, message="Causing Exception's Stack Trace Variables:").split("\n"))
+
+                full_message: str = "\n".join(detailed_message)
+
+                if action == "stderr":
+                    print(full_message, sys.stderr)  # noqa: T201
+                elif action == "print":
+                    print(full_message)  # noqa: T201
+                if log:
+                    with Path("errorlog.txt").open("a") as outfile:
+                        outfile.write(full_message)
+                if rethrow:
+                    # Raise an exception with the detailed message
+                    if isinstance(e, CustomAssertionError):
+                        raise AssertionError(e.message) from None
+                    raise e.__class__(full_message) from e
+
+                return None
+            else:
+                return result
+
+        return wrapper
+
+    return decorator

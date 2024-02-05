@@ -1,28 +1,26 @@
 from __future__ import annotations
 
 import os
+import pathlib
 import shutil
 import sys
 import tempfile
 import unittest
 from configparser import ConfigParser
-import pathlib
 from typing import TYPE_CHECKING
 
 THIS_SCRIPT_PATH = pathlib.Path(__file__)
-PYKOTOR_PATH = THIS_SCRIPT_PATH.parents[2].resolve()
-UTILITY_PATH = THIS_SCRIPT_PATH.parents[4].joinpath("Utility", "src").resolve()
-if PYKOTOR_PATH.exists():
-    working_dir = str(PYKOTOR_PATH)
-    if working_dir in sys.path:
-        sys.path.remove(working_dir)
-        os.chdir(PYKOTOR_PATH.parent)
-    sys.path.insert(0, working_dir)
-if UTILITY_PATH.exists():
-    working_dir = str(UTILITY_PATH)
-    if working_dir in sys.path:
-        sys.path.remove(working_dir)
-    sys.path.insert(0, working_dir)
+PYKOTOR_PATH = THIS_SCRIPT_PATH.parents[2]
+UTILITY_PATH = THIS_SCRIPT_PATH.parents[4].joinpath("Utility", "src")
+def add_sys_path(p: pathlib.Path):
+    working_dir = str(p)
+    if working_dir not in sys.path:
+        sys.path.append(working_dir)
+if PYKOTOR_PATH.joinpath("pykotor").exists():
+    add_sys_path(PYKOTOR_PATH)
+    os.chdir(PYKOTOR_PATH.parent)
+if UTILITY_PATH.joinpath("utility").exists():
+    add_sys_path(UTILITY_PATH)
 
 from pykotor.common.geometry import Vector3, Vector4
 from pykotor.common.language import Gender, Language
@@ -58,7 +56,7 @@ from pykotor.tslpatcher.mods.twoda import (
     TargetType,
 )
 from pykotor.tslpatcher.reader import ConfigReader
-from utility.path import Path
+from utility.system.path import Path
 
 if TYPE_CHECKING:
     from pykotor.tslpatcher.mods.ssf import ModifySSF

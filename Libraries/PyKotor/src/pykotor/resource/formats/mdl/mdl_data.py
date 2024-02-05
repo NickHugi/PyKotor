@@ -198,7 +198,7 @@ class MDL:
         return {
             node.mesh.texture_1
             for node in self.all_nodes()
-            if (node.mesh and node.mesh.texture_1 != "NULL" and node.mesh.texture_1 != "")
+            if (node.mesh and node.mesh.texture_1 != "NULL" and node.mesh.texture_1)
         }
 
     def all_lightmaps(
@@ -223,7 +223,7 @@ class MDL:
         return {
             node.mesh.texture_2
             for node in self.all_nodes()
-            if (node.mesh and node.mesh.texture_2 != "NULL" and node.mesh.texture_2 != "")
+            if (node.mesh and node.mesh.texture_2 != "NULL" and node.mesh.texture_2)
         }
 
 

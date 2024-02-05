@@ -7,13 +7,14 @@ from typing import TYPE_CHECKING, Any, Callable, Generator
 
 from pykotor.tools.registry import winreg_key
 from utility.misc import is_instance_or_subinstance
-from utility.path import Path as InternalPath
-from utility.path import PathElem
-from utility.path import PurePath as InternalPurePath
+from utility.system.path import Path as InternalPath
+from utility.system.path import PathElem
+from utility.system.path import PurePath as InternalPurePath
 from utility.registry import resolve_reg_key_to_path
 
 if TYPE_CHECKING:
     from pykotor.common.misc import Game
+    from typing_extensions import Self
 
 def simple_wrapper(fn_name, wrapped_class_type) -> Callable[..., Any]:
     """Wraps a function to handle case-sensitive pathlib.PurePath arguments.
@@ -131,39 +132,38 @@ class CaseAwarePath(InternalPath):  # type: ignore[misc]
     """A class capable of resolving case-sensitivity in a path. Absolutely essential for working with KOTOR files on Unix filesystems."""
 
     def resolve(self, strict=False):  # noqa: FBT002
-        new_path = super().resolve(strict)
-        if self.should_resolve_case(new_path):
+        if self.should_resolve_case(self):
             new_path = self.get_case_sensitive_path(self)
             return super(CaseAwarePath, new_path).resolve(strict)
-        return new_path
+        return super().resolve(strict)
 
-    def relative_to(self, *args, walk_up=False, **kwargs):
+    def relative_to(self, *args, walk_up=False, **kwargs) -> InternalPath | Self:
         if not args or "other" in kwargs:
             raise TypeError("relative_to() missing 1 required positional argument: 'other'")  # noqa: TRY003, EM101
 
         other, *_deprecated = args
-        parsed_other = self.with_segments(other, *_deprecated)
-        for step, path in enumerate([parsed_other, *list(parsed_other.parents)]):  # noqa: B007
-            if self.is_relative_to(path):
-                break
-            if not walk_up:
-                raise ValueError(f"{str(self)!r} is not in the subpath of {str(parsed_other)!r}")  # noqa: TRY003, EM102
-            if path.name == "..":
-                raise ValueError(f"'..' segment in {str(parsed_other)!r} cannot be walked")  # noqa: TRY003, EM102
+        resolved_self = self
+        if isinstance(resolved_self, InternalPath):
+            if not isinstance(other, InternalPath):
+                other = self.__class__(other)
+            parsed_other = self.with_segments(other, *_deprecated).absolute()
+            resolved_self = resolved_self.absolute()
         else:
-            raise ValueError(f"{str(self)!r} and {str(parsed_other)!r} have different anchors")  # noqa: TRY003, EM102
+            parsed_other = other if isinstance(other, InternalPurePath) else InternalPurePath(other)
+            parsed_other = other.with_segments(other, *_deprecated)
 
-        parts: list[str] = [".."] * step + list(self.parts[step:])
-        return self.with_segments(*parts)
+        self_str, other_str = map(str, (resolved_self, parsed_other))
+        if isinstance(self, (pathlib.PureWindowsPath, pathlib.WindowsPath)) or type(self).__name__ == "CaseAwarePath" or os.name == "nt":  # HACK: maybe import CaseAwarePath or have an attribute set over there (might need to set __slots__ too)
+            self_str, other_str = map(str.lower, (self_str, other_str))
 
-    def is_relative_to(self, *args, **kwargs):
-        """Return True if the path is relative to another path or False."""
-        if not args or "other" in kwargs:
-            raise TypeError("relative_to() missing 1 required positional argument: 'other'")  # noqa: TRY003, EM101
+        if other_str not in self_str:
+            msg = f"self '{self_str}' is not relative to other '{other_str}'"
+            raise ValueError(msg)
 
-        other, *_deprecated = args
-        parsed_other = self.with_segments(other, *_deprecated)
-        return parsed_other == self or parsed_other in self.parents
+        replacement = self_str.replace(other_str, "").lstrip("\\").lstrip("/")
+        if isinstance(self, CaseAwarePath):  # CaseAwarePath's are always absolute.
+            return InternalPath(replacement)
+        return self.__class__(replacement)
 
     @classmethod
     def get_case_sensitive_path(cls, path: PathElem):
@@ -263,8 +263,11 @@ class CaseAwarePath(InternalPath):  # type: ignore[misc]
     def should_resolve_case(path: os.PathLike | str) -> bool:
         if os.name == "nt":
             return False
-        path_obj = pathlib.Path(path)
-        return path_obj.is_absolute() and not path_obj.exists()
+        try:
+            path_obj = pathlib.Path(path)
+            return path_obj.is_absolute() and not path_obj.exists()
+        except Exception:  # noqa: BLE001
+            return False
 
     def __hash__(self):
         return hash(self.as_windows())
@@ -285,9 +288,9 @@ class CaseAwarePath(InternalPath):  # type: ignore[misc]
     def __str__(self):
         path_obj = pathlib.Path(self)
         return (
-            self._fix_path_formatting(str(path_obj))
-            if not self.should_resolve_case(path_obj)
-            else super(CaseAwarePath, self.get_case_sensitive_path(path_obj)).__str__()
+            super(CaseAwarePath, self.get_case_sensitive_path(path_obj)).__str__()
+            if self.should_resolve_case(path_obj)
+            else self._fix_path_formatting(str(path_obj))
         )
 
 if os.name != "nt":  # Wrapping is unnecessary on Windows
@@ -382,7 +385,7 @@ def find_kotor_paths_from_default() -> dict[Game, list[CaseAwarePath]]:
         game: {
             case_path
             for case_path in (CaseAwarePath(path).resolve() for path in paths)
-            if case_path.exists()
+            if case_path.safe_isdir()
         }
         for game, paths in raw_locations.get(os_str, {}).items()
     }
@@ -393,7 +396,7 @@ def find_kotor_paths_from_default() -> dict[Game, list[CaseAwarePath]]:
             for reg_key, reg_valname in possible_game_paths:
                 path_str = resolve_reg_key_to_path(reg_key, reg_valname)
                 path = CaseAwarePath(path_str).resolve() if path_str else None
-                if path and path.name and path.exists():
+                if path and path.name and path.safe_isdir():
                     locations[game].add(path)
 
     # don't return nested sets, return as lists.

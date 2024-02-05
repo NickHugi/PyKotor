@@ -4,8 +4,12 @@ import itertools
 import math
 from copy import copy
 from enum import IntEnum
+from typing import TYPE_CHECKING
 
 from pykotor.common.geometry import Face, Vector3
+
+if TYPE_CHECKING:
+    from typing_extensions import Literal
 
 # A lot of the code in this module was adapted from the KotorBlender fork by seedhartha:
 # https://github.com/seedhartha/kotorblender
@@ -142,7 +146,7 @@ class BWM:
             - Stop when single face remains or axes exhausted
         """
         if rlevel > 128:
-            msg = f"rlevel must not exceed 128, but is equal to {rlevel}"
+            msg = f"recursion level must not exceed 128, but is currently at level {rlevel}"
             raise ValueError(msg)
 
         if not faces:
@@ -152,9 +156,9 @@ class BWM:
         # Calculate bounding box
         bbmin = Vector3(100000.0, 100000.0, 100000.0)
         bbmax = Vector3(-100000.0, -100000.0, -100000.0)
-        bbcentre = Vector3.from_null()
+        bbcentre: Vector3 = Vector3.from_null()
         for face in faces:
-            for vertex in [face.v1, face.v2, face.v3]:
+            for vertex in (face.v1, face.v2, face.v3):
                 for axis in range(3):
                     bbmin[axis] = min(bbmin[axis], vertex[axis])
                     bbmax[axis] = max(bbmax[axis], vertex[axis])
@@ -167,7 +171,7 @@ class BWM:
             return
 
         # Find longest axis
-        split_axis = 0
+        split_axis: int = 0
         bb_size: Vector3 = bbmax - bbmin
         if bb_size.y > bb_size.x:
             split_axis = 1
@@ -175,7 +179,7 @@ class BWM:
             split_axis = 2
 
         # Change axis in case points are coplanar with the split plane
-        change_axis = True
+        change_axis: bool = True
         for face in faces:
             change_axis = change_axis and face.centre()[split_axis] == bbcentre[split_axis]
         if change_axis:
@@ -190,7 +194,7 @@ class BWM:
             faces_left = []
             faces_right = []
             for face in faces:
-                centre = face.centre()
+                centre: Vector3 = face.centre()
                 if centre[split_axis] < bbcentre[split_axis]:
                     faces_left.append(face)
                 else:
@@ -232,8 +236,8 @@ class BWM:
             - Traces edge paths and adds them to the edges list until it loops back
             - Marks final edges and records perimeter lengths
         """
-        walkable = [face for face in self.faces if face.material.walkable()]
-        adjacencies = [self.adjacencies(face) for face in walkable]
+        walkable: list[BWMFace] = [face for face in self.faces if face.material.walkable()]
+        adjacencies: list[tuple[BWMAdjacency | None, BWMAdjacency | None, BWMAdjacency | None]] = [self.adjacencies(face) for face in walkable]
 
         visited: set[int] = set()
         edges: list[BWMEdge] = []
@@ -241,19 +245,19 @@ class BWM:
         for i, j in itertools.product(range(len(walkable)), range(3)):
             if adjacencies[i][j] is not None:
                 continue
-            edge_index = i * 3 + j
+            edge_index: int = i * 3 + j
             if edge_index in visited:
                 continue
-            next_face = i
-            next_edge = j
+            next_face: int = i
+            next_edge: int = j
             while next_face != -1:
-                adj_edge = adjacencies[next_face][next_edge]
-                adj_edge_index = self.faces.index(adj_edge.face) * 3 + adj_edge.edge if adj_edge is not None else -1
+                adj_edge: BWMAdjacency | None = adjacencies[next_face][next_edge]
+                adj_edge_index: int = self.faces.index(adj_edge.face) * 3 + adj_edge.edge if adj_edge is not None else -1
                 if adj_edge is None:
                     edge_index = 3 * next_face + next_edge
                     if edge_index not in visited:
-                        face_id = edge_index // 3
-                        edge_id = edge_index % 3
+                        face_id: int = edge_index // 3
+                        edge_id: int = edge_index % 3
                         transition: int | None = -1
                         if edge_id == 0 and self.faces[face_id].trans1 is not None:
                             transition = self.faces[face_id].trans1
@@ -262,9 +266,7 @@ class BWM:
                         if edge_id == 2 and self.faces[face_id].trans3 is not None:
                             transition = self.faces[face_id].trans3
 
-                        edges.append(
-                            BWMEdge(self.faces[next_face], next_edge, transition or -1),
-                        )
+                        edges.append(BWMEdge(self.faces[next_face], next_edge, transition or -1))
 
                         visited.add(edge_index)
                         next_edge = (next_edge + 1) % 3
@@ -299,29 +301,29 @@ class BWM:
             3. Iterate through walkable faces and check if edges match using a bit flag
             4. Return adjacencies or None.
         """
-        walkable = self.walkable_faces()
+        walkable: list[BWMFace] = self.walkable_faces()
 
-        adj1 = [face.v1, face.v2]
-        adj2 = [face.v2, face.v3]
-        adj3 = [face.v3, face.v1]
+        adj1: list[Vector3] = [face.v1, face.v2]
+        adj2: list[Vector3] = [face.v2, face.v3]
+        adj3: list[Vector3] = [face.v3, face.v1]
 
         adj_index1 = None
         adj_index2 = None
         adj_index3 = None
 
         def matches(
-            face_index,
-            edges,
-        ):
+            face_index: int,
+            edges: list[Vector3],
+        ) -> Literal[2, 1, 0, -1]:
             flag = 0x00
-            other_face = self.faces[face_index]
+            other_face: BWMFace = self.faces[face_index]
             if other_face.v1 in edges:
                 flag += 0x01
             if other_face.v2 in edges:
                 flag += 0x02
             if other_face.v3 in edges:
                 flag += 0x04
-            edge = -1
+            edge: Literal[2, 1, 0, -1] = -1
             if flag == 0x03:
                 edge = 0
             if flag == 0x06:
@@ -333,7 +335,7 @@ class BWM:
         for other in walkable:
             if other is face:
                 continue
-            other_index = walkable.index(other)
+            other_index: int = walkable.index(other)
             if matches(other_index, adj1) != -1:
                 adj_index1 = BWMAdjacency(
                     walkable[other_index],
@@ -502,8 +504,8 @@ class BWM:
 
     def flip(
         self,
-        x: bool,
-        y: bool,
+        x: bool,  # noqa: FBT001
+        y: bool,  # noqa: FBT001
     ):
         """Flips the walkmesh around the specified axes.
 
@@ -620,7 +622,7 @@ class BWMEdge:
         face: The face.
         index: Edge index on the face (0 to 2 inclusive).
         transition: Index into a LYT file.
-        final: The final edge of the perimeter.
+        final: This is the final edge of the perimeter.
     """
 
     def __init__(
@@ -628,6 +630,7 @@ class BWMEdge:
         face: BWMFace,
         index: int,
         transition: int,
+        *,
         final: bool = False,
     ):
         self.face: BWMFace = face

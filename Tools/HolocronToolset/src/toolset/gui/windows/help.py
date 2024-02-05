@@ -16,8 +16,7 @@ from PyQt5.QtWidgets import QMainWindow, QMessageBox, QTreeWidgetItem, QWidget
 from toolset.__main__ import is_frozen
 from toolset.config import UPDATE_INFO_LINK
 from toolset.gui.dialogs.asyncloader import AsyncLoader
-from utility.error_handling import universal_simplify_exception
-from utility.path import Path, PurePath
+from utility.system.path import Path, PurePath
 
 if TYPE_CHECKING:
     import os
@@ -51,7 +50,7 @@ class HelpWindow(QMainWindow):
     def _setupContents(self):
         self.ui.contentsTree.clear()
 
-        try:
+        with suppress(Exception):
             tree = ElemTree.parse("./help/contents.xml")
             root = tree.getroot()
 
@@ -63,8 +62,6 @@ class HelpWindow(QMainWindow):
             # data = json.loads(text)
             # self.version = data["version"]
             # self._setupContentsRecJSON(None, data)
-        except Exception as e:
-            print(f"Suppressed error: {universal_simplify_exception(e)}")
 
     def _setupContentsRecJSON(self, parent: QTreeWidgetItem | None, data: dict):
         add = self.ui.contentsTree.addTopLevelItem if parent is None else parent.addChild
@@ -95,7 +92,11 @@ class HelpWindow(QMainWindow):
             owner, repo = PurePath(url_or_repo).parts[-2:]
             api_url = f"https://api.github.com/repos/{owner}/{repo}/contents/{PurePath(repo_path).as_posix()}"
 
-            file_info = self._request_api_data(api_url)
+            # Get file info from GitHub API
+            response = requests.get(api_url, timeout=15)
+            response.raise_for_status()
+            file_info = response.json()
+
             # Check if it's a file and get the download URL
             if file_info["type"] == "file":
                 download_url = file_info["download_url"]
@@ -122,7 +123,10 @@ class HelpWindow(QMainWindow):
         repo = PurePath(repo)
         repo_path = PurePath(repo_path)
         api_url = f"https://api.github.com/repos/{repo.as_posix()}/contents/{repo_path.as_posix()}"
-        data = self._request_api_data(api_url)
+        req = requests.get(api_url, timeout=15)
+        req.raise_for_status()
+        data = req.json()
+
         for item in data:
             item_path = Path(item["path"])
             local_path = item_path.relative_to("toolset")
@@ -131,11 +135,6 @@ class HelpWindow(QMainWindow):
                 self.download_file(item["download_url"], Path(local_dir, local_path))
             elif item["type"] == "dir":
                 self.download_directory(repo, item_path, local_path)
-
-    def _request_api_data(self, api_url):
-        response = requests.get(api_url, timeout=15)
-        response.raise_for_status()
-        return response.json()
 
     def checkForUpdates(self):
         try:
@@ -167,7 +166,7 @@ class HelpWindow(QMainWindow):
                 QMessageBox.Information,
                 "Unable to fetch latest version of the help booklet.",
                 (
-                    f"{universal_simplify_exception(e)}\n"
+                    f"Error: {e!r}\n"
                     "Check if you are connected to the internet."
                 ),
                 QMessageBox.Ok,
@@ -182,7 +181,7 @@ class HelpWindow(QMainWindow):
 
         # Extract the ZIP file
         with zipfile.ZipFile(help_zip_path) as zip_file:
-            print(f"Extracting downloaded content to {help_path}")
+            print(f"Extracting downloaded content to {help_path!s}")
             zip_file.extractall(help_path)
 
         if is_frozen():
@@ -191,19 +190,19 @@ class HelpWindow(QMainWindow):
     def displayFile(self, filepath: os.PathLike | str):
         filepath = Path.pathify(filepath)
         try:
-            text: str = decode_bytes_with_fallbacks(BinaryReader.load_file(filepath))
-            html: str = markdown.markdown(text, extensions=["tables", "fenced_code", "codehilite"]) if filepath.endswith(".md") else text
+            text = decode_bytes_with_fallbacks(BinaryReader.load_file(filepath))
+            html = markdown.markdown(text, extensions=["tables", "fenced_code", "codehilite"]) if filepath.suffix.lower() == ".md" else text
             self.ui.textDisplay.setHtml(html)
-        except OSError as e:
+        except OSError:
             QMessageBox(
                 QMessageBox.Critical,
                 "Failed to open help file",
-                f"Could not access '{filepath}'.\n{universal_simplify_exception(e)}",
+                f"Could not access '{filepath!s}'.",
             ).exec_()
 
     def onContentsClicked(self):
         if self.ui.contentsTree.selectedItems():
-            item: QTreeWidgetItem = self.ui.contentsTree.selectedItems()[0]
+            item = self.ui.contentsTree.selectedItems()[0]
             filename = item.data(0, QtCore.Qt.UserRole)  # type: ignore[attr-defined]
             if filename:
                 help_path = Path("./help").resolve()

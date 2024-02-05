@@ -5,19 +5,17 @@ import unittest
 from unittest.mock import patch
 
 THIS_SCRIPT_PATH = pathlib.Path(__file__)
-PYKOTOR_PATH = THIS_SCRIPT_PATH.parents[2].resolve()
-UTILITY_PATH = THIS_SCRIPT_PATH.parents[4].joinpath("Utility", "src").resolve()
-if PYKOTOR_PATH.exists():
-    working_dir = str(PYKOTOR_PATH)
-    if working_dir in sys.path:
-        sys.path.remove(working_dir)
-        os.chdir(PYKOTOR_PATH.parent)
-    sys.path.insert(0, working_dir)
-if UTILITY_PATH.exists():
-    working_dir = str(UTILITY_PATH)
-    if working_dir in sys.path:
-        sys.path.remove(working_dir)
-    sys.path.insert(0, working_dir)
+PYKOTOR_PATH = THIS_SCRIPT_PATH.parents[2]
+UTILITY_PATH = THIS_SCRIPT_PATH.parents[4].joinpath("Utility", "src")
+def add_sys_path(p: pathlib.Path):
+    working_dir = str(p)
+    if working_dir not in sys.path:
+        sys.path.append(working_dir)
+if PYKOTOR_PATH.joinpath("pykotor").exists():
+    add_sys_path(PYKOTOR_PATH)
+    os.chdir(PYKOTOR_PATH.parent)
+if UTILITY_PATH.joinpath("utility").exists():
+    add_sys_path(UTILITY_PATH)
 
 if __name__ == "__main__" and not __package__:
     this_script_file_path = pathlib.Path(__file__)
@@ -78,6 +76,9 @@ class TestCaseAwarePath(unittest.TestCase):
         file_path = CaseAwarePath("TEST\\path\\to\\something.test")
         folder_path = CaseAwarePath("TesT\\Path\\")
         self.assertTrue(file_path.is_relative_to(folder_path))
+        relative_path = file_path.relative_to(folder_path)
+        self.assertIsInstance(relative_path, pathlib.Path)
+        self.assertEqual(relative_path, "to\\something.test")
 
     def test_relative_to_base(self):
         file_path = CaseAwarePath("TEST\\path\\to\\something.test")

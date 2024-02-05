@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING, NamedTuple
 from pykotor.common.language import Language
 from pykotor.common.misc import ResRef
 from pykotor.common.stream import BinaryReader
-from utility.path import Path
+from utility.system.path import Path
 
 if TYPE_CHECKING:
     import os
@@ -87,7 +87,7 @@ class TalkTable:  # TODO: dialogf.tlk
         with BinaryReader.from_file(self._path) as reader:
             reader.seek(12)
             entries_count = reader.read_uint32()
-            _texts_offset = reader.read_uint32()
+            reader.skip(4)
 
             if stringref >= entries_count:
                 return ResRef.from_blank()

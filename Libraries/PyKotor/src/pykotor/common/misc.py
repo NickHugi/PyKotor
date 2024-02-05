@@ -93,7 +93,7 @@ class ResRef(CaseInsensitiveWrappedStr):
 
         Args:
         ----
-            path: The filepath.
+            file_path (os.PathLike | str): The path to the file.
 
         Returns:
         -------
@@ -117,6 +117,7 @@ class ResRef(CaseInsensitiveWrappedStr):
     def set_data(
         self,
         text: str,
+        *,
         truncate: bool = False,
     ):    # sourcery skip: remove-unnecessary-cast
         """Sets the ResRef.
@@ -177,16 +178,37 @@ class ResRef(CaseInsensitiveWrappedStr):
 
 
 class Game(IntEnum):
-    """Represents which game."""
+    """Represents which KOTOR game."""
 
     K1 = 1
     K2 = 2
     K1_XBOX = 3
     K2_XBOX = 4
+    K1_IOS = 5
+    K2_IOS = 6
+    K1_ANDROID = 7
+    K2_ANDROID = 8
 
     def is_xbox(self) -> bool:
-        return self in (Game.K1_XBOX, Game.K2_XBOX)
+        return self in {Game.K1_XBOX, Game.K2_XBOX}
 
+    def is_pc(self) -> bool:
+        return self in {Game.K1, Game.K2}
+
+    def is_mobile(self) -> bool:
+        return self in {Game.K1_IOS, Game.K1_ANDROID, Game.K2_IOS, Game.K2_ANDROID}
+
+    def is_android(self) -> bool:
+        return self in {Game.K1_ANDROID, Game.K2_ANDROID}
+
+    def is_ios(self) -> bool:
+        return self in {Game.K1_IOS, Game.K2_IOS}
+
+    def is_k1(self) -> bool:
+        return self.value % 2 != 0
+
+    def is_k2(self) -> bool:
+        return self.value % 2 == 0
 
 class Color:
     # Listed here for hinting purposes
@@ -427,15 +449,18 @@ class WrappedInt:
             return None
         return NotImplemented
 
+    def __hash__(self):
+        return hash(self._value)
+
     def __eq__(
         self,
         other: WrappedInt | int | object,
     ):
         if isinstance(other, WrappedInt):
             return self.get() == other.get()
-        if isinstance(other, int):
+        if isinstance(other, int):  # sourcery skip: assign-if-exp
             return self.get() == other
-        return NotImplemented
+        return hash(self) == hash(other)
 
     def set(
         self,
@@ -453,8 +478,8 @@ class InventoryItem:
     def __init__(
         self,
         resref: ResRef,
-        droppable: bool = False,
-        infinite: bool = False,
+        droppable: bool = False,  # noqa: FBT001, FBT002
+        infinite: bool = False,  # noqa: FBT001, FBT002
     ):
         self.resref: ResRef = resref
         self.droppable: bool = droppable
@@ -475,7 +500,6 @@ class InventoryItem:
 
     def __hash__(
         self,
-        other,
     ):
         return hash(self.resref)
 
@@ -503,19 +527,19 @@ class EquipmentSlot(Enum):
 class CaseInsensitiveHashSet(set, Generic[T]):
     def __init__(self, iterable: Iterable[T] | None = None):
         super().__init__()
-        if iterable:
+        if iterable is not None:
             for item in iterable:
                 self.add(item)
 
     def _normalize_key(self, item: T):
-        return item.lower() if isinstance(item, str) else item
+        return item.casefold() if isinstance(item, str) else item
 
     def add(self, item: T):
         """Add an element to a set.
 
         This has no effect if the element is already present.
         """
-        key = self._normalize_key(item)
+        key: str | object = self._normalize_key(item)
         if key not in self:
             super().add(item)
 
@@ -559,8 +583,7 @@ class CaseInsensitiveDict(Generic[T]):
         self,
         initial: Mapping[str, T] | Iterable[tuple[str, T]] | ItemsView[str, T] | None = None,
     ):
-        self._dictionary: dict[str, T] = {}
-        self._case_map: dict[str, str] = {}
+        self._dictionary: dict[CaseInsensitiveWrappedStr, T] = {}
 
         if initial:
             # If initial is a mapping, use its items method.
@@ -627,33 +650,27 @@ class CaseInsensitiveDict(Generic[T]):
         if not isinstance(key, str):
             msg = f"Keys must be strings in CaseInsensitiveDict-inherited classes, got {key!r}"
             raise KeyError(msg)
-        return self._dictionary[self._case_map[key.lower()]]
+        return self._dictionary[CaseInsensitiveWrappedStr.cast(key)]
 
     def __setitem__(self, key: str, value: T):
         if not isinstance(key, str):
             msg = f"Keys must be strings in CaseInsensitiveDict-inherited classes, got {key!r}"
             raise KeyError(msg)
-
-        lower_key: str = key.lower()
-        case_sens_key: str | None = self._case_map.get(lower_key)
-        if case_sens_key is not None:  # delete old item if it exists
-            del self._dictionary[case_sens_key]
-        self._case_map[lower_key] = key
-        self._dictionary[key] = value
+        if key in self:
+            self.__delitem__(key)
+        self._dictionary[CaseInsensitiveWrappedStr.cast(key)] = value
 
     def __delitem__(self, key: str):
         if not isinstance(key, str):
             msg = f"Keys must be strings in CaseInsensitiveDict-inherited classes, got {key!r}"
             raise KeyError(msg)
-        lower_key = key.lower()
-        del self._dictionary[self._case_map[lower_key]]
-        del self._case_map[lower_key]
+        del self._dictionary[key]
 
     def __contains__(self, key: str) -> bool:
         if not isinstance(key, str):
             msg = f"Keys must be strings in CaseInsensitiveDict-inherited classes, got {key!r}"
             raise KeyError(msg)
-        return key.lower() in self._case_map
+        return CaseInsensitiveWrappedStr.cast(key) in self
 
     def __len__(self) -> int:
         return len(self._dictionary)
@@ -691,10 +708,10 @@ class CaseInsensitiveDict(Generic[T]):
         ...
 
     def pop(self, __key: str, __default: VT = _unique_sentinel) -> VT | T:  # type: ignore[assignment]
-        lower_key: str = __key.lower()
+        lower_key: str = CaseInsensitiveWrappedStr.cast(__key)
         try:
             # Attempt to pop the value using the case-insensitive key.
-            value: T = self._dictionary.pop(self._case_map.pop(lower_key))
+            value: T = self._dictionary.pop(lower_key)
         except KeyError:
             if __default is _unique_sentinel:
                 raise
@@ -733,10 +750,10 @@ class CaseInsensitiveDict(Generic[T]):
         ...
 
     def get(self, __key: str, __default: VT = None) -> VT | T:  # type: ignore[assignment]
-        key_lookup: str = self._case_map.get(__key.lower(), _unique_sentinel)  # type: ignore[arg-type]
+        key_lookup: str = self.get(CaseInsensitiveWrappedStr.cast(__key), _unique_sentinel)  # type: ignore[arg-type]
         return (
             __default
-            if key_lookup == _unique_sentinel
+            if key_lookup is _unique_sentinel
             else self._dictionary.get(key_lookup, __default)
         )
 

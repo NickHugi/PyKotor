@@ -10,7 +10,6 @@ from pykotor.common.misc import CaseInsensitiveDict, ResRef
 from pykotor.common.stream import BinaryReader
 from pykotor.resource.formats.gff import GFFFieldType, GFFList, GFFStruct
 from pykotor.resource.formats.ssf import SSFSound
-from pykotor.resource.formats.tlk.tlk_auto import read_tlk
 from pykotor.tools.encoding import decode_bytes_with_fallbacks
 from pykotor.tools.path import CaseAwarePath
 from pykotor.tslpatcher.logger import PatchLogger
@@ -28,7 +27,8 @@ from pykotor.tslpatcher.mods.gff import (
     ModifyFieldGFF,
 )
 from pykotor.tslpatcher.mods.install import InstallFile
-from pykotor.tslpatcher.mods.nss import ModificationsNCS, ModificationsNSS
+from pykotor.tslpatcher.mods.ncs import ModificationsNCS
+from pykotor.tslpatcher.mods.nss import ModificationsNSS
 from pykotor.tslpatcher.mods.ssf import ModificationsSSF, ModifySSF
 from pykotor.tslpatcher.mods.tlk import ModificationsTLK, ModifyTLK
 from pykotor.tslpatcher.mods.twoda import (
@@ -51,17 +51,16 @@ from pykotor.tslpatcher.mods.twoda import (
 )
 from pykotor.tslpatcher.namespaces import PatcherNamespace
 from utility.misc import is_float, is_int
-from utility.path import Path, PurePath, PureWindowsPath
+from utility.system.path import Path, PurePath, PureWindowsPath
 
 if TYPE_CHECKING:
     import os
 
-    from pykotor.resource.formats.tlk.tlk_data import TLK, TLKEntry
     from pykotor.tslpatcher.config import PatcherConfig
     from pykotor.tslpatcher.mods.gff import ModifyGFF
     from typing_extensions import Literal
 
-SECTION_NOT_FOUND_ERROR: str = "The [{}] section was not found in the ini"
+SECTION_NOT_FOUND_ERROR = "The [{}] section was not found in the ini"
 REFERENCES_TRACEBACK_MSG = ", referenced by '{}={}' in [{}]"
 
 class NamespaceReader:
@@ -185,8 +184,7 @@ class ConfigReader:
         self.load_compile_list()
         self.load_hack_list()
         self.load_ssf_list()
-
-        # Print orphaned INI sections.
+        self.log.add_note("The ConfigReader finished loading the INI")
         all_sections_set = set(self.ini.sections())
         orphaned_sections: set[str] = all_sections_set - self.previously_parsed_sections
         if len(orphaned_sections):
@@ -221,6 +219,7 @@ class ConfigReader:
         self.config.confirm_message = settings_ini.get("ConfirmMessage", "")
         self.config.required_file = settings_ini.get("Required")
         self.config.required_message = settings_ini.get("RequiredMsg", "")
+        self.config.save_processed_scripts = int(settings_ini.get("SaveProcessedScripts", 0))
 
         # HoloPatcher optional
         self.config.ignore_file_extensions = bool(settings_ini.get("IgnoreExtensions")) or False
@@ -274,11 +273,10 @@ class ConfigReader:
                 file_section_name: str | None = self.get_section_name(filename)
                 if file_section_name is not None:
                     file_section_dict = CaseInsensitiveDict(self.ini[file_section_name])
-                    file_install.pop_tslpatcher_vars(file_section_dict, foldername)
-
+                    file_install.pop_tslpatcher_vars(file_section_dict, foldername, sourcefolder)
 
     def load_tlk_list(self):
-        """Loads TLK patches from the ini file.
+        """Loads TLK patches from the ini file into memory.
 
         Processing Logic:
         ----------------
@@ -287,7 +285,7 @@ class ConfigReader:
             - Builds ModifyTLK objects for each patch and adds to the patch list
             - Raises errors for invalid syntax or missing files
         """
-        tlk_list_section: str | None = self.get_section_name("TLKList")
+        tlk_list_section: str | None = self.get_section_name("tlklist")
         if tlk_list_section is None:
             self.log.add_note("[TLKList] section missing from ini.")
             return
@@ -295,12 +293,12 @@ class ConfigReader:
         self.log.add_note("Loading [TLKList] patches from ini...")
         tlk_list_edits = CaseInsensitiveDict(self.ini[tlk_list_section])
 
-        default_destination: str = tlk_list_edits.pop("!DefaultDestination", ModificationsTLK.DEFAULT_DESTINATION)
-        self.config.patches_tlk.pop_tslpatcher_vars(tlk_list_edits, default_destination)
+        default_destination = tlk_list_edits.pop("!DefaultDestination", ModificationsTLK.DEFAULT_DESTINATION)
+        default_sourcefolder = tlk_list_edits.pop("!DefaultSourceFolder", ".")
+        self.config.patches_tlk.pop_tslpatcher_vars(tlk_list_edits, default_destination, default_sourcefolder)
 
         modifier_dict: dict[int, dict[str, str]] = {}
         range_delims: list[str] = [":", "-", "to"]
-        append_tlk_edits: TLK | None = None
         syntax_error_caught = False
 
         def extract_range_parts(range_str: str) -> tuple[int, int | None]:
@@ -366,7 +364,7 @@ class ConfigReader:
         tlk_list_ignored_indices: set[int] = set()
 
         def process_tlk_entries(
-            tlk_data: TLK,
+            tlk_filename: str,
             dialog_tlk_keys,
             modifications_tlk_keys,
             *,
@@ -400,12 +398,12 @@ class ConfigReader:
                 change_iter, value_iter = tee(change_indices)
                 value_iter = iter(value_range)
 
-                for mod_index in change_iter:
-                    if mod_index in tlk_list_ignored_indices:
+                for token_id in change_iter:
+                    if token_id in tlk_list_ignored_indices:
                         continue
-                    token_id: int = next(value_iter)
-                    entry: TLKEntry = tlk_data[token_id]
-                    modifier = ModifyTLK(mod_index, entry.text, entry.voiceover, is_replacement)
+                    modifier = ModifyTLK(token_id, is_replacement)
+                    modifier.mod_index = next(value_iter)
+                    modifier.tlk_filepath = self.mod_path / tlk_filename
                     self.config.patches_tlk.modifiers.append(modifier)
 
         for i in tlk_list_edits:
@@ -424,39 +422,25 @@ class ConfigReader:
                 if lower_key.startswith("ignore"):
                     continue
                 if lower_key.startswith("strref"):
-                    if append_tlk_edits is None:  # load append.tlk only if it's needed.
-                        append_tlk_edits = read_tlk(self.mod_path / self.config.patches_tlk.sourcefile)
-                    if len(append_tlk_edits) == 0:
-                        syntax_error_caught = True
-                        msg = f"'{self.config.patches_tlk.sourcefile}' in mod directory is empty, but is required to perform modifier '{key}={value}' in [TLKList]"
-                        raise ValueError(msg)  # noqa: TRY301
-
-                    strref_range: range   = parse_range(lower_key[6:])
-                    token_id_range: range = parse_range(value)
+                    strref_range = parse_range(lower_key[6:])
+                    token_id_range = parse_range(value)
                     process_tlk_entries(
-                        append_tlk_edits,
+                        self.config.patches_tlk.sourcefile,
                         strref_range,
                         token_id_range,
                         is_replacement=False,
                     )
                 elif replace_file or append_file:
-                    tlk_modifications_path: CaseAwarePath = self.mod_path / value
-                    modifications_tlk_data: TLK = read_tlk(tlk_modifications_path)
-                    if len(modifications_tlk_data) == 0:
-                        syntax_error_caught = True
-                        msg = f"'{value}' file in mod directory is empty, but is required to perform modifier '{key}={value}' in [TLKList]"
-                        raise ValueError(msg)  # noqa: TRY301
-
-                    next_section_name: str | None = self.get_section_name(value)
-                    if not next_section_name:
+                    next_section_name = self.get_section_name(value)
+                    if next_section_name is None:
                         syntax_error_caught = True
                         raise ValueError(SECTION_NOT_FOUND_ERROR.format(value) + REFERENCES_TRACEBACK_MSG.format(key, value, tlk_list_section))  # noqa: TRY301
 
                     next_section_dict = CaseInsensitiveDict(self.ini[next_section_name])
-                    self.config.patches_tlk.pop_tslpatcher_vars(next_section_dict, default_destination)
+                    self.config.patches_tlk.pop_tslpatcher_vars(next_section_dict, default_destination, default_sourcefolder)
 
                     process_tlk_entries(
-                        modifications_tlk_data,
+                        value,
                         self.ini[next_section_name].keys(),
                         self.ini[next_section_name].values(),
                         is_replacement=replace_file,
@@ -473,21 +457,17 @@ class ConfigReader:
                         }
 
                     if property_name == "text":
-                        modifier_dict[token_id]["text"] = value
+                        modifier = ModifyTLK(token_id, is_replacement=True)
+                        modifier.text = value
+                        self.config.patches_tlk.modifiers.append(modifier)
                     elif property_name == "sound":
-                        modifier_dict[token_id]["voiceover"] = value
+                        modifier = ModifyTLK(token_id, is_replacement=True)
+                        modifier.sound = ResRef(value)
+                        self.config.patches_tlk.modifiers.append(modifier)
                     else:
                         syntax_error_caught = True
                         msg = f"Invalid [TLKList] syntax: '{key}={value}'! Expected '{key}' to be one of ['Sound', 'Text']"
                         raise ValueError(msg)  # noqa: TRY301
-
-                    text: str | None = modifier_dict[token_id].get("text")
-                    voiceover: str | None = modifier_dict[token_id].get("voiceover")
-
-                    if text and voiceover:
-                        vo_resref: ResRef = ResRef(voiceover) if voiceover else ResRef.from_blank()
-                        modifier = ModifyTLK(token_id, text, vo_resref, is_replacement=True)
-                        self.config.patches_tlk.modifiers.append(modifier)
                 else:
                     syntax_error_caught = True
                     msg = f"Invalid syntax found in [TLKList] '{key}={value}'! Expected '{key}' to be one of ['AppendFile', 'ReplaceFile', '!SourceFile', 'StrRef', 'Text', 'Sound']"
@@ -527,6 +507,7 @@ class ConfigReader:
 
         twoda_section_dict = CaseInsensitiveDict(self.ini[twoda_section_name])
         default_destination: str = twoda_section_dict.pop("!DefaultDestination", Modifications2DA.DEFAULT_DESTINATION)
+        default_source_folder = twoda_section_dict.pop("!DefaultSourceFolder", ".")
         for identifier, file in twoda_section_dict.items():
             file_section: str | None = self.get_section_name(file)
             if file_section is None:
@@ -534,10 +515,8 @@ class ConfigReader:
 
             modifications = Modifications2DA(file)
             file_section_dict = CaseInsensitiveDict(self.ini[file_section])
-            modifications.pop_tslpatcher_vars(file_section_dict)
+            modifications.pop_tslpatcher_vars(file_section_dict, default_destination, default_source_folder)
 
-            if modifications.destination.capitalize() == modifications.DEFAULT_DESTINATION:
-                modifications.destination = default_destination
             self.config.patches_2da.append(modifications)
 
             for key, modification_id in file_section_dict.items():
@@ -575,6 +554,7 @@ class ConfigReader:
 
         ssf_section_dict = CaseInsensitiveDict(self.ini[ssf_list_section])
         default_destination: str = ssf_section_dict.pop("!DefaultDestination", ModificationsSSF.DEFAULT_DESTINATION)
+        default_source_folder = ssf_section_dict.pop("!DefaultSourceFolder", ".")
 
         for identifier, file in ssf_section_dict.items():
             ssf_file_section: str | None = self.get_section_name(file)
@@ -586,7 +566,7 @@ class ConfigReader:
             self.config.patches_ssf.append(modifications)
 
             file_section_dict = CaseInsensitiveDict(self.ini[ssf_file_section])
-            modifications.pop_tslpatcher_vars(file_section_dict, default_destination)
+            modifications.pop_tslpatcher_vars(file_section_dict, default_destination, default_source_folder)
 
             for name, value in file_section_dict.items():
                 new_value: TokenUsage
@@ -628,6 +608,7 @@ class ConfigReader:
         self.log.add_note("Loading [GFFList] patches from ini...")
         gff_section_dict = CaseInsensitiveDict(self.ini[gff_list_section])
         default_destination: str = gff_section_dict.pop("!DefaultDestination", ModificationsGFF.DEFAULT_DESTINATION)
+        default_source_folder = gff_section_dict.pop("!DefaultSourceFolder", ".")
 
         for identifier, file in gff_section_dict.items():
             file_section_name: str | None = self.get_section_name(file)
@@ -639,7 +620,7 @@ class ConfigReader:
             self.config.patches_gff.append(modifications)
 
             file_section_dict = CaseInsensitiveDict(self.ini[file_section_name])
-            modifications.pop_tslpatcher_vars(file_section_dict, default_destination)
+            modifications.pop_tslpatcher_vars(file_section_dict, default_destination, default_source_folder)
 
             for key, value in file_section_dict.items():
                 modifier: ModifyGFF | None
@@ -690,16 +671,19 @@ class ConfigReader:
         self.log.add_note("Loading [CompileList] patches from ini...")
         compilelist_section_dict = CaseInsensitiveDict(self.ini[compilelist_section])
         default_destination: str = compilelist_section_dict.pop("!DefaultDestination", ModificationsNSS.DEFAULT_DESTINATION)
+        default_source_folder = compilelist_section_dict.pop("!DefaultSourceFolder", ".")
 
         for identifier, file in compilelist_section_dict.items():
             replace: bool = identifier.lower().startswith("replace")
             modifications = ModificationsNSS(file, replace)
             modifications.nwnnsscomp_path = self.mod_path / "nwnnsscomp.exe"
+            modifications.destination = default_destination
+            modifications.sourcefolder = default_source_folder
 
             optional_file_section_name: str | None = self.get_section_name(file)
             if optional_file_section_name is not None:
                 file_section_dict = CaseInsensitiveDict(self.ini[optional_file_section_name])
-                modifications.pop_tslpatcher_vars(file_section_dict, default_destination)
+                modifications.pop_tslpatcher_vars(file_section_dict, default_destination, default_source_folder)
 
             self.config.patches_nss.append(modifications)
 
@@ -721,19 +705,20 @@ class ConfigReader:
             return
 
         self.log.add_note("Loading [HACKList] patches from ini...")
-        compilelist_section_dict = CaseInsensitiveDict(self.ini[hacklist_section])
-        default_destination: str = compilelist_section_dict.pop("!DefaultDestination", ModificationsNCS.DEFAULT_DESTINATION)
+        hacklist_section_dict = CaseInsensitiveDict(self.ini[hacklist_section])
+        default_destination: str = hacklist_section_dict.pop("!DefaultDestination", ModificationsNCS.DEFAULT_DESTINATION)
+        default_source_folder = hacklist_section_dict.pop("!DefaultSourceFolder", ".")
 
-        for identifier, file in compilelist_section_dict.items():
+        for identifier, file in hacklist_section_dict.items():
             replace: bool = identifier.lower().startswith("replace")
             modifications = ModificationsNCS(file, replace)
 
-            optional_file_section_name: str | None = self.get_section_name(file)
-            if optional_file_section_name is None:
+            file_section_name: str | None = self.get_section_name(file)
+            if file_section_name is None:
                 raise KeyError(SECTION_NOT_FOUND_ERROR.format(file) + REFERENCES_TRACEBACK_MSG.format(identifier, file, hacklist_section))
 
-            file_section_dict = CaseInsensitiveDict(self.ini[optional_file_section_name])
-            modifications.pop_tslpatcher_vars(file_section_dict, default_destination)
+            file_section_dict = CaseInsensitiveDict(self.ini[file_section_name])
+            modifications.pop_tslpatcher_vars(file_section_dict, default_destination, default_source_folder)
 
             for offset_str, value_str in file_section_dict.items():
                 lower_value: str = value_str.lower()
@@ -867,15 +852,13 @@ class ConfigReader:
         value: FieldValue = self._get_addfield_value(ini_data, field_type, identifier)
 
         # Check if label unset to determine if current ini section is a struct inside a list.
-        # NOTE: The `field_type == GFFFieldType.Struct` check below is unnecessary but provided
-        # for clarity.  Label should never be defined in gfflist struct sections.
         if not label and field_type == GFFFieldType.Struct:
             return AddStructToListGFF(identifier, value, path, index_in_list_token, modifiers)
 
-        # if label and field_type == GFFFieldType.Struct:
+        # if field_type == GFFFieldType.Struct:  # not sure if this is invalid syntax or not.
         #     msg = f"Label={label} cannot be used when FieldType={GFFFieldType.Struct.value}. Error happened in [{identifier}] section in ini."
         #     raise ValueError(msg)
-        if not label and field_type != GFFFieldType.Struct:
+        if not label:
             msg = f"Label must be set for {field_type!r} (FieldType={field_type.value}). Error happened in [{identifier}] section in ini."
             raise ValueError(msg)
         return AddFieldGFF(identifier, label, field_type, value, path, modifiers)
@@ -1323,7 +1306,7 @@ class ConfigReader:
 
             is_store_2da:  bool = lower_modifier.startswith("2damemory")
             is_store_tlk:  bool = lower_modifier.startswith("strref") and len(lower_modifier) > len("strref")
-            is_row_label:  bool = lower_modifier in ["rowlabel", "newrowlabel"]
+            is_row_label:  bool = lower_modifier in {"rowlabel", "newrowlabel"}
 
             row_value: RowValue | None = None
             if lower_value.startswith("2damemory"):

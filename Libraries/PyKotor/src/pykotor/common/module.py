@@ -9,7 +9,7 @@ from pykotor.extract.capsule import Capsule
 from pykotor.extract.file import LocationResult, ResourceIdentifier, ResourceResult
 from pykotor.extract.installation import Installation, SearchLocation
 from pykotor.resource.formats.bwm import bytes_bwm, read_bwm
-from pykotor.resource.formats.erf import ERFType, read_erf, write_erf
+from pykotor.resource.formats.erf import read_erf, write_erf
 from pykotor.resource.formats.gff import read_gff
 from pykotor.resource.formats.lyt import bytes_lyt, read_lyt
 from pykotor.resource.formats.rim import read_rim, write_rim
@@ -30,15 +30,10 @@ from pykotor.resource.generics.uts import UTS, bytes_uts, read_uts
 from pykotor.resource.generics.utt import UTT, bytes_utt, read_utt
 from pykotor.resource.generics.utw import UTW, bytes_utw, read_utw
 from pykotor.resource.type import ResourceType
-from pykotor.tools.misc import (
-    is_any_erf_type_file,
-    is_bif_file,
-    is_capsule_file,
-    is_rim_file,
-)
+from pykotor.tools.misc import is_any_erf_type_file, is_bif_file, is_capsule_file, is_rim_file
 from pykotor.tools.model import list_lightmaps, list_textures
 from utility.error_handling import format_exception_with_variables
-from utility.path import Path, PurePath
+from utility.system.path import Path, PurePath
 
 if TYPE_CHECKING:
     import os
@@ -73,7 +68,7 @@ class Module:
         self._capsules: list[Capsule] = [
             Capsule(installation.module_path() / module)
             for module in installation.module_names()
-            if root in module.lower()
+            if root in module
         ]
         # Append the custom capsule if provided
         if custom_capsule is not None:
@@ -101,7 +96,7 @@ class Module:
     @staticmethod
     def get_root(
         filepath: os.PathLike | str,
-    ) -> str:
+    ) -> str:  # sourcery skip: inline-immediately-returned-variable
         """Returns the root name for a module from the given filepath (or filename). For example "danm13_s.rim" would become "danm13".
 
         Args:
@@ -113,9 +108,9 @@ class Module:
             The string for the root name of a module.
         """
         root: str = PurePath.pathify(filepath).stem
-        lower_root: str = root.lower()
-        root = root[:-2] if lower_root.endswith("_s") else root
-        root = root[:-4] if lower_root.endswith("_dlg") else root
+        case_root: str = root.casefold()
+        root = root[:-2] if case_root.endswith("_s") else root
+        root = root[:-4] if case_root.endswith("_dlg") else root
         return root  # noqa: RET504
 
     def capsules(self) -> list[Capsule]:
@@ -227,8 +222,8 @@ class Module:
                     textures.add(texture)
                 for lightmap in list_lightmaps(data):
                     textures.add(lightmap)
-            except Exception as e:  # noqa: PERF203
-                print(format_exception_with_variables(e, ___message___=f"Exception occurred when executing {self!r}.reload_resources()"))
+            except Exception as e:
+                print(format_exception_with_variables(e, message=f"Exception occurred when executing {self!r}.reload_resources() with model '{model.resname()}.{model.restype()}'"))
 
         for texture in textures:
             look_for.extend(
@@ -257,8 +252,9 @@ class Module:
                 [location.filepath for location in locations],
             )
 
-        for resource in self.resources.values():
-            resource.activate()
+        for module_resource in self.resources.values():
+            module_resource.activate()
+
 
 
     def add_locations(
@@ -1195,7 +1191,6 @@ class ModuleResource(Generic[T]):
         print(f"Could not find res of type {type(res)}")
         return None
 
-
     def data(self) -> bytes:
         """Opens the file at the active location and returns the data.
 
@@ -1268,7 +1263,7 @@ class ModuleResource(Generic[T]):
                 self._resource_obj = None
 
             elif is_capsule_file(self._active.name):
-                data = Capsule(self._active).resource(self._resname, self._restype)
+                data: bytes | None = Capsule(self._active).resource(self._resname, self._restype)
                 if data is None:
                     msg = f"Resource '{file_name}' not found in '{self._active}'"
                     raise ValueError(msg)
@@ -1413,7 +1408,6 @@ class ModuleResource(Generic[T]):
 
         if is_any_erf_type_file(self._active.name):
             erf: ERF = read_erf(self._active)
-            erf.erf_type = ERFType.from_extension(self._active.name)  # TODO: Is this needed? I believe the file header is more trustworthy than the extension.
             erf.set_data(
                 self._resname,
                 self._restype,

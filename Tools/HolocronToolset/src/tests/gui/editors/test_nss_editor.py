@@ -20,7 +20,7 @@ if getattr(sys, "frozen", False) is False:
         working_dir = str(p)
         if working_dir in sys.path:
             sys.path.remove(working_dir)
-        sys.path.insert(0, working_dir)
+        sys.path.append(working_dir)
     pykotor_path = pathlib.Path(__file__).parents[6] / "Libraries" / "PyKotor" / "src" / "pykotor"
     if pykotor_path.exists():
         add_sys_path(pykotor_path.parent)
@@ -39,7 +39,6 @@ K1_PATH = os.environ.get("K1_PATH")
 K2_PATH = os.environ.get("K2_PATH")
 
 from pykotor.common.stream import BinaryReader
-from pykotor.extract.installation import Installation
 from pykotor.resource.formats.ncs.ncs_auto import read_ncs
 from pykotor.resource.type import ResourceType
 

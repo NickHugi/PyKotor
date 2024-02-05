@@ -64,7 +64,7 @@ class PTH:
         try:
             return self._points[index]
         except Exception as e:
-            print(format_exception_with_variables(e, ___message___="This exception has been suppressed."))
+            print(format_exception_with_variables(e, message="This exception has been suppressed."))
         return None
 
     def find(
@@ -86,8 +86,9 @@ class PTH:
         target: int,
     ):
         for edge in copy(self._connections):
-            has_source = edge.source in [source, target]
-            has_target = edge.target in [source, target]
+            tuple_check: tuple[int, int] = (source, target)
+            has_source: bool = edge.source in tuple_check
+            has_target: bool = edge.target in tuple_check
             if has_source and has_target:
                 self._connections.remove(edge)
 

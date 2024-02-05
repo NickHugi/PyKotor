@@ -1,3 +1,7 @@
+param (
+  [switch]$noprompt
+)
+$this_noprompt = $noprompt
 
 $scriptPath = Split-Path -Parent $MyInvocation.MyCommand.Definition
 $rootPath = (Resolve-Path -LiteralPath "$scriptPath/..").Path
@@ -20,46 +24,8 @@ if ( (Get-OS) -eq "Linux" ) {
     . brew install python-tk
 }
 
-$pyInstallerArgs = @{
-    'exclude-module' = @(
-        '',
-        'dl_translate',
-        'torch'
-        'PyQt5'
-        'PyOpenGL'
-        'PyGLM'
-        'numpy'
-        'multiprocessing'
-        'pykotor-gl '
-    )
-    'console' = $true
-    'onefile' = $true
-    'noconfirm' = $true
-    'name' = 'K_BatchPatcher'
-    'distpath' = ($rootPath + $pathSep + 'dist')
-}
-$pyInstallerArgsString = ($pyInstallerArgs.GetEnumerator() | ForEach-Object {
-    $key = $_.Key
-    $value = $_.Value
-
-    if ($value -is [System.Array]) {
-        # Handle array values
-        $value -join " --$key="
-        $value = " --$key=$value "
-    } else {
-        # Handle key-value pair arguments
-        if ($value -eq $true) {
-            "--$key "
-        } else {
-            "--$key=$value "
-        }
-    }
-}) -join ''
-
-# Format PYTHONPATH paths and add them to the pyInstallerArgsString
-$pythonPaths = $env:PYTHONPATH -split ';'
-$pythonPathArgs = $pythonPaths | ForEach-Object { "--path=$_" }
-$pythonPathArgsString = $pythonPathArgs -join ' '
+$current_working_dir = (Get-Location).Path
+Set-Location -LiteralPath (Resolve-Path -LiteralPath "$rootPath/Tools/BatchPatcher/src").Path
 
 # Determine the final executable path
 $finalExecutablePath = $null
@@ -76,19 +42,76 @@ if (Test-Path -Path $finalExecutablePath) {
     Remove-Item -Path $finalExecutablePath -Force
 }
 
-# Combine pyInstallerArgsString with pythonPathArgsString
-$finalPyInstallerArgsString = "$pythonPathArgsString $pyInstallerArgsString"
+Write-Host "Compiling BatchPatcher..."
+$pyInstallerArgs = @{
+    'exclude-module' = @(
+        ''
+        'dl_translate',
+        'torch'
+        'PyQt5'
+        'PyOpenGL'
+        'PyGLM'
+        'numpy'
+        'multiprocessing'
+        'pykotor-gl '
+    )
+    'console' = $true
+    'onefile' = $true
+    'noconfirm' = $true
+    'name' = 'K_BatchPatcher'
+    'distpath' = ($rootPath + $pathSep + 'dist')
+}
 
-Set-Location -LiteralPath (Resolve-Path -LiteralPath "$rootPath/Tools/BatchPatcher/src").Path
-$command = "$pythonExePath -m PyInstaller $finalPyInstallerArgsString `"__main__.py`""
-Write-Host $command
-Invoke-Expression $command
+$pyInstallerArgs = $pyInstallerArgs.GetEnumerator() | ForEach-Object {
+    $key = $_.Key
+    $value = $_.Value
+
+    if ($value -is [System.Array]) {
+        # Handle array values
+        $value -join "--$key="
+        $value = "--$key=$value"
+    } else {
+        # Handle key-value pair arguments
+        if ($value -eq $true) {
+            "--$key"
+        } elseif ($value -eq $false) {
+        } else {
+            "--$key=$value"
+        }
+    }
+}
+
+# Add PYTHONPATH paths as arguments
+$env:PYTHONPATH -split ';' | ForEach-Object {
+    $pyInstallerArgs += "--path=$_"
+}
+
+# Define each argument as an element in an array
+$argumentsArray = @(
+    "-m",
+    "PyInstaller"
+)
+# Unpack $pyInstallerArgs into $argumentsArray
+foreach ($arg in $pyInstallerArgs) {
+    $argumentsArray += $arg
+}
+
+# Append the final script path
+$argumentsArray += "__main__.py"
+
+# Use the call operator with the arguments array
+Write-Host "Executing command: $pythonExePath $argumentsArray"
+& $pythonExePath $argumentsArray
 
 # Check if the final executable exists
 if (-not (Test-Path -Path $finalExecutablePath)) {
-    Write-Error "K_BatchPatcher could not be compiled, scroll up to find out why"   
+    Write-Error "BatchPatcher could not be compiled, scroll up to find out why"   
 } else {
-    Write-Host "K_BatchPatcher was compiled to '$finalExecutablePath'"
+    Write-Host "BatchPatcher was compiled to '$finalExecutablePath'"
 }
-Write-Host "Press any key to exit..."
-$null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
+Set-Location -LiteralPath $current_working_dir
+
+if (-not $this_noprompt) {
+    Write-Host "Press any key to exit..."
+    $null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
+}

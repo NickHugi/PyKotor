@@ -81,7 +81,7 @@ class MDLEditor(Editor):
 
         if restype == ResourceType.MDL:
             mdl_data = data
-            if c_filepath.endswith(".mdl"):
+            if c_filepath.suffix.lower() == ".mdl":
                 mdx_data = BinaryReader.load_file(c_filepath.with_suffix(".mdx"))
             elif is_any_erf_type_file(c_filepath.name):
                 erf = read_erf(filepath)
@@ -93,7 +93,7 @@ class MDLEditor(Editor):
                 mdx_data = self._installation.resource(resref, ResourceType.MDX, [SearchLocation.CHITIN]).data
         elif restype == ResourceType.MDX:
             mdx_data = data
-            if c_filepath.endswith(".mdx"):
+            if c_filepath.suffix.lower() == ".mdx":
                 mdl_data = BinaryReader.load_file(c_filepath.with_suffix(".mdl"))
             elif is_any_erf_type_file(c_filepath.name):
                 erf = read_erf(filepath)
@@ -105,7 +105,7 @@ class MDLEditor(Editor):
                 mdl_data = self._installation.resource(resref, ResourceType.MDL, [SearchLocation.CHITIN]).data
 
         if mdl_data is None or mdx_data is None:
-            QMessageBox(QMessageBox.Critical, f"Could not find the {c_filepath.stem} MDL/MDX", "").exec_()
+            QMessageBox(QMessageBox.Critical, f"Could not find the '{c_filepath.stem}' MDL/MDX", "").exec_()
             return
 
         self.ui.modelRenderer.setModel(mdl_data, mdx_data)

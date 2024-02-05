@@ -23,7 +23,6 @@ from OpenGL.raw.GL.VERSION.GL_1_0 import (
 from OpenGL.raw.GL.VERSION.GL_1_1 import glBindTexture
 from OpenGL.raw.GL.VERSION.GL_1_3 import glCompressedTexImage2D
 from OpenGL.raw.GL.VERSION.GL_2_0 import GL_FRAGMENT_SHADER, GL_VERTEX_SHADER, glUniform1i, glUseProgram
-
 from pykotor.resource.formats.tpc import TPC, TPCTextureFormat
 
 KOTOR_VSHADER = """
