@@ -40,7 +40,7 @@
   "python.testing.unittestArgs": [
     "-v",
     "-s",
-    "./Libraries/PyKotor/src/tests",
+    "./tests",
     "-p",
     "*test*.py"
   ],
