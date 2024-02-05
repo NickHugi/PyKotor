@@ -73,7 +73,7 @@ Modifications are defined in INI files, which specify the files to be patched, t
 - Adding or modifying fields in GFF files.
 - Inserting or modifying rows in 2DA files.
 - Adding or modifying entries in TLK files.
-- Compiling NSS scripts into NCS bytecode.
+- Compiling NSS scripts into NCS bytecode without reliance on nwnnsscomp.
 - Modifying SSF sound files.
 
 See the TSLPatcher readme for more information.
