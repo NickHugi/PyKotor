@@ -2,8 +2,8 @@ from __future__ import annotations
 
 import os
 import re
-from contextlib import suppress
 from concurrent.futures import ThreadPoolExecutor
+from contextlib import suppress
 from copy import copy
 from enum import Enum, IntEnum
 from typing import TYPE_CHECKING, Any, Callable, ClassVar, Generator, Generic, NamedTuple, TypeVar
@@ -411,8 +411,9 @@ class Installation:
         """
         resources: CaseInsensitiveDict[list[FileResource]] | list[FileResource] = CaseInsensitiveDict() if capsule_check else []
 
-        if not path.exists():
-            print(f"The '{path.name}' folder did not exist when loading the installation at '{self._path}', skipping...")
+        r_path = Path(path)
+        if not r_path.safe_isdir():
+            print(f"The '{r_path.name}' folder did not exist when loading the installation at '{self._path}', skipping...")
             return resources
 
         files_iter = (
@@ -449,7 +450,7 @@ class Installation:
                         resources.append(resource)
 
         if not resources:
-            print(f"No resources found at '{path}' when loading the installation, skipping...")
+            print(f"No resources found at '{r_path}' when loading the installation, skipping...")
         return resources
 
     def load_chitin(self):
