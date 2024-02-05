@@ -19,7 +19,7 @@ if UTILITY_PATH.joinpath("utility").exists():
 from pykotor.resource.formats.gff import read_gff
 from pykotor.resource.generics.utm import UTM, construct_utm, dismantle_utm
 
-TEST_FILE = "src/tests/files/test.utm"
+TEST_FILE = "tests/files/test.utm"
 
 
 class TestUTM(unittest.TestCase):

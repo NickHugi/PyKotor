@@ -22,11 +22,11 @@ from pykotor.common.language import Gender, Language
 from pykotor.resource.formats.gff import GFF, GFFBinaryReader, GFFXMLReader, read_gff, write_gff
 from pykotor.resource.type import ResourceType
 
-BINARY_TEST_FILE = "src/tests/files/test.gff"
-XML_TEST_FILE = "src/tests/files/test.gff.xml"
+BINARY_TEST_FILE = "tests/files/test.gff"
+XML_TEST_FILE = "tests/files/test.gff.xml"
 DOES_NOT_EXIST_FILE = "./thisfiledoesnotexist"
-CORRUPT_BINARY_TEST_FILE = "src/tests/files/test_corrupted.gff"
-CORRUPT_XML_TEST_FILE = "src/tests/files/test_corrupted.gff.xml"
+CORRUPT_BINARY_TEST_FILE = "tests/files/test_corrupted.gff"
+CORRUPT_XML_TEST_FILE = "tests/files/test_corrupted.gff.xml"
 
 
 class TestGFF(TestCase):

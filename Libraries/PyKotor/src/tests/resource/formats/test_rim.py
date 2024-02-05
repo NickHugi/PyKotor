@@ -19,9 +19,9 @@ if UTILITY_PATH.joinpath("utility").exists():
 from pykotor.resource.formats.rim import RIM, RIMBinaryReader, read_rim, write_rim
 from pykotor.resource.type import ResourceType
 
-BINARY_TEST_FILE = "src/tests/files/test.rim"
+BINARY_TEST_FILE = "tests/files/test.rim"
 DOES_NOT_EXIST_FILE = "./thisfiledoesnotexist"
-CORRUPT_BINARY_TEST_FILE = "src/tests/files/test_corrupted.rim"
+CORRUPT_BINARY_TEST_FILE = "tests/files/test_corrupted.rim"
 
 
 class TestRIM(unittest.TestCase):

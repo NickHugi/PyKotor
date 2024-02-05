@@ -25,7 +25,7 @@ from pykotor.resource.generics.ute import UTE, construct_ute, dismantle_ute
 from pykotor.resource.formats.gff.gff_data import GFF
 from pykotor.resource.type import ResourceType
 
-TEST_FILE = "src/tests/files/test.ute"
+TEST_FILE = "tests/files/test.ute"
 K1_PATH = os.environ.get("K1_PATH")
 K2_PATH = os.environ.get("K2_PATH")
 

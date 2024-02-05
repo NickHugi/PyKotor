@@ -24,9 +24,9 @@ from pykotor.resource.formats.erf import ERF, ERFBinaryReader, read_erf, write_e
 from pykotor.resource.type import ResourceType
 from utility.system.path import Path
 
-BINARY_TEST_FILE = Path("src/tests/files/test.erf").resolve()
+BINARY_TEST_FILE = Path("tests/files/test.erf").resolve()
 DOES_NOT_EXIST_FILE = "./thisfiledoesnotexist"
-CORRUPT_BINARY_TEST_FILE = Path("src/tests/files/test_corrupted.gff")
+CORRUPT_BINARY_TEST_FILE = Path("tests/files/test_corrupted.gff")
 
 
 class TestERF(TestCase):

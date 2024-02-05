@@ -24,7 +24,7 @@ from pykotor.resource.formats.gff.gff_data import GFF
 from pykotor.resource.generics.utc import UTC, construct_utc, dismantle_utc
 from pykotor.resource.type import ResourceType
 
-TEST_FILE = "src/tests/files/test.utc"
+TEST_FILE = "tests/files/test.utc"
 K1_PATH = os.environ.get("K1_PATH")
 K2_PATH = os.environ.get("K2_PATH")
 
