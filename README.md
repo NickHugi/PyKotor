@@ -33,7 +33,9 @@ pip install -r Tools/HolocronToolset/requirements.txt --prefer-binary
 python Tools/HolocronToolset/src/toolset/__main__.py
 python Tools/KotorDiff/__main__.py
 ```
+
 see [HoloPatcher's readme](https://github.com/NickHugi/PyKotor/tree/master/Tools/HoloPatcher#readme) for more information
+
 see [HolocronToolset's readme](https://github.com/NickHugi/PyKotor/tree/master/Tools/HolocronToolset#readme) for more information
 
 Install requirements-dev.txt to get all pip packages in one shot:
