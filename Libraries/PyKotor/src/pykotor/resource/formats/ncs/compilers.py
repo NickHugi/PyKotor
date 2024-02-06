@@ -66,7 +66,7 @@ class KnownExternalCompilers(Enum):
         author="Fred Tetra",
         features=ExternalCompilerFeatures(can_compile=True, can_decompile=True),
         commandline={
-            "compile": ["-c", "--outputdir", "{output_dir}", "-o", "{output_name}", "-g", "{game_value}", "--optimize", "{source}"],
+            "compile": ["-c", "--outputdir", "{output_dir}", "-o", "{output_name}", "-g", "{game_value}", "{source}"],
             "decompile": ["-d", "--outputdir", "{output_dir}", "-o", "{output_name}", "-g", "{game_value}", "{source}"],
         },
     )
@@ -77,7 +77,7 @@ class KnownExternalCompilers(Enum):
         author="todo",
         features=ExternalCompilerFeatures(can_compile=True, can_decompile=True),
         commandline={
-            "compile": ["-c", "-o", "{source}", "{output}"],
+            "compile": ["-c", "{source}", "{output}"],
             "decompile": ["-d", "{source}", "{output}"],
         },
     )
@@ -88,7 +88,7 @@ class KnownExternalCompilers(Enum):
         author="James Goad",  # TODO: double check
         features=ExternalCompilerFeatures(can_compile=True, can_decompile=True),
         commandline={
-            "compile": ["-c", "--outputdir", "{output_dir}", "-o", "{output_name}", "-g", "{game_value}", "--optimize", "{source}"],
+            "compile": ["-c", "--outputdir", "{output_dir}", "-o", "{output_name}", "-g", "{game_value}", "{source}"],
             "decompile": ["-d", "--outputdir", "{output_dir}", "-o", "{output_name}", "-g", "{game_value}", "{source}"],
         },
     )
