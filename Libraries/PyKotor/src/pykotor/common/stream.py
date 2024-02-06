@@ -133,9 +133,9 @@ class BinaryReader:
         -------
             A new BinaryReader instance.
         """
-        stream = Path(path).open("rb")
-        mmap_stream = mmap.mmap(stream.fileno(), length=0, access=mmap.ACCESS_READ)
-        return cls(mmap_stream, offset, size)
+        with Path(path).open("rb") as file:
+            mmap_stream = mmap.mmap(file.fileno(), length=0, access=mmap.ACCESS_READ)
+            return cls(mmap_stream, offset, size)
 
     @classmethod
     def from_bytes(
