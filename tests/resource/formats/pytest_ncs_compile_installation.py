@@ -78,9 +78,24 @@ def pytest_runtest_makereport(item: pytest.Item, call: pytest.CallInfo) -> TestR
         return None
     if call.excinfo is not None and call.when == "call":
         # This means the test has failed
-        longrepr = call.excinfo.getrepr()
-        #longrepr = format_exception_with_variables(call.excinfo.value, call.excinfo.type, call.excinfo.tb)
+        # Construct and return a TestReport object
+
+        #longrepr = call.excinfo.getrepr()
+        longrepr = format_exception_with_variables(call.excinfo.value, call.excinfo.type, call.excinfo.tb)
         logger.error("Test failed with exception!", extra={"item.nodeid": item.nodeid, "Traceback: ": longrepr})
+        report = TestReport(
+            nodeid=item.nodeid,
+            location=item.location,
+            keywords=item.keywords,
+            outcome="failed",
+            longrepr=longrepr,
+            when=call.when,
+            sections=[],
+            duration=call.stop - call.start,
+            user_properties=item.user_properties,
+        )
+        return report
+    return None
 
 def log_file(
     *args,
