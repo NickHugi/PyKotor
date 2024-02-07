@@ -1,13 +1,19 @@
 from __future__ import annotations
 
 import os
+from typing import Iterator
 
 from pykotor.resource.formats.vis.vis_data import VIS
 from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES, ResourceReader, ResourceWriter, autoclose
 
 
 class VISAsciiReader(ResourceReader):
-    def __init__(self, source: SOURCE_TYPES, offset: int = 0, size: int = 0):
+    def __init__(
+        self,
+        source: SOURCE_TYPES,
+        offset: int = 0,
+        size: int = 0,
+    ):
         super().__init__(source, offset, size)
         self._vis: VIS | None = None
         self._lines: list[str] = []
@@ -17,9 +23,9 @@ class VISAsciiReader(ResourceReader):
         self._vis = VIS()
         self._lines = self._reader.read_string(self._reader.size()).splitlines()
 
-        pairs = []
+        pairs: list[tuple[str, str]] = []
 
-        iterator = iter(self._lines)
+        iterator: Iterator[str] = iter(self._lines)
         for line in iterator:
             tokens: list[str] = line.split()
 
@@ -28,7 +34,7 @@ class VISAsciiReader(ResourceReader):
 
             count = int(tokens[1])
             for _ in range(count):
-                show = next(iterator).split()[0]
+                show: str = next(iterator).split()[0]
                 pairs.append((when_inside, show))
 
         for when_inside, show in pairs:
