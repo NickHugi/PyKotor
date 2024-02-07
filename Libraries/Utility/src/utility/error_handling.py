@@ -164,8 +164,11 @@ def format_exception_with_variables(
         msg = f"{value!r} is not an exception instance"
         raise TypeError(msg)
     if not isinstance(tb, types.TracebackType):
-        msg = "tb is not a traceback object"
-        raise TypeError(msg)
+        try:
+            raise value
+        except etype as e:
+            tb = e.__traceback__
+        assert tb is not None, "Could not get traceback object!"
 
     # Construct the stack trace using traceback
     formatted_traceback: str = "".join(traceback.format_exception(etype, value, tb))
