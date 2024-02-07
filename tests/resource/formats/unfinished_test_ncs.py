@@ -22,7 +22,7 @@ from pykotor.resource.formats.ncs import NCS, NCSBinaryReader
 from pykotor.resource.formats.ncs.ncs_auto import bytes_ncs, read_ncs, write_ncs
 from utility.system.path import Path
 
-BINARY_TEST_FILE = "src/tests/files/test.ncs"
+BINARY_TEST_FILE = "tests/files/test.ncs"
 
 
 class TestNCS(TestCase):

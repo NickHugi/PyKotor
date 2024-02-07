@@ -25,7 +25,7 @@ from pykotor.extract.installation import Installation
 from pykotor.resource.formats.gff import GFF, read_gff
 from pykotor.resource.generics.are import ARE, construct_are, dismantle_are
 
-TEST_FILE = "src/tests/files/test.are"
+TEST_FILE = "tests/files/test.are"
 K1_PATH = os.environ.get("K1_PATH")
 K2_PATH = os.environ.get("K2_PATH")
 

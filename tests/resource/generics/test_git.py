@@ -26,9 +26,9 @@ from pykotor.resource.formats.gff import read_gff
 from pykotor.resource.formats.gff.gff_data import GFF
 from pykotor.resource.generics.git import GIT, construct_git, dismantle_git
 
-TEST_FILE = "src/tests/files/test.git"
-K1_SAME_TEST = "src/tests/files/k1_same_git_test.git"
-K1_LAST_GOOD_EXTRACT = "src/tests/files/k1_extracted_git_test.git"
+TEST_FILE = "tests/files/test.git"
+K1_SAME_TEST = "tests/files/k1_same_git_test.git"
+K1_LAST_GOOD_EXTRACT = "tests/files/k1_extracted_git_test.git"
 K1_PATH = os.environ.get("K1_PATH")
 K2_PATH = os.environ.get("K2_PATH")
 

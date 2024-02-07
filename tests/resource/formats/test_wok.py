@@ -20,7 +20,7 @@ if UTILITY_PATH.joinpath("utility").exists():
 from pykotor.common.geometry import Vector3
 from pykotor.resource.formats.bwm import BWM, BWMBinaryReader, read_bwm, write_bwm
 
-BINARY_TEST_FILE = "src/tests/files/test.wok"
+BINARY_TEST_FILE = "tests/files/test.wok"
 
 
 class TestBWM(TestCase):

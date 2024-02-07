@@ -24,7 +24,7 @@ from pykotor.resource.formats.gff import GFF, read_gff
 from pykotor.resource.generics.jrl import JRL, JRLEntry, construct_jrl, dismantle_jrl
 from pykotor.resource.type import ResourceType
 
-TEST_FILE = "src/tests/files/test.jrl"
+TEST_FILE = "tests/files/test.jrl"
 K1_PATH = os.environ.get("K1_PATH")
 K2_PATH = os.environ.get("K2_PATH")
 

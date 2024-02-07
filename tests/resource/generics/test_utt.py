@@ -26,7 +26,7 @@ from pykotor.resource.type import ResourceType
 
 
 
-TEST_FILE = "src/tests/files/test.utt"
+TEST_FILE = "tests/files/test.utt"
 
 K1_PATH = os.environ.get("K1_PATH")
 K2_PATH = os.environ.get("K2_PATH")

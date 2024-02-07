@@ -24,7 +24,7 @@ from pykotor.resource.formats.gff.gff_data import GFF
 from pykotor.resource.generics.pth import PTH, construct_pth, dismantle_pth
 from pykotor.resource.type import ResourceType
 
-TEST_FILE = "src/tests/files/test.pth"
+TEST_FILE = "tests/files/test.pth"
 K1_PATH = os.environ.get("K1_PATH")
 K2_PATH = os.environ.get("K2_PATH")
 

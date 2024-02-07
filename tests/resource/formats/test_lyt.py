@@ -22,9 +22,9 @@ from pykotor.resource.formats.lyt import LYT, LYTAsciiReader, LYTDoorHook, LYTOb
 from pykotor.resource.formats.lyt.lyt_auto import read_lyt, write_lyt
 from pykotor.resource.type import ResourceType
 
-ASCII_TEST_FILE = "src/tests/files/test.lyt"
+ASCII_TEST_FILE = "tests/files/test.lyt"
 DOES_NOT_EXIST_FILE = "./thisfiledoesnotexist"
-CORRUPT_BINARY_TEST_FILE = "src/tests/files/test_corrupted.lyt"
+CORRUPT_BINARY_TEST_FILE = "tests/files/test_corrupted.lyt"
 
 
 class TestLYT(TestCase):

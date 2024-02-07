@@ -24,8 +24,8 @@ from pykotor.resource.formats.gff.gff_data import GFF
 from pykotor.resource.generics.utd import UTD, construct_utd, dismantle_utd
 from pykotor.resource.type import ResourceType
 
-TEST_FILE = "src/tests/files/test.utd"
-K1_SAME_TEST_FILE = "src/tests/files/k1_utd_same_test.utd"
+TEST_FILE = "tests/files/test.utd"
+K1_SAME_TEST_FILE = "tests/files/k1_utd_same_test.utd"
 K1_PATH = os.environ.get("K1_PATH")
 K2_PATH = os.environ.get("K2_PATH")
 

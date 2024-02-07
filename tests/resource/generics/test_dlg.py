@@ -27,8 +27,8 @@ from pykotor.resource.formats.gff import read_gff
 from pykotor.resource.generics.dlg import DLG, DLGEntry, DLGReply, construct_dlg, dismantle_dlg
 from pykotor.resource.type import ResourceType
 
-TEST_FILE = "src/tests/files/test.dlg"
-TEST_K1_FILE = "src/tests/files/test_k1.dlg"
+TEST_FILE = "tests/files/test.dlg"
+TEST_K1_FILE = "tests/files/test_k1.dlg"
 K1_PATH = os.environ.get("K1_PATH")
 K2_PATH = os.environ.get("K2_PATH")
 

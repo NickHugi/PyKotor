@@ -24,7 +24,7 @@ from pykotor.resource.formats.gff.gff_data import GFF
 from pykotor.resource.generics.ifo import IFO, construct_ifo, dismantle_ifo
 from pykotor.resource.type import ResourceType
 
-TEST_FILE = "src/tests/files/test.ifo"
+TEST_FILE = "tests/files/test.ifo"
 K1_PATH = os.environ.get("K1_PATH")
 K2_PATH = os.environ.get("K2_PATH")
 

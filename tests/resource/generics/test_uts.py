@@ -25,8 +25,8 @@ from pykotor.extract.installation import Installation
 from pykotor.resource.formats.gff.gff_data import GFF
 from pykotor.resource.type import ResourceType
 
-TEST_FILE = "src/tests/files/test.uts"
-TEST_K1_FILE = "src/tests/files/test_k1.uts"
+TEST_FILE = "tests/files/test.uts"
+TEST_K1_FILE = "tests/files/test_k1.uts"
 
 K1_PATH = os.environ.get("K1_PATH")
 K2_PATH = os.environ.get("K2_PATH")

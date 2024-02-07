@@ -102,16 +102,8 @@ def parse_args() -> Namespace:
     # Positional arguments for the old syntax
     parser.add_argument("--game-dir", type=str, help="Path to game directory")
     parser.add_argument("--tslpatchdata", type=str, help="Path to tslpatchdata")
-    parser.add_argument(
-        "--namespace-option-index",
-        type=int,
-        help="Namespace option index",
-    )
-    parser.add_argument(
-        "--console",
-        action="store_true",
-        help="Show the console when launching HoloPatcher.",
-    )
+    parser.add_argument("--namespace-option-index", type=int, help="Namespace option index")
+    parser.add_argument("--console", action="store_true", help="Show the console when launching HoloPatcher.")
     parser.add_argument("--uninstall", action="store_true", help="Uninstalls the selected mod.")
     parser.add_argument("--install", action="store_true", help="Starts an install immediately on launch.")
     parser.add_argument("--validate", action="store_true", help="Starts validation of the selected mod.")

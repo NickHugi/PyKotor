@@ -20,7 +20,7 @@ import unittest
 from pykotor.common.language import Language
 from pykotor.extract.talktable import TalkTable
 
-TEST_FILE = "src/tests/files/test.tlk"
+TEST_FILE = "tests/files/test.tlk"
 
 
 class TestTalkTable(unittest.TestCase):
