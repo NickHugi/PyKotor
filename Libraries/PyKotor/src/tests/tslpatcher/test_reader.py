@@ -107,8 +107,8 @@ class TestConfigReader(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmpdirname:
             self.mod_path = Path(tmpdirname) / "tslpatchdata"
         self.mod_path.mkdir(exist_ok=True, parents=True)
-        shutil.copy(Path("src/tests/files/complex.tlk").resolve(), self.mod_path / "complex.tlk")
-        shutil.copy(Path("src/tests/files/append.tlk").resolve(), self.mod_path / "append.tlk")
+        shutil.copy(Path("tests/files/complex.tlk").resolve(), self.mod_path / "complex.tlk")
+        shutil.copy(Path("tests/files/append.tlk").resolve(), self.mod_path / "append.tlk")
 
         # write it to a real file
         write_tlk(

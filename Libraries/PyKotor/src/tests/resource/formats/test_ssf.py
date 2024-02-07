@@ -20,11 +20,11 @@ from pykotor.resource.formats.ssf import SSF, SSFBinaryReader, SSFSound, SSFXMLR
 from pykotor.resource.formats.ssf.ssf_auto import detect_ssf
 from pykotor.resource.type import ResourceType
 
-BINARY_TEST_FILE = "src/tests/files/test.ssf"
-XML_TEST_FILE = "src/tests/files/test.ssf.xml"
+BINARY_TEST_FILE = "tests/files/test.ssf"
+XML_TEST_FILE = "tests/files/test.ssf.xml"
 DOES_NOT_EXIST_FILE = "./thisfiledoesnotexist"
-CORRUPT_BINARY_TEST_FILE = "src/tests/files/test_corrupted.ssf"
-CORRUPT_XML_TEST_FILE = "src/tests/files/test_corrupted.ssf.xml"
+CORRUPT_BINARY_TEST_FILE = "tests/files/test_corrupted.ssf"
+CORRUPT_XML_TEST_FILE = "tests/files/test_corrupted.ssf.xml"
 
 
 class TestSSF(unittest.TestCase):

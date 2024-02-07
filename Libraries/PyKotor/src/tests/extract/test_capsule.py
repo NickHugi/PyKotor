@@ -20,8 +20,8 @@ if UTILITY_PATH.joinpath("utility").exists():
 from pykotor.extract.capsule import Capsule
 from pykotor.resource.type import ResourceType
 
-TEST_ERF_FILE = "src/tests/files/capsule.mod"
-TEST_RIM_FILE = "src/tests/files/capsule.rim"
+TEST_ERF_FILE = "tests/files/capsule.mod"
+TEST_RIM_FILE = "tests/files/capsule.rim"
 
 
 class TestCapsule(TestCase):
