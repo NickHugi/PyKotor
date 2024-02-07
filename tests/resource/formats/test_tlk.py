@@ -30,13 +30,13 @@ from pykotor.resource.formats.tlk import (
 )
 from pykotor.resource.type import ResourceType
 
-BINARY_TEST_FILE = "src/tests/files/test.tlk"
-XML_TEST_FILE = "src/tests/files/test.tlk.xml"
-JSON_TEST_FILE = "src/tests/files/test.tlk.json"
+BINARY_TEST_FILE = "tests/files/test.tlk"
+XML_TEST_FILE = "tests/files/test.tlk.xml"
+JSON_TEST_FILE = "tests/files/test.tlk.json"
 DOES_NOT_EXIST_FILE = "./thisfiledoesnotexist"
-CORRUPT_BINARY_TEST_FILE = "src/tests/files/test_corrupted.tlk"
-CORRUPT_XML_TEST_FILE = "src/tests/files/test_corrupted.tlk.xml"
-CORRUPT_JSON_TEST_FILE = "src/tests/files/test_corrupted.tlk.json"
+CORRUPT_BINARY_TEST_FILE = "tests/files/test_corrupted.tlk"
+CORRUPT_XML_TEST_FILE = "tests/files/test_corrupted.tlk.xml"
+CORRUPT_JSON_TEST_FILE = "tests/files/test_corrupted.tlk.json"
 
 
 class TestTLK(unittest.TestCase):
