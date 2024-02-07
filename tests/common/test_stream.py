@@ -54,7 +54,7 @@ class TestBinaryReader(TestCase):
 
         reader4 = BinaryReader.from_bytes(self.data4)
         self.assertAlmostEqual(-123.456, reader4.read_single(), 3)
-        self.assertAlmostEqual(--123.457, reader4.read_double(), 6)
+        self.assertAlmostEqual(123.457, reader4.read_double(), 6)
 
     def test_size(self):
         self.reader1.read_bytes(4)
