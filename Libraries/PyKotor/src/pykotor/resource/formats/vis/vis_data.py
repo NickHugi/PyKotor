@@ -138,6 +138,7 @@ class VIS:
         self,
         when_inside: str,
         show: str,
+        *,
         visible: bool,
     ):
         """Sets the visibility of a specified room based off when viewing from another specified room.

@@ -1,15 +1,15 @@
-name: Forward Commits to Bleeding-Edge
+name: Forward Commits to Bleeding-Edge-Fork
 
 on:
   push:
     branches:
       - '*'
-      - '!bleeding-edge'
+      - '!bleeding-edge-fork'
 
 jobs:
   merge:
     runs-on: ubuntu-latest
-    if: contains(github.event.head_commit.message, '[skip-edge]') == false
+    if: contains(github.event.head_commit.message, '[skip-edge=fork]') == false
 
     steps:
     - name: Checkout Repository
@@ -24,7 +24,7 @@ jobs:
 
     - name: Cherry-Pick to Bleeding-Edge
       run: |
-        git checkout bleeding-edge
+        git checkout bleeding-edge-fork
         # Attempt to cherry-pick and resolve conflicts by favoring incoming changes
         git cherry-pick ${{ github.sha }} || true
         # If there were conflicts, add all and continue
@@ -32,4 +32,4 @@ jobs:
           git add .
           git cherry-pick --continue
         fi
-        git push origin bleeding-edge
+        git push origin bleeding-edge-fork
