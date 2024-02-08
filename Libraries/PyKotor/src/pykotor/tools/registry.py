@@ -25,6 +25,7 @@ KOTOR_REG_PATHS = {
         ProcessorArchitecture.BIT_32: [
             (r"HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\Steam App 208580", "InstallLocation"),
             (r"HKEY_LOCAL_MACHINE\SOFTWARE\GOG.com\Games\1421404581", "PATH"),
+            (r"HKEY_LOCAL_MACHINE\SOFTWARE\LucasArts\KotOR2", "InternalPath"),
             (r"HKEY_LOCAL_MACHINE\SOFTWARE\LucasArts\KotOR2", "Path"),
         ],
         ProcessorArchitecture.BIT_64: [
