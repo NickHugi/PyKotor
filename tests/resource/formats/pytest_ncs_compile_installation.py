@@ -341,8 +341,6 @@ def test_bizarre_compiler(
 ):
     game, script_info = script_data
     file_res, nss_path, ncs_path = script_info
-    if file_res.identifier() in CUR_FAILED_EXT[game]:
-        return
     if nss_path.name == "nwscript.nss":
         pytest.skip("nwscript.nss is not a script we can compile.")
     if nss_path.is_symlink():  # don't test scripts.bif symlinks.
@@ -373,8 +371,6 @@ def test_pykotor_compile_nss(
 ):
     game, script_info = script_data
     file_res, nss_path, ncs_path = script_info
-    if file_res.identifier() in CUR_FAILED_EXT[game]:
-        return
     if nss_path.name == "nwscript.nss":
         return
     if nss_path.is_symlink():  # don't test scripts.bif symlinks.
@@ -393,6 +389,7 @@ def test_pykotor_compile_nss(
             new_exc = FileNotFoundError("Could not find NCS compiled script on disk, compile_nss failed.")
             new_exc.filename = ncs_path
             raise new_exc  # noqa: TRY301
+
     except EntryPointError as e:
         pytest.xfail(f"compile_nss: No entry point in with '{working_dir.name}/{nss_path.name}': {e}")
     except Exception as e:  # noqa: BLE001
