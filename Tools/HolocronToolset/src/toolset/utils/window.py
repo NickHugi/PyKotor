@@ -118,7 +118,7 @@ def openResourceEditor(
             return None, None
 
     if restype in [ResourceType.DLG, ResourceType.DLG_XML]:
-        if installation is None:  # noqa: SIM108
+        if installation is None or not gff_specialized:  # noqa: SIM108
             editor = GFFEditor(None, installation)
         else:
             editor = DLGEditor(None, installation)

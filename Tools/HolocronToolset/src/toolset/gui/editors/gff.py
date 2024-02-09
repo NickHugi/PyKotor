@@ -47,6 +47,7 @@ class GFFEditor(Editor):
             ResourceType.GIT,
             ResourceType.JRL,
             ResourceType.ITP,
+            ResourceType.RES,
         ]
         super().__init__(parent, "GFF Editor", "none", supported, supported, installation)
         self.resize(400, 250)
