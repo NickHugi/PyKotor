@@ -120,8 +120,11 @@ class BinaryReader:
         -------
             A new BinaryReader instance.
         """
-        with Path.pathify(path).open("rb") as file:
-            return cls.from_stream(file, offset, size)
+        stream = Path.pathify(path).open("rb")
+        instance = cls.from_stream(stream, offset, size)
+        if instance._stream is not stream:
+            stream.close()
+        return instance
 
     @classmethod
     def from_bytes(
