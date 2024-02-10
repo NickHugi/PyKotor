@@ -1,6 +1,8 @@
 """This module contains the ResourceType class and initializes the static list of ResourceTypes that can be found in both games."""
 from __future__ import annotations
 
+import io
+import mmap
 import os
 import uuid
 from enum import Enum
@@ -9,7 +11,8 @@ from xml.etree.ElementTree import ParseError
 
 from pykotor.common.stream import BinaryReader, BinaryWriter
 
-SOURCE_TYPES = Union[os.PathLike, str, bytes, bytearray, BinaryReader]
+STREAM_TYPES = Union[io.BufferedIOBase, io.RawIOBase, mmap.mmap]
+SOURCE_TYPES = Union[os.PathLike, str, bytes, bytearray, memoryview, BinaryReader, STREAM_TYPES]
 TARGET_TYPES = Union[os.PathLike, str, bytearray, BinaryWriter]
 
 
