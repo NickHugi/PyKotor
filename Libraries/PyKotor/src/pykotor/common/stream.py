@@ -96,9 +96,10 @@ class BinaryReader:
 
         try:
             mmap_stream = mmap.mmap(stream.fileno(), length=0, access=mmap.ACCESS_READ)
-            return cls(mmap_stream, offset, size)
-        except OSError:
+        except (ValueError, OSError):  # ValueError means mmap cannot map to empty files
             return cls(stream, offset, size)
+        else:
+            return cls(mmap_stream, offset, size)
 
     @classmethod
     def from_file(
