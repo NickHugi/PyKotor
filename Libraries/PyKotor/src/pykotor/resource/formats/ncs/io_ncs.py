@@ -587,7 +587,7 @@ class NCSBinaryWriter(ResourceWriter):
 
         elif instruction.ins_type in [NCSInstructionType.MOVSP]:
             # MOVSP to adjust the stack pointer
-            self._writer.write_int32(to_signed_32bit(instruction.args[0]), big=True)
+            self._writer.write_int32(instruction.args[0], big=True)
 
         elif instruction.ins_type in [  # noqa: SIM114
             #NCSInstructionType.STORE_STATEALL,
@@ -603,14 +603,14 @@ class NCSBinaryWriter(ResourceWriter):
             jump = instruction.jump
             assert jump is not None, f"{instruction} has a NoneType jump."
             relative = self._offsets[jump] - self._offsets[instruction]
-            self._writer.write_int32(to_signed_32bit(relative), big=True)
+            self._writer.write_int32(relative, big=True)
 
         elif instruction.ins_type in [NCSInstructionType.RETN]:
             ...
 
         elif instruction.ins_type in [NCSInstructionType.DESTRUCT]:
             self._writer.write_uint16(instruction.args[0], big=True)
-            self._writer.write_int16(to_signed_16bit(instruction.args[1]), big=True)
+            self._writer.write_int16(instruction.args[1], big=True)
             self._writer.write_uint16(instruction.args[2], big=True)
 
         elif instruction.ins_type in [NCSInstructionType.NOTI]:  # noqa: SIM114
