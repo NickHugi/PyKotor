@@ -71,7 +71,8 @@ def fix_sys_and_cwd_path():
 
 if __name__ == "__main__":
 
-    os.environ["QT_MULTIMEDIA_PREFERRED_PLUGINS"] = "windowsmediafoundation"
+    if os.name == "nt":
+        os.environ["QT_MULTIMEDIA_PREFERRED_PLUGINS"] = "windowsmediafoundation"
     os.environ["QT_DEBUG_PLUGINS"] = "1"
 
     # os.environ["QT_AUTO_SCREEN_SCALE_FACTOR"] = "1"
@@ -79,6 +80,7 @@ if __name__ == "__main__":
     # os.environ["QT_SCALE_FACTOR"] = "1"
 
     if is_frozen():
+        print("App is frozen - doing multiprocessing.freeze_support()")
         multiprocessing.freeze_support()
     fix_sys_and_cwd_path()
     from utility.system.path import Path

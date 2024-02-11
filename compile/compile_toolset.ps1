@@ -20,7 +20,7 @@ Write-Host "Installing required packages to build the holocron toolset..."
 . $pythonExePath -m pip install -r ($rootPath + $pathSep + "Libraries" + $pathSep + "PyKotorGL" + $pathSep + "recommended.txt") --prefer-binary --compile --progress-bar on -U
 
 if ( (Get-OS) -eq "Linux" ) {
-    . sudo apt install python3-pyqt5 -y
+    . sudo apt install python3-pyqt5 libpulse-mainloop-glib0 libgstreamer-plugins-base1.0-dev gstreamer1.0-plugins-base gstreamer1.0-plugins-good gstreamer1.0-plugins-bad gstreamer1.0-plugins-ugly libgstreamer1.0-dev -y
 } elseif ( (Get-OS) -eq "Mac" ) {
     . brew install pyqt5
 }
