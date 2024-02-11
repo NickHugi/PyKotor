@@ -374,6 +374,8 @@ class NCSBinaryWriter(ResourceWriter):
             NCSInstructionType.CPDOWNSP, NCSInstructionType.CPTOPSP,
             NCSInstructionType.CPDOWNBP, NCSInstructionType.CPTOPBP,
             NCSInstructionType.DESTRUCT,
+            NCSInstructionType.DECISP, NCSInstructionType.INCISP,
+            NCSInstructionType.DECIBP, NCSInstructionType.INCIBP,
         ]:
             size += 6
 
@@ -392,8 +394,6 @@ class NCSBinaryWriter(ResourceWriter):
             NCSInstructionType.MOVSP,
             NCSInstructionType.JMP, NCSInstructionType.JSR,
             NCSInstructionType.JZ, NCSInstructionType.JNZ,
-            NCSInstructionType.DECISP, NCSInstructionType.INCISP,
-            NCSInstructionType.DECIBP, NCSInstructionType.INCIBP,
         ]:
             size += 4  # 4 bytes for the value/offset, total 6 bytes
 
