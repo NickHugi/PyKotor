@@ -374,8 +374,6 @@ class NCSBinaryWriter(ResourceWriter):
             NCSInstructionType.CPDOWNSP, NCSInstructionType.CPTOPSP,
             NCSInstructionType.CPDOWNBP, NCSInstructionType.CPTOPBP,
             NCSInstructionType.DESTRUCT,
-            NCSInstructionType.DECISP, NCSInstructionType.INCISP,
-            NCSInstructionType.DECIBP, NCSInstructionType.INCIBP,
         ]:
             size += 6
 
@@ -396,6 +394,12 @@ class NCSBinaryWriter(ResourceWriter):
             NCSInstructionType.JZ, NCSInstructionType.JNZ,
         ]:
             size += 4  # 4 bytes for the value/offset, total 6 bytes
+
+        elif instruction.ins_type in [
+            NCSInstructionType.DECISP, NCSInstructionType.INCISP,
+            NCSInstructionType.DECIBP, NCSInstructionType.INCIBP,
+        ]:
+            size += 4
 
         elif instruction.ins_type in [
             NCSInstructionType.CONSTI, NCSInstructionType.CONSTF,
@@ -435,14 +439,13 @@ class NCSBinaryWriter(ResourceWriter):
             NCSInstructionType.DECIBP, NCSInstructionType.INCIBP,
         ]:
             self._writer.write_int32(instruction.args[0], big=True)
-            self._writer.write_uint16(4, big=True)  # TODO: 12 for float support
 
         elif instruction.ins_type in [
             NCSInstructionType.CPDOWNSP, NCSInstructionType.CPTOPSP,
             NCSInstructionType.CPDOWNBP, NCSInstructionType.CPTOPBP
         ]:
             self._writer.write_int32(instruction.args[0], big=True)
-            self._writer.write_uint16(instruction.args[1], big=True)
+            self._writer.write_uint16(4, big=True)  # TODO: 12 for float support
 
         elif instruction.ins_type == NCSInstructionType.CONSTF:
             self._writer.write_single(instruction.args[0], big=True)
