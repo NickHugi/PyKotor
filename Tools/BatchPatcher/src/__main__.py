@@ -23,13 +23,14 @@ if getattr(sys, "frozen", False) is False:
         if working_dir not in sys.path:
             sys.path.append(working_dir)
 
-    pykotor_font_path = pathlib.Path(__file__).parents[3] / "Libraries" / "PyKotorFont" / "src" / "pykotor"
+    absolute_file_path = pathlib.Path(__file__).resolve()
+    pykotor_font_path = absolute_file_path.parents[3] / "Libraries" / "PyKotorFont" / "src" / "pykotor"
     if pykotor_font_path.is_dir():
         add_sys_path(pykotor_font_path.parent)
-    pykotor_path = pathlib.Path(__file__).parents[3] / "Libraries" / "PyKotor" / "src" / "pykotor"
+    pykotor_path = absolute_file_path.parents[3] / "Libraries" / "PyKotor" / "src" / "pykotor"
     if pykotor_path.is_dir():
         add_sys_path(pykotor_path.parent)
-    utility_path = pathlib.Path(__file__).parents[3] / "Libraries" / "Utility" / "src" / "utility"
+    utility_path = absolute_file_path.parents[3] / "Libraries" / "Utility" / "src" / "utility"
     if utility_path.is_dir():
         add_sys_path(utility_path.parent)
 

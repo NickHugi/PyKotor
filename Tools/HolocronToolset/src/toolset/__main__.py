@@ -15,7 +15,6 @@ from PyQt5.QtWidgets import QApplication
 if TYPE_CHECKING:
     from types import TracebackType
 
-
 def onAppCrash(etype: type[BaseException], e: BaseException, tback: TracebackType | None):
     from utility.error_handling import format_exception_with_variables
     with pathlib.Path("errorlog.txt").open("a", encoding="utf-8") as file:
@@ -57,16 +56,18 @@ def fix_sys_and_cwd_path():
         if working_dir not in sys.path:
             sys.path.append(working_dir)
 
-    pykotor_path = pathlib.Path(__file__).parents[4] / "Libraries" / "PyKotor" / "src" / "pykotor"
+    file_absolute_path = pathlib.Path(__file__).resolve()
+
+    pykotor_path = file_absolute_path.parents[4] / "Libraries" / "PyKotor" / "src" / "pykotor"
     if pykotor_path.exists():
         update_sys_path(pykotor_path.parent)
-    pykotor_gl_path = pathlib.Path(__file__).parents[4] / "Libraries" / "PyKotorGL" / "src" / "pykotor"
+    pykotor_gl_path = file_absolute_path.parents[4] / "Libraries" / "PyKotorGL" / "src" / "pykotor"
     if pykotor_gl_path.exists():
         update_sys_path(pykotor_gl_path.parent)
-    utility_path = pathlib.Path(__file__).parents[4] / "Libraries" / "Utility" / "src"
+    utility_path = file_absolute_path.parents[4] / "Libraries" / "Utility" / "src"
     if utility_path.exists():
         update_sys_path(utility_path)
-    toolset_path = pathlib.Path(__file__).parents[1] / "toolset"
+    toolset_path = file_absolute_path.parents[1] / "toolset"
     if toolset_path.exists():
         update_sys_path(toolset_path.parent)
         os.chdir(toolset_path)
