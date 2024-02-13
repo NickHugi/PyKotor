@@ -53,7 +53,7 @@ if ((Get-OS) -eq "Mac") {
                 break
             }
             "arch" {
-                $command = "sudo pacman -Sy tk --noconfirm"
+                $command = "sudo pacman -Sy tk mpdecimal --noconfirm"
             }
         }
     

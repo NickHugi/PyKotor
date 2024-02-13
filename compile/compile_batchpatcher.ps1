@@ -60,6 +60,9 @@ if ((Get-OS) -eq "Mac") {
                 $command = "sudo apk add ttf-dejavu fontconfig python3-tkinter"
                 break
             }
+            "arch" {
+                $command = "sudo pacman -Sy tk mpdecimal --noconfirm"
+            }
         }
     
         if ($command -eq "") {

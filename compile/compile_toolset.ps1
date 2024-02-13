@@ -59,7 +59,7 @@ if (Test-Path -Path "/etc/os-release") {
             break
         }
         "arch" {
-            $command = "sudo pacman -Syu --noconfirm && sudo pacman -S python-opengl python-pyqt5 qt5-base qt5-multimedia qt5-svg pulseaudio pulseaudio-alsa gstreamer mesa libglvnd ttf-dejavu fontconfig gst-plugins-base gst-plugins-good gst-plugins-bad gst-plugins-ugly --noconfirm"
+            $command = "sudo pacman -Syu --noconfirm && sudo pacman -S python-opengl mpdecimal python-pyqt5 qt5-base qt5-multimedia qt5-svg pulseaudio pulseaudio-alsa gstreamer mesa libglvnd ttf-dejavu fontconfig gst-plugins-base gst-plugins-good gst-plugins-bad gst-plugins-ugly --noconfirm"
             break
         }
     }
