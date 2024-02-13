@@ -53,6 +53,7 @@ class GFFEditor(Editor):
         self.resize(400, 250)
 
         self._talktable: TalkTable | None = installation.talktable() if installation else None
+        self._gff_content: GFFContent | None = None
 
         from toolset.uic.editors.gff import Ui_MainWindow
 
@@ -140,7 +141,8 @@ class GFFEditor(Editor):
             - Expands root node in tree view after loading.
         """
         super().load(filepath, resref, restype, data)
-        gff = read_gff(data)
+        gff: GFF = read_gff(data)
+        self._gff_content = gff.content
 
         self.model.clear()
         self.model.setColumnCount(1)
@@ -233,8 +235,9 @@ class GFFEditor(Editor):
             - Returns the byte array and an empty byte array.
         """
         try:
-            content = GFFContent(f"{self._restype.extension.upper()} ")
-        except ValueError:
+            content = self._gff_content or GFFContent(f"{self._restype.extension.upper()} ")
+        except ValueError as e:
+            print(format_exception_with_variables(e))
             content = GFFContent.GFF
 
         gff = GFF(content)
