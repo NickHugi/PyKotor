@@ -221,7 +221,7 @@ function Install-Linux-Deps {
             tar -xvf Python-3.8.18.tgz
             $current_working_dir = (Get-Location).Path
             Set-Location -LiteralPath "Python-3.8.18" -ErrorAction Stop
-            sudo ./configure --enable-optimizations
+            sudo ./configure --enable-optimizations --with-ensurepip=install
             sudo make -j $(nproc)
             sudo make altinstall
             Set-Location -LiteralPath $current_working_dir
