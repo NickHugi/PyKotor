@@ -6,6 +6,7 @@ import os
 import pathlib
 import sys
 import tempfile
+import traceback
 from typing import TYPE_CHECKING
 
 from PyQt5.QtCore import QThread
@@ -23,7 +24,8 @@ def onAppCrash(etype: type[BaseException], e: BaseException, tback: TracebackTyp
         except:  # noqa: E722
             file.writelines(str(e))
         file.write("\n----------------------\n")
-    raise e
+    # Mimic default behavior by printing the traceback to stderr
+    traceback.print_exception(etype, e, tback)
 
 def is_frozen() -> bool:  # sourcery skip: assign-if-exp, boolean-if-exp-identity, reintroduce-else, remove-unnecessary-cast
     # Check for sys.frozen attribute
