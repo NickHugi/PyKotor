@@ -3,6 +3,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from pykotor.common.misc import ResRef
+from pykotor.common.stream import BinaryReader
 from pykotor.extract.file import ResourceIdentifier
 from pykotor.resource.formats.erf import ERF, ERFResource, ERFType, read_erf, write_erf
 from pykotor.resource.formats.rim import RIM, read_rim, write_rim
@@ -14,6 +15,7 @@ from PyQt5.QtWidgets import QFileDialog, QMessageBox, QShortcut, QTableView, QWi
 from toolset.gui.editor import Editor
 from toolset.gui.widgets.settings.installations import GlobalSettings
 from toolset.utils.window import openResourceEditor
+from utility.error_handling import format_exception_with_variables
 from utility.system.path import Path
 
 if TYPE_CHECKING:
@@ -241,7 +243,7 @@ class ERFEditor(Editor):
             self.model.removeRow(item.row())
 
     def addResources(self, filepaths: list[str]):
-        """Adds resource files to the project.
+        """Adds resources to the capsule.
 
         Args:
         ----
@@ -261,18 +263,20 @@ class ERFEditor(Editor):
             if not c_filepath.exists():
                 c_filepath = c_filepath.resolve()
             try:
-                with c_filepath.open("rb") as file:
-                    data = file.read()
+                resref, restype = ResourceIdentifier.from_path(c_filepath).validate()
+                data = BinaryReader.load_file(c_filepath)
+                resource = ERFResource(ResRef(resref), restype, data)
 
-                    resref, restype = ResourceIdentifier.from_path(c_filepath.parent).validate()
-                    resource = ERFResource(ResRef(resref), restype, data)
-
-                    resrefItem = QStandardItem(resource.resref.get())
-                    resrefItem.setData(resource)
-                    restypeItem = QStandardItem(resource.restype.extension.upper())
-                    sizeItem = QStandardItem(str(len(resource.data)))
-                    self.model.appendRow([resrefItem, restypeItem, sizeItem])
-            except Exception:
+                resrefItem = QStandardItem(str(resource.resref))
+                resrefItem.setData(resource)
+                restypeItem = QStandardItem(resource.restype.extension.upper())
+                sizeItem = QStandardItem(str(len(resource.data)))
+                self.model.appendRow([resrefItem, restypeItem, sizeItem])
+            except Exception as e:
+                with Path("errorlog.txt").open("a", encoding="utf-8") as file:
+                    lines = format_exception_with_variables(e)
+                    file.writelines(lines)
+                    file.write("\n----------------------\n")
                 QMessageBox(
                     QMessageBox.Critical,
                     "Failed to add resource",
