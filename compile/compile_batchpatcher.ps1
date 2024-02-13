@@ -11,17 +11,64 @@ Write-Host "The path to the root directory is: $rootPath"
 Write-Host "Initializing python virtual environment..."
 . $rootPath/install_python_venv.ps1
 
+# Define temporary directories for build and cache
+$tempBuildDir = "/tmp/pip_build/"
+$tempCacheDir = "/tmp/pip_cache/"
+
+# Ensure these temporary directories exist
+Invoke-Expression "mkdir -p $tempBuildDir"
+Invoke-Expression "mkdir -p $tempCacheDir"
+$env:PIP_CACHE_DIR = $tempCacheDir
+
 Write-Host "Installing required packages to build the batchpatcher..."
 . $pythonExePath -m pip install --upgrade pip --prefer-binary --progress-bar on
 . $pythonExePath -m pip install pyinstaller --prefer-binary --progress-bar on
-. $pythonExePath -m pip install -r ($rootPath + $pathSep + "Tools" + $pathSep + "BatchPatcher" + $pathSep + "requirements.txt") --prefer-binary --progress-bar on -U --upgrade-strategy "eager"
-. $pythonExePath -m pip install -r ($rootPath + $pathSep + "Libraries" + $pathSep + "PyKotor" + $pathSep + "requirements.txt") --prefer-binary --progress-bar on -U --upgrade-strategy "eager"
-. $pythonExePath -m pip install -r ($rootPath + $pathSep + "Libraries" + $pathSep + "PyKotorFont" + $pathSep + "requirements.txt") --prefer-binary --progress-bar on -U --upgrade-strategy "eager"
+. $pythonExePath -m pip install -r ($rootPath + $pathSep + "Tools" + $pathSep + "BatchPatcher" + $pathSep + "requirements.txt") --prefer-binary --progress-bar on
+. $pythonExePath -m pip install -r ($rootPath + $pathSep + "Libraries" + $pathSep + "PyKotor" + $pathSep + "requirements.txt") --prefer-binary --progress-bar on
+. $pythonExePath -m pip install -r ($rootPath + $pathSep + "Libraries" + $pathSep + "PyKotorFont" + $pathSep + "requirements.txt") --prefer-binary --progress-bar on
 
-if ( (Get-OS) -eq "Linux" ) {
-    . sudo apt install python3-tk -y
-} elseif ( (Get-OS) -eq "Mac" ) {
-    . brew install python-tk
+if ((Get-OS) -eq "Mac") {
+    brew install python-tk
+} elseif ((Get-OS) -eq "Linux") {
+    if (Test-Path -Path "/etc/os-release") {
+        $osInfo = Get-Content "/etc/os-release" -Raw
+        if ($osInfo -match 'ID=(.*)') {
+            $distro = $Matches[1].Trim('"')
+        }
+        if ($osInfo -match 'VERSION_ID=(.*)') {
+            $versionId = $Matches[1].Trim('"')
+        }
+        $command = ""
+        switch ($distro) {
+            "debian" {
+                $command = "sudo apt install python3-tk -y"
+                break
+            }
+            "ubuntu" {
+                $command = "sudo apt install python3-tk -y"
+                break
+            }
+            "fedora" {
+                $command = "sudo dnf install python3-tkinter python3.10-tkinter"
+                break
+            }
+            "almalinux" {
+                $command = "sudo dnf install python3-tkinter -y"
+                break
+            }
+            "alpine" {
+                $command = "sudo apk add ttf-dejavu fontconfig python3-tkinter"
+                break
+            }
+        }
+    
+        if ($command -eq "") {
+            Write-Warning "Dist $distro version $versionId not supported for automated system package install, please install the dependencies if you experience problems."
+        } else {
+            Write-Host "Executing command: $command"
+            Invoke-Expression $command
+        }
+    }
 }
 
 $current_working_dir = (Get-Location).Path

@@ -1,4 +1,5 @@
-param (
+param(
+  [string]$venv_name = ".venv",
   [switch]$noprompt
 )
 
@@ -96,6 +97,140 @@ function Set-EnvironmentVariablesFromEnvFile {
 
     # environment file not found.
     return $false
+}
+
+function Install-Linux-Deps {
+    if (Test-Path "/etc/os-release") {
+        $osInfo = Get-Content "/etc/os-release" -Raw
+        if ($osInfo -match 'ID=(.*)') {
+            $distro = $Matches[1].Trim('"')
+        }
+        if ($osInfo -match 'VERSION_ID=(.*)') {
+            $versionId = $Matches[1].Trim('"')
+        }
+        
+        try {
+            switch ($distro) {
+                "debian" {
+                    sudo apt update
+                    sudo apt install python3 -y
+                    sudo apt install python3-dev -y
+                    sudo apt install python3-venv -y
+                    sudo apt install python3-pip -y
+                    break
+                }
+                "ubuntu" {
+                    sudo apt install python3 -y
+                    sudo apt install python3-dev -y
+                    sudo apt install python3-venv -y
+                    sudo apt install python3-pip -y
+                    break
+                }
+                "alpine" {
+                    sudo apk update
+                    sudo apk add --update --no-cache python3
+                    ln -sf python3 /usr/bin/python
+                    python3 -m ensurepip
+                    pip3 install --no-cache --upgrade pip setuptools
+                    break
+                }
+                "almalinux" {
+                    sudo dnf update -y
+                    sudo dnf upgrade -y
+                    #sudo dnf install python38 -y  # Won't work because the main binary doesn't contain tkinter.
+                    Find-Python
+                    if ( $global:pythonInstallPath -eq "") {
+                        sudo dnf install tk-devel tcl-devel -y
+                        sudo dnf install openssl-devel bzip2-devel libffi-devel wget -y
+                        sudo dnf groupinstall "Development Tools" -y
+                        gcc --version
+                        wget https://www.python.org/ftp/python/3.8.9/Python-3.8.9.tgz
+                        tar -xf Python-3.8.9.tgz
+                        Set-Location "Python-3.8.9"
+                        ./configure --enable-optimizations --with-ensurepip=install
+                        make
+                        sudo make install
+                    }
+                    python3.8 --version
+                }
+                "fedora" {
+                    sudo dnf update
+                    sudo dnf install python3 -y
+                    sudo dnf install python3-pip -y
+                    sudo dnf install python3-venv -y
+                    sudo dnf install git -y
+                    break
+                }
+                "centos" {
+                    sudo yum update
+                    if ( $versionId -eq "7" ) {
+                        sudo yum install epel-release -y
+                    }
+                    sudo yum install python3 -y
+                    sudo yum install python3-pip
+                    sudo yum install python3-venv
+                    break
+                }
+                "arch" {
+                    sudo pacman -Syu --noconfirm
+                    sudo pacman -Sy base-devel wget --noconfirm
+                    sudo pacman -Sy python-pip --noconfirm
+                    sudo pacman -Sy python --noconfirm                    
+                }
+                default {
+                    Write-Error "Unsupported Linux distribution for package manager install of Python."
+                }
+            }
+            Find-Python -intrnal
+            if ( $global:pythonInstallPath -eq "" ) {
+                throw "Python not found/installed"
+            }
+        } catch {
+            $userInput = Read-Host "Could not install python from your package manager, would you like to attempt to build from source instead? (y/N)"
+            if ( $userInput -ne "Y" -and $userInput -ne "y" ) {
+                Write-Host "Press any key to exit..."
+                $null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
+                exit 1
+            }
+            # Fallback mechanism for each distribution
+            switch ($distro) {
+                "debian" {
+                    sudo apt update
+                    sudo apt install build-essential zlib1g-dev libncurses5-dev libgdbm-dev libssl-dev libreadline-dev libffi-dev libsqlite3-dev libbz2-dev tk-dev -y
+                }
+                "ubuntu" {
+                    sudo apt update
+                    sudo apt install build-essential zlib1g-dev libncurses5-dev libgdbm-dev libssl-dev libreadline-dev libffi-dev libsqlite3-dev libbz2-dev tk-dev -y
+                }
+                "alpine" {
+                    sudo apk add --update --no-cache alpine-sdk linux-headers zlib-dev bzip2-dev readline-dev sqlite-dev openssl-dev tk-dev libffi-dev
+                }
+                "fedora" {
+                    sudo yum groupinstall "Development Tools" -y
+                    sudo yum install zlib-devel bzip2-devel readline-devel sqlite-devel openssl-devel tk-devel libffi-devel -y
+                }
+                "centos" {
+                    sudo yum groupinstall "Development Tools" -y
+                    sudo yum install zlib-devel bzip2-devel readline-devel sqlite-devel openssl-devel tk-devel libffi-devel -y
+                }
+                default {
+                    Write-Error "Unsupported Linux distribution for building Python"
+                    exit 1
+                }
+            }
+            Invoke-WebRequest -Uri https://www.python.org/ftp/python/3.8.18/Python-3.8.18.tgz
+            tar -xvf Python-3.8.18.tgz
+            $current_working_dir = (Get-Location).Path
+            Set-Location -LiteralPath "Python-3.8.18" -ErrorAction Stop
+            sudo ./configure --enable-optimizations
+            sudo make -j $(nproc)
+            sudo make altinstall
+            Set-Location -LiteralPath $current_working_dir
+        }
+    } else {
+        Write-Host "Cannot determine Linux distribution."
+        exit 1
+    }
 }
 
 function Python-Install-Windows {
@@ -295,111 +430,7 @@ function Find-Python {
                     }
                 }
             } elseif ( (Get-OS) -eq "Linux" ) {
-                if (Test-Path "/etc/os-release") {
-                    $osInfo = Get-Content "/etc/os-release" -Raw
-                    if ($osInfo -match 'ID=(.*)') {
-                        $distro = $Matches[1].Trim('"')
-                    }
-                    if ($osInfo -match 'VERSION_ID=(.*)') {
-                        $versionId = $Matches[1].Trim('"')
-                    }
-                    
-                    try {
-                        switch ($distro) {
-                            "debian" {
-                                sudo apt update
-                                sudo apt install python3 -y
-                                sudo apt install python3-dev -y
-                                sudo apt install python3-venv -y
-                                sudo apt install python3-pip -y
-                                break
-                            }
-                            "ubuntu" {
-                                sudo apt install python3 -y
-                                sudo apt install python3-dev -y
-                                sudo apt install python3-venv -y
-                                sudo apt install python3-pip -y
-                                break
-                            }
-                            "alpine" {
-                                sudo apk update
-                                sudo apk add --update --no-cache python3
-                                ln -sf python3 /usr/bin/python
-                                python3 -m ensurepip
-                                pip3 install --no-cache --upgrade pip setuptools
-                                break
-                            }
-                            "fedora" {
-                                sudo dnf update
-                                sudo dnf install python3 -y
-                                sudo dnf install python3-pip -y
-                                sudo dnf install python3-venv -y
-                                break
-                            }
-                            "centos" {
-                                sudo yum update
-                                if ( $versionId -eq "7" ) {
-                                    sudo yum install epel-release -y
-                                }
-                                sudo yum install python3 -y
-                                sudo yum install python3-pip
-                                sudo yum install python3-venv
-                                break
-                            }
-                            default {
-                                Write-Error "Unsupported Linux distribution for package manager install of Python."
-                            }
-                        }
-                        Find-Python -intrnal
-                        if ( $global:pythonInstallPath -eq "" ) {
-                            throw "Python not found/installed"
-                        }
-                    } catch {
-                        $userInput = Read-Host "Could not install python from your package manager, would you like to attempt to build from source instead? (y/N)"
-                        if ( $userInput -ne "Y" -and $userInput -ne "y" ) {
-                            Write-Host "Press any key to exit..."
-                            $null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
-                            exit 1
-                        }
-                        # Fallback mechanism for each distribution
-                        switch ($distro) {
-                            "debian" {
-                                sudo apt update
-                                sudo apt install build-essential zlib1g-dev libncurses5-dev libgdbm-dev libssl-dev libreadline-dev libffi-dev libsqlite3-dev libbz2-dev tk-dev -y
-                            }
-                            "ubuntu" {
-                                sudo apt update
-                                sudo apt install build-essential zlib1g-dev libncurses5-dev libgdbm-dev libssl-dev libreadline-dev libffi-dev libsqlite3-dev libbz2-dev tk-dev -y
-                            }
-                            "alpine" {
-                                sudo apk add --update --no-cache alpine-sdk linux-headers zlib-dev bzip2-dev readline-dev sqlite-dev openssl-dev tk-dev libffi-dev
-                            }
-                            "fedora" {
-                                sudo yum groupinstall "Development Tools" -y
-                                sudo yum install zlib-devel bzip2-devel readline-devel sqlite-devel openssl-devel tk-devel libffi-devel -y
-                            }
-                            "centos" {
-                                sudo yum groupinstall "Development Tools" -y
-                                sudo yum install zlib-devel bzip2-devel readline-devel sqlite-devel openssl-devel tk-devel libffi-devel -y
-                            }
-                            default {
-                                Write-Error "Unsupported Linux distribution for building Python"
-                                exit 1
-                            }
-                        }
-                        Invoke-WebRequest -Uri https://www.python.org/ftp/python/3.8.18/Python-3.8.18.tgz
-                        tar -xvf Python-3.8.18.tgz
-                        $current_working_dir = (Get-Location).Path
-                        Set-Location -LiteralPath "Python-3.8.18" -ErrorAction Stop
-                        sudo ./configure --enable-optimizations
-                        sudo make -j $(nproc)
-                        sudo make altinstall
-                        Set-Location -LiteralPath $current_working_dir
-                    }
-                } else {
-                    Write-Host "Cannot determine Linux distribution."
-                    exit 1
-                }
+                Install-Linux-Deps
             } elseif ( (Get-OS) -eq "Mac" ) {
                 & bash -c "brew install python@3.8" 2>&1 | Write-Output
             }
@@ -409,11 +440,13 @@ function Find-Python {
     }
 }
 
-$venvPath = "$repoRootPath$pathSep.venv"
-$pythonExePath = ""
+$venvPath = $repoRootPath + $pathSep + $venv_name
 $findVenvExecutable = $true
 if (Test-Path $venvPath -ErrorAction SilentlyContinue) {
-    Write-Host "Found existing .venv at '$venvPath'"
+    Write-Host "Found existing python virtual environment at '$venvPath'"
+} elseif (Get-ChildItem Env:VIRTUAL_ENV -ErrorAction SilentlyContinue) {  # Check if a venv is already activated
+    $venvPath = $env:VIRTUAL_ENV
+    Write-Host "A virtual environment is currently activated: $venvPath"
 } else {
     Find-Python
     if ( $global:pythonInstallPath -eq "" ) {
