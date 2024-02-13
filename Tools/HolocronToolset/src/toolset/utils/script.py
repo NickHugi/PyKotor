@@ -77,7 +77,12 @@ def decompileScript(compiled_bytes: bytes, tsl: bool, installation_path: Path) -
         if extCompiler.get_info().name != "TSLPatcher":
             # Set the registry temporarily so nwnnsscomp doesn't fail with 'Error: Couldn't initialize the NwnStdLoader'
             if ProcessorArchitecture.from_os() == ProcessorArchitecture.BIT_64:
-                orig_regkey_path = r"HKEY_LOCAL_MACHINE\SOFTWARE\WOW6432Node\BioWare\SW\KOTOR"
+                if tsl:
+                    orig_regkey_path = r"HKEY_LOCAL_MACHINE\SOFTWARE\WOW6432Node\LucasArts\KotOR2"
+                else:
+                    orig_regkey_path = r"HKEY_LOCAL_MACHINE\SOFTWARE\WOW6432Node\BioWare\SW\KOTOR"
+            elif tsl:
+                orig_regkey_path = r"HKEY_LOCAL_MACHINE\SOFTWARE\LucasArts\KotOR2"
             else:
                 orig_regkey_path = r"HKEY_LOCAL_MACHINE\SOFTWARE\BioWare\SW\KOTOR"
 
@@ -179,7 +184,12 @@ def _compile_windows(
         if extCompiler.get_info().name != "TSLPatcher":
             # Set the registry temporarily so nwnnsscomp doesn't fail with 'Error: Couldn't initialize the NwnStdLoader'
             if ProcessorArchitecture.from_os() == ProcessorArchitecture.BIT_64:
-                orig_regkey_path = r"HKEY_LOCAL_MACHINE\SOFTWARE\WOW6432Node\BioWare\SW\KOTOR"
+                if tsl:
+                    orig_regkey_path = r"HKEY_LOCAL_MACHINE\SOFTWARE\WOW6432Node\LucasArts\KotOR2"
+                else:
+                    orig_regkey_path = r"HKEY_LOCAL_MACHINE\SOFTWARE\WOW6432Node\BioWare\SW\KOTOR"
+            elif tsl:
+                orig_regkey_path = r"HKEY_LOCAL_MACHINE\SOFTWARE\LucasArts\KotOR2"
             else:
                 orig_regkey_path = r"HKEY_LOCAL_MACHINE\SOFTWARE\BioWare\SW\KOTOR"
 
