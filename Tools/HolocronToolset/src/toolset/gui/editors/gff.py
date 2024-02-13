@@ -413,7 +413,7 @@ class GFFEditor(Editor):
                 self.ui.lineEdit.setText(item.data(_VALUE_NODE_ROLE).get())
             elif item.data(_TYPE_NODE_ROLE) == GFFFieldType.String:
                 self.ui.pages.setCurrentWidget(self.ui.textPage)
-                self.ui.textEdit.setPlainText(item.data(_VALUE_NODE_ROLE))
+                self.ui.textEdit.setPlainText(str(item.data(_VALUE_NODE_ROLE)))
             elif item.data(_TYPE_NODE_ROLE) == GFFFieldType.Struct:
                 set_widget(-1, 0xFFFFFFFF, item)
             elif item.data(_TYPE_NODE_ROLE) == GFFFieldType.List:
@@ -709,18 +709,21 @@ class GFFEditor(Editor):
         parent.appendRow(item)
         self.refreshItemText(item)
 
+    def addNode(self, item: QStandardItem):
+        """Add a node from the tree model.
+
+        Args:
+        ----
+            item: The item to add
+        """
+        self.insertNode(item, "New Struct", GFFFieldType.Struct, GFFStruct())
+
     def removeNode(self, item: QStandardItem):
         """Remove a node from the tree model.
 
         Args:
         ----
             item: The item to remove
-
-        Processing Logic:
-        ----------------
-            - Get the parent item of the item to remove
-            - Remove the item's row from the parent
-            - This removes the item from the model.
         """
         item.parent().removeRow(item.row())
 
@@ -766,7 +769,7 @@ class GFFEditor(Editor):
             menu = QMenu(self)
 
             if item.data(_TYPE_NODE_ROLE) == GFFFieldType.List:
-                menu.addAction("Add Struct").triggered.connect()
+                menu.addAction("Add Struct").triggered.connect(lambda: self.addNode(item))
             elif item.data(_TYPE_NODE_ROLE) in [GFFFieldType.Struct, None]:
                 self._build_context_menu_gff_struct(menu, item)
             else:
