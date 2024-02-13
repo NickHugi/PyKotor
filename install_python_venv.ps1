@@ -154,7 +154,7 @@ function Install-Linux-Deps {
                     python3.8 --version
                 }
                 "fedora" {
-                    sudo dnf update
+                    sudo dnf update -y
                     sudo dnf install python3 -y
                     sudo dnf install python3-pip -y
                     sudo dnf install python3-venv -y
@@ -167,8 +167,8 @@ function Install-Linux-Deps {
                         sudo yum install epel-release -y
                     }
                     sudo yum install python3 -y
-                    sudo yum install python3-pip
-                    sudo yum install python3-venv
+                    sudo yum install python3-pip -y
+                    sudo yum install python3-venv -y
                     break
                 }
                 "arch" {
