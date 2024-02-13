@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import base64
 import contextlib
 import ctypes
 import inspect
@@ -75,7 +76,7 @@ def updater_process(
         )
     except Exception as e:
         with Path("errorlog.txt").open("a") as f:
-            f.write(format_exception_with_variables(e, ___message___="Updater process encountered an error"))
+            f.write(format_exception_with_variables(e, message="Updater process encountered an error"))
     finally:
         sys.exit()
 
@@ -105,7 +106,7 @@ def _write_update_after_main_closes(
     print("Restarting newly-updated holopatcher application.")
     pid = None
     if platform.system() == "Windows" or os.name == "nt":
-        command = f'start "" "{str(temp_filepath)}"'
+        command = f'start "" "{temp_filepath}"'
         os.system(command)
     else:
         proc = subprocess.Popen(["/bin/sh", "-c", str(holopatcher_filepath)], preexec_fn=os.setsid)
