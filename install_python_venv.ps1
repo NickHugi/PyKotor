@@ -215,7 +215,6 @@ function Install-Linux-Deps {
                 }
                 default {
                     Write-Error "Unsupported Linux distribution for building Python"
-                    exit 1
                 }
             }
             Invoke-WebRequest -Uri https://www.python.org/ftp/python/3.8.18/Python-3.8.18.tgz
