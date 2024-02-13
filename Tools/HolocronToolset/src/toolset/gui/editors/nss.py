@@ -163,7 +163,7 @@ class NSSEditor(Editor):
             self.ui.codeEdit.setPlainText(data.decode("windows-1252", errors="ignore"))
         elif restype == ResourceType.NCS:
             try:
-                source = decompileScript(data, self._installation.tsl)
+                source = decompileScript(data, self._installation.tsl, self._installation.path())
                 self.ui.codeEdit.setPlainText(source)
             except ValueError as e:
                 QMessageBox(QMessageBox.Critical, "Decompilation Failed", str(e)).exec_()

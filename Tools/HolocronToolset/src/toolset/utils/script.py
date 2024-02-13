@@ -21,7 +21,7 @@ from utility.misc import ProcessorArchitecture
 from utility.system.path import Path
 
 
-def decompileScript(compiled: bytes, tsl: bool) -> str:
+def decompileScript(compiled_bytes: bytes, tsl: bool, installation_path: Path) -> str:
     """Returns the NSS bytes of a decompiled script. If no NCS Decompiler is selected, prompts the user to find the executable.
 
     Current implementation copies the NCS to a temporary directory (configured in settings), decompiles it there,
@@ -30,13 +30,13 @@ def decompileScript(compiled: bytes, tsl: bool) -> str:
 
     Args:
     ----
-        compiled: The bytes of the compiled script.
+        compiled_bytes: The bytes of the compiled script.
         tsl: Compile the script for TSL instead of KotOR.
 
     Raises:
     ------
         OSError: If an error occured writing or loading from the temp directory.
-        ValueError: If the source script failed to compile.
+        ValueError: If the compiled bytes failed to decompile.
         NoConfigurationSet: If no path has been set for the temp directory or NSS decompiler.
 
     Returns:
@@ -68,19 +68,35 @@ def decompileScript(compiled: bytes, tsl: bool) -> str:
     tempscript_filestem = f"tempscript_{rand_id}"
     tempCompiledPath = extract_path / f"{tempscript_filestem}.ncs"
     tempDecompiledPath = extract_path / f"{tempscript_filestem}_decompiled.txt"
-    BinaryWriter.dump(tempCompiledPath, compiled)
+    BinaryWriter.dump(tempCompiledPath, compiled_bytes)
+    orig_regkey_value = None
 
     try:
         game = Game.K2 if tsl else Game.K1
-        ExternalNCSCompiler(ncs_decompiler_path).decompile_script(tempCompiledPath, tempDecompiledPath, game)
+        extCompiler = ExternalNCSCompiler(ncs_decompiler_path)
+        if extCompiler.get_info().name != "TSLPatcher":
+            # Set the registry temporarily so nwnnsscomp doesn't fail with 'Error: Couldn't initialize the NwnStdLoader'
+            if ProcessorArchitecture.from_os() == ProcessorArchitecture.BIT_64:
+                orig_regkey_path = r"HKEY_LOCAL_MACHINE\SOFTWARE\WOW6432Node\BioWare\SW\KOTOR"
+            else:
+                orig_regkey_path = r"HKEY_LOCAL_MACHINE\SOFTWARE\BioWare\SW\KOTOR"
+
+            orig_regkey_value = resolve_reg_key_to_path(orig_regkey_path, "Path")
+            set_registry_key_value(orig_regkey_path, "Path", str(installation_path))
+        stdout, stderr = extCompiler.decompile_script(tempCompiledPath, tempDecompiledPath, game)
+        print(stdout, "\n", stderr)
+        if stderr:
+            raise ValueError(stderr)  # noqa: TRY301
         return BinaryReader.load_file(tempDecompiledPath).decode(encoding="windows-1252")
     except Exception as e:  # noqa: BLE001
         with Path("errorlog.txt").open("w") as f:
             msg = format_exception_with_variables(e)
             print(msg, sys.stderr)  # noqa: T201
             f.write(msg)
-
-    return ""
+        raise
+    finally:
+        if orig_regkey_value is not None and orig_regkey_path is not None:
+            set_registry_key_value(orig_regkey_path, "Path", orig_regkey_value)
 
 
 def compileScript(source: str, tsl: bool, installation_path: Path) -> bytes | None:
