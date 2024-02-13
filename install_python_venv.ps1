@@ -144,12 +144,14 @@ function Install-Linux-Deps {
                         sudo dnf install openssl-devel bzip2-devel libffi-devel wget -y
                         sudo dnf groupinstall "Development Tools" -y
                         gcc --version
-                        wget https://www.python.org/ftp/python/3.8.9/Python-3.8.9.tgz
-                        tar -xf Python-3.8.9.tgz
-                        Set-Location "Python-3.8.9"
+                        Invoke-WebRequest -Uri https://www.python.org/ftp/python/3.8.18/Python-3.8.18.tgz
+                        tar -xf Python-3.8.18.tgz
+                        $current_working_dir = (Get-Location).Path
+                        Set-Location "Python-3.8.18" -ErrorAction Stop
                         ./configure --enable-optimizations --with-ensurepip=install
                         make
                         sudo make install
+                        Set-Location -LiteralPath $current_working_dir
                     }
                     python3.8 --version
                 }
