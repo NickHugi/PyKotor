@@ -138,7 +138,7 @@ class ERFEditor(Editor):
                 QMessageBox.Critical,
                 "Unable to load file",
                 "The file specified is not a MOD/ERF type file.",
-                self,
+                parent=self,
             ).show()
 
     def build(self) -> tuple[bytes, bytes]:
