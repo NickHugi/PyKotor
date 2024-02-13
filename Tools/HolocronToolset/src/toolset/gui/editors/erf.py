@@ -200,7 +200,7 @@ class ERFEditor(Editor):
         self.ui.refreshButton.setEnabled(True)
 
         data = self.build()
-        self._revert = data
+        self._revert = data[0]
 
         with self._filepath.open("wb") as file:
             file.write(data[0])
