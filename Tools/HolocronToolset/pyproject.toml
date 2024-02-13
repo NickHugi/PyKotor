@@ -105,6 +105,7 @@ ignore = [
     "D213",     # Multi-line docstring summary should start at the second line
 #    "D400",     # First line should end with a period
     "D401",     # First line of docstring should be in imperative mood
+    "D413",     # Missing blank line after last section 'xyz'
 #    "D403",     # First word of the first line should be capitalized: {} -> {}
 #    "D404",     # First word of the docstring should not be "This"
     "D417",     # Missing argument description in the docstring for {definition}: {name}
@@ -121,7 +122,7 @@ ignore = [
 #    "S101",     # Use of assert detected
 #    "S314",     # Using `xml` to parse untrusted data is known to be vulnerable to XML attacks; use `defusedxml` equivalents
 #    "S605",     # Starting a process with a shell, possible injection detected
-    "SLF001",   # Private member accessed
+#    "SLF001",   # Private member accessed
 #    "T201",     # `print` found
 #
 # According to ruff documentation, the following rules should be avoided when using its formatter:

@@ -79,7 +79,7 @@ class RIM:
 
         Args:
         ----
-            resname: The resref name.
+            resname: The resource reference filename.
             restype: The resource type.
             data: The new resource data.
         """
@@ -103,7 +103,7 @@ class RIM:
 
         Args:
         ----
-            resname: The resref name.
+            resname: The resource reference filename.
             restype: The resource type.
 
         Returns:
@@ -125,7 +125,7 @@ class RIM:
 
         Args:
         ----
-            resname: The resref name.
+            resname: The resource reference filename.
             restype: The resource type.
         """
         self._resources = [

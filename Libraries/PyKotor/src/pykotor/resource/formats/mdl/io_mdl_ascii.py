@@ -18,7 +18,7 @@ class MDLAsciiReader:
         size: int = 0,
     ):
         self._mdl: MDL | None = None
-        self._reader = BinaryReader.from_auto(source, offset)
+        self._reader: BinaryReader = BinaryReader.from_auto(source, offset)
 
     def load(
         self,

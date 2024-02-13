@@ -3,7 +3,6 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from ply import yacc
-
 from pykotor.resource.formats.ncs.compiler.classes import (
     AdditionAssignment,
     Assignment,
@@ -11,7 +10,7 @@ from pykotor.resource.formats.ncs.compiler.classes import (
     BreakStatement,
     CodeBlock,
     CodeRoot,
-    CompileException,
+    CompileError,
     ConditionalBlock,
     ConditionAndBlock,
     ContinueStatement,
@@ -56,11 +55,10 @@ from pykotor.resource.formats.ncs.compiler.classes import (
     WhileLoopBlock,
 )
 from pykotor.resource.formats.ncs.compiler.lexer import NssLexer
-from pykotor.tools.path import CaseAwarePath
+from utility.system.path import Path
 
 if TYPE_CHECKING:
     from ply.lex import LexToken
-
     from pykotor.common.script import ScriptConstant, ScriptFunction
 
 
@@ -70,32 +68,24 @@ class NssParser:
         functions: list[ScriptFunction],
         constants: list[ScriptConstant],
         library: dict[str, bytes],
-        library_lookup: list[str] | list[CaseAwarePath] | str | CaseAwarePath | None,
-        errorlog=yacc.NullLogger(),
+        library_lookup: list[str | Path] |  list[str] | list[Path] | str | Path | None,
+        errorlog: yacc.NullLogger | None = yacc.NullLogger(),  # noqa: B008
+        debug=False,  # noqa: FBT002
     ):
         self.parser = yacc.yacc(
             module=self,
             errorlog=errorlog,
             write_tables=False,
-            debug=False,
-            debuglog=yacc.NullLogger(),
+            debug=debug,
         )
         self.functions: list[ScriptFunction] = functions
         self.constants: list[ScriptConstant] = constants
         self.library: dict[str, bytes] = library
-        self.library_lookup: list[CaseAwarePath] = []
-        if not library_lookup:
-            pass
-        elif isinstance(library_lookup, list):
-            for library_path in library_lookup:
-                if isinstance(library_path, CaseAwarePath):
-                    self.library_lookup.append(library_path)
-                elif library_path:
-                    self.library_lookup.append(CaseAwarePath(library_path))
-        elif isinstance(library_lookup, CaseAwarePath):
-            self.library_lookup = [library_lookup]
-        else:
-            self.library_lookup = [CaseAwarePath(library_lookup)]
+        self.library_lookup: list[Path] = []
+        if library_lookup:
+            if not isinstance(library_lookup, list):
+                library_lookup = [library_lookup]
+            self.library_lookup = [Path.pathify(item) for item in library_lookup]
 
     tokens: list[str] = NssLexer.tokens
     literals: list[str] = NssLexer.literals
@@ -116,10 +106,10 @@ class NssParser:
     )
 
     def p_error(self, p: LexToken):
-        msg = f"Syntax error at line {p.lineno}, position {p.lexpos}, token='{p.value}'"  # type: ignore
-        raise CompileException(msg)
+        msg = f"Syntax error at line {p.lineno}, position {p.lexpos}, token='{p.value}'"
+        raise CompileError(msg)
 
-    def p_code_root(self, p):
+    def p_code_root(self, p: LexToken):
         """
         code_root : code_root code_root_object
                   |
@@ -232,7 +222,7 @@ class NssParser:
             block: CodeBlock = p[1]
             block.add(p[2])
             p[0] = block
-        elif len(p) == 2:
+        elif len(p) == 2:  # sourcery skip: class-extract-method
             block = CodeBlock()
             block.add(p[1])
             p[0] = block

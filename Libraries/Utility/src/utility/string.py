@@ -19,11 +19,12 @@ def ireplace(original: str, target: str, replacement: str) -> str:
     target_length: int = len(target)
 
     # Convert the target to lowercase for case-insensitive comparison
-    target_lower: str = target.casefold()
+    target_lower: str = target.lower()
+    original_lower: str = original.lower()
 
     while i < len(original):
         # If a potential match is found
-        if original[i : i + target_length].casefold() == target_lower:
+        if original_lower[i : i + target_length] == target_lower:
             # Add the replacement to the result
             result += replacement
             # Skip the characters of the target
@@ -247,12 +248,14 @@ class WrappedStr(str):  # (metaclass=StrType):
 
     def __init__(
         self,
-        __content: Self | str = "",
+        content: Self | str = "",
     ):
-        if __content is None:
+        if content is None:
             msg = f"Cannot initialize {self.__class__.__name__}(None), expected a str-like argument"
             raise RuntimeError(msg)
-        self._content: str = str(__content)
+        if isinstance(content, WrappedStr):
+            content = content._content
+        self._content: str = content
 
     @classmethod
     def maketrans(
@@ -871,16 +874,18 @@ class CaseInsensitiveWrappedStr(WrappedStr):
         cls,
         item,
     ) -> str:
-        if isinstance(item, (WrappedStr, str)):
+        if isinstance(item, WrappedStr):
+            return str(item._content).casefold()
+        if isinstance(item, str):
             return str(item).casefold()
         return item
 
     def __init__(
         self,
-        __content: WrappedStr | str,
+        content: str | WrappedStr,
     ):
-        super().__init__(__content)
-        self._lower_content: str = str(self._content).casefold()
+        super().__init__(content)
+        self._lower_content: str = str(content).casefold()
 
     def __contains__(
         self,

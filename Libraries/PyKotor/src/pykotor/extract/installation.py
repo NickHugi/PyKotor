@@ -12,6 +12,7 @@ from pykotor.extract.capsule import Capsule
 from pykotor.extract.chitin import Chitin
 from pykotor.extract.file import FileResource, LocationResult, ResourceIdentifier, ResourceResult
 from pykotor.extract.talktable import StringResult, TalkTable
+from pykotor.resource.formats.erf.erf_data import ERFType
 from pykotor.resource.formats.gff import read_gff
 from pykotor.resource.formats.tpc import TPC, read_tpc
 from pykotor.resource.type import ResourceType
@@ -19,9 +20,7 @@ from pykotor.tools.misc import is_capsule_file, is_erf_file, is_mod_file, is_rim
 from pykotor.tools.path import CaseAwarePath
 from pykotor.tools.sound import fix_audio
 from utility.error_handling import format_exception_with_variables
-from utility.misc import remove_duplicates
-from utility.path import Path, PurePath
-from utility.string import CaseInsensitiveWrappedStr
+from utility.system.path import Path, PurePath
 
 if TYPE_CHECKING:
     import os
@@ -159,10 +158,10 @@ class Installation:
         self._talktable: TalkTable = TalkTable(self._path / "dialog.tlk")
         self._female_talktable: TalkTable = TalkTable(self._path / "dialogf.tlk")
 
-        self._modules: CaseInsensitiveDict[list[FileResource]] = CaseInsensitiveDict()
-        self._lips: CaseInsensitiveDict[list[FileResource]] = CaseInsensitiveDict()
-        self._texturepacks: CaseInsensitiveDict[list[FileResource]] = CaseInsensitiveDict()
-        self._rims: CaseInsensitiveDict[list[FileResource]] = CaseInsensitiveDict()
+        self._modules: dict[str, list[FileResource]] = {}
+        self._lips: dict[str, list[FileResource]] = {}
+        self._texturepacks: dict[str, list[FileResource]] = {}
+        self._rims: dict[str, list[FileResource]] = {}
 
         self._override: dict[str, list[FileResource]] = {}
 
@@ -171,29 +170,25 @@ class Installation:
         self._streamsounds: list[FileResource] = []
         self._streamwaves: list[FileResource] = []
         self._game: Game | None = None
+        self.load()
 
-        self._initialized = False
-
-    def reload_all(self):
+    def load(self):
         self.load_chitin()
         self.load_lips()
         self.load_modules()
         self.load_override()
-        if self.game().is_k1():
+        if self.game() == Game.K1:
             self.load_rims()
         self.load_streammusic()
         self.load_streamsounds()
-        if self.game().is_k1():
+        if self.game() == Game.K1:
             self.load_streamwaves()
-        elif self.game().is_k2():
+        elif self.game() == Game.K2:
             self.load_streamvoice()
         self.load_textures()
-        print(f"Finished loading the installation from {self._path}")
-        self._initialized = True
+        print(f"Finished loading the installation from {self._path!s}")
 
     def __iter__(self) -> Generator[FileResource, Any, None]:
-        if not self._initialized:
-            self.reload_all()
         def generator() -> Generator[FileResource, Any, None]:
             yield from self._chitin
             yield from self._streammusic
@@ -212,7 +207,7 @@ class Installation:
             tlk_path = self._path / "dialog.tlk"
             yield FileResource("dialog", ResourceType.TLK, tlk_path.stat().st_size, 0, tlk_path)
             female_tlk_path = self._path / "dialogf.tlk"
-            if female_tlk_path.safe_exists():
+            if female_tlk_path.safe_isfile():
                 yield FileResource("dialogf", ResourceType.TLK, female_tlk_path.stat().st_size, 0, female_tlk_path)
         return generator()
 
@@ -290,7 +285,7 @@ class Installation:
         return self._find_resource_folderpath("streamsounds", optional=True)
 
     def streamwaves_path(self) -> CaseAwarePath:
-        """Returns the path to 'streamwaves' folder of the Installation. This method maintains the case of the foldername.
+        """Returns the path to 'streamwaves' or 'streamvoice' folder of the Installation. This method maintains the case of the foldername.
 
         In the first game, this folder is named 'streamwaves'
         In the second game, this folder has been renamed to 'streamvoice'.
@@ -302,14 +297,14 @@ class Installation:
         return self._find_resource_folderpath(("streamwaves", "streamvoice"))
 
     def streamvoice_path(self) -> CaseAwarePath:
-        """Returns the path to 'streamwaves' or 'streamvoice' folder of the Installation. This method maintains the case of the foldername.
+        """Returns the path to 'streamvoice' or 'streamwaves' folder of the Installation. This method maintains the case of the foldername.
 
         In the first game, this folder is named 'streamwaves'
         In the second game, this folder has been renamed to 'streamvoice'.
 
         Returns
         -------
-            The path to the streamwaves/streamvoice folder.
+            The path to the streamvoice/streamwaves folder.
         """
         return self._find_resource_folderpath(("streamvoice", "streamwaves"))
 
@@ -338,12 +333,11 @@ class Installation:
             - Raises FileNotFoundError if no path is found and optional is False.
         """
         try:
-            resource_path = self._path
             if isinstance(folder_names, str):  # make a tuple
                 folder_names = (folder_names,)
             for folder_name in folder_names:
-                resource_path = CaseAwarePath(self._path, folder_name)
-                if resource_path.is_dir():
+                resource_path: CaseAwarePath = self._path / folder_name
+                if resource_path.safe_isdir():
                     return resource_path
         except Exception as e:  # noqa: BLE001
             msg = f"An error occurred while finding the '{' or '.join(folder_names)}' folder in '{self._path}'."
@@ -364,60 +358,73 @@ class Installation:
         capsule_check: Callable | None = None,
         *,
         recurse: bool = False,
-    ) -> CaseInsensitiveDict[list[FileResource]] | list[FileResource]:
+    ) -> dict[str, list[FileResource]] | list[FileResource]:
         """Load resources for a given path and store them in a new list/dict.
 
         Args:
         ----
-            path_method (os.PathLike | str): path for lookup.
+            path (os.PathLike | str): path for lookup.
             recurse (bool): whether to recurse into subfolders (default is False)
+            capsule_check (Callable returns bool or None): Determines whether to use a resource dict or resource list. If the check doesn't pass, the resource isn't added.
 
         Returns:
         -------
             list[FileResource]: The list where resources at the path have been stored.
              or
-            CaseInsensitiveDict[list[FileResource]]: A dict keyed by filename to the encapsulated resources
+            dict[str, list[FileResource]]: A dict keyed by filename to the encapsulated resources
         """
-        resources: CaseInsensitiveDict[list[FileResource]] | list[FileResource] = CaseInsensitiveDict() if capsule_check else []
+        resources: dict[str, list[FileResource]] | list[FileResource] = {} if capsule_check else []
 
-        if not path.exists():
-            print(f"The '{path.name}' folder did not exist when loading the installation at '{self._path}', skipping...")
+        r_path = Path(str(path))
+        if not r_path.safe_isdir():
+            print(f"The '{r_path.name}' folder did not exist when loading the installation at '{self._path}', skipping...")
             return resources
 
-        files_list: list[CaseAwarePath] = list(
-            path.rglob("*")
+        print(f"Loading '{r_path.name}' folder from installation...")
+        files_iter: Generator[Path, None, None] = (
+            r_path.safe_rglob("*")
             if recurse
-            else path.iterdir(),
+            else r_path.safe_iterdir()
         )
-        for file in files_list:
-            if capsule_check and capsule_check(file):
-                resources[file.name] = list(Capsule(file))  # type: ignore[assignment, call-overload]
-            else:
-                resname, restype = ResourceIdentifier.from_path(file)
-                if restype.is_invalid:
-                    continue
-                resource = FileResource(
-                    resname,
-                    restype,
-                    file.stat().st_size,
-                    0,
-                    file,
-                )
-                resources.append(resource)  # type: ignore[assignment, call-overload, union-attr]
-        if not resources or not files_list:
-            print(f"No resources found at '{path}' when loading the installation, skipping...")
-        else:
-            print(f"Loading '{path.name}' folder from installation...")
+        file: Path | None = None
+        for file in files_iter:
+            try:
+                if capsule_check:
+                    if not capsule_check(file):
+                        continue
+                    resources[file.name] = list(Capsule(file))  # type: ignore[assignment, call-overload]
+
+                else:
+                    resname, restype = ResourceIdentifier.from_path(file)
+                    if restype.is_invalid:
+                        continue
+
+                    resource = FileResource(
+                        resname,
+                        restype,
+                        file.stat().st_size,
+                        0,
+                        file,
+                    )
+                    resources.append(resource)  # type: ignore[assignment, call-overload, union-attr]
+            except Exception as e:  # noqa: BLE001
+                with Path("errorlog.txt").open("a") as f:
+                    f.write(format_exception_with_variables(e))
+        if not resources or file is None:
+            print(f"No resources found at '{r_path}' when loading the installation, skipping...")
         return resources
 
     def load_chitin(self):
         """Reloads the list of resources in the Chitin linked to the Installation."""
         chitin_path: CaseAwarePath = self._path / "chitin.key"
-        if not chitin_path.safe_exists():
+        chitin_exists: bool | None = chitin_path.safe_isfile()
+        if chitin_exists:
+            print(f"Loading BIFs from chitin.key at '{self._path}'...")
+            self._chitin = list(Chitin(key_path=chitin_path))
+        elif chitin_exists is False:
             print(f"The chitin.key file did not exist at '{self._path}' when loading the installation, skipping...")
-            return
-        print("Load chitin...")
-        self._chitin = list(Chitin(key_path=chitin_path))
+        elif chitin_exists is None:
+            print(f"No permissions to the chitin.key file at '{self._path}' when loading the installation, skipping...")
 
     def load_lips(
         self,
@@ -434,10 +441,8 @@ class Installation:
 
         Args:
         ----
-            module: The filename of the module.
+            module: The filename of the module, including the extension.
         """
-        if not self._modules or module not in self._modules:
-            self.load_modules()
         self._modules[module] = list(Capsule(self.module_path() / module))
 
     def load_rims(
@@ -445,7 +450,6 @@ class Installation:
     ):
         """Reloads the list of module files in the rims folder linked to the Installation."""
         self._rims = self.load_resources(self.rims_path(), capsule_check=is_rim_file)  # type: ignore[assignment]
-        #self._rims.extend(self.load_resources(self.module_path(), capsule_check=is_rim_file))  # type: ignore[assignment]
 
     def load_textures(
         self,
@@ -475,7 +479,7 @@ class Installation:
             target_dirs = [override_path / directory]
             self._override[directory] = []
         else:
-            target_dirs = [f for f in override_path.rglob("*") if f.is_dir()]
+            target_dirs = [f for f in override_path.safe_rglob("*") if f.safe_isdir()]
             target_dirs.append(override_path)
             self._override = {}
 
@@ -508,7 +512,7 @@ class Installation:
     ):
         filepath: Path = Path.pathify(file)
         parent_folder = filepath.parent
-        rel_folderpath: str = str(filepath.parent.relative_to(self.override_path())) if parent_folder.name else "."
+        rel_folderpath: str = str(parent_folder.relative_to(self.override_path())) if parent_folder.name else "."
         if rel_folderpath not in self._override:
             self.load_override(rel_folderpath)
 
@@ -529,27 +533,19 @@ class Installation:
         else:
             override_list[override_list.index(resource)] = resource
 
-    def load_streammusic(
-        self,
-    ):
+    def load_streammusic(self):
         """Reloads the list of resources in the streammusic folder linked to the Installation."""
         self._streammusic = self.load_resources(self.streammusic_path())  # type: ignore[assignment]
 
-    def load_streamsounds(
-        self,
-    ):
+    def load_streamsounds(self):
         """Reloads the list of resources in the streamsounds folder linked to the Installation."""
         self._streamsounds = self.load_resources(self.streamsounds_path())  # type: ignore[assignment]
 
-    def load_streamwaves(
-        self,
-    ):
+    def load_streamwaves(self):
         """Reloads the list of resources in the streamwaves folder linked to the Installation."""
         self._streamwaves = self.load_resources(self._find_resource_folderpath("streamwaves"), recurse=True)  # type: ignore[assignment]
 
-    def load_streamvoice(
-        self,
-    ):
+    def load_streamvoice(self):
         """Reloads the list of resources in the streamvoice folder linked to the Installation."""
         self._streamwaves = self.load_resources(self._find_resource_folderpath("streamvoice"), recurse=True)  # type: ignore[assignment]
 
@@ -563,11 +559,9 @@ class Installation:
         -------
             A list of FileResources.
         """
-        if not self._chitin:
-            self.load_chitin()
         return self._chitin[:]
 
-    def modules_list(self) -> list[CaseInsensitiveWrappedStr]:
+    def modules_list(self) -> list[str]:
         """Returns the list of module filenames located in the modules folder linked to the Installation.
 
         Module filenames are cached and require to be refreshed after a file is added, deleted or renamed.
@@ -576,8 +570,6 @@ class Installation:
         -------
             A list of filenames.
         """
-        if not self._modules:
-            self.load_modules()
         return list(self._modules.keys())
 
     def module_resources(
@@ -592,16 +584,9 @@ class Installation:
         -------
             A list of FileResources.
         """
-        if not self._modules or filename and filename not in self._modules:
-            self.load_modules()
+        return self._modules[filename][:]
 
-        return (
-            self._modules[filename][:]
-            if filename
-            else [module_resource for module_filename in self._modules for module_resource in self._modules[module_filename]]
-        )
-
-    def lips_list(self) -> list[CaseInsensitiveWrappedStr]:
+    def lips_list(self) -> list[str]:
         """Returns the list of module filenames located in the lips folder linked to the Installation.
 
         Module filenames are cached and require to be refreshed after a file is added, deleted or renamed.
@@ -610,8 +595,6 @@ class Installation:
         -------
             A list of filenames.
         """
-        if not self._lips:
-            self.load_lips()
         return list(self._lips.keys())
 
     def lip_resources(
@@ -626,91 +609,15 @@ class Installation:
         -------
             A list of FileResources.
         """
-        if not self._lips or filename and filename not in self._lips:
-            self.load_lips()
+        return self._lips[filename][:]
 
-        return (
-            self._lips[filename][:]
-            if filename
-            else [lip_resource for lip_filename in self._lips for lip_resource in self._lips[lip_filename]]
-        )
-
-    def rims_list(self) -> list[CaseInsensitiveWrappedStr]:
-        """Returns the list of rim filenames located in the 'rims' and 'modules' folders linked to the Installation.
-
-        Rim filenames are cached and require to be refreshed after a file is added, deleted or renamed.
-
-        Returns
-        -------
-            A list of filenames.
-        """
-        if not self._rims and self.game() == Game.K1:
-            self.load_rims()
-        if not self._modules:
-            self.load_modules()
-
-        return [
-            *self._rims.keys(),
-            *[modules_rim_filename for modules_rim_filename in self._modules if is_rim_file(modules_rim_filename)],
-        ]
-
-    def rim_resources(
-        self,
-        filename: str | None = None,
-    ) -> list[FileResource]:
-        """Returns a shallow copy of the list of FileResources stored in the specified module file located in the 'rims' and 'modules' folders linked to the Installation.
-
-        RIM resources are cached and require a reload after the contents have been modified on disk.
-
-        Returns
-        -------
-            A list of FileResources.
-        """
-        queried_rim_resources: list[FileResource] = []
-        queried_module_rim_resources: list[FileResource] = []
-
-        if self.game() == Game.K1 and (
-            not self._rims
-            or filename and filename not in self._rims
-        ):
-            self.load_rims()
-
-            queried_rim_resources = (
-                self._rims[filename][:]
-                if filename
-                else [resource for rim_filename in self._rims if is_rim_file(rim_filename) for resource in self._rims[rim_filename]]
-            )
-
-        if filename and is_rim_file(filename):
-            if not self._modules:
-                self.load_modules()
-
-            queried_module_rim_resources = self._modules[filename][:]
-
-        elif not filename:
-            if not self._modules:
-                self.load_modules()
-
-            queried_module_rim_resources = [
-                resource
-                for modules_rim_filename in self._modules if is_rim_file(modules_rim_filename)
-                for resource in self._modules[modules_rim_filename]
-            ]
-
-        return [
-            *queried_rim_resources,
-            *queried_module_rim_resources,
-        ]
-
-    def texturepacks_list(self) -> list[CaseInsensitiveWrappedStr]:
+    def texturepacks_list(self) -> list[str]:
         """Returns the list of texture-pack filenames located in the texturepacks folder linked to the Installation.
 
         Returns
         -------
             A list of filenames.
         """
-        if not self._texturepacks:
-            self.load_textures()
         return list(self._texturepacks.keys())
 
     def texturepack_resources(
@@ -719,48 +626,13 @@ class Installation:
     ) -> list[FileResource]:
         """Returns a shallow copy of the list of FileResources stored in the specified module file located in the texturepacks folder linked to the Installation.
 
-        Texturepacks resources are cached and require a reload after the contents have been modified on disk.
+        Texturepack resources are cached and require a reload after the contents have been modified on disk.
 
         Returns
         -------
-            A list of FileResources.
+            A list of FileResources from the 'texturepacks' folder of the Installation.
         """
-        if not self._texturepacks or filename and filename not in self._texturepacks:
-            self.load_textures()
-
-        return (
-            self._texturepacks[filename][:]
-            if filename
-            else [texture_resource for texture_filename in self._texturepacks for texture_resource in self._texturepacks[texture_filename]]
-        )
-
-    def streamwaves_resources(self) -> list[FileResource]:
-        """Returns a list of FileResources stored in the streamwaves folder linked to the Installation.
-
-        Streamwaves resources are cached and require a reload after the contents have been modified on disk.
-        In the first game, this folder is named 'streamwaves'
-        In the second game, this folder has been renamed to 'streamvoice'.
-
-        Returns
-        -------
-            A list of FileResources from either the 'streamwaves' or 'streamvoice' folder, depending on the detected game.
-        """
-        if not self._streamwaves:
-            self.load_streamwaves()
-        return self._streamwaves
-
-    def streammusic_resources(self) -> list[FileResource]:
-        """Returns a list of FileResources stored in the streammusic folder linked to the Installation.
-
-        Streammusic resources are cached and require a reload after the contents have been modified on disk.
-
-        Returns
-        -------
-            A list of FileResources from either the 'streamwaves' or 'streamvoice' folder, depending on the detected game.
-        """
-        if not self._streammusic:
-            self.load_streammusic()
-        return self._streammusic
+        return self._texturepacks[filename][:]
 
     def override_list(self) -> list[str]:
         """Returns the list of subdirectories located in override folder linked to the Installation.
@@ -771,15 +643,13 @@ class Installation:
         -------
             A list of subfolder names in Override.
         """
-        if not self._override:
-            self.load_override()
         return list(self._override.keys())
 
     def override_resources(
         self,
         directory: str | None = None,
     ) -> list[FileResource]:
-        """Returns a list of FileResources stored in the specified subdirectory located in the override folder linked to the Installation.
+        """Returns a list of FileResources stored in the specified subdirectory located in the 'override' folder linked to the Installation.
 
         Override resources are cached and require a reload after the contents have been modified on disk.
 
@@ -787,14 +657,7 @@ class Installation:
         -------
             A list of FileResources.
         """
-        if not self._override or directory and directory not in self._override:
-            self.load_override()
-
-        return (
-            self._override[directory]
-            if directory
-            else [override_resource for ov_subfolder_name in self._override for override_resource in self._override[ov_subfolder_name]]
-        )
+        return self._override[directory]
 
     # endregion
 
@@ -820,8 +683,8 @@ class Installation:
         r_path: CaseAwarePath = CaseAwarePath.pathify(path)
 
         def check(x) -> bool:
-            file_path: CaseAwarePath = r_path.joinpath(x)
-            return bool(file_path.safe_exists())
+            c_path: CaseAwarePath = r_path.joinpath(x)
+            return c_path.safe_exists() is not False
 
         # Checks for each game
         game1_pc_checks: list[bool] = [
@@ -962,11 +825,11 @@ class Installation:
         return determine_highest_scoring_game()
 
     def game(self) -> Game:
-        """Determines the game (K1 or K2) for the given HTInstallation.
+        """Determines the game (K1 or K2) for the given Installation.
 
         Args:
         ----
-            self: The HTInstallation instance
+            self: The Installation instance
 
         Returns:
         -------
@@ -1157,31 +1020,6 @@ class Installation:
             folders=folders,
         )[query]
 
-    def load_search_locations(self, order: list[SearchLocation]):
-        if SearchLocation.OVERRIDE in order and not self._override:
-            self.load_override()
-        if SearchLocation.CHITIN in order and not self._chitin:
-            self.load_chitin()
-        if SearchLocation.LIPS in order and not self._lips:
-            self.load_lips()
-        if (SearchLocation.MODULES in order or SearchLocation.RIMS in order) and not self._modules:
-            self.load_modules()
-        if SearchLocation.MUSIC in order and not self._streammusic:
-            self.load_streammusic()
-        if SearchLocation.RIMS in order and not self._rims and self.game().is_k1():
-            self.load_rims()
-        if SearchLocation.SOUND in order and not self._streamsounds:
-            self.load_streamsounds()
-        if (
-            SearchLocation.TEXTURES_GUI in order
-            or SearchLocation.TEXTURES_TPA in order
-            or SearchLocation.TEXTURES_TPB in order
-            or SearchLocation.TEXTURES_TPC in order
-        ) and not self._texturepacks:
-            self.load_textures()
-        if SearchLocation.VOICE in order and not self._streamwaves:
-            self.load_streamvoice()
-
     def locations(
         self,
         queries: list[ResourceIdentifier] | set[ResourceIdentifier],
@@ -1211,17 +1049,17 @@ class Installation:
                 SearchLocation.MODULES,
                 SearchLocation.CHITIN,
             ]
-        self.load_search_locations(order)
+        queries = set(queries)
         capsules = [] if capsules is None else capsules
         folders = [] if folders is None else folders
 
         locations: dict[ResourceIdentifier, list[LocationResult]] = {}
-        for qinden in queries:
-            locations[qinden] = []
+        for qident in queries:
+            locations[qident] = []
 
-        def check_dict(values: dict[str, list[FileResource]] | CaseInsensitiveDict[list[FileResource]]):
-            for resources in values.values():
-                check_list(resources)
+        def check_dict(resource_dict: dict[str, list[FileResource]] | CaseInsensitiveDict[list[FileResource]]):
+            for resource_list in resource_dict.values():
+                check_list(resource_list)
 
         def check_list(values: list[FileResource]):
             # Index resources by identifier
@@ -1240,27 +1078,32 @@ class Installation:
             for capsule in values:
                 for query in queries:
                     resource: FileResource | None = capsule.info(*query)
-                    if resource is not None:
-                        location = LocationResult(
-                            resource.filepath(),
-                            resource.offset(),
-                            resource.size(),
-                        )
-                        locations[resource.identifier()].append(location)
+                    if resource is None:
+                        continue
+
+                    location = LocationResult(
+                        resource.filepath(),
+                        resource.offset(),
+                        resource.size(),
+                    )
+                    locations[resource.identifier()].append(location)
 
 
         def check_folders(values: list[Path]):
             for folder in values:
-                for file in folder.rglob("*"):
-                    if file.safe_isfile():
-                        identifier = ResourceIdentifier.from_path(file)
-                        if identifier in queries:
-                            location = LocationResult(
-                                file,
-                                0,
-                                file.stat().st_size,
-                            )
-                            locations[identifier].append(location)
+                for file in folder.safe_rglob("*"):
+                    if not file.safe_isfile():
+                        continue
+                    identifier = ResourceIdentifier.from_path(file)
+                    if identifier not in queries:
+                        continue
+
+                    location = LocationResult(
+                        filepath=file,
+                        offset=0,
+                        size=file.stat().st_size,
+                    )
+                    locations[identifier].append(location)
 
         function_map: dict[SearchLocation, Callable] = {
             SearchLocation.OVERRIDE: lambda: check_dict(self._override),
@@ -1353,69 +1196,61 @@ class Installation:
                 SearchLocation.TEXTURES_TPA,
                 SearchLocation.CHITIN,
             ]
-        self.load_search_locations(order)
-        resnames = remove_duplicates(resnames, case_insensitive=True)
+        case_resnames: list[str] = [resname.lower() for resname in resnames]
         capsules = [] if capsules is None else capsules
         folders = [] if folders is None else folders
 
         textures: CaseInsensitiveDict[TPC | None] = CaseInsensitiveDict()
         texture_types: list[ResourceType] = [ResourceType.TPC, ResourceType.TGA]
 
-        case_resnames: list[CaseInsensitiveWrappedStr] = []
         for resname in resnames:
             textures[resname] = None
-            case_resnames.append(CaseInsensitiveWrappedStr.cast(resname))
 
-        def decode_txi(txi_bytes: bytes) -> str:
+        def decode_txi(txi_bytes: bytes):
             return txi_bytes.decode("ascii", errors="ignore")
 
-        def get_txi_from_list(resname: CaseInsensitiveWrappedStr, resource_list: list[FileResource]) -> str:
+        def get_txi_from_list(resname: str, resource_list: list[FileResource]) -> str:
             txi_resource: FileResource | None = next(
                 (
                     resource
                     for resource in resource_list
-                    if resource.resname() == resname
-                    and resource.restype() == ResourceType.TXI
+                    if resource.resname() == resname and resource.restype() == ResourceType.TXI
                 ),
                 None,
             )
             return decode_txi(txi_resource.data()) if txi_resource is not None else ""
 
-        def check_dict(values: dict[str, list[FileResource]] | CaseInsensitiveDict[list[FileResource]]):
+        def check_dict(values: dict[str, list[FileResource]]):
             for resources in values.values():
                 check_list(resources)
 
         def check_list(resource_list: list[FileResource]):
             for resource in resource_list:
-                case_resname: CaseInsensitiveWrappedStr = CaseInsensitiveWrappedStr.cast(resource.resname())
-                if case_resname not in case_resnames:
-                    continue
-                restype: ResourceType = resource.restype()
-                if restype not in texture_types:
-                    continue
-                case_resnames.remove(case_resname)
-                tpc: TPC = read_tpc(resource.data())
-                if restype == ResourceType.TGA:
-                    tpc.txi = get_txi_from_list(case_resname, resource_list)
-                textures[case_resname] = tpc
+                case_resname = resource.resname().casefold()
+                if case_resname in case_resnames and resource.restype() in texture_types:
+                    case_resnames.remove(case_resname)
+                    tpc: TPC = read_tpc(resource.data())
+                    if resource.restype() == ResourceType.TGA:
+                        tpc.txi = get_txi_from_list(case_resname, resource_list)
+                    textures[case_resname] = tpc
 
         def check_capsules(values: list[Capsule]):  # NOTE: This function does not support txi's in the Override folder.
             for capsule in values:
-                for resname in copy(case_resnames):
+                for case_resname in copy(case_resnames):
                     texture_data: bytes | None = None
                     tformat: ResourceType | None = None
                     for tformat in texture_types:
-                        texture_data = capsule.resource(resname, tformat)
+                        texture_data = capsule.resource(case_resname, tformat)
                         if texture_data is not None:
                             break
                     if texture_data is None:
                         continue
 
-                    case_resnames.remove(resname)
+                    case_resnames.remove(case_resname)
                     tpc: TPC = read_tpc(texture_data) if texture_data else TPC()
                     if tformat == ResourceType.TGA:
-                        tpc.txi = get_txi_from_list(resname, capsule.resources())
-                    textures[resname] = tpc
+                        tpc.txi = get_txi_from_list(case_resname, capsule.resources())
+                    textures[case_resname] = tpc
 
         def check_folders(values: list[Path]):
             queried_texture_files: set[Path] = set()
@@ -1424,21 +1259,20 @@ class Installation:
                     file
                     for file in folder.rglob("*")
                     if (
-                        file.stem in case_resnames
+                        file.stem.casefold() in case_resnames
                         and ResourceType.from_extension(file.suffix) in texture_types
                         and file.is_file()
                     )
                 )
             for texture_file in queried_texture_files:
-                case_resname: CaseInsensitiveWrappedStr = CaseInsensitiveWrappedStr.cast(texture_file.stem)
-                case_resnames.remove(case_resname)
+                case_resnames.remove(texture_file.stem.casefold())
                 texture_data: bytes = BinaryReader.load_file(texture_file)
                 tpc = read_tpc(texture_data) if texture_data else TPC()
                 txi_file = CaseAwarePath(texture_file.with_suffix(".txi"))
                 if txi_file.exists():
                     txi_data: bytes = BinaryReader.load_file(txi_file)
                     tpc.txi = decode_txi(txi_data)
-                textures[case_resname] = tpc
+                textures[texture_file.stem] = tpc
 
         function_map: dict[SearchLocation, Callable] = {
             SearchLocation.OVERRIDE: lambda: check_dict(self._override),
@@ -1508,6 +1342,7 @@ class Installation:
         -------
             A dictionary mapping a case-insensitive string to a bytes object or None.
         """
+        case_resnames: list[str] = [resname.casefold() for resname in resnames]
         capsules = [] if capsules is None else capsules
         folders = [] if folders is None else folders
         if order is None:
@@ -1518,41 +1353,37 @@ class Installation:
                 SearchLocation.SOUND,
                 SearchLocation.CHITIN,
             ]
-        self.load_search_locations(order)
 
         sounds: CaseInsensitiveDict[bytes | None] = CaseInsensitiveDict()
         sound_formats: list[ResourceType] = [ResourceType.WAV, ResourceType.MP3]
 
-        case_resnames: list[CaseInsensitiveWrappedStr] = []
-        resnames = remove_duplicates(resnames, case_insensitive=True)
         for resname in resnames:
             sounds[resname] = None
-            case_resnames.append(CaseInsensitiveWrappedStr.cast(resname))
 
-        def check_dict(values: dict[str, list[FileResource]] | CaseInsensitiveDict[list[FileResource]]):
+        def check_dict(values: dict[str, list[FileResource]]):
             for resources in values.values():
                 check_list(resources)
 
         def check_list(values: list[FileResource]):
             for resource in values:
-                resname: str = resource.resname()
-                if resname in case_resnames and resource.restype() in sound_formats:
-                    case_resnames.remove(resname)
+                case_resname: str = resource.resname().casefold()
+                if case_resname in case_resnames and resource.restype() in sound_formats:
+                    case_resnames.remove(case_resname)
                     sound_data: bytes = resource.data()
-                    sounds[resname] = fix_audio(sound_data) if sound_data else b""
+                    sounds[resource.resname()] = fix_audio(sound_data) if sound_data else b""
 
         def check_capsules(values: list[Capsule]):
             for capsule in values:
-                for resname in copy(case_resnames):
+                for case_resname in copy(case_resnames):
                     sound_data: bytes | None = None
                     for sformat in sound_formats:
-                        sound_data = capsule.resource(resname, sformat)
+                        sound_data = capsule.resource(case_resname, sformat)
                         if sound_data is not None:
                             break
                     if sound_data is None:
                         continue
-                    case_resnames.remove(CaseInsensitiveWrappedStr.cast(resname))
-                    sounds[resname] = fix_audio(sound_data) if sound_data else b""
+                    case_resnames.remove(case_resname)
+                    sounds[case_resname] = fix_audio(sound_data) if sound_data else b""
 
         def check_folders(values: list[Path]):
             queried_sound_files: set[Path] = set()
@@ -1561,16 +1392,15 @@ class Installation:
                     file
                     for file in folder.rglob("*")
                     if (
-                        file.stem in case_resnames
+                        file.stem.casefold() in case_resnames
                         and ResourceType.from_extension(file.suffix) in sound_formats
                         and file.is_file()
                     )
                 )
             for sound_file in queried_sound_files:
-                case_resname: CaseInsensitiveWrappedStr = CaseInsensitiveWrappedStr(sound_file.stem)
-                case_resnames.remove(case_resname)
+                case_resnames.remove(sound_file.stem.casefold())
                 sound_data: bytes = BinaryReader.load_file(sound_file)
-                sounds[case_resname] = fix_audio(sound_data) if sound_data else b""
+                sounds[sound_file.stem] = fix_audio(sound_data) if sound_data else b""
 
         function_map: dict[SearchLocation, Callable] = {
             SearchLocation.OVERRIDE: lambda: check_dict(self._override),
@@ -1634,7 +1464,7 @@ class Installation:
         stringrefs: list[int] = [locstring.stringref for locstring in queries]
 
         batch: dict[int, StringResult] = self.talktable().batch(stringrefs)
-        female_batch: dict[int, StringResult] = self.female_talktable().batch(stringrefs) if self.female_talktable().path().exists() else {}
+        female_batch: dict[int, StringResult] = self.female_talktable().batch(stringrefs) if self.female_talktable().path().safe_isfile() else {}
 
         results: dict[LocalizedString, str] = {}
         for locstring in queries:
@@ -1681,7 +1511,7 @@ class Installation:
 
         name: str | None = root
         for module in self.modules_list():
-            if root.casefold() not in module.casefold():
+            if root.lower() not in module.lower():
                 continue
 
             capsule = Capsule(self.module_path() / module)
@@ -1703,13 +1533,14 @@ class Installation:
                     name = locstring.get(Language.ENGLISH, Gender.MALE)
                 else:
                     name = self.talktable().string(locstring.stringref)
-                break
             except Exception as e:  # noqa: BLE001
-                print(format_exception_with_variables(e, ___message___="This exception has been suppressed in pykotor.extract.installation."))
+                print(format_exception_with_variables(e, message="This exception has been suppressed in pykotor.extract.installation."))
+            else:
+                break
 
         return name or root
 
-    def module_names(self) -> CaseInsensitiveDict[str]:
+    def module_names(self) -> dict[str, str]:
         """Returns a dictionary mapping module filename to the name of the area.
 
         The name is taken from the LocalizedString "Name" in the relevant module file's ARE resource.
@@ -1718,7 +1549,7 @@ class Installation:
         -------
             A dictionary mapping module filename to in-game module area name.
         """
-        return CaseInsensitiveDict.from_dict({module: self.module_name(module) for module in self.modules_list()})
+        return {module: self.module_name(module) for module in self.modules_list()}
 
 
     def module_id(
@@ -1740,7 +1571,7 @@ class Installation:
         -------
             The ID of the area for the module.
         """
-        root = self.replace_module_extensions(module_filename)
+        root: str = self.replace_module_extensions(module_filename)
         if use_hardcoded:
             for key, value in HARDCODED_MODULE_IDS.items():
                 if key.upper() in module_filename.upper():
@@ -1749,7 +1580,7 @@ class Installation:
         mod_id: str = ""
 
         for module in self.modules_list():
-            if root.casefold() not in module.casefold():
+            if root.lower() not in module.lower():
                 continue
 
             try:
@@ -1762,11 +1593,10 @@ class Installation:
                     if mod_id:
                         break
             except Exception as e:  # noqa: BLE001
-                print(format_exception_with_variables(e, ___message___="This exception has been suppressed in pykotor.extract.installation."))
-
+                print(format_exception_with_variables(e, message="This exception has been suppressed in pykotor.extract.installation."))
         return mod_id
 
-    def module_ids(self) -> CaseInsensitiveDict[str]:
+    def module_ids(self) -> dict[str, str]:
         """Returns a dictionary mapping module filename to the ID of the module.
 
         The ID is taken from the ResRef field "Mod_Entry_Area" in the relevant module file's IFO resource.
@@ -1775,15 +1605,14 @@ class Installation:
         -------
             A dictionary mapping module filename to in-game module id.
         """
-        return CaseInsensitiveDict.from_dict({module: self.module_id(module) for module in self.modules_list()})
+        return {module: self.module_id(module) for module in self.modules_list()}
 
     @staticmethod
     def replace_module_extensions(module_filepath: os.PathLike | str) -> str:
         module_filename: str = PurePath(module_filepath).name
-        result = re.sub(r"\.mod$", "", module_filename, flags=re.IGNORECASE)
-        result = re.sub(r"\.erf$", "", result, flags=re.IGNORECASE)
-        result = re.sub(r"\.rim$", "", result, flags=re.IGNORECASE)
-        result = re.sub(r"\.sav$", "", result, flags=re.IGNORECASE)
+        result = re.sub(r"\.rim$", "", module_filename, flags=re.IGNORECASE)
+        for erftype_name in ERFType.__members__:
+            result = re.sub(rf"\.{erftype_name}$", "", result, flags=re.IGNORECASE)
         result = result[:-2] if result.lower().endswith("_s") else result
         result = result[:-4] if result.lower().endswith("_dlg") else result
         return result  # noqa: RET504

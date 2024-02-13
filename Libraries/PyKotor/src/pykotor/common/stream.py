@@ -10,14 +10,16 @@ from typing import TYPE_CHECKING, BinaryIO
 from pykotor.common.geometry import Vector2, Vector3, Vector4
 from pykotor.common.language import LocalizedString
 from pykotor.tools.encoding import decode_bytes_with_fallbacks
-from utility.path import Path
+from utility.system.path import Path
 
 if TYPE_CHECKING:
+    from types import TracebackType
+
     from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES
 
 
 def _endian_char(
-    big: bool,
+    big: bool,  # noqa: FBT001
 ) -> str:
     """Returns the character that represents either big endian or small endian in struct unpack.
 
@@ -56,11 +58,12 @@ class BinaryReader:
         self.auto_close: bool = True
         self._stream.seek(offset)
 
-        available = self.true_size() - offset
-        self._size: int = available if size is None else size
-        if available > self.true_size():
+        true_size = self.true_size()
+        available = true_size - offset
+        if available > true_size:
             msg = "Specified size is greater than the number of available bytes."
             raise OSError(msg)
+        self._size: int = available if size is None else size
 
     def __enter__(
         self,
@@ -69,9 +72,9 @@ class BinaryReader:
 
     def __exit__(
         self,
-        exc_type,
-        exc_val,
-        exc_tb,
+        exc_type: type[BaseException] | None,
+        exc_val: BaseException | None,
+        exc_tb: TracebackType | None,
     ):
         if self.auto_close:
             self.close()
@@ -95,13 +98,13 @@ class BinaryReader:
         -------
             A new BinaryReader instance.
         """
-        stream = Path.pathify(path).open("rb")
+        stream: BinaryIO = Path.pathify(path).open("rb")
         return BinaryReader(stream, offset, size)
 
     @classmethod
     def from_bytes(
         cls,
-        data: bytes,
+        data: bytes | memoryview | bytearray,
         offset: int = 0,
         size: int | None = None,
     ) -> BinaryReader:
@@ -126,15 +129,15 @@ class BinaryReader:
         source: SOURCE_TYPES,
         offset: int = 0,
         size: int | None = None,
-    ):
+    ) -> BinaryReader:
         if isinstance(source, (os.PathLike, str)):  # is path
             reader = BinaryReader.from_file(source, offset, size)
-        elif isinstance(source, (bytes, bytearray, memoryview)):  # is binary data
+        elif isinstance(source, (memoryview, bytes, bytearray)):  # is binary data
             reader = BinaryReader.from_bytes(source, offset, size)
-        elif isinstance(source, BinaryReader):
-            reader = BinaryReader(source._stream, source._offset, source._size)
+        elif isinstance(source, BinaryReader):  # is reader
+            reader = BinaryReader(source._stream, source._offset, source._size)  # noqa: SLF001
         else:
-            msg = "Must specify a path, bytes-like object or an existing BinaryReader instance."
+            msg = f"Must specify a path, bytes-like object or an existing BinaryReader instance, got type ({type(source)})."
             raise NotImplementedError(msg)
 
         return reader
@@ -369,11 +372,11 @@ class BinaryReader:
         """Reads an unsigned 32-bit integer from the stream.
 
         If max_is_neg1 flag is set to true and the bytes read off the stream are equal to 0xFFFFFFFF then the method
-        will return a value of -1 instead of 4294967295.
+        will return a value of -1 instead of 4294967295 (hex 0xFFFFFFFF).
 
         Args:
         ----
-            max_neg1: Return -1 when the value of the stream equals 0xFFFFFFFF.
+            max_neg1: Return -1 when the value of the stream equals 0xFFFFFFFF (dec 4294967295).
             big: Read int bytes as big endian.
 
         Returns:
@@ -383,7 +386,7 @@ class BinaryReader:
         self.exceed_check(4)
         unpacked = struct.unpack(f"{_endian_char(big)}I", self._stream.read(4))[0]
 
-        if unpacked == 0xFFFFFFFF and max_neg1:
+        if unpacked == 0xFFFFFFFF and max_neg1:  # noqa: PLR2004
             unpacked = -1
 
         return unpacked
@@ -604,8 +607,8 @@ class BinaryReader:
         -------
             A string read from the stream.
         """
-        string = ""
-        char = ""
+        string: str = ""
+        char: str = ""
         while char != terminator:
             string += char
             self.exceed_check(1)
@@ -660,7 +663,7 @@ class BinaryReader:
 
         Raises:
         ------
-            OSError: Iset_datahe given number sex exceeds the number of remaining bytes.
+            OSError: When the attempted read operation exceeds the number of remaining bytes.
         """
         if self.position() + num > self.size():
             msg = "This operation would exceed the streams boundaries."
@@ -727,7 +730,10 @@ class BinaryWriter(ABC):
         if isinstance(source, (bytes, memoryview)):  # is immutable binary data
             return BinaryWriter.to_bytearray(bytearray(source))
         if isinstance(source, BinaryWriter):
-            return source
+            if isinstance(source, BinaryWriterFile):
+                return BinaryWriterFile(source._stream, source.offset)  # noqa: SLF001
+            if isinstance(source, BinaryWriterBytearray):
+                return BinaryWriterBytearray(source._ba, source._offset)  # noqa: SLF001
         msg = "Must specify a path, bytes object or an existing BinaryWriter instance."
         raise NotImplementedError(msg)
 
@@ -1491,12 +1497,13 @@ class BinaryWriterFile(BinaryWriter):
         bw: BinaryWriterBytearray = BinaryWriter.to_bytearray()
         bw.write_uint32(value.stringref, big=big, max_neg1=True)
         bw.write_uint32(len(value), big=big)
+
         for language, gender, substring in value:
             string_id: int = LocalizedString.substring_id(language, gender)
             bw.write_uint32(string_id, big=big)
             bw.write_string(substring, prefix_length=4, encoding=language.get_encoding())
-        locstring_data: bytes = bw.data()
 
+        locstring_data: bytes = bw.data()
         self.write_uint32(len(locstring_data))
         self.write_bytes(locstring_data)
 

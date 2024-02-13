@@ -9,7 +9,7 @@ from pykotor.extract.capsule import Capsule
 from pykotor.extract.file import LocationResult, ResourceIdentifier, ResourceResult
 from pykotor.extract.installation import Installation, SearchLocation
 from pykotor.resource.formats.bwm import bytes_bwm, read_bwm
-from pykotor.resource.formats.erf import ERFType, read_erf, write_erf
+from pykotor.resource.formats.erf import read_erf, write_erf
 from pykotor.resource.formats.gff import read_gff
 from pykotor.resource.formats.lyt import bytes_lyt, read_lyt
 from pykotor.resource.formats.rim import read_rim, write_rim
@@ -30,16 +30,10 @@ from pykotor.resource.generics.uts import UTS, bytes_uts, read_uts
 from pykotor.resource.generics.utt import UTT, bytes_utt, read_utt
 from pykotor.resource.generics.utw import UTW, bytes_utw, read_utw
 from pykotor.resource.type import ResourceType
-from pykotor.tools.misc import (
-    is_any_erf_type_file,
-    is_bif_file,
-    is_capsule_file,
-    is_rim_file,
-)
+from pykotor.tools.misc import is_any_erf_type_file, is_bif_file, is_capsule_file, is_rim_file
 from pykotor.tools.model import list_lightmaps, list_textures
 from utility.error_handling import format_exception_with_variables
-from utility.path import Path, PurePath
-from utility.string import CaseInsensitiveWrappedStr
+from utility.system.path import Path, PurePath
 
 if TYPE_CHECKING:
     import os
@@ -68,7 +62,7 @@ class Module:
     ):
         self.resources: CaseInsensitiveDict[ModuleResource] = CaseInsensitiveDict()
         self._installation: Installation = installation
-        self._root: CaseInsensitiveWrappedStr = CaseInsensitiveWrappedStr.cast(root)
+        self._root: str = root.lower()
 
         # Build list of capsules from all .mods' in the provided installation
         self._capsules: list[Capsule] = [
@@ -114,9 +108,9 @@ class Module:
             The string for the root name of a module.
         """
         root: str = PurePath.pathify(filepath).stem
-        lower_root: str = root.casefold()
-        root = root[:-2] if lower_root.endswith("_s") else root
-        root = root[:-4] if lower_root.endswith("_dlg") else root
+        case_root: str = root.casefold()
+        root = root[:-2] if case_root.endswith("_s") else root
+        root = root[:-4] if case_root.endswith("_dlg") else root
         return root  # noqa: RET504
 
     def capsules(self) -> list[Capsule]:
@@ -228,8 +222,8 @@ class Module:
                     textures.add(texture)
                 for lightmap in list_lightmaps(data):
                     textures.add(lightmap)
-            except Exception as e:  # noqa: PERF203
-                print(format_exception_with_variables(e, ___message___=f"Exception occurred when executing {self!r}.reload_resources() with model '{model}'"))
+            except Exception as e:
+                print(format_exception_with_variables(e, message=f"Exception occurred when executing {self!r}.reload_resources() with model '{model.resname()}.{model.restype()}'"))
 
         for texture in textures:
             look_for.extend(
@@ -285,8 +279,8 @@ class Module:
         """
         # In order to store TGA resources in the same ModuleResource as their TPC counterpart, we use the .TPC extension
         # instead of the .TGA for the dictionary key.
-        filename_ext: CaseInsensitiveWrappedStr = (ResourceType.TPC if restype == ResourceType.TGA else restype).extension
-        filename: str = f"{resname}.{filename_ext}"
+        filename_ext = str(ResourceType.TPC if restype == ResourceType.TGA else restype)
+        filename = f"{resname}.{filename_ext}"
         if filename not in self.resources:
             self.resources[filename] = ModuleResource(
                 resname,
@@ -295,10 +289,8 @@ class Module:
             )
         self.resources[filename].add_locations(locations)
 
-
     def installation(self) -> Installation:
         return self._installation
-
 
     def resource(
         self,
@@ -371,7 +363,6 @@ class Module:
             ),
             None,
         )
-
 
     def are(
         self,
@@ -1192,7 +1183,6 @@ class ModuleResource(Generic[T]):
         print(f"Could not find res of type {type(res)}")
         return None
 
-
     def data(self) -> bytes:
         """Opens the file at the active location and returns the data.
 
@@ -1225,6 +1215,7 @@ class ModuleResource(Generic[T]):
             if resource is None:
                 msg = f"Resource '{file_name}' not found in '{self._active}'"
                 raise ValueError(msg)
+            return resource.data
 
         return BinaryReader.load_file(self._active)
 
@@ -1265,7 +1256,7 @@ class ModuleResource(Generic[T]):
                 self._resource_obj = None
 
             elif is_capsule_file(self._active.name):
-                data = Capsule(self._active).resource(self._resname, self._restype)
+                data: bytes | None = Capsule(self._active).resource(self._resname, self._restype)
                 if data is None:
                     msg = f"Resource '{file_name}' not found in '{self._active}'"
                     raise ValueError(msg)
@@ -1410,7 +1401,6 @@ class ModuleResource(Generic[T]):
 
         if is_any_erf_type_file(self._active.name):
             erf: ERF = read_erf(self._active)
-            erf.erf_type = ERFType.from_extension(self._active.name)  # TODO: Is this needed? I believe the file header is more trustworthy than the extension.
             erf.set_data(
                 self._resname,
                 self._restype,

@@ -51,7 +51,7 @@ from pykotor.tslpatcher.mods.twoda import (
 )
 from pykotor.tslpatcher.namespaces import PatcherNamespace
 from utility.misc import is_float, is_int
-from utility.path import Path, PurePath, PureWindowsPath
+from utility.system.path import Path, PurePath, PureWindowsPath
 
 if TYPE_CHECKING:
     import os
@@ -60,7 +60,7 @@ if TYPE_CHECKING:
     from pykotor.tslpatcher.mods.gff import ModifyGFF
     from typing_extensions import Literal
 
-SECTION_NOT_FOUND_ERROR: str = "The [{}] section was not found in the ini"
+SECTION_NOT_FOUND_ERROR = "The [{}] section was not found in the ini"
 REFERENCES_TRACEBACK_MSG = ", referenced by '{}={}' in [{}]"
 
 class NamespaceReader:
@@ -184,8 +184,7 @@ class ConfigReader:
         self.load_compile_list()
         self.load_hack_list()
         self.load_ssf_list()
-
-        # Print orphaned INI sections.
+        self.log.add_note("The ConfigReader finished loading the INI")
         all_sections_set = set(self.ini.sections())
         orphaned_sections: set[str] = all_sections_set - self.previously_parsed_sections
         if len(orphaned_sections):
@@ -220,6 +219,7 @@ class ConfigReader:
         self.config.confirm_message = settings_ini.get("ConfirmMessage", "")
         self.config.required_file = settings_ini.get("Required")
         self.config.required_message = settings_ini.get("RequiredMsg", "")
+        self.config.save_processed_scripts = int(settings_ini.get("SaveProcessedScripts", 0))
 
         # HoloPatcher optional
         self.config.ignore_file_extensions = bool(settings_ini.get("IgnoreExtensions")) or False
@@ -273,7 +273,7 @@ class ConfigReader:
                 file_section_name: str | None = self.get_section_name(filename)
                 if file_section_name is not None:
                     file_section_dict = CaseInsensitiveDict(self.ini[file_section_name])
-                    file_install.pop_tslpatcher_vars(file_section_dict, foldername)
+                    file_install.pop_tslpatcher_vars(file_section_dict, foldername, sourcefolder)
 
     def load_tlk_list(self):
         """Loads TLK patches from the ini file into memory.
@@ -294,7 +294,8 @@ class ConfigReader:
         tlk_list_edits = CaseInsensitiveDict(self.ini[tlk_list_section])
 
         default_destination = tlk_list_edits.pop("!DefaultDestination", ModificationsTLK.DEFAULT_DESTINATION)
-        self.config.patches_tlk.pop_tslpatcher_vars(tlk_list_edits, default_destination)
+        default_sourcefolder = tlk_list_edits.pop("!DefaultSourceFolder", ".")
+        self.config.patches_tlk.pop_tslpatcher_vars(tlk_list_edits, default_destination, default_sourcefolder)
 
         modifier_dict: dict[int, dict[str, str]] = {}
         range_delims: list[str] = [":", "-", "to"]
@@ -436,7 +437,7 @@ class ConfigReader:
                         raise ValueError(SECTION_NOT_FOUND_ERROR.format(value) + REFERENCES_TRACEBACK_MSG.format(key, value, tlk_list_section))  # noqa: TRY301
 
                     next_section_dict = CaseInsensitiveDict(self.ini[next_section_name])
-                    self.config.patches_tlk.pop_tslpatcher_vars(next_section_dict, default_destination)
+                    self.config.patches_tlk.pop_tslpatcher_vars(next_section_dict, default_destination, default_sourcefolder)
 
                     process_tlk_entries(
                         value,
@@ -506,6 +507,7 @@ class ConfigReader:
 
         twoda_section_dict = CaseInsensitiveDict(self.ini[twoda_section_name])
         default_destination: str = twoda_section_dict.pop("!DefaultDestination", Modifications2DA.DEFAULT_DESTINATION)
+        default_source_folder = twoda_section_dict.pop("!DefaultSourceFolder", ".")
         for identifier, file in twoda_section_dict.items():
             file_section: str | None = self.get_section_name(file)
             if file_section is None:
@@ -513,10 +515,8 @@ class ConfigReader:
 
             modifications = Modifications2DA(file)
             file_section_dict = CaseInsensitiveDict(self.ini[file_section])
-            modifications.pop_tslpatcher_vars(file_section_dict)
+            modifications.pop_tslpatcher_vars(file_section_dict, default_destination, default_source_folder)
 
-            if modifications.destination.capitalize() == modifications.DEFAULT_DESTINATION:
-                modifications.destination = default_destination
             self.config.patches_2da.append(modifications)
 
             for key, modification_id in file_section_dict.items():
@@ -554,6 +554,7 @@ class ConfigReader:
 
         ssf_section_dict = CaseInsensitiveDict(self.ini[ssf_list_section])
         default_destination: str = ssf_section_dict.pop("!DefaultDestination", ModificationsSSF.DEFAULT_DESTINATION)
+        default_source_folder = ssf_section_dict.pop("!DefaultSourceFolder", ".")
 
         for identifier, file in ssf_section_dict.items():
             ssf_file_section: str | None = self.get_section_name(file)
@@ -565,7 +566,7 @@ class ConfigReader:
             self.config.patches_ssf.append(modifications)
 
             file_section_dict = CaseInsensitiveDict(self.ini[ssf_file_section])
-            modifications.pop_tslpatcher_vars(file_section_dict, default_destination)
+            modifications.pop_tslpatcher_vars(file_section_dict, default_destination, default_source_folder)
 
             for name, value in file_section_dict.items():
                 new_value: TokenUsage
@@ -607,6 +608,7 @@ class ConfigReader:
         self.log.add_note("Loading [GFFList] patches from ini...")
         gff_section_dict = CaseInsensitiveDict(self.ini[gff_list_section])
         default_destination: str = gff_section_dict.pop("!DefaultDestination", ModificationsGFF.DEFAULT_DESTINATION)
+        default_source_folder = gff_section_dict.pop("!DefaultSourceFolder", ".")
 
         for identifier, file in gff_section_dict.items():
             file_section_name: str | None = self.get_section_name(file)
@@ -618,7 +620,7 @@ class ConfigReader:
             self.config.patches_gff.append(modifications)
 
             file_section_dict = CaseInsensitiveDict(self.ini[file_section_name])
-            modifications.pop_tslpatcher_vars(file_section_dict, default_destination)
+            modifications.pop_tslpatcher_vars(file_section_dict, default_destination, default_source_folder)
 
             for key, value in file_section_dict.items():
                 modifier: ModifyGFF | None
@@ -669,16 +671,19 @@ class ConfigReader:
         self.log.add_note("Loading [CompileList] patches from ini...")
         compilelist_section_dict = CaseInsensitiveDict(self.ini[compilelist_section])
         default_destination: str = compilelist_section_dict.pop("!DefaultDestination", ModificationsNSS.DEFAULT_DESTINATION)
+        default_source_folder = compilelist_section_dict.pop("!DefaultSourceFolder", ".")
 
         for identifier, file in compilelist_section_dict.items():
             replace: bool = identifier.lower().startswith("replace")
             modifications = ModificationsNSS(file, replace)
             modifications.nwnnsscomp_path = self.mod_path / "nwnnsscomp.exe"
+            modifications.destination = default_destination
+            modifications.sourcefolder = default_source_folder
 
             optional_file_section_name: str | None = self.get_section_name(file)
             if optional_file_section_name is not None:
                 file_section_dict = CaseInsensitiveDict(self.ini[optional_file_section_name])
-                modifications.pop_tslpatcher_vars(file_section_dict, default_destination)
+                modifications.pop_tslpatcher_vars(file_section_dict, default_destination, default_source_folder)
 
             self.config.patches_nss.append(modifications)
 
@@ -700,19 +705,20 @@ class ConfigReader:
             return
 
         self.log.add_note("Loading [HACKList] patches from ini...")
-        compilelist_section_dict = CaseInsensitiveDict(self.ini[hacklist_section])
-        default_destination: str = compilelist_section_dict.pop("!DefaultDestination", ModificationsNCS.DEFAULT_DESTINATION)
+        hacklist_section_dict = CaseInsensitiveDict(self.ini[hacklist_section])
+        default_destination: str = hacklist_section_dict.pop("!DefaultDestination", ModificationsNCS.DEFAULT_DESTINATION)
+        default_source_folder = hacklist_section_dict.pop("!DefaultSourceFolder", ".")
 
-        for identifier, file in compilelist_section_dict.items():
+        for identifier, file in hacklist_section_dict.items():
             replace: bool = identifier.lower().startswith("replace")
             modifications = ModificationsNCS(file, replace)
 
-            optional_file_section_name: str | None = self.get_section_name(file)
-            if optional_file_section_name is None:
+            file_section_name: str | None = self.get_section_name(file)
+            if file_section_name is None:
                 raise KeyError(SECTION_NOT_FOUND_ERROR.format(file) + REFERENCES_TRACEBACK_MSG.format(identifier, file, hacklist_section))
 
-            file_section_dict = CaseInsensitiveDict(self.ini[optional_file_section_name])
-            modifications.pop_tslpatcher_vars(file_section_dict, default_destination)
+            file_section_dict = CaseInsensitiveDict(self.ini[file_section_name])
+            modifications.pop_tslpatcher_vars(file_section_dict, default_destination, default_source_folder)
 
             for offset_str, value_str in file_section_dict.items():
                 lower_value: str = value_str.lower()
@@ -846,12 +852,10 @@ class ConfigReader:
         value: FieldValue = self._get_addfield_value(ini_data, field_type, identifier)
 
         # Check if label unset to determine if current ini section is a struct inside a list.
-        # NOTE: The `field_type == GFFFieldType.Struct` check below is unnecessary but provided
-        # for clarity.  Label should never be defined in gfflist struct sections.
         if not label and field_type == GFFFieldType.Struct:
             return AddStructToListGFF(identifier, value, path, index_in_list_token, modifiers)
 
-        # if field_type == GFFFieldType.Struct:
+        # if field_type == GFFFieldType.Struct:  # not sure if this is invalid syntax or not.
         #     msg = f"Label={label} cannot be used when FieldType={GFFFieldType.Struct.value}. Error happened in [{identifier}] section in ini."
         #     raise ValueError(msg)
         if not label:

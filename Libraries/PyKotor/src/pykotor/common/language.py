@@ -528,7 +528,7 @@ class LocalizedString:
         language: Language,
         gender: Gender,
         string: str,
-    ) -> None:
+    ):
         """Sets the text of the substring with the corresponding language/gender pair.
 
         Note: The substring is created if it does not exist.
@@ -565,7 +565,7 @@ class LocalizedString:
         self,
         language: Language,
         gender: Gender,
-    ) -> None:
+    ):
         """Removes the existing substring with the respective language/gender pair if it exists.
 
         Note: No error is thrown if it does not find a corresponding pair.

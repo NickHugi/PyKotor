@@ -107,17 +107,18 @@ def openResourceEditor(
     if restype in [ResourceType.TXT, ResourceType.TXI, ResourceType.LYT, ResourceType.VIS]:
         editor = TXTEditor(None)
 
-    if restype in [ResourceType.NSS]:
-        if installation:  # noqa: SIM108
+    if restype in [ResourceType.NSS, ResourceType.NCS]:
+        if installation:
             editor = NSSEditor(None, installation)
-        else:
+        elif restype == ResourceType.NSS:
+            QMessageBox.warning(None, "No installation loaded", "The toolset cannot use its full nss editor features until you select an installation.")
             editor = TXTEditor(None, installation)
-
-    if restype in [ResourceType.NCS] and installation:
-        editor = NSSEditor(None, installation)
+        else:
+            QMessageBox.warning(None, "Cannot decompile NCS without an installation active", "Please select an installation from the dropdown before loading an NCS.")
+            return None, None
 
     if restype in [ResourceType.DLG, ResourceType.DLG_XML]:
-        if installation is None:  # noqa: SIM108
+        if installation is None or not gff_specialized:  # noqa: SIM108
             editor = GFFEditor(None, installation)
         else:
             editor = DLGEditor(None, installation)
@@ -239,7 +240,7 @@ def openResourceEditor(
             ).show()
             raise
         else:
-            return filepath, editor
+            return filepath, editor  # type: ignore[reportReturnType]
     else:
         QMessageBox(
             QMessageBox.Critical,

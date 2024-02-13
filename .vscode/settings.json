@@ -28,6 +28,13 @@
     "./Libraries/Utility/src",
   ],
   "python.testing.unittestEnabled": true,
+  "python.testing.unittestArgs": [
+    "-v",
+    "-s",
+    "./tests",
+    "-p",
+    "*test*.py"
+  ],
   "python.missingPackage.severity": "Information",
   "python.terminal.launchArgs": [
     "-i",
@@ -36,13 +43,6 @@
     "--listen",
     "5678",
     "--wait-for-client"
-  ],
-  "python.testing.unittestArgs": [
-    "-v",
-    "-s",
-    "./Libraries/PyKotor/src/tests",
-    "-p",
-    "*test*.py"
   ],
   "python.analysis.diagnosticSeverityOverrides": {
       "reportOptionalMemberAccess": "none" // Ignores issues with defs that can optionally be None.

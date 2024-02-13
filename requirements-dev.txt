@@ -9,3 +9,9 @@
 mypy
 ruff
 pylint
+snakeviz
+autoflake
+pytest
+pytest-xdist
+pytest-html
+pytest-xdist

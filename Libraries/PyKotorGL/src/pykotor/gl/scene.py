@@ -347,7 +347,7 @@ class Scene:
             self.objects[placeable].set_rotation(0, 0, placeable.bearing)
 
         for git_creature in self.git.creatures:
-            if creature not in self.objects:
+            if git_creature not in self.objects:
                 self.objects[git_creature] = self.getCreatureRenderObject(git_creature)
 
             self.objects[git_creature].set_position(git_creature.position.x, git_creature.position.y, git_creature.position.z)
@@ -712,7 +712,7 @@ class Scene:
                 capsules: list[Capsule] = [] if self.module is None else self.module.capsules()
                 mdl_search: ResourceResult | None = self.installation.resource(name, ResourceType.MDL, SEARCH_ORDER, capsules=capsules)
                 mdx_search: ResourceResult | None = self.installation.resource(name, ResourceType.MDX, SEARCH_ORDER, capsules=capsules)
-                if mdl_search and mdx_search:
+                if mdl_search is not None and mdx_search is not None:
                     mdl_data: bytes = mdl_search.data
                     mdx_data: bytes = mdx_search.data
 

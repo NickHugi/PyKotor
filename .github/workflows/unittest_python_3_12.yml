@@ -21,6 +21,7 @@ jobs:
       run: |
         ./install_python_venv.ps1 -noprompt
         ./compile/compile_holopatcher.ps1 -noprompt
+        pip install -r requirements-dev.txt
         cd Libraries/PyKotor
         python -m unittest discover -s src/tests -p 'test_*.py' -v
         cd ../../Tools/HolocronToolset

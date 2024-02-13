@@ -14,7 +14,8 @@ if TYPE_CHECKING:
     from pykotor.resource.type import SOURCE_TYPES
     from pykotor.tslpatcher.logger import PatchLogger
     from pykotor.tslpatcher.memory import PatcherMemory
-    from utility.path import Path
+    from typing_extensions import Literal
+    from utility.system.path import Path
 
 
 class ModificationsTLK(PatcherModifications):
@@ -23,36 +24,24 @@ class ModificationsTLK(PatcherModifications):
     DEFAULT_SOURCEFILE_F  = "appendf.tlk"
     DEFAULT_SAVEAS_FILE   = "dialog.tlk"
     DEFAULT_SAVEAS_FILE_F = "dialogf.tlk"
-    def __init__(self, filename=DEFAULT_SOURCEFILE, replace=None, modifiers=None):
+    def __init__(
+        self,
+        filename: str=DEFAULT_SOURCEFILE,
+        replace: bool | None =None,
+        modifiers=None,
+    ):
         super().__init__(filename)
         self.destination = self.DEFAULT_DESTINATION
         self.modifiers: list[ModifyTLK] = modifiers if modifiers is not None else []
-        self.sourcefile_f: str = self.DEFAULT_SOURCEFILE_F
+        self.sourcefile_f: str = self.DEFAULT_SOURCEFILE_F  # Polish version of k1
+        self.saveas = self.DEFAULT_SAVEAS_FILE
 
-    def apply(
+    def pop_tslpatcher_vars(
         self,
-        dialog,
-        memory: PatcherMemory,
-        log: PatchLogger | None = None,
-        game: Game | None = None,
+        file_section_dict,
+        default_destination=DEFAULT_DESTINATION,
+        default_sourcefolder=".",
     ):
-        for modifier in self.modifiers:
-            modifier.apply(dialog, memory)
-            if log:
-                log.complete_patch()
-
-    def patch_resource(
-        self,
-        source: SOURCE_TYPES,
-        memory: PatcherMemory,
-        log: PatchLogger | None = None,
-        game: Game | None = None,
-    ) -> bytes:
-        dialog: TLK = TLKBinaryReader(source).load()
-        self.apply(dialog, memory, log, game)
-        return bytes_tlk(dialog)
-
-    def pop_tslpatcher_vars(self, file_section_dict, default_destination=DEFAULT_DESTINATION):
         if "!ReplaceFile" in file_section_dict:
             msg = "!ReplaceFile is not supported in [TLKList]"
             raise ValueError(msg)
@@ -61,15 +50,36 @@ class ModificationsTLK(PatcherModifications):
             raise ValueError(msg)
 
         self.sourcefile_f = file_section_dict.pop("!SourceFileF", self.DEFAULT_SOURCEFILE_F)
-        super().pop_tslpatcher_vars(file_section_dict, default_destination)
-        self.saveas = self.saveas if self.saveas != self.sourcefile else self.DEFAULT_SAVEAS_FILE
+        super().pop_tslpatcher_vars(file_section_dict, default_destination, default_sourcefolder)
+
+    def patch_resource(
+        self,
+        source: SOURCE_TYPES,
+        memory: PatcherMemory,
+        log: PatchLogger,
+        game: Game,
+    ) -> bytes | Literal[True]:
+        dialog: TLK = TLKBinaryReader(source).load()
+        self.apply(dialog, memory, log, game)
+        return bytes_tlk(dialog)
+
+    def apply(
+        self,
+        dialog: TLK,
+        memory: PatcherMemory,
+        log: PatchLogger,
+        game: Game,
+    ):
+        for modifier in self.modifiers:
+            modifier.apply(dialog, memory)
+            log.complete_patch()
 
 
 class ModifyTLK:
     def __init__(
         self,
         token_id: int,
-        is_replacement: bool = False,
+        is_replacement: bool = False,  # noqa: FBT001, FBT002
     ):
         self.tlk_filepath: Path | None = None
         self.text: str = ""
@@ -81,11 +91,11 @@ class ModifyTLK:
 
     def apply(self, dialog: TLK, memory: PatcherMemory):
         self.load()
-        if not self.is_replacement:
-            memory.memory_str[self.token_id] = dialog.add(self.text, str(self.sound))
-        else:
+        if self.is_replacement:
             dialog.replace(self.token_id, self.text, str(self.sound))
             memory.memory_str[self.token_id] = self.token_id
+        else:
+            memory.memory_str[self.token_id] = dialog.add(self.text, str(self.sound))
 
     def load(self):
         if self.tlk_filepath is None:

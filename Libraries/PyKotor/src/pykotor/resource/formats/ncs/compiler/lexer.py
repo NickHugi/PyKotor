@@ -3,7 +3,6 @@ from __future__ import annotations
 from typing import ClassVar
 
 from ply import lex
-
 from pykotor.common.script import DataType
 from pykotor.resource.formats.ncs import NCSInstructionType
 from pykotor.resource.formats.ncs.compiler.classes import (
@@ -20,8 +19,13 @@ from pykotor.resource.formats.ncs.compiler.classes import (
 
 
 class NssLexer:
-    def __init__(self, errorlog=lex.NullLogger()):
-        self.lexer = lex.lex(module=self, errorlog=errorlog, nowarn=True)
+    def __init__(
+        self,
+        errorlog=lex.NullLogger(),  # noqa: B008
+        *,
+        nowarn=True,
+    ):
+        self.lexer: lex.Lexer = lex.lex(module=self, errorlog=errorlog, nowarn=nowarn)
         self.lexer.begin("INITIAL")
 
     tokens: ClassVar[list[str]] = [
@@ -102,14 +106,14 @@ class NssLexer:
         "]",
     ]
 
-    t_ignore = " \t\r"
+    t_ignore: str = " \t\r"
 
     def t_NEWLINE(self, t):
         r"\n+"  # noqa: D300, D400, D415
         t.lexer.lineno += len(t.value)
 
     def t_NOP(self, t):
-        r"nop"  # noqa: D300, D400, D415, D403
+        "nop"  # noqa: D300, D400, D415, D403
         return t
 
     def t_COMMENT(self, t):
@@ -125,77 +129,77 @@ class NssLexer:
         return t
 
     def t_OBJECTSELF_VALUE(self, t):
-        r"OBJECT_SELF"  # noqa: D300, D400, D415
+        r"OBJECT_SELF\b"  # noqa: D300, D400, D415
         t.value = ObjectExpression(0)
         return t
 
     def t_OBJECTINVALID_VALUE(self, t):
-        r"OBJECT_INVALID"  # noqa: D300, D400, D415
+        r"OBJECT_INVALID\b"  # noqa: D300, D400, D415
         t.value = ObjectExpression(1)
         return t
 
     def t_TRUE_VALUE(self, t):
-        r"TRUE"  # noqa: D300, D400, D415
+        r"TRUE\b"  # noqa: D300, D400, D415
         t.value = IntExpression(1)
         return t
 
     def t_FALSE_VALUE(self, t):
-        r"FALSE"  # noqa: D300, D400, D415
+        r"FALSE\b"  # noqa: D300, D400, D415
         t.value = IntExpression(0)
         return t
 
     # region Control Tokens
     def t_BREAK_CONTROL(self, t):
-        r"break"  # noqa: D300, D400, D415, D403
+        r"break\b"  # noqa: D300, D400, D415
         t.value = ControlKeyword.BREAK
         return t
 
     def t_CONTINUE_CONTROL(self, t):
-        r"continue"  # noqa: D300, D400, D415, D403
+        r"continue\b"  # noqa: D300, D400, D415
         return t
 
     def t_CASE_CONTROL(self, t):
-        r"case"  # noqa: D300, D400, D415, D403
+        r"case\b"  # noqa: D300, D400, D415
         t.value = ControlKeyword.CASE
         return t
 
     def t_DEFAULT_CONTROL(self, t):
-        r"default"  # noqa: D300, D400, D415, D403
+        r"default\b"  # noqa: D300, D400, D415
         t.value = ControlKeyword.DEFAULT
         return t
 
     def t_DO_CONTROL(self, t):
-        r"do"  # noqa: D300, D400, D415, D403
+        r"do\b"  # noqa: D300, D400, D415
         t.value = ControlKeyword.DO
         return t
 
     def t_ELSE_CONTROL(self, t):
-        r"else"  # noqa: D300, D400, D415, D403
+        r"else\b"  # noqa: D300, D400, D415
         t.value = ControlKeyword.ELSE
         return t
 
     def t_SWITCH_CONTROL(self, t):
-        r"switch"  # noqa: D300, D400, D415, D403
+        r"switch\b"  # noqa: D300, D400, D415
         t.value = ControlKeyword.SWITCH
         return t
 
     def t_WHILE_CONTROL(self, t):
-        r"while"  # noqa: D300, D400, D415, D403
+        r"while\b"  # noqa: D300, D400, D415
         t.value = ControlKeyword.WHILE
         return t
 
     def t_FOR_CONTROL(self, t):
-        r"for"  # noqa: D300, D400, D415, D403
+        r"for\b"  # noqa: D300, D400, D415
         t.value = ControlKeyword.FOR
         return t
 
     def t_IF_CONTROL(self, t):
-        r"if"  # noqa: D300, D400, D415, D403
+        r"if\b"  # noqa: D300, D400, D415
         t.value = ControlKeyword.IF
         return t
 
     def t_RETURN(self, t):
-        r"return"  # noqa: D300, D400, D415, D403
+        r"return\b"  # noqa: D300, D400, D415
         t.value = ControlKeyword.RETURN
         return t
 
@@ -203,67 +207,67 @@ class NssLexer:
 
     # region Type Tokens
     def t_STRUCT(self, t):
-        r"struct"  # noqa: D300, D400, D415, D403
+        r"struct\b"  # noqa: D300, D400, D415
         t.value = DataType.STRUCT
         return t
 
     def t_INT_TYPE(self, t):
-        r"int"  # noqa: D300, D400, D415, D403
+        r"int\b"  # noqa: D300, D400, D415
         t.value = DataType.INT
         return t
 
     def t_FLOAT_TYPE(self, t):
-        r"float"  # noqa: D300, D400, D415, D403
+        r"float\b"  # noqa: D300, D400, D415
         t.value = DataType.FLOAT
         return t
 
     def t_OBJECT_TYPE(self, t):
-        r"object"  # noqa: D300, D400, D415, D403
+        r"object\b"  # noqa: D300, D400, D415
         t.value = DataType.OBJECT
         return t
 
     def t_VOID_TYPE(self, t):
-        r"void"  # noqa: D300, D400, D415, D403
+        r"void\b"  # noqa: D300, D400, D415
         t.value = DataType.VOID
         return t
 
     def t_EVENT_TYPE(self, t):
-        r"event"  # noqa: D300, D400, D415, D403
+        r"event\b"  # noqa: D300, D400, D415
         t.value = DataType.EVENT
         return t
 
     def t_EFFECT_TYPE(self, t):
-        r"effect"  # noqa: D300, D400, D415, D403
+        r"effect\b"  # noqa: D300, D400, D415
         t.value = DataType.EFFECT
         return t
 
     def t_ITEMPROPERTY_TYPE(self, t):
-        r"itemproperty"  # noqa: D300, D400, D415, D403
+        r"itemproperty\b"  # noqa: D300, D400, D415
         t.value = DataType.ITEMPROPERTY
         return t
 
     def t_LOCATION_TYPE(self, t):
-        r"location"  # noqa: D300, D400, D415, D403
+        r"location\b"  # noqa: D300, D400, D415
         t.value = DataType.LOCATION
         return t
 
     def t_STRING_TYPE(self, t):
-        r"string"  # noqa: D300, D400, D415, D403
+        r"string\b"  # noqa: D300, D400, D415
         t.value = DataType.STRING
         return t
 
     def t_TALENT_TYPE(self, t):
-        r"talent"  # noqa: D300, D400, D415, D403
+        r"talent\b"  # noqa: D300, D400, D415
         t.value = DataType.TALENT
         return t
 
     def t_ACTION_TYPE(self, t):
-        r"action"  # noqa: D300, D400, D415, D403
+        r"action\b"  # noqa: D300, D400, D415
         t.value = DataType.ACTION
         return t
 
     def t_VECTOR_TYPE(self, t):
-        r"vector"  # noqa: D300, D400, D415, D403
+        r"vector\b"  # noqa: D300, D400, D415
         t.value = DataType.VECTOR
         return t
 
@@ -271,7 +275,7 @@ class NssLexer:
 
     # region Value Tokens
     def t_IDENTIFIER(self, t):
-        r"[a-zA-Z_]+[a-zA-Z0-9_]*"  # noqa: D300, D400, D415
+        "[a-zA-Z_]+[a-zA-Z0-9_]*"  # noqa: D300, D400, D415
         t.value = Identifier(t.value)
         return t
 
@@ -286,12 +290,12 @@ class NssLexer:
         return t
 
     def t_INT_HEX_VALUE(self, t):
-        r"0x[0-9a-fA-F]+"  # noqa: D300, D400, D415
+        "0x[0-9a-fA-F]+"  # noqa: D300, D400, D415
         t.value = IntExpression(int(t.value, 16))
         return t
 
     def t_INT_VALUE(self, t):
-        r"[0-9]+"  # noqa: D300, D400, D415
+        "[0-9]+"  # noqa: D300, D400, D415
         t.value = IntExpression(int(t.value))
         return t
 
@@ -300,20 +304,20 @@ class NssLexer:
     def t_INCREMENT(self, t):
         r"\+\+"  # noqa: D300, D400, D415
         t.value = OperatorMapping(
-            [
+            unary=[
                 UnaryOperatorMapping(NCSInstructionType.INCISP, DataType.INT),
             ],
-            [],
+            binary=[],
         )
         return t
 
     def t_DECREMENT(self, t):
         r"\-\-"  # noqa: D300, D400, D415
         t.value = OperatorMapping(
-            [
+            unary=[
                 UnaryOperatorMapping(NCSInstructionType.DECISP, DataType.INT),
             ],
-            [],
+            binary=[],
         )
         return t
 
@@ -337,8 +341,8 @@ class NssLexer:
     def t_BITWISE_LEFT(self, t):
         "<<"  # noqa: D300, D400, D415
         t.value = OperatorMapping(
-            [],
-            [
+            unary=[],
+            binary=[
                 BinaryOperatorMapping(NCSInstructionType.SHLEFTII, DataType.INT, DataType.INT, DataType.INT),
             ],
         )
@@ -347,8 +351,8 @@ class NssLexer:
     def t_BITWISE_RIGHT(self, t):
         ">>"  # noqa: D300, D400, D415
         t.value = OperatorMapping(
-            [],
-            [
+            unary=[],
+            binary=[
                 BinaryOperatorMapping(NCSInstructionType.SHRIGHTII, DataType.INT, DataType.INT, DataType.INT),
             ],
         )
@@ -357,8 +361,8 @@ class NssLexer:
     def t_ADD(self, t):
         r"\+"  # noqa: D300, D400, D415
         t.value = OperatorMapping(
-            [],
-            [
+            unary=[],
+            binary=[
                 BinaryOperatorMapping(NCSInstructionType.ADDII, DataType.INT, DataType.INT, DataType.INT),
                 BinaryOperatorMapping(NCSInstructionType.ADDIF, DataType.INT, DataType.INT, DataType.FLOAT),
                 BinaryOperatorMapping(NCSInstructionType.ADDFI, DataType.FLOAT, DataType.FLOAT, DataType.INT),
@@ -370,13 +374,13 @@ class NssLexer:
         return t
 
     def t_MINUS(self, t):
-        "-"  # noqa: D300, D400, D415
+        "-"  # noqa: D300, D415, D400
         t.value = OperatorMapping(
-            [
+            unary=[
                 UnaryOperatorMapping(NCSInstructionType.NEGI, DataType.INT),
                 UnaryOperatorMapping(NCSInstructionType.NEGF, DataType.FLOAT),
             ],
-            [
+            binary=[
                 BinaryOperatorMapping(NCSInstructionType.SUBII, DataType.INT, DataType.INT, DataType.INT),
                 BinaryOperatorMapping(NCSInstructionType.SUBIF, DataType.INT, DataType.INT, DataType.FLOAT),
                 BinaryOperatorMapping(NCSInstructionType.SUBFI, DataType.FLOAT, DataType.FLOAT, DataType.INT),
@@ -389,8 +393,8 @@ class NssLexer:
     def t_MULTIPLY(self, t):
         r"\*"  # noqa: D300, D400, D415
         t.value = OperatorMapping(
-            [],
-            [
+            unary=[],
+            binary=[
                 BinaryOperatorMapping(NCSInstructionType.MULII, DataType.INT, DataType.INT, DataType.INT),
                 BinaryOperatorMapping(NCSInstructionType.MULIF, DataType.INT, DataType.INT, DataType.FLOAT),
                 BinaryOperatorMapping(NCSInstructionType.MULFI, DataType.FLOAT, DataType.FLOAT, DataType.INT),
@@ -404,8 +408,8 @@ class NssLexer:
     def t_DIVIDE(self, t):
         "/"  # noqa: D300, D400, D415
         t.value = OperatorMapping(
-            [],
-            [
+            unary=[],
+            binary=[
                 BinaryOperatorMapping(NCSInstructionType.DIVII, DataType.INT, DataType.INT, DataType.INT),
                 BinaryOperatorMapping(NCSInstructionType.DIVIF, DataType.INT, DataType.INT, DataType.FLOAT),
                 BinaryOperatorMapping(NCSInstructionType.DIVFI, DataType.FLOAT, DataType.FLOAT, DataType.INT),
@@ -419,8 +423,8 @@ class NssLexer:
     def t_MOD(self, t):
         r"\%"  # noqa: D300, D400, D415
         t.value = OperatorMapping(
-            [],
-            [
+            unary=[],
+            binary=[
                 BinaryOperatorMapping(NCSInstructionType.MODII, DataType.INT, DataType.INT, DataType.INT),
             ],
         )
@@ -429,8 +433,8 @@ class NssLexer:
     def t_EQUALS(self, t):
         r"\=\="  # noqa: D300, D400, D415
         t.value = OperatorMapping(
-            [],
-            [
+            unary=[],
+            binary=[
                 BinaryOperatorMapping(NCSInstructionType.EQUALII, DataType.INT, DataType.INT, DataType.INT),
                 BinaryOperatorMapping(NCSInstructionType.EQUALFF, DataType.INT, DataType.FLOAT, DataType.FLOAT),
                 BinaryOperatorMapping(NCSInstructionType.EQUALOO, DataType.INT, DataType.OBJECT, DataType.OBJECT),
@@ -442,8 +446,8 @@ class NssLexer:
     def t_NOT_EQUALS(self, t):
         r"\!="  # noqa: D300, D400, D415
         t.value = OperatorMapping(
-            [],
-            [
+            unary=[],
+            binary=[
                 BinaryOperatorMapping(NCSInstructionType.NEQUALII, DataType.INT, DataType.INT, DataType.INT),
                 BinaryOperatorMapping(NCSInstructionType.NEQUALFF, DataType.INT, DataType.FLOAT, DataType.FLOAT),
                 BinaryOperatorMapping(NCSInstructionType.NEQUALOO, DataType.INT, DataType.OBJECT, DataType.OBJECT),
@@ -455,8 +459,8 @@ class NssLexer:
     def t_GREATER_THAN_OR_EQUALS(self, t):
         r">\="  # noqa: D300, D400, D415
         t.value = OperatorMapping(
-            [],
-            [
+            unary=[],
+            binary=[
                 BinaryOperatorMapping(NCSInstructionType.GEQII, DataType.INT, DataType.INT, DataType.INT),
                 BinaryOperatorMapping(NCSInstructionType.GEQFF, DataType.INT, DataType.FLOAT, DataType.FLOAT),
             ],
@@ -466,8 +470,8 @@ class NssLexer:
     def t_GREATER_THAN(self, t):
         ">"  # noqa: D300, D400, D415
         t.value = OperatorMapping(
-            [],
-            [
+            unary=[],
+            binary=[
                 BinaryOperatorMapping(NCSInstructionType.GTII, DataType.INT, DataType.INT, DataType.INT),
                 BinaryOperatorMapping(NCSInstructionType.GTFF, DataType.INT, DataType.FLOAT, DataType.FLOAT),
             ],
@@ -477,8 +481,8 @@ class NssLexer:
     def t_LESS_THAN_OR_EQUALS(self, t):
         r"\<="  # noqa: D300, D400, D415
         t.value = OperatorMapping(
-            [],
-            [
+            unary=[],
+            binary=[
                 BinaryOperatorMapping(NCSInstructionType.LEQII, DataType.INT, DataType.INT, DataType.INT),
                 BinaryOperatorMapping(NCSInstructionType.LEQFF, DataType.INT, DataType.FLOAT, DataType.FLOAT),
             ],
@@ -488,8 +492,8 @@ class NssLexer:
     def t_LESS_THAN(self, t):
         r"\<"  # noqa: D300, D400, D415
         t.value = OperatorMapping(
-            [],
-            [
+            unary=[],
+            binary=[
                 BinaryOperatorMapping(NCSInstructionType.LTII, DataType.INT, DataType.INT, DataType.INT),
                 BinaryOperatorMapping(NCSInstructionType.LTFF, DataType.INT, DataType.FLOAT, DataType.FLOAT),
             ],
@@ -499,8 +503,8 @@ class NssLexer:
     def t_AND(self, t):
         "&&"  # noqa: D300, D400, D415
         t.value = OperatorMapping(
-            [],
-            [
+            unary=[],
+            binary=[
                 BinaryOperatorMapping(NCSInstructionType.LOGANDII, DataType.INT, DataType.INT, DataType.INT),
             ],
         )
@@ -509,8 +513,8 @@ class NssLexer:
     def t_OR(self, t):
         r"\|\|"  # noqa: D300, D400, D415
         t.value = OperatorMapping(
-            [],
-            [
+            unary=[],
+            binary=[
                 BinaryOperatorMapping(NCSInstructionType.LOGORII, DataType.INT, DataType.INT, DataType.INT),
             ],
         )
@@ -519,18 +523,18 @@ class NssLexer:
     def t_NOT(self, t):
         r"\!"  # noqa: D300, D400
         t.value = OperatorMapping(
-            [
+            unary=[
                 UnaryOperatorMapping(NCSInstructionType.NOTI, DataType.INT),
             ],
-            [],
+            binary=[],
         )
         return t
 
     def t_BITWISE_AND(self, t):
         "&"  # noqa: D300, D400, D415
         t.value = OperatorMapping(
-            [],
-            [
+            unary=[],
+            binary=[
                 BinaryOperatorMapping(NCSInstructionType.BOOLANDII, DataType.INT, DataType.INT, DataType.INT),
             ],
         )
@@ -539,8 +543,8 @@ class NssLexer:
     def t_BITWISE_OR(self, t):
         r"\|"  # noqa: D300, D400, D415
         t.value = OperatorMapping(
-            [],
-            [
+            unary=[],
+            binary=[
                 BinaryOperatorMapping(NCSInstructionType.INCORII, DataType.INT, DataType.INT, DataType.INT),
             ],
         )
@@ -549,8 +553,8 @@ class NssLexer:
     def t_BITWISE_XOR(self, t):
         r"\^"  # noqa: D300, D400, D415
         t.value = OperatorMapping(
-            [],
-            [
+            unary=[],
+            binary=[
                 BinaryOperatorMapping(NCSInstructionType.EXCORII, DataType.INT, DataType.INT, DataType.INT),
             ],
         )
@@ -558,7 +562,12 @@ class NssLexer:
 
     def t_BITWISE_NOT(self, t):
         r"\~"  # noqa: D300, D400, D415
-        t.value = OperatorMapping([UnaryOperatorMapping(NCSInstructionType.COMPI, DataType.INT)], [])
+        t.value = OperatorMapping(
+            unary=[
+                UnaryOperatorMapping(NCSInstructionType.COMPI, DataType.INT),
+            ],
+            binary=[],
+        )
         return t
 
     # endregion

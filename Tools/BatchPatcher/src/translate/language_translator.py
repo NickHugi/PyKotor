@@ -7,9 +7,8 @@ from enum import Enum
 from typing import TYPE_CHECKING, Any, Callable
 
 import requests
-
 from pykotor.common.language import Language
-from utility.path import Path
+from utility.system.path import Path
 
 if TYPE_CHECKING:
     import os
@@ -192,7 +191,7 @@ class TranslationOption(Enum):
             if msg:
                 return msg
             database_path = Path(attr)
-            if not database_path.safe_exists() or database_path.suffix.lower() != ".db":
+            if database_path.suffix.lower() != ".db" or not database_path.safe_isfile():
                 return "Database not found or incorrect type, needs to be a valid path to the .db file."
         elif self is self.LIBRE_TRANSLATOR:
             msg, attr = check("api_key")
