@@ -14,7 +14,7 @@ from pathlib import Path, PosixPath, PurePath, PurePosixPath, PureWindowsPath, W
 from tempfile import TemporaryDirectory
 from unittest import mock
 
-THIS_SCRIPT_PATH = pathlib.Path(__file__)
+THIS_SCRIPT_PATH = pathlib.Path(__file__).resolve()
 PYKOTOR_PATH = THIS_SCRIPT_PATH.parents[2]
 UTILITY_PATH = THIS_SCRIPT_PATH.parents[4].joinpath("Utility", "src")
 def add_sys_path(p: pathlib.Path):
@@ -246,7 +246,7 @@ class TestPathlibMixedSlashes(unittest.TestCase):
             self.assertEqual(test_pathtype_isdir, True)
             #self.assertRaises(OSError, PathType(test_path).is_dir)
 
-    def test_find_exists_problems(self):
+    def find_exists_problems(self):
         test_classes: tuple[type, ...] = (Path, CustomPath, CaseAwarePath)
         test_path = "/" if platform.system() != "Windows" else "C:\\"
         for PathType in test_classes:

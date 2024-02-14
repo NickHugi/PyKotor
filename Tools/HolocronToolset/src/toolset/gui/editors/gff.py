@@ -48,11 +48,13 @@ class GFFEditor(Editor):
             ResourceType.GIT,
             ResourceType.JRL,
             ResourceType.ITP,
+            ResourceType.RES,
         ]
         super().__init__(parent, "GFF Editor", "none", supported, supported, installation)
         self.resize(400, 250)
 
         self._talktable: TalkTable | None = installation.talktable() if installation else None
+        self._gff_content: GFFContent | None = None
 
         from toolset.uic.editors.gff import Ui_MainWindow
 
@@ -140,7 +142,8 @@ class GFFEditor(Editor):
             - Expands root node in tree view after loading.
         """
         super().load(filepath, resref, restype, data)
-        gff = read_gff(data)
+        gff: GFF = read_gff(data)
+        self._gff_content = gff.content
 
         self.model.clear()
         self.model.setColumnCount(1)
@@ -233,7 +236,7 @@ class GFFEditor(Editor):
             - Returns the byte array and an empty byte array.
         """
         try:
-            content = GFFContent(f"{self._restype.extension.upper()} ")
+            content = self._gff_content or GFFContent(f"{self._restype.extension.upper()} ")
         except ValueError as e:
             print(format_exception_with_variables(e))
             content = GFFContent.GFF
@@ -411,7 +414,7 @@ class GFFEditor(Editor):
                 self.ui.lineEdit.setText(item.data(_VALUE_NODE_ROLE).get())
             elif item.data(_TYPE_NODE_ROLE) == GFFFieldType.String:
                 self.ui.pages.setCurrentWidget(self.ui.textPage)
-                self.ui.textEdit.setPlainText(item.data(_VALUE_NODE_ROLE))
+                self.ui.textEdit.setPlainText(str(item.data(_VALUE_NODE_ROLE)))
             elif item.data(_TYPE_NODE_ROLE) == GFFFieldType.Struct:
                 set_widget(-1, 0xFFFFFFFF, item)
             elif item.data(_TYPE_NODE_ROLE) == GFFFieldType.List:
@@ -707,18 +710,21 @@ class GFFEditor(Editor):
         parent.appendRow(item)
         self.refreshItemText(item)
 
+    def addNode(self, item: QStandardItem):
+        """Add a node from the tree model.
+
+        Args:
+        ----
+            item: The item to add
+        """
+        self.insertNode(item, "New Struct", GFFFieldType.Struct, GFFStruct())
+
     def removeNode(self, item: QStandardItem):
         """Remove a node from the tree model.
 
         Args:
         ----
             item: The item to remove
-
-        Processing Logic:
-        ----------------
-            - Get the parent item of the item to remove
-            - Remove the item's row from the parent
-            - This removes the item from the model.
         """
         item.parent().removeRow(item.row())
 
@@ -764,7 +770,7 @@ class GFFEditor(Editor):
             menu = QMenu(self)
 
             if item.data(_TYPE_NODE_ROLE) == GFFFieldType.List:
-                menu.addAction("Add Struct").triggered.connect()
+                menu.addAction("Add Struct").triggered.connect(lambda: self.addNode(item))
             elif item.data(_TYPE_NODE_ROLE) in [GFFFieldType.Struct, None]:
                 self._build_context_menu_gff_struct(menu, item)
             else:

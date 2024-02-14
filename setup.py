@@ -8,7 +8,8 @@ from setuptools import setup
 
 
 def main():
-    HERE = Path(__file__).parent
+    file_absolute_path = Path(__file__).resolve()
+    HERE = Path(file_absolute_path).parent
 
     # Load information from pyproject.toml
     with HERE.joinpath("pyproject.toml").open() as toml_file:

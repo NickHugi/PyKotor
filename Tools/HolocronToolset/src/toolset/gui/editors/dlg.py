@@ -1019,7 +1019,7 @@ class DLGEditor(Editor):
         item: QStandardItem | None = self.model.itemFromIndex(index)
 
         link: DLGLink = item.data(_LINK_ROLE)
-        node: DLGNode = link.node
+        node: DLGNode | None = link.node
 
         node.listener = self.ui.listenerEdit.text()
         if isinstance(node, DLGEntry):

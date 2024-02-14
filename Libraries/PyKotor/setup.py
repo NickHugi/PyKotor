@@ -9,7 +9,7 @@ from setuptools import setup
 
 
 def main():
-    HERE = Path(__file__).parent
+    HERE = Path(__file__).resolve().parent
 
     # Load information from pyproject.toml
     with HERE.joinpath("pyproject.toml").open() as toml_file:
