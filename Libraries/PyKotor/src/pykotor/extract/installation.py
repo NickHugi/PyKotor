@@ -1589,9 +1589,14 @@ class Installation:
 
         def check_list(values: list[FileResource]):
             for resource in values:
-                case_resname: str = resource.resname().casefold()
-                if case_resname in case_resnames and resource.restype() in sound_formats:
-                    case_resnames.remove(case_resname)
+                if resource.restype() not in sound_formats:
+                    continue
+                case_resname = CaseInsensitiveWrappedStr.cast(resource.resname())
+                if case_resname not in case_resnames:
+                    continue
+                case_resnames.remove(case_resname)
+                sound_data = resource.data()
+                sounds[case_resname] = fix_audio(sound_data) if sound_data else b""
 
         def check_capsules(resource_list: list[Capsule]):
             for capsule in resource_list:
