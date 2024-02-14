@@ -1,10 +1,9 @@
 from __future__ import annotations
 
 from configparser import ConfigParser
-from copy import copy, deepcopy
+from copy import copy
 from enum import IntEnum
 from typing import TYPE_CHECKING
-from pykotor.tslpatcher.mods.gff import Memory2DAModifierGFF
 
 from pykotor.tslpatcher.mods.gff import Memory2DAModifierGFF
 from pykotor.tslpatcher.mods.tlk import ModificationsTLK

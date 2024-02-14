@@ -204,7 +204,7 @@ class CaseAwarePath(InternalPath):  # type: ignore[misc]
                     (
                         item
                         for item in base_path.safe_iterdir()
-                        if item.name.lower() == parts[i].lower() and (last_part or item.safe_isdir())
+                        if last_part or item.safe_isdir()
                     ),
                 )
 

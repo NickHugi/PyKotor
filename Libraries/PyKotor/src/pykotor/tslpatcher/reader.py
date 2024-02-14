@@ -393,7 +393,7 @@ class ConfigReader:
                 modifications_tlk_keys,
             ):
                 change_indices: range = mod_key if isinstance(mod_key, range) else parse_range(str(mod_key))
-                value_range: range = parse_range(str(mod_value)) if not isinstance(mod_value, range) and mod_value != "" else mod_key
+                value_range = parse_range(str(mod_value)) if not isinstance(mod_value, range) and mod_value != "" else mod_key
 
                 change_iter, value_iter = tee(change_indices)
                 value_iter = iter(value_range)
