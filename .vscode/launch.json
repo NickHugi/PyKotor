@@ -1,6 +1,5 @@
 {
   "version": "0.2.0",
-  "justMyCode": true,
   "preLaunchTask": "install_requirements",
   "dependsOn": "install_requirements",
   "configurations": [
@@ -34,17 +33,34 @@
       "justMyCode": false,
     },
     {
-        "name": "Run Holocron Toolset",
-        "type": "python",
-        "request": "launch",
-        "module": "toolset",
-        "cwd": "${workspaceFolder}/Tools/HolocronToolset/src/",
-        "pythonArgs": [
-          "-Xfrozen_modules=off",
-          "-Xdev"
-        ],
-        "console": "integratedTerminal",
-        "env": {"PYTHONPATH": "${workspaceFolder}/Libraries/PyKotor/src${pathSeparator}${env:PYTHONPATH}"}
-      },
+      "name": "Run Holocron Toolset",
+      "type": "python",
+      "request": "launch",
+      "module": "toolset",
+      "cwd": "${workspaceFolder}/Tools/HolocronToolset/src/",
+      "pythonArgs": [
+        "-Xfrozen_modules=off",
+        "-Xdev"
+      ],
+      "console": "integratedTerminal",
+    },
+    {
+      "name": "Run HoloPatcher",
+      "type": "python",
+      "request": "launch",
+      "program": "${workspaceFolder}${pathSeparator}Tools${pathSeparator}HoloPatcher${pathSeparator}src${pathSeparator}__main__.py",
+      "cwd": "${workspaceFolder}/Tools/HoloPatcher/src/",
+      "console": "integratedTerminal",
+      "env": {"PYTHONPATH": "${workspaceFolder}/Libraries/PyKotor/src;${workspaceFolder}/Libraries/Utility/src;${env:PYTHONPATH}"}
+    },
+    {
+      "name": "Run BatchPatcher",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${workspaceFolder}${pathSeparator}Tools${pathSeparator}BatchPatcher${pathSeparator}src${pathSeparator}__main__.py",
+      "cwd": "${workspaceFolder}/Tools/BatchPatcher/src/",
+      "console": "integratedTerminal",
+      "env": {"PYTHONPATH": "${workspaceFolder}/Libraries/PyKotor/src;${workspaceFolder}/Libraries/Utility/src;${env:PYTHONPATH}"}
+    },
   ]
 }

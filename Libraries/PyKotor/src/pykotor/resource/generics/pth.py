@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from contextlib import suppress
 from copy import copy
 
 from pykotor.common.geometry import Vector2
@@ -8,6 +7,7 @@ from pykotor.common.misc import Game
 from pykotor.resource.formats.gff import GFF, GFFContent, GFFList, read_gff, write_gff
 from pykotor.resource.formats.gff.gff_auto import bytes_gff
 from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES, ResourceType
+from utility.error_handling import format_exception_with_variables
 
 
 class PTH:
@@ -34,7 +34,7 @@ class PTH:
     def __getitem__(
         self,
         item: int,
-    ):
+    ) -> Vector2:
         return self._points[item]
 
     def add(
@@ -48,7 +48,7 @@ class PTH:
     def remove(
         self,
         index: int,
-    ) -> None:
+    ):
         self._points.pop(index)
 
         self._connections = [x for x in self._connections if index not in (x.source, x.target)]
@@ -61,8 +61,10 @@ class PTH:
         self,
         index: int,
     ) -> Vector2 | None:
-        with suppress(Exception):
+        try:
             return self._points[index]
+        except Exception as e:
+            print(format_exception_with_variables(e, message="This exception has been suppressed."))
         return None
 
     def find(
@@ -75,17 +77,18 @@ class PTH:
         self,
         source: int,
         target: int,
-    ) -> None:
+    ):
         self._connections.append(PTHEdge(source, target))
 
     def disconnect(
         self,
         source: int,
         target: int,
-    ) -> None:
+    ):
         for edge in copy(self._connections):
-            has_source = edge.source in [source, target]
-            has_target = edge.target in [source, target]
+            tuple_check: tuple[int, int] = (source, target)
+            has_source: bool = edge.source in tuple_check
+            has_target: bool = edge.target in tuple_check
             if has_source and has_target:
                 self._connections.remove(edge)
 
@@ -115,17 +118,25 @@ class PTHEdge:
         source: int,
         target: int,
     ):
-        self.source = source
-        self.target = target
+        self.source: int = source
+        self.target: int = target
+
+    def __repr__(
+        self,
+    ):
+        return f"{self.__class__.__name__}(source={self.source}, target={self.target})"
 
     def __eq__(
         self,
-        other,
+        other: PTHEdge,
     ):
-        if not isinstance(other, PTHEdge):
-            raise NotImplementedError
+        if isinstance(other, PTHEdge):
+            return self.source == other.source and self.target == other.target
 
-        return self.source == other.source and self.target == other.target
+        msg = f"Cannot compare {self!r} with {other!r}."
+        print(msg)
+        return NotImplemented
+
 
 
 def construct_pth(
@@ -133,18 +144,18 @@ def construct_pth(
 ) -> PTH:
     pth = PTH()
 
-    connections_list = gff.root.acquire("Path_Conections", GFFList())
+    connections_list: GFFList = gff.root.acquire("Path_Conections", GFFList())
 
     for point_struct in gff.root.acquire("Path_Points", GFFList()):
-        connections = point_struct.acquire("Conections", 0)
-        first_connection = point_struct.acquire("First_Conection", 0)
-        x = point_struct.acquire("X", 0.0)
-        y = point_struct.acquire("Y", 0.0)
+        connections: int = point_struct.acquire("Conections", 0)
+        first_connection: int = point_struct.acquire("First_Conection", 0)
+        x: float = point_struct.acquire("X", 0.0)
+        y: float = point_struct.acquire("Y", 0.0)
 
-        source = pth.add(x, y)
+        source: int = pth.add(x, y)
 
         for i in range(first_connection, first_connection + connections):
-            target = connections_list.at(i).acquire("Destination", 0)
+            target: int = connections_list.at(i).acquire("Destination", 0)
             pth.connect(source, target)
 
     return pth
@@ -158,11 +169,11 @@ def dismantle_pth(
 ) -> GFF:
     gff = GFF(GFFContent.PTH)
 
-    connections_list = gff.root.set_list("Path_Conections", GFFList())
-    points_list = gff.root.set_list("Path_Points", GFFList())
+    connections_list: GFFList = gff.root.set_list("Path_Conections", GFFList())
+    points_list: GFFList = gff.root.set_list("Path_Points", GFFList())
 
     for i, point in enumerate(pth):
-        outgoings = pth.outgoing(i)
+        outgoings: list[PTHEdge] = pth.outgoing(i)
 
         point_struct = points_list.add(2)
         point_struct.set_uint32("Conections", len(outgoings))
@@ -182,7 +193,7 @@ def read_pth(
     offset: int = 0,
     size: int | None = None,
 ) -> PTH:
-    gff = read_gff(source, offset, size)
+    gff: GFF = read_gff(source, offset, size)
     return construct_pth(gff)
 
 
@@ -193,8 +204,8 @@ def write_pth(
     file_format: ResourceType = ResourceType.GFF,
     *,
     use_deprecated: bool = True,
-) -> None:
-    gff = dismantle_pth(pth, game, use_deprecated=use_deprecated)
+):
+    gff: GFF = dismantle_pth(pth, game, use_deprecated=use_deprecated)
     write_gff(gff, target, file_format)
 
 
@@ -205,5 +216,5 @@ def bytes_pth(
     *,
     use_deprecated: bool = True,
 ) -> bytes:
-    gff = dismantle_pth(pth, game, use_deprecated=use_deprecated)
+    gff: GFF = dismantle_pth(pth, game, use_deprecated=use_deprecated)
     return bytes_gff(gff, file_format)

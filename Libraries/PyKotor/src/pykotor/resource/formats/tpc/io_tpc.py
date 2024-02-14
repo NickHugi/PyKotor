@@ -77,9 +77,9 @@ class TPCBinaryReader(ResourceReader):
         """
         self._tpc = TPC()
 
-        size = self._reader.read_uint32()
+        size: int = self._reader.read_uint32()
         min_size = -1
-        compressed = size != 0
+        compressed: bool = size != 0
 
         self._reader.skip(4)
 
@@ -137,13 +137,13 @@ class TPCBinaryWriter(ResourceWriter):
         target: TARGET_TYPES,
     ):
         super().__init__(target)
-        self._tpc = tpc
+        self._tpc: TPC = tpc
 
     @autoclose
     def write(
         self,
         auto_close: bool = True,
-    ) -> None:
+    ):
         """Writes the TPC texture data to the file stream.
 
         Args:

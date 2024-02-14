@@ -83,7 +83,7 @@ class SSFBinaryWriter(ResourceWriter):
     def write(
         self,
         auto_close: bool = True,
-    ) -> None:
+    ):
         self._writer.write_string("SSF ")
         self._writer.write_string("V1.1")
         self._writer.write_uint32(12)

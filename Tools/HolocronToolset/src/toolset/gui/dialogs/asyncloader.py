@@ -8,7 +8,7 @@ from PyQt5.QtWidgets import QDialog, QLabel, QMessageBox, QProgressBar, QVBoxLay
 from toolset.__main__ import is_frozen
 from utility.error_handling import format_exception_with_variables
 from utility.misc import is_debug_mode
-from utility.path import Path
+from utility.system.path import Path
 
 if TYPE_CHECKING:
     from PyQt5.QtGui import QCloseEvent
@@ -73,7 +73,7 @@ class AsyncLoader(QDialog):
         self._worker.failed.connect(self._onFailed)
         self._worker.start()
 
-    def closeEvent(self, e: QCloseEvent) -> None:
+    def closeEvent(self, e: QCloseEvent):
         self._worker.terminate()
 
     def updateInfo(self, text: str):
@@ -166,10 +166,10 @@ class AsyncBatchLoader(QDialog):
         self._worker.completed.connect(self._onAllCompleted)
         self._worker.start()
 
-    def closeEvent(self, e: QCloseEvent) -> None:
+    def closeEvent(self, e: QCloseEvent):
         self._worker.terminate()
 
-    def addTask(self, task: Callable) -> None:
+    def addTask(self, task: Callable):
         self._worker.addTask(task)
         self._progressBar.setMaximum(self._worker.numTasks())
 
@@ -229,7 +229,7 @@ class AsyncBatchWorker(QThread):
                     break
         self.completed.emit()
 
-    def addTask(self, task: Callable) -> None:
+    def addTask(self, task: Callable):
         self._tasks.append(task)
 
     def numTasks(self) -> int:

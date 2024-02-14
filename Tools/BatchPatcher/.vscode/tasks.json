@@ -3,7 +3,9 @@
   "tasks": [
     {
       "label": "requirements.txt",
-      "dependsOn": ["pykotor_requirements"],
+      "dependsOn": [
+        "pykotor_requirements"
+      ],
       "type": "shell",
       "command": "${command:python.interpreterPath}",
       "args": [
@@ -11,7 +13,7 @@
         "pip",
         "install",
         "-r",
-        "requirements.txt",
+        "requirements.txt"
       ],
       "presentation": {
         "echo": true,
@@ -28,14 +30,14 @@
         "pip",
         "install",
         "-r",
-        "requirements.txt",
+        "requirements.txt"
       ],
       "presentation": {
         "echo": true,
         "reveal": "always"
       },
       "options": {
-        "cwd": "../../Libraries/PyKotor",
+        "cwd": "../../Libraries/PyKotor"
       },
       "problemMatcher": []
     },
@@ -47,7 +49,7 @@
         "-m",
         "pip",
         "install",
-        "pyinstaller",
+        "pyinstaller"
       ],
       "presentation": {
         "echo": true,
@@ -63,7 +65,7 @@
         "-m",
         "pip",
         "install",
-        "shiv",
+        "shiv"
       ],
       "presentation": {
         "echo": true,
@@ -79,7 +81,7 @@
         "-m",
         "pip",
         "install",
-        "nuitka",
+        "nuitka"
       ],
       "presentation": {
         "echo": true,
@@ -95,7 +97,7 @@
         "-m",
         "pip",
         "install",
-        "pylint",
+        "pylint"
       ],
       "presentation": {
         "echo": true,
@@ -111,7 +113,7 @@
         "-m",
         "pip",
         "install",
-        "ruff",
+        "ruff"
       ],
       "presentation": {
         "echo": true,
@@ -127,7 +129,7 @@
         "-m",
         "pip",
         "install",
-        "mypy",
+        "mypy"
       ],
       "presentation": {
         "echo": true,
@@ -143,7 +145,7 @@
         "-m",
         "pip",
         "install",
-        "pylint",
+        "pylint"
       ],
       "presentation": {
         "echo": true,
@@ -152,19 +154,25 @@
       "problemMatcher": []
     },
     {
-        "label": "pylint: pykotor",
-        "dependsOn": ["requirements.txt", "install_pylint"],
-        "type": "shell",
-        "command": "${command:python.interpreterPath} -m pylint --disable=C0301,C0302,C0115,C0116,R0913,C0114,R0903,R0902,W0212,R0914,R0904,W0613,E0611,C0415 pykotor",
-        "presentation": {
-            "reveal": "never",
-            "panel": "shared"
-        },
-        "problemMatcher": [],
+      "label": "pylint: pykotor",
+      "dependsOn": [
+        "requirements.txt",
+        "install_pylint"
+      ],
+      "type": "shell",
+      "command": "${command:python.interpreterPath} -m pylint --disable=C0301,C0302,C0115,C0116,R0913,C0114,R0903,R0902,W0212,R0914,R0904,W0613,E0611,C0415 pykotor",
+      "presentation": {
+        "reveal": "never",
+        "panel": "shared"
+      },
+      "problemMatcher": []
     },
     {
       "label": "Python: lint pykotor with mypy",
-      "dependsOn": ["requirements.txt", "install_mypy"],
+      "dependsOn": [
+        "requirements.txt",
+        "install_mypy"
+      ],
       "type": "shell",
       "command": "${command:python.interpreterPath}",
       "args": [
@@ -175,18 +183,18 @@
         "--package",
         "pykotor",
         "--check-untyped-defs",
-        "--no-strict-optional",
+        "--no-strict-optional"
       ],
       "group": "test",
       "presentation": {
         "reveal": "always",
-        "panel": "new",
+        "panel": "new"
       },
       "problemMatcher": {
         "owner": "python",
         "fileLocation": [
           "relative",
-          "${workspaceFolder}",
+          "${workspaceFolder}"
         ],
         "pattern": {
           "regexp": "^(.+):(\\d+):(\\d+): (\\w+): (.*)$",
@@ -194,14 +202,17 @@
           "line": 2,
           "column": 3,
           "severity": 4,
-          "message": 5,
+          "message": 5
         }
       }
     },
     {
       "label": "Python: Ruff check entire project",
       "type": "shell",
-      "dependsOn": ["requirements.txt", "install_ruff"],
+      "dependsOn": [
+        "requirements.txt",
+        "install_ruff"
+      ],
       "command": "${command:python.interpreterPath}",
       "args": [
         "-m",
@@ -234,7 +245,10 @@
     {
       "label": "Build K-BatchPatcher",
       "type": "shell",
-      "dependsOn": ["requirements.txt", "install_pyinstaller"],
+      "dependsOn": [
+        "requirements.txt",
+        "install_pyinstaller"
+      ],
       "command": "${command:python.interpreterPath}",
       "args": [
         "-m",
@@ -249,10 +263,22 @@
         "--exclude-module=PyGLM",
         "--exclude-module=dl_translate",
         "--exclude-module=torch",
-        "--path=${workspaceFolder}${pathSeparator}tools${pathSeparator}k_batchpatcher",
-        "tools${pathSeparator}k_batchpatcher${pathSeparator}__main__.py"
+        "--path=${workspaceFolder}${pathSeparator}..${pathSeparator}..${pathSeparator}Libraries${pathSeparator}PyKotor",
+        "--path=${workspaceFolder}${pathSeparator}..${pathSeparator}..${pathSeparator}Libraries${pathSeparator}PyKotorFont",
+        "--path=${workspaceFolder}${pathSeparator}..${pathSeparator}..${pathSeparator}Libraries${pathSeparator}Utility",
+        "--upx-dir=${env:USERPROFILE}${pathSeparator}Documents${pathSeparator}GitHub${pathSeparator}upx-win32",
+        "${workspaceFolder}${pathSeparator}src${pathSeparator}__main__.py"
       ],
+      "options": {
+        "env":{
+          "PYTHONOPTIMIZE": "1",
+        }
+      },
       "problemMatcher": [],
-    },
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      }
+    }
   ]
 }

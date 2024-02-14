@@ -67,13 +67,13 @@ class RIMBinaryWriter(ResourceWriter):
         target: TARGET_TYPES,
     ):
         super().__init__(target)
-        self._rim = rim
+        self._rim: RIM = rim
 
     @autoclose
     def write(
         self,
         auto_close: bool = True,
-    ) -> None:
+    ):
         entry_count = len(self._rim)
         offset_to_keys = RIMBinaryWriter.FILE_HEADER_SIZE
 
@@ -86,7 +86,7 @@ class RIMBinaryWriter(ResourceWriter):
 
         data_offset = offset_to_keys + RIMBinaryWriter.KEY_ELEMENT_SIZE * entry_count
         for resid, resource in enumerate(self._rim):
-            self._writer.write_string(resource.resref.get(), string_length=16)
+            self._writer.write_string(str(resource.resref), string_length=16)
             self._writer.write_uint32(resource.restype.type_id)
             self._writer.write_uint32(resid)
             self._writer.write_uint32(data_offset)

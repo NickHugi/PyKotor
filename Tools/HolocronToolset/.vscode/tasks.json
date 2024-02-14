@@ -3,7 +3,10 @@
   "tasks": [
     {
       "label": "toolset requirements",
-      "dependsOn": ["pykotor_requirements", "pykotorgl_requirements"],
+      "dependsOn": [
+        "pykotor_requirements",
+        "pykotorgl_requirements"
+      ],
       "type": "shell",
       "command": "${command:python.interpreterPath}",
       "args": [
@@ -11,7 +14,7 @@
         "pip",
         "install",
         "-r",
-        "requirements.txt",
+        "requirements.txt"
       ],
       "presentation": {
         "echo": true,
@@ -28,7 +31,7 @@
         "pip",
         "install",
         "-r",
-        "../../Libraries/PyKotor/requirements.txt",
+        "../../Libraries/PyKotor/requirements.txt"
       ],
       "presentation": {
         "echo": true,
@@ -45,7 +48,7 @@
         "pip",
         "install",
         "-r",
-        "../../Libraries/PyKotorGL/requirements.txt",
+        "../../Libraries/PyKotorGL/requirements.txt"
       ],
       "presentation": {
         "echo": true,
@@ -61,7 +64,7 @@
         "-m",
         "pip",
         "install",
-        "pyinstaller",
+        "pyinstaller"
       ],
       "presentation": {
         "echo": true,
@@ -77,7 +80,7 @@
         "-m",
         "pip",
         "install",
-        "shiv",
+        "shiv"
       ],
       "presentation": {
         "echo": true,
@@ -93,7 +96,7 @@
         "-m",
         "pip",
         "install",
-        "nuitka",
+        "nuitka"
       ],
       "presentation": {
         "echo": true,
@@ -109,7 +112,7 @@
         "-m",
         "pip",
         "install",
-        "pylint",
+        "pylint"
       ],
       "presentation": {
         "echo": true,
@@ -125,7 +128,7 @@
         "-m",
         "pip",
         "install",
-        "ruff",
+        "ruff"
       ],
       "presentation": {
         "echo": true,
@@ -141,7 +144,7 @@
         "-m",
         "pip",
         "install",
-        "mypy",
+        "mypy"
       ],
       "presentation": {
         "echo": true,
@@ -157,7 +160,7 @@
         "-m",
         "pip",
         "install",
-        "pylint",
+        "pylint"
       ],
       "presentation": {
         "echo": true,
@@ -166,30 +169,39 @@
       "problemMatcher": []
     },
     {
-        "label": "pylint: toolset",
-        "dependsOn": ["requirements.txt", "install_pylint"],
-        "type": "shell",
-        "command": "${command:python.interpreterPath} -m pylint --disable=C0301,C0302,C0115,C0116,R0913,C0114,R0903,R0902,W0212,R0914,R0904,W0613,E0611,C0415,I1101 tools/HolocronToolset/toolset",
-        "presentation": {
-            "reveal": "never",
-            "panel": "shared"
-        },
-        "problemMatcher": []
+      "label": "pylint: toolset",
+      "dependsOn": [
+        "requirements.txt",
+        "install_pylint"
+      ],
+      "type": "shell",
+      "command": "${command:python.interpreterPath} -m pylint --disable=C0301,C0302,C0115,C0116,R0913,C0114,R0903,R0902,W0212,R0914,R0904,W0613,E0611,C0415,I1101 tools/HolocronToolset/toolset",
+      "presentation": {
+        "reveal": "never",
+        "panel": "shared"
+      },
+      "problemMatcher": []
     },
     {
-        "label": "pylint: pykotor",
-        "dependsOn": ["requirements.txt", "install_pylint"],
-        "type": "shell",
-        "command": "${command:python.interpreterPath} -m pylint --disable=C0301,C0302,C0115,C0116,R0913,C0114,R0903,R0902,W0212,R0914,R0904,W0613,E0611,C0415 pykotor",
-        "presentation": {
-            "reveal": "never",
-            "panel": "shared"
-        },
-        "problemMatcher": []
+      "label": "pylint: pykotor",
+      "dependsOn": [
+        "requirements.txt",
+        "install_pylint"
+      ],
+      "type": "shell",
+      "command": "${command:python.interpreterPath} -m pylint --disable=C0301,C0302,C0115,C0116,R0913,C0114,R0903,R0902,W0212,R0914,R0904,W0613,E0611,C0415 pykotor",
+      "presentation": {
+        "reveal": "never",
+        "panel": "shared"
+      },
+      "problemMatcher": []
     },
     {
       "label": "Python: lint pykotor with mypy",
-      "dependsOn": ["requirements.txt", "install_mypy"],
+      "dependsOn": [
+        "requirements.txt",
+        "install_mypy"
+      ],
       "type": "shell",
       "command": "${command:python.interpreterPath}",
       "args": [
@@ -225,7 +237,10 @@
     },
     {
       "label": "Python: lint toolset with mypy",
-      "dependsOn": ["install_mypy", "requirements.txt"],
+      "dependsOn": [
+        "install_mypy",
+        "requirements.txt"
+      ],
       "type": "shell",
       "command": "${command:python.interpreterPath}",
       "args": [
@@ -262,7 +277,10 @@
     {
       "label": "Python: Ruff check entire workspace",
       "type": "shell",
-      "dependsOn": ["requirements.txt", "install_ruff"],
+      "dependsOn": [
+        "requirements.txt",
+        "install_ruff"
+      ],
       "command": "${command:python.interpreterPath}",
       "args": [
         "-m",
@@ -295,12 +313,15 @@
     {
       "label": "Build Toolset - PyInstaller",
       "type": "shell",
-      "dependsOn": ["requirements.txt", "install_pyinstaller"],
+      "dependsOn": [
+        "requirements.txt",
+        "install_pyinstaller"
+      ],
       "command": "${command:python.interpreterPath}",
       "args": [
         "-m",
         "PyInstaller",
-        "--noconsole",
+        "--console",
         "--onefile",
         "--clean",
         "--noconfirm",
@@ -309,40 +330,48 @@
         "--path=${workspaceFolder}${pathSeparator}..${pathSeparator}..${pathSeparator}Libraries${pathSeparator}PyKotor${pathSeparator}src",
         "--path=${workspaceFolder}${pathSeparator}..${pathSeparator}..${pathSeparator}Libraries${pathSeparator}PyKotorGL${pathSeparator}src",
         "--path=${workspaceFolder}${pathSeparator}..${pathSeparator}..${pathSeparator}Libraries${pathSeparator}Utility${pathSeparator}src",
-        "--icon=resources${pathSeparator}icons${pathSeparator}sith.ico",
-        "toolset${pathSeparator}__main__.py",
+        "--icon=${workspaceFolder}${pathSeparator}src${pathSeparator}resources${pathSeparator}icons${pathSeparator}sith.ico",
+        "toolset${pathSeparator}__main__.py"
       ],
       "problemMatcher": [],
       "options": {
         "cwd": "src",
+        "env": {
+          "PYTHONOPTIMIZE": "1",
+        }
+      },
+      "group": {
+        "kind": "build",
+        "isDefault": true
       }
     },
     {
       "label": "Build Toolset - Nuitka (Windows - Untested)",
       "type": "shell",
-      "dependsOn": ["requirements.txt", "install_nuitka"],
+      "dependsOn": [
+        "requirements.txt",
+        "install_nuitka"
+      ],
       "command": "${command:python.interpreterPath}",
       "args": [
         "-m",
         "nuitka",
         "--disable-console",
         "--onefile",
-//        "--mingw64",
-//        "--clang",
         "--output-filename=HolocronToolset",
         "--windows-icon-from-ico=resources${pathSeparator}icons${pathSeparator}sith.ico",
         "--remove-output",
         "--output-dir=${workspaceFolder}${pathSeparator}nuitka_dist",
         "--enable-plugin=pyqt5",
-        "toolset${pathSeparator}__main__.py",
+        "toolset${pathSeparator}__main__.py"
       ],
       "problemMatcher": [],
       "options": {
         "cwd": "src",
         "env": {
           "PYTHONPATH": "${env:PYTHONPATH};${workspaceFolder}${pathSeparator}..${pathSeparator}..${pathSeparator}Libraries${pathSeparator}PyKotor${pathSeparator}src;${workspaceFolder}${pathSeparator}..${pathSeparator}..${pathSeparator}Libraries${pathSeparator}PyKotorGL${pathSeparator}src;${workspaceFolder}${pathSeparator}..${pathSeparator}..${pathSeparator}Libraries${pathSeparator}Utility${pathSeparator}src"
-        },
+        }
       }
-    },
+    }
   ]
 }

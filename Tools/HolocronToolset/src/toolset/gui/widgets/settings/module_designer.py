@@ -15,11 +15,12 @@ class ModuleDesignerWidget(SettingsWidget):
     editedSignal = QtCore.pyqtSignal()
 
     def __init__(self, parent: QWidget):
-        """Initializes the Module Designer UI
+        """Initializes the Module Designer UI.
+
         Args:
+        ----
             parent (QWidget): The parent widget
-        Returns:
-            None
+
         Processing Logic:
         ----------------
             - Initializes settings and binds lists
@@ -66,7 +67,7 @@ class ModuleDesignerWidget(SettingsWidget):
 
         self.setupValues()
 
-    def _load3dBindValues(self) -> None:
+    def _load3dBindValues(self):
         self.ui.moveCameraSensitivity3dEdit.setValue(self.settings.moveCameraSensitivity3d)
         self.ui.rotateCameraSensitivity3dEdit.setValue(self.settings.rotateCameraSensitivity3d)
         self.ui.zoomCameraSensitivity3dEdit.setValue(self.settings.zoomCameraSensitivity3d)
@@ -74,14 +75,14 @@ class ModuleDesignerWidget(SettingsWidget):
         for bindEdit in [widget for widget in dir(self.ui) if "3dBindEdit" in widget]:
             self._registerBind(getattr(self.ui, bindEdit), bindEdit[:-4])
 
-    def _loadFcBindValues(self) -> None:
+    def _loadFcBindValues(self):
         self.ui.flySpeedFcEdit.setValue(self.settings.flyCameraSpeedFC)
         self.ui.rotateCameraSensitivityFcEdit.setValue(self.settings.rotateCameraSensitivity3d)
 
         for bindEdit in [widget for widget in dir(self.ui) if "FcBindEdit" in widget]:
             self._registerBind(getattr(self.ui, bindEdit), bindEdit[:-4])
 
-    def _load2dBindValues(self) -> None:
+    def _load2dBindValues(self):
         self.ui.moveCameraSensitivity2dEdit.setValue(self.settings.moveCameraSensitivity2d)
         self.ui.rotateCameraSensitivity2dEdit.setValue(self.settings.rotateCameraSensitivity2d)
         self.ui.zoomCameraSensitivity2dEdit.setValue(self.settings.zoomCameraSensitivity2d)
@@ -89,18 +90,18 @@ class ModuleDesignerWidget(SettingsWidget):
         for bindEdit in [widget for widget in dir(self.ui) if "2dBindEdit" in widget]:
             self._registerBind(getattr(self.ui, bindEdit), bindEdit[:-4])
 
-    def _loadColourValues(self) -> None:
+    def _loadColourValues(self):
         for colorEdit in [widget for widget in dir(self.ui) if "ColourEdit" in widget]:
             self._registerColour(getattr(self.ui, colorEdit), colorEdit[:-4])
 
-    def setupValues(self) -> None:
+    def setupValues(self):
         self.ui.fovSpin.setValue(self.settings.fieldOfView)
         self._load3dBindValues()
         self._loadFcBindValues()
         self._load2dBindValues()
         self._loadColourValues()
 
-    def save(self) -> None:
+    def save(self):
         self.settings.fieldOfView = self.ui.fovSpin.value()
         self.settings.zoomCameraSensitivity3d = self.ui.moveCameraSensitivity3dEdit.value()
         self.settings.rotateCameraSensitivity3d = self.ui.rotateCameraSensitivity3dEdit.value()
@@ -115,19 +116,19 @@ class ModuleDesignerWidget(SettingsWidget):
         for widget, colourName in self.colours:
             setattr(self.settings, colourName, widget.color().rgba_integer())
 
-    def resetControls3d(self) -> None:
+    def resetControls3d(self):
         self.settings.resetControls3d()
         self._load3dBindValues()
 
-    def resetControlsFc(self) -> None:
+    def resetControlsFc(self):
         self.settings.resetControlsFc()
         self._loadFcBindValues()
 
-    def resetControls2d(self) -> None:
+    def resetControls2d(self):
         self.settings.resetControls2d()
         self._load2dBindValues()
 
-    def resetColours(self) -> None:
+    def resetColours(self):
         self.settings.resetMaterialColors()
         self._loadColourValues()
 
@@ -136,23 +137,23 @@ class ModuleDesignerSettings(Settings):
     def __init__(self):
         super().__init__("ModuleDesigner")
 
-    def resetControls3d(self) -> None:
+    def resetControls3d(self):
         for setting in dir(self):
             if setting.endswith("3d"):
                 self.settings.remove(setting)
         self.settings.remove("toggleLockInstancesBind")
 
-    def resetControlsFc(self) -> None:
+    def resetControlsFc(self):
         for setting in dir(self):
             if setting.endswith("Fc"):
                 self.settings.remove(setting)
 
-    def resetControls2d(self) -> None:
+    def resetControls2d(self):
         for setting in dir(self):
             if setting.endswith("2d"):
                 self.settings.remove(setting)
 
-    def resetMaterialColors(self) -> None:
+    def resetMaterialColors(self):
         for setting in dir(self):
             if setting.endswith("Colour"):
                 self.settings.remove(setting)

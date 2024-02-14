@@ -19,12 +19,10 @@ from OpenGL.raw.GL.VERSION.GL_1_3 import GL_TEXTURE0, GL_TEXTURE1, glActiveTextu
 from OpenGL.raw.GL.VERSION.GL_1_5 import GL_ARRAY_BUFFER, GL_ELEMENT_ARRAY_BUFFER, GL_STATIC_DRAW, glBindBuffer, glBufferData
 from OpenGL.raw.GL.VERSION.GL_2_0 import glEnableVertexAttribArray
 from OpenGL.raw.GL.VERSION.GL_3_0 import glBindVertexArray
-
 from pykotor.common.geometry import Vector3
 
 if TYPE_CHECKING:
     from _testbuffer import ndarray
-
     from pykotor.gl.scene import Scene
     from pykotor.gl.shader import Shader
 
@@ -38,9 +36,9 @@ class Model:
         self.root.draw(shader, transform, override_texture)
 
     def find(self, name: str) -> Node | None:
-        nodes = [self.root]
+        nodes: list[Node] = [self.root]
         while nodes:
-            node = nodes.pop()
+            node: Node = nodes.pop()
             if node.name.lower() == name.lower():
                 return node
             nodes.extend(node.children)
@@ -50,7 +48,7 @@ class Model:
         all_nodes: list[Node] = []
         search: list[Node] = [self.root]
         while search:
-            node = search.pop()
+            node: Node = search.pop()
             search.extend(node.children)
             all_nodes.append(node)
         return all_nodes
@@ -86,7 +84,7 @@ class Model:
 
         return min_point, max_point
 
-    def _box_rec(self, node: Node, transform: mat4, min_point: vec3, max_point: vec3) -> None:
+    def _box_rec(self, node: Node, transform: mat4, min_point: vec3, max_point: vec3):
         """Calculates bounding box of node and its children recursively.
 
         Call the 'box' function to get started here, don't call this directly.
@@ -141,21 +139,21 @@ class Node:
         self._recalc_transform()
 
     def root(self) -> Node:
-        ancestor = self._parent
+        ancestor: Node | None = self._parent
         while ancestor:
             ancestor = ancestor._parent
         return ancestor
 
     def ancestors(self) -> list[Node]:
-        ancestors = []
-        ancestor = self._parent
+        ancestors: list[Node] = []
+        ancestor: Node | None = self._parent
         while ancestor:
             ancestors.append(ancestor)
             ancestor = ancestor._parent
         return list(reversed(ancestors))
 
     def global_position(self) -> vec3:  # sourcery skip: class-extract-method
-        ancestors = [*self.ancestors(), self]
+        ancestors: list[Node] = [*self.ancestors(), self]
         transform = mat4()
         for ancestor in ancestors:
             transform = transform * glm.translate(ancestor._position)
@@ -165,7 +163,7 @@ class Node:
         return position
 
     def global_rotation(self) -> quat:
-        ancestors = [*self.ancestors(), self]
+        ancestors: list[Node] = [*self.ancestors(), self]
         transform = mat4()
         for ancestor in ancestors:
             transform = transform * glm.translate(ancestor._position)
@@ -175,7 +173,7 @@ class Node:
         return rotation
 
     def global_transform(self) -> mat4:
-        ancestors = [*self.ancestors(), self]
+        ancestors: list[Node] = [*self.ancestors(), self]
         transform = mat4()
         for ancestor in ancestors:
             transform = transform * glm.translate(ancestor._position)
@@ -185,20 +183,20 @@ class Node:
     def transform(self) -> mat4:
         return copy(self._transform)
 
-    def _recalc_transform(self) -> None:
+    def _recalc_transform(self):
         self._transform = glm.translate(self._position) * glm.mat4_cast(quat(self._rotation))
 
     def position(self) -> vec3:
         return copy(self._position)
 
-    def set_position(self, x: float, y: float, z: float) -> None:
+    def set_position(self, x: float, y: float, z: float):
         self._position = vec3(x, y, z)
         self._recalc_transform()
 
     def rotation(self) -> quat:
         return copy(self._rotation)
 
-    def set_rotation(self, pitch: float, yaw: float, roll: float) -> None:
+    def set_rotation(self, pitch: float, yaw: float, roll: float):
         self._rotation = quat(vec3(pitch, yaw, roll))
         self._recalc_transform()
 
@@ -256,10 +254,15 @@ class Mesh:
         glBindVertexArray(self._vao)
 
         glBindBuffer(GL_ARRAY_BUFFER, self._vbo)
-        glBufferData(GL_ARRAY_BUFFER, len(vertex_data), vertex_data, GL_STATIC_DRAW)
+        # Convert vertex_data bytearray to MemoryView
+        vertex_data_mv = memoryview(vertex_data)
+        glBufferData(GL_ARRAY_BUFFER, len(vertex_data), vertex_data_mv, GL_STATIC_DRAW)
 
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, self._ebo)
-        glBufferData(GL_ELEMENT_ARRAY_BUFFER, len(element_data), element_data, GL_STATIC_DRAW)
+        # Convert element_data bytearray to MemoryView
+        element_data_mv = memoryview(element_data)
+        glBufferData(GL_ELEMENT_ARRAY_BUFFER, len(element_data), element_data_mv, GL_STATIC_DRAW)
+
         self._face_count = len(element_data) // 2
 
         if data_bitflags & 0x0001:
@@ -340,8 +343,8 @@ class Cube:
             6, 7, 3,
         ], dtype="int16")
 
-        self.min_point = min_point
-        self.max_point = max_point
+        self.min_point: vec3 = min_point
+        self.max_point: vec3 = max_point
 
         self._vao = glGenVertexArrays(1)
         self._vbo = glGenBuffers(1)
@@ -353,7 +356,7 @@ class Cube:
 
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, self._ebo)
         glBufferData(GL_ELEMENT_ARRAY_BUFFER, len(elements)*4, elements, GL_STATIC_DRAW)
-        self._face_count = len(elements)
+        self._face_count: int = len(elements)
 
         glEnableVertexAttribArray(1)
         glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 12, ctypes.c_void_p(0))
@@ -384,7 +387,7 @@ class Boundary:
             - Populate EBO with element indices
             - Configure vertex attributes.
         """
-        self._scene = scene
+        self._scene: Scene = scene
 
         vertices, elements = self._build_nd(vertices)
 
@@ -398,7 +401,7 @@ class Boundary:
 
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, self._ebo)
         glBufferData(GL_ELEMENT_ARRAY_BUFFER, len(elements) * 4, elements, GL_STATIC_DRAW)
-        self._face_count = len(elements)
+        self._face_count: int = len(elements)
 
         glEnableVertexAttribArray(1)
         glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 12, ctypes.c_void_p(0))
@@ -426,7 +429,7 @@ class Boundary:
             - Add vertices rotating around the circle four times
             - Return a new Boundary instance with the calculated vertices.
         """
-        vertices = []
+        vertices: list[Vector3] = []
         for i in range(smoothness):
             x = math.cos(i/smoothness*math.pi/2)
             y = math.sin(i/smoothness*math.pi/2)
@@ -450,12 +453,12 @@ class Boundary:
         glBindVertexArray(self._vao)
         glDrawElements(GL_TRIANGLES, self._face_count, GL_UNSIGNED_SHORT, None)
 
-    def _build_nd(self, vertices) -> tuple[ndarray, ndarray]:
+    def _build_nd(self, vertices: list[Vector3]) -> tuple[ndarray, ndarray]:
         npvertices = []
         for vertex in vertices:
             npvertices.extend([*vertex, *Vector3(vertex.x, vertex.y, vertex.z+2)])
 
-        npfaces = []
+        npfaces: list[int] = []
         count = len(vertices) * 2
         for i, _vertex in enumerate(vertices):
             index1 = i*2
@@ -468,7 +471,7 @@ class Boundary:
 
 class Empty:
     def __init__(self, scene: Scene):
-        self._scene = scene
+        self._scene: Scene = scene
 
     def draw(self, shader: Shader, transform: mat4):
         ...

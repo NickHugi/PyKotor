@@ -38,7 +38,7 @@ class SelectModuleDialog(QDialog):
 
         self._buildModuleList()
 
-    def _buildModuleList(self) -> None:
+    def _buildModuleList(self):
         """Builds a list of installed modules
         Args:
             self: The class instance
@@ -65,7 +65,7 @@ class SelectModuleDialog(QDialog):
             item.setData(QtCore.Qt.UserRole, root)
             self.ui.moduleList.addItem(item)
 
-    def browse(self) -> None:
+    def browse(self):
         filepath, _ = QFileDialog.getOpenFileName(
             self,
             "Select module to open",
@@ -77,7 +77,7 @@ class SelectModuleDialog(QDialog):
             self.module = Module.get_root(filepath)
             self.accept()
 
-    def confirm(self) -> None:
+    def confirm(self):
         """Confirms the selected module
         Args:
             self: The object instance
@@ -89,10 +89,10 @@ class SelectModuleDialog(QDialog):
         self.module = self.ui.moduleList.currentItem().data(QtCore.Qt.UserRole)
         self.accept()
 
-    def onRowChanged(self) -> None:
+    def onRowChanged(self):
         self.ui.openButton.setEnabled(self.ui.moduleList.currentItem() is not None)
 
-    def onFilterEdited(self) -> None:
+    def onFilterEdited(self):
         """Filter modules based on filter text
         Args:
             self: The class instance

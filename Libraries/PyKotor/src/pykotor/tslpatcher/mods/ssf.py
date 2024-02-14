@@ -7,9 +7,12 @@ from pykotor.resource.formats.ssf.io_ssf import SSFBinaryReader
 from pykotor.tslpatcher.mods.template import PatcherModifications
 
 if TYPE_CHECKING:
+    from pykotor.common.misc import Game
     from pykotor.resource.formats.ssf import SSF, SSFSound
     from pykotor.resource.type import SOURCE_TYPES
+    from pykotor.tslpatcher.logger import PatchLogger
     from pykotor.tslpatcher.memory import PatcherMemory, TokenUsage
+    from typing_extensions import Literal
 
 
 class ModifySSF:
@@ -17,7 +20,7 @@ class ModifySSF:
         self.sound: SSFSound = sound
         self.stringref: TokenUsage = stringref
 
-    def apply(self, ssf: SSF, memory: PatcherMemory) -> None:
+    def apply(self, ssf: SSF, memory: PatcherMemory):
         ssf.set_data(self.sound, int(self.stringref.value(memory)))
 
 
@@ -25,7 +28,7 @@ class ModificationsSSF(PatcherModifications):
     def __init__(
         self,
         filename: str,
-        replace_file: bool,
+        replace_file: bool,  # noqa: FBT001
         modifiers: list[ModifySSF] | None = None,
     ):
         super().__init__(filename)
@@ -33,11 +36,23 @@ class ModificationsSSF(PatcherModifications):
         self.no_replacefile_check = True
         self.modifiers: list[ModifySSF] = modifiers if modifiers is not None else []
 
-    def patch_resource(self, source_ssf: SOURCE_TYPES, memory: PatcherMemory, log=None, game=None) -> bytes:
+    def patch_resource(
+        self,
+        source_ssf: SOURCE_TYPES,
+        memory: PatcherMemory,
+        logger: PatchLogger,
+        game: Game,
+    ) -> bytes | Literal[True]:
         ssf: SSF = SSFBinaryReader(source_ssf).load()
-        self.apply(ssf, memory, log, game)
+        self.apply(ssf, memory, logger, game)
         return bytes_ssf(ssf)
 
-    def apply(self, ssf: SSF, memory: PatcherMemory, log=None, game=None) -> None:
+    def apply(
+        self,
+        ssf: SSF,
+        memory: PatcherMemory,
+        logger: PatchLogger,
+        game: Game,
+    ):
         for modifier in self.modifiers:
             modifier.apply(ssf, memory)

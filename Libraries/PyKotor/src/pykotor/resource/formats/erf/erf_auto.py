@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+from pykotor.resource.formats.erf.erf_data import ERFType
 from pykotor.resource.formats.erf.io_erf import ERFBinaryReader, ERFBinaryWriter
 from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES, ResourceType
 
@@ -42,7 +43,7 @@ def write_erf(
     erf: ERF,
     target: TARGET_TYPES,
     file_format: ResourceType = ResourceType.ERF,
-) -> None:
+):
     """Writes the ERF data to the target location with the specified format (ERF or MOD).
 
     Args:
@@ -57,12 +58,11 @@ def write_erf(
         PermissionError: If the file could not be written to the specified destination.
         ValueError: If the specified format was unsupported.
     """
-    if file_format in [ResourceType.ERF, ResourceType.MOD]:
+    if hasattr(file_format, "name") and file_format.name in ERFType.__members__:
         ERFBinaryWriter(erf, target).write()
     else:
-        msg = "Unsupported format specified; use ERF or MOD."
+        msg = f"Unsupported format specified: '{file_format!r}'; expected one of {', '.join(f'ResourceType.{member.name}' for member in ERFType)}."
         raise ValueError(msg)
-
 
 def bytes_erf(
     erf: ERF,
@@ -85,6 +85,10 @@ def bytes_erf(
     -------
         The ERF data.
     """
-    data = bytearray()
-    write_erf(erf, data, file_format)
-    return data
+    if hasattr(file_format, "name") and file_format.name in ERFType.__members__:
+        data = bytearray()
+        write_erf(erf, data, file_format)
+        return data
+
+    msg = f"Unsupported format specified: '{file_format!r}'; expected one of {', '.join(member.name for member in ERFType)}."
+    raise ValueError(msg)

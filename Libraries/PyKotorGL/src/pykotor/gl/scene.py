@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import math
-from contextlib import suppress
 from copy import copy
 from typing import TYPE_CHECKING, Any, Callable, ClassVar
 
@@ -82,16 +81,22 @@ from pykotor.resource.generics.git import (
     GITTrigger,
     GITWaypoint,
 )
+from pykotor.resource.generics.uts import UTS
 from pykotor.resource.type import ResourceType
 from pykotor.tools import creature
+from utility.error_handling import format_exception_with_variables
 
 if TYPE_CHECKING:
     from pykotor.common.module import Module
-    from pykotor.extract.file import ResourceIdentifier
+    from pykotor.extract.capsule import Capsule
+    from pykotor.extract.file import ResourceIdentifier, ResourceResult
     from pykotor.resource.generics.utc import UTC
+    from pykotor.resource.generics.utd import UTD
+    from pykotor.resource.generics.utp import UTP
+    from typing_extensions import Literal
 
-SEARCH_ORDER_2DA = [SearchLocation.OVERRIDE, SearchLocation.CHITIN]
-SEARCH_ORDER = [SearchLocation.CUSTOM_MODULES, SearchLocation.OVERRIDE, SearchLocation.CHITIN]
+SEARCH_ORDER_2DA: list[SearchLocation] = [SearchLocation.OVERRIDE, SearchLocation.CHITIN]
+SEARCH_ORDER: list[SearchLocation] = [SearchLocation.CUSTOM_MODULES, SearchLocation.OVERRIDE, SearchLocation.CHITIN]
 
 
 class Scene:
@@ -139,11 +144,11 @@ class Scene:
 
         self.jump_to_entry_location()
 
-        self.table_doors = TwoDA()
-        self.table_placeables = TwoDA()
-        self.table_creatures = TwoDA()
-        self.table_heads = TwoDA()
-        self.table_baseitems = TwoDA()
+        self.table_doors: TwoDA = TwoDA()
+        self.table_placeables: TwoDA = TwoDA()
+        self.table_creatures: TwoDA = TwoDA()
+        self.table_heads: TwoDA = TwoDA()
+        self.table_baseitems: TwoDA = TwoDA()
         if installation is not None:
             self.setInstallation(installation)
 
@@ -163,7 +168,7 @@ class Scene:
         self.use_lightmap: bool = True
         self.show_cursor: bool = True
 
-    def setInstallation(self, installation: Installation) -> None:
+    def setInstallation(self, installation: Installation):
         self.table_doors = read_2da(installation.resource("genericdoors", ResourceType.TwoDA, SEARCH_ORDER_2DA).data)
         self.table_placeables = read_2da(installation.resource("placeables", ResourceType.TwoDA, SEARCH_ORDER_2DA).data)
         self.table_creatures = read_2da(installation.resource("appearance", ResourceType.TwoDA, SEARCH_ORDER_2DA).data)
@@ -184,15 +189,15 @@ class Scene:
 
         Processing Logic:
         ----------------
-        - Gets body, head, weapon and mask models/textures based on creature appearance
-        - Creates base render object and attaches head, hands and mask sub-objects
-        - Catches exceptions and returns default "unknown" render object if model loading fails.
+            - Gets body, head, weapon and mask models/textures based on creature appearance
+            - Creates base render object and attaches head, hands and mask sub-objects
+            - Catches exceptions and returns default "unknown" render object if model loading fails.
         """
         try:
             if utc is None:
-                utc = self.module.creature(instance.resref.get()).resource()
+                utc = self.module.creature(str(instance.resref)).resource()
 
-            head_obj = None
+            head_obj: RenderObject | None = None
             mask_hook = None
 
             body_model, body_texture = creature.get_body_model(
@@ -245,7 +250,7 @@ class Scene:
                     head_obj.children.append(mask_obj)
 
         except Exception as e:
-            print(e, "getCreatureRenderObject")
+            print(format_exception_with_variables(e))
             # If failed to load creature models, use the unknown model instead
             obj = RenderObject("unknown", data=instance)
 
@@ -256,7 +261,7 @@ class Scene:
         rhand_obj.set_transform(arg1.global_transform())
         obj.children.append(rhand_obj)
 
-    def buildCache(self, clear_cache: bool = False) -> None:
+    def buildCache(self, clear_cache: bool = False):
         """Builds and caches game objects from the module.
 
         Args:
@@ -284,17 +289,17 @@ class Scene:
                 if identifier.resname == placeable.resref and identifier.restype == ResourceType.UTP:
                     del self.objects[placeable]
             for door in copy(self.git.doors):
-                if door.resref.get() == identifier.resname and identifier.restype == ResourceType.UTD:
+                if door.resref == identifier.resname and identifier.restype == ResourceType.UTD:
                     del self.objects[door]
-            if identifier.restype in [ResourceType.TPC, ResourceType.TGA]:
+            if identifier.restype in (ResourceType.TPC, ResourceType.TGA):
                 del self.textures[identifier.resname]
-            if identifier.restype in [ResourceType.MDL, ResourceType.MDX]:
+            if identifier.restype in (ResourceType.MDL, ResourceType.MDX):
                 del self.models[identifier.resname]
-            if identifier.restype in [ResourceType.GIT]:
+            if identifier.restype == ResourceType.GIT:
                 for instance in self.git.instances():
                     del self.objects[instance]
                 self.git = self.module.git().resource()
-            if identifier.restype in [ResourceType.LYT]:
+            if identifier.restype == ResourceType.LYT:
                 for room in self.layout.rooms:
                     del self.objects[room]
                 self.layout = self.module.layout().resource()
@@ -314,9 +319,10 @@ class Scene:
         for door in self.git.doors:
             if door not in self.objects:
                 try:
-                    utd = self.module.door(door.resref.get()).resource()
+                    utd: UTD | None = self.module.door(str(door.resref)).resource()
                     model_name = self.table_doors.get_row(utd.appearance_id).get_string("modelname")
-                except Exception:
+                except Exception as e:
+                    print(format_exception_with_variables(e))
                     # If failed to load creature models, use an empty model instead
                     model_name = "unknown"
 
@@ -328,9 +334,10 @@ class Scene:
         for placeable in self.git.placeables:
             if placeable not in self.objects:
                 try:
-                    utp = self.module.placeable(placeable.resref.get()).resource()
-                    model_name = self.table_placeables.get_row(utp.appearance_id).get_string("modelname")
-                except Exception:
+                    utp: UTP | None = self.module.placeable(str(placeable.resref)).resource()
+                    model_name: str = self.table_placeables.get_row(utp.appearance_id).get_string("modelname")
+                except Exception as e:
+                    print(format_exception_with_variables(e))
                     # If failed to load creature models, use an empty model instead
                     model_name = "unknown"
 
@@ -340,7 +347,7 @@ class Scene:
             self.objects[placeable].set_rotation(0, 0, placeable.bearing)
 
         for git_creature in self.git.creatures:
-            if creature not in self.objects:
+            if git_creature not in self.objects:
                 self.objects[git_creature] = self.getCreatureRenderObject(git_creature)
 
             self.objects[git_creature].set_position(git_creature.position.x, git_creature.position.y, git_creature.position.z)
@@ -364,8 +371,11 @@ class Scene:
 
         for sound in self.git.sounds:
             if sound not in self.objects:
-                with suppress(Exception):
-                    uts = self.module.sound(sound.resref.get()).resource
+                try:
+                    uts: UTS = self.module.sound(str(sound.resref)).resource() or UTS()
+                except Exception as e:
+                    print(format_exception_with_variables(e))
+                    uts = UTS()
 
                 obj = RenderObject(
                     "sound",
@@ -413,8 +423,12 @@ class Scene:
                 self.objects[camera] = obj
 
             self.objects[camera].set_position(camera.position.x, camera.position.y, camera.position.z + camera.height)
-            euler = glm.eulerAngles(quat(camera.orientation.w, camera.orientation.x, camera.orientation.y, camera.orientation.z))
-            self.objects[camera].set_rotation(euler.y, euler.z - math.pi / 2 + math.radians(camera.pitch), -euler.x + math.pi / 2)
+            euler: vec3 = glm.eulerAngles(quat(camera.orientation.w, camera.orientation.x, camera.orientation.y, camera.orientation.z))
+            self.objects[camera].set_rotation(
+                euler.y,
+                euler.z - math.pi / 2 + math.radians(camera.pitch),
+                -euler.x + math.pi / 2,
+            )
 
         # Detect if GIT still exists; if they do not then remove them from the render list
         for obj in copy(self.objects):
@@ -440,7 +454,7 @@ class Scene:
         if isinstance(obj, GITSound) and obj not in self.git.sounds:
             del self.objects[obj]
 
-    def render(self) -> None:
+    def render(self):
         """Renders the scene.
 
         Args:
@@ -478,7 +492,7 @@ class Scene:
         self.shader.set_matrix4("view", self.camera.view())
         self.shader.set_matrix4("projection", self.camera.projection())
         self.shader.set_bool("enableLightmap", self.use_lightmap)
-        group1 = [obj for obj in self.objects.values() if obj.model not in self.SPECIAL_MODELS]
+        group1: list[RenderObject] = [obj for obj in self.objects.values() if obj.model not in self.SPECIAL_MODELS]
         for obj in group1:
             self._render_object(self.shader, obj, mat4())
 
@@ -488,7 +502,7 @@ class Scene:
         self.plain_shader.set_matrix4("view", self.camera.view())
         self.plain_shader.set_matrix4("projection", self.camera.projection())
         self.plain_shader.set_vector4("color", vec4(0.0, 0.0, 1.0, 0.4))
-        group2 = [obj for obj in self.objects.values() if obj.model in self.SPECIAL_MODELS]
+        group2: list[RenderObject] = [obj for obj in self.objects.values() if obj.model in self.SPECIAL_MODELS]
         for obj in group2:
             self._render_object(self.plain_shader, obj, mat4())
 
@@ -504,18 +518,18 @@ class Scene:
             obj.boundary(self).draw(self.plain_shader, obj.transform())
 
         # Draw non-selected boundaries
-        for obj in [obj for obj in self.objects.values() if obj.model == "sound" and not self.hide_sound_boundaries]:
+        for obj in (obj for obj in self.objects.values() if obj.model == "sound" and not self.hide_sound_boundaries):
             obj.boundary(self).draw(self.plain_shader, obj.transform())
-        for obj in [obj for obj in self.objects.values() if obj.model == "encounter" and not self.hide_encounter_boundaries]:
+        for obj in (obj for obj in self.objects.values() if obj.model == "encounter" and not self.hide_encounter_boundaries):
             obj.boundary(self).draw(self.plain_shader, obj.transform())
-        for obj in [obj for obj in self.objects.values() if obj.model == "trigger" and not self.hide_trigger_boundaries]:
+        for obj in (obj for obj in self.objects.values() if obj.model == "trigger" and not self.hide_trigger_boundaries):
             obj.boundary(self).draw(self.plain_shader, obj.transform())
 
         if self.show_cursor:
             self.plain_shader.set_vector4("color", vec4(1.0, 0.0, 0.0, 0.4))
             self._render_object(self.plain_shader, self.cursor, mat4())
 
-    def _render_object(self, shader: Shader, obj: RenderObject, transform: mat4) -> None:
+    def _render_object(self, shader: Shader, obj: RenderObject, transform: mat4):
         if isinstance(obj.data, GITCreature) and self.hide_creatures:
             return
         if isinstance(obj.data, GITPlaceable) and self.hide_placeables:
@@ -535,14 +549,14 @@ class Scene:
         if isinstance(obj.data, GITCamera) and self.hide_cameras:
             return
 
-        model = self.model(obj.model)
+        model: Model = self.model(obj.model)
         transform = transform * obj.transform()
         model.draw(shader, transform, override_texture=obj.override_texture)
 
         for child in obj.children:
             self._render_object(shader, child, transform)
 
-    def picker_render(self) -> None:
+    def picker_render(self):
         glClearColor(1.0, 1.0, 1.0, 1.0)
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
 
@@ -556,16 +570,16 @@ class Scene:
         self.picker_shader.set_matrix4("projection", self.camera.projection())
         instances = list(self.objects.values())
         for obj in instances:
-            int_rgb = instances.index(obj)
-            r = int_rgb & 0xFF
-            g = (int_rgb >> 8) & 0xFF
-            b = (int_rgb >> 16) & 0xFF
+            int_rgb: int = instances.index(obj)
+            r: int = int_rgb & 0xFF
+            g: int = (int_rgb >> 8) & 0xFF
+            b: int = (int_rgb >> 16) & 0xFF
             color = vec3(r / 0xFF, g / 0xFF, b / 0xFF)
             self.picker_shader.set_vector3("colorId", color)
 
             self._picker_render_object(obj, mat4())
 
-    def _picker_render_object(self, obj: RenderObject, transform: mat4) -> None:
+    def _picker_render_object(self, obj: RenderObject, transform: mat4):
         if isinstance(obj.data, GITCreature) and self.hide_creatures:
             return
         if isinstance(obj.data, GITPlaceable) and self.hide_placeables:
@@ -585,16 +599,16 @@ class Scene:
         if isinstance(obj.data, GITCamera) and self.hide_cameras:
             return
 
-        model = self.model(obj.model)
+        model: Model = self.model(obj.model)
         model.draw(self.picker_shader, transform * obj.transform())
         for child in obj.children:
             self._picker_render_object(child, obj.transform())
 
     def pick(self, x, y) -> RenderObject:
         self.picker_render()
-        pixel = glReadPixels(x, y, 1, 1, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8)[0][0] >> 8
+        pixel = glReadPixels(x, y, 1, 1, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8)[0][0] >> 8  # type: ignore[]
         instances = list(self.objects.values())
-        return instances[pixel] if pixel != 0xFFFFFF else None
+        return instances[pixel] if pixel != 0xFFFFFF else None  # type: ignore[]
 
     def select(self, target: RenderObject | GITInstance, clear_existing: bool = True):
         if clear_existing:
@@ -625,12 +639,12 @@ class Scene:
         self.shader.use()
         self.shader.set_matrix4("view", self.camera.view())
         self.shader.set_matrix4("projection", self.camera.projection())
-        group1 = [obj for obj in self.objects.values() if isinstance(obj.data, LYTRoom)]
+        group1: list[RenderObject] = [obj for obj in self.objects.values() if isinstance(obj.data, LYTRoom)]
         for obj in group1:
             self._render_object(self.shader, obj, mat4())
 
-        zpos = glReadPixels(x, self.camera.height - y, 1, 1, GL_DEPTH_COMPONENT, GL_FLOAT)[0][0]
-        cursor = glm.unProject(
+        zpos = glReadPixels(x, self.camera.height - y, 1, 1, GL_DEPTH_COMPONENT, GL_FLOAT)[0][0]  # FIXME: "__getitem__" method not defined on type "int"
+        cursor: vec3 = glm.unProject(
             vec3(x, self.camera.height - y, zpos),
             self.camera.view(),
             self.camera.projection(),
@@ -646,12 +660,13 @@ class Scene:
                 if self.module is not None:
                     tpc = self.module.texture(name).resource() if self.module.texture(name) is not None else None
                 # Otherwise just search through all relevant game files
-                tpc = (
+                tpc: TPC | None = (
                     self.installation.texture(name, [SearchLocation.OVERRIDE, SearchLocation.TEXTURES_TPA, SearchLocation.CHITIN])
                     if tpc is None
                     else tpc
                 )
-            except (OSError, ValueError):
+            except (OSError, ValueError) as e:
+                print(format_exception_with_variables(e))
                 # If an error occurs during the loading process, just use a blank image.
                 tpc = TPC()
 
@@ -694,16 +709,17 @@ class Scene:
                 mdl_data = UNKNOWN_MDL_DATA
                 mdx_data = UNKNOWN_MDX_DATA
             elif self.installation is not None:
-                capsules = [] if self.module is None else self.module.capsules()
-                mdl_search = self.installation.resource(name, ResourceType.MDL, SEARCH_ORDER, capsules=capsules)
-                mdx_search = self.installation.resource(name, ResourceType.MDX, SEARCH_ORDER, capsules=capsules)
-                if mdl_search and mdx_search:
-                    mdl_data = mdl_search.data
-                    mdx_data = mdx_search.data
+                capsules: list[Capsule] = [] if self.module is None else self.module.capsules()
+                mdl_search: ResourceResult | None = self.installation.resource(name, ResourceType.MDL, SEARCH_ORDER, capsules=capsules)
+                mdx_search: ResourceResult | None = self.installation.resource(name, ResourceType.MDX, SEARCH_ORDER, capsules=capsules)
+                if mdl_search is not None and mdx_search is not None:
+                    mdl_data: bytes = mdl_search.data
+                    mdx_data: bytes = mdx_search.data
 
             try:
                 model = gl_load_stitched_model(self, BinaryReader.from_bytes(mdl_data, 12), BinaryReader.from_bytes(mdx_data))
-            except Exception:
+            except Exception as e:
+                print(format_exception_with_variables(e))
                 model = gl_load_stitched_model(
                     self,
                     BinaryReader.from_bytes(EMPTY_MDL_DATA, 12),
@@ -713,13 +729,13 @@ class Scene:
             self.models[name] = model
         return self.models[name]
 
-    def jump_to_entry_location(self) -> None:
+    def jump_to_entry_location(self):
         if self.module is None:
             self.camera.x = 0
             self.camera.y = 0
             self.camera.z = 0
         else:
-            point = self.module.info().resource().entry_position
+            point: Vector3 = self.module.info().resource().entry_position
             self.camera.x = point.x
             self.camera.y = point.y
             self.camera.z = point.z + 1.8
@@ -742,7 +758,7 @@ class RenderObject:
         self._position: vec3 = position if position is not None else vec3()
         self._rotation: vec3 = rotation if rotation is not None else vec3()
         self._cube: Cube | None = None
-        self._boundary: Boundary | None = None
+        self._boundary: Boundary | Empty | None = None
         self.genBoundary: Callable[[], Boundary] | None = gen_boundary
         self.data: Any = data
         self.override_texture: str | None = override_texture
@@ -752,20 +768,20 @@ class RenderObject:
     def transform(self) -> mat4:
         return self._transform
 
-    def set_transform(self, transform: mat4) -> None:
+    def set_transform(self, transform: mat4):
         self._transform = transform
         rotation = quat()
-        glm.decompose(transform, vec3(), rotation, self._position, vec3(), vec4())
+        glm.decompose(transform, vec3(), rotation, self._position, vec3(), vec4())  # FIXME: Type "mat4" cannot be assigned to type "F32Matrix3x3 | mat3x3 | Tuple[Tuple[Number, Number, Number]]"
         self._rotation = glm.eulerAngles(rotation)
 
-    def _recalc_transform(self) -> None:
+    def _recalc_transform(self):
         self._transform = mat4() * glm.translate(self._position)
         self._transform = self._transform * glm.mat4_cast(quat(self._rotation))
 
     def position(self) -> vec3:
         return copy(self._position)
 
-    def set_position(self, x: float, y: float, z: float) -> None:
+    def set_position(self, x: float, y: float, z: float):
         if self._position.x == x and self._position.y == y and self._position.z == z:
             return
 
@@ -775,14 +791,14 @@ class RenderObject:
     def rotation(self) -> vec3:
         return copy(self._rotation)
 
-    def set_rotation(self, x: float, y: float, z: float) -> None:
+    def set_rotation(self, x: float, y: float, z: float):
         if self._rotation.x == x and self._rotation.y == y and self._rotation.z == z:
             return
 
         self._rotation = vec3(x, y, z)
         self._recalc_transform()
 
-    def reset_cube(self) -> None:
+    def reset_cube(self):
         self._cube = None
 
     def cube(self, scene: Scene) -> Cube:
@@ -804,7 +820,7 @@ class RenderObject:
             abs(cube.max_point.z),
         )
 
-    def _cube_rec(self, scene: Scene, transform: mat4, obj: RenderObject, min_point: vec3, max_point: vec3) -> None:
+    def _cube_rec(self, scene: Scene, transform: mat4, obj: RenderObject, min_point: vec3, max_point: vec3):
         obj_min, obj_max = scene.model(obj.model).box()
         obj_min = transform * obj_min
         obj_max = transform * obj_max
@@ -817,7 +833,7 @@ class RenderObject:
         for child in obj.children:
             self._cube_rec(scene, transform * child.transform(), child, min_point, max_point)
 
-    def reset_boundary(self) -> None:
+    def reset_boundary(self):
         self._boundary = None
 
     def boundary(self, scene: Scene) -> Boundary | Empty:
@@ -842,6 +858,21 @@ class Camera:
         self.fov: float = 90.0
 
     def view(self) -> mat4:
+        """Returns the view matrix for the camera.
+
+        Args:
+        ----
+            self: The camera object
+
+        Returns:
+        -------
+            mat4: The view matrix
+
+        Processing Logic:
+        ----------------
+            - Calculate camera position based on yaw, pitch and distance from origin
+            - Construct view matrix by translating to camera position and rotating by yaw and pitch
+        """
         up = vec3(0, 0, 1)
         pitch = glm.vec3(1, 0, 0)
 
@@ -856,14 +887,47 @@ class Camera:
         return glm.inverse(camera)
 
     def projection(self) -> mat4:
+        """Generate a perspective projection matrix.
+
+        Args:
+        ----
+            self: The camera object
+
+        Returns:
+        -------
+            mat4: The 4x4 perspective projection matrix
+
+        Processing Logic:
+        ----------------
+            - Calculate the aspect ratio of the viewport from the camera's width and height
+            - Use the aspect ratio and field of view to generate a perspective projection matrix using glm.perspective
+            - The projection matrix transforms world coordinates into clip coordinates and maps the scene to the viewport
+        """
         return glm.perspective(self.fov, self.width / self.height, 0.1, 5000)
 
-    def translate(self, translation: vec3) -> None:
+    def translate(self, translation: vec3):
         self.x += translation.x
         self.y += translation.y
         self.z += translation.z
 
     def rotate(self, yaw: float, pitch: float):
+        """Rotates the object by yaw and pitch angles.
+
+        Args:
+        ----
+            yaw: float - Yaw angle in radians
+            pitch: float - Pitch angle in radians
+
+        Returns:
+        -------
+            None - Rotates object in place
+
+        Processes rotation:
+        ------------------
+            - Increments pitch by pitch argument
+            - Increments yaw by yaw argument
+            - Clips pitch to valid range between 0 and pi radians to avoid gimbal lock
+        """
         self.pitch += pitch
         self.yaw += yaw
 
@@ -873,23 +937,89 @@ class Camera:
             self.pitch = 0.001
 
     def forward(self, ignore_z: bool = True) -> vec3:
-        eye_x = math.cos(self.yaw) * math.cos(self.pitch - math.pi / 2)
-        eye_y = math.sin(self.yaw) * math.cos(self.pitch - math.pi / 2)
-        eye_z = 0 if ignore_z else math.sin(self.pitch - math.pi / 2)
+        """Calculates the forward vector from the camera's rotation.
+
+        Args:
+        ----
+            ignore_z: Whether to ignore z component of vector {True by default}.
+
+        Returns:
+        -------
+            vec3: Normalized forward vector from camera rotation
+
+        Processing Logic:
+        ----------------
+            - Calculate x component of eye vector from yaw and pitch
+            - Calculate y component of eye vector from yaw and pitch
+            - Set z component to 0 if ignore_z is True, else calculate from pitch
+            - Return normalized negative of eye vector as forward vector.
+        """
+        eye_x: float = math.cos(self.yaw) * math.cos(self.pitch - math.pi / 2)
+        eye_y: float = math.sin(self.yaw) * math.cos(self.pitch - math.pi / 2)
+        eye_z: float | Literal[0] = 0 if ignore_z else math.sin(self.pitch - math.pi / 2)
         return glm.normalize(-vec3(eye_x, eye_y, eye_z))
 
     def sideward(self, ignore_z: bool = True) -> vec3:
+        """Returns a normalized vector perpendicular to the forward direction.
+
+        Args:
+        ----
+            ignore_z: Ignore z-component of forward vector.
+
+        Returns:
+        -------
+            vec3: Normalized sideward vector.
+
+        Processing Logic:
+        ----------------
+            - Calculate cross product of forward vector and (0,0,1) to get sideward vector
+            - Normalize sideward vector to get unit sideward vector
+            - Return normalized sideward vector
+        """
         return glm.normalize(glm.cross(self.forward(ignore_z), vec3(0.0, 0.0, 1.0)))
 
     def upward(self, ignore_xy: bool = True) -> vec3:
+        """Returns the upward vector of the entity.
+
+        Args:
+        ----
+            ignore_xy (bool): Ignore x and y components of the vector if True.
+
+        Returns:
+        -------
+            vec3: The normalized upward vector.
+
+        Processing Logic:
+        ----------------
+            - Calculate forward vector ignoring z component
+            - Calculate sideward vector ignoring z component
+            - Take cross product of forward and sideward vectors
+            - Return normalized cross product vector
+        """
         if ignore_xy:
             return glm.normalize(vec3(0, 0, 1))
-        forward = self.forward(ignore_z=False)
-        sideward = self.sideward(ignore_z=False)
-        cross = glm.cross(forward, sideward)
+        forward: vec3 = self.forward(ignore_z=False)
+        sideward: vec3 = self.sideward(ignore_z=False)
+        cross: vec3 = glm.cross(forward, sideward)
         return glm.normalize(cross)
 
     def true_position(self) -> vec3:
+        """Calculates the true position of an object based on its orientation and distance from origin.
+
+        Args:
+        ----
+            self: {Object with x, y, z, yaw, pitch, and distance attributes}
+
+        Returns:
+        -------
+            vec3: {Calculated true position as a 3D vector}
+
+        Processing Logic:
+        ----------------
+            - Calculate x, y, z offsets based on orientation and distance
+            - Add offsets to base x, y, z to get true position
+            - Return true position as a 3D vector
+        """
         x, y, z = self.x, self.y, self.z
         x += math.cos(self.yaw) * math.cos(self.pitch - math.pi / 2) * self.distance
         y += math.sin(self.yaw) * math.cos(self.pitch - math.pi / 2) * self.distance

@@ -26,7 +26,7 @@ class CreatureDialog(QDialog):
 
         self.creature: GITCreature = creature
 
-    def accept(self) -> None:
+    def accept(self):
         super().accept()
         self.creature.resref = ResRef(self.ui.resrefEdit.text())
         self.creature.position.x = self.ui.xPosSpin.value()

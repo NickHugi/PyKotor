@@ -1,10 +1,15 @@
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 from pykotor.common.language import LocalizedString
 from pykotor.common.misc import Game, InventoryItem, ResRef
 from pykotor.resource.formats.gff import GFF, GFFContent, GFFList, read_gff, write_gff
 from pykotor.resource.formats.gff.gff_auto import bytes_gff
 from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES, ResourceType
+
+if TYPE_CHECKING:
+    from pykotor.resource.formats.gff.gff_data import GFFStruct
 
 
 class UTP:
@@ -80,7 +85,7 @@ class UTP:
 
     def __init__(
         self,
-    ) -> None:
+    ):
         self.resref: ResRef = ResRef.from_blank()
         self.conversation: ResRef = ResRef.from_blank()
         self.tag: str = ""
@@ -209,14 +214,14 @@ def construct_utp(
         utp.inventory.append(InventoryItem(resref, droppable))
 
     utp.description = root.acquire("Description", LocalizedString.from_invalid())
-    utp.interruptable = root.acquire("Interruptable", 0)
+    utp.interruptable = bool(root.acquire("Interruptable", 0))
     utp.portrait_id = root.acquire("PortraitId", 0)
-    utp.trap_detectable = root.acquire("TrapDetectable", 0)
+    utp.trap_detectable = bool(root.acquire("TrapDetectable", 0))
     utp.trap_detect_dc = root.acquire("TrapDetectDC", 0)
-    utp.trap_disarmable = root.acquire("TrapDisarmable", 0)
+    utp.trap_disarmable = bool(root.acquire("TrapDisarmable", 0))
     utp.trap_disarm_dc = root.acquire("DisarmDC", 0)
     utp.trap_flag = root.acquire("TrapFlag", 0)
-    utp.trap_one_shot = root.acquire("TrapOneShot", 0)
+    utp.trap_one_shot = bool(root.acquire("TrapOneShot", 0))
     utp.trap_type = root.acquire("TrapType", 0)
     utp.will = root.acquire("Will", 0)
     utp.reflex = root.acquire("Ref", 0)
@@ -276,18 +281,18 @@ def dismantle_utp(
     root.set_resref("OnUsed", utp.on_used)
     root.set_string("Comment", utp.comment)
 
-    item_list = root.set_list("ItemList", GFFList())
+    item_list: GFFList = root.set_list("ItemList", GFFList())
     for i, item in enumerate(utp.inventory):
-        item_struct = item_list.add(i)
+        item_struct: GFFStruct = item_list.add(i)
         item_struct.set_resref("InventoryRes", item.resref)
         item_struct.set_uint16("Repos_PosX", i)
-        item_struct.set_uint16("Repos_Posy", 0)
+        item_struct.set_uint16("Repos_PosY", 0)
         if item.droppable:
             item_struct.set_uint8("Dropable", value=True)
 
     root.set_uint8("PaletteID", utp.palette_id)
 
-    if game == Game.K2:
+    if game.is_k2():
         root.set_uint8("NotBlastable", utp.not_blastable)
         root.set_uint8("OpenLockDiff", utp.unlock_diff)
         root.set_int8("OpenLockDiffMod", utp.unlock_diff_mod)
@@ -320,7 +325,7 @@ def read_utp(
     offset: int = 0,
     size: int | None = None,
 ) -> UTP:
-    gff = read_gff(source, offset, size)
+    gff: GFF = read_gff(source, offset, size)
     return construct_utp(gff)
 
 
@@ -331,8 +336,8 @@ def write_utp(
     file_format: ResourceType = ResourceType.GFF,
     *,
     use_deprecated: bool = True,
-) -> None:
-    gff = dismantle_utp(utp, game, use_deprecated=use_deprecated)
+):
+    gff: GFF = dismantle_utp(utp, game, use_deprecated=use_deprecated)
     write_gff(gff, target, file_format)
 
 
@@ -343,5 +348,5 @@ def bytes_utp(
     *,
     use_deprecated: bool = True,
 ) -> bytes:
-    gff = dismantle_utp(utp, game, use_deprecated=use_deprecated)
+    gff: GFF = dismantle_utp(utp, game, use_deprecated=use_deprecated)
     return bytes_gff(gff, file_format)

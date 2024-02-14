@@ -7,7 +7,7 @@ from pykotor.common.stream import BinaryReader, BinaryWriter
 from pykotor.extract.file import FileResource, ResourceIdentifier
 from pykotor.resource.type import ResourceType
 from pykotor.tools.path import CaseAwarePath
-from utility.path import PurePath
+from utility.system.path import PurePath
 
 if TYPE_CHECKING:
     import os
@@ -25,9 +25,9 @@ class Chitin:
         key_path: os.PathLike | str,
         base_path: os.PathLike | str | None = None,
     ):
-        self._key_path: CaseAwarePath = key_path if isinstance(key_path, CaseAwarePath) else CaseAwarePath(key_path)
+        self._key_path: CaseAwarePath = CaseAwarePath.pathify(key_path)
         base_path = base_path if base_path is not None else self._key_path.parent
-        self._base_path: CaseAwarePath = base_path if isinstance(base_path, CaseAwarePath) else CaseAwarePath(base_path)
+        self._base_path: CaseAwarePath = CaseAwarePath.pathify(base_path)
 
         self._resources: list[FileResource] = []
         self._resource_dict: dict[str, list[FileResource]] = {}
@@ -45,7 +45,7 @@ class Chitin:
 
     def load(
         self,
-    ) -> None:
+    ):
         """Reload the list of resource info linked from the chitin.key file."""
         self._resources = []
         self._resource_dict = {}
@@ -80,7 +80,7 @@ class Chitin:
                     self._resources.append(resource)
                     self._resource_dict[bif].append(resource)
 
-    def save(self) -> None:
+    def save(self):
         """(unfinished) Writes the list of resource info to the chitin.key file and associated .bif files."""
         keys, bifs = self._get_chitin_data()
         resource_lookup: dict[str, tuple[PurePath, FileResource]] = {
@@ -134,12 +134,13 @@ class Chitin:
 
     def _get_chitin_data(self) -> tuple[dict[int, str], list[str]]:
         with BinaryReader.from_file(self._key_path) as reader:
-            _key_file_type = reader.read_string(4)
-            _key_file_version = reader.read_string(4)
+            #_key_file_type = reader.read_string(4)  # noqa: ERA001
+            #_key_file_version = reader.read_string(4)  # noqa: ERA001
+            reader.skip(8)
             bif_count = reader.read_uint32()
             key_count = reader.read_uint32()
             file_table_offset = reader.read_uint32()
-            _key_table_offset = reader.read_uint32()
+            reader.skip(4)  # key table offset uint32
 
             files = []
             reader.seek(file_table_offset)
@@ -159,7 +160,7 @@ class Chitin:
             keys: dict[int, str] = {}
             for _ in range(key_count):
                 resref = reader.read_string(16)
-                _restype_id = reader.read_uint16()
+                reader.skip(2)  # restype_id uint16
                 res_id = reader.read_uint32()
                 keys[res_id] = resref
 

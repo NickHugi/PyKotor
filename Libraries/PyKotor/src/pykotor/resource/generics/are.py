@@ -5,7 +5,7 @@ from enum import IntEnum
 from pykotor.common.geometry import Vector2
 from pykotor.common.language import LocalizedString
 from pykotor.common.misc import Color, Game, ResRef
-from pykotor.resource.formats.gff import GFF, GFFContent, GFFStruct, read_gff, write_gff, GFFList
+from pykotor.resource.formats.gff import GFF, GFFContent, GFFList, GFFStruct, read_gff, write_gff
 from pykotor.resource.formats.gff.gff_auto import bytes_gff
 from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES, ResourceType
 
@@ -227,12 +227,18 @@ class ARENorthAxis(IntEnum):
 def construct_are(
     gff: GFF,
 ) -> ARE:
-    """Constructs an ARE object from a GFF file
+    """Constructs an ARE object from a GFF file.
+
     Args:
+    ----
         gff: GFF - The GFF file object
+
     Returns:
+    -------
         ARE - The constructed ARE object
+
     Processing Logic:
+    ----------------
         - Acquires values from the GFF root node and assigns them to ARE properties
         - Handles color values as special case, converting to Color objects
         - All other values assigned directly from GFF.
@@ -275,15 +281,15 @@ def construct_are(
     are.grass_prob_lr = root.acquire("Grass_Prob_LR", 0.0)
     are.grass_prob_ul = root.acquire("Grass_Prob_UL", 0.0)
     are.grass_prob_ur = root.acquire("Grass_Prob_UR", 0.0)
-    are.fog_enabled = root.acquire("SunFogOn", 0)
+    are.fog_enabled = bool(root.acquire("SunFogOn", 0))
     are.fog_near = root.acquire("SunFogNear", 0.0)
     are.fog_far = root.acquire("SunFogFar", 0.0)
-    are.shadows = root.acquire("SunShadows", 0)
+    are.shadows = bool(root.acquire("SunShadows", 0))
     are.shadow_opacity = root.acquire("ShadowOpacity", 0)
-    are.wind_power = root.acquire("WindPower", 0)
-    are.unescapable = root.acquire("Unescapable", 0)
-    are.disable_transit = root.acquire("DisableTransit", 0)
-    are.stealth_xp = root.acquire("StealthXPEnabled", 0)
+    are.wind_power = AREWindPower(root.acquire("WindPower", 0))
+    are.unescapable = bool(root.acquire("Unescapable", 0))
+    are.disable_transit = bool(root.acquire("DisableTransit", 0))
+    are.stealth_xp = bool(root.acquire("StealthXPEnabled", 0))
     are.stealth_xp_loss = root.acquire("StealthXPLoss", 0)
     are.stealth_xp_max = root.acquire("StealthXPMax", 0)
     are.on_enter = root.acquire("OnEnter", ResRef.from_blank())
@@ -340,7 +346,7 @@ def construct_are(
         ambient_scale = room_struct.acquire("AmbientScale", 0.0)
         env_audio = room_struct.acquire("EnvAudio", 0)
         room_name = room_struct.acquire("RoomName", "")
-        disable_weather = room_struct.acquire("DisableWeather", 0.0)
+        disable_weather = room_struct.acquire("DisableWeather", 0.0)  # FIXME
         force_rating = room_struct.acquire("ForceRating", 0)
         are.rooms.append(ARERoom(room_name, disable_weather, env_audio, force_rating, ambient_scale))
 
@@ -353,14 +359,20 @@ def dismantle_are(
     *,
     use_deprecated: bool = True,
 ) -> GFF:
-    """Converts an ARE structure to a GFF structure
+    """Converts an ARE structure to a GFF structure.
+
     Args:
+    ----
         are: ARE - The ARE structure to convert
         game: Game - The game type (K1, K2, etc)
         use_deprecated: bool - Whether to include deprecated fields
+
     Returns:
+    -------
         gff: GFF - The converted GFF structure
+
     Processing Logic:
+    ----------------
         - Creates a new GFF structure
         - Maps ARE fields to GFF fields
         - Includes additional K2-specific fields if game is K2
@@ -411,7 +423,7 @@ def dismantle_are(
     root.set_single("SunFogFar", are.fog_far)
     root.set_uint8("SunShadows", are.shadows)
     root.set_uint8("ShadowOpacity", are.shadow_opacity)
-    root.set_int32("WindPower", are.wind_power)
+    root.set_int32("WindPower", are.wind_power.value)
     root.set_uint8("Unescapable", are.unescapable)
     root.set_uint8("DisableTransit", are.disable_transit)
     root.set_uint8("StealthXPEnabled", are.stealth_xp)
@@ -428,11 +440,11 @@ def dismantle_are(
         room_struct.set_single("AmbientScale", room.ambient_scale)
         room_struct.set_int32("EnvAudio", room.env_audio)
         room_struct.set_string("RoomName", room.name)
-        if game == Game.K2:
+        if game.is_k2():
             room_struct.set_uint8("DisableWeather", room.weather)
             room_struct.set_int32("ForceRating", room.force_rating)
 
-    if game == Game.K2:
+    if game.is_k2():
         root.set_int32("DirtyARGBOne", are.dirty_argb_1.rgb_integer())
         root.set_int32("DirtyARGBTwo", are.dirty_argb_2.rgb_integer())
         root.set_int32("DirtyARGBThree", are.dirty_argb_3.rgb_integer())
@@ -489,10 +501,15 @@ def read_are(
         source: The source to read from
         offset: The byte offset to start reading from
         size: The maximum number of bytes to read
+
     Returns:
+    -------
         ARE: The constructed annotation regions
-    - Read GFF from source starting at offset with max size
-    - Construct ARE object from parsed GFF
+
+    Processing Logic:
+    ----------------
+        - Read GFF from source starting at offset with max size
+        - Construct ARE object from parsed GFF
     """
     gff = read_gff(source, offset, size)
     return construct_are(gff)
@@ -505,7 +522,7 @@ def write_are(
     file_format: ResourceType = ResourceType.GFF,
     *,
     use_deprecated: bool = True,
-) -> None:
+):
     """Writes an ARE resource to a target file format.
 
     Args:
@@ -519,8 +536,11 @@ def write_are(
     Returns:
     -------
         None: Writes the ARE as GFF to the target without returning anything
-    - Dismantles the ARE into a GFF structure
-    - Writes the GFF structure to the target using the specified file format
+
+    Processing Logic:
+    ----------------
+        - Dismantles the ARE into a GFF structure
+        - Writes the GFF structure to the target using the specified file format
     """
     gff = dismantle_are(are, game, use_deprecated=use_deprecated)
     write_gff(gff, target, file_format)

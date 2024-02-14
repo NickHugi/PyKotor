@@ -1,23 +1,32 @@
+from __future__ import annotations
+
+import cProfile
 import multiprocessing
 import os
 import pathlib
 import sys
 import tempfile
-from types import TracebackType
+import traceback
+from typing import TYPE_CHECKING
 
 from PyQt5.QtCore import QThread
 from PyQt5.QtWidgets import QApplication
 
+if TYPE_CHECKING:
+    from types import TracebackType
 
-def onAppCrash(e: BaseException, value: str, tback: TracebackType):
+def onAppCrash(etype: type[BaseException], e: BaseException, tback: TracebackType | None):
     from utility.error_handling import format_exception_with_variables
-    with pathlib.Path("errorlog.txt").open("a") as file:
-        file.writelines(format_exception_with_variables(e, value, tback))
+    with pathlib.Path("errorlog.txt").open("a", encoding="utf-8") as file:
+        try:  # sourcery skip: do-not-use-bare-except
+            file.writelines(format_exception_with_variables(e, etype, tback))
+        except:  # noqa: E722
+            file.writelines(str(e))
         file.write("\n----------------------\n")
-    raise e
+    # Mimic default behavior by printing the traceback to stderr
+    traceback.print_exception(etype, e, tback)
 
-def is_frozen() -> bool:
-    # sourcery skip: assign-if-exp, boolean-if-exp-identity, reintroduce-else, remove-unnecessary-cast
+def is_frozen() -> bool:  # sourcery skip: assign-if-exp, boolean-if-exp-identity, reintroduce-else, remove-unnecessary-cast
     # Check for sys.frozen attribute
     if getattr(sys, "frozen", False):
         return True
@@ -44,41 +53,40 @@ def fix_sys_and_cwd_path():
     """
     def update_sys_path(path: pathlib.Path):
         working_dir = str(path)
-        if working_dir in sys.path:
-            sys.path.remove(working_dir)
-        sys.path.insert(0, working_dir)
+        if working_dir not in sys.path:
+            sys.path.append(working_dir)
 
-    pykotor_path = pathlib.Path(__file__).parents[4] / "Libraries" / "PyKotor" / "src" / "pykotor"
+    file_absolute_path = pathlib.Path(__file__).resolve()
+
+    pykotor_path = file_absolute_path.parents[4] / "Libraries" / "PyKotor" / "src" / "pykotor"
     if pykotor_path.exists():
         update_sys_path(pykotor_path.parent)
-    pykotor_gl_path = pathlib.Path(__file__).parents[4] / "Libraries" / "PyKotorGL" / "src" / "pykotor"
+    pykotor_gl_path = file_absolute_path.parents[4] / "Libraries" / "PyKotorGL" / "src" / "pykotor"
     if pykotor_gl_path.exists():
         update_sys_path(pykotor_gl_path.parent)
-    utility_path = pathlib.Path(__file__).parents[4] / "Libraries" / "Utility" / "src"
+    utility_path = file_absolute_path.parents[4] / "Libraries" / "Utility" / "src"
     if utility_path.exists():
         update_sys_path(utility_path)
-    toolset_path = pathlib.Path(__file__).parents[1] / "toolset"
+    toolset_path = file_absolute_path.parents[1] / "toolset"
     if toolset_path.exists():
         update_sys_path(toolset_path.parent)
         os.chdir(toolset_path)
 
 if __name__ == "__main__":
-    if is_frozen() is False:
-        fix_sys_and_cwd_path()
 
-    from utility.misc import is_debug_mode
-
-    os.environ["QT_MULTIMEDIA_PREFERRED_PLUGINS"] = "windowsmediafoundation"
+    if os.name == "nt":
+        os.environ["QT_MULTIMEDIA_PREFERRED_PLUGINS"] = "windowsmediafoundation"
     os.environ["QT_DEBUG_PLUGINS"] = "1"
 
     # os.environ["QT_AUTO_SCREEN_SCALE_FACTOR"] = "1"
     # os.environ["QT_SCALE_FACTOR_ROUNDING_POLICY"] = "PassThrough"
     # os.environ["QT_SCALE_FACTOR"] = "1"
 
-    if not is_debug_mode() or is_frozen():
+    if is_frozen():
+        print("App is frozen - doing multiprocessing.freeze_support()")
         multiprocessing.freeze_support()
-
-    from toolset.gui.windows.main import ToolWindow
+    fix_sys_and_cwd_path()
+    from utility.system.path import Path
 
     app = QApplication(sys.argv)
 
@@ -91,6 +99,20 @@ if __name__ == "__main__":
     app.thread().setPriority(QThread.HighestPriority)
 
     sys.excepthook = onAppCrash
+
+    from toolset.gui.windows.main import ToolWindow
+
     window = ToolWindow()
     window.show()
+
+
+    profiler = True  # Set to False or None to disable profiler
+    if profiler:
+        profiler = cProfile.Profile()
+        profiler.enable()
+
     app.exec_()
+
+    if profiler:
+        profiler.disable()
+        profiler.dump_stats(str(Path("profiler_output.pstat")))

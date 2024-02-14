@@ -15,15 +15,18 @@ class LocalizedStringLineEdit(QWidget):
     editingFinished = QtCore.pyqtSignal()
 
     def __init__(self, parent: QWidget):
-        """Initialize a locstring edit widget
+        """Initialize a locstring edit widget.
+
         Args:
+        ----
             parent: QWidget - Parent widget
-        Returns:
-            None
-        - Initialize UI from designer file
-        - Set initial locstring to invalid
-        - Connect edit button to editLocstring method
-        - Connect double click on text to editLocstring.
+
+        Processing Logic:
+        ----------------
+            - Initialize UI from designer file
+            - Set initial locstring to invalid
+            - Connect edit button to editLocstring method
+            - Connect double click on text to editLocstring.
         """
         super().__init__(parent)
 
@@ -37,19 +40,16 @@ class LocalizedStringLineEdit(QWidget):
         self.ui.editButton.clicked.connect(self.editLocstring)
         self.ui.locstringText.mouseDoubleClickEvent = lambda _: self.editLocstring()
 
-    def setInstallation(self, installation: HTInstallation) -> None:
+    def setInstallation(self, installation: HTInstallation):
         self._installation = installation
 
-    def setLocstring(self, locstring: LocalizedString) -> None:
+    def setLocstring(self, locstring: LocalizedString):
         """Sets the localized string for a UI element.
 
         Args:
         ----
             locstring: {Localized string object to set}
 
-        Returns:
-        -------
-            None: {No return value}
         Processing Logic:
         ----------------
             - Sets the internal locstring property to the passed in value
@@ -66,7 +66,7 @@ class LocalizedStringLineEdit(QWidget):
             self.ui.locstringText.setText(self._installation.talktable().string(locstring.stringref))
             self.ui.locstringText.setStyleSheet("QLineEdit {background-color: #fffded;}")
 
-    def editLocstring(self) -> None:
+    def editLocstring(self):
         dialog = LocalizedStringDialog(self, self._installation, self._locstring)
         if dialog.exec_():
             self.setLocstring(dialog.locstring)

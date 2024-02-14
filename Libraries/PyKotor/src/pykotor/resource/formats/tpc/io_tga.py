@@ -61,7 +61,7 @@ class TPCTGAReader(ResourceReader):
         while self._reader.remaining():  # while n < width * height:
             packet = self._reader.read_uint8()
             count = (packet & 0b01111111) + 1
-            is_raw_packet = (packet >> 7) == 0
+            is_raw_packet: bool = (packet >> 7) == 0
             #count = (packet & 0x7f) + 1
             #is_raw_packet = packet & 0x80
             n += count
@@ -143,7 +143,7 @@ class TPCTGAReader(ResourceReader):
         self._tpc = TPC()
 
         id_length = self._reader.read_uint8()
-        colormap_type = self._reader.read_uint8()  # noqa: F841
+        colormap_type = self._reader.read_uint8()
         datatype_code = self._reader.read_uint8()
         colormap_origin = self._reader.read_uint16()  # noqa: F841
         colormap_length = self._reader.read_uint16()
@@ -175,10 +175,10 @@ class TPCTGAReader(ResourceReader):
         elif datatype_code == _DataTypes.UNCOMPRESSED_RGB:
             self._reader.skip(colormap_length * colormap_depth // 8)
 
-            if bits_per_pixel not in [24, 32]:
+            if bits_per_pixel not in {24, 32}:
                 ValueError("The image must store 24 or 32 bits per pixel.")
 
-            pixel_rows = []
+            pixel_rows: list[bytearray] = []
             for y in range(height):
                 pixel_rows.append(bytearray())
                 for _ in range(width):
@@ -215,7 +215,7 @@ class TPCTGAReader(ResourceReader):
             data = self._process_rle_data(width, height, bits_per_pixel, is_direct_rgb=True)
         elif datatype_code == _DataTypes.COMPRESSED_BLACK_WHITE:
             data = self._process_rle_data(width, height, bits_per_pixel)
-        elif datatype_code in [_DataTypes.COMPRESSED_COLOR_MAPPED_A, _DataTypes.COMPRESSED_COLOR_MAPPED_B]:
+        elif datatype_code in {_DataTypes.COMPRESSED_COLOR_MAPPED_A, _DataTypes.COMPRESSED_COLOR_MAPPED_B}:
             if color_map is None:
                 msg = "Expected color map not found for compressed color-mapped data"
                 raise ValueError(msg)
@@ -224,7 +224,9 @@ class TPCTGAReader(ResourceReader):
             msg = "The image format is not currently supported."
             raise ValueError(msg)
 
-        self._tpc.set_data(width, height, [bytes(data)], TPCTextureFormat.RGBA)
+        # Set the texture format based on the bits per pixel
+        texture_format = TPCTextureFormat.RGBA if bits_per_pixel == 32 else TPCTextureFormat.RGB
+        self._tpc.set_data(width, height, [bytes(data)], texture_format)
 
         return self._tpc
 
@@ -236,13 +238,13 @@ class TPCTGAWriter(ResourceWriter):
         target: TARGET_TYPES,
     ):
         super().__init__(target)
-        self._tpc = tpc
+        self._tpc: TPC = tpc
 
     @autoclose
     def write(
         self,
         auto_close: bool = True,
-    ) -> None:
+    ):
         """Writes the TPC texture to a BMP file.
 
         Args:
@@ -270,8 +272,8 @@ class TPCTGAWriter(ResourceWriter):
         if self._tpc.format() in [TPCTextureFormat.RGB or TPCTextureFormat.DXT1]:
             self._writer.write_uint8(32)  # bits_per_pixel, image_descriptor
             self._writer.write_uint8(0)
-            data = self._tpc.convert(TPCTextureFormat.RGB, 0).data
-            pixel_reader = BinaryReader.from_bytes(data)
+            data: bytes | None = self._tpc.convert(TPCTextureFormat.RGB, 0).data
+            pixel_reader: BinaryReader = BinaryReader.from_bytes(data)
             for _ in range(len(data) // 3):
                 r = pixel_reader.read_uint8()
                 g = pixel_reader.read_uint8()

@@ -21,13 +21,13 @@ class VISAsciiReader(ResourceReader):
 
         iterator = iter(self._lines)
         for line in iterator:
-            tokens = line.split()
+            tokens: list[str] = line.split()
 
-            when_inside = tokens[0]
+            when_inside: str = tokens[0]
             self._vis.add_room(when_inside)
 
             count = int(tokens[1])
-            for _i in range(count):
+            for _ in range(count):
                 show = next(iterator).split()[0]
                 pairs.append((when_inside, show))
 
@@ -47,7 +47,7 @@ class VISAsciiWriter(ResourceWriter):
         self._vis: VIS = vis
 
     @autoclose
-    def write(self, auto_close: bool = True) -> None:
+    def write(self, auto_close: bool = True):
         for observer, observed in self._vis:
             self._writer.write_string(f"{observer} {len(observed)}{os.linesep}")
             for room in observed:

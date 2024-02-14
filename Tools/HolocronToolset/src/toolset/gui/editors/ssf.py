@@ -46,7 +46,7 @@ class SSFEditor(Editor):
 
         self.new()
 
-    def _setupSignals(self) -> None:
+    def _setupSignals(self):
         """Connects signals to update text boxes.
 
         Args:
@@ -92,7 +92,7 @@ class SSFEditor(Editor):
 
         self.ui.actionSetTLK.triggered.connect(self.selectTalkTable)
 
-    def load(self, filepath: os.PathLike | str, resref: str, restype: ResourceType, data: bytes) -> None:
+    def load(self, filepath: os.PathLike | str, resref: str, restype: ResourceType, data: bytes):
         """Loads sound data from an SSF file
         Args:
             filepath: {PathLike or string}: Path to SSF file
@@ -186,7 +186,7 @@ class SSFEditor(Editor):
         write_ssf(ssf, data)
         return data, b""
 
-    def new(self) -> None:
+    def new(self):
         super().new()
 
         self.ui.battlecry1StrrefSpin.setValue(0)
@@ -218,7 +218,7 @@ class SSFEditor(Editor):
         self.ui.rejoinPartyStrrefSpin.setValue(0)
         self.ui.poisonedStrrefSpin.setValue(0)
 
-    def updateTextBoxes(self) -> None:
+    def updateTextBoxes(self):
         """Updates text boxes with sound and text from talktable
         Args:
             self: The class instance
@@ -271,7 +271,7 @@ class SSFEditor(Editor):
             pair[0].setText(sound.get())
             pair[1].setText(text)
 
-    def selectTalkTable(self) -> None:
+    def selectTalkTable(self):
         filepath, filter = QFileDialog.getOpenFileName(self, "Select a TLK file", "", "TalkTable (*.tlk)")
         if filepath:
             self._talktable = TalkTable(filepath)

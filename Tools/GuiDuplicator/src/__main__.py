@@ -8,11 +8,11 @@ from fractions import Fraction
 
 if getattr(sys, "frozen", False) is False:
     pykotor_path = pathlib.Path(__file__).parents[2] / "pykotor"
-    if pykotor_path.exists():
+    if pykotor_path.is_dir():
         working_dir = str(pykotor_path.parent)
         if working_dir in sys.path:
             sys.path.remove(working_dir)
-        sys.path.insert(0, working_dir)
+        sys.path.append(working_dir)
 
 from pykotor.resource.formats.gff import GFF, GFFContent, read_gff, write_gff
 from pykotor.tools.path import CaseAwarePath
@@ -52,7 +52,7 @@ def log(message: str):
     """Function to log messages both on console and to a file if logging is enabled."""
     print(message)
     if LOGGING_ENABLED:
-        with parser_args.output.joinpath("output.log").open("a") as log_file:
+        with parser_args.output.joinpath("output.log").open("a", encoding="utf-8") as log_file:
             log_file.write(message + "\n")
 
 
@@ -219,21 +219,21 @@ ASPECT_RATIO_TO_RESOLUTION = {
 
 def process_file(gui_file: CaseAwarePath, output_dir: CaseAwarePath):
     if gui_file.suffix.lower() != ".gui":
-        print(f"Invalid GUI file: {gui_file!s}")
+        print(f"Invalid GUI file: {gui_file}")
         return
 
     gui_data: GFF | None = read_gff(gui_file)
     if not gui_data:
-        print(f"Could not read GUI file: {gui_file!s}")
+        print(f"Could not read GUI file: {gui_file}")
         return
 
-    log(f"Processing GUI file: {gui_file!s}")
+    log(f"Processing GUI file: {gui_file}")
 
     # Processing and saving the resolutions based on the ASPECT_RATIO_TO_RESOLUTION dictionary
     for aspect_ratio in ASPECT_RATIO_TO_RESOLUTION:
         aspect_ratio_dir: CaseAwarePath = output_dir / aspect_ratio.replace(":", "x")
         aspect_ratio_dir.mkdir(exist_ok=True, parents=True)
-        log(f"Created directory for aspect ratio {aspect_ratio} at {aspect_ratio_dir!s}")
+        log(f"Created directory for aspect ratio {aspect_ratio} at {aspect_ratio_dir}")
 
         for width, height in ASPECT_RATIO_TO_RESOLUTION[aspect_ratio]:
             adjusted_gui_data = adjust_controls_for_resolution(gui_data, width, height)
@@ -241,24 +241,24 @@ def process_file(gui_file: CaseAwarePath, output_dir: CaseAwarePath):
             output_path: CaseAwarePath = aspect_ratio_dir / output_filename
             output_path.touch(exist_ok=True)
             write_gff(adjusted_gui_data, output_path)
-            log(f"Processed and wrote GUI data for resolution {width}x{height} at {output_path!s}")
+            log(f"Processed and wrote GUI data for resolution {width}x{height} at {output_path}")
 
 
 def main():
     input_path: CaseAwarePath = parser_args.input
 
-    if input_path.is_file():
+    if input_path.safe_isfile():
         process_file(input_path, parser_args.output)
 
-    elif input_path.is_dir():
-        for gui_file in input_path.rglob("*.gui"):
+    elif input_path.safe_isdir():
+        for gui_file in input_path.safe_rglob("*.gui"):
             relative_path = gui_file.relative_to(input_path)
-            new_output_dir = parser_args.output / relative_path.parent / gui_file.stem
+            new_output_dir: CaseAwarePath = parser_args.output / relative_path.parent / gui_file.stem
             new_output_dir.mkdir(parents=True, exist_ok=True)
             process_file(gui_file, new_output_dir)
 
     else:
-        print(f"Invalid input: {input_path!s}. It's neither a file nor a directory.")
+        print(f"Invalid input: {input_path}. It's neither a file nor a directory.")
         return
 
 

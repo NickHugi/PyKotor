@@ -10,7 +10,7 @@
         "pip",
         "install",
         "-r",
-        "${workspaceFolder}..${pathSeparator}..${pathSeparator}Libraries${pathSeparator}PyKotor${pathSeparator}requirements.txt",
+        "${workspaceFolder}${pathSeparator}..${pathSeparator}..${pathSeparator}Libraries${pathSeparator}PyKotor${pathSeparator}requirements.txt"
       ],
       "presentation": {
         "echo": true,
@@ -19,8 +19,10 @@
       "problemMatcher": []
     },
     {
-      "label": "holopatcher_requirements",
-      "dependsOn": ["pykotor_requirements"],
+      "label": "holopatcher_recommended",
+      "dependsOn": [
+        "pykotor_requirements"
+      ],
       "type": "shell",
       "command": "${command:python.interpreterPath}",
       "args": [
@@ -28,7 +30,7 @@
         "pip",
         "install",
         "-r",
-        "requirements.txt",
+        "recommended.txt"
       ],
       "presentation": {
         "echo": true,
@@ -44,7 +46,7 @@
         "-m",
         "pip",
         "install",
-        "pyinstaller",
+        "pyinstaller"
       ],
       "presentation": {
         "echo": true,
@@ -60,7 +62,7 @@
         "-m",
         "pip",
         "install",
-        "shiv",
+        "shiv"
       ],
       "presentation": {
         "echo": true,
@@ -76,7 +78,7 @@
         "-m",
         "pip",
         "install",
-        "nuitka",
+        "nuitka"
       ],
       "presentation": {
         "echo": true,
@@ -92,7 +94,7 @@
         "-m",
         "pip",
         "install",
-        "pylint",
+        "pylint"
       ],
       "presentation": {
         "echo": true,
@@ -108,7 +110,7 @@
         "-m",
         "pip",
         "install",
-        "ruff",
+        "ruff"
       ],
       "presentation": {
         "echo": true,
@@ -124,7 +126,7 @@
         "-m",
         "pip",
         "install",
-        "mypy",
+        "mypy"
       ],
       "presentation": {
         "echo": true,
@@ -140,7 +142,7 @@
         "-m",
         "pip",
         "install",
-        "pylint",
+        "pylint"
       ],
       "presentation": {
         "echo": true,
@@ -149,19 +151,25 @@
       "problemMatcher": []
     },
     {
-        "label": "pylint: pykotor",
-        "dependsOn": ["holopatcher_requirements", "install_pylint"],
-        "type": "shell",
-        "command": "${command:python.interpreterPath} -m pylint --disable=C0301,C0302,C0115,C0116,R0913,C0114,R0903,R0902,W0212,R0914,R0904,W0613,E0611,C0415 pykotor",
-        "presentation": {
-            "reveal": "never",
-            "panel": "shared"
-        },
-        "problemMatcher": []
+      "label": "pylint: pykotor",
+      "dependsOn": [
+        "holopatcher_recommended",
+        "install_pylint"
+      ],
+      "type": "shell",
+      "command": "${command:python.interpreterPath} -m pylint --disable=C0301,C0302,C0115,C0116,R0913,C0114,R0903,R0902,W0212,R0914,R0904,W0613,E0611,C0415 pykotor",
+      "presentation": {
+        "reveal": "never",
+        "panel": "shared"
+      },
+      "problemMatcher": []
     },
     {
       "label": "Python: lint pykotor with mypy",
-      "dependsOn": ["holopatcher_requirements", "install_mypy"],
+      "dependsOn": [
+        "holopatcher_recommended",
+        "install_mypy"
+      ],
       "type": "shell",
       "command": "${command:python.interpreterPath}",
       "args": [
@@ -198,7 +206,10 @@
     {
       "label": "Python: Ruff check entire project",
       "type": "shell",
-      "dependsOn": ["holopatcher_requirements", "install_ruff"],
+      "dependsOn": [
+        "holopatcher_recommended",
+        "install_ruff"
+      ],
       "command": "${command:python.interpreterPath}",
       "args": [
         "-m",
@@ -229,9 +240,51 @@
       }
     },
     {
+      "label": "holopatcher_compile",
+      "type": "shell",
+      "command": "${command:python.interpreterPath}",
+      "args": [
+        "-OO",
+        "-m",
+        "compileall",
+        "${workspaceFolder}/src"
+      ],
+      "problemMatcher": [],
+      "group": "build"
+    },
+    {
+      "label": "pykotor_compile",
+      "type": "shell",
+      "command": "${command:python.interpreterPath}",
+      "args": [
+        "-O",
+        "-m",
+        "compileall",
+        "${workspaceFolder}${pathSeparator}..${pathSeparator}..${pathSeparator}Libraries${pathSeparator}PyKotor${pathSeparator}src"
+      ],
+      "problemMatcher": [],
+      "group": "build"
+    },
+    {
+      "label": "utility_compile",
+      "type": "shell",
+      "command": "${command:python.interpreterPath}",
+      "args": [
+        "-OO",
+        "-m",
+        "compileall",
+        "${workspaceFolder}${pathSeparator}..${pathSeparator}..${pathSeparator}Libraries${pathSeparator}Utility${pathSeparator}src"
+      ],
+      "problemMatcher": [],
+      "group": "build"
+    },
+    {
       "label": "Build HoloPatcher - PyInstaller",
       "type": "shell",
-      "dependsOn": ["holopatcher_requirements", "install_pyinstaller"],
+      "dependsOn": [
+        "holopatcher_recommended",
+        "install_pyinstaller",
+      ],
       "command": "${command:python.interpreterPath}",
       "args": [
         "-m",
@@ -241,8 +294,41 @@
         "--clean",
         "--noconfirm",
         "--name=HoloPatcher",
+        "--path=${workspaceFolder}${pathSeparator}..${pathSeparator}..${pathSeparator}Libraries${pathSeparator}PyKotor${pathSeparator}src",
+        "--path=${workspaceFolder}${pathSeparator}..${pathSeparator}..${pathSeparator}Libraries${pathSeparator}Utility${pathSeparator}src",
         "--distpath=${workspaceFolder}${pathSeparator}dist",
-        "--icon=${workspaceFolder}${pathSeparator}resources${pathSeparator}icons${pathSeparator}patcher_icon_v2.ico",
+        "--upx-dir=${env:USERPROFILE}${pathSeparator}Documents${pathSeparator}GitHub${pathSeparator}upx-win32",
+        "__main__.py"
+      ],
+      "problemMatcher": [],
+      "options": {
+        "cwd": "${workspaceFolder}${pathSeparator}src",
+        "env": {
+          "PYTHONOPTIMIZE": "1",  // Enable optimizations
+        }
+      },
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      }
+    },
+    {
+      "label": "Build HoloPatcher - Nuitka (Windows only, no CLI support)",
+      "type": "shell",
+      "dependsOn": [
+        "holopatcher_recommended",
+        "install_nuitka"
+      ],
+      "command": "${command:python.interpreterPath}",
+      "args": [
+        "-m",
+        "nuitka",
+        "--onefile",
+        "--output-filename=HoloPatcher",
+        "--windows-icon-from-ico=${workspaceFolder}${pathSeparator}resources${pathSeparator}icons${pathSeparator}patcher_icon_v2.ico",
+        "--remove-output",
+        "--output-dir=${workspaceFolder}${pathSeparator}nuitka_dist",
+        "--enable-plugin=tk-inter",
         "__main__.py"
       ],
       "problemMatcher": [],
@@ -251,34 +337,11 @@
         "env": {
           "PYTHONPATH": "${env:PYTHONPATH};${workspaceFolder}${pathSeparator}..${pathSeparator}..${pathSeparator}Libraries${pathSeparator}PyKotor${pathSeparator}src;${workspaceFolder}${pathSeparator}..${pathSeparator}..${pathSeparator}Libraries${pathSeparator}Utility${pathSeparator}src"
         },
+        "group": {
+          "kind": "build",
+          "isDefault": false
+        }
       }
-    },
-    {
-      "label": "Build HoloPatcher - Nuitka (Windows only, no CLI support)",
-      "type": "shell",
-      "dependsOn": ["holopatcher_requirements", "install_nuitka"],
-      "command": "${command:python.interpreterPath}",
-      "args": [
-        "-m",
-        "nuitka",
-        "--disable-console",
-        "--onefile",
-//        "--mingw64",
-//        "--clang",
-        "--output-filename=HoloPatcher",
-        "--windows-icon-from-ico=${workspaceFolder}${pathSeparator}resources${pathSeparator}icons${pathSeparator}patcher_icon_v2.ico",
-        "--remove-output",
-        "--output-dir=${workspaceFolder}${pathSeparator}nuitka_dist",
-        "--enable-plugin=tk-inter",
-        "__main__.py",
-      ],
-      "problemMatcher": [],
-      "options": {
-        "cwd": "${workspaceFolder}${pathSeparator}src",
-        "env": {
-          "PYTHONPATH": "${env:PYTHONPATH};${workspaceFolder}${pathSeparator}..${pathSeparator}..${pathSeparator}Libraries${pathSeparator}PyKotor${pathSeparator}src;${workspaceFolder}${pathSeparator}..${pathSeparator}..${pathSeparator}Libraries${pathSeparator}Utility${pathSeparator}src"
-        },
-      },
-    },
+    }
   ]
 }

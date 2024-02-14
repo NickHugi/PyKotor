@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from copy import deepcopy
 from typing import TYPE_CHECKING
 
 from pykotor.common.misc import ResRef
@@ -60,7 +61,7 @@ class UTDEditor(Editor):
         self.update3dPreview()
         self.new()
 
-    def _setupSignals(self) -> None:
+    def _setupSignals(self):
         """Connect GUI buttons and signals to methods.
 
         Args:
@@ -118,13 +119,13 @@ class UTDEditor(Editor):
         self.ui.difficultyLabel.setVisible(installation.tsl)
         self.ui.difficultyModLabel.setVisible(installation.tsl)
 
-    def load(self, filepath: os.PathLike | str, resref: str, restype: ResourceType, data: bytes) -> None:
+    def load(self, filepath: os.PathLike | str, resref: str, restype: ResourceType, data: bytes):
         super().load(filepath, resref, restype, data)
 
         utd = read_utd(data)
         self._loadUTD(utd)
 
-    def _loadUTD(self, utd: UTD) -> None:
+    def _loadUTD(self, utd: UTD):
         """Loads UTD data into UI elements.
 
         Args:
@@ -198,7 +199,7 @@ class UTDEditor(Editor):
         - Writes the constructed UTD to a GFF bytearray
         - Returns the GFF data and any errors
         """
-        utd: UTD = self._utd
+        utd: UTD = deepcopy(self._utd)
 
         # Basic
         utd.name = self.ui.nameEdit.locstring()
@@ -252,27 +253,27 @@ class UTDEditor(Editor):
 
         return data, b""
 
-    def new(self) -> None:
+    def new(self):
         super().new()
         self._loadUTD(UTD())
 
-    def changeName(self) -> None:
+    def changeName(self):
         dialog = LocalizedStringDialog(self, self._installation, self.ui.nameEdit.locstring())
         if dialog.exec_():
             self._loadLocstring(self.ui.nameEdit, dialog.locstring)
 
-    def generateTag(self) -> None:
+    def generateTag(self):
         if self.ui.resrefEdit.text() == "":
             self.generateResref()
         self.ui.tagEdit.setText(self.ui.resrefEdit.text())
 
-    def generateResref(self) -> None:
+    def generateResref(self):
         if self._resref is not None and self._resref != "":
             self.ui.resrefEdit.setText(self._resref)
         else:
             self.ui.resrefEdit.setText("m00xx_dor_000")
 
-    def editConversation(self) -> None:
+    def editConversation(self):
         """Edits a conversation.
 
         Processing Logic:
@@ -309,11 +310,11 @@ class UTDEditor(Editor):
         if data is not None:
             openResourceEditor(filepath, resname, ResourceType.DLG, data, self._installation, self)
 
-    def togglePreview(self) -> None:
+    def togglePreview(self):
         self.globalSettings.showPreviewUTP = not self.globalSettings.showPreviewUTP
         self.update3dPreview()
 
-    def update3dPreview(self) -> None:
+    def update3dPreview(self):
         """Updates the 3D preview renderer visibility and size.
 
         Processing Logic:

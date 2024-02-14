@@ -7,19 +7,20 @@ from typing import TYPE_CHECKING, Any, Callable, Generator
 
 from pykotor.tools.registry import winreg_key
 from utility.misc import is_instance_or_subinstance
-from utility.path import Path as InternalPath
-from utility.path import PathElem
-from utility.path import PurePath as InternalPurePath
 from utility.registry import resolve_reg_key_to_path
+from utility.system.path import Path as InternalPath
+from utility.system.path import PathElem
+from utility.system.path import PurePath as InternalPurePath
 
 if TYPE_CHECKING:
     from pykotor.common.misc import Game
+    from typing_extensions import Self
 
 def simple_wrapper(fn_name, wrapped_class_type) -> Callable[..., Any]:
     """Wraps a function to handle case-sensitive pathlib.PurePath arguments.
 
     This is a hacky way of ensuring that all args to any pathlib methods have their path case-sensitively resolved.
-    This also resolves self and kwargs for ensured accuracy.
+    This also resolves self, *args, and **kwargs for ensured accuracy.
 
     Args:
     ----
@@ -57,7 +58,7 @@ def simple_wrapper(fn_name, wrapped_class_type) -> Callable[..., Any]:
         """
         orig_fn = wrapped_class_type._original_methods[fn_name]  # noqa: SLF001
 
-        def parse_arg(arg):
+        def parse_arg(arg) -> CaseAwarePath | Any:
             if is_instance_or_subinstance(arg, InternalPurePath) and CaseAwarePath.should_resolve_case(arg):
                 return CaseAwarePath.get_case_sensitive_path(arg)
             return arg
@@ -66,20 +67,20 @@ def simple_wrapper(fn_name, wrapped_class_type) -> Callable[..., Any]:
         actual_self_or_cls: CaseAwarePath | type = parse_arg(self)
 
         # Handle positional arguments
-        args = tuple(parse_arg(arg) for arg in args)
+        new_args: tuple[CaseAwarePath | Any, ...] = tuple(parse_arg(arg) for arg in args)
 
         # Handle keyword arguments
-        kwargs = {k: parse_arg(v) for k, v in kwargs.items()}
+        new_kwargs: dict[str, CaseAwarePath | Any] = {k: parse_arg(v) for k, v in kwargs.items()}
 
         # TODO: when orig_fn doesn't exist, the AttributeException should be raised by
         # the prior stack instead of here, as that's what would normally happen.
 
-        return orig_fn(actual_self_or_cls, *args, **kwargs)
+        return orig_fn(actual_self_or_cls, *new_args, **new_kwargs)
 
     return wrapped
 
 
-def create_case_insensitive_pathlib_class(cls: type) -> None:  # TODO: move into CaseAwarePath.__getattr__
+def create_case_insensitive_pathlib_class(cls: type):  # TODO: move into CaseAwarePath.__getattr__
     # Create a dictionary that'll hold the original methods for this class
     """Wraps methods of a pathlib class to be case insensitive.
 
@@ -96,10 +97,10 @@ def create_case_insensitive_pathlib_class(cls: type) -> None:  # TODO: move into
         5. Check if method and not wrapped before
         6. Add method to wrapped dictionary and reassign with wrapper.
     """
-    cls._original_methods = {}  # type: ignore[reportGeneralTypeIssues]
-    mro = cls.mro()  # Gets the method resolution order
-    parent_classes = mro[1:-1]  # Exclude the current class itself and the object class
-    cls_methods = [method for method in cls.__dict__ if callable(getattr(cls, method))]  # define names of methods in the cls, excluding inherited
+    cls._original_methods = {}  # type: ignore[attr-defined]
+    mro: list[type] = cls.mro()  # Gets the method resolution order
+    parent_classes: list[type] = mro[1:-1]  # Exclude the current class itself and the object class
+    cls_methods: set[str] = {method for method in cls.__dict__ if callable(getattr(cls, method))}  # define names of methods in the cls, excluding inherited
 
     # Store already wrapped methods to avoid wrapping multiple times
     wrapped_methods = set()
@@ -114,6 +115,7 @@ def create_case_insensitive_pathlib_class(cls: type) -> None:  # TODO: move into
         "__setattr__",
         "__init__",
         "_init",
+        "pathify",
         *cls_methods,
     }
 
@@ -121,7 +123,7 @@ def create_case_insensitive_pathlib_class(cls: type) -> None:  # TODO: move into
         for attr_name, attr_value in parent.__dict__.items():
             # Check if it's a method and hasn't been wrapped before
             if callable(attr_value) and attr_name not in wrapped_methods and attr_name not in ignored_methods:
-                cls._original_methods[attr_name] = attr_value  # type: ignore[reportGeneralTypeIssues]
+                cls._original_methods[attr_name] = attr_value  # type: ignore[attr-defined]
                 setattr(cls, attr_name, simple_wrapper(attr_name, cls))
                 wrapped_methods.add(attr_name)
 
@@ -129,41 +131,42 @@ def create_case_insensitive_pathlib_class(cls: type) -> None:  # TODO: move into
 class CaseAwarePath(InternalPath):  # type: ignore[misc]
     """A class capable of resolving case-sensitivity in a path. Absolutely essential for working with KOTOR files on Unix filesystems."""
 
-    def resolve(self, strict=False):
-        new_path = super().resolve(strict)
-        if self.should_resolve_case(new_path):
-            new_path = self.get_case_sensitive_path(new_path)
-        return new_path
+    def resolve(self, strict=False):  # noqa: FBT002
+        if self.should_resolve_case(self):
+            new_path = self.get_case_sensitive_path(self)
+            return super(CaseAwarePath, new_path).resolve(strict)
+        return super().resolve(strict)
 
-    def __hash__(self):
-        """Ensures any instance of this class will be treated the same in lists etc, if they're case-insensitive matches."""
-        return hash((self.__class__.__name__, super().__str__().lower()))
+    def relative_to(self, *args, walk_up=False, **kwargs) -> InternalPath | Self:
+        if not args or "other" in kwargs:
+            raise TypeError("relative_to() missing 1 required positional argument: 'other'")  # noqa: TRY003, EM101
 
-    def __eq__(self, other: object):
-        """All pathlib classes that derive from PurePath are equal to this object if their str paths are case-insensitive equivalents."""
-        if not isinstance(other, (os.PathLike, str)):
-            return NotImplemented
-        other = other.as_posix() if isinstance(other, pathlib.PurePath) else str(other)
-        return self._fix_path_formatting(other).lower() == super().__str__().lower()
+        other, *_deprecated = args
+        resolved_self = self
+        if isinstance(resolved_self, InternalPath):
+            if not isinstance(other, InternalPath):
+                other = self.__class__(other)
+            parsed_other = self.with_segments(other, *_deprecated).absolute()
+            resolved_self = resolved_self.absolute()
+        else:
+            parsed_other = other if isinstance(other, InternalPurePath) else InternalPurePath(other)
+            parsed_other = other.with_segments(other, *_deprecated)
 
-    def __repr__(self) -> str:
-        return f"{self.__class__.__name__}({super().__str__().lower()})"
+        self_str, other_str = map(str, (resolved_self, parsed_other))
+        if isinstance(self, (pathlib.PureWindowsPath, pathlib.WindowsPath)) or type(self).__name__ == "CaseAwarePath" or os.name == "nt":  # HACK: maybe import CaseAwarePath or have an attribute set over there (might need to set __slots__ too)
+            self_str, other_str = map(str.lower, (self_str, other_str))
 
-    def __str__(self) -> str:
-        return (
-            super().__str__()
-            if pathlib.Path(self).exists()
-            else super(self.__class__, self.get_case_sensitive_path(self)).__str__()
-        )
+        if other_str not in self_str:
+            msg = f"self '{self_str}' is not relative to other '{other_str}'"
+            raise ValueError(msg)
 
-    def __contains__(self, other_path: os.PathLike | str):
-        return self.is_relative_to(other_path)
+        replacement = self_str.replace(other_str, "").lstrip("\\").lstrip("/")
+        if isinstance(self, CaseAwarePath):  # CaseAwarePath's are always absolute.
+            return InternalPath(replacement)
+        return self.__class__(replacement)
 
-    def is_relative_to(self, other: PathElem, case_sensitive=False) -> bool:
-        return super().is_relative_to(other, case_sensitive=case_sensitive)
-
-    @staticmethod
-    def get_case_sensitive_path(path: os.PathLike | str) -> CaseAwarePath:
+    @classmethod
+    def get_case_sensitive_path(cls, path: PathElem):
         """Get a case sensitive path.
 
         Args:
@@ -189,41 +192,63 @@ class CaseAwarePath(InternalPath):  # type: ignore[misc]
             base_path: InternalPath = InternalPath(*parts[:i])
             next_path: InternalPath = InternalPath(*parts[: i + 1])
 
-            # Find the first non-existent case-sensitive file/folder in hierarchy
             if not next_path.safe_isdir() and base_path.safe_isdir():
 
+                # Find the first non-existent case-sensitive file/folder in hierarchy
                 # if multiple are found, use the one that most closely matches our case
-                # A closest match is defined in this context as the file/folder's name which has the most case-sensitive positional character matches
-                # If two closest matches are identical (e.g. we're looking for TeST and we find TeSt and TesT), it's random.
-                parts[i] = CaseAwarePath.find_closest_match(
+                # A closest match is defined, in this context, as the file/folder's name that contains the most case-sensitive positional character matches
+                # If two closest matches are identical (e.g. we're looking for TeST and we find TeSt and TesT), it's probably random.
+                last_part: bool = i == len(parts) - 1
+                parts[i] = cls.find_closest_match(
                     parts[i],
                     (
                         item
                         for item in base_path.safe_iterdir()
-                        if (i == len(parts) - 1) or item.safe_isdir()
+                        if last_part or item.safe_isdir()
                     ),
                 )
 
-            # return a CaseAwarePath instance that resolves the case of existing items on disk, joined with the non-existing
-            # parts in their original case.
-            # if parts[1] is not found on disk, i.e. when i is 1 and base_path.exists() returns False, this will also return the original path.
             elif not next_path.safe_exists():
-                return CaseAwarePath._create_instance(base_path.joinpath(*parts[i:]))  # noqa: SLF001
+                break
 
         # return a CaseAwarePath instance
-        return CaseAwarePath._create_instance(*parts)  # noqa: SLF001
+        return cls._create_instance(*parts)
 
     @classmethod
     def find_closest_match(cls, target: str, candidates: Generator[InternalPath, None, None]) -> str:
+        """Finds the closest match from candidates to the target string.
+
+        Args:
+        ----
+            target: str - The target string to find closest match for
+            candidates: Generator[pathlib.Path, None, None] - Generator of candidate paths
+
+        Returns:
+        -------
+            str - The closest matching candidate's file/folder name from the candidates
+
+        Processing Logic:
+        ----------------
+            - Initialize max_matching_chars to -1
+            - Iterate through each candidate
+            - Get the matching character count between candidate and target using get_matching_characters_count method
+            - Update closest_match and max_matching_chars if new candidate has more matches
+            - Return closest_match after full iteration.
+            - If no exact match found, return target which will of course be nonexistent.
+        """
         max_matching_chars: int = -1
-        closest_match: str = target
+        closest_match: str | None = None
+
         for candidate in candidates:
             matching_chars: int = cls.get_matching_characters_count(candidate.name, target)
             if matching_chars > max_matching_chars:
                 closest_match = candidate.name
-                if matching_chars == len(target):  # break if exact match
-                    break
+                if matching_chars == len(target):
+                    break  # Exit the loop early if exact match (faster)
                 max_matching_chars = matching_chars
+
+        if not closest_match:
+            return target
         return closest_match
 
     @staticmethod
@@ -238,18 +263,40 @@ class CaseAwarePath(InternalPath):  # type: ignore[misc]
     def should_resolve_case(path: os.PathLike | str) -> bool:
         if os.name == "nt":
             return False
-        path_obj = pathlib.Path(path)
-        return path_obj.is_absolute() and not path_obj.exists()
+        try:
+            path_obj = pathlib.Path(path)
+            return path_obj.is_absolute() and not path_obj.exists()
+        except Exception:  # noqa: BLE001
+            return False
 
+    def __hash__(self):
+        return hash(self.as_windows())
 
-# HACK: fix later
-if os.name == "posix":
+    def __eq__(self, other):
+        """All pathlib classes that derive from PurePath are equal to this object if their str paths are case-insensitive equivalents."""
+        if not isinstance(other, (os.PathLike, str)):
+            print(f"Cannot compare {self!r} with {other!r}")
+            return NotImplemented
+        if isinstance(other, CaseAwarePath):
+            return self.as_posix().lower() == other.as_posix().lower()
+
+        return self._fix_path_formatting(str(other), slash="/").lower() == self.as_posix().lower()
+
+    def __repr__(self):
+        return f"{self.__class__.__name__}({self.as_windows()})"
+
+    def __str__(self):
+        path_obj = pathlib.Path(self)
+        return (
+            super(CaseAwarePath, self.get_case_sensitive_path(path_obj)).__str__()
+            if self.should_resolve_case(path_obj)
+            else self._fix_path_formatting(str(path_obj))
+        )
+
+if os.name != "nt":  # Wrapping is unnecessary on Windows
     create_case_insensitive_pathlib_class(CaseAwarePath)
-elif os.name == "nt":
-    CaseAwarePath = InternalPath  # type: ignore[assignment, misc]
 
-
-def get_default_paths():
+def get_default_paths() -> dict[str, dict[Game, list[str]]]:
     from pykotor.common.misc import Game
 
     return {
@@ -338,7 +385,7 @@ def find_kotor_paths_from_default() -> dict[Game, list[CaseAwarePath]]:
         game: {
             case_path
             for case_path in (CaseAwarePath(path).resolve() for path in paths)
-            if case_path.exists()
+            if case_path.safe_isdir()
         }
         for game, paths in raw_locations.get(os_str, {}).items()
     }
@@ -349,7 +396,7 @@ def find_kotor_paths_from_default() -> dict[Game, list[CaseAwarePath]]:
             for reg_key, reg_valname in possible_game_paths:
                 path_str = resolve_reg_key_to_path(reg_key, reg_valname)
                 path = CaseAwarePath(path_str).resolve() if path_str else None
-                if path and path.name and path.exists():
+                if path and path.name and path.safe_isdir():
                     locations[game].add(path)
 
     # don't return nested sets, return as lists.

@@ -51,11 +51,11 @@ class ModelRenderer(QOpenGLWidget):
         self.zoomCameraOut: ControlItem = ControlItem(self.settings.zoomCameraOut3dBind)
         self.toggleInstanceLock: ControlItem = ControlItem(self.settings.toggleLockInstancesBind)
 
-    def loop(self) -> None:
+    def loop(self):
         self.repaint()
         QTimer.singleShot(33, self.loop)
 
-    def initializeGL(self) -> None:
+    def initializeGL(self):
         self.scene = Scene(installation=self.installation)
         self.scene.camera.fov = 70
         self.scene.camera.distance = 4
@@ -69,12 +69,13 @@ class ModelRenderer(QOpenGLWidget):
 
         QTimer.singleShot(33, self.loop)
 
-    def paintGL(self) -> None:
-        """Renders the scene
+    def paintGL(self):
+        """Renders the scene.
+
         Args:
+        ----
             self: The class instance
-        Returns:
-            None: Does not return anything
+
         Processing Logic:
         ----------------
             - Checks if scene is None and returns if so
@@ -101,19 +102,19 @@ class ModelRenderer(QOpenGLWidget):
 
         self.scene.render()
 
-    def clearModel(self) -> None:
+    def clearModel(self):
         if self.scene is not None and "model" in self.scene.objects:
             del self.scene.objects["model"]
 
-    def setModel(self, data: bytes, data_ext: bytes) -> None:
+    def setModel(self, data: bytes, data_ext: bytes):
         mdl = BinaryReader.from_auto(data, 12)
         mdx = BinaryReader.from_auto(data_ext)
         self._modelToLoad = mdl, mdx
 
-    def setCreature(self, utc: UTC) -> None:
+    def setCreature(self, utc: UTC):
         self._creatureToLoad = utc
 
-    def resetCamera(self) -> None:
+    def resetCamera(self):
         if "model" in self.scene.objects:
             model = self.scene.objects["model"]
             self.scene.camera.x = 0
@@ -124,14 +125,14 @@ class ModelRenderer(QOpenGLWidget):
             self.scene.camera.distance = model.radius(self.scene) + 2
 
     # region Events
-    def resizeEvent(self, e: QResizeEvent) -> None:
+    def resizeEvent(self, e: QResizeEvent):
         super().resizeEvent(e)
 
         if self.scene is not None:
             self.scene.camera.width = e.size().width()
             self.scene.camera.height = e.size().height()
 
-    def wheelEvent(self, e: QWheelEvent) -> None:
+    def wheelEvent(self, e: QWheelEvent):
         if self.zoomCamera.satisfied(self._mouseDown, self._keysDown):
             strength = self.settings.zoomCameraSensitivity3d / 2000
             self.scene.camera.distance += -e.angleDelta().y() * strength
@@ -140,7 +141,7 @@ class ModelRenderer(QOpenGLWidget):
             strength = self.settings.moveCameraSensitivity3d / 10000
             self.scene.camera.z -= -e.angleDelta().y() * strength
 
-    def mouseMoveEvent(self, e: QMouseEvent) -> None:
+    def mouseMoveEvent(self, e: QMouseEvent):
         screen = Vector2(e.x(), e.y())
         screenDelta = Vector2(screen.x - self._mousePrev.x, screen.y - self._mousePrev.y)
         self._mousePrev = screen
@@ -156,13 +157,13 @@ class ModelRenderer(QOpenGLWidget):
             strength = self.settings.moveCameraSensitivity3d / 10000
             self.scene.camera.rotate(-screenDelta.x * strength, screenDelta.y * strength)
 
-    def mousePressEvent(self, e: QMouseEvent) -> None:
+    def mousePressEvent(self, e: QMouseEvent):
         self._mouseDown.add(e.button())
 
-    def mouseReleaseEvent(self, e: QMouseEvent) -> None:
+    def mouseReleaseEvent(self, e: QMouseEvent):
         self._mouseDown.discard(e.button())
 
-    def keyPressEvent(self, e: QKeyEvent, bubble: bool = True) -> None:
+    def keyPressEvent(self, e: QKeyEvent, bubble: bool = True):
         self._keysDown.add(e.key())
 
         if self.rotateCameraLeft.satisfied(self._mouseDown, self._keysDown):
@@ -192,6 +193,6 @@ class ModelRenderer(QOpenGLWidget):
         if self.zoomCameraOut.satisfied(self._mouseDown, self._keysDown):
             self.scene.camera.distance -= 1
 
-    def keyReleaseEvent(self, e: QKeyEvent, bubble: bool = True) -> None:
+    def keyReleaseEvent(self, e: QKeyEvent, bubble: bool = True):
         self._keysDown.discard(e.key())
     # endregion

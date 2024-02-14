@@ -152,7 +152,7 @@ def dismantle_uti(
     root.set_uint8("PaletteID", uti.palette_id)
     root.set_string("Comment", uti.comment)
 
-    properties_list = root.set_list("PropertiesList", GFFList())
+    properties_list: GFFList = root.set_list("PropertiesList", GFFList())
     for prop in uti.properties:
         properties_struct = properties_list.add(0)
         properties_struct.set_uint8("CostTable", prop.cost_table)
@@ -169,7 +169,7 @@ def dismantle_uti(
     root.set_uint8("BodyVariation", uti.body_variation)
     root.set_uint8("TextureVar", uti.texture_variation)
 
-    if game == Game.K2:
+    if game.is_k2():
         root.set_uint8("UpgradeLevel", uti.upgrade_level)
 
     if use_deprecated:
@@ -195,7 +195,7 @@ def write_uti(
     file_format: ResourceType = ResourceType.GFF,
     *,
     use_deprecated: bool = True,
-) -> None:
+):
     gff = dismantle_uti(uti, game, use_deprecated=use_deprecated)
     write_gff(gff, target, file_format)
 

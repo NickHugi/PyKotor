@@ -13,7 +13,7 @@ if getattr(sys, "frozen", False) is False:
 
 from pykotor.resource.formats.mdl import read_mdl, write_mdl
 from pykotor.resource.type import ResourceType
-from utility.path import Path
+from utility.system.path import Path
 
 parser = argparse.ArgumentParser(description="Extracts MDL/MDX in ASCII format, whatever that means")
 parser.add_argument("--input", type=str, help="Path to the MDL/MDX file/folder of MDL files")

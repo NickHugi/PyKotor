@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from pykotor.common.misc import Game
 from pykotor.common.scriptdefs import KOTOR_CONSTANTS, KOTOR_FUNCTIONS, TSL_CONSTANTS, TSL_FUNCTIONS
 from pykotor.common.scriptlib import KOTOR_LIBRARY, TSL_LIBRARY
 from pykotor.resource.formats.ncs.compiler.lexer import NssLexer
@@ -13,8 +12,9 @@ from pykotor.resource.formats.ncs.optimizers import RemoveNopOptimizer
 from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES, ResourceType
 
 if TYPE_CHECKING:
+    from pykotor.common.misc import Game
     from pykotor.resource.formats.ncs.ncs_data import NCSOptimizer
-    from pykotor.tools.path import CaseAwarePath
+    from utility.system.path import Path
 
 
 def read_ncs(
@@ -45,7 +45,7 @@ def write_ncs(
     ncs: NCS,
     target: TARGET_TYPES,
     file_format: ResourceType = ResourceType.NCS,
-) -> None:
+):
     """Writes the NCS data to the target location with the specified format (NCS only).
 
     Args:
@@ -95,7 +95,10 @@ def compile_nss(
     source: str,
     game: Game,
     optimizers: list[NCSOptimizer] | None = None,
-    library_lookup: list[str | CaseAwarePath] | str | CaseAwarePath | None = None,
+    library_lookup: list[str | Path] | list[Path] | list[str] | str | Path | None = None,
+    *,
+    errorlog=None,
+    debug=False,
 ) -> NCS:
     """Returns NCS object compiled from input source string.
 
@@ -107,18 +110,22 @@ def compile_nss(
     """
     NssLexer()
     nss_parser = NssParser(
-        functions=KOTOR_FUNCTIONS if game == Game.K1 else TSL_FUNCTIONS,
-        constants=KOTOR_CONSTANTS if game == Game.K1 else TSL_CONSTANTS,
-        library=KOTOR_LIBRARY if game == Game.K1 else TSL_LIBRARY,
+        functions=KOTOR_FUNCTIONS if game.is_k1() else TSL_FUNCTIONS,
+        constants=KOTOR_CONSTANTS if game.is_k1() else TSL_CONSTANTS,
+        library=KOTOR_LIBRARY if game.is_k1() else TSL_LIBRARY,
         library_lookup=library_lookup,
+        errorlog=errorlog,
+        debug=debug,
     )
 
     ncs = NCS()
 
-    block = nss_parser.parser.parse(source, tracking=True)
+    block = nss_parser.parser.parse(source, tracking=True, debug=debug)
     block.compile(ncs)
 
-    optimizers = [RemoveNopOptimizer()] if optimizers is None else [RemoveNopOptimizer(), *optimizers]
+    if not optimizers or not any(isinstance(optimizer, RemoveNopOptimizer) for optimizer in optimizers):
+        optimizers = [RemoveNopOptimizer()] + (optimizers or [])
+
     for optimizer in optimizers:
         optimizer.reset()
     ncs.optimize(optimizers)

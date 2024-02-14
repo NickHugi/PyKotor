@@ -17,13 +17,13 @@ if getattr(sys, "frozen", False) is False:
         working_dir = str(pykotor_path.parent)
         if working_dir in sys.path:
             sys.path.remove(working_dir)
-        sys.path.insert(0, working_dir)
+        sys.path.append(working_dir)
     toolset_path = pathlib.Path(__file__).parents[3] / "toolset"
     if toolset_path.exists():
         working_dir = str(toolset_path.parent)
         if working_dir in sys.path:
             sys.path.remove(working_dir)
-        sys.path.insert(0, working_dir)
+        sys.path.append(working_dir)
 
 K1_PATH = os.environ.get("K1_PATH")
 
@@ -38,17 +38,17 @@ K1_PATH = os.environ.get("K1_PATH")
 )
 class TXTEditorTest(TestCase):
     @classmethod
-    def setUpClass(cls) -> None:
+    def setUpClass(cls):
         # Make sure to configure this environment path before testing!
         from toolset.data.installation import HTInstallation
         cls.INSTALLATION = HTInstallation(K1_PATH, "", False, None)
 
-    def setUp(self) -> None:
+    def setUp(self):
         from toolset.gui.editors.txt import TXTEditor
         self.app = QApplication([])
         self.ui = TXTEditor(None, self.INSTALLATION)
 
-    def tearDown(self) -> None:
+    def tearDown(self):
         self.app.deleteLater()
 
     def test_placeholder(self):

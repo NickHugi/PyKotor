@@ -3,6 +3,7 @@ from __future__ import annotations
 from enum import IntEnum
 
 from pykotor.common.language import LocalizedString
+from pykotor.common.misc import Game
 from pykotor.resource.formats.gff import GFF, GFFContent, GFFList, read_gff, write_gff
 from pykotor.resource.formats.gff.gff_auto import bytes_gff
 from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES, ResourceType
@@ -15,7 +16,7 @@ class JRL:
 
     def __init__(
         self,
-    ) -> None:
+    ):
         self.quests: list[JRLQuest] = []
 
 
@@ -35,7 +36,7 @@ class JRLQuest:
 
     def __init__(
         self,
-    ) -> None:
+    ):
         self.comment: str = ""
         self.name: LocalizedString = LocalizedString.from_invalid()
         self.planet_id: int = 0
@@ -58,7 +59,7 @@ class JRLEntry:
 
     def __init__(
         self,
-    ) -> None:
+    ):
         self.end: bool = False
         self.entry_id: int = 0
         self.text: LocalizedString = LocalizedString.from_invalid()
@@ -97,10 +98,15 @@ def construct_jrl(gff: GFF) -> JRL:
     return jrl
 
 
-def dismantle_jrl(jrl: JRL) -> GFF:
+def dismantle_jrl(  # TODO: store original list indices and sort.
+    jrl: JRL,
+    game: Game = Game.K2,
+    *,
+    use_deprecated: bool = True,
+) -> GFF:
     gff = GFF(GFFContent.JRL)
 
-    category_list = gff.root.set_list("Categories", GFFList())
+    category_list: GFFList = gff.root.set_list("Categories", GFFList())
     for i, quest in enumerate(jrl.quests):
         category_struct = category_list.add(i)
         category_struct.set_string("Comment", quest.comment)
@@ -110,7 +116,7 @@ def dismantle_jrl(jrl: JRL) -> GFF:
         category_struct.set_uint32("Priority", quest.priority.value)
         category_struct.set_string("Tag", quest.tag)
 
-        entry_list = category_struct.set_list("EntryList", GFFList())
+        entry_list: GFFList = category_struct.set_list("EntryList", GFFList())
         for j, entry in enumerate(quest.entries):
             entry_struct = entry_list.add(j)
             entry_struct.set_uint16("End", entry.end)
@@ -126,7 +132,7 @@ def read_jrl(
     offset: int = 0,
     size: int | None = None,
 ) -> JRL:
-    gff = read_gff(source, offset, size)
+    gff: GFF = read_gff(source, offset, size)
     return construct_jrl(gff)
 
 
@@ -134,8 +140,8 @@ def write_jrl(
     jrl: JRL,
     target: TARGET_TYPES,
     file_format: ResourceType = ResourceType.GFF,
-) -> None:
-    gff = dismantle_jrl(jrl)
+):
+    gff: GFF = dismantle_jrl(jrl)
     write_gff(gff, target, file_format)
 
 
@@ -143,5 +149,5 @@ def bytes_jrl(
     jrl: JRL,
     file_format: ResourceType = ResourceType.GFF,
 ) -> bytes:
-    gff = dismantle_jrl(jrl)
+    gff: GFF = dismantle_jrl(jrl)
     return bytes_gff(gff, file_format)

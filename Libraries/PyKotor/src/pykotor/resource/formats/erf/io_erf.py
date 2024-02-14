@@ -41,11 +41,15 @@ class ERFBinaryReader(ResourceReader):
         file_type = self._reader.read_string(4)
         file_version = self._reader.read_string(4)
 
-        if not any(x for x in ERFType if x.value == file_type):
-            msg = "Not a valid ERF file."
+        erf_type = next(
+            (x for x in ERFType if x.value == file_type),
+            None,
+        )
+        if erf_type is None:
+            msg = f"Not a valid ERF file: '{file_type}'"
             raise ValueError(msg)
 
-        self._erf = ERF(ERFType.MOD if file_type == ERFType.MOD.value else ERFType.ERF)
+        self._erf = ERF(erf_type)
 
         if file_version != "V1.0":
             msg = f"ERF version '{file_version}' is unsupported."
@@ -57,9 +61,9 @@ class ERFBinaryReader(ResourceReader):
         offset_to_keys = self._reader.read_uint32()
         offset_to_resources = self._reader.read_uint32()
 
-        resrefs = []
-        resids = []
-        restypes = []
+        resrefs: list[str] = []
+        resids: list[int] = []
+        restypes: list[int] = []
         self._reader.seek(offset_to_keys)
         for _ in range(entry_count):
             resrefs.append(self._reader.read_string(16))
@@ -93,13 +97,13 @@ class ERFBinaryWriter(ResourceWriter):
         target: TARGET_TYPES,
     ):
         super().__init__(target)
-        self.erf = erf
+        self.erf: ERF = erf
 
     @autoclose
     def write(
         self,
         auto_close: bool = True,
-    ) -> None:
+    ):
         entry_count = len(self.erf)
         offset_to_keys = ERFBinaryWriter.FILE_HEADER_SIZE
         offset_to_resources = offset_to_keys + ERFBinaryWriter.KEY_ELEMENT_SIZE * entry_count
@@ -118,7 +122,7 @@ class ERFBinaryWriter(ResourceWriter):
         self._writer.write_bytes(b"\0" * 116)
 
         for resid, resource in enumerate(self.erf):
-            self._writer.write_string(resource.resref.get(), string_length=16)
+            self._writer.write_string(str(resource.resref), string_length=16)
             self._writer.write_uint32(resid)
             self._writer.write_uint16(resource.restype.type_id)
             self._writer.write_uint16(0)

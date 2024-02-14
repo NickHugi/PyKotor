@@ -1,11 +1,9 @@
 from __future__ import annotations
 
 import cProfile
-import os
 import pathlib
 import sys
 from argparse import ArgumentParser
-from hashlib import sha256
 from io import StringIO
 from typing import TYPE_CHECKING
 
@@ -27,17 +25,21 @@ from pykotor.extract.capsule import Capsule
 from pykotor.resource.formats import gff, lip, tlk, twoda
 from pykotor.tools.misc import is_capsule_file
 from pykotor.tools.path import CaseAwarePath
-from utility.path import Path, PureWindowsPath
+from utility.misc import generate_hash
+from utility.system.path import Path, PureWindowsPath
 
 if TYPE_CHECKING:
+    import os
+
     from pykotor.extract.file import FileResource
+
 OUTPUT_LOG: Path | None = None
 LOGGING_ENABLED: bool | None = None
 
 PARSER_ARGS = None
 PARSER = None
 
-def log_output(*args, **kwargs) -> None:
+def log_output(*args, **kwargs):
     global OUTPUT_LOG  # noqa: PLW0603
     # Create an in-memory text stream
     buffer = StringIO()
@@ -72,27 +74,6 @@ def log_output(*args, **kwargs) -> None:
         f.write(msg)
 
 
-def compute_sha256(where: os.PathLike | str | bytes):
-    """Compute the SHA-256 hash of the data."""
-    sha256_hash = sha256()
-    if isinstance(where, bytes):
-        sha256_hash.update(where)
-        return sha256_hash.hexdigest()
-
-    if isinstance(where, (os.PathLike, str)):
-        file_path = where if isinstance(where, Path) else Path(where).resolve()
-
-        with file_path.open("rb") as f:
-            while True:
-                data = f.read(0x10000)  # read in 64k chunks
-                if not data:
-                    break
-                sha256_hash.update(data)
-
-        return sha256_hash.hexdigest()
-    return None
-
-
 def relative_path_from_to(src, dst) -> Path:
     src_parts = list(src.parts)
     dst_parts = list(dst.parts)
@@ -111,14 +92,14 @@ def visual_length(s: str, tab_length=8) -> int:
 
     # Split the string at tabs, sum the lengths of the substrings,
     # and add the necessary spaces to account for the tab stops.
-    parts = s.split("\t")
-    vis_length = sum(len(part) for part in parts)
+    parts: list[str] = s.split("\t")
+    vis_length: int = sum(len(part) for part in parts)
     for part in parts[:-1]:  # all parts except the last one
         vis_length += tab_length - (len(part) % tab_length)
     return vis_length
 
 
-gff_types = [x.value.lower().strip() for x in gff.GFFContent]
+gff_types: list[str] = [x.value.lower().strip() for x in gff.GFFContent]
 
 
 def diff_data(
@@ -251,7 +232,7 @@ def diff_data(
             return log_output_with_separator(message)
         return True
 
-    if PARSER_ARGS.compare_hashes and compute_sha256(data1) != compute_sha256(data2):
+    if PARSER_ARGS.compare_hashes and generate_hash(data1) != generate_hash(data2):
         log_output(f"'{where}': SHA256 is different")
         return False
     return True
@@ -266,8 +247,8 @@ def log_output_with_separator(message, below=True, above=False, surround=False):
 
 
 def diff_files(file1: os.PathLike | str, file2: os.PathLike | str) -> bool | None:
-    c_file1 = file1 if isinstance(file1, Path) else Path(file1).resolve()
-    c_file2 = file2 if isinstance(file2, Path) else Path(file2).resolve()
+    c_file1 = Path.pathify(file1).resolve()
+    c_file2 = Path.pathify(file2).resolve()
     c_file1_rel: Path = relative_path_from_to(c_file2, c_file1)
     c_file2_rel: Path = relative_path_from_to(c_file1, c_file2)
     is_same_result: bool | None = True
@@ -319,8 +300,8 @@ def diff_files(file1: os.PathLike | str, file2: os.PathLike | str) -> bool | Non
 
 
 def diff_directories(dir1: os.PathLike | str, dir2: os.PathLike | str) -> bool | None:
-    c_dir1 = dir1 if isinstance(dir1, Path) else Path(dir1).resolve()
-    c_dir2 = dir2 if isinstance(dir2, Path) else Path(dir2).resolve()
+    c_dir1 = Path.pathify(dir1).resolve()
+    c_dir2 = Path.pathify(dir2).resolve()
 
     log_output_with_separator(f"Finding differences in the '{c_dir1.name}' folders...", above=True)
 
@@ -340,8 +321,9 @@ def diff_directories(dir1: os.PathLike | str, dir2: os.PathLike | str) -> bool |
 
 
 def diff_installs(install_path1: os.PathLike | str, install_path2: os.PathLike | str) -> bool | None:
-    install_path1 = install_path1 if isinstance(install_path1, CaseAwarePath) else CaseAwarePath(install_path1).resolve()
-    install_path2 = install_path2 if isinstance(install_path2, CaseAwarePath) else CaseAwarePath(install_path2).resolve()
+    # TODO: use pykotor.extract.installation
+    install_path1 = CaseAwarePath.pathify(install_path1).resolve()
+    install_path2 = CaseAwarePath.pathify(install_path2).resolve()
     log_output()
     log_output((max(len(str(install_path1)) + 29, len(str(install_path2)) + 30)) * "-")
     log_output("Searching first install dir:", install_path1)
@@ -380,7 +362,7 @@ def diff_installs(install_path1: os.PathLike | str, install_path2: os.PathLike |
 
 
 def is_kotor_install_dir(path: os.PathLike | str) -> bool:
-    c_path: CaseAwarePath = path if isinstance(path, CaseAwarePath) else CaseAwarePath(path)
+    c_path: CaseAwarePath = CaseAwarePath.pathify(path)
     return c_path.safe_isdir() and c_path.joinpath("chitin.key").exists()
 
 
@@ -400,10 +382,10 @@ def run_differ_from_args(path1: Path, path2: Path) -> bool | None:
     msg = f"--path1='{path1.name}' and --path2='{path2.name}' must be the same type"
     raise ValueError(msg)
 
-def main() -> None:
+def main():
     global PARSER_ARGS
-    global PARSER
-    global LOGGING_ENABLED
+    global PARSER  # noqa: PLW0603
+    global LOGGING_ENABLED  # noqa: PLW0603
     PARSER = ArgumentParser(description="Finds differences between two KOTOR installations")
     PARSER.add_argument("--path1", type=str, help="Path to the first K1/TSL install, file, or directory to diff.")
     PARSER.add_argument("--path2", type=str, help="Path to the second K1/TSL install, file, or directory to diff.")
@@ -467,10 +449,7 @@ def main() -> None:
         )
 
         if profiler is not None:
-            profiler.disable()
-            profiler_output_file = Path("profiler_output.pstat").resolve()
-            profiler.dump_stats(str(profiler_output_file))
-            log_output(f"Profiler output saved to: {profiler_output_file}")
+            _stop_profiler(profiler)
         if comparison is not None:
             log_output(
                 f"'{relative_path_from_to(PARSER_ARGS.path2, PARSER_ARGS.path1)}'",
@@ -486,12 +465,15 @@ def main() -> None:
             sys.exit(3)
     except KeyboardInterrupt:
         if profiler is not None:
-            profiler.disable()
-            profiler_output_file = Path("profiler_output.pstat").resolve()
-            profiler.dump_stats(str(profiler_output_file))
-            log_output(f"Profiler output saved to: {profiler_output_file}")
+            _stop_profiler(profiler)
         log_output("KeyboardInterrupt - KotorDiff was cancelled by user.")
         raise
+
+def _stop_profiler(profiler: cProfile.Profile):
+    profiler.disable()
+    profiler_output_file = Path("profiler_output.pstat").resolve()
+    profiler.dump_stats(str(profiler_output_file))
+    log_output(f"Profiler output saved to: {profiler_output_file}")
 
 
 if __name__ == "__main__":

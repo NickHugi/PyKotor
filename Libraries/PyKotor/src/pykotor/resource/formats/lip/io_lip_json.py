@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import json
 
-from pykotor.resource.formats.lip.lip_data import LIP, LIPShape
+from pykotor.resource.formats.lip.lip_data import LIP, LIPKeyFrame, LIPShape
 from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES, ResourceReader, ResourceWriter, autoclose
 from pykotor.tools.encoding import decode_bytes_with_fallbacks
 
@@ -15,7 +15,7 @@ class LIPJSONReader(ResourceReader):
         size: int = 0,
     ):
         super().__init__(source, offset, size)
-        self._json = {}
+        self._json: dict = {}
         self._lip: LIP | None = None
 
     @autoclose
@@ -47,23 +47,26 @@ class LIPJSONWriter(ResourceWriter):
         target: TARGET_TYPES,
     ):
         super().__init__(target)
-        self._lip = lip
-        self._json = {"duration": str(self._lip.length), "keyframes": []}
+        self._lip: LIP = lip
+        self._json: dict[str, str | list[LIPKeyFrame]] = {
+            "duration": str(self._lip.length),
+            "keyframes": [],
+        }
 
     @autoclose
     def write(
         self,
         auto_close: bool = True,
-    ) -> None:
+    ):
         # Populate the dictionary with keyframe data
         for keyframe in self._lip:
             self._json["keyframes"].append(
                 {
                     "time": str(keyframe.time),
                     "shape": str(keyframe.shape.value),
-                },
+                }, # type: ignore[reportGeneralTypeIssues]
             )
 
-        json_string = json.dumps(self._json, indent=4)
+        json_string: str = json.dumps(self._json, indent=4)
         self._writer.write_bytes(json_string.encode())
 

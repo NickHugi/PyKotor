@@ -7,9 +7,9 @@ class Observable:
     def __init__(self):
         self.callbacks: list[Callable] = []
 
-    def subscribe(self, callback: Callable) -> None:
+    def subscribe(self, callback: Callable):
         self.callbacks.append(callback)
 
-    def fire(self, message: object) -> None:
+    def fire(self, message: object):
         for callback in self.callbacks:
             callback(message)

@@ -82,24 +82,28 @@ def list_textures(
     Args:
     ----
         data: bytes - The binary data to parse
+
     Returns:
+    -------
         list[str] - A list of unique texture names
+
     Processing Logic:
-    - Uses a BinaryReader to parse the binary data
-    - Starts at a root offset to traverse node offsets
-    - Checks node IDs for texture nodes
-    - Reads texture names and adds unique names to the textures list
-    - Returns the list of unique textures.
+    ----------------
+        - Uses a BinaryReader to parse the binary data
+        - Starts at a root offset to traverse node offsets
+        - Checks node IDs for texture nodes
+        - Reads texture names and adds unique names to the textures list
+        - Returns the list of unique textures.
     """
-    textures = []
+    textures: list[str] = []
 
     with BinaryReader.from_bytes(data, 12) as reader:
         reader.seek(168)
         root_offset = reader.read_uint32()
 
-        nodes = [root_offset]
+        nodes: list[int] = [root_offset]
         while nodes:
-            node_offset = nodes.pop()
+            node_offset: int = nodes.pop()
             reader.seek(node_offset)
             node_id = reader.read_uint32()
 
@@ -108,11 +112,11 @@ def list_textures(
             child_offsets_count = reader.read_uint32()
 
             reader.seek(child_offsets_offset)
-            nodes.extend(reader.read_uint32() for _i in range(child_offsets_count))
+            nodes.extend(reader.read_uint32() for _ in range(child_offsets_count))
             if node_id & 32:
                 reader.seek(node_offset + 168)
                 texture = reader.read_string(32)
-                if texture != "" and texture != "NULL" and texture.lower() not in textures:
+                if texture and texture != "NULL" and texture.lower() not in textures:
                     textures.append(texture.lower())
 
     return textures
@@ -130,18 +134,22 @@ def list_lightmaps(
     Returns:
     -------
         lightmaps: {A list of unique lightmap names}
-    - The function reads the lightmap data file using a BinaryReader
-    - It parses the node tree to extract all lightmap names
-    - Duplicate and empty names are filtered out
-    - The unique lightmap names are returned as a list.
+
+    Processing Logic:
+    ----------------
+        - The function reads the lightmap data file using a BinaryReader
+        - It parses the node tree to extract all lightmap names
+        - Duplicate and empty names are filtered out
+        - The unique lightmap names are returned as a list.
     """
-    lightmaps = []
+    lightmaps: list[str] = []
+    lightmaps_caseset: set[str] = set()
 
     with BinaryReader.from_bytes(data, 12) as reader:
         reader.seek(168)
         root_offset = reader.read_uint32()
 
-        nodes = [root_offset]
+        nodes: list[int] = [root_offset]
         while nodes:
             node_offset = nodes.pop()
             reader.seek(node_offset)
@@ -152,12 +160,14 @@ def list_lightmaps(
             child_offsets_count = reader.read_uint32()
 
             reader.seek(child_offsets_offset)
-            nodes.extend(reader.read_uint32() for _i in range(child_offsets_count))
+            nodes.extend(reader.read_uint32() for _ in range(child_offsets_count))
             if node_id & 32:
                 reader.seek(node_offset + 200)
                 lightmap = reader.read_string(32)
-                if lightmap != "" and lightmap != "NULL" and lightmap.lower() not in lightmaps:
-                    lightmaps.append(lightmap.lower())
+                lowercase_lightmap = lightmap.lower()
+                if lightmap and lightmap != "NULL" and lowercase_lightmap not in lightmaps_caseset:
+                    lightmaps.append(lightmap)
+                    lightmaps_caseset.add(lowercase_lightmap)
 
     return lightmaps
 
@@ -166,28 +176,34 @@ def change_textures(
     data: bytes,
     textures: dict[str, str],
 ) -> bytes:
-    """Changes textures in a game file
+    """Changes textures in a game file.
+
     Args:
+    ----
         data: bytes - Game file data
         textures: dict[str, str] - Dictionary of old texture names keyed to new texture names
+
     Returns:
+    -------
         bytes - Game file data with textures replaced
-    Processes Logic:
+
+    Processing Logic:
+    ---------------
         1. Reads offsets of texture names from game file
         2. Loops through offsets and replaces texture names based on textures dictionary
         3. Returns updated game file data with new textures.
     """
     data = bytearray(data)
-    offsets = {}
+    offsets: dict[str, list[int]] = {}
 
-    textures_ins = {old_texture.lower(): new_texture.lower() for old_texture, new_texture in textures.items()}
+    textures_ins: dict[str, str] = {old_texture.lower(): new_texture.lower() for old_texture, new_texture in textures.items()}
     textures = textures_ins
 
     with BinaryReader.from_bytes(data, 12) as reader:
         reader.seek(168)
         root_offset = reader.read_uint32()
 
-        nodes = [root_offset]
+        nodes: list[int] = [root_offset]
         while nodes:
             node_offset = nodes.pop()
             reader.seek(node_offset)
@@ -198,7 +214,7 @@ def change_textures(
             child_offsets_count = reader.read_uint32()
 
             reader.seek(child_offsets_offset)
-            nodes.extend(reader.read_uint32() for _i in range(child_offsets_count))
+            nodes.extend(reader.read_uint32() for _ in range(child_offsets_count))
             if node_id & 32:
                 reader.seek(node_offset + 168)
                 texture = reader.read_string(32).lower()
@@ -234,26 +250,29 @@ def change_lightmaps(
     ----
         data: bytes - Binary data of the Unity3D asset file
         textures: dict[str, str] - Dictionary of old texture names to new texture names
+
     Returns:
+    -------
         bytes - Binary data of the Unity3D asset file with lightmaps textures changed
 
-    Processes Logic:
-    1. Reads offsets of nodes containing texture names from the asset file
-    2. Gets list of texture names to replace from the textures dictionary
-    3. Loops through offsets lists to replace texture names in the asset file data
-    4. Returns updated asset file data with lightmaps textures changed
+    Processing Logic:
+    ----------------
+        1. Reads offsets of nodes containing texture names from the asset file
+        2. Gets list of texture names to replace from the textures dictionary
+        3. Loops through offsets lists to replace texture names in the asset file data
+        4. Returns updated asset file data with lightmaps textures changed
     """
     data = bytearray(data)
     offsets: dict[str, list[int]] = {}
 
-    textures_ins = {old_texture.lower(): new_texture.lower() for old_texture, new_texture in textures.items()}
+    textures_ins: dict[str, str] = {old_texture.lower(): new_texture.lower() for old_texture, new_texture in textures.items()}
     textures = textures_ins
 
     with BinaryReader.from_bytes(data, 12) as reader:
         reader.seek(168)
         root_offset = reader.read_uint32()
 
-        nodes = [root_offset]
+        nodes: list[int] = [root_offset]
         while nodes:
             node_offset = nodes.pop()
             reader.seek(node_offset)
@@ -293,14 +312,21 @@ def change_lightmaps(
 def detect_version(
     data: bytes,
 ) -> Game:
-    """Detect game version from data header
+    """Detect game version from data header.
+
     Args:
+    ----
         data: bytes: Binary data header
+
     Returns:
+    -------
         Game: Detected game version enum
-    - Unpack 4 byte integer from offset 12-16 in data
-    - Compare integer to known version pointer values
-    - Return Game.K1 if match, else return Game.K2.
+
+    Processing Logic:
+    ----------------
+        - Unpack 4 byte integer from offset 12-16 in data
+        - Compare integer to known version pointer values
+        - Return Game.K1 if match, else return Game.K2.
     """
     pointer = struct.unpack("I", data[12:16])[0]
     return Game.K1 if pointer == _GEOM_ROOT_FP0_K1 else Game.K2
@@ -309,12 +335,18 @@ def detect_version(
 def convert_to_k1(
     data: bytes,
 ) -> bytes:
-    """Converts data to K1 format
+    """Converts data to K1 format.
+
     Args:
+    ----
         data: bytes - The bytes data to convert
+
     Returns:
+    -------
         bytes: The converted bytes data
+
     Processing Logic:
+    ----------------
         - Detect if already in K1 format and return early
         - Trim unnecessary nodes
         - Update file pointers
@@ -324,13 +356,13 @@ def convert_to_k1(
     if detect_version(data) == Game.K1:
         return data
 
-    trim = []
+    trim: list[tuple[int, int]] = []
 
     with BinaryReader.from_bytes(data, 12) as reader:
         reader.seek(168)
         root_offset = reader.read_uint32()
 
-        nodes = [root_offset]
+        nodes: list[int] = [root_offset]
         while nodes:
             node_offset = nodes.pop()
             reader.seek(node_offset)
@@ -344,7 +376,7 @@ def convert_to_k1(
             child_offsets_count = reader.read_uint32()
 
             reader.seek(child_offsets_offset)
-            nodes.extend(reader.read_uint32() for _i in range(child_offsets_count))
+            nodes.extend(reader.read_uint32() for _ in range(child_offsets_count))
     start = data[:12]
     data = bytearray(data[12:])
 
@@ -379,7 +411,7 @@ def convert_to_k1(
             data[mesh_start : mesh_start + 4] = struct.pack("I", _AABB_FP0_K1)
             data[mesh_start + 4 : mesh_start + 8] = struct.pack("I", _AABB_FP1_K1)
 
-        shifting = data[offset_start : offset_start + offset_size]
+        shifting: bytearray = data[offset_start : offset_start + offset_size]
         data[offset_start - 8 : offset_start - 8 + offset_size] = shifting
 
     return bytes(start + data)
@@ -388,32 +420,36 @@ def convert_to_k1(
 def convert_to_k2(
     data: bytes,
 ) -> bytes:
-    """Convert a game data file to the K2 format
+    """Convert a game data file to the K2 format.
+
     Args:
+    ----
         data: bytes - The game data file
+
     Returns:
+    -------
         bytes: The converted game data file
+
     Processing Logic:
-    1. Builds a dictionary mapping offsets to offsets
-    2. Extracts mesh and animation node offsets
-    3. Updates function pointers to K2 values
-    4. Adds extra data to mesh headers
-    5. Updates all offsets in the data.
+    ----------------
+        1. Builds a dictionary mapping offsets to offsets
+        2. Extracts mesh and animation node offsets
+        3. Updates function pointers to K2 values
+        4. Adds extra data to mesh headers
+        5. Updates all offsets in the data.
     """
     if detect_version(data) == Game.K2:
         return data
 
-    offsets = {}  # Maps the offset for an offset to its offset
-    mesh_offsets = []  # tuple of (Offset to every mesh node, Node type)
-    anim_offsets = []
+    offsets: dict[int, int] = {}        # Maps the offset for an offset to its offset
+    mesh_offsets: list[list[int]] = []  # tuple of (Offset to every mesh node, Node type)
+    anim_offsets: list[int] = []
 
     # First, we build a dictionary of every offset in the file plus a list of the mesh nodes
     with BinaryReader.from_bytes(data, 12) as reader:
 
-        def node_recursive(
-            offset_to_root_offset,
-        ):
-            nodes = [offset_to_root_offset]
+        def node_recursive(offset_to_root_offset: int):
+            nodes: list[int] = [offset_to_root_offset]
             while nodes:
                 offset_to_node_offset = nodes.pop()
                 reader.seek(offset_to_node_offset)
@@ -503,7 +539,7 @@ def convert_to_k2(
                     reader.seek(base_offset + 0)
                     offsets[base_offset + 0] = reader.read_uint32()  # Node header -> AABB root node
 
-                    aabbs = [offsets[base_offset + 0]]
+                    aabbs: list[int] = [offsets[base_offset + 0]]
                     while aabbs:
                         aabb = aabbs.pop()
 
@@ -656,7 +692,7 @@ def convert_to_k2(
     for offset_location, offset_value in offsets.items():
         data[offset_location : offset_location + 4] = struct.pack("I", offset_value)
 
-    return bytes(0 for i in range(4)) + struct.pack("I", len(data)) + mdx_size + data
+    return bytes(0 for _ in range(4)) + struct.pack("I", len(data)) + mdx_size + data
 
 
 def transform(
@@ -796,16 +832,16 @@ def flip(
     mdl_data = bytearray(mdl_data[12:])
     mdx_data = bytearray(mdx_data)
 
-    mdl_vertex_offsets = []  # This is a list of tuples: (count, offset)
-    mdx_vertex_offsets = []  # This is a list of tuples: (count, offset, stride, position)
-    mdx_normal_offsets = []  # This is a list of tuples: (count, offset, stride, position)
-    elements_offsets = []  # This is a list of tuples: (count, offset)
-    faces_offsets = []  # This is a list of tuples: (count, offset)
+    mdl_vertex_offsets: list[tuple[int, int]] = []  # This is a list of tuples: (count, offset)
+    mdx_vertex_offsets: list[tuple[int, int, int, int]] = []  # This is a list of tuples: (count, offset, stride, position)
+    mdx_normal_offsets: list[tuple[int, int, int, int]] = []  # This is a list of tuples: (count, offset, stride, position)
+    elements_offsets: list[tuple[int, int]] = []  # This is a list of tuples: (count, offset)
+    faces_offsets: list[tuple[int, int]] = []  # This is a list of tuples: (count, offset)
     with BinaryReader.from_bytes(mdl_data) as reader:
         reader.seek(168)
         root_offset = reader.read_uint32()
 
-        nodes = [root_offset]
+        nodes: list[int] = [root_offset]
         while nodes:
             node_offset = nodes.pop()
             reader.seek(node_offset)
@@ -841,13 +877,13 @@ def flip(
             if node_id & 32:
                 reader.seek(node_offset + 80)
                 fp = reader.read_uint32()
-                tsl = fp not in [
+                tsl = fp not in {
                     _MESH_FP0_K1,
                     _SKIN_FP0_K1,
                     _DANGLY_FP0_K2,
                     _AABB_FP0_K1,
                     _SABER_FP0_K1,
-                ]
+                }
 
                 reader.seek(node_offset + 80 + 8)
                 faces_offset = reader.read_uint32()
@@ -935,7 +971,7 @@ def flip(
                 y = struct.unpack("f", mdx_data[offset + 4 : offset + 8])[0]
                 mdx_data[offset + 4 : offset + 8] = struct.pack("f", -y)
 
-    # Readd the first 12 bytes
+    # Re-add the first 12 bytes
     mdl_data = mdl_start + mdl_data
 
     return MDLMDXTuple(mdl_data, mdx_data)

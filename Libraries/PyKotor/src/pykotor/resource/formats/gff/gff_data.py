@@ -12,8 +12,8 @@ from pykotor.common.geometry import Vector3, Vector4
 from pykotor.common.language import LocalizedString
 from pykotor.common.misc import ResRef
 from pykotor.resource.type import ResourceType
-from utility.path import PureWindowsPath
 from utility.string import compare_and_format, format_text
+from utility.system.path import PureWindowsPath
 
 if TYPE_CHECKING:
     from collections.abc import Generator, Iterator
@@ -45,17 +45,24 @@ class GFFContent(Enum):
     BIC = "BIC "
     GUI = "GUI "
     PTH = "PTH "
+    NFO = "NFO "  # savenfo.res
+    PT  = "PT  "  # partytable.res
+    GVT = "GVT "  # GLOBALVARS.res
 
     @classmethod
     def has_value(
         cls,
         value,
     ):
-        return any(gff_content.value == value for gff_content in cls)
+        if isinstance(value, GFFContent):
+            value = value.value
+        elif not isinstance(value, str):
+            raise NotImplementedError(value)
+        return any(gff_content.value == value.upper() for gff_content in cls)
 
     @classmethod
-    def get_valid_types(cls):
-        return [x.value.lower().strip() for x in cls]
+    def get_valid_types(cls) -> set[str]:
+        return {x.name for x in cls}
 
 
 class GFFFieldType(IntEnum):
@@ -83,7 +90,7 @@ class GFFFieldType(IntEnum):
     def return_type(
         self,
     ) -> type[int | str | ResRef | Vector3 | Vector4 | LocalizedString | GFFStruct | GFFList | bytes | float]:
-        if self in [
+        if self in {
             GFFFieldType.UInt8,
             GFFFieldType.UInt16,
             GFFFieldType.UInt32,
@@ -92,25 +99,25 @@ class GFFFieldType(IntEnum):
             GFFFieldType.Int16,
             GFFFieldType.Int32,
             GFFFieldType.Int64,
-        ]:
+        }:
             return int
-        if self in [GFFFieldType.String]:
+        if self == GFFFieldType.String:
             return str
-        if self in [GFFFieldType.ResRef]:
+        if self == GFFFieldType.ResRef:
             return ResRef
-        if self in [GFFFieldType.Vector3]:
+        if self == GFFFieldType.Vector3:
             return Vector3
-        if self in [GFFFieldType.Vector4]:
+        if self == GFFFieldType.Vector4:
             return Vector4
-        if self in [GFFFieldType.LocalizedString]:
+        if self == GFFFieldType.LocalizedString:
             return LocalizedString
-        if self in [GFFFieldType.Struct]:
+        if self == GFFFieldType.Struct:
             return GFFStruct
-        if self in [GFFFieldType.List]:
+        if self == GFFFieldType.List:
             return GFFList
-        if self in [GFFFieldType.Binary]:
+        if self == GFFFieldType.Binary:
             return bytes
-        if self in [GFFFieldType.Double, GFFFieldType.Single]:
+        if self in {GFFFieldType.Double, GFFFieldType.Single}:
             return float
         raise ValueError(self)
 
@@ -132,7 +139,7 @@ class GFF:
         root: GFFStruct | None = None,
         indent: int = 0,
         column_len: int = 40,
-    ) -> None:
+    ):
         if root is None:
             root = self.root
 
@@ -158,7 +165,7 @@ class GFF:
                     )
                     self.print_tree(gff_struct, indent + 2)
 
-    def compare(self, other_gff: GFF, log_func: Callable = print, path: PureWindowsPath | None = None) -> bool:
+    def compare(self, other_gff: GFF, log_func: Callable = print, path: PureWindowsPath | None = None, ignore_default_changes: bool = False) -> bool:
         """Compare two GFF objects.
 
         Args:
@@ -180,7 +187,7 @@ class GFF:
             - Write comparison report to given path if provided
             - Return True if no differences found, False otherwise.
         """
-        return self.root.compare(other_gff.root, log_func, path)
+        return self.root.compare(other_gff.root, log_func, path, ignore_default_changes)
 
 
 
@@ -274,7 +281,7 @@ class GFFStruct:
     def remove(
         self,
         label: str,
-    ) -> None:
+    ):
         """Removes the field with the specified label.
 
         Args:
@@ -305,6 +312,7 @@ class GFFStruct:
         other_gff_struct: GFFStruct,
         log_func: Callable = print,
         current_path: PureWindowsPath | os.PathLike | str | None = None,
+        ignore_default_changes=False,
     ) -> bool:
         """Recursively compares two GFFStructs.
 
@@ -333,86 +341,105 @@ class GFFStruct:
             "KTInfoVersion",
             "EditorInfo",
         }
+        def is_ignorable_value(v) -> bool:
+            return not v or str(v) in {"0", "-1"}
+
+        def is_ignorable_comparison(
+            old_value,
+            new_value,
+        ) -> bool:
+            return is_ignorable_value(old_value) and is_ignorable_value(new_value)
+
+        is_same: bool = True
         current_path = PureWindowsPath(current_path or "GFFRoot")
-        if len(self) != len(other_gff_struct):  # sourcery skip: class-extract-method
+        if len(self) != len(other_gff_struct) and not ignore_default_changes:  # sourcery skip: class-extract-method
             log_func()
             log_func(f"GFFStruct: number of fields have changed at '{current_path}': '{len(self)}' --> '{len(other_gff_struct)}'")
-            is_same_result = False
+            is_same = False
+        if self.struct_id != other_gff_struct.struct_id:
+            log_func(f"Struct ID is different at '{current_path}': '{self.struct_id}' --> '{other_gff_struct.struct_id}'")
+            is_same = False
 
         # Create dictionaries for both old and new structures
         old_dict: dict[str, tuple[GFFFieldType, Any]] = {label or f"gffstruct({idx})": (ftype, value) for idx, (label, ftype, value) in enumerate(self) if label not in ignore_labels}
         new_dict: dict[str, tuple[GFFFieldType, Any]] = {label or f"gffstruct({idx})": (ftype, value) for idx, (label, ftype, value) in enumerate(other_gff_struct) if label not in ignore_labels}
 
         # Union of labels from both old and new structures
-        all_labels = set(old_dict.keys()) | set(new_dict.keys())
-
-        is_same_result = True
+        all_labels: set[str] = set(old_dict.keys()) | set(new_dict.keys())
 
         for label in all_labels:
-            child_path = current_path / str(label)
+            child_path: PureWindowsPath = current_path / str(label)
             old_ftype, old_value = old_dict.get(label, (None, None))
             new_ftype, new_value = new_dict.get(label, (None, None))
+
+            if ignore_default_changes and is_ignorable_comparison(old_value, new_value):
+                continue
 
             # Check for missing fields/values in either structure
             if old_ftype is None or old_value is None:
                 if new_ftype is None:
-                    msg = "new_ftype shouldn't be None here."
+                    msg = f"new_ftype shouldn't be None here. Relevance: old_ftype={old_ftype!r}, old_value={old_value!r}, new_value={new_value!r}"
                     raise RuntimeError(msg)
                 log_func(f"Extra '{new_ftype.name}' field found at '{child_path}': {format_text(new_value)}" )
-                is_same_result = False
+                is_same = False
                 continue
             if new_value is None or new_ftype is None:
                 log_func(f"Missing '{old_ftype.name}' field at '{child_path}': {format_text(old_value)}")
-                is_same_result = False
+                is_same = False
                 continue
 
             # Check if field types have changed
             if old_ftype != new_ftype:
                 log_func(f"Field type is different at '{child_path}': '{old_ftype.name}'-->'{new_ftype.name}'")
-                is_same_result = False
+                is_same = False
                 continue
 
             # Compare values depending on their types
             if old_ftype == GFFFieldType.Struct:
+                assert isinstance(new_value, GFFStruct)
                 cur_struct_this: GFFStruct = old_value
                 if cur_struct_this.struct_id != new_value.struct_id:
                     log_func(f"Struct ID is different at '{child_path}': '{cur_struct_this.struct_id}'-->'{new_value.struct_id}'")
-                    is_same_result = False
+                    is_same = False
 
-                if not cur_struct_this.compare(new_value, log_func, child_path):
-                    is_same_result = False
+                if not cur_struct_this.compare(new_value, log_func, child_path, ignore_default_changes):
+                    is_same = False
                     continue
-
             elif old_ftype == GFFFieldType.List:
                 gff_list: GFFList = old_value
-                if not gff_list.compare(new_value, log_func, child_path):
-                    is_same_result = False
+                if not gff_list.compare(new_value, log_func, child_path, ignore_default_changes=ignore_default_changes):
+                    is_same = False
                     continue
 
             elif old_value != new_value:
                 if (
                     isinstance(old_value, float)
                     and isinstance(new_value, float)
-                    and math.isclose(old_value, new_value, rel_tol=1e-9, abs_tol=1e-9)
+                    and math.isclose(old_value, new_value, rel_tol=1e-4, abs_tol=1e-4)
                 ):
                     continue
+
+                is_same = False
                 if str(old_value) == str(new_value):
-                    is_same_result = False
                     log_func(f"Field '{old_ftype.name}' is different at '{child_path}': String representations match, but have other properties that don't (such as a lang id difference).")
                     continue
-                formatted_old_value, formatted_new_value = map(str, (old_value, new_value))
-                newlines_in_old, newlines_in_new = (x.count("\n") for x in (formatted_old_value, formatted_new_value))
-                if newlines_in_old > 1 or newlines_in_new > 1:
-                    formatted_old_value, formatted_new_value = compare_and_format(old_value, new_value)
-                    log_func(f"Field '{old_ftype.name}' is different at '{child_path}': {format_text(formatted_old_value)}<-vvv->{format_text(formatted_new_value)}")
-                elif newlines_in_old == 1 or newlines_in_new == 1:
-                    log_func(f"Field '{old_ftype.name}' is different at '{child_path}': {os.linesep}{old_value!s}{os.linesep}<-vvv->{os.linesep}{new_value!s}")
-                else:
-                    log_func(f"Field '{old_ftype.name}' is different at '{child_path}': {old_value!s} --> {new_value!s}")
-                is_same_result = False
-                continue
 
-        return is_same_result
+                formatted_old_value, formatted_new_value = map(str, (old_value, new_value))
+                newlines_in_old: int = formatted_old_value.count("\n")
+                newlines_in_new: int = formatted_new_value.count("\n")
+
+                if newlines_in_old > 1 or newlines_in_new > 1:
+                    formatted_old_value, formatted_new_value = compare_and_format(formatted_old_value, formatted_new_value)
+                    log_func(f"Field '{old_ftype.name}' is different at '{child_path}': {format_text(formatted_old_value)}<-vvv->{format_text(formatted_new_value)}")
+                    continue
+
+                if newlines_in_old == 1 or newlines_in_new == 1:
+                    log_func(f"Field '{old_ftype.name}' is different at '{child_path}': {os.linesep}{formatted_old_value}{os.linesep}<-vvv->{os.linesep}{formatted_new_value}")
+                    continue
+
+                log_func(f"Field '{old_ftype.name}' is different at '{child_path}': {formatted_old_value} --> {formatted_new_value}")
+
+        return is_same
 
     def what_type(
         self,
@@ -432,19 +459,19 @@ class GFFStruct:
         ----
             label: The field label.
             default: Default value to return if value does not match object_type.
-            object_type: The preferred type of the field value. If not specified it will match the default's type.
+            object_type: The type of the field value. If not specified it will match the default's type.
 
         Returns:
         -------
             The field value. If the field does not exist or the value type does not match the specified type then the default is returned instead.
         """
-        value = default
+        value: T = default
         if object_type is None:
             object_type = type(default)
         if (
             self.exists(label)
             and object_type is not None
-#            and isinstance(self[label], object_type)  # TODO: uncomment this and assert type after fixing all the call typings
+#           and isinstance(self[label], object_type)  # TODO: uncomment this and assert type after fixing all the call typings
         ):
             value = self[label]
         return value
@@ -459,7 +486,7 @@ class GFFStruct:
         self,
         label: str,
         value: int,
-    ) -> None:
+    ):
         """Sets the value and field type of the field with the specified label.
 
         Args:
@@ -473,7 +500,7 @@ class GFFStruct:
         self,
         label: str,
         value: int,
-    ) -> None:
+    ):
         """Sets the value and field type of the field with the specified label.
 
         Args:
@@ -487,7 +514,7 @@ class GFFStruct:
         self,
         label: str,
         value: int,
-    ) -> None:
+    ):
         """Sets the value and field type of the field with the specified label.
 
         Args:
@@ -501,7 +528,7 @@ class GFFStruct:
         self,
         label: str,
         value: int,
-    ) -> None:
+    ):
         """Sets the value and field type of the field with the specified label.
 
         Args:
@@ -515,7 +542,7 @@ class GFFStruct:
         self,
         label: str,
         value: int,
-    ) -> None:
+    ):
         """Sets the value and field type of the field with the specified label.
 
         Args:
@@ -529,7 +556,7 @@ class GFFStruct:
         self,
         label: str,
         value: int,
-    ) -> None:
+    ):
         """Sets the value and field type of the field with the specified label.
 
         Args:
@@ -543,7 +570,7 @@ class GFFStruct:
         self,
         label: str,
         value: int,
-    ) -> None:
+    ):
         """Sets the value and field type of the field with the specified label.
 
         Args:
@@ -557,7 +584,7 @@ class GFFStruct:
         self,
         label: str,
         value: int,
-    ) -> None:
+    ):
         """Sets the value and field type of the field with the specified label.
 
         Args:
@@ -571,7 +598,7 @@ class GFFStruct:
         self,
         label: str,
         value: float,
-    ) -> None:
+    ):
         """Sets the value and field type of the field with the specified label.
 
         Args:
@@ -585,7 +612,7 @@ class GFFStruct:
         self,
         label: str,
         value: float,
-    ) -> None:
+    ):
         """Sets the value and field type of the field with the specified label.
 
         Args:
@@ -615,7 +642,7 @@ class GFFStruct:
         self,
         label: str,
         value: str,
-    ) -> None:
+    ):
         """Sets the value and field type of the field with the specified label.
 
         Args:
@@ -629,7 +656,7 @@ class GFFStruct:
         self,
         label: str,
         value: LocalizedString,
-    ) -> None:
+    ):
         """Sets the value and field type of the field with the specified label.
 
         Args:
@@ -643,7 +670,7 @@ class GFFStruct:
         self,
         label: str,
         value: bytes,
-    ) -> None:
+    ):
         """Sets the value and field type of the field with the specified label.
 
         Args:
@@ -657,7 +684,7 @@ class GFFStruct:
         self,
         label: str,
         value: Vector3,
-    ) -> None:
+    ):
         """Sets the value and field type of the field with the specified label.
 
         Args:
@@ -671,7 +698,7 @@ class GFFStruct:
         self,
         label: str,
         value: Vector4,
-    ) -> None:
+    ):
         """Sets the value and field type of the field with the specified label.
 
         Args:
@@ -1268,7 +1295,7 @@ class GFFList:
 
     def __init__(
         self,
-    ) -> None:
+    ):
         self._structs: list[GFFStruct] = []
 
     def __len__(
@@ -1323,7 +1350,7 @@ class GFFList:
     def remove(
         self,
         index: int,
-    ) -> None:
+    ):
         """Removes the struct at the specified index.
 
         Args:
@@ -1333,7 +1360,14 @@ class GFFList:
         self._structs.pop(index)
 
 
-    def compare(self, other_gff_list: GFFList, log_func=print, current_path: PureWindowsPath | None = None) -> bool:
+    def compare(
+        self,
+        other_gff_list: GFFList,
+        log_func=print,
+        current_path: PureWindowsPath | None = None,
+        *,
+        ignore_default_changes: bool = False,
+    ) -> bool:
         """Compare two GFFLists recursively.
 
         Functionally the same as __eq__, but will also log/print the differences.
@@ -1394,7 +1428,7 @@ class GFFList:
         for list_index in common_items:
             old_child: GFFStruct = old_dict[list_index]
             new_child: GFFStruct = new_dict[list_index]
-            if not old_child.compare(new_child, log_func, current_path / str(list_index)):
+            if not old_child.compare(new_child, log_func, current_path / str(list_index), ignore_default_changes):
                 is_same_result = False
 
         return is_same_result

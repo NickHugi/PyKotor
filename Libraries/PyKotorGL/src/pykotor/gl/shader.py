@@ -23,7 +23,6 @@ from OpenGL.raw.GL.VERSION.GL_1_0 import (
 from OpenGL.raw.GL.VERSION.GL_1_1 import glBindTexture
 from OpenGL.raw.GL.VERSION.GL_1_3 import glCompressedTexImage2D
 from OpenGL.raw.GL.VERSION.GL_2_0 import GL_FRAGMENT_SHADER, GL_VERTEX_SHADER, glUniform1i, glUseProgram
-
 from pykotor.resource.formats.tpc import TPC, TPCTextureFormat
 
 KOTOR_VSHADER = """
@@ -142,7 +141,7 @@ class Shader:
         fragment_shader = shaders.compileShader(fshader, GL_FRAGMENT_SHADER)
         self._id: int = shaders.compileProgram(vertex_shader, fragment_shader)
 
-    def use(self) -> None:
+    def use(self):
         glUseProgram(self._id)
 
     def uniform(self, uniform_name: str):
@@ -208,5 +207,5 @@ class Texture:
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR)
         return Texture(gl_id)
 
-    def use(self) -> None:
+    def use(self):
         glBindTexture(GL_TEXTURE_2D, self._id)

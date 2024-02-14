@@ -1,10 +1,15 @@
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 from pykotor.common.language import LocalizedString
 from pykotor.common.misc import Game, ResRef
 from pykotor.resource.formats.gff import GFF, GFFContent, write_gff
 from pykotor.resource.formats.gff.gff_auto import bytes_gff, read_gff
 from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES, ResourceType
+
+if TYPE_CHECKING:
+    from pykotor.resource.formats.gff.gff_data import GFFStruct
 
 
 class UTD:
@@ -235,7 +240,7 @@ def dismantle_utd(
 ) -> GFF:
     gff = GFF(GFFContent.UTD)
 
-    root = gff.root
+    root: GFFStruct = gff.root
     root.set_string("Tag", utd.tag)
     root.set_locstring("LocName", utd.name)
     root.set_resref("TemplateResRef", utd.resref)
@@ -269,7 +274,7 @@ def dismantle_utd(
     root.set_resref("OnFailToOpen", utd.on_open_failed)
     root.set_string("Comment", utd.comment)
 
-    if game == Game.K2:
+    if game.is_k2():
         root.set_uint8("OpenLockDiff", utd.unlock_diff)
         root.set_int8("OpenLockDiffMod", utd.unlock_diff_mod)
         root.set_uint8("OpenState", utd.open_state)
@@ -304,7 +309,7 @@ def read_utd(
     offset: int = 0,
     size: int | None = None,
 ) -> UTD:
-    gff = read_gff(source, offset, size)
+    gff: GFF = read_gff(source, offset, size)
     return construct_utd(gff)
 
 
@@ -315,8 +320,8 @@ def write_utd(
     file_format: ResourceType = ResourceType.GFF,
     *,
     use_deprecated: bool = True,
-) -> None:
-    gff = dismantle_utd(utd, game, use_deprecated=use_deprecated)
+):
+    gff: GFF = dismantle_utd(utd, game, use_deprecated=use_deprecated)
     write_gff(gff, target, file_format)
 
 
@@ -327,5 +332,5 @@ def bytes_utd(
     *,
     use_deprecated: bool = True,
 ) -> bytes:
-    gff = dismantle_utd(utd, game, use_deprecated=use_deprecated)
+    gff: GFF = dismantle_utd(utd, game, use_deprecated=use_deprecated)
     return bytes_gff(gff, file_format)

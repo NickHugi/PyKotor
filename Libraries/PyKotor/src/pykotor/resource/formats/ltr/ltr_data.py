@@ -39,7 +39,7 @@ class LTR:
     def generate(
         self,
         seed: int | None = None,
-    ) -> str | None:
+    ) -> str:
         """Returns a randomly generated name based on the LTR instance data.
 
         This method was ported from the C code that can be found on GitHub:
@@ -59,7 +59,7 @@ class LTR:
 
         while not done:
             attempts = 0
-            name = ""
+            name: str = ""
 
             for char in LTR.CHARACTER_SET:
                 if LTR._chance() < self._singles.get_start(char):
@@ -86,7 +86,7 @@ class LTR:
                 continue
 
             while True:
-                prob = LTR._chance()
+                prob: float = LTR._chance()
 
                 if (secrets.randbelow(12) % 12) <= len(name):
                     for char in LTR.CHARACTER_SET:
@@ -106,7 +106,9 @@ class LTR:
                     attempts += 1
                     if len(name) < 4 or attempts > 100:
                         break
-        return None
+
+        msg = f"Unknown problem generating LTR from seed {seed}"
+        raise RuntimeError(msg)
 
     def set_singles_start(
         self,
@@ -196,7 +198,7 @@ class LTRBlock:
         self,
         char: str,
         chance: float,
-    ) -> None:
+    ):
         """Sets the chance of a specified character at the start of the block.
 
         Args:
@@ -226,7 +228,7 @@ class LTRBlock:
         self,
         char: str,
         chance: float,
-    ) -> None:
+    ):
         """Sets the chance of a specified character at the middle of the block.
 
         Args:
@@ -256,7 +258,7 @@ class LTRBlock:
         self,
         char: str,
         chance: float,
-    ) -> None:
+    ):
         """Sets the chance of a specified character at the end of the block.
 
         Args:

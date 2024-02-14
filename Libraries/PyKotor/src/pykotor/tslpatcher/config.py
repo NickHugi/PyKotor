@@ -1,9 +1,11 @@
 from __future__ import annotations
 
 from configparser import ConfigParser
+from copy import copy
 from enum import IntEnum
 from typing import TYPE_CHECKING
 
+from pykotor.tslpatcher.mods.gff import Memory2DAModifierGFF
 from pykotor.tslpatcher.mods.tlk import ModificationsTLK
 from pykotor.tslpatcher.namespaces import PatcherNamespace
 from pykotor.tslpatcher.reader import ConfigReader
@@ -13,14 +15,15 @@ if TYPE_CHECKING:
 
     from pykotor.tools.path import CaseAwarePath
     from pykotor.tslpatcher.logger import PatchLogger
-    from pykotor.tslpatcher.mods.gff import ModificationsGFF
+    from pykotor.tslpatcher.mods.gff import ModificationsGFF, ModifyGFF
     from pykotor.tslpatcher.mods.install import InstallFile
-    from pykotor.tslpatcher.mods.nss import ModificationsNCS, ModificationsNSS
+    from pykotor.tslpatcher.mods.ncs import ModificationsNCS
+    from pykotor.tslpatcher.mods.nss import ModificationsNSS
     from pykotor.tslpatcher.mods.ssf import ModificationsSSF
     from pykotor.tslpatcher.mods.twoda import Modifications2DA
 
 
-class LogLevel(IntEnum):
+class LogLevel(IntEnum):  # TODO: implement into HoloPatcher
     # Docstrings taken from ChangeEdit docs
 
     NOTHING = 0
@@ -43,13 +46,14 @@ class LogLevel(IntEnum):
 
 
 class PatcherConfig:
-    def __init__(self) -> None:
+    def __init__(self):
         self.window_title: str = ""
         self.confirm_message: str = ""
         self.game_number: int | None = None
 
         self.required_file: str | None = None
         self.required_message: str = ""
+        self.save_processed_scripts: int = 0
 
         # optional hp features
         self.ignore_file_extensions: bool = False
@@ -62,7 +66,7 @@ class PatcherConfig:
         self.patches_ncs: list[ModificationsNCS] = []
         self.patches_tlk: ModificationsTLK = ModificationsTLK()
 
-    def load(self, ini_text: str, mod_path: os.PathLike | str, logger: PatchLogger | None = None) -> None:
+    def load(self, ini_text: str, mod_path: os.PathLike | str, logger: PatchLogger | None = None):
         """Loads configuration from a TSLPatcher changes ini text string.
 
         Args:
@@ -112,25 +116,52 @@ class PatcherConfig:
             - Sets the ini_filename, info_filename and name attributes from the config
             - Returns the populated PatcherNamespace
         """
-        reader = ConfigReader.from_filepath(filepath)
+        reader: ConfigReader = ConfigReader.from_filepath(filepath)
         reader.load_settings()
 
-        namespace = PatcherNamespace.from_default()
-        namespace.name = reader.config.window_title
-        if not namespace.name:
-            try:
-                namespace.name = filepath.parent.parent.name.strip() or "<< Untitled Mod Loaded >>"
-            except Exception:  # noqa: BLE001
-                namespace.name = "<< Untitled Mod Loaded >>"
+        namespace: PatcherNamespace = PatcherNamespace.from_default()
+        namespace.name = reader.config.window_title or filepath.parents[1].name.strip() or "<< Untitled Mod Loaded >>"
 
         return namespace
 
+    def get_nested_gff_patches(self, arg_gff_modifier: ModifyGFF) -> list[ModifyGFF]:
+        nested_modifiers: list[ModifyGFF] = copy(getattr(arg_gff_modifier, "modifiers", []))
+        for gff_modifier in nested_modifiers:
+            nested_modifiers.extend(self.get_nested_gff_patches(gff_modifier))
+        return nested_modifiers
+
+    def flatten_gff_patches(self) -> list[ModifyGFF]:
+        flattened_gff_patches: list[ModifyGFF] = []
+        for gff_patch in self.patches_gff:
+            for gff_modifier in gff_patch.modifiers:
+                nested_modifiers: list[ModifyGFF] | None = getattr(gff_modifier, "modifiers", None)
+
+                is_memory_modifier: bool = isinstance(gff_modifier, Memory2DAModifierGFF)
+                if not is_memory_modifier:
+                    flattened_gff_patches.append(gff_modifier)
+                if not nested_modifiers or is_memory_modifier:
+                    continue
+
+                nested_modifiers = self.get_nested_gff_patches(gff_modifier)
+                gff_modifier.modifiers = nested_modifiers  # nested modifiers will reference the item from the flattened list.
+                flattened_gff_patches.extend(nested_modifiers)
+        return flattened_gff_patches
+
     def patch_count(self) -> int:
+        num_2da_patches: int = sum(len(twoda_patch.modifiers) for twoda_patch in self.patches_2da)
+        num_gff_patches: int = len(self.flatten_gff_patches())
+        num_ssf_patches: int = sum(len(ssf_patch.modifiers) for ssf_patch in self.patches_ssf)
+        num_tlk_patches: int = len(self.patches_tlk.modifiers)
+        num_install_list_patches: int = len(self.install_list)
+        num_nss_patches: int = len(self.patches_nss)
+        num_ncs_patches: int = len(self.patches_ncs)
+
         return (
-            len(self.patches_2da)
-            + len(self.patches_gff)
-            + len(self.patches_ssf)
-            + len(self.patches_tlk.modifiers)
-            + len(self.install_list)
-            + len(self.patches_nss)
+            num_2da_patches
+            + num_gff_patches
+            + num_ssf_patches
+            + num_tlk_patches
+            + num_install_list_patches
+            + num_nss_patches
+            + num_ncs_patches
         )

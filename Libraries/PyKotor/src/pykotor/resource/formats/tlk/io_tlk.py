@@ -16,11 +16,13 @@ class TLKBinaryReader(ResourceReader):
         source: SOURCE_TYPES,
         offset: int = 0,
         size: int = 0,
+        language: Language | None = None,
     ):
         super().__init__(source, offset, size)
         self._tlk: TLK
         self._texts_offset = 0
         self._text_headers: list[ArrayHead] = []
+        self._language: Language | None = language
 
     @autoclose
     def load(
@@ -57,7 +59,7 @@ class TLKBinaryReader(ResourceReader):
             msg = "Invalid file version."
             raise ValueError(msg)
 
-        self._tlk.language = Language(language_id)
+        self._tlk.language = self._language if self._language is not None else Language(language_id)
         self._tlk.resize(string_count)
 
         self._texts_offset = entries_offset
@@ -85,10 +87,10 @@ class TLKBinaryReader(ResourceReader):
         self,
         stringref: int,
     ):
-        text_header = self._text_headers[stringref]
+        text_header: ArrayHead = self._text_headers[stringref]
 
         self._reader.seek(text_header.offset + self._texts_offset)
-        text = self._reader.read_string(text_header.length, encoding=self._tlk.language.get_encoding())
+        text: str = self._reader.read_string(text_header.length, encoding=self._tlk.language.get_encoding())
 
         self._tlk.entries[stringref].text = text
 
@@ -105,7 +107,7 @@ class TLKBinaryWriter(ResourceWriter):
     def write(
         self,
         auto_close: bool = True,
-    ) -> None:
+    ):
         self._write_file_header()
 
         text_offset = WrappedInt(0)
@@ -123,7 +125,7 @@ class TLKBinaryWriter(ResourceWriter):
 
     def _write_file_header(
         self,
-    ) -> None:
+    ):
         language_id: int = self._tlk.language.value
         string_count: int = len(self._tlk)
         entries_offset: int = self._calculate_entries_offset()
@@ -139,7 +141,7 @@ class TLKBinaryWriter(ResourceWriter):
         entry: TLKEntry,
         previous_offset: WrappedInt,
     ):
-        sound_resref = entry.voiceover.get()
+        sound_resref = str(entry.voiceover)
         text_offset = previous_offset.get()
         text_length = len(entry.text)
 

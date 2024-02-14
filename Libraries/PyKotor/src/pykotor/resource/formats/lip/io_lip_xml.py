@@ -1,13 +1,13 @@
 from __future__ import annotations
 
-from contextlib import suppress
-
 # Try to import defusedxml, fallback to ElementTree if not available
 from xml.etree import ElementTree
 
-with suppress(ImportError):
+try:
     from defusedxml.ElementTree import fromstring as _fromstring
     ElementTree.fromstring = _fromstring
+except (ImportError, ModuleNotFoundError):
+    pass
 
 from pykotor.resource.formats.lip.lip_data import LIP, LIPShape
 from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES, ResourceReader, ResourceWriter, autoclose
@@ -32,7 +32,7 @@ class LIPXMLReader(ResourceReader):
         self._lip = LIP()
 
         data = self._reader.read_bytes(self._reader.size()).decode()
-        xml_root = ElementTree.fromstring(data)  # noqa: S314
+        xml_root: ElementTree.Element = ElementTree.fromstring(data)  # noqa: S314
 
         if xml_root.tag != "lip":
             msg = "The XML file that was loaded was not a valid LIP."
@@ -55,14 +55,14 @@ class LIPXMLWriter(ResourceWriter):
         target: TARGET_TYPES,
     ):
         super().__init__(target)
-        self._lip = lip
+        self._lip: LIP = lip
         self._xml_root: ElementTree.Element = ElementTree.Element("lip")
 
     @autoclose
     def write(
         self,
         auto_close: bool = True,
-    ) -> None:
+    ):
         self._xml_root.set("duration", str(self._lip.length))
 
         for keyframe in self._lip:

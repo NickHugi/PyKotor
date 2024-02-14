@@ -184,7 +184,7 @@ def dismantle_ute(
         creature_struct.set_single("CR", creature.challenge_rating)
         creature_struct.set_uint8("SingleSpawn", creature.single_spawn)
         creature_struct.set_resref("ResRef", creature.resref)
-        if game == Game.K2:
+        if game.is_k2():
             creature_struct.set_int32("GuaranteedCount", creature.guaranteed_count)
 
     if use_deprecated:
@@ -210,7 +210,7 @@ def write_ute(
     file_format: ResourceType = ResourceType.GFF,
     *,
     use_deprecated: bool = True,
-) -> None:
+):
     gff = dismantle_ute(ute, game, use_deprecated=use_deprecated)
     write_gff(gff, target, file_format)
 

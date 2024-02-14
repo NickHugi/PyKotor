@@ -7,7 +7,7 @@ from pykotor.common.stream import BinaryWriter
 from pykotor.resource.formats.gff.gff_data import GFF, GFFContent, GFFFieldType, GFFList, GFFStruct
 from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES, ResourceReader, ResourceWriter, autoclose
 
-_COMPLEX_FIELD = {
+_COMPLEX_FIELD: set[GFFFieldType] = {
     GFFFieldType.UInt64,
     GFFFieldType.Int64,
     GFFFieldType.Double,
@@ -31,11 +31,11 @@ class GFFBinaryReader(ResourceReader):
         self._gff: GFF | None = None
 
         self._labels: list[str] = []
-        self._field_data_offset = 0
-        self._field_indices_offset = 0
-        self._list_indices_offset = 0
-        self._struct_offset = 0
-        self._field_offset = 0
+        self._field_data_offset: int = 0
+        self._field_indices_offset: int = 0
+        self._list_indices_offset: int = 0
+        self._struct_offset: int = 0
+        self._field_offset: int = 0
 
     @autoclose
     def load(
@@ -125,7 +125,7 @@ class GFFBinaryReader(ResourceReader):
                 gff_struct.set_string(label, self._reader.read_string(length))
             elif field_type is GFFFieldType.ResRef:
                 length = self._reader.read_uint8()
-                resref = ResRef(self._reader.read_string(length))
+                resref = ResRef(self._reader.read_string(length).strip())
                 gff_struct.set_resref(label, resref)
             elif field_type is GFFFieldType.LocalizedString:
                 gff_struct.set_locstring(label, self._reader.read_locstring())
@@ -158,7 +158,7 @@ class GFFBinaryReader(ResourceReader):
         elif field_type is GFFFieldType.Single:
             gff_struct.set_single(label, self._reader.read_single())
 
-    def _load_list(self, gff_struct: GFFStruct, label: str) -> None:
+    def _load_list(self, gff_struct: GFFStruct, label: str):
         offset = self._reader.read_uint32()  # relative to list indices
         self._reader.seek(self._list_indices_offset + offset)
         value = GFFList()
@@ -166,7 +166,7 @@ class GFFBinaryReader(ResourceReader):
         list_indices: list[int] = [self._reader.read_uint32() for _ in range(count)]
         for struct_index in list_indices:
             value.add(0)
-            child = value.at(len(value) - 1)
+            child: GFFStruct | None = value.at(len(value) - 1)
             self._load_struct(child, struct_index)
         gff_struct.set_list(label, value)
 
@@ -178,7 +178,7 @@ class GFFBinaryWriter(ResourceWriter):
         target: TARGET_TYPES,
     ):
         super().__init__(target)
-        self._gff = gff
+        self._gff: GFF = gff
 
         self._struct_writer: BinaryWriter = BinaryWriter.to_bytearray()
         self._field_writer: BinaryWriter = BinaryWriter.to_bytearray()
@@ -195,7 +195,7 @@ class GFFBinaryWriter(ResourceWriter):
     def write(
         self,
         auto_close: bool = True,
-    ) -> None:
+    ):
         self._build_struct(self._gff.root)
 
         struct_offset = 56
@@ -244,20 +244,19 @@ class GFFBinaryWriter(ResourceWriter):
 
         self._struct_writer.write_uint32(struct_id, max_neg1=True)
 
-        if len(gff_struct) == 0:
+        if field_count == 0:
             self._struct_writer.write_uint32(0xFFFFFFFF)
             self._struct_writer.write_uint32(0)
-        elif len(gff_struct) == 1:
+        elif field_count == 1:
             self._struct_writer.write_uint32(self._field_count)
             self._struct_writer.write_uint32(field_count)
 
             for label, field_type, value in gff_struct:
                 self._build_field(label, value, field_type)
-        elif len(gff_struct) > 1:
-            self._extracted_from__build_struct_21(field_count, gff_struct)
+        elif field_count > 1:
+            self._write_large_struct(field_count, gff_struct)
 
-    # TODO Rename this here and in `_build_struct`
-    def _extracted_from__build_struct_21(self, field_count, gff_struct):
+    def _write_large_struct(self, field_count: int, gff_struct: GFFStruct):
         self._struct_writer.write_uint32(self._field_indices_writer.size())
         self._struct_writer.write_uint32(field_count)
 
@@ -309,7 +308,7 @@ class GFFBinaryWriter(ResourceWriter):
             elif field_type is GFFFieldType.String:
                 self._field_data_writer.write_string(value, prefix_length=4)
             elif field_type is GFFFieldType.ResRef:
-                self._field_data_writer.write_string(value.get(), prefix_length=1)
+                self._field_data_writer.write_string(str(value), prefix_length=1)
             elif field_type is GFFFieldType.LocalizedString:
                 self._field_data_writer.write_locstring(value)
             elif field_type is GFFFieldType.Binary:

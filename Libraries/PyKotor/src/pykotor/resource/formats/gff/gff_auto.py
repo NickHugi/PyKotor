@@ -45,11 +45,11 @@ def detect_gff(
 
     file_format: ResourceType
     try:
-        if isinstance(source, (str, os.PathLike)):
+        if isinstance(source, (os.PathLike, str)):
             with BinaryReader.from_file(source, offset) as reader:
                 file_format = check(reader.read_string(4))
-        elif isinstance(source, (bytes, bytearray)):
-            file_format = check(source[:4].decode("ascii", "ignore"))
+        elif isinstance(source, (memoryview, bytes, bytearray)):
+            file_format = check(bytes(source[:4]).decode("ascii", "ignore"))
         elif isinstance(source, BinaryReader):
             file_format = check(source.read_string(4))
             source.skip(-4)
@@ -97,8 +97,7 @@ def read_gff(
         return GFFXMLReader(source, offset, size or 0).load()
 
     msg = "Failed to determine the format of the GFF file."
-    if file_format is ResourceType.INVALID:
-        raise ValueError(msg)
+    #if file_format == ResourceType.INVALID:
     raise ValueError(msg)
 
 
@@ -106,7 +105,7 @@ def write_gff(
     gff: GFF,
     target: TARGET_TYPES,
     file_format: ResourceType = ResourceType.GFF,
-) -> None:
+):
     """Writes the GFF data to the target location with the specified format (GFF or GFF_XML).
 
     Args:

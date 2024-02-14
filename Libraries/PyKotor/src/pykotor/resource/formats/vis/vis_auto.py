@@ -36,14 +36,14 @@ def read_vis(
     -------
         An VIS instance.
     """
-    return VISAsciiReader(source, offset, size).load()
+    return VISAsciiReader(source, offset, size or 0).load()
 
 
 def write_vis(
     vis: VIS,
     target: TARGET_TYPES,
     file_format: ResourceType = ResourceType.VIS,
-) -> None:
+):
     """Writes the VIS data to the target location with the specified format (VIS only).
 
     Args:

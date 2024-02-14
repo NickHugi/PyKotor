@@ -8,10 +8,10 @@ from pykotor.resource.formats.erf import read_erf
 from pykotor.resource.formats.mdl import MDL, read_mdl, write_mdl
 from pykotor.resource.formats.rim import read_rim
 from pykotor.resource.type import ResourceType
-from pykotor.tools.misc import is_bif_file, is_erf_or_mod_file, is_rim_file
+from pykotor.tools.misc import is_any_erf_type_file, is_bif_file, is_rim_file
+from pykotor.tools.path import CaseAwarePath
 from PyQt5.QtWidgets import QMessageBox, QWidget
 from toolset.gui.editor import Editor
-from utility.path import Path
 
 if TYPE_CHECKING:
     import os
@@ -21,12 +21,13 @@ if TYPE_CHECKING:
 
 class MDLEditor(Editor):
     def __init__(self, parent: QWidget | None, installation: HTInstallation | None = None):
-        """Initialize the Model Viewer window
+        """Initialize the Model Viewer window.
+
         Args:
+        ----
             parent: {QWidget}: The parent widget of this window
             installation: {HTInstallation}: The installation context
-        Returns:
-            None: Does not return anything
+
         Processing Logic:
         ----------------
             - Initialize the base class with the given parameters
@@ -53,10 +54,10 @@ class MDLEditor(Editor):
 
         self.new()
 
-    def _setupSignals(self) -> None:
+    def _setupSignals(self):
         ...
 
-    def load(self, filepath: os.PathLike | str, resref: str, restype: ResourceType, data: bytes) -> None:
+    def load(self, filepath: os.PathLike | str, resref: str, restype: ResourceType, data: bytes):
         """Loads a model resource and its associated data.
 
         Args:
@@ -66,17 +67,13 @@ class MDLEditor(Editor):
             restype: {Resource type (MDL or MDX)}
             data: {Binary data of the resource}
 
-        Returns:
-        -------
-            None
-
         Loads associated MDL/MDX data:
-        - Checks file extension and loads associated data from file
-        - Loads associated data from Erf, Rim or Bif files if present
-        - Sets model data on renderer if both MDL and MDX found
-        - Displays error if unable to find associated data.
+            - Checks file extension and loads associated data from file
+            - Loads associated data from Erf, Rim or Bif files if present
+            - Sets model data on renderer if both MDL and MDX found
+            - Displays error if unable to find associated data.
         """
-        c_filepath = Path(filepath)
+        c_filepath = CaseAwarePath.pathify(filepath)
         super().load(c_filepath, resref, restype, data)
 
         mdl_data: bytes | None = None
@@ -84,9 +81,9 @@ class MDLEditor(Editor):
 
         if restype == ResourceType.MDL:
             mdl_data = data
-            if c_filepath.endswith(".mdl"):
+            if c_filepath.suffix.lower() == ".mdl":
                 mdx_data = BinaryReader.load_file(c_filepath.with_suffix(".mdx"))
-            elif is_erf_or_mod_file(c_filepath.name):
+            elif is_any_erf_type_file(c_filepath.name):
                 erf = read_erf(filepath)
                 mdx_data = erf.get(resref, ResourceType.MDX)
             elif is_rim_file(c_filepath.name):
@@ -96,25 +93,25 @@ class MDLEditor(Editor):
                 mdx_data = self._installation.resource(resref, ResourceType.MDX, [SearchLocation.CHITIN]).data
         elif restype == ResourceType.MDX:
             mdx_data = data
-            if c_filepath.endswith(".mdx"):
-                mdl_data = BinaryReader.load_file(c_filepath.with_suffix(".mdx"))
-            elif is_erf_or_mod_file(c_filepath.name):
+            if c_filepath.suffix.lower() == ".mdx":
+                mdl_data = BinaryReader.load_file(c_filepath.with_suffix(".mdl"))
+            elif is_any_erf_type_file(c_filepath.name):
                 erf = read_erf(filepath)
-                mdl_data = erf.get(resref, ResourceType.MDX)
+                mdl_data = erf.get(resref, ResourceType.MDL)
             elif is_rim_file(c_filepath.name):
                 rim = read_rim(filepath)
-                mdl_data = rim.get(resref, ResourceType.MDX)
+                mdl_data = rim.get(resref, ResourceType.MDL)
             elif is_bif_file(c_filepath.name):
                 mdl_data = self._installation.resource(resref, ResourceType.MDL, [SearchLocation.CHITIN]).data
 
-        if mdl_data and mdx_data:
-            self.ui.modelRenderer.setModel(mdl_data, mdx_data)
-        else:
-            QMessageBox(QMessageBox.Critical, f"Could not find the {c_filepath.stem} MDL/MDX", "").exec_()
+        if mdl_data is None or mdx_data is None:
+            QMessageBox(QMessageBox.Critical, f"Could not find the '{c_filepath.stem}' MDL/MDX", "").exec_()
+            return
 
+        self.ui.modelRenderer.setModel(mdl_data, mdx_data)
         self._mdl = read_mdl(mdl_data, 0, 0, mdx_data, 0, 0)
 
-    def _loadMDL(self, mdl: MDL) -> None:
+    def _loadMDL(self, mdl: MDL):
         self._mdl = mdl
 
     def build(self) -> tuple[bytes, bytes]:
@@ -123,7 +120,7 @@ class MDLEditor(Editor):
         write_mdl(self._mdl, data, ResourceType.MDL, data_ext)
         return data, data_ext
 
-    def new(self) -> None:
+    def new(self):
         super().new()
         self._mdl = MDL()
         self.ui.modelRenderer.clearModel()

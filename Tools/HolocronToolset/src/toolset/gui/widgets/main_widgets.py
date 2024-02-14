@@ -15,6 +15,7 @@ from PyQt5.QtGui import QIcon, QImage, QPixmap, QResizeEvent, QStandardItem, QSt
 from PyQt5.QtWidgets import QHeaderView, QMenu, QWidget
 
 if TYPE_CHECKING:
+    from pykotor.common.misc import CaseInsensitiveDict
     from pykotor.extract.file import FileResource
     from toolset.data.installation import HTInstallation
 
@@ -42,11 +43,12 @@ class ResourceList(MainWindowList):
     requestRefresh = QtCore.pyqtSignal()
 
     def __init__(self, parent: QWidget):
-        """Initializes the ResourceList widget
+        """Initializes the ResourceList widget.
+
         Args:
+        ----
             parent (QWidget): The parent widget
-        Returns:
-            None: Does not return anything
+
         Processing Logic:
         ----------------
             - Initializes the UI from the designer file
@@ -70,7 +72,7 @@ class ResourceList(MainWindowList):
         self.sectionModel = QStandardItemModel()
         self.ui.sectionCombo.setModel(self.sectionModel)
 
-    def setupSignals(self) -> None:
+    def setupSignals(self):
         self.ui.searchEdit.textEdited.connect(self.onFilterStringUpdated)
         self.ui.sectionCombo.currentIndexChanged.connect(self.onSectionChanged)
         self.ui.reloadButton.clicked.connect(self.onReloadClicked)
@@ -78,10 +80,10 @@ class ResourceList(MainWindowList):
         self.ui.resourceTree.customContextMenuRequested.connect(self.onResourceContextMenu)
         self.ui.resourceTree.doubleClicked.connect(self.onResourceDoubleClicked)
 
-    def hideReloadButton(self) -> None:
+    def hideReloadButton(self):
         self.ui.reloadButton.setVisible(False)
 
-    def hideSection(self) -> None:
+    def hideSection(self):
         self.ui.line.setVisible(False)
         self.ui.sectionCombo.setVisible(False)
         self.ui.refreshButton.setVisible(False)
@@ -89,12 +91,12 @@ class ResourceList(MainWindowList):
     def currentSection(self) -> str:
         return self.ui.sectionCombo.currentData()
 
-    def changeSection(self, section: str) -> None:
+    def changeSection(self, section: str):
         for i in range(self.ui.sectionCombo.count()):
             if section in self.ui.sectionCombo.itemText(i):
                 self.ui.sectionCombo.setCurrentIndex(i)
 
-    def setResources(self, resources: list[FileResource]) -> None:
+    def setResources(self, resources: list[FileResource]):
         """Adds and removes FileResources from the modules model.
 
         Args:
@@ -111,7 +113,8 @@ class ResourceList(MainWindowList):
         # Add any missing resources to the list
         for resource in resources:
             for item in allResources:
-                if item.resource == resource:
+                resource_from_item: FileResource = item.resource
+                if resource_from_item == resource:
                     # Update the resource reference. Important when to a new module that share a resource
                     # with the same name and restype with the old one.
                     item.resource = resource
@@ -127,12 +130,12 @@ class ResourceList(MainWindowList):
         # Remove unused categories
         self.modulesModel.removeUnusedCategories()
 
-    def setSections(self, sections: list[QStandardItem]) -> None:
+    def setSections(self, sections: list[QStandardItem]):
         self.sectionModel.clear()
         for section in sections:
             self.sectionModel.insertRow(self.sectionModel.rowCount(), section)
 
-    def setResourceSelection(self, resource: FileResource) -> None:
+    def setResourceSelection(self, resource: FileResource):
         """Sets the selected resource in the resource tree.
 
         Args:
@@ -152,7 +155,8 @@ class ResourceList(MainWindowList):
             self.ui.resourceTree.setCurrentIndex(child)
 
         for item in model.allResourcesItems():
-            if item.resource.resname() == resource.resname() and item.resource.restype() == resource.restype():
+            resource_from_item: FileResource = item.resource
+            if resource_from_item.resname() == resource.resname() and resource_from_item.restype() == resource.restype():
                 _parentIndex = model.proxyModel().mapFromSource(item.parent().index())  # TODO: why is this unused
                 itemIndex = model.proxyModel().mapFromSource(item.index())
                 QTimer.singleShot(1, lambda index=itemIndex, item=item: select(item.parent().index(), index))
@@ -160,24 +164,25 @@ class ResourceList(MainWindowList):
     def selectedResources(self) -> list[FileResource]:
         return self.modulesModel.resourceFromIndexes(self.ui.resourceTree.selectedIndexes())
 
-    def onFilterStringUpdated(self) -> None:
+    def onFilterStringUpdated(self):
         self.modulesModel.proxyModel().setFilterFixedString(self.ui.searchEdit.text())
 
-    def onSectionChanged(self) -> None:
+    def onSectionChanged(self):
         self.sectionChanged.emit(self.ui.sectionCombo.currentData(QtCore.Qt.UserRole))
 
-    def onReloadClicked(self) -> None:
+    def onReloadClicked(self):
         self.requestReload.emit(self.ui.sectionCombo.currentData(QtCore.Qt.UserRole))
 
-    def onRefreshClicked(self) -> None:
+    def onRefreshClicked(self):
         self.requestRefresh.emit()
 
-    def onResourceContextMenu(self, point: QPoint) -> None:
-        """Shows context menu for selected resources
+    def onResourceContextMenu(self, point: QPoint):
+        """Shows context menu for selected resources.
+
         Args:
+        ----
             point: QPoint - Mouse position for context menu
-        Returns:
-            None
+
         Processing Logic:
         ----------------
             - Create QMenu at mouse position
@@ -201,10 +206,10 @@ class ResourceList(MainWindowList):
 
         menu.popup(self.ui.resourceTree.mapToGlobal(point))
 
-    def onResourceDoubleClicked(self) -> None:
+    def onResourceDoubleClicked(self):
         self.requestOpenResource.emit(self.selectedResources(), None)
 
-    def resizeEvent(self, event) -> None:
+    def resizeEvent(self, event):
         super().resizeEvent(event)
         self.ui.resourceTree.setColumnWidth(1, 10)
         self.ui.resourceTree.setColumnWidth(0, self.ui.resourceTree.width() - 80)
@@ -212,9 +217,7 @@ class ResourceList(MainWindowList):
 
 
 class ResourceModel(QStandardItemModel):
-    """A data model used by the different trees (Core, Modules, Override). This class provides an easy way to add resources
-    while sorting the into categories.
-    """
+    """A data model used by the different trees (Core, Modules, Override). This class provides an easy way to add resources while sorting the into categories."""
 
     def __init__(self):
         super().__init__()
@@ -228,7 +231,7 @@ class ResourceModel(QStandardItemModel):
     def proxyModel(self) -> QSortFilterProxyModel:
         return self._proxyModel
 
-    def clear(self) -> None:
+    def clear(self):
         super().clear()
         self._categoryItems = {}
         self.setColumnCount(2)
@@ -244,7 +247,7 @@ class ResourceModel(QStandardItemModel):
             self.appendRow([categoryItem, unusedItem])
         return self._categoryItems[resourceType.category]
 
-    def addResource(self, resource: FileResource) -> None:
+    def addResource(self, resource: FileResource):
         item1 = QStandardItem(resource.resname())
         item1.resource = resource
         item2 = QStandardItem(resource.restype().extension.upper())
@@ -310,7 +313,7 @@ class TextureList(MainWindowList):
         self._scanner.run = self.scan
         self._scanner.start()
 
-    def setupSignals(self) -> None:
+    def setupSignals(self):
         self.ui.searchEdit.textEdited.connect(self.onFilterStringUpdated)
         self.ui.sectionCombo.currentIndexChanged.connect(self.onSectionChanged)
         self.ui.resourceList.doubleClicked.connect(self.onResourceDoubleClicked)
@@ -319,15 +322,15 @@ class TextureList(MainWindowList):
         self.ui.resourceList.verticalScrollBar().valueChanged.connect(self.onTextureListScrolled)
         self.ui.searchEdit.textChanged.connect(self.onTextureListScrolled)
 
-    def doTerminations(self) -> None:
+    def doTerminations(self):
         self._scanner.terminate()
         for consumer in self._consumers:
             consumer.terminate()
 
-    def setInstallation(self, installation: HTInstallation) -> None:
+    def setInstallation(self, installation: HTInstallation):
         self._installation = installation
 
-    def setResources(self, resources: list[FileResource]) -> None:
+    def setResources(self, resources: list[FileResource]):
         blankImage = QImage(bytes(0 for _ in range(64 * 64 * 3)), 64, 64, QImage.Format_RGB888)
         blankIcon = QIcon(QPixmap.fromImage(blankImage))
 
@@ -342,7 +345,7 @@ class TextureList(MainWindowList):
         if self._installation is not None:
             self.onTextureListScrolled()
 
-    def setSections(self, sections: list[QStandardItem]) -> None:
+    def setSections(self, sections: list[QStandardItem]):
         self.sectionModel.clear()
         for section in sections:
             self.sectionModel.insertRow(self.sectionModel.rowCount(), section)
@@ -395,7 +398,7 @@ class TextureList(MainWindowList):
 
         return items
 
-    def scan(self) -> None:
+    def scan(self):
         while True:
             for row, _resname, width, height, data in iter(self._resultQueue.get, None):
                 image = QImage(data, width, height, QImage.Format_RGB888)
@@ -406,29 +409,29 @@ class TextureList(MainWindowList):
 
             sleep(0.1)
 
-    def onFilterStringUpdated(self) -> None:
-        self.texturesProxyModel.setFilterFixedString(self.ui.searchEdit.text().lower())
+    def onFilterStringUpdated(self):
+        self.texturesProxyModel.setFilterFixedString(self.ui.searchEdit.text().casefold())
 
-    def onSectionChanged(self) -> None:
+    def onSectionChanged(self):
         self.sectionChanged.emit(self.ui.sectionCombo.currentData(QtCore.Qt.UserRole))
 
-    def onReloadClicked(self) -> None:
+    def onReloadClicked(self):
         self.requestReload.emit(self.ui.sectionCombo.currentData(QtCore.Qt.UserRole))
 
-    def onRefreshClicked(self) -> None:
+    def onRefreshClicked(self):
         self.requestRefresh.emit()
 
-    def onTextureListScrolled(self) -> None:
+    def onTextureListScrolled(self):
         # Note: Avoid redundantly loading textures that have already been loaded
-        textures = self._installation.textures(
-            [item.text() for item in self.visibleItems() if item.text() not in self._scannedTextures],
+        textures: CaseInsensitiveDict[TPC | None] = self._installation.textures(
+            [item.text() for item in self.visibleItems() if item.text().casefold() not in self._scannedTextures],
             [SearchLocation.TEXTURES_GUI, SearchLocation.TEXTURES_TPA],
         )
 
         # Emit signals to load textures that have not had their icons assigned
-        for item in [item for item in self.visibleItems() if item.text() not in self._scannedTextures]:
+        for item in [item for item in self.visibleItems() if item.text().casefold() not in self._scannedTextures]:
             # Avoid trying to load the same texture multiple times.
-            self._scannedTextures.add(item.text())
+            self._scannedTextures.add(item.text().casefold())
 
             hasTPC = item.text() in textures and textures[item.text()] is not None
             tpc = textures[item.text()] if hasTPC else TPC()
@@ -441,16 +444,16 @@ class TextureList(MainWindowList):
         with suppress(RuntimeError):
             item.setIcon(icon)
 
-    def onResourceDoubleClicked(self) -> None:
+    def onResourceDoubleClicked(self):
         self.requestOpenResource.emit(self.selectedResources(), None)
 
-    def resizeEvent(self, a0: QResizeEvent) -> None:
+    def resizeEvent(self, a0: QResizeEvent):
         # Trigger the scroll slot method - this will cause any newly visible icons to load.
         self.onTextureListScrolled()
 
 
 class TextureListConsumer(multiprocessing.Process):
-    def __init__(self, taskQueue, resultQueue) -> None:
+    def __init__(self, taskQueue, resultQueue):
         multiprocessing.Process.__init__(self)
         self.taskQueue: multiprocessing.JoinableQueue = taskQueue
         self.resultQueue: multiprocessing.Queue = resultQueue

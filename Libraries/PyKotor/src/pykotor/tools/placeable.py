@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+from pykotor.resource.formats.twoda import read_2da
 from pykotor.resource.type import ResourceType
 
 if TYPE_CHECKING:
@@ -31,6 +32,6 @@ def get_model(
         Returns the model name for the placeable.
     """
     if placeables is None:
-        placeables = installation.resource("genericdoors", ResourceType.TwoDA)  # TODO: should be type TwoDA not ResourceResult
+        placeables = read_2da(installation.resource("genericdoors", ResourceType.TwoDA).data)
 
     return placeables.get_row(utp.appearance_id).get_string("modelname")

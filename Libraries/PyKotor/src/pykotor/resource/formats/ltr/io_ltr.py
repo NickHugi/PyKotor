@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import itertools
+
 from pykotor.resource.formats.ltr.ltr_data import LTR
 from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES, ResourceReader, ResourceWriter
 
@@ -36,20 +38,20 @@ class LTRBinaryReader(ResourceReader):
             msg = "LTR files that do not handle exactly 28 characters are not supported."
             raise TypeError(msg)
 
-        self._ltr._singles._start = [self._reader.read_single() for i in range(28)]
-        self._ltr._singles._middle = [self._reader.read_single() for i in range(28)]
-        self._ltr._singles._end = [self._reader.read_single() for i in range(28)]
+        self._ltr._singles._start = [self._reader.read_single() for _ in range(28)]
+        self._ltr._singles._middle = [self._reader.read_single() for _ in range(28)]
+        self._ltr._singles._end = [self._reader.read_single() for _ in range(28)]
 
         for i in range(28):
-            self._ltr._doubles[i]._start = [self._reader.read_single() for j in range(28)]
-            self._ltr._doubles[i]._middle = [self._reader.read_single() for j in range(28)]
-            self._ltr._doubles[i]._end = [self._reader.read_single() for j in range(28)]
+            self._ltr._doubles[i]._start = [self._reader.read_single() for _ in range(28)]
+            self._ltr._doubles[i]._middle = [self._reader.read_single() for _ in range(28)]
+            self._ltr._doubles[i]._end = [self._reader.read_single() for _ in range(28)]
 
         for i in range(28):
             for j in range(28):
-                self._ltr._triples[i][j]._start = [self._reader.read_single() for k in range(28)]
-                self._ltr._triples[i][j]._middle = [self._reader.read_single() for k in range(28)]
-                self._ltr._triples[i][j]._end = [self._reader.read_single() for k in range(28)]
+                self._ltr._triples[i][j]._start = [self._reader.read_single() for _ in range(28)]
+                self._ltr._triples[i][j]._middle = [self._reader.read_single() for _ in range(28)]
+                self._ltr._triples[i][j]._end = [self._reader.read_single() for _ in range(28)]
 
         if auto_close:
             self._reader.close()
@@ -69,24 +71,32 @@ class LTRBinaryWriter(ResourceWriter):
     def write(
         self,
         auto_close: bool = True,
-    ) -> None:
+    ):
         self._writer.write_string("LTR V1.0")
         self._writer.write_uint8(28)
 
-        [self._writer.write_single(chance) for chance in self._ltr._singles._start]
-        [self._writer.write_single(chance) for chance in self._ltr._singles._middle]
-        [self._writer.write_single(chance) for chance in self._ltr._singles._end]
+        for chance in self._ltr._singles._start:
+            self._writer.write_single(chance)
+        for chance in self._ltr._singles._middle:
+            self._writer.write_single(chance)
+        for chance in self._ltr._singles._end:
+            self._writer.write_single(chance)
 
         for i in range(28):
-            [self._writer.write_single(chance) for chance in self._ltr._doubles[i]._start]
-            [self._writer.write_single(chance) for chance in self._ltr._doubles[i]._middle]
-            [self._writer.write_single(chance) for chance in self._ltr._doubles[i]._end]
+            for chance in self._ltr._doubles[i]._start:
+                self._writer.write_single(chance)
+            for chance in self._ltr._doubles[i]._middle:
+                self._writer.write_single(chance)
+            for chance in self._ltr._doubles[i]._end:
+                self._writer.write_single(chance)
 
-        for i in range(28):
-            for j in range(28):
-                [self._writer.write_single(chance) for chance in self._ltr._triples[i][j]._start]
-                [self._writer.write_single(chance) for chance in self._ltr._triples[i][j]._middle]
-                [self._writer.write_single(chance) for chance in self._ltr._triples[i][j]._end]
+        for i, j in itertools.product(range(28), range(28)):
+            for chance in self._ltr._triples[i][j]._start:
+                self._writer.write_single(chance)
+            for chance in self._ltr._triples[i][j]._middle:
+                self._writer.write_single(chance)
+            for chance in self._ltr._triples[i][j]._end:
+                self._writer.write_single(chance)
 
         if auto_close:
             self._writer.close()

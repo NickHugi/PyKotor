@@ -5,11 +5,11 @@ from typing import TYPE_CHECKING
 from pykotor.common.stream import BinaryReader
 from pykotor.resource.formats.erf import read_erf
 from pykotor.resource.formats.rim import read_rim
-from pykotor.tools.misc import is_erf_or_mod_file, is_rim_file
+from pykotor.tools.misc import is_any_erf_type_file, is_rim_file
 from PyQt5 import QtCore
 from PyQt5.QtCore import QUrl
 from PyQt5.QtGui import QDesktopServices, QKeySequence
-from utility.path import Path
+from utility.system.path import Path
 
 if TYPE_CHECKING:
     import os
@@ -44,7 +44,7 @@ def get_nums(string_input: str) -> list[int]:
     return nums
 
 
-def openLink(link: str) -> None:
+def openLink(link: str):
     url = QUrl(link)
     QDesktopServices.openUrl(url)
 
@@ -54,8 +54,9 @@ def clamp(value: float, minValue: float, maxValue: float) -> float:
 
 
 def getStringFromKey(key: int) -> str:
-    """Returns the string for the given key code. This function will take into account edge cases that
-    QKeySequence.toString() fails to handle properly.
+    """Returns the string for the given key code.
+
+    This function will take into account edge cases that QKeySequence.toString() fails to handle properly.
 
     Args:
     ----
@@ -74,7 +75,7 @@ def getStringFromKey(key: int) -> str:
     return QKeySequence(key).toString()
 
 
-def getResourceFromFile(filepath: os.PathLike | str, resname: str, restype: ResourceType) -> bytes | None:
+def getResourceFromFile(filepath: os.PathLike | str, resname: str, restype: ResourceType) -> bytes:
     """Gets a resource from a file by name and type.
 
     Args:
@@ -86,27 +87,29 @@ def getResourceFromFile(filepath: os.PathLike | str, resname: str, restype: Reso
     Returns:
     -------
         data: The resource data as bytes or None if not found.
+
     Processing Logic:
+    ----------------
         - Determines if the file is an ERF, RIM or generic file
         - Reads the file using the appropriate reader
         - Looks up the resource by name and type
         - Raises an error if the resource is not found
         - Returns the resource data or None.
     """
-    data = None
+    data: bytes | None = None
     c_filepath = Path(filepath)
 
-    if is_erf_or_mod_file(c_filepath.name):
+    if is_any_erf_type_file(c_filepath.name):
         erf: ERF = read_erf(filepath)
-        data: bytes | None = erf.get(resname, restype)
+        data = erf.get(resname, restype)
     elif is_rim_file(c_filepath.name):
         rim: RIM = read_rim(filepath)
-        data: bytes | None = rim.get(resname, restype)
+        data = rim.get(resname, restype)
     else:
         data = BinaryReader.load_file(filepath)
 
     if data is None:
-        msg = "Could not find resource in RIM/ERF/MOD."
+        msg = "Could not find resource in RIM/ERF"
         raise ValueError(msg)
 
     return data

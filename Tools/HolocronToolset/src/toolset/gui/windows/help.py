@@ -16,7 +16,7 @@ from PyQt5.QtWidgets import QMainWindow, QMessageBox, QTreeWidgetItem, QWidget
 from toolset.__main__ import is_frozen
 from toolset.config import UPDATE_INFO_LINK
 from toolset.gui.dialogs.asyncloader import AsyncLoader
-from utility.path import Path, PurePath
+from utility.system.path import Path, PurePath
 
 if TYPE_CHECKING:
     import os
@@ -44,10 +44,10 @@ class HelpWindow(QMainWindow):
         if startingPage:
             self.displayFile(startingPage)
 
-    def _setupSignals(self) -> None:
+    def _setupSignals(self):
         self.ui.contentsTree.clicked.connect(self.onContentsClicked)
 
-    def _setupContents(self) -> None:
+    def _setupContents(self):
         self.ui.contentsTree.clear()
 
         with suppress(Exception):
@@ -63,7 +63,7 @@ class HelpWindow(QMainWindow):
             # self.version = data["version"]
             # self._setupContentsRecJSON(None, data)
 
-    def _setupContentsRecJSON(self, parent: QTreeWidgetItem | None, data: dict) -> None:
+    def _setupContentsRecJSON(self, parent: QTreeWidgetItem | None, data: dict):
         add = self.ui.contentsTree.addTopLevelItem if parent is None else parent.addChild
 
         if "structure" in data:
@@ -73,7 +73,7 @@ class HelpWindow(QMainWindow):
                 add(item)
                 self._setupContentsRecJSON(item, data["structure"][title])
 
-    def _setupContentsRecXML(self, parent: QTreeWidgetItem | None, element: ElemTree.Element) -> None:
+    def _setupContentsRecXML(self, parent: QTreeWidgetItem | None, element: ElemTree.Element):
         add = self.ui.contentsTree.addTopLevelItem if parent is None else parent.addChild
 
         for child in element:
@@ -83,7 +83,7 @@ class HelpWindow(QMainWindow):
             self._setupContentsRecXML(item, child)
 
 
-    def download_file(self, url_or_repo: str, local_path: os.PathLike | str, repo_path=None) -> None:
+    def download_file(self, url_or_repo: str, local_path: os.PathLike | str, repo_path=None):
         local_path = Path(local_path)
         local_path.parent.mkdir(parents=True, exist_ok=True)
 
@@ -119,7 +119,7 @@ class HelpWindow(QMainWindow):
         repo: os.PathLike | str,
         local_dir: os.PathLike | str,
         repo_path: os.PathLike | str,
-    ) -> None:
+    ):
         repo = PurePath(repo)
         repo_path = PurePath(repo_path)
         api_url = f"https://api.github.com/repos/{repo.as_posix()}/contents/{repo_path.as_posix()}"
@@ -136,7 +136,7 @@ class HelpWindow(QMainWindow):
             elif item["type"] == "dir":
                 self.download_directory(repo, item_path, local_path)
 
-    def checkForUpdates(self) -> None:
+    def checkForUpdates(self):
         try:
             req = requests.get(UPDATE_INFO_LINK, timeout=15)
             req.raise_for_status()
@@ -173,7 +173,7 @@ class HelpWindow(QMainWindow):
                 self,
             ).exec_()
 
-    def _downloadUpdate(self) -> None:
+    def _downloadUpdate(self):
         help_path = Path("help").resolve()
         help_path.mkdir(parents=True, exist_ok=True)
         help_zip_path = Path("./help.zip").resolve()
@@ -187,11 +187,11 @@ class HelpWindow(QMainWindow):
         if is_frozen():
             help_zip_path.unlink()
 
-    def displayFile(self, filepath: os.PathLike | str) -> None:
-        filepath = filepath if isinstance(filepath, Path) else Path(filepath)
+    def displayFile(self, filepath: os.PathLike | str):
+        filepath = Path.pathify(filepath)
         try:
             text = decode_bytes_with_fallbacks(BinaryReader.load_file(filepath))
-            html = markdown.markdown(text, extensions=["tables", "fenced_code", "codehilite"]) if filepath.endswith(".md") else text
+            html = markdown.markdown(text, extensions=["tables", "fenced_code", "codehilite"]) if filepath.suffix.lower() == ".md" else text
             self.ui.textDisplay.setHtml(html)
         except OSError:
             QMessageBox(
@@ -200,7 +200,7 @@ class HelpWindow(QMainWindow):
                 f"Could not access '{filepath!s}'.",
             ).exec_()
 
-    def onContentsClicked(self) -> None:
+    def onContentsClicked(self):
         if self.ui.contentsTree.selectedItems():
             item = self.ui.contentsTree.selectedItems()[0]
             filename = item.data(0, QtCore.Qt.UserRole)  # type: ignore[attr-defined]

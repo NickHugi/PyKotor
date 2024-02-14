@@ -7,8 +7,8 @@ from pathlib import Path
 from setuptools import setup
 
 
-def main() -> None:
-    HERE = Path(__file__).parent
+def main():
+    HERE = Path(__file__).resolve().parent
 
     # Load information from pyproject.toml
     with HERE.joinpath("pyproject.toml").open() as toml_file:
@@ -229,7 +229,6 @@ class TomlDecoder:
                 break
 
     def _get_split_on_quotes(self, line):
-    def _get_split_on_quotes(self, line):
         doublequotesplits = line.split('"')
         quoted = False
         quotesplits = []
@@ -263,11 +262,9 @@ class TomlDecoder:
         if _number_with_underscores.match(pair[-1]):
             pair[-1] = pair[-1].replace('_', '')
         while len(pair[-1]) and (pair[-1][0] != ' ' and pair[-1][0] != '\t' and pair[-1][0] != "'" and pair[-1][0] != '"' and pair[-1][0] != '[' and pair[-1][0] != '{' and pair[-1].strip() != 'true' and pair[-1].strip() != 'false'):
-            try:
+            with contextlib.suppress(ValueError):
                 float(pair[-1])
                 break
-            except ValueError:
-                pass
             if _load_date(pair[-1]) is not None:
                 break
             if TIME_RE.match(pair[-1]):

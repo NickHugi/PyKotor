@@ -28,7 +28,7 @@ class TwoDACSVReader(ResourceReader):
         _csv = csv.reader(io.StringIO(data))
 
         try:
-            headers = next(_csv)[1:]
+            headers: list[str] = next(_csv)[1:]
             if not headers:
                 msg = "CSV header is missing or not formatted correctly."
                 raise ValueError(msg)
@@ -73,10 +73,10 @@ class TwoDACSVWriter(ResourceWriter):
     def write(
         self,
         auto_close: bool = True,
-    ) -> None:
-        headers = self._twoda.get_headers()
+    ):
+        headers: list[str] = self._twoda.get_headers()
 
-        insert = [""]
+        insert: list[str] = [""]
         insert.extend(iter(headers))
         self._csv_writer.writerow(insert)
 
@@ -85,5 +85,5 @@ class TwoDACSVWriter(ResourceWriter):
             insert.extend(row.get_string(header) for header in headers)
             self._csv_writer.writerow(insert)
 
-        data = self._csv_string.getvalue().encode("ascii")
+        data: bytes = self._csv_string.getvalue().encode("ascii")
         self._writer.write_bytes(data)

@@ -41,7 +41,8 @@ class RIM:
             try:
                 return next(resource for resource in self._resources if resource.resref == item)
             except StopIteration as e:
-                raise KeyError from e
+                msg = f"{item} not found."
+                raise KeyError(msg) from e
         return NotImplemented
 
     def __add__(self, other: RIM) -> RIM:
@@ -60,74 +61,78 @@ class RIM:
 
         combined_rim = RIM()
         for resource in self:
-            combined_rim.set_data(resource.resref.get(), resource.restype, resource.data)
+            combined_rim.set_data(str(resource.resref), resource.restype, resource.data)
         for resource in other:
-            combined_rim.set_data(resource.resref.get(), resource.restype, resource.data)
+            combined_rim.set_data(str(resource.resref), resource.restype, resource.data)
 
         return combined_rim
 
     def set_data(
         self,
-        resref: str,
+        resname: str,
         restype: ResourceType,
         data: bytes,
-    ) -> None:
+    ):
         """Sets the data of the resource with the specified resref/restype pair.
 
         If it does not exists, a resource is appended to the resource list.
 
         Args:
         ----
-            resref: The resref.
+            resname: The resource reference filename.
             restype: The resource type.
             data: The new resource data.
         """
-        resource = next(
-            (resource for resource in self._resources if resource.resref == resref and resource.restype == restype),
+        resource: RIMResource | None = next(
+            (resource for resource in self._resources if resource.resref == resname and resource.restype == restype),
             None,
         )
         if resource is None:
-            self._resources.append(RIMResource(ResRef(resref), restype, data))
+            self._resources.append(RIMResource(ResRef(resname), restype, data))
         else:
-            resource.resref = ResRef(resref)
+            resource.resref = ResRef(resname)
             resource.restype = restype
             resource.data = data
 
     def get(
         self,
-        resref: str,
+        resname: str,
         restype: ResourceType,
     ) -> bytes | None:
         """Returns the data of the resource with the specified resref/restype pair if it exists, otherwise returns None.
 
         Args:
         ----
-            resref: The resref.
+            resname: The resource reference filename.
             restype: The resource type.
 
         Returns:
         -------
             The bytes data of the resource or None.
         """
-        resource = next(
-            (resource for resource in self._resources if resource.resref == resref and resource.restype == restype),
+        resource: RIMResource | None = next(
+            (resource for resource in self._resources if resource.resref == resname and resource.restype == restype),
             None,
         )
         return None if resource is None else resource.data
 
     def remove(
         self,
-        resref: str,
+        resname: str,
         restype: ResourceType,
-    ) -> None:
+    ):
         """Removes the resource with the given resref/restype pair if it exists.
 
         Args:
         ----
-            resref: The resref.
+            resname: The resource reference filename.
             restype: The resource type.
         """
-        self._resources = [res for res in self._resources if res.resref != resref and res.restype != restype]
+        self._resources = [
+            res
+            for res in self._resources
+            if res.resref != resname and res.restype != restype
+        ]
 
     def to_erf(
         self,
@@ -142,7 +147,7 @@ class RIM:
 
         erf = ERF()
         for resource in self._resources:
-            erf.set_data(resource.resref.get(), resource.restype, resource.data)
+            erf.set_data(str(resource.resref), resource.restype, resource.data)
         return erf
 
 

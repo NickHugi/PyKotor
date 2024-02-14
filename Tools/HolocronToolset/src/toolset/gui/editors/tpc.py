@@ -49,27 +49,29 @@ class TPCEditor(Editor):
 
         self.new()
 
-    def _setupSignals(self) -> None:
+    def _setupSignals(self):
         ...
 
-    def load(self, filepath: os.PathLike | str, resref: str, restype: ResourceType, data: bytes) -> None:
-        """Load a resource into the editor
+    def load(self, filepath: os.PathLike | str, resref: str, restype: ResourceType, data: bytes):
+        """Load a resource into the editor.
+
         Args:
+        ----
             filepath: The path to the resource file
             resref: The resource reference
             restype: The resource type
             data: The raw resource data
-        Returns:
-            None
+
         Load resource:
-        - Read TPC data directly if type is TPC or TGA
-        - Otherwise open as PIL Image, convert to RGBA, flip vertically
-        - Extract TPC data from PIL image
-        - Convert TPC to RGB format
-        - Create QImage from RGB data
-        - Create QPixmap from QImage with y-axis flip
-        - Set pixmap on texture image label
-        - Set TXI data on editor.
+        -------------
+            - Read TPC data directly if type is TPC or TGA
+            - Otherwise open as PIL Image, convert to RGBA, flip vertically
+            - Extract TPC data from PIL image
+            - Convert TPC to RGB format
+            - Create QImage from RGB data
+            - Create QPixmap from QImage with y-axis flip
+            - Set pixmap on texture image label
+            - Set TXI data on editor.
         """
         super().load(filepath, resref, restype, data)
 
@@ -83,14 +85,16 @@ class TPCEditor(Editor):
             self._tpc.set_single(pillow.width, pillow.height, pillow.tobytes(), TPCTextureFormat.RGBA)
 
         width, height, rgba = self._tpc.convert(TPCTextureFormat.RGB, 0)
+        assert rgba is not None, "rgba cannot be None."
 
         image = QImage(rgba, width, height, QImage.Format_RGB888)
+
         pixmap = QPixmap.fromImage(image).transformed(QTransform().scale(1, -1))
 
         self.ui.textureImage.setPixmap(pixmap)
         self.ui.txiEdit.setPlainText(self._tpc.txi)
 
-    def new(self) -> None:
+    def new(self):
         """Set texture image from TPC texture.
 
         Args:

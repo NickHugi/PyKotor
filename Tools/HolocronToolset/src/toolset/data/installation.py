@@ -79,12 +79,17 @@ class HTInstallation(Installation):
         Args:
         ----
             resname: The name of the 2DA resource to retrieve
+
         Returns:
+        -------
             2DA: The retrieved 2DA data
-        - Check if the 2DA is already cached
-        - If not cached, retrieve the 2DA data from the resource system
-        - Parse and cache the retrieved 2DA data
-        - Return the cached 2DA data.
+
+        Processing Logic:
+        ----------------
+            - Check if the 2DA is already cached
+            - If not cached, retrieve the 2DA data from the resource system
+            - Parse and cache the retrieved 2DA data
+            - Return the cached 2DA data.
         """
         resname = resname.lower()
         if resname not in self._cache2da:
@@ -93,12 +98,13 @@ class HTInstallation(Installation):
         return self._cache2da[resname]
 
     def htBatchCache2DA(self, resnames: List[str], reload: bool = False):
-        """Cache 2D array resources in batch
+        """Cache 2D array resources in batch.
+
         Args:
+        ----
             resnames: List of resource names to cache
             reload: Whether to reload cached resources
-        Returns:
-            None: No return value
+
         Processing Logic:
         ----------------
             1. Check if reload is True, query all resources. Else, query only non-cached resources
@@ -129,8 +135,11 @@ class HTInstallation(Installation):
         Args:
         ----
             resname: Resource name as string
+
         Returns:
+        -------
             TPC: Loaded TPC texture or None
+
         Processing Logic:
         ----------------
             - Check if texture is already cached in _cacheTpc dict
@@ -143,15 +152,18 @@ class HTInstallation(Installation):
         return self._cacheTpc[resname] if resname in self._cacheTpc else None
 
     def htBatchCacheTPC(self, names: List[str], reload: bool = False):
-        """Cache textures for batch queries
+        """Cache textures for batch queries.
+
         Args:
+        ----
             names: List of texture names to cache
             reload: Reload textures from source if True
-        Returns:
-            None: No return value
-        - Check if textures need reloading from source
-        - Filter names not already in cache
-        - Loop through remaining names and cache textures from sources.
+
+        Processing Logic:
+        ----------------
+            - Check if textures need reloading from source
+            - Filter names not already in cache
+            - Loop through remaining names and cache textures from sources.
         """
         queries = list(names) if reload else [name for name in names if name not in self._cache2da]
 
@@ -171,12 +183,17 @@ class HTInstallation(Installation):
         Args:
         ----
             uti (UTI): The UTI of the item
+
         Returns:
+        -------
             QPixmap: The icon pixmap for the item
-        - Looks up the item class and variation from the UTI in the base items 2DA
-        - Constructs the texture resource name from the item class and variation
-        - Looks up the texture from the texture cache
-        - Returns the icon pixmap if a texture is found, otherwise returns a default icon.
+
+        Processing Logic:
+        ----------------
+            - Looks up the item class and variation from the UTI in the base items 2DA
+            - Constructs the texture resource name from the item class and variation
+            - Looks up the texture from the texture cache
+            - Returns the icon pixmap if a texture is found, otherwise returns a default icon.
         """
         pixmap = QPixmap(":/images/inventory/unknown.png")
         baseitems = self.htGetCache2DA(HTInstallation.TwoDA_BASEITEMS)
@@ -192,13 +209,18 @@ class HTInstallation(Installation):
         return pixmap
 
     def getItemIcon(self, baseItem: int, modelVariation: int, textureVariation: int) -> QPixmap:
-        """Get item icon from base item and variations
+        """Get item icon from base item and variations.
+
         Args:
+        ----
             baseItem: int - Base item id
             modelVariation: int - Model variation
             textureVariation: int - Texture variation
+
         Returns:
+        -------
             QPixmap - Item icon pixmap
+
         Processing Logic:
         ----------------
             1. Get base item class from cache

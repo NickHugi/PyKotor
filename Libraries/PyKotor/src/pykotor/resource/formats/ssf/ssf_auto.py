@@ -1,12 +1,15 @@
 from __future__ import annotations
 
 import os
+from typing import TYPE_CHECKING
 
 from pykotor.common.stream import BinaryReader
 from pykotor.resource.formats.ssf.io_ssf import SSFBinaryReader, SSFBinaryWriter
 from pykotor.resource.formats.ssf.io_ssf_xml import SSFXMLReader, SSFXMLWriter
-from pykotor.resource.formats.ssf.ssf_data import SSF
 from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES, ResourceType
+
+if TYPE_CHECKING:
+    from pykotor.resource.formats.ssf.ssf_data import SSF
 
 
 def detect_ssf(
@@ -45,11 +48,11 @@ def detect_ssf(
 
     file_format: ResourceType
     try:
-        if isinstance(source, (str, os.PathLike)):
+        if isinstance(source, (os.PathLike, str)):
             with BinaryReader.from_file(source, offset) as reader:
                 file_format = check(reader.read_string(4))
-        elif isinstance(source, (bytes, bytearray)):
-            file_format = check(source[:4].decode("ascii", "ignore"))
+        elif isinstance(source, (memoryview, bytes, bytearray)):
+            file_format = check(bytes(source[:4]).decode("ascii", "ignore"))
         elif isinstance(source, BinaryReader):
             file_format = check(source.read_string(4))
             source.skip(-4)
@@ -89,9 +92,9 @@ def read_ssf(
     -------
         An SSF instance.
     """
-    file_format = detect_ssf(source, offset)
+    file_format: ResourceType = detect_ssf(source, offset)
 
-    if file_format is ResourceType.INVALID:
+    if file_format == ResourceType.INVALID:
         msg = "Failed to determine the format of the GFF file."
         raise ValueError(msg)
 
@@ -99,14 +102,15 @@ def read_ssf(
         return SSFBinaryReader(source, offset, size or 0).load()
     if file_format == ResourceType.SSF_XML:
         return SSFXMLReader(source, offset, size or 0).load()
-    return None
+    msg = "Failed to determine the format of the GFF file."
+    raise ValueError(msg)
 
 
 def write_ssf(
     ssf: SSF,
     target: TARGET_TYPES,
     file_format: ResourceType = ResourceType.SSF,
-) -> None:
+):
     """Writes the SSF data to the target location with the specified format (SSF or SSF_XML).
 
     Args:

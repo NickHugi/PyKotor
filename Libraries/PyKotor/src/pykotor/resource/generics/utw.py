@@ -1,10 +1,14 @@
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 from pykotor.common.language import LocalizedString
 from pykotor.common.misc import Game, ResRef
-from pykotor.resource.formats.gff import GFF, GFFContent, read_gff, write_gff
-from pykotor.resource.formats.gff.gff_auto import bytes_gff
+from pykotor.resource.formats.gff import GFF, GFFContent, bytes_gff, read_gff, write_gff
 from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES, ResourceType
+
+if TYPE_CHECKING:
+    from pykotor.resource.formats.gff import GFFStruct
 
 
 class UTW:
@@ -29,7 +33,7 @@ class UTW:
 
     def __init__(
         self,
-    ) -> None:
+    ):
         self.resref: ResRef = ResRef.from_blank()
         self.comment: str = ""
         self.tag: str = ""
@@ -53,16 +57,16 @@ def construct_utw(
 ) -> UTW:
     utw = UTW()
 
-    root = gff.root
+    root: GFFStruct = gff.root
     utw.appearance_id = root.acquire("Appearance", 0)
     utw.linked_to = root.acquire("LinkedTo", "")
     utw.resref = root.acquire("TemplateResRef", ResRef.from_blank())
     utw.tag = root.acquire("Tag", "")
     utw.name = root.acquire("LocalizedName", LocalizedString.from_invalid())
     utw.description = root.acquire("Description", LocalizedString.from_invalid())
-    utw.has_map_note = root.acquire("HasMapNote", 0)
+    utw.has_map_note = bool(root.acquire("HasMapNote", 0))
     utw.map_note = root.acquire("MapNote", LocalizedString.from_invalid())
-    utw.map_note_enabled = root.acquire("MapNoteEnabled", 0)
+    utw.map_note_enabled = bool(root.acquire("MapNoteEnabled", 0))
     utw.palette_id = root.acquire("PaletteID", 0)
     utw.comment = root.acquire("Comment", "")
 
@@ -77,7 +81,7 @@ def dismantle_utw(
 ) -> GFF:
     gff = GFF(GFFContent.UTW)
 
-    root = gff.root
+    root: GFFStruct = gff.root
     root.set_uint8("Appearance", utw.appearance_id)
     root.set_string("LinkedTo", utw.linked_to)
     root.set_resref("TemplateResRef", utw.resref)
@@ -98,7 +102,7 @@ def read_utw(
     offset: int = 0,
     size: int | None = None,
 ) -> UTW:
-    gff = read_gff(source, offset, size)
+    gff: GFF = read_gff(source, offset, size)
     return construct_utw(gff)
 
 
@@ -109,8 +113,8 @@ def write_utw(
     file_format: ResourceType = ResourceType.GFF,
     *,
     use_deprecated: bool = True,
-) -> None:
-    gff = dismantle_utw(utw, game, use_deprecated=use_deprecated)
+):
+    gff: GFF = dismantle_utw(utw, game, use_deprecated=use_deprecated)
     write_gff(gff, target, file_format)
 
 
@@ -121,5 +125,5 @@ def bytes_utw(
     *,
     use_deprecated: bool = True,
 ) -> bytes:
-    gff = dismantle_utw(utw, game, use_deprecated=use_deprecated)
+    gff: GFF = dismantle_utw(utw, game, use_deprecated=use_deprecated)
     return bytes_gff(gff, file_format)

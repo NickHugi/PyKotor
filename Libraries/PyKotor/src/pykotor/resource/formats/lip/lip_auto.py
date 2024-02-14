@@ -45,11 +45,11 @@ def detect_lip(
         return ResourceType.INVALID
     file_format: ResourceType
     try:
-        if isinstance(source, (str, os.PathLike)):
+        if isinstance(source, (os.PathLike, str)):
             with BinaryReader.from_file(source, offset) as reader:
                 file_format = check(reader.read_string(4))
-        elif isinstance(source, (bytes, bytearray)):
-            file_format = check(source[:4].decode("ascii", "ignore"))
+        elif isinstance(source, (memoryview, bytes, bytearray)):
+            file_format = check(bytes(source[:4]).decode("ascii", "ignore"))
         elif isinstance(source, BinaryReader):
             file_format = check(source.read_string(4))
             source.skip(-4)
@@ -91,9 +91,6 @@ def read_lip(
     """
     file_format = detect_lip(source, offset)
 
-    if file_format is ResourceType.INVALID:
-        msg = "Failed to determine the format of the GFF file."
-        raise ValueError(msg)
 
     if file_format == ResourceType.LIP:
         return LIPBinaryReader(source, offset, size or 0).load()
@@ -101,14 +98,16 @@ def read_lip(
         return LIPXMLReader(source, offset, size or 0).load()
     if file_format == ResourceType.LIP_JSON:
         return LIPJSONReader(source, offset, size or 0).load()
-    return None
+    #if file_format == ResourceType.INVALID:
+    msg = "Failed to determine the format of the GFF file."
+    raise ValueError(msg)
 
 
 def write_lip(
     lip: LIP,
     target: TARGET_TYPES,
     file_format: ResourceType = ResourceType.LIP,
-) -> None:
+):
     """Writes the LIP data to the target location with the specified format (LIP or LIP_XML).
 
     Args:
@@ -130,7 +129,7 @@ def write_lip(
     elif file_format == ResourceType.LIP_JSON:
         LIPJSONWriter(lip, target).write()
     else:
-        msg = "Unsupported format specified; use LIP or LIP_XML."
+        msg = "Unsupported format specified; use LIP or LIP_XML or LIP_JSON."
         raise ValueError(msg)
 
 

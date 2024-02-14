@@ -23,7 +23,7 @@ class SoundDialog(QDialog):
 
         self.sound: GITSound = sound
 
-    def accept(self) -> None:
+    def accept(self):
         super().accept()
         self.sound.resref = ResRef(self.ui.resrefEdit.text())
         self.sound.position.x = self.ui.xPosSpin.value()

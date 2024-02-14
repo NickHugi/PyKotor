@@ -10,14 +10,17 @@ def extract_name(data: bytes) -> LocalizedString:
         data: Bytes containing GFF data
     Returns:
         LocalizedString: Extracted name string
-    - Read GFF data from bytes
-    - Check content type and select appropriate name field
-    - Return localized name string.
+
+    Processing Logic:
+    ----------------
+        - Read GFF data from bytes
+        - Check content type and select appropriate name field
+        - Return localized name string.
     """
     gff = read_gff(data)
-    if gff.content in [GFFContent.UTC]:
+    if gff.content == GFFContent.UTC:
         return gff.root.get_locstring("FirstName")
-    if gff.content in [GFFContent.UTT, GFFContent.UTW]:
+    if gff.content in {GFFContent.UTT, GFFContent.UTW}:
         return gff.root.get_locstring("LocalizedName")
     return gff.root.get_locstring("LocName")
 

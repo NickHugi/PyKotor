@@ -1,13 +1,13 @@
 from __future__ import annotations
 
-from contextlib import suppress
-
 # Try to import defusedxml, fallback to ElementTree if not available
 from xml.etree import ElementTree
 
-with suppress(ImportError):
+try:
     from defusedxml.ElementTree import fromstring as _fromstring
     ElementTree.fromstring = _fromstring
+except (ImportError, ModuleNotFoundError):
+    pass
 
 from pykotor.common.language import Language
 from pykotor.common.misc import ResRef
@@ -61,7 +61,7 @@ class TLKXMLWriter(ResourceWriter):
     def write(
         self,
         auto_close: bool = True,
-    ) -> None:
+    ):
         self._xml.tag = "tlk"
         self._xml.set("language", str(self._tlk.language.value))
 
@@ -70,7 +70,7 @@ class TLKXMLWriter(ResourceWriter):
             element.text = entry.text
             element.set("id", str(stringref))
             if entry.voiceover:
-                element.set("sound", entry.voiceover.get())
+                element.set("sound", str(entry.voiceover))
             self._xml.append(element)
 
         indent(self._xml)

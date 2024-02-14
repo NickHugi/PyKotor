@@ -30,7 +30,7 @@ class CameraDialog(QDialog):
 
         self.camera: GITCamera = camera
 
-    def accept(self) -> None:
+    def accept(self):
         super().accept()
         self.camera.position.x = self.ui.xPosSpin.value()
         self.camera.position.y = self.ui.yPosSpin.value()

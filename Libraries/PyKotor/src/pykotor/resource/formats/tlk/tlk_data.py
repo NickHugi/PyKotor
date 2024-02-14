@@ -16,7 +16,7 @@ class TLK:
     def __init__(
         self,
         language: Language = Language.ENGLISH,
-    ) -> None:
+    ):
         self.entries: list[TLKEntry] = []
         self.language: Language = language  # game does not use this field
 
@@ -77,7 +77,7 @@ class TLK:
         self.entries.append(entry)
         return len(self.entries) - 1
 
-    def replace(self, stringref: int, text: str, sound_resref: str = "") -> None:
+    def replace(self, stringref: int, text: str, sound_resref: str = ""):
         """Replaces an entry at the specified stringref with the provided text and sound resref.
 
         Args:
@@ -89,14 +89,14 @@ class TLK:
         if not 0 <= stringref < len(self.entries):
             msg = f"Cannot replace nonexistent stringref in dialog.tlk: '{stringref}'"
             raise IndexError(msg)
-        old_text = self.entries[stringref].text
-        old_sound = self.entries[stringref].voiceover
+        old_text: str = self.entries[stringref].text
+        old_sound: ResRef = self.entries[stringref].voiceover
         self.entries[stringref] = TLKEntry(text or old_text, ResRef(sound_resref) if sound_resref else old_sound)
 
     def resize(
         self,
         size: int,
-    ) -> None:
+    ):
         """Resizes the number of entries to the specified size.
 
         Args:
@@ -125,8 +125,8 @@ class TLK:
                 extra_old += 1
                 continue
             if old_entry != new_entry:
-                text_mismatch: bool = old_entry.text.lower() != new_entry.text.lower()
-                vo_mismatch: bool = old_entry.voiceover.get().lower() != new_entry.voiceover.get().lower()
+                text_mismatch: bool = old_entry.text != new_entry.text
+                vo_mismatch: bool = old_entry.voiceover != new_entry.voiceover
                 if not text_mismatch and not vo_mismatch:
                     log_func("TLK entries are not equal, but no differences could be found?")
                     continue
@@ -167,7 +167,7 @@ class TLKEntry:
 
     def __eq__(
         self,
-        other,
+        other: TLKEntry,
     ):
         """Returns True if the text and voiceover match."""
         if not isinstance(other, TLKEntry):

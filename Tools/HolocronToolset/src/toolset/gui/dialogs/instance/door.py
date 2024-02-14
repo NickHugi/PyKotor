@@ -44,7 +44,7 @@ class DoorDialog(QDialog):
 
         self.door: GITDoor = door
 
-    def accept(self) -> None:
+    def accept(self):
         super().accept()
         self.door.resref = ResRef(self.ui.resrefEdit.text())
         self.door.tag = self.ui.tagEdit.text()
@@ -60,17 +60,17 @@ class DoorDialog(QDialog):
         )
         self.door.transition_destination = self.ui.transNameEdit.locstring()
 
-    def doorCheckboxesChanged(self, state: bool) -> None:
+    def doorCheckboxesChanged(self, state: bool):
         self.ui.linkToTagEdit.setEnabled(state)
         self.ui.linkToModuleEdit.setEnabled(state)
         self.ui.transNameEdit.setEnabled(state)
 
-    def changeColor(self, colorSpin: LongSpinBox) -> None:
+    def changeColor(self, colorSpin: LongSpinBox):
         qcolor = QColorDialog.getColor(QColor(colorSpin.value()))
         color = Color.from_rgb_integer(qcolor.rgb())
         colorSpin.setValue(color.rgb_integer())
 
-    def redoColorImage(self, value: int, colorLabel: QLabel) -> None:
+    def redoColorImage(self, value: int, colorLabel: QLabel):
         color = Color.from_bgr_integer(value)
         r, g, b = int(color.r * 255), int(color.g * 255), int(color.b * 255)
         data = bytes([r, g, b] * 16 * 16)

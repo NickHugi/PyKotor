@@ -63,7 +63,7 @@ class IFO:
         self.mod_name: LocalizedString = LocalizedString.from_invalid()
         self.area_name: ResRef = ResRef.from_blank()
 
-        self.identifier: ResRef = ResRef.from_blank()
+        self.resref: ResRef = ResRef.from_blank()
         self.entry_direction: float = 0.0
         self.entry_position: Vector3 = Vector3.from_null()
         self.tag: str = ""
@@ -111,7 +111,7 @@ def construct_ifo(
     ifo.vo_id = root.acquire("Mod_VO_ID", "")
     ifo.mod_name = root.acquire("Mod_Name", LocalizedString.from_invalid())
     ifo.tag = root.acquire("Mod_Tag", "")
-    ifo.identifier = root.acquire("Mod_Entry_Area", ResRef.from_blank())
+    ifo.resref = root.acquire("Mod_Entry_Area", ResRef.from_blank())
     ifo.entry_position.x = root.acquire("Mod_Entry_X", 0.0)
     ifo.entry_position.y = root.acquire("Mod_Entry_Y", 0.0)
     ifo.entry_position.z = root.acquire("Mod_Entry_Z", 0.0)
@@ -167,7 +167,7 @@ def dismantle_ifo(
     root.set_locstring("Mod_Name", ifo.mod_name)
     root.set_string("Mod_Tag", ifo.tag)
     root.set_uint8("Mod_IsSaveGame", 0)
-    root.set_resref("Mod_Entry_Area", ifo.identifier)
+    root.set_resref("Mod_Entry_Area", ifo.resref)
     root.set_single("Mod_Entry_X", ifo.entry_position.x)
     root.set_single("Mod_Entry_Y", ifo.entry_position.y)
     root.set_single("Mod_Entry_Z", ifo.entry_position.z)
@@ -233,7 +233,7 @@ def write_ifo(
     file_format: ResourceType = ResourceType.GFF,
     *,
     use_deprecated: bool = True,
-) -> None:
+):
     gff = dismantle_ifo(ifo, game, use_deprecated=use_deprecated)
     write_gff(gff, target, file_format)
 

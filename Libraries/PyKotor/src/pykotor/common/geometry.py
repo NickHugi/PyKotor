@@ -233,7 +233,7 @@ class Vector2:
         self,
         x: float,
         y: float,
-    ) -> None:
+    ):
         """Sets the components of the vector.
 
         Args:
@@ -246,7 +246,7 @@ class Vector2:
 
     def normalize(
         self,
-    ) -> None:
+    ):
         """Normalizes the vector so that the magnitude is equal to one while maintaining the same angle."""
         magnitude = self.magnitude()
         if magnitude == 0:
@@ -542,7 +542,7 @@ class Vector3:
         x: float,
         y: float,
         z: float,
-    ) -> None:
+    ):
         """Sets the components of the vector.
 
         Args:
@@ -557,7 +557,7 @@ class Vector3:
 
     def normalize(
         self,
-    ) -> None:
+    ):
         """Normalizes the vector so that the magnitude is equal to one while maintaining the same angle."""
         magnitude = self.magnitude()
         if magnitude == 0:
@@ -629,8 +629,9 @@ class Vector3:
         self,
         container: list,
     ) -> bool:
-        """Checks to see if the same Vector3 object in located in the specified list. This differs from using the 'in'
-        keyword as that will return True for Vector3 objects that have similar coordinates.
+        """Checks to see if the same Vector3 object in located in the specified list.
+
+        This differs from using the 'in' keyword as that will return True for Vector3 objects that have similar coordinates.
 
         Args:
         ----
@@ -814,8 +815,11 @@ class Vector4:
         Args:
         ----
             data: The compressed data as an integer
+
         Returns:
+        -------
             Vector4: The decompressed Vector4
+
         Processing Logic:
         ----------------
             - Extract x, y, z components from data bits
@@ -845,7 +849,7 @@ class Vector4:
         x: float,
         y: float,
         z: float,
-    ):
+    ) -> Vector4:
         """Creates a Vector3 object from x/y/z rotations (in radians).
 
         Args:
@@ -858,30 +862,26 @@ class Vector4:
         -------
             A new Vector3 object.
         """
-        roll = x
-        pitch = y
-        yaw = z
+        roll: float = x
+        pitch: float = y
+        yaw: float = z
 
-        qx = math.sin(roll / 2) * math.cos(pitch / 2) * math.cos(yaw / 2) - math.cos(
-            roll / 2,
-        ) * math.sin(
-            pitch / 2,
-        ) * math.sin(yaw / 2)
-        qy = math.cos(roll / 2) * math.sin(pitch / 2) * math.cos(yaw / 2) + math.sin(
-            roll / 2,
-        ) * math.cos(
-            pitch / 2,
-        ) * math.sin(yaw / 2)
-        qz = math.cos(roll / 2) * math.cos(pitch / 2) * math.sin(yaw / 2) - math.sin(
-            roll / 2,
-        ) * math.sin(
-            pitch / 2,
-        ) * math.cos(yaw / 2)
-        qw = math.cos(roll / 2) * math.cos(pitch / 2) * math.cos(yaw / 2) + math.sin(
-            roll / 2,
-        ) * math.sin(
-            pitch / 2,
-        ) * math.sin(yaw / 2)
+        qx: float = (
+            math.sin(roll / 2) * math.cos(pitch / 2) * math.cos(yaw / 2)
+            - math.cos(roll / 2) * math.sin(pitch / 2) * math.sin(yaw / 2)
+        )
+        qy: float = (
+            math.cos(roll / 2) * math.sin(pitch / 2) * math.cos(yaw / 2)
+            + math.sin(roll / 2) * math.cos(pitch / 2) * math.sin(yaw / 2)
+        )
+        qz: float = (
+            math.cos(roll / 2) * math.cos(pitch / 2) * math.sin(yaw / 2)
+            - math.sin(roll / 2) * math.sin(pitch / 2) * math.cos(yaw / 2)
+        )
+        qw: float = (
+            math.cos(roll / 2) * math.cos(pitch / 2) * math.cos(yaw / 2)
+            + math.sin(roll / 2) * math.sin(pitch / 2) * math.sin(yaw / 2)
+        )
 
         return Vector4(qx, qy, qz, qw)
 
@@ -940,7 +940,7 @@ class Vector4:
         -------
             The same vector.
         """
-        magnitude = self.magnitude()
+        magnitude: float = self.magnitude()
         if magnitude == 0:
             self.x = 0
             self.y = 0
@@ -959,7 +959,7 @@ class Vector4:
         y: float,
         z: float,
         w: float,
-    ) -> None:
+    ):
         """Sets the components of the vector.
 
         Args:
@@ -1007,7 +1007,7 @@ class AxisAngle:
         -------
             A new AxisAngle instance.
         """
-        aa = AxisAngle.from_null()
+        aa: AxisAngle = AxisAngle.from_null()
         quaternion.normalize()
 
         aa.angle = 2.0 * math.atan2(
@@ -1078,7 +1078,7 @@ class SurfaceMaterial(IntEnum):
         self,
     ) -> bool:
         """Returns True if the surface material is walkable, False otherwise."""
-        return self in [
+        return self in {
             SurfaceMaterial.DIRT,
             SurfaceMaterial.GRASS,
             SurfaceMaterial.STONE,
@@ -1092,7 +1092,7 @@ class SurfaceMaterial(IntEnum):
             SurfaceMaterial.LEAVES,
             SurfaceMaterial.DOOR,
             SurfaceMaterial.TRIGGER,
-        ]
+        }
 
 
 class Face:
@@ -1127,10 +1127,10 @@ class Face:
         -------
             A new Vector3 instance representing the face normal.
         """
-        u = self.v2 - self.v1
-        v = self.v3 - self.v2
+        u: Vector3 = self.v2 - self.v1
+        v: Vector3 = self.v3 - self.v2
 
-        normal = Vector3.from_null()
+        normal: Vector3 = Vector3.from_null()
         normal.x = (u.y * v.z) - (u.z * v.y)
         normal.y = (u.z * v.x) - (u.x * v.z)
         normal.z = (u.x * v.y) - (u.y * v.x)
@@ -1151,12 +1151,12 @@ class Face:
     ) -> float:
         return -1.0 * (self.normal().dot(self.v1))
 
-    def centre(  # TODO: fix return type
+    def centre(
         self,
     ) -> Vector3:
         return (self.v1 + self.v2 + self.v3) / 3
 
-    def average(  # TODO: fix return type
+    def average(
         self,
     ) -> Vector3:
         """Returns the average point of the face.
@@ -1329,19 +1329,19 @@ class Polygon2:
     def append(
         self,
         point: Vector2,
-    ) -> None:
+    ):
         self.points.append(point)
 
     def extend(
         self,
         points: list[Vector2],
-    ) -> None:
+    ):
         self.points.extend(points)
 
     def remove(
         self,
         point: Vector2,
-    ) -> None:
+    ):
         self.points.remove(point)
 
     def index(
@@ -1375,8 +1375,8 @@ class Polygon3:
 
     def __getitem__(
         self,
-        item: int,
-    ) -> Vector3 | list[Vector3]:
+        item: int | slice,
+    ):
         if isinstance(item, int):
             return self.points[item]
         if isinstance(item, slice):
@@ -1415,19 +1415,19 @@ class Polygon3:
     def append(
         self,
         point: Vector3,
-    ) -> None:
+    ):
         self.points.append(point)
 
     def extend(
         self,
         points: list[Vector3],
-    ) -> None:
+    ):
         self.points.extend(points)
 
     def remove(
         self,
         point: Vector3,
-    ) -> None:
+    ):
         self.points.remove(point)
 
     def index(

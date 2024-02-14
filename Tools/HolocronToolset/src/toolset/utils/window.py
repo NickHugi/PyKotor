@@ -2,10 +2,12 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+from pykotor.resource.formats.erf.erf_data import ERFType
 from pykotor.resource.type import ResourceType
 from PyQt5.QtWidgets import QMessageBox, QWidget
 from toolset.gui.editors.mdl import MDLEditor
 from toolset.gui.widgets.settings.installations import GlobalSettings
+from utility.error_handling import universal_simplify_exception
 
 if TYPE_CHECKING:
     import os
@@ -16,7 +18,7 @@ if TYPE_CHECKING:
 windows: list[QWidget] = []
 
 
-def addWindow(window: QWidget) -> None:
+def addWindow(window: QWidget):
     def removeFromList(a0):
         QWidget.closeEvent(window, a0)
         if window in windows:
@@ -36,7 +38,9 @@ def openResourceEditor(
     parentwindow: QWidget | None = None,
     gff_specialized: bool | None = None,
 ) -> tuple[os.PathLike | str, Editor] | tuple[None, None]:
-    """Opens an editor for the specified resource. If the user settings have the editor set to inbuilt it will return
+    """Opens an editor for the specified resource.
+
+    If the user settings have the editor set to inbuilt it will return
     the editor, otherwise it returns None.
 
     Args:
@@ -103,17 +107,18 @@ def openResourceEditor(
     if restype in [ResourceType.TXT, ResourceType.TXI, ResourceType.LYT, ResourceType.VIS]:
         editor = TXTEditor(None)
 
-    if restype in [ResourceType.NSS]:
-        if installation:  # noqa: SIM108
+    if restype in [ResourceType.NSS, ResourceType.NCS]:
+        if installation:
             editor = NSSEditor(None, installation)
-        else:
+        elif restype == ResourceType.NSS:
+            QMessageBox.warning(None, "No installation loaded", "The toolset cannot use its full nss editor features until you select an installation.")
             editor = TXTEditor(None, installation)
-
-    if restype in [ResourceType.NCS] and installation:
-        editor = NSSEditor(None, installation)
+        else:
+            QMessageBox.warning(None, "Cannot decompile NCS without an installation active", "Please select an installation from the dropdown before loading an NCS.")
+            return None, None
 
     if restype in [ResourceType.DLG, ResourceType.DLG_XML]:
-        if installation is None:  # noqa: SIM108
+        if installation is None or not gff_specialized:  # noqa: SIM108
             editor = GFFEditor(None, installation)
         else:
             editor = DLGEditor(None, installation)
@@ -205,13 +210,14 @@ def openResourceEditor(
         ResourceType.GUI_XML,
         ResourceType.IFO,
         ResourceType.IFO_XML,
+        ResourceType.RES,
     ]:
         editor = GFFEditor(None, installation)
 
     if restype in [ResourceType.WAV, ResourceType.MP3]:
         editor = AudioPlayer(parentwindow)
 
-    if restype in [ResourceType.MOD, ResourceType.ERF, ResourceType.RIM]:
+    if restype.name in ERFType.__members__ or restype == ResourceType.RIM:
         editor = ERFEditor(None, installation)
 
     if restype in [ResourceType.MDL, ResourceType.MDX]:
@@ -225,15 +231,22 @@ def openResourceEditor(
             addWindow(editor)
 
         except Exception as e:
-            QMessageBox(QMessageBox.Critical, "An unknown error occured", str(e), QMessageBox.Ok, parentwindow).show()
+            etype, emsg = universal_simplify_exception(e)
+            QMessageBox(
+                QMessageBox.Critical,
+                f"An unexpected error has occurred: {etype}",
+                emsg,
+                QMessageBox.Ok,
+                parentwindow
+            ).show()
             raise
         else:
-            return filepath, editor
+            return filepath, editor  # type: ignore[reportReturnType]
     else:
         QMessageBox(
             QMessageBox.Critical,
             "Failed to open file",
-            "The selected file is not yet supported.",
+            f"The selected file format '{restype!r}' is not yet supported.",
             QMessageBox.Ok,
             parentwindow,
         ).show()

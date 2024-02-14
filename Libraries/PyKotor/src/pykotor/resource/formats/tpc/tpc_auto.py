@@ -94,24 +94,21 @@ def read_tpc(
     -------
         An TPC instance.
     """
-    file_format = detect_tpc(source, offset)
-
-    if file_format is ResourceType.INVALID:
-        msg = "Failed to determine the format of the GFF file."
-        raise ValueError(msg)
+    file_format: ResourceType = detect_tpc(source, offset)
 
     if file_format == ResourceType.TPC:
         return TPCBinaryReader(source, offset, size or 0).load()
     if file_format == ResourceType.TGA:
         return TPCTGAReader(source, offset, size or 0).load()
-    return None
+    msg = "Failed to determine the format of the GFF file."
+    raise ValueError(msg)
 
 
 def write_tpc(
     tpc: TPC,
     target: TARGET_TYPES,
     file_format: ResourceType = ResourceType.TPC,
-) -> None:
+):
     """Writes the TPC data to the target location with the specified format (TPC, TGA or BMP).
 
     Args:

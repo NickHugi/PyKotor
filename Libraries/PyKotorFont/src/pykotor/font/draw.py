@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING
 from PIL import Image, ImageDraw, ImageFont
 from pykotor.resource.formats.txi import TXIFontInformation
 from pykotor.tools.encoding import get_charset_from_singlebyte_encoding
-from utility.path import Path
+from utility.system.path import Path
 
 if TYPE_CHECKING:
     import os
@@ -51,9 +51,8 @@ def write_bitmap_fonts(
     draw_box=False,
     custom_scaling=1.0,
     font_color=None,
-) -> None:
-    target_path = target if isinstance(target, Path) else Path(target)
-    target_path = target_path if target_path.exists() else target_path.resolve()
+):
+    target_path = Path.pathify(target)
     target_path.mkdir(parents=True, exist_ok=True)
 
     for font_name in TXIFontInformation.FONT_TEXTURES:
@@ -78,13 +77,13 @@ def write_bitmap_font(
     draw_box: bool = False,
     custom_scaling: float = 1.0,
     font_color=None,
-) -> None:
+):
     """Generates a bitmap font (TGA and TXI) from a TTF font file. Note the default 'draw_boxes', none of these boxes show up in the game (just outside the coords)."""
     if any(resolution) == 0:
         msg = f"resolution must be nonzero, got {resolution}"
         raise ZeroDivisionError(msg)
 
-    font_path, target_path = ((p if isinstance(p, Path) else Path(p)).resolve() for p in (font_path, target))
+    font_path, target_path = (Path.pathify(p) for p in (font_path, target))
     charset_list: list[str] = get_charset_from_singlebyte_encoding(lang.get_encoding())
     numchars: int = len([char for char in charset_list if char])
 
@@ -101,8 +100,20 @@ def write_bitmap_font(
     # Adjust the resolution to include the additional height
     adjusted_resolution: tuple[int, int] = (resolution[0] + total_additional_height, resolution[1] + total_additional_height)
 
-    # Create charset image with adjusted resolution
-    charset_image = Image.new("RGBA", adjusted_resolution, (0, 0, 0, 0))
+    # Calculate the multiplier
+    multiplier_width = adjusted_resolution[0] / resolution[0]
+    multiplier_height = adjusted_resolution[1] / resolution[1]
+
+    # Calculate new resolution that will determine character size
+    new_original_resolution = (int(resolution[0] / multiplier_width), int(resolution[1] / multiplier_height))
+
+    # Recalculate everything with the new resolution
+    font_size = min(new_original_resolution[0] // characters_per_column, new_original_resolution[1] // characters_per_row)
+    pil_font = ImageFont.truetype(str(font_path), font_size)
+    baseline_height, max_underhang_height, max_char_height = calculate_character_metrics(pil_font, charset_list)
+
+    # Create charset image
+    charset_image = Image.new("RGBA", resolution, (0, 0, 0, 0))
     draw = ImageDraw.Draw(charset_image)
 
     # Initialize the grid position
@@ -117,20 +128,20 @@ def write_bitmap_font(
             lower_right_coords.append((0.000002, 0.000002, 0))
             continue
 
-        cell_height = adjusted_resolution[1] / characters_per_row
+        cell_height = resolution[1] / characters_per_row
 
         # Calculate normalized coordinates for upper left
         norm_x1 = grid_x / characters_per_column
-        norm_y1 = (grid_y * cell_height) / adjusted_resolution[1]
+        norm_y1 = (grid_y * cell_height) / resolution[1]
         # Calculate normalized coordinates for lower right
         norm_x2 = (grid_x + 1) / characters_per_row
-        norm_y2 = ((grid_y + 1) * cell_height) / adjusted_resolution[1]
+        norm_y2 = ((grid_y + 1) * cell_height) / resolution[1]
 
         # Convert normalized coordinates to pixels
-        pixel_x1 = norm_x1 * adjusted_resolution[0]
-        pixel_y1 = norm_y1 * adjusted_resolution[1]
-        pixel_x2 = norm_x2 * adjusted_resolution[0]
-        pixel_y2 = norm_y2 * adjusted_resolution[1]
+        pixel_x1 = norm_x1 * resolution[0]
+        pixel_y1 = norm_y1 * resolution[1]
+        pixel_x2 = norm_x2 * resolution[0]
+        pixel_y2 = norm_y2 * resolution[1]
 
         # Calculate character height and width
         char_bbox = draw.textbbox((pixel_x1, pixel_y1), char, font=pil_font)
@@ -151,10 +162,10 @@ def write_bitmap_font(
             draw.rectangle((pixel_x1, pixel_y1, pixel_x2, pixel_y2), outline="red")
 
         # Calculate normalized coordinates
-        norm_x1 = pixel_x1 / adjusted_resolution[0]
-        norm_y1 = pixel_y1 / adjusted_resolution[1]
-        norm_x2 = pixel_x2 / adjusted_resolution[0]
-        norm_y2 = pixel_y2 / adjusted_resolution[1]
+        norm_x1 = pixel_x1 / resolution[0]
+        norm_y1 = pixel_y1 / resolution[1]
+        norm_x2 = pixel_x2 / resolution[0]
+        norm_y2 = pixel_y2 / resolution[1]
 
         # Invert Y-axis normalization
         norm_y1 = 1 - norm_y1
@@ -180,12 +191,12 @@ def write_bitmap_font(
     txi_font_info.upper_left_coords = upper_left_coords
     txi_font_info.lower_right_coords = lower_right_coords
     # Normalize and set font metrics
-    txi_font_info.set_font_metrics(adjusted_resolution, max_char_height, baseline_height, custom_scaling)
+    txi_font_info.set_font_metrics(resolution, max_char_height, baseline_height, custom_scaling)
 
     target_path.parent.mkdir(parents=True, exist_ok=True)
     charset_image.save(target_path.with_suffix(".tga"), format="TGA")
 
     # Generate and save the TXI data
     txi_target = target_path.with_suffix(".txi")
-    with txi_target.open("w") as txi_file:
+    with txi_target.open("w", encoding="utf-8") as txi_file:
         txi_file.write(str(txi_font_info))

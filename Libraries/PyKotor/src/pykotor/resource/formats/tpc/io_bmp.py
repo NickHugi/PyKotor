@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import struct
 
 from pykotor.common.stream import BinaryReader
@@ -12,13 +14,13 @@ class TPCBMPWriter(ResourceWriter):
         target: TARGET_TYPES,
     ):
         super().__init__(target)
-        self._tpc = tpc
+        self._tpc: TPC = tpc
 
     @autoclose
     def write(
         self,
         auto_close: bool = True,
-    ) -> None:
+    ):
         """Writes the texture to a bitmap file.
 
         Args:
@@ -54,9 +56,9 @@ class TPCBMPWriter(ResourceWriter):
         self._writer.write_uint32(0)  # colors used
         self._writer.write_uint32(0)
 
-        pixel_reader = BinaryReader.from_bytes(data)
-        temp_pixels = []
-        for _i in range(len(data) // 3):
+        pixel_reader: BinaryReader = BinaryReader.from_bytes(data)
+        temp_pixels: list[list[int]] = []
+        for _ in range(len(data) // 3):
             r = pixel_reader.read_uint8()
             g = pixel_reader.read_uint8()
             b = pixel_reader.read_uint8()
