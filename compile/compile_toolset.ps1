@@ -11,15 +11,6 @@ Write-Host "The path to the root directory is: $rootPath"
 Write-Host "Initializing python virtual environment..."
 . $rootPath/install_python_venv.ps1
 
-# Define temporary directories for build and cache
-$tempBuildDir = "/tmp/pip_build/"
-$tempCacheDir = "/tmp/pip_cache/"
-
-# Ensure these temporary directories exist
-Invoke-Expression "mkdir -p $tempBuildDir"
-Invoke-Expression "mkdir -p $tempCacheDir"
-$env:PIP_CACHE_DIR = $tempCacheDir
-
 Write-Host "Installing required packages to build the holocron toolset..."
 . $pythonExePath -m pip install --upgrade pip --prefer-binary --progress-bar on
 . $pythonExePath -m pip install pyinstaller --prefer-binary --progress-bar on
