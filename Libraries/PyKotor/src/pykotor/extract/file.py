@@ -37,6 +37,8 @@ class FileResource:
         self._filepath: Path = Path.pathify(filepath)
 
         self.inside_capsule: bool = is_capsule_file(self._filepath)
+        if self._identifier == self._filepath.name:
+            self.inside_capsule = False  # HACK: For when capsules are the resource themselves.
         self.inside_bif: bool = is_bif_file(self._filepath)
 
 #        filehash = self.get_hash(reload=True)
@@ -54,7 +56,11 @@ class FileResource:
         self._internal = False
 
     def __setattr__(self, __name, __value):
-        if hasattr(self, __name) and __name != "_internal" and not self._internal:
+        if (
+            hasattr(self, __name)
+            and __name not in {"_internal", "_task_running"}
+            and not getattr(self, "_internal", True)
+        ):
             msg = f"Cannot modify immutable FileResource instance, attempted `setattr({self!r}, {__name!r}, {__value!r})`"
             raise RuntimeError(msg)
 

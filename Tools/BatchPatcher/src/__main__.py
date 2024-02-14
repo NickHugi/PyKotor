@@ -23,13 +23,14 @@ if getattr(sys, "frozen", False) is False:
         if working_dir not in sys.path:
             sys.path.append(working_dir)
 
-    pykotor_font_path = pathlib.Path(__file__).parents[3] / "Libraries" / "PyKotorFont" / "src" / "pykotor"
+    absolute_file_path = pathlib.Path(__file__).resolve()
+    pykotor_font_path = absolute_file_path.parents[3] / "Libraries" / "PyKotorFont" / "src" / "pykotor"
     if pykotor_font_path.is_dir():
         add_sys_path(pykotor_font_path.parent)
-    pykotor_path = pathlib.Path(__file__).parents[3] / "Libraries" / "PyKotor" / "src" / "pykotor"
+    pykotor_path = absolute_file_path.parents[3] / "Libraries" / "PyKotor" / "src" / "pykotor"
     if pykotor_path.is_dir():
         add_sys_path(pykotor_path.parent)
-    utility_path = pathlib.Path(__file__).parents[3] / "Libraries" / "Utility" / "src" / "utility"
+    utility_path = absolute_file_path.parents[3] / "Libraries" / "Utility" / "src" / "utility"
     if utility_path.is_dir():
         add_sys_path(utility_path.parent)
 
@@ -53,7 +54,7 @@ from pykotor.resource.formats.tpc.tpc_auto import bytes_tpc
 from pykotor.resource.formats.tpc.tpc_data import TPC
 from pykotor.resource.type import ResourceType
 from pykotor.tools.encoding import decode_bytes_with_fallbacks
-from pykotor.tools.misc import is_capsule_file
+from pykotor.tools.misc import is_any_erf_type_file, is_capsule_file
 from pykotor.tools.path import CaseAwarePath, find_kotor_paths_from_default
 from pykotor.tslpatcher.logger import PatchLog, PatchLogger
 from translate.language_translator import TranslationOption, Translator
@@ -95,6 +96,7 @@ class Globals:
         self.convert_tga: bool = False
         self.custom_scaling: float = 1.0
         self.draw_bounds: bool = False
+        self.fix_dialog_skipping: bool = False
         self.font_color: float
         self.font_path: Path
         self.install_running: bool = False
@@ -220,8 +222,21 @@ def patch_nested_gff(
     made_change: bool = False,
 ) -> bool:
     if gff_content != GFFContent.DLG and not SCRIPT_GLOBALS.translate:
-        print(f"Skipping file at '{current_path}', translate not set.")
+        #print(f"Skipping file at '{current_path}', translate not set.")
         return False
+    if gff_content == GFFContent.DLG and SCRIPT_GLOBALS.fix_dialog_skipping:
+        delay = gff_struct.acquire("Delay", None)
+        if delay == 0:
+            vo_resref = gff_struct.acquire("VO_ResRef", "")
+            if vo_resref and vo_resref.strip():
+                log_output(f"Changing Delay at '{current_path}' from {delay} to -1")
+                gff_struct.set_uint32("Delay", 0xFFFFFFFF)
+                made_change = True
+            else:
+                log_output(f"Skipping delay change at '{current_path}', no VO_ResRef defined.")
+        #next_node_id = gff_struct.acquire("NextNodeID", None)
+        #if next_node_id:
+        #    gff_struct.set_int32("NextNodeID", 0)
 
     current_path = PurePath.pathify(current_path or "GFFRoot")
     for label, ftype, value in gff_struct:
@@ -231,12 +246,12 @@ def patch_nested_gff(
 
         if ftype == GFFFieldType.Struct:
             assert isinstance(value, GFFStruct)  # noqa: S101
-            made_change &= patch_nested_gff(value, gff_content, child_path, made_change)
+            made_change |= patch_nested_gff(value, gff_content, child_path, made_change)
             continue
 
         if ftype == GFFFieldType.List:
             assert isinstance(value, GFFList)  # noqa: S101
-            made_change &= recurse_through_list(value, gff_content, child_path, made_change)
+            made_change |= recurse_through_list(value, gff_content, child_path, made_change)
             continue
 
         if ftype == GFFFieldType.LocalizedString and SCRIPT_GLOBALS.translate:  # and gff_content.value == GFFContent.DLG.value:
@@ -257,7 +272,7 @@ def patch_nested_gff(
 def recurse_through_list(gff_list: GFFList, gff_content: GFFContent, current_path: PurePath, made_change: bool) -> bool:
     current_path = PurePath.pathify(current_path or "GFFListRoot")
     for list_index, gff_struct in enumerate(gff_list):
-        made_change &= patch_nested_gff(gff_struct, gff_content, current_path / str(list_index), made_change)
+        made_change |= patch_nested_gff(gff_struct, gff_content, current_path / str(list_index), made_change)
     return made_change
 
 def fix_encoding(text: str, encoding: str):
@@ -289,7 +304,7 @@ def patch_resource(resource: FileResource) -> GFF | TPC | None:
                         tlk.replace(strref, translated_text)
                         log_output(f"#{strref} Translated {original_text} --> {translated_text}")
                 except Exception as exc:  # noqa: BLE001
-                    log_output(f"tlk strref {strref} generated an exception: {universal_simplify_exception(exc)}")
+                    log_output(format_exception_with_variables(e, message=f"tlk strref {strref} generated an exception: {universal_simplify_exception(exc)}"))
                     print(format_exception_with_variables(exc))
 
     if resource.restype().extension.lower() == "tlk" and SCRIPT_GLOBALS.translate and SCRIPT_GLOBALS.pytranslator:
@@ -298,7 +313,7 @@ def patch_resource(resource: FileResource) -> GFF | TPC | None:
             log_output(f"Loading TLK '{resource.filepath()}'")
             tlk = read_tlk(resource.data())
         except Exception as e:  # noqa: BLE001
-            log_output(f"Error loading TLK {resource.filepath()}! {universal_simplify_exception(e)}")
+            log_output(format_exception_with_variables(e, message=f"[Error] loading TLK '{resource.identifier()}' at '{resource.filepath()}'!"))
             print(format_exception_with_variables(e))
             return None
 
@@ -338,7 +353,7 @@ def patch_resource(resource: FileResource) -> GFF | TPC | None:
             ) or made_change:
                 return gff
         except Exception as e:  # noqa: BLE001
-            log_output(f"[Error] loading GFF '{resource.identifier()}' at '{resource.filepath()}'! {universal_simplify_exception(e)}")
+            log_output(format_exception_with_variables(e, message=f"[Error] loading GFF '{resource.identifier()}' at '{resource.filepath()}'!"))
             #raise
             return None
 
@@ -351,7 +366,7 @@ def patch_and_save_noncapsule(resource: FileResource, savedir: Path | None = Non
     patched_data: GFF | TPC | None = patch_resource(resource)
     if patched_data is None:
         return
-    new_path = savedir or resource.filepath()
+    capsule = Capsule(resource.filepath()) if resource.inside_capsule else None
     if isinstance(patched_data, GFF):
         new_data = bytes_gff(patched_data)
 
@@ -359,16 +374,34 @@ def patch_and_save_noncapsule(resource: FileResource, savedir: Path | None = Non
         if SCRIPT_GLOBALS.translate:
             new_gff_filename = f"{resource.resname()}_{SCRIPT_GLOBALS.pytranslator.to_lang.get_bcp47_code()}.{resource.restype().extension}"
 
-        new_path = new_path.parent / new_gff_filename
-        BinaryWriter.dump(new_path, new_data)
+        new_path = (savedir or resource.filepath().parent) / new_gff_filename
+        if new_path.exists():
+            log_output(f"Skipping '{new_gff_filename}', already exists on disk")
+        else:
+            log_output(f"Saving patched gff to '{new_path}'")
+            BinaryWriter.dump(new_path, new_data)
     elif isinstance(patched_data, TPC):
-        txi_file = resource.filepath().with_suffix(".txi")
-        if txi_file.is_file():
-            log_output("Embedding TXI information...")
-            data: bytes = BinaryReader.load_file(txi_file)
-            txi_text: str = decode_bytes_with_fallbacks(data)
-            patched_data.txi = txi_text
-        TPCTGAWriter(patched_data, new_path.with_suffix(".tpc")).write()
+        if capsule is None:
+            txi_file = resource.filepath().with_suffix(".txi")
+            if txi_file.is_file():
+                log_output("Embedding TXI information...")
+                data: bytes = BinaryReader.load_file(txi_file)
+                txi_text: str = decode_bytes_with_fallbacks(data)
+                patched_data.txi = txi_text
+        else:
+            txi_data = capsule.resource(resource.resname(), ResourceType.TXI)
+            if txi_data is not None:
+                log_output("Embedding TXI information from resource found in capsule...")
+                txi_text = decode_bytes_with_fallbacks(txi_data)
+                patched_data.txi = txi_text
+
+        new_path = (savedir or resource.filepath().parent) / resource.resname()
+        new_path = new_path.with_suffix(".tpc")
+        if new_path.exists():
+            log_output(f"Skipping '{new_path}', already exists on disk")
+        else:
+            log_output(f"Saving converted tpc to '{new_path}'")
+            TPCTGAWriter(patched_data, new_path.with_suffix(".tpc")).write()
 
 def patch_capsule_file(c_file: Path):
     new_data: bytes
@@ -383,15 +416,15 @@ def patch_capsule_file(c_file: Path):
     if SCRIPT_GLOBALS.translate:
         new_filepath = c_file.parent / f"{c_file.stem}_{SCRIPT_GLOBALS.pytranslator.to_lang.get_bcp47_code()}{c_file.suffix}"
 
-    new_capsule = Capsule(new_filepath, create_nonexisting=True)
+    new_resources: list[tuple[str, ResourceType, bytes]] = []
     omitted_resources: list[ResourceIdentifier] = []
     for resource in file_capsule:
 
         patched_data: GFF | TPC | None = patch_resource(resource)
         if isinstance(patched_data, GFF):
             new_data = bytes_gff(patched_data) if patched_data else resource.data()
-            log_output(f"Adding patched GFF resource '{resource.resname()}' to capsule {c_file.name}")
-            new_capsule.add(resource.resname(), resource.restype(), new_data)
+            log_output(f"Adding patched GFF resource '{resource.identifier()}' to capsule {new_filepath.name}")
+            new_resources.append((resource.resname(), resource.restype(), new_data))
             omitted_resources.append(resource.identifier())
 
         elif isinstance(patched_data, TPC):
@@ -401,13 +434,21 @@ def patch_capsule_file(c_file: Path):
                 omitted_resources.append(ResourceIdentifier(resource.resname(), ResourceType.TXI))
 
             new_data = bytes_tpc(patched_data)
-            log_output(f"Adding patched TPC resource '{resource.resname()}' to capsule {c_file.name}")
-            new_capsule.add(resource.resname(), ResourceType.TPC, new_data)
+            log_output(f"Adding patched TPC resource '{resource.identifier()}' to capsule {new_filepath.name}")
+            new_resources.append((resource.resname(), ResourceType.TPC, new_data))
             omitted_resources.append(resource.identifier())
 
+    erf_or_rim: ERF | RIM = ERF(ERFType.from_extension(new_filepath)) if is_any_erf_type_file(c_file) else RIM()
     for resource in file_capsule:
         if resource.identifier() not in omitted_resources:
-            new_capsule.add(resource.resname(), resource.restype(), resource.data())
+            erf_or_rim.set_data(resource.resname(), resource.restype(), resource.data())
+    for resinfo in new_resources:
+        erf_or_rim.set_data(*resinfo)
+    log_output(f"Saving back to {new_filepath.name}")
+    if is_any_erf_type_file(c_file):
+        write_erf(erf_or_rim, new_filepath)  # type: ignore[arg-type, reportArgumentType]
+    else:
+        write_rim(erf_or_rim, new_filepath)  # type: ignore[arg-type, reportArgumentType]
 
 def patch_erf_or_rim(resources: list[FileResource], filename: str, erf_or_rim: RIM | ERF) -> PurePath:
     omitted_resources: list[ResourceIdentifier] = []
@@ -489,11 +530,13 @@ def patch_install(install_path: os.PathLike | str):
         if restype == ResourceType.RIM:
             new_rim = RIM()
             new_rim_filename = patch_erf_or_rim(resources, module_name, new_rim)
+            log_output(f"Saving rim {new_rim_filename}")
             write_rim(new_rim, k_install.path() / new_rim_filename)
 
         elif restype.name in ERFType.__members__:
-            new_erf = ERF(ERFType.ERF)
+            new_erf = ERF(ERFType.__members__[restype.name])
             new_erf_filename = patch_erf_or_rim(resources, module_name, new_erf)
+            log_output(f"Saving erf {new_rim_filename}")
             write_erf(new_erf, k_install.path() / new_erf_filename, restype)
 
         else:
@@ -503,16 +546,17 @@ def patch_install(install_path: os.PathLike | str):
     for rim_name, resources in k_install._rims.items():
         new_rim = RIM()
         new_rim_filename = patch_erf_or_rim(resources, rim_name, new_rim)
+        log_output(f"Patching in the 'rims' folder {new_rim_filename}")
         write_rim(new_rim, k_install.path() / new_rim_filename)
 
     # Patch Override...
-    for folder in k_install.override_list():
-        for resource in k_install.override_resources(folder):
-            patch_and_save_noncapsule(resource)
-
-    # Patch bif data and save to Override
     override_path = k_install.override_path()
     override_path.mkdir(exist_ok=True, parents=True)
+    for folder in k_install.override_list():
+        for resource in k_install.override_resources(folder):
+            patch_and_save_noncapsule(resource, savedir=override_path)
+
+    # Patch bif data and save to Override
     for resource in k_install.chitin_resources():
         patch_and_save_noncapsule(resource, savedir=override_path)
 
@@ -547,8 +591,7 @@ def execute_patchloop_thread():
         do_main_patchloop()
         SCRIPT_GLOBALS.install_running = False
     except Exception as e:  # noqa: BLE001
-        log_output("Unhandled exception during the patching process.")
-        log_output(traceback.format_exc())
+        log_output(format_exception_with_variables(e, message="Unhandled exception during the patching process."))
         SCRIPT_GLOBALS.install_running = False
         return messagebox.showerror("Error", f"An error occurred during patching\n{e!r}")
 
@@ -574,7 +617,7 @@ def do_main_patchloop():
         has_action = True
         for lang in SCRIPT_GLOBALS.chosen_languages:
             main_translate_loop(lang)
-    if SCRIPT_GLOBALS.set_unskippable or SCRIPT_GLOBALS.convert_tga:
+    if SCRIPT_GLOBALS.set_unskippable or SCRIPT_GLOBALS.convert_tga or SCRIPT_GLOBALS.fix_dialog_skipping:
         determine_input_path(Path(SCRIPT_GLOBALS.path))
         has_action = True
     if not has_action:
@@ -621,8 +664,8 @@ def assign_to_globals(instance: KOTORPatchingToolUI):
 
 
 class KOTORPatchingToolUI:
-    def __init__(self, root):
-        self.root = root
+    def __init__(self, root: tk.Tk):
+        self.root: tk.Tk = root
         root.title("KOTOR Translate Tool")
 
         self.path = tk.StringVar()
@@ -634,6 +677,7 @@ class KOTORPatchingToolUI:
         self.custom_scaling = tk.DoubleVar(value=SCRIPT_GLOBALS.custom_scaling)
         self.font_color = tk.StringVar()
         self.draw_bounds = tk.BooleanVar(value=False)
+        self.fix_dialog_skipping = tk.BooleanVar(value=False)
         self.convert_tga = tk.BooleanVar(value=False)
 
         # Middle area for text and scrollbar
@@ -712,12 +756,16 @@ class KOTORPatchingToolUI:
         browse_button = ttk.Button(self.root, text="Browse", command=self.browse_path)
         browse_button.grid(row=row, column=3, padx=2)  # Stick to both sides within its cell
         browse_button.config(width=15)
-
         row += 1
 
         # Skippable
         ttk.Label(self.root, text="Make all dialog unskippable:").grid(row=row, column=0)
         ttk.Checkbutton(self.root, text="Yes", variable=self.set_unskippable).grid(row=row, column=1)
+        row += 1
+
+        # Fix skippable dialog bug
+        ttk.Label(self.root, text="Fix engine dialog skipping bug:").grid(row=row, column=0)
+        ttk.Checkbutton(self.root, text="Yes", variable=self.fix_dialog_skipping).grid(row=row, column=1)
         row += 1
 
         # TGA -> TPC

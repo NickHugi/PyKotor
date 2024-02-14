@@ -8,7 +8,7 @@ from setuptools import setup
 
 
 def main():
-    HERE = Path(__file__).parent
+    HERE = Path(__file__).resolve().parent
     os.chdir(HERE)
 
     # Load information from pyproject.toml

@@ -224,7 +224,9 @@ class TPCTGAReader(ResourceReader):
             msg = "The image format is not currently supported."
             raise ValueError(msg)
 
-        self._tpc.set_data(width, height, [bytes(data)], TPCTextureFormat.RGBA)
+        # Set the texture format based on the bits per pixel
+        texture_format = TPCTextureFormat.RGBA if bits_per_pixel == 32 else TPCTextureFormat.RGB
+        self._tpc.set_data(width, height, [bytes(data)], texture_format)
 
         return self._tpc
 

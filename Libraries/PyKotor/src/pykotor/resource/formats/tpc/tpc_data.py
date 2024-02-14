@@ -111,6 +111,9 @@ class TPC:
         """
         width, height = self._mipmap_size(mipmap)
         raw_data: bytes = self._mipmaps[mipmap]
+        if self._texture_format == convert_format:
+            print(f"No conversion to {convert_format.name} necessary, self is already in {self._texture_format.name} format")
+            return TPCConvertResult(width, height, raw_data)
         data = bytearray()
 
         if convert_format in {TPCTextureFormat.DXT1, TPCTextureFormat.DXT5}:

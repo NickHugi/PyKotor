@@ -5,11 +5,12 @@ import contextlib
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    import types
+    from types import ModuleType
 
+    from charset_normalizer import CharsetMatch, CharsetMatches
     from pykotor.common.language import Language
 
-charset_normalizer: types.ModuleType | None = None
+charset_normalizer: None | ModuleType
 try:
     import charset_normalizer
 except ImportError:
@@ -55,13 +56,13 @@ def decode_bytes_with_fallbacks(
         return byte_content.decode(encoding=provided_encoding, errors=errors)
 
     # Store the detections as there's no need to recalc
-    detected_encodings = None
+    detected_encodings: CharsetMatches | None = None
 
     def _decode_attempt(attempt_errors: str) -> str:
         nonlocal detected_encodings
 
         # Attempt decoding with provided encoding
-        if provided_encoding:
+        if provided_encoding is not None:
             with contextlib.suppress(UnicodeDecodeError):
                 return byte_content.decode(provided_encoding, errors=attempt_errors)
 
@@ -70,18 +71,20 @@ def decode_bytes_with_fallbacks(
 
         # Filter the charset-normalizer results to encodings with a maximum of 256 characters
         if only_8bit_encodings:
-            max_8bit_characters = 256
-            detected_8bit_encodings = [
+            max_8bit_characters: int = 256
+            detected_8bit_encodings: list[CharsetMatch] = [
                 enc_match
                 for enc_match in detected_encodings
                 if len(enc_match.alphabets) <= max_8bit_characters
             ]
-            best_match = detected_8bit_encodings[0]
-            best_8bit_encoding: str = best_match.encoding or "windows-1252"
+            best_8bit_encoding = "windows-1252"
+            if detected_8bit_encodings:
+                best_match: CharsetMatch = detected_8bit_encodings[0]
+                best_8bit_encoding: str = best_match.encoding
             return byte_content.decode(encoding=best_8bit_encoding, errors=attempt_errors)
 
-        result_detect = detected_encodings.best()
-        if not result_detect:
+        result_detect: CharsetMatch | None = detected_encodings.best()
+        if result_detect is None:
             # Semi-Final fallback (utf-8) if no encoding is detected
             with contextlib.suppress(UnicodeDecodeError):
                 return byte_content.decode(encoding="utf-8", errors=attempt_errors)
@@ -91,9 +94,9 @@ def decode_bytes_with_fallbacks(
         best_encoding: str = result_detect.encoding
 
         # Special handling for BOM
-        aliases: list[str] = result_detect.encoding_aliases
+        aliases: set[str] = {alias.lower() for alias in result_detect.encoding_aliases}
         if result_detect.bom:
-            aliases.append(best_encoding)
+            aliases.add(best_encoding.lower())
             for alias in aliases:
                 normalized_alias: str = alias.replace("_", "-")
                 if normalized_alias.startswith("utf-8"):
@@ -101,6 +104,7 @@ def decode_bytes_with_fallbacks(
                     break
                 if normalized_alias.startswith("utf-16"):
                     best_encoding="UTF-16LE"
+                    break
 
         return byte_content.decode(encoding=best_encoding, errors=attempt_errors)
 
@@ -109,7 +113,11 @@ def decode_bytes_with_fallbacks(
         return _decode_attempt(attempt_errors="strict")
     return _decode_attempt(attempt_errors=errors)
 
-def get_charset_from_singlebyte_encoding(encoding: str, indexing: bool = True) -> list[str]:
+def get_charset_from_singlebyte_encoding(
+    encoding: str,
+    *,
+    indexing: bool = True,
+) -> list[str]:
     charset: list[str] = []
     for i in range(256):
         try:
@@ -119,7 +127,11 @@ def get_charset_from_singlebyte_encoding(encoding: str, indexing: bool = True) -
                 charset.append("")
     return charset
 
-def get_charset_from_unicode_encoding(encoding: str, indexing: bool = True) -> list[str]:
+def get_charset_from_unicode_encoding(
+    encoding: str,
+    *,
+    indexing: bool = True,
+) -> list[str]:
     charset: list[str] = []
     for i in range(0x110000):
         try:
@@ -129,7 +141,9 @@ def get_charset_from_unicode_encoding(encoding: str, indexing: bool = True) -> l
                 charset.append("")
     return charset
 
-def get_charset_from_doublebyte_encoding(encoding: str) -> list[str]:
+def get_charset_from_doublebyte_encoding(
+    encoding: str,
+) -> list[str]:
     # I believe these need to be mapped to the TXI with the 'dbmapping' field.
     # Experimentation would be required for the syntax, perhaps could pull from other aurora games.
     if encoding == "cp936":
