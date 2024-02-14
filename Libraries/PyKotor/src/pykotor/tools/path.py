@@ -399,7 +399,7 @@ def find_kotor_paths_from_default() -> dict[Game, list[CaseAwarePath]]:
                 if path and path.name and path.safe_isdir():
                     locations[game].add(path)
         amazon_k1_path_str: str | None = find_software_key("AmazonGames/Star Wars - Knights of the Old")
-        if amazon_k1_path_str is not None:
+        if amazon_k1_path_str is not None and InternalPath(amazon_k1_path_str).safe_isdir():
             locations[Game.K1].add(CaseAwarePath(amazon_k1_path_str))
 
     # don't return nested sets, return as lists.
