@@ -2,7 +2,7 @@ import os
 import pathlib
 import sys
 
-THIS_SCRIPT_PATH = pathlib.Path(__file__)
+THIS_SCRIPT_PATH = pathlib.Path(__file__).resolve()
 PYKOTOR_PATH = THIS_SCRIPT_PATH.parents[2]
 UTILITY_PATH = THIS_SCRIPT_PATH.parents[4].joinpath("Utility", "src")
 def add_sys_path(p: pathlib.Path):

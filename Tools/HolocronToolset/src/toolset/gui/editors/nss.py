@@ -163,7 +163,7 @@ class NSSEditor(Editor):
             self.ui.codeEdit.setPlainText(data.decode("windows-1252", errors="ignore"))
         elif restype == ResourceType.NCS:
             try:
-                source = decompileScript(data, self._installation.tsl)
+                source = decompileScript(data, self._installation.tsl, self._installation.path())
                 self.ui.codeEdit.setPlainText(source)
             except ValueError as e:
                 QMessageBox(QMessageBox.Critical, "Decompilation Failed", str(e)).exec_()
@@ -172,12 +172,17 @@ class NSSEditor(Editor):
                 QMessageBox(QMessageBox.Critical, "Filepath is not set", str(e)).exec_()
                 self.new()
 
-    def build(self) -> tuple[bytes, bytes]:
-        if self._restype.NSS:
-            return self.ui.codeEdit.toPlainText().encode(encoding="windows-1252"), b""
-        if self._restype.NCS:
-            compileScript(self.ui.codeEdit.toPlainText(), self._installation.tsl)
-        msg = "Could not convert to bytes"
+    def build(self) -> tuple[bytes | None, bytes]:
+        if self._restype != ResourceType.NCS:
+            return self.ui.codeEdit.toPlainText().encode("windows-1252"), b""
+
+        compiled_bytes: bytes | None = compileScript(self.ui.codeEdit.toPlainText(), self._installation.tsl, self._installation.path())
+        print("compiling script from nsseditor")
+        if compiled_bytes is None:
+            print("user cancelled the compilation")
+            return None, b""
+
+        msg = "Could not convert to bytes - nsseditor.build()"
         raise ValueError(msg)
 
     def new(self):
@@ -207,8 +212,10 @@ class NSSEditor(Editor):
             4. Displays a success or failure message.
         """
         try:
-            source = self.ui.codeEdit.toPlainText()
-            data = compileScript(source, self._installation.tsl)
+            source: str = self.ui.codeEdit.toPlainText()
+            data: bytes | None = compileScript(source, self._installation.tsl, self._installation.path())
+            if data is None:  # user cancelled
+                return
 
             filepath: Path = self._filepath if self._filepath is not None else Path.cwd() / "untitled_script.ncs"
             if is_any_erf_type_file(filepath.name):
