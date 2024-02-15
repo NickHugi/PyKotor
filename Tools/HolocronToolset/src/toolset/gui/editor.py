@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import os
 from abc import abstractmethod
 from typing import TYPE_CHECKING
 
@@ -25,6 +24,8 @@ from utility.error_handling import format_exception_with_variables
 from utility.system.path import Path
 
 if TYPE_CHECKING:
+    import os
+
     from pykotor.common.language import LocalizedString
     from toolset.data.installation import HTInstallation
 

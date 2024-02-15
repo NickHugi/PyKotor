@@ -798,7 +798,7 @@ class IndoorMap:
         self.lighting.r = data["lighting"][2]
 
         self.moduleId = data["warp"]
-        self.skybox = data["skybox"] if "skybox" in data else ""
+        self.skybox = data.get("skybox", "")
 
         for roomData in data["rooms"]:
             sKit = next((kit for kit in kits if kit.name == roomData["kit"]), None)
@@ -816,8 +816,8 @@ class IndoorMap:
 
             position = Vector3(roomData["position"][0], roomData["position"][1], roomData["position"][2])
             rotation = roomData["rotation"]
-            flip_x = bool(roomData["flip_x"] if "flip_x" in roomData else False)
-            flip_y = bool(roomData["flip_y"] if "flip_y" in roomData else False)
+            flip_x = bool(roomData.get("flip_x", False))
+            flip_y = bool(roomData.get("flip_y", False))
             room = IndoorMapRoom(sComponent, position, rotation, flip_x, flip_y)
             self.rooms.append(room)
 

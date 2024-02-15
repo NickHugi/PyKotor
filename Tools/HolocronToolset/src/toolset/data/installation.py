@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from contextlib import suppress
-from typing import TYPE_CHECKING, List
+from typing import TYPE_CHECKING
 
 from pykotor.extract.file import ResourceIdentifier
 from pykotor.extract.installation import Installation, SearchLocation
@@ -97,7 +97,7 @@ class HTInstallation(Installation):
             self._cache2da[resname] = read_2da(result.data)
         return self._cache2da[resname]
 
-    def htBatchCache2DA(self, resnames: List[str], reload: bool = False):
+    def htBatchCache2DA(self, resnames: list[str], reload: bool = False):
         """Cache 2D array resources in batch.
 
         Args:
@@ -149,9 +149,9 @@ class HTInstallation(Installation):
         """
         if resname not in self._cacheTpc:
             self._cacheTpc[resname] = self.texture(resname, [SearchLocation.TEXTURES_TPA, SearchLocation.TEXTURES_GUI])
-        return self._cacheTpc[resname] if resname in self._cacheTpc else None
+        return self._cacheTpc.get(resname, None)
 
-    def htBatchCacheTPC(self, names: List[str], reload: bool = False):
+    def htBatchCacheTPC(self, names: list[str], reload: bool = False):
         """Cache textures for batch queries.
 
         Args:

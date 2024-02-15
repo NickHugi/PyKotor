@@ -1,12 +1,15 @@
 from __future__ import annotations
 
 import math
+from typing import TYPE_CHECKING
 
 from pykotor.common.misc import Color, ResRef
-from pykotor.resource.generics.git import GITPlaceable
 from PyQt5.QtGui import QColor, QIcon, QImage, QPixmap
 from PyQt5.QtWidgets import QColorDialog, QDialog, QDoubleSpinBox, QLabel, QWidget
-from toolset.gui.widgets.long_spinbox import LongSpinBox
+
+if TYPE_CHECKING:
+    from pykotor.resource.generics.git import GITPlaceable
+    from toolset.gui.widgets.long_spinbox import LongSpinBox
 
 
 class PlaceableDialog(QDialog):

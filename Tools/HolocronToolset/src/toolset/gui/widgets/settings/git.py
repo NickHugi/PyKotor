@@ -1,10 +1,14 @@
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 from PyQt5 import QtCore
-from PyQt5.QtWidgets import QWidget
 from toolset.data.settings import Settings
 from toolset.gui.widgets.settings.base import SettingsWidget
 from toolset.utils.misc import QtKey, QtMouse
+
+if TYPE_CHECKING:
+    from PyQt5.QtWidgets import QWidget
 
 
 class GITWidget(SettingsWidget):

@@ -1,8 +1,12 @@
 from __future__ import annotations
 
-from pykotor.extract.capsule import Capsule
-from pykotor.resource.type import ResourceType
+from typing import TYPE_CHECKING
+
 from PyQt5.QtWidgets import QDialog, QListWidgetItem
+
+if TYPE_CHECKING:
+    from pykotor.extract.capsule import Capsule
+    from pykotor.resource.type import ResourceType
 
 
 class LoadFromModuleDialog(QDialog):

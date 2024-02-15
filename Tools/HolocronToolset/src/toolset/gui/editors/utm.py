@@ -51,7 +51,7 @@ class UTMEditor(Editor):
         self.new()
 
     def _setupSignals(self):
-        """Sets up signal connections for UI buttons"""
+        """Sets up signal connections for UI buttons."""
         self.ui.tagGenerateButton.clicked.connect(self.generateTag)
         self.ui.resrefGenerateButton.clicked.connect(self.generateResref)
         self.ui.inventoryButton.clicked.connect(self.openInventory)

@@ -218,7 +218,7 @@ class BWMEditor(Editor):
 
         Processing Logic:
         ----------------
-            - Check if a transition is selected in the list 
+            - Check if a transition is selected in the list
             - If selected, get the selected item and extract the transition data
             - Pass the transition data to the render area to highlight
             - If no item selected, clear any existing highlight.

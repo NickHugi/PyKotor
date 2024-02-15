@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 import math
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, NoReturn
 
 from jsmin import jsmin
 from pykotor.common.geometry import Vector2, Vector3
@@ -411,7 +411,7 @@ class DCVariable:
     def get(self) -> Any:
         raise NotImplementedError
 
-    def set(self, value: Any):
+    def set(self, value: Any) -> NoReturn:
         raise NotImplementedError
 
 

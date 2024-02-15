@@ -1,9 +1,13 @@
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 from pykotor.common.misc import ResRef
-from pykotor.resource.generics.git import GITSound
 from PyQt5.QtGui import QIcon, QPixmap
 from PyQt5.QtWidgets import QDialog, QWidget
+
+if TYPE_CHECKING:
+    from pykotor.resource.generics.git import GITSound
 
 
 class SoundDialog(QDialog):

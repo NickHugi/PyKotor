@@ -1,8 +1,12 @@
 from __future__ import annotations
 
-from pykotor.resource.generics.git import GITCamera
+from typing import TYPE_CHECKING
+
 from PyQt5.QtGui import QIcon, QPixmap
 from PyQt5.QtWidgets import QDialog, QWidget
+
+if TYPE_CHECKING:
+    from pykotor.resource.generics.git import GITCamera
 
 
 class CameraDialog(QDialog):
