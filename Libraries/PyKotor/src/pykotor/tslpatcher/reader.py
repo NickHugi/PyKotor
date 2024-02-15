@@ -56,9 +56,10 @@ from utility.system.path import Path, PurePath, PureWindowsPath
 if TYPE_CHECKING:
     import os
 
+    from typing_extensions import Literal
+
     from pykotor.tslpatcher.config import PatcherConfig
     from pykotor.tslpatcher.mods.gff import ModifyGFF
-    from typing_extensions import Literal
 
 SECTION_NOT_FOUND_ERROR = "The [{}] section was not found in the ini"
 REFERENCES_TRACEBACK_MSG = ", referenced by '{}={}' in [{}]"
@@ -164,7 +165,7 @@ class ConfigReader:
         )
 
         # Use case-sensitive keys
-        ini.optionxform = lambda optionstr: optionstr  #  type: ignore[method-assign]
+        ini.optionxform = lambda optionstr: optionstr  # type: ignore[method-assign]
         ini.read_string(decode_bytes_with_fallbacks(BinaryReader.load_file(resolved_file_path)))
 
         instance = cls(ini, resolved_file_path.parent, logger)
@@ -326,8 +327,8 @@ class ConfigReader:
                 if delim.lower() not in range_str:
                     continue
 
-                parts: list[str]  = range_str.split(delim)
-                start: int        = int(parts[0].strip()) if parts[0].strip() else 0
+                parts: list[str] = range_str.split(delim)
+                start: int = int(parts[0].strip()) if parts[0].strip() else 0
                 end:   int | None = int(parts[1].strip()) if parts[1].strip() else None
                 return start, end
 

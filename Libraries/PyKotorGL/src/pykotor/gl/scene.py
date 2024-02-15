@@ -1,11 +1,12 @@
 from __future__ import annotations
 
 import math
+
 from copy import copy
 from typing import TYPE_CHECKING, Any, Callable, ClassVar
 
 import glm
-from glm import mat4, quat, vec3, vec4
+
 from OpenGL.GL import glReadPixels
 from OpenGL.raw.GL.ARB.vertex_shader import GL_FLOAT
 from OpenGL.raw.GL.VERSION.GL_1_0 import (
@@ -27,6 +28,8 @@ from OpenGL.raw.GL.VERSION.GL_1_0 import (
     glEnable,
 )
 from OpenGL.raw.GL.VERSION.GL_1_2 import GL_BGRA, GL_UNSIGNED_INT_8_8_8_8
+from glm import mat4, quat, vec3, vec4
+
 from pykotor.common.geometry import Vector3
 from pykotor.common.misc import CaseInsensitiveDict
 from pykotor.common.stream import BinaryReader
@@ -87,13 +90,14 @@ from pykotor.tools import creature
 from utility.error_handling import format_exception_with_variables
 
 if TYPE_CHECKING:
+    from typing_extensions import Literal
+
     from pykotor.common.module import Module
     from pykotor.extract.capsule import Capsule
     from pykotor.extract.file import ResourceIdentifier, ResourceResult
     from pykotor.resource.generics.utc import UTC
     from pykotor.resource.generics.utd import UTD
     from pykotor.resource.generics.utp import UTP
-    from typing_extensions import Literal
 
 SEARCH_ORDER_2DA: list[SearchLocation] = [SearchLocation.OVERRIDE, SearchLocation.CHITIN]
 SEARCH_ORDER: list[SearchLocation] = [SearchLocation.CUSTOM_MODULES, SearchLocation.OVERRIDE, SearchLocation.CHITIN]

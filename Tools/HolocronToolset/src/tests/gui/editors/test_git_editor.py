@@ -4,6 +4,7 @@ import os
 import pathlib
 import sys
 import unittest
+
 from unittest import TestCase
 
 try:
@@ -66,7 +67,7 @@ class GITEditorTest(TestCase):
         from toolset.gui.editors.git import GITEditor
         cls.GITEditor = GITEditor
         from toolset.data.installation import HTInstallation
-        #cls.K1_INSTALLATION = HTInstallation(K1_PATH, "", tsl=False, mainWindow=None)
+        # cls.K1_INSTALLATION = HTInstallation(K1_PATH, "", tsl=False, mainWindow=None)
         cls.INSTALLATION = HTInstallation(K2_PATH, "", tsl=True, mainWindow=None)
 
     def setUp(self):

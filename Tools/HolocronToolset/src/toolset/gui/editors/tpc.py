@@ -1,19 +1,22 @@
 from __future__ import annotations
 
 import io
+
 from typing import TYPE_CHECKING
 
 from PIL import Image, ImageOps
+from PyQt5.QtGui import QImage, QPixmap, QTransform
+
 from pykotor.resource.formats.tpc import TPC, TPCTextureFormat, read_tpc, write_tpc
 from pykotor.resource.type import ResourceType
-from PyQt5.QtGui import QImage, QPixmap, QTransform
 from toolset.gui.editor import Editor
 
 if TYPE_CHECKING:
     import os
 
-    from pykotor.extract.installation import Installation
     from PyQt5.QtWidgets import QWidget
+
+    from pykotor.extract.installation import Installation
 
 
 class TPCEditor(Editor):
@@ -132,7 +135,7 @@ class TPCEditor(Editor):
             write_tpc(self._tpc, data, self._restype)
         elif self._restype in [ResourceType.PNG, ResourceType.BMP]:
             data = self.extract_png_bmp_bytes()
-        elif self._restype in [ResourceType.JPG]:
+        elif self._restype == ResourceType.JPG:
             data = self.extract_tpc_jpeg_bytes()
         return data, b""
 

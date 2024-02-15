@@ -4,6 +4,7 @@ from __future__ import annotations
 import io
 import os
 import struct
+
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, BinaryIO
 
@@ -192,7 +193,7 @@ class BinaryReader:
     ) -> int:
         """Returns the total number of bytes accessible.
 
-        Returns
+        Returns:
         -------
             The number of accessible bytes.
         """
@@ -203,7 +204,7 @@ class BinaryReader:
     ) -> int:
         """Returns the total number of bytes in the stream.
 
-        Returns
+        Returns:
         -------
             The total file size.
         """
@@ -218,7 +219,7 @@ class BinaryReader:
     ) -> int:
         """Returns the remaining number of bytes in the stream.
 
-        Returns
+        Returns:
         -------
             The total file size.
         """
@@ -248,7 +249,7 @@ class BinaryReader:
     ) -> int:
         """Returns the byte offset into the stream.
 
-        Returns
+        Returns:
         -------
             The byte offset.
         """
@@ -622,7 +623,7 @@ class BinaryReader:
 
         The binary data structure that is read follows the structure found in the GFF format specification.
 
-        Returns
+        Returns:
         -------
             A LocalizedString read from the stream.
         """
@@ -764,7 +765,7 @@ class BinaryWriter(ABC):
     ) -> int:
         """Returns the total file size.
 
-        Returns
+        Returns:
         -------
             The total file size.
         """
@@ -775,7 +776,7 @@ class BinaryWriter(ABC):
     ) -> bytes:
         """Returns the full file data.
 
-        Returns
+        Returns:
         -------
             The full file data.
         """
@@ -810,7 +811,7 @@ class BinaryWriter(ABC):
     ) -> int:
         """Returns the byte offset into the stream.
 
-        Returns
+        Returns:
         -------
             The byte offset.
         """
@@ -1122,7 +1123,7 @@ class BinaryWriterFile(BinaryWriter):
     ) -> int:
         """Returns the total file size.
 
-        Returns
+        Returns:
         -------
             The total file size.
         """
@@ -1137,7 +1138,7 @@ class BinaryWriterFile(BinaryWriter):
     ) -> bytes:
         """Returns the full file data.
 
-        Returns
+        Returns:
         -------
             The full file data.
         """
@@ -1177,7 +1178,7 @@ class BinaryWriterFile(BinaryWriter):
     ) -> int:
         """Returns the byte offset into the stream.
 
-        Returns
+        Returns:
         -------
             The byte offset.
         """
@@ -1541,7 +1542,7 @@ class BinaryWriterBytearray(BinaryWriter):
     ) -> int:
         """Returns the total file size.
 
-        Returns
+        Returns:
         -------
             The total file size.
         """
@@ -1552,7 +1553,7 @@ class BinaryWriterBytearray(BinaryWriter):
     ) -> bytes:
         """Returns the full file data.
 
-        Returns
+        Returns:
         -------
             The full file data.
         """
@@ -1587,7 +1588,7 @@ class BinaryWriterBytearray(BinaryWriter):
     ) -> int:
         """Returns the byte offset into the stream.
 
-        Returns
+        Returns:
         -------
             The byte offset.
         """

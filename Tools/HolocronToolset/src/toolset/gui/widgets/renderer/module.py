@@ -1,23 +1,26 @@
 from __future__ import annotations
 
 import math
+
 from copy import copy
 from datetime import datetime, timedelta, timezone
 from typing import TYPE_CHECKING
+
+from PyQt5 import QtCore
+from PyQt5.QtCore import QTimer
+from PyQt5.QtWidgets import QOpenGLWidget, QWidget
 
 from pykotor.common.geometry import Vector2, Vector3
 from pykotor.gl.scene import Scene
 from pykotor.resource.generics.git import GITInstance
 from pykotor.resource.type import ResourceType
-from PyQt5 import QtCore
-from PyQt5.QtCore import QTimer
-from PyQt5.QtWidgets import QOpenGLWidget, QWidget
 
 if TYPE_CHECKING:
+    from PyQt5.QtGui import QKeyEvent, QMouseEvent, QResizeEvent, QWheelEvent
     from glm import vec3
+
     from pykotor.common.module import Module
     from pykotor.resource.formats.bwm import BWMFace
-    from PyQt5.QtGui import QKeyEvent, QMouseEvent, QResizeEvent, QWheelEvent
     from toolset.data.installation import HTInstallation
 
 
@@ -122,7 +125,7 @@ class ModuleRenderer(QOpenGLWidget):
             if walkmesh is None:
                 continue
             over = walkmesh.faceAt(x, y)
-            if over and (face is None or not face.material.walkable() and over.material.walkable()):
+            if over and (face is None or (not face.material.walkable() and over.material.walkable())):
                 face = over
         z = default_z if face is None else face.determine_z(x, y)
         return Vector3(x, y, z)
@@ -190,7 +193,7 @@ class ModuleRenderer(QOpenGLWidget):
     # region Camera Transformations
     def snapCameraToPoint(self, point: Vector3, distance: float = 6.0):
         camera = self.scene.camera
-        camera.x, camera.y, camera.z = point.x, point.y, point.z+1.0
+        camera.x, camera.y, camera.z = point.x, point.y, point.z + 1.0
         camera.distance = distance
 
     def panCamera(self, forward: float, right: float, up: float):
@@ -231,8 +234,8 @@ class ModuleRenderer(QOpenGLWidget):
             snapRotations:
         """
         self.scene.camera.rotate(yaw, pitch)
-        if self.scene.camera.pitch < math.pi/2 and snapRotations:
-            self.scene.camera.pitch = math.pi/2
+        if self.scene.camera.pitch < math.pi / 2 and snapRotations:
+            self.scene.camera.pitch = math.pi / 2
         if self.scene.camera.pitch > math.pi and snapRotations:
             self.scene.camera.pitch = math.pi
 
@@ -267,7 +270,7 @@ class ModuleRenderer(QOpenGLWidget):
         """
         screen = Vector2(e.x(), e.y())
         if self.freeCam:
-            screenDelta = Vector2(screen.x - self.width()/2, screen.y - self.height()/2)
+            screenDelta = Vector2(screen.x - self.width() / 2, screen.y - self.height() / 2)
         else:
             screenDelta = Vector2(screen.x - self._mousePrev.x, screen.y - self._mousePrev.y)
 

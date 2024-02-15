@@ -4,6 +4,7 @@ import inspect
 import sys
 import traceback
 import types
+
 from pathlib import Path
 from typing import TYPE_CHECKING, Callable, TypeVar
 
@@ -139,7 +140,7 @@ def format_frame_info(frame_info: inspect.FrameInfo) -> list[str]:
         index,
     ) = frame_info
     code_context = ""  # type: ignore[assignment]
-    #code_context = f"\nContext [{', '.join(code_context)}] " if code_context else ""  # type: ignore[assignment]
+    # code_context = f"\nContext [{', '.join(code_context)}] " if code_context else ""  # type: ignore[assignment]
     detailed_message: list[str] = [f"\nFunction '{function}' at {filename}:{line_no}:{code_context}"]
     for var, val in frame.f_locals.items():
         formatted_var: str | None = format_var_str(var, val)
@@ -201,7 +202,7 @@ def enforce_instance_cast(obj: object, type_: type[IT]) -> IT:
         return obj  # type: ignore[return-value]
 
     assert_with_variable_trace(isinstance(obj, type_), "enforce_is_instance failed.")
-    return obj # type: ignore[return-value]
+    return obj  # type: ignore[return-value]
 
 def assert_with_variable_trace(condition: bool, message: str = "Assertion Failed"):
     if condition:
@@ -264,7 +265,7 @@ def with_variable_trace(
                     "Stack Trace Variables:",
                 ]
                 for frame_info in inspect.getouterframes(inspect.currentframe()):
-                    #if frame_info.function != f.__name__:  # Why did I add this?
+                    # if frame_info.function != f.__name__:  # Why did I add this?
                     #    continue
                     detailed_message.extend(format_frame_info(frame_info))
                 if e.__cause__ is not None:

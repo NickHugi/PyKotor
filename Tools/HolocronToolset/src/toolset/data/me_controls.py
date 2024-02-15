@@ -2,16 +2,18 @@ from __future__ import annotations
 
 import json
 import math
+
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, Any, NoReturn
 
-from jsmin import jsmin
-from pykotor.common.geometry import Vector2, Vector3
-from pykotor.gl.scene import Camera
-from pykotor.tools.encoding import decode_bytes_with_fallbacks
 from PyQt5 import QtCore
 from PyQt5.QtCore import QPoint
 from PyQt5.QtGui import QKeySequence
+from jsmin import jsmin
+
+from pykotor.common.geometry import Vector2, Vector3
+from pykotor.gl.scene import Camera
+from pykotor.tools.encoding import decode_bytes_with_fallbacks
 from utility.system.path import Path
 
 if TYPE_CHECKING:
@@ -34,7 +36,7 @@ def getKeyCode(string: str):
     Args:
         string: The key name as a string.
 
-    Returns
+    Returns:
     -------
         int: The Qt key code integer.
     - Maps common key names "CTRL", "ALT", and 'SHIFT" to their Qt key code integer.
@@ -165,7 +167,7 @@ class ModuleEditorControls(ABC):
 
     def alterCameraRotation(self, yaw: float, pitch: float):
         self.renderer.scene.camera.yaw += yaw
-        self.renderer.scene.camera.pitch = min(math.pi-0.000001, max(0.000001, self.renderer.scene.camera.pitch + pitch))
+        self.renderer.scene.camera.pitch = min(math.pi - 0.000001, max(0.000001, self.renderer.scene.camera.pitch + pitch))
 
     def setCameraRotation(self, yaw: float, pitch: float):
         self.renderer.scene.camera.yaw = yaw
@@ -365,8 +367,8 @@ class HolocronModuleEditorControls(DynamicModuleEditorControls):
         self.mouseMoveEvents: list[DCItem] = [
             DCItem({getKeyCode("CTRL")}, {getMouseCode("LEFT")}, [DCEffectAlterCameraPosition("panCamSensitivity", "cx", "cy", 0)]),
             DCItem({getKeyCode("CTRL")}, {getMouseCode("MIDDLE")}, [DCEffectAlterCameraRotation("rotateCamSensitivity", "dx", "dy")]),
-            DCItem(set(),      {getMouseCode("LEFT")}, [DCEffectAlterObjectPosition("panObjSensitivity", True, "cx", "cy", 0)]),
-            DCItem(set(),      {getMouseCode("MIDDLE")}, [DCEffectAlterObjectRotation("rotateObjSensitivity", "dx")]),
+            DCItem(set(), {getMouseCode("LEFT")}, [DCEffectAlterObjectPosition("panObjSensitivity", True, "cx", "cy", 0)]),
+            DCItem(set(), {getMouseCode("MIDDLE")}, [DCEffectAlterObjectRotation("rotateObjSensitivity", "dx")]),
         ]
         self.mousePressEvents: list[DCItem] = [
             DCItem(set(), {getMouseCode("LEFT")}, [DCEffectSelectObjectAtMouse()]),
@@ -378,16 +380,16 @@ class HolocronModuleEditorControls(DynamicModuleEditorControls):
         ]
         self.keyPressEvents: list[DCItem] = [
             DCItem({getKeyCode("1")}, set(), [DCEffectSetCameraRotation(0, "crp")]),
-            DCItem({getKeyCode("3")}, set(), [DCEffectSetCameraRotation(0, "crp"), DCEffectAlterCameraRotation(None, math.pi/2, 0)]),
+            DCItem({getKeyCode("3")}, set(), [DCEffectSetCameraRotation(0, "crp"), DCEffectAlterCameraRotation(None, math.pi / 2, 0)]),
             DCItem({getKeyCode("7")}, set(), [DCEffectSetCameraRotation("cry", 0)]),
-            DCItem({getKeyCode("4")}, set(), [DCEffectAlterCameraRotation(None, math.pi/8, 0)]),
-            DCItem({getKeyCode("6")}, set(), [DCEffectAlterCameraRotation(None, -math.pi/8, 0)]),
-            DCItem({getKeyCode("8")}, set(), [DCEffectAlterCameraRotation(None, 0, math.pi/8)]),
-            DCItem({getKeyCode("2")}, set(), [DCEffectAlterCameraRotation(None, 0, -math.pi/8)]),
-            DCItem({getKeyCode("W")}, set(), [DCEffectAlterCameraRotation(None, 0, math.pi/8)]),
-            DCItem({getKeyCode("A")}, set(), [DCEffectAlterCameraRotation(None, math.pi/8, 0)]),
-            DCItem({getKeyCode("S")}, set(), [DCEffectAlterCameraRotation(None, 0, -math.pi/8)]),
-            DCItem({getKeyCode("D")}, set(), [DCEffectAlterCameraRotation(None, -math.pi/8, 0)]),
+            DCItem({getKeyCode("4")}, set(), [DCEffectAlterCameraRotation(None, math.pi / 8, 0)]),
+            DCItem({getKeyCode("6")}, set(), [DCEffectAlterCameraRotation(None, -math.pi / 8, 0)]),
+            DCItem({getKeyCode("8")}, set(), [DCEffectAlterCameraRotation(None, 0, math.pi / 8)]),
+            DCItem({getKeyCode("2")}, set(), [DCEffectAlterCameraRotation(None, 0, -math.pi / 8)]),
+            DCItem({getKeyCode("W")}, set(), [DCEffectAlterCameraRotation(None, 0, math.pi / 8)]),
+            DCItem({getKeyCode("A")}, set(), [DCEffectAlterCameraRotation(None, math.pi / 8, 0)]),
+            DCItem({getKeyCode("S")}, set(), [DCEffectAlterCameraRotation(None, 0, -math.pi / 8)]),
+            DCItem({getKeyCode("D")}, set(), [DCEffectAlterCameraRotation(None, -math.pi / 8, 0)]),
             DCItem({getKeyCode("Q")}, set(), [DCEffectAlterCameraPosition(None, 0, 0, 1)]),
             DCItem({getKeyCode("Z")}, set(), [DCEffectAlterCameraPosition(None, 0, 0, -1)]),
         ]
@@ -488,7 +490,7 @@ class DCEffect(ABC):
             dx: {Camera delta x}
             dy: {Camera delta y}.
 
-        Returns
+        Returns:
         -------
             float: {The determined float value}
         Processes Logic:

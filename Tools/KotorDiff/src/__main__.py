@@ -3,6 +3,7 @@ from __future__ import annotations
 import cProfile
 import pathlib
 import sys
+
 from argparse import ArgumentParser
 from io import StringIO
 from typing import TYPE_CHECKING
@@ -242,7 +243,7 @@ def log_output_with_separator(message, below=True, above=False, surround=False):
     if above or surround:
         log_output(visual_length(message) * "-")
     log_output(message)
-    if below and not above or surround:
+    if (below and not above) or surround:
         log_output(visual_length(message) * "-")
 
 

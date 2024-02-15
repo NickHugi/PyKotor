@@ -35,7 +35,7 @@ class ERFType(Enum):
 class ERF:
     """Represents the data of a ERF file.
 
-    Attributes
+    Attributes:
     ----------
         erf_type: The ERF type.
     """
@@ -158,7 +158,7 @@ class ERF:
     ):
         """Returns a RIM with the same resources.
 
-        Returns
+        Returns:
         -------
             A new RIM object.
         """

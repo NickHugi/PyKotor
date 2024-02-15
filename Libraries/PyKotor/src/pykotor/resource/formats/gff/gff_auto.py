@@ -37,9 +37,9 @@ def detect_gff(
             return ResourceType.GFF
         if "<" in first4:  # sourcery skip: assign-if-exp, reintroduce-else
             return ResourceType.GFF_XML
-        #if "{" in first4:
+        # if "{" in first4:
         #    return ResourceType.GFF_JSON
-        #if "," in first4:
+        # if "," in first4:
         #    return ResourceType.GFF_CSV
         return ResourceType.INVALID
 
@@ -97,7 +97,7 @@ def read_gff(
         return GFFXMLReader(source, offset, size or 0).load()
 
     msg = "Failed to determine the format of the GFF file."
-    #if file_format == ResourceType.INVALID:
+    # if file_format == ResourceType.INVALID:
     raise ValueError(msg)
 
 

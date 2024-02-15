@@ -3,6 +3,8 @@ from __future__ import annotations
 from copy import deepcopy
 from typing import TYPE_CHECKING
 
+from PyQt5.QtWidgets import QMessageBox, QWidget
+
 from pykotor.common.misc import ResRef
 from pykotor.common.stream import BinaryWriter
 from pykotor.resource.formats.gff import write_gff
@@ -10,7 +12,6 @@ from pykotor.resource.generics.dlg import DLG, dismantle_dlg
 from pykotor.resource.generics.utd import UTD, dismantle_utd, read_utd
 from pykotor.resource.type import ResourceType
 from pykotor.tools import door
-from PyQt5.QtWidgets import QMessageBox, QWidget
 from toolset.data.installation import HTInstallation
 from toolset.gui.dialogs.edit.locstring import LocalizedStringDialog
 from toolset.gui.editor import Editor
@@ -189,7 +190,7 @@ class UTDEditor(Editor):
     def build(self) -> tuple[bytes, bytes]:
         """Builds a UTD object from UI data.
 
-        Returns
+        Returns:
         -------
             tuple[bytes, bytes]: A tuple containing the GFF data (bytes) and errors (bytes)
 

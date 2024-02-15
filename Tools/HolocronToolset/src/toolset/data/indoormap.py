@@ -3,8 +3,12 @@ from __future__ import annotations
 import itertools
 import json
 import math
+
 from copy import copy, deepcopy
 from typing import TYPE_CHECKING, NamedTuple
+
+from PyQt5 import QtCore
+from PyQt5.QtGui import QColor, QImage, QPainter, QPixmap, QTransform
 
 from pykotor.common.geometry import Vector2, Vector3, Vector4
 from pykotor.common.language import LocalizedString
@@ -22,8 +26,6 @@ from pykotor.resource.generics.ifo import IFO, bytes_ifo
 from pykotor.resource.generics.utd import UTD, bytes_utd
 from pykotor.resource.type import ResourceType
 from pykotor.tools import model
-from PyQt5 import QtCore
-from PyQt5.QtGui import QColor, QImage, QPainter, QPixmap, QTransform
 
 if TYPE_CHECKING:
     import os
@@ -114,7 +116,7 @@ class IndoorMap:
 
                 if position not in points:
                     points.append(position)  # 47
-                    #if room2 is None:  # FIXME ??? why is this conditional ever hit
+                    # if room2 is None:  # FIXME ??? why is this conditional ever hit
                     #    msg = "room2 cannot be None"
                     #    raise ValueError(msg)
 

@@ -1,11 +1,13 @@
 from __future__ import annotations
 
 import os
+
 from typing import TYPE_CHECKING
+
+from PyQt5.QtWidgets import QPlainTextEdit, QWidget
 
 from pykotor.resource.type import ResourceType
 from pykotor.tools.encoding import decode_bytes_with_fallbacks
-from PyQt5.QtWidgets import QPlainTextEdit, QWidget
 from toolset.gui.editor import Editor
 
 if TYPE_CHECKING:

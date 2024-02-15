@@ -1,11 +1,13 @@
 from __future__ import annotations
 
 import math
+
 from typing import TYPE_CHECKING
 
-from pykotor.common.misc import ResRef
 from PyQt5.QtGui import QIcon, QPixmap
 from PyQt5.QtWidgets import QDialog, QWidget
+
+from pykotor.common.misc import ResRef
 
 if TYPE_CHECKING:
     from pykotor.resource.generics.git import GITCreature

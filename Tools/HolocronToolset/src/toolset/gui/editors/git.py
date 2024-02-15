@@ -1,9 +1,14 @@
 from __future__ import annotations
 
 import math
+
 from abc import ABC, abstractmethod
 from copy import deepcopy
 from typing import TYPE_CHECKING
+
+from PyQt5 import QtCore
+from PyQt5.QtGui import QColor, QIcon, QKeyEvent, QKeySequence
+from PyQt5.QtWidgets import QCheckBox, QDialog, QListWidgetItem, QMenu, QWidget
 
 from pykotor.common.geometry import SurfaceMaterial, Vector2, Vector3
 from pykotor.common.misc import Color
@@ -29,9 +34,6 @@ from pykotor.resource.generics.git import (
 from pykotor.resource.type import ResourceType
 from pykotor.tools.misc import is_rim_file
 from pykotor.tools.template import extract_name, extract_tag
-from PyQt5 import QtCore
-from PyQt5.QtGui import QColor, QIcon, QKeyEvent, QKeySequence
-from PyQt5.QtWidgets import QCheckBox, QDialog, QListWidgetItem, QMenu, QWidget
 from toolset.data.misc import ControlItem
 from toolset.gui.dialogs.instance.camera import CameraDialog
 from toolset.gui.dialogs.instance.creature import CreatureDialog
@@ -51,8 +53,9 @@ from toolset.utils.window import openResourceEditor
 if TYPE_CHECKING:
     import os
 
-    from pykotor.extract.file import ResourceIdentifier
     from PyQt5.QtCore import QPoint
+
+    from pykotor.extract.file import ResourceIdentifier
     from toolset.data.installation import HTInstallation
 
 
@@ -186,20 +189,20 @@ class GITEditor(Editor):
         self.ui.viewCameraCheck.toggled.connect(self.updateVisibility)
         self.ui.viewStoreCheck.toggled.connect(self.updateVisibility)
 
-        self.ui.viewCreatureCheck.mouseDoubleClickEvent = lambda _: self.onInstanceVisibilityDoubleClick( self.ui.viewCreatureCheck)
-        self.ui.viewPlaceableCheck.mouseDoubleClickEvent = lambda _: self.onInstanceVisibilityDoubleClick( self.ui.viewPlaceableCheck)
+        self.ui.viewCreatureCheck.mouseDoubleClickEvent = lambda _: self.onInstanceVisibilityDoubleClick(self.ui.viewCreatureCheck)
+        self.ui.viewPlaceableCheck.mouseDoubleClickEvent = lambda _: self.onInstanceVisibilityDoubleClick(self.ui.viewPlaceableCheck)
         self.ui.viewDoorCheck.mouseDoubleClickEvent = lambda _: self.onInstanceVisibilityDoubleClick(self.ui.viewDoorCheck)
         self.ui.viewSoundCheck.mouseDoubleClickEvent = lambda _: self.onInstanceVisibilityDoubleClick(self.ui.viewSoundCheck)
         self.ui.viewTriggerCheck.mouseDoubleClickEvent = lambda _: self.onInstanceVisibilityDoubleClick(self.ui.viewTriggerCheck)
-        self.ui.viewEncounterCheck.mouseDoubleClickEvent = lambda _: self.onInstanceVisibilityDoubleClick( self.ui.viewEncounterCheck)
-        self.ui.viewWaypointCheck.mouseDoubleClickEvent = lambda _: self.onInstanceVisibilityDoubleClick( self.ui.viewWaypointCheck)
+        self.ui.viewEncounterCheck.mouseDoubleClickEvent = lambda _: self.onInstanceVisibilityDoubleClick(self.ui.viewEncounterCheck)
+        self.ui.viewWaypointCheck.mouseDoubleClickEvent = lambda _: self.onInstanceVisibilityDoubleClick(self.ui.viewWaypointCheck)
         self.ui.viewCameraCheck.mouseDoubleClickEvent = lambda _: self.onInstanceVisibilityDoubleClick(self.ui.viewCameraCheck)
         self.ui.viewStoreCheck.mouseDoubleClickEvent = lambda _: self.onInstanceVisibilityDoubleClick(self.ui.viewStoreCheck)
 
         # View
         self.ui.actionZoomIn.triggered.connect(lambda: self.ui.renderArea.camera.nudgeZoom(1))
         self.ui.actionZoomOut.triggered.connect(lambda: self.ui.renderArea.camera.nudgeZoom(-1))
-        self.ui.actionRecentreCamera.triggered.connect(lambda: self.ui.renderArea.centerCamera())
+        self.ui.actionRecentreCamera.triggered.connect(self.ui.renderArea.centerCamera)
         # View -> Creature Labels
         self.ui.actionUseCreatureResRef.triggered.connect(lambda: setattr(self.settings, "creatureLabel", "resref"))
         self.ui.actionUseCreatureResRef.triggered.connect(self.updateVisibility)
@@ -265,7 +268,7 @@ class GITEditor(Editor):
             restype: {The type of the resource}
             data: {The raw data of the resource}.
 
-        Returns
+        Returns:
         -------
             None
         - Call super().load() to load base resource

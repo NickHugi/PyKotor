@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+
 from typing import TYPE_CHECKING
 
 from pykotor.common.stream import BinaryReader
@@ -46,7 +47,7 @@ def detect_2da(
             return ResourceType.TwoDA_JSON
         if "," in first4:
             return ResourceType.TwoDA_CSV
-        #if "<" in first4:
+        # if "<" in first4:
         #    return ResourceType.TwoDA_XML
         return ResourceType.INVALID
 

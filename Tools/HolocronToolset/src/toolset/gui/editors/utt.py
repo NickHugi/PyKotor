@@ -123,7 +123,7 @@ class UTTEditor(Editor):
     def build(self) -> tuple[bytes, bytes]:
         """Builds an UTT from UI input.
 
-        Returns
+        Returns:
         -------
             tuple[bytes, bytes]: A tuple containing the GFF data (bytes) and any errors (bytes).
 

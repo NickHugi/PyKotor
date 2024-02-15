@@ -13,7 +13,7 @@ from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES, ResourceType
 class ARE:
     """Stores static area data.
 
-    Attributes
+    Attributes:
     ----------
         tag: "Tag" field.
         name: "Name" field.

@@ -3,18 +3,22 @@ from __future__ import annotations
 import os
 import pathlib
 import platform
+
 from typing import TYPE_CHECKING, Any, Callable, Generator
 
 from pykotor.tools.registry import find_software_key, winreg_key
 from utility.misc import is_instance_or_subinstance
 from utility.registry import resolve_reg_key_to_path
-from utility.system.path import Path as InternalPath
-from utility.system.path import PathElem
-from utility.system.path import PurePath as InternalPurePath
+from utility.system.path import (
+    Path as InternalPath,
+    PathElem,
+    PurePath as InternalPurePath,
+)
 
 if TYPE_CHECKING:
-    from pykotor.common.misc import Game
     from typing_extensions import Self
+
+    from pykotor.common.misc import Game
 
 def simple_wrapper(fn_name, wrapped_class_type) -> Callable[..., Any]:
     """Wraps a function to handle case-sensitive pathlib.PurePath arguments.
@@ -364,7 +368,7 @@ def get_default_paths() -> dict[str, dict[Game, list[str]]]:
 def find_kotor_paths_from_default() -> dict[Game, list[CaseAwarePath]]:
     """Finds paths to Knights of the Old Republic game data directories.
 
-    Returns
+    Returns:
     -------
         dict[Game, list[CaseAwarePath]]: A dictionary mapping Games to lists of existing path locations.
 

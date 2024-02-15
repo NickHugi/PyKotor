@@ -58,7 +58,7 @@ class UTWEditorTest(unittest.TestCase):
         from toolset.data.installation import HTInstallation
         from toolset.gui.editors.utw import UTWEditor
         cls.UTWEditor = UTWEditor
-        #cls.K1_INSTALLATION = HTInstallation(K1_PATH, "", tsl=False, mainWindow=None)
+        # cls.K1_INSTALLATION = HTInstallation(K1_PATH, "", tsl=False, mainWindow=None)
         cls.K2_INSTALLATION = HTInstallation(K2_PATH, "", tsl=True, mainWindow=None)
 
     def setUp(self):

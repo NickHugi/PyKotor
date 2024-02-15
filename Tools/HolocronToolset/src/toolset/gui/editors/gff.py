@@ -2,16 +2,17 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
 
+from PyQt5 import QtCore
+from PyQt5.QtCore import QItemSelectionRange, QModelIndex, QSortFilterProxyModel
+from PyQt5.QtGui import QBrush, QColor, QStandardItem, QStandardItemModel
+from PyQt5.QtWidgets import QFileDialog, QListWidgetItem, QMenu, QShortcut, QWidget
+
 from pykotor.common.geometry import Vector3, Vector4
 from pykotor.common.language import Gender, Language, LocalizedString
 from pykotor.common.misc import ResRef
 from pykotor.extract.talktable import TalkTable
 from pykotor.resource.formats.gff import GFF, GFFContent, GFFFieldType, GFFList, GFFStruct, read_gff, write_gff
 from pykotor.resource.type import ResourceType
-from PyQt5 import QtCore
-from PyQt5.QtCore import QItemSelectionRange, QModelIndex, QSortFilterProxyModel
-from PyQt5.QtGui import QBrush, QColor, QStandardItem, QStandardItemModel
-from PyQt5.QtWidgets import QFileDialog, QListWidgetItem, QMenu, QShortcut, QWidget
 from toolset.gui.editor import Editor
 
 if TYPE_CHECKING:
@@ -431,7 +432,6 @@ class GFFEditor(Editor):
                 self.ui.wVec4Spin.setValue(vec4.w)
             elif item.data(_TYPE_NODE_ROLE) == GFFFieldType.Binary:
                 self.ui.pages.setCurrentWidget(self.ui.blankPage)
-                ...
             elif item.data(_TYPE_NODE_ROLE) == GFFFieldType.LocalizedString:
                 locstring: LocalizedString = item.data(_VALUE_NODE_ROLE)
                 self.ui.pages.setCurrentWidget(self.ui.substringPage)
@@ -479,14 +479,14 @@ class GFFEditor(Editor):
             item.setData(self.ui.intSpin.value(), _VALUE_NODE_ROLE)
         elif item.data(_TYPE_NODE_ROLE) in [GFFFieldType.Single, GFFFieldType.Double]:
             item.setData(self.ui.floatSpin.value(), _VALUE_NODE_ROLE)
-        elif item.data(_TYPE_NODE_ROLE) in [GFFFieldType.ResRef]:
+        elif item.data(_TYPE_NODE_ROLE) == GFFFieldType.ResRef:
             item.setData(ResRef(self.ui.lineEdit.text()), _VALUE_NODE_ROLE)
-        elif item.data(_TYPE_NODE_ROLE) in [GFFFieldType.String]:
+        elif item.data(_TYPE_NODE_ROLE) == GFFFieldType.String:
             item.setData(self.ui.textEdit.toPlainText(), _VALUE_NODE_ROLE)
-        elif item.data(_TYPE_NODE_ROLE) in [GFFFieldType.Vector3]:
+        elif item.data(_TYPE_NODE_ROLE) == GFFFieldType.Vector3:
             vec3 = Vector3(self.ui.xVec3Spin.value(), self.ui.yVec3Spin.value(), self.ui.zVec3Spin.value())
             item.setData(vec3, _VALUE_NODE_ROLE)
-        elif item.data(_TYPE_NODE_ROLE) in [GFFFieldType.Vector4]:
+        elif item.data(_TYPE_NODE_ROLE) == GFFFieldType.Vector4:
             vec4 = Vector4(
                 self.ui.xVec4Spin.value(),
                 self.ui.yVec4Spin.value(),
@@ -494,9 +494,9 @@ class GFFEditor(Editor):
                 self.ui.wVec4Spin.value(),
             )
             item.setData(vec4, _VALUE_NODE_ROLE)
-        elif item.data(_TYPE_NODE_ROLE) in [GFFFieldType.LocalizedString]:
+        elif item.data(_TYPE_NODE_ROLE) == GFFFieldType.LocalizedString:
             item.data(_VALUE_NODE_ROLE).stringref = self.ui.stringrefSpin.value()
-        elif item.data(_TYPE_NODE_ROLE) in [GFFFieldType.Struct] or item.data(_TYPE_NODE_ROLE) is None:
+        elif item.data(_TYPE_NODE_ROLE) == GFFFieldType.Struct or item.data(_TYPE_NODE_ROLE) is None:
             item.setData(self.ui.intSpin.value(), _VALUE_NODE_ROLE)
 
         self.refreshItemText(item)

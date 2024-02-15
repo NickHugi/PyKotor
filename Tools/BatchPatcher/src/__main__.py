@@ -7,12 +7,18 @@ import platform
 import sys
 import tkinter as tk
 import traceback
+
 from contextlib import suppress
 from copy import deepcopy
 from io import StringIO
 from threading import Thread
-from tkinter import colorchooser, filedialog, messagebox, ttk
-from tkinter import font as tkfont
+from tkinter import (
+    colorchooser,
+    filedialog,
+    font as tkfont,
+    messagebox,
+    ttk,
+)
 from typing import TYPE_CHECKING, Any, Callable
 
 from utility.error_handling import format_exception_with_variables, universal_simplify_exception
@@ -190,7 +196,7 @@ def log_output(*args, **kwargs):
         f.write(msg)
 
     # Print the captured output to console
-    #print(*args, **kwargs)  # noqa: T201
+    # print(*args, **kwargs)  # noqa: T201
     SCRIPT_GLOBALS.patchlogger.add_note("\t".join(args))
 
 
@@ -211,7 +217,7 @@ def log_output_with_separator(message, below=True, above=False, surround=False):
     if above or surround:
         log_output(visual_length(message) * "-")
     log_output(message)
-    if below and not above or surround:
+    if (below and not above) or surround:
         log_output(visual_length(message) * "-")
 
 
@@ -222,7 +228,7 @@ def patch_nested_gff(
     made_change: bool = False,
 ) -> bool:
     if gff_content != GFFContent.DLG and not SCRIPT_GLOBALS.translate:
-        #print(f"Skipping file at '{current_path}', translate not set.")
+        # print(f"Skipping file at '{current_path}', translate not set.")
         return False
     if gff_content == GFFContent.DLG and SCRIPT_GLOBALS.fix_dialog_skipping:
         delay = gff_struct.acquire("Delay", None)
@@ -234,8 +240,8 @@ def patch_nested_gff(
                 made_change = True
             else:
                 log_output(f"Skipping delay change at '{current_path}', no VO_ResRef defined.")
-        #next_node_id = gff_struct.acquire("NextNodeID", None)
-        #if next_node_id:
+        # next_node_id = gff_struct.acquire("NextNodeID", None)
+        # if next_node_id:
         #    gff_struct.set_int32("NextNodeID", 0)
 
     current_path = PurePath.pathify(current_path or "GFFRoot")
@@ -340,7 +346,7 @@ def patch_resource(resource: FileResource) -> GFF | TPC | None:
     if resource.restype().name.upper() in {x.name for x in GFFContent}:
         gff: GFF | None = None
         try:
-            #log_output(f"Loading {resource.resname()}.{resource.restype().extension} from '{resource.filepath().name}'")
+            # log_output(f"Loading {resource.resname()}.{resource.restype().extension} from '{resource.filepath().name}'")
             gff = read_gff(resource.data())
             made_change = False
             if gff.content == GFFContent.DLG and SCRIPT_GLOBALS.set_unskippable:
@@ -354,7 +360,7 @@ def patch_resource(resource: FileResource) -> GFF | TPC | None:
                 return gff
         except Exception as e:  # noqa: BLE001
             log_output(format_exception_with_variables(e, message=f"[Error] loading GFF '{resource.identifier()}' at '{resource.filepath()}'!"))
-            #raise
+            # raise
             return None
 
         if not gff:
@@ -641,7 +647,7 @@ def create_font_pack(lang: Language):
         lang,
         SCRIPT_GLOBALS.draw_bounds,
         SCRIPT_GLOBALS.custom_scaling,
-        font_color = SCRIPT_GLOBALS.font_color,
+        font_color=SCRIPT_GLOBALS.font_color,
     )
 
 
@@ -831,11 +837,11 @@ class KOTORPatchingToolUI:
                 self.font_color.set(color_code[1])
 
         # TODO: parse the .gui or wherever the actual color is stored.
-        #self.font_color = tk.StringVar()
-        #ttk.Label(self.root, text="Font Color:").grid(row=row, column=0)
-        #ttk.Entry(self.root, textvariable=self.font_color).grid(row=row, column=1)
-        #tk.Button(self.root, text="Choose Color", command=choose_color).grid(row=row, column=2)
-        #row += 1
+        # self.font_color = tk.StringVar()
+        # ttk.Label(self.root, text="Font Color:").grid(row=row, column=0)
+        # ttk.Entry(self.root, textvariable=self.font_color).grid(row=row, column=1)
+        # tk.Button(self.root, text="Choose Color", command=choose_color).grid(row=row, column=2)
+        # row += 1
 
         # Font Scaling
         ttk.Label(self.root, text="Font Scaling:").grid(row=row, column=0)
@@ -843,14 +849,14 @@ class KOTORPatchingToolUI:
         row += 1
 
         # Logging Enabled
-        #ttk.Label(self.root, text="Enable Logging:").grid(row=row, column=0)
-        #ttk.Checkbutton(self.root, text="Yes", variable=self.logging_enabled).grid(row=row, column=1)
-        #row += 1
+        # ttk.Label(self.root, text="Enable Logging:").grid(row=row, column=0)
+        # ttk.Checkbutton(self.root, text="Yes", variable=self.logging_enabled).grid(row=row, column=1)
+        # row += 1
 
         # Use Profiler
-        #ttk.Label(self.root, text="Use Profiler:").grid(row=row, column=0)
-        #ttk.Checkbutton(self.root, text="Yes", variable=self.use_profiler).grid(row=row, column=1)
-        #row += 1
+        # ttk.Label(self.root, text="Use Profiler:").grid(row=row, column=0)
+        # ttk.Checkbutton(self.root, text="Yes", variable=self.use_profiler).grid(row=row, column=1)
+        # row += 1
 
         # Show/Hide output window
         self.show_hide_output = tk.BooleanVar(value=False)

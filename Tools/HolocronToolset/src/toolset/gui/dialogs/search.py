@@ -2,10 +2,11 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Callable
 
-from pykotor.resource.type import ResourceType
-from pykotor.tools.encoding import decode_bytes_with_fallbacks
 from PyQt5 import QtCore
 from PyQt5.QtWidgets import QDialog, QListWidgetItem, QWidget
+
+from pykotor.resource.type import ResourceType
+from pykotor.tools.encoding import decode_bytes_with_fallbacks
 from toolset.gui.dialogs.asyncloader import AsyncBatchLoader
 from toolset.utils.window import openResourceEditor
 
@@ -44,7 +45,7 @@ class FileSearcher(QDialog):
             searchOverride: {True if override search is checked, False otherwise}
             checkTypes: {List of selected resource types}.
 
-        Returns
+        Returns:
         -------
             None
         {Processes user search parameters by:

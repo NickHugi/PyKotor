@@ -3,14 +3,15 @@ from __future__ import annotations
 from time import sleep
 from typing import TYPE_CHECKING
 
-from pykotor.common.language import Language
-from pykotor.common.misc import ResRef
-from pykotor.resource.formats.tlk import TLK, TLKEntry, bytes_tlk, read_tlk, write_tlk
-from pykotor.resource.type import ResourceType
 from PyQt5 import QtCore
 from PyQt5.QtCore import QSortFilterProxyModel, QThread
 from PyQt5.QtGui import QStandardItem, QStandardItemModel
 from PyQt5.QtWidgets import QAction, QDialog, QProgressBar, QShortcut, QVBoxLayout, QWidget
+
+from pykotor.common.language import Language
+from pykotor.common.misc import ResRef
+from pykotor.resource.formats.tlk import TLK, TLKEntry, bytes_tlk, read_tlk, write_tlk
+from pykotor.resource.type import ResourceType
 from toolset.gui.editor import Editor
 
 if TYPE_CHECKING:
@@ -77,7 +78,7 @@ class TLKEditor(Editor):
         self.ui.actionFind.triggered.connect(self.toggleFilterBox)
         self.ui.searchButton.clicked.connect(lambda: self.doFilter(self.ui.searchEdit.text()))
         self.ui.actionInsert.triggered.connect(self.insert)
-        #self.ui.actionAuto_detect_slower.triggered.connect()
+        # self.ui.actionAuto_detect_slower.triggered.connect()
 
         self.ui.talkTable.clicked.connect(self.selectionChanged)
         self.ui.textEdit.textChanged.connect(self.updateEntry)
@@ -175,7 +176,7 @@ class TLKEditor(Editor):
     def build(self) -> tuple[bytes, bytes]:
         """Builds a TLK file from the model data.
 
-        Returns
+        Returns:
         -------
             tuple[bytes, bytes]: A tuple containing the TLK data and an empty bytes object
 

@@ -1,14 +1,16 @@
 from __future__ import annotations
 
 import json
+
 from typing import TYPE_CHECKING, NamedTuple
+
+from PyQt5.QtGui import QImage
 
 from pykotor.common.geometry import Vector3
 from pykotor.common.misc import CaseInsensitiveDict
 from pykotor.common.stream import BinaryReader
 from pykotor.resource.formats.bwm import BWM, read_bwm
 from pykotor.resource.generics.utd import UTD, read_utd
-from PyQt5.QtGui import QImage
 from toolset.utils.misc import get_nums
 from utility.system.path import Path
 

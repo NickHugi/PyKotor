@@ -5,6 +5,7 @@ from typing import TYPE_CHECKING, Any, Callable
 from PyQt5 import QtCore
 from PyQt5.QtCore import QThread
 from PyQt5.QtWidgets import QDialog, QLabel, QMessageBox, QProgressBar, QVBoxLayout, QWidget
+
 from toolset.__main__ import is_frozen
 from utility.error_handling import format_exception_with_variables
 from utility.misc import is_debug_mode
@@ -196,7 +197,7 @@ class AsyncBatchLoader(QDialog):
         if self.errors:
             self.reject()
             if self.errorTitle:
-                errorStrings = [str(error)+"\n" for error in self.errors]
+                errorStrings = [str(error) + "\n" for error in self.errors]
                 QMessageBox(QMessageBox.Critical, self.errorTitle, "".join(errorStrings)).exec_()
             with Path("errorlog.txt").open("a") as file:
                 lines = []

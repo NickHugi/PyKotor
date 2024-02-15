@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import re
+
 from copy import copy
 from enum import Enum, IntEnum
 from typing import TYPE_CHECKING, Any, Callable, ClassVar, Generator, NamedTuple
@@ -215,7 +216,7 @@ class Installation:
     def path(self) -> CaseAwarePath:
         """Returns the path to root folder of the Installation.
 
-        Returns
+        Returns:
         -------
             The path to the root folder.
         """
@@ -224,7 +225,7 @@ class Installation:
     def module_path(self) -> CaseAwarePath:
         """Returns the path to modules folder of the Installation. This method maintains the case of the foldername.
 
-        Returns
+        Returns:
         -------
             The path to the modules folder.
         """
@@ -233,7 +234,7 @@ class Installation:
     def override_path(self) -> CaseAwarePath:
         """Returns the path to override folder of the Installation. This method maintains the case of the foldername.
 
-        Returns
+        Returns:
         -------
             The path to the override folder.
         """
@@ -242,7 +243,7 @@ class Installation:
     def lips_path(self) -> CaseAwarePath:
         """Returns the path to 'lips' folder of the Installation. This method maintains the case of the foldername.
 
-        Returns
+        Returns:
         -------
             The path to the lips folder.
         """
@@ -251,7 +252,7 @@ class Installation:
     def texturepacks_path(self) -> CaseAwarePath:
         """Returns the path to 'texturepacks' folder of the Installation. This method maintains the case of the foldername.
 
-        Returns
+        Returns:
         -------
             The path to the texturepacks folder.
         """
@@ -260,7 +261,7 @@ class Installation:
     def rims_path(self) -> CaseAwarePath:
         """Returns the path to 'rims' folder of the Installation. This method maintains the case of the foldername.
 
-        Returns
+        Returns:
         -------
             The path to the rims folder.
         """
@@ -269,7 +270,7 @@ class Installation:
     def streammusic_path(self) -> CaseAwarePath:
         """Returns the path to 'streammusic' folder of the Installation. This method maintains the case of the foldername.
 
-        Returns
+        Returns:
         -------
             The path to the streammusic folder.
         """
@@ -278,7 +279,7 @@ class Installation:
     def streamsounds_path(self) -> CaseAwarePath:
         """Returns the path to 'streamsounds' folder of the Installation. This method maintains the case of the foldername.
 
-        Returns
+        Returns:
         -------
             The path to the streamsounds folder.
         """
@@ -290,7 +291,7 @@ class Installation:
         In the first game, this folder is named 'streamwaves'
         In the second game, this folder has been renamed to 'streamvoice'.
 
-        Returns
+        Returns:
         -------
             The path to the streamwaves/streamvoice folder.
         """
@@ -302,7 +303,7 @@ class Installation:
         In the first game, this folder is named 'streamwaves'
         In the second game, this folder has been renamed to 'streamvoice'.
 
-        Returns
+        Returns:
         -------
             The path to the streamvoice/streamwaves folder.
         """
@@ -555,7 +556,7 @@ class Installation:
     def chitin_resources(self) -> list[FileResource]:
         """Returns a shallow copy of the list of FileResources stored in the Chitin linked to the Installation.
 
-        Returns
+        Returns:
         -------
             A list of FileResources.
         """
@@ -566,7 +567,7 @@ class Installation:
 
         Module filenames are cached and require to be refreshed after a file is added, deleted or renamed.
 
-        Returns
+        Returns:
         -------
             A list of filenames.
         """
@@ -580,7 +581,7 @@ class Installation:
 
         Module resources are cached and require a reload after the contents have been modified on disk.
 
-        Returns
+        Returns:
         -------
             A list of FileResources.
         """
@@ -591,7 +592,7 @@ class Installation:
 
         Module filenames are cached and require to be refreshed after a file is added, deleted or renamed.
 
-        Returns
+        Returns:
         -------
             A list of filenames.
         """
@@ -605,7 +606,7 @@ class Installation:
 
         Module resources are cached and require a reload after the contents have been modified on disk.
 
-        Returns
+        Returns:
         -------
             A list of FileResources.
         """
@@ -614,7 +615,7 @@ class Installation:
     def texturepacks_list(self) -> list[str]:
         """Returns the list of texture-pack filenames located in the texturepacks folder linked to the Installation.
 
-        Returns
+        Returns:
         -------
             A list of filenames.
         """
@@ -628,7 +629,7 @@ class Installation:
 
         Texturepack resources are cached and require a reload after the contents have been modified on disk.
 
-        Returns
+        Returns:
         -------
             A list of FileResources from the 'texturepacks' folder of the Installation.
         """
@@ -639,7 +640,7 @@ class Installation:
 
         Subdirectories are cached and require a refresh after a folder is added, deleted or renamed.
 
-        Returns
+        Returns:
         -------
             A list of subfolder names in Override.
         """
@@ -653,7 +654,7 @@ class Installation:
 
         Override resources are cached and require a reload after the contents have been modified on disk.
 
-        Returns
+        Returns:
         -------
             A list of FileResources.
         """
@@ -856,7 +857,7 @@ class Installation:
     def talktable(self) -> TalkTable:
         """Returns the TalkTable linked to the Installation.
 
-        Returns
+        Returns:
         -------
             A TalkTable object.
         """
@@ -865,7 +866,7 @@ class Installation:
     def female_talktable(self) -> TalkTable:
         """Returns the female TalkTable linked to the Installation. This is 'dialogf.tlk' in the Polish version of K1.
 
-        Returns
+        Returns:
         -------
             A TalkTable object.
         """
@@ -1545,7 +1546,7 @@ class Installation:
 
         The name is taken from the LocalizedString "Name" in the relevant module file's ARE resource.
 
-        Returns
+        Returns:
         -------
             A dictionary mapping module filename to in-game module area name.
         """
@@ -1601,7 +1602,7 @@ class Installation:
 
         The ID is taken from the ResRef field "Mod_Entry_Area" in the relevant module file's IFO resource.
 
-        Returns
+        Returns:
         -------
             A dictionary mapping module filename to in-game module id.
         """

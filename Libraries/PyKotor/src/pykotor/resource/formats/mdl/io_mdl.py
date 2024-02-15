@@ -222,7 +222,7 @@ class _Animation:
     ) -> _Animation:
         self.header = _AnimationHeader().read(reader)
 
-        ...  # read events
+        # read events
         return self
 
     def write(

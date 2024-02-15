@@ -2,9 +2,10 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from pykotor.common.module import Module
 from PyQt5 import QtCore
 from PyQt5.QtWidgets import QDialog, QFileDialog, QListWidgetItem, QWidget
+
+from pykotor.common.module import Module
 
 if TYPE_CHECKING:
     from toolset.data.installation import HTInstallation

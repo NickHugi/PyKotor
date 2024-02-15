@@ -1,14 +1,16 @@
 from __future__ import annotations
 
 import os
+
 from typing import Any
 
-from pykotor.common.misc import Game
-from pykotor.tools.path import find_kotor_paths_from_default
 from PyQt5 import QtCore
 from PyQt5.QtCore import QSettings
 from PyQt5.QtGui import QStandardItem, QStandardItemModel
 from PyQt5.QtWidgets import QWidget
+
+from pykotor.common.misc import Game
+from pykotor.tools.path import find_kotor_paths_from_default
 from toolset.data.settings import Settings
 from utility.system.path import Path
 

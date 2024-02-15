@@ -64,7 +64,7 @@ class LIPJSONWriter(ResourceWriter):
                 {
                     "time": str(keyframe.time),
                     "shape": str(keyframe.shape.value),
-                }, # type: ignore[reportGeneralTypeIssues]
+                },  # type: ignore[reportGeneralTypeIssues]
             )
 
         json_string: str = json.dumps(self._json, indent=4)

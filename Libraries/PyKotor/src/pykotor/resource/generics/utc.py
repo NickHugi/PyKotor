@@ -10,7 +10,7 @@ from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES, ResourceType
 class UTC:
     """Stores creature data.
 
-    Attributes
+    Attributes:
     ----------
         resref: "TemplateResRef" field.
         tag: "Tag" field.
@@ -121,7 +121,7 @@ class UTC:
         self.disarmable: bool = False  # ???
         self.ignore_cre_path: bool = False  # KotOR 2 Only
         self.hologram: bool = False  # KotOR 2 Only
-        self.will_not_render: bool = False # Kotor 2 Only
+        self.will_not_render: bool = False  # Kotor 2 Only
 
         self.alignment: int = 0
         self.challenge_rating: float = 0.0

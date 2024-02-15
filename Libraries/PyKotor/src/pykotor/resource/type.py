@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import os
 import uuid
+
 from enum import Enum
 from typing import Callable, Iterable, NamedTuple, TypeVar, Union
 from xml.etree.ElementTree import ParseError
@@ -60,7 +61,7 @@ class ResourceType(Enum):
 
     Stored in the class is also several static attributes, each an actual resource type used by the games.
 
-    Attributes
+    Attributes:
     ----------
         type_id: Integer id of the resource type as recognized by the games.
         extension: File extension associated with the resource type and as recognized by the game.

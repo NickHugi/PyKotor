@@ -4,6 +4,7 @@ import os
 import pathlib
 import sys
 import unittest
+
 from unittest import TestCase
 
 try:
@@ -59,7 +60,7 @@ class UTTEditorTest(TestCase):
         from toolset.data.installation import HTInstallation
         from toolset.gui.editors.utt import UTTEditor
         cls.UTTEditor = UTTEditor
-        #cls.K1_INSTALLATION = HTInstallation(K1_PATH, "", tsl=False, mainWindow=None)
+        # cls.K1_INSTALLATION = HTInstallation(K1_PATH, "", tsl=False, mainWindow=None)
         cls.K2_INSTALLATION = HTInstallation(K2_PATH, "", tsl=False, mainWindow=None)
 
     def setUp(self):

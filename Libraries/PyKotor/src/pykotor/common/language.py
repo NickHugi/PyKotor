@@ -283,13 +283,9 @@ class Language(IntEnum):
             Language.MALAGASY,
         ]:
             return "ISO-8859-3"
-        if self in [
-            Language.KURDISH_LATIN,
-        ]:
+        if self == Language.KURDISH_LATIN:
             return "ISO-8859-9"
-        if self in [
-            Language.KINYARWANDA,
-        ]:
+        if self == Language.KINYARWANDA:
             return "ISO-8859-10"
 
         # The following languages/encodings may not be 8-bit and need additional information in order to be supported.
@@ -422,7 +418,7 @@ class LocalizedString:
     This is achieved through either referencing a entry in the 'dialog.tlk' or by directly providing strings for each
     language.
 
-    Attributes
+    Attributes:
     ----------
         stringref: An index into the 'dialog.tlk' file. If this value is -1 the game will use the stored substrings.
     """

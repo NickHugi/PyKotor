@@ -10,7 +10,7 @@ from pykotor.resource.type import ResourceType
 class MDL:
     """Represents a MDL/MDX file.
 
-    Attributes
+    Attributes:
     ----------
         root: The root node of the model.
         anims: The animations stored in the model.
@@ -297,7 +297,7 @@ class MDLNodeFlags(IntEnum):
 class MDLNode:
     """A node in the MDL tree that can store additional nodes or some extra data related to the model such as geometry or lighting.
 
-    Attributes
+    Attributes:
     ----------
         children: List of children linked to the node.
         controllers: List of controllers linked to the node.
@@ -405,7 +405,7 @@ class MDLNode:
 class MDLLight:
     """Light data that can be attached to a node.
 
-    Attributes
+    Attributes:
     ----------
         flare_radius:
         light_priority:
@@ -436,7 +436,7 @@ class MDLLight:
 class MDLEmitter:
     """Emitter data that can be attached to a node.
 
-    Attributes
+    Attributes:
     ----------
         dead_space:
         blast_radius:
@@ -486,7 +486,7 @@ class MDLEmitter:
 class MDLReference:
     """Reference data that can be attached to a node.
 
-    Attributes
+    Attributes:
     ----------
         model:
         reattachable:

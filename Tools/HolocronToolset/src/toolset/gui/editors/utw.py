@@ -13,6 +13,7 @@ if TYPE_CHECKING:
     import os
 
     from PyQt5.QtWidgets import QWidget
+
     from toolset.data.installation import HTInstallation
 
 

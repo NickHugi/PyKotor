@@ -2,14 +2,15 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from pykotor.common.misc import ResRef
-from pykotor.resource.formats.gff import write_gff
-from pykotor.resource.generics.uts import UTS, dismantle_uts, read_uts
-from pykotor.resource.type import ResourceType
 from PyQt5 import QtCore
 from PyQt5.QtCore import QBuffer, QIODevice
 from PyQt5.QtMultimedia import QMediaContent, QMediaPlayer
 from PyQt5.QtWidgets import QListWidgetItem, QMessageBox, QWidget
+
+from pykotor.common.misc import ResRef
+from pykotor.resource.formats.gff import write_gff
+from pykotor.resource.generics.uts import UTS, dismantle_uts, read_uts
+from pykotor.resource.type import ResourceType
 from toolset.gui.dialogs.edit.locstring import LocalizedStringDialog
 from toolset.gui.editor import Editor
 
@@ -17,6 +18,7 @@ if TYPE_CHECKING:
     import os
 
     from PyQt5.QtGui import QCloseEvent
+
     from toolset.data.installation import HTInstallation
 
 
@@ -171,7 +173,7 @@ class UTSEditor(Editor):
     def build(self) -> tuple[bytes, bytes]:
         """Builds a UTS from UI fields.
 
-        Returns
+        Returns:
         -------
             tuple[bytes, bytes]: A tuple containing the unit data and log.
 

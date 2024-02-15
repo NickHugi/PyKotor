@@ -2,6 +2,9 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+from PyQt5.QtGui import QColor, QImage, QPixmap
+from PyQt5.QtWidgets import QColorDialog, QLabel, QWidget
+
 from pykotor.common.geometry import SurfaceMaterial, Vector2
 from pykotor.common.misc import Color, ResRef
 from pykotor.extract.file import ResourceIdentifier, ResourceResult
@@ -11,8 +14,6 @@ from pykotor.resource.formats.gff import write_gff
 from pykotor.resource.formats.lyt import read_lyt
 from pykotor.resource.generics.are import ARE, ARENorthAxis, AREWindPower, dismantle_are, read_are
 from pykotor.resource.type import ResourceType
-from PyQt5.QtGui import QColor, QImage, QPixmap
-from PyQt5.QtWidgets import QColorDialog, QLabel, QWidget
 from toolset.data.installation import HTInstallation
 from toolset.gui.dialogs.edit.locstring import LocalizedStringDialog
 from toolset.gui.editor import Editor
@@ -247,7 +248,7 @@ class AREEditor(Editor):
     def build(self) -> tuple[bytes, bytes]:
         """Builds the ARE data from UI controls.
 
-        Returns
+        Returns:
         -------
             tuple[bytes, bytes]: The ARE data and log
 

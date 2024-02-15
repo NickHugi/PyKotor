@@ -4,6 +4,13 @@ from copy import copy, deepcopy
 from typing import TYPE_CHECKING
 
 import pyperclip
+
+from PyQt5 import QtCore
+from PyQt5.QtCore import QBuffer, QIODevice, QItemSelection, QItemSelectionModel, QModelIndex, QPoint
+from PyQt5.QtGui import QBrush, QColor, QKeyEvent, QMouseEvent, QStandardItem, QStandardItemModel
+from PyQt5.QtMultimedia import QMediaContent, QMediaPlayer
+from PyQt5.QtWidgets import QListWidgetItem, QMenu, QMessageBox, QPlainTextEdit, QShortcut, QWidget
+
 from pykotor.common.misc import ResRef
 from pykotor.extract.installation import SearchLocation
 from pykotor.resource.generics.dlg import (
@@ -20,11 +27,6 @@ from pykotor.resource.generics.dlg import (
     write_dlg,
 )
 from pykotor.resource.type import ResourceType
-from PyQt5 import QtCore
-from PyQt5.QtCore import QBuffer, QIODevice, QItemSelection, QItemSelectionModel, QModelIndex, QPoint
-from PyQt5.QtGui import QBrush, QColor, QKeyEvent, QMouseEvent, QStandardItem, QStandardItemModel
-from PyQt5.QtMultimedia import QMediaContent, QMediaPlayer
-from PyQt5.QtWidgets import QListWidgetItem, QMenu, QMessageBox, QPlainTextEdit, QShortcut, QWidget
 from toolset.data.installation import HTInstallation
 from toolset.gui.dialogs.edit.dialog_animation import EditAnimationDialog
 from toolset.gui.dialogs.edit.dialog_model import CutsceneModelDialog
@@ -397,7 +399,7 @@ class DLGEditor(Editor):
 
         videoEffects: TwoDA = installation.htGetCache2DA(HTInstallation.TwoDA_VIDEO_EFFECTS)
         for i, label in enumerate(videoEffects.get_column("label")):
-            self.ui.cameraEffectSelect.addItem(label.replace("VIDEO_EFFECT_", "").replace("_" , " ").title(), i)
+            self.ui.cameraEffectSelect.addItem(label.replace("VIDEO_EFFECT_", "").replace("_", " ").title(), i)
 
     def _setup_tsl_install_defs(self, installation: HTInstallation):
         """Set up UI elements for TSL installation selection.
@@ -823,7 +825,7 @@ class DLGEditor(Editor):
         elif not self._focused:
             menu = QMenu(self)
 
-            menu.addAction("Add Entry").triggered.connect(lambda: self.addRootNode())
+            menu.addAction("Add Entry").triggered.connect(self.addRootNode)
 
             menu.popup(self.ui.dialogTree.viewport().mapToGlobal(point))
 
@@ -985,7 +987,7 @@ class DLGEditor(Editor):
             self.ui.cameraIdSpin.setValue(node.camera_id if node.camera_id is not None else -1)
             self.ui.cameraAnimSpin.setValue(node.camera_anim if node.camera_anim is not None else -1)
             self.ui.cameraAngleSelect.setCurrentIndex(node.camera_angle if node.camera_angle is not None else 0)
-            self.ui.cameraEffectSelect.setCurrentIndex(node.camera_effect+1 if node.camera_effect is not None else 0)
+            self.ui.cameraEffectSelect.setCurrentIndex(node.camera_effect + 1 if node.camera_effect is not None else 0)
 
             self.ui.nodeUnskippableCheckbox.setChecked(node.unskippable)
             self.ui.nodeIdSpin.setValue(node.node_id)

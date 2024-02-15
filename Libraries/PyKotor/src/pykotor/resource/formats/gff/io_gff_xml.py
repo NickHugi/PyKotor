@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import base64
+
 from typing import Any
 
 # Try to import defusedxml, fallback to ElementTree if not available

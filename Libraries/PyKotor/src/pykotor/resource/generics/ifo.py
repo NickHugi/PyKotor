@@ -11,7 +11,7 @@ from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES, ResourceType
 class IFO:
     """Stores module information.
 
-    Attributes
+    Attributes:
     ----------
         mod_id: "Mod_ID" field.
         vo_id: "Mod_VO_ID" field.

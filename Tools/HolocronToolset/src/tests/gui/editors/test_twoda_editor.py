@@ -4,6 +4,7 @@ import os
 import pathlib
 import sys
 import unittest
+
 from unittest import TestCase
 
 try:
@@ -118,7 +119,7 @@ class TwoDAEditorTest(TestCase):
             diff = old.compare(new, self.log_func)
             self.assertTrue(diff, os.linesep.join(self.log_messages))
 
-    def assertDeepEqual(self, obj1, obj2, context=''):
+    def assertDeepEqual(self, obj1, obj2, context=""):
         if isinstance(obj1, dict) and isinstance(obj2, dict):
             self.assertEqual(set(obj1.keys()), set(obj2.keys()), context)
             for key in obj1:
@@ -131,7 +132,7 @@ class TwoDAEditorTest(TestCase):
                 new_context = f"{context}[{index}]" if context else f"[{index}]"
                 self.assertDeepEqual(item1, item2, new_context)
 
-        elif hasattr(obj1, '__dict__') and hasattr(obj2, '__dict__'):
+        elif hasattr(obj1, "__dict__") and hasattr(obj2, "__dict__"):
             self.assertDeepEqual(obj1.__dict__, obj2.__dict__, context)
 
         else:

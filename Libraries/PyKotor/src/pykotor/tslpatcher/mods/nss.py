@@ -3,12 +3,15 @@ from __future__ import annotations
 
 import os
 import re
+
 from tempfile import TemporaryDirectory
 from typing import TYPE_CHECKING
 
 from pykotor.common.stream import BinaryReader, BinaryWriter
-from pykotor.resource.formats.ncs import bytes_ncs
-from pykotor.resource.formats.ncs import compile_nss as compile_with_builtin
+from pykotor.resource.formats.ncs import (
+    bytes_ncs,
+    compile_nss as compile_with_builtin,
+)
 from pykotor.resource.formats.ncs.compiler.classes import EntryPointError
 from pykotor.resource.formats.ncs.compilers import ExternalNCSCompiler
 from pykotor.tools.encoding import decode_bytes_with_fallbacks
@@ -18,12 +21,13 @@ from utility.error_handling import universal_simplify_exception
 from utility.system.path import Path, PurePath, PureWindowsPath
 
 if TYPE_CHECKING:
+    from typing_extensions import Literal
+
     from pykotor.common.misc import Game
     from pykotor.resource.formats.ncs.ncs_data import NCS
     from pykotor.resource.type import SOURCE_TYPES
     from pykotor.tslpatcher.logger import PatchLogger
     from pykotor.tslpatcher.memory import PatcherMemory
-    from typing_extensions import Literal
 
 class MutableString:
     def __init__(self, value: str):
@@ -113,7 +117,7 @@ class ModificationsNSS(PatcherModifications):
             ncs: NCS = compile_with_builtin(
                 source.value,
                 game,
-                [], #[RemoveNopOptimizer(), RemoveMoveSPEqualsZeroOptimizer(), RemoveUnusedBlocksOptimizer()],  # TODO: ncs optimizers need testing
+                [],  # [RemoveNopOptimizer(), RemoveMoveSPEqualsZeroOptimizer(), RemoveUnusedBlocksOptimizer()],  # TODO: ncs optimizers need testing
                 library_lookup=[CaseAwarePath.pathify(self.temp_script_folder)],
             )
         except EntryPointError as e:

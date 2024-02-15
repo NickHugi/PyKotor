@@ -9,6 +9,7 @@ import platform
 import subprocess
 import sys
 import unittest
+
 from ctypes.wintypes import DWORD
 from pathlib import Path, PosixPath, PurePath, PurePosixPath, PureWindowsPath, WindowsPath
 from tempfile import TemporaryDirectory
@@ -28,12 +29,14 @@ if UTILITY_PATH.joinpath("utility").exists():
     add_sys_path(UTILITY_PATH)
 
 from pykotor.tools.path import CaseAwarePath
-from utility.system.path import Path as CustomPath
-from utility.system.path import PosixPath as CustomPosixPath
-from utility.system.path import PurePath as CustomPurePath
-from utility.system.path import PurePosixPath as CustomPurePosixPath
-from utility.system.path import PureWindowsPath as CustomPureWindowsPath
-from utility.system.path import WindowsPath as CustomWindowsPath
+from utility.system.path import (
+    Path as CustomPath,
+    PosixPath as CustomPosixPath,
+    PurePath as CustomPurePath,
+    PurePosixPath as CustomPurePosixPath,
+    PureWindowsPath as CustomPureWindowsPath,
+    WindowsPath as CustomWindowsPath,
+)
 
 
 def check_path_win_api(path) -> tuple[bool, bool, bool]:
@@ -57,14 +60,14 @@ class TestPathlibMixedSlashes(unittest.TestCase):
             script_path = str(Path(tempdir, "temp_script.bat").absolute())
 
             # Write the commands to a batch file
-            with open(script_path, 'w') as file:
+            with open(script_path, "w") as file:
                 for command in cmd:
-                    file.write(command + '\n')
+                    file.write(command + "\n")
                 if pause_after_command:
-                    file.write('pause\nexit\n')
+                    file.write("pause\nexit\n")
 
             # Determine the CMD switch to use
-            cmd_switch = '/K' if pause_after_command else '/C'
+            cmd_switch = "/K" if pause_after_command else "/C"
 
             # Construct the command to run the batch script with elevated privileges
             run_script_cmd: list[str] = [
@@ -87,18 +90,18 @@ class TestPathlibMixedSlashes(unittest.TestCase):
 
         # Define the commands
         combined_commands: list[str] = [
-            f"icacls \"{path_str}\" /reset",
-            f"attrib +S \"{path_str}\"",
-            f"icacls \"{path_str}\" /inheritance:r",
-            f"icacls \"{path_str}\" /deny Everyone:(F)"
+            f'icacls "{path_str}" /reset',
+            f'attrib +S "{path_str}"',
+            f'icacls "{path_str}" /inheritance:r',
+            f'icacls "{path_str}" /deny Everyone:(F)'
         ]
 
         # Create and run the batch script
         self.create_and_run_batch_script(combined_commands)
 
-        #self.run_command(isfile_or_dir_args(["icacls", path_str, "/setowner", "dummy_user"]))
-        #self.run_command(isfile_or_dir_args(["icacls", path_str, "/deny", "dummy_user:(D,WDAC,WO)"]))
-        #self.run_command(["cipher", "/e", path_str])
+        # self.run_command(isfile_or_dir_args(["icacls", path_str, "/setowner", "dummy_user"]))
+        # self.run_command(isfile_or_dir_args(["icacls", path_str, "/deny", "dummy_user:(D,WDAC,WO)"]))
+        # self.run_command(["cipher", "/e", path_str])
 
     def run_command(self, cmd):
         cmd_with_admin: list[str] = self.get_admin_command(cmd)
@@ -121,8 +124,8 @@ class TestPathlibMixedSlashes(unittest.TestCase):
             # Remove all permissions from the file
 
             test_filepath = CustomPath(test_file)
-            #self.assertFalse(os.access(test_file, os.W_OK), "Write access should be denied")  # this only checks attrs on windows
-            #self.assertFalse(os.access(test_file, os.R_OK), "Read access should be denied")   # this only checks attrs on windows
+            # self.assertFalse(os.access(test_file, os.W_OK), "Write access should be denied")  # this only checks attrs on windows
+            # self.assertFalse(os.access(test_file, os.R_OK), "Read access should be denied")   # this only checks attrs on windows
 
             self.assertEqual(test_filepath.has_access(mode=0o1), True)  # this is a bug with os.access
             self.assertEqual(test_filepath.has_access(mode=0o7), False)
@@ -130,11 +133,11 @@ class TestPathlibMixedSlashes(unittest.TestCase):
             self.assertEqual(test_filepath.gain_access(mode=0o6), True)
             self.assertEqual(test_filepath.has_access(mode=0o6), True)
 
-            #self.assertFalse(os.access(test_file, os.R_OK), "Read access should be denied")   # this only checks attrs on windows
-            #self.assertFalse(os.access(test_file, os.W_OK), "Write access should be denied")  # this only checks attrs on windows
+            # self.assertFalse(os.access(test_file, os.R_OK), "Read access should be denied")   # this only checks attrs on windows
+            # self.assertFalse(os.access(test_file, os.W_OK), "Write access should be denied")  # this only checks attrs on windows
         finally:
             # Clean up: Delete the temporary file
-            #test_file.unlink()
+            # test_file.unlink()
             ...
 
     def test_nt_case_hashing(self):
@@ -231,20 +234,20 @@ class TestPathlibMixedSlashes(unittest.TestCase):
         self.assertEqual(test_os_isfile, False)
 
         # These are the bugs too.
-        #self.assertRaises(OSError, Path(test_path).exists)
-        #self.assertRaises(OSError, Path(test_path).is_file)
-        #self.assertRaises(OSError, Path(test_path).is_dir)
+        # self.assertRaises(OSError, Path(test_path).exists)
+        # self.assertRaises(OSError, Path(test_path).is_file)
+        # self.assertRaises(OSError, Path(test_path).is_dir)
         for PathType in test_classes:
 
             test_pathtype_exists: bool | None = PathType(test_path).safe_exists()
             self.assertEqual(test_pathtype_exists, True)
-            #self.assertRaises(OSError, PathType(test_path).exists)
+            # self.assertRaises(OSError, PathType(test_path).exists)
             test_pathtype_isfile: bool | None = PathType(test_path).safe_isfile()
             self.assertEqual(test_pathtype_isfile, False)
-            #self.assertRaises(OSError, PathType(test_path).is_file)
+            # self.assertRaises(OSError, PathType(test_path).is_file)
             test_pathtype_isdir: bool | None = PathType(test_path).safe_isdir()
             self.assertEqual(test_pathtype_isdir, True)
-            #self.assertRaises(OSError, PathType(test_path).is_dir)
+            # self.assertRaises(OSError, PathType(test_path).is_dir)
 
     def find_exists_problems(self):
         test_classes: tuple[type, ...] = (Path, CustomPath, CaseAwarePath)
@@ -252,15 +255,15 @@ class TestPathlibMixedSlashes(unittest.TestCase):
         for PathType in test_classes:
             self.assertTrue(self.list_files_recursive_scandir(test_path, set(), PathType))
 
-    def list_files_recursive_scandir(self, path: str, seen: set, PathType: type[pathlib.Path] | type[CustomPath] | type[CaseAwarePath]):
+    def list_files_recursive_scandir(self, path: str, seen: set, PathType: type[pathlib.Path | CustomPath | CaseAwarePath]):
         if "/mnt/c" in path.lower():
             print("Skipping /mnt/c (wsl)")
             return True
         try:
             it = os.scandir(path)
         except Exception:
-            return
-        
+            return None
+
         known_issue_paths: set[str] = {
             "C:\\GitHub\\PyKotor\\.venv_wsl\\bin\\python",
             "C:\\GitHub\\PyKotor\\.venv_wsl\\bin\\python3",
@@ -273,8 +276,7 @@ class TestPathlibMixedSlashes(unittest.TestCase):
                     continue
                 if path_entry.replace("\\", "/").count("/") > 5 or path_entry in seen:  # Handle links
                     continue
-                else:
-                    seen.add(path_entry)
+                seen.add(path_entry)
                 try:
                     is_dir_check = PathType(path_entry).is_dir()
                     assert is_dir_check is True or is_dir_check is False, f"is_file_check returned nonbool '{is_dir_check}' at '{path_entry}'"
@@ -285,7 +287,7 @@ class TestPathlibMixedSlashes(unittest.TestCase):
                     assert is_file_check is True or is_file_check is False, f"is_file_check returned nonbool '{is_file_check}' at '{path_entry}'"
                     if is_file_check:
                         ...
-                        #print(f"File: {path_entry}")
+                        # print(f"File: {path_entry}")
                     if is_file_check or is_dir_check:
                         continue
 
@@ -293,7 +295,7 @@ class TestPathlibMixedSlashes(unittest.TestCase):
                     if exist_check is True:
                         print(f"exists: True but no permissions to {path_entry}")
                         raise RuntimeError(f"exists: True but no permissions to {path_entry}")
-                    elif exist_check is False:
+                    if exist_check is False:
                         print(f"exists: False but no permissions to {path_entry}")
                     else:
                         raise ValueError(f"Unexpected ret value of exist_check at {path_entry}: {exist_check}")
@@ -351,7 +353,7 @@ class TestPathlibMixedSlashes(unittest.TestCase):
                 # Joinpath, rtruediv, truediv
                 self.assertEqual(str(PathType("C:/Users").joinpath("test/")), "C:/Users/test")
                 self.assertEqual(str(PathType("C:/Users") / "test/"), "C:/Users/test")
-                self.assertEqual(str(PathType("C:/Users").__truediv__("test/")), "C:/Users/test")
+                self.assertEqual(str(PathType("C:/Users") / "test/"), "C:/Users/test")
 
                 # Bizarre Scenarios
                 self.assertEqual(str(PathType("")), ".")
@@ -395,7 +397,7 @@ class TestPathlibMixedSlashes(unittest.TestCase):
                 # Joinpath, rtruediv, truediv
                 self.assertEqual(str(PathType("C:/Users").joinpath("test/")), "C:\\Users\\test")
                 self.assertEqual(str(PathType("C:/Users") / "test/"), "C:\\Users\\test")
-                self.assertEqual(str(PathType("C:/Users").__truediv__("test/")), "C:\\Users\\test")
+                self.assertEqual(str(PathType("C:/Users") / "test/"), "C:\\Users\\test")
 
                 # Bizarre Scenarios
                 self.assertEqual(str(PathType("")), ".")
@@ -451,7 +453,7 @@ class TestPathlibMixedSlashes(unittest.TestCase):
                 # Joinpath, rtruediv, truediv
                 self.assertEqual(str(PathType("C:/Users").joinpath("test/")), "C:/Users/test".replace("/", os.sep))
                 self.assertEqual(str(PathType("C:/Users") / "test/"), "C:/Users/test".replace("/", os.sep))
-                self.assertEqual(str(PathType("C:/Users").__truediv__("test/")), "C:/Users/test".replace("/", os.sep))
+                self.assertEqual(str(PathType("C:/Users") / "test/"), "C:/Users/test".replace("/", os.sep))
 
                 # Bizarre Scenarios
                 self.assertEqual(str(PathType("")), ".")
@@ -498,7 +500,7 @@ class TestPathlibMixedSlashes(unittest.TestCase):
                 # Joinpath, rtruediv, truediv
                 self.assertEqual(str(PathType("C:/Users").joinpath("test/")), "C:/Users/test")
                 self.assertEqual(str(PathType("C:/Users") / "test/"), "C:/Users/test")
-                self.assertEqual(str(PathType("C:/Users").__truediv__("test/")), "C:/Users/test")
+                self.assertEqual(str(PathType("C:/Users") / "test/"), "C:/Users/test")
 
                 # Bizarre Scenarios
                 self.assertEqual(str(PathType("")), ".")
@@ -537,7 +539,7 @@ class TestPathlibMixedSlashes(unittest.TestCase):
                 # Joinpath, rtruediv, truediv
                 self.assertEqual(str(PathType("C:/Users").joinpath("test/")), "C:\\Users\\test")
                 self.assertEqual(str(PathType("C:/Users") / "test/"), "C:\\Users\\test")
-                self.assertEqual(str(PathType("C:/Users").__truediv__("test/")), "C:\\Users\\test")
+                self.assertEqual(str(PathType("C:/Users") / "test/"), "C:\\Users\\test")
 
                 # Bizarre Scenarios
                 self.assertEqual(str(PathType("")), ".")
@@ -549,7 +551,7 @@ class TestPathlibMixedSlashes(unittest.TestCase):
 
     def test_custom_path_edge_cases_os_specific(self):
         # sourcery skip: extract-duplicate-method
-        for PathType in {CaseAwarePath, CustomPath, CustomPurePath}:
+        for PathType in (CaseAwarePath, CustomPath, CustomPurePath):
             with self.subTest(PathType=PathType):
                 # Absolute vs Relative Paths
                 self.assertEqual(str(PathType("C:/")), "C:")
@@ -587,7 +589,7 @@ class TestPathlibMixedSlashes(unittest.TestCase):
                 # Joinpath, rtruediv, truediv
                 self.assertEqual(str(PathType("C:/Users").joinpath("test/")), "C:/Users/test".replace("/", os.sep))
                 self.assertEqual(str(PathType("C:/Users") / "test/"), "C:/Users/test".replace("/", os.sep))
-                self.assertEqual(str(PathType("C:/Users").__truediv__("test/")), "C:/Users/test".replace("/", os.sep))
+                self.assertEqual(str(PathType("C:/Users") / "test/"), "C:/Users/test".replace("/", os.sep))
 
                 # Bizarre Scenarios
                 self.assertEqual(str(PathType("")), ".")

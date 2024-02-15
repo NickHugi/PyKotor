@@ -10,7 +10,7 @@ from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES, ResourceType
 class UTT:
     """Stores trigger data.
 
-    Attributes
+    Attributes:
     ----------
         tag: "Tag" field.
         resref: "TemplateResRef" field.

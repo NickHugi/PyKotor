@@ -121,17 +121,17 @@ def check_reg_keys_existence_and_validity() -> tuple[list[tuple[str, str]], list
 def winreg_key(game: Game) -> list[tuple[str, str]]:
     """Returns a list of registry keys that are utilized by KOTOR.
 
-    Attributes
+    Attributes:
     ----------
         game: Game IntEnum - The game to lookup
         access: Access permissions for the key (see winreg module).
 
-    Raises
+    Raises:
     ------
         ValueError: Not on a Windows OS.
         WinError: Most likely do not have sufficient permissions.
 
-    Returns
+    Returns:
     -------
         Key object or None if no key exists.
     """
@@ -145,11 +145,11 @@ def winreg_key(game: Game) -> list[tuple[str, str]]:
 def get_winreg_path(game: Game):
     """Returns the specified path value in the windows registry for the given game.
 
-    Attributes
+    Attributes:
     ----------
         game: The game to lookup in the registry
 
-    Raises
+    Raises:
     ------
         ValueError: Not on a Windows OS.
         WinError: Most likely do not have sufficient permissions.
@@ -169,12 +169,12 @@ def get_winreg_path(game: Game):
 def set_winreg_path(game: Game, path: str):
     """Sets the kotor install folder path value in the windows registry for the given game.
 
-    Attributes
+    Attributes:
     ----------
         game: The game to set in the registry
         path: New path value for the game.
 
-    Raises
+    Raises:
     ------
         ValueError: Not on a Windows OS.
         WinError: Most likely do not have sufficient permissions.

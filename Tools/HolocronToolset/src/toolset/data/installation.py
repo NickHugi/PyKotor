@@ -3,16 +3,18 @@ from __future__ import annotations
 from contextlib import suppress
 from typing import TYPE_CHECKING
 
+from PyQt5.QtGui import QImage, QPixmap, QStandardItemModel, QTransform
+
 from pykotor.extract.file import ResourceIdentifier
 from pykotor.extract.installation import Installation, SearchLocation
 from pykotor.resource.formats.tpc import TPC, TPCTextureFormat
 from pykotor.resource.formats.twoda import TwoDA, read_2da
 from pykotor.resource.type import ResourceType
-from PyQt5.QtGui import QImage, QPixmap, QStandardItemModel, QTransform
 
 if TYPE_CHECKING:
-    from pykotor.resource.generics.uti import UTI
     from PyQt5.QtWidgets import QWidget
+
+    from pykotor.resource.generics.uti import UTI
 
 
 class HTInstallation(Installation):

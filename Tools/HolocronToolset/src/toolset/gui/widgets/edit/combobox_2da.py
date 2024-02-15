@@ -4,6 +4,7 @@ from typing import TYPE_CHECKING
 
 from PyQt5 import QtCore
 from PyQt5.QtWidgets import QComboBox, QMenu, QWidget
+
 from toolset.gui.dialogs.edit.combo_2da import ModdedValueSpinboxDialog
 
 if TYPE_CHECKING:
@@ -92,7 +93,7 @@ class ComboBox2DA(QComboBox):
     def currentIndex(self) -> int:
         """Returns the row index from the currently selected item.
 
-        Returns
+        Returns:
         -------
             Row index into the 2DA file.
         """

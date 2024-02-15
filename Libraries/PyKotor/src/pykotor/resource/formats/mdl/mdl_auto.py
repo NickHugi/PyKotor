@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+
 from typing import TYPE_CHECKING
 
 from pykotor.common.stream import BinaryReader
@@ -39,13 +40,13 @@ def detect_mdl(
         if first4 == b"\x00\x00\x00\x00":
             return ResourceType.MDL
         return ResourceType.MDL_ASCII
-        #if "<" in first4:
+        # if "<" in first4:
         #    return ResourceType.MDL_XML
-        #if "{" in first4:
+        # if "{" in first4:
         #    return ResourceType.MDL_JSON
-        #if "," in first4:
+        # if "," in first4:
         #    return ResourceType.MDL_CSV
-        #return ResourceType.INVALID
+        # return ResourceType.INVALID
     try:
         if isinstance(source, (os.PathLike, str)):
             with BinaryReader.from_file(source, offset) as reader:

@@ -10,7 +10,7 @@ from pykotor.resource.type import ResourceType
 class LIP:
     """Represents the data of a LIP file.
 
-    Attributes
+    Attributes:
     ----------
         length: The total duration of lip animation.
         frames: The keyframes for the lip animation.
@@ -140,7 +140,7 @@ class LIPShape(IntEnum):
 class LIPKeyFrame:
     """A keyframe for a lip animation.
 
-    Attributes
+    Attributes:
     ----------
         time: The time the keyframe animation occurs.
         shape: The mouth shape.

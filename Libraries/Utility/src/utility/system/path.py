@@ -6,6 +6,7 @@ import pathlib
 import re
 import subprocess
 import uuid
+
 from tempfile import TemporaryDirectory
 from typing import TYPE_CHECKING, Any, Callable, Generator, Union
 
@@ -29,10 +30,10 @@ def override_to_pathlib(cls: type) -> type:
     return class_map.get(cls, cls)
 
 class PurePathType(type):
-    def __instancecheck__(cls, instance: object) -> bool: # sourcery skip: instance-method-first-arg-name
+    def __instancecheck__(cls, instance: object) -> bool:  # sourcery skip: instance-method-first-arg-name
         return cls.__subclasscheck__(type(instance))
 
-    def __subclasscheck__(cls, subclass: type) -> bool: # sourcery skip: instance-method-first-arg-name
+    def __subclasscheck__(cls, subclass: type) -> bool:  # sourcery skip: instance-method-first-arg-name
         return override_to_pathlib(cls) in override_to_pathlib(subclass).__mro__
 
 class BasePurePath(metaclass=PurePathType):  # type: ignore[misc]
@@ -446,7 +447,7 @@ class BasePath(BasePurePath):
         try:
             iterator: Generator[Self, Any, None] = self.rglob(pattern)  # type: ignore[assignment, reportGeneralTypeIssues]
         except Exception as e:  # noqa: BLE001
-            print(format_exception_with_variables(e,  message="This exception has been suppressed and is only relevant for debug purposes."))
+            print(format_exception_with_variables(e, message="This exception has been suppressed and is only relevant for debug purposes."))
             return
         else:
             while True:
@@ -455,7 +456,7 @@ class BasePath(BasePurePath):
                 except StopIteration:  # noqa: PERF203
                     break  # StopIteration means there are no more files to iterate over
                 except Exception as e:  # noqa: BLE001
-                    print(format_exception_with_variables(e,  message="This exception has been suppressed and is only relevant for debug purposes."))
+                    print(format_exception_with_variables(e, message="This exception has been suppressed and is only relevant for debug purposes."))
                     continue  # Ignore the file that caused an exception and move to the next
 
     # Safe iterdir operation
@@ -465,7 +466,7 @@ class BasePath(BasePurePath):
         try:
             iterator: Generator[Self, Any, None] = self.iterdir()  # type: ignore[assignment, reportGeneralTypeIssues]
         except Exception as e:  # noqa: BLE001
-            print(format_exception_with_variables(e,  message="This exception has been suppressed and is only relevant for debug purposes."))
+            print(format_exception_with_variables(e, message="This exception has been suppressed and is only relevant for debug purposes."))
             return
         else:
             while True:
@@ -474,7 +475,7 @@ class BasePath(BasePurePath):
                 except StopIteration:  # noqa: PERF203
                     break  # StopIteration means there are no more files to iterate over
                 except Exception as e:  # noqa: BLE001
-                    print(format_exception_with_variables(e,  message="This exception has been suppressed and is only relevant for debug purposes."))
+                    print(format_exception_with_variables(e, message="This exception has been suppressed and is only relevant for debug purposes."))
                     continue  # Ignore the file that caused an exception and move to the next
 
     # Safe is_dir operation
@@ -483,7 +484,7 @@ class BasePath(BasePurePath):
         try:
             check = self.is_dir()
         except OSError as e:
-            print(format_exception_with_variables(e,  message="This exception has been suppressed and is only relevant for debug purposes."))
+            print(format_exception_with_variables(e, message="This exception has been suppressed and is only relevant for debug purposes."))
             return None
         else:
             return check
@@ -494,7 +495,7 @@ class BasePath(BasePurePath):
         try:
             check = self.is_file()
         except OSError as e:
-            print(format_exception_with_variables(e,  message="This exception has been suppressed and is only relevant for debug purposes."))
+            print(format_exception_with_variables(e, message="This exception has been suppressed and is only relevant for debug purposes."))
             return None
         else:
             return check
@@ -505,7 +506,7 @@ class BasePath(BasePurePath):
         try:
             check = self.exists()
         except Exception as e:
-            print(format_exception_with_variables(e,  message="This exception has been suppressed and is only relevant for debug purposes."))
+            print(format_exception_with_variables(e, message="This exception has been suppressed and is only relevant for debug purposes."))
             return None
         else:
             return check
@@ -691,7 +692,7 @@ class BasePath(BasePurePath):
             print(format_exception_with_variables(os_exc))
         except Exception as exc:
             print(format_exception_with_variables(exc))
-            #raise
+            # raise
         return False
 
     unique_sentinel = object()
@@ -783,7 +784,7 @@ class BasePath(BasePurePath):
 
         if not success:
             log_func("Verifying the operations were successful...")
-            success= self.has_access(mode, recurse=False)
+            success = self.has_access(mode, recurse=False)
         try:
             if recurse and self.safe_isdir():
                 for child in self.iterdir():

@@ -11,12 +11,13 @@ from utility.error_handling import format_exception_with_variables, universal_si
 from utility.system.path import PureWindowsPath
 
 if TYPE_CHECKING:
+    from typing_extensions import Literal
+
     from pykotor.common.misc import Game
     from pykotor.resource.formats.twoda import TwoDA, TwoDARow
     from pykotor.resource.type import SOURCE_TYPES
     from pykotor.tslpatcher.logger import PatchLogger
     from pykotor.tslpatcher.memory import PatcherMemory
-    from typing_extensions import Literal
 
 
 class CriticalError(Exception):
@@ -134,7 +135,7 @@ class RowValueTLKMemory(RowValue):
 
 class RowValueHigh(RowValue):
     """
-    Attributes
+    Attributes:
     ----------
     column: Column to get the max integer from. If None it takes it from the Row Label.
     """  # noqa: D205, D212
@@ -232,7 +233,7 @@ class ChangeRow2DA(Modify2DA):
 
     Target row can either be the Row Index, Row Label, or value under the "label" column where applicable.
 
-    Attributes
+    Attributes:
     ----------
         target: The row to change.
         modifiers: For the row, sets a cell under column KEY to have the text VALUE.
@@ -281,7 +282,7 @@ class ChangeRow2DA(Modify2DA):
 class AddRow2DA(Modify2DA):
     """Adds a new row.
 
-    Attributes
+    Attributes:
     ----------
         modifiers: For the row, sets a cell under column KEY to have the text VALUE.
     """
@@ -362,7 +363,7 @@ class AddRow2DA(Modify2DA):
 class CopyRow2DA(Modify2DA):
     """Copies the the row if the exclusive_column value doesn't already exist. If the row already exists, it simply modifies the existing line.
 
-    Attributes
+    Attributes:
     ----------
         identifier:
         target: Which row to copy.
@@ -457,7 +458,7 @@ class CopyRow2DA(Modify2DA):
 class AddColumn2DA(Modify2DA):
     """Adds a column. The new cells are either given a default value or can be given a value based on what the row index or row label is.
 
-    Attributes
+    Attributes:
     ----------
         identifier:
         header: Label for the name column.

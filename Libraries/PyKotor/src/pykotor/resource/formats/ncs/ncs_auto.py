@@ -102,7 +102,7 @@ def compile_nss(
 ) -> NCS:
     """Returns NCS object compiled from input source string.
 
-    Attributes
+    Attributes:
     ----------
         source: The source code.
         game: Target game for the NCS object.

@@ -5,14 +5,14 @@ import json
 import math
 import shutil
 import zipfile
+
 from contextlib import suppress
 from copy import copy, deepcopy
 from tempfile import TemporaryDirectory
 from typing import TYPE_CHECKING
 
 import requests
-from pykotor.common.geometry import Vector2, Vector3
-from pykotor.common.stream import BinaryReader, BinaryWriter
+
 from PyQt5 import QtCore
 from PyQt5.QtCore import QPoint, QPointF, QRectF, QTimer
 from PyQt5.QtGui import (
@@ -21,9 +21,9 @@ from PyQt5.QtGui import (
     QKeyEvent,
     QKeySequence,
     QMouseEvent,
+    QPaintEvent,
     QPainter,
     QPainterPath,
-    QPaintEvent,
     QPen,
     QPixmap,
     QTransform,
@@ -40,6 +40,9 @@ from PyQt5.QtWidgets import (
     QPushButton,
     QWidget,
 )
+
+from pykotor.common.geometry import Vector2, Vector3
+from pykotor.common.stream import BinaryReader, BinaryWriter
 from toolset.__main__ import is_frozen
 from toolset.config import UPDATE_INFO_LINK
 from toolset.data.indoorkit import Kit, KitComponent, load_kits
@@ -623,7 +626,7 @@ class IndoorMapRenderer(QWidget):
     def cameraZoom(self) -> float:
         """Returns the current zoom value of the camera.
 
-        Returns
+        Returns:
         -------
             The camera zoom value.
         """
@@ -652,7 +655,7 @@ class IndoorMapRenderer(QWidget):
     def cameraPosition(self) -> Vector2:
         """Returns the position of the camera.
 
-        Returns
+        Returns:
         -------
             The camera position vector.
         """
@@ -684,7 +687,7 @@ class IndoorMapRenderer(QWidget):
     def cameraRotation(self) -> float:
         """Returns the current angle of the camera in radians.
 
-        Returns
+        Returns:
         -------
             The camera angle in radians.
         """
@@ -983,7 +986,7 @@ class KitDownloader(QDialog):
                 try:
                     localKitDict = json.loads(BinaryReader.load_file(kitPath))
                 except Exception as e:
-                    print(repr(e),"\n in _setupDownloads for kit update check")
+                    print(repr(e), "\n in _setupDownloads for kit update check")
                     button.setText("Missing JSON - click to redownload.")
                     button.setEnabled(True)
                 else:

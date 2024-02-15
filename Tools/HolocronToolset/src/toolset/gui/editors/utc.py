@@ -4,6 +4,11 @@ from contextlib import suppress
 from copy import deepcopy
 from typing import TYPE_CHECKING, Literal
 
+from PyQt5 import QtCore
+from PyQt5.QtCore import QSettings
+from PyQt5.QtGui import QImage, QPixmap, QTransform
+from PyQt5.QtWidgets import QListWidgetItem, QMessageBox, QWidget
+
 from pykotor.common.language import Gender, Language
 from pykotor.common.misc import Game, ResRef
 from pykotor.common.module import Module
@@ -16,10 +21,6 @@ from pykotor.resource.formats.tpc import TPCTextureFormat
 from pykotor.resource.generics.dlg import DLG, dismantle_dlg
 from pykotor.resource.generics.utc import UTC, UTCClass, dismantle_utc, read_utc
 from pykotor.resource.type import ResourceType
-from PyQt5 import QtCore
-from PyQt5.QtCore import QSettings
-from PyQt5.QtGui import QImage, QPixmap, QTransform
-from PyQt5.QtWidgets import QListWidgetItem, QMessageBox, QWidget
 from toolset.data.installation import HTInstallation
 from toolset.gui.dialogs.inventory import InventoryEditor
 from toolset.gui.editor import Editor
@@ -330,7 +331,7 @@ class UTCEditor(Editor):
     def build(self) -> tuple[bytes, bytes]:
         """Builds a UTC from UI data.
 
-        Returns
+        Returns:
         -------
             tuple[bytes, bytes]: The GFF data and log.
 
@@ -653,7 +654,7 @@ class UTCEditor(Editor):
                 self.ui.previewRenderer.setCreature(utc)
         else:
             self.ui.previewRenderer.setVisible(False)
-            self.setFixedSize(798-350, 553)
+            self.setFixedSize(798 - 350, 553)
 
 
 class UTCSettings:

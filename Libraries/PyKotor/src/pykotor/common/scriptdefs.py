@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import math
+
 from pykotor.common.geometry import Vector3
 from pykotor.common.script import DataType, ScriptConstant, ScriptFunction, ScriptParam
 
@@ -11,7 +13,7 @@ KOTOR_CONSTANTS = [
     ScriptConstant(DataType.FLOAT, "DIRECTION_NORTH", 90.0),
     ScriptConstant(DataType.FLOAT, "DIRECTION_WEST", 180.0),
     ScriptConstant(DataType.FLOAT, "DIRECTION_SOUTH", 270.0),
-    ScriptConstant(DataType.FLOAT, "PI", 3.141592),
+    ScriptConstant(DataType.FLOAT, "PI", math.pi),
     ScriptConstant(DataType.INT, "ATTITUDE_NEUTRAL", 0),
     ScriptConstant(DataType.INT, "ATTITUDE_AGGRESSIVE", 1),
     ScriptConstant(DataType.INT, "ATTITUDE_DEFENSIVE", 2),
@@ -1503,7 +1505,7 @@ TSL_CONSTANTS = [
     ScriptConstant(DataType.FLOAT, "DIRECTION_NORTH", 90.0),
     ScriptConstant(DataType.FLOAT, "DIRECTION_WEST", 180.0),
     ScriptConstant(DataType.FLOAT, "DIRECTION_SOUTH", 270.0),
-    ScriptConstant(DataType.FLOAT, "PI", 3.141592),
+    ScriptConstant(DataType.FLOAT, "PI", math.pi),
     ScriptConstant(DataType.INT, "ATTITUDE_NEUTRAL", 0),
     ScriptConstant(DataType.INT, "ATTITUDE_AGGRESSIVE", 1),
     ScriptConstant(DataType.INT, "ATTITUDE_DEFENSIVE", 2),

@@ -7,6 +7,7 @@ import pathlib
 import sys
 import tempfile
 import traceback
+
 from typing import TYPE_CHECKING
 
 from PyQt5.QtCore import QThread

@@ -4,6 +4,8 @@ from contextlib import suppress
 from copy import deepcopy
 from typing import TYPE_CHECKING
 
+from PyQt5.QtWidgets import QMessageBox, QWidget
+
 from pykotor.common.misc import ResRef
 from pykotor.common.module import Module
 from pykotor.common.stream import BinaryWriter
@@ -13,7 +15,6 @@ from pykotor.resource.generics.dlg import DLG, dismantle_dlg
 from pykotor.resource.generics.utp import UTP, dismantle_utp, read_utp
 from pykotor.resource.type import ResourceType
 from pykotor.tools import placeable
-from PyQt5.QtWidgets import QMessageBox, QWidget
 from toolset.data.installation import HTInstallation
 from toolset.gui.dialogs.edit.locstring import LocalizedStringDialog
 from toolset.gui.dialogs.inventory import InventoryEditor

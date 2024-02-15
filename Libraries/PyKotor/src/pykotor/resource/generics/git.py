@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import math
+
 from abc import ABC, abstractmethod
 from enum import IntEnum
 from typing import NoReturn
@@ -49,7 +50,7 @@ class GIT:
     ) -> list[GITInstance]:
         """Returns a list of all instances stored inside the GIT, regardless of the type.
 
-        Returns
+        Returns:
         -------
             A list of all stored instances.
         """

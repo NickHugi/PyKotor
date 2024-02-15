@@ -111,9 +111,9 @@ class RemoveUnusedBlocksOptimizer(NCSOptimizer):
                 NCSInstructionType.JSR,
             ]:
                 checking.extend((ncs.instructions.index(instruction.jump), check + 1))
-            elif instruction.ins_type in [NCSInstructionType.JMP]:
+            elif instruction.ins_type == NCSInstructionType.JMP:
                 checking.append(ncs.instructions.index(instruction.jump))
-            elif instruction.ins_type in [NCSInstructionType.RETN]:
+            elif instruction.ins_type == NCSInstructionType.RETN:
                 ...
             else:
                 checking.append(check + 1)

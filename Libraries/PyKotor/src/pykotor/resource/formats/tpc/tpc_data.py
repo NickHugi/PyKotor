@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import itertools as tpc_itertools
+
 from enum import IntEnum
 from typing import NamedTuple
 
@@ -25,7 +26,7 @@ class TPCConvertResult(NamedTuple):
 class TPC:
     """Represents a TPC file.
 
-    Attributes
+    Attributes:
     ----------
         txi: Stores additional information regarding the texture.
     """
@@ -48,7 +49,7 @@ class TPC:
     ) -> int:
         """Returns the number of mipmaps.
 
-        Returns
+        Returns:
         -------
             The number of mipmaps.
         """
@@ -59,7 +60,7 @@ class TPC:
     ) -> TPCTextureFormat:
         """Returns the format of the stored texture.
 
-        Returns
+        Returns:
         -------
             The format of the stored texture.
         """
@@ -70,7 +71,7 @@ class TPC:
     ) -> tuple[int, int]:
         """Returns the width and height of the largest mipmap.
 
-        Returns
+        Returns:
         -------
             A tuple containing [width, height].
         """

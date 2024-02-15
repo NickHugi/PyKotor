@@ -23,7 +23,7 @@ class JRL:
 class JRLQuest:
     """Stores data of an individual quest.
 
-    Attributes
+    Attributes:
     ----------
         name: "Name" field.
         planet_id: "PlanetID" field.
@@ -49,7 +49,7 @@ class JRLQuest:
 class JRLEntry:
     """Stores the data for an entry in a quest.
 
-    Attributes
+    Attributes:
     ----------
         end: "End" field.
         entry_id: "ID" field.

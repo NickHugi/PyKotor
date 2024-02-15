@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from PyQt5.QtWidgets import QDialog, QWidget
+
 from toolset.config import PROGRAM_VERSION
 
 

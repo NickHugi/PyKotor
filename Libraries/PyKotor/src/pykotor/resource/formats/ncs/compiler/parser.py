@@ -3,6 +3,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, NoReturn
 
 from ply import yacc
+
 from pykotor.resource.formats.ncs.compiler.classes import (
     AdditionAssignment,
     Assignment,
@@ -11,8 +12,8 @@ from pykotor.resource.formats.ncs.compiler.classes import (
     CodeBlock,
     CodeRoot,
     CompileError,
-    ConditionalBlock,
     ConditionAndBlock,
+    ConditionalBlock,
     ContinueStatement,
     DeclarationStatement,
     DefaultSwitchLabel,
@@ -59,6 +60,7 @@ from utility.system.path import Path
 
 if TYPE_CHECKING:
     from ply.lex import LexToken
+
     from pykotor.common.script import ScriptConstant, ScriptFunction
 
 
@@ -68,7 +70,7 @@ class NssParser:
         functions: list[ScriptFunction],
         constants: list[ScriptConstant],
         library: dict[str, bytes],
-        library_lookup: list[str | Path] |  list[str] | list[Path] | str | Path | None,
+        library_lookup: list[str | Path] | list[str] | list[Path] | str | Path | None,
         errorlog: yacc.NullLogger | None = yacc.NullLogger(),  # noqa: B008
         debug=False,  # noqa: FBT002
     ):

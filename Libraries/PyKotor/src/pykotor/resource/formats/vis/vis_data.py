@@ -127,7 +127,7 @@ class VIS:
     ) -> bool:
         """Returns true if the specified room exists.
 
-        Returns
+        Returns:
         -------
             True if the room exists.
         """

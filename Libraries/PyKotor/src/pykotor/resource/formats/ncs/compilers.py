@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import subprocess
+
 from datetime import date
 from enum import Enum
 from typing import TYPE_CHECKING, NamedTuple
@@ -208,7 +209,7 @@ class ExternalNCSCompiler(NCSCompiler):
         source_file: os.PathLike | str,
         output_file: os.PathLike | str,
         game: Game | int,
-        timeout: int=5,
+        timeout: int = 5,
     ) -> tuple[str, str]:
         """Compiles a NSS script into NCS using the external compiler.
 
@@ -250,7 +251,7 @@ class ExternalNCSCompiler(NCSCompiler):
         source_file: os.PathLike | str,
         output_file: os.PathLike | str,
         game: Game | int,
-        timeout: int=5,
+        timeout: int = 5,
     ) -> tuple[str, str]:
         """Decompiles a script file into C# source code.
 

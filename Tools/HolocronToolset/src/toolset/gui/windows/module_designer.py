@@ -1,8 +1,14 @@
 from __future__ import annotations
 
 import math
+
 from copy import deepcopy
 from typing import TYPE_CHECKING
+
+from PyQt5 import QtCore
+from PyQt5.QtCore import QPoint, QTimer
+from PyQt5.QtGui import QColor, QIcon, QKeyEvent, QPixmap
+from PyQt5.QtWidgets import QAction, QCheckBox, QListWidgetItem, QMainWindow, QMenu, QMessageBox, QTreeWidgetItem, QWidget
 
 from pykotor.common.geometry import SurfaceMaterial, Vector2, Vector3, Vector4
 from pykotor.common.misc import Color, ResRef
@@ -27,10 +33,6 @@ from pykotor.resource.generics.utt import read_utt
 from pykotor.resource.generics.utw import read_utw
 from pykotor.resource.type import ResourceType
 from pykotor.tools import module
-from PyQt5 import QtCore
-from PyQt5.QtCore import QPoint, QTimer
-from PyQt5.QtGui import QColor, QIcon, QKeyEvent, QPixmap
-from PyQt5.QtWidgets import QAction, QCheckBox, QListWidgetItem, QMainWindow, QMenu, QMessageBox, QTreeWidgetItem, QWidget
 from toolset.data.misc import ControlItem
 from toolset.gui.dialogs.insert_instance import InsertInstanceDialog
 from toolset.gui.dialogs.select_module import SelectModuleDialog
@@ -463,7 +465,7 @@ class ModuleDesigner(QMainWindow):
                 name = resref
                 tag = ""
 
-                if isinstance(instance, GITDoor) or isinstance(instance, GITTrigger) and resourceExists:
+                if isinstance(instance, GITDoor) or (isinstance(instance, GITTrigger) and resourceExists):
                     # Tag is stored in the GIT
                     name = resource.localized_name()
                     tag = instance.tag

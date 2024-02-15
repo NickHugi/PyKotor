@@ -2,16 +2,17 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+from PyQt5 import QtCore, QtGui
+from PyQt5.QtCore import QMimeData
+from PyQt5.QtGui import QStandardItem, QStandardItemModel
+from PyQt5.QtWidgets import QFileDialog, QMessageBox, QShortcut, QTableView, QWidget
+
 from pykotor.common.misc import ResRef
 from pykotor.common.stream import BinaryReader
 from pykotor.extract.file import ResourceIdentifier
 from pykotor.resource.formats.erf import ERF, ERFResource, ERFType, read_erf, write_erf
 from pykotor.resource.formats.rim import RIM, read_rim, write_rim
 from pykotor.resource.type import ResourceType
-from PyQt5 import QtCore, QtGui
-from PyQt5.QtCore import QMimeData
-from PyQt5.QtGui import QStandardItem, QStandardItemModel
-from PyQt5.QtWidgets import QFileDialog, QMessageBox, QShortcut, QTableView, QWidget
 from toolset.gui.editor import Editor
 from toolset.gui.widgets.settings.installations import GlobalSettings
 from toolset.utils.window import openResourceEditor
@@ -144,7 +145,7 @@ class ERFEditor(Editor):
     def build(self) -> tuple[bytes, bytes]:
         """Builds resource data from the model.
 
-        Returns
+        Returns:
         -------
             data: The built resource data.
             b"": An empty bytes object.

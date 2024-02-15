@@ -1,9 +1,11 @@
 from __future__ import annotations
 
 import math
+
 from typing import TYPE_CHECKING
 
 from PIL import Image, ImageDraw, ImageFont
+
 from pykotor.resource.formats.txi import TXIFontInformation
 from pykotor.tools.encoding import get_charset_from_singlebyte_encoding
 from utility.system.path import Path
@@ -187,7 +189,7 @@ def write_bitmap_font(
     # Build txi fields
     txi_font_info = TXIFontInformation()
     txi_font_info.isdoublebyte = not lang.is_8bit_encoding()  # does nothing ingame?
-    #txi_font_info.numchars = numchars
+    # txi_font_info.numchars = numchars
     txi_font_info.upper_left_coords = upper_left_coords
     txi_font_info.lower_right_coords = lower_right_coords
     # Normalize and set font metrics

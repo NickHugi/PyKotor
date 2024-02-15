@@ -4,11 +4,13 @@ from enum import IntEnum
 from typing import TYPE_CHECKING
 
 import pyperclip
-from pykotor.resource.formats.twoda import TwoDA, read_2da, write_2da
-from pykotor.resource.type import ResourceType
+
 from PyQt5.QtCore import QSortFilterProxyModel
 from PyQt5.QtGui import QStandardItem, QStandardItemModel
 from PyQt5.QtWidgets import QAction, QMessageBox, QWidget
+
+from pykotor.resource.formats.twoda import TwoDA, read_2da, write_2da
+from pykotor.resource.type import ResourceType
 from toolset.gui.editor import Editor
 
 if TYPE_CHECKING:
@@ -204,7 +206,7 @@ class TwoDAEditor(Editor):
             twoda.add_row()
             twoda.set_label(i, self.model.item(i, 0).text())
             for j, header in enumerate(twoda.get_headers()):
-                twoda.set_cell(i, header, self.model.item(i, j+1).text())
+                twoda.set_cell(i, header, self.model.item(i, j + 1).text())
 
         data = bytearray()
         write_2da(twoda, data, self._restype)

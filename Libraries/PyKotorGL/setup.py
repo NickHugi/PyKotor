@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import os
 import sys
+
 from pathlib import Path
 
 from setuptools import setup
@@ -53,7 +54,7 @@ import re
 TIME_RE = re.compile(r"([0-9]{2}):([0-9]{2}):([0-9]{2})(\.([0-9]{3,6}))?")
 _number_with_underscores = re.compile("([0-9])(_([0-9]))*")
 _escapes = ["0", "b", "f", "n", "r", "t", '"']
-_escapedchars = ["\0", "\b", "\f", "\n", "\r", "\t", '\"']
+_escapedchars = ["\0", "\b", "\f", "\n", "\r", "\t", '"']
 _escape_to_escapedchars = dict(zip(_escapes, _escapedchars))
 _groupname_re = re.compile(r"^[A-Za-z0-9_-]+$")
 unicode = str
@@ -374,42 +375,41 @@ class TomlDecoder:
                                                     v[1] == v[2]):
                 v = v[2:-2]
             return (v[1:-1], "str")
-        elif v[0] == "[":
+        if v[0] == "[":
             return (self.load_array(v), "array")
-        elif v[0] == "{":
+        if v[0] == "{":
             inline_object = self.get_empty_inline_table()
             self.load_inline_object(v, inline_object)
             return (inline_object, "inline_object")
-        elif TIME_RE.match(v):
+        if TIME_RE.match(v):
             h, m, s, _, ms = TIME_RE.match(v).groups()
             time = datetime.time(int(h), int(m), int(s), int(ms) if ms else 0)
             return (time, "time")
-        else:
-            parsed_date = _load_date(v)
-            if parsed_date is not None: return (parsed_date, "date")
-            if not strictly_valid: raise ValueError("Weirdness with leading zeroes or underscores in your number.")
-            itype = "int"
-            neg = False
-            if v[0] == "-":
-                neg = True
-                v = v[1:]
-            elif v[0] == "+":
-                v = v[1:]
-            v = v.replace("_", "")
-            lowerv = v.lower()
-            if "." in v or ("x" not in v and ("e" in v or "E" in v)):
-                if "." in v and v.split(".", 1)[1] == "": raise ValueError("This float is missing digits after the point")
-                if v[0] not in "0123456789": raise ValueError("This float doesn't have a leading digit")
-                v = float(v)
-                itype = "float"
-            elif len(lowerv) == 3 and (lowerv in ("inf", "nan")):
-                v = float(v)
-                itype = "float"
-            if itype == "int":
-                v = int(v, 0)
-            if neg:
-                return (0 - v, itype)
-            return (v, itype)
+        parsed_date = _load_date(v)
+        if parsed_date is not None: return (parsed_date, "date")
+        if not strictly_valid: raise ValueError("Weirdness with leading zeroes or underscores in your number.")
+        itype = "int"
+        neg = False
+        if v[0] == "-":
+            neg = True
+            v = v[1:]
+        elif v[0] == "+":
+            v = v[1:]
+        v = v.replace("_", "")
+        lowerv = v.lower()
+        if "." in v or ("x" not in v and ("e" in v or "E" in v)):
+            if "." in v and v.split(".", 1)[1] == "": raise ValueError("This float is missing digits after the point")
+            if v[0] not in "0123456789": raise ValueError("This float doesn't have a leading digit")
+            v = float(v)
+            itype = "float"
+        elif len(lowerv) == 3 and (lowerv in ("inf", "nan")):
+            v = float(v)
+            itype = "float"
+        if itype == "int":
+            v = int(v, 0)
+        if neg:
+            return (0 - v, itype)
+        return (v, itype)
 
     def bounded_string(self, s):
         if len(s) == 0:
@@ -786,7 +786,7 @@ def loads(s, _dict=dict, decoder=None):
         if line[0] == "[":
             arrayoftables = False
             if len(line) == 1:
-                raise ValueError("Opening key group bracket on line by " "itself.", original, pos)
+                raise ValueError("Opening key group bracket on line by itself.", original, pos)
             if line[1] == "[":
                 arrayoftables = True
                 line = line[2:]
@@ -830,14 +830,14 @@ def loads(s, _dict=dict, decoder=None):
             for i in _range(len(groups)):
                 group = groups[i]
                 if group == "":
-                    raise ValueError("Can't have a keygroup with an empty " "name", original, pos)
+                    raise ValueError("Can't have a keygroup with an empty name", original, pos)
                 try:
                     currentlevel[group]
                     if i == len(groups) - 1:
                         if group in implicitgroups:
                             implicitgroups.remove(group)
                             if arrayoftables:
-                                raise ValueError("An implicitly defined " "table can't be an array", original, pos)
+                                raise ValueError("An implicitly defined table can't be an array", original, pos)
                         elif arrayoftables:
                             currentlevel[group].append(decoder.get_empty_table(),
                                                     )

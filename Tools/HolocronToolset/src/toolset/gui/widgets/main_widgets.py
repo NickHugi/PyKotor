@@ -1,18 +1,20 @@
 from __future__ import annotations
 
 import multiprocessing
+
 from abc import abstractmethod
 from contextlib import suppress
 from time import sleep
 from typing import TYPE_CHECKING
 
-from pykotor.extract.installation import SearchLocation
-from pykotor.resource.formats.tpc import TPC, TPCTextureFormat
-from pykotor.resource.type import ResourceType
 from PyQt5 import QtCore
 from PyQt5.QtCore import QModelIndex, QPoint, QSortFilterProxyModel, QThread, QTimer
 from PyQt5.QtGui import QIcon, QImage, QPixmap, QResizeEvent, QStandardItem, QStandardItemModel, QTransform
 from PyQt5.QtWidgets import QHeaderView, QMenu, QWidget
+
+from pykotor.extract.installation import SearchLocation
+from pykotor.resource.formats.tpc import TPC, TPCTextureFormat
+from pykotor.resource.type import ResourceType
 
 if TYPE_CHECKING:
     from pykotor.common.misc import CaseInsensitiveDict

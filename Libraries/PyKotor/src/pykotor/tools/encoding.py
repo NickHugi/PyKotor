@@ -2,12 +2,14 @@ from __future__ import annotations
 
 import codecs
 import contextlib
+
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from types import ModuleType
 
     from charset_normalizer import CharsetMatch, CharsetMatches
+
     from pykotor.common.language import Language
 
 charset_normalizer: None | ModuleType
@@ -100,10 +102,10 @@ def decode_bytes_with_fallbacks(
             for alias in aliases:
                 normalized_alias: str = alias.replace("_", "-")
                 if normalized_alias.startswith("utf-8"):
-                    best_encoding="utf-8-sig"
+                    best_encoding = "utf-8-sig"
                     break
                 if normalized_alias.startswith("utf-16"):
-                    best_encoding="UTF-16LE"
+                    best_encoding = "UTF-16LE"
                     break
 
         return byte_content.decode(encoding=best_encoding, errors=attempt_errors)
@@ -226,7 +228,7 @@ def get_cp936_charset() -> list[str]:
                 charset.append("")  # Append a blank for non-existent characters
         elif 0x81 <= i <= 0x9F:
             # Double-byte introducer, skip this byte
-            #continue
+            # continue
             charset.append("")  # Undefined code point, append a blank
         elif 0xA1 <= i <= 0xDF:
             # Single-byte code

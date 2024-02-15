@@ -11,7 +11,7 @@ def read_txi(
     offset: int = 0,
     size: int | None = None,
 ):
-    #if isinstance(source, (os.PathLike, str)):
+    # if isinstance(source, (os.PathLike, str)):
     #    txi = TXI()
     #    with Path.pathify(source).open("r") as f:
     #        for line in f.readlines():

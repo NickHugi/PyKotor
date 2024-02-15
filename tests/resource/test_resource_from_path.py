@@ -100,7 +100,7 @@ class TestResourceType(unittest.TestCase):
         self.assertEqual(ResourceType.from_extension(".l.o.n.g._ex.te.nsio.n.xyz").extension, "l.o.n.g._ex.te.nsio.n.xyz")
 
 class TestResourceIdentifier(unittest.TestCase):
-    """ These tests were created because of the many soft, hard-to-find errors that occur all over when this function ever fails."""
+    """These tests were created because of the many soft, hard-to-find errors that occur all over when this function ever fails."""
     def assert_hashing(self, res_ident: ResourceIdentifier):
         lower_ident = ResourceIdentifier(res_ident.resname.swapcase(), res_ident.restype)
         self.assertEqual(res_ident, lower_ident, f"{res_ident!r} != {lower_ident!r}")

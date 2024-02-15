@@ -3,12 +3,13 @@ from __future__ import annotations
 from contextlib import suppress
 from typing import TYPE_CHECKING
 
+from PyQt5 import QtCore
+from PyQt5.QtWidgets import QDialog, QListWidgetItem, QShortcut, QTreeWidgetItem, QWidget
+
 from pykotor.common.misc import ResRef
 from pykotor.resource.formats.gff import write_gff
 from pykotor.resource.generics.uti import UTI, UTIProperty, dismantle_uti, read_uti
 from pykotor.resource.type import ResourceType
-from PyQt5 import QtCore
-from PyQt5.QtWidgets import QDialog, QListWidgetItem, QShortcut, QTreeWidgetItem, QWidget
 from toolset.data.installation import HTInstallation
 from toolset.gui.dialogs.edit.locstring import LocalizedStringDialog
 from toolset.gui.editor import Editor
@@ -440,7 +441,7 @@ class PropertyEditor(QDialog):
         upgrades = installation.htGetCache2DA(HTInstallation.TwoDA_UPGRADES)
         self.ui.upgradeSelect.addItem("[None]", None)
         for i in range(upgrades.get_height()):
-            text = upgrades.get_cell(i, "label").replace("_" , " ").title()
+            text = upgrades.get_cell(i, "label").replace("_", " ").title()
             self.ui.upgradeSelect.addItem(text, i)
         if utiProperty.upgrade_type is not None:
             self.ui.upgradeSelect.setCurrentIndex(utiProperty.upgrade_type + 1)

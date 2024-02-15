@@ -2,9 +2,10 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+from PyQt5.QtWidgets import QMessageBox, QWidget
+
 from pykotor.resource.formats.erf.erf_data import ERFType
 from pykotor.resource.type import ResourceType
-from PyQt5.QtWidgets import QMessageBox, QWidget
 from toolset.gui.editors.mdl import MDLEditor
 from toolset.gui.widgets.settings.installations import GlobalSettings
 from utility.error_handling import universal_simplify_exception
@@ -13,6 +14,7 @@ if TYPE_CHECKING:
     import os
 
     from gui.editor import Editor
+
     from toolset.data.installation import HTInstallation
 
 windows: list[QWidget] = []

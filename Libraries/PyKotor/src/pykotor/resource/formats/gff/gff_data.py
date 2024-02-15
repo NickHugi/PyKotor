@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import math
 import os
+
 from copy import copy, deepcopy
 from enum import Enum, IntEnum
 from typing import TYPE_CHECKING, Any, Callable, ClassVar, TypeVar
@@ -44,7 +45,7 @@ class GFFContent(Enum):
     GUI = "GUI "
     PTH = "PTH "
     NFO = "NFO "  # savenfo.res
-    PT  = "PT  "  # partytable.res
+    PT = "PT  "  # partytable.res
     GVT = "GVT "  # GLOBALVARS.res
 
     @classmethod
@@ -238,7 +239,7 @@ class _GFFField:
     ) -> GFFFieldType:
         """Returns the field type.
 
-        Returns
+        Returns:
         -------
             The field's field_type.
         """
@@ -249,7 +250,7 @@ class _GFFField:
     ) -> Any:
         """Returns the value.
 
-        Returns
+        Returns:
         -------
             The field's value.
         """
@@ -259,7 +260,7 @@ class _GFFField:
 class GFFStruct:
     """Stores a collection of GFFFields.
 
-    Attributes
+    Attributes:
     ----------
         struct_id: User defined id.
     """
@@ -393,7 +394,7 @@ class GFFStruct:
                 if new_ftype is None:
                     msg = f"new_ftype shouldn't be None here. Relevance: old_ftype={old_ftype!r}, old_value={old_value!r}, new_value={new_value!r}"
                     raise RuntimeError(msg)
-                log_func(f"Extra '{new_ftype.name}' field found at '{child_path}': {format_text(new_value)}" )
+                log_func(f"Extra '{new_ftype.name}' field found at '{child_path}': {format_text(new_value)}")
                 is_same = False
                 continue
             if new_value is None or new_ftype is None:

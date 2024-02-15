@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import struct
+
 from enum import IntEnum
 
 from pykotor.common.stream import BinaryReader
@@ -62,8 +63,8 @@ class TPCTGAReader(ResourceReader):
             packet = self._reader.read_uint8()
             count = (packet & 0b01111111) + 1
             is_raw_packet: bool = (packet >> 7) == 0
-            #count = (packet & 0x7f) + 1
-            #is_raw_packet = packet & 0x80
+            # count = (packet & 0x7f) + 1
+            # is_raw_packet = packet & 0x80
             n += count
 
             if is_raw_packet:
@@ -269,7 +270,7 @@ class TPCTGAWriter(ResourceWriter):
         self._writer.write_uint16(width)
         self._writer.write_uint16(height)
 
-        if self._tpc.format() in [TPCTextureFormat.RGB or TPCTextureFormat.DXT1]:
+        if self._tpc.format() == TPCTextureFormat.RGB or TPCTextureFormat.DXT1:
             self._writer.write_uint8(32)  # bits_per_pixel, image_descriptor
             self._writer.write_uint8(0)
             data: bytes | None = self._tpc.convert(TPCTextureFormat.RGB, 0).data

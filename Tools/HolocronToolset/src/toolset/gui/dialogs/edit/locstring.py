@@ -3,10 +3,11 @@ from __future__ import annotations
 from copy import deepcopy
 from typing import TYPE_CHECKING
 
+from PyQt5.QtWidgets import QDialog, QWidget
+
 from pykotor.common.language import Gender, Language, LocalizedString
 from pykotor.resource.formats.tlk import read_tlk, write_tlk
 from pykotor.tools.path import CaseAwarePath
-from PyQt5.QtWidgets import QDialog, QWidget
 
 if TYPE_CHECKING:
     from toolset.data.installation import HTInstallation

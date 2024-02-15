@@ -1,8 +1,11 @@
+from __future__ import annotations
+
 import os
 import pathlib
 import sys
-from unittest import TestCase
 import unittest
+
+from unittest import TestCase
 
 THIS_SCRIPT_PATH = pathlib.Path(__file__).resolve()
 PYKOTOR_PATH = THIS_SCRIPT_PATH.parents[3].resolve()
@@ -18,11 +21,10 @@ if UTILITY_PATH.joinpath("utility").exists():
     add_sys_path(UTILITY_PATH)
 
 from pykotor.common.misc import Game
-from pykotor.resource.formats.gff import read_gff
-from pykotor.resource.generics.uts import UTS, construct_uts, dismantle_uts
 from pykotor.extract.installation import Installation
-
+from pykotor.resource.formats.gff import read_gff
 from pykotor.resource.formats.gff.gff_data import GFF
+from pykotor.resource.generics.uts import UTS, construct_uts, dismantle_uts
 from pykotor.resource.type import ResourceType
 
 TEST_FILE = "tests/files/test.uts"

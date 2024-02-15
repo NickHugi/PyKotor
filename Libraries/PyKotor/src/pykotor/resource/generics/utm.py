@@ -15,7 +15,7 @@ if TYPE_CHECKING:
 class UTM:
     """Stores merchant data.
 
-    Attributes
+    Attributes:
     ----------
         resref: "ResRef" field.
         name: "LocName" field.

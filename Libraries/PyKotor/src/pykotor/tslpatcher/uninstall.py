@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import os
 import shutil
+
 from datetime import datetime
 from tkinter import messagebox
 from typing import TYPE_CHECKING
@@ -249,11 +250,11 @@ class ModUninstaller:
             error_name, msg = universal_simplify_exception(e)
             messagebox.showerror(
                 error_name,
-                f"Failed to restore backup because of exception.{os.linesep*2}{msg}",
+                f"Failed to restore backup because of exception.{os.linesep * 2}{msg}",
             )
         while messagebox.askyesno(
             "Uninstall completed!",
-            f"Deleted {len(existing_files)} files and successfully restored backup created on {most_recent_backup_folder.name}{os.linesep*2}"
+            f"Deleted {len(existing_files)} files and successfully restored backup created on {most_recent_backup_folder.name}{os.linesep * 2}"
             f"Would you like to delete the backup created on {most_recent_backup_folder.name} since it now has been restored?",
         ):
             try:

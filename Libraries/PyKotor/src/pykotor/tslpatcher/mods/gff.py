@@ -14,11 +14,12 @@ from utility.system.path import PureWindowsPath
 if TYPE_CHECKING:
     import os
 
+    from typing_extensions import Literal
+
     from pykotor.resource.formats.gff.gff_data import _GFFField
     from pykotor.resource.type import SOURCE_TYPES
     from pykotor.tslpatcher.logger import PatchLogger
     from pykotor.tslpatcher.memory import PatcherMemory
-    from typing_extensions import Literal
 
 
 class LocalizedStringDelta(LocalizedString):

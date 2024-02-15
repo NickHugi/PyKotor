@@ -15,7 +15,7 @@ if TYPE_CHECKING:
 class UTD:
     """Stores door data.
 
-    Attributes
+    Attributes:
     ----------
         tag: "Tag" field.
         name: "LocName" field.

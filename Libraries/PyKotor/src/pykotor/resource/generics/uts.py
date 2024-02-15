@@ -15,7 +15,7 @@ if TYPE_CHECKING:
 class UTS:
     """Stores sound data.
 
-    Attributes
+    Attributes:
     ----------
         tag: "Tag" field.
         resref: "TemplateResRef" field.

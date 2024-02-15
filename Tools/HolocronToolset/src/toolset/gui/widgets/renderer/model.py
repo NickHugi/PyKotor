@@ -1,22 +1,25 @@
 from __future__ import annotations
 
 import math
+
 from typing import TYPE_CHECKING
+
+from PyQt5.QtCore import QTimer
+from PyQt5.QtWidgets import QOpenGLWidget, QWidget
 
 from pykotor.common.geometry import Vector2
 from pykotor.common.stream import BinaryReader
 from pykotor.gl.models.read_mdl import gl_load_mdl
 from pykotor.gl.scene import RenderObject, Scene
 from pykotor.resource.generics.git import GIT, GITCreature
-from PyQt5.QtCore import QTimer
-from PyQt5.QtWidgets import QOpenGLWidget, QWidget
 from toolset.data.misc import ControlItem
 from toolset.gui.widgets.settings.module_designer import ModuleDesignerSettings
 
 if TYPE_CHECKING:
+    from PyQt5.QtGui import QKeyEvent, QMouseEvent, QResizeEvent, QWheelEvent
+
     from pykotor.extract.installation import Installation
     from pykotor.resource.generics.utc import UTC
-    from PyQt5.QtGui import QKeyEvent, QMouseEvent, QResizeEvent, QWheelEvent
 
 
 class ModelRenderer(QOpenGLWidget):
@@ -60,7 +63,7 @@ class ModelRenderer(QOpenGLWidget):
         self.scene.camera.fov = 70
         self.scene.camera.distance = 4
         self.scene.camera.z = 1.8
-        self.scene.camera.yaw = math.pi/2
+        self.scene.camera.yaw = math.pi / 2
         self.scene.camera.width = self.width()
         self.scene.camera.height = self.height()
         self.scene.show_cursor = False
@@ -167,13 +170,13 @@ class ModelRenderer(QOpenGLWidget):
         self._keysDown.add(e.key())
 
         if self.rotateCameraLeft.satisfied(self._mouseDown, self._keysDown):
-            self.scene.camera.rotate(math.pi/4, 0)
+            self.scene.camera.rotate(math.pi / 4, 0)
         if self.rotateCameraRight.satisfied(self._mouseDown, self._keysDown):
-            self.scene.camera.rotate(-math.pi/4, 0)
+            self.scene.camera.rotate(-math.pi / 4, 0)
         if self.rotateCameraUp.satisfied(self._mouseDown, self._keysDown):
-            self.scene.camera.rotate(0, math.pi/4)
+            self.scene.camera.rotate(0, math.pi / 4)
         if self.rotateCameraDown.satisfied(self._mouseDown, self._keysDown):
-            self.scene.camera.rotate(0, -math.pi/4)
+            self.scene.camera.rotate(0, -math.pi / 4)
 
         if self.moveCameraUp.satisfied(self._mouseDown, self._keysDown):
             self.scene.camera.z += 1

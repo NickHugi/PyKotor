@@ -17,6 +17,7 @@ if TYPE_CHECKING:
     import os
 
     from PyQt5.QtWidgets import QWidget
+
     from toolset.data.installation import HTInstallation
 
 
@@ -109,7 +110,7 @@ class UTMEditor(Editor):
     def build(self) -> tuple[bytes, bytes]:
         """Builds a UTM object from UI fields.
 
-        Returns
+        Returns:
         -------
             data: The built UTM data.
             b"": An empty bytes object.

@@ -6,6 +6,7 @@ import shutil
 import sys
 import tempfile
 import unittest
+
 from configparser import ConfigParser
 from typing import TYPE_CHECKING
 
@@ -72,7 +73,7 @@ class TestConfigReader(unittest.TestCase):
             interpolation=None,
         )
         # use case-sensitive keys
-        self.ini.optionxform = lambda optionstr: optionstr  #  type: ignore[method-assign]
+        self.ini.optionxform = lambda optionstr: optionstr  # type: ignore[method-assign]
 
         self.test_tlk_data: TLK = self.create_test_tlk(
             {
@@ -321,7 +322,7 @@ class TestConfigReader(unittest.TestCase):
             self.assertTrue(modifiers1[i].is_replacement, f"i={i}")
         for j in range(12, 26):
             self.assertFalse(modifiers1[j].is_replacement, f"j={j}")
-        for k in modifiers_dict1.keys():
+        for k in modifiers_dict1:
             modifiers_dict1[k].pop("is_replacement")
             modifiers_dict2[k].pop("is_replacement")
 
@@ -339,7 +340,7 @@ class TestConfigReader(unittest.TestCase):
                 },
                 2: {"text": "Tatooine", "voiceover": ResRef.from_blank()},
                 3: {
-                    "text": "Climate: Arid\n" "Terrain: Desert\n" "Docking: Anchorhead Spaceport\n" "Native Species: Unknown",
+                    "text": "Climate: Arid\nTerrain: Desert\nDocking: Anchorhead Spaceport\nNative Species: Unknown",
                     "voiceover": ResRef.from_blank(),
                 },
                 4: {"text": "Manaan", "voiceover": ResRef.from_blank()},
@@ -352,7 +353,7 @@ class TestConfigReader(unittest.TestCase):
                 },
                 6: {"text": "Kashyyyk", "voiceover": ResRef.from_blank()},
                 7: {
-                    "text": "Climate: Temperate\n" "Terrain: Forest\n" "Docking: Czerka Landing Pad\n" "Native Species: Wookies",
+                    "text": "Climate: Temperate\nTerrain: Forest\nDocking: Czerka Landing Pad\nNative Species: Wookies",
                     "voiceover": ResRef.from_blank(),
                 },
                 8: {"text": "", "voiceover": ResRef.from_blank()},
@@ -375,12 +376,12 @@ class TestConfigReader(unittest.TestCase):
                     "voiceover": ResRef.from_blank(),
                 },
                 123716: {
-                    "text": "Climate: None\n" "Terrain: Asteroid\n" "Docking: Peragus Mining Station\n" "Native Species: None",
+                    "text": "Climate: None\nTerrain: Asteroid\nDocking: Peragus Mining Station\nNative Species: None",
                     "voiceover": ResRef.from_blank(),
                 },
                 123717: {"text": "Lehon", "voiceover": ResRef.from_blank()},
                 123718: {
-                    "text": "Climate: Tropical\n" "Terrain: Islands\n" "Docking: Beach Landing\n" "Native Species: Rakata",
+                    "text": "Climate: Tropical\nTerrain: Islands\nDocking: Beach Landing\nNative Species: Rakata",
                     "voiceover": ResRef.from_blank(),
                 },
                 123720: {
@@ -391,11 +392,11 @@ class TestConfigReader(unittest.TestCase):
                     "voiceover": ResRef.from_blank(),
                 },
                 123722: {
-                    "text": "Climate: Tropical\n" "Terrain: Jungle\n" "Docking: Jungle Clearing\n" "Native Species: None",
+                    "text": "Climate: Tropical\nTerrain: Jungle\nDocking: Jungle Clearing\nNative Species: None",
                     "voiceover": ResRef.from_blank(),
                 },
                 123724: {
-                    "text": "Climate: Temperate\n" "Terrain: Forest\n" "Docking: Iziz Spaceport\n" "Native Species: None",
+                    "text": "Climate: Temperate\nTerrain: Forest\nDocking: Iziz Spaceport\nNative Species: None",
                     "voiceover": ResRef.from_blank(),
                 },
                 123726: {
@@ -413,7 +414,7 @@ class TestConfigReader(unittest.TestCase):
                     "voiceover": ResRef.from_blank(),
                 },
                 123730: {
-                    "text": "Climate: Arid\n" "Terrain: Volcanic\n" "Docking: Dreshae Settlement\n" "Native Species: Unknown",
+                    "text": "Climate: Arid\nTerrain: Volcanic\nDocking: Dreshae Settlement\nNative Species: Unknown",
                     "voiceover": ResRef.from_blank(),
                 },
                 124112: {
@@ -492,7 +493,6 @@ class TestConfigReader(unittest.TestCase):
     # region 2DA: Change Row
     def test_2da_changerow_identifier(self):
         """Test that identifier is being loaded correctly."""
-
         ini_text = """
             [2DAList]
             Table0=test.2da
@@ -514,7 +514,7 @@ class TestConfigReader(unittest.TestCase):
             interpolation=None,
         )
         # use case-sensitive keys
-        ini.optionxform = lambda optionstr: optionstr  #  type: ignore[method-assign]
+        ini.optionxform = lambda optionstr: optionstr  # type: ignore[method-assign]
 
         ini.read_string(ini_text)
 
@@ -532,7 +532,6 @@ class TestConfigReader(unittest.TestCase):
 
     def test_2da_changerow_targets(self):
         """Test that target values (line to modify) are loading correctly."""
-
         ini_text = """
             [2DAList]
             Table0=test.2da
@@ -557,7 +556,7 @@ class TestConfigReader(unittest.TestCase):
             interpolation=None,
         )
         # use case-sensitive keys
-        ini.optionxform = lambda optionstr: optionstr  #  type: ignore[method-assign]
+        ini.optionxform = lambda optionstr: optionstr  # type: ignore[method-assign]
 
         ini.read_string(ini_text)
 
@@ -582,7 +581,6 @@ class TestConfigReader(unittest.TestCase):
 
     def test_2da_changerow_store2da(self):
         """Test that 2DAMEMORY values are set to be stored correctly."""
-
         ini_text = """
             [2DAList]
             Table0=test.2da
@@ -604,7 +602,7 @@ class TestConfigReader(unittest.TestCase):
             interpolation=None,
         )
         # use case-sensitive keys
-        ini.optionxform = lambda optionstr: optionstr  #  type: ignore[method-assign]
+        ini.optionxform = lambda optionstr: optionstr  # type: ignore[method-assign]
 
         ini.read_string(ini_text)
 
@@ -630,7 +628,6 @@ class TestConfigReader(unittest.TestCase):
 
     def test_2da_changerow_cells(self):
         """Test that cells are set to be modified correctly."""
-
         ini_text = """
             [2DAList]
             Table0=test.2da
@@ -652,7 +649,7 @@ class TestConfigReader(unittest.TestCase):
             interpolation=None,
         )
         # use case-sensitive keys
-        ini.optionxform = lambda optionstr: optionstr  #  type: ignore[method-assign]
+        ini.optionxform = lambda optionstr: optionstr  # type: ignore[method-assign]
 
         ini.read_string(ini_text)
 
@@ -682,7 +679,6 @@ class TestConfigReader(unittest.TestCase):
     # region 2DA: Add Row
     def test_2da_addrow_identifier(self):
         """Test that identifier is being loaded correctly."""
-
         ini_text = """
             [2DAList]
             Table0=test.2da
@@ -702,7 +698,7 @@ class TestConfigReader(unittest.TestCase):
             interpolation=None,
         )
         # use case-sensitive keys
-        ini.optionxform = lambda optionstr: optionstr  #  type: ignore[method-assign]
+        ini.optionxform = lambda optionstr: optionstr  # type: ignore[method-assign]
 
         ini.read_string(ini_text)
 
@@ -720,7 +716,6 @@ class TestConfigReader(unittest.TestCase):
 
     def test_2da_addrow_exclusivecolumn(self):
         """Test that exclusive column property is being loaded correctly."""
-
         ini_text = """
             [2DAList]
             Table0=test.2da
@@ -741,7 +736,7 @@ class TestConfigReader(unittest.TestCase):
             interpolation=None,
         )
         # use case-sensitive keys
-        ini.optionxform = lambda optionstr: optionstr  #  type: ignore[method-assign]
+        ini.optionxform = lambda optionstr: optionstr  # type: ignore[method-assign]
 
         ini.read_string(ini_text)
 
@@ -763,7 +758,6 @@ class TestConfigReader(unittest.TestCase):
 
     def test_2da_addrow_rowlabel(self):
         """Test that row label property is being loaded correctly."""
-
         ini_text = """
             [2DAList]
             Table0=test.2da
@@ -784,7 +778,7 @@ class TestConfigReader(unittest.TestCase):
             interpolation=None,
         )
         # use case-sensitive keys
-        ini.optionxform = lambda optionstr: optionstr  #  type: ignore[method-assign]
+        ini.optionxform = lambda optionstr: optionstr  # type: ignore[method-assign]
 
         ini.read_string(ini_text)
 
@@ -806,7 +800,6 @@ class TestConfigReader(unittest.TestCase):
 
     def test_2da_addrow_store2da(self):
         """Test that 2DAMEMORY# data will be saved correctly."""
-
         ini_text = """
             [2DAList]
             Table0=test.2da
@@ -827,7 +820,7 @@ class TestConfigReader(unittest.TestCase):
             interpolation=None,
         )
         # use case-sensitive keys
-        ini.optionxform = lambda optionstr: optionstr  #  type: ignore[method-assign]
+        ini.optionxform = lambda optionstr: optionstr  # type: ignore[method-assign]
 
         ini.read_string(ini_text)
 
@@ -853,7 +846,6 @@ class TestConfigReader(unittest.TestCase):
 
     def test_2da_addrow_cells(self):
         """Test that cells will be assigned properly correctly."""
-
         ini_text = """
             [2DAList]
             Table0=test.2da
@@ -874,7 +866,7 @@ class TestConfigReader(unittest.TestCase):
             interpolation=None,
         )
         # use case-sensitive keys
-        ini.optionxform = lambda optionstr: optionstr  #  type: ignore[method-assign]
+        ini.optionxform = lambda optionstr: optionstr  # type: ignore[method-assign]
 
         ini.read_string(ini_text)
 
@@ -904,7 +896,6 @@ class TestConfigReader(unittest.TestCase):
     # region 2DA: Copy Row
     def test_2da_copyrow_identifier(self):
         """Test that identifier is being loaded correctly."""
-
         ini_text = """
             [2DAList]
             Table0=test.2da
@@ -926,7 +917,7 @@ class TestConfigReader(unittest.TestCase):
             interpolation=None,
         )
         # use case-sensitive keys
-        ini.optionxform = lambda optionstr: optionstr  #  type: ignore[method-assign]
+        ini.optionxform = lambda optionstr: optionstr  # type: ignore[method-assign]
 
         ini.read_string(ini_text)
 
@@ -940,11 +931,10 @@ class TestConfigReader(unittest.TestCase):
         # noinspection PyTypeChecker
         mod_1: CopyRow2DA = config.patches_2da[0].modifiers.pop(0)  # type: ignore
         self.assertEqual("copy_row_1", mod_1.identifier)
-    
+
 
     def test_2da_copyrow_high(self):
         """Test that high() is working correctly in copyrow's."""
-
         ini_text = """
             [2DAList]
             Table0=spells_hlfp_test.2da
@@ -989,7 +979,7 @@ class TestConfigReader(unittest.TestCase):
             interpolation=None,
         )
         # use case-sensitive keys
-        ini.optionxform = lambda optionstr: optionstr  #  type: ignore[method-assign]
+        ini.optionxform = lambda optionstr: optionstr  # type: ignore[method-assign]
 
         ini.read_string(ini_text)
 
@@ -1005,34 +995,33 @@ class TestConfigReader(unittest.TestCase):
         self.assertEqual("spells_forcestrike", mod_0.identifier)
         self.assertEqual("label", mod_0.exclusive_column)
         self.assertEqual("ST_FORCE_POWER_STRIKE", mod_0.cells["label"].string)
-        self.assertEqual("55", mod_0.cells['forcepoints'].string)
-        self.assertEqual("21", mod_0.cells['jedimaster'].string)
-        self.assertEqual("21", mod_0.cells['sithlord'].string)
-        self.assertEqual("-1", mod_0.cells['guardian'].string)
-        self.assertEqual("-1", mod_0.cells['consular'].string)
-        self.assertEqual("-1", mod_0.cells['sentinel'].string)
-        self.assertEqual("-1", mod_0.cells['weapmstr'].string)
-        self.assertEqual("-1", mod_0.cells['watchman'].string)
-        self.assertEqual("-1", mod_0.cells['marauder'].string)
-        self.assertEqual("-1", mod_0.cells['assassin'].string)
-        self.assertEqual("21", mod_0.cells['inate'].string)
-        self.assertEqual("12", mod_0.cells['maxcr'].string)
-        self.assertEqual(f"{0x4101:#x}", mod_0.cells['category'].string)
-        self.assertEqual("ip_st_strike", mod_0.cells['iconresref'].string)
-        self.assertEqual("st_forcestrike", mod_0.cells['impactscript'].string)
-        self.assertEqual("up", mod_0.cells['conjanim'].string)
-        self.assertEqual("up", mod_0.cells['castanim'].string)
-        self.assertEqual("forcehostile", mod_0.cells['forcehostile'].column)
+        self.assertEqual("55", mod_0.cells["forcepoints"].string)
+        self.assertEqual("21", mod_0.cells["jedimaster"].string)
+        self.assertEqual("21", mod_0.cells["sithlord"].string)
+        self.assertEqual("-1", mod_0.cells["guardian"].string)
+        self.assertEqual("-1", mod_0.cells["consular"].string)
+        self.assertEqual("-1", mod_0.cells["sentinel"].string)
+        self.assertEqual("-1", mod_0.cells["weapmstr"].string)
+        self.assertEqual("-1", mod_0.cells["watchman"].string)
+        self.assertEqual("-1", mod_0.cells["marauder"].string)
+        self.assertEqual("-1", mod_0.cells["assassin"].string)
+        self.assertEqual("21", mod_0.cells["inate"].string)
+        self.assertEqual("12", mod_0.cells["maxcr"].string)
+        self.assertEqual(f"{0x4101:#x}", mod_0.cells["category"].string)
+        self.assertEqual("ip_st_strike", mod_0.cells["iconresref"].string)
+        self.assertEqual("st_forcestrike", mod_0.cells["impactscript"].string)
+        self.assertEqual("up", mod_0.cells["conjanim"].string)
+        self.assertEqual("up", mod_0.cells["castanim"].string)
+        self.assertEqual("forcehostile", mod_0.cells["forcehostile"].column)
         self.assertIsInstance(mod_0.cells["forcehostile"], RowValueHigh)
-        self.assertEqual("", mod_0.cells['dark_recom'].string)
-        self.assertEqual("", mod_0.cells['light_recom'].string)
-        self.assertEqual("0", mod_0.cells['forcepriority'].string)
-        self.assertEqual("3", mod_0.cells['pips'].string)
-        
+        self.assertEqual("", mod_0.cells["dark_recom"].string)
+        self.assertEqual("", mod_0.cells["light_recom"].string)
+        self.assertEqual("0", mod_0.cells["forcepriority"].string)
+        self.assertEqual("3", mod_0.cells["pips"].string)
+
 
     def test_2da_copyrow_target(self):
         """Test that target values (line to modify) are loading correctly."""
-
         ini_text = """
             [2DAList]
             Table0=test.2da
@@ -1057,7 +1046,7 @@ class TestConfigReader(unittest.TestCase):
             interpolation=None,
         )
         # use case-sensitive keys
-        ini.optionxform = lambda optionstr: optionstr  #  type: ignore[method-assign]
+        ini.optionxform = lambda optionstr: optionstr  # type: ignore[method-assign]
 
         ini.read_string(ini_text)
 
@@ -1082,7 +1071,6 @@ class TestConfigReader(unittest.TestCase):
 
     def test_2da_copyrow_exclusivecolumn(self):
         """Test that exclusive column property is being loaded correctly."""
-
         ini_text = """
             [2DAList]
             Table0=test.2da
@@ -1105,7 +1093,7 @@ class TestConfigReader(unittest.TestCase):
             interpolation=None,
         )
         # use case-sensitive keys
-        ini.optionxform = lambda optionstr: optionstr  #  type: ignore[method-assign]
+        ini.optionxform = lambda optionstr: optionstr  # type: ignore[method-assign]
 
         ini.read_string(ini_text)
 
@@ -1127,7 +1115,6 @@ class TestConfigReader(unittest.TestCase):
 
     def test_2da_copyrow_rowlabel(self):
         """Test that row label property is being loaded correctly."""
-
         ini_text = """
             [2DAList]
             Table0=test.2da
@@ -1150,7 +1137,7 @@ class TestConfigReader(unittest.TestCase):
             interpolation=None,
         )
         # use case-sensitive keys
-        ini.optionxform = lambda optionstr: optionstr  #  type: ignore[method-assign]
+        ini.optionxform = lambda optionstr: optionstr  # type: ignore[method-assign]
 
         ini.read_string(ini_text)
 
@@ -1172,7 +1159,6 @@ class TestConfigReader(unittest.TestCase):
 
     def test_2da_copyrow_store2da(self):
         """Test that 2DAMEMORY# data will be saved correctly."""
-
         ini_text = """
             [2DAList]
             Table0=test.2da
@@ -1194,7 +1180,7 @@ class TestConfigReader(unittest.TestCase):
             interpolation=None,
         )
         # use case-sensitive keys
-        ini.optionxform = lambda optionstr: optionstr  #  type: ignore[method-assign]
+        ini.optionxform = lambda optionstr: optionstr  # type: ignore[method-assign]
 
         ini.read_string(ini_text)
 
@@ -1220,7 +1206,6 @@ class TestConfigReader(unittest.TestCase):
 
     def test_2da_copyrow_cells(self):
         """Test that cells will be assigned properly."""
-
         ini_text = """
             [2DAList]
             Table0=test.2da
@@ -1242,7 +1227,7 @@ class TestConfigReader(unittest.TestCase):
             interpolation=None,
         )
         # use case-sensitive keys
-        ini.optionxform = lambda optionstr: optionstr  #  type: ignore[method-assign]
+        ini.optionxform = lambda optionstr: optionstr  # type: ignore[method-assign]
 
         ini.read_string(ini_text)
 
@@ -1272,7 +1257,6 @@ class TestConfigReader(unittest.TestCase):
     # region 2DA: Add Column
     def test_2da_addcolumn_basic(self):
         """Test that column will be inserted with correct label and default values."""
-
         ini_text = """
             [2DAList]
             Table0=test.2da
@@ -1299,7 +1283,7 @@ class TestConfigReader(unittest.TestCase):
             interpolation=None,
         )
         # use case-sensitive keys
-        ini.optionxform = lambda optionstr: optionstr  #  type: ignore[method-assign]
+        ini.optionxform = lambda optionstr: optionstr  # type: ignore[method-assign]
 
         ini.read_string(ini_text)
 
@@ -1319,7 +1303,6 @@ class TestConfigReader(unittest.TestCase):
 
     def test_2da_addcolumn_indexinsert(self):
         """Test that cells will be inserted to the new column at the given index correctly."""
-
         ini_text = """
             [2DAList]
             Table0=test.2da
@@ -1342,7 +1325,7 @@ class TestConfigReader(unittest.TestCase):
             interpolation=None,
         )
         # use case-sensitive keys
-        ini.optionxform = lambda optionstr: optionstr  #  type: ignore[method-assign]
+        ini.optionxform = lambda optionstr: optionstr  # type: ignore[method-assign]
 
         ini.read_string(ini_text)
 
@@ -1367,7 +1350,6 @@ class TestConfigReader(unittest.TestCase):
 
     def test_2da_addcolumn_labelinsert(self):
         """Test that cells will be inserted to the new column at the given label correctly."""
-
         ini_text = """
             [2DAList]
             Table0=test.2da
@@ -1390,7 +1372,7 @@ class TestConfigReader(unittest.TestCase):
             interpolation=None,
         )
         # use case-sensitive keys
-        ini.optionxform = lambda optionstr: optionstr  #  type: ignore[method-assign]
+        ini.optionxform = lambda optionstr: optionstr  # type: ignore[method-assign]
 
         ini.read_string(ini_text)
 
@@ -1415,7 +1397,6 @@ class TestConfigReader(unittest.TestCase):
 
     def test_2da_addcolumn_2damemory(self):
         """Test that 2DAMEMORY will be stored correctly."""
-
         ini_text = """
             [2DAList]
             Table0=test.2da
@@ -1436,7 +1417,7 @@ class TestConfigReader(unittest.TestCase):
             interpolation=None,
         )
         # use case-sensitive keys
-        ini.optionxform = lambda optionstr: optionstr  #  type: ignore[method-assign]
+        ini.optionxform = lambda optionstr: optionstr  # type: ignore[method-assign]
 
         ini.read_string(ini_text)
 
@@ -1454,7 +1435,6 @@ class TestConfigReader(unittest.TestCase):
     # region SSF
     def test_ssf_replace(self):
         """Test that the replace file boolean is registered correctly."""
-
         ini_text = """
             [SSFList]
             File0=test1.ssf
@@ -1471,7 +1451,7 @@ class TestConfigReader(unittest.TestCase):
             interpolation=None,
         )
         # use case-sensitive keys
-        ini.optionxform = lambda optionstr: optionstr  #  type: ignore[method-assign]
+        ini.optionxform = lambda optionstr: optionstr  # type: ignore[method-assign]
 
         ini.read_string(ini_text)
 
@@ -1484,7 +1464,6 @@ class TestConfigReader(unittest.TestCase):
 
     def test_ssf_stored_constant(self):
         """Test that the set sound as constant stringref is registered correctly."""
-
         ini_text = """
             [SSFList]
             File0=test.ssf
@@ -1501,7 +1480,7 @@ class TestConfigReader(unittest.TestCase):
             interpolation=None,
         )
         # use case-sensitive keys
-        ini.optionxform = lambda optionstr: optionstr  #  type: ignore[method-assign]
+        ini.optionxform = lambda optionstr: optionstr  # type: ignore[method-assign]
 
         ini.read_string(ini_text)
 
@@ -1519,7 +1498,6 @@ class TestConfigReader(unittest.TestCase):
 
     def test_ssf_stored_2da(self):
         """Test that the set sound as 2DAMEMORY value is registered correctly."""
-
         ini_text = """
             [SSFList]
             File0=test.ssf
@@ -1536,7 +1514,7 @@ class TestConfigReader(unittest.TestCase):
             interpolation=None,
         )
         # use case-sensitive keys
-        ini.optionxform = lambda optionstr: optionstr  #  type: ignore[method-assign]
+        ini.optionxform = lambda optionstr: optionstr  # type: ignore[method-assign]
 
         ini.read_string(ini_text)
 
@@ -1554,7 +1532,6 @@ class TestConfigReader(unittest.TestCase):
 
     def test_ssf_stored_tlk(self):
         """Test that the set sound as StrRef is registered correctly."""
-
         ini_text = """
             [SSFList]
             File0=test.ssf
@@ -1571,7 +1548,7 @@ class TestConfigReader(unittest.TestCase):
             interpolation=None,
         )
         # use case-sensitive keys
-        ini.optionxform = lambda optionstr: optionstr  #  type: ignore[method-assign]
+        ini.optionxform = lambda optionstr: optionstr  # type: ignore[method-assign]
 
         ini.read_string(ini_text)
 
@@ -1589,7 +1566,6 @@ class TestConfigReader(unittest.TestCase):
 
     def test_ssf_set(self):
         """Test that each sound is mapped and will register correctly."""
-
         ini_text = """
             [SSFList]
             File0=test.ssf
@@ -1632,7 +1608,7 @@ class TestConfigReader(unittest.TestCase):
             interpolation=None,
         )
         # use case-sensitive keys
-        ini.optionxform = lambda optionstr: optionstr  #  type: ignore[method-assign]
+        ini.optionxform = lambda optionstr: optionstr  # type: ignore[method-assign]
 
         ini.read_string(ini_text)
 
@@ -1702,7 +1678,6 @@ class TestConfigReader(unittest.TestCase):
     # region GFF: Modify
     def test_gff_modify_pathing(self):
         """Test that the modify path for the field registered correctly."""
-
         ini_text = """
             [GFFList]
             File0=test.gff
@@ -1718,7 +1693,7 @@ class TestConfigReader(unittest.TestCase):
             interpolation=None,
         )
         # use case-sensitive keys
-        ini.optionxform = lambda optionstr: optionstr  #  type: ignore[method-assign]
+        ini.optionxform = lambda optionstr: optionstr  # type: ignore[method-assign]
 
         ini.read_string(ini_text)
 
@@ -1732,7 +1707,6 @@ class TestConfigReader(unittest.TestCase):
 
     def test_gff_modify_type_int(self):
         """Test that the modify field modifiers are registered correctly."""
-
         ini_text = """
             [GFFList]
             File0=test.gff
@@ -1748,7 +1722,7 @@ class TestConfigReader(unittest.TestCase):
             interpolation=None,
         )
         # use case-sensitive keys
-        ini.optionxform = lambda optionstr: optionstr  #  type: ignore[method-assign]
+        ini.optionxform = lambda optionstr: optionstr  # type: ignore[method-assign]
 
         ini.read_string(ini_text)
 
@@ -1764,7 +1738,6 @@ class TestConfigReader(unittest.TestCase):
 
     def test_gff_modify_type_string(self):
         """Test that the modify field modifiers are registered correctly."""
-
         ini_text = """
             [GFFList]
             File0=test.gff
@@ -1780,7 +1753,7 @@ class TestConfigReader(unittest.TestCase):
             interpolation=None,
         )
         # use case-sensitive keys
-        ini.optionxform = lambda optionstr: optionstr  #  type: ignore[method-assign]
+        ini.optionxform = lambda optionstr: optionstr  # type: ignore[method-assign]
 
         ini.read_string(ini_text)
 
@@ -1796,7 +1769,6 @@ class TestConfigReader(unittest.TestCase):
 
     def test_gff_modify_type_vector3(self):
         """Test that the modify field modifiers are registered correctly."""
-
         ini_text = """
             [GFFList]
             File0=test.gff
@@ -1812,7 +1784,7 @@ class TestConfigReader(unittest.TestCase):
             interpolation=None,
         )
         # use case-sensitive keys
-        ini.optionxform = lambda optionstr: optionstr  #  type: ignore[method-assign]
+        ini.optionxform = lambda optionstr: optionstr  # type: ignore[method-assign]
 
         ini.read_string(ini_text)
 
@@ -1828,7 +1800,6 @@ class TestConfigReader(unittest.TestCase):
 
     def test_gff_modify_type_vector4(self):
         """Test that the modify field modifiers are registered correctly."""
-
         ini_text = """
             [GFFList]
             File0=test.gff
@@ -1844,7 +1815,7 @@ class TestConfigReader(unittest.TestCase):
             interpolation=None,
         )
         # use case-sensitive keys
-        ini.optionxform = lambda optionstr: optionstr  #  type: ignore[method-assign]
+        ini.optionxform = lambda optionstr: optionstr  # type: ignore[method-assign]
 
         ini.read_string(ini_text)
 
@@ -1860,7 +1831,6 @@ class TestConfigReader(unittest.TestCase):
 
     def test_gff_modify_type_locstring(self):
         """Test that the modify field modifiers are registered correctly."""
-
         ini_text = """
             [GFFList]
             File0=test.gff
@@ -1878,7 +1848,7 @@ class TestConfigReader(unittest.TestCase):
             interpolation=None,
         )
         # use case-sensitive keys
-        ini.optionxform = lambda optionstr: optionstr  #  type: ignore[method-assign]
+        ini.optionxform = lambda optionstr: optionstr  # type: ignore[method-assign]
 
         ini.read_string(ini_text)
 
@@ -1912,7 +1882,6 @@ class TestConfigReader(unittest.TestCase):
 
     def test_gff_modify_2damemory(self):
         """Test that the modify field modifiers are registered correctly."""
-
         ini_text = """
             [GFFList]
             File0=test.gff
@@ -1929,7 +1898,7 @@ class TestConfigReader(unittest.TestCase):
             interpolation=None,
         )
         # use case-sensitive keys
-        ini.optionxform = lambda optionstr: optionstr  #  type: ignore[method-assign]
+        ini.optionxform = lambda optionstr: optionstr  # type: ignore[method-assign]
 
         ini.read_string(ini_text)
 
@@ -1952,7 +1921,6 @@ class TestConfigReader(unittest.TestCase):
 
     def test_gff_modify_tlkmemory(self):
         """Test that the modify field modifiers are registered correctly."""
-
         ini_text = """
             [GFFList]
             File0=test.gff
@@ -1968,7 +1936,7 @@ class TestConfigReader(unittest.TestCase):
             interpolation=None,
         )
         # use case-sensitive keys
-        ini.optionxform = lambda optionstr: optionstr  #  type: ignore[method-assign]
+        ini.optionxform = lambda optionstr: optionstr  # type: ignore[method-assign]
 
         ini.read_string(ini_text)
 
@@ -1985,7 +1953,6 @@ class TestConfigReader(unittest.TestCase):
     # region GFF: Add
     def test_gff_add_ints(self):
         """Test that the add field modifiers are registered correctly."""
-
         ini_text = """
             [GFFList]
             File0=test.gff
@@ -2049,7 +2016,7 @@ class TestConfigReader(unittest.TestCase):
             interpolation=None,
         )
         # use case-sensitive keys
-        ini.optionxform = lambda optionstr: optionstr  #  type: ignore[method-assign]
+        ini.optionxform = lambda optionstr: optionstr  # type: ignore[method-assign]
 
         ini.read_string(ini_text)
 
@@ -2088,7 +2055,6 @@ class TestConfigReader(unittest.TestCase):
 
     def test_gff_add_floats(self):
         """Test that the add field modifiers are registered correctly."""
-
         ini_text = """
             [GFFList]
             File0=test.gff
@@ -2117,7 +2083,7 @@ class TestConfigReader(unittest.TestCase):
             interpolation=None,
         )
         # use case-sensitive keys
-        ini.optionxform = lambda optionstr: optionstr  #  type: ignore[method-assign]
+        ini.optionxform = lambda optionstr: optionstr  # type: ignore[method-assign]
 
         ini.read_string(ini_text)
 
@@ -2133,7 +2099,6 @@ class TestConfigReader(unittest.TestCase):
 
     def test_gff_add_string(self):
         """Test that the add field modifiers are registered correctly."""
-
         ini_text = """
             [GFFList]
             File0=test.gff
@@ -2155,7 +2120,7 @@ class TestConfigReader(unittest.TestCase):
             interpolation=None,
         )
         # use case-sensitive keys
-        ini.optionxform = lambda optionstr: optionstr  #  type: ignore[method-assign]
+        ini.optionxform = lambda optionstr: optionstr  # type: ignore[method-assign]
 
         ini.read_string(ini_text)
 
@@ -2168,7 +2133,6 @@ class TestConfigReader(unittest.TestCase):
 
     def test_gff_add_vector3(self):
         """Test that the add field modifiers are registered correctly."""
-
         ini_text = """
             [GFFList]
             File0=test.gff
@@ -2190,7 +2154,7 @@ class TestConfigReader(unittest.TestCase):
             interpolation=None,
         )
         # use case-sensitive keys
-        ini.optionxform = lambda optionstr: optionstr  #  type: ignore[method-assign]
+        ini.optionxform = lambda optionstr: optionstr  # type: ignore[method-assign]
 
         ini.read_string(ini_text)
 
@@ -2203,7 +2167,6 @@ class TestConfigReader(unittest.TestCase):
 
     def test_gff_add_vector4(self):
         """Test that the add field modifiers are registered correctly."""
-
         ini_text = """
             [GFFList]
             File0=test.gff
@@ -2225,7 +2188,7 @@ class TestConfigReader(unittest.TestCase):
             interpolation=None,
         )
         # use case-sensitive keys
-        ini.optionxform = lambda optionstr: optionstr  #  type: ignore[method-assign]
+        ini.optionxform = lambda optionstr: optionstr  # type: ignore[method-assign]
 
         ini.read_string(ini_text)
 
@@ -2238,7 +2201,6 @@ class TestConfigReader(unittest.TestCase):
 
     def test_gff_add_resref(self):
         """Test that the add field modifiers are registered correctly."""
-
         ini_text = """
             [GFFList]
             File0=test.gff
@@ -2260,7 +2222,7 @@ class TestConfigReader(unittest.TestCase):
             interpolation=None,
         )
         # use case-sensitive keys
-        ini.optionxform = lambda optionstr: optionstr  #  type: ignore[method-assign]
+        ini.optionxform = lambda optionstr: optionstr  # type: ignore[method-assign]
 
         ini.read_string(ini_text)
 
@@ -2273,7 +2235,6 @@ class TestConfigReader(unittest.TestCase):
 
     def test_gff_add_locstring(self):
         """Test that the add field modifiers are registered correctly."""
-
         ini_text = """
             [GFFList]
             File0=test.gff
@@ -2304,7 +2265,7 @@ class TestConfigReader(unittest.TestCase):
             interpolation=None,
         )
         # use case-sensitive keys
-        ini.optionxform = lambda optionstr: optionstr  #  type: ignore[method-assign]
+        ini.optionxform = lambda optionstr: optionstr  # type: ignore[method-assign]
 
         ini.read_string(ini_text)
 
@@ -2313,34 +2274,33 @@ class TestConfigReader(unittest.TestCase):
 
         mod_0 = config.patches_gff[0].modifiers.pop(0)
         self.assertIsInstance(mod_0, AddFieldGFF)
-        assert(isinstance(mod_0, AddFieldGFF))
+        assert (isinstance(mod_0, AddFieldGFF))
         self.assertIsInstance(mod_0.value, FieldValueConstant)
-        assert(isinstance(mod_0.value, FieldValueConstant))
+        assert (isinstance(mod_0.value, FieldValueConstant))
         self.assertIsInstance(mod_0.value.stored, LocalizedStringDelta)
-        assert(isinstance(mod_0.value.stored, LocalizedStringDelta))
+        assert (isinstance(mod_0.value.stored, LocalizedStringDelta))
         self.assertEqual("SomeList", str(mod_0.path))
         self.assertEqual("SomeField", mod_0.label)
         self.assertIsInstance(mod_0.value.stored.stringref, FieldValueConstant)
-        assert(isinstance(mod_0.value.stored.stringref, FieldValueConstant))
+        assert (isinstance(mod_0.value.stored.stringref, FieldValueConstant))
         self.assertEqual(123, mod_0.value.stored.stringref.stored)
         self.assertEqual("abc", mod_0.value.stored.get(Language.ENGLISH, Gender.MALE))
         self.assertEqual("lmnop", mod_0.value.stored.get(Language.FRENCH, Gender.FEMALE))
 
         mod_1 = config.patches_gff[0].modifiers.pop(0)
         self.assertIsInstance(mod_1, AddFieldGFF)
-        assert(isinstance(mod_1, AddFieldGFF))
+        assert (isinstance(mod_1, AddFieldGFF))
         self.assertIsInstance(mod_1.value, FieldValueConstant)
-        assert(isinstance(mod_1.value, FieldValueConstant))
+        assert (isinstance(mod_1.value, FieldValueConstant))
         self.assertIsInstance(mod_1.value.stored, LocalizedStringDelta)
-        assert(isinstance(mod_1.value.stored, LocalizedStringDelta))
+        assert (isinstance(mod_1.value.stored, LocalizedStringDelta))
         self.assertIsInstance(mod_1.value.stored.stringref, FieldValueTLKMemory)
-        assert(isinstance(mod_1.value.stored.stringref, FieldValueTLKMemory))
+        assert (isinstance(mod_1.value.stored.stringref, FieldValueTLKMemory))
         self.assertEqual(8, mod_1.value.stored.stringref.token_id)
 
 
     def test_gff_add_inside_struct(self):
         """Test that the add field modifiers are registered correctly."""
-
         ini_text = """
             [GFFList]
             File0=test.gff
@@ -2369,7 +2329,7 @@ class TestConfigReader(unittest.TestCase):
             interpolation=None,
         )
         # use case-sensitive keys
-        ini.optionxform = lambda optionstr: optionstr  #  type: ignore[method-assign]
+        ini.optionxform = lambda optionstr: optionstr  # type: ignore[method-assign]
 
         ini.read_string(ini_text)
 
@@ -2378,9 +2338,9 @@ class TestConfigReader(unittest.TestCase):
 
         mod_0 = config.patches_gff[0].modifiers.pop(0)
         self.assertIsInstance(mod_0, AddFieldGFF)
-        assert(isinstance(mod_0, AddFieldGFF))
+        assert (isinstance(mod_0, AddFieldGFF))
         self.assertIsInstance(mod_0.value, FieldValueConstant)
-        assert(isinstance(mod_0.value, FieldValueConstant))
+        assert (isinstance(mod_0.value, FieldValueConstant))
         self.assertEqual(mod_0.path.name, ">>##INDEXINLIST##<<")
         self.assertEqual("SomeStruct", mod_0.label)
         self.assertEqual(321, mod_0.value.stored.struct_id)
@@ -2397,7 +2357,6 @@ class TestConfigReader(unittest.TestCase):
 
     def test_gff_add_inside_list(self):
         """Test that the add field modifiers are registered correctly."""
-
         ini_text = """
             [GFFList]
             File0=test.gff
@@ -2425,7 +2384,7 @@ class TestConfigReader(unittest.TestCase):
             interpolation=None,
         )
         # use case-sensitive keys
-        ini.optionxform = lambda optionstr: optionstr  #  type: ignore[method-assign]
+        ini.optionxform = lambda optionstr: optionstr  # type: ignore[method-assign]
 
         ini.read_string(ini_text)
 
@@ -2434,19 +2393,19 @@ class TestConfigReader(unittest.TestCase):
 
         mod_0 = config.patches_gff[0].modifiers.pop(0)
         self.assertIsInstance(mod_0, AddFieldGFF)
-        assert(isinstance(mod_0, AddFieldGFF))
+        assert (isinstance(mod_0, AddFieldGFF))
         self.assertIsInstance(mod_0.value, FieldValueConstant)
-        assert(isinstance(mod_0.value, FieldValueConstant))
+        assert (isinstance(mod_0.value, FieldValueConstant))
         self.assertFalse(mod_0.path.name)
         self.assertEqual("SomeList", mod_0.label)
 
         mod_1 = mod_0.modifiers.pop(0)
         self.assertIsInstance(mod_1, AddStructToListGFF)
-        assert(isinstance(mod_1, AddStructToListGFF))
+        assert (isinstance(mod_1, AddStructToListGFF))
         self.assertIsInstance(mod_1.value, FieldValueConstant)
-        assert(isinstance(mod_1.value, FieldValueConstant))
+        assert (isinstance(mod_1.value, FieldValueConstant))
         self.assertIsInstance(mod_1.value.value(None, GFFFieldType.Struct), GFFStruct)  # type: ignore[arg-type, reportGeneralTypeIssues]
-        assert(isinstance(mod_1.value.stored, GFFStruct))
+        assert (isinstance(mod_1.value.stored, GFFStruct))
         self.assertEqual(111, mod_1.value.stored.struct_id)
         self.assertEqual(5, mod_1.index_to_token)
 

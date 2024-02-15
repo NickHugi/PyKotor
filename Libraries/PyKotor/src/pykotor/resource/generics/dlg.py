@@ -13,7 +13,7 @@ from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES, ResourceType
 class DLG:
     """Stores dialog data.
 
-    Attributes
+    Attributes:
     ----------
         word_count: "NumWords" field.
         on_abort: "EndConverAbort" field.
@@ -126,7 +126,7 @@ class DLG:
     ) -> list[DLGEntry]:
         """Returns a flat list of all entries in the dialog.
 
-        Returns
+        Returns:
         -------
             A list of all stored entries.
         """
@@ -177,7 +177,7 @@ class DLG:
     ) -> list[DLGReply]:
         """Returns a flat list of all replies in the dialog.
 
-        Returns
+        Returns:
         -------
             A list of all stored replies.
         """
@@ -239,7 +239,7 @@ class DLGConversationType(IntEnum):
 class DLGNode:
     """Represents a node in the dialog tree.
 
-    Attributes
+    Attributes:
     ----------
         text: "Text" field.
         listener: "Listener" field.
@@ -399,7 +399,7 @@ class DLGAnimation:
 class DLGLink:
     """Points to a node. Links are stored either in other nodes or in the starting list of the DLG.
 
-    Attributes
+    Attributes:
     ----------
         active1: "Active" field.
         comment: "LinkComment" field. Only used in links stored in nodes.
@@ -457,7 +457,7 @@ class DLGLink:
 
 class DLGStunt:
     """
-    Attributes
+    Attributes:
     ----------
     participant: "Participant" field.
     stunt_model: "StuntModel" field.

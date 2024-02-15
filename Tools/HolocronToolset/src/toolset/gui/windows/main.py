@@ -3,12 +3,14 @@ from __future__ import annotations
 import base64
 import json
 import traceback
+
 from contextlib import suppress
 from datetime import datetime, timedelta, timezone
 from tempfile import TemporaryDirectory
 from typing import TYPE_CHECKING, ClassVar
 
 import requests
+
 from PyQt5 import QtCore, QtGui
 from PyQt5.QtGui import QCloseEvent, QIcon, QPixmap, QStandardItem
 from PyQt5.QtWidgets import QFileDialog, QMainWindow, QMessageBox, QTreeView

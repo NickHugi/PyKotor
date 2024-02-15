@@ -10,7 +10,7 @@ from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES, ResourceType
 class UTE:
     """Stores encounter data.
 
-    Attributes
+    Attributes:
     ----------
         tag: "Tag" field.
         resref: "TemplateResRef" field.
@@ -76,7 +76,7 @@ class UTE:
 class UTECreature:
     """Stores data for a creature that can be spawned by an encounter.
 
-    Attributes
+    Attributes:
     ----------
         appearance_id: "Appearance" field.
         challenge_rating: "CR" field.

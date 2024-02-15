@@ -4,6 +4,7 @@ import os
 import pathlib
 import sys
 import unittest
+
 from types import ModuleType
 
 THIS_SCRIPT_PATH = pathlib.Path(__file__).resolve()
@@ -59,7 +60,7 @@ class TestDecodeBytes(unittest.TestCase):
 
     def test_errors_replace(self):
         byte_str = b"h\xc3\xa9llo"
-        #self.assertEqual(byte_str.decode(errors="replace"), "h?llo")
+        # self.assertEqual(byte_str.decode(errors="replace"), "h?llo")
         self.assertEqual(byte_str.decode(errors="replace"), "héllo")
 
         result = decode_bytes_with_fallbacks(byte_str, errors="replace")

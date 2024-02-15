@@ -2,6 +2,9 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+from PyQt5.QtGui import QColor, QKeyEvent
+from PyQt5.QtWidgets import QMenu, QWidget
+
 from pykotor.common.geometry import SurfaceMaterial, Vector2
 from pykotor.common.misc import Color
 from pykotor.extract.installation import SearchLocation
@@ -9,8 +12,6 @@ from pykotor.resource.formats.bwm import read_bwm
 from pykotor.resource.formats.lyt import LYT, read_lyt
 from pykotor.resource.generics.pth import PTH, bytes_pth, read_pth
 from pykotor.resource.type import ResourceType
-from PyQt5.QtGui import QColor, QKeyEvent
-from PyQt5.QtWidgets import QMenu, QWidget
 from toolset.data.misc import ControlItem
 from toolset.gui.editor import Editor
 from toolset.gui.widgets.settings.git import GITSettings
@@ -18,8 +19,9 @@ from toolset.gui.widgets.settings.git import GITSettings
 if TYPE_CHECKING:
     import os
 
-    from pykotor.extract.file import ResourceIdentifier
     from PyQt5.QtCore import QPoint
+
+    from pykotor.extract.file import ResourceIdentifier
     from toolset.data.installation import HTInstallation
 
 
@@ -41,7 +43,7 @@ class PTHEditor(Editor):
 
         def intColorToQColor(intvalue):
             color = Color.from_rgba_integer(intvalue)
-            return QColor(int(color.r*255), int(color.g*255), int(color.b*255), int(color.a*255))
+            return QColor(int(color.r * 255), int(color.g * 255), int(color.b * 255), int(color.a * 255))
         self.materialColors: dict[SurfaceMaterial, QColor] = {
             SurfaceMaterial.UNDEFINED: intColorToQColor(self.settings.undefinedMaterialColour),
             SurfaceMaterial.OBSCURING: intColorToQColor(self.settings.obscuringMaterialColour),

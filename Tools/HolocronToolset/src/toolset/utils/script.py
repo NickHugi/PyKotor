@@ -5,6 +5,8 @@ import re
 import sys
 import uuid
 
+from PyQt5.QtWidgets import QFileDialog, QMessageBox
+
 from pykotor.common.misc import Game
 from pykotor.common.stream import BinaryReader, BinaryWriter
 from pykotor.extract.file import ResourceIdentifier
@@ -14,7 +16,6 @@ from pykotor.resource.formats.ncs.ncs_auto import bytes_ncs, compile_nss
 from pykotor.resource.type import ResourceType
 from pykotor.tools.path import CaseAwarePath
 from pykotor.tools.registry import resolve_reg_key_to_path, set_registry_key_value
-from PyQt5.QtWidgets import QFileDialog, QMessageBox
 from toolset.gui.widgets.settings.installations import GlobalSettings, NoConfigurationSetError
 from utility.error_handling import format_exception_with_variables
 from utility.misc import ProcessorArchitecture

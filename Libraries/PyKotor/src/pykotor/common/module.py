@@ -116,7 +116,7 @@ class Module:
     def capsules(self) -> list[Capsule]:
         """Returns a copy of the capsules used by the module.
 
-        Returns
+        Returns:
         -------
             A list of linked capsules.
         """
@@ -875,7 +875,7 @@ class Module:
     ) -> list[ModuleResource[UTW]]:
         """Returns list of UTW resources from resources dict.
 
-        Returns
+        Returns:
         -------
             list[ModuleResource[UTW]]: List of UTW resources
 
@@ -1125,7 +1125,7 @@ class ModuleResource(Generic[T]):
     def resname(self) -> str:
         """Returns the resource name.
 
-        Returns
+        Returns:
         -------
             The resource name.
         """
@@ -1135,7 +1135,7 @@ class ModuleResource(Generic[T]):
     def restype(self) -> ResourceType:
         """Returns the type of resource stored.
 
-        Returns
+        Returns:
         -------
             The resource type.
         """
@@ -1186,11 +1186,11 @@ class ModuleResource(Generic[T]):
     def data(self) -> bytes:
         """Opens the file at the active location and returns the data.
 
-        Raises
+        Raises:
         ------
             ValueError: If no file is active.
 
-        Returns
+        Returns:
         -------
             The bytes data of the active file.
         """
@@ -1223,7 +1223,7 @@ class ModuleResource(Generic[T]):
     def resource(self) -> T | None:
         """Returns the cached resource object. If no object has been cached, then it will load the object.
 
-        Returns
+        Returns:
         -------
             The resource object.
         """
@@ -1338,7 +1338,7 @@ class ModuleResource(Generic[T]):
     def active(self) -> Path:
         """Returns the filepath of the currently active file for the resource.
 
-        Returns
+        Returns:
         -------
             Filepath to the active resource.
         """

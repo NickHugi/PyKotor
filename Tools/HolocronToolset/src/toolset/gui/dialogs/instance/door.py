@@ -1,12 +1,14 @@
 from __future__ import annotations
 
 import math
+
 from typing import TYPE_CHECKING
+
+from PyQt5.QtGui import QColor, QIcon, QImage, QPixmap
+from PyQt5.QtWidgets import QColorDialog, QDialog, QLabel, QWidget
 
 from pykotor.common.misc import Color, ResRef
 from pykotor.resource.generics.git import GITDoor, GITModuleLink
-from PyQt5.QtGui import QColor, QIcon, QImage, QPixmap
-from PyQt5.QtWidgets import QColorDialog, QDialog, QLabel, QWidget
 
 if TYPE_CHECKING:
     from toolset.data.installation import HTInstallation

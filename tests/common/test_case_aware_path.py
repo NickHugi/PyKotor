@@ -1,7 +1,10 @@
+from __future__ import annotations
+
 import os
 import pathlib
 import sys
 import unittest
+
 from unittest.mock import patch
 
 THIS_SCRIPT_PATH = pathlib.Path(__file__).resolve()
@@ -107,78 +110,78 @@ class TestCaseAwarePath(unittest.TestCase):
 
 class TestSplitFilename(unittest.TestCase):
     def test_normal(self):
-        path = CaseAwarePath('file.txt')
+        path = CaseAwarePath("file.txt")
         stem, ext = path.split_filename()
-        self.assertEqual(stem, 'file')
-        self.assertEqual(ext, 'txt')
+        self.assertEqual(stem, "file")
+        self.assertEqual(ext, "txt")
 
     def test_multiple_dots(self):
-        path = CaseAwarePath('file.with.dots.txt')
+        path = CaseAwarePath("file.with.dots.txt")
         stem, ext = path.split_filename(dots=2)
-        self.assertEqual(stem, 'file.with')
-        self.assertEqual(ext, 'dots.txt')
-        path = CaseAwarePath('test.asdf.qwerty.tlk.xml')
+        self.assertEqual(stem, "file.with")
+        self.assertEqual(ext, "dots.txt")
+        path = CaseAwarePath("test.asdf.qwerty.tlk.xml")
         stem, ext = path.split_filename(dots=2)
-        self.assertEqual(stem, 'test.asdf.qwerty')
-        self.assertEqual(ext, 'tlk.xml')
+        self.assertEqual(stem, "test.asdf.qwerty")
+        self.assertEqual(ext, "tlk.xml")
 
     def test_no_dots(self):
-        path = CaseAwarePath('filename')
+        path = CaseAwarePath("filename")
         stem, ext = path.split_filename()
-        self.assertEqual(stem, 'filename')
-        self.assertEqual(ext, '')
+        self.assertEqual(stem, "filename")
+        self.assertEqual(ext, "")
 
     def test_negative_dots(self):
-        path = CaseAwarePath('left.right.txt')
+        path = CaseAwarePath("left.right.txt")
         stem, ext = path.split_filename(dots=-1)
-        self.assertEqual(stem, 'right.txt')
-        self.assertEqual(ext, 'left')
+        self.assertEqual(stem, "right.txt")
+        self.assertEqual(ext, "left")
 
     def test_more_dots_than_parts(self):
-        path = CaseAwarePath('file.txt')
+        path = CaseAwarePath("file.txt")
         stem, ext = path.split_filename(dots=3)
-        self.assertEqual(stem, 'file')
-        self.assertEqual(ext, 'txt')
+        self.assertEqual(stem, "file")
+        self.assertEqual(ext, "txt")
         stem, ext = path.split_filename(dots=-3)
-        self.assertEqual(stem, 'file')
-        self.assertEqual(ext, 'txt')
+        self.assertEqual(stem, "file")
+        self.assertEqual(ext, "txt")
 
     def test_invalid_dots(self):
-        path = CaseAwarePath('file.txt')
+        path = CaseAwarePath("file.txt")
         with self.assertRaises(ValueError):
             path.split_filename(dots=0)
 
 class TestIsRelativeTo(unittest.TestCase):
 
     def test_basic(self):  # sourcery skip: class-extract-method
-        p1 = CaseAwarePath('/usr/local/bin')
-        p2 = CaseAwarePath('/usr/local')
+        p1 = CaseAwarePath("/usr/local/bin")
+        p2 = CaseAwarePath("/usr/local")
         self.assertTrue(p1.is_relative_to(p2))
 
     def test_different_paths(self):
-        p1 = CaseAwarePath('/usr/local/bin') 
-        p2 = CaseAwarePath('/etc')
+        p1 = CaseAwarePath("/usr/local/bin")
+        p2 = CaseAwarePath("/etc")
         self.assertFalse(p1.is_relative_to(p2))
 
     def test_relative_paths(self):
-        p1 = CaseAwarePath('docs/file.txt')
-        p2 = CaseAwarePath('docs')
+        p1 = CaseAwarePath("docs/file.txt")
+        p2 = CaseAwarePath("docs")
         self.assertTrue(p1.is_relative_to(p2))
 
     def test_case_insensitive(self):
-        p1 = CaseAwarePath('/User/Docs')
-        p2 = CaseAwarePath('/user/docs')
+        p1 = CaseAwarePath("/User/Docs")
+        p2 = CaseAwarePath("/user/docs")
         self.assertTrue(p1.is_relative_to(p2))
 
     def test_not_path(self):
-        p1 = CaseAwarePath('/home')
-        p2 = '/home'
+        p1 = CaseAwarePath("/home")
+        p2 = "/home"
         self.assertTrue(p1.is_relative_to(p2))
 
     def test_same_path(self):
-        p1 = CaseAwarePath('/home/user')
-        p2 = CaseAwarePath('/home/user')
+        p1 = CaseAwarePath("/home/user")
+        p2 = CaseAwarePath("/home/user")
         self.assertTrue(p1.is_relative_to(p2))
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

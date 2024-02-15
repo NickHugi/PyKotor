@@ -1,14 +1,16 @@
 from __future__ import annotations
 
 import struct
+
 from typing import TYPE_CHECKING
+
+from PyQt5 import QtCore
+from PyQt5.QtGui import QColor, QIcon, QImage, QPixmap
+from PyQt5.QtWidgets import QListWidgetItem, QShortcut, QWidget
 
 from pykotor.common.geometry import SurfaceMaterial, Vector2, Vector3
 from pykotor.resource.formats.bwm import BWM, BWMFace, read_bwm, write_bwm
 from pykotor.resource.type import ResourceType
-from PyQt5 import QtCore
-from PyQt5.QtGui import QColor, QIcon, QImage, QPixmap
-from PyQt5.QtWidgets import QListWidgetItem, QShortcut, QWidget
 from toolset.gui.editor import Editor
 
 if TYPE_CHECKING:

@@ -101,23 +101,23 @@ class NCSBinaryReader(ResourceReader):
         ]:
             instruction.args.extend([self._reader.read_int32(big=True), self._reader.read_uint16(big=True)])
 
-        elif instruction.ins_type in [NCSInstructionType.CONSTI]:
+        elif instruction.ins_type == NCSInstructionType.CONSTI:
             instruction.args.extend([self._reader.read_uint32(big=True)])
 
-        elif instruction.ins_type in [NCSInstructionType.CONSTF]:
+        elif instruction.ins_type == NCSInstructionType.CONSTF:
             instruction.args.extend([self._reader.read_single(big=True)])
 
-        elif instruction.ins_type in [NCSInstructionType.CONSTS]:
+        elif instruction.ins_type == NCSInstructionType.CONSTS:
             length = self._reader.read_uint16(big=True)
             instruction.args.extend([self._reader.read_string(length)])
 
-        elif instruction.ins_type in [NCSInstructionType.CONSTO]:
+        elif instruction.ins_type == NCSInstructionType.CONSTO:
             instruction.args.extend([self._reader.read_uint16(big=True)])
 
-        elif instruction.ins_type in [NCSInstructionType.ACTION]:
+        elif instruction.ins_type == NCSInstructionType.ACTION:
             instruction.args.extend([self._reader.read_uint16(big=True), self._reader.read_uint8(big=True)])
 
-        elif instruction.ins_type in [NCSInstructionType.MOVSP]:
+        elif instruction.ins_type == NCSInstructionType.MOVSP:
             instruction.args.extend([self._reader.read_int32(big=True)])
 
         elif instruction.ins_type in [
@@ -129,7 +129,7 @@ class NCSBinaryReader(ResourceReader):
             jumpOffset = self._reader.read_int32(big=True) + self._reader.position() - 6
             self._jumps[instruction] = jumpOffset
 
-        elif instruction.ins_type in [NCSInstructionType.DESTRUCT]:
+        elif instruction.ins_type == NCSInstructionType.DESTRUCT:
             instruction.args.extend(
                 [
                     self._reader.read_uint16(big=True),
@@ -146,7 +146,7 @@ class NCSBinaryReader(ResourceReader):
         ]:
             instruction.args.extend([self._reader.read_uint32(big=True)])
 
-        elif instruction.ins_type in [NCSInstructionType.STORE_STATE]:
+        elif instruction.ins_type == NCSInstructionType.STORE_STATE:
             instruction.args.extend([self._reader.read_uint32(big=True), self._reader.read_uint32(big=True)])
 
         elif instruction.ins_type in [
@@ -167,7 +167,7 @@ class NCSBinaryReader(ResourceReader):
         ]:
             ...
 
-        elif instruction.ins_type in [NCSInstructionType.BOOLANDII]:  # noqa: SIM114
+        elif instruction.ins_type == NCSInstructionType.BOOLANDII:  # noqa: SIM114
             ...
 
         elif instruction.ins_type in [  # noqa: SIM114
@@ -195,20 +195,20 @@ class NCSBinaryReader(ResourceReader):
             ...
 
         elif instruction.ins_type in [  # noqa: SIM114
-            #NCSInstructionType.GEQxx,
+            # NCSInstructionType.GEQxx,
             NCSInstructionType.GEQII,
             NCSInstructionType.GEQFF,
-            #NCSInstructionType.GTxx,
+            # NCSInstructionType.GTxx,
             NCSInstructionType.GTII,
             NCSInstructionType.GTFF,
         ]:
             ...
 
         elif instruction.ins_type in [  # noqa: SIM114
-            #NCSInstructionType.LTxx,
+            # NCSInstructionType.LTxx,
             NCSInstructionType.LTII,
             NCSInstructionType.LTFF,
-            #NCSInstructionType.LExx,
+            # NCSInstructionType.LExx,
             NCSInstructionType.LEQII,
             NCSInstructionType.LEQFF,
         ]:
@@ -260,30 +260,25 @@ class NCSBinaryReader(ResourceReader):
         ]:
             ...
 
-        elif instruction.ins_type in [NCSInstructionType.MODII]:  # noqa: SIM114
+        elif instruction.ins_type == NCSInstructionType.MODII:  # noqa: SIM114
             ...
 
         elif instruction.ins_type in [  # noqa: SIM114
-            #NCSInstructionType.NEGx,
+            # NCSInstructionType.NEGx,
             NCSInstructionType.NEGI,
             NCSInstructionType.NEGF,
         ]:
             ...
 
-        elif instruction.ins_type in [  # noqa: SIM114
-            NCSInstructionType.COMPI,
+        elif instruction.ins_type == NCSInstructionType.COMPI or instruction.ins_type in [  # noqa: SIM114
+            # NCSInstructionType.STORE_STATEALL,
         ]:
             ...
 
-        elif instruction.ins_type in [  # noqa: SIM114
-            #NCSInstructionType.STORE_STATEALL,
-        ]:
+        elif instruction.ins_type == NCSInstructionType.RETN:  # noqa: SIM114
             ...
 
-        elif instruction.ins_type in [NCSInstructionType.RETN]:  # noqa: SIM114
-            ...
-
-        elif instruction.ins_type in [NCSInstructionType.NOTI]:  # noqa: SIM114
+        elif instruction.ins_type == NCSInstructionType.NOTI:  # noqa: SIM114
             ...
 
         elif instruction.ins_type in [  # noqa: SIM114
@@ -292,7 +287,7 @@ class NCSBinaryReader(ResourceReader):
         ]:
             ...
 
-        elif instruction.ins_type in [NCSInstructionType.NOP]:  # noqa: SIM114
+        elif instruction.ins_type == NCSInstructionType.NOP:  # noqa: SIM114
             ...
 
         elif instruction.ins_type in [
@@ -377,9 +372,7 @@ class NCSBinaryWriter(ResourceWriter):
         ]:
             size += 6
 
-        elif instruction.ins_type in [
-            NCSInstructionType.STORE_STATE,
-        ]:
+        elif instruction.ins_type == NCSInstructionType.STORE_STATE:
             size += 8
 
         elif instruction.ins_type in [
@@ -453,11 +446,11 @@ class NCSBinaryWriter(ResourceWriter):
             self._writer.write_uint32(instruction.args[0], big=True)
         elif instruction.ins_type == NCSInstructionType.CONSTI:
             self._writer.write_int32(instruction.args[0], big=True)
-        elif instruction.ins_type in [NCSInstructionType.CONSTS]:
+        elif instruction.ins_type == NCSInstructionType.CONSTS:
             # CONSTS with string length and string data
             self._writer.write_string(instruction.args[0], big=True, prefix_length=2)
 
-        elif instruction.ins_type in [NCSInstructionType.ACTION]:
+        elif instruction.ins_type == NCSInstructionType.ACTION:
             # ACTION with routine number and argument count
             self._writer.write_uint16(instruction.args[0], big=True)
             self._writer.write_uint8(instruction.args[1], big=True)
@@ -474,7 +467,7 @@ class NCSBinaryWriter(ResourceWriter):
         ]:
             ...
 
-        elif instruction.ins_type in [NCSInstructionType.BOOLANDII]:  # noqa: SIM114
+        elif instruction.ins_type == NCSInstructionType.BOOLANDII:  # noqa: SIM114
             ...
 
         elif instruction.ins_type in [  # noqa: SIM114
@@ -508,20 +501,20 @@ class NCSBinaryWriter(ResourceWriter):
             self._writer.write_uint16(instruction.args[0], big=True)
 
         elif instruction.ins_type in [  # noqa: SIM114
-            #NCSInstructionType.GEQxx,
+            # NCSInstructionType.GEQxx,
             NCSInstructionType.GEQII,
             NCSInstructionType.GEQFF,
-            #NCSInstructionType.GTxx,
+            # NCSInstructionType.GTxx,
             NCSInstructionType.GTII,
             NCSInstructionType.GTFF,
         ]:
             ...
 
         elif instruction.ins_type in [  # noqa: SIM114
-            #NCSInstructionType.LTxx,
+            # NCSInstructionType.LTxx,
             NCSInstructionType.LTII,
             NCSInstructionType.LTFF,
-            #NCSInstructionType.LExx,
+            # NCSInstructionType.LExx,
             NCSInstructionType.LEQII,
             NCSInstructionType.LEQFF,
         ]:
@@ -573,27 +566,25 @@ class NCSBinaryWriter(ResourceWriter):
         ]:
             ...
 
-        elif instruction.ins_type in [NCSInstructionType.MODII]:  # noqa: SIM114
+        elif instruction.ins_type == NCSInstructionType.MODII:  # noqa: SIM114
             ...
 
         elif instruction.ins_type in [  # noqa: SIM114
-            #NCSInstructionType.NEGx,
+            # NCSInstructionType.NEGx,
             NCSInstructionType.NEGI,
             NCSInstructionType.NEGF,
         ]:
             ...
 
-        elif instruction.ins_type in [
-            NCSInstructionType.COMPI,
-        ]:
+        elif instruction.ins_type == NCSInstructionType.COMPI:
             ...
 
-        elif instruction.ins_type in [NCSInstructionType.MOVSP]:
+        elif instruction.ins_type == NCSInstructionType.MOVSP:
             # MOVSP to adjust the stack pointer
             self._writer.write_int32(instruction.args[0], big=True)
 
         elif instruction.ins_type in [  # noqa: SIM114
-            #NCSInstructionType.STORE_STATEALL,
+            # NCSInstructionType.STORE_STATEALL,
         ]:
             ...
 
@@ -608,15 +599,15 @@ class NCSBinaryWriter(ResourceWriter):
             relative = self._offsets[jump] - self._offsets[instruction]
             self._writer.write_int32(relative, big=True)
 
-        elif instruction.ins_type in [NCSInstructionType.RETN]:
+        elif instruction.ins_type == NCSInstructionType.RETN:
             ...
 
-        elif instruction.ins_type in [NCSInstructionType.DESTRUCT]:
+        elif instruction.ins_type == NCSInstructionType.DESTRUCT:
             self._writer.write_uint16(instruction.args[0], big=True)
             self._writer.write_int16(instruction.args[1], big=True)
             self._writer.write_uint16(instruction.args[2], big=True)
 
-        elif instruction.ins_type in [NCSInstructionType.NOTI]:  # noqa: SIM114
+        elif instruction.ins_type == NCSInstructionType.NOTI:  # noqa: SIM114
             ...
 
         elif instruction.ins_type in [
@@ -625,13 +616,11 @@ class NCSBinaryWriter(ResourceWriter):
         ]:
             ...
 
-        elif instruction.ins_type in [
-            NCSInstructionType.STORE_STATE,
-        ]:
+        elif instruction.ins_type == NCSInstructionType.STORE_STATE:
             self._writer.write_uint32(instruction.args[0], big=True)
             self._writer.write_uint32(instruction.args[1], big=True)
 
-        elif instruction.ins_type in [NCSInstructionType.NOP]:  # noqa: SIM114
+        elif instruction.ins_type == NCSInstructionType.NOP:  # noqa: SIM114
             ...
 
         elif instruction.ins_type in [
