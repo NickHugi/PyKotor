@@ -15,7 +15,7 @@ TSLPatcher, additionally, is closed source, making it difficult to determine its
 ## Goals
 
 - **Backwards Compatibility**: Match TSLPatcher's output and behavior as closely as possible.
-- **Cross-platform compatible**: Function platform-agnostically on windows/mac/linux.
+- **Cross-platform compatible**: Windows/Mac/Linux will all produce the same patch results. HoloPatcher provides case-insensitive pathing support for all operating systems.
 - **Support the non-PC versions of the game**: Support and provide tools for kotor ports such as iOS, android, steamdeck, etc. This goal is largely still in progress.
 - **Add new features**: Add highly-requested features while still ensuring backwards compatibility with TSLPatcher.
 
