@@ -13,7 +13,6 @@ from xml.etree.ElementTree import ParseError
 
 from pykotor.common.stream import BinaryReader, BinaryWriter
 from utility.error_handling import format_exception_with_variables
-from utility.string import CaseInsensitiveWrappedStr, WrappedStr
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterable
@@ -235,7 +234,7 @@ class ResourceType(Enum):
             if self.is_invalid or other.is_invalid:
                 return self.is_invalid and other.is_invalid
             return self.name == other.name
-        if isinstance(other, (str, WrappedStr)):
+        if isinstance(other, str):
             return self.extension == other.lower()
         if isinstance(other, int):
             return self.type_id == other

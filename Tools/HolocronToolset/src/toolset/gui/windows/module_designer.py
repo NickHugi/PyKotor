@@ -60,7 +60,7 @@ if TYPE_CHECKING:
     from toolset.gui.widgets.renderer.walkmesh import WalkmeshRenderer
 
 
-class ModuleDesigner(QMainWindow):
+class ModuleDesigner(QMainWindow):  # noqa: PLR0904
     def __init__(self, parent: QWidget | None, installation: HTInstallation):
         """Initializes the Module Designer window.
 
@@ -270,7 +270,7 @@ class ModuleDesigner(QMainWindow):
     def unloadModule(self):
         self._module = None
         self.ui.mainRenderer.scene = None
-        self.ui.mainRenderer._init = False
+        self.ui.mainRenderer._init = False  # noqa: SLF001
 
     def showHelpWindow(self):
         window = HelpWindow(self, "./help/tools/1-moduleEditor.md")

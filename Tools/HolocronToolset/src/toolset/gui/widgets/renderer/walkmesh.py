@@ -42,6 +42,7 @@ if TYPE_CHECKING:
         QPaintEvent,
         QWheelEvent,
     )
+
     from pykotor.common.geometry import SurfaceMaterial
     from pykotor.resource.formats.bwm import BWM, BWMFace
     from pykotor.resource.formats.tpc import TPC

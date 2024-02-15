@@ -225,7 +225,7 @@ class StrictStrProtocol(Protocol):
 
 StrictStr = TypeVar("StrictStr", bound=str)
 
-class WrappedStr(str):  # (metaclass=StrType):
+class WrappedStr(str):  # (metaclass=StrType):  # noqa: PLR0904
 
     __slots__: tuple[str, ...] = (
         "_content",
@@ -234,7 +234,7 @@ class WrappedStr(str):  # (metaclass=StrType):
     @classmethod
     def _assert_str_type(
         cls: type[Self],
-        var,
+        var: str,
     ) -> str:
         if var is None:
             return None  # type: ignore[return-value]
