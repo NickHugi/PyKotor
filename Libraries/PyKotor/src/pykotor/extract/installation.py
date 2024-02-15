@@ -19,7 +19,7 @@ from pykotor.resource.formats.tpc import TPC, read_tpc
 from pykotor.resource.type import ResourceType
 from pykotor.tools.misc import is_capsule_file, is_erf_file, is_mod_file, is_rim_file
 from pykotor.tools.path import CaseAwarePath
-from pykotor.tools.sound import fix_audio
+from pykotor.tools.sound import deobfuscate_audio
 from utility.error_handling import format_exception_with_variables
 from utility.system.path import Path, PurePath
 
@@ -146,8 +146,8 @@ HARDCODED_MODULE_IDS: dict[str, str] = {
 }
 
 
-class Installation:
-    """Installation provides a centralized location for loading resources stored in the game through its various folders and formats."""
+class Installation:  # noqa: PLR0904
+    """Installation provides a centralized location for loading resources stored in the game through its various folders and formats."""  # noqa: E501
 
     TEXTURES_TYPES: ClassVar[list[ResourceType]] = [
         ResourceType.TPC,
@@ -1373,7 +1373,7 @@ class Installation:
                 if case_resname in case_resnames and resource.restype() in sound_formats:
                     case_resnames.remove(case_resname)
                     sound_data: bytes = resource.data()
-                    sounds[resource.resname()] = fix_audio(sound_data) if sound_data else b""
+                    sounds[resource.resname()] = deobfuscate_audio(sound_data) if sound_data else b""
 
         def check_capsules(values: list[Capsule]):
             for capsule in values:
@@ -1386,7 +1386,7 @@ class Installation:
                     if sound_data is None:
                         continue
                     case_resnames.remove(case_resname)
-                    sounds[case_resname] = fix_audio(sound_data) if sound_data else b""
+                    sounds[case_resname] = deobfuscate_audio(sound_data) if sound_data else b""
 
         def check_folders(values: list[Path]):
             queried_sound_files: set[Path] = set()
@@ -1403,7 +1403,7 @@ class Installation:
             for sound_file in queried_sound_files:
                 case_resnames.remove(sound_file.stem.casefold())
                 sound_data: bytes = BinaryReader.load_file(sound_file)
-                sounds[sound_file.stem] = fix_audio(sound_data) if sound_data else b""
+                sounds[sound_file.stem] = deobfuscate_audio(sound_data) if sound_data else b""
 
         function_map: dict[SearchLocation, Callable] = {
             SearchLocation.OVERRIDE: lambda: check_dict(self._override),
