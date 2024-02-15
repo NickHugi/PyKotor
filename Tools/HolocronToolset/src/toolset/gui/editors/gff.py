@@ -403,10 +403,10 @@ class GFFEditor(Editor):
                 set_widget(0, 0xFFFFFFFF, item)
             elif item.data(_TYPE_NODE_ROLE) == GFFFieldType.UInt64:
                 set_widget(0, 0xFFFFFFFFFFFFFFFF, item)
-            elif item.data(_TYPE_NODE_ROLE) in [
+            elif item.data(_TYPE_NODE_ROLE) in {
                 GFFFieldType.Double,
                 GFFFieldType.Single,
-            ]:
+            }:
                 self.ui.pages.setCurrentWidget(self.ui.floatPage)
                 self.ui.floatSpin.setValue(item.data(_VALUE_NODE_ROLE))
             elif item.data(_TYPE_NODE_ROLE) == GFFFieldType.ResRef:
@@ -468,7 +468,7 @@ class GFFEditor(Editor):
 
         item.setData(self.ui.labelEdit.text(), _LABEL_NODE_ROLE)
 
-        if item.data(_TYPE_NODE_ROLE) in [
+        if item.data(_TYPE_NODE_ROLE) in {
             GFFFieldType.UInt8,
             GFFFieldType.Int8,
             GFFFieldType.UInt16,
@@ -477,9 +477,9 @@ class GFFEditor(Editor):
             GFFFieldType.Int32,
             GFFFieldType.UInt64,
             GFFFieldType.Int64,
-        ]:
+        }:
             item.setData(self.ui.intSpin.value(), _VALUE_NODE_ROLE)
-        elif item.data(_TYPE_NODE_ROLE) in [GFFFieldType.Single, GFFFieldType.Double]:
+        elif item.data(_TYPE_NODE_ROLE) in {GFFFieldType.Single, GFFFieldType.Double}:
             item.setData(self.ui.floatSpin.value(), _VALUE_NODE_ROLE)
         elif item.data(_TYPE_NODE_ROLE) == GFFFieldType.ResRef:
             item.setData(ResRef(self.ui.lineEdit.text()), _VALUE_NODE_ROLE)
@@ -651,7 +651,7 @@ class GFFEditor(Editor):
 
         numeric = isinstance(item.data(_VALUE_NODE_ROLE), (float, int))
 
-        if not numeric and ftype in [
+        if not numeric and ftype in {
             GFFFieldType.UInt8,
             GFFFieldType.Int8,
             GFFFieldType.UInt16,
@@ -662,7 +662,7 @@ class GFFEditor(Editor):
             GFFFieldType.Int64,
             GFFFieldType.Single,
             GFFFieldType.Double,
-        ]:
+        }:
             # If the old data does not store a number but the new one does, set the value to 0.
             item.setData(0, _VALUE_NODE_ROLE)
         elif ftype == GFFFieldType.String:
@@ -770,7 +770,7 @@ class GFFEditor(Editor):
 
             if item.data(_TYPE_NODE_ROLE) == GFFFieldType.List:
                 menu.addAction("Add Struct").triggered.connect(lambda: self.addNode(item))
-            elif item.data(_TYPE_NODE_ROLE) in [GFFFieldType.Struct, None]:
+            elif item.data(_TYPE_NODE_ROLE) in {GFFFieldType.Struct, None}:
                 self._build_context_menu_gff_struct(menu, item)
             else:
                 ...

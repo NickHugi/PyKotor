@@ -426,9 +426,9 @@ class App(tk.Tk):
                 print(f"{title}\n{message}")  # noqa: T201
                 while True:
                     response = input("(y/N)").lower().strip()
-                    if response in ["yes", "y"]:
+                    if response in {"yes", "y"}:
                         return True
-                    if response in ["no", "n"]:
+                    if response in {"no", "n"}:
                         return False
                     print("Invalid input. Please enter 'yes' or 'no'")  # noqa: T201
 

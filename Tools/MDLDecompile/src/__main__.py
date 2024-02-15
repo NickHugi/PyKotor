@@ -53,7 +53,7 @@ while True:
     if parser_args.compile.lower().strip() in {"compile", "c"}:
         parser_args.compile = True
         break
-    elif parser_args.compile.lower().strip() in ("decompile", "d"):
+    elif parser_args.compile.lower().strip() in {"decompile", "d"}:
         parser_args.compile = False
         break
     else:

@@ -142,7 +142,7 @@ class BasePurePath(metaclass=PurePathType):  # type: ignore[misc]
             4. Format Unix paths by replacing mixed slashes and normalizing slashes
             5. Strip trailing slashes from the formatted path.
         """
-        if slash not in ("\\", "/"):
+        if slash not in {"\\", "/"}:
             msg = f"Invalid slash str: '{slash}'"
             raise ValueError(msg)
 

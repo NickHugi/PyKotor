@@ -204,7 +204,7 @@ class TomlDecoder:
             try: _, value = candidate_group.split("=", 1)
             except ValueError: raise ValueError("Invalid inline table encountered")
             value = value.strip()
-            if ((value[0] == value[-1] and value[0] in ('"', "'")) or (value[0] in "-0123456789" or value in ("true", "false") or (value[0] == "[" and value[-1] == "]") or (value[0] == "{" and value[-1] == "}"))):
+            if ((value[0] == value[-1] and value[0] in {'"', "'"}) or (value[0] in "-0123456789" or value in {"true", "false"} or (value[0] == "[" and value[-1] == "]") or (value[0] == "{" and value[-1] == "}"))):
                 groups.append(candidate_group)
             elif len(candidate_groups) > 0: candidate_groups[0] = (candidate_group + "," + candidate_groups[0])
             else: raise ValueError("Invalid inline table value encountered")
@@ -280,7 +280,7 @@ class TomlDecoder:
                 if level not in currentlevel: currentlevel[level] = self.get_empty_table()
                 currentlevel = currentlevel[level]
             pair[0] = levels[-1].strip()
-        elif pair[0][0] in ['"', "'"] and pair[0][-1] == pair[0][0]:
+        elif pair[0][0] in {'"', "'"} and pair[0][-1] == pair[0][0]:
             pair[0] = _unescape(pair[0][1:-1])
         k, koffset = self._load_line_multiline_str(pair[1])
         if k > -1:
@@ -402,7 +402,7 @@ class TomlDecoder:
             if v[0] not in "0123456789": raise ValueError("This float doesn't have a leading digit")
             v = float(v)
             itype = "float"
-        elif len(lowerv) == 3 and (lowerv in ("inf", "nan")):
+        elif len(lowerv) == 3 and (lowerv in {"inf", "nan"}):
             v = float(v)
             itype = "float"
         if itype == "int":
@@ -538,7 +538,7 @@ def _strictly_valid_num(n):
         return False
     if len(n) == 1:
         return True
-    if n[0] == "0" and n[1] not in [".", "o", "b", "x"]:
+    if n[0] == "0" and n[1] not in {".", "o", "b", "x"}:
         return False
     if n[0] == "+" or n[0] == "-":
         n = n[1:]
@@ -601,7 +601,7 @@ def loads(s, _dict=dict, decoder=None):
                     continue
                 if item.isalnum() or item == "_" or item == "-":
                     continue
-                if (dottedkey and sl[i - 1] == "." and (item in ('"', "'"))):
+                if (dottedkey and sl[i - 1] == "." and (item in {'"', "'"})):
                     openstring, openstrchar = True, item
                     continue
             elif keyname == 2:

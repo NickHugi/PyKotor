@@ -593,25 +593,25 @@ class Translator:
             translated_chunk: str = ""
             # if option == TranslationOption.GOOGLETRANS:
             #    translated_chunk = self._translator.translate(chunk, src=from_lang_code, dest=to_lang_code).text  # type: ignore[attr-defined]  # noqa: ERA001
-            if option in (
+            if option in {
                 TranslationOption.LIBRE_FALLBACK,
                 TranslationOption.DEEPL_SCRAPER,
                 TranslationOption.DL_TRANSLATE,
                 TranslationOption.TEXTBLOB,
                 TranslationOption.ARGOS_TRANSLATE,
                 TranslationOption.YANDEX_TRANSLATOR,
-            ):
+            }:
                 # if self.from_lang is None and option == TranslationOption.LIBRE:
                 #    msg = "LibreTranslate requires a specified source language."  # noqa: ERA001
                 #    raise ValueError(msg)  # noqa: ERA001
                 translated_chunk = self._translator.translate(chunk, from_lang_code, to_lang_code)  # type: ignore[attr-defined]
             elif option == TranslationOption.YANDEX_TRANSLATOR:
                 translated_chunk = self._translator.translate(from_lang_code, to_lang_code, chunk)  # type: ignore[attr-defined]
-            elif option in (
+            elif option in {
                 TranslationOption.DL_TRANSLATE,
                 TranslationOption.T5_TRANSLATOR,
                 TranslationOption.MY_MEMORY_TRANSLATOR,
-            ):  # noqa: ERA001, RUF100
+            }:  # noqa: ERA001, RUF100
                 translated_chunk = self._translator.translate(chunk, self.from_lang.name, self.to_lang.name)  # type: ignore[attr-defined, union-attr]  # noqa: ERA001, RUF100
             elif option == TranslationOption.QCRI_TRANSLATOR:
                 translated_chunk = self._translator.translate(source=from_lang_code, target=to_lang_code, domain=self.domain, text=chunk)

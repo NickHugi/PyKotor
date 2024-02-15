@@ -233,7 +233,7 @@ class ConfigReader:
         lookup_game_number: str | None = settings_ini.get("LookupGameNumber")
         if lookup_game_number:
             lookup_game_number = lookup_game_number.strip()
-            if lookup_game_number not in ("1", "2"):
+            if lookup_game_number not in {"1", "2"}:
                 msg = f"Invalid: 'LookupGameNumber={lookup_game_number}' in [Settings], must be 1 or 2 representing the KOTOR game."
                 raise ValueError(msg)
             self.config.game_number = int(lookup_game_number)

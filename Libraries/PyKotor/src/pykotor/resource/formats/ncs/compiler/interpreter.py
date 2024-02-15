@@ -67,51 +67,51 @@ class Interpreter:
             elif self._cursor.ins_type == NCSInstructionType.MOVSP:
                 self._stack.move(self._cursor.args[0])
 
-            elif self._cursor.ins_type in [
+            elif self._cursor.ins_type in {
                 NCSInstructionType.ADDII,
                 NCSInstructionType.ADDIF,
                 NCSInstructionType.ADDFF,
                 NCSInstructionType.ADDFI,
                 NCSInstructionType.ADDSS,
                 NCSInstructionType.ADDVV,
-            ]:
+            }:
                 self._stack.addition_op()
 
-            elif self._cursor.ins_type in [
+            elif self._cursor.ins_type in {
                 NCSInstructionType.SUBII,
                 NCSInstructionType.SUBIF,
                 NCSInstructionType.SUBFF,
                 NCSInstructionType.SUBFI,
                 NCSInstructionType.SUBVV,
-            ]:
+            }:
                 self._stack.subtraction_op()
 
-            elif self._cursor.ins_type in [
+            elif self._cursor.ins_type in {
                 NCSInstructionType.MULII,
                 NCSInstructionType.MULIF,
                 NCSInstructionType.MULFF,
                 NCSInstructionType.MULFI,
                 NCSInstructionType.MULVF,
                 NCSInstructionType.MULFV,
-            ]:
+            }:
                 self._stack.multiplication_op()
 
-            elif self._cursor.ins_type in [
+            elif self._cursor.ins_type in {
                 NCSInstructionType.DIVII,
                 NCSInstructionType.DIVIF,
                 NCSInstructionType.DIVFF,
                 NCSInstructionType.DIVFI,
                 NCSInstructionType.DIVVF,
-            ]:
+            }:
                 self._stack.division_op()
 
             elif self._cursor.ins_type == NCSInstructionType.MODII:
                 self._stack.modulus_op()
 
-            elif self._cursor.ins_type in [
+            elif self._cursor.ins_type in {
                 NCSInstructionType.NEGI,
                 NCSInstructionType.NEGF,
-            ]:
+            }:
                 self._stack.negation_op()
 
             elif self._cursor.ins_type == NCSInstructionType.COMPI:
@@ -135,44 +135,44 @@ class Interpreter:
             elif self._cursor.ins_type == NCSInstructionType.BOOLANDII:
                 self._stack.bitwise_and_op()
 
-            elif self._cursor.ins_type in [
+            elif self._cursor.ins_type in {
                 NCSInstructionType.EQUALII,
                 NCSInstructionType.EQUALFF,
                 NCSInstructionType.EQUALSS,
                 NCSInstructionType.EQUALOO,
-            ]:
+            }:
                 self._stack.logical_equality_op()
 
-            elif self._cursor.ins_type in [
+            elif self._cursor.ins_type in {
                 NCSInstructionType.NEQUALII,
                 NCSInstructionType.NEQUALFF,
                 NCSInstructionType.NEQUALSS,
                 NCSInstructionType.NEQUALOO,
-            ]:
+            }:
                 self._stack.logical_inequality_op()
 
-            elif self._cursor.ins_type in [
+            elif self._cursor.ins_type in {
                 NCSInstructionType.GTII,
                 NCSInstructionType.GTFF,
-            ]:
+            }:
                 self._stack.compare_greaterthan_op()
 
-            elif self._cursor.ins_type in [
+            elif self._cursor.ins_type in {
                 NCSInstructionType.GEQII,
                 NCSInstructionType.GEQFF,
-            ]:
+            }:
                 self._stack.compare_greaterthanorequal_op()
 
-            elif self._cursor.ins_type in [
+            elif self._cursor.ins_type in {
                 NCSInstructionType.LTII,
                 NCSInstructionType.LTFF,
-            ]:
+            }:
                 self._stack.compare_lessthan_op()
 
-            elif self._cursor.ins_type in [
+            elif self._cursor.ins_type in {
                 NCSInstructionType.LEQII,
                 NCSInstructionType.LEQFF,
-            ]:
+            }:
                 self._stack.compare_lessthanorequal_op()
 
             elif self._cursor.ins_type == NCSInstructionType.SHLEFTII:
@@ -234,10 +234,10 @@ class Interpreter:
                 return_to = self._ncs.instructions[index_return_to]
                 self._returns.append(return_to)
 
-            elif self._cursor.ins_type in [
+            elif self._cursor.ins_type in {
                 NCSInstructionType.JZ,
                 NCSInstructionType.JNZ,
-            ]:
+            }:
                 jump_value = self._stack.pop()
 
             elif self._cursor.ins_type == NCSInstructionType.STORE_STATE:
@@ -369,7 +369,7 @@ class StackV2:
 
     # TODO: refactor
     def add(self, datatype: DataType, value: float | int):  # noqa: PYI041,RUF100
-        if datatype not in [DataType.INT, DataType.FLOAT]:
+        if datatype not in {DataType.INT, DataType.FLOAT}:
             raise NotImplementedError
         if not isinstance(value, int):
             raise ValueError

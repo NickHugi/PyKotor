@@ -56,7 +56,7 @@ def _load_node(scene, node: Node | None, mdl: BinaryReader, mdx: BinaryReader, o
     if node_type & 0b100000:
         mdl.seek(offset + 80)
         fp = mdl.read_uint32()
-        k2 = fp in (4216880, 4216816, 4216864)
+        k2 = fp in {4216880, 4216816, 4216864}
 
         mdl.seek(offset + 80 + 8)
         mdl.read_uint32()  # offset_to_faces
@@ -264,7 +264,7 @@ def gl_load_stitched_model(scene, mdl: BinaryReader, mdx: BinaryReader) -> Model
         for offset, transform in value:
             mdl.seek(offset + 80)
             fp = mdl.read_uint32()
-            k2 = fp in (4216880, 4216816, 4216864)
+            k2 = fp in {4216880, 4216816, 4216864}
 
             mdl.seek(offset + 80 + 252)
             mdx_block_size = mdl.read_uint32()

@@ -757,11 +757,11 @@ class _TrimeshHeader:
         self.unknown10 = reader.read_uint8()
         self.total_area = reader.read_single()
         self.unknown11 = reader.read_uint32()
-        if self.function_pointer0 in (
+        if self.function_pointer0 in {
             _TrimeshHeader.K2_FUNCTION_POINTER0,
             _TrimeshHeader.K2_DANGLY_FUNCTION_POINTER0,
             _TrimeshHeader.K2_SKIN_FUNCTION_POINTER0,
-        ):
+        }:
             self.unknown12 = reader.read_uint32()
             self.unknown13 = reader.read_uint32()
         self.mdx_data_offset = reader.read_uint32()

@@ -205,14 +205,14 @@ class StrType(type):
     def __instancecheck__(cls, instance):  # sourcery skip: instance-method-first-arg-name
         instance_type = type(instance)
         mro = instance_type.__mro__
-        if cls in (str, WrappedStr):
-            return instance_type in (WrappedStr, str) or WrappedStr in mro or str in mro
+        if cls in {str, WrappedStr}:
+            return instance_type in {WrappedStr, str} or WrappedStr in mro or str in mro
         return cls in mro
 
     def __subclasscheck__(cls, subclass):  # sourcery skip: instance-method-first-arg-name
         mro = subclass.__mro__
-        if cls in (str, WrappedStr):
-            return subclass in (WrappedStr, str) or WrappedStr in mro or str in mro
+        if cls in {str, WrappedStr}:
+            return subclass in {WrappedStr, str} or WrappedStr in mro or str in mro
         return cls in mro
 
 @runtime_checkable

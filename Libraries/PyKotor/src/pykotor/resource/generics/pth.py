@@ -55,7 +55,7 @@ class PTH:
     ):
         self._points.pop(index)
 
-        self._connections = [x for x in self._connections if index not in (x.source, x.target)]
+        self._connections = [x for x in self._connections if index not in {x.source, x.target}]
 
         for connection in self._connections:
             connection.source = connection.source - 1 if connection.source > index else connection.source

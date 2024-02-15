@@ -217,7 +217,7 @@ class TomlDecoder:
             except ValueError:
                 raise ValueError("Invalid inline table encountered")
             value = value.strip()
-            if ((value[0] == value[-1] and value[0] in ('"', "'")) or (value[0] in "-0123456789" or value in ("true", "false") or (value[0] == "[" and value[-1] == "]") or (value[0] == "{" and value[-1] == "}"))):
+            if ((value[0] == value[-1] and value[0] in {'"', "'"}) or (value[0] in "-0123456789" or value in {"true", "false"} or (value[0] == "[" and value[-1] == "]") or (value[0] == "{" and value[-1] == "}"))):
                 groups.append(candidate_group)
             elif len(candidate_groups) > 0:
                 candidate_groups[0] = f"{candidate_group},{candidate_groups[0]}"
@@ -298,7 +298,7 @@ class TomlDecoder:
                     currentlevel[level] = self.get_empty_table()
                 currentlevel = currentlevel[level]
             pair[0] = levels[-1].strip()
-        elif pair[0][0] in ['"', "'"] and pair[0][-1] == pair[0][0]:
+        elif pair[0][0] in {'"', "'"} and pair[0][-1] == pair[0][0]:
             pair[0] = _unescape(pair[0][1:-1])
         k, koffset = self._load_line_multiline_str(pair[1])
         if k > -1:
@@ -436,7 +436,7 @@ class TomlDecoder:
                 raise ValueError("This float doesn't have a leading digit")
             v = float(v)
             itype = "float"
-        elif len(lowerv) == 3 and (lowerv in ("inf", "nan")):
+        elif len(lowerv) == 3 and (lowerv in {"inf", "nan"}):
             v = float(v)
             itype = "float"
         if itype == "int":
@@ -572,9 +572,9 @@ def _strictly_valid_num(n):
         return False
     if len(n) == 1:
         return True
-    if n[0] == "0" and n[1] not in [".", "o", "b", "x"]:
+    if n[0] == "0" and n[1] not in {".", "o", "b", "x"}:
         return False
-    if n[0] in ["+", "-"]:
+    if n[0] in {"+", "-"}:
         n = n[1:]
         if len(n) > 1 and n[0] == "0" and n[1] != ".":
             return False

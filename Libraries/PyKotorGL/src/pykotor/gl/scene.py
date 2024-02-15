@@ -300,9 +300,9 @@ class Scene:
             for door in copy(self.git.doors):
                 if door.resref == identifier.resname and identifier.restype == ResourceType.UTD:
                     del self.objects[door]
-            if identifier.restype in (ResourceType.TPC, ResourceType.TGA):
+            if identifier.restype in {ResourceType.TPC, ResourceType.TGA}:
                 del self.textures[identifier.resname]
-            if identifier.restype in (ResourceType.MDL, ResourceType.MDX):
+            if identifier.restype in {ResourceType.MDL, ResourceType.MDX}:
                 del self.models[identifier.resname]
             if identifier.restype == ResourceType.GIT:
                 for instance in self.git.instances():

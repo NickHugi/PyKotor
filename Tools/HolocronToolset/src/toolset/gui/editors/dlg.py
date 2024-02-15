@@ -891,7 +891,7 @@ class DLGEditor(Editor):
         menu.popup(self.ui.dialogTree.viewport().mapToGlobal(point))
 
     def keyPressEvent(self, event: QKeyEvent | None):
-        if event.key() in (QtKey.Key_Enter, QtKey.Key_Return):
+        if event.key() in {QtKey.Key_Enter, QtKey.Key_Return}:
             selectedItem: QModelIndex = self.ui.dialogTree.currentIndex()
             if selectedItem.isValid():
                 item: QStandardItem | None = self.model.itemFromIndex(selectedItem)

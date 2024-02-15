@@ -78,7 +78,7 @@ class TPCEditor(Editor):
         """
         super().load(filepath, resref, restype, data)
 
-        if restype in [ResourceType.TPC, ResourceType.TGA]:
+        if restype in {ResourceType.TPC, ResourceType.TGA}:
             self._tpc = read_tpc(data)
         else:
             pillow = Image.open(io.BytesIO(data))
@@ -131,9 +131,9 @@ class TPCEditor(Editor):
 
         data = bytearray()
 
-        if self._restype in [ResourceType.TPC, ResourceType.TGA]:
+        if self._restype in {ResourceType.TPC, ResourceType.TGA}:
             write_tpc(self._tpc, data, self._restype)
-        elif self._restype in [ResourceType.PNG, ResourceType.BMP]:
+        elif self._restype in {ResourceType.PNG, ResourceType.BMP}:
             data = self.extract_png_bmp_bytes()
         elif self._restype == ResourceType.JPG:
             data = self.extract_tpc_jpeg_bytes()
