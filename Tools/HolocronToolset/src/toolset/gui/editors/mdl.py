@@ -39,7 +39,7 @@ class MDLEditor(Editor):
             - Set the installation on the model renderer
             - Call new() to start with a blank state.
         """
-        supported = [ResourceType.MDL]
+        supported: list[ResourceType] = [ResourceType.MDL]
         super().__init__(parent, "Model Viewer", "none", supported, supported, installation)
 
         self._mdl: MDL = MDL()
@@ -75,7 +75,7 @@ class MDLEditor(Editor):
             - Sets model data on renderer if both MDL and MDX found
             - Displays error if unable to find associated data.
         """
-        c_filepath = CaseAwarePath.pathify(filepath)
+        c_filepath: CaseAwarePath = CaseAwarePath.pathify(filepath)
         super().load(c_filepath, resref, restype, data)
 
         mdl_data: bytes | None = None

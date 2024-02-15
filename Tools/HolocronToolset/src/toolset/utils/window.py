@@ -8,7 +8,7 @@ from pykotor.resource.formats.erf.erf_data import ERFType
 from pykotor.resource.type import ResourceType
 from toolset.gui.editors.mdl import MDLEditor
 from toolset.gui.widgets.settings.installations import GlobalSettings
-from utility.error_handling import universal_simplify_exception
+from utility.error_handling import assert_with_variable_trace, universal_simplify_exception
 
 if TYPE_CHECKING:
     import os
@@ -213,10 +213,14 @@ def openResourceEditor(
         ResourceType.IFO,
         ResourceType.IFO_XML,
         ResourceType.RES,
+        ResourceType.RES_XML,
+        ResourceType.FAC,
+        ResourceType.FAC_XML,
     }:
         editor = GFFEditor(None, installation)
 
     if restype in {ResourceType.WAV, ResourceType.MP3}:
+        assert parentwindow is not None, assert_with_variable_trace(parentwindow is not None)
         editor = AudioPlayer(parentwindow)
 
     if restype.name in ERFType.__members__ or restype == ResourceType.RIM:
@@ -233,11 +237,10 @@ def openResourceEditor(
             addWindow(editor)
 
         except Exception as e:
-            etype, emsg = universal_simplify_exception(e)
             QMessageBox(
                 QMessageBox.Critical,
-                f"An unexpected error has occurred: {etype}",
-                emsg,
+                "An unexpected error has occurred",
+                str(universal_simplify_exception(e)),
                 QMessageBox.Ok,
                 parentwindow
             ).show()
@@ -248,7 +251,7 @@ def openResourceEditor(
         QMessageBox(
             QMessageBox.Critical,
             "Failed to open file",
-            f"The selected file format '{restype!r}' is not yet supported.",
+            f"The selected file format '{restype}' is not yet supported.",
             QMessageBox.Ok,
             parentwindow,
         ).show()

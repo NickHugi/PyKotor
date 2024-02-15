@@ -86,7 +86,8 @@ if __name__ == "__main__":
     if is_frozen():
         print("App is frozen - doing multiprocessing.freeze_support()")
         multiprocessing.freeze_support()
-    fix_sys_and_cwd_path()
+    else:
+        fix_sys_and_cwd_path()
     from utility.system.path import Path
 
     app = QApplication(sys.argv)

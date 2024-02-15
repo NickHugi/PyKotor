@@ -3,10 +3,10 @@ from __future__ import annotations
 import struct
 
 
-def fix_audio(
+def deobfuscate_audio(
     data: bytes,
-) -> bytes:
-    """Fixes corrupted audio data.
+) -> bytes:  # sourcery skip: remove-redundant-slice-index
+    """Removes the junk data at the start of a kotor audio file to make it playable by most media players.
 
     Args:
     ----

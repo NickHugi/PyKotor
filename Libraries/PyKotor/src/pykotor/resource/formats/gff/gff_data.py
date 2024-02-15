@@ -5,7 +5,7 @@ import os
 
 from copy import copy, deepcopy
 from enum import Enum, IntEnum
-from typing import TYPE_CHECKING, Any, Callable, ClassVar, TypeVar
+from typing import TYPE_CHECKING, Any, ClassVar, TypeVar
 
 from pykotor.common.geometry import Vector3, Vector4
 from pykotor.common.language import LocalizedString
@@ -15,7 +15,7 @@ from utility.string import compare_and_format, format_text
 from utility.system.path import PureWindowsPath
 
 if TYPE_CHECKING:
-    from collections.abc import Generator, Iterator
+    from collections.abc import Callable, Generator, Iterator
 
 T = TypeVar("T")
 U = TypeVar("U")
@@ -47,6 +47,7 @@ class GFFContent(Enum):
     NFO = "NFO "  # savenfo.res
     PT = "PT  "  # partytable.res
     GVT = "GVT "  # GLOBALVARS.res
+    INV = "INV "  # inventory in SAVEGAME.res
 
     @classmethod
     def has_value(

@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from copy import copy
-from typing import TYPE_CHECKING, Any, Callable, Generic, TypeVar
+from typing import TYPE_CHECKING, Any, Generic, TypeVar
 
 from pykotor.common.misc import CaseInsensitiveDict
 from pykotor.common.stream import BinaryReader, BinaryWriter
@@ -37,6 +37,8 @@ from utility.system.path import Path, PurePath
 
 if TYPE_CHECKING:
     import os
+
+    from collections.abc import Callable
 
     from pykotor.common.misc import ResRef
     from pykotor.extract.file import LocationResult, ResourceResult
@@ -289,18 +291,19 @@ class Module:
         """
         # In order to store TGA resources in the same ModuleResource as their TPC counterpart, we use the .TPC extension
         # instead of the .TGA for the dictionary key.
-        filename_ext = str(ResourceType.TPC if restype == ResourceType.TGA else restype)
-        filename = f"{resname}.{filename_ext}"
-        if filename not in self.resources:
-            self.resources[filename] = ModuleResource(
-                resname,
-                restype,
-                self._installation,
-            )
+        filename_ext: CaseInsensitiveWrappedStr = (ResourceType.TPC if restype == ResourceType.TGA else restype).extension
+        filename: str = f"{resname}.{filename_ext}"
+        module_resource: ModuleResource = self.resources.get(filename)
+        if module_resource is None:
+            module_resource = ModuleResource(resname, restype, self._installation)
+            self.resources[filename] = module_resource
+
         self.resources[filename].add_locations(locations)
+
 
     def installation(self) -> Installation:
         return self._installation
+
 
     def resource(
         self,
@@ -373,6 +376,7 @@ class Module:
             ),
             None,
         )
+
 
     def are(
         self,

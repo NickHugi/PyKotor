@@ -1,12 +1,14 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Callable
+from typing import TYPE_CHECKING, Any, Callable, Generator
+
+from PyQt5 import QtCore
+from PyQt5.QtWidgets import QDialog, QListWidgetItem
 
 from PyQt5 import QtCore
 from PyQt5.QtWidgets import QDialog, QListWidgetItem
 
 from pykotor.resource.type import ResourceType
-from pykotor.tools.encoding import decode_bytes_with_fallbacks
 from toolset.gui.dialogs.asyncloader import AsyncBatchLoader
 from toolset.utils.window import openResourceEditor
 
@@ -55,7 +57,7 @@ class FileSearcher(QDialog):
             - Mapping checked resource types to list
             - Calling search function to start search}.
         """
-        installation = self.ui.installationSelect.currentData()
+        installation: HTInstallation = self.ui.installationSelect.currentData()
         caseSensitive = self.ui.caseSensitiveRadio.isChecked()
         filenamesOnly = self.ui.filenamesOnlyCheck.isChecked()
         text = self.ui.searchTextEdit.text()
@@ -64,24 +66,24 @@ class FileSearcher(QDialog):
         searchModules = self.ui.modulesCheck.isChecked()
         searchOverride = self.ui.overrideCheck.isChecked()
 
-        checkTypes = []
-        if self.ui.typeARECheck.isChecked(): checkTypes.append(ResourceType.ARE)
-        if self.ui.typeGITCheck.isChecked(): checkTypes.append(ResourceType.GIT)
-        if self.ui.typeIFOCheck.isChecked(): checkTypes.append(ResourceType.IFO)
-        if self.ui.typeDLGCheck.isChecked(): checkTypes.append(ResourceType.DLG)
-        if self.ui.typeJRLCheck.isChecked(): checkTypes.append(ResourceType.JRL)
-        if self.ui.typeUTCCheck.isChecked(): checkTypes.append(ResourceType.UTC)
-        if self.ui.typeUTDCheck.isChecked(): checkTypes.append(ResourceType.UTD)
-        if self.ui.typeUTECheck.isChecked(): checkTypes.append(ResourceType.UTE)
-        if self.ui.typeUTICheck.isChecked(): checkTypes.append(ResourceType.UTI)
-        if self.ui.typeUTPCheck.isChecked(): checkTypes.append(ResourceType.UTP)
-        if self.ui.typeUTMCheck.isChecked(): checkTypes.append(ResourceType.UTM)
-        if self.ui.typeUTWCheck.isChecked(): checkTypes.append(ResourceType.UTW)
-        if self.ui.typeUTSCheck.isChecked(): checkTypes.append(ResourceType.UTS)
-        if self.ui.typeUTTCheck.isChecked(): checkTypes.append(ResourceType.UTT)
-        if self.ui.type2DACheck.isChecked(): checkTypes.append(ResourceType.TwoDA)
-        if self.ui.typeNSSCheck.isChecked(): checkTypes.append(ResourceType.NSS)
-        if self.ui.typeNCSCheck.isChecked(): checkTypes.append(ResourceType.NCS)
+        checkTypes: list[ResourceType] = []
+        if self.ui.typeARECheck.isChecked(): checkTypes.append(ResourceType.ARE)  # noqa: E701
+        if self.ui.typeGITCheck.isChecked(): checkTypes.append(ResourceType.GIT)  # noqa: E701
+        if self.ui.typeIFOCheck.isChecked(): checkTypes.append(ResourceType.IFO)  # noqa: E701
+        if self.ui.typeDLGCheck.isChecked(): checkTypes.append(ResourceType.DLG)  # noqa: E701
+        if self.ui.typeJRLCheck.isChecked(): checkTypes.append(ResourceType.JRL)  # noqa: E701
+        if self.ui.typeUTCCheck.isChecked(): checkTypes.append(ResourceType.UTC)  # noqa: E701
+        if self.ui.typeUTDCheck.isChecked(): checkTypes.append(ResourceType.UTD)  # noqa: E701
+        if self.ui.typeUTECheck.isChecked(): checkTypes.append(ResourceType.UTE)  # noqa: E701
+        if self.ui.typeUTICheck.isChecked(): checkTypes.append(ResourceType.UTI)  # noqa: E701
+        if self.ui.typeUTPCheck.isChecked(): checkTypes.append(ResourceType.UTP)  # noqa: E701
+        if self.ui.typeUTMCheck.isChecked(): checkTypes.append(ResourceType.UTM)  # noqa: E701
+        if self.ui.typeUTWCheck.isChecked(): checkTypes.append(ResourceType.UTW)  # noqa: E701
+        if self.ui.typeUTSCheck.isChecked(): checkTypes.append(ResourceType.UTS)  # noqa: E701
+        if self.ui.typeUTTCheck.isChecked(): checkTypes.append(ResourceType.UTT)  # noqa: E701
+        if self.ui.type2DACheck.isChecked(): checkTypes.append(ResourceType.TwoDA)  # noqa: E701
+        if self.ui.typeNSSCheck.isChecked(): checkTypes.append(ResourceType.NSS)  # noqa: E701
+        if self.ui.typeNCSCheck.isChecked(): checkTypes.append(ResourceType.NCS)  # noqa: E701
 
         self.search(installation, caseSensitive, filenamesOnly, text, searchCore, searchModules, searchOverride, checkTypes)
         self.installation = installation
@@ -109,28 +111,35 @@ class FileSearcher(QDialog):
             - Applies search function asynchronously to resources
             - Stores results in self.results.
         """
-        searchIn: list[FileResource] = []
         results: list[FileResource] = []
 
-        if searchCore:
-            searchIn.extend(installation.chitin_resources())
-        if searchModules:
-            for module in installation.modules_list():
-                searchIn.extend(installation.module_resources(module))
-        if searchOverride:
-            for folder in installation.override_list():
-                searchIn.extend(installation.override_resources(folder))
+        def search_generator() -> Generator[FileResource, Any, None]:
+            if searchCore:
+                yield from installation.chitin_resources()
+            if searchModules:
+                for module in installation.modules_list():
+                    yield from installation.module_resources(module)
+            if searchOverride:
+                for folder in installation.override_list():
+                    yield from installation.override_resources(folder)
+
+        searchText = text.lower() if caseSensitive else text
 
         def search(resource: FileResource):
-            resource_name = resource.resname()
-            resource_data = decode_bytes_with_fallbacks(resource.data())
+            resource_name: str = resource.resname()
 
-            name_check: bool = text in resource_name if caseSensitive else text.lower() in resource_name.lower()
-            data_check: bool = text in resource_data if caseSensitive else text.lower() in resource_data.lower()
+            name_check: bool = searchText in (resource_name if caseSensitive else resource_name.lower())
+            if name_check:
+                results.append(resource)
+            if name_check or filenamesOnly:
+                return
 
-            if name_check or (not filenamesOnly and data_check):
+            resource_data: str = resource.data().decode(encoding="utf-8", errors="ignore")  # HACK:
+            data_check: bool = searchText in (resource_data if caseSensitive else resource_data.lower())
+            if data_check:
                 results.append(resource)
 
+        searchIn: Generator[FileResource, Any, None] = search_generator()
         searches: list[Callable[[FileResource], None]] = [lambda resource=resource: search(resource) for resource in searchIn]
         AsyncBatchLoader(self, "Searching...", searches, "An error occured during the search").exec_()
 
@@ -167,8 +176,7 @@ class FileResults(QDialog):
         self.installation: HTInstallation = installation
 
         for result in results:
-            filename = f"{result.resname()}.{result.restype().extension}"
-            item = QListWidgetItem(filename)
+            item = QListWidgetItem(result.filename())
             item.setData(QtCore.Qt.UserRole, result)
             item.setToolTip(str(result.filepath()))
             self.ui.resultList.addItem(item)
@@ -196,16 +204,12 @@ class FileResults(QDialog):
         self.selection = item.data(QtCore.Qt.UserRole) if item is not None else None
         super().accept()
 
-    def open(self):  # noqa: A003
+    def open(self):
         """Opens the current item in the result list.
 
         Args:
         ----
             self: The class instance.
-
-        Returns:
-        -------
-            None: Does not return anything.
 
         Processing Logic:
         ----------------
@@ -214,7 +218,7 @@ class FileResults(QDialog):
             - Gets the FileResource object from the item's data
             - Opens the resource editor window with the resource's details.
         """
-        item = self.ui.resultList.currentItem()
+        item: QListWidgetItem | None = self.ui.resultList.currentItem()
         if item:
             resource: FileResource = item.data(QtCore.Qt.UserRole)
             openResourceEditor(resource.filepath(), resource.resname(), resource.restype(), resource.data(),

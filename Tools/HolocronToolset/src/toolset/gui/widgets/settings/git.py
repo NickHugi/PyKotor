@@ -1,12 +1,11 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
-
 from PyQt5 import QtCore
 
 from toolset.data.settings import Settings
 from toolset.gui.widgets.settings.base import SettingsWidget
 from toolset.utils.misc import QtKey, QtMouse
+from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from PyQt5.QtWidgets import QWidget
@@ -16,11 +15,12 @@ class GITWidget(SettingsWidget):
     editedSignal = QtCore.pyqtSignal()
 
     def __init__(self, parent: QWidget):
-        """Initializes the GIT settings widget
+        """Initializes the GIT settings widget.
+
         Args:
+        ----
             parent (QWidget): The parent widget
-        Returns:
-            None
+
         Processing Logic:
         ----------------
             - Calls the parent __init__ method

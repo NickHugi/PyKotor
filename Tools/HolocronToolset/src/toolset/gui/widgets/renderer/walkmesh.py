@@ -33,6 +33,7 @@ from pykotor.resource.generics.git import (
     GITWaypoint,
 )
 from toolset.utils.misc import clamp
+from utility.error_handling import assert_with_variable_trace
 
 if TYPE_CHECKING:
     from PyQt5.QtGui import (
@@ -183,7 +184,7 @@ class WalkmeshRenderer(QWidget):
         self.geometrySelection: WalkmeshSelection[GeomPoint] = WalkmeshSelection()
 
         self._mousePrev: Vector2 = Vector2(self.cursor().pos().x(), self.cursor().pos().y())
-        self._walkmeshFaceCache: list[QPainterPath] | None = None
+        self._walkmeshFaceCache: dict[BWMFace, QPainterPath] | None = None
 
         self.highlightOnHover: bool = False
         self.highlightBoundaries: bool = True
@@ -200,7 +201,7 @@ class WalkmeshRenderer(QWidget):
         self.hideWaypoints: bool = True
         self.hideCameras: bool = True
 
-        self.materialColors: dict[SurfaceMaterial, int] = {}
+        self.materialColors: dict[SurfaceMaterial, QColor] = {}
         self.defaultMaterialColor: QColor = QColor(255, 0, 255)
 
         self._keysDown: set[int] = set()
@@ -276,7 +277,10 @@ class WalkmeshRenderer(QWidget):
     def setMinimap(self, are: ARE, tpc: TPC):
         self._are = are
 
-        image = QImage(tpc.convert(TPCTextureFormat.RGB).data, tpc.get().width, tpc.get().height, QImage.Format_RGB888)
+        tpc_rgb_data: bytes | None = tpc.convert(TPCTextureFormat.RGB).data
+        assert tpc_rgb_data is not None, assert_with_variable_trace(tpc_rgb_data is not None)
+
+        image = QImage(tpc_rgb_data, tpc.get().width, tpc.get().height, QImage.Format_RGB888)
         crop = QRect(0, 0, 435, 256)
         self._minimapImage = image.copy(crop)
 
@@ -298,12 +302,12 @@ class WalkmeshRenderer(QWidget):
         -------
             A vector representing a point on the widget.
         """
-        cos = math.cos(self.camera.rotation())
-        sin = math.sin(self.camera.rotation())
+        cos: float = math.cos(self.camera.rotation())
+        sin: float = math.sin(self.camera.rotation())
         x -= self.camera.position().x
         y -= self.camera.position().y
-        x2 = (x * cos - y * sin) * self.camera.zoom() + self.width() / 2
-        y2 = (x * sin + y * cos) * self.camera.zoom() + self.height() / 2
+        x2: float = (x * cos - y * sin) * self.camera.zoom() + self.width() / 2
+        y2: float = (x * sin + y * cos) * self.camera.zoom() + self.height() / 2
         return Vector2(x2, y2)
 
     def toWorldCoords(self, x: float, y: float) -> Vector3:
@@ -348,12 +352,12 @@ class WalkmeshRenderer(QWidget):
         -------
             A vector representing a change in position in the world.
         """
-        cos = math.cos(-self.camera.rotation())
-        sin = math.sin(-self.camera.rotation())
+        cos: float = math.cos(-self.camera.rotation())
+        sin: float = math.sin(-self.camera.rotation())
         x /= self.camera.zoom()
         y /= self.camera.zoom()
-        x2 = x * cos - y * sin
-        y2 = x * sin + y * cos
+        x2: float = x * cos - y * sin
+        y2: float = x * sin + y * cos
         return Vector2(x2, -y2)
 
     def getZCoord(self, x: float, y: float) -> float:
@@ -375,7 +379,7 @@ class WalkmeshRenderer(QWidget):
         # And if we cant find a face, then set the Z to 0.0
         face: BWMFace | None = None
         for walkmesh in self._walkmeshes:
-            over = walkmesh.faceAt(x, y)
+            over: BWMFace | None = walkmesh.faceAt(x, y)
             if over and (
                 face is None or (
                     not face.material.walkable()
@@ -403,6 +407,22 @@ class WalkmeshRenderer(QWidget):
         return self.materialColors[material] if material in self.materialColors else self.defaultMaterialColor  # TODO: fix the typing - an int is not the same as a QColor object
 
     def instancesUnderMouse(self) -> list[GITInstance]:
+        """Returns a list of GITInstances under the mouse.
+
+        Args:
+        ----
+            self: The current GITWindow instance
+
+        Returns:
+        -------
+            list[GITInstance]: A list of GITInstance objects under the mouse
+
+        Processing Logic:
+        ----------------
+            - Checks the mouse position against the bounding boxes of all GITInstances
+            - Returns a list of all instances whose bounding box contains the mouse position
+            - If no instances are under the mouse, an empty list is returned.
+        """
         return self._instancesUnderMouse
 
     def pathNodesUnderMouse(self) -> list[Vector2]:
@@ -484,8 +504,8 @@ class WalkmeshRenderer(QWidget):
             4. Sets the camera zoom and rotation based on the scale.
         """
         self.camera.setPosition((self._bbmin.x + self._bbmax.x) / 2, (self._bbmin.y + self._bbmax.y) / 2)
-        world_w = self._worldSize.x
-        world_h = self._worldSize.y
+        world_w: float = self._worldSize.x
+        world_h: float = self._worldSize.y
 
         # If the GIT is being loaded directly after the window opens the widget won't have appropriately resized itself,
         # so we check for this and set the sizes to what it should be by default.
@@ -493,12 +513,12 @@ class WalkmeshRenderer(QWidget):
             screen_w = 520
             screen_h = 507
         else:
-            screen_w = self.width()
-            screen_h = self.height()
+            screen_w: int = self.width()
+            screen_h: int = self.height()
 
-        scale_w = screen_w / world_w if world_w != 0 else 0
-        scale_h = screen_h / world_h if world_h != 0 else 0
-        camScale: float | int = min(scale_w, scale_h)
+        scale_w: float = screen_w / world_w if world_w != 0 else 0.0
+        scale_h: float = screen_h / world_h if world_h != 0 else 0.0
+        camScale: float = min(scale_w, scale_h)
 
         self.camera.setZoom(camScale)
         self.camera.setRotation(0)
@@ -547,27 +567,28 @@ class WalkmeshRenderer(QWidget):
         """
         path = QPainterPath()
         if (isinstance(instance, (GITEncounter, GITTrigger))) and len(instance.geometry) > 0:
-            path.moveTo(instance.position.x + instance.geometry[0].x, instance.position.y + instance.geometry[0].y)
+            path.moveTo(instance.position.x + instance.geometry[0].x, instance.position.y + instance.geometry[0].y)  # type: ignore[]
             for point in instance.geometry[1:]:
-                path.lineTo(instance.position.x + point.x, instance.position.y + point.y)
-            path.lineTo(instance.position.x + instance.geometry[0].x, instance.position.y + instance.geometry[0].y)
+                path.lineTo(instance.position.x + point.x, instance.position.y + point.y)  # type: ignore[]
+            path.lineTo(instance.position.x + instance.geometry[0].x, instance.position.y + instance.geometry[0].y)  # type: ignore[]
         return path
 
     def _buildInstanceBoundsPoints(self, instance: GITInstance) -> QPainterPath:
         path = QPainterPath()
         if isinstance(instance, (GITTrigger, GITEncounter)):
             for point in instance.geometry:
-                size = 4 / self.camera.zoom()
+                size: float = 4 / self.camera.zoom()
                 path.addEllipse(QPointF(instance.position.x + point.x, instance.position.y + point.y), size, size)
         return path
 
     def _drawImage(self, painter: QPainter, pixmap: QPixmap, x: float, y: float, rotation: float, scale: float):
-        source = QRectF(0, 0, pixmap.width(), pixmap.height())
-        trueWidth, trueHeight = pixmap.width() * scale, pixmap.height() * scale
         painter.save()
         painter.translate(x, y)
         painter.rotate(math.degrees(rotation))
         painter.scale(-1, 1)
+
+        source = QRectF(0, 0, pixmap.width(), pixmap.height())
+        trueWidth, trueHeight = pixmap.width() * scale, pixmap.height() * scale
         painter.drawPixmap(QRectF(-trueWidth / 2, -trueHeight / 2, trueWidth, trueHeight), pixmap, source)
         painter.restore()
 
@@ -698,65 +719,66 @@ class WalkmeshRenderer(QWidget):
             for i, source in enumerate(self._pth):
                 painter.setPen(QPen(QColor(200, 200, 200, 255), self._pathEdgeWidth, QtCore.Qt.SolidLine))
                 for j in self._pth.outgoing(i):
-                    target = self._pth.get(j.target)
+                    target: Vector2 | None = self._pth.get(j.target)
+                    assert target is not None, assert_with_variable_trace(target is not None)
                     painter.drawLine(QPointF(source.x, source.y), QPointF(target.x, target.y))
 
-            for point in self._pth:
+            for point_2d in self._pth:
                 painter.setPen(QColor(0, 0, 0, 0))
                 painter.setBrush(QColor(200, 200, 200, 255))
-                painter.drawEllipse(QPointF(point.x, point.y), self._pathNodeSize, self._pathNodeSize)
+                painter.drawEllipse(QPointF(point_2d.x, point_2d.y), self._pathNodeSize, self._pathNodeSize)
 
-            for point in self._pathNodesUnderMouse:
+            for point_2d in self._pathNodesUnderMouse:
                 painter.setPen(QColor(0, 0, 0, 0))
                 painter.setBrush(QColor(255, 255, 255, 255))
-                painter.drawEllipse(QPointF(point.x, point.y), self._pathNodeSize, self._pathNodeSize)
+                painter.drawEllipse(QPointF(point_2d.x, point_2d.y), self._pathNodeSize, self._pathNodeSize)
 
-            for point in self.pathSelection.all():
+            for point_2d in self.pathSelection.all():
                 painter.setPen(QColor(0, 0, 0, 0))
                 painter.setBrush(QColor(0, 255, 0, 255))
-                painter.drawEllipse(QPointF(point.x, point.y), self._pathNodeSize, self._pathNodeSize)
+                painter.drawEllipse(QPointF(point_2d.x, point_2d.y), self._pathNodeSize, self._pathNodeSize)
 
         # Draw the git instances (represented as icons)
         painter.setOpacity(0.6)
         painter.setRenderHint(QPainter.SmoothPixmapTransform, True)
         if self._git is not None:
             for creature in [] if self.hideCreatures else self._git.creatures:
-                if self.instanceFilter.lower() not in creature.resref.get().lower() and creature.resref.get() != "":
+                if creature.resref and self.instanceFilter not in creature.resref:
                     continue
                 self._drawImage(painter, self._pixmapCreature, creature.position.x, creature.position.y, math.pi + self.camera.rotation(), 1 / 16)
 
             for door in [] if self.hideDoors else self._git.doors:
-                if self.instanceFilter.lower() not in door.resref.get().lower() and door.resref.get() != "":
+                if door.resref and self.instanceFilter not in door.resref:
                     continue
                 self._drawImage(painter, self._pixmapDoor, door.position.x, door.position.y, math.pi + self.camera.rotation(), 1 / 16)
 
             for placeable in [] if self.hidePlaceables else self._git.placeables:
-                if self.instanceFilter.lower() not in placeable.resref.get().lower() and placeable.resref.get() != "":
+                if placeable.resref and self.instanceFilter not in placeable.resref:
                     continue
                 self._drawImage(painter, self._pixmapPlaceable, placeable.position.x, placeable.position.y, math.pi + self.camera.rotation(), 1 / 16)
 
             for merchant in [] if self.hideStores else self._git.stores:
-                if self.instanceFilter.lower() not in merchant.resref.get().lower() and merchant.resref.get() != "":
+                if merchant.resref and self.instanceFilter not in merchant.resref:
                     continue
                 self._drawImage(painter, self._pixmapMerchant, merchant.position.x, merchant.position.y, math.pi + self.camera.rotation(), 1 / 16)
 
             for waypoint in [] if self.hideWaypoints else self._git.waypoints:
-                if self.instanceFilter.lower() not in waypoint.resref.get().lower() and waypoint.resref.get() != "":
+                if waypoint.resref and self.instanceFilter not in waypoint.resref:
                     continue
                 self._drawImage(painter, self._pixmapWaypoint, waypoint.position.x, waypoint.position.y, math.pi + self.camera.rotation(), 1 / 16)
 
             for sound in [] if self.hideSounds else self._git.sounds:
-                if self.instanceFilter.lower() not in sound.resref.get().lower() and sound.resref.get() != "":
+                if sound.resref and self.instanceFilter not in sound.resref:
                     continue
                 self._drawImage(painter, self._pixmapSound, sound.position.x, sound.position.y, math.pi + self.camera.rotation(), 1 / 16)
 
             for encounter in [] if self.hideEncounters else self._git.encounters:
-                if self.instanceFilter.lower() not in encounter.resref.get().lower() and encounter.resref.get() != "":
+                if encounter.resref and self.instanceFilter not in encounter.resref:
                     continue
                 self._drawImage(painter, self._pixmapEncounter, encounter.position.x, encounter.position.y, math.pi + self.camera.rotation(), 1 / 16)
 
             for trigger in [] if self.hideTriggers else self._git.triggers:
-                if self.instanceFilter.lower() not in trigger.resref.get().lower() and trigger.resref.get() != "":
+                if trigger.resref and self.instanceFilter not in trigger.resref:
                     continue
                 self._drawImage(painter, self._pixmapTrigger, trigger.position.x, trigger.position.y, math.pi + self.camera.rotation(), 1 / 16)
 
@@ -778,7 +800,7 @@ class WalkmeshRenderer(QWidget):
 
         # Highlight first geom point that is underneath the mouse
         if self._geomPointsUnderMouse:
-            gpoint = self._geomPointsUnderMouse[0]
+            gpoint: GeomPoint = self._geomPointsUnderMouse[0]
             point = gpoint.instance.position + gpoint.point
 
             if not self.hideGeomPoints:
@@ -804,18 +826,19 @@ class WalkmeshRenderer(QWidget):
                 painter.drawPath(self._buildInstanceBoundsPoints(instance))
 
             # Draw an arrow representing the instance rotation (where applicable)
-            if instance.yaw() is not None:
-                l1px = instance.position.x + math.cos(instance.yaw() + math.pi / 2) * 1.1
-                l1py = instance.position.y + math.sin(instance.yaw() + math.pi / 2) * 1.1
-                l2px = instance.position.x + math.cos(instance.yaw() + math.pi / 2) * 1.3
-                l2py = instance.position.y + math.sin(instance.yaw() + math.pi / 2) * 1.3
+            instance_yaw_value: float | None = instance.yaw()
+            if instance_yaw_value is not None:
+                l1px = instance.position.x + math.cos(instance_yaw_value + math.pi / 2) * 1.1
+                l1py = instance.position.y + math.sin(instance_yaw_value + math.pi / 2) * 1.1
+                l2px = instance.position.x + math.cos(instance_yaw_value + math.pi / 2) * 1.3
+                l2py = instance.position.y + math.sin(instance_yaw_value + math.pi / 2) * 1.3
                 painter.setBrush(QtCore.Qt.NoBrush)
                 painter.setPen(QPen(QColor(255, 255, 255, 255), 0.15))
                 painter.drawLine(QPointF(l1px, l1py), QPointF(l2px, l2py))
 
         # Highlight selected geometry points
         for geomPoint in self.geometrySelection.all():
-            point = geomPoint.point + geomPoint.instance.position
+            point: Vector3 = geomPoint.point + geomPoint.instance.position
             painter.setBrush(QColor(255, 255, 255, 255))
             painter.setPen(QtCore.Qt.NoPen)
             painter.drawEllipse(QPointF(point.x, point.y), 4 / self.camera.zoom(), 4 / self.camera.zoom())
@@ -844,10 +867,10 @@ class WalkmeshRenderer(QWidget):
         self._geomPointsUnderMouse: list[GeomPoint] = []
         self._pathNodesUnderMouse: list[Vector2] = []
 
-        world = Vector2.from_vector3(self.toWorldCoords(coords.x, coords.y))  # Mouse pos in world
+        world: Vector2 = Vector2.from_vector3(self.toWorldCoords(coords.x, coords.y))  # Mouse pos in world
 
         if self._git is not None:
-            instances = self._git.instances()
+            instances: list[GITInstance] = self._git.instances()
             for instance in instances:
                 position = Vector2(instance.position.x, instance.position.y)
                 if position.distance(world) <= 1 and self.isInstanceVisible(instance):

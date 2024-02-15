@@ -5,6 +5,8 @@ from enum import Enum, IntEnum
 from typing import TYPE_CHECKING, Any, NamedTuple
 
 if TYPE_CHECKING:
+    import os
+
     from pykotor.common.misc import Game
 
 
@@ -320,5 +322,5 @@ class NCSOptimizer(ABC):
 
 class NCSCompiler(ABC):
     @abstractmethod
-    def compile_script(self, source_filepath: str, output_filepath: str, game: Game):
+    def compile_script(self, source_filepath: os.PathLike | str, output_filepath: os.PathLike | str, game: Game, *, debug: bool):
         ...

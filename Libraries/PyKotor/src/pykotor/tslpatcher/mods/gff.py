@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from itertools import zip_longest
-from typing import TYPE_CHECKING, Any, Callable
+from typing import TYPE_CHECKING, Any
 
 from pykotor.common.language import LocalizedString
 from pykotor.common.misc import ResRef
@@ -14,6 +14,7 @@ from utility.system.path import PureWindowsPath
 if TYPE_CHECKING:
     import os
 
+    from collections.abc import Callable
     from typing_extensions import Literal
 
     from pykotor.common.misc import Game

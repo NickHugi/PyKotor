@@ -20,11 +20,16 @@ if PYKOTOR_PATH.joinpath("pykotor").exists():
 if UTILITY_PATH.joinpath("utility").exists():
     add_sys_path(UTILITY_PATH)
 
+from typing import TYPE_CHECKING
+
 from pykotor.common.misc import Color, Game
 from pykotor.extract.installation import Installation
 from pykotor.resource.formats.gff import read_gff
-from pykotor.resource.formats.gff.gff_data import GFF
-from pykotor.resource.generics.git import GIT, construct_git, dismantle_git
+from pykotor.resource.generics.git import construct_git, dismantle_git
+
+if TYPE_CHECKING:
+    from pykotor.resource.formats.gff.gff_data import GFF
+    from pykotor.resource.generics.git import GIT
 
 TEST_FILE = "tests/files/test.git"
 K1_SAME_TEST = "tests/files/k1_same_git_test.git"

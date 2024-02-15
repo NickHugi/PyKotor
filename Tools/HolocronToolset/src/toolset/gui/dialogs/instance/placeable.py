@@ -30,7 +30,7 @@ class PlaceableDialog(QDialog):
         self.ui.colorButton.clicked.connect(lambda: self.changeColor(self.ui.colorSpin))
         self.ui.colorSpin.valueChanged.connect(lambda value: self.redoColorImage(value, self.ui.color))
 
-        self.ui.resrefEdit.setText(placeable.resref.get())
+        self.ui.resrefEdit.setText(str(placeable.resref))
         self.ui.xPosSpin.setValue(placeable.position.x)
         self.ui.yPosSpin.setValue(placeable.position.y)
         self.ui.zPosSpin.setValue(placeable.position.z)
@@ -39,7 +39,7 @@ class PlaceableDialog(QDialog):
 
         self.placeable: GITPlaceable = placeable
 
-        for widget in [getattr(self.ui, attr) for attr in dir(self.ui)]:
+        for widget in (getattr(self.ui, attr) for attr in dir(self.ui)):
             if isinstance(widget, QDoubleSpinBox):
                 widget.setDecimals(8)
 

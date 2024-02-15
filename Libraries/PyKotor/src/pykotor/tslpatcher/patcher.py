@@ -295,7 +295,7 @@ class ModInstaller:
             - Checks if the target capsule exists if patching one
             - Logs the patching action
             - Returns True if the patch should be applied.
-        """  # noqa: D205
+        """
         local_folder: str = self.game_path.name if patch.destination.strip("\\").strip("/") == "." else patch.destination
         container_type: Literal["folder", "archive"] = "folder" if capsule is None else "archive"
 

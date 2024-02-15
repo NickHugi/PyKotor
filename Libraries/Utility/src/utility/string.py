@@ -3,9 +3,11 @@ from __future__ import annotations
 import os
 import re
 
-from typing import TYPE_CHECKING, Any, Iterable, Protocol, TypeVar, runtime_checkable
+from typing import TYPE_CHECKING, Any, Protocol, TypeVar, runtime_checkable
 
 if TYPE_CHECKING:
+    from collections.abc import Iterable
+
     from typing_extensions import LiteralString, Self, SupportsIndex
 
 

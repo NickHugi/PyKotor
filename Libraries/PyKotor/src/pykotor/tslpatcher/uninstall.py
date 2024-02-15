@@ -146,7 +146,7 @@ class ModUninstaller:
             return None
         return max(valid_backups, key=lambda x: datetime.strptime(x.name, "%Y-%m-%d_%H.%M.%S").astimezone())
 
-    def restore_backup(  # noqa: D417
+    def restore_backup(
         self,
         backup_folder: Path,
         existing_files: set[str],

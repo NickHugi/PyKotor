@@ -3,7 +3,7 @@ from __future__ import annotations
 import math
 
 from copy import copy
-from typing import TYPE_CHECKING, Any, Callable, ClassVar
+from typing import TYPE_CHECKING, Any, ClassVar
 
 import glm
 
@@ -89,6 +89,8 @@ from pykotor.tools import creature
 from utility.error_handling import format_exception_with_variables
 
 if TYPE_CHECKING:
+    from collections.abc import Callable
+
     from typing_extensions import Literal
 
     from pykotor.common.module import Module

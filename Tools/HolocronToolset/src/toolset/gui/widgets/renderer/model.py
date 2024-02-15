@@ -14,10 +14,12 @@ from pykotor.gl.scene import RenderObject, Scene
 from pykotor.resource.generics.git import GIT, GITCreature
 from toolset.data.misc import ControlItem
 from toolset.gui.widgets.settings.module_designer import ModuleDesignerSettings
+from utility.error_handling import assert_with_variable_trace
 
 if TYPE_CHECKING:
     from PyQt5.QtWidgets import QWidget
     from PyQt5.QtGui import QKeyEvent, QMouseEvent, QResizeEvent, QWheelEvent
+    from glm import vec3
 
     from pykotor.extract.installation import Installation
     from pykotor.resource.generics.utc import UTC
@@ -29,8 +31,8 @@ class ModelRenderer(QOpenGLWidget):
 
         self.scene: Scene | None = None
         self.installation: Installation | None = None
-        self._modelToLoad = None
-        self._creatureToLoad = None
+        self._modelToLoad: tuple[BinaryReader, BinaryReader] | None = None
+        self._creatureToLoad: UTC | None = None
 
         self._keysDown: set[int] = set()
         self._mouseDown: set[int] = set()
@@ -119,14 +121,16 @@ class ModelRenderer(QOpenGLWidget):
         self._creatureToLoad = utc
 
     def resetCamera(self):
-        if "model" in self.scene.objects:
-            model = self.scene.objects["model"]
-            self.scene.camera.x = 0
-            self.scene.camera.y = 0
-            self.scene.camera.z = (model.cube(self.scene).max_point.z - model.cube(self.scene).min_point.z) / 2
-            self.scene.camera.pitch = math.pi / 16 * 9
-            self.scene.camera.yaw = math.pi / 16 * 7
-            self.scene.camera.distance = model.radius(self.scene) + 2
+        scene: Scene | None = self.scene
+        assert scene is not None, assert_with_variable_trace(scene is not None)
+        if "model" in scene.objects:
+            model: RenderObject = scene.objects["model"]
+            scene.camera.x = 0
+            scene.camera.y = 0
+            scene.camera.z = (model.cube(scene).max_point.z - model.cube(scene).min_point.z) / 2
+            scene.camera.pitch = math.pi / 16 * 9
+            scene.camera.yaw = math.pi / 16 * 7
+            scene.camera.distance = model.radius(scene) + 2
 
     # region Events
     def resizeEvent(self, e: QResizeEvent):
@@ -138,11 +142,11 @@ class ModelRenderer(QOpenGLWidget):
 
     def wheelEvent(self, e: QWheelEvent):
         if self.zoomCamera.satisfied(self._mouseDown, self._keysDown):
-            strength = self.settings.zoomCameraSensitivity3d / 2000
+            strength: float = self.settings.zoomCameraSensitivity3d / 2000
             self.scene.camera.distance += -e.angleDelta().y() * strength
 
         if self.moveZCamera.satisfied(self._mouseDown, self._keysDown):
-            strength = self.settings.moveCameraSensitivity3d / 10000
+            strength: float = self.settings.moveCameraSensitivity3d / 10000
             self.scene.camera.z -= -e.angleDelta().y() * strength
 
     def mouseMoveEvent(self, e: QMouseEvent):
@@ -151,8 +155,8 @@ class ModelRenderer(QOpenGLWidget):
         self._mousePrev = screen
 
         if self.moveXYCamera.satisfied(self._mouseDown, self._keysDown):
-            forward = -screenDelta.y * self.scene.camera.forward()
-            sideward = screenDelta.x * self.scene.camera.sideward()
+            forward: vec3 = -screenDelta.y * self.scene.camera.forward()
+            sideward: vec3 = screenDelta.x * self.scene.camera.sideward()
             strength = self.settings.moveCameraSensitivity3d / 10000
             self.scene.camera.x -= (forward.x + sideward.x) * strength
             self.scene.camera.y -= (forward.y + sideward.y) * strength

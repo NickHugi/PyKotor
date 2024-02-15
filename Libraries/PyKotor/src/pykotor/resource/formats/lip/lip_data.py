@@ -2,9 +2,12 @@
 from __future__ import annotations
 
 from enum import IntEnum
-from typing import Iterator
+from typing import TYPE_CHECKING
 
 from pykotor.resource.type import ResourceType
+
+if TYPE_CHECKING:
+    from collections.abc import Iterator
 
 
 class LIP:

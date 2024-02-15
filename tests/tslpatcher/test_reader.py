@@ -41,11 +41,9 @@ from pykotor.tslpatcher.mods.gff import (
     LocalizedStringDelta,
     ModifyFieldGFF,
 )
-from pykotor.tslpatcher.mods.tlk import ModificationsTLK, ModifyTLK
+from pykotor.tslpatcher.mods.tlk import ModificationsTLK
 from pykotor.tslpatcher.mods.twoda import (
-    AddColumn2DA,
     AddRow2DA,
-    ChangeRow2DA,
     CopyRow2DA,
     RowValue2DAMemory,
     RowValueConstant,
@@ -61,6 +59,11 @@ from utility.system.path import Path
 
 if TYPE_CHECKING:
     from pykotor.tslpatcher.mods.ssf import ModifySSF
+    from pykotor.tslpatcher.mods.tlk import ModifyTLK
+    from pykotor.tslpatcher.mods.twoda import (
+        AddColumn2DA,
+        ChangeRow2DA,
+    )
 
 
 class TestConfigReader(unittest.TestCase):

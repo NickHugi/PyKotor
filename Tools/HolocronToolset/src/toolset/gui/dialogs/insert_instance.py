@@ -6,6 +6,7 @@ from PyQt5 import QtCore
 from PyQt5.QtGui import QColor
 from PyQt5.QtWidgets import QDialog, QDialogButtonBox, QListWidgetItem
 
+from pykotor.common.misc import ResRef
 from pykotor.common.stream import BinaryWriter
 from pykotor.resource.formats.erf import read_erf, write_erf
 from pykotor.resource.formats.rim import read_rim, write_rim
@@ -24,6 +25,7 @@ from utility.system.path import Path
 
 if TYPE_CHECKING:
     from PyQt5.QtWidgets import QWidget
+
     from pykotor.common.module import Module
     from pykotor.extract.file import FileResource
     from toolset.data.installation import HTInstallation
@@ -100,7 +102,7 @@ class InsertInstanceDialog(QDialog):
                 self.ui.resourceList.addItem(item)
 
         for capsule in self._module.capsules():
-            for resource in [resource for resource in capsule if resource.restype() == self._restype]:
+            for resource in (resource for resource in capsule if resource.restype() == self._restype):
                 if resource.restype() == self._restype:
                     item = QListWidgetItem(resource.resname())
                     item.setToolTip(str(resource.filepath()))
@@ -196,4 +198,4 @@ class InsertInstanceDialog(QDialog):
             item.setHidden(text not in item.text())
 
     def isValidResref(self, text: str) -> bool:
-        return self._module.resource(text, self._restype) is None and text != ""
+        return self._module.resource(text, self._restype) is None and ResRef.is_valid(text)

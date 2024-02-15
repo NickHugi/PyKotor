@@ -18,11 +18,17 @@ if PYKOTOR_PATH.joinpath("pykotor").exists():
 if UTILITY_PATH.joinpath("utility").exists():
     add_sys_path(UTILITY_PATH)
 
+from typing import TYPE_CHECKING
+
 from pykotor.common.misc import Game
 from pykotor.extract.installation import Installation
-from pykotor.resource.formats.gff import GFF, read_gff
-from pykotor.resource.generics.jrl import JRL, JRLEntry, construct_jrl, dismantle_jrl
+from pykotor.resource.formats.gff import read_gff
+from pykotor.resource.generics.jrl import construct_jrl, dismantle_jrl
 from pykotor.resource.type import ResourceType
+
+if TYPE_CHECKING:
+    from pykotor.resource.formats.gff import GFF
+    from pykotor.resource.generics.jrl import JRL, JRLEntry
 
 TEST_FILE = "tests/files/test.jrl"
 K1_PATH = os.environ.get("K1_PATH")

@@ -187,6 +187,24 @@ class TPC:
         """
         # TODO: Some sort of simple sanity check on the data; make sure the mipmaps' data have the appropriate size
         #       according to their texture format.
+        # possible fix for the todo:
+        # Check if the number of mipmaps matches the expected count based on the width and height.
+        # This simplistic check assumes square textures for simplicity.
+        # max_dimension = max(width, height)
+        # expected_mipmap_count = 1 + math.floor(math.log2(max_dimension))
+        # if len(mipmaps) != expected_mipmap_count:
+            # raise ValueError(f"Expected {expected_mipmap_count} mipmaps, got {len(mipmaps)}.")
+        # Iterate over mipmaps and check if their data sizes match the expected sizes.
+        # current_width, current_height = width, height
+        # for i, mipmap in enumerate(mipmaps):
+            # expected_size = (current_width * current_height * bits_per_pixel) // 8
+            # if len(mipmap) != expected_size:
+                # raise ValueError(f"Mipmap level {i} has incorrect size. Expected {expected_size} bytes, got {len(mipmap)} bytes.")
+
+            # Update dimensions for the next mipmap level.
+            # current_width = max(1, current_width // 2)
+            # current_height = max(1, current_height // 2)
+
 
         self._texture_format = texture_format
         self._mipmaps = mipmaps
@@ -233,7 +251,7 @@ class TPC:
         data: bytes,
         width: int,
         height: int,
-    ) -> bytearray:
+    ) -> bytearray:  # sourcery skip: merge-list-appends-into-extend
         """Converts DXT5 compressed texture data to RGBA bytes.
 
         Args:
@@ -292,9 +310,9 @@ class TPC:
                 alpha_code.append(int((4.0 * alpha0 + 1.0 * alpha1 + 1) / 5))
                 alpha_code.append(int((3.0 * alpha0 + 2.0 * alpha1 + 2) / 5))
                 alpha_code.append(int((2.0 * alpha0 + 3.0 * alpha1 + 2) / 5))
-                alpha_code.extend(
-                    (int((1.0 * alpha0 + 4.0 * alpha1 + 2) / 5), 0, 255),
-                )
+                alpha_code.append(int((1.0 * alpha0 + 4.0 * alpha1 + 2) / 5))
+                alpha_code.append(0)
+                alpha_code.append(255)
             for y in (3, 2, 1, 0):
                 for x in (0, 1, 2, 3):
                     pixelc_code = dxt_pixels & 3
@@ -588,7 +606,7 @@ class TPC:
     @staticmethod
     def _rgba565_to_rgb(
         color: int,
-    ):
+    ) -> tuple[int, int, int]:
         """Converts a 16-bit 565 RGB color to a tuple of 8-bit RGB values.
 
         Args:
@@ -616,7 +634,7 @@ class TPC:
         weight: float,
         color0,
         color1,
-    ):
+    ) -> tuple[int, int, int]:
         color0_blue = color0[2]
         color0_greed = color0[1]
         color0_red = color0[0]

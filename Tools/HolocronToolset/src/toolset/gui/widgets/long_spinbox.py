@@ -11,8 +11,8 @@ class LongSpinBox(QAbstractSpinBox):
 
     def __init__(self, parent):
         super().__init__(parent)
-        self._min = 0
-        self._max = 4294967295
+        self._min: int = 0
+        self._max: int = 0xFFFFFFFF
 
         self.lineEdit().editingFinished.connect(self.clampLineEdit)
         self.lineEdit().textEdited.connect(lambda: self.valueChanged.emit(self.value()))
@@ -27,7 +27,7 @@ class LongSpinBox(QAbstractSpinBox):
         self.setValue(self.value() + steps * 1)
 
     def text(self) -> str:
-        return str(self._value)
+        return str(self.lineEdit().text())
 
     def setRange(self, min_value: int, max_value: int):
         self._min = min_value
@@ -58,5 +58,5 @@ class LongSpinBox(QAbstractSpinBox):
         except ValueError:
             return 0
 
-    def stepEnabled(self):
+    def stepEnabled(self) -> QAbstractSpinBox.StepEnabled:
         return self.StepUpEnabled | self.StepDownEnabled
