@@ -1,11 +1,19 @@
-from pykotor.resource.formats.lip.io_lip import LIPBinaryReader as LIPBinaryReader
-from pykotor.resource.formats.lip.io_lip import LIPBinaryWriter as LIPBinaryWriter
-from pykotor.resource.formats.lip.io_lip_xml import LIPXMLReader as LIPXMLReader
-from pykotor.resource.formats.lip.io_lip_xml import LIPXMLWriter as LIPXMLWriter
-from pykotor.resource.formats.lip.lip_auto import bytes_lip as bytes_lip
-from pykotor.resource.formats.lip.lip_auto import detect_lip as detect_lip
-from pykotor.resource.formats.lip.lip_auto import read_lip as read_lip
-from pykotor.resource.formats.lip.lip_auto import write_lip as write_lip
-from pykotor.resource.formats.lip.lip_data import LIP as LIP
-from pykotor.resource.formats.lip.lip_data import LIPKeyFrame as LIPKeyFrame
-from pykotor.resource.formats.lip.lip_data import LIPShape as LIPShape
+from pykotor.resource.formats.lip.io_lip import (
+    LIPBinaryReader as LIPBinaryReader,
+    LIPBinaryWriter as LIPBinaryWriter,
+)
+from pykotor.resource.formats.lip.io_lip_xml import (
+    LIPXMLReader as LIPXMLReader,
+    LIPXMLWriter as LIPXMLWriter,
+)
+from pykotor.resource.formats.lip.lip_auto import (
+    bytes_lip as bytes_lip,
+    detect_lip as detect_lip,
+    read_lip as read_lip,
+    write_lip as write_lip,
+)
+from pykotor.resource.formats.lip.lip_data import (
+    LIP as LIP,
+    LIPKeyFrame as LIPKeyFrame,
+    LIPShape as LIPShape,
+)

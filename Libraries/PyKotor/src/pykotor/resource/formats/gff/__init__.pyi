@@ -1,13 +1,21 @@
-from pykotor.resource.formats.gff.gff_auto import bytes_gff as bytes_gff
-from pykotor.resource.formats.gff.gff_auto import detect_gff as detect_gff
-from pykotor.resource.formats.gff.gff_auto import read_gff as read_gff
-from pykotor.resource.formats.gff.gff_auto import write_gff as write_gff
-from pykotor.resource.formats.gff.gff_data import GFF as GFF
-from pykotor.resource.formats.gff.gff_data import GFFContent as GFFContent
-from pykotor.resource.formats.gff.gff_data import GFFFieldType as GFFFieldType
-from pykotor.resource.formats.gff.gff_data import GFFList as GFFList
-from pykotor.resource.formats.gff.gff_data import GFFStruct as GFFStruct
-from pykotor.resource.formats.gff.io_gff import GFFBinaryReader as GFFBinaryReader
-from pykotor.resource.formats.gff.io_gff import GFFBinaryWriter as GFFBinaryWriter
-from pykotor.resource.formats.gff.io_gff_xml import GFFXMLReader as GFFXMLReader
-from pykotor.resource.formats.gff.io_gff_xml import GFFXMLWriter as GFFXMLWriter
+from pykotor.resource.formats.gff.gff_auto import (
+    bytes_gff as bytes_gff,
+    detect_gff as detect_gff,
+    read_gff as read_gff,
+    write_gff as write_gff,
+)
+from pykotor.resource.formats.gff.gff_data import (
+    GFF as GFF,
+    GFFContent as GFFContent,
+    GFFFieldType as GFFFieldType,
+    GFFList as GFFList,
+    GFFStruct as GFFStruct,
+)
+from pykotor.resource.formats.gff.io_gff import (
+    GFFBinaryReader as GFFBinaryReader,
+    GFFBinaryWriter as GFFBinaryWriter,
+)
+from pykotor.resource.formats.gff.io_gff_xml import (
+    GFFXMLReader as GFFXMLReader,
+    GFFXMLWriter as GFFXMLWriter,
+)

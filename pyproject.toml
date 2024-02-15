@@ -183,7 +183,7 @@ ignore = [
 #    "COM819",   # prohibited-trailing-comma
 ]
 
-[tool.lint.ruff.per-file-ignores]
+[tool.ruff.per-file-ignores]
 "*.pyi" = [
   "I002", # from __future__ import annotations
 ]
