@@ -4,7 +4,7 @@
 from __future__ import annotations
 
 from enum import Enum, IntEnum
-from typing import TYPE_CHECKING, Any, ClassVar, Generator, Generic, ItemsView, Iterable, Iterator, Mapping, TypeVar, overload
+from typing import TYPE_CHECKING, ClassVar, Generic, ItemsView, Iterable, Iterator, Mapping, TypeVar, overload
 
 from pykotor.common.geometry import Vector3
 
@@ -649,7 +649,7 @@ class CaseInsensitiveDict(Generic[T]):
 
         return True
 
-    def __iter__(self) -> Generator[str, Any, None]:
+    def __iter__(self) -> Iterator[str]:
         yield from self._dictionary
 
     def __getitem__(self, key: str) -> T:

@@ -13,6 +13,7 @@ from pykotor.resource.formats.ncs import NCS, NCSInstruction, NCSInstructionType
 
 class Interpreter:
     """This class is not used in the compiling process. This is only partially implemented, mostly for testing purposes."""
+
     def __init__(self, ncs: NCS):
         self._ncs: NCS = ncs
         self._cursor: NCSInstruction = ncs.instructions[0]

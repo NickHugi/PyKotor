@@ -255,7 +255,8 @@ def with_variable_trace(
             try:
                 result: RT = f(*args, **kwargs)
                 if return_type is not unique_sentinel and not isinstance(result, return_type):
-                    raise CustomAssertionError(f"Return type of '{f.__name__}' must be {return_type.__name__}, got {type(result)}: {result!r}: {result}")
+                    msg = f"Return type of '{f.__name__}' must be {return_type.__name__}, got {type(result)}: {result!r}: {result}"
+                    raise CustomAssertionError(msg)
             except exception_types as e:
 
                 detailed_message: list[str] = [

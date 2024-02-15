@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from typing import NoReturn
+
 from pykotor.resource.formats.ncs.ncs_data import NCS, NCSInstruction, NCSInstructionType, NCSOptimizer
 
 
@@ -67,12 +69,12 @@ class RemoveMoveSPEqualsZeroOptimizer(NCSOptimizer):
 
 
 class MergeAdjacentMoveSPOptimizer(NCSOptimizer):
-    def optimize(self, ncs: NCS):
+    def optimize(self, ncs: NCS) -> NoReturn:
         raise NotImplementedError
 
 
 class RemoveJMPToAdjacentOptimizer(NCSOptimizer):
-    def optimize(self, ncs: NCS):
+    def optimize(self, ncs: NCS) -> NoReturn:
         raise NotImplementedError
 
 
@@ -125,5 +127,5 @@ class RemoveUnusedBlocksOptimizer(NCSOptimizer):
 
 
 class RemoveUnusedGlobalsInStackOptimizer(NCSOptimizer):
-    def optimize(self, ncs: NCS):
+    def optimize(self, ncs: NCS) -> NoReturn:
         raise NotImplementedError

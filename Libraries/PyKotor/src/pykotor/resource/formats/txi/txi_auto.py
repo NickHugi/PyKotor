@@ -1,9 +1,6 @@
 from __future__ import annotations
 
-import os
 from typing import TYPE_CHECKING
-
-from utility.system.path import Path
 
 if TYPE_CHECKING:
     from pykotor.resource.type import SOURCE_TYPES

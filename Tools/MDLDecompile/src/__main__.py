@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import argparse  # noqa: INP001
 import pathlib
 import sys

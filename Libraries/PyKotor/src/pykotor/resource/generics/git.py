@@ -3,6 +3,7 @@ from __future__ import annotations
 import math
 from abc import ABC, abstractmethod
 from enum import IntEnum
+from typing import NoReturn
 
 from pykotor.common.geometry import Polygon3, Vector2, Vector3, Vector4
 from pykotor.common.language import LocalizedString
@@ -509,7 +510,7 @@ class GITEncounter(GITInstance):
         yaw: float,
         pitch: float,
         roll: float,
-    ):
+    ) -> NoReturn:
         msg = "Encounters cannot be rotated."
         raise ValueError(msg)
 
@@ -631,7 +632,7 @@ class GITSound(GITInstance):
         yaw: float,
         pitch: float,
         roll: float,
-    ):
+    ) -> NoReturn:
         msg = "Sounds cannot be rotated."
         raise ValueError(msg)
 
@@ -742,7 +743,7 @@ class GITTrigger(GITInstance):
         yaw: float,
         pitch: float,
         roll: float,
-    ):
+    ) -> NoReturn:
         msg = "Triggers cannot be rotated."
         raise ValueError(msg)
 

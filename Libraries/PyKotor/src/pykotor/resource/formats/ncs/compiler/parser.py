@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, NoReturn
 
 from ply import yacc
 from pykotor.resource.formats.ncs.compiler.classes import (
@@ -105,7 +105,7 @@ class NssParser:
         ("left", "INCREMENT", "DECREMENT"),
     )
 
-    def p_error(self, p: LexToken):
+    def p_error(self, p: LexToken) -> NoReturn:
         msg = f"Syntax error at line {p.lineno}, position {p.lexpos}, token='{p.value}'"
         raise CompileError(msg)
 

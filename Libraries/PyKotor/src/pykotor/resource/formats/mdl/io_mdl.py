@@ -354,7 +354,6 @@ class _Node:
         self.header: _NodeHeader | None = _NodeHeader()
         self.trimesh: _TrimeshHeader | None = None
         self.skin: _SkinmeshHeader | None = None
-        ...
         self.children_offsets = []
 
         self.w_children = []

@@ -562,7 +562,8 @@ class BasePath(BasePurePath):
     def is_relative_to(self: Path, *args, **kwargs) -> bool:  # type: ignore[misc]
         """Return True if the path is relative to another path or False."""
         if not args or "other" in kwargs:
-            raise TypeError(f"{type(self)}.is_relative_to() missing 1 required positional argument: 'other'")
+            msg = f"{type(self)}.is_relative_to() missing 1 required positional argument: 'other'"
+            raise TypeError(msg)
 
         other, *_deprecated = args
         parsed_other = self.with_segments(other, *_deprecated)
@@ -854,7 +855,8 @@ class BasePath(BasePurePath):
 
             # If the function fails, it returns INVALID_FILE_ATTRIBUTES
             if attrs == -1:
-                raise FileNotFoundError(f"Cannot access attributes of file: {file_path}")
+                msg = f"Cannot access attributes of file: {file_path}"
+                raise FileNotFoundError(msg)
 
             # Check for specific attributes
             is_read_only = bool(attrs & FILE_ATTRIBUTE_READONLY)

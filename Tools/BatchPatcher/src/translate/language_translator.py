@@ -176,7 +176,7 @@ class TranslationOption(Enum):
     TRANSLATE = TranslateTranslator  # has api limits
     YANDEX_TRANSLATOR = deep_translator.YandexTranslator if deep_translator is not None else None
 
-    def min_chunk_length(self):
+    def min_chunk_length(self) -> int:
         return 1
 
     def validate_args(self, translator: Translator) -> str: # type: ignore[return]
@@ -272,7 +272,7 @@ class TranslationOption(Enum):
             }
         return {}
 
-    def max_chunk_length(self):
+    def max_chunk_length(self) -> int:
         if self == TranslationOption.TRANSLATE:
             return 500
         if self in {TranslationOption.MY_MEMORY_TRANSLATOR, TranslationOption.PONS_TRANSLATOR}:

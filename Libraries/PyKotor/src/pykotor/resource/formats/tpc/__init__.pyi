@@ -1,5 +1,11 @@
 from .io_bmp import TPCBMPWriter as TPCBMPWriter
-from .io_tga import TPCTGAReader as TPCTGAReader, TPCTGAWriter as TPCTGAWriter
-from .io_tpc import TPCBinaryReader as TPCBinaryReader, TPCBinaryWriter as TPCBinaryWriter
-from .tpc_auto import bytes_tpc as bytes_tpc, detect_tpc as detect_tpc, read_tpc as read_tpc, write_tpc as write_tpc
-from .tpc_data import TPC as TPC, TPCTextureFormat as TPCTextureFormat
+from .io_tga import TPCTGAReader as TPCTGAReader
+from .io_tga import TPCTGAWriter as TPCTGAWriter
+from .io_tpc import TPCBinaryReader as TPCBinaryReader
+from .io_tpc import TPCBinaryWriter as TPCBinaryWriter
+from .tpc_auto import bytes_tpc as bytes_tpc
+from .tpc_auto import detect_tpc as detect_tpc
+from .tpc_auto import read_tpc as read_tpc
+from .tpc_auto import write_tpc as write_tpc
+from .tpc_data import TPC as TPC
+from .tpc_data import TPCTextureFormat as TPCTextureFormat

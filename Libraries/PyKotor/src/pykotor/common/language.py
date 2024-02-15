@@ -149,7 +149,7 @@ class Language(IntEnum):
             Language.THAI,
         }
 
-    def get_encoding(self):
+    def get_encoding(self) -> str | None:
         """Gets the encoding for a given language.
 
         Args:
@@ -559,7 +559,7 @@ class LocalizedString:
             The text of the substring if a matching pair is found, otherwise returns None.
         """
         substring_id: int = LocalizedString.substring_id(language, gender)
-        return self._substrings[substring_id] if substring_id in self._substrings else None
+        return self._substrings.get(substring_id, None)
 
     def remove(
         self,

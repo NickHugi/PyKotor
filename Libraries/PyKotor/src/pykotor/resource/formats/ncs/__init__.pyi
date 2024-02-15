@@ -1,3 +1,12 @@
-from pykotor.resource.formats.ncs.io_ncs import NCSBinaryReader as NCSBinaryReader, NCSBinaryWriter as NCSBinaryWriter
-from pykotor.resource.formats.ncs.ncs_auto import bytes_ncs as bytes_ncs, compile_nss as compile_nss, read_ncs as read_ncs, write_ncs as write_ncs
-from pykotor.resource.formats.ncs.ncs_data import NCS as NCS, NCSByteCode as NCSByteCode, NCSInstruction as NCSInstruction, NCSInstructionQualifier as NCSInstructionQualifier, NCSInstructionType as NCSInstructionType, NCSInstructionTypeValue as NCSInstructionTypeValue
+from pykotor.resource.formats.ncs.io_ncs import NCSBinaryReader as NCSBinaryReader
+from pykotor.resource.formats.ncs.io_ncs import NCSBinaryWriter as NCSBinaryWriter
+from pykotor.resource.formats.ncs.ncs_auto import bytes_ncs as bytes_ncs
+from pykotor.resource.formats.ncs.ncs_auto import compile_nss as compile_nss
+from pykotor.resource.formats.ncs.ncs_auto import read_ncs as read_ncs
+from pykotor.resource.formats.ncs.ncs_auto import write_ncs as write_ncs
+from pykotor.resource.formats.ncs.ncs_data import NCS as NCS
+from pykotor.resource.formats.ncs.ncs_data import NCSByteCode as NCSByteCode
+from pykotor.resource.formats.ncs.ncs_data import NCSInstruction as NCSInstruction
+from pykotor.resource.formats.ncs.ncs_data import NCSInstructionQualifier as NCSInstructionQualifier
+from pykotor.resource.formats.ncs.ncs_data import NCSInstructionType as NCSInstructionType
+from pykotor.resource.formats.ncs.ncs_data import NCSInstructionTypeValue as NCSInstructionTypeValue

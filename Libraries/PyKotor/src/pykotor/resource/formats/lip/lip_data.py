@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 from enum import IntEnum
-from typing import Any, Generator
+from typing import Iterator
 
 from pykotor.resource.type import ResourceType
 
@@ -26,7 +26,7 @@ class LIP:
 
     def __iter__(
         self,
-    ) -> Generator[LIPKeyFrame, Any, None]:
+    ) -> Iterator[LIPKeyFrame]:
         """Iterates through the stored list of keyframes yielding the LIPKeyFrame each iteration."""
         yield from self.frames
 

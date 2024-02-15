@@ -236,7 +236,8 @@ class WrappedStr(str):  # (metaclass=StrType):
         if var is None:
             return None  # type: ignore[return-value]
         if not isinstance(var, (cls, str)):
-            raise TypeError(f"Expected str-like, got '{var}' of type {type(var)}")
+            msg = f"Expected str-like, got '{var}' of type {type(var)}"
+            raise TypeError(msg)
         return str(var)
 
     @classmethod
