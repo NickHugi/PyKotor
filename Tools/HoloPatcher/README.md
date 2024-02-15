@@ -64,7 +64,7 @@ Options:
 
 ### Graphical User Interface
 
-Simply run the `src/__main__.py` file without any arguments to launch the GUI.
+Simply run the [`src/__main__.py`](https://github.com/NickHugi/PyKotor/blob/master/Tools/HoloPatcher/src/__main__.py) file without any arguments to launch the GUI.
 
 ## Configuration
 
