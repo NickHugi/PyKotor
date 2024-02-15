@@ -577,7 +577,7 @@ class Installation:  # noqa: PLR0904
 
     def module_resources(
         self,
-        filename: str | None = None,
+        filename: str,
     ) -> list[FileResource]:
         """Returns a a shallow copy of the list of FileResources stored in the specified module file located in the modules folder linked to the Installation.
 
@@ -602,7 +602,7 @@ class Installation:  # noqa: PLR0904
 
     def lip_resources(
         self,
-        filename: str | None = None,
+        filename: str,
     ) -> list[FileResource]:
         """Returns a shallow copy of the list of FileResources stored in the specified module file located in the lips folder linked to the Installation.
 
@@ -625,7 +625,7 @@ class Installation:  # noqa: PLR0904
 
     def texturepack_resources(
         self,
-        filename: str | None = None,
+        filename: str,
     ) -> list[FileResource]:
         """Returns a shallow copy of the list of FileResources stored in the specified module file located in the texturepacks folder linked to the Installation.
 
@@ -650,7 +650,7 @@ class Installation:  # noqa: PLR0904
 
     def override_resources(
         self,
-        directory: str | None = None,
+        directory: str,
     ) -> list[FileResource]:
         """Returns a list of FileResources stored in the specified subdirectory located in the 'override' folder linked to the Installation.
 
@@ -874,7 +874,7 @@ class Installation:  # noqa: PLR0904
         """
         return self._female_talktable
 
-    def resource(
+    def resource(  # noqa: PLR0913
         self,
         resname: str,
         restype: ResourceType,
