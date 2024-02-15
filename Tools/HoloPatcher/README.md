@@ -27,6 +27,7 @@ TSLPatcher, additionally, is closed source, making it difficult to determine its
 - **Error Handling and Logging**: Provides robust error handling and detailed logging functionality, aiding in debugging and ensuring smooth patching operations.
 - **User Interface**: Features a graphical user interface for easy mod installation and management.
 - **Command-line support**: Offer a command line for tools such as [KOTORModSync](https://github.com/th3w1zard1/KOTORModSync)
+- **Compiling NSS scripts into NCS bytecode without reliance on nwnnsscomp.**
 
 ## Usage
 
