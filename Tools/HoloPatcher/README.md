@@ -30,6 +30,8 @@ TSLPatcher, additionally, is closed source, making it difficult to determine its
 
 ## Usage
 
+_End users should [download the latest release here](https://github.com/NickHugi/PyKotor/releases)_
+
 HoloPatcher can be used both as a command-line tool and through its graphical user interface.
 
 ### Requirements
