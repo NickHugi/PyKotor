@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from PyQt5.QtWidgets import QDialog, QTreeWidgetItem, QWidget
 
 

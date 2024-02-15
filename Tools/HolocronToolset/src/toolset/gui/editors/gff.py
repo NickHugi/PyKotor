@@ -229,7 +229,7 @@ class GFFEditor(Editor):
         gff_content = self._gff_content or GFFContent.from_res(self._resname or "")
         gff_type = self._restype or ResourceType.GFF
 
-        exts = gff_type.extension.split('.')
+        exts = gff_type.extension.split(".")
         test_content = gff_type.name.upper()
         if len(exts) > 1 and exts[-1].lower() == "xml":
             gff_type = ResourceType.GFF_XML

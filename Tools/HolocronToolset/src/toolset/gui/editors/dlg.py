@@ -4,12 +4,6 @@ from copy import copy, deepcopy
 from typing import TYPE_CHECKING
 
 import pyperclip
-from PyQt5 import QtCore
-from PyQt5.QtCore import QModelIndex, QBuffer, QIODevice, QItemSelection, QItemSelectionModel, QPoint
-from PyQt5.QtGui import QBrush, QColor, QKeyEvent, QMouseEvent, QStandardItem, QStandardItemModel
-from PyQt5.QtMultimedia import QMediaContent, QMediaPlayer
-from PyQt5.QtWidgets import QListWidgetItem, QMenu, QMessageBox, QPlainTextEdit, QShortcut, QWidget
-
 from pykotor.common.misc import ResRef
 from pykotor.extract.installation import SearchLocation
 from pykotor.resource.generics.dlg import (
@@ -26,6 +20,11 @@ from pykotor.resource.generics.dlg import (
     write_dlg,
 )
 from pykotor.resource.type import ResourceType
+from PyQt5 import QtCore
+from PyQt5.QtCore import QBuffer, QIODevice, QItemSelection, QItemSelectionModel, QModelIndex, QPoint
+from PyQt5.QtGui import QBrush, QColor, QKeyEvent, QMouseEvent, QStandardItem, QStandardItemModel
+from PyQt5.QtMultimedia import QMediaContent, QMediaPlayer
+from PyQt5.QtWidgets import QListWidgetItem, QMenu, QMessageBox, QPlainTextEdit, QShortcut, QWidget
 from toolset.data.installation import HTInstallation
 from toolset.gui.dialogs.edit.dialog_animation import EditAnimationDialog
 from toolset.gui.dialogs.edit.dialog_model import CutsceneModelDialog

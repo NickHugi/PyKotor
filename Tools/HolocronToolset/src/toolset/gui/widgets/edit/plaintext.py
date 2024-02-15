@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from PyQt5 import QtCore
 from PyQt5.QtGui import QKeyEvent, QMouseEvent
 from PyQt5.QtWidgets import QPlainTextEdit

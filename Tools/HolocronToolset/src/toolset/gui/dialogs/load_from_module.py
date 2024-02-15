@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from pykotor.extract.capsule import Capsule
 from pykotor.resource.type import ResourceType
 from PyQt5.QtWidgets import QDialog, QListWidgetItem

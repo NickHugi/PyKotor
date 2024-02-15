@@ -1,3 +1,4 @@
+from __future__ import annotations
 
 from pykotor.common.misc import ResRef
 from pykotor.resource.generics.git import GITEncounter

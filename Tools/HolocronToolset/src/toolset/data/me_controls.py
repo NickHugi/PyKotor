@@ -299,7 +299,6 @@ class DynamicModuleEditorControls(ModuleEditorControls):
             array.append(DCItem(keys, mouse, effects))
 
     def onMouseMoved(self, screen: Vector2, delta: Vector2, buttons: set[int], keys: set[int]):
-        ...
 
         for event in self.mouseMoveEvents:
             if (event.mouse == buttons or event.mouse is None) and (event.keys == keys or event.keys is None):

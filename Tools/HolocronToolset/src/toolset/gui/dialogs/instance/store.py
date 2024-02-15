@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from pykotor.common.misc import ResRef
 from pykotor.resource.generics.git import GITStore
 from PyQt5.QtGui import QIcon, QPixmap

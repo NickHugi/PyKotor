@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from pykotor.common.module import Module
 from PyQt5 import QtCore
 from PyQt5.QtWidgets import QDialog, QFileDialog, QListWidgetItem, QWidget
