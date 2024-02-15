@@ -85,20 +85,54 @@ atomic = true
 profile = "black"
 line_length = 130
 skip_gitignore = true
+multi_line_output = 3
 
 [tool.ruff]
-target-version = "py38"
 line-length = 130
 
-select = ["ALL"]
+# Enable preview features.
+preview = true
 
+fix = true
+force-exclude = true
+show-fixes = true
+output-format = "grouped"  # Group violations by containing file.
+respect-gitignore = false
+
+src = [
+    "Libraries/PyKotor/src",
+    "Libraries/PyKotorGL/src",
+    "Libraries/PyKotorFont/src",
+    "Libraries/Utility/src",
+    "Tools/HolocronToolset/src",
+    "Tools/BatchPatcher/src",
+    "Tools/HoloPatcher/src",
+    "Tools/KotorDiff/src",
+    "Tools/GuiDuplicator/src",
+    "Tools/MDLDecompile/src",
+    "tests"
+]
+
+[tool.ruff.lint]
+ignore-init-module-imports = true
+external = ["V"]
+task-tags = ["TODO", "FIXME", "HACK"]
+select = ["ALL"]
+exclude = [".venv"]
+unfixable = [
+    "F841",
+    "ERA001",
+    "N815",
+    "RUF100",   # Unused `noqa` directive
+    #"UP035",  # replaces deprecated/outdated imports (we want to support older versions of python in the future)
+    #"UP038",  # non-pep604-isinstance (python 3.10 syntax)
+]
 ignore = [
 # The following rules are too strict to be realistically used by ruff:
     "ANN401",   # Dynamically typed expressions (typing.Any) are disallowed in {name}
     "ANN204",   # Missing return type annotation for special method
     "ARG002",   # Unused method argument: `method`
     "COM812",   # missing-trailing-comma
-    "E501",     # line too long
 #    "FBT001",   # Boolean positional arg in function definition
 #    "FBT002",   # Boolean default value in function definition
     "D100",     # Missing docstring in public module
@@ -119,11 +153,8 @@ ignore = [
     "N802",     # Function name `screenToWorld` should be lowercase
     "N806",     # Variable `jumpToOffset` in function should be lowercase
     "N815",     # Variable `var` in class scope should not be mixedCase
-    "RUF100",   # Unused `noqa` directive
     "T201",     # 'print' found
 # The following are currently violated by the codebase.
-    "RUF100",   # Unused `noqa` directive
-    "T201",     # 'print' found
 #    "D205",     # 1 blank line required between summary line and description
 #    "E402",     # Module level import not at top of file
 #    "FIX004",   # Line contains HACK, consider resolving the issue
@@ -151,18 +182,8 @@ ignore = [
 #    "COM812",   # missing-trailing-comma
 #    "COM819",   # prohibited-trailing-comma
 ]
-unfixable = [
-    "UP035",  # replaces deprecated/outdated imports (we want to support older versions of python in the future)
-    "N815",
-    "F841",
-    "ERA001",
-    "UP038",  # non-pep604-isinstance (python 3.10 syntax)
-]
 
-[tool.ruff.isort]
-required-imports = ["from __future__ import annotations"]
-
-[tool.ruff.per-file-ignores]
+[tool.lint.ruff.per-file-ignores]
 "*.pyi" = [
   "I002", # from __future__ import annotations
 ]
@@ -177,14 +198,65 @@ required-imports = ["from __future__ import annotations"]
 ".mdl" = ["ALL"]
 "pykotor/resource/formats/ncs/compiler/*.py" = ["ALL"]
 
-[tool.ruff.flake8-pytest-style]
+[tool.ruff.lint.flake8-pytest-style]
 fixture-parentheses = false
+mark-parentheses = false
+parametrize-names-type = "list"
+parametrize-values-row-type = "list"
+parametrize-values-type = "list"  # default
+raises-require-match-for = ["requests.RequestException"]
 
-[tool.ruff.pyupgrade]
-keep-runtime-typing = true
+[tool.ruff.lint.flake8-annotations]
+ignore-fully-untyped = true
+mypy-init-return = true
+suppress-none-returning = true
+
+[tool.ruff.lint.flake8-bandit]
+check-typed-exception = true
+
+[tool.ruff.lint.flake8-errmsg]
+max-string-length = 20
+
+[tool.ruff.lint.flake8-quotes]
+docstring-quotes = "double"
+inline-quotes = "double"
+multiline-quotes = "double"
+
+[tool.ruff.lint.flake8-tidy-imports]
+ban-relative-imports = "all"  # Disallow all relative imports.
+
+[tool.ruff.lint.flake8-type-checking]
+# Add quotes around type annotations, if doing so would allow an import to be moved into a type-checking block.
+quote-annotations = true  # Does nothing when from __future__ import annotations is used
+exempt-modules = ["typing", "typing_extensions"]
+strict = true
+
+[tool.ruff.lint.flake8-unused-arguments]
+ignore-variadic-names = true
+
+[tool.ruff.lint.isort]
+case-sensitive = true
+force-wrap-aliases = true
+combine-as-imports = true
+lines-between-types = 1
+no-sections = false
+required-imports = ["from __future__ import annotations"]
+
+[tool.ruff.format]
+indent-style = "tab"
+skip-magic-trailing-comma = true
+
+[tool.ruff.lint.pyupgrade]
+keep-runtime-typing = false
 
 [tool.mccabe]
 max-complexity = 25
+
+[tool.ruff.lint.pycodestyle]
+max-doc-length = 160
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"
 
 [tool.style]
 based_on_style = "pep8"
