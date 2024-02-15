@@ -153,7 +153,9 @@ class HTInstallation(Installation):
             - Return cached texture or None if not found.
         """
         if resname not in self._cacheTpc:
-            self._cacheTpc[resname] = self.texture(resname, [SearchLocation.TEXTURES_TPA, SearchLocation.TEXTURES_GUI])
+            tex = self.texture(resname, [SearchLocation.TEXTURES_TPA, SearchLocation.TEXTURES_GUI])
+            if tex is not None:
+                self._cacheTpc[resname] = tex
         return self._cacheTpc.get(resname, None)
 
     def htBatchCacheTPC(self, names: list[str], reload: bool = False):
@@ -176,7 +178,9 @@ class HTInstallation(Installation):
             return
 
         for resname in queries:
-            self._cacheTpc[resname] = self.texture(resname, [SearchLocation.TEXTURES_TPA, SearchLocation.TEXTURES_GUI])
+            tex = self.texture(resname, [SearchLocation.TEXTURES_TPA, SearchLocation.TEXTURES_GUI])
+            if tex is not None:
+                self._cacheTpc[resname] = tex
 
     def htClearCacheTPC(self):
         self._cacheTpc = {}
