@@ -62,6 +62,20 @@ class GFFContent(Enum):
     def get_valid_types(cls) -> set[str]:
         return {x.name for x in cls}
 
+    @classmethod
+    def from_res(cls, resname: str) -> GFFContent | None:
+        lower_resname = resname.lower()
+        gff_content = None
+        if lower_resname == "savenfo":
+            gff_content = GFFContent.NFO
+        elif lower_resname == "partytable":
+            gff_content = GFFContent.PT
+        elif lower_resname == "globalvars":
+            gff_content = GFFContent.GVT
+        elif lower_resname == "inventory":
+            gff_content = GFFContent.INV
+        return gff_content
+
 
 class GFFFieldType(IntEnum):
     """The different types of fields based off what kind of data it stores."""

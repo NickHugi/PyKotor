@@ -224,28 +224,26 @@ class GFFEditor(Editor):
         Returns:
         -------
             bytes: The built GFF file
-            bytes: An empty byte array
-
-        Processing Logic:
-        ----------------
-            - Creates a GFFContent object to hold the GFF data
-            - Initializes a GFF object with the GFFContent
-            - Calls _build_struct to populate the GFF structure from the model
-            - Writes the populated GFF to a byte array
-            - Returns the byte array and an empty byte array.
+            bytes: An empty byte array (superclass uses for mdx)
         """
-        try:
-            content = self._gff_content or GFFContent(f"{self._restype.extension.upper()} ")
-        except ValueError as e:
-            print(format_exception_with_variables(e))
-            content = GFFContent.GFF
+        gff_content = self._gff_content or GFFContent.from_res(self._resname or "")
+        gff_type = self._restype or ResourceType.GFF
 
-        gff = GFF(content)
+        exts = gff_type.extension.split('.')
+        test_content = gff_type.name.upper()
+        if len(exts) > 1 and exts[-1].lower() == "xml":
+            gff_type = ResourceType.GFF_XML
+            test_content = exts[-2].upper()
+        if test_content in GFFContent.__members__:
+            gff_content = GFFContent.__members__[test_content]
+        if not gff_content:
+            gff_content = GFFContent.GFF
 
+        gff = GFF(gff_content)
         self._build_struct(self.model.item(0, 0), gff.root)
 
         data = bytearray()
-        write_gff(gff, data)
+        write_gff(gff, data, gff_type)
         return data, b""
 
     def _build_struct(self, item: QStandardItem, gffStruct: GFFStruct):
