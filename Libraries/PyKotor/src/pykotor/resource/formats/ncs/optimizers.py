@@ -1,8 +1,11 @@
 from __future__ import annotations
 
-from typing import NoReturn
+from typing import TYPE_CHECKING, NoReturn
 
-from pykotor.resource.formats.ncs.ncs_data import NCS, NCSInstruction, NCSInstructionType, NCSOptimizer
+from pykotor.resource.formats.ncs.ncs_data import NCSInstructionType, NCSOptimizer
+
+if TYPE_CHECKING:
+    from pykotor.resource.formats.ncs.ncs_data import NCS, NCSInstruction
 
 
 class RemoveNopOptimizer(NCSOptimizer):

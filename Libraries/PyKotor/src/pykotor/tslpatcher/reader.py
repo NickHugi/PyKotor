@@ -13,11 +13,10 @@ from pykotor.resource.formats.ssf import SSFSound
 from pykotor.tools.encoding import decode_bytes_with_fallbacks
 from pykotor.tools.path import CaseAwarePath
 from pykotor.tslpatcher.logger import PatchLogger
-from pykotor.tslpatcher.memory import NoTokenUsage, TokenUsage, TokenUsage2DA, TokenUsageTLK
+from pykotor.tslpatcher.memory import NoTokenUsage, TokenUsage2DA, TokenUsageTLK
 from pykotor.tslpatcher.mods.gff import (
     AddFieldGFF,
     AddStructToListGFF,
-    FieldValue,
     FieldValue2DAMemory,
     FieldValueConstant,
     FieldValueTLKMemory,
@@ -37,8 +36,6 @@ from pykotor.tslpatcher.mods.twoda import (
     ChangeRow2DA,
     CopyRow2DA,
     Modifications2DA,
-    Modify2DA,
-    RowValue,
     RowValue2DAMemory,
     RowValueConstant,
     RowValueHigh,
@@ -59,7 +56,15 @@ if TYPE_CHECKING:
     from typing_extensions import Literal
 
     from pykotor.tslpatcher.config import PatcherConfig
-    from pykotor.tslpatcher.mods.gff import ModifyGFF
+    from pykotor.tslpatcher.memory import TokenUsage
+    from pykotor.tslpatcher.mods.gff import (
+        FieldValue,
+        ModifyGFF,
+    )
+    from pykotor.tslpatcher.mods.twoda import (
+        Modify2DA,
+        RowValue,
+    )
 
 SECTION_NOT_FOUND_ERROR = "The [{}] section was not found in the ini"
 REFERENCES_TRACEBACK_MSG = ", referenced by '{}={}' in [{}]"

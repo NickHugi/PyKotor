@@ -2,14 +2,14 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from PyQt5.QtGui import QColor, QKeyEvent
-from PyQt5.QtWidgets import QMenu, QWidget
+from PyQt5.QtGui import QColor
+from PyQt5.QtWidgets import QMenu
 
 from pykotor.common.geometry import SurfaceMaterial, Vector2
 from pykotor.common.misc import Color
 from pykotor.extract.installation import SearchLocation
 from pykotor.resource.formats.bwm import read_bwm
-from pykotor.resource.formats.lyt import LYT, read_lyt
+from pykotor.resource.formats.lyt import read_lyt
 from pykotor.resource.generics.pth import PTH, bytes_pth, read_pth
 from pykotor.resource.type import ResourceType
 from toolset.data.misc import ControlItem
@@ -17,11 +17,14 @@ from toolset.gui.editor import Editor
 from toolset.gui.widgets.settings.git import GITSettings
 
 if TYPE_CHECKING:
+    from PyQt5.QtWidgets import QWidget
+    from PyQt5.QtGui import QKeyEvent
     import os
 
     from PyQt5.QtCore import QPoint
 
     from pykotor.extract.file import ResourceIdentifier
+    from pykotor.resource.formats.lyt import LYT
     from toolset.data.installation import HTInstallation
 
 

@@ -1,10 +1,14 @@
 from __future__ import annotations
 
 from enum import IntEnum
+from typing import TYPE_CHECKING
 
-from pykotor.common.geometry import SurfaceMaterial, Vector2, Vector3, Vector4
+from pykotor.common.geometry import SurfaceMaterial, Vector3, Vector4
 from pykotor.common.misc import Color
 from pykotor.resource.type import ResourceType
+
+if TYPE_CHECKING:
+    from pykotor.common.geometry import Vector2
 
 
 class MDL:

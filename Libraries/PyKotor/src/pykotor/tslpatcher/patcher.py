@@ -19,7 +19,7 @@ from pykotor.tslpatcher.config import PatcherConfig
 from pykotor.tslpatcher.logger import PatchLogger
 from pykotor.tslpatcher.memory import PatcherMemory
 from pykotor.tslpatcher.mods.install import InstallFile, create_backup
-from pykotor.tslpatcher.mods.template import OverrideType, PatcherModifications
+from pykotor.tslpatcher.mods.template import OverrideType
 from utility.error_handling import format_exception_with_variables, universal_simplify_exception
 from utility.system.path import PurePath
 
@@ -30,6 +30,7 @@ if TYPE_CHECKING:
 
     from pykotor.common.misc import Game
     from pykotor.resource.type import SOURCE_TYPES
+    from pykotor.tslpatcher.mods.template import PatcherModifications
     from pykotor.tslpatcher.mods.tlk import ModificationsTLK
 
 class ModInstaller:

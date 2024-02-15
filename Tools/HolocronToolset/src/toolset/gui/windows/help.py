@@ -12,7 +12,7 @@ import markdown
 import requests
 
 from PyQt5 import QtCore
-from PyQt5.QtWidgets import QMainWindow, QMessageBox, QTreeWidgetItem, QWidget
+from PyQt5.QtWidgets import QMainWindow, QMessageBox, QTreeWidgetItem
 
 from pykotor.common.stream import BinaryReader
 from pykotor.tools.encoding import decode_bytes_with_fallbacks
@@ -22,6 +22,7 @@ from toolset.gui.dialogs.asyncloader import AsyncLoader
 from utility.system.path import Path, PurePath
 
 if TYPE_CHECKING:
+    from PyQt5.QtWidgets import QWidget
     import os
 
 

@@ -22,7 +22,6 @@ from pykotor.resource.formats.ncs.compiler.classes import (
     DynamicDataType,
     EmptyStatement,
     EngineCallExpression,
-    Expression,
     ExpressionStatement,
     ExpressionSwitchLabel,
     FieldAccess,
@@ -62,6 +61,9 @@ if TYPE_CHECKING:
     from ply.lex import LexToken
 
     from pykotor.common.script import ScriptConstant, ScriptFunction
+    from pykotor.resource.formats.ncs.compiler.classes import (
+        Expression,
+    )
 
 
 class NssParser:

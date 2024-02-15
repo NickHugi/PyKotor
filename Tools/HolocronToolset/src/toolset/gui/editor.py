@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING
 
 from PyQt5 import QtCore
 from PyQt5.QtGui import QIcon, QPixmap
-from PyQt5.QtWidgets import QFileDialog, QLineEdit, QMainWindow, QMessageBox, QPlainTextEdit, QShortcut, QWidget
+from PyQt5.QtWidgets import QFileDialog, QLineEdit, QMainWindow, QMessageBox, QPlainTextEdit, QShortcut
 
 from pykotor.common.module import Module
 from pykotor.extract.capsule import Capsule
@@ -25,6 +25,7 @@ from utility.error_handling import format_exception_with_variables
 from utility.system.path import Path
 
 if TYPE_CHECKING:
+    from PyQt5.QtWidgets import QWidget
     import os
 
     from pykotor.common.language import LocalizedString

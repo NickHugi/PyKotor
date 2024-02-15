@@ -33,8 +33,8 @@ from glm import mat4, quat, vec3, vec4
 from pykotor.common.geometry import Vector3
 from pykotor.common.misc import CaseInsensitiveDict
 from pykotor.common.stream import BinaryReader
-from pykotor.extract.installation import Installation, SearchLocation
-from pykotor.gl.models.mdl import Boundary, Cube, Empty, Model
+from pykotor.extract.installation import SearchLocation
+from pykotor.gl.models.mdl import Boundary, Cube, Empty
 from pykotor.gl.models.predefined_mdl import (
     CAMERA_MDL_DATA,
     CAMERA_MDX_DATA,
@@ -68,11 +68,10 @@ from pykotor.gl.shader import (
     Shader,
     Texture,
 )
-from pykotor.resource.formats.lyt import LYT, LYTRoom
+from pykotor.resource.formats.lyt import LYTRoom
 from pykotor.resource.formats.tpc import TPC
 from pykotor.resource.formats.twoda import TwoDA, read_2da
 from pykotor.resource.generics.git import (
-    GIT,
     GITCamera,
     GITCreature,
     GITDoor,
@@ -95,6 +94,12 @@ if TYPE_CHECKING:
     from pykotor.common.module import Module
     from pykotor.extract.capsule import Capsule
     from pykotor.extract.file import ResourceIdentifier, ResourceResult
+    from pykotor.extract.installation import Installation
+    from pykotor.gl.models.mdl import Model
+    from pykotor.resource.formats.lyt import LYT
+    from pykotor.resource.generics.git import (
+        GIT,
+    )
     from pykotor.resource.generics.utc import UTC
     from pykotor.resource.generics.utd import UTD
     from pykotor.resource.generics.utp import UTP

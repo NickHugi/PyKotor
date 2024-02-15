@@ -4,7 +4,7 @@ from contextlib import suppress
 from copy import deepcopy
 from typing import TYPE_CHECKING
 
-from PyQt5.QtWidgets import QMessageBox, QWidget
+from PyQt5.QtWidgets import QMessageBox
 
 from pykotor.common.misc import ResRef
 from pykotor.common.module import Module
@@ -23,6 +23,7 @@ from toolset.gui.widgets.settings.installations import GlobalSettings
 from toolset.utils.window import openResourceEditor
 
 if TYPE_CHECKING:
+    from PyQt5.QtWidgets import QWidget
     import os
 
 

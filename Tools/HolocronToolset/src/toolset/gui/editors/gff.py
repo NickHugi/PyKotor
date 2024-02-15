@@ -3,9 +3,9 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Any
 
 from PyQt5 import QtCore
-from PyQt5.QtCore import QItemSelectionRange, QModelIndex, QSortFilterProxyModel
+from PyQt5.QtCore import QSortFilterProxyModel
 from PyQt5.QtGui import QBrush, QColor, QStandardItem, QStandardItemModel
-from PyQt5.QtWidgets import QFileDialog, QListWidgetItem, QMenu, QShortcut, QWidget
+from PyQt5.QtWidgets import QFileDialog, QListWidgetItem, QMenu, QShortcut
 
 from pykotor.common.geometry import Vector3, Vector4
 from pykotor.common.language import Gender, Language, LocalizedString
@@ -16,6 +16,8 @@ from pykotor.resource.type import ResourceType
 from toolset.gui.editor import Editor
 
 if TYPE_CHECKING:
+    from PyQt5.QtWidgets import QWidget
+    from PyQt5.QtCore import QItemSelectionRange, QModelIndex
     import os
 
     from pykotor.extract.installation import Installation

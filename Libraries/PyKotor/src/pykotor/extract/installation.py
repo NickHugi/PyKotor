@@ -6,13 +6,13 @@ from copy import copy
 from enum import Enum, IntEnum
 from typing import TYPE_CHECKING, Any, Callable, ClassVar, Generator, NamedTuple
 
-from pykotor.common.language import Gender, Language, LocalizedString
+from pykotor.common.language import Gender, Language
 from pykotor.common.misc import CaseInsensitiveDict, Game
 from pykotor.common.stream import BinaryReader
 from pykotor.extract.capsule import Capsule
 from pykotor.extract.chitin import Chitin
 from pykotor.extract.file import FileResource, LocationResult, ResourceIdentifier, ResourceResult
-from pykotor.extract.talktable import StringResult, TalkTable
+from pykotor.extract.talktable import TalkTable
 from pykotor.resource.formats.erf.erf_data import ERFType
 from pykotor.resource.formats.gff import read_gff
 from pykotor.resource.formats.tpc import TPC, read_tpc
@@ -26,6 +26,8 @@ from utility.system.path import Path, PurePath
 if TYPE_CHECKING:
     import os
 
+    from pykotor.common.language import LocalizedString
+    from pykotor.extract.talktable import StringResult
     from pykotor.resource.formats.gff import GFF
 
 

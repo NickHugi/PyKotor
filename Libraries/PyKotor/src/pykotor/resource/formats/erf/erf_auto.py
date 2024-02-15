@@ -4,10 +4,11 @@ from typing import TYPE_CHECKING
 
 from pykotor.resource.formats.erf.erf_data import ERFType
 from pykotor.resource.formats.erf.io_erf import ERFBinaryReader, ERFBinaryWriter
-from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES, ResourceType
+from pykotor.resource.type import ResourceType
 
 if TYPE_CHECKING:
     from pykotor.resource.formats.erf.erf_data import ERF
+    from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES
 
 
 def read_erf(

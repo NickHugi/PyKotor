@@ -2,7 +2,11 @@ from __future__ import annotations
 
 from enum import IntEnum
 
-from PyQt5.QtWidgets import QDialog, QWidget
+from PyQt5.QtWidgets import QDialog
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from PyQt5.QtWidgets import QWidget
 
 
 class RimSaveOption(IntEnum):

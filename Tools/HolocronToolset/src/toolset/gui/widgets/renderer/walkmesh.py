@@ -10,28 +10,22 @@ from PyQt5.QtCore import QPointF, QRect, QRectF, QTimer
 from PyQt5.QtGui import (
     QColor,
     QImage,
-    QKeyEvent,
-    QMouseEvent,
-    QPaintEvent,
     QPainter,
     QPainterPath,
     QPen,
     QPixmap,
     QTransform,
-    QWheelEvent,
 )
 from PyQt5.QtWidgets import QWidget
 
-from pykotor.common.geometry import SurfaceMaterial, Vector2, Vector3
-from pykotor.resource.formats.tpc import TPC, TPCTextureFormat
-from pykotor.resource.generics.are import ARE, ARENorthAxis
+from pykotor.common.geometry import Vector2, Vector3
+from pykotor.resource.formats.tpc import TPCTextureFormat
+from pykotor.resource.generics.are import ARENorthAxis
 from pykotor.resource.generics.git import (
-    GIT,
     GITCamera,
     GITCreature,
     GITDoor,
     GITEncounter,
-    GITInstance,
     GITPlaceable,
     GITSound,
     GITStore,
@@ -41,7 +35,20 @@ from pykotor.resource.generics.git import (
 from toolset.utils.misc import clamp
 
 if TYPE_CHECKING:
+    from PyQt5.QtGui import (
+        QKeyEvent,
+        QMouseEvent,
+        QPaintEvent,
+        QWheelEvent,
+    )
+    from pykotor.common.geometry import SurfaceMaterial
     from pykotor.resource.formats.bwm import BWM, BWMFace
+    from pykotor.resource.formats.tpc import TPC
+    from pykotor.resource.generics.are import ARE
+    from pykotor.resource.generics.git import (
+        GIT,
+        GITInstance,
+    )
     from pykotor.resource.generics.pth import PTH
 
 T = TypeVar("T")

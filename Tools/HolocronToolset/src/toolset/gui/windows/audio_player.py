@@ -7,13 +7,14 @@ from typing import TYPE_CHECKING
 from PyQt5 import QtCore
 from PyQt5.QtCore import QBuffer, QIODevice
 from PyQt5.QtMultimedia import QMediaContent, QMediaPlayer
-from PyQt5.QtWidgets import QFileDialog, QMainWindow, QWidget
+from PyQt5.QtWidgets import QFileDialog, QMainWindow
 
 from pykotor.common.stream import BinaryReader
 from pykotor.extract.file import ResourceIdentifier
 from pykotor.tools import sound
 
 if TYPE_CHECKING:
+    from PyQt5.QtWidgets import QWidget
     import os
 
     from PyQt5.QtGui import QCloseEvent

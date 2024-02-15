@@ -9,12 +9,14 @@ from typing import TYPE_CHECKING, NamedTuple
 from pykotor.common.misc import Game
 from pykotor.common.stream import BinaryReader
 from pykotor.resource.formats.ncs.ncs_auto import compile_nss, write_ncs
-from pykotor.resource.formats.ncs.ncs_data import NCS, NCSCompiler, NCSOptimizer
+from pykotor.resource.formats.ncs.ncs_data import NCSCompiler
 from utility.misc import generate_hash
 from utility.system.path import Path
 
 if TYPE_CHECKING:
     import os
+
+    from pykotor.resource.formats.ncs.ncs_data import NCS, NCSOptimizer
 
 
 class InbuiltNCSCompiler(NCSCompiler):

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from PyQt5.QtWidgets import QMessageBox, QWidget
+from PyQt5.QtWidgets import QMessageBox
 
 from pykotor.common.stream import BinaryReader
 from pykotor.extract.installation import SearchLocation
@@ -15,6 +15,7 @@ from pykotor.tools.path import CaseAwarePath
 from toolset.gui.editor import Editor
 
 if TYPE_CHECKING:
+    from PyQt5.QtWidgets import QWidget
     import os
 
     from toolset.data.installation import HTInstallation

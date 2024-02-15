@@ -10,20 +10,17 @@ from PyQt5.QtGui import (
     QColor,
     QFont,
     QFontMetricsF,
-    QPaintEvent,
     QPainter,
-    QResizeEvent,
     QSyntaxHighlighter,
     QTextCharFormat,
-    QTextDocument,
     QTextFormat,
 )
 from PyQt5.QtWidgets import QListWidgetItem, QMessageBox, QPlainTextEdit, QShortcut, QTextEdit, QWidget
 
 from pykotor.common.scriptdefs import KOTOR_CONSTANTS, KOTOR_FUNCTIONS, TSL_CONSTANTS, TSL_FUNCTIONS
 from pykotor.common.stream import BinaryWriter
-from pykotor.resource.formats.erf import ERF, read_erf, write_erf
-from pykotor.resource.formats.rim import RIM, read_rim, write_rim
+from pykotor.resource.formats.erf import read_erf, write_erf
+from pykotor.resource.formats.rim import read_rim, write_rim
 from pykotor.resource.type import ResourceType
 from pykotor.tools.misc import is_any_erf_type_file, is_bif_file, is_rim_file
 from toolset.gui.editor import Editor
@@ -32,9 +29,16 @@ from toolset.utils.script import compileScript, decompileScript
 from utility.system.path import Path
 
 if TYPE_CHECKING:
+    from PyQt5.QtGui import (
+        QPaintEvent,
+        QResizeEvent,
+        QTextDocument,
+    )
     import os
 
     from pykotor.common.script import ScriptConstant, ScriptFunction
+    from pykotor.resource.formats.erf import ERF
+    from pykotor.resource.formats.rim import RIM
     from toolset.data.installation import HTInstallation
 
 

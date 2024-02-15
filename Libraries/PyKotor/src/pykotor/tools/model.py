@@ -4,11 +4,14 @@ import math
 import struct
 
 from copy import deepcopy
-from typing import NamedTuple
+from typing import TYPE_CHECKING, NamedTuple
 
-from pykotor.common.geometry import Vector3, Vector4
+from pykotor.common.geometry import Vector4
 from pykotor.common.misc import Game
 from pykotor.common.stream import BinaryReader
+
+if TYPE_CHECKING:
+    from pykotor.common.geometry import Vector3
 
 _GEOM_ROOT_FP0_K1 = 4273776
 _GEOM_ROOT_FP1_K1 = 4216096

@@ -4,13 +4,14 @@ import os
 
 from typing import TYPE_CHECKING
 
-from PyQt5.QtWidgets import QPlainTextEdit, QWidget
+from PyQt5.QtWidgets import QPlainTextEdit
 
 from pykotor.resource.type import ResourceType
 from pykotor.tools.encoding import decode_bytes_with_fallbacks
 from toolset.gui.editor import Editor
 
 if TYPE_CHECKING:
+    from PyQt5.QtWidgets import QWidget
     from toolset.data.installation import HTInstallation
 
 

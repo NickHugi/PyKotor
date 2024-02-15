@@ -4,7 +4,7 @@ from typing import TYPE_CHECKING
 
 from PyQt5 import QtCore
 from PyQt5.QtGui import QColor
-from PyQt5.QtWidgets import QDialog, QDialogButtonBox, QListWidgetItem, QWidget
+from PyQt5.QtWidgets import QDialog, QDialogButtonBox, QListWidgetItem
 
 from pykotor.common.stream import BinaryWriter
 from pykotor.resource.formats.erf import read_erf, write_erf
@@ -23,6 +23,7 @@ from toolset.gui.widgets.settings.installations import GlobalSettings
 from utility.system.path import Path
 
 if TYPE_CHECKING:
+    from PyQt5.QtWidgets import QWidget
     from pykotor.common.module import Module
     from pykotor.extract.file import FileResource
     from toolset.data.installation import HTInstallation

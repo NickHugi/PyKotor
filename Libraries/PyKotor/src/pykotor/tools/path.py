@@ -11,7 +11,6 @@ from utility.misc import is_instance_or_subinstance
 from utility.registry import resolve_reg_key_to_path
 from utility.system.path import (
     Path as InternalPath,
-    PathElem,
     PurePath as InternalPurePath,
 )
 
@@ -19,6 +18,9 @@ if TYPE_CHECKING:
     from typing_extensions import Self
 
     from pykotor.common.misc import Game
+    from utility.system.path import (
+        PathElem,
+    )
 
 def simple_wrapper(fn_name, wrapped_class_type) -> Callable[..., Any]:
     """Wraps a function to handle case-sensitive pathlib.PurePath arguments.

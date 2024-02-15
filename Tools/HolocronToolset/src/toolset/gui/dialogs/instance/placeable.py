@@ -5,11 +5,12 @@ import math
 from typing import TYPE_CHECKING
 
 from PyQt5.QtGui import QColor, QIcon, QImage, QPixmap
-from PyQt5.QtWidgets import QColorDialog, QDialog, QDoubleSpinBox, QLabel, QWidget
+from PyQt5.QtWidgets import QColorDialog, QDialog, QDoubleSpinBox
 
 from pykotor.common.misc import Color, ResRef
 
 if TYPE_CHECKING:
+    from PyQt5.QtWidgets import QLabel, QWidget
     from pykotor.resource.generics.git import GITPlaceable
     from toolset.gui.widgets.long_spinbox import LongSpinBox
 

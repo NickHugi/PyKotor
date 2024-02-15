@@ -23,7 +23,7 @@ from pykotor.resource.formats.vis import VIS, bytes_vis
 from pykotor.resource.generics.are import ARE, ARENorthAxis, bytes_are
 from pykotor.resource.generics.git import GIT, GITDoor, bytes_git
 from pykotor.resource.generics.ifo import IFO, bytes_ifo
-from pykotor.resource.generics.utd import UTD, bytes_utd
+from pykotor.resource.generics.utd import bytes_utd
 from pykotor.resource.type import ResourceType
 from pykotor.tools import model
 
@@ -31,6 +31,7 @@ if TYPE_CHECKING:
     import os
 
     from pykotor.resource.formats.bwm import BWM
+    from pykotor.resource.generics.utd import UTD
     from toolset.data.indoorkit import Kit, KitComponent, KitComponentHook, KitDoor
     from toolset.data.installation import HTInstallation
 

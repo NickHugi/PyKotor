@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING
 from PyQt5 import QtCore
 from PyQt5.QtCore import QSortFilterProxyModel, QThread
 from PyQt5.QtGui import QStandardItem, QStandardItemModel
-from PyQt5.QtWidgets import QAction, QDialog, QProgressBar, QShortcut, QVBoxLayout, QWidget
+from PyQt5.QtWidgets import QAction, QDialog, QProgressBar, QShortcut, QVBoxLayout
 
 from pykotor.common.language import Language
 from pykotor.common.misc import ResRef
@@ -15,6 +15,7 @@ from pykotor.resource.type import ResourceType
 from toolset.gui.editor import Editor
 
 if TYPE_CHECKING:
+    from PyQt5.QtWidgets import QWidget
     import os
 
     from toolset.data.installation import HTInstallation

@@ -14,25 +14,19 @@ from typing import TYPE_CHECKING
 import requests
 
 from PyQt5 import QtCore
-from PyQt5.QtCore import QPoint, QPointF, QRectF, QTimer
+from PyQt5.QtCore import QPointF, QRectF, QTimer
 from PyQt5.QtGui import (
     QColor,
-    QImage,
-    QKeyEvent,
     QKeySequence,
-    QMouseEvent,
-    QPaintEvent,
     QPainter,
     QPainterPath,
     QPen,
     QPixmap,
     QTransform,
-    QWheelEvent,
 )
 from PyQt5.QtWidgets import (
     QDialog,
     QFileDialog,
-    QFormLayout,
     QListWidgetItem,
     QMainWindow,
     QMenu,
@@ -45,7 +39,7 @@ from pykotor.common.geometry import Vector2, Vector3
 from pykotor.common.stream import BinaryReader, BinaryWriter
 from toolset.__main__ import is_frozen
 from toolset.config import UPDATE_INFO_LINK
-from toolset.data.indoorkit import Kit, KitComponent, load_kits
+from toolset.data.indoorkit import load_kits
 from toolset.data.indoormap import IndoorMap, IndoorMapRoom
 from toolset.gui.dialogs.asyncloader import AsyncLoader
 from toolset.gui.dialogs.indoor_settings import IndoorMapSettings
@@ -54,9 +48,21 @@ from utility.misc import is_debug_mode
 from utility.system.path import Path, PurePath
 
 if TYPE_CHECKING:
+    from PyQt5.QtWidgets import (
+        QFormLayout,
+    )
+    from PyQt5.QtCore import QPoint
+    from PyQt5.QtGui import (
+        QImage,
+        QKeyEvent,
+        QMouseEvent,
+        QPaintEvent,
+        QWheelEvent,
+    )
     import os
 
     from pykotor.resource.formats.bwm import BWMFace
+    from toolset.data.indoorkit import Kit, KitComponent
     from toolset.data.installation import HTInstallation
 
 

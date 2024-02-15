@@ -6,7 +6,7 @@ import uuid
 
 from enum import Enum
 from typing import Callable, Iterable, NamedTuple, TypeVar, Union
-from xml.etree.ElementTree import ParseError
+from xml.etree.ElementTree import ParseError  # noqa: S405
 
 from pykotor.common.stream import BinaryReader, BinaryWriter
 

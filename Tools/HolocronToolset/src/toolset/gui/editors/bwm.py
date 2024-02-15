@@ -6,16 +6,19 @@ from typing import TYPE_CHECKING
 
 from PyQt5 import QtCore
 from PyQt5.QtGui import QColor, QIcon, QImage, QPixmap
-from PyQt5.QtWidgets import QListWidgetItem, QShortcut, QWidget
+from PyQt5.QtWidgets import QListWidgetItem, QShortcut
 
-from pykotor.common.geometry import SurfaceMaterial, Vector2, Vector3
-from pykotor.resource.formats.bwm import BWM, BWMFace, read_bwm, write_bwm
+from pykotor.common.geometry import SurfaceMaterial
+from pykotor.resource.formats.bwm import read_bwm, write_bwm
 from pykotor.resource.type import ResourceType
 from toolset.gui.editor import Editor
 
 if TYPE_CHECKING:
+    from PyQt5.QtWidgets import QWidget
     import os
 
+    from pykotor.common.geometry import Vector2, Vector3
+    from pykotor.resource.formats.bwm import BWM, BWMFace
     from toolset.data.installation import HTInstallation
 
 _TRANS_FACE_ROLE = QtCore.Qt.UserRole + 1  # type: ignore[reportGeneralTypeIssues, attr-defined]

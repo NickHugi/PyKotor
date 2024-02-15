@@ -7,22 +7,21 @@ from copy import deepcopy
 from typing import TYPE_CHECKING
 
 from PyQt5 import QtCore
-from PyQt5.QtGui import QColor, QIcon, QKeyEvent, QKeySequence
-from PyQt5.QtWidgets import QCheckBox, QDialog, QListWidgetItem, QMenu, QWidget
+from PyQt5.QtGui import QColor, QIcon, QKeySequence
+from PyQt5.QtWidgets import QDialog, QListWidgetItem, QMenu
 
 from pykotor.common.geometry import SurfaceMaterial, Vector2, Vector3
 from pykotor.common.misc import Color
 from pykotor.common.module import Module
 from pykotor.extract.installation import SearchLocation
 from pykotor.resource.formats.bwm import read_bwm
-from pykotor.resource.formats.lyt import LYT, read_lyt
+from pykotor.resource.formats.lyt import read_lyt
 from pykotor.resource.generics.git import (
     GIT,
     GITCamera,
     GITCreature,
     GITDoor,
     GITEncounter,
-    GITInstance,
     GITPlaceable,
     GITSound,
     GITStore,
@@ -51,11 +50,17 @@ from toolset.utils.misc import getResourceFromFile
 from toolset.utils.window import openResourceEditor
 
 if TYPE_CHECKING:
+    from PyQt5.QtWidgets import QCheckBox, QWidget
+    from PyQt5.QtGui import QKeyEvent
     import os
 
     from PyQt5.QtCore import QPoint
 
     from pykotor.extract.file import ResourceIdentifier
+    from pykotor.resource.formats.lyt import LYT
+    from pykotor.resource.generics.git import (
+        GITInstance,
+    )
     from toolset.data.installation import HTInstallation
 
 

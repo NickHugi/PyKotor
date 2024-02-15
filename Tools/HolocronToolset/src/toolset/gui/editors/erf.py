@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING
 from PyQt5 import QtCore, QtGui
 from PyQt5.QtCore import QMimeData
 from PyQt5.QtGui import QStandardItem, QStandardItemModel
-from PyQt5.QtWidgets import QFileDialog, QMessageBox, QShortcut, QTableView, QWidget
+from PyQt5.QtWidgets import QFileDialog, QMessageBox, QShortcut, QTableView
 
 from pykotor.common.misc import ResRef
 from pykotor.common.stream import BinaryReader
@@ -20,6 +20,7 @@ from utility.error_handling import format_exception_with_variables
 from utility.system.path import Path
 
 if TYPE_CHECKING:
+    from PyQt5.QtWidgets import QWidget
     import os
 
     from toolset.data.installation import HTInstallation

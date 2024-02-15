@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 import glm
 
 from OpenGL.GL import glGenTextures, glGetUniformLocation, glTexImage2D, glUniform3fv, glUniform4fv, glUniformMatrix4fv, shaders
@@ -23,9 +25,12 @@ from OpenGL.raw.GL.VERSION.GL_1_0 import (
 from OpenGL.raw.GL.VERSION.GL_1_1 import glBindTexture
 from OpenGL.raw.GL.VERSION.GL_1_3 import glCompressedTexImage2D
 from OpenGL.raw.GL.VERSION.GL_2_0 import GL_FRAGMENT_SHADER, GL_VERTEX_SHADER, glUniform1i, glUseProgram
-from glm import mat4, vec3, vec4
 
-from pykotor.resource.formats.tpc import TPC, TPCTextureFormat
+from pykotor.resource.formats.tpc import TPCTextureFormat
+
+if TYPE_CHECKING:
+    from glm import mat4, vec3, vec4
+    from pykotor.resource.formats.tpc import TPC
 
 KOTOR_VSHADER = """
 #version 330 core

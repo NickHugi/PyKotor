@@ -4,12 +4,16 @@ import struct
 
 from copy import copy
 from inspect import signature
-from typing import Any, Callable, NamedTuple
+from typing import TYPE_CHECKING, Any, Callable, NamedTuple
 
 from pykotor.common.geometry import Vector3
-from pykotor.common.script import DataType, ScriptFunction
+from pykotor.common.script import DataType
 from pykotor.common.scriptdefs import KOTOR_FUNCTIONS
-from pykotor.resource.formats.ncs import NCS, NCSInstruction, NCSInstructionType
+from pykotor.resource.formats.ncs import NCSInstructionType
+
+if TYPE_CHECKING:
+    from pykotor.common.script import ScriptFunction
+    from pykotor.resource.formats.ncs import NCS, NCSInstruction
 
 
 class Interpreter:

@@ -3,27 +3,27 @@ from __future__ import annotations
 from copy import copy
 from typing import TYPE_CHECKING, Any, Callable, Generic, TypeVar
 
-from pykotor.common.misc import CaseInsensitiveDict, ResRef
+from pykotor.common.misc import CaseInsensitiveDict
 from pykotor.common.stream import BinaryReader, BinaryWriter
 from pykotor.extract.capsule import Capsule
-from pykotor.extract.file import LocationResult, ResourceIdentifier, ResourceResult
-from pykotor.extract.installation import Installation, SearchLocation
+from pykotor.extract.file import ResourceIdentifier
+from pykotor.extract.installation import SearchLocation
 from pykotor.resource.formats.bwm import bytes_bwm, read_bwm
 from pykotor.resource.formats.erf import read_erf, write_erf
 from pykotor.resource.formats.gff import read_gff
 from pykotor.resource.formats.lyt import bytes_lyt, read_lyt
 from pykotor.resource.formats.rim import read_rim, write_rim
-from pykotor.resource.formats.tpc import TPC, bytes_tpc, read_tpc
-from pykotor.resource.formats.vis import VIS, bytes_vis, read_vis
-from pykotor.resource.generics.are import ARE, bytes_are, read_are
+from pykotor.resource.formats.tpc import bytes_tpc, read_tpc
+from pykotor.resource.formats.vis import bytes_vis, read_vis
+from pykotor.resource.generics.are import bytes_are, read_are
 from pykotor.resource.generics.dlg import bytes_dlg, read_dlg
-from pykotor.resource.generics.git import GIT, bytes_git, read_git
-from pykotor.resource.generics.ifo import IFO, bytes_ifo, read_ifo
-from pykotor.resource.generics.pth import PTH, bytes_pth, read_pth
+from pykotor.resource.generics.git import bytes_git, read_git
+from pykotor.resource.generics.ifo import bytes_ifo, read_ifo
+from pykotor.resource.generics.pth import bytes_pth, read_pth
 from pykotor.resource.generics.utc import UTC, bytes_utc, read_utc
 from pykotor.resource.generics.utd import UTD, bytes_utd, read_utd
 from pykotor.resource.generics.ute import UTE, bytes_ute, read_ute
-from pykotor.resource.generics.uti import UTI, bytes_uti, read_uti
+from pykotor.resource.generics.uti import bytes_uti, read_uti
 from pykotor.resource.generics.utm import UTM, bytes_utm, read_utm
 from pykotor.resource.generics.utp import UTP, bytes_utp, read_utp
 from pykotor.resource.generics.uts import UTS, bytes_uts, read_uts
@@ -38,11 +38,21 @@ from utility.system.path import Path, PurePath
 if TYPE_CHECKING:
     import os
 
+    from pykotor.common.misc import ResRef
+    from pykotor.extract.file import LocationResult, ResourceResult
+    from pykotor.extract.installation import Installation
     from pykotor.resource.formats.erf.erf_data import ERF
     from pykotor.resource.formats.gff.gff_data import GFF
     from pykotor.resource.formats.lyt import LYT
     from pykotor.resource.formats.mdl import MDL
     from pykotor.resource.formats.rim.rim_data import RIM
+    from pykotor.resource.formats.tpc import TPC
+    from pykotor.resource.formats.vis import VIS
+    from pykotor.resource.generics.are import ARE
+    from pykotor.resource.generics.git import GIT
+    from pykotor.resource.generics.ifo import IFO
+    from pykotor.resource.generics.pth import PTH
+    from pykotor.resource.generics.uti import UTI
     from pykotor.resource.type import SOURCE_TYPES
 
 T = TypeVar("T")

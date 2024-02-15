@@ -3,11 +3,12 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from PyQt5 import QtCore
-from PyQt5.QtWidgets import QComboBox, QMenu, QWidget
+from PyQt5.QtWidgets import QComboBox, QMenu
 
 from toolset.gui.dialogs.edit.combo_2da import ModdedValueSpinboxDialog
 
 if TYPE_CHECKING:
+    from PyQt5.QtWidgets import QWidget
     from PyQt5.QtCore import QPoint
 
 
