@@ -6,6 +6,8 @@ HoloPatcher is a rewrite of TSLPatcher written in Python, utilizing the PyKotor 
 
 TSLPatcher is a Delphi utility designed for modifying game files for "Star Wars: Knights of the Old Republic" and its sequel. It allows for the seamless integration of mods, ensuring compatibility and minimizing conflicts between different mods.
 
+You can find the [TSLPatcher official readme here.](https://github.com/NickHugi/PyKotor/wiki/TSLPatcher's-Official-Readme)
+
 However, TSLPatcher is over 20 years old now and many qol features, bugs, and highly popular features were never added over the years.
 TSLPatcher, additionally, is closed source, making it difficult to determine its logic or why it may be failing to install a specific mod.
 
@@ -85,6 +87,14 @@ HoloPatcher is designed with extensibility in mind. Developers can extend its fu
 ## Contributing
 
 Contributions to the PyKotor's HoloPatcher are welcome. Whether it's adding new features, improving existing functionality, or fixing bugs, your contributions are appreciated.
+
+## Further Documentation
+
+For more detailed guides and tutorials on using HoloPatcher, refer to the following resources:
+
+- [Installing Mods with HoloPatcher](https://github.com/NickHugi/PyKotor/wiki/Installing-Mods-with-HoloPatcher): A step-by-step tutorial on setting up and running HoloPatcher.
+- [Advanced Configuration Options](https://github.com/NickHugi/PyKotor/wiki/HoloPatcher-README-for-mod-developers.): Detailed descriptions of advanced features and how to use them.
+- [Mod Creation Best Practices](https://github.com/NickHugi/PyKotor/wiki/Mod-Creation-Best-Practices): Guidelines and tips for creating mods with HoloPatcher.
 
 ## License
 
