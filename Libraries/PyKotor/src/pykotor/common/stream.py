@@ -615,12 +615,11 @@ class BinaryReader:
         char: str = ""
         bytes_read: int = 0
 
-        while char != terminator and bytes_read < length:
+        while char != terminator and (length == -1 or bytes_read < length):
+            string += char
+            bytes_read += 1
+            self.exceed_check(1)
             char = self.read_bytes(1).decode("ascii", errors="ignore")
-            if char:  # Only append and increment if char was successfully read
-                string += char
-                bytes_read += 1
-            self.exceed_check(1)  # Check if it exceeds some limit after each read
 
         # If a length is specified and not all bytes were read, skip the remaining bytes
         if length != -1:
