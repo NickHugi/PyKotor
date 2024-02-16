@@ -4,6 +4,7 @@ import contextlib
 import os
 
 from pykotor.common.misc import Game
+from utility.error_handling import format_exception_with_variables
 from utility.misc import ProcessorArchitecture
 
 KOTOR_REG_PATHS = {
@@ -52,7 +53,7 @@ def find_software_key(software_name: str) -> str | None:
                     # If this point is reached, the software is installed under this SID
                     return winreg.QueryValue(software_key, "InstallLocation")
                 i += 1
-            except OSError:  # TODO: except OSError after confirming it doesn't crash.  # noqa: PERF203, BLE001
+            except OSError:  # noqa: PERF203
                 break
 
     return None
@@ -121,17 +122,17 @@ def check_reg_keys_existence_and_validity() -> tuple[list[tuple[str, str]], list
 def winreg_key(game: Game) -> list[tuple[str, str]]:
     """Returns a list of registry keys that are utilized by KOTOR.
 
-    Attributes
+    Attributes:
     ----------
         game: Game IntEnum - The game to lookup
         access: Access permissions for the key (see winreg module).
 
-    Raises
+    Raises:
     ------
         ValueError: Not on a Windows OS.
         WinError: Most likely do not have sufficient permissions.
 
-    Returns
+    Returns:
     -------
         Key object or None if no key exists.
     """
@@ -145,11 +146,11 @@ def winreg_key(game: Game) -> list[tuple[str, str]]:
 def get_winreg_path(game: Game):
     """Returns the specified path value in the windows registry for the given game.
 
-    Attributes
+    Attributes:
     ----------
         game: The game to lookup in the registry
 
-    Raises
+    Raises:
     ------
         ValueError: Not on a Windows OS.
         WinError: Most likely do not have sufficient permissions.
@@ -169,12 +170,12 @@ def get_winreg_path(game: Game):
 def set_winreg_path(game: Game, path: str):
     """Sets the kotor install folder path value in the windows registry for the given game.
 
-    Attributes
+    Attributes:
     ----------
         game: The game to set in the registry
         path: New path value for the game.
 
-    Raises
+    Raises:
     ------
         ValueError: Not on a Windows OS.
         WinError: Most likely do not have sufficient permissions.
@@ -207,7 +208,7 @@ def create_registry_path(hive, path):  # sourcery skip: raise-from-previous-erro
                 # sourcery skip: raise-specific-error
                 raise Exception(f"Failed to create registry key: {current_path}. Error: {e}")  # noqa: TRY002, TRY003, EM102, B904
     except Exception as e:  # noqa: BLE001
-        print(e)
+        print(format_exception_with_variables(e))
 
 def set_registry_key_value(full_key_path, value_name, value_data):
     """Sets a registry key value, creating the key (and its parents, if necessary).
@@ -237,17 +238,19 @@ def set_registry_key_value(full_key_path, value_name, value_data):
         try:
             create_registry_path(hive, sub_key)
         except Exception as e:  # noqa: BLE001
-            print(e)
+            print(format_exception_with_variables(e))
             return
         # Open or create the key at the specified path
         with winreg.CreateKeyEx(hive, sub_key, 0, winreg.KEY_WRITE | winreg.KEY_WOW64_32KEY) as key:
             # Set the value
             winreg.SetValueEx(key, value_name, 0, winreg.REG_SZ, value_data)
             print(f"Successfully set {value_name} to {value_data} at {hive}\\{sub_key}")
-    except PermissionError:
-        print("Error: Permission denied. This script requires administrator privileges to run.")
+    except PermissionError as e:
+        print(f"Error: Permission denied creating regkey {full_key_path}")
+        print(e, "\n", repr(e))
     except Exception as e:  # noqa: BLE001
         print(f"An unexpected error occurred: {e}")
+        print(format_exception_with_variables(e))
 
 def remove_winreg_path(game: Game):
     possible_kotor_reg_paths = winreg_key(game)

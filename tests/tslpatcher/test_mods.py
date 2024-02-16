@@ -4,6 +4,7 @@ import os
 import pathlib
 import sys
 import unittest
+
 from unittest import TestCase
 
 THIS_SCRIPT_PATH = pathlib.Path(__file__).resolve()
@@ -18,6 +19,8 @@ if PYKOTOR_PATH.joinpath("pykotor").exists():
     os.chdir(PYKOTOR_PATH.parent)
 if UTILITY_PATH.joinpath("utility").exists():
     add_sys_path(UTILITY_PATH)
+
+from typing import TYPE_CHECKING
 
 from pykotor.common.geometry import Vector3, Vector4
 from pykotor.common.language import LocalizedString
@@ -40,7 +43,6 @@ from pykotor.tslpatcher.mods.gff import (
     LocalizedStringDelta,
     ModificationsGFF,
     ModifyFieldGFF,
-    ModifyGFF,
 )
 from pykotor.tslpatcher.mods.ssf import ModificationsSSF, ModifySSF
 from pykotor.tslpatcher.mods.tlk import ModificationsTLK, ModifyTLK
@@ -61,6 +63,11 @@ from pykotor.tslpatcher.mods.twoda import (
     TargetType,
 )
 from utility.system.path import PureWindowsPath
+
+if TYPE_CHECKING:
+    from pykotor.tslpatcher.mods.gff import (
+        ModifyGFF,
+    )
 
 # TODO Error, Warning tracking
 

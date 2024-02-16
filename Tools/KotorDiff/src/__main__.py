@@ -3,28 +3,30 @@ from __future__ import annotations
 import cProfile
 import pathlib
 import sys
+
 from argparse import ArgumentParser
 from io import StringIO
 from typing import TYPE_CHECKING
 
 if getattr(sys, "frozen", False) is False:
-    pykotor_path = pathlib.Path(__file__).parents[3] / "Libraries/PyKotor/src"
+    def update_sys_path(path):
+        working_dir = str(path)
+        if working_dir in sys.path:
+            sys.path.remove(working_dir)
+        sys.path.append(working_dir)
+
+    pykotor_path = pathlib.Path(__file__).parents[3] / "Libraries" / "PyKotor" / "src" / "pykotor"
     if pykotor_path.exists():
-        working_dir = str(pykotor_path)
-        if pykotor_path in sys.path:
-            sys.path.remove(working_dir)
-        sys.path.insert(0, working_dir)
-    utility_path = pathlib.Path(__file__).parents[3] / "Libraries/Utility/src"
+        update_sys_path(pykotor_path.parent)
+    utility_path = pathlib.Path(__file__).parents[3] / "Libraries" / "Utility" / "src" / "utility"
     if utility_path.exists():
-        working_dir = str(utility_path)
-        if pykotor_path in sys.path:
-            sys.path.remove(working_dir)
-        sys.path.insert(0, working_dir)
+        update_sys_path(utility_path.parent)
 
 from pykotor.extract.capsule import Capsule
 from pykotor.resource.formats import gff, lip, tlk, twoda
 from pykotor.tools.misc import is_capsule_file
 from pykotor.tools.path import CaseAwarePath
+from utility.error_handling import universal_simplify_exception
 from utility.misc import generate_hash
 from utility.system.path import Path, PureWindowsPath
 
@@ -64,13 +66,13 @@ def log_output(*args, **kwargs):
                 or "log_install_differ.log"
             )
             OUTPUT_LOG = Path(chosen_log_file_path).resolve()
-            if OUTPUT_LOG.parent.exists():
+            if OUTPUT_LOG.parent.safe_isdir():
                 break
             print("Invalid path:", OUTPUT_LOG)
             PARSER.print_help()
 
     # Write the captured output to the file
-    with OUTPUT_LOG.open("a") as f:
+    with OUTPUT_LOG.open("a", encoding="utf-8") as f:
         f.write(msg)
 
 
@@ -132,12 +134,12 @@ def diff_data(
         gff2: gff.GFF | None = None
         try:
             gff1 = gff.read_gff(data1)
-        except Exception:  # noqa: BLE001
-            return log_output(f"[Error] loading GFF {file1_rel.parent / where}!")  # type: ignore[func-returns-value]
+        except Exception as e:  # noqa: BLE001
+            return log_output(f"[Error] loading GFF {file1_rel.parent / where}!\n{universal_simplify_exception(e)}")  # type: ignore[func-returns-value]
         try:
             gff2 = gff.read_gff(data2)
-        except Exception:  # noqa: BLE001
-            return log_output(f"[Error] loading GFF {file2_rel.parent / where}!")  # type: ignore[func-returns-value]
+        except Exception as e:  # noqa: BLE001
+            return log_output(f"[Error] loading GFF {file2_rel.parent / where}!\n{universal_simplify_exception(e)}")  # type: ignore[func-returns-value]
         if gff1 and not gff2:
             return log_output(f"GFF resource missing in memory:\t'{file1_rel.parent / where}'")  # type: ignore[func-returns-value]
         if not gff1 and gff2:
@@ -154,16 +156,22 @@ def diff_data(
         twoda2: twoda.TwoDA | None = None
         try:
             twoda1 = twoda.read_2da(data1)
-        except Exception:  # noqa: BLE001
-            if file1_rel.parent.name.lower() == "rims" and (file1_rel.name.lower() == "global.rim" or file1_rel.name == "miniglobal.rim"):
+        except Exception as e:  # noqa: BLE001
+            if (
+                file1_rel.parent.name.lower() == "rims"
+                and file1_rel.name.lower() in {"global.rim", "miniglobal.rim"}
+            ):
                 return True
-            return log_output(f"Error loading 2DA {file1_rel.parent / where}!")  # type: ignore[func-returns-value]
+            return log_output(f"Error loading 2DA {file1_rel.parent / where}!\n{universal_simplify_exception(e)}")  # type: ignore[func-returns-value]
         try:
             twoda2 = twoda.read_2da(data2)
-        except Exception:  # noqa: BLE001
-            if file1_rel.parent.name.lower() == "rims" and (file1_rel.name.lower() == "global.rim" or file1_rel.name == "miniglobal.rim"):
+        except Exception as e:  # noqa: BLE001
+            if (
+                file1_rel.parent.name.lower() == "rims"
+                and file1_rel.name.lower() in {"global.rim", "miniglobal.rim"}
+            ):
                 return True
-            return log_output(f"Error loading 2DA {file2_rel.parent / where}!")  # type: ignore[func-returns-value]
+            return log_output(f"Error loading 2DA {file2_rel.parent / where}!\n{universal_simplify_exception(e)}")  # type: ignore[func-returns-value]
         if twoda1 and not twoda2:
             message = f"2DA resource missing in memory:\t'{file1_rel.parent / where}'"
             return log_output(message)  # type: ignore[func-returns-value]
@@ -184,13 +192,13 @@ def diff_data(
         try:
             log_output(f"Loading TLK '{file1_rel.parent / where}'")
             tlk1 = tlk.read_tlk(data1)
-        except Exception:  # noqa: BLE001
-            return log_output(f"Error loading TLK {file1_rel.parent / where}!")  # type: ignore[func-returns-value]
+        except Exception as e:  # noqa: BLE001
+            return log_output(f"Error loading TLK {file1_rel.parent / where}!\n{universal_simplify_exception(e)}")  # type: ignore[func-returns-value]
         try:
             log_output(f"Loading TLK '{file2_rel.parent / where}'")
             tlk2 = tlk.read_tlk(data2)
-        except Exception:  # noqa: BLE001
-            return log_output(f"Error loading TLK {file2_rel.parent / where}!")  # type: ignore[func-returns-value]
+        except Exception as e:  # noqa: BLE001
+            return log_output(f"Error loading TLK {file2_rel.parent / where}!\n{universal_simplify_exception(e)}")  # type: ignore[func-returns-value]
         if tlk1 and not tlk2:
             message = f"TLK resource missing in memory:\t'{file1_rel.parent / where}'"
             return log_output(message)  # type: ignore[func-returns-value]
@@ -210,12 +218,12 @@ def diff_data(
         lip2: lip.LIP | None = None
         try:
             lip1 = lip.read_lip(data1)
-        except Exception:  # noqa: BLE001
-            return log_output(f"Error loading LIP {file1_rel.parent / where}!")  # type: ignore[func-returns-value]
+        except Exception as e:  # noqa: BLE001
+            return log_output(f"Error loading LIP {file1_rel.parent / where}!\n{universal_simplify_exception(e)}")  # type: ignore[func-returns-value]
         try:
             lip2 = lip.read_lip(data2)
-        except Exception:  # noqa: BLE001
-            return log_output(f"Error loading LIP {file2_rel.parent / where}!")  # type: ignore[func-returns-value]
+        except Exception as e:  # noqa: BLE001
+            return log_output(f"Error loading LIP {file2_rel.parent / where}!\n{universal_simplify_exception(e)}")  # type: ignore[func-returns-value]
         if lip1 and not lip2:
             message = f"LIP resource missing in memory:\t'{file1_rel.parent / where}'"
             return log_output(message)  # type: ignore[func-returns-value]
@@ -242,7 +250,7 @@ def log_output_with_separator(message, below=True, above=False, surround=False):
     if above or surround:
         log_output(visual_length(message) * "-")
     log_output(message)
-    if below and not above or surround:
+    if (below and not above) or surround:
         log_output(visual_length(message) * "-")
 
 
@@ -253,10 +261,10 @@ def diff_files(file1: os.PathLike | str, file2: os.PathLike | str) -> bool | Non
     c_file2_rel: Path = relative_path_from_to(c_file1, c_file2)
     is_same_result: bool | None = True
 
-    if not c_file1.exists():
+    if not c_file1.safe_isfile():
         log_output(f"Missing file:\t{c_file1_rel}")
         return False
-    if not c_file2.exists():
+    if not c_file2.safe_isfile():
         log_output(f"Missing file:\t{c_file2_rel}")
         return False
 
@@ -264,12 +272,12 @@ def diff_files(file1: os.PathLike | str, file2: os.PathLike | str) -> bool | Non
         try:
             file1_capsule = Capsule(file1)
         except ValueError as e:
-            log_output(f"Could not load '{c_file1_rel}'. Reason: {e}")
+            log_output(f"Could not load '{c_file1_rel}'. Reason: {universal_simplify_exception(e)}")
             return None
         try:
             file2_capsule = Capsule(file2)
         except ValueError as e:
-            log_output(f"Could not load '{c_file2_rel}'. Reason: {e}")
+            log_output(f"Could not load '{c_file2_rel}'. Reason: {universal_simplify_exception(e)}")
             return None
 
         # Build dict of resources
@@ -306,11 +314,11 @@ def diff_directories(dir1: os.PathLike | str, dir2: os.PathLike | str) -> bool |
     log_output_with_separator(f"Finding differences in the '{c_dir1.name}' folders...", above=True)
 
     # Store relative paths instead of just filenames
-    files_path1 = {f.relative_to(c_dir1).as_posix().lower() for f in c_dir1.safe_rglob("*") if f.safe_isfile()}
-    files_path2 = {f.relative_to(c_dir2).as_posix().lower() for f in c_dir2.safe_rglob("*") if f.safe_isfile()}
+    files_path1: set[str] = {f.relative_to(c_dir1).as_posix().lower() for f in c_dir1.safe_rglob("*") if f.safe_isfile()}
+    files_path2: set[str] = {f.relative_to(c_dir2).as_posix().lower() for f in c_dir2.safe_rglob("*") if f.safe_isfile()}
 
     # Merge both sets to iterate over unique relative paths
-    all_files = files_path1.union(files_path2)
+    all_files: set[str] = files_path1.union(files_path2)
 
     is_same_result: bool | None = True
     for rel_path in all_files:
@@ -322,55 +330,55 @@ def diff_directories(dir1: os.PathLike | str, dir2: os.PathLike | str) -> bool |
 
 def diff_installs(install_path1: os.PathLike | str, install_path2: os.PathLike | str) -> bool | None:
     # TODO: use pykotor.extract.installation
-    install_path1 = CaseAwarePath.pathify(install_path1).resolve()
-    install_path2 = CaseAwarePath.pathify(install_path2).resolve()
+    rinstall_path1: CaseAwarePath = CaseAwarePath.pathify(install_path1).resolve()
+    rinstall_path2: CaseAwarePath = CaseAwarePath.pathify(install_path2).resolve()
     log_output()
-    log_output((max(len(str(install_path1)) + 29, len(str(install_path2)) + 30)) * "-")
-    log_output("Searching first install dir:", install_path1)
-    log_output("Searching second install dir:", install_path2)
+    log_output((max(len(str(rinstall_path1)) + 29, len(str(rinstall_path2)) + 30)) * "-")
+    log_output("Searching first install dir:", rinstall_path1)
+    log_output("Searching second install dir:", rinstall_path2)
     log_output()
 
-    is_same_result = diff_files(install_path1.joinpath("dialog.tlk"), install_path2 / "dialog.tlk")
-    modules_path1: CaseAwarePath = install_path1 / "Modules"
-    modules_path2: CaseAwarePath = install_path2 / "Modules"
+    is_same_result = diff_files(rinstall_path1.joinpath("dialog.tlk"), rinstall_path2 / "dialog.tlk")
+    modules_path1: CaseAwarePath = rinstall_path1 / "Modules"
+    modules_path2: CaseAwarePath = rinstall_path2 / "Modules"
     is_same_result = diff_directories(modules_path1, modules_path2) and is_same_result
 
-    override_path1: CaseAwarePath = install_path1 / "Override"
-    override_path2: CaseAwarePath = install_path2 / "Override"
+    override_path1: CaseAwarePath = rinstall_path1 / "Override"
+    override_path2: CaseAwarePath = rinstall_path2 / "Override"
     is_same_result = diff_directories(override_path1, override_path2) and is_same_result
 
-    rims_path1: CaseAwarePath = install_path1 / "rims"
-    rims_path2: CaseAwarePath = install_path2 / "rims"
+    rims_path1: CaseAwarePath = rinstall_path1 / "rims"
+    rims_path2: CaseAwarePath = rinstall_path2 / "rims"
     is_same_result = diff_directories(rims_path1, rims_path2) and is_same_result
 
-    lips_path1: CaseAwarePath = install_path1 / "Lips"
-    lips_path2: CaseAwarePath = install_path2 / "Lips"
+    lips_path1: CaseAwarePath = rinstall_path1 / "Lips"
+    lips_path2: CaseAwarePath = rinstall_path2 / "Lips"
     is_same_result = diff_directories(lips_path1, lips_path2) and is_same_result
 
     streamwaves_path1: CaseAwarePath = (
-        install_path1.joinpath("streamwaves")
-        if install_path1.joinpath("streamwaves").exists()
-        else install_path1.joinpath("streamvoice")
+        rinstall_path1.joinpath("streamwaves")
+        if rinstall_path1.joinpath("streamwaves").safe_isdir()
+        else rinstall_path1.joinpath("streamvoice")
     )
     streamwaves_path2: CaseAwarePath = (
-        install_path2.joinpath("streamwaves")
-        if install_path2.joinpath("streamwaves").exists()
-        else install_path2.joinpath("streamvoice")
+        rinstall_path2.joinpath("streamwaves")
+        if rinstall_path2.joinpath("streamwaves").safe_isdir()
+        else rinstall_path2.joinpath("streamvoice")
     )
     is_same_result = diff_directories(streamwaves_path1, streamwaves_path2) and is_same_result
     return is_same_result  # noqa: RET504
 
 
-def is_kotor_install_dir(path: os.PathLike | str) -> bool:
+def is_kotor_install_dir(path: os.PathLike | str) -> bool | None:
     c_path: CaseAwarePath = CaseAwarePath.pathify(path)
-    return c_path.safe_isdir() and c_path.joinpath("chitin.key").exists()
+    return c_path.safe_isdir() and c_path.joinpath("chitin.key").safe_isfile()
 
 
 def run_differ_from_args(path1: Path, path2: Path) -> bool | None:
-    if not path1.exists():
+    if not path1.safe_exists():
         log_output(f"--path1='{path1}' does not exist on disk, cannot diff")
         return None
-    if not path2.exists():
+    if not path2.safe_exists():
         log_output(f"--path2='{path2}' does not exist on disk, cannot diff")
         return None
     if is_kotor_install_dir(path1) and is_kotor_install_dir(path2):
@@ -405,7 +413,7 @@ def main():
             or (unknown[0] if len(unknown) > 0 else None)
             or input("Path to the first K1/TSL install, file, or directory to diff: "),
         ).resolve()
-        if PARSER_ARGS.path1.exists():
+        if PARSER_ARGS.path1.safe_exists():
             break
         print("Invalid path:", PARSER_ARGS.path1)
         PARSER.print_help()
@@ -416,7 +424,7 @@ def main():
             or (unknown[1] if len(unknown) > 1 else None)
             or input("Path to the second K1/TSL install, file, or directory to diff: "),
         ).resolve()
-        if PARSER_ARGS.path2.exists():
+        if PARSER_ARGS.path2.safe_exists():
             break
         print("Invalid path:", PARSER_ARGS.path2)
         PARSER.print_help()
@@ -431,11 +439,11 @@ def main():
     log_output()
     log_output(f"Using --path1='{PARSER_ARGS.path1}'")
     log_output(f"Using --path2='{PARSER_ARGS.path2}'")
-    log_output(f"Using --ignore-rims={PARSER_ARGS.ignore_rims!s}")
-    log_output(f"Using --ignore-tlk={PARSER_ARGS.ignore_tlk!s}")
-    log_output(f"Using --ignore-lips={PARSER_ARGS.ignore_lips!s}")
-    log_output(f"Using --compare-hashes={PARSER_ARGS.compare_hashes!s}")
-    log_output(f"Using --use-profiler={PARSER_ARGS.use_profiler!s}")
+    log_output(f"Using --ignore-rims={PARSER_ARGS.ignore_rims}")
+    log_output(f"Using --ignore-tlk={PARSER_ARGS.ignore_tlk}")
+    log_output(f"Using --ignore-lips={PARSER_ARGS.ignore_lips}")
+    log_output(f"Using --compare-hashes={PARSER_ARGS.compare_hashes}")
+    log_output(f"Using --use-profiler={PARSER_ARGS.use_profiler}")
 
     profiler = None
     try:
@@ -464,14 +472,15 @@ def main():
             log_output("Completed with errors found during comparison")
             sys.exit(3)
     except KeyboardInterrupt:
-        if profiler is not None:
-            _stop_profiler(profiler)
         log_output("KeyboardInterrupt - KotorDiff was cancelled by user.")
         raise
+    finally:
+        if profiler is not None:
+            _stop_profiler(profiler)
 
 def _stop_profiler(profiler: cProfile.Profile):
     profiler.disable()
-    profiler_output_file = Path("profiler_output.pstat").resolve()
+    profiler_output_file = Path("profiler_output.pstat")
     profiler.dump_stats(str(profiler_output_file))
     log_output(f"Profiler output saved to: {profiler_output_file}")
 

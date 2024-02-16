@@ -2,9 +2,14 @@ from __future__ import annotations
 
 import json
 
+from typing import TYPE_CHECKING
+
 from pykotor.resource.formats.twoda.twoda_data import TwoDA
-from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES, ResourceReader, ResourceWriter, autoclose
+from pykotor.resource.type import ResourceReader, ResourceWriter, autoclose
 from pykotor.tools.encoding import decode_bytes_with_fallbacks
+
+if TYPE_CHECKING:
+    from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES
 
 
 class TwoDAJSONReader(ResourceReader):

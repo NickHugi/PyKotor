@@ -4,6 +4,8 @@ from contextlib import suppress
 from copy import deepcopy
 from typing import TYPE_CHECKING
 
+from PyQt5.QtWidgets import QMessageBox
+
 from pykotor.common.misc import ResRef
 from pykotor.common.module import Module
 from pykotor.common.stream import BinaryWriter
@@ -13,7 +15,6 @@ from pykotor.resource.generics.dlg import DLG, dismantle_dlg
 from pykotor.resource.generics.utp import UTP, dismantle_utp, read_utp
 from pykotor.resource.type import ResourceType
 from pykotor.tools import placeable
-from PyQt5.QtWidgets import QMessageBox, QWidget
 from toolset.data.installation import HTInstallation
 from toolset.gui.dialogs.edit.locstring import LocalizedStringDialog
 from toolset.gui.dialogs.inventory import InventoryEditor
@@ -22,7 +23,11 @@ from toolset.gui.widgets.settings.installations import GlobalSettings
 from toolset.utils.window import openResourceEditor
 
 if TYPE_CHECKING:
+    from PyQt5.QtWidgets import QWidget
     import os
+
+    from pykotor.extract.file import ResourceResult
+    from pykotor.resource.formats.twoda.twoda_data import TwoDA
 
 
 class UTPEditor(Editor):
@@ -37,13 +42,13 @@ class UTPEditor(Editor):
 
         Processing Logic:
         ----------------
-        1. Initialize supported resource types and call super constructor
-        2. Initialize global settings object
-        3. Get placeables 2DA cache from installation
-        4. Initialize UTP object
-        5. Set up UI from designer file
-        6. Set up menus, signals and installation
-        7. Update 3D preview and call new() to initialize editor.
+            1. Initialize supported resource types and call super constructor
+            2. Initialize global settings object
+            3. Get placeables 2DA cache from installation
+            4. Initialize UTP object
+            5. Set up UI from designer file
+            6. Set up menus, signals and installation
+            7. Update 3D preview and call new() to initialize editor.
         """
         supported = [ResourceType.UTP]
         super().__init__(parent, "Placeable Editor", "placeable", supported, supported, installation, mainwindow)
@@ -92,21 +97,21 @@ class UTPEditor(Editor):
 
         Processing Logic:
         ----------------
-        - Sets the internal installation reference and updates UI elements
-        - Loads required 2da files if not already loaded
-        - Populates appearance and faction dropdowns from loaded 2da data
-        - Hides/shows TSL specific UI elements based on installation type
+            - Sets the internal installation reference and updates UI elements
+            - Loads required 2da files if not already loaded
+            - Populates appearance and faction dropdowns from loaded 2da data
+            - Hides/shows TSL specific UI elements based on installation type
         """
         self._installation = installation
         self.ui.nameEdit.setInstallation(installation)
         self.ui.previewRenderer.installation = installation
 
         # Load required 2da files if they have not been loaded already
-        required = [HTInstallation.TwoDA_PLACEABLES, HTInstallation.TwoDA_FACTIONS]
+        required: list[str] = [HTInstallation.TwoDA_PLACEABLES, HTInstallation.TwoDA_FACTIONS]
         installation.htBatchCache2DA(required)
 
-        appearances = installation.htGetCache2DA(HTInstallation.TwoDA_PLACEABLES)
-        factions = installation.htGetCache2DA(HTInstallation.TwoDA_FACTIONS)
+        appearances: TwoDA = installation.htGetCache2DA(HTInstallation.TwoDA_PLACEABLES)
+        factions: TwoDA = installation.htGetCache2DA(HTInstallation.TwoDA_FACTIONS)
 
         self.ui.appearanceSelect.setItems(appearances.get_column("label"))
         self.ui.factionSelect.setItems(factions.get_column("label"))
@@ -138,7 +143,7 @@ class UTPEditor(Editor):
             - Sets script text fields from UTP script properties
             - Sets comment text from UTP comment property.
         """
-        self._utp = utp
+        self._utp: UTP = utp
 
         # Basic
         self.ui.nameEdit.setLocstring(utp.name)
@@ -206,12 +211,13 @@ class UTPEditor(Editor):
         -------
             data: The built UTP data
             b"": Empty byte string
+
         Builds a UTP by:
             - Setting UTP properties like name, tag, scripts from UI elements
             - Writing the constructed UTP to a byte array
             - Returning the byte array and an empty byte string.
         """
-        utp = deepcopy(self._utp)
+        utp: UTP = deepcopy(self._utp)
 
         # Basic
         utp.name = self.ui.nameEdit.locstring()
@@ -279,18 +285,18 @@ class UTPEditor(Editor):
         self.ui.inventoryCountLabel.setText(f"Total Items: {len(self._utp.inventory)}")
 
     def changeName(self):
-        dialog = LocalizedStringDialog(self, self._installation, self.ui.nameEdit.locstring)
+        dialog = LocalizedStringDialog(self, self._installation, self.ui.nameEdit.locstring())
         if dialog.exec_():
-            self._loadLocstring(self.ui.nameEdit, dialog.locstring)
+            self._loadLocstring(self.ui.nameEdit.ui.locstringText, dialog.locstring)
 
     def generateTag(self):
-        if self.ui.resrefEdit.text() == "":
+        if not self.ui.resrefEdit.text():
             self.generateResref()
         self.ui.tagEdit.setText(self.ui.resrefEdit.text())
 
     def generateResref(self):
-        if self._resref is not None and self._resref != "":
-            self.ui.resrefEdit.setText(self._resref)
+        if self._resname is not None and self._resname != "":
+            self.ui.resrefEdit.setText(self._resname)
         else:
             self.ui.resrefEdit.setText("m00xx_plc_000")
 
@@ -299,10 +305,10 @@ class UTPEditor(Editor):
 
         Processing Logic:
         ----------------
-        - It gets the conversation name from the UI text field
-        - Searches the installation for the conversation resource
-        - If not found, it creates a new empty file in the override
-        - If found, it opens the resource editor window.
+            - It gets the conversation name from the UI text field
+            - Searches the installation for the conversation resource
+            - If not found, it creates a new empty file in the override
+            - If found, it opens the resource editor window.
         """
         resname = self.ui.conversationEdit.text()
         data, filepath = None, None
@@ -312,10 +318,10 @@ class UTPEditor(Editor):
                         "Conversation field cannot be blank.").exec_()
             return
 
-        search = self._installation.resource(resname, ResourceType.DLG)
+        search: ResourceResult | None = self._installation.resource(resname, ResourceType.DLG)
 
         if search is None:
-            msgbox = QMessageBox(QMessageBox.Information, "DLG file not found",
+            msgbox: int = QMessageBox(QMessageBox.Information, "DLG file not found",
                                  "Do you wish to create a file in the override?",
                                  QMessageBox.Yes | QMessageBox.No).exec_()
             if QMessageBox.Yes == msgbox:
@@ -337,19 +343,21 @@ class UTPEditor(Editor):
 
         Processing Logic:
         ----------------
-        - Gets list of capsule paths for the module
-        - Creates capsule objects from the paths
-        - Initializes InventoryEditor with the capsules and other data
-        - Runs editor and updates inventory if changes were made.
+            - Gets list of capsule paths for the module
+            - Creates capsule objects from the paths
+            - Initializes InventoryEditor with the capsules and other data
+            - Runs editor and updates inventory if changes were made.
         """
-        capsules = []
+        capsules: list[Capsule] = []
 
         with suppress(Exception):
             root = Module.get_root(self._filepath)
-            str_path = str(self._filepath).casefold()
-            capsulesPaths: list[str] = [path for path in self._installation.module_names() if
-                             root.casefold() in path.casefold() and path.casefold() != str_path]
-            capsules.extend([Capsule(self._installation.module_path() / path) for path in capsulesPaths])
+            moduleNames: list[str] = [
+                path for path in self._installation.module_names()
+                if root in path and path != self._filepath
+            ]
+            newCapsules: list[Capsule] = [Capsule(self._installation.module_path() / mod_filename) for mod_filename in moduleNames]
+            capsules.extend(newCapsules)
 
         inventoryEditor = InventoryEditor(self, self._installation, capsules, [], self._utp.inventory, {}, False, True)
         if inventoryEditor.exec_():
@@ -391,10 +399,10 @@ class UTPEditor(Editor):
         self.setFixedSize(674, 457)
 
         data, _ = self.build()
-        modelname = placeable.get_model(read_utp(data), self._installation, placeables=self._placeables2DA)
-        mdl = self._installation.resource(modelname, ResourceType.MDL)
-        mdx = self._installation.resource(modelname, ResourceType.MDX)
-        if mdl and mdx:
+        modelname: str = placeable.get_model(read_utp(data), self._installation, placeables=self._placeables2DA)
+        mdl: ResourceResult | None = self._installation.resource(modelname, ResourceType.MDL)
+        mdx: ResourceResult | None = self._installation.resource(modelname, ResourceType.MDX)
+        if mdl is not None and mdx is not None:
             self.ui.previewRenderer.setModel(mdl.data, mdx.data)
         else:
             self.ui.previewRenderer.clearModel()

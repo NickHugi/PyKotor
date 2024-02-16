@@ -1,16 +1,25 @@
 """This module contains the ResourceType class and initializes the static list of ResourceTypes that can be found in both games."""
 from __future__ import annotations
 
+import io
+import mmap
 import os
 import uuid
+
 from enum import Enum
-from typing import Callable, Iterable, NamedTuple, TypeVar, Union
+from pathlib import Path
+from typing import TYPE_CHECKING, NamedTuple, TypeVar, Union
 from xml.etree.ElementTree import ParseError
 
 from pykotor.common.stream import BinaryReader, BinaryWriter
 from utility.string import WrappedStr
+from utility.error_handling import format_exception_with_variables
 
-SOURCE_TYPES = Union[os.PathLike, str, bytes, bytearray, BinaryReader]
+if TYPE_CHECKING:
+    from collections.abc import Callable, Iterable
+
+STREAM_TYPES = Union[io.BufferedIOBase, io.RawIOBase, mmap.mmap]
+SOURCE_TYPES = Union[os.PathLike, str, bytes, bytearray, memoryview, BinaryReader, STREAM_TYPES]
 TARGET_TYPES = Union[os.PathLike, str, bytearray, BinaryWriter]
 
 
@@ -61,15 +70,17 @@ class ResourceType(Enum):
 
     Stored in the class is also several static attributes, each an actual resource type used by the games.
 
-    Attributes
+    Attributes:
     ----------
         type_id: Integer id of the resource type as recognized by the games.
         extension: File extension associated with the resource type and as recognized by the game.
         category: Short description on what kind of data the resource type stores.
         contents: How the resource type stores data, ie. plaintext, binary, or gff.
+
     """
 
-    INVALID = ResourceTuple(0, "", "Undefined", "binary", is_invalid=True)
+    INVALID = ResourceTuple(-1, "", "Undefined", "binary", is_invalid=True)
+    RES = ResourceTuple(0, "res", "Save Data", "gff")
     BMP = ResourceTuple(1, "bmp", "Images", "binary")  # ???
     TGA = ResourceTuple(3, "tga", "Textures", "binary")
     WAV = ResourceTuple(4, "wav", "Audio", "binary")
@@ -109,6 +120,7 @@ class ResourceType(Enum):
     DWK = ResourceTuple(2052, "dwk", "Walkmeshes", "binary")
     PWK = ResourceTuple(2053, "pwk", "Walkmeshes", "binary")
     JRL = ResourceTuple(2056, "jrl", "Journals", "gff")
+    SAV = ResourceTuple(2057, "sav", "Save Data", "erf")
     UTW = ResourceTuple(2058, "utw", "Waypoints", "gff")
     SSF = ResourceTuple(2060, "ssf", "Soundsets", "binary")
     NDB = ResourceTuple(2064, "ndb", "Other", "binary")  # ???
@@ -124,8 +136,6 @@ class ResourceType(Enum):
     TPC = ResourceTuple(3007, "tpc", "Textures", "binary")
     MDX = ResourceTuple(3008, "mdx", "Models", "binary")
     ERF = ResourceTuple(9997, "erf", "Modules", "binary")
-    RES = ResourceTuple(69420, "res", "Save Data", "gff")  # unknown type_id
-    SAV = ResourceTuple(42069, "sav", "Save Data", "erf")  # unknown type_id
 
     # For Toolset Use:
     PLT = ResourceTuple(6, "plt", "Other", "binary")
@@ -194,7 +204,7 @@ class ResourceType(Enum):
 
         return (  # For dynamically constructed invalid members
             f"{self.__class__.__name__}.from_invalid("
-            f"{f'type_id={self.type_id}, ' if self.type_id else ''}"
+            f"{f'type_id={self.type_id}, '}"
             f"{f'extension={self.extension}, ' if self.extension else ''}"
             f"{f'category={self.category}, ' if self.category else ''}"
             f"contents={self.contents})"
@@ -204,7 +214,7 @@ class ResourceType(Enum):
         self,
     ) -> str:
         """Returns the extension in all caps."""
-        return self.extension.upper()
+        return str(self.extension.upper())
 
     def __int__(
         self,
@@ -318,7 +328,11 @@ def autoclose(func: Callable[..., R]) -> Callable[..., R]:
         try:
             resource: R = func(self, auto_close)
         except (OSError, ParseError, ValueError, IndexError, StopIteration) as e:
-            msg = "Tried to load an unsupported or corrupted file."
+            with Path("errorlog.txt").open("a", encoding="utf-8") as file:
+                lines = format_exception_with_variables(e)
+                file.writelines(lines)
+                file.write("\n----------------------\n")
+                msg = "Tried to load an unsupported or corrupted file."
             raise ValueError(msg) from e
         finally:
             if auto_close:

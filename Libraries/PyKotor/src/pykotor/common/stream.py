@@ -4,6 +4,7 @@ from __future__ import annotations
 import io
 import os
 import struct
+
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, BinaryIO
 
@@ -14,6 +15,8 @@ from utility.system.path import Path
 
 if TYPE_CHECKING:
     from types import TracebackType
+
+    from typing_extensions import Literal
 
     from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES
 
@@ -192,7 +195,7 @@ class BinaryReader:
     ) -> int:
         """Returns the total number of bytes accessible.
 
-        Returns
+        Returns:
         -------
             The number of accessible bytes.
         """
@@ -203,7 +206,7 @@ class BinaryReader:
     ) -> int:
         """Returns the total number of bytes in the stream.
 
-        Returns
+        Returns:
         -------
             The total file size.
         """
@@ -218,7 +221,7 @@ class BinaryReader:
     ) -> int:
         """Returns the remaining number of bytes in the stream.
 
-        Returns
+        Returns:
         -------
             The total file size.
         """
@@ -248,7 +251,7 @@ class BinaryReader:
     ) -> int:
         """Returns the byte offset into the stream.
 
-        Returns
+        Returns:
         -------
             The byte offset.
         """
@@ -568,6 +571,7 @@ class BinaryReader:
         self,
         length: int,
         encoding: str | None = "windows-1252",
+        errors: Literal["ignore", "strict", "replace"] = "ignore",
     ) -> str:
         """Reads a string from the stream with the specified length.
 
@@ -585,7 +589,7 @@ class BinaryReader:
         """
         self.exceed_check(length)
         string_byte_data = self._stream.read(length)
-        string = decode_bytes_with_fallbacks(string_byte_data, encoding=encoding, errors="ignore")
+        string = decode_bytes_with_fallbacks(string_byte_data, encoding=encoding, errors=errors)
         if "\0" in string:
             string = string[: string.index("\0")].rstrip("\0")
             string = string.replace("\0", "")
@@ -594,14 +598,21 @@ class BinaryReader:
     def read_terminated_string(
         self,
         terminator: str,
+        length: int = -1,
+        encoding: str = "ascii",
+        *,
+        strict: bool = True,
     ) -> str:
-        """Reads a string continuously from the stream until it hits the terminator string specified.
-
-        Any unknown characters are ignored.
+        """Reads a string continuously from the stream up to a specified length or until it hits the terminator string, whichever comes first.
+        If length is -1, reads until the terminator is encountered without a length constraint.
 
         Args:
         ----
             terminator: The terminator string.
+            length: The maximum length to read from the stream, or -1 for no length constraint.
+                If a terminator is found before length is reached, skip the remaining.
+            encoding: the encoding to use, in most cases this should be "ascii" (default)
+            strict: Whether to stop appending the final string if a character could not be decoded by the encoding.
 
         Returns:
         -------
@@ -609,10 +620,23 @@ class BinaryReader:
         """
         string: str = ""
         char: str = ""
-        while char != terminator:
+        bytes_read: int = 0
+
+        while char != terminator and (length == -1 or bytes_read < length):
             string += char
             self.exceed_check(1)
-            char = self.read_bytes(1).decode("ascii", errors="ignore")
+            char = self.read_bytes(1).decode(encoding=encoding, errors="ignore")
+            bytes_read += 1
+            if not char and strict:
+                break
+
+        if length == -1:
+            return string
+
+        # If a length is specified and not all bytes were read, skip the remaining bytes
+        remaining_length = length - bytes_read
+        if remaining_length > 0:
+            self.skip(remaining_length)
         return string
 
     def read_locstring(
@@ -622,7 +646,7 @@ class BinaryReader:
 
         The binary data structure that is read follows the structure found in the GFF format specification.
 
-        Returns
+        Returns:
         -------
             A LocalizedString read from the stream.
         """
@@ -764,7 +788,7 @@ class BinaryWriter(ABC):
     ) -> int:
         """Returns the total file size.
 
-        Returns
+        Returns:
         -------
             The total file size.
         """
@@ -775,7 +799,7 @@ class BinaryWriter(ABC):
     ) -> bytes:
         """Returns the full file data.
 
-        Returns
+        Returns:
         -------
             The full file data.
         """
@@ -810,7 +834,7 @@ class BinaryWriter(ABC):
     ) -> int:
         """Returns the byte offset into the stream.
 
-        Returns
+        Returns:
         -------
             The byte offset.
         """
@@ -1032,7 +1056,7 @@ class BinaryWriter(ABC):
         self,
         value: str,
         encoding: str | None = "windows-1252",
-        errors: str = "errors",
+        errors: str = "strict",
         *,
         big: bool = False,
         prefix_length: int = 0,
@@ -1122,7 +1146,7 @@ class BinaryWriterFile(BinaryWriter):
     ) -> int:
         """Returns the total file size.
 
-        Returns
+        Returns:
         -------
             The total file size.
         """
@@ -1137,7 +1161,7 @@ class BinaryWriterFile(BinaryWriter):
     ) -> bytes:
         """Returns the full file data.
 
-        Returns
+        Returns:
         -------
             The full file data.
         """
@@ -1177,7 +1201,7 @@ class BinaryWriterFile(BinaryWriter):
     ) -> int:
         """Returns the byte offset into the stream.
 
-        Returns
+        Returns:
         -------
             The byte offset.
         """
@@ -1541,7 +1565,7 @@ class BinaryWriterBytearray(BinaryWriter):
     ) -> int:
         """Returns the total file size.
 
-        Returns
+        Returns:
         -------
             The total file size.
         """
@@ -1552,7 +1576,7 @@ class BinaryWriterBytearray(BinaryWriter):
     ) -> bytes:
         """Returns the full file data.
 
-        Returns
+        Returns:
         -------
             The full file data.
         """
@@ -1587,7 +1611,7 @@ class BinaryWriterBytearray(BinaryWriter):
     ) -> int:
         """Returns the byte offset into the stream.
 
-        Returns
+        Returns:
         -------
             The byte offset.
         """

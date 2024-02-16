@@ -1,19 +1,24 @@
 from __future__ import annotations
-from contextlib import suppress
 
+from copy import deepcopy
 from typing import TYPE_CHECKING
+
+from PyQt5.QtWidgets import QCheckBox, QDoubleSpinBox, QSpinBox, QTableWidgetItem
 
 from pykotor.common.misc import ResRef
 from pykotor.resource.formats.gff import write_gff
 from pykotor.resource.generics.ute import UTE, UTECreature, dismantle_ute, read_ute
 from pykotor.resource.type import ResourceType
-from PyQt5.QtWidgets import QCheckBox, QDoubleSpinBox, QSpinBox, QTableWidgetItem, QWidget
 from toolset.data.installation import HTInstallation
 from toolset.gui.dialogs.edit.locstring import LocalizedStringDialog
 from toolset.gui.editor import Editor
 
 if TYPE_CHECKING:
+    from PyQt5.QtWidgets import QWidget
     import os
+
+    from pykotor.resource.formats.gff.gff_data import GFF
+    from pykotor.resource.formats.twoda.twoda_data import TwoDA
 
 
 class UTEEditor(Editor):
@@ -33,7 +38,7 @@ class UTEEditor(Editor):
             - Initialize UTE object
             - Call new() to start with a blank trigger.
         """
-        supported = [ResourceType.UTE]
+        supported: list[ResourceType] = [ResourceType.UTE]
         super().__init__(parent, "Trigger Editor", "trigger", supported, supported, installation)
 
         from toolset.uic.editors.ute import Ui_MainWindow
@@ -43,7 +48,7 @@ class UTEEditor(Editor):
         self._setupSignals()
         self._setupInstallation(installation)
 
-        self._ute = UTE()
+        self._ute: UTE = UTE()
 
         self.new()
 
@@ -83,17 +88,14 @@ class UTEEditor(Editor):
         self._installation = installation
         self.ui.nameEdit.setInstallation(installation)
 
-        try:
-            factions = installation.htGetCache2DA(HTInstallation.TwoDA_FACTIONS)
-            difficulties = installation.htGetCache2DA(HTInstallation.TwoDA_ENC_DIFFICULTIES)
+        factions: TwoDA = installation.htGetCache2DA(HTInstallation.TwoDA_FACTIONS)
+        difficulties: TwoDA = installation.htGetCache2DA(HTInstallation.TwoDA_ENC_DIFFICULTIES)
 
-            self.ui.difficultySelect.clear()
-            self.ui.difficultySelect.setItems(difficulties.get_column("label"))
+        self.ui.difficultySelect.clear()
+        self.ui.difficultySelect.setItems(difficulties.get_column("label"))
 
-            self.ui.factionSelect.clear()
-            self.ui.difficultySelect.setItems(factions.get_column("label"))
-        except Exception as e:
-            print(e)
+        self.ui.factionSelect.clear()
+        self.ui.difficultySelect.setItems(factions.get_column("label"))
 
     def load(self, filepath: os.PathLike | str, resref: str, restype: ResourceType, data: bytes):
         super().load(filepath, resref, restype, data)
@@ -108,12 +110,14 @@ class UTEEditor(Editor):
         ----
             ute (UTE): UTE object to load
 
-        Loads UTE:
-        - Sets basic UTE properties like name, tag, etc.
-        - Sets advanced properties like active, faction, respawning
-        - Loads creatures and adds them to creature table
-        - Sets script fields
-        - Sets comment text.
+
+        Processing Logic:
+        ----------------
+            - Sets basic UTE properties like name, tag, etc.
+            - Sets advanced properties like active, faction, respawning
+            - Loads creatures and adds them to creature table
+            - Sets script fields
+            - Sets comment text.
         """
         self._ute = ute
 
@@ -154,7 +158,7 @@ class UTEEditor(Editor):
     def build(self) -> tuple[bytes, bytes]:
         """Builds a UTE object from UI data.
 
-        Returns
+        Returns:
         -------
             tuple[bytes, bytes]: A tuple containing the UTE data and an empty string.
 
@@ -166,7 +170,7 @@ class UTEEditor(Editor):
             - Adding comment text
             - Encoding the UTE object into bytes.
         """
-        ute = self._ute
+        ute: UTE = deepcopy(self._ute)
 
         # Basic
         ute.name = self.ui.nameEdit.locstring()
@@ -210,7 +214,7 @@ class UTEEditor(Editor):
         ute.comment = self.ui.commentsEdit.toPlainText()
 
         data = bytearray()
-        gff = dismantle_ute(ute)
+        gff: GFF = dismantle_ute(ute)
         write_gff(gff, data)
 
         return data, b""
@@ -220,32 +224,31 @@ class UTEEditor(Editor):
         self._loadUTE(UTE())
 
     def changeName(self):
-        dialog = LocalizedStringDialog(self, self._installation, self.ui.nameEdit.locstring)
+        dialog = LocalizedStringDialog(self, self._installation, self.ui.nameEdit.locstring())
         if dialog.exec_():
-            self._loadLocstring(self.ui.nameEdit, dialog.locstring)
+            self._loadLocstring(self.ui.nameEdit.ui.locstringText, dialog.locstring)
 
     def generateTag(self):
-        if self.ui.resrefEdit.text() == "":
+        if not self.ui.resrefEdit.text():
             self.generateResref()
         self.ui.tagEdit.setText(self.ui.resrefEdit.text())
 
     def generateResref(self):
-        if self._resref is not None and self._resref != "":
-            self.ui.resrefEdit.setText(self._resref)
+        if self._resname:
+            self.ui.resrefEdit.setText(self._resname)
         else:
             self.ui.resrefEdit.setText("m00xx_enc_000")
 
     def setInfiniteRespawn(self):
         if self.ui.infiniteRespawnCheckbox.isChecked():
-            self._extracted_from_setInfiniteRespawn_3(-1, False)
+            self._setInfiniteRespawnMain(val=-1, enabled=False)
         else:
-            self._extracted_from_setInfiniteRespawn_3(0, True)
+            self._setInfiniteRespawnMain(val=0, enabled=True)
 
-    # TODO Rename this here and in `setInfiniteRespawn`
-    def _extracted_from_setInfiniteRespawn_3(self, arg0, boolean):
-        self.ui.respawnCountSpin.setMinimum(arg0)
-        self.ui.respawnCountSpin.setValue(arg0)
-        self.ui.respawnCountSpin.setEnabled(boolean)
+    def _setInfiniteRespawnMain(self, val: int, enabled: bool):
+        self.ui.respawnCountSpin.setMinimum(val)
+        self.ui.respawnCountSpin.setValue(val)
+        self.ui.respawnCountSpin.setEnabled(enabled)
 
     def setContinuous(self):
         isContinuous = self.ui.spawnSelect.currentIndex() == 1
@@ -254,7 +257,13 @@ class UTEEditor(Editor):
         self.ui.respawnCountSpin.setEnabled(isContinuous)
         self.ui.respawnTimeSpin.setEnabled(isContinuous)
 
-    def addCreature(self, resname: str = "", appearanceId: int = 0, challenge: float = 0.0, singe: bool = False):
+    def addCreature(
+        self,
+        resname: str = "",
+        appearanceId: int = 0,
+        challenge: float = 0.0,
+        single: bool = False,
+    ):
         """Adds a new creature to the creature table.
 
         Args:
@@ -262,7 +271,7 @@ class UTEEditor(Editor):
             resname (str): Name of the creature
             appearanceId (int): ID number for the creature's appearance
             challenge (float): Difficulty rating for the creature
-            singe (bool): Whether the creature is a single creature encounter
+            single (bool): Whether the creature is a single creature encounter
 
         Processing Logic:
         ----------------
@@ -273,11 +282,11 @@ class UTEEditor(Editor):
             - Sets the widgets as the cell widgets in the appropriate columns
             - Sets the creature name as the item in the name column.
         """
-        rowId = self.ui.creatureTable.rowCount()
+        rowId: int = self.ui.creatureTable.rowCount()
         self.ui.creatureTable.insertRow(rowId)
 
         singleCheckbox = QCheckBox()
-        singleCheckbox.setChecked(singe)
+        singleCheckbox.setChecked(single)
         challengeSpin = QDoubleSpinBox()
         challengeSpin.setValue(challenge)
         appearanceSpin = QSpinBox()
@@ -290,5 +299,5 @@ class UTEEditor(Editor):
 
     def removeSelectedCreature(self):
         if self.ui.creatureTable.selectedItems():
-            item = self.ui.creatureTable.selectedItems()[0]
+            item: QTableWidgetItem = self.ui.creatureTable.selectedItems()[0]
             self.ui.creatureTable.removeRow(item.row())

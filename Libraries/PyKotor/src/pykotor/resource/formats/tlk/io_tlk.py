@@ -1,10 +1,16 @@
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 from pykotor.common.language import Language
 from pykotor.common.misc import ResRef, WrappedInt
 from pykotor.common.stream import ArrayHead
-from pykotor.resource.formats.tlk.tlk_data import TLK, TLKEntry
-from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES, ResourceReader, ResourceWriter, autoclose
+from pykotor.resource.formats.tlk.tlk_data import TLK
+from pykotor.resource.type import ResourceReader, ResourceWriter, autoclose
+
+if TYPE_CHECKING:
+    from pykotor.resource.formats.tlk.tlk_data import TLKEntry
+    from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES
 
 _FILE_HEADER_SIZE = 20
 _ENTRY_SIZE = 40

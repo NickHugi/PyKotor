@@ -1,10 +1,18 @@
+from __future__ import annotations
+
 import math
 
-from pykotor.common.misc import Color, ResRef
-from pykotor.resource.generics.git import GITPlaceable
+from typing import TYPE_CHECKING
+
 from PyQt5.QtGui import QColor, QIcon, QImage, QPixmap
-from PyQt5.QtWidgets import QColorDialog, QDialog, QDoubleSpinBox, QLabel, QWidget
-from toolset.gui.widgets.long_spinbox import LongSpinBox
+from PyQt5.QtWidgets import QColorDialog, QDialog, QDoubleSpinBox
+
+from pykotor.common.misc import Color, ResRef
+
+if TYPE_CHECKING:
+    from PyQt5.QtWidgets import QLabel, QWidget
+    from pykotor.resource.generics.git import GITPlaceable
+    from toolset.gui.widgets.long_spinbox import LongSpinBox
 
 
 class PlaceableDialog(QDialog):
@@ -31,7 +39,7 @@ class PlaceableDialog(QDialog):
 
         self.placeable: GITPlaceable = placeable
 
-        for widget in [getattr(self.ui, attr) for attr in dir(self.ui)]:
+        for widget in (getattr(self.ui, attr) for attr in dir(self.ui)):
             if isinstance(widget, QDoubleSpinBox):
                 widget.setDecimals(8)
 

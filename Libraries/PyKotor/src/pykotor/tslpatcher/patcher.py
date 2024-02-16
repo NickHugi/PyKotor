@@ -3,6 +3,7 @@ from __future__ import annotations
 import os
 import shutil
 import sys
+
 from copy import deepcopy
 from datetime import datetime, timezone
 from typing import TYPE_CHECKING
@@ -18,17 +19,19 @@ from pykotor.tslpatcher.config import PatcherConfig
 from pykotor.tslpatcher.logger import PatchLogger
 from pykotor.tslpatcher.memory import PatcherMemory
 from pykotor.tslpatcher.mods.install import InstallFile, create_backup
-from pykotor.tslpatcher.mods.template import OverrideType, PatcherModifications
+from pykotor.tslpatcher.mods.template import OverrideType
 from utility.error_handling import format_exception_with_variables, universal_simplify_exception
 from utility.system.path import PurePath
 
 if TYPE_CHECKING:
     from threading import Event
 
+    from typing_extensions import Literal
+
     from pykotor.common.misc import Game
     from pykotor.resource.type import SOURCE_TYPES
+    from pykotor.tslpatcher.mods.template import PatcherModifications
     from pykotor.tslpatcher.mods.tlk import ModificationsTLK
-    from typing_extensions import Literal
 
 class ModInstaller:
     def __init__(
@@ -180,7 +183,7 @@ class ModInstaller:
         return (exists, capsule)
 
     def load_resource_file(self, source: SOURCE_TYPES) -> bytes:
-        #if self._config and self._config.ignore_file_extensions:
+        # if self._config and self._config.ignore_file_extensions:
         #    return read_resource(source)
         with BinaryReader.from_auto(source) as reader:
             return reader.read_all()
@@ -292,7 +295,7 @@ class ModInstaller:
             - Checks if the target capsule exists if patching one
             - Logs the patching action
             - Returns True if the patch should be applied.
-        """  # noqa: D205
+        """
         local_folder: str = self.game_path.name if patch.destination.strip("\\").strip("/") == "." else patch.destination
         container_type: Literal["folder", "archive"] = "folder" if capsule is None else "archive"
 
@@ -354,7 +357,7 @@ class ModInstaller:
             if should_cancel is not None and should_cancel.is_set():
                 print("ModInstaller.install() received termination request, cancelling...")
                 sys.exit()
-            #if self.game.is_ios():  # TODO:
+            # if self.game.is_ios():  # TODO:
             #    patch.destination = patch.destination.lower()
             output_container_path: CaseAwarePath = self.game_path / patch.destination
             try:
@@ -378,7 +381,7 @@ class ModInstaller:
                     self.handle_override_type(patch)
                     capsule.add(*ResourceIdentifier.from_path(patch.saveas), patched_data)
                 else:
-                    #if self.game.is_ios():  # TODO:
+                    # if self.game.is_ios():  # TODO:
                     #    patch.saveas = patch.saveas.lower()
                     output_container_path.mkdir(exist_ok=True, parents=True)  # Create non-existing folders when the patch demands it.
                     BinaryWriter.dump(output_container_path / patch.saveas, patched_data)

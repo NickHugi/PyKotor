@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import argparse  # noqa: INP001
 import pathlib
 import sys
@@ -33,7 +35,7 @@ while True:
         or (unknown[0] if len(unknown) > 0 else None)
         or input("Path to the MDL/MDX file/folder of MDL files: "),
     ).resolve()
-    if parser_args.input.exists():
+    if parser_args.input.safe_exists():
         break
     print("Invalid path:", parser_args.input)
     parser.print_help()
@@ -42,7 +44,7 @@ while True:
     parser_args.output = Path(
         parser_args.output or (unknown[1] if len(unknown) > 1 else None) or input("Output directory: "),
     ).resolve()
-    if parser_args.output.parent.exists():
+    if parser_args.output.parent.safe_exists():
         parser_args.output.mkdir(exist_ok=True, parents=True)
         break
     print("Invalid path:", parser_args.output)
@@ -57,7 +59,7 @@ while True:
     if parser_args.compile.lower().strip() in {"compile", "c"}:
         parser_args.compile = True
         break
-    elif parser_args.compile.lower().strip() in ("decompile", "d"):
+    elif parser_args.compile.lower().strip() in {"decompile", "d"}:
         parser_args.compile = False
         break
     else:
@@ -87,14 +89,14 @@ def main():
     try:
         input_path: Path = parser_args.input
 
-        if input_path.is_file():
+        if input_path.safe_isfile():
             process_file(input_path, parser_args.output, parser_args.compile)
 
-        elif input_path.is_dir():
-            for gui_file in input_path.rglob("*.gui"):
+        elif input_path.safe_isdir():
+            for gui_file in input_path.safe_rglob("*.gui"):
                 try:
-                    relative_path = gui_file.relative_to(input_path)
-                    new_output_dir = parser_args.output / relative_path.parent / gui_file.stem
+                    relative_path: Path = gui_file.relative_to(input_path)
+                    new_output_dir: Path = parser_args.output / relative_path.parent / gui_file.stem
                     new_output_dir.mkdir(parents=True, exist_ok=True)
                     process_file(gui_file, new_output_dir, parser_args.compile)
                 except KeyboardInterrupt:  # noqa: PERF203

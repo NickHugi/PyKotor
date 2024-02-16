@@ -4,6 +4,7 @@ import os
 import pathlib
 import sys
 import unittest
+
 from unittest import TestCase
 
 THIS_SCRIPT_PATH = pathlib.Path(__file__).resolve()
@@ -107,7 +108,7 @@ class TestInstallation(TestCase):
             ResourceIdentifier.from_path("mus_theme_carth.wav"),
             ResourceIdentifier.from_path("x.mp3"),
         ]
-        music_results= installation.resources(
+        music_results = installation.resources(
             music_resources, [SearchLocation.MUSIC]
         )
         self._assert_from_path_tests(music_results, "mus_theme_carth.wav", "x.mp3")

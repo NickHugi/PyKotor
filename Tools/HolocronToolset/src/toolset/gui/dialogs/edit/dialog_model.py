@@ -1,6 +1,13 @@
+from __future__ import annotations
+
+from PyQt5.QtWidgets import QDialog
+
 from pykotor.common.misc import ResRef
 from pykotor.resource.generics.dlg import DLGStunt
-from PyQt5.QtWidgets import QDialog, QWidget
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from PyQt5.QtWidgets import QWidget
 
 
 class CutsceneModelDialog(QDialog):

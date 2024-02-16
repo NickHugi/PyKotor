@@ -3,6 +3,8 @@ from __future__ import annotations
 from copy import deepcopy
 from typing import TYPE_CHECKING
 
+from PyQt5.QtWidgets import QMessageBox
+
 from pykotor.common.misc import ResRef
 from pykotor.common.stream import BinaryWriter
 from pykotor.resource.formats.gff import write_gff
@@ -10,7 +12,6 @@ from pykotor.resource.generics.dlg import DLG, dismantle_dlg
 from pykotor.resource.generics.utd import UTD, dismantle_utd, read_utd
 from pykotor.resource.type import ResourceType
 from pykotor.tools import door
-from PyQt5.QtWidgets import QMessageBox, QWidget
 from toolset.data.installation import HTInstallation
 from toolset.gui.dialogs.edit.locstring import LocalizedStringDialog
 from toolset.gui.editor import Editor
@@ -20,6 +21,9 @@ from toolset.utils.window import openResourceEditor
 if TYPE_CHECKING:
     import os
 
+    from PyQt5.QtWidgets import QWidget
+
+    from pykotor.extract.file import ResourceResult
     from pykotor.resource.formats.twoda.twoda_data import TwoDA
 
 
@@ -46,12 +50,12 @@ class UTDEditor(Editor):
             6. Set up menus, signals and installation.
             7. Update 3D preview and call new() to initialize editor.
         """
-        supported = [ResourceType.UTD]
+        supported: list[ResourceType] = [ResourceType.UTD]
         super().__init__(parent, "Door Editor", "door", supported, supported, installation, mainwindow)
 
         self.globalSettings: GlobalSettings = GlobalSettings()
-        self._genericdoors2DA = installation.htGetCache2DA("genericdoors")
-        self._utd = UTD()
+        self._genericdoors2DA: TwoDA = installation.htGetCache2DA("genericdoors")
+        self._utd: UTD = UTD()
 
         from toolset.uic.editors.utd import Ui_MainWindow
         self.ui = Ui_MainWindow()
@@ -70,14 +74,13 @@ class UTDEditor(Editor):
         ----
             self: The class instance.
 
-        Returns:
-        -------
-            None
-        - Connect tagGenerateButton click signal to generateTag method
-        - Connect resrefGenerateButton click signal to generateResref method
-        - Connect conversationModifyButton click signal to editConversation method
-        - Connect appearanceSelect currentIndexChanged signal to update3dPreview method
-        - Connect actionShowPreview triggered signal to togglePreview method.
+        Processing Logic:
+        ----------------
+            - Connect tagGenerateButton click signal to generateTag method
+            - Connect resrefGenerateButton click signal to generateResref method
+            - Connect conversationModifyButton click signal to editConversation method
+            - Connect appearanceSelect currentIndexChanged signal to update3dPreview method
+            - Connect actionShowPreview triggered signal to togglePreview method.
         """
         self.ui.tagGenerateButton.clicked.connect(self.generateTag)
         self.ui.resrefGenerateButton.clicked.connect(self.generateResref)
@@ -93,13 +96,12 @@ class UTDEditor(Editor):
         ----
             installation: {HTInstallation}: The installation to set up for editing.
 
-        Returns:
-        -------
-            None
-        - Sets the internal installation reference and updates UI elements
-        - Loads required 2da files if not already loaded
-        - Populates appearance and faction dropdowns from loaded 2da files
-        - Shows/hides TSL-specific UI elements based on installation type.
+        Processing Logic:
+        ----------------
+            - Sets the internal installation reference and updates UI elements
+            - Loads required 2da files if not already loaded
+            - Populates appearance and faction dropdowns from loaded 2da files
+            - Shows/hides TSL-specific UI elements based on installation type.
         """
         self._installation = installation
         self.ui.nameEdit.setInstallation(installation)
@@ -191,7 +193,7 @@ class UTDEditor(Editor):
     def build(self) -> tuple[bytes, bytes]:
         """Builds a UTD object from UI data.
 
-        Returns
+        Returns:
         -------
             tuple[bytes, bytes]: A tuple containing the GFF data (bytes) and errors (bytes)
 
@@ -262,7 +264,7 @@ class UTDEditor(Editor):
     def changeName(self):
         dialog = LocalizedStringDialog(self, self._installation, self.ui.nameEdit.locstring())
         if dialog.exec_():
-            self._loadLocstring(self.ui.nameEdit, dialog.locstring)
+            self._loadLocstring(self.ui.nameEdit.ui.locstringText, dialog.locstring)
 
     def generateTag(self):
         if self.ui.resrefEdit.text() == "":
@@ -270,8 +272,8 @@ class UTDEditor(Editor):
         self.ui.tagEdit.setText(self.ui.resrefEdit.text())
 
     def generateResref(self):
-        if self._resref is not None and self._resref != "":
-            self.ui.resrefEdit.setText(self._resref)
+        if self._resname is not None and self._resname != "":
+            self.ui.resrefEdit.setText(self._resname)
         else:
             self.ui.resrefEdit.setText("m00xx_dor_000")
 
@@ -347,10 +349,10 @@ class UTDEditor(Editor):
         self.setFixedSize(674, 457)
 
         data, _ = self.build()
-        modelname = door.get_model(read_utd(data), self._installation, genericdoors=self._genericdoors2DA)
-        mdl = self._installation.resource(modelname, ResourceType.MDL)
-        mdx = self._installation.resource(modelname, ResourceType.MDX)
-        if mdl and mdx:
+        modelname: str = door.get_model(read_utd(data), self._installation, genericdoors=self._genericdoors2DA)
+        mdl: ResourceResult | None = self._installation.resource(modelname, ResourceType.MDL)
+        mdx: ResourceResult | None = self._installation.resource(modelname, ResourceType.MDX)
+        if mdl is not None and mdx is not None:
             self.ui.previewRenderer.setModel(mdl.data, mdx.data)
         else:
             self.ui.previewRenderer.clearModel()

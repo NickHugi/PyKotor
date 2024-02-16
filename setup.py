@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import os
 import sys
+
 from pathlib import Path
 
 from setuptools import setup
@@ -64,7 +65,7 @@ import re
 TIME_RE = re.compile(r"([0-9]{2}):([0-9]{2}):([0-9]{2})(\.([0-9]{3,6}))?")
 _number_with_underscores = re.compile("([0-9])(_([0-9]))*")
 _escapes = ["0", "b", "f", "n", "r", "t", '"']
-_escapedchars = ["\0", "\b", "\f", "\n", "\r", "\t", '\"']
+_escapedchars = ["\0", "\b", "\f", "\n", "\r", "\t", '"']
 _escape_to_escapedchars = dict(zip(_escapes, _escapedchars))
 _groupname_re = re.compile(r"^[A-Za-z0-9_-]+$")
 unicode = str
@@ -115,7 +116,8 @@ def _unescape(v):
             elif v[i] == "u" or v[i] == "U":
                 i += 1
             else:
-                raise ValueError("Reserved escape sequence used")
+                msg = "Reserved escape sequence used"
+                raise ValueError(msg)
             continue
         if v[i] == "\\":
             backslash = True
@@ -213,7 +215,7 @@ class TomlDecoder:
             try: _, value = candidate_group.split("=", 1)
             except ValueError: raise ValueError("Invalid inline table encountered")
             value = value.strip()
-            if ((value[0] == value[-1] and value[0] in ('"', "'")) or (value[0] in "-0123456789" or value in ("true", "false") or (value[0] == "[" and value[-1] == "]") or (value[0] == "{" and value[-1] == "}"))):
+            if ((value[0] == value[-1] and value[0] in {'"', "'"}) or (value[0] in "-0123456789" or value in {"true", "false"} or (value[0] == "[" and value[-1] == "]") or (value[0] == "{" and value[-1] == "}"))):
                 groups.append(candidate_group)
             elif len(candidate_groups) > 0: candidate_groups[0] = (candidate_group + "," + candidate_groups[0])
             else: raise ValueError("Invalid inline table value encountered")
@@ -289,7 +291,7 @@ class TomlDecoder:
                 if level not in currentlevel: currentlevel[level] = self.get_empty_table()
                 currentlevel = currentlevel[level]
             pair[0] = levels[-1].strip()
-        elif pair[0][0] in ['"', "'"] and pair[0][-1] == pair[0][0]:
+        elif pair[0][0] in {'"', "'"} and pair[0][-1] == pair[0][0]:
             pair[0] = _unescape(pair[0][1:-1])
         k, koffset = self._load_line_multiline_str(pair[1])
         if k > -1:
@@ -302,7 +304,8 @@ class TomlDecoder:
             value, vtype = self.load_value(pair[1], strictly_valid)
         try:
             currentlevel[pair[0]]
-            raise ValueError("Duplicate keys!")
+            msg = "Duplicate keys!"
+            raise ValueError(msg)
         except TypeError as e: raise ValueError("Duplicate keys!") from e
         except KeyError:
             if multikey:
@@ -358,7 +361,8 @@ class TomlDecoder:
                         pass
                     if not oddbackslash:
                         if closed:
-                            raise ValueError("Found tokens after a closed string. Invalid TOML.")
+                            msg = "Found tokens after a closed string. Invalid TOML."
+                            raise ValueError(msg)
                         if not triplequote or triplequotecount > 1:
                             closed = True
                         else:
@@ -371,7 +375,8 @@ class TomlDecoder:
                         backslash = not backslash
                     else:
                         if i[0] not in _escapes and (i[0] != "u" and i[0] != "U" and not backslash):
-                            raise ValueError("Reserved escape sequence used")
+                            msg = "Reserved escape sequence used"
+                            raise ValueError(msg)
                         if backslash:
                             backslash = False
                 for prefix in ["\\u", "\\U"]:
@@ -384,42 +389,41 @@ class TomlDecoder:
                                                      v[1] == v[2]):
                 v = v[2:-2]
             return (v[1:-1], "str")
-        elif v[0] == "[":
+        if v[0] == "[":
             return (self.load_array(v), "array")
-        elif v[0] == "{":
+        if v[0] == "{":
             inline_object = self.get_empty_inline_table()
             self.load_inline_object(v, inline_object)
             return (inline_object, "inline_object")
-        elif TIME_RE.match(v):
+        if TIME_RE.match(v):
             h, m, s, _, ms = TIME_RE.match(v).groups()
             time = datetime.time(int(h), int(m), int(s), int(ms) if ms else 0)
             return (time, "time")
-        else:
-            parsed_date = _load_date(v)
-            if parsed_date is not None: return (parsed_date, "date")
-            if not strictly_valid: raise ValueError("Weirdness with leading zeroes or underscores in your number.")
-            itype = "int"
-            neg = False
-            if v[0] == "-":
-                neg = True
-                v = v[1:]
-            elif v[0] == "+":
-                v = v[1:]
-            v = v.replace("_", "")
-            lowerv = v.lower()
-            if "." in v or ("x" not in v and ("e" in v or "E" in v)):
-                if "." in v and v.split(".", 1)[1] == "": raise ValueError("This float is missing digits after the point")
-                if v[0] not in "0123456789": raise ValueError("This float doesn't have a leading digit")
-                v = float(v)
-                itype = "float"
-            elif len(lowerv) == 3 and (lowerv in ("inf", "nan")):
-                v = float(v)
-                itype = "float"
-            if itype == "int":
-                v = int(v, 0)
-            if neg:
-                return (0 - v, itype)
-            return (v, itype)
+        parsed_date = _load_date(v)
+        if parsed_date is not None: return (parsed_date, "date")
+        if not strictly_valid: raise ValueError("Weirdness with leading zeroes or underscores in your number.")
+        itype = "int"
+        neg = False
+        if v[0] == "-":
+            neg = True
+            v = v[1:]
+        elif v[0] == "+":
+            v = v[1:]
+        v = v.replace("_", "")
+        lowerv = v.lower()
+        if "." in v or ("x" not in v and ("e" in v or "E" in v)):
+            if "." in v and v.split(".", 1)[1] == "": raise ValueError("This float is missing digits after the point")
+            if v[0] not in "0123456789": raise ValueError("This float doesn't have a leading digit")
+            v = float(v)
+            itype = "float"
+        elif len(lowerv) == 3 and (lowerv in {"inf", "nan"}):
+            v = float(v)
+            itype = "float"
+        if itype == "int":
+            v = int(v, 0)
+        if neg:
+            return (0 - v, itype)
+        return (v, itype)
 
     def bounded_string(self, s):
         if len(s) == 0:
@@ -524,7 +528,8 @@ class TomlDecoder:
                 nval, ntype = self.load_value(a[i])
                 if atype:
                     if ntype != atype:
-                        raise ValueError("Not a homogeneous array")
+                        msg = "Not a homogeneous array"
+                        raise ValueError(msg)
                 else:
                     atype = ntype
                 retval.append(nval)
@@ -548,7 +553,7 @@ def _strictly_valid_num(n):
         return False
     if len(n) == 1:
         return True
-    if n[0] == "0" and n[1] not in [".", "o", "b", "x"]:
+    if n[0] == "0" and n[1] not in {".", "o", "b", "x"}:
         return False
     if n[0] == "+" or n[0] == "-":
         n = n[1:]
@@ -584,7 +589,8 @@ def load_toml(f, _dict=dict, decoder=None):
         try:
             return loads(f.read(), _dict, decoder)
         except AttributeError:
-            raise TypeError("You can only load a file descriptor, filename or list")
+            msg = "You can only load a file descriptor, filename or list"
+            raise TypeError(msg)
 
 def loads(s, _dict=dict, decoder=None):
     implicitgroups = []
@@ -593,7 +599,8 @@ def loads(s, _dict=dict, decoder=None):
     retval = decoder.get_empty_table()
     currentlevel = retval
     if not isinstance(s, basestring):
-        raise TypeError("Expecting something like a string")
+        msg = "Expecting something like a string"
+        raise TypeError(msg)
 
     if not isinstance(s, unicode):
         s = s.decode("utf8")
@@ -606,7 +613,8 @@ def loads(s, _dict=dict, decoder=None):
         if keyname:
             key += item
             if item == "\n":
-                raise ValueError("Key name found without value. Reached end of line.", original, i)
+                msg = "Key name found without value. Reached end of line."
+                raise ValueError(msg, original, i)
             if openstring:
                 if item == openstrchar:
                     oddbackslash = False
@@ -628,7 +636,7 @@ def loads(s, _dict=dict, decoder=None):
                     continue
                 if item.isalnum() or item == "_" or item == "-":
                     continue
-                if (dottedkey and sl[i - 1] == "." and (item in ('"', "'"))):
+                if (dottedkey and sl[i - 1] == "." and (item in {'"', "'"})):
                     openstring, openstrchar = True, item
                     continue
             elif keyname == 2:
@@ -724,7 +732,8 @@ def loads(s, _dict=dict, decoder=None):
         if item == "\n":
             if openstring or multilinestr:
                 if not multilinestr:
-                    raise ValueError("Unbalanced quotes", original, i)
+                    msg = "Unbalanced quotes"
+                    raise ValueError(msg, original, i)
                 if ((sl[i - 1] == "'" or sl[i - 1] == '"') and (
                         sl[i - 2] == sl[i - 1])):
                     sl[i] = sl[i - 1]
@@ -739,13 +748,16 @@ def loads(s, _dict=dict, decoder=None):
             beginline = False
             if not keygroup and not arrayoftables:
                 if sl[i] == "=":
-                    raise ValueError("Found empty keyname. ", original, i)
+                    msg = "Found empty keyname. "
+                    raise ValueError(msg, original, i)
                 keyname = 1
                 key += item
     if keyname:
-        raise ValueError("Key name found without value. Reached end of file.", original, len(s))
+        msg = "Key name found without value. Reached end of file."
+        raise ValueError(msg, original, len(s))
     if openstring:  # reached EOF and have an unterminated string
-        raise ValueError("Unterminated string found. Reached end of file.", original, len(s))
+        msg = "Unterminated string found. Reached end of file."
+        raise ValueError(msg, original, len(s))
     s = "".join(sl)
     s = s.split("\n")
     multikey = None
@@ -796,8 +808,8 @@ def loads(s, _dict=dict, decoder=None):
         if line[0] == "[":
             arrayoftables = False
             if len(line) == 1:
-                raise ValueError("Opening key group bracket on line by "
-                                      "itself.", original, pos)
+                msg = "Opening key group bracket on line by itself."
+                raise ValueError(msg, original, pos)
             if line[1] == "[":
                 arrayoftables = True
                 line = line[2:]
@@ -815,7 +827,8 @@ def loads(s, _dict=dict, decoder=None):
                 quoted = not quoted
             line = line.split(splitstr, i)
             if len(line) < i + 1 or line[-1].strip() != "":
-                raise ValueError("Key group not on a line by itself.",
+                msg = "Key group not on a line by itself."
+                raise ValueError(msg,
                                       original, pos)
             groups = splitstr.join(line[:-1]).split(".")
             i = 0
@@ -844,25 +857,21 @@ def loads(s, _dict=dict, decoder=None):
             for i in _range(len(groups)):
                 group = groups[i]
                 if group == "":
-                    raise ValueError("Can't have a keygroup with an empty "
-                                          "name", original, pos)
+                    msg = "Can't have a keygroup with an empty name"
+                    raise ValueError(msg, original, pos)
                 try:
                     currentlevel[group]
                     if i == len(groups) - 1:
                         if group in implicitgroups:
                             implicitgroups.remove(group)
                             if arrayoftables:
-                                raise ValueError("An implicitly defined "
-                                                      "table can't be an array",
-                                                      original, pos)
+                                msg = "An implicitly defined table can't be an array"
+                                raise ValueError(msg, original, pos)
                         elif arrayoftables:
-                            currentlevel[group].append(decoder.get_empty_table(),
-                                                       )
+                            currentlevel[group].append(decoder.get_empty_table())
                         else:
-                            raise ValueError("What? " + group +
-                                                  " already exists?" +
-                                                  str(currentlevel),
-                                                  original, pos)
+                            msg = f"What? {group} already exists?"
+                            raise ValueError(msg, currentlevel, original, pos)
                 except TypeError:
                     currentlevel = currentlevel[-1]
                     if group not in currentlevel:
@@ -881,7 +890,8 @@ def loads(s, _dict=dict, decoder=None):
                         currentlevel = currentlevel[-1]
         elif line[0] == "{":
             if line[-1] != "}":
-                raise ValueError("Line breaks are not allowed in inlineobjects", original, pos)
+                msg = "Line breaks are not allowed in inlineobjects"
+                raise ValueError(msg, original, pos)
             try:
                 decoder.load_inline_object(line, currentlevel, multikey,
                                            multibackslash)

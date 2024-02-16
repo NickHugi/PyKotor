@@ -35,7 +35,7 @@ class ERFType(Enum):
 class ERF:
     """Represents the data of a ERF file.
 
-    Attributes
+    Attributes:
     ----------
         erf_type: The ERF type.
     """
@@ -92,7 +92,7 @@ class ERF:
 
         return NotImplemented
 
-    def set_data(  # noqa: D417
+    def set_data(
         self,
         resname: str,
         restype: ResourceType,
@@ -163,7 +163,7 @@ class ERF:
     ):
         """Returns a RIM with the same resources.
 
-        Returns
+        Returns:
         -------
             A new RIM object.
         """

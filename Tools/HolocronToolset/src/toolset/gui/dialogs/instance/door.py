@@ -1,11 +1,20 @@
+from __future__ import annotations
+
 import math
 
-from pykotor.common.misc import Color, ResRef
-from pykotor.resource.generics.git import GITDoor, GITModuleLink
+from typing import TYPE_CHECKING
+
 from PyQt5.QtGui import QColor, QIcon, QImage, QPixmap
-from PyQt5.QtWidgets import QColorDialog, QDialog, QLabel, QWidget
-from toolset.data.installation import HTInstallation
-from toolset.gui.widgets.long_spinbox import LongSpinBox
+from PyQt5.QtWidgets import QColorDialog, QDialog
+
+from pykotor.common.misc import Color, ResRef
+from pykotor.resource.generics.git import GITModuleLink
+
+if TYPE_CHECKING:
+    from PyQt5.QtWidgets import QLabel, QWidget
+    from pykotor.resource.generics.git import GITDoor
+    from toolset.data.installation import HTInstallation
+    from toolset.gui.widgets.long_spinbox import LongSpinBox
 
 
 class DoorDialog(QDialog):

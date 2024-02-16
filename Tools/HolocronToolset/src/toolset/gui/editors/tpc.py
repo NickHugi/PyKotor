@@ -1,19 +1,23 @@
 from __future__ import annotations
 
 import io
+
 from typing import TYPE_CHECKING
 
 from PIL import Image, ImageOps
+from PyQt5.QtGui import QImage, QPixmap, QTransform
+
 from pykotor.resource.formats.tpc import TPC, TPCTextureFormat, read_tpc, write_tpc
 from pykotor.resource.type import ResourceType
-from PyQt5.QtGui import QImage, QPixmap, QTransform
 from toolset.gui.editor import Editor
+from utility.error_handling import assert_with_variable_trace
 
 if TYPE_CHECKING:
     import os
 
-    from pykotor.extract.installation import Installation
     from PyQt5.QtWidgets import QWidget
+
+    from pykotor.extract.installation import Installation
 
 
 class TPCEditor(Editor):
@@ -34,7 +38,7 @@ class TPCEditor(Editor):
             - Creates a default 256x256 RGBA texture
             - Calls new() to display the default texture.
         """
-        supported = [ResourceType.TPC, ResourceType.TGA, ResourceType.JPG, ResourceType.PNG, ResourceType.BMP]
+        supported: list[ResourceType] = [ResourceType.TPC, ResourceType.TGA, ResourceType.JPG, ResourceType.PNG, ResourceType.BMP]
         super().__init__(parent, "Texture Viewer", "none", supported, supported, installation)
 
         from toolset.uic.editors.tpc import Ui_MainWindow
@@ -75,23 +79,22 @@ class TPCEditor(Editor):
         """
         super().load(filepath, resref, restype, data)
 
-        if restype in [ResourceType.TPC, ResourceType.TGA]:
+        if restype in {ResourceType.TPC, ResourceType.TGA}:
             self._tpc = read_tpc(data)
         else:
-            pillow = Image.open(io.BytesIO(data))
+            pillow: Image.Image = Image.open(io.BytesIO(data))
             pillow = pillow.convert("RGBA")
             pillow = ImageOps.flip(pillow)
             self._tpc = TPC()
             self._tpc.set_single(pillow.width, pillow.height, pillow.tobytes(), TPCTextureFormat.RGBA)
 
         width, height, rgba = self._tpc.convert(TPCTextureFormat.RGB, 0)
-        assert rgba is not None, "rgba cannot be None."
-
+        assert rgba is not None, assert_with_variable_trace(rgba is not None)
         image = QImage(rgba, width, height, QImage.Format_RGB888)
-
-        pixmap = QPixmap.fromImage(image).transformed(QTransform().scale(1, -1))
+        pixmap: QPixmap = QPixmap.fromImage(image).transformed(QTransform().scale(1, -1))
 
         self.ui.textureImage.setPixmap(pixmap)
+        self.ui.textureImage.setScaledContents(True)
         self.ui.txiEdit.setPlainText(self._tpc.txi)
 
     def new(self):
@@ -100,8 +103,7 @@ class TPCEditor(Editor):
         Args:
         ----
             self: The class instance
-        Returns:
-            None: No return value
+
         Processing Logic:
         ----------------
             1. Call super().new() to initialize parent class
@@ -118,36 +120,47 @@ class TPCEditor(Editor):
         self._tpc.set_single(256, 256, bytes(0 for _ in range(256 * 256 * 4)), TPCTextureFormat.RGBA)
         width, height, rgba = self._tpc.convert(TPCTextureFormat.RGBA, 0)
 
+        assert rgba is not None, assert_with_variable_trace(rgba is not None)
         image = QImage(rgba, width, height, QImage.Format_RGBA8888)
         pixmap = QPixmap.fromImage(image)
         self.ui.textureImage.setPixmap(pixmap)
+        self.ui.textureImage.setScaledContents(True)
         self.ui.txiEdit.setPlainText("")
 
     def build(self) -> tuple[bytes, bytes]:
         self._tpc.txi = self.ui.txiEdit.toPlainText()
 
-        data = bytearray()
+        data: bytes | bytearray = bytearray()
 
-        if self._restype in [ResourceType.TPC, ResourceType.TGA]:
+        if self._restype in {ResourceType.TPC, ResourceType.TGA}:
             write_tpc(self._tpc, data, self._restype)
-        elif self._restype in [ResourceType.PNG, ResourceType.BMP]:
+            return bytes(data), b""
+
+        if self._restype in {ResourceType.PNG, ResourceType.BMP}:
             data = self.extract_png_bmp_bytes()
-        elif self._restype in [ResourceType.JPG]:
+        elif self._restype == ResourceType.JPG:
             data = self.extract_tpc_jpeg_bytes()
         return data, b""
 
     # TODO Rename this here and in `build`
     def extract_tpc_jpeg_bytes(self):
-        """Extracts image from TPC texture and returns JPEG bytes
+        """Extracts image from TPC texture and returns JPEG bytes.
+
         Args:
+        ----
             self: The class instance
+
         Returns:
+        -------
             bytes: JPEG image bytes
-        - Converts TPC texture to RGB pixel data
-        - Creates PIL Image from pixel data
-        - Flips the image vertically
-        - Saves image to BytesIO as JPEG with 80% quality
-        - Returns JPEG bytes from BytesIO.
+
+        Processing Logic:
+        ----------------
+            - Converts TPC texture to RGB pixel data
+            - Creates PIL Image from pixel data
+            - Flips the image vertically
+            - Saves image to BytesIO as JPEG with 80% quality
+            - Returns JPEG bytes from BytesIO
         """
         width, height, pixeldata = self._tpc.convert(TPCTextureFormat.RGB, 0)
         image = Image.frombuffer("RGB", (width, height), bytes(pixeldata))
@@ -159,16 +172,23 @@ class TPCEditor(Editor):
 
     # TODO Rename this here and in `build`
     def extract_png_bmp_bytes(self):
-        """Extracts texture data from a TPC texture
+        """Extracts texture data from a TPC texture.
+
         Args:
+        ----
             self: The TPC texture object
+
         Returns:
+        -------
             bytes: Texture image data as bytes
-        - Converts TPC texture to RGBA format
-        - Creates PIL Image from texture pixel data
-        - Flips the image vertically
-        - Saves image to BytesIO stream as PNG or BMP
-        - Returns bytes of image data.
+
+        Processing Logic:
+        ----------------
+            - Converts TPC texture to RGBA format
+            - Creates PIL Image from texture pixel data
+            - Flips the image vertically
+            - Saves image to BytesIO stream as PNG or BMP
+            - Returns bytes of image data.
         """
         width, height, pixeldata = self._tpc.convert(TPCTextureFormat.RGBA, 0)
         image = Image.frombuffer("RGBA", (width, height), pixeldata)

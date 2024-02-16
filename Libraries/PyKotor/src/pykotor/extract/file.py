@@ -361,7 +361,7 @@ class ResourceIdentifier(NamedTuple):
             return ResourceIdentifier("", ResourceType.from_extension(""))
 
         max_dots: int = path_obj.name.count(".")
-        for dots in range(max_dots+1, 1, -1):
+        for dots in range(max_dots + 1, 1, -1):
             with suppress(Exception):
                 resname, restype_ext = path_obj.split_filename(dots)
                 return ResourceIdentifier(

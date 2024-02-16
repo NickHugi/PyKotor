@@ -1,11 +1,12 @@
 from __future__ import annotations
 
 import math
+
 from copy import copy
-from typing import TYPE_CHECKING, Any, Callable, ClassVar
+from typing import TYPE_CHECKING, Any, ClassVar
 
 import glm
-from glm import mat4, quat, vec3, vec4
+
 from OpenGL.GL import glReadPixels
 from OpenGL.raw.GL.ARB.vertex_shader import GL_FLOAT
 from OpenGL.raw.GL.VERSION.GL_1_0 import (
@@ -27,11 +28,13 @@ from OpenGL.raw.GL.VERSION.GL_1_0 import (
     glEnable,
 )
 from OpenGL.raw.GL.VERSION.GL_1_2 import GL_BGRA, GL_UNSIGNED_INT_8_8_8_8
+from glm import mat4, quat, vec3, vec4
+
 from pykotor.common.geometry import Vector3
 from pykotor.common.misc import CaseInsensitiveDict
 from pykotor.common.stream import BinaryReader
-from pykotor.extract.installation import Installation, SearchLocation
-from pykotor.gl.models.mdl import Boundary, Cube, Empty, Model
+from pykotor.extract.installation import SearchLocation
+from pykotor.gl.models.mdl import Boundary, Cube, Empty
 from pykotor.gl.models.predefined_mdl import (
     CAMERA_MDL_DATA,
     CAMERA_MDX_DATA,
@@ -65,11 +68,10 @@ from pykotor.gl.shader import (
     Shader,
     Texture,
 )
-from pykotor.resource.formats.lyt import LYT, LYTRoom
+from pykotor.resource.formats.lyt import LYTRoom
 from pykotor.resource.formats.tpc import TPC
 from pykotor.resource.formats.twoda import TwoDA, read_2da
 from pykotor.resource.generics.git import (
-    GIT,
     GITCamera,
     GITCreature,
     GITDoor,
@@ -87,13 +89,22 @@ from pykotor.tools import creature
 from utility.error_handling import format_exception_with_variables
 
 if TYPE_CHECKING:
+    from collections.abc import Callable
+
+    from typing_extensions import Literal
+
     from pykotor.common.module import Module
     from pykotor.extract.capsule import Capsule
     from pykotor.extract.file import ResourceIdentifier, ResourceResult
+    from pykotor.extract.installation import Installation
+    from pykotor.gl.models.mdl import Model
+    from pykotor.resource.formats.lyt import LYT
+    from pykotor.resource.generics.git import (
+        GIT,
+    )
     from pykotor.resource.generics.utc import UTC
     from pykotor.resource.generics.utd import UTD
     from pykotor.resource.generics.utp import UTP
-    from typing_extensions import Literal
 
 SEARCH_ORDER_2DA: list[SearchLocation] = [SearchLocation.OVERRIDE, SearchLocation.CHITIN]
 SEARCH_ORDER: list[SearchLocation] = [SearchLocation.CUSTOM_MODULES, SearchLocation.OVERRIDE, SearchLocation.CHITIN]
@@ -291,9 +302,9 @@ class Scene:
             for door in copy(self.git.doors):
                 if door.resref == identifier.resname and identifier.restype == ResourceType.UTD:
                     del self.objects[door]
-            if identifier.restype in (ResourceType.TPC, ResourceType.TGA):
+            if identifier.restype in {ResourceType.TPC, ResourceType.TGA}:
                 del self.textures[identifier.resname]
-            if identifier.restype in (ResourceType.MDL, ResourceType.MDX):
+            if identifier.restype in {ResourceType.MDL, ResourceType.MDX}:
                 del self.models[identifier.resname]
             if identifier.restype == ResourceType.GIT:
                 for instance in self.git.instances():
@@ -382,7 +393,7 @@ class Scene:
                     vec3(),
                     vec3(),
                     data=sound,
-                    gen_boundary=lambda boundary: (boundary or Boundary.from_circle(self, uts.max_distance)),
+                    gen_boundary=lambda uts=uts: Boundary.from_circle(self, uts.max_distance),
                 )
                 self.objects[sound] = obj
 
@@ -396,7 +407,7 @@ class Scene:
                     vec3(),
                     vec3(),
                     data=encounter,
-                    gen_boundary=lambda boundary: (boundary or Boundary(self, encounter.geometry.points)),
+                    gen_boundary=lambda encounter=encounter: Boundary(self, encounter.geometry.points),
                 )
                 self.objects[encounter] = obj
 
@@ -410,7 +421,7 @@ class Scene:
                     vec3(),
                     vec3(),
                     data=trigger,
-                    gen_boundary=lambda boundary: (boundary or Boundary(self, trigger.geometry.points)),
+                    gen_boundary=lambda trigger=trigger: Boundary(self, trigger.geometry.points),
                 )
                 self.objects[trigger] = obj
 
@@ -608,7 +619,7 @@ class Scene:
         self.picker_render()
         pixel = glReadPixels(x, y, 1, 1, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8)[0][0] >> 8  # type: ignore[]
         instances = list(self.objects.values())
-        return instances[pixel] if pixel != 0xFFFFFF else None  # type: ignore[]
+        return instances[pixel] if pixel != 0xFFFFFF else None
 
     def select(self, target: RenderObject | GITInstance, clear_existing: bool = True):
         if clear_existing:
@@ -653,24 +664,29 @@ class Scene:
         return Vector3(cursor.x, cursor.y, cursor.z)
 
     def texture(self, name: str) -> Texture:
-        if name not in self.textures:
-            try:
-                tpc = None
-                # Check the textures linked to the module first
-                if self.module is not None:
-                    tpc = self.module.texture(name).resource() if self.module.texture(name) is not None else None
-                # Otherwise just search through all relevant game files
-                tpc: TPC | None = (
-                    self.installation.texture(name, [SearchLocation.OVERRIDE, SearchLocation.TEXTURES_TPA, SearchLocation.CHITIN])
-                    if tpc is None
-                    else tpc
-                )
-            except (OSError, ValueError) as e:
-                print(format_exception_with_variables(e))
-                # If an error occurs during the loading process, just use a blank image.
-                tpc = TPC()
+        if name in self.textures:
+            return self.textures[name]
+        try:
+            tpc: TPC | None = None
+            # Check the textures linked to the module first
+            if self.module is not None:
+                print(f"Loading texture '{name}' from {self.module._root}")
+                module_tex = self.module.texture(name)
+                tpc = module_tex.resource() if module_tex is not None else None
 
-            self.textures[name] = Texture.from_tpc(tpc) if tpc is not None else Texture.from_color(0xFF, 0, 0xFF)
+            # Otherwise just search through all relevant game files
+            if tpc is None:
+                print(f"Texture '{name}' not found, locating it in override/bifs...")
+                if self.installation:
+                    tpc = self.installation.texture(name, [SearchLocation.OVERRIDE, SearchLocation.TEXTURES_TPA, SearchLocation.CHITIN])
+            if tpc is None:
+                print(f"NOT FOUND: Texture '{name}'")
+        except (OSError, ValueError) as e:
+            print(format_exception_with_variables(e))
+            # If an error occurs during the loading process, just use a blank image.
+            tpc = TPC()
+
+        self.textures[name] = Texture.from_color(0xFF, 0, 0xFF) if tpc is None else Texture.from_tpc(tpc)
         return self.textures[name]
 
     def model(self, name: str) -> Model:
