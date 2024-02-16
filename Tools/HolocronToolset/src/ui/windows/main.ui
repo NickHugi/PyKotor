@@ -53,31 +53,31 @@
           </item>
          </layout>
         </widget>
-        <widget class="QWidget" name="savesTab">
-         <attribute name="title">
-          <string>Saves</string>
-         </attribute>
-         <layout class="QGridLayout" name="gridLayoutSaves">
-          <property name="leftMargin">
-           <number>0</number>
-          </property>
-          <property name="topMargin">
-           <number>0</number>
-          </property>
-          <property name="rightMargin">
-           <number>0</number>
-          </property>
-          <property name="bottomMargin">
-           <number>0</number>
-          </property>
-          <property name="spacing">
-           <number>0</number>
-          </property>
-          <item row="0" column="0" rowspan="2" colspan="2">
-           <widget class="ResourceList" name="savesWidget" native="true"/>
-          </item>
-         </layout>
-        </widget>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
         <widget class="QWidget" name="modulesTab">
          <attribute name="title">
           <string>Modules</string>
@@ -666,7 +666,7 @@
   </action>
   <action name="actionDiscordKotOR">
    <property name="text">
-    <string>KOTOR Community Portal</string>
+    <string>r/KotOR</string>
    </property>
   </action>
   <action name="actionDiscordDeadlyStream">
