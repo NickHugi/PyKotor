@@ -63,8 +63,8 @@ def _load_node(scene, node: Node | None, mdl: BinaryReader, mdx: BinaryReader, o
         face_count = mdl.read_uint32()
 
         mdl.seek(offset + 80 + 88)
-        texture = mdl.read_string(32)
-        lightmap = mdl.read_string(32)
+        texture = mdl.read_terminated_string("\0", 32)
+        lightmap = mdl.read_terminated_string("\0", 32)
 
         mdl.seek(offset + 80 + 313)
         node.render = bool(mdl.read_uint8())
@@ -247,8 +247,8 @@ def gl_load_stitched_model(scene, mdl: BinaryReader, mdx: BinaryReader) -> Model
     merged = {}
     for offset, transform in offsets:
         mdl.seek(offset + 80 + 88)
-        texture = mdl.read_string(32)
-        lightmap = mdl.read_string(32)
+        texture = mdl.read_terminated_string("\0", 32)
+        lightmap = mdl.read_terminated_string("\0", 32)
         key = texture + "\n" + lightmap
         if key not in merged:
             merged[key] = []

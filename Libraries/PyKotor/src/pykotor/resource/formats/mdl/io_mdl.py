@@ -71,7 +71,7 @@ class _ModelHeader:
         self.bounding_box_max = reader.read_vector3()
         self.radius = reader.read_single()
         self.anim_scale = reader.read_single()
-        self.supermodel = reader.read_string(32)
+        self.supermodel = reader.read_terminated_string("\0", 32)
         self.offset_to_super_root = reader.read_uint32()
         self.unknown3 = reader.read_uint32()
         self.mdx_size = reader.read_uint32()
@@ -99,7 +99,7 @@ class _ModelHeader:
         writer.write_vector3(self.bounding_box_max)
         writer.write_single(self.radius)
         writer.write_single(self.anim_scale)
-        writer.write_string(self.supermodel, string_length=32)
+        writer.write_string(self.supermodel, string_length=32, encoding="ascii", errors="ignore")
         writer.write_uint32(self.offset_to_super_root)
         writer.write_uint32(self.unknown3)
         writer.write_uint32(self.mdx_size)
@@ -143,7 +143,7 @@ class _GeometryHeader:
     ) -> _GeometryHeader:
         self.function_pointer0 = reader.read_uint32()
         self.function_pointer1 = reader.read_uint32()
-        self.model_name = reader.read_string(32)
+        self.model_name = reader.read_terminated_string("\0", 32)
         self.root_node_offset = reader.read_uint32()
         self.node_count = reader.read_uint32()
         self.unknown0 = reader.read_bytes(28)
@@ -157,7 +157,7 @@ class _GeometryHeader:
     ):
         writer.write_uint32(self.function_pointer0)
         writer.write_uint32(self.function_pointer1)
-        writer.write_string(self.model_name, string_length=32)
+        writer.write_string(self.model_name, string_length=32, encoding="ascii")
         writer.write_uint32(self.root_node_offset)
         writer.write_uint32(self.node_count)
         writer.write_bytes(self.unknown0)
@@ -187,7 +187,7 @@ class _AnimationHeader:
         self.geometry = _GeometryHeader().read(reader)
         self.duration = reader.read_single()
         self.transition = reader.read_single()
-        self.root = reader.read_string(32)
+        self.root = reader.read_terminated_string("\0", 32)
         self.offset_to_events = reader.read_uint32()
         self.event_count = reader.read_uint32()
         self.event_count2 = reader.read_uint32()
@@ -201,7 +201,7 @@ class _AnimationHeader:
         self.geometry.write(writer)
         writer.write_single(self.duration)
         writer.write_single(self.transition)
-        writer.write_string(self.root, string_length=32)
+        writer.write_string(self.root, string_length=32, encoding="ascii")
         writer.write_uint32(self.offset_to_events)
         writer.write_uint32(self.event_count)
         writer.write_uint32(self.event_count2)
@@ -279,7 +279,7 @@ class _EventStructure:
         reader: BinaryReader,
     ) -> _EventStructure:
         self.activation_time = reader.read_single()
-        self.event_name = reader.read_string(32)
+        self.event_name = reader.read_terminated_string("\0", 32)
         return self
 
     def write(
@@ -287,7 +287,7 @@ class _EventStructure:
         writer: BinaryWriter,
     ):
         writer.write_single(self.activation_time)
-        writer.write_string(self.event_name, string_length=32)
+        writer.write_string(self.event_name, string_length=32, encoding="ascii")
 
 
 class _Controller:
@@ -714,8 +714,8 @@ class _TrimeshHeader:
         self.diffuse = reader.read_vector3()
         self.ambient = reader.read_vector3()
         self.transparency_hint = reader.read_uint32()
-        self.texture1 = reader.read_string(32)
-        self.texture2 = reader.read_string(32)
+        self.texture1 = reader.read_terminated_string("\0", 32)
+        self.texture2 = reader.read_terminated_string("\0", 32)
         self.unknown0 = reader.read_bytes(24)
         self.offset_to_indices_counts = reader.read_uint32()
         self.indices_counts_count = reader.read_uint32()
@@ -795,8 +795,8 @@ class _TrimeshHeader:
         writer.write_vector3(self.diffuse)
         writer.write_vector3(self.ambient)
         writer.write_uint32(self.transparency_hint)
-        writer.write_string(self.texture1, string_length=32)
-        writer.write_string(self.texture2, string_length=32)
+        writer.write_string(self.texture1, string_length=32, encoding="ascii")
+        writer.write_string(self.texture2, string_length=32, encoding="ascii")
         writer.write_bytes(self.unknown0)
         writer.write_uint32(self.offset_to_indices_counts)
         writer.write_uint32(self.indices_counts_count)
@@ -1131,16 +1131,16 @@ class _EmitterHeader:
         self.branch_count = reader.read_uint32()
         self.smoothing = reader.read_single()
         self.grid = reader.read_vector2()
-        self.update = reader.read_string(32)
-        self.render = reader.read_string(32)
-        self.blend = reader.read_string(32)
-        self.texture = reader.read_string(32)
-        self.chunk_name = reader.read_string(32)
+        self.update = reader.read_terminated_string("\0", 32)
+        self.render = reader.read_terminated_string("\0", 32)
+        self.blend = reader.read_terminated_string("\0", 32)
+        self.texture = reader.read_terminated_string("\0", 32)
+        self.chunk_name = reader.read_terminated_string("\0", 32)
         self.twosided_texture = reader.read_uint32()
         self.loop = reader.read_uint32()
         self.render_order = reader.read_uint32()
         self.frame_blending = reader.read_uint32()
-        self.depth_texture = reader.read_string(32)
+        self.depth_texture = reader.read_terminated_string("\0", 32)
         self.unknown0 = reader.read_uint8()
         self.flags = reader.read_uint32()
         return self
@@ -1155,16 +1155,16 @@ class _EmitterHeader:
         writer.write_uint32(self.branch_count)
         writer.write_single(self.smoothing)
         writer.write_vector2(self.grid)
-        writer.write_string(self.update, string_length=32)
-        writer.write_string(self.render, string_length=32)
-        writer.write_string(self.blend, string_length=32)
-        writer.write_string(self.texture, string_length=32)
-        writer.write_string(self.chunk_name, string_length=32)
+        writer.write_string(self.update, string_length=32, encoding="ascii")
+        writer.write_string(self.render, string_length=32, encoding="ascii")
+        writer.write_string(self.blend, string_length=32, encoding="ascii")
+        writer.write_string(self.texture, string_length=32, encoding="ascii")
+        writer.write_string(self.chunk_name, string_length=32, encoding="ascii")
         writer.write_uint32(self.twosided_texture)
         writer.write_uint32(self.loop)
         writer.write_uint32(self.render_order)
         writer.write_uint32(self.frame_blending)
-        writer.write_string(self.depth_texture, string_length=32)
+        writer.write_string(self.depth_texture, string_length=32, encoding="ascii")
         writer.write_uint8(self.unknown0)
         writer.write_uint32(self.flags)
 
@@ -1180,7 +1180,7 @@ class _ReferenceHeader:
         self,
         reader: BinaryReader,
     ) -> _ReferenceHeader:
-        self.model = reader.read_string(32)
+        self.model = reader.read_terminated_string("\0", 32)
         self.reattachable = reader.read_uint32()
         return self
 
@@ -1188,7 +1188,7 @@ class _ReferenceHeader:
         self,
         writer: BinaryWriter,
     ):
-        writer.write_string(self.model, string_length=32)
+        writer.write_string(self.model, string_length=32, encoding="ascii")
         writer.write_uint32(self.reattachable)
 
 
@@ -1247,6 +1247,7 @@ class MDLBinaryReader:
         source_ext: SOURCE_TYPES | None = None,
         offset_ext: int = 0,
         size_ext: int = 0,
+        game: Game = Game.K2,
     ):
         self._mdl: MDL | None = None
         self._reader: BinaryReader = BinaryReader.from_auto(source, offset)
@@ -1942,7 +1943,7 @@ class MDLBinaryWriter:
             self._writer.write_uint32(name_offset)
 
         for name in self._names:
-            self._writer.write_string(name + "\0")
+            self._writer.write_string(name + "\0", encoding="ascii")
 
         for anim_offset in self._anim_offsets:
             self._writer.write_uint32(anim_offset)
