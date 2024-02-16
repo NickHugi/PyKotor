@@ -2,15 +2,18 @@
 from __future__ import annotations
 
 from enum import IntEnum
-from typing import Any, Generator
+from typing import TYPE_CHECKING
 
 from pykotor.resource.type import ResourceType
+
+if TYPE_CHECKING:
+    from collections.abc import Iterator
 
 
 class LIP:
     """Represents the data of a LIP file.
 
-    Attributes
+    Attributes:
     ----------
         length: The total duration of lip animation.
         frames: The keyframes for the lip animation.
@@ -26,7 +29,7 @@ class LIP:
 
     def __iter__(
         self,
-    ) -> Generator[LIPKeyFrame, Any, None]:
+    ) -> Iterator[LIPKeyFrame]:
         """Iterates through the stored list of keyframes yielding the LIPKeyFrame each iteration."""
         yield from self.frames
 
@@ -140,7 +143,7 @@ class LIPShape(IntEnum):
 class LIPKeyFrame:
     """A keyframe for a lip animation.
 
-    Attributes
+    Attributes:
     ----------
         time: The time the keyframe animation occurs.
         shape: The mouth shape.

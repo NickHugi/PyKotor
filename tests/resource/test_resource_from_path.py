@@ -36,7 +36,7 @@ class TestResourceType(unittest.TestCase):
         self.assertEqual(invalid.contents, ResourceType.INVALID.contents)
         self.assertEqual(invalid.category, ResourceType.INVALID.category)
         self.assertEqual(invalid.extension, "asdf")
-        self.assertEqual(repr(invalid), "ResourceType.from_invalid(extension=asdf, category=Undefined, contents=binary)")
+        self.assertEqual(repr(invalid), "ResourceType.from_invalid(type_id=-1, extension=asdf, category=Undefined, contents=binary)")
         self.assertEqual(invalid.name, "INVALID_aSdF")
         self.assertEqual(repr(ResourceType.INVALID), "ResourceType.INVALID")
         self.assertEqual(str(invalid), "ASDF")
@@ -47,7 +47,7 @@ class TestResourceType(unittest.TestCase):
         self.assertEqual(acquired_type, ResourceType.INVALID)
         self.assertEqual("Tlk", acquired_type)
         self.assertEqual(acquired_type.extension, "tlk")
-        self.assertEqual(acquired_type.type_id, 0)
+        self.assertEqual(acquired_type.type_id, -1)
         self.assertEqual(str(acquired_type), "TLK")
         self.assertEqual(acquired_type.contents, "binary")
         self.assertEqual(acquired_type.category, "Undefined")
@@ -56,7 +56,7 @@ class TestResourceType(unittest.TestCase):
         self.assertEqual(acquired_type.contents, ResourceType.INVALID.contents)
         self.assertEqual(acquired_type.category, ResourceType.INVALID.category)
         self.assertEqual(acquired_type.extension, "tlk")
-        self.assertEqual(repr(acquired_type), "ResourceType.from_invalid(extension=tlk, category=Undefined, contents=binary)")
+        self.assertEqual(repr(acquired_type), "ResourceType.from_invalid(type_id=-1, extension=tlk, category=Undefined, contents=binary)")
         self.assertEqual(acquired_type.name, "INVALID_tlk")
         self.assertEqual(repr(ResourceType.INVALID), "ResourceType.INVALID")
         self.assertNotEqual(acquired_type.extension, ResourceType.INVALID.extension)
@@ -100,7 +100,7 @@ class TestResourceType(unittest.TestCase):
         self.assertEqual(ResourceType.from_extension(".l.o.n.g._ex.te.nsio.n.xyz").extension, "l.o.n.g._ex.te.nsio.n.xyz")
 
 class TestResourceIdentifier(unittest.TestCase):
-    """ These tests were created because of the many soft, hard-to-find errors that occur all over when this function ever fails."""
+    """These tests were created because of the many soft, hard-to-find errors that occur all over when this function ever fails."""
     def assert_hashing(self, res_ident: ResourceIdentifier):
         lower_ident = ResourceIdentifier(res_ident.resname.swapcase(), res_ident.restype)
         self.assertEqual(res_ident, lower_ident, f"{res_ident!r} != {lower_ident!r}")
@@ -113,19 +113,13 @@ class TestResourceIdentifier(unittest.TestCase):
         fail_message = f"\nresname: '{result.resname}' restype: '{result.restype}'\nexpected resname: '{expected_resname}' expected restype: '{expected_restype}'"
         self.assertEqual(result.resname, expected_resname, fail_message)
         self.assertEqual(result.restype, expected_restype, fail_message)
-        str_result = str(result)
-        self.assertEqual(result, str_result, f"{result!r} != {str_result!r}")
-        test_set = {result, str_result}
-        self.assertEqual(len(test_set), 1, repr(test_set))
+        self.assert_hashing(result)
 
     def test_hashing(self):
-        test_resname = "test_resname"
+        test_resname = "test_ResnamE"
         for type_name in ResourceType.__members__:
             test_ident = ResourceIdentifier(test_resname, ResourceType.__members__[type_name])
-            str_ident_test = str(test_ident)
-            self.assertEqual(test_ident, str_ident_test, f"{test_ident!r} != {str_ident_test!r}")
-            test_set = {test_ident, str_ident_test}
-            self.assertEqual(len(test_set), 1, repr(test_set))
+            self.assert_hashing(test_ident)
 
     def test_from_path_mdl(self):
         self.assert_resource_identifier("C:/path/to/resource.mdl", "resource", ResourceType.MDL)

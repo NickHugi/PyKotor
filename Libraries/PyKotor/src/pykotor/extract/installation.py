@@ -1,30 +1,33 @@
 from __future__ import annotations
 
 import re
+
 from copy import copy
 from enum import Enum, IntEnum
 from typing import TYPE_CHECKING, Any, Callable, ClassVar, Generator, NamedTuple
 
-from pykotor.common.language import Gender, Language, LocalizedString
+from pykotor.common.language import Gender, Language
 from pykotor.common.misc import CaseInsensitiveDict, Game
 from pykotor.common.stream import BinaryReader
 from pykotor.extract.capsule import Capsule
 from pykotor.extract.chitin import Chitin
 from pykotor.extract.file import FileResource, LocationResult, ResourceIdentifier, ResourceResult
-from pykotor.extract.talktable import StringResult, TalkTable
+from pykotor.extract.talktable import TalkTable
 from pykotor.resource.formats.erf.erf_data import ERFType
 from pykotor.resource.formats.gff import read_gff
 from pykotor.resource.formats.tpc import TPC, read_tpc
 from pykotor.resource.type import ResourceType
 from pykotor.tools.misc import is_capsule_file, is_erf_file, is_mod_file, is_rim_file
 from pykotor.tools.path import CaseAwarePath
-from pykotor.tools.sound import fix_audio
+from pykotor.tools.sound import deobfuscate_audio
 from utility.error_handling import format_exception_with_variables
 from utility.system.path import Path, PurePath
 
 if TYPE_CHECKING:
     import os
 
+    from pykotor.common.language import LocalizedString
+    from pykotor.extract.talktable import StringResult
     from pykotor.resource.formats.gff import GFF
 
 
@@ -143,8 +146,8 @@ HARDCODED_MODULE_IDS: dict[str, str] = {
 }
 
 
-class Installation:
-    """Installation provides a centralized location for loading resources stored in the game through its various folders and formats."""
+class Installation:  # noqa: PLR0904
+    """Installation provides a centralized location for loading resources stored in the game through its various folders and formats."""  # noqa: E501
 
     TEXTURES_TYPES: ClassVar[list[ResourceType]] = [
         ResourceType.TPC,
@@ -215,7 +218,7 @@ class Installation:
     def path(self) -> CaseAwarePath:
         """Returns the path to root folder of the Installation.
 
-        Returns
+        Returns:
         -------
             The path to the root folder.
         """
@@ -224,7 +227,7 @@ class Installation:
     def module_path(self) -> CaseAwarePath:
         """Returns the path to modules folder of the Installation. This method maintains the case of the foldername.
 
-        Returns
+        Returns:
         -------
             The path to the modules folder.
         """
@@ -233,7 +236,7 @@ class Installation:
     def override_path(self) -> CaseAwarePath:
         """Returns the path to override folder of the Installation. This method maintains the case of the foldername.
 
-        Returns
+        Returns:
         -------
             The path to the override folder.
         """
@@ -242,7 +245,7 @@ class Installation:
     def lips_path(self) -> CaseAwarePath:
         """Returns the path to 'lips' folder of the Installation. This method maintains the case of the foldername.
 
-        Returns
+        Returns:
         -------
             The path to the lips folder.
         """
@@ -251,7 +254,7 @@ class Installation:
     def texturepacks_path(self) -> CaseAwarePath:
         """Returns the path to 'texturepacks' folder of the Installation. This method maintains the case of the foldername.
 
-        Returns
+        Returns:
         -------
             The path to the texturepacks folder.
         """
@@ -260,7 +263,7 @@ class Installation:
     def rims_path(self) -> CaseAwarePath:
         """Returns the path to 'rims' folder of the Installation. This method maintains the case of the foldername.
 
-        Returns
+        Returns:
         -------
             The path to the rims folder.
         """
@@ -269,7 +272,7 @@ class Installation:
     def streammusic_path(self) -> CaseAwarePath:
         """Returns the path to 'streammusic' folder of the Installation. This method maintains the case of the foldername.
 
-        Returns
+        Returns:
         -------
             The path to the streammusic folder.
         """
@@ -278,7 +281,7 @@ class Installation:
     def streamsounds_path(self) -> CaseAwarePath:
         """Returns the path to 'streamsounds' folder of the Installation. This method maintains the case of the foldername.
 
-        Returns
+        Returns:
         -------
             The path to the streamsounds folder.
         """
@@ -290,7 +293,7 @@ class Installation:
         In the first game, this folder is named 'streamwaves'
         In the second game, this folder has been renamed to 'streamvoice'.
 
-        Returns
+        Returns:
         -------
             The path to the streamwaves/streamvoice folder.
         """
@@ -302,7 +305,7 @@ class Installation:
         In the first game, this folder is named 'streamwaves'
         In the second game, this folder has been renamed to 'streamvoice'.
 
-        Returns
+        Returns:
         -------
             The path to the streamvoice/streamwaves folder.
         """
@@ -555,7 +558,7 @@ class Installation:
     def chitin_resources(self) -> list[FileResource]:
         """Returns a shallow copy of the list of FileResources stored in the Chitin linked to the Installation.
 
-        Returns
+        Returns:
         -------
             A list of FileResources.
         """
@@ -566,7 +569,7 @@ class Installation:
 
         Module filenames are cached and require to be refreshed after a file is added, deleted or renamed.
 
-        Returns
+        Returns:
         -------
             A list of filenames.
         """
@@ -574,13 +577,13 @@ class Installation:
 
     def module_resources(
         self,
-        filename: str | None = None,
+        filename: str,
     ) -> list[FileResource]:
         """Returns a a shallow copy of the list of FileResources stored in the specified module file located in the modules folder linked to the Installation.
 
         Module resources are cached and require a reload after the contents have been modified on disk.
 
-        Returns
+        Returns:
         -------
             A list of FileResources.
         """
@@ -591,7 +594,7 @@ class Installation:
 
         Module filenames are cached and require to be refreshed after a file is added, deleted or renamed.
 
-        Returns
+        Returns:
         -------
             A list of filenames.
         """
@@ -599,13 +602,13 @@ class Installation:
 
     def lip_resources(
         self,
-        filename: str | None = None,
+        filename: str,
     ) -> list[FileResource]:
         """Returns a shallow copy of the list of FileResources stored in the specified module file located in the lips folder linked to the Installation.
 
         Module resources are cached and require a reload after the contents have been modified on disk.
 
-        Returns
+        Returns:
         -------
             A list of FileResources.
         """
@@ -614,7 +617,7 @@ class Installation:
     def texturepacks_list(self) -> list[str]:
         """Returns the list of texture-pack filenames located in the texturepacks folder linked to the Installation.
 
-        Returns
+        Returns:
         -------
             A list of filenames.
         """
@@ -622,13 +625,13 @@ class Installation:
 
     def texturepack_resources(
         self,
-        filename: str | None = None,
+        filename: str,
     ) -> list[FileResource]:
         """Returns a shallow copy of the list of FileResources stored in the specified module file located in the texturepacks folder linked to the Installation.
 
         Texturepack resources are cached and require a reload after the contents have been modified on disk.
 
-        Returns
+        Returns:
         -------
             A list of FileResources from the 'texturepacks' folder of the Installation.
         """
@@ -639,7 +642,7 @@ class Installation:
 
         Subdirectories are cached and require a refresh after a folder is added, deleted or renamed.
 
-        Returns
+        Returns:
         -------
             A list of subfolder names in Override.
         """
@@ -647,13 +650,13 @@ class Installation:
 
     def override_resources(
         self,
-        directory: str | None = None,
+        directory: str,
     ) -> list[FileResource]:
         """Returns a list of FileResources stored in the specified subdirectory located in the 'override' folder linked to the Installation.
 
         Override resources are cached and require a reload after the contents have been modified on disk.
 
-        Returns
+        Returns:
         -------
             A list of FileResources.
         """
@@ -856,7 +859,7 @@ class Installation:
     def talktable(self) -> TalkTable:
         """Returns the TalkTable linked to the Installation.
 
-        Returns
+        Returns:
         -------
             A TalkTable object.
         """
@@ -865,13 +868,13 @@ class Installation:
     def female_talktable(self) -> TalkTable:
         """Returns the female TalkTable linked to the Installation. This is 'dialogf.tlk' in the Polish version of K1.
 
-        Returns
+        Returns:
         -------
             A TalkTable object.
         """
         return self._female_talktable
 
-    def resource(
+    def resource(  # noqa: PLR0913
         self,
         resname: str,
         restype: ResourceType,
@@ -1370,7 +1373,7 @@ class Installation:
                 if case_resname in case_resnames and resource.restype() in sound_formats:
                     case_resnames.remove(case_resname)
                     sound_data: bytes = resource.data()
-                    sounds[resource.resname()] = fix_audio(sound_data) if sound_data else b""
+                    sounds[resource.resname()] = deobfuscate_audio(sound_data) if sound_data else b""
 
         def check_capsules(values: list[Capsule]):
             for capsule in values:
@@ -1383,7 +1386,7 @@ class Installation:
                     if sound_data is None:
                         continue
                     case_resnames.remove(case_resname)
-                    sounds[case_resname] = fix_audio(sound_data) if sound_data else b""
+                    sounds[case_resname] = deobfuscate_audio(sound_data) if sound_data else b""
 
         def check_folders(values: list[Path]):
             queried_sound_files: set[Path] = set()
@@ -1400,7 +1403,7 @@ class Installation:
             for sound_file in queried_sound_files:
                 case_resnames.remove(sound_file.stem.casefold())
                 sound_data: bytes = BinaryReader.load_file(sound_file)
-                sounds[sound_file.stem] = fix_audio(sound_data) if sound_data else b""
+                sounds[sound_file.stem] = deobfuscate_audio(sound_data) if sound_data else b""
 
         function_map: dict[SearchLocation, Callable] = {
             SearchLocation.OVERRIDE: lambda: check_dict(self._override),
@@ -1545,7 +1548,7 @@ class Installation:
 
         The name is taken from the LocalizedString "Name" in the relevant module file's ARE resource.
 
-        Returns
+        Returns:
         -------
             A dictionary mapping module filename to in-game module area name.
         """
@@ -1601,7 +1604,7 @@ class Installation:
 
         The ID is taken from the ResRef field "Mod_Entry_Area" in the relevant module file's IFO resource.
 
-        Returns
+        Returns:
         -------
             A dictionary mapping module filename to in-game module id.
         """

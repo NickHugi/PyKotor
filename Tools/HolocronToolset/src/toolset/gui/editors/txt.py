@@ -1,19 +1,22 @@
 from __future__ import annotations
 
 import os
+
 from typing import TYPE_CHECKING
+
+from PyQt5.QtWidgets import QPlainTextEdit
 
 from pykotor.resource.type import ResourceType
 from pykotor.tools.encoding import decode_bytes_with_fallbacks
-from PyQt5.QtWidgets import QPlainTextEdit, QWidget
 from toolset.gui.editor import Editor
 
 if TYPE_CHECKING:
+    from PyQt5.QtWidgets import QWidget
     from toolset.data.installation import HTInstallation
 
 
 class TXTEditor(Editor):
-    def __init__(self, parent: QWidget | None, installation: HTInstallation = None):
+    def __init__(self, parent: QWidget | None, installation: HTInstallation | None = None):
         """Initialize the text editor.
 
         Args:
@@ -30,7 +33,7 @@ class TXTEditor(Editor):
             - Connects signals
             - Opens new empty document.
         """
-        supported = [ResourceType.TXT, ResourceType.TXI, ResourceType.LYT, ResourceType.VIS, ResourceType.NSS]
+        supported: list[ResourceType] = [ResourceType.TXT, ResourceType.TXI, ResourceType.LYT, ResourceType.VIS, ResourceType.NSS]
         super().__init__(parent, "Text Editor", "none", supported, supported, installation)
         self.resize(400, 250)
 

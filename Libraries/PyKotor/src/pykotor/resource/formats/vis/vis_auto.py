@@ -3,10 +3,11 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from pykotor.resource.formats.vis.io_vis import VISAsciiReader, VISAsciiWriter
-from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES, ResourceType
+from pykotor.resource.type import ResourceType
 
 if TYPE_CHECKING:
     from pykotor.resource.formats.vis.vis_data import VIS
+    from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES
 
 
 def read_vis(

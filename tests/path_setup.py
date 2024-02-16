@@ -1,7 +1,11 @@
+from __future__ import annotations
+
 import sys
+
 from pathlib import Path
+
 print()
-print("TEST","PATH SETUP","TEST")
+print("TEST", "PATH SETUP", "TEST")
 TESTS_FOLDER = Path(__file__).resolve().parent
 UTILITY_PATH = TESTS_FOLDER.parents[2].joinpath("Utility").resolve()
 

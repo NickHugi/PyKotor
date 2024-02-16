@@ -3,11 +3,12 @@ from __future__ import annotations
 
 from contextlib import suppress
 from copy import copy
-from typing import TYPE_CHECKING, Any, Callable, TypeVar
+from typing import TYPE_CHECKING, Any, TypeVar
 
 from pykotor.resource.type import ResourceType
 
 if TYPE_CHECKING:
+    from collections.abc import Callable
     from enum import Enum
 
 T = TypeVar("T")
@@ -36,7 +37,7 @@ class TwoDA:
     ) -> list[str]:
         """Returns a copy of the set of column headers.
 
-        Returns
+        Returns:
         -------
             The column headers.
         """
@@ -111,7 +112,7 @@ class TwoDA:
     ) -> list[str]:
         """Returns a copy of the set of row labels.
 
-        Returns
+        Returns:
         -------
             The column headers.
         """
@@ -330,7 +331,7 @@ class TwoDA:
     ) -> int:
         """Returns the number of rows in the table.
 
-        Returns
+        Returns:
         -------
             The number of rows.
         """
@@ -341,7 +342,7 @@ class TwoDA:
     ) -> int:
         """Returns the number of columns in the table.
 
-        Returns
+        Returns:
         -------
             The number of columns.
         """
@@ -382,7 +383,7 @@ class TwoDA:
     ) -> int:
         """Returns the highest numerical value underneath the specified column.
 
-        Returns
+        Returns:
         -------
             Highest numerical value underneath the column.
         """
@@ -511,7 +512,7 @@ class TwoDARow:
     ) -> str:
         """Returns the row label.
 
-        Returns
+        Returns:
         -------
             The label for the row.
         """

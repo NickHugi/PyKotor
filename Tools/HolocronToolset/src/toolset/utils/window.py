@@ -2,17 +2,19 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+from PyQt5.QtWidgets import QMessageBox, QWidget
+
 from pykotor.resource.formats.erf.erf_data import ERFType
 from pykotor.resource.type import ResourceType
-from PyQt5.QtWidgets import QMessageBox, QWidget
 from toolset.gui.editors.mdl import MDLEditor
 from toolset.gui.widgets.settings.installations import GlobalSettings
-from utility.error_handling import universal_simplify_exception
+from utility.error_handling import assert_with_variable_trace, universal_simplify_exception
 
 if TYPE_CHECKING:
     import os
 
     from gui.editor import Editor
+
     from toolset.data.installation import HTInstallation
 
 windows: list[QWidget] = []
@@ -89,25 +91,25 @@ def openResourceEditor(
 
     editor = None
 
-    if restype in [ResourceType.TwoDA, ResourceType.TwoDA_CSV, ResourceType.TwoDA_JSON]:
+    if restype in {ResourceType.TwoDA, ResourceType.TwoDA_CSV, ResourceType.TwoDA_JSON}:
         editor = TwoDAEditor(None, installation)
 
-    if restype in [ResourceType.SSF, ResourceType.SSF_XML]:
+    if restype in {ResourceType.SSF, ResourceType.SSF_XML}:
         editor = SSFEditor(None, installation)
 
-    if restype in [ResourceType.TLK, ResourceType.TLK_XML, ResourceType.TLK_JSON]:
+    if restype in {ResourceType.TLK, ResourceType.TLK_XML, ResourceType.TLK_JSON}:
         editor = TLKEditor(None, installation)
 
-    if restype in [ResourceType.WOK, ResourceType.DWK, ResourceType.PWK]:
+    if restype in {ResourceType.WOK, ResourceType.DWK, ResourceType.PWK}:
         editor = BWMEditor(None, installation)
 
-    if restype in [ResourceType.TPC, ResourceType.TGA, ResourceType.JPG, ResourceType.BMP, ResourceType.PNG]:
+    if restype in {ResourceType.TPC, ResourceType.TGA, ResourceType.JPG, ResourceType.BMP, ResourceType.PNG}:
         editor = TPCEditor(None, installation)
 
-    if restype in [ResourceType.TXT, ResourceType.TXI, ResourceType.LYT, ResourceType.VIS]:
+    if restype in {ResourceType.TXT, ResourceType.TXI, ResourceType.LYT, ResourceType.VIS}:
         editor = TXTEditor(None)
 
-    if restype in [ResourceType.NSS, ResourceType.NCS]:
+    if restype in {ResourceType.NSS, ResourceType.NCS}:
         if installation:
             editor = NSSEditor(None, installation)
         elif restype == ResourceType.NSS:
@@ -117,91 +119,91 @@ def openResourceEditor(
             QMessageBox.warning(None, "Cannot decompile NCS without an installation active", "Please select an installation from the dropdown before loading an NCS.")
             return None, None
 
-    if restype in [ResourceType.DLG, ResourceType.DLG_XML]:
+    if restype in {ResourceType.DLG, ResourceType.DLG_XML}:
         if installation is None or not gff_specialized:  # noqa: SIM108
             editor = GFFEditor(None, installation)
         else:
             editor = DLGEditor(None, installation)
 
-    if restype in [ResourceType.UTC, ResourceType.UTC_XML]:
+    if restype in {ResourceType.UTC, ResourceType.UTC_XML}:
         if installation is None or not gff_specialized:
             editor = GFFEditor(None, installation)
         else:
             editor = UTCEditor(None, installation, mainwindow=parentwindow)
 
-    if restype in [ResourceType.UTP, ResourceType.UTP_XML]:
+    if restype in {ResourceType.UTP, ResourceType.UTP_XML}:
         if installation is None or not gff_specialized:
             editor = GFFEditor(None, installation)
         else:
             editor = UTPEditor(None, installation, mainwindow=parentwindow)
 
-    if restype in [ResourceType.UTD, ResourceType.UTD_XML]:
+    if restype in {ResourceType.UTD, ResourceType.UTD_XML}:
         if installation is None or not gff_specialized:
             editor = GFFEditor(None, installation)
         else:
             editor = UTDEditor(None, installation, mainwindow=parentwindow)
 
-    if restype in [ResourceType.UTS, ResourceType.UTS_XML]:
+    if restype in {ResourceType.UTS, ResourceType.UTS_XML}:
         if installation is None or not gff_specialized:  # noqa: SIM108
             editor = GFFEditor(None, installation)
         else:
             editor = UTSEditor(None, installation)
 
-    if restype in [ResourceType.UTT, ResourceType.UTT_XML]:
+    if restype in {ResourceType.UTT, ResourceType.UTT_XML}:
         if installation is None or not gff_specialized:  # noqa: SIM108
             editor = GFFEditor(None, installation)
         else:
             editor = UTTEditor(None, installation)
 
-    if restype in [ResourceType.UTM, ResourceType.UTM_XML]:
+    if restype in {ResourceType.UTM, ResourceType.UTM_XML}:
         if installation is None or not gff_specialized:  # noqa: SIM108
             editor = GFFEditor(None, installation)
         else:
             editor = UTMEditor(None, installation)
 
-    if restype in [ResourceType.UTW, ResourceType.UTW_XML]:
+    if restype in {ResourceType.UTW, ResourceType.UTW_XML}:
         if installation is None or not gff_specialized:  # noqa: SIM108
             editor = GFFEditor(None, installation)
         else:
             editor = UTWEditor(None, installation)
 
-    if restype in [ResourceType.UTE, ResourceType.UTE_XML]:
+    if restype in {ResourceType.UTE, ResourceType.UTE_XML}:
         if installation is None or not gff_specialized:  # noqa: SIM108
             editor = GFFEditor(None, installation)
         else:
             editor = UTEEditor(None, installation)
 
-    if restype in [ResourceType.UTI, ResourceType.UTI_XML]:
+    if restype in {ResourceType.UTI, ResourceType.UTI_XML}:
         if installation is None or not gff_specialized:  # noqa: SIM108
             editor = GFFEditor(None, installation)
         else:
             editor = UTIEditor(None, installation)
 
-    if restype in [ResourceType.JRL, ResourceType.JRL_XML]:
+    if restype in {ResourceType.JRL, ResourceType.JRL_XML}:
         if installation is None or not gff_specialized:  # noqa: SIM108
             editor = GFFEditor(None, installation)
         else:
             editor = JRLEditor(None, installation)
 
-    if restype in [ResourceType.ARE, ResourceType.ARE_XML]:
+    if restype in {ResourceType.ARE, ResourceType.ARE_XML}:
         if installation is None or not gff_specialized:  # noqa: SIM108
             editor = GFFEditor(None, installation)
         else:
             editor = AREEditor(None, installation)
 
-    if restype in [ResourceType.PTH, ResourceType.PTH_XML]:
+    if restype in {ResourceType.PTH, ResourceType.PTH_XML}:
         if installation is None or not gff_specialized:  # noqa: SIM108
             editor = GFFEditor(None, installation)
         else:
             editor = PTHEditor(None, installation)
 
-    if restype in [ResourceType.GIT, ResourceType.GIT_XML]:
+    if restype in {ResourceType.GIT, ResourceType.GIT_XML}:
         if installation is None or not gff_specialized:  # noqa: SIM108
             editor = GFFEditor(None, installation)
         else:
             editor = GITEditor(None, installation)
 
-    if restype in [
+    if restype in {
         ResourceType.GFF,
         ResourceType.GFF_XML,
         ResourceType.ITP,
@@ -211,16 +213,20 @@ def openResourceEditor(
         ResourceType.IFO,
         ResourceType.IFO_XML,
         ResourceType.RES,
-    ]:
+        ResourceType.RES_XML,
+        ResourceType.FAC,
+        ResourceType.FAC_XML,
+    }:
         editor = GFFEditor(None, installation)
 
-    if restype in [ResourceType.WAV, ResourceType.MP3]:
+    if restype in {ResourceType.WAV, ResourceType.MP3}:
+        assert parentwindow is not None, assert_with_variable_trace(parentwindow is not None)
         editor = AudioPlayer(parentwindow)
 
     if restype.name in ERFType.__members__ or restype == ResourceType.RIM:
         editor = ERFEditor(None, installation)
 
-    if restype in [ResourceType.MDL, ResourceType.MDX]:
+    if restype in {ResourceType.MDL, ResourceType.MDX}:
         editor = MDLEditor(None, installation)
 
     if editor is not None:
@@ -231,11 +237,10 @@ def openResourceEditor(
             addWindow(editor)
 
         except Exception as e:
-            etype, emsg = universal_simplify_exception(e)
             QMessageBox(
                 QMessageBox.Critical,
-                f"An unexpected error has occurred: {etype}",
-                emsg,
+                "An unexpected error has occurred",
+                str(universal_simplify_exception(e)),
                 QMessageBox.Ok,
                 parentwindow
             ).show()
@@ -246,7 +251,7 @@ def openResourceEditor(
         QMessageBox(
             QMessageBox.Critical,
             "Failed to open file",
-            f"The selected file format '{restype!r}' is not yet supported.",
+            f"The selected file format '{restype}' is not yet supported.",
             QMessageBox.Ok,
             parentwindow,
         ).show()

@@ -100,13 +100,13 @@
   <customwidget>
    <class>LocalizedStringLineEdit</class>
    <extends>QWidget</extends>
-   <header location="global">toolset.misc.widget.widgets</header>
+   <header location="global">toolset.gui.widgets.edit.locstring</header>
    <container>1</container>
   </customwidget>
   <customwidget>
    <class>ColorEdit</class>
    <extends>QWidget</extends>
-   <header location="global">toolset.misc.widget.widgets</header>
+   <header location="global">toolset.gui.widgets.edit.color</header>
    <container>1</container>
   </customwidget>
  </customwidgets>

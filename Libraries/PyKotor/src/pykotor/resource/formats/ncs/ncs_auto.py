@@ -9,11 +9,12 @@ from pykotor.resource.formats.ncs.compiler.parser import NssParser
 from pykotor.resource.formats.ncs.io_ncs import NCSBinaryReader, NCSBinaryWriter
 from pykotor.resource.formats.ncs.ncs_data import NCS
 from pykotor.resource.formats.ncs.optimizers import RemoveNopOptimizer
-from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES, ResourceType
+from pykotor.resource.type import ResourceType
 
 if TYPE_CHECKING:
     from pykotor.common.misc import Game
     from pykotor.resource.formats.ncs.ncs_data import NCSOptimizer
+    from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES
     from utility.system.path import Path
 
 
@@ -102,7 +103,7 @@ def compile_nss(
 ) -> NCS:
     """Returns NCS object compiled from input source string.
 
-    Attributes
+    Attributes:
     ----------
         source: The source code.
         game: Target game for the NCS object.

@@ -1,11 +1,14 @@
 from __future__ import annotations
 
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from pykotor.common.misc import ResRef
 from pykotor.common.stream import BinaryWriter
 from pykotor.resource.formats.gff.gff_data import GFF, GFFContent, GFFFieldType, GFFList, GFFStruct
-from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES, ResourceReader, ResourceWriter, autoclose
+from pykotor.resource.type import ResourceReader, ResourceWriter, autoclose
+
+if TYPE_CHECKING:
+    from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES
 
 _COMPLEX_FIELD: set[GFFFieldType] = {
     GFFFieldType.UInt64,

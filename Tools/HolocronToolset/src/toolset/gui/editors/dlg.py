@@ -4,24 +4,22 @@ from copy import copy, deepcopy
 from typing import TYPE_CHECKING
 
 import pyperclip
+
 from PyQt5 import QtCore
-from PyQt5.QtCore import QModelIndex, QBuffer, QIODevice, QItemSelection, QItemSelectionModel, QPoint
-from PyQt5.QtGui import QBrush, QColor, QKeyEvent, QMouseEvent, QStandardItem, QStandardItemModel
+from PyQt5.QtCore import QBuffer, QIODevice, QItemSelectionModel
+from PyQt5.QtGui import QBrush, QColor, QStandardItem, QStandardItemModel
 from PyQt5.QtMultimedia import QMediaContent, QMediaPlayer
-from PyQt5.QtWidgets import QListWidgetItem, QMenu, QMessageBox, QPlainTextEdit, QShortcut, QWidget
+from PyQt5.QtWidgets import QListWidgetItem, QMenu, QMessageBox, QShortcut
 
 from pykotor.common.misc import ResRef
 from pykotor.extract.installation import SearchLocation
 from pykotor.resource.generics.dlg import (
     DLG,
-    DLGAnimation,
     DLGComputerType,
     DLGConversationType,
     DLGEntry,
     DLGLink,
-    DLGNode,
     DLGReply,
-    DLGStunt,
     read_dlg,
     write_dlg,
 )
@@ -32,12 +30,21 @@ from toolset.gui.dialogs.edit.dialog_model import CutsceneModelDialog
 from toolset.gui.dialogs.edit.locstring import LocalizedStringDialog
 from toolset.gui.editor import Editor
 from toolset.utils.misc import QtKey
+from utility.error_handling import assert_with_variable_trace
 
 if TYPE_CHECKING:
+    from PyQt5.QtCore import QItemSelection, QModelIndex, QPoint
+    from PyQt5.QtWidgets import QPlainTextEdit, QWidget
+    from PyQt5.QtGui import QKeyEvent, QMouseEvent
     import os
 
     from pykotor.common.language import LocalizedString
     from pykotor.resource.formats.twoda.twoda_data import TwoDA
+    from pykotor.resource.generics.dlg import (
+        DLGAnimation,
+        DLGNode,
+        DLGStunt,
+    )
 
 _LINK_ROLE = QtCore.Qt.UserRole + 1
 _COPY_ROLE = QtCore.Qt.UserRole + 2
@@ -198,11 +205,11 @@ class DLGEditor(Editor):
         self._loadDLG(dlg)
         self.refreshStuntList()
 
-        self.ui.onAbortEdit.setText(dlg.on_abort.get())
-        self.ui.onEndEdit.setText(dlg.on_end.get())
+        self.ui.onAbortEdit.setText(str(dlg.on_abort))
+        self.ui.onEndEdit.setText(str(dlg.on_end))
         self.ui.voIdEdit.setText(dlg.vo_id)
-        self.ui.ambientTrackEdit.setText(dlg.ambient_track.get())
-        self.ui.cameraModelEdit.setText(dlg.camera_model.get())
+        self.ui.ambientTrackEdit.setText(str(dlg.ambient_track))
+        self.ui.cameraModelEdit.setText(str(dlg.camera_model))
         self.ui.conversationSelect.setCurrentIndex(dlg.conversation_type.value)
         self.ui.computerSelect.setCurrentIndex(dlg.computer_type.value)
         self.ui.skippableCheckbox.setChecked(dlg.skippable)
@@ -266,7 +273,9 @@ class DLGEditor(Editor):
             - Refreshes the item
             - Loops through child links and loads recursively if not seen.
         """
-        node: DLGNode = link.node
+        node: DLGNode | None = link.node
+        assert_with_variable_trace(node is not None, "link.node cannot be None.")
+        assert node is not None
         item.setData(link, _LINK_ROLE)
 
         alreadyListed: bool = link in seenLinks or node in seenNodes
@@ -396,9 +405,9 @@ class DLGEditor(Editor):
         self.ui.cameraEffectSelect.clear()
         self.ui.cameraEffectSelect.addItem("[None]", None)
 
-        videoEffects: TwoDA = installation.htGetCache2DA(HTInstallation.TwoDA_VIDEO_EFFECTS)
+        videoEffects: TwoDA | None = installation.htGetCache2DA(HTInstallation.TwoDA_VIDEO_EFFECTS)
         for i, label in enumerate(videoEffects.get_column("label")):
-            self.ui.cameraEffectSelect.addItem(label.replace("VIDEO_EFFECT_", "").replace("_" , " ").title(), i)
+            self.ui.cameraEffectSelect.addItem(label.replace("VIDEO_EFFECT_", "").replace("_", " ").title(), i)
 
     def _setup_tsl_install_defs(self, installation: HTInstallation):
         """Set up UI elements for TSL installation selection.
@@ -446,7 +455,8 @@ class DLGEditor(Editor):
             item: QStandardItem | None = self.model.itemFromIndex(indexes[0])
             link: DLGLink = item.data(_LINK_ROLE)
             isCopy: bool = item.data(_COPY_ROLE)
-            node: DLGNode = link.node
+            node: DLGNode | None = link.node
+            assert_with_variable_trace(node is not None, "node cannot be None")
             dialog = LocalizedStringDialog(self, self._installation, node.text)
             if dialog.exec_() and not isCopy:
                 node.text = dialog.locstring
@@ -467,7 +477,7 @@ class DLGEditor(Editor):
             textbox.setPlainText(text if text != "-1" else "")
             textbox.setStyleSheet("QPlainTextEdit {background-color: white;}")
         else:
-            text = self._installation.talktable().string(locstring.stringref)
+            text: str = self._installation.talktable().string(locstring.stringref)
             textbox.setPlainText(text)
             textbox.setStyleSheet("QPlainTextEdit {background-color: #fffded;}")
 
@@ -824,7 +834,7 @@ class DLGEditor(Editor):
         elif not self._focused:
             menu = QMenu(self)
 
-            menu.addAction("Add Entry").triggered.connect(lambda: self.addRootNode())
+            menu.addAction("Add Entry").triggered.connect(self.addRootNode)
 
             menu.popup(self.ui.dialogTree.viewport().mapToGlobal(point))
 
@@ -885,7 +895,7 @@ class DLGEditor(Editor):
         menu.popup(self.ui.dialogTree.viewport().mapToGlobal(point))
 
     def keyPressEvent(self, event: QKeyEvent | None):
-        if event.key() in (QtKey.Key_Enter, QtKey.Key_Return):
+        if event.key() in {QtKey.Key_Enter, QtKey.Key_Return}:
             selectedItem: QModelIndex = self.ui.dialogTree.currentIndex()
             if selectedItem.isValid():
                 item: QStandardItem | None = self.model.itemFromIndex(selectedItem)
@@ -937,7 +947,7 @@ class DLGEditor(Editor):
             self.ui.listenerEdit.setText(node.listener)
             self._loadLocstring(self.ui.textEdit, node.text)
 
-            self.ui.script1ResrefEdit.setText(node.script1.get())
+            self.ui.script1ResrefEdit.setText(str(node.script1))
             self.ui.script1Param1Spin.setValue(node.script1_param1)
             self.ui.script1Param2Spin.setValue(node.script1_param2)
             self.ui.script1Param3Spin.setValue(node.script1_param3)
@@ -945,7 +955,7 @@ class DLGEditor(Editor):
             self.ui.script1Param5Spin.setValue(node.script1_param5)
             self.ui.script1Param6Edit.setText(node.script1_param6)
 
-            self.ui.script2ResrefEdit.setText(node.script2.get())
+            self.ui.script2ResrefEdit.setText(str(node.script2))
             self.ui.script2Param1Spin.setValue(node.script2_param1)
             self.ui.script2Param2Spin.setValue(node.script2_param2)
             self.ui.script2Param3Spin.setValue(node.script2_param3)
@@ -953,7 +963,7 @@ class DLGEditor(Editor):
             self.ui.script2Param5Spin.setValue(node.script2_param5)
             self.ui.script2Param6Edit.setText(node.script2_param6)
 
-            self.ui.condition1ResrefEdit.setText(link.active1.get())
+            self.ui.condition1ResrefEdit.setText(str(link.active1))
             self.ui.condition1Param1Spin.setValue(link.active1_param1)
             self.ui.condition1Param2Spin.setValue(link.active1_param2)
             self.ui.condition1Param3Spin.setValue(link.active1_param3)
@@ -962,7 +972,7 @@ class DLGEditor(Editor):
             self.ui.condition1Param6Edit.setText(link.active1_param6)
             self.ui.condition1NotCheckbox.setChecked(link.active1_not)
 
-            self.ui.condition2ResrefEdit.setText(link.active2.get())
+            self.ui.condition2ResrefEdit.setText(str(link.active2))
             self.ui.condition2Param1Spin.setValue(link.active2_param1)
             self.ui.condition2Param2Spin.setValue(link.active2_param2)
             self.ui.condition2Param3Spin.setValue(link.active2_param3)
@@ -974,9 +984,9 @@ class DLGEditor(Editor):
             self.refreshAnimList()
             self.ui.emotionSelect.setCurrentIndex(node.emotion_id)
             self.ui.expressionSelect.setCurrentIndex(node.facial_id)
-            self.ui.soundEdit.setText(node.sound.get())
+            self.ui.soundEdit.setText(str(node.sound))
             self.ui.soundCheckbox.setChecked(node.sound_exists)
-            self.ui.voiceEdit.setText(node.vo_resref.get())
+            self.ui.voiceEdit.setText(str(node.vo_resref))
 
             self.ui.plotIndexSpin.setValue(node.plot_index)
             self.ui.plotXpSpin.setValue(node.plot_xp_percentage)
@@ -986,7 +996,7 @@ class DLGEditor(Editor):
             self.ui.cameraIdSpin.setValue(node.camera_id if node.camera_id is not None else -1)
             self.ui.cameraAnimSpin.setValue(node.camera_anim if node.camera_anim is not None else -1)
             self.ui.cameraAngleSelect.setCurrentIndex(node.camera_angle if node.camera_angle is not None else 0)
-            self.ui.cameraEffectSelect.setCurrentIndex(node.camera_effect+1 if node.camera_effect is not None else 0)
+            self.ui.cameraEffectSelect.setCurrentIndex(node.camera_effect + 1 if node.camera_effect is not None else 0)
 
             self.ui.nodeUnskippableCheckbox.setChecked(node.unskippable)
             self.ui.nodeIdSpin.setValue(node.node_id)

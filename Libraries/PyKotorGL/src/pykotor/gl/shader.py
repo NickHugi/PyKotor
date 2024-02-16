@@ -1,11 +1,13 @@
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 import glm
-from glm import mat4, vec3, vec4
+
 from OpenGL.GL import glGenTextures, glGetUniformLocation, glTexImage2D, glUniform3fv, glUniform4fv, glUniformMatrix4fv, shaders
 from OpenGL.GL.framebufferobjects import glGenerateMipmap
 from OpenGL.GL.shaders import GL_FALSE
-from OpenGL.raw.GL.EXT.texture_compression_s3tc import GL_COMPRESSED_RGB_S3TC_DXT1_EXT, GL_COMPRESSED_RGBA_S3TC_DXT5_EXT
+from OpenGL.raw.GL.EXT.texture_compression_s3tc import GL_COMPRESSED_RGBA_S3TC_DXT5_EXT, GL_COMPRESSED_RGB_S3TC_DXT1_EXT
 from OpenGL.raw.GL.VERSION.GL_1_0 import (
     GL_LINEAR,
     GL_NEAREST_MIPMAP_LINEAR,
@@ -23,7 +25,12 @@ from OpenGL.raw.GL.VERSION.GL_1_0 import (
 from OpenGL.raw.GL.VERSION.GL_1_1 import glBindTexture
 from OpenGL.raw.GL.VERSION.GL_1_3 import glCompressedTexImage2D
 from OpenGL.raw.GL.VERSION.GL_2_0 import GL_FRAGMENT_SHADER, GL_VERTEX_SHADER, glUniform1i, glUseProgram
-from pykotor.resource.formats.tpc import TPC, TPCTextureFormat
+
+from pykotor.resource.formats.tpc import TPCTextureFormat
+
+if TYPE_CHECKING:
+    from glm import mat4, vec3, vec4
+    from pykotor.resource.formats.tpc import TPC
 
 KOTOR_VSHADER = """
 #version 330 core

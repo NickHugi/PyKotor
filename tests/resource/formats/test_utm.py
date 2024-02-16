@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import os
 import pathlib
 import sys
@@ -16,8 +18,13 @@ if PYKOTOR_PATH.joinpath("pykotor").exists():
 if UTILITY_PATH.joinpath("utility").exists():
     add_sys_path(UTILITY_PATH)
 
+from typing import TYPE_CHECKING
+
 from pykotor.resource.formats.gff import read_gff
-from pykotor.resource.generics.utm import UTM, construct_utm, dismantle_utm
+from pykotor.resource.generics.utm import construct_utm, dismantle_utm
+
+if TYPE_CHECKING:
+    from pykotor.resource.generics.utm import UTM
 
 TEST_FILE = "tests/files/test.utm"
 

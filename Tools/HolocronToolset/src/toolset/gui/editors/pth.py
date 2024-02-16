@@ -2,30 +2,39 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+from PyQt5.QtGui import QColor
+from PyQt5.QtWidgets import QMenu
+
 from pykotor.common.geometry import SurfaceMaterial, Vector2
 from pykotor.common.misc import Color
 from pykotor.extract.installation import SearchLocation
 from pykotor.resource.formats.bwm import read_bwm
-from pykotor.resource.formats.lyt import LYT, read_lyt
+from pykotor.resource.formats.lyt import read_lyt
 from pykotor.resource.generics.pth import PTH, bytes_pth, read_pth
 from pykotor.resource.type import ResourceType
-from PyQt5.QtGui import QColor, QKeyEvent
-from PyQt5.QtWidgets import QMenu, QWidget
 from toolset.data.misc import ControlItem
 from toolset.gui.editor import Editor
 from toolset.gui.widgets.settings.git import GITSettings
+from utility.error_handling import assert_with_variable_trace
 
 if TYPE_CHECKING:
+    from PyQt5.QtWidgets import QWidget
+    from PyQt5.QtGui import QKeyEvent
     import os
 
-    from pykotor.extract.file import ResourceIdentifier
     from PyQt5.QtCore import QPoint
+
+    from pykotor.common.geometry import Vector3
+    from pykotor.extract.file import ResourceIdentifier, ResourceResult
+    from pykotor.resource.formats.bwm.bwm_data import BWM
+    from pykotor.resource.formats.lyt import LYT
+    from pykotor.resource.generics.git import GITInstance
     from toolset.data.installation import HTInstallation
 
 
 class PTHEditor(Editor):
     def __init__(self, parent: QWidget | None, installation: HTInstallation | None = None):
-        supported = [ResourceType.PTH]
+        supported: list[ResourceType] = [ResourceType.PTH]
         super().__init__(parent, "PTH Editor", "pth", supported, supported, installation)
 
         from toolset.uic.editors.pth import Ui_MainWindow
@@ -41,7 +50,7 @@ class PTHEditor(Editor):
 
         def intColorToQColor(intvalue):
             color = Color.from_rgba_integer(intvalue)
-            return QColor(int(color.r*255), int(color.g*255), int(color.b*255), int(color.a*255))
+            return QColor(int(color.r * 255), int(color.g * 255), int(color.b * 255), int(color.a * 255))
         self.materialColors: dict[SurfaceMaterial, QColor] = {
             SurfaceMaterial.UNDEFINED: intColorToQColor(self.settings.undefinedMaterialColour),
             SurfaceMaterial.OBSCURING: intColorToQColor(self.settings.obscuringMaterialColour),
@@ -68,7 +77,7 @@ class PTHEditor(Editor):
         self.nameBuffer: dict[ResourceIdentifier, str] = {}
         self.tagBuffer: dict[ResourceIdentifier, str] = {}
 
-        self.ui.renderArea.materialColors = self.materialColors
+        self.ui.renderArea.materialColors = self.materialColors  # FIXME: wrong type Color v int
         self.ui.renderArea.hideWalkmeshEdges = True
         self.ui.renderArea.highlightBoundaries = False
 
@@ -85,12 +94,12 @@ class PTHEditor(Editor):
     def load(self, filepath: os.PathLike | str, resref: str, restype: ResourceType, data: bytes):
         super().load(filepath, resref, restype, data)
 
-        order = [SearchLocation.OVERRIDE, SearchLocation.CHITIN, SearchLocation.MODULES]
-        result = self._installation.resource(resref, ResourceType.LYT, order)
+        order: list[SearchLocation] = [SearchLocation.OVERRIDE, SearchLocation.CHITIN, SearchLocation.MODULES]
+        result: ResourceResult | None = self._installation.resource(resref, ResourceType.LYT, order)
         if result:
             self.loadLayout(read_lyt(result.data))
 
-        pth = read_pth(data)
+        pth: PTH = read_pth(data)
         self._loadPTH(pth)
 
     def _loadPTH(self, pth: PTH):
@@ -109,17 +118,17 @@ class PTHEditor(Editor):
         return self._pth
 
     def loadLayout(self, layout: LYT):
-        walkmeshes = []
+        walkmeshes: list[BWM] = []
         for room in layout.rooms:
-            order = [SearchLocation.OVERRIDE, SearchLocation.CHITIN, SearchLocation.MODULES]
-            findBWM = self._installation.resource(room.model, ResourceType.WOK, order)
+            order: list[SearchLocation] = [SearchLocation.OVERRIDE, SearchLocation.CHITIN, SearchLocation.MODULES]
+            findBWM: ResourceResult | None = self._installation.resource(room.model, ResourceType.WOK, order)
             if findBWM is not None:
                 walkmeshes.append(read_bwm(findBWM.data))
 
         self.ui.renderArea.setWalkmeshes(walkmeshes)
 
     def moveCameraToSelection(self):
-        instance = self.ui.renderArea.instanceSelection.last()
+        instance: GITInstance | None = self.ui.renderArea.instanceSelection.last()
         if instance:
             self.ui.renderArea.camera.setPosition(instance.position.x, instance.position.y)
 
@@ -139,7 +148,7 @@ class PTHEditor(Editor):
 
     def selectNodeUnderMouse(self):
         if self.ui.renderArea.pathNodesUnderMouse():
-            toSelect = [self.ui.renderArea.pathNodesUnderMouse()[0]]
+            toSelect: list[Vector2] = [self.ui.renderArea.pathNodesUnderMouse()[0]]
             self.ui.renderArea.pathSelection.select(toSelect)
         else:
             self.ui.renderArea.pathSelection.clear()
@@ -165,14 +174,14 @@ class PTHEditor(Editor):
 
     # region Signal Callbacks
     def onContextMenu(self, point: QPoint):
-        globalPoint = self.ui.renderArea.mapToGlobal(point)
-        world = self.ui.renderArea.toWorldCoords(point.x(), point.y())
+        globalPoint: QPoint = self.ui.renderArea.mapToGlobal(point)
+        world: Vector3 = self.ui.renderArea.toWorldCoords(point.x(), point.y())
         self._controls.onRenderContextMenu(world, globalPoint)
 
     def onMouseMoved(self, screen: Vector2, delta: Vector2, buttons: set[int], keys: set[int]):
-        worldDelta = self.ui.renderArea.toWorldDelta(delta.x, delta.y)
-        world = self.ui.renderArea.toWorldCoords(screen.x, screen.y)
-        self._controls.onMouseMoved(screen, delta, world, worldDelta, buttons, keys)
+        worldDelta: Vector2 = self.ui.renderArea.toWorldDelta(delta.x, delta.y)
+        world: Vector3 = self.ui.renderArea.toWorldCoords(screen.x, screen.y)
+        self._controls.onMouseMoved(screen, delta, world, worldDelta, buttons, keys)  # FIXME: world is Vector3, arg is Vector2
 
     def onMouseScrolled(self, delta: Vector2, buttons: set[int], keys: set[int]):
         self._controls.onMouseScrolled(delta, buttons, keys)
@@ -227,17 +236,18 @@ class PTHControlScheme:
 
     def onKeyboardPressed(self, buttons: set[int], keys: set[int]):
         if self.deleteSelected.satisfied(buttons, keys):
-            self.editor.deleteSelected()
+            self.editor.deleteSelected()  # FIXME: undefined
 
     def onKeyboardReleased(self, buttons: set[int], keys: set[int]):
         ...
 
     def onRenderContextMenu(self, world: Vector2, screen: QPoint):
-        targetNode = self.editor.pointsUnderMouse()[0] if self.editor.pointsUnderMouse() else None
-        targetIndex = self.editor.pth().find(targetNode) if targetNode else None
+        targetNode: Vector2 | None = self.editor.pointsUnderMouse()[0] if self.editor.pointsUnderMouse() else None
+        targetIndex: int | None = self.editor.pth().find(targetNode) if targetNode else None
 
-        sourceNode = self.editor.selectedNodes()[0] if self.editor.pointsUnderMouse() else None
-        sourceIndex = self.editor.pth().find(sourceNode) if targetNode else None
+        sourceNode: Vector2 | None = self.editor.selectedNodes()[0] if self.editor.pointsUnderMouse() else None
+        assert sourceNode is not None, assert_with_variable_trace(sourceNode is not None)
+        sourceIndex: int | None = self.editor.pth().find(sourceNode) if targetNode else None
 
         menu = QMenu(self.editor)
 

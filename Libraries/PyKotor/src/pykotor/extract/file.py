@@ -85,7 +85,7 @@ class FileResource:
 
     def __eq__(  # Checks are ordered from fastest to slowest.
         self,
-        other: FileResource | ResourceIdentifier #| bytes | bytearray | memoryview | object,
+        other: FileResource | ResourceIdentifier  # | bytes | bytearray | memoryview | object,
     ):
         if isinstance(other, ResourceIdentifier):
             return self.identifier() == other
@@ -191,7 +191,7 @@ class FileResource:
             with BinaryReader.from_file(self._filepath) as file:
                 file.seek(self._offset)
                 data: bytes = file.read_bytes(self._size)
-                #self._file_hash = generate_hash(data)
+                # self._file_hash = generate_hash(data)
                 return data
         finally:
             self._internal = False
@@ -305,7 +305,7 @@ class ResourceIdentifier():
             return ResourceIdentifier("", ResourceType.from_extension(""))
 
         max_dots: int = path_obj.name.count(".")
-        for dots in range(max_dots+1, 1, -1):
+        for dots in range(max_dots + 1, 1, -1):
             with suppress(Exception):
                 resname, restype_ext = path_obj.split_filename(dots)
                 return ResourceIdentifier(
