@@ -666,22 +666,25 @@ class Scene:
     def texture(self, name: str) -> Texture:
         if name not in self.textures:
             try:
-                tpc = None
+                tpc: TPC | None = None
                 # Check the textures linked to the module first
                 if self.module is not None:
-                    tpc = self.module.texture(name).resource() if self.module.texture(name) is not None else None
+                    print(f"Loading texture '{name}' from {self.module._root}")
+                    module_tex = self.module.texture(name)
+                    tpc = module_tex.resource() if module_tex is not None else None
+
                 # Otherwise just search through all relevant game files
-                tpc: TPC | None = (
-                    self.installation.texture(name, [SearchLocation.OVERRIDE, SearchLocation.TEXTURES_TPA, SearchLocation.CHITIN])
-                    if tpc is None
-                    else tpc
-                )
+                if tpc is None:
+                    print(f"Texture '{name}' not found in {self.module._root}, locating it in override/bifs...")
+                    tpc = self.installation.texture(name, [SearchLocation.OVERRIDE, SearchLocation.TEXTURES_TPA, SearchLocation.CHITIN])
+                    if tpc is not None:
+                        print(f"Texture '{name}' found in installation.")
             except (OSError, ValueError) as e:
                 print(format_exception_with_variables(e))
                 # If an error occurs during the loading process, just use a blank image.
                 tpc = TPC()
 
-            self.textures[name] = Texture.from_tpc(tpc) if tpc is not None else Texture.from_color(0xFF, 0, 0xFF)
+            self.textures[name] = Texture.from_color(0xFF, 0, 0xFF) if tpc is None else Texture.from_tpc(tpc)
         return self.textures[name]
 
     def model(self, name: str) -> Model:
