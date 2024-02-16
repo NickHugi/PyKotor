@@ -159,7 +159,7 @@ class ConfigReader:
             - Populate its config attribute from the ConfigParser
             - Return the initialized instance
         """
-        from pykotor.tslpatcher.config import PatcherConfig
+        from pykotor.tslpatcher.config import PatcherConfig  # noqa: PLC0415 Prevent circular imports
         resolved_file_path: Path = Path.pathify(file_path).resolve()
 
         ini = ConfigParser(

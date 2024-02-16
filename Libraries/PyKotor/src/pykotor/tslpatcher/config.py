@@ -8,7 +8,6 @@ from typing import TYPE_CHECKING
 from pykotor.tslpatcher.mods.gff import Memory2DAModifierGFF
 from pykotor.tslpatcher.mods.tlk import ModificationsTLK
 from pykotor.tslpatcher.namespaces import PatcherNamespace
-from pykotor.tslpatcher.reader import ConfigReader
 
 if TYPE_CHECKING:
     import os
@@ -82,7 +81,7 @@ class PatcherConfig:
             - Set the ConfigParser to use case-insensitive keys. Ini is inherently case-insensitive by default.
             - Call the load method on the ConfigReader, passing self to populate the configuration instance.
         """
-        from pykotor.tslpatcher.reader import ConfigReader
+        from pykotor.tslpatcher.reader import ConfigReader  # noqa: PLC0415  Prevent circular imports.
 
         ini = ConfigParser(
             delimiters=("="),
@@ -90,13 +89,14 @@ class PatcherConfig:
             strict=False,
             interpolation=None,
         )
-        # use case-sensitive keys
-        ini.optionxform = lambda optionstr: optionstr  # type: ignore[method-assign]
+
+        ini.optionxform = lambda optionstr: optionstr  # type: ignore[method-assign]  # use case-sensitive keys
         ini.read_string(ini_text)
 
         ConfigReader(ini, mod_path, logger).load(self)
 
-    def as_namespace(self, filepath: CaseAwarePath) -> PatcherNamespace:
+    @classmethod
+    def as_namespace(cls, filepath: CaseAwarePath) -> PatcherNamespace:
         """Builds a changes.ini file as PatcherNamespace object.
 
         When a changes.ini is loaded when no namespaces.ini is created, we create a namespace internally with this single entry.
@@ -116,6 +116,8 @@ class PatcherConfig:
             - Sets the ini_filename, info_filename and name attributes from the config
             - Returns the populated PatcherNamespace
         """
+        from pykotor.tslpatcher.reader import ConfigReader  # noqa: PLC0415  Prevent circular imports.
+
         reader: ConfigReader = ConfigReader.from_filepath(filepath)
         reader.load_settings()
 
@@ -143,7 +145,7 @@ class PatcherConfig:
                     continue
 
                 nested_modifiers = self.get_nested_gff_patches(gff_modifier)
-                gff_modifier.modifiers = nested_modifiers  # nested modifiers will reference the item from the flattened list.
+                gff_modifier.modifiers = nested_modifiers  # type: ignore[reportAttributeAccessIssue]  nested modifiers will reference the item from the flattened list.
                 flattened_gff_patches.extend(nested_modifiers)
         return flattened_gff_patches
 

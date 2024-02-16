@@ -153,6 +153,7 @@ ignore = [
     "N802",     # Function name `screenToWorld` should be lowercase
     "N806",     # Variable `jumpToOffset` in function should be lowercase
     "N815",     # Variable `var` in class scope should not be mixedCase
+    "PLR0904",  # Too many public methods
     "T201",     # 'print' found
 # The following are currently violated by the codebase.
 #    "D205",     # 1 blank line required between summary line and description
