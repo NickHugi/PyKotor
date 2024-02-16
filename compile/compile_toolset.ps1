@@ -20,9 +20,7 @@ Write-Host "Installing required packages to build the holocron toolset..."
 . $pythonExePath -m pip install -r ($rootPath + $pathSep + "Libraries" + $pathSep + "PyKotorGL" + $pathSep + "recommended.txt") --prefer-binary --compile --progress-bar on
 
 if ((Get-OS) -eq "Mac") {
-    & "brew install python qt pyqt5 mpdecimal " +
-               "` gstreamer gst-plugins-base gst-plugins-good gst-plugins-bad gst-plugins-ugly " +
-               "` pulseaudio fontconfig"
+    & bash -c "brew install python@3.8 qt pyqt5 mpdecimal gstreamer gst-plugins-base gst-plugins-good gst-plugins-bad gst-plugins-ugly pulseaudio fontconfig" 2>&1 | Write-Output 
 } elseif (Test-Path -Path "/etc/os-release") {
     $osInfo = Get-Content "/etc/os-release" -Raw
     if ($osInfo -match 'ID=(.*)') {
