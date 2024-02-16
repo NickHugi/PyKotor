@@ -16,6 +16,8 @@ from utility.system.path import Path
 if TYPE_CHECKING:
     from types import TracebackType
 
+    from typing_extensions import Literal
+
     from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES
 
 
@@ -569,7 +571,7 @@ class BinaryReader:
         self,
         length: int,
         encoding: str | None = "windows-1252",
-        errors: str = "ignore",
+        errors: Literal["ignore", "strict", "replace"] = "ignore",
     ) -> str:
         """Reads a string from the stream with the specified length.
 
@@ -597,6 +599,9 @@ class BinaryReader:
         self,
         terminator: str,
         length: int = -1,
+        encoding: str = "ascii",
+        *,
+        strict: bool = True,
     ) -> str:
         """Reads a string continuously from the stream up to a specified length or until it hits the terminator string, whichever comes first.
         If length is -1, reads until the terminator is encountered without a length constraint.
@@ -606,6 +611,8 @@ class BinaryReader:
             terminator: The terminator string.
             length: The maximum length to read from the stream, or -1 for no length constraint.
                 If a terminator is found before length is reached, skip the remaining.
+            encoding: the encoding to use, in most cases this should be "ascii" (default)
+            strict: Whether to stop appending the final string if a character could not be decoded by the encoding.
 
         Returns:
         -------
@@ -617,16 +624,19 @@ class BinaryReader:
 
         while char != terminator and (length == -1 or bytes_read < length):
             string += char
-            bytes_read += 1
             self.exceed_check(1)
-            char = self.read_bytes(1).decode("ascii", errors="ignore")
+            char = self.read_bytes(1).decode(encoding=encoding, errors="ignore")
+            bytes_read += 1
+            if not char and strict:
+                break
+
+        if length == -1:
+            return string
 
         # If a length is specified and not all bytes were read, skip the remaining bytes
-        if length != -1:
-            remaining_length = length - bytes_read
-            if remaining_length > 0:
-                self.skip(remaining_length)
-
+        remaining_length = length - bytes_read
+        if remaining_length > 0:
+            self.skip(remaining_length)
         return string
 
     def read_locstring(
