@@ -393,7 +393,7 @@ class Scene:
                     vec3(),
                     vec3(),
                     data=sound,
-                    gen_boundary=lambda boundary: (boundary or Boundary.from_circle(self, uts.max_distance)),
+                    gen_boundary=lambda uts=uts: Boundary.from_circle(self, uts.max_distance),
                 )
                 self.objects[sound] = obj
 
@@ -407,7 +407,7 @@ class Scene:
                     vec3(),
                     vec3(),
                     data=encounter,
-                    gen_boundary=lambda boundary: (boundary or Boundary(self, encounter.geometry.points)),
+                    gen_boundary=lambda encounter=encounter: Boundary(self, encounter.geometry.points),
                 )
                 self.objects[encounter] = obj
 
@@ -421,7 +421,7 @@ class Scene:
                     vec3(),
                     vec3(),
                     data=trigger,
-                    gen_boundary=lambda boundary: (boundary or Boundary(self, trigger.geometry.points)),
+                    gen_boundary=lambda trigger=trigger: Boundary(self, trigger.geometry.points),
                 )
                 self.objects[trigger] = obj
 
