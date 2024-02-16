@@ -70,7 +70,7 @@ class UTCEditor(Editor):
         self.globalSettings: GlobalSettings = GlobalSettings()
         self._utc: UTC = UTC()
 
-        from toolset.uic.editors.utc import Ui_MainWindow
+        from toolset.uic.editors.utc import Ui_MainWindow  # noqa: PLC0415
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
         self._setupMenus()
