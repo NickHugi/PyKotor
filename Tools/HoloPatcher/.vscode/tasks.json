@@ -19,7 +19,7 @@
       "problemMatcher": []
     },
     {
-      "label": "holopatcher_requirements",
+      "label": "holopatcher_recommended",
       "dependsOn": [
         "pykotor_requirements"
       ],
@@ -30,7 +30,7 @@
         "pip",
         "install",
         "-r",
-        "requirements.txt"
+        "recommended.txt"
       ],
       "presentation": {
         "echo": true,
@@ -153,7 +153,7 @@
     {
       "label": "pylint: pykotor",
       "dependsOn": [
-        "holopatcher_requirements",
+        "holopatcher_recommended",
         "install_pylint"
       ],
       "type": "shell",
@@ -167,7 +167,7 @@
     {
       "label": "Python: lint pykotor with mypy",
       "dependsOn": [
-        "holopatcher_requirements",
+        "holopatcher_recommended",
         "install_mypy"
       ],
       "type": "shell",
@@ -207,7 +207,7 @@
       "label": "Python: Ruff check entire project",
       "type": "shell",
       "dependsOn": [
-        "holopatcher_requirements",
+        "holopatcher_recommended",
         "install_ruff"
       ],
       "command": "${command:python.interpreterPath}",
@@ -282,7 +282,7 @@
       "label": "Build HoloPatcher - PyInstaller",
       "type": "shell",
       "dependsOn": [
-        "holopatcher_requirements",
+        "holopatcher_recommended",
         "install_pyinstaller",
       ],
       "command": "${command:python.interpreterPath}",
@@ -316,7 +316,7 @@
       "label": "Build HoloPatcher - Nuitka (Windows only, no CLI support)",
       "type": "shell",
       "dependsOn": [
-        "holopatcher_requirements",
+        "holopatcher_recommended",
         "install_nuitka"
       ],
       "command": "${command:python.interpreterPath}",

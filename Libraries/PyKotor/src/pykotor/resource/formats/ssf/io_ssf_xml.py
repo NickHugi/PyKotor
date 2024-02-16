@@ -5,14 +5,21 @@ from contextlib import suppress
 # Try to import defusedxml, fallback to ElementTree if not available
 from xml.etree import ElementTree
 
-with suppress(ImportError):
+try:
     from defusedxml.ElementTree import fromstring as _fromstring
     ElementTree.fromstring = _fromstring
+except (ImportError, ModuleNotFoundError):
+    pass
+
+from typing import TYPE_CHECKING
 
 from pykotor.resource.formats.ssf.ssf_data import SSF, SSFSound
-from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES, ResourceReader, ResourceWriter, autoclose
+from pykotor.resource.type import ResourceReader, ResourceWriter, autoclose
 from pykotor.tools.encoding import decode_bytes_with_fallbacks
 from utility.misc import indent
+
+if TYPE_CHECKING:
+    from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES
 
 
 class SSFXMLReader(ResourceReader):
@@ -58,7 +65,7 @@ class SSFXMLWriter(ResourceWriter):
     def write(
         self,
         auto_close: bool = True,
-    ) -> None:
+    ):
         for sound_name, sound in SSFSound.__members__.items():
             ElementTree.SubElement(
                 self.xml_root,

@@ -2,19 +2,23 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+from PyQt5.QtGui import QColor, QStandardItem, QStandardItemModel
+from PyQt5.QtWidgets import QMenu, QShortcut, QTreeView
+
 from pykotor.resource.formats.gff import write_gff
 from pykotor.resource.generics.jrl import JRL, JRLEntry, JRLQuest, JRLQuestPriority, dismantle_jrl, read_jrl
 from pykotor.resource.type import ResourceType
-from PyQt5.QtGui import QColor, QStandardItem, QStandardItemModel
-from PyQt5.QtWidgets import QMenu, QShortcut, QTreeView, QWidget
 from toolset.data.installation import HTInstallation
 from toolset.gui.dialogs.edit.locstring import LocalizedStringDialog
 from toolset.gui.editor import Editor
 
 if TYPE_CHECKING:
+    from PyQt5.QtWidgets import QWidget
     import os
 
     from PyQt5.QtCore import QItemSelection, QPoint
+
+    from pykotor.resource.formats.twoda.twoda_data import TwoDA
 
 
 class JRLEditor(Editor):
@@ -46,7 +50,7 @@ class JRLEditor(Editor):
             - Sets the installation if provided
             - Displays an empty new journal by default.
         """
-        supported = [ResourceType.JRL]
+        supported: list[ResourceType] = [ResourceType.JRL]
         super().__init__(parent, "Journal Editor", "journal", supported, supported, installation)
         self.resize(400, 250)
 
@@ -68,7 +72,7 @@ class JRLEditor(Editor):
 
         self.new()
 
-    def _setupSignals(self) -> None:
+    def _setupSignals(self):
         """Setup signals for journal UI interactions.
 
         Args:
@@ -102,20 +106,19 @@ class JRLEditor(Editor):
 
         QShortcut("Del", self).activated.connect(self.onDeleteShortcut)
 
-    def _setupInstallation(self, installation: HTInstallation) -> None:
+    def _setupInstallation(self, installation: HTInstallation):
         self._installation = installation
         self.ui.categoryNameEdit.setInstallation(installation)
 
-        planets = installation.htGetCache2DA(HTInstallation.TwoDA_PLANETS)
+        planets: TwoDA = installation.htGetCache2DA(HTInstallation.TwoDA_PLANETS)
 
         self.ui.categoryPlanetSelect.clear()
         self.ui.categoryPlanetSelect.addItem("[None]", -1)
         for row in planets:
-            text = self._installation.talktable().string(row.get_integer("name", 0))
-            text = row.get_string("label").replace("_", " ").title() if text == "" or text is None else text
+            text = self._installation.talktable().string(row.get_integer("name", 0)) or row.get_string("label").replace("_", " ").title()
             self.ui.categoryPlanetSelect.addItem(text)
 
-    def load(self, filepath: os.PathLike | str, resref: str, restype: ResourceType, data: bytes) -> None:
+    def load(self, filepath: os.PathLike | str, resref: str, restype: ResourceType, data: bytes):
         """Load quest data from a file.
 
         Args:
@@ -160,73 +163,73 @@ class JRLEditor(Editor):
         write_gff(dismantle_jrl(self._jrl), data)
         return data, b""
 
-    def new(self) -> None:
+    def new(self):
         super().new()
         self._jrl = JRL()
         self._model.clear()
 
-    def refreshEntryItem(self, entryItem: QStandardItem) -> None:
+    def refreshEntryItem(self, entryItem: QStandardItem):
         """Updates the specified item's (storing entry data) text.
 
         Args:
         ----
             entryItem: The item to refresh.
         """
-        text = f"[{entryItem.data().entry_id}] {self._installation.string(entryItem.data().text)}"
+        text: str = f"[{entryItem.data().entry_id}] {self._installation.string(entryItem.data().text)}"
         entryItem.setForeground(QColor(0x880000 if entryItem.data().end else 0x000000))
         entryItem.setText(text)
 
-    def refreshQuestItem(self, questItem: QStandardItem) -> None:
+    def refreshQuestItem(self, questItem: QStandardItem):
         """Updates the specified item's (storing quest data) text.
 
         Args:
         ----
             questItem: The item to refresh.
         """
-        text = self._installation.string(questItem.data().name, "[Unnamed]")
+        text: str = self._installation.string(questItem.data().name, "[Unnamed]")
         questItem.setText(text)
 
-    def changeQuestName(self) -> None:
+    def changeQuestName(self):
         """Opens a LocalizedStringDialog for editing the name of the selected quest."""
         dialog = LocalizedStringDialog(self, self._installation, self.ui.categoryNameEdit.locstring())
         if dialog.exec_():
             self.ui.categoryNameEdit.setInstallation(self._installation)
             self.onValueUpdated()
-            item = self._get_item()
+            item: QStandardItem = self._get_item()
             quest: JRLQuest = item.data()
             quest.name = dialog.locstring
             self.refreshQuestItem(item)
 
-    def changeEntryText(self) -> None:
+    def changeEntryText(self):
         """Opens a LocalizedStringDialog for editing the text of the selected entry."""
-        dialog = LocalizedStringDialog(self, self._installation, self.ui.entryTextEdit.locstring)
+        dialog = LocalizedStringDialog(self, self._installation, self.ui.entryTextEdit.locstring)  # FIXME: locstring or locstring()?
         if dialog.exec_():
             self._loadLocstring(self.ui.entryTextEdit, dialog.locstring)
             self.onValueUpdated()
-            item = self._get_item()
+            item: QStandardItem = self._get_item()
             entry: JRLEntry = item.data()
             entry.text = dialog.locstring
             self.refreshEntryItem(item)
 
-    def removeQuest(self, questItem: QStandardItem) -> None:
+    def removeQuest(self, questItem: QStandardItem):
         """Removes a quest from the journal.
 
         Args:
         ----
             questItem: The item in the tree that stores the quest.
         """
-        quest = questItem.data()
+        quest: JRLQuest = questItem.data()
         self._model.removeRow(questItem.row())
         self._jrl.quests.remove(quest)
 
-    def removeEntry(self, entryItem: QStandardItem) -> None:
+    def removeEntry(self, entryItem: QStandardItem):
         """Removes an entry from the journal.
 
         Args:
         ----
             entryItem: The item in the tree that stores the entry.
         """
-        entry = entryItem.data()
+        entry: JRLEntry = entryItem.data()
         entryItem.parent().removeRow(entryItem.row())
         for quest in self._jrl.quests:
             if entry in quest.entries:
@@ -245,7 +248,8 @@ class JRLEditor(Editor):
         entryItem.setData(newEntry)
         self.refreshEntryItem(entryItem)
         questItem.appendRow(entryItem)
-        questItem.data().entries.append(newEntry)
+        quest: JRLQuest = questItem.data()
+        quest.entries.append(newEntry)
 
     def addQuest(self, newQuest: JRLQuest):
         """Adds a quest to the journal.
@@ -260,7 +264,7 @@ class JRLEditor(Editor):
         self._model.appendRow(questItem)
         self._jrl.quests.append(newQuest)
 
-    def onValueUpdated(self) -> None:
+    def onValueUpdated(self):
         """Updates the selected item in the journal tree when values change.
 
         This method should be connected to all the widgets that store data related quest or entry text (besides the
@@ -278,7 +282,7 @@ class JRLEditor(Editor):
             - Update the appropriate fields on the item object
             - Refresh the entry item to update the display.
         """
-        item = self._get_item()
+        item: QStandardItem = self._get_item()
         data = item.data()
         if isinstance(data, JRLQuest):  # sourcery skip: extract-method
             data.name = self.ui.categoryNameEdit.locstring()
@@ -294,7 +298,7 @@ class JRLEditor(Editor):
             data.entry_id = self.ui.entryIdSpin.value()
             self.refreshEntryItem(item)
 
-    def onSelectionChanged(self, selection: QItemSelection, deselected: QItemSelection) -> None:
+    def onSelectionChanged(self, selection: QItemSelection, deselected: QItemSelection):
         """Updates UI on journal tree selection change.
 
         This method should be connected to a signal that emits when selection changes for the journalTree widget. It
@@ -338,7 +342,7 @@ class JRLEditor(Editor):
         self.ui.categoryCommentEdit.blockSignals(False)
         self.ui.entryTextEdit.blockSignals(False)
 
-    def onContextMenuRequested(self, point: QPoint) -> None:
+    def onContextMenuRequested(self, point: QPoint):
         """Handle context menu requests for the journal tree widget.
 
         This method should be connected to the customContextMenuRequested of the journalTree object. This will popup the
@@ -376,7 +380,7 @@ class JRLEditor(Editor):
 
         menu.popup(self.ui.journalTree.viewport().mapToGlobal(point))
 
-    def onDeleteShortcut(self) -> None:
+    def onDeleteShortcut(self):
         """Deletes selected shortcut from journal tree.
 
         This method should be connected to the activated signal of a QShortcut. The method will delete the selected

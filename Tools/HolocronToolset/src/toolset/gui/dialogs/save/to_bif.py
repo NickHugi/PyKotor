@@ -1,6 +1,12 @@
+from __future__ import annotations
+
 from enum import IntEnum
 
-from PyQt5.QtWidgets import QDialog, QWidget
+from PyQt5.QtWidgets import QDialog
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from PyQt5.QtWidgets import QWidget
 
 
 class BifSaveOption(IntEnum):
@@ -24,10 +30,10 @@ class BifSaveDialog(QDialog):
 
         self.option: BifSaveOption = BifSaveOption.Nothing
 
-    def saveAsMod(self) -> None:
+    def saveAsMod(self):
         self.option = BifSaveOption.MOD
         self.accept()
 
-    def saveAsOverride(self) -> None:
+    def saveAsOverride(self):
         self.option = BifSaveOption.Override
         self.accept()

@@ -6,11 +6,12 @@ from pykotor.common.stream import BinaryReader
 from pykotor.resource.formats.tpc.io_bmp import TPCBMPWriter
 from pykotor.resource.formats.tpc.io_tga import TPCTGAReader, TPCTGAWriter
 from pykotor.resource.formats.tpc.io_tpc import TPCBinaryReader, TPCBinaryWriter
-from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES, ResourceType
+from pykotor.resource.type import ResourceType
 from pykotor.tools.path import CaseAwarePath
 
 if TYPE_CHECKING:
     from pykotor.resource.formats.tpc.tpc_data import TPC
+    from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES
 
 
 def detect_tpc(
@@ -108,7 +109,7 @@ def write_tpc(
     tpc: TPC,
     target: TARGET_TYPES,
     file_format: ResourceType = ResourceType.TPC,
-) -> None:
+):
     """Writes the TPC data to the target location with the specified format (TPC, TGA or BMP).
 
     Args:

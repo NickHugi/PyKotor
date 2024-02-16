@@ -1,17 +1,22 @@
 from __future__ import annotations
 
-from contextlib import suppress
-
 # Try to import defusedxml, fallback to ElementTree if not available
 from xml.etree import ElementTree
 
-with suppress(ImportError):
+try:
     from defusedxml.ElementTree import fromstring as _fromstring
     ElementTree.fromstring = _fromstring
+except (ImportError, ModuleNotFoundError):
+    pass
+
+from typing import TYPE_CHECKING
 
 from pykotor.resource.formats.lip.lip_data import LIP, LIPShape
-from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES, ResourceReader, ResourceWriter, autoclose
+from pykotor.resource.type import ResourceReader, ResourceWriter, autoclose
 from utility.misc import indent
+
+if TYPE_CHECKING:
+    from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES
 
 
 class LIPXMLReader(ResourceReader):
@@ -62,7 +67,7 @@ class LIPXMLWriter(ResourceWriter):
     def write(
         self,
         auto_close: bool = True,
-    ) -> None:
+    ):
         self._xml_root.set("duration", str(self._lip.length))
 
         for keyframe in self._lip:

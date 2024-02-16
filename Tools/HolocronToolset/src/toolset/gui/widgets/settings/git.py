@@ -1,19 +1,26 @@
+from __future__ import annotations
+
 from PyQt5 import QtCore
-from PyQt5.QtWidgets import QWidget
+
 from toolset.data.settings import Settings
 from toolset.gui.widgets.settings.base import SettingsWidget
 from toolset.utils.misc import QtKey, QtMouse
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from PyQt5.QtWidgets import QWidget
 
 
 class GITWidget(SettingsWidget):
     editedSignal = QtCore.pyqtSignal()
 
     def __init__(self, parent: QWidget):
-        """Initializes the GIT settings widget
+        """Initializes the GIT settings widget.
+
         Args:
+        ----
             parent (QWidget): The parent widget
-        Returns:
-            None
+
         Processing Logic:
         ----------------
             - Calls the parent __init__ method
@@ -57,29 +64,29 @@ class GITWidget(SettingsWidget):
 
         self.setupValues()
 
-    def _setupColourValues(self) -> None:
+    def _setupColourValues(self):
         for colorEdit in [widget for widget in dir(self.ui) if "ColourEdit" in widget]:
             self._registerColour(getattr(self.ui, colorEdit), colorEdit[:-4])
 
-    def _setupBindValues(self) -> None:
+    def _setupBindValues(self):
         for bindEdit in [widget for widget in dir(self.ui) if "BindEdit" in widget]:
             self._registerBind(getattr(self.ui, bindEdit), bindEdit[:-4])
 
-    def setupValues(self) -> None:
+    def setupValues(self):
         self._setupColourValues()
         self._setupBindValues()
 
-    def save(self) -> None:
+    def save(self):
         for widget, bindName in self.binds:
             setattr(self.settings, bindName, widget.bind())
         for widget, colourName in self.colours:
             setattr(self.settings, colourName, widget.color().rgba_integer())
 
-    def resetColours(self) -> None:
+    def resetColours(self):
         self.settings.resetMaterialColors()
         self._setupColourValues()
 
-    def resetControls(self) -> None:
+    def resetControls(self):
         self.settings.resetControls()
         self._setupBindValues()
 
@@ -88,12 +95,12 @@ class GITSettings(Settings):
     def __init__(self):
         super().__init__("GITEditor")
 
-    def resetMaterialColors(self) -> None:
+    def resetMaterialColors(self):
         for setting in dir(self):
             if setting.endswith("Colour"):
                 self.settings.remove(setting)
 
-    def resetControls(self) -> None:
+    def resetControls(self):
         for setting in dir(self):
             if setting.endswith("Bind"):
                 self.settings.remove(setting)

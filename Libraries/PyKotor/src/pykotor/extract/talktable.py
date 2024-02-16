@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING, NamedTuple
 from pykotor.common.language import Language
 from pykotor.common.misc import ResRef
 from pykotor.common.stream import BinaryReader
-from utility.path import Path
+from utility.system.path import Path
 
 if TYPE_CHECKING:
     import os
@@ -35,9 +35,9 @@ class TalkTable:  # TODO: dialogf.tlk
         self,
         path: os.PathLike | str,
     ):
-        self._path: Path = Path.pathify(path)  # type: ignore[assignment]
+        self._path: Path = Path.pathify(path)
 
-    def path(self):
+    def path(self) -> Path:
         return self._path
 
     def string(
@@ -58,13 +58,13 @@ class TalkTable:  # TODO: dialogf.tlk
             return ""
         with BinaryReader.from_file(self._path) as reader:
             reader.seek(12)
-            entries_count = reader.read_uint32()
-            texts_offset = reader.read_uint32()
+            entries_count: int = reader.read_uint32()
+            texts_offset: int = reader.read_uint32()
 
             if stringref >= entries_count:
                 return ""
 
-            tlkdata = self._extract_common_tlk_data(reader, stringref)
+            tlkdata: TLKData = self._extract_common_tlk_data(reader, stringref)
             reader.seek(texts_offset + tlkdata.text_offset)
             return reader.read_string(tlkdata.text_length)
 
@@ -87,7 +87,7 @@ class TalkTable:  # TODO: dialogf.tlk
         with BinaryReader.from_file(self._path) as reader:
             reader.seek(12)
             entries_count = reader.read_uint32()
-            _texts_offset = reader.read_uint32()
+            reader.skip(4)
 
             if stringref >= entries_count:
                 return ResRef.from_blank()
@@ -137,7 +137,7 @@ class TalkTable:  # TODO: dialogf.tlk
             entries_count = reader.read_uint32()
             texts_offset = reader.read_uint32()
 
-            batch = {}
+            batch: dict[int, StringResult] = {}
 
             for stringref in stringrefs:
                 if stringref == -1 or stringref >= entries_count:
@@ -159,7 +159,7 @@ class TalkTable:  # TODO: dialogf.tlk
     ) -> int:
         """Returns the number of entries in the talk table.
 
-        Returns
+        Returns:
         -------
             The number of entries in the talk table.
         """
@@ -172,7 +172,7 @@ class TalkTable:  # TODO: dialogf.tlk
     ) -> Language:
         """Returns the matching Language of the TLK file.
 
-        Returns
+        Returns:
         -------
             The language of the TLK file.
         """

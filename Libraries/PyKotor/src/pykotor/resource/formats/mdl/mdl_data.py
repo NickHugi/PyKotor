@@ -1,18 +1,21 @@
 from __future__ import annotations
 
 from enum import IntEnum
-from typing import Tuple
+from typing import TYPE_CHECKING, Tuple
 
-from pykotor.common.geometry import SurfaceMaterial, Vector2, Vector3, Vector4
+from pykotor.common.geometry import SurfaceMaterial, Vector3, Vector4
 from pykotor.common.misc import Color
 from pykotor.resource.type import ResourceType
 
 BONE_INDICES = Tuple[int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int]
+if TYPE_CHECKING:
+    from pykotor.common.geometry import Vector2
+
 
 class MDL:
     """Represents a MDL/MDX file.
 
-    Attributes
+    Attributes:
     ----------
         root: The root node of the model.
         anims: The animations stored in the model.
@@ -25,7 +28,7 @@ class MDL:
 
     def __init__(
         self,
-    ) -> None:
+    ):
         self.root: MDLNode = MDLNode()
         self.anims: list[MDLAnimation] = []
         self.name: str = ""
@@ -52,11 +55,11 @@ class MDL:
             - Check each node's name against the target name.
             - Return the matching node or None if not found.
         """
-        pick: MDLNode | None = None
+        pick = None
 
-        nodes: list[MDLNode] = [self.root]
+        nodes = [self.root]
         while nodes:
-            node: MDLNode = nodes.pop()
+            node = nodes.pop()
             if node.name == node_name:
                 pick = node
             else:
@@ -116,14 +119,12 @@ class MDL:
             - If found, set the parent variable to that node
             - Return the parent node or None if not found.
         """
-        return next(
-            (
-                node
-                for node in self.all_nodes()
-                if child in node.children
-            ),
-            None,
-        )
+        all_nodes: list[MDLNode] = self.all_nodes()
+        parent: MDLNode | None = None
+        for node in all_nodes:
+            if child in node.children:
+                parent = node
+        return parent
 
     def global_position(
         self,
@@ -167,10 +168,6 @@ class MDL:
         -------
             MDLNode: The node with matching id
 
-        Raises:
-        ------
-            StopIteration: node_id not found.
-
         Processing Logic:
         ----------------
             - Iterate through all nodes in the graph
@@ -178,7 +175,10 @@ class MDL:
             - Return node if id matches
             - Raise error if no matching node found.
         """
-        return next(node for node in self.all_nodes() if node.node_id == node_id)
+        for node in self.all_nodes():
+            if node.node_id == node_id:
+                return node
+        raise ValueError
 
     def all_textures(
         self,
@@ -203,7 +203,7 @@ class MDL:
         return {
             node.mesh.texture_1
             for node in self.all_nodes()
-            if (node.mesh and node.mesh.texture_1 != "NULL" and node.mesh.texture_1 != "")
+            if (node.mesh and node.mesh.texture_1 != "NULL" and node.mesh.texture_1)
         }
 
     def all_lightmaps(
@@ -228,7 +228,7 @@ class MDL:
         return {
             node.mesh.texture_2
             for node in self.all_nodes()
-            if (node.mesh and node.mesh.texture_2 != "NULL" and node.mesh.texture_2 != "")
+            if (node.mesh and node.mesh.texture_2 != "NULL" and node.mesh.texture_2)
         }
 
 
@@ -236,7 +236,7 @@ class MDL:
 class MDLAnimation:
     def __init__(
         self,
-    ) -> None:
+    ):
         self.name: str = ""
         self.root_model: str = ""
         self.anim_length: float = 0.0
@@ -265,10 +265,10 @@ class MDLAnimation:
             - Repeat until scan is empty
             - Return the nodes list containing all nodes.
         """
-        nodes: list[MDLNode] = []
-        scan: list[MDLNode] = [self.root]
+        nodes = []
+        scan = [self.root]
         while scan:
-            node: MDLNode = scan.pop()
+            node = scan.pop()
             nodes.append(node)
             scan.extend(node.children)
         return nodes
@@ -277,7 +277,7 @@ class MDLAnimation:
 class MDLEvent:
     def __init__(
         self,
-    ) -> None:
+    ):
         self.activation_time: float = 0.0
         self.name: str = ""
 
@@ -302,7 +302,7 @@ class MDLNodeFlags(IntEnum):
 class MDLNode:
     """A node in the MDL tree that can store additional nodes or some extra data related to the model such as geometry or lighting.
 
-    Attributes
+    Attributes:
     ----------
         children: List of children linked to the node.
         controllers: List of controllers linked to the node.
@@ -320,7 +320,7 @@ class MDLNode:
 
     def __init__(
         self,
-    ) -> None:
+    ):
         """Initializes a MDLNode object.
 
         Args:
@@ -410,7 +410,7 @@ class MDLNode:
 class MDLLight:
     """Light data that can be attached to a node.
 
-    Attributes
+    Attributes:
     ----------
         flare_radius:
         light_priority:
@@ -441,7 +441,7 @@ class MDLLight:
 class MDLEmitter:
     """Emitter data that can be attached to a node.
 
-    Attributes
+    Attributes:
     ----------
         dead_space:
         blast_radius:
@@ -491,7 +491,7 @@ class MDLEmitter:
 class MDLReference:
     """Reference data that can be attached to a node.
 
-    Attributes
+    Attributes:
     ----------
         model:
         reattachable:
@@ -510,7 +510,7 @@ class MDLMesh:
 
     def __init__(
         self,
-    ) -> None:
+    ):
         # TODO: look at mesh inverted counter array, rename boolean flags
         self.faces: list[MDLFace] = []
         self.diffuse: Color = Color.WHITE
@@ -592,7 +592,7 @@ class MDLSaber:
 class MDLBoneVertex:
     def __init__(
         self,
-    ) -> None:
+    ):
         self.vertex_weights: tuple[float, float, float, float] = (0.0, 0.0, 0.0, 0.0)
         self.vertex_indices: tuple[float, float, float, float] = (-1.0, -1.0, -1.0, -1.0)
 
@@ -600,7 +600,7 @@ class MDLBoneVertex:
 class MDLFace:
     def __init__(
         self,
-    ) -> None:
+    ):
         self.v1: int = 0
         self.v2: int = 0
         self.v3: int = 0
@@ -692,7 +692,7 @@ class MDLController:
 
     def __init__(
         self,
-    ) -> None:
+    ):
         self.controller_type: MDLControllerType = MDLControllerType.INVALID
         self.rows: list[MDLControllerRow] = []
 
@@ -702,7 +702,7 @@ class MDLControllerRow:
         self,
         time,
         data,
-    ) -> None:
+    ):
         self.time: float = time
         self.data: list[float] = data
 

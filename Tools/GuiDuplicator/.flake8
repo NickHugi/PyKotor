@@ -1,3 +1,0 @@
-exclude = [".git", "__pycache__", "dist"]
-max-line-length = 130
-max-complexity = 25

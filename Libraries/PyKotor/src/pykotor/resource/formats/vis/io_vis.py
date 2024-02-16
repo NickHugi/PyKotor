@@ -2,8 +2,13 @@ from __future__ import annotations
 
 import os
 
+from typing import TYPE_CHECKING
+
 from pykotor.resource.formats.vis.vis_data import VIS
-from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES, ResourceReader, ResourceWriter, autoclose
+from pykotor.resource.type import ResourceReader, ResourceWriter, autoclose
+
+if TYPE_CHECKING:
+    from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES
 
 
 class VISAsciiReader(ResourceReader):
@@ -47,7 +52,7 @@ class VISAsciiWriter(ResourceWriter):
         self._vis: VIS = vis
 
     @autoclose
-    def write(self, auto_close: bool = True) -> None:
+    def write(self, auto_close: bool = True):
         for observer, observed in self._vis:
             self._writer.write_string(f"{observer} {len(observed)}{os.linesep}")
             for room in observed:

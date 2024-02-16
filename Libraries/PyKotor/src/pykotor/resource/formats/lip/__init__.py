@@ -1,3 +1,4 @@
+from __future__ import annotations
 from pykotor.resource.formats.lip.lip_data import (
     LIP,
     LIPShape,

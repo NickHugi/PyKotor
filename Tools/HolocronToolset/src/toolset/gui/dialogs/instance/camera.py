@@ -1,6 +1,13 @@
-from pykotor.resource.generics.git import GITCamera
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
 from PyQt5.QtGui import QIcon, QPixmap
-from PyQt5.QtWidgets import QDialog, QWidget
+from PyQt5.QtWidgets import QDialog
+
+if TYPE_CHECKING:
+    from PyQt5.QtWidgets import QWidget
+    from pykotor.resource.generics.git import GITCamera
 
 
 class CameraDialog(QDialog):
@@ -30,7 +37,7 @@ class CameraDialog(QDialog):
 
         self.camera: GITCamera = camera
 
-    def accept(self) -> None:
+    def accept(self):
         super().accept()
         self.camera.position.x = self.ui.xPosSpin.value()
         self.camera.position.y = self.ui.yPosSpin.value()

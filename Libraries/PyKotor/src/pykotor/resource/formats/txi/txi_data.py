@@ -3,13 +3,14 @@
 from __future__ import annotations
 
 import math
+
 from typing import ClassVar
 
 
 class TXIBaseInformation:
     """Fields used within all txi files."""
 
-    def __init__(self) -> None:
+    def __init__(self):
         #  Mipmap and Filter settings (0/1) can apply different graphical "softening" on the fonts (not affecting spacing etc.). Don't use it though, in most case it would hurt your eyes.
         #  The engine has broken mip use implementation. It incorrectly mixes mip levels, even on objects filling the screen.
         self.mipmap: int = 0  # The mipmap 0 setting shouldn't be changed. That tells the engine to use mip 0, i.e. the highest resolution of the image
@@ -19,7 +20,7 @@ class TXIBaseInformation:
 
 
 class TXIMaterialInformation(TXIBaseInformation):
-    def __init__(self) -> None:
+    def __init__(self):
         self.bumpmaptexture: int
         self.bumpyshinytexture: int
         self.envmaptexture: int
@@ -29,7 +30,7 @@ class TXIMaterialInformation(TXIBaseInformation):
 
 
 class TXITextureInformation(TXIBaseInformation):
-    def __init__(self) -> None:
+    def __init__(self):
         super().__init__()
         self.proceduretype: int
         self.filerange: int
@@ -101,7 +102,7 @@ class TXIFontInformation(TXIBaseInformation):
         "cus_button_yps",
     ]
 
-    def __init__(self) -> None:
+    def __init__(self):
         super().__init__()
         # Actual fields
         self.numchars: int = 256  # Tested. Unsure if this is actually required, or if the game simply takes from the 'upperleftcoords' and 'lowerrightcoords' sizes.
@@ -252,13 +253,13 @@ lowerrightcoords {self.lr_coords_count}
         self.fontheight = 128 * custom_scaling * max_char_height / (25 * resolution[1])
         self.baselineheight = baseline_height / resolution[1]
 
-        #self.texturewidth: float = self.numchars * custom_scaling / 50  # maybe?
-        #self.fontheight: float = (self.numchars * custom_scaling * max_char_height) / (50 * resolution[1])  # maybe?
+        # self.texturewidth: float = self.numchars * custom_scaling / 50  # maybe?
+        # self.fontheight: float = (self.numchars * custom_scaling * max_char_height) / (50 * resolution[1])  # maybe?
 
         # TODO: I'm pretty sure fontwidth could be calculated here too. During testing, it's been easier to leave that at 1.000000 so there's less variables to worry about.
         # We should figure out the relationship for proper readability. I think vanilla K1 defines texturewidth as 'resolution_x / 100'.
         # Also worth mentioning the above math doesn't even work if the resolution isn't a perfect square.
         # EDIT: Editing fontwidth yields no changes in K1. Might do something in K2.
-        #self.fontwidth = self.texturewidth / self.fontheight * max_char_height / resolution[0]
-        #assert int(round(self.fontwidth)) == 1
+        # self.fontwidth = self.texturewidth / self.fontheight * max_char_height / resolution[0]
+        # assert int(round(self.fontwidth)) == 1
 

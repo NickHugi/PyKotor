@@ -1,3 +1,4 @@
+from __future__ import annotations
 from pykotor.resource.formats.gff.gff_data import (
     GFF,
     GFFList,

@@ -2,12 +2,15 @@
 from __future__ import annotations
 
 from itertools import zip_longest
-from typing import Callable
+from typing import TYPE_CHECKING
 
 from pykotor.common.language import Language
 from pykotor.common.misc import ResRef
 from pykotor.resource.type import ResourceType
 from utility.string import compare_and_format, format_text
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
 
 
 class TLK:
@@ -16,7 +19,7 @@ class TLK:
     def __init__(
         self,
         language: Language = Language.ENGLISH,
-    ) -> None:
+    ):
         self.entries: list[TLKEntry] = []
         self.language: Language = language  # game does not use this field
 
@@ -77,7 +80,7 @@ class TLK:
         self.entries.append(entry)
         return len(self.entries) - 1
 
-    def replace(self, stringref: int, text: str, sound_resref: str = "") -> None:
+    def replace(self, stringref: int, text: str, sound_resref: str = ""):
         """Replaces an entry at the specified stringref with the provided text and sound resref.
 
         Args:
@@ -96,7 +99,7 @@ class TLK:
     def resize(
         self,
         size: int,
-    ) -> None:
+    ):
         """Resizes the number of entries to the specified size.
 
         Args:
@@ -125,8 +128,8 @@ class TLK:
                 extra_old += 1
                 continue
             if old_entry != new_entry:
-                text_mismatch: bool = old_entry.text.lower() != new_entry.text.lower()
-                vo_mismatch: bool = old_entry.voiceover.get().lower() != new_entry.voiceover.get().lower()
+                text_mismatch: bool = old_entry.text != new_entry.text
+                vo_mismatch: bool = old_entry.voiceover != new_entry.voiceover
                 if not text_mismatch and not vo_mismatch:
                     log_func("TLK entries are not equal, but no differences could be found?")
                     continue
@@ -167,7 +170,7 @@ class TLKEntry:
 
     def __eq__(
         self,
-        other,
+        other: TLKEntry,
     ):
         """Returns True if the text and voiceover match."""
         if not isinstance(other, TLKEntry):

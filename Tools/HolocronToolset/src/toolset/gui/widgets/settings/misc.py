@@ -1,6 +1,8 @@
+from __future__ import annotations
 
 from PyQt5 import QtCore
 from PyQt5.QtWidgets import QWidget
+
 from toolset.gui.widgets.settings.installations import GlobalSettings
 
 
@@ -17,7 +19,7 @@ class MiscWidget(QWidget):
         self.ui.setupUi(self)
         self.setupValues()
 
-    def setupValues(self) -> None:
+    def setupValues(self):
         self.ui.saveRimCheck.setChecked(not self.settings.disableRIMSaving)
         self.ui.mergeRimCheck.setChecked(self.settings.joinRIMsTogether)
         self.ui.greyRimCheck.setChecked(self.settings.greyRIMText)
@@ -29,7 +31,7 @@ class MiscWidget(QWidget):
         self.ui.ncsToolEdit.setText(self.settings.ncsDecompilerPath)
         self.ui.nssCompEdit.setText(self.settings.nssCompilerPath)
 
-    def save(self) -> None:
+    def save(self):
         self.settings.disableRIMSaving = not self.ui.saveRimCheck.isChecked()
         self.settings.joinRIMsTogether = self.ui.mergeRimCheck.isChecked()
         self.settings.greyRIMText = self.ui.greyRimCheck.isChecked()

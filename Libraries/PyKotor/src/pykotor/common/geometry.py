@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import math
+
 from enum import IntEnum
 from typing import TYPE_CHECKING
 
@@ -12,7 +13,7 @@ if TYPE_CHECKING:
 class Vector2:
     """Represents a 2 dimensional vector.
 
-    Attributes
+    Attributes:
     ----------
         x: The x component.
         y: The y component.
@@ -204,7 +205,7 @@ class Vector2:
     ) -> Vector2:
         """Returns a new vector with a magnitude of zero.
 
-        Returns
+        Returns:
         -------
             A new Vector2 instance.
         """
@@ -233,7 +234,7 @@ class Vector2:
         self,
         x: float,
         y: float,
-    ) -> None:
+    ):
         """Sets the components of the vector.
 
         Args:
@@ -246,7 +247,7 @@ class Vector2:
 
     def normalize(
         self,
-    ) -> None:
+    ):
         """Normalizes the vector so that the magnitude is equal to one while maintaining the same angle."""
         magnitude = self.magnitude()
         if magnitude == 0:
@@ -261,7 +262,7 @@ class Vector2:
     ) -> float:
         """Returns the magnitude of the vector.
 
-        Returns
+        Returns:
         -------
             The magnitude of the vector.
         """
@@ -333,7 +334,7 @@ class Vector2:
     ) -> float:
         """Returns the angle of the vector.
 
-        Returns
+        Returns:
         -------
             The angle of the vector in radians.
         """
@@ -343,7 +344,7 @@ class Vector2:
 class Vector3:
     """Represents a 3 dimensional vector.
 
-    Attributes
+    Attributes:
     ----------
         x: The x component.
         y: The y component.
@@ -531,7 +532,7 @@ class Vector3:
     ) -> Vector3:
         """Returns a new vector with a magnitude of zero.
 
-        Returns
+        Returns:
         -------
             A new Vector3 instance.
         """
@@ -542,7 +543,7 @@ class Vector3:
         x: float,
         y: float,
         z: float,
-    ) -> None:
+    ):
         """Sets the components of the vector.
 
         Args:
@@ -557,7 +558,7 @@ class Vector3:
 
     def normalize(
         self,
-    ) -> None:
+    ):
         """Normalizes the vector so that the magnitude is equal to one while maintaining the same angle."""
         magnitude = self.magnitude()
         if magnitude == 0:
@@ -574,7 +575,7 @@ class Vector3:
     ) -> float:
         """Returns the magnitude of the vector.
 
-        Returns
+        Returns:
         -------
             The magnitude of the vector.
         """
@@ -647,7 +648,7 @@ class Vector3:
 class Vector4:
     """Represents a 4 dimensional vector.
 
-    Attributes
+    Attributes:
     ----------
         x: The x component.
         y: The y component.
@@ -799,7 +800,7 @@ class Vector4:
     ) -> Vector4:
         """Returns a new vector with a magnitude of zero.
 
-        Returns
+        Returns:
         -------
             A new Vector4 instance.
         """
@@ -925,7 +926,7 @@ class Vector4:
     ) -> float:
         """Returns the magnitude of the vector.
 
-        Returns
+        Returns:
         -------
             The magnitude of the vector.
         """
@@ -936,7 +937,7 @@ class Vector4:
     ) -> Vector4:
         """Normalizes the vector so that the magnitude is equal to one while maintaining the same angle.
 
-        Returns
+        Returns:
         -------
             The same vector.
         """
@@ -959,7 +960,7 @@ class Vector4:
         y: float,
         z: float,
         w: float,
-    ) -> None:
+    ):
         """Sets the components of the vector.
 
         Args:
@@ -978,7 +979,7 @@ class Vector4:
 class AxisAngle:
     """Represents a rotation in 3D space.
 
-    Attributes
+    Attributes:
     ----------
         axis: The axis of rotation.
         angle: The magnitude of the rotation.
@@ -1031,7 +1032,7 @@ class AxisAngle:
     ) -> AxisAngle:
         """Returns a AxisAngle that contains no rotation.
 
-        Returns
+        Returns:
         -------
             A new AxisAngle instance.
         """
@@ -1078,7 +1079,7 @@ class SurfaceMaterial(IntEnum):
         self,
     ) -> bool:
         """Returns True if the surface material is walkable, False otherwise."""
-        return self in [
+        return self in {
             SurfaceMaterial.DIRT,
             SurfaceMaterial.GRASS,
             SurfaceMaterial.STONE,
@@ -1092,13 +1093,13 @@ class SurfaceMaterial(IntEnum):
             SurfaceMaterial.LEAVES,
             SurfaceMaterial.DOOR,
             SurfaceMaterial.TRIGGER,
-        ]
+        }
 
 
 class Face:
     """Represents a triangle in 3D space.
 
-    Attributes
+    Attributes:
     ----------
         v1: First point of the triangle.
         v2: Second point of the triangle.
@@ -1123,7 +1124,7 @@ class Face:
     ) -> Vector3:
         """Returns the normal for the face.
 
-        Returns
+        Returns:
         -------
             A new Vector3 instance representing the face normal.
         """
@@ -1151,17 +1152,17 @@ class Face:
     ) -> float:
         return -1.0 * (self.normal().dot(self.v1))
 
-    def centre(  # TODO: fix return type
+    def centre(
         self,
     ) -> Vector3:
         return (self.v1 + self.v2 + self.v3) / 3
 
-    def average(  # TODO: fix return type
+    def average(
         self,
     ) -> Vector3:
         """Returns the average point of the face.
 
-        Returns
+        Returns:
         -------
             A vector representing the average point of the face.
         """
@@ -1176,7 +1177,7 @@ class Face:
 
         This method does not check if the point exists within the face, that must be done separately with inside().
 
-        Returns
+        Returns:
         -------
             The Z-component.
         """
@@ -1329,19 +1330,19 @@ class Polygon2:
     def append(
         self,
         point: Vector2,
-    ) -> None:
+    ):
         self.points.append(point)
 
     def extend(
         self,
         points: list[Vector2],
-    ) -> None:
+    ):
         self.points.extend(points)
 
     def remove(
         self,
         point: Vector2,
-    ) -> None:
+    ):
         self.points.remove(point)
 
     def index(
@@ -1375,8 +1376,8 @@ class Polygon3:
 
     def __getitem__(
         self,
-        item: int,
-    ) -> Vector3 | list[Vector3]:
+        item: int | slice,
+    ):
         if isinstance(item, int):
             return self.points[item]
         if isinstance(item, slice):
@@ -1415,19 +1416,19 @@ class Polygon3:
     def append(
         self,
         point: Vector3,
-    ) -> None:
+    ):
         self.points.append(point)
 
     def extend(
         self,
         points: list[Vector3],
-    ) -> None:
+    ):
         self.points.extend(points)
 
     def remove(
         self,
         point: Vector3,
-    ) -> None:
+    ):
         self.points.remove(point)
 
     def index(

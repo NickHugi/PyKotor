@@ -6,16 +6,17 @@ from pykotor.common.language import LocalizedString
 from pykotor.common.misc import Game, ResRef
 from pykotor.resource.formats.gff import GFF, GFFContent, write_gff
 from pykotor.resource.formats.gff.gff_auto import bytes_gff, read_gff
-from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES, ResourceType
+from pykotor.resource.type import ResourceType
 
 if TYPE_CHECKING:
     from pykotor.resource.formats.gff.gff_data import GFFStruct
+    from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES
 
 
 class UTD:
     """Stores door data.
 
-    Attributes
+    Attributes:
     ----------
         tag: "Tag" field.
         name: "LocName" field.
@@ -81,7 +82,7 @@ class UTD:
 
     def __init__(
         self,
-    ) -> None:
+    ):
         self.resref: ResRef = ResRef.from_blank()
         self.conversation: ResRef = ResRef.from_blank()
         self.tag: str = ""
@@ -274,7 +275,7 @@ def dismantle_utd(
     root.set_resref("OnFailToOpen", utd.on_open_failed)
     root.set_string("Comment", utd.comment)
 
-    if game == Game.K2:
+    if game.is_k2():
         root.set_uint8("OpenLockDiff", utd.unlock_diff)
         root.set_int8("OpenLockDiffMod", utd.unlock_diff_mod)
         root.set_uint8("OpenState", utd.open_state)
@@ -320,7 +321,7 @@ def write_utd(
     file_format: ResourceType = ResourceType.GFF,
     *,
     use_deprecated: bool = True,
-) -> None:
+):
     gff: GFF = dismantle_utd(utd, game, use_deprecated=use_deprecated)
     write_gff(gff, target, file_format)
 

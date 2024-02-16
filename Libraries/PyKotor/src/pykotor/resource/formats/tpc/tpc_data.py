@@ -2,7 +2,8 @@
 
 from __future__ import annotations
 
-import itertools
+import itertools as tpc_itertools
+
 from enum import IntEnum
 from typing import NamedTuple
 
@@ -25,7 +26,7 @@ class TPCConvertResult(NamedTuple):
 class TPC:
     """Represents a TPC file.
 
-    Attributes
+    Attributes:
     ----------
         txi: Stores additional information regarding the texture.
     """
@@ -34,7 +35,7 @@ class TPC:
 
     def __init__(
         self,
-    ) -> None:
+    ):
         self._texture_format: TPCTextureFormat = TPCTextureFormat.RGB
         self._mipmaps: list[bytes] = [bytes(0 for _ in range(4 * 4 * 3))]
         self._width: int = 4
@@ -48,7 +49,7 @@ class TPC:
     ) -> int:
         """Returns the number of mipmaps.
 
-        Returns
+        Returns:
         -------
             The number of mipmaps.
         """
@@ -59,7 +60,7 @@ class TPC:
     ) -> TPCTextureFormat:
         """Returns the format of the stored texture.
 
-        Returns
+        Returns:
         -------
             The format of the stored texture.
         """
@@ -70,7 +71,7 @@ class TPC:
     ) -> tuple[int, int]:
         """Returns the width and height of the largest mipmap.
 
-        Returns
+        Returns:
         -------
             A tuple containing [width, height].
         """
@@ -111,9 +112,12 @@ class TPC:
         """
         width, height = self._mipmap_size(mipmap)
         raw_data: bytes = self._mipmaps[mipmap]
+        if self._texture_format == convert_format:
+            print(f"No conversion to {convert_format.name} necessary, self is already in {self._texture_format.name} format")
+            return TPCConvertResult(width, height, raw_data)
         data = bytearray()
 
-        if convert_format in [TPCTextureFormat.DXT1, TPCTextureFormat.DXT5]:
+        if convert_format in {TPCTextureFormat.DXT1, TPCTextureFormat.DXT5}:
             raise NotImplementedError
 
         if convert_format == TPCTextureFormat.Greyscale:
@@ -153,7 +157,7 @@ class TPC:
         height: int,
         data: bytes,
         texture_format: TPCTextureFormat,
-    ) -> None:
+    ):
         """Sets the texture data but only for a single mipmap.
 
         Args:
@@ -171,7 +175,7 @@ class TPC:
         height: int,
         mipmaps: list[bytes],
         texture_format: TPCTextureFormat,
-    ) -> None:
+    ):
         """Sets the new texture data.
 
         Args:
@@ -183,6 +187,24 @@ class TPC:
         """
         # TODO: Some sort of simple sanity check on the data; make sure the mipmaps' data have the appropriate size
         #       according to their texture format.
+        # possible fix for the todo:
+        # Check if the number of mipmaps matches the expected count based on the width and height.
+        # This simplistic check assumes square textures for simplicity.
+        # max_dimension = max(width, height)
+        # expected_mipmap_count = 1 + math.floor(math.log2(max_dimension))
+        # if len(mipmaps) != expected_mipmap_count:
+            # raise ValueError(f"Expected {expected_mipmap_count} mipmaps, got {len(mipmaps)}.")
+        # Iterate over mipmaps and check if their data sizes match the expected sizes.
+        # current_width, current_height = width, height
+        # for i, mipmap in enumerate(mipmaps):
+            # expected_size = (current_width * current_height * bits_per_pixel) // 8
+            # if len(mipmap) != expected_size:
+                # raise ValueError(f"Mipmap level {i} has incorrect size. Expected {expected_size} bytes, got {len(mipmap)} bytes.")
+
+            # Update dimensions for the next mipmap level.
+            # current_width = max(1, current_width // 2)
+            # current_height = max(1, current_height // 2)
+
 
         self._texture_format = texture_format
         self._mipmaps = mipmaps
@@ -192,7 +214,7 @@ class TPC:
     def is_compressed(
         self,
     ) -> bool:
-        return self._texture_format in [TPCTextureFormat.DXT1, TPCTextureFormat.DXT5]
+        return self._texture_format in {TPCTextureFormat.DXT1, TPCTextureFormat.DXT5}
 
     def _mipmap_size(
         self,
@@ -229,7 +251,7 @@ class TPC:
         data: bytes,
         width: int,
         height: int,
-    ) -> bytearray:
+    ) -> bytearray:  # sourcery skip: merge-list-appends-into-extend
         """Converts DXT5 compressed texture data to RGBA bytes.
 
         Args:
@@ -254,7 +276,7 @@ class TPC:
         dxt_reader: BinaryReader = BinaryReader.from_bytes(data)
         new_data = bytearray(width * height * 4)
 
-        for ty, tx in itertools.product(range(4, height + 4, 4), range(0, width, 4)):
+        for ty, tx in tpc_itertools.product(range(4, height + 4, 4), range(0, width, 4)):
             alpha0 = dxt_reader.read_uint8()
             alpha1 = dxt_reader.read_uint8()
             dxt_alpha = TPC._integer48(dxt_reader.read_bytes(6))
@@ -288,11 +310,11 @@ class TPC:
                 alpha_code.append(int((4.0 * alpha0 + 1.0 * alpha1 + 1) / 5))
                 alpha_code.append(int((3.0 * alpha0 + 2.0 * alpha1 + 2) / 5))
                 alpha_code.append(int((2.0 * alpha0 + 3.0 * alpha1 + 2) / 5))
-                alpha_code.extend(
-                    (int((1.0 * alpha0 + 4.0 * alpha1 + 2) / 5), 0, 255),
-                )
-            for y in [3, 2, 1, 0]:
-                for x in [0, 1, 2, 3]:
+                alpha_code.append(int((1.0 * alpha0 + 4.0 * alpha1 + 2) / 5))
+                alpha_code.append(0)
+                alpha_code.append(255)
+            for y in (3, 2, 1, 0):
+                for x in (0, 1, 2, 3):
                     pixelc_code = dxt_pixels & 3
                     dxt_pixels >>= 2
 
@@ -335,7 +357,7 @@ class TPC:
         dxt_reader: BinaryReader = BinaryReader.from_bytes(data)
         new_data = bytearray(width * height * 4)
 
-        for ty, tx in itertools.product(range(4, height + 4, 4), range(0, width, 4)):
+        for ty, tx in tpc_itertools.product(range(4, height + 4, 4), range(0, width, 4)):
             x = dxt_reader.read_int16()
             y = dxt_reader.read_int16()
             c0: tuple[int, int, int] = TPC._rgba565_to_rgb(x)
@@ -353,8 +375,8 @@ class TPC:
             else:
                 cc.extend([TPC._interpolate_rgb(0.5555555, c0, c1), (0, 0, 0)])
 
-            for y in [3, 2, 1, 0]:
-                for x in [0, 1, 2, 3]:
+            for y in (3, 2, 1, 0):
+                for x in (0, 1, 2, 3):
                     pixelc_code = dxt_pixels & 3
                     dxt_pixels >>= 2
 
@@ -375,7 +397,7 @@ class TPC:
         new_data = bytearray()
         rgb_reader = BinaryReader.from_bytes(data)
 
-        for _ty, _x in itertools.product(range(4, height + 4, 4), range(width)):
+        for _ty, _x in tpc_itertools.product(range(4, height + 4, 4), range(width)):
             new_data.extend(
                 [
                     rgb_reader.read_uint8(),
@@ -396,7 +418,7 @@ class TPC:
         new_data = bytearray()
         rgb_reader = BinaryReader.from_bytes(data)
 
-        for _y, _x in itertools.product(range(height), range(width)):
+        for _y, _x in tpc_itertools.product(range(height), range(width)):
             brightness = rgb_reader.read_uint8()
             new_data.extend([brightness, brightness, brightness, 255])
 
@@ -414,7 +436,7 @@ class TPC:
         new_data = bytearray()
         rgb_reader = BinaryReader.from_bytes(data)
 
-        for _y, _x in itertools.product(range(height), range(width)):
+        for _y, _x in tpc_itertools.product(range(height), range(width)):
             r = rgb_reader.read_uint8()
             g = rgb_reader.read_uint8()
             b = rgb_reader.read_uint8()
@@ -440,7 +462,7 @@ class TPC:
         dxt_reader = BinaryReader.from_bytes(data)
         new_data = bytearray(width * height * 3)
 
-        for ty, tx in itertools.product(range(4, height + 4, 4), range(0, width, 4)):
+        for ty, tx in tpc_itertools.product(range(4, height + 4, 4), range(0, width, 4)):
             dxt_reader.skip(8)
 
             x = dxt_reader.read_int16()
@@ -460,8 +482,8 @@ class TPC:
             else:
                 cc.extend([TPC._interpolate_rgb(0.5555555, c0, c1), (0, 0, 0)])
 
-            for y in [3, 2, 1, 0]:
-                for x in [0, 1, 2, 3]:
+            for y in (3, 2, 1, 0):
+                for x in (0, 1, 2, 3):
                     pixelc_code = dxt_pixels & 3
                     dxt_pixels >>= 2
 
@@ -481,7 +503,7 @@ class TPC:
         dxt_reader = BinaryReader.from_bytes(data)
         new_data = bytearray(width * height * 3)
 
-        for ty, tx in itertools.product(range(4, height + 4, 4), range(0, width, 4)):
+        for ty, tx in tpc_itertools.product(range(4, height + 4, 4), range(0, width, 4)):
             x = dxt_reader.read_int16()
             y = dxt_reader.read_int16()
             c0: tuple[int, int, int] = TPC._rgba565_to_rgb(x)
@@ -499,8 +521,8 @@ class TPC:
             else:
                 cc.extend([TPC._interpolate_rgb(0.5555555, c0, c1), (0, 0, 0)])
 
-            for y in [3, 2, 1, 0]:
-                for x in [0, 1, 2, 3]:
+            for y in (3, 2, 1, 0):
+                for x in (0, 1, 2, 3):
                     pixelc_code = dxt_pixels & 3
                     dxt_pixels >>= 2
 
@@ -520,7 +542,7 @@ class TPC:
         new_data = bytearray()
         rgb_reader: BinaryReader = BinaryReader.from_bytes(data)
 
-        for _y, _x in itertools.product(range(height), range(width)):
+        for _y, _x in tpc_itertools.product(range(height), range(width)):
             new_data.extend(
                 [
                     rgb_reader.read_uint8(),
@@ -584,7 +606,7 @@ class TPC:
     @staticmethod
     def _rgba565_to_rgb(
         color: int,
-    ):
+    ) -> tuple[int, int, int]:
         """Converts a 16-bit 565 RGB color to a tuple of 8-bit RGB values.
 
         Args:
@@ -612,7 +634,7 @@ class TPC:
         weight: float,
         color0,
         color1,
-    ):
+    ) -> tuple[int, int, int]:
         color0_blue = color0[2]
         color0_greed = color0[1]
         color0_red = color0[0]

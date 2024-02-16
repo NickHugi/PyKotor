@@ -1,19 +1,23 @@
 from __future__ import annotations
 
 from enum import IntEnum
+from typing import TYPE_CHECKING
 
 from pykotor.common.geometry import Vector2
 from pykotor.common.language import LocalizedString
 from pykotor.common.misc import Color, Game, ResRef
 from pykotor.resource.formats.gff import GFF, GFFContent, GFFList, GFFStruct, read_gff, write_gff
 from pykotor.resource.formats.gff.gff_auto import bytes_gff
-from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES, ResourceType
+from pykotor.resource.type import ResourceType
+
+if TYPE_CHECKING:
+    from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES
 
 
 class ARE:
     """Stores static area data.
 
-    Attributes
+    Attributes:
     ----------
         tag: "Tag" field.
         name: "Name" field.
@@ -94,7 +98,7 @@ class ARE:
 
     def __init__(
         self,
-    ) -> None:
+    ):
         self.alpha_test: float = 0.0
         self.camera_style: int = 0
 
@@ -440,11 +444,11 @@ def dismantle_are(
         room_struct.set_single("AmbientScale", room.ambient_scale)
         room_struct.set_int32("EnvAudio", room.env_audio)
         room_struct.set_string("RoomName", room.name)
-        if game == Game.K2:
+        if game.is_k2():
             room_struct.set_uint8("DisableWeather", room.weather)
             room_struct.set_int32("ForceRating", room.force_rating)
 
-    if game == Game.K2:
+    if game.is_k2():
         root.set_int32("DirtyARGBOne", are.dirty_argb_1.rgb_integer())
         root.set_int32("DirtyARGBTwo", are.dirty_argb_2.rgb_integer())
         root.set_int32("DirtyARGBThree", are.dirty_argb_3.rgb_integer())
@@ -522,7 +526,7 @@ def write_are(
     file_format: ResourceType = ResourceType.GFF,
     *,
     use_deprecated: bool = True,
-) -> None:
+):
     """Writes an ARE resource to a target file format.
 
     Args:

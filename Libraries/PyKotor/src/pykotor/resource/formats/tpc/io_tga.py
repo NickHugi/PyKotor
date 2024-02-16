@@ -1,11 +1,16 @@
 from __future__ import annotations
 
 import struct
+
 from enum import IntEnum
+from typing import TYPE_CHECKING
 
 from pykotor.common.stream import BinaryReader
 from pykotor.resource.formats.tpc.tpc_data import TPC, TPCTextureFormat
-from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES, ResourceReader, ResourceWriter, autoclose
+from pykotor.resource.type import ResourceReader, ResourceWriter, autoclose
+
+if TYPE_CHECKING:
+    from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES
 
 
 class _DataTypes(IntEnum):
@@ -62,8 +67,8 @@ class TPCTGAReader(ResourceReader):
             packet = self._reader.read_uint8()
             count = (packet & 0b01111111) + 1
             is_raw_packet: bool = (packet >> 7) == 0
-            #count = (packet & 0x7f) + 1
-            #is_raw_packet = packet & 0x80
+            # count = (packet & 0x7f) + 1
+            # is_raw_packet = packet & 0x80
             n += count
 
             if is_raw_packet:
@@ -175,7 +180,7 @@ class TPCTGAReader(ResourceReader):
         elif datatype_code == _DataTypes.UNCOMPRESSED_RGB:
             self._reader.skip(colormap_length * colormap_depth // 8)
 
-            if bits_per_pixel not in [24, 32]:
+            if bits_per_pixel not in {24, 32}:
                 ValueError("The image must store 24 or 32 bits per pixel.")
 
             pixel_rows: list[bytearray] = []
@@ -215,7 +220,7 @@ class TPCTGAReader(ResourceReader):
             data = self._process_rle_data(width, height, bits_per_pixel, is_direct_rgb=True)
         elif datatype_code == _DataTypes.COMPRESSED_BLACK_WHITE:
             data = self._process_rle_data(width, height, bits_per_pixel)
-        elif datatype_code in [_DataTypes.COMPRESSED_COLOR_MAPPED_A, _DataTypes.COMPRESSED_COLOR_MAPPED_B]:
+        elif datatype_code in {_DataTypes.COMPRESSED_COLOR_MAPPED_A, _DataTypes.COMPRESSED_COLOR_MAPPED_B}:
             if color_map is None:
                 msg = "Expected color map not found for compressed color-mapped data"
                 raise ValueError(msg)
@@ -224,7 +229,9 @@ class TPCTGAReader(ResourceReader):
             msg = "The image format is not currently supported."
             raise ValueError(msg)
 
-        self._tpc.set_data(width, height, [bytes(data)], TPCTextureFormat.RGBA)
+        # Set the texture format based on the bits per pixel
+        texture_format = TPCTextureFormat.RGBA if bits_per_pixel == 32 else TPCTextureFormat.RGB
+        self._tpc.set_data(width, height, [bytes(data)], texture_format)
 
         return self._tpc
 
@@ -242,7 +249,7 @@ class TPCTGAWriter(ResourceWriter):
     def write(
         self,
         auto_close: bool = True,
-    ) -> None:
+    ):
         """Writes the TPC texture to a BMP file.
 
         Args:
@@ -267,7 +274,7 @@ class TPCTGAWriter(ResourceWriter):
         self._writer.write_uint16(width)
         self._writer.write_uint16(height)
 
-        if self._tpc.format() in [TPCTextureFormat.RGB or TPCTextureFormat.DXT1]:
+        if self._tpc.format() == TPCTextureFormat.RGB or TPCTextureFormat.DXT1:
             self._writer.write_uint8(32)  # bits_per_pixel, image_descriptor
             self._writer.write_uint8(0)
             data: bytes | None = self._tpc.convert(TPCTextureFormat.RGB, 0).data

@@ -16,7 +16,7 @@ class LYT:
 
     def __init__(
         self,
-    ) -> None:
+    ):
         self.rooms: list[LYTRoom] = []
         self.tracks: list[LYTTrack] = []
         self.obstacles: list[LYTObstacle] = []
@@ -26,7 +26,7 @@ class LYT:
 class LYTRoom:
     """An area model.
 
-    Attributes
+    Attributes:
     ----------
         model: The filename of the area model.
         position: The position of the area model.
@@ -37,12 +37,12 @@ class LYTRoom:
         model: str,
         position: Vector3,
     ):
-        self.model: str = model
+        self.model: str = model  # TODO: find out if this is case-insensitive and implement via __eq__.
         self.position: Vector3 = position
 
     def __eq__(
         self,
-        other,
+        other: LYTRoom,
     ):
         if not isinstance(other, LYTRoom):
             return NotImplemented
@@ -59,7 +59,7 @@ class LYTTrack:
 
     Unknown if this actually does anything in-game or is just to assist developers.
 
-    Attributes
+    Attributes:
     ----------
         model: The corresponding model filename.
         position: The position.
@@ -70,12 +70,12 @@ class LYTTrack:
         model: str,
         position: Vector3,
     ):
-        self.model: str = model
+        self.model: str = model  # TODO: find out if this is case-insensitive and implement via __eq__.
         self.position: Vector3 = position
 
     def __eq__(
         self,
-        other,
+        other: LYTTrack,
     ):
         if not isinstance(other, LYTTrack):
             return NotImplemented
@@ -87,7 +87,7 @@ class LYTObstacle:
 
     Unknown if this actually does anything in-game or is just to assist developers.
 
-    Attributes
+    Attributes:
     ----------
         model: The corresponding model filename.
         position: The position.
@@ -98,12 +98,12 @@ class LYTObstacle:
         model: str,
         position: Vector3,
     ):
-        self.model: str = model
+        self.model: str = model  # TODO: find out if this is case-insensitive and implement via __eq__.
         self.position: Vector3 = position
 
     def __eq__(
         self,
-        other,
+        other: LYTObstacle,
     ):
         if not isinstance(other, LYTObstacle):
             return NotImplemented
@@ -115,7 +115,7 @@ class LYTDoorHook:
 
     This just exists for modelers to assist module designers.
 
-    Attributes
+    Attributes:
     ----------
         room: The corresponding room in the layout.
         door: The door name.
@@ -130,14 +130,14 @@ class LYTDoorHook:
         position: Vector3,
         orientation: Vector4,
     ):
-        self.room: str = room
-        self.door: str = door
+        self.room: str = room  # TODO: find out if this is case-insensitive and implement via __eq__.
+        self.door: str = door  # TODO: find out if this is case-insensitive and implement via __eq__.
         self.position: Vector3 = position
         self.orientation: Vector4 = orientation
 
     def __eq__(
         self,
-        other,
+        other: LYTDoorHook,
     ):
         if not isinstance(other, LYTDoorHook):
             return NotImplemented

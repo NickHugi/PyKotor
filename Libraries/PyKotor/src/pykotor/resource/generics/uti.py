@@ -1,10 +1,15 @@
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 from pykotor.common.language import LocalizedString
 from pykotor.common.misc import Game, ResRef
 from pykotor.resource.formats.gff import GFF, GFFContent, GFFList, read_gff, write_gff
 from pykotor.resource.formats.gff.gff_auto import bytes_gff
-from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES, ResourceType
+from pykotor.resource.type import ResourceType
+
+if TYPE_CHECKING:
+    from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES
 
 ARMOR_BASE_ITEMS = {
     35,
@@ -40,7 +45,7 @@ class UTI:
 
     def __init__(
         self,
-    ) -> None:
+    ):
         self.resref: ResRef = ResRef.from_blank()
         self.base_item: int = 0
         self.name: LocalizedString = LocalizedString.from_invalid()
@@ -169,7 +174,7 @@ def dismantle_uti(
     root.set_uint8("BodyVariation", uti.body_variation)
     root.set_uint8("TextureVar", uti.texture_variation)
 
-    if game == Game.K2:
+    if game.is_k2():
         root.set_uint8("UpgradeLevel", uti.upgrade_level)
 
     if use_deprecated:
@@ -195,7 +200,7 @@ def write_uti(
     file_format: ResourceType = ResourceType.GFF,
     *,
     use_deprecated: bool = True,
-) -> None:
+):
     gff = dismantle_uti(uti, game, use_deprecated=use_deprecated)
     write_gff(gff, target, file_format)
 

@@ -2,9 +2,15 @@ from __future__ import annotations
 
 import json
 
-from pykotor.resource.formats.lip.lip_data import LIP, LIPKeyFrame, LIPShape
-from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES, ResourceReader, ResourceWriter, autoclose
+from typing import TYPE_CHECKING
+
+from pykotor.resource.formats.lip.lip_data import LIP, LIPShape
+from pykotor.resource.type import ResourceReader, ResourceWriter, autoclose
 from pykotor.tools.encoding import decode_bytes_with_fallbacks
+
+if TYPE_CHECKING:
+    from pykotor.resource.formats.lip.lip_data import LIPKeyFrame
+    from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES
 
 
 class LIPJSONReader(ResourceReader):
@@ -57,14 +63,14 @@ class LIPJSONWriter(ResourceWriter):
     def write(
         self,
         auto_close: bool = True,
-    ) -> None:
+    ):
         # Populate the dictionary with keyframe data
         for keyframe in self._lip:
             self._json["keyframes"].append(
                 {
                     "time": str(keyframe.time),
                     "shape": str(keyframe.shape.value),
-                }, # type: ignore[reportGeneralTypeIssues]
+                },  # type: ignore[reportGeneralTypeIssues]
             )
 
         json_string: str = json.dumps(self._json, indent=4)

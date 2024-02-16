@@ -1,21 +1,28 @@
-from PyQt5.QtWidgets import QDialog, QTreeWidgetItem, QWidget
+from __future__ import annotations
+
+from PyQt5.QtWidgets import QDialog
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from PyQt5.QtWidgets import QTreeWidgetItem, QWidget
 
 
 class SettingsDialog(QDialog):
     def __init__(self, parent: QWidget):
-        """Initialize Holocron Toolset settings dialog editor
+        """Initialize Holocron Toolset settings dialog editor.
+
         Args:
+        ----
             parent: QWidget: The parent widget of this dialog
-        Returns:
-            None: Does not return anything
+
         Processing Logic:
         ----------------
-        - Initialize parent class with parent widget
-        - Set flag for edited installations
-        - Import UI dialog class
-        - Set up UI
-        - Map pages to UI elements
-        - Connect signal handlers.
+            - Initialize parent class with parent widget
+            - Set flag for edited installations
+            - Import UI dialog class
+            - Set up UI
+            - Map pages to UI elements
+            - Connect signal handlers.
         """
         super().__init__(parent)
 
@@ -34,18 +41,18 @@ class SettingsDialog(QDialog):
             "Module Designer": self.ui.moduleDesignerPage,
         }
 
-    def _setupSignals(self) -> None:
+    def _setupSignals(self):
         self.ui.installationsWidget.edited.connect(self.onInstallationEdited)
         self.ui.settingsTree.itemClicked.connect(self.pageChanged)
 
-    def pageChanged(self, pageTreeItem: QTreeWidgetItem) -> None:
+    def pageChanged(self, pageTreeItem: QTreeWidgetItem):
         newPage = self.pageDict[pageTreeItem.text(0)]
         self.ui.settingsStack.setCurrentWidget(newPage)
 
-    def onInstallationEdited(self) -> None:
+    def onInstallationEdited(self):
         self.installationEdited = True
 
-    def accept(self) -> None:
+    def accept(self):
         super().accept()
 
         self.ui.miscWidget.save()

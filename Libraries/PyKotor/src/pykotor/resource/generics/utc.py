@@ -1,16 +1,21 @@
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 from pykotor.common.language import LocalizedString
 from pykotor.common.misc import EquipmentSlot, Game, InventoryItem, ResRef
 from pykotor.resource.formats.gff import GFF, GFFContent, GFFList, read_gff, write_gff
 from pykotor.resource.formats.gff.gff_auto import bytes_gff
-from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES, ResourceType
+from pykotor.resource.type import ResourceType
+
+if TYPE_CHECKING:
+    from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES
 
 
 class UTC:
     """Stores creature data.
 
-    Attributes
+    Attributes:
     ----------
         resref: "TemplateResRef" field.
         tag: "Tag" field.
@@ -89,7 +94,7 @@ class UTC:
 
     def __init__(
         self,
-    ) -> None:
+    ):
         self.resref: ResRef = ResRef.from_blank()
         self.conversation: ResRef = ResRef.from_blank()
         self.tag: str = ""
@@ -121,7 +126,7 @@ class UTC:
         self.disarmable: bool = False  # ???
         self.ignore_cre_path: bool = False  # KotOR 2 Only
         self.hologram: bool = False  # KotOR 2 Only
-        self.will_not_render: bool = False # Kotor 2 Only
+        self.will_not_render: bool = False  # Kotor 2 Only
 
         self.alignment: int = 0
         self.challenge_rating: float = 0.0
@@ -197,11 +202,21 @@ class UTCClass:
         self.class_level: int = class_level
         self.powers: list[int] = []
 
+    def __repr__(
+        self,
+    ):
+        return f"{self.__class__.__name__}(class_id={self.class_id}, class_level={self.class_level})"
+
     def __eq__(
         self,
-        other,
+        other: UTCClass,
     ):
-        return self.class_id == other.class_id and self.class_level == self.class_level
+        if isinstance(other, UTCClass):
+            return self.class_id == other.class_id and self.class_level == self.class_level
+
+        msg = f"Cannot compare {self!r} with {other!r}"
+        print(msg)
+        return NotImplemented
 
 
 def construct_utc(
@@ -444,7 +459,7 @@ def dismantle_utc(
         if item.droppable:
             item_struct.set_uint8("Dropable", value=True)
 
-    if game == Game.K2:
+    if game.is_k2():
         root.set_single("BlindSpot", utc.blindspot)
         root.set_uint8("MultiplierSet", utc.multiplier_set)
         root.set_uint8("IgnoreCrePath", utc.ignore_cre_path)
@@ -481,7 +496,7 @@ def write_utc(
     file_format: ResourceType = ResourceType.GFF,
     *,
     use_deprecated: bool = True,
-) -> None:
+):
     gff: GFF = dismantle_utc(utc, game, use_deprecated=use_deprecated)
     write_gff(gff, target, file_format)
 

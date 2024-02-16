@@ -1,0 +1,2 @@
+requests  # for 'check for updates' feature.
+charset-normalizer>=2.0,<3.4  # auto-detect encoding of INI files

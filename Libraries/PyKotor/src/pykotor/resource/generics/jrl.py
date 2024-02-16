@@ -1,11 +1,16 @@
 from __future__ import annotations
 
 from enum import IntEnum
+from typing import TYPE_CHECKING
 
 from pykotor.common.language import LocalizedString
+from pykotor.common.misc import Game
 from pykotor.resource.formats.gff import GFF, GFFContent, GFFList, read_gff, write_gff
 from pykotor.resource.formats.gff.gff_auto import bytes_gff
-from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES, ResourceType
+from pykotor.resource.type import ResourceType
+
+if TYPE_CHECKING:
+    from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES
 
 
 class JRL:
@@ -15,14 +20,14 @@ class JRL:
 
     def __init__(
         self,
-    ) -> None:
+    ):
         self.quests: list[JRLQuest] = []
 
 
 class JRLQuest:
     """Stores data of an individual quest.
 
-    Attributes
+    Attributes:
     ----------
         name: "Name" field.
         planet_id: "PlanetID" field.
@@ -35,7 +40,7 @@ class JRLQuest:
 
     def __init__(
         self,
-    ) -> None:
+    ):
         self.comment: str = ""
         self.name: LocalizedString = LocalizedString.from_invalid()
         self.planet_id: int = 0
@@ -48,7 +53,7 @@ class JRLQuest:
 class JRLEntry:
     """Stores the data for an entry in a quest.
 
-    Attributes
+    Attributes:
     ----------
         end: "End" field.
         entry_id: "ID" field.
@@ -58,7 +63,7 @@ class JRLEntry:
 
     def __init__(
         self,
-    ) -> None:
+    ):
         self.end: bool = False
         self.entry_id: int = 0
         self.text: LocalizedString = LocalizedString.from_invalid()
@@ -97,7 +102,12 @@ def construct_jrl(gff: GFF) -> JRL:
     return jrl
 
 
-def dismantle_jrl(jrl: JRL) -> GFF:  # TODO: store original list indices and sort.
+def dismantle_jrl(  # TODO: store original list indices and sort.
+    jrl: JRL,
+    game: Game = Game.K2,
+    *,
+    use_deprecated: bool = True,
+) -> GFF:
     gff = GFF(GFFContent.JRL)
 
     category_list: GFFList = gff.root.set_list("Categories", GFFList())
@@ -134,8 +144,9 @@ def write_jrl(
     jrl: JRL,
     target: TARGET_TYPES,
     file_format: ResourceType = ResourceType.GFF,
-) -> None:
-    gff: GFF = dismantle_jrl(jrl)
+    game: Game = Game.K2,
+):
+    gff: GFF = dismantle_jrl(jrl, game)
     write_gff(gff, target, file_format)
 
 

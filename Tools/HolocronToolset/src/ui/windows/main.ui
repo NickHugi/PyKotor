@@ -53,6 +53,31 @@
           </item>
          </layout>
         </widget>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
         <widget class="QWidget" name="modulesTab">
          <attribute name="title">
           <string>Modules</string>

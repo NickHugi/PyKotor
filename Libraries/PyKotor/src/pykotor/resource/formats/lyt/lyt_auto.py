@@ -3,10 +3,11 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from pykotor.resource.formats.lyt.io_lyt import LYTAsciiReader, LYTAsciiWriter
-from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES, ResourceType
+from pykotor.resource.type import ResourceType
 
 if TYPE_CHECKING:
     from pykotor.resource.formats.lyt.lyt_data import LYT
+    from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES
 
 
 def read_lyt(
@@ -42,7 +43,7 @@ def write_lyt(
     lyt: LYT,
     target: TARGET_TYPES,
     file_format: ResourceType = ResourceType.LYT,
-) -> None:
+):
     """Writes the LYT data to the target location with the specified format (LYT only).
 
     Args:

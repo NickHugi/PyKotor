@@ -1,19 +1,22 @@
 from __future__ import annotations
 
 import os
+
 from typing import TYPE_CHECKING
+
+from PyQt5.QtWidgets import QPlainTextEdit
 
 from pykotor.resource.type import ResourceType
 from pykotor.tools.encoding import decode_bytes_with_fallbacks
-from PyQt5.QtWidgets import QPlainTextEdit, QWidget
 from toolset.gui.editor import Editor
 
 if TYPE_CHECKING:
+    from PyQt5.QtWidgets import QWidget
     from toolset.data.installation import HTInstallation
 
 
 class TXTEditor(Editor):
-    def __init__(self, parent: QWidget | None, installation: HTInstallation = None):
+    def __init__(self, parent: QWidget | None, installation: HTInstallation | None = None):
         """Initialize the text editor.
 
         Args:
@@ -30,7 +33,7 @@ class TXTEditor(Editor):
             - Connects signals
             - Opens new empty document.
         """
-        supported = [ResourceType.TXT, ResourceType.TXI, ResourceType.LYT, ResourceType.VIS, ResourceType.NSS]
+        supported: list[ResourceType] = [ResourceType.TXT, ResourceType.TXI, ResourceType.LYT, ResourceType.VIS, ResourceType.NSS]
         super().__init__(parent, "Text Editor", "none", supported, supported, installation)
         self.resize(400, 250)
 
@@ -44,21 +47,21 @@ class TXTEditor(Editor):
 
         self.new()
 
-    def _setupSignals(self) -> None:
+    def _setupSignals(self):
         self.ui.actionWord_Wrap.triggered.connect(self.toggleWordWrap)
 
-    def load(self, filepath: os.PathLike | str, resref: str, restype: ResourceType, data: bytes) -> None:
+    def load(self, filepath: os.PathLike | str, resref: str, restype: ResourceType, data: bytes):
         super().load(filepath, resref, restype, data)
         self.ui.textEdit.setPlainText(decode_bytes_with_fallbacks(data))
 
     def build(self) -> tuple[bytes, bytes]:
         return self.ui.textEdit.toPlainText().replace("\r\n", os.linesep).replace("\n", os.linesep).encode(), b""
 
-    def new(self) -> None:
+    def new(self):
         super().new()
         self.ui.textEdit.setPlainText("")
 
-    def toggleWordWrap(self) -> None:
+    def toggleWordWrap(self):
         self._wordWrap = not self._wordWrap
         self.ui.actionWord_Wrap.setChecked(self._wordWrap)
         self.ui.textEdit.setLineWrapMode(QPlainTextEdit.WidgetWidth if self._wordWrap else QPlainTextEdit.NoWrap)

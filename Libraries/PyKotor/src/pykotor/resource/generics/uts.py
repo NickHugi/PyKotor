@@ -6,16 +6,17 @@ from pykotor.common.language import LocalizedString
 from pykotor.common.misc import Game, ResRef
 from pykotor.resource.formats.gff import GFF, GFFContent, GFFList, read_gff, write_gff
 from pykotor.resource.formats.gff.gff_auto import bytes_gff
-from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES, ResourceType
+from pykotor.resource.type import ResourceType
 
 if TYPE_CHECKING:
     from pykotor.resource.formats.gff.gff_data import GFFStruct
+    from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES
 
 
 class UTS:
     """Stores sound data.
 
-    Attributes
+    Attributes:
     ----------
         tag: "Tag" field.
         resref: "TemplateResRef" field.
@@ -49,7 +50,7 @@ class UTS:
 
     def __init__(
         self,
-    ) -> None:
+    ):
         self.resref: ResRef = ResRef.from_blank()
         self.tag: str = ""
         self.comment: str = ""
@@ -183,7 +184,7 @@ def write_uts(
     file_format: ResourceType = ResourceType.GFF,
     *,
     use_deprecated: bool = True,
-) -> None:
+):
     gff = dismantle_uts(uts, game, use_deprecated=use_deprecated)
     write_gff(gff, target, file_format)
 

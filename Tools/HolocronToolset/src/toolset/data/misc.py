@@ -25,9 +25,9 @@ class ControlItem:
 
         Processing Logic:
         ----------------
-        - Check if exactKeys is True
-        - If True, check if buttons and keys are equal sets or if one is None
-        - If False, check if buttons are equal sets or one is None, and keys is a superset.
+            - Check if exactKeys is True
+            - If True, check if buttons and keys are equal sets or if one is None
+            - If False, check if buttons are equal sets or one is None, and keys is a superset.
         """
         if exactKeys:
             return (self.mouse == buttons or self.mouse is None) and (self.keys == keys or self.keys is None)

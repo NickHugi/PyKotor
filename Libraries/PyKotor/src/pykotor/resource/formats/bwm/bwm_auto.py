@@ -3,10 +3,11 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from pykotor.resource.formats.bwm.io_bwm import BWMBinaryReader, BWMBinaryWriter
-from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES, ResourceType
+from pykotor.resource.type import ResourceType
 
 if TYPE_CHECKING:
     from pykotor.resource.formats.bwm.bwm_data import BWM
+    from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES
 
 def read_bwm(
     source: SOURCE_TYPES,
@@ -39,7 +40,7 @@ def write_bwm(
     wok: BWM,
     target: TARGET_TYPES,
     file_format: ResourceType = ResourceType.WOK,
-) -> None:
+):
     """Writes the WOK data to the target location with the specified format (WOK only).
 
     Args:

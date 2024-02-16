@@ -1,12 +1,14 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from PyQt5 import QtCore
-from PyQt5.QtWidgets import QComboBox, QMenu, QWidget
+from PyQt5.QtWidgets import QComboBox, QMenu
+
 from toolset.gui.dialogs.edit.combo_2da import ModdedValueSpinboxDialog
 
 if TYPE_CHECKING:
+    from PyQt5.QtWidgets import QWidget
     from PyQt5.QtCore import QPoint
 
 
@@ -17,11 +19,10 @@ class ComboBox2DA(QComboBox):
         self.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
         self.customContextMenuRequested.connect(self.onContextMenu)
 
-        self._sortAlphabetically = False
+        self._sortAlphabetically: bool = False
 
-    def addItem(self, text: str, row: int | None = None) -> None:
-        """Adds the 2DA row into the combobox. If the row index is not specified, then the value will be set to the number
-        of items in the combobox.
+    def addItem(self, text: str, row: int | None = None):
+        """Adds the 2DA row into the combobox. If the row index is not specified, then the value will be set to the number of items in the combobox.
 
         Args:
         ----
@@ -33,34 +34,33 @@ class ComboBox2DA(QComboBox):
         super().addItem(text, row)
 
     def setItems(self, values: list[str], sortAlphabetically: bool = True, cleanupStrings: bool = True,
-                 ignoreBlanks: bool = False) -> None:
+                 ignoreBlanks: bool = False):
         self._sortAlphabetically = sortAlphabetically
         self.clear()
 
         for index, text in enumerate(values):
-            new_text = text
+            new_text: str = text
             if cleanupStrings:
                 new_text = text.replace("TRAP_", "")
                 new_text = text.replace("GENDER_", "")
                 new_text = text.replace("_", " ")
-            if ignoreBlanks and new_text == "":
-                continue
-            super().addItem(new_text, index)
+            if not ignoreBlanks or (ignoreBlanks and new_text):
+                super().addItem(new_text, index)
 
         self.enableSort() if self._sortAlphabetically else self.disableSort()
 
-    def toggleSort(self) -> None:
+    def toggleSort(self):
         self.disableSort() if self._sortAlphabetically else self.enableSort()
 
-    def enableSort(self) -> None:
+    def enableSort(self):
         self._sortAlphabetically = True
         self.model().sort(0)
 
-    def disableSort(self) -> None:
+    def disableSort(self):
         self._sortAlphabetically = False
         selected = self.currentData()
 
-        items = [
+        items: list[tuple[Any, str]] = [
             (self.itemData(index), self.itemText(index))
             for index in range(self.count())
         ]
@@ -70,14 +70,14 @@ class ComboBox2DA(QComboBox):
             self.addItem(text, index)
         self.setCurrentIndex(selected)
 
-    def setCurrentIndex(self, rowIn2DA: int) -> None:
+    def setCurrentIndex(self, rowIn2DA: int):
         """Selects the item with the specified row index: This is NOT the index into the combobox like it would be with a
         normal QCombobox. If the index cannot be found, it will create an item with the matching index.
 
         Args:
         ----
             rowIn2DA: The row index to select.
-        """
+        """  # noqa: D205
         index = None
         for i in range(self.count()):
             if self.itemData(i) == rowIn2DA:
@@ -92,19 +92,19 @@ class ComboBox2DA(QComboBox):
     def currentIndex(self) -> int:
         """Returns the row index from the currently selected item.
 
-        Returns
+        Returns:
         -------
             Row index into the 2DA file.
         """
         return 0 if self.currentData() is None else self.currentData()
 
-    def onContextMenu(self, point: QPoint) -> None:
+    def onContextMenu(self, point: QPoint):
         menu = QMenu(self)
         menu.addAction("Set Modded Value").triggered.connect(self.openModdedValueDialog)
         menu.addAction("Toggle Sorting").triggered.connect(self.toggleSort)
         menu.popup(self.mapToGlobal(point))
 
-    def openModdedValueDialog(self) -> None:
+    def openModdedValueDialog(self):
         """Opens a dialog where the player can manually set the index into the 2DA file."""
         dialog = ModdedValueSpinboxDialog(self)
         if dialog.exec_():

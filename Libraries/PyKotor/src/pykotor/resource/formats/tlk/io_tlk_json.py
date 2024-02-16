@@ -2,10 +2,15 @@ from __future__ import annotations
 
 import json
 
+from typing import TYPE_CHECKING
+
 from pykotor.common.misc import ResRef
 from pykotor.resource.formats.tlk.tlk_data import TLK
-from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES, ResourceReader, ResourceWriter, autoclose
+from pykotor.resource.type import ResourceReader, ResourceWriter, autoclose
 from pykotor.tools.encoding import decode_bytes_with_fallbacks
+
+if TYPE_CHECKING:
+    from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES
 
 
 class TLKJSONReader(ResourceReader):
@@ -50,13 +55,13 @@ class TLKJSONWriter(ResourceWriter):
     def write(
         self,
         auto_close: bool = True,
-    ) -> None:
+    ):
         for stringref, entry in self._tlk:
             string: dict = {}
             self._json["strings"].append(string)
             string["_index"] = str(stringref)
             string["text"] = entry.text
-            string["soundResRef"] = entry.voiceover.get()
+            string["soundResRef"] = str(entry.voiceover)
 
         json_dump = json.dumps(self._json, indent=4)
         self._writer.write_bytes(json_dump.encode())

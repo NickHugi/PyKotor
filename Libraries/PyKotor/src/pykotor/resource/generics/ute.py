@@ -1,16 +1,21 @@
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 from pykotor.common.language import LocalizedString
 from pykotor.common.misc import Game, ResRef
 from pykotor.resource.formats.gff import GFF, GFFContent, GFFList, read_gff, write_gff
 from pykotor.resource.formats.gff.gff_auto import bytes_gff
-from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES, ResourceType
+from pykotor.resource.type import ResourceType
+
+if TYPE_CHECKING:
+    from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES
 
 
 class UTE:
     """Stores encounter data.
 
-    Attributes
+    Attributes:
     ----------
         tag: "Tag" field.
         resref: "TemplateResRef" field.
@@ -41,7 +46,7 @@ class UTE:
 
     def __init__(
         self,
-    ) -> None:
+    ):
         self.resref: ResRef = ResRef.from_blank()
         self.tag: str = ""
         self.comment: str = ""
@@ -76,7 +81,7 @@ class UTE:
 class UTECreature:
     """Stores data for a creature that can be spawned by an encounter.
 
-    Attributes
+    Attributes:
     ----------
         appearance_id: "Appearance" field.
         challenge_rating: "CR" field.
@@ -87,7 +92,7 @@ class UTECreature:
 
     def __init__(
         self,
-    ) -> None:
+    ):
         self.appearance_id: int = 0
         self.challenge_rating: float = 0.0
         self.resref: ResRef = ResRef.from_blank()
@@ -184,7 +189,7 @@ def dismantle_ute(
         creature_struct.set_single("CR", creature.challenge_rating)
         creature_struct.set_uint8("SingleSpawn", creature.single_spawn)
         creature_struct.set_resref("ResRef", creature.resref)
-        if game == Game.K2:
+        if game.is_k2():
             creature_struct.set_int32("GuaranteedCount", creature.guaranteed_count)
 
     if use_deprecated:
@@ -210,7 +215,7 @@ def write_ute(
     file_format: ResourceType = ResourceType.GFF,
     *,
     use_deprecated: bool = True,
-) -> None:
+):
     gff = dismantle_ute(ute, game, use_deprecated=use_deprecated)
     write_gff(gff, target, file_format)
 
