@@ -98,6 +98,7 @@ For more detailed guides and tutorials on using HoloPatcher, refer to the follow
 - [Installing Mods with HoloPatcher](https://github.com/NickHugi/PyKotor/wiki/Installing-Mods-with-HoloPatcher): A step-by-step tutorial on setting up and running HoloPatcher.
 - [Advanced Configuration Options](https://github.com/NickHugi/PyKotor/wiki/HoloPatcher-README-for-mod-developers.): Detailed descriptions of advanced features and how to use them.
 - [Mod Creation Best Practices](https://github.com/NickHugi/PyKotor/wiki/Mod-Creation-Best-Practices): Guidelines and tips for creating mods with HoloPatcher.
+- [Notes on Internal Workings](https://github.com/NickHugi/PyKotor/wiki/Explanations-on-HoloPatcher-Internal-Logic): Explanations on how HoloPatcher works internally and some key TSLPatcher logic.
 
 ## License
 
