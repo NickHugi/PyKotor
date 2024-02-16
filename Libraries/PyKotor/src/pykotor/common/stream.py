@@ -569,6 +569,7 @@ class BinaryReader:
         self,
         length: int,
         encoding: str | None = "windows-1252",
+        errors: str = "ignore",
     ) -> str:
         """Reads a string from the stream with the specified length.
 
@@ -586,7 +587,7 @@ class BinaryReader:
         """
         self.exceed_check(length)
         string_byte_data = self._stream.read(length)
-        string = decode_bytes_with_fallbacks(string_byte_data, encoding=encoding, errors="ignore")
+        string = decode_bytes_with_fallbacks(string_byte_data, encoding=encoding, errors=errors)
         if "\0" in string:
             string = string[: string.index("\0")].rstrip("\0")
             string = string.replace("\0", "")
@@ -1033,7 +1034,7 @@ class BinaryWriter(ABC):
         self,
         value: str,
         encoding: str | None = "windows-1252",
-        errors: str = "errors",
+        errors: str = "strict",
         *,
         big: bool = False,
         prefix_length: int = 0,

@@ -20,7 +20,7 @@ except ImportError:
 
 def decode_bytes_with_fallbacks(
     byte_content: bytes | bytearray,
-    errors="strict",
+    errors: str = "strict",
     encoding: str | None = None,
     lang: Language | None = None,
     only_8bit_encodings: bool | None = False,
