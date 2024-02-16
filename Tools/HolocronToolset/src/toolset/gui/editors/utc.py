@@ -8,11 +8,6 @@ from PyQt5.QtCore import QSettings
 from PyQt5.QtGui import QImage, QPixmap, QTransform
 from PyQt5.QtWidgets import QListWidgetItem, QMessageBox
 
-from PyQt5 import QtCore
-from PyQt5.QtCore import QSettings
-from PyQt5.QtGui import QImage, QPixmap, QTransform
-from PyQt5.QtWidgets import QListWidgetItem, QMessageBox
-
 from pykotor.common.language import Gender, Language
 from pykotor.common.misc import Game, ResRef
 from pykotor.common.module import Module
@@ -31,9 +26,9 @@ from toolset.utils.window import openResourceEditor
 from utility.error_handling import format_exception_with_variables
 
 if TYPE_CHECKING:
-    from PyQt5.QtWidgets import QWidget
     import os
 
+    from PyQt5.QtWidgets import QWidget
     from typing_extensions import Literal
 
     from pykotor.common.language import LocalizedString
