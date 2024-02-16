@@ -677,7 +677,8 @@ class Scene:
             # Otherwise just search through all relevant game files
             if tpc is None:
                 print(f"Texture '{name}' not found, locating it in override/bifs...")
-                tpc = self.installation.texture(name, [SearchLocation.OVERRIDE, SearchLocation.TEXTURES_TPA, SearchLocation.CHITIN])
+                if self.installation:
+                    tpc = self.installation.texture(name, [SearchLocation.OVERRIDE, SearchLocation.TEXTURES_TPA, SearchLocation.CHITIN])
             if tpc is None:
                 print(f"NOT FOUND: Texture '{name}'")
         except (OSError, ValueError) as e:
