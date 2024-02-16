@@ -596,14 +596,16 @@ class BinaryReader:
     def read_terminated_string(
         self,
         terminator: str,
+        length: int = -1,
     ) -> str:
-        """Reads a string continuously from the stream until it hits the terminator string specified.
-
-        Any unknown characters are ignored.
+        """Reads a string continuously from the stream up to a specified length or until it hits the terminator string, whichever comes first.
+        If length is -1, reads until the terminator is encountered without a length constraint.
 
         Args:
         ----
             terminator: The terminator string.
+            length: The maximum length to read from the stream, or -1 for no length constraint.
+                If a terminator is found before length is reached, skip the remaining.
 
         Returns:
         -------
@@ -611,10 +613,21 @@ class BinaryReader:
         """
         string: str = ""
         char: str = ""
-        while char != terminator:
-            string += char
-            self.exceed_check(1)
+        bytes_read: int = 0
+
+        while char != terminator and bytes_read < length:
             char = self.read_bytes(1).decode("ascii", errors="ignore")
+            if char:  # Only append and increment if char was successfully read
+                string += char
+                bytes_read += 1
+            self.exceed_check(1)  # Check if it exceeds some limit after each read
+
+        # If a length is specified and not all bytes were read, skip the remaining bytes
+        if length != -1:
+            remaining_length = length - bytes_read
+            if remaining_length > 0:
+                self.skip(remaining_length)
+
         return string
 
     def read_locstring(

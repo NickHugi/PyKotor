@@ -71,7 +71,7 @@ class _ModelHeader:
         self.bounding_box_max = reader.read_vector3()
         self.radius = reader.read_single()
         self.anim_scale = reader.read_single()
-        self.supermodel = reader.read_string(32, encoding="ascii")
+        self.supermodel = reader.read_terminated_string("\0", 32)
         self.offset_to_super_root = reader.read_uint32()
         self.unknown3 = reader.read_uint32()
         self.mdx_size = reader.read_uint32()
@@ -143,7 +143,7 @@ class _GeometryHeader:
     ) -> _GeometryHeader:
         self.function_pointer0 = reader.read_uint32()
         self.function_pointer1 = reader.read_uint32()
-        self.model_name = reader.read_string(32, encoding="ascii")
+        self.model_name = reader.read_terminated_string("\0", 32)
         self.root_node_offset = reader.read_uint32()
         self.node_count = reader.read_uint32()
         self.unknown0 = reader.read_bytes(28)
@@ -187,7 +187,7 @@ class _AnimationHeader:
         self.geometry = _GeometryHeader().read(reader)
         self.duration = reader.read_single()
         self.transition = reader.read_single()
-        self.root = reader.read_string(32, encoding="ascii")
+        self.root = reader.read_terminated_string("\0", 32)
         self.offset_to_events = reader.read_uint32()
         self.event_count = reader.read_uint32()
         self.event_count2 = reader.read_uint32()
@@ -279,7 +279,7 @@ class _EventStructure:
         reader: BinaryReader,
     ) -> _EventStructure:
         self.activation_time = reader.read_single()
-        self.event_name = reader.read_string(32, encoding="ascii")
+        self.event_name = reader.read_terminated_string("\0", 32)
         return self
 
     def write(
@@ -714,8 +714,8 @@ class _TrimeshHeader:
         self.diffuse = reader.read_vector3()
         self.ambient = reader.read_vector3()
         self.transparency_hint = reader.read_uint32()
-        self.texture1 = reader.read_string(32, encoding="ascii")
-        self.texture2 = reader.read_string(32, encoding="ascii")
+        self.texture1 = reader.read_terminated_string("\0", 32)
+        self.texture2 = reader.read_terminated_string("\0", 32)
         self.unknown0 = reader.read_bytes(24)
         self.offset_to_indices_counts = reader.read_uint32()
         self.indices_counts_count = reader.read_uint32()
@@ -1131,16 +1131,16 @@ class _EmitterHeader:
         self.branch_count = reader.read_uint32()
         self.smoothing = reader.read_single()
         self.grid = reader.read_vector2()
-        self.update = reader.read_string(32, encoding="ascii")
-        self.render = reader.read_string(32, encoding="ascii")
-        self.blend = reader.read_string(32, encoding="ascii")
-        self.texture = reader.read_string(32, encoding="ascii")
-        self.chunk_name = reader.read_string(32, encoding="ascii")
+        self.update = reader.read_terminated_string("\0", 32)
+        self.render = reader.read_terminated_string("\0", 32)
+        self.blend = reader.read_terminated_string("\0", 32)
+        self.texture = reader.read_terminated_string("\0", 32)
+        self.chunk_name = reader.read_terminated_string("\0", 32)
         self.twosided_texture = reader.read_uint32()
         self.loop = reader.read_uint32()
         self.render_order = reader.read_uint32()
         self.frame_blending = reader.read_uint32()
-        self.depth_texture = reader.read_string(32, encoding="ascii")
+        self.depth_texture = reader.read_terminated_string("\0", 32)
         self.unknown0 = reader.read_uint8()
         self.flags = reader.read_uint32()
         return self
@@ -1180,7 +1180,7 @@ class _ReferenceHeader:
         self,
         reader: BinaryReader,
     ) -> _ReferenceHeader:
-        self.model = reader.read_string(32, encoding="ascii")
+        self.model = reader.read_terminated_string("\0", 32)
         self.reattachable = reader.read_uint32()
         return self
 
@@ -1247,6 +1247,7 @@ class MDLBinaryReader:
         source_ext: SOURCE_TYPES | None = None,
         offset_ext: int = 0,
         size_ext: int = 0,
+        game: Game = Game.K2,
     ):
         self._mdl: MDL | None = None
         self._reader: BinaryReader = BinaryReader.from_auto(source, offset)
