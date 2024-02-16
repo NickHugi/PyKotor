@@ -17,8 +17,8 @@ from toolset.gui.widgets.settings.module_designer import ModuleDesignerSettings
 from utility.error_handling import assert_with_variable_trace
 
 if TYPE_CHECKING:
-    from PyQt5.QtWidgets import QWidget
     from PyQt5.QtGui import QKeyEvent, QMouseEvent, QResizeEvent, QWheelEvent
+    from PyQt5.QtWidgets import QWidget
     from glm import vec3
 
     from pykotor.extract.installation import Installation
