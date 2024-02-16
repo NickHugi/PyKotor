@@ -3,6 +3,7 @@ from __future__ import annotations
 from typing import ClassVar
 
 from ply import lex
+
 from pykotor.common.script import DataType
 from pykotor.resource.formats.ncs import NCSInstructionType
 from pykotor.resource.formats.ncs.compiler.classes import (

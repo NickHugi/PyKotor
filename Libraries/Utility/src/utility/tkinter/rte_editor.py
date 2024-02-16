@@ -4,6 +4,7 @@ from __future__ import annotations
 import ctypes
 import json
 import tkinter as tk
+
 from functools import partial
 from tkinter.filedialog import askopenfilename, asksaveasfilename
 from typing import Any
@@ -93,7 +94,7 @@ def main():
 
                 for i, tagRange in enumerate(ranges[::2]):
                     some_list: list[list[str]] = document["tags"][tag_name]
-                    some_list.append([str(tagRange), str(ranges[i+1])])
+                    some_list.append([str(tagRange), str(ranges[i + 1])])
 
             if not file_path:
                 # ask the user for a filename with the native file explorer.

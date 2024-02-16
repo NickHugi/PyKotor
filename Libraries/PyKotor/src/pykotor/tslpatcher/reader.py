@@ -13,11 +13,10 @@ from pykotor.resource.formats.ssf import SSFSound
 from pykotor.tools.encoding import decode_bytes_with_fallbacks
 from pykotor.tools.path import CaseAwarePath
 from pykotor.tslpatcher.logger import PatchLogger
-from pykotor.tslpatcher.memory import NoTokenUsage, TokenUsage, TokenUsage2DA, TokenUsageTLK
+from pykotor.tslpatcher.memory import NoTokenUsage, TokenUsage2DA, TokenUsageTLK
 from pykotor.tslpatcher.mods.gff import (
     AddFieldGFF,
     AddStructToListGFF,
-    FieldValue,
     FieldValue2DAMemory,
     FieldValueConstant,
     FieldValueTLKMemory,
@@ -37,8 +36,6 @@ from pykotor.tslpatcher.mods.twoda import (
     ChangeRow2DA,
     CopyRow2DA,
     Modifications2DA,
-    Modify2DA,
-    RowValue,
     RowValue2DAMemory,
     RowValueConstant,
     RowValueHigh,
@@ -56,9 +53,18 @@ from utility.system.path import Path, PurePath, PureWindowsPath
 if TYPE_CHECKING:
     import os
 
-    from pykotor.tslpatcher.config import PatcherConfig
-    from pykotor.tslpatcher.mods.gff import ModifyGFF
     from typing_extensions import Literal
+
+    from pykotor.tslpatcher.config import PatcherConfig
+    from pykotor.tslpatcher.memory import TokenUsage
+    from pykotor.tslpatcher.mods.gff import (
+        FieldValue,
+        ModifyGFF,
+    )
+    from pykotor.tslpatcher.mods.twoda import (
+        Modify2DA,
+        RowValue,
+    )
 
 SECTION_NOT_FOUND_ERROR = "The [{}] section was not found in the ini"
 REFERENCES_TRACEBACK_MSG = ", referenced by '{}={}' in [{}]"
@@ -153,7 +159,7 @@ class ConfigReader:
             - Populate its config attribute from the ConfigParser
             - Return the initialized instance
         """
-        from pykotor.tslpatcher.config import PatcherConfig
+        from pykotor.tslpatcher.config import PatcherConfig  # noqa: PLC0415 Prevent circular imports
         resolved_file_path: Path = Path.pathify(file_path).resolve()
 
         ini = ConfigParser(
@@ -164,7 +170,7 @@ class ConfigReader:
         )
 
         # Use case-sensitive keys
-        ini.optionxform = lambda optionstr: optionstr  #  type: ignore[method-assign]
+        ini.optionxform = lambda optionstr: optionstr  # type: ignore[method-assign]
         ini.read_string(decode_bytes_with_fallbacks(BinaryReader.load_file(resolved_file_path)))
 
         instance = cls(ini, resolved_file_path.parent, logger)
@@ -227,7 +233,7 @@ class ConfigReader:
         lookup_game_number: str | None = settings_ini.get("LookupGameNumber")
         if lookup_game_number:
             lookup_game_number = lookup_game_number.strip()
-            if lookup_game_number not in ("1", "2"):
+            if lookup_game_number not in {"1", "2"}:
                 msg = f"Invalid: 'LookupGameNumber={lookup_game_number}' in [Settings], must be 1 or 2 representing the KOTOR game."
                 raise ValueError(msg)
             self.config.game_number = int(lookup_game_number)
@@ -326,8 +332,8 @@ class ConfigReader:
                 if delim.lower() not in range_str:
                     continue
 
-                parts: list[str]  = range_str.split(delim)
-                start: int        = int(parts[0].strip()) if parts[0].strip() else 0
+                parts: list[str] = range_str.split(delim)
+                start: int = int(parts[0].strip()) if parts[0].strip() else 0
                 end:   int | None = int(parts[1].strip()) if parts[1].strip() else None
                 return start, end
 

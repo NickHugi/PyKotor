@@ -3,6 +3,8 @@ from __future__ import annotations
 import contextlib
 import os
 
+from typing import TYPE_CHECKING
+
 from pykotor.extract.file import ResourceIdentifier
 from pykotor.resource.formats.bwm import bytes_bwm, read_bwm
 from pykotor.resource.formats.erf import ERFType, bytes_erf, read_erf
@@ -18,9 +20,12 @@ from pykotor.resource.formats.tlk import bytes_tlk, read_tlk
 from pykotor.resource.formats.tpc import bytes_tpc, read_tpc
 from pykotor.resource.formats.twoda import bytes_2da, read_2da
 from pykotor.resource.formats.vis import bytes_vis, read_vis
-from pykotor.resource.type import SOURCE_TYPES, ResourceType
+from pykotor.resource.type import ResourceType
 from utility.error_handling import universal_simplify_exception
 from utility.system.path import PurePath
+
+if TYPE_CHECKING:
+    from pykotor.resource.type import SOURCE_TYPES
 
 
 def read_resource(source: SOURCE_TYPES, resource_type: ResourceType | None = None) -> bytes:  # noqa: C901, PLR0911, PLR0912

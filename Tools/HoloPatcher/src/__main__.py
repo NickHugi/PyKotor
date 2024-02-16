@@ -15,13 +15,18 @@ import time
 import tkinter as tk
 import traceback
 import webbrowser
+
 from argparse import ArgumentParser, Namespace
 from datetime import datetime, timedelta, timezone
 from enum import IntEnum
 from threading import Event, Thread
-from tkinter import filedialog, messagebox, ttk
-from tkinter import font as tkfont
-from typing import TYPE_CHECKING, Callable, NoReturn
+from tkinter import (
+    filedialog,
+    font as tkfont,
+    messagebox,
+    ttk,
+)
+from typing import TYPE_CHECKING, NoReturn
 
 if getattr(sys, "frozen", False) is False:
     def update_sys_path(path):
@@ -44,7 +49,7 @@ from pykotor.common.stream import BinaryReader
 from pykotor.extract.file import ResourceIdentifier
 from pykotor.tools.encoding import decode_bytes_with_fallbacks
 from pykotor.tools.path import CaseAwarePath, find_kotor_paths_from_default
-from pykotor.tslpatcher.logger import PatchLog, PatchLogger
+from pykotor.tslpatcher.logger import PatchLogger
 from pykotor.tslpatcher.patcher import ModInstaller
 from pykotor.tslpatcher.reader import ConfigReader, NamespaceReader
 from pykotor.tslpatcher.uninstall import ModUninstaller
@@ -54,8 +59,10 @@ from utility.system.path import Path
 from utility.tkinter.tooltip import ToolTip
 
 if TYPE_CHECKING:
+    from collections.abc import Callable
     from types import TracebackType
 
+    from pykotor.tslpatcher.logger import PatchLog
     from pykotor.tslpatcher.namespaces import PatcherNamespace
 
 CURRENT_VERSION: tuple[int, ...] = (1, 5, 2)
@@ -239,7 +246,7 @@ class App(tk.Tk):
         self.namespaces_combobox: ttk.Combobox = ttk.Combobox(top_frame, state="readonly", style="TCombobox")
         self.namespaces_combobox.grid(row=0, column=0, padx=5, pady=2, sticky="ew")
         self.namespaces_combobox.set("Select the mod to install")
-        ToolTip(self.namespaces_combobox, lambda: self.get_namespace_description())
+        ToolTip(self.namespaces_combobox, self.get_namespace_description)
         self.namespaces_combobox.bind("<<ComboboxSelected>>", self.on_namespace_option_chosen)
         # Handle annoyances with Focus Events
         self.namespaces_combobox.bind("<FocusIn>", self.on_combobox_focus_in)
@@ -297,7 +304,7 @@ class App(tk.Tk):
         self,
         event: tk.Event,
     ):
-        if self.namespaces_combobox_state == 2: # no selection, fix the focus  # noqa: PLR2004
+        if self.namespaces_combobox_state == 2:  # no selection, fix the focus  # noqa: PLR2004
             self.focus_set()
             self.namespaces_combobox_state = 0  # base status
         else:
@@ -415,14 +422,14 @@ class App(tk.Tk):
                 print(f"[Error] - {title}: {message}")  # noqa: T201
 
             @staticmethod
-            def askyesno(title, message):
+            def askyesno(title, message) -> bool | None:
                 """Console-based replacement for messagebox.askyesno and similar."""
                 print(f"{title}\n{message}")  # noqa: T201
                 while True:
                     response = input("(y/N)").lower().strip()
-                    if response in ["yes", "y"]:
+                    if response in {"yes", "y"}:
                         return True
-                    if response in ["no", "n"]:
+                    if response in {"no", "n"}:
                         return False
                     print("Invalid input. Please enter 'yes' or 'no'")  # noqa: T201
 
@@ -462,7 +469,7 @@ class App(tk.Tk):
         if not backup_parent_folder.safe_isdir():
             messagebox.showerror(
                 "Backup folder empty/missing.",
-                f"Could not find backup folder '{backup_parent_folder}'{os.linesep*2}Are you sure the mod is installed?",
+                f"Could not find backup folder '{backup_parent_folder}'{os.linesep * 2}Are you sure the mod is installed?",
             )
             return
         self.set_state(state=True)
@@ -703,7 +710,7 @@ class App(tk.Tk):
                 data = BinaryReader.load_file(info_rtf_path)
                 rtf_text = decode_bytes_with_fallbacks(data)
                 self.set_stripped_rtf_text(rtf_text)
-                #self.load_rtf_file(info_rtf_path)
+                # self.load_rtf_file(info_rtf_path)
         except Exception as e:  # noqa: BLE001
             self._handle_general_exception(e, "An unexpected error occurred while loading the patcher namespace.")
         else:
@@ -725,7 +732,7 @@ class App(tk.Tk):
         if msgbox:
             messagebox.showerror(
                 title or error_name,
-                f"{(error_name + os.linesep*2) if title else ''}{custom_msg}.{os.linesep*2}{msg}",
+                f"{(error_name + os.linesep * 2) if title else ''}{custom_msg}.{os.linesep * 2}{msg}",
             )
 
     def load_namespace(
@@ -876,7 +883,7 @@ class App(tk.Tk):
                 self.logger.add_note("Please wait, this may take awhile...")
                 try:
                     access: bool = path.gain_access(recurse=True, log_func=self.logger.add_verbose)
-                    #self.play_complete_sound()
+                    # self.play_complete_sound()
                     if not access:
                         if not directory:
                             messagebox.showerror("Could not acquire permission!", "Permissions denied! Check the logs for more details.")
@@ -923,7 +930,7 @@ class App(tk.Tk):
         directory: Path,
         *,
         recurse: bool = False,
-        should_filter = False,
+        should_filter=False,
     ) -> bool:
         """Check access to a directory.
 
@@ -1146,14 +1153,14 @@ class App(tk.Tk):
         confirm_msg: str = installer.config().confirm_message.strip()
         if confirm_msg and not self.one_shot and confirm_msg != "N/A" and not messagebox.askokcancel("This mod requires confirmation", confirm_msg):
             return
-        #profiler = cProfile.Profile()
-        #profiler.enable()
+        # profiler = cProfile.Profile()
+        # profiler.enable()
         install_start_time: datetime = datetime.now(timezone.utc).astimezone()
         installer.install(should_cancel_thread)
         total_install_time: timedelta = datetime.now(timezone.utc).astimezone() - install_start_time
-        #profiler.disable()
-        #profiler_output_file = Path("profiler_output.pstat").resolve()
-        #profiler.dump_stats(str(profiler_output_file))
+        # profiler.disable()
+        # profiler_output_file = Path("profiler_output.pstat").resolve()
+        # profiler.dump_stats(str(profiler_output_file))
 
         days, remainder = divmod(total_install_time.total_seconds(), 24 * 60 * 60)
         hours, remainder = divmod(remainder, 60 * 60)
@@ -1178,7 +1185,7 @@ class App(tk.Tk):
             messagebox.showerror(
                 "Install completed with errors!",
                 f"The install completed with {num_errors} errors and {num_warnings} warnings! The installation may not have been successful, check the logs for more details."
-                f"{os.linesep*2}Total install time: {time_str}"
+                f"{os.linesep * 2}Total install time: {time_str}"
                 f"{os.linesep}Total patches: {num_patches}",
             )
             if self.one_shot:
@@ -1187,14 +1194,14 @@ class App(tk.Tk):
             messagebox.showwarning(
                 "Install completed with warnings",
                 f"The install completed with {num_warnings} warnings! Review the logs for details. The script in the 'uninstall' folder of the mod directory will revert these changes."
-                f"{os.linesep*2}Total install time: {time_str}"
+                f"{os.linesep * 2}Total install time: {time_str}"
                 f"{os.linesep}Total patches: {num_patches}",
             )
         else:
             messagebox.showinfo(
                 "Install complete!",
                 f"Check the logs for details on what has been done. Utilize the script in the 'uninstall' folder of the mod directory to revert these changes."
-                f"{os.linesep*2}Total install time: {time_str}"
+                f"{os.linesep * 2}Total install time: {time_str}"
                 f"{os.linesep}Total patches: {num_patches}",
             )
             if self.one_shot:
@@ -1229,7 +1236,7 @@ class App(tk.Tk):
         self.logger.add_error(f"{error_name}: {msg}{os.linesep}The installation was aborted with errors")
         messagebox.showerror(
             error_name,
-            f"An unexpected error occurred during the installation and the installation was forced to terminate.{os.linesep*2}{msg}",
+            f"An unexpected error occurred during the installation and the installation was forced to terminate.{os.linesep * 2}{msg}",
         )
         raise
 

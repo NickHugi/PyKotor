@@ -159,7 +159,7 @@ class TalkTable:  # TODO: dialogf.tlk
     ) -> int:
         """Returns the number of entries in the talk table.
 
-        Returns
+        Returns:
         -------
             The number of entries in the talk table.
         """
@@ -172,7 +172,7 @@ class TalkTable:  # TODO: dialogf.tlk
     ) -> Language:
         """Returns the matching Language of the TLK file.
 
-        Returns
+        Returns:
         -------
             The language of the TLK file.
         """

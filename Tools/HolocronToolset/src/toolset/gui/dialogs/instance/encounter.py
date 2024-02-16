@@ -1,8 +1,15 @@
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
+from PyQt5.QtGui import QIcon, QPixmap
+from PyQt5.QtWidgets import QDialog
 
 from pykotor.common.misc import ResRef
-from pykotor.resource.generics.git import GITEncounter
-from PyQt5.QtGui import QIcon, QPixmap
-from PyQt5.QtWidgets import QDialog, QWidget
+
+if TYPE_CHECKING:
+    from PyQt5.QtWidgets import QWidget
+    from pykotor.resource.generics.git import GITEncounter
 
 
 class EncounterDialog(QDialog):
@@ -16,7 +23,7 @@ class EncounterDialog(QDialog):
         self.setWindowTitle("Edit Encounter")
         self.setWindowIcon(QIcon(QPixmap(":/images/icons/k1/encounter.png")))
 
-        self.ui.resrefEdit.setText(encounter.resref.get())
+        self.ui.resrefEdit.setText(str(encounter.resref))
         self.ui.xPosSpin.setValue(encounter.position.x)
         self.ui.yPosSpin.setValue(encounter.position.y)
         self.ui.zPosSpin.setValue(encounter.position.z)

@@ -3,20 +3,22 @@ from __future__ import annotations
 import base64
 import json
 import traceback
+
 from contextlib import suppress
 from datetime import datetime, timedelta, timezone
 from tempfile import TemporaryDirectory
 from typing import TYPE_CHECKING, ClassVar
 
 import requests
-from PyQt5 import QtCore, QtGui
-from PyQt5.QtGui import QCloseEvent, QIcon, QPixmap, QStandardItem
-from PyQt5.QtWidgets import QFileDialog, QMainWindow, QMessageBox, QTreeView
+
+from PyQt5 import QtCore
+from PyQt5.QtGui import QIcon, QPixmap, QStandardItem
+from PyQt5.QtWidgets import QFileDialog, QMainWindow, QMessageBox
 from watchdog.events import FileSystemEventHandler
 from watchdog.observers import Observer
 
 from pykotor.common.stream import BinaryReader
-from pykotor.extract.file import FileResource, ResourceIdentifier
+from pykotor.extract.file import ResourceIdentifier
 from pykotor.extract.installation import SearchLocation
 from pykotor.resource.formats.mdl import read_mdl, write_mdl
 from pykotor.resource.formats.tpc import read_tpc, write_tpc
@@ -55,8 +57,12 @@ from utility.error_handling import assert_with_variable_trace, universal_simplif
 from utility.system.path import Path, PurePath
 
 if TYPE_CHECKING:
+    from PyQt5 import QtGui
+    from PyQt5.QtGui import QCloseEvent
+    from PyQt5.QtWidgets import QTreeView
     import os
 
+    from pykotor.extract.file import FileResource
     from pykotor.resource.formats.mdl.mdl_data import MDL
     from pykotor.resource.formats.tpc import TPC
     from pykotor.resource.type import SOURCE_TYPES

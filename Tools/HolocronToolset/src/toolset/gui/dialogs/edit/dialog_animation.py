@@ -1,6 +1,13 @@
+from __future__ import annotations
+
+from PyQt5.QtWidgets import QDialog
+
 from pykotor.resource.generics.dlg import DLGAnimation
-from PyQt5.QtWidgets import QDialog, QWidget
 from toolset.data.installation import HTInstallation
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from PyQt5.QtWidgets import QWidget
 
 
 class EditAnimationDialog(QDialog):

@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+from PyQt5.QtWidgets import QMessageBox
+
 from pykotor.common.stream import BinaryReader
 from pykotor.extract.installation import SearchLocation
 from pykotor.resource.formats.erf import read_erf
@@ -10,11 +12,12 @@ from pykotor.resource.formats.rim import read_rim
 from pykotor.resource.type import ResourceType
 from pykotor.tools.misc import is_any_erf_type_file, is_bif_file, is_rim_file
 from pykotor.tools.path import CaseAwarePath
-from PyQt5.QtWidgets import QMessageBox, QWidget
 from toolset.gui.editor import Editor
 
 if TYPE_CHECKING:
     import os
+
+    from PyQt5.QtWidgets import QWidget
 
     from toolset.data.installation import HTInstallation
 
@@ -37,13 +40,13 @@ class MDLEditor(Editor):
             - Set the installation on the model renderer
             - Call new() to start with a blank state.
         """
-        supported = [ResourceType.MDL]
+        supported: list[ResourceType] = [ResourceType.MDL]
         super().__init__(parent, "Model Viewer", "none", supported, supported, installation)
 
         self._mdl: MDL = MDL()
         self._installation = installation
 
-        from toolset.uic.editors.mdl import Ui_MainWindow
+        from toolset.uic.editors.mdl import Ui_MainWindow  # noqa: PLC0415
 
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
@@ -73,7 +76,7 @@ class MDLEditor(Editor):
             - Sets model data on renderer if both MDL and MDX found
             - Displays error if unable to find associated data.
         """
-        c_filepath = CaseAwarePath.pathify(filepath)
+        c_filepath: CaseAwarePath = CaseAwarePath.pathify(filepath)
         super().load(c_filepath, resref, restype, data)
 
         mdl_data: bytes | None = None

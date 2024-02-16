@@ -1,9 +1,13 @@
 from __future__ import annotations
+
+import io
+
 from typing import Any
 
 import pytest
-import io
+
 from pykotor.common.stream import BinaryReader
+
 
 # Test BinaryReader Initialization
 @pytest.mark.parametrize("test_id, stream, offset, size, expected_position, expected_exception", [
@@ -41,7 +45,7 @@ def test_binary_reader_initialization(
     ("happy_path_read_int16_big_endian", "read_int16", {"big": True}, 258, None),
     ("happy_path_read_uint32_max_neg1", "read_uint32", {"max_neg1": True}, 4294902273, None),
     ("error_case_read_beyond_stream", "read_uint64", {}, None, OSError),
-    #("error_case_read_negative_length", "read_bytes", {"length": -1}, None, OSError),  I guess stream's support negative lengths.
+    # ("error_case_read_negative_length", "read_bytes", {"length": -1}, None, OSError),  I guess stream's support negative lengths.
 ])
 def test_binary_reader_read_methods(
     test_id: str,

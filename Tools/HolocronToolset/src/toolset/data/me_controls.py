@@ -2,19 +2,23 @@ from __future__ import annotations
 
 import json
 import math
-from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, Any
 
-from jsmin import jsmin
-from pykotor.common.geometry import Vector2, Vector3
-from pykotor.gl.scene import Camera
-from pykotor.tools.encoding import decode_bytes_with_fallbacks
+from abc import ABC, abstractmethod
+from typing import TYPE_CHECKING, Any, NoReturn
+
 from PyQt5 import QtCore
 from PyQt5.QtCore import QPoint
 from PyQt5.QtGui import QKeySequence
+from jsmin import jsmin
+
+from pykotor.common.geometry import Vector3
+from pykotor.common.stream import BinaryReader
+from pykotor.gl.scene import Camera
+from pykotor.tools.encoding import decode_bytes_with_fallbacks
 from utility.system.path import Path
 
 if TYPE_CHECKING:
+    from pykotor.common.geometry import Vector2
     from pykotor.resource.generics.git import GITInstance
     from toolset.gui.widgets.renderer.module import ModuleRenderer
 
@@ -30,13 +34,16 @@ def getMouseCode(string: str):
 
 
 def getKeyCode(string: str):
-    """Returns the Qt key code for a given string key name
+    """Returns the Qt key code for a given string key name.
+
     Args:
+    ----
         string: The key name as a string.
 
-    Returns
+    Returns:
     -------
         int: The Qt key code integer.
+
     - Maps common key names "CTRL", "ALT", and 'SHIFT" to their Qt key code integer.
     - Uses QKeySequence to parse more complex key names into their key code.
     - Returns the mapped key code if found, otherwise returns the first key code from parsing the key name.
@@ -107,19 +114,24 @@ class ModuleEditorControls(ABC):
         return z - point.z
 
     def translateSelectedObjects(self, snap: bool, dx: float, dy: float, dz: float):
-        """Translates selected objects
+        """Translates selected objects.
+
         Args:
+        ----
             snap: Snap objects to walkmesh
             dx: Translation amount on X axis
             dy: Translation amount on Y axis
             dz: Translation amount on Z axis
+
         Returns:
+        -------
             None: Function does not return anything
+
         Translates selected objects by specified amounts on each axis.
-        - Loops through each selected object
-        - Calculates new position by adding translation amounts to current position
-        - Checks if snap is enabled, and if so, snaps new position to walkmesh
-        - Sets new position on object instance.
+            - Loops through each selected object
+            - Calculates new position by adding translation amounts to current position
+            - Checks if snap is enabled, and if so, snaps new position to walkmesh
+            - Sets new position on object instance.
         """
         for obj in self.renderer.scene.selection:
             x = obj.data.position.x + dx
@@ -145,13 +157,14 @@ class ModuleEditorControls(ABC):
         self.renderer.scene.camera.z += dz
 
     def snapCameraPosition(self, x: float | None = None, y: float | None = None, z: float | None = None):
-        """Snap camera position to provided coordinates
+        """Snap camera position to provided coordinates.
+
         Args:
+        ----
             x: X coordinate of camera position
             y: Y coordinate of camera position
             z: Z coordinate of camera position
-        Returns:
-            None: Function does not return anything
+
         - If x is provided, set camera's x position to the value of x
         - If y is provided, set camera's y position to the value of y
         - If z is provided, set camera's z position to the value of z.
@@ -165,7 +178,7 @@ class ModuleEditorControls(ABC):
 
     def alterCameraRotation(self, yaw: float, pitch: float):
         self.renderer.scene.camera.yaw += yaw
-        self.renderer.scene.camera.pitch = min(math.pi-0.000001, max(0.000001, self.renderer.scene.camera.pitch + pitch))
+        self.renderer.scene.camera.pitch = min(math.pi - 0.000001, max(0.000001, self.renderer.scene.camera.pitch + pitch))
 
     def setCameraRotation(self, yaw: float, pitch: float):
         self.renderer.scene.camera.yaw = yaw
@@ -202,16 +215,17 @@ class DynamicModuleEditorControls(ModuleEditorControls):
             self.load(filepath)
 
     def load(self, filepath: str):
-        """Load a filepath into the editor
+        """Load a filepath into the editor.
+
         Args:
+        ----
             filepath (str): Path to JSON file
-        Returns:
-            None
+
         Loads data from JSON file:
-        - Parses JSON file and extracts data
-        - Initializes variables from JSON
-        - Initializes control events from JSON
-        - Raises errors for invalid data.
+            - Parses JSON file and extracts data
+            - Initializes variables from JSON
+            - Initializes control events from JSON
+            - Raises errors for invalid data.
         """
         self.variables: list[DCVariable] = []
         self.mouseMoveEvents = []
@@ -222,8 +236,8 @@ class DynamicModuleEditorControls(ModuleEditorControls):
         self.keyReleaseEvents = []
 
         r_filepath = Path(filepath)
-        f = r_filepath.open("rb")
-        rootJSON = json.loads(jsmin(decode_bytes_with_fallbacks(f.read())))
+        data = BinaryReader.load_file(r_filepath)
+        rootJSON = json.loads(jsmin(decode_bytes_with_fallbacks(data)))
 
         self.name = rootJSON["name"]
         self.cameraStyle = rootJSON["style"]
@@ -232,7 +246,7 @@ class DynamicModuleEditorControls(ModuleEditorControls):
             data_type = variableJSON["type"]
             default = variableJSON["default"]
 
-            var = None
+            var: DCVariable | None = None
             if data_type == "STRING":
                 var = DCVariableString(name, default, variableJSON["allowed"])
             elif data_type == "INT":
@@ -242,10 +256,12 @@ class DynamicModuleEditorControls(ModuleEditorControls):
             elif data_type == "BOOL":
                 var = DCVariableBool(name, default)
             else:
-                ValueError(f"Unknown data type '{data_type}'.")
+                msg = f"Unknown data type '{data_type}'."
+                raise ValueError(msg)
 
             self.variables.append(var)
 
+        array: list[DCItem]
         for controlJSON in rootJSON["controls"]:
             if controlJSON["event"] == "MOUSE_MOVE":
                 array = self.mouseMoveEvents
@@ -279,7 +295,7 @@ class DynamicModuleEditorControls(ModuleEditorControls):
                     key = mouseJSON if isinstance(mouseJSON, int) else getMouseCode(mouseJSON)
                     mouse.add(key)
 
-            effects = []
+            effects: list[dict[str, Any]] = []
             for effectsJSON in controlJSON["effects"]:
                 for effectJSON in effectsJSON:
                     args = effectsJSON[effectJSON]
@@ -299,8 +315,6 @@ class DynamicModuleEditorControls(ModuleEditorControls):
             array.append(DCItem(keys, mouse, effects))
 
     def onMouseMoved(self, screen: Vector2, delta: Vector2, buttons: set[int], keys: set[int]):
-        ...
-
         for event in self.mouseMoveEvents:
             if (event.mouse == buttons or event.mouse is None) and (event.keys == keys or event.keys is None):
                 for effect in event.effects:
@@ -340,18 +354,19 @@ class DynamicModuleEditorControls(ModuleEditorControls):
 class HolocronModuleEditorControls(DynamicModuleEditorControls):
 
     def __init__(self, renderer: ModuleRenderer):
-        """Initializes a camera controller
+        """Initializes a camera controller.
+
         Args:
+        ----
             renderer: ModuleRenderer - The renderer for the scene
-        Returns:
-            None - Initializes camera controller variables and events
+
         Processing Logic:
         ----------------
-        - Defines camera sensitivity variables
-        - Sets up mouse and key events to control camera position and rotation
-        - Mouse events pan/rotate camera and select/manipulate objects
-        - Key events directly set or incrementally change camera rotation
-        - CTRL modifiers used to raise/lower camera along Z-axis.
+            - Defines camera sensitivity variables
+            - Sets up mouse and key events to control camera position and rotation
+            - Mouse events pan/rotate camera and select/manipulate objects
+            - Key events directly set or incrementally change camera rotation
+            - CTRL modifiers used to raise/lower camera along Z-axis.
         """
         super().__init__(renderer)
 
@@ -366,8 +381,8 @@ class HolocronModuleEditorControls(DynamicModuleEditorControls):
         self.mouseMoveEvents: list[DCItem] = [
             DCItem({getKeyCode("CTRL")}, {getMouseCode("LEFT")}, [DCEffectAlterCameraPosition("panCamSensitivity", "cx", "cy", 0)]),
             DCItem({getKeyCode("CTRL")}, {getMouseCode("MIDDLE")}, [DCEffectAlterCameraRotation("rotateCamSensitivity", "dx", "dy")]),
-            DCItem(set(),      {getMouseCode("LEFT")}, [DCEffectAlterObjectPosition("panObjSensitivity", True, "cx", "cy", 0)]),
-            DCItem(set(),      {getMouseCode("MIDDLE")}, [DCEffectAlterObjectRotation("rotateObjSensitivity", "dx")]),
+            DCItem(set(), {getMouseCode("LEFT")}, [DCEffectAlterObjectPosition("panObjSensitivity", True, "cx", "cy", 0)]),
+            DCItem(set(), {getMouseCode("MIDDLE")}, [DCEffectAlterObjectRotation("rotateObjSensitivity", "dx")]),
         ]
         self.mousePressEvents: list[DCItem] = [
             DCItem(set(), {getMouseCode("LEFT")}, [DCEffectSelectObjectAtMouse()]),
@@ -379,16 +394,16 @@ class HolocronModuleEditorControls(DynamicModuleEditorControls):
         ]
         self.keyPressEvents: list[DCItem] = [
             DCItem({getKeyCode("1")}, set(), [DCEffectSetCameraRotation(0, "crp")]),
-            DCItem({getKeyCode("3")}, set(), [DCEffectSetCameraRotation(0, "crp"), DCEffectAlterCameraRotation(None, math.pi/2, 0)]),
+            DCItem({getKeyCode("3")}, set(), [DCEffectSetCameraRotation(0, "crp"), DCEffectAlterCameraRotation(None, math.pi / 2, 0)]),
             DCItem({getKeyCode("7")}, set(), [DCEffectSetCameraRotation("cry", 0)]),
-            DCItem({getKeyCode("4")}, set(), [DCEffectAlterCameraRotation(None, math.pi/8, 0)]),
-            DCItem({getKeyCode("6")}, set(), [DCEffectAlterCameraRotation(None, -math.pi/8, 0)]),
-            DCItem({getKeyCode("8")}, set(), [DCEffectAlterCameraRotation(None, 0, math.pi/8)]),
-            DCItem({getKeyCode("2")}, set(), [DCEffectAlterCameraRotation(None, 0, -math.pi/8)]),
-            DCItem({getKeyCode("W")}, set(), [DCEffectAlterCameraRotation(None, 0, math.pi/8)]),
-            DCItem({getKeyCode("A")}, set(), [DCEffectAlterCameraRotation(None, math.pi/8, 0)]),
-            DCItem({getKeyCode("S")}, set(), [DCEffectAlterCameraRotation(None, 0, -math.pi/8)]),
-            DCItem({getKeyCode("D")}, set(), [DCEffectAlterCameraRotation(None, -math.pi/8, 0)]),
+            DCItem({getKeyCode("4")}, set(), [DCEffectAlterCameraRotation(None, math.pi / 8, 0)]),
+            DCItem({getKeyCode("6")}, set(), [DCEffectAlterCameraRotation(None, -math.pi / 8, 0)]),
+            DCItem({getKeyCode("8")}, set(), [DCEffectAlterCameraRotation(None, 0, math.pi / 8)]),
+            DCItem({getKeyCode("2")}, set(), [DCEffectAlterCameraRotation(None, 0, -math.pi / 8)]),
+            DCItem({getKeyCode("W")}, set(), [DCEffectAlterCameraRotation(None, 0, math.pi / 8)]),
+            DCItem({getKeyCode("A")}, set(), [DCEffectAlterCameraRotation(None, math.pi / 8, 0)]),
+            DCItem({getKeyCode("S")}, set(), [DCEffectAlterCameraRotation(None, 0, -math.pi / 8)]),
+            DCItem({getKeyCode("D")}, set(), [DCEffectAlterCameraRotation(None, -math.pi / 8, 0)]),
             DCItem({getKeyCode("Q")}, set(), [DCEffectAlterCameraPosition(None, 0, 0, 1)]),
             DCItem({getKeyCode("Z")}, set(), [DCEffectAlterCameraPosition(None, 0, 0, -1)]),
         ]
@@ -412,7 +427,7 @@ class DCVariable:
     def get(self) -> Any:
         raise NotImplementedError
 
-    def set(self, value: Any):
+    def set(self, value: Any) -> NoReturn:
         raise NotImplementedError
 
 
@@ -482,16 +497,19 @@ class DCEffect(ABC):
 
     @staticmethod
     def determineFloat(value: float | str, controls: ModuleEditorControls, dx: float, dy: float) -> float:
-        """Determines a float value from a value or string
+        """Determines a float value from a value or string.
+
         Args:
+        ----
             value: {The value or string to determine the float from}
             controls: {Module editor controls object}
             dx: {Camera delta x}
             dy: {Camera delta y}.
 
-        Returns
+        Returns:
         -------
             float: {The determined float value}
+
         Processes Logic:
             - Checks if value is a string and extracts modifier
             - Maps string aliases like "dx" to appropriate values

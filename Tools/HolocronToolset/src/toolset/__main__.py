@@ -7,6 +7,7 @@ import pathlib
 import sys
 import tempfile
 import traceback
+
 from typing import TYPE_CHECKING
 
 from PyQt5.QtCore import QThread
@@ -16,7 +17,7 @@ if TYPE_CHECKING:
     from types import TracebackType
 
 def onAppCrash(etype: type[BaseException], e: BaseException, tback: TracebackType | None):
-    from utility.error_handling import format_exception_with_variables
+    from utility.error_handling import format_exception_with_variables  # noqa: PLC0415
     with pathlib.Path("errorlog.txt").open("a", encoding="utf-8") as file:
         try:  # sourcery skip: do-not-use-bare-except
             file.writelines(format_exception_with_variables(e, etype, tback))
@@ -85,7 +86,8 @@ if __name__ == "__main__":
     if is_frozen():
         print("App is frozen - doing multiprocessing.freeze_support()")
         multiprocessing.freeze_support()
-    fix_sys_and_cwd_path()
+    else:
+        fix_sys_and_cwd_path()
     from utility.system.path import Path
 
     app = QApplication(sys.argv)

@@ -1,18 +1,23 @@
 from __future__ import annotations
 
 from contextlib import suppress
-from typing import TYPE_CHECKING, List
+from typing import TYPE_CHECKING
+
+from PyQt5.QtGui import QImage, QPixmap, QTransform
 
 from pykotor.extract.file import ResourceIdentifier
 from pykotor.extract.installation import Installation, SearchLocation
-from pykotor.resource.formats.tpc import TPC, TPCTextureFormat
-from pykotor.resource.formats.twoda import TwoDA, read_2da
+from pykotor.resource.formats.tpc import TPCTextureFormat
+from pykotor.resource.formats.twoda import read_2da
 from pykotor.resource.type import ResourceType
-from PyQt5.QtGui import QImage, QPixmap, QStandardItemModel, QTransform
 
 if TYPE_CHECKING:
-    from pykotor.resource.generics.uti import UTI
+    from PyQt5.QtGui import QStandardItemModel
     from PyQt5.QtWidgets import QWidget
+
+    from pykotor.resource.formats.tpc import TPC
+    from pykotor.resource.formats.twoda import TwoDA
+    from pykotor.resource.generics.uti import UTI
 
 
 class HTInstallation(Installation):
@@ -97,7 +102,7 @@ class HTInstallation(Installation):
             self._cache2da[resname] = read_2da(result.data)
         return self._cache2da[resname]
 
-    def htBatchCache2DA(self, resnames: List[str], reload: bool = False):
+    def htBatchCache2DA(self, resnames: list[str], reload: bool = False):
         """Cache 2D array resources in batch.
 
         Args:
@@ -148,10 +153,12 @@ class HTInstallation(Installation):
             - Return cached texture or None if not found.
         """
         if resname not in self._cacheTpc:
-            self._cacheTpc[resname] = self.texture(resname, [SearchLocation.TEXTURES_TPA, SearchLocation.TEXTURES_GUI])
-        return self._cacheTpc[resname] if resname in self._cacheTpc else None
+            tex = self.texture(resname, [SearchLocation.TEXTURES_TPA, SearchLocation.TEXTURES_GUI])
+            if tex is not None:
+                self._cacheTpc[resname] = tex
+        return self._cacheTpc.get(resname, None)
 
-    def htBatchCacheTPC(self, names: List[str], reload: bool = False):
+    def htBatchCacheTPC(self, names: list[str], reload: bool = False):
         """Cache textures for batch queries.
 
         Args:
@@ -171,7 +178,9 @@ class HTInstallation(Installation):
             return
 
         for resname in queries:
-            self._cacheTpc[resname] = self.texture(resname, [SearchLocation.TEXTURES_TPA, SearchLocation.TEXTURES_GUI])
+            tex = self.texture(resname, [SearchLocation.TEXTURES_TPA, SearchLocation.TEXTURES_GUI])
+            if tex is not None:
+                self._cacheTpc[resname] = tex
 
     def htClearCacheTPC(self):
         self._cacheTpc = {}

@@ -1,7 +1,10 @@
+from __future__ import annotations
+
 import os
 import pathlib
 import sys
 import unittest
+
 from unittest import TestCase
 
 THIS_SCRIPT_PATH = pathlib.Path(__file__).resolve()
@@ -105,7 +108,7 @@ class TestBinaryReader(TestCase):
         self.assertEqual(2, self.reader1c.position())
         self.assertEqual(0, self.reader1c.read_uint16())
 
-    def test_skip(self):
+    def test_skip(self):  # sourcery skip: class-extract-method
         self.reader1.read_uint32()
         self.reader1.skip(2)
         self.reader1.skip(1)

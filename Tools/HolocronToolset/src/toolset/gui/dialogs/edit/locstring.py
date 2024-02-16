@@ -1,10 +1,18 @@
-from copy import deepcopy
+from __future__ import annotations
 
-from pykotor.common.language import Gender, Language, LocalizedString
+from copy import deepcopy
+from typing import TYPE_CHECKING
+
+from PyQt5.QtWidgets import QDialog
+
+from pykotor.common.language import Gender, Language
 from pykotor.resource.formats.tlk import read_tlk, write_tlk
 from pykotor.tools.path import CaseAwarePath
-from PyQt5.QtWidgets import QDialog, QWidget
-from toolset.data.installation import HTInstallation
+
+if TYPE_CHECKING:
+    from PyQt5.QtWidgets import QWidget
+    from pykotor.common.language import LocalizedString
+    from toolset.data.installation import HTInstallation
 
 
 class LocalizedStringDialog(QDialog):

@@ -20,11 +20,16 @@ if PYKOTOR_PATH.joinpath("pykotor").exists():
 if UTILITY_PATH.joinpath("utility").exists():
     add_sys_path(UTILITY_PATH)
 
+from typing import TYPE_CHECKING
+
 from pykotor.common.misc import Color, Game
 from pykotor.extract.installation import Installation
 from pykotor.resource.formats.gff import read_gff
-from pykotor.resource.formats.gff.gff_data import GFF
-from pykotor.resource.generics.git import GIT, construct_git, dismantle_git
+from pykotor.resource.generics.git import construct_git, dismantle_git
+
+if TYPE_CHECKING:
+    from pykotor.resource.formats.gff.gff_data import GFF
+    from pykotor.resource.generics.git import GIT
 
 TEST_FILE = "tests/files/test.git"
 K1_SAME_TEST = "tests/files/k1_same_git_test.git"
@@ -84,7 +89,7 @@ class TestGIT(unittest.TestCase):
         git = construct_git(gff)
         self.validate_io(git)
 
-    def assertDeepEqual(self, obj1, obj2, context=''):
+    def assertDeepEqual(self, obj1, obj2, context=""):
         if isinstance(obj1, dict) and isinstance(obj2, dict):
             self.assertEqual(set(obj1.keys()), set(obj2.keys()), context)
             for key in obj1:
@@ -97,7 +102,7 @@ class TestGIT(unittest.TestCase):
                 new_context = f"{context}[{index}]" if context else f"[{index}]"
                 self.assertDeepEqual(item1, item2, new_context)
 
-        elif hasattr(obj1, '__dict__') and hasattr(obj2, '__dict__'):
+        elif hasattr(obj1, "__dict__") and hasattr(obj2, "__dict__"):
             self.assertDeepEqual(obj1.__dict__, obj2.__dict__, context)
 
         else:

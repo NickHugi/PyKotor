@@ -2,12 +2,17 @@ from __future__ import annotations
 
 import os
 
+from typing import TYPE_CHECKING
+
 from pykotor.common.stream import BinaryReader
 from pykotor.resource.formats.lip.io_lip import LIPBinaryReader, LIPBinaryWriter
 from pykotor.resource.formats.lip.io_lip_json import LIPJSONReader, LIPJSONWriter
 from pykotor.resource.formats.lip.io_lip_xml import LIPXMLReader, LIPXMLWriter
-from pykotor.resource.formats.lip.lip_data import LIP
-from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES, ResourceType
+from pykotor.resource.type import ResourceType
+
+if TYPE_CHECKING:
+    from pykotor.resource.formats.lip.lip_data import LIP
+    from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES
 
 
 def detect_lip(
@@ -40,7 +45,7 @@ def detect_lip(
             return ResourceType.LIP_XML
         if "{" in first4:
             return ResourceType.LIP_JSON
-        #if "," in first4:
+        # if "," in first4:
         #    return ResourceType.LIP_CSV
         return ResourceType.INVALID
     file_format: ResourceType
@@ -98,7 +103,7 @@ def read_lip(
         return LIPXMLReader(source, offset, size or 0).load()
     if file_format == ResourceType.LIP_JSON:
         return LIPJSONReader(source, offset, size or 0).load()
-    #if file_format == ResourceType.INVALID:
+    # if file_format == ResourceType.INVALID:
     msg = "Failed to determine the format of the GFF file."
     raise ValueError(msg)
 

@@ -1,8 +1,9 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, NoReturn
 
 from ply import yacc
+
 from pykotor.resource.formats.ncs.compiler.classes import (
     AdditionAssignment,
     Assignment,
@@ -11,8 +12,8 @@ from pykotor.resource.formats.ncs.compiler.classes import (
     CodeBlock,
     CodeRoot,
     CompileError,
-    ConditionalBlock,
     ConditionAndBlock,
+    ConditionalBlock,
     ContinueStatement,
     DeclarationStatement,
     DefaultSwitchLabel,
@@ -21,7 +22,6 @@ from pykotor.resource.formats.ncs.compiler.classes import (
     DynamicDataType,
     EmptyStatement,
     EngineCallExpression,
-    Expression,
     ExpressionStatement,
     ExpressionSwitchLabel,
     FieldAccess,
@@ -59,7 +59,11 @@ from utility.system.path import Path
 
 if TYPE_CHECKING:
     from ply.lex import LexToken
+
     from pykotor.common.script import ScriptConstant, ScriptFunction
+    from pykotor.resource.formats.ncs.compiler.classes import (
+        Expression,
+    )
 
 
 class NssParser:
@@ -68,11 +72,11 @@ class NssParser:
         functions: list[ScriptFunction],
         constants: list[ScriptConstant],
         library: dict[str, bytes],
-        library_lookup: list[str | Path] |  list[str] | list[Path] | str | Path | None,
+        library_lookup: list[str | Path] | list[str] | list[Path] | str | Path | None,
         errorlog: yacc.NullLogger | None = yacc.NullLogger(),  # noqa: B008
         debug=False,  # noqa: FBT002
     ):
-        self.parser = yacc.yacc(
+        self.parser: yacc.LRParser = yacc.yacc(
             module=self,
             errorlog=errorlog,
             write_tables=False,
@@ -105,7 +109,7 @@ class NssParser:
         ("left", "INCREMENT", "DECREMENT"),
     )
 
-    def p_error(self, p: LexToken):
+    def p_error(self, p: LexToken) -> NoReturn:
         msg = f"Syntax error at line {p.lineno}, position {p.lexpos}, token='{p.value}'"
         raise CompileError(msg)
 

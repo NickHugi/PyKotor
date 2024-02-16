@@ -4,6 +4,7 @@ import hashlib
 import os
 import platform
 import sys
+
 from contextlib import suppress
 from enum import Enum
 from typing import TYPE_CHECKING, SupportsFloat, SupportsInt, TypeVar
@@ -165,7 +166,7 @@ def is_instance_or_subinstance(instance: object, target_cls: type) -> bool:
 def generate_hash(
     data_input: bytes | bytearray | memoryview | os.PathLike | str,
     hash_algo: str = "sha1",  # sha1 is faster than md5 in python somehow
-    chunk_size: int = 262144, # 256KB default
+    chunk_size: int = 262144,  # 256KB default
     always_chunk: bool = False,  # Don't unnecessarily chunk bytes/bytearray inputs.
 ) -> str:
     # Create a hash object for the specified algorithm
@@ -192,7 +193,7 @@ def generate_hash(
     # Special handling for SHAKE algorithms which require a digest length
     if "shake" in hash_algo:
         # Producing a 64-byte (512 bits) output
-        return hasher.hexdigest(64) # type: ignore[]
+        return hasher.hexdigest(64)  # type: ignore[]
     return hasher.hexdigest()
 
 
@@ -205,7 +206,7 @@ def indent(
         elem: Element - The element to indent
         level: int - The level of indentation (default: 0).
 
-    Returns
+    Returns:
     -------
         None - Indents the element in-place
 

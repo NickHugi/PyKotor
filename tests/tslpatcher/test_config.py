@@ -1,7 +1,10 @@
+from __future__ import annotations
+
 import os
 import pathlib
 import sys
 import unittest
+
 from tempfile import NamedTemporaryFile
 from unittest.mock import MagicMock, Mock, patch
 
@@ -45,7 +48,7 @@ class TestLookupResourceFunction(unittest.TestCase):
 
         mock_binary_reader = MagicMock()
         mock_binary_reader.read_all.return_value = "BinaryReader read_all result"
-        
+
         with patch("pykotor.common.stream.BinaryReader.from_auto", return_value=mock_binary_reader):
 
             # Act
@@ -59,7 +62,7 @@ class TestLookupResourceFunction(unittest.TestCase):
 
         mock_binary_reader = MagicMock()
         mock_binary_reader.read_all.return_value = "BinaryReader read_all result"
-        
+
         capsule = Capsule("test.mod", create_nonexisting=True)
         with patch("pykotor.common.stream.BinaryReader.from_auto", return_value=mock_binary_reader):
             result = self.config.lookup_resource(
@@ -77,7 +80,7 @@ class TestLookupResourceFunction(unittest.TestCase):
 
         mock_binary_reader = MagicMock()
         mock_binary_reader.read_all.return_value = "BinaryReader read_all result"
-        
+
         with patch("pykotor.common.stream.BinaryReader.from_auto", return_value=mock_binary_reader):
             result = self.config.lookup_resource(
                 self.patch,
@@ -94,7 +97,7 @@ class TestLookupResourceFunction(unittest.TestCase):
 
         mock_binary_reader = MagicMock()
         mock_binary_reader.read_all.return_value = "BinaryReader read_all result"
-        
+
         with patch("pykotor.common.stream.BinaryReader.from_auto", return_value=mock_binary_reader):
             result = self.config.lookup_resource(
                 self.patch,
@@ -110,7 +113,7 @@ class TestLookupResourceFunction(unittest.TestCase):
 
         mock_binary_reader = MagicMock()
         mock_binary_reader.read_all.return_value = "BinaryReader read_all result"
-        
+
         capsule = Capsule("test.mod", create_nonexisting=True)
         with patch("pykotor.common.stream.BinaryReader.from_auto", return_value=mock_binary_reader):
             result = self.config.lookup_resource(
