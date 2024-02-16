@@ -679,7 +679,7 @@ class Scene:
                 print(f"Texture '{name}' not found, locating it in override/bifs...")
                 tpc = self.installation.texture(name, [SearchLocation.OVERRIDE, SearchLocation.TEXTURES_TPA, SearchLocation.CHITIN])
             if tpc is None:
-                print(f"NOT FOUND: Texture '{name}' required by {self.module._root}")
+                print(f"NOT FOUND: Texture '{name}'")
         except (OSError, ValueError) as e:
             print(format_exception_with_variables(e))
             # If an error occurs during the loading process, just use a blank image.
