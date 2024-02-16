@@ -101,4 +101,4 @@ For more detailed guides and tutorials on using HoloPatcher, refer to the follow
 
 ## License
 
-HoloPatcher is released under the [MIT License](https://github.com/NickHugi/PyKotor/blob/master/LICENSE).
+HoloPatcher is released under the [GPLv3 License](https://github.com/NickHugi/PyKotor/edit/master/Tools/HoloPatcher/LICENSE.txt).
