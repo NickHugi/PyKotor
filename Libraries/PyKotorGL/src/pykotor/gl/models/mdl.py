@@ -273,12 +273,12 @@ class Mesh:
             glEnableVertexAttribArray(1)
             glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, block_size, ctypes.c_void_p(vertex_offset))
 
-        if data_bitflags & 0x0020 and texture != "" and texture != "NULL":
+        if data_bitflags & 0x0020 and texture and texture != "NULL":
             glEnableVertexAttribArray(3)
             glVertexAttribPointer(3, 2, GL_FLOAT, GL_FALSE, block_size, ctypes.c_void_p(texture_offset))
             self.texture = texture
 
-        if data_bitflags & 0x0004 and lightmap != "" and lightmap != "NULL":
+        if data_bitflags & 0x0004 and lightmap and lightmap != "NULL":
             glEnableVertexAttribArray(4)
             glVertexAttribPointer(4, 2, GL_FLOAT, GL_FALSE, block_size, ctypes.c_void_p(lightmap_offset))
             self.lightmap = lightmap
@@ -286,11 +286,16 @@ class Mesh:
         glBindBuffer(GL_ARRAY_BUFFER, 0)
         glBindVertexArray(0)
 
-    def draw(self, shader: Shader, transform: mat4, override_texture: str | None = None):
+    def draw(
+        self,
+        shader: Shader,
+        transform: mat4,
+        override_texture: str | None = None,
+    ):
         shader.set_matrix4("model", transform)
 
         glActiveTexture(GL_TEXTURE0)
-        self._scene.texture(self.texture if override_texture is None else override_texture).use()
+        self._scene.texture(override_texture or self.texture).use()
 
         glActiveTexture(GL_TEXTURE1)
         self._scene.texture(self.lightmap).use()
