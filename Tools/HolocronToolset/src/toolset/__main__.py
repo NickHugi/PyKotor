@@ -17,7 +17,7 @@ if TYPE_CHECKING:
     from types import TracebackType
 
 def onAppCrash(etype: type[BaseException], e: BaseException, tback: TracebackType | None):
-    from utility.error_handling import format_exception_with_variables
+    from utility.error_handling import format_exception_with_variables  # noqa: PLC0415
     with pathlib.Path("errorlog.txt").open("a", encoding="utf-8") as file:
         try:  # sourcery skip: do-not-use-bare-except
             file.writelines(format_exception_with_variables(e, etype, tback))

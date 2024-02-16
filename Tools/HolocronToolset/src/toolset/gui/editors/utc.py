@@ -70,7 +70,7 @@ class UTCEditor(Editor):
         self.globalSettings: GlobalSettings = GlobalSettings()
         self._utc: UTC = UTC()
 
-        from toolset.uic.editors.utc import Ui_MainWindow
+        from toolset.uic.editors.utc import Ui_MainWindow  # noqa: PLC0415
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
         self._setupMenus()
@@ -177,8 +177,8 @@ class UTCEditor(Editor):
             item.setFlags(item.flags() | QtCore.Qt.ItemIsUserCheckable)
             item.setCheckState(QtCore.Qt.Unchecked)
             self.ui.featList.addItem(item)
-        self.ui.featList.setSortingEnabled(True)
-        self.ui.featList.sortItems(QtCore.Qt.AscendingOrder)
+        #self.ui.featList.setSortingEnabled(True)
+        #self.ui.featList.sortItems(QtCore.Qt.AscendingOrder)
 
         self.ui.powerList.clear()
         for power in powers:
@@ -191,8 +191,8 @@ class UTCEditor(Editor):
             item.setFlags(item.flags() | QtCore.Qt.ItemIsUserCheckable)
             item.setCheckState(QtCore.Qt.Unchecked)
             self.ui.powerList.addItem(item)
-        self.ui.powerList.setSortingEnabled(True)
-        self.ui.powerList.sortItems(QtCore.Qt.AscendingOrder)
+        #self.ui.powerList.setSortingEnabled(True)
+        #self.ui.powerList.sortItems(QtCore.Qt.AscendingOrder)
 
         self.ui.noBlockCheckbox.setVisible(installation.tsl)
         self.ui.hologramCheckbox.setVisible(installation.tsl)

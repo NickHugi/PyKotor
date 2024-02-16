@@ -15,8 +15,9 @@ from pykotor.tools.path import CaseAwarePath
 from toolset.gui.editor import Editor
 
 if TYPE_CHECKING:
-    from PyQt5.QtWidgets import QWidget
     import os
+
+    from PyQt5.QtWidgets import QWidget
 
     from toolset.data.installation import HTInstallation
 
@@ -45,7 +46,7 @@ class MDLEditor(Editor):
         self._mdl: MDL = MDL()
         self._installation = installation
 
-        from toolset.uic.editors.mdl import Ui_MainWindow
+        from toolset.uic.editors.mdl import Ui_MainWindow  # noqa: PLC0415
 
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)

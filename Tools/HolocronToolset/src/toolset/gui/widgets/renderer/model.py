@@ -172,6 +172,9 @@ class ModelRenderer(QOpenGLWidget):
         self._mouseDown.discard(e.button())
 
     def keyPressEvent(self, e: QKeyEvent, bubble: bool = True):
+
+        # FIXME: these values are wrong but there's an issue elsewhere i cbf fixing.
+
         self._keysDown.add(e.key())
 
         if self.rotateCameraLeft.satisfied(self._mouseDown, self._keysDown):
@@ -184,17 +187,17 @@ class ModelRenderer(QOpenGLWidget):
             self.scene.camera.rotate(0, -math.pi / 4)
 
         if self.moveCameraUp.satisfied(self._mouseDown, self._keysDown):
-            self.scene.camera.z += 1
-        if self.moveCameraDown.satisfied(self._mouseDown, self._keysDown):
-            self.scene.camera.z -= 1
-        if self.moveCameraLeft.satisfied(self._mouseDown, self._keysDown):
-            self.scene.camera.y -= 1
-        if self.moveCameraRight.satisfied(self._mouseDown, self._keysDown):
             self.scene.camera.y += 1
-        if self.moveCameraForward.satisfied(self._mouseDown, self._keysDown):
+        if self.moveCameraDown.satisfied(self._mouseDown, self._keysDown):
+            self.scene.camera.y -= 1
+        if self.moveCameraLeft.satisfied(self._mouseDown, self._keysDown):
             self.scene.camera.x += 1
-        if self.moveCameraBackward.satisfied(self._mouseDown, self._keysDown):
+        if self.moveCameraRight.satisfied(self._mouseDown, self._keysDown):
             self.scene.camera.x -= 1
+        if self.moveCameraForward.satisfied(self._mouseDown, self._keysDown):
+            self.scene.camera.z += 1
+        if self.moveCameraBackward.satisfied(self._mouseDown, self._keysDown):
+            self.scene.camera.z -= 1
 
         if self.zoomCameraIn.satisfied(self._mouseDown, self._keysDown):
             self.scene.camera.distance += 1
