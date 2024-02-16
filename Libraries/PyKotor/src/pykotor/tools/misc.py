@@ -48,6 +48,9 @@ def is_bif_file(filepath: os.PathLike | str) -> bool:
     """Returns true if the given filename has a BIF file extension."""
     return PurePath.pathify(normalize_ext(filepath)).suffix.lower() == ".bif"
 
+def is_bzf_file(filepath: os.PathLike | str) -> bool:
+    """Returns true if the given filename has a BZF file extension (lzma-compressed bif archive usually used on iOS)."""
+    return PurePath.pathify(normalize_ext(filepath)).suffix.lower() == ".bzf"
 
 def is_capsule_file(filepath: os.PathLike | str) -> bool:
     """Returns true if the given filename has either an ERF, MOD, SAV, or RIM file extension."""

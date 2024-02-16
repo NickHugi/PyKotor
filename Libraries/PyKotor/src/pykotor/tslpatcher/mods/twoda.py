@@ -138,7 +138,7 @@ class RowValueHigh(RowValue):
     Attributes:
     ----------
     column: Column to get the max integer from. If None it takes it from the Row Label.
-    """  # noqa: D205, D212
+    """  # noqa: D212
 
     def __init__(self, column: str | None):
         self.column: str | None = column

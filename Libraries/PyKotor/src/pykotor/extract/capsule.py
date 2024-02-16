@@ -13,6 +13,8 @@ from utility.system.path import Path
 if TYPE_CHECKING:
     import os
 
+    from collections.abc import Iterator
+
 
 class Capsule:
     """Capsule object is used for loading the list of resources stored in the .erf/.rim/.mod/.sav files used by the game.
@@ -259,8 +261,9 @@ class Capsule:
             if file_type == "RIM ":
                 return self._load_rim(reader)
 
-            msg = f"File '{self._path}' must be a ERF/MOD/SAV/RIM capsule."
-            raise NotImplementedError(msg)
+        msg = f"File '{self._path}' must be a ERF/MOD/SAV/RIM capsule."
+        raise NotImplementedError(msg)
+
 
     def add(
         self,
@@ -339,9 +342,11 @@ class Capsule:
         restypes: list[ResourceType] = []
         reader.seek(offset_to_keys)
         for _ in range(entry_count):
-            resrefs.append(reader.read_string(16))
+            resref = reader.read_string(16)
+            resrefs.append(resref)
             resids.append(reader.read_uint32())
-            restypes.append(ResourceType.from_id(reader.read_uint16()))
+            restype = reader.read_uint16()
+            restypes.append(ResourceType.from_id(restype))
             reader.skip(2)
 
         reader.seek(offset_to_resources)

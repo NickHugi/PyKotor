@@ -12,12 +12,14 @@ from PyQt5.QtWidgets import QOpenGLWidget
 
 from pykotor.common.geometry import Vector2, Vector3
 from pykotor.gl.scene import Scene
+from pykotor.resource.formats.bwm.bwm_data import BWM
 from pykotor.resource.generics.git import GITInstance
 from pykotor.resource.type import ResourceType
+from utility.error_handling import assert_with_variable_trace
 
 if TYPE_CHECKING:
-    from PyQt5.QtWidgets import QWidget
     from PyQt5.QtGui import QKeyEvent, QMouseEvent, QResizeEvent, QWheelEvent
+    from PyQt5.QtWidgets import QWidget
     from glm import vec3
 
     from pykotor.common.module import Module
@@ -25,7 +27,7 @@ if TYPE_CHECKING:
     from toolset.data.installation import HTInstallation
 
 
-class ModuleRenderer(QOpenGLWidget):
+class ModuleRenderer(QOpenGLWidget):  # noqa: PLR0904
     sceneInitalized = QtCore.pyqtSignal()
     """Signal emitted when scene has been initialized."""
 
@@ -94,10 +96,12 @@ class ModuleRenderer(QOpenGLWidget):
         ----
             self: The object instance
 
-        - Calls repaint() to redraw the canvas
-        - Checks if mouse is over object and keyboard keys are pressed
-        - Emits keyboardPressed signal with mouse/key info
-        - Schedules next loop call after delay to maintain ~30fps
+        Processing Logic:
+        ----------------
+            - Calls repaint() to redraw the canvas
+            - Checks if mouse is over object and keyboard keys are pressed
+            - Emits keyboardPressed signal with mouse/key info
+            - Schedules next loop call after delay to maintain ~30fps
         """
         self.repaint()
         if self.underMouse() and self.freeCam and len(self._keysDown) > 0:
@@ -114,21 +118,34 @@ class ModuleRenderer(QOpenGLWidget):
             x: float - The x coordinate of the point
             y: float - The y coordinate of the point
             default_z: float = 0.0 - The default z height if no face is found
+
         Returns:
+        -------
             Vector3 - The (x, y, z) position on the walkmesh
-        - Iterates through walkmesh resources to find the face at the given (x,y) coordinates
-        - Checks if the found face is walkable, and overrides any previous less walkable face
-        - Returns a Vector3 with the input x,y coords and either the face z height or default z if no face.
+
+        Processing Logic:
+        ----------------
+            - Iterates through walkmesh resources to find the face at the given (x,y) coordinates
+            - Checks if the found face is walkable, and overrides any previous less walkable face
+            - Returns a Vector3 with the input x,y coords and either the face z height or default z if no face.
         """
         face: BWMFace | None = None
-        for walkmesh in [res.resource() for res in self._module.resources.values() if
-                         res.restype() == ResourceType.WOK]:
-            if walkmesh is None:
+        for module_resource in self._module.resources.values():
+            if module_resource.restype() != ResourceType.WOK:
                 continue
-            over = walkmesh.faceAt(x, y)
-            if over and (face is None or (not face.material.walkable() and over.material.walkable())):
+            walkmesh_resource = module_resource.resource()
+            if walkmesh_resource is None:
+                continue
+            assert isinstance(walkmesh_resource, BWM), assert_with_variable_trace(isinstance(walkmesh_resource, BWM))
+            over: BWMFace | None = walkmesh_resource.faceAt(x, y)
+            if over is None:
+                continue
+            if face is None:  # noqa: SIM114
                 face = over
-        z = default_z if face is None else face.determine_z(x, y)
+            elif not face.material.walkable() and over.material.walkable():
+                face = over
+
+        z: float = default_z if face is None else face.determine_z(x, y)
         return Vector3(x, y, z)
 
     def initializeGL(self):

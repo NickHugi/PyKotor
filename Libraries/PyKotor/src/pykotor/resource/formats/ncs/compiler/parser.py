@@ -76,7 +76,7 @@ class NssParser:
         errorlog: yacc.NullLogger | None = yacc.NullLogger(),  # noqa: B008
         debug=False,  # noqa: FBT002
     ):
-        self.parser = yacc.yacc(
+        self.parser: yacc.LRParser = yacc.yacc(
             module=self,
             errorlog=errorlog,
             write_tables=False,

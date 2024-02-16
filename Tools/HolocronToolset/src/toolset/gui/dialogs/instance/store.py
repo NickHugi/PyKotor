@@ -24,7 +24,7 @@ class StoreDialog(QDialog):
         self.setWindowTitle("Edit Store")
         self.setWindowIcon(QIcon(QPixmap(":/images/icons/k1/merchant.png")))
 
-        self.ui.resrefEdit.setText(store.resref.get())
+        self.ui.resrefEdit.setText(str(store.resref))
         self.ui.xPosSpin.setValue(store.position.x)
         self.ui.yPosSpin.setValue(store.position.y)
         self.ui.zPosSpin.setValue(store.position.z)

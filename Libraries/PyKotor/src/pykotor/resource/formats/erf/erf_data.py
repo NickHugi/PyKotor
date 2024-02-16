@@ -57,6 +57,11 @@ class ERF:
     ):
         return f"{self.__class__.__name__}({self.erf_type!r})"
 
+    def __repr__(
+        self,
+    ):
+        return f"{self.__class__.__name__}({self.erf_type!r})"
+
     def __iter__(
         self,
     ):
@@ -87,7 +92,7 @@ class ERF:
 
         return NotImplemented
 
-    def set_data(  # noqa: D417
+    def set_data(
         self,
         resname: str,
         restype: ResourceType,

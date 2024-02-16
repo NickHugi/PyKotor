@@ -3,9 +3,11 @@ from __future__ import annotations
 import os
 import re
 
-from typing import TYPE_CHECKING, Any, Iterable, Protocol, TypeVar, runtime_checkable
+from typing import TYPE_CHECKING, Any, Protocol, TypeVar, runtime_checkable
 
 if TYPE_CHECKING:
+    from collections.abc import Iterable
+
     from typing_extensions import LiteralString, Self, SupportsIndex
 
 
@@ -223,7 +225,7 @@ class StrictStrProtocol(Protocol):
 
 StrictStr = TypeVar("StrictStr", bound=str)
 
-class WrappedStr(str):  # (metaclass=StrType):
+class WrappedStr(str):  # (metaclass=StrType):  # noqa: PLR0904
 
     __slots__: tuple[str, ...] = (
         "_content",
@@ -232,7 +234,7 @@ class WrappedStr(str):  # (metaclass=StrType):
     @classmethod
     def _assert_str_type(
         cls: type[Self],
-        var,
+        var: str,
     ) -> str:
         if var is None:
             return None  # type: ignore[return-value]

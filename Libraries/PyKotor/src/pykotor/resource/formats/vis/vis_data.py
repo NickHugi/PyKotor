@@ -2,9 +2,12 @@
 from __future__ import annotations
 
 from copy import copy, deepcopy
-from typing import Any, Generator
+from typing import TYPE_CHECKING, Any
 
 from pykotor.resource.type import ResourceType
+
+if TYPE_CHECKING:
+    from collections.abc import Generator
 
 
 class VIS:

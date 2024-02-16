@@ -20,8 +20,13 @@ if PYKOTOR_PATH.joinpath("pykotor").exists():
 if UTILITY_PATH.joinpath("utility").exists():
     add_sys_path(UTILITY_PATH)
 
+from typing import TYPE_CHECKING
+
 from pykotor.common.geometry import Vector3
-from pykotor.resource.formats.bwm import BWM, BWMBinaryReader, read_bwm, write_bwm
+from pykotor.resource.formats.bwm import BWMBinaryReader, read_bwm, write_bwm
+
+if TYPE_CHECKING:
+    from pykotor.resource.formats.bwm import BWM
 
 BINARY_TEST_FILE = "tests/files/test.wok"
 

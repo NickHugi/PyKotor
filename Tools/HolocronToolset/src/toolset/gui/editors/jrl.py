@@ -18,6 +18,8 @@ if TYPE_CHECKING:
 
     from PyQt5.QtCore import QItemSelection, QPoint
 
+    from pykotor.resource.formats.twoda.twoda_data import TwoDA
+
 
 class JRLEditor(Editor):
     """Journal Editor is designed for editing JRL files.
@@ -48,7 +50,7 @@ class JRLEditor(Editor):
             - Sets the installation if provided
             - Displays an empty new journal by default.
         """
-        supported = [ResourceType.JRL]
+        supported: list[ResourceType] = [ResourceType.JRL]
         super().__init__(parent, "Journal Editor", "journal", supported, supported, installation)
         self.resize(400, 250)
 
@@ -108,13 +110,12 @@ class JRLEditor(Editor):
         self._installation = installation
         self.ui.categoryNameEdit.setInstallation(installation)
 
-        planets = installation.htGetCache2DA(HTInstallation.TwoDA_PLANETS)
+        planets: TwoDA = installation.htGetCache2DA(HTInstallation.TwoDA_PLANETS)
 
         self.ui.categoryPlanetSelect.clear()
         self.ui.categoryPlanetSelect.addItem("[None]", -1)
         for row in planets:
-            text = self._installation.talktable().string(row.get_integer("name", 0))
-            text = row.get_string("label").replace("_", " ").title() if text == "" or text is None else text
+            text = self._installation.talktable().string(row.get_integer("name", 0)) or row.get_string("label").replace("_", " ").title()
             self.ui.categoryPlanetSelect.addItem(text)
 
     def load(self, filepath: os.PathLike | str, resref: str, restype: ResourceType, data: bytes):
@@ -174,7 +175,7 @@ class JRLEditor(Editor):
         ----
             entryItem: The item to refresh.
         """
-        text = f"[{entryItem.data().entry_id}] {self._installation.string(entryItem.data().text)}"
+        text: str = f"[{entryItem.data().entry_id}] {self._installation.string(entryItem.data().text)}"
         entryItem.setForeground(QColor(0x880000 if entryItem.data().end else 0x000000))
         entryItem.setText(text)
 
@@ -185,7 +186,7 @@ class JRLEditor(Editor):
         ----
             questItem: The item to refresh.
         """
-        text = self._installation.string(questItem.data().name, "[Unnamed]")
+        text: str = self._installation.string(questItem.data().name, "[Unnamed]")
         questItem.setText(text)
 
     def changeQuestName(self):
@@ -194,18 +195,18 @@ class JRLEditor(Editor):
         if dialog.exec_():
             self.ui.categoryNameEdit.setInstallation(self._installation)
             self.onValueUpdated()
-            item = self._get_item()
+            item: QStandardItem = self._get_item()
             quest: JRLQuest = item.data()
             quest.name = dialog.locstring
             self.refreshQuestItem(item)
 
     def changeEntryText(self):
         """Opens a LocalizedStringDialog for editing the text of the selected entry."""
-        dialog = LocalizedStringDialog(self, self._installation, self.ui.entryTextEdit.locstring)
+        dialog = LocalizedStringDialog(self, self._installation, self.ui.entryTextEdit.locstring)  # FIXME: locstring or locstring()?
         if dialog.exec_():
             self._loadLocstring(self.ui.entryTextEdit, dialog.locstring)
             self.onValueUpdated()
-            item = self._get_item()
+            item: QStandardItem = self._get_item()
             entry: JRLEntry = item.data()
             entry.text = dialog.locstring
             self.refreshEntryItem(item)
@@ -217,7 +218,7 @@ class JRLEditor(Editor):
         ----
             questItem: The item in the tree that stores the quest.
         """
-        quest = questItem.data()
+        quest: JRLQuest = questItem.data()
         self._model.removeRow(questItem.row())
         self._jrl.quests.remove(quest)
 
@@ -228,7 +229,7 @@ class JRLEditor(Editor):
         ----
             entryItem: The item in the tree that stores the entry.
         """
-        entry = entryItem.data()
+        entry: JRLEntry = entryItem.data()
         entryItem.parent().removeRow(entryItem.row())
         for quest in self._jrl.quests:
             if entry in quest.entries:
@@ -247,7 +248,8 @@ class JRLEditor(Editor):
         entryItem.setData(newEntry)
         self.refreshEntryItem(entryItem)
         questItem.appendRow(entryItem)
-        questItem.data().entries.append(newEntry)
+        quest: JRLQuest = questItem.data()
+        quest.entries.append(newEntry)
 
     def addQuest(self, newQuest: JRLQuest):
         """Adds a quest to the journal.
@@ -280,7 +282,7 @@ class JRLEditor(Editor):
             - Update the appropriate fields on the item object
             - Refresh the entry item to update the display.
         """
-        item = self._get_item()
+        item: QStandardItem = self._get_item()
         data = item.data()
         if isinstance(data, JRLQuest):  # sourcery skip: extract-method
             data.name = self.ui.categoryNameEdit.locstring()

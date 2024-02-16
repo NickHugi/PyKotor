@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from copy import copy
-from typing import TYPE_CHECKING, Any, Callable, Generic, TypeVar
+from typing import TYPE_CHECKING, Any, Generic, TypeVar
 
 from pykotor.common.misc import CaseInsensitiveDict
 from pykotor.common.stream import BinaryReader, BinaryWriter
@@ -32,11 +32,13 @@ from pykotor.resource.generics.utw import UTW, bytes_utw, read_utw
 from pykotor.resource.type import ResourceType
 from pykotor.tools.misc import is_any_erf_type_file, is_bif_file, is_capsule_file, is_rim_file
 from pykotor.tools.model import list_lightmaps, list_textures
-from utility.error_handling import format_exception_with_variables
+from utility.error_handling import assert_with_variable_trace, format_exception_with_variables
 from utility.system.path import Path, PurePath
 
 if TYPE_CHECKING:
     import os
+
+    from collections.abc import Callable
 
     from pykotor.common.misc import ResRef
     from pykotor.extract.file import LocationResult, ResourceResult
@@ -63,7 +65,7 @@ SEARCH_ORDER: list[SearchLocation] = [
 ]
 
 
-class Module:
+class Module:  # noqa: PLR0904
     def __init__(
         self,
         root: str,
@@ -289,18 +291,19 @@ class Module:
         """
         # In order to store TGA resources in the same ModuleResource as their TPC counterpart, we use the .TPC extension
         # instead of the .TGA for the dictionary key.
-        filename_ext = str(ResourceType.TPC if restype == ResourceType.TGA else restype)
-        filename = f"{resname}.{filename_ext}"
-        if filename not in self.resources:
-            self.resources[filename] = ModuleResource(
-                resname,
-                restype,
-                self._installation,
-            )
+        filename_ext = (ResourceType.TPC if restype == ResourceType.TGA else restype).extension
+        filename: str = f"{resname}.{filename_ext}"
+        module_resource: ModuleResource = self.resources.get(filename)
+        if module_resource is None:
+            module_resource = ModuleResource(resname, restype, self._installation)
+            self.resources[filename] = module_resource
+
         self.resources[filename].add_locations(locations)
+
 
     def installation(self) -> Installation:
         return self._installation
+
 
     def resource(
         self,
@@ -373,6 +376,7 @@ class Module:
             ),
             None,
         )
+
 
     def are(
         self,
@@ -1263,6 +1267,13 @@ class ModuleResource(Generic[T]):
 
             file_name: str = f"{self._resname}.{self._restype.extension}"
             if self._active is None:
+                try:
+                    assert_with_variable_trace(self._resource_obj is not None)
+                except Exception as e:
+                    with Path("errorlog.txt").open("a", encoding="utf-8") as file:
+                        lines = format_exception_with_variables(e)
+                        file.writelines(lines)
+                        file.write("\n----------------------\n")
                 self._resource_obj = None
 
             elif is_capsule_file(self._active.name):

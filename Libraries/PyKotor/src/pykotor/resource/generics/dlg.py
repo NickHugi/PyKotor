@@ -466,7 +466,7 @@ class DLGStunt:
     ----------
     participant: "Participant" field.
     stunt_model: "StuntModel" field.
-    """  # noqa: D205, D212
+    """  # noqa: D212
 
     def __init__(
         self,

@@ -20,10 +20,16 @@ if PYKOTOR_PATH.joinpath("pykotor").exists():
 if UTILITY_PATH.joinpath("utility").exists():
     add_sys_path(UTILITY_PATH)
 
+from typing import TYPE_CHECKING
+
 from pykotor.common.misc import Game
 from pykotor.extract.installation import Installation
-from pykotor.resource.formats.gff import GFF, read_gff
-from pykotor.resource.generics.are import ARE, construct_are, dismantle_are
+from pykotor.resource.formats.gff import read_gff
+from pykotor.resource.generics.are import construct_are, dismantle_are
+
+if TYPE_CHECKING:
+    from pykotor.resource.formats.gff import GFF
+    from pykotor.resource.generics.are import ARE
 
 TEST_FILE = "tests/files/test.are"
 K1_PATH = os.environ.get("K1_PATH")

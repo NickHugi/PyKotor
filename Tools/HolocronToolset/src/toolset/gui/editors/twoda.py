@@ -12,6 +12,7 @@ from PyQt5.QtWidgets import QAction, QMessageBox
 from pykotor.resource.formats.twoda import TwoDA, read_2da, write_2da
 from pykotor.resource.type import ResourceType
 from toolset.gui.editor import Editor
+from utility.error_handling import assert_with_variable_trace
 
 if TYPE_CHECKING:
     from PyQt5.QtWidgets import QWidget
@@ -22,12 +23,13 @@ if TYPE_CHECKING:
 
 class TwoDAEditor(Editor):
     def __init__(self, parent: QWidget | None, installation: HTInstallation | None = None):
-        """Initializes the 2DA editor
+        """Initializes the 2DA editor.
+
         Args:
+        ----
             parent: QWidget: The parent widget
             installation: HTInstallation: The installation
-        Returns:
-            None: Does not return anything
+
         Processing Logic:
         ----------------
             - Sets supported resource types
@@ -35,7 +37,7 @@ class TwoDAEditor(Editor):
             - Connects model change signals
             - Sets default empty model.
         """
-        supported = [ResourceType.TwoDA, ResourceType.TwoDA_CSV, ResourceType.TwoDA_JSON]
+        supported: list[ResourceType] = [ResourceType.TwoDA, ResourceType.TwoDA_CSV, ResourceType.TwoDA_JSON]
         super().__init__(parent, "2DA Editor", "none", supported, supported, installation)
         self.resize(400, 250)
 
@@ -100,14 +102,13 @@ class TwoDAEditor(Editor):
             restype: The resource type.
             data: The raw file data.
 
-        Returns:
-        -------
-            None
-        - Parses the raw file data and populates the model
-        - Sets up a proxy model for sorting and filtering
-        - Catches any errors during loading and displays a message
-        - Sets the proxy model as the view model if loading fails
-        - Resets to a new empty state if loading fails
+        Processing Logic:
+        ----------------
+            - Parses the raw file data and populates the model
+            - Sets up a proxy model for sorting and filtering
+            - Catches any errors during loading and displays a message
+            - Sets the proxy model as the view model if loading fails
+            - Resets to a new empty state if loading fails
         """
         super().load(filepath, resref, restype, data)
         self.model = QStandardItemModel(self)
@@ -120,12 +121,13 @@ class TwoDAEditor(Editor):
             self.proxyModel.setSourceModel(self.model)
             self.new()
 
-    def _load_main(self, data):
-        """Loads data from a 2DA file into the main table
+    def _load_main(self, data: bytes):
+        """Loads data from a 2DA file into the main table.
+
         Args:
+        ----
             data: The 2DA data to load
-        Returns:
-            None
+
         Processing Logic:
         ----------------
             1. Reads the 2DA data
@@ -134,9 +136,9 @@ class TwoDAEditor(Editor):
             4. Configures vertical header menu
             5. Sets up sorting proxy model.
         """
-        twoda = read_2da(data)
+        twoda: TwoDA = read_2da(data)
 
-        headers = ["", *list(twoda.get_headers())]
+        headers: list[str] = ["", *list(twoda.get_headers())]
         self.model.setColumnCount(len(headers))
         self.model.setHorizontalHeaderLabels(headers)
 
@@ -183,12 +185,17 @@ class TwoDAEditor(Editor):
             self.ui.twodaTable.resizeColumnToContents(i)
 
     def build(self) -> tuple[bytes, bytes]:
-        """Builds a 2D array from a table model
+        """Builds a 2D array from a table model.
+
         Args:
+        ----
             self: The object instance
             model: The table model to convert
+
         Returns:
+        -------
             tuple[bytes, bytes]: A tuple containing the 2DA data and an empty string
+
         Processing Logic:
         ----------------
             - Initialize an empty TwoDA object
@@ -210,6 +217,7 @@ class TwoDAEditor(Editor):
                 twoda.set_cell(i, header, self.model.item(i, j + 1).text())
 
         data = bytearray()
+        assert self._restype, assert_with_variable_trace(bool(self._restype), "self._restype must be valid.")
         write_2da(twoda, data, self._restype)
         return data, b""
 
@@ -223,7 +231,7 @@ class TwoDAEditor(Editor):
         self.proxyModel.setFilterFixedString(text)
 
     def toggleFilter(self):
-        visible = not self.ui.filterBox.isVisible()
+        visible: bool = not self.ui.filterBox.isVisible()
         self.ui.filterBox.setVisible(visible)
         if visible:
             self.doFilter(self.ui.filterEdit.text())
@@ -258,7 +266,7 @@ class TwoDAEditor(Editor):
             left = min([left, mapped_index.column()])
             right = max([right, mapped_index.column()])
 
-        clipboard = ""
+        clipboard: str = ""
         for j in range(top, bottom + 1):
             for i in range(left, right + 1):
                 clipboard += self.model.item(j, i).text()
@@ -287,16 +295,16 @@ class TwoDAEditor(Editor):
                 - Resets column to the left column after each row
                 - Increments the row.
         """
-        rows = pyperclip.paste().split("\n")
+        rows: list[str] = pyperclip.paste().split("\n")
 
         topLeftIndex = self.proxyModel.mapToSource(self.ui.twodaTable.selectedIndexes()[0])
-        topLeftItem = self.model.itemFromIndex(topLeftIndex)
+        topLeftItem: QStandardItem | None = self.model.itemFromIndex(topLeftIndex)
 
         _top, left = y, x = topLeftItem.row(), topLeftItem.column()
 
         for row in rows:
             for cell in row.split("\t"):
-                item = self.model.item(y, x)
+                item: QStandardItem | None = self.model.item(y, x)
                 if item:
                     item.setText(cell)
                 x += 1
@@ -318,7 +326,7 @@ class TwoDAEditor(Editor):
             - Makes the row index bold and changes its background color
             - Resets the vertical header labels.
         """
-        rowIndex = self.model.rowCount()
+        rowIndex: int = self.model.rowCount()
         self.model.appendRow([QStandardItem("") for _ in range(self.model.columnCount())])
         self.model.setItem(rowIndex, 0, QStandardItem(str(rowIndex)))
         font = self.model.item(rowIndex, 0).font()
@@ -350,9 +358,9 @@ class TwoDAEditor(Editor):
             - Resets the vertical headers of the table.
         """
         if self.ui.twodaTable.selectedIndexes():
-            copyRow = self.ui.twodaTable.selectedIndexes()[0].row()
+            copyRow: int = self.ui.twodaTable.selectedIndexes()[0].row()
 
-            rowIndex = self.model.rowCount()
+            rowIndex: int = self.model.rowCount()
             self.model.appendRow([QStandardItem(self.model.item(copyRow, i)) for i in range(self.model.columnCount())])
             self.model.setItem(rowIndex, 0, QStandardItem(str(rowIndex)))
             font = self.model.item(rowIndex, 0).font()
@@ -363,7 +371,7 @@ class TwoDAEditor(Editor):
 
     def removeSelectedRows(self):
         """Removes the rows the user has selected."""
-        rows = {index.row() for index in self.ui.twodaTable.selectedIndexes()}
+        rows: set[int] = {index.row() for index in self.ui.twodaTable.selectedIndexes()}
         for row in sorted(rows, reverse=True):
             self.model.removeRow(row)
 
@@ -374,7 +382,8 @@ class TwoDAEditor(Editor):
 
     def setVerticalHeaderOption(self, option: VerticalHeaderOption, column: str | None = None):
         self.verticalHeaderOption = option
-        self.verticalHeaderColumn = column
+        assert_with_variable_trace(column is not None, "column cannot be None")
+        self.verticalHeaderColumn = column or ""
         self.resetVerticalHeaders()
 
     def resetVerticalHeaders(self):
@@ -396,14 +405,14 @@ class TwoDAEditor(Editor):
             - Set vertical header item for each row using headers list values
         """
         self.ui.twodaTable.verticalHeader().setStyleSheet("")
-        headers = []
+        headers: list[str] = []
 
         if self.verticalHeaderOption == VerticalHeaderOption.ROW_INDEX:
             headers = [str(i) for i in range(self.model.rowCount())]
         elif self.verticalHeaderOption == VerticalHeaderOption.ROW_LABEL:
             headers = [self.model.item(i, 0).text() for i in range(self.model.rowCount())]
         elif self.verticalHeaderOption == VerticalHeaderOption.CELL_VALUE:
-            columnIndex = 0
+            columnIndex: int = 0
             for i in range(self.model.columnCount()):
                 if self.model.horizontalHeaderItem(i).text() == self.verticalHeaderColumn:
                     columnIndex = i
@@ -444,8 +453,8 @@ class SortFilterProxyModel(QSortFilterProxyModel):
             - If any cell matches, return True
         - If no cells match, return False
         """
-        pattern = self.filterRegExp().pattern().lower()
-        if self.filterRegExp().pattern() == "":
+        pattern: str = self.filterRegExp().pattern().lower()
+        if not self.filterRegExp().pattern():
             return True
         for i in range(self.sourceModel().columnCount()):
             index = self.sourceModel().index(sourceRow, i, sourceParent)

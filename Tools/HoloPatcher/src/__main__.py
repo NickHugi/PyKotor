@@ -26,7 +26,7 @@ from tkinter import (
     messagebox,
     ttk,
 )
-from typing import TYPE_CHECKING, Callable, NoReturn
+from typing import TYPE_CHECKING, NoReturn
 
 if getattr(sys, "frozen", False) is False:
     def update_sys_path(path):
@@ -59,6 +59,7 @@ from utility.system.path import Path
 from utility.tkinter.tooltip import ToolTip
 
 if TYPE_CHECKING:
+    from collections.abc import Callable
     from types import TracebackType
 
     from pykotor.tslpatcher.logger import PatchLog

@@ -6,9 +6,10 @@ import traceback
 import types
 
 from pathlib import Path
-from typing import TYPE_CHECKING, Callable, TypeVar
+from typing import TYPE_CHECKING, TypeVar
 
 if TYPE_CHECKING:
+    from collections.abc import Callable
     from typing_extensions import Literal
 
 
@@ -110,7 +111,7 @@ def format_var_str(
         val_str = str(val)
         if len(val_str) > max_length:
             val_str = f"{val_str[:max_length]}...<truncated>"
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         val_str = unique_sentinel
         exc = e
 
@@ -118,7 +119,7 @@ def format_var_str(
         val_repr = repr(val)
         if len(val_repr) > max_length:
             val_repr = f"{val_repr[:max_length]}...<truncated>"
-    except Exception:
+    except Exception:  # noqa: BLE001
         val_repr = unique_sentinel
 
     display_value: str | object = val_repr
@@ -165,8 +166,13 @@ def format_exception_with_variables(
         msg = f"{value!r} is not an exception instance"
         raise TypeError(msg)
     if not isinstance(tb, types.TracebackType):
-        msg = "tb is not a traceback object"
-        raise TypeError(msg)
+        try:
+            raise value  # noqa: TRY301
+        except BaseException as e:  # noqa: BLE001
+            tb = e.__traceback__  # Now we have the traceback object
+        if tb is None:
+            msg = f"Could not determine traceback from {value}"
+            raise RuntimeError(msg)
 
     # Construct the stack trace using traceback
     formatted_traceback: str = "".join(traceback.format_exception(etype, value, tb))
@@ -240,6 +246,7 @@ unique_sentinel = object()
 def with_variable_trace(
     exception_types: type[Exception] | tuple[type[Exception], ...] = Exception,
     return_type: type[RT] = unique_sentinel,  # type: ignore[reportGeneralTypeIssues, assignment]
+    *,
     action="print",
     log: bool = True,
     rethrow: bool = False,

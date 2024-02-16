@@ -20,10 +20,15 @@ if PYKOTOR_PATH.joinpath("pykotor").exists():
 if UTILITY_PATH.joinpath("utility").exists():
     add_sys_path(UTILITY_PATH)
 
+from typing import TYPE_CHECKING
+
 from pykotor.common.stream import BinaryReader
-from pykotor.resource.formats.ncs import NCS, NCSBinaryReader
+from pykotor.resource.formats.ncs import NCSBinaryReader
 from pykotor.resource.formats.ncs.ncs_auto import bytes_ncs, read_ncs, write_ncs
 from utility.system.path import Path
+
+if TYPE_CHECKING:
+    from pykotor.resource.formats.ncs import NCS
 
 BINARY_TEST_FILE = "tests/files/test.ncs"
 

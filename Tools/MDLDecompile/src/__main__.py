@@ -6,12 +6,18 @@ import sys
 import traceback
 
 if getattr(sys, "frozen", False) is False:
-    pykotor_path = pathlib.Path(__file__).parents[2] / "pykotor"
-    if pykotor_path.exists():
-        working_dir = str(pykotor_path.parent)
+    def update_sys_path(path):
+        working_dir = str(path)
         if working_dir in sys.path:
             sys.path.remove(working_dir)
-        sys.path.insert(0, working_dir)
+        sys.path.append(working_dir)
+
+    pykotor_path = pathlib.Path(__file__).parents[3] / "Libraries" / "PyKotor" / "src" / "pykotor"
+    if pykotor_path.exists():
+        update_sys_path(pykotor_path.parent)
+    utility_path = pathlib.Path(__file__).parents[3] / "Libraries" / "Utility" / "src" / "utility"
+    if utility_path.exists():
+        update_sys_path(utility_path.parent)
 
 from pykotor.resource.formats.mdl import read_mdl, write_mdl
 from pykotor.resource.type import ResourceType
@@ -29,7 +35,7 @@ while True:
         or (unknown[0] if len(unknown) > 0 else None)
         or input("Path to the MDL/MDX file/folder of MDL files: "),
     ).resolve()
-    if parser_args.input.exists():
+    if parser_args.input.safe_exists():
         break
     print("Invalid path:", parser_args.input)
     parser.print_help()
@@ -38,7 +44,7 @@ while True:
     parser_args.output = Path(
         parser_args.output or (unknown[1] if len(unknown) > 1 else None) or input("Output directory: "),
     ).resolve()
-    if parser_args.output.parent.exists():
+    if parser_args.output.parent.safe_exists():
         parser_args.output.mkdir(exist_ok=True, parents=True)
         break
     print("Invalid path:", parser_args.output)
@@ -83,28 +89,28 @@ def main():
     try:
         input_path: Path = parser_args.input
 
-        if input_path.is_file():
+        if input_path.safe_isfile():
             process_file(input_path, parser_args.output, parser_args.compile)
 
-        elif input_path.is_dir():
-            for gui_file in input_path.rglob("*.gui", case_sensitive=False):
+        elif input_path.safe_isdir():
+            for gui_file in input_path.safe_rglob("*.gui"):
                 try:
-                    relative_path = gui_file.relative_to(input_path)
-                    new_output_dir = parser_args.output / relative_path.parent / gui_file.stem
+                    relative_path: Path = gui_file.relative_to(input_path)
+                    new_output_dir: Path = parser_args.output / relative_path.parent / gui_file.stem
                     new_output_dir.mkdir(parents=True, exist_ok=True)
                     process_file(gui_file, new_output_dir, parser_args.compile)
                 except KeyboardInterrupt:  # noqa: PERF203
                     raise
-                except Exception:
+                except Exception:  # noqa: BLE001
                     traceback.print_exc()
 
         else:
-            print(f"Invalid input: {input_path!s}. It's neither a file nor a directory.")
+            print(f"Invalid input: {input_path}. It's neither a file nor a directory.")
             return
         print("Completed extractions")
     except KeyboardInterrupt:
         print("Goodbye")
-    except Exception:
+    except Exception:  # noqa: BLE001
         traceback.print_exc()
 
 

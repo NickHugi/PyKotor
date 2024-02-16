@@ -47,17 +47,17 @@ def decompileScript(compiled_bytes: bytes, tsl: bool, installation_path: Path) -
     global_settings = GlobalSettings()
     extract_path = Path(global_settings.extractPath)
 
-    if not extract_path.exists():
+    if not extract_path.safe_isdir():
         extract_path = Path(QFileDialog.getExistingDirectory(None, "Select a temp directory"))
-        if not extract_path.exists():
+        if not extract_path.safe_isdir():
             msg = "Temp directory has not been set or is invalid."
             raise NoConfigurationSetError(msg)
 
     ncs_decompiler_path = Path(global_settings.ncsDecompilerPath)
-    if not ncs_decompiler_path.name or ncs_decompiler_path.suffix.lower() != ".exe" or not ncs_decompiler_path.exists():
+    if not ncs_decompiler_path.name or ncs_decompiler_path.suffix.lower() != ".exe" or not ncs_decompiler_path.safe_isfile():
         ncs_decompiler_path, _ = QFileDialog.getOpenFileName(None, "Select the NCS Decompiler executable")
         ncs_decompiler_path = Path(ncs_decompiler_path)
-        if not ncs_decompiler_path.exists():
+        if not ncs_decompiler_path.safe_isfile():
             global_settings.ncsDecompilerPath = ""
             msg = "NCS Decompiler has not been set or is invalid."
             raise NoConfigurationSetError(msg)
@@ -65,7 +65,7 @@ def decompileScript(compiled_bytes: bytes, tsl: bool, installation_path: Path) -
     global_settings.extractPath = str(extract_path)
     global_settings.ncsDecompilerPath = str(ncs_decompiler_path)
 
-    rand_id = uuid.uuid1().hex[6:]
+    rand_id = uuid.uuid1().hex[:6]
     tempscript_filestem = f"tempscript_{rand_id}"
     tempCompiledPath = extract_path / f"{tempscript_filestem}.ncs"
     tempDecompiledPath = extract_path / f"{tempscript_filestem}_decompiled.txt"
@@ -94,8 +94,8 @@ def decompileScript(compiled_bytes: bytes, tsl: bool, installation_path: Path) -
         if stderr:
             raise ValueError(stderr)  # noqa: TRY301
         return BinaryReader.load_file(tempDecompiledPath).decode(encoding="windows-1252")
-    except Exception as e:  # noqa: BLE001
-        with Path("errorlog.txt").open("w") as f:
+    except Exception as e:
+        with Path("errorlog.txt").open("a") as f:
             msg = format_exception_with_variables(e)
             print(msg, sys.stderr)  # noqa: T201
             f.write(msg)
@@ -131,9 +131,10 @@ def compileScript(source: str, tsl: bool, installation_path: Path) -> bytes | No
     global_settings = GlobalSettings()
     extract_path = Path(global_settings.extractPath)
 
-    if not extract_path.safe_exists():
-        extract_path = Path(QFileDialog.getExistingDirectory(None, "Select a temp directory"))
-        if not extract_path.safe_exists():
+    if not extract_path.safe_isdir():
+        extract_path_str = QFileDialog.getExistingDirectory(None, "Select a temp directory")
+        extract_path = Path(extract_path_str) if extract_path_str else None
+        if not extract_path or not extract_path.safe_isdir():
             msg = "Temp directory has not been set or is invalid."
             raise NoConfigurationSetError(msg)
 
@@ -161,17 +162,17 @@ def _compile_windows(
     installation_path: Path,
 ) -> bytes:
     nss_compiler_path = Path(global_settings.nssCompilerPath)
-    if not nss_compiler_path.safe_exists():
+    if not nss_compiler_path.safe_isfile():
         lookup_path, _ = QFileDialog.getOpenFileName(None, "Select the NCS Compiler executable")
         nss_compiler_path = Path(lookup_path)
-        if not nss_compiler_path.safe_exists():
+        if not nss_compiler_path.safe_isfile():
             msg = "NCS Compiler has not been set or is invalid."
             raise NoConfigurationSetError(msg)
 
     global_settings.extractPath = str(extract_path)
     global_settings.nssCompilerPath = str(nss_compiler_path)
 
-    rand_id = uuid.uuid1().hex[6:]
+    rand_id = uuid.uuid1().hex[:6]
     tempscript_filestem = f"tempscript_{rand_id}"
     tempSourcePath = extract_path / f"{tempscript_filestem}.nss"
     tempCompiledPath = extract_path / f"{tempscript_filestem}.ncs"
@@ -210,10 +211,10 @@ def _compile_windows(
         if stderr:
             pattern = r'Unable to open the include file "([^"\n]*)"'
             while "Unable to open the include file" in stderr:
-                match = re.search(pattern, stderr)
+                match: re.Match | None = re.search(pattern, stderr)
                 include_path_str = QFileDialog.getExistingDirectory(
                     None,
-                    f"Script requires include file '{match.group(1) if match else '<unknown>'}', please choose the directory it's in.",
+                    f"Script requires include file '{Path(match[1]).name if match else '<unknown>'}', please choose the directory it's in.",
                     options=QFileDialog.Options(),
                 )
                 if not include_path_str or not include_path_str.strip():

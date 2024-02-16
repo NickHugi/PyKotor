@@ -24,7 +24,7 @@ class SoundDialog(QDialog):
         self.setWindowTitle("Edit Sound")
         self.setWindowIcon(QIcon(QPixmap(":/images/icons/k1/sound.png")))
 
-        self.ui.resrefEdit.setText(sound.resref.get())
+        self.ui.resrefEdit.setText(str(sound.resref))
         self.ui.xPosSpin.setValue(sound.position.x)
         self.ui.yPosSpin.setValue(sound.position.y)
         self.ui.zPosSpin.setValue(sound.position.z)

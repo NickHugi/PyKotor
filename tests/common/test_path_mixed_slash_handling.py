@@ -1,5 +1,5 @@
 # Rigorously test the string result of each pathlib module.
-# The goal isn't really to test pathlib.Path or utility.system.path, the goal is to determine if there was a breaking change in a python patch release.
+# The goal isn't really to test pathlib.Path or utility.path, the goal is to determine if there was a breaking change in a python patch release.
 from __future__ import annotations
 
 import ctypes
@@ -54,7 +54,7 @@ def check_path_win_api(path) -> tuple[bool, bool, bool]:
 
 class TestPathlibMixedSlashes(unittest.TestCase):
 
-    def create_and_run_batch_script(self, cmd: list[str], pause_after_command: bool = True):
+    def create_and_run_batch_script(self, cmd: list[str], pause_after_command: bool = False):
         with TemporaryDirectory() as tempdir:
             # Ensure the script path is absolute
             script_path = str(Path(tempdir, "temp_script.bat").absolute())
@@ -91,7 +91,7 @@ class TestPathlibMixedSlashes(unittest.TestCase):
         # Define the commands
         combined_commands: list[str] = [
             f'icacls "{path_str}" /reset',
-            f'attrib +S "{path_str}"',
+            f'attrib +S +R "{path_str}"',
             f'icacls "{path_str}" /inheritance:r',
             f'icacls "{path_str}" /deny Everyone:(F)'
         ]
@@ -102,13 +102,6 @@ class TestPathlibMixedSlashes(unittest.TestCase):
         # self.run_command(isfile_or_dir_args(["icacls", path_str, "/setowner", "dummy_user"]))
         # self.run_command(isfile_or_dir_args(["icacls", path_str, "/deny", "dummy_user:(D,WDAC,WO)"]))
         # self.run_command(["cipher", "/e", path_str])
-
-    def run_command(self, cmd):
-        cmd_with_admin: list[str] = self.get_admin_command(cmd)
-        result: subprocess.CompletedProcess[str] = subprocess.run(cmd_with_admin, check=False, capture_output=True, text=True)
-        assert not result.stderr.strip(), result.stderr
-        print(f"stdout: {result.stdout} stderr: {result.stderr}")
-
 
     def test_gain_file_access(self):  # sourcery skip: extract-method
         test_file = Path("this file has no permissions.txt").absolute()

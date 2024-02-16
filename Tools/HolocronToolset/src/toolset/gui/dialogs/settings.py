@@ -9,19 +9,20 @@ if TYPE_CHECKING:
 
 class SettingsDialog(QDialog):
     def __init__(self, parent: QWidget):
-        """Initialize Holocron Toolset settings dialog editor
+        """Initialize Holocron Toolset settings dialog editor.
+
         Args:
+        ----
             parent: QWidget: The parent widget of this dialog
-        Returns:
-            None: Does not return anything
+
         Processing Logic:
         ----------------
-        - Initialize parent class with parent widget
-        - Set flag for edited installations
-        - Import UI dialog class
-        - Set up UI
-        - Map pages to UI elements
-        - Connect signal handlers.
+            - Initialize parent class with parent widget
+            - Set flag for edited installations
+            - Import UI dialog class
+            - Set up UI
+            - Map pages to UI elements
+            - Connect signal handlers.
         """
         super().__init__(parent)
 

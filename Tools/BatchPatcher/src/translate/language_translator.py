@@ -5,7 +5,7 @@ import re
 import traceback
 
 from enum import Enum
-from typing import TYPE_CHECKING, Any, Callable
+from typing import TYPE_CHECKING, Any
 
 import requests
 
@@ -14,6 +14,8 @@ from utility.system.path import Path
 
 if TYPE_CHECKING:
     import os
+
+    from collections.abc import Callable
 
 # region LoadTranslatorPackages
 BergamotTranslator = None

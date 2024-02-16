@@ -39,7 +39,7 @@ class TLKEditor(Editor):
             - Make bottom panel take minimal space
             - Create a new empty TLK file.
         """
-        supported = [ResourceType.TLK, ResourceType.TLK_XML, ResourceType.TLK_JSON]
+        supported: list[ResourceType] = [ResourceType.TLK, ResourceType.TLK_XML, ResourceType.TLK_JSON]
         super().__init__(parent, "TLK Editor", "none", supported, supported, installation)
 
         from toolset.uic.editors.tlk import Ui_MainWindow
@@ -52,7 +52,7 @@ class TLKEditor(Editor):
         self.ui.searchBox.setVisible(False)
         self.ui.jumpBox.setVisible(False)
 
-        self.language = Language.ENGLISH
+        self.language: Language = Language.ENGLISH
 
         self.model = QStandardItemModel(self)
         self.proxyModel = QSortFilterProxyModel(self)
@@ -120,7 +120,6 @@ class TLKEditor(Editor):
         self.language = language
         if not self._revert:
             return
-
         tlk: TLK = read_tlk(self._revert, language=language)
         self._extracted_from_new_2()
         dialog = LoaderDialog(self, bytes_tlk(tlk), self.model)
@@ -183,11 +182,11 @@ class TLKEditor(Editor):
 
         Processing Logic:
         ----------------
-        - Iterate through each row in the model
-        - Extract the text and sound from each item
-        - Add an entry to the TLK object with the text and sound
-        - Write the TLK object to a byte array
-        - Return the byte array and an empty bytes object as a tuple.
+            - Iterate through each row in the model
+            - Extract the text and sound from each item
+            - Add an entry to the TLK object with the text and sound
+            - Write the TLK object to a byte array
+            - Return the byte array and an empty bytes object as a tuple.
         """
         tlk = TLK()
         tlk.language = self.language
@@ -242,10 +241,10 @@ class TLKEditor(Editor):
 
         proxyIndex = selected.indexes()[0]
         sourceIndex = self.proxyModel.mapToSource(proxyIndex)
-        item = self.model.itemFromIndex(sourceIndex)
+        item: QStandardItem | None = self.model.itemFromIndex(sourceIndex)
 
-        text = item.text()
-        sound = self.model.item(sourceIndex.row(), 1).text()
+        text: str = item.text()
+        sound: str = self.model.item(sourceIndex.row(), 1).text()
 
         self.ui.textEdit.setPlainText(text)
         self.ui.soundEdit.setText(sound)
@@ -307,7 +306,7 @@ class LoaderDialog(QDialog):
     def onBatch(self, batch: list[QStandardItem]):
         for row in batch:
             self.model.appendRow(row)
-            index = self.model.rowCount() - 1
+            index: int = self.model.rowCount() - 1
             self.model.setVerticalHeaderItem(index, QStandardItem(str(index)))
         self._progressBar.setValue(self.model.rowCount())
 
@@ -331,13 +330,13 @@ class LoaderWorker(QThread):
 
     def load_data(self):
         """Load tlk data from file."""
-        tlk = read_tlk(self._fileData)
+        tlk: TLK = read_tlk(self._fileData)
         self.entryCount.emit(len(tlk))
         self.language.emit(tlk.language)
 
         batch: list[list[QStandardItem]] = []
         for _stringref, entry in tlk:
-            batch.append([QStandardItem(entry.text), QStandardItem(entry.voiceover.get())])
+            batch.append([QStandardItem(entry.text), QStandardItem(str(entry.voiceover))])
             if len(batch) > 200:
                 self.batch.emit(batch)
                 batch = []

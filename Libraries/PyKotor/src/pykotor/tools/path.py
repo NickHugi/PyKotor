@@ -4,25 +4,27 @@ import os
 import pathlib
 import platform
 
-from typing import TYPE_CHECKING, Any, Callable, Generator
+from typing import TYPE_CHECKING, Any
 
 from pykotor.tools.registry import find_software_key, winreg_key
 from utility.misc import is_instance_or_subinstance
-from utility.registry import resolve_reg_key_to_path
 from utility.system.path import (
     Path as InternalPath,
+    PosixPath as InternalPosixPath,
     PurePath as InternalPurePath,
+    WindowsPath as InternalWindowsPath,
 )
+from utility.system.registry import resolve_reg_key_to_path
 
 if TYPE_CHECKING:
-    from typing_extensions import Self
+    from collections.abc import Callable, Generator
 
     from pykotor.common.misc import Game
     from utility.system.path import (
         PathElem,
     )
 
-def simple_wrapper(fn_name, wrapped_class_type) -> Callable[..., Any]:
+def simple_wrapper(fn_name: str, wrapped_class_type: type) -> Callable[..., Any]:
     """Wraps a function to handle case-sensitive pathlib.PurePath arguments.
 
     This is a hacky way of ensuring that all args to any pathlib methods have their path case-sensitively resolved.
@@ -134,7 +136,7 @@ def create_case_insensitive_pathlib_class(cls: type):  # TODO: move into CaseAwa
                 wrapped_methods.add(attr_name)
 
  # TODO: Move to pykotor.common
-class CaseAwarePath(InternalPath):  # type: ignore[misc]
+class CaseAwarePath(InternalWindowsPath if os.name == "nt" else InternalPosixPath):  # type: ignore[misc]
     """A class capable of resolving case-sensitivity in a path. Absolutely essential for working with KOTOR files on Unix filesystems."""
 
     def resolve(self, strict=False):  # noqa: FBT002
@@ -143,7 +145,7 @@ class CaseAwarePath(InternalPath):  # type: ignore[misc]
             return super(CaseAwarePath, new_path).resolve(strict)
         return super().resolve(strict)
 
-    def relative_to(self, *args, walk_up=False, **kwargs) -> InternalPath | Self:
+    def relative_to(self, *args, walk_up=False, **kwargs) -> InternalPath:
         if not args or "other" in kwargs:
             raise TypeError("relative_to() missing 1 required positional argument: 'other'")  # noqa: TRY003, EM101
 
@@ -218,7 +220,9 @@ class CaseAwarePath(InternalPath):  # type: ignore[misc]
                 break
 
         # return a CaseAwarePath instance
-        return cls._create_instance(*parts)
+        instance = cls._create_instance(*parts)
+        assert instance.__class__.__base__ is (InternalWindowsPath if os.name == "nt" else InternalPosixPath)
+        return instance
 
     @classmethod
     def find_closest_match(cls, target: str, candidates: Generator[InternalPath, None, None]) -> str:
@@ -253,9 +257,7 @@ class CaseAwarePath(InternalPath):  # type: ignore[misc]
                     break  # Exit the loop early if exact match (faster)
                 max_matching_chars = matching_chars
 
-        if not closest_match:
-            return target
-        return closest_match
+        return closest_match or target
 
     @staticmethod
     def get_matching_characters_count(str1: str, str2: str) -> int:

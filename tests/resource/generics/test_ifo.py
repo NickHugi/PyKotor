@@ -20,12 +20,17 @@ if PYKOTOR_PATH.joinpath("pykotor").exists():
 if UTILITY_PATH.joinpath("utility").exists():
     add_sys_path(UTILITY_PATH)
 
+from typing import TYPE_CHECKING
+
 from pykotor.common.misc import Game
 from pykotor.extract.installation import Installation
 from pykotor.resource.formats.gff import read_gff
-from pykotor.resource.formats.gff.gff_data import GFF
-from pykotor.resource.generics.ifo import IFO, construct_ifo, dismantle_ifo
+from pykotor.resource.generics.ifo import construct_ifo, dismantle_ifo
 from pykotor.resource.type import ResourceType
+
+if TYPE_CHECKING:
+    from pykotor.resource.formats.gff.gff_data import GFF
+    from pykotor.resource.generics.ifo import IFO
 
 TEST_FILE = "tests/files/test.ifo"
 K1_PATH = os.environ.get("K1_PATH")

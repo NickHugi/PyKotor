@@ -3,11 +3,12 @@ from __future__ import annotations
 
 from contextlib import suppress
 from copy import copy
-from typing import TYPE_CHECKING, Any, Callable, TypeVar
+from typing import TYPE_CHECKING, Any, TypeVar
 
 from pykotor.resource.type import ResourceType
 
 if TYPE_CHECKING:
+    from collections.abc import Callable
     from enum import Enum
 
 T = TypeVar("T")
