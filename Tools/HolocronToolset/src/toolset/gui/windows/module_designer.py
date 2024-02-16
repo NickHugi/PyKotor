@@ -262,7 +262,7 @@ class ModuleDesigner(QMainWindow):  # noqa: PLR0904
                 [
                     bwm.resource()  # FIXME: resource() will sometimes return None
                     for bwm in self._module.resources.values()
-                    if bwm.restype() == ResourceType.WOK
+                    if bwm.restype() == ResourceType.WOK and bwm.resource() is not None
                 ],
             )
             self.ui.flatRenderer.centerCamera()

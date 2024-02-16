@@ -1133,7 +1133,7 @@ class KitDownloader(QDialog):
                 return False
             finally:
                 try:
-                    if tempdir:
+                    if tempdir and Path(tempdir).safe_isdir():
                         shutil.rmtree(tempdir)
                 except Exception as exc:  # noqa: BLE001
                     print(format_exception_with_variables(exc))
