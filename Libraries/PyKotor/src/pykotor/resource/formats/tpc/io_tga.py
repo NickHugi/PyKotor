@@ -274,10 +274,10 @@ class TPCTGAWriter(ResourceWriter):
         self._writer.write_uint16(width)
         self._writer.write_uint16(height)
 
-        if self._tpc.format() == TPCTextureFormat.RGB or TPCTextureFormat.DXT1:
+        if self._tpc.format() == {TPCTextureFormat.RGB, TPCTextureFormat.DXT1}:
             self._writer.write_uint8(32)  # bits_per_pixel, image_descriptor
             self._writer.write_uint8(0)
-            data: bytes | None = self._tpc.convert(TPCTextureFormat.RGB, 0).data
+            data: bytearray = self._tpc.convert(TPCTextureFormat.RGB, 0).data
             pixel_reader: BinaryReader = BinaryReader.from_bytes(data)
             for _ in range(len(data) // 3):
                 r = pixel_reader.read_uint8()
