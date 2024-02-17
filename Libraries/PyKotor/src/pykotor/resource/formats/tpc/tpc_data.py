@@ -5,7 +5,7 @@ from __future__ import annotations
 import itertools as tpc_itertools
 
 from enum import IntEnum
-from typing import NamedTuple
+from typing import NamedTuple, Tuple, cast
 
 from pykotor.common.stream import BinaryReader
 from pykotor.resource.type import ResourceType
@@ -21,7 +21,7 @@ class TPCGetResult(NamedTuple):
 class TPCConvertResult(NamedTuple):
     width: int
     height: int
-    data: bytes | None
+    data: bytearray
 
 class TPC:
     """Represents a TPC file.
@@ -110,27 +110,34 @@ class TPC:
         -------
             A tuple equal to (width, height, data)
         """
+        if convert_format in {TPCTextureFormat.DXT1, TPCTextureFormat.DXT5}:
+            msg = f"Conversion from {self._texture_format} to {convert_format} not implemented."
+            raise NotImplementedError(msg)
+
         width, height = self._mipmap_size(mipmap)
         raw_data: bytes = self._mipmaps[mipmap]
-        if self._texture_format == convert_format:
-            print(f"No conversion to {convert_format.name} necessary, self is already in {self._texture_format.name} format")
-            return TPCConvertResult(width, height, raw_data)
-        data = bytearray()
+        if self._texture_format == convert_format:  # Is conversion needed?
+            return TPCConvertResult(width, height, bytearray(raw_data))
 
-        if convert_format in {TPCTextureFormat.DXT1, TPCTextureFormat.DXT5}:
-            raise NotImplementedError
-
+        data: bytearray = bytearray(raw_data)
         if convert_format == TPCTextureFormat.Greyscale:
-            raise NotImplementedError
+            if self._texture_format == TPCTextureFormat.DXT5:
+                rgba_data = TPC._dxt5_to_rgba(raw_data, width, height)
+                data = TPC._rgba_to_grey(rgba_data, width, height)
+            elif self._texture_format == TPCTextureFormat.DXT1:
+                rgba_data = TPC._dxt1_to_rgba(raw_data, width, height)
+                data = TPC._rgba_to_grey(rgba_data, width, height)
+            elif self._texture_format == TPCTextureFormat.RGBA:
+                data = TPC._rgba_to_grey(raw_data, width, height)
+            elif self._texture_format == TPCTextureFormat.RGB:
+                rgba_data = TPC._rgb_to_rgba(raw_data, width, height)
+                data = TPC._rgba_to_grey(rgba_data, width, height)
 
-        data: bytearray
         if convert_format == TPCTextureFormat.RGBA:
             if self._texture_format == TPCTextureFormat.DXT5:
                 data = TPC._dxt5_to_rgba(raw_data, width, height)
             elif self._texture_format == TPCTextureFormat.DXT1:
                 data = TPC._dxt1_to_rgba(raw_data, width, height)
-            elif self._texture_format == TPCTextureFormat.RGBA:
-                data = bytearray(raw_data)
             elif self._texture_format == TPCTextureFormat.RGB:
                 data = TPC._rgb_to_rgba(raw_data, width, height)
             elif self._texture_format == TPCTextureFormat.Greyscale:
@@ -143,11 +150,9 @@ class TPC:
                 data = TPC._dxt1_to_rgb(raw_data, width, height)
             elif self._texture_format == TPCTextureFormat.RGBA:
                 data = TPC._rgba_to_rgb(raw_data, width, height)
-            elif self._texture_format == TPCTextureFormat.RGB:
-                data = bytearray(raw_data)
             elif self._texture_format == TPCTextureFormat.Greyscale:
-                data = TPC._grey_to_rgba(raw_data, width, height)
-                data = TPC._rgba_to_rgb(data, width, height)
+                rgba_data = TPC._grey_to_rgba(raw_data, width, height)
+                data = TPC._rgba_to_rgb(rgba_data, width, height)
 
         return TPCConvertResult(width, height, data)
 
@@ -245,6 +250,55 @@ class TPC:
             height >>= 1
         return width, height
 
+    @staticmethod
+    def _calculate_color_indices(
+        rgba_block: list[tuple[int, int, int, int]],
+        c0: tuple[int, int, int],
+        c1: tuple[int, int, int],
+    ) -> int:
+        """Calculate 2-bit indices for each pixel in a 4x4 block."""
+        indices: int = 0
+        for i, pixel in enumerate(rgba_block):
+            r, g, b, _a = pixel
+            dr0, dg0, db0 = r - c0[0], g - c0[1], b - c0[2]
+            dr1, dg1, db1 = r - c1[0], g - c1[1], b - c1[2]
+            distance0 = dr0**2 + dg0**2 + db0**2
+            distance1 = dr1**2 + dg1**2 + db1**2
+            index = 0 if distance0 < distance1 else 1
+            indices |= index << (i * 2)
+        return indices
+
+    @staticmethod
+    def _select_representative_colors(
+        rgba_block: list[tuple[int, int, int, int]]
+    ) -> tuple[tuple[int, int, int], tuple[int, int, int]]:
+        """Select representative colors for DXT1 compression."""
+        colors = sorted(rgba_block, key=lambda x: (x[0] << 16) + (x[1] << 8) + x[2])
+        return colors[0][:3], colors[-1][:3]
+
+    @staticmethod
+    def rgba_to_dxt1(
+        rgba_data: bytes,
+        width: int,
+        height: int,
+    ) -> bytearray:
+        """Convert RGBA data to DXT1 compressed format."""
+        compressed_data = bytearray()
+        for y, x in tpc_itertools.product(range(0, height, 4), range(0, width, 4)):
+            rgba_block: list[tuple[int, int, int, int]] = [
+                cast(Tuple[int, int, int, int], tuple(rgba_data[i:i + 4]))
+                for dy in range(4) for dx in range(4)
+                for i in range((y * width + x + dy * width + dx) * 4, (y * width + x + dy * width + dx) * 4 + 4, 4)
+            ]
+            c0, c1 = TPC._select_representative_colors(rgba_block)
+            c0_565 = TPC._rgb_to_rgba565(c0)
+            c1_565 = TPC._rgb_to_rgba565(c1)
+            indices = TPC._calculate_color_indices(rgba_block, c0, c1)
+            compressed_data += c0_565.to_bytes(2, byteorder="little")
+            compressed_data += c1_565.to_bytes(2, byteorder="little")
+            compressed_data += indices.to_bytes(4, byteorder="little")
+        return compressed_data
+
     # region Convert to RGBA
     @staticmethod
     def _dxt5_to_rgba(
@@ -296,23 +350,36 @@ class TPC:
                     ],
                 )
             else:
-                cc.extend([TPC._interpolate_rgb(0.5555555, c0, c1), (0, 0, 0)])
+                cc.extend(
+                    [
+                        TPC._interpolate_rgb(0.5555555, c0, c1),
+                        (0, 0, 0),
+                    ]
+                )
 
             alpha_code = [alpha0, alpha1]
             if alpha0 > alpha1:
-                alpha_code.append(int((6.0 * alpha0 + 1.0 * alpha1 + 3) / 7))
-                alpha_code.append(int((5.0 * alpha0 + 2.0 * alpha1 + 3) / 7))
-                alpha_code.append(int((4.0 * alpha0 + 3.0 * alpha1 + 3) / 7))
-                alpha_code.append(int((3.0 * alpha0 + 4.0 * alpha1 + 3) / 7))
-                alpha_code.append(int((2.0 * alpha0 + 5.0 * alpha1 + 3) / 7))
-                alpha_code.append(int((1.0 * alpha0 + 6.0 * alpha1 + 3) / 7))
+                alpha_code.extend(
+                    (
+                        int((6.0 * alpha0 + 1.0 * alpha1 + 3) / 7),
+                        int((5.0 * alpha0 + 2.0 * alpha1 + 3) / 7),
+                        int((4.0 * alpha0 + 3.0 * alpha1 + 3) / 7),
+                        int((3.0 * alpha0 + 4.0 * alpha1 + 3) / 7),
+                        int((2.0 * alpha0 + 5.0 * alpha1 + 3) / 7),
+                        int((1.0 * alpha0 + 6.0 * alpha1 + 3) / 7)
+                    )
+                )
             else:
-                alpha_code.append(int((4.0 * alpha0 + 1.0 * alpha1 + 1) / 5))
-                alpha_code.append(int((3.0 * alpha0 + 2.0 * alpha1 + 2) / 5))
-                alpha_code.append(int((2.0 * alpha0 + 3.0 * alpha1 + 2) / 5))
-                alpha_code.append(int((1.0 * alpha0 + 4.0 * alpha1 + 2) / 5))
-                alpha_code.append(0)
-                alpha_code.append(255)
+                alpha_code.extend(
+                    (
+                        int((4.0 * alpha0 + 1.0 * alpha1 + 1) / 5),
+                        int((3.0 * alpha0 + 2.0 * alpha1 + 2) / 5),
+                        int((2.0 * alpha0 + 3.0 * alpha1 + 2) / 5),
+                        int((1.0 * alpha0 + 4.0 * alpha1 + 2) / 5),
+                        0,
+                        255
+                    )
+                )
             for y in (3, 2, 1, 0):
                 for x in (0, 1, 2, 3):
                     pixelc_code = dxt_pixels & 3
@@ -564,6 +631,12 @@ class TPC:
         green = (color >> 5) & 0x3F
         red = (color >> 11) & 0x1F
         return (blue << 3) + (green << 10) + (red << 19)
+
+    @staticmethod
+    def _rgb_to_rgba565(rgb: tuple[int, int, int]) -> int:
+        """Convert an RGB tuple to 5:6:5 bit RGB format."""
+        r, g, b = rgb
+        return (r >> 3) << 11 | (g >> 2) << 5 | b >> 3
 
     @staticmethod
     def _interpolate(
