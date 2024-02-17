@@ -493,7 +493,7 @@ class TextureListTask:
     def __repr__(self):
         return str(self.row)
 
-    def __call__(self, *args, **kwargs) -> tuple[int, str, int, int, bytes | None]:
+    def __call__(self, *args, **kwargs) -> tuple[int, str, int, int, bytearray]:
         width, height, data = self.tpc.convert(TPCTextureFormat.RGB, self.bestMipmap(self.tpc))
         return self.row, self.resname, width, height, data
 

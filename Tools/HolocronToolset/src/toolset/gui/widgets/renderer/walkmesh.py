@@ -278,9 +278,7 @@ class WalkmeshRenderer(QWidget):  # noqa: PLR0904
     def setMinimap(self, are: ARE, tpc: TPC):
         self._are = are
 
-        tpc_rgb_data: bytes | None = tpc.convert(TPCTextureFormat.RGB).data
-        assert tpc_rgb_data is not None, assert_with_variable_trace(tpc_rgb_data is not None)
-
+        tpc_rgb_data: bytearray = tpc.convert(TPCTextureFormat.RGB).data
         image = QImage(tpc_rgb_data, tpc.get().width, tpc.get().height, QImage.Format_RGB888)
         crop = QRect(0, 0, 435, 256)
         self._minimapImage = image.copy(crop)
