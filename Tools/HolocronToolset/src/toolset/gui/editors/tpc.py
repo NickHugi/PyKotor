@@ -5,6 +5,7 @@ import io
 from typing import TYPE_CHECKING
 
 from PIL import Image, ImageOps
+from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QImage, QPixmap, QTransform
 
 from pykotor.resource.formats.tpc import TPC, TPCTextureFormat, read_tpc, write_tpc
@@ -41,7 +42,7 @@ class TPCEditor(Editor):
         supported: list[ResourceType] = [ResourceType.TPC, ResourceType.TGA, ResourceType.JPG, ResourceType.PNG, ResourceType.BMP]
         super().__init__(parent, "Texture Viewer", "none", supported, supported, installation)
 
-        from toolset.uic.editors.tpc import Ui_MainWindow
+        from toolset.uic.editors.tpc import Ui_MainWindow  # noqa: PLC0415
 
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
@@ -49,7 +50,12 @@ class TPCEditor(Editor):
         self._setupSignals()
 
         self._tpc: TPC = TPC()
-        self._tpc.set_single(256, 256, bytes(0 for i in range(256 * 256 * 4)), TPCTextureFormat.RGBA)
+        self._tpc.set_single(
+            256,
+            256,
+            bytes(0 for _ in range(256 * 256 * 4)),
+            TPCTextureFormat.RGBA
+        )
 
         self.new()
 
@@ -89,9 +95,23 @@ class TPCEditor(Editor):
             self._tpc.set_single(pillow.width, pillow.height, pillow.tobytes(), TPCTextureFormat.RGBA)
 
         width, height, rgba = self._tpc.convert(TPCTextureFormat.RGB, 0)
-        assert rgba is not None, assert_with_variable_trace(rgba is not None)
+
+        # Calculate new dimensions maintaining aspect ratio
+        max_width, max_height = 640, 480
+        aspect_ratio = width / height
+        if width / height > max_width / max_height:
+            new_width = max_width
+            new_height = int(new_width / aspect_ratio)
+        else:
+            new_height = max_height
+            new_width = int(new_height * aspect_ratio)
+
+        # Create QImage and scale it
         image = QImage(rgba, width, height, QImage.Format_RGB888)
-        pixmap: QPixmap = QPixmap.fromImage(image).transformed(QTransform().scale(1, -1))
+        scaled_image = image.scaled(new_width, new_height, Qt.KeepAspectRatio, Qt.SmoothTransformation)
+
+        # Create QPixmap from the scaled QImage
+        pixmap: QPixmap = QPixmap.fromImage(scaled_image)
 
         self.ui.textureImage.setPixmap(pixmap)
         self.ui.textureImage.setScaledContents(True)
@@ -120,7 +140,6 @@ class TPCEditor(Editor):
         self._tpc.set_single(256, 256, bytes(0 for _ in range(256 * 256 * 4)), TPCTextureFormat.RGBA)
         width, height, rgba = self._tpc.convert(TPCTextureFormat.RGBA, 0)
 
-        assert rgba is not None, assert_with_variable_trace(rgba is not None)
         image = QImage(rgba, width, height, QImage.Format_RGBA8888)
         pixmap = QPixmap.fromImage(image)
         self.ui.textureImage.setPixmap(pixmap)
