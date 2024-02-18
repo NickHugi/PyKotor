@@ -102,6 +102,8 @@ function Set-EnvironmentVariablesFromEnvFile {
 function Get-Linux-Distro {
     $osInfo = Get-Content "/etc/os-release" -Raw
     if ($osInfo -match 'ID=(.*)') {
+        Write-Host "found distro"
+        Write-Host $Matches[1].Trim('"')
         return $Matches[1].Trim('"')
     }
     return $null
@@ -450,6 +452,9 @@ function Find-Python {
     }
     if ( (Get-Linux-Distro) -eq "ubuntu" -or (Get-Linux-Distro) -eq "debian") {
         Install-Linux-Deps
+    } else {
+        Write-Host "wrong distro"
+        Write-Host (Get-Linux-Distro)
     }
 }
 
