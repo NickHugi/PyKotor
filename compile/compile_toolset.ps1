@@ -26,8 +26,7 @@ if ((Get-OS) -eq "Mac") {
             break
         }
         "fedora" {
-            sudo dnf groupinstall "Development Tools"
-            sudo dnf install python3-devel
+            sudo dnf groupinstall "Development Tools" -y
             $command = "sudo dnf install binutils python3-pyopengl PyQt5 pulseaudio-libs-glib2 gstreamer1-plugins-base gstreamer1-plugins-good gstreamer1-plugins-bad-free gstreamer1-plugins-ugly-free gstreamer1-devel -y"
             break
         }
