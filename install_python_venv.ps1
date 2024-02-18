@@ -104,6 +104,9 @@ function Get-Linux-Distro-Name {
     if (Test-Path "/etc/os-release") {
         if ($osInfo -match '\nID="?([^"\n]*)"?') {
             $distroName = $Matches[1].Trim('"')
+            if ($distroName -eq "ol") {
+                return "fedora"
+            }
             return $distroName
         }
     }
