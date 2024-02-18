@@ -99,6 +99,14 @@ function Set-EnvironmentVariablesFromEnvFile {
     return $false
 }
 
+function Get-Linux-Distro {
+    $osInfo = Get-Content "/etc/os-release" -Raw
+    if ($osInfo -match 'ID=(.*)') {
+        return $Matches[1].Trim('"')
+    }
+    return $null
+}
+
 function Install-Linux-Deps {
     if (Test-Path "/etc/os-release") {
         $osInfo = Get-Content "/etc/os-release" -Raw
@@ -438,6 +446,8 @@ function Find-Python {
             Write-Host "Find python again now that it's been installed."
             Find-Python -intrnal
         }
+    } elseif ( (Get-Linux-Distro) -eq "ubuntu" -or (Get-Linux-Distro) -eq "debian") {
+        Install-Linux-Deps
     }
 }
 
