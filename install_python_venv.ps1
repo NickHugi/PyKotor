@@ -102,7 +102,7 @@ function Set-EnvironmentVariablesFromEnvFile {
 function Get-Linux-Distro {
     $osInfo = Get-Content "/etc/os-release" -Raw
     if (Test-Path "/etc/os-release") {
-        if ($osInfo -match 'ID="?([^"\n]*)"?') {
+        if ($osInfo -match '\nID="?([^"\n]*)"?') {
             $distro = $Matches[1].Trim('"')
             Write-Host "found distro"
             Write-Host $distro
@@ -115,7 +115,7 @@ function Get-Linux-Distro {
 function Install-Linux-Deps {
     if (Test-Path "/etc/os-release") {
         $osInfo = Get-Content "/etc/os-release" -Raw
-        if ($osInfo -match 'ID="?([^"\n]*)"?') {
+        if ($osInfo -match '\nID="?([^"\n]*)"?') {
             $distro = $Matches[1].Trim('"')
         }
         if ($osInfo -match 'VERSION_ID="?([^"\n]*)"?') {
