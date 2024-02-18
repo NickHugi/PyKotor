@@ -457,7 +457,7 @@ function Find-Python {
             Find-Python -intrnal
         }
     }
-    if ( (Get-Linux-Distro-Name) -eq "ubuntu" -or (Get-Linux-Distro-Name) -eq "debian") {
+    if ( -not $intrnal -and (Get-Linux-Distro-Name) -eq "ubuntu" -or (Get-Linux-Distro-Name) -eq "debian") {
         Install-Linux-Deps
     }
 }
