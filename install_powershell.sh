@@ -273,8 +273,7 @@ case "$OS" in
                     sudo yum install -y powershell
                     ;;
                 almalinux)
-                    sudo yum update
-                    sudo yum install -y powershell
+                    sudo dnf install https://github.com/PowerShell/PowerShell/releases/download/v7.1.4/powershell-7.1.4-1.centos.8.x86_64.rpm
                     ;;
                 *)
                     echo "Unsupported Linux distribution for automatic PowerShell installation. Attempting to install automatically with your package manager..."
