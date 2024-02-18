@@ -100,8 +100,8 @@ function Set-EnvironmentVariablesFromEnvFile {
 }
 
 function Get-Linux-Distro-Name {
-    $osInfo = Get-Content "/etc/os-release" -Raw
-    if (Test-Path "/etc/os-release") {
+    if (Test-Path "/etc/os-release" -ErrorAction SilentlyContinue) {
+        $osInfo = Get-Content "/etc/os-release" -Raw
         if ($osInfo -match '\nID="?([^"\n]*)"?') {
             $distroName = $Matches[1].Trim('"')
             if ($distroName -eq "ol") {
@@ -116,7 +116,7 @@ function Get-Linux-Distro-Name {
 
 function Get-Linux-Distro-Version {
     $osInfo = Get-Content "/etc/os-release" -Raw
-    if (Test-Path "/etc/os-release") {
+    if (Test-Path "/etc/os-release" -ErrorAction SilentlyContinue) {
         if ($osInfo -match '\nVERSION_ID="?([^"\n]*)"?') {
             $distroVersion = $Matches[1].Trim('"')
             return $distroVersion
@@ -283,11 +283,14 @@ function Get-Python-Version {
     Param (
         [string]$pythonPath
     )
-    $global:pythonVersionOutput = & $pythonPath --version 2>&1
-    $global:pythonVersionString = $global:pythonVersionOutput -replace '^Python\s+'
-    $numericVersionString = $global:pythonVersionString -replace '(\d+\.\d+\.\d+).*', '$1'
-    $global:pythonVersion = [Version]$numericVersionString
-    return $global:pythonVersion
+    if (Test-Path $pythonPath -ErrorAction SilentlyContinue) {
+        $global:pythonVersionOutput = & $pythonPath --version 2>&1
+        $global:pythonVersionString = $global:pythonVersionOutput -replace '^Python\s+'
+        $numericVersionString = $global:pythonVersionString -replace '(\d+\.\d+\.\d+).*', '$1'
+        $global:pythonVersion = [Version]$numericVersionString
+        return $global:pythonVersion
+    }
+    return [Version]"0.0.0"
 }
 
 $minVersion = [Version]"3.8.0"
