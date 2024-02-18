@@ -52,6 +52,11 @@ if ((Get-OS) -eq "Mac") {
             break
         }
         "arch" {
+            Write-Host "Initializing pacman keyring..."
+            sudo pacman-key --init
+            sudo pacman-key --populate archlinux
+            Write-Host "Refreshing keys..."
+            sudo pacman-key --refresh-keys
             sudo pacman -Sy archlinux-keyring --noconfirm
             sudo pacman -Sc --noconfirm
             sudo pacman -Syu --noconfirm
