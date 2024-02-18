@@ -128,6 +128,7 @@ function Install-Linux-Deps {
                     break
                 }
                 "ubuntu" {
+                    sudo apt update
                     sudo apt install python3 -y
                     sudo apt install python3-dev -y
                     sudo apt install python3-venv -y
