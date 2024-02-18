@@ -9,6 +9,7 @@ fallback_install_pwsh() {
     fi
     if ! command -v pwsh > /dev/null; then
         if command -v apt-get > /dev/null; then
+            echo "Found 'apt-get' command"
             install_powershell_ubuntu
         fi
     fi
@@ -18,9 +19,9 @@ fallback_install_pwsh() {
             echo "Found 'dnf' command"
             sudo dnf update -y
             echo Updated, installing powershell...
-            if $ID -eq "almalinux"; then
+            if [[ $ID == "almalinux" ]]; then
                 sudo dnf install -y https://packages.microsoft.com/config/alma/$VERSION_ID/packages-microsoft-prod.rpm
-            elif $ID_LIKE -eq "fedora"; then
+            elif [[ $ID_LIKE == "fedora" ]]; then
                 sudo dnf install -y https://packages.microsoft.com/config/fedora/$VERSION_ID/packages-microsoft-prod.rpm
             elif [[ $ID_LIKE == *"fedora"* ]]; then
                 sudo dnf install -y https://packages.microsoft.com/config/fedora/$VERSION_ID/packages-microsoft-prod.rpm
@@ -204,6 +205,7 @@ install_powershell_mac() {
 }
 
 install_powershell_debian() {
+    echo "Installing Powershell for debian..."
     sudo apt-get update
     sudo apt-get install -y wget
     source /etc/os-release
@@ -215,6 +217,7 @@ install_powershell_debian() {
 }
 
 install_powershell_ubuntu() {
+    echo "Installing Powershell for ubuntu..."
     sudo apt update
     sudo apt install -y wget apt-transport-https software-properties-common
     source /etc/os-release
@@ -226,6 +229,7 @@ install_powershell_ubuntu() {
 }
 
 install_powershell_rhel() {
+    echo "Installing Powershell for rhel systems..."
     sudo dnf install bc -y
     source /etc/os-release
     if [ $(bc<<<"$VERSION_ID < 8") = 1 ]
@@ -249,6 +253,7 @@ install_powershell_rhel() {
 }
 
 install_powershell_alpine() {
+    echo "Installing Powershell for alpine..."
     # install the requirements
     apk add sudo
     sudo apk add --no-cache \
@@ -306,6 +311,7 @@ case "$OS" in
                     sudo dnf install -y powershell
                     ;;
                 centos)
+                    echo "Installing Powershell for centos..."
                     # Obtain CentOS version
                     centos_version=$(rpm -E %{rhel})
 
@@ -326,6 +332,7 @@ case "$OS" in
                     sudo yum install -y powershell
                     ;;
                 almalinux)
+                    echo "Installing Powershell for almalinux..."
                     sudo dnf install -y https://github.com/PowerShell/PowerShell/releases/download/v7.1.4/powershell-7.1.4-1.centos.8.x86_64.rpm
                     ;;
                 *)
