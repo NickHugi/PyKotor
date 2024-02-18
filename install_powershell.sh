@@ -1,31 +1,82 @@
 #!/bin/bash
 
 # Function to install PowerShell on Linux
-determine_linux_powershell_installer() {
-    # Determine if using apt-get (Debian-based) or yum/dnf (Red Hat-based)
-    if command -v apt-get > /dev/null; then
-        sudo apt-get update
-        sudo apt-get install -y powershell
-    elif command -v dnf > /dev/null; then
-        sudo dnf update -y
-        echo Updated, installing powershell...
-        sudo dnf install -y https://packages.microsoft.com/config/fedora/$(rpm -E %fedora)/packages-microsoft-prod.rpm
-        sudo dnf install -y powershell
-    elif command -v yum > /dev/null; then
-        sudo yum update
-        sudo yum install -y powershell
-    elif command -v zypper > /dev/null; then
-        sudo zypper install -y https://packages.microsoft.com/config/sles/15/packages-microsoft-prod.rpm
-        sudo zypper refresh
-        sudo zypper install -y powershell
-    elif command -v brew > /dev/null; then
-        brew update
-        brew install powershell/tap/powershell
-        brew install --cask powershell
-    elif command -v pacman > /dev/null; then
-        install_powershell_archlinux
+fallback_install_pwsh() {
+    if command -v apt > /dev/null; then
+        echo "Found 'apt' command"
+        sudo apt update
+        sudo apt install -y powershell
+    fi
+    if ! command -v pwsh > /dev/null; then
+        if command -v apt-get > /dev/null; then
+            install_powershell_ubuntu
+        fi
+    fi
+    if ! command -v pwsh > /dev/null; then
+        if command -v dnf > /dev/null; then
+            source /etc/os-release
+            echo "Found 'dnf' command"
+            sudo dnf update -y
+            echo Updated, installing powershell...
+            if $ID -eq "almalinux"; then
+                sudo dnf install -y https://packages.microsoft.com/config/alma/$VERSION_ID/packages-microsoft-prod.rpm
+            elif $ID_LIKE -eq "fedora"; then
+                sudo dnf install -y https://packages.microsoft.com/config/fedora/$VERSION_ID/packages-microsoft-prod.rpm
+            elif [[ $ID_LIKE == *"fedora"* ]]; then
+                sudo dnf install -y https://packages.microsoft.com/config/fedora/$VERSION_ID/packages-microsoft-prod.rpm
+            elif [[ $ID_LIKE == *"rhel"* ]]; then
+                sudo dnf install -y https://packages.microsoft.com/config/rhel/$VERSION_ID/packages-microsoft-prod.rpm
+            elif [[ $ID_LIKE == *"centos"* ]]; then
+                sudo dnf install -y https://packages.microsoft.com/config/centos/$VERSION_ID/packages-microsoft-prod.rpm
+            fi
+            sudo dnf install -y powershell
+        fi
+    fi
+    if ! command -v pwsh > /dev/null; then
+        if command -v snap > /dev/null; then
+            echo "Installing PowerShell via Snap..."
+            sudo snap install powershell --classic
+        fi
+    fi
+    if ! command -v pwsh > /dev/null; then
+        if command -v yum > /dev/null; then
+            echo "Found 'yum' command"
+            sudo yum update
+            sudo yum install -y powershell
+        fi
+    fi
+    if ! command -v pwsh > /dev/null; then
+        if command -v zypper > /dev/null; then
+            echo "Found 'zypper' command"
+            sudo zypper install -y https://packages.microsoft.com/config/sles/15/packages-microsoft-prod.rpm
+            sudo zypper refresh
+            sudo zypper install -y powershell
+        fi
+    fi
+    if ! command -v pwsh > /dev/null; then
+        if command -v brew > /dev/null; then
+            echo "Found 'brew' command"
+            brew update
+            brew install powershell/tap/powershell
+            brew install --cask powershell
+        fi
+    fi
+    #if ! command -v pwsh > /dev/null; then
+        #if command -v pacman > /dev/null; then
+            #...
+        #fi
+    #fi
+    if ! command -v pwsh > /dev/null; then
+        if command -v flatpak > /dev/null; then
+            echo "Installing PowerShell via Flatpak..."
+            flatpak install flathub com.microsoft.powershell -y
+        fi
+    fi
+
+    if command -v pwsh > /dev/null; then
+        echo "PowerShell installation was successful."
     else
-        echo "Unsupported Linux distribution for automatic PowerShell installation."
+        echo "PowerShell installation failed."
         exit 1
     fi
 }
@@ -164,14 +215,14 @@ install_powershell_debian() {
 }
 
 install_powershell_ubuntu() {
-    sudo apt-get update
-    sudo apt-get install -y wget apt-transport-https software-properties-common
+    sudo apt update
+    sudo apt install -y wget apt-transport-https software-properties-common
     source /etc/os-release
     wget -q https://packages.microsoft.com/config/ubuntu/$VERSION_ID/packages-microsoft-prod.deb
     sudo dpkg -i packages-microsoft-prod.deb
     rm packages-microsoft-prod.deb
-    sudo apt-get update
-    sudo apt-get install -y powershell
+    sudo apt update
+    sudo apt install -y powershell
 }
 
 install_powershell_rhel() {
@@ -245,11 +296,12 @@ case "$OS" in
                     install_powershell_alpine
                     ;;
                 fedora)
+                    echo "Installing powershell for fedora"
                     sudo rpm --import https://packages.microsoft.com/keys/microsoft.asc
                     curl https://packages.microsoft.com/config/rhel/7/prod.repo | sudo tee /etc/yum.repos.d/microsoft.repo
                     sudo dnf update -y
                     echo Updated, installing powershell...
-                    sudo dnf install -y https://packages.microsoft.com/config/fedora/$(rpm -E %fedora)/packages-microsoft-prod.rpm
+                    sudo dnf install -y https://packages.microsoft.com/config/fedora/$VERSION_ID/packages-microsoft-prod.rpm
                     sudo dnf install -y powershell
                     ;;
                 centos)
@@ -273,11 +325,15 @@ case "$OS" in
                     sudo yum install -y powershell
                     ;;
                 almalinux)
-                    sudo dnf install https://github.com/PowerShell/PowerShell/releases/download/v7.1.4/powershell-7.1.4-1.centos.8.x86_64.rpm
+                    sudo dnf install -y https://github.com/PowerShell/PowerShell/releases/download/v7.1.4/powershell-7.1.4-1.centos.8.x86_64.rpm
                     ;;
                 *)
-                    echo "Unsupported Linux distribution for automatic PowerShell installation. Attempting to install automatically with your package manager..."
-                    determine_linux_powershell_installer
+                    if [ -f /etc/redhat-release ]; then
+                        install_powershell_rhel
+                    else
+                        echo "Unsupported Linux distribution for automatic PowerShell installation. Attempting to install automatically with your package manager..."
+                        fallback_install_pwsh
+                    fi
                     ;;
             esac
         else
