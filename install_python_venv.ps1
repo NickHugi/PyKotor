@@ -99,14 +99,23 @@ function Set-EnvironmentVariablesFromEnvFile {
     return $false
 }
 
-function Get-Linux-Distro {
+function Get-Linux-Distro-Name {
     $osInfo = Get-Content "/etc/os-release" -Raw
     if (Test-Path "/etc/os-release") {
         if ($osInfo -match '\nID="?([^"\n]*)"?') {
-            $distro = $Matches[1].Trim('"')
-            Write-Host "found distro"
-            Write-Host $distro
-            return $Matches[1].Trim('"')
+            $distroName = $Matches[1].Trim('"')
+            return $distroName
+        }
+    }
+    return $null
+}
+
+function Get-Linux-Distro-Version {
+    $osInfo = Get-Content "/etc/os-release" -Raw
+    if (Test-Path "/etc/os-release") {
+        if ($osInfo -match '\nVERSION_ID="?([^"\n]*)"?') {
+            $distroVersion = $Matches[1].Trim('"')
+            return $distroVersion
         }
     }
     return $null
@@ -114,13 +123,8 @@ function Get-Linux-Distro {
 
 function Install-Linux-Deps {
     if (Test-Path "/etc/os-release") {
-        $osInfo = Get-Content "/etc/os-release" -Raw
-        if ($osInfo -match '\nID="?([^"\n]*)"?') {
-            $distro = $Matches[1].Trim('"')
-        }
-        if ($osInfo -match 'VERSION_ID="?([^"\n]*)"?') {
-            $versionId = $Matches[1].Trim('"')
-        }
+        $distro = (Get-Linux-Distro-Name)
+        $versionId = (Get-Linux-Distro-Version)
         
         try {
             switch ($distro) {
@@ -453,7 +457,7 @@ function Find-Python {
             Find-Python -intrnal
         }
     }
-    if ( (Get-Linux-Distro) -eq "ubuntu" -or (Get-Linux-Distro) -eq "debian") {
+    if ( (Get-Linux-Distro-Name) -eq "ubuntu" -or (Get-Linux-Distro-Name) -eq "debian") {
         Install-Linux-Deps
     }
 }

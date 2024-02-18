@@ -22,14 +22,8 @@ Write-Host "Installing required packages to build the holocron toolset..."
 if ((Get-OS) -eq "Mac") {
     & bash -c "brew install python@3.12 pyqt@5 mpdecimal gstreamer pulseaudio fontconfig" 2>&1 | Write-Output 
 } elseif (Test-Path -Path "/etc/os-release") {
-    $osInfo = Get-Content "/etc/os-release" -Raw
-    if ($osInfo -match 'ID=(.*)') {
-        $distro = $Matches[1].Trim('"')
-    }
-    if ($osInfo -match 'VERSION_ID=(.*)') {
-        $versionId = $Matches[1].Trim('"')
-    }
     $command = ""
+    $distro = (Get-Linux-Distro-Name)
     switch ($distro) {
         "debian" {  # untested
             $command = "sudo apt install python3-opengl python3-pyqt5-sip python3-pyqt5 libpulse-mainloop-glib0 libgstreamer-plugins-base1.0-dev gstreamer1.0-plugins-base gstreamer1.0-plugins-good gstreamer1.0-plugins-bad gstreamer1.0-plugins-ugly libgstreamer1.0-dev mesa-utils libgl1-mesa-glx libgl1-mesa-dri qt5-default qtbase5-dev qtchooser qt5-qmake qtbase5-dev-tools libgl1-mesa-glx libglu1-mesa libglu1-mesa-dev libqt5gui5 libqt5core5a libqt5dbus5 libqt5widgets5 -y"
@@ -65,7 +59,7 @@ if ((Get-OS) -eq "Mac") {
     }
 
     if ($command -eq "") {
-        Write-Warning "Dist $distro version $versionId not supported for automated system package install, please install the dependencies if you experience problems."
+        Write-Warning "Dist '$distro' not supported for automated system package install, please install the dependencies if you experience problems."
     } else {
         Write-Host "Executing command: $command"
         $output = Invoke-Expression $command

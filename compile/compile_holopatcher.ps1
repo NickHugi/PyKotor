@@ -22,13 +22,7 @@ if ((Get-OS) -eq "Mac") {
     brew install python-tk
 } elseif ((Get-OS) -eq "Linux") {
     if (Test-Path -Path "/etc/os-release") {
-        $osInfo = Get-Content "/etc/os-release" -Raw
-        if ($osInfo -match 'ID=(.*)') {
-            $distro = $Matches[1].Trim('"')
-        }
-        if ($osInfo -match 'VERSION_ID=(.*)') {
-            $versionId = $Matches[1].Trim('"')
-        }
+        $distro = (Get-Linux-Distro-Name)
         $command = ""
         switch ($distro) {
             "debian" {
@@ -58,7 +52,7 @@ if ((Get-OS) -eq "Mac") {
         }
     
         if ($command -eq "") {
-            Write-Warning "Dist $distro version $versionId not supported for automated system package install, please install the dependencies if you experience problems."
+            Write-Warning "Dist '$distro' not supported for automated system package install, please install the dependencies if you experience problems."
         } else {
             Write-Host "Executing command: $command"
             Invoke-Expression $command
