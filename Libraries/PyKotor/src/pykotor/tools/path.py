@@ -224,6 +224,7 @@ class CaseAwarePath(InternalWindowsPath if os.name == "nt" else InternalPosixPat
 
         # return a CaseAwarePath instance
         instance = cls._create_instance(*parts)
+        #assert instance.__class__.__base__ is (InternalWindowsPath if os.name == "nt" else InternalPosixPath)  # FIXME: this assert sometimes fails, find out why.
         return instance
 
     @classmethod

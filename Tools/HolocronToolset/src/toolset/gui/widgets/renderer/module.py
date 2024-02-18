@@ -265,6 +265,8 @@ class ModuleRenderer(QOpenGLWidget):  # noqa: PLR0904
     # region Events
     def resizeEvent(self, e: QResizeEvent):
         super().resizeEvent(e)
+        if self.scene is None:
+            return
 
         self.scene.camera.width = e.size().width()
         self.scene.camera.height = e.size().height()
