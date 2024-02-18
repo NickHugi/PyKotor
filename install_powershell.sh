@@ -226,6 +226,7 @@ install_powershell_ubuntu() {
 }
 
 install_powershell_rhel() {
+    sudo dnf install bc -y
     source /etc/os-release
     if [ $(bc<<<"$VERSION_ID < 8") = 1 ]
     then majorver=7
