@@ -17,9 +17,9 @@ if TYPE_CHECKING:
 
 
 def calculate_character_metrics(
-    pil_font,
-    charset_list,
-    baseline_char="0",  # ( 0 should be in every code page )
+    pil_font: ImageFont.FreeTypeFont,
+    charset_list: list[str],
+    baseline_char: str = "0",  # ( 0 should be in every code page )
 ) -> tuple[int, int, int]:
     """Calculates and returns metrics like baseline height, maximum underhang height, and maximum character height."""
     # Create a temporary image for measurements
@@ -50,8 +50,8 @@ def write_bitmap_fonts(
     font_path: os.PathLike | str,
     resolution: tuple[int, int],
     lang: Language,
-    draw_box=False,
-    custom_scaling=1.0,
+    draw_box: bool = False,
+    custom_scaling: float = 1.0,
     font_color=None,
 ):
     target_path = Path.pathify(target)
