@@ -102,6 +102,8 @@ function Set-EnvironmentVariablesFromEnvFile {
 function Get-Linux-Distro {
     $osInfo = Get-Content "/etc/os-release" -Raw
     if ($osInfo -match 'ID=(.*)') {
+        Write-Host "found distro"
+        Write-Host $Matches[1].Trim('"')
         return $Matches[1].Trim('"')
     }
     return $null
