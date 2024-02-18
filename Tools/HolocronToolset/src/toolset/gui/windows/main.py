@@ -57,10 +57,11 @@ from utility.error_handling import assert_with_variable_trace, universal_simplif
 from utility.system.path import Path, PurePath
 
 if TYPE_CHECKING:
+    import os
+
     from PyQt5 import QtGui
     from PyQt5.QtGui import QCloseEvent
     from PyQt5.QtWidgets import QTreeView
-    import os
 
     from pykotor.extract.file import FileResource
     from pykotor.resource.formats.mdl.mdl_data import MDL

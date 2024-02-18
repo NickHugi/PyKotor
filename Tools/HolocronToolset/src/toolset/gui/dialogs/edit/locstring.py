@@ -11,6 +11,7 @@ from pykotor.tools.path import CaseAwarePath
 
 if TYPE_CHECKING:
     from PyQt5.QtWidgets import QWidget
+
     from pykotor.common.language import LocalizedString
     from toolset.data.installation import HTInstallation
 

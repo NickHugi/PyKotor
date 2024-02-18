@@ -33,6 +33,7 @@ if TYPE_CHECKING:
     from pykotor.tslpatcher.mods.template import PatcherModifications
     from pykotor.tslpatcher.mods.tlk import ModificationsTLK
 
+
 class ModInstaller:
     def __init__(
         self,

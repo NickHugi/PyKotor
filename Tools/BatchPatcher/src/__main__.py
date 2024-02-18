@@ -402,6 +402,7 @@ ALIEN_SOUNDS = {  # Same in k1 and tsl.
     "n_genbith_coml1": {"_id": "298", "comment": "Bith_Generic_Comment_-_Long_1"}
 }
 
+
 class Globals:
     def __init__(self):
         self.chosen_languages: list[Language] = []
@@ -434,13 +435,16 @@ class Globals:
 
 SCRIPT_GLOBALS = Globals()
 
+
 def get_font_paths_linux() -> list[Path]:
     font_dirs: list[Path] = [Path("/usr/share/fonts/"), Path("/usr/local/share/fonts/"), Path.home() / ".fonts"]
     return [font for font_dir in font_dirs for font in font_dir.glob("**/*.ttf")]
 
+
 def get_font_paths_macos() -> list[Path]:
     font_dirs: list[Path] = [Path("/Library/Fonts/"), Path("/System/Library/Fonts/"), Path.home() / "Library/Fonts"]
     return [font for font_dir in font_dirs for font in font_dir.glob("**/*.ttf")]
+
 
 def get_font_paths_windows() -> list[Path]:
     import winreg
@@ -460,6 +464,7 @@ def get_font_paths_windows() -> list[Path]:
 
     return list(font_paths)
 
+
 def get_font_paths() -> list[Path]:
     with suppress(Exception):
         os_str = platform.system()
@@ -471,6 +476,7 @@ def get_font_paths() -> list[Path]:
             return get_font_paths_windows()
     msg = "Unsupported operating system"
     raise NotImplementedError(msg)
+
 
 def relative_path_from_to(src: PurePath, dst: PurePath) -> Path:
     src_parts = list(src.parts)
@@ -601,8 +607,10 @@ def recurse_through_list(
         made_change |= result_made_change
     return made_change, alien_vo_count
 
+
 def fix_encoding(text: str, encoding: str):
     return text.encode(encoding=encoding, errors="ignore").decode(encoding=encoding, errors="ignore").strip()
+
 
 def patch_resource(resource: FileResource) -> GFF | TPC | None:
     def translate_entry(tlkentry: TLKEntry, from_lang: Language) -> tuple[str, str]:
@@ -705,6 +713,7 @@ def patch_resource(resource: FileResource) -> GFF | TPC | None:
             return None
     return None
 
+
 def patch_and_save_noncapsule(resource: FileResource, savedir: Path | None = None):
     patched_data: GFF | TPC | None = patch_resource(resource)
     if patched_data is None:
@@ -745,6 +754,7 @@ def patch_and_save_noncapsule(resource: FileResource, savedir: Path | None = Non
         else:
             log_output(f"Saving converted tpc to '{new_path}'")
             TPCTGAWriter(patched_data, new_path.with_suffix(".tpc")).write()
+
 
 def patch_capsule_file(c_file: Path):
     new_data: bytes
@@ -794,6 +804,7 @@ def patch_capsule_file(c_file: Path):
     else:
         write_rim(erf_or_rim, new_filepath)  # type: ignore[arg-type, reportArgumentType]
 
+
 def patch_erf_or_rim(resources: list[FileResource], filename: str, erf_or_rim: RIM | ERF) -> PurePath:
     omitted_resources: list[ResourceIdentifier] = []
     new_filename = PurePath(filename)
@@ -831,6 +842,7 @@ def patch_erf_or_rim(resources: list[FileResource], filename: str, erf_or_rim: R
             erf_or_rim.set_data(resource.resname(), resource.restype(), resource.data())
     return new_filename
 
+
 def patch_file(file: os.PathLike | str):
     c_file = Path.pathify(file)
     if c_file in processed_files:
@@ -854,11 +866,13 @@ def patch_file(file: os.PathLike | str):
             ),
         )
 
+
 def patch_folder(folder_path: os.PathLike | str):
     c_folderpath = Path.pathify(folder_path)
     log_output_with_separator(f"Recursing through resources in the '{c_folderpath.name}' folder...", above=True)
     for file_path in c_folderpath.safe_rglob("*"):
         patch_file(file_path)
+
 
 def patch_install(install_path: os.PathLike | str):
     log_output()
@@ -948,6 +962,7 @@ def execute_patchloop_thread():
         SCRIPT_GLOBALS.install_running = False
         return messagebox.showerror("Error", f"An error occurred during patching\n{e!r}")
 
+
 def do_main_patchloop():
     # Validate args
     if not SCRIPT_GLOBALS.chosen_languages:
@@ -984,6 +999,7 @@ def main_translate_loop(lang: Language):
     print(f"Translating to {lang.name}...")
     SCRIPT_GLOBALS.pytranslator.to_lang = lang
     determine_input_path(Path(SCRIPT_GLOBALS.path))
+
 
 def create_font_pack(lang: Language):
     print(f"Creating font pack for '{lang.name}'...")

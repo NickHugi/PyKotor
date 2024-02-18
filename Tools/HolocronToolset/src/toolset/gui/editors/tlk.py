@@ -15,8 +15,9 @@ from pykotor.resource.type import ResourceType
 from toolset.gui.editor import Editor
 
 if TYPE_CHECKING:
-    from PyQt5.QtWidgets import QWidget
     import os
+
+    from PyQt5.QtWidgets import QWidget
 
     from toolset.data.installation import HTInstallation
 

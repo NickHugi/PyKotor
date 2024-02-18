@@ -23,6 +23,7 @@ _WINDOWS_PATH_NORMALIZE_RE = re.compile(r"^\\{3,}")
 _WINDOWS_EXTRA_SLASHES_RE = re.compile(r"(?<!^)\\+")
 _UNIX_EXTRA_SLASHES_RE = re.compile(r"/{2,}")
 
+
 def get_direct_parent(cls: type):
     parent_map: dict[type, type] = {
         PurePath: object,
@@ -47,6 +48,7 @@ def override_to_pathlib(cls: type) -> type:
 
     return class_map.get(cls, cls)
 
+
 def pathlib_to_override(cls: type) -> type:
     class_map: dict[type, type] = {
         pathlib.PurePath: PurePath,
@@ -59,12 +61,14 @@ def pathlib_to_override(cls: type) -> type:
 
     return class_map.get(cls, cls)
 
+
 class PurePathType(type):
     def __instancecheck__(cls, instance: object) -> bool:  # sourcery skip: instance-method-first-arg-name
         return cls.__subclasscheck__(instance.__class__)
 
     def __subclasscheck__(cls, subclass: type) -> bool:  # sourcery skip: instance-method-first-arg-name
         return pathlib_to_override(cls) in pathlib_to_override(subclass).__mro__
+
 
 class PurePath(pathlib.PurePath, metaclass=PurePathType):  # type: ignore[misc]
     # pylint: disable-all
@@ -417,8 +421,10 @@ class PurePath(pathlib.PurePath, metaclass=PurePathType):  # type: ignore[misc]
         # Utilize Python's built-in endswith method
         return self_str.endswith(text)
 
+
 class PurePosixPath(PurePath, pathlib.PurePosixPath):  # type: ignore[misc]
     ...
+
 
 class PureWindowsPath(PurePath, pathlib.PureWindowsPath):  # type: ignore[misc]
     ...
@@ -906,6 +912,7 @@ class Path(PurePath, pathlib.Path):  # type: ignore[misc]
             # Retrieve the current user's UID and GID
             current_uid = uid if uid is not None else os.getuid()
             current_gid = gid if gid is not None else os.getgid()
+
 
 class PosixPath(Path):  # type: ignore[misc]
     _flavour = pathlib.PurePosixPath._flavour  # noqa: SLF001  # type: ignore[reportAttributeAccessIssue]

@@ -43,8 +43,8 @@ from toolset.utils.misc import QtMouse
 from toolset.utils.window import openResourceEditor
 
 if TYPE_CHECKING:
-    from PyQt5.QtWidgets import QCheckBox, QWidget
     from PyQt5.QtGui import QFont, QKeyEvent
+    from PyQt5.QtWidgets import QCheckBox, QWidget
     from glm import vec3
 
     from pykotor.gl.scene import Camera

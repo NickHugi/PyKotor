@@ -22,8 +22,9 @@ from utility.error_handling import universal_simplify_exception
 from utility.system.path import Path, PurePath
 
 if TYPE_CHECKING:
-    from PyQt5.QtWidgets import QWidget
     import os
+
+    from PyQt5.QtWidgets import QWidget
 
 
 class HelpWindow(QMainWindow):

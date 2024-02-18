@@ -81,6 +81,7 @@ class ItemTuple(NamedTuple):
     name: str
     filepath: Path
 
+
 class TexturePackNames(Enum):
     """Full list of texturepack ERF filenames for both games."""
 

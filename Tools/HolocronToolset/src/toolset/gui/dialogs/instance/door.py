@@ -12,6 +12,7 @@ from pykotor.resource.generics.git import GITModuleLink
 
 if TYPE_CHECKING:
     from PyQt5.QtWidgets import QLabel, QWidget
+
     from pykotor.resource.generics.git import GITDoor
     from toolset.data.installation import HTInstallation
     from toolset.gui.widgets.long_spinbox import LongSpinBox

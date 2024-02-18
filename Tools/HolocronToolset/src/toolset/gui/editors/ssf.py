@@ -10,8 +10,9 @@ from pykotor.resource.type import ResourceType
 from toolset.gui.editor import Editor
 
 if TYPE_CHECKING:
-    from PyQt5.QtWidgets import QLineEdit, QWidget
     import os
+
+    from PyQt5.QtWidgets import QLineEdit, QWidget
 
     from pykotor.extract.installation import Installation
     from pykotor.extract.talktable import StringResult

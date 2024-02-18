@@ -14,10 +14,10 @@ from pykotor.extract.file import ResourceIdentifier
 from pykotor.tools import sound
 
 if TYPE_CHECKING:
-    from PyQt5.QtWidgets import QWidget
     import os
 
     from PyQt5.QtGui import QCloseEvent
+    from PyQt5.QtWidgets import QWidget
 
     from pykotor.resource.type import ResourceType
 

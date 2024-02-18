@@ -48,6 +48,9 @@ from utility.misc import is_debug_mode
 from utility.system.path import Path, PurePath
 
 if TYPE_CHECKING:
+    import os
+
+    from PyQt5.QtCore import QPoint
     from PyQt5.QtGui import (
         QImage,
         QKeyEvent,
@@ -55,11 +58,9 @@ if TYPE_CHECKING:
         QPaintEvent,
         QWheelEvent,
     )
-    from PyQt5.QtCore import QPoint
     from PyQt5.QtWidgets import (
         QFormLayout,
     )
-    import os
 
     from pykotor.resource.formats.bwm import BWMFace
     from pykotor.resource.formats.bwm.bwm_data import BWM

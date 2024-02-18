@@ -5,15 +5,13 @@ from typing import TYPE_CHECKING, Any, Callable, Generator
 from PyQt5 import QtCore
 from PyQt5.QtWidgets import QDialog, QListWidgetItem
 
-from PyQt5 import QtCore
-from PyQt5.QtWidgets import QDialog, QListWidgetItem
-
 from pykotor.resource.type import ResourceType
 from toolset.gui.dialogs.asyncloader import AsyncBatchLoader
 from toolset.utils.window import openResourceEditor
 
 if TYPE_CHECKING:
     from PyQt5.QtWidgets import QWidget
+
     from pykotor.extract.file import FileResource
     from toolset.data.installation import HTInstallation
 

@@ -31,13 +31,14 @@ from toolset.data.installation import HTInstallation
 from utility.error_handling import format_exception_with_variables
 
 if TYPE_CHECKING:
+    import os
+
+    from PyQt5.QtCore import QModelIndex, QPoint
+    from PyQt5.QtGui import QDragEnterEvent, QDragMoveEvent, QDropEvent
     from PyQt5.QtWidgets import (
         QLabel,
         QWidget,
     )
-    from PyQt5.QtCore import QModelIndex, QPoint
-    from PyQt5.QtGui import QDragEnterEvent, QDragMoveEvent, QDropEvent
-    import os
 
     from pykotor.extract.file import ResourceResult
     from pykotor.resource.formats.tlk import TLK

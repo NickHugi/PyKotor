@@ -16,6 +16,7 @@ from PyQt5.QtWidgets import QApplication
 if TYPE_CHECKING:
     from types import TracebackType
 
+
 def onAppCrash(etype: type[BaseException], e: BaseException, tback: TracebackType | None):
     from utility.error_handling import format_exception_with_variables  # noqa: PLC0415
     with pathlib.Path("errorlog.txt").open("a", encoding="utf-8") as file:
@@ -27,6 +28,7 @@ def onAppCrash(etype: type[BaseException], e: BaseException, tback: TracebackTyp
     # Mimic default behavior by printing the traceback to stderr
     traceback.print_exception(etype, e, tback)
 
+
 def is_frozen() -> bool:  # sourcery skip: assign-if-exp, boolean-if-exp-identity, reintroduce-else, remove-unnecessary-cast
     # Check for sys.frozen attribute
     if getattr(sys, "frozen", False):
@@ -35,6 +37,7 @@ def is_frozen() -> bool:  # sourcery skip: assign-if-exp, boolean-if-exp-identit
     if tempfile.gettempdir() in sys.executable:
         return True
     return False
+
 
 def fix_sys_and_cwd_path():
     """Fixes sys.path and current working directory for PyKotor.

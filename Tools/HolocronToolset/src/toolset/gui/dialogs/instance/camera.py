@@ -7,6 +7,7 @@ from PyQt5.QtWidgets import QDialog
 
 if TYPE_CHECKING:
     from PyQt5.QtWidgets import QWidget
+
     from pykotor.resource.generics.git import GITCamera
 
 

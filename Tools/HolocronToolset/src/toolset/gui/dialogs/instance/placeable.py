@@ -11,6 +11,7 @@ from pykotor.common.misc import Color, ResRef
 
 if TYPE_CHECKING:
     from PyQt5.QtWidgets import QLabel, QWidget
+
     from pykotor.resource.generics.git import GITPlaceable
     from toolset.gui.widgets.long_spinbox import LongSpinBox
 

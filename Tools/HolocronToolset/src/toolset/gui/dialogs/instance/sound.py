@@ -9,6 +9,7 @@ from pykotor.common.misc import ResRef
 
 if TYPE_CHECKING:
     from PyQt5.QtWidgets import QWidget
+
     from pykotor.resource.generics.git import GITSound
 
 

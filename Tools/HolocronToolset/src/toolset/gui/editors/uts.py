@@ -16,10 +16,10 @@ from toolset.gui.dialogs.edit.locstring import LocalizedStringDialog
 from toolset.gui.editor import Editor
 
 if TYPE_CHECKING:
-    from PyQt5.QtWidgets import QWidget
     import os
 
     from PyQt5.QtGui import QCloseEvent
+    from PyQt5.QtWidgets import QWidget
 
     from toolset.data.installation import HTInstallation
 

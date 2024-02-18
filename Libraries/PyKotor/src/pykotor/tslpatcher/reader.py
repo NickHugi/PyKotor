@@ -69,6 +69,7 @@ if TYPE_CHECKING:
 SECTION_NOT_FOUND_ERROR = "The [{}] section was not found in the ini"
 REFERENCES_TRACEBACK_MSG = ", referenced by '{}={}' in [{}]"
 
+
 class NamespaceReader:
     """Responsible for reading and loading namespaces from the namespaces.ini file."""
 
@@ -123,6 +124,7 @@ class NamespaceReader:
             namespaces.append(namespace)
 
         return namespaces
+
 
 class ConfigReader:
     def __init__(

@@ -23,6 +23,7 @@ class TPCConvertResult(NamedTuple):
     height: int
     data: bytearray
 
+
 class TPC:
     """Represents a TPC file.
 

@@ -133,19 +133,19 @@ function Install-Linux-Deps {
         try {
             switch ($distro) {
                 "debian" {
-                    sudo apt update
-                    sudo apt install python3 -y
-                    sudo apt install python3-dev -y
-                    sudo apt install python3-venv -y
-                    sudo apt install python3-pip -y
+                    sudo apt-get update
+                    sudo apt-get install python3 -y
+                    sudo apt-get install python3-dev -y
+                    sudo apt-get install python3-venv -y
+                    sudo apt-get install python3-pip -y
                     break
                 }
                 "ubuntu" {
-                    sudo apt update
-                    sudo apt install python3 -y
-                    sudo apt install python3-dev -y
-                    sudo apt install python3-venv -y
-                    sudo apt install python3-pip -y
+                    sudo apt-get update
+                    sudo apt-get install python3 -y
+                    sudo apt-get install python3-dev -y
+                    sudo apt-get install python3-venv -y
+                    sudo apt-get install python3-pip -y
                     break
                 }
                 "alpine" {
@@ -218,12 +218,12 @@ function Install-Linux-Deps {
             # Fallback mechanism for each distribution
             switch ($distro) {
                 "debian" {
-                    sudo apt update
-                    sudo apt install build-essential zlib1g-dev libncurses5-dev libgdbm-dev libssl-dev libreadline-dev libffi-dev libsqlite3-dev libbz2-dev tk-dev -y
+                    sudo apt-get update
+                    sudo apt-get install build-essential zlib1g-dev libncurses5-dev libgdbm-dev libssl-dev libreadline-dev libffi-dev libsqlite3-dev libbz2-dev tk-dev -y
                 }
                 "ubuntu" {
-                    sudo apt update
-                    sudo apt install build-essential zlib1g-dev libncurses5-dev libgdbm-dev libssl-dev libreadline-dev libffi-dev libsqlite3-dev libbz2-dev tk-dev -y
+                    sudo apt-get update
+                    sudo apt-get install build-essential zlib1g-dev libncurses5-dev libgdbm-dev libssl-dev libreadline-dev libffi-dev libsqlite3-dev libbz2-dev tk-dev -y
                 }
                 "alpine" {
                     sudo apk add --update --no-cache alpine-sdk linux-headers zlib-dev bzip2-dev readline-dev sqlite-dev openssl-dev tk-dev libffi-dev
@@ -470,11 +470,11 @@ function Find-Python {
 
 $venvPath = $repoRootPath + $pathSep + $venv_name
 $findVenvExecutable = $true
-if (Test-Path $venvPath -ErrorAction SilentlyContinue) {
-    Write-Host "Found existing python virtual environment at '$venvPath'"
-} elseif (Get-ChildItem Env:VIRTUAL_ENV -ErrorAction SilentlyContinue) {  # Check if a venv is already activated
+if (Get-ChildItem Env:VIRTUAL_ENV -ErrorAction SilentlyContinue) {  # Check if a venv is already activated
     $venvPath = $env:VIRTUAL_ENV
     Write-Host "A virtual environment is currently activated: $venvPath"
+} elseif (Test-Path $venvPath -ErrorAction SilentlyContinue) {
+    Write-Host "Found existing python virtual environment at '$venvPath'"
 } else {
     Find-Python
     if ( $global:pythonInstallPath -eq "" ) {

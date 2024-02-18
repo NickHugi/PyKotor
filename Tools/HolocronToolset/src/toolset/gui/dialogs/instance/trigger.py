@@ -10,6 +10,7 @@ from pykotor.resource.generics.git import GITModuleLink
 
 if TYPE_CHECKING:
     from PyQt5.QtWidgets import QWidget
+
     from pykotor.resource.generics.git import GITTrigger
     from toolset.data.installation import HTInstallation
 

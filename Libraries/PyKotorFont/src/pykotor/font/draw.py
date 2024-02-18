@@ -71,6 +71,7 @@ def write_bitmap_fonts(
             font_color,
         )
 
+
 def write_bitmap_font(
     target: os.PathLike | str,
     font_path: os.PathLike | str,

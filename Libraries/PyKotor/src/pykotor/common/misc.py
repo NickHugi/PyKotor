@@ -15,6 +15,7 @@ T = TypeVar("T")
 VT = TypeVar("VT")
 _unique_sentinel = object()
 
+
 class ResRef:
     """A string reference to a game resource.
 

@@ -15,6 +15,7 @@ if TYPE_CHECKING:
     import os
 
     from collections.abc import Callable
+
     from typing_extensions import Literal
 
     from pykotor.common.misc import Game

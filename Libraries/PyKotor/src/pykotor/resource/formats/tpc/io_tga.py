@@ -24,6 +24,7 @@ class _DataTypes(IntEnum):
     COMPRESSED_COLOR_MAPPED_A = 32
     COMPRESSED_COLOR_MAPPED_B = 33
 
+
 class TPCTGAReader(ResourceReader):
     def __init__(
         self,

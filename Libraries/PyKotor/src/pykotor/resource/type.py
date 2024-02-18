@@ -50,6 +50,7 @@ class ResourceWriter:
     ):
         self._writer.close()
 
+
 class ResourceTuple(NamedTuple):
     type_id: int
     extension: str
@@ -322,6 +323,8 @@ class ResourceType(Enum):
         return self
 
 R = TypeVar("R")
+
+
 def autoclose(func: Callable[..., R]) -> Callable[..., R]:
     def _autoclose(self: ResourceReader | ResourceWriter, auto_close: bool = True) -> R:  # noqa: FBT002, FBT001
         try:

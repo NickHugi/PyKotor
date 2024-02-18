@@ -2,11 +2,6 @@
 
 # Function to install PowerShell on Linux
 fallback_install_pwsh() {
-    if command -v apt > /dev/null; then
-        echo "Found 'apt' command"
-        sudo apt update
-        sudo apt install -y powershell
-    fi
     if ! command -v pwsh > /dev/null; then
         if command -v apt-get > /dev/null; then
             echo "Found 'apt-get' command"
@@ -218,14 +213,14 @@ install_powershell_debian() {
 
 install_powershell_ubuntu() {
     echo "Installing Powershell for ubuntu..."
-    sudo apt update
-    sudo apt install -y wget apt-transport-https software-properties-common
+    sudo apt-get update
+    sudo apt-get install -y wget apt-transport-https software-properties-common
     source /etc/os-release
     wget -q https://packages.microsoft.com/config/ubuntu/$VERSION_ID/packages-microsoft-prod.deb
     sudo dpkg -i packages-microsoft-prod.deb
     rm packages-microsoft-prod.deb
-    sudo apt update
-    sudo apt install -y powershell
+    sudo apt-get update
+    sudo apt-get install -y powershell
 }
 
 install_powershell_rhel() {

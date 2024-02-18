@@ -24,6 +24,7 @@ if TYPE_CHECKING:
         PathElem,
     )
 
+
 def simple_wrapper(fn_name: str, wrapped_class_type: type) -> Callable[..., Any]:
     """Wraps a function to handle case-sensitive pathlib.PurePath arguments.
 
@@ -135,6 +136,8 @@ def create_case_insensitive_pathlib_class(cls: type):  # TODO: move into CaseAwa
                 setattr(cls, attr_name, simple_wrapper(attr_name, cls))
                 wrapped_methods.add(attr_name)
 
+
+
  # TODO: Move to pykotor.common
 class CaseAwarePath(InternalWindowsPath if os.name == "nt" else InternalPosixPath):  # type: ignore[misc]
     """A class capable of resolving case-sensitivity in a path. Absolutely essential for working with KOTOR files on Unix filesystems."""
@@ -221,7 +224,6 @@ class CaseAwarePath(InternalWindowsPath if os.name == "nt" else InternalPosixPat
 
         # return a CaseAwarePath instance
         instance = cls._create_instance(*parts)
-        assert instance.__class__.__base__ is (InternalWindowsPath if os.name == "nt" else InternalPosixPath)
         return instance
 
     @classmethod
@@ -303,6 +305,7 @@ class CaseAwarePath(InternalWindowsPath if os.name == "nt" else InternalPosixPat
 
 if os.name != "nt":  # Wrapping is unnecessary on Windows
     create_case_insensitive_pathlib_class(CaseAwarePath)
+
 
 def get_default_paths() -> dict[str, dict[Game, list[str]]]:
     from pykotor.common.misc import Game

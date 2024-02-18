@@ -80,6 +80,7 @@ class ExitCode(IntEnum):
     EXCEPTION_DURING_INSTALL = 7
     INSTALL_COMPLETED_WITH_ERRORS = 8
 
+
 class HoloPatcherError(Exception):
     ...
 
@@ -136,6 +137,7 @@ def parse_args() -> Namespace:
             sys.exit(ExitCode.NAMESPACE_INDEX_OUT_OF_RANGE)
 
     return kwargs
+
 
 class App(tk.Tk):
     def __init__(self):
@@ -1346,6 +1348,7 @@ def is_frozen() -> bool:  # sourcery skip: assign-if-exp, boolean-if-exp-identit
     if tempfile.gettempdir() in sys.executable:
         return True
     return False
+
 
 def main():
     app = App()

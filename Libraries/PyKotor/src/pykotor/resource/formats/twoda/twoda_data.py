@@ -12,6 +12,8 @@ if TYPE_CHECKING:
     from enum import Enum
 
 T = TypeVar("T")
+
+
 class TwoDA:
     """Represents a 2DA file."""
 

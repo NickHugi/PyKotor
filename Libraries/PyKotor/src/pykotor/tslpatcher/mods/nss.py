@@ -29,11 +29,13 @@ if TYPE_CHECKING:
     from pykotor.tslpatcher.logger import PatchLogger
     from pykotor.tslpatcher.memory import PatcherMemory
 
+
 class MutableString:
     def __init__(self, value: str):
         self.value: str = value
     def __str__(self):
         return self.value
+
 
 class ModificationsNSS(PatcherModifications):
     def __init__(self, filename, replace=None, modifiers=None):

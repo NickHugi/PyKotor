@@ -71,6 +71,8 @@ unicode = str
 _range = range
 basestring = str
 unichr = chr
+
+
 def _load_unicode_escapes(v, hexbytes, prefix):
     skip = False
     i = len(v) - 1
@@ -101,6 +103,8 @@ def _load_unicode_escapes(v, hexbytes, prefix):
         v += unichr(int(hxb, 16))
         v += unicode(hx[len(hxb):])
     return v
+
+
 def _unescape(v):
     """Unescape characters in a TOML string."""
     i = 0
@@ -121,6 +125,8 @@ def _unescape(v):
             backslash = True
         i += 1
     return v
+
+
 class TomlTz(datetime.tzinfo):
     def __init__(self, toml_offset):
         if toml_offset == "Z":
@@ -142,6 +148,8 @@ class TomlTz(datetime.tzinfo):
 
     def dst(self, dt):
         return datetime.timedelta(0)
+
+
 def _load_date(val):
     microsecond = 0
     tz = None
@@ -187,8 +195,11 @@ def _load_date(val):
     except ValueError:
         return None
     return d
+
+
 class InlineTableDict:
     """Sentinel subclass of dict for inline tables."""
+
 
 class TomlDecoder:
 
@@ -535,6 +546,7 @@ class TomlDecoder:
     def embed_comments(self, idx, currentlevel):
         pass
 
+
 def _strictly_valid_num(n):
     n = n.strip()
     if not n:
@@ -584,6 +596,7 @@ def load_toml(f, _dict=dict, decoder=None):
             return loads(f.read(), _dict, decoder)
         except AttributeError:
             raise TypeError("You can only load a file descriptor, filename or list")
+
 
 def loads(s, _dict=dict, decoder=None):
     implicitgroups = []

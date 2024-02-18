@@ -10,6 +10,7 @@ from typing import TYPE_CHECKING, TypeVar
 
 if TYPE_CHECKING:
     from collections.abc import Callable
+
     from typing_extensions import Literal
 
 
@@ -89,10 +90,12 @@ ignore_attrs: set[str] = {
     "__builtins__",
 }
 
+
 class CustomAssertionError(AssertionError):
     def __init__(self, *args, **kwargs):
         self.message: str = kwargs.get("message", args[0])
         super().__init__(*args, **kwargs)
+
 
 def format_var_str(
     var,
@@ -130,6 +133,7 @@ def format_var_str(
 
     return f"  {var} = {display_value}"
 
+
 def format_frame_info(frame_info: inspect.FrameInfo) -> list[str]:
     """Extract and format information from a frame."""
     (
@@ -148,6 +152,7 @@ def format_frame_info(frame_info: inspect.FrameInfo) -> list[str]:
         if formatted_var:
             detailed_message.append(formatted_var)
     return detailed_message
+
 
 def format_exception_with_variables(
     value: BaseException,
@@ -195,10 +200,13 @@ def format_exception_with_variables(
 
     return "\n".join(detailed_message)
 
+
 def is_assertion_removal_enabled() -> bool:
     return sys.flags.optimize >= 1
 
 IT = TypeVar("IT")
+
+
 def enforce_instance_cast(obj: object, type_: type[IT]) -> IT:
     instance_check: bool = isinstance(obj, type_)
     if is_assertion_removal_enabled():
@@ -209,6 +217,7 @@ def enforce_instance_cast(obj: object, type_: type[IT]) -> IT:
 
     assert_with_variable_trace(isinstance(obj, type_), "enforce_is_instance failed.")
     return obj  # type: ignore[return-value]
+
 
 def assert_with_variable_trace(condition: bool, message: str = "Assertion Failed"):
     if condition:
@@ -243,6 +252,8 @@ def assert_with_variable_trace(condition: bool, message: str = "Assertion Failed
 
 RT = TypeVar("RT")
 unique_sentinel = object()
+
+
 def with_variable_trace(
     exception_types: type[Exception] | tuple[type[Exception], ...] = Exception,
     return_type: type[RT] = unique_sentinel,  # type: ignore[reportGeneralTypeIssues, assignment]

@@ -132,6 +132,8 @@ class LibreFallbackTranslator:
     def __call__(self):
         return
 
+
+
 # Function to convert numerals
 def translate_numerals(num_string: str, source_lang: Language, target_lang: Language) -> str:
     # Dictionaries for each language's numerals
@@ -347,9 +349,11 @@ class TranslationOption(Enum):
             if translator.value is not None
         }
 
+
 def replace_with_placeholder(match, replaced_text: list[str], counter: int) -> str:
     replaced_text.append(match.group(0))  # Store the original text
     return f"__{counter}__"
+
 
 def replace_curly_braces(original_string: str):
     replaced_text: list[str] = []
@@ -365,6 +369,7 @@ def replace_curly_braces(original_string: str):
     modified_string = re.sub(pattern, matcher, original_string)
     return modified_string, replaced_text
 
+
 def restore_original_text(modified_string: str, replaced_text: list[str]):
     counter = -1
     for counter, original_text in enumerate(replaced_text):
@@ -372,6 +377,7 @@ def restore_original_text(modified_string: str, replaced_text: list[str]):
         modified_string = modified_string.replace(placeholder, original_text)
     assert counter == len(replaced_text) - 1
     return modified_string
+
 
 class Translator:
     def __init__(

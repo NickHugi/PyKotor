@@ -41,6 +41,7 @@ LOGGING_ENABLED: bool | None = None
 PARSER_ARGS = None
 PARSER = None
 
+
 def log_output(*args, **kwargs):
     global OUTPUT_LOG  # noqa: PLW0603
     # Create an in-memory text stream
@@ -390,6 +391,7 @@ def run_differ_from_args(path1: Path, path2: Path) -> bool | None:
     msg = f"--path1='{path1.name}' and --path2='{path2.name}' must be the same type"
     raise ValueError(msg)
 
+
 def main():
     global PARSER_ARGS
     global PARSER  # noqa: PLW0603
@@ -477,6 +479,7 @@ def main():
     finally:
         if profiler is not None:
             _stop_profiler(profiler)
+
 
 def _stop_profiler(profiler: cProfile.Profile):
     profiler.disable()

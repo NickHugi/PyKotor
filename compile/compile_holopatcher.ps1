@@ -26,11 +26,11 @@ if ((Get-OS) -eq "Mac") {
         $command = ""
         switch ($distro) {
             "debian" {
-                $command = "sudo apt install python3-tk -y"
+                $command = "sudo apt-get install python3-tk -y"
                 break
             }
             "ubuntu" {
-                $command = "sudo apt install python3-tk -y"
+                $command = "sudo apt-get install python3-tk -y"
                 break
             }
             "fedora" {

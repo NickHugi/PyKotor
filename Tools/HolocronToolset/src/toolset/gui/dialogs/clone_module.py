@@ -10,6 +10,7 @@ from toolset.gui.dialogs.asyncloader import AsyncLoader
 
 if TYPE_CHECKING:
     from PyQt5.QtWidgets import QWidget
+
     from toolset.data.installation import HTInstallation
 
 _ROOT_INDEX = 0

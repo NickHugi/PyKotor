@@ -50,11 +50,11 @@ from toolset.utils.misc import getResourceFromFile
 from toolset.utils.window import openResourceEditor
 
 if TYPE_CHECKING:
-    from PyQt5.QtWidgets import QCheckBox, QWidget
-    from PyQt5.QtGui import QKeyEvent
     import os
 
     from PyQt5.QtCore import QPoint
+    from PyQt5.QtGui import QKeyEvent
+    from PyQt5.QtWidgets import QCheckBox, QWidget
 
     from pykotor.extract.file import LocationResult, ResourceIdentifier, ResourceResult
     from pykotor.resource.formats.bwm.bwm_data import BWM

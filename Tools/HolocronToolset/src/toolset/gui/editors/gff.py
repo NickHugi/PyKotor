@@ -16,9 +16,10 @@ from pykotor.resource.type import ResourceType
 from toolset.gui.editor import Editor
 
 if TYPE_CHECKING:
-    from PyQt5.QtWidgets import QWidget
-    from PyQt5.QtCore import QItemSelectionRange, QModelIndex
     import os
+
+    from PyQt5.QtCore import QItemSelectionRange, QModelIndex
+    from PyQt5.QtWidgets import QWidget
 
     from toolset.data.installation import HTInstallation
 

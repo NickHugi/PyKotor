@@ -6,6 +6,7 @@ from PyQt5.QtWidgets import QDialog
 
 if TYPE_CHECKING:
     from PyQt5.QtWidgets import QWidget
+
     from toolset.data.indoorkit import Kit
     from toolset.data.indoormap import IndoorMap
     from toolset.data.installation import HTInstallation

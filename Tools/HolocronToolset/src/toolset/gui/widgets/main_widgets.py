@@ -16,8 +16,9 @@ from pykotor.resource.formats.tpc import TPC, TPCTextureFormat
 from utility.error_handling import format_exception_with_variables
 
 if TYPE_CHECKING:
-    from PyQt5.QtGui import QResizeEvent
     from PyQt5.QtCore import QModelIndex
+    from PyQt5.QtGui import QResizeEvent
+
     from pykotor.common.misc import CaseInsensitiveDict
     from pykotor.extract.file import FileResource
     from pykotor.resource.type import ResourceType

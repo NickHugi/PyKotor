@@ -1,10 +1,11 @@
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 from PyQt5.QtWidgets import QDialog
 
 from pykotor.resource.generics.dlg import DLGAnimation
 from toolset.data.installation import HTInstallation
-from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from PyQt5.QtWidgets import QWidget

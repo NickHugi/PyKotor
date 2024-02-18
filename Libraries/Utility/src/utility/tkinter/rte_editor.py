@@ -40,6 +40,8 @@ default_content: dict[str, Any] = {
     },
 }
 
+
+
 # Transform rgb to hex
 def rgbToHex(rgb) -> str:
     return "#{:02x}{:02x}{:02x}".format(*rgb)

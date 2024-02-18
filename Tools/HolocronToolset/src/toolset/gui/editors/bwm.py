@@ -15,8 +15,9 @@ from toolset.gui.editor import Editor
 from utility.error_handling import assert_with_variable_trace
 
 if TYPE_CHECKING:
-    from PyQt5.QtWidgets import QWidget
     import os
+
+    from PyQt5.QtWidgets import QWidget
 
     from pykotor.common.geometry import Vector2, Vector3
     from pykotor.resource.formats.bwm import BWM, BWMFace

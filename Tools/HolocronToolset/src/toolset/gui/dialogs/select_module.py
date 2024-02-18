@@ -9,6 +9,7 @@ from pykotor.common.module import Module
 
 if TYPE_CHECKING:
     from PyQt5.QtWidgets import QWidget
+
     from toolset.data.installation import HTInstallation
 
 

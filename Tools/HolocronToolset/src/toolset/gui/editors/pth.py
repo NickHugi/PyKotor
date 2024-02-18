@@ -18,11 +18,11 @@ from toolset.gui.widgets.settings.git import GITSettings
 from utility.error_handling import assert_with_variable_trace
 
 if TYPE_CHECKING:
-    from PyQt5.QtWidgets import QWidget
-    from PyQt5.QtGui import QKeyEvent
     import os
 
     from PyQt5.QtCore import QPoint
+    from PyQt5.QtGui import QKeyEvent
+    from PyQt5.QtWidgets import QWidget
 
     from pykotor.common.geometry import Vector3
     from pykotor.extract.file import ResourceIdentifier, ResourceResult

@@ -20,9 +20,10 @@ from utility.error_handling import format_exception_with_variables, universal_si
 from utility.system.path import Path
 
 if TYPE_CHECKING:
-    from PyQt5.QtWidgets import QWidget
-    from PyQt5.QtGui import QDragEnterEvent, QDragMoveEvent, QDropEvent
     import os
+
+    from PyQt5.QtGui import QDragEnterEvent, QDragMoveEvent, QDropEvent
+    from PyQt5.QtWidgets import QWidget
 
     from pykotor.resource.formats.rim import RIMResource
     from toolset.data.installation import HTInstallation

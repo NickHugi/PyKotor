@@ -10,6 +10,7 @@ def _convert(content):
         return content.toPyth()
     return content
 
+
 class PythonReader(PythReader):
 
     @classmethod
@@ -94,6 +95,7 @@ class P(_PythonBase, metaclass=_MetaPythonBase()):
 
 class LE(_PythonBase, metaclass=_MetaPythonBase()):
     pythType = ListEntry
+
 
 class L(_PythonBase, metaclass=_MetaPythonBase()):
     pythType = List

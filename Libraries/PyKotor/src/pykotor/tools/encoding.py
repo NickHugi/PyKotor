@@ -18,6 +18,7 @@ try:
 except ImportError:
     charset_normalizer = None
 
+
 def decode_bytes_with_fallbacks(
     byte_content: bytes | bytearray,
     errors: str = "strict",
@@ -115,6 +116,7 @@ def decode_bytes_with_fallbacks(
         return _decode_attempt(attempt_errors="strict")
     return _decode_attempt(attempt_errors=errors)
 
+
 def get_charset_from_singlebyte_encoding(
     encoding: str,
     *,
@@ -128,6 +130,7 @@ def get_charset_from_singlebyte_encoding(
             if indexing:
                 charset.append("")
     return charset
+
 
 def get_charset_from_unicode_encoding(
     encoding: str,
@@ -143,6 +146,7 @@ def get_charset_from_unicode_encoding(
                 charset.append("")
     return charset
 
+
 def get_charset_from_doublebyte_encoding(
     encoding: str,
 ) -> list[str]:
@@ -157,6 +161,7 @@ def get_charset_from_doublebyte_encoding(
 
     # maybe possible?
     return get_generalized_doublebyte_charset(encoding)
+
 
 def get_cp950_charset() -> list[str]:
     charset: list[str] = []
@@ -192,6 +197,7 @@ def get_cp950_charset() -> list[str]:
             charset.append("")  # Append a blank for bytes outside the Big5 range
     return charset
 
+
 def get_cp949_charset() -> list[str]:
     charset: list[str] = []
     for i in range(256):
@@ -215,6 +221,7 @@ def get_cp949_charset() -> list[str]:
         else:
             charset.append("")  # Undefined code point, append a blank
     return charset
+
 
 def get_cp936_charset() -> list[str]:
     # sourcery skip: merge-duplicate-blocks, remove-redundant-if
@@ -246,6 +253,7 @@ def get_cp936_charset() -> list[str]:
         else:
             charset.append("")  # Undefined code point, append a blank
     return charset
+
 
 def get_generalized_doublebyte_charset(encoding: str) -> list[str]:
     charset: list[str] = []

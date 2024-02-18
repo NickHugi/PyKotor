@@ -24,6 +24,7 @@ DEFAULT_PARA_SPACE = 0.2 * inch
 
 BULLET_TEXT = "\xe2\x80\xa2"
 
+
 class PDFWriter(PythWriter):
 
     @classmethod

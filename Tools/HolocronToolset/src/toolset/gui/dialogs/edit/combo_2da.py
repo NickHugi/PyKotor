@@ -1,7 +1,8 @@
 from __future__ import annotations
 
-from PyQt5.QtWidgets import QDialog
 from typing import TYPE_CHECKING
+
+from PyQt5.QtWidgets import QDialog
 
 if TYPE_CHECKING:
     from PyQt5.QtWidgets import QWidget

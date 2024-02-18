@@ -33,10 +33,11 @@ from toolset.utils.misc import QtKey
 from utility.error_handling import assert_with_variable_trace
 
 if TYPE_CHECKING:
-    from PyQt5.QtCore import QItemSelection, QModelIndex, QPoint
-    from PyQt5.QtWidgets import QPlainTextEdit, QWidget
-    from PyQt5.QtGui import QKeyEvent, QMouseEvent
     import os
+
+    from PyQt5.QtCore import QItemSelection, QModelIndex, QPoint
+    from PyQt5.QtGui import QKeyEvent, QMouseEvent
+    from PyQt5.QtWidgets import QPlainTextEdit, QWidget
 
     from pykotor.common.language import LocalizedString
     from pykotor.resource.formats.twoda.twoda_data import TwoDA

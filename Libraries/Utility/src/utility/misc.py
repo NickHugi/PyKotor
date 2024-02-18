@@ -56,6 +56,7 @@ class ProcessorArchitecture(Enum):
         """Check if the architecture supports 64-bit processing."""
         return self == self.BIT_64
 
+
 def format_gpu_info(info, headers):
     # Determine the maximum width for each column
     column_widths: list[int] = [max(len(str(row[i])) for row in (headers, *info)) for i in range(len(headers))]
@@ -73,6 +74,7 @@ def format_gpu_info(info, headers):
         output += format_row(row) + "\n"
 
     return output
+
 
 def get_system_info():
     # sourcery skip: extract-method, list-comprehension, merge-dict-assign
@@ -122,6 +124,8 @@ def get_system_info():
     return info
 
 T = TypeVar("T")
+
+
 def remove_duplicates(my_list: list[T], *, case_insensitive=False) -> list[T]:
     seen = set()
     return [
@@ -129,6 +133,7 @@ def remove_duplicates(my_list: list[T], *, case_insensitive=False) -> list[T]:
         for x in my_list
         if not (x in seen or seen.add(x))
     ]
+
 
 def is_debug_mode() -> bool:
     ret = False
@@ -140,6 +145,7 @@ def is_debug_mode() -> bool:
         ret = True
     print(f"DEBUG MODE: {ret}")
     return ret
+
 
 def has_attr_excluding_object(cls: type, attr_name: str) -> bool:
     # Exclude the built-in 'object' class
