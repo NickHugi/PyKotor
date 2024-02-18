@@ -103,8 +103,9 @@ function Get-Linux-Distro {
     $osInfo = Get-Content "/etc/os-release" -Raw
     if (Test-Path "/etc/os-release") {
         if ($osInfo -match 'ID="?([^"\n]*)"?') {
+            $distro = $Matches[1].Trim('"')
             Write-Host "found distro"
-            Write-Host $Matches[1].Trim('"')
+            Write-Host $distro
             return $Matches[1].Trim('"')
         }
     }
