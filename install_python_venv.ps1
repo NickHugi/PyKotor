@@ -177,7 +177,6 @@ function Install-Linux-Deps {
                     sudo dnf update -y
                     sudo dnf install python3 -y
                     sudo dnf install python3-pip -y
-                    sudo dnf install python3-venv -y
                     sudo dnf install git -y
                     break
                 }
