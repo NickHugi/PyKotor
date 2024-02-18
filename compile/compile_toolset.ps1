@@ -58,7 +58,6 @@ if ((Get-OS) -eq "Mac") {
             Write-Host "Refreshing keys..."
             sudo pacman-key --refresh-keys
             sudo pacman -Sy archlinux-keyring --noconfirm
-            sudo pacman -Sc --noconfirm
             sudo pacman -Syu --noconfirm
             $command = "sudo pacman -Syu --noconfirm && sudo pacman -S mesa libxcb qt5-base qt5-wayland xcb-util-wm xcb-util-keysyms xcb-util-image xcb-util-renderutil python-opengl libxcomposite gtk3 atk mpdecimal python-pyqt5 qt5-base qt5-multimedia qt5-svg pulseaudio pulseaudio-alsa gstreamer mesa libglvnd ttf-dejavu fontconfig gst-plugins-base gst-plugins-good gst-plugins-bad gst-plugins-ugly --noconfirm"
             break
@@ -69,7 +68,18 @@ if ((Get-OS) -eq "Mac") {
         Write-Warning "Dist $distro version $versionId not supported for automated system package install, please install the dependencies if you experience problems."
     } else {
         Write-Host "Executing command: $command"
-        Invoke-Expression $command
+        $output = Invoke-Expression $command
+
+        # Check if the output contains the error message
+        if ($distro -eq "arch") {
+            if ($output -match "error: failed to commit transaction (invalid or corrupted package)") {
+                Write-Host "Detected error: No packages were upgraded. Please run the command `sudo pacman-key --refresh-keys` and try again."
+                if (-not $this_noprompt) {
+                    Write-Host "Press any key to exit..."
+                    $null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
+                }
+            }
+        }
     }
 }
 
