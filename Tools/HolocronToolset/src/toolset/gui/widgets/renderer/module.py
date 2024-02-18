@@ -291,6 +291,8 @@ class ModuleRenderer(QOpenGLWidget):  # noqa: PLR0904
             screenDelta = Vector2(screen.x - self.width() / 2, screen.y - self.height() / 2)
         else:
             screenDelta = Vector2(screen.x - self._mousePrev.x, screen.y - self._mousePrev.y)
+        if self.scene is None:
+            return
 
         world = self.scene.cursor.position()
         self._mousePrev = screen
