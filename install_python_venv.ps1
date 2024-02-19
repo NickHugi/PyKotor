@@ -402,7 +402,7 @@ function Find-Python {
         [switch]$intrnal
     )
     # Check for Python 3 command and version
-    $python3Command = Get-Command -Name python3 -ErrorAction SilentlyContinue
+    $python3Command = Get-Command -Name "python3" -ErrorAction SilentlyContinue
     if ($null -ne $python3Command) {
         $global:pythonVersion = Get-Python-Version "python3"
         if ($global:pythonVersion -ge $minVersion -and $global:pythonVersion -lt $maxVersion) {
@@ -415,7 +415,7 @@ function Find-Python {
         }
     }
 
-    $pythonCommand = Get-Command -Name python -ErrorAction SilentlyContinue
+    $pythonCommand = Get-Command -Name "python" -ErrorAction SilentlyContinue
     if ($null -ne $pythonCommand) {
         $global:pythonVersion = Get-Python-Version "python"
         if ($global:pythonVersion -ge $minVersion -and $global:pythonVersion -lt $maxVersion) {
@@ -430,14 +430,14 @@ function Find-Python {
         }
     }
 
-    $pythonCommand = Get-Command -Name python -ErrorAction SilentlyContinue
+    $pythonCommand = Get-Command -Name "python3.8" -ErrorAction SilentlyContinue
     if ($null -ne $pythonCommand) {
         $global:pythonVersion = Get-Python-Version "python3.8"
         if ($global:pythonVersion -ge $minVersion -and $global:pythonVersion -lt $maxVersion) {
             Write-Host "Found python command with version $global:pythonVersion"
             $global:pythonInstallPath = Get-Path-From-Command "python3.8"
         } else {
-            Write-Host "python path '$global:pythonInstallPath' version '$global:pythonVersion' not supported"
+            Write-Host "python3.8 path '$global:pythonInstallPath' version '$global:pythonVersion' not supported"
             if ( $global:pythonInstallPath -eq "" ) {
                 $global:pythonInstallPath = ""
                 $global:pythonVersion = ""
@@ -445,14 +445,14 @@ function Find-Python {
         }
     }
 
-    $pythonCommand = Get-Command -Name python -ErrorAction SilentlyContinue
+    $pythonCommand = Get-Command -Name "python3.9" -ErrorAction SilentlyContinue
     if ($null -ne $pythonCommand) {
         $global:pythonVersion = Get-Python-Version "python3.9"
         if ($global:pythonVersion -ge $minVersion -and $global:pythonVersion -lt $maxVersion) {
             Write-Host "Found python command with version $global:pythonVersion"
             $global:pythonInstallPath = Get-Path-From-Command "python3.9"
         } else {
-            Write-Host "python path '$global:pythonInstallPath' version '$global:pythonVersion' not supported"
+            Write-Host "python3.9 path '$global:pythonInstallPath' version '$global:pythonVersion' not supported"
             if ( $global:pythonInstallPath -eq "" ) {
                 $global:pythonInstallPath = ""
                 $global:pythonVersion = ""
@@ -460,14 +460,14 @@ function Find-Python {
         }
     }
 
-    $pythonCommand = Get-Command -Name python -ErrorAction SilentlyContinue
+    $pythonCommand = Get-Command -Name "python3.10" -ErrorAction SilentlyContinue
     if ($null -ne $pythonCommand) {
         $global:pythonVersion = Get-Python-Version "python3.10"
         if ($global:pythonVersion -ge $minVersion -and $global:pythonVersion -lt $maxVersion) {
             Write-Host "Found python command with version $global:pythonVersion"
             $global:pythonInstallPath = Get-Path-From-Command "python3.10"
         } else {
-            Write-Host "python path '$global:pythonInstallPath' version '$global:pythonVersion' not supported"
+            Write-Host "python3.10 path '$global:pythonInstallPath' version '$global:pythonVersion' not supported"
             if ( $global:pythonInstallPath -eq "" ) {
                 $global:pythonInstallPath = ""
                 $global:pythonVersion = ""
@@ -475,14 +475,14 @@ function Find-Python {
         }
     }
 
-    $pythonCommand = Get-Command -Name python -ErrorAction SilentlyContinue
+    $pythonCommand = Get-Command -Name "python3.11" -ErrorAction SilentlyContinue
     if ($null -ne $pythonCommand) {
         $global:pythonVersion = Get-Python-Version "python3.11"
         if ($global:pythonVersion -ge $minVersion -and $global:pythonVersion -lt $maxVersion) {
             Write-Host "Found python command with version $global:pythonVersion"
             $global:pythonInstallPath = Get-Path-From-Command "python3.11"
         } else {
-            Write-Host "python path '$global:pythonInstallPath' version '$global:pythonVersion' not supported"
+            Write-Host "python3.11 path '$global:pythonInstallPath' version '$global:pythonVersion' not supported"
             if ( $global:pythonInstallPath -eq "" ) {
                 $global:pythonInstallPath = ""
                 $global:pythonVersion = ""
@@ -490,14 +490,14 @@ function Find-Python {
         }
     }
 
-    $pythonCommand = Get-Command -Name python -ErrorAction SilentlyContinue
+    $pythonCommand = Get-Command -Name "python3.12" -ErrorAction SilentlyContinue
     if ($null -ne $pythonCommand) {
         $global:pythonVersion = Get-Python-Version "python3.12"
         if ($global:pythonVersion -ge $minVersion -and $global:pythonVersion -lt $maxVersion) {
             Write-Host "Found python command with version $global:pythonVersion"
             $global:pythonInstallPath = Get-Path-From-Command "python3.12"
         } else {
-            Write-Host "python path '$global:pythonInstallPath' version '$global:pythonVersion' not supported"
+            Write-Host "python3.12 path '$global:pythonInstallPath' version '$global:pythonVersion' not supported"
             if ( $global:pythonInstallPath -eq "" ) {
                 $global:pythonInstallPath = ""
                 $global:pythonVersion = ""
