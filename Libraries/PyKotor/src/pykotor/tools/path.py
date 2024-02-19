@@ -153,7 +153,7 @@ def create_case_insensitive_pathlib_class(cls: type):  # TODO: move into CaseAwa
 class CaseAwarePath(InternalWindowsPath if os.name == "nt" else InternalPosixPath):  # type: ignore[misc]
     """A class capable of resolving case-sensitivity in a path. Absolutely essential for working with KOTOR files on Unix filesystems."""
     def resolve(self, strict=False):  # noqa: FBT002
-        if not pathlib.Path.exists(self):
+        if not pathlib.Path(self).exists():
             new_path = self.get_case_sensitive_path(self)
             return super(CaseAwarePath, new_path).resolve(strict)
         return super().resolve(strict)
