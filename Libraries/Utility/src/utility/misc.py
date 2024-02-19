@@ -166,7 +166,8 @@ def is_instance_or_subinstance(instance: object, target_cls: type) -> bool:
     if hasattr(instance, "__bases__"):  # instance is a class
         return False  # if instance is a class type, always return False
     # instance is not a class
-    return type(instance) is target_cls or is_class_or_subclass_but_not_instance(type(instance), target_cls)
+    instance_type = instance.__class__
+    return instance_type is target_cls or is_class_or_subclass_but_not_instance(instance_type, target_cls)
 
 
 def generate_hash(

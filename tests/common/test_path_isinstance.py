@@ -9,15 +9,14 @@ from pykotor.tools.path import CaseAwarePath
 from utility.system.path import Path, PosixPath, PurePath, PurePosixPath, PureWindowsPath, WindowsPath
 
 THIS_SCRIPT_PATH = pathlib.Path(__file__).resolve()
-PYKOTOR_PATH = THIS_SCRIPT_PATH.parents[2]
-UTILITY_PATH = THIS_SCRIPT_PATH.parents[4].joinpath("Utility", "src")
+PYKOTOR_PATH = THIS_SCRIPT_PATH.parents[2].joinpath("Libraries", "PyKotor", "src")
+UTILITY_PATH = THIS_SCRIPT_PATH.parents[2].joinpath("Libraries", "Utility", "src")
 def add_sys_path(p: pathlib.Path):
     working_dir = str(p)
     if working_dir not in sys.path:
         sys.path.append(working_dir)
 if PYKOTOR_PATH.joinpath("pykotor").exists():
     add_sys_path(PYKOTOR_PATH)
-    os.chdir(PYKOTOR_PATH.parent)
 if UTILITY_PATH.joinpath("utility").exists():
     add_sys_path(UTILITY_PATH)
 
@@ -26,22 +25,22 @@ class TestPathInheritance(unittest.TestCase):
 
     def test_path_attributes(self):
         self.assertIs(PureWindowsPath("mypath").__class__, PureWindowsPath)
-        self.assertIs(PurePath("mypath").__class__, PurePath)
+        self.assertIs(PurePath("mypath").__class__, PurePosixPath if os.name == "posix" else PureWindowsPath)
         self.assertIs(PurePosixPath("mypath").__class__, PurePosixPath)
         if os.name == "nt":
             self.assertIs(WindowsPath("mypath").__class__, WindowsPath)
         else:
             self.assertIs(PosixPath("mypath").__class__, PosixPath)
-        self.assertIs(Path("mypath").__class__, Path)
+        self.assertIs(Path("mypath").__class__, PosixPath if os.name == "posix" else WindowsPath)
         self.assertIs(CaseAwarePath("mypath").__class__, CaseAwarePath)
         self.assertIs(PureWindowsPath("mypath").__class__.__base__, PurePath)
-        self.assertIs(PurePath("mypath").__class__.__base__, pathlib.PurePath)
+        self.assertIs(PurePath("mypath").__class__.__base__, PurePath)
         self.assertIs(PurePosixPath("mypath").__class__.__base__, PurePath)
         if os.name == "nt":
             self.assertIs(WindowsPath("mypath").__class__.__base__, Path)
         else:
             self.assertIs(PosixPath("mypath").__class__.__base__, Path)
-        self.assertIs(Path("mypath").__class__.__base__, PurePath)
+        self.assertIs(Path("mypath").__class__.__base__, Path)
         self.assertIs(CaseAwarePath("mypath").__class__.__base__, WindowsPath if os.name == "nt" else PosixPath)
 
     def test_pure_windows_path_isinstance(self):

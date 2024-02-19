@@ -8,6 +8,7 @@ from typing import TYPE_CHECKING, Any
 
 from pykotor.tools.registry import find_software_key, winreg_key
 from utility.misc import is_instance_or_subinstance
+from utility.string import ireplace
 from utility.system.path import (
     Path as InternalPath,
     PosixPath as InternalPosixPath,
@@ -67,8 +68,12 @@ def simple_wrapper(fn_name: str, wrapped_class_type: type) -> Callable[..., Any]
         """
         orig_fn = wrapped_class_type._original_methods[fn_name]  # noqa: SLF001
 
-        def parse_arg(arg) -> CaseAwarePath | Any:
-            if is_instance_or_subinstance(arg, InternalPurePath) and CaseAwarePath.should_resolve_case(arg):
+        def parse_arg(arg: Any) -> CaseAwarePath | Any:
+            if arg is CaseAwarePath:
+                return CaseAwarePath
+            if arg.__class__ is CaseAwarePath:
+                return arg if pathlib.Path(arg).exists() else CaseAwarePath.get_case_sensitive_path(arg)
+            if not hasattr(arg, "__bases__") and arg.__class__ in InternalPurePath.__bases__ and pathlib.Path.exists(arg):
                 return CaseAwarePath.get_case_sensitive_path(arg)
             return arg
 
@@ -123,6 +128,7 @@ def create_case_insensitive_pathlib_class(cls: type):  # TODO: move into CaseAwa
         "__getattr__",
         "__setattr__",
         "__init__",
+        "__new__",
         "_init",
         "pathify",
         *cls_methods,
@@ -141,9 +147,8 @@ def create_case_insensitive_pathlib_class(cls: type):  # TODO: move into CaseAwa
  # TODO: Move to pykotor.common
 class CaseAwarePath(InternalWindowsPath if os.name == "nt" else InternalPosixPath):  # type: ignore[misc]
     """A class capable of resolving case-sensitivity in a path. Absolutely essential for working with KOTOR files on Unix filesystems."""
-
     def resolve(self, strict=False):  # noqa: FBT002
-        if self.should_resolve_case(self):
+        if pathlib.Path.exists(self):
             new_path = self.get_case_sensitive_path(self)
             return super(CaseAwarePath, new_path).resolve(strict)
         return super().resolve(strict)
@@ -164,16 +169,13 @@ class CaseAwarePath(InternalWindowsPath if os.name == "nt" else InternalPosixPat
             parsed_other = other.with_segments(other, *_deprecated)
 
         self_str, other_str = map(str, (resolved_self, parsed_other))
-        if isinstance(self, (pathlib.PureWindowsPath, pathlib.WindowsPath)) or type(self).__name__ == "CaseAwarePath" or os.name == "nt":  # HACK: maybe import CaseAwarePath or have an attribute set over there (might need to set __slots__ too)
-            self_str, other_str = map(str.lower, (self_str, other_str))
-
-        if other_str not in self_str:
+        replacement = ireplace(self_str, other_str, "").lstrip("\\").lstrip("/")
+        if replacement == self_str:
             msg = f"self '{self_str}' is not relative to other '{other_str}'"
             raise ValueError(msg)
 
-        replacement = self_str.replace(other_str, "").lstrip("\\").lstrip("/")
-        if isinstance(self, CaseAwarePath):  # CaseAwarePath's are always absolute.
-            return InternalPath(replacement)
+        if isinstance(self, CaseAwarePath):
+            return self.get_case_sensitive_path(replacement)
         return self.__class__(replacement)
 
     @classmethod
@@ -196,8 +198,10 @@ class CaseAwarePath(InternalWindowsPath if os.name == "nt" else InternalPosixPat
             - If not, find the closest matching file/folder name in the existing path
             - Return a CaseAwarePath instance with case sensitivity resolved.
         """
-        pathlib_path: pathlib.Path = pathlib.Path(path)
-        parts = list(pathlib_path.parts)
+        pathlib_path = pathlib.Path(path)
+        pathlib_abspath = pathlib_path.absolute()
+        num_differing_parts = len(pathlib_abspath.parts) - len(pathlib_path.parts)  # keeps the path relative if it already was.
+        parts = list(pathlib_abspath.parts)
 
         for i in range(1, len(parts)):  # ignore the root (/, C:\\, etc)
             base_path: InternalPath = InternalPath(*parts[:i])
@@ -223,9 +227,7 @@ class CaseAwarePath(InternalWindowsPath if os.name == "nt" else InternalPosixPat
                 break
 
         # return a CaseAwarePath instance
-        instance = cls._create_instance(*parts)
-        #assert instance.__class__.__base__ is (InternalWindowsPath if os.name == "nt" else InternalPosixPath)  # FIXME: this assert sometimes fails, find out why.
-        return instance
+        return cls._create_instance(*parts[num_differing_parts:])
 
     @classmethod
     def find_closest_match(cls, target: str, candidates: Generator[InternalPath, None, None]) -> str:
@@ -270,16 +272,6 @@ class CaseAwarePath(InternalWindowsPath if os.name == "nt" else InternalPosixPat
         """
         return sum(a == b for a, b in zip(str1, str2)) if str1.lower() == str2.lower() else -1
 
-    @staticmethod
-    def should_resolve_case(path: os.PathLike | str) -> bool:
-        if os.name == "nt":
-            return False
-        try:
-            path_obj = pathlib.Path(path)
-            return path_obj.is_absolute() and not path_obj.exists()
-        except Exception:  # noqa: BLE001
-            return False
-
     def __hash__(self):
         return hash(self.as_windows())
 
@@ -294,15 +286,19 @@ class CaseAwarePath(InternalWindowsPath if os.name == "nt" else InternalPosixPat
         return self._fix_path_formatting(str(other), slash="/").lower() == self.as_posix().lower()
 
     def __repr__(self):
-        return f"{self.__class__.__name__}({self.as_windows()})"
+        return f"{self.__class__.__name__}({', '.join(self.parts)})"
 
     def __str__(self):
         path_obj = pathlib.Path(self)
-        return (
-            super(CaseAwarePath, self.get_case_sensitive_path(path_obj)).__str__()
-            if self.should_resolve_case(path_obj)
-            else self._fix_path_formatting(str(path_obj))
-        )
+        if path_obj.exists():
+            return super().__str__()
+
+        case_resolved_path = self.get_case_sensitive_path(path_obj)
+        if not pathlib.Path(case_resolved_path).exists():
+            return super().__str__()
+
+        return super(self.__class__, case_resolved_path).__str__()
+
 
 if os.name != "nt":  # Wrapping is unnecessary on Windows
     create_case_insensitive_pathlib_class(CaseAwarePath)

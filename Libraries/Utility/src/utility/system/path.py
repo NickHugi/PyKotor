@@ -196,7 +196,7 @@ class PurePath(pathlib.PurePath, metaclass=PurePathType):  # type: ignore[misc]
 
     def __str__(self):
         """Return the result from _fix_path_formatting that was initialized."""
-        return self.as_posix() if self._flavour.sep == "/" else self._fix_path_formatting(super().__str__(), slash="\\")  # type: ignore[reportAttributeAccessIssue]
+        return self._fix_path_formatting(super().__str__(), slash=self._flavour.sep)  # type: ignore[reportAttributeAccessIssue]
 
     def __repr__(self):
         return f"{self.__class__.__name__}({self})"
@@ -436,9 +436,11 @@ class Path(PurePath, pathlib.Path):  # type: ignore[misc]
         *args: PathElem,
         **kwargs
     ) -> Self:
-       if cls is not Path and cls.__name__ != "CaseAwarePath":  # don't import
-           return super().__new__(cls, *args, **kwargs)
-       return WindowsPath(*args, **kwargs) if os.name == "nt" else PosixPath(*args, **kwargs)  # type: ignore[reportReturnType]
+        if cls.__base__ in {PosixPath, WindowsPath}:  # check for classes inheriting us (e.g. CaseAwarePath)
+            return super().__new__(cls, *args, **kwargs)
+        if cls is not Path:
+            return super().__new__(cls, *args, **kwargs)
+        return WindowsPath(*args, **kwargs) if os.name == "nt" else PosixPath(*args, **kwargs)  # type: ignore[reportReturnType]
 
     # Safe rglob operation
     def safe_rglob(
@@ -675,7 +677,7 @@ class Path(PurePath, pathlib.Path):  # type: ignore[misc]
             print(format_exception_with_variables(e, message=f"Error during chmod at path '{self}'"))
 
         success: bool = True
-        if not self.has_access(mode, recurse=False):
+        if not self.has_access(mode, recurse=False) and os.name == "nt":
             log_func(f"No permissions to {self}, attempting native access fix...")
             try:
                 self.request_native_access(elevate=False, recurse=recurse, log_func=log_func)
