@@ -6,12 +6,11 @@ from typing import TYPE_CHECKING
 
 from PIL import Image, ImageOps
 from PyQt5.QtCore import Qt
-from PyQt5.QtGui import QImage, QPixmap, QTransform
+from PyQt5.QtGui import QImage, QPixmap
 
 from pykotor.resource.formats.tpc import TPC, TPCTextureFormat, read_tpc, write_tpc
 from pykotor.resource.type import ResourceType
 from toolset.gui.editor import Editor
-from utility.error_handling import assert_with_variable_trace
 
 if TYPE_CHECKING:
     import os

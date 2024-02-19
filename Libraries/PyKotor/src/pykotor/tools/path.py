@@ -7,7 +7,6 @@ import platform
 from typing import TYPE_CHECKING, Any
 
 from pykotor.tools.registry import find_software_key, winreg_key
-from utility.misc import is_instance_or_subinstance
 from utility.string import ireplace
 from utility.system.path import (
     Path as InternalPath,
