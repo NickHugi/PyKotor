@@ -127,6 +127,8 @@ def create_case_insensitive_pathlib_class(cls: type):  # TODO: move into CaseAwa
         "__getattr__",
         "__setattr__",
         "__init__",
+        "__fspath__",
+        "__truediv__",
         "_init",
         "pathify",
         *cls_methods,
@@ -150,6 +152,22 @@ class CaseAwarePath(InternalWindowsPath if os.name == "nt" else InternalPosixPat
             return super(CaseAwarePath, new_path).resolve(strict)
         return super().resolve(strict)
 
+    @staticmethod
+    def extract_absolute_prefix(relative_path: InternalPath, absolute_path: InternalPath) -> tuple[str, ...]:
+        # Ensure the absolute path is absolute and the relative path is resolved relative to it
+        absolute_path = absolute_path.absolute()
+        relative_path_resolved = (absolute_path.parent / relative_path).absolute()
+
+        # Convert to lists of parts for comparison
+        abs_parts = absolute_path.parts
+        rel_parts = relative_path_resolved.parts
+
+        # Identify the index where the relative path starts in the absolute path
+        start_index_of_rel_in_abs = len(abs_parts) - len(rel_parts)
+
+        # Extract the differing prefix part as a new Path object
+        return abs_parts[:start_index_of_rel_in_abs]
+
     def relative_to(self, *args, walk_up=False, **kwargs) -> InternalPath:
         if not args or "other" in kwargs:
             raise TypeError("relative_to() missing 1 required positional argument: 'other'")  # noqa: TRY003, EM101
@@ -171,12 +189,13 @@ class CaseAwarePath(InternalWindowsPath if os.name == "nt" else InternalPosixPat
             msg = f"self '{self_str}' is not relative to other '{other_str}'"
             raise ValueError(msg)
 
-        if isinstance(self, CaseAwarePath):
-            return self.get_case_sensitive_path(replacement)
+        if isinstance(self, CaseAwarePath) and not pathlib.Path(replacement).exists():
+            prefixes = self.extract_absolute_prefix(InternalPath(replacement), parsed_other)
+            return self.get_case_sensitive_path(replacement, prefixes)
         return self.__class__(replacement)
 
     @classmethod
-    def get_case_sensitive_path(cls, path: PathElem):
+    def get_case_sensitive_path(cls, path: PathElem, prefixes: list[str] | tuple[str, ...] | None = None):
         """Get a case sensitive path.
 
         Args:
@@ -195,8 +214,9 @@ class CaseAwarePath(InternalWindowsPath if os.name == "nt" else InternalPosixPat
             - If not, find the closest matching file/folder name in the existing path
             - Return a CaseAwarePath instance with case sensitivity resolved.
         """
+        prefixes = prefixes or []
         pathlib_path = pathlib.Path(path)
-        pathlib_abspath = pathlib_path.absolute()
+        pathlib_abspath = pathlib.Path(*prefixes, path).absolute() if prefixes else pathlib_path.absolute()
         num_differing_parts = len(pathlib_abspath.parts) - len(pathlib_path.parts)  # keeps the path relative if it already was.
         parts = list(pathlib_abspath.parts)
 
@@ -292,9 +312,6 @@ class CaseAwarePath(InternalWindowsPath if os.name == "nt" else InternalPosixPat
             return super().__str__()
 
         case_resolved_path = self.get_case_sensitive_path(path_obj)
-        if not pathlib.Path(case_resolved_path).exists():
-            return super().__str__()
-
         return super(self.__class__, case_resolved_path).__str__()
 
 
