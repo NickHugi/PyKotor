@@ -81,14 +81,14 @@ class PurePath(pathlib.PurePath, metaclass=PurePathType):  # type: ignore[misc]
             return args[0]
 
         if cls is not PurePath:
-            return super().__new__(cls, *cls.parse_args(args), **kwargs)
+            return cls._create_super_instance(*cls.parse_args(args), **kwargs)
         return PureWindowsPath(*args, **kwargs) if os.name == "nt" else PurePosixPath(*args, **kwargs)  # type: ignore[reportReturnType]
 
     @classmethod
     def _create_super_instance(cls, *args, **kwargs) -> Self:
         # Create the pathlib class instance, ignore the type errors in super().__new__
         arg_pathlib_instance: Self = super().__new__(cls, *args, **kwargs)  # type: ignore[call-arg]
-        arg_pathlib_instance.__init__(*args, _called_from_pathlib=False)  # type: ignore[misc]
+        arg_pathlib_instance.__init__(*args)  # noqa: PLC2801
         return arg_pathlib_instance
 
     @classmethod
