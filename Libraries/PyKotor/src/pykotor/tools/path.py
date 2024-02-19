@@ -69,11 +69,14 @@ def simple_wrapper(fn_name: str, wrapped_class_type: type) -> Callable[..., Any]
         orig_fn = wrapped_class_type._original_methods[fn_name]  # noqa: SLF001
 
         def parse_arg(arg: Any) -> CaseAwarePath | Any:
-            if arg is CaseAwarePath:
-                return CaseAwarePath
-            if arg.__class__ is CaseAwarePath:
-                return arg if pathlib.Path(arg).exists() else CaseAwarePath.get_case_sensitive_path(arg)
-            if not hasattr(arg, "__bases__") and arg.__class__ in CaseAwarePath.__base__.__bases__ and pathlib.Path.exists(arg):
+            if (
+                not hasattr(arg, "__bases__")
+                and (
+                    arg.__class__ in {*CaseAwarePath.__bases__, CaseAwarePath}
+                    or CaseAwarePath in {*arg.__class__.__bases__, arg.__class__}
+                )
+                and not pathlib.Path(arg).exists()
+            ):
                 return CaseAwarePath.get_case_sensitive_path(arg)
             return arg
 
