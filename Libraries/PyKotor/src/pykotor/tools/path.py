@@ -283,7 +283,8 @@ class CaseAwarePath(InternalWindowsPath if os.name == "nt" else InternalPosixPat
         return self._fix_path_formatting(str(other), slash="/").lower() == self.as_posix().lower()
 
     def __repr__(self):
-        return f"{self.__class__.__name__}({', '.join(self.parts)})"
+        str_parts = ", ".join(f'"{part}"' for part in self.parts)
+        return f"{self.__class__.__name__}({str_parts})"
 
     def __str__(self):
         path_obj = pathlib.Path(self)
