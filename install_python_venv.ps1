@@ -387,7 +387,7 @@ function Get-Path-From-Command {
 
     if ($null -ne $pythonCommand) {
         $pythonPath = $pythonCommand.Source
-        Write-Host "Path to Python executable: $pythonPath"
+        Write-Host "Command: '$command' Path to Python executable: $pythonPath"
         return $pythonPath
     } else {
         return ""
