@@ -160,20 +160,13 @@ function Install-Linux-Deps {
                     sudo dnf update -y
                     sudo dnf upgrade -y
                     #sudo dnf install python38 -y  # Won't work because the main binary doesn't contain tkinter.
-                    Find-Python
+                    Find-Python -intrnal
                     if ( $global:pythonInstallPath -eq "") {
                         sudo dnf install tk-devel tcl-devel -y
                         sudo dnf install openssl-devel bzip2-devel libffi-devel wget -y
                         sudo dnf groupinstall "Development Tools" -y
                         gcc --version
-                        Invoke-WebRequest -Uri https://www.python.org/ftp/python/3.8.18/Python-3.8.18.tgz
-                        tar -xf Python-3.8.18.tgz
-                        $current_working_dir = (Get-Location).Path
-                        Set-Location "Python-3.8.18" -ErrorAction Stop
-                        ./configure --enable-optimizations --with-ensurepip=install
-                        make
-                        sudo make install
-                        Set-Location -LiteralPath $current_working_dir
+                        Python-Install-Unix-Source
                     }
                     python3.8 --version
                 }
@@ -235,24 +228,54 @@ function Install-Linux-Deps {
                 "centos" {
                     sudo yum groupinstall "Development Tools" -y
                     sudo yum install zlib-devel bzip2-devel readline-devel sqlite-devel openssl-devel tk-devel libffi-devel -y
-                }
-                default {
-                    Write-Error "Unsupported Linux distribution for building Python"
+                } default {
+                    # Check for the presence of package managers and execute corresponding commands
+                    if (Get-Command apt-get -ErrorAction SilentlyContinue) {
+                        sudo apt-get update
+                        sudo apt-get install build-essential zlib1g-dev libncurses5-dev libgdbm-dev libssl-dev libreadline-dev libffi-dev libsqlite3-dev libbz2-dev tk-dev -y
+                    } elseif (Get-Command apk -ErrorAction SilentlyContinue) {
+                        sudo apk add --update --no-cache alpine-sdk linux-headers zlib-dev bzip2-dev readline-dev sqlite-dev openssl-dev tk-dev libffi-dev
+                    } elseif (Get-Command yum -ErrorAction SilentlyContinue) {
+                        sudo yum groupinstall "Development Tools" -y
+                        sudo yum install zlib-devel bzip2-devel readline-devel sqlite-devel openssl-devel tk-devel libffi-devel -y
+                    } elseif (Get-Command dnf -ErrorAction SilentlyContinue) {
+                        sudo dnf groupinstall "Development Tools" -y
+                        sudo dnf install zlib-devel bzip2-devel readline-devel sqlite-devel openssl-devel tk-devel libffi-devel -y
+                    } elseif (Get-Command zypper -ErrorAction SilentlyContinue) {
+                        sudo zypper install -t pattern devel_basis
+                        sudo zypper install zlib-devel bzip2-devel readline-devel sqlite3-devel openssl-devel tk-devel libffi-devel -y
+                    } elseif (Get-Command pacman -ErrorAction SilentlyContinue) {
+                        sudo pacman -Syu --noconfirm
+                        sudo pacman -S base-devel zlib bzip2 readline sqlite openssl tk libffi --noconfirm
+                    } elseif (Get-Command brew -ErrorAction SilentlyContinue) {
+                        brew update
+                        brew install zlib bzip2 readline sqlite openssl tk libffi
+                    } elseif (Get-Command snap -ErrorAction SilentlyContinue) {
+                        Write-Warning "Snap packages are not directly applicable for building Python. Please ensure build dependencies are installed using another package manager."
+                    } elseif (Get-Command flatpak -ErrorAction SilentlyContinue) {
+                        Write-Warning "Flatpak is not suitable for installing build dependencies. Please use another package manager."
+                    } else {
+                        Write-Warning "Compatible package manager not found. Please install the build dependencies manually."
+                    }
                 }
             }
-            Invoke-WebRequest -Uri https://www.python.org/ftp/python/3.8.18/Python-3.8.18.tgz
-            tar -xvf Python-3.8.18.tgz
-            $current_working_dir = (Get-Location).Path
-            Set-Location -LiteralPath "Python-3.8.18" -ErrorAction Stop
-            sudo ./configure --enable-optimizations --with-ensurepip=install
-            sudo make -j $(nproc)
-            sudo make altinstall
-            Set-Location -LiteralPath $current_working_dir
+            Python-Install-Unix-Source
         }
     } else {
         Write-Host "Cannot determine Linux distribution."
         exit 1
     }
+}
+
+function Python-Install-Unix-Source {
+    Invoke-WebRequest -Uri https://www.python.org/ftp/python/3.8.18/Python-3.8.18.tgz -OutFile Python-3.8.18.tgz
+    tar -xvf Python-3.8.18.tgz
+    $current_working_dir = (Get-Location).Path
+    Set-Location -LiteralPath "Python-3.8.18" -ErrorAction Stop
+    sudo ./configure --enable-optimizations --with-ensurepip=install --enable-shared
+    sudo make -j $(nproc)
+    sudo make altinstall
+    Set-Location -LiteralPath $current_working_dir
 }
 
 function Python-Install-Windows {
@@ -398,6 +421,81 @@ function Find-Python {
         if ($global:pythonVersion -ge $minVersion -and $global:pythonVersion -lt $maxVersion) {
             Write-Host "Found python command with version $global:pythonVersion"
             $global:pythonInstallPath = Get-Path-From-Command "python"
+        } else {
+            Write-Host "python path '$global:pythonInstallPath' version '$global:pythonVersion' not supported"
+            if ( $global:pythonInstallPath -eq "" ) {
+                $global:pythonInstallPath = ""
+                $global:pythonVersion = ""
+            }
+        }
+    }
+
+    $pythonCommand = Get-Command -Name python -ErrorAction SilentlyContinue
+    if ($null -ne $pythonCommand) {
+        $global:pythonVersion = Get-Python-Version "python3.8"
+        if ($global:pythonVersion -ge $minVersion -and $global:pythonVersion -lt $maxVersion) {
+            Write-Host "Found python command with version $global:pythonVersion"
+            $global:pythonInstallPath = Get-Path-From-Command "python3.8"
+        } else {
+            Write-Host "python path '$global:pythonInstallPath' version '$global:pythonVersion' not supported"
+            if ( $global:pythonInstallPath -eq "" ) {
+                $global:pythonInstallPath = ""
+                $global:pythonVersion = ""
+            }
+        }
+    }
+
+    $pythonCommand = Get-Command -Name python -ErrorAction SilentlyContinue
+    if ($null -ne $pythonCommand) {
+        $global:pythonVersion = Get-Python-Version "python3.9"
+        if ($global:pythonVersion -ge $minVersion -and $global:pythonVersion -lt $maxVersion) {
+            Write-Host "Found python command with version $global:pythonVersion"
+            $global:pythonInstallPath = Get-Path-From-Command "python3.9"
+        } else {
+            Write-Host "python path '$global:pythonInstallPath' version '$global:pythonVersion' not supported"
+            if ( $global:pythonInstallPath -eq "" ) {
+                $global:pythonInstallPath = ""
+                $global:pythonVersion = ""
+            }
+        }
+    }
+
+    $pythonCommand = Get-Command -Name python -ErrorAction SilentlyContinue
+    if ($null -ne $pythonCommand) {
+        $global:pythonVersion = Get-Python-Version "python3.10"
+        if ($global:pythonVersion -ge $minVersion -and $global:pythonVersion -lt $maxVersion) {
+            Write-Host "Found python command with version $global:pythonVersion"
+            $global:pythonInstallPath = Get-Path-From-Command "python3.10"
+        } else {
+            Write-Host "python path '$global:pythonInstallPath' version '$global:pythonVersion' not supported"
+            if ( $global:pythonInstallPath -eq "" ) {
+                $global:pythonInstallPath = ""
+                $global:pythonVersion = ""
+            }
+        }
+    }
+
+    $pythonCommand = Get-Command -Name python -ErrorAction SilentlyContinue
+    if ($null -ne $pythonCommand) {
+        $global:pythonVersion = Get-Python-Version "python3.11"
+        if ($global:pythonVersion -ge $minVersion -and $global:pythonVersion -lt $maxVersion) {
+            Write-Host "Found python command with version $global:pythonVersion"
+            $global:pythonInstallPath = Get-Path-From-Command "python3.11"
+        } else {
+            Write-Host "python path '$global:pythonInstallPath' version '$global:pythonVersion' not supported"
+            if ( $global:pythonInstallPath -eq "" ) {
+                $global:pythonInstallPath = ""
+                $global:pythonVersion = ""
+            }
+        }
+    }
+
+    $pythonCommand = Get-Command -Name python -ErrorAction SilentlyContinue
+    if ($null -ne $pythonCommand) {
+        $global:pythonVersion = Get-Python-Version "python3.12"
+        if ($global:pythonVersion -ge $minVersion -and $global:pythonVersion -lt $maxVersion) {
+            Write-Host "Found python command with version $global:pythonVersion"
+            $global:pythonInstallPath = Get-Path-From-Command "python3.12"
         } else {
             Write-Host "python path '$global:pythonInstallPath' version '$global:pythonVersion' not supported"
             if ( $global:pythonInstallPath -eq "" ) {
