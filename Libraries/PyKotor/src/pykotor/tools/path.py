@@ -73,7 +73,7 @@ def simple_wrapper(fn_name: str, wrapped_class_type: type) -> Callable[..., Any]
                 return CaseAwarePath
             if arg.__class__ is CaseAwarePath:
                 return arg if pathlib.Path(arg).exists() else CaseAwarePath.get_case_sensitive_path(arg)
-            if not hasattr(arg, "__bases__") and arg.__class__ in InternalPurePath.__bases__ and pathlib.Path.exists(arg):
+            if not hasattr(arg, "__bases__") and arg.__class__ in CaseAwarePath.__base__.__bases__ and pathlib.Path.exists(arg):
                 return CaseAwarePath.get_case_sensitive_path(arg)
             return arg
 
