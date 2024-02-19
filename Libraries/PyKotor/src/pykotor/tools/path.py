@@ -66,6 +66,11 @@ def simple_wrapper(fn_name: str, wrapped_class_type: type) -> Callable[..., Any]
             - Return the result
         """
         orig_fn = wrapped_class_type._original_methods[fn_name]  # noqa: SLF001
+        # Do not use. CaseAwarePath's performance depends on only resolving case when it absolutely has to.
+        #if fn_name == "__new__":
+        #    path_obj = pathlib.Path(*args, **kwargs)
+        #    if "called_from_getcase" not in kwargs and not path_obj.exists():
+        #        return CaseAwarePath.get_case_sensitive_path(path_obj)
 
         def parse_arg(arg: Any) -> CaseAwarePath | Any:
             if (
@@ -130,6 +135,7 @@ def create_case_insensitive_pathlib_class(cls: type):  # TODO: move into CaseAwa
         "__fspath__",
         "__truediv__",
         "_init",
+        "__new__",
         "pathify",
         *cls_methods,
     }
@@ -244,7 +250,7 @@ class CaseAwarePath(InternalWindowsPath if os.name == "nt" else InternalPosixPat
                 break
 
         # return a CaseAwarePath instance
-        return cls._create_instance(*parts[num_differing_parts:])
+        return cls._create_instance(*parts[num_differing_parts:], called_from_getcase=True)
 
     @classmethod
     def find_closest_match(cls, target: str, candidates: Generator[InternalPath, None, None]) -> str:
