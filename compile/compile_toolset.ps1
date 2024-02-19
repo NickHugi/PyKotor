@@ -8,11 +8,8 @@ $rootPath = (Resolve-Path -LiteralPath "$scriptPath/..").Path
 Write-Host "The path to the script directory is: $scriptPath"
 Write-Host "The path to the root directory is: $rootPath"
 
-Write-Host "Initializing python virtual environment..."
-. $rootPath/install_python_venv.ps1
-
 if ((Get-OS) -eq "Mac") {
-    & bash -c "brew install python@3.12 pyqt@5 mpdecimal gstreamer pulseaudio fontconfig" 2>&1 | Write-Output 
+    & bash -c "brew install pyqt@5 mpdecimal gstreamer pulseaudio fontconfig" 2>&1 | Write-Output 
 } elseif (Test-Path -Path "/etc/os-release") {
     $command = ""
     $distro = (Get-Linux-Distro-Name)
@@ -73,6 +70,9 @@ if ((Get-OS) -eq "Mac") {
         }
     }
 }
+
+Write-Host "Initializing python virtual environment..."
+. $rootPath/install_python_venv.ps1
 
 Write-Host "Installing required packages to build the holocron toolset..."
 . $pythonExePath -m pip install --upgrade pip --prefer-binary --progress-bar on
