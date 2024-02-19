@@ -402,41 +402,25 @@ function Find-Python {
         [switch]$intrnal
     )
     # Check for Python 3 command and version
-    $python3Command = Get-Command -Name "python3" -ErrorAction SilentlyContinue
-    if ($null -ne $python3Command) {
-        $testPath = Get-Path-From-Command "python3"
-        $global:pythonVersion = Get-Python-Version $testPath
-        if ($global:pythonVersion -ge $minVersion -and $global:pythonVersion -lt $maxVersion) {
-            Write-Host "Found python command with version $global:pythonVersion"
-            $global:pythonInstallPath = Get-Path-From-Command $testPath
-        } else {
-            Write-Host "python '$testPath' version '$global:pythonVersion' not supported"
-            if ( $global:pythonInstallPath -eq "" ) {
-                $global:pythonInstallPath = ""
-                $global:pythonVersion = ""
-            }
-        }
-    }
-
-    $pythonCommand = Get-Command -Name "python" -ErrorAction SilentlyContinue
-    if ($null -ne $pythonCommand) {
-        $testPath = Get-Path-From-Command "python"
-        $global:pythonVersion = Get-Python-Version $testPath
-        if ($global:pythonVersion -ge $minVersion -and $global:pythonVersion -lt $maxVersion) {
-            Write-Host "Found python command with version $global:pythonVersion"
-            $global:pythonInstallPath = Get-Path-From-Command $testPath
-        } else {
-            Write-Host "python '$testPath' version '$global:pythonVersion' not supported"
-            if ( $global:pythonInstallPath -eq "" ) {
-                $global:pythonInstallPath = ""
-                $global:pythonVersion = ""
-            }
-        }
-    }
-
     $pythonCommand = Get-Command -Name "python3.8" -ErrorAction SilentlyContinue
     if ($null -ne $pythonCommand) {
         $testPath = Get-Path-From-Command "python3.8"
+        $global:pythonVersion = Get-Python-Version $testPath
+        if ($global:pythonVersion -ge $minVersion -and $global:pythonVersion -lt $maxVersion) {
+            Write-Host "Found python command with version $global:pythonVersion"
+            $global:pythonInstallPath = Get-Path-From-Command $testPath
+        } else {
+            Write-Host "python '$testPath' version '$global:pythonVersion' not supported"
+            if ( $global:pythonInstallPath -eq "" ) {
+                $global:pythonInstallPath = ""
+                $global:pythonVersion = ""
+            }
+        }
+    }
+
+    $python3Command = Get-Command -Name "python3" -ErrorAction SilentlyContinue
+    if ($null -ne $python3Command) {
+        $testPath = Get-Path-From-Command "python3"
         $global:pythonVersion = Get-Python-Version $testPath
         if ($global:pythonVersion -ge $minVersion -and $global:pythonVersion -lt $maxVersion) {
             Write-Host "Found python command with version $global:pythonVersion"
@@ -501,6 +485,22 @@ function Find-Python {
     $pythonCommand = Get-Command -Name "python3.12" -ErrorAction SilentlyContinue
     if ($null -ne $pythonCommand) {
         $testPath = Get-Path-From-Command "python3.12"
+        $global:pythonVersion = Get-Python-Version $testPath
+        if ($global:pythonVersion -ge $minVersion -and $global:pythonVersion -lt $maxVersion) {
+            Write-Host "Found python command with version $global:pythonVersion"
+            $global:pythonInstallPath = Get-Path-From-Command $testPath
+        } else {
+            Write-Host "python '$testPath' version '$global:pythonVersion' not supported"
+            if ( $global:pythonInstallPath -eq "" ) {
+                $global:pythonInstallPath = ""
+                $global:pythonVersion = ""
+            }
+        }
+    }
+
+    $pythonCommand = Get-Command -Name "python" -ErrorAction SilentlyContinue
+    if ($null -ne $pythonCommand) {
+        $testPath = Get-Path-From-Command "python"
         $global:pythonVersion = Get-Python-Version $testPath
         if ($global:pythonVersion -ge $minVersion -and $global:pythonVersion -lt $maxVersion) {
             Write-Host "Found python command with version $global:pythonVersion"
