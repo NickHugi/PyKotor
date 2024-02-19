@@ -71,10 +71,7 @@ def simple_wrapper(fn_name: str, wrapped_class_type: type) -> Callable[..., Any]
         def parse_arg(arg: Any) -> CaseAwarePath | Any:
             if (
                 not hasattr(arg, "__bases__")
-                and (
-                    arg.__class__ in {*CaseAwarePath.__bases__, CaseAwarePath}
-                    or CaseAwarePath in {*arg.__class__.__bases__, arg.__class__}
-                )
+                and hasattr(arg, "__fspath__")
                 and not pathlib.Path(arg).exists()
             ):
                 return CaseAwarePath.get_case_sensitive_path(arg)
@@ -131,7 +128,6 @@ def create_case_insensitive_pathlib_class(cls: type):  # TODO: move into CaseAwa
         "__getattr__",
         "__setattr__",
         "__init__",
-        "__new__",
         "_init",
         "pathify",
         *cls_methods,
@@ -146,12 +142,11 @@ def create_case_insensitive_pathlib_class(cls: type):  # TODO: move into CaseAwa
                 wrapped_methods.add(attr_name)
 
 
-
  # TODO: Move to pykotor.common
 class CaseAwarePath(InternalWindowsPath if os.name == "nt" else InternalPosixPath):  # type: ignore[misc]
     """A class capable of resolving case-sensitivity in a path. Absolutely essential for working with KOTOR files on Unix filesystems."""
     def resolve(self, strict=False):  # noqa: FBT002
-        if pathlib.Path.exists(self):
+        if not pathlib.Path.exists(self):
             new_path = self.get_case_sensitive_path(self)
             return super(CaseAwarePath, new_path).resolve(strict)
         return super().resolve(strict)
