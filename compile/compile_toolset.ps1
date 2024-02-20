@@ -1,4 +1,5 @@
 param (
+  [string]$venv_name = ".venv",
   [switch]$noprompt
 )
 $this_noprompt = $noprompt
@@ -7,6 +8,46 @@ $scriptPath = Split-Path -Parent $MyInvocation.MyCommand.Definition
 $rootPath = (Resolve-Path -LiteralPath "$scriptPath/..").Path
 Write-Host "The path to the script directory is: $scriptPath"
 Write-Host "The path to the root directory is: $rootPath"
+
+function Get-OS {
+    if ($IsWindows) {
+        return "Windows"
+    } elseif ($IsMacOS) {
+        return "Mac"
+    } elseif ($IsLinux) {
+        return "Linux"
+    }
+    $os = (Get-WmiObject -Class Win32_OperatingSystem).Caption
+    if ($os -match "Windows") {
+        return "Windows"
+    } elseif ($os -match "Mac") {
+        return "Mac"
+    } elseif ($os -match "Linux") {
+        return "Linux"
+    } else {
+        Write-Error "Unknown Operating System"
+        Write-Host "Press any key to exit..."
+        if (-not $noprompt) {
+            $null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
+        }
+        exit
+    }
+}
+
+function Get-Linux-Distro-Name {
+    if (Test-Path "/etc/os-release" -ErrorAction SilentlyContinue) {
+        $osInfo = Get-Content "/etc/os-release" -Raw
+        if ($osInfo -match '\nID="?([^"\n]*)"?') {
+            $distroName = $Matches[1].Trim('"')
+            if ($distroName -eq "ol") {
+                sudo yum install -y https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm
+                return "oracle"
+            }
+            return $distroName
+        }
+    }
+    return $null
+}
 
 if ((Get-OS) -eq "Mac") {
     & bash -c "brew install pyqt@5 mpdecimal gstreamer pulseaudio fontconfig" 2>&1 | Write-Output 
@@ -72,7 +113,8 @@ if ((Get-OS) -eq "Mac") {
 }
 
 Write-Host "Initializing python virtual environment..."
-. $rootPath/install_python_venv.ps1
+. $rootPath/install_python_venv.ps1 $($this_noprompt ? '-noprompt' : '') $($venv_name ? "-venv_name $venv_name" : '')
+
 
 Write-Host "Installing required packages to build the holocron toolset..."
 . $pythonExePath -m pip install --upgrade pip --prefer-binary --progress-bar on
@@ -114,7 +156,7 @@ $pyInstallerArgs = @{
     'name' = "HolocronToolset"
     'distpath'=($rootPath + $pathSep + "dist")
 #    'upx-dir' = "C:\GitHub\upx-win64"
-    'icon'="resources/icons/sith.ico"
+    'icon'="resources/icons/sith.$((Get-OS) -eq 'Mac' ? 'icns' : 'ico')"
 }
 
 $pyInstallerArgs = $pyInstallerArgs.GetEnumerator() | ForEach-Object {

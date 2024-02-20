@@ -1,4 +1,5 @@
 param (
+  [string]$venv_name=".venv",
   [switch]$noprompt
 )
 $this_noprompt = $noprompt
@@ -72,7 +73,7 @@ try {
         Remove-Item -Path $venvPath -Recurse -Force
     }
     Write-Host "Reinitializing python virtual environment..."
-    . $rootPath/install_python_venv.ps1 -noprompt -venv_name $venv_name
+    . $rootPath/install_python_venv.ps1 $($this_noprompt ? '-noprompt' : '') $($venv_name ? "-venv_name $venv_name" : '')
 }
 
 Write-Host "Installing required packages to build the batchpatcher..."
