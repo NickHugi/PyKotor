@@ -5,6 +5,7 @@ import os
 import pathlib
 import re
 import subprocess
+import sys
 import uuid
 
 from tempfile import TemporaryDirectory
@@ -77,24 +78,28 @@ class PurePath(pathlib.PurePath, metaclass=PurePathType):  # type: ignore[misc]
         *args,
         **kwargs
     ) -> Self:
-        if len(args) == 1 and args[0].__class__ is cls:  # faster to see if it already is our instance
-            return args[0]
+        if cls is PurePath:
+            cls = PureWindowsPath if os.name == "nt" else PurePosixPath
+        return super().__new__(cls, *cls.parse_args(args), **kwargs)  # type: ignore[reportReturnType]
 
-        if cls is not PurePath:
-            return cls._create_super_instance(*cls.parse_args(args), **kwargs)
-        return PureWindowsPath(*args, **kwargs) if os.name == "nt" else PurePosixPath(*args, **kwargs)  # type: ignore[reportReturnType]
+    def __init__(
+        self,
+        *args,
+        **kwargs,
+    ):
+        if sys.version_info < (3, 12, 0):
+            super().__init__()
+            return
+        super().__init__(*self.parse_args(args), **kwargs)
 
     @classmethod
-    def _create_super_instance(cls, *args, **kwargs) -> Self:
-        # Create the pathlib class instance, ignore the type errors in super().__new__
-        arg_pathlib_instance: Self = super().__new__(cls, *args, **kwargs)  # type: ignore[call-arg]
-        arg_pathlib_instance.__init__(*args)  # noqa: PLC2801
-        return arg_pathlib_instance
-
-    @classmethod
-    def _create_instance(cls, *args, **kwargs) -> Self:
+    def _create_instance(
+        cls,
+        *args: PathElem,
+        **kwargs,  # noqa: ANN003
+    ) -> Self:
         instance: Self = cls.__new__(cls, *args, **kwargs)
-        instance.__init__(*args, **kwargs)  # type: ignore[misc]
+        instance.__init__(*args)  # type: ignore[misc]  # noqa: PLC2801
         return instance
 
     @classmethod
@@ -377,7 +382,10 @@ class PurePath(pathlib.PurePath, metaclass=PurePathType):  # type: ignore[misc]
         return self._create_instance(str(self) + extension)
 
     @classmethod
-    def with_segments(cls, *pathsegments) -> Self:
+    def with_segments(
+        cls,
+        *pathsegments: PathElem,
+    ) -> Self:
         """Construct a new path object from any number of path-like objects.
 
         Subclasses may override this method to customize how new path objects
@@ -390,7 +398,7 @@ class PurePath(pathlib.PurePath, metaclass=PurePathType):  # type: ignore[misc]
         self: PurePath = self  # type: ignore[] # noqa: PLW0127
         return self.with_name(stem + self.suffix)  # type: ignore[return-value]
 
-    def endswith(self, text: str | tuple[str, ...], case_sensitive: bool = False) -> bool:  # type: ignore[override]
+    def endswith(self, text: str | tuple[str, ...], *, case_sensitive: bool = False) -> bool:  # type: ignore[override]
         """Checks if string ends with the specified str or tuple of strings.
 
         Args:
@@ -433,15 +441,12 @@ class PureWindowsPath(PurePath, pathlib.PureWindowsPath):  # type: ignore[misc]
 class Path(PurePath, pathlib.Path):  # type: ignore[misc]
     def __new__(
         cls,
-        *args: PathElem,
+        *args,
         **kwargs
     ) -> Self:
-        if cls.__base__ in {PosixPath, WindowsPath}:  # check for classes inheriting us (e.g. CaseAwarePath)
-            return super().__new__(cls, *args, **kwargs)
-        if cls is not Path:
-            return super().__new__(cls, *args, **kwargs)
-        return WindowsPath(*args, **kwargs) if os.name == "nt" else PosixPath(*args, **kwargs)  # type: ignore[reportReturnType]
-
+        if cls is Path:
+            cls = WindowsPath if os.name == "nt" else PosixPath
+        return super().__new__(cls, *cls.parse_args(args), **kwargs)  # type: ignore[reportReturnType]
     # Safe rglob operation
     def safe_rglob(
         self,
@@ -450,7 +455,7 @@ class Path(PurePath, pathlib.Path):  # type: ignore[misc]
         try:
             iterator: Generator[Self, Any, None] = self.rglob(pattern)
         except Exception as e:  # noqa: BLE001
-            print(format_exception_with_variables(e, message="This exception has been suppressed and is only relevant for debug purposes."))
+            #print(format_exception_with_variables(e, message="This exception has been suppressed and is only relevant for debug purposes."))
             return
         else:
             while True:
@@ -459,7 +464,7 @@ class Path(PurePath, pathlib.Path):  # type: ignore[misc]
                 except StopIteration:  # noqa: PERF203
                     break  # StopIteration means there are no more files to iterate over
                 except Exception as e:  # noqa: BLE001
-                    print(format_exception_with_variables(e, message="This exception has been suppressed and is only relevant for debug purposes."))
+                    #print(format_exception_with_variables(e, message="This exception has been suppressed and is only relevant for debug purposes."))
                     continue  # Ignore the file that caused an exception and move to the next
 
     # Safe iterdir operation
@@ -476,7 +481,7 @@ class Path(PurePath, pathlib.Path):  # type: ignore[misc]
                 except StopIteration:  # noqa: PERF203
                     break  # StopIteration means there are no more files to iterate over
                 except Exception as e:  # noqa: BLE001
-                    print(format_exception_with_variables(e, message="This exception has been suppressed and is only relevant for debug purposes."))
+                    #print(format_exception_with_variables(e, message="This exception has been suppressed and is only relevant for debug purposes."))
                     continue  # Ignore the file that caused an exception and move to the next
 
     # Safe is_dir operation
@@ -485,7 +490,7 @@ class Path(PurePath, pathlib.Path):  # type: ignore[misc]
         try:
             check = self.is_dir()
         except (OSError, ValueError) as e:
-            print(format_exception_with_variables(e, message="This exception has been suppressed and is only relevant for debug purposes."))
+            #print(format_exception_with_variables(e, message="This exception has been suppressed and is only relevant for debug purposes."))
             return None
         else:
             return check
@@ -496,7 +501,7 @@ class Path(PurePath, pathlib.Path):  # type: ignore[misc]
         try:
             check = self.is_file()
         except (OSError, ValueError) as e:
-            print(format_exception_with_variables(e, message="This exception has been suppressed and is only relevant for debug purposes."))
+            #print(format_exception_with_variables(e, message="This exception has been suppressed and is only relevant for debug purposes."))
             return None
         else:
             return check
@@ -507,7 +512,7 @@ class Path(PurePath, pathlib.Path):  # type: ignore[misc]
         try:
             check = self.exists()
         except (OSError, ValueError) as e:
-            print(format_exception_with_variables(e, message="This exception has been suppressed and is only relevant for debug purposes."))
+            #print(format_exception_with_variables(e, message="This exception has been suppressed and is only relevant for debug purposes."))
             return None
         else:
             return check

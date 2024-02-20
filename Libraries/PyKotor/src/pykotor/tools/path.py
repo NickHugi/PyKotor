@@ -76,9 +76,18 @@ def simple_wrapper(fn_name: str, wrapped_class_type: type) -> Callable[..., Any]
             if (
                 not hasattr(arg, "__bases__")
                 and hasattr(arg, "__fspath__")
-                and not pathlib.Path(arg).exists()
+                and arg.__class__ is not CaseAwarePath
             ):
-                return CaseAwarePath.get_case_sensitive_path(arg)
+                pathlib_path_obj = pathlib.Path(arg)
+                new_cls = arg.__class__
+                if (
+                    pathlib_path_obj.absolute()
+                    and not pathlib_path_obj.exists()
+                ):
+                    instance = CaseAwarePath.get_case_sensitive_path(arg)
+                    if arg.__class__ in CaseAwarePath.__bases__ and arg.__class is not object:
+                        return new_cls(instance)
+                    return instance
             return arg
 
         # Parse `self` if it meets the condition
@@ -134,6 +143,7 @@ def create_case_insensitive_pathlib_class(cls: type):  # TODO: move into CaseAwa
         "__init__",
         "__fspath__",
         "__truediv__",
+        "_fspath_str",
         "_init",
         "__new__",
         "pathify",
@@ -152,11 +162,7 @@ def create_case_insensitive_pathlib_class(cls: type):  # TODO: move into CaseAwa
  # TODO: Move to pykotor.common
 class CaseAwarePath(InternalWindowsPath if os.name == "nt" else InternalPosixPath):  # type: ignore[misc]
     """A class capable of resolving case-sensitivity in a path. Absolutely essential for working with KOTOR files on Unix filesystems."""
-    def resolve(self, strict=False):  # noqa: FBT002
-        if not pathlib.Path(self).exists():
-            new_path = self.get_case_sensitive_path(self)
-            return super(CaseAwarePath, new_path).resolve(strict)
-        return super().resolve(strict)
+    __slots__ = ("_tail_cached",)
 
     @staticmethod
     def extract_absolute_prefix(relative_path: InternalPath, absolute_path: InternalPath) -> tuple[str, ...]:
