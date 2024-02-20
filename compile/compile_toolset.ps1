@@ -84,8 +84,6 @@ if ((Get-OS) -eq "Mac") {
             Write-Host "Initializing pacman keyring..."
             sudo pacman-key --init
             sudo pacman-key --populate archlinux
-            Write-Host "Refreshing keys..."
-            sudo pacman-key --refresh-keys
             sudo pacman -Sy archlinux-keyring --noconfirm
             sudo pacman -Syu --noconfirm
             $command = "sudo pacman -Syu --noconfirm && sudo pacman -S mesa libxcb qt5-base qt5-wayland xcb-util-wm xcb-util-keysyms xcb-util-image xcb-util-renderutil python-opengl libxcomposite gtk3 atk mpdecimal python-pyqt5 qt5-base qt5-multimedia qt5-svg pulseaudio pulseaudio-alsa gstreamer mesa libglvnd ttf-dejavu fontconfig gst-plugins-base gst-plugins-good gst-plugins-bad gst-plugins-ugly --noconfirm"
