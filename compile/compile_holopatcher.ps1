@@ -15,7 +15,7 @@ Write-Host "Initializing python virtual environment..."
 # Execute the Python code using the specified interpreter
 
 $output = & $pythonExePath -c "import tkinter; print('Tkinter is available')" 2>&1
-if ($output -is [System.Management.Automation.ErrorRecord]) {
+if ($output -match "ModuleNotFoundError" -or $output -is [System.Management.Automation.ErrorRecord]) {
     Write-Host "Tkinter is not available for $($pythonExePath)"
     $venvPath = ""
     if ($null -ne $env:VIRTUAL_ENV) {

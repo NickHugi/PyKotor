@@ -16,8 +16,8 @@ import tkinter as tk
 import traceback
 import webbrowser
 
-from argparse import ArgumentParser, Namespace
-from datetime import datetime, timedelta, timezone
+from argparse import ArgumentParser
+from datetime import datetime, timezone
 from enum import IntEnum
 from threading import Event, Thread
 from tkinter import (
@@ -59,7 +59,9 @@ from utility.system.path import Path
 from utility.tkinter.tooltip import ToolTip
 
 if TYPE_CHECKING:
+    from argparse import Namespace
     from collections.abc import Callable
+    from datetime import timedelta
     from types import TracebackType
 
     from pykotor.tslpatcher.logger import PatchLog
