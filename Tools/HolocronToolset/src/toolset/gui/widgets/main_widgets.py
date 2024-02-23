@@ -59,7 +59,7 @@ class ResourceList(MainWindowList):
         """
         super().__init__(parent)
 
-        from toolset.uic.widgets.resource_list import Ui_Form
+        from toolset.uic.widgets.resource_list import Ui_Form  # noqa: PLC0415  # pylint: disable=C0415
         self.ui = Ui_Form()
         self.ui.setupUi(self)
         self.setupSignals()
@@ -201,6 +201,7 @@ class ResourceList(MainWindowList):
             if resource.restype().contents == "gff":
                 def open1():
                     return self.requestOpenResource.emit(resources, False)
+
                 def open2():
                     return self.requestOpenResource.emit(resources, True)
                 menu.addAction("Open").triggered.connect(open2)
@@ -294,7 +295,7 @@ class TextureList(MainWindowList):
     def __init__(self, parent: QWidget):
         super().__init__(parent)
 
-        from toolset.uic.widgets.texture_list import Ui_Form
+        from toolset.uic.widgets.texture_list import Ui_Form  # noqa: PLC0415  # pylint: disable=C0415
         self.ui = Ui_Form()
         self.ui.setupUi(self)
         self.setupSignals()
@@ -455,8 +456,12 @@ class TextureList(MainWindowList):
             self._taskQueue.put(task)
             item.setData(True, QtCore.Qt.UserRole)
 
-    def onIconUpdate(self, item, icon):
-        try:
+    def onIconUpdate(
+        self,
+        item: QStandardItem,
+        icon,
+    ):
+        try:  # FIXME: there's a race condition happening somewhere, causing the item to have previously been deleted.
             item.setIcon(icon)
         except RuntimeError as e:
             print(format_exception_with_variables(e, message="This exception has been suppressed."))
@@ -464,7 +469,7 @@ class TextureList(MainWindowList):
     def onResourceDoubleClicked(self):
         self.requestOpenResource.emit(self.selectedResources(), None)
 
-    def resizeEvent(self, a0: QResizeEvent):
+    def resizeEvent(self, a0: QResizeEvent):  # pylint: disable=W0613
         # Trigger the scroll slot method - this will cause any newly visible icons to load.
         self.onTextureListScrolled()
 
