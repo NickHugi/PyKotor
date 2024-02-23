@@ -317,7 +317,7 @@ function Get-Python-Version {
 }
 
 $minVersion = [Version]"3.8.0"
-$maxVersion = [Version]"3.12.0"
+$maxVersion = [Version]"3.12"
 $recommendedVersion = [Version]"3.8.10"
 $lessThanVersion = [Version]"3.9"
 
