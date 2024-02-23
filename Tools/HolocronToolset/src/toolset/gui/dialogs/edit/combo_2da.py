@@ -12,7 +12,7 @@ class ModdedValueSpinboxDialog(QDialog):
     def __init__(self, parent: QWidget):
         super().__init__(parent)
 
-        from toolset.uic.widgets.modded_value_spinbox import Ui_Dialog
+        from toolset.uic.widgets.modded_value_spinbox import Ui_Dialog  # pylint: disable=C0415  # noqa: PLC0415
         self.ui = Ui_Dialog()
         self.ui.setupUi(self)
 

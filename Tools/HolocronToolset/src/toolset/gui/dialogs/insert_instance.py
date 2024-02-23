@@ -58,7 +58,7 @@ class InsertInstanceDialog(QDialog):
         self.data: bytes = b""
         self.filepath: Path | None = None
 
-        from toolset.uic.dialogs.insert_instance import Ui_Dialog
+        from toolset.uic.dialogs.insert_instance import Ui_Dialog  # pylint: disable=C0415  # noqa: PLC0415
 
         self.ui = Ui_Dialog()
         self.ui.setupUi(self)

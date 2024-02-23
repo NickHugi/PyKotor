@@ -114,7 +114,7 @@ def format_var_str(
         val_str = str(val)
         if len(val_str) > max_length:
             val_str = f"{val_str[:max_length]}...<truncated>"
-    except Exception as e:  # noqa: BLE001
+    except Exception as e:  # pylint: disable=W0718  # noqa: BLE001
         val_str = unique_sentinel
         exc = e
 
@@ -122,7 +122,7 @@ def format_var_str(
         val_repr = repr(val)
         if len(val_repr) > max_length:
             val_repr = f"{val_repr[:max_length]}...<truncated>"
-    except Exception:  # noqa: BLE001
+    except Exception:  # pylint: disable=W0718  # noqa: BLE001
         val_repr = unique_sentinel
 
     display_value: str | object = val_repr
@@ -173,7 +173,7 @@ def format_exception_with_variables(
     if not isinstance(tb, types.TracebackType):
         try:
             raise value  # noqa: TRY301
-        except BaseException as e:  # noqa: BLE001
+        except BaseException as e:  # pylint: disable=W0718  # noqa: BLE001
             tb = e.__traceback__  # Now we have the traceback object
         if tb is None:
             msg = f"Could not determine traceback from {value}"

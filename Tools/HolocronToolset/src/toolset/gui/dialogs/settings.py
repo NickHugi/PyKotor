@@ -29,7 +29,7 @@ class SettingsDialog(QDialog):
 
         self.installationEdited: bool = False
 
-        from toolset.uic.dialogs import settings
+        from toolset.uic.dialogs import settings  # pylint: disable=C0415  # noqa: PLC0415
 
         self.ui = settings.Ui_Dialog()
         self.ui.setupUi(self)

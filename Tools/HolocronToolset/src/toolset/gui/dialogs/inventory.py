@@ -85,7 +85,7 @@ class InventoryEditor(QDialog):
         """
         super().__init__(parent)
 
-        from toolset.uic.dialogs.inventory import Ui_Dialog
+        from toolset.uic.dialogs.inventory import Ui_Dialog  # pylint: disable=C0415  # noqa: PLC0415
         self.ui = Ui_Dialog()
         self.ui.setupUi(self)
 
@@ -823,7 +823,7 @@ class ItemBuilderWorker(QThread):
             uti: UTI | None = None
             try:  # FIXME
                 uti = read_uti(result.data)
-            except Exception as e:  # noqa: BLE001
+            except Exception as e:  # pylint: disable=W0718  # noqa: BLE001
                 print(format_exception_with_variables(e, message="This exception has been suppressed but needs to be fixed."))
             else:
                 self.utiLoaded.emit(uti, result)

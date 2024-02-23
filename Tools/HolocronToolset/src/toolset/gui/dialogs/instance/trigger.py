@@ -19,7 +19,7 @@ class TriggerDialog(QDialog):
     def __init__(self, parent: QWidget, trigger: GITTrigger, installation: HTInstallation):
         super().__init__(parent)
 
-        from toolset.uic.dialogs.instance.trigger import Ui_Dialog
+        from toolset.uic.dialogs.instance.trigger import Ui_Dialog  # pylint: disable=C0415  # noqa: PLC0415
 
         self.ui = Ui_Dialog()
         self.ui.setupUi(self)

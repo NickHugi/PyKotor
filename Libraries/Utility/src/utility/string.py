@@ -203,7 +203,7 @@ def striprtf(text) -> str:  # noqa: C901, PLR0915, PLR0912
 def is_string_like(obj) -> bool:  # sourcery skip: use-fstring-for-concatenation
     try:
         _ = obj + ""
-    except Exception:  # noqa: BLE001
+    except Exception:  # pylint: disable=W0718  # noqa: BLE001
         return False
     else:
         return True

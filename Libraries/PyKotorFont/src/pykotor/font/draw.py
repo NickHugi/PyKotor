@@ -44,7 +44,6 @@ def calculate_character_metrics(
     return baseline_height, max_underhang_height, max_char_height
 
 
-
 def write_bitmap_fonts(
     target: os.PathLike | str,
     font_path: os.PathLike | str,

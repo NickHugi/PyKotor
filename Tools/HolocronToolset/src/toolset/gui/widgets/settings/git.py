@@ -35,7 +35,7 @@ class GITWidget(SettingsWidget):
 
         self.settings = GITSettings()
 
-        from toolset.uic.widgets.settings.git import Ui_Form
+        from toolset.uic.widgets.settings.git import Ui_Form  # noqa: PLC0415  # pylint: disable=C0415
         self.ui = Ui_Form()
         self.ui.setupUi(self)
 

@@ -6,9 +6,7 @@ from PyQt5 import QtCore
 from PyQt5.QtCore import QThread
 from PyQt5.QtWidgets import QDialog, QLabel, QMessageBox, QProgressBar, QVBoxLayout
 
-from toolset.__main__ import is_frozen
 from utility.error_handling import format_exception_with_variables, universal_simplify_exception
-from utility.misc import is_debug_mode
 from utility.system.path import Path
 
 if TYPE_CHECKING:
@@ -115,7 +113,7 @@ class AsyncWorker(QThread):
     def run(self):
         try:
             self.successful.emit(self._task())
-        except Exception as e:  # noqa: BLE001
+        except Exception as e:  # pylint: disable=W0718  # noqa: BLE001
             self.failed.emit(e)
 
 
@@ -204,7 +202,7 @@ class AsyncBatchLoader(QDialog):
         with Path("errorlog.txt").open("a", encoding="utf-8") as file:
             try:
                 file.writelines(format_exception_with_variables(error))
-            except Exception:  # noqa: BLE001
+            except Exception:  # pylint: disable=W0718  # noqa: BLE001
                 file.writelines(str(error))
 
     def _onAllCompleted(self):
@@ -246,7 +244,7 @@ class AsyncBatchWorker(QThread):
             try:
                 result = task()
                 self.successful.emit(result)
-            except Exception as e:  # noqa: PERF203, BLE001
+            except Exception as e:  # pylint: disable=W0718  # noqa: PERF203, BLE001
                 self.failed.emit(e)
                 if self._cascade:
                     break

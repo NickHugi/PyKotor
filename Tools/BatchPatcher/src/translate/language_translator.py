@@ -32,7 +32,7 @@ argos_import_success = True
 try:
     import argostranslate.package
     import argostranslate.translate
-except Exception:  # noqa: BLE001
+except Exception:  # pylint: disable=W0718  # noqa: BLE001
     argos_import_success = False
 try:
     import deep_translator  # type: ignore[import-not-found, import-untyped]
@@ -131,7 +131,6 @@ class LibreFallbackTranslator:
 
     def __call__(self):
         return
-
 
 
 # Function to convert numerals
@@ -520,7 +519,6 @@ class Translator:
             print(f"Cannot translate - could not find bt47 lang code for {self.to_lang.name}. returning original text.")
             return text
 
-
         # Function to chunk the text into segments with a maximum of 500 characters
         def chunk_text(text: str, size) -> list[str]:
             """Splits a text into chunks of given size.
@@ -654,7 +652,7 @@ class Translator:
         except MinimumLengthError:
             print(f"Using a fallback translator because {self.translation_option.name} does not support this minimum length of text to translate.")
             minimum_length_failed_translate_option = self.translation_option
-        except Exception as e:  # noqa: BLE001
+        except Exception as e:  # pylint: disable=W0718  # noqa: BLE001
             # Log the exception, proceed to the next translation option
             print(f"Translation using preferred translator '{self.translation_option.name}' failed: {e!r}")
 
@@ -691,7 +689,7 @@ class Translator:
                 )
                 if minimum_length_failed_translate_option is None:
                     minimum_length_failed_translate_option = option
-            except Exception as e:  # noqa: BLE001
+            except Exception as e:  # pylint: disable=W0718  # noqa: BLE001
                 # Log the exception, proceed to the next translation option
                 print(f"Translation using '{option.name}' failed: {e!r}")
                 print(traceback.format_exc())

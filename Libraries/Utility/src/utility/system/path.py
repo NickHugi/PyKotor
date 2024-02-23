@@ -454,7 +454,7 @@ class Path(PurePath, pathlib.Path):  # type: ignore[misc]
     ) -> Generator[Self, Any, None]:
         try:
             iterator: Generator[Self, Any, None] = self.rglob(pattern)
-        except Exception as e:  # noqa: BLE001
+        except Exception as e:  # pylint: disable=W0718  # noqa: BLE001
             #print(format_exception_with_variables(e, message="This exception has been suppressed and is only relevant for debug purposes."))
             return
         else:
@@ -463,7 +463,7 @@ class Path(PurePath, pathlib.Path):  # type: ignore[misc]
                     yield next(iterator)
                 except StopIteration:  # noqa: PERF203
                     break  # StopIteration means there are no more files to iterate over
-                except Exception as e:  # noqa: BLE001
+                except Exception as e:  # pylint: disable=W0718  # noqa: BLE001
                     #print(format_exception_with_variables(e, message="This exception has been suppressed and is only relevant for debug purposes."))
                     continue  # Ignore the file that caused an exception and move to the next
 
@@ -471,7 +471,7 @@ class Path(PurePath, pathlib.Path):  # type: ignore[misc]
     def safe_iterdir(self) -> Generator[Self, Any, None]:
         try:
             iterator: Generator[Self, Any, None] = self.iterdir()
-        except Exception as e:  # noqa: BLE001
+        except Exception as e:  # pylint: disable=W0718  # noqa: BLE001
             print(format_exception_with_variables(e, message="This exception has been suppressed and is only relevant for debug purposes."))
             return
         else:
@@ -480,7 +480,7 @@ class Path(PurePath, pathlib.Path):  # type: ignore[misc]
                     yield next(iterator)
                 except StopIteration:  # noqa: PERF203
                     break  # StopIteration means there are no more files to iterate over
-                except Exception as e:  # noqa: BLE001
+                except Exception as e:  # pylint: disable=W0718  # noqa: BLE001
                     #print(format_exception_with_variables(e, message="This exception has been suppressed and is only relevant for debug purposes."))
                     continue  # Ignore the file that caused an exception and move to the next
 
@@ -540,7 +540,6 @@ class Path(PurePath, pathlib.Path):  # type: ignore[misc]
         if execute_permission:
             permission_value += 0o1  # Add 1 for execute permission (001 in binary)
         return permission_value
-
 
     def has_access(
         self,

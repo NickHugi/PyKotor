@@ -58,7 +58,7 @@ class UTPEditor(Editor):
         self._placeables2DA = installation.htGetCache2DA("placeables")
         self._utp = UTP()
 
-        from toolset.uic.editors.utp import Ui_MainWindow
+        from toolset.uic.editors.utp import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
         self._setupMenus()

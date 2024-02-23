@@ -40,7 +40,7 @@ class TXTEditor(Editor):
 
         self._wordWrap: bool = False
 
-        from toolset.uic.editors.txt import Ui_MainWindow
+        from toolset.uic.editors.txt import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
         self._setupMenus()

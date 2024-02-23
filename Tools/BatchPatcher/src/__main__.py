@@ -42,7 +42,6 @@ if getattr(sys, "frozen", False) is False:
         add_sys_path(utility_path.parent)
 
 
-
 from pykotor.common.language import Language, LocalizedString
 from pykotor.common.stream import BinaryReader, BinaryWriter
 from pykotor.extract.capsule import Capsule
@@ -637,7 +636,7 @@ def patch_resource(resource: FileResource) -> GFF | TPC | None:
                         translated_text = fix_encoding(translated_text, SCRIPT_GLOBALS.pytranslator.to_lang.get_encoding())
                         tlk.replace(strref, translated_text)
                         log_output(f"#{strref} Translated {original_text} --> {translated_text}")
-                except Exception as exc:  # noqa: BLE001
+                except Exception as exc:  # pylint: disable=W0718  # noqa: BLE001
                     log_output(format_exception_with_variables(e, message=f"tlk strref {strref} generated an exception: {universal_simplify_exception(exc)}"))
                     print(format_exception_with_variables(exc))
 
@@ -646,7 +645,7 @@ def patch_resource(resource: FileResource) -> GFF | TPC | None:
         try:
             log_output(f"Loading TLK '{resource.filepath()}'")
             tlk = read_tlk(resource.data())
-        except Exception as e:  # noqa: BLE001
+        except Exception as e:  # pylint: disable=W0718  # noqa: BLE001
             log_output(format_exception_with_variables(e, message=f"[Error] loading TLK '{resource.identifier()}' at '{resource.filepath()}'!"))
             print(format_exception_with_variables(e))
             return None
@@ -703,7 +702,7 @@ def patch_resource(resource: FileResource) -> GFF | TPC | None:
                         gff.root.set_uint8("Skippable", 0)
             if made_change or result_made_change:
                 return gff
-        except Exception as e:  # noqa: BLE001
+        except Exception as e:  # pylint: disable=W0718  # noqa: BLE001
             log_output(format_exception_with_variables(e, message=f"[Error] loading GFF '{resource._path_ident_obj}'!"))
             # raise
             return None
@@ -915,7 +914,6 @@ def patch_install(install_path: os.PathLike | str):
     #    log_output(f"Patching {new_rim_filename} in the 'rims' folder ")
     #    write_rim(new_rim, filepath.parent / new_rim_filename)
 
-
     log_output_with_separator("Patching Override...")
     override_path = k_install.override_path()
     override_path.mkdir(exist_ok=True, parents=True)
@@ -957,7 +955,7 @@ def execute_patchloop_thread():
         SCRIPT_GLOBALS.install_running = True
         do_main_patchloop()
         SCRIPT_GLOBALS.install_running = False
-    except Exception as e:  # noqa: BLE001
+    except Exception as e:  # pylint: disable=W0718  # noqa: BLE001
         log_output(format_exception_with_variables(e, message="Unhandled exception during the patching process."))
         SCRIPT_GLOBALS.install_running = False
         return messagebox.showerror("Error", f"An error occurred during patching\n{e!r}")
@@ -1388,7 +1386,7 @@ class KOTORPatchingToolUI:
 
             SCRIPT_GLOBALS.install_thread = Thread(target=execute_patchloop_thread)
             SCRIPT_GLOBALS.install_thread.start()
-        except Exception as e:  # noqa: BLE001
+        except Exception as e:  # pylint: disable=W0718  # noqa: BLE001
             messagebox.showerror("Unhandled exception", str(universal_simplify_exception(e)))
             SCRIPT_GLOBALS.install_running = False
             self.install_button.config(state=tk.DISABLED)
@@ -1399,6 +1397,6 @@ if __name__ == "__main__":
         root = tk.Tk()
         APP = KOTORPatchingToolUI(root)
         root.mainloop()
-    except Exception:  # noqa: BLE001, RUF100
+    except Exception:  # pylint: disable=W0718  # noqa: BLE001, RUF100
         log_output(traceback.format_exc())
         raise

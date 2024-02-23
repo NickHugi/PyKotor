@@ -40,7 +40,6 @@ KOTOR_REG_PATHS = {
 }
 
 
-
 # amazon's k1 reg key can be found using the below code. Doesn't store it in HKLM for some reason.
 def find_software_key(software_name: str) -> str | None:
     import winreg
@@ -210,10 +209,10 @@ def create_registry_path(hive, path):  # sourcery skip: raise-from-previous-erro
                 winreg.CreateKey(hive, current_path)
             except PermissionError:
                 raise PermissionError("Permission denied. Administrator privileges required.")  # noqa: B904, TRY003, EM101
-            except Exception as e:  # noqa: BLE001
+            except Exception as e:  # pylint: disable=W0718  # noqa: BLE001
                 # sourcery skip: raise-specific-error
                 raise Exception(f"Failed to create registry key: {current_path}. Error: {e}")  # noqa: TRY002, TRY003, EM102, B904
-    except Exception as e:  # noqa: BLE001
+    except Exception as e:  # pylint: disable=W0718  # noqa: BLE001
         print(format_exception_with_variables(e))
 
 
@@ -244,7 +243,7 @@ def set_registry_key_value(full_key_path, value_name, value_data):
         # Create the registry path
         try:
             create_registry_path(hive, sub_key)
-        except Exception as e:  # noqa: BLE001
+        except Exception as e:  # pylint: disable=W0718  # noqa: BLE001
             print(format_exception_with_variables(e))
             return
         # Open or create the key at the specified path
@@ -255,7 +254,7 @@ def set_registry_key_value(full_key_path, value_name, value_data):
     except PermissionError as e:
         print(f"Error: Permission denied creating regkey {full_key_path}")
         print(e, "\n", repr(e))
-    except Exception as e:  # noqa: BLE001
+    except Exception as e:  # pylint: disable=W0718  # noqa: BLE001
         print(f"An unexpected error occurred: {e}")
         print(format_exception_with_variables(e))
 

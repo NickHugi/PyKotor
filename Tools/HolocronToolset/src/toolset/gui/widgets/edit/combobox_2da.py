@@ -44,7 +44,7 @@ class ComboBox2DA(QComboBox):
                 new_text = text.replace("TRAP_", "")
                 new_text = text.replace("GENDER_", "")
                 new_text = text.replace("_", " ")
-            if not ignoreBlanks or (ignoreBlanks and new_text):
+            if not ignoreBlanks or new_text:
                 super().addItem(new_text, index)
 
         self.enableSort() if self._sortAlphabetically else self.disableSort()
@@ -77,7 +77,7 @@ class ComboBox2DA(QComboBox):
         Args:
         ----
             rowIn2DA: The row index to select.
-        """  # noqa: D205
+        """
         index = None
         for i in range(self.count()):
             if self.itemData(i) == rowIn2DA:

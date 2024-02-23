@@ -119,7 +119,7 @@ class ToolWindow(QMainWindow):
         self.settings: GlobalSettings = GlobalSettings()
         self.installations: dict[str, HTInstallation] = {}
 
-        from toolset.uic.windows.main import Ui_MainWindow
+        from toolset.uic.windows.main import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
 
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
@@ -489,7 +489,7 @@ class ToolWindow(QMainWindow):
         """
         try:
             self._check_toolset_update(silent)
-        except Exception as e:  # noqa: BLE001
+        except Exception as e:  # pylint: disable=W0718  # noqa: BLE001
             if not silent:
                 etype, msg = universal_simplify_exception(e)
                 QMessageBox(
@@ -700,7 +700,6 @@ class ToolWindow(QMainWindow):
 
                 assert_with_variable_trace(isinstance(self.active, HTInstallation))
                 assert isinstance(self.active, HTInstallation)  # noqa: S101
-
 
                 print("Loading installation resources into UI...")
                 self.ui.coreWidget.setResources(self.active.chitin_resources())

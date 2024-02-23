@@ -267,7 +267,6 @@ class Module:  # noqa: PLR0904
         for module_resource in self.resources.values():
             module_resource.activate()
 
-
     def add_locations(
         self,
         resname: str,
@@ -300,10 +299,8 @@ class Module:  # noqa: PLR0904
 
         self.resources[filename].add_locations(locations)
 
-
     def installation(self) -> Installation:
         return self._installation
-
 
     def resource(
         self,
@@ -322,7 +319,6 @@ class Module:  # noqa: PLR0904
             ModuleResource | None: The resource with the given name and type, or None if it does not exist.
         """
         return self.resources.get(f"{resname}.{restype.extension}", None)
-
 
     def layout(self) -> ModuleResource[LYT] | None:
         """Returns the LYT layout resource with a matching ID if it exists.
@@ -351,7 +347,6 @@ class Module:  # noqa: PLR0904
             None,
         )
 
-
     def vis(self) -> ModuleResource[VIS] | None:
         """Finds the VIS resource with matching ID.
 
@@ -376,7 +371,6 @@ class Module:  # noqa: PLR0904
             ),
             None,
         )
-
 
     def are(
         self,
@@ -406,7 +400,6 @@ class Module:  # noqa: PLR0904
             None,
         )
 
-
     def git(
         self,
     ) -> ModuleResource[GIT] | None:
@@ -435,7 +428,6 @@ class Module:  # noqa: PLR0904
             None,
         )
 
-
     def pth(
         self,
     ) -> ModuleResource[PTH] | None:
@@ -462,7 +454,6 @@ class Module:  # noqa: PLR0904
             ),
             None,
         )
-
 
     def info(
         self,
@@ -492,7 +483,6 @@ class Module:  # noqa: PLR0904
             ),
             None,
         )
-
 
     def creature(
         self,
@@ -524,7 +514,6 @@ class Module:  # noqa: PLR0904
             None,
         )
 
-
     def creatures(
         self,
     ) -> list[ModuleResource[UTC]]:
@@ -545,7 +534,6 @@ class Module:  # noqa: PLR0904
             - Add matching resources to the return list.
         """
         return [resource for resource in self.resources.values() if resource.restype() == ResourceType.UTC]
-
 
     def placeable(
         self,
@@ -577,7 +565,6 @@ class Module:  # noqa: PLR0904
             None,
         )
 
-
     def placeables(
         self,
     ) -> list[ModuleResource[UTP]]:
@@ -598,7 +585,6 @@ class Module:  # noqa: PLR0904
             - Add matching resources to the return list.
         """
         return [resource for resource in self.resources.values() if resource.restype() == ResourceType.UTP]
-
 
     def door(
         self,
@@ -630,7 +616,6 @@ class Module:  # noqa: PLR0904
             None,
         )
 
-
     def doors(
         self,
     ) -> list[ModuleResource[UTD]]:
@@ -651,7 +636,6 @@ class Module:  # noqa: PLR0904
             - Add matching resources to the return list.
         """
         return [resource for resource in self.resources.values() if resource.restype() == ResourceType.UTD]
-
 
     def item(
         self,
@@ -683,7 +667,6 @@ class Module:  # noqa: PLR0904
             None,
         )
 
-
     def items(
         self,
     ) -> list[ModuleResource[UTI]]:
@@ -705,7 +688,6 @@ class Module:  # noqa: PLR0904
             - Return the list of UTI resources.
         """
         return [resource for resource in self.resources.values() if resource.restype() == ResourceType.UTD]
-
 
     def encounter(
         self,
@@ -737,7 +719,6 @@ class Module:  # noqa: PLR0904
             None,
         )
 
-
     def encounters(
         self,
     ) -> list[ModuleResource[UTE]]:
@@ -759,7 +740,6 @@ class Module:  # noqa: PLR0904
             - Return the list of UTE resources.
         """
         return [resource for resource in self.resources.values() if resource.restype() == ResourceType.UTE]
-
 
     def store(self, resname: str) -> ModuleResource[UTM] | None:
         """Looks up a material (UTM) resource by the specified resname from this module and returns the resource data.
@@ -789,13 +769,11 @@ class Module:  # noqa: PLR0904
             None,
         )
 
-
     def stores(
         self,
     ) -> list[ModuleResource[UTM]]:
         """Returns a list of material (UTM) resources for this module."""
         return [resource for resource in self.resources.values() if resource.restype() == ResourceType.UTM]
-
 
     def trigger(
         self,
@@ -828,7 +806,6 @@ class Module:  # noqa: PLR0904
             None,
         )
 
-
     def triggers(
         self,
     ) -> list[ModuleResource[UTT]]:
@@ -850,7 +827,6 @@ class Module:  # noqa: PLR0904
             - Return the list of UTT resources.
         """
         return [resource for resource in self.resources.values() if resource.restype() == ResourceType.UTT]
-
 
     def waypoint(
         self,
@@ -883,7 +859,6 @@ class Module:  # noqa: PLR0904
             None,
         )
 
-
     def waypoints(
         self,
     ) -> list[ModuleResource[UTW]]:
@@ -901,7 +876,6 @@ class Module:  # noqa: PLR0904
             - Return list of UTW resources.
         """
         return [resource for resource in self.resources.values() if resource.restype() == ResourceType.UTW]
-
 
     def model(
         self,
@@ -933,7 +907,6 @@ class Module:  # noqa: PLR0904
             None,
         )
 
-
     def model_ext(
         self,
         resname: str,
@@ -963,7 +936,6 @@ class Module:  # noqa: PLR0904
             None,
         )
 
-
     def models(
         self,
     ) -> list[ModuleResource[MDL]]:
@@ -984,7 +956,6 @@ class Module:  # noqa: PLR0904
         """
         return [resource for resource in self.resources.values() if resource.restype() == ResourceType.MDL]
 
-
     def model_exts(
         self,
     ) -> list[ModuleResource]:
@@ -1004,7 +975,6 @@ class Module:  # noqa: PLR0904
             - Adds matching resources to the return list.
         """
         return [resource for resource in self.resources.values() if resource.restype() == ResourceType.MDX]
-
 
     def texture(
         self,
@@ -1038,7 +1008,6 @@ class Module:  # noqa: PLR0904
             None,
         )
 
-
     def textures(
         self,
     ) -> list[ModuleResource[MDL]]:
@@ -1060,7 +1029,6 @@ class Module:  # noqa: PLR0904
         """
         texture_types: list[ResourceType] = [ResourceType.TPC, ResourceType.TGA]
         return [resource for resource in self.resources.values() if resource.restype() in texture_types]
-
 
     def sound(
         self,
@@ -1092,7 +1060,6 @@ class Module:  # noqa: PLR0904
             None,
         )
 
-
     def sounds(
         self,
     ) -> list[ModuleResource[UTS]]:
@@ -1116,7 +1083,6 @@ class Module:  # noqa: PLR0904
         return [resource for resource in self.resources.values() if resource.restype() == ResourceType.UTS]
 
 
-
 class ModuleResource(Generic[T]):
     def __init__(self, resname: str, restype: ResourceType, installation: Installation):
         self._resname: str = resname
@@ -1127,14 +1093,11 @@ class ModuleResource(Generic[T]):
         self._locations: list[Path] = []
         self._identifier = ResourceIdentifier(resname, restype)
 
-
     def __eq__(self, other):
         return hash(self) == hash(other)
 
-
     def __hash__(self):
         return hash(self._identifier)
-
 
     def resname(self) -> str:
         """Returns the resource name.
@@ -1145,7 +1108,6 @@ class ModuleResource(Generic[T]):
         """
         return self._resname
 
-
     def restype(self) -> ResourceType:
         """Returns the type of resource stored.
 
@@ -1154,7 +1116,6 @@ class ModuleResource(Generic[T]):
             The resource type.
         """
         return self._restype
-
 
     def localized_name(self) -> str | None:
         # sourcery skip: assign-if-exp, reintroduce-else
@@ -1233,7 +1194,6 @@ class ModuleResource(Generic[T]):
 
         return BinaryReader.load_file(self._active)
 
-
     def resource(self) -> T | None:
         """Returns the cached resource object. If no object has been cached, then it will load the object.
 
@@ -1300,7 +1260,6 @@ class ModuleResource(Generic[T]):
 
         return self._resource_obj
 
-
     def add_locations(self, filepaths: list[Path]):
         """Adds a list of filepaths to the list of locations stored for the resource.
 
@@ -1314,12 +1273,10 @@ class ModuleResource(Generic[T]):
         if self._active is None and self._locations:
             self.activate(self._locations[0])
 
-
     def locations(
         self,
     ) -> list[Path]:
         return self._locations
-
 
     def activate(self, filepath: os.PathLike | str | None = None):
         """Sets the active file to the specified path. Calling this method will reset the loaded resource.
@@ -1344,17 +1301,14 @@ class ModuleResource(Generic[T]):
                 msg = f"The filepath '{self._active}' is not being tracked as a location for the resource."
                 raise ValueError(msg)
 
-
     def unload(self):
         """Clears the cached resource object from memory."""
         self._resource_obj = None
-
 
     def reload(self):
         """Reloads the resource object from the active location."""
         self._resource_obj = None
         self.resource()
-
 
     def active(self) -> Path:
         """Returns the filepath of the currently active file for the resource.
@@ -1368,7 +1322,6 @@ class ModuleResource(Generic[T]):
             raise ValueError(msg)
 
         return self._active
-
 
     def save(
         self,

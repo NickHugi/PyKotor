@@ -17,7 +17,6 @@ class PythReader:
         """
 
 
-
 class PythWriter:
     """Base class for all Pyth writers.
 

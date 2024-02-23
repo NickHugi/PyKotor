@@ -93,7 +93,7 @@ class IndoorMapBuilder(QMainWindow):
         self._map: IndoorMap = IndoorMap()
         self._filepath: str = ""
 
-        from toolset.uic.windows.indoor_builder import Ui_MainWindow
+        from toolset.uic.windows.indoor_builder import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
 
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
@@ -165,7 +165,8 @@ class IndoorMapBuilder(QMainWindow):
             self.ui.kitSelect.addItem(kit.name, kit)
 
     def _refreshWindowTitle(self):
-        if self._filepath == "":
+        assert self._installation is not None
+        if not self._filepath:
             self.setWindowTitle(f"{self._installation.name} - Map Builder")
         else:
             self.setWindowTitle(f"{self._filepath} - {self._installation.name} - Map Builder")
@@ -315,7 +316,7 @@ class IndoorMapBuilder(QMainWindow):
         elif QtCore.Qt.MiddleButton in buttons and QtCore.Qt.Key_Control in keys:
             # MMB + CTRL
             self.ui.mapRenderer.rotateCamera(delta.x / 50)
-        elif QtCore.Qt.LeftButton in buttons and QtCore.Qt.Key_Control not in keys:
+        elif QtCore.Qt.LeftButton in buttons:
             # LMB
             rooms: list[IndoorMapRoom] = self.ui.mapRenderer.selectedRooms()
             if not rooms:
@@ -960,7 +961,7 @@ class KitDownloader(QDialog):
     def __init__(self, parent: QWidget):
         super().__init__(parent)
 
-        from toolset.uic.dialogs.indoor_downloader import Ui_Dialog
+        from toolset.uic.dialogs.indoor_downloader import Ui_Dialog  # pylint: disable=C0415  # noqa: PLC0415
 
         self.ui = Ui_Dialog()
         self.ui.setupUi(self)
@@ -1048,7 +1049,12 @@ class KitDownloader(QDialog):
                 button.setText("Download Failed")
                 button.setEnabled(True)
 
-    def download_file(self, url_or_repo: str, local_path: os.PathLike | str, repo_path=None):
+    def download_file(
+        self,
+        url_or_repo: str,
+        local_path: os.PathLike | str,
+        repo_path: os.PathLike | str | None = None,
+    ):
         local_path = Path(local_path)
         local_path.parent.mkdir(parents=True, exist_ok=True)
 
@@ -1095,7 +1101,7 @@ class KitDownloader(QDialog):
             elif item["type"] == "dir":
                 self.download_directory(repo, item_path, local_path)
 
-    def _get_update_data(self, link):
+    def _get_update_data(self, link: str | bytes):
         req: requests.Response = requests.get(link, timeout=15)
         req.raise_for_status()
         return req.json()
@@ -1129,14 +1135,14 @@ class KitDownloader(QDialog):
                         print(msg)
                         return False
                     shutil.copy(src_kit_json_path, kits_path / this_kit_json_filename)
-            except Exception as original_exception:  # noqa: BLE001
+            except Exception as original_exception:  # pylint: disable=W0718  # noqa: BLE001
                 print(format_exception_with_variables(original_exception))
                 return False
             finally:
                 try:
                     if tempdir and Path(tempdir).safe_isdir():
                         shutil.rmtree(tempdir)
-                except Exception as exc:  # noqa: BLE001
+                except Exception as exc:  # pylint: disable=W0718  # noqa: BLE001
                     print(format_exception_with_variables(exc))
 
         if kits_zip_path.is_file():

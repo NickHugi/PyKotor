@@ -42,7 +42,7 @@ class UTEEditor(Editor):
         supported: list[ResourceType] = [ResourceType.UTE]
         super().__init__(parent, "Trigger Editor", "trigger", supported, supported, installation)
 
-        from toolset.uic.editors.ute import Ui_MainWindow
+        from toolset.uic.editors.ute import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
         self._setupMenus()

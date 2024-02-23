@@ -113,7 +113,6 @@ class TPCTGAReader(ResourceReader):
                 break
         return data
 
-
     def _process_non_rle_color_mapped(self, width: int, height: int, color_map: list[bytes]) -> bytearray:
         """Process non-RLE color-mapped data."""
         data = bytearray()

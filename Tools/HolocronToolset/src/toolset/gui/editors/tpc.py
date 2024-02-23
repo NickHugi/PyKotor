@@ -41,7 +41,7 @@ class TPCEditor(Editor):
         supported: list[ResourceType] = [ResourceType.TPC, ResourceType.TGA, ResourceType.JPG, ResourceType.PNG, ResourceType.BMP]
         super().__init__(parent, "Texture Viewer", "none", supported, supported, installation)
 
-        from toolset.uic.editors.tpc import Ui_MainWindow  # noqa: PLC0415
+        from toolset.uic.editors.tpc import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
 
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)

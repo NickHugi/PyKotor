@@ -26,7 +26,7 @@ class About(QDialog):
         """
         super().__init__(parent)
 
-        from toolset.uic.dialogs import about
+        from toolset.uic.dialogs import about  # pylint: disable=C0415  # noqa: PLC0415
         self.ui = about.Ui_Dialog()
         self.ui.setupUi(self)
 

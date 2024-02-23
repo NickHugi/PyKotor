@@ -36,7 +36,6 @@ class XHTMLWriter(PythWriter):
 
         return final
 
-
     def __init__(self, doc, target, cssClasses=True, pretty=False):
         self.document = doc
         self.target = target
@@ -46,7 +45,6 @@ class XHTMLWriter(PythWriter):
             document.List: self._list,
             document.Paragraph: self._paragraph
         }
-
 
     def go(self):
 
@@ -61,7 +59,6 @@ class XHTMLWriter(PythWriter):
         tag.render(self.target)
         return self.target
 
-
     def _paragraph(self, paragraph):
         p = Tag("p")
         for text in paragraph.content:
@@ -70,7 +67,6 @@ class XHTMLWriter(PythWriter):
         if self.pretty:
             return [_prettyBreak, p, _prettyBreak]
         return [p]
-
 
     def _list(self, lst):
         self.list_level += 1
@@ -90,7 +86,6 @@ class XHTMLWriter(PythWriter):
         self.list_level -= 1
 
         return [ul]
-
 
     def _text(self, text):
         if "url" in text.properties:
@@ -120,7 +115,6 @@ class XHTMLWriter(PythWriter):
         return tag
 
 
-
 _prettyBreak = object()
 
 
@@ -130,7 +124,6 @@ class Tag:
         self.tag = tag
         self.attrs = attrs or {}
         self.content = content or []
-
 
     def render(self, target):
 
@@ -151,16 +144,13 @@ class Tag:
         if self.tag is not None:
             target.write("</%s>" % self.tag)
 
-
     def attrString(self):
         return " ".join(
             f'{k}="{quoteAttr(v)}"'
             for (k, v) in self.attrs.items())
 
-
     def __repr__(self):
         return f"T({self.tag})[{self.content!r}]"
-
 
 
 def quoteText(text):

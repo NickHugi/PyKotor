@@ -135,11 +135,11 @@ def diff_data(
         gff2: gff.GFF | None = None
         try:
             gff1 = gff.read_gff(data1)
-        except Exception as e:  # noqa: BLE001
+        except Exception as e:  # pylint: disable=W0718  # noqa: BLE001
             return log_output(f"[Error] loading GFF {file1_rel.parent / where}!\n{universal_simplify_exception(e)}")  # type: ignore[func-returns-value]
         try:
             gff2 = gff.read_gff(data2)
-        except Exception as e:  # noqa: BLE001
+        except Exception as e:  # pylint: disable=W0718  # noqa: BLE001
             return log_output(f"[Error] loading GFF {file2_rel.parent / where}!\n{universal_simplify_exception(e)}")  # type: ignore[func-returns-value]
         if gff1 and not gff2:
             return log_output(f"GFF resource missing in memory:\t'{file1_rel.parent / where}'")  # type: ignore[func-returns-value]
@@ -157,7 +157,7 @@ def diff_data(
         twoda2: twoda.TwoDA | None = None
         try:
             twoda1 = twoda.read_2da(data1)
-        except Exception as e:  # noqa: BLE001
+        except Exception as e:  # pylint: disable=W0718  # noqa: BLE001
             if (
                 file1_rel.parent.name.lower() == "rims"
                 and file1_rel.name.lower() in {"global.rim", "miniglobal.rim"}
@@ -166,7 +166,7 @@ def diff_data(
             return log_output(f"Error loading 2DA {file1_rel.parent / where}!\n{universal_simplify_exception(e)}")  # type: ignore[func-returns-value]
         try:
             twoda2 = twoda.read_2da(data2)
-        except Exception as e:  # noqa: BLE001
+        except Exception as e:  # pylint: disable=W0718  # noqa: BLE001
             if (
                 file1_rel.parent.name.lower() == "rims"
                 and file1_rel.name.lower() in {"global.rim", "miniglobal.rim"}
@@ -193,12 +193,12 @@ def diff_data(
         try:
             log_output(f"Loading TLK '{file1_rel.parent / where}'")
             tlk1 = tlk.read_tlk(data1)
-        except Exception as e:  # noqa: BLE001
+        except Exception as e:  # pylint: disable=W0718  # noqa: BLE001
             return log_output(f"Error loading TLK {file1_rel.parent / where}!\n{universal_simplify_exception(e)}")  # type: ignore[func-returns-value]
         try:
             log_output(f"Loading TLK '{file2_rel.parent / where}'")
             tlk2 = tlk.read_tlk(data2)
-        except Exception as e:  # noqa: BLE001
+        except Exception as e:  # pylint: disable=W0718  # noqa: BLE001
             return log_output(f"Error loading TLK {file2_rel.parent / where}!\n{universal_simplify_exception(e)}")  # type: ignore[func-returns-value]
         if tlk1 and not tlk2:
             message = f"TLK resource missing in memory:\t'{file1_rel.parent / where}'"
@@ -219,11 +219,11 @@ def diff_data(
         lip2: lip.LIP | None = None
         try:
             lip1 = lip.read_lip(data1)
-        except Exception as e:  # noqa: BLE001
+        except Exception as e:  # pylint: disable=W0718  # noqa: BLE001
             return log_output(f"Error loading LIP {file1_rel.parent / where}!\n{universal_simplify_exception(e)}")  # type: ignore[func-returns-value]
         try:
             lip2 = lip.read_lip(data2)
-        except Exception as e:  # noqa: BLE001
+        except Exception as e:  # pylint: disable=W0718  # noqa: BLE001
             return log_output(f"Error loading LIP {file2_rel.parent / where}!\n{universal_simplify_exception(e)}")  # type: ignore[func-returns-value]
         if lip1 and not lip2:
             message = f"LIP resource missing in memory:\t'{file1_rel.parent / where}'"

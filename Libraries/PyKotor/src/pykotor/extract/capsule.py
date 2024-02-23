@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Iterator
+from typing import TYPE_CHECKING
 
 from pykotor.common.stream import BinaryReader
 from pykotor.extract.file import FileResource, ResourceIdentifier, ResourceResult
@@ -263,7 +263,6 @@ class Capsule:
 
         msg = f"File '{self._path}' must be a ERF/MOD/SAV/RIM capsule."
         raise NotImplementedError(msg)
-
 
     def add(
         self,

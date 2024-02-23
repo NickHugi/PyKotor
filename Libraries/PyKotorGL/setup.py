@@ -31,7 +31,6 @@ def main():
     if len(sys.argv) < 2:
         sys.argv.append("install")
 
-
     for key in ["authors", "readme"]:  # Remove keys that are not needed in setup()
         if key in project_metadata:
             project_metadata.pop(key)
@@ -44,7 +43,6 @@ def main():
         long_description_content_type=README["content-type"],
         include_dirs=HERE,
     )
-
 
 
 import contextlib

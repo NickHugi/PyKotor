@@ -97,7 +97,6 @@ class TalkTable:  # TODO: dialogf.tlk
             tlkdata = self._extract_common_tlk_data(reader, stringref)
             return ResRef(tlkdata.sound_resref)
 
-
     def _extract_common_tlk_data(
         self,
         reader: BinaryReader,

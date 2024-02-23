@@ -211,7 +211,6 @@ class TPC:
             # current_width = max(1, current_width // 2)
             # current_height = max(1, current_height // 2)
 
-
         self._texture_format = texture_format
         self._mipmaps = mipmaps
         self._width = width

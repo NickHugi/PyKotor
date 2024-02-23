@@ -268,7 +268,6 @@ class ExternalNCSCompiler(NCSCompiler):
 
         return stdout, stderr
 
-
     def decompile_script(
         self,
         source_file: os.PathLike | str,

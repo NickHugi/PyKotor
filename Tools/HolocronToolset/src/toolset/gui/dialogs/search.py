@@ -21,7 +21,7 @@ class FileSearcher(QDialog):
     def __init__(self, parent: QWidget, installations: dict[str, HTInstallation]):
         super().__init__(parent)
 
-        from toolset.uic.dialogs import search
+        from toolset.uic.dialogs import search  # pylint: disable=C0415  # noqa: PLC0415
         self.ui = search.Ui_Dialog()
         self.ui.setupUi(self)
 

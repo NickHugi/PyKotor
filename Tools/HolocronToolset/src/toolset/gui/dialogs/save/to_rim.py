@@ -19,7 +19,7 @@ class RimSaveDialog(QDialog):
     def __init__(self, parent: QWidget):
         super().__init__(parent)
 
-        from toolset.uic.dialogs import save_in_rim
+        from toolset.uic.dialogs import save_in_rim  # pylint: disable=C0415  # noqa: PLC0415
 
         self.ui = save_in_rim.Ui_Dialog()
         self.ui.setupUi(self)

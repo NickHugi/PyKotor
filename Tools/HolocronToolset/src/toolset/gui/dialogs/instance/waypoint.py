@@ -20,7 +20,7 @@ class WaypointDialog(QDialog):
     def __init__(self, parent: QWidget, waypoint: GITWaypoint, installation: HTInstallation):
         super().__init__(parent)
 
-        from toolset.uic.dialogs.instance.waypoint import Ui_Dialog
+        from toolset.uic.dialogs.instance.waypoint import Ui_Dialog  # pylint: disable=C0415  # noqa: PLC0415
 
         self.ui = Ui_Dialog()
         self.ui.setupUi(self)

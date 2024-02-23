@@ -73,7 +73,7 @@ class DLGEditor(Editor):
         supported: list[ResourceType] = [ResourceType.DLG]
         super().__init__(parent, "Dialog Editor", "dialog", supported, supported, installation)
 
-        from toolset.uic.editors.dlg import Ui_MainWindow
+        from toolset.uic.editors.dlg import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
         self._setupMenus()
@@ -399,7 +399,6 @@ class DLGEditor(Editor):
             HTInstallation.TwoDA_DIALOG_ANIMS,
         ]
         installation.htBatchCache2DA(required)
-
 
         if installation.tsl:
             self._setup_tsl_install_defs(installation)
@@ -748,7 +747,6 @@ class DLGEditor(Editor):
                 "Corrupted/blank audio file",
                 f"Could not load audio resource '{resname}'.",
             )
-
 
     def focusOnNode(self, link: DLGLink) -> QStandardItem:
         """Focuses the dialog tree on a specific link node.

@@ -27,7 +27,7 @@ if TYPE_CHECKING:
     from toolset.data.installation import HTInstallation
 
 
-class ModuleRenderer(QOpenGLWidget):  # noqa: PLR0904
+class ModuleRenderer(QOpenGLWidget):
     sceneInitalized = QtCore.pyqtSignal()
     """Signal emitted when scene has been initialized."""
 
@@ -65,7 +65,7 @@ class ModuleRenderer(QOpenGLWidget):  # noqa: PLR0904
         """
         super().__init__(parent)
 
-        from toolset.gui.windows.module_designer import ModuleDesignerSettings
+        from toolset.gui.windows.module_designer import ModuleDesignerSettings  # noqa: PLC0415  # pylint: disable=C0415
 
         self.scene: Scene | None = None
         self.settings: ModuleDesignerSettings = ModuleDesignerSettings()

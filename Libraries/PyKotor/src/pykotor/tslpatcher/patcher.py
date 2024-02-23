@@ -257,7 +257,7 @@ class ModInstaller:
                     i += 1
                 try:
                     shutil.move(str(override_resource_path), str(renamed_file_path))
-                except Exception as e:  # noqa: BLE001
+                except Exception as e:  # pylint: disable=W0718  # noqa: BLE001
                     # Handle exceptions such as permission errors or file in use.
                     self.log.add_error(f"Could not rename '{patch.saveas}' to '{renamed_file_path.name}' in the Override folder: {universal_simplify_exception(e)}")
             elif override_type == OverrideType.WARN:
@@ -387,7 +387,7 @@ class ModInstaller:
                     output_container_path.mkdir(exist_ok=True, parents=True)  # Create non-existing folders when the patch demands it.
                     BinaryWriter.dump(output_container_path / patch.saveas, patched_data)
                 self.log.complete_patch()
-            except Exception as e:  # noqa: BLE001
+            except Exception as e:  # pylint: disable=W0718  # noqa: BLE001
                 self.log.add_error(str(e))
                 detailed_error = format_exception_with_variables(e)
                 with CaseAwarePath.cwd().joinpath("errorlog.txt").open("a") as f:

@@ -98,7 +98,6 @@ class WalkmeshCamera:
         self._zoom = clamp(newZoom, 0.1, 100)
 
 
-
 class WalkmeshSelection(Generic[T]):
     def __init__(self):
         self._selection: list[T] = []
@@ -130,7 +129,7 @@ class WalkmeshSelection(Generic[T]):
         self._selection.extend(elements)
 
 
-class WalkmeshRenderer(QWidget):  # noqa: PLR0904
+class WalkmeshRenderer(QWidget):
     mouseMoved = QtCore.pyqtSignal(object, object, object, object)  # screen coords, screen delta, mouse, keys
     """Signal emitted when mouse is moved over the widget."""
 

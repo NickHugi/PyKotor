@@ -158,7 +158,6 @@ def create_case_insensitive_pathlib_class(cls: type):  # TODO: move into CaseAwa
                 setattr(cls, attr_name, simple_wrapper(attr_name, cls))
                 wrapped_methods.add(attr_name)
 
-
  # TODO: Move to pykotor.common
 class CaseAwarePath(InternalWindowsPath if os.name == "nt" else InternalPosixPath):  # type: ignore[misc]
     """A class capable of resolving case-sensitivity in a path. Absolutely essential for working with KOTOR files on Unix filesystems."""

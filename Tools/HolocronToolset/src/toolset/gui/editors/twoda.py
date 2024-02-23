@@ -42,7 +42,7 @@ class TwoDAEditor(Editor):
         super().__init__(parent, "2DA Editor", "none", supported, supported, installation)
         self.resize(400, 250)
 
-        from toolset.uic.editors.twoda import Ui_MainWindow
+        from toolset.uic.editors.twoda import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
         self._setupMenus()
