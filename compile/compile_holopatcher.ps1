@@ -15,9 +15,7 @@ Write-Host "Initializing python virtual environment..."
 # Execute the Python code using the specified interpreter
 
 $output = & $pythonExePath -c "import tkinter; print('Tkinter is available')" 2>&1
-if ($output -is -not [System.Management.Automation.ErrorRecord]) {
-    Write-Host "Tkinter is available for $($pythonExePath)"
-} else {
+if ($output -is [System.Management.Automation.ErrorRecord]) {
     Write-Host "Tkinter is not available for $($pythonExePath)"
     $venvPath = ""
     if ($null -ne $env:VIRTUAL_ENV) {
@@ -75,6 +73,8 @@ if ($output -is -not [System.Management.Automation.ErrorRecord]) {
     }
     Write-Host "Reinitializing python virtual environment..."
     . $rootPath/install_python_venv.ps1 $($this_noprompt ? '-noprompt' : '') $($venv_name ? "-venv_name $venv_name" : '')
+} else {
+    Write-Host "Tkinter is available for $($pythonExePath)"
 }
 
 Write-Host "Installing required packages to build holopatcher..."
