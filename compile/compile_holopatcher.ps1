@@ -13,10 +13,11 @@ Write-Host "Initializing python virtual environment..."
 . $rootPath/install_python_venv.ps1
 
 # Execute the Python code using the specified interpreter
-try {
-    & $pythonExePath -c "import tkinter; print('Tkinter is available')"
+
+$output = & $pythonExePath -c "import tkinter; print('Tkinter is available')" 2>&1
+if ($output -is -not [System.Management.Automation.ErrorRecord]) {
     Write-Host "Tkinter is available for $($pythonExePath)"
-} catch {
+} else {
     Write-Host "Tkinter is not available for $($pythonExePath)"
     $venvPath = ""
     if ($null -ne $env:VIRTUAL_ENV) {
