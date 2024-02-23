@@ -9,7 +9,9 @@ Write-Host "The path to the script directory is: $scriptPath"
 Write-Host "The path to the root directory is: $rootPath"
 
 Write-Host "Initializing python virtual environment..."
-. $rootPath/install_python_venv.ps1
+$this_noprompt_arg = if ($this_noprompt) {'-noprompt'} else {''}
+$venv_name_arg = if ($venv_name) {"-venv_name $venv_name"} else {''}
+. $rootPath/install_python_venv.ps1 $this_noprompt_arg $venv_name_arg
 
 Write-Host "Installing required packages to build kotordiff..."
 . $pythonExePath -m pip install --upgrade pip --prefer-binary --progress-bar on

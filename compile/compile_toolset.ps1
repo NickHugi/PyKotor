@@ -111,7 +111,9 @@ if ((Get-OS) -eq "Mac") {
 }
 
 Write-Host "Initializing python virtual environment..."
-. $rootPath/install_python_venv.ps1 $($this_noprompt ? '-noprompt' : '') $($venv_name ? "-venv_name $venv_name" : '')
+$this_noprompt_arg = if ($this_noprompt) {'-noprompt'} else {''}
+$venv_name_arg = if ($venv_name) {"-venv_name $venv_name"} else {''}
+. $rootPath/install_python_venv.ps1 $this_noprompt_arg $venv_name_arg
 
 
 Write-Host "Installing required packages to build the holocron toolset..."
@@ -141,6 +143,7 @@ if (Test-Path -Path $finalExecutablePath) {
 }
 
 Write-Host "Extra PYTHONPATH paths:\n'$env:PYTHONPATH'\n\n"
+$iconExtension = if ((Get-OS) -eq 'Mac') {'icns'} else {'ico'}
 $pyInstallerArgs = @{
     'exclude-module' = @(
         '',
@@ -154,7 +157,7 @@ $pyInstallerArgs = @{
     'name' = "HolocronToolset"
     'distpath'=($rootPath + $pathSep + "dist")
 #    'upx-dir' = "C:\GitHub\upx-win64"
-    'icon'="resources/icons/sith.$((Get-OS) -eq 'Mac' ? 'icns' : 'ico')"
+    'icon'="resources/icons/sith.$iconExtension"
 }
 
 $pyInstallerArgs = $pyInstallerArgs.GetEnumerator() | ForEach-Object {

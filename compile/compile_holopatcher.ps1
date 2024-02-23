@@ -10,7 +10,9 @@ Write-Host "The path to the script directory is: $scriptPath"
 Write-Host "The path to the root directory is: $rootPath"
 
 Write-Host "Initializing python virtual environment..."
-. $rootPath/install_python_venv.ps1
+$this_noprompt_arg = if ($this_noprompt) {'-noprompt'} else {''}
+$venv_name_arg = if ($venv_name) {"-venv_name $venv_name"} else {''}
+. $rootPath/install_python_venv.ps1 $this_noprompt_arg $venv_name_arg
 
 # Execute the Python code using the specified interpreter
 
@@ -104,6 +106,7 @@ if (Test-Path -Path $finalExecutablePath) {
 }
 
 Write-Host "Compiling HoloPatcher..."
+$iconExtension = if ((Get-OS) -eq 'Mac') {'icns'} else {'ico'}
 $pyInstallerArgs = @{
     'exclude-module' = @(
         '',
@@ -151,7 +154,7 @@ $pyInstallerArgs = @{
     'distpath' = ($rootPath + $pathSep + "dist")
     'name' = 'HoloPatcher'
     'upx-dir' = "C:\GitHub\upx-win64"
-    'icon' = "..$pathSep" + "resources$pathSep" + "icons$pathSep" + "patcher_icon_v2.$((Get-OS) -eq 'Mac' ? 'png' : 'ico')"
+    'icon' = "..$pathSep" + "resources$pathSep" + "icons$pathSep" + "patcher_icon_v2.$iconExtension"
 }
 
 $pyInstallerArgs = $pyInstallerArgs.GetEnumerator() | ForEach-Object {

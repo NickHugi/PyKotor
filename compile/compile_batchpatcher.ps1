@@ -73,7 +73,9 @@ try {
         Remove-Item -Path $venvPath -Recurse -Force
     }
     Write-Host "Reinitializing python virtual environment..."
-    . $rootPath/install_python_venv.ps1 $($this_noprompt ? '-noprompt' : '') $($venv_name ? "-venv_name $venv_name" : '')
+    $this_noprompt_arg = if ($this_noprompt) {'-noprompt'} else {''}
+    $venv_name_arg = if ($venv_name) {"-venv_name $venv_name"} else {''}
+    . $rootPath/install_python_venv.ps1 $this_noprompt_arg $venv_name_arg
 }
 
 Write-Host "Installing required packages to build the batchpatcher..."
