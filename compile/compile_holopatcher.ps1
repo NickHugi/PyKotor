@@ -27,7 +27,7 @@ if ($output -match "ModuleNotFoundError" -or $output -is [System.Management.Auto
         Write-Host "No virtual environment is activated."
     }
     if ((Get-OS) -eq "Mac") {
-        brew install python-tk
+        brew install python@3.12 python-tk
     } elseif ((Get-OS) -eq "Linux") {
         if (Test-Path -Path "/etc/os-release") {
             $distro = (Get-Linux-Distro-Name)
