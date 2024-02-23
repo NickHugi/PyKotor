@@ -150,7 +150,7 @@ $pyInstallerArgs = @{
     'distpath' = ($rootPath + $pathSep + "dist")
     'name' = 'HoloPatcher'
     'upx-dir' = "C:\GitHub\upx-win64"
-    'icon' = "..$pathSep" + "resources$pathSep" + "icons$pathSep" + "patcher_icon_v2.ico"
+    'icon' = "..$pathSep" + "resources$pathSep" + "icons$pathSep" + "patcher_icon_v2.$((Get-OS) -eq 'Mac' ? 'icns' : 'ico')"
 }
 
 $pyInstallerArgs = $pyInstallerArgs.GetEnumerator() | ForEach-Object {
