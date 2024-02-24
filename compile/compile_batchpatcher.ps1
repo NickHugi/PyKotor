@@ -14,11 +14,6 @@ $this_noprompt_arg = if ($this_noprompt) {'-noprompt'} else {''}
 $venv_name_arg = if ($venv_name) {"-venv_name $venv_name"} else {''}
 . $rootPath/install_python_venv.ps1 $this_noprompt_arg $venv_name_arg
 
-Write-Host "Initializing python virtual environment..."
-$this_noprompt_arg = if ($this_noprompt) {'-noprompt'} else {''}
-$venv_name_arg = if ($venv_name) {"-venv_name $venv_name"} else {''}
-. $rootPath/install_python_venv.ps1 $this_noprompt_arg $venv_name_arg
-
 $current_working_dir = (Get-Location).Path
 Set-Location -LiteralPath (Resolve-Path -LiteralPath "$rootPath/Tools/BatchPatcher/src").Path
 
@@ -40,7 +35,6 @@ if (Test-Path -Path $finalExecutablePath) {
 Write-Host "Compiling BatchPatcher..."
 $pyInstallerArgs = @{
     'exclude-module' = @(
-        ''
         'dl_translate',
         'torch'
         'PyQt5'
@@ -48,13 +42,15 @@ $pyInstallerArgs = @{
         'PyGLM'
         'numpy'
         'multiprocessing'
-        'pykotor-gl '
+        'pykotor-gl'
     )
+    'clean' = $true
     'console' = $true
     'onefile' = $true
     'noconfirm' = $true
     'name' = 'K_BatchPatcher'
     'distpath' = ($rootPath + $pathSep + 'dist')
+    'upx-dir' = "C:\GitHub\upx-win64"
 }
 
 $pyInstallerArgs = $pyInstallerArgs.GetEnumerator() | ForEach-Object {
@@ -63,8 +59,11 @@ $pyInstallerArgs = $pyInstallerArgs.GetEnumerator() | ForEach-Object {
 
     if ($value -is [System.Array]) {
         # Handle array values
-        $value -join "--$key="
-        $value = "--$key=$value"
+        $arr = @()
+        foreach ($elem in $value) {
+            $arr += "--$key=$elem"
+        }
+        $arr
     } else {
         # Handle key-value pair arguments
         if ($value -eq $true) {

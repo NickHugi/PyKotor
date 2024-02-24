@@ -36,9 +36,8 @@ Write-Host "Extra PYTHONPATH paths:\n'$env:PYTHONPATH'\n\n"
 $iconExtension = if ((Get-OS) -eq 'Mac') {'icns'} else {'ico'}
 $pyInstallerArgs = @{
     'exclude-module' = @(
-        '',
         'dl_translate',
-        'torch '
+        'torch'
     )
     'clean' = $true
     'console' = $true
@@ -56,8 +55,11 @@ $pyInstallerArgs = $pyInstallerArgs.GetEnumerator() | ForEach-Object {
 
     if ($value -is [System.Array]) {
         # Handle array values
-        $value -join "--$key="
-        $value = "--$key=$value"
+        $arr = @()
+        foreach ($elem in $value) {
+            $arr += "--$key=$elem"
+        }
+        $arr
     } else {
         # Handle key-value pair arguments
         if ($value -eq $true) {

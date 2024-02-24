@@ -36,7 +36,6 @@ Write-Host "Compiling HoloPatcher..."
 $iconExtension = if ((Get-OS) -eq 'Mac') {'icns'} else {'ico'}
 $pyInstallerArgs = @{
     'exclude-module' = @(
-        '',
         'numpy',
         'PyQt5',
         'PIL',
@@ -72,7 +71,7 @@ $pyInstallerArgs = @{
         'install_playwright',
         'greenlet',
         'cssselect',
-        'beautifulsoup4 '
+        'beautifulsoup4'
     )
     'clean' = $true
     'noconsole' = $true
@@ -90,8 +89,11 @@ $pyInstallerArgs = $pyInstallerArgs.GetEnumerator() | ForEach-Object {
 
     if ($value -is [System.Array]) {
         # Handle array values
-        $value -join "--$key="
-        $value = "--$key=$value"
+        $arr = @()
+        foreach ($elem in $value) {
+            $arr += "--$key=$elem"
+        }
+        $arr
     } else {
         # Handle key-value pair arguments
         if ($value -eq $true) {
