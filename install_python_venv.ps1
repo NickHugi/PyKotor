@@ -583,6 +583,11 @@ $findVenvExecutable = $true
 if (Get-ChildItem Env:VIRTUAL_ENV -ErrorAction SilentlyContinue) {  # Check if a venv is already activated
     $venvPath = $env:VIRTUAL_ENV
     Write-Host "A virtual environment is currently activated: $venvPath"
+    if ($null -ne $pythonExePath) { # check if this script itself was previously used to activate this venv.
+        Write-Host "install_python_venv.ps1 has already ran and activated this venv, nothing left to do by rerunning this."
+        return
+    }
+    deactivate
 } elseif ($venvPath -ne ($repoRootPath + $pathSep) -and (Test-Path $venvPath -ErrorAction SilentlyContinue)) {
     Write-Host "Found existing python virtual environment at '$venvPath'"
 } else {
