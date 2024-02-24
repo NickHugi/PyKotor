@@ -587,6 +587,10 @@ $findVenvExecutable = $true
 if (Get-ChildItem Env:VIRTUAL_ENV -ErrorAction SilentlyContinue) {  # Check if a venv is already activated
     $venvPath = $env:VIRTUAL_ENV
     Write-Host "A virtual environment is currently activated: $venvPath"
+    if ($null -ne $pythonExePath) { # check if this script itself was previously used to activate this venv.
+        Write-Host "install_python_venv.ps1 has already ran and activated this venv, nothing left to do by rerunning this."
+        return
+    }
 } elseif ($venvPath -ne ($repoRootPath + $pathSep) -and (Test-Path $venvPath -ErrorAction SilentlyContinue)) {
     Write-Host "Found existing python virtual environment at '$venvPath'"
 } else {
@@ -658,18 +662,30 @@ if ( $findVenvExecutable -eq $true) {
     }
 }
 
-
-Write-Host "Activating venv at '$venvPath'"
-$originalPath = $env:PATH -split ';'
-if ((Get-OS) -eq "Windows") {
-    . $venvPath\Scripts\Activate.ps1
-} else {
-    . $venvPath/bin/Activate.ps1
+try {
+    Write-Host "Activating venv at '$venvPath'"
+    $originalPath = $env:PATH -split ';'
+    if ((Get-OS) -eq "Windows") {
+        . $venvPath\Scripts\Activate.ps1
+    } else {
+        . $venvPath/bin/Activate.ps1
+    }
+    # sanitize $PATH, otherwise pyinstaller will act up...
+    $modifiedPath = $env:PATH -split ';'
+    $addedPaths = $modifiedPath | Where-Object { $originalPath -notcontains $_ }
+    $env:PATH = $addedPaths -join ';'
+    $pythonExecutablePath = python -c "import sys; print(sys.executable)"
+    $env:PATH += ";$pythonExecutablePath;"
+    Write-Debug "Python install path appended: '$pythonExecutablePath'"
+} catch {
+    deactivate
+    Write-Error "$($_.InvocationInfo.PositionMessage)`n$($_.Exception.Message)"
+    Write-Host "Press any key to exit..."
+    if (-not $noprompt) {
+        $null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
+    }
+    exit
 }
-# sanitize $PATH, otherwise pyinstaller will act up...
-$modifiedPath = $env:PATH -split ';'
-$addedPaths = $modifiedPath | Where-Object { $originalPath -notcontains $_ }
-$env:PATH = $addedPaths -join ';'
 
 Write-Output "Sanitized PATH env: $env:PATH"
 
