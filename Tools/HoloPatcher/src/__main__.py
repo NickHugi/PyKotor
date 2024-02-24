@@ -28,7 +28,18 @@ from tkinter import (
 )
 from typing import TYPE_CHECKING, NoReturn
 
-if getattr(sys, "frozen", False) is False:
+
+def is_frozen() -> bool:  # sourcery skip: assign-if-exp, boolean-if-exp-identity, reintroduce-else, remove-unnecessary-cast
+    # Check for sys.frozen attribute
+    if getattr(sys, "frozen", False):
+        return True
+    # Check if the executable is in a temp directory (common for frozen apps)
+    if tempfile.gettempdir() in sys.executable:
+        return True
+    return False
+
+
+if not is_frozen():
     def update_sys_path(path):
         working_dir = str(path)
         if working_dir not in sys.path:
@@ -42,7 +53,6 @@ if getattr(sys, "frozen", False) is False:
         utility_path = pathlib.Path(__file__).parents[3] / "Libraries" / "Utility" / "src" / "utility"
         if utility_path.exists():
             update_sys_path(utility_path.parent)
-
 
 from pykotor.common.misc import Game
 from pykotor.common.stream import BinaryReader
@@ -67,7 +77,7 @@ if TYPE_CHECKING:
     from pykotor.tslpatcher.logger import PatchLog
     from pykotor.tslpatcher.namespaces import PatcherNamespace
 
-CURRENT_VERSION: tuple[int, ...] = (1, 5, 2)
+CURRENT_VERSION: tuple[int, ...] = (1, 5, 3)
 VERSION_LABEL = f"v{'.'.join(map(str, CURRENT_VERSION))}"
 
 
@@ -1339,16 +1349,6 @@ def onAppCrash(
     sys.exit()
 
 sys.excepthook = onAppCrash
-
-
-def is_frozen() -> bool:  # sourcery skip: assign-if-exp, boolean-if-exp-identity, reintroduce-else, remove-unnecessary-cast
-    # Check for sys.frozen attribute
-    if getattr(sys, "frozen", False):
-        return True
-    # Check if the executable is in a temp directory (common for frozen apps)
-    if tempfile.gettempdir() in sys.executable:
-        return True
-    return False
 
 
 def main():
