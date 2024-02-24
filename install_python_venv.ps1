@@ -3,10 +3,6 @@ param(
   [switch]$noprompt
 )
 
-if (-not $venv_name -or $venv_name.Trim() -eq '') {
-    $venv_name = ".venv"
-}
-
 $repoRootPath = Split-Path -Parent $MyInvocation.MyCommand.Definition
 function Get-OS {
     if ($IsWindows) {
@@ -660,18 +656,13 @@ if ( $findVenvExecutable -eq $true) {
 
 
 Write-Host "Activating venv at '$venvPath'"
-$originalPath = $env:PATH -split ';'
 if ((Get-OS) -eq "Windows") {
     . $venvPath\Scripts\Activate.ps1
 } else {
     . $venvPath/bin/Activate.ps1
 }
-# sanitize $PATH, otherwise pyinstaller will act up...
-$modifiedPath = $env:PATH -split ';'
-$addedPaths = $modifiedPath | Where-Object { $originalPath -notcontains $_ }
-$env:PATH = $addedPaths -join ';'
 
-Write-Output "Sanitized PATH env: $env:PATH"
+Initialize-Python $pythonExePath
 
 # Set environment variables from .env file
 $dotenv_path = "$repoRootPath$pathSep.env"
