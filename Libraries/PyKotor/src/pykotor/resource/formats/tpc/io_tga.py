@@ -35,7 +35,11 @@ class TPCTGAReader(ResourceReader):
         super().__init__(source, offset, size)
         self._tpc: TPC | None = None
 
-    def _read_color_map(self, length, depth) -> list[bytes]:
+    def _read_color_map(
+        self,
+        length: int,
+        depth: int,
+    ) -> list[bytes]:
         color_map: list[bytes] = []
         bytes_per_entry = depth // 8
 
@@ -47,7 +51,8 @@ class TPCTGAReader(ResourceReader):
 
         return color_map
 
-    def _convert_grayscale_to_rgba(self, grayscale_value: int) -> list[int]:
+    @staticmethod
+    def _convert_grayscale_to_rgba(grayscale_value: int) -> list[int]:
         """Convert a grayscale value to RGBA."""
         return [grayscale_value, grayscale_value, grayscale_value, 255]
 
@@ -57,7 +62,8 @@ class TPCTGAReader(ResourceReader):
         height: int,
         bits_per_pixel: int,
         color_map: list[bytes] | None = None,
-        is_direct_rgb: bool = False,  # New parameter
+        *,
+        is_direct_rgb: bool = False,
     ) -> bytearray:
         """Process RLE compressed data."""
         data = bytearray()
@@ -113,7 +119,12 @@ class TPCTGAReader(ResourceReader):
                 break
         return data
 
-    def _process_non_rle_color_mapped(self, width: int, height: int, color_map: list[bytes]) -> bytearray:
+    def _process_non_rle_color_mapped(
+        self,
+        width: int,
+        height: int,
+        color_map: list[bytes],
+    ) -> bytearray:
         """Process non-RLE color-mapped data."""
         data = bytearray()
         for _ in range(width * height):
@@ -150,11 +161,11 @@ class TPCTGAReader(ResourceReader):
         id_length = self._reader.read_uint8()
         colormap_type = self._reader.read_uint8()
         datatype_code = self._reader.read_uint8()
-        colormap_origin = self._reader.read_uint16()  # noqa: F841
+        _colormap_origin = self._reader.read_uint16()
         colormap_length = self._reader.read_uint16()
         colormap_depth = self._reader.read_uint8()
-        x_origin = self._reader.read_uint16()  # noqa: F841
-        y_origin = self._reader.read_uint16()  # noqa: F841
+        _x_origin = self._reader.read_uint16()
+        _y_origin = self._reader.read_uint16()
         width = self._reader.read_uint16()
         height = self._reader.read_uint16()
         bits_per_pixel = self._reader.read_uint8()
