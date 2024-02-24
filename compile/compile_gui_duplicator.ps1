@@ -109,6 +109,11 @@ $pyInstallerArgs = $pyInstallerArgs.GetEnumerator() | ForEach-Object {
     }
 }
 
+# Ensure .app is created on Mac OS X:
+if ((Get-OS) -eq "Mac") {  # https://github.com/pyinstaller/pyinstaller/wiki/FAQ#mac-os-x
+    $pyInstallerArgs += "--windowed"
+}
+
 # Add PYTHONPATH paths as arguments
 $env:PYTHONPATH -split ';' | ForEach-Object {
     $pyInstallerArgs += "--path=$_"
