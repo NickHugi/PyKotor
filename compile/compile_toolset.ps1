@@ -40,7 +40,7 @@ $pyInstallerArgs = @{
         'torch'
     )
     'clean' = $true
-    'console' = $true
+    'noconsole' = $true  # https://github.com/pyinstaller/pyinstaller/wiki/FAQ#mac-os-x  https://pyinstaller.org/en/stable/usage.html#cmdoption-w
     'onefile' = $true
     'noconfirm' = $true
     'name' = "HolocronToolset"
@@ -69,11 +69,6 @@ $pyInstallerArgs = $pyInstallerArgs.GetEnumerator() | ForEach-Object {
             "--$key=$value"
         }
     }
-}
-
-# Ensure .app is created on Mac OS X:
-if ((Get-OS) -eq "Mac") {  # https://github.com/pyinstaller/pyinstaller/wiki/FAQ#mac-os-x
-    $pyInstallerArgs += "--windowed"
 }
 
 # Add PYTHONPATH paths as arguments

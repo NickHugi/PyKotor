@@ -74,7 +74,7 @@ $pyInstallerArgs = @{
         'beautifulsoup4'
     )
     'clean' = $true
-    'noconsole' = $true
+    'noconsole' = $true  # https://github.com/pyinstaller/pyinstaller/wiki/FAQ#mac-os-x  https://pyinstaller.org/en/stable/usage.html#cmdoption-w
     'onefile' = $true
     'noconfirm' = $true
     'distpath' = ($rootPath + $pathSep + "dist")
@@ -103,11 +103,6 @@ $pyInstallerArgs = $pyInstallerArgs.GetEnumerator() | ForEach-Object {
             "--$key=$value"
         }
     }
-}
-
-# Ensure .app is created on Mac OS X:
-if ((Get-OS) -eq "Mac") {  # https://github.com/pyinstaller/pyinstaller/wiki/FAQ#mac-os-x
-    $pyInstallerArgs += "--windowed"
 }
 
 # Add PYTHONPATH paths as arguments
