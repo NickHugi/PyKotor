@@ -1066,8 +1066,8 @@ class Installation:  # noqa: PLR0904
             # Index resources by identifier
             resource_dict: dict[ResourceIdentifier, FileResource] = {resource.identifier(): resource for resource in values}
             for query in queries:
-                if query in resource_dict:
-                    resource: FileResource = resource_dict[query]
+                resource: FileResource | None = resource_dict.get(query)
+                if resource is not None:
                     location = LocationResult(
                         resource.filepath(),
                         resource.offset(),
