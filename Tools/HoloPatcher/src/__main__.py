@@ -546,14 +546,14 @@ class App(tk.Tk):
         i = 0
         while self.task_thread.is_alive():
             try:
-                self.task_thread._stop()  # type: ignore[attr-defined]
-                print("force terminate of install thread succeeded", sys.stdout)  # noqa: T201
+                self.task_thread._stop()  # type: ignore[attr-defined]  # pylint: disable=protected-access
+                print("force terminate of install thread succeeded")
             except BaseException as e:  # pylint: disable=W0718  # noqa: BLE001
                 self._handle_general_exception(e, "Error using self.install_thread._stop()", msgbox=False)
             try:
                 if self.task_thread.ident is None:
                     msg = "task ident is None, expected an int."
-                    raise ValueError(msg)
+                    raise ValueError(msg)  # noqa: TRY301
                 self.async_raise(self.task_thread.ident, SystemExit)
             except BaseException as e:  # pylint: disable=W0718  # noqa: BLE001
                 self._handle_general_exception(e, "Error using async_raise(self.install_thread.ident, SystemExit)", msgbox=False)

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import inspect
+import os
 import sys
 import traceback
 import types
@@ -293,6 +294,8 @@ def with_variable_trace(
                 full_message: str = "\n".join(detailed_message)
 
                 if action == "stderr":
+                    if sys.stderr is None:
+                        sys.stderr = open(os.devnull, "w")  # noqa: PTH123, SIM115, PLW1514  # pylint: disable=all
                     print(full_message, sys.stderr)  # noqa: T201
                 elif action == "print":
                     print(full_message)  # noqa: T201
