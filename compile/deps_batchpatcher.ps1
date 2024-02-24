@@ -14,11 +14,6 @@ $this_noprompt_arg = if ($this_noprompt) {'-noprompt'} else {''}
 $venv_name_arg = if ($venv_name) {"-venv_name $venv_name"} else {''}
 . $rootPath/install_python_venv.ps1 $this_noprompt_arg $venv_name_arg
 
-Write-Host "Initializing python virtual environment..."
-$this_noprompt_arg = if ($this_noprompt) {'-noprompt'} else {''}
-$venv_name_arg = if ($venv_name) {"-venv_name $venv_name"} else {''}
-. $rootPath/install_python_venv.ps1 $this_noprompt_arg $venv_name_arg
-
 $output = & $pythonExePath -c "import tkinter; print('Tkinter is available')" 2>&1
 if ($output -match "ModuleNotFoundError" -or $output -is [System.Management.Automation.ErrorRecord]) {
     Write-Host "Tkinter is not available for $($pythonExePath)"
