@@ -57,6 +57,8 @@ $pyInstallerArgs = @{
         'Markdown',
         'pyperclip',
         'setuptools',
+        'java',
+        'java.lang',
         'wheel',
         'ruff',
         'pylint',
