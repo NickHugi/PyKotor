@@ -306,14 +306,17 @@ function Get-Python-Version {
     Param (
         [string]$pythonPath
     )
-    if (Test-Path $pythonPath -ErrorAction SilentlyContinue) {
-        $global:pythonVersionOutput = & $pythonPath --version 2>&1
-        $global:pythonVersionString = $global:pythonVersionOutput -replace '^Python\s+'
-        $numericVersionString = $global:pythonVersionString -replace '(\d+\.\d+\.\d+).*', '$1'
-        $global:pythonVersion = [Version]$numericVersionString
-        return $global:pythonVersion
+    try {
+        if (Test-Path $pythonPath -ErrorAction SilentlyContinue) {
+            $global:pythonVersionOutput = & $pythonPath --version 2>&1
+            $global:pythonVersionString = $global:pythonVersionOutput -replace '^Python\s+'
+            $numericVersionString = $global:pythonVersionString -replace '(\d+\.\d+\.\d+).*', '$1'
+            $global:pythonVersion = [Version]$numericVersionString
+            return $global:pythonVersion
+        }
+    } catch {
+        return [Version]"0.0.0"
     }
-    return [Version]"0.0.0"
 }
 
 $minVersion = [Version]"3.8.0"
