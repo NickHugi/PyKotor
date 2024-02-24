@@ -111,9 +111,10 @@ def decode_bytes_with_fallbacks(
 
         return byte_content.decode(encoding=best_encoding, errors=attempt_errors)
 
-    # Attempt strict first for more accurate results.
-    with contextlib.suppress(UnicodeDecodeError):
-        return _decode_attempt(attempt_errors="strict")
+    if encoding is None:
+        # Attempt strict first for more accurate results.
+        with contextlib.suppress(UnicodeDecodeError):
+            return _decode_attempt(attempt_errors="strict")
     return _decode_attempt(attempt_errors=errors)
 
 
