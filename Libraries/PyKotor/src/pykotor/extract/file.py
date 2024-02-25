@@ -173,7 +173,7 @@ class FileResource:
         finally:
             self._internal = False
 
-    def get_sha256_hash(
+    def get_sha1_hash(
         self,
         *,
         reload: bool = False,
