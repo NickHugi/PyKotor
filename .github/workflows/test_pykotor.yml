@@ -1,4 +1,4 @@
-name: PyKotor tests/compilations
+name: Test PyKotor and Update Status
 
 on: [push]
 
@@ -27,61 +27,6 @@ jobs:
         ./install_python_venv.ps1 -noprompt -venv_name .venv_${{ matrix.os }}_${{ matrix.python-version }}
       shell: pwsh
 
-    - name: Install HoloPatcher dependencies
-      run: |
-        ./compile/deps_holopatcher.ps1 -noprompt -venv_name .venv_${{ matrix.os }}_${{ matrix.python-version }}
-      shell: pwsh
-      continue-on-error: true
-    
-    - name: Compile HoloPatcher
-      run: |
-        ./compile/compile_holopatcher.ps1 -noprompt -venv_name .venv_${{ matrix.os }}_${{ matrix.python-version }}
-      shell: pwsh
-      continue-on-error: true
-
-    - name: Install Holocron Toolset dependencies
-      run: |
-        ./compile/deps_toolset.ps1 -noprompt -venv_name .venv_${{ matrix.os }}_${{ matrix.python-version }}
-      shell: pwsh
-      continue-on-error: true
-
-    - name: Compile Holocron Toolset
-      run: |
-        ./compile/compile_toolset.ps1 -noprompt -venv_name .venv_${{ matrix.os }}_${{ matrix.python-version }}
-      shell: pwsh
-      continue-on-error: true
-
-    - name: Install BatchPatcher dependencies
-      run: |
-        ./compile/deps_batchpatcher.ps1 -noprompt -venv_name .venv_${{ matrix.os }}_${{ matrix.python-version }}
-      shell: pwsh
-      continue-on-error: true
-
-    - name: Compile BatchPatcher
-      run: |
-        ./compile/compile_batchpatcher.ps1 -noprompt -venv_name .venv_${{ matrix.os }}_${{ matrix.python-version }}
-      shell: pwsh
-      continue-on-error: true
-
-    - name: Compile KotorDiff
-      run: |
-        ./compile/compile_kotordiff.ps1 -noprompt -venv_name .venv_${{ matrix.os }}_${{ matrix.python-version }}
-      shell: pwsh
-      continue-on-error: true
-
-    - name: Compile GUIDuplicator
-      run: |
-        ./compile/compile_gui_duplicator.ps1 -noprompt -venv_name .venv_${{ matrix.os }}_${{ matrix.python-version }}
-      shell: pwsh
-      continue-on-error: true
-
-    - name: Upload compiled binaries
-      uses: actions/upload-artifact@v3
-      if: always()  # This ensures the step runs regardless of previous step's success or failure
-      with:
-        name: publish_${{ matrix.os }}_${{ matrix.python-version }}
-        path: ./dist/**
-
     - name: Install development packages
       run: |
         ./install_python_venv.ps1 -noprompt -venv_name .venv_${{ matrix.os }}_${{ matrix.python-version }}
@@ -94,12 +39,6 @@ jobs:
         python -m pytest tests -v -ra -o log_cli=true --capture=no --junitxml=pytest_report.xml --html=pytest_report.html --self-contained-html --tb=no --continue-on-collection-errors
       shell: pwsh
       continue-on-error: true
-
-    - name: Configure Git Identity
-      if: always()
-      run: |
-        git config --global user.name "GitHub Action"
-        git config --global user.email "action@github.com"
 
     - name: Update README with custom test status badges
       if: always()
@@ -137,8 +76,8 @@ jobs:
         $NewReadmeContent | Set-Content $ReadmePath
         
         # Git configuration and commit
-        git config --global user.name "github-actions"
-        git config --global user.email "github-actions@github.com"
+        git config --global user.name "GitHub Action"
+        git config --global user.email "action@github.com"
         git add $ReadmePath
         git commit -m "Update README with custom test status badge for $BadgeName"
         git push
