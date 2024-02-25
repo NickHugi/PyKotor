@@ -1,6 +1,6 @@
 param(
-  [string]$venv_name = ".venv",
-  [switch]$noprompt
+  [switch]$noprompt = $false,
+  [string]$venv_name = ".venv"
 )
 
 $repoRootPath = Split-Path -Parent $MyInvocation.MyCommand.Definition

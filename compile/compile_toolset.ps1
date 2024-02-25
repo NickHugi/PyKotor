@@ -1,6 +1,6 @@
-param (
-  [string]$venv_name = ".venv",
-  [switch]$noprompt
+param(
+  [switch]$noprompt = $false,
+  [string]$venv_name = ".venv"
 )
 $this_noprompt = $noprompt
 
