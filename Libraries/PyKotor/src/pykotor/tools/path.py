@@ -85,7 +85,7 @@ def simple_wrapper(fn_name: str, wrapped_class_type: type) -> Callable[..., Any]
                     and not pathlib_path_obj.exists()
                 ):
                     instance = CaseAwarePath.get_case_sensitive_path(arg)
-                    if arg.__class__ in CaseAwarePath.__bases__ and arg.__class is not object:
+                    if arg.__class__ in CaseAwarePath.__bases__ and arg.__class__ is not object:
                         return new_cls(instance)
                     return instance
             return arg
@@ -154,7 +154,7 @@ def create_case_insensitive_pathlib_class(cls: type):  # TODO: move into CaseAwa
         for attr_name, attr_value in parent.__dict__.items():
             # Check if it's a method and hasn't been wrapped before
             if callable(attr_value) and attr_name not in wrapped_methods and attr_name not in ignored_methods:
-                cls._original_methods[attr_name] = attr_value  # type: ignore[attr-defined]
+                cls._original_methods[attr_name] = attr_value  # type: ignore[attr-defined]  # pylint: disable=protected-access
                 setattr(cls, attr_name, simple_wrapper(attr_name, cls))
                 wrapped_methods.add(attr_name)
 
@@ -192,7 +192,7 @@ class CaseAwarePath(InternalWindowsPath if os.name == "nt" else InternalPosixPat
             resolved_self = resolved_self.absolute()
         else:
             parsed_other = other if isinstance(other, InternalPurePath) else InternalPurePath(other)
-            parsed_other = other.with_segments(other, *_deprecated)
+            parsed_other = parsed_other.with_segments(other, *_deprecated)
 
         self_str, other_str = map(str, (resolved_self, parsed_other))
         replacement = ireplace(self_str, other_str, "").lstrip("\\").lstrip("/")
@@ -331,7 +331,7 @@ if os.name != "nt":  # Wrapping is unnecessary on Windows
 
 
 def get_default_paths() -> dict[str, dict[Game, list[str]]]:
-    from pykotor.common.misc import Game
+    from pykotor.common.misc import Game  # noqa: PLC0415  # pylint: disable=import-outside-toplevel
 
     return {
         "Windows": {
@@ -409,7 +409,7 @@ def find_kotor_paths_from_default() -> dict[Game, list[CaseAwarePath]]:
         - On Windows, also searches the registry for additional locations
         - Returns results as lists for each Game rather than sets
     """
-    from pykotor.common.misc import Game
+    from pykotor.common.misc import Game  # noqa: PLC0415  # pylint: disable=import-outside-toplevel
 
     os_str = platform.system()
 
