@@ -29,7 +29,7 @@ if ((Get-OS) -eq "Windows") {
 } elseif ((Get-OS) -eq "Linux") {
     $finalExecutablePath = "$rootPath/dist/KotorDiff"
 } elseif ((Get-OS) -eq "Mac") {
-    $finalExecutablePath = "$rootPath/dist/KotorDiff.app"
+    $finalExecutablePath = "$rootPath/dist/KotorDiff"
 }
 
 # Delete the final executable if it exists

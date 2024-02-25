@@ -29,7 +29,7 @@ if ((Get-OS) -eq "Windows") {
 } elseif ((Get-OS) -eq "Linux") {
     $finalExecutablePath = "$rootPath/dist/GuiDuplicator"
 } elseif ((Get-OS) -eq "Mac") {
-    $finalExecutablePath = "$rootPath/dist/GuiDuplicator.app"
+    $finalExecutablePath = "$rootPath/dist/GuiDuplicator"
 }
 
 # Delete the final executable if it exists
