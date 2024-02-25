@@ -179,7 +179,12 @@ class CaseAwarePath(InternalWindowsPath if os.name == "nt" else InternalPosixPat
         # Extract the differing prefix part as a new Path object
         return abs_parts[:start_index_of_rel_in_abs]
 
-    def relative_to(self, *args, walk_up=False, **kwargs) -> InternalPath:
+    def relative_to(
+        self,
+        *args: PathElem,
+        walk_up: bool = False,
+        **kwargs,
+    ) -> InternalPath:
         if not args or "other" in kwargs:
             raise TypeError("relative_to() missing 1 required positional argument: 'other'")  # noqa: TRY003, EM101
 
@@ -201,12 +206,16 @@ class CaseAwarePath(InternalWindowsPath if os.name == "nt" else InternalPosixPat
             raise ValueError(msg)
 
         if isinstance(self, CaseAwarePath) and not pathlib.Path(replacement).exists():
-            prefixes = self.extract_absolute_prefix(InternalPath(replacement), parsed_other)
+            prefixes = self.extract_absolute_prefix(InternalPath(replacement), InternalPath(parsed_other))
             return self.get_case_sensitive_path(replacement, prefixes)
         return self.__class__(replacement)
 
     @classmethod
-    def get_case_sensitive_path(cls, path: PathElem, prefixes: list[str] | tuple[str, ...] | None = None):
+    def get_case_sensitive_path(
+        cls,
+        path: PathElem,
+        prefixes: list[str] | tuple[str, ...] | None = None,
+    ):
         """Get a case sensitive path.
 
         Args:
@@ -258,7 +267,11 @@ class CaseAwarePath(InternalWindowsPath if os.name == "nt" else InternalPosixPat
         return cls._create_instance(*parts[num_differing_parts:], called_from_getcase=True)
 
     @classmethod
-    def find_closest_match(cls, target: str, candidates: Generator[InternalPath, None, None]) -> str:
+    def find_closest_match(
+        cls,
+        target: str,
+        candidates: Generator[InternalPath, None, None],
+    ) -> str:
         """Finds the closest match from candidates to the target string.
 
         Args:
