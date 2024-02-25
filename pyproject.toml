@@ -18,8 +18,8 @@ description="Read, modify and write files used by KotOR's game engine."
 authors = [{name = "NickHugi"}]
 maintainers = [{name = "th3w1zard1", email = "halomastar@gmail.com"}]
 readme = {file = "README.md", content-type = "text/markdown"}
-license = {text = "MIT License"}
-keywords = ["kotor", "library", "holocron", "toolset", "pykotor", "editor", "mit", "holopatcher", "tslpatcher"]
+license = {text = "GPLv3 License"}
+keywords = ["kotor", "library", "holocron", "toolset", "pykotor", "editor", "holopatcher", "tslpatcher"]
 requires-python = ">= 3.8"
 dependencies = ["ply>=3.11,<4"]  # required for the nss compiler lexer
 
