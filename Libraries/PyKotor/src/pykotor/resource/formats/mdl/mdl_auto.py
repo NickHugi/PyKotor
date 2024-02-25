@@ -145,6 +145,7 @@ def write_mdl(
         msg = "Unsupported format specified; use MDL or MDL_ASCII."
         raise ValueError(msg)
 
+
 def bytes_mdl(
     mdl: MDL,
     file_format: ResourceType = ResourceType.MDL,

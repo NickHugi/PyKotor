@@ -11,6 +11,7 @@ from pykotor.tools.path import CaseAwarePath
 
 if TYPE_CHECKING:
     from PyQt5.QtWidgets import QWidget
+
     from pykotor.common.language import LocalizedString
     from toolset.data.installation import HTInstallation
 
@@ -19,7 +20,7 @@ class LocalizedStringDialog(QDialog):
     def __init__(self, parent: QWidget, installation: HTInstallation, locstring: LocalizedString):
         super().__init__(parent)
 
-        from toolset.uic.dialogs.locstring import Ui_Dialog
+        from toolset.uic.dialogs.locstring import Ui_Dialog  # pylint: disable=C0415  # noqa: PLC0415
 
         self.ui = Ui_Dialog()
         self.ui.setupUi(self)
@@ -71,11 +72,7 @@ class LocalizedStringDialog(QDialog):
     def _update_text(self):
         language = Language(self.ui.languageSelect.currentIndex())
         gender = Gender(int(self.ui.femaleRadio.isChecked()))
-        text = (
-            self.locstring.get(language, gender)
-            if self.locstring.get(language, gender) is not None
-            else ""
-        )
+        text = self.locstring.get(language, gender) or ""
         self.ui.stringEdit.setPlainText(text)
 
     def stringEdited(self):

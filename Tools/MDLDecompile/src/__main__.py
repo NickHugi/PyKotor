@@ -101,7 +101,7 @@ def main():
                     process_file(gui_file, new_output_dir, parser_args.compile)
                 except KeyboardInterrupt:  # noqa: PERF203
                     raise
-                except Exception:  # noqa: BLE001
+                except Exception:  # pylint: disable=W0718  # noqa: BLE001
                     traceback.print_exc()
 
         else:
@@ -110,7 +110,7 @@ def main():
         print("Completed extractions")
     except KeyboardInterrupt:
         print("Goodbye")
-    except Exception:  # noqa: BLE001
+    except Exception:  # pylint: disable=W0718  # noqa: BLE001
         traceback.print_exc()
 
 

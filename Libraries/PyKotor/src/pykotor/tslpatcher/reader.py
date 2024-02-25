@@ -69,13 +69,13 @@ if TYPE_CHECKING:
 SECTION_NOT_FOUND_ERROR = "The [{}] section was not found in the ini"
 REFERENCES_TRACEBACK_MSG = ", referenced by '{}={}' in [{}]"
 
+
 class NamespaceReader:
     """Responsible for reading and loading namespaces from the namespaces.ini file."""
 
     def __init__(self, ini: ConfigParser):
         self.ini: ConfigParser = ini
         self.namespaces: list[PatcherNamespace] = []
-
 
     @classmethod
     def from_filepath(cls, path: os.PathLike | str) -> list[PatcherNamespace]:
@@ -90,7 +90,6 @@ class NamespaceReader:
 
         ini.read_string(decode_bytes_with_fallbacks(BinaryReader.load_file(path)))
         return NamespaceReader(ini).load()
-
 
     def load(self) -> list[PatcherNamespace]:  # Case-insensitive access to section
         namespaces_section_name: str | None = next((section for section in self.ini.sections() if section.lower() == "namespaces"), None)
@@ -124,6 +123,7 @@ class NamespaceReader:
 
         return namespaces
 
+
 class ConfigReader:
     def __init__(
         self,
@@ -136,7 +136,6 @@ class ConfigReader:
         self.mod_path: CaseAwarePath = CaseAwarePath.pathify(mod_path)
         self.config: PatcherConfig
         self.log: PatchLogger = logger or PatchLogger()
-
 
     @classmethod
     def from_filepath(cls, file_path: os.PathLike | str, logger: PatchLogger | None = None):
@@ -177,7 +176,6 @@ class ConfigReader:
         instance.config = PatcherConfig()
         return instance
 
-
     def load(self, config: PatcherConfig) -> PatcherConfig:
         self.config = config
         self.previously_parsed_sections = set()
@@ -199,7 +197,6 @@ class ConfigReader:
 
         return self.config
 
-
     def get_section_name(self, section_name: str):
         """Resolves the case-insensitive section name string if found and returns the case-sensitive correct section name."""
         s: str | None = next(
@@ -209,7 +206,6 @@ class ConfigReader:
         if s is not None:
             self.previously_parsed_sections.add(s)
         return s
-
 
     def load_settings(self):
         """Loads [Settings] from ini configuration into memory."""
@@ -239,7 +235,6 @@ class ConfigReader:
             self.config.game_number = int(lookup_game_number)
         else:
             self.config.game_number = None
-
 
     def load_install_list(self):
         """Loads [InstallList] from ini configuration into memory.
@@ -485,7 +480,6 @@ class ConfigReader:
                 msg = f"Could not parse '{key}={value}' in [TLKList]"
                 raise ValueError(msg) from e
 
-
     def load_2da_list(self):
         """Load 2D array patches from ini file into memory.
 
@@ -535,7 +529,6 @@ class ConfigReader:
                 if not manipulation:  # TODO: Does this denote an error occurred? If so we should raise.
                     continue
                 modifications.modifiers.append(manipulation)
-
 
     def load_ssf_list(self):
         """Loads SSF patches from the ini file into memory.
@@ -589,7 +582,6 @@ class ConfigReader:
                 sound: SSFSound = self.resolve_tslpatcher_ssf_sound(name)
                 modifier = ModifySSF(sound, new_value)
                 modifications.modifiers.append(modifier)
-
 
     def load_gff_list(self):
         """Loads GFF patches from the ini file into memory.
@@ -655,7 +647,6 @@ class ConfigReader:
 
                 modifications.modifiers.append(modifier)
 
-
     def load_compile_list(self):
         """Loads patches from the [CompileList] section of the ini file.
 
@@ -692,7 +683,6 @@ class ConfigReader:
                 modifications.pop_tslpatcher_vars(file_section_dict, default_destination, default_source_folder)
 
             self.config.patches_nss.append(modifications)
-
 
     def load_hack_list(self):
         """Loads [HACKList] patches from ini file into memory.
@@ -782,7 +772,6 @@ class ConfigReader:
 
         return ModifyFieldGFF(PureWindowsPath(key), value)
 
-
     def add_field_gff(
         self,
         identifier: str,
@@ -869,7 +858,6 @@ class ConfigReader:
             raise ValueError(msg)
         return AddFieldGFF(identifier, label, field_type, value, path, modifiers)
 
-
     @classmethod
     def _get_addfield_value(
         cls,
@@ -926,7 +914,6 @@ class ConfigReader:
 
         return value
 
-
     @classmethod
     def field_value_from_localized_string(cls, ini_section_dict: CaseInsensitiveDict) -> FieldValueConstant:
         """Parses a localized string from an INI section dictionary (usually a GFF section).
@@ -963,7 +950,6 @@ class ConfigReader:
 
         return FieldValueConstant(l_string_delta)
 
-
     @staticmethod
     def field_value_from_memory(raw_value: str) -> FieldValue | None:
         """Extract field value from memory reference string.
@@ -994,7 +980,6 @@ class ConfigReader:
             return FieldValue2DAMemory(token_id)
 
         return None
-
 
     @staticmethod
     def field_value_from_unknown(raw_value: str) -> FieldValue:
@@ -1064,7 +1049,6 @@ class ConfigReader:
 
         msg = f"Cannot determine type/value from '{raw_value}'"
         raise ValueError(msg)
-
 
     @staticmethod
     def field_value_from_type(raw_value: str, field_type: GFFFieldType) -> FieldValue | None:
@@ -1185,7 +1169,6 @@ class ConfigReader:
 
         return modification
 
-
     def _read_add_column(self, modifiers: CaseInsensitiveDict[str], identifier: str) -> AddColumn2DA:
         """Loads the add new column to be added to the 2D array.
 
@@ -1232,7 +1215,6 @@ class ConfigReader:
             store_2da,
         )
 
-
     def target_2da(
         self,
         identifier: str,
@@ -1277,7 +1259,6 @@ class ConfigReader:
 
         self.log.add_warning(f"No line set to be modified in [{identifier}].")  # TODO: should raise an exception?
         return None
-
 
     def cells_2da(
         self,
@@ -1345,7 +1326,6 @@ class ConfigReader:
 
         return cells, store_2da, store_tlk
 
-
     def row_label_2da(self, identifier: str, modifiers: CaseInsensitiveDict[str]) -> str | None:
         """Returns the row label for a 2D array based on modifiers.
 
@@ -1368,7 +1348,6 @@ class ConfigReader:
            "RowLabel",
            modifiers.pop("NewRowLabel", None),
         )
-
 
     def column_inserts_2da(
         self,
@@ -1442,7 +1421,6 @@ class ConfigReader:
         """
         return value_str.replace(",", ".")
 
-
     @staticmethod
     def normalize_tslpatcher_crlf(value_str: str) -> str:
         r"""Normalize line endings in a string value.
@@ -1461,7 +1439,6 @@ class ConfigReader:
             - Returns string with all line endings normalized
         """
         return value_str.replace("<#LF#>", "\n").replace("<#CR#>", "\r")
-
 
     @staticmethod
     def resolve_tslpatcher_ssf_sound(name: str) -> SSFSound:
@@ -1513,7 +1490,6 @@ class ConfigReader:
             }.items(),
         )
         return configstr_to_ssfsound[name]
-
 
     @staticmethod
     def resolve_tslpatcher_gff_field_type(field_type_num_str: str) -> GFFFieldType:

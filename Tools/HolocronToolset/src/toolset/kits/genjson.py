@@ -159,7 +159,6 @@ doors_hidden_bek = [(3.6, 2.5)]
 doors_dantooine_estate = [(4.5, 2.63), (2.18, 2.8)]
 
 
-
 if __name__ == "__main__":
     app = QApplication(sys.argv)
 

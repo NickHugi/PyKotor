@@ -11,12 +11,14 @@ if TYPE_CHECKING:
     from pykotor.tslpatcher.logger import PatchLogger
     from pykotor.tslpatcher.memory import PatcherMemory
 
+
 class OverrideType:
     """Possible actions for how the patcher should behave when patching a file to a ERF/MOD/RIM while that filename already exists in the Override folder."""
 
     IGNORE = "ignore"  # Do nothing: don't even check (TSLPatcher default)
     WARN = "warn"    # Log a warning (HoloPatcher default)
     RENAME = "rename"  # Rename the file in the Override folder with the 'old_' prefix. Also logs a warning.
+
 
 class PatcherModifications(ABC):
     """Abstract base class for TSLPatcher modifications.
@@ -131,6 +133,7 @@ class PatcherModifications(ABC):
         # a major problem, so HoloPatcher defaults to "warn"
         self.override_type = file_section_dict.pop("!OverrideType", OverrideType.WARN).lower()
         self.sourcefolder = file_section_dict.pop("!SourceFolder", default_sourcefolder)
+
 
 def convert_to_bool(value: bool | str) -> bool:
     # sourcery skip: assign-if-exp, reintroduce-else

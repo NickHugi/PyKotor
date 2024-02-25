@@ -84,6 +84,7 @@ class ItemTuple(NamedTuple):
     name: str
     filepath: Path
 
+
 class TexturePackNames(Enum):
     """Full list of texturepack ERF filenames for both games."""
 
@@ -347,7 +348,7 @@ class Installation:  # noqa: PLR0904
                 resource_path: CaseAwarePath = self._path / folder_name
                 if resource_path.safe_isdir():
                     return resource_path
-        except Exception as e:  # noqa: BLE001
+        except Exception as e:  # pylint: disable=W0718  # noqa: BLE001
             msg = f"An error occurred while finding the '{' or '.join(folder_names)}' folder in '{self._path}'."
             raise OSError(msg) from e
         else:
@@ -531,7 +532,6 @@ class Installation:  # noqa: PLR0904
             relative_folder: str = folder.relative_to(override_path).as_posix()  # '.' if folder is the same as override_path
             self._override[relative_folder] = self.load_resources(folder, recurse=True)  # type: ignore[assignment]
 
-
     def reload_override(
         self,
         directory: str,
@@ -548,7 +548,6 @@ class Installation:  # noqa: PLR0904
             - Override any existing resources with new ones from directory
         """
         self.load_override(directory)
-
 
     def reload_override_file(
         self,
@@ -1006,7 +1005,6 @@ class Installation:  # noqa: PLR0904
 
             return highest_scoring_game
 
-
         return determine_highest_scoring_game()
 
     def game(self) -> Game:
@@ -1303,7 +1301,6 @@ class Installation:  # noqa: PLR0904
                         resource.size(),
                     )
                     locations[resource.identifier()].append(location)
-
 
         def check_folders(values: list[Path]):
             for folder in values:
@@ -1838,7 +1835,6 @@ class Installation:  # noqa: PLR0904
 
         return results
 
-
     def module_name(
         self,
         module_filename: str,
@@ -1889,7 +1885,7 @@ class Installation:  # noqa: PLR0904
                     name = locstring.get(Language.ENGLISH, Gender.MALE)
                 else:
                     name = self.talktable().string(locstring.stringref)
-            except Exception as e:  # noqa: BLE001
+            except Exception as e:  # pylint: disable=W0718  # noqa: BLE001
                 print(format_exception_with_variables(e, message="This exception has been suppressed in pykotor.extract.installation."))
             else:
                 break
@@ -1906,7 +1902,6 @@ class Installation:  # noqa: PLR0904
             A dictionary mapping module filename to in-game module area name.
         """
         return CaseInsensitiveDict((module, self.module_name(module)) for module in self.modules_list())
-
 
     def module_id(
         self,
@@ -1948,7 +1943,7 @@ class Installation:  # noqa: PLR0904
                     mod_id = str(ifo.root.get_resref("Mod_Entry_Area"))
                     if mod_id:
                         break
-            except Exception as e:  # noqa: BLE001
+            except Exception as e:  # pylint: disable=W0718  # noqa: BLE001
                 print(format_exception_with_variables(e, message="This exception has been suppressed in pykotor.extract.installation."))
         return mod_id
 

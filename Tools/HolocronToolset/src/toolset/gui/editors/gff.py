@@ -17,9 +17,10 @@ from toolset.gui.editor import Editor
 from utility.error_handling import format_exception_with_variables
 
 if TYPE_CHECKING:
-    from PyQt5.QtWidgets import QWidget
-    from PyQt5.QtCore import QItemSelectionRange, QModelIndex
     import os
+
+    from PyQt5.QtCore import QItemSelectionRange, QModelIndex
+    from PyQt5.QtWidgets import QWidget
 
     from toolset.data.installation import HTInstallation
 
@@ -59,7 +60,7 @@ class GFFEditor(Editor):
         self._talktable: TalkTable | None = installation.talktable() if installation else None
         self._gff_content: GFFContent | None = None
 
-        from toolset.uic.editors.gff import Ui_MainWindow
+        from toolset.uic.editors.gff import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
 
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)

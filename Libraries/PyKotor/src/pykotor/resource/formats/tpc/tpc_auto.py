@@ -134,6 +134,7 @@ def write_tpc(
         msg = "Unsupported format specified; use TPC, TGA or BMP."
         raise ValueError(msg)
 
+
 def bytes_tpc(
     tpc: TPC,
     file_format: ResourceType = ResourceType.TPC,

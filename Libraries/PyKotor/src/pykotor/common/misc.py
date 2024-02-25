@@ -62,7 +62,6 @@ class ResRef(CaseInsensitiveWrappedStr):
         def __init__(self, resref: ResRef, func_name, *args, **kwargs):
             super().__init__(f"ResRef's must be case-insensitive, attempted {resref!r}.{func_name}({args, kwargs})")
 
-
     def __init__(
         self,
         name: str,

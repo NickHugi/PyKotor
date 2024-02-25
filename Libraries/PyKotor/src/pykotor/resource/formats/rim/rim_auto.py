@@ -9,6 +9,7 @@ if TYPE_CHECKING:
     from pykotor.resource.formats.rim.rim_data import RIM
     from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES
 
+
 def read_rim(
     source: SOURCE_TYPES,
     offset: int = 0,

@@ -25,7 +25,6 @@
     "./Libraries/PyKotorFont/src",
     "./Libraries/Utility/src",
   ],
-  "python.testing.cwd": "${workspaceFolder}",
   "python.testing.autoTestDiscoverOnSaveEnabled": true,
   "python.testing.promptToConfigure": true,
   "python.testing.pytestEnabled": false,
