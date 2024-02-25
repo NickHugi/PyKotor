@@ -205,7 +205,11 @@ class Rtf15Reader(PythReader):
         ctx = DocBuilder(doc, self.clean_paragraphs)
 
         for bit in self.group.flatten():
+<<<<<<< HEAD
             typeName = type(bit).__name__
+=======
+            typeName = bit.__class__.__name__
+>>>>>>> master
             getattr(ctx, f"handle_{typeName}", str)(bit)
 
         ctx.flushParagraph()

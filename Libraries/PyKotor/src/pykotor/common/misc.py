@@ -731,13 +731,13 @@ class CaseInsensitiveDict(Generic[T]):
         if isinstance(other, (dict, CaseInsensitiveDict)):
             for key, value in other.items():
                 if not isinstance(key, str):
-                    msg = f"{key} must be a str, got type {type(key)}"
+                    msg = f"{key} must be a str, got type {key.__class__}"
                     raise TypeError(msg)
                 self[key] = value
         else:
             for key, value in other:
                 if not isinstance(key, str):
-                    msg = f"{key} must be a str, got type {type(key)}"
+                    msg = f"{key} must be a str, got type {key.__class__}"
                     raise TypeError(msg)
                 self[key] = value
 

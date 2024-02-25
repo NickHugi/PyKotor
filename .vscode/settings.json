@@ -47,7 +47,12 @@
   ],
   "python.analysis.diagnosticSeverityOverrides": {
     "reportGeneralTypeIssues": "warning",
+<<<<<<< HEAD
     "reportOptionalMemberAccess": "warning" // Ignores issues with defs that can optionally be None.
+=======
+    "reportOptionalMemberAccess": "warning", // Ignores issues with defs that can optionally be None.
+    "reportCallIssue": "none"
+>>>>>>> master
   },
   "mypy-type-checker.args": [
     "--check-untyped-defs" // Ignores issues with defs that can optionally be None.

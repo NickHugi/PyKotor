@@ -207,6 +207,7 @@ class TestPathlibMixedSlashes(unittest.TestCase):
             test_pathtype_isdir: bool | None = PathType(test_path).safe_isdir()
             self.assertEqual(test_pathtype_isdir, True)
 
+<<<<<<< HEAD
     @unittest.skipIf(os.name != "nt", "Test only supported on Windows.")
     def test_windows_exists_alternatives(self):
         test_classes: tuple[type, ...] = (CustomPath, CaseAwarePath)
@@ -242,6 +243,8 @@ class TestPathlibMixedSlashes(unittest.TestCase):
             self.assertEqual(test_pathtype_isdir, True)
             # self.assertRaises(OSError, PathType(test_path).is_dir)
 
+=======
+>>>>>>> master
     def find_exists_problems(self):
         test_classes: tuple[type, ...] = (Path, CustomPath, CaseAwarePath)
         test_path = "/" if platform.system() != "Windows" else "C:\\"
