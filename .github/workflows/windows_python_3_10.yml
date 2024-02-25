@@ -22,7 +22,7 @@ jobs:
         ./install_python_venv.ps1 -noprompt
       shell: pwsh
 
-    - name: Install holopatcher dependencies:
+    - name: Install holopatcher dependencies
       run: |
         ./compile/deps_holopatcher.ps1 -noprompt
       shell: pwsh
@@ -34,7 +34,7 @@ jobs:
       shell: pwsh
       continue-on-error: true
 
-    - name: Install Holocron Toolset dependencies:
+    - name: Install Holocron Toolset dependencies
       run: |
         ./compile/deps_toolset.ps1 -noprompt
       shell: pwsh
@@ -46,7 +46,7 @@ jobs:
       shell: pwsh
       continue-on-error: true
 
-    - name: Install BatchPatcher dependencies:
+    - name: Install BatchPatcher dependencies
       run: |
         ./compile/deps_batchpatcher.ps1 -noprompt
       shell: pwsh
