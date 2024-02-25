@@ -7,7 +7,7 @@ import os
 import struct
 
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, BinaryIO
+from typing import TYPE_CHECKING
 
 from pykotor.common.geometry import Vector2, Vector3, Vector4
 from pykotor.common.language import LocalizedString
@@ -159,10 +159,10 @@ class BinaryReader:
         size: int | None = None,
     ) -> BinaryReader:
         if isinstance(source, (os.PathLike, str)):  # is path
-            reader = BinaryReader.from_file(source, offset, size)
+            reader = cls.from_file(source, offset, size)
 
         elif isinstance(source, (memoryview, bytes, bytearray)):  # is binary data
-            reader = BinaryReader.from_bytes(source, offset, size)
+            reader = cls.from_bytes(source, offset, size)
 
         elif isinstance(source, (io.IOBase, mmap.mmap)):
             if isinstance(source, (io.RawIOBase, io.BufferedIOBase)):  # only seekable streams are supported.
@@ -776,16 +776,15 @@ class BinaryWriter(ABC):
         source: TARGET_TYPES,
     ) -> BinaryWriter:
         if isinstance(source, (os.PathLike, str)):  # is path
-            return BinaryWriter.to_file(source)
+            return cls.to_file(source)
         if isinstance(source, bytearray):  # is mutable binary data
-            return BinaryWriter.to_bytearray(source)
+            return cls.to_bytearray(source)
         if isinstance(source, (bytes, memoryview)):  # is immutable binary data
-            return BinaryWriter.to_bytearray(bytearray(source))
-        if isinstance(source, BinaryWriter):
-            if isinstance(source, BinaryWriterFile):
-                return BinaryWriterFile(source._stream, source.offset)  # noqa: SLF001
-            if isinstance(source, BinaryWriterBytearray):
-                return BinaryWriterBytearray(source._ba, source._offset)  # noqa: SLF001
+            return cls.to_bytearray(bytearray(source))
+        if isinstance(source, BinaryWriterFile):
+            return BinaryWriterFile(source._stream, source.offset)  # noqa: SLF001
+        if isinstance(source, BinaryWriterBytearray):
+            return BinaryWriterBytearray(source._ba, source._offset)  # noqa: SLF001
         msg = "Must specify a path, bytes object or an existing BinaryWriter instance."
         raise NotImplementedError(msg)
 
