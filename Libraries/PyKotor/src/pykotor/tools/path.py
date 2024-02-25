@@ -85,7 +85,7 @@ def simple_wrapper(fn_name: str, wrapped_class_type: type) -> Callable[..., Any]
                     and not pathlib_path_obj.exists()
                 ):
                     instance = CaseAwarePath.get_case_sensitive_path(arg)
-                    if arg.__class__ in CaseAwarePath.__bases__ and arg.__class is not object:
+                    if arg.__class__ in CaseAwarePath.__bases__ and arg.__class__ is not object:
                         return new_cls(instance)
                     return instance
             return arg
