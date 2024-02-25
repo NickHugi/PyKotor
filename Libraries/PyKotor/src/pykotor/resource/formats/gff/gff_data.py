@@ -479,9 +479,10 @@ class GFFStruct:
         -------
             The field value. If the field does not exist or the value type does not match the specified type then the default is returned instead.
         """
+        assert isinstance(default, object)
         value: T = default
         if object_type is None:
-            object_type = type(default)
+            object_type = default.__class__
         if (
             self.exists(label)
             and object_type is not None

@@ -211,7 +211,7 @@ def is_string_like(obj) -> bool:  # sourcery skip: use-fstring-for-concatenation
 
 class StrType(type):
     def __instancecheck__(cls, instance):  # sourcery skip: instance-method-first-arg-name
-        instance_type = type(instance)
+        instance_type = instance.__class__
         mro = instance_type.__mro__
         if cls in {str, WrappedStr}:
             return instance_type in {WrappedStr, str} or WrappedStr in mro or str in mro
@@ -247,7 +247,7 @@ class WrappedStr(str):  # (metaclass=StrType):  # noqa: PLR0904
         if var is None:
             return None  # type: ignore[return-value]
         if not isinstance(var, (cls, str)):
-            msg = f"Expected str-like, got '{var}' of type {type(var)}"
+            msg = f"Expected str-like, got '{var}' of type {var.__class__}"
             raise TypeError(msg)
         return str(var)
 

@@ -89,8 +89,9 @@ class PurePath(pathlib.PurePath, metaclass=PurePathType):  # type: ignore[misc]
     ):
         if sys.version_info < (3, 12, 0):
             super().__init__()
-            return
-        super().__init__(*self.parse_args(args), **kwargs)
+        else:
+            super().__init__(*self.parse_args(args), **kwargs)
+        self._cached_str = self._fix_path_formatting(super().__str__(), slash=self._flavour.sep)  # type: ignore[reportAttributeAccessIssue]
 
     @classmethod
     def _create_instance(
@@ -196,12 +197,15 @@ class PurePath(pathlib.PurePath, metaclass=PurePathType):  # type: ignore[misc]
         if isinstance(arg, os.PathLike):
             return str(arg)
 
-        msg = f"Object '{arg!r}' must be str, or path-like object (implementing __fspath__). Instead got type '{type(arg)}'"
+        msg = f"Object '{arg!r}' must be str, or path-like object (implementing __fspath__). Instead got type '{arg.__class__}'"
         raise TypeError(msg)
 
     def __str__(self):
         """Return the result from _fix_path_formatting that was initialized."""
-        return self._fix_path_formatting(super().__str__(), slash=self._flavour.sep)  # type: ignore[reportAttributeAccessIssue]
+        if hasattr(self, "_cached_str"):  # Sometimes pathlib's internal instance creation mechanisms won't call our __init__
+            return self._cached_str
+        self._cached_str = self._fix_path_formatting(super().__str__(), slash=self._flavour.sep)  # type: ignore[reportAttributeAccessIssue]
+        return self._cached_str
 
     def __repr__(self):
         return f"{self.__class__.__name__}({self})"
@@ -520,7 +524,7 @@ class Path(PurePath, pathlib.Path):  # type: ignore[misc]
     def is_relative_to(self, *args, **kwargs) -> bool:
         """Return True if the path is relative to another path or False."""
         if not args or "other" in kwargs:
-            msg = f"{type(self)}.is_relative_to() missing 1 required positional argument: 'other'"
+            msg = f"{self.__class__.__name__}.is_relative_to() missing 1 required positional argument: 'other'"
             raise TypeError(msg)
 
         other, *_deprecated = args

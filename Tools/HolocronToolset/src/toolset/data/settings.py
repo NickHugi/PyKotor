@@ -12,6 +12,6 @@ class Settings:
     @staticmethod
     def _addSetting(name: str, default: Any):
         return property(
-            lambda this: this.settings.value(name, default, type(default)),
+            lambda this: this.settings.value(name, default, default.__class__),
             lambda this, val: this.settings.setValue(name, val),
         )

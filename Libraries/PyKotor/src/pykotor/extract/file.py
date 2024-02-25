@@ -1,12 +1,11 @@
 from __future__ import annotations
 
 import lzma
-import os
+
 from concurrent.futures import ThreadPoolExecutor
 from contextlib import suppress
 from dataclasses import dataclass, field
-import time
-from typing import TYPE_CHECKING, Any, NamedTuple
+from typing import TYPE_CHECKING, NamedTuple
 
 from pykotor.common.stream import BinaryReader
 from pykotor.resource.type import ResourceType
@@ -16,6 +15,8 @@ from utility.string import CaseInsensitiveWrappedStr
 from utility.system.path import Path, PurePath
 
 if TYPE_CHECKING:
+    import os
+
     from pykotor.common.misc import ResRef
 
 
@@ -31,7 +32,6 @@ class FileResource:
         filepath: os.PathLike | str,
     ):
         assert resname == resname.strip(), f"FileResource cannot be constructed, resource name '{resname}' cannot start/end with whitespace."
-
         self._identifier = ResourceIdentifier(resname, restype)
 
         self._resname: str = resname
@@ -87,16 +87,7 @@ class FileResource:
         if isinstance(other, ResourceIdentifier):
             return self.identifier() == other
         if isinstance(other, FileResource):
-            if self is other:
-                return True
-            return self._path_ident_obj == other._path_ident_obj
-
-        if not self._file_hash:
-            return False
-
-        if isinstance(other, (os.PathLike, bytes, bytearray, memoryview)):
-            return self._file_hash == generate_hash(other)
-
+            return True if self is other else self._path_ident_obj == other._path_ident_obj
         return NotImplemented
 
     def resname(self) -> str:
@@ -248,14 +239,9 @@ class FileResource:
 
                 if not _internal and not self._task_running:
                     def background_task(res: FileResource, sentdata: bytes):
-                        print(f"Calculating hash for {self._path_ident_obj} ")
                         self._task_running = True
-                        start_time = time.time()
                         res._file_hash = generate_hash(sentdata)  # noqa: SLF001
-                        end_time = time.time()
                         self._task_running = False
-                        duration = end_time - start_time  # Calculate the duration of the hashing operation
-                        print(f"Finished calculating hash for {self._path_ident_obj}. Duration: {duration:.4f} seconds")
 
                     with ThreadPoolExecutor(thread_name_prefix="background_fileresource_sha1hash_calculation") as executor:
                         executor.submit(background_task, self, data)
@@ -291,11 +277,17 @@ class LocationResult(NamedTuple):
     offset: int
     size: int
 
-class ResourceIdentifier(NamedTuple):
+@dataclass(frozen=True)
+class ResourceIdentifier:
     """Class for storing resource name and type, facilitating case-insensitive object comparisons and hashing equal to their string representations."""
 
     resname: str
     restype: ResourceType
+    _cached_filename_str: str = field(default=None, init=False, repr=False)  # type: ignore[reportArgumentType]
+
+    def __post_init__(self):
+        # Workaround to initialize a field in a frozen dataclass
+        object.__setattr__(self, "_cached_filename_str", None)
 
     def __hash__(
         self,
@@ -307,18 +299,28 @@ class ResourceIdentifier(NamedTuple):
     ):
         return f"{self.__class__.__name__}(resname='{self.resname}', restype={self.restype!r})"
 
-    def __str__(
-        self,
-    ):
-        ext: str = self.restype.extension
-        suffix: str = f".{ext}" if ext else ""
-        return f"{self.resname}{suffix}".lower()
+    def __str__(self) -> str:
+        if self._cached_filename_str is None:
+            ext: str = self.restype.extension
+            suffix: str = f".{ext}" if ext else ""
+            cached_str = f"{self.resname}{suffix}".lower()
+            object.__setattr__(self, "_cached_filename_str", cached_str)
+        return self._cached_filename_str
+
+    def __getitem__(self, key: int) -> str | ResourceType:
+        if key == 0:
+            return self.resname
+        if key == 1:
+            return self.restype
+        msg = f"Index out of range for ResourceIdentifier. key: {key}"
+        raise IndexError(msg)
 
     def __eq__(self, other: object):
-        if isinstance(other, str):
-            return hash(self) == hash(other.lower())
+        # sourcery skip: assign-if-exp, reintroduce-else
         if isinstance(other, ResourceIdentifier):
-            return hash(self) == hash(other)
+            return str(self) == str(other)
+        if isinstance(other, str):
+            return str(self) == other.lower()
         return NotImplemented
 
     def validate(self, *, strict=False):
