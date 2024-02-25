@@ -1,7 +1,10 @@
+from __future__ import annotations
+
 import os
 import unittest
 
 from PIL import Image
+
 from pykotor.common.language import Language
 from pykotor.font.draw import write_bitmap_font, write_bitmap_fonts
 from utility.system.path import Path
@@ -21,10 +24,10 @@ class TestWriteBitmapFont(unittest.TestCase):
         self.output_path.unlink()
     def test_bitmap_font(self):
         write_bitmap_fonts(self.output_path, r"C:\Windows\Fonts\Inkfree.ttf", (2048, 2048), Language.ENGLISH, draw_box=True, custom_scaling=1.0)
-    #def test_bitmap_font_chinese(self):
+    # def test_bitmap_font_chinese(self):
     #    write_bitmap_font(self.output_path / "test_font_chinese.tga", CHINESE_FONT_PATH_FILE, (10240,10240), Language.CHINESE_SIMPLIFIED, draw_box=True)
     def test_bitmap_font_thai(self):
-        write_bitmap_font(self.output_path / "test_font_thai.tga", THAI_FONT_PATH_FILE, (2048,2048), Language.THAI, draw_box=True)
+        write_bitmap_font(self.output_path / "test_font_thai.tga", THAI_FONT_PATH_FILE, (2048, 2048), Language.THAI, draw_box=True)
     def test_valid_inputs(self):
         # Test with valid inputs
         target_path = Path("output/font2.tga").resolve()

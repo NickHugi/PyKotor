@@ -2,20 +2,21 @@ from __future__ import annotations
 
 import json
 import sys
+
 from pathlib import Path
 from typing import TYPE_CHECKING
+
+# import config
+# import pyperclip
+from PyQt5 import QtCore
+from PyQt5.QtGui import QColor, QPainter, QPainterPath, QPixmap, QTransform
+from PyQt5.QtWidgets import QApplication
 
 from pykotor.common.geometry import SurfaceMaterial, Vector2
 from pykotor.common.stream import BinaryReader
 from pykotor.resource.formats.bwm import read_bwm
 from pykotor.resource.formats.mdl import read_mdl
 from pykotor.tools import model
-
-#import config
-#import pyperclip
-from PyQt5 import QtCore
-from PyQt5.QtGui import QColor, QPainter, QPainterPath, QPixmap, QTransform
-from PyQt5.QtWidgets import QApplication
 
 if TYPE_CHECKING:
     import os
@@ -37,8 +38,8 @@ def minimap(bwm_path: os.PathLike | str, png_path: os.PathLike | str):
     bwm = read_bwm(bwm_path)
     box = bwm.box()
 
-    width = int(box[1].x*10 - box[0].x*10) + int(box[1].x*10 - box[0].x*10)*3/2
-    height = int(box[1].y*10 - box[0].y*10) + int(box[1].y*10 - box[0].y*10)*3/2
+    width = int(box[1].x * 10 - box[0].x * 10) + int(box[1].x * 10 - box[0].x * 10) * 3 / 2
+    height = int(box[1].y * 10 - box[0].y * 10) + int(box[1].y * 10 - box[0].y * 10) * 3 / 2
     dim = Vector2(width, height)
 
     pixmap = QPixmap(int(width), int(height))
@@ -65,9 +66,9 @@ def minimap(bwm_path: os.PathLike | str, png_path: os.PathLike | str):
     for face in bwm.walkable_faces():
         painter.setBrush(material_color[face.material])
 
-        v1 = Vector2(face.v1.x, face.v1.y) * 10 + dim/2
-        v2 = Vector2(face.v2.x, face.v2.y) * 10 + dim/2
-        v3 = Vector2(face.v3.x, face.v3.y) * 10 + dim/2
+        v1 = Vector2(face.v1.x, face.v1.y) * 10 + dim / 2
+        v2 = Vector2(face.v2.x, face.v2.y) * 10 + dim / 2
+        v3 = Vector2(face.v3.x, face.v3.y) * 10 + dim / 2
 
         path = QPainterPath()
         path.moveTo(v1.x, v1.y)
@@ -158,21 +159,20 @@ doors_hidden_bek = [(3.6, 2.5)]
 doors_dantooine_estate = [(4.5, 2.63), (2.18, 2.8)]
 
 
-
 if __name__ == "__main__":
     app = QApplication(sys.argv)
 
-    #x = kitdict("Hidden Bek", "hiddenbek", 1, doors_hiddenBek)
+    # x = kitdict("Hidden Bek", "hiddenbek", 1, doors_hiddenBek)
     x = kitdict("Black Vulkar", "blackvulkar", 1, doors_hidden_bek)
-    #x = kitdict("Endar Spire", "endarspire", 1, doors_enclaveSurface)
-    #x = kitdict("Enclave Surface", "enclavesurface", 1, doors_enclaveSurface)
-    #x = kitdict("Dantooine Estate", "dantooineestate", 1, doors_dantooineEstate)
+    # x = kitdict("Endar Spire", "endarspire", 1, doors_enclaveSurface)
+    # x = kitdict("Enclave Surface", "enclavesurface", 1, doors_enclaveSurface)
+    # x = kitdict("Dantooine Estate", "dantooineestate", 1, doors_dantooineEstate)
 
     fn = x["id"]
     json.dump(x, Path(TOOLSET_KIT_PATH / fn).with_suffix(".json").open("w"), indent=4)
-    #dump = json.dumps(x, indent=4)
+    # dump = json.dumps(x, indent=4)
 
     # print(dump)
-    #pyperclip.copy(dump)
+    # pyperclip.copy(dump)
 
     # app.exec_()

@@ -1,12 +1,13 @@
 from __future__ import annotations
+
 import cProfile
 import os
-from typing import Any
+
+from typing import TYPE_CHECKING, Any
 
 import pytest
 
 from pykotor.common.misc import Game
-from pykotor.extract.file import FileResource
 from pykotor.resource.formats.gff.gff_auto import read_gff, write_gff
 from pykotor.resource.generics.are import read_are, write_are
 from pykotor.resource.generics.dlg import read_dlg, write_dlg
@@ -25,6 +26,9 @@ from pykotor.resource.generics.utw import read_utw, write_utw
 from pykotor.resource.type import ResourceType
 from utility.system.path import Path
 
+if TYPE_CHECKING:
+    from pykotor.extract.file import FileResource
+
 
 def test_gff_conversions(
     gff_data: tuple[Game, FileResource, Path],
@@ -36,7 +40,7 @@ def test_gff_conversions(
     if resource.restype() == ResourceType.ARE:
         generic = read_are(resource.data(), offset=0, size=resource.size())
         write_are(generic, converted_filepath, converted_game)
-    
+
     elif resource.restype() == ResourceType.DLG:
         generic = read_dlg(resource.data(), offset=0, size=resource.size())
         write_dlg(generic, converted_filepath, converted_game)
@@ -122,17 +126,17 @@ if __name__ == "__main__":
         [
             __file__,
             "-v",
-            #"--full-trace",
+            # "--full-trace",
             "-ra",
-            f"--log-file=test_gff_conversions.txt",
+            "--log-file=test_gff_conversions.txt",
             "-o",
             "log_cli=true",
             "--capture=no",
             "--junitxml=pytest_report.xml",
             "--html=pytest_report.html",
             "--self-contained-html",
-            #"-n",
-            #"auto"
+            # "-n",
+            # "auto"
         ],
     )
 

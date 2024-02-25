@@ -2,13 +2,16 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from enum import Enum
-from typing import NamedTuple
+from typing import TYPE_CHECKING, NamedTuple
 
-from pykotor.common.script import DataType, ScriptConstant, ScriptFunction
+from pykotor.common.script import DataType
 from pykotor.common.stream import BinaryReader
 from pykotor.resource.formats.ncs import NCS, NCSInstruction, NCSInstructionType
 from pykotor.tools.path import CaseAwarePath
 from utility.system.path import Path
+
+if TYPE_CHECKING:
+    from pykotor.common.script import ScriptConstant, ScriptFunction
 
 
 def get_logical_equality_instruction(
@@ -22,12 +25,15 @@ def get_logical_equality_instruction(
     msg = f"Tried an unsupported comparison between '{type1}' '{type2}'."
     raise CompileError(msg)
 
+
 class CompileError(Exception):
     def __init__(self, message: str):
         super().__init__(message)
 
+
 class EntryPointError(CompileError):
     ...
+
 
 class TopLevelObject(ABC):
     @abstractmethod
@@ -318,7 +324,8 @@ class CodeRoot:
             )
             ncs.add(NCSInstructionType.RSADDI, args=[], index=entry_index)
         else:
-            raise EntryPointError("This file has no entry point and cannot be compiled (Most likely an include file).")
+            msg = "This file has no entry point and cannot be compiled (Most likely an include file)."
+            raise EntryPointError(msg)
 
     def compile_jsr(
         self,

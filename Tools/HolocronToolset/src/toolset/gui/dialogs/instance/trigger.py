@@ -1,15 +1,25 @@
-from pykotor.common.misc import ResRef
-from pykotor.resource.generics.git import GITModuleLink, GITTrigger
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
 from PyQt5.QtGui import QIcon, QPixmap
-from PyQt5.QtWidgets import QDialog, QWidget
-from toolset.data.installation import HTInstallation
+from PyQt5.QtWidgets import QDialog
+
+from pykotor.common.misc import ResRef
+from pykotor.resource.generics.git import GITModuleLink
+
+if TYPE_CHECKING:
+    from PyQt5.QtWidgets import QWidget
+
+    from pykotor.resource.generics.git import GITTrigger
+    from toolset.data.installation import HTInstallation
 
 
 class TriggerDialog(QDialog):
     def __init__(self, parent: QWidget, trigger: GITTrigger, installation: HTInstallation):
         super().__init__(parent)
 
-        from toolset.uic.dialogs.instance.trigger import Ui_Dialog
+        from toolset.uic.dialogs.instance.trigger import Ui_Dialog  # pylint: disable=C0415  # noqa: PLC0415
 
         self.ui = Ui_Dialog()
         self.ui.setupUi(self)
@@ -19,13 +29,13 @@ class TriggerDialog(QDialog):
         self.setWindowTitle("Edit Trigger")
         self.setWindowIcon(QIcon(QPixmap(":/images/icons/k1/trigger.png")))
 
-        self.ui.resrefEdit.setText(trigger.resref.get())
+        self.ui.resrefEdit.setText(str(trigger.resref))
         self.ui.tagEdit.setText(trigger.tag)
         self.ui.xPosSpin.setValue(trigger.position.x)
         self.ui.yPosSpin.setValue(trigger.position.y)
         self.ui.zPosSpin.setValue(trigger.position.z)
         self.ui.linkToTagEdit.setText(trigger.linked_to)
-        self.ui.linkToModuleEdit.setText(trigger.linked_to_module.get())
+        self.ui.linkToModuleEdit.setText(str(trigger.linked_to_module))
         self.ui.noTransCheck.setChecked(trigger.linked_to_flags == 0)
         self.ui.toDoorCheck.setChecked(trigger.linked_to_flags == 1)
         self.ui.toWaypointCheck.setChecked(trigger.linked_to_flags == 2)

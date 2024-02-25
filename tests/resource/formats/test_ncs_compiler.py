@@ -6,7 +6,7 @@ import sys
 import unittest
 from tempfile import TemporaryDirectory
 
-THIS_SCRIPT_PATH = pathlib.Path(__file__)
+THIS_SCRIPT_PATH = pathlib.Path(__file__).resolve()
 PYKOTOR_PATH = THIS_SCRIPT_PATH.parents[3].resolve()
 UTILITY_PATH = THIS_SCRIPT_PATH.parents[5].joinpath("Utility", "src").resolve()
 def add_sys_path(p: pathlib.Path):
@@ -15,9 +15,10 @@ def add_sys_path(p: pathlib.Path):
         sys.path.append(working_dir)
 if PYKOTOR_PATH.joinpath("pykotor").exists():
     add_sys_path(PYKOTOR_PATH)
-    os.chdir(PYKOTOR_PATH.parent)
 if UTILITY_PATH.joinpath("utility").exists():
     add_sys_path(UTILITY_PATH)
+
+import math
 
 from pykotor.common.geometry import Vector3
 from pykotor.common.misc import Game
@@ -1714,7 +1715,7 @@ class TestNSSCompiler(unittest.TestCase):
         interpreter = Interpreter(ncs)
         interpreter.run()
 
-        self.assertTrue(any((inst for inst in ncs.instructions if inst.ins_type == NCSInstructionType.SAVEBP)))
+        self.assertTrue(any(inst for inst in ncs.instructions if inst.ins_type == NCSInstructionType.SAVEBP))
 
     def test_global_initializations(self):
         ncs = self.compile(
@@ -1739,7 +1740,7 @@ class TestNSSCompiler(unittest.TestCase):
         self.assertEqual(interpreter.action_snapshots[-3].arg_values[0], 0)
         self.assertEqual(interpreter.action_snapshots[-2].arg_values[0], 0.0)
         self.assertEqual(interpreter.action_snapshots[-1].arg_values[0], "")
-        self.assertTrue(any((inst for inst in ncs.instructions if inst.ins_type == NCSInstructionType.SAVEBP)))
+        self.assertTrue(any(inst for inst in ncs.instructions if inst.ins_type == NCSInstructionType.SAVEBP))
 
     def test_global_initialization_with_unary(self):
         ncs = self.compile(
@@ -2161,7 +2162,7 @@ class TestNSSCompiler(unittest.TestCase):
         )
 
         interpreter = Interpreter(ncs)
-        interpreter.set_mock("Vector", lambda x, y, z: Vector3(x, y, z))
+        interpreter.set_mock("Vector", Vector3)
         interpreter.set_mock("VectorMagnitude", lambda vec: vec.magnitude())
         interpreter.run()
 
@@ -2201,7 +2202,7 @@ class TestNSSCompiler(unittest.TestCase):
         )
 
         interpreter = Interpreter(ncs)
-        interpreter.set_mock("Vector", lambda x, y, z: Vector3(x, y, z))
+        interpreter.set_mock("Vector", Vector3)
         interpreter.run()
 
         self.assertEqual(2.0, interpreter.action_snapshots[-3].arg_values[0])
@@ -2225,7 +2226,7 @@ class TestNSSCompiler(unittest.TestCase):
         )
 
         interpreter = Interpreter(ncs)
-        interpreter.set_mock("Vector", lambda x, y, z: Vector3(x, y, z))
+        interpreter.set_mock("Vector", Vector3)
         interpreter.run()
 
         self.assertEqual(2.0, interpreter.action_snapshots[-3].arg_values[0])
@@ -2305,7 +2306,7 @@ class TestNSSCompiler(unittest.TestCase):
 
         self.assertEqual(123, interpreter.action_snapshots[-3].arg_values[0])
         self.assertEqual("abc", interpreter.action_snapshots[-2].arg_values[0])
-        self.assertEqual(3.14, interpreter.action_snapshots[-1].arg_values[0])
+        self.assertAlmostEqual(3.14, interpreter.action_snapshots[-1].arg_values[0].value)
 
     def test_prefix_increment_sp_int(self):
         ncs = self.compile(

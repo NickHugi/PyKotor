@@ -3,8 +3,12 @@ from __future__ import annotations
 import itertools
 import json
 import math
+
 from copy import copy, deepcopy
 from typing import TYPE_CHECKING, NamedTuple
+
+from PyQt5 import QtCore
+from PyQt5.QtGui import QColor, QImage, QPainter, QPixmap, QTransform
 
 from pykotor.common.geometry import Vector2, Vector3, Vector4
 from pykotor.common.language import LocalizedString
@@ -19,16 +23,15 @@ from pykotor.resource.formats.vis import VIS, bytes_vis
 from pykotor.resource.generics.are import ARE, ARENorthAxis, bytes_are
 from pykotor.resource.generics.git import GIT, GITDoor, bytes_git
 from pykotor.resource.generics.ifo import IFO, bytes_ifo
-from pykotor.resource.generics.utd import UTD, bytes_utd
+from pykotor.resource.generics.utd import bytes_utd
 from pykotor.resource.type import ResourceType
 from pykotor.tools import model
-from PyQt5 import QtCore
-from PyQt5.QtGui import QColor, QImage, QPainter, QPixmap, QTransform
 
 if TYPE_CHECKING:
     import os
 
     from pykotor.resource.formats.bwm import BWM
+    from pykotor.resource.generics.utd import UTD
     from toolset.data.indoorkit import Kit, KitComponent, KitComponentHook, KitDoor
     from toolset.data.installation import HTInstallation
 
@@ -114,7 +117,7 @@ class IndoorMap:
 
                 if position not in points:
                     points.append(position)  # 47
-                    #if room2 is None:  # FIXME ??? why is this conditional ever hit
+                    # if room2 is None:  # FIXME ??? why is this conditional ever hit
                     #    msg = "room2 cannot be None"
                     #    raise ValueError(msg)
 
@@ -798,7 +801,7 @@ class IndoorMap:
         self.lighting.r = data["lighting"][2]
 
         self.moduleId = data["warp"]
-        self.skybox = data["skybox"] if "skybox" in data else ""
+        self.skybox = data.get("skybox", "")
 
         for roomData in data["rooms"]:
             sKit = next((kit for kit in kits if kit.name == roomData["kit"]), None)
@@ -816,8 +819,8 @@ class IndoorMap:
 
             position = Vector3(roomData["position"][0], roomData["position"][1], roomData["position"][2])
             rotation = roomData["rotation"]
-            flip_x = bool(roomData["flip_x"] if "flip_x" in roomData else False)
-            flip_y = bool(roomData["flip_y"] if "flip_y" in roomData else False)
+            flip_x = bool(roomData.get("flip_x", False))
+            flip_y = bool(roomData.get("flip_y", False))
             room = IndoorMapRoom(sComponent, position, rotation, flip_x, flip_y)
             self.rooms.append(room)
 

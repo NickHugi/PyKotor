@@ -4,7 +4,7 @@
 from __future__ import annotations
 
 from enum import Enum, IntEnum
-from typing import TYPE_CHECKING, Any, ClassVar, Generator, Generic, ItemsView, Iterable, Iterator, Mapping, TypeVar, overload
+from typing import TYPE_CHECKING, ClassVar, Generic, ItemsView, Iterable, Iterator, Mapping, TypeVar, overload
 
 from pykotor.common.geometry import Vector3
 
@@ -14,6 +14,7 @@ if TYPE_CHECKING:
 T = TypeVar("T")
 VT = TypeVar("VT")
 _unique_sentinel = object()
+
 
 class ResRef:
     """A string reference to a game resource.
@@ -61,7 +62,6 @@ class ResRef:
         def __init__(self, resref: ResRef, func_name, *args, **kwargs):
             super().__init__(f"ResRef's must be case-insensitive, attempted {resref!r}.{func_name}({args, kwargs})")
 
-
     def __init__(
         self,
         text: str,
@@ -104,7 +104,7 @@ class ResRef:
     def from_blank(cls) -> ResRef:
         """Returns a blank ResRef.
 
-        Returns
+        Returns:
         -------
             A new ResRef instance.
         """
@@ -159,19 +159,20 @@ class ResRef:
         # Validate text length.
         if len(parsed_text) > self.MAX_LENGTH:
             if not truncate:
-                raise self.ExceedsMaxLengthError(parsed_text)
+                ...
+                # raise self.ExceedsMaxLengthError(parsed_text)  # pykotor isn't stable enough to enforce this yet.
             parsed_text = parsed_text[:self.MAX_LENGTH]
 
         # Ensure text doesn't start/end with whitespace.
         if parsed_text != parsed_text.strip():
             msg = f"ResRef '{text}' cannot start or end with a space."
-            raise self.InvalidFormatError(msg)
+            # raise self.InvalidFormatError(msg)  # pykotor isn't stable enough to enforce this yet.
 
         # Ensure text doesn't contain any invalid ASCII characters.
         for i in range(len(parsed_text)):
             if parsed_text[i] in self.INVALID_CHARACTERS:
                 msg = f"ResRef '{text}' cannot contain any invalid characters in [{self.INVALID_CHARACTERS}]"
-                raise self.InvalidFormatError(msg)
+                # raise self.InvalidFormatError(msg)  # pykotor isn't stable enough to enforce this yet.
 
         self._value = parsed_text
 
@@ -366,7 +367,7 @@ class Color:
     ) -> int:
         """Returns a RGB integer encoded from the color components.
 
-        Returns
+        Returns:
         -------
             A integer representing a color.
         """
@@ -380,7 +381,7 @@ class Color:
     ) -> int:
         """Returns a RGB integer encoded from the color components.
 
-        Returns
+        Returns:
         -------
             A integer representing a color.
         """
@@ -395,7 +396,7 @@ class Color:
     ) -> int:
         """Returns a BGR integer encoded from the color components.
 
-        Returns
+        Returns:
         -------
             A integer representing a color.
         """
@@ -409,7 +410,7 @@ class Color:
     ) -> Vector3:
         """Returns a Vector3 representing a color with its components.
 
-        Returns
+        Returns:
         -------
             A new Vector3 instance.
         """
@@ -420,7 +421,7 @@ class Color:
     ) -> Vector3:
         """Returns a Vector3 representing a color with its components.
 
-        Returns
+        Returns:
         -------
             A new Vector3 instance.
         """
@@ -648,7 +649,7 @@ class CaseInsensitiveDict(Generic[T]):
 
         return True
 
-    def __iter__(self) -> Generator[str, Any, None]:
+    def __iter__(self) -> Iterator[str]:
         yield from self._dictionary
 
     def __getitem__(self, key: str) -> T:

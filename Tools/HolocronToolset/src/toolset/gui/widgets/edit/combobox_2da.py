@@ -1,13 +1,15 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from PyQt5 import QtCore
-from PyQt5.QtWidgets import QComboBox, QMenu, QWidget
+from PyQt5.QtWidgets import QComboBox, QMenu
+
 from toolset.gui.dialogs.edit.combo_2da import ModdedValueSpinboxDialog
 
 if TYPE_CHECKING:
     from PyQt5.QtCore import QPoint
+    from PyQt5.QtWidgets import QWidget
 
 
 class ComboBox2DA(QComboBox):
@@ -17,11 +19,10 @@ class ComboBox2DA(QComboBox):
         self.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
         self.customContextMenuRequested.connect(self.onContextMenu)
 
-        self._sortAlphabetically = False
+        self._sortAlphabetically: bool = False
 
     def addItem(self, text: str, row: int | None = None):
-        """Adds the 2DA row into the combobox. If the row index is not specified, then the value will be set to the number
-        of items in the combobox.
+        """Adds the 2DA row into the combobox. If the row index is not specified, then the value will be set to the number of items in the combobox.
 
         Args:
         ----
@@ -38,14 +39,13 @@ class ComboBox2DA(QComboBox):
         self.clear()
 
         for index, text in enumerate(values):
-            new_text = text
+            new_text: str = text
             if cleanupStrings:
                 new_text = text.replace("TRAP_", "")
                 new_text = text.replace("GENDER_", "")
                 new_text = text.replace("_", " ")
-            if ignoreBlanks and new_text == "":
-                continue
-            super().addItem(new_text, index)
+            if not ignoreBlanks or new_text:
+                super().addItem(new_text, index)
 
         self.enableSort() if self._sortAlphabetically else self.disableSort()
 
@@ -60,7 +60,7 @@ class ComboBox2DA(QComboBox):
         self._sortAlphabetically = False
         selected = self.currentData()
 
-        items = [
+        items: list[tuple[Any, str]] = [
             (self.itemData(index), self.itemText(index))
             for index in range(self.count())
         ]
@@ -92,7 +92,7 @@ class ComboBox2DA(QComboBox):
     def currentIndex(self) -> int:
         """Returns the row index from the currently selected item.
 
-        Returns
+        Returns:
         -------
             Row index into the 2DA file.
         """

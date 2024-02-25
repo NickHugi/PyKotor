@@ -9,25 +9,26 @@ from pykotor.resource.formats.tlk.tlk_auto import bytes_tlk
 from pykotor.tslpatcher.mods.template import PatcherModifications
 
 if TYPE_CHECKING:
+    from typing_extensions import Literal
+
     from pykotor.common.misc import Game
     from pykotor.resource.formats.tlk import TLK
     from pykotor.resource.type import SOURCE_TYPES
     from pykotor.tslpatcher.logger import PatchLogger
     from pykotor.tslpatcher.memory import PatcherMemory
-    from typing_extensions import Literal
     from utility.system.path import Path
 
 
 class ModificationsTLK(PatcherModifications):
-    DEFAULT_DESTINATION   = "."
-    DEFAULT_SOURCEFILE    = "append.tlk"
-    DEFAULT_SOURCEFILE_F  = "appendf.tlk"
-    DEFAULT_SAVEAS_FILE   = "dialog.tlk"
+    DEFAULT_DESTINATION = "."
+    DEFAULT_SOURCEFILE = "append.tlk"
+    DEFAULT_SOURCEFILE_F = "appendf.tlk"
+    DEFAULT_SAVEAS_FILE = "dialog.tlk"
     DEFAULT_SAVEAS_FILE_F = "dialogf.tlk"
     def __init__(
         self,
-        filename: str=DEFAULT_SOURCEFILE,
-        replace: bool | None =None,
+        filename: str = DEFAULT_SOURCEFILE,
+        replace: bool | None = None,
         modifiers=None,
     ):
         super().__init__(filename)

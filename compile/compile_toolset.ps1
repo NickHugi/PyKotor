@@ -1,5 +1,6 @@
-param (
-  [switch]$noprompt
+param(
+  [switch]$noprompt,
+  [string]$venv_name = ".venv"
 )
 $this_noprompt = $noprompt
 
@@ -9,20 +10,10 @@ Write-Host "The path to the script directory is: $scriptPath"
 Write-Host "The path to the root directory is: $rootPath"
 
 Write-Host "Initializing python virtual environment..."
-. $rootPath/install_python_venv.ps1
-
-Write-Host "Installing required packages to build the holocron toolset..."
-. $pythonExePath -m pip install --upgrade pip --prefer-binary --progress-bar on
-. $pythonExePath -m pip install pyinstaller --prefer-binary --progress-bar on
-. $pythonExePath -m pip install -r ($rootPath + $pathSep + "Tools" + $pathSep + "HolocronToolset" + $pathSep + "requirements.txt") --prefer-binary --compile --progress-bar on -U
-. $pythonExePath -m pip install -r ($rootPath + $pathSep + "Libraries" + $pathSep + "PyKotor" + $pathSep + "requirements.txt") --prefer-binary --compile --progress-bar on -U
-. $pythonExePath -m pip install -r ($rootPath + $pathSep + "Libraries" + $pathSep + "PyKotorGL" + $pathSep + "requirements.txt") --prefer-binary --compile --progress-bar on -U
-. $pythonExePath -m pip install -r ($rootPath + $pathSep + "Libraries" + $pathSep + "PyKotorGL" + $pathSep + "recommended.txt") --prefer-binary --compile --progress-bar on -U
-
-if ( (Get-OS) -eq "Linux" ) {
-    . sudo apt install python3-pyqt5 -y
-} elseif ( (Get-OS) -eq "Mac" ) {
-    . brew install pyqt5
+if ($this_noprompt) {
+    . $rootPath/install_python_venv.ps1 -noprompt -venv_name $venv_name
+} else {
+    . $rootPath/install_python_venv.ps1 -venv_name $venv_name
 }
 
 $current_working_dir = (Get-Location).Path
@@ -43,21 +34,21 @@ if (Test-Path -Path $finalExecutablePath) {
     Remove-Item -Path $finalExecutablePath -Force
 }
 
-Write-Host "EXTRA PYTHONPATH: '$env:PYTHONPATH'"
+Write-Host "Extra PYTHONPATH paths:\n'$env:PYTHONPATH'\n\n"
+$iconExtension = if ((Get-OS) -eq 'Mac') {'icns'} else {'ico'}
 $pyInstallerArgs = @{
     'exclude-module' = @(
-        '',
         'dl_translate',
-        'torch '
+        'torch'
     )
     'clean' = $true
-    'console' = $true
+    'noconsole' = $true  # https://github.com/pyinstaller/pyinstaller/wiki/FAQ#mac-os-x  https://pyinstaller.org/en/stable/usage.html#cmdoption-w
     'onefile' = $true
     'noconfirm' = $true
     'name' = "HolocronToolset"
     'distpath'=($rootPath + $pathSep + "dist")
-#    'upx-dir' = "C:\GitHub\upx-win64"
-    'icon'="resources/icons/sith.ico"
+    'upx-dir' = "C:\GitHub\upx-win64"
+    'icon'="resources/icons/sith.$iconExtension"
 }
 
 $pyInstallerArgs = $pyInstallerArgs.GetEnumerator() | ForEach-Object {
@@ -66,8 +57,11 @@ $pyInstallerArgs = $pyInstallerArgs.GetEnumerator() | ForEach-Object {
 
     if ($value -is [System.Array]) {
         # Handle array values
-        $value -join "--$key="
-        $value = "--$key=$value"
+        $arr = @()
+        foreach ($elem in $value) {
+            $arr += "--$key=$elem"
+        }
+        $arr
     } else {
         # Handle key-value pair arguments
         if ($value -eq $true) {

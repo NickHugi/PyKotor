@@ -1,23 +1,29 @@
 from __future__ import annotations
 
 import math
+
 from copy import copy
 from datetime import datetime, timedelta, timezone
 from typing import TYPE_CHECKING
 
-from pykotor.common.geometry import Vector2, Vector3
-from pykotor.gl.scene import Scene
-from pykotor.resource.generics.git import GITInstance
-from pykotor.resource.type import ResourceType
 from PyQt5 import QtCore
 from PyQt5.QtCore import QTimer
-from PyQt5.QtWidgets import QOpenGLWidget, QWidget
+from PyQt5.QtWidgets import QOpenGLWidget
+
+from pykotor.common.geometry import Vector2, Vector3
+from pykotor.gl.scene import Scene
+from pykotor.resource.formats.bwm.bwm_data import BWM
+from pykotor.resource.generics.git import GITInstance
+from pykotor.resource.type import ResourceType
+from utility.error_handling import assert_with_variable_trace
 
 if TYPE_CHECKING:
+    from PyQt5.QtGui import QKeyEvent, QMouseEvent, QResizeEvent, QWheelEvent
+    from PyQt5.QtWidgets import QWidget
     from glm import vec3
+
     from pykotor.common.module import Module
     from pykotor.resource.formats.bwm import BWMFace
-    from PyQt5.QtGui import QKeyEvent, QMouseEvent, QResizeEvent, QWheelEvent
     from toolset.data.installation import HTInstallation
 
 
@@ -59,7 +65,7 @@ class ModuleRenderer(QOpenGLWidget):
         """
         super().__init__(parent)
 
-        from toolset.gui.windows.module_designer import ModuleDesignerSettings
+        from toolset.gui.windows.module_designer import ModuleDesignerSettings  # noqa: PLC0415  # pylint: disable=C0415
 
         self.scene: Scene | None = None
         self.settings: ModuleDesignerSettings = ModuleDesignerSettings()
@@ -90,10 +96,12 @@ class ModuleRenderer(QOpenGLWidget):
         ----
             self: The object instance
 
-        - Calls repaint() to redraw the canvas
-        - Checks if mouse is over object and keyboard keys are pressed
-        - Emits keyboardPressed signal with mouse/key info
-        - Schedules next loop call after delay to maintain ~30fps
+        Processing Logic:
+        ----------------
+            - Calls repaint() to redraw the canvas
+            - Checks if mouse is over object and keyboard keys are pressed
+            - Emits keyboardPressed signal with mouse/key info
+            - Schedules next loop call after delay to maintain ~30fps
         """
         self.repaint()
         if self.underMouse() and self.freeCam and len(self._keysDown) > 0:
@@ -110,21 +118,34 @@ class ModuleRenderer(QOpenGLWidget):
             x: float - The x coordinate of the point
             y: float - The y coordinate of the point
             default_z: float = 0.0 - The default z height if no face is found
+
         Returns:
+        -------
             Vector3 - The (x, y, z) position on the walkmesh
-        - Iterates through walkmesh resources to find the face at the given (x,y) coordinates
-        - Checks if the found face is walkable, and overrides any previous less walkable face
-        - Returns a Vector3 with the input x,y coords and either the face z height or default z if no face.
+
+        Processing Logic:
+        ----------------
+            - Iterates through walkmesh resources to find the face at the given (x,y) coordinates
+            - Checks if the found face is walkable, and overrides any previous less walkable face
+            - Returns a Vector3 with the input x,y coords and either the face z height or default z if no face.
         """
         face: BWMFace | None = None
-        for walkmesh in [res.resource() for res in self._module.resources.values() if
-                         res.restype() == ResourceType.WOK]:
-            if walkmesh is None:
+        for module_resource in self._module.resources.values():
+            if module_resource.restype() != ResourceType.WOK:
                 continue
-            over = walkmesh.faceAt(x, y)
-            if over and (face is None or not face.material.walkable() and over.material.walkable()):
+            walkmesh_resource = module_resource.resource()
+            if walkmesh_resource is None:
+                continue
+            assert isinstance(walkmesh_resource, BWM), assert_with_variable_trace(isinstance(walkmesh_resource, BWM))
+            over: BWMFace | None = walkmesh_resource.faceAt(x, y)
+            if over is None:
+                continue
+            if face is None:  # noqa: SIM114
                 face = over
-        z = default_z if face is None else face.determine_z(x, y)
+            elif not face.material.walkable() and over.material.walkable():
+                face = over
+
+        z: float = default_z if face is None else face.determine_z(x, y)
         return Vector3(x, y, z)
 
     def initializeGL(self):
@@ -190,7 +211,7 @@ class ModuleRenderer(QOpenGLWidget):
     # region Camera Transformations
     def snapCameraToPoint(self, point: Vector3, distance: float = 6.0):
         camera = self.scene.camera
-        camera.x, camera.y, camera.z = point.x, point.y, point.z+1.0
+        camera.x, camera.y, camera.z = point.x, point.y, point.z + 1.0
         camera.distance = distance
 
     def panCamera(self, forward: float, right: float, up: float):
@@ -231,8 +252,8 @@ class ModuleRenderer(QOpenGLWidget):
             snapRotations:
         """
         self.scene.camera.rotate(yaw, pitch)
-        if self.scene.camera.pitch < math.pi/2 and snapRotations:
-            self.scene.camera.pitch = math.pi/2
+        if self.scene.camera.pitch < math.pi / 2 and snapRotations:
+            self.scene.camera.pitch = math.pi / 2
         if self.scene.camera.pitch > math.pi and snapRotations:
             self.scene.camera.pitch = math.pi
 
@@ -244,6 +265,8 @@ class ModuleRenderer(QOpenGLWidget):
     # region Events
     def resizeEvent(self, e: QResizeEvent):
         super().resizeEvent(e)
+        if self.scene is None:
+            return
 
         self.scene.camera.width = e.size().width()
         self.scene.camera.height = e.size().height()
@@ -267,9 +290,11 @@ class ModuleRenderer(QOpenGLWidget):
         """
         screen = Vector2(e.x(), e.y())
         if self.freeCam:
-            screenDelta = Vector2(screen.x - self.width()/2, screen.y - self.height()/2)
+            screenDelta = Vector2(screen.x - self.width() / 2, screen.y - self.height() / 2)
         else:
             screenDelta = Vector2(screen.x - self._mousePrev.x, screen.y - self._mousePrev.y)
+        if self.scene is None:
+            return
 
         world = self.scene.cursor.position()
         self._mousePrev = screen

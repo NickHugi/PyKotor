@@ -35,7 +35,7 @@ class ERFType(Enum):
 class ERF:
     """Represents the data of a ERF file.
 
-    Attributes
+    Attributes:
     ----------
         erf_type: The ERF type.
     """
@@ -51,6 +51,11 @@ class ERF:
 
         # used for faster lookups
         self._resource_dict: dict[ResourceIdentifier, ERFResource] = {}
+
+    def __repr__(
+        self,
+    ):
+        return f"{self.__class__.__name__}({self.erf_type!r})"
 
     def __repr__(
         self,
@@ -87,7 +92,7 @@ class ERF:
 
         return NotImplemented
 
-    def set_data(  # noqa: D417
+    def set_data(
         self,
         resname: str,
         restype: ResourceType,
@@ -158,7 +163,7 @@ class ERF:
     ):
         """Returns a RIM with the same resources.
 
-        Returns
+        Returns:
         -------
             A new RIM object.
         """

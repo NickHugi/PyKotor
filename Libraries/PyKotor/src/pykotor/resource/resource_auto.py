@@ -3,6 +3,8 @@ from __future__ import annotations
 import contextlib
 import os
 
+from typing import TYPE_CHECKING
+
 from pykotor.extract.file import ResourceIdentifier
 from pykotor.resource.formats.bwm import bytes_bwm, read_bwm
 from pykotor.resource.formats.erf import ERFType, bytes_erf, read_erf
@@ -18,9 +20,12 @@ from pykotor.resource.formats.tlk import bytes_tlk, read_tlk
 from pykotor.resource.formats.tpc import bytes_tpc, read_tpc
 from pykotor.resource.formats.twoda import bytes_2da, read_2da
 from pykotor.resource.formats.vis import bytes_vis, read_vis
-from pykotor.resource.type import SOURCE_TYPES, ResourceType
+from pykotor.resource.type import ResourceType
 from utility.error_handling import universal_simplify_exception
 from utility.system.path import PurePath
+
+if TYPE_CHECKING:
+    from pykotor.resource.type import SOURCE_TYPES
 
 
 def read_resource(source: SOURCE_TYPES, resource_type: ResourceType | None = None) -> bytes:  # noqa: C901, PLR0911, PLR0912
@@ -79,7 +84,7 @@ def read_resource(source: SOURCE_TYPES, resource_type: ResourceType | None = Non
             return bytes_ltr(read_ltr(source))
         if resource_type.category == "Walkmeshes":
             return bytes_bwm(read_bwm(source))
-    except Exception as e:  # noqa: BLE001
+    except Exception as e:  # pylint: disable=W0718  # noqa: BLE001
         new_err = ValueError(f"Could not load resource '{source_path}' as resource type '{resource_type}")
         print(universal_simplify_exception(new_err))
         raise new_err from e

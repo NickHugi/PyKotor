@@ -5,7 +5,7 @@ import pathlib
 import sys
 import unittest
 
-THIS_SCRIPT_PATH = pathlib.Path(__file__)
+THIS_SCRIPT_PATH = pathlib.Path(__file__).resolve()
 PYKOTOR_PATH = THIS_SCRIPT_PATH.parents[3].resolve()
 UTILITY_PATH = THIS_SCRIPT_PATH.parents[5].joinpath("Utility", "src").resolve()
 def add_sys_path(p: pathlib.Path):
@@ -14,15 +14,20 @@ def add_sys_path(p: pathlib.Path):
         sys.path.append(working_dir)
 if PYKOTOR_PATH.joinpath("pykotor").exists():
     add_sys_path(PYKOTOR_PATH)
-    os.chdir(PYKOTOR_PATH.parent)
 if UTILITY_PATH.joinpath("utility").exists():
     add_sys_path(UTILITY_PATH)
 
+from typing import TYPE_CHECKING
+
 from pykotor.common.misc import Game
 from pykotor.extract.installation import Installation
-from pykotor.resource.formats.gff import GFF, read_gff
-from pykotor.resource.generics.jrl import JRL, JRLEntry, construct_jrl, dismantle_jrl
+from pykotor.resource.formats.gff import read_gff
+from pykotor.resource.generics.jrl import construct_jrl, dismantle_jrl
 from pykotor.resource.type import ResourceType
+
+if TYPE_CHECKING:
+    from pykotor.resource.formats.gff import GFF
+    from pykotor.resource.generics.jrl import JRL, JRLEntry
 
 TEST_FILE = "tests/files/test.jrl"
 K1_PATH = os.environ.get("K1_PATH")

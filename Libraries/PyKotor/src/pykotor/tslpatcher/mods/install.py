@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import shutil
+
 from typing import TYPE_CHECKING
 
 from pykotor.common.stream import BinaryReader
@@ -11,12 +12,13 @@ from utility.system.path import PurePath
 if TYPE_CHECKING:
     import os
 
+    from typing_extensions import Literal
+
     from pykotor.common.misc import Game
     from pykotor.resource.type import SOURCE_TYPES
     from pykotor.tools.path import CaseAwarePath
     from pykotor.tslpatcher.logger import PatchLogger
     from pykotor.tslpatcher.memory import PatcherMemory
-    from typing_extensions import Literal
 
 
 def create_backup(

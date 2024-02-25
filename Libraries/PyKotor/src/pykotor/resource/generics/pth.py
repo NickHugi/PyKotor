@@ -1,13 +1,17 @@
 from __future__ import annotations
 
 from copy import copy
+from typing import TYPE_CHECKING
 
 from pykotor.common.geometry import Vector2
 from pykotor.common.misc import Game
 from pykotor.resource.formats.gff import GFF, GFFContent, GFFList, read_gff, write_gff
 from pykotor.resource.formats.gff.gff_auto import bytes_gff
-from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES, ResourceType
+from pykotor.resource.type import ResourceType
 from utility.error_handling import format_exception_with_variables
+
+if TYPE_CHECKING:
+    from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES
 
 
 class PTH:
@@ -51,7 +55,7 @@ class PTH:
     ):
         self._points.pop(index)
 
-        self._connections = [x for x in self._connections if index not in (x.source, x.target)]
+        self._connections = [x for x in self._connections if index not in {x.source, x.target}]
 
         for connection in self._connections:
             connection.source = connection.source - 1 if connection.source > index else connection.source
@@ -136,7 +140,6 @@ class PTHEdge:
         msg = f"Cannot compare {self!r} with {other!r}."
         print(msg)
         return NotImplemented
-
 
 
 def construct_pth(

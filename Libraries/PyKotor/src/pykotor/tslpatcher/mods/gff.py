@@ -2,11 +2,11 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from itertools import zip_longest
-from typing import TYPE_CHECKING, Any, Callable
+from typing import TYPE_CHECKING, Any
 
 from pykotor.common.language import LocalizedString
-from pykotor.common.misc import Game, ResRef
-from pykotor.resource.formats.gff import GFF, GFFFieldType, GFFList, GFFStruct, bytes_gff
+from pykotor.common.misc import ResRef
+from pykotor.resource.formats.gff import GFFFieldType, GFFList, GFFStruct, bytes_gff
 from pykotor.resource.formats.gff.io_gff import GFFBinaryReader
 from pykotor.tslpatcher.mods.template import PatcherModifications
 from utility.system.path import PureWindowsPath
@@ -14,11 +14,16 @@ from utility.system.path import PureWindowsPath
 if TYPE_CHECKING:
     import os
 
+    from collections.abc import Callable
+
+    from typing_extensions import Literal
+
+    from pykotor.common.misc import Game
+    from pykotor.resource.formats.gff import GFF
     from pykotor.resource.formats.gff.gff_data import _GFFField
     from pykotor.resource.type import SOURCE_TYPES
     from pykotor.tslpatcher.logger import PatchLogger
     from pykotor.tslpatcher.memory import PatcherMemory
-    from typing_extensions import Literal
 
 
 class LocalizedStringDelta(LocalizedString):

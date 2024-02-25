@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import subprocess
+
 from datetime import date
 from enum import Enum
 from typing import TYPE_CHECKING, NamedTuple
@@ -9,13 +10,15 @@ from pykotor.common.misc import Game
 from pykotor.common.stream import BinaryReader
 from pykotor.resource.formats.ncs.compiler.classes import EntryPointError
 from pykotor.resource.formats.ncs.ncs_auto import compile_nss, write_ncs
-from pykotor.resource.formats.ncs.ncs_data import NCS, NCSCompiler, NCSOptimizer
+from pykotor.resource.formats.ncs.ncs_data import NCSCompiler
 from pykotor.tools.encoding import decode_bytes_with_fallbacks
 from utility.misc import generate_hash
 from utility.system.path import Path
 
 if TYPE_CHECKING:
     import os
+
+    from pykotor.resource.formats.ncs.ncs_data import NCS, NCSOptimizer
 
 
 class InbuiltNCSCompiler(NCSCompiler):
@@ -30,7 +33,7 @@ class InbuiltNCSCompiler(NCSCompiler):
     ):
         source_filepath: Path = Path.pathify(source_path)
         nss_data: bytes = BinaryReader.load_file(source_filepath)
-        nss_contents: str = decode_bytes_with_fallbacks(nss_data)#.replace('#include "k_inc_debug"', "")
+        nss_contents: str = decode_bytes_with_fallbacks(nss_data)  # .replace('#include "k_inc_debug"', "")
         ncs: NCS = compile_nss(nss_contents, game, optimizers, library_lookup=[source_filepath.parent], debug=debug)
         write_ncs(ncs, output_path)
 
@@ -39,6 +42,7 @@ class ExternalCompilerFeatures(NamedTuple):
     can_compile: bool
     can_decompile: bool
 
+
 class ExternalCompilerConfig(NamedTuple):
     sha256: str
     name: str
@@ -46,6 +50,7 @@ class ExternalCompilerConfig(NamedTuple):
     author: str
     features: ExternalCompilerFeatures
     commandline: dict[str, list[str]]
+
 
 class KnownExternalCompilers(Enum):
     TSLPATCHER = ExternalCompilerConfig(
@@ -216,7 +221,7 @@ class ExternalNCSCompiler(NCSCompiler):
         source_file: os.PathLike | str,
         output_file: os.PathLike | str,
         game: Game | int,
-        timeout: int=5,
+        timeout: int = 5,
         *,
         debug: bool = False,
     ) -> tuple[str, str]:
@@ -263,13 +268,12 @@ class ExternalNCSCompiler(NCSCompiler):
 
         return stdout, stderr
 
-
     def decompile_script(
         self,
         source_file: os.PathLike | str,
         output_file: os.PathLike | str,
         game: Game | int,
-        timeout: int=5,
+        timeout: int = 5,
     ) -> tuple[str, str]:
         """Decompiles a script file into C# source code.
 
@@ -302,22 +306,18 @@ class ExternalNCSCompiler(NCSCompiler):
         stdout: str = result.stdout
         stderr: str = (
             f"no error provided but return code is nonzero: ({result.returncode})"
-            if result.returncode != 0 and ( not result.stderr or not result.stderr.strip() )
+            if result.returncode != 0 and (not result.stderr or not result.stderr.strip())
             else result.stderr
         )
 
-        if "error:" in stdout.lower():
+        if "Error:" in stdout:
             stdout_lines: list[str] = stdout.split("\n")
-            error_lines: str = ""
+            error_line: str = ""
             # Find and remove the line with 'Error:'
             filtered_stdout_lines: list[str] = []
             for line in stdout_lines:
-                if "error:" in line.lower():
-                    error_lines += (
-                        f"\n{line}"
-                        if error_lines  # If there's already content in error_line, add a newline before appending
-                        else line
-                    )
+                if "Error:" in line:
+                    error_line += "\n" + line
                 else:
                     filtered_stdout_lines.append(line)
 
@@ -325,10 +325,9 @@ class ExternalNCSCompiler(NCSCompiler):
             stdout = "\n".join(filtered_stdout_lines)
 
             # Append the error line to stderr if it was found
-            if error_lines:
-                stderr += (
-                    f"\n{error_lines}"
-                    if stderr  # If there's already content in stderr, add a newline before appending
-                    else error_lines
-                )
+            if error_line:
+                if stderr:  # If there's already content in stderr, add a newline before appending
+                    stderr += "\n" + error_line
+                else:
+                    stderr = error_line
         return stdout, stderr

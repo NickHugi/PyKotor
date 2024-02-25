@@ -13,6 +13,7 @@ os.environ['PYTHONPATH'] = Path(r"../get-pwbrowser-sync")
 from __future__ import annotations
 
 import re
+
 from time import sleep
 from urllib.parse import quote
 
@@ -20,7 +21,7 @@ from pyquery import PyQuery as PyQ
 
 try:
     from playwright.sync_api import sync_playwright
-except Exception as exc:  # noqa: BLE001
+except Exception as exc:  # pylint: disable=W0718  # noqa: BLE001
     sync_playwright = None
     print(exc)
 
@@ -53,7 +54,7 @@ def deepl_tr(text: str, from_lang: str = "auto", to_lang: str = "zh", timeout: f
             from playwright.sync_api import sync_playwright
 
             scraper_cons_instance.sync_playwright = sync_playwright
-        except Exception as exc:  # noqa: BLE001
+        except Exception as exc:  # pylint: disable=W0718  # noqa: BLE001
             print(exc)
             return str(exc)
 
@@ -64,18 +65,18 @@ def deepl_tr(text: str, from_lang: str = "auto", to_lang: str = "zh", timeout: f
         print("not a string?")
         raise
 
-    #print("Spawning playwright-sync")
+    # print("Spawning playwright-sync")
     with scraper_cons_instance.sync_playwright() as playwright:
-        #print("Launching browser")
+        # print("Launching browser")
         browser = playwright.chromium.launch(headless=headless)
 
-        #print("Creating page")
+        # print("Creating page")
         page = browser.new_page()
 
-        #print(f"Moving to {URL}")
+        # print(f"Moving to {URL}")
         page.goto(URL, timeout=45 * 1000)
 
-        #print("Page loaded")
+        # print("Page loaded")
         # ----------------------------
         url0 = f"{URL}#{from_lang}/{to_lang}/"
         url_ = f"{URL}#{from_lang}/{to_lang}/{quote(text)}"
@@ -92,8 +93,8 @@ def deepl_tr(text: str, from_lang: str = "auto", to_lang: str = "zh", timeout: f
 
         # selector = "div.lmt__translations_as_text"
         if text_old and text.strip() == text_old.strip():  # type: ignore
-            #print(" ** early result: ** ")
-            #print("%s, %s", text, doc(".lmt__translations_as_text__text_btn").html())
+            # print(" ** early result: ** ")
+            # print("%s, %s", text, doc(".lmt__translations_as_text__text_btn").html())
             doc = PyQ(page.content())
             # content = doc(".lmt__translations_as_text__text_btn").text()
             content = doc(".lmt__translations_as_text__text_btn").html()
@@ -140,7 +141,7 @@ def deepl_tr(text: str, from_lang: str = "auto", to_lang: str = "zh", timeout: f
             # loop until content changed
             idx = 0
             # bound = 50  # 5s
-            #print("Getting content... wait...")
+            # print("Getting content... wait...")
             while idx < timeout / 0.1:
                 idx += 1
                 sleep(0.1)
@@ -150,7 +151,7 @@ def deepl_tr(text: str, from_lang: str = "auto", to_lang: str = "zh", timeout: f
                 if content_old != content and bool(content):
                     break
 
-            #print("Total Loop: %s", idx)
+            # print("Total Loop: %s", idx)
 
             browser.close()
 

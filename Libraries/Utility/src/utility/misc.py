@@ -4,6 +4,7 @@ import hashlib
 import os
 import platform
 import sys
+
 from contextlib import suppress
 from enum import Enum
 from typing import TYPE_CHECKING, SupportsFloat, SupportsInt, TypeVar
@@ -55,6 +56,7 @@ class ProcessorArchitecture(Enum):
         """Check if the architecture supports 64-bit processing."""
         return self == self.BIT_64
 
+
 def format_gpu_info(info, headers):
     # Determine the maximum width for each column
     column_widths: list[int] = [max(len(str(row[i])) for row in (headers, *info)) for i in range(len(headers))]
@@ -72,6 +74,7 @@ def format_gpu_info(info, headers):
         output += format_row(row) + "\n"
 
     return output
+
 
 def get_system_info():
     # sourcery skip: extract-method, list-comprehension, merge-dict-assign
@@ -121,6 +124,8 @@ def get_system_info():
     return info
 
 T = TypeVar("T")
+
+
 def remove_duplicates(my_list: list[T], *, case_insensitive=False) -> list[T]:
     seen = set()
     return [
@@ -128,6 +133,7 @@ def remove_duplicates(my_list: list[T], *, case_insensitive=False) -> list[T]:
         for x in my_list
         if not (x in seen or seen.add(x))
     ]
+
 
 def is_debug_mode() -> bool:
     ret = False
@@ -139,6 +145,7 @@ def is_debug_mode() -> bool:
         ret = True
     print(f"DEBUG MODE: {ret}")
     return ret
+
 
 def has_attr_excluding_object(cls: type, attr_name: str) -> bool:
     # Exclude the built-in 'object' class
@@ -159,13 +166,14 @@ def is_instance_or_subinstance(instance: object, target_cls: type) -> bool:
     if hasattr(instance, "__bases__"):  # instance is a class
         return False  # if instance is a class type, always return False
     # instance is not a class
-    return type(instance) is target_cls or is_class_or_subclass_but_not_instance(type(instance), target_cls)
+    instance_type = instance.__class__
+    return instance_type is target_cls or is_class_or_subclass_but_not_instance(instance_type, target_cls)
 
 
 def generate_hash(
     data_input: bytes | bytearray | memoryview | os.PathLike | str,
     hash_algo: str = "sha1",  # sha1 is faster than md5 in python somehow
-    chunk_size: int = 262144, # 256KB default
+    chunk_size: int = 262144,  # 256KB default
     always_chunk: bool = False,  # Don't unnecessarily chunk bytes/bytearray inputs.
 ) -> str:
     # Create a hash object for the specified algorithm
@@ -192,7 +200,7 @@ def generate_hash(
     # Special handling for SHAKE algorithms which require a digest length
     if "shake" in hash_algo:
         # Producing a 64-byte (512 bits) output
-        return hasher.hexdigest(64) # type: ignore[]
+        return hasher.hexdigest(64)  # type: ignore[]
     return hasher.hexdigest()
 
 
@@ -205,7 +213,7 @@ def indent(
         elem: Element - The element to indent
         level: int - The level of indentation (default: 0).
 
-    Returns
+    Returns:
     -------
         None - Indents the element in-place
 

@@ -4,6 +4,7 @@ from __future__ import annotations
 import ctypes
 import json
 import tkinter as tk
+
 from functools import partial
 from tkinter.filedialog import askopenfilename, asksaveasfilename
 from typing import Any
@@ -38,6 +39,7 @@ default_content: dict[str, Any] = {
         "bold": [(), ()],
     },
 }
+
 
 # Transform rgb to hex
 def rgbToHex(rgb) -> str:
@@ -93,7 +95,7 @@ def main():
 
                 for i, tagRange in enumerate(ranges[::2]):
                     some_list: list[list[str]] = document["tags"][tag_name]
-                    some_list.append([str(tagRange), str(ranges[i+1])])
+                    some_list.append([str(tagRange), str(ranges[i + 1])])
 
             if not file_path:
                 # ask the user for a filename with the native file explorer.
@@ -114,7 +116,6 @@ def main():
                 f.write(json.dumps(document))
 
             root.title(f"{app_name} - {file_path}")
-
 
     def _prompt_user_file():
         # ask the user for a filename with the native file explorer.
@@ -143,7 +144,6 @@ def main():
                 text_area.tag_add(tag_name, tagStart, tagEnd)
                 print(tag_name, tagStart, tagEnd)
 
-
     def resetTags():
         for tag in text_area.tag_names():
             text_area.tag_remove(tag, "1.0", "end")
@@ -151,10 +151,8 @@ def main():
         for tag_type in tag_types:
             text_area.tag_configure(tag_type.lower(), tag_types[tag_type])
 
-
     def keyDown(event: tk.Tk | None = None):
         root.title(f"{app_name} - *{file_path}")
-
 
     def tagToggle(tag_name: str):
         # Check if there is a selection
@@ -185,7 +183,6 @@ def main():
 
     resetTags()
 
-
     menu = tk.Menu(root)
     root.config(menu=menu)
 
@@ -200,13 +197,11 @@ def main():
 
     file_menu.add_command(label="Exit", command=root.destroy)
 
-
     format_menu = tk.Menu(menu, tearoff=0)
     menu.add_cascade(label="Format", menu=format_menu)
 
     for tag_type in tag_types:
         format_menu.add_command(label=tag_type, command=partial(tagToggle, tag_name=tag_type.lower()))
-
 
     root.mainloop()
 

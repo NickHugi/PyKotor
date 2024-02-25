@@ -149,7 +149,7 @@ class Language(IntEnum):
             Language.THAI,
         }
 
-    def get_encoding(self):
+    def get_encoding(self) -> str | None:
         """Gets the encoding for a given language.
 
         Args:
@@ -167,7 +167,7 @@ class Language(IntEnum):
             - Check if language is in list of Central European languages and return "cp1250" encoding
             - Check individual languages and return their specific encodings.
         """
-        if self in (
+        if self in {
             Language.ALBANIAN,
             Language.BOSNIAN_LATIN,
             Language.CROATIAN,
@@ -178,9 +178,9 @@ class Language(IntEnum):
             Language.ROMANIAN,  # before 1993 reform
             Language.SLOVAK,
             Language.SLOVENE,
-        ):
+        }:
             return "cp1250"
-        if self in (
+        if self in {
             Language.BULGARIAN,
             Language.BELARISIAN,
             Language.MACEDONIAN,
@@ -190,9 +190,9 @@ class Language(IntEnum):
             Language.TATAR_CYRILLIC,
             Language.UKRAINIAN,
             Language.UZBEK,
-        ):
+        }:
             return "cp1251"
-        if self in (
+        if self in {
             Language.ENGLISH,
             Language.FRENCH,
             Language.GERMAN,
@@ -247,49 +247,45 @@ class Language(IntEnum):
             Language.YORUBA,
             Language.WELSH,
             Language.ZULU,
-        ):
+        }:
             return "cp1252"
         if self == Language.GREEK:
             return "cp1253"
-        if self in (
+        if self in {
             Language.AZERBAIJANI_LATIN,
             Language.TURKISH,
             Language.TURKMEN_LATIN,
-        ):
+        }:
             return "cp1254"
         if self == Language.HEBREW:
             return "cp1255"
         if self == Language.ARABIC:
             return "cp1256"
-        if self in (
+        if self in {
             Language.ESTONIAN,
             Language.LATVIAN,
             Language.LITHUANIAN,
-        ):
+        }:
             return "cp1257"
         if self == Language.VIETNAMESE:
             return "cp1258"
         if self == Language.THAI:
             return "cp874"
-        if self in [
+        if self in {
             Language.MALAY_LATIN,
             Language.SAMOAN,
             Language.SOMALI,
-        ]:
+        }:
             return "ISO-8859-1"
-        if self in [
+        if self in {
             Language.AYMARA,
             Language.ESPERANTO,
             Language.MALAGASY,
-        ]:
+        }:
             return "ISO-8859-3"
-        if self in [
-            Language.KURDISH_LATIN,
-        ]:
+        if self == Language.KURDISH_LATIN:
             return "ISO-8859-9"
-        if self in [
-            Language.KINYARWANDA,
-        ]:
+        if self == Language.KINYARWANDA:
             return "ISO-8859-10"
 
         # The following languages/encodings may not be 8-bit and need additional information in order to be supported.
@@ -422,7 +418,7 @@ class LocalizedString:
     This is achieved through either referencing a entry in the 'dialog.tlk' or by directly providing strings for each
     language.
 
-    Attributes
+    Attributes:
     ----------
         stringref: An index into the 'dialog.tlk' file. If this value is -1 the game will use the stored substrings.
     """
@@ -559,7 +555,7 @@ class LocalizedString:
             The text of the substring if a matching pair is found, otherwise returns None.
         """
         substring_id: int = LocalizedString.substring_id(language, gender)
-        return self._substrings[substring_id] if substring_id in self._substrings else None
+        return self._substrings.get(substring_id, None)
 
     def remove(
         self,

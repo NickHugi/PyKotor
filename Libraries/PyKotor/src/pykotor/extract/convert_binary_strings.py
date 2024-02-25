@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import os
 import sys
+
 from pathlib import Path
 
 sys.path.append(str(Path(__file__).parent.absolute().parent.parent))
@@ -55,9 +56,9 @@ def highlight_difference(
             reverted_char = repr(reverted_string[i])
 
             # Extract excerpts and place arrows around differing character
-            original_excerpt = repr(f"{original_string[start:i]}>>>{original_char  }<<<{original_string[ i + 1:end]}")[1:-1]
+            original_excerpt = repr(f"{original_string[start:i]}>>>{original_char  }<<<{original_string[i + 1:end]}")[1:-1]
             converted_excerpt = repr(f"{converted_string[start:i]}>>>{converted_char}<<<{converted_string[i + 1:end]}")[1:-1]
-            reverted_excerpt = repr(f"{reverted_string[start:i]}>>>{reverted_char  }<<<{reverted_string[ i + 1:end]}")[1:-1]
+            reverted_excerpt = repr(f"{reverted_string[start:i]}>>>{reverted_char  }<<<{reverted_string[i + 1:end]}")[1:-1]
 
             # Represent special characters in a readable manner
             original_char = repr(
@@ -67,11 +68,11 @@ def highlight_difference(
 
             # Display the excerpts
             print(f"{key}:", "FAILED!")
-            print(f"    Difference found at character position {i+1:,}.")
+            print(f"    Difference found at character position {i + 1:,}.")
             print(f"    Original character:  {original_char }")
             print(f"    Converted character: {converted_char}")
             print(f"    Reverted character:  {reverted_char }")
-            print(f"    Printing {i-start} characters before and {end-i-1} characters after the difference:")
+            print(f"    Printing {i - start} characters before and {end - i - 1} characters after the difference:")
             print(f"    Original:  {original_excerpt}")
             print(f"    Converted: {converted_excerpt}")
             print(f"    Reverted:  {reverted_excerpt}")

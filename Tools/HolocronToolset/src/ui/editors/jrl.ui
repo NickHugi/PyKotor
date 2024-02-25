@@ -280,18 +280,18 @@
   <customwidget>
    <class>LocalizedStringLineEdit</class>
    <extends>QWidget</extends>
-   <header location="global">toolset.gui.widgets.locstring_edit</header>
+   <header location="global">toolset.gui.widgets.edit.locstring</header>
    <container>1</container>
   </customwidget>
   <customwidget>
    <class>ComboBox2DA</class>
    <extends>QComboBox</extends>
-   <header location="global">toolset.gui.widgets.combobox_2da</header>
+   <header location="global">toolset.gui.widgets.edit.combobox_2da</header>
   </customwidget>
   <customwidget>
    <class>HTPlainTextEdit</class>
    <extends>QPlainTextEdit</extends>
-   <header location="global">toolset.gui.widgets.plaintext_edit</header>
+   <header location="global">toolset.gui.widgets.edit.plaintext</header>
   </customwidget>
  </customwidgets>
  <resources/>

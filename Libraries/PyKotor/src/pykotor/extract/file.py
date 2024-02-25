@@ -36,6 +36,8 @@ class FileResource:
         self._filepath: Path = Path.pathify(filepath)
 
         self.inside_capsule: bool = is_capsule_file(self._filepath)
+        if self._identifier == self._filepath.name:
+            self.inside_capsule = False  # HACK: For when capsules are the resource themselves.
         self.inside_bif: bool = is_bif_file(self._filepath)
 
 #        filehash = self.get_hash(reload=True)
@@ -53,7 +55,11 @@ class FileResource:
         self._internal = False
 
     def __setattr__(self, __name, __value):
-        if hasattr(self, __name) and __name != "_internal" and not self._internal:
+        if (
+            hasattr(self, __name)
+            and __name not in {"_internal", "_task_running"}
+            and not getattr(self, "_internal", True)
+        ):
             msg = f"Cannot modify immutable FileResource instance, attempted `setattr({self!r}, {__name!r}, {__value!r})`"
             raise RuntimeError(msg)
 
@@ -78,7 +84,7 @@ class FileResource:
 
     def __eq__(  # Checks are ordered from fastest to slowest.
         self,
-        other: FileResource | ResourceIdentifier #| bytes | bytearray | memoryview | object,
+        other: FileResource | ResourceIdentifier  # | bytes | bytearray | memoryview | object,
     ):
         if isinstance(other, ResourceIdentifier):
             return self.identifier() == other
@@ -184,7 +190,7 @@ class FileResource:
             with BinaryReader.from_file(self._filepath) as file:
                 file.seek(self._offset)
                 data: bytes = file.read_bytes(self._size)
-                #self._file_hash = generate_hash(data)
+                # self._file_hash = generate_hash(data)
                 return data
         finally:
             self._internal = False
@@ -284,7 +290,7 @@ class ResourceIdentifier(NamedTuple):
             return ResourceIdentifier("", ResourceType.from_extension(""))
 
         max_dots: int = path_obj.name.count(".")
-        for dots in range(max_dots+1, 1, -1):
+        for dots in range(max_dots + 1, 1, -1):
             with suppress(Exception):
                 resname, restype_ext = path_obj.split_filename(dots)
                 return ResourceIdentifier(

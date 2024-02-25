@@ -4,10 +4,12 @@ from typing import TYPE_CHECKING
 
 from pykotor.common.geometry import Vector3, Vector4
 from pykotor.resource.formats.lyt.lyt_data import LYT, LYTDoorHook, LYTObstacle, LYTRoom, LYTTrack
-from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES, ResourceReader, ResourceWriter, autoclose
+from pykotor.resource.type import ResourceReader, ResourceWriter, autoclose
 
 if TYPE_CHECKING:
     from collections.abc import Iterator
+
+    from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES
 
 
 class LYTAsciiReader(ResourceReader):

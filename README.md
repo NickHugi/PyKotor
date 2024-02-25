@@ -15,7 +15,8 @@ PyKotor is supported on most (if not all) operating systems. Yes, this includes 
 ## Cloning the repo
 If you would like to work with the source files directly from GitHub, run the following commands to get yourself set:
 
-**Note**: Linux/Mac users should use `pwsh ./install_python_venv.ps1`.
+**Note**: Linux/Mac users should initialize a powershell shell with the command `pwsh`, before executing the below commands:
+
 ```commandline
 git clone https://github.com/NickHugi/PyKotor
 cd PyKotor
@@ -43,14 +44,15 @@ Optionally, install requirements-dev.txt to get all pip packages in one shot:
 ```commandline
 pip install -r requirements-dev.txt --prefer-binary
 ```
+We use `--prefer-binary` as building pip packages from source can occasionally fail on some operating systems/python environments.
 
 ## Compiling/Building Available Tools:
-After cloning the repo, open any of the powershell scripts in the `compile` folder such as `compile_holopatcher.ps1` and `compile_toolset.ps1` with PowerShell. Doing so will start an automated process that results in a EXE being built/compiled to the PyKotor/dist folder. Specifically, those scripts will:
+After cloning the repo, open any of the powershell scripts in the `compile` folder such as `compile_holopatcher.ps1` and `compile_toolset.ps1` with PowerShell. Run the `deps_holopatcher.ps1` or `deps_toolset.ps1` first to get the dependencies setup. Doing so will start an automated process that results in a EXE being built/compiled to the PyKotor/dist folder. Specifically, those scripts will:
 - Find a compatible Python interpreter, otherwise will install Python 3.8
 - Setup the environment (the venv and PYTHONPATH)
 - Install the tool's dependencies. This is any pip packages they require from requirements.txt and recommended.txt
 - Install PyInstaller
-- Compile to executable binary, as one file, to the dist folder in the root level of the repository.
+- Compile to executable binary, as one file, to the dist folder in the root level of this repository.
 
 
 ## Development Example Usage:
@@ -67,4 +69,4 @@ write_tpc(tex, "./C_Gammorean01.tga", ResourceType.TGA)
 As shown, this will save `C_Gammorean01.tga` to the current directory.
 
 ## License
-This repository falls under the [MIT License](https://github.com/NickHugi/PyKotor/blob/master/README.md).
+This repository falls under the [MIT License](https://github.com/NickHugi/PyKotor/blob/master/LICENSE).

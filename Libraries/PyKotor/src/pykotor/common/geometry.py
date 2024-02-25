@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import math
+
 from enum import IntEnum
 from typing import TYPE_CHECKING
 
@@ -12,7 +13,7 @@ if TYPE_CHECKING:
 class Vector2:
     """Represents a 2 dimensional vector.
 
-    Attributes
+    Attributes:
     ----------
         x: The x component.
         y: The y component.
@@ -204,7 +205,7 @@ class Vector2:
     ) -> Vector2:
         """Returns a new vector with a magnitude of zero.
 
-        Returns
+        Returns:
         -------
             A new Vector2 instance.
         """
@@ -261,7 +262,7 @@ class Vector2:
     ) -> float:
         """Returns the magnitude of the vector.
 
-        Returns
+        Returns:
         -------
             The magnitude of the vector.
         """
@@ -333,7 +334,7 @@ class Vector2:
     ) -> float:
         """Returns the angle of the vector.
 
-        Returns
+        Returns:
         -------
             The angle of the vector in radians.
         """
@@ -343,7 +344,7 @@ class Vector2:
 class Vector3:
     """Represents a 3 dimensional vector.
 
-    Attributes
+    Attributes:
     ----------
         x: The x component.
         y: The y component.
@@ -531,7 +532,7 @@ class Vector3:
     ) -> Vector3:
         """Returns a new vector with a magnitude of zero.
 
-        Returns
+        Returns:
         -------
             A new Vector3 instance.
         """
@@ -574,7 +575,7 @@ class Vector3:
     ) -> float:
         """Returns the magnitude of the vector.
 
-        Returns
+        Returns:
         -------
             The magnitude of the vector.
         """
@@ -647,7 +648,7 @@ class Vector3:
 class Vector4:
     """Represents a 4 dimensional vector.
 
-    Attributes
+    Attributes:
     ----------
         x: The x component.
         y: The y component.
@@ -799,7 +800,7 @@ class Vector4:
     ) -> Vector4:
         """Returns a new vector with a magnitude of zero.
 
-        Returns
+        Returns:
         -------
             A new Vector4 instance.
         """
@@ -925,7 +926,7 @@ class Vector4:
     ) -> float:
         """Returns the magnitude of the vector.
 
-        Returns
+        Returns:
         -------
             The magnitude of the vector.
         """
@@ -936,7 +937,7 @@ class Vector4:
     ) -> Vector4:
         """Normalizes the vector so that the magnitude is equal to one while maintaining the same angle.
 
-        Returns
+        Returns:
         -------
             The same vector.
         """
@@ -978,7 +979,7 @@ class Vector4:
 class AxisAngle:
     """Represents a rotation in 3D space.
 
-    Attributes
+    Attributes:
     ----------
         axis: The axis of rotation.
         angle: The magnitude of the rotation.
@@ -1031,7 +1032,7 @@ class AxisAngle:
     ) -> AxisAngle:
         """Returns a AxisAngle that contains no rotation.
 
-        Returns
+        Returns:
         -------
             A new AxisAngle instance.
         """
@@ -1098,7 +1099,7 @@ class SurfaceMaterial(IntEnum):
 class Face:
     """Represents a triangle in 3D space.
 
-    Attributes
+    Attributes:
     ----------
         v1: First point of the triangle.
         v2: Second point of the triangle.
@@ -1123,7 +1124,7 @@ class Face:
     ) -> Vector3:
         """Returns the normal for the face.
 
-        Returns
+        Returns:
         -------
             A new Vector3 instance representing the face normal.
         """
@@ -1161,7 +1162,7 @@ class Face:
     ) -> Vector3:
         """Returns the average point of the face.
 
-        Returns
+        Returns:
         -------
             A vector representing the average point of the face.
         """
@@ -1176,7 +1177,7 @@ class Face:
 
         This method does not check if the point exists within the face, that must be done separately with inside().
 
-        Returns
+        Returns:
         -------
             The Z-component.
         """

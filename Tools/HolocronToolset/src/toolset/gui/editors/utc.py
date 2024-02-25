@@ -1,35 +1,43 @@
 from __future__ import annotations
 
-from contextlib import suppress
 from copy import deepcopy
-from typing import TYPE_CHECKING, Literal
+from typing import TYPE_CHECKING
+
+from PyQt5 import QtCore
+from PyQt5.QtCore import QSettings
+from PyQt5.QtGui import QImage, QPixmap, QTransform
+from PyQt5.QtWidgets import QListWidgetItem, QMessageBox
 
 from pykotor.common.language import Gender, Language
 from pykotor.common.misc import Game, ResRef
 from pykotor.common.module import Module
-from pykotor.common.stream import BinaryWriter
 from pykotor.extract.capsule import Capsule
 from pykotor.extract.installation import SearchLocation
-from pykotor.resource.formats.gff import write_gff
 from pykotor.resource.formats.ltr import read_ltr
 from pykotor.resource.formats.tpc import TPCTextureFormat
-from pykotor.resource.generics.dlg import DLG, dismantle_dlg
-from pykotor.resource.generics.utc import UTC, UTCClass, dismantle_utc, read_utc
+from pykotor.resource.generics.dlg import DLG, write_dlg
+from pykotor.resource.generics.utc import UTC, UTCClass, read_utc, write_utc
 from pykotor.resource.type import ResourceType
-from PyQt5 import QtCore
-from PyQt5.QtCore import QSettings
-from PyQt5.QtGui import QImage, QPixmap, QTransform
-from PyQt5.QtWidgets import QListWidgetItem, QMessageBox, QWidget
 from toolset.data.installation import HTInstallation
 from toolset.gui.dialogs.inventory import InventoryEditor
 from toolset.gui.editor import Editor
 from toolset.gui.widgets.settings.installations import GlobalSettings
 from toolset.utils.window import openResourceEditor
+from utility.error_handling import format_exception_with_variables
 
 if TYPE_CHECKING:
     import os
 
+    from PyQt5.QtWidgets import QWidget
+    from typing_extensions import Literal
+
+    from pykotor.common.language import LocalizedString
     from pykotor.extract.file import ResourceResult
+    from pykotor.resource.formats.ltr.ltr_data import LTR
+    from pykotor.resource.formats.tpc.tpc_data import TPC
+    from pykotor.resource.formats.twoda.twoda_data import TwoDA
+    from pykotor.tools.path import CaseAwarePath
+    from utility.system.path import Path
 
 
 class UTCEditor(Editor):
@@ -55,14 +63,14 @@ class UTCEditor(Editor):
             - Updates 3D preview
             - Creates new empty creature.
         """
-        supported = [ResourceType.UTC]
+        supported: list[ResourceType] = [ResourceType.UTC]
         super().__init__(parent, "Creature Editor", "creature", supported, supported, installation, mainwindow)
 
         self.settings: UTCSettings = UTCSettings()
         self.globalSettings: GlobalSettings = GlobalSettings()
-        self._utc = UTC()
+        self._utc: UTC = UTC()
 
-        from toolset.uic.editors.utc import Ui_MainWindow
+        from toolset.uic.editors.utc import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
         self._setupMenus()
@@ -81,9 +89,9 @@ class UTCEditor(Editor):
 
         Processing Logic:
         ----------------
-        - Connects button and widget signals to appropriate slot methods
-        - Connects value changed signals from slider and dropdowns
-        - Connects menu action triggers to toggle settings.
+            - Connects button and widget signals to appropriate slot methods
+            - Connects value changed signals from slider and dropdowns
+            - Connects menu action triggers to toggle settings.
         """
         self.ui.firstnameRandomButton.clicked.connect(self.randomizeFirstname)
         self.ui.lastnameRandomButton.clicked.connect(self.randomizeLastname)
@@ -111,10 +119,10 @@ class UTCEditor(Editor):
 
         Processing Logic:
         ----------------
-        - Loads required 2da files if not already loaded
-        - Sets items for dropdown menus from loaded 2da files
-        - Clears and populates feat and power lists from loaded 2da files
-        - Sets visibility of some checkboxes based on installation type.
+            - Loads required 2da files if not already loaded
+            - Sets items for dropdown menus from loaded 2da files
+            - Clears and populates feat and power lists from loaded 2da files
+            - Sets visibility of some checkboxes based on installation type.
         """
         self._installation = installation
 
@@ -161,44 +169,50 @@ class UTCEditor(Editor):
 
         self.ui.featList.clear()
         for feat in feats:
-            stringref = feat.get_integer("name", 0)
-            text = installation.talktable().string(stringref) if stringref != 0 else feat.get_string("label")
-            text = f"[Unused Feat ID: {feat.label()}]" if text == "" else text
+            stringref: int = feat.get_integer("name", 0)
+            text: str = installation.talktable().string(stringref) if stringref else feat.get_string("label")
+            text = text or f"[Unused Feat ID: {feat.label()}]"
             item = QListWidgetItem(text)
             item.setData(QtCore.Qt.UserRole, int(feat.label()))
             item.setFlags(item.flags() | QtCore.Qt.ItemIsUserCheckable)
             item.setCheckState(QtCore.Qt.Unchecked)
             self.ui.featList.addItem(item)
-        self.ui.featList.setSortingEnabled(True)
-        self.ui.featList.sortItems(QtCore.Qt.AscendingOrder)
+        #self.ui.featList.setSortingEnabled(True)
+        #self.ui.featList.sortItems(QtCore.Qt.AscendingOrder)
 
         self.ui.powerList.clear()
         for power in powers:
             stringref = power.get_integer("name", 0)
-            text = installation.talktable().string(stringref) if stringref != 0 else power.get_string("label")
+            text = installation.talktable().string(stringref) if stringref else power.get_string("label")
             text = text.replace("_", " ").replace("XXX", "").replace("\n", "").title()
-            text = f"[Unused Power ID: {power.label()}]" if text == "" else text
+            text = text or f"[Unused Power ID: {power.label()}]"
             item = QListWidgetItem(text)
             item.setData(QtCore.Qt.UserRole, int(power.label()))
             item.setFlags(item.flags() | QtCore.Qt.ItemIsUserCheckable)
             item.setCheckState(QtCore.Qt.Unchecked)
             self.ui.powerList.addItem(item)
-        self.ui.powerList.setSortingEnabled(True)
-        self.ui.powerList.sortItems(QtCore.Qt.AscendingOrder)
+        #self.ui.powerList.setSortingEnabled(True)
+        #self.ui.powerList.sortItems(QtCore.Qt.AscendingOrder)
 
         self.ui.noBlockCheckbox.setVisible(installation.tsl)
         self.ui.hologramCheckbox.setVisible(installation.tsl)
         self.ui.k2onlyBox.setVisible(installation.tsl)
 
-    def load(self, filepath: os.PathLike | str, resref: str, restype: ResourceType, data: bytes):
+    def load(
+        self,
+        filepath: os.PathLike | str,
+        resref: str,
+        restype: ResourceType,
+        data: bytes,
+    ):
         super().load(filepath, resref, restype, data)
-
-        utc = read_utc(data)
-        self._loadUTC(utc)
-
+        self._loadUTC(read_utc(data))
         self.updateItemCount()
 
-    def _loadUTC(self, utc: UTC):
+    def _loadUTC(
+        self,
+        utc: UTC,
+    ):
         """Loads UTC data into the UI.
 
         Args:
@@ -222,10 +236,10 @@ class UTCEditor(Editor):
         self.ui.firstnameEdit.setLocstring(utc.first_name)
         self.ui.lastnameEdit.setLocstring(utc.last_name)
         self.ui.tagEdit.setText(utc.tag)
-        self.ui.resrefEdit.setText(utc.resref.get())
+        self.ui.resrefEdit.setText(str(utc.resref))
         self.ui.appearanceSelect.setCurrentIndex(utc.appearance_id)
         self.ui.soundsetSelect.setCurrentIndex(utc.soundset_id)
-        self.ui.conversationEdit.setText(utc.conversation.get())
+        self.ui.conversationEdit.setText(str(utc.conversation))
         self.ui.portraitSelect.setCurrentIndex(utc.portrait_id)
 
         # Advanced
@@ -310,19 +324,19 @@ class UTCEditor(Editor):
                 item.setCheckState(QtCore.Qt.Checked)
 
         # Scripts
-        self.ui.onBlockedEdit.setText(utc.on_blocked.get())
-        self.ui.onAttakcedEdit.setText(utc.on_attacked.get())
-        self.ui.onNoticeEdit.setText(utc.on_notice.get())
-        self.ui.onConversationEdit.setText(utc.on_dialog.get())
-        self.ui.onDamagedEdit.setText(utc.on_damaged.get())
-        self.ui.onDeathEdit.setText(utc.on_death.get())
-        self.ui.onEndRoundEdit.setText(utc.on_end_round.get())
-        self.ui.onEndConversationEdit.setText(utc.on_end_dialog.get())
-        self.ui.onDisturbedEdit.setText(utc.on_disturbed.get())
-        self.ui.onHeartbeatEdit.setText(utc.on_heartbeat.get())
-        self.ui.onSpawnEdit.setText(utc.on_spawn.get())
-        self.ui.onSpellCastEdit.setText(utc.on_spell.get())
-        self.ui.onUserDefinedEdit.setText(utc.on_user_defined.get())
+        self.ui.onBlockedEdit.setText(str(utc.on_blocked))
+        self.ui.onAttakcedEdit.setText(str(utc.on_attacked))
+        self.ui.onNoticeEdit.setText(str(utc.on_notice))
+        self.ui.onConversationEdit.setText(str(utc.on_dialog))
+        self.ui.onDamagedEdit.setText(str(utc.on_damaged))
+        self.ui.onDeathEdit.setText(str(utc.on_death))
+        self.ui.onEndRoundEdit.setText(str(utc.on_end_round))
+        self.ui.onEndConversationEdit.setText(str(utc.on_end_dialog))
+        self.ui.onDisturbedEdit.setText(str(utc.on_disturbed))
+        self.ui.onHeartbeatEdit.setText(str(utc.on_heartbeat))
+        self.ui.onSpawnEdit.setText(str(utc.on_spawn))
+        self.ui.onSpellCastEdit.setText(str(utc.on_spell))
+        self.ui.onUserDefinedEdit.setText(str(utc.on_user_defined))
 
         # Comments
         self.ui.comments.setPlainText(utc.comment)
@@ -330,7 +344,7 @@ class UTCEditor(Editor):
     def build(self) -> tuple[bytes, bytes]:
         """Builds a UTC from UI data.
 
-        Returns
+        Returns:
         -------
             tuple[bytes, bytes]: The GFF data and log.
 
@@ -422,16 +436,20 @@ class UTCEditor(Editor):
             if item.checkState() == QtCore.Qt.Checked:
                 utc.feats.append(item.data(QtCore.Qt.UserRole))
 
-        powers = utc.classes[-1].powers
+        powers: list[int] = utc.classes[-1].powers
         for i in range(self.ui.powerList.count()):
             item = self.ui.powerList.item(i)
             if item.checkState() == QtCore.Qt.Checked:
                 powers.append(item.data(QtCore.Qt.UserRole))
 
+        use_tsl: Literal[Game.K2, Game.K1] = Game.K2 if self.settings.alwaysSaveK2Fields or self._installation.tsl else Game.K1
         data = bytearray()
-        version: Literal[Game.K2, Game.K1] = Game.K2 if self.settings.alwaysSaveK2Fields or self._installation.tsl else Game.K1
-        gff = dismantle_utc(utc, version, use_deprecated=self.settings.saveUnusedFields)
-        write_gff(gff, data)
+        write_utc(
+            utc,
+            data,
+            game=use_tsl,
+            use_deprecated=self.settings.saveUnusedFields,
+        )
 
         return data, b""
 
@@ -441,16 +459,16 @@ class UTCEditor(Editor):
         self.updateItemCount()
 
     def randomizeFirstname(self):
-        ltr_resname = "humanf" if self.ui.genderSelect.currentIndex() == 1 else "humanm"
-        locstring = self.ui.firstnameEdit.locstring()
-        ltr = read_ltr(self._installation.resource(ltr_resname, ResourceType.LTR).data)
+        ltr_resname: Literal["humanf", "humanm"] = "humanf" if self.ui.genderSelect.currentIndex() == 1 else "humanm"
+        locstring: LocalizedString = self.ui.firstnameEdit.locstring()
+        ltr: LTR = read_ltr(self._installation.resource(ltr_resname, ResourceType.LTR).data)
         locstring.stringref = -1
         locstring.set_data(Language.ENGLISH, Gender.MALE, ltr.generate())
         self.ui.firstnameEdit.setLocstring(locstring)
 
     def randomizeLastname(self):
-        locstring = self.ui.lastnameEdit.locstring()
-        ltr = read_ltr(self._installation.resource("humanl", ResourceType.LTR).data)
+        locstring: LocalizedString = self.ui.lastnameEdit.locstring()
+        ltr: LTR = read_ltr(self._installation.resource("humanl", ResourceType.LTR).data)
         locstring.stringref = -1
         locstring.set_data(Language.ENGLISH, Gender.MALE, ltr.generate())
         self.ui.lastnameEdit.setLocstring(locstring)
@@ -487,30 +505,33 @@ class UTCEditor(Editor):
         Returns:
         -------
             pixmap: A QPixmap of the character portrait
+
         Builds the portrait pixmap by:
             1. Getting the character's alignment value
             2. Looking up the character's portrait reference in the portraits 2DA based on alignment
             3. Loading the texture for the portrait reference
             4. Converting the texture to a QPixmap.
         """
-        alignment = self.ui.alignmentSlider.value()
-        portraits = self._installation.htGetCache2DA(HTInstallation.TwoDA_PORTRAITS)
-        portrait = portraits.get_cell(index, "baseresref")
-        if 40 >= alignment > 30 and portraits.get_cell(index, "baseresrefe") != "":  # TODO: document these magic numbers
+        alignment: int = self.ui.alignmentSlider.value()
+        portraits: TwoDA = self._installation.htGetCache2DA(HTInstallation.TwoDA_PORTRAITS)
+        portrait: str = portraits.get_cell(index, "baseresref")
+
+        if 40 >= alignment > 30 and portraits.get_cell(index, "baseresrefe"):  # TODO: document these magic numbers
             portrait = portraits.get_cell(index, "baseresrefe")
-        elif 30 >= alignment > 20 and portraits.get_cell(index, "baseresrefve") != "":
+        elif 30 >= alignment > 20 and portraits.get_cell(index, "baseresrefve"):
             portrait = portraits.get_cell(index, "baseresrefve")
-        elif 20 >= alignment > 10 and portraits.get_cell(index, "baseresrefvve") != "":
+        elif 20 >= alignment > 10 and portraits.get_cell(index, "baseresrefvve"):
             portrait = portraits.get_cell(index, "baseresrefvve")
-        elif alignment <= 10 and portraits.get_cell(index, "baseresrefvvve") != "":
+        elif alignment <= 10 and portraits.get_cell(index, "baseresrefvvve"):
             portrait = portraits.get_cell(index, "baseresrefvvve")
 
-        texture = self._installation.texture(portrait, [SearchLocation.TEXTURES_GUI])
+        texture: TPC | None = self._installation.texture(portrait, [SearchLocation.TEXTURES_GUI])
 
         if texture is not None:
             width, height, rgba = texture.convert(TPCTextureFormat.RGB, 0)
             image = QImage(rgba, width, height, QImage.Format_RGB888)
             return QPixmap.fromImage(image).transformed(QTransform().scale(1, -1))
+
         image = QImage(bytes(0 for _ in range(64 * 64 * 3)), 64, 64, QImage.Format_RGB888)
         return QPixmap.fromImage(image)
 
@@ -519,55 +540,65 @@ class UTCEditor(Editor):
 
         Processing Logic:
         ----------------
-        1. Gets the conversation name from the UI text field
-        2. Searches the installation for the conversation resource
-        3. If not found, prompts to create a new file in the override folder
-        4. Opens the resource editor with the conversation data.
+            1. Gets the conversation name from the UI text field
+            2. Searches the installation for the conversation resource
+            3. If not found, prompts to create a new file in the override folder
+            4. Opens the resource editor with the conversation data.
         """
-        resname = self.ui.conversationEdit.text()
-        data, filepath = None, None
+        resname: str = self.ui.conversationEdit.text()
 
-        if resname == "":
+        restype: ResourceType | None = None
+        filepath: Path | CaseAwarePath | None = None
+        data: bytes | None = None
+
+        if not resname:
             QMessageBox(QMessageBox.Critical, "Failed to open DLG Editor", "Conversation field cannot be blank.").exec_()
             return
 
         search: ResourceResult | None = self._installation.resource(resname, ResourceType.DLG)
 
         if search is None:
-            msgbox = QMessageBox(QMessageBox.Information, "DLG file not found",
-                              "Do you wish to create a file in the override?",
-                              QMessageBox.Yes | QMessageBox.No).exec_()
-            if QMessageBox.Yes == msgbox:
+            if QMessageBox(
+                QMessageBox.Information,
+                "DLG file not found",
+                "Do you wish to create a file in the override?",
+                QMessageBox.Yes | QMessageBox.No
+            ).exec_() == QMessageBox.Yes:
                 data = bytearray()
-
-                write_gff(dismantle_dlg(DLG()), data)
                 filepath = self._installation.override_path() / f"{resname}.dlg"
-                writer = BinaryWriter.to_file(filepath)
-                writer.write_bytes(data)
-                writer.close()
+
+                dlg = DLG()
+                write_dlg(dlg, data)
+                write_dlg(dlg, filepath)
         else:
             resname, restype, filepath, data = search
 
-        if data is not None:
-            openResourceEditor(filepath, resname, ResourceType.DLG, data, self._installation, self)
+        if data is None or filepath is None:
+            print(f"Data/filepath cannot be None in self.editConversation() relevance: (resname={resname}, restype={restype!r}, filepath={filepath!r})")
+            return
+
+        openResourceEditor(filepath, resname, ResourceType.DLG, data, self._installation, self)
 
     def openInventory(self):
         """Opens the inventory editor.
 
         Processing Logic:
         ----------------
-        - Loads installed capsules from the root module folder
-        - Initializes InventoryEditor with loaded capsules and current inventory/equipment
-        - If InventoryEditor is closed successfully, updates internal inventory/equipment
-        - Refreshes item count and 3D preview.
+            - Loads installed capsules from the root module folder
+            - Initializes InventoryEditor with loaded capsules and current inventory/equipment
+            - If InventoryEditor is closed successfully, updates internal inventory/equipment
+            - Refreshes item count and 3D preview.
         """
-        droid = self.ui.raceSelect.currentIndex() == 0
-        capsules = []
+        droid: bool = self.ui.raceSelect.currentIndex() == 0
+        capsules: list[Capsule] = []
 
-        with suppress(Exception):
-            root = Module.get_root(self._filepath)
-            capsulesPaths = [path for path in self._installation.module_names() if root in path and path != self._filepath]
+        try:
+            assert self._filepath is not None, f"self._filepath cannot be None in {self!r}.openInventory(). Relevance: (droid={droid!r})"
+            root: str = Module.get_root(self._filepath)
+            capsulesPaths: list[str] = [path for path in self._installation.module_names() if root in path and path != self._filepath]
             capsules.extend([Capsule(self._installation.module_path() / path) for path in capsulesPaths])
+        except Exception as e:  # pylint: disable=W0718  # noqa: BLE001
+            print(format_exception_with_variables(e, message="This exception has been suppressed by default."))
 
         inventoryEditor = InventoryEditor(self, self._installation, capsules, [], self._utc.inventory, self._utc.equipment, droid=droid)
         if inventoryEditor.exec_():
@@ -581,14 +612,20 @@ class UTCEditor(Editor):
 
     def getFeatItem(self, featId: int) -> QListWidgetItem | None:
         for i in range(self.ui.featList.count()):
-            item = self.ui.featList.item(i)
+            item: QListWidgetItem | None = self.ui.featList.item(i)
+            if item is None:
+                print(f"self.ui.featList.item(i={i}) returned None. Relevance: {self!r}.getFeatItem(featId={featId!r})")
+                return None
             if item.data(QtCore.Qt.UserRole) == featId:
                 return item
         return None
 
     def getPowerItem(self, powerId: int) -> QListWidgetItem | None:
         for i in range(self.ui.powerList.count()):
-            item = self.ui.powerList.item(i)
+            item: QListWidgetItem | None = self.ui.powerList.item(i)
+            if item is None:
+                print(f"self.ui.powerList.item(i={i}) returned None. Relevance: {self!r}.getPowerItem(powerId={powerId!r})")
+                return None
             if item.data(QtCore.Qt.UserRole) == powerId:
                 return item
         return None
@@ -602,16 +639,20 @@ class UTCEditor(Editor):
 
         Processing Logic:
         ----------------
-        - Loops through each item in the feature list
-        - Checks if the item is checked
-        - Adds the text of checked items to a summary string
-        - Sets the summary text to the feature summary edit text area.
+            - Loops through each item in the feature list
+            - Checks if the item is checked
+            - Adds the text of checked items to a summary string
+            - Sets the summary text to the feature summary edit text area.
         """
-        summary = ""
+        summary: str = ""
         for i in range(self.ui.featList.count()):
-            item = self.ui.featList.item(i)
+            item: QListWidgetItem | None = self.ui.featList.item(i)
+            if item is None:
+                print(f"self.ui.featList.item(i={i}) returned None. Relevance: {self!r}.updateFeatSummary()")
+                return
+
             if item.checkState() == QtCore.Qt.Checked:
-                summary += item.text() + "\n"
+                summary += f"{item.text()}\n"
         self.ui.featSummaryEdit.setPlainText(summary)
 
     def updatePowerSummary(self):
@@ -619,16 +660,20 @@ class UTCEditor(Editor):
 
         Processing Logic:
         ----------------
-        - Loops through each item in the power list
-        - Checks if the item is checked
-        - Adds the item text to the summary string with a newline
-        - Sets the power summary edit text to the generated summary.
+            - Loops through each item in the power list
+            - Checks if the item is checked
+            - Adds the item text to the summary string with a newline
+            - Sets the power summary edit text to the generated summary.
         """
-        summary = ""
+        summary: str = ""
         for i in range(self.ui.powerList.count()):
-            item = self.ui.powerList.item(i)
+            item: QListWidgetItem | None = self.ui.powerList.item(i)
+            if item is None:
+                print(f"self.ui.powerList.item(i={i}) returned None. Relevance: {self!r}.updatePowerSummary()")
+                return
+
             if item.checkState() == QtCore.Qt.Checked:
-                summary += item.text() + "\n"
+                summary += f"{item.text()}\n"
         self.ui.powerSummaryEdit.setPlainText(summary)
 
     def update3dPreview(self):
@@ -649,11 +694,11 @@ class UTCEditor(Editor):
 
             if self._installation is not None:
                 data, _ = self.build()
-                utc = read_utc(data)
+                utc: UTC = read_utc(data)
                 self.ui.previewRenderer.setCreature(utc)
         else:
             self.ui.previewRenderer.setVisible(False)
-            self.setFixedSize(798-350, 553)
+            self.setFixedSize(798 - 350, 553)
 
 
 class UTCSettings:

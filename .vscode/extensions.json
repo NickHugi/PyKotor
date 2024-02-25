@@ -8,6 +8,8 @@
     "charliermarsh.ruff",
     "tamasfe.even-better-toml",
     "chinmaybharti.codequalitychecker",
-    "codeantai.codeantai"
+    "codeantai.codeantai",
+    "ms-vscode.powershell",
+    "ms-python.debugpy"
   ]
 }

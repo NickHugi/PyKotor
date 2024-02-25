@@ -1,32 +1,38 @@
 from __future__ import annotations
 
+import os
+
 from abc import abstractmethod
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Callable
+
+from PyQt5 import QtCore
+from PyQt5.QtGui import QIcon, QPixmap
+from PyQt5.QtWidgets import QFileDialog, QLineEdit, QMainWindow, QMessageBox, QPlainTextEdit, QShortcut
 
 from pykotor.common.module import Module
+from pykotor.common.stream import BinaryReader
 from pykotor.extract.capsule import Capsule
 from pykotor.extract.file import ResourceIdentifier
 from pykotor.resource.formats.erf import ERFType, read_erf, write_erf
+from pykotor.resource.formats.erf.erf_data import ERF
 from pykotor.resource.formats.rim import read_rim, write_rim
 from pykotor.resource.type import ResourceType
 from pykotor.tools import module
 from pykotor.tools.misc import is_any_erf_type_file, is_bif_file, is_capsule_file, is_rim_file
-from PyQt5 import QtCore
-from PyQt5.QtGui import QIcon, QPixmap
-from PyQt5.QtWidgets import QFileDialog, QLineEdit, QMainWindow, QMessageBox, QPlainTextEdit, QShortcut, QWidget
 from pykotor.tools.path import CaseAwarePath
 from toolset.gui.dialogs.load_from_module import LoadFromModuleDialog
 from toolset.gui.dialogs.save.to_bif import BifSaveDialog, BifSaveOption
 from toolset.gui.dialogs.save.to_module import SaveToModuleDialog
 from toolset.gui.dialogs.save.to_rim import RimSaveDialog, RimSaveOption
 from toolset.gui.widgets.settings.installations import GlobalSettings
-from utility.error_handling import format_exception_with_variables
+from utility.error_handling import assert_with_variable_trace, format_exception_with_variables, universal_simplify_exception
 from utility.system.path import Path
 
 if TYPE_CHECKING:
-    import os
+    from PyQt5.QtWidgets import QWidget
 
     from pykotor.common.language import LocalizedString
+    from pykotor.resource.formats.rim.rim_data import RIM
     from toolset.data.installation import HTInstallation
 
 
@@ -71,34 +77,35 @@ class Editor(QMainWindow):
         super().__init__(parent)
 
         self._filepath: Path | None = None
-        self._resref: str | None = None
+        self._resname: str | None = None
         self._restype: ResourceType | None = None
         self._revert: bytes | None = None
         self._readSupported: list[ResourceType] = readSupported
         self._writeSupported: list[ResourceType] = writeSupported
         self._global_settings: GlobalSettings = GlobalSettings()
         self._installation: HTInstallation = installation
-        self._mainwindow = mainwindow
+        self._mainwindow: QMainWindow | None = mainwindow
 
-        self._editorTitle = title
+        self._editorTitle: str = title
         self.setWindowTitle(title)
         self._setupIcon(iconName)
 
+        capsule_types = " ".join(f"*.{e.name.lower()}" for e in ERFType) + " *.rim"
         self._saveFilter: str = "All valid files ("
         for resource in writeSupported:
             self._saveFilter += f'*.{resource.extension}{"" if writeSupported[-1] == resource else " "}'
-        self._saveFilter += " *.erf *.mod *.rim *.sav);;"
+        self._saveFilter += f" {capsule_types});;"
         for resource in writeSupported:
             self._saveFilter += f"{resource.category} File (*.{resource.extension});;"
-        self._saveFilter += "Save into module (*.erf *.mod *.rim *.sav)"
+        self._saveFilter += f"Save into module ({capsule_types})"
 
         self._openFilter: str = "All valid files ("
         for resource in readSupported:
             self._openFilter += f'*.{resource.extension}{"" if readSupported[-1] == resource else " "}'
-        self._openFilter += " *.erf *.mod *.rim *.sav);;"
+        self._openFilter += f" {capsule_types});;"
         for resource in readSupported:
             self._openFilter += f"{resource.category} File (*.{resource.extension});;"
-        self._openFilter += "Load from module (*.erf *.mod *.rim *.sav)"
+        self._openFilter += f"Load from module ({capsule_types})"
 
     def _setupMenus(self):
         """Sets up menu actions and keyboard shortcuts.
@@ -151,11 +158,11 @@ class Editor(QMainWindow):
         if self._filepath is None:
             self.setWindowTitle(self._editorTitle)
         elif is_capsule_file(self._filepath.name):
-            self.setWindowTitle(f"{self._filepath.name}/{self._resref}.{self._restype.extension} - {installationName} - {self._editorTitle}")
+            self.setWindowTitle(f"{self._filepath.name}/{self._resname}.{self._restype.extension} - {installationName} - {self._editorTitle}")
         else:
-            folders = self._filepath.parts
-            folder = folders[-2] if len(folders) >= 2 else ""
-            self.setWindowTitle(f"{folder}/{self._resref}.{self._restype.extension} - {installationName} - {self._editorTitle}")
+            hierarchy: tuple[str, ...] = self._filepath.parts
+            folder = f"{hierarchy[-2]}/" if len(hierarchy) >= 2 else ""
+            self.setWindowTitle(f"{folder}{self._resname}.{self._restype.extension} - {installationName} - {self._editorTitle}")
 
     def saveAs(self):
         """Saves the file with the selected filepath.
@@ -171,26 +178,35 @@ class Editor(QMainWindow):
             - Enables the Revert menu item
         """
         filepath_str, _filter = QFileDialog.getSaveFileName(self, "Save As", "", self._saveFilter, "")
-        if filepath_str != "":
-            if is_capsule_file(filepath_str) and "Save into module (*.erf *.mod *.rim *.sav)" in self._saveFilter:
-                if self._resref is None:
-                    self._resref = "new"
-                    self._restype = self._writeSupported[0]
+        if not filepath_str:
+            return
+        try:
+            identifier = ResourceIdentifier.from_path(filepath_str).validate()
+        except ValueError as e:
+            print(format_exception_with_variables(e))
+            QMessageBox(QMessageBox.Critical, "Invalid filename/extension", f"Check the filename and try again. Could not save!{os.linesep * 2}{universal_simplify_exception(e)}").exec_()
+            return
 
-                dialog2 = SaveToModuleDialog(self._resref, self._restype, self._writeSupported)
-                if dialog2.exec_():
-                    self._resref = dialog2.resref()
-                    self._restype = dialog2.restype()
-                    self._filepath = Path(filepath_str)
-            else:
+        capsule_types = " ".join(f"*.{e.name.lower()}" for e in ERFType) + " *.rim"
+        if is_capsule_file(filepath_str) and f"Save into module ({capsule_types})" in self._saveFilter:
+            if self._resname is None:
+                self._resname = "new"
+                self._restype = self._writeSupported[0]
+
+            dialog2 = SaveToModuleDialog(self._resname, self._restype, self._writeSupported)
+            if dialog2.exec_():
+                self._resname = dialog2.resname()
+                self._restype = dialog2.restype()
                 self._filepath = Path(filepath_str)
-                self._resref, self._restype = ResourceIdentifier.from_path(self._filepath).validate()
-            self.save()
+        else:
+            self._filepath = Path(filepath_str)
+            self._resname, self._restype = identifier
+        self.save()
 
-            self.refreshWindowTitle()
-            for action in self.menuBar().actions()[0].menu().actions():
-                if action.text() == "Revert":
-                    action.setEnabled(True)
+        self.refreshWindowTitle()
+        for action in self.menuBar().actions()[0].menu().actions():
+            if action.text() == "Revert":
+                action.setEnabled(True)
 
     def save(self):
         """Saves the current data to file.
@@ -207,6 +223,8 @@ class Editor(QMainWindow):
 
         try:
             data, data_ext = self.build()
+            if data is None:  # nsseditor
+                return
             self._revert = data
 
             self.refreshWindowTitle()
@@ -219,12 +237,12 @@ class Editor(QMainWindow):
                 self._saveEndsWithErf(data, data_ext)
             else:
                 self._saveEndsWithOther(data, data_ext)
-        except Exception as e:  # noqa: BLE001
-            with Path("errorlog.txt").open("a") as file:
-                lines = format_exception_with_variables(e, e.__class__, e.__traceback__)
+        except Exception as e:  # pylint: disable=W0718  # noqa: BLE001
+            with Path("errorlog.txt").open("a", encoding="utf-8") as file:
+                lines = format_exception_with_variables(e)
                 file.writelines(lines)
                 file.write("\n----------------------\n")
-            QMessageBox(QMessageBox.Critical, "Failed to write to file", str(e)).exec_()
+            QMessageBox(QMessageBox.Critical, "Failed to write to file", str(universal_simplify_exception(e))).exec_()
 
     def _saveEndsWithBif(self, data: bytes, data_ext: bytes):
         """Saves data if dialog returns specific options.
@@ -244,16 +262,23 @@ class Editor(QMainWindow):
         dialog = BifSaveDialog(self)
         dialog.exec_()
         if dialog.option == BifSaveOption.MOD:
-            filepath, filter = QFileDialog.getSaveFileName(self, "Save As", "", ".MOD File (*.mod)", "")
-            dialog2 = SaveToModuleDialog(self._resref, self._restype, self._writeSupported)
+            str_filepath, filter = QFileDialog.getSaveFileName(self, "Save As", "", ".MOD File (*.mod)", "")
+            if not str_filepath.strip():
+                print(f"User cancelled filepath lookup in _saveEndsWithBif ({self._resname}.{self._restype})")
+                return
+
+            r_filepath = Path(str_filepath)
+            dialog2 = SaveToModuleDialog(self._resname, self._restype, self._writeSupported)
             if dialog2.exec_():
-                self._resref = dialog2.resref()
+                self._resname = dialog2.resname()
                 self._restype = dialog2.restype()
-                self._filepath = Path(filepath)
+                self._filepath = r_filepath
                 self.save()
         elif dialog.option == BifSaveOption.Override:
-            self._filepath = self._installation.override_path() / f"{self._resref}.{self._restype.extension}"
+            self._filepath = self._installation.override_path() / f"{self._resname}.{self._restype.extension}"
             self.save()
+        else:
+            print(f"User closed out of BifSaveDialog in _saveEndsWithBif (({self._resname}.{self._restype}))")
 
     def _saveEndsWithRim(self, data: bytes, data_ext: bytes):
         """Saves resource data to a RIM file.
@@ -274,31 +299,37 @@ class Editor(QMainWindow):
             dialog = RimSaveDialog(self)
             dialog.exec_()
             if dialog.option == RimSaveOption.MOD:
-                folderpath = self._filepath.parent
-                filename = f"{Module.get_root(self._filepath)}.mod"
+                assert self._filepath is not None, assert_with_variable_trace(self._filepath is not None)
+                folderpath: Path = self._filepath.parent
+                filename: str = f"{Module.get_root(self._filepath)}.mod"
                 self._filepath = folderpath / filename
                 # Re-save with the updated filepath
                 self.save()
             elif dialog.option == RimSaveOption.Override:
-                self._filepath = self._installation.override_path() / f"{self._resref}.{self._restype.extension}"
+                assert self._resname is not None, assert_with_variable_trace(self._resname is not None)
+                assert self._restype is not None, assert_with_variable_trace(self._restype is not None)
+                self._filepath = self._installation.override_path() / f"{self._resname}.{self._restype.extension}"
                 self.save()
             return
 
-        rim = read_rim(self._filepath)
+        assert self._filepath is not None, assert_with_variable_trace(self._filepath is not None)  # sourcery skip: class-extract-method
+        assert self._resname is not None, assert_with_variable_trace(self._resname is not None)
+        assert self._restype is not None, assert_with_variable_trace(self._restype is not None)
+
+        rim: RIM = read_rim(self._filepath)
 
         # MDL is a special case - we need to save the MDX file with the MDL file.
         if self._restype == ResourceType.MDL:
-            rim.set_data(self._resref, ResourceType.MDX, data_ext)
+            rim.set_data(self._resname, ResourceType.MDX, data_ext)
 
-        rim.set_data(self._resref, self._restype, data)
+        rim.set_data(self._resname, self._restype, data)
 
         write_rim(rim, self._filepath)
-        self.savedFile.emit(str(self._filepath), self._resref, self._restype, data)
+        self.savedFile.emit(str(self._filepath), self._resname, self._restype, data)
 
         # Update installation cache
         if self._installation is not None:
-            basename = self._filepath.name
-            self._installation.reload_module(basename)
+            self._installation.reload_module(self._filepath.name)
 
     def _saveEndsWithErf(self, data: bytes, data_ext: bytes):
         # Create the mod file if it does not exist.
@@ -320,37 +351,51 @@ class Editor(QMainWindow):
             - Emit a signal that a file was saved
             - Reload the module in the installation cache.
         """
-        if not self._filepath.exists():
-            module.rim_to_mod(self._filepath)
+        assert self._filepath is not None, assert_with_variable_trace(self._filepath is not None)
+        assert self._resname is not None, assert_with_variable_trace(self._resname is not None)
+        assert self._restype is not None, assert_with_variable_trace(self._restype is not None)
 
-        erf = read_erf(self._filepath)
-        erf.erf_type = ERFType.from_extension(self._filepath)
+        erftype: ERFType = ERFType.from_extension(self._filepath)
+        c_filepath: CaseAwarePath = CaseAwarePath.pathify(self._filepath)
+        if c_filepath.is_file():
+            erf: ERF = read_erf(c_filepath)
+        elif c_filepath.with_suffix(".rim").is_file():
+            module.rim_to_mod(c_filepath)
+            erf = read_erf(c_filepath)
+        else:  # originally in a bif, user chose to save into erf/mod.
+            print(f"Saving '{self._resname}.{self._restype}' to a blank new {erftype.name} file at {c_filepath}")
+            erf = ERF(erftype)  # create a new ERF I guess.
+        erf.erf_type = erftype
 
         # MDL is a special case - we need to save the MDX file with the MDL file.
         if self._restype == ResourceType.MDL:
-            erf.set_data(self._resref, ResourceType.MDX, data_ext)
+            assert data_ext is not None, assert_with_variable_trace(data_ext is not None)
+            erf.set_data(self._resname, ResourceType.MDX, data_ext)
 
-        erf.set_data(self._resref, self._restype, data)
+        erf.set_data(self._resname, self._restype, data)
 
-        write_erf(erf, self._filepath)
-        self.savedFile.emit(self._filepath, self._resref, self._restype, data)
+        write_erf(erf, c_filepath)
+        self.savedFile.emit(str(c_filepath), self._resname, self._restype, data)
 
         # Update installation cache
-        if self._installation is not None:
-            self._installation.reload_module(self._filepath.name)
+        if self._installation is not None and c_filepath.parent == self._installation.module_path():
+            self._installation.reload_module(c_filepath.name)
 
     def _saveEndsWithOther(self, data: bytes, data_ext: bytes):
-        with self._filepath.open("wb") as file:
+        assert self._filepath is not None, assert_with_variable_trace(self._filepath is not None)
+
+        c_filepath: CaseAwarePath = CaseAwarePath.pathify(self._filepath)
+        with c_filepath.open("wb") as file:
             file.write(data)
 
         # MDL is a special case - we need to save the MDX file with the MDL file.
         if self._restype == ResourceType.MDL:
-            with CaseAwarePath.pathify(self._filepath).with_suffix(".mdx").open("wb") as file:
+            with c_filepath.with_suffix(".mdx").open("wb") as file:
                 file.write(data_ext)
 
-        self.savedFile.emit(self._filepath, self._resref, self._restype, data)
+        self.savedFile.emit(self._filepath, self._resname, self._restype, data)
 
-    def open(self):  # noqa: A003
+    def open(self):    # noqa: A003
         """Opens a file dialog to select a file to open.
 
         Processing Logic:
@@ -361,16 +406,29 @@ class Editor(QMainWindow):
             - Otherwise, directly load the file by path, reference, type and content
         """
         filepath_str, filter = QFileDialog.getOpenFileName(self, "Open file", "", self._openFilter)
-        if filepath_str:
-            c_filepath = Path(filepath_str)
-            if is_capsule_file(c_filepath.name) and "Load from module (*.erf *.mod *.rim *.sav)" in self._openFilter:
-                dialog = LoadFromModuleDialog(Capsule(c_filepath), self._readSupported)
-                if dialog.exec_():
-                    self.load(c_filepath, dialog.resref(), dialog.restype(), dialog.data())
-            else:
-                with c_filepath.open("rb") as file:
-                    data = file.read()
-                self.load(c_filepath, *ResourceIdentifier.from_path(c_filepath).validate(), data)
+        if not filepath_str.strip():
+            return
+        r_filepath = Path(filepath_str)
+
+        capsule_types = " ".join(f"*.{e.name.lower()}" for e in ERFType) + " *.rim"
+        if is_capsule_file(r_filepath) and f"Load from module ({capsule_types})" in self._openFilter:
+            dialog = LoadFromModuleDialog(Capsule(r_filepath), self._readSupported)
+            if dialog.exec_():
+                self.load_module_from_dialog_info(dialog, r_filepath)
+        else:
+            data: bytes = BinaryReader.load_file(r_filepath)
+            res_ident: ResourceIdentifier = ResourceIdentifier.from_path(r_filepath).validate()
+            self.load(r_filepath, *res_ident, data)
+
+    def load_module_from_dialog_info(self, dialog: LoadFromModuleDialog, c_filepath: Path):
+        resname: str | None = dialog.resname()
+        restype: ResourceType | None = dialog.restype()
+        data: bytes | None = dialog.data()
+        assert resname is not None, assert_with_variable_trace(resname is not None)
+        assert restype is not None, assert_with_variable_trace(resname is not None)
+        assert data is not None, assert_with_variable_trace(resname is not None)
+
+        self.load(c_filepath, resname, restype, data)
 
     @abstractmethod
     def build(self) -> tuple[bytes, bytes]:
@@ -395,14 +453,14 @@ class Editor(QMainWindow):
             - Emit loadedFile signal with load details.
         """
         self._filepath = Path.pathify(filepath)  # type: ignore[reportGeneralTypeIssues]
-        self._resref = resref
+        self._resname = resref
         self._restype = restype
         self._revert = data
         for action in self.menuBar().actions()[0].menu().actions():
             if action.text() == "Revert":
                 action.setEnabled(True)
         self.refreshWindowTitle()
-        self.loadedFile.emit(str(self._filepath), self._resref, self._restype, data)
+        self.loadedFile.emit(str(self._filepath), self._resname, self._restype, data)
 
     def exit(self):  # noqa: A003
         self.close()
@@ -418,7 +476,10 @@ class Editor(QMainWindow):
 
     def revert(self):
         if self._revert is not None:
-            self.load(self._filepath, self._resref, self._restype, self._revert)
+            assert self._filepath is not None, assert_with_variable_trace(self._filepath is not None)
+            assert self._resname is not None, assert_with_variable_trace(self._resname is not None)
+            assert self._restype is not None, assert_with_variable_trace(self._restype is not None)
+            self.load(self._filepath, self._resname, self._restype, self._revert)
 
     def _loadLocstring(self, textbox: QLineEdit | QPlainTextEdit, locstring: LocalizedString):
         """Loads a LocalizedString into a textbox.
@@ -436,7 +497,7 @@ class Editor(QMainWindow):
             - Checks if locstring has stringref or not
             - Sets textbox text and style accordingly.
         """
-        setText = textbox.setPlainText if isinstance(textbox, QPlainTextEdit) else textbox.setText
+        setText: Callable[..., None] = textbox.setPlainText if isinstance(textbox, QPlainTextEdit) else textbox.setText
         className = "QLineEdit" if isinstance(textbox, QLineEdit) else "QPlainTextEdit"
 
         textbox.locstring = locstring

@@ -10,7 +10,13 @@ class ControlItem:
         self.keys: set[int] = bind[0]
         self.mouse: set[int] = bind[1]
 
-    def satisfied(self, buttons: set[int], keys: set[int], *, exactKeys=True) -> bool:
+    def satisfied(
+        self,
+        buttons: set[int],
+        keys: set[int],
+        *,
+        exactKeys: bool = True,
+    ) -> bool:
         """Handles the mouse scroll event.
 
         Args:
@@ -25,9 +31,9 @@ class ControlItem:
 
         Processing Logic:
         ----------------
-        - Check if exactKeys is True
-        - If True, check if buttons and keys are equal sets or if one is None
-        - If False, check if buttons are equal sets or one is None, and keys is a superset.
+            - Check if exactKeys is True
+            - If True, check if buttons and keys are equal sets or if one is None
+            - If False, check if buttons are equal sets or one is None, and keys is a superset.
         """
         if exactKeys:
             return (self.mouse == buttons or self.mouse is None) and (self.keys == keys or self.keys is None)

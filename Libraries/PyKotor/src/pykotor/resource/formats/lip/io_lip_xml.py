@@ -9,9 +9,14 @@ try:
 except (ImportError, ModuleNotFoundError):
     pass
 
+from typing import TYPE_CHECKING
+
 from pykotor.resource.formats.lip.lip_data import LIP, LIPShape
-from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES, ResourceReader, ResourceWriter, autoclose
+from pykotor.resource.type import ResourceReader, ResourceWriter, autoclose
 from utility.misc import indent
+
+if TYPE_CHECKING:
+    from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES
 
 
 class LIPXMLReader(ResourceReader):

@@ -1,6 +1,11 @@
 from __future__ import annotations
 
-from pykotor.resource.formats.ncs.ncs_data import NCS, NCSInstruction, NCSInstructionType, NCSOptimizer
+from typing import TYPE_CHECKING, NoReturn
+
+from pykotor.resource.formats.ncs.ncs_data import NCSInstructionType, NCSOptimizer
+
+if TYPE_CHECKING:
+    from pykotor.resource.formats.ncs.ncs_data import NCS, NCSInstruction
 
 
 class RemoveNopOptimizer(NCSOptimizer):
@@ -67,12 +72,12 @@ class RemoveMoveSPEqualsZeroOptimizer(NCSOptimizer):
 
 
 class MergeAdjacentMoveSPOptimizer(NCSOptimizer):
-    def optimize(self, ncs: NCS):
+    def optimize(self, ncs: NCS) -> NoReturn:
         raise NotImplementedError
 
 
 class RemoveJMPToAdjacentOptimizer(NCSOptimizer):
-    def optimize(self, ncs: NCS):
+    def optimize(self, ncs: NCS) -> NoReturn:
         raise NotImplementedError
 
 
@@ -103,15 +108,15 @@ class RemoveUnusedBlocksOptimizer(NCSOptimizer):
                 continue
             reachable.add(instruction)
 
-            if instruction.ins_type in [
+            if instruction.ins_type in {
                 NCSInstructionType.JZ,
                 NCSInstructionType.JNZ,
                 NCSInstructionType.JSR,
-            ]:
+            }:
                 checking.extend((ncs.instructions.index(instruction.jump), check + 1))
-            elif instruction.ins_type in [NCSInstructionType.JMP]:
+            elif instruction.ins_type == NCSInstructionType.JMP:
                 checking.append(ncs.instructions.index(instruction.jump))
-            elif instruction.ins_type in [NCSInstructionType.RETN]:
+            elif instruction.ins_type == NCSInstructionType.RETN:
                 ...
             else:
                 checking.append(check + 1)
@@ -125,5 +130,5 @@ class RemoveUnusedBlocksOptimizer(NCSOptimizer):
 
 
 class RemoveUnusedGlobalsInStackOptimizer(NCSOptimizer):
-    def optimize(self, ncs: NCS):
+    def optimize(self, ncs: NCS) -> NoReturn:
         raise NotImplementedError
