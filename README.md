@@ -69,4 +69,4 @@ write_tpc(tex, "./C_Gammorean01.tga", ResourceType.TGA)
 As shown, this will save `C_Gammorean01.tga` to the current directory.
 
 ## License
-This repository falls under the [MIT License](https://github.com/NickHugi/PyKotor/blob/master/LICENSE).
+This repository falls under the [GPLv3 License](https://github.com/NickHugi/PyKotor/blob/master/LICENSE).

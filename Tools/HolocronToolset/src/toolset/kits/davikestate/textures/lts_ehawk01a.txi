@@ -1,6 +1,0 @@
-envmaptexture CM_wintaris
-
-
-
-
-

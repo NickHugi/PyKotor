@@ -1,4 +1,0 @@
-envmaptexture CM_jedcom
-
-
-

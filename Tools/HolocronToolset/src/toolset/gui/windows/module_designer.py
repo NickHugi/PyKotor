@@ -459,12 +459,12 @@ class ModuleDesigner(QMainWindow):  # noqa: PLR0904
         items: list[QListWidgetItem] = []
 
         for instance in self._module.git().resource().instances():
-            if visibleMapping[type(instance)]:
+            if visibleMapping[instance.__class__]:
                 continue
 
             struct_index: int = self._module.git().resource().index(instance)
 
-            icon = QIcon(iconMapping[type(instance)])
+            icon = QIcon(iconMapping[instance.__class__])
             item = QListWidgetItem(icon, "")
             font: QFont = item.font()
 
