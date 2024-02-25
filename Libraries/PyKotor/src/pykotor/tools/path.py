@@ -331,7 +331,7 @@ if os.name != "nt":  # Wrapping is unnecessary on Windows
 
 
 def get_default_paths() -> dict[str, dict[Game, list[str]]]:
-    from pykotor.common.misc import Game
+    from pykotor.common.misc import Game  # noqa: PLC0415  # pylint: disable=import-outside-toplevel
 
     return {
         "Windows": {
@@ -409,7 +409,7 @@ def find_kotor_paths_from_default() -> dict[Game, list[CaseAwarePath]]:
         - On Windows, also searches the registry for additional locations
         - Returns results as lists for each Game rather than sets
     """
-    from pykotor.common.misc import Game
+    from pykotor.common.misc import Game  # noqa: PLC0415  # pylint: disable=import-outside-toplevel
 
     os_str = platform.system()
 
