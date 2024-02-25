@@ -3,10 +3,11 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from pykotor.resource.formats.ltr.io_ltr import LTRBinaryReader, LTRBinaryWriter
-from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES, ResourceType
+from pykotor.resource.type import ResourceType
 
 if TYPE_CHECKING:
     from pykotor.resource.formats.ltr.ltr_data import LTR
+    from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES
 
 
 def read_ltr(
@@ -41,7 +42,7 @@ def write_ltr(
     ltr: LTR,
     target: TARGET_TYPES,
     file_format: ResourceType = ResourceType.LTR,
-) -> None:
+):
     """Writes the LTR data to the target location with the specified format (LTR only).
 
     Args:

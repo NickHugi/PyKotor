@@ -6,16 +6,17 @@ from pykotor.common.language import LocalizedString
 from pykotor.common.misc import Game, InventoryItem, ResRef
 from pykotor.resource.formats.gff import GFF, GFFContent, GFFList, read_gff, write_gff
 from pykotor.resource.formats.gff.gff_auto import bytes_gff
-from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES, ResourceType
+from pykotor.resource.type import ResourceType
 
 if TYPE_CHECKING:
     from pykotor.resource.formats.gff.gff_data import GFFStruct
+    from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES
 
 
 class UTP:
     """Stores placeable data.
 
-    Attributes
+    Attributes:
     ----------
         tag: "Tag" field.
         name: "LocName" field.
@@ -85,7 +86,7 @@ class UTP:
 
     def __init__(
         self,
-    ) -> None:
+    ):
         self.resref: ResRef = ResRef.from_blank()
         self.conversation: ResRef = ResRef.from_blank()
         self.tag: str = ""
@@ -336,7 +337,7 @@ def write_utp(
     file_format: ResourceType = ResourceType.GFF,
     *,
     use_deprecated: bool = True,
-) -> None:
+):
     gff: GFF = dismantle_utp(utp, game, use_deprecated=use_deprecated)
     write_gff(gff, target, file_format)
 

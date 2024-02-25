@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from contextlib import suppress
+from copy import deepcopy
 from typing import TYPE_CHECKING
 
 from pykotor.common.misc import ResRef
@@ -12,11 +12,15 @@ from pykotor.resource.type import ResourceType
 from toolset.gui.dialogs.edit.locstring import LocalizedStringDialog
 from toolset.gui.dialogs.inventory import InventoryEditor
 from toolset.gui.editor import Editor
+from utility.error_handling import format_exception_with_variables
 
 if TYPE_CHECKING:
     import os
 
     from PyQt5.QtWidgets import QWidget
+
+    from pykotor.common.misc import CaseInsensitiveDict
+    from pykotor.resource.formats.gff.gff_data import GFF
     from toolset.data.installation import HTInstallation
 
 
@@ -31,17 +35,17 @@ class UTMEditor(Editor):
 
         Processing Logic:
         ----------------
-        - Sets up the UI from the designer file
-        - Initializes menus and signals
-        - Loads data from the provided installation if given
-        - Calls new() to start with a blank merchant
+            - Sets up the UI from the designer file
+            - Initializes menus and signals
+            - Loads data from the provided installation if given
+            - Calls new() to start with a blank merchant
         """
-        supported = [ResourceType.UTM]
+        supported: list[ResourceType] = [ResourceType.UTM]
         super().__init__(parent, "Merchant Editor", "merchant", supported, supported, installation)
 
-        self._utm = UTM()
+        self._utm: UTM = UTM()
 
-        from toolset.uic.editors.utm import Ui_MainWindow
+        from toolset.uic.editors.utm import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
         self._setupMenus()
@@ -50,8 +54,8 @@ class UTMEditor(Editor):
 
         self.new()
 
-    def _setupSignals(self) -> None:
-        """Sets up signal connections for UI buttons"""
+    def _setupSignals(self):
+        """Sets up signal connections for UI buttons."""
         self.ui.tagGenerateButton.clicked.connect(self.generateTag)
         self.ui.resrefGenerateButton.clicked.connect(self.generateResref)
         self.ui.inventoryButton.clicked.connect(self.openInventory)
@@ -65,20 +69,20 @@ class UTMEditor(Editor):
 
         Processing Logic:
         ----------------
-        - Sets the internal installation reference to the passed in installation
-        - Sets the installation on the UI name edit to the passed installation
-        - Allows editing of the installation details in the UI.
+            - Sets the internal installation reference to the passed in installation
+            - Sets the installation on the UI name edit to the passed installation
+            - Allows editing of the installation details in the UI.
         """
         self._installation = installation
         self.ui.nameEdit.setInstallation(installation)
 
-    def load(self, filepath: os.PathLike | str, resref: str, restype: ResourceType, data: bytes) -> None:
+    def load(self, filepath: os.PathLike | str, resref: str, restype: ResourceType, data: bytes):
         super().load(filepath, resref, restype, data)
 
-        utm = read_utm(data)
+        utm: UTM = read_utm(data)
         self._loadUTM(utm)
 
-    def _loadUTM(self, utm: UTM) -> None:
+    def _loadUTM(self, utm: UTM):
         """Loads UTM data into UI elements.
 
         Args:
@@ -96,11 +100,11 @@ class UTMEditor(Editor):
         # Basic
         self.ui.nameEdit.setLocstring(utm.name)
         self.ui.tagEdit.setText(utm.tag)
-        self.ui.resrefEdit.setText(utm.resref.get())
+        self.ui.resrefEdit.setText(str(utm.resref))
         self.ui.idSpin.setValue(utm.id)
         self.ui.markUpSpin.setValue(utm.mark_up)
         self.ui.markDownSpin.setValue(utm.mark_down)
-        self.ui.onOpenEdit.setText(utm.on_open.get())
+        self.ui.onOpenEdit.setText(str(utm.on_open))
         self.ui.storeFlagSelect.setCurrentIndex((int(utm.can_buy) + int(utm.can_sell) * 2) - 1)
 
         # Comments
@@ -109,19 +113,19 @@ class UTMEditor(Editor):
     def build(self) -> tuple[bytes, bytes]:
         """Builds a UTM object from UI fields.
 
-        Returns
+        Returns:
         -------
             data: The built UTM data.
             b"": An empty bytes object.
 
         Processing Logic:
         ----------------
-        - Populate UTM object fields from UI elements
-        - Convert UTM to GFF format
-        - Write GFF to bytearray
-        - Return bytearray and empty bytes
+            - Populate UTM object fields from UI elements
+            - Convert UTM to GFF format
+            - Write GFF to bytearray
+            - Return bytearray and empty bytes
         """
-        utm = self._utm
+        utm: UTM = deepcopy(self._utm)
 
         # Basic
         utm.name = self.ui.nameEdit.locstring()
@@ -138,38 +142,43 @@ class UTMEditor(Editor):
         utm.comment = self.ui.commentsEdit.toPlainText()
 
         data = bytearray()
-        gff = dismantle_utm(utm)
+        gff: GFF = dismantle_utm(utm)
         write_gff(gff, data)
 
         return data, b""
 
-    def new(self) -> None:
+    def new(self):
         super().new()
         self._loadUTM(UTM())
 
-    def changeName(self) -> None:
-        dialog = LocalizedStringDialog(self, self._installation, self.ui.nameEdit.locstring)
+    def changeName(self):
+        dialog = LocalizedStringDialog(self, self._installation, self.ui.nameEdit.locstring())
         if dialog.exec_():
-            self._loadLocstring(self.ui.nameEdit, dialog.locstring)
+            self._loadLocstring(self.ui.nameEdit.ui.locstringText, dialog.locstring)
 
-    def generateTag(self) -> None:
-        if self.ui.resrefEdit.text() == "":
+    def generateTag(self):
+        if not self.ui.resrefEdit.text():
             self.generateResref()
         self.ui.tagEdit.setText(self.ui.resrefEdit.text())
 
-    def generateResref(self) -> None:
-        if self._resref is not None and self._resref != "":
-            self.ui.resrefEdit.setText(self._resref)
+    def generateResref(self):
+        if self._resname:
+            self.ui.resrefEdit.setText(self._resname)
         else:
             self.ui.resrefEdit.setText("m00xx_mer_000")
 
-    def openInventory(self) -> None:
-        capsules = []
+    def openInventory(self):
+        capsules: list[Capsule] = []
 
-        with suppress(Exception):
-            root = Module.get_root(self._filepath)
-            capsulesPaths = [path for path in self._installation.module_names() if root in path and path != self._filepath]
+        try:
+            root: str = Module.get_root(self._filepath)
+            case_root = root.casefold()
+            module_names: CaseInsensitiveDict[str] = self._installation.module_names()
+            filepath_str = str(self._filepath)
+            capsulesPaths: list[str] = [path for path in module_names if case_root in path and path != filepath_str]
             capsules.extend([Capsule(self._installation.module_path() / path) for path in capsulesPaths])
+        except Exception as e:
+            print(format_exception_with_variables(e, message="This exception has been suppressed."))
 
         inventoryEditor = InventoryEditor(self, self._installation, capsules, [], self._utm.inventory, {}, False, True, True)
         if inventoryEditor.exec_():

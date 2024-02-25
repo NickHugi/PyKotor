@@ -1,32 +1,34 @@
 from __future__ import annotations
 
 import os
-from typing import Any
 
-from pykotor.common.misc import Game
-from pykotor.tools.path import find_kotor_paths_from_default
 from PyQt5 import QtCore
 from PyQt5.QtCore import QSettings
 from PyQt5.QtGui import QStandardItem, QStandardItemModel
 from PyQt5.QtWidgets import QWidget
+
+from pykotor.common.misc import Game
+from pykotor.tools.path import CaseAwarePath, find_kotor_paths_from_default
 from toolset.data.settings import Settings
-from utility.path import Path
 
 
 class InstallationsWidget(QWidget):
     edited = QtCore.pyqtSignal()
 
     def __init__(self, parent: QWidget):
-        """Initialize the Installations widget
+        """Initialize the Installations widget.
+
         Args:
+        ----
             parent: Parent widget
-        Returns:
-            None
-        - Set up model to hold installation data
-        - Load global settings
-        - Set up UI from designer file
-        - Populate UI with initial values
-        - Connect signal handlers.
+
+        Processing Logic:
+        ----------------
+            - Set up model to hold installation data
+            - Load global settings
+            - Set up UI from designer file
+            - Populate UI with initial values
+            - Connect signal handlers.
         """
         super().__init__(parent)
 
@@ -39,17 +41,20 @@ class InstallationsWidget(QWidget):
         self.setupValues()
         self.setupSignals()
 
-    def setupValues(self) -> None:
-        """Sets up installation values in the model
+    def setupValues(self):
+        """Sets up installation values in the model.
+
         Args:
+        ----
             self: The class instance
-        Returns:
-            None: Does not return anything
-        - Clears existing items from the installations model
-        - Loops through installations from settings
-        - Creates a QStandardItem for each installation
-        - Sets data like path and tsl on the item
-        - Appends the item to the installations model.
+
+        Processing Logic:
+        ----------------
+            - Clears existing items from the installations model
+            - Loops through installations from settings
+            - Creates a QStandardItem for each installation
+            - Sets data like path and tsl on the item
+            - Appends the item to the installations model.
         """
         self.installationsModel.clear()
         for installation in self.settings.installations().values():
@@ -57,16 +62,13 @@ class InstallationsWidget(QWidget):
             item.setData({"path": installation.path, "tsl": installation.tsl})
             self.installationsModel.appendRow(item)
 
-    def setupSignals(self) -> None:
+    def setupSignals(self):
         """Set up signal connections for installation management UI.
 
         Args:
         ----
             self: {The class instance}
 
-        Returns:
-        -------
-            None: {No return value}
         Processing Logic:
         ----------------
             - Connect add path button click to add new installation slot
@@ -84,23 +86,24 @@ class InstallationsWidget(QWidget):
         self.ui.pathTslCheckbox.stateChanged.connect(self.updateInstallation)
         self.ui.pathList.selectionModel().selectionChanged.connect(self.installationSelected)
 
-    def save(self) -> None:
-        installations = {}
+    def save(self):
+        installations: dict[str, dict[str, str]] = {}
 
         for row in range(self.installationsModel.rowCount()):
-            item = self.installationsModel.item(row, 0)
-            installations[item.text()] = item.data()
-            installations[item.text()]["name"] = item.text()
+            item: QStandardItem = self.installationsModel.item(row, 0)
+            item_text: str = item.text()
+            installations[item_text] = item.data()
+            installations[item_text]["name"] = item_text
 
         self.settings.settings.setValue("installations", installations)
 
-    def addNewInstallation(self) -> None:
+    def addNewInstallation(self):
         item = QStandardItem("New")
         item.setData({"path": "", "tsl": False})
         self.installationsModel.appendRow(item)
         self.edited.emit()
 
-    def removeSelectedInstallation(self) -> None:
+    def removeSelectedInstallation(self):
         if len(self.ui.pathList.selectedIndexes()) > 0:
             index = self.ui.pathList.selectedIndexes()[0]
             item = self.installationsModel.itemFromIndex(index)
@@ -110,7 +113,7 @@ class InstallationsWidget(QWidget):
         if len(self.ui.pathList.selectedIndexes()) == 0:
             self.ui.pathFrame.setEnabled(False)
 
-    def updateInstallation(self) -> None:
+    def updateInstallation(self):
         index = self.ui.pathList.selectedIndexes()[0]
         item = self.installationsModel.itemFromIndex(index)
 
@@ -123,7 +126,7 @@ class InstallationsWidget(QWidget):
 
         self.edited.emit()
 
-    def installationSelected(self) -> None:
+    def installationSelected(self):
         if len(self.ui.pathList.selectedIndexes()) > 0:
             self.ui.pathFrame.setEnabled(True)
 
@@ -145,8 +148,8 @@ class InstallationConfig:
         return self._name
 
     @name.setter
-    def name(self, value: str) -> None:
-        installations = self._settings.value("installations", {}, dict[str, Any])
+    def name(self, value: str):
+        installations = self._settings.value("installations", {}, dict)
         installation = installations[self._name]
 
         del installations[self._name]
@@ -162,8 +165,8 @@ class InstallationConfig:
         return installation["path"]
 
     @path.setter
-    def path(self, value: str) -> None:
-        installations = self._settings.value("installations", {})
+    def path(self, value: str):
+        installations: dict[str, dict[str, str]] = self._settings.value("installations", {})
         installations[self._name]["path"] = value
         self._settings.setValue("installations", installations)
 
@@ -173,7 +176,7 @@ class InstallationConfig:
         return installation["tsl"]
 
     @tsl.setter
-    def tsl(self, value: bool) -> None:
+    def tsl(self, value: bool):
         installations = self._settings.value("installations", {})
         installations[self._name]["tsl"] = value
         self._settings.setValue("installations", installations)
@@ -203,11 +206,11 @@ class GlobalSettings(Settings):
         if installations is None:
             installations = {}
 
-        counters = {Game.K1: 1, Game.K2: 1}
-        existing_paths = {Path(inst["path"]) for inst in installations.values()}  # Create a set of existing paths
+        counters: dict[Game, int] = {Game.K1: 1, Game.K2: 1}
+        existing_paths: set[CaseAwarePath] = {CaseAwarePath(inst["path"]) for inst in installations.values()}  # Create a set of existing paths
 
         for game, paths in find_kotor_paths_from_default().items():
-            for path in filter(Path.exists, paths):
+            for path in filter(CaseAwarePath.safe_isdir, paths):
                 if path in existing_paths:  # If the path is already recorded, skip to the next one
                     continue
 
@@ -230,8 +233,6 @@ class GlobalSettings(Settings):
         self.settings.setValue("installations", installations)
 
         return {name: InstallationConfig(name) for name in installations}
-
-
 
     # region Strings
     extractPath = Settings._addSetting(

@@ -1,17 +1,26 @@
-from pykotor.common.module import Module
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
 from PyQt5 import QtCore
-from PyQt5.QtWidgets import QDialog, QFileDialog, QListWidgetItem, QWidget
-from toolset.data.installation import HTInstallation
+from PyQt5.QtWidgets import QDialog, QFileDialog, QListWidgetItem
+
+from pykotor.common.module import Module
+
+if TYPE_CHECKING:
+    from PyQt5.QtWidgets import QWidget
+
+    from toolset.data.installation import HTInstallation
 
 
 class SelectModuleDialog(QDialog):
     def __init__(self, parent: QWidget, installation: HTInstallation):
-        """Initializes the dialog to select a module
+        """Initializes the dialog to select a module.
+
         Args:
             parent (QWidget): Parent widget
             installation (HTInstallation): HT installation object
-        Returns:
-            None: Does not return anything
+
         Processing Logic:
         ----------------
             - Initializes the UI from the dialog design
@@ -25,7 +34,7 @@ class SelectModuleDialog(QDialog):
 
         self.module: str = ""
 
-        from toolset.uic.dialogs.select_module import Ui_Dialog
+        from toolset.uic.dialogs.select_module import Ui_Dialog  # pylint: disable=C0415  # noqa: PLC0415
 
         self.ui = Ui_Dialog()
         self.ui.setupUi(self)
@@ -38,7 +47,7 @@ class SelectModuleDialog(QDialog):
 
         self._buildModuleList()
 
-    def _buildModuleList(self) -> None:
+    def _buildModuleList(self):
         """Builds a list of installed modules
         Args:
             self: The class instance
@@ -65,7 +74,7 @@ class SelectModuleDialog(QDialog):
             item.setData(QtCore.Qt.UserRole, root)
             self.ui.moduleList.addItem(item)
 
-    def browse(self) -> None:
+    def browse(self):
         filepath, _ = QFileDialog.getOpenFileName(
             self,
             "Select module to open",
@@ -77,7 +86,7 @@ class SelectModuleDialog(QDialog):
             self.module = Module.get_root(filepath)
             self.accept()
 
-    def confirm(self) -> None:
+    def confirm(self):
         """Confirms the selected module
         Args:
             self: The object instance
@@ -89,10 +98,10 @@ class SelectModuleDialog(QDialog):
         self.module = self.ui.moduleList.currentItem().data(QtCore.Qt.UserRole)
         self.accept()
 
-    def onRowChanged(self) -> None:
+    def onRowChanged(self):
         self.ui.openButton.setEnabled(self.ui.moduleList.currentItem() is not None)
 
-    def onFilterEdited(self) -> None:
+    def onFilterEdited(self):
         """Filter modules based on filter text
         Args:
             self: The class instance

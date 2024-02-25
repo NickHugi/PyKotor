@@ -149,7 +149,7 @@ class Language(IntEnum):
             Language.THAI,
         }
 
-    def get_encoding(self):
+    def get_encoding(self) -> str | None:
         """Gets the encoding for a given language.
 
         Args:
@@ -167,7 +167,7 @@ class Language(IntEnum):
             - Check if language is in list of Central European languages and return "cp1250" encoding
             - Check individual languages and return their specific encodings.
         """
-        if self in (
+        if self in {
             Language.ALBANIAN,
             Language.BOSNIAN_LATIN,
             Language.CROATIAN,
@@ -178,9 +178,9 @@ class Language(IntEnum):
             Language.ROMANIAN,  # before 1993 reform
             Language.SLOVAK,
             Language.SLOVENE,
-        ):
+        }:
             return "cp1250"
-        if self in (
+        if self in {
             Language.BULGARIAN,
             Language.BELARISIAN,
             Language.MACEDONIAN,
@@ -190,9 +190,9 @@ class Language(IntEnum):
             Language.TATAR_CYRILLIC,
             Language.UKRAINIAN,
             Language.UZBEK,
-        ):
+        }:
             return "cp1251"
-        if self in (
+        if self in {
             Language.ENGLISH,
             Language.FRENCH,
             Language.GERMAN,
@@ -247,49 +247,45 @@ class Language(IntEnum):
             Language.YORUBA,
             Language.WELSH,
             Language.ZULU,
-        ):
+        }:
             return "cp1252"
         if self == Language.GREEK:
             return "cp1253"
-        if self in (
+        if self in {
             Language.AZERBAIJANI_LATIN,
             Language.TURKISH,
             Language.TURKMEN_LATIN,
-        ):
+        }:
             return "cp1254"
         if self == Language.HEBREW:
             return "cp1255"
         if self == Language.ARABIC:
             return "cp1256"
-        if self in (
+        if self in {
             Language.ESTONIAN,
             Language.LATVIAN,
             Language.LITHUANIAN,
-        ):
+        }:
             return "cp1257"
         if self == Language.VIETNAMESE:
             return "cp1258"
         if self == Language.THAI:
             return "cp874"
-        if self in [
+        if self in {
             Language.MALAY_LATIN,
             Language.SAMOAN,
             Language.SOMALI,
-        ]:
+        }:
             return "ISO-8859-1"
-        if self in [
+        if self in {
             Language.AYMARA,
             Language.ESPERANTO,
             Language.MALAGASY,
-        ]:
+        }:
             return "ISO-8859-3"
-        if self in [
-            Language.KURDISH_LATIN,
-        ]:
+        if self == Language.KURDISH_LATIN:
             return "ISO-8859-9"
-        if self in [
-            Language.KINYARWANDA,
-        ]:
+        if self == Language.KINYARWANDA:
             return "ISO-8859-10"
 
         # The following languages/encodings may not be 8-bit and need additional information in order to be supported.
@@ -422,7 +418,7 @@ class LocalizedString:
     This is achieved through either referencing a entry in the 'dialog.tlk' or by directly providing strings for each
     language.
 
-    Attributes
+    Attributes:
     ----------
         stringref: An index into the 'dialog.tlk' file. If this value is -1 the game will use the stored substrings.
     """
@@ -432,7 +428,7 @@ class LocalizedString:
         self._substrings: dict[int, str] = {}
 
     def __iter__(self):
-        """Iterates through the list of substrings. Yields a tuple containing [language, gender, text]."""
+        """Iterates through the list of substrings. Yields a tuple containing (language, gender, text)."""
         for substring_id, text in self._substrings.items():
             language, gender = LocalizedString.substring_pair(substring_id)
             yield language, gender, text
@@ -440,6 +436,9 @@ class LocalizedString:
     def __len__(self):
         """Returns the number of substrings."""
         return len(self._substrings)
+
+    def __hash__(self):
+        return hash(self.stringref)
 
     def __str__(self):
         """If the stringref is valid, it will return it as a string. Otherwise it will return one of the substrings,
@@ -462,9 +461,6 @@ class LocalizedString:
         if other.stringref != self.stringref:
             return False
         return other._substrings == self._substrings
-
-    def __hash__(self):
-        return hash(self.stringref)
 
     @classmethod
     def from_invalid(cls):
@@ -523,7 +519,12 @@ class LocalizedString:
         gender = Gender(substring_id % 2)
         return language, gender
 
-    def set_data(self, language: Language, gender: Gender, string: str) -> None:
+    def set_data(
+        self,
+        language: Language,
+        gender: Gender,
+        string: str,
+    ):
         """Sets the text of the substring with the corresponding language/gender pair.
 
         Note: The substring is created if it does not exist.
@@ -534,10 +535,14 @@ class LocalizedString:
             gender: The gender.
             string: The new text for the new substring.
         """
-        substring_id = LocalizedString.substring_id(language, gender)
+        substring_id: int = LocalizedString.substring_id(language, gender)
         self._substrings[substring_id] = string
 
-    def get(self, language: Language, gender: Gender) -> str | None:
+    def get(
+        self,
+        language: Language,
+        gender: Gender,
+    ) -> str | None:
         """Gets the substring text with the corresponding language/gender pair.
 
         Args:
@@ -549,10 +554,14 @@ class LocalizedString:
         -------
             The text of the substring if a matching pair is found, otherwise returns None.
         """
-        substring_id = LocalizedString.substring_id(language, gender)
-        return self._substrings[substring_id] if substring_id in self._substrings else None
+        substring_id: int = LocalizedString.substring_id(language, gender)
+        return self._substrings.get(substring_id, None)
 
-    def remove(self, language: Language, gender: Gender) -> None:
+    def remove(
+        self,
+        language: Language,
+        gender: Gender,
+    ):
         """Removes the existing substring with the respective language/gender pair if it exists.
 
         Note: No error is thrown if it does not find a corresponding pair.
@@ -562,10 +571,14 @@ class LocalizedString:
             language: The language.
             gender: The gender.
         """
-        substring_id = LocalizedString.substring_id(language, gender)
+        substring_id: int = LocalizedString.substring_id(language, gender)
         self._substrings.pop(substring_id)
 
-    def exists(self, language: Language, gender: Gender) -> bool:
+    def exists(
+        self,
+        language: Language,
+        gender: Gender,
+    ) -> bool:
         """Returns whether or not a substring exists with the respective language/gender pair.
 
         Args:
@@ -577,5 +590,5 @@ class LocalizedString:
         -------
             True if the corresponding substring exists.
         """
-        substring_id = LocalizedString.substring_id(language, gender)
+        substring_id: int = LocalizedString.substring_id(language, gender)
         return substring_id in self._substrings

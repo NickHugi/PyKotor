@@ -2,9 +2,15 @@ from __future__ import annotations
 
 import struct
 
+from typing import TYPE_CHECKING
+
 from pykotor.common.geometry import SurfaceMaterial, Vector3
-from pykotor.resource.formats.bwm.bwm_data import BWM, BWMAdjacency, BWMEdge, BWMFace, BWMNodeAABB, BWMType
-from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES, ResourceReader, ResourceWriter, autoclose
+from pykotor.resource.formats.bwm.bwm_data import BWM, BWMFace, BWMType
+from pykotor.resource.type import ResourceReader, ResourceWriter, autoclose
+
+if TYPE_CHECKING:
+    from pykotor.resource.formats.bwm.bwm_data import BWMAdjacency, BWMEdge, BWMNodeAABB
+    from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES
 
 
 class BWMBinaryReader(ResourceReader):
@@ -13,7 +19,7 @@ class BWMBinaryReader(ResourceReader):
         source: SOURCE_TYPES,
         offset: int = 0,
         size: int = 0,
-    ) -> None:
+    ):
         """Initializes a Wok object.
 
         Args:
@@ -163,7 +169,7 @@ class BWMBinaryWriter(ResourceWriter):
     def write(
         self,
         auto_close: bool = True,
-    ) -> None:
+    ):
         """Writes the walkmesh data to a binary file.
 
         Args:

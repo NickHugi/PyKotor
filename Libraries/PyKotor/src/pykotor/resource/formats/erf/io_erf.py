@@ -1,7 +1,12 @@
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 from pykotor.resource.formats.erf.erf_data import ERF, ERFType
-from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES, ResourceReader, ResourceType, ResourceWriter, autoclose
+from pykotor.resource.type import ResourceReader, ResourceType, ResourceWriter, autoclose
+
+if TYPE_CHECKING:
+    from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES
 
 
 class ERFBinaryReader(ResourceReader):
@@ -103,7 +108,7 @@ class ERFBinaryWriter(ResourceWriter):
     def write(
         self,
         auto_close: bool = True,
-    ) -> None:
+    ):
         entry_count = len(self.erf)
         offset_to_keys = ERFBinaryWriter.FILE_HEADER_SIZE
         offset_to_resources = offset_to_keys + ERFBinaryWriter.KEY_ELEMENT_SIZE * entry_count
@@ -122,7 +127,7 @@ class ERFBinaryWriter(ResourceWriter):
         self._writer.write_bytes(b"\0" * 116)
 
         for resid, resource in enumerate(self.erf):
-            self._writer.write_string(resource.resref.get(), string_length=16)
+            self._writer.write_string(str(resource.resref), string_length=16)
             self._writer.write_uint32(resid)
             self._writer.write_uint16(resource.restype.type_id)
             self._writer.write_uint16(0)

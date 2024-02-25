@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from PyQt5 import QtCore
 from PyQt5.QtWidgets import QAbstractSpinBox
 
@@ -9,25 +11,25 @@ class LongSpinBox(QAbstractSpinBox):
 
     def __init__(self, parent):
         super().__init__(parent)
-        self._min = 0
-        self._max = 4294967295
+        self._min: int = 0
+        self._max: int = 0xFFFFFFFF
 
         self.lineEdit().editingFinished.connect(self.clampLineEdit)
         self.lineEdit().textEdited.connect(lambda: self.valueChanged.emit(self.value()))
 
-    def stepUp(self) -> None:
+    def stepUp(self):
         self.setValue(self.value() + 1)
 
-    def stepDown(self) -> None:
+    def stepDown(self):
         self.setValue(self.value() - 1)
 
-    def stepBy(self, steps: int) -> None:
+    def stepBy(self, steps: int):
         self.setValue(self.value() + steps * 1)
 
     def text(self) -> str:
-        return str(self._value)
+        return str(self.lineEdit().text())
 
-    def setRange(self, min_value: int, max_value: int) -> None:
+    def setRange(self, min_value: int, max_value: int):
         self._min = min_value
         self._max = max_value
 
@@ -42,7 +44,7 @@ class LongSpinBox(QAbstractSpinBox):
         except ValueError:
             self.lineEdit().setText("0")
 
-    def setValue(self, value: int) -> None:
+    def setValue(self, value: int):
         if not isinstance(value, int):
             self.lineEdit().setText("0")
         else:
@@ -56,5 +58,5 @@ class LongSpinBox(QAbstractSpinBox):
         except ValueError:
             return 0
 
-    def stepEnabled(self):
+    def stepEnabled(self) -> QAbstractSpinBox.StepEnabled:
         return self.StepUpEnabled | self.StepDownEnabled

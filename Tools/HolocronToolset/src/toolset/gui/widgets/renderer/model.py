@@ -1,22 +1,28 @@
 from __future__ import annotations
 
 import math
+
 from typing import TYPE_CHECKING
+
+from PyQt5.QtCore import QTimer
+from PyQt5.QtWidgets import QOpenGLWidget
 
 from pykotor.common.geometry import Vector2
 from pykotor.common.stream import BinaryReader
 from pykotor.gl.models.read_mdl import gl_load_mdl
 from pykotor.gl.scene import RenderObject, Scene
 from pykotor.resource.generics.git import GIT, GITCreature
-from PyQt5.QtCore import QTimer
-from PyQt5.QtWidgets import QOpenGLWidget, QWidget
 from toolset.data.misc import ControlItem
 from toolset.gui.widgets.settings.module_designer import ModuleDesignerSettings
+from utility.error_handling import assert_with_variable_trace
 
 if TYPE_CHECKING:
+    from PyQt5.QtGui import QKeyEvent, QMouseEvent, QResizeEvent, QWheelEvent
+    from PyQt5.QtWidgets import QWidget
+    from glm import vec3
+
     from pykotor.extract.installation import Installation
     from pykotor.resource.generics.utc import UTC
-    from PyQt5.QtGui import QKeyEvent, QMouseEvent, QResizeEvent, QWheelEvent
 
 
 class ModelRenderer(QOpenGLWidget):
@@ -25,8 +31,8 @@ class ModelRenderer(QOpenGLWidget):
 
         self.scene: Scene | None = None
         self.installation: Installation | None = None
-        self._modelToLoad = None
-        self._creatureToLoad = None
+        self._modelToLoad: tuple[BinaryReader, BinaryReader] | None = None
+        self._creatureToLoad: UTC | None = None
 
         self._keysDown: set[int] = set()
         self._mouseDown: set[int] = set()
@@ -51,16 +57,16 @@ class ModelRenderer(QOpenGLWidget):
         self.zoomCameraOut: ControlItem = ControlItem(self.settings.zoomCameraOut3dBind)
         self.toggleInstanceLock: ControlItem = ControlItem(self.settings.toggleLockInstancesBind)
 
-    def loop(self) -> None:
+    def loop(self):
         self.repaint()
         QTimer.singleShot(33, self.loop)
 
-    def initializeGL(self) -> None:
+    def initializeGL(self):
         self.scene = Scene(installation=self.installation)
         self.scene.camera.fov = 70
         self.scene.camera.distance = 4
         self.scene.camera.z = 1.8
-        self.scene.camera.yaw = math.pi/2
+        self.scene.camera.yaw = math.pi / 2
         self.scene.camera.width = self.width()
         self.scene.camera.height = self.height()
         self.scene.show_cursor = False
@@ -69,12 +75,13 @@ class ModelRenderer(QOpenGLWidget):
 
         QTimer.singleShot(33, self.loop)
 
-    def paintGL(self) -> None:
-        """Renders the scene
+    def paintGL(self):
+        """Renders the scene.
+
         Args:
+        ----
             self: The class instance
-        Returns:
-            None: Does not return anything
+
         Processing Logic:
         ----------------
             - Checks if scene is None and returns if so
@@ -101,53 +108,55 @@ class ModelRenderer(QOpenGLWidget):
 
         self.scene.render()
 
-    def clearModel(self) -> None:
+    def clearModel(self):
         if self.scene is not None and "model" in self.scene.objects:
             del self.scene.objects["model"]
 
-    def setModel(self, data: bytes, data_ext: bytes) -> None:
+    def setModel(self, data: bytes, data_ext: bytes):
         mdl = BinaryReader.from_auto(data, 12)
         mdx = BinaryReader.from_auto(data_ext)
         self._modelToLoad = mdl, mdx
 
-    def setCreature(self, utc: UTC) -> None:
+    def setCreature(self, utc: UTC):
         self._creatureToLoad = utc
 
-    def resetCamera(self) -> None:
-        if "model" in self.scene.objects:
-            model = self.scene.objects["model"]
-            self.scene.camera.x = 0
-            self.scene.camera.y = 0
-            self.scene.camera.z = (model.cube(self.scene).max_point.z - model.cube(self.scene).min_point.z) / 2
-            self.scene.camera.pitch = math.pi / 16 * 9
-            self.scene.camera.yaw = math.pi / 16 * 7
-            self.scene.camera.distance = model.radius(self.scene) + 2
+    def resetCamera(self):
+        scene: Scene | None = self.scene
+        assert scene is not None, assert_with_variable_trace(scene is not None)
+        if "model" in scene.objects:
+            model: RenderObject = scene.objects["model"]
+            scene.camera.x = 0
+            scene.camera.y = 0
+            scene.camera.z = (model.cube(scene).max_point.z - model.cube(scene).min_point.z) / 2
+            scene.camera.pitch = math.pi / 16 * 9
+            scene.camera.yaw = math.pi / 16 * 7
+            scene.camera.distance = model.radius(scene) + 2
 
     # region Events
-    def resizeEvent(self, e: QResizeEvent) -> None:
+    def resizeEvent(self, e: QResizeEvent):
         super().resizeEvent(e)
 
         if self.scene is not None:
             self.scene.camera.width = e.size().width()
             self.scene.camera.height = e.size().height()
 
-    def wheelEvent(self, e: QWheelEvent) -> None:
+    def wheelEvent(self, e: QWheelEvent):
         if self.zoomCamera.satisfied(self._mouseDown, self._keysDown):
-            strength = self.settings.zoomCameraSensitivity3d / 2000
+            strength: float = self.settings.zoomCameraSensitivity3d / 2000
             self.scene.camera.distance += -e.angleDelta().y() * strength
 
         if self.moveZCamera.satisfied(self._mouseDown, self._keysDown):
-            strength = self.settings.moveCameraSensitivity3d / 10000
+            strength: float = self.settings.moveCameraSensitivity3d / 10000
             self.scene.camera.z -= -e.angleDelta().y() * strength
 
-    def mouseMoveEvent(self, e: QMouseEvent) -> None:
+    def mouseMoveEvent(self, e: QMouseEvent):
         screen = Vector2(e.x(), e.y())
         screenDelta = Vector2(screen.x - self._mousePrev.x, screen.y - self._mousePrev.y)
         self._mousePrev = screen
 
         if self.moveXYCamera.satisfied(self._mouseDown, self._keysDown):
-            forward = -screenDelta.y * self.scene.camera.forward()
-            sideward = screenDelta.x * self.scene.camera.sideward()
+            forward: vec3 = -screenDelta.y * self.scene.camera.forward()
+            sideward: vec3 = screenDelta.x * self.scene.camera.sideward()
             strength = self.settings.moveCameraSensitivity3d / 10000
             self.scene.camera.x -= (forward.x + sideward.x) * strength
             self.scene.camera.y -= (forward.y + sideward.y) * strength
@@ -156,42 +165,45 @@ class ModelRenderer(QOpenGLWidget):
             strength = self.settings.moveCameraSensitivity3d / 10000
             self.scene.camera.rotate(-screenDelta.x * strength, screenDelta.y * strength)
 
-    def mousePressEvent(self, e: QMouseEvent) -> None:
+    def mousePressEvent(self, e: QMouseEvent):
         self._mouseDown.add(e.button())
 
-    def mouseReleaseEvent(self, e: QMouseEvent) -> None:
+    def mouseReleaseEvent(self, e: QMouseEvent):
         self._mouseDown.discard(e.button())
 
-    def keyPressEvent(self, e: QKeyEvent, bubble: bool = True) -> None:
+    def keyPressEvent(self, e: QKeyEvent, bubble: bool = True):
+
+        # FIXME: these values are wrong but there's an issue elsewhere i cbf fixing.
+
         self._keysDown.add(e.key())
 
         if self.rotateCameraLeft.satisfied(self._mouseDown, self._keysDown):
-            self.scene.camera.rotate(math.pi/4, 0)
+            self.scene.camera.rotate(math.pi / 4, 0)
         if self.rotateCameraRight.satisfied(self._mouseDown, self._keysDown):
-            self.scene.camera.rotate(-math.pi/4, 0)
+            self.scene.camera.rotate(-math.pi / 4, 0)
         if self.rotateCameraUp.satisfied(self._mouseDown, self._keysDown):
-            self.scene.camera.rotate(0, math.pi/4)
+            self.scene.camera.rotate(0, math.pi / 4)
         if self.rotateCameraDown.satisfied(self._mouseDown, self._keysDown):
-            self.scene.camera.rotate(0, -math.pi/4)
+            self.scene.camera.rotate(0, -math.pi / 4)
 
         if self.moveCameraUp.satisfied(self._mouseDown, self._keysDown):
-            self.scene.camera.z += 1
-        if self.moveCameraDown.satisfied(self._mouseDown, self._keysDown):
-            self.scene.camera.z -= 1
-        if self.moveCameraLeft.satisfied(self._mouseDown, self._keysDown):
-            self.scene.camera.y -= 1
-        if self.moveCameraRight.satisfied(self._mouseDown, self._keysDown):
             self.scene.camera.y += 1
-        if self.moveCameraForward.satisfied(self._mouseDown, self._keysDown):
+        if self.moveCameraDown.satisfied(self._mouseDown, self._keysDown):
+            self.scene.camera.y -= 1
+        if self.moveCameraLeft.satisfied(self._mouseDown, self._keysDown):
             self.scene.camera.x += 1
-        if self.moveCameraBackward.satisfied(self._mouseDown, self._keysDown):
+        if self.moveCameraRight.satisfied(self._mouseDown, self._keysDown):
             self.scene.camera.x -= 1
+        if self.moveCameraForward.satisfied(self._mouseDown, self._keysDown):
+            self.scene.camera.z += 1
+        if self.moveCameraBackward.satisfied(self._mouseDown, self._keysDown):
+            self.scene.camera.z -= 1
 
         if self.zoomCameraIn.satisfied(self._mouseDown, self._keysDown):
             self.scene.camera.distance += 1
         if self.zoomCameraOut.satisfied(self._mouseDown, self._keysDown):
             self.scene.camera.distance -= 1
 
-    def keyReleaseEvent(self, e: QKeyEvent, bubble: bool = True) -> None:
+    def keyReleaseEvent(self, e: QKeyEvent, bubble: bool = True):
         self._keysDown.discard(e.key())
     # endregion

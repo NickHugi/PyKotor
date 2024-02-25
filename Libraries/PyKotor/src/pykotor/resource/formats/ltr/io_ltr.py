@@ -1,8 +1,14 @@
 from __future__ import annotations
 
 import itertools
+
+from typing import TYPE_CHECKING
+
 from pykotor.resource.formats.ltr.ltr_data import LTR
-from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES, ResourceReader, ResourceWriter
+from pykotor.resource.type import ResourceReader, ResourceWriter
+
+if TYPE_CHECKING:
+    from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES
 
 
 class LTRBinaryReader(ResourceReader):
@@ -11,7 +17,7 @@ class LTRBinaryReader(ResourceReader):
         source: SOURCE_TYPES,
         offset: int = 0,
         size: int = 0,
-    ) -> None:
+    ):
         super().__init__(source, offset, size)
         self._lip: LTR | None = None
 
@@ -70,7 +76,7 @@ class LTRBinaryWriter(ResourceWriter):
     def write(
         self,
         auto_close: bool = True,
-    ) -> None:
+    ):
         self._writer.write_string("LTR V1.0")
         self._writer.write_uint8(28)
 

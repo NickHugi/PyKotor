@@ -3,10 +3,12 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from pykotor.resource.formats.rim.io_rim import RIMBinaryReader, RIMBinaryWriter
-from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES, ResourceType
+from pykotor.resource.type import ResourceType
 
 if TYPE_CHECKING:
     from pykotor.resource.formats.rim.rim_data import RIM
+    from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES
+
 
 def read_rim(
     source: SOURCE_TYPES,
@@ -41,7 +43,7 @@ def write_rim(
     rim: RIM,
     target: TARGET_TYPES,
     file_format: ResourceType = ResourceType.RIM,
-) -> None:
+):
     """Writes the RIM data to the target location with the specified format (RIM only).
 
     Args:

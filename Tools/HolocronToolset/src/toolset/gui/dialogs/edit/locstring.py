@@ -1,17 +1,26 @@
-from copy import deepcopy
+from __future__ import annotations
 
-from pykotor.common.language import Gender, Language, LocalizedString
+from copy import deepcopy
+from typing import TYPE_CHECKING
+
+from PyQt5.QtWidgets import QDialog
+
+from pykotor.common.language import Gender, Language
 from pykotor.resource.formats.tlk import read_tlk, write_tlk
 from pykotor.tools.path import CaseAwarePath
-from PyQt5.QtWidgets import QDialog, QWidget
-from toolset.data.installation import HTInstallation
+
+if TYPE_CHECKING:
+    from PyQt5.QtWidgets import QWidget
+
+    from pykotor.common.language import LocalizedString
+    from toolset.data.installation import HTInstallation
 
 
 class LocalizedStringDialog(QDialog):
     def __init__(self, parent: QWidget, installation: HTInstallation, locstring: LocalizedString):
         super().__init__(parent)
 
-        from toolset.uic.dialogs.locstring import Ui_Dialog
+        from toolset.uic.dialogs.locstring import Ui_Dialog  # pylint: disable=C0415  # noqa: PLC0415
 
         self.ui = Ui_Dialog()
         self.ui.setupUi(self)
@@ -29,7 +38,7 @@ class LocalizedStringDialog(QDialog):
         self.locstring = deepcopy(locstring)
         self.ui.stringrefSpin.setValue(locstring.stringref)
 
-    def accept(self) -> None:
+    def accept(self):
         if self.locstring.stringref != -1:
             tlk_path = CaseAwarePath(self._installation.path(), "dialog.tlk")
             tlk = read_tlk(tlk_path)
@@ -39,10 +48,10 @@ class LocalizedStringDialog(QDialog):
             write_tlk(tlk, tlk_path)
         super().accept()
 
-    def reject(self) -> None:
+    def reject(self):
         super().reject()
 
-    def stringrefChanged(self, stringref: int) -> None:
+    def stringrefChanged(self, stringref: int):
         self.ui.substringFrame.setVisible(stringref == -1)
         self.locstring.stringref = stringref
 
@@ -54,23 +63,19 @@ class LocalizedStringDialog(QDialog):
     def newTlkString(self):
         self.ui.stringrefSpin.setValue(self._installation.talktable().size())
 
-    def noTlkString(self) -> None:
+    def noTlkString(self):
         self.ui.stringrefSpin.setValue(-1)
 
-    def substringChanged(self) -> None:
+    def substringChanged(self):
         self._update_text()
 
     def _update_text(self):
         language = Language(self.ui.languageSelect.currentIndex())
         gender = Gender(int(self.ui.femaleRadio.isChecked()))
-        text = (
-            self.locstring.get(language, gender)
-            if self.locstring.get(language, gender) is not None
-            else ""
-        )
+        text = self.locstring.get(language, gender) or ""
         self.ui.stringEdit.setPlainText(text)
 
-    def stringEdited(self) -> None:
+    def stringEdited(self):
         if self.locstring.stringref == -1:
             language = Language(self.ui.languageSelect.currentIndex())
             gender = Gender(int(self.ui.femaleRadio.isChecked()))

@@ -2,6 +2,11 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+from PyQt5 import QtCore
+from PyQt5.QtGui import QColor
+from PyQt5.QtWidgets import QDialog, QDialogButtonBox, QListWidgetItem
+
+from pykotor.common.misc import ResRef
 from pykotor.common.stream import BinaryWriter
 from pykotor.resource.formats.erf import read_erf, write_erf
 from pykotor.resource.formats.rim import read_rim, write_rim
@@ -15,13 +20,12 @@ from pykotor.resource.generics.utt import UTT, bytes_utt
 from pykotor.resource.generics.utw import UTW, bytes_utw
 from pykotor.resource.type import ResourceType
 from pykotor.tools.misc import is_any_erf_type_file, is_rim_file
-from PyQt5 import QtCore
-from PyQt5.QtGui import QColor
-from PyQt5.QtWidgets import QDialog, QDialogButtonBox, QListWidgetItem, QWidget
 from toolset.gui.widgets.settings.installations import GlobalSettings
-from utility.path import Path
+from utility.system.path import Path
 
 if TYPE_CHECKING:
+    from PyQt5.QtWidgets import QWidget
+
     from pykotor.common.module import Module
     from pykotor.extract.file import FileResource
     from toolset.data.installation import HTInstallation
@@ -54,7 +58,7 @@ class InsertInstanceDialog(QDialog):
         self.data: bytes = b""
         self.filepath: Path | None = None
 
-        from toolset.uic.dialogs.insert_instance import Ui_Dialog
+        from toolset.uic.dialogs.insert_instance import Ui_Dialog  # pylint: disable=C0415  # noqa: PLC0415
 
         self.ui = Ui_Dialog()
         self.ui.setupUi(self)
@@ -62,14 +66,14 @@ class InsertInstanceDialog(QDialog):
         self._setupLocationSelect()
         self._setupResourceList()
 
-    def _setupSignals(self) -> None:
+    def _setupSignals(self):
         self.ui.createResourceRadio.toggled.connect(self.onResourceRadioToggled)
         self.ui.reuseResourceRadio.toggled.connect(self.onResourceRadioToggled)
         self.ui.copyResourceRadio.toggled.connect(self.onResourceRadioToggled)
         self.ui.resrefEdit.textEdited.connect(self.onResRefEdited)
         self.ui.resourceFilter.textChanged.connect(self.onResourceFilterChanged)
 
-    def _setupLocationSelect(self) -> None:
+    def _setupLocationSelect(self):
         self.ui.locationSelect.addItem(str(self._installation.override_path()), self._installation.override_path())
         for capsule in self._module.capsules():
             if is_rim_file(capsule.path()) and GlobalSettings().disableRIMSaving:
@@ -77,7 +81,7 @@ class InsertInstanceDialog(QDialog):
             self.ui.locationSelect.addItem(str(capsule.path()), capsule.path())
         self.ui.locationSelect.setCurrentIndex(self.ui.locationSelect.count() - 1)
 
-    def _setupResourceList(self) -> None:
+    def _setupResourceList(self):
         """Populates a resource list widget with available resources.
 
         Args:
@@ -98,7 +102,7 @@ class InsertInstanceDialog(QDialog):
                 self.ui.resourceList.addItem(item)
 
         for capsule in self._module.capsules():
-            for resource in [resource for resource in capsule if resource.restype() == self._restype]:
+            for resource in (resource for resource in capsule if resource.restype() == self._restype):
                 if resource.restype() == self._restype:
                     item = QListWidgetItem(resource.resname())
                     item.setToolTip(str(resource.filepath()))
@@ -109,7 +113,7 @@ class InsertInstanceDialog(QDialog):
         if self.ui.resourceList.count() > 0:
             self.ui.resourceList.item(0).setSelected(True)
 
-    def accept(self) -> None:
+    def accept(self):
         """Accepts resource selection and updates module accordingly.
 
         Processing Logic:
@@ -170,7 +174,7 @@ class InsertInstanceDialog(QDialog):
 
         self._module.add_locations(self.resname, self._restype, [self.filepath])
 
-    def onResourceRadioToggled(self) -> None:
+    def onResourceRadioToggled(self):
         self.ui.resourceList.setEnabled(not self.ui.createResourceRadio.isChecked())
         self.ui.resourceFilter.setEnabled(not self.ui.createResourceRadio.isChecked())
         self.ui.resrefEdit.setEnabled(not self.ui.reuseResourceRadio.isChecked())
@@ -184,14 +188,14 @@ class InsertInstanceDialog(QDialog):
         if self.ui.createResourceRadio.isChecked():
             self.ui.buttonBox.button(QDialogButtonBox.Ok).setEnabled(self.isValidResref(self.ui.resrefEdit.text()))
 
-    def onResRefEdited(self, text: str) -> None:
+    def onResRefEdited(self, text: str):
         self.ui.buttonBox.button(QDialogButtonBox.Ok).setEnabled(self.isValidResref(text))
 
-    def onResourceFilterChanged(self) -> None:
+    def onResourceFilterChanged(self):
         text = self.ui.resourceFilter.text()
         for row in range(self.ui.resourceList.count()):
             item = self.ui.resourceList.item(row)
             item.setHidden(text not in item.text())
 
     def isValidResref(self, text: str) -> bool:
-        return self._module.resource(text, self._restype) is None and text != ""
+        return self._module.resource(text, self._restype) is None and ResRef.is_valid(text)

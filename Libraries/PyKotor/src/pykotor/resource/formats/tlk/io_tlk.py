@@ -1,10 +1,16 @@
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 from pykotor.common.language import Language
 from pykotor.common.misc import ResRef, WrappedInt
 from pykotor.common.stream import ArrayHead
-from pykotor.resource.formats.tlk.tlk_data import TLK, TLKEntry
-from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES, ResourceReader, ResourceWriter, autoclose
+from pykotor.resource.formats.tlk.tlk_data import TLK
+from pykotor.resource.type import ResourceReader, ResourceWriter, autoclose
+
+if TYPE_CHECKING:
+    from pykotor.resource.formats.tlk.tlk_data import TLKEntry
+    from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES
 
 _FILE_HEADER_SIZE = 20
 _ENTRY_SIZE = 40
@@ -22,7 +28,7 @@ class TLKBinaryReader(ResourceReader):
         self._tlk: TLK
         self._texts_offset = 0
         self._text_headers: list[ArrayHead] = []
-        self._language = language
+        self._language: Language | None = language
 
     @autoclose
     def load(
@@ -86,13 +92,14 @@ class TLKBinaryReader(ResourceReader):
     def _load_text(
         self,
         stringref: int,
-    ) -> None:
+    ):
         text_header: ArrayHead = self._text_headers[stringref]
 
         self._reader.seek(text_header.offset + self._texts_offset)
         text: str = self._reader.read_string(text_header.length, encoding=self._tlk.language.get_encoding())
 
         self._tlk.entries[stringref].text = text
+
 
 class TLKBinaryWriter(ResourceWriter):
     def __init__(
@@ -107,7 +114,7 @@ class TLKBinaryWriter(ResourceWriter):
     def write(
         self,
         auto_close: bool = True,
-    ) -> None:
+    ):
         self._write_file_header()
 
         text_offset = WrappedInt(0)
@@ -125,7 +132,7 @@ class TLKBinaryWriter(ResourceWriter):
 
     def _write_file_header(
         self,
-    ) -> None:
+    ):
         language_id: int = self._tlk.language.value
         string_count: int = len(self._tlk)
         entries_offset: int = self._calculate_entries_offset()
@@ -140,8 +147,8 @@ class TLKBinaryWriter(ResourceWriter):
         self,
         entry: TLKEntry,
         previous_offset: WrappedInt,
-    ) -> None:
-        sound_resref = entry.voiceover.get()
+    ):
+        sound_resref = str(entry.voiceover)
         text_offset = previous_offset.get()
         text_length = len(entry.text)
 

@@ -1,13 +1,17 @@
 from __future__ import annotations
 
-from contextlib import suppress
 from copy import copy
+from typing import TYPE_CHECKING
 
 from pykotor.common.geometry import Vector2
 from pykotor.common.misc import Game
 from pykotor.resource.formats.gff import GFF, GFFContent, GFFList, read_gff, write_gff
 from pykotor.resource.formats.gff.gff_auto import bytes_gff
-from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES, ResourceType
+from pykotor.resource.type import ResourceType
+from utility.error_handling import format_exception_with_variables
+
+if TYPE_CHECKING:
+    from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES
 
 
 class PTH:
@@ -34,7 +38,7 @@ class PTH:
     def __getitem__(
         self,
         item: int,
-    ):
+    ) -> Vector2:
         return self._points[item]
 
     def add(
@@ -48,10 +52,10 @@ class PTH:
     def remove(
         self,
         index: int,
-    ) -> None:
+    ):
         self._points.pop(index)
 
-        self._connections = [x for x in self._connections if index not in (x.source, x.target)]
+        self._connections = [x for x in self._connections if index not in {x.source, x.target}]
 
         for connection in self._connections:
             connection.source = connection.source - 1 if connection.source > index else connection.source
@@ -61,8 +65,10 @@ class PTH:
         self,
         index: int,
     ) -> Vector2 | None:
-        with suppress(Exception):
+        try:
             return self._points[index]
+        except Exception as e:
+            print(format_exception_with_variables(e, message="This exception has been suppressed."))
         return None
 
     def find(
@@ -75,17 +81,18 @@ class PTH:
         self,
         source: int,
         target: int,
-    ) -> None:
+    ):
         self._connections.append(PTHEdge(source, target))
 
     def disconnect(
         self,
         source: int,
         target: int,
-    ) -> None:
+    ):
         for edge in copy(self._connections):
-            has_source = edge.source in [source, target]
-            has_target = edge.target in [source, target]
+            tuple_check: tuple[int, int] = (source, target)
+            has_source: bool = edge.source in tuple_check
+            has_target: bool = edge.target in tuple_check
             if has_source and has_target:
                 self._connections.remove(edge)
 
@@ -115,17 +122,24 @@ class PTHEdge:
         source: int,
         target: int,
     ):
-        self.source = source
-        self.target = target
+        self.source: int = source
+        self.target: int = target
+
+    def __repr__(
+        self,
+    ):
+        return f"{self.__class__.__name__}(source={self.source}, target={self.target})"
 
     def __eq__(
         self,
-        other,
+        other: PTHEdge,
     ):
-        if not isinstance(other, PTHEdge):
-            raise NotImplementedError
+        if isinstance(other, PTHEdge):
+            return self.source == other.source and self.target == other.target
 
-        return self.source == other.source and self.target == other.target
+        msg = f"Cannot compare {self!r} with {other!r}."
+        print(msg)
+        return NotImplemented
 
 
 def construct_pth(
@@ -193,7 +207,7 @@ def write_pth(
     file_format: ResourceType = ResourceType.GFF,
     *,
     use_deprecated: bool = True,
-) -> None:
+):
     gff: GFF = dismantle_pth(pth, game, use_deprecated=use_deprecated)
     write_gff(gff, target, file_format)
 

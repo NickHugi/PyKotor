@@ -2,9 +2,12 @@
 from __future__ import annotations
 
 from copy import copy, deepcopy
-from typing import Any, Generator
+from typing import TYPE_CHECKING, Any
 
 from pykotor.resource.type import ResourceType
+
+if TYPE_CHECKING:
+    from collections.abc import Generator
 
 
 class VIS:
@@ -14,7 +17,7 @@ class VIS:
 
     def __init__(
         self,
-    ) -> None:
+    ):
         self._rooms: set[str] = set()
         self._visibility: dict[str, set[str]] = {}
 
@@ -49,7 +52,7 @@ class VIS:
     def add_room(
         self,
         model: str,
-    ) -> None:
+    ):
         """Adds a room. If an room already exists, it is ignored; no error is thrown.
 
         Args:
@@ -66,7 +69,7 @@ class VIS:
     def remove_room(
         self,
         model: str,
-    ) -> None:
+    ):
         """Removes a room. If a room does not exist, it is ignored; no error is thrown.
 
         Args:
@@ -86,7 +89,7 @@ class VIS:
         self,
         old: str,
         new: str,
-    ) -> None:
+    ):
         """Renames a room.
 
         Args:
@@ -127,7 +130,7 @@ class VIS:
     ) -> bool:
         """Returns true if the specified room exists.
 
-        Returns
+        Returns:
         -------
             True if the room exists.
         """
@@ -139,7 +142,7 @@ class VIS:
         when_inside: str,
         show: str,
         visible: bool,
-    ) -> None:
+    ):
         """Sets the visibility of a specified room based off when viewing from another specified room.
 
         Args:
@@ -187,7 +190,7 @@ class VIS:
 
     def set_all_visible(
         self,
-    ) -> None:
+    ):
         """Sets all rooms visible from each other.
 
         Processing Logic:
@@ -197,5 +200,5 @@ class VIS:
             - Set the visibility between the current room and other room to True.
         """
         for when_inside in self._rooms:
-            for show in [room for room in self._rooms if room != when_inside]:
+            for show in (room for room in self._rooms if room != when_inside):
                 self.set_visible(when_inside, show, visible=True)

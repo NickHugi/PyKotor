@@ -2,12 +2,17 @@ from __future__ import annotations
 
 import os
 
+from typing import TYPE_CHECKING
+
 from pykotor.common.stream import BinaryReader
 from pykotor.resource.formats.lip.io_lip import LIPBinaryReader, LIPBinaryWriter
 from pykotor.resource.formats.lip.io_lip_json import LIPJSONReader, LIPJSONWriter
 from pykotor.resource.formats.lip.io_lip_xml import LIPXMLReader, LIPXMLWriter
-from pykotor.resource.formats.lip.lip_data import LIP
-from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES, ResourceType
+from pykotor.resource.type import ResourceType
+
+if TYPE_CHECKING:
+    from pykotor.resource.formats.lip.lip_data import LIP
+    from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES
 
 
 def detect_lip(
@@ -40,16 +45,16 @@ def detect_lip(
             return ResourceType.LIP_XML
         if "{" in first4:
             return ResourceType.LIP_JSON
-        #if "," in first4:
+        # if "," in first4:
         #    return ResourceType.LIP_CSV
         return ResourceType.INVALID
     file_format: ResourceType
     try:
-        if isinstance(source, (str, os.PathLike)):
+        if isinstance(source, (os.PathLike, str)):
             with BinaryReader.from_file(source, offset) as reader:
                 file_format = check(reader.read_string(4))
-        elif isinstance(source, (bytes, bytearray)):
-            file_format = check(source[:4].decode("ascii", "ignore"))
+        elif isinstance(source, (memoryview, bytes, bytearray)):
+            file_format = check(bytes(source[:4]).decode("ascii", "ignore"))
         elif isinstance(source, BinaryReader):
             file_format = check(source.read_string(4))
             source.skip(-4)
@@ -91,14 +96,13 @@ def read_lip(
     """
     file_format = detect_lip(source, offset)
 
-
     if file_format == ResourceType.LIP:
         return LIPBinaryReader(source, offset, size or 0).load()
     if file_format == ResourceType.LIP_XML:
         return LIPXMLReader(source, offset, size or 0).load()
     if file_format == ResourceType.LIP_JSON:
         return LIPJSONReader(source, offset, size or 0).load()
-    #if file_format == ResourceType.INVALID:
+    # if file_format == ResourceType.INVALID:
     msg = "Failed to determine the format of the GFF file."
     raise ValueError(msg)
 
@@ -107,7 +111,7 @@ def write_lip(
     lip: LIP,
     target: TARGET_TYPES,
     file_format: ResourceType = ResourceType.LIP,
-) -> None:
+):
     """Writes the LIP data to the target location with the specified format (LIP or LIP_XML).
 
     Args:

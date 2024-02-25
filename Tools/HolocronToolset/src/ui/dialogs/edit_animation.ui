@@ -54,7 +54,7 @@
   <customwidget>
    <class>ComboBox2DA</class>
    <extends>QComboBox</extends>
-   <header location="global">toolset.gui.widgets.combobox_2da</header>
+   <header location="global">toolset.gui.widgets.edit.combobox_2da</header>
   </customwidget>
  </customwidgets>
  <resources/>

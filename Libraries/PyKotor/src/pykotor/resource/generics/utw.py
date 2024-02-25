@@ -5,10 +5,11 @@ from typing import TYPE_CHECKING
 from pykotor.common.language import LocalizedString
 from pykotor.common.misc import Game, ResRef
 from pykotor.resource.formats.gff import GFF, GFFContent, bytes_gff, read_gff, write_gff
-from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES, ResourceType
+from pykotor.resource.type import ResourceType
 
 if TYPE_CHECKING:
     from pykotor.resource.formats.gff import GFFStruct
+    from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES
 
 
 class UTW:
@@ -33,7 +34,7 @@ class UTW:
 
     def __init__(
         self,
-    ) -> None:
+    ):
         self.resref: ResRef = ResRef.from_blank()
         self.comment: str = ""
         self.tag: str = ""
@@ -113,7 +114,7 @@ def write_utw(
     file_format: ResourceType = ResourceType.GFF,
     *,
     use_deprecated: bool = True,
-) -> None:
+):
     gff: GFF = dismantle_utw(utw, game, use_deprecated=use_deprecated)
     write_gff(gff, target, file_format)
 

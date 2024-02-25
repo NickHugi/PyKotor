@@ -1,19 +1,24 @@
 from __future__ import annotations
 
 from enum import IntEnum
+from typing import TYPE_CHECKING
 
 from pykotor.common.geometry import Vector3
 from pykotor.common.language import Gender, Language, LocalizedString
 from pykotor.common.misc import Color, Game, ResRef
 from pykotor.resource.formats.gff.gff_auto import bytes_gff, read_gff, write_gff
-from pykotor.resource.formats.gff.gff_data import GFF, GFFContent, GFFList, GFFStruct
-from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES, ResourceType
+from pykotor.resource.formats.gff.gff_data import GFF, GFFContent, GFFList
+from pykotor.resource.type import ResourceType
+
+if TYPE_CHECKING:
+    from pykotor.resource.formats.gff.gff_data import GFFStruct
+    from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES
 
 
 class DLG:
     """Stores dialog data.
 
-    Attributes
+    Attributes:
     ----------
         word_count: "NumWords" field.
         on_abort: "EndConverAbort" field.
@@ -43,7 +48,7 @@ class DLG:
     def __init__(
         self,
         blank_node: bool = True,
-    ) -> None:
+    ):
         """Initializes a DLGNode object.
 
         Args:
@@ -94,7 +99,7 @@ class DLG:
 
     def print_tree(
         self,
-    ) -> None:
+    ):
         """Prints all the nodes (one per line) in the dialog tree with appropriate indentation."""
         self._print_tree(self.starters, 0, [], [])
 
@@ -104,7 +109,7 @@ class DLG:
         indent: int,
         seen_links: list[DLGLink],
         seen_nodes: list[DLGNode],
-    ) -> None:
+    ):
         for link in links:
             if link.node not in seen_nodes:
                 print(f'{" " * indent}-> {link.node.text}')
@@ -126,7 +131,7 @@ class DLG:
     ) -> list[DLGEntry]:
         """Returns a flat list of all entries in the dialog.
 
-        Returns
+        Returns:
         -------
             A list of all stored entries.
         """
@@ -177,7 +182,7 @@ class DLG:
     ) -> list[DLGReply]:
         """Returns a flat list of all replies in the dialog.
 
-        Returns
+        Returns:
         -------
             A list of all stored replies.
         """
@@ -239,7 +244,7 @@ class DLGConversationType(IntEnum):
 class DLGNode:
     """Represents a node in the dialog tree.
 
-    Attributes
+    Attributes:
     ----------
         text: "Text" field.
         listener: "Listener" field.
@@ -294,7 +299,7 @@ class DLGNode:
 
     def __init__(
         self,
-    ) -> None:
+    ):
         """Initializes a DLGNode object.
 
         Processing Logic:
@@ -372,7 +377,7 @@ class DLGReply(DLGNode):
 
     def __init__(
         self,
-    ) -> None:
+    ):
         super().__init__()
 
 
@@ -381,7 +386,7 @@ class DLGEntry(DLGNode):
 
     def __init__(
         self,
-    ) -> None:
+    ):
         super().__init__()
         self.speaker: str = ""
 
@@ -391,7 +396,7 @@ class DLGAnimation:
 
     def __init__(
         self,
-    ) -> None:
+    ):
         self.animation_id: int = 6
         self.participant: str = ""
 
@@ -399,7 +404,7 @@ class DLGAnimation:
 class DLGLink:
     """Points to a node. Links are stored either in other nodes or in the starting list of the DLG.
 
-    Attributes
+    Attributes:
     ----------
         active1: "Active" field.
         comment: "LinkComment" field. Only used in links stored in nodes.
@@ -425,7 +430,7 @@ class DLGLink:
     def __init__(
         self,
         node: DLGNode | None = None,
-    ) -> None:
+    ):
         self.active1: ResRef = ResRef.from_blank()
         self.node: DLGNode | None = node
         self.link_index: int = -1
@@ -457,15 +462,15 @@ class DLGLink:
 
 class DLGStunt:
     """
-    Attributes
+    Attributes:
     ----------
     participant: "Participant" field.
     stunt_model: "StuntModel" field.
-    """  # noqa: D205, D212
+    """  # noqa: D212
 
     def __init__(
         self,
-    ) -> None:
+    ):
         self.participant: str = ""
         self.stunt_model: ResRef = ResRef.from_blank()
 
@@ -493,7 +498,7 @@ def construct_dlg(
     def construct_node(
         gff_struct: GFFStruct,
         node: DLGNode,
-    ) -> None:
+    ):
         """Constructs a DLGNode from a GFFStruct.
 
         Args:
@@ -583,7 +588,7 @@ def construct_dlg(
     def construct_link(
         gff_struct: GFFStruct,
         link: DLGLink,
-    ) -> None:
+    ):
         """Constructs a DLGLink from a GFFStruct.
 
         Args:
@@ -733,7 +738,7 @@ def dismantle_dlg(
         link: DLGLink,
         nodes: list,
         list_name: str,
-    ) -> None:
+    ):
         """Disassembles a link into a GFFStruct.
 
         Args:
@@ -782,7 +787,7 @@ def dismantle_dlg(
         node: DLGNode,
         nodes: list,
         list_name: str,
-    ) -> None:
+    ):
         """Disassembles a DLGNode into a GFFStruct.
 
         Args:
@@ -946,6 +951,7 @@ def dismantle_dlg(
 
     return gff
 
+
 def read_dlg(
     source: SOURCE_TYPES,
     offset: int = 0,
@@ -980,7 +986,7 @@ def write_dlg(
     file_format: ResourceType = ResourceType.GFF,
     *,
     use_deprecated: bool = True,
-) -> None:
+):
     """Writes a dialogue to a target file format.
 
     Args:

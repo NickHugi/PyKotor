@@ -1,7 +1,12 @@
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 from pykotor.resource.formats.rim.rim_data import RIM
-from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES, ResourceReader, ResourceType, ResourceWriter, autoclose
+from pykotor.resource.type import ResourceReader, ResourceType, ResourceWriter, autoclose
+
+if TYPE_CHECKING:
+    from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES
 
 
 class RIMBinaryReader(ResourceReader):
@@ -10,7 +15,7 @@ class RIMBinaryReader(ResourceReader):
         source: SOURCE_TYPES,
         offset: int = 0,
         size: int = 0,
-    ) -> None:
+    ):
         super().__init__(source, offset, size)
         self._rim: RIM | None = None
 
@@ -73,7 +78,7 @@ class RIMBinaryWriter(ResourceWriter):
     def write(
         self,
         auto_close: bool = True,
-    ) -> None:
+    ):
         entry_count = len(self._rim)
         offset_to_keys = RIMBinaryWriter.FILE_HEADER_SIZE
 
@@ -86,7 +91,7 @@ class RIMBinaryWriter(ResourceWriter):
 
         data_offset = offset_to_keys + RIMBinaryWriter.KEY_ELEMENT_SIZE * entry_count
         for resid, resource in enumerate(self._rim):
-            self._writer.write_string(resource.resref.get(), string_length=16)
+            self._writer.write_string(str(resource.resref), string_length=16)
             self._writer.write_uint32(resource.restype.type_id)
             self._writer.write_uint32(resid)
             self._writer.write_uint32(data_offset)

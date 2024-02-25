@@ -2,11 +2,17 @@ from __future__ import annotations
 
 import os
 
+from typing import TYPE_CHECKING
+
 from pykotor.common.stream import BinaryReader
-from pykotor.resource.formats.gff.gff_data import GFF, GFFContent
+from pykotor.resource.formats.gff.gff_data import GFFContent
 from pykotor.resource.formats.gff.io_gff import GFFBinaryReader, GFFBinaryWriter
 from pykotor.resource.formats.gff.io_gff_xml import GFFXMLReader, GFFXMLWriter
-from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES, ResourceType
+from pykotor.resource.type import ResourceType
+
+if TYPE_CHECKING:
+    from pykotor.resource.formats.gff.gff_data import GFF
+    from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES
 
 
 def detect_gff(
@@ -37,19 +43,19 @@ def detect_gff(
             return ResourceType.GFF
         if "<" in first4:  # sourcery skip: assign-if-exp, reintroduce-else
             return ResourceType.GFF_XML
-        #if "{" in first4:
+        # if "{" in first4:
         #    return ResourceType.GFF_JSON
-        #if "," in first4:
+        # if "," in first4:
         #    return ResourceType.GFF_CSV
         return ResourceType.INVALID
 
     file_format: ResourceType
     try:
-        if isinstance(source, (str, os.PathLike)):
+        if isinstance(source, (os.PathLike, str)):
             with BinaryReader.from_file(source, offset) as reader:
                 file_format = check(reader.read_string(4))
-        elif isinstance(source, (bytes, bytearray)):
-            file_format = check(source[:4].decode("ascii", "ignore"))
+        elif isinstance(source, (memoryview, bytes, bytearray)):
+            file_format = check(bytes(source[:4]).decode("ascii", "ignore"))
         elif isinstance(source, BinaryReader):
             file_format = check(source.read_string(4))
             source.skip(-4)
@@ -97,7 +103,7 @@ def read_gff(
         return GFFXMLReader(source, offset, size or 0).load()
 
     msg = "Failed to determine the format of the GFF file."
-    #if file_format == ResourceType.INVALID:
+    # if file_format == ResourceType.INVALID:
     raise ValueError(msg)
 
 
@@ -105,7 +111,7 @@ def write_gff(
     gff: GFF,
     target: TARGET_TYPES,
     file_format: ResourceType = ResourceType.GFF,
-) -> None:
+):
     """Writes the GFF data to the target location with the specified format (GFF or GFF_XML).
 
     Args:

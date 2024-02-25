@@ -1,3 +1,4 @@
+from __future__ import annotations
 from pykotor.resource.formats.vis.vis_data import VIS
 from pykotor.resource.formats.vis.io_vis import (
     VISAsciiReader,

@@ -1,8 +1,14 @@
 from __future__ import annotations
 
 import math
+
 from copy import deepcopy
 from typing import TYPE_CHECKING
+
+from PyQt5 import QtCore
+from PyQt5.QtCore import QPoint, QTimer
+from PyQt5.QtGui import QColor, QIcon, QPixmap
+from PyQt5.QtWidgets import QAction, QListWidgetItem, QMainWindow, QMenu, QMessageBox, QTreeWidgetItem
 
 from pykotor.common.geometry import SurfaceMaterial, Vector2, Vector3, Vector4
 from pykotor.common.misc import Color, ResRef
@@ -10,7 +16,6 @@ from pykotor.common.module import Module, ModuleResource
 from pykotor.common.stream import BinaryWriter
 from pykotor.extract.file import ResourceIdentifier
 from pykotor.resource.generics.git import (
-    GIT,
     GITCamera,
     GITCreature,
     GITDoor,
@@ -27,10 +32,6 @@ from pykotor.resource.generics.utt import read_utt
 from pykotor.resource.generics.utw import read_utw
 from pykotor.resource.type import ResourceType
 from pykotor.tools import module
-from PyQt5 import QtCore
-from PyQt5.QtCore import QPoint, QTimer
-from PyQt5.QtGui import QColor, QIcon, QKeyEvent, QPixmap
-from PyQt5.QtWidgets import QAction, QCheckBox, QListWidgetItem, QMainWindow, QMenu, QMessageBox, QTreeWidgetItem, QWidget
 from toolset.data.misc import ControlItem
 from toolset.gui.dialogs.insert_instance import InsertInstanceDialog
 from toolset.gui.dialogs.select_module import SelectModuleDialog
@@ -42,14 +43,24 @@ from toolset.utils.misc import QtMouse
 from toolset.utils.window import openResourceEditor
 
 if TYPE_CHECKING:
+    from PyQt5.QtGui import QFont, QKeyEvent
+    from PyQt5.QtWidgets import QCheckBox, QWidget
+    from glm import vec3
+
+    from pykotor.gl.scene import Camera
     from pykotor.resource.generics.are import ARE
+    from pykotor.resource.generics.git import (
+        GIT,
+    )
     from pykotor.resource.generics.ifo import IFO
+    from pykotor.tools.path import CaseAwarePath
     from toolset.data.installation import HTInstallation
+    from toolset.gui.editor import Editor
     from toolset.gui.widgets.renderer.module import ModuleRenderer
     from toolset.gui.widgets.renderer.walkmesh import WalkmeshRenderer
 
 
-class ModuleDesigner(QMainWindow):
+class ModuleDesigner(QMainWindow):  # noqa: PLR0904
     def __init__(self, parent: QWidget | None, installation: HTInstallation):
         """Initializes the Module Designer window.
 
@@ -84,13 +95,13 @@ class ModuleDesigner(QMainWindow):
         self.hideCameras: bool = False
         self.lockInstances: bool = False
 
-        from toolset.uic.windows.module_designer import Ui_MainWindow
+        from toolset.uic.windows.module_designer import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
 
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
         self._setupSignals()
 
-        def intColorToQColor(intvalue):
+        def intColorToQColor(intvalue) -> QColor:
             """Converts an integer color value to a QColor object.
 
             Args:
@@ -147,7 +158,7 @@ class ModuleDesigner(QMainWindow):
 
         QTimer().singleShot(33, self.openModule)
 
-    def _setupSignals(self) -> None:
+    def _setupSignals(self):
         """Connect signals to slots.
 
         Args:
@@ -181,15 +192,15 @@ class ModuleDesigner(QMainWindow):
         self.ui.lightmapCheck.toggled.connect(self.updateToggles)
         self.ui.cursorCheck.toggled.connect(self.updateToggles)
 
-        self.ui.viewCreatureCheck.mouseDoubleClickEvent = lambda _: self.onInstanceVisibilityDoubleClick(self.ui.viewCreatureCheck)
-        self.ui.viewPlaceableCheck.mouseDoubleClickEvent = lambda _: self.onInstanceVisibilityDoubleClick(self.ui.viewPlaceableCheck)
-        self.ui.viewDoorCheck.mouseDoubleClickEvent = lambda _: self.onInstanceVisibilityDoubleClick(self.ui.viewDoorCheck)
-        self.ui.viewSoundCheck.mouseDoubleClickEvent = lambda _: self.onInstanceVisibilityDoubleClick(self.ui.viewSoundCheck)
-        self.ui.viewTriggerCheck.mouseDoubleClickEvent = lambda _: self.onInstanceVisibilityDoubleClick(self.ui.viewTriggerCheck)
-        self.ui.viewEncounterCheck.mouseDoubleClickEvent = lambda _: self.onInstanceVisibilityDoubleClick(self.ui.viewEncounterCheck)
-        self.ui.viewWaypointCheck.mouseDoubleClickEvent = lambda _: self.onInstanceVisibilityDoubleClick(self.ui.viewWaypointCheck)
-        self.ui.viewCameraCheck.mouseDoubleClickEvent = lambda _: self.onInstanceVisibilityDoubleClick(self.ui.viewCameraCheck)
-        self.ui.viewStoreCheck.mouseDoubleClickEvent = lambda _: self.onInstanceVisibilityDoubleClick(self.ui.viewStoreCheck)
+        self.ui.viewCreatureCheck.mouseDoubleClickEvent = lambda a0: self.onInstanceVisibilityDoubleClick(self.ui.viewCreatureCheck)  # noqa: ARG005
+        self.ui.viewPlaceableCheck.mouseDoubleClickEvent = lambda a0: self.onInstanceVisibilityDoubleClick(self.ui.viewPlaceableCheck)  # noqa: ARG005
+        self.ui.viewDoorCheck.mouseDoubleClickEvent = lambda a0: self.onInstanceVisibilityDoubleClick(self.ui.viewDoorCheck)  # noqa: ARG005
+        self.ui.viewSoundCheck.mouseDoubleClickEvent = lambda a0: self.onInstanceVisibilityDoubleClick(self.ui.viewSoundCheck)  # noqa: ARG005
+        self.ui.viewTriggerCheck.mouseDoubleClickEvent = lambda a0: self.onInstanceVisibilityDoubleClick(self.ui.viewTriggerCheck)  # noqa: ARG005
+        self.ui.viewEncounterCheck.mouseDoubleClickEvent = lambda a0: self.onInstanceVisibilityDoubleClick(self.ui.viewEncounterCheck)  # noqa: ARG005
+        self.ui.viewWaypointCheck.mouseDoubleClickEvent = lambda a0: self.onInstanceVisibilityDoubleClick(self.ui.viewWaypointCheck)  # noqa: ARG005
+        self.ui.viewCameraCheck.mouseDoubleClickEvent = lambda a0: self.onInstanceVisibilityDoubleClick(self.ui.viewCameraCheck)  # noqa: ARG005
+        self.ui.viewStoreCheck.mouseDoubleClickEvent = lambda a0: self.onInstanceVisibilityDoubleClick(self.ui.viewStoreCheck)  # noqa: ARG005
 
         self.ui.instanceList.doubleClicked.connect(self.onInstanceListDoubleClicked)
         self.ui.instanceList.customContextMenuRequested.connect(self.onContextMenuSelectionExists)
@@ -206,14 +217,15 @@ class ModuleDesigner(QMainWindow):
         self.ui.flatRenderer.mouseScrolled.connect(self.on2dMouseScrolled)
         self.ui.flatRenderer.keyPressed.connect(self.on2dKeyboardPressed)
 
-    def _refreshWindowTitle(self) -> None:
+    def _refreshWindowTitle(self):
         if self._module is None:
             title = f"No Module - {self._installation.name} - Module Designer"
         else:
             title = f"{self._module._id} - {self._installation.name} - Module Designer"
         self.setWindowTitle(title)
 
-    def openModule(self) -> None:
+#    @with_variable_trace(Exception)
+    def openModule(self):
         """Opens a module.
 
         Args:
@@ -236,45 +248,49 @@ class ModuleDesigner(QMainWindow):
             self.unloadModule()
 
             mod_filepath = self._installation.module_path().joinpath(f"{dialog.module}.mod")
-            if not mod_filepath.exists() and GlobalSettings().disableRIMSaving:
+            if GlobalSettings().disableRIMSaving and not mod_filepath.is_file():
                 module.rim_to_mod(mod_filepath)
                 self._installation.load_modules()
 
             self._module = Module(dialog.module, self._installation)
             self.ui.mainRenderer.init(self._installation, self._module)
 
-            self.ui.flatRenderer.setGit(self._module.git().resource())
+            git: GIT | None = self._module.git().resource()
+
+            self.ui.flatRenderer.setGit(git)
             self.ui.flatRenderer.setWalkmeshes(
                 [
-                    bwm.resource()
+                    bwm.resource()  # FIXME: resource() will sometimes return None
                     for bwm in self._module.resources.values()
-                    if bwm.restype() == ResourceType.WOK
+                    if bwm.restype() == ResourceType.WOK and bwm.resource() is not None
                 ],
             )
             self.ui.flatRenderer.centerCamera()
 
-    def unloadModule(self) -> None:
+    def unloadModule(self):
         self._module = None
         self.ui.mainRenderer.scene = None
-        self.ui.mainRenderer._init = False
+        self.ui.mainRenderer._init = False  # noqa: SLF001
 
-    def showHelpWindow(self) -> None:
+    def showHelpWindow(self):
         window = HelpWindow(self, "./help/tools/1-moduleEditor.md")
         window.show()
 
+#    @with_variable_trace((Exception, OSError))
     def git(self) -> GIT:
         return self._module.git().resource()
 
+#    @with_variable_trace(Exception)
     def are(self) -> ARE:
         return self._module.are().resource()
-
+#    @with_variable_trace(Exception)
     def ifo(self) -> IFO:
         return self._module.info().resource()
 
-    def saveGit(self) -> None:
+    def saveGit(self):
         self._module.git().save()
 
-    def rebuildResourceTree(self) -> None:
+    def rebuildResourceTree(self):
         """Rebuilds the resource tree widget.
 
         Args:
@@ -337,8 +353,8 @@ class ModuleDesigner(QMainWindow):
         self.ui.resourceTree.sortByColumn(0, QtCore.Qt.AscendingOrder)
         self.ui.resourceTree.setSortingEnabled(True)
 
-    def openModuleResource(self, resource: ModuleResource) -> None:
-        editor = openResourceEditor(resource.active(), resource.resname(), resource.restype(), resource.data(),
+    def openModuleResource(self, resource: ModuleResource):
+        editor: Editor | None = openResourceEditor(resource.active(), resource.resname(), resource.restype(), resource.data(),
                                     self._installation, self)[1]
 
         if editor is None:
@@ -350,18 +366,18 @@ class ModuleDesigner(QMainWindow):
         else:
             editor.savedFile.connect(lambda: self._onSavedResource(resource))
 
-    def copyResourceToOverride(self, resource: ModuleResource) -> None:
-        location = self._installation.override_path() / f"{resource.resname()}.{resource.restype().extension}"
+    def copyResourceToOverride(self, resource: ModuleResource):
+        location: CaseAwarePath = self._installation.override_path() / f"{resource.resname()}.{resource.restype().extension}"
         BinaryWriter.dump(location, resource.data())
         resource.add_locations([location])
         resource.activate(location)
         self.ui.mainRenderer.scene.clearCacheBuffer.append(ResourceIdentifier(resource.resname(), resource.restype()))
 
-    def activateResourceFile(self, resource: ModuleResource, location: str) -> None:
+    def activateResourceFile(self, resource: ModuleResource, location: str):
         resource.activate(location)
         self.ui.mainRenderer.scene.clearCacheBuffer.append(ResourceIdentifier(resource.resname(), resource.restype()))
 
-    def selectResourceItem(self, instance: GITInstance, clearExisting: bool = True) -> None:
+    def selectResourceItem(self, instance: GITInstance, clearExisting: bool = True):
         """Select a resource item in the tree.
 
         Args:
@@ -380,7 +396,7 @@ class ModuleDesigner(QMainWindow):
             self.ui.resourceTree.clearSelection()
 
         for i in range(self.ui.resourceTree.topLevelItemCount()):
-            parent = self.ui.resourceTree.topLevelItem(i)
+            parent: QTreeWidgetItem | None = self.ui.resourceTree.topLevelItem(i)
             for j in range(parent.childCount()):
                 item = parent.child(j)
                 res: ModuleResource = item.data(0, QtCore.Qt.UserRole)
@@ -393,7 +409,7 @@ class ModuleDesigner(QMainWindow):
                     item.setSelected(True)
                     self.ui.resourceTree.scrollToItem(item)
 
-    def rebuildInstanceList(self) -> None:
+    def rebuildInstanceList(self):
         """Rebuilds the instance list.
 
         Args:
@@ -446,40 +462,40 @@ class ModuleDesigner(QMainWindow):
             if visibleMapping[type(instance)]:
                 continue
 
-            struct_index = self._module.git().resource().index(instance)
+            struct_index: int = self._module.git().resource().index(instance)
 
             icon = QIcon(iconMapping[type(instance)])
             item = QListWidgetItem(icon, "")
-            font = item.font()
+            font: QFont = item.font()
 
             if isinstance(instance, GITCamera):
                 item.setText(f"Camera #{instance.camera_id}")
                 item.setToolTip(f"Struct Index: {struct_index}\nCamera ID: {instance.camera_id}\nFOV: {instance.fov}")
                 item.setData(QtCore.Qt.UserRole + 1, "cam" + str(instance.camera_id).rjust(10, "0"))
             else:
-                resource = self._module.resource(instance.identifier().resname, instance.identifier().restype)
-                resourceExists = resource is not None and resource.resource() is not None
-                resref = instance.identifier().resname
-                name = resref
-                tag = ""
+                resource: ModuleResource[ARE] | None = self._module.resource(instance.identifier().resname, instance.identifier().restype)
+                filename: str = instance.identifier().resname
+                name: str = filename
+                tag: str = ""
 
-                if isinstance(instance, GITDoor) or isinstance(instance, GITTrigger) and resourceExists:
+                resourceExists: bool = resource is not None and resource.resource() is not None
+                if isinstance(instance, GITDoor) or (isinstance(instance, GITTrigger) and resourceExists):
                     # Tag is stored in the GIT
-                    name = resource.localized_name()
+                    name = resource.localized_name() or filename
                     tag = instance.tag
                 elif isinstance(instance, GITWaypoint):
                     # Name and tag are stored in the GIT
                     name = self._installation.string(instance.name)
                     tag = instance.tag
                 elif resourceExists:
-                    name = resource.localized_name()
+                    name = resource.localized_name() or filename
                     tag = resource.resource().tag
 
                 if resource is None:
                     font.setItalic(True)
 
                 item.setText(name)
-                item.setToolTip(f"Struct Index: {struct_index}\nResRef: {resref}\nName: {name}\nTag: {tag}")
+                item.setToolTip(f"Struct Index: {struct_index}\nResRef: {filename}\nName: {name}\nTag: {tag}")
                 item.setData(QtCore.Qt.UserRole + 1, instance.identifier().restype.extension + name)
 
             item.setFont(font)
@@ -489,7 +505,7 @@ class ModuleDesigner(QMainWindow):
         for item in sorted(items, key=lambda i: i.data(QtCore.Qt.UserRole + 1)):
             self.ui.instanceList.addItem(item)
 
-    def selectInstanceItemOnList(self, instance: GITInstance) -> None:
+    def selectInstanceItemOnList(self, instance: GITInstance):
         """Select an instance item on the instance list.
 
         Args:
@@ -505,13 +521,13 @@ class ModuleDesigner(QMainWindow):
         """
         self.ui.instanceList.clearSelection()
         for i in range(self.ui.instanceList.count()):
-            item = self.ui.instanceList.item(i)
+            item: QListWidgetItem | None = self.ui.instanceList.item(i)
             data: GITInstance = item.data(QtCore.Qt.UserRole)
             if data is instance:
                 item.setSelected(True)
                 self.ui.instanceList.scrollToItem(item)
 
-    def updateToggles(self) -> None:
+    def updateToggles(self):
         self.hideCreatures = self.ui.mainRenderer.scene.hide_creatures = self.ui.flatRenderer.hideCreatures = not self.ui.viewCreatureCheck.isChecked()
         self.hidePlaceables = self.ui.mainRenderer.scene.hide_placeables = self.ui.flatRenderer.hidePlaceables = not self.ui.viewPlaceableCheck.isChecked()
         self.hideDoors = self.ui.mainRenderer.scene.hide_doors = self.ui.flatRenderer.hideDoors = not self.ui.viewDoorCheck.isChecked()
@@ -528,7 +544,8 @@ class ModuleDesigner(QMainWindow):
 
         self.rebuildInstanceList()
 
-    def addInstance(self, instance: GITInstance, walkmeshSnap: bool = True) -> None:
+#    @with_variable_trace(Exception)
+    def addInstance(self, instance: GITInstance, walkmeshSnap: bool = True):
         """Adds a GIT instance to the editor.
 
         Args:
@@ -575,7 +592,8 @@ class ModuleDesigner(QMainWindow):
             self._module.git().resource().add(instance)
         self.rebuildInstanceList()
 
-    def addInstanceAtCursor(self, instance: GITInstance) -> None:
+#    @with_variable_trace()
+    def addInstanceAtCursor(self, instance: GITInstance):
         """Adds instance at cursor position.
 
         Args:
@@ -604,23 +622,24 @@ class ModuleDesigner(QMainWindow):
             self._module.git().resource().add(instance)
         self.rebuildInstanceList()
 
-    def editInstance(self, instance: GITInstance) -> None:
+#    @with_variable_trace()
+    def editInstance(self, instance: GITInstance):
         if openInstanceDialog(self, instance, self._installation):
             if not isinstance(instance, GITCamera):
                 self.ui.mainRenderer.scene.clearCacheBuffer.append(instance.identifier())
             self.rebuildInstanceList()
 
-    def snapCameraToView(self, instance: GITCamera) -> None:
-        view = self.ui.mainRenderer.scene.camera.true_position()
-        rot = self.ui.mainRenderer.scene.camera
+    def snapCameraToView(self, instance: GITCamera):
+        view: vec3 = self.ui.mainRenderer.scene.camera.true_position()
+        rot: Camera = self.ui.mainRenderer.scene.camera
         instance.pitch = 0
         instance.height = 0
         instance.position = Vector3(view.x, view.y, view.z)
         instance.orientation = Vector4.from_euler(math.pi / 2 - rot.yaw, 0, math.pi - rot.pitch)
 
-    def snapViewToCamera(self, instance: GITCamera) -> None:
-        camera = self.ui.mainRenderer.scene.camera
-        euler = instance.orientation.to_euler()
+    def snapViewToCamera(self, instance: GITCamera):
+        camera: Camera = self.ui.mainRenderer.scene.camera
+        euler: Vector3 = instance.orientation.to_euler()
         camera.pitch = math.pi - euler.z - math.radians(instance.pitch)
         camera.yaw = math.pi / 2 - euler.x
         camera.x = instance.position.x
@@ -628,19 +647,19 @@ class ModuleDesigner(QMainWindow):
         camera.z = instance.position.z + instance.height
         camera.distance = 0
 
-    def snapCameraToEntryLocation(self) -> None:
+    def snapCameraToEntryLocation(self):
         self.ui.mainRenderer.scene.camera.x = self.ifo().entry_position.x
         self.ui.mainRenderer.scene.camera.y = self.ifo().entry_position.y
         self.ui.mainRenderer.scene.camera.z = self.ifo().entry_position.z
 
-    def toggleFreeCam(self) -> None:
+    def toggleFreeCam(self):
         if isinstance(self._controls3d, ModuleDesignerControls3d):
             self._controls3d = ModuleDesignerControlsFreeCam(self, self.ui.mainRenderer)
         else:
             self._controls3d = ModuleDesignerControls3d(self, self.ui.mainRenderer)
 
     # region Selection Manipulations
-    def setSelection(self, instances: list[GITInstance]) -> None:
+    def setSelection(self, instances: list[GITInstance]):
         if instances:
             self.ui.mainRenderer.scene.select(instances[0])
             self.ui.flatRenderer.instanceSelection.select(instances)
@@ -652,7 +671,7 @@ class ModuleDesigner(QMainWindow):
             self.ui.flatRenderer.instanceSelection.clear()
             self.selectedInstances.clear()
 
-    def deleteSelected(self) -> None:
+    def deleteSelected(self):
         for instance in self.selectedInstances:
             self._module.git().resource().remove(instance)
 
@@ -661,7 +680,7 @@ class ModuleDesigner(QMainWindow):
         self.ui.flatRenderer.instanceSelection.clear()
         self.rebuildInstanceList()
 
-    def moveSelected(self, x: float, y: float, z: float | None = None) -> None:
+    def moveSelected(self, x: float, y: float, z: float | None = None):
         """Moves selected instances by the given offsets.
 
         Args:
@@ -689,7 +708,7 @@ class ModuleDesigner(QMainWindow):
             else:
                 instance.position.z += z
 
-    def rotateSelected(self, x: float, y: float) -> None:
+    def rotateSelected(self, x: float, y: float):
         if self.ui.lockInstancesCheck.isChecked():
             return
 
@@ -699,19 +718,19 @@ class ModuleDesigner(QMainWindow):
     # endregion
 
     # region Signal Callbacks
-    def _onSavedResource(self, resource: ModuleResource) -> None:
+    def _onSavedResource(self, resource: ModuleResource):
         resource.reload()
         self.ui.mainRenderer.scene.clearCacheBuffer.append(ResourceIdentifier(resource.resname(), resource.restype()))
 
-    def onInstanceListDoubleClicked(self) -> None:
+    def onInstanceListDoubleClicked(self):
         if self.ui.instanceList.selectedItems():
-            item = self.ui.instanceList.selectedItems()[0]
+            item: QListWidgetItem = self.ui.instanceList.selectedItems()[0]
             instance: GITInstance = item.data(QtCore.Qt.UserRole)
             self.setSelection([instance])
             self.ui.mainRenderer.snapCameraToPoint(instance.position)
             self.ui.flatRenderer.snapCameraToPoint(instance.position)
 
-    def onInstanceVisibilityDoubleClick(self, checkbox: QCheckBox) -> None:
+    def onInstanceVisibilityDoubleClick(self, checkbox: QCheckBox):
         """Toggles visibility of a single instance type on double click.
 
         This method should be called whenever one of the instance visibility checkboxes have been double clicked. The
@@ -739,7 +758,7 @@ class ModuleDesigner(QMainWindow):
 
         checkbox.setChecked(True)
 
-    def onResourceTreeContextMenu(self, point: QPoint) -> None:
+    def onResourceTreeContextMenu(self, point: QPoint):
         menu = QMenu(self)
 
         data = self.ui.resourceTree.currentItem().data(0, QtCore.Qt.UserRole)
@@ -775,30 +794,30 @@ class ModuleDesigner(QMainWindow):
             locationAction.triggered.connect(lambda _, loc=location: self.activateResourceFile(data, loc))
             if location == data.active():
                 locationAction.setEnabled(False)
-            lowercase_parts = [part.lower for part in location.parts]
+            lowercase_parts: list[str] = [part.lower() for part in location.parts]
             if "override" in lowercase_parts:
                 copyToOverrideAction.setEnabled(False)
             menu.addAction(locationAction)
 
-    def on3dMouseMoved(self, screen: Vector2, screenDelta: Vector2, world: Vector3, buttons: set[int], keys: set[int]) -> None:
+    def on3dMouseMoved(self, screen: Vector2, screenDelta: Vector2, world: Vector3, buttons: set[int], keys: set[int]):
         self._controls3d.onMouseMoved(screen, screenDelta, world, buttons, keys)
 
-    def on3dMouseScrolled(self, delta: Vector2, buttons: set[int], keys: set[int]) -> None:
+    def on3dMouseScrolled(self, delta: Vector2, buttons: set[int], keys: set[int]):
         self._controls3d.onMouseScrolled(delta, buttons, keys)
 
-    def on3dMousePressed(self, screen: Vector2, buttons: set[int], keys: set[int]) -> None:
+    def on3dMousePressed(self, screen: Vector2, buttons: set[int], keys: set[int]):
         self._controls3d.onMousePressed(screen, buttons, keys)
 
-    def on3dKeyboardPressed(self, buttons: set[int], keys: set[int]) -> None:
+    def on3dKeyboardPressed(self, buttons: set[int], keys: set[int]):
         self._controls3d.onKeyboardPressed(buttons, keys)
 
-    def on3dObjectSelected(self, instance: GITInstance) -> None:
+    def on3dObjectSelected(self, instance: GITInstance):
         if instance is not None:
             self.setSelection([instance])
         else:
             self.setSelection([])
 
-    def onContextMenu(self, world: Vector3, point: QPoint) -> None:
+    def onContextMenu(self, world: Vector3, point: QPoint):
         if self._module is None:
             return
 
@@ -841,7 +860,7 @@ class ModuleDesigner(QMainWindow):
         menu.popup(self.cursor().pos())
         menu.aboutToHide.connect(self.ui.mainRenderer.resetMouseButtons)
 
-    def onContextMenuSelectionExists(self) -> None:
+    def onContextMenuSelectionExists(self):
         """Checks if a context menu selection exists.
 
         Args:
@@ -871,35 +890,35 @@ class ModuleDesigner(QMainWindow):
         menu.popup(self.cursor().pos())
         menu.aboutToHide.connect(self.ui.mainRenderer.resetMouseButtons)
 
-    def on3dSceneInitialized(self) -> None:
+    def on3dSceneInitialized(self):
         self.rebuildResourceTree()
         self.rebuildInstanceList()
         self._refreshWindowTitle()
         self.updateToggles()
 
-    def on2dMouseMoved(self, screen: Vector2, delta: Vector2, buttons: set[int], keys: set[int]) -> None:
-        worldDelta = self.ui.flatRenderer.toWorldDelta(delta.x, delta.y)
-        world = self.ui.flatRenderer.toWorldCoords(screen.x, screen.y)
-        self._controls2d.onMouseMoved(screen, delta, world, worldDelta, buttons, keys)
+    def on2dMouseMoved(self, screen: Vector2, delta: Vector2, buttons: set[int], keys: set[int]):
+        worldDelta: Vector2 = self.ui.flatRenderer.toWorldDelta(delta.x, delta.y)
+        world: Vector3 = self.ui.flatRenderer.toWorldCoords(screen.x, screen.y)
+        self._controls2d.onMouseMoved(screen, delta, Vector2.from_vector3(world), worldDelta, buttons, keys)
 
-    def on2dMouseScrolled(self, delta: Vector2, buttons: set[int], keys: set[int]) -> None:
+    def on2dMouseScrolled(self, delta: Vector2, buttons: set[int], keys: set[int]):
         self._controls2d.onMouseScrolled(delta, buttons, keys)
 
-    def on2dMousePressed(self, screen: Vector2, buttons: set[int], keys: set[int]) -> None:
+    def on2dMousePressed(self, screen: Vector2, buttons: set[int], keys: set[int]):
         self._controls2d.onMousePressed(screen, buttons, keys)
 
-    def on2dKeyboardPressed(self, buttons: set[int], keys: set[int]) -> None:
+    def on2dKeyboardPressed(self, buttons: set[int], keys: set[int]):
         self._controls2d.onKeyboardPressed(buttons, keys)
 
     # endregion
 
     # region Events
-    def keyPressEvent(self, e: QKeyEvent, bubble: bool = True) -> None:
+    def keyPressEvent(self, e: QKeyEvent, bubble: bool = True):
         super().keyPressEvent(e)
         self.ui.mainRenderer.keyPressEvent(e)
         self.ui.flatRenderer.keyPressEvent(e)
 
-    def keyReleaseEvent(self, e: QKeyEvent, bubble: bool = True) -> None:
+    def keyReleaseEvent(self, e: QKeyEvent, bubble: bool = True):
         super().keyReleaseEvent(e)
         self.ui.mainRenderer.keyReleaseEvent(e)
         self.ui.flatRenderer.keyReleaseEvent(e)
@@ -962,7 +981,7 @@ class ModuleDesignerControls3d:
         self.renderer.freeCam = False
         self.renderer.setCursor(QtCore.Qt.CursorShape.ArrowCursor)
 
-    def onMouseScrolled(self, delta: Vector2, buttons: set[int], keys: set[int]) -> None:
+    def onMouseScrolled(self, delta: Vector2, buttons: set[int], keys: set[int]):
         if self.zoomCamera.satisfied(buttons, keys):
             strength = self.settings.zoomCameraSensitivity3d / 2000
             self.renderer.scene.camera.distance += -delta.y * strength
@@ -971,7 +990,7 @@ class ModuleDesignerControls3d:
             strength = self.settings.moveCameraSensitivity3d / 1000
             self.renderer.scene.camera.z -= -delta.y * strength
 
-    def onMouseMoved(self, screen: Vector2, screenDelta: Vector2, world: Vector3, buttons: set[int], keys: set[int]) -> None:
+    def onMouseMoved(self, screen: Vector2, screenDelta: Vector2, world: Vector3, buttons: set[int], keys: set[int]):
         """Moves the camera or selected instances on mouse movement.
 
         Args:
@@ -1030,7 +1049,7 @@ class ModuleDesignerControls3d:
         if self.rotateSelected.satisfied(buttons, keys):
             self.editor.rotateSelected(screenDelta.x, screenDelta.y)
 
-    def onMousePressed(self, screen: Vector2, buttons: set[int], keys: set[int]) -> None:
+    def onMousePressed(self, screen: Vector2, buttons: set[int], keys: set[int]):
         """Handle mouse press events in the editor.
 
         Args:
@@ -1049,20 +1068,21 @@ class ModuleDesignerControls3d:
             self.renderer.doSelect = True
 
         if self.duplicateSelected.satisfied(buttons, keys) and self.editor.selectedInstances:
-            instance = deepcopy(self.editor.selectedInstances[-1])
-            instance.position = self.renderer.scene.cursor.position()
+            instance: GITInstance = deepcopy(self.editor.selectedInstances[-1])
+            vect3 = self.renderer.scene.cursor.position()
+            instance.position = Vector3(vect3.x, vect3.y, vect3.z)
             self.editor.git().add(instance)
             self.editor.rebuildInstanceList()
             self.editor.setSelection([instance])
 
         if self.openContextMenu.satisfied(buttons, keys):
             world = Vector3(*self.renderer.scene.cursor.position())
-            self.editor.onContextMenu(world, self.renderer.mapToGlobal(QPoint(screen.x, screen.y)))
+            self.editor.onContextMenu(world, self.renderer.mapToGlobal(QPoint(int(screen.x), int(screen.y))))
 
-    def onMouseReleased(self, screen: Vector2, buttons: set[int], keys: set[int]) -> None:
+    def onMouseReleased(self, screen: Vector2, buttons: set[int], keys: set[int]):
         ...
 
-    def onKeyboardPressed(self, buttons: set[int], keys: set[int]) -> None:
+    def onKeyboardPressed(self, buttons: set[int], keys: set[int]):
         """Handles keyboard input in the editor.
 
         Args:
@@ -1128,7 +1148,7 @@ class ModuleDesignerControls3d:
         if self.toggleInstanceLock.satisfied(buttons, keys):
             self.editor.ui.lockInstancesCheck.setChecked(not self.editor.ui.lockInstancesCheck.isChecked())
 
-    def onKeyboardReleased(self, buttons: set[int], keys: set[int]) -> None:
+    def onKeyboardReleased(self, buttons: set[int], keys: set[int]):
         ...
 
 
@@ -1169,25 +1189,25 @@ class ModuleDesignerControlsFreeCam:
         mouseY = rendererPos.y() + self.renderer.height() // 2
         self.renderer.cursor().setPos(mouseX, mouseY)
 
-    def onMouseScrolled(self, delta: Vector2, buttons: set[int], keys: set[int]) -> None:
+    def onMouseScrolled(self, delta: Vector2, buttons: set[int], keys: set[int]):
         ...
 
-    def onMouseMoved(self, screen: Vector2, screenDelta: Vector2, world: Vector3, buttons: set[int], keys: set[int]) -> None:
+    def onMouseMoved(self, screen: Vector2, screenDelta: Vector2, world: Vector3, buttons: set[int], keys: set[int]):
         rendererPos = self.renderer.mapToGlobal(self.renderer.pos())
-        mouseX = rendererPos.x() + self.renderer.width() // 2
-        mouseY = rendererPos.y() + self.renderer.height() // 2
-        strength = self.settings.rotateCameraSensitivityFC / 10000
+        mouseX: int = rendererPos.x() + self.renderer.width() // 2
+        mouseY: int = rendererPos.y() + self.renderer.height() // 2
+        strength: float = self.settings.rotateCameraSensitivityFC / 10000
 
         self.renderer.rotateCamera(-screenDelta.x * strength, screenDelta.y * strength, snapRotations=False)
         self.renderer.cursor().setPos(mouseX, mouseY)
 
-    def onMousePressed(self, screen: Vector2, buttons: set[int], keys: set[int]) -> None:
+    def onMousePressed(self, screen: Vector2, buttons: set[int], keys: set[int]):
         ...
 
-    def onMouseReleased(self, screen: Vector2, buttons: set[int], keys: set[int]) -> None:
+    def onMouseReleased(self, screen: Vector2, buttons: set[int], keys: set[int]):
         ...
 
-    def onKeyboardPressed(self, buttons: set[int], keys: set[int]) -> None:
+    def onKeyboardPressed(self, buttons: set[int], keys: set[int]):
         if self.toggleFreeCam.satisfied(buttons, keys):
             self.editor.toggleFreeCam()
 
@@ -1205,7 +1225,7 @@ class ModuleDesignerControlsFreeCam:
         if self.moveCameraBackward.satisfied(buttons, keys, exactKeys=False):
             self.renderer.moveCamera(-strength, 0, 0)
 
-    def onKeyboardReleased(self, buttons: set[int], keys: set[int]) -> None:
+    def onKeyboardReleased(self, buttons: set[int], keys: set[int]):
         ...
 
 
@@ -1240,7 +1260,7 @@ class ModuleDesignerControls2d:
         self.openContextMenu: ControlItem = ControlItem((set(), {QtMouse.RightButton}))
         self.toggleInstanceLock: ControlItem = ControlItem(self.settings.toggleLockInstancesBind)
 
-    def onMouseScrolled(self, delta: Vector2, buttons: set[int], keys: set[int]) -> None:
+    def onMouseScrolled(self, delta: Vector2, buttons: set[int], keys: set[int]):
         """Scrolls camera zoom on mouse scroll.
 
         Args:
@@ -1256,11 +1276,11 @@ class ModuleDesignerControls2d:
             - Nudges camera zoom by calculated amount.
         """
         if self.zoomCamera.satisfied(buttons, keys):
-            strength = self.settings.moveCameraSensitivity2d / 100 / 50
+            strength: float = self.settings.moveCameraSensitivity2d / 100 / 50
             zoomInFactor = 1.1
             zoomOutFactor = 0.90
 
-            zoomFactor = zoomInFactor if delta.y > 0 else zoomOutFactor
+            zoomFactor: float = zoomInFactor if delta.y > 0 else zoomOutFactor
             self.renderer.camera.nudgeZoom(delta.y * zoomFactor)
 
     def onMouseMoved(
@@ -1271,7 +1291,7 @@ class ModuleDesignerControls2d:
         worldDelta: Vector2,
         buttons: set[int],
         keys: set[int],
-    ) -> None:
+    ):
         """Handles mouse movement events in the editor.
 
         Args:
@@ -1303,13 +1323,13 @@ class ModuleDesignerControls2d:
 
         if self.rotateSelected.satisfied(buttons, keys):
             for instance in self.editor.selectedInstances:
-                rotation = -math.atan2(world.x - instance.position.x, world.y - instance.position.y)
+                rotation: float = -math.atan2(world.x - instance.position.x, world.y - instance.position.y)
                 if isinstance(instance, GITCamera):
                     instance.rotate(instance.yaw() - rotation, 0, 0)
                 else:
                     instance.rotate(-instance.yaw() + rotation, 0, 0)
 
-    def onMousePressed(self, screen: Vector2, buttons: set[int], keys: set[int]) -> None:
+    def onMousePressed(self, screen: Vector2, buttons: set[int], keys: set[int]):
         """Handle mouse press events in the editor.
 
         Args:
@@ -1333,22 +1353,22 @@ class ModuleDesignerControls2d:
         if self.duplicateSelected.satisfied(buttons, keys) and self.editor.selectedInstances:
             self._duplicate_instance()
         if self.openContextMenu.satisfied(buttons, keys):
-            world = self.renderer.toWorldCoords(screen.x, screen.y)
-            self.editor.onContextMenu(world, self.renderer.mapToGlobal(QPoint(screen.x, screen.y)))
+            world: Vector3 = self.renderer.toWorldCoords(screen.x, screen.y)
+            self.editor.onContextMenu(world, self.renderer.mapToGlobal(QPoint(int(screen.x), int(screen.y))))
 
     # TODO Rename this here and in `onMousePressed`
     def _duplicate_instance(self):
-        instance = deepcopy(self.editor.selectedInstances[-1])
+        instance: GITInstance = deepcopy(self.editor.selectedInstances[-1])
         result = self.renderer.mapFromGlobal(self.renderer.cursor().pos())
         instance.position = self.renderer.toWorldCoords(result.x(), result.y())
         self.editor.git().add(instance)
         self.editor.rebuildInstanceList()
         self.editor.setSelection([instance])
 
-    def onMouseReleased(self, screen: Vector2, buttons: set[int], keys: set[int]) -> None:
+    def onMouseReleased(self, screen: Vector2, buttons: set[int], keys: set[int]):
         ...
 
-    def onKeyboardPressed(self, buttons: set[int], keys: set[int]) -> None:
+    def onKeyboardPressed(self, buttons: set[int], keys: set[int]):
         """Handle keyboard input in the editor.
 
         Args:
@@ -1373,5 +1393,5 @@ class ModuleDesignerControls2d:
         if self.toggleInstanceLock.satisfied(buttons, keys):
             self.editor.ui.lockInstancesCheck.setChecked(not self.editor.ui.lockInstancesCheck.isChecked())
 
-    def onKeyboardReleased(self, buttons: set[int], keys: set[int]) -> None:
+    def onKeyboardReleased(self, buttons: set[int], keys: set[int]):
         ...

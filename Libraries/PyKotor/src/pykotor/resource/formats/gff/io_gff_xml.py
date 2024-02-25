@@ -1,22 +1,27 @@
 from __future__ import annotations
 
 import base64
-from contextlib import suppress
-from typing import Any
+
+from typing import TYPE_CHECKING, Any
 
 # Try to import defusedxml, fallback to ElementTree if not available
 from xml.etree import ElementTree
 
-with suppress(ImportError):
+try:
     from defusedxml.ElementTree import fromstring as _fromstring
     ElementTree.fromstring = _fromstring
+except (ImportError, ModuleNotFoundError):
+    pass
 
 from pykotor.common.geometry import Vector3, Vector4
 from pykotor.common.language import LocalizedString
 from pykotor.common.misc import ResRef
 from pykotor.resource.formats.gff.gff_data import GFF, GFFFieldType, GFFList, GFFStruct
-from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES, ResourceReader, ResourceWriter, autoclose
+from pykotor.resource.type import ResourceReader, ResourceWriter, autoclose
 from utility.misc import indent
+
+if TYPE_CHECKING:
+    from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES
 
 
 class GFFXMLReader(ResourceReader):
@@ -130,7 +135,7 @@ class GFFXMLWriter(ResourceWriter):
         self,
         gff: GFF,
         target: TARGET_TYPES,
-    ) -> None:
+    ):
         super().__init__(target)
         self.xml_root = ElementTree.Element("xml")
         self.gff: GFF = gff
@@ -139,7 +144,7 @@ class GFFXMLWriter(ResourceWriter):
     def write(
         self,
         auto_close: bool = True,
-    ) -> None:
+    ):
         self.xml_root.tag = "gff3"
 
         xml_struct = ElementTree.Element("struct")
@@ -153,7 +158,7 @@ class GFFXMLWriter(ResourceWriter):
         self,
         gff_struct: GFFStruct,
         xml_struct: ElementTree.Element,
-    ) -> None:
+    ):
         xml_struct.set("id", str(gff_struct.struct_id))
 
         for label, field_type, value in gff_struct:
@@ -165,7 +170,7 @@ class GFFXMLWriter(ResourceWriter):
         value: Any,
         field_type: GFFFieldType,
         xml_struct: ElementTree.Element,
-    ) -> None:
+    ):
         xml_field = ElementTree.Element("")
         xml_field.set("label", label)
         xml_struct.append(xml_field)
@@ -235,7 +240,7 @@ class GFFXMLWriter(ResourceWriter):
                 xml_field.append(subelement)
                 self._build_struct(gff_struct, subelement)
 
-    def _build_vector3(self, xml_field: ElementTree.Element, value):
+    def _build_vector3(self, xml_field: ElementTree.Element, value: Vector3):
         xml_field.tag = "vector"
         x_element = ElementTree.Element("double")
         x_element.text = str(value.x)
@@ -245,7 +250,7 @@ class GFFXMLWriter(ResourceWriter):
         z_element.text = str(value.z)
         xml_field.extend([x_element, y_element, z_element])
 
-    def _build_vector4(self, xml_field: ElementTree.Element, value):
+    def _build_vector4(self, xml_field: ElementTree.Element, value: Vector4):
         xml_field.tag = "orientation"
         x_element = ElementTree.Element("double")
         x_element.text = str(value.x)

@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Tuple, cast
+from typing import TYPE_CHECKING
 
 from pykotor.common.geometry import SurfaceMaterial, Vector2, Vector3, Vector4
 from pykotor.common.misc import Color, Game
@@ -71,7 +71,7 @@ class _ModelHeader:
         self.bounding_box_max = reader.read_vector3()
         self.radius = reader.read_single()
         self.anim_scale = reader.read_single()
-        self.supermodel = reader.read_string(32)
+        self.supermodel = reader.read_terminated_string("\0", 32)
         self.offset_to_super_root = reader.read_uint32()
         self.unknown3 = reader.read_uint32()
         self.mdx_size = reader.read_uint32()
@@ -84,7 +84,7 @@ class _ModelHeader:
     def write(
         self,
         writer: BinaryWriter,
-    ) -> None:
+    ):
         self.geometry.write(writer)
         writer.write_uint8(self.model_type)
         writer.write_uint8(self.unknown0)
@@ -99,7 +99,7 @@ class _ModelHeader:
         writer.write_vector3(self.bounding_box_max)
         writer.write_single(self.radius)
         writer.write_single(self.anim_scale)
-        writer.write_string(self.supermodel, string_length=32)
+        writer.write_string(self.supermodel, string_length=32, encoding="ascii", errors="ignore")
         writer.write_uint32(self.offset_to_super_root)
         writer.write_uint32(self.unknown3)
         writer.write_uint32(self.mdx_size)
@@ -143,7 +143,7 @@ class _GeometryHeader:
     ) -> _GeometryHeader:
         self.function_pointer0 = reader.read_uint32()
         self.function_pointer1 = reader.read_uint32()
-        self.model_name = reader.read_string(32)
+        self.model_name = reader.read_terminated_string("\0", 32)
         self.root_node_offset = reader.read_uint32()
         self.node_count = reader.read_uint32()
         self.unknown0 = reader.read_bytes(28)
@@ -154,10 +154,10 @@ class _GeometryHeader:
     def write(
         self,
         writer: BinaryWriter,
-    ) -> None:
+    ):
         writer.write_uint32(self.function_pointer0)
         writer.write_uint32(self.function_pointer1)
-        writer.write_string(self.model_name, string_length=32)
+        writer.write_string(self.model_name, string_length=32, encoding="ascii")
         writer.write_uint32(self.root_node_offset)
         writer.write_uint32(self.node_count)
         writer.write_bytes(self.unknown0)
@@ -187,7 +187,7 @@ class _AnimationHeader:
         self.geometry = _GeometryHeader().read(reader)
         self.duration = reader.read_single()
         self.transition = reader.read_single()
-        self.root = reader.read_string(32)
+        self.root = reader.read_terminated_string("\0", 32)
         self.offset_to_events = reader.read_uint32()
         self.event_count = reader.read_uint32()
         self.event_count2 = reader.read_uint32()
@@ -197,11 +197,11 @@ class _AnimationHeader:
     def write(
         self,
         writer: BinaryWriter,
-    ) -> None:
+    ):
         self.geometry.write(writer)
         writer.write_single(self.duration)
         writer.write_single(self.transition)
-        writer.write_string(self.root, string_length=32)
+        writer.write_string(self.root, string_length=32, encoding="ascii")
         writer.write_uint32(self.offset_to_events)
         writer.write_uint32(self.event_count)
         writer.write_uint32(self.event_count2)
@@ -222,14 +222,14 @@ class _Animation:
     ) -> _Animation:
         self.header = _AnimationHeader().read(reader)
 
-        ...  # read events
+        # read events
         return self
 
     def write(
         self,
         writer: BinaryWriter,
         game: Game,
-    ) -> None:
+    ):
         self.header.write(writer)
         for event in self.events:
             event.write(writer)
@@ -279,15 +279,15 @@ class _EventStructure:
         reader: BinaryReader,
     ) -> _EventStructure:
         self.activation_time = reader.read_single()
-        self.event_name = reader.read_string(32)
+        self.event_name = reader.read_terminated_string("\0", 32)
         return self
 
     def write(
         self,
         writer: BinaryWriter,
-    ) -> None:
+    ):
         writer.write_single(self.activation_time)
-        writer.write_string(self.event_name, string_length=32)
+        writer.write_string(self.event_name, string_length=32, encoding="ascii")
 
 
 class _Controller:
@@ -320,7 +320,7 @@ class _Controller:
     def write(
         self,
         writer: BinaryWriter,
-    ) -> None:
+    ):
         writer.write_uint32(self.type_id)
         writer.write_uint16(self.unknown0)
         writer.write_uint16(self.row_count)
@@ -354,12 +354,11 @@ class _Node:
         self.header: _NodeHeader | None = _NodeHeader()
         self.trimesh: _TrimeshHeader | None = None
         self.skin: _SkinmeshHeader | None = None
-        ...
-        self.children_offsets: list[int] = []
+        self.children_offsets = []
 
         self.w_children = []
-        self.w_controllers: list[_Controller] = []
-        self.w_controller_data: list[float] = []
+        self.w_controllers = []
+        self.w_controller_data = []
 
     def read(
         self,
@@ -379,14 +378,14 @@ class _Node:
             self.skin.read_extra(reader)
 
         reader.seek(self.header.offset_to_children)
-        self.children_offsets = [reader.read_uint32() for _ in range(self.header.children_count)]
+        self.children_offsets = [reader.read_uint32() for i in range(self.header.children_count)]
         return self
 
     def write(
         self,
         writer: BinaryWriter,
         game: Game,
-    ) -> None:
+    ):
         self.header.write(writer)
 
         if self.trimesh:
@@ -581,7 +580,7 @@ class _NodeHeader:
     def write(
         self,
         writer: BinaryWriter,
-    ) -> None:
+    ):
         writer.write_uint16(self.type_id)
         writer.write_uint16(self.node_id)
         writer.write_uint16(self.name_id)
@@ -647,7 +646,7 @@ class _TrimeshHeader:
         self.transparency_hint: int = 0
         self.texture1: str = ""
         self.texture2: str = ""
-        self.texture3and4bytes: bytes = b"\x00" * 24
+        self.unknown0: bytes = b"\x00" * 24
         self.offset_to_indices_counts: int = 0
         self.indices_counts_count: int = 0
         self.indices_counts_count2: int = 0
@@ -659,7 +658,7 @@ class _TrimeshHeader:
         self.counters_count2: int = 0
         self.unknown1: bytes = b"\xFF\xFF\xFF\xFF" + b"\xFF\xFF\xFF\xFF" + b"\x00\x00\x00\x00"
         self.saber_unknowns: bytes = b"\x00" * 8
-        self.animate_uv: int = 0
+        self.unknown2: int = 0
         self.uv_direction: Vector2 = Vector2.from_null()
         self.uv_jitter: float = 0.0
         self.uv_speed: float = 0.0
@@ -670,12 +669,12 @@ class _TrimeshHeader:
         self.mdx_color_offset: int = 0xFFFFFFFF
         self.mdx_texture1_offset: int = 0
         self.mdx_texture2_offset: int = 0
-        self.mdx_texture3_offset: int = 0xFFFFFFFF
-        self.mdx_texture4_offset: int = 0xFFFFFFFF
-        self.mdx_tan_space1: int = 0xFFFFFFFF
-        self.mdx_tan_space2: int = 0xFFFFFFFF
-        self.mdx_tan_space3: int = 0xFFFFFFFF
-        self.mdx_tan_space4: int = 0xFFFFFFFF
+        self.unknown3: int = 0xFFFFFFFF
+        self.unknown4: int = 0xFFFFFFFF
+        self.unknown5: int = 0xFFFFFFFF
+        self.unknown6: int = 0xFFFFFFFF
+        self.unknown7: int = 0xFFFFFFFF
+        self.unknown8: int = 0xFFFFFFFF
         self.vertex_count: int = 0
         self.texture_count: int = 1
         self.has_lightmap: int = 0
@@ -684,7 +683,7 @@ class _TrimeshHeader:
         self.has_shadow: int = 0
         self.beaming: int = 0
         self.render: int = 0
-        self.dirt_enabled: int = 0
+        self.unknown9: int = 0
         self.unknown10: int = 0
         self.total_area: float = 0.0
         self.unknown11: int = 0
@@ -715,9 +714,9 @@ class _TrimeshHeader:
         self.diffuse = reader.read_vector3()
         self.ambient = reader.read_vector3()
         self.transparency_hint = reader.read_uint32()
-        self.texture1 = reader.read_string(32)
-        self.texture2 = reader.read_string(32)
-        self.texture3and4bytes = reader.read_bytes(24)
+        self.texture1 = reader.read_terminated_string("\0", 32)
+        self.texture2 = reader.read_terminated_string("\0", 32)
+        self.unknown0 = reader.read_bytes(24)
         self.offset_to_indices_counts = reader.read_uint32()
         self.indices_counts_count = reader.read_uint32()
         self.indices_counts_count2 = reader.read_uint32()
@@ -729,7 +728,7 @@ class _TrimeshHeader:
         self.counters_count2 = reader.read_uint32()
         self.unknown1 = reader.read_bytes(12)  # -1 -1 0
         self.saber_unknowns = reader.read_bytes(8)  # 3 0 0 0 0 0 0 0
-        self.animate_uv = reader.read_uint32()
+        self.unknown2 = reader.read_uint32()
         self.uv_direction = reader.read_vector2()
         self.uv_jitter = reader.read_single()
         self.uv_speed = reader.read_single()
@@ -740,12 +739,12 @@ class _TrimeshHeader:
         self.mdx_color_offset = reader.read_uint32()
         self.mdx_texture1_offset = reader.read_uint32()
         self.mdx_texture2_offset = reader.read_uint32()
-        self.mdx_texture3_offset = reader.read_uint32()
-        self.mdx_texture4_offset = reader.read_uint32()
-        self.mdx_tan_space1 = reader.read_uint32()
-        self.mdx_tan_space2 = reader.read_uint32()
-        self.mdx_tan_space3 = reader.read_uint32()
-        self.mdx_tan_space4 = reader.read_uint32()
+        self.unknown3 = reader.read_uint32()
+        self.unknown4 = reader.read_uint32()
+        self.unknown5 = reader.read_uint32()
+        self.unknown6 = reader.read_uint32()
+        self.unknown7 = reader.read_uint32()
+        self.unknown8 = reader.read_uint32()
         self.vertex_count = reader.read_uint16()
         self.texture_count = reader.read_uint16()
         self.has_lightmap = reader.read_uint8()
@@ -754,20 +753,17 @@ class _TrimeshHeader:
         self.has_shadow = reader.read_uint8()
         self.beaming = reader.read_uint8()
         self.render = reader.read_uint8()
-        if self.function_pointer0 in (
+        self.unknown9 = reader.read_uint8()
+        self.unknown10 = reader.read_uint8()
+        self.total_area = reader.read_single()
+        self.unknown11 = reader.read_uint32()
+        if self.function_pointer0 in {
             _TrimeshHeader.K2_FUNCTION_POINTER0,
             _TrimeshHeader.K2_DANGLY_FUNCTION_POINTER0,
             _TrimeshHeader.K2_SKIN_FUNCTION_POINTER0,
-        ):
-            self.dirt_enabled = reader.read_uint8()
-            reader.skip(1)  # padding
-            self.dirt_texture = reader.read_uint16()
-            self.dirt_coord_space = reader.read_uint16()
-            self.hide_in_holograms = reader.read_uint8()
-            reader.skip(1)
-        reader.skip(2)  # padding
-        self.total_area = reader.read_single()
-        reader.skip(4)  # padding
+        }:
+            self.unknown12 = reader.read_uint32()
+            self.unknown13 = reader.read_uint32()
         self.mdx_data_offset = reader.read_uint32()
         self.vertices_offset = reader.read_uint32()
         return self
@@ -775,7 +771,7 @@ class _TrimeshHeader:
     def read_extra(
         self,
         reader: BinaryReader,
-    ) -> None:
+    ):
         reader.seek(self.vertices_offset)
         self.vertices = [reader.read_vector3() for _ in range(self.vertex_count)]
 
@@ -786,7 +782,7 @@ class _TrimeshHeader:
         self,
         writer: BinaryWriter,
         game: Game,
-    ) -> None:
+    ):
         writer.write_uint32(self.function_pointer0)
         writer.write_uint32(self.function_pointer1)
         writer.write_uint32(self.offset_to_faces)
@@ -799,9 +795,9 @@ class _TrimeshHeader:
         writer.write_vector3(self.diffuse)
         writer.write_vector3(self.ambient)
         writer.write_uint32(self.transparency_hint)
-        writer.write_string(self.texture1, string_length=32)
-        writer.write_string(self.texture2, string_length=32)
-        writer.write_bytes(self.texture3and4bytes)  # two 32-lengthed strings
+        writer.write_string(self.texture1, string_length=32, encoding="ascii")
+        writer.write_string(self.texture2, string_length=32, encoding="ascii")
+        writer.write_bytes(self.unknown0)
         writer.write_uint32(self.offset_to_indices_counts)
         writer.write_uint32(self.indices_counts_count)
         writer.write_uint32(self.indices_counts_count2)
@@ -813,7 +809,7 @@ class _TrimeshHeader:
         writer.write_uint32(self.counters_count2)
         writer.write_bytes(self.unknown1)
         writer.write_bytes(self.saber_unknowns)
-        writer.write_uint32(self.animate_uv)
+        writer.write_uint32(self.unknown2)
         writer.write_vector2(self.uv_direction)
         writer.write_single(self.uv_jitter)
         writer.write_single(self.uv_speed)
@@ -824,12 +820,12 @@ class _TrimeshHeader:
         writer.write_uint32(self.mdx_color_offset)
         writer.write_uint32(self.mdx_texture1_offset)
         writer.write_uint32(self.mdx_texture2_offset)
-        writer.write_uint32(self.mdx_texture3_offset)
-        writer.write_uint32(self.mdx_texture4_offset)
-        writer.write_uint32(self.mdx_tan_space1)
-        writer.write_uint32(self.mdx_tan_space2)
-        writer.write_uint32(self.mdx_tan_space3)
-        writer.write_uint32(self.mdx_tan_space4)
+        writer.write_uint32(self.unknown3)
+        writer.write_uint32(self.unknown4)
+        writer.write_uint32(self.unknown5)
+        writer.write_uint32(self.unknown6)
+        writer.write_uint32(self.unknown7)
+        writer.write_uint32(self.unknown8)
         writer.write_uint16(self.vertex_count)
         writer.write_uint16(self.texture_count)
         writer.write_uint8(self.has_lightmap)
@@ -838,18 +834,15 @@ class _TrimeshHeader:
         writer.write_uint8(self.has_shadow)
         writer.write_uint8(self.beaming)
         writer.write_uint8(self.render)
-        if game == Game.K2:
-            writer.write_uint8(self.dirt_enabled)
-            writer.write_uint8(0)  # padding
-            writer.write_uint16(self.dirt_texture)
-            writer.write_uint16(self.dirt_coord_space)
-            writer.write_uint8(self.hide_in_holograms)
-            writer.write_uint8(0)  # padding
-        writer.write_uint16(0)  # padding
+        writer.write_uint8(self.unknown9)
+        writer.write_uint8(self.unknown10)
         writer.write_single(self.total_area)
-        writer.write_uint32(0)  # padding
+        writer.write_uint32(self.unknown11)
+        if game == Game.K2:
+            writer.write_uint32(self.unknown12)
+            writer.write_uint32(self.unknown13)
         writer.write_uint32(self.mdx_data_offset)
-        writer.write_uint32(self.vertices_offset)  # pc only
+        writer.write_uint32(self.vertices_offset)
 
     def header_size(
         self,
@@ -896,7 +889,7 @@ class _DanglymeshHeader:
     def write(
         self,
         writer: BinaryWriter,
-    ) -> None:
+    ):
         writer.write_uint32(self.offset_to_contraints)
         writer.write_uint32(self.constraints_count)
         writer.write_uint32(self.constraints_count2)
@@ -905,7 +898,6 @@ class _DanglymeshHeader:
         writer.write_single(self.period)
         writer.write_uint32(self.unknown0)
 
-BONE_INDICES = Tuple[int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int]
 
 class _SkinmeshHeader:
     def __init__(
@@ -927,7 +919,7 @@ class _SkinmeshHeader:
         self.offset_to_unknown0: int = 0
         self.unknown0_count: int = 0
         self.unknown0_count2: int = 0
-        self.bones: BONE_INDICES = cast(BONE_INDICES, tuple(-1 for _ in range(16)))
+        self.bones: tuple[int] = tuple(-1 for _ in range(16))
         self.unknown1: int = 0
 
         self.bonemap: list[int] = []
@@ -954,7 +946,7 @@ class _SkinmeshHeader:
         self.offset_to_unknown0 = reader.read_uint32()
         self.unknown0_count = reader.read_uint32()
         self.unknown0_count2 = reader.read_uint32()
-        self.bones = cast(BONE_INDICES, tuple(reader.read_uint16() for _ in range(16)))
+        self.bones = (reader.read_uint16() for _ in range(16))
         self.unknown1 = reader.read_uint32()
         return self
 
@@ -970,7 +962,7 @@ class _SkinmeshHeader:
     def write(
         self,
         writer: BinaryWriter,
-    ) -> None:
+    ):
         writer.write_int32(self.unknown2)
         writer.write_int32(self.unknown3)
         writer.write_int32(self.unknown4)
@@ -1014,7 +1006,7 @@ class _SaberHeader:
     def write(
         self,
         writer: BinaryWriter,
-    ) -> None:
+    ):
         writer.write_uint32(self.offset_to_vertices)
         writer.write_uint32(self.offset_to_texcoords)
         writer.write_uint32(self.offset_to_normals)
@@ -1080,7 +1072,7 @@ class _LightHeader:
     def write(
         self,
         writer: BinaryWriter,
-    ) -> None:
+    ):
         writer.write_uint32(self.offset_to_unknown0)
         writer.write_uint32(self.unknown0_count)
         writer.write_uint32(self.unknown0_count2)
@@ -1139,16 +1131,16 @@ class _EmitterHeader:
         self.branch_count = reader.read_uint32()
         self.smoothing = reader.read_single()
         self.grid = reader.read_vector2()
-        self.update = reader.read_string(32)
-        self.render = reader.read_string(32)
-        self.blend = reader.read_string(32)
-        self.texture = reader.read_string(32)
-        self.chunk_name = reader.read_string(32)
+        self.update = reader.read_terminated_string("\0", 32)
+        self.render = reader.read_terminated_string("\0", 32)
+        self.blend = reader.read_terminated_string("\0", 32)
+        self.texture = reader.read_terminated_string("\0", 32)
+        self.chunk_name = reader.read_terminated_string("\0", 32)
         self.twosided_texture = reader.read_uint32()
         self.loop = reader.read_uint32()
         self.render_order = reader.read_uint32()
         self.frame_blending = reader.read_uint32()
-        self.depth_texture = reader.read_string(32)
+        self.depth_texture = reader.read_terminated_string("\0", 32)
         self.unknown0 = reader.read_uint8()
         self.flags = reader.read_uint32()
         return self
@@ -1156,23 +1148,23 @@ class _EmitterHeader:
     def write(
         self,
         writer: BinaryWriter,
-    ) -> None:
+    ):
         writer.write_single(self.dead_space)
         writer.write_single(self.blast_radius)
         writer.write_single(self.blast_length)
         writer.write_uint32(self.branch_count)
         writer.write_single(self.smoothing)
         writer.write_vector2(self.grid)
-        writer.write_string(self.update, string_length=32)
-        writer.write_string(self.render, string_length=32)
-        writer.write_string(self.blend, string_length=32)
-        writer.write_string(self.texture, string_length=32)
-        writer.write_string(self.chunk_name, string_length=32)
+        writer.write_string(self.update, string_length=32, encoding="ascii")
+        writer.write_string(self.render, string_length=32, encoding="ascii")
+        writer.write_string(self.blend, string_length=32, encoding="ascii")
+        writer.write_string(self.texture, string_length=32, encoding="ascii")
+        writer.write_string(self.chunk_name, string_length=32, encoding="ascii")
         writer.write_uint32(self.twosided_texture)
         writer.write_uint32(self.loop)
         writer.write_uint32(self.render_order)
         writer.write_uint32(self.frame_blending)
-        writer.write_string(self.depth_texture, string_length=32)
+        writer.write_string(self.depth_texture, string_length=32, encoding="ascii")
         writer.write_uint8(self.unknown0)
         writer.write_uint32(self.flags)
 
@@ -1188,15 +1180,15 @@ class _ReferenceHeader:
         self,
         reader: BinaryReader,
     ) -> _ReferenceHeader:
-        self.model = reader.read_string(32)
+        self.model = reader.read_terminated_string("\0", 32)
         self.reattachable = reader.read_uint32()
         return self
 
     def write(
         self,
         writer: BinaryWriter,
-    ) -> None:
-        writer.write_string(self.model, string_length=32)
+    ):
+        writer.write_string(self.model, string_length=32, encoding="ascii")
         writer.write_uint32(self.reattachable)
 
 
@@ -1234,7 +1226,7 @@ class _Face:
     def write(
         self,
         writer: BinaryWriter,
-    ) -> None:
+    ):
         writer.write_vector3(self.normal)
         writer.write_single(self.plane_coefficient)
         writer.write_uint32(self.material)
@@ -1255,11 +1247,12 @@ class MDLBinaryReader:
         source_ext: SOURCE_TYPES | None = None,
         offset_ext: int = 0,
         size_ext: int = 0,
+        game: Game = Game.K2,
     ):
         self._mdl: MDL | None = None
-        self._reader = BinaryReader.from_auto(source, offset)
+        self._reader: BinaryReader = BinaryReader.from_auto(source, offset)
 
-        self._reader_ext = None if source_ext is None else BinaryReader.from_auto(source_ext, offset_ext)
+        self._reader_ext: BinaryReader | None = None if source_ext is None else BinaryReader.from_auto(source_ext, offset_ext)
 
         # first 12 bytes do not count in offsets used within the file
         self._reader.set_offset(self._reader.offset() + 12)
@@ -1277,7 +1270,7 @@ class MDLBinaryReader:
 
         self._mdl.name = model_header.geometry.model_name
         self._mdl.supermodel = model_header.supermodel
-        self._mdl.fog = bool(model_header.fog)
+        self._mdl.fog = model_header.fog
 
         self._load_names(model_header)
         self._mdl.root = self._load_node(model_header.geometry.root_node_offset)
@@ -1290,7 +1283,7 @@ class MDLBinaryReader:
 
         if auto_close:
             self._reader.close()
-            if self._reader_ext is not None:
+        if auto_close and self._reader_ext is not None:
                 self._reader_ext.close()
 
         return self._mdl
@@ -1335,7 +1328,7 @@ class MDLBinaryReader:
             node.mesh.radius = bin_node.trimesh.radius
             node.mesh.average = bin_node.trimesh.average
             node.mesh.area = bin_node.trimesh.total_area
-            node.mesh.saber_unknowns = cast(Tuple[int, int, int, int, int, int, int, int], tuple(bin_node.trimesh.saber_unknowns))
+            node.mesh.saber_unknowns = bin_node.trimesh.saber_unknowns
 
             node.mesh.vertex_positions = bin_node.trimesh.vertices
 
@@ -1351,9 +1344,7 @@ class MDLBinaryReader:
             for i in range(len(bin_node.trimesh.vertices)):
                 if bin_node.trimesh.mdx_data_bitmap & _MDXDataFlags.NORMAL and self._reader_ext:
                     self._reader_ext.seek(
-                        mdx_offset
-                        + i * mdx_block_size
-                        + bin_node.trimesh.mdx_normal_offset,
+                        mdx_offset + i * mdx_block_size + bin_node.trimesh.mdx_normal_offset,
                     )
                     x, y, z = (
                         self._reader_ext.read_single(),
@@ -1363,9 +1354,7 @@ class MDLBinaryReader:
                     node.mesh.vertex_normals.append(Vector3(x, y, z))
                 if bin_node.trimesh.mdx_data_bitmap & _MDXDataFlags.TEXTURE1 and self._reader_ext:
                     self._reader_ext.seek(
-                        mdx_offset
-                        + i * mdx_block_size
-                        + bin_node.trimesh.mdx_texture1_offset,
+                        mdx_offset + i * mdx_block_size + bin_node.trimesh.mdx_texture1_offset,
                     )
                     u, v = (
                         self._reader_ext.read_single(),
@@ -1374,9 +1363,7 @@ class MDLBinaryReader:
                     node.mesh.vertex_uv1.append(Vector2(u, v))
                 if bin_node.trimesh.mdx_data_bitmap & _MDXDataFlags.TEXTURE2 and self._reader_ext:
                     self._reader_ext.seek(
-                        mdx_offset
-                        + i * mdx_block_size
-                        + bin_node.trimesh.mdx_texture2_offset,
+                        mdx_offset + i * mdx_block_size + bin_node.trimesh.mdx_texture2_offset,
                     )
                     u, v = (
                         self._reader_ext.read_single(),
@@ -1505,7 +1492,7 @@ class MDLBinaryReader:
             data = [[self._reader.read_single() for j in range(column_count)] for i in range(row_count)]
 
         controller = MDLController()
-        controller.controller_type = bin_controller.type_id  # TODO
+        controller.controller_type = bin_controller.type_id
         controller.rows = [MDLControllerRow(time_keys[i], data[i]) for i in range(row_count)]
         return controller
 
@@ -1540,7 +1527,7 @@ class MDLBinaryWriter:
     def write(
         self,
         auto_close: bool = True,
-    ) -> None:
+    ):
         self._mdl_nodes = self._mdl.all_nodes()
         self._bin_nodes = [_Node() for node in self._mdl_nodes]
         self._bin_anims = [_Animation() for anim in self._mdl.anims]
@@ -1631,9 +1618,9 @@ class MDLBinaryWriter:
             bin_node.trimesh.has_shadow = mdl_node.mesh.shadow
             bin_node.trimesh.beaming = mdl_node.mesh.beaming
             bin_node.trimesh.render = mdl_node.mesh.render
-            bin_node.trimesh.dirt_enabled = mdl_node.mesh.dirt_enabled
-            bin_node.trimesh.dirt_texture = mdl_node.mesh.dirt_texture
-            bin_node.trimesh.saber_unknowns = bytes(mdl_node.mesh.saber_unknowns)
+            bin_node.trimesh.dirt_enabled = mdl_node.mesh.dirt_enabled  # TODO: undefined??
+            bin_node.trimesh.dirt_texture = mdl_node.mesh.dirt_texture  # TODO: undefined??
+            bin_node.trimesh.saber_unknowns = mdl_node.mesh.saber_unknowns  # TODO: wrong type??
 
             bin_node.trimesh.vertex_count = len(mdl_node.mesh.vertex_positions)
             bin_node.trimesh.vertices = mdl_node.mesh.vertex_positions
@@ -1956,7 +1943,7 @@ class MDLBinaryWriter:
             self._writer.write_uint32(name_offset)
 
         for name in self._names:
-            self._writer.write_string(name + "\0")
+            self._writer.write_string(name + "\0", encoding="ascii")
 
         for anim_offset in self._anim_offsets:
             self._writer.write_uint32(anim_offset)

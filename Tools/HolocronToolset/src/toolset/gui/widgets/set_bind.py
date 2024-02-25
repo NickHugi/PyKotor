@@ -4,20 +4,23 @@ from typing import TYPE_CHECKING
 
 from PyQt5 import QtCore
 from PyQt5.QtWidgets import QWidget
+
 from toolset.utils.misc import getStringFromKey
 
 if TYPE_CHECKING:
     from PyQt5.QtGui import QKeyEvent
+
     from toolset.data.misc import Bind
 
 
 class SetBindWidget(QWidget):
     def __init__(self, parent: QWidget):
-        """Initializes the widget for setting keybinds
+        """Initializes the widget for setting keybinds.
+
         Args:
+        ----
             parent (QWidget): Parent widget
-        Returns:
-            None
+
         Processing Logic:
         ----------------
             - Sets up initial keybind set as empty
@@ -30,7 +33,7 @@ class SetBindWidget(QWidget):
         self.keybind: set[int] = set()
         self.recordBind: bool = False
 
-        from toolset.uic.widgets.set_bind import Ui_Form
+        from toolset.uic.widgets.set_bind import Ui_Form  # noqa: PLC0415  # pylint: disable=C0415
         self.ui = Ui_Form()
         self.ui.setupUi(self)
 
@@ -45,25 +48,25 @@ class SetBindWidget(QWidget):
         self.ui.mouseCombo.setItemData(3, {})
         self.ui.mouseCombo.setItemData(4, None)
 
-    def startRecording(self) -> None:
+    def startRecording(self):
         self.recordBind = True
         self.keybind.clear()
         self.updateKeybindText()
         self.ui.setKeysEdit.setPlaceholderText("enter a key...")
 
-    def clearKeybind(self) -> None:
+    def clearKeybind(self):
         self.keybind.clear()
         self.ui.setKeysEdit.setPlaceholderText("none")
 
-    def keyPressed(self, event: QKeyEvent) -> None:
+    def keyPressed(self, a0: QKeyEvent):
         if self.recordBind:
-            self.keybind.add(event.key())
+            self.keybind.add(a0.key())
             self.updateKeybindText()
 
-    def keyReleased(self, event: QKeyEvent) -> None:
+    def keyReleased(self, e: QKeyEvent):
         self.recordBind = False
 
-    def setBind(self, bind: Bind) -> None:
+    def setBind(self, bind: Bind):
         if bind[1] == {QtCore.Qt.MouseButton.LeftButton}:
             self.ui.mouseCombo.setCurrentIndex(0)
         if bind[1] == {QtCore.Qt.MouseButton.MiddleButton}:
@@ -82,8 +85,8 @@ class SetBindWidget(QWidget):
         mousebind: set[int] = self.ui.mouseCombo.currentData()
         return self.keybind, mousebind
 
-    def updateKeybindText(self) -> None:
-        text = ""
+    def updateKeybindText(self):
+        text: str = ""
         for i, key in enumerate(sorted(self.keybind, reverse=True)):
             text += getStringFromKey(key)
             if i != len(self.keybind) - 1:
