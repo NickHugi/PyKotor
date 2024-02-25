@@ -154,7 +154,7 @@ def create_case_insensitive_pathlib_class(cls: type):  # TODO: move into CaseAwa
         for attr_name, attr_value in parent.__dict__.items():
             # Check if it's a method and hasn't been wrapped before
             if callable(attr_value) and attr_name not in wrapped_methods and attr_name not in ignored_methods:
-                cls._original_methods[attr_name] = attr_value  # type: ignore[attr-defined]
+                cls._original_methods[attr_name] = attr_value  # type: ignore[attr-defined]  # pylint: disable=protected-access
                 setattr(cls, attr_name, simple_wrapper(attr_name, cls))
                 wrapped_methods.add(attr_name)
 
@@ -192,7 +192,7 @@ class CaseAwarePath(InternalWindowsPath if os.name == "nt" else InternalPosixPat
             resolved_self = resolved_self.absolute()
         else:
             parsed_other = other if isinstance(other, InternalPurePath) else InternalPurePath(other)
-            parsed_other = other.with_segments(other, *_deprecated)
+            parsed_other = parsed_other.with_segments(other, *_deprecated)
 
         self_str, other_str = map(str, (resolved_self, parsed_other))
         replacement = ireplace(self_str, other_str, "").lstrip("\\").lstrip("/")
