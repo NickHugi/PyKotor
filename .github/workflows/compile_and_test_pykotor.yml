@@ -23,7 +23,7 @@ jobs:
 
     - name: Install python venv from install_python_venv.ps1
       run: |
-        ./install_python_venv.ps1 -noprompt
+        ./install_python_venv.ps1 -noprompt -venv_name .venv_${{ matrix.python-version }}
       shell: pwsh
 
     - name: Install holopatcher dependencies
