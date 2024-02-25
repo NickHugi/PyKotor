@@ -168,14 +168,14 @@ class BinaryReader:
             if isinstance(source, (io.RawIOBase, io.BufferedIOBase)):  # only seekable streams are supported.
                 reader = cls.from_stream(source, offset, size)
             else:
-                msg = f"Stream of type '{type(source)}' is not supported by this {cls.__name__} class."
+                msg = f"Stream of type '{source.__class__}' is not supported by this {cls.__name__} class."
                 raise TypeError(msg)
 
         elif isinstance(source, BinaryReader):  # is already a BinaryReader instance
             reader = cls(source._stream, source.offset(), source.size())
 
         else:
-            msg = f"Must specify a path, bytes-like object, stream, io. or an existing BinaryReader instance, got type ({type(source)})."
+            msg = f"Must specify a path, bytes-like object, stream, io. or an existing BinaryReader instance, got type ({source.__class__})."
             raise TypeError(msg)
 
         return reader

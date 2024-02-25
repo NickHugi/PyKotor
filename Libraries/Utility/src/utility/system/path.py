@@ -196,7 +196,7 @@ class PurePath(pathlib.PurePath, metaclass=PurePathType):  # type: ignore[misc]
         if isinstance(arg, os.PathLike):
             return str(arg)
 
-        msg = f"Object '{arg!r}' must be str, or path-like object (implementing __fspath__). Instead got type '{type(arg)}'"
+        msg = f"Object '{arg!r}' must be str, or path-like object (implementing __fspath__). Instead got type '{arg.__class__}'"
         raise TypeError(msg)
 
     def __str__(self):
@@ -520,7 +520,7 @@ class Path(PurePath, pathlib.Path):  # type: ignore[misc]
     def is_relative_to(self, *args, **kwargs) -> bool:
         """Return True if the path is relative to another path or False."""
         if not args or "other" in kwargs:
-            msg = f"{type(self)}.is_relative_to() missing 1 required positional argument: 'other'"
+            msg = f"{self.__class__.__name__}.is_relative_to() missing 1 required positional argument: 'other'"
             raise TypeError(msg)
 
         other, *_deprecated = args

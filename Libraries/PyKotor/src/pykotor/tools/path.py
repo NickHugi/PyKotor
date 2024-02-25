@@ -67,7 +67,7 @@ def simple_wrapper(fn_name: str, wrapped_class_type: type) -> Callable[..., Any]
         """
         orig_fn = wrapped_class_type._original_methods[fn_name]  # noqa: SLF001
         # Do not use. CaseAwarePath's performance depends on only resolving case when it absolutely has to.
-        #if fn_name == "__new__":
+        # if fn_name == "__new__":
         #    path_obj = pathlib.Path(*args, **kwargs)
         #    if "called_from_getcase" not in kwargs and not path_obj.exists():
         #        return CaseAwarePath.get_case_sensitive_path(path_obj)

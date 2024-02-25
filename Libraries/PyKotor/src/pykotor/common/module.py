@@ -1155,7 +1155,7 @@ class ModuleResource(Generic[T]):
             return self._installation.string(res.name)
         if isinstance(res, UTS):
             return self._installation.string(res.name)
-        print(f"Could not find res of type {type(res)}")
+        print(f"Could not find res of type {res.__class__}")
         return None
 
     def data(self) -> bytes:
