@@ -58,13 +58,13 @@ jobs:
       shell: pwsh
       continue-on-error: true
 
-    - name: Compile BatchPatcher
+    - name: Compile KotorDiff
       run: |
         ./compile/compile_kotordiff.ps1 -noprompt
       shell: pwsh
       continue-on-error: true
 
-    - name: Compile BatchPatcher
+    - name: Compile GUIDuplicator
       run: |
         ./compile/compile_gui_duplicator.ps1 -noprompt
       shell: pwsh
