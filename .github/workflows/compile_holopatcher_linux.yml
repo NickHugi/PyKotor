@@ -1,4 +1,4 @@
-name: Python 3.12 HoloPatcher compile
+name: Holopatcher Compile Linux (Python 3.12)
 
 on: [push]
 

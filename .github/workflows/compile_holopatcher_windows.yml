@@ -1,4 +1,4 @@
-name: Python 3.12 unittest
+name: Holopatcher Compile Windows (Python 3.12)
 
 on: [push]
 
