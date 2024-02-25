@@ -138,7 +138,6 @@ class FileResource:
         self,
         *,
         reload: bool = False,
-        _internal: bool = False,
     ) -> bytes:
         """Opens the file the resource is located at and returns the bytes data of the resource.
 
@@ -162,7 +161,7 @@ class FileResource:
                 file.seek(self._offset)
                 data: bytes = file.read_bytes(self._size)
 
-                if not _internal and not self._task_running:
+                if not self._task_running:
                     def background_task(res: FileResource, sentdata: bytes):
                         res._task_running = True
                         res._file_hash = generate_hash(sentdata)
