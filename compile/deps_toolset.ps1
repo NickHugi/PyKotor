@@ -1,6 +1,6 @@
-param (
-  [string]$venv_name = ".venv",
-  [switch]$noprompt
+param(
+  [switch]$noprompt,
+  [string]$venv_name = ".venv"
 )
 $this_noprompt = $noprompt
 
@@ -111,9 +111,12 @@ if ((Get-OS) -eq "Mac") {
 }
 
 Write-Host "Initializing python virtual environment..."
-$this_noprompt_arg = if ($this_noprompt) {'-noprompt'} else {''}
-$venv_name_arg = if ($venv_name) {"-venv_name $venv_name"} else {''}
-. $rootPath/install_python_venv.ps1 $this_noprompt_arg $venv_name_arg
+Write-Host "Initializing python virtual environment..."
+if ($this_noprompt) {
+    . $rootPath/install_python_venv.ps1 -noprompt -venv_name $venv_name
+} else {
+    . $rootPath/install_python_venv.ps1 -venv_name $venv_name
+}
 
 
 Write-Host "Installing required packages to build the holocron toolset..."
