@@ -625,7 +625,7 @@ if (Get-ChildItem Env:VIRTUAL_ENV -ErrorAction SilentlyContinue) {  # Check if a
         }
     }
     Write-Host "Attempting to create a python virtual environment. This might take a while..."
-    $pythonVenvCreation = & $global:pythonInstallPath -m venv $venvPath
+    $pythonVenvCreation = & $global:pythonInstallPath -m venv $venvPath 2>&1
     if ($pythonVenvCreation -like "*Error*") {
         Write-Error $pythonVenvCreation
         Write-Error "Failed to create virtual environment. Ensure Python 3.8 is installed correctly."
