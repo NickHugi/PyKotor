@@ -24,54 +24,54 @@ jobs:
     - name: Install python venv from install_python_venv.ps1
       run: |
         Set-PSDebug -Trace 2
-        ./install_python_venv.ps1 -noprompt -venv_name .venv_${{ matrix.python-version }}
+        ./install_python_venv.ps1 -noprompt -venv_name .venv_${{ matrix.os }}_${{ matrix.python-version }}
       shell: pwsh
 
     - name: Install holopatcher dependencies
       run: |
-        ./compile/deps_holopatcher.ps1 -noprompt -venv_name .venv_${{ matrix.python-version }}
+        ./compile/deps_holopatcher.ps1 -noprompt -venv_name .venv_${{ matrix.os }}_${{ matrix.python-version }}
       shell: pwsh
       continue-on-error: true
     
     - name: Compile HoloPatcher
       run: |
-        ./compile/compile_holopatcher.ps1 -noprompt -venv_name .venv_${{ matrix.python-version }}
+        ./compile/compile_holopatcher.ps1 -noprompt -venv_name .venv_${{ matrix.os }}_${{ matrix.python-version }}
       shell: pwsh
       continue-on-error: true
 
     - name: Install Holocron Toolset dependencies
       run: |
-        ./compile/deps_toolset.ps1 -noprompt -venv_name .venv_${{ matrix.python-version }}
+        ./compile/deps_toolset.ps1 -noprompt -venv_name .venv_${{ matrix.os }}_${{ matrix.python-version }}
       shell: pwsh
       continue-on-error: true
 
     - name: Compile Holocron Toolset
       run: |
-        ./compile/compile_toolset.ps1 -noprompt -venv_name .venv_${{ matrix.python-version }}
+        ./compile/compile_toolset.ps1 -noprompt -venv_name .venv_${{ matrix.os }}_${{ matrix.python-version }}
       shell: pwsh
       continue-on-error: true
 
     - name: Install BatchPatcher dependencies
       run: |
-        ./compile/deps_batchpatcher.ps1 -noprompt -venv_name .venv_${{ matrix.python-version }}
+        ./compile/deps_batchpatcher.ps1 -noprompt -venv_name .venv_${{ matrix.os }}_${{ matrix.python-version }}
       shell: pwsh
       continue-on-error: true
 
     - name: Compile BatchPatcher
       run: |
-        ./compile/compile_batchpatcher.ps1 -noprompt -venv_name .venv_${{ matrix.python-version }}
+        ./compile/compile_batchpatcher.ps1 -noprompt -venv_name .venv_${{ matrix.os }}_${{ matrix.python-version }}
       shell: pwsh
       continue-on-error: true
 
     - name: Compile KotorDiff
       run: |
-        ./compile/compile_kotordiff.ps1 -noprompt -venv_name .venv_${{ matrix.python-version }}
+        ./compile/compile_kotordiff.ps1 -noprompt -venv_name .venv_${{ matrix.os }}_${{ matrix.python-version }}
       shell: pwsh
       continue-on-error: true
 
     - name: Compile GUIDuplicator
       run: |
-        ./compile/compile_gui_duplicator.ps1 -noprompt -venv_name .venv_${{ matrix.python-version }}
+        ./compile/compile_gui_duplicator.ps1 -noprompt -venv_name .venv_${{ matrix.os }}_${{ matrix.python-version }}
       shell: pwsh
       continue-on-error: true
 
@@ -79,20 +79,20 @@ jobs:
       uses: actions/upload-artifact@v3
       if: always()  # This ensures the step runs regardless of previous step's success or failure
       with:
-        name: dist-folder
+        name: publish_${{ matrix.os }}_${{ matrix.python-version }}
         path: ./dist/**
 
     - name: Install development packages
       run: |
         Set-PSDebug -Trace 2
-        ./install_python_venv.ps1 -noprompt -venv_name .venv_${{ matrix.python-version }}
+        ./install_python_venv.ps1 -noprompt -venv_name .venv_${{ matrix.os }}_${{ matrix.python-version }}
         pip install -r requirements-dev.txt
       shell: pwsh
 
     - name: Run all unittests/pytests
       run: |
         Set-PSDebug -Trace 2
-        ./install_python_venv.ps1 -noprompt -venv_name .venv_${{ matrix.python-version }}
+        ./install_python_venv.ps1 -noprompt -venv_name .venv_${{ matrix.os }}_${{ matrix.python-version }}
         python -m pytest tests -v -ra -o log_cli=true --capture=no --junitxml=pytest_report.xml --html=pytest_report.html --self-contained-html --tb=no --continue-on-collection-errors
       shell: pwsh
 
