@@ -1,0 +1,155 @@
+name: Compile and Test PyKotor
+
+on: [push]
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false  # Disable automatic cancellation of other jobs
+      matrix:
+        os: [windows-latest, ubuntu-latest, macos-latest]
+        python-version: ['3.8', '3.9', '3.10', '3.11', '3.12']
+
+    steps:
+    - uses: actions/checkout@v3
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v3
+      with:
+        python-version: ${{ matrix.python-version }}
+
+    - name: Install python venv from install_python_venv.ps1
+      run: |  # create the venv early to work around an issue with the matrix runners' concurrency
+        python -m venv .venv_${{ matrix.os }}_${{ matrix.python-version }}
+        ./install_python_venv.ps1 -noprompt -venv_name .venv_${{ matrix.os }}_${{ matrix.python-version }}
+      shell: pwsh
+
+    - name: Install HoloPatcher dependencies
+      run: |
+        ./compile/deps_holopatcher.ps1 -noprompt -venv_name .venv_${{ matrix.os }}_${{ matrix.python-version }}
+      shell: pwsh
+      continue-on-error: true
+    
+    - name: Compile HoloPatcher
+      run: |
+        ./compile/compile_holopatcher.ps1 -noprompt -venv_name .venv_${{ matrix.os }}_${{ matrix.python-version }}
+      shell: pwsh
+      continue-on-error: true
+
+    - name: Install Holocron Toolset dependencies
+      run: |
+        ./compile/deps_toolset.ps1 -noprompt -venv_name .venv_${{ matrix.os }}_${{ matrix.python-version }}
+      shell: pwsh
+      continue-on-error: true
+
+    - name: Compile Holocron Toolset
+      run: |
+        ./compile/compile_toolset.ps1 -noprompt -venv_name .venv_${{ matrix.os }}_${{ matrix.python-version }}
+      shell: pwsh
+      continue-on-error: true
+
+    - name: Install BatchPatcher dependencies
+      run: |
+        ./compile/deps_batchpatcher.ps1 -noprompt -venv_name .venv_${{ matrix.os }}_${{ matrix.python-version }}
+      shell: pwsh
+      continue-on-error: true
+
+    - name: Compile BatchPatcher
+      run: |
+        ./compile/compile_batchpatcher.ps1 -noprompt -venv_name .venv_${{ matrix.os }}_${{ matrix.python-version }}
+      shell: pwsh
+      continue-on-error: true
+
+    - name: Compile KotorDiff
+      run: |
+        ./compile/compile_kotordiff.ps1 -noprompt -venv_name .venv_${{ matrix.os }}_${{ matrix.python-version }}
+      shell: pwsh
+      continue-on-error: true
+
+    - name: Compile GUIDuplicator
+      run: |
+        ./compile/compile_gui_duplicator.ps1 -noprompt -venv_name .venv_${{ matrix.os }}_${{ matrix.python-version }}
+      shell: pwsh
+      continue-on-error: true
+
+    - name: Upload compiled binaries
+      uses: actions/upload-artifact@v3
+      if: always()  # This ensures the step runs regardless of previous step's success or failure
+      with:
+        name: publish_${{ matrix.os }}_${{ matrix.python-version }}
+        path: ./dist/**
+
+    - name: Install development packages
+      run: |
+        ./install_python_venv.ps1 -noprompt -venv_name .venv_${{ matrix.os }}_${{ matrix.python-version }}
+        pip install -r requirements-dev.txt
+      shell: pwsh
+
+    - name: Run all unittests/pytests
+      run: |
+        ./install_python_venv.ps1 -noprompt -venv_name .venv_${{ matrix.os }}_${{ matrix.python-version }}
+        python -m pytest tests -v -ra -o log_cli=true --capture=no --junitxml=pytest_report.xml --html=pytest_report.html --self-contained-html --tb=no --continue-on-collection-errors
+      shell: pwsh
+      continue-on-error: true
+
+    - name: Upload Pytest Reports
+      uses: actions/upload-artifact@v3
+      if: always()  # Ensures this step runs even if the previous step fails
+      with:
+        name: pytest-reports_${{ matrix.os }}_${{ matrix.python-version }}
+        path: |
+          pytest_report.html
+          pytest_report.xml
+
+    - name: Update README with custom test status badges
+      if: always()
+      env:
+        OS_NAME: ${{ matrix.os }}
+        PYTHON_VERSION: ${{ matrix.python-version }}
+      run: |
+        $ErrorActionPreference = 'Stop' # This will halt the script on any errors
+        $OSBadge = $env:OS_NAME -replace '-latest', '' # Removes the '-latest' from OS names
+        $BadgeNamePassed = "tests-passed-$OSBadge-${env:PYTHON_VERSION}"
+        $BadgeNameFailed = "tests-failed-$OSBadge-${env:PYTHON_VERSION}"
+        
+        # Extract test counts from the pytest report
+        $TestResults = [xml](Get-Content ./pytest_report.xml)
+        $PassedTests = $TestResults.testsuite.tests - $TestResults.testsuite.failures
+        $FailedTests = $TestResults.testsuite.failures
+        $TotalTests = $TestResults.testsuite.tests
+        
+        # Generate badge URLs
+        $BadgeURLPassed = "https://img.shields.io/badge/$BadgeNamePassed-$PassedTests%20passed-brightgreen"
+        $BadgeURLFailed = "https://img.shields.io/badge/$BadgeNameFailed-$FailedTests%20failed-red"
+        
+        # Badge Markdown
+        $BadgeMarkdown = "![$BadgeNamePassed]($BadgeURLPassed) ![$BadgeNameFailed]($BadgeURLFailed)"
+        
+        # Check if README already has the badges for the current matrix parameters
+        $ReadmePath = "./README.md"
+        $ReadmeContent = Get-Content $ReadmePath -Raw
+        $BadgeRegexPassed = "\!\[$BadgeNamePassed\]\(https:\/\/img\.shields\.io\/badge\/.*\)"
+        $BadgeRegexFailed = "\!\[$BadgeNameFailed\]\(https:\/\/img\.shields\.io\/badge\/.*\)"
+        
+        if ($ReadmeContent -match $BadgeRegexPassed -and $ReadmeContent -match $BadgeRegexFailed) {
+          # Badges exist, update them
+          $NewReadmeContent = $ReadmeContent -replace $BadgeRegexPassed, "![$BadgeNamePassed]($BadgeURLPassed)"
+          $NewReadmeContent = $NewReadmeContent -replace $BadgeRegexFailed, "![$BadgeNameFailed]($BadgeURLFailed)"
+        } else {
+          # Badges don't exist, add them
+          $NewReadmeContent = $ReadmeContent + "`n$BadgeMarkdown"
+        }
+
+        # Write the new README content to the file
+        $NewReadmeContent | Set-Content $ReadmePath
+        
+        # Git configuration and commit
+        git config --global user.name "GitHub Action"
+        git config --global user.email "action@github.com"
+        git add $ReadmePath
+        git commit -m "Update README with custom test status badges for $OSBadge-${env:PYTHON_VERSION}"
+        git push
+      shell: pwsh
