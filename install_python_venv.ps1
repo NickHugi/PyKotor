@@ -272,10 +272,14 @@ function Python-Install-Unix-Source {
     tar -xvf Python-3.8.18.tgz
     $current_working_dir = (Get-Location).Path
     Set-Location -LiteralPath "Python-3.8.18" -ErrorAction Stop
+    $env:LDFLAGS="-Wl,-rpath=/usr/local/lib"
     sudo ./configure --enable-optimizations --with-ensurepip=install --enable-shared
     sudo make -j $(nproc)
+    # Do NOT use `make install`. `make altinstall` will install it system-wide, but not as the default system python. (/usr/local/bin/python3.8)
     sudo make altinstall
     Set-Location -LiteralPath $current_working_dir
+    # LD_LIBRARY_PATH must be updated. However this won't be permanent, just long enough to create the venv.
+    $env:LD_LIBRARY_PATH = "/usr/local/lib:$env:LD_LIBRARY_PATH"
 }
 
 function Python-Install-Windows {
@@ -412,6 +416,7 @@ function Find-Python {
         if ($global:pythonVersion -ge $minVersion -and $global:pythonVersion -lt $maxVersion) {
             Write-Host "Found python command with version $global:pythonVersion"
             $global:pythonInstallPath = Get-Path-From-Command $testPath
+            return
         } else {
             Write-Host "python '$testPath' version '$global:pythonVersion' not supported"
             if ( $global:pythonInstallPath -eq "" ) {
@@ -428,6 +433,7 @@ function Find-Python {
         if ($global:pythonVersion -ge $minVersion -and $global:pythonVersion -lt $maxVersion) {
             Write-Host "Found python command with version $global:pythonVersion"
             $global:pythonInstallPath = Get-Path-From-Command $testPath
+            return
         } else {
             Write-Host "python '$testPath' version '$global:pythonVersion' not supported"
             if ( $global:pythonInstallPath -eq "" ) {
@@ -444,6 +450,7 @@ function Find-Python {
         if ($global:pythonVersion -ge $minVersion -and $global:pythonVersion -lt $maxVersion) {
             Write-Host "Found python command with version $global:pythonVersion"
             $global:pythonInstallPath = Get-Path-From-Command $testPath
+            return
         } else {
             Write-Host "python '$testPath' version '$global:pythonVersion' not supported"
             if ( $global:pythonInstallPath -eq "" ) {
@@ -460,6 +467,7 @@ function Find-Python {
         if ($global:pythonVersion -ge $minVersion -and $global:pythonVersion -lt $maxVersion) {
             Write-Host "Found python command with version $global:pythonVersion"
             $global:pythonInstallPath = Get-Path-From-Command $testPath
+            return
         } else {
             Write-Host "python '$testPath' version '$global:pythonVersion' not supported"
             if ( $global:pythonInstallPath -eq "" ) {
@@ -476,6 +484,7 @@ function Find-Python {
         if ($global:pythonVersion -ge $minVersion -and $global:pythonVersion -lt $maxVersion) {
             Write-Host "Found python command with version $global:pythonVersion"
             $global:pythonInstallPath = Get-Path-From-Command $testPath
+            return
         } else {
             Write-Host "python '$testPath' version '$global:pythonVersion' not supported"
             if ( $global:pythonInstallPath -eq "" ) {
@@ -492,6 +501,7 @@ function Find-Python {
         if ($global:pythonVersion -ge $minVersion -and $global:pythonVersion -lt $maxVersion) {
             Write-Host "Found python command with version $global:pythonVersion"
             $global:pythonInstallPath = Get-Path-From-Command $testPath
+            return
         } else {
             Write-Host "python '$testPath' version '$global:pythonVersion' not supported"
             if ( $global:pythonInstallPath -eq "" ) {
@@ -508,6 +518,7 @@ function Find-Python {
         if ($global:pythonVersion -ge $minVersion -and $global:pythonVersion -lt $maxVersion) {
             Write-Host "Found python command with version $global:pythonVersion"
             $global:pythonInstallPath = Get-Path-From-Command $testPath
+            return
         } else {
             Write-Host "python '$testPath' version '$global:pythonVersion' not supported"
             if ( $global:pythonInstallPath -eq "" ) {
