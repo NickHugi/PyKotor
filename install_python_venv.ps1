@@ -672,6 +672,8 @@ if ( $findVenvExecutable -eq $true) {
 
 Write-Host "Activating venv at '$venvPath'"
 if ((Get-OS) -eq "Windows") {
+    Write-Host "Checking existence of Activate.ps1 in $venvPath\Scripts"
+    Get-ChildItem "$venvPath\Scripts" -Name
     . $venvPath\Scripts\Activate.ps1
 } else {
     . $venvPath/bin/Activate.ps1
