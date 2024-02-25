@@ -1,19 +1,24 @@
 from __future__ import annotations
 
 import multiprocessing
+
 from abc import abstractmethod
 from time import sleep
 from typing import TYPE_CHECKING
 
+from PyQt5 import QtCore
+from PyQt5.QtCore import QPoint, QSortFilterProxyModel, QThread, QTimer
+from PyQt5.QtGui import QIcon, QImage, QPixmap, QStandardItem, QStandardItemModel, QTransform
+from PyQt5.QtWidgets import QHeaderView, QMenu, QWidget
+
 from pykotor.extract.installation import SearchLocation
 from pykotor.resource.formats.tpc import TPC, TPCTextureFormat
-from PyQt5 import QtCore
-from PyQt5.QtCore import QModelIndex, QPoint, QSortFilterProxyModel, QThread, QTimer
-from PyQt5.QtGui import QIcon, QImage, QPixmap, QResizeEvent, QStandardItem, QStandardItemModel, QTransform
-from PyQt5.QtWidgets import QHeaderView, QMenu, QWidget
 from utility.error_handling import format_exception_with_variables
 
 if TYPE_CHECKING:
+    from PyQt5.QtCore import QModelIndex
+    from PyQt5.QtGui import QResizeEvent
+
     from pykotor.common.misc import CaseInsensitiveDict
     from pykotor.extract.file import FileResource
     from pykotor.resource.type import ResourceType
@@ -54,7 +59,7 @@ class ResourceList(MainWindowList):
         """
         super().__init__(parent)
 
-        from toolset.uic.widgets.resource_list import Ui_Form
+        from toolset.uic.widgets.resource_list import Ui_Form  # noqa: PLC0415  # pylint: disable=C0415
         self.ui = Ui_Form()
         self.ui.setupUi(self)
         self.setupSignals()
@@ -153,7 +158,7 @@ class ResourceList(MainWindowList):
 
         for item in model.allResourcesItems():
             resource_from_item: FileResource = item.resource
-            if resource_from_item.resname() == resource.resname() and resource_from_item.restype() == resource.restype():
+            if resource_from_item.identifier() == resource.identifier():
                 _parentIndex = model.proxyModel().mapFromSource(item.parent().index())  # TODO: why is this unused
                 itemIndex = model.proxyModel().mapFromSource(item.index())
                 QTimer.singleShot(1, lambda index=itemIndex, item=item: select(item.parent().index(), index))
@@ -196,6 +201,7 @@ class ResourceList(MainWindowList):
             if resource.restype().contents == "gff":
                 def open1():
                     return self.requestOpenResource.emit(resources, False)
+
                 def open2():
                     return self.requestOpenResource.emit(resources, True)
                 menu.addAction("Open").triggered.connect(open2)
@@ -265,11 +271,11 @@ class ResourceModel(QStandardItemModel):
 
     def allResourcesItems(self) -> list[QStandardItem]:
         """Returns a list of all QStandardItem objects in the model that represent resource files."""
-        resources = [
+        resources = (
             category.child(i, 0)
             for category in self._categoryItems.values()
             for i in range(category.rowCount())
-        ]
+        )
         return [item for item in resources if item is not None]
 
     def removeUnusedCategories(self):
@@ -289,7 +295,7 @@ class TextureList(MainWindowList):
     def __init__(self, parent: QWidget):
         super().__init__(parent)
 
-        from toolset.uic.widgets.texture_list import Ui_Form
+        from toolset.uic.widgets.texture_list import Ui_Form  # noqa: PLC0415  # pylint: disable=C0415
         self.ui = Ui_Form()
         self.ui.setupUi(self)
         self.setupSignals()
@@ -428,6 +434,7 @@ class TextureList(MainWindowList):
 
     def onTextureListScrolled(self):
         if self._installation is None:
+            print("No installation loaded, nothing to scroll through?")
             return
         # Note: Avoid redundantly loading textures that have already been loaded
         textures: CaseInsensitiveDict[TPC | None] = self._installation.textures(
@@ -449,8 +456,12 @@ class TextureList(MainWindowList):
             self._taskQueue.put(task)
             item.setData(True, QtCore.Qt.UserRole)
 
-    def onIconUpdate(self, item, icon):
-        try:
+    def onIconUpdate(
+        self,
+        item: QStandardItem,
+        icon,
+    ):
+        try:  # FIXME: there's a race condition happening somewhere, causing the item to have previously been deleted.
             item.setIcon(icon)
         except RuntimeError as e:
             print(format_exception_with_variables(e, message="This exception has been suppressed."))
@@ -458,7 +469,7 @@ class TextureList(MainWindowList):
     def onResourceDoubleClicked(self):
         self.requestOpenResource.emit(self.selectedResources(), None)
 
-    def resizeEvent(self, a0: QResizeEvent):
+    def resizeEvent(self, a0: QResizeEvent):  # pylint: disable=W0613
         # Trigger the scroll slot method - this will cause any newly visible icons to load.
         self.onTextureListScrolled()
 
@@ -488,7 +499,7 @@ class TextureListTask:
     def __repr__(self):
         return str(self.row)
 
-    def __call__(self, *args, **kwargs) -> tuple[int, str, int, int, bytes | None]:
+    def __call__(self, *args, **kwargs) -> tuple[int, str, int, int, bytearray]:
         width, height, data = self.tpc.convert(TPCTextureFormat.RGB, self.bestMipmap(self.tpc))
         return self.row, self.resname, width, height, data
 

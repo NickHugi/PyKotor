@@ -1,14 +1,18 @@
 from __future__ import annotations
 
 import os
+
 from typing import TYPE_CHECKING
+
+from PyQt5.QtWidgets import QPlainTextEdit
 
 from pykotor.resource.type import ResourceType
 from pykotor.tools.encoding import decode_bytes_with_fallbacks
-from PyQt5.QtWidgets import QPlainTextEdit, QWidget
 from toolset.gui.editor import Editor
 
 if TYPE_CHECKING:
+    from PyQt5.QtWidgets import QWidget
+
     from toolset.data.installation import HTInstallation
 
 
@@ -36,7 +40,7 @@ class TXTEditor(Editor):
 
         self._wordWrap: bool = False
 
-        from toolset.uic.editors.txt import Ui_MainWindow
+        from toolset.uic.editors.txt import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
         self._setupMenus()

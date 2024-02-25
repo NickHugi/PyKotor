@@ -57,7 +57,7 @@ _CODEPAGES = {
 # All the ones named by number in my 2.6 encodings dir
 _CODEPAGES_BY_NUMBER = {
     x: f"cp{x}"
-    for x in ( 37, 1006, 1026, 1140, 1250, 1251, 1252, 1253, 1254, 1255, 1256, 1257, 1258,
+    for x in (37, 1006, 1026, 1140, 1250, 1251, 1252, 1253, 1254, 1255, 1256, 1257, 1258,
               424, 437, 500, 737, 775, 850, 852, 855, 856, 857, 860, 861, 862, 863, 864, 865,
               866, 869, 874, 875, 932, 949, 950)
 }
@@ -206,7 +206,7 @@ class Rtf15Reader(PythReader):
 
         for bit in self.group.flatten():
             typeName = type(bit).__name__
-            getattr(ctx, f"handle_{typeName}", lambda x: str(x))(bit)
+            getattr(ctx, f"handle_{typeName}", str)(bit)
 
         ctx.flushParagraph()
 
@@ -348,7 +348,7 @@ class DocBuilder:
 
 
 class Group:
-    def __init__(self, reader, parent=None, charset_table: dict[int, str] | None =None):
+    def __init__(self, reader, parent=None, charset_table: dict[int, str] | None = None):
         self.reader = reader
         self.parent = parent
 
@@ -452,7 +452,8 @@ class Group:
         if codepage in _CODEPAGES_BY_NUMBER:
             self.charset = self.reader.charset = _CODEPAGES_BY_NUMBER[codepage]
         else:
-            raise ValueError(f"Unknown codepage {codepage}")
+            msg = f"Unknown codepage {codepage}"
+            raise ValueError(msg)
 
     def handle_fonttbl(self):
         self.special_meaning = "FONT_TABLE"
@@ -469,7 +470,7 @@ class Group:
             self.charset_table[self.font_num] = charset
 
     def handle_f(self, font_num):
-        if "FONT_TABLE" in (self.parent.special_meaning, self.special_meaning):
+        if "FONT_TABLE" in {self.parent.special_meaning, self.special_meaning}:
             self.font_num = int(font_num)
             self._setFontCharset()
         elif self.charset_table is not None:
@@ -481,14 +482,15 @@ class Group:
                     raise
 
     def handle_fcharset(self, charset_num):
-        if "FONT_TABLE" in (self.parent.special_meaning, self.special_meaning):
+        if "FONT_TABLE" in {self.parent.special_meaning, self.special_meaning}:
             # Theoretically, \fN should always be before \fcharsetN
             # I don't really expect that will always be true, but let's crash
             # if it's not, and see if it happens in the real world.
             charset: str | None = _CODEPAGES.get(int(charset_num))
 
             if charset is None:
-                raise ValueError(f"Unsupported charset {charset_num}")
+                msg = f"Unsupported charset {charset_num}"
+                raise ValueError(msg)
             self._setFontCharset(charset)
 
     def handle_ansi_escape(self, code):
@@ -536,15 +538,15 @@ class Group:
         self.content.append("\n")
 
     def handle_b(self, on_off=None):
-        val = on_off in (None, "", "1")
+        val = on_off in {None, "", "1"}
         self.content.append(ReadableMarker("bold", val))
 
     def handle_i(self, on_off=None):
-        val = on_off in (None, "", "1")
+        val = on_off in {None, "", "1"}
         self.content.append(ReadableMarker("italic", val))
 
     def handle_ul(self, on_off=None):
-        val = on_off in (None, "", "1")
+        val = on_off in {None, "", "1"}
         self.content.append(ReadableMarker("underline", val))
 
     def handle_ilvl(self, level):
@@ -605,7 +607,7 @@ class Group:
         self.parent.destination = False
 
     def handle_field(self):
-        def finalize():
+        def finalize() -> str | None:
             if len(self.content) != 2:
                 return ""
 
@@ -617,7 +619,7 @@ class Group:
             # {\field{\*\fldinst {\rtlch\fcs1 \af0 \ltrch\fcs0 \insrsid15420660  PAGE   \\* MERGEFORMAT }}
             try:
                 destination = "".join(destination.content)
-            except Exception:  # noqa: BLE001
+            except Exception:  # pylint: disable=W0718  # noqa: BLE001
                 return ""
 
             match: re.Match[str] | None = re.match(r'HYPERLINK "(.*)"', destination)

@@ -16,15 +16,31 @@ import time
 import tkinter as tk
 import traceback
 import webbrowser
-from argparse import ArgumentParser, Namespace
-from datetime import datetime, timedelta, timezone
+
+from argparse import ArgumentParser
+from datetime import datetime, timezone
 from enum import IntEnum
 from threading import Event, Thread
-from tkinter import filedialog, messagebox, ttk
-from tkinter import font as tkfont
-from typing import TYPE_CHECKING, Callable, NoReturn
+from tkinter import (
+    filedialog,
+    font as tkfont,
+    messagebox,
+    ttk,
+)
+from typing import TYPE_CHECKING, NoReturn
 
-if getattr(sys, "frozen", False) is False:
+
+def is_frozen() -> bool:  # sourcery skip: assign-if-exp, boolean-if-exp-identity, reintroduce-else, remove-unnecessary-cast
+    # Check for sys.frozen attribute
+    if getattr(sys, "frozen", False):
+        return True
+    # Check if the executable is in a temp directory (common for frozen apps)
+    if tempfile.gettempdir() in sys.executable:
+        return True
+    return False
+
+
+if not is_frozen():
     def update_sys_path(path):
         working_dir = str(path)
         if working_dir not in sys.path:
@@ -39,26 +55,30 @@ if getattr(sys, "frozen", False) is False:
         if utility_path.exists():
             update_sys_path(utility_path.parent)
 
+from pykotor.common.misc import Game
 from pykotor.common.stream import BinaryReader
 from pykotor.extract.file import ResourceIdentifier
-from pykotor.extract.installation import Installation
 from pykotor.tools.encoding import decode_bytes_with_fallbacks
 from pykotor.tools.path import CaseAwarePath, find_kotor_paths_from_default
-from pykotor.tslpatcher.logger import PatchLog, PatchLogger
+from pykotor.tslpatcher.logger import PatchLogger
 from pykotor.tslpatcher.patcher import ModInstaller
 from pykotor.tslpatcher.reader import ConfigReader, NamespaceReader
+from pykotor.tslpatcher.uninstall import ModUninstaller
 from utility.error_handling import format_exception_with_variables, universal_simplify_exception
 from utility.string import striprtf
 from utility.system.path import Path
 from utility.tkinter.tooltip import ToolTip
 
 if TYPE_CHECKING:
+    from argparse import Namespace
+    from collections.abc import Callable
+    from datetime import timedelta
     from types import TracebackType
 
-    from pykotor.common.misc import Game
+    from pykotor.tslpatcher.logger import PatchLog
     from pykotor.tslpatcher.namespaces import PatcherNamespace
 
-CURRENT_VERSION: tuple[int, ...] = (1, 5, 2)
+CURRENT_VERSION: tuple[int, ...] = (1, 5, 3)
 VERSION_LABEL = f"v{'.'.join(map(str, CURRENT_VERSION))}"
 
 
@@ -72,6 +92,10 @@ class ExitCode(IntEnum):
     ABORT_INSTALL_UNSAFE = 6
     EXCEPTION_DURING_INSTALL = 7
     INSTALL_COMPLETED_WITH_ERRORS = 8
+
+class HoloPatcherError(Exception):
+    ...
+
 
 class HoloPatcherError(Exception):
     ...
@@ -102,16 +126,8 @@ def parse_args() -> Namespace:
     # Positional arguments for the old syntax
     parser.add_argument("--game-dir", type=str, help="Path to game directory")
     parser.add_argument("--tslpatchdata", type=str, help="Path to tslpatchdata")
-    parser.add_argument(
-        "--namespace-option-index",
-        type=int,
-        help="Namespace option index",
-    )
-    parser.add_argument(
-        "--console",
-        action="store_true",
-        help="Show the console when launching HoloPatcher.",
-    )
+    parser.add_argument("--namespace-option-index", type=int, help="Namespace option index")
+    parser.add_argument("--console", action="store_true", help="Show the console when launching HoloPatcher.")
     parser.add_argument("--uninstall", action="store_true", help="Uninstalls the selected mod.")
     parser.add_argument("--install", action="store_true", help="Starts an install immediately on launch.")
     parser.add_argument("--validate", action="store_true", help="Starts validation of the selected mod.")
@@ -138,6 +154,7 @@ def parse_args() -> Namespace:
 
     return kwargs
 
+
 class App(tk.Tk):
     def __init__(self):
         super().__init__()
@@ -160,7 +177,7 @@ class App(tk.Tk):
 
         cmdline_args: Namespace = parse_args()
         self.open_mod(cmdline_args.tslpatchdata or Path.cwd())
-        self.handle_commandline(cmdline_args)
+        self.execute_commandline(cmdline_args)
 
     def set_window(
         self,
@@ -194,9 +211,10 @@ class App(tk.Tk):
         # Tools menu
         tools_menu = tk.Menu(self.menu_bar, tearoff=0)
         tools_menu.add_command(label="Validate INI", command=self.test_reader)
+        # tools_menu.add_command(label="Uninstall Mod / Restore Backup", command=self.uninstall_selected_mod)
         tools_menu.add_command(label="Fix permissions to file/folder...", command=self.fix_permissions)
         tools_menu.add_command(label="Fix iOS Case Sensitivity", command=self.lowercase_files_and_folders)
-        tools_menu.add_command(label="Create info.rte...", command=self.create_rte_content)
+        # tools_menu.add_command(label="Create info.rte...", command=self.create_rte_content)
         self.menu_bar.add_cascade(label="Tools", menu=tools_menu)
 
         # Help menu
@@ -246,7 +264,7 @@ class App(tk.Tk):
         self.namespaces_combobox: ttk.Combobox = ttk.Combobox(top_frame, state="readonly", style="TCombobox")
         #self.namespaces_combobox.grid(row=0, column=0, padx=5, pady=2, sticky="ew")
         self.namespaces_combobox.set("Select the mod to install")
-        ToolTip(self.namespaces_combobox, lambda: self.get_namespace_description())
+        ToolTip(self.namespaces_combobox, self.get_namespace_description)
         self.namespaces_combobox.bind("<<ComboboxSelected>>", self.on_namespace_option_chosen)
         # Handle annoyances with Focus Events
         self.namespaces_combobox.bind("<FocusIn>", self.on_combobox_focus_in)
@@ -314,7 +332,7 @@ class App(tk.Tk):
         self,
         event: tk.Event,
     ):
-        if self.namespaces_combobox_state == 2: # no selection, fix the focus  # noqa: PLR2004
+        if self.namespaces_combobox_state == 2:  # no selection, fix the focus  # noqa: PLR2004
             self.focus_set()
             self.namespaces_combobox_state = 0  # base status
         else:
@@ -349,10 +367,10 @@ class App(tk.Tk):
                     "No updates available.",
                     f"You are already running the latest version of HoloPatcher ({VERSION_LABEL})",
                 )
-        except Exception as e:  # noqa: BLE001
+        except Exception as e:  # pylint: disable=W0718  # noqa: BLE001
             self._handle_general_exception(e, title="Unable to fetch latest version")
 
-    def handle_commandline(
+    def execute_commandline(
         self,
         cmdline_args: Namespace,
     ):
@@ -393,7 +411,7 @@ class App(tk.Tk):
     ):
         self.one_shot = True
         self.withdraw()
-        self.handle_console_mode()
+        self.setup_cli_messagebox_overrides()
         if not self.preinstall_validate_chosen():
             sys.exit(ExitCode.NUMBER_OF_ARGS)
         if cmdline_args.install:
@@ -402,7 +420,7 @@ class App(tk.Tk):
             self.test_reader()
         sys.exit(ExitCode.SUCCESS)
 
-    def handle_console_mode(self):
+    def setup_cli_messagebox_overrides(self):
         """Overrides message box functions for console mode. This is done for true CLI support.
 
         Args:
@@ -430,14 +448,14 @@ class App(tk.Tk):
                 print(f"[Error] - {title}: {message}")  # noqa: T201
 
             @staticmethod
-            def askyesno(title, message):
+            def askyesno(title, message) -> bool | None:
                 """Console-based replacement for messagebox.askyesno and similar."""
                 print(f"{title}\n{message}")  # noqa: T201
                 while True:
                     response = input("(y/N)").lower().strip()
-                    if response in ["yes", "y"]:
+                    if response in {"yes", "y"}:
                         return True
-                    if response in ["no", "n"]:
+                    if response in {"no", "n"}:
                         return False
                     print("Invalid input. Please enter 'yes' or 'no'")  # noqa: T201
 
@@ -454,19 +472,62 @@ class App(tk.Tk):
         if os.name == "nt":
             ctypes.windll.user32.ShowWindow(ctypes.windll.kernel32.GetConsoleWindow(), 0)
 
-    def async_raise(self, tid, exctype):
+    def uninstall_selected_mod(self):
+        """Uninstalls the selected mod using the most recent backup folder created during the last install.
+
+        Processing Logic:
+        ----------------
+            - Check if an install is already running
+            - Get the selected namespace option
+            - Check for valid namespace and game path
+            - Get the backup folder path
+            - Sort backup folders by date
+            - Get the most recent backup folder
+            - Check for required files in backup
+            - Confirm uninstall with user
+            - Delete existing files
+            - Restore files from backup
+            - Offer to delete restored backup.
+        """
+        if not self.preinstall_validate_chosen():
+            return
+        backup_parent_folder = Path(self.mod_path, "backup")
+        if not backup_parent_folder.safe_isdir():
+            messagebox.showerror(
+                "Backup folder empty/missing.",
+                f"Could not find backup folder '{backup_parent_folder}'{os.linesep * 2}Are you sure the mod is installed?",
+            )
+            return
+        self.set_state(state=True)
+        self.clear_main_text()
+        fully_ran: bool = True
+        try:
+            uninstaller = ModUninstaller(backup_parent_folder, Path(self.gamepaths.get()), self.logger)
+            fully_ran = uninstaller.uninstall_selected_mod()
+        except Exception as e:  # pylint: disable=W0718  # noqa: BLE001
+            self._handle_exception_during_install(e)
+        finally:
+            self.set_state(state=False)
+            self.logger.add_note("Mod uninstaller/backup restore task completed.")
+        if not fully_ran:
+            self.on_namespace_option_chosen(tk.Event())
+
+    def async_raise(self, tid: int, exctype: type):
         """Raises an exception in the threads with id tid."""
         if not inspect.isclass(exctype):
-            raise TypeError("Only types can be raised (not instances)")
+            msg = "Only types can be raised (not instances)"
+            raise TypeError(msg)
         res = ctypes.pythonapi.PyThreadState_SetAsyncExc(ctypes.c_long(tid),
                                                         ctypes.py_object(exctype))
         if res == 0:
-            raise ValueError("invalid thread id")
+            msg = "invalid thread id"
+            raise ValueError(msg)
         if res != 1:
             # "if it returns a number greater than one, you're in trouble,
             # and you should call it again with exc=NULL to revert the effect"
             ctypes.pythonapi.PyThreadState_SetAsyncExc(ctypes.c_long(tid), None)
-            raise SystemError("PyThreadState_SetAsyncExc failed")
+            msg = "PyThreadState_SetAsyncExc failed"
+            raise SystemError(msg)
         print("success")
 
     def handle_exit_button(self):
@@ -508,16 +569,16 @@ class App(tk.Tk):
         i = 0
         while self.task_thread.is_alive():
             try:
-                self.task_thread._stop()  # type: ignore[attr-defined]
-                print("force terminate of install thread succeeded", sys.stdout)  # noqa: T201
-            except BaseException as e:  # noqa: BLE001
+                self.task_thread._stop()  # type: ignore[attr-defined]  # pylint: disable=protected-access
+                print("force terminate of install thread succeeded")
+            except BaseException as e:  # pylint: disable=W0718  # noqa: BLE001
                 self._handle_general_exception(e, "Error using self.install_thread._stop()", msgbox=False)
             try:
                 if self.task_thread.ident is None:
                     msg = "task ident is None, expected an int."
-                    raise ValueError(msg)
+                    raise ValueError(msg)  # noqa: TRY301
                 self.async_raise(self.task_thread.ident, SystemExit)
-            except BaseException as e:  # noqa: BLE001
+            except BaseException as e:  # pylint: disable=W0718  # noqa: BLE001
                 self._handle_general_exception(e, "Error using async_raise(self.install_thread.ident, SystemExit)", msgbox=False)
             print(f"Install thread is still alive after {i} seconds, waiting...")
             time.sleep(1)
@@ -665,8 +726,8 @@ class App(tk.Tk):
                 data = BinaryReader.load_file(info_rtf_path)
                 rtf_text = decode_bytes_with_fallbacks(data)
                 self.set_stripped_rtf_text(rtf_text)
-                #self.load_rtf_file(info_rtf_path)
-        except Exception as e:  # noqa: BLE001
+                # self.load_rtf_file(info_rtf_path)
+        except Exception as e:  # pylint: disable=W0718  # noqa: BLE001
             self._handle_general_exception(e, "An unexpected error occurred while loading the patcher namespace.")
         else:
             self.after(10, lambda: self.move_cursor_to_end(self.namespaces_combobox))
@@ -676,6 +737,7 @@ class App(tk.Tk):
         exc: BaseException,
         custom_msg: str = "Unexpected error.",
         title: str = "",
+        *,
         msgbox: bool = True,
     ):
         detailed_msg = format_exception_with_variables(exc, message=custom_msg)
@@ -686,7 +748,7 @@ class App(tk.Tk):
         if msgbox:
             messagebox.showerror(
                 title or error_name,
-                f"{(error_name + os.linesep*2) if title else ''}{custom_msg}.{os.linesep*2}{msg}",
+                f"{(error_name + os.linesep * 2) if title else ''}{custom_msg}.{os.linesep * 2}{msg}",
             )
 
     def load_namespace(
@@ -762,7 +824,7 @@ class App(tk.Tk):
                     messagebox.showerror("Error", "Could not find a mod located at the given folder.")
                 return
             self.check_access(tslpatchdata_path, recurse=True, should_filter=True)
-        except Exception as e:  # noqa: BLE001
+        except Exception as e:  # pylint: disable=W0718  # noqa: BLE001
             self._handle_general_exception(e, "An unexpected error occurred while loading the mod info.")
         else:
             if default_directory_path_str:
@@ -839,7 +901,7 @@ class App(tk.Tk):
                 self.logger.add_note("Please wait, this may take awhile...")
                 try:
                     access: bool = path.gain_access(recurse=True, log_func=self.logger.add_verbose)
-                    #self.play_complete_sound()
+                    # self.play_complete_sound()
                     if not access:
                         if not directory:
                             messagebox.showerror("Could not acquire permission!", "Permissions denied! Check the logs for more details.")
@@ -886,7 +948,7 @@ class App(tk.Tk):
         directory: Path,
         *,
         recurse: bool = False,
-        should_filter = False,
+        should_filter: bool = False,
     ) -> bool:
         """Check access to a directory.
 
@@ -1182,7 +1244,7 @@ class App(tk.Tk):
             try:
                 reader = ConfigReader.from_filepath(ini_file_path, self.logger)
                 reader.load(reader.config)
-            except Exception as e:  # noqa: BLE001
+            except Exception as e:  # pylint: disable=W0718  # noqa: BLE001
                 self._handle_general_exception(e, "An unexpected error occurred while testing the config ini reader")
             finally:
                 self.set_state(state=False)
@@ -1253,9 +1315,9 @@ class App(tk.Tk):
         self.begin_edge_preinstall_logic()
         installer.install(should_cancel_thread)
         total_install_time: timedelta = datetime.now(timezone.utc).astimezone() - install_start_time
-        #profiler.disable()
-        #profiler_output_file = Path("profiler_output.pstat").resolve()
-        #profiler.dump_stats(str(profiler_output_file))
+        # profiler.disable()
+        # profiler_output_file = Path("profiler_output.pstat").resolve()
+        # profiler.dump_stats(str(profiler_output_file))
 
         days, remainder = divmod(total_install_time.total_seconds(), 24 * 60 * 60)
         hours, remainder = divmod(remainder, 60 * 60)
@@ -1280,7 +1342,7 @@ class App(tk.Tk):
             messagebox.showerror(
                 "Install completed with errors!",
                 f"The install completed with {num_errors} errors and {num_warnings} warnings! The installation may not have been successful, check the logs for more details."
-                f"{os.linesep*2}Total install time: {time_str}"
+                f"{os.linesep * 2}Total install time: {time_str}"
                 f"{os.linesep}Total patches: {num_patches}",
             )
             if self.one_shot:
@@ -1289,14 +1351,14 @@ class App(tk.Tk):
             messagebox.showwarning(
                 "Install completed with warnings",
                 f"The install completed with {num_warnings} warnings! Review the logs for details. The script in the 'uninstall' folder of the mod directory will revert these changes."
-                f"{os.linesep*2}Total install time: {time_str}"
+                f"{os.linesep * 2}Total install time: {time_str}"
                 f"{os.linesep}Total patches: {num_patches}",
             )
         else:
             messagebox.showinfo(
                 "Install complete!",
                 f"Check the logs for details on what has been done. Utilize the script in the 'uninstall' folder of the mod directory to revert these changes."
-                f"{os.linesep*2}Total install time: {time_str}"
+                f"{os.linesep * 2}Total install time: {time_str}"
                 f"{os.linesep}Total patches: {num_patches}",
             )
             if self.one_shot:
@@ -1331,7 +1393,7 @@ class App(tk.Tk):
         self.logger.add_error(f"{error_name}: {msg}{os.linesep}The installation was aborted with errors")
         messagebox.showerror(
             error_name,
-            f"An unexpected error occurred during the installation and the installation was forced to terminate.{os.linesep*2}{msg}",
+            f"An unexpected error occurred during the installation and the installation was forced to terminate.{os.linesep * 2}{msg}",
         )
         raise
 
@@ -1432,15 +1494,6 @@ def onAppCrash(
 
 sys.excepthook = onAppCrash
 
-
-def is_frozen() -> bool:  # sourcery skip: assign-if-exp, boolean-if-exp-identity, reintroduce-else, remove-unnecessary-cast
-    # Check for sys.frozen attribute
-    if getattr(sys, "frozen", False):
-        return True
-    # Check if the executable is in a temp directory (common for frozen apps)
-    if tempfile.gettempdir() in sys.executable:
-        return True
-    return False
 
 def main():
     app = App()

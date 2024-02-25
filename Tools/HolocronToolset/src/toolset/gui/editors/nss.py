@@ -3,12 +3,6 @@ from __future__ import annotations
 from operator import attrgetter
 from typing import TYPE_CHECKING, ClassVar
 
-from pykotor.common.scriptdefs import KOTOR_CONSTANTS, KOTOR_FUNCTIONS, TSL_CONSTANTS, TSL_FUNCTIONS
-from pykotor.common.stream import BinaryWriter
-from pykotor.resource.formats.erf import ERF, read_erf, write_erf
-from pykotor.resource.formats.rim import RIM, read_rim, write_rim
-from pykotor.resource.type import ResourceType
-from pykotor.tools.misc import is_any_erf_type_file, is_bif_file, is_rim_file
 from PyQt5 import QtCore
 from PyQt5.QtCore import QRect, QRegExp, QSize
 from PyQt5.QtGui import (
@@ -16,15 +10,18 @@ from PyQt5.QtGui import (
     QFont,
     QFontMetricsF,
     QPainter,
-    QPaintEvent,
-    QResizeEvent,
     QSyntaxHighlighter,
-    QTextBlock,
     QTextCharFormat,
-    QTextDocument,
     QTextFormat,
 )
 from PyQt5.QtWidgets import QListWidgetItem, QMessageBox, QPlainTextEdit, QShortcut, QTextEdit, QWidget
+
+from pykotor.common.scriptdefs import KOTOR_CONSTANTS, KOTOR_FUNCTIONS, TSL_CONSTANTS, TSL_FUNCTIONS
+from pykotor.common.stream import BinaryWriter
+from pykotor.resource.formats.erf import read_erf, write_erf
+from pykotor.resource.formats.rim import read_rim, write_rim
+from pykotor.resource.type import ResourceType
+from pykotor.tools.misc import is_any_erf_type_file, is_bif_file, is_rim_file
 from toolset.gui.editor import Editor
 from toolset.gui.widgets.settings.installations import GlobalSettings, NoConfigurationSetError
 from toolset.utils.script import compileScript, decompileScript
@@ -34,7 +31,16 @@ from utility.system.path import Path
 if TYPE_CHECKING:
     import os
 
+    from PyQt5.QtGui import (
+        QPaintEvent,
+        QResizeEvent,
+        QTextBlock,
+        QTextDocument,
+    )
+
     from pykotor.common.script import ScriptConstant, ScriptFunction
+    from pykotor.resource.formats.erf import ERF
+    from pykotor.resource.formats.rim import RIM
     from toolset.data.installation import HTInstallation
 
 
@@ -62,7 +68,7 @@ class NSSEditor(Editor):
         supported: list[ResourceType] = [ResourceType.NSS, ResourceType.NCS]
         super().__init__(parent, "Script Editor", "script", supported, supported, installation)
 
-        from toolset.uic.editors.nss import Ui_MainWindow
+        from toolset.uic.editors.nss import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
 
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
@@ -163,7 +169,7 @@ class NSSEditor(Editor):
             self.ui.codeEdit.setPlainText(data.decode("windows-1252", errors="ignore"))
         elif restype == ResourceType.NCS:
             try:
-                source = decompileScript(data, self._installation.tsl)
+                source = decompileScript(data, self._installation.tsl, self._installation.path())
                 self.ui.codeEdit.setPlainText(source)
                 self._is_decompiled = True
             except ValueError as e:
@@ -177,7 +183,7 @@ class NSSEditor(Editor):
         if self._restype != ResourceType.NCS:
             return self.ui.codeEdit.toPlainText().encode("windows-1252"), b""
 
-        compiled_bytes: bytes | None = compileScript(self.ui.codeEdit.toPlainText(), self._installation.tsl)
+        compiled_bytes: bytes | None = compileScript(self.ui.codeEdit.toPlainText(), self._installation.tsl, self._installation.path())
         print("compiling script from nsseditor")
         if compiled_bytes is None:
             print("user cancelled the compilation")
@@ -214,7 +220,7 @@ class NSSEditor(Editor):
         """
         try:
             source: str = self.ui.codeEdit.toPlainText()
-            data: bytes | None = compileScript(source, self._installation.tsl)
+            data: bytes | None = compileScript(source, self._installation.tsl, self._installation.path())
             if data is None:  # user cancelled
                 return
 

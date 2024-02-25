@@ -3,18 +3,21 @@ from __future__ import annotations
 from time import sleep
 from typing import TYPE_CHECKING
 
+from PyQt5 import QtCore
+from PyQt5.QtCore import QSortFilterProxyModel, QThread
+from PyQt5.QtGui import QStandardItem, QStandardItemModel
+from PyQt5.QtWidgets import QAction, QDialog, QProgressBar, QShortcut, QVBoxLayout
+
 from pykotor.common.language import Language
 from pykotor.common.misc import ResRef
 from pykotor.resource.formats.tlk import TLK, TLKEntry, bytes_tlk, read_tlk, write_tlk
 from pykotor.resource.type import ResourceType
-from PyQt5 import QtCore
-from PyQt5.QtCore import QSortFilterProxyModel, QThread
-from PyQt5.QtGui import QStandardItem, QStandardItemModel
-from PyQt5.QtWidgets import QAction, QDialog, QProgressBar, QShortcut, QVBoxLayout, QWidget
 from toolset.gui.editor import Editor
 
 if TYPE_CHECKING:
     import os
+
+    from PyQt5.QtWidgets import QWidget
 
     from toolset.data.installation import HTInstallation
 
@@ -40,7 +43,7 @@ class TLKEditor(Editor):
         supported: list[ResourceType] = [ResourceType.TLK, ResourceType.TLK_XML, ResourceType.TLK_JSON]
         super().__init__(parent, "TLK Editor", "none", supported, supported, installation)
 
-        from toolset.uic.editors.tlk import Ui_MainWindow
+        from toolset.uic.editors.tlk import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
 
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
@@ -77,7 +80,7 @@ class TLKEditor(Editor):
         self.ui.actionFind.triggered.connect(self.toggleFilterBox)
         self.ui.searchButton.clicked.connect(lambda: self.doFilter(self.ui.searchEdit.text()))
         self.ui.actionInsert.triggered.connect(self.insert)
-        #self.ui.actionAuto_detect_slower.triggered.connect()
+        # self.ui.actionAuto_detect_slower.triggered.connect()
 
         self.ui.talkTable.clicked.connect(self.selectionChanged)
         self.ui.textEdit.textChanged.connect(self.updateEntry)
@@ -174,7 +177,7 @@ class TLKEditor(Editor):
     def build(self) -> tuple[bytes, bytes]:
         """Builds a TLK file from the model data.
 
-        Returns
+        Returns:
         -------
             tuple[bytes, bytes]: A tuple containing the TLK data and an empty bytes object
 

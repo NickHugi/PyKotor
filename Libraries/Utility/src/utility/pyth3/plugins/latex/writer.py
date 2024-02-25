@@ -1,14 +1,14 @@
-"""
-Render documents as latex.
+"""Render documents as latex.
 
 For the moment we generate the latex document from the
 reStructuredText writer output.
 """
+from __future__ import annotations
 
 from io import StringIO
+
 import docutils.core
 
-from utility.pyth3 import document
 from utility.pyth3.format import PythWriter
 from utility.pyth3.plugins.rst.writer import RSTWriter
 
@@ -17,8 +17,7 @@ class LatexWriter(PythWriter):
 
     @classmethod
     def write(klass, document, target=None, stylesheet=""):
-        """
-        convert a pyth document to a latex document
+        """Convert a pyth document to a latex document.
 
         we can specify a stylesheet as a latex document fragment that
         will be inserted after the headers.  This way we can override
@@ -28,7 +27,7 @@ class LatexWriter(PythWriter):
         return writer.go()
 
     def __init__(self, doc, target=None, stylesheet=""):
-        """Create a writer that produce a latex document
+        """Create a writer that produce a latex document.
 
         we can specify a stylesheet as a latex document fragment that
         will be inserted after the headers.  This way we can override
@@ -40,30 +39,29 @@ class LatexWriter(PythWriter):
 
     @property
     def full_stylesheet(self):
-        """
-        Return the style sheet that will ultimately be inserted into
+        """Return the style sheet that will ultimately be inserted into
         the latex document.
 
         This is the user given style sheet plus some additional parts
         to add the meta data.
         """
         latex_fragment = r"""
-        \usepackage[colorlinks=true,linkcolor=blue,urlcolor=blue]{hyperref}
-        \hypersetup{
-           pdftitle={%s},
-           pdfauthor={%s},
-           pdfsubject={%s}
-        }
-        """ % (self.document.properties.get("title"),
+        \usepackage[colorlinks=true,linkcolor=blue,urlcolor=blue]{{hyperref}}
+        \hypersetup{{
+           pdftitle={{{}}},
+           pdfauthor={{{}}},
+           pdfsubject={{{}}}
+        }}
+        """.format(self.document.properties.get("title"),
                self.document.properties.get("author"),
                self.document.properties.get("subject"))
         return latex_fragment + self.stylesheet
 
     def go(self):
         rst = RSTWriter.write(self.document).getvalue()
-        settings = dict(input_encoding="UTF-8",
-                        output_encoding="UTF-8",
-                        stylesheet="stylesheet.tex")
+        settings = {"input_encoding": "UTF-8",
+                        "output_encoding": "UTF-8",
+                        "stylesheet": "stylesheet.tex"}
         latex = docutils.core.publish_string(rst,
                                              writer_name="latex",
                                              settings_overrides=settings)

@@ -1,5 +1,11 @@
-from pykotor.common.language import LocalizedString
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
 from pykotor.resource.formats.gff import GFFContent, read_gff
+
+if TYPE_CHECKING:
+    from pykotor.common.language import LocalizedString
 
 
 def extract_name(data: bytes) -> LocalizedString:

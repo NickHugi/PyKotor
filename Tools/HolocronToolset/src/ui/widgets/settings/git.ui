@@ -665,7 +665,7 @@
   <customwidget>
    <class>ColorEdit</class>
    <extends>QWidget</extends>
-   <header location="global">toolset.gui.widgets.color_edit</header>
+   <header location="global">toolset.gui.widgets.edit.color</header>
    <container>1</container>
   </customwidget>
  </customwidgets>

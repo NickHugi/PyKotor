@@ -1,6 +1,5 @@
-"""
-Render documents as reStructuredText.
-"""
+"""Render documents as reStructuredText."""
+from __future__ import annotations
 
 from io import StringIO
 
@@ -26,7 +25,7 @@ class RSTWriter(PythWriter):
                                   document.Paragraph: self.paragraph}
 
     def go(self):
-        for (i, paragraph) in enumerate(self.document.content):
+        for (_i, paragraph) in enumerate(self.document.content):
             handler = self.paragraphDispatch[paragraph.__class__]
             handler(paragraph)
             self.target.write("\n")
@@ -38,26 +37,22 @@ class RSTWriter(PythWriter):
         return self.target
 
     def text(self, text):
-        """
-        process a pyth text and return the formatted string
-        """
+        """Process a pyth text and return the formatted string."""
         ret = "".join(text.content)
-        if 'url' in text.properties:
+        if "url" in text.properties:
             return "`%s`_" % ret
-        if 'bold' in text.properties:
+        if "bold" in text.properties:
             return "**%s**" % ret
-        if 'italic' in text.properties:
+        if "italic" in text.properties:
             return "*%s*" % ret
-        if 'sub' in text.properties:
+        if "sub" in text.properties:
             return r"\ :sub:`%s`\ " % ret
-        if 'super' in text.properties:
+        if "super" in text.properties:
             return r"\ :sup:`%s`\ " % ret
         return ret
 
     def paragraph(self, paragraph, prefix=""):
-        """
-        process a pyth paragraph into the target
-        """
+        """Process a pyth paragraph into the target."""
         content = []
         for text in paragraph.content:
             content.append(self.text(text))
@@ -72,20 +67,18 @@ class RSTWriter(PythWriter):
                 prefix = "  "
 
         # handle the links
-        if any('url' in text.properties for text in paragraph.content):
+        if any("url" in text.properties for text in paragraph.content):
             self.target.write("\n")
             for text in paragraph.content:
-                if 'url' in text.properties:
+                if "url" in text.properties:
                     string = "".join(text.content)
-                    url = text.properties['url']
-                    self.target.write(".. _%s: %s\n" % (string, url))
+                    url = text.properties["url"]
+                    self.target.write(f".. _{string}: {url}\n")
 
     def list(self, list, prefix=None):
-        """
-        Process a pyth list into the target
-        """
+        """Process a pyth list into the target."""
         self.indent += 1
-        for (i, entry) in enumerate(list.content):
+        for (_i, entry) in enumerate(list.content):
             for (j, paragraph) in enumerate(entry.content):
                 prefix = "- " if j == 0 else "  "
                 handler = self.paragraphDispatch[paragraph.__class__]

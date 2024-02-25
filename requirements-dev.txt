@@ -5,9 +5,13 @@
 -r Libraries/PyKotor/requirements.txt
 -r Libraries/PyKotor/recommended.txt
 -r Libraries/PyKotorGL/requirements.txt
+#-r Libraries/PyKotorGL/optional.txt
 -r Libraries/PyKotorFont/requirements.txt
 mypy
 ruff
 pylint
 snakeviz
 autoflake
+pytest
+pytest-xdist
+pytest-html

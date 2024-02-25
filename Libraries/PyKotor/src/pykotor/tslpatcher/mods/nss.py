@@ -3,19 +3,17 @@ from __future__ import annotations
 
 import os
 import re
+
 from tempfile import TemporaryDirectory
 from typing import TYPE_CHECKING
 
 from pykotor.common.stream import BinaryReader, BinaryWriter
-from pykotor.resource.formats.ncs import bytes_ncs
-from pykotor.resource.formats.ncs import compile_nss as compile_with_builtin
+from pykotor.resource.formats.ncs import (
+    bytes_ncs,
+    compile_nss as compile_with_builtin,
+)
 from pykotor.resource.formats.ncs.compiler.classes import EntryPointError
 from pykotor.resource.formats.ncs.compilers import ExternalNCSCompiler
-from pykotor.resource.formats.ncs.optimizers import (
-    RemoveMoveSPEqualsZeroOptimizer,
-    RemoveNopOptimizer,
-    RemoveUnusedBlocksOptimizer,
-)
 from pykotor.tools.encoding import decode_bytes_with_fallbacks
 from pykotor.tools.path import CaseAwarePath
 from pykotor.tslpatcher.mods.template import PatcherModifications
@@ -23,18 +21,21 @@ from utility.error_handling import universal_simplify_exception
 from utility.system.path import Path, PurePath, PureWindowsPath
 
 if TYPE_CHECKING:
+    from typing_extensions import Literal
+
     from pykotor.common.misc import Game
     from pykotor.resource.formats.ncs.ncs_data import NCS
     from pykotor.resource.type import SOURCE_TYPES
     from pykotor.tslpatcher.logger import PatchLogger
     from pykotor.tslpatcher.memory import PatcherMemory
-    from typing_extensions import Literal
+
 
 class MutableString:
     def __init__(self, value: str):
         self.value: str = value
     def __str__(self):
         return self.value
+
 
 class ModificationsNSS(PatcherModifications):
     def __init__(self, filename, replace=None, modifiers=None):
@@ -72,7 +73,7 @@ class ModificationsNSS(PatcherModifications):
             2. Replaces 2DAMEMORY# and StrRef# tokens with values from patcher memory
             3. Attempts to compile with external NWN compiler if on Windows
             4. Falls back to built-in compiler if external isn't available, fails, or not on Windows
-        """  # noqa: D205
+        """
         with BinaryReader.from_auto(nss_source) as reader:
             nss_bytes: bytes = reader.read_all()
         if nss_bytes is None:
@@ -102,7 +103,7 @@ class ModificationsNSS(PatcherModifications):
                 )
             try:
                 return self._compile_with_external(temp_script_file, nwnnsscompiler, logger, game)
-            except Exception as e:  # noqa: BLE001
+            except Exception as e:  # pylint: disable=W0718  # noqa: BLE001
                 logger.add_error(str(universal_simplify_exception(e)))
 
         if is_windows:
@@ -118,7 +119,7 @@ class ModificationsNSS(PatcherModifications):
             ncs: NCS = compile_with_builtin(
                 source.value,
                 game,
-                [], #[RemoveNopOptimizer(), RemoveMoveSPEqualsZeroOptimizer(), RemoveUnusedBlocksOptimizer()],  # TODO: ncs optimizers need testing
+                [],  # [RemoveNopOptimizer(), RemoveMoveSPEqualsZeroOptimizer(), RemoveUnusedBlocksOptimizer()],  # TODO: ncs optimizers need testing
                 library_lookup=[CaseAwarePath.pathify(self.temp_script_folder)],
             )
         except EntryPointError as e:
@@ -174,7 +175,6 @@ class ModificationsNSS(PatcherModifications):
             value: int = memory_strval
             nss_source.value = nss_source.value[: match.start()] + str(value) + nss_source.value[match.end() :]
             match = re.search(r"#StrRef\d+#", nss_source.value)
-
 
     def _compile_with_external(
         self,

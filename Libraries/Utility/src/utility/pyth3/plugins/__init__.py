@@ -1,3 +1,1 @@
-"""
-Document format plugins
-"""
+"""Document format plugins."""

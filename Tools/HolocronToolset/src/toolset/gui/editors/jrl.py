@@ -2,11 +2,12 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+from PyQt5.QtGui import QColor, QStandardItem, QStandardItemModel
+from PyQt5.QtWidgets import QMenu, QShortcut, QTreeView
+
 from pykotor.resource.formats.gff import write_gff
 from pykotor.resource.generics.jrl import JRL, JRLEntry, JRLQuest, JRLQuestPriority, dismantle_jrl, read_jrl
 from pykotor.resource.type import ResourceType
-from PyQt5.QtGui import QColor, QStandardItem, QStandardItemModel
-from PyQt5.QtWidgets import QMenu, QShortcut, QTreeView, QWidget
 from toolset.data.installation import HTInstallation
 from toolset.gui.dialogs.edit.locstring import LocalizedStringDialog
 from toolset.gui.editor import Editor
@@ -16,6 +17,9 @@ if TYPE_CHECKING:
 
     from pykotor.resource.formats.twoda.twoda_data import TwoDA
     from PyQt5.QtCore import QItemSelection, QPoint
+    from PyQt5.QtWidgets import QWidget
+
+    from pykotor.resource.formats.twoda.twoda_data import TwoDA
 
 
 class JRLEditor(Editor):
@@ -51,7 +55,7 @@ class JRLEditor(Editor):
         super().__init__(parent, "Journal Editor", "journal", supported, supported, installation)
         self.resize(400, 250)
 
-        from toolset.uic.editors.jrl import Ui_MainWindow
+        from toolset.uic.editors.jrl import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
 
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)

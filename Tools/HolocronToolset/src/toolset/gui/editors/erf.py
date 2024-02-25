@@ -2,25 +2,30 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+from PyQt5 import QtCore, QtGui
+from PyQt5.QtCore import QMimeData
+from PyQt5.QtGui import QStandardItem, QStandardItemModel
+from PyQt5.QtWidgets import QFileDialog, QMessageBox, QShortcut, QTableView
+
 from pykotor.common.misc import ResRef
 from pykotor.common.stream import BinaryReader
 from pykotor.extract.file import ResourceIdentifier
 from pykotor.resource.formats.erf import ERF, ERFResource, ERFType, read_erf, write_erf
-from pykotor.resource.formats.rim import RIM, RIMResource, read_rim, write_rim
+from pykotor.resource.formats.rim import RIM, read_rim, write_rim
 from pykotor.resource.type import ResourceType
-from PyQt5 import QtCore, QtGui
-from PyQt5.QtCore import QMimeData
-from PyQt5.QtGui import QDragEnterEvent, QDragMoveEvent, QDropEvent, QStandardItem, QStandardItemModel
-from PyQt5.QtWidgets import QFileDialog, QMessageBox, QShortcut, QTableView, QWidget
 from toolset.gui.editor import Editor
 from toolset.gui.widgets.settings.installations import GlobalSettings
 from toolset.utils.window import openResourceEditor
-from utility.error_handling import universal_simplify_exception
+from utility.error_handling import format_exception_with_variables, universal_simplify_exception
 from utility.system.path import Path
 
 if TYPE_CHECKING:
     import os
 
+    from PyQt5.QtGui import QDragEnterEvent, QDragMoveEvent, QDropEvent
+    from PyQt5.QtWidgets import QWidget
+
+    from pykotor.resource.formats.rim import RIMResource
     from toolset.data.installation import HTInstallation
 
 
@@ -47,7 +52,7 @@ class ERFEditor(Editor):
         super().__init__(parent, "ERF Editor", "none", supported, supported, installation)
         self.resize(400, 250)
 
-        from toolset.uic.editors.erf import Ui_MainWindow
+        from toolset.uic.editors.erf import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
 
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
@@ -117,6 +122,12 @@ class ERFEditor(Editor):
         self.model.setColumnCount(3)
         self.model.setHorizontalHeaderLabels(["ResRef", "Type", "Size"])
         self.ui.refreshButton.setEnabled(True)
+        def human_readable_size(byte_size: float) -> str:
+            for unit in ["bytes", "KB", "MB", "GB", "TB", "PB", "EB", "ZB", "YB"]:
+                if byte_size < 1024:  # noqa: PLR2004
+                    return f"{round(byte_size, 2)} {unit}"
+                byte_size /= 1024
+            return str(byte_size)
 
         if restype.name in ERFType.__members__:
             erf: ERF = read_erf(data)
@@ -124,7 +135,7 @@ class ERFEditor(Editor):
                 resrefItem = QStandardItem(str(resource.resref))
                 resrefItem.setData(resource)
                 restypeItem = QStandardItem(resource.restype.extension.upper())
-                sizeItem = QStandardItem(str(len(resource.data)))
+                sizeItem = QStandardItem(human_readable_size(len(resource.data)))
                 self.model.appendRow([resrefItem, restypeItem, sizeItem])
 
         elif restype == ResourceType.RIM:
@@ -133,7 +144,7 @@ class ERFEditor(Editor):
                 resrefItem = QStandardItem(str(resource.resref))
                 resrefItem.setData(resource)
                 restypeItem = QStandardItem(resource.restype.extension.upper())
-                sizeItem = QStandardItem(str(len(resource.data)))
+                sizeItem = QStandardItem(human_readable_size(len(resource.data)))
                 self.model.appendRow([resrefItem, restypeItem, sizeItem])
 
         else:
@@ -141,13 +152,13 @@ class ERFEditor(Editor):
                 QMessageBox.Critical,
                 "Unable to load file",
                 "The file specified is not a MOD/ERF type file.",
-                self,
+                parent=self,
             ).show()
 
     def build(self) -> tuple[bytes, bytes]:
         """Builds resource data from the model.
 
-        Returns
+        Returns:
         -------
             data: The built resource data.
             b"": An empty bytes object.
@@ -247,7 +258,7 @@ class ERFEditor(Editor):
             self.model.removeRow(item.row())
 
     def addResources(self, filepaths: list[str]):
-        """Adds resource files to the project.
+        """Adds resources to the capsule.
 
         Args:
         ----
@@ -265,7 +276,7 @@ class ERFEditor(Editor):
         for filepath in filepaths:
             c_filepath = Path(filepath)
             try:
-                resref, restype = ResourceIdentifier.from_path(c_filepath.parent).validate()
+                resref, restype = ResourceIdentifier.from_path(c_filepath).validate()
                 data = BinaryReader.load_file(c_filepath)
                 resource = ERFResource(ResRef(resref), restype, data)
 
@@ -275,6 +286,10 @@ class ERFEditor(Editor):
                 sizeItem = QStandardItem(str(len(resource.data)))
                 self.model.appendRow([resrefItem, restypeItem, sizeItem])
             except Exception as e:
+                with Path("errorlog.txt").open("a", encoding="utf-8") as file:
+                    lines = format_exception_with_variables(e)
+                    file.writelines(lines)
+                    file.write("\n----------------------\n")
                 QMessageBox(
                     QMessageBox.Critical,
                     "Failed to add resource",
@@ -304,15 +319,15 @@ class ERFEditor(Editor):
             item = self.model.itemFromIndex(index)
             resource: ERFResource = item.data()
 
-            if resource.restype.name in ERFType.__members__:
-                QMessageBox(
-                    QMessageBox.Warning,
-                    "Cannot open nested ERF files",
-                    "Editing ERF or RIM files nested within each other is not supported.",
-                    QMessageBox.Ok,
-                    self,
-                ).exec_()
-                continue
+            # if resource.restype.name in ERFType.__members__:
+            #    QMessageBox(
+            #        QMessageBox.Warning,
+            #        "Cannot open nested ERF files",
+            #        "Editing ERF or RIM files nested within each other is not supported.",
+            #        QMessageBox.Ok,
+            #        self,
+            #    ).exec_()
+            #    continue
 
             tempPath, editor = openResourceEditor(
                 self._filepath,

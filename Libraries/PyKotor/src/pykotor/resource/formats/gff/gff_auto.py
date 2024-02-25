@@ -2,11 +2,17 @@ from __future__ import annotations
 
 import os
 
+from typing import TYPE_CHECKING
+
 from pykotor.common.stream import BinaryReader
-from pykotor.resource.formats.gff.gff_data import GFF, GFFContent
+from pykotor.resource.formats.gff.gff_data import GFFContent
 from pykotor.resource.formats.gff.io_gff import GFFBinaryReader, GFFBinaryWriter
 from pykotor.resource.formats.gff.io_gff_xml import GFFXMLReader, GFFXMLWriter
-from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES, ResourceType
+from pykotor.resource.type import ResourceType
+
+if TYPE_CHECKING:
+    from pykotor.resource.formats.gff.gff_data import GFF
+    from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES
 
 
 def detect_gff(
@@ -37,9 +43,9 @@ def detect_gff(
             return ResourceType.GFF
         if "<" in first4:  # sourcery skip: assign-if-exp, reintroduce-else
             return ResourceType.GFF_XML
-        #if "{" in first4:
+        # if "{" in first4:
         #    return ResourceType.GFF_JSON
-        #if "," in first4:
+        # if "," in first4:
         #    return ResourceType.GFF_CSV
         return ResourceType.INVALID
 
@@ -97,7 +103,7 @@ def read_gff(
         return GFFXMLReader(source, offset, size or 0).load()
 
     msg = "Failed to determine the format of the GFF file."
-    #if file_format == ResourceType.INVALID:
+    # if file_format == ResourceType.INVALID:
     raise ValueError(msg)
 
 

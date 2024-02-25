@@ -2,9 +2,15 @@ from __future__ import annotations
 
 import struct
 
+from typing import TYPE_CHECKING
+
 from pykotor.common.stream import BinaryReader
-from pykotor.resource.formats.tpc.tpc_data import TPC, TPCTextureFormat
-from pykotor.resource.type import TARGET_TYPES, ResourceWriter, autoclose
+from pykotor.resource.formats.tpc.tpc_data import TPCTextureFormat
+from pykotor.resource.type import ResourceWriter, autoclose
+
+if TYPE_CHECKING:
+    from pykotor.resource.formats.tpc.tpc_data import TPC
+    from pykotor.resource.type import TARGET_TYPES
 
 
 class TPCBMPWriter(ResourceWriter):

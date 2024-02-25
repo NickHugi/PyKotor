@@ -3,6 +3,8 @@ from __future__ import annotations
 
 
 class _PythBase:
+    validProperties: tuple[str, ...] = ()
+    contentType: type
     def __init__(self, properties: dict | None = None, content: list | None = None):
         if properties is None:
             properties = {}
@@ -19,13 +21,15 @@ class _PythBase:
 
     def __setitem__(self, key, value):
         if key not in self.validProperties:
-            raise ValueError(f"Invalid {self.__class__.__name__} property: {key!r}")
+            msg = f"Invalid {self.__class__.__name__} property: {key!r}"
+            raise ValueError(msg)
 
         self.properties[key] = value
 
     def __getitem__(self, key):
         if key not in self.validProperties:
-            raise ValueError(f"Invalid {self.__class__.__name__} property: {key!r}")
+            msg = f"Invalid {self.__class__.__name__} property: {key!r}"
+            raise ValueError(msg)
         return self.properties.get(key)
 
     def append(self, item):
@@ -52,7 +56,8 @@ class _PythBase:
                 okay = False
 
         if not okay:
-            raise TypeError(f"Wrong content type for {self.__class__.__name__}: {type(item)!r} ({item!r})")
+            msg = f"Wrong content type for {self.__class__.__name__}: {type(item)!r} ({item!r})"
+            raise TypeError(msg)
 
         self.content.append(item)
 

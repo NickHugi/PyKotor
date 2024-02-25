@@ -3,7 +3,12 @@ from __future__ import annotations
 from copy import deepcopy
 from typing import TYPE_CHECKING
 
-from pykotor.common.language import Gender, Language, LocalizedString
+from PyQt5 import QtCore
+from PyQt5.QtCore import QSettings
+from PyQt5.QtGui import QImage, QPixmap, QTransform
+from PyQt5.QtWidgets import QListWidgetItem, QMessageBox
+
+from pykotor.common.language import Gender, Language
 from pykotor.common.misc import Game, ResRef
 from pykotor.common.module import Module
 from pykotor.extract.capsule import Capsule
@@ -13,10 +18,6 @@ from pykotor.resource.formats.tpc import TPCTextureFormat
 from pykotor.resource.generics.dlg import DLG, write_dlg
 from pykotor.resource.generics.utc import UTC, UTCClass, read_utc, write_utc
 from pykotor.resource.type import ResourceType
-from PyQt5 import QtCore
-from PyQt5.QtCore import QSettings
-from PyQt5.QtGui import QImage, QPixmap, QTransform
-from PyQt5.QtWidgets import QListWidgetItem, QMessageBox, QWidget
 from toolset.data.installation import HTInstallation
 from toolset.gui.dialogs.inventory import InventoryEditor
 from toolset.gui.editor import Editor
@@ -27,12 +28,15 @@ from utility.error_handling import format_exception_with_variables
 if TYPE_CHECKING:
     import os
 
+    from PyQt5.QtWidgets import QWidget
+    from typing_extensions import Literal
+
+    from pykotor.common.language import LocalizedString
     from pykotor.extract.file import ResourceResult
     from pykotor.resource.formats.ltr.ltr_data import LTR
     from pykotor.resource.formats.tpc.tpc_data import TPC
     from pykotor.resource.formats.twoda.twoda_data import TwoDA
     from pykotor.tools.path import CaseAwarePath
-    from typing_extensions import Literal
     from utility.system.path import Path
 
 
@@ -66,7 +70,7 @@ class UTCEditor(Editor):
         self.globalSettings: GlobalSettings = GlobalSettings()
         self._utc: UTC = UTC()
 
-        from toolset.uic.editors.utc import Ui_MainWindow
+        from toolset.uic.editors.utc import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
         self._setupMenus()
@@ -173,8 +177,8 @@ class UTCEditor(Editor):
             item.setFlags(item.flags() | QtCore.Qt.ItemIsUserCheckable)
             item.setCheckState(QtCore.Qt.Unchecked)
             self.ui.featList.addItem(item)
-        self.ui.featList.setSortingEnabled(True)
-        self.ui.featList.sortItems(QtCore.Qt.AscendingOrder)
+        #self.ui.featList.setSortingEnabled(True)
+        #self.ui.featList.sortItems(QtCore.Qt.AscendingOrder)
 
         self.ui.powerList.clear()
         for power in powers:
@@ -187,8 +191,8 @@ class UTCEditor(Editor):
             item.setFlags(item.flags() | QtCore.Qt.ItemIsUserCheckable)
             item.setCheckState(QtCore.Qt.Unchecked)
             self.ui.powerList.addItem(item)
-        self.ui.powerList.setSortingEnabled(True)
-        self.ui.powerList.sortItems(QtCore.Qt.AscendingOrder)
+        #self.ui.powerList.setSortingEnabled(True)
+        #self.ui.powerList.sortItems(QtCore.Qt.AscendingOrder)
 
         self.ui.noBlockCheckbox.setVisible(installation.tsl)
         self.ui.hologramCheckbox.setVisible(installation.tsl)
@@ -340,7 +344,7 @@ class UTCEditor(Editor):
     def build(self) -> tuple[bytes, bytes]:
         """Builds a UTC from UI data.
 
-        Returns
+        Returns:
         -------
             tuple[bytes, bytes]: The GFF data and log.
 
@@ -455,7 +459,7 @@ class UTCEditor(Editor):
         self.updateItemCount()
 
     def randomizeFirstname(self):
-        ltr_resname: Literal['humanf', 'humanm'] = "humanf" if self.ui.genderSelect.currentIndex() == 1 else "humanm"
+        ltr_resname: Literal["humanf", "humanm"] = "humanf" if self.ui.genderSelect.currentIndex() == 1 else "humanm"
         locstring: LocalizedString = self.ui.firstnameEdit.locstring()
         ltr: LTR = read_ltr(self._installation.resource(ltr_resname, ResourceType.LTR).data)
         locstring.stringref = -1
@@ -593,7 +597,7 @@ class UTCEditor(Editor):
             root: str = Module.get_root(self._filepath)
             capsulesPaths: list[str] = [path for path in self._installation.module_names() if root in path and path != self._filepath]
             capsules.extend([Capsule(self._installation.module_path() / path) for path in capsulesPaths])
-        except Exception as e:  # noqa: BLE001
+        except Exception as e:  # pylint: disable=W0718  # noqa: BLE001
             print(format_exception_with_variables(e, message="This exception has been suppressed by default."))
 
         inventoryEditor = InventoryEditor(self, self._installation, capsules, [], self._utc.inventory, self._utc.equipment, droid=droid)
@@ -694,7 +698,7 @@ class UTCEditor(Editor):
                 self.ui.previewRenderer.setCreature(utc)
         else:
             self.ui.previewRenderer.setVisible(False)
-            self.setFixedSize(798-350, 553)
+            self.setFixedSize(798 - 350, 553)
 
 
 class UTCSettings:

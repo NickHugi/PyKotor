@@ -1,9 +1,11 @@
 from __future__ import annotations
 
 import math
+
 from typing import TYPE_CHECKING
 
 from PIL import Image, ImageDraw, ImageFont
+
 from pykotor.resource.formats.txi import TXIFontInformation
 from pykotor.tools.encoding import get_charset_from_singlebyte_encoding
 from utility.system.path import Path
@@ -15,9 +17,9 @@ if TYPE_CHECKING:
 
 
 def calculate_character_metrics(
-    pil_font,
-    charset_list,
-    baseline_char="0",  # ( 0 should be in every code page )
+    pil_font: ImageFont.FreeTypeFont,
+    charset_list: list[str],
+    baseline_char: str = "0",  # ( 0 should be in every code page )
 ) -> tuple[int, int, int]:
     """Calculates and returns metrics like baseline height, maximum underhang height, and maximum character height."""
     # Create a temporary image for measurements
@@ -42,14 +44,13 @@ def calculate_character_metrics(
     return baseline_height, max_underhang_height, max_char_height
 
 
-
 def write_bitmap_fonts(
     target: os.PathLike | str,
     font_path: os.PathLike | str,
     resolution: tuple[int, int],
     lang: Language,
-    draw_box=False,
-    custom_scaling=1.0,
+    draw_box: bool = False,
+    custom_scaling: float = 1.0,
     font_color=None,
 ):
     target_path = Path.pathify(target)
@@ -68,6 +69,7 @@ def write_bitmap_fonts(
             custom_scaling,
             font_color,
         )
+
 
 def write_bitmap_font(
     target: os.PathLike | str,
@@ -187,7 +189,7 @@ def write_bitmap_font(
     # Build txi fields
     txi_font_info = TXIFontInformation()
     txi_font_info.isdoublebyte = not lang.is_8bit_encoding()  # does nothing ingame?
-    #txi_font_info.numchars = numchars
+    # txi_font_info.numchars = numchars
     txi_font_info.upper_left_coords = upper_left_coords
     txi_font_info.lower_right_coords = lower_right_coords
     # Normalize and set font metrics

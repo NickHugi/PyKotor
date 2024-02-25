@@ -2,23 +2,26 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
 
+from PyQt5 import QtCore
+from PyQt5.QtCore import QSortFilterProxyModel
+from PyQt5.QtGui import QBrush, QColor, QStandardItem, QStandardItemModel
+from PyQt5.QtWidgets import QFileDialog, QListWidgetItem, QMenu, QShortcut
+
 from pykotor.common.geometry import Vector3, Vector4
 from pykotor.common.language import Gender, Language, LocalizedString
 from pykotor.common.misc import ResRef
 from pykotor.extract.talktable import TalkTable
 from pykotor.resource.formats.gff import GFF, GFFContent, GFFFieldType, GFFList, GFFStruct, read_gff, write_gff
 from pykotor.resource.type import ResourceType
-from PyQt5 import QtCore
-from PyQt5.QtCore import QItemSelectionRange, QModelIndex, QSortFilterProxyModel
-from PyQt5.QtGui import QBrush, QColor, QStandardItem, QStandardItemModel
-from PyQt5.QtWidgets import QFileDialog, QListWidgetItem, QMenu, QShortcut, QWidget
 from toolset.gui.editor import Editor
-from utility.error_handling import format_exception_with_variables
 
 if TYPE_CHECKING:
     import os
 
-    from pykotor.extract.installation import Installation
+    from PyQt5.QtCore import QItemSelectionRange, QModelIndex
+    from PyQt5.QtWidgets import QWidget
+
+    from toolset.data.installation import HTInstallation
 
 _VALUE_NODE_ROLE = QtCore.Qt.UserRole + 1
 _TYPE_NODE_ROLE = QtCore.Qt.UserRole + 2
@@ -29,7 +32,7 @@ _TEXT_SUBSTRING_ROLE = QtCore.Qt.UserRole + 2
 
 
 class GFFEditor(Editor):
-    def __init__(self, parent: QWidget | None, installation: Installation | None = None):
+    def __init__(self, parent: QWidget | None, installation: HTInstallation | None = None):
         supported: list[ResourceType] = [
             ResourceType.GFF,
             ResourceType.UTC,
@@ -48,13 +51,15 @@ class GFFEditor(Editor):
             ResourceType.GIT,
             ResourceType.JRL,
             ResourceType.ITP,
+            ResourceType.RES,
         ]
         super().__init__(parent, "GFF Editor", "none", supported, supported, installation)
         self.resize(400, 250)
 
         self._talktable: TalkTable | None = installation.talktable() if installation else None
+        self._gff_content: GFFContent | None = None
 
-        from toolset.uic.editors.gff import Ui_MainWindow
+        from toolset.uic.editors.gff import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
 
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
@@ -141,6 +146,7 @@ class GFFEditor(Editor):
         """
         super().load(filepath, resref, restype, data)
         gff: GFF = read_gff(data)
+        self._gff_content = gff.content
 
         self.model.clear()
         self.model.setColumnCount(1)
@@ -222,28 +228,26 @@ class GFFEditor(Editor):
         Returns:
         -------
             bytes: The built GFF file
-            bytes: An empty byte array
-
-        Processing Logic:
-        ----------------
-            - Creates a GFFContent object to hold the GFF data
-            - Initializes a GFF object with the GFFContent
-            - Calls _build_struct to populate the GFF structure from the model
-            - Writes the populated GFF to a byte array
-            - Returns the byte array and an empty byte array.
+            bytes: An empty byte array (superclass uses for mdx)
         """
-        try:
-            content = GFFContent(f"{self._restype.extension.upper()} ")
-        except ValueError as e:
-            print(format_exception_with_variables(e))
-            content = GFFContent.GFF
+        gff_content = self._gff_content or GFFContent.from_res(self._resname or "")
+        gff_type = self._restype or ResourceType.GFF
 
-        gff = GFF(content)
+        exts = gff_type.extension.split(".")
+        test_content = gff_type.name.upper()
+        if len(exts) > 1 and exts[-1].lower() == "xml":
+            gff_type = ResourceType.GFF_XML
+            test_content = exts[-2].upper()
+        if test_content in GFFContent.__members__:
+            gff_content = GFFContent.__members__[test_content]
+        if not gff_content:
+            gff_content = GFFContent.GFF
 
+        gff = GFF(gff_content)
         self._build_struct(self.model.item(0, 0), gff.root)
 
         data = bytearray()
-        write_gff(gff, data)
+        write_gff(gff, data, gff_type)
         return data, b""
 
     def _build_struct(self, item: QStandardItem, gffStruct: GFFStruct):
@@ -410,7 +414,7 @@ class GFFEditor(Editor):
                 self.ui.lineEdit.setText(str(item.data(_VALUE_NODE_ROLE)))
             elif item.data(_TYPE_NODE_ROLE) == GFFFieldType.String:
                 self.ui.pages.setCurrentWidget(self.ui.textPage)
-                self.ui.textEdit.setPlainText(item.data(_VALUE_NODE_ROLE))
+                self.ui.textEdit.setPlainText(str(item.data(_VALUE_NODE_ROLE)))
             elif item.data(_TYPE_NODE_ROLE) == GFFFieldType.Struct:
                 set_widget(-1, 0xFFFFFFFF, item)
             elif item.data(_TYPE_NODE_ROLE) == GFFFieldType.List:
@@ -430,7 +434,6 @@ class GFFEditor(Editor):
                 self.ui.wVec4Spin.setValue(vec4.w)
             elif item.data(_TYPE_NODE_ROLE) == GFFFieldType.Binary:
                 self.ui.pages.setCurrentWidget(self.ui.blankPage)
-                ...  # TODO: Why is this here?
             elif item.data(_TYPE_NODE_ROLE) == GFFFieldType.LocalizedString:
                 locstring: LocalizedString = item.data(_VALUE_NODE_ROLE)
                 self.ui.pages.setCurrentWidget(self.ui.substringPage)
@@ -644,7 +647,7 @@ class GFFEditor(Editor):
 
         numeric = isinstance(item.data(_VALUE_NODE_ROLE), (float, int))
 
-        if not numeric and ftype in [
+        if not numeric and ftype in {
             GFFFieldType.UInt8,
             GFFFieldType.Int8,
             GFFFieldType.UInt16,
@@ -655,7 +658,7 @@ class GFFEditor(Editor):
             GFFFieldType.Int64,
             GFFFieldType.Single,
             GFFFieldType.Double,
-        ]:
+        }:
             # If the old data does not store a number but the new one does, set the value to 0.
             item.setData(0, _VALUE_NODE_ROLE)
         elif ftype == GFFFieldType.String:
@@ -703,18 +706,21 @@ class GFFEditor(Editor):
         parent.appendRow(item)
         self.refreshItemText(item)
 
+    def addNode(self, item: QStandardItem):
+        """Add a node from the tree model.
+
+        Args:
+        ----
+            item: The item to add
+        """
+        self.insertNode(item, "New Struct", GFFFieldType.Struct, GFFStruct())
+
     def removeNode(self, item: QStandardItem):
         """Remove a node from the tree model.
 
         Args:
         ----
             item: The item to remove
-
-        Processing Logic:
-        ----------------
-            - Get the parent item of the item to remove
-            - Remove the item's row from the parent
-            - This removes the item from the model.
         """
         item.parent().removeRow(item.row())
 
@@ -761,8 +767,8 @@ class GFFEditor(Editor):
             menu = QMenu(self)
 
             if item.data(_TYPE_NODE_ROLE) == GFFFieldType.List:
-                menu.addAction("Add Struct").triggered.connect(lambda: None)  # FIXME: call self.addStruct or whatever the method name is
-            elif item.data(_TYPE_NODE_ROLE) in [GFFFieldType.Struct, None]:
+                menu.addAction("Add Struct").triggered.connect(lambda: self.addNode(item))
+            elif item.data(_TYPE_NODE_ROLE) in {GFFFieldType.Struct, None}:
                 self._build_context_menu_gff_struct(menu, item)
 
             if item.data(_TYPE_NODE_ROLE) is not None:

@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Form implementation generated from reading ui file 'tools/HolocronToolset/ui/editors/tlk.ui'
+# Form implementation generated from reading ui file '..\src\ui\editors\tlk.ui'
 #
 # Created by: PyQt5 UI code generator 5.15.10
 #
@@ -91,8 +91,8 @@ class Ui_MainWindow(object):
         self.menubar.setObjectName("menubar")
         self.menuView = QtWidgets.QMenu(self.menubar)
         self.menuView.setObjectName("menuView")
-        self.menuFIle = QtWidgets.QMenu(self.menubar)
-        self.menuFIle.setObjectName("menuFIle")
+        self.menuFile = QtWidgets.QMenu(self.menubar)
+        self.menuFile.setObjectName("menuFile")
         self.menuLanguage = QtWidgets.QMenu(self.menubar)
         self.menuLanguage.setObjectName("menuLanguage")
         MainWindow.setMenuBar(self.menubar)
@@ -119,16 +119,16 @@ class Ui_MainWindow(object):
         self.menuView.addAction(self.actionGoTo)
         self.menuView.addAction(self.actionFind)
         self.menuView.addAction(self.actionInsert)
-        self.menuFIle.addAction(self.actionNew)
-        self.menuFIle.addAction(self.actionOpen)
-        self.menuFIle.addAction(self.actionSave)
-        self.menuFIle.addAction(self.actionSaveAs)
-        self.menuFIle.addSeparator()
-        self.menuFIle.addAction(self.actionRevert)
-        self.menuFIle.addSeparator()
-        self.menuFIle.addAction(self.actionClose)
+        self.menuFile.addAction(self.actionNew)
+        self.menuFile.addAction(self.actionOpen)
+        self.menuFile.addAction(self.actionSave)
+        self.menuFile.addAction(self.actionSaveAs)
+        self.menuFile.addSeparator()
+        self.menuFile.addAction(self.actionRevert)
+        self.menuFile.addSeparator()
+        self.menuFile.addAction(self.actionClose)
         self.menuLanguage.addAction(self.actionAuto_detect_slower)
-        self.menubar.addAction(self.menuFIle.menuAction())
+        self.menubar.addAction(self.menuFile.menuAction())
         self.menubar.addAction(self.menuView.menuAction())
         self.menubar.addAction(self.menuLanguage.menuAction())
 
@@ -144,7 +144,7 @@ class Ui_MainWindow(object):
         self.jumpButton.setText(_translate("MainWindow", "Jump"))
         self.label.setText(_translate("MainWindow", "Sound ResRef:"))
         self.menuView.setTitle(_translate("MainWindow", "Tools"))
-        self.menuFIle.setTitle(_translate("MainWindow", "File"))
+        self.menuFile.setTitle(_translate("MainWindow", "File"))
         self.menuLanguage.setTitle(_translate("MainWindow", "Language"))
         self.actionGoTo.setText(_translate("MainWindow", "Go to"))
         self.actionFind.setText(_translate("MainWindow", "Find"))

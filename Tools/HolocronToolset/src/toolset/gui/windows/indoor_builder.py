@@ -5,33 +5,27 @@ import json
 import math
 import shutil
 import zipfile
+
 from copy import copy, deepcopy
 from tempfile import TemporaryDirectory
 from typing import TYPE_CHECKING
 
 import requests
-from pykotor.common.geometry import Vector2, Vector3
-from pykotor.common.stream import BinaryReader, BinaryWriter
+
 from PyQt5 import QtCore
-from PyQt5.QtCore import QPoint, QPointF, QRectF, QTimer
+from PyQt5.QtCore import QPointF, QRectF, QTimer
 from PyQt5.QtGui import (
     QColor,
-    QImage,
-    QKeyEvent,
     QKeySequence,
-    QMouseEvent,
     QPainter,
     QPainterPath,
-    QPaintEvent,
     QPen,
     QPixmap,
     QTransform,
-    QWheelEvent,
 )
 from PyQt5.QtWidgets import (
     QDialog,
     QFileDialog,
-    QFormLayout,
     QListWidgetItem,
     QMainWindow,
     QMenu,
@@ -39,9 +33,12 @@ from PyQt5.QtWidgets import (
     QPushButton,
     QWidget,
 )
+
+from pykotor.common.geometry import Vector2, Vector3
+from pykotor.common.stream import BinaryReader, BinaryWriter
 from toolset.__main__ import is_frozen
 from toolset.config import UPDATE_INFO_LINK
-from toolset.data.indoorkit import Kit, KitComponent, KitComponentHook, load_kits
+from toolset.data.indoorkit import load_kits
 from toolset.data.indoormap import IndoorMap, IndoorMapRoom
 from toolset.gui.dialogs.asyncloader import AsyncLoader
 from toolset.gui.dialogs.indoor_settings import IndoorMapSettings
@@ -53,8 +50,21 @@ from utility.system.path import Path, PurePath
 if TYPE_CHECKING:
     import os
 
+    from PyQt5.QtCore import QPoint
+    from PyQt5.QtGui import (
+        QImage,
+        QKeyEvent,
+        QMouseEvent,
+        QPaintEvent,
+        QWheelEvent,
+    )
+    from PyQt5.QtWidgets import (
+        QFormLayout,
+    )
+
     from pykotor.resource.formats.bwm import BWMFace
     from pykotor.resource.formats.bwm.bwm_data import BWM
+    from toolset.data.indoorkit import Kit, KitComponent, KitComponentHook
     from toolset.data.installation import HTInstallation
 
 
@@ -83,7 +93,7 @@ class IndoorMapBuilder(QMainWindow):
         self._map: IndoorMap = IndoorMap()
         self._filepath: str = ""
 
-        from toolset.uic.windows.indoor_builder import Ui_MainWindow
+        from toolset.uic.windows.indoor_builder import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
 
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
@@ -155,7 +165,8 @@ class IndoorMapBuilder(QMainWindow):
             self.ui.kitSelect.addItem(kit.name, kit)
 
     def _refreshWindowTitle(self):
-        if self._filepath == "":
+        assert self._installation is not None
+        if not self._filepath:
             self.setWindowTitle(f"{self._installation.name} - Map Builder")
         else:
             self.setWindowTitle(f"{self._filepath} - {self._installation.name} - Map Builder")
@@ -305,7 +316,7 @@ class IndoorMapBuilder(QMainWindow):
         elif QtCore.Qt.MiddleButton in buttons and QtCore.Qt.Key_Control in keys:
             # MMB + CTRL
             self.ui.mapRenderer.rotateCamera(delta.x / 50)
-        elif QtCore.Qt.LeftButton in buttons and QtCore.Qt.Key_Control not in keys:
+        elif QtCore.Qt.LeftButton in buttons:
             # LMB
             rooms: list[IndoorMapRoom] = self.ui.mapRenderer.selectedRooms()
             if not rooms:
@@ -626,7 +637,7 @@ class IndoorMapRenderer(QWidget):
     def cameraZoom(self) -> float:
         """Returns the current zoom value of the camera.
 
-        Returns
+        Returns:
         -------
             The camera zoom value.
         """
@@ -655,7 +666,7 @@ class IndoorMapRenderer(QWidget):
     def cameraPosition(self) -> Vector2:
         """Returns the position of the camera.
 
-        Returns
+        Returns:
         -------
             The camera position vector.
         """
@@ -686,7 +697,7 @@ class IndoorMapRenderer(QWidget):
     def cameraRotation(self) -> float:
         """Returns the current angle of the camera in radians.
 
-        Returns
+        Returns:
         -------
             The camera angle in radians.
         """
@@ -912,7 +923,7 @@ class IndoorMapRenderer(QWidget):
             for room in self._map.rooms:
                 hook1, hook2 = self.getConnectedHooks(fakeCursorRoom, room)
                 if hook1 is not None:
-                    self._cursorPoint = ( room.position - fakeCursorRoom.hookPosition(hook1, False) + room.hookPosition(hook2, False) )
+                    self._cursorPoint = (room.position - fakeCursorRoom.hookPosition(hook1, False) + room.hookPosition(hook2, False))
 
         self._underMouseRoom = None
         for room in self._map.rooms:
@@ -950,7 +961,7 @@ class KitDownloader(QDialog):
     def __init__(self, parent: QWidget):
         super().__init__(parent)
 
-        from toolset.uic.dialogs.indoor_downloader import Ui_Dialog
+        from toolset.uic.dialogs.indoor_downloader import Ui_Dialog  # pylint: disable=C0415  # noqa: PLC0415
 
         self.ui = Ui_Dialog()
         self.ui.setupUi(self)
@@ -986,7 +997,7 @@ class KitDownloader(QDialog):
                 try:
                     localKitDict = json.loads(BinaryReader.load_file(kitPath))
                 except Exception as e:
-                    print(universal_simplify_exception(e),"\n in _setupDownloads for kit update check")
+                    print(universal_simplify_exception(e), "\n in _setupDownloads for kit update check")
                     button.setText("Missing JSON - click to redownload.")
                     button.setEnabled(True)
                 else:
@@ -1038,7 +1049,12 @@ class KitDownloader(QDialog):
                 button.setText("Download Failed")
                 button.setEnabled(True)
 
-    def download_file(self, url_or_repo: str, local_path: os.PathLike | str, repo_path=None):
+    def download_file(
+        self,
+        url_or_repo: str,
+        local_path: os.PathLike | str,
+        repo_path: os.PathLike | str | None = None,
+    ):
         local_path = Path(local_path)
         local_path.parent.mkdir(parents=True, exist_ok=True)
 
@@ -1085,7 +1101,7 @@ class KitDownloader(QDialog):
             elif item["type"] == "dir":
                 self.download_directory(repo, item_path, local_path)
 
-    def _get_update_data(self, link):
+    def _get_update_data(self, link: str | bytes):
         req: requests.Response = requests.get(link, timeout=15)
         req.raise_for_status()
         return req.json()
@@ -1119,14 +1135,14 @@ class KitDownloader(QDialog):
                         print(msg)
                         return False
                     shutil.copy(src_kit_json_path, kits_path / this_kit_json_filename)
-            except Exception as original_exception:  # noqa: BLE001
+            except Exception as original_exception:  # pylint: disable=W0718  # noqa: BLE001
                 print(format_exception_with_variables(original_exception))
                 return False
             finally:
                 try:
-                    if tempdir:
+                    if tempdir and Path(tempdir).safe_isdir():
                         shutil.rmtree(tempdir)
-                except Exception as exc:  # noqa: BLE001
+                except Exception as exc:  # pylint: disable=W0718  # noqa: BLE001
                     print(format_exception_with_variables(exc))
 
         if kits_zip_path.is_file():

@@ -2,12 +2,13 @@ from __future__ import annotations
 
 import os
 
-from pykotor.common.misc import Game
-from pykotor.tools.path import CaseAwarePath, find_kotor_paths_from_default
 from PyQt5 import QtCore
 from PyQt5.QtCore import QSettings
 from PyQt5.QtGui import QStandardItem, QStandardItemModel
 from PyQt5.QtWidgets import QWidget
+
+from pykotor.common.misc import Game
+from pykotor.tools.path import CaseAwarePath, find_kotor_paths_from_default
 from toolset.data.settings import Settings
 
 
@@ -232,8 +233,6 @@ class GlobalSettings(Settings):
         self.settings.setValue("installations", installations)
 
         return {name: InstallationConfig(name) for name in installations}
-
-
 
     # region Strings
     extractPath = Settings._addSetting(

@@ -1,9 +1,7 @@
 .git
 .idea
 venv
-.venv
-.venv_wsl
-.venv_win
+.venv*
 errorlog.txt
 dist
 build
@@ -63,3 +61,4 @@ Tools/HolocronToolset/src/toolset/kits/*/*
 *.egg-info*
 .venv
 .venv_wsl
+.secrets

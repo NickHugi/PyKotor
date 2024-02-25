@@ -2,11 +2,13 @@ from __future__ import annotations
 
 import threading
 import tkinter as tk
+
 from tkinter import ttk
-from typing import TYPE_CHECKING, Callable
+from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from typing_extensions import Literal
+    from collections.abc import Callable
+    from typing import Literal
 
 
 class LoadingDialog(tk.Toplevel):

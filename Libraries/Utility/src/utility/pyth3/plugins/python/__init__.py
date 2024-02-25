@@ -1,4 +1,2 @@
-"""
-Python object input
-"""
+"""Python object input."""
 

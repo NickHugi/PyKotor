@@ -3,6 +3,7 @@ from __future__ import annotations
 import argparse
 import pathlib
 import sys
+
 from copy import deepcopy
 from fractions import Fraction
 

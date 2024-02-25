@@ -2,23 +2,26 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+from PyQt5.QtGui import QColor, QImage, QPixmap
+from PyQt5.QtWidgets import QColorDialog
+
 from pykotor.common.geometry import SurfaceMaterial, Vector2
 from pykotor.common.misc import Color, ResRef
-from pykotor.extract.file import ResourceIdentifier, ResourceResult
+from pykotor.extract.file import ResourceIdentifier
 from pykotor.extract.installation import SearchLocation
 from pykotor.resource.formats.bwm import read_bwm
 from pykotor.resource.formats.gff import write_gff
 from pykotor.resource.formats.lyt import read_lyt
 from pykotor.resource.generics.are import ARE, ARENorthAxis, AREWindPower, dismantle_are, read_are
 from pykotor.resource.type import ResourceType
-from PyQt5.QtGui import QColor, QImage, QPixmap
-from PyQt5.QtWidgets import QColorDialog, QLabel, QWidget
 from toolset.data.installation import HTInstallation
 from toolset.gui.dialogs.edit.locstring import LocalizedStringDialog
 from toolset.gui.editor import Editor
 
 if TYPE_CHECKING:
     import os
+
+    from PyQt5.QtWidgets import QLabel, QWidget
 
     from pykotor.resource.formats.bwm.bwm_data import BWM
     from pykotor.resource.formats.lyt.lyt_data import LYT
@@ -55,7 +58,7 @@ class AREEditor(Editor):
         self._are: ARE = ARE()
         self._minimap = None
 
-        from toolset.uic.editors.are import Ui_MainWindow
+        from toolset.uic.editors.are import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
 
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
@@ -251,7 +254,7 @@ class AREEditor(Editor):
     def build(self) -> tuple[bytes, bytes]:
         """Builds the ARE data from UI controls.
 
-        Returns
+        Returns:
         -------
             tuple[bytes, bytes]: The ARE data and log
 

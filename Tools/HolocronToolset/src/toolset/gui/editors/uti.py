@@ -3,12 +3,13 @@ from __future__ import annotations
 from copy import deepcopy
 from typing import TYPE_CHECKING
 
+from PyQt5 import QtCore
+from PyQt5.QtWidgets import QDialog, QListWidgetItem, QShortcut, QTreeWidgetItem
+
 from pykotor.common.misc import ResRef
 from pykotor.resource.formats.gff import write_gff
 from pykotor.resource.generics.uti import UTI, UTIProperty, dismantle_uti, read_uti
 from pykotor.resource.type import ResourceType
-from PyQt5 import QtCore
-from PyQt5.QtWidgets import QDialog, QListWidgetItem, QShortcut, QTreeWidgetItem, QWidget
 from toolset.data.installation import HTInstallation
 from toolset.gui.dialogs.edit.locstring import LocalizedStringDialog
 from toolset.gui.editor import Editor
@@ -17,8 +18,10 @@ from utility.error_handling import assert_with_variable_trace, format_exception_
 if TYPE_CHECKING:
     import os
 
-    from pykotor.resource.formats.twoda.twoda_data import TwoDA
+    from PyQt5.QtWidgets import QWidget
     from typing_extensions import Literal
+
+    from pykotor.resource.formats.twoda.twoda_data import TwoDA
 
 
 class UTIEditor(Editor):
@@ -48,7 +51,7 @@ class UTIEditor(Editor):
 
         self._uti = UTI()
 
-        from toolset.uic.editors.uti import Ui_MainWindow
+        from toolset.uic.editors.uti import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
         self._setupMenus()
@@ -369,7 +372,7 @@ class UTIEditor(Editor):
         if not subtypeResname:
             return None
         subproperties: TwoDA = installation.htGetCache2DA(subtypeResname)
-        headerStrref: Literal['name', 'string_ref'] = "name" if "name" in subproperties.get_headers() else "string_ref"
+        headerStrref: Literal["name", "string_ref"] = "name" if "name" in subproperties.get_headers() else "string_ref"
         nameStrref: int | None = subproperties.get_row(subprop).get_integer(headerStrref)
         return (
             installation.talktable().string(nameStrref)
@@ -449,7 +452,7 @@ class PropertyEditor(QDialog):
         upgrades = installation.htGetCache2DA(HTInstallation.TwoDA_UPGRADES)
         self.ui.upgradeSelect.addItem("[None]", None)
         for i in range(upgrades.get_height()):
-            text = upgrades.get_cell(i, "label").replace("_" , " ").title()
+            text = upgrades.get_cell(i, "label").replace("_", " ").title()
             self.ui.upgradeSelect.addItem(text, i)
         if utiProperty.upgrade_type is not None:
             self.ui.upgradeSelect.setCurrentIndex(utiProperty.upgrade_type + 1)

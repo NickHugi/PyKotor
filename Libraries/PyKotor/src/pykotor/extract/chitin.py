@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import struct
+
 from typing import TYPE_CHECKING
 
 from pykotor.common.stream import BinaryReader, BinaryWriter
@@ -11,6 +12,8 @@ from utility.system.path import PurePath
 
 if TYPE_CHECKING:
     import os
+
+    from pykotor.common.misc import Game
 
 
 class Chitin:
@@ -24,14 +27,16 @@ class Chitin:
         self,
         key_path: os.PathLike | str,
         base_path: os.PathLike | str | None = None,
+        game: Game | None = None,
     ):
         self._key_path: CaseAwarePath = CaseAwarePath.pathify(key_path)
         base_path = base_path if base_path is not None else self._key_path.parent
         self._base_path: CaseAwarePath = CaseAwarePath.pathify(base_path)
 
-        self._resources: list[FileResource] = []
-        self._resource_dict: dict[str, list[FileResource]] = {}
-        self.load()
+        self._resources: list[FileResource]
+        self._resource_dict: dict[str, list[FileResource]]
+        self.game: Game | None = game
+        self.reload()
 
     def __iter__(
         self,
@@ -43,42 +48,43 @@ class Chitin:
     ):
         return len(self._resources)
 
-    def load(
-        self,
-    ):
+    def reload(self):
         """Reload the list of resource info linked from the chitin.key file."""
         self._resources = []
         self._resource_dict = {}
 
         keys, bifs = self._get_chitin_data()
-        for bif in bifs:
+        for bif in bifs:  # Loop through all bifs in the chitin.key
             self._resource_dict[bif] = []
-            absolute_bif_path = self._base_path / bif
-            with BinaryReader.from_file(absolute_bif_path) as reader:
-                _bif_file_type = reader.read_string(4)
-                _bif_file_version = reader.read_string(4)
-                resource_count = reader.read_uint32()
-                reader.skip(4)  # padding (always 0x00000000?) fixed resource count, unimplemented
-                resource_offset = reader.read_uint32()  # 0x10 always 20
+            absolute_bif_path = self._base_path.joinpath(bif)
+            if self.game is not None and self.game.is_ios():  # For some reason, the chitin.key references the .bif path instead of the correct .bzf path.
+                absolute_bif_path = absolute_bif_path.with_suffix(".bzf")
+            self.read_bif(absolute_bif_path, keys, bif)
 
-                reader.seek(resource_offset)  # 0x20
-                for _ in range(resource_count):
-                    res_id = reader.read_uint32()
-                    offset = reader.read_uint32()
-                    size = reader.read_uint32()
-                    restype_id = reader.read_uint32()
-
-                    resref = keys[res_id]
-                    restype = ResourceType.from_id(restype_id)
-                    resource = FileResource(
-                        resref,
-                        restype,
-                        size,
-                        offset,
-                        absolute_bif_path,
-                    )
-                    self._resources.append(resource)
-                    self._resource_dict[bif].append(resource)
+    def read_bif(
+        self,
+        bif_path: CaseAwarePath,
+        keys: dict[int, str],
+        bif_filename: str,
+    ):
+        with BinaryReader.from_file(bif_path) as reader:
+            _bif_file_type = reader.read_string(4)        # 0x0
+            _bif_file_version = reader.read_string(4)     # 0x4
+            resource_count = reader.read_uint32()         # 0x8
+            _fixed_resource_count = reader.read_uint32()  # unimplemented/padding (always 0x00000000?)
+            resource_offset = reader.read_uint32()        # 0x10 always the value hex 0x14 (dec 20)
+            reader.seek(resource_offset)                  # Skip to 0x14
+            for _ in range(resource_count):
+                # Initialize the FileResource and add to this chitin object's collections.
+                resource = FileResource(
+                    resname=keys[reader.read_uint32()],  # resref str
+                    offset=reader.read_uint32(),
+                    size=reader.read_uint32(),
+                    restype=ResourceType.from_id(reader.read_uint32()),
+                    filepath=bif_path,
+                )
+                self._resources.append(resource)
+                self._resource_dict[bif_filename].append(resource)
 
     def save(self):
         """(unfinished) Writes the list of resource info to the chitin.key file and associated .bif files."""
@@ -134,8 +140,8 @@ class Chitin:
 
     def _get_chitin_data(self) -> tuple[dict[int, str], list[str]]:
         with BinaryReader.from_file(self._key_path) as reader:
-            #_key_file_type = reader.read_string(4)  # noqa: ERA001
-            #_key_file_version = reader.read_string(4)  # noqa: ERA001
+            # _key_file_type = reader.read_string(4)  # noqa: ERA001
+            # _key_file_version = reader.read_string(4)  # noqa: ERA001
             reader.skip(8)
             bif_count = reader.read_uint32()
             key_count = reader.read_uint32()

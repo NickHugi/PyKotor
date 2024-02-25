@@ -2,13 +2,16 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any, Callable, Generator
 
-from pykotor.resource.type import ResourceType
 from PyQt5 import QtCore
-from PyQt5.QtWidgets import QDialog, QListWidgetItem, QWidget
+from PyQt5.QtWidgets import QDialog, QListWidgetItem
+
+from pykotor.resource.type import ResourceType
 from toolset.gui.dialogs.asyncloader import AsyncBatchLoader
 from toolset.utils.window import openResourceEditor
 
 if TYPE_CHECKING:
+    from PyQt5.QtWidgets import QWidget
+
     from pykotor.extract.file import FileResource
     from toolset.data.installation import HTInstallation
 
@@ -16,9 +19,9 @@ if TYPE_CHECKING:
 class FileSearcher(QDialog):
 
     def __init__(self, parent: QWidget, installations: dict[str, HTInstallation]):
-        super().__init__(self)
+        super().__init__(parent)
 
-        from toolset.uic.dialogs import search
+        from toolset.uic.dialogs import search  # pylint: disable=C0415  # noqa: PLC0415
         self.ui = search.Ui_Dialog()
         self.ui.setupUi(self)
 
@@ -43,7 +46,7 @@ class FileSearcher(QDialog):
             searchOverride: {True if override search is checked, False otherwise}
             checkTypes: {List of selected resource types}.
 
-        Returns
+        Returns:
         -------
             None
         {Processes user search parameters by:
@@ -118,19 +121,19 @@ class FileSearcher(QDialog):
                 for folder in installation.override_list():
                     yield from installation.override_resources(folder)
 
-        lowercase_text = text.lower()
+        searchText = text.lower() if caseSensitive else text
 
         def search(resource: FileResource):
             resource_name: str = resource.resname()
 
-            name_check: bool = text in resource_name if caseSensitive else lowercase_text in resource_name.lower()
+            name_check: bool = searchText in (resource_name if caseSensitive else resource_name.lower())
             if name_check:
                 results.append(resource)
             if name_check or filenamesOnly:
                 return
 
-            resource_data: str = resource.data().decode(encoding="utf-8", errors="ignore")  # TODO: use a library to find strings in binary file data.
-            data_check: bool = text in resource_data if caseSensitive else lowercase_text in resource_data.lower()
+            resource_data: str = resource.data().decode(encoding="utf-8", errors="ignore")  # HACK:
+            data_check: bool = searchText in (resource_data if caseSensitive else resource_data.lower())
             if data_check:
                 results.append(resource)
 
@@ -158,7 +161,7 @@ class FileResults(QDialog):
             - Save search results and installation object as member variables
             - Sort results alphabetically.
         """
-        super().__init__(self)
+        super().__init__(parent)
 
         from toolset.uic.dialogs.search_result import Ui_Dialog
         self.ui = Ui_Dialog()
@@ -199,7 +202,7 @@ class FileResults(QDialog):
         self.selection = item.data(QtCore.Qt.UserRole) if item is not None else None
         super().accept()
 
-    def open(self):  # noqa: A003
+    def open(self):
         """Opens the current item in the result list.
 
         Args:

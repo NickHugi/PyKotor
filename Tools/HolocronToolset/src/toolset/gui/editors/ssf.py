@@ -2,16 +2,20 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from pykotor.extract.talktable import StringResult, TalkTable
+from PyQt5.QtWidgets import QFileDialog
+
+from pykotor.extract.talktable import TalkTable
 from pykotor.resource.formats.ssf import SSF, SSFSound, read_ssf, write_ssf
 from pykotor.resource.type import ResourceType
-from PyQt5.QtWidgets import QFileDialog, QLineEdit, QWidget
 from toolset.gui.editor import Editor
 
 if TYPE_CHECKING:
     import os
 
+    from PyQt5.QtWidgets import QLineEdit, QWidget
+
     from pykotor.extract.installation import Installation
+    from pykotor.extract.talktable import StringResult
 
 
 class SSFEditor(Editor):
@@ -36,7 +40,7 @@ class SSFEditor(Editor):
 
         self._talktable: TalkTable | None = installation.talktable() if installation else None
 
-        from toolset.uic.editors.ssf import Ui_MainWindow
+        from toolset.uic.editors.ssf import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
 
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)

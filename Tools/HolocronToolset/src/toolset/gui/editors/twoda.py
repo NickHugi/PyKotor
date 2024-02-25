@@ -4,16 +4,20 @@ from enum import IntEnum
 from typing import TYPE_CHECKING
 
 import pyperclip
-from pykotor.resource.formats.twoda import TwoDA, read_2da, write_2da
-from pykotor.resource.type import ResourceType
+
 from PyQt5.QtCore import QSortFilterProxyModel
 from PyQt5.QtGui import QStandardItem, QStandardItemModel
-from PyQt5.QtWidgets import QAction, QMessageBox, QWidget
+from PyQt5.QtWidgets import QAction, QMessageBox
+
+from pykotor.resource.formats.twoda import TwoDA, read_2da, write_2da
+from pykotor.resource.type import ResourceType
 from toolset.gui.editor import Editor
 from utility.error_handling import assert_with_variable_trace
 
 if TYPE_CHECKING:
     import os
+
+    from PyQt5.QtWidgets import QWidget
 
     from toolset.data.installation import HTInstallation
 
@@ -38,7 +42,7 @@ class TwoDAEditor(Editor):
         super().__init__(parent, "2DA Editor", "none", supported, supported, installation)
         self.resize(400, 250)
 
-        from toolset.uic.editors.twoda import Ui_MainWindow
+        from toolset.uic.editors.twoda import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
         self._setupMenus()
@@ -211,7 +215,7 @@ class TwoDAEditor(Editor):
             twoda.add_row()
             twoda.set_label(i, self.model.item(i, 0).text())
             for j, header in enumerate(twoda.get_headers()):
-                twoda.set_cell(i, header, self.model.item(i, j+1).text())
+                twoda.set_cell(i, header, self.model.item(i, j + 1).text())
 
         data = bytearray()
         assert self._restype, assert_with_variable_trace(bool(self._restype), "self._restype must be valid.")

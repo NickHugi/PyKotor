@@ -19,6 +19,9 @@ if TYPE_CHECKING:
 
     from pykotor.resource.formats.gff.gff_data import GFF
     from PyQt5.QtWidgets import QWidget
+
+    from pykotor.common.misc import CaseInsensitiveDict
+    from pykotor.resource.formats.gff.gff_data import GFF
     from toolset.data.installation import HTInstallation
 
 
@@ -43,7 +46,7 @@ class UTMEditor(Editor):
 
         self._utm: UTM = UTM()
 
-        from toolset.uic.editors.utm import Ui_MainWindow
+        from toolset.uic.editors.utm import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
         self._setupMenus()
@@ -111,7 +114,7 @@ class UTMEditor(Editor):
     def build(self) -> tuple[bytes, bytes]:
         """Builds a UTM object from UI fields.
 
-        Returns
+        Returns:
         -------
             data: The built UTM data.
             b"": An empty bytes object.

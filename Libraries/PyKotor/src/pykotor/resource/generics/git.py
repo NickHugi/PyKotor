@@ -1,8 +1,10 @@
 from __future__ import annotations
 
 import math
+
 from abc import ABC, abstractmethod
 from enum import IntEnum
+from typing import TYPE_CHECKING, NoReturn
 
 from pykotor.common.geometry import Polygon3, Vector2, Vector3, Vector4
 from pykotor.common.language import LocalizedString
@@ -17,7 +19,10 @@ from pykotor.resource.generics.utp import UTP, bytes_utp
 from pykotor.resource.generics.uts import UTS, bytes_uts
 from pykotor.resource.generics.utt import UTT, bytes_utt
 from pykotor.resource.generics.utw import UTW, bytes_utw
-from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES, ResourceType
+from pykotor.resource.type import ResourceType
+
+if TYPE_CHECKING:
+    from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES
 
 
 class GIT:
@@ -48,7 +53,7 @@ class GIT:
     ) -> list[GITInstance]:
         """Returns a list of all instances stored inside the GIT, regardless of the type.
 
-        Returns
+        Returns:
         -------
             A list of all stored instances.
         """
@@ -509,7 +514,7 @@ class GITEncounter(GITInstance):
         yaw: float,
         pitch: float,
         roll: float,
-    ):
+    ) -> NoReturn:
         msg = "Encounters cannot be rotated."
         raise ValueError(msg)
 
@@ -631,7 +636,7 @@ class GITSound(GITInstance):
         yaw: float,
         pitch: float,
         roll: float,
-    ):
+    ) -> NoReturn:
         msg = "Sounds cannot be rotated."
         raise ValueError(msg)
 
@@ -742,7 +747,7 @@ class GITTrigger(GITInstance):
         yaw: float,
         pitch: float,
         roll: float,
-    ):
+    ) -> NoReturn:
         msg = "Triggers cannot be rotated."
         raise ValueError(msg)
 

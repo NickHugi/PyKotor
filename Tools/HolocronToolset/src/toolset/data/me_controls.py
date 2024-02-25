@@ -2,20 +2,23 @@ from __future__ import annotations
 
 import json
 import math
-from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, Any
 
-from jsmin import jsmin
-from pykotor.common.geometry import Vector2, Vector3
-from pykotor.common.stream import BinaryReader
-from pykotor.gl.scene import Camera
-from pykotor.tools.encoding import decode_bytes_with_fallbacks
+from abc import ABC, abstractmethod
+from typing import TYPE_CHECKING, Any, NoReturn
+
 from PyQt5 import QtCore
 from PyQt5.QtCore import QPoint
 from PyQt5.QtGui import QKeySequence
+from jsmin import jsmin
+
+from pykotor.common.geometry import Vector3
+from pykotor.common.stream import BinaryReader
+from pykotor.gl.scene import Camera
+from pykotor.tools.encoding import decode_bytes_with_fallbacks
 from utility.system.path import Path
 
 if TYPE_CHECKING:
+    from pykotor.common.geometry import Vector2
     from pykotor.resource.generics.git import GITInstance
     from toolset.gui.widgets.renderer.module import ModuleRenderer
 
@@ -175,7 +178,7 @@ class ModuleEditorControls(ABC):
 
     def alterCameraRotation(self, yaw: float, pitch: float):
         self.renderer.scene.camera.yaw += yaw
-        self.renderer.scene.camera.pitch = min(math.pi-0.000001, max(0.000001, self.renderer.scene.camera.pitch + pitch))
+        self.renderer.scene.camera.pitch = min(math.pi - 0.000001, max(0.000001, self.renderer.scene.camera.pitch + pitch))
 
     def setCameraRotation(self, yaw: float, pitch: float):
         self.renderer.scene.camera.yaw = yaw
@@ -312,8 +315,6 @@ class DynamicModuleEditorControls(ModuleEditorControls):
             array.append(DCItem(keys, mouse, effects))
 
     def onMouseMoved(self, screen: Vector2, delta: Vector2, buttons: set[int], keys: set[int]):
-        ...
-
         for event in self.mouseMoveEvents:
             if (event.mouse == buttons or event.mouse is None) and (event.keys == keys or event.keys is None):
                 for effect in event.effects:
@@ -380,8 +381,8 @@ class HolocronModuleEditorControls(DynamicModuleEditorControls):
         self.mouseMoveEvents: list[DCItem] = [
             DCItem({getKeyCode("CTRL")}, {getMouseCode("LEFT")}, [DCEffectAlterCameraPosition("panCamSensitivity", "cx", "cy", 0)]),
             DCItem({getKeyCode("CTRL")}, {getMouseCode("MIDDLE")}, [DCEffectAlterCameraRotation("rotateCamSensitivity", "dx", "dy")]),
-            DCItem(set(),      {getMouseCode("LEFT")}, [DCEffectAlterObjectPosition("panObjSensitivity", True, "cx", "cy", 0)]),
-            DCItem(set(),      {getMouseCode("MIDDLE")}, [DCEffectAlterObjectRotation("rotateObjSensitivity", "dx")]),
+            DCItem(set(), {getMouseCode("LEFT")}, [DCEffectAlterObjectPosition("panObjSensitivity", True, "cx", "cy", 0)]),
+            DCItem(set(), {getMouseCode("MIDDLE")}, [DCEffectAlterObjectRotation("rotateObjSensitivity", "dx")]),
         ]
         self.mousePressEvents: list[DCItem] = [
             DCItem(set(), {getMouseCode("LEFT")}, [DCEffectSelectObjectAtMouse()]),
@@ -393,16 +394,16 @@ class HolocronModuleEditorControls(DynamicModuleEditorControls):
         ]
         self.keyPressEvents: list[DCItem] = [
             DCItem({getKeyCode("1")}, set(), [DCEffectSetCameraRotation(0, "crp")]),
-            DCItem({getKeyCode("3")}, set(), [DCEffectSetCameraRotation(0, "crp"), DCEffectAlterCameraRotation(None, math.pi/2, 0)]),
+            DCItem({getKeyCode("3")}, set(), [DCEffectSetCameraRotation(0, "crp"), DCEffectAlterCameraRotation(None, math.pi / 2, 0)]),
             DCItem({getKeyCode("7")}, set(), [DCEffectSetCameraRotation("cry", 0)]),
-            DCItem({getKeyCode("4")}, set(), [DCEffectAlterCameraRotation(None, math.pi/8, 0)]),
-            DCItem({getKeyCode("6")}, set(), [DCEffectAlterCameraRotation(None, -math.pi/8, 0)]),
-            DCItem({getKeyCode("8")}, set(), [DCEffectAlterCameraRotation(None, 0, math.pi/8)]),
-            DCItem({getKeyCode("2")}, set(), [DCEffectAlterCameraRotation(None, 0, -math.pi/8)]),
-            DCItem({getKeyCode("W")}, set(), [DCEffectAlterCameraRotation(None, 0, math.pi/8)]),
-            DCItem({getKeyCode("A")}, set(), [DCEffectAlterCameraRotation(None, math.pi/8, 0)]),
-            DCItem({getKeyCode("S")}, set(), [DCEffectAlterCameraRotation(None, 0, -math.pi/8)]),
-            DCItem({getKeyCode("D")}, set(), [DCEffectAlterCameraRotation(None, -math.pi/8, 0)]),
+            DCItem({getKeyCode("4")}, set(), [DCEffectAlterCameraRotation(None, math.pi / 8, 0)]),
+            DCItem({getKeyCode("6")}, set(), [DCEffectAlterCameraRotation(None, -math.pi / 8, 0)]),
+            DCItem({getKeyCode("8")}, set(), [DCEffectAlterCameraRotation(None, 0, math.pi / 8)]),
+            DCItem({getKeyCode("2")}, set(), [DCEffectAlterCameraRotation(None, 0, -math.pi / 8)]),
+            DCItem({getKeyCode("W")}, set(), [DCEffectAlterCameraRotation(None, 0, math.pi / 8)]),
+            DCItem({getKeyCode("A")}, set(), [DCEffectAlterCameraRotation(None, math.pi / 8, 0)]),
+            DCItem({getKeyCode("S")}, set(), [DCEffectAlterCameraRotation(None, 0, -math.pi / 8)]),
+            DCItem({getKeyCode("D")}, set(), [DCEffectAlterCameraRotation(None, -math.pi / 8, 0)]),
             DCItem({getKeyCode("Q")}, set(), [DCEffectAlterCameraPosition(None, 0, 0, 1)]),
             DCItem({getKeyCode("Z")}, set(), [DCEffectAlterCameraPosition(None, 0, 0, -1)]),
         ]
@@ -426,7 +427,7 @@ class DCVariable:
     def get(self) -> Any:
         raise NotImplementedError
 
-    def set(self, value: Any):
+    def set(self, value: Any) -> NoReturn:
         raise NotImplementedError
 
 
@@ -515,66 +516,64 @@ class DCEffect(ABC):
             - Performs camera transformations on aliases like "cpdx"
             - Returns float value or 0 if not matched.
         """
-        if isinstance(value, str):
-            output = 0.0
-            modifier = 1.0
-            if value.startswith("-"):
-                modifier = -1.0
-                value = value[1:]
+        if not isinstance(value, str):
+            return value if isinstance(value, (float, int)) else 0
+        output = 0.0
+        modifier = 1.0
+        if value.startswith("-"):
+            modifier = -1.0
+            value = value[1:]
 
-            if value == "dx":
-                output = dx
-            elif value == "dy":
-                output = dy
+        if value == "dx":
+            output = dx
+        elif value == "dy":
+            output = dy
 
-            elif value == "cpdxFlat":
-                forward = -dy * controls.renderer.scene.camera.forward()
-                sideward = dx * controls.renderer.scene.camera.sideward()
-                output = -(forward.x + sideward.x)
-            elif value == "cpdyFlat":
-                forward = -dy * controls.renderer.scene.camera.forward()
-                sideward = dx * controls.renderer.scene.camera.sideward()
-                output = -(forward.y + sideward.y)
+        elif value == "cpdxFlat":
+            forward = -dy * controls.renderer.scene.camera.forward()
+            sideward = dx * controls.renderer.scene.camera.sideward()
+            output = -(forward.x + sideward.x)
+        elif value == "cpdyFlat":
+            forward = -dy * controls.renderer.scene.camera.forward()
+            sideward = dx * controls.renderer.scene.camera.sideward()
+            output = -(forward.y + sideward.y)
 
-            elif value == "cpdx":
-                sideward = dx * controls.renderer.scene.camera.sideward(False)
-                upward = dy * controls.renderer.scene.camera.upward(False)
-                output = -(upward.x + sideward.x)
-            elif value == "cpdy":
-                sideward = dx * controls.renderer.scene.camera.sideward(False)
-                upward = dy * controls.renderer.scene.camera.upward(False)
-                output = -(upward.y + sideward.y)
-            elif value == "cpdz":
-                sideward = dx * controls.renderer.scene.camera.sideward(False)
-                upward = dy * controls.renderer.scene.camera.upward(False)
-                output = -(upward.z + sideward.z)
+        elif value == "cpdx":
+            sideward = dx * controls.renderer.scene.camera.sideward(False)
+            upward = dy * controls.renderer.scene.camera.upward(False)
+            output = -(upward.x + sideward.x)
+        elif value == "cpdy":
+            sideward = dx * controls.renderer.scene.camera.sideward(False)
+            upward = dy * controls.renderer.scene.camera.upward(False)
+            output = -(upward.y + sideward.y)
+        elif value == "cpdz":
+            sideward = dx * controls.renderer.scene.camera.sideward(False)
+            upward = dy * controls.renderer.scene.camera.upward(False)
+            output = -(upward.z + sideward.z)
 
-            elif value == "cpxFlat":
-                forward = controls.renderer.scene.camera.forward()
-                output = forward.x
-            elif value == "cpyFlat":
-                forward = controls.renderer.scene.camera.forward()
-                output = forward.y
+        elif value == "cpxFlat":
+            forward = controls.renderer.scene.camera.forward()
+            output = forward.x
+        elif value == "cpyFlat":
+            forward = controls.renderer.scene.camera.forward()
+            output = forward.y
 
-            elif value == "cpx":
-                forward = controls.renderer.scene.camera.sideward(False)
-                output = forward.x
-            elif value == "cpy":
-                forward = controls.renderer.scene.camera.sideward(False)
-                output = forward.y
-            elif value == "cpz":
-                forward = controls.renderer.scene.camera.sideward(False)
-                output = forward.z
+        elif value == "cpx":
+            forward = controls.renderer.scene.camera.sideward(False)
+            output = forward.x
+        elif value == "cpy":
+            forward = controls.renderer.scene.camera.sideward(False)
+            output = forward.y
+        elif value == "cpz":
+            forward = controls.renderer.scene.camera.sideward(False)
+            output = forward.z
 
-            elif value == "cry":
-                output = controls.renderer.scene.camera.yaw
-            elif value == "crp":
-                output = controls.renderer.scene.camera.pitch
+        elif value == "cry":
+            output = controls.renderer.scene.camera.yaw
+        elif value == "crp":
+            output = controls.renderer.scene.camera.pitch
 
-            return output * modifier
-        if isinstance(value, (float, int)):
-            return value
-        return 0
+        return output * modifier
 # endregion
 
 

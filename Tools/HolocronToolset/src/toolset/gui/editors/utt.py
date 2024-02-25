@@ -17,6 +17,8 @@ if TYPE_CHECKING:
     from pykotor.resource.formats.twoda.twoda_data import TwoDA
     from PyQt5.QtWidgets import QWidget
 
+    from pykotor.resource.formats.twoda.twoda_data import TwoDA
+
 
 class UTTEditor(Editor):
     def __init__(self, parent: QWidget | None, installation: HTInstallation | None = None):
@@ -38,7 +40,7 @@ class UTTEditor(Editor):
         supported = [ResourceType.UTT]
         super().__init__(parent, "Trigger Editor", "trigger", supported, supported, installation)
 
-        from toolset.uic.editors.utt import Ui_MainWindow
+        from toolset.uic.editors.utt import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
         self._setupMenus()
@@ -125,7 +127,7 @@ class UTTEditor(Editor):
     def build(self) -> tuple[bytes, bytes]:
         """Builds an UTT from UI input.
 
-        Returns
+        Returns:
         -------
             tuple[bytes, bytes]: A tuple containing the GFF data (bytes) and any errors (bytes).
 
