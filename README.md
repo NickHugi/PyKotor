@@ -70,5 +70,3 @@ As shown, this will save `C_Gammorean01.tga` to the current directory.
 
 ## License
 This repository falls under the [GPLv3 License](https://github.com/NickHugi/PyKotor/blob/master/LICENSE).
-
-![Test Status](https://img.shields.io/badge/tests-ubuntu-3.11-0%20passed%2C%20%20failed-brightgreen)
