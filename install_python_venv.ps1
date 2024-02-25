@@ -158,7 +158,7 @@ function Install-Linux-Deps {
                 }
                 "almalinux" {
                     sudo dnf update -y
-                    sudo dnf upgrade -y
+                    #sudo dnf upgrade -y
                     #sudo dnf install python38 -y  # Won't work because the main binary doesn't contain tkinter.
                     Find-Python -intrnal
                     if ( $global:pythonInstallPath -eq "") {

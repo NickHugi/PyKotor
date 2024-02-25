@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import ctypes
 import json
+import os
 import tkinter as tk
 
 from functools import partial
@@ -11,7 +12,8 @@ from typing import Any
 
 from utility.system.path import Path
 
-ctypes.windll.shcore.SetProcessDpiAwareness(True)  # noqa: FBT003
+if os.name == "nt":
+    ctypes.windll.shcore.SetProcessDpiAwareness(True)  # noqa: FBT003
 
 # Current File Path
 file_path = None
