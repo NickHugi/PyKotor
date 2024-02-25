@@ -47,6 +47,7 @@ default_content: dict[str, Any] = {
 def rgbToHex(rgb) -> str:
     return "#{:02x}{:02x}{:02x}".format(*rgb)
 
+
 # Add Different Types of Tags that can be added to the document.
 tag_types: dict[str, dict[str, str]] = {
     # Font Settings
@@ -76,7 +77,10 @@ tag_types: dict[str, dict[str, str]] = {
 
 def main():
     # Handle File Events
-    def handle_file_manager(event: tk.Tk | None = None, action=None):
+    def handle_file_manager(
+        event: tk.Tk | None = None,
+        action: str | None = None,
+    ):
         global document
         global file_path
 
@@ -206,6 +210,7 @@ def main():
         format_menu.add_command(label=tag_type, command=partial(tagToggle, tag_name=tag_type.lower()))
 
     root.mainloop()
+
 
 if __name__ == "__main__":
     main()
