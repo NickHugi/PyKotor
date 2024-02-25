@@ -295,7 +295,7 @@ class TestCompileInstallation(unittest.TestCase):
             else:
                 # if not isinstance(ncs_result, NCS):
                 #    self.log_file(nss_path.name, filepath="bizarre_incompatible.txt")
-                assert isinstance(ncs_result, NCS), f"{nss_path.name} was compiled and return as {type(ncs_result)} instead of NCS."  # noqa: S101
+                assert isinstance(ncs_result, NCS), f"{nss_path.name} was compiled and return as {ncs_result.__class__} instead of NCS."  # noqa: S101
 
     def _test_builtin_compile_nss(self, game: Game):
         for script_info in self.all_scripts[game]:
@@ -317,7 +317,7 @@ class TestCompileInstallation(unittest.TestCase):
             else:
                 # if not isinstance(ncs_result, NCS):
                 #    self.log_file(nss_path.name, filepath="bizarre_incompatible.txt")
-                assert isinstance(ncs_result, NCS), f"{nss_path.name} was compiled and return as {type(ncs_result)} instead of NCS."  # noqa: S101
+                assert isinstance(ncs_result, NCS), f"{nss_path.name} was compiled and return as {ncs_result.__class__} instead of NCS."  # noqa: S101
 
     @unittest.skipIf(
         not K1_PATH or not pathlib.Path(K1_PATH).joinpath("chitin.key").is_file(),

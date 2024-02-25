@@ -1,2 +1,0 @@
-bumpyshinytexture CM_Dantne
-bumpmaptexture LDA_flr09b
