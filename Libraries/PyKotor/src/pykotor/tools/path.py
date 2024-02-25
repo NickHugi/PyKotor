@@ -179,7 +179,12 @@ class CaseAwarePath(InternalWindowsPath if os.name == "nt" else InternalPosixPat
         # Extract the differing prefix part as a new Path object
         return abs_parts[:start_index_of_rel_in_abs]
 
-    def relative_to(self, *args, walk_up=False, **kwargs) -> InternalPath:
+    def relative_to(
+        self,
+        *args: PathElem,
+        walk_up: bool = False,
+        **kwargs,
+    ) -> InternalPath:
         if not args or "other" in kwargs:
             raise TypeError("relative_to() missing 1 required positional argument: 'other'")  # noqa: TRY003, EM101
 
@@ -201,7 +206,7 @@ class CaseAwarePath(InternalWindowsPath if os.name == "nt" else InternalPosixPat
             raise ValueError(msg)
 
         if isinstance(self, CaseAwarePath) and not pathlib.Path(replacement).exists():
-            prefixes = self.extract_absolute_prefix(InternalPath(replacement), parsed_other)
+            prefixes = self.extract_absolute_prefix(InternalPath(replacement), InternalPath(parsed_other))
             return self.get_case_sensitive_path(replacement, prefixes)
         return self.__class__(replacement)
 
