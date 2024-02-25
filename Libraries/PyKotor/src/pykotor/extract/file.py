@@ -164,9 +164,9 @@ class FileResource:
 
                 if not _internal and not self._task_running:
                     def background_task(res: FileResource, sentdata: bytes):
-                        self._task_running = True
-                        res._file_hash = generate_hash(sentdata)  # noqa: SLF001
-                        self._task_running = False
+                        res._task_running = True
+                        res._file_hash = generate_hash(sentdata)
+                        res._task_running = False
 
                     with ThreadPoolExecutor(thread_name_prefix="background_fileresource_sha1hash_calculation") as executor:
                         executor.submit(background_task, self, data)
