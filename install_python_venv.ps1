@@ -1,5 +1,5 @@
 param(
-  [switch]$noprompt = $false,
+  [switch]$noprompt,
   [string]$venv_name = ".venv"
 )
 

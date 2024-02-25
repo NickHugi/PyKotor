@@ -1,5 +1,5 @@
 param(
-  [switch]$noprompt = $false,
+  [switch]$noprompt,
   [string]$venv_name = ".venv"
 )
 $this_noprompt = $noprompt
@@ -10,9 +10,12 @@ Write-Host "The path to the script directory is: $scriptPath"
 Write-Host "The path to the root directory is: $rootPath"
 
 Write-Host "Initializing python virtual environment..."
-$this_noprompt_arg = if ($this_noprompt) {'-noprompt'} else {''}
-$venv_name_arg = if ($venv_name) {"-venv_name $venv_name"} else {''}
-. $rootPath/install_python_venv.ps1 $this_noprompt_arg $venv_name_arg
+Write-Host "Initializing python virtual environment..."
+if ($this_noprompt) {
+    . $rootPath/install_python_venv.ps1 -noprompt -venv_name $venv_name
+} else {
+    . $rootPath/install_python_venv.ps1 -venv_name $venv_name
+}
 
 Write-Host "Installing required packages to build the kotordiff tool..."
 . $pythonExePath -m pip install --upgrade pip --prefer-binary --progress-bar on
