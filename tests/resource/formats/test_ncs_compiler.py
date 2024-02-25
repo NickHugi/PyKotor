@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import os
 import pathlib
 import sys
@@ -12,9 +14,10 @@ def add_sys_path(p: pathlib.Path):
         sys.path.append(working_dir)
 if PYKOTOR_PATH.joinpath("pykotor").exists():
     add_sys_path(PYKOTOR_PATH)
-    os.chdir(PYKOTOR_PATH.parent)
 if UTILITY_PATH.joinpath("utility").exists():
     add_sys_path(UTILITY_PATH)
+
+import math
 
 from pykotor.common.geometry import Vector3
 from pykotor.common.scriptdefs import KOTOR_CONSTANTS, KOTOR_FUNCTIONS
@@ -25,12 +28,24 @@ from pykotor.resource.formats.ncs.compiler.lexer import NssLexer
 from pykotor.resource.formats.ncs.compiler.parser import NssParser
 from utility.system.path import Path
 
+K1_PATH: str | None = os.environ.get("K1_PATH")
+K2_PATH: str | None = os.environ.get("K2_PATH")
 
 class TestNSSCompiler(unittest.TestCase):
-    def compile(self, script: str, library=None, library_lookup=None) -> NCS:
+    def compile(
+        self,
+        script: str,
+        library: dict[str, bytes] | None = None,
+        library_lookup: list[str | Path] | list[str] | list[Path] | str | Path | None = None,
+    ) -> NCS:
+        if library is None:
+            library = {}
         nssLexer = NssLexer()
         nssParser = NssParser(
-            library=library, constants=KOTOR_CONSTANTS, functions=KOTOR_FUNCTIONS, library_lookup=library_lookup
+            library=library,
+            constants=KOTOR_CONSTANTS,
+            functions=KOTOR_FUNCTIONS,
+            library_lookup=library_lookup
         )
 
         parser = nssParser.parser
@@ -39,6 +54,7 @@ class TestNSSCompiler(unittest.TestCase):
         ncs = NCS()
         t.compile(ncs)
         return ncs
+
 
     # region Engine Call
     def test_enginecall(self):
@@ -1692,7 +1708,7 @@ class TestNSSCompiler(unittest.TestCase):
         interpreter = Interpreter(ncs)
         interpreter.run()
 
-        self.assertTrue(any((inst for inst in ncs.instructions if inst.ins_type == NCSInstructionType.SAVEBP)))
+        self.assertTrue(any(inst for inst in ncs.instructions if inst.ins_type == NCSInstructionType.SAVEBP))
 
     def test_global_initializations(self):
         ncs = self.compile(
@@ -1717,7 +1733,7 @@ class TestNSSCompiler(unittest.TestCase):
         self.assertEqual(interpreter.action_snapshots[-3].arg_values[0], 0)
         self.assertEqual(interpreter.action_snapshots[-2].arg_values[0], 0.0)
         self.assertEqual(interpreter.action_snapshots[-1].arg_values[0], "")
-        self.assertTrue(any((inst for inst in ncs.instructions if inst.ins_type == NCSInstructionType.SAVEBP)))
+        self.assertTrue(any(inst for inst in ncs.instructions if inst.ins_type == NCSInstructionType.SAVEBP))
 
     def test_global_initialization_with_unary(self):
         ncs = self.compile(
@@ -2139,7 +2155,7 @@ class TestNSSCompiler(unittest.TestCase):
         )
 
         interpreter = Interpreter(ncs)
-        interpreter.set_mock("Vector", lambda x, y, z: Vector3(x, y, z))
+        interpreter.set_mock("Vector", Vector3)
         interpreter.set_mock("VectorMagnitude", lambda vec: vec.magnitude())
         interpreter.run()
 
@@ -2179,7 +2195,7 @@ class TestNSSCompiler(unittest.TestCase):
         )
 
         interpreter = Interpreter(ncs)
-        interpreter.set_mock("Vector", lambda x, y, z: Vector3(x, y, z))
+        interpreter.set_mock("Vector", Vector3)
         interpreter.run()
 
         self.assertEqual(2.0, interpreter.action_snapshots[-3].arg_values[0])
@@ -2203,7 +2219,7 @@ class TestNSSCompiler(unittest.TestCase):
         )
 
         interpreter = Interpreter(ncs)
-        interpreter.set_mock("Vector", lambda x, y, z: Vector3(x, y, z))
+        interpreter.set_mock("Vector", Vector3)
         interpreter.run()
 
         self.assertEqual(2.0, interpreter.action_snapshots[-3].arg_values[0])
@@ -2283,7 +2299,7 @@ class TestNSSCompiler(unittest.TestCase):
 
         self.assertEqual(123, interpreter.action_snapshots[-3].arg_values[0])
         self.assertEqual("abc", interpreter.action_snapshots[-2].arg_values[0])
-        self.assertEqual(3.14, interpreter.action_snapshots[-1].arg_values[0])
+        self.assertAlmostEqual(3.14, interpreter.action_snapshots[-1].arg_values[0].value)
 
     def test_prefix_increment_sp_int(self):
         ncs = self.compile(

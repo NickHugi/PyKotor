@@ -1,20 +1,22 @@
+from __future__ import annotations
+
 import os
 import pathlib
 import sys
 import unittest
+
 from tempfile import NamedTemporaryFile
 from unittest.mock import MagicMock, Mock, patch
 
 THIS_SCRIPT_PATH = pathlib.Path(__file__).resolve()
-PYKOTOR_PATH = THIS_SCRIPT_PATH.parents[2]
-UTILITY_PATH = THIS_SCRIPT_PATH.parents[4].joinpath("Utility", "src")
+PYKOTOR_PATH = THIS_SCRIPT_PATH.parents[2].joinpath("Libraries", "PyKotor", "src")
+UTILITY_PATH = THIS_SCRIPT_PATH.parents[2].joinpath("Libraries", "Utility", "src")
 def add_sys_path(p: pathlib.Path):
     working_dir = str(p)
     if working_dir not in sys.path:
         sys.path.append(working_dir)
 if PYKOTOR_PATH.joinpath("pykotor").exists():
     add_sys_path(PYKOTOR_PATH)
-    os.chdir(PYKOTOR_PATH.parent)
 if UTILITY_PATH.joinpath("utility").exists():
     add_sys_path(UTILITY_PATH)
 
@@ -45,7 +47,7 @@ class TestLookupResourceFunction(unittest.TestCase):
 
         mock_binary_reader = MagicMock()
         mock_binary_reader.read_all.return_value = "BinaryReader read_all result"
-        
+
         with patch("pykotor.common.stream.BinaryReader.from_auto", return_value=mock_binary_reader):
 
             # Act
@@ -59,7 +61,7 @@ class TestLookupResourceFunction(unittest.TestCase):
 
         mock_binary_reader = MagicMock()
         mock_binary_reader.read_all.return_value = "BinaryReader read_all result"
-        
+
         capsule = Capsule("test.mod", create_nonexisting=True)
         with patch("pykotor.common.stream.BinaryReader.from_auto", return_value=mock_binary_reader):
             result = self.config.lookup_resource(
@@ -77,7 +79,7 @@ class TestLookupResourceFunction(unittest.TestCase):
 
         mock_binary_reader = MagicMock()
         mock_binary_reader.read_all.return_value = "BinaryReader read_all result"
-        
+
         with patch("pykotor.common.stream.BinaryReader.from_auto", return_value=mock_binary_reader):
             result = self.config.lookup_resource(
                 self.patch,
@@ -94,7 +96,7 @@ class TestLookupResourceFunction(unittest.TestCase):
 
         mock_binary_reader = MagicMock()
         mock_binary_reader.read_all.return_value = "BinaryReader read_all result"
-        
+
         with patch("pykotor.common.stream.BinaryReader.from_auto", return_value=mock_binary_reader):
             result = self.config.lookup_resource(
                 self.patch,
@@ -110,7 +112,7 @@ class TestLookupResourceFunction(unittest.TestCase):
 
         mock_binary_reader = MagicMock()
         mock_binary_reader.read_all.return_value = "BinaryReader read_all result"
-        
+
         capsule = Capsule("test.mod", create_nonexisting=True)
         with patch("pykotor.common.stream.BinaryReader.from_auto", return_value=mock_binary_reader):
             result = self.config.lookup_resource(

@@ -2,12 +2,14 @@ from __future__ import annotations
 
 import codecs
 import contextlib
+
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from types import ModuleType
 
     from charset_normalizer import CharsetMatch, CharsetMatches
+
     from pykotor.common.language import Language
 
 charset_normalizer: None | ModuleType
@@ -16,9 +18,10 @@ try:
 except ImportError:
     charset_normalizer = None
 
+
 def decode_bytes_with_fallbacks(
     byte_content: bytes | bytearray,
-    errors="strict",
+    errors: str = "strict",
     encoding: str | None = None,
     lang: Language | None = None,
     only_8bit_encodings: bool | None = False,
@@ -100,18 +103,20 @@ def decode_bytes_with_fallbacks(
             for alias in aliases:
                 normalized_alias: str = alias.replace("_", "-")
                 if normalized_alias.startswith("utf-8"):
-                    best_encoding="utf-8-sig"
+                    best_encoding = "utf-8-sig"
                     break
                 if normalized_alias.startswith("utf-16"):
-                    best_encoding="UTF-16LE"
+                    best_encoding = "UTF-16LE"
                     break
 
         return byte_content.decode(encoding=best_encoding, errors=attempt_errors)
 
-    # Attempt strict first for more accurate results.
-    with contextlib.suppress(UnicodeDecodeError):
-        return _decode_attempt(attempt_errors="strict")
+    if encoding is None:
+        # Attempt strict first for more accurate results.
+        with contextlib.suppress(UnicodeDecodeError):
+            return _decode_attempt(attempt_errors="strict")
     return _decode_attempt(attempt_errors=errors)
+
 
 def get_charset_from_singlebyte_encoding(
     encoding: str,
@@ -127,6 +132,7 @@ def get_charset_from_singlebyte_encoding(
                 charset.append("")
     return charset
 
+
 def get_charset_from_unicode_encoding(
     encoding: str,
     *,
@@ -140,6 +146,7 @@ def get_charset_from_unicode_encoding(
             if indexing:
                 charset.append("")
     return charset
+
 
 def get_charset_from_doublebyte_encoding(
     encoding: str,
@@ -155,6 +162,7 @@ def get_charset_from_doublebyte_encoding(
 
     # maybe possible?
     return get_generalized_doublebyte_charset(encoding)
+
 
 def get_cp950_charset() -> list[str]:
     charset: list[str] = []
@@ -190,6 +198,7 @@ def get_cp950_charset() -> list[str]:
             charset.append("")  # Append a blank for bytes outside the Big5 range
     return charset
 
+
 def get_cp949_charset() -> list[str]:
     charset: list[str] = []
     for i in range(256):
@@ -214,6 +223,7 @@ def get_cp949_charset() -> list[str]:
             charset.append("")  # Undefined code point, append a blank
     return charset
 
+
 def get_cp936_charset() -> list[str]:
     # sourcery skip: merge-duplicate-blocks, remove-redundant-if
     charset: list[str] = []
@@ -226,7 +236,7 @@ def get_cp936_charset() -> list[str]:
                 charset.append("")  # Append a blank for non-existent characters
         elif 0x81 <= i <= 0x9F:
             # Double-byte introducer, skip this byte
-            #continue
+            # continue
             charset.append("")  # Undefined code point, append a blank
         elif 0xA1 <= i <= 0xDF:
             # Single-byte code
@@ -244,6 +254,7 @@ def get_cp936_charset() -> list[str]:
         else:
             charset.append("")  # Undefined code point, append a blank
     return charset
+
 
 def get_generalized_doublebyte_charset(encoding: str) -> list[str]:
     charset: list[str] = []

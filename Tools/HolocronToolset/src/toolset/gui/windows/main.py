@@ -3,20 +3,22 @@ from __future__ import annotations
 import base64
 import json
 import traceback
+
 from contextlib import suppress
 from datetime import datetime, timedelta, timezone
 from tempfile import TemporaryDirectory
 from typing import TYPE_CHECKING, ClassVar
 
 import requests
-from PyQt5 import QtCore, QtGui
-from PyQt5.QtGui import QCloseEvent, QIcon, QPixmap, QStandardItem
-from PyQt5.QtWidgets import QFileDialog, QMainWindow, QMessageBox, QTreeView
+
+from PyQt5 import QtCore
+from PyQt5.QtGui import QIcon, QPixmap, QStandardItem
+from PyQt5.QtWidgets import QFileDialog, QMainWindow, QMessageBox
 from watchdog.events import FileSystemEventHandler
 from watchdog.observers import Observer
 
 from pykotor.common.stream import BinaryReader
-from pykotor.extract.file import FileResource, ResourceIdentifier
+from pykotor.extract.file import ResourceIdentifier
 from pykotor.extract.installation import SearchLocation
 from pykotor.resource.formats.mdl import read_mdl, write_mdl
 from pykotor.resource.formats.tpc import read_tpc, write_tpc
@@ -57,6 +59,11 @@ from utility.system.path import Path, PurePath
 if TYPE_CHECKING:
     import os
 
+    from PyQt5 import QtGui
+    from PyQt5.QtGui import QCloseEvent
+    from PyQt5.QtWidgets import QTreeView
+
+    from pykotor.extract.file import FileResource
     from pykotor.resource.formats.mdl.mdl_data import MDL
     from pykotor.resource.formats.tpc import TPC
     from pykotor.resource.type import SOURCE_TYPES
@@ -112,7 +119,7 @@ class ToolWindow(QMainWindow):
         self.settings: GlobalSettings = GlobalSettings()
         self.installations: dict[str, HTInstallation] = {}
 
-        from toolset.uic.windows.main import Ui_MainWindow
+        from toolset.uic.windows.main import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
 
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
@@ -482,7 +489,7 @@ class ToolWindow(QMainWindow):
         """
         try:
             self._check_toolset_update(silent)
-        except Exception as e:  # noqa: BLE001
+        except Exception as e:  # pylint: disable=W0718  # noqa: BLE001
             if not silent:
                 etype, msg = universal_simplify_exception(e)
                 QMessageBox(
@@ -693,7 +700,6 @@ class ToolWindow(QMainWindow):
 
                 assert_with_variable_trace(isinstance(self.active, HTInstallation))
                 assert isinstance(self.active, HTInstallation)  # noqa: S101
-
 
                 print("Loading installation resources into UI...")
                 self.ui.coreWidget.setResources(self.active.chitin_resources())

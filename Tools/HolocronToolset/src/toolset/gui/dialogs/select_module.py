@@ -1,17 +1,26 @@
-from pykotor.common.module import Module
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
 from PyQt5 import QtCore
-from PyQt5.QtWidgets import QDialog, QFileDialog, QListWidgetItem, QWidget
-from toolset.data.installation import HTInstallation
+from PyQt5.QtWidgets import QDialog, QFileDialog, QListWidgetItem
+
+from pykotor.common.module import Module
+
+if TYPE_CHECKING:
+    from PyQt5.QtWidgets import QWidget
+
+    from toolset.data.installation import HTInstallation
 
 
 class SelectModuleDialog(QDialog):
     def __init__(self, parent: QWidget, installation: HTInstallation):
-        """Initializes the dialog to select a module
+        """Initializes the dialog to select a module.
+
         Args:
             parent (QWidget): Parent widget
             installation (HTInstallation): HT installation object
-        Returns:
-            None: Does not return anything
+
         Processing Logic:
         ----------------
             - Initializes the UI from the dialog design
@@ -25,7 +34,7 @@ class SelectModuleDialog(QDialog):
 
         self.module: str = ""
 
-        from toolset.uic.dialogs.select_module import Ui_Dialog
+        from toolset.uic.dialogs.select_module import Ui_Dialog  # pylint: disable=C0415  # noqa: PLC0415
 
         self.ui = Ui_Dialog()
         self.ui.setupUi(self)

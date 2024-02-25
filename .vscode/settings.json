@@ -2,18 +2,17 @@
   "justMyCode": false,
   "python.analysis.inlayHints.callArgumentNames": "off",
   "python.analysis.inlayHints.functionReturnTypes": true,
-  "python.analysis.inlayHints.variableTypes": true,
+  "python.analysis.inlayHints.variableTypes": false,
   "python.analysis.typeCheckingMode": "basic",
   "launch": {
   //  "configurations": [],
     "compounds": [],
-    "justMyCode": false,
-    "debugStdLib": true,
+    "justMyCode": true,
+    "debugStdLib": false,
   },
   "debug.allowBreakpointsEverywhere": false,
   "debugStdLib": true,
   "python.analysis.enablePytestSupport": false,
-  "python.testing.pytestEnabled": false,
   "python.analysis.extraPaths": [
     "./Tools/BatchPatcher/src",
     "./Tools/GuiDuplicator/src",
@@ -26,6 +25,9 @@
     "./Libraries/PyKotorFont/src",
     "./Libraries/Utility/src",
   ],
+  "python.testing.autoTestDiscoverOnSaveEnabled": true,
+  "python.testing.promptToConfigure": true,
+  "python.testing.pytestEnabled": false,
   "python.testing.unittestEnabled": true,
   "python.testing.unittestArgs": [
     "-v",
@@ -44,10 +46,18 @@
     "--wait-for-client"
   ],
   "python.analysis.diagnosticSeverityOverrides": {
-      "reportOptionalMemberAccess": "none" // Ignores issues with defs that can optionally be None.
+    "reportGeneralTypeIssues": "warning",
+    "reportOptionalMemberAccess": "warning" // Ignores issues with defs that can optionally be None.
   },
   "mypy-type-checker.args": [
     "--check-untyped-defs" // Ignores issues with defs that can optionally be None.
   ],
-  "cmake.configureOnOpen": false,
+  "python.analysis.autoFormatStrings": true,
+  "mypy.targets": [
+    "Libraries",
+    "Tools"
+  ],
+  "mypy.extraArguments": [
+    "--exclude='./.venv'"
+  ],
 }

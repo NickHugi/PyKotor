@@ -4,20 +4,22 @@ import os
 import pathlib
 import sys
 import unittest
+
 from unittest import TestCase
 
 THIS_SCRIPT_PATH = pathlib.Path(__file__).resolve()
-PYKOTOR_PATH = THIS_SCRIPT_PATH.parents[2]
-UTILITY_PATH = THIS_SCRIPT_PATH.parents[4].joinpath("Utility", "src")
+PYKOTOR_PATH = THIS_SCRIPT_PATH.parents[2].joinpath("Libraries", "PyKotor", "src")
+UTILITY_PATH = THIS_SCRIPT_PATH.parents[2].joinpath("Libraries", "Utility", "src")
 def add_sys_path(p: pathlib.Path):
     working_dir = str(p)
     if working_dir not in sys.path:
         sys.path.append(working_dir)
 if PYKOTOR_PATH.joinpath("pykotor").exists():
     add_sys_path(PYKOTOR_PATH)
-    os.chdir(PYKOTOR_PATH.parent)
 if UTILITY_PATH.joinpath("utility").exists():
     add_sys_path(UTILITY_PATH)
+
+from typing import TYPE_CHECKING
 
 from pykotor.common.geometry import Vector3, Vector4
 from pykotor.common.language import LocalizedString
@@ -40,7 +42,6 @@ from pykotor.tslpatcher.mods.gff import (
     LocalizedStringDelta,
     ModificationsGFF,
     ModifyFieldGFF,
-    ModifyGFF,
 )
 from pykotor.tslpatcher.mods.ssf import ModificationsSSF, ModifySSF
 from pykotor.tslpatcher.mods.tlk import ModificationsTLK, ModifyTLK
@@ -61,6 +62,11 @@ from pykotor.tslpatcher.mods.twoda import (
     TargetType,
 )
 from utility.system.path import PureWindowsPath
+
+if TYPE_CHECKING:
+    from pykotor.tslpatcher.mods.gff import (
+        ModifyGFF,
+    )
 
 # TODO Error, Warning tracking
 

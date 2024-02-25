@@ -4,23 +4,28 @@ import os
 import pathlib
 import sys
 import unittest
-from types import ModuleType
+
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from types import ModuleType
+
+    import charset_normalizer
 
 THIS_SCRIPT_PATH = pathlib.Path(__file__).resolve()
-PYKOTOR_PATH = THIS_SCRIPT_PATH.parents[2]
-UTILITY_PATH = THIS_SCRIPT_PATH.parents[4].joinpath("Utility", "src")
+PYKOTOR_PATH = THIS_SCRIPT_PATH.parents[2].joinpath("Libraries", "PyKotor", "src")
+UTILITY_PATH = THIS_SCRIPT_PATH.parents[2].joinpath("Libraries", "Utility", "src")
 def add_sys_path(p: pathlib.Path):
     working_dir = str(p)
     if working_dir not in sys.path:
         sys.path.append(working_dir)
 if PYKOTOR_PATH.joinpath("pykotor").exists():
     add_sys_path(PYKOTOR_PATH)
-    os.chdir(PYKOTOR_PATH.parent)
 if UTILITY_PATH.joinpath("utility").exists():
     add_sys_path(UTILITY_PATH)
 
-from pykotor.common.language import Language
-from pykotor.tools.encoding import decode_bytes_with_fallbacks
+from pykotor.common.language import Language  # noqa: E402
+from pykotor.tools.encoding import decode_bytes_with_fallbacks  # noqa: E402
 
 charset_normalizer: None | ModuleType
 try:
@@ -59,7 +64,7 @@ class TestDecodeBytes(unittest.TestCase):
 
     def test_errors_replace(self):
         byte_str = b"h\xc3\xa9llo"
-        #self.assertEqual(byte_str.decode(errors="replace"), "h?llo")
+        # self.assertEqual(byte_str.decode(errors="replace"), "h?llo")
         self.assertEqual(byte_str.decode(errors="replace"), "héllo")
 
         result = decode_bytes_with_fallbacks(byte_str, errors="replace")
@@ -109,7 +114,7 @@ class TestDecodeBytes(unittest.TestCase):
         self.assertEqual(result, "��\x00")
 
         result = decode_bytes_with_fallbacks(byte_content, errors, encoding, lang, only_8bit_encodings)
-        self.assertTrue(result in ("��\x00", "ÿþ\x00"))
+        self.assertTrue(result in {"��\x00", "ÿþ\x00"})
 
     def test_fallback_to_detected_encoding(self):
         byte_content = b"\xc2\xa1Hola!"

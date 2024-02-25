@@ -1,0 +1,84 @@
+name: MacOS Python 3.8 tests/compilations
+
+on: [push]
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+
+    runs-on: macos-latest
+
+    steps:
+    - uses: actions/checkout@v3
+    - name: Set up Python 3.8
+      uses: actions/setup-python@v3
+      with:
+        python-version: "3.8"
+
+    - name: Install python venv from install_python_venv.ps1
+      run: |
+        ./install_python_venv.ps1 -noprompt
+      shell: pwsh
+
+    - name: Install holopatcher dependencies
+      run: |
+        ./compile/deps_holopatcher.ps1 -noprompt
+      shell: pwsh
+      continue-on-error: true
+    
+    - name: Compile HoloPatcher
+      run: |
+        ./compile/compile_holopatcher.ps1 -noprompt
+      shell: pwsh
+      continue-on-error: true
+
+    - name: Install Holocron Toolset dependencies
+      run: |
+        ./compile/deps_toolset.ps1 -noprompt
+      shell: pwsh
+      continue-on-error: true
+
+    - name: Compile Holocron Toolset
+      run: |
+        ./compile/compile_toolset.ps1 -noprompt
+      shell: pwsh
+      continue-on-error: true
+
+    - name: Install BatchPatcher dependencies
+      run: |
+        ./compile/deps_batchpatcher.ps1 -noprompt
+      shell: pwsh
+      continue-on-error: true
+
+    - name: Compile BatchPatcher
+      run: |
+        ./compile/compile_batchpatcher.ps1 -noprompt
+      shell: pwsh
+      continue-on-error: true
+
+    - name: Compile KotorDiff
+      run: |
+        ./compile/compile_kotordiff.ps1 -noprompt
+      shell: pwsh
+      continue-on-error: true
+
+    - name: Compile GUIDuplicator
+      run: |
+        ./compile/compile_gui_duplicator.ps1 -noprompt
+      shell: pwsh
+      continue-on-error: true
+
+    - name: Upload compiled binaries
+      uses: actions/upload-artifact@v3
+      if: always()  # This ensures the step runs regardless of previous step's success or failure
+      with:
+        name: dist-folder
+        path: ./dist/**
+
+    - name: Install development packages and run tests.
+      run: |
+        pip install -r requirements-dev.txt
+        python -m unittest discover -s tests -p 'test_*.py' -v
+      shell: pwsh

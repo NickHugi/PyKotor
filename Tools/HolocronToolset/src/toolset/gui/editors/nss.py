@@ -1,15 +1,8 @@
 from __future__ import annotations
 
-from copy import deepcopy
 from operator import attrgetter
 from typing import TYPE_CHECKING, ClassVar
 
-from pykotor.common.scriptdefs import KOTOR_CONSTANTS, KOTOR_FUNCTIONS, TSL_CONSTANTS, TSL_FUNCTIONS
-from pykotor.common.stream import BinaryWriter
-from pykotor.resource.formats.erf import ERF, read_erf, write_erf
-from pykotor.resource.formats.rim import RIM, read_rim, write_rim
-from pykotor.resource.type import ResourceType
-from pykotor.tools.misc import is_any_erf_type_file, is_bif_file, is_rim_file
 from PyQt5 import QtCore
 from PyQt5.QtCore import QRect, QRegExp, QSize
 from PyQt5.QtGui import (
@@ -17,23 +10,37 @@ from PyQt5.QtGui import (
     QFont,
     QFontMetricsF,
     QPainter,
-    QPaintEvent,
-    QResizeEvent,
     QSyntaxHighlighter,
     QTextCharFormat,
-    QTextDocument,
     QTextFormat,
 )
 from PyQt5.QtWidgets import QListWidgetItem, QMessageBox, QPlainTextEdit, QShortcut, QTextEdit, QWidget
+
+from pykotor.common.scriptdefs import KOTOR_CONSTANTS, KOTOR_FUNCTIONS, TSL_CONSTANTS, TSL_FUNCTIONS
+from pykotor.common.stream import BinaryWriter
+from pykotor.resource.formats.erf import read_erf, write_erf
+from pykotor.resource.formats.rim import read_rim, write_rim
+from pykotor.resource.type import ResourceType
+from pykotor.tools.misc import is_any_erf_type_file, is_bif_file, is_rim_file
 from toolset.gui.editor import Editor
 from toolset.gui.widgets.settings.installations import GlobalSettings, NoConfigurationSetError
 from toolset.utils.script import compileScript, decompileScript
+from utility.error_handling import universal_simplify_exception
 from utility.system.path import Path
 
 if TYPE_CHECKING:
     import os
 
+    from PyQt5.QtGui import (
+        QPaintEvent,
+        QResizeEvent,
+        QTextBlock,
+        QTextDocument,
+    )
+
     from pykotor.common.script import ScriptConstant, ScriptFunction
+    from pykotor.resource.formats.erf import ERF
+    from pykotor.resource.formats.rim import RIM
     from toolset.data.installation import HTInstallation
 
 
@@ -58,10 +65,10 @@ class NSSEditor(Editor):
             5. Set the tab size for the code editor
             6. Create a new empty script.
         """
-        supported = [ResourceType.NSS, ResourceType.NCS]
+        supported: list[ResourceType] = [ResourceType.NSS, ResourceType.NCS]
         super().__init__(parent, "Script Editor", "script", supported, supported, installation)
 
-        from toolset.uic.editors.nss import Ui_MainWindow
+        from toolset.uic.editors.nss import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
 
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
@@ -69,6 +76,7 @@ class NSSEditor(Editor):
         self._setupSignals()
 
         self._length: int = 0
+        self._is_decompiled: bool = False
         self._global_settings: GlobalSettings = GlobalSettings()
         self._highlighter: SyntaxHighlighter = SyntaxHighlighter(self.ui.codeEdit.document(), installation)
         self.setInstallation(self._installation)
@@ -124,12 +132,9 @@ class NSSEditor(Editor):
         """
         self._installation = installation
 
-        constants: list[ScriptConstant] = deepcopy(TSL_CONSTANTS if self._installation.tsl else KOTOR_CONSTANTS)
-        functions: list[ScriptFunction] = deepcopy(TSL_FUNCTIONS if self._installation.tsl else KOTOR_FUNCTIONS)
-
         # sort them alphabetically
-        constants.sort(key=attrgetter("name"))
-        functions.sort(key=attrgetter("name"))
+        constants: list[ScriptConstant] = sorted(TSL_CONSTANTS if self._installation.tsl else KOTOR_CONSTANTS, key=attrgetter("name"))
+        functions: list[ScriptFunction] = sorted(TSL_FUNCTIONS if self._installation.tsl else KOTOR_FUNCTIONS, key=attrgetter("name"))
 
         for function in functions:
             item = QListWidgetItem(function.name)
@@ -158,6 +163,7 @@ class NSSEditor(Editor):
             - Catches errors during decompilation and displays message.
         """
         super().load(filepath, resref, restype, data)
+        self._is_decompiled = False
 
         if restype == ResourceType.NSS:
             self.ui.codeEdit.setPlainText(data.decode("windows-1252", errors="ignore"))
@@ -165,11 +171,12 @@ class NSSEditor(Editor):
             try:
                 source = decompileScript(data, self._installation.tsl, self._installation.path())
                 self.ui.codeEdit.setPlainText(source)
+                self._is_decompiled = True
             except ValueError as e:
-                QMessageBox(QMessageBox.Critical, "Decompilation Failed", str(e)).exec_()
+                QMessageBox(QMessageBox.Critical, "Decompilation Failed", str(universal_simplify_exception(e))).exec_()
                 self.new()
             except NoConfigurationSetError as e:
-                QMessageBox(QMessageBox.Critical, "Filepath is not set", str(e)).exec_()
+                QMessageBox(QMessageBox.Critical, "Filepath is not set", str(universal_simplify_exception(e))).exec_()
                 self.new()
 
     def build(self) -> tuple[bytes | None, bytes]:
@@ -219,18 +226,18 @@ class NSSEditor(Editor):
 
             filepath: Path = self._filepath if self._filepath is not None else Path.cwd() / "untitled_script.ncs"
             if is_any_erf_type_file(filepath.name):
-                savePath = filepath / f"{self._resref}.{self._restype.extension}"
+                savePath = filepath / f"{self._resname}.{self._restype.extension}"
                 erf: ERF = read_erf(filepath)
-                erf.set_data(self._resref, ResourceType.NCS, data)
+                erf.set_data(self._resname, ResourceType.NCS, data)
                 write_erf(erf, filepath)
             elif is_rim_file(filepath.name):
-                savePath = filepath / f"{self._resref}.{self._restype.extension}"
+                savePath = filepath / f"{self._resname}.{self._restype.extension}"
                 rim: RIM = read_rim(filepath)
-                rim.set_data(self._resref, ResourceType.NCS, data)
+                rim.set_data(self._resname, ResourceType.NCS, data)
                 write_rim(rim, filepath)
             else:
                 if not filepath or is_bif_file(filepath.name):
-                    savePath = self._installation.override_path() / f"{self._resref}.ncs"
+                    savePath = self._installation.override_path() / f"{self._resname}.ncs"
                 else:
                     savePath = filepath.with_suffix(".ncs")
                 BinaryWriter.dump(savePath, data)
@@ -241,9 +248,9 @@ class NSSEditor(Editor):
                 f"Compiled script successfully saved to:\n {savePath}.",
             ).exec_()
         except ValueError as e:
-            QMessageBox(QMessageBox.Critical, "Failed to compile", str(e)).exec_()
+            QMessageBox(QMessageBox.Critical, "Failed to compile", str(universal_simplify_exception(e))).exec_()
         except OSError as e:
-            QMessageBox(QMessageBox.Critical, "Failed to save file", str(e)).exec_()
+            QMessageBox(QMessageBox.Critical, "Failed to save file", str(universal_simplify_exception(e))).exec_()
 
     def changeDescription(self):
         """Change the description textbox to whatever function or constant the user has selected.
@@ -277,7 +284,7 @@ class NSSEditor(Editor):
     def insertSelectedConstant(self):
         """Inserts the selected constant on the constant list into the code textbox at the cursors location. The cursor is
         then shifted to the end of the newly inserted constant.
-        """
+        """  # noqa: D205
         if self.ui.constantList.selectedItems():
             constant = self.ui.constantList.selectedItems()[0].data(QtCore.Qt.UserRole)
             insert = constant.name
@@ -286,7 +293,7 @@ class NSSEditor(Editor):
     def insertSelectedFunction(self):
         """Inserts the selected function on the function list into the code textbox at the cursors location. The cursor is
         then shifted to the start of the first parameter of the inserted function.
-        """
+        """  # noqa: D205
         if self.ui.functionList.selectedItems():
             function: ScriptFunction = self.ui.functionList.selectedItems()[0].data(QtCore.Qt.UserRole)
             insert = f"{function.name}()"
@@ -300,7 +307,7 @@ class NSSEditor(Editor):
         ----
             insert: Text to insert.
             offset: Amount of characters to shift the cursor.
-        """
+        """  # noqa: D205
         cursor = self.ui.codeEdit.textCursor()
         index = cursor.position()
         text = self.ui.codeEdit.toPlainText()
@@ -328,7 +335,7 @@ class NSSEditor(Editor):
             - If newline inserted and indent needed, insert indent.
         """
         # Check if text was inserted not deleted
-        insertion = self._length < len(self.ui.codeEdit.toPlainText())
+        insertion: bool = self._length < len(self.ui.codeEdit.toPlainText())
 
         if insertion:
             index = self.ui.codeEdit.textCursor().position()
@@ -384,7 +391,7 @@ class LineNumberArea(QWidget):
         super().__init__(editor)
         self._editor: CodeEditor = editor
 
-    def sizeHint(self):
+    def sizeHint(self) -> QSize:
         return QSize(self._editor.lineNumberAreaWidth(), 0)
 
     def paintEvent(self, event):
@@ -427,10 +434,10 @@ class CodeEditor(QPlainTextEdit):
         painter = QPainter(self._lineNumberArea)
         painter.fillRect(e.rect(), QColor(230, 230, 230))
 
-        block = self.firstVisibleBlock()
-        blockNumber = block.blockNumber()
-        top = self.blockBoundingGeometry(block).translated(self.contentOffset()).top()
-        bottom = top + self.blockBoundingRect(block).height()
+        block: QTextBlock = self.firstVisibleBlock()
+        blockNumber: int = block.blockNumber()
+        top: float = self.blockBoundingGeometry(block).translated(self.contentOffset()).top()
+        bottom: float = top + self.blockBoundingRect(block).height()
 
         while block.isValid() and top <= e.rect().bottom():
             if block.isVisible() and bottom >= e.rect().top():
@@ -468,7 +475,7 @@ class CodeEditor(QPlainTextEdit):
             - Returns the larger of the minimum and calculated widths.
         """
         digits = 1
-        maximum = max(1, self.blockCount())
+        maximum: int = max(1, self.blockCount())
         while maximum >= 10:
             maximum /= 10  # type: ignore[assignment]
             digits += 1
@@ -479,7 +486,7 @@ class CodeEditor(QPlainTextEdit):
     def resizeEvent(self, e: QResizeEvent):
         super().resizeEvent(e)
 
-        cr = self.contentsRect()
+        cr: QRect = self.contentsRect()
         self._lineNumberArea.setGeometry(QRect(cr.left(), cr.top(), self.lineNumberAreaWidth(), cr.height()))
 
     def _updateLineNumberAreaWidth(self, newBlockCount: int):
@@ -500,7 +507,7 @@ class CodeEditor(QPlainTextEdit):
             - Appends the selection to the extra selections list
             - Sets the extra selections on the text editor.
         """
-        extraSelections = []
+        extraSelections: list[QTextEdit.ExtraSelection] = []
 
         if not self.isReadOnly():
             selection = QTextEdit.ExtraSelection()
@@ -567,7 +574,7 @@ class SyntaxHighlighter(QSyntaxHighlighter):
         """
         super().__init__(parent)
 
-        self.styles = {
+        self.styles: dict[str, QTextCharFormat] = {
             "keyword": self.getCharFormat("blue"),
             "operator": self.getCharFormat("darkRed"),
             "numbers": self.getCharFormat("brown"),
@@ -578,10 +585,10 @@ class SyntaxHighlighter(QSyntaxHighlighter):
             "constant": self.getCharFormat("darkBlue"),
         }
 
-        functions = [function.name for function in (TSL_FUNCTIONS if installation.tsl else KOTOR_FUNCTIONS)]
-        constants = [function.name for function in (TSL_CONSTANTS if installation.tsl else TSL_CONSTANTS)]
+        functions: list[str] = [function.name for function in (TSL_FUNCTIONS if installation.tsl else KOTOR_FUNCTIONS)]
+        constants: list[str] = [function.name for function in (TSL_CONSTANTS if installation.tsl else TSL_CONSTANTS)]
 
-        rules = []
+        rules: list[tuple[str, int, QTextCharFormat]] = []
         rules += [(r"\b%s\b" % w, 0, self.styles["keyword"]) for w in SyntaxHighlighter.KEYWORDS]
         rules += [(r"\b%s\b" % w, 0, self.styles["function"]) for w in functions]
         rules += [(r"\b%s\b" % w, 0, self.styles["constant"]) for w in constants]
@@ -597,7 +604,7 @@ class SyntaxHighlighter(QSyntaxHighlighter):
             (r"//[^\n]*", 0, self.styles["comment"]),
         ]
 
-        self.rules = [(QtCore.QRegExp(pat), index, fmt) for (pat, index, fmt) in rules]
+        self.rules: list[tuple[QtCore.QRegExp, int, QTextCharFormat]] = [(QtCore.QRegExp(pat), index, fmt) for (pat, index, fmt) in rules]
 
     def highlightBlock(self, text: str | None):
         """Highlights blocks of text.
@@ -621,11 +628,11 @@ class SyntaxHighlighter(QSyntaxHighlighter):
             print("text cannot be None", "highlightBlock")
             return
         for expression, nth, format in self.rules:
-            index = expression.indexIn(text, 0)
+            index: int = expression.indexIn(text, 0)
 
             while index >= 0:
                 index = expression.pos(nth)
-                length = len(expression.cap(nth))
+                length: int = len(expression.cap(nth))
                 self.setFormat(index, length, format)
                 index = expression.indexIn(text, index + length)
 
@@ -645,10 +652,17 @@ class SyntaxHighlighter(QSyntaxHighlighter):
             self.setFormat(startIndex, commentLength, self.styles["comment"])
             startIndex = SyntaxHighlighter.COMMENT_BLOCK_START.indexIn(text, startIndex + commentLength + 2)
 
-    def getCharFormat(self, color: str | int, bold: bool = False, italic: bool = False) -> QTextCharFormat:
-        color = QColor(color)
+    def getCharFormat(
+        self,
+        color: str | int,
+        bold: bool = False,
+        italic: bool = False,
+    ) -> QTextCharFormat:
+        # The docs on QColor are different from the stubs? Not sure why the static typing is erroring here.
+        qcolor_obj = QColor(color)  # type: ignore[]
         textFormat = QTextCharFormat()
-        textFormat.setForeground(color)
+        textFormat.setForeground(qcolor_obj)
         textFormat.setFontWeight(QFont.Bold if bold else QFont.Normal)
         textFormat.setFontItalic(italic)
         return textFormat
+

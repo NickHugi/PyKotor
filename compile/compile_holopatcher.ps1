@@ -1,4 +1,5 @@
 param (
+  [string]$venv_name=".venv",
   [switch]$noprompt
 )
 $this_noprompt = $noprompt
@@ -9,62 +10,9 @@ Write-Host "The path to the script directory is: $scriptPath"
 Write-Host "The path to the root directory is: $rootPath"
 
 Write-Host "Initializing python virtual environment..."
-. $rootPath/install_python_venv.ps1
-
-Write-Host "Installing required packages to build holopatcher..."
-. $pythonExePath -m pip install --upgrade pip --prefer-binary --progress-bar on
-. $pythonExePath -m pip install pyinstaller --prefer-binary --progress-bar on
-. $pythonExePath -m pip install -r ($rootPath + $pathSep + "Tools" + $pathSep + "HoloPatcher" + $pathSep + "requirements.txt") --prefer-binary --progress-bar on
-. $pythonExePath -m pip install -r ($rootPath + $pathSep + "Tools" + $pathSep + "HoloPatcher" + $pathSep + "recommended.txt") --prefer-binary --progress-bar on
-. $pythonExePath -m pip install -r ($rootPath + $pathSep + "Libraries" + $pathSep + "PyKotor" + $pathSep + "requirements.txt") --prefer-binary --progress-bar on
-
-if ((Get-OS) -eq "Mac") {
-    brew install python-tk
-} elseif ((Get-OS) -eq "Linux") {
-    if (Test-Path -Path "/etc/os-release") {
-        $osInfo = Get-Content "/etc/os-release" -Raw
-        if ($osInfo -match 'ID=(.*)') {
-            $distro = $Matches[1].Trim('"')
-        }
-        if ($osInfo -match 'VERSION_ID=(.*)') {
-            $versionId = $Matches[1].Trim('"')
-        }
-        $command = ""
-        switch ($distro) {
-            "debian" {
-                $command = "sudo apt install python3-tk -y"
-                break
-            }
-            "ubuntu" {
-                $command = "sudo apt install python3-tk -y"
-                break
-            }
-            "fedora" {
-                $command = "sudo dnf install python3-tkinter python3.10-tkinter"
-                break
-            }
-            "almalinux" {
-                sudo dnf install tk-devel tcl-devel
-                $command = "sudo dnf install python3-tkinter -y"
-                break
-            }
-            "alpine" {
-                $command = "sudo apk add ttf-dejavu fontconfig python3-tkinter"
-                break
-            }
-            "arch" {
-                $command = "sudo pacman -Sy tk mpdecimal --noconfirm"
-            }
-        }
-    
-        if ($command -eq "") {
-            Write-Warning "Dist $distro version $versionId not supported for automated system package install, please install the dependencies if you experience problems."
-        } else {
-            Write-Host "Executing command: $command"
-            Invoke-Expression $command
-        }
-    }
-}
+$this_noprompt_arg = if ($this_noprompt) {'-noprompt'} else {''}
+$venv_name_arg = if ($venv_name) {"-venv_name $venv_name"} else {''}
+. $rootPath/install_python_venv.ps1 $this_noprompt_arg $venv_name_arg
 
 $current_working_dir = (Get-Location).Path
 Set-Location -LiteralPath (Resolve-Path -LiteralPath "$rootPath/Tools/HoloPatcher/src").Path
@@ -85,9 +33,9 @@ if (Test-Path -Path $finalExecutablePath) {
 }
 
 Write-Host "Compiling HoloPatcher..."
+$iconExtension = if ((Get-OS) -eq 'Mac') {'icns'} else {'ico'}
 $pyInstallerArgs = @{
     'exclude-module' = @(
-        '',
         'numpy',
         'PyQt5',
         'PIL',
@@ -109,11 +57,15 @@ $pyInstallerArgs = @{
         'Markdown',
         'pyperclip',
         'setuptools',
+        'java',
+        'java.lang',
         'wheel',
         'ruff',
         'pylint',
         'pykotor.gl',
+        'pykotorgl',
         'pykotor.font',
+        'pykotorfont'
         'pykotor.secure_xml',
         'mypy-extensions',
         'mypy',
@@ -121,16 +73,16 @@ $pyInstallerArgs = @{
         'install_playwright',
         'greenlet',
         'cssselect',
-        'beautifulsoup4 '
+        'beautifulsoup4'
     )
     'clean' = $true
-    'noconsole' = $true
+    'noconsole' = $true  # https://github.com/pyinstaller/pyinstaller/wiki/FAQ#mac-os-x  https://pyinstaller.org/en/stable/usage.html#cmdoption-w
     'onefile' = $true
     'noconfirm' = $true
     'distpath' = ($rootPath + $pathSep + "dist")
     'name' = 'HoloPatcher'
     'upx-dir' = "C:\GitHub\upx-win64"
-    'icon' = "..$pathSep" + "resources$pathSep" + "icons$pathSep" + "patcher_icon_v2.ico"
+    'icon' = "..$pathSep" + "resources$pathSep" + "icons$pathSep" + "patcher_icon_v2.$iconExtension"
 }
 
 $pyInstallerArgs = $pyInstallerArgs.GetEnumerator() | ForEach-Object {
@@ -139,8 +91,11 @@ $pyInstallerArgs = $pyInstallerArgs.GetEnumerator() | ForEach-Object {
 
     if ($value -is [System.Array]) {
         # Handle array values
-        $value -join "--$key="
-        $value = "--$key=$value"
+        $arr = @()
+        foreach ($elem in $value) {
+            $arr += "--$key=$elem"
+        }
+        $arr
     } else {
         # Handle key-value pair arguments
         if ($value -eq $true) {

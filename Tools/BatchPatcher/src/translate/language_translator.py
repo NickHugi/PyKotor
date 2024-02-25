@@ -3,15 +3,19 @@ from __future__ import annotations
 import json
 import re
 import traceback
+
 from enum import Enum
-from typing import TYPE_CHECKING, Any, Callable
+from typing import TYPE_CHECKING, Any
 
 import requests
+
 from pykotor.common.language import Language
 from utility.system.path import Path
 
 if TYPE_CHECKING:
     import os
+
+    from collections.abc import Callable
 
 # region LoadTranslatorPackages
 BergamotTranslator = None
@@ -28,7 +32,7 @@ argos_import_success = True
 try:
     import argostranslate.package
     import argostranslate.translate
-except Exception:  # noqa: BLE001
+except Exception:  # pylint: disable=W0718  # noqa: BLE001
     argos_import_success = False
 try:
     import deep_translator  # type: ignore[import-not-found, import-untyped]
@@ -128,6 +132,7 @@ class LibreFallbackTranslator:
     def __call__(self):
         return
 
+
 # Function to convert numerals
 def translate_numerals(num_string: str, source_lang: Language, target_lang: Language) -> str:
     # Dictionaries for each language's numerals
@@ -160,7 +165,7 @@ class TranslationOption(Enum):
     CHATGPT_TRANSLATOR = ChatGptTranslator if ChatGptTranslator is not None else None
     DEEPL = deep_translator.DeeplTranslator if deep_translator is not None else None
     DEEPL_SCRAPER = AbstractTranslator(deepl_tr)
-    DL_TRANSLATE = (lambda: dlt.TranslationModel()) if dlt is not None else None
+    DL_TRANSLATE = (dlt.TranslationModel) if dlt is not None else None
     GOOGLE_TRANSLATE = deep_translator.GoogleTranslator if deep_translator is not None else None  # this translator is LARGE and SLOW  # noqa: ERA001, RUF100
     LIBRE_FALLBACK = LibreFallbackTranslator
     LIBRE_TRANSLATOR = deep_translator.LibreTranslator if deep_translator is not None else None
@@ -176,10 +181,10 @@ class TranslationOption(Enum):
     TRANSLATE = TranslateTranslator  # has api limits
     YANDEX_TRANSLATOR = deep_translator.YandexTranslator if deep_translator is not None else None
 
-    def min_chunk_length(self):
+    def min_chunk_length(self) -> int:
         return 1
 
-    def validate_args(self, translator: Translator) -> str: # type: ignore[return]
+    def validate_args(self, translator: Translator) -> str:  # type: ignore[return]
         def check(key) -> tuple[str, Any]:
             attr = getattr(translator, key, None)
             if not attr:
@@ -229,35 +234,33 @@ class TranslationOption(Enum):
         if self is self.TATOEBA:
             return {
                 "descriptor_label": lambda root: ttk.Label(root, text="Path to tatoeba.db:"),
-                "database_path": lambda root: ttk.Entry(root),
+                "database_path": ttk.Entry,
             }
         if self is self.LIBRE_TRANSLATOR:
             return {
                 "descriptor_label": lambda root: ttk.Label(root, text="Base URL (use default if unsure):"),
-                "base_url": lambda root: ttk.Entry(root),
+                "base_url": ttk.Entry,
                 "descriptor_label2": lambda root: ttk.Label(root, text="API Key:"),
-                "api_key": lambda root: ttk.Entry(root),
+                "api_key": ttk.Entry,
             }
         if self is self.BERGAMOT:
             return {
                 "descriptor_label": lambda root: ttk.Label(root, text="Local server url (usually http://localhost:8080):"),
-                "server_url": lambda root: ttk.Entry(root),
+                "server_url": ttk.Entry,
             }
         if self is self.PAPAGO_TRANSLATOR:
             return {
                 "descriptor_label": lambda root: ttk.Label(root, text="Client id:"),
-                "client_id": lambda root: ttk.Entry(root),
+                "client_id": ttk.Entry,
                 "descriptor_label2": lambda root: ttk.Label(root, text="Secret key:"),
-                "secret_key": lambda root: ttk.Entry(root),
+                "secret_key": ttk.Entry,
             }
-        if self in {
-            self.DEEPL,
-        }:
+        if self == self.DEEPL:
             return {
                 "descriptor_label": lambda root: ttk.Label(root, text="API Key:"),
-                "api_key": lambda root: ttk.Entry(root),
+                "api_key": ttk.Entry,
                 "descriptor_label2": lambda root: ttk.Label(root, text="Use Free API:"),
-                "use_free_api": lambda root: ttk.Checkbutton(root),
+                "use_free_api": ttk.Checkbutton,
             }
         if self in {
             self.DEEPL,
@@ -268,11 +271,11 @@ class TranslationOption(Enum):
         }:
             return {
                 "descriptor_label": lambda root: ttk.Label(root, text="API Key:"),
-                "api_key": lambda root: ttk.Entry(root),
+                "api_key": ttk.Entry,
             }
         return {}
 
-    def max_chunk_length(self):
+    def max_chunk_length(self) -> int:
         if self == TranslationOption.TRANSLATE:
             return 500
         if self in {TranslationOption.MY_MEMORY_TRANSLATOR, TranslationOption.PONS_TRANSLATOR}:
@@ -345,9 +348,11 @@ class TranslationOption(Enum):
             if translator.value is not None
         }
 
+
 def replace_with_placeholder(match, replaced_text: list[str], counter: int) -> str:
     replaced_text.append(match.group(0))  # Store the original text
     return f"__{counter}__"
+
 
 def replace_curly_braces(original_string: str):
     replaced_text: list[str] = []
@@ -363,13 +368,15 @@ def replace_curly_braces(original_string: str):
     modified_string = re.sub(pattern, matcher, original_string)
     return modified_string, replaced_text
 
+
 def restore_original_text(modified_string: str, replaced_text: list[str]):
     counter = -1
     for counter, original_text in enumerate(replaced_text):
         placeholder = f"__{counter}__"
         modified_string = modified_string.replace(placeholder, original_text)
-    assert counter == len(replaced_text)-1
+    assert counter == len(replaced_text) - 1
     return modified_string
+
 
 class Translator:
     def __init__(
@@ -429,9 +436,7 @@ class Translator:
         }:
             self._translator = self.translation_option.value(self.from_lang.name.lower(), self.to_lang.name.lower())
 
-        elif self.translation_option in {
-            TranslationOption.LIBRE_TRANSLATOR,
-        }:
+        elif self.translation_option == TranslationOption.LIBRE_TRANSLATOR:
             self._translator = self.translation_option.value(
                 source=from_lang_code,
                 target=to_lang_code,
@@ -439,19 +444,13 @@ class Translator:
                 api_key=self.api_key,
             )
 
-        elif self.translation_option in {
-            TranslationOption.TATOEBA,
-        }:
+        elif self.translation_option == TranslationOption.TATOEBA:
             self._translator = self.translation_option.value(local_db_path=self.database_path)
 
-        elif self.translation_option in {
-            TranslationOption.BERGAMOT,
-        }:
+        elif self.translation_option == TranslationOption.BERGAMOT:
             self._translator = self.translation_option.value(local_server_url=self.server_url)
 
-        elif self.translation_option in {
-            TranslationOption.DEEPL,
-        }:
+        elif self.translation_option == TranslationOption.DEEPL:
             self._translator = self.translation_option.value(
                 api_key=self.api_key,
                 source=from_lang_code,
@@ -515,11 +514,10 @@ class Translator:
         if from_lang_code is None:
             print(f"No bt47 lang code for {self.from_lang.name} found, attempting to use 'auto'")
             from_lang_code = "auto"
-        to_lang_code: str | None =  self.translation_option.get_lang_code(self.to_lang)
+        to_lang_code: str | None = self.translation_option.get_lang_code(self.to_lang)
         if to_lang_code is None:
             print(f"Cannot translate - could not find bt47 lang code for {self.to_lang.name}. returning original text.")
             return text
-
 
         # Function to chunk the text into segments with a maximum of 500 characters
         def chunk_text(text: str, size) -> list[str]:
@@ -601,31 +599,27 @@ class Translator:
             translated_chunk: str = ""
             # if option == TranslationOption.GOOGLETRANS:
             #    translated_chunk = self._translator.translate(chunk, src=from_lang_code, dest=to_lang_code).text  # type: ignore[attr-defined]  # noqa: ERA001
-            if option in (
+            if option in {
                 TranslationOption.LIBRE_FALLBACK,
                 TranslationOption.DEEPL_SCRAPER,
                 TranslationOption.DL_TRANSLATE,
                 TranslationOption.TEXTBLOB,
                 TranslationOption.ARGOS_TRANSLATE,
                 TranslationOption.YANDEX_TRANSLATOR,
-            ):
+            }:
                 # if self.from_lang is None and option == TranslationOption.LIBRE:
                 #    msg = "LibreTranslate requires a specified source language."  # noqa: ERA001
                 #    raise ValueError(msg)  # noqa: ERA001
                 translated_chunk = self._translator.translate(chunk, from_lang_code, to_lang_code)  # type: ignore[attr-defined]
-            elif option in (
-                TranslationOption.YANDEX_TRANSLATOR,
-            ):
+            elif option == TranslationOption.YANDEX_TRANSLATOR:
                 translated_chunk = self._translator.translate(from_lang_code, to_lang_code, chunk)  # type: ignore[attr-defined]
-            elif option in (
+            elif option in {
                 TranslationOption.DL_TRANSLATE,
                 TranslationOption.T5_TRANSLATOR,
                 TranslationOption.MY_MEMORY_TRANSLATOR,
-            ):  # noqa: ERA001, RUF100
+            }:  # noqa: ERA001, RUF100
                 translated_chunk = self._translator.translate(chunk, self.from_lang.name, self.to_lang.name)  # type: ignore[attr-defined, union-attr]  # noqa: ERA001, RUF100
-            elif option in (
-                TranslationOption.QCRI_TRANSLATOR,
-            ):
+            elif option == TranslationOption.QCRI_TRANSLATOR:
                 translated_chunk = self._translator.translate(source=from_lang_code, target=to_lang_code, domain=self.domain, text=chunk)
             else:
                 translated_chunk = self._translator.translate(chunk)  # type: ignore[misc, reportOptionalCall, attr-defined]
@@ -658,7 +652,7 @@ class Translator:
         except MinimumLengthError:
             print(f"Using a fallback translator because {self.translation_option.name} does not support this minimum length of text to translate.")
             minimum_length_failed_translate_option = self.translation_option
-        except Exception as e:  # noqa: BLE001
+        except Exception as e:  # pylint: disable=W0718  # noqa: BLE001
             # Log the exception, proceed to the next translation option
             print(f"Translation using preferred translator '{self.translation_option.name}' failed: {e!r}")
 
@@ -695,7 +689,7 @@ class Translator:
                 )
                 if minimum_length_failed_translate_option is None:
                     minimum_length_failed_translate_option = option
-            except Exception as e:  # noqa: BLE001
+            except Exception as e:  # pylint: disable=W0718  # noqa: BLE001
                 # Log the exception, proceed to the next translation option
                 print(f"Translation using '{option.name}' failed: {e!r}")
                 print(traceback.format_exc())

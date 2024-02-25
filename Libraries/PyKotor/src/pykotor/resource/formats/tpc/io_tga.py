@@ -1,11 +1,16 @@
 from __future__ import annotations
 
 import struct
+
 from enum import IntEnum
+from typing import TYPE_CHECKING
 
 from pykotor.common.stream import BinaryReader
 from pykotor.resource.formats.tpc.tpc_data import TPC, TPCTextureFormat
-from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES, ResourceReader, ResourceWriter, autoclose
+from pykotor.resource.type import ResourceReader, ResourceWriter, autoclose
+
+if TYPE_CHECKING:
+    from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES
 
 
 class _DataTypes(IntEnum):
@@ -19,6 +24,7 @@ class _DataTypes(IntEnum):
     COMPRESSED_COLOR_MAPPED_A = 32
     COMPRESSED_COLOR_MAPPED_B = 33
 
+
 class TPCTGAReader(ResourceReader):
     def __init__(
         self,
@@ -29,7 +35,11 @@ class TPCTGAReader(ResourceReader):
         super().__init__(source, offset, size)
         self._tpc: TPC | None = None
 
-    def _read_color_map(self, length, depth) -> list[bytes]:
+    def _read_color_map(
+        self,
+        length: int,
+        depth: int,
+    ) -> list[bytes]:
         color_map: list[bytes] = []
         bytes_per_entry = depth // 8
 
@@ -41,7 +51,8 @@ class TPCTGAReader(ResourceReader):
 
         return color_map
 
-    def _convert_grayscale_to_rgba(self, grayscale_value: int) -> list[int]:
+    @staticmethod
+    def _convert_grayscale_to_rgba(grayscale_value: int) -> list[int]:
         """Convert a grayscale value to RGBA."""
         return [grayscale_value, grayscale_value, grayscale_value, 255]
 
@@ -51,7 +62,8 @@ class TPCTGAReader(ResourceReader):
         height: int,
         bits_per_pixel: int,
         color_map: list[bytes] | None = None,
-        is_direct_rgb: bool = False,  # New parameter
+        *,
+        is_direct_rgb: bool = False,
     ) -> bytearray:
         """Process RLE compressed data."""
         data = bytearray()
@@ -62,8 +74,8 @@ class TPCTGAReader(ResourceReader):
             packet = self._reader.read_uint8()
             count = (packet & 0b01111111) + 1
             is_raw_packet: bool = (packet >> 7) == 0
-            #count = (packet & 0x7f) + 1
-            #is_raw_packet = packet & 0x80
+            # count = (packet & 0x7f) + 1
+            # is_raw_packet = packet & 0x80
             n += count
 
             if is_raw_packet:
@@ -107,8 +119,12 @@ class TPCTGAReader(ResourceReader):
                 break
         return data
 
-
-    def _process_non_rle_color_mapped(self, width: int, height: int, color_map: list[bytes]) -> bytearray:
+    def _process_non_rle_color_mapped(
+        self,
+        width: int,
+        height: int,
+        color_map: list[bytes],
+    ) -> bytearray:
         """Process non-RLE color-mapped data."""
         data = bytearray()
         for _ in range(width * height):
@@ -145,11 +161,11 @@ class TPCTGAReader(ResourceReader):
         id_length = self._reader.read_uint8()
         colormap_type = self._reader.read_uint8()
         datatype_code = self._reader.read_uint8()
-        colormap_origin = self._reader.read_uint16()  # noqa: F841
+        _colormap_origin = self._reader.read_uint16()
         colormap_length = self._reader.read_uint16()
         colormap_depth = self._reader.read_uint8()
-        x_origin = self._reader.read_uint16()  # noqa: F841
-        y_origin = self._reader.read_uint16()  # noqa: F841
+        _x_origin = self._reader.read_uint16()
+        _y_origin = self._reader.read_uint16()
         width = self._reader.read_uint16()
         height = self._reader.read_uint16()
         bits_per_pixel = self._reader.read_uint8()
@@ -269,10 +285,10 @@ class TPCTGAWriter(ResourceWriter):
         self._writer.write_uint16(width)
         self._writer.write_uint16(height)
 
-        if self._tpc.format() in [TPCTextureFormat.RGB or TPCTextureFormat.DXT1]:
+        if self._tpc.format() in {TPCTextureFormat.RGB, TPCTextureFormat.DXT1}:
             self._writer.write_uint8(32)  # bits_per_pixel, image_descriptor
             self._writer.write_uint8(0)
-            data: bytes | None = self._tpc.convert(TPCTextureFormat.RGB, 0).data
+            data: bytearray = self._tpc.convert(TPCTextureFormat.RGB, 0).data
             pixel_reader: BinaryReader = BinaryReader.from_bytes(data)
             for _ in range(len(data) // 3):
                 r = pixel_reader.read_uint8()

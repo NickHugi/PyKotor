@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 KOTOR_LIBRARY = {
     "k_inc_cheat": b"""//:: k_inc_cheat
 /*

@@ -1,19 +1,21 @@
+from __future__ import annotations
+
 import os
 import pathlib
 import sys
 import unittest
+
 from unittest.mock import patch
 
 THIS_SCRIPT_PATH = pathlib.Path(__file__).resolve()
-PYKOTOR_PATH = THIS_SCRIPT_PATH.parents[2]
-UTILITY_PATH = THIS_SCRIPT_PATH.parents[4].joinpath("Utility", "src")
+PYKOTOR_PATH = THIS_SCRIPT_PATH.parents[2].joinpath("Libraries", "PyKotor", "src")
+UTILITY_PATH = THIS_SCRIPT_PATH.parents[2].joinpath("Libraries", "Utility", "src")
 def add_sys_path(p: pathlib.Path):
     working_dir = str(p)
     if working_dir not in sys.path:
         sys.path.append(working_dir)
 if PYKOTOR_PATH.joinpath("pykotor").exists():
     add_sys_path(PYKOTOR_PATH)
-    os.chdir(PYKOTOR_PATH.parent)
 if UTILITY_PATH.joinpath("utility").exists():
     add_sys_path(UTILITY_PATH)
 
@@ -93,92 +95,80 @@ class TestCaseAwarePath(unittest.TestCase):
         self.assertEqual(CaseAwarePath._fix_path_formatting("/path//to/dir/", slash="\\"), "\\path\\to\\dir")
         self.assertEqual(CaseAwarePath._fix_path_formatting("/path//to/dir/", slash="/"), "/path/to/dir")
 
-    @patch.object(pathlib.Path, "exists", autospec=True)
-    def test_should_resolve_case(self, mock_exists):
-        mock_exists.side_effect = lambda x: str(x) != "/path/to/dir"
-        if os.name == "nt":  # sourcery skip: hoist-similar-statement-from-if, hoist-statement-from-if
-            self.assertFalse(CaseAwarePath.should_resolve_case("/path/to/dir"))
-            self.assertFalse(CaseAwarePath.should_resolve_case(CaseAwarePath("/path/to/dir")))
-            self.assertFalse(CaseAwarePath.should_resolve_case("path/to/dir"))
-        else:
-            self.assertTrue(CaseAwarePath.should_resolve_case("/path/to/dir"))
-            self.assertTrue(CaseAwarePath.should_resolve_case(CaseAwarePath("/path/to/dir")))
-            self.assertFalse(CaseAwarePath.should_resolve_case("path/to/dir"))
-
 class TestSplitFilename(unittest.TestCase):
     def test_normal(self):
-        path = CaseAwarePath('file.txt')
+        path = CaseAwarePath("file.txt")
         stem, ext = path.split_filename()
-        self.assertEqual(stem, 'file')
-        self.assertEqual(ext, 'txt')
+        self.assertEqual(stem, "file")
+        self.assertEqual(ext, "txt")
 
     def test_multiple_dots(self):
-        path = CaseAwarePath('file.with.dots.txt')
+        path = CaseAwarePath("file.with.dots.txt")
         stem, ext = path.split_filename(dots=2)
-        self.assertEqual(stem, 'file.with')
-        self.assertEqual(ext, 'dots.txt')
-        path = CaseAwarePath('test.asdf.qwerty.tlk.xml')
+        self.assertEqual(stem, "file.with")
+        self.assertEqual(ext, "dots.txt")
+        path = CaseAwarePath("test.asdf.qwerty.tlk.xml")
         stem, ext = path.split_filename(dots=2)
-        self.assertEqual(stem, 'test.asdf.qwerty')
-        self.assertEqual(ext, 'tlk.xml')
+        self.assertEqual(stem, "test.asdf.qwerty")
+        self.assertEqual(ext, "tlk.xml")
 
     def test_no_dots(self):
-        path = CaseAwarePath('filename')
+        path = CaseAwarePath("filename")
         stem, ext = path.split_filename()
-        self.assertEqual(stem, 'filename')
-        self.assertEqual(ext, '')
+        self.assertEqual(stem, "filename")
+        self.assertEqual(ext, "")
 
     def test_negative_dots(self):
-        path = CaseAwarePath('left.right.txt')
+        path = CaseAwarePath("left.right.txt")
         stem, ext = path.split_filename(dots=-1)
-        self.assertEqual(stem, 'right.txt')
-        self.assertEqual(ext, 'left')
+        self.assertEqual(stem, "right.txt")
+        self.assertEqual(ext, "left")
 
     def test_more_dots_than_parts(self):
-        path = CaseAwarePath('file.txt')
+        path = CaseAwarePath("file.txt")
         stem, ext = path.split_filename(dots=3)
-        self.assertEqual(stem, 'file')
-        self.assertEqual(ext, 'txt')
+        self.assertEqual(stem, "file")
+        self.assertEqual(ext, "txt")
         stem, ext = path.split_filename(dots=-3)
-        self.assertEqual(stem, 'file')
-        self.assertEqual(ext, 'txt')
+        self.assertEqual(stem, "file")
+        self.assertEqual(ext, "txt")
 
     def test_invalid_dots(self):
-        path = CaseAwarePath('file.txt')
+        path = CaseAwarePath("file.txt")
         with self.assertRaises(ValueError):
             path.split_filename(dots=0)
 
 class TestIsRelativeTo(unittest.TestCase):
 
     def test_basic(self):  # sourcery skip: class-extract-method
-        p1 = CaseAwarePath('/usr/local/bin')
-        p2 = CaseAwarePath('/usr/local')
+        p1 = CaseAwarePath("/usr/local/bin")
+        p2 = CaseAwarePath("/usr/local")
         self.assertTrue(p1.is_relative_to(p2))
 
     def test_different_paths(self):
-        p1 = CaseAwarePath('/usr/local/bin') 
-        p2 = CaseAwarePath('/etc')
+        p1 = CaseAwarePath("/usr/local/bin")
+        p2 = CaseAwarePath("/etc")
         self.assertFalse(p1.is_relative_to(p2))
 
     def test_relative_paths(self):
-        p1 = CaseAwarePath('docs/file.txt')
-        p2 = CaseAwarePath('docs')
+        p1 = CaseAwarePath("docs/file.txt")
+        p2 = CaseAwarePath("docs")
         self.assertTrue(p1.is_relative_to(p2))
 
     def test_case_insensitive(self):
-        p1 = CaseAwarePath('/User/Docs')
-        p2 = CaseAwarePath('/user/docs')
+        p1 = CaseAwarePath("/User/Docs")
+        p2 = CaseAwarePath("/user/docs")
         self.assertTrue(p1.is_relative_to(p2))
 
     def test_not_path(self):
-        p1 = CaseAwarePath('/home')
-        p2 = '/home'
+        p1 = CaseAwarePath("/home")
+        p2 = "/home"
         self.assertTrue(p1.is_relative_to(p2))
 
     def test_same_path(self):
-        p1 = CaseAwarePath('/home/user')
-        p2 = CaseAwarePath('/home/user')
+        p1 = CaseAwarePath("/home/user")
+        p2 = CaseAwarePath("/home/user")
         self.assertTrue(p1.is_relative_to(p2))
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

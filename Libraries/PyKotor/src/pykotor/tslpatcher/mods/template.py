@@ -4,18 +4,21 @@ from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
+    from typing_extensions import Literal
+
     from pykotor.common.misc import CaseInsensitiveDict, Game
     from pykotor.resource.type import SOURCE_TYPES
     from pykotor.tslpatcher.logger import PatchLogger
     from pykotor.tslpatcher.memory import PatcherMemory
-    from typing_extensions import Literal
+
 
 class OverrideType:
     """Possible actions for how the patcher should behave when patching a file to a ERF/MOD/RIM while that filename already exists in the Override folder."""
 
     IGNORE = "ignore"  # Do nothing: don't even check (TSLPatcher default)
-    WARN   = "warn"    # Log a warning (HoloPatcher default)
+    WARN = "warn"    # Log a warning (HoloPatcher default)
     RENAME = "rename"  # Rename the file in the Override folder with the 'old_' prefix. Also logs a warning.
+
 
 class PatcherModifications(ABC):
     """Abstract base class for TSLPatcher modifications.
@@ -73,14 +76,14 @@ class PatcherModifications(ABC):
         replace: bool | None = None,
         modifiers: list | None = None,
     ):
-        self.sourcefile:    str  = sourcefile
-        self.sourcefolder:  str  = "."
-        self.saveas:        str  = sourcefile
+        self.sourcefile:    str = sourcefile
+        self.sourcefolder:  str = "."
+        self.saveas:        str = sourcefile
         self.replace_file:  bool = bool(replace)
-        self.destination:   str  = self.DEFAULT_DESTINATION
+        self.destination:   str = self.DEFAULT_DESTINATION
 
-        self.action:        str  = "Patch" + " "
-        self.override_type: str  = OverrideType.WARN
+        self.action:        str = "Patch" + " "
+        self.override_type: str = OverrideType.WARN
         self.skip_if_not_replace: bool = False  # [InstallList] and [CompileList] only
 
     @abstractmethod
@@ -130,6 +133,7 @@ class PatcherModifications(ABC):
         # a major problem, so HoloPatcher defaults to "warn"
         self.override_type = file_section_dict.pop("!OverrideType", OverrideType.WARN).lower()
         self.sourcefolder = file_section_dict.pop("!SourceFolder", default_sourcefolder)
+
 
 def convert_to_bool(value: bool | str) -> bool:
     # sourcery skip: assign-if-exp, reintroduce-else

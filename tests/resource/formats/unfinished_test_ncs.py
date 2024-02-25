@@ -1,7 +1,10 @@
+from __future__ import annotations
+
 import os
 import pathlib
 import sys
 import unittest
+
 from unittest import TestCase
 
 THIS_SCRIPT_PATH = pathlib.Path(__file__).resolve()
@@ -13,14 +16,18 @@ def add_sys_path(p: pathlib.Path):
         sys.path.append(working_dir)
 if PYKOTOR_PATH.joinpath("pykotor").exists():
     add_sys_path(PYKOTOR_PATH)
-    os.chdir(PYKOTOR_PATH.parent)
 if UTILITY_PATH.joinpath("utility").exists():
     add_sys_path(UTILITY_PATH)
 
+from typing import TYPE_CHECKING
+
 from pykotor.common.stream import BinaryReader
-from pykotor.resource.formats.ncs import NCS, NCSBinaryReader
+from pykotor.resource.formats.ncs import NCSBinaryReader
 from pykotor.resource.formats.ncs.ncs_auto import bytes_ncs, read_ncs, write_ncs
 from utility.system.path import Path
+
+if TYPE_CHECKING:
+    from pykotor.resource.formats.ncs import NCS
 
 BINARY_TEST_FILE = "tests/files/test.ncs"
 

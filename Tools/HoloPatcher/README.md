@@ -6,6 +6,8 @@ HoloPatcher is a rewrite of TSLPatcher written in Python, utilizing the PyKotor 
 
 TSLPatcher is a Delphi utility designed for modifying game files for "Star Wars: Knights of the Old Republic" and its sequel. It allows for the seamless integration of mods, ensuring compatibility and minimizing conflicts between different mods.
 
+You can find the [TSLPatcher official readme here.](https://github.com/NickHugi/PyKotor/wiki/TSLPatcher's-Official-Readme)
+
 However, TSLPatcher is over 20 years old now and many qol features, bugs, and highly popular features were never added over the years.
 TSLPatcher, additionally, is closed source, making it difficult to determine its logic or why it may be failing to install a specific mod.
 
@@ -13,7 +15,7 @@ TSLPatcher, additionally, is closed source, making it difficult to determine its
 ## Goals
 
 - **Backwards Compatibility**: Match TSLPatcher's output and behavior as closely as possible.
-- **Cross-platform compatible**: Function platform-agnostically on windows/mac/linux.
+- **Cross-platform compatible**: Windows/Mac/Linux will all produce the same patch results. HoloPatcher provides case-insensitive pathing support for all operating systems.
 - **Support the non-PC versions of the game**: Support and provide tools for kotor ports such as iOS, android, steamdeck, etc. This goal is largely still in progress.
 - **Add new features**: Add highly-requested features while still ensuring backwards compatibility with TSLPatcher.
 
@@ -25,8 +27,11 @@ TSLPatcher, additionally, is closed source, making it difficult to determine its
 - **Error Handling and Logging**: Provides robust error handling and detailed logging functionality, aiding in debugging and ensuring smooth patching operations.
 - **User Interface**: Features a graphical user interface for easy mod installation and management.
 - **Command-line support**: Offer a command line for tools such as [KOTORModSync](https://github.com/th3w1zard1/KOTORModSync)
+- **Compiling NSS scripts into NCS bytecode without reliance on nwnnsscomp.**
 
 ## Usage
+
+_End users should [download the latest release here](https://github.com/NickHugi/PyKotor/releases)_
 
 HoloPatcher can be used both as a command-line tool and through its graphical user interface.
 
@@ -64,7 +69,7 @@ Options:
 
 ### Graphical User Interface
 
-Simply run the `src/__main__.py` file without any arguments to launch the GUI.
+Simply run the [`src/__main__.py`](https://github.com/NickHugi/PyKotor/blob/master/Tools/HoloPatcher/src/__main__.py) file without any arguments to launch the GUI.
 
 ## Configuration
 
@@ -72,7 +77,7 @@ Modifications are defined in INI files, which specify the files to be patched, t
 
 - Adding or modifying fields in GFF files.
 - Inserting or modifying rows in 2DA files.
-- Adding or modifying entries in TLK files.
+- Adding or [modifying](https://github.com/NickHugi/PyKotor/wiki/HoloPatcher-README-for-mod-developers.#tlk-replacements) entries in TLK files.
 - Compiling NSS scripts into NCS bytecode without reliance on nwnnsscomp.
 - Modifying SSF sound files.
 
@@ -86,6 +91,15 @@ HoloPatcher is designed with extensibility in mind. Developers can extend its fu
 
 Contributions to the PyKotor's HoloPatcher are welcome. Whether it's adding new features, improving existing functionality, or fixing bugs, your contributions are appreciated.
 
+## Further Documentation
+
+For more detailed guides and tutorials on using HoloPatcher, refer to the following resources:
+
+- [Installing Mods with HoloPatcher](https://github.com/NickHugi/PyKotor/wiki/Installing-Mods-with-HoloPatcher): A step-by-step tutorial on setting up and running HoloPatcher.
+- [Advanced Configuration Options](https://github.com/NickHugi/PyKotor/wiki/HoloPatcher-README-for-mod-developers.): Detailed descriptions of advanced features and how to use them.
+- [Mod Creation Best Practices](https://github.com/NickHugi/PyKotor/wiki/Mod-Creation-Best-Practices): Guidelines and tips for creating mods with HoloPatcher.
+- [Notes on Internal Workings](https://github.com/NickHugi/PyKotor/wiki/Explanations-on-HoloPatcher-Internal-Logic): Explanations on how HoloPatcher works internally and some key TSLPatcher logic.
+
 ## License
 
-HoloPatcher is released under the [MIT License](https://github.com/NickHugi/PyKotor/blob/master/LICENSE).
+HoloPatcher is released under the [GPLv3 License](https://github.com/NickHugi/PyKotor/edit/master/Tools/HoloPatcher/LICENSE.txt).

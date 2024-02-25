@@ -7,6 +7,7 @@ import pathlib
 import sys
 import tempfile
 import traceback
+
 from typing import TYPE_CHECKING
 
 from PyQt5.QtCore import QThread
@@ -15,16 +16,22 @@ from PyQt5.QtWidgets import QApplication
 if TYPE_CHECKING:
     from types import TracebackType
 
-def onAppCrash(etype: type[BaseException], e: BaseException, tback: TracebackType | None):
-    from utility.error_handling import format_exception_with_variables
+
+def onAppCrash(
+    etype: type[BaseException],
+    e: BaseException,
+    tback: TracebackType | None,
+):
+    from utility.error_handling import format_exception_with_variables  # noqa: PLC0415  # pylint: disable=C0415
     with pathlib.Path("errorlog.txt").open("a", encoding="utf-8") as file:
-        try:  # sourcery skip: do-not-use-bare-except
+        try:
             file.writelines(format_exception_with_variables(e, etype, tback))
-        except:  # noqa: E722
+        except Exception:  # pylint: disable=W0702,W0718  # pylint: disable=W0718  # noqa: BLE001
             file.writelines(str(e))
         file.write("\n----------------------\n")
     # Mimic default behavior by printing the traceback to stderr
     traceback.print_exception(etype, e, tback)
+
 
 def is_frozen() -> bool:  # sourcery skip: assign-if-exp, boolean-if-exp-identity, reintroduce-else, remove-unnecessary-cast
     # Check for sys.frozen attribute
@@ -34,6 +41,7 @@ def is_frozen() -> bool:  # sourcery skip: assign-if-exp, boolean-if-exp-identit
     if tempfile.gettempdir() in sys.executable:
         return True
     return False
+
 
 def fix_sys_and_cwd_path():
     """Fixes sys.path and current working directory for PyKotor.
@@ -85,7 +93,8 @@ if __name__ == "__main__":
     if is_frozen():
         print("App is frozen - doing multiprocessing.freeze_support()")
         multiprocessing.freeze_support()
-    fix_sys_and_cwd_path()
+    else:
+        fix_sys_and_cwd_path()
     from utility.system.path import Path
 
     app = QApplication(sys.argv)
@@ -104,7 +113,6 @@ if __name__ == "__main__":
 
     window = ToolWindow()
     window.show()
-
 
     profiler = True  # Set to False or None to disable profiler
     if profiler:

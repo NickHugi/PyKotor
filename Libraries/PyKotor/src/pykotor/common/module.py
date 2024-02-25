@@ -1,29 +1,29 @@
 from __future__ import annotations
 
 from copy import copy
-from typing import TYPE_CHECKING, Any, Callable, Generic, TypeVar
+from typing import TYPE_CHECKING, Any, Generic, TypeVar
 
-from pykotor.common.misc import CaseInsensitiveDict, ResRef
+from pykotor.common.misc import CaseInsensitiveDict
 from pykotor.common.stream import BinaryReader, BinaryWriter
 from pykotor.extract.capsule import Capsule
-from pykotor.extract.file import LocationResult, ResourceIdentifier, ResourceResult
-from pykotor.extract.installation import Installation, SearchLocation
+from pykotor.extract.file import ResourceIdentifier
+from pykotor.extract.installation import SearchLocation
 from pykotor.resource.formats.bwm import bytes_bwm, read_bwm
 from pykotor.resource.formats.erf import read_erf, write_erf
 from pykotor.resource.formats.gff import read_gff
 from pykotor.resource.formats.lyt import bytes_lyt, read_lyt
 from pykotor.resource.formats.rim import read_rim, write_rim
-from pykotor.resource.formats.tpc import TPC, bytes_tpc, read_tpc
-from pykotor.resource.formats.vis import VIS, bytes_vis, read_vis
-from pykotor.resource.generics.are import ARE, bytes_are, read_are
+from pykotor.resource.formats.tpc import bytes_tpc, read_tpc
+from pykotor.resource.formats.vis import bytes_vis, read_vis
+from pykotor.resource.generics.are import bytes_are, read_are
 from pykotor.resource.generics.dlg import bytes_dlg, read_dlg
-from pykotor.resource.generics.git import GIT, bytes_git, read_git
-from pykotor.resource.generics.ifo import IFO, bytes_ifo, read_ifo
-from pykotor.resource.generics.pth import PTH, bytes_pth, read_pth
+from pykotor.resource.generics.git import bytes_git, read_git
+from pykotor.resource.generics.ifo import bytes_ifo, read_ifo
+from pykotor.resource.generics.pth import bytes_pth, read_pth
 from pykotor.resource.generics.utc import UTC, bytes_utc, read_utc
 from pykotor.resource.generics.utd import UTD, bytes_utd, read_utd
 from pykotor.resource.generics.ute import UTE, bytes_ute, read_ute
-from pykotor.resource.generics.uti import UTI, bytes_uti, read_uti
+from pykotor.resource.generics.uti import bytes_uti, read_uti
 from pykotor.resource.generics.utm import UTM, bytes_utm, read_utm
 from pykotor.resource.generics.utp import UTP, bytes_utp, read_utp
 from pykotor.resource.generics.uts import UTS, bytes_uts, read_uts
@@ -32,17 +32,29 @@ from pykotor.resource.generics.utw import UTW, bytes_utw, read_utw
 from pykotor.resource.type import ResourceType
 from pykotor.tools.misc import is_any_erf_type_file, is_bif_file, is_capsule_file, is_rim_file
 from pykotor.tools.model import list_lightmaps, list_textures
-from utility.error_handling import format_exception_with_variables
+from utility.error_handling import assert_with_variable_trace, format_exception_with_variables
 from utility.system.path import Path, PurePath
 
 if TYPE_CHECKING:
     import os
 
+    from collections.abc import Callable
+
+    from pykotor.common.misc import ResRef
+    from pykotor.extract.file import LocationResult, ResourceResult
+    from pykotor.extract.installation import Installation
     from pykotor.resource.formats.erf.erf_data import ERF
     from pykotor.resource.formats.gff.gff_data import GFF
     from pykotor.resource.formats.lyt import LYT
     from pykotor.resource.formats.mdl import MDL
     from pykotor.resource.formats.rim.rim_data import RIM
+    from pykotor.resource.formats.tpc import TPC
+    from pykotor.resource.formats.vis import VIS
+    from pykotor.resource.generics.are import ARE
+    from pykotor.resource.generics.git import GIT
+    from pykotor.resource.generics.ifo import IFO
+    from pykotor.resource.generics.pth import PTH
+    from pykotor.resource.generics.uti import UTI
     from pykotor.resource.type import SOURCE_TYPES
 
 T = TypeVar("T")
@@ -53,7 +65,7 @@ SEARCH_ORDER: list[SearchLocation] = [
 ]
 
 
-class Module:
+class Module:  # noqa: PLR0904
     def __init__(
         self,
         root: str,
@@ -116,7 +128,7 @@ class Module:
     def capsules(self) -> list[Capsule]:
         """Returns a copy of the capsules used by the module.
 
-        Returns
+        Returns:
         -------
             A list of linked capsules.
         """
@@ -255,7 +267,6 @@ class Module:
         for module_resource in self.resources.values():
             module_resource.activate()
 
-
     def add_locations(
         self,
         resname: str,
@@ -279,14 +290,13 @@ class Module:
         """
         # In order to store TGA resources in the same ModuleResource as their TPC counterpart, we use the .TPC extension
         # instead of the .TGA for the dictionary key.
-        filename_ext = str(ResourceType.TPC if restype == ResourceType.TGA else restype)
-        filename = f"{resname}.{filename_ext}"
-        if filename not in self.resources:
-            self.resources[filename] = ModuleResource(
-                resname,
-                restype,
-                self._installation,
-            )
+        filename_ext = (ResourceType.TPC if restype == ResourceType.TGA else restype).extension
+        filename: str = f"{resname}.{filename_ext}"
+        module_resource: ModuleResource = self.resources.get(filename)
+        if module_resource is None:
+            module_resource = ModuleResource(resname, restype, self._installation)
+            self.resources[filename] = module_resource
+
         self.resources[filename].add_locations(locations)
 
     def installation(self) -> Installation:
@@ -309,7 +319,6 @@ class Module:
             ModuleResource | None: The resource with the given name and type, or None if it does not exist.
         """
         return self.resources.get(f"{resname}.{restype.extension}", None)
-
 
     def layout(self) -> ModuleResource[LYT] | None:
         """Returns the LYT layout resource with a matching ID if it exists.
@@ -337,7 +346,6 @@ class Module:
             ),
             None,
         )
-
 
     def vis(self) -> ModuleResource[VIS] | None:
         """Finds the VIS resource with matching ID.
@@ -392,7 +400,6 @@ class Module:
             None,
         )
 
-
     def git(
         self,
     ) -> ModuleResource[GIT] | None:
@@ -421,7 +428,6 @@ class Module:
             None,
         )
 
-
     def pth(
         self,
     ) -> ModuleResource[PTH] | None:
@@ -448,7 +454,6 @@ class Module:
             ),
             None,
         )
-
 
     def info(
         self,
@@ -478,7 +483,6 @@ class Module:
             ),
             None,
         )
-
 
     def creature(
         self,
@@ -510,7 +514,6 @@ class Module:
             None,
         )
 
-
     def creatures(
         self,
     ) -> list[ModuleResource[UTC]]:
@@ -531,7 +534,6 @@ class Module:
             - Add matching resources to the return list.
         """
         return [resource for resource in self.resources.values() if resource.restype() == ResourceType.UTC]
-
 
     def placeable(
         self,
@@ -563,7 +565,6 @@ class Module:
             None,
         )
 
-
     def placeables(
         self,
     ) -> list[ModuleResource[UTP]]:
@@ -584,7 +585,6 @@ class Module:
             - Add matching resources to the return list.
         """
         return [resource for resource in self.resources.values() if resource.restype() == ResourceType.UTP]
-
 
     def door(
         self,
@@ -616,7 +616,6 @@ class Module:
             None,
         )
 
-
     def doors(
         self,
     ) -> list[ModuleResource[UTD]]:
@@ -637,7 +636,6 @@ class Module:
             - Add matching resources to the return list.
         """
         return [resource for resource in self.resources.values() if resource.restype() == ResourceType.UTD]
-
 
     def item(
         self,
@@ -669,7 +667,6 @@ class Module:
             None,
         )
 
-
     def items(
         self,
     ) -> list[ModuleResource[UTI]]:
@@ -691,7 +688,6 @@ class Module:
             - Return the list of UTI resources.
         """
         return [resource for resource in self.resources.values() if resource.restype() == ResourceType.UTD]
-
 
     def encounter(
         self,
@@ -723,7 +719,6 @@ class Module:
             None,
         )
 
-
     def encounters(
         self,
     ) -> list[ModuleResource[UTE]]:
@@ -745,7 +740,6 @@ class Module:
             - Return the list of UTE resources.
         """
         return [resource for resource in self.resources.values() if resource.restype() == ResourceType.UTE]
-
 
     def store(self, resname: str) -> ModuleResource[UTM] | None:
         """Looks up a material (UTM) resource by the specified resname from this module and returns the resource data.
@@ -775,13 +769,11 @@ class Module:
             None,
         )
 
-
     def stores(
         self,
     ) -> list[ModuleResource[UTM]]:
         """Returns a list of material (UTM) resources for this module."""
         return [resource for resource in self.resources.values() if resource.restype() == ResourceType.UTM]
-
 
     def trigger(
         self,
@@ -814,7 +806,6 @@ class Module:
             None,
         )
 
-
     def triggers(
         self,
     ) -> list[ModuleResource[UTT]]:
@@ -836,7 +827,6 @@ class Module:
             - Return the list of UTT resources.
         """
         return [resource for resource in self.resources.values() if resource.restype() == ResourceType.UTT]
-
 
     def waypoint(
         self,
@@ -869,13 +859,12 @@ class Module:
             None,
         )
 
-
     def waypoints(
         self,
     ) -> list[ModuleResource[UTW]]:
         """Returns list of UTW resources from resources dict.
 
-        Returns
+        Returns:
         -------
             list[ModuleResource[UTW]]: List of UTW resources
 
@@ -887,7 +876,6 @@ class Module:
             - Return list of UTW resources.
         """
         return [resource for resource in self.resources.values() if resource.restype() == ResourceType.UTW]
-
 
     def model(
         self,
@@ -919,7 +907,6 @@ class Module:
             None,
         )
 
-
     def model_ext(
         self,
         resname: str,
@@ -949,7 +936,6 @@ class Module:
             None,
         )
 
-
     def models(
         self,
     ) -> list[ModuleResource[MDL]]:
@@ -970,7 +956,6 @@ class Module:
         """
         return [resource for resource in self.resources.values() if resource.restype() == ResourceType.MDL]
 
-
     def model_exts(
         self,
     ) -> list[ModuleResource]:
@@ -990,7 +975,6 @@ class Module:
             - Adds matching resources to the return list.
         """
         return [resource for resource in self.resources.values() if resource.restype() == ResourceType.MDX]
-
 
     def texture(
         self,
@@ -1024,7 +1008,6 @@ class Module:
             None,
         )
 
-
     def textures(
         self,
     ) -> list[ModuleResource[MDL]]:
@@ -1046,7 +1029,6 @@ class Module:
         """
         texture_types: list[ResourceType] = [ResourceType.TPC, ResourceType.TGA]
         return [resource for resource in self.resources.values() if resource.restype() in texture_types]
-
 
     def sound(
         self,
@@ -1078,7 +1060,6 @@ class Module:
             None,
         )
 
-
     def sounds(
         self,
     ) -> list[ModuleResource[UTS]]:
@@ -1102,7 +1083,6 @@ class Module:
         return [resource for resource in self.resources.values() if resource.restype() == ResourceType.UTS]
 
 
-
 class ModuleResource(Generic[T]):
     def __init__(self, resname: str, restype: ResourceType, installation: Installation):
         self._resname: str = resname
@@ -1113,34 +1093,29 @@ class ModuleResource(Generic[T]):
         self._locations: list[Path] = []
         self._identifier = ResourceIdentifier(resname, restype)
 
-
     def __eq__(self, other):
         return hash(self) == hash(other)
-
 
     def __hash__(self):
         return hash(self._identifier)
 
-
     def resname(self) -> str:
         """Returns the resource name.
 
-        Returns
+        Returns:
         -------
             The resource name.
         """
         return self._resname
 
-
     def restype(self) -> ResourceType:
         """Returns the type of resource stored.
 
-        Returns
+        Returns:
         -------
             The resource type.
         """
         return self._restype
-
 
     def localized_name(self) -> str | None:
         # sourcery skip: assign-if-exp, reintroduce-else
@@ -1186,11 +1161,11 @@ class ModuleResource(Generic[T]):
     def data(self) -> bytes:
         """Opens the file at the active location and returns the data.
 
-        Raises
+        Raises:
         ------
             ValueError: If no file is active.
 
-        Returns
+        Returns:
         -------
             The bytes data of the active file.
         """
@@ -1219,11 +1194,10 @@ class ModuleResource(Generic[T]):
 
         return BinaryReader.load_file(self._active)
 
-
     def resource(self) -> T | None:
         """Returns the cached resource object. If no object has been cached, then it will load the object.
 
-        Returns
+        Returns:
         -------
             The resource object.
         """
@@ -1253,6 +1227,13 @@ class ModuleResource(Generic[T]):
 
             file_name: str = f"{self._resname}.{self._restype.extension}"
             if self._active is None:
+                try:
+                    assert_with_variable_trace(self._resource_obj is not None)
+                except Exception as e:
+                    with Path("errorlog.txt").open("a", encoding="utf-8") as file:
+                        lines = format_exception_with_variables(e)
+                        file.writelines(lines)
+                        file.write("\n----------------------\n")
                 self._resource_obj = None
 
             elif is_capsule_file(self._active.name):
@@ -1279,7 +1260,6 @@ class ModuleResource(Generic[T]):
 
         return self._resource_obj
 
-
     def add_locations(self, filepaths: list[Path]):
         """Adds a list of filepaths to the list of locations stored for the resource.
 
@@ -1293,12 +1273,10 @@ class ModuleResource(Generic[T]):
         if self._active is None and self._locations:
             self.activate(self._locations[0])
 
-
     def locations(
         self,
     ) -> list[Path]:
         return self._locations
-
 
     def activate(self, filepath: os.PathLike | str | None = None):
         """Sets the active file to the specified path. Calling this method will reset the loaded resource.
@@ -1323,22 +1301,19 @@ class ModuleResource(Generic[T]):
                 msg = f"The filepath '{self._active}' is not being tracked as a location for the resource."
                 raise ValueError(msg)
 
-
     def unload(self):
         """Clears the cached resource object from memory."""
         self._resource_obj = None
-
 
     def reload(self):
         """Reloads the resource object from the active location."""
         self._resource_obj = None
         self.resource()
 
-
     def active(self) -> Path:
         """Returns the filepath of the currently active file for the resource.
 
-        Returns
+        Returns:
         -------
             Filepath to the active resource.
         """
@@ -1347,7 +1322,6 @@ class ModuleResource(Generic[T]):
             raise ValueError(msg)
 
         return self._active
-
 
     def save(
         self,

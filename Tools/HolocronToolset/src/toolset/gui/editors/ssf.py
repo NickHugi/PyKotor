@@ -2,28 +2,31 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+from PyQt5.QtWidgets import QFileDialog
+
 from pykotor.extract.talktable import TalkTable
 from pykotor.resource.formats.ssf import SSF, SSFSound, read_ssf, write_ssf
 from pykotor.resource.type import ResourceType
-from PyQt5.QtWidgets import QFileDialog, QWidget
 from toolset.gui.editor import Editor
 
 if TYPE_CHECKING:
     import os
 
+    from PyQt5.QtWidgets import QLineEdit, QWidget
+
     from pykotor.extract.installation import Installation
+    from pykotor.extract.talktable import StringResult
 
 
 class SSFEditor(Editor):
     def __init__(self, parent: QWidget | None, installation: Installation | None = None):
-        """Initialize Soundset Editor window
+        """Initialize Soundset Editor window.
+
         Args:
+        ----
             parent: {Parent widget}
             installation: {Installation object}.
 
-        Returns
-        -------
-            None
         Processing Logic:
         ----------------
             - Call super().__init__ to initialize base editor
@@ -32,12 +35,12 @@ class SSFEditor(Editor):
             - Setup menus and signals
             - Call new() to start with empty soundset
         """
-        supported = [ResourceType.SSF]
+        supported: list[ResourceType] = [ResourceType.SSF]
         super().__init__(parent, "Soundset Editor", "soundset", supported, supported, installation)
 
         self._talktable: TalkTable | None = installation.talktable() if installation else None
 
-        from toolset.uic.editors.ssf import Ui_MainWindow
+        from toolset.uic.editors.ssf import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
 
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
@@ -53,9 +56,6 @@ class SSFEditor(Editor):
         ----
             self: The class instance.
 
-        Returns:
-        -------
-            None
         Processing Logic:
         ----------------
             - Connects valueChanged signals from spin boxes to updateTextBoxes method
@@ -93,21 +93,22 @@ class SSFEditor(Editor):
         self.ui.actionSetTLK.triggered.connect(self.selectTalkTable)
 
     def load(self, filepath: os.PathLike | str, resref: str, restype: ResourceType, data: bytes):
-        """Loads sound data from an SSF file
+        """Loads sound data from an SSF file.
+
         Args:
+        ----
             filepath: {PathLike or string}: Path to SSF file
             resref: {string}: Resource reference
             restype: {ResourceType}: Resource type
             data: {bytes}: SSF data
-        Returns:
-            None: No return value
+
         Loads sound data from an SSF file and sets values of UI spin boxes:
-        - Reads SSF data from file
-        - Sets values of spin boxes for different sound events like battlecries, attacks, abilities etc
-        - Populates UI with sound data from file.
+            - Reads SSF data from file
+            - Sets values of spin boxes for different sound events like battlecries, attacks, abilities etc
+            - Populates UI with sound data from file.
         """
         super().load(filepath, resref, restype, data)
-        ssf = read_ssf(data)
+        ssf: SSF = read_ssf(data)
 
         self.ui.battlecry1StrrefSpin.setValue(ssf.get(SSFSound.BATTLE_CRY_1))
         self.ui.battlecry2StrrefSpin.setValue(ssf.get(SSFSound.BATTLE_CRY_2))
@@ -139,11 +140,16 @@ class SSFEditor(Editor):
         self.ui.poisonedStrrefSpin.setValue(ssf.get(SSFSound.POISONED))
 
     def build(self) -> tuple[bytes, bytes]:
-        """Builds sound data from UI values
+        """Builds sound data from UI values.
+
         Args:
+        ----
             self: {The class instance}: Provides UI element values
+
         Returns:
+        -------
             tuple[bytes, bytes]: {The built sound data and empty string}
+
         Processing Logic:
         ----------------
             - Initialize SSF object
@@ -219,11 +225,12 @@ class SSFEditor(Editor):
         self.ui.poisonedStrrefSpin.setValue(0)
 
     def updateTextBoxes(self):
-        """Updates text boxes with sound and text from talktable
+        """Updates text boxes with sound and text from talktable.
+
         Args:
+        ----
             self: The class instance
-        Returns:
-            None: Does not return anything
+
         Processing Logic:
         ----------------
             - Gets stringref values from UI elements
@@ -233,7 +240,7 @@ class SSFEditor(Editor):
         if self._talktable is None:
             return
 
-        pairs = {
+        pairs: dict[tuple[QLineEdit, QLineEdit], int] = {
             (self.ui.battlecry1SoundEdit, self.ui.battlecry1TextEdit): self.ui.battlecry1StrrefSpin.value(),
             (self.ui.battlecry2SoundEdit, self.ui.battlecry2TextEdit): self.ui.battlecry2StrrefSpin.value(),
             (self.ui.battlecry3SoundEdit, self.ui.battlecry3TextEdit): self.ui.battlecry3StrrefSpin.value(),
@@ -264,11 +271,11 @@ class SSFEditor(Editor):
             (self.ui.poisonedSoundEdit, self.ui.poisonedTextEdit): self.ui.poisonedStrrefSpin.value(),
         }
 
-        batch = self._talktable.batch(list(pairs.values()))
+        batch: dict[int, StringResult] = self._talktable.batch(list(pairs.values()))
 
         for pair, stringref in pairs.items():
             text, sound = batch[stringref]
-            pair[0].setText(sound.get())
+            pair[0].setText(str(sound))
             pair[1].setText(text)
 
     def selectTalkTable(self):

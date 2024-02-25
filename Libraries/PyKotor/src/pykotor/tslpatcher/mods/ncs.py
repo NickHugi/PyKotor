@@ -7,11 +7,12 @@ from pykotor.tslpatcher.mods.template import PatcherModifications
 from utility.system.path import PureWindowsPath
 
 if TYPE_CHECKING:
+    from typing_extensions import Literal
+
     from pykotor.common.misc import Game
     from pykotor.resource.type import SOURCE_TYPES
     from pykotor.tslpatcher.logger import PatchLogger
     from pykotor.tslpatcher.memory import PatcherMemory
-    from typing_extensions import Literal
 
 
 class ModificationsNCS(PatcherModifications):

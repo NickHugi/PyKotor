@@ -1,3 +1,4 @@
+from __future__ import annotations
 from pykotor.resource.formats.lyt.lyt_data import (
     LYT,
     LYTRoom,

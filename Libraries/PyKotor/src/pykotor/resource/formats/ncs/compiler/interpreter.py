@@ -1,18 +1,26 @@
 from __future__ import annotations
 
 import struct
+
 from copy import copy
 from inspect import signature
-from typing import Any, Callable, NamedTuple
+from typing import TYPE_CHECKING, Any, NamedTuple
 
 from pykotor.common.geometry import Vector3
-from pykotor.common.script import DataType, ScriptFunction
+from pykotor.common.script import DataType
 from pykotor.common.scriptdefs import KOTOR_FUNCTIONS
-from pykotor.resource.formats.ncs import NCS, NCSInstruction, NCSInstructionType
+from pykotor.resource.formats.ncs import NCSInstructionType
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
+
+    from pykotor.common.script import ScriptFunction
+    from pykotor.resource.formats.ncs import NCS, NCSInstruction
 
 
 class Interpreter:
     """This class is not used in the compiling process. This is only partially implemented, mostly for testing purposes."""
+
     def __init__(self, ncs: NCS):
         self._ncs: NCS = ncs
         self._cursor: NCSInstruction = ncs.instructions[0]
@@ -61,180 +69,180 @@ class Interpreter:
             elif self._cursor.ins_type == NCSInstructionType.MOVSP:
                 self._stack.move(self._cursor.args[0])
 
-            elif self._cursor.ins_type in [
+            elif self._cursor.ins_type in {
                 NCSInstructionType.ADDII,
                 NCSInstructionType.ADDIF,
                 NCSInstructionType.ADDFF,
                 NCSInstructionType.ADDFI,
                 NCSInstructionType.ADDSS,
                 NCSInstructionType.ADDVV,
-            ]:
+            }:
                 self._stack.addition_op()
 
-            elif self._cursor.ins_type in [
+            elif self._cursor.ins_type in {
                 NCSInstructionType.SUBII,
                 NCSInstructionType.SUBIF,
                 NCSInstructionType.SUBFF,
                 NCSInstructionType.SUBFI,
                 NCSInstructionType.SUBVV,
-            ]:
+            }:
                 self._stack.subtraction_op()
 
-            elif self._cursor.ins_type in [
+            elif self._cursor.ins_type in {
                 NCSInstructionType.MULII,
                 NCSInstructionType.MULIF,
                 NCSInstructionType.MULFF,
                 NCSInstructionType.MULFI,
                 NCSInstructionType.MULVF,
                 NCSInstructionType.MULFV,
-            ]:
+            }:
                 self._stack.multiplication_op()
 
-            elif self._cursor.ins_type in [
+            elif self._cursor.ins_type in {
                 NCSInstructionType.DIVII,
                 NCSInstructionType.DIVIF,
                 NCSInstructionType.DIVFF,
                 NCSInstructionType.DIVFI,
                 NCSInstructionType.DIVVF,
-            ]:
+            }:
                 self._stack.division_op()
 
-            elif self._cursor.ins_type in [NCSInstructionType.MODII]:
+            elif self._cursor.ins_type == NCSInstructionType.MODII:
                 self._stack.modulus_op()
 
-            elif self._cursor.ins_type in [
+            elif self._cursor.ins_type in {
                 NCSInstructionType.NEGI,
                 NCSInstructionType.NEGF,
-            ]:
+            }:
                 self._stack.negation_op()
 
-            elif self._cursor.ins_type in [NCSInstructionType.COMPI]:
+            elif self._cursor.ins_type == NCSInstructionType.COMPI:
                 self._stack.bitwise_not_op()
 
-            elif self._cursor.ins_type in [NCSInstructionType.NOTI]:
+            elif self._cursor.ins_type == NCSInstructionType.NOTI:
                 self._stack.logical_not_op()
 
-            elif self._cursor.ins_type in [NCSInstructionType.LOGANDII]:
+            elif self._cursor.ins_type == NCSInstructionType.LOGANDII:
                 self._stack.logical_and_op()
 
-            elif self._cursor.ins_type in [NCSInstructionType.LOGORII]:
+            elif self._cursor.ins_type == NCSInstructionType.LOGORII:
                 self._stack.logical_or_op()
 
-            elif self._cursor.ins_type in [NCSInstructionType.INCORII]:
+            elif self._cursor.ins_type == NCSInstructionType.INCORII:
                 self._stack.bitwise_or_op()
 
-            elif self._cursor.ins_type in [NCSInstructionType.EXCORII]:
+            elif self._cursor.ins_type == NCSInstructionType.EXCORII:
                 self._stack.bitwise_xor_op()
 
-            elif self._cursor.ins_type in [NCSInstructionType.BOOLANDII]:
+            elif self._cursor.ins_type == NCSInstructionType.BOOLANDII:
                 self._stack.bitwise_and_op()
 
-            elif self._cursor.ins_type in [
+            elif self._cursor.ins_type in {
                 NCSInstructionType.EQUALII,
                 NCSInstructionType.EQUALFF,
                 NCSInstructionType.EQUALSS,
                 NCSInstructionType.EQUALOO,
-            ]:
+            }:
                 self._stack.logical_equality_op()
 
-            elif self._cursor.ins_type in [
+            elif self._cursor.ins_type in {
                 NCSInstructionType.NEQUALII,
                 NCSInstructionType.NEQUALFF,
                 NCSInstructionType.NEQUALSS,
                 NCSInstructionType.NEQUALOO,
-            ]:
+            }:
                 self._stack.logical_inequality_op()
 
-            elif self._cursor.ins_type in [
+            elif self._cursor.ins_type in {
                 NCSInstructionType.GTII,
                 NCSInstructionType.GTFF,
-            ]:
+            }:
                 self._stack.compare_greaterthan_op()
 
-            elif self._cursor.ins_type in [
+            elif self._cursor.ins_type in {
                 NCSInstructionType.GEQII,
                 NCSInstructionType.GEQFF,
-            ]:
+            }:
                 self._stack.compare_greaterthanorequal_op()
 
-            elif self._cursor.ins_type in [
+            elif self._cursor.ins_type in {
                 NCSInstructionType.LTII,
                 NCSInstructionType.LTFF,
-            ]:
+            }:
                 self._stack.compare_lessthan_op()
 
-            elif self._cursor.ins_type in [
+            elif self._cursor.ins_type in {
                 NCSInstructionType.LEQII,
                 NCSInstructionType.LEQFF,
-            ]:
+            }:
                 self._stack.compare_lessthanorequal_op()
 
-            elif self._cursor.ins_type in [NCSInstructionType.SHLEFTII]:
+            elif self._cursor.ins_type == NCSInstructionType.SHLEFTII:
                 self._stack.bitwise_leftshift_op()
 
-            elif self._cursor.ins_type in [NCSInstructionType.SHRIGHTII]:
+            elif self._cursor.ins_type == NCSInstructionType.SHRIGHTII:
                 self._stack.bitwise_rightshift_op()
 
-            elif self._cursor.ins_type in [NCSInstructionType.INCIBP]:
+            elif self._cursor.ins_type == NCSInstructionType.INCIBP:
                 self._stack.increment_bp(self._cursor.args[0])
 
-            elif self._cursor.ins_type in [NCSInstructionType.DECIBP]:
+            elif self._cursor.ins_type == NCSInstructionType.DECIBP:
                 self._stack.decrement_bp(self._cursor.args[0])
 
-            elif self._cursor.ins_type in [NCSInstructionType.INCISP]:
+            elif self._cursor.ins_type == NCSInstructionType.INCISP:
                 self._stack.increment(self._cursor.args[0])
 
-            elif self._cursor.ins_type in [NCSInstructionType.DECISP]:
+            elif self._cursor.ins_type == NCSInstructionType.DECISP:
                 self._stack.decrement(self._cursor.args[0])
 
-            elif self._cursor.ins_type in [NCSInstructionType.RSADDI]:
+            elif self._cursor.ins_type == NCSInstructionType.RSADDI:
                 self._stack.add(DataType.INT, 0)
 
-            elif self._cursor.ins_type in [NCSInstructionType.RSADDF]:
+            elif self._cursor.ins_type == NCSInstructionType.RSADDF:
                 self._stack.add(DataType.FLOAT, 0)
 
-            elif self._cursor.ins_type in [NCSInstructionType.RSADDS]:
+            elif self._cursor.ins_type == NCSInstructionType.RSADDS:
                 self._stack.add(DataType.STRING, "")
 
-            elif self._cursor.ins_type in [NCSInstructionType.RSADDO]:
+            elif self._cursor.ins_type == NCSInstructionType.RSADDO:
                 self._stack.add(DataType.OBJECT, 1)
 
-            elif self._cursor.ins_type in [NCSInstructionType.RSADDEFF]:
+            elif self._cursor.ins_type == NCSInstructionType.RSADDEFF:
                 self._stack.add(DataType.EFFECT, 0)
 
-            elif self._cursor.ins_type in [NCSInstructionType.RSADDTAL]:
+            elif self._cursor.ins_type == NCSInstructionType.RSADDTAL:
                 self._stack.add(DataType.TALENT, 0)
 
-            elif self._cursor.ins_type in [NCSInstructionType.RSADDLOC]:
+            elif self._cursor.ins_type == NCSInstructionType.RSADDLOC:
                 self._stack.add(DataType.LOCATION, 0)
 
-            elif self._cursor.ins_type in [NCSInstructionType.RSADDEVT]:
+            elif self._cursor.ins_type == NCSInstructionType.RSADDEVT:
                 self._stack.add(DataType.EVENT, 0)
 
-            elif self._cursor.ins_type in [NCSInstructionType.SAVEBP]:
+            elif self._cursor.ins_type == NCSInstructionType.SAVEBP:
                 self._stack.save_bp()
 
-            elif self._cursor.ins_type in [NCSInstructionType.RESTOREBP]:
+            elif self._cursor.ins_type == NCSInstructionType.RESTOREBP:
                 self._stack.restore_bp()
 
-            elif self._cursor.ins_type in [NCSInstructionType.CPTOPBP]:
+            elif self._cursor.ins_type == NCSInstructionType.CPTOPBP:
                 self._stack.copy_top_bp(self._cursor.args[0], self._cursor.args[1])
 
-            elif self._cursor.ins_type in [NCSInstructionType.CPDOWNBP]:
+            elif self._cursor.ins_type == NCSInstructionType.CPDOWNBP:
                 self._stack.copy_down_bp(self._cursor.args[0], self._cursor.args[1])
 
-            elif self._cursor.ins_type in [NCSInstructionType.JSR]:
+            elif self._cursor.ins_type == NCSInstructionType.JSR:
                 index_return_to = self._ncs.instructions.index(self._cursor) + 1
                 return_to = self._ncs.instructions[index_return_to]
                 self._returns.append(return_to)
 
-            elif self._cursor.ins_type in [
+            elif self._cursor.ins_type in {
                 NCSInstructionType.JZ,
                 NCSInstructionType.JNZ,
-            ]:
+            }:
                 jump_value = self._stack.pop()
 
-            elif self._cursor.ins_type in [NCSInstructionType.STORE_STATE]:
+            elif self._cursor.ins_type == NCSInstructionType.STORE_STATE:
                 self.store_state()
 
             self.stack_snapshots.append(
@@ -242,16 +250,16 @@ class Interpreter:
             )
 
             # Control flow
-            if self._cursor.ins_type in [NCSInstructionType.RETN]:
+            if self._cursor.ins_type == NCSInstructionType.RETN:
                 return_to = self._returns.pop()
                 self._cursor = return_to
                 continue
 
             if (
-                self._cursor.ins_type in [NCSInstructionType.JMP]
-                or (self._cursor.ins_type in [NCSInstructionType.JZ] and jump_value == 0)
-                or (self._cursor.ins_type in [NCSInstructionType.JNZ] and jump_value != 0)
-                or self._cursor.ins_type in [NCSInstructionType.JSR]
+                self._cursor.ins_type == NCSInstructionType.JMP
+                or (self._cursor.ins_type == NCSInstructionType.JZ and jump_value == 0)
+                or (self._cursor.ins_type == NCSInstructionType.JNZ and jump_value != 0)
+                or self._cursor.ins_type == NCSInstructionType.JSR
             ):
                 self._cursor = self._cursor.jump
             else:
@@ -363,7 +371,7 @@ class StackV2:
 
     # TODO: refactor
     def add(self, datatype: DataType, value: float | int):  # noqa: PYI041,RUF100
-        if datatype not in [DataType.INT, DataType.FLOAT]:
+        if datatype not in {DataType.INT, DataType.FLOAT}:
             raise NotImplementedError
         if not isinstance(value, int):
             raise ValueError

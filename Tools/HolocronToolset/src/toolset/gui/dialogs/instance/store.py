@@ -1,14 +1,23 @@
-from pykotor.common.misc import ResRef
-from pykotor.resource.generics.git import GITStore
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
 from PyQt5.QtGui import QIcon, QPixmap
-from PyQt5.QtWidgets import QDialog, QWidget
+from PyQt5.QtWidgets import QDialog
+
+from pykotor.common.misc import ResRef
+
+if TYPE_CHECKING:
+    from PyQt5.QtWidgets import QWidget
+
+    from pykotor.resource.generics.git import GITStore
 
 
 class StoreDialog(QDialog):
     def __init__(self, parent: QWidget, store: GITStore):
         super().__init__(parent)
 
-        from toolset.uic.dialogs.instance.store import Ui_Dialog
+        from toolset.uic.dialogs.instance.store import Ui_Dialog  # pylint: disable=C0415  # noqa: PLC0415
 
         self.ui = Ui_Dialog()
         self.ui.setupUi(self)
@@ -16,7 +25,7 @@ class StoreDialog(QDialog):
         self.setWindowTitle("Edit Store")
         self.setWindowIcon(QIcon(QPixmap(":/images/icons/k1/merchant.png")))
 
-        self.ui.resrefEdit.setText(store.resref.get())
+        self.ui.resrefEdit.setText(str(store.resref))
         self.ui.xPosSpin.setValue(store.position.x)
         self.ui.yPosSpin.setValue(store.position.y)
         self.ui.zPosSpin.setValue(store.position.z)

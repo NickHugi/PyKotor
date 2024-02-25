@@ -139,7 +139,7 @@ class RIM:
     ):
         """Returns a ERF with the same resources.
 
-        Returns
+        Returns:
         -------
             A new ERF object.
         """

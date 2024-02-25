@@ -3,6 +3,14 @@ from __future__ import annotations
 from copy import copy, deepcopy
 from typing import TYPE_CHECKING
 
+import pyperclip
+
+from PyQt5 import QtCore
+from PyQt5.QtCore import QBuffer, QIODevice, QItemSelectionModel
+from PyQt5.QtGui import QBrush, QColor, QStandardItem, QStandardItemModel
+from PyQt5.QtMultimedia import QMediaContent, QMediaPlayer
+from PyQt5.QtWidgets import QListWidgetItem, QMenu, QMessageBox, QShortcut
+
 from pykotor.common.misc import ResRef
 from pykotor.extract.installation import SearchLocation
 from pykotor.resource.formats.gff import write_gff
@@ -12,7 +20,6 @@ from pykotor.resource.generics.dlg import (
     DLGConversationType,
     DLGEntry,
     DLGLink,
-    DLGNode,
     DLGReply,
     dismantle_dlg,
     read_dlg,
@@ -28,11 +35,23 @@ from toolset.gui.dialogs.edit.dialog_animation import EditAnimationDialog
 from toolset.gui.dialogs.edit.dialog_model import CutsceneModelDialog
 from toolset.gui.dialogs.edit.locstring import LocalizedStringDialog
 from toolset.gui.editor import Editor
+from toolset.utils.misc import QtKey
+from utility.error_handling import assert_with_variable_trace
 
 if TYPE_CHECKING:
     import os
 
+    from PyQt5.QtCore import QItemSelection, QModelIndex, QPoint
+    from PyQt5.QtGui import QKeyEvent, QMouseEvent
+    from PyQt5.QtWidgets import QPlainTextEdit, QWidget
+
     from pykotor.common.language import LocalizedString
+    from pykotor.resource.formats.twoda.twoda_data import TwoDA
+    from pykotor.resource.generics.dlg import (
+        DLGAnimation,
+        DLGNode,
+        DLGStunt,
+    )
 
 _LINK_ROLE = QtCore.Qt.UserRole + 1
 _COPY_ROLE = QtCore.Qt.UserRole + 2
@@ -60,7 +79,7 @@ class DLGEditor(Editor):
         supported = [ResourceType.DLG]
         super().__init__(parent, "Dialog Editor", "dialog", supported, supported, installation)
 
-        from toolset.uic.editors.dlg import Ui_MainWindow
+        from toolset.uic.editors.dlg import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
         self._setupMenus()
@@ -255,7 +274,8 @@ class DLGEditor(Editor):
             - Refreshes the item
             - Loops through child links and loads recursively if not seen.
         """
-        node = link._node
+        node: DLGNode | None = link._node
+        assert node is not None, assert_with_variable_trace(node is not None, "link._node cannot be None.")
         item.setData(link, _LINK_ROLE)
 
         alreadyListed = link in seenLink or node in seenNode
@@ -375,14 +395,14 @@ class DLGEditor(Editor):
                     HTInstallation.TwoDA_DIALOG_ANIMS]
         installation.htBatchCache2DA(required)
 
-        videoEffects = installation.htGetCache2DA(HTInstallation.TwoDA_VIDEO_EFFECTS)
-
         if installation.tsl:
             self._setup_tsl_install_defs(installation)
         self.ui.cameraEffectSelect.clear()
         self.ui.cameraEffectSelect.addItem("[None]", None)
+
+        videoEffects: TwoDA | None = installation.htGetCache2DA(HTInstallation.TwoDA_VIDEO_EFFECTS)
         for i, label in enumerate(videoEffects.get_column("label")):
-            self.ui.cameraEffectSelect.addItem(label.replace("VIDEO_EFFECT_", "").replace("_" , " ").title(), i)
+            self.ui.cameraEffectSelect.addItem(label.replace("VIDEO_EFFECT_", "").replace("_", " ").title(), i)
 
     def _setup_tsl_install_defs(self, installation: HTInstallation):
         """Set up UI elements for TSL installation selection.
@@ -428,8 +448,9 @@ class DLGEditor(Editor):
             item = self.model.itemFromIndex(indexes[0])
             link: DLGLink = item.data(_LINK_ROLE)
             isCopy: bool = item.data(_COPY_ROLE)
-            node: DLGNode = link._node
-            dialog = LocalizedStringDialog(self, self._installation, node.Text)
+            node: DLGNode | None = link._node
+            assert node is not None, assert_with_variable_trace(node is not None, "node cannot be None")
+            dialog = LocalizedStringDialog(self, self._installation, node.text)
             if dialog.exec_() and not isCopy:
                 node.Text = dialog.locstring
                 item.setText(self._installation.string(node.Text, "(continue)"))
@@ -449,7 +470,7 @@ class DLGEditor(Editor):
             textbox.setPlainText(text if text != "-1" else "")
             textbox.setStyleSheet("QPlainTextEdit {background-color: white;}")
         else:
-            text = self._installation.talktable().string(locstring.stringref)
+            text: str = self._installation.talktable().string(locstring.stringref)
             textbox.setPlainText(text)
             textbox.setStyleSheet("QPlainTextEdit {background-color: #fffded;}")
 
@@ -767,7 +788,7 @@ class DLGEditor(Editor):
         elif not self._focused:
             menu = QMenu(self)
 
-            menu.addAction("Add Entry").triggered.connect(lambda: self.addRootNode())
+            menu.addAction("Add Entry").triggered.connect(self.addRootNode)
 
             menu.popup(self.ui.dialogTree.viewport().mapToGlobal(point))
 
@@ -825,7 +846,26 @@ class DLGEditor(Editor):
 
         menu.popup(self.ui.dialogTree.viewport().mapToGlobal(point))
 
-    def onSelectionChanged(self, selection: QItemSelection) -> None:
+    def keyPressEvent(self, event: QKeyEvent | None):
+        if event.key() in {QtKey.Key_Enter, QtKey.Key_Return}:
+            selectedItem: QModelIndex = self.ui.dialogTree.currentIndex()
+            if selectedItem.isValid():
+                item: QStandardItem | None = self.model.itemFromIndex(selectedItem)
+                link = item.data(_LINK_ROLE)
+                if link:
+                    self.focusOnNode(link)
+        super().keyPressEvent(event)  # Call the base class method to ensure default behavior
+
+    def mouseDoubleClickEvent(self, event: QMouseEvent | None):
+        selectedItem: QModelIndex = self.ui.dialogTree.currentIndex()
+        if selectedItem.isValid():
+            item: QStandardItem | None = self.model.itemFromIndex(selectedItem)
+            link = item.data(_LINK_ROLE)
+            if link:
+                self.focusOnNode(link)
+        super().mouseDoubleClickEvent(event)
+
+    def onSelectionChanged(self, selection: QItemSelection):
         """Updates UI fields based on selected dialog node.
 
         Args:

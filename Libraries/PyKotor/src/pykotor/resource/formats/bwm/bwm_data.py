@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import itertools
 import math
+
 from copy import copy
 from enum import IntEnum
 from typing import TYPE_CHECKING
@@ -13,6 +14,7 @@ if TYPE_CHECKING:
 
 # A lot of the code in this module was adapted from the KotorBlender fork by seedhartha:
 # https://github.com/seedhartha/kotorblender
+
 
 class BWMType(IntEnum):
     PlaceableOrDoor = 0
@@ -82,7 +84,7 @@ class BWM:
     ) -> list[Vector3]:
         """Returns a list of vectors stored in the faces of the walkmesh.
 
-        Returns
+        Returns:
         -------
             A list of Vector3 objects.
         """
@@ -599,7 +601,7 @@ class BWMNodeAABB:
 class BWMAdjacency:
     """Maps a edge index (0 to 2 inclusive) to a target face from a source face. Calculated with BWM.adjacencies().
 
-    Attributes
+    Attributes:
     ----------
         face: Target face.
         edge: Edge index of the source face (0 to 2 inclusive).
@@ -617,7 +619,7 @@ class BWMAdjacency:
 class BWMEdge:
     """Represents an edge of a the face that is not adjacent to any other walkable face. Calculated with BWM.edges().
 
-    Attributes
+    Attributes:
     ----------
         face: The face.
         index: Edge index on the face (0 to 2 inclusive).

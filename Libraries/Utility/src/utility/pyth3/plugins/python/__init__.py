@@ -1,0 +1,2 @@
+"""Python object input."""
+

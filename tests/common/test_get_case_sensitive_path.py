@@ -1,26 +1,29 @@
+from __future__ import annotations
+
 import os
 import pathlib
 import sys
 import tempfile
 import unittest
+
 from unittest import TestCase
 
 THIS_SCRIPT_PATH = pathlib.Path(__file__).resolve()
-PYKOTOR_PATH = THIS_SCRIPT_PATH.parents[2]
-UTILITY_PATH = THIS_SCRIPT_PATH.parents[4].joinpath("Utility", "src")
+PYKOTOR_PATH = THIS_SCRIPT_PATH.parents[2].joinpath("Libraries", "PyKotor", "src")
+UTILITY_PATH = THIS_SCRIPT_PATH.parents[2].joinpath("Libraries", "Utility", "src")
 def add_sys_path(p: pathlib.Path):
     working_dir = str(p)
     if working_dir not in sys.path:
         sys.path.append(working_dir)
 if PYKOTOR_PATH.joinpath("pykotor").exists():
     add_sys_path(PYKOTOR_PATH)
-    os.chdir(PYKOTOR_PATH.parent)
 if UTILITY_PATH.joinpath("utility").exists():
     add_sys_path(UTILITY_PATH)
 
 from pykotor.tools.path import CaseAwarePath
 
 
+@unittest.skipIf(os.name == "nt", "Test not available on Windows")
 class TestCaseAwarePath(TestCase):
     def setUp(self):
         self.temp_dir = tempfile.TemporaryDirectory()
@@ -29,20 +32,17 @@ class TestCaseAwarePath(TestCase):
     def tearDown(self):
         self.temp_dir.cleanup()
 
-    @unittest.skipIf(os.name == "nt", "Test not available on Windows")
     def test_join_with_nonexistent_path(self):
         non_existent_path = CaseAwarePath("nonExistentDir")
         existent_path = self.temp_path
         joined_path = existent_path.joinpath(non_existent_path)
         self.assertFalse(joined_path.exists(), f"joined_path is '{joined_path}'")
 
-    @unittest.skipIf(os.name == "nt", "Test not available on Windows")
     def test_truediv_equivalent_to_joinpath(self):
         case_aware_path1 = CaseAwarePath("someDir")
         case_aware_path2 = CaseAwarePath("someFile.txt")
         self.assertEqual(case_aware_path1 / case_aware_path2, case_aware_path1.joinpath(case_aware_path2))
 
-    @unittest.skipIf(os.name == "nt", "Test not available on Windows")
     def test_rtruediv(self):
         case_aware_file_path = str(self.temp_path) / CaseAwarePath("soMeDir", "someFile.TXT")
         expected_path: pathlib.Path = self.temp_path / "SOmeDir" / "SOMEFile.txT"
@@ -52,7 +52,6 @@ class TestCaseAwarePath(TestCase):
         self.assertTrue(case_aware_file_path.exists(), f"expected_path: {expected_path} actual_path: {case_aware_file_path}")
         self.assertEqual(str(case_aware_file_path), str(expected_path))
 
-    @unittest.skipIf(os.name == "nt", "Test not available on Windows")
     def test_make_and_parse_uri(self):
         # Create a temporary directory
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -85,10 +84,9 @@ class TestCaseAwarePath(TestCase):
             # Ensure that the parsed path matches the original path
             self.assertEqual(path, str(sample_file))
 
-    @unittest.skipIf(os.name == "nt", "Test not available on Windows")
     def test_case_change_after_creation(self):
         initial_path: pathlib.Path = self.temp_path / "TestFile.txt"
-        case_aware_path = CaseAwarePath(f"{str(self.temp_path)}/testfile.TXT")
+        case_aware_path = CaseAwarePath(f"{self.temp_path!s}/testfile.TXT")
         initial_path.touch()
 
         # Ensure existence is detected despite case difference
@@ -107,14 +105,14 @@ class TestCaseAwarePath(TestCase):
         # Changing directory case
         os.rename(path, self.temp_path / "dir1")
         path_changed = self.temp_path / "dir1"
-        case_aware_path = CaseAwarePath(f"{str(self.temp_path)}/DIR1/someFile.txt")
+        case_aware_path = CaseAwarePath(f"{self.temp_path!s}/DIR1/someFile.txt")
 
         self.assertFalse(case_aware_path.exists())
         (path_changed / "SOMEfile.TXT").touch()
         self.assertTrue(case_aware_path.exists())
 
     def test_mixed_case_creation_and_deletion(self):
-        case_aware_path = CaseAwarePath(f"{str(self.temp_path)}/MixEDCase/File.TXT")
+        case_aware_path = CaseAwarePath(f"{self.temp_path!s}/MixEDCase/File.TXT")
         regular_path: pathlib.Path = self.temp_path / "mixedcase" / "file.txt"
 
         regular_path.parent.mkdir()
@@ -151,7 +149,7 @@ class TestCaseAwarePath(TestCase):
         deep_path: pathlib.Path = base_path / "a" / "b" / "c" / "d" / "e"
         deep_path.mkdir(parents=True)
 
-        case_aware_deep_path = CaseAwarePath(f"{str(self.temp_path)}/A/B/C/D/E")
+        case_aware_deep_path = CaseAwarePath(f"{self.temp_path!s}/A/B/C/D/E")
         self.assertTrue(case_aware_deep_path.exists())
         case_aware_deep_path = CaseAwarePath(self.temp_path) / "A" / "B" / "C" / "D" / "E"
         self.assertTrue(case_aware_deep_path.exists())
@@ -161,12 +159,12 @@ class TestCaseAwarePath(TestCase):
         recursive_path.mkdir(parents=True)
         self.assertTrue(recursive_path.exists())
 
-        actual_path = CaseAwarePath(f"{str(self.temp_path)}/X/Y/Z")
+        actual_path = CaseAwarePath(f"{self.temp_path!s}/X/Y/Z")
         self.assertTrue(actual_path.exists())
 
     def test_cascading_file_creation(self):
         cascading_file: pathlib.Path = self.temp_path / "dir" / "subdir" / "file.txt"
-        case_aware_cascading_file = CaseAwarePath(f"{str(self.temp_path)}/DIR/SUBDIR/FILE.TXT")
+        case_aware_cascading_file = CaseAwarePath(f"{self.temp_path!s}/DIR/SUBDIR/FILE.TXT")
 
         cascading_file.parent.mkdir(parents=True)
         cascading_file.touch()
@@ -193,7 +191,7 @@ class TestCaseAwarePath(TestCase):
     @unittest.skip("unfinished")
     def test_chmod(self):
         file_path: pathlib.Path = self.temp_path / "file.txt"
-        case_aware_file_path = CaseAwarePath(f"{str(self.temp_path)}/FILE.txt")
+        case_aware_file_path = CaseAwarePath(f"{self.temp_path!s}/FILE.txt")
 
         file_path.mkdir(parents=True, exist_ok=True)
         file_path.touch()
@@ -205,7 +203,7 @@ class TestCaseAwarePath(TestCase):
 
     def test_open_read_write(self):
         file_path: pathlib.Path = self.temp_path / "file.txt"
-        case_aware_file_path = CaseAwarePath(f"{str(self.temp_path)}/FILE.txt")
+        case_aware_file_path = CaseAwarePath(f"{self.temp_path!s}/FILE.txt")
 
         with file_path.open("w") as f:
             f.write("Hello, world!")
@@ -217,11 +215,11 @@ class TestCaseAwarePath(TestCase):
 
     def test_touch(self):
         self.temp_path.joinpath("SOMEfile.TXT").touch()
-        self.assertTrue(CaseAwarePath(f"{str(self.temp_path)}/someFile.txt").exists())
+        self.assertTrue(CaseAwarePath(f"{self.temp_path!s}/someFile.txt").exists())
 
     def test_samefile(self):
         file_path = self.temp_path / "file.txt"
-        case_aware_file_path = CaseAwarePath(f"{str(self.temp_path)}/FILE.TXT")
+        case_aware_file_path = CaseAwarePath(f"{self.temp_path!s}/FILE.TXT")
 
         file_path.mkdir(parents=True, exist_ok=True)
         file_path.touch()
@@ -231,8 +229,8 @@ class TestCaseAwarePath(TestCase):
     def test_replace(self):
         file_path1 = self.temp_path / "file1.txt"
         file_path2 = self.temp_path / "file2.txt"
-        case_aware_file_path1 = CaseAwarePath(f"{str(self.temp_path)}/FILE1.txt")
-        case_aware_file_path2 = CaseAwarePath(f"{str(self.temp_path)}/FILE2.txt")
+        case_aware_file_path1 = CaseAwarePath(f"{self.temp_path!s}/FILE1.txt")
+        case_aware_file_path2 = CaseAwarePath(f"{self.temp_path!s}/FILE2.txt")
 
         file_path1.mkdir(parents=True, exist_ok=True)
         file_path1.touch()
@@ -248,7 +246,7 @@ class TestCaseAwarePath(TestCase):
     def test_rename(self):
         original_file = self.temp_path / "original.txt"
         renamed_file = self.temp_path / "renamed.txt"
-        case_aware_original_file = CaseAwarePath(f"{str(self.temp_path)}/ORIGINAL.txt")
+        case_aware_original_file = CaseAwarePath(f"{self.temp_path!s}/ORIGINAL.txt")
 
         original_file.touch()
         case_aware_original_file.rename(renamed_file)
@@ -260,7 +258,7 @@ class TestCaseAwarePath(TestCase):
     def test_symlink_to(self):
         source_file = self.temp_path / "source.txt"
         link_file = self.temp_path / "link.txt"
-        case_aware_link_file = CaseAwarePath(f"{str(self.temp_path)}/LINK.txt")
+        case_aware_link_file = CaseAwarePath(f"{self.temp_path!s}/LINK.txt")
 
         source_file.touch()
         case_aware_link_file.symlink_to(source_file)
@@ -272,7 +270,7 @@ class TestCaseAwarePath(TestCase):
     def test_hardlink_to(self):
         source_file = self.temp_path / "source.txt"
         hardlink_file = self.temp_path / "hardlink.txt"
-        case_aware_hardlink_file = CaseAwarePath(f"{str(self.temp_path)}/HARDLINK.txt")
+        case_aware_hardlink_file = CaseAwarePath(f"{self.temp_path!s}/HARDLINK.txt")
 
         source_file.touch()
         case_aware_hardlink_file.hardlink_to(source_file)

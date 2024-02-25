@@ -4,24 +4,24 @@ from typing import TYPE_CHECKING, Any, Callable
 
 from PyQt5 import QtCore
 from PyQt5.QtCore import QThread
-from PyQt5.QtWidgets import QDialog, QLabel, QMessageBox, QProgressBar, QVBoxLayout, QWidget
-from toolset.__main__ import is_frozen
-from utility.error_handling import format_exception_with_variables
-from utility.misc import is_debug_mode
+from PyQt5.QtWidgets import QDialog, QLabel, QMessageBox, QProgressBar, QVBoxLayout
+
+from utility.error_handling import format_exception_with_variables, universal_simplify_exception
 from utility.system.path import Path
 
 if TYPE_CHECKING:
     from PyQt5.QtGui import QCloseEvent
+    from PyQt5.QtWidgets import QWidget
 
 
 class AsyncLoader(QDialog):
-
-    def exec_(self, *args, **kwargs):
-        if is_debug_mode() and not is_frozen():
-            self.value = self._debug_task()
-            return 1
-        return super().exec_(*args, **kwargs)
-    def __init__(self, parent: QWidget, title: str, task: Callable, errorTitle: str | None = None):
+    def __init__(
+        self,
+        parent: QWidget,
+        title: str,
+        task: Callable,
+        errorTitle: str | None = None,
+    ):
         """Initializes a progress dialog.
 
         Args:
@@ -41,10 +41,6 @@ class AsyncLoader(QDialog):
             - Starts an AsyncWorker thread to run the task asynchronously
             - Connects callbacks for successful/failed task completion.
         """
-        if is_debug_mode() and not is_frozen():
-            self._debug_task = task
-            return
-
         super().__init__(parent)
         self._progressBar = QProgressBar(self)
         self._progressBar.setMinimum(0)
@@ -93,41 +89,53 @@ class AsyncLoader(QDialog):
         self.error = error
         self.reject()
 
-        if self.errorTitle:
-            QMessageBox(QMessageBox.Critical, self.errorTitle, str(error)).exec_()
-
-        with Path("errorlog.txt").open("a") as file:
-            lines = format_exception_with_variables(type(self.error), self.error, self.error.__traceback__)
+        with Path("errorlog.txt").open("a", encoding="utf-8") as file:
+            lines = format_exception_with_variables(self.error)
             file.writelines(lines)
             file.write("\n----------------------\n")
+
+        if self.errorTitle:
+            QMessageBox(QMessageBox.Critical, self.errorTitle, str(universal_simplify_exception(error))).exec_()
 
 
 class AsyncWorker(QThread):
     successful = QtCore.pyqtSignal(object)
     failed = QtCore.pyqtSignal(object)
 
-    def __init__(self, parent: QWidget, task: Callable):
+    def __init__(
+        self,
+        parent: QWidget,
+        task: Callable,
+    ):
         super().__init__(parent)
         self._task = task
 
     def run(self):
         try:
             self.successful.emit(self._task())
-        except Exception as e:  # noqa: BLE001
+        except Exception as e:  # pylint: disable=W0718  # noqa: BLE001
             self.failed.emit(e)
 
 
 class AsyncBatchLoader(QDialog):
-    def __init__(self, parent: QWidget, title: str, tasks: list[Callable], errorTitle: str | None = None, *,
-                 cascade: bool = False):
-        """Initializes a progress dialog for running multiple tasks asynchronously
+    def __init__(
+        self,
+        parent: QWidget | None,
+        title: str,
+        tasks: list[Callable],
+        errorTitle: str | None = None,
+        *,
+        cascade: bool = False,
+    ):
+        """Initializes a progress dialog for running multiple tasks asynchronously.
+
         Args:
+        ----
             parent (QWidget): Parent widget
             title (str): Title of the progress dialog
             tasks (list[Callable]): List of tasks to run
             errorTitle (str | None): Title for error dialog, if any
-        Returns:
-            None: Does not return anything
+
         Processing Logic:
         ----------------
             - Sets up progress bar, info text and layout
@@ -191,21 +199,29 @@ class AsyncBatchLoader(QDialog):
         self.errors.append(error)
         self.failCount += 1
         self._progressBar.setValue(self._progressBar.value() + 1)
+        with Path("errorlog.txt").open("a", encoding="utf-8") as file:
+            try:
+                file.writelines(format_exception_with_variables(error))
+            except Exception:  # pylint: disable=W0718  # noqa: BLE001
+                file.writelines(str(error))
 
     def _onAllCompleted(self):
-        if self.errors:
-            self.reject()
-            if self.errorTitle:
-                errorStrings = [str(error)+"\n" for error in self.errors]
-                QMessageBox(QMessageBox.Critical, self.errorTitle, "".join(errorStrings)).exec_()
-            with Path("errorlog.txt").open("a") as file:
-                lines = []
-                for e in self.errors:
-                    lines.extend(format_exception_with_variables(type(e), e, e.__traceback__).split("\n"))
-                file.writelines(lines)
-                file.write("\n----------------------\n")
-        else:
+        if not self.errors:
             self.accept()
+            return
+
+        self.reject()
+        if not self.errorTitle:
+            return
+
+        errorTitle = self.errorTitle
+        if self.failCount:
+            errorTitle = f"{self.errorTitle} ({self.failCount} errors)"
+        QMessageBox(
+            QMessageBox.Critical,
+            errorTitle,
+            "\n".join(str(universal_simplify_exception(error)) for error in self.errors),
+        ).exec_()
 
 
 class AsyncBatchWorker(QThread):
@@ -213,7 +229,12 @@ class AsyncBatchWorker(QThread):
     failed = QtCore.pyqtSignal(object)
     completed = QtCore.pyqtSignal()
 
-    def __init__(self, parent: QWidget, tasks: list[Callable], cascade: bool):
+    def __init__(
+        self,
+        parent: QWidget,
+        tasks: list[Callable],
+        cascade: bool,
+    ):
         super().__init__(parent)
         self._tasks: list[Callable] = tasks
         self._cascade: bool = cascade
@@ -223,7 +244,7 @@ class AsyncBatchWorker(QThread):
             try:
                 result = task()
                 self.successful.emit(result)
-            except Exception as e:  # noqa: PERF203, BLE001
+            except Exception as e:  # pylint: disable=W0718  # noqa: PERF203, BLE001
                 self.failed.emit(e)
                 if self._cascade:
                     break

@@ -1,17 +1,26 @@
+from __future__ import annotations
+
 import math
 
-from pykotor.common.misc import Color, ResRef
-from pykotor.resource.generics.git import GITPlaceable
+from typing import TYPE_CHECKING
+
 from PyQt5.QtGui import QColor, QIcon, QImage, QPixmap
-from PyQt5.QtWidgets import QColorDialog, QDialog, QDoubleSpinBox, QLabel, QWidget
-from toolset.gui.widgets.long_spinbox import LongSpinBox
+from PyQt5.QtWidgets import QColorDialog, QDialog, QDoubleSpinBox
+
+from pykotor.common.misc import Color, ResRef
+
+if TYPE_CHECKING:
+    from PyQt5.QtWidgets import QLabel, QWidget
+
+    from pykotor.resource.generics.git import GITPlaceable
+    from toolset.gui.widgets.long_spinbox import LongSpinBox
 
 
 class PlaceableDialog(QDialog):
     def __init__(self, parent: QWidget, placeable: GITPlaceable):
         super().__init__(parent)
 
-        from toolset.uic.dialogs.instance.placeable import Ui_Dialog
+        from toolset.uic.dialogs.instance.placeable import Ui_Dialog  # pylint: disable=C0415  # noqa: PLC0415
 
         self.ui = Ui_Dialog()
         self.ui.setupUi(self)
@@ -22,7 +31,7 @@ class PlaceableDialog(QDialog):
         self.ui.colorButton.clicked.connect(lambda: self.changeColor(self.ui.colorSpin))
         self.ui.colorSpin.valueChanged.connect(lambda value: self.redoColorImage(value, self.ui.color))
 
-        self.ui.resrefEdit.setText(placeable.resref.get())
+        self.ui.resrefEdit.setText(str(placeable.resref))
         self.ui.xPosSpin.setValue(placeable.position.x)
         self.ui.yPosSpin.setValue(placeable.position.y)
         self.ui.zPosSpin.setValue(placeable.position.z)
@@ -31,7 +40,7 @@ class PlaceableDialog(QDialog):
 
         self.placeable: GITPlaceable = placeable
 
-        for widget in [getattr(self.ui, attr) for attr in dir(self.ui)]:
+        for widget in (getattr(self.ui, attr) for attr in dir(self.ui)):
             if isinstance(widget, QDoubleSpinBox):
                 widget.setDecimals(8)
 

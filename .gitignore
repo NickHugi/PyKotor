@@ -8,7 +8,6 @@ build
 /__main__.dist/
 /__main__.build/
 /__main__.onefile-build/
-*.exe
 *.spec
 *.zip
 dist-mac
@@ -54,7 +53,12 @@ Tools/HolocronToolset/src/toolset/kits
 Tools/HolocronToolset/src/toolset/kits/*/door0_k1.utd
 Tools/HolocronToolset/src/toolset/kits/*/*
 /Tools/HolocronToolset/toolset/kits/
+.idea/misc.xml
+.idea/PyKotor.iml
+.idea/misc.xml
+.idea/PyKotor.iml
 .mypy_cache
 *.egg-info*
 .venv
 .venv_wsl
+.secrets
