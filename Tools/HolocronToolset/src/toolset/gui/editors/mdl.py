@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+from PyQt5.QtWidgets import QMessageBox
+
 from pykotor.common.stream import BinaryReader
 from pykotor.extract.installation import SearchLocation
 from pykotor.resource.formats.erf import read_erf
@@ -10,11 +12,12 @@ from pykotor.resource.formats.rim import read_rim
 from pykotor.resource.type import ResourceType
 from pykotor.tools.misc import is_any_erf_type_file, is_bif_file, is_rim_file
 from pykotor.tools.path import CaseAwarePath
-from PyQt5.QtWidgets import QMessageBox, QWidget
 from toolset.gui.editor import Editor
 
 if TYPE_CHECKING:
     import os
+
+    from PyQt5.QtWidgets import QWidget
 
     from toolset.data.installation import HTInstallation
 
@@ -43,7 +46,7 @@ class MDLEditor(Editor):
         self._mdl: MDL = MDL()
         self._installation = installation
 
-        from toolset.uic.editors.mdl import Ui_MainWindow
+        from toolset.uic.editors.mdl import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
 
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)

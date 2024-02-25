@@ -2,6 +2,10 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+from PyQt5 import QtCore
+from PyQt5.QtGui import QColor
+from PyQt5.QtWidgets import QDialog, QDialogButtonBox, QListWidgetItem
+
 from pykotor.common.misc import ResRef
 from pykotor.common.stream import BinaryWriter
 from pykotor.resource.formats.erf import read_erf, write_erf
@@ -16,13 +20,12 @@ from pykotor.resource.generics.utt import UTT, bytes_utt
 from pykotor.resource.generics.utw import UTW, bytes_utw
 from pykotor.resource.type import ResourceType
 from pykotor.tools.misc import is_any_erf_type_file, is_rim_file
-from PyQt5 import QtCore
-from PyQt5.QtGui import QColor
-from PyQt5.QtWidgets import QDialog, QDialogButtonBox, QListWidgetItem, QWidget
 from toolset.gui.widgets.settings.installations import GlobalSettings
 from utility.system.path import Path
 
 if TYPE_CHECKING:
+    from PyQt5.QtWidgets import QWidget
+
     from pykotor.common.module import Module
     from pykotor.extract.file import FileResource
     from toolset.data.installation import HTInstallation
@@ -55,7 +58,7 @@ class InsertInstanceDialog(QDialog):
         self.data: bytes = b""
         self.filepath: Path | None = None
 
-        from toolset.uic.dialogs.insert_instance import Ui_Dialog
+        from toolset.uic.dialogs.insert_instance import Ui_Dialog  # pylint: disable=C0415  # noqa: PLC0415
 
         self.ui = Ui_Dialog()
         self.ui.setupUi(self)

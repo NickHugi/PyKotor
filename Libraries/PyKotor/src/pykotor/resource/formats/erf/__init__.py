@@ -1,3 +1,4 @@
+from __future__ import annotations
 from pykotor.resource.formats.erf.erf_data import (
     ERF,
     ERFResource,

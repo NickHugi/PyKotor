@@ -4,6 +4,12 @@ import tkinter as tk
 from tkinter import ttk
 from typing import Callable
 
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from tkinter import ttk
+    from collections.abc import Callable
+
 
 class ToolTip:
     def __init__(self, widget: ttk.Widget, callable_returns_text: Callable[..., str]):

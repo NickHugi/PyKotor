@@ -1,16 +1,18 @@
 from __future__ import annotations
 
 import os
+
 from typing import TYPE_CHECKING
 
 from pykotor.common.stream import BinaryReader
 from pykotor.resource.formats.twoda.io_twoda import TwoDABinaryReader, TwoDABinaryWriter
 from pykotor.resource.formats.twoda.io_twoda_csv import TwoDACSVReader, TwoDACSVWriter
 from pykotor.resource.formats.twoda.io_twoda_json import TwoDAJSONReader, TwoDAJSONWriter
-from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES, ResourceType
+from pykotor.resource.type import ResourceType
 
 if TYPE_CHECKING:
     from pykotor.resource.formats.twoda.twoda_data import TwoDA
+    from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES
 
 
 def detect_2da(
@@ -46,7 +48,7 @@ def detect_2da(
             return ResourceType.TwoDA_JSON
         if "," in first4:
             return ResourceType.TwoDA_CSV
-        #if "<" in first4:
+        # if "<" in first4:
         #    return ResourceType.TwoDA_XML
         return ResourceType.INVALID
 

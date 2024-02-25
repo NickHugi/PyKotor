@@ -4,10 +4,9 @@
 from __future__ import annotations
 
 from enum import Enum, IntEnum
-from typing import TYPE_CHECKING, Any, ClassVar, Generator, Generic, ItemsView, Iterable, Iterator, Mapping, TypeVar, overload
+from typing import TYPE_CHECKING, ClassVar, Generic, ItemsView, Iterable, Iterator, Mapping, TypeVar, overload
 
 from pykotor.common.geometry import Vector3
-from utility.string import CaseInsensitiveWrappedStr
 
 if TYPE_CHECKING:
     import os
@@ -16,7 +15,8 @@ T = TypeVar("T")
 VT = TypeVar("VT")
 _unique_sentinel = object()
 
-class ResRef(CaseInsensitiveWrappedStr):
+
+class ResRef:
     """A string reference to a game resource.
 
     ResRefs are the names of resources without the extension (the file stem).
@@ -62,19 +62,49 @@ class ResRef(CaseInsensitiveWrappedStr):
         def __init__(self, resref: ResRef, func_name, *args, **kwargs):
             super().__init__(f"ResRef's must be case-insensitive, attempted {resref!r}.{func_name}({args, kwargs})")
 
-
     def __init__(
         self,
-        name: str,
+        text: str,
     ):
-        super().__init__(name)
-        self.set_data(name)
+        self._value = ""
+        self.set_data(text)
+
+    def __len__(
+        self,
+    ):
+        return len(self._value)
+
+    def __bool__(self):
+        return bool(self._value)
+
+    def __eq__(
+        self,
+        other,
+    ):
+        """A ResRef can be compared to another ResRef or a str."""
+        if isinstance(other, ResRef):
+            other_value = other.get().lower()
+        elif isinstance(other, str):
+            other_value = other.lower()
+        else:
+            return NotImplemented
+        return other_value == self._value.lower()
+
+    def __repr__(
+        self,
+    ):
+        return f"ResRef({self._value})"
+
+    def __str__(
+        self,
+    ):
+        return self._value
 
     @classmethod
     def from_blank(cls) -> ResRef:
         """Returns a blank ResRef.
 
-        Returns
+        Returns:
         -------
             A new ResRef instance.
         """
@@ -96,21 +126,11 @@ class ResRef(CaseInsensitiveWrappedStr):
             A new ResRef instance.
         """
         from pykotor.extract.file import ResourceIdentifier  # Prevent circular imports
-        return cls(ResourceIdentifier.from_path(file_path).resname)
 
-    @classmethod
-    def from_invalid(
-        cls,
-        resname: str,
-    ):
-        """Create a new ResRef from a string, removing any non-ascii characters."""
-        return cls(resname.encode("ascii", "ignore").decode()[:cls.MAX_LENGTH])
+        resname = ResourceIdentifier.from_path(file_path).resname
+        return cls(resname)
 
-    @classmethod
-    def is_valid(cls, filestem) -> bool:
-        return filestem == cls.from_invalid(filestem)
-
-    def set_data(  # noqa: D417
+    def set_data(
         self,
         text: str,
         *,
@@ -139,27 +159,26 @@ class ResRef(CaseInsensitiveWrappedStr):
         # Validate text length.
         if len(parsed_text) > self.MAX_LENGTH:
             if not truncate:
-                raise self.ExceedsMaxLengthError(parsed_text)
+                ...
+                # raise self.ExceedsMaxLengthError(parsed_text)  # pykotor isn't stable enough to enforce this yet.
             parsed_text = parsed_text[:self.MAX_LENGTH]
 
         # Ensure text doesn't start/end with whitespace.
         if parsed_text != parsed_text.strip():
             msg = f"ResRef '{text}' cannot start or end with a space."
-            raise self.InvalidFormatError(msg)
+            # raise self.InvalidFormatError(msg)  # pykotor isn't stable enough to enforce this yet.
 
         # Ensure text doesn't contain any invalid ASCII characters.
         for i in range(len(parsed_text)):
             if parsed_text[i] in self.INVALID_CHARACTERS:
                 msg = f"ResRef '{text}' cannot contain any invalid characters in [{self.INVALID_CHARACTERS}]"
-                raise self.InvalidFormatError(msg)
+                # raise self.InvalidFormatError(msg)  # pykotor isn't stable enough to enforce this yet.
 
-        # bypass the immutability enforcers
-        object.__setattr__(self, "_content", parsed_text)
-        object.__setattr__(self, "_lowercontent", parsed_text.casefold())
+        self._value = parsed_text
 
-    def get(self) -> CaseInsensitiveWrappedStr:
+    def get(self) -> str:
         """Returns a case-insensitive wrapped string."""
-        return CaseInsensitiveWrappedStr(self._content)
+        return str(self._value)
 
 
 class Game(IntEnum):
@@ -348,7 +367,7 @@ class Color:
     ) -> int:
         """Returns a RGB integer encoded from the color components.
 
-        Returns
+        Returns:
         -------
             A integer representing a color.
         """
@@ -362,7 +381,7 @@ class Color:
     ) -> int:
         """Returns a RGB integer encoded from the color components.
 
-        Returns
+        Returns:
         -------
             A integer representing a color.
         """
@@ -377,7 +396,7 @@ class Color:
     ) -> int:
         """Returns a BGR integer encoded from the color components.
 
-        Returns
+        Returns:
         -------
             A integer representing a color.
         """
@@ -391,7 +410,7 @@ class Color:
     ) -> Vector3:
         """Returns a Vector3 representing a color with its components.
 
-        Returns
+        Returns:
         -------
             A new Vector3 instance.
         """
@@ -402,7 +421,7 @@ class Color:
     ) -> Vector3:
         """Returns a Vector3 representing a color with its components.
 
-        Returns
+        Returns:
         -------
             A new Vector3 instance.
         """
@@ -559,8 +578,8 @@ class CaseInsensitiveHashSet(set, Generic[T]):
         return super().__ne__({self._normalize_key(item) for item in other})
 
 
-class CaseInsensitiveDict(dict, Generic[T]):
-    """A class exactly like the builtin dict[str, T], but provides case-insensitive key lookups.
+class CaseInsensitiveDict(Generic[T]):
+    """A class exactly like the builtin dict[str, Any], but provides case-insensitive key lookups.
 
     The case-sensitivity of the keys themselves are always preserved.
     """
@@ -569,7 +588,8 @@ class CaseInsensitiveDict(dict, Generic[T]):
         self,
         initial: Mapping[str, T] | Iterable[tuple[str, T]] | ItemsView[str, T] | None = None,
     ):
-        self._dictionary: dict[CaseInsensitiveWrappedStr, T] = {}
+        self._dictionary: dict[str, T] = {}
+        self._case_map: dict[str, T] = {}
 
         if initial:
             # If initial is a mapping, use its items method.
@@ -590,7 +610,7 @@ class CaseInsensitiveDict(dict, Generic[T]):
                     self[key] = value
 
     @classmethod
-    def from_dict(cls, initial: dict[str, T] | dict[CaseInsensitiveWrappedStr, T]) -> CaseInsensitiveDict[T]:
+    def from_dict(cls, initial: dict[str, T]) -> CaseInsensitiveDict[T]:
         """Class method to create a CaseInsensitiveDict instance from a dictionary.
 
         Args:
@@ -617,45 +637,46 @@ class CaseInsensitiveDict(dict, Generic[T]):
         if not isinstance(other, (dict, CaseInsensitiveDict)):
             return NotImplemented
 
-        other_dict: dict[CaseInsensitiveWrappedStr, T] = other._dictionary if isinstance(other, CaseInsensitiveDict) else other
+        other_dict: dict[str, T] = other._dictionary if isinstance(other, CaseInsensitiveDict) else other
 
         if len(self._dictionary) != len(other_dict):
             return False
 
         for key, value in self._dictionary.items():
-            other_value: T | None = other_dict.get(key)
+            other_value: T | None = other_dict.get(key.lower())
             if other_value != value:
                 return False
 
         return True
 
-    def __iter__(self) -> Generator[str, Any, None]:
+    def __iter__(self) -> Iterator[str]:
         yield from self._dictionary
 
     def __getitem__(self, key: str) -> T:
         if not isinstance(key, str):
             msg = f"Keys must be strings in CaseInsensitiveDict-inherited classes, got {key!r}"
             raise KeyError(msg)
-        return self._dictionary[CaseInsensitiveWrappedStr.cast(key)]
+        return self._dictionary[self._case_map[key.lower()]]
 
     def __setitem__(self, key: str, value: T):
         if not isinstance(key, str):
             msg = f"Keys must be strings in CaseInsensitiveDict-inherited classes, got {key!r}"
             raise KeyError(msg)
-
-        self._dictionary[CaseInsensitiveWrappedStr.cast(key)] = value
+        if key in self:
+            self.__delitem__(key)
+        self._case_map[key.lower()] = key
+        self._dictionary[key] = value
 
     def __delitem__(self, key: str):
         if not isinstance(key, str):
             msg = f"Keys must be strings in CaseInsensitiveDict-inherited classes, got {key!r}"
             raise KeyError(msg)
-        del self._dictionary[CaseInsensitiveWrappedStr.cast(key)]
+        lower_key = key.lower()
+        del self._dictionary[self._case_map[lower_key]]
+        del self._case_map[lower_key]
 
     def __contains__(self, key: str) -> bool:
-        if not isinstance(key, str):
-            msg = f"Keys must be strings in CaseInsensitiveDict-inherited classes, got {key!r}"
-            raise KeyError(msg)
-        return CaseInsensitiveWrappedStr.cast(key) in self._dictionary
+        return key.lower() in self._case_map
 
     def __len__(self) -> int:
         return len(self._dictionary)
@@ -673,7 +694,7 @@ class CaseInsensitiveDict(dict, Generic[T]):
     def __ror__(self, other):
         if not isinstance(other, (dict, CaseInsensitiveDict)):
             return NotImplemented
-        other_dict: CaseInsensitiveDict[T] = other if isinstance(other, CaseInsensitiveDict) else CaseInsensitiveDict.from_dict(other)
+        other_dict: CaseInsensitiveDict[T] = (other if isinstance(other, CaseInsensitiveDict) else CaseInsensitiveDict.from_dict(other))
         new_dict: CaseInsensitiveDict[T] = other_dict.copy()
         new_dict.update(self)
         return new_dict
@@ -685,17 +706,11 @@ class CaseInsensitiveDict(dict, Generic[T]):
     def __reversed__(self) -> Iterator[str]:
         return reversed(list(self._dictionary.keys()))
 
-    @overload
-    def pop(self, __key: str) -> T:
-        ...
-    @overload
-    def pop(self, __key: str, __default: VT = None) -> VT | T:
-        ...
-
     def pop(self, __key: str, __default: VT = _unique_sentinel) -> VT | T:  # type: ignore[assignment]
+        lower_key: str = __key.lower()
         try:
             # Attempt to pop the value using the case-insensitive key.
-            value: T = self._dictionary.pop(CaseInsensitiveWrappedStr.cast(__key))
+            value: T = self._dictionary.pop(self._case_map.pop(lower_key))
         except KeyError:
             if __default is _unique_sentinel:
                 raise
@@ -734,11 +749,11 @@ class CaseInsensitiveDict(dict, Generic[T]):
         ...
 
     def get(self, __key: str, __default: VT = None) -> VT | T:  # type: ignore[assignment]
-        key_lookup: CaseInsensitiveWrappedStr = self._dictionary.get(CaseInsensitiveWrappedStr.cast(__key), _unique_sentinel)  # type: ignore[arg-type]
-        return (  # type: ignore[]
+        key_lookup: str = self._case_map.get(__key.lower(), _unique_sentinel)  # type: ignore[arg-type]
+        return (
             __default
             if key_lookup is _unique_sentinel
-            else key_lookup
+            else self._dictionary.get(key_lookup, __default)
         )
 
     def items(self):

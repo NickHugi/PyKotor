@@ -1,20 +1,26 @@
 from __future__ import annotations
 
 import struct
+
 from typing import TYPE_CHECKING
 
-from pykotor.common.geometry import SurfaceMaterial, Vector2, Vector3
-from pykotor.resource.formats.bwm import BWM, BWMFace, read_bwm, write_bwm
-from pykotor.resource.type import ResourceType
 from PyQt5 import QtCore
 from PyQt5.QtGui import QColor, QIcon, QImage, QPixmap
-from PyQt5.QtWidgets import QListWidgetItem, QShortcut, QWidget
+from PyQt5.QtWidgets import QListWidgetItem, QShortcut
+
+from pykotor.common.geometry import SurfaceMaterial
+from pykotor.resource.formats.bwm import read_bwm, write_bwm
+from pykotor.resource.type import ResourceType
 from toolset.gui.editor import Editor
 from utility.error_handling import assert_with_variable_trace
 
 if TYPE_CHECKING:
     import os
 
+    from PyQt5.QtWidgets import QWidget
+
+    from pykotor.common.geometry import Vector2, Vector3
+    from pykotor.resource.formats.bwm import BWM, BWMFace
     from toolset.data.installation import HTInstallation
 
 _TRANS_FACE_ROLE = QtCore.Qt.UserRole + 1  # type: ignore[attr-defined]
@@ -43,7 +49,7 @@ class BWMEditor(Editor):
         supported = [ResourceType.WOK, ResourceType.DWK, ResourceType.PWK]
         super().__init__(parent, "Walkmesh Painter", "walkmesh", supported, supported, installation)
 
-        from toolset.uic.editors.bwm import Ui_MainWindow
+        from toolset.uic.editors.bwm import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
 
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
@@ -100,8 +106,7 @@ class BWMEditor(Editor):
             - Add item to material list.
         """
         self.ui.materialList.clear()
-        for material in self.materialColors:
-            color: QColor = self.materialColors[material]
+        for material, color in self.materialColors.items():
             image = QImage(struct.pack("BBB", color.red(), color.green(), color.blue()) * 16 * 16, 16, 16, QImage.Format_RGB888)
             icon = QIcon(QPixmap(image))
             text = material.name.replace("_", " ").title()
@@ -150,9 +155,6 @@ class BWMEditor(Editor):
         write_bwm(self._bwm, data)
         return bytes(data), b""
 
-    def new(self):
-        super().new()
-
     def onMouseMoved(self, screen: Vector2, delta: Vector2, buttons: set[int], keys: set[int]):
         """Handles mouse movement events in the viewer.
 
@@ -178,8 +180,7 @@ class BWMEditor(Editor):
             self.ui.renderArea.camera.nudgePosition(-worldData.x, -worldData.y)
         elif QtCore.Qt.MiddleButton in buttons and QtCore.Qt.Key_Control in keys:  # type: ignore[attr-defined]
             self.ui.renderArea.camera.nudgeRotation(delta.x / 50)
-        elif QtCore.Qt.LeftButton in buttons:  # type: ignore[attr-defined]
-            assert face is not None, assert_with_variable_trace(face is not None)
+        elif QtCore.Qt.LeftButton in buttons and face is not None:  # face will be None if user is clicking on nothing/background.
             self.changeFaceMaterial(face)
 
         coordsText = f"x: {world.x:.2f}, {world.y:.2f}"
@@ -191,7 +192,7 @@ class BWMEditor(Editor):
         self.statusBar().showMessage(coordsText + faceText + xy)
 
     def onMouseScrolled(self, delta: Vector2, buttons: set[int], keys: set[int]):
-        if QtCore.Qt.Key_Control in keys:  # type: ignore[attr-defined]
+        if QtCore.Qt.Key_Control in keys:  # type: ignore[reportGeneralTypeIssues, attr-defined]
             zoomInFactor = 1.1
             zoomOutFactor = 0.90
 

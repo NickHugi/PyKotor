@@ -26,7 +26,7 @@ class LYT:
 class LYTRoom:
     """An area model.
 
-    Attributes
+    Attributes:
     ----------
         model: The filename of the area model.
         position: The position of the area model.
@@ -59,7 +59,7 @@ class LYTTrack:
 
     Unknown if this actually does anything in-game or is just to assist developers.
 
-    Attributes
+    Attributes:
     ----------
         model: The corresponding model filename.
         position: The position.
@@ -87,7 +87,7 @@ class LYTObstacle:
 
     Unknown if this actually does anything in-game or is just to assist developers.
 
-    Attributes
+    Attributes:
     ----------
         model: The corresponding model filename.
         position: The position.
@@ -115,7 +115,7 @@ class LYTDoorHook:
 
     This just exists for modelers to assist module designers.
 
-    Attributes
+    Attributes:
     ----------
         room: The corresponding room in the layout.
         door: The door name.

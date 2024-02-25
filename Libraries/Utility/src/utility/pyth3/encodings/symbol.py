@@ -1,6 +1,5 @@
-""" 
-Maps Symbol typeface to Unicode, extracted from http://en.wikipedia.org/wiki/Symbol_(typeface)
-"""
+"""Maps Symbol typeface to Unicode, extracted from http://en.wikipedia.org/wiki/Symbol_(typeface)."""
+from __future__ import annotations
 
 import codecs
 
@@ -22,43 +21,46 @@ decodeTable = {
     235: 9123, 236: 9127, 237: 9128, 238: 9129, 239: 9130, 241: 12297, 242: 8747, 243: 8992, 244: 9134, 245: 8993, 246: 9118,
     247: 9119, 248: 9120, 249: 9124, 250: 9125, 251: 9126, 252: 9131, 253: 9132, 254: 9133}
 
-encodeTable = dict((v, k) for (k, v) in decodeTable.items())
+encodeTable = {v: k for (k, v) in decodeTable.items()}
 
 ERROR_STRING = "Ordinal not in range (255)"
 
-def symbol_decode(input, errors='strict'):
+
+def symbol_decode(input, errors="strict"):
     chars = []
     for (i, c) in enumerate(input):
         try:
             chars.append(decodeTable[ord(c)])
         except KeyError:
-            if errors == 'replace':
-                chars.append(ord('?'))
+            if errors == "replace":
+                chars.append(ord("?"))
             else:
-                raise UnicodeDecodeError("symbol", input, i, i+1, ERROR_STRING)
+                msg = "symbol"
+                raise UnicodeDecodeError(msg, input, i, i + 1, ERROR_STRING)
     return ("".join(map(chr, chars)), len(input))
-            
 
-def symbol_encode(input, errors='strict'):
+
+def symbol_encode(input, errors="strict"):
     chars = []
     for (i, c) in enumerate(input):
         try:
             chars.append(encodeTable[ord(c)])
         except KeyError:
-            if errors == 'replace':
-                chars.append(ord('?'))
+            if errors == "replace":
+                chars.append(ord("?"))
             else:
-                raise UnicodeEncodeError("symbol", input, i, i+1, ERROR_STRING)
+                msg = "symbol"
+                raise UnicodeEncodeError(msg, input, i, i + 1, ERROR_STRING)
     return ("".join(map(chr, chars)), len(input))
 
 
-### Codec APIs
+# Codec APIs
 
 class Codec(codecs.Codec):
-    def encode(self, input,errors='strict'):
+    def encode(self, input, errors="strict"):
         return symbol_encode(input, errors)
 
-    def decode(self, input,errors='strict'):
+    def decode(self, input, errors="strict"):
         return symbol_decode(input, errors)
 
 
@@ -69,6 +71,7 @@ class IncrementalEncoder(codecs.IncrementalEncoder):
         except UnicodeEncodeError:
             raise ValueError(ERROR_STRING)
 
+
 class IncrementalDecoder(codecs.IncrementalDecoder):
     def decode(self, input, final=False):
         try:
@@ -77,16 +80,17 @@ class IncrementalDecoder(codecs.IncrementalDecoder):
             raise ValueError(ERROR_STRING)
 
 
-class StreamWriter(Codec,codecs.StreamWriter):
+class StreamWriter(Codec, codecs.StreamWriter):
     pass
 
-class StreamReader(Codec,codecs.StreamReader):
+
+class StreamReader(Codec, codecs.StreamReader):
     pass
 
-### encodings module API
+# encodings module API
 
 info = codecs.CodecInfo(
-    name='symbol',
+    name="symbol",
     encode=symbol_encode,
     decode=symbol_decode,
     incrementalencoder=IncrementalEncoder,
@@ -94,6 +98,7 @@ info = codecs.CodecInfo(
     streamwriter=StreamWriter,
     streamreader=StreamReader,
 )
+
 
 def search(name):
     # What the hell is this actually supposed to do?

@@ -1,24 +1,27 @@
 from __future__ import annotations
 
 import math
+
 from abc import ABC, abstractmethod
 from copy import deepcopy
 from typing import TYPE_CHECKING
+
+from PyQt5 import QtCore
+from PyQt5.QtGui import QColor, QIcon, QKeySequence
+from PyQt5.QtWidgets import QDialog, QListWidgetItem, QMenu
 
 from pykotor.common.geometry import SurfaceMaterial, Vector2, Vector3
 from pykotor.common.misc import Color
 from pykotor.common.module import Module
 from pykotor.extract.installation import SearchLocation
 from pykotor.resource.formats.bwm import read_bwm
-from pykotor.resource.formats.bwm.bwm_data import BWM
-from pykotor.resource.formats.lyt import LYT, read_lyt
+from pykotor.resource.formats.lyt import read_lyt
 from pykotor.resource.generics.git import (
     GIT,
     GITCamera,
     GITCreature,
     GITDoor,
     GITEncounter,
-    GITInstance,
     GITPlaceable,
     GITSound,
     GITStore,
@@ -30,9 +33,6 @@ from pykotor.resource.generics.git import (
 from pykotor.resource.type import ResourceType
 from pykotor.tools.misc import is_rim_file
 from pykotor.tools.template import extract_name, extract_tag
-from PyQt5 import QtCore
-from PyQt5.QtGui import QColor, QIcon, QKeyEvent, QKeySequence
-from PyQt5.QtWidgets import QCheckBox, QDialog, QListWidgetItem, QMenu, QWidget
 from toolset.data.misc import ControlItem
 from toolset.gui.dialogs.instance.camera import CameraDialog
 from toolset.gui.dialogs.instance.creature import CreatureDialog
@@ -52,8 +52,16 @@ from toolset.utils.window import openResourceEditor
 if TYPE_CHECKING:
     import os
 
-    from pykotor.extract.file import LocationResult, ResourceIdentifier, ResourceResult
     from PyQt5.QtCore import QPoint
+    from PyQt5.QtGui import QKeyEvent
+    from PyQt5.QtWidgets import QCheckBox, QWidget
+
+    from pykotor.extract.file import LocationResult, ResourceIdentifier, ResourceResult
+    from pykotor.resource.formats.bwm.bwm_data import BWM
+    from pykotor.resource.formats.lyt import LYT
+    from pykotor.resource.generics.git import (
+        GITInstance,
+    )
     from toolset.data.installation import HTInstallation
     from utility.system.path import Path
 
@@ -99,7 +107,7 @@ class GITEditor(Editor):
         supported = [ResourceType.GIT]
         super().__init__(parent, "GIT Editor", "git", supported, supported, installation)
 
-        from toolset.uic.editors.git import Ui_MainWindow
+        from toolset.uic.editors.git import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
 
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
@@ -190,20 +198,20 @@ class GITEditor(Editor):
         self.ui.viewCameraCheck.toggled.connect(self.updateVisibility)
         self.ui.viewStoreCheck.toggled.connect(self.updateVisibility)
 
-        self.ui.viewCreatureCheck.mouseDoubleClickEvent = lambda a0: self.onInstanceVisibilityDoubleClick( self.ui.viewCreatureCheck)  # noqa: ARG005
-        self.ui.viewPlaceableCheck.mouseDoubleClickEvent = lambda a0: self.onInstanceVisibilityDoubleClick( self.ui.viewPlaceableCheck)  # noqa: ARG005
+        self.ui.viewCreatureCheck.mouseDoubleClickEvent = lambda a0: self.onInstanceVisibilityDoubleClick(self.ui.viewCreatureCheck)  # noqa: ARG005
+        self.ui.viewPlaceableCheck.mouseDoubleClickEvent = lambda a0: self.onInstanceVisibilityDoubleClick(self.ui.viewPlaceableCheck)  # noqa: ARG005
         self.ui.viewDoorCheck.mouseDoubleClickEvent = lambda a0: self.onInstanceVisibilityDoubleClick(self.ui.viewDoorCheck)  # noqa: ARG005
         self.ui.viewSoundCheck.mouseDoubleClickEvent = lambda a0: self.onInstanceVisibilityDoubleClick(self.ui.viewSoundCheck)  # noqa: ARG005
         self.ui.viewTriggerCheck.mouseDoubleClickEvent = lambda a0: self.onInstanceVisibilityDoubleClick(self.ui.viewTriggerCheck)  # noqa: ARG005
-        self.ui.viewEncounterCheck.mouseDoubleClickEvent = lambda a0: self.onInstanceVisibilityDoubleClick( self.ui.viewEncounterCheck)  # noqa: ARG005
-        self.ui.viewWaypointCheck.mouseDoubleClickEvent = lambda a0: self.onInstanceVisibilityDoubleClick( self.ui.viewWaypointCheck)  # noqa: ARG005
+        self.ui.viewEncounterCheck.mouseDoubleClickEvent = lambda a0: self.onInstanceVisibilityDoubleClick(self.ui.viewEncounterCheck)  # noqa: ARG005
+        self.ui.viewWaypointCheck.mouseDoubleClickEvent = lambda a0: self.onInstanceVisibilityDoubleClick(self.ui.viewWaypointCheck)  # noqa: ARG005
         self.ui.viewCameraCheck.mouseDoubleClickEvent = lambda a0: self.onInstanceVisibilityDoubleClick(self.ui.viewCameraCheck)  # noqa: ARG005
         self.ui.viewStoreCheck.mouseDoubleClickEvent = lambda a0: self.onInstanceVisibilityDoubleClick(self.ui.viewStoreCheck)  # noqa: ARG005
 
         # View
         self.ui.actionZoomIn.triggered.connect(lambda: self.ui.renderArea.camera.nudgeZoom(1))
         self.ui.actionZoomOut.triggered.connect(lambda: self.ui.renderArea.camera.nudgeZoom(-1))
-        self.ui.actionRecentreCamera.triggered.connect(lambda: self.ui.renderArea.centerCamera())
+        self.ui.actionRecentreCamera.triggered.connect(self.ui.renderArea.centerCamera)
         # View -> Creature Labels
         self.ui.actionUseCreatureResRef.triggered.connect(lambda: setattr(self.settings, "creatureLabel", "resref"))
         self.ui.actionUseCreatureResRef.triggered.connect(self.updateVisibility)

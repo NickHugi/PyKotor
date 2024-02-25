@@ -1,5 +1,13 @@
-from PyQt5.QtWidgets import QDialog, QWidget
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
+from PyQt5.QtWidgets import QDialog
+
 from toolset.config import PROGRAM_VERSION
+
+if TYPE_CHECKING:
+    from PyQt5.QtWidgets import QWidget
 
 
 class About(QDialog):
@@ -18,7 +26,7 @@ class About(QDialog):
         """
         super().__init__(parent)
 
-        from toolset.uic.dialogs import about
+        from toolset.uic.dialogs import about  # pylint: disable=C0415  # noqa: PLC0415
         self.ui = about.Ui_Dialog()
         self.ui.setupUi(self)
 

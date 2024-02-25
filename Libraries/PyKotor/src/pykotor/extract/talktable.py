@@ -15,6 +15,7 @@ class StringResult(NamedTuple):
     text: str
     sound: ResRef
 
+
 class TLKData(NamedTuple):
     flags: int
     sound_resref: str
@@ -23,6 +24,7 @@ class TLKData(NamedTuple):
     text_offset: int
     text_length: int
     sound_length: float
+
 
 class TalkTable:  # TODO: dialogf.tlk
     """Talktables are for read-only loading of stringrefs stored in a dialog.tlk file.
@@ -95,7 +97,6 @@ class TalkTable:  # TODO: dialogf.tlk
             tlkdata = self._extract_common_tlk_data(reader, stringref)
             return ResRef(tlkdata.sound_resref)
 
-
     def _extract_common_tlk_data(
         self,
         reader: BinaryReader,
@@ -159,7 +160,7 @@ class TalkTable:  # TODO: dialogf.tlk
     ) -> int:
         """Returns the number of entries in the talk table.
 
-        Returns
+        Returns:
         -------
             The number of entries in the talk table.
         """
@@ -172,7 +173,7 @@ class TalkTable:  # TODO: dialogf.tlk
     ) -> Language:
         """Returns the matching Language of the TLK file.
 
-        Returns
+        Returns:
         -------
             The language of the TLK file.
         """

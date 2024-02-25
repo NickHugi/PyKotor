@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import argparse  # noqa: INP001
 import pathlib
 import sys
@@ -57,7 +59,7 @@ while True:
     if parser_args.compile.lower().strip() in {"compile", "c"}:
         parser_args.compile = True
         break
-    elif parser_args.compile.lower().strip() in ("decompile", "d"):
+    elif parser_args.compile.lower().strip() in {"decompile", "d"}:
         parser_args.compile = False
         break
     else:
@@ -99,7 +101,7 @@ def main():
                     process_file(gui_file, new_output_dir, parser_args.compile)
                 except KeyboardInterrupt:  # noqa: PERF203
                     raise
-                except Exception:  # noqa: BLE001
+                except Exception:  # pylint: disable=W0718  # noqa: BLE001
                     traceback.print_exc()
 
         else:
@@ -108,7 +110,7 @@ def main():
         print("Completed extractions")
     except KeyboardInterrupt:
         print("Goodbye")
-    except Exception:  # noqa: BLE001
+    except Exception:  # pylint: disable=W0718  # noqa: BLE001
         traceback.print_exc()
 
 

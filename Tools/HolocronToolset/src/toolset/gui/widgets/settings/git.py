@@ -1,8 +1,15 @@
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
 from PyQt5 import QtCore
-from PyQt5.QtWidgets import QWidget
+
 from toolset.data.settings import Settings
 from toolset.gui.widgets.settings.base import SettingsWidget
 from toolset.utils.misc import QtKey, QtMouse
+
+if TYPE_CHECKING:
+    from PyQt5.QtWidgets import QWidget
 
 
 class GITWidget(SettingsWidget):
@@ -28,7 +35,7 @@ class GITWidget(SettingsWidget):
 
         self.settings = GITSettings()
 
-        from toolset.uic.widgets.settings.git import Ui_Form
+        from toolset.uic.widgets.settings.git import Ui_Form  # noqa: PLC0415  # pylint: disable=C0415
         self.ui = Ui_Form()
         self.ui.setupUi(self)
 

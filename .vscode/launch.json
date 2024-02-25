@@ -14,7 +14,7 @@
     
     {
       "name": "Python: Current File",
-      "type": "python",
+      "type": "debugpy",
       "request": "launch",
       "program": "${file}",
       "console": "integratedTerminal",
@@ -26,15 +26,15 @@
     },
     {
       "name": "Debug Unit Test",
-      "type": "python",
+      "type": "debugpy",
       "request": "launch",
       "program": "${file}",
       "purpose": ["debug-test"],
-      "justMyCode": false,
+      "justMyCode": true,
     },
     {
       "name": "Run Holocron Toolset",
-      "type": "python",
+      "type": "debugpy",
       "request": "launch",
       "module": "toolset",
       "cwd": "${workspaceFolder}/Tools/HolocronToolset/src/",
@@ -46,10 +46,19 @@
     },
     {
       "name": "Run HoloPatcher",
-      "type": "python",
+      "type": "debugpy",
       "request": "launch",
       "program": "${workspaceFolder}${pathSeparator}Tools${pathSeparator}HoloPatcher${pathSeparator}src${pathSeparator}__main__.py",
       "cwd": "${workspaceFolder}/Tools/HoloPatcher/src/",
+      "console": "integratedTerminal",
+      "env": {"PYTHONPATH": "${workspaceFolder}/Libraries/PyKotor/src;${workspaceFolder}/Libraries/Utility/src;${env:PYTHONPATH}"}
+    },
+    {
+      "name": "Run BatchPatcher",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${workspaceFolder}${pathSeparator}Tools${pathSeparator}BatchPatcher${pathSeparator}src${pathSeparator}__main__.py",
+      "cwd": "${workspaceFolder}/Tools/BatchPatcher/src/",
       "console": "integratedTerminal",
       "env": {"PYTHONPATH": "${workspaceFolder}/Libraries/PyKotor/src;${workspaceFolder}/Libraries/Utility/src;${env:PYTHONPATH}"}
     },

@@ -2,9 +2,10 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from pykotor.common.language import LocalizedString
 from PyQt5 import QtCore
 from PyQt5.QtWidgets import QWidget
+
+from pykotor.common.language import LocalizedString
 from toolset.gui.dialogs.edit.locstring import LocalizedStringDialog
 from utility.error_handling import assert_with_variable_trace
 
@@ -31,7 +32,7 @@ class LocalizedStringLineEdit(QWidget):
         """
         super().__init__(parent)
 
-        from toolset.uic.widgets.locstring_edit import Ui_Form
+        from toolset.uic.widgets.locstring_edit import Ui_Form  # noqa: PLC0415  # pylint: disable=C0415
         self.ui = Ui_Form()
         self.ui.setupUi(self)
 

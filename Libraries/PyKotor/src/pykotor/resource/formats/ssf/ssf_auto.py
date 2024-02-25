@@ -1,15 +1,17 @@
 from __future__ import annotations
 
 import os
+
 from typing import TYPE_CHECKING
 
 from pykotor.common.stream import BinaryReader
 from pykotor.resource.formats.ssf.io_ssf import SSFBinaryReader, SSFBinaryWriter
 from pykotor.resource.formats.ssf.io_ssf_xml import SSFXMLReader, SSFXMLWriter
-from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES, ResourceType
+from pykotor.resource.type import ResourceType
 
 if TYPE_CHECKING:
     from pykotor.resource.formats.ssf.ssf_data import SSF
+    from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES
 
 
 def detect_ssf(
@@ -40,9 +42,9 @@ def detect_ssf(
             return ResourceType.SSF
         if "<" in first4:  # sourcery skip: assign-if-exp, reintroduce-else
             return ResourceType.SSF_XML
-        #if "{" in first4:
+        # if "{" in first4:
         #    return ResourceType.SSF_JSON
-        #if "," in first4:
+        # if "," in first4:
         #    return ResourceType.SSF_CSV
         return ResourceType.INVALID
 

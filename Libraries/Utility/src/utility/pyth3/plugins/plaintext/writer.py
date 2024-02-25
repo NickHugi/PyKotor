@@ -18,7 +18,6 @@ class PlaintextWriter(PythWriter):
         writer = PlaintextWriter(document, target, newline)
         return writer.go()
 
-
     def __init__(self, doc, target, newline):
         self.document = doc
         self.target = target
@@ -29,9 +28,8 @@ class PlaintextWriter(PythWriter):
             document.Paragraph: self.paragraph
         }
 
-
     def go(self):
-        for (i, paragraph) in enumerate(self.document.content):
+        for (_i, paragraph) in enumerate(self.document.content):
             handler = self.paragraphDispatch[paragraph.__class__]
             handler(paragraph)
             self.target.write("\n")
@@ -43,24 +41,20 @@ class PlaintextWriter(PythWriter):
         self.target.seek(0)
         return self.target
 
-
-    def paragraph(self, paragraph, prefix=""):
-        content = []
-        for text in paragraph.content:
-            content.append("".join(text.content))
-        content = "".join(content).encode("utf-8")
-            
+    def paragraph(self, paragraph: document.Paragraph, prefix: str = ""):
+        content_list = ["".join(text.content) for text in paragraph.content]
+        content = "".join(content_list)
         for line in content.split("\n"):
             self.target.write("  " * self.indent)
             self.target.write(prefix)
             self.target.write(line)
             self.target.write("\n")
-            if prefix: prefix = "  "
-
+            if prefix:
+                prefix = "  "
 
     def list(self, list, prefix=None):
         self.indent += 1
-        for (i, entry) in enumerate(list.content):           
+        for (_i, entry) in enumerate(list.content):
             for (j, paragraph) in enumerate(entry.content):
                 prefix = "* " if j == 0 else "  "
                 handler = self.paragraphDispatch[paragraph.__class__]
@@ -70,4 +64,4 @@ class PlaintextWriter(PythWriter):
 
 
 
-            
+

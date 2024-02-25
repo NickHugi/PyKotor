@@ -7,14 +7,21 @@ import platform
 import sys
 import tkinter as tk
 import traceback
+
 from contextlib import suppress
 from copy import deepcopy
 from io import StringIO
 from threading import Thread
-from tkinter import colorchooser, filedialog, messagebox, ttk
-from tkinter import font as tkfont
-from typing import TYPE_CHECKING, Any, Callable
+from tkinter import (
+    colorchooser,
+    filedialog,
+    font as tkfont,
+    messagebox,
+    ttk,
+)
+from typing import TYPE_CHECKING, Any
 
+from pykotor.common.misc import ResRef
 from utility.error_handling import format_exception_with_variables, universal_simplify_exception
 
 if getattr(sys, "frozen", False) is False:
@@ -23,16 +30,16 @@ if getattr(sys, "frozen", False) is False:
         if working_dir not in sys.path:
             sys.path.append(working_dir)
 
-    pykotor_font_path = pathlib.Path(__file__).parents[3] / "Libraries" / "PyKotorFont" / "src" / "pykotor"
+    absolute_file_path = pathlib.Path(__file__).resolve()
+    pykotor_font_path = absolute_file_path.parents[3] / "Libraries" / "PyKotorFont" / "src" / "pykotor"
     if pykotor_font_path.is_dir():
         add_sys_path(pykotor_font_path.parent)
-    pykotor_path = pathlib.Path(__file__).parents[3] / "Libraries" / "PyKotor" / "src" / "pykotor"
+    pykotor_path = absolute_file_path.parents[3] / "Libraries" / "PyKotor" / "src" / "pykotor"
     if pykotor_path.is_dir():
         add_sys_path(pykotor_path.parent)
-    utility_path = pathlib.Path(__file__).parents[3] / "Libraries" / "Utility" / "src" / "utility"
+    utility_path = absolute_file_path.parents[3] / "Libraries" / "Utility" / "src" / "utility"
     if utility_path.is_dir():
         add_sys_path(utility_path.parent)
-
 
 
 from pykotor.common.language import Language, LocalizedString
@@ -47,21 +54,25 @@ from pykotor.resource.formats.gff import GFF, GFFContent, GFFFieldType, GFFList,
 from pykotor.resource.formats.gff.gff_auto import bytes_gff
 from pykotor.resource.formats.rim.rim_auto import write_rim
 from pykotor.resource.formats.rim.rim_data import RIM
-from pykotor.resource.formats.tlk import TLK, read_tlk, write_tlk
+from pykotor.resource.formats.tlk import read_tlk, write_tlk
 from pykotor.resource.formats.tpc.io_tga import TPCTGAReader, TPCTGAWriter
 from pykotor.resource.formats.tpc.tpc_auto import bytes_tpc
 from pykotor.resource.formats.tpc.tpc_data import TPC
 from pykotor.resource.type import ResourceType
 from pykotor.tools.encoding import decode_bytes_with_fallbacks
-from pykotor.tools.misc import is_capsule_file
+from pykotor.tools.misc import is_any_erf_type_file, is_capsule_file
 from pykotor.tools.path import CaseAwarePath, find_kotor_paths_from_default
-from pykotor.tslpatcher.logger import PatchLog, PatchLogger
+from pykotor.tslpatcher.logger import PatchLogger
 from translate.language_translator import TranslationOption, Translator
 from utility.system.path import Path, PurePath
 
 if TYPE_CHECKING:
 
+    from collections.abc import Callable
+
+    from pykotor.resource.formats.tlk import TLK
     from pykotor.resource.formats.tlk.tlk_data import TLKEntry
+    from pykotor.tslpatcher.logger import PatchLog
 
 APP: KOTORPatchingToolUI
 OUTPUT_LOG: Path
@@ -88,6 +99,309 @@ fieldtype_to_fieldname: dict[GFFFieldType, str] = {
     GFFFieldType.List: "List",
 }
 
+ALIEN_SOUNDS = {  # Same in k1 and tsl.
+    "n_genwook_grts1": {"_id": "0", "comment": "Gen_Wookiee_Greeting_Short"},
+    "n_genwook_coms1": {"_id": "1", "comment": "Gen_Wookiee_Generic_Comment_-_Short_1"},
+    "n_genwook_coms2": {"_id": "2", "comment": "Gen_Wookiee_Generic_Comment_-_Short_2"},
+    "n_genwook_comm1": {"_id": "3", "comment": "Gen_Wookiee_Generic_Comment_-_Medium_1"},
+    "n_genwook_comm2": {"_id": "4", "comment": "Gen_Wookiee_Generic_Comment_-_Medium_2"},
+    "n_genwook_angs": {"_id": "5", "comment": "Gen_Wookiee_Angry_Short"},
+    "n_genwook_angm": {"_id": "6", "comment": "Gen_Wookiee_Angry_Medium"},
+    "n_genwook_ques": {"_id": "7", "comment": "Gen_Wookiee_Question_-_Short"},
+    "n_genwook_quem": {"_id": "8", "comment": "Gen_Wookiee_Question_-_Medium"},
+    "n_genwook_scrs": {"_id": "9", "comment": "Gen_Wookiee_Scared_-_Short"},
+    "n_genwook_scrm": {"_id": "10", "comment": "Gen_Wookiee_Scared_-_Medium"},
+    "n_genwook_lghs": {"_id": "11", "comment": "Gen_Wookiee_Laughter_(mocking)_-_short"},
+    "n_genwook_lghm": {"_id": "12", "comment": "Gen_Wookiee_Laughter_(mocking)_-_medium"},
+    "n_genwook_hpys": {"_id": "13", "comment": "Gen_Wookiee_Happy_(thankful)_-_short"},
+    "n_genwook_hpym": {"_id": "14", "comment": "Gen_Wookiee_Happy_(thankful)_-_medium"},
+    "n_genwook_sads": {"_id": "15", "comment": "Gen_Wookiee_Sad_-_Short"},
+    "n_genwook_sadm": {"_id": "16", "comment": "Gen_Wookiee_Sad_-_Medium"},
+    "n_genfwook_grts1": {"_id": "17", "comment": "Female_Wookiee_Greeting_Short"},
+    "n_genfwook_coms1": {"_id": "18", "comment": "Female_Wookiee_Generic_Comment_-_Short_1"},
+    "n_genfwook_coms2": {"_id": "19", "comment": "Female_Wookiee_Generic_Comment_-_Short_2"},
+    "n_genfwook_comm1": {"_id": "20", "comment": "Female_Wookiee_Generic_Comment_-_Medium_1"},
+    "n_genfwook_comm2": {"_id": "21", "comment": "Female_Wookiee_Generic_Comment_-_Medium_2"},
+    "n_genfwook_angs": {"_id": "22", "comment": "Female_Wookiee_Angry_Short"},
+    "n_genfwook_angm": {"_id": "23", "comment": "Female_Wookiee_Angry_Medium"},
+    "n_genfwook_ques": {"_id": "24", "comment": "Female_Wookiee_Question_-_Short"},
+    "n_genfwook_quem": {"_id": "25", "comment": "Female_Wookiee_Question_-_Medium"},
+    "n_genfwook_scrs": {"_id": "26", "comment": "Female_Wookiee_Scared_-_Short"},
+    "n_genfwook_scrm": {"_id": "27", "comment": "Female_Wookiee_Scared_-_Medium"},
+    "n_genfwook_lghs": {"_id": "28", "comment": "Female_Wookiee_Laughter_(mocking)_-_short"},
+    "n_genfwook_lghm": {"_id": "29", "comment": "Female_Wookiee_Laughter_(mocking)_-_medium"},
+    "n_genfwook_hpys": {"_id": "30", "comment": "Female_Wookiee_Happy_(thankful)_-_short"},
+    "n_genfwook_hpym": {"_id": "31", "comment": "Female_Wookiee_Happy_(thankful)_-_medium"},
+    "n_genfwook_sads": {"_id": "32", "comment": "Female_Wookiee_Sad_-_Short"},
+    "n_genfwook_sadm": {"_id": "33", "comment": "Female_Wookiee_Sad_-_Medium"},
+    "n_gentwook_grts1": {"_id": "34", "comment": "Gen_Tough_Wooki_ee_Greeting_Short"},
+    "n_gentwook_coms1": {"_id": "35", "comment": "Gen_Tough_Wookiee_Generic_Comment"},
+    "n_gentwook_coms2": {"_id": "36", "comment": "Gen_Tough_Wookiee_Generic_Comment"},
+    "n_gentwook_comm1": {"_id": "37", "comment": "Gen_Tough_Wookiee_Generic_Comment"},
+    "n_gentwook_comm2": {"_id": "38", "comment": "Gen_Tough_Wookiee_Generic_Comment"},
+    "n_gentwook_angs": {"_id": "39", "comment": "Gen_Tough_Wookiee_Angry_Short"},
+    "n_gentwook_angm": {"_id": "40", "comment": "Gen_Tough_Wookiee_Angry_Medium"},
+    "n_gentwook_ques": {"_id": "41", "comment": "Gen_Tough_Wookiee_Question_-_Short"},
+    "n_gentwook_quem": {"_id": "42", "comment": "Gen_Tough_Wookiee_Question_-_Medium"},
+    "n_gentwook_scrs": {"_id": "43", "comment": "Gen_Tough_Wookiee_Scared_-_Short"},
+    "n_gentwook_scrm": {"_id": "44", "comment": "Gen_Tough_Wookiee_Scared_-_Medium"},
+    "n_gentwook_lghs": {"_id": "45", "comment": "Gen_Tough_Wookiee_Laughter_(mocking)_-_short"},
+    "n_gentwook_lghm": {"_id": "46", "comment": "Gen_Tough_Wookiee_Laughter_(mocking)_-_medium"},
+    "n_gentwook_hpys": {"_id": "47", "comment": "Gen_Tough_Wookiee_Happy_(thankful)_-_short"},
+    "n_gentwook_hpym": {"_id": "48", "comment": "Gen_Tough_Wookiee_Happy_(thankful)_-_medium"},
+    "n_gentwook_sads": {"_id": "49", "comment": "Gen_Tough_Wookiee_Sad_-_Short"},
+    "n_gentwook_sadm": {"_id": "50", "comment": "Gen_Tough_Wookiee_Sad_-_Medium"},
+    "n_genwwook_grts1": {"_id": "51", "comment": "Gen_Wise_Wookiee_Greeting_Short"},
+    "n_genwwook_coms1": {"_id": "52", "comment": "Gen_Wise_Wookiee_Generic_Comment_-_Short_1"},
+    "n_genwwook_coms2": {"_id": "53", "comment": "Gen_Wise_Wookiee_Generic_Comment_-_Short_2"},
+    "n_genwwook_comm1": {"_id": "54", "comment": "Gen_Wise_Wookiee_Generic_Comment_-_Medium_1"},
+    "n_genwwook_comm2": {"_id": "55", "comment": "Gen_Wise_Wookiee_Generic_Comment_-_Medium_2"},
+    "n_genwwook_angs": {"_id": "56", "comment": "Gen_Wise_Wookiee_Angry_Short"},
+    "n_genwwook_angm": {"_id": "57", "comment": "Gen_Wise_Wookiee_Angry_Medium"},
+    "n_genwwook_ques": {"_id": "58", "comment": "Gen_Wise_Wookiee_Question_-_Short"},
+    "n_genwwook_quem": {"_id": "59", "comment": "Gen_Wise_Wookiee_Question_-_Medium"},
+    "n_genwwook_scrs": {"_id": "60", "comment": "Gen_Wise_Wookiee_Scared_-_Short"},
+    "n_genwwook_scrm": {"_id": "61", "comment": "Gen_Wise_Wookiee_Scared_-_Medium"},
+    "n_genwwook_lghs": {"_id": "62", "comment": "Gen_Wise_Wookiee_Laughter_(mocking)_-_short"},
+    "n_genwwook_lghm": {"_id": "63", "comment": "Gen_Wise_Wookiee_Laughter_(mocking)_-_medium"},
+    "n_genwwook_hpys": {"_id": "64", "comment": "Gen_Wise_Wookiee_Happy_(thankful)_-_short"},
+    "n_genwwook_hpym": {"_id": "65", "comment": "Gen_Wise_Wookiee_Happy_(thankful)_-_medium"},
+    "n_genwwook_sads": {"_id": "66", "comment": "Gen_Wise_Wookiee_Sad_-_Short"},
+    "n_genwwook_sadm": {"_id": "67", "comment": "Gen_Wise_Wookiee_Sad_-_Medium"},
+    "n_gftwilek_grts": {"_id": "68", "comment": "Female_Twilek_Greeting_Short"},
+    "n_gftwilek_grtm": {"_id": "69", "comment": "Female_Twilek_Greeting_Medium"},
+    "n_gftwilek_coms1": {"_id": "70", "comment": "Female_Twilek_Generic_Comment_-_Short_1"},
+    "n_gftwilek_coms2": {"_id": "71", "comment": "Female_Twilek_Generic_Comment_-_Short_2"},
+    "n_gftwilek_comm1": {"_id": "72", "comment": "Female_Twilek_Generic_Comment_-_Medium_1"},
+    "n_gftwilek_comm2": {"_id": "73", "comment": "Female_Twilek_Generic_Comment_-_Medium_2"},
+    "n_gftwilek_coml1": {"_id": "74", "comment": "Female_Twilek_Generic_Comment_-_Long_1"},
+    "n_gftwilek_coml2": {"_id": "75", "comment": "Female_Twilek_Generic_Comment_-_Long_2"},
+    "n_gftwilek_angs": {"_id": "76", "comment": "Female_Twilek_Angry_Short"},
+    "n_gftwilek_angm": {"_id": "77", "comment": "Female_Twilek_Angry_Medium"},
+    "n_gftwilek_angl": {"_id": "78", "comment": "Female_Twilek_Angry_Long"},
+    "n_gftwilek_ques": {"_id": "79", "comment": "Female_Twilek_Question_-_Short"},
+    "n_gftwilek_quel": {"_id": "80", "comment": "Female_Twilek_Question_-_Long"},
+    "n_gftwilek_scrs": {"_id": "81", "comment": "Female_Twilek_Scared_-_Short"},
+    "n_gftwilek_scrm": {"_id": "82", "comment": "Female_Twilek_Scared_-_Medium"},
+    "n_gftwilek_scrl": {"_id": "83", "comment": "Female_Twilek_Scared_-_Long"},
+    "n_gftwilek_ples": {"_id": "84", "comment": "Female_Twilek_Pleading_-_Short"},
+    "n_gftwilek_plem": {"_id": "85", "comment": "Female_Twilek_Pleading_-_Medium"},
+    "n_gftwilek_lghs": {"_id": "86", "comment": "Female_Twilek_Laughter_(mocking)_-_short"},
+    "n_gftwilek_lghm": {"_id": "87", "comment": "Female_Twilek_Laughter_(mocking)_-_medium"},
+    "n_gftwilek_hpys": {"_id": "88", "comment": "Female_Twilek_Happy_(thankful)_-_short"},
+    "n_gftwilek_hpym": {"_id": "89", "comment": "Female_Twilek_Happy_(thankful)_-_medium"},
+    "n_gftwilek_hpyl": {"_id": "90", "comment": "Female_Twilek_Happy_(thankful)_-_long"},
+    "n_gftwilek_sads": {"_id": "91", "comment": "Female_Twilek_Sad_-_Short"},
+    "n_gftwilek_sadm": {"_id": "92", "comment": "Female_Twilek_Sad_-_Medium"},
+    "n_gftwilek_sadl": {"_id": "93", "comment": "Female_Twilek_Sad_-_Long"},
+    "n_gftwilek_seds": {"_id": "94", "comment": "Female_Twilek_Seductive_-_Short"},
+    "n_gftwilek_sedm": {"_id": "95", "comment": "Female_Twilek_Seductive_-_Medium"},
+    "n_gftwilek_sedl": {"_id": "96", "comment": "Female_Twilek_Seductive_-_Long"},
+    "n_gmtwilek_grts": {"_id": "97", "comment": "Gen_Male_Twilek_Greeting_Short"},
+    "n_gmtwilek_grtm": {"_id": "98", "comment": "Gen_Male_Twilek_Greeting_Medium"},
+    "n_gmtwilek_coms1": {"_id": "99", "comment": "Gen_Male_Twilek_Generic_Comment_-_Short_1"},
+    "n_gmtwilek_coms2": {"_id": "100", "comment": "Gen_Male_Twilek_Generic_Comment_-_Short_2"},
+    "n_gmtwilek_comm1": {"_id": "101", "comment": "Gen_Male_Twilek_Generic_Comment_-_Medium_1"},
+    "n_gmtwilek_comm2": {"_id": "102", "comment": "Gen_Male_Twilek_Generic_Comment_-_Medium_2"},
+    "n_gmtwilek_coml1": {"_id": "103", "comment": "Gen_Male_Twilek_Generic_Comment_-_Long_1"},
+    "n_gmtwilek_coml2": {"_id": "104", "comment": "Gen_Male_Twilek_Generic_Comment_-_Long_2"},
+    "n_gmtwilek_angs": {"_id": "105", "comment": "Gen_Male_Twilek_Angry_Short"},
+    "n_gmtwilek_angm": {"_id": "106", "comment": "Gen_Male_Twilek_Angry_Medium"},
+    "n_gmtwilek_angl": {"_id": "107", "comment": "Gen_Male_Twilek_Angry_Long"},
+    "n_gmtwilek_ques": {"_id": "108", "comment": "Gen_Male_Twilek_Question_-_Short"},
+    "n_gmtwilek_quem": {"_id": "109", "comment": "Gen_Male_Twilek_Question_-_Medium"},
+    "n_gmtwilek_quel": {"_id": "110", "comment": "Gen_Male_Twilek_Question_-_Long"},
+    "n_gmtwilek_scrs": {"_id": "111", "comment": "Gen_Male_Twilek_Scared_-_Short"},
+    "n_gmtwilek_scrm": {"_id": "112", "comment": "Gen_Male_Twilek_Scared_-_Medium"},
+    "n_gmtwilek_scrl": {"_id": "113", "comment": "Gen_Male_Twilek_Scared_-_Long"},
+    "n_gmtwilek_ples": {"_id": "114", "comment": "Gen_Male_Twilek_Pleading_-_Short"},
+    "n_gmtwilek_plem": {"_id": "115", "comment": "Gen_Male_Twilek_Pleading_-_Medium"},
+    "n_gmtwilek_lghs": {"_id": "116", "comment": "Gen_Male_Twilek_Laughter_(mocking)_-_short"},
+    "n_gmtwilek_lghm": {"_id": "117", "comment": "Gen_Male_Twilek_Laughter_(mocking)_-_medium"},
+    "n_gmtwilek_hpys": {"_id": "118", "comment": "Gen_Male_Twilek_Happy_(thankful)_-_short"},
+    "n_gmtwilek_hpym": {"_id": "119", "comment": "Gen_Male_Twilek_Happy_(thankful)_-_medium"},
+    "n_gmtwilek_hpyl": {"_id": "120", "comment": "Gen_Male_Twilek_Happy_(thankful)_-_long"},
+    "n_gmtwilek_sads": {"_id": "121", "comment": "Gen_Male_Twilek_Sad_-_Short"},
+    "n_gmtwilek_sadm": {"_id": "122", "comment": "Gen_Male_Twilek_Sad_-_Medium"},
+    "n_gmtwilek_sadl": {"_id": "123", "comment": "Gen_Male_Twilek_Sad_-_Long"},
+    "n_gmtwilek_seds": {"_id": "124", "comment": "Gen_Male_Twilek_Seductive_-_Short"},
+    "n_gmtwilek_sedm": {"_id": "125", "comment": "Gen_Male_Twilek_Seductive_-_Medium"},
+    "n_gmtwilek_sedl": {"_id": "126", "comment": "Gen_Male_Twilek_Seductive_-_Long"},
+    "n_gtmtwlek_grts": {"_id": "127", "comment": "Gen_Tough_Male_Twilek_Greeting_Short"},
+    "n_gtmtwlek_grtm": {"_id": "128", "comment": "Gen_Tough_Male_Twilek_Greeting_Medium"},
+    "n_gtmtwlek_coms1": {"_id": "129", "comment": "Gen_Tough_Male_Twilek_Generic_Comment_-_Short_1"},
+    "n_gtmtwlek_coms2": {"_id": "130", "comment": "Gen_Tough_Male_Twilek_Generic_Comment_-_Short_2"},
+    "n_gtmtwlek_comm1": {"_id": "131", "comment": "Gen_Tough_Male_Twilek_Generic_Comment_-_Medium_1"},
+    "n_gtmtwlek_comm2": {"_id": "132", "comment": "Gen_Tough_Male_Twilek_Generic_Comment_-_Medium_2"},
+    "n_gtmtwlek_coml1": {"_id": "133", "comment": "Gen_Tough_Male_Twilek_Generic_Comment_-_Long_1"},
+    "n_gtmtwlek_coml2": {"_id": "134", "comment": "Gen_Tough_Male_Twilek_Generic_Comment_-_Long_2"},
+    "n_gtmtwlek_angs": {"_id": "135", "comment": "Gen_Tough_Male_Twilek_Angry_Short"},
+    "n_gtmtwlek_angm": {"_id": "136", "comment": "Gen_Tough_Male_Twilek_Angry_Medium"},
+    "n_gtmtwlek_angl": {"_id": "137", "comment": "Gen_Tough_Male_Twilek_Angry_Long"},
+    "n_gtmtwlek_ques": {"_id": "138", "comment": "Gen_Tough_Male_Twilek_Question_-_Short"},
+    "n_gtmtwlek_quem": {"_id": "139", "comment": "Gen_Tough_Male_Twilek_Question_-_Medium"},
+    "n_gtmtwlek_quel": {"_id": "140", "comment": "Gen_Tough_Male_Twilek_Question_-_Long"},
+    "n_gtmtwlek_scrs": {"_id": "141", "comment": "Gen_Tough_Male_Twilek_Scared_-_Short"},
+    "n_gtmtwlek_scrm": {"_id": "142", "comment": "Gen_Tough_Male_Twilek_Scared_-_Medium"},
+    "n_gtmtwlek_scrl": {"_id": "143", "comment": "Gen_Tough_Male_Twilek_Scared_-_Long"},
+    "n_gtmtwlek_ples": {"_id": "144", "comment": "Gen_Tough_Male_Twilek_Pleading_-_Short"},
+    "n_gtmtwlek_plem": {"_id": "145", "comment": "Gen_Tough_Male_Twilek_Pleading_-_Medium"},
+    "n_gtmtwlek_lghs": {"_id": "146", "comment": "Gen_Tough_Male_Twilek_Laughter_(mocking)_-_short"},
+    "n_gtmtwlek_lghm": {"_id": "147", "comment": "Gen_Tough_Male_Twilek_Laughter_(mocking)_-_medium"},
+    "n_gtmtwlek_hpys": {"_id": "148", "comment": "Gen_Tough_Male_Twilek_Happy_(thankful)_-_short"},
+    "n_gtmtwlek_hpym": {"_id": "149", "comment": "Gen_Tough_Male_Twilek_Happy_(thankful)_-_medium"},
+    "n_gtmtwlek_hpyl": {"_id": "150", "comment": "Gen_Tough_Male_Twilek_Happy_(thankful)_-_long"},
+    "n_gtmtwlek_sads": {"_id": "151", "comment": "Gen_Tough_Male_Twilek_Sad_-_Short"},
+    "n_gtmtwlek_sadm": {"_id": "152", "comment": "Gen_Tough_Male_Twilek_Sad_-_Medium"},
+    "n_gtmtwlek_sadl": {"_id": "153", "comment": "Gen_Tough_Male_Twilek_Sad_-_Long"},
+    "n_grodian_grts": {"_id": "154", "comment": "Gen_Rodian_Greeting_Short"},
+    "n_grodian_grtm": {"_id": "155", "comment": "Gen_Rodian_Greeting_Medium"},
+    "n_grodian_coms1": {"_id": "156", "comment": "Gen_Rodian_Generic_Comment_-_Short_1"},
+    "n_grodian_coms2": {"_id": "157", "comment": "Gen_Rodian_Generic_Comment_-_Short_2"},
+    "n_grodian_comm1": {"_id": "158", "comment": "Gen_Rodian_Generic_Comment_-_Medium_1"},
+    "n_grodian_comm2": {"_id": "159", "comment": "Gen_Rodian_Generic_Comment_-_Medium_2"},
+    "n_grodian_coml1": {"_id": "160", "comment": "Gen_Rodian_Generic_Comment_-_Long_1"},
+    "n_grodian_coml2": {"_id": "161", "comment": "Gen_Rodian_Generic_Comment_-_Long_2"},
+    "n_grodian_angs": {"_id": "162", "comment": "Gen_Rodian_Angry_Short"},
+    "n_grodian_angm": {"_id": "163", "comment": "Gen_Rodian_Angry_Medium"},
+    "n_grodian_angl": {"_id": "164", "comment": "Gen_Rodian_Angry_Long"},
+    "n_grodian_ques": {"_id": "165", "comment": "Gen_Rodian_Question_-_Short"},
+    "n_grodian_quem": {"_id": "166", "comment": "Gen_Rodian_Question_-_Medium"},
+    "n_grodian_quel": {"_id": "167", "comment": "Gen_Rodian_Question_-_Long"},
+    "n_grodian_scrs": {"_id": "168", "comment": "Gen_Rodian_Scared_-_Short"},
+    "n_grodian_scrm": {"_id": "169", "comment": "Gen_Rodian_Scared_-_Medium"},
+    "n_grodian_scrl": {"_id": "170", "comment": "Gen_Rodian_Scared_-_Long"},
+    "n_grodian_ples": {"_id": "171", "comment": "Gen_Rodian_Pleading_-_Short"},
+    "n_grodian_plem": {"_id": "172", "comment": "Gen_Rodian_Pleading_-_Medium"},
+    "n_grodian_lghs": {"_id": "173", "comment": "Gen_Rodian_Laughter_(mocking)_-_short"},
+    "n_grodian_lghm": {"_id": "174", "comment": "Gen_Rodian_Laughter_(mocking)_-_medium"},
+    "n_grodian_hpys": {"_id": "175", "comment": "Gen_Rodian_Happy_(thankful)_-_short"},
+    "n_grodian_hpym": {"_id": "176", "comment": "Gen_Rodian_Happy_(thankful)_-_medium"},
+    "n_grodian_hpyl": {"_id": "177", "comment": "Gen_Rodian_Happy_(thankful)_-_long"},
+    "n_grodian_sads": {"_id": "178", "comment": "Gen_Rodian_Sad_-_Short"},
+    "n_grodian_sadm": {"_id": "179", "comment": "Gen_Rodian_Sad_-_Medium"},
+    "n_grodian_sadl": {"_id": "180", "comment": "Gen_Rodian_Sad_-_Long"},
+    "n_gtrodian_grts": {"_id": "181", "comment": "Gen_Tough_Rodian_Greeting_Short"},
+    "n_gtrodian_grtm": {"_id": "182", "comment": "Gen_Tough_Rodian_Greeting_Medium"},
+    "n_gtrodian_coms1": {"_id": "183", "comment": "Gen_Tough_Rodian_Generic_Comment_-_Short_1"},
+    "n_gtrodian_coms2": {"_id": "184", "comment": "Gen_Tough_Rodian_Generic_Comment_-_Short_2"},
+    "n_gtrodian_comm1": {"_id": "185", "comment": "Gen_Tough_Rodian_Generic_Comment_-_Medium_1"},
+    "n_gtrodian_comm2": {"_id": "186", "comment": "Gen_Tough_Rodian_Generic_Comment_-_Medium_2"},
+    "n_gtrodian_coml1": {"_id": "187", "comment": "Gen_Tough_Rodian_Generic_Comment_-_Long_1"},
+    "n_gtrodian_coml2": {"_id": "188", "comment": "Gen_Tough_Rodian_Generic_Comment_-_Long_2"},
+    "n_gtrodian_angs": {"_id": "189", "comment": "Gen_Tough_Rodian_Angry_Short"},
+    "n_gtrodian_angm": {"_id": "190", "comment": "Gen_Tough_Rodian_Angry_Medium"},
+    "n_gtrodian_angl": {"_id": "191", "comment": "Gen_Tough_Rodian_Angry_Long"},
+    "n_gtrodian_ques": {"_id": "192", "comment": "Gen_Tough_Rodian_Question_-_Short"},
+    "n_gtrodian_quem": {"_id": "193", "comment": "Gen_Tough_Rodian_Question_-_Medium"},
+    "n_gtrodian_quel": {"_id": "194", "comment": "Gen_Tough_Rodian_Question_-_Long"},
+    "n_gtrodian_scrs": {"_id": "195", "comment": "Gen_Tough_Rodian_Scared_-_Short"},
+    "n_gtrodian_scrm": {"_id": "196", "comment": "Gen_Tough_Rodian_Scared_-_Medium"},
+    "n_gtrodian_scrl": {"_id": "197", "comment": "Gen_Tough_Rodian_Scared_-_Long"},
+    "n_gtrodian_ples": {"_id": "198", "comment": "Gen_Tough_Rodian_Pleading_-_Short"},
+    "n_gtrodian_plem": {"_id": "199", "comment": "Gen_Tough_Rodian_Pleading_-_Medium"},
+    "n_gtrodian_lghs": {"_id": "200", "comment": "Gen_Tough_Rodian_Laughter_(mocking)_-_short"},
+    "n_gtrodian_lghm": {"_id": "201", "comment": "Gen_Tough_Rodian_Laughter_(mocking)_-_medium"},
+    "n_gtrodian_hpys": {"_id": "202", "comment": "Gen_Tough_Rodian_Happy_(thankful)_-_short"},
+    "n_gtrodian_hpym": {"_id": "203", "comment": "Gen_Tough_Rodian_Happy_(thankful)_-_medium"},
+    "n_gtrodian_hpyl": {"_id": "204", "comment": "Gen_Tough_Rodian_Happy_(thankful)_-_long"},
+    "n_gtrodian_sads": {"_id": "205", "comment": "Gen_Tough_Rodian_Sad_-_Short"},
+    "n_gtrodian_sadm": {"_id": "206", "comment": "Gen_Tough_Rodian_Sad_-_Medium"},
+    "n_gtrodian_sadl": {"_id": "207", "comment": "Gen_Tough_Rodian_Sad_-_Long"},
+    "n_grakata_grts": {"_id": "208", "comment": "Gen_Rakatan_Greeting_Short"},
+    "n_grakata_grtm": {"_id": "209", "comment": "Gen_Rakatan_Greeting_Medium"},
+    "n_grakata_coms1": {"_id": "210", "comment": "Gen_Rakatan_Generic_Comment_-_Short_1"},
+    "n_grakata_coms2": {"_id": "211", "comment": "Gen_Rakatan_Generic_Comment_-_Short_2"},
+    "n_grakata_comm1": {"_id": "212", "comment": "Gen_Rakatan_Generic_Comment_-_Medium_1"},
+    "n_grakata_comm2": {"_id": "213", "comment": "Gen_Rakatan_Generic_Comment_-_Medium_2"},
+    "n_grakata_coml1": {"_id": "214", "comment": "Gen_Rakatan_Generic_Comment_-_Long_1"},
+    "n_grakata_coml2": {"_id": "215", "comment": "Gen_Rakatan_Generic_Comment_-_Long_2"},
+    "n_grakata_angs": {"_id": "216", "comment": "Gen_Rakatan_Angry_Short"},
+    "n_grakata_angm": {"_id": "217", "comment": "Gen_Rakatan_Angry_Medium"},
+    "n_grakata_angl": {"_id": "218", "comment": "Gen_Rakatan_Angry_Long"},
+    "n_grakata_ques": {"_id": "219", "comment": "Gen_Rakatan_Question_-_Short"},
+    "n_grakata_quem": {"_id": "220", "comment": "Gen_Rakatan_Question_-_Medium"},
+    "n_grakata_quel": {"_id": "221", "comment": "Gen_Rakatan_Question_-_Long"},
+    "n_grakata_scrs": {"_id": "222", "comment": "Gen_Rakatan_Scared_-_Short"},
+    "n_grakata_scrm": {"_id": "223", "comment": "Gen_Rakatan_Scared_-_Medium"},
+    "n_grakata_scrl": {"_id": "224", "comment": "Gen_Rakatan_Scared_-_Long"},
+    "n_grakata_ples": {"_id": "225", "comment": "Gen_Rakatan_Pleading_-_Short"},
+    "n_grakata_plem": {"_id": "226", "comment": "Gen_Rakatan_Pleading_-_Medium"},
+    "n_grakata_lghs": {"_id": "227", "comment": "Gen_Rakatan_Laughter_(mocking)_-_short"},
+    "n_grakata_lghm": {"_id": "228", "comment": "Gen_Rakatan_Laughter_(mocking)_-_medium"},
+    "n_grakata_hpys": {"_id": "229", "comment": "Gen_Rakatan_Happy_(thankful)_-_short"},
+    "n_grakata_hpym": {"_id": "230", "comment": "Gen_Rakatan_Happy_(thankful)_-_medium"},
+    "n_grakata_hpyl": {"_id": "231", "comment": "Gen_Rakatan_Happy_(thankful)_-_long"},
+    "n_grakata_sads": {"_id": "232", "comment": "Gen_Rakatan_Sad_-_Short"},
+    "n_grakata_sadm": {"_id": "233", "comment": "Gen_Rakatan_Sad_-_Medium"},
+    "n_grakata_sadl": {"_id": "234", "comment": "Gen_Rakatan_Sad_-_Long"},
+    "n_genwrakata_grts": {"_id": "235", "comment": "Gen_Wise_Rakatan_Greeting_Short"},
+    "n_genwrakata_grtm": {"_id": "236", "comment": "Gen_Wise_Rakatan_Greeting_Medium"},
+    "n_genwrakata_coms1": {"_id": "237", "comment": "Gen_Wise_Rakatan_Generic_Comment_-_Short_1"},
+    "n_genwrakata_coms2": {"_id": "238", "comment": "Gen_Wise_Rakatan_Generic_Comment_-_Short_2"},
+    "n_genwrakata_comm1": {"_id": "239", "comment": "Gen_Wise_Rakatan_Generic_Comment_-_Medium_1"},
+    "n_genwrakata_comm2": {"_id": "240", "comment": "Gen_Wise_Rakatan_Generic_Comment_-_Medium_2"},
+    "n_genwrakata_coml1": {"_id": "241", "comment": "Gen_Wise_Rakatan_Generic_Comment_-_Long_1"},
+    "n_genwrakata_coml2": {"_id": "242", "comment": "Gen_Wise_Rakatan_Generic_Comment_-_Long_2"},
+    "n_genwrakata_angs": {"_id": "243", "comment": "Gen_Wise_Rakatan_Angry_Short"},
+    "n_genwrakata_angm": {"_id": "244", "comment": "Gen_Wise_Rakatan_Angry_Medium"},
+    "n_genwrakata_angl": {"_id": "245", "comment": "Gen_Wise_Rakatan_Angry_Long"},
+    "n_genwrakata_ques": {"_id": "246", "comment": "Gen_Wise_Rakatan_Question_-_Short"},
+    "n_genwrakata_quem": {"_id": "247", "comment": "Gen_Wise_Rakatan_Question_-_Medium"},
+    "n_genwrakata_quel": {"_id": "248", "comment": "Gen_Wise_Rakatan_Question_-_Long"},
+    "n_genwrakata_scrs": {"_id": "249", "comment": "Gen_Wise_Rakatan_Scared_-_Short"},
+    "n_genwrakata_scrm": {"_id": "250", "comment": "Gen_Wise_Rakatan_Scared_-_Medium"},
+    "n_genwrakata_scrl": {"_id": "251", "comment": "Gen_Wise_Rakatan_Scared_-_Long"},
+    "n_genwrakata_ples": {"_id": "252", "comment": "Gen_Wise_Rakatan_Pleading_-_Short"},
+    "n_genwrakata_plem": {"_id": "253", "comment": "Gen_Wise_Rakatan_Pleading_-_Medium"},
+    "n_genwrakata_lghs": {"_id": "254", "comment": "Gen_Wise_Rakatan_Laughter_(mocking)_-_short"},
+    "n_genwrakata_lghm": {"_id": "255", "comment": "Gen_Wise_Rakatan_Laughter_(mocking)_-_medium"},
+    "n_genwrakata_hpys": {"_id": "256", "comment": "Gen_Wise_Rakatan_Happy_(thankful)_-_short"},
+    "n_genwrakata_hpym": {"_id": "257", "comment": "Gen_Wise_Rakatan_Happy_(thankful)_-_medium"},
+    "n_genwrakata_hpyl": {"_id": "258", "comment": "Gen_Wise_Rakatan_Happy_(thankful)_-_long"},
+    "n_genwrakata_sads": {"_id": "259", "comment": "Gen_Wise_Rakatan_Sad_-_Short"},
+    "n_genwrakata_sadm": {"_id": "260", "comment": "Gen_Wise_Rakatan_Sad_-_Medium"},
+    "n_genwrakata_sadl": {"_id": "261", "comment": "Gen_Wise_Rakatan_Sad_-_Long"},
+    "n_genjawa_grts1": {"_id": "262", "comment": "Gen_Jawa_Greeting_Short_1"},
+    "n_genjawa_grts2": {"_id": "263", "comment": "Gen_Jawa_Greeting_Short_2"},
+    "n_genjawa_coms1": {"_id": "264", "comment": "Gen_Jawa_Generic_Comment_-_Short_1"},
+    "n_genjawa_coms2": {"_id": "265", "comment": "Gen_Jawa_Generic_Comment_-_Short_2"},
+    "n_genjawa_comm1": {"_id": "266", "comment": "Gen_Jawa_Generic_Comment_-_Medium_1"},
+    "n_genjawa_comm2": {"_id": "267", "comment": "Gen_Jawa_Generic_Comment_-_Medium_2"},
+    "n_genjawa_ques": {"_id": "268", "comment": "Gen_Jawa_Question_-_Short"},
+    "n_genjawa_quem": {"_id": "269", "comment": "Gen_Jawa_Question_-_Medium"},
+    "n_genhutt_grts": {"_id": "270", "comment": "Gen_Hutt_Greeting_Short"},
+    "n_genhutt_coms1": {"_id": "271", "comment": "Gen_Hutt_Generic_Comment_-_Short_1"},
+    "n_genhutt_coms2": {"_id": "272", "comment": "Gen_Hutt_Generic_Comment_-_Short_2"},
+    "n_genhutt_comm1": {"_id": "273", "comment": "Gen_Hutt_Generic_Comment_-_Medium_1"},
+    "n_genhutt_comm2": {"_id": "274", "comment": "Gen_Hutt_Generic_Comment_-_Medium_2"},
+    "n_genhutt_coml1": {"_id": "275", "comment": "Gen_Hutt_Generic_Comment_-_Long_1"},
+    "n_genhutt_coml2": {"_id": "276", "comment": "Gen_Hutt_Generic_Comment_-_Long_2"},
+    "n_genhutt_angm": {"_id": "277", "comment": "Gen_Hutt_Angry_Medium"},
+    "n_genhutt_angl": {"_id": "278", "comment": "Gen_Hutt_Angry_Long"},
+    "n_genhutt_ques": {"_id": "279", "comment": "Gen_Hutt_Question_-_Short"},
+    "n_genhutt_quem": {"_id": "280", "comment": "Gen_Hutt_Question_-_Medium"},
+    "n_genhutt_quel": {"_id": "281", "comment": "Gen_Hutt_Question_-_Long"},
+    "n_genhutt_scrs": {"_id": "282", "comment": "Gen_Hutt_Scared_-_Short"},
+    "n_genhutt_scrm": {"_id": "283", "comment": "Gen_Hutt_Scared_-_Medium"},
+    "n_genhutt_lghs": {"_id": "284", "comment": "Gen_Hutt_Laughter_(mocking)_-_short"},
+    "n_genhutt_lghm": {"_id": "285", "comment": "Gen_Hutt_Laughter_(mocking)_-_medium"},
+    "n_genhutt_hpys": {"_id": "286", "comment": "Gen_Hutt_Happy_(thankful)_-_short"},
+    "n_genhutt_hpyl": {"_id": "287", "comment": "Gen_Hutt_Happy_(thankful)_-_long"},
+    "n_genduros_grt": {"_id": "288", "comment": "Duros_Greeting_Short"},
+    "n_genduros_coms1": {"_id": "289", "comment": "Duros_Generic_Comment_-_Short_1"},
+    "n_genduros_coms2": {"_id": "290", "comment": "Duros_Generic_Comment_-_Short_2"},
+    "n_genduros_comm1": {"_id": "291", "comment": "Duros_Generic_Comment_-_Medium_1"},
+    "n_genduros_comm2": {"_id": "292", "comment": "Duros_Generic_Comment_-_Medium_2"},
+    "n_genduros_coml1": {"_id": "293", "comment": "Duros_Generic_Comment_-_Long_1"},
+    "n_genduros_coml2": {"_id": "294", "comment": "Duros_Generic_Comment_-_Long_2"},
+    "n_genbith_grt": {"_id": "295", "comment": "Bith_Greeting_Short"},
+    "n_genbith_coms1": {"_id": "296", "comment": "Bith_Generic_Comment_-_Short_1"},
+    "n_genbith_comm1": {"_id": "297", "comment": "Bith_Generic_Comment_-_Medium_1"},
+    "n_genbith_coml1": {"_id": "298", "comment": "Bith_Generic_Comment_-_Long_1"}
+}
+
+
 class Globals:
     def __init__(self):
         self.chosen_languages: list[Language] = []
@@ -95,6 +409,7 @@ class Globals:
         self.convert_tga: bool = False
         self.custom_scaling: float = 1.0
         self.draw_bounds: bool = False
+        self.fix_dialog_skipping: bool = False
         self.font_color: float
         self.font_path: Path
         self.install_running: bool = False
@@ -119,13 +434,16 @@ class Globals:
 
 SCRIPT_GLOBALS = Globals()
 
+
 def get_font_paths_linux() -> list[Path]:
     font_dirs: list[Path] = [Path("/usr/share/fonts/"), Path("/usr/local/share/fonts/"), Path.home() / ".fonts"]
     return [font for font_dir in font_dirs for font in font_dir.glob("**/*.ttf")]
 
+
 def get_font_paths_macos() -> list[Path]:
     font_dirs: list[Path] = [Path("/Library/Fonts/"), Path("/System/Library/Fonts/"), Path.home() / "Library/Fonts"]
     return [font for font_dir in font_dirs for font in font_dir.glob("**/*.ttf")]
+
 
 def get_font_paths_windows() -> list[Path]:
     import winreg
@@ -145,6 +463,7 @@ def get_font_paths_windows() -> list[Path]:
 
     return list(font_paths)
 
+
 def get_font_paths() -> list[Path]:
     with suppress(Exception):
         os_str = platform.system()
@@ -156,6 +475,7 @@ def get_font_paths() -> list[Path]:
             return get_font_paths_windows()
     msg = "Unsupported operating system"
     raise NotImplementedError(msg)
+
 
 def relative_path_from_to(src: PurePath, dst: PurePath) -> Path:
     src_parts = list(src.parts)
@@ -188,8 +508,8 @@ def log_output(*args, **kwargs):
         f.write(msg)
 
     # Print the captured output to console
-    #print(*args, **kwargs)  # noqa: T201
-    SCRIPT_GLOBALS.patchlogger.add_note("\t".join(args))
+    # print(*args, **kwargs)
+    SCRIPT_GLOBALS.patchlogger.add_note("\t".join(str(arg) for arg in args))
 
 
 def visual_length(s: str, tab_length=8) -> int:
@@ -209,19 +529,35 @@ def log_output_with_separator(message, below=True, above=False, surround=False):
     if above or surround:
         log_output(visual_length(message) * "-")
     log_output(message)
-    if below and not above or surround:
+    if (below and not above) or surround:
         log_output(visual_length(message) * "-")
 
 
 def patch_nested_gff(
     gff_struct: GFFStruct,
     gff_content: GFFContent,
+    gff: GFF,
     current_path: PurePath | Path = None,  # type: ignore[pylance, assignment]
     made_change: bool = False,
-) -> bool:
+    alien_vo_count=-1,
+) -> tuple[bool, int]:
     if gff_content != GFFContent.DLG and not SCRIPT_GLOBALS.translate:
-        print(f"Skipping file at '{current_path}', translate not set.")
-        return False
+        # print(f"Skipping file at '{current_path}', translate not set.")
+        return False, alien_vo_count
+    if gff_content == GFFContent.DLG:
+        if SCRIPT_GLOBALS.fix_dialog_skipping:
+            delay = gff_struct.acquire("Delay", None)
+            if delay == 0:
+                vo_resref = gff_struct.acquire("VO_ResRef", "")
+                if vo_resref and vo_resref.strip():
+                    log_output(f"Changing Delay at '{current_path}' from {delay} to -1")
+                    gff_struct.set_uint32("Delay", 0xFFFFFFFF)
+                    made_change = True
+        sound: ResRef | None = gff_struct.acquire("Sound", None, ResRef)
+        sound_str = str(sound).strip().lower() if sound is not None else ""
+        if sound and sound_str.strip() and sound_str in ALIEN_SOUNDS:
+            log_output(sound_str, "found in:", str(current_path))
+            alien_vo_count += 1
 
     current_path = PurePath.pathify(current_path or "GFFRoot")
     for label, ftype, value in gff_struct:
@@ -231,12 +567,14 @@ def patch_nested_gff(
 
         if ftype == GFFFieldType.Struct:
             assert isinstance(value, GFFStruct)  # noqa: S101
-            made_change &= patch_nested_gff(value, gff_content, child_path, made_change)
+            result_made_change, alien_vo_count = patch_nested_gff(value, gff_content, gff, child_path, made_change, alien_vo_count)
+            made_change |= result_made_change
             continue
 
         if ftype == GFFFieldType.List:
             assert isinstance(value, GFFList)  # noqa: S101
-            made_change &= recurse_through_list(value, gff_content, child_path, made_change)
+            result_made_change, alien_vo_count = recurse_through_list(value, gff_content, gff, child_path, made_change, alien_vo_count)
+            made_change |= result_made_change
             continue
 
         if ftype == GFFFieldType.LocalizedString and SCRIPT_GLOBALS.translate:  # and gff_content.value == GFFContent.DLG.value:
@@ -251,17 +589,27 @@ def patch_nested_gff(
                     new_substrings[substring_id] = str(translated_text)
                     made_change = True
             value._substrings = new_substrings
-    return made_change
+    return made_change, alien_vo_count
 
 
-def recurse_through_list(gff_list: GFFList, gff_content: GFFContent, current_path: PurePath, made_change: bool) -> bool:
+def recurse_through_list(
+    gff_list: GFFList,
+    gff_content: GFFContent,
+    gff: GFF,
+    current_path: PurePath | Path = None,  # type: ignore[pylance, assignment]
+    made_change: bool = False,
+    alien_vo_count=-1,
+) -> tuple[bool, int]:
     current_path = PurePath.pathify(current_path or "GFFListRoot")
     for list_index, gff_struct in enumerate(gff_list):
-        made_change &= patch_nested_gff(gff_struct, gff_content, current_path / str(list_index), made_change)
-    return made_change
+        result_made_change, alien_vo_count = patch_nested_gff(gff_struct, gff_content, gff, current_path / str(list_index), made_change, alien_vo_count)
+        made_change |= result_made_change
+    return made_change, alien_vo_count
+
 
 def fix_encoding(text: str, encoding: str):
     return text.encode(encoding=encoding, errors="ignore").decode(encoding=encoding, errors="ignore").strip()
+
 
 def patch_resource(resource: FileResource) -> GFF | TPC | None:
     def translate_entry(tlkentry: TLKEntry, from_lang: Language) -> tuple[str, str]:
@@ -288,8 +636,8 @@ def patch_resource(resource: FileResource) -> GFF | TPC | None:
                         translated_text = fix_encoding(translated_text, SCRIPT_GLOBALS.pytranslator.to_lang.get_encoding())
                         tlk.replace(strref, translated_text)
                         log_output(f"#{strref} Translated {original_text} --> {translated_text}")
-                except Exception as exc:  # noqa: BLE001
-                    log_output(f"tlk strref {strref} generated an exception: {universal_simplify_exception(exc)}")
+                except Exception as exc:  # pylint: disable=W0718  # noqa: BLE001
+                    log_output(format_exception_with_variables(e, message=f"tlk strref {strref} generated an exception: {universal_simplify_exception(exc)}"))
                     print(format_exception_with_variables(exc))
 
     if resource.restype().extension.lower() == "tlk" and SCRIPT_GLOBALS.translate and SCRIPT_GLOBALS.pytranslator:
@@ -297,8 +645,8 @@ def patch_resource(resource: FileResource) -> GFF | TPC | None:
         try:
             log_output(f"Loading TLK '{resource.filepath()}'")
             tlk = read_tlk(resource.data())
-        except Exception as e:  # noqa: BLE001
-            log_output(f"Error loading TLK {resource.filepath()}! {universal_simplify_exception(e)}")
+        except Exception as e:  # pylint: disable=W0718  # noqa: BLE001
+            log_output(format_exception_with_variables(e, message=f"[Error] loading TLK '{resource.identifier()}' at '{resource.filepath()}'!"))
             print(format_exception_with_variables(e))
             return None
 
@@ -319,39 +667,57 @@ def patch_resource(resource: FileResource) -> GFF | TPC | None:
         processed_files.add(new_file_path)
 
     if resource.restype().extension.lower() == "tga" and SCRIPT_GLOBALS.convert_tga:
-        log_output(f"Converting TGA at {resource.filepath()} to TPC...")
+        log_output(f"Converting TGA at {resource._path_ident_obj} to TPC...")
         return TPCTGAReader(resource.data()).load()
 
     if resource.restype().name.upper() in {x.name for x in GFFContent}:
         gff: GFF | None = None
         try:
-            #log_output(f"Loading {resource.resname()}.{resource.restype().extension} from '{resource.filepath().name}'")
+            # log_output(f"Loading {resource.resname()}.{resource.restype().extension} from '{resource.filepath().name}'")
             gff = read_gff(resource.data())
             made_change = False
             if gff.content == GFFContent.DLG and SCRIPT_GLOBALS.set_unskippable:
-                made_change = True
-                gff.root.set_uint8("Skippable", 0)
-            if patch_nested_gff(
+                skippable = gff.root.acquire("Skippable", None)
+                if skippable not in {0, "0"}:
+                    conversationtype = gff.root.acquire("ConversationType", None)
+                    if conversationtype not in {"1", 1}:
+                        alien_owner: str | None = gff.root.acquire("AlienRaceOwner", None)  # TSL only
+                        if alien_owner in {"0", 0}:
+                            made_change = True
+                            gff.root.set_uint8("Skippable", 0)
+                            log_output(f"ConversationType: {conversationtype}", f"alien_owner: {alien_owner}", f"Conditions passed, setting dialog unskippable for {resource._path_ident_obj}")
+            result_made_change, alien_vo_count = patch_nested_gff(
                 gff.root,
                 gff.content,
-                resource.filepath() / str(resource.identifier())
-            ) or made_change:
+                gff,
+                resource._path_ident_obj  # noqa: SLF001
+            )
+            if not made_change and alien_vo_count < 3 and alien_vo_count != -1 and SCRIPT_GLOBALS.set_unskippable and gff.content == GFFContent.DLG:
+                skippable = gff.root.acquire("Skippable", None)
+                if skippable not in {0, "0"}:
+                    conversationtype = gff.root.acquire("ConversationType", None)
+                    if conversationtype not in {"1", 1}:
+                        log_output("Skippable", skippable, "alien_vo_count", alien_vo_count, "ConversationType", conversationtype, f"Setting dialog as unskippable in {resource._path_ident_obj}")
+                        made_change = True
+                        gff.root.set_uint8("Skippable", 0)
+            if made_change or result_made_change:
                 return gff
-        except Exception as e:  # noqa: BLE001
-            log_output(f"[Error] loading GFF '{resource.identifier()}' at '{resource.filepath()}'! {universal_simplify_exception(e)}")
-            #raise
+        except Exception as e:  # pylint: disable=W0718  # noqa: BLE001
+            log_output(format_exception_with_variables(e, message=f"[Error] loading GFF '{resource._path_ident_obj}'!"))
+            # raise
             return None
 
         if not gff:
-            log_output(f"GFF resource '{resource.identifier()}' missing in memory at '{resource.filepath()}'")
+            log_output(f"GFF resource '{resource._path_ident_obj}' missing in memory")
             return None
     return None
+
 
 def patch_and_save_noncapsule(resource: FileResource, savedir: Path | None = None):
     patched_data: GFF | TPC | None = patch_resource(resource)
     if patched_data is None:
         return
-    new_path = savedir or resource.filepath()
+    capsule = Capsule(resource.filepath()) if resource.inside_capsule else None
     if isinstance(patched_data, GFF):
         new_data = bytes_gff(patched_data)
 
@@ -359,16 +725,35 @@ def patch_and_save_noncapsule(resource: FileResource, savedir: Path | None = Non
         if SCRIPT_GLOBALS.translate:
             new_gff_filename = f"{resource.resname()}_{SCRIPT_GLOBALS.pytranslator.to_lang.get_bcp47_code()}.{resource.restype().extension}"
 
-        new_path = new_path.parent / new_gff_filename
-        BinaryWriter.dump(new_path, new_data)
+        new_path = (savedir or resource.filepath().parent) / new_gff_filename
+        if new_path.exists() and savedir:
+            log_output(f"Skipping '{new_gff_filename}', already exists on disk")
+        else:
+            log_output(f"Saving patched gff to '{new_path}'")
+            BinaryWriter.dump(new_path, new_data)
     elif isinstance(patched_data, TPC):
-        txi_file = resource.filepath().with_suffix(".txi")
-        if txi_file.is_file():
-            log_output("Embedding TXI information...")
-            data: bytes = BinaryReader.load_file(txi_file)
-            txi_text: str = decode_bytes_with_fallbacks(data)
-            patched_data.txi = txi_text
-        TPCTGAWriter(patched_data, new_path.with_suffix(".tpc")).write()
+        if capsule is None:
+            txi_file = resource.filepath().with_suffix(".txi")
+            if txi_file.is_file():
+                log_output("Embedding TXI information...")
+                data: bytes = BinaryReader.load_file(txi_file)
+                txi_text: str = decode_bytes_with_fallbacks(data)
+                patched_data.txi = txi_text
+        else:
+            txi_data = capsule.resource(resource.resname(), ResourceType.TXI)
+            if txi_data is not None:
+                log_output("Embedding TXI information from resource found in capsule...")
+                txi_text = decode_bytes_with_fallbacks(txi_data)
+                patched_data.txi = txi_text
+
+        new_path = (savedir or resource.filepath().parent) / resource.resname()
+        new_path = new_path.with_suffix(".tpc")
+        if new_path.exists():
+            log_output(f"Skipping '{new_path}', already exists on disk")
+        else:
+            log_output(f"Saving converted tpc to '{new_path}'")
+            TPCTGAWriter(patched_data, new_path.with_suffix(".tpc")).write()
+
 
 def patch_capsule_file(c_file: Path):
     new_data: bytes
@@ -383,15 +768,15 @@ def patch_capsule_file(c_file: Path):
     if SCRIPT_GLOBALS.translate:
         new_filepath = c_file.parent / f"{c_file.stem}_{SCRIPT_GLOBALS.pytranslator.to_lang.get_bcp47_code()}{c_file.suffix}"
 
-    new_capsule = Capsule(new_filepath, create_nonexisting=True)
+    new_resources: list[tuple[str, ResourceType, bytes]] = []
     omitted_resources: list[ResourceIdentifier] = []
     for resource in file_capsule:
 
         patched_data: GFF | TPC | None = patch_resource(resource)
         if isinstance(patched_data, GFF):
             new_data = bytes_gff(patched_data) if patched_data else resource.data()
-            log_output(f"Adding patched GFF resource '{resource.resname()}' to capsule {c_file.name}")
-            new_capsule.add(resource.resname(), resource.restype(), new_data)
+            log_output(f"Adding patched GFF resource '{resource.identifier()}' to capsule {new_filepath.name}")
+            new_resources.append((resource.resname(), resource.restype(), new_data))
             omitted_resources.append(resource.identifier())
 
         elif isinstance(patched_data, TPC):
@@ -401,13 +786,23 @@ def patch_capsule_file(c_file: Path):
                 omitted_resources.append(ResourceIdentifier(resource.resname(), ResourceType.TXI))
 
             new_data = bytes_tpc(patched_data)
-            log_output(f"Adding patched TPC resource '{resource.resname()}' to capsule {c_file.name}")
-            new_capsule.add(resource.resname(), ResourceType.TPC, new_data)
+            log_output(f"Adding patched TPC resource '{resource.identifier()}' to capsule {new_filepath.name}")
+            new_resources.append((resource.resname(), ResourceType.TPC, new_data))
             omitted_resources.append(resource.identifier())
 
+    erf_or_rim: ERF | RIM = ERF(ERFType.from_extension(new_filepath)) if is_any_erf_type_file(c_file) else RIM()
     for resource in file_capsule:
         if resource.identifier() not in omitted_resources:
-            new_capsule.add(resource.resname(), resource.restype(), resource.data())
+            erf_or_rim.set_data(resource.resname(), resource.restype(), resource.data())
+    for resinfo in new_resources:
+        erf_or_rim.set_data(*resinfo)
+
+    log_output(f"Saving back to {new_filepath.name}")
+    if is_any_erf_type_file(c_file):
+        write_erf(erf_or_rim, new_filepath)  # type: ignore[arg-type, reportArgumentType]
+    else:
+        write_rim(erf_or_rim, new_filepath)  # type: ignore[arg-type, reportArgumentType]
+
 
 def patch_erf_or_rim(resources: list[FileResource], filename: str, erf_or_rim: RIM | ERF) -> PurePath:
     omitted_resources: list[ResourceIdentifier] = []
@@ -418,7 +813,7 @@ def patch_erf_or_rim(resources: list[FileResource], filename: str, erf_or_rim: R
     for resource in resources:
         patched_data: GFF | TPC | None = patch_resource(resource)
         if isinstance(patched_data, GFF):
-            log_output(f"Adding patched GFF resource '{resource.resname()}' to {new_filename}")
+            log_output(f"Adding patched GFF resource '{resource.identifier()}' to {new_filename}")
             new_data: bytes = bytes_gff(patched_data) if patched_data else resource.data()
             erf_or_rim.set_data(resource.resname(), resource.restype(), new_data)
             omitted_resources.append(resource.identifier())
@@ -446,6 +841,7 @@ def patch_erf_or_rim(resources: list[FileResource], filename: str, erf_or_rim: R
             erf_or_rim.set_data(resource.resname(), resource.restype(), resource.data())
     return new_filename
 
+
 def patch_file(file: os.PathLike | str):
     c_file = Path.pathify(file)
     if c_file in processed_files:
@@ -455,7 +851,7 @@ def patch_file(file: os.PathLike | str):
         patch_capsule_file(c_file)
 
     else:
-        resname, restype = ResourceIdentifier.from_path(c_file)
+        resname, restype = ResourceIdentifier.from_path(c_file).unpack()
         if restype == ResourceType.INVALID:
             return
 
@@ -469,50 +865,63 @@ def patch_file(file: os.PathLike | str):
             ),
         )
 
+
 def patch_folder(folder_path: os.PathLike | str):
     c_folderpath = Path.pathify(folder_path)
     log_output_with_separator(f"Recursing through resources in the '{c_folderpath.name}' folder...", above=True)
     for file_path in c_folderpath.safe_rglob("*"):
         patch_file(file_path)
 
+
 def patch_install(install_path: os.PathLike | str):
     log_output()
     log_output_with_separator(f"Patching install dir:\t{install_path}", above=True)
     log_output()
 
-    log_output_with_separator("Patching modules...")
     k_install = Installation(install_path)
-
-    # Patch modules...
+    k_install.reload_all()
+    log_output_with_separator("Patching modules...")
     for module_name, resources in k_install._modules.items():
-        _resname, restype = ResourceIdentifier.from_path(module_name)
-        if restype == ResourceType.RIM:
+        res_ident = ResourceIdentifier.from_path(module_name)
+        filename = str(res_ident)
+        filepath = k_install.path().joinpath("Modules", filename)
+        if res_ident.restype == ResourceType.RIM:
+            if filepath.with_suffix(".mod").safe_isfile():
+                log_output(f"Skipping {filepath}, a .mod already exists at this path.")
+                continue
             new_rim = RIM()
             new_rim_filename = patch_erf_or_rim(resources, module_name, new_rim)
-            write_rim(new_rim, k_install.path() / new_rim_filename)
+            log_output(f"Saving rim {new_rim_filename}")
+            write_rim(new_rim, filepath.parent / new_rim_filename, res_ident.restype)
 
-        elif restype.name in ERFType.__members__:
-            new_erf = ERF(ERFType.ERF)
+        elif res_ident.restype.name in ERFType.__members__:
+            new_erf = ERF(ERFType.__members__[res_ident.restype.name])
             new_erf_filename = patch_erf_or_rim(resources, module_name, new_erf)
-            write_erf(new_erf, k_install.path() / new_erf_filename, restype)
+            log_output(f"Saving erf {new_erf_filename}")
+            write_erf(new_erf, filepath.parent / new_erf_filename, res_ident.restype)
 
         else:
             log_output("Unsupported module:", module_name, " - cannot patch")
 
-    # Patch rims...
-    for rim_name, resources in k_install._rims.items():
-        new_rim = RIM()
-        new_rim_filename = patch_erf_or_rim(resources, rim_name, new_rim)
-        write_rim(new_rim, k_install.path() / new_rim_filename)
+    # nothing by the game uses these rims as far as I can tell
+    # log_output_with_separator("Patching rims...")
+    # for rim_name, resources in k_install._rims.items():
+    #    new_rim = RIM()
+    #    res_ident = ResourceIdentifier.from_path(module_name)
+    #    filename = str(res_ident)
+    #    filepath = k_install.path().joinpath("rims", filename)
+    #    new_rim_filename = patch_erf_or_rim(resources, rim_name, new_rim)
+    #    log_output(f"Patching {new_rim_filename} in the 'rims' folder ")
+    #    write_rim(new_rim, filepath.parent / new_rim_filename)
 
-    # Patch Override...
+    log_output_with_separator("Patching Override...")
+    override_path = k_install.override_path()
+    override_path.mkdir(exist_ok=True, parents=True)
     for folder in k_install.override_list():
         for resource in k_install.override_resources(folder):
             patch_and_save_noncapsule(resource)
 
-    # Patch bif data and save to Override
-    override_path = k_install.override_path()
-    override_path.mkdir(exist_ok=True, parents=True)
+    log_output_with_separator("Extract and patch BIF data, saving to Override")
     for resource in k_install.chitin_resources():
         patch_and_save_noncapsule(resource, savedir=override_path)
 
@@ -546,11 +955,11 @@ def execute_patchloop_thread():
         SCRIPT_GLOBALS.install_running = True
         do_main_patchloop()
         SCRIPT_GLOBALS.install_running = False
-    except Exception as e:  # noqa: BLE001
-        log_output("Unhandled exception during the patching process.")
-        log_output(traceback.format_exc())
+    except Exception as e:  # pylint: disable=W0718  # noqa: BLE001
+        log_output(format_exception_with_variables(e, message="Unhandled exception during the patching process."))
         SCRIPT_GLOBALS.install_running = False
         return messagebox.showerror("Error", f"An error occurred during patching\n{e!r}")
+
 
 def do_main_patchloop():
     # Validate args
@@ -574,7 +983,7 @@ def do_main_patchloop():
         has_action = True
         for lang in SCRIPT_GLOBALS.chosen_languages:
             main_translate_loop(lang)
-    if SCRIPT_GLOBALS.set_unskippable or SCRIPT_GLOBALS.convert_tga:
+    if SCRIPT_GLOBALS.set_unskippable or SCRIPT_GLOBALS.convert_tga or SCRIPT_GLOBALS.fix_dialog_skipping:
         determine_input_path(Path(SCRIPT_GLOBALS.path))
         has_action = True
     if not has_action:
@@ -589,6 +998,7 @@ def main_translate_loop(lang: Language):
     SCRIPT_GLOBALS.pytranslator.to_lang = lang
     determine_input_path(Path(SCRIPT_GLOBALS.path))
 
+
 def create_font_pack(lang: Language):
     print(f"Creating font pack for '{lang.name}'...")
     write_bitmap_fonts(
@@ -598,7 +1008,7 @@ def create_font_pack(lang: Language):
         lang,
         SCRIPT_GLOBALS.draw_bounds,
         SCRIPT_GLOBALS.custom_scaling,
-        font_color = SCRIPT_GLOBALS.font_color,
+        font_color=SCRIPT_GLOBALS.font_color,
     )
 
 
@@ -621,8 +1031,8 @@ def assign_to_globals(instance: KOTORPatchingToolUI):
 
 
 class KOTORPatchingToolUI:
-    def __init__(self, root):
-        self.root = root
+    def __init__(self, root: tk.Tk):
+        self.root: tk.Tk = root
         root.title("KOTOR Translate Tool")
 
         self.path = tk.StringVar()
@@ -634,6 +1044,7 @@ class KOTORPatchingToolUI:
         self.custom_scaling = tk.DoubleVar(value=SCRIPT_GLOBALS.custom_scaling)
         self.font_color = tk.StringVar()
         self.draw_bounds = tk.BooleanVar(value=False)
+        self.fix_dialog_skipping = tk.BooleanVar(value=False)
         self.convert_tga = tk.BooleanVar(value=False)
 
         # Middle area for text and scrollbar
@@ -712,12 +1123,16 @@ class KOTORPatchingToolUI:
         browse_button = ttk.Button(self.root, text="Browse", command=self.browse_path)
         browse_button.grid(row=row, column=3, padx=2)  # Stick to both sides within its cell
         browse_button.config(width=15)
-
         row += 1
 
         # Skippable
         ttk.Label(self.root, text="Make all dialog unskippable:").grid(row=row, column=0)
         ttk.Checkbutton(self.root, text="Yes", variable=self.set_unskippable).grid(row=row, column=1)
+        row += 1
+
+        # Fix skippable dialog bug
+        ttk.Label(self.root, text="(experimental) Fix TSL engine dialog skipping bug:").grid(row=row, column=0)
+        ttk.Checkbutton(self.root, text="Yes", variable=self.fix_dialog_skipping).grid(row=row, column=1)
         row += 1
 
         # TGA -> TPC
@@ -783,11 +1198,11 @@ class KOTORPatchingToolUI:
                 self.font_color.set(color_code[1])
 
         # TODO: parse the .gui or wherever the actual color is stored.
-        #self.font_color = tk.StringVar()
-        #ttk.Label(self.root, text="Font Color:").grid(row=row, column=0)
-        #ttk.Entry(self.root, textvariable=self.font_color).grid(row=row, column=1)
-        #tk.Button(self.root, text="Choose Color", command=choose_color).grid(row=row, column=2)
-        #row += 1
+        # self.font_color = tk.StringVar()
+        # ttk.Label(self.root, text="Font Color:").grid(row=row, column=0)
+        # ttk.Entry(self.root, textvariable=self.font_color).grid(row=row, column=1)
+        # tk.Button(self.root, text="Choose Color", command=choose_color).grid(row=row, column=2)
+        # row += 1
 
         # Font Scaling
         ttk.Label(self.root, text="Font Scaling:").grid(row=row, column=0)
@@ -795,14 +1210,14 @@ class KOTORPatchingToolUI:
         row += 1
 
         # Logging Enabled
-        #ttk.Label(self.root, text="Enable Logging:").grid(row=row, column=0)
-        #ttk.Checkbutton(self.root, text="Yes", variable=self.logging_enabled).grid(row=row, column=1)
-        #row += 1
+        # ttk.Label(self.root, text="Enable Logging:").grid(row=row, column=0)
+        # ttk.Checkbutton(self.root, text="Yes", variable=self.logging_enabled).grid(row=row, column=1)
+        # row += 1
 
         # Use Profiler
-        #ttk.Label(self.root, text="Use Profiler:").grid(row=row, column=0)
-        #ttk.Checkbutton(self.root, text="Yes", variable=self.use_profiler).grid(row=row, column=1)
-        #row += 1
+        # ttk.Label(self.root, text="Use Profiler:").grid(row=row, column=0)
+        # ttk.Checkbutton(self.root, text="Yes", variable=self.use_profiler).grid(row=row, column=1)
+        # row += 1
 
         # Show/Hide output window
         self.show_hide_output = tk.BooleanVar(value=False)
@@ -971,7 +1386,7 @@ class KOTORPatchingToolUI:
 
             SCRIPT_GLOBALS.install_thread = Thread(target=execute_patchloop_thread)
             SCRIPT_GLOBALS.install_thread.start()
-        except Exception as e:  # noqa: BLE001
+        except Exception as e:  # pylint: disable=W0718  # noqa: BLE001
             messagebox.showerror("Unhandled exception", str(universal_simplify_exception(e)))
             SCRIPT_GLOBALS.install_running = False
             self.install_button.config(state=tk.DISABLED)
@@ -982,6 +1397,6 @@ if __name__ == "__main__":
         root = tk.Tk()
         APP = KOTORPatchingToolUI(root)
         root.mainloop()
-    except Exception:  # noqa: BLE001, RUF100
+    except Exception:  # pylint: disable=W0718  # noqa: BLE001, RUF100
         log_output(traceback.format_exc())
         raise

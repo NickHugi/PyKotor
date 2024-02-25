@@ -3,11 +3,13 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Any
 
 from PyQt5 import QtCore
-from PyQt5.QtWidgets import QComboBox, QMenu, QWidget
+from PyQt5.QtWidgets import QComboBox, QMenu
+
 from toolset.gui.dialogs.edit.combo_2da import ModdedValueSpinboxDialog
 
 if TYPE_CHECKING:
     from PyQt5.QtCore import QPoint
+    from PyQt5.QtWidgets import QWidget
 
 
 class ComboBox2DA(QComboBox):
@@ -42,7 +44,7 @@ class ComboBox2DA(QComboBox):
                 new_text = text.replace("TRAP_", "")
                 new_text = text.replace("GENDER_", "")
                 new_text = text.replace("_", " ")
-            if not ignoreBlanks or ignoreBlanks and new_text:
+            if not ignoreBlanks or new_text:
                 super().addItem(new_text, index)
 
         self.enableSort() if self._sortAlphabetically else self.disableSort()
@@ -75,7 +77,7 @@ class ComboBox2DA(QComboBox):
         Args:
         ----
             rowIn2DA: The row index to select.
-        """  # noqa: D205
+        """
         index = None
         for i in range(self.count()):
             if self.itemData(i) == rowIn2DA:
@@ -90,7 +92,7 @@ class ComboBox2DA(QComboBox):
     def currentIndex(self) -> int:
         """Returns the row index from the currently selected item.
 
-        Returns
+        Returns:
         -------
             Row index into the 2DA file.
         """

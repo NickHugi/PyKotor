@@ -3,14 +3,15 @@ from __future__ import annotations
 from copy import deepcopy
 from typing import TYPE_CHECKING
 
+from PyQt5 import QtCore
+from PyQt5.QtCore import QBuffer, QIODevice
+from PyQt5.QtMultimedia import QMediaContent, QMediaPlayer
+from PyQt5.QtWidgets import QListWidgetItem, QMessageBox
+
 from pykotor.common.misc import ResRef
 from pykotor.resource.formats.gff import write_gff
 from pykotor.resource.generics.uts import UTS, dismantle_uts, read_uts
 from pykotor.resource.type import ResourceType
-from PyQt5 import QtCore
-from PyQt5.QtCore import QBuffer, QIODevice
-from PyQt5.QtMultimedia import QMediaContent, QMediaPlayer
-from PyQt5.QtWidgets import QListWidgetItem, QMessageBox, QWidget
 from toolset.gui.dialogs.edit.locstring import LocalizedStringDialog
 from toolset.gui.editor import Editor
 
@@ -18,6 +19,8 @@ if TYPE_CHECKING:
     import os
 
     from PyQt5.QtGui import QCloseEvent
+    from PyQt5.QtWidgets import QWidget
+
     from toolset.data.installation import HTInstallation
 
 
@@ -47,7 +50,7 @@ class UTSEditor(Editor):
         self.player = QMediaPlayer(self)
         self.buffer = QBuffer(self)
 
-        from toolset.uic.editors.uts import Ui_MainWindow
+        from toolset.uic.editors.uts import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
 
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
@@ -172,7 +175,7 @@ class UTSEditor(Editor):
     def build(self) -> tuple[bytes, bytes]:
         """Builds a UTS from UI fields.
 
-        Returns
+        Returns:
         -------
             tuple[bytes, bytes]: A tuple containing the unit data and log.
 
@@ -277,10 +280,12 @@ class UTSEditor(Editor):
     def playSound(self):
         self.player.stop()
 
-        if not self.ui.soundList.currentItem().text():
+        curItem = self.ui.soundList.currentItem()
+        curItemText = curItem.text() if curItem else None
+        if not curItem or not curItemText:
             return
 
-        resname: str = self.ui.soundList.currentItem().text()
+        resname: str = curItemText
         data: bytes | None = self._installation.sound(resname)
 
         if data:

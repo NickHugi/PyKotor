@@ -1,7 +1,13 @@
 from __future__ import annotations
 
+import os
+
 from abc import abstractmethod
 from typing import TYPE_CHECKING, Callable
+
+from PyQt5 import QtCore
+from PyQt5.QtGui import QIcon, QPixmap
+from PyQt5.QtWidgets import QFileDialog, QLineEdit, QMainWindow, QMessageBox, QPlainTextEdit, QShortcut
 
 from pykotor.common.module import Module
 from pykotor.common.stream import BinaryReader
@@ -14,9 +20,6 @@ from pykotor.resource.type import ResourceType
 from pykotor.tools import module
 from pykotor.tools.misc import is_any_erf_type_file, is_bif_file, is_capsule_file, is_rim_file
 from pykotor.tools.path import CaseAwarePath
-from PyQt5 import QtCore
-from PyQt5.QtGui import QIcon, QPixmap
-from PyQt5.QtWidgets import QFileDialog, QLineEdit, QMainWindow, QMessageBox, QPlainTextEdit, QShortcut, QWidget
 from toolset.gui.dialogs.load_from_module import LoadFromModuleDialog
 from toolset.gui.dialogs.save.to_bif import BifSaveDialog, BifSaveOption
 from toolset.gui.dialogs.save.to_module import SaveToModuleDialog
@@ -26,7 +29,7 @@ from utility.error_handling import assert_with_variable_trace, format_exception_
 from utility.system.path import Path
 
 if TYPE_CHECKING:
-    import os
+    from PyQt5.QtWidgets import QWidget
 
     from pykotor.common.language import LocalizedString
     from pykotor.resource.formats.rim.rim_data import RIM
@@ -181,7 +184,7 @@ class Editor(QMainWindow):
             identifier = ResourceIdentifier.from_path(filepath_str).validate()
         except ValueError as e:
             print(format_exception_with_variables(e))
-            QMessageBox(QMessageBox.Critical, "Invalid filename/extension", f"Check the filename and try again. Could not save!{os.linesep*2}{universal_simplify_exception(e)}").exec_()
+            QMessageBox(QMessageBox.Critical, "Invalid filename/extension", f"Check the filename and try again. Could not save!{os.linesep * 2}{universal_simplify_exception(e)}").exec_()
             return
 
         capsule_types = " ".join(f"*.{e.name.lower()}" for e in ERFType) + " *.rim"
@@ -234,7 +237,7 @@ class Editor(QMainWindow):
                 self._saveEndsWithErf(data, data_ext)
             else:
                 self._saveEndsWithOther(data, data_ext)
-        except Exception as e:  # noqa: BLE001
+        except Exception as e:  # pylint: disable=W0718  # noqa: BLE001
             with Path("errorlog.txt").open("a", encoding="utf-8") as file:
                 lines = format_exception_with_variables(e)
                 file.writelines(lines)

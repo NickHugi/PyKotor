@@ -2,39 +2,48 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, NamedTuple
 
-from pykotor.common.misc import EquipmentSlot, InventoryItem, ResRef
-from pykotor.common.stream import BinaryReader
-from pykotor.extract.capsule import Capsule
-from pykotor.extract.file import ResourceIdentifier, ResourceResult
-from pykotor.extract.installation import SearchLocation
-from pykotor.resource.formats.tlk import TLK, read_tlk
-from pykotor.resource.generics.uti import UTI, read_uti
-from pykotor.resource.type import ResourceType
-from pykotor.tools.misc import is_bif_file, is_capsule_file
-from pykotor.tools.path import CaseAwarePath
 from PyQt5 import QtCore
-from PyQt5.QtCore import QModelIndex, QPoint, QSize, QSortFilterProxyModel, QThread
-from PyQt5.QtGui import QDragEnterEvent, QDragMoveEvent, QDropEvent, QIcon, QPixmap, QStandardItem, QStandardItemModel
+from PyQt5.QtCore import QSize, QSortFilterProxyModel, QThread
+from PyQt5.QtGui import QIcon, QPixmap, QStandardItem, QStandardItemModel
 from PyQt5.QtWidgets import (
     QAction,
     QDialog,
     QFrame,
-    QLabel,
     QMenu,
     QProgressBar,
     QTableWidget,
     QTableWidgetItem,
     QTreeView,
     QVBoxLayout,
-    QWidget,
 )
+
+from pykotor.common.misc import EquipmentSlot, InventoryItem, ResRef
+from pykotor.common.stream import BinaryReader
+from pykotor.extract.capsule import Capsule
+from pykotor.extract.file import ResourceIdentifier
+from pykotor.extract.installation import SearchLocation
+from pykotor.resource.formats.tlk import read_tlk
+from pykotor.resource.generics.uti import read_uti
+from pykotor.resource.type import ResourceType
+from pykotor.tools.misc import is_bif_file, is_capsule_file
+from pykotor.tools.path import CaseAwarePath
 from toolset.data.installation import HTInstallation
 from utility.error_handling import format_exception_with_variables
 
 if TYPE_CHECKING:
     import os
 
+    from PyQt5.QtCore import QModelIndex, QPoint
+    from PyQt5.QtGui import QDragEnterEvent, QDragMoveEvent, QDropEvent
+    from PyQt5.QtWidgets import (
+        QLabel,
+        QWidget,
+    )
+
+    from pykotor.extract.file import ResourceResult
+    from pykotor.resource.formats.tlk import TLK
     from pykotor.resource.formats.twoda.twoda_data import TwoDA
+    from pykotor.resource.generics.uti import UTI
 
 _RESNAME_ROLE = QtCore.Qt.UserRole + 1
 _FILEPATH_ROLE = QtCore.Qt.UserRole + 2
@@ -76,7 +85,7 @@ class InventoryEditor(QDialog):
         """
         super().__init__(parent)
 
-        from toolset.uic.dialogs.inventory import Ui_Dialog
+        from toolset.uic.dialogs.inventory import Ui_Dialog  # pylint: disable=C0415  # noqa: PLC0415
         self.ui = Ui_Dialog()
         self.ui.setupUi(self)
 
@@ -814,7 +823,7 @@ class ItemBuilderWorker(QThread):
             uti: UTI | None = None
             try:  # FIXME
                 uti = read_uti(result.data)
-            except Exception as e:  # noqa: BLE001
+            except Exception as e:  # pylint: disable=W0718  # noqa: BLE001
                 print(format_exception_with_variables(e, message="This exception has been suppressed but needs to be fixed."))
             else:
                 self.utiLoaded.emit(uti, result)

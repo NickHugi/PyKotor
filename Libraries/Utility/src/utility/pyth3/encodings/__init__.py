@@ -1,3 +1,1 @@
-"""
-Custom encodings
-"""
+"""Custom encodings."""

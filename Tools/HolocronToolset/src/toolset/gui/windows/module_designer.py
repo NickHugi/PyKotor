@@ -1,8 +1,14 @@
 from __future__ import annotations
 
 import math
+
 from copy import deepcopy
 from typing import TYPE_CHECKING
+
+from PyQt5 import QtCore
+from PyQt5.QtCore import QPoint, QTimer
+from PyQt5.QtGui import QColor, QIcon, QPixmap
+from PyQt5.QtWidgets import QAction, QListWidgetItem, QMainWindow, QMenu, QMessageBox, QTreeWidgetItem
 
 from pykotor.common.geometry import SurfaceMaterial, Vector2, Vector3, Vector4
 from pykotor.common.misc import Color, ResRef
@@ -10,7 +16,6 @@ from pykotor.common.module import Module, ModuleResource
 from pykotor.common.stream import BinaryWriter
 from pykotor.extract.file import ResourceIdentifier
 from pykotor.resource.generics.git import (
-    GIT,
     GITCamera,
     GITCreature,
     GITDoor,
@@ -27,10 +32,6 @@ from pykotor.resource.generics.utt import read_utt
 from pykotor.resource.generics.utw import read_utw
 from pykotor.resource.type import ResourceType
 from pykotor.tools import module
-from PyQt5 import QtCore
-from PyQt5.QtCore import QPoint, QTimer
-from PyQt5.QtGui import QColor, QFont, QIcon, QKeyEvent, QPixmap
-from PyQt5.QtWidgets import QAction, QCheckBox, QListWidgetItem, QMainWindow, QMenu, QMessageBox, QTreeWidgetItem, QWidget
 from toolset.data.misc import ControlItem
 from toolset.gui.dialogs.insert_instance import InsertInstanceDialog
 from toolset.gui.dialogs.select_module import SelectModuleDialog
@@ -40,12 +41,17 @@ from toolset.gui.widgets.settings.module_designer import ModuleDesignerSettings
 from toolset.gui.windows.help import HelpWindow
 from toolset.utils.misc import QtMouse
 from toolset.utils.window import openResourceEditor
-from utility.error_handling import with_variable_trace
 
 if TYPE_CHECKING:
+    from PyQt5.QtGui import QFont, QKeyEvent
+    from PyQt5.QtWidgets import QCheckBox, QWidget
     from glm import vec3
+
     from pykotor.gl.scene import Camera
     from pykotor.resource.generics.are import ARE
+    from pykotor.resource.generics.git import (
+        GIT,
+    )
     from pykotor.resource.generics.ifo import IFO
     from pykotor.tools.path import CaseAwarePath
     from toolset.data.installation import HTInstallation
@@ -54,7 +60,7 @@ if TYPE_CHECKING:
     from toolset.gui.widgets.renderer.walkmesh import WalkmeshRenderer
 
 
-class ModuleDesigner(QMainWindow):
+class ModuleDesigner(QMainWindow):  # noqa: PLR0904
     def __init__(self, parent: QWidget | None, installation: HTInstallation):
         """Initializes the Module Designer window.
 
@@ -89,7 +95,7 @@ class ModuleDesigner(QMainWindow):
         self.hideCameras: bool = False
         self.lockInstances: bool = False
 
-        from toolset.uic.windows.module_designer import Ui_MainWindow
+        from toolset.uic.windows.module_designer import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
 
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
@@ -256,7 +262,7 @@ class ModuleDesigner(QMainWindow):
                 [
                     bwm.resource()  # FIXME: resource() will sometimes return None
                     for bwm in self._module.resources.values()
-                    if bwm.restype() == ResourceType.WOK
+                    if bwm.restype() == ResourceType.WOK and bwm.resource() is not None
                 ],
             )
             self.ui.flatRenderer.centerCamera()
@@ -264,7 +270,7 @@ class ModuleDesigner(QMainWindow):
     def unloadModule(self):
         self._module = None
         self.ui.mainRenderer.scene = None
-        self.ui.mainRenderer._init = False
+        self.ui.mainRenderer._init = False  # noqa: SLF001
 
     def showHelpWindow(self):
         window = HelpWindow(self, "./help/tools/1-moduleEditor.md")
@@ -473,7 +479,7 @@ class ModuleDesigner(QMainWindow):
                 tag: str = ""
 
                 resourceExists: bool = resource is not None and resource.resource() is not None
-                if isinstance(instance, GITDoor) or isinstance(instance, GITTrigger) and resourceExists:
+                if isinstance(instance, GITDoor) or (isinstance(instance, GITTrigger) and resourceExists):
                     # Tag is stored in the GIT
                     name = resource.localized_name() or filename
                     tag = instance.tag

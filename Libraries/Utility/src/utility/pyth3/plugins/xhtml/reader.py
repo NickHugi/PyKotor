@@ -1,8 +1,8 @@
-"""
-Read documents from xhtml
-"""
+"""Read documents from xhtml."""
+from __future__ import annotations
 
 import BeautifulSoup
+
 from utility.pyth3 import document
 from utility.pyth3.format import PythReader
 from utility.pyth3.plugins.xhtml.css import CSS
@@ -37,7 +37,7 @@ class XHTMLReader(PythReader):
         return doc
 
     def format(self, soup):
-        """format a BeautifulSoup document
+        """Format a BeautifulSoup document.
 
         This will transform the block elements content from
         multi-lines text into single line.
@@ -50,94 +50,85 @@ class XHTMLReader(PythReader):
             if node.rstrip(" ").endswith("\n"):
                 node.replaceWith(node.rstrip(" ").rstrip("\n"))
         # Join the block elements lines into a single long line
-        for tag in ['p', 'li']:
+        for tag in ["p", "li"]:
             for node in soup.findAll(tag):
                 text = str(node)
                 lines = [x.strip() for x in text.splitlines()]
-                text = ' '.join(lines)
+                text = " ".join(lines)
                 node.replaceWith(BeautifulSoup.BeautifulSoup(text))
         soup = BeautifulSoup.BeautifulSoup(str(soup))
         # replace all <br/> tag by newline character
-        for node in soup.findAll('br'):
+        for node in soup.findAll("br"):
             node.replaceWith("\n")
-        soup = BeautifulSoup.BeautifulSoup(str(soup))
-        return soup
+        return BeautifulSoup.BeautifulSoup(str(soup))
 
     def is_bold(self, node):
-        """
-        Return true if the BeautifulSoup node needs to be rendered as
+        """Return true if the BeautifulSoup node needs to be rendered as
         bold.
         """
-        return (node.findParent(['b', 'strong']) is not None or
+        return (node.findParent(["b", "strong"]) is not None or
                 self.css.is_bold(node))
 
     def is_italic(self, node):
-        """
-        Return true if the BeautifulSoup node needs to be rendered as
+        """Return true if the BeautifulSoup node needs to be rendered as
         italic.
         """
-        return (node.findParent(['em', 'i']) is not None
+        return (node.findParent(["em", "i"]) is not None
                 or self.css.is_italic(node))
 
     def is_sub(self, node):
-        """
-        Return true if the BeautifulSoup node needs to be rendered as
+        """Return true if the BeautifulSoup node needs to be rendered as
         sub.
         """
-        return (node.findParent(['sub']) is not None
+        return (node.findParent(["sub"]) is not None
                 or self.css.is_sub(node))
 
     def is_super(self, node):
-        """
-        Return true if the BeautifulSoup node needs to be rendered as
+        """Return true if the BeautifulSoup node needs to be rendered as
         super.
         """
-        return (node.findParent(['sup']) is not None
+        return (node.findParent(["sup"]) is not None
                 or self.css.is_super(node))
 
     def url(self, node):
-        """
-        return the url of a BeautifulSoup node or None if there is no
+        """Return the url of a BeautifulSoup node or None if there is no
         url.
         """
-        a_node = node.findParent('a')
+        a_node = node.findParent("a")
         if not a_node:
             return None
 
         if self.link_callback is None:
-            return a_node.get('href')
-        else:
-            return self.link_callback(a_node.get('href'))
+            return a_node.get("href")
+        return self.link_callback(a_node.get("href"))
 
     def process_text(self, node):
-        """
-        Return a pyth Text object from a BeautifulSoup node or None if
+        """Return a pyth Text object from a BeautifulSoup node or None if
         the text is empty.
         """
         text = node.string.strip()
         if not text:
-            return
+            return None
 
         # Set all the properties
-        properties=dict()
+        properties = {}
         if self.is_bold(node):
-            properties['bold'] = True
+            properties["bold"] = True
         if self.is_italic(node):
-            properties['italic'] = True
+            properties["italic"] = True
         if self.url(node):
-            properties['url'] = self.url(node)
+            properties["url"] = self.url(node)
         if self.is_sub(node):
-            properties['sub'] = True
+            properties["sub"] = True
         if self.is_super(node):
-            properties['super'] = True
+            properties["super"] = True
 
-        content=[node.string]
+        content = [node.string]
 
         return document.Text(properties, content)
 
     def process_into(self, node, obj):
-        """
-        Process a BeautifulSoup node and fill its elements into a pyth
+        """Process a BeautifulSoup node and fill its elements into a pyth
         base object.
         """
         if isinstance(node, BeautifulSoup.NavigableString):
@@ -145,17 +136,17 @@ class XHTMLReader(PythReader):
             if text:
                 obj.append(text)
             return
-        if node.name == 'p':
+        if node.name == "p":
             # add a new paragraph into the pyth object
             new_obj = document.Paragraph()
             obj.append(new_obj)
             obj = new_obj
-        elif node.name == 'ul':
+        elif node.name == "ul":
             # add a new list
             new_obj = document.List()
             obj.append(new_obj)
             obj = new_obj
-        elif node.name == 'li':
+        elif node.name == "li":
             # add a new list entry
             new_obj = document.ListEntry()
             obj.append(new_obj)

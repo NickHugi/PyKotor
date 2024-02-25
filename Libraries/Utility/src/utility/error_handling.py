@@ -1,13 +1,17 @@
 from __future__ import annotations
 
 import inspect
+import os
 import sys
 import traceback
 import types
+
 from pathlib import Path
-from typing import TYPE_CHECKING, Callable, TypeVar
+from typing import TYPE_CHECKING, TypeVar
 
 if TYPE_CHECKING:
+    from collections.abc import Callable
+
     from typing_extensions import Literal
 
 
@@ -87,10 +91,12 @@ ignore_attrs: set[str] = {
     "__builtins__",
 }
 
+
 class CustomAssertionError(AssertionError):
     def __init__(self, *args, **kwargs):
         self.message: str = kwargs.get("message", args[0])
         super().__init__(*args, **kwargs)
+
 
 def format_var_str(
     var,
@@ -109,7 +115,7 @@ def format_var_str(
         val_str = str(val)
         if len(val_str) > max_length:
             val_str = f"{val_str[:max_length]}...<truncated>"
-    except Exception as e:
+    except Exception as e:  # pylint: disable=W0718  # noqa: BLE001
         val_str = unique_sentinel
         exc = e
 
@@ -117,7 +123,7 @@ def format_var_str(
         val_repr = repr(val)
         if len(val_repr) > max_length:
             val_repr = f"{val_repr[:max_length]}...<truncated>"
-    except Exception:
+    except Exception:  # pylint: disable=W0718  # noqa: BLE001
         val_repr = unique_sentinel
 
     display_value: str | object = val_repr
@@ -127,6 +133,7 @@ def format_var_str(
         display_value = f"<Error in repr({var}): {exc}>"
 
     return f"  {var} = {display_value}"
+
 
 def format_frame_info(frame_info: inspect.FrameInfo) -> list[str]:
     """Extract and format information from a frame."""
@@ -139,13 +146,14 @@ def format_frame_info(frame_info: inspect.FrameInfo) -> list[str]:
         index,
     ) = frame_info
     code_context = ""  # type: ignore[assignment]
-    #code_context = f"\nContext [{', '.join(code_context)}] " if code_context else ""  # type: ignore[assignment]
+    # code_context = f"\nContext [{', '.join(code_context)}] " if code_context else ""  # type: ignore[assignment]
     detailed_message: list[str] = [f"\nFunction '{function}' at {filename}:{line_no}:{code_context}"]
     for var, val in frame.f_locals.items():
         formatted_var: str | None = format_var_str(var, val)
         if formatted_var:
             detailed_message.append(formatted_var)
     return detailed_message
+
 
 def format_exception_with_variables(
     value: BaseException,
@@ -164,8 +172,13 @@ def format_exception_with_variables(
         msg = f"{value!r} is not an exception instance"
         raise TypeError(msg)
     if not isinstance(tb, types.TracebackType):
-        msg = "tb is not a traceback object"
-        raise TypeError(msg)
+        try:
+            raise value  # noqa: TRY301
+        except BaseException as e:  # pylint: disable=W0718  # noqa: BLE001
+            tb = e.__traceback__  # Now we have the traceback object
+        if tb is None:
+            msg = f"Could not determine traceback from {value}"
+            raise RuntimeError(msg)
 
     # Construct the stack trace using traceback
     formatted_traceback: str = "".join(traceback.format_exception(etype, value, tb))
@@ -188,10 +201,13 @@ def format_exception_with_variables(
 
     return "\n".join(detailed_message)
 
+
 def is_assertion_removal_enabled() -> bool:
     return sys.flags.optimize >= 1
 
 IT = TypeVar("IT")
+
+
 def enforce_instance_cast(obj: object, type_: type[IT]) -> IT:
     instance_check: bool = isinstance(obj, type_)
     if is_assertion_removal_enabled():
@@ -201,7 +217,8 @@ def enforce_instance_cast(obj: object, type_: type[IT]) -> IT:
         return obj  # type: ignore[return-value]
 
     assert_with_variable_trace(isinstance(obj, type_), "enforce_is_instance failed.")
-    return obj # type: ignore[return-value]
+    return obj  # type: ignore[return-value]
+
 
 def assert_with_variable_trace(condition: bool, message: str = "Assertion Failed"):
     if condition:
@@ -236,9 +253,12 @@ def assert_with_variable_trace(condition: bool, message: str = "Assertion Failed
 
 RT = TypeVar("RT")
 unique_sentinel = object()
+
+
 def with_variable_trace(
     exception_types: type[Exception] | tuple[type[Exception], ...] = Exception,
     return_type: type[RT] = unique_sentinel,  # type: ignore[reportGeneralTypeIssues, assignment]
+    *,
     action="print",
     log: bool = True,
     rethrow: bool = False,
@@ -255,7 +275,8 @@ def with_variable_trace(
             try:
                 result: RT = f(*args, **kwargs)
                 if return_type is not unique_sentinel and not isinstance(result, return_type):
-                    raise CustomAssertionError(f"Return type of '{f.__name__}' must be {return_type.__name__}, got {type(result)}: {result!r}: {result}")
+                    msg = f"Return type of '{f.__name__}' must be {return_type.__name__}, got {type(result)}: {result!r}: {result}"
+                    raise CustomAssertionError(msg)
             except exception_types as e:
 
                 detailed_message: list[str] = [
@@ -263,7 +284,7 @@ def with_variable_trace(
                     "Stack Trace Variables:",
                 ]
                 for frame_info in inspect.getouterframes(inspect.currentframe()):
-                    #if frame_info.function != f.__name__:  # Why did I add this?
+                    # if frame_info.function != f.__name__:  # Why did I add this?
                     #    continue
                     detailed_message.extend(format_frame_info(frame_info))
                 if e.__cause__ is not None:
@@ -273,6 +294,8 @@ def with_variable_trace(
                 full_message: str = "\n".join(detailed_message)
 
                 if action == "stderr":
+                    if sys.stderr is None:
+                        sys.stderr = open(os.devnull, "w")  # noqa: PTH123, SIM115, PLW1514  # pylint: disable=all
                     print(full_message, sys.stderr)  # noqa: T201
                 elif action == "print":
                     print(full_message)  # noqa: T201

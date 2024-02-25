@@ -35,7 +35,7 @@ class ERFType(Enum):
 class ERF:
     """Represents the data of a ERF file.
 
-    Attributes
+    Attributes:
     ----------
         erf_type: The ERF type.
     """
@@ -50,7 +50,12 @@ class ERF:
         self._resources: list[ERFResource] = []
 
         # used for faster lookups
-        self._resource_dict: dict[tuple[str, ResourceType], ERFResource] = {}
+        self._resource_dict: dict[ResourceIdentifier, ERFResource] = {}
+
+    def __repr__(
+        self,
+    ):
+        return f"{self.__class__.__name__}({self.erf_type!r})"
 
     def __repr__(
         self,
@@ -87,7 +92,7 @@ class ERF:
 
         return NotImplemented
 
-    def set_data(  # noqa: D417
+    def set_data(
         self,
         resname: str,
         restype: ResourceType,
@@ -109,7 +114,7 @@ class ERF:
             - If existing resource, update its properties
             - Add/update resource to internal lists and dict
         """
-        ident: ResourceIdentifier = ResourceIdentifier(resname, restype).as_resref_compatible()
+        ident: ResourceIdentifier = ResourceIdentifier(resname, restype)
         resource: ERFResource | None = self._resource_dict.get(ident)
         resref = ResRef(ident.resname)
         if resource is None:
@@ -126,14 +131,14 @@ class ERF:
 
         Args:
         ----
-            resname: The resref str.
+            resname: The resource reference filename stem.
             restype: The resource type.
 
         Returns:
         -------
             The bytes data of the resource or None.
         """
-        resource: ERFResource | None = self._resource_dict.get(ResourceIdentifier(resname, restype).as_resref_compatible())
+        resource: ERFResource | None = self._resource_dict.get(ResourceIdentifier(resname, restype))
         return resource.data if resource is not None else None
 
     def remove(
@@ -148,7 +153,7 @@ class ERF:
             resname: The resource reference filename.
             restype: The resource type.
         """
-        key = ResourceIdentifier(resname, restype).as_resref_compatible()
+        key = ResourceIdentifier(resname, restype)
         resource: ERFResource | None = self._resource_dict.pop(key, None)
         if resource:  # FIXME: should raise here
             self._resources.remove(resource)
@@ -158,7 +163,7 @@ class ERF:
     ):
         """Returns a RIM with the same resources.
 
-        Returns
+        Returns:
         -------
             A new RIM object.
         """
