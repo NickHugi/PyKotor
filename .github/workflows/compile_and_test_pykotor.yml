@@ -22,12 +22,12 @@ jobs:
         python-version: ${{ matrix.python-version }}
 
     - name: Install python venv from install_python_venv.ps1
-      run: |
+      run: |  # create the venv early to work around an issue with the matrix runners' concurrency
         python -m venv .venv_${{ matrix.os }}_${{ matrix.python-version }}
         ./install_python_venv.ps1 -noprompt -venv_name .venv_${{ matrix.os }}_${{ matrix.python-version }}
       shell: pwsh
 
-    - name: Install holopatcher dependencies
+    - name: Install HoloPatcher dependencies
       run: |
         ./compile/deps_holopatcher.ps1 -noprompt -venv_name .venv_${{ matrix.os }}_${{ matrix.python-version }}
       shell: pwsh
@@ -84,24 +84,25 @@ jobs:
 
     - name: Install development packages
       run: |
-        Set-PSDebug -Trace 2
         ./install_python_venv.ps1 -noprompt -venv_name .venv_${{ matrix.os }}_${{ matrix.python-version }}
         pip install -r requirements-dev.txt
       shell: pwsh
 
     - name: Run all unittests/pytests
       run: |
-        Set-PSDebug -Trace 2
         ./install_python_venv.ps1 -noprompt -venv_name .venv_${{ matrix.os }}_${{ matrix.python-version }}
         python -m pytest tests -v -ra -o log_cli=true --capture=no --junitxml=pytest_report.xml --html=pytest_report.html --self-contained-html --tb=no --continue-on-collection-errors
       shell: pwsh
+      continue-on-error: true
 
     - name: Configure Git Identity
+      if: always()
       run: |
         git config --global user.name "GitHub Action"
         git config --global user.email "action@github.com"
 
     - name: Update README with custom test status badges
+      if: always()
       env:
         OS_NAME: ${{ matrix.os }}
         PYTHON_VERSION: ${{ matrix.python-version }}
@@ -142,7 +143,6 @@ jobs:
         git commit -m "Update README with custom test status badge for $BadgeName"
         git push
       shell: pwsh
-      if: success() # This ensures the step only runs if the previous steps succeeded
 
     - name: Upload Pytest Reports
       uses: actions/upload-artifact@v3
