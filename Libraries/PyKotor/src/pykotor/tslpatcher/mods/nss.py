@@ -29,11 +29,13 @@ if TYPE_CHECKING:
     from pykotor.tslpatcher.logger import PatchLogger
     from pykotor.tslpatcher.memory import PatcherMemory
 
+
 class MutableString:
     def __init__(self, value: str):
         self.value: str = value
     def __str__(self):
         return self.value
+
 
 class ModificationsNSS(PatcherModifications):
     def __init__(self, filename, replace=None, modifiers=None):
@@ -101,7 +103,7 @@ class ModificationsNSS(PatcherModifications):
                 )
             try:
                 return self._compile_with_external(temp_script_file, nwnnsscompiler, logger, game)
-            except Exception as e:  # noqa: BLE001
+            except Exception as e:  # pylint: disable=W0718  # noqa: BLE001
                 logger.add_error(str(universal_simplify_exception(e)))
 
         if is_windows:
@@ -173,7 +175,6 @@ class ModificationsNSS(PatcherModifications):
             value: int = memory_strval
             nss_source.value = nss_source.value[: match.start()] + str(value) + nss_source.value[match.end() :]
             match = re.search(r"#StrRef\d+#", nss_source.value)
-
 
     def _compile_with_external(
         self,

@@ -142,7 +142,6 @@ class PTHEdge:
         return NotImplemented
 
 
-
 def construct_pth(
     gff: GFF,
 ) -> PTH:

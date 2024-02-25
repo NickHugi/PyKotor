@@ -57,7 +57,7 @@ class UTDEditor(Editor):
         self._genericdoors2DA: TwoDA = installation.htGetCache2DA("genericdoors")
         self._utd: UTD = UTD()
 
-        from toolset.uic.editors.utd import Ui_MainWindow
+        from toolset.uic.editors.utd import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
         self._setupMenus()
@@ -267,12 +267,12 @@ class UTDEditor(Editor):
             self._loadLocstring(self.ui.nameEdit.ui.locstringText, dialog.locstring)
 
     def generateTag(self):
-        if self.ui.resrefEdit.text() == "":
+        if not self.ui.resrefEdit.text():
             self.generateResref()
         self.ui.tagEdit.setText(self.ui.resrefEdit.text())
 
     def generateResref(self):
-        if self._resname is not None and self._resname != "":
+        if self._resname:
             self.ui.resrefEdit.setText(self._resname)
         else:
             self.ui.resrefEdit.setText("m00xx_dor_000")
@@ -290,7 +290,7 @@ class UTDEditor(Editor):
         resname = self.ui.conversationEdit.text()
         data, filepath = None, None
 
-        if resname == "":
+        if not resname or not resname.strip():
             QMessageBox(QMessageBox.Critical, "Failed to open DLG Editor", "Conversation field cannot be blank.").exec_()
             return
 

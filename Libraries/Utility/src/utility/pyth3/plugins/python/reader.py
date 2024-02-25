@@ -10,13 +10,13 @@ def _convert(content):
         return content.toPyth()
     return content
 
+
 class PythonReader(PythReader):
 
     @classmethod
     def read(self, source):
         """source: A list of P objects."""
         return Document(content=[_convert(c) for c in source])
-
 
 
 class _Shortcut:
@@ -48,7 +48,6 @@ def _MetaPythonBase():
     return MagicGetItem
 
 
-
 class _PythonBase:
     """Base class for Python markup objects, providing
     stan-ish interface.
@@ -62,11 +61,9 @@ class _PythonBase:
 
         self.content = []
 
-
     def toPyth(self):
         return self.pythType(self.properties,
                              [_convert(c) for c in self.content])
-
 
     def __getitem__(self, item):
 
@@ -79,13 +76,11 @@ class _PythonBase:
 
         return self
 
-
     def __str__(self):
         return "{}({}) [ {} ]".format(
             self.__class__.__name__,
             ", ".join(f"{k}={v!r}" for (k, v) in self.properties.items()),
             ", ".join(repr(x) for x in self.content))
-
 
 
 class P(_PythonBase, metaclass=_MetaPythonBase()):
@@ -94,6 +89,7 @@ class P(_PythonBase, metaclass=_MetaPythonBase()):
 
 class LE(_PythonBase, metaclass=_MetaPythonBase()):
     pythType = ListEntry
+
 
 class L(_PythonBase, metaclass=_MetaPythonBase()):
     pythType = List

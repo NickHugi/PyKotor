@@ -246,7 +246,7 @@ class ModUninstaller:
             return False
         try:
             self.restore_backup(most_recent_backup_folder, existing_files, files_in_backup)
-        except Exception as e:  # noqa: BLE001
+        except Exception as e:  # pylint: disable=W0718  # noqa: BLE001
             error_name, msg = universal_simplify_exception(e)
             messagebox.showerror(
                 error_name,

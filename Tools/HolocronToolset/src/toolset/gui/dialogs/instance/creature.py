@@ -11,6 +11,7 @@ from pykotor.common.misc import ResRef
 
 if TYPE_CHECKING:
     from PyQt5.QtWidgets import QWidget
+
     from pykotor.resource.generics.git import GITCreature
 
 
@@ -18,7 +19,7 @@ class CreatureDialog(QDialog):
     def __init__(self, parent: QWidget, creature: GITCreature):
         super().__init__(parent)
 
-        from toolset.uic.dialogs.instance.creature import Ui_Dialog
+        from toolset.uic.dialogs.instance.creature import Ui_Dialog  # pylint: disable=C0415  # noqa: PLC0415
 
         self.ui = Ui_Dialog()
         self.ui.setupUi(self)
