@@ -1,5 +1,0 @@
-blending additive
-
-envmaptexture CM_wintaris
-
-

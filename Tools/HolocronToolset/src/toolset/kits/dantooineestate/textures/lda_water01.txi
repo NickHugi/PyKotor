@@ -1,4 +1,0 @@
-wateralpha 0.4
-bumpyshinytexture CM_danint
-
-bumpmaptexture LMA_Water01B

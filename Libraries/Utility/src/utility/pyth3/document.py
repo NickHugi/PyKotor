@@ -56,7 +56,7 @@ class _PythBase:
                 okay = False
 
         if not okay:
-            msg = f"Wrong content type for {self.__class__.__name__}: {type(item)!r} ({item!r})"
+            msg = f"Wrong content type for {self.__class__.__name__}: {item.__class__!r} ({item!r})"
             raise TypeError(msg)
 
         self.content.append(item)
