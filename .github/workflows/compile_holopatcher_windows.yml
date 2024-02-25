@@ -7,21 +7,25 @@ permissions:
 
 jobs:
   build:
-
-    runs-on: ubuntu-latest
+    runs-on: windows-latest
 
     steps:
     - uses: actions/checkout@v3
+
     - name: Set up Python 3.12
       uses: actions/setup-python@v3
       with:
         python-version: "3.12"
 
-    - name: Run unittest on files in pykotor/tests
+    - name: Compile HoloPatcher
       run: |
         ./install_python_venv.ps1 -noprompt
         ./compile/deps_holopatcher.ps1 -noprompt
-        ./compile/deps_toolset.ps1 -noprompt
-        pip install -r requirements-dev.txt
-        python -m unittest discover -s tests -p 'test_*.py' -v
+        ./compile/compile_holopatcher.ps1 -noprompt
       shell: pwsh
+
+    - name: Upload HoloPatcher.exe
+      uses: actions/upload-artifact@v3
+      with:
+        name: HoloPatcher-executable
+        path: ./dist/HoloPatcher.exe
