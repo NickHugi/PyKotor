@@ -46,7 +46,7 @@ class MDLEditor(Editor):
         self._mdl: MDL = MDL()
         self._installation = installation
 
-        from toolset.uic.editors.mdl import Ui_MainWindow  # noqa: PLC0415
+        from toolset.uic.editors.mdl import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
 
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)

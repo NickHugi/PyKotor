@@ -43,8 +43,8 @@ from toolset.utils.misc import QtMouse
 from toolset.utils.window import openResourceEditor
 
 if TYPE_CHECKING:
-    from PyQt5.QtWidgets import QCheckBox, QWidget
     from PyQt5.QtGui import QFont, QKeyEvent
+    from PyQt5.QtWidgets import QCheckBox, QWidget
     from glm import vec3
 
     from pykotor.gl.scene import Camera
@@ -95,7 +95,7 @@ class ModuleDesigner(QMainWindow):  # noqa: PLR0904
         self.hideCameras: bool = False
         self.lockInstances: bool = False
 
-        from toolset.uic.windows.module_designer import Ui_MainWindow
+        from toolset.uic.windows.module_designer import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
 
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)

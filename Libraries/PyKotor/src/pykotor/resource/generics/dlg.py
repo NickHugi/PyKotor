@@ -951,6 +951,7 @@ def dismantle_dlg(
 
     return gff
 
+
 def read_dlg(
     source: SOURCE_TYPES,
     offset: int = 0,

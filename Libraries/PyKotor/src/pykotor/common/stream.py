@@ -631,12 +631,12 @@ class BinaryReader:
         *,
         strict: bool = True,
     ) -> str:
-        """Reads a string continuously from the stream up to a specified length or until it hits the terminator string, whichever comes first.
+        """Reads a string continuously from the stream up to a specified length or until it hits the terminator character, whichever comes first.
         If length is -1, reads until the terminator is encountered without a length constraint.
 
         Args:
         ----
-            terminator: The terminator string.
+            terminator: The terminator character.
             length: The maximum length to read from the stream, or -1 for no length constraint.
                 If a terminator is found before length is reached, skip the remaining.
             encoding: the encoding to use, in most cases this should be "ascii" (default)

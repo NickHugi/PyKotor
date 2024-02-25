@@ -9,6 +9,7 @@ if TYPE_CHECKING:
     from pykotor.resource.formats.bwm.bwm_data import BWM
     from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES
 
+
 def read_bwm(
     source: SOURCE_TYPES,
     offset: int = 0,

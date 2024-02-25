@@ -84,7 +84,7 @@ def read_resource(source: SOURCE_TYPES, resource_type: ResourceType | None = Non
             return bytes_ltr(read_ltr(source))
         if resource_type.category == "Walkmeshes":
             return bytes_bwm(read_bwm(source))
-    except Exception as e:  # noqa: BLE001
+    except Exception as e:  # pylint: disable=W0718  # noqa: BLE001
         new_err = ValueError(f"Could not load resource '{source_path}' as resource type '{resource_type}")
         print(universal_simplify_exception(new_err))
         raise new_err from e

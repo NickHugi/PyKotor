@@ -24,6 +24,7 @@ DEFAULT_PARA_SPACE = 0.2 * inch
 
 BULLET_TEXT = "\xe2\x80\xa2"
 
+
 class PDFWriter(PythWriter):
 
     @classmethod
@@ -38,7 +39,6 @@ class PDFWriter(PythWriter):
         doc.build(story)
         return target
 
-
     def __init__(self, doc, paragraphStyle=None):
         self.document = doc
 
@@ -52,23 +52,19 @@ class PDFWriter(PythWriter):
             document.List: self._list,
             document.Paragraph: self._paragraph}
 
-
     def go(self):
         self.paragraphs = []
         for para in self.document.content:
             self._dispatch(para)
         return self.paragraphs
 
-
     def _dispatch(self, para, level=0, **kw):
         handler = self.paragraphDispatch[type(para)]
         return handler(para, level=level, **kw)
 
-
     def _paragraph(self, paragraph, level=0, bulletText=None):
         text = "".join(self._text(t) for t in paragraph.content)
         self.paragraphs.append(Paragraph(text, self.paragraphStyle, bulletText=bulletText))
-
 
     def _text(self, text) -> str:
         content = cgi.escape("".join(text.content))
@@ -85,11 +81,9 @@ class PDFWriter(PythWriter):
         close_tags = "".join(tag[1] for tag in reversed(tags))
         return f"{open_tags}{content}{close_tags}"
 
-
     def _list(self, plist, level=0, bulletText=None):
         for entry in plist.content:
             self._list_entry(entry, level=level + 1)
-
 
     def _list_entry(self, entry, level):
         first = True

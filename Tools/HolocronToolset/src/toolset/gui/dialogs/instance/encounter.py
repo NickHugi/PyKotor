@@ -9,6 +9,7 @@ from pykotor.common.misc import ResRef
 
 if TYPE_CHECKING:
     from PyQt5.QtWidgets import QWidget
+
     from pykotor.resource.generics.git import GITEncounter
 
 
@@ -16,7 +17,7 @@ class EncounterDialog(QDialog):
     def __init__(self, parent: QWidget, encounter: GITEncounter):
         super().__init__(parent)
 
-        from toolset.uic.dialogs.instance.encounter import Ui_Dialog
+        from toolset.uic.dialogs.instance.encounter import Ui_Dialog  # pylint: disable=C0415  # noqa: PLC0415
         self.ui = Ui_Dialog()
         self.ui.setupUi(self)
 

@@ -22,8 +22,9 @@ from utility.error_handling import universal_simplify_exception
 from utility.system.path import Path, PurePath
 
 if TYPE_CHECKING:
-    from PyQt5.QtWidgets import QWidget
     import os
+
+    from PyQt5.QtWidgets import QWidget
 
 
 class HelpWindow(QMainWindow):
@@ -34,8 +35,8 @@ class HelpWindow(QMainWindow):
 
         self.version: tuple[int, ...] | None = None
 
-        from toolset.uic.windows import help
-        self.ui = help.Ui_MainWindow()
+        from toolset.uic.windows import help as toolset_help  # noqa: PLC0415  # pylint: disable=C0415
+        self.ui = toolset_help.Ui_MainWindow()
         self.ui.setupUi(self)
         self._setupSignals()
         self._setupContents()
@@ -84,12 +85,16 @@ class HelpWindow(QMainWindow):
 
         for child in element:
             item = QTreeWidgetItem([child.get("name")])  # FIXME: typing
-            item.setData(0, QtCore.Qt.UserRole, child.get("file"))  # type: ignore[attr-defined]
+            item.setData(0, QtCore.Qt.UserRole, child.get("file"))
             add(item)
             self._setupContentsRecXML(item, child)
 
-
-    def download_file(self, url_or_repo: str, local_path: os.PathLike | str, repo_path=None):
+    def download_file(
+        self,
+        url_or_repo: str,
+        local_path: os.PathLike | str,
+        repo_path: os.PathLike | str | None = None,
+    ):
         local_path = Path(local_path)
         local_path.parent.mkdir(parents=True, exist_ok=True)
 
@@ -135,7 +140,7 @@ class HelpWindow(QMainWindow):
             elif item["type"] == "dir":
                 self.download_directory(repo, item_path, local_path)
 
-    def _request_api_data(self, api_url):
+    def _request_api_data(self, api_url: str):
         response = requests.get(api_url, timeout=15)
         response.raise_for_status()
         return response.json()
@@ -207,7 +212,7 @@ class HelpWindow(QMainWindow):
     def onContentsClicked(self):
         if self.ui.contentsTree.selectedItems():
             item: QTreeWidgetItem = self.ui.contentsTree.selectedItems()[0]
-            filename = item.data(0, QtCore.Qt.UserRole)  # type: ignore[attr-defined]
+            filename = item.data(0, QtCore.Qt.UserRole)
             if filename:
                 help_path = Path("./help").resolve()
                 file_path = Path(help_path, filename)

@@ -10,7 +10,13 @@ class ControlItem:
         self.keys: set[int] = bind[0]
         self.mouse: set[int] = bind[1]
 
-    def satisfied(self, buttons: set[int], keys: set[int], *, exactKeys=True) -> bool:
+    def satisfied(
+        self,
+        buttons: set[int],
+        keys: set[int],
+        *,
+        exactKeys: bool = True,
+    ) -> bool:
         """Handles the mouse scroll event.
 
         Args:

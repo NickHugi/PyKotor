@@ -21,7 +21,7 @@ from pyquery import PyQuery as PyQ
 
 try:
     from playwright.sync_api import sync_playwright
-except Exception as exc:  # noqa: BLE001
+except Exception as exc:  # pylint: disable=W0718  # noqa: BLE001
     sync_playwright = None
     print(exc)
 
@@ -54,7 +54,7 @@ def deepl_tr(text: str, from_lang: str = "auto", to_lang: str = "zh", timeout: f
             from playwright.sync_api import sync_playwright
 
             scraper_cons_instance.sync_playwright = sync_playwright
-        except Exception as exc:  # noqa: BLE001
+        except Exception as exc:  # pylint: disable=W0718  # noqa: BLE001
             print(exc)
             return str(exc)
 

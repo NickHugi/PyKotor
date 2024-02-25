@@ -42,6 +42,7 @@ class ExternalCompilerFeatures(NamedTuple):
     can_compile: bool
     can_decompile: bool
 
+
 class ExternalCompilerConfig(NamedTuple):
     sha256: str
     name: str
@@ -49,6 +50,7 @@ class ExternalCompilerConfig(NamedTuple):
     author: str
     features: ExternalCompilerFeatures
     commandline: dict[str, list[str]]
+
 
 class KnownExternalCompilers(Enum):
     TSLPATCHER = ExternalCompilerConfig(
@@ -265,7 +267,6 @@ class ExternalNCSCompiler(NCSCompiler):
             raise EntryPointError(msg)
 
         return stdout, stderr
-
 
     def decompile_script(
         self,

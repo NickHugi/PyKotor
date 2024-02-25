@@ -163,12 +163,15 @@ class TPCBinaryWriter(ResourceWriter):
             - Optionally closes file stream..
         """
         data = bytearray()
-        size = 0
+        size: int = 0
 
         for i in range(self._tpc.mipmap_count()):
             width, height, texture_format, mm_data = self._tpc.get(i)
+            assert mm_data is not None
             data += mm_data
-            size += _get_size(width, height, texture_format)
+            detsize = _get_size(width, height, texture_format)
+            assert detsize is not None
+            size += detsize
 
         if self._tpc.format() == TPCTextureFormat.RGBA:
             encoding = 4

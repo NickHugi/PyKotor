@@ -204,7 +204,6 @@ class GFF:
         return self.root.compare(other_gff.root, log_func, path, ignore_default_changes)
 
 
-
 class _GFFField:
     """Read-only data structure for items stored in GFFStruct."""
 
@@ -1259,7 +1258,6 @@ class GFFList:
             index: The index of the desired struct.
         """
         self._structs.pop(index)
-
 
     def compare(
         self,

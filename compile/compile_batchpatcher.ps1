@@ -1,4 +1,5 @@
 param (
+  [string]$venv_name=".venv",
   [switch]$noprompt
 )
 $this_noprompt = $noprompt
@@ -9,70 +10,9 @@ Write-Host "The path to the script directory is: $scriptPath"
 Write-Host "The path to the root directory is: $rootPath"
 
 Write-Host "Initializing python virtual environment..."
-. $rootPath/install_python_venv.ps1
-
-# Define temporary directories for build and cache
-$tempBuildDir = "/tmp/pip_build/"
-$tempCacheDir = "/tmp/pip_cache/"
-
-# Ensure these temporary directories exist
-Invoke-Expression "mkdir -p $tempBuildDir"
-Invoke-Expression "mkdir -p $tempCacheDir"
-$env:PIP_CACHE_DIR = $tempCacheDir
-
-Write-Host "Installing required packages to build the batchpatcher..."
-. $pythonExePath -m pip install --upgrade pip --prefer-binary --progress-bar on
-. $pythonExePath -m pip install pyinstaller --prefer-binary --progress-bar on
-. $pythonExePath -m pip install -r ($rootPath + $pathSep + "Tools" + $pathSep + "BatchPatcher" + $pathSep + "requirements.txt") --prefer-binary --progress-bar on
-. $pythonExePath -m pip install -r ($rootPath + $pathSep + "Libraries" + $pathSep + "PyKotor" + $pathSep + "requirements.txt") --prefer-binary --progress-bar on
-. $pythonExePath -m pip install -r ($rootPath + $pathSep + "Libraries" + $pathSep + "PyKotorFont" + $pathSep + "requirements.txt") --prefer-binary --progress-bar on
-
-if ((Get-OS) -eq "Mac") {
-    brew install python-tk
-} elseif ((Get-OS) -eq "Linux") {
-    if (Test-Path -Path "/etc/os-release") {
-        $osInfo = Get-Content "/etc/os-release" -Raw
-        if ($osInfo -match 'ID=(.*)') {
-            $distro = $Matches[1].Trim('"')
-        }
-        if ($osInfo -match 'VERSION_ID=(.*)') {
-            $versionId = $Matches[1].Trim('"')
-        }
-        $command = ""
-        switch ($distro) {
-            "debian" {
-                $command = "sudo apt install python3-tk -y"
-                break
-            }
-            "ubuntu" {
-                $command = "sudo apt install python3-tk -y"
-                break
-            }
-            "fedora" {
-                $command = "sudo dnf install python3-tkinter python3.10-tkinter"
-                break
-            }
-            "almalinux" {
-                $command = "sudo dnf install python3-tkinter -y"
-                break
-            }
-            "alpine" {
-                $command = "sudo apk add ttf-dejavu fontconfig python3-tkinter"
-                break
-            }
-            "arch" {
-                $command = "sudo pacman -Sy tk mpdecimal --noconfirm"
-            }
-        }
-    
-        if ($command -eq "") {
-            Write-Warning "Dist $distro version $versionId not supported for automated system package install, please install the dependencies if you experience problems."
-        } else {
-            Write-Host "Executing command: $command"
-            Invoke-Expression $command
-        }
-    }
-}
+$this_noprompt_arg = if ($this_noprompt) {'-noprompt'} else {''}
+$venv_name_arg = if ($venv_name) {"-venv_name $venv_name"} else {''}
+. $rootPath/install_python_venv.ps1 $this_noprompt_arg $venv_name_arg
 
 $current_working_dir = (Get-Location).Path
 Set-Location -LiteralPath (Resolve-Path -LiteralPath "$rootPath/Tools/BatchPatcher/src").Path
@@ -95,7 +35,6 @@ if (Test-Path -Path $finalExecutablePath) {
 Write-Host "Compiling BatchPatcher..."
 $pyInstallerArgs = @{
     'exclude-module' = @(
-        ''
         'dl_translate',
         'torch'
         'PyQt5'
@@ -103,13 +42,15 @@ $pyInstallerArgs = @{
         'PyGLM'
         'numpy'
         'multiprocessing'
-        'pykotor-gl '
+        'pykotor-gl'
     )
-    'console' = $true
+    'clean' = $true
+    'noconsole' = $true  # https://github.com/pyinstaller/pyinstaller/wiki/FAQ#mac-os-x  https://pyinstaller.org/en/stable/usage.html#cmdoption-w
     'onefile' = $true
     'noconfirm' = $true
     'name' = 'K_BatchPatcher'
     'distpath' = ($rootPath + $pathSep + 'dist')
+    'upx-dir' = "C:\GitHub\upx-win64"
 }
 
 $pyInstallerArgs = $pyInstallerArgs.GetEnumerator() | ForEach-Object {
@@ -118,8 +59,11 @@ $pyInstallerArgs = $pyInstallerArgs.GetEnumerator() | ForEach-Object {
 
     if ($value -is [System.Array]) {
         # Handle array values
-        $value -join "--$key="
-        $value = "--$key=$value"
+        $arr = @()
+        foreach ($elem in $value) {
+            $arr += "--$key=$elem"
+        }
+        $arr
     } else {
         # Handle key-value pair arguments
         if ($value -eq $true) {
