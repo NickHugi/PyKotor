@@ -1,4 +1,4 @@
-name: MacOS Python 3.8 tests/compilations
+name: PyKotor tests/compilations
 
 on: [push]
 
@@ -7,8 +7,11 @@ permissions:
 
 jobs:
   build:
-
-    runs-on: macos-latest
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [windows-latest, ubuntu-latest, macos-latest]
+        python-version: [3.8, 3.9, 3.10, 3.11, 3.12]
 
     steps:
     - uses: actions/checkout@v3
@@ -86,6 +89,54 @@ jobs:
       run: |
         python -m pytest tests -v -ra -o log_cli=true --capture=no --junitxml=pytest_report.xml --html=pytest_report.html --self-contained-html --tb=no --continue-on-collection-errors
       shell: pwsh
+
+    - name: Configure Git Identity
+      run: |
+        git config --global user.name "GitHub Action"
+        git config --global user.email "action@github.com"
+
+    - name: Update README with custom test status badges
+      env:
+        OS_NAME: ${{ matrix.os }}
+        PYTHON_VERSION: ${{ matrix.python-version }}
+      run: |
+        $ErrorActionPreference = 'Stop' # This will halt the script on any errors
+        $OSBadge = $env:OS_NAME -replace '-latest', '' # Removes the '-latest' from OS names
+        $BadgeName = "tests-$OSBadge-${env:PYTHON_VERSION}"
+        
+        # Extract test counts from the pytest report
+        $TestResults = [xml](Get-Content ./pytest_report.xml)
+        $PassedTests = $TestResults.testsuite.tests - $TestResults.testsuite.failures
+        $FailedTests = $TestResults.testsuite.failures
+        $TotalTests = $TestResults.testsuite.tests
+        
+        # Generate badge URL
+        $BadgeURL = "https://img.shields.io/badge/$BadgeName-$PassedTests%20passed%2C%20$FailedTests%20failed-brightgreen"
+        
+        # Check if README already has the badge for the current matrix parameters
+        $ReadmePath = "./README.md"
+        $ReadmeContent = Get-Content $ReadmePath -Raw
+        $BadgeRegex = "\!\[$BadgeName\]\(https:\/\/img\.shields\.io\/badge\/.*\)"
+        
+        if ($ReadmeContent -match $BadgeRegex) {
+          # Badge exists, update it
+          $NewReadmeContent = $ReadmeContent -replace $BadgeRegex, "![$BadgeName]($BadgeURL)"
+        } else {
+          # Badge doesn't exist, add it
+          $NewReadmeContent = $ReadmeContent + "`n![Test Status]($BadgeURL)"
+        }
+
+        # Write the new README content to the file
+        $NewReadmeContent | Set-Content $ReadmePath
+        
+        # Git configuration and commit
+        git config --global user.name "github-actions"
+        git config --global user.email "github-actions@github.com"
+        git add $ReadmePath
+        git commit -m "Update README with custom test status badge for $BadgeName"
+        git push
+      shell: pwsh
+      if: success() # This ensures the step only runs if the previous steps succeeded
 
     - name: Upload Pytest Reports
       uses: actions/upload-artifact@v3
