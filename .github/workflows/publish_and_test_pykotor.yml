@@ -106,7 +106,7 @@ jobs:
       if: runner.os == 'macOS'
       run: |
         mkdir -p "${{ github.workspace }}/upx-dir"
-        cd -av upx-4.2.2-src
+        cd upx-4.2.2-src
         make all
         # Copy the UPX binary to the upx-dir directory we confirmed above
         cp -av src/upx "${{ github.workspace }}/upx-dir"
