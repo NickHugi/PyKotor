@@ -511,6 +511,7 @@ function Find-Python {
 
 $venvPath = $repoRootPath + $pathSep + $venv_name
 $findVenvExecutable = $true
+$installPipToVenvManually = $false
 if (Get-ChildItem Env:VIRTUAL_ENV -ErrorAction SilentlyContinue) {  # Check if a venv is already activated
     $venvPath = $env:VIRTUAL_ENV
     Write-Host "A virtual environment is currently activated: $venvPath"
@@ -548,8 +549,8 @@ if (Get-ChildItem Env:VIRTUAL_ENV -ErrorAction SilentlyContinue) {  # Check if a
     $pythonVenvCreation = & $global:pythonInstallPath -m venv $venvPath 2>&1
     if ($pythonVenvCreation -like "*Error*") {
         Write-Error $pythonVenvCreation
-        Write-Error "Failed to create virtual environment. Ensure Python 3.8 is installed correctly."
-        Write-Warning "Attempt to use main python install at $global:pythonInstallPath instead of a venv? (not recommended but is usually fine)"
+        Write-Error "Failed to create virtual environment. Ensure Python is installed correctly."
+        Write-Warning "Attempt to use main python install at $global:pythonInstallPath instead of a venv? (not recommended)"
         if (-not $noprompt) {
             $userInput = Read-Host "(Y/N)"
             if ( $userInput -ne "Y" -and $userInput -ne "y" ) {
@@ -563,6 +564,23 @@ if (Get-ChildItem Env:VIRTUAL_ENV -ErrorAction SilentlyContinue) {  # Check if a
     } else {
         #Write-Host $pythonVenvCreation
         Write-Host "Virtual environment created."
+        if ((Get-OS) -eq "Linux") {
+
+            $activateScriptBash = Join-Path -Path $venvPath -ChildPath "bin/activate"
+            $activateScriptPs1 = Join-Path -Path $venvPath -ChildPath "bin/Activate.ps1"
+    
+            # Check if activate scripts are created
+            if (-not (Test-Path $activateScriptPs1) -and -not (Test-Path $activateScriptBash)) {
+                Write-Warning "Neither activate nor Activate.ps1 scripts were found. Deleting the virtual environment and attempting to recreate it with --without-pip..."
+                Remove-Item -Path $venvPath -Recurse -Force
+                & $global:pythonInstallPath -m venv --without-pip $venvPath 2>&1
+                $installPipToVenvManually = $true
+    
+                Write-Host "Virtual environment recreated without pip. Will install pip in a later step."
+            } else {
+                Write-Host "Virtual environment created and activate scripts found."
+            }
+        }
     }
 }
 
@@ -614,6 +632,42 @@ if ((Get-OS) -eq "Windows") {
         $bashCommand = "source " + (Join-Path -Path $venvPath -ChildPath "bin/activate")
         bash -c "`"$bashCommand`""
         Write-Host "Activated venv using bash source command."
+    }
+}
+
+if ($installPipToVenvManually) {
+    $originalLocation = Get-Location
+    try {
+        # Download get-pip.py
+        $getPipScriptPath = Join-Path -Path $env:TEMP -ChildPath "get-pip.py"
+        Invoke-WebRequest -Uri "https://bootstrap.pypa.io/get-pip.py" -OutFile $getPipScriptPath
+
+        # Attempt to install pip
+        & $pythonExePath $getPipScriptPath
+        $pipPathLinux = Join-Path -Path $venvPath -ChildPath "bin/pip"
+        if (-not $? -or (-not (Test-Path $pipPathLinux -ErrorAction SilentlyContinue))) {
+            Write-Error "Failed to install pip with get-pip.py, attempting fallback method..."
+            # Fallback to manual setuptools and pip installation
+            Invoke-WebRequest -Uri "https://files.pythonhosted.org/packages/69/77/aee1ecacea4d0db740046ce1785e81d16c4b1755af50eceac4ca1a1f8bfd/setuptools-60.5.0.tar.gz" -OutFile "setuptools-60.5.0.tar.gz"
+            tar -xzf "setuptools-60.5.0.tar.gz"
+            Set-Location -Path "setuptools-60.5.0"
+            & $pythonExePath setup.py install
+            Set-Location -Path $originalLocation
+
+            Invoke-WebRequest -Uri "https://files.pythonhosted.org/packages/94/59/6638090c25e9bc4ce0c42817b5a234e183872a1129735a9330c472cc2056/pip-24.0.tar.gz" -OutFile "pip-24.0.tar.gz"
+            tar -xzf "pip-24.0.tar.gz"
+            Set-Location -Path "pip-24.0"
+            & $pythonExePath setup.py install
+            Set-Location -Path $originalLocation
+
+            . $activateCommand
+        } else {
+            Write-Host "pip installed successfully."
+        }
+    } catch {
+        Write-Error "An error occurred during pip installation: $_"
+    } finally {
+        Set-Location -Path $originalLocation
     }
 }
 
