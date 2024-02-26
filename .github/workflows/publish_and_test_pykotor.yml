@@ -341,7 +341,7 @@ jobs:
                     Write-Host "No test results for '$key', must have failed, generating 'Build Failed' badge..."
                     $encodedKey = [System.Web.HttpUtility]::UrlEncode($key.Replace(' ', '_').Replace('-', '--'))
                     $BadgeURLBuildFailed = "https://img.shields.io/badge/${encodedKey}_Build_Failed-lightgrey"
-                    $DetailsURL = "https://github.com/$repository_owner/$repository_name/blob/$commitSHA/$testsResultsPath/$key-Build_Failed.xml"
+                    $DetailsURL = "https://github.com/$repository_owner/$repository_name/actions/runs/${{ github.run_id }}"
                     $BadgeMarkdown = "[![$key-Build_Failed]($BadgeURLBuildFailed)]($DetailsURL)"
                 }
 
