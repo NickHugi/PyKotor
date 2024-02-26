@@ -75,33 +75,35 @@ jobs:
     - name: Download and prepare UPX
       run: |
         # Ensure we do not run the download steps on macOS since we are building from source.
+        
+        $ext = "${{ runner.os }}" -eq "Windows" ? "zip" : "tar.xz"
+        $stripComponents = "${{ runner.os }}" -eq "Windows" ? "" : "--strip-components=1"
+  
+        $url = "${{ steps.upx_setup.outputs.url }}"
+        $outputPath = "upx.$ext"
+        
+        # Use Invoke-WebRequest or curl depending on the OS
+        if ("${{ runner.os }}" -eq "Windows") {
+          Invoke-WebRequest -Uri $url -OutFile $outputPath
+        } elseif ("${{ runner.os }}" -eq "macOS") {
+          curl -L $url -o upx-source.tar.xz
+          mkdir -p upx-4.2.2-src
+          tar -xvf upx-source.tar.xz -C upx-4.2.2-src --strip-components=1
+        } else {
+          curl -L $url -o $outputPath
+        }
+        
+        New-Item -ItemType Directory -Force -Path "upx-dir" -ErrorAction SilentlyContinue
         if ("${{ runner.os }}" -ne "macOS") {
-          $ext = "${{ runner.os }}" -eq "Windows" ? "zip" : "tar.xz"
-          $stripComponents = "${{ runner.os }}" -eq "Windows" ? "" : "--strip-components=1"
-    
-          $url = "${{ steps.upx_setup.outputs.url }}"
-          $outputPath = "upx.$ext"
-          
-          # Use Invoke-WebRequest or curl depending on the OS
-          if ("${{ runner.os }}" -eq "Windows") {
-            Invoke-WebRequest -Uri $url -OutFile $outputPath
-          } else {
-            curl -L $url -o $outputPath
-          }
-          
-          New-Item -ItemType Directory -Force -Path "upx-dir" -ErrorAction SilentlyContinue
-          
           if ($ext -eq "zip") {
             Expand-Archive -Path $outputPath -DestinationPath "upx-dir"
           } elseif ($stripComponents) {
-            tar -xf $outputPath -C "upx-dir" $stripComponents
+            tar -xvf $outputPath -C "upx-dir" $stripComponents
           } else {
-            tar -xf $outputPath -C "upx-dir"
+            tar -xvf $outputPath -C "upx-dir"
           }
     
           Remove-Item $outputPath # Clean up downloaded archive
-        } else {
-          Write-Host "Skipping download for macOS; Building from source instead."
         }
       shell: pwsh
     
