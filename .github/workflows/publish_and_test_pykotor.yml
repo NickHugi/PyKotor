@@ -47,7 +47,7 @@ jobs:
       run: |
         if ("${{ runner.os }}" == "Windows") {
           echo "::set-output name=build::no"
-          if ("${{ matrix.architecture }} == "x86") {
+          if (${{ matrix.architecture }} == "x86") {
             echo "::set-output name=url::https://github.com/upx/upx/releases/download/v4.2.2/upx-4.2.2-win32.zip"
           } else {
             echo "::set-output name=url::https://github.com/upx/upx/releases/download/v4.2.2/upx-4.2.2-win64.zip"
