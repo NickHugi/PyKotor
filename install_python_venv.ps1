@@ -592,9 +592,29 @@ if ( $findVenvExecutable -eq $true) {
 
 Write-Host "Activating venv at '$venvPath'"
 if ((Get-OS) -eq "Windows") {
-    . $venvPath\Scripts\Activate.ps1
+    # For Windows, attempt to activate using Activate.ps1
+    $activateScriptPath = Join-Path -Path $venvPath -ChildPath "Scripts\Activate.ps1"
+    if (Test-Path $activateScriptPath) {
+        & $activateScriptPath
+    } else {
+        Write-Error "Activate.ps1 not found in $activateScriptPath"
+        Write-Host "Press any key to exit..."
+        if (-not $noprompt) {
+            $null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
+        }
+        exit
+    }
 } else {
-    . $venvPath/bin/Activate.ps1
+    # For Linux and macOS, check for Activate.ps1 for consistency, though it's not usually present
+    $activateScriptPath = Join-Path -Path $venvPath -ChildPath "bin/Activate.ps1"
+    if (Test-Path $activateScriptPath -ErrorAction SilentlyContinue) {
+        & $activateScriptPath
+    } else {
+        Write-Warning "Activate.ps1 not found in $activateScriptPath, attempting to use fallback activation script..."
+        $bashCommand = "source " + (Join-Path -Path $venvPath -ChildPath "bin/activate")
+        bash -c "`"$bashCommand`""
+        Write-Host "Activated venv using bash source command."
+    }
 }
 
 Initialize-Python $pythonExePath
