@@ -177,148 +177,127 @@ jobs:
 
           # Determine the branch that triggered the workflow
           $branchName = "${{ github.ref_name }}"
-
-          # Generate a unique name for the temporary branch to avoid conflicts
+          $repository_owner = "${{ github.repository_owner }}"
+          $repository_name = "${{ github.repository }}"
           $uniqueTempBranchName = "temp-branch-${{ github.run_id }}"
 
-          # Fetch the latest history without altering the working directory
           git fetch
-
-          # Checkout to a unique temporary branch to prepare the new commit
           git checkout -b $uniqueTempBranchName
 
-          # Ensure the tests/results directory exists
           $testsResultsPath = "tests/results"
+          Remove-Item -Path $testsResultsPath -Recurse -Force
           New-Item -ItemType Directory -Force -Path $testsResultsPath
 
           $OS_NAMES = @("windows-2019", "ubuntu-20.04", "macos-12")
           $PYTHON_VERSIONS = @('3.7', '3.8', '3.9', '3.10', '3.11', '3.12', '3.13.0-alpha.4')
           $ARCHITECTURES = @('x86', 'x64')
-          
-          # Ensure the extracted-reports directory is created
+
           $extractedReportsPath = "tests/results"
           New-Item -ItemType Directory -Force -Path $extractedReportsPath
 
-          # Extract all downloaded artifacts
           Get-ChildItem "./all_pytest_reports" -Filter *.zip | ForEach-Object {
-            Expand-Archive -Path $_.FullName -DestinationPath $extractedReportsPath -Force
+              Expand-Archive -Path $_.FullName -DestinationPath $(Join-Path -Path $extractedReportsPath -ChildPath $_.BaseName) -Force
           }
+          Remove-Item -Path "./all_pytest_reports" -Recurse -Force
 
-          # Commit the test results
           git add -A
-          git commit -am "Upload test results" || Write-Host "No changes to commit."
+          git commit -am "Upload test results"
 
-          # Get the SHA-1 hash of the commit where test results were uploaded
           $commitSHA = git rev-parse HEAD
 
-          # Initialize a hashtable to store test results
           $testResults = @{}
 
-          # Process each extracted report
           Get-ChildItem $extractedReportsPath -Recurse -Filter pytest_report.xml | ForEach-Object {
-            $filePath = $_.FullName  # Get the full file path of the current file
-            [xml]$TestResultsXml = Get-Content $filePath
-            $totalTests = [int]$TestResultsXml.testsuite.tests
-            $failedTests = [int]$TestResultsXml.testsuite.failures
-            $errors = [int]$TestResultsXml.testsuite.errors
+              [xml]$TestResultsXml = Get-Content $_.FullName
+              $totalTests = [int]$TestResultsXml.testsuites.testsuite.tests
+              $failedTests = [int]$TestResultsXml.testsuites.testsuite.failures
+              $errors = [int]$TestResultsXml.testsuites.testsuite.errors
+              $passedTests = $totalTests - $failedTests - $errors
 
-            # Calculate passed tests by subtracting failures and errors from total
-            $passedTests = $totalTests - $failedTests - $errors
+              $resultFilePathHtml = $_.FullName -replace '\.xml$', '.html'
+              $relHtmlFilePath = Resolve-Path -Path $resultFilePathHtml -Relative
+              if ($relHtmlFilePath.StartsWith(".\") -or $relHtmlFilePath.StartsWith("./")) {
+                  $cleanRelHtmlFilePath = $relHtmlFilePath.Substring(2)
+              } else {
+                  $cleanRelHtmlFilePath = $relHtmlFilePath
+              }
+              $DetailsURL = "https://github.com/$repository_owner/$repository_name/blob/$commitSHA/$cleanRelHtmlFilePath"
+              $key = $_.Directory.Name.Replace('pytest_report_', '').Replace('_', '-')
 
-            # Update the DetailsURL to point to the specific result file
-            $resultFilePathHtml = $resultFilePath -replace '\.xml$', '.html'
-            $DetailsURL = "https://github.com/${{ github.repository_owner }}/${{ github.repository }}/blob/$commitSHA/$resultFilePathHtml"
-
-            # Extract key from artifact name, which includes OS, Python version, and architecture
-            $key = $_.Directory.Name.Replace('pytest_report_', '').Replace('_', '-')
-
-            # Store results in hashtable with the calculated number of passed and failed tests
-            $testResults[$key] = @{
-              Passed = $passedTests
-              Failed = $failedTests + $errors  # Considering errors as failures for badge display
-              Total  = $totalTests
-              DetailsURL = $DetailsURL
-            }
+              $testResults[$key] = @{
+                  Passed = $passedTests
+                  Failed = $failedTests + $errors
+                  Total  = $totalTests
+                  DetailsURL = $DetailsURL
+              }
           }
 
-          # Read the current README content
           $ReadmePath = "./README.md"
           $ReadmeContent = Get-Content $ReadmePath -Raw
 
-          # Initialize badge content variables
           $WindowsBadgeContent = ""
           $LinuxBadgeContent = ""
           $MacOSBadgeContent = ""
 
-          # Define placeholders
           $windowsBadgesStartPlaceholder = "<!-- WINDOWS-BADGES-START -->"
           $windowsBadgesEndPlaceholder = "<!-- WINDOWS-BADGES-END -->"
           $linuxBadgesStartPlaceholder = "<!-- LINUX-BADGES-START -->"
           $linuxBadgesEndPlaceholder = "<!-- LINUX-BADGES-END -->"
           $macosBadgesStartPlaceholder = "<!-- MACOS-BADGES-START -->"
           $macosBadgesEndPlaceholder = "<!-- MACOS-BADGES-END -->"
-          
-          # Function to replace the content between placeholders
+
           function Replace-BadgeContent {
-            param (
-              [string]$readmeContent,
-              [string]$badgeContent,
-              [string]$startPlaceholder,
-              [string]$endPlaceholder
-            )
-            
-            $pattern = [regex]::Escape($startPlaceholder) + "(.|\n)*?" + [regex]::Escape($endPlaceholder)
-            $replacement = $startPlaceholder + "`n" + $badgeContent + "`n" + $endPlaceholder
-            return $readmeContent -replace $pattern, $replacement
+              param (
+                  [string]$readmeContent,
+                  [string]$badgeContent,
+                  [string]$startPlaceholder,
+                  [string]$endPlaceholder
+              )
+
+              $pattern = [regex]::Escape($startPlaceholder) + "(.|\n)*?" + [regex]::Escape($endPlaceholder)
+              $replacement = $startPlaceholder + "`n" + $badgeContent + "`n" + $endPlaceholder
+              return $readmeContent -replace $pattern, $replacement
           }
 
           foreach ($OS in $OS_NAMES) {
-            foreach ($PYTHON_VERSION in $PYTHON_VERSIONS) {
-              foreach ($ARCH in $ARCHITECTURES) {
-                $key = "$OS-$PYTHON_VERSION-$ARCH"
-                if ($testResults.ContainsKey($key)) {
-                  $passedTests = $testResults[$key]['Passed']
-                  $failedTests = $testResults[$key]['Failed']
-                  $DetailsURL = $testResults[$key]['DetailsURL']
-                  $BadgeMarkdown = "[![$key-Passing]($BadgeURLPassed)]($DetailsURL) [![$key-Failing]($BadgeURLFailed)]($DetailsURL)"
-                } else {
-                  Write-Host "No test results for $key, must have failed, generating 'Build Failed' badge..."
-                  $BadgeURLBuildFailed = "https://img.shields.io/badge/$key-Build_Failed-lightgrey"
-                  $DetailsURL = "https://github.com/yourusername/yourrepository/blob/main/$testsResultsPath/$key-Build_Failed.xml" # Replace with your actual repository details
-                  $BadgeMarkdown = "[![$key-Build_Failed]($BadgeURLBuildFailed)]($DetailsURL)"
-                }
+              foreach ($PYTHON_VERSION in $PYTHON_VERSIONS) {
+                  foreach ($ARCH in $ARCHITECTURES) {
+                  $key = "$OS-$PYTHON_VERSION-$ARCH"
+                  if ($testResults.ContainsKey($key)) {
+                      $passedTests = $testResults[$key]['Passed']
+                      $failedTests = $testResults[$key]['Failed']
+                      $DetailsURL = $testResults[$key]['DetailsURL']
+                      # Encode the label to replace spaces with underscores and URI-encode other special characters
+                      $encodedKey = [System.Web.HttpUtility]::UrlEncode($key.Replace(' ', '_').Replace('-', '--'))
+                      $BadgeURLPassed = "https://img.shields.io/badge/${encodedKey}_Passed-${passedTests}-brightgreen"
+                      $BadgeURLFailed = "https://img.shields.io/badge/${encodedKey}_Failed-${failedTests}-red"
+                      $BadgeMarkdown = "[![$key-Passing]($BadgeURLPassed)]($DetailsURL) [![$key-Failing]($BadgeURLFailed)]($DetailsURL)"
 
-                # Append the new badge markdown to the corresponding OS badge content
-                switch ($OS) {
-                  "windows-2019" { $WindowsBadgeContent += $BadgeMarkdown + " " }
-                  "ubuntu-20.04" { $LinuxBadgeContent += $BadgeMarkdown + " " }
-                  "macos-12" { $MacOSBadgeContent += $BadgeMarkdown + " " }
-                }
+                  } else {
+                      Write-Host "No test results for $key, must have failed, generating 'Build Failed' badge..."
+                      $encodedKey = [System.Web.HttpUtility]::UrlEncode($key.Replace(' ', '_').Replace('-', '--'))
+                      $BadgeURLBuildFailed = "https://img.shields.io/badge/${encodedKey}_Build_Failed-lightgrey"
+                      $DetailsURL = "https://github.com/$repository_owner/$repository_name/blob/$commitSHA/$testsResultsPath/$key-Build_Failed.xml"
+                      $BadgeMarkdown = "[![$key-Build_Failed]($BadgeURLBuildFailed)]($DetailsURL)"
+                  }
+
+                      switch ($OS) {
+                          "windows-2019" { $WindowsBadgeContent += $BadgeMarkdown + " " }
+                          "ubuntu-20.04" { $LinuxBadgeContent += $BadgeMarkdown + " " }
+                          "macos-12" { $MacOSBadgeContent += $BadgeMarkdown + " " }
+                      }
+                  }
               }
-            }
           }
 
-          # Replace the old badges with the new badge content in the README content
           $ReadmeContent = Replace-BadgeContent -readmeContent $ReadmeContent -badgeContent $WindowsBadgeContent.TrimEnd() -startPlaceholder $windowsBadgesStartPlaceholder -endPlaceholder $windowsBadgesEndPlaceholder
           $ReadmeContent = Replace-BadgeContent -readmeContent $ReadmeContent -badgeContent $LinuxBadgeContent.TrimEnd() -startPlaceholder $linuxBadgesStartPlaceholder -endPlaceholder $linuxBadgesEndPlaceholder
           $ReadmeContent = Replace-BadgeContent -readmeContent $ReadmeContent -badgeContent $MacOSBadgeContent.TrimEnd() -startPlaceholder $macosBadgesStartPlaceholder -endPlaceholder $macosBadgesEndPlaceholder
 
-          # Write the updated README content to the file
           Set-Content -Path $ReadmePath -Value $ReadmeContent
 
-          # Commit the changes in the temporary branch
-          git commit -am "Update README with custom test status badges" || Write-Host "No changes to commit."
-
-          # Switch back to the original branch
+          git commit -am "Update README with custom test status badges"
           git checkout $branchName
-
-          # Merge the temporary branch without a fast-forward merge. This ensures
-          # a merge commit is created, which incorporates both your changes and any
-          # new changes from the remote that were fetched earlier.
           git merge --no-ff $uniqueTempBranchName
-
-          # Delete the temporary branch
           git branch -d $uniqueTempBranchName
-
-          # Push the changes back to the remote repository
           git push origin $branchName
