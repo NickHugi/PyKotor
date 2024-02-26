@@ -120,6 +120,22 @@ jobs:
       - name: Extract and update README with custom test status badges
         shell: pwsh
         run: |
+          # Git configuration and commit
+          git config --global user.name "GitHub Action"
+          git config --global user.email "action@github.com"
+
+          # Determine the branch that triggered the workflow
+          $branchName = "${{ github.ref_name }}"
+
+          # Generate a unique name for the temporary branch to avoid conflicts
+          $uniqueTempBranchName = "temp-branch-${{ github.run_id }}"
+
+          # Fetch the latest history without altering the working directory
+          git fetch
+
+          # Checkout to a unique temporary branch to prepare the new commit
+          git checkout -b $uniqueTempBranchName
+
           $OS_NAMES = @("windows-latest", "ubuntu-latest", "macos-latest")
           $PYTHON_VERSIONS = @("3.8", "3.9", "3.10", "3.11", "3.12")
           
@@ -184,10 +200,20 @@ jobs:
 
           # Write the updated README content to the file
           Set-Content -Path $ReadmePath -Value $ReadmeContent
-          
-          # Git configuration and commit
-          git config --global user.name "GitHub Action"
-          git config --global user.email "action@github.com"
-          git add README.md
-          git commit -m "Update README with custom test status badges"
-          git push
+
+          # Commit the changes in the temporary branch
+          git commit -am "Update README with custom test status badges" || Write-Host "No changes to commit."
+
+          # Switch back to the original branch
+          git checkout $branchName
+
+          # Merge the temporary branch without a fast-forward merge. This ensures
+          # a merge commit is created, which incorporates both your changes and any
+          # new changes from the remote that were fetched earlier.
+          git merge --no-ff $uniqueTempBranchName
+
+          # Delete the temporary branch
+          git branch -d $uniqueTempBranchName
+
+          # Push the changes back to the remote repository
+          git push origin $branchName
