@@ -102,8 +102,11 @@ jobs:
     - name: Set UPX directory path
       id: upx_dir
       run: |
-        echo "path=$(pwd)/upx-dir" >> $GITHUB_OUTPUT
-      shell: bash
+        $upx_dir = $([System.IO.Path]::GetFullPath('./upx-dir'))
+        Write-Output "upx-dir set to '$upx_dir'"
+        Get-Item $upx_dir
+        echo "path=$upx_dir" >> $GITHUB_OUTPUT
+      shell: pwsh
 
     - name: Install HoloPatcher dependencies
       run: |
