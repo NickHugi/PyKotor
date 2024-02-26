@@ -38,7 +38,11 @@ Get-ChildItem $extractedReportsPath -Recurse -Filter pytest_report.xml | ForEach
 
     $resultFilePathHtml = $_.FullName -replace '\.xml$', '.html'
     $relHtmlFilePath = Resolve-Path -Path $resultFilePathHtml -Relative
-    $cleanRelHtmlFilePath = $relHtmlFilePath -replace '^\.\', ''
+    if ($relHtmlFilePath.StartsWith(".\")) {
+        $cleanRelHtmlFilePath = $relHtmlFilePath.Substring(2)
+    } else {
+        $cleanRelHtmlFilePath = $relHtmlFilePath
+    }
     $DetailsURL = "https://github.com/$repository_owner/$repository_name/blob/$commitSHA/$cleanRelHtmlFilePath"
     $key = $_.Directory.Name.Replace('pytest_report_', '').Replace('_', '-')
 
