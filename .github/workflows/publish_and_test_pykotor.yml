@@ -15,9 +15,9 @@ jobs:
         python-version: ['3.8', '3.9', '3.10', '3.11', '3.12']
 
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v3
+      uses: actions/setup-python@v4
       with:
         python-version: ${{ matrix.python-version }}
 
@@ -76,7 +76,7 @@ jobs:
       continue-on-error: true
 
     - name: Upload compiled binaries
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       if: always()  # This ensures the step runs regardless of previous step's success or failure
       with:
         name: publish_${{ matrix.os }}_${{ matrix.python-version }}
@@ -96,7 +96,7 @@ jobs:
       continue-on-error: true
 
     - name: Upload Pytest Reports
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       if: always()  # Ensures this step runs even if the previous step fails
       with:
         name: pytest-reports_${{ matrix.os }}_${{ matrix.python-version }}
@@ -109,11 +109,12 @@ jobs:
     runs-on: ubuntu-latest  # Or any other suitable runner
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
-      - name: Download all artifacts
-        uses: actions/download-artifact@v3
+      - name: Download pytest reports artifacts only
+        uses: actions/download-artifact@v4
         with:
+          name: pytest-reports_*
           path: pytest-reports
 
       - name: Extract and update README with custom test status badges
@@ -122,18 +123,22 @@ jobs:
           $OS_NAMES = @("windows-latest", "ubuntu-latest", "macos-latest")
           $PYTHON_VERSIONS = @("3.8", "3.9", "3.10", "3.11", "3.12")
           
+          # Ensure the extracted-reports directory is created
+          $extractedReportsPath = "extracted-reports"
+          New-Item -ItemType Directory -Force -Path $extractedReportsPath
+
           # Extract all downloaded artifacts
           Get-ChildItem pytest-reports -Filter *.zip | ForEach-Object {
-            Expand-Archive "$($_.FullName)" -DestinationPath "extracted-reports" -Force
+            Expand-Archive -Path $_.FullName -DestinationPath $extractedReportsPath -Force
           }
-            
+          
           # Initialize a hashtable to store test results
           $testResults = @{}
 
           # Process each extracted report
-          Get-ChildItem extracted-reports -Directory | ForEach-Object {
-            $dirName = $_.Name
-            [xml]$TestResultsXml = Get-Content "$_/pytest_report.xml"
+          Get-ChildItem $extractedReportsPath -Recurse -Filter pytest_report.xml | ForEach-Object {
+            $dirName = $_.Directory.Name
+            [xml]$TestResultsXml = Get-Content $_.FullName
             $passedTests = $TestResultsXml.testsuite.tests - $TestResultsXml.testsuite.failures
             $failedTests = $TestResultsXml.testsuite.failures
             $totalTests = $TestResultsXml.testsuite.tests
@@ -146,64 +151,43 @@ jobs:
             }
           }
 
-          # Dynamically get the current branch name that triggered the workflow
-          $GITHUB_REF = "${{ github.ref }}"
-          $BRANCH_NAME = $GITHUB_REF -replace 'refs/heads/', ''
-
+          # Update README with test results
+          $ReadmePath = "./README.md"
+          $ReadmeContent = Get-Content $ReadmePath -Raw
           foreach ($OS in $OS_NAMES) {
             foreach ($PYTHON_VERSION in $PYTHON_VERSIONS) {
-
-              # Ensure local repo is in sync with the remote
-              git fetch origin
-              git checkout $BRANCH_NAME
-              git pull origin $BRANCH_NAME
-
-              $ErrorActionPreference = 'Stop' # This will halt the script on any errors
-              $OSBadge = $env:OS_NAME -replace '-latest', '' # Removes the '-latest' from OS names
-              $BadgeNamePassed = "tests-passed-$OSBadge-${env:PYTHON_VERSION}"
-              $BadgeNameFailed = "tests-failed-$OSBadge-${env:PYTHON_VERSION}"
-              
-              # Extract test counts from the pytest report
-              $TestResults = [xml](Get-Content ./pytest_report.xml)
-              $PassedTests = $TestResults.testsuite.tests - $TestResults.testsuite.failures
-              $FailedTests = $TestResults.testsuite.failures
-              $TotalTests = $TestResults.testsuite.tests
+              $OSBadge = $OS -replace '-latest', ''
+              $BadgeNamePassed = "tests-passed-$OSBadge-${PYTHON_VERSION}"
+              $BadgeNameFailed = "tests-failed-$OSBadge-${PYTHON_VERSION}"
               
               # Generate badge URLs with proper encoding
               $BadgeNamePassedEncoded = [uri]::EscapeDataString($BadgeNamePassed)
               $BadgeNameFailedEncoded = [uri]::EscapeDataString($BadgeNameFailed)
-              $PassedTestsEncoded = [uri]::EscapeDataString("$PassedTests passed")
-              $FailedTestsEncoded = [uri]::EscapeDataString("$FailedTests failed")
-
-              $BadgeURLPassed = "https://img.shields.io/badge/$BadgeNamePassedEncoded-$PassedTestsEncoded-brightgreen"
-              $BadgeURLFailed = "https://img.shields.io/badge/$BadgeNameFailedEncoded-$FailedTestsEncoded-red"
+              $BadgeURLPassed = "https://img.shields.io/badge/$BadgeNamePassedEncoded-brightgreen"
+              $BadgeURLFailed = "https://img.shields.io/badge/$BadgeNameFailedEncoded-red"
 
               # Badge Markdown
               $BadgeMarkdown = "![$BadgeNamePassed]($BadgeURLPassed) ![$BadgeNameFailed]($BadgeURLFailed)"
               
-              # Check if README already has the badges for the current matrix parameters
-              $ReadmePath = "./README.md"
-              $ReadmeContent = Get-Content $ReadmePath -Raw
+              # Regex to check if the badges already exist
               $BadgeRegexPassed = "\!\[$BadgeNamePassed\]\(https:\/\/img\.shields\.io\/badge\/.*\)"
               $BadgeRegexFailed = "\!\[$BadgeNameFailed\]\(https:\/\/img\.shields\.io\/badge\/.*\)"
               
               if ($ReadmeContent -match $BadgeRegexPassed -and $ReadmeContent -match $BadgeRegexFailed) {
-                # Badges exist, update them
-                $NewReadmeContent = $ReadmeContent -replace $BadgeRegexPassed, "![$BadgeNamePassed]($BadgeURLPassed)"
-                $NewReadmeContent = $NewReadmeContent -replace $BadgeRegexFailed, "![$BadgeNameFailed]($BadgeURLFailed)"
+                $ReadmeContent = $ReadmeContent -replace $BadgeRegexPassed, "![$BadgeNamePassed]($BadgeURLPassed)"
+                $ReadmeContent = $ReadmeContent -replace $BadgeRegexFailed, "![$BadgeNameFailed]($BadgeURLFailed)"
               } else {
-                # Badges don't exist, add them
-                $NewReadmeContent = $ReadmeContent + "`n$BadgeMarkdown"
+                $ReadmeContent += "`n$BadgeMarkdown"
               }
-
-              # Write the new README content to the file
-              $NewReadmeContent | Set-Content $ReadmePath
-              
-              # Git configuration and commit
-              git config --global user.name "GitHub Action"
-              git config --global user.email "action@github.com"
-              git add $ReadmePath
-              git commit -m "Update README with custom test status badges for $OSBadge-${env:PYTHON_VERSION}"
-              git push
             }
           }
+
+          # Write the updated README content to the file
+          Set-Content -Path $ReadmePath -Value $ReadmeContent
+          
+          # Git configuration and commit
+          git config --global user.name "GitHub Action"
+          git config --global user.email "action@github.com"
+          git add README.md
+          git commit -m "Update README with custom test status badges"
+          git push
