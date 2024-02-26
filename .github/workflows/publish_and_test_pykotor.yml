@@ -106,8 +106,8 @@ jobs:
         if ("${{ runner.os }}" -ne "macOS") {
           $upx_dir = $([System.IO.Path]::GetFullPath('./upx-dir'))
           Dir -Recurse $upx_dir | Get-Childitem
-          echo "path=$upx_dir" >> $GITHUB_OUTPUT
-          Write-Output "upx-dir set to '$upx_dir'"
+          echo "UPX_DIR=$upx_dir" | Out-File -FilePath $env:GITHUB_ENV -Append
+          Write-Output "UPX_DIR set to '$upx_dir'"
         }
       shell: pwsh
 
@@ -126,8 +126,6 @@ jobs:
         ./compile/compile_holopatcher.ps1 -noprompt -venv_name .venv_holopatcher_${{ matrix.os }}_${{ matrix.python-version }}_${{ matrix.architecture }} -upx_dir $upxDir
       shell: pwsh
       continue-on-error: true
-      env:
-        UPX_DIR: ${{ env.UPX_DIR }}
 
     - name: Install Holocron Toolset dependencies
       run: |
@@ -139,9 +137,13 @@ jobs:
 
     - name: Compile Holocron Toolset
       run: |
-        ./compile/compile_toolset.ps1 -noprompt -venv_name .venv_toolset_${{ matrix.os }}_${{ matrix.python-version }}_${{ matrix.architecture }} -upx_dir ${{ steps.upx_dir.outputs.path }}
+        $upxDir = $env:UPX_DIR
+        Write-Host "Using UPX directory at '$upxDir'"
+        ./compile/compile_toolset.ps1 -noprompt -venv_name .venv_toolset_${{ matrix.os }}_${{ matrix.python-version }}_${{ matrix.architecture }} -upx_dir $upxDir
       shell: pwsh
       continue-on-error: true
+      env:
+        UPX_DIR: ${{ env.UPX_DIR }}
 
     - name: Install BatchPatcher dependencies
       run: |
@@ -153,25 +155,31 @@ jobs:
 
     - name: Compile BatchPatcher
       run: |
-        ./compile/compile_batchpatcher.ps1 -noprompt -venv_name .venv_batchpatcher_${{ matrix.os }}_${{ matrix.python-version }}_${{ matrix.architecture }} -upx_dir ${{ steps.upx_dir.outputs.path }}
+        $upxDir = $env:UPX_DIR
+        Write-Host "Using UPX directory at '$upxDir'"
+        ./compile/compile_batchpatcher.ps1 -noprompt -venv_name .venv_batchpatcher_${{ matrix.os }}_${{ matrix.python-version }}_${{ matrix.architecture }} -upx_dir $upxDir
       shell: pwsh
       continue-on-error: true
 
     - name: Compile KotorDiff
       run: |
+        $upxDir = $env:UPX_DIR
+        Write-Host "Using UPX directory at '$upxDir'"
         ./install_python_venv.ps1 -noprompt -venv_name .venv_kotordiff_${{ matrix.os }}_${{ matrix.python-version }}_${{ matrix.architecture }}
         pip install "pyinstaller==5.4" --prefer-binary
         pip install -r Tools/KotorDiff/requirements.txt --prefer-binary
-        ./compile/compile_kotordiff.ps1 -noprompt -venv_name .venv_kotordiff_${{ matrix.os }}_${{ matrix.python-version }}_${{ matrix.architecture }} -upx_dir ${{ steps.upx_dir.outputs.path }}
+        ./compile/compile_kotordiff.ps1 -noprompt -venv_name .venv_kotordiff_${{ matrix.os }}_${{ matrix.python-version }}_${{ matrix.architecture }} -upx_dir $upxDir
       shell: pwsh
       continue-on-error: true
 
     - name: Compile GUIDuplicator
       run: |
+        $upxDir = $env:UPX_DIR
+        Write-Host "Using UPX directory at '$upxDir'"
         ./install_python_venv.ps1 -noprompt -venv_name .venv_guiduplicator_${{ matrix.os }}_${{ matrix.python-version }}_${{ matrix.architecture }}
         pip install "pyinstaller==5.4" --prefer-binary
         pip install -r Tools/GuiDuplicator/requirements.txt --prefer-binary
-        ./compile/compile_gui_duplicator.ps1 -noprompt -venv_name .venv_guiduplicator_${{ matrix.os }}_${{ matrix.python-version }}_${{ matrix.architecture }} -upx_dir ${{ steps.upx_dir.outputs.path }}
+        ./compile/compile_gui_duplicator.ps1 -noprompt -venv_name .venv_guiduplicator_${{ matrix.os }}_${{ matrix.python-version }}_${{ matrix.architecture }} -upx_dir $upxDir
       shell: pwsh
       continue-on-error: true
 
@@ -259,15 +267,14 @@ jobs:
           $PYTHON_VERSIONS = @('3.7', '3.8', '3.9', '3.10', '3.11', '3.12', '3.13.0-alpha.4')
           $ARCHITECTURES = @('x86', 'x64')
 
-          $extractedReportsPath = "tests/results"
-          New-Item -ItemType Directory -Force -Path $extractedReportsPath
-
-          New-Item -ItemType Directory -Force -Path "./all_pytest_reports" -ErrorAction SilentlyContinue
-          Get-ChildItem "./all_pytest_reports" -Recurse -Filter *.zip | ForEach-Object {
+          $artifact_reports_dir = "./all_pytest_reports"
+          New-Item -ItemType Directory -Force -Path $artifact_reports_dir -ErrorAction SilentlyContinue
+          Dir -Recurse $artifact_reports_dir | Get-Childitem
+          Get-ChildItem $artifact_reports_dir -Recurse -Filter *.zip | ForEach-Object {
             Write-Output "Extracting $_.FullName to $extractedReportsPath..."
             Expand-Archive -Path $_.FullName -DestinationPath $(Join-Path -Path $extractedReportsPath -ChildPath $_.BaseName) -Force
           }
-          Remove-Item -Path "./all_pytest_reports" -Recurse -Force -ErrorAction SilentlyContinue
+          Remove-Item -Path $artifact_reports_dir -Recurse -Force -ErrorAction SilentlyContinue
 
           git fetch origin $branchName
           if (git log "${{ github.sha }}"..origin/$branchName --oneline) {
