@@ -92,7 +92,7 @@ jobs:
           if ($ext -eq "zip") {
             Expand-Archive -Path $archiveName -DestinationPath "upx-dir"
           } else {
-            tar -xvf $archiveName -C "upx-dir"
+            tar -xvf $archiveName --strip-components=1 -C "upx-dir"
           }
     
           Remove-Item $archiveName # Clean up downloaded archive
@@ -102,10 +102,13 @@ jobs:
     - name: Set UPX directory path
       id: upx_dir
       run: |
-        $upx_dir = $([System.IO.Path]::GetFullPath('./upx-dir'))
-        Write-Output "upx-dir set to '$upx_dir'"
-        Get-Item $upx_dir
-        echo "path=$upx_dir" >> $GITHUB_OUTPUT
+        $upx_dir = "./upx-dir"
+        if ("${{ runner.os }}" -ne "macOS") {
+          $upx_dir = $([System.IO.Path]::GetFullPath('./upx-dir'))
+          Dir -Recurse $upx_dir | Get-Childitem
+          echo "path=$upx_dir" >> $GITHUB_OUTPUT
+          Write-Output "upx-dir set to '$upx_dir'"
+        }
       shell: pwsh
 
     - name: Install HoloPatcher dependencies
@@ -118,9 +121,13 @@ jobs:
     
     - name: Compile HoloPatcher
       run: |
-        ./compile/compile_holopatcher.ps1 -noprompt -venv_name .venv_holopatcher_${{ matrix.os }}_${{ matrix.python-version }}_${{ matrix.architecture }} -upx_dir ${{ steps.upx_dir.outputs.path }}
+        $upxDir = $env:UPX_DIR
+        Write-Host "Using UPX directory at '$upxDir'"
+        ./compile/compile_holopatcher.ps1 -noprompt -venv_name .venv_holopatcher_${{ matrix.os }}_${{ matrix.python-version }}_${{ matrix.architecture }} -upx_dir $upxDir
       shell: pwsh
       continue-on-error: true
+      env:
+        UPX_DIR: ${{ env.UPX_DIR }}
 
     - name: Install Holocron Toolset dependencies
       run: |
