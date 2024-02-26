@@ -36,9 +36,8 @@ Get-ChildItem $extractedReportsPath -Recurse -Filter pytest_report.xml | ForEach
     $errors = [int]$TestResultsXml.testsuites.testsuite.errors
 
     $passedTests = $totalTests - $failedTests - $errors
-    $curDirectory = (Get-Location).Path
     $resultFilePathHtml = $_.FullName -replace '\.xml$', '.html'
-    $relHtmlFilePath = Join-Path -Path $curDirectory -ChildPath $resultFilePathHtml
+    $relHtmlFilePath = (Resolve-Path -Path $resultFilePathHtml -Relative).Path
     $DetailsURL = "https://github.com/$repository_owner/$repository_name/blob/$commitSHA/$relHtmlFilePath"
     $key = $_.Directory.Name.Replace('pytest_report_', '').Replace('_', '-')
 
