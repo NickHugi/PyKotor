@@ -123,7 +123,7 @@ jobs:
       uses: actions/upload-artifact@v4
       if: always()  # Ensures this step runs even if the previous step fails
       with:
-        name: pytest-reports_${{ matrix.os }}_${{ matrix.python-version }}_${{ matrix.architecture }}
+        name: pytest_report_${{ matrix.os }}_${{ matrix.python-version }}_${{ matrix.architecture }}
         path: |
           pytest_report.html
           pytest_report.xml
@@ -140,7 +140,8 @@ jobs:
       - name: Download all artifacts
         uses: actions/download-artifact@v4
         with:
-          path: pytest-reports
+          path: all_pytest_reports
+          pattern: pytest_report_*
 
       - name: Extract and update README with custom test status badges
         shell: pwsh
@@ -172,7 +173,7 @@ jobs:
           New-Item -ItemType Directory -Force -Path $extractedReportsPath
 
           # Extract all downloaded artifacts
-          Get-ChildItem pytest-reports -Filter *.zip | ForEach-Object {
+          Get-ChildItem "./all_pytest_reports" -Filter *.zip | ForEach-Object {
             Expand-Archive -Path $_.FullName -DestinationPath $extractedReportsPath -Force
           }
           
@@ -207,21 +208,29 @@ jobs:
           foreach ($OS in $OS_NAMES) {
             foreach ($PYTHON_VERSION in $PYTHON_VERSIONS) {
               foreach ($ARCH in $ARCHITECTURES) {
-                $key = "$OS_$PYTHON_VERSION_$ARCH"
-                $passedTests = $testResults[$key]['Passed']
-                $failedTests = $testResults[$key]['Failed']
-          
-                $BadgeURLPassed = "https://img.shields.io/badge/$($OS)_$($PYTHON_VERSION)_$($ARCH)_Passing-$passedTests-brightgreen"
-                $BadgeURLFailed = "https://img.shields.io/badge/$($OS)_$($PYTHON_VERSION)_$($ARCH)_Failing-$failedTests-red"
-          
-                $BadgeNamePassed = "$OS-$PYTHON_VERSION-$ARCH"
-                $BadgeNameFailed = "$OS-$PYTHON_VERSION-$ARCH"
-          
-                # Badge Markdown
-                $BadgeMarkdown = "![$BadgeNamePassed]($BadgeURLPassed) ![$BadgeNameFailed]($BadgeURLFailed)"
+                $key = "$($OS)_$($PYTHON_VERSION)_$($ARCH)"
+                if ($testResults.ContainsKey($key)) {
+                  $passedTests = $testResults[$key]['Passed']
+                  $failedTests = $testResults[$key]['Failed']
+
+                  $BadgeURLPassed = "https://img.shields.io/badge/$($OS)_$($PYTHON_VERSION)_$($ARCH)_Passing-$passedTests-brightgreen"
+                  $BadgeURLFailed = "https://img.shields.io/badge/$($OS)_$($PYTHON_VERSION)_$($ARCH)_Failing-$failedTests-red"
+                } else {
+                  Write-Host "No test results for $key, must have failed, generating 'Build Failed' badge..."
+
+                  # Generate a 'Build Failed' badge for this combination
+                  $BadgeURLBuildFailed = "https://img.shields.io/badge/$($OS)_$($PYTHON_VERSION)_$($ARCH)_Build_Failed-lightgrey"
+                }
+
+                # Determine the badge markdown based on test results availability
+                $BadgeMarkdown = if ($testResults.ContainsKey($key)) {
+                  "![$($OS)_$($PYTHON_VERSION)_$($ARCH)_Passing]($BadgeURLPassed) ![$($OS)_$($PYTHON_VERSION)_$($ARCH)_Failing]($BadgeURLFailed)"
+                } else {
+                  "![$($OS)_$($PYTHON_VERSION)_$($ARCH)_Build_Failed]($BadgeURLBuildFailed)"
+                }
           
                 # Regex to find existing badges for the same OS and Python version
-                $BadgeRegex = "!\[$BadgeNamePassed\].+?!\[$BadgeNameFailed\].+?"
+                $BadgeRegex = "!\[$($OS)_$($PYTHON_VERSION)_$($ARCH)_(Passing|Failing|Build_Failed)\].+?"
           
                 if ($ReadmeContent -match $BadgeRegex) {
                   $ReadmeContent = $Readreadmecontent -replace $BadgeRegex, $BadgeMarkdown
