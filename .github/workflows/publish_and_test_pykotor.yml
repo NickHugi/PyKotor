@@ -57,7 +57,7 @@ jobs:
           echo "::set-output name=url::https://github.com/upx/upx/releases/download/v4.2.2/upx-4.2.2-amd64_linux.tar.xz"
         } elseif ("${{ runner.os }}" -eq "macOS") {
           echo "::set-output name=build::no"
-          echo "::set-output name=url::https://github.com/upx/upx/releases/download/v3.96/upx-3.96-amd64_macosx.tar.xz"
+          echo "::set-output name=url::https://github.com/upx/upx/releases/download/v4.2.2/upx-4.2.2-src.tar.xz"
         }
       shell: pwsh
   
