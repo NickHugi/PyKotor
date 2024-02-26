@@ -42,6 +42,69 @@ jobs:
         python -m venv .venv_batchpatcher_${{ matrix.os }}_${{ matrix.python-version }}_${{ matrix.architecture }}
       shell: pwsh
 
+    - name: Set UPX download URL
+      id: upx_setup
+      run: |
+        if ("${{ runner.os }}" == "Windows") {
+          echo "::set-output name=build::no"
+          if ("${{ matrix.architecture }} == "x86") {
+            echo "::set-output name=url::https://github.com/upx/upx/releases/download/v4.2.2/upx-4.2.2-win32.zip"
+          } else {
+            echo "::set-output name=url::https://github.com/upx/upx/releases/download/v4.2.2/upx-4.2.2-win64.zip"
+          }
+        } elseif ("${{ runner.os }}" == "Linux") {
+          echo "::set-output name=build::no"
+          echo "::set-output name=url::https://github.com/upx/upx/releases/download/v4.2.2/upx-4.2.2-amd64_linux.tar.xz"
+        } elseif ("${{ runner.os }}" == "macOS") {
+          echo "::set-output name=build::no"
+          echo "::set-output name=url::https://github.com/upx/upx/releases/download/v3.96/upx-3.96-amd64_macosx.tar.xz"
+        }
+      shell: pwsh
+  
+    - name: Install build dependencies (macOS)
+      if: runner.os == 'macOS' && steps.upx_setup.outputs.build == 'yes'
+      run: |
+        brew install ucl
+        brew install zlib
+      shell: bash
+
+    - name: Download and prepare UPX
+      run: |
+        if ("${{ runner.os }}" == "Windows") {
+          $ext = "zip"
+          $stripComponents = ""
+        } else {
+          $ext = "tar.xz"
+          $stripComponents = "--strip-components=1"
+        }
+        $url = "${{ steps.upx_setup.outputs.url }}"
+        $outputPath = "upx.$ext"
+        Invoke-WebRequest -Uri $url -OutFile $outputPath
+        if ($ext.ToLower() -eq "zip") {
+          Expand-Archive -Path $outputPath -DestinationPath "upx-dir"
+        } elseif ($stripComponents) {
+          tar -xf $outputPath -C "upx-dir" $stripComponents
+        } else {
+          tar -xf $outputPath -C "upx-dir"
+        }
+      shell: pwsh
+
+    - name: Build UPX (macOS)
+      if: runner.os == 'macOS'
+      run: |
+        cd upx-4.2.2-src
+        make all
+        cd ..
+        mkdir -p upx-dir
+        cp upx-4.2.2-src/src/upx upx-dir/upx
+      shell: bash
+
+    - name: Set UPX directory path
+      id: upx_dir
+      run: |
+        echo "::set-output name=path::$(pwd)/upx-dir"
+      shell: bash
+
     - name: Install HoloPatcher dependencies
       run: |
         ./install_python_venv.ps1 -noprompt -venv_name .venv_holopatcher_${{ matrix.os }}_${{ matrix.python-version }}_${{ matrix.architecture }}
@@ -52,7 +115,7 @@ jobs:
     
     - name: Compile HoloPatcher
       run: |
-        ./compile/compile_holopatcher.ps1 -noprompt -venv_name .venv_holopatcher_${{ matrix.os }}_${{ matrix.python-version }}_${{ matrix.architecture }}
+        ./compile/compile_holopatcher.ps1 -noprompt -venv_name .venv_holopatcher_${{ matrix.os }}_${{ matrix.python-version }}_${{ matrix.architecture }} -upx_dir ${{ steps.upx_dir.outputs.path }}
       shell: pwsh
       continue-on-error: true
 
@@ -66,7 +129,7 @@ jobs:
 
     - name: Compile Holocron Toolset
       run: |
-        ./compile/compile_toolset.ps1 -noprompt -venv_name .venv_toolset_${{ matrix.os }}_${{ matrix.python-version }}_${{ matrix.architecture }}
+        ./compile/compile_toolset.ps1 -noprompt -venv_name .venv_toolset_${{ matrix.os }}_${{ matrix.python-version }}_${{ matrix.architecture }} -upx_dir ${{ steps.upx_dir.outputs.path }}
       shell: pwsh
       continue-on-error: true
 
@@ -80,7 +143,7 @@ jobs:
 
     - name: Compile BatchPatcher
       run: |
-        ./compile/compile_batchpatcher.ps1 -noprompt -venv_name .venv_batchpatcher_${{ matrix.os }}_${{ matrix.python-version }}_${{ matrix.architecture }}
+        ./compile/compile_batchpatcher.ps1 -noprompt -venv_name .venv_batchpatcher_${{ matrix.os }}_${{ matrix.python-version }}_${{ matrix.architecture }} -upx_dir ${{ steps.upx_dir.outputs.path }}
       shell: pwsh
       continue-on-error: true
 
@@ -89,7 +152,7 @@ jobs:
         ./install_python_venv.ps1 -noprompt -venv_name .venv_kotordiff_${{ matrix.os }}_${{ matrix.python-version }}_${{ matrix.architecture }}
         pip install "pyinstaller==5.4" --prefer-binary
         pip install -r Tools/KotorDiff/requirements.txt --prefer-binary
-        ./compile/compile_kotordiff.ps1 -noprompt -venv_name .venv_kotordiff_${{ matrix.os }}_${{ matrix.python-version }}_${{ matrix.architecture }}
+        ./compile/compile_kotordiff.ps1 -noprompt -venv_name .venv_kotordiff_${{ matrix.os }}_${{ matrix.python-version }}_${{ matrix.architecture }} -upx_dir ${{ steps.upx_dir.outputs.path }}
       shell: pwsh
       continue-on-error: true
 
@@ -98,7 +161,7 @@ jobs:
         ./install_python_venv.ps1 -noprompt -venv_name .venv_guiduplicator_${{ matrix.os }}_${{ matrix.python-version }}_${{ matrix.architecture }}
         pip install "pyinstaller==5.4" --prefer-binary
         pip install -r Tools/GuiDuplicator/requirements.txt --prefer-binary
-        ./compile/compile_gui_duplicator.ps1 -noprompt -venv_name .venv_guiduplicator_${{ matrix.os }}_${{ matrix.python-version }}_${{ matrix.architecture }}
+        ./compile/compile_gui_duplicator.ps1 -noprompt -venv_name .venv_guiduplicator_${{ matrix.os }}_${{ matrix.python-version }}_${{ matrix.architecture }} -upx_dir ${{ steps.upx_dir.outputs.path }}
       shell: pwsh
       continue-on-error: true
 
@@ -169,8 +232,6 @@ jobs:
       - name: Extract and update README with custom test status badges
         shell: pwsh
         run: |
-          Set-PSDebug -Trace 2
-
           # Git configuration and commit
           git config --global user.name "GitHub Action"
           git config --global user.email "action@github.com"
@@ -180,9 +241,6 @@ jobs:
           $repository_owner = "${{ github.repository_owner }}"
           $repository_name = "${{ github.repository }}"
           $uniqueTempBranchName = "temp-branch-${{ github.run_id }}"
-
-          git fetch
-          git checkout -b $uniqueTempBranchName
 
           $testsResultsPath = "tests/results"
           Remove-Item -Path $testsResultsPath -Recurse -Force
@@ -196,40 +254,42 @@ jobs:
           New-Item -ItemType Directory -Force -Path $extractedReportsPath
 
           Get-ChildItem "./all_pytest_reports" -Filter *.zip | ForEach-Object {
-              Expand-Archive -Path $_.FullName -DestinationPath $(Join-Path -Path $extractedReportsPath -ChildPath $_.BaseName) -Force
+            Expand-Archive -Path $_.FullName -DestinationPath $(Join-Path -Path $extractedReportsPath -ChildPath $_.BaseName) -Force
           }
           Remove-Item -Path "./all_pytest_reports" -Recurse -Force
 
+          git fetch
+          git checkout -b $uniqueTempBranchName
           git add -A
           git commit -am "Upload test results"
-
           $commitSHA = git rev-parse HEAD
 
           $testResults = @{}
 
           Get-ChildItem $extractedReportsPath -Recurse -Filter pytest_report.xml | ForEach-Object {
-              [xml]$TestResultsXml = Get-Content $_.FullName
-              $totalTests = [int]$TestResultsXml.testsuites.testsuite.tests
-              $failedTests = [int]$TestResultsXml.testsuites.testsuite.failures
-              $errors = [int]$TestResultsXml.testsuites.testsuite.errors
-              $passedTests = $totalTests - $failedTests - $errors
+            [xml]$TestResultsXml = Get-Content $_.FullName
+            $totalTests = [int]$TestResultsXml.testsuites.testsuite.tests
+            $failedTests = [int]$TestResultsXml.testsuites.testsuite.failures
+            $errors = [int]$TestResultsXml.testsuites.testsuite.errors
+            $passedTests = $totalTests - $failedTests - $errors
 
-              $resultFilePathHtml = $_.FullName -replace '\.xml$', '.html'
-              $relHtmlFilePath = Resolve-Path -Path $resultFilePathHtml -Relative
-              if ($relHtmlFilePath.StartsWith(".\") -or $relHtmlFilePath.StartsWith("./")) {
-                  $cleanRelHtmlFilePath = $relHtmlFilePath.Substring(2)
-              } else {
-                  $cleanRelHtmlFilePath = $relHtmlFilePath
-              }
-              $DetailsURL = "https://github.com/$repository_owner/$repository_name/blob/$commitSHA/$cleanRelHtmlFilePath"
-              $key = $_.Directory.Name.Replace('pytest_report_', '').Replace('_', '-')
+            $resultFilePathHtml = $_.FullName -replace '\.xml$', '.html'
+            $relHtmlFilePath = Resolve-Path -Path $resultFilePathHtml -Relative
+            if ($relHtmlFilePath.StartsWith(".\") -or $relHtmlFilePath.StartsWith("./")) {
+              $cleanRelHtmlFilePath = $relHtmlFilePath.Substring(2)
+            } else {
+              $cleanRelHtmlFilePath = $relHtmlFilePath
+            }
+            $DetailsURL = "https://github.com/$repository_owner/$repository_name/blob/$commitSHA/$cleanRelHtmlFilePath"
+            $key = $_.Directory.Name.Replace('pytest_report_', '').Replace('_', '-')
+            Write-Host "KEY FOUND: '$key'"
 
-              $testResults[$key] = @{
-                  Passed = $passedTests
-                  Failed = $failedTests + $errors
-                  Total  = $totalTests
-                  DetailsURL = $DetailsURL
-              }
+            $testResults[$key] = @{
+              Passed = $passedTests
+              Failed = $failedTests + $errors
+              Total  = $totalTests
+              DetailsURL = $DetailsURL
+            }
           }
 
           $ReadmePath = "./README.md"
@@ -247,47 +307,47 @@ jobs:
           $macosBadgesEndPlaceholder = "<!-- MACOS-BADGES-END -->"
 
           function Replace-BadgeContent {
-              param (
-                  [string]$readmeContent,
-                  [string]$badgeContent,
-                  [string]$startPlaceholder,
-                  [string]$endPlaceholder
-              )
+            param (
+                [string]$readmeContent,
+                [string]$badgeContent,
+                [string]$startPlaceholder,
+                [string]$endPlaceholder
+            )
 
-              $pattern = [regex]::Escape($startPlaceholder) + "(.|\n)*?" + [regex]::Escape($endPlaceholder)
-              $replacement = $startPlaceholder + "`n" + $badgeContent + "`n" + $endPlaceholder
-              return $readmeContent -replace $pattern, $replacement
+            $pattern = [regex]::Escape($startPlaceholder) + "(.|\n)*?" + [regex]::Escape($endPlaceholder)
+            $replacement = $startPlaceholder + "`n" + $badgeContent + "`n" + $endPlaceholder
+            return $readmeContent -replace $pattern, $replacement
           }
 
           foreach ($OS in $OS_NAMES) {
-              foreach ($PYTHON_VERSION in $PYTHON_VERSIONS) {
-                  foreach ($ARCH in $ARCHITECTURES) {
-                  $key = "$OS-$PYTHON_VERSION-$ARCH"
-                  if ($testResults.ContainsKey($key)) {
-                      $passedTests = $testResults[$key]['Passed']
-                      $failedTests = $testResults[$key]['Failed']
-                      $DetailsURL = $testResults[$key]['DetailsURL']
-                      # Encode the label to replace spaces with underscores and URI-encode other special characters
-                      $encodedKey = [System.Web.HttpUtility]::UrlEncode($key.Replace(' ', '_').Replace('-', '--'))
-                      $BadgeURLPassed = "https://img.shields.io/badge/${encodedKey}_Passed-${passedTests}-brightgreen"
-                      $BadgeURLFailed = "https://img.shields.io/badge/${encodedKey}_Failed-${failedTests}-red"
-                      $BadgeMarkdown = "[![$key-Passing]($BadgeURLPassed)]($DetailsURL) [![$key-Failing]($BadgeURLFailed)]($DetailsURL)"
+            foreach ($PYTHON_VERSION in $PYTHON_VERSIONS) {
+              foreach ($ARCH in $ARCHITECTURES) {
+                $key = "$OS-$PYTHON_VERSION-$ARCH"
+                if ($testResults.ContainsKey($key)) {
+                    $passedTests = $testResults[$key]['Passed']
+                    $failedTests = $testResults[$key]['Failed']
+                    $DetailsURL = $testResults[$key]['DetailsURL']
+                    # Encode the label to replace spaces with underscores and URI-encode other special characters
+                    $encodedKey = [System.Web.HttpUtility]::UrlEncode($key.Replace(' ', '_').Replace('-', '--'))
+                    $BadgeURLPassed = "https://img.shields.io/badge/${encodedKey}_Passed-${passedTests}-brightgreen"
+                    $BadgeURLFailed = "https://img.shields.io/badge/${encodedKey}_Failed-${failedTests}-red"
+                    $BadgeMarkdown = "[![$key-Passing]($BadgeURLPassed)]($DetailsURL) [![$key-Failing]($BadgeURLFailed)]($DetailsURL)"
 
-                  } else {
-                      Write-Host "No test results for $key, must have failed, generating 'Build Failed' badge..."
-                      $encodedKey = [System.Web.HttpUtility]::UrlEncode($key.Replace(' ', '_').Replace('-', '--'))
-                      $BadgeURLBuildFailed = "https://img.shields.io/badge/${encodedKey}_Build_Failed-lightgrey"
-                      $DetailsURL = "https://github.com/$repository_owner/$repository_name/blob/$commitSHA/$testsResultsPath/$key-Build_Failed.xml"
-                      $BadgeMarkdown = "[![$key-Build_Failed]($BadgeURLBuildFailed)]($DetailsURL)"
-                  }
+                } else {
+                    Write-Host "No test results for '$key', must have failed, generating 'Build Failed' badge..."
+                    $encodedKey = [System.Web.HttpUtility]::UrlEncode($key.Replace(' ', '_').Replace('-', '--'))
+                    $BadgeURLBuildFailed = "https://img.shields.io/badge/${encodedKey}_Build_Failed-lightgrey"
+                    $DetailsURL = "https://github.com/$repository_owner/$repository_name/blob/$commitSHA/$testsResultsPath/$key-Build_Failed.xml"
+                    $BadgeMarkdown = "[![$key-Build_Failed]($BadgeURLBuildFailed)]($DetailsURL)"
+                }
 
-                      switch ($OS) {
-                          "windows-2019" { $WindowsBadgeContent += $BadgeMarkdown + " " }
-                          "ubuntu-20.04" { $LinuxBadgeContent += $BadgeMarkdown + " " }
-                          "macos-12" { $MacOSBadgeContent += $BadgeMarkdown + " " }
-                      }
-                  }
+                switch ($OS) {
+                    "windows-2019" { $WindowsBadgeContent += $BadgeMarkdown + " " }
+                    "ubuntu-20.04" { $LinuxBadgeContent += $BadgeMarkdown + " " }
+                    "macos-12" { $MacOSBadgeContent += $BadgeMarkdown + " " }
+                }
               }
+            }
           }
 
           $ReadmeContent = Replace-BadgeContent -readmeContent $ReadmeContent -badgeContent $WindowsBadgeContent.TrimEnd() -startPlaceholder $windowsBadgesStartPlaceholder -endPlaceholder $windowsBadgesEndPlaceholder
