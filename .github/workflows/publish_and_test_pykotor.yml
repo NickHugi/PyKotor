@@ -49,6 +49,8 @@ jobs:
       shell: pwsh
 
     - name: Set UPX download URL
+        # upx docs express that crashes are happening on ventura and above with upx, don't use on mac.
+      if: runner.os != 'macOS'
       id: upx_setup
       run: |
         if ("${{ runner.os }}" -eq "Windows") {
@@ -66,18 +68,10 @@ jobs:
           echo "::set-output name=url::https://github.com/upx/upx/releases/download/v4.2.2/upx-4.2.2-src.tar.xz"
         }
       shell: pwsh
-  
-    - name: Install build dependencies (macOS)
-      if: runner.os == 'macOS' && steps.upx_setup.outputs.build == 'yes'
-      run: |
-        brew install ucl
-        brew install zlib
-      shell: bash
 
     - name: Download and prepare UPX
-      run: |
-        # Ensure we do not run the download steps on macOS since we are building from source.
-        
+      if: runner.os != 'macOS'
+      run: |        
         $ext = "${{ runner.os }}" -eq "Windows" ? "zip" : "tar.xz"
         $stripComponents = "${{ runner.os }}" -eq "Windows" ? "" : "--strip-components=1"
   
@@ -87,11 +81,7 @@ jobs:
         # Use Invoke-WebRequest or curl depending on the OS
         if ("${{ runner.os }}" -eq "Windows") {
           Invoke-WebRequest -Uri $url -OutFile $outputPath
-        } elseif ("${{ runner.os }}" -eq "macOS") {
-          curl -L $url -o upx-source.tar.xz
-          mkdir -p upx-4.2.2-src
-          tar -xvf upx-source.tar.xz -C upx-4.2.2-src --strip-components=1
-        } else {
+        } elseif ("${{ runner.os }}" -eq "Linux") {
           curl -L $url -o $outputPath
         }
         
@@ -108,21 +98,6 @@ jobs:
           Remove-Item $outputPath # Clean up downloaded archive
         }
       shell: pwsh
-    
-
-    - name: Build UPX (macOS)
-      if: runner.os == 'macOS'
-      run: |
-        mkdir -p "${{ github.workspace }}/upx-dir"
-        cd upx-4.2.2-src
-        make all
-        ls -al
-        cd src
-        ls -al
-        cd ..
-        # Copy the UPX binary to the upx-dir directory we confirmed above
-        cp -av src/upx "${{ github.workspace }}/upx-dir"
-      shell: bash
 
     - name: Set UPX directory path
       id: upx_dir
@@ -192,7 +167,7 @@ jobs:
 
     - name: Upload compiled binaries
       uses: actions/upload-artifact@v4
-      if: always()
+      if: ${{ success() || failure() }}
       with:
         name: publish_${{ matrix.os }}_${{ matrix.python-version }}_${{ matrix.architecture }}
         path: ./dist/**
@@ -232,7 +207,7 @@ jobs:
 
     - name: Upload Pytest Reports
       uses: actions/upload-artifact@v4
-      if: always()  # Ensures this step runs even if the previous step fails
+      if: ${{ success() || failure() }}
       with:
         name: pytest_report_${{ matrix.os }}_${{ matrix.python-version }}_${{ matrix.architecture }}
         path: |
@@ -241,8 +216,7 @@ jobs:
 
   update-readme:
     needs: build  # do not start this job until all 'build' jobs complete
-    # always run regardless of whether any builds errored or not.
-    if: always()
+    if: ${{ success() || failure() }}
     runs-on: ubuntu-latest  # Or any other suitable runner
     steps:
       - name: Checkout code
