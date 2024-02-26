@@ -79,7 +79,12 @@ jobs:
         }
         $url = "${{ steps.upx_setup.outputs.url }}"
         $outputPath = "upx.$ext"
-        Invoke-WebRequest -Uri $url -OutFile $outputPath
+        # Use curl instead of Invoke-WebRequest on macOS (workaround to a strange bug)
+        if ("${{ runner.os }}" -eq "macOS") {
+          curl -L $url -o $outputPath
+        } else {
+          Invoke-WebRequest -Uri $url -OutFile $outputPath
+        }
         
         # Ensure the upx-dir directory exists
         New-Item -ItemType Directory -Force -Path "upx-dir" -ErrorAction SilentlyContinue
