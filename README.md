@@ -1,5 +1,5 @@
 <!-- WINDOWS-BADGES-START -->
-[![windows-2019-3.8-x64-Passing](https://img.shields.io/badge/windows-2019-3.8-x64_Passed-631-brightgreen)](https://github.com/th3w1zard1/PyKotor/blob/043c4a95063c4df019332b978194011d5e7882c9/C:\GitHub\PyKotor\tests\results\pytest_report_windows-2019_3.8_x64\pytest_report.html) [![windows-2019-3.8-x64-Failing](https://img.shields.io/badge/windows-2019-3.8-x64_Failed-9-red)](https://github.com/th3w1zard1/PyKotor/blob/043c4a95063c4df019332b978194011d5e7882c9/C:\GitHub\PyKotor\tests\results\pytest_report_windows-2019_3.8_x64\pytest_report.html)
+[![windows-2019-3.8-x64-Passing](https://img.shields.io/badge/windows--2019--3.8--x64_Passed-631-brightgreen)](https://github.com/th3w1zard1/PyKotor/blob/2803e7d11eadb835d10f7ebae90625f1ce273f04/C:\GitHub\PyKotor\tests\results\pytest_report_windows-2019_3.8_x64\pytest_report.html) [![windows-2019-3.8-x64-Failing](https://img.shields.io/badge/windows--2019--3.8--x64_Failed-9-red)](https://github.com/th3w1zard1/PyKotor/blob/2803e7d11eadb835d10f7ebae90625f1ce273f04/C:\GitHub\PyKotor\tests\results\pytest_report_windows-2019_3.8_x64\pytest_report.html)
 <!-- WINDOWS-BADGES-END -->
 
 <!-- LINUX-BADGES-START -->
