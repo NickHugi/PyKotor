@@ -49,24 +49,26 @@ jobs:
       shell: pwsh
 
     - name: Set UPX download URL
-        # upx docs express that crashes are happening on ventura and above with upx, don't use on mac.
+      # upx docs express that crashes are happening on ventura and above with upx, don't use on mac.
       if: runner.os != 'macOS'
       id: upx_setup
       run: |
+        $build = "no"
         if ("${{ runner.os }}" -eq "Windows") {
-          echo "::set-output name=build::no"
           if ("${{ matrix.architecture }}" -eq "x86") {
-            echo "::set-output name=url::https://github.com/upx/upx/releases/download/v4.2.2/upx-4.2.2-win32.zip"
+            $url = "https://github.com/upx/upx/releases/download/v4.2.2/upx-4.2.2-win32.zip"
           } else {
-            echo "::set-output name=url::https://github.com/upx/upx/releases/download/v4.2.2/upx-4.2.2-win64.zip"
+            $url = "https://github.com/upx/upx/releases/download/v4.2.2/upx-4.2.2-win64.zip"
           }
         } elseif ("${{ runner.os }}" -eq "Linux") {
-          echo "::set-output name=build::no"
-          echo "::set-output name=url::https://github.com/upx/upx/releases/download/v4.2.2/upx-4.2.2-amd64_linux.tar.xz"
+          $url = "https://github.com/upx/upx/releases/download/v4.2.2/upx-4.2.2-amd64_linux.tar.xz"
         } elseif ("${{ runner.os }}" -eq "macOS") {
-          echo "::set-output name=build::yes"
-          echo "::set-output name=url::https://github.com/upx/upx/releases/download/v4.2.2/upx-4.2.2-src.tar.xz"
+          $build = "yes"
+          $url = "https://github.com/upx/upx/releases/download/v4.2.2/upx-4.2.2-src.tar.xz"
         }
+
+        Write-Output "URL=$url" | Out-File -FilePath $env:GITHUB_ENV -Append
+        Write-Output "BUILD=$build" | Out-File -FilePath $env:GITHUB_ENV -Append
       shell: pwsh
 
     - name: Download and prepare UPX
@@ -102,7 +104,7 @@ jobs:
     - name: Set UPX directory path
       id: upx_dir
       run: |
-        echo "::set-output name=path::$(pwd)/upx-dir"
+        echo "UPX_PATH=$(pwd)/upx-dir" >> $GITHUB_ENV
       shell: bash
 
     - name: Install HoloPatcher dependencies
@@ -225,7 +227,7 @@ jobs:
       - name: Download all artifacts
         uses: actions/download-artifact@v4
         with:
-          path: all_pytest_reports
+          path: $GITHUB_WORKSPACE/all_pytest_reports
           pattern: pytest_report_*
 
       - name: Extract and update README with custom test status badges
@@ -253,7 +255,7 @@ jobs:
           New-Item -ItemType Directory -Force -Path $extractedReportsPath
 
           New-Item -ItemType Directory -Force -Path "./all_pytest_reports" -ErrorAction SilentlyContinue
-          Get-ChildItem "./all_pytest_reports" -Filter *.zip | ForEach-Object {
+          Get-ChildItem "./all_pytest_reports" -Recurse -Filter *.zip | ForEach-Object {
             Write-Output "Extracting $_.FullName to $extractedReportsPath..."
             Expand-Archive -Path $_.FullName -DestinationPath $(Join-Path -Path $extractedReportsPath -ChildPath $_.BaseName) -Force
           }
