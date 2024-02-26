@@ -85,14 +85,14 @@ foreach ($OS in $OS_NAMES) {
             $failedTests = $testResults[$key]['Failed']
             $DetailsURL = $testResults[$key]['DetailsURL']
             # Encode the label to replace spaces with underscores and URI-encode other special characters
-            $encodedKey = [System.Web.HttpUtility]::UrlEncode($key).Replace('+', '_')
+            $encodedKey = [System.Web.HttpUtility]::UrlEncode($key.Replace(' ', '_').Replace('-', '--'))
             $BadgeURLPassed = "https://img.shields.io/badge/${encodedKey}_Passed-${passedTests}-brightgreen"
             $BadgeURLFailed = "https://img.shields.io/badge/${encodedKey}_Failed-${failedTests}-red"
             $BadgeMarkdown = "[![$key-Passing]($BadgeURLPassed)]($DetailsURL) [![$key-Failing]($BadgeURLFailed)]($DetailsURL)"
 
         } else {
             Write-Host "No test results for $key, must have failed, generating 'Build Failed' badge..."
-            $encodedKey = [System.Web.HttpUtility]::UrlEncode($key).Replace('+', '_')
+            $encodedKey = [System.Web.HttpUtility]::UrlEncode($key.Replace(' ', '_').Replace('-', '--'))
             $BadgeURLBuildFailed = "https://img.shields.io/badge/${encodedKey}_Build_Failed-lightgrey"
             $DetailsURL = "https://github.com/$repository_owner/$repository_name/blob/$commitSHA/$testsResultsPath/$key-Build_Failed.xml"
             $BadgeMarkdown = "[![$key-Build_Failed]($BadgeURLBuildFailed)]($DetailsURL)"
