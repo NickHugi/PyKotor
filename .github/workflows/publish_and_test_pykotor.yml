@@ -106,7 +106,9 @@ jobs:
           pytest_report.xml
 
   update-readme:
-    needs: build  # Assumes 'build' is the job id of the matrix job
+    needs: build  # do not start this job until all 'build' jobs complete
+    # always run regardless of whether any builds errored or not.
+    if: always()
     runs-on: ubuntu-latest  # Or any other suitable runner
     steps:
       - name: Checkout code
