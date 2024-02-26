@@ -75,29 +75,26 @@ jobs:
       if: runner.os != 'macOS'
       run: |        
         $ext = "${{ runner.os }}" -eq "Windows" ? "zip" : "tar.xz"
-        $stripComponents = "${{ runner.os }}" -eq "Windows" ? "" : "--strip-components=1"
-  
+        $outputPath = "upx-dir"
         $url = "${{ steps.upx_setup.outputs.url }}"
-        $outputPath = "upx.$ext"
-        
+        $archiveName = "upx.$ext"
+
         # Use Invoke-WebRequest or curl depending on the OS
         if ("${{ runner.os }}" -eq "Windows") {
-          Invoke-WebRequest -Uri $url -OutFile $outputPath
+          Invoke-WebRequest -Uri $url -OutFile $archiveName
         } elseif ("${{ runner.os }}" -eq "Linux") {
-          curl -L $url -o $outputPath
+          curl -L $url -o $archiveName
         }
         
         New-Item -ItemType Directory -Force -Path "upx-dir" -ErrorAction SilentlyContinue
         if ("${{ runner.os }}" -ne "macOS") {
           if ($ext -eq "zip") {
-            Expand-Archive -Path $outputPath -DestinationPath "upx-dir"
-          } elseif ($stripComponents) {
-            tar -xvf $outputPath -C "upx-dir" $stripComponents
+            Expand-Archive -Path $archiveName -DestinationPath "upx-dir"
           } else {
-            tar -xvf $outputPath -C "upx-dir"
+            tar -xvf $archiveName -C "upx-dir"
           }
     
-          Remove-Item $outputPath # Clean up downloaded archive
+          Remove-Item $archiveName # Clean up downloaded archive
         }
       shell: pwsh
 
