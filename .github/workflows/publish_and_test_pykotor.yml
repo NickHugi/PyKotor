@@ -12,8 +12,8 @@ jobs:
       fail-fast: false  # Disable automatic cancellation of other jobs
       matrix:
         os: [windows-2019, ubuntu-20.04, macos-12]
-        python-version: ['3.7', '3.8', '3.9', '3.10', '3.11', '3.12', '3.13.0-alpha.4']
-        architecture: ['x86', 'x64']
+        python-version: ['3.8', '3.9']
+        architecture: ['x64']
         exclude:
           # unix x86 is definitely not supported.
           - os: ubuntu-20.04
@@ -32,67 +32,89 @@ jobs:
         python-version: ${{ matrix.python-version }}
         architecture: ${{ matrix.architecture }}
 
-    - name: Install python venv from install_python_venv.ps1
+    - name: Setup python venvs
       run: |  # create the venv early to work around an issue with the matrix runners' concurrency
         python -m venv .venv_${{ matrix.os }}_${{ matrix.python-version }}_${{ matrix.architecture }}
-        Set-PSDebug -Trace 2
-        ./install_python_venv.ps1 -noprompt -venv_name .venv_${{ matrix.os }}_${{ matrix.python-version }}_${{ matrix.architecture }}
+        python -m venv .venv_holopatcher_${{ matrix.os }}_${{ matrix.python-version }}_${{ matrix.architecture }}
+        python -m venv .venv_toolset_${{ matrix.os }}_${{ matrix.python-version }}_${{ matrix.architecture }}
+        python -m venv .venv_guiduplicator_${{ matrix.os }}_${{ matrix.python-version }}_${{ matrix.architecture }}
+        python -m venv .venv_kotordiff_${{ matrix.os }}_${{ matrix.python-version }}_${{ matrix.architecture }}
+        python -m venv .venv_batchpatcher_${{ matrix.os }}_${{ matrix.python-version }}_${{ matrix.architecture }}
       shell: pwsh
 
     - name: Install HoloPatcher dependencies
       run: |
-        ./compile/deps_holopatcher.ps1 -noprompt -venv_name .venv_${{ matrix.os }}_${{ matrix.python-version }}_${{ matrix.architecture }}
+        ./install_python_venv.ps1 -noprompt -venv_name .venv_holopatcher_${{ matrix.os }}_${{ matrix.python-version }}_${{ matrix.architecture }}
+        pip install "pyinstaller==5.4" --prefer-binary
+        ./compile/deps_holopatcher.ps1 -noprompt -venv_name .venv_holopatcher_${{ matrix.os }}_${{ matrix.python-version }}_${{ matrix.architecture }}
       shell: pwsh
       continue-on-error: true
     
     - name: Compile HoloPatcher
       run: |
-        ./compile/compile_holopatcher.ps1 -noprompt -venv_name .venv_${{ matrix.os }}_${{ matrix.python-version }}_${{ matrix.architecture }}
+        ./compile/compile_holopatcher.ps1 -noprompt -venv_name .venv_holopatcher_${{ matrix.os }}_${{ matrix.python-version }}_${{ matrix.architecture }}
       shell: pwsh
       continue-on-error: true
 
     - name: Install Holocron Toolset dependencies
       run: |
-        ./compile/deps_toolset.ps1 -noprompt -venv_name .venv_${{ matrix.os }}_${{ matrix.python-version }}_${{ matrix.architecture }}
+        ./install_python_venv.ps1 -noprompt -venv_name .venv_toolset_${{ matrix.os }}_${{ matrix.python-version }}_${{ matrix.architecture }}
+        pip install "pyinstaller==5.4" --prefer-binary
+        ./compile/deps_toolset.ps1 -noprompt -venv_name .venv_toolset_${{ matrix.os }}_${{ matrix.python-version }}_${{ matrix.architecture }}
       shell: pwsh
       continue-on-error: true
 
     - name: Compile Holocron Toolset
       run: |
-        ./compile/compile_toolset.ps1 -noprompt -venv_name .venv_${{ matrix.os }}_${{ matrix.python-version }}_${{ matrix.architecture }}
+        ./compile/compile_toolset.ps1 -noprompt -venv_name .venv_toolset_${{ matrix.os }}_${{ matrix.python-version }}_${{ matrix.architecture }}
       shell: pwsh
       continue-on-error: true
 
     - name: Install BatchPatcher dependencies
       run: |
-        ./compile/deps_batchpatcher.ps1 -noprompt -venv_name .venv_${{ matrix.os }}_${{ matrix.python-version }}_${{ matrix.architecture }}
+        ./install_python_venv.ps1 -noprompt -venv_name .venv_batchpatcher_${{ matrix.os }}_${{ matrix.python-version }}_${{ matrix.architecture }}
+        pip install "pyinstaller==5.4" --prefer-binary
+        ./compile/deps_batchpatcher.ps1 -noprompt -venv_name .venv_batchpatcher_${{ matrix.os }}_${{ matrix.python-version }}_${{ matrix.architecture }}
       shell: pwsh
       continue-on-error: true
 
     - name: Compile BatchPatcher
       run: |
-        ./compile/compile_batchpatcher.ps1 -noprompt -venv_name .venv_${{ matrix.os }}_${{ matrix.python-version }}_${{ matrix.architecture }}
+        ./compile/compile_batchpatcher.ps1 -noprompt -venv_name .venv_batchpatcher_${{ matrix.os }}_${{ matrix.python-version }}_${{ matrix.architecture }}
       shell: pwsh
       continue-on-error: true
 
     - name: Compile KotorDiff
       run: |
-        ./compile/compile_kotordiff.ps1 -noprompt -venv_name .venv_${{ matrix.os }}_${{ matrix.python-version }}_${{ matrix.architecture }}
+        ./install_python_venv.ps1 -noprompt -venv_name .venv_kotordiff_${{ matrix.os }}_${{ matrix.python-version }}_${{ matrix.architecture }}
+        pip install "pyinstaller==5.4" --prefer-binary
+        pip install -r Tools/KotorDiff/requirements.txt --prefer-binary
+        ./compile/compile_kotordiff.ps1 -noprompt -venv_name .venv_kotordiff_${{ matrix.os }}_${{ matrix.python-version }}_${{ matrix.architecture }}
       shell: pwsh
       continue-on-error: true
 
     - name: Compile GUIDuplicator
       run: |
-        ./compile/compile_gui_duplicator.ps1 -noprompt -venv_name .venv_${{ matrix.os }}_${{ matrix.python-version }}_${{ matrix.architecture }}
+        ./install_python_venv.ps1 -noprompt -venv_name .venv_guiduplicator_${{ matrix.os }}_${{ matrix.python-version }}_${{ matrix.architecture }}
+        pip install "pyinstaller==5.4" --prefer-binary
+        pip install -r Tools/GuiDuplicator/requirements.txt --prefer-binary
+        ./compile/compile_gui_duplicator.ps1 -noprompt -venv_name .venv_guiduplicator_${{ matrix.os }}_${{ matrix.python-version }}_${{ matrix.architecture }}
       shell: pwsh
       continue-on-error: true
 
     - name: Upload compiled binaries
       uses: actions/upload-artifact@v4
-      if: always()  # This ensures the step runs regardless of previous step's success or failure
+      if: always()
       with:
         name: publish_${{ matrix.os }}_${{ matrix.python-version }}_${{ matrix.architecture }}
         path: ./dist/**
+
+    - name: Install MinGW with GCC >= 8.4 on Windows
+      if: runner.os == 'Windows' && matrix.python-version == '3.13.0-alpha.4'
+      run: |
+        choco install mingw --version=8.4.0 -y
+        echo "C:\tools\mingw64\bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+      shell: pwsh
 
     - name: Install Meson
       if: matrix.python-version == '3.13.0-alpha.4' && (runner.os == 'Linux' || runner.os == 'macOS')
@@ -179,7 +201,7 @@ jobs:
           }
 
           # Initialize a hashtable to store test results
-          $testResults = @{}# Inside the 'update-readme' job
+          $testResults = @{}
 
           # Process each extracted report
           Get-ChildItem $extractedReportsPath -Recurse -Filter pytest_report.xml | ForEach-Object {
@@ -204,9 +226,33 @@ jobs:
           # Read the current README content
           $ReadmePath = "./README.md"
           $ReadmeContent = Get-Content $ReadmePath -Raw
+
+          # Initialize badge content variables
+          $WindowsBadgeContent = ""
+          $LinuxBadgeContent = ""
+          $MacOSBadgeContent = ""
+
+          # Define placeholders
+          $windowsBadgesStartPlaceholder = "<!-- WINDOWS-BADGES-START -->"
+          $windowsBadgesEndPlaceholder = "<!-- WINDOWS-BADGES-END -->"
+          $linuxBadgesStartPlaceholder = "<!-- LINUX-BADGES-START -->"
+          $linuxBadgesEndPlaceholder = "<!-- LINUX-BADGES-END -->"
+          $macosBadgesStartPlaceholder = "<!-- MACOS-BADGES-START -->"
+          $macosBadgesEndPlaceholder = "<!-- MACOS-BADGES-END -->"
           
-          # Initialize the badge content for each OS
-          $WindowsBadgeContent = $LinuxBadgeContent = $MacOSBadgeContent = ""
+          # Function to replace the content between placeholders
+          function Replace-BadgeContent {
+            param (
+              [string]$readmeContent,
+              [string]$badgeContent,
+              [string]$startPlaceholder,
+              [string]$endPlaceholder
+            )
+            
+            $pattern = [regex]::Escape($startPlaceholder) + "(.|\n)*?" + [regex]::Escape($endPlaceholder)
+            $replacement = $startPlaceholder + "`n" + $badgeContent + "`n" + $endPlaceholder
+            return $readmeContent -replace $pattern, $replacement
+          }
 
           foreach ($OS in $OS_NAMES) {
             foreach ($PYTHON_VERSION in $PYTHON_VERSIONS) {
@@ -235,9 +281,9 @@ jobs:
           }
 
           # Replace the old badges with the new badge content in the README content
-          $ReadmeContent = $ReadmeContent -replace "(?<=<!-- WINDOWS-BADGES-START -->).+?(?=<!-- WINDOWS-BADGES-END -->)", $WindowsBadgeContent.TrimEnd()
-          $ReadmeContent = $ReadmeContent -replace "(?<=<!-- LINUX-BADGES-START -->).+?(?=<!-- LINUX-BADGES-END -->)", $LinuxBadgeContent.TrimEnd()
-          $ReadmeContent = $ReadmeContent -replace "(?<=<!-- MACOS-BADGES-START -->).+?(?=<!-- MACOS-BADGES-END -->)", $MacOSBadgeContent.TrimEnd()
+          $ReadmeContent = Replace-BadgeContent -readmeContent $ReadmeContent -badgeContent $WindowsBadgeContent.TrimEnd() -startPlaceholder $windowsBadgesStartPlaceholder -endPlaceholder $windowsBadgesEndPlaceholder
+          $ReadmeContent = Replace-BadgeContent -readmeContent $ReadmeContent -badgeContent $LinuxBadgeContent.TrimEnd() -startPlaceholder $linuxBadgesStartPlaceholder -endPlaceholder $linuxBadgesEndPlaceholder
+          $ReadmeContent = Replace-BadgeContent -readmeContent $ReadmeContent -badgeContent $MacOSBadgeContent.TrimEnd() -startPlaceholder $macosBadgesStartPlaceholder -endPlaceholder $macosBadgesEndPlaceholder
 
           # Write the updated README content to the file
           Set-Content -Path $ReadmePath -Value $ReadmeContent
