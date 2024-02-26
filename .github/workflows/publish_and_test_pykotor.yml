@@ -251,7 +251,7 @@ jobs:
           $branchName = "${{ github.ref_name }}"
           $repository_owner = "${{ github.repository_owner }}"
           $repository_name = "${{ github.repository }}"
-          $uniqueTempBranchName = "temp-branch-${{ github.run_id }}"
+          $commitSHA = "${{ github.sha }}"
 
           $testsResultsPath = "tests/results"
           Remove-Item -Path $testsResultsPath -Recurse -Force -ErrorAction SilentlyContinue
@@ -266,14 +266,20 @@ jobs:
 
           New-Item -ItemType Directory -Force -Path "./all_pytest_reports" -ErrorAction SilentlyContinue
           Get-ChildItem "./all_pytest_reports" -Filter *.zip | ForEach-Object {
+            Write-Output "Extracting $_.FullName to $extractedReportsPath..."
             Expand-Archive -Path $_.FullName -DestinationPath $(Join-Path -Path $extractedReportsPath -ChildPath $_.BaseName) -Force
           }
           Remove-Item -Path "./all_pytest_reports" -Recurse -Force -ErrorAction SilentlyContinue
 
-          git fetch
-          git checkout -b $uniqueTempBranchName
-          git add -A
-          git commit -am "Upload test results"
+          git fetch origin $branchName
+          # Checking if there are newer commits on the remote branch than the commit that triggered the workflow
+          if git log ${{ github.sha }}..origin/$branchName --oneline | grep -q '.'; then
+            echo "Newer commits are present on the remote branch, cannot continue"
+            exit 1
+          fi
+          git add $testsResultsPath
+          git commit -m "Add test results"
+          git push --force-with-lease origin HEAD:${{ github.ref_name }}
           $commitSHA = git rev-parse HEAD
 
           $testResults = @{}
@@ -367,9 +373,12 @@ jobs:
           $ReadmeContent = Replace-BadgeContent -readmeContent $ReadmeContent -badgeContent $MacOSBadgeContent.TrimEnd() -startPlaceholder $macosBadgesStartPlaceholder -endPlaceholder $macosBadgesEndPlaceholder
 
           Set-Content -Path $ReadmePath -Value $ReadmeContent
-
-          git commit -am "Update README with custom test status badges"
-          git checkout $branchName
-          git merge --no-ff $uniqueTempBranchName
-          git branch -d $uniqueTempBranchName
-          git push origin $branchName
+          git fetch origin $branchName
+          # Checking if there are newer commits on the remote branch than the commit that triggered the workflow
+          if git log $commitSHA..origin/$branchName --oneline | grep -q '.'; then
+            echo "Newer commits are present on the remote branch, cannot continue"
+            exit 1
+          fi
+          git add $testsResultsPath
+          git commit -m "Add test results"
+          git push --force-with-lease origin HEAD:${{ github.ref_name }}
