@@ -335,7 +335,7 @@ function Get-Python-Version {
     }
 }
 
-$minVersion = [Version]"3.8.0"
+$minVersion = [Version]"3.7.0"
 $maxVersion = [Version]"3.13.0"
 $recommendedVersion = [Version]"3.8.10"
 $lessThanVersion = [Version]"3.9"
@@ -362,7 +362,7 @@ function Initialize-Python {
     }
 }
 
-$validPythonVersions = @("3.8", "3.9", "3.10", "3.11", "3.12", "3.13", "3.14")
+$validPythonVersions = @("3.7", "3.8", "3.9", "3.10", "3.11", "3.12", "3.13", "3.14")
 
 function Get-PythonPaths {
     Param (
