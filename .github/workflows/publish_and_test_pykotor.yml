@@ -187,12 +187,16 @@ jobs:
           # Checkout to a unique temporary branch to prepare the new commit
           git checkout -b $uniqueTempBranchName
 
+          # Ensure the tests/results directory exists
+          $testsResultsPath = "tests/results"
+          New-Item -ItemType Directory -Force -Path $testsResultsPath
+
           $OS_NAMES = @("windows-2019", "ubuntu-20.04", "macos-12")
           $PYTHON_VERSIONS = @('3.7', '3.8', '3.9', '3.10', '3.11', '3.12', '3.13.0-alpha.4')
           $ARCHITECTURES = @('x86', 'x64')
           
           # Ensure the extracted-reports directory is created
-          $extractedReportsPath = "extracted-reports"
+          $extractedReportsPath = "tests/results"
           New-Item -ItemType Directory -Force -Path $extractedReportsPath
 
           # Extract all downloaded artifacts
@@ -200,27 +204,40 @@ jobs:
             Expand-Archive -Path $_.FullName -DestinationPath $extractedReportsPath -Force
           }
 
+          # Commit the test results
+          git commit -am "Upload test results" || Write-Host "No changes to commit."
+
+          # Get the SHA-1 hash of the commit where test results were uploaded
+          $commitSHA = git rev-parse HEAD
+
           # Initialize a hashtable to store test results
           $testResults = @{}
 
           # Process each extracted report
           Get-ChildItem $extractedReportsPath -Recurse -Filter pytest_report.xml | ForEach-Object {
-              [xml]$TestResultsXml = Get-Content $_.FullName
-              $totalTests = [int]$TestResultsXml.testsuite.tests
-              $failedTests = [int]$TestResultsXml.testsuite.failures
-              $errors = [int]$TestResultsXml.testsuite.errors
-              # Calculate passed tests by subtracting failures and errors from total
-              $passedTests = $totalTests - $failedTests - $errors
+            $filePath = $_.FullName  # Get the full file path of the current file
+            [xml]$TestResultsXml = Get-Content $filePath
+            $totalTests = [int]$TestResultsXml.testsuite.tests
+            $failedTests = [int]$TestResultsXml.testsuite.failures
+            $errors = [int]$TestResultsXml.testsuite.errors
 
-              # Extract key from artifact name, which includes OS, Python version, and architecture
-              $key = $_.Directory.Name.Replace('pytest_report_', '').Replace('_', '-')
+            # Calculate passed tests by subtracting failures and errors from total
+            $passedTests = $totalTests - $failedTests - $errors
 
-              # Store results in hashtable with the calculated number of passed and failed tests
-              $testResults[$key] = @{
-                Passed = $passedTests
-                Failed = $failedTests + $errors # Considering errors as failures for badge display
-                Total  = $totalTests
-              }
+            # Update the DetailsURL to point to the specific result file
+            $resultFilePathHtml = $resultFilePath -replace '\.xml$', '.html'
+            $DetailsURL = "https://github.com/${{ github.repository_owner }}/${{ github.repository }}/blob/$commitSHA/$resultFilePathHtml"
+
+            # Extract key from artifact name, which includes OS, Python version, and architecture
+            $key = $_.Directory.Name.Replace('pytest_report_', '').Replace('_', '-')
+
+            # Store results in hashtable with the calculated number of passed and failed tests
+            $testResults[$key] = @{
+              Passed = $passedTests
+              Failed = $failedTests + $errors  # Considering errors as failures for badge display
+              Total  = $totalTests
+              DetailsURL = $DetailsURL
+            }
           }
 
           # Read the current README content
@@ -261,13 +278,13 @@ jobs:
                 if ($testResults.ContainsKey($key)) {
                   $passedTests = $testResults[$key]['Passed']
                   $failedTests = $testResults[$key]['Failed']
-                  $BadgeURLPassed = "https://img.shields.io/badge/$key-Passing-$passedTests-brightgreen"
-                  $BadgeURLFailed = "https://img.shields.io/badge/$key-Failing-$failedTests-red"
-                  $BadgeMarkdown = "![$key-Passing]($BadgeURLPassed) ![$key-Failing]($BadgeURLFailed)"
+                  $DetailsURL = $testResults[$key]['DetailsURL']
+                  $BadgeMarkdown = "[![$key-Passing]($BadgeURLPassed)]($DetailsURL) [![$key-Failing]($BadgeURLFailed)]($DetailsURL)"
                 } else {
                   Write-Host "No test results for $key, must have failed, generating 'Build Failed' badge..."
                   $BadgeURLBuildFailed = "https://img.shields.io/badge/$key-Build_Failed-lightgrey"
-                  $BadgeMarkdown = "![$key-Build_Failed]($BadgeURLBuildFailed)"
+                  $DetailsURL = "https://github.com/yourusername/yourrepository/blob/main/$testsResultsPath/$key-Build_Failed.xml" # Replace with your actual repository details
+                  $BadgeMarkdown = "[![$key-Build_Failed]($BadgeURLBuildFailed)]($DetailsURL)"
                 }
 
                 # Append the new badge markdown to the corresponding OS badge content
