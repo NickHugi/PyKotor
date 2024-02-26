@@ -84,19 +84,25 @@ foreach ($OS in $OS_NAMES) {
             $passedTests = $testResults[$key]['Passed']
             $failedTests = $testResults[$key]['Failed']
             $DetailsURL = $testResults[$key]['DetailsURL']
+            # Encode the label to replace spaces with underscores and URI-encode other special characters
+            $encodedKey = [System.Web.HttpUtility]::UrlEncode($key).Replace('+', '_')
+            $BadgeURLPassed = "https://img.shields.io/badge/${encodedKey}_Passed-${passedTests}-brightgreen"
+            $BadgeURLFailed = "https://img.shields.io/badge/${encodedKey}_Failed-${failedTests}-red"
             $BadgeMarkdown = "[![$key-Passing]($BadgeURLPassed)]($DetailsURL) [![$key-Failing]($BadgeURLFailed)]($DetailsURL)"
+
         } else {
             Write-Host "No test results for $key, must have failed, generating 'Build Failed' badge..."
-            $BadgeURLBuildFailed = "https://img.shields.io/badge/$key-Build_Failed-lightgrey"
+            $encodedKey = [System.Web.HttpUtility]::UrlEncode($key).Replace('+', '_')
+            $BadgeURLBuildFailed = "https://img.shields.io/badge/${encodedKey}_Build_Failed-lightgrey"
             $DetailsURL = "https://github.com/$repository_owner/$repository_name/blob/$commitSHA/$testsResultsPath/$key-Build_Failed.xml"
             $BadgeMarkdown = "[![$key-Build_Failed]($BadgeURLBuildFailed)]($DetailsURL)"
         }
 
-        switch ($OS) {
-            "windows-2019" { $WindowsBadgeContent += $BadgeMarkdown + " " }
-            "ubuntu-20.04" { $LinuxBadgeContent += $BadgeMarkdown + " " }
-            "macos-12" { $MacOSBadgeContent += $BadgeMarkdown + " " }
-        }
+            switch ($OS) {
+                "windows-2019" { $WindowsBadgeContent += $BadgeMarkdown + " " }
+                "ubuntu-20.04" { $LinuxBadgeContent += $BadgeMarkdown + " " }
+                "macos-12" { $MacOSBadgeContent += $BadgeMarkdown + " " }
+            }
         }
     }
 }
