@@ -86,7 +86,7 @@ jobs:
     - name: Install development packages
       run: |
         ./install_python_venv.ps1 -noprompt -venv_name .venv_${{ matrix.os }}_${{ matrix.python-version }}
-        pip install -r requirements-dev.txt
+        pip install -r requirements-dev.txt --prefer-binary
       shell: pwsh
 
     - name: Run all unittests/pytests
