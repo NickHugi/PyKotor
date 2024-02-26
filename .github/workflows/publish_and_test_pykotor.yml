@@ -45,17 +45,17 @@ jobs:
     - name: Set UPX download URL
       id: upx_setup
       run: |
-        if ("${{ runner.os }}" == "Windows") {
+        if (${{ runner.os }} == "Windows") {
           echo "::set-output name=build::no"
           if (${{ matrix.architecture }} == "x86") {
             echo "::set-output name=url::https://github.com/upx/upx/releases/download/v4.2.2/upx-4.2.2-win32.zip"
           } else {
             echo "::set-output name=url::https://github.com/upx/upx/releases/download/v4.2.2/upx-4.2.2-win64.zip"
           }
-        } elseif ("${{ runner.os }}" == "Linux") {
+        } elseif (${{ runner.os }} == "Linux") {
           echo "::set-output name=build::no"
           echo "::set-output name=url::https://github.com/upx/upx/releases/download/v4.2.2/upx-4.2.2-amd64_linux.tar.xz"
-        } elseif ("${{ runner.os }}" == "macOS") {
+        } elseif (${{ runner.os }} == "macOS") {
           echo "::set-output name=build::no"
           echo "::set-output name=url::https://github.com/upx/upx/releases/download/v3.96/upx-3.96-amd64_macosx.tar.xz"
         }
@@ -70,7 +70,7 @@ jobs:
 
     - name: Download and prepare UPX
       run: |
-        if ("${{ runner.os }}" == "Windows") {
+        if (${{ runner.os }} == "Windows") {
           $ext = "zip"
           $stripComponents = ""
         } else {
