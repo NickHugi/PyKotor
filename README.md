@@ -1,5 +1,5 @@
 <!-- WINDOWS-BADGES-START -->
-[![windows-2019-3.8-x64-Passing](https://img.shields.io/badge/windows--2019--3.8--x64_Passed-631-brightgreen)](https://github.com/th3w1zard1/PyKotor/blob/2803e7d11eadb835d10f7ebae90625f1ce273f04/C:\GitHub\PyKotor\tests\results\pytest_report_windows-2019_3.8_x64\pytest_report.html) [![windows-2019-3.8-x64-Failing](https://img.shields.io/badge/windows--2019--3.8--x64_Failed-9-red)](https://github.com/th3w1zard1/PyKotor/blob/2803e7d11eadb835d10f7ebae90625f1ce273f04/C:\GitHub\PyKotor\tests\results\pytest_report_windows-2019_3.8_x64\pytest_report.html)
+
 <!-- WINDOWS-BADGES-END -->
 
 <!-- LINUX-BADGES-START -->
@@ -9,6 +9,7 @@
 <!-- MACOS-BADGES-START -->
 
 <!-- MACOS-BADGES-END -->
+
 PyKotor
 =======
 A comprehensive Python library that can read and modify most file formats used by the game [Knights of the Old Republic](https://en.wikipedia.org/wiki/Star_Wars:_Knights_of_the_Old_Republic_(video_game)) and its [sequel](https://en.wikipedia.org/wiki/Star_Wars_Knights_of_the_Old_Republic_II:_The_Sith_Lords).
