@@ -80,6 +80,10 @@ jobs:
         $url = "${{ steps.upx_setup.outputs.url }}"
         $outputPath = "upx.$ext"
         Invoke-WebRequest -Uri $url -OutFile $outputPath
+        
+        # Ensure the upx-dir directory exists
+        New-Item -ItemType Directory -Force -Path "upx-dir" -ErrorAction SilentlyContinue
+    
         if ($ext.ToLower() -eq "zip") {
           Expand-Archive -Path $outputPath -DestinationPath "upx-dir"
         } elseif ($stripComponents) {
@@ -87,7 +91,9 @@ jobs:
         } else {
           tar -xf $outputPath -C "upx-dir"
         }
+        Get-Item $outputPath
       shell: pwsh
+    
 
     - name: Build UPX (macOS)
       if: runner.os == 'macOS'
