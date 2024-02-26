@@ -8,6 +8,7 @@ git fetch
 git checkout -b $uniqueTempBranchName
 
 $testsResultsPath = "tests/results"
+Remove-Item -Path $testsResultsPath -Recurse -Force
 New-Item -ItemType Directory -Force -Path $testsResultsPath
 
 $OS_NAMES = @("windows-2019", "ubuntu-20.04", "macos-12")
@@ -30,9 +31,9 @@ $testResults = @{}
 
 Get-ChildItem $extractedReportsPath -Recurse -Filter pytest_report.xml | ForEach-Object {
     [xml]$TestResultsXml = Get-Content $_.FullName
-    $totalTests = [int]$TestResultsXml.testsuite.tests
-    $failedTests = [int]$TestResultsXml.testsuite.failures
-    $errors = [int]$TestResultsXml.testsuite.errors
+    $totalTests = [int]$TestResultsXml.testsuites.testsuite.tests
+    $failedTests = [int]$TestResultsXml.testsuites.testsuite.failures
+    $errors = [int]$TestResultsXml.testsuites.testsuite.errors
 
     $passedTests = $totalTests - $failedTests - $errors
 
