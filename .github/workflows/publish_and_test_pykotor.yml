@@ -288,8 +288,8 @@ jobs:
           New-Item -ItemType Directory -Force -Path $artifact_reports_dir -ErrorAction SilentlyContinue
           Dir -Recurse $artifact_reports_dir | Get-Childitem
           Get-ChildItem $artifact_reports_dir -Recurse -Filter *.zip | ForEach-Object {
-            Write-Output "Extracting $_.FullName to $extractedReportsPath..."
-            Expand-Archive -Path $_.FullName -DestinationPath $(Join-Path -Path $extractedReportsPath -ChildPath $_.BaseName) -Force
+            Write-Output "Extracting $_.FullName to $testsResultsPath..."
+            Expand-Archive -Path $_.FullName -DestinationPath $(Join-Path -Path $testsResultsPath -ChildPath $_.BaseName) -Force
           }
           Remove-Item -Path $artifact_reports_dir -Recurse -Force -ErrorAction SilentlyContinue
 
@@ -305,7 +305,7 @@ jobs:
 
           $testResults = @{}
 
-          Get-ChildItem $extractedReportsPath -Recurse -Filter pytest_report.xml | ForEach-Object {
+          Get-ChildItem $testsResultsPath -Recurse -Filter pytest_report.xml | ForEach-Object {
             [xml]$TestResultsXml = Get-Content $_.FullName
             $totalTests = [int]$TestResultsXml.testsuites.testsuite.tests
             $failedTests = [int]$TestResultsXml.testsuites.testsuite.failures
