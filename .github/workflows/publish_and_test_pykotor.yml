@@ -271,7 +271,7 @@ jobs:
           # Determine the branch that triggered the workflow
           $branchName = "${{ github.ref_name }}"
           $repository_owner = "${{ github.repository_owner }}"
-          $repository_name = "${{ github.repository }}"
+          $repository = "${{ github.repository }}"
           $commitSHA = "${{ github.sha }}"
 
           $testsResultsPath = "tests/results"
@@ -319,7 +319,7 @@ jobs:
             } else {
               $cleanRelHtmlFilePath = $relHtmlFilePath
             }
-            $DetailsURL = "https://github.com/$repository_owner/$repository_name/blob/$commitSHA/$cleanRelHtmlFilePath"
+            $DetailsURL = "https://github.com/$repository/blob/$commitSHA/$cleanRelHtmlFilePath"
             $key = $_.Directory.Name.Replace('pytest_report_', '').Replace('_', '-')
             Write-Host "KEY FOUND: '$key'"
 
@@ -379,7 +379,7 @@ jobs:
                     Write-Host "No test results for '$key', must have failed, generating 'Build Failed' badge..."
                     $encodedKey = [System.Web.HttpUtility]::UrlEncode($key.Replace(' ', '_').Replace('-', '--'))
                     $BadgeURLBuildFailed = "https://img.shields.io/badge/${encodedKey}_Build_Failed-lightgrey"
-                    $DetailsURL = "https://github.com/$repository_owner/$repository_name/actions/runs/${{ github.run_id }}"
+                    $DetailsURL = "https://github.com/$repository/actions/runs/${{ github.run_id }}"
                     $BadgeMarkdown = "[![$key-Build_Failed]($BadgeURLBuildFailed)]($DetailsURL)"
                 }
 
