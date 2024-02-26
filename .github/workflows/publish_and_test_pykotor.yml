@@ -66,9 +66,10 @@ jobs:
           $build = "yes"
           $url = "https://github.com/upx/upx/releases/download/v4.2.2/upx-4.2.2-src.tar.xz"
         }
-
-        Write-Output "URL=$url" | Out-File -FilePath $env:GITHUB_ENV -Append
-        Write-Output "BUILD=$build" | Out-File -FilePath $env:GITHUB_ENV -Append
+    
+        # Write to the GITHUB_OUTPUT environment file
+        Add-Content -Path $env:GITHUB_OUTPUT -Value "build=$build"
+        Add-Content -Path $env:GITHUB_OUTPUT -Value "url=$url"
       shell: pwsh
 
     - name: Download and prepare UPX
@@ -101,7 +102,7 @@ jobs:
     - name: Set UPX directory path
       id: upx_dir
       run: |
-        echo "UPX_PATH=$(pwd)/upx-dir" >> $GITHUB_ENV
+        echo "path=$(pwd)/upx-dir" >> $GITHUB_OUTPUT
       shell: bash
 
     - name: Install HoloPatcher dependencies
