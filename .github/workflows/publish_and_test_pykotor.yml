@@ -100,6 +100,7 @@ jobs:
         ./install_python_venv.ps1 -noprompt -venv_name .venv_${{ matrix.os }}_${{ matrix.python-version }}_${{ matrix.architecture }}
         python -m pip install numpy --only-binary :all: --upgrade
         python -m pip install meson --upgrade --prefer-binary
+      shell: pwsh
 
     - name: Install development packages
       run: |
@@ -176,71 +177,67 @@ jobs:
           Get-ChildItem "./all_pytest_reports" -Filter *.zip | ForEach-Object {
             Expand-Archive -Path $_.FullName -DestinationPath $extractedReportsPath -Force
           }
-          
+
           # Initialize a hashtable to store test results
-          $testResults = @{}
+          $testResults = @{}# Inside the 'update-readme' job
 
           # Process each extracted report
           Get-ChildItem $extractedReportsPath -Recurse -Filter pytest_report.xml | ForEach-Object {
-            [xml]$TestResultsXml = Get-Content $_.FullName
-            $totalTests = [int]$TestResultsXml.testsuite.tests
-            $failedTests = [int]$TestResultsXml.testsuite.failures
-            $errors = [int]$TestResultsXml.testsuite.errors
-            # Calculate passed tests by subtracting failures and errors from total
-            $passedTests = $totalTests - $failedTests - $errors
+              [xml]$TestResultsXml = Get-Content $_.FullName
+              $totalTests = [int]$TestResultsXml.testsuite.tests
+              $failedTests = [int]$TestResultsXml.testsuite.failures
+              $errors = [int]$TestResultsXml.testsuite.errors
+              # Calculate passed tests by subtracting failures and errors from total
+              $passedTests = $totalTests - $failedTests - $errors
 
-            # Assuming the use of file names or directory names to distinguish between test results
-            # Here we need a consistent approach to generate a key for each test result set
-            # This example assumes you're using directory names that reflect the matrix configuration
-            $key = $_.Directory.Name.Replace('-', '_')
+              # Extract key from artifact name, which includes OS, Python version, and architecture
+              $key = $_.Directory.Name.Replace('pytest_report_', '').Replace('_', '-')
 
-            # Store results in hashtable with the calculated number of passed and failed tests
-            $testResults[$key] = @{
-              Passed = $passedTests
-              Failed = $failedTests + $errors # Considering errors as failures for badge display
-              Total  = $totalTests
-            }
+              # Store results in hashtable with the calculated number of passed and failed tests
+              $testResults[$key] = @{
+                Passed = $passedTests
+                Failed = $failedTests + $errors # Considering errors as failures for badge display
+                Total  = $totalTests
+              }
           }
 
-          # Update README with test results
+          # Read the current README content
           $ReadmePath = "./README.md"
           $ReadmeContent = Get-Content $ReadmePath -Raw
+          
+          # Initialize the badge content for each OS
+          $WindowsBadgeContent = $LinuxBadgeContent = $MacOSBadgeContent = ""
+
           foreach ($OS in $OS_NAMES) {
             foreach ($PYTHON_VERSION in $PYTHON_VERSIONS) {
               foreach ($ARCH in $ARCHITECTURES) {
-                $key = "$($OS)_$($PYTHON_VERSION)_$($ARCH)"
+                $key = "$OS-$PYTHON_VERSION-$ARCH"
                 if ($testResults.ContainsKey($key)) {
                   $passedTests = $testResults[$key]['Passed']
                   $failedTests = $testResults[$key]['Failed']
-
-                  $BadgeURLPassed = "https://img.shields.io/badge/$($OS)_$($PYTHON_VERSION)_$($ARCH)_Passing-$passedTests-brightgreen"
-                  $BadgeURLFailed = "https://img.shields.io/badge/$($OS)_$($PYTHON_VERSION)_$($ARCH)_Failing-$failedTests-red"
+                  $BadgeURLPassed = "https://img.shields.io/badge/$key-Passing-$passedTests-brightgreen"
+                  $BadgeURLFailed = "https://img.shields.io/badge/$key-Failing-$failedTests-red"
+                  $BadgeMarkdown = "![$key-Passing]($BadgeURLPassed) ![$key-Failing]($BadgeURLFailed)"
                 } else {
                   Write-Host "No test results for $key, must have failed, generating 'Build Failed' badge..."
-
-                  # Generate a 'Build Failed' badge for this combination
-                  $BadgeURLBuildFailed = "https://img.shields.io/badge/$($OS)_$($PYTHON_VERSION)_$($ARCH)_Build_Failed-lightgrey"
+                  $BadgeURLBuildFailed = "https://img.shields.io/badge/$key-Build_Failed-lightgrey"
+                  $BadgeMarkdown = "![$key-Build_Failed]($BadgeURLBuildFailed)"
                 }
 
-                # Determine the badge markdown based on test results availability
-                $BadgeMarkdown = if ($testResults.ContainsKey($key)) {
-                  "![$($OS)_$($PYTHON_VERSION)_$($ARCH)_Passing]($BadgeURLPassed) ![$($OS)_$($PYTHON_VERSION)_$($ARCH)_Failing]($BadgeURLFailed)"
-                } else {
-                  "![$($OS)_$($PYTHON_VERSION)_$($ARCH)_Build_Failed]($BadgeURLBuildFailed)"
-                }
-          
-                # Regex to find existing badges for the same OS and Python version
-                $BadgeRegex = "!\[$($OS)_$($PYTHON_VERSION)_$($ARCH)_(Passing|Failing|Build_Failed)\].+?"
-          
-                if ($ReadmeContent -match $BadgeRegex) {
-                  $ReadmeContent = $Readreadmecontent -replace $BadgeRegex, $BadgeMarkdown
-                } else {
-                  # Prepend the new badges to the top of the README
-                  $ReadmeContent = $BadgeMarkdown + "`n`n" + $ReadmeContent
+                # Append the new badge markdown to the corresponding OS badge content
+                switch ($OS) {
+                  "windows-2019" { $WindowsBadgeContent += $BadgeMarkdown + " " }
+                  "ubuntu-20.04" { $LinuxBadgeContent += $BadgeMarkdown + " " }
+                  "macos-12" { $MacOSBadgeContent += $BadgeMarkdown + " " }
                 }
               }
             }
           }
+
+          # Replace the old badges with the new badge content in the README content
+          $ReadmeContent = $ReadmeContent -replace "(?<=<!-- WINDOWS-BADGES-START -->).+?(?=<!-- WINDOWS-BADGES-END -->)", $WindowsBadgeContent.TrimEnd()
+          $ReadmeContent = $ReadmeContent -replace "(?<=<!-- LINUX-BADGES-START -->).+?(?=<!-- LINUX-BADGES-END -->)", $LinuxBadgeContent.TrimEnd()
+          $ReadmeContent = $ReadmeContent -replace "(?<=<!-- MACOS-BADGES-START -->).+?(?=<!-- MACOS-BADGES-END -->)", $MacOSBadgeContent.TrimEnd()
 
           # Write the updated README content to the file
           Set-Content -Path $ReadmePath -Value $ReadmeContent

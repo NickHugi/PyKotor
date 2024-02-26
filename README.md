@@ -1,90 +1,14 @@
-![macos-12_3.13.0-alpha.4_x64_Build_Failed](https://img.shields.io/badge/macos-12_3.13.0-alpha.4_x64_Build_Failed-lightgrey)
+<!-- WINDOWS-BADGES-START -->
+<!-- WINDOWS-BADGES-END -->
 
-![macos-12_3.13.0-alpha.4_x86_Build_Failed](https://img.shields.io/badge/macos-12_3.13.0-alpha.4_x86_Build_Failed-lightgrey)
+<!-- LINUX-BADGES-START -->
+<!-- LINUX-BADGES-END -->
 
-![macos-12_3.12_x64_Build_Failed](https://img.shields.io/badge/macos-12_3.12_x64_Build_Failed-lightgrey)
-
-![macos-12_3.12_x86_Build_Failed](https://img.shields.io/badge/macos-12_3.12_x86_Build_Failed-lightgrey)
-
-![macos-12_3.11_x64_Build_Failed](https://img.shields.io/badge/macos-12_3.11_x64_Build_Failed-lightgrey)
-
-![macos-12_3.11_x86_Build_Failed](https://img.shields.io/badge/macos-12_3.11_x86_Build_Failed-lightgrey)
-
-![macos-12_3.10_x64_Build_Failed](https://img.shields.io/badge/macos-12_3.10_x64_Build_Failed-lightgrey)
-
-![macos-12_3.10_x86_Build_Failed](https://img.shields.io/badge/macos-12_3.10_x86_Build_Failed-lightgrey)
-
-![macos-12_3.9_x64_Build_Failed](https://img.shields.io/badge/macos-12_3.9_x64_Build_Failed-lightgrey)
-
-![macos-12_3.9_x86_Build_Failed](https://img.shields.io/badge/macos-12_3.9_x86_Build_Failed-lightgrey)
-
-![macos-12_3.8_x64_Build_Failed](https://img.shields.io/badge/macos-12_3.8_x64_Build_Failed-lightgrey)
-
-![macos-12_3.8_x86_Build_Failed](https://img.shields.io/badge/macos-12_3.8_x86_Build_Failed-lightgrey)
-
-![macos-12_3.7_x64_Build_Failed](https://img.shields.io/badge/macos-12_3.7_x64_Build_Failed-lightgrey)
-
-![macos-12_3.7_x86_Build_Failed](https://img.shields.io/badge/macos-12_3.7_x86_Build_Failed-lightgrey)
-
-![ubuntu-20.04_3.13.0-alpha.4_x64_Build_Failed](https://img.shields.io/badge/ubuntu-20.04_3.13.0-alpha.4_x64_Build_Failed-lightgrey)
-
-![ubuntu-20.04_3.13.0-alpha.4_x86_Build_Failed](https://img.shields.io/badge/ubuntu-20.04_3.13.0-alpha.4_x86_Build_Failed-lightgrey)
-
-![ubuntu-20.04_3.12_x64_Build_Failed](https://img.shields.io/badge/ubuntu-20.04_3.12_x64_Build_Failed-lightgrey)
-
-![ubuntu-20.04_3.12_x86_Build_Failed](https://img.shields.io/badge/ubuntu-20.04_3.12_x86_Build_Failed-lightgrey)
-
-![ubuntu-20.04_3.11_x64_Build_Failed](https://img.shields.io/badge/ubuntu-20.04_3.11_x64_Build_Failed-lightgrey)
-
-![ubuntu-20.04_3.11_x86_Build_Failed](https://img.shields.io/badge/ubuntu-20.04_3.11_x86_Build_Failed-lightgrey)
-
-![ubuntu-20.04_3.10_x64_Build_Failed](https://img.shields.io/badge/ubuntu-20.04_3.10_x64_Build_Failed-lightgrey)
-
-![ubuntu-20.04_3.10_x86_Build_Failed](https://img.shields.io/badge/ubuntu-20.04_3.10_x86_Build_Failed-lightgrey)
-
-![ubuntu-20.04_3.9_x64_Build_Failed](https://img.shields.io/badge/ubuntu-20.04_3.9_x64_Build_Failed-lightgrey)
-
-![ubuntu-20.04_3.9_x86_Build_Failed](https://img.shields.io/badge/ubuntu-20.04_3.9_x86_Build_Failed-lightgrey)
-
-![ubuntu-20.04_3.8_x64_Build_Failed](https://img.shields.io/badge/ubuntu-20.04_3.8_x64_Build_Failed-lightgrey)
-
-![ubuntu-20.04_3.8_x86_Build_Failed](https://img.shields.io/badge/ubuntu-20.04_3.8_x86_Build_Failed-lightgrey)
-
-![ubuntu-20.04_3.7_x64_Build_Failed](https://img.shields.io/badge/ubuntu-20.04_3.7_x64_Build_Failed-lightgrey)
-
-![ubuntu-20.04_3.7_x86_Build_Failed](https://img.shields.io/badge/ubuntu-20.04_3.7_x86_Build_Failed-lightgrey)
-
-![windows-2019_3.13.0-alpha.4_x64_Build_Failed](https://img.shields.io/badge/windows-2019_3.13.0-alpha.4_x64_Build_Failed-lightgrey)
-
-![windows-2019_3.13.0-alpha.4_x86_Build_Failed](https://img.shields.io/badge/windows-2019_3.13.0-alpha.4_x86_Build_Failed-lightgrey)
-
-![windows-2019_3.12_x64_Build_Failed](https://img.shields.io/badge/windows-2019_3.12_x64_Build_Failed-lightgrey)
-
-![windows-2019_3.12_x86_Build_Failed](https://img.shields.io/badge/windows-2019_3.12_x86_Build_Failed-lightgrey)
-
-![windows-2019_3.11_x64_Build_Failed](https://img.shields.io/badge/windows-2019_3.11_x64_Build_Failed-lightgrey)
-
-![windows-2019_3.11_x86_Build_Failed](https://img.shields.io/badge/windows-2019_3.11_x86_Build_Failed-lightgrey)
-
-![windows-2019_3.10_x64_Build_Failed](https://img.shields.io/badge/windows-2019_3.10_x64_Build_Failed-lightgrey)
-
-![windows-2019_3.10_x86_Build_Failed](https://img.shields.io/badge/windows-2019_3.10_x86_Build_Failed-lightgrey)
-
-![windows-2019_3.9_x64_Build_Failed](https://img.shields.io/badge/windows-2019_3.9_x64_Build_Failed-lightgrey)
-
-![windows-2019_3.9_x86_Build_Failed](https://img.shields.io/badge/windows-2019_3.9_x86_Build_Failed-lightgrey)
-
-![windows-2019_3.8_x64_Build_Failed](https://img.shields.io/badge/windows-2019_3.8_x64_Build_Failed-lightgrey)
-
-![windows-2019_3.8_x86_Build_Failed](https://img.shields.io/badge/windows-2019_3.8_x86_Build_Failed-lightgrey)
-
-![windows-2019_3.7_x64_Build_Failed](https://img.shields.io/badge/windows-2019_3.7_x64_Build_Failed-lightgrey)
-
-![windows-2019_3.7_x86_Build_Failed](https://img.shields.io/badge/windows-2019_3.7_x86_Build_Failed-lightgrey)
-
+<!-- MACOS-BADGES-START -->
+<!-- MACOS-BADGES-END -->
 PyKotor
 =======
-A comprehensive and exhaustive Python library that can read and modify most file formats used by the game [Knights of the Old Republic](https://en.wikipedia.org/wiki/Star_Wars:_Knights_of_the_Old_Republic_(video_game)) and its [sequel](https://en.wikipedia.org/wiki/Star_Wars_Knights_of_the_Old_Republic_II:_The_Sith_Lords).
+A comprehensive Python library that can read and modify most file formats used by the game [Knights of the Old Republic](https://en.wikipedia.org/wiki/Star_Wars:_Knights_of_the_Old_Republic_(video_game)) and its [sequel](https://en.wikipedia.org/wiki/Star_Wars_Knights_of_the_Old_Republic_II:_The_Sith_Lords).
 
 ## Installation
 (The PyPI egg is currently in maintenance. Please check back later) Install from [PyPI](https://pypi.org/project/PyKotor/).
