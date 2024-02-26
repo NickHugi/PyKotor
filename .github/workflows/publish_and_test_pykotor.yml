@@ -111,10 +111,9 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Download pytest reports artifacts only
+      - name: Download all artifacts
         uses: actions/download-artifact@v4
         with:
-          name: pytest-reports_*
           path: pytest-reports
 
       - name: Extract and update README with custom test status badges
