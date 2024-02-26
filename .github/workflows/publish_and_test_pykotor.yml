@@ -71,15 +71,15 @@ jobs:
     - name: Download and prepare UPX
       run: |
         # Ensure we do not run the download steps on macOS since we are building from source.
-        if (${{ runner.os }} -ne "macOS") {
-          $ext = ${{ runner.os }} -eq "Windows" ? "zip" : "tar.xz"
-          $stripComponents = ${{ runner.os }} -eq "Windows" ? "" : "--strip-components=1"
+        if ("${{ runner.os }}" -ne "macOS") {
+          $ext = "${{ runner.os }}" -eq "Windows" ? "zip" : "tar.xz"
+          $stripComponents = "${{ runner.os }}" -eq "Windows" ? "" : "--strip-components=1"
     
           $url = "${{ steps.upx_setup.outputs.url }}"
           $outputPath = "upx.$ext"
           
           # Use Invoke-WebRequest or curl depending on the OS
-          if (${{ runner.os }} -eq "Windows") {
+          if ("${{ runner.os }}" -eq "Windows") {
             Invoke-WebRequest -Uri $url -OutFile $outputPath
           } else {
             curl -L $url -o $outputPath
