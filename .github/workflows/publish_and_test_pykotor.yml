@@ -253,10 +253,11 @@ jobs:
           $extractedReportsPath = "tests/results"
           New-Item -ItemType Directory -Force -Path $extractedReportsPath
 
+          New-Item -ItemType Directory -Force -Path "./all_pytest_reports" -ErrorAction SilentlyContinue
           Get-ChildItem "./all_pytest_reports" -Filter *.zip | ForEach-Object {
             Expand-Archive -Path $_.FullName -DestinationPath $(Join-Path -Path $extractedReportsPath -ChildPath $_.BaseName) -Force
           }
-          Remove-Item -Path "./all_pytest_reports" -Recurse -Force
+          Remove-Item -Path "./all_pytest_reports" -Recurse -Force -ErrorAction SilentlyContinue
 
           git fetch
           git checkout -b $uniqueTempBranchName
