@@ -312,19 +312,34 @@ case "$OS" in
 
                     # Compare version to see if it's less than 8.5
                     if [[ "$centos_version" -lt 85 ]]; then
-                        echo "CentOS version is less than 8.5, converting to alma linux..."
+                        echo "CentOS version is less than 8.5, considering converting to AlmaLinux..."
                     else
-                        echo "CentOS version is 8.5 or higher, converting to alma linux..."
+                        echo "CentOS version is 8.5 or higher, considering converting to AlmaLinux..."
                     fi
-                    sed -i -r 's|^(mirrorlist.+)$|#\1|g; s|^#baseurl=http://mirror.centos.org/\$contentdir/\$releasever/|baseurl=https://vault.centos.org/8.5.2111/|g' /etc/yum.repos.d/CentOS-*.repo
-                    sudo yum update -y
-                    curl -O https://raw.githubusercontent.com/AlmaLinux/almalinux-deploy/master/almalinux-deploy.sh
-                    sudo bash almalinux-deploy.sh
-                    sudo rpm --import https://repo.almalinux.org/almalinux/RPM-GPG-KEY-AlmaLinux && sudo bash almalinux-deploy.sh
-                    cat /etc/redhat-release
-                    sudo grubby --info DEFAULT | grep AlmaLinux
-                    sudo yum update
-                    sudo yum install -y powershell
+                    echo "You are currently running CentOS version $centos_version. The package manager 'yum' on here reached EOL and is no longer hosted."
+                    echo "In order to install powershell, we must convert you to alma linux through their supported process (recommended)."
+                    echo "WARNING: Converting CentOS to AlmaLinux is a significant change and not reversible. This process will change your CentOS distribution to AlmaLinux to continue with the PowerShell installation."
+                    echo "Do you want to continue with the conversion? (y/n)"
+                    read -p "Enter y to continue or n to cancel: " user_choice
+
+                    if [[ $user_choice == "y" ]]; then
+                        sed -i -r 's|^(mirrorlist.+)$|#\1|g; s|^#baseurl=http://mirror.centos.org/\$contentdir/\$releasever/|baseurl=https://vault.centos.org/8.5.2111/|g' /etc/yum.repos.d/CentOS-*.repo
+                        sudo yum update -y
+                        echo "Downloading AlmaLinux conversion script..."
+                        curl -O https://raw.githubusercontent.com/AlmaLinux/almalinux-deploy/master/almalinux-deploy.sh
+                        echo "Converting to AlmaLinux. This may take some time..."
+                        sudo bash almalinux-deploy.sh
+                        sudo rpm --import https://repo.almalinux.org/almalinux/RPM-GPG-KEY-AlmaLinux && sudo bash almalinux-deploy.sh
+                        echo "Conversion to AlmaLinux completed."
+                        cat /etc/redhat-release
+                        sudo grubby --info DEFAULT | grep AlmaLinux
+                        sudo yum update
+                        sudo yum install -y powershell
+                        echo "PowerShell has been installed successfully."
+                    else
+                        echo "Conversion canceled by the user. Attempting fallbacks..."
+                        fallback_install_pwsh
+                    fi
                     ;;
                 almalinux)
                     echo "Installing Powershell for almalinux..."
