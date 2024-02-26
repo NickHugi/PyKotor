@@ -70,20 +70,3 @@ As shown, this will save `C_Gammorean01.tga` to the current directory.
 
 ## License
 This repository falls under the [GPLv3 License](https://github.com/NickHugi/PyKotor/blob/master/LICENSE).
-
-![tests-passed-windows-3.8](https://img.shields.io/badge/tests-passed-windows-3.8-brightgreen?style=flat&logo=checkmark)
-![tests-passed-windows-3.9](https://img.shields.io/badge/tests-passed-windows-3.9-brightgreen?style=flat&logo=checkmark)
-![tests-passed-windows-3.10](https://img.shields.io/badge/tests-passed-windows-3.10-brightgreen?style=flat&logo=checkmark)
-![tests-passed-windows-3.11](https://img.shields.io/badge/tests-passed-windows-3.11-brightgreen?style=flat&logo=checkmark)
-![tests-passed-windows-3.12](https://img.shields.io/badge/tests-passed-windows-3.12-brightgreen?style=flat&logo=checkmark)
-![tests-passed-ubuntu-3.8](https://img.shields.io/badge/tests-passed-ubuntu-3.8-brightgreen?style=flat&logo=checkmark)
-![tests-passed-ubuntu-3.9](https://img.shields.io/badge/tests-passed-ubuntu-3.9-brightgreen?style=flat&logo=checkmark)
-![tests-passed-ubuntu-3.10](https://img.shields.io/badge/tests-passed-ubuntu-3.10-brightgreen?style=flat&logo=checkmark)
-![tests-passed-ubuntu-3.11](https://img.shields.io/badge/tests-passed-ubuntu-3.11-brightgreen?style=flat&logo=checkmark)
-![tests-passed-ubuntu-3.12](https://img.shields.io/badge/tests-passed-ubuntu-3.12-brightgreen?style=flat&logo=checkmark)
-![tests-passed-macos-3.8](https://img.shields.io/badge/tests-passed-macos-3.8-brightgreen?style=flat&logo=checkmark)
-![tests-passed-macos-3.9](https://img.shields.io/badge/tests-passed-macos-3.9-brightgreen?style=flat&logo=checkmark)
-![tests-passed-macos-3.10](https://img.shields.io/badge/tests-passed-macos-3.10-brightgreen?style=flat&logo=checkmark)
-![tests-passed-macos-3.11](https://img.shields.io/badge/tests-passed-macos-3.11-brightgreen?style=flat&logo=checkmark)
-![tests-passed-macos-3.12](https://img.shields.io/badge/tests-passed-macos-3.12-brightgreen?style=flat&logo=checkmark)
-

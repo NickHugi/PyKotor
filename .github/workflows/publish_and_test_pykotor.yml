@@ -13,6 +13,10 @@ jobs:
       matrix:
         os: [windows-2019, ubuntu-20.04, macos-12]
         python-version: ['3.7', '3.8', '3.9', '3.10', '3.11', '3.12', '3.13.0-alpha.4']
+        architecture: ['x86', 'x64']
+    outputs:
+      matrix-os: ${{ toJson(strategy.matrix.os) }}
+      matrix-python-version: ${{ toJson(strategy.matrix.python-version) }}
 
     steps:
     - uses: actions/checkout@v4
@@ -20,59 +24,60 @@ jobs:
       uses: actions/setup-python@v5
       with:
         python-version: ${{ matrix.python-version }}
+        architecture: ${{ matrix.architecture }}
 
     - name: Install python venv from install_python_venv.ps1
       run: |  # create the venv early to work around an issue with the matrix runners' concurrency
-        python -m venv .venv_${{ matrix.os }}_${{ matrix.python-version }}
+        python -m venv .venv_${{ matrix.os }}_${{ matrix.python-version }}_${{ matrix.architecture }}
         Set-PSDebug -Trace 2
-        ./install_python_venv.ps1 -noprompt -venv_name .venv_${{ matrix.os }}_${{ matrix.python-version }}
+        ./install_python_venv.ps1 -noprompt -venv_name .venv_${{ matrix.os }}_${{ matrix.python-version }}_${{ matrix.architecture }}
       shell: pwsh
 
     - name: Install HoloPatcher dependencies
       run: |
-        ./compile/deps_holopatcher.ps1 -noprompt -venv_name .venv_${{ matrix.os }}_${{ matrix.python-version }}
+        ./compile/deps_holopatcher.ps1 -noprompt -venv_name .venv_${{ matrix.os }}_${{ matrix.python-version }}_${{ matrix.architecture }}
       shell: pwsh
       continue-on-error: true
     
     - name: Compile HoloPatcher
       run: |
-        ./compile/compile_holopatcher.ps1 -noprompt -venv_name .venv_${{ matrix.os }}_${{ matrix.python-version }}
+        ./compile/compile_holopatcher.ps1 -noprompt -venv_name .venv_${{ matrix.os }}_${{ matrix.python-version }}_${{ matrix.architecture }}
       shell: pwsh
       continue-on-error: true
 
     - name: Install Holocron Toolset dependencies
       run: |
-        ./compile/deps_toolset.ps1 -noprompt -venv_name .venv_${{ matrix.os }}_${{ matrix.python-version }}
+        ./compile/deps_toolset.ps1 -noprompt -venv_name .venv_${{ matrix.os }}_${{ matrix.python-version }}_${{ matrix.architecture }}
       shell: pwsh
       continue-on-error: true
 
     - name: Compile Holocron Toolset
       run: |
-        ./compile/compile_toolset.ps1 -noprompt -venv_name .venv_${{ matrix.os }}_${{ matrix.python-version }}
+        ./compile/compile_toolset.ps1 -noprompt -venv_name .venv_${{ matrix.os }}_${{ matrix.python-version }}_${{ matrix.architecture }}
       shell: pwsh
       continue-on-error: true
 
     - name: Install BatchPatcher dependencies
       run: |
-        ./compile/deps_batchpatcher.ps1 -noprompt -venv_name .venv_${{ matrix.os }}_${{ matrix.python-version }}
+        ./compile/deps_batchpatcher.ps1 -noprompt -venv_name .venv_${{ matrix.os }}_${{ matrix.python-version }}_${{ matrix.architecture }}
       shell: pwsh
       continue-on-error: true
 
     - name: Compile BatchPatcher
       run: |
-        ./compile/compile_batchpatcher.ps1 -noprompt -venv_name .venv_${{ matrix.os }}_${{ matrix.python-version }}
+        ./compile/compile_batchpatcher.ps1 -noprompt -venv_name .venv_${{ matrix.os }}_${{ matrix.python-version }}_${{ matrix.architecture }}
       shell: pwsh
       continue-on-error: true
 
     - name: Compile KotorDiff
       run: |
-        ./compile/compile_kotordiff.ps1 -noprompt -venv_name .venv_${{ matrix.os }}_${{ matrix.python-version }}
+        ./compile/compile_kotordiff.ps1 -noprompt -venv_name .venv_${{ matrix.os }}_${{ matrix.python-version }}_${{ matrix.architecture }}
       shell: pwsh
       continue-on-error: true
 
     - name: Compile GUIDuplicator
       run: |
-        ./compile/compile_gui_duplicator.ps1 -noprompt -venv_name .venv_${{ matrix.os }}_${{ matrix.python-version }}
+        ./compile/compile_gui_duplicator.ps1 -noprompt -venv_name .venv_${{ matrix.os }}_${{ matrix.python-version }}_${{ matrix.architecture }}
       shell: pwsh
       continue-on-error: true
 
@@ -80,18 +85,18 @@ jobs:
       uses: actions/upload-artifact@v4
       if: always()  # This ensures the step runs regardless of previous step's success or failure
       with:
-        name: publish_${{ matrix.os }}_${{ matrix.python-version }}
+        name: publish_${{ matrix.os }}_${{ matrix.python-version }}_${{ matrix.architecture }}
         path: ./dist/**
 
     - name: Install development packages
       run: |
-        ./install_python_venv.ps1 -noprompt -venv_name .venv_${{ matrix.os }}_${{ matrix.python-version }}
+        ./install_python_venv.ps1 -noprompt -venv_name .venv_${{ matrix.os }}_${{ matrix.python-version }}_${{ matrix.architecture }}
         pip install -r requirements-dev.txt --prefer-binary
       shell: pwsh
 
     - name: Run all unittests/pytests
       run: |
-        ./install_python_venv.ps1 -noprompt -venv_name .venv_${{ matrix.os }}_${{ matrix.python-version }}
+        ./install_python_venv.ps1 -noprompt -venv_name .venv_${{ matrix.os }}_${{ matrix.python-version }}_${{ matrix.architecture }}
         python -m pytest tests -v -ra -o log_cli=true --capture=no --junitxml=pytest_report.xml --html=pytest_report.html --self-contained-html --tb=no --continue-on-collection-errors
       shell: pwsh
       continue-on-error: true
@@ -100,7 +105,7 @@ jobs:
       uses: actions/upload-artifact@v4
       if: always()  # Ensures this step runs even if the previous step fails
       with:
-        name: pytest-reports_${{ matrix.os }}_${{ matrix.python-version }}
+        name: pytest-reports_${{ matrix.os }}_${{ matrix.python-version }}_${{ matrix.architecture }}
         path: |
           pytest_report.html
           pytest_report.xml
@@ -138,8 +143,9 @@ jobs:
           # Checkout to a unique temporary branch to prepare the new commit
           git checkout -b $uniqueTempBranchName
 
-          $OS_NAMES = @("windows-latest", "ubuntu-latest", "macos-latest")
-          $PYTHON_VERSIONS = @("3.8", "3.9", "3.10", "3.11", "3.12")
+          $OS_NAMES = @("windows-2019", "ubuntu-20.04", "macos-12")
+          $PYTHON_VERSIONS = @('3.7', '3.8', '3.9', '3.10', '3.11', '3.12', '3.13.0-alpha.4')
+          $ARCHITECTURES = @('x86', 'x64')
           
           # Ensure the extracted-reports directory is created
           $extractedReportsPath = "extracted-reports"
@@ -155,14 +161,17 @@ jobs:
 
           # Process each extracted report
           Get-ChildItem $extractedReportsPath -Recurse -Filter pytest_report.xml | ForEach-Object {
-            $dirName = $_.Directory.Name
             [xml]$TestResultsXml = Get-Content $_.FullName
-            $passedTests = $TestResultsXml.testsuite.tests - $TestResultsXml.testsuite.failures
-            $failedTests = $TestResultsXml.testsuite.failures
-            $totalTests = $TestResultsXml.testsuite.tests
+            $totalTests = [int]$TestResultsXml.testsuite.tests
+            $failedTests = [int]$TestResultsXml.testsuite.failures
+            $errors = [int]$TestResultsXml.testsuite.errors
+            $passedTests = $totalTests - $failedTests - $errors
+
+            # Create a unique key for each OS, Python version, and architecture
+            $key = $_.Directory.Name.Replace('-', '_')
 
             # Store results in hashtable
-            $testResults[$dirName] = @{
+            $testResults[$key] = @{
               Passed = $passedTests
               Failed = $failedTests
               Total  = $totalTests
@@ -174,28 +183,29 @@ jobs:
           $ReadmeContent = Get-Content $ReadmePath -Raw
           foreach ($OS in $OS_NAMES) {
             foreach ($PYTHON_VERSION in $PYTHON_VERSIONS) {
-              $OSBadge = $OS -replace '-latest', ''
-              $BadgeNamePassed = "tests-passed-$OSBadge-${PYTHON_VERSION}"
-              $BadgeNameFailed = "tests-failed-$OSBadge-${PYTHON_VERSION}"
-              
-              # Generate badge URLs with proper encoding and logo
-              $BadgeNamePassedEncoded = [uri]::EscapeDataString($BadgeNamePassed)
-              $BadgeNameFailedEncoded = [uri]::EscapeDataString($BadgeNameFailed)
-              $BadgeURLPassed = "https://img.shields.io/badge/$BadgeNamePassedEncoded-brightgreen?style=flat&logo=checkmark"
-              $BadgeURLFailed = "https://img.shields.io/badge/$BadgeNameFailedEncoded-red?style=flat&logo=close"
-
-              # Badge Markdown
-              $BadgeMarkdown = "![$BadgeNamePassed]($BadgeURLPassed) ![$BadgeNameFailed]($BadgeURLFailed)"
-              
-              # Regex to check if the badges already exist
-              $BadgeRegexPassed = "\!\[$BadgeNamePassed\]\(https:\/\/img\.shields\.io\/badge\/.*\)"
-              $BadgeRegexFailed = "\!\[$BadgeNameFailed\]\(https:\/\/img\.shields\.io\/badge\/.*\)"
-              
-              if ($ReadmeContent -match $BadgeRegexPassed -and $ReadmeContent -match $BadgeRegexFailed) {
-                $ReadmeContent = $ReadmeContent -replace $BadgeRegexPassed, "![$BadgeNamePassed]($BadgeURLPassed)"
-                $ReadmeContent = $ReadmeContent -replace $BadgeRegexFailed, "![$BadgeNameFailed]($BadgeURLFailed)"
-              } else {
-                $ReadmeContent += "`n$BadgeMarkdown"
+              foreach ($ARCH in $ARCHITECTURES) {
+                $key = "$OS_$PYTHON_VERSION_$ARCH"
+                $passedTests = $testResults[$key]['Passed']
+                $failedTests = $testResults[$key]['Failed']
+          
+                $BadgeURLPassed = "https://img.shields.io/badge/$($OS)_$($PYTHON_VERSION)_$($ARCH)_Passing-$passedTests-brightgreen"
+                $BadgeURLFailed = "https://img.shields.io/badge/$($OS)_$($PYTHON_VERSION)_$($ARCH)_Failing-$failedTests-red"
+          
+                $BadgeNamePassed = "$OS-$PYTHON_VERSION-$ARCH"
+                $BadgeNameFailed = "$OS-$PYTHON_VERSION-$ARCH"
+          
+                # Badge Markdown
+                $BadgeMarkdown = "![$BadgeNamePassed]($BadgeURLPassed) ![$BadgeNameFailed]($BadgeURLFailed)"
+          
+                # Regex to find existing badges for the same OS and Python version
+                $BadgeRegex = "!\[$BadgeNamePassed\].+?!\[$BadgeNameFailed\].+?"
+          
+                if ($ReadmeContent -match $BadgeRegex) {
+                  $ReadmeContent = $Readreadmecontent -replace $BadgeRegex, $BadgeMarkdown
+                } else {
+                  # Prepend the new badges to the top of the README
+                  $ReadmeContent = $BadgeMarkdown + "`n`n" + $ReadmeContent
+                }
               }
             }
           }
