@@ -116,6 +116,7 @@ jobs:
         mkdir -p "${{ github.workspace }}/upx-dir"
         cd upx-4.2.2-src
         make all
+        ls -al
         # Copy the UPX binary to the upx-dir directory we confirmed above
         cp -av src/upx "${{ github.workspace }}/upx-dir"
       shell: bash
