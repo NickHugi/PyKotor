@@ -24,6 +24,7 @@ jobs:
     - name: Install python venv from install_python_venv.ps1
       run: |  # create the venv early to work around an issue with the matrix runners' concurrency
         python -m venv .venv_${{ matrix.os }}_${{ matrix.python-version }}
+        Set-PSDebug -Trace 2
         ./install_python_venv.ps1 -noprompt -venv_name .venv_${{ matrix.os }}_${{ matrix.python-version }}
       shell: pwsh
 
