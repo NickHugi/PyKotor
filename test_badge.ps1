@@ -38,7 +38,7 @@ Get-ChildItem $extractedReportsPath -Recurse -Filter pytest_report.xml | ForEach
 
     $resultFilePathHtml = $_.FullName -replace '\.xml$', '.html'
     $relHtmlFilePath = Resolve-Path -Path $resultFilePathHtml -Relative
-    if ($relHtmlFilePath.StartsWith(".\")) {
+    if ($relHtmlFilePath.StartsWith(".\") -or $relHtmlFilePath.StartsWith("./")) {
         $cleanRelHtmlFilePath = $relHtmlFilePath.Substring(2)
     } else {
         $cleanRelHtmlFilePath = $relHtmlFilePath
