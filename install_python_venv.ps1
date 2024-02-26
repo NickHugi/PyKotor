@@ -36,7 +36,7 @@ if ((Get-OS) -eq "Windows") {
 } else {
     # LD_LIBRARY_PATH must be set on unix systems in order to build python.
     $ldLibraryPath = [System.Environment]::GetEnvironmentVariable('LD_LIBRARY_PATH', 'Process')
-    if (-z $ldLibraryPath) {
+    if ([string]::IsNullOrEmpty($ldLibraryPath)) {
         Write-Warning "LD_LIBRARY_PATH not defined, creating it with /usr/local/lib ..."
         [System.Environment]::SetEnvironmentVariable('LD_LIBRARY_PATH', '/usr/local/lib', 'Process')
     } elseif (-not $ldLibraryPath.Contains('/usr/local/lib')) {
