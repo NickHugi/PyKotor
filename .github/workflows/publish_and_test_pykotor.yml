@@ -17,7 +17,7 @@ jobs:
     steps:
     - uses: actions/checkout@v4
     - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v4
+      uses: actions/setup-python@v5
       with:
         python-version: ${{ matrix.python-version }}
 
@@ -159,11 +159,11 @@ jobs:
               $BadgeNamePassed = "tests-passed-$OSBadge-${PYTHON_VERSION}"
               $BadgeNameFailed = "tests-failed-$OSBadge-${PYTHON_VERSION}"
               
-              # Generate badge URLs with proper encoding
+              # Generate badge URLs with proper encoding and logo
               $BadgeNamePassedEncoded = [uri]::EscapeDataString($BadgeNamePassed)
               $BadgeNameFailedEncoded = [uri]::EscapeDataString($BadgeNameFailed)
-              $BadgeURLPassed = "https://img.shields.io/badge/$BadgeNamePassedEncoded-brightgreen"
-              $BadgeURLFailed = "https://img.shields.io/badge/$BadgeNameFailedEncoded-red"
+              $BadgeURLPassed = "https://img.shields.io/badge/$BadgeNamePassedEncoded-brightgreen?style=flat&logo=checkmark"
+              $BadgeURLFailed = "https://img.shields.io/badge/$BadgeNameFailedEncoded-red?style=flat&logo=close"
 
               # Badge Markdown
               $BadgeMarkdown = "![$BadgeNamePassed]($BadgeURLPassed) ![$BadgeNameFailed]($BadgeURLFailed)"

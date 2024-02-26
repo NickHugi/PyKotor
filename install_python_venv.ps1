@@ -33,6 +33,15 @@ function Get-OS {
 $pathSep = "/"
 if ((Get-OS) -eq "Windows") {
     $pathSep = "\"
+} else {
+    # LD_LIBRARY_PATH must be set on unix systems in order to build python.
+    $ldLibraryPath = [System.Environment]::GetEnvironmentVariable('LD_LIBRARY_PATH', 'Process')
+    if (-z $ldLibraryPath) {
+        [System.Environment]::SetEnvironmentVariable('LD_LIBRARY_PATH', '/usr/local/lib', 'Process')
+    } elseif (-not $ldLibraryPath.Contains('/usr/local/lib')) {
+        $newLdLibraryPath = $ldLibraryPath + ':/usr/local/lib'
+        [System.Environment]::SetEnvironmentVariable('LD_LIBRARY_PATH', $newLdLibraryPath, 'Process')
+    }
 }
 
 # Ensure script is running with elevated permissions
