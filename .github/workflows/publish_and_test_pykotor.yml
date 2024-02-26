@@ -272,11 +272,10 @@ jobs:
           Remove-Item -Path "./all_pytest_reports" -Recurse -Force -ErrorAction SilentlyContinue
 
           git fetch origin $branchName
-          # Checking if there are newer commits on the remote branch than the commit that triggered the workflow
-          if git log ${{ github.sha }}..origin/$branchName --oneline | grep -q '.'; then
-            echo "Newer commits are present on the remote branch, cannot continue"
-            exit 1
-          fi
+          if (git log "${{ github.sha }}"..origin/$branchName --oneline) {
+              Write-Host "Newer commits are present on the remote branch, cannot continue"
+              exit 1
+          }
           git add $testsResultsPath
           git commit -m "Add test results"
           git push --force-with-lease origin HEAD:${{ github.ref_name }}
@@ -375,10 +374,10 @@ jobs:
           Set-Content -Path $ReadmePath -Value $ReadmeContent
           git fetch origin $branchName
           # Checking if there are newer commits on the remote branch than the commit that triggered the workflow
-          if git log $commitSHA..origin/$branchName --oneline | grep -q '.'; then
-            echo "Newer commits are present on the remote branch, cannot continue"
-            exit 1
-          fi
+          if (git log "${{ github.sha }}"..origin/$branchName --oneline) {
+              Write-Host "Newer commits are present on the remote branch, cannot continue"
+              exit 1
+          }
           git add $ReadmePath
           git commit -m "Add test results"
           git push --force-with-lease origin HEAD:${{ github.ref_name }}
