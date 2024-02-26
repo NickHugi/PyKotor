@@ -243,7 +243,7 @@ jobs:
           $uniqueTempBranchName = "temp-branch-${{ github.run_id }}"
 
           $testsResultsPath = "tests/results"
-          Remove-Item -Path $testsResultsPath -Recurse -Force
+          Remove-Item -Path $testsResultsPath -Recurse -Force -ErrorAction SilentlyContinue
           New-Item -ItemType Directory -Force -Path $testsResultsPath
 
           $OS_NAMES = @("windows-2019", "ubuntu-20.04", "macos-12")
