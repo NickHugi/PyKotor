@@ -96,12 +96,20 @@ jobs:
 
     - name: Install Meson
       if: matrix.python-version == '3.13.0-alpha.4' && (runner.os == 'Linux' || runner.os == 'macOS')
-      run: python -m pip install meson --upgrade --prefer-binary
+      run: |
+        ./install_python_venv.ps1 -noprompt -venv_name .venv_${{ matrix.os }}_${{ matrix.python-version }}_${{ matrix.architecture }}
+        python -m pip install numpy --only-binary :all: --upgrade
+        python -m pip install meson --upgrade --prefer-binary
 
     - name: Install development packages
       run: |
         ./install_python_venv.ps1 -noprompt -venv_name .venv_${{ matrix.os }}_${{ matrix.python-version }}_${{ matrix.architecture }}
-        pip install -r requirements-dev.txt --prefer-binary
+        if ($env:python_version -ne "3.13.0-alpha.4" -or $env:RUNNER_OS -eq "Windows") {
+          pip install -r requirements-dev.txt --prefer-binary
+        }
+        else {
+          pip install -r requirements-dev-py313.txt --prefer-binary
+        }
       shell: pwsh
 
     - name: Run all unittests/pytests
@@ -137,6 +145,8 @@ jobs:
       - name: Extract and update README with custom test status badges
         shell: pwsh
         run: |
+          Set-PSDebug -Trace 2
+
           # Git configuration and commit
           git config --global user.name "GitHub Action"
           git config --global user.email "action@github.com"
@@ -175,15 +185,18 @@ jobs:
             $totalTests = [int]$TestResultsXml.testsuite.tests
             $failedTests = [int]$TestResultsXml.testsuite.failures
             $errors = [int]$TestResultsXml.testsuite.errors
+            # Calculate passed tests by subtracting failures and errors from total
             $passedTests = $totalTests - $failedTests - $errors
 
-            # Create a unique key for each OS, Python version, and architecture
+            # Assuming the use of file names or directory names to distinguish between test results
+            # Here we need a consistent approach to generate a key for each test result set
+            # This example assumes you're using directory names that reflect the matrix configuration
             $key = $_.Directory.Name.Replace('-', '_')
 
-            # Store results in hashtable
+            # Store results in hashtable with the calculated number of passed and failed tests
             $testResults[$key] = @{
               Passed = $passedTests
-              Failed = $failedTests
+              Failed = $failedTests + $errors # Considering errors as failures for badge display
               Total  = $totalTests
             }
           }
