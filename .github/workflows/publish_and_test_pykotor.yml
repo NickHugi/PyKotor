@@ -70,44 +70,31 @@ jobs:
 
     - name: Download and prepare UPX
       run: |
-        if ("${{ runner.os }}" -eq "Windows") {
-          $ext = "zip"
-          $stripComponents = ""
+        if ("${{ runner.os }}" -ne "macOS") {
+          ...
+          # Existing download and preparation logic here
+          ...
+          if ($ext.ToLower() -eq "zip") {
+            Expand-Archive -Path $outputPath -DestinationPath "upx-dir"
+          } elseif ($stripComponents) {
+            tar -xf $outputPath -C "upx-dir" $stripComponents
+          } else {
+            tar -xf $outputPath -C "upx-dir"
+          }
         } else {
-          $ext = "tar.xz"
-          $stripComponents = "--strip-components=1"
+          Write-Host "Skipping download for macOS; Building from source instead."
         }
-        $url = "${{ steps.upx_setup.outputs.url }}"
-        $outputPath = "upx.$ext"
-        # Use curl instead of Invoke-WebRequest on macOS (workaround to a strange bug)
-        if ("${{ runner.os }}" -eq "macOS") {
-          curl -L $url -o $outputPath
-        } else {
-          Invoke-WebRequest -Uri $url -OutFile $outputPath
-        }
-        
-        # Ensure the upx-dir directory exists
-        New-Item -ItemType Directory -Force -Path "upx-dir" -ErrorAction SilentlyContinue
-    
-        if ($ext.ToLower() -eq "zip") {
-          Expand-Archive -Path $outputPath -DestinationPath "upx-dir"
-        } elseif ($stripComponents) {
-          tar -xf $outputPath -C "upx-dir" $stripComponents
-        } else {
-          tar -xf $outputPath -C "upx-dir"
-        }
-        Get-Item $outputPath
       shell: pwsh
     
 
     - name: Build UPX (macOS)
       if: runner.os == 'macOS'
       run: |
-        cd upx-4.2.2-src
+        mkdir -p "${{ github.workspace }}/upx-dir"
+        cd -av upx-4.2.2-src
         make all
-        cd ..
-        mkdir -p upx-dir
-        cp upx-4.2.2-src/src/upx upx-dir/upx
+        # Copy the UPX binary to the upx-dir directory we confirmed above
+        cp -av src/upx "${{ github.workspace }}/upx-dir"
       shell: bash
 
     - name: Set UPX directory path
