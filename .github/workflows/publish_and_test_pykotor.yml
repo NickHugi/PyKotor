@@ -12,8 +12,8 @@ jobs:
       fail-fast: false  # Disable automatic cancellation of other jobs
       matrix:
         os: [windows-2019, ubuntu-20.04, macos-12]
-        python-version: ['3.8', '3.9']
-        architecture: ['x64']
+        python-version: ['3.7', '3.8', '3.9', '3.10', '3.11', '3.12', '3.13.0-alpha.4']
+        architecture: ['x86', 'x64']
         exclude:
           # unix x86 is definitely not supported.
           - os: ubuntu-20.04
