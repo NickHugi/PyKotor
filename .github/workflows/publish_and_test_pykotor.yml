@@ -21,8 +21,8 @@ jobs:
           - os: macos-12
             architecture: x86
     outputs:
-      matrix-os: ${{ toJson(strategy.matrix.os) }}
-      matrix-python-version: ${{ toJson(strategy.matrix.python-version) }}
+      matrix-os: ${{ toJson(matrix.os) }}
+      matrix-python-version: ${{ toJson(matrix.python-version) }}
 
     steps:
     - uses: actions/checkout@v4
@@ -205,6 +205,7 @@ jobs:
           }
 
           # Commit the test results
+          git add -A
           git commit -am "Upload test results" || Write-Host "No changes to commit."
 
           # Get the SHA-1 hash of the commit where test results were uploaded
