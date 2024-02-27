@@ -338,6 +338,7 @@ jobs:
           $ReadmePath = "./README.md"
           $ReadmeContent = Get-Content $ReadmePath -Raw
 
+          # Define placeholders
           $WindowsBadgeContent = ""
           $LinuxBadgeContent = ""
           $MacOSBadgeContent = ""
@@ -349,6 +350,7 @@ jobs:
           $macosBadgesStartPlaceholder = "<!-- MACOS-BADGES-START -->"
           $macosBadgesEndPlaceholder = "<!-- MACOS-BADGES-END -->"
 
+          # Function to replace badge content in the README
           function Replace-BadgeContent {
             param (
               [string]$readmeContent,
@@ -362,11 +364,12 @@ jobs:
             return $readmeContent -replace $pattern, $replacement
           }
 
+          # Generate badges for each OS/Python version/architecture combination
           foreach ($OS in $OS_NAMES) {
             foreach ($PYTHON_VERSION in $PYTHON_VERSIONS) {
               foreach ($ARCH in $ARCHITECTURES) {
                 if ($OS -ne "windows-2019" -and $ARCH -eq "x86") {
-                  continue  # no x86 support for unix.
+                  continue  # Skip unsupported x86 architecture on Unix
                 }
                 $key = "$OS-$PYTHON_VERSION-$ARCH"
                 if ($testResults.ContainsKey($key)) {
@@ -375,10 +378,8 @@ jobs:
                     $DetailsURL = $testResults[$key]['DetailsURL']
                     # Encode the label to replace spaces with underscores and URI-encode other special characters
                     $encodedKey = [System.Web.HttpUtility]::UrlEncode($key.Replace(' ', '_').Replace('-', '--'))
-                    $BadgeURLPassed = "https://img.shields.io/badge/${encodedKey}_Passed-${passedTests}-brightgreen"
-                    $BadgeURLFailed = "https://img.shields.io/badge/${encodedKey}_Failed-${failedTests}-red"
-                    $BadgeMarkdown = "[![$key-Passing]($BadgeURLPassed)]($DetailsURL) [![$key-Failing]($BadgeURLFailed)]($DetailsURL)"
-
+                    $BadgeURL = "https://img.shields.io/badge/${encodedKey}_Passed_${passedTests}_Failed_${failedTests}-brightgreen_red"
+                    $BadgeMarkdown = "[![$key-Status]($BadgeURL)]($DetailsURL)"
                 } else {
                     Write-Host "No test results for '$key', must have failed, generating 'Build Failed' badge..."
                     $encodedKey = [System.Web.HttpUtility]::UrlEncode($key.Replace(' ', '_').Replace('-', '--'))
@@ -387,19 +388,20 @@ jobs:
                     $BadgeMarkdown = "[![$key-Build_Failed]($BadgeURLBuildFailed)]($DetailsURL)"
                 }
 
+                # Append badge markdown to the appropriate OS content variable
                 switch ($OS) {
-                    "windows-2019" { $WindowsBadgeContent += $BadgeMarkdown + " " }
-                    "ubuntu-20.04" { $LinuxBadgeContent += $BadgeMarkdown + " " }
-                    "macos-12" { $MacOSBadgeContent += $BadgeMarkdown + " " }
+                    "windows-2019" { $WindowsBadgeContent += $BadgeMarkdown + "`n" }
+                    "ubuntu-20.04" { $LinuxBadgeContent += $BadgeMarkdown + "`n" }
+                    "macos-12" { $MacOSBadgeContent += $BadgeMarkdown + "`n" }
                 }
               }
             }
           }
 
-          $ReadmeContent = Replace-BadgeContent -readmeContent $ReadmeContent -badgeContent $WindowsBadgeContent.TrimEnd() -startPlaceholder $windowsBadgesStartPlaceholder -endPlaceholder $windowsBadgesEndPlaceholder
-          $ReadmeContent = Replace-BadgeContent -readmeContent $ReadmeContent -badgeContent $LinuxBadgeContent.TrimEnd() -startPlaceholder $linuxBadgesStartPlaceholder -endPlaceholder $linuxBadgesEndPlaceholder
-          $ReadmeContent = Replace-BadgeContent -readmeContent $ReadmeContent -badgeContent $MacOSBadgeContent.TrimEnd() -startPlaceholder $macosBadgesStartPlaceholder -endPlaceholder $macosBadgesEndPlaceholder
-
+          # Replace the placeholders in the README content
+          $ReadmeContent = Replace-BadgeContent -readmeContent $ReadmeContent -badgeContent $WindowsBadgeContent.Trim() -startPlaceholder $windowsBadgesStartPlaceholder -endPlaceholder $windowsBadgesEndPlaceholder
+          $ReadmeContent = Replace-BadgeContent -readmeContent $ReadmeContent -badgeContent $LinuxBadgeContent.Trim() -startPlaceholder $linuxBadgesStartPlaceholder -endPlaceholder $linuxBadgesEndPlaceholder
+          $ReadmeContent = Replace-BadgeContent -readmeContent $ReadmeContent -badgeContent $MacOSBadgeContent.Trim() -startPlaceholder $macosBadgesStartPlaceholder -endPlaceholder $macosBadgesEndPlaceholder
           Set-Content -Path $ReadmePath -Value $ReadmeContent
           git fetch origin $branchName
           # Checking if there are newer commits on the remote branch than the commit that triggered the workflow
