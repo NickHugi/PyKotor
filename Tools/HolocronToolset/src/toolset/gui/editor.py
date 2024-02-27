@@ -30,6 +30,7 @@ from utility.system.path import Path
 
 if TYPE_CHECKING:
     from PyQt5.QtWidgets import QWidget
+
     from pykotor.common.language import LocalizedString
     from pykotor.resource.formats.rim.rim_data import RIM
     from toolset.data.installation import HTInstallation
@@ -236,7 +237,7 @@ class Editor(QMainWindow):
                 self._saveEndsWithErf(data, data_ext)
             else:
                 self._saveEndsWithOther(data, data_ext)
-        except Exception as e:  # noqa: BLE001
+        except Exception as e:  # pylint: disable=W0718  # noqa: BLE001
             with Path("errorlog.txt").open("a", encoding="utf-8") as file:
                 lines = format_exception_with_variables(e)
                 file.writelines(lines)

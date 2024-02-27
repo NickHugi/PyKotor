@@ -10,6 +10,7 @@ def is_admin() -> bool:
     except:  # noqa: E722
         return False
 
+
 def execute_process(program, args, use_shell_execute: bool, hide_process) -> tuple[int, bytes, bytes]:
     stdout_option: int | None = subprocess.PIPE if hide_process else None
     stderr_option: int | None = subprocess.PIPE if hide_process else None

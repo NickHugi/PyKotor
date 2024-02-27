@@ -98,7 +98,6 @@ class WalkmeshCamera:
         self._zoom = clamp(newZoom, 0.1, 100)
 
 
-
 class WalkmeshSelection(Generic[T]):
     def __init__(self):
         self._selection: list[T] = []
@@ -130,7 +129,7 @@ class WalkmeshSelection(Generic[T]):
         self._selection.extend(elements)
 
 
-class WalkmeshRenderer(QWidget):  # noqa: PLR0904
+class WalkmeshRenderer(QWidget):
     mouseMoved = QtCore.pyqtSignal(object, object, object, object)  # screen coords, screen delta, mouse, keys
     """Signal emitted when mouse is moved over the widget."""
 
@@ -278,9 +277,7 @@ class WalkmeshRenderer(QWidget):  # noqa: PLR0904
     def setMinimap(self, are: ARE, tpc: TPC):
         self._are = are
 
-        tpc_rgb_data: bytes | None = tpc.convert(TPCTextureFormat.RGB).data
-        assert tpc_rgb_data is not None, assert_with_variable_trace(tpc_rgb_data is not None)
-
+        tpc_rgb_data: bytearray = tpc.convert(TPCTextureFormat.RGB).data
         image = QImage(tpc_rgb_data, tpc.get().width, tpc.get().height, QImage.Format_RGB888)
         crop = QRect(0, 0, 435, 256)
         self._minimapImage = image.copy(crop)

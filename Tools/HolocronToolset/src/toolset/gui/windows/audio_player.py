@@ -14,10 +14,10 @@ from pykotor.extract.file import ResourceIdentifier
 from pykotor.tools import sound
 
 if TYPE_CHECKING:
-    from PyQt5.QtWidgets import QWidget
     import os
 
     from PyQt5.QtGui import QCloseEvent
+    from PyQt5.QtWidgets import QWidget
 
     from pykotor.resource.type import ResourceType
 
@@ -26,7 +26,7 @@ class AudioPlayer(QMainWindow):
     def __init__(self, parent: QWidget):
         super().__init__(parent)
 
-        from toolset.uic.windows.audio_player import Ui_MainWindow
+        from toolset.uic.windows.audio_player import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
 
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
@@ -55,7 +55,7 @@ class AudioPlayer(QMainWindow):
 
     def open(self):
         filepath: str = QFileDialog.getOpenFileName(self, "Select an audio file")[0]
-        if filepath != "":
+        if filepath:
             resname, restype = ResourceIdentifier.from_path(filepath).validate()
             data: bytes = BinaryReader.load_file(filepath)
             self.load(filepath, resname, restype, data)

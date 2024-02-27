@@ -154,6 +154,7 @@ def compileScript(source: str, tsl: bool, installation_path: Path) -> bytes | No
 
     raise ValueError("Could not get the NCS bytes.")  # noqa: TRY003, EM101
 
+
 def _compile_windows(
     global_settings: GlobalSettings,
     extract_path: Path,
@@ -253,6 +254,7 @@ def _compile_windows(
             set_registry_key_value(orig_regkey_path, "Path", orig_regkey_value)
 
     return BinaryReader.load_file(tempCompiledPath)
+
 
 def _prompt_user_for_compiler_option() -> int:
     # Create the message box

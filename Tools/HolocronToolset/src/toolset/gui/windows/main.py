@@ -57,10 +57,11 @@ from utility.error_handling import assert_with_variable_trace, universal_simplif
 from utility.system.path import Path, PurePath
 
 if TYPE_CHECKING:
+    import os
+
     from PyQt5 import QtGui
     from PyQt5.QtGui import QCloseEvent
     from PyQt5.QtWidgets import QTreeView
-    import os
 
     from pykotor.extract.file import FileResource
     from pykotor.resource.formats.mdl.mdl_data import MDL
@@ -118,7 +119,7 @@ class ToolWindow(QMainWindow):
         self.settings: GlobalSettings = GlobalSettings()
         self.installations: dict[str, HTInstallation] = {}
 
-        from toolset.uic.windows.main import Ui_MainWindow
+        from toolset.uic.windows.main import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
 
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
@@ -488,7 +489,7 @@ class ToolWindow(QMainWindow):
         """
         try:
             self._check_toolset_update(silent)
-        except Exception as e:  # noqa: BLE001
+        except Exception as e:  # pylint: disable=W0718  # noqa: BLE001
             if not silent:
                 etype, msg = universal_simplify_exception(e)
                 QMessageBox(
@@ -700,7 +701,6 @@ class ToolWindow(QMainWindow):
                 assert_with_variable_trace(isinstance(self.active, HTInstallation))
                 assert isinstance(self.active, HTInstallation)  # noqa: S101
 
-
                 print("Loading installation resources into UI...")
                 self.ui.coreWidget.setResources(self.active.chitin_resources())
                 self.refreshModuleList(reload=True)  # TODO: Modules/Override/Textures are loaded twice when HT is first initialized.
@@ -798,10 +798,10 @@ class ToolWindow(QMainWindow):
                     write_tpc(tpc, folderpath.joinpath(f"{texture}.{extension}"), file_format)
                 except Exception as e:  # noqa: PERF203
                     etype, msg = universal_simplify_exception(e)
-                    loader.errors.append(type(e)(f"Could not find or extract tpc: '{texture}'\nReason ({etype}): {msg}"))
+                    loader.errors.append(e.__class__(f"Could not find or extract tpc: '{texture}'\nReason ({etype}): {msg}"))
         except Exception as e:
             etype, msg = universal_simplify_exception(e)
-            loader.errors.append(type(e)(f"Could not determine textures used in model: '{resource.resname()}'\nReason ({etype}): {msg}"))
+            loader.errors.append(e.__class__(f"Could not determine textures used in model: '{resource.resname()}'\nReason ({etype}): {msg}"))
 
     def openFromFile(self):
         filepaths = QFileDialog.getOpenFileNames(self, "Select files to open")[:-1][0]

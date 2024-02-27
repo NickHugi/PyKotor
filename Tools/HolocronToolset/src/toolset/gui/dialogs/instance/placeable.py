@@ -11,6 +11,7 @@ from pykotor.common.misc import Color, ResRef
 
 if TYPE_CHECKING:
     from PyQt5.QtWidgets import QLabel, QWidget
+
     from pykotor.resource.generics.git import GITPlaceable
     from toolset.gui.widgets.long_spinbox import LongSpinBox
 
@@ -19,7 +20,7 @@ class PlaceableDialog(QDialog):
     def __init__(self, parent: QWidget, placeable: GITPlaceable):
         super().__init__(parent)
 
-        from toolset.uic.dialogs.instance.placeable import Ui_Dialog
+        from toolset.uic.dialogs.instance.placeable import Ui_Dialog  # pylint: disable=C0415  # noqa: PLC0415
 
         self.ui = Ui_Dialog()
         self.ui.setupUi(self)

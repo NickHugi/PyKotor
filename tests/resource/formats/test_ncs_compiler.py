@@ -14,7 +14,6 @@ def add_sys_path(p: pathlib.Path):
         sys.path.append(working_dir)
 if PYKOTOR_PATH.joinpath("pykotor").exists():
     add_sys_path(PYKOTOR_PATH)
-    os.chdir(PYKOTOR_PATH.parent)
 if UTILITY_PATH.joinpath("utility").exists():
     add_sys_path(UTILITY_PATH)
 
@@ -2300,7 +2299,7 @@ class TestNSSCompiler(unittest.TestCase):
 
         self.assertEqual(123, interpreter.action_snapshots[-3].arg_values[0])
         self.assertEqual("abc", interpreter.action_snapshots[-2].arg_values[0])
-        self.assertAlmostEqual(math.pi, interpreter.action_snapshots[-1].arg_values[0])
+        self.assertAlmostEqual(3.14, interpreter.action_snapshots[-1].arg_values[0].value)
 
     def test_prefix_increment_sp_int(self):
         ncs = self.compile(

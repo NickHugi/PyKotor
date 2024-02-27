@@ -42,7 +42,6 @@ if getattr(sys, "frozen", False) is False:
         add_sys_path(utility_path.parent)
 
 
-
 from pykotor.common.language import Language, LocalizedString
 from pykotor.common.stream import BinaryReader, BinaryWriter
 from pykotor.extract.capsule import Capsule
@@ -402,6 +401,7 @@ ALIEN_SOUNDS = {  # Same in k1 and tsl.
     "n_genbith_coml1": {"_id": "298", "comment": "Bith_Generic_Comment_-_Long_1"}
 }
 
+
 class Globals:
     def __init__(self):
         self.chosen_languages: list[Language] = []
@@ -434,13 +434,16 @@ class Globals:
 
 SCRIPT_GLOBALS = Globals()
 
+
 def get_font_paths_linux() -> list[Path]:
     font_dirs: list[Path] = [Path("/usr/share/fonts/"), Path("/usr/local/share/fonts/"), Path.home() / ".fonts"]
     return [font for font_dir in font_dirs for font in font_dir.glob("**/*.ttf")]
 
+
 def get_font_paths_macos() -> list[Path]:
     font_dirs: list[Path] = [Path("/Library/Fonts/"), Path("/System/Library/Fonts/"), Path.home() / "Library/Fonts"]
     return [font for font_dir in font_dirs for font in font_dir.glob("**/*.ttf")]
+
 
 def get_font_paths_windows() -> list[Path]:
     import winreg
@@ -460,6 +463,7 @@ def get_font_paths_windows() -> list[Path]:
 
     return list(font_paths)
 
+
 def get_font_paths() -> list[Path]:
     with suppress(Exception):
         os_str = platform.system()
@@ -471,6 +475,7 @@ def get_font_paths() -> list[Path]:
             return get_font_paths_windows()
     msg = "Unsupported operating system"
     raise NotImplementedError(msg)
+
 
 def relative_path_from_to(src: PurePath, dst: PurePath) -> Path:
     src_parts = list(src.parts)
@@ -601,8 +606,10 @@ def recurse_through_list(
         made_change |= result_made_change
     return made_change, alien_vo_count
 
+
 def fix_encoding(text: str, encoding: str):
     return text.encode(encoding=encoding, errors="ignore").decode(encoding=encoding, errors="ignore").strip()
+
 
 def patch_resource(resource: FileResource) -> GFF | TPC | None:
     def translate_entry(tlkentry: TLKEntry, from_lang: Language) -> tuple[str, str]:
@@ -629,7 +636,7 @@ def patch_resource(resource: FileResource) -> GFF | TPC | None:
                         translated_text = fix_encoding(translated_text, SCRIPT_GLOBALS.pytranslator.to_lang.get_encoding())
                         tlk.replace(strref, translated_text)
                         log_output(f"#{strref} Translated {original_text} --> {translated_text}")
-                except Exception as exc:  # noqa: BLE001
+                except Exception as exc:  # pylint: disable=W0718  # noqa: BLE001
                     log_output(format_exception_with_variables(e, message=f"tlk strref {strref} generated an exception: {universal_simplify_exception(exc)}"))
                     print(format_exception_with_variables(exc))
 
@@ -638,7 +645,7 @@ def patch_resource(resource: FileResource) -> GFF | TPC | None:
         try:
             log_output(f"Loading TLK '{resource.filepath()}'")
             tlk = read_tlk(resource.data())
-        except Exception as e:  # noqa: BLE001
+        except Exception as e:  # pylint: disable=W0718  # noqa: BLE001
             log_output(format_exception_with_variables(e, message=f"[Error] loading TLK '{resource.identifier()}' at '{resource.filepath()}'!"))
             print(format_exception_with_variables(e))
             return None
@@ -695,7 +702,7 @@ def patch_resource(resource: FileResource) -> GFF | TPC | None:
                         gff.root.set_uint8("Skippable", 0)
             if made_change or result_made_change:
                 return gff
-        except Exception as e:  # noqa: BLE001
+        except Exception as e:  # pylint: disable=W0718  # noqa: BLE001
             log_output(format_exception_with_variables(e, message=f"[Error] loading GFF '{resource._path_ident_obj}'!"))
             # raise
             return None
@@ -704,6 +711,7 @@ def patch_resource(resource: FileResource) -> GFF | TPC | None:
             log_output(f"GFF resource '{resource._path_ident_obj}' missing in memory")
             return None
     return None
+
 
 def patch_and_save_noncapsule(resource: FileResource, savedir: Path | None = None):
     patched_data: GFF | TPC | None = patch_resource(resource)
@@ -745,6 +753,7 @@ def patch_and_save_noncapsule(resource: FileResource, savedir: Path | None = Non
         else:
             log_output(f"Saving converted tpc to '{new_path}'")
             TPCTGAWriter(patched_data, new_path.with_suffix(".tpc")).write()
+
 
 def patch_capsule_file(c_file: Path):
     new_data: bytes
@@ -794,6 +803,7 @@ def patch_capsule_file(c_file: Path):
     else:
         write_rim(erf_or_rim, new_filepath)  # type: ignore[arg-type, reportArgumentType]
 
+
 def patch_erf_or_rim(resources: list[FileResource], filename: str, erf_or_rim: RIM | ERF) -> PurePath:
     omitted_resources: list[ResourceIdentifier] = []
     new_filename = PurePath(filename)
@@ -831,6 +841,7 @@ def patch_erf_or_rim(resources: list[FileResource], filename: str, erf_or_rim: R
             erf_or_rim.set_data(resource.resname(), resource.restype(), resource.data())
     return new_filename
 
+
 def patch_file(file: os.PathLike | str):
     c_file = Path.pathify(file)
     if c_file in processed_files:
@@ -854,11 +865,13 @@ def patch_file(file: os.PathLike | str):
             ),
         )
 
+
 def patch_folder(folder_path: os.PathLike | str):
     c_folderpath = Path.pathify(folder_path)
     log_output_with_separator(f"Recursing through resources in the '{c_folderpath.name}' folder...", above=True)
     for file_path in c_folderpath.safe_rglob("*"):
         patch_file(file_path)
+
 
 def patch_install(install_path: os.PathLike | str):
     log_output()
@@ -901,7 +914,6 @@ def patch_install(install_path: os.PathLike | str):
     #    log_output(f"Patching {new_rim_filename} in the 'rims' folder ")
     #    write_rim(new_rim, filepath.parent / new_rim_filename)
 
-
     log_output_with_separator("Patching Override...")
     override_path = k_install.override_path()
     override_path.mkdir(exist_ok=True, parents=True)
@@ -943,10 +955,11 @@ def execute_patchloop_thread():
         SCRIPT_GLOBALS.install_running = True
         do_main_patchloop()
         SCRIPT_GLOBALS.install_running = False
-    except Exception as e:  # noqa: BLE001
+    except Exception as e:  # pylint: disable=W0718  # noqa: BLE001
         log_output(format_exception_with_variables(e, message="Unhandled exception during the patching process."))
         SCRIPT_GLOBALS.install_running = False
         return messagebox.showerror("Error", f"An error occurred during patching\n{e!r}")
+
 
 def do_main_patchloop():
     # Validate args
@@ -984,6 +997,7 @@ def main_translate_loop(lang: Language):
     print(f"Translating to {lang.name}...")
     SCRIPT_GLOBALS.pytranslator.to_lang = lang
     determine_input_path(Path(SCRIPT_GLOBALS.path))
+
 
 def create_font_pack(lang: Language):
     print(f"Creating font pack for '{lang.name}'...")
@@ -1372,7 +1386,7 @@ class KOTORPatchingToolUI:
 
             SCRIPT_GLOBALS.install_thread = Thread(target=execute_patchloop_thread)
             SCRIPT_GLOBALS.install_thread.start()
-        except Exception as e:  # noqa: BLE001
+        except Exception as e:  # pylint: disable=W0718  # noqa: BLE001
             messagebox.showerror("Unhandled exception", str(universal_simplify_exception(e)))
             SCRIPT_GLOBALS.install_running = False
             self.install_button.config(state=tk.DISABLED)
@@ -1383,6 +1397,6 @@ if __name__ == "__main__":
         root = tk.Tk()
         APP = KOTORPatchingToolUI(root)
         root.mainloop()
-    except Exception:  # noqa: BLE001, RUF100
+    except Exception:  # pylint: disable=W0718  # noqa: BLE001, RUF100
         log_output(traceback.format_exc())
         raise

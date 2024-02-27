@@ -18,7 +18,6 @@ class PlaintextWriter(PythWriter):
         writer = PlaintextWriter(document, target, newline)
         return writer.go()
 
-
     def __init__(self, doc, target, newline):
         self.document = doc
         self.target = target
@@ -28,7 +27,6 @@ class PlaintextWriter(PythWriter):
             document.List: self.list,
             document.Paragraph: self.paragraph
         }
-
 
     def go(self):
         for (_i, paragraph) in enumerate(self.document.content):
@@ -43,7 +41,6 @@ class PlaintextWriter(PythWriter):
         self.target.seek(0)
         return self.target
 
-
     def paragraph(self, paragraph: document.Paragraph, prefix: str = ""):
         content_list = ["".join(text.content) for text in paragraph.content]
         content = "".join(content_list)
@@ -54,7 +51,6 @@ class PlaintextWriter(PythWriter):
             self.target.write("\n")
             if prefix:
                 prefix = "  "
-
 
     def list(self, list, prefix=None):
         self.indent += 1

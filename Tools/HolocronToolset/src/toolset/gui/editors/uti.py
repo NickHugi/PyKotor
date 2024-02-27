@@ -16,9 +16,9 @@ from toolset.gui.editor import Editor
 from utility.error_handling import assert_with_variable_trace, format_exception_with_variables
 
 if TYPE_CHECKING:
-    from PyQt5.QtWidgets import QWidget
     import os
 
+    from PyQt5.QtWidgets import QWidget
     from typing_extensions import Literal
 
     from pykotor.resource.formats.twoda.twoda_data import TwoDA
@@ -51,7 +51,7 @@ class UTIEditor(Editor):
 
         self._uti = UTI()
 
-        from toolset.uic.editors.uti import Ui_MainWindow
+        from toolset.uic.editors.uti import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
         self._setupMenus()

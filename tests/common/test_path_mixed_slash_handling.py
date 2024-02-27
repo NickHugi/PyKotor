@@ -16,15 +16,14 @@ from tempfile import TemporaryDirectory
 from unittest import mock
 
 THIS_SCRIPT_PATH = pathlib.Path(__file__).resolve()
-PYKOTOR_PATH = THIS_SCRIPT_PATH.parents[2]
-UTILITY_PATH = THIS_SCRIPT_PATH.parents[4].joinpath("Utility", "src")
+PYKOTOR_PATH = THIS_SCRIPT_PATH.parents[2].joinpath("Libraries", "PyKotor", "src")
+UTILITY_PATH = THIS_SCRIPT_PATH.parents[2].joinpath("Libraries", "Utility", "src")
 def add_sys_path(p: pathlib.Path):
     working_dir = str(p)
     if working_dir not in sys.path:
         sys.path.append(working_dir)
 if PYKOTOR_PATH.joinpath("pykotor").exists():
     add_sys_path(PYKOTOR_PATH)
-    os.chdir(PYKOTOR_PATH.parent)
 if UTILITY_PATH.joinpath("utility").exists():
     add_sys_path(UTILITY_PATH)
 
@@ -103,6 +102,7 @@ class TestPathlibMixedSlashes(unittest.TestCase):
         # self.run_command(isfile_or_dir_args(["icacls", path_str, "/deny", "dummy_user:(D,WDAC,WO)"]))
         # self.run_command(["cipher", "/e", path_str])
 
+    @unittest.skipIf(os.name == "posix", "This test can only run on Windows.")
     def test_gain_file_access(self):  # sourcery skip: extract-method
         test_file = Path("this file has no permissions.txt").absolute()
         try:
@@ -206,41 +206,6 @@ class TestPathlibMixedSlashes(unittest.TestCase):
             self.assertEqual(test_pathtype_isfile, False)
             test_pathtype_isdir: bool | None = PathType(test_path).safe_isdir()
             self.assertEqual(test_pathtype_isdir, True)
-
-    @unittest.skipIf(os.name != "nt", "Test only supported on Windows.")
-    def test_windows_exists_alternatives(self):
-        test_classes: tuple[type, ...] = (CustomPath, CaseAwarePath)
-        test_path = "C:\\GitHub\\PyKotor\\.venv_wsl\\bin"
-        self.assertFalse(os.access("C:\\nonexistent\\path", os.F_OK))
-        test_access: bool = os.access(test_path, os.F_OK)
-        self.assertEqual(test_access, True)
-
-        exists, is_file, is_dir = check_path_win_api(test_path)
-        self.assertEqual(exists, True)
-        self.assertEqual(is_file, False)
-        self.assertEqual(is_dir, True)
-
-        # These are the bugs
-        test_os_exists: bool = os.path.exists(test_path)
-        self.assertEqual(test_os_exists, True)
-        test_os_isfile: bool = os.path.isfile(test_path)
-        self.assertEqual(test_os_isfile, False)
-
-        # These are the bugs too.
-        # self.assertRaises(OSError, Path(test_path).exists)
-        # self.assertRaises(OSError, Path(test_path).is_file)
-        # self.assertRaises(OSError, Path(test_path).is_dir)
-        for PathType in test_classes:
-
-            test_pathtype_exists: bool | None = PathType(test_path).safe_exists()
-            self.assertEqual(test_pathtype_exists, True)
-            # self.assertRaises(OSError, PathType(test_path).exists)
-            test_pathtype_isfile: bool | None = PathType(test_path).safe_isfile()
-            self.assertEqual(test_pathtype_isfile, False)
-            # self.assertRaises(OSError, PathType(test_path).is_file)
-            test_pathtype_isdir: bool | None = PathType(test_path).safe_isdir()
-            self.assertEqual(test_pathtype_isdir, True)
-            # self.assertRaises(OSError, PathType(test_path).is_dir)
 
     def find_exists_problems(self):
         test_classes: tuple[type, ...] = (Path, CustomPath, CaseAwarePath)

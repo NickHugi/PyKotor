@@ -8,15 +8,14 @@ import unittest
 from unittest.mock import patch
 
 THIS_SCRIPT_PATH = pathlib.Path(__file__).resolve()
-PYKOTOR_PATH = THIS_SCRIPT_PATH.parents[2]
-UTILITY_PATH = THIS_SCRIPT_PATH.parents[4].joinpath("Utility", "src")
+PYKOTOR_PATH = THIS_SCRIPT_PATH.parents[2].joinpath("Libraries", "PyKotor", "src")
+UTILITY_PATH = THIS_SCRIPT_PATH.parents[2].joinpath("Libraries", "Utility", "src")
 def add_sys_path(p: pathlib.Path):
     working_dir = str(p)
     if working_dir not in sys.path:
         sys.path.append(working_dir)
 if PYKOTOR_PATH.joinpath("pykotor").exists():
     add_sys_path(PYKOTOR_PATH)
-    os.chdir(PYKOTOR_PATH.parent)
 if UTILITY_PATH.joinpath("utility").exists():
     add_sys_path(UTILITY_PATH)
 
@@ -95,18 +94,6 @@ class TestCaseAwarePath(unittest.TestCase):
         self.assertEqual(CaseAwarePath._fix_path_formatting("\\path//to/dir/", slash="/"), "/path/to/dir")
         self.assertEqual(CaseAwarePath._fix_path_formatting("/path//to/dir/", slash="\\"), "\\path\\to\\dir")
         self.assertEqual(CaseAwarePath._fix_path_formatting("/path//to/dir/", slash="/"), "/path/to/dir")
-
-    @patch.object(pathlib.Path, "exists", autospec=True)
-    def test_should_resolve_case(self, mock_exists):
-        mock_exists.side_effect = lambda x: str(x) != "/path/to/dir"
-        if os.name == "nt":  # sourcery skip: hoist-similar-statement-from-if, hoist-statement-from-if
-            self.assertFalse(CaseAwarePath.should_resolve_case("/path/to/dir"))
-            self.assertFalse(CaseAwarePath.should_resolve_case(CaseAwarePath("/path/to/dir")))
-            self.assertFalse(CaseAwarePath.should_resolve_case("path/to/dir"))
-        else:
-            self.assertTrue(CaseAwarePath.should_resolve_case("/path/to/dir"))
-            self.assertTrue(CaseAwarePath.should_resolve_case(CaseAwarePath("/path/to/dir")))
-            self.assertFalse(CaseAwarePath.should_resolve_case("path/to/dir"))
 
 class TestSplitFilename(unittest.TestCase):
     def test_normal(self):

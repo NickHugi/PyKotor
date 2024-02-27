@@ -13,7 +13,7 @@ class ColorEdit(QWidget):
         self._color: Color = Color(255, 255, 255)
         self.allowAlpha: bool = False
 
-        from toolset.uic.widgets.color_edit import Ui_Form
+        from toolset.uic.widgets.color_edit import Ui_Form  # noqa: PLC0415  # pylint: disable=C0415
         self.ui = Ui_Form()
         self.ui.setupUi(self)
 

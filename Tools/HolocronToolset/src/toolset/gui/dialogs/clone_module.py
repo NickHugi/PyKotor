@@ -10,6 +10,7 @@ from toolset.gui.dialogs.asyncloader import AsyncLoader
 
 if TYPE_CHECKING:
     from PyQt5.QtWidgets import QWidget
+
     from toolset.data.installation import HTInstallation
 
 _ROOT_INDEX = 0
@@ -51,7 +52,7 @@ class CloneModuleDialog(QDialog):
         """
         super().__init__(parent)
 
-        from toolset.uic.dialogs import clone_module
+        from toolset.uic.dialogs import clone_module  # pylint: disable=C0415  # noqa: PLC0415
         self.ui = clone_module.Ui_Dialog()
         self.ui.setupUi(self)
 
@@ -59,7 +60,7 @@ class CloneModuleDialog(QDialog):
         self._installations: dict[str, HTInstallation] = {active.name: active}
 
         self.ui.createButton.clicked.connect(self.ok)
-        self.ui.cancelButton.clicked.connect(self.close)  # type: ignore[]
+        self.ui.cancelButton.clicked.connect(self.close)
         self.ui.filenameEdit.textChanged.connect(self.setPrefixFromFilename)
         self.ui.moduleSelect.currentIndexChanged.connect(self.changedModule)
 

@@ -8,6 +8,8 @@ from Cython.Build import cythonize
 
 def find_py_files(root_dir: Path) -> list[str]:
     return [str(file) for file in root_dir.rglob("*") if file.suffix.lower() == ".py"]
+
+
 def find_extra_files(root_dir: Path) -> list[str]:
     return [
         str(file) for file in root_dir.rglob("*")
@@ -17,6 +19,7 @@ def find_extra_files(root_dir: Path) -> list[str]:
             and "cython" not in file.name.lower()
         )
     ]
+
 
 def compile_cython_files(py_files):
     setup(

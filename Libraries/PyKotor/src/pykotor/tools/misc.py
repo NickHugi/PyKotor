@@ -7,6 +7,7 @@ from utility.system.path import PurePath
 if TYPE_CHECKING:
     import os
 
+
 def normalize_ext(str_repr: os.PathLike | str) -> os.PathLike | str:
     if isinstance(str_repr, str):
         if str_repr[0] == ".":
@@ -14,6 +15,7 @@ def normalize_ext(str_repr: os.PathLike | str) -> os.PathLike | str:
         if "." not in str_repr:
             str_repr = f"stem.{str_repr}"
     return str_repr
+
 
 def is_nss_file(filepath: os.PathLike | str) -> bool:
     """Returns true if the given filename has a NSS file extension."""
@@ -24,9 +26,11 @@ def is_mod_file(filepath: os.PathLike | str) -> bool:
     """Returns true if the given filename has a MOD file extension."""
     return PurePath.pathify(normalize_ext(filepath)).suffix.lower() == ".mod"
 
+
 def is_erf_file(filepath: os.PathLike | str) -> bool:
     """Returns true if the given filename has a ERF file extension."""
     return PurePath.pathify(normalize_ext(filepath)).suffix.lower() == ".erf"
+
 
 def is_sav_file(filepath: os.PathLike | str) -> bool:
     """Returns true if the given filename has a SAV file extension."""
@@ -48,9 +52,11 @@ def is_bif_file(filepath: os.PathLike | str) -> bool:
     """Returns true if the given filename has a BIF file extension."""
     return PurePath.pathify(normalize_ext(filepath)).suffix.lower() == ".bif"
 
+
 def is_bzf_file(filepath: os.PathLike | str) -> bool:
     """Returns true if the given filename has a BZF file extension (lzma-compressed bif archive usually used on iOS)."""
     return PurePath.pathify(normalize_ext(filepath)).suffix.lower() == ".bzf"
+
 
 def is_capsule_file(filepath: os.PathLike | str) -> bool:
     """Returns true if the given filename has either an ERF, MOD, SAV, or RIM file extension."""

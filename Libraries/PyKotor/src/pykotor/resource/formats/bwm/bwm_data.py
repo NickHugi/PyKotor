@@ -15,6 +15,7 @@ if TYPE_CHECKING:
 # A lot of the code in this module was adapted from the KotorBlender fork by seedhartha:
 # https://github.com/seedhartha/kotorblender
 
+
 class BWMType(IntEnum):
     PlaceableOrDoor = 0
     AreaModel = 1

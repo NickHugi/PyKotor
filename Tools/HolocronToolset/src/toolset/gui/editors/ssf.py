@@ -10,8 +10,9 @@ from pykotor.resource.type import ResourceType
 from toolset.gui.editor import Editor
 
 if TYPE_CHECKING:
-    from PyQt5.QtWidgets import QLineEdit, QWidget
     import os
+
+    from PyQt5.QtWidgets import QLineEdit, QWidget
 
     from pykotor.extract.installation import Installation
     from pykotor.extract.talktable import StringResult
@@ -39,7 +40,7 @@ class SSFEditor(Editor):
 
         self._talktable: TalkTable | None = installation.talktable() if installation else None
 
-        from toolset.uic.editors.ssf import Ui_MainWindow
+        from toolset.uic.editors.ssf import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
 
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)

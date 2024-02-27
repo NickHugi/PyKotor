@@ -19,15 +19,25 @@ PowerShell comes pre-installed on most modern versions of Windows. However, if y
 1. Open a terminal window.
 2. Run the following command to install PowerShell:
 
+   # For Ubuntu-based distributions:
    ```bash
-   # For Ubuntu-based distributions
    sudo apt-get install -y powershell
+   ```
 
    # For Fedora
+   ```bash
    sudo dnf install -y powershell
+   ```
 
    # For macOS
+   ```bash
    brew install --cask powershell
+   ```
+   
+   or
+
+   ```bash
+   brew install pwsh
    ```
 
 3. Once installed, you can launch PowerShell by typing `pwsh` in your terminal.
@@ -73,7 +83,7 @@ When working with the PyKotor source files directly from GitHub, you may need to
 ### Running `install_python_venv.ps1`
 
 1. Clone the PyKotor repository and navigate to the project directory.
-2. Run the following command in PowerShell:
+2. Run the following command(s):
 
 #### Windows:
 
@@ -83,7 +93,8 @@ When working with the PyKotor source files directly from GitHub, you may need to
 #### Mac/Linux:
 
 ```bash
-pwsh install_python_venv.ps1
+pwsh
+./install_python_venv.ps1
 ```
 
 This script checks for the appropriate Python version, installs it if necessary, and sets up a virtual environment for PyKotor development.

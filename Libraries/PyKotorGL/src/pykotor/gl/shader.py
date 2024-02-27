@@ -30,6 +30,7 @@ from pykotor.resource.formats.tpc import TPCTextureFormat
 
 if TYPE_CHECKING:
     from glm import mat4, vec3, vec4
+
     from pykotor.resource.formats.tpc import TPC
 
 KOTOR_VSHADER = """

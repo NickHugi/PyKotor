@@ -205,7 +205,7 @@ class Rtf15Reader(PythReader):
         ctx = DocBuilder(doc, self.clean_paragraphs)
 
         for bit in self.group.flatten():
-            typeName = type(bit).__name__
+            typeName = bit.__class__.__name__
             getattr(ctx, f"handle_{typeName}", str)(bit)
 
         ctx.flushParagraph()
@@ -619,7 +619,7 @@ class Group:
             # {\field{\*\fldinst {\rtlch\fcs1 \af0 \ltrch\fcs0 \insrsid15420660  PAGE   \\* MERGEFORMAT }}
             try:
                 destination = "".join(destination.content)
-            except Exception:  # noqa: BLE001
+            except Exception:  # pylint: disable=W0718  # noqa: BLE001
                 return ""
 
             match: re.Match[str] | None = re.match(r'HYPERLINK "(.*)"', destination)

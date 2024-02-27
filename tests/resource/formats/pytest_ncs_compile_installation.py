@@ -209,7 +209,7 @@ def compile_with_abstract_compatible(
             new_exc.filename = ncs_path
             raise new_exc
 
-    except Exception as e:  # noqa: BLE001
+    except Exception as e:  # pylint: disable=W0718  # noqa: BLE001
         if isinstance(compiler, ExternalNCSCompiler):
             CUR_FAILED_EXT[game].add(ResourceIdentifier.from_path(nss_path))
             if isinstance(e, FileNotFoundError):
@@ -442,7 +442,7 @@ def test_pykotor_compile_nss(
             raise new_exc  # noqa: TRY301
     except EntryPointError as e:
         pytest.xfail(f"compile_nss: No entry point in with '{working_dir.name}/{nss_path.name}': {e}")
-    except Exception as e:  # noqa: BLE001
+    except Exception as e:  # pylint: disable=W0718  # noqa: BLE001
         _handle_compile_exc(e, file_res, nss_path, "compile_nss", game)
 
 

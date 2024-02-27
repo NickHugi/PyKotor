@@ -100,6 +100,7 @@ class TLKBinaryReader(ResourceReader):
 
         self._tlk.entries[stringref].text = text
 
+
 class TLKBinaryWriter(ResourceWriter):
     def __init__(
         self,

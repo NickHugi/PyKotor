@@ -16,8 +16,8 @@ import tkinter as tk
 import traceback
 import webbrowser
 
-from argparse import ArgumentParser, Namespace
-from datetime import datetime, timedelta, timezone
+from argparse import ArgumentParser
+from datetime import datetime, timezone
 from enum import IntEnum
 from threading import Event, Thread
 from tkinter import (
@@ -28,7 +28,18 @@ from tkinter import (
 )
 from typing import TYPE_CHECKING, NoReturn
 
-if getattr(sys, "frozen", False) is False:
+
+def is_frozen() -> bool:  # sourcery skip: assign-if-exp, boolean-if-exp-identity, reintroduce-else, remove-unnecessary-cast
+    # Check for sys.frozen attribute
+    if getattr(sys, "frozen", False):
+        return True
+    # Check if the executable is in a temp directory (common for frozen apps)
+    if tempfile.gettempdir() in sys.executable:
+        return True
+    return False
+
+
+if not is_frozen():
     def update_sys_path(path):
         working_dir = str(path)
         if working_dir not in sys.path:
@@ -42,7 +53,6 @@ if getattr(sys, "frozen", False) is False:
         utility_path = pathlib.Path(__file__).parents[3] / "Libraries" / "Utility" / "src" / "utility"
         if utility_path.exists():
             update_sys_path(utility_path.parent)
-
 
 from pykotor.common.misc import Game
 from pykotor.common.stream import BinaryReader
@@ -59,13 +69,15 @@ from utility.system.path import Path
 from utility.tkinter.tooltip import ToolTip
 
 if TYPE_CHECKING:
+    from argparse import Namespace
     from collections.abc import Callable
+    from datetime import timedelta
     from types import TracebackType
 
     from pykotor.tslpatcher.logger import PatchLog
     from pykotor.tslpatcher.namespaces import PatcherNamespace
 
-CURRENT_VERSION: tuple[int, ...] = (1, 5, 2)
+CURRENT_VERSION: tuple[int, ...] = (1, 5, 3)
 VERSION_LABEL = f"v{'.'.join(map(str, CURRENT_VERSION))}"
 
 
@@ -79,6 +91,7 @@ class ExitCode(IntEnum):
     ABORT_INSTALL_UNSAFE = 6
     EXCEPTION_DURING_INSTALL = 7
     INSTALL_COMPLETED_WITH_ERRORS = 8
+
 
 class HoloPatcherError(Exception):
     ...
@@ -136,6 +149,7 @@ def parse_args() -> Namespace:
             sys.exit(ExitCode.NAMESPACE_INDEX_OUT_OF_RANGE)
 
     return kwargs
+
 
 class App(tk.Tk):
     def __init__(self):
@@ -339,7 +353,7 @@ class App(tk.Tk):
                     "No updates available.",
                     f"You are already running the latest version of HoloPatcher ({VERSION_LABEL})",
                 )
-        except Exception as e:  # noqa: BLE001
+        except Exception as e:  # pylint: disable=W0718  # noqa: BLE001
             self._handle_general_exception(e, title="Unable to fetch latest version")
 
     def execute_commandline(
@@ -375,7 +389,6 @@ class App(tk.Tk):
         elif num_cmdline_actions > 1:
             messagebox.showerror("Invalid cmdline args passed", "Cannot run more than one of [--install, --uninstall, --validate]")
             sys.exit(ExitCode.NUMBER_OF_ARGS)
-
 
     def _begin_oneshot(
         self,
@@ -478,7 +491,7 @@ class App(tk.Tk):
         try:
             uninstaller = ModUninstaller(backup_parent_folder, Path(self.gamepaths.get()), self.logger)
             fully_ran = uninstaller.uninstall_selected_mod()
-        except Exception as e:  # noqa: BLE001
+        except Exception as e:  # pylint: disable=W0718  # noqa: BLE001
             self._handle_exception_during_install(e)
         finally:
             self.set_state(state=False)
@@ -543,16 +556,16 @@ class App(tk.Tk):
         i = 0
         while self.task_thread.is_alive():
             try:
-                self.task_thread._stop()  # type: ignore[attr-defined]
-                print("force terminate of install thread succeeded", sys.stdout)  # noqa: T201
-            except BaseException as e:  # noqa: BLE001
+                self.task_thread._stop()  # type: ignore[attr-defined]  # pylint: disable=protected-access
+                print("force terminate of install thread succeeded")
+            except BaseException as e:  # pylint: disable=W0718  # noqa: BLE001
                 self._handle_general_exception(e, "Error using self.install_thread._stop()", msgbox=False)
             try:
                 if self.task_thread.ident is None:
                     msg = "task ident is None, expected an int."
-                    raise ValueError(msg)
+                    raise ValueError(msg)  # noqa: TRY301
                 self.async_raise(self.task_thread.ident, SystemExit)
-            except BaseException as e:  # noqa: BLE001
+            except BaseException as e:  # pylint: disable=W0718  # noqa: BLE001
                 self._handle_general_exception(e, "Error using async_raise(self.install_thread.ident, SystemExit)", msgbox=False)
             print(f"Install thread is still alive after {i} seconds, waiting...")
             time.sleep(1)
@@ -711,7 +724,7 @@ class App(tk.Tk):
                 rtf_text = decode_bytes_with_fallbacks(data)
                 self.set_stripped_rtf_text(rtf_text)
                 # self.load_rtf_file(info_rtf_path)
-        except Exception as e:  # noqa: BLE001
+        except Exception as e:  # pylint: disable=W0718  # noqa: BLE001
             self._handle_general_exception(e, "An unexpected error occurred while loading the patcher namespace.")
         else:
             self.after(10, lambda: self.move_cursor_to_end(self.namespaces_combobox))
@@ -808,7 +821,7 @@ class App(tk.Tk):
                     messagebox.showerror("Error", "Could not find a mod located at the given folder.")
                 return
             self.check_access(tslpatchdata_path, recurse=True, should_filter=True)
-        except Exception as e:  # noqa: BLE001
+        except Exception as e:  # pylint: disable=W0718  # noqa: BLE001
             self._handle_general_exception(e, "An unexpected error occurred while loading the mod info.")
         else:
             if default_directory_path_str:
@@ -844,7 +857,7 @@ class App(tk.Tk):
             if directory_str not in self.gamepaths["values"]:
                 self.gamepaths["values"] = (*self.gamepaths["values"], directory_str)
             self.after(10, self.move_cursor_to_end, self.namespaces_combobox)
-        except Exception as e:  # noqa: BLE001
+        except Exception as e:  # pylint: disable=W0718  # noqa: BLE001
             self._handle_general_exception(e, "An unexpected error occurred while loading the game directory.")
 
     @staticmethod
@@ -1039,7 +1052,7 @@ class App(tk.Tk):
                 return
             self.task_thread = Thread(target=self.begin_install_thread, args=(self.simple_thread_event,))
             self.task_thread.start()
-        except Exception as e:  # noqa: BLE001
+        except Exception as e:  # pylint: disable=W0718  # noqa: BLE001
             self._handle_general_exception(e, "An unexpected error occurred during the installation and the program was forced to exit")
             sys.exit(ExitCode.EXCEPTION_DURING_INSTALL)
 
@@ -1070,7 +1083,7 @@ class App(tk.Tk):
         try:
             installer = ModInstaller(namespace_mod_path, self.gamepaths.get(), ini_file_path, self.logger)
             self._execute_mod_install(installer, should_cancel_thread)
-        except Exception as e:  # noqa: BLE001
+        except Exception as e:  # pylint: disable=W0718  # noqa: BLE001
             self._handle_exception_during_install(e)
         finally:
             self.set_state(state=False)
@@ -1088,7 +1101,7 @@ class App(tk.Tk):
             try:
                 reader = ConfigReader.from_filepath(ini_file_path, self.logger)
                 reader.load(reader.config)
-            except Exception as e:  # noqa: BLE001
+            except Exception as e:  # pylint: disable=W0718  # noqa: BLE001
                 self._handle_general_exception(e, "An unexpected error occurred while testing the config ini reader")
             finally:
                 self.set_state(state=False)
@@ -1337,15 +1350,6 @@ def onAppCrash(
 
 sys.excepthook = onAppCrash
 
-
-def is_frozen() -> bool:  # sourcery skip: assign-if-exp, boolean-if-exp-identity, reintroduce-else, remove-unnecessary-cast
-    # Check for sys.frozen attribute
-    if getattr(sys, "frozen", False):
-        return True
-    # Check if the executable is in a temp directory (common for frozen apps)
-    if tempfile.gettempdir() in sys.executable:
-        return True
-    return False
 
 def main():
     app = App()

@@ -234,8 +234,6 @@ class GlobalSettings(Settings):
 
         return {name: InstallationConfig(name) for name in installations}
 
-
-
     # region Strings
     extractPath = Settings._addSetting(
         "extractPath",

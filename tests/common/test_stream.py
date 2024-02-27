@@ -8,15 +8,14 @@ import unittest
 from unittest import TestCase
 
 THIS_SCRIPT_PATH = pathlib.Path(__file__).resolve()
-PYKOTOR_PATH = THIS_SCRIPT_PATH.parents[2]
-UTILITY_PATH = THIS_SCRIPT_PATH.parents[4].joinpath("Utility", "src")
+PYKOTOR_PATH = THIS_SCRIPT_PATH.parents[2].joinpath("Libraries", "PyKotor", "src")
+UTILITY_PATH = THIS_SCRIPT_PATH.parents[2].joinpath("Libraries", "Utility", "src")
 def add_sys_path(p: pathlib.Path):
     working_dir = str(p)
     if working_dir not in sys.path:
         sys.path.append(working_dir)
 if PYKOTOR_PATH.joinpath("pykotor").exists():
     add_sys_path(PYKOTOR_PATH)
-    os.chdir(PYKOTOR_PATH.parent)
 if UTILITY_PATH.joinpath("utility").exists():
     add_sys_path(UTILITY_PATH)
 
@@ -57,7 +56,7 @@ class TestBinaryReader(TestCase):
 
         reader4 = BinaryReader.from_bytes(self.data4)
         self.assertAlmostEqual(-123.456, reader4.read_single(), 3)
-        self.assertAlmostEqual(--123.457, reader4.read_double(), 6)
+        self.assertAlmostEqual(123.457, reader4.read_double(), 6)
 
     def test_size(self):
         self.reader1.read_bytes(4)

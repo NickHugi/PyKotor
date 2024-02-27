@@ -50,11 +50,11 @@ from toolset.utils.misc import getResourceFromFile
 from toolset.utils.window import openResourceEditor
 
 if TYPE_CHECKING:
-    from PyQt5.QtWidgets import QCheckBox, QWidget
-    from PyQt5.QtGui import QKeyEvent
     import os
 
     from PyQt5.QtCore import QPoint
+    from PyQt5.QtGui import QKeyEvent
+    from PyQt5.QtWidgets import QCheckBox, QWidget
 
     from pykotor.extract.file import LocationResult, ResourceIdentifier, ResourceResult
     from pykotor.resource.formats.bwm.bwm_data import BWM
@@ -107,7 +107,7 @@ class GITEditor(Editor):
         supported = [ResourceType.GIT]
         super().__init__(parent, "GIT Editor", "git", supported, supported, installation)
 
-        from toolset.uic.editors.git import Ui_MainWindow
+        from toolset.uic.editors.git import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
 
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)

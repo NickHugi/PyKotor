@@ -20,9 +20,10 @@ from utility.error_handling import format_exception_with_variables, universal_si
 from utility.system.path import Path
 
 if TYPE_CHECKING:
-    from PyQt5.QtWidgets import QWidget
-    from PyQt5.QtGui import QDragEnterEvent, QDragMoveEvent, QDropEvent
     import os
+
+    from PyQt5.QtGui import QDragEnterEvent, QDragMoveEvent, QDropEvent
+    from PyQt5.QtWidgets import QWidget
 
     from pykotor.resource.formats.rim import RIMResource
     from toolset.data.installation import HTInstallation
@@ -51,7 +52,7 @@ class ERFEditor(Editor):
         super().__init__(parent, "ERF Editor", "none", supported, supported, installation)
         self.resize(400, 250)
 
-        from toolset.uic.editors.erf import Ui_MainWindow
+        from toolset.uic.editors.erf import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
 
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)

@@ -31,7 +31,7 @@ class LoadFromModuleDialog(QDialog):
         """
         super().__init__()
 
-        from toolset.uic.dialogs.load_from_module import Ui_Dialog
+        from toolset.uic.dialogs.load_from_module import Ui_Dialog  # pylint: disable=C0415  # noqa: PLC0415
 
         self.ui = Ui_Dialog()
         self.ui.setupUi(self)

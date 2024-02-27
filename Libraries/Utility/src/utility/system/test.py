@@ -7,6 +7,7 @@ FILE_ATTRIBUTE_READONLY = 0x1
 FILE_ATTRIBUTE_HIDDEN = 0x2
 FILE_ATTRIBUTE_SYSTEM = 0x4
 
+
 def get_win_attrs(file_path):
     # GetFileAttributesW is a Windows API function
     attrs = ctypes.windll.kernel32.GetFileAttributesW(file_path)

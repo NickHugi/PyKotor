@@ -15,6 +15,7 @@ T = TypeVar("T")
 VT = TypeVar("VT")
 _unique_sentinel = object()
 
+
 class ResRef:
     """A string reference to a game resource.
 
@@ -60,7 +61,6 @@ class ResRef:
 
         def __init__(self, resref: ResRef, func_name, *args, **kwargs):
             super().__init__(f"ResRef's must be case-insensitive, attempted {resref!r}.{func_name}({args, kwargs})")
-
 
     def __init__(
         self,
@@ -731,13 +731,13 @@ class CaseInsensitiveDict(Generic[T]):
         if isinstance(other, (dict, CaseInsensitiveDict)):
             for key, value in other.items():
                 if not isinstance(key, str):
-                    msg = f"{key} must be a str, got type {type(key)}"
+                    msg = f"{key} must be a str, got type {key.__class__}"
                     raise TypeError(msg)
                 self[key] = value
         else:
             for key, value in other:
                 if not isinstance(key, str):
-                    msg = f"{key} must be a str, got type {type(key)}"
+                    msg = f"{key} must be a str, got type {key.__class__}"
                     raise TypeError(msg)
                 self[key] = value
 

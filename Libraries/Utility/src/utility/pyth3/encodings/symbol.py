@@ -25,6 +25,7 @@ encodeTable = {v: k for (k, v) in decodeTable.items()}
 
 ERROR_STRING = "Ordinal not in range (255)"
 
+
 def symbol_decode(input, errors="strict"):
     chars = []
     for (i, c) in enumerate(input):
@@ -70,6 +71,7 @@ class IncrementalEncoder(codecs.IncrementalEncoder):
         except UnicodeEncodeError:
             raise ValueError(ERROR_STRING)
 
+
 class IncrementalDecoder(codecs.IncrementalDecoder):
     def decode(self, input, final=False):
         try:
@@ -80,6 +82,7 @@ class IncrementalDecoder(codecs.IncrementalDecoder):
 
 class StreamWriter(Codec, codecs.StreamWriter):
     pass
+
 
 class StreamReader(Codec, codecs.StreamReader):
     pass
@@ -95,6 +98,7 @@ info = codecs.CodecInfo(
     streamwriter=StreamWriter,
     streamreader=StreamReader,
 )
+
 
 def search(name):
     # What the hell is this actually supposed to do?

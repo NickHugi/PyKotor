@@ -18,11 +18,11 @@ from toolset.gui.widgets.settings.git import GITSettings
 from utility.error_handling import assert_with_variable_trace
 
 if TYPE_CHECKING:
-    from PyQt5.QtWidgets import QWidget
-    from PyQt5.QtGui import QKeyEvent
     import os
 
     from PyQt5.QtCore import QPoint
+    from PyQt5.QtGui import QKeyEvent
+    from PyQt5.QtWidgets import QWidget
 
     from pykotor.common.geometry import Vector3
     from pykotor.extract.file import ResourceIdentifier, ResourceResult
@@ -37,7 +37,7 @@ class PTHEditor(Editor):
         supported: list[ResourceType] = [ResourceType.PTH]
         super().__init__(parent, "PTH Editor", "pth", supported, supported, installation)
 
-        from toolset.uic.editors.pth import Ui_MainWindow
+        from toolset.uic.editors.pth import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
         self._setupMenus()

@@ -1,7 +1,8 @@
 from __future__ import annotations
 
-from PyQt5.QtWidgets import QDialog
 from typing import TYPE_CHECKING
+
+from PyQt5.QtWidgets import QDialog
 
 if TYPE_CHECKING:
     from PyQt5.QtWidgets import QTreeWidgetItem, QWidget
@@ -28,7 +29,7 @@ class SettingsDialog(QDialog):
 
         self.installationEdited: bool = False
 
-        from toolset.uic.dialogs import settings
+        from toolset.uic.dialogs import settings  # pylint: disable=C0415  # noqa: PLC0415
 
         self.ui = settings.Ui_Dialog()
         self.ui.setupUi(self)

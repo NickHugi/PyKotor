@@ -45,6 +45,7 @@ def format_text(text, max_chars_before_newline: int = 20) -> str:
         return f'"""{os.linesep}{text_str}{os.linesep}"""'
     return f"'{text_str}'"
 
+
 def first_char_diff_index(str1: str, str2: str) -> int:
     """Find the index of the first differing character in two strings."""
     min_length = min(len(str1), len(str2))
@@ -55,11 +56,13 @@ def first_char_diff_index(str1: str, str2: str) -> int:
         return min_length  # Difference due to length
     return -1  # No difference
 
+
 def generate_diff_marker_line(index: int, length: int) -> str:
     """Generate a line of spaces with a '^' at the specified index."""
     if index == -1:
         return ""
     return " " * index + "^" + " " * (length - index - 1)
+
 
 def compare_and_format(old_value, new_value) -> tuple[str, str]:
     """Compares and formats two values for diff display.
@@ -100,6 +103,7 @@ def compare_and_format(old_value, new_value) -> tuple[str, str]:
             formatted_new.append(marker_line)
 
     return os.linesep.join(formatted_old), os.linesep.join(formatted_new)
+
 
 def striprtf(text) -> str:  # noqa: C901, PLR0915, PLR0912
     """Removes RTF tags from a string.
@@ -195,17 +199,19 @@ def striprtf(text) -> str:  # noqa: C901, PLR0915, PLR0912
                 out.append(tchar)
     return "".join(out)
 
+
 def is_string_like(obj) -> bool:  # sourcery skip: use-fstring-for-concatenation
     try:
         _ = obj + ""
-    except Exception:  # noqa: BLE001
+    except Exception:  # pylint: disable=W0718  # noqa: BLE001
         return False
     else:
         return True
 
+
 class StrType(type):
     def __instancecheck__(cls, instance):  # sourcery skip: instance-method-first-arg-name
-        instance_type = type(instance)
+        instance_type = instance.__class__
         mro = instance_type.__mro__
         if cls in {str, WrappedStr}:
             return instance_type in {WrappedStr, str} or WrappedStr in mro or str in mro
@@ -217,6 +223,7 @@ class StrType(type):
             return subclass in {WrappedStr, str} or WrappedStr in mro or str in mro
         return cls in mro
 
+
 @runtime_checkable
 class StrictStrProtocol(Protocol):
     @classmethod
@@ -224,6 +231,7 @@ class StrictStrProtocol(Protocol):
         return subclass is str
 
 StrictStr = TypeVar("StrictStr", bound=str)
+
 
 class WrappedStr(str):  # (metaclass=StrType):  # noqa: PLR0904
 
@@ -239,7 +247,7 @@ class WrappedStr(str):  # (metaclass=StrType):  # noqa: PLR0904
         if var is None:
             return None  # type: ignore[return-value]
         if not isinstance(var, (cls, str)):
-            msg = f"Expected str-like, got '{var}' of type {type(var)}"
+            msg = f"Expected str-like, got '{var}' of type {var.__class__}"
             raise TypeError(msg)
         return str(var)
 

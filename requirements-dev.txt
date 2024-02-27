@@ -5,6 +5,7 @@
 -r Libraries/PyKotor/requirements.txt
 -r Libraries/PyKotor/recommended.txt
 -r Libraries/PyKotorGL/requirements.txt
+#-r Libraries/PyKotorGL/optional.txt
 -r Libraries/PyKotorFont/requirements.txt
 mypy
 ruff
@@ -14,4 +15,3 @@ autoflake
 pytest
 pytest-xdist
 pytest-html
-pytest-xdist

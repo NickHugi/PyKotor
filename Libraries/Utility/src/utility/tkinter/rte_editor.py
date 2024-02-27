@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import ctypes
 import json
+import os
 import tkinter as tk
 
 from functools import partial
@@ -11,7 +12,8 @@ from typing import Any
 
 from utility.system.path import Path
 
-ctypes.windll.shcore.SetProcessDpiAwareness(True)  # noqa: FBT003
+if os.name == "nt":
+    ctypes.windll.shcore.SetProcessDpiAwareness(True)  # noqa: FBT003
 
 # Current File Path
 file_path = None
@@ -40,9 +42,11 @@ default_content: dict[str, Any] = {
     },
 }
 
+
 # Transform rgb to hex
 def rgbToHex(rgb) -> str:
     return "#{:02x}{:02x}{:02x}".format(*rgb)
+
 
 # Add Different Types of Tags that can be added to the document.
 tag_types: dict[str, dict[str, str]] = {
@@ -73,7 +77,10 @@ tag_types: dict[str, dict[str, str]] = {
 
 def main():
     # Handle File Events
-    def handle_file_manager(event: tk.Tk | None = None, action=None):
+    def handle_file_manager(
+        event: tk.Tk | None = None,
+        action: str | None = None,
+    ):
         global document
         global file_path
 
@@ -116,7 +123,6 @@ def main():
 
             root.title(f"{app_name} - {file_path}")
 
-
     def _prompt_user_file():
         # ask the user for a filename with the native file explorer.
         filePath: str = askopenfilename(filetypes=valid_file_types, initialdir=initialdir)
@@ -144,7 +150,6 @@ def main():
                 text_area.tag_add(tag_name, tagStart, tagEnd)
                 print(tag_name, tagStart, tagEnd)
 
-
     def resetTags():
         for tag in text_area.tag_names():
             text_area.tag_remove(tag, "1.0", "end")
@@ -152,10 +157,8 @@ def main():
         for tag_type in tag_types:
             text_area.tag_configure(tag_type.lower(), tag_types[tag_type])
 
-
     def keyDown(event: tk.Tk | None = None):
         root.title(f"{app_name} - *{file_path}")
-
 
     def tagToggle(tag_name: str):
         # Check if there is a selection
@@ -186,7 +189,6 @@ def main():
 
     resetTags()
 
-
     menu = tk.Menu(root)
     root.config(menu=menu)
 
@@ -201,15 +203,14 @@ def main():
 
     file_menu.add_command(label="Exit", command=root.destroy)
 
-
     format_menu = tk.Menu(menu, tearoff=0)
     menu.add_cascade(label="Format", menu=format_menu)
 
     for tag_type in tag_types:
         format_menu.add_command(label=tag_type, command=partial(tagToggle, tag_name=tag_type.lower()))
 
-
     root.mainloop()
+
 
 if __name__ == "__main__":
     main()

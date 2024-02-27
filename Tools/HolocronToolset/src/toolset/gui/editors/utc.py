@@ -70,7 +70,7 @@ class UTCEditor(Editor):
         self.globalSettings: GlobalSettings = GlobalSettings()
         self._utc: UTC = UTC()
 
-        from toolset.uic.editors.utc import Ui_MainWindow  # noqa: PLC0415
+        from toolset.uic.editors.utc import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
         self._setupMenus()
@@ -597,7 +597,7 @@ class UTCEditor(Editor):
             root: str = Module.get_root(self._filepath)
             capsulesPaths: list[str] = [path for path in self._installation.module_names() if root in path and path != self._filepath]
             capsules.extend([Capsule(self._installation.module_path() / path) for path in capsulesPaths])
-        except Exception as e:  # noqa: BLE001
+        except Exception as e:  # pylint: disable=W0718  # noqa: BLE001
             print(format_exception_with_variables(e, message="This exception has been suppressed by default."))
 
         inventoryEditor = InventoryEditor(self, self._installation, capsules, [], self._utc.inventory, self._utc.equipment, droid=droid)

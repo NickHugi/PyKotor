@@ -516,66 +516,64 @@ class DCEffect(ABC):
             - Performs camera transformations on aliases like "cpdx"
             - Returns float value or 0 if not matched.
         """
-        if isinstance(value, str):
-            output = 0.0
-            modifier = 1.0
-            if value.startswith("-"):
-                modifier = -1.0
-                value = value[1:]
+        if not isinstance(value, str):
+            return value if isinstance(value, (float, int)) else 0
+        output = 0.0
+        modifier = 1.0
+        if value.startswith("-"):
+            modifier = -1.0
+            value = value[1:]
 
-            if value == "dx":
-                output = dx
-            elif value == "dy":
-                output = dy
+        if value == "dx":
+            output = dx
+        elif value == "dy":
+            output = dy
 
-            elif value == "cpdxFlat":
-                forward = -dy * controls.renderer.scene.camera.forward()
-                sideward = dx * controls.renderer.scene.camera.sideward()
-                output = -(forward.x + sideward.x)
-            elif value == "cpdyFlat":
-                forward = -dy * controls.renderer.scene.camera.forward()
-                sideward = dx * controls.renderer.scene.camera.sideward()
-                output = -(forward.y + sideward.y)
+        elif value == "cpdxFlat":
+            forward = -dy * controls.renderer.scene.camera.forward()
+            sideward = dx * controls.renderer.scene.camera.sideward()
+            output = -(forward.x + sideward.x)
+        elif value == "cpdyFlat":
+            forward = -dy * controls.renderer.scene.camera.forward()
+            sideward = dx * controls.renderer.scene.camera.sideward()
+            output = -(forward.y + sideward.y)
 
-            elif value == "cpdx":
-                sideward = dx * controls.renderer.scene.camera.sideward(False)
-                upward = dy * controls.renderer.scene.camera.upward(False)
-                output = -(upward.x + sideward.x)
-            elif value == "cpdy":
-                sideward = dx * controls.renderer.scene.camera.sideward(False)
-                upward = dy * controls.renderer.scene.camera.upward(False)
-                output = -(upward.y + sideward.y)
-            elif value == "cpdz":
-                sideward = dx * controls.renderer.scene.camera.sideward(False)
-                upward = dy * controls.renderer.scene.camera.upward(False)
-                output = -(upward.z + sideward.z)
+        elif value == "cpdx":
+            sideward = dx * controls.renderer.scene.camera.sideward(False)
+            upward = dy * controls.renderer.scene.camera.upward(False)
+            output = -(upward.x + sideward.x)
+        elif value == "cpdy":
+            sideward = dx * controls.renderer.scene.camera.sideward(False)
+            upward = dy * controls.renderer.scene.camera.upward(False)
+            output = -(upward.y + sideward.y)
+        elif value == "cpdz":
+            sideward = dx * controls.renderer.scene.camera.sideward(False)
+            upward = dy * controls.renderer.scene.camera.upward(False)
+            output = -(upward.z + sideward.z)
 
-            elif value == "cpxFlat":
-                forward = controls.renderer.scene.camera.forward()
-                output = forward.x
-            elif value == "cpyFlat":
-                forward = controls.renderer.scene.camera.forward()
-                output = forward.y
+        elif value == "cpxFlat":
+            forward = controls.renderer.scene.camera.forward()
+            output = forward.x
+        elif value == "cpyFlat":
+            forward = controls.renderer.scene.camera.forward()
+            output = forward.y
 
-            elif value == "cpx":
-                forward = controls.renderer.scene.camera.sideward(False)
-                output = forward.x
-            elif value == "cpy":
-                forward = controls.renderer.scene.camera.sideward(False)
-                output = forward.y
-            elif value == "cpz":
-                forward = controls.renderer.scene.camera.sideward(False)
-                output = forward.z
+        elif value == "cpx":
+            forward = controls.renderer.scene.camera.sideward(False)
+            output = forward.x
+        elif value == "cpy":
+            forward = controls.renderer.scene.camera.sideward(False)
+            output = forward.y
+        elif value == "cpz":
+            forward = controls.renderer.scene.camera.sideward(False)
+            output = forward.z
 
-            elif value == "cry":
-                output = controls.renderer.scene.camera.yaw
-            elif value == "crp":
-                output = controls.renderer.scene.camera.pitch
+        elif value == "cry":
+            output = controls.renderer.scene.camera.yaw
+        elif value == "crp":
+            output = controls.renderer.scene.camera.pitch
 
-            return output * modifier
-        if isinstance(value, (float, int)):
-            return value
-        return 0
+        return output * modifier
 # endregion
 
 

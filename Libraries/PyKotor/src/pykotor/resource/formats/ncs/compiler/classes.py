@@ -25,12 +25,15 @@ def get_logical_equality_instruction(
     msg = f"Tried an unsupported comparison between '{type1}' '{type2}'."
     raise CompileError(msg)
 
+
 class CompileError(Exception):
     def __init__(self, message: str):
         super().__init__(message)
 
+
 class EntryPointError(CompileError):
     ...
+
 
 class TopLevelObject(ABC):
     @abstractmethod

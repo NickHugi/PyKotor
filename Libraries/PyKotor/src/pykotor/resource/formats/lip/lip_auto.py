@@ -96,7 +96,6 @@ def read_lip(
     """
     file_format = detect_lip(source, offset)
 
-
     if file_format == ResourceType.LIP:
         return LIPBinaryReader(source, offset, size or 0).load()
     if file_format == ResourceType.LIP_XML:

@@ -541,6 +541,7 @@ class AddColumn2DA(Modify2DA):
                 raise WarningError(msg)
 # endregion
 
+
 class Modifications2DA(PatcherModifications):
     def __init__(self, filename: str):
         super().__init__(filename)

@@ -30,7 +30,6 @@ class Rtf15Writer(PythWriter):
         "roman": "Times New Roman",
     }
 
-
     @classmethod
     def write(klass, document, target=None, fontFamily="roman"):
         if target is None:
@@ -38,7 +37,6 @@ class Rtf15Writer(PythWriter):
 
         writer = Rtf15Writer(document, target, fontFamily)
         return writer.go()
-
 
     def __init__(self, doc, target, family):
         self.document = doc
@@ -58,7 +56,6 @@ class Rtf15Writer(PythWriter):
             document.Paragraph: self._paragraph
         }
 
-
     def go(self):
         self.list_level = -1
         self.addSpacing = None
@@ -69,11 +66,8 @@ class Rtf15Writer(PythWriter):
         self.target.write("}")
         return self.target
 
-
-
     # -----------------------------------------------
     # Header section
-
 
     def _writeHeader(self):
         # Do this first to get the default font number
@@ -95,8 +89,6 @@ class Rtf15Writer(PythWriter):
                 self.target.write(part)
                 self.target.write("\n")
 
-
-
     def _getFontTable(self):
         output = [r"{\fonttbl"]
         for i, (fontFamily, fontName) in enumerate(self.fonts.items()):
@@ -111,19 +103,16 @@ class Rtf15Writer(PythWriter):
         output.append("}")
         return "".join(output)
 
-
     def _getColorTable(self) -> str:
         # We only need black, and blue (for hyperlinks)
         return (r"{\colortbl;"
                 r"\red0\green0\blue0;"
                 r"\red0\green0\blue255;}")
 
-
     def _getStyleSheet(self) -> str:
         # OpenOffice won't render bullets unless there's a stylesheet entry
         # even if it doesn't do anything.
         return r"""{\stylesheet{\s1 List Paragraph;}}"""
-
 
     def _getListTable(self):
         # levelnfc23 means bullets (rather than numbering)
@@ -141,21 +130,17 @@ class Rtf15Writer(PythWriter):
         output.append("}}")
         return "".join(output)
 
-
     def _getListOverrides(self) -> str:
         # I have no idea what the point is of this,
         # but we need it.
         return r"{\listoverridetable{\listoverride\listid1\listoverridecount0\ls0}}"
 
-
     def _getRevTable(self):
         # Hell no I don't think so
         pass
 
-
     # -----------------------------------------------
     # Document section
-
 
     def _writeDocument(self):
 
@@ -167,28 +152,21 @@ class Rtf15Writer(PythWriter):
                 self.target.write(part)
                 self.target.write("\n")
 
-
         for paragraph in self.document.content:
             handler = self._paragraphDispatch[paragraph.__class__]
             handler(paragraph)
 
-
     def _getInfo(self):
         pass
-
 
     def _getDocFormat(self):
         pass
 
-
     def _getSecFormat(self):
         pass
 
-
-
     # -----------------------------------------------
     # Content
-
 
     def _paragraph(self, paragraph, spacing=PARAGRAPH_SPACING):
 
@@ -204,7 +182,6 @@ class Rtf15Writer(PythWriter):
             self._text(text)
 
         self.target.write(r"}\par\pard" "\n")
-
 
     def _list(self, lst, spacing=PARAGRAPH_SPACING):
         self.list_level += 1
@@ -224,7 +201,6 @@ class Rtf15Writer(PythWriter):
         # add some extra spacing to balance the list out.
         if self.list_level == -1:
             self.addSpacing = 150
-
 
     def _text(self, text):
 
@@ -246,7 +222,6 @@ class Rtf15Writer(PythWriter):
 
         if props:
             self.target.write("".join(props) + " ")
-
 
         for run in text.content:
             for unichar in run:
