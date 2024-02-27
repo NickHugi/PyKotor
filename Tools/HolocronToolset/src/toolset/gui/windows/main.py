@@ -28,7 +28,7 @@ from pykotor.resource.formats.rim.rim_data import RIM
 from pykotor.resource.formats.tpc import read_tpc, write_tpc
 from pykotor.resource.type import ResourceType
 from pykotor.tools import model, module
-from pykotor.tools.misc import is_any_erf_type_file, is_bif_file, is_capsule_file, is_mod_file, is_rim_file
+from pykotor.tools.misc import is_any_erf_type_file, is_bif_file, is_capsule_file, is_erf_file, is_mod_file, is_rim_file
 from toolset.config import PROGRAM_VERSION, UPDATE_INFO_LINK
 from toolset.data.installation import HTInstallation
 from toolset.gui.dialogs.about import About
@@ -324,12 +324,24 @@ class ToolWindow(QMainWindow):
     def _saveCapsuleFromToolUI(self, module_name: str):
         c_filepath = self.active.module_path() / module_name
 
-        capsuleFilter = " ".join(f"*.{e.name.lower()}" for e in ERFType) + " *.rim"
+        capsuleFilter = "Module file (*.mod);;Encapsulated Resource File (*.erf);;Resource Image File (*.rim);;Save (*.sav);;All Capsule Types (*.erf; *.mod; *.rim; *.sav)"
+        capsule_type = "module"
+        if is_erf_file(c_filepath):
+            capsule_type = "erf"
+        elif is_rim_file(c_filepath):
+            capsule_type = "rim"
+        extension_to_filter = {
+            ".mod": "Module file (*.mod)",
+            ".erf": "Encapsulated Resource File (*.erf)",
+            ".rim": "Resource Image File (*.rim)",
+            ".sav": "Save ERF (*.sav)",
+        }
         filepath_str, _filter = QFileDialog.getSaveFileName(
             self,
-            f"Save extracted module '{c_filepath.stem}' as...",
-            "",
+            f"Save extracted {capsule_type} '{c_filepath.stem}' as...",
+            str(Path.cwd().resolve()),
             capsuleFilter,
+            extension_to_filter[c_filepath.suffix.lower()],  # defaults to the original extension.
         )
         if not filepath_str.strip():
             return
