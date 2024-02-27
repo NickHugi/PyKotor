@@ -100,7 +100,11 @@ jobs:
           if ($ext -eq "zip") {
             $fileNameWithoutExtension = [System.IO.Path]::GetFileNameWithoutExtension($archiveName)
             Expand-Archive -Path $archiveName -DestinationPath "temp_folder_upx"
-            Move-Item -LiteralPath "temp_folder_upx/$fileNameWithoutExtension" -Destination "./upx-dir"
+            # Ensure upx-dir exists; create it if it doesn't
+            if (-not (Test-Path -Path "upx-dir")) {
+                New-Item -ItemType Directory -Path "upx-dir"
+            }
+            Get-ChildItem -Path "temp_folder_upx/$fileNameWithoutExtension" -Recurse | Move-Item -Destination "upx-dir"
             Remove-Item "temp_folder_upx" -Recurse -Force -ErrorAction SilentlyContinue
           } else {
             tar -xvf $archiveName --strip-components=1 -C "upx-dir"
