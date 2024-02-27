@@ -40,7 +40,6 @@ function Get-Linux-Distro-Name {
         if ($osInfo -match '\nID="?([^"\n]*)"?') {
             $distroName = $Matches[1].Trim('"')
             if ($distroName -eq "ol") {
-                sudo yum install -y https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm
                 return "oracle"
             }
             return $distroName
@@ -50,17 +49,19 @@ function Get-Linux-Distro-Name {
 }
 
 if ((Get-OS) -eq "Mac") {
-    & bash -c "brew install pyqt@5 mpdecimal gstreamer pulseaudio fontconfig" 2>&1 | Write-Output 
+    & bash -c "brew install pyqt@5 qt" 2>&1 | Write-Output 
 } elseif (Test-Path -Path "/etc/os-release") {
     $command = ""
     $distro = (Get-Linux-Distro-Name)
     switch ($distro) {
         "debian" {  # untested
-            $command = "sudo apt-get install python3-opengl python3-pyqt5 libpulse-mainloop-glib0 libgstreamer-plugins-base1.0-dev gstreamer1.0-plugins-base gstreamer1.0-plugins-good gstreamer1.0-plugins-bad gstreamer1.0-plugins-ugly libgstreamer1.0-dev mesa-utils libgl1-mesa-glx libgl1-mesa-dri qtbase5-dev qtchooser qt5-qmake qtbase5-dev-tools libgl1-mesa-glx libglu1-mesa libglu1-mesa-dev libqt5gui5 libqt5core5a libqt5dbus5 libqt5widgets5 -y"
+            sudo apt-get update
+            $command = "sudo apt-get install libicu-dev libwebp-dev liblzma-dev libjpeg-dev libtiff-dev libquadmath0 libgfortran5 libopenblas-dev libxau-dev libxcb1-dev python3-opengl python3-pyqt5 libpulse-mainloop-glib0 libgstreamer-plugins-base1.0-dev gstreamer1.0-plugins-base gstreamer1.0-plugins-good gstreamer1.0-plugins-bad gstreamer1.0-plugins-ugly libgstreamer1.0-dev mesa-utils libgl1-mesa-glx libgl1-mesa-dri qtbase5-dev qtchooser qt5-qmake qtbase5-dev-tools libgl1-mesa-glx libglu1-mesa libglu1-mesa-dev libqt5gui5 libqt5core5a libqt5dbus5 libqt5widgets5 -y"
             break
         }
         "ubuntu" {  # export LIBGL_ALWAYS_SOFTWARE=1
-            $command = "sudo apt-get install python3-opengl python3-pyqt5 libpulse-mainloop-glib0 libgstreamer-plugins-base1.0-dev gstreamer1.0-plugins-base gstreamer1.0-plugins-good gstreamer1.0-plugins-bad gstreamer1.0-plugins-ugly libgstreamer1.0-dev mesa-utils libgl1-mesa-glx libgl1-mesa-dri qtbase5-dev qtchooser qt5-qmake qtbase5-dev-tools libgl1-mesa-glx libglu1-mesa libglu1-mesa-dev libqt5gui5 libqt5core5a libqt5dbus5 libqt5widgets5 -y"
+            sudo apt-get update
+            $command = "sudo apt-get install libicu-dev libwebp-dev liblzma-dev libjpeg-dev libtiff-dev libquadmath0 libgfortran5 libopenblas-dev libxau-dev libxcb1-dev python3-opengl python3-pyqt5 libpulse-mainloop-glib0 libgstreamer-plugins-base1.0-dev gstreamer1.0-plugins-base gstreamer1.0-plugins-good gstreamer1.0-plugins-bad gstreamer1.0-plugins-ugly libgstreamer1.0-dev mesa-utils libgl1-mesa-glx libgl1-mesa-dri qtbase5-dev qtchooser qt5-qmake qtbase5-dev-tools libgl1-mesa-glx libglu1-mesa libglu1-mesa-dev libqt5gui5 libqt5core5a libqt5dbus5 libqt5widgets5 -y"
             break
         }
         "fedora" {
@@ -69,6 +70,7 @@ if ((Get-OS) -eq "Mac") {
             break
         }
         "oracle" {
+            sudo yum install -y https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm
             $command = "sudo dnf install binutils PyQt5 mesa-libGL-devel pulseaudio-libs-glib2 gstreamer1-plugins-base gstreamer1-plugins-good gstreamer1-plugins-bad-free gstreamer1-plugins-ugly-free gstreamer1-devel -y"
             break
         }
@@ -100,17 +102,13 @@ if ((Get-OS) -eq "Mac") {
         # Check if the output contains the error message
         if ($distro -eq "arch") {
             if ($output -match "error: failed to commit transaction (invalid or corrupted package)") {
-                Write-Host "Detected error: No packages were upgraded. Please run the command `sudo pacman-key --refresh-keys` and try again."
-                if (-not $this_noprompt) {
-                    Write-Host "Press any key to exit..."
-                    $null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
-                }
+                Write-Error "Detected error: No packages were upgraded. Please run the command `sudo pacman-key --refresh-keys` and try again."
+                Write-Error $output
             }
         }
     }
 }
 
-Write-Host "Initializing python virtual environment..."
 Write-Host "Initializing python virtual environment..."
 if ($this_noprompt) {
     . $rootPath/install_python_venv.ps1 -noprompt -venv_name $venv_name

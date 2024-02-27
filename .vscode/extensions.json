@@ -10,6 +10,10 @@
     "chinmaybharti.codequalitychecker",
     "codeantai.codeantai",
     "ms-vscode.powershell",
-    "ms-python.debugpy"
+    "ms-python.debugpy",
+    "tylerleonhardt.vscode-inline-values-powershell",
+    "almenon.arepl",
+    "rogalmic.bash-debug",
+    "mads-hartmann.bash-ide-vscode"
   ]
 }

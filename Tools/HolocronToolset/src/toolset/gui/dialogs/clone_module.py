@@ -60,7 +60,7 @@ class CloneModuleDialog(QDialog):
         self._installations: dict[str, HTInstallation] = {active.name: active}
 
         self.ui.createButton.clicked.connect(self.ok)
-        self.ui.cancelButton.clicked.connect(self.close)  # type: ignore[]
+        self.ui.cancelButton.clicked.connect(self.close)
         self.ui.filenameEdit.textChanged.connect(self.setPrefixFromFilename)
         self.ui.moduleSelect.currentIndexChanged.connect(self.changedModule)
 
