@@ -1,6 +1,8 @@
+[CmdletBinding(PositionalBinding=$false)]
 param(
   [switch]$noprompt,
-  [string]$venv_name = ".venv"
+  [string]$venv_name = ".venv",
+  [string]$upx_dir
 )
 $this_noprompt = $noprompt
 
@@ -47,7 +49,7 @@ $pyInstallerArgs = @{
     'noconfirm' = $true
     'name' = "HolocronToolset"
     'distpath'=($rootPath + $pathSep + "dist")
-    'upx-dir' = "C:\GitHub\upx-win64"
+    'upx-dir' = $upx_dir
     'icon'="resources/icons/sith.$iconExtension"
 }
 

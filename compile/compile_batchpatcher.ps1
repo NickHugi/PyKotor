@@ -1,6 +1,8 @@
+[CmdletBinding(PositionalBinding=$false)]
 param(
   [switch]$noprompt,
-  [string]$venv_name = ".venv"
+  [string]$venv_name = ".venv",
+  [string]$upx_dir
 )
 $this_noprompt = $noprompt
 
@@ -53,7 +55,7 @@ $pyInstallerArgs = @{
     'noconfirm' = $true
     'name' = 'K_BatchPatcher'
     'distpath' = ($rootPath + $pathSep + 'dist')
-    'upx-dir' = "C:\GitHub\upx-win64"
+    'upx-dir' = $upx_dir
 }
 
 $pyInstallerArgs = $pyInstallerArgs.GetEnumerator() | ForEach-Object {

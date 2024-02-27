@@ -17,63 +17,54 @@ if ($this_noprompt) {
     . $rootPath/install_python_venv.ps1 -venv_name $venv_name
 }
 
-$output = & $pythonExePath -c "import tkinter; print('Tkinter is available')" 2>&1
-if ($output -match "ModuleNotFoundError" -or $output -is [System.Management.Automation.ErrorRecord]) {
-    Write-Host "Tkinter is not available for $($pythonExePath)"
-    $venvPath = ""
-    if ($null -ne $env:VIRTUAL_ENV) {
-        Write-Host "A virtual environment is activated."
-        Write-Host "Virtual Environment Root: $($env:VIRTUAL_ENV)"
-        $venvPath = $env:VIRTUAL_ENV
-        deactivate
-    } else {
-        Write-Host "No virtual environment is activated."
-    }
-    if ((Get-OS) -eq "Mac") {
-        brew install python@3.12 python-tk
-    } elseif ((Get-OS) -eq "Linux") {
-        if (Test-Path -Path "/etc/os-release") {
-            switch ((Get-Linux-Distro-Name)) {
-                "debian" {
-                    sudo apt-get install python3-tk -y
-                    break
-                }
-                "ubuntu" {
-                    sudo apt-get install python3-tk -y
-                    break
-                }
-                "fedora" {
-                    sudo dnf install python3-tkinter python3.10-tkinter
-                    break
-                }
-                "almalinux" {
-                    sudo dnf install tk-devel tcl-devel
-                    sudo dnf install python3-tkinter -y
-                    break
-                }
-                "alpine" {
-                    sudo apk add ttf-dejavu fontconfig python3-tkinter
-                    break
-                }
-                "arch" {
-                    sudo pacman -Syu
-                    sudo pacman -Sy tk mpdecimal --noconfirm
-                }
+if ((Get-OS) -eq "Mac") {
+    brew install python@3.12 python-tk
+} elseif ((Get-OS) -eq "Linux") {
+    if (Test-Path -Path "/etc/os-release") {
+        switch ((Get-Linux-Distro-Name)) {
+            "debian" {
+                sudo apt-get update
+                sudo apt-get install -y tcl8.6 tk8.6 tcl8.6-dev tk8.6-dev python3-tk
+                break
+            }
+            "ubuntu" {
+                sudo apt-get update
+                sudo apt-get install -y tcl8.6 tk8.6 tcl8.6-dev tk8.6-dev python3-tk
+                break
+            }
+            "fedora" {
+                sudo dnf install -y tk-devel tcl-devel python3-tkinter
+                break
+            }
+            "almalinux" {
+                sudo yum install -y tk-devel tcl-devel python3-tkinter
+                break
+            }
+            "rocky" {
+                sudo yum install -y tk-devel tcl-devel python3-tkinter
+                break
+            }
+            "alpine" {
+                sudo apk add --update tcl tk python3-tkinter ttf-dejavu fontconfig
+                break
+            }
+            "arch" {
+                sudo pacman -Syu --noconfirm tk tcl mpdecimal
+                break
+            }
+            "manjaro" {
+                sudo pacman -Syu --noconfirm tk tcl mpdecimal
+                break
+            }
+            "opensuse" {
+                sudo zypper install -y tk-devel tcl-devel python3-tk
+                break
+            }
+            default {
+                Write-Warning "Distribution not recognized or not supported by this script."
             }
         }
     }
-    if ($venvPath -ne "" -and $null -ne $venvPath) {
-        Write-Host "Deleting old venv at '$venvPath'..."
-        Remove-Item -Path $venvPath -Recurse -Force
-    }
-    Write-Host "Reinitializing python virtual environment..."
-    if ($this_noprompt) {
-        . $rootPath/install_python_venv.ps1 -noprompt -venv_name $venv_name
-    } else {
-        . $rootPath/install_python_venv.ps1 -venv_name $venv_name
-    }    
-} else {
-    Write-Host "Tkinter is available for $($pythonExePath)"
 }
 
 Write-Host "Installing required packages to build the batchpatcher..."
