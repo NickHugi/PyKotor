@@ -1,6 +1,8 @@
+[CmdletBinding(PositionalBinding=$false)]
 param(
   [switch]$noprompt,
-  [string]$venv_name = ".venv"
+  [string]$venv_name = ".venv",
+  [string]$upx_dir
 )
 $this_noprompt = $noprompt
 
@@ -84,7 +86,7 @@ $pyInstallerArgs = @{
     'noconfirm' = $true
     'distpath' = ($rootPath + $pathSep + "dist")
     'name' = 'HoloPatcher'
-    'upx-dir' = "C:\GitHub\upx-win64"
+    'upx-dir' = $upx_dir
     'icon' = "..$pathSep" + "resources$pathSep" + "icons$pathSep" + "patcher_icon_v2.$iconExtension"
 }
 

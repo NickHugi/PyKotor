@@ -18,7 +18,7 @@ requires-python = ">= 3.7"
 dependencies = ["ply>=3.11,<4"]  # required for the nss compiler lexer
 
 [project.optional-dependencies]
-font                 = ["Pillow>=9.5,<11"]    # required for TXI/TGA fonts
+font                 = ["Pillow>=9.5"]    # required for TXI/TGA fonts
 secure_xml           = ["defusedxml~=0.7"]    # secure XML parsing
 encodings = ["charset-normalizer>=2.0,<3.4"]  # used for localized string decodings
 
