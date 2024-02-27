@@ -59,31 +59,34 @@ jobs:
       id: upx_setup
       run: |
         $build = "no"
+        $archiveName = ""
         if ("${{ runner.os }}" -eq "Windows") {
           if ("${{ matrix.architecture }}" -eq "x86") {
-            $url = "https://github.com/upx/upx/releases/download/v4.2.2/upx-4.2.2-win32.zip"
+            $archiveName = "upx-4.2.2-win32.zip"
           } else {
-            $url = "https://github.com/upx/upx/releases/download/v4.2.2/upx-4.2.2-win64.zip"
+            $archiveName = "upx-4.2.2-win64.zip"
           }
         } elseif ("${{ runner.os }}" -eq "Linux") {
-          $url = "https://github.com/upx/upx/releases/download/v4.2.2/upx-4.2.2-amd64_linux.tar.xz"
+          $archiveName = "upx-4.2.2-amd64_linux.tar.xz"
         } elseif ("${{ runner.os }}" -eq "macOS") {
           $build = "yes"
-          $url = "https://github.com/upx/upx/releases/download/v4.2.2/upx-4.2.2-src.tar.xz"
+          $archiveName = "upx-4.2.2-src.tar.xz"
         }
+        $url = "https://github.com/upx/upx/releases/download/v4.2.2/$archiveName"
     
         # Write to the GITHUB_OUTPUT environment file
         Add-Content -Path $env:GITHUB_OUTPUT -Value "build=$build"
         Add-Content -Path $env:GITHUB_OUTPUT -Value "url=$url"
+        Add-Content -Path $env:GITHUB_OUTPUT -Value "archiveName=$archiveName"
       shell: pwsh
 
     - name: Download and prepare UPX
       if: runner.os != 'macOS'
       run: |        
         $ext = "${{ runner.os }}" -eq "Windows" ? "zip" : "tar.xz"
-        $outputPath = "upx-dir"
         $url = "${{ steps.upx_setup.outputs.url }}"
-        $archiveName = "upx.$ext"
+        $archiveName = "${{ steps.upx_setup.outputs.archiveName }}"
+        $outputPath = "upx-dir"
 
         # Use Invoke-WebRequest or curl depending on the OS
         if ("${{ runner.os }}" -eq "Windows") {
