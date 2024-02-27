@@ -351,6 +351,7 @@ class ToolWindow(QMainWindow):
             elif is_any_erf_type_file(r_save_filepath):
                 if isinstance(erf_or_rim, RIM):
                     erf_or_rim = erf_or_rim.to_erf()
+                erf_or_rim.erf_type = ERFType.from_extension(r_save_filepath)
                 write_erf(erf_or_rim, r_save_filepath)
                 QMessageBox(QMessageBox.Information, "ERF Saved", f"Encapsulated Resource File saved to '{r_save_filepath}'").exec_()
 
