@@ -27,7 +27,7 @@ license = {text = "GPLv3 License"}
 keywords = ["kotor", "library", "holocron", "toolset", "pykotor", "editor", "holopatcher", "tslpatcher"]
 
 [project.optional-dependencies]
-font_writer = ["Pillow>=9.5,<11"] # required for TXI/TGA fonts
+font_writer = ["Pillow>=9.5"]  # required for TXI/TGA fonts
 xml         = ["defusedxml~=0.7"]         # secure XML parsing
 gl          = [
   "PyGLM>=2.0,<2.8",

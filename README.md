@@ -1,6 +1,7 @@
+
 PyKotor
 =======
-A comprehensive and exhaustive Python library that can read and modify most file formats used by the game [Knights of the Old Republic](https://en.wikipedia.org/wiki/Star_Wars:_Knights_of_the_Old_Republic_(video_game)) and its [sequel](https://en.wikipedia.org/wiki/Star_Wars_Knights_of_the_Old_Republic_II:_The_Sith_Lords).
+A comprehensive Python library that can read and modify most file formats used by the game [Knights of the Old Republic](https://en.wikipedia.org/wiki/Star_Wars:_Knights_of_the_Old_Republic_(video_game)) and its [sequel](https://en.wikipedia.org/wiki/Star_Wars_Knights_of_the_Old_Republic_II:_The_Sith_Lords).
 
 ## Installation
 (The PyPI egg is currently in maintenance. Please check back later) Install from [PyPI](https://pypi.org/project/PyKotor/).
@@ -68,9 +69,54 @@ write_tpc(tex, "./C_Gammorean01.tga", ResourceType.TGA)
 ```
 As shown, this will save `C_Gammorean01.tga` to the current directory.
 
+## Tests
+
+These represent the currently passing/failing python versions/operating system combinations. Each badge is hyperlinked and permalinked to the full test report. Pick and choose any commit and see how far we have come.
+
+### Windows:
+
+<!-- WINDOWS-BADGES-START -->
+[![3.7-x86-Build_Failed](https://img.shields.io/badge/3.7--x86_Build_Failed-lightgrey)](https://github.com/th3w1zard1/PyKotor/actions/runs/8059254249)
+[![3.7-x64-Build_Failed](https://img.shields.io/badge/3.7--x64_Build_Failed-lightgrey)](https://github.com/th3w1zard1/PyKotor/actions/runs/8059254249)
+[![windows-2019-3.8-x86](https://img.shields.io/badge/build-3.8--x86_Passing_631-brightgreen?style=plastic&logo=simple-icons&logoColor=%23FF5e34&label=9&labelColor=%23c71818&color=%232f991a)](https://github.com/th3w1zard1/PyKotor/blob/2fb46e566313bb58aa68573acd48b27bfdf26789/tests/results/pytest_report_windows-2019_3.8_x86/pytest_report.html)
+[![windows-2019-3.8-x64](https://img.shields.io/badge/build-3.8--x64_Passing_631-brightgreen?style=plastic&logo=simple-icons&logoColor=%23FF5e34&label=9&labelColor=%23c71818&color=%232f991a)](https://github.com/th3w1zard1/PyKotor/blob/2fb46e566313bb58aa68573acd48b27bfdf26789/tests/results/pytest_report_windows-2019_3.8_x64/pytest_report.html)
+[![windows-2019-3.9-x86](https://img.shields.io/badge/build-3.9--x86_Passing_631-brightgreen?style=plastic&logo=simple-icons&logoColor=%23FF5e34&label=9&labelColor=%23c71818&color=%232f991a)](https://github.com/th3w1zard1/PyKotor/blob/2fb46e566313bb58aa68573acd48b27bfdf26789/tests/results/pytest_report_windows-2019_3.9_x86/pytest_report.html)
+[![windows-2019-3.9-x64](https://img.shields.io/badge/build-3.9--x64_Passing_631-brightgreen?style=plastic&logo=simple-icons&logoColor=%23FF5e34&label=9&labelColor=%23c71818&color=%232f991a)](https://github.com/th3w1zard1/PyKotor/blob/2fb46e566313bb58aa68573acd48b27bfdf26789/tests/results/pytest_report_windows-2019_3.9_x64/pytest_report.html)
+[![windows-2019-3.10-x86](https://img.shields.io/badge/build-3.10--x86_Passing_631-brightgreen?style=plastic&logo=simple-icons&logoColor=%23FF5e34&label=9&labelColor=%23c71818&color=%232f991a)](https://github.com/th3w1zard1/PyKotor/blob/2fb46e566313bb58aa68573acd48b27bfdf26789/tests/results/pytest_report_windows-2019_3.10_x86/pytest_report.html)
+[![windows-2019-3.10-x64](https://img.shields.io/badge/build-3.10--x64_Passing_631-brightgreen?style=plastic&logo=simple-icons&logoColor=%23FF5e34&label=9&labelColor=%23c71818&color=%232f991a)](https://github.com/th3w1zard1/PyKotor/blob/2fb46e566313bb58aa68573acd48b27bfdf26789/tests/results/pytest_report_windows-2019_3.10_x64/pytest_report.html)
+[![windows-2019-3.11-x86](https://img.shields.io/badge/build-3.11--x86_Passing_631-brightgreen?style=plastic&logo=simple-icons&logoColor=%23FF5e34&label=9&labelColor=%23c71818&color=%232f991a)](https://github.com/th3w1zard1/PyKotor/blob/2fb46e566313bb58aa68573acd48b27bfdf26789/tests/results/pytest_report_windows-2019_3.11_x86/pytest_report.html)
+[![windows-2019-3.11-x64](https://img.shields.io/badge/build-3.11--x64_Passing_631-brightgreen?style=plastic&logo=simple-icons&logoColor=%23FF5e34&label=9&labelColor=%23c71818&color=%232f991a)](https://github.com/th3w1zard1/PyKotor/blob/2fb46e566313bb58aa68573acd48b27bfdf26789/tests/results/pytest_report_windows-2019_3.11_x64/pytest_report.html)
+[![windows-2019-3.12-x86](https://img.shields.io/badge/build-3.12--x86_Passing_631-brightgreen?style=plastic&logo=simple-icons&logoColor=%23FF5e34&label=9&labelColor=%23c71818&color=%232f991a)](https://github.com/th3w1zard1/PyKotor/blob/2fb46e566313bb58aa68573acd48b27bfdf26789/tests/results/pytest_report_windows-2019_3.12_x86/pytest_report.html)
+[![windows-2019-3.12-x64](https://img.shields.io/badge/build-3.12--x64_Passing_631-brightgreen?style=plastic&logo=simple-icons&logoColor=%23FF5e34&label=9&labelColor=%23c71818&color=%232f991a)](https://github.com/th3w1zard1/PyKotor/blob/2fb46e566313bb58aa68573acd48b27bfdf26789/tests/results/pytest_report_windows-2019_3.12_x64/pytest_report.html)
+[![3.13.0-alpha.4-x86-Build_Failed](https://img.shields.io/badge/3.13.0--alpha.4--x86_Build_Failed-lightgrey)](https://github.com/th3w1zard1/PyKotor/actions/runs/8059254249)
+[![3.13.0-alpha.4-x64-Build_Failed](https://img.shields.io/badge/3.13.0--alpha.4--x64_Build_Failed-lightgrey)](https://github.com/th3w1zard1/PyKotor/actions/runs/8059254249)
+<!-- WINDOWS-BADGES-END -->
+
+### Linux:
+
+<!-- LINUX-BADGES-START -->
+[![ubuntu-20.04-3.7-x64](https://img.shields.io/badge/build-3.7--x64_Passing_0-brightgreen?style=plastic&logo=simple-icons&logoColor=%23FF5e34&label=1&labelColor=%23c71818&color=%232f991a)](https://github.com/th3w1zard1/PyKotor/blob/2fb46e566313bb58aa68573acd48b27bfdf26789/tests/results/pytest_report_ubuntu-20.04_3.7_x64/pytest_report.html)
+[![ubuntu-20.04-3.8-x64](https://img.shields.io/badge/build-3.8--x64_Passing_631-brightgreen?style=plastic&logo=simple-icons&logoColor=%23FF5e34&label=9&labelColor=%23c71818&color=%232f991a)](https://github.com/th3w1zard1/PyKotor/blob/2fb46e566313bb58aa68573acd48b27bfdf26789/tests/results/pytest_report_ubuntu-20.04_3.8_x64/pytest_report.html)
+[![ubuntu-20.04-3.9-x64](https://img.shields.io/badge/build-3.9--x64_Passing_631-brightgreen?style=plastic&logo=simple-icons&logoColor=%23FF5e34&label=9&labelColor=%23c71818&color=%232f991a)](https://github.com/th3w1zard1/PyKotor/blob/2fb46e566313bb58aa68573acd48b27bfdf26789/tests/results/pytest_report_ubuntu-20.04_3.9_x64/pytest_report.html)
+[![ubuntu-20.04-3.10-x64](https://img.shields.io/badge/build-3.10--x64_Passing_631-brightgreen?style=plastic&logo=simple-icons&logoColor=%23FF5e34&label=9&labelColor=%23c71818&color=%232f991a)](https://github.com/th3w1zard1/PyKotor/blob/2fb46e566313bb58aa68573acd48b27bfdf26789/tests/results/pytest_report_ubuntu-20.04_3.10_x64/pytest_report.html)
+[![ubuntu-20.04-3.11-x64](https://img.shields.io/badge/build-3.11--x64_Passing_631-brightgreen?style=plastic&logo=simple-icons&logoColor=%23FF5e34&label=9&labelColor=%23c71818&color=%232f991a)](https://github.com/th3w1zard1/PyKotor/blob/2fb46e566313bb58aa68573acd48b27bfdf26789/tests/results/pytest_report_ubuntu-20.04_3.11_x64/pytest_report.html)
+[![ubuntu-20.04-3.12-x64](https://img.shields.io/badge/build-3.12--x64_Passing_631-brightgreen?style=plastic&logo=simple-icons&logoColor=%23FF5e34&label=9&labelColor=%23c71818&color=%232f991a)](https://github.com/th3w1zard1/PyKotor/blob/2fb46e566313bb58aa68573acd48b27bfdf26789/tests/results/pytest_report_ubuntu-20.04_3.12_x64/pytest_report.html)
+[![ubuntu-20.04-3.13.0-alpha.4-x64](https://img.shields.io/badge/build-3.13.0--alpha.4--x64_Passing_33-brightgreen?style=plastic&logo=simple-icons&logoColor=%23FF5e34&label=50&labelColor=%23c71818&color=%232f991a)](https://github.com/th3w1zard1/PyKotor/blob/2fb46e566313bb58aa68573acd48b27bfdf26789/tests/results/pytest_report_ubuntu-20.04_3.13.0-alpha.4_x64/pytest_report.html)
+<!-- LINUX-BADGES-END -->
+
+### MacOS:
+
+<!-- MACOS-BADGES-START -->
+[![macos-12-3.7-x64](https://img.shields.io/badge/build-3.7--x64_Passing_0-brightgreen?style=plastic&logo=simple-icons&logoColor=%23FF5e34&label=1&labelColor=%23c71818&color=%232f991a)](https://github.com/th3w1zard1/PyKotor/blob/2fb46e566313bb58aa68573acd48b27bfdf26789/tests/results/pytest_report_macos-12_3.7_x64/pytest_report.html)
+[![macos-12-3.8-x64](https://img.shields.io/badge/build-3.8--x64_Passing_627-brightgreen?style=plastic&logo=simple-icons&logoColor=%23FF5e34&label=13&labelColor=%23c71818&color=%232f991a)](https://github.com/th3w1zard1/PyKotor/blob/2fb46e566313bb58aa68573acd48b27bfdf26789/tests/results/pytest_report_macos-12_3.8_x64/pytest_report.html)
+[![macos-12-3.9-x64](https://img.shields.io/badge/build-3.9--x64_Passing_627-brightgreen?style=plastic&logo=simple-icons&logoColor=%23FF5e34&label=13&labelColor=%23c71818&color=%232f991a)](https://github.com/th3w1zard1/PyKotor/blob/2fb46e566313bb58aa68573acd48b27bfdf26789/tests/results/pytest_report_macos-12_3.9_x64/pytest_report.html)
+[![macos-12-3.10-x64](https://img.shields.io/badge/build-3.10--x64_Passing_627-brightgreen?style=plastic&logo=simple-icons&logoColor=%23FF5e34&label=13&labelColor=%23c71818&color=%232f991a)](https://github.com/th3w1zard1/PyKotor/blob/2fb46e566313bb58aa68573acd48b27bfdf26789/tests/results/pytest_report_macos-12_3.10_x64/pytest_report.html)
+[![macos-12-3.11-x64](https://img.shields.io/badge/build-3.11--x64_Passing_627-brightgreen?style=plastic&logo=simple-icons&logoColor=%23FF5e34&label=13&labelColor=%23c71818&color=%232f991a)](https://github.com/th3w1zard1/PyKotor/blob/2fb46e566313bb58aa68573acd48b27bfdf26789/tests/results/pytest_report_macos-12_3.11_x64/pytest_report.html)
+[![macos-12-3.12-x64](https://img.shields.io/badge/build-3.12--x64_Passing_627-brightgreen?style=plastic&logo=simple-icons&logoColor=%23FF5e34&label=13&labelColor=%23c71818&color=%232f991a)](https://github.com/th3w1zard1/PyKotor/blob/2fb46e566313bb58aa68573acd48b27bfdf26789/tests/results/pytest_report_macos-12_3.12_x64/pytest_report.html)
+[![macos-12-3.13.0-alpha.4-x64](https://img.shields.io/badge/build-3.13.0--alpha.4--x64_Passing_33-brightgreen?style=plastic&logo=simple-icons&logoColor=%23FF5e34&label=50&labelColor=%23c71818&color=%232f991a)](https://github.com/th3w1zard1/PyKotor/blob/2fb46e566313bb58aa68573acd48b27bfdf26789/tests/results/pytest_report_macos-12_3.13.0-alpha.4_x64/pytest_report.html)
+<!-- MACOS-BADGES-END -->
+
 ## License
-<<<<<<< HEAD
-This repository falls under the [MIT License](https://github.com/NickHugi/PyKotor/blob/master/LICENSE).
-=======
 This repository falls under the [GPLv3 License](https://github.com/NickHugi/PyKotor/blob/master/LICENSE).
->>>>>>> master
+
+

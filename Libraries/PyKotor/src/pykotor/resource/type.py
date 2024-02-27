@@ -316,6 +316,7 @@ class ResourceType(Enum):
         A ResourceType and a str are equal if the extension is case-sensitively equal to the string.
         A ResourceType and a int are equal if the type_id is equal to the integer.
         """
+        # sourcery skip: assign-if-exp, merge-duplicate-blocks, reintroduce-else, remove-redundant-if, split-or-ifs
         if isinstance(other, ResourceType):
             if self.is_invalid or other.is_invalid:
                 return self.is_invalid and other.is_invalid
