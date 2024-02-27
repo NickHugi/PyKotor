@@ -239,13 +239,6 @@ jobs:
         name: publish_${{ matrix.os }}_${{ matrix.python-version }}_${{ matrix.architecture }}
         path: ./dist/**
 
-    - name: Install MinGW with GCC >= 8.4 on Windows
-      if: runner.os == 'Windows' && matrix.python-version == '3.13.0-alpha.4'
-      run: |
-        choco install mingw -y
-        echo "C:\tools\mingw64\bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
-      shell: pwsh
-
     - name: Install MinGW with GCC on Windows
       if: runner.os == 'Windows' && matrix.python-version == '3.13.0-alpha.4'
       run: |
@@ -411,7 +404,7 @@ jobs:
                     # Encode the label to replace spaces with underscores and URI-encode other special characters
                     $encodedKey = [System.Web.HttpUtility]::UrlEncode($shortKey.Replace(' ', '_').Replace('-', '--'))
                     $BadgeURLPassed = "https://img.shields.io/badge/${encodedKey}_Passed-${passedTests}-brightgreen"
-                    $BadgeMarkdown = '[![' + $key + '](https://img.shields.io/badge/build-' + $encodedKey + $passedTests + '_Passing_' + '-brightgreen?style=plastic&logo=simple-icons&logoColor=%23FF5e34&label=' + $failedTests + '%2052&labelColor=%23c71818&color=%232f991a)](' + $DetailsURL + ')'
+                    $BadgeMarkdown = '[![' + $key + '](https://img.shields.io/badge/build-' + $encodedKey + $passedTests + '_Passing_' + '-brightgreen?style=plastic&logo=simple-icons&logoColor=%23FF5e34&label=' + $failedTests + '&labelColor=%23c71818&color=%232f991a)](' + $DetailsURL + ')'
                 } else {
                     Write-Host "No test results for '$key', must have failed, generating 'Build Failed' badge..."
                     $encodedKey = [System.Web.HttpUtility]::UrlEncode($shortKey.Replace(' ', '_').Replace('-', '--'))

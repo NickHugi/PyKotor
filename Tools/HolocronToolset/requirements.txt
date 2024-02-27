@@ -9,5 +9,5 @@ jsmin~=3.0
 requests>=2.27,<2.32
 certifi==2021.10.8
 pyperclip~=1.8
-setuptools>=68.2.2
+setuptools>=67.8.0
 Pillow>=9.5
