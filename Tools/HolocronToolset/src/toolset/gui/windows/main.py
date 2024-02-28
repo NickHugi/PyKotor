@@ -652,7 +652,7 @@ class ToolWindow(QMainWindow):
             areaNames,
             key=lambda moduleFileName:
             (
-                moduleFileName
+                moduleFileName.lower()
                 if self.settings.useModuleFilenames
                 else areaNames.get(moduleFileName).lower()
             )
