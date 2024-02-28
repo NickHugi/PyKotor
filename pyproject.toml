@@ -198,6 +198,7 @@ ignore = [
 ".mdx" = ["ALL"]
 ".mdl" = ["ALL"]
 "pykotor/resource/formats/ncs/compiler/*.py" = ["ALL"]
+"tests/results" = ["ALL"]
 
 [tool.ruff.lint.flake8-pytest-style]
 fixture-parentheses = false
