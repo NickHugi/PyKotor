@@ -3,6 +3,7 @@ from __future__ import annotations
 from copy import deepcopy
 from typing import TYPE_CHECKING
 
+from PyQt5.QtCore import QObject
 from PyQt5.QtWidgets import QMessageBox
 
 from pykotor.common.misc import ResRef
@@ -28,7 +29,13 @@ if TYPE_CHECKING:
 
 
 class UTDEditor(Editor):
-    def __init__(self, parent: QWidget | None, installation: HTInstallation | None = None, *, mainwindow=None):
+    def __init__(
+        self,
+        parent: QWidget | None,
+        installation: HTInstallation | None = None,
+        *,
+        mainwindow: QWidget | QObject | None = None,
+    ):
         """Initialize the Door Editor.
 
         Args:

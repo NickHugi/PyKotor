@@ -4,7 +4,7 @@ from copy import deepcopy
 from typing import TYPE_CHECKING
 
 from PyQt5 import QtCore
-from PyQt5.QtCore import QBuffer, QIODevice
+from PyQt5.QtCore import QBuffer, QIODevice, QObject
 from PyQt5.QtMultimedia import QMediaContent, QMediaPlayer
 from PyQt5.QtWidgets import QListWidgetItem, QMessageBox
 
@@ -25,7 +25,13 @@ if TYPE_CHECKING:
 
 
 class UTSEditor(Editor):
-    def __init__(self, parent: QWidget | None, installation: HTInstallation | None = None):
+    def __init__(
+        self,
+        parent: QWidget | None,
+        installation: HTInstallation | None = None,
+        *,
+        mainwindow: QWidget | QObject | None = None,
+    ):
         """Initialize the Sound Editor window.
 
         Args:

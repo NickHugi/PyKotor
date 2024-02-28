@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+from PyQt5.QtCore import QObject
 from PyQt5.QtWidgets import QMessageBox, QWidget
 
 from pykotor.resource.formats.erf.erf_data import ERFType
@@ -37,7 +38,8 @@ def openResourceEditor(
     restype: ResourceType,
     data: bytes,
     installation: HTInstallation | None = None,
-    parentwindow: QWidget | None = None,
+    parentwindow: QWidget | QObject | None = None,
+    *,
     gff_specialized: bool | None = None,
 ) -> tuple[os.PathLike | str, Editor] | tuple[None, None]:
     """Opens an editor for the specified resource.
