@@ -1,1 +1,10 @@
-install_powershell.sh text eol=lf
+*.sh text eol=lf
+*.ps1 text eol=lf
+*.sh -crlf diff eol=lf
+*.ps1 -crlf diff eol=lf
+*.sh -crlf diff eol=lf chmod=+x
+*.ps1 -crlf diff eol=lf chmod=+x
+dist/* -text
+dist/* -crlf
+dist/* -diff
+dist/* binary chmod=+x
