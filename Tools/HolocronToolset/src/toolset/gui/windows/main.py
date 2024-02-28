@@ -222,6 +222,9 @@ class ToolWindow(QMainWindow):
         if eventType == "deleted":
             self.onModuleRefresh()
         else:
+            if not changedFile or not changedFile.strip():  # FIXME: Why is the watchdog constantly sending invalid filenames?
+                print(f"onModuleFileUpdated: can't reload module '{changedFile}', invalid name")
+                return
             # Reload the resource cache for the module
             self.active.reload_module(changedFile)
             # If the current module opened is the file which was updated, then we
@@ -233,6 +236,9 @@ class ToolWindow(QMainWindow):
         self.onModuleReload(newModuleFile)
 
     def onModuleReload(self, moduleFile: str):
+        if not moduleFile or not moduleFile.strip():  # FIXME: Why is the watchdog constantly sending invalid filenames?
+            print(f"onModuleReload: can't reload module '{moduleFile}', invalid name")
+            return
         resources: list[FileResource] = self.active.module_resources(moduleFile)
 
         # Some users may choose to have their RIM files for the same module merged into a single option for the
