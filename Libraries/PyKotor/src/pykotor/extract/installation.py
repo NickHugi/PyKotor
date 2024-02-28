@@ -3,7 +3,7 @@ from __future__ import annotations
 import os
 import re
 
-from concurrent.futures import ThreadPoolExecutor, as_completed
+from concurrent.futures import ThreadPoolExecutor
 from copy import copy
 from enum import Enum, IntEnum
 from typing import TYPE_CHECKING, Any, Callable, ClassVar, Generator, NamedTuple
@@ -23,8 +23,6 @@ from pykotor.tools.misc import is_capsule_file, is_erf_file, is_mod_file, is_rim
 from pykotor.tools.path import CaseAwarePath
 from pykotor.tools.sound import deobfuscate_audio
 from utility.error_handling import format_exception_with_variables
-from utility.misc import remove_duplicates
-from utility.string import CaseInsensitiveWrappedStr
 from utility.system.path import Path, PurePath
 
 if TYPE_CHECKING:
@@ -667,7 +665,6 @@ class Installation:  # noqa: PLR0904
         -------
             A list of filenames.
         """
-        if not self._texturepacks:
         return list(self._texturepacks.keys())
 
     def texturepack_resources(
