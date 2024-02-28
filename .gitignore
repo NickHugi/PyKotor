@@ -62,3 +62,4 @@ Tools/HolocronToolset/src/toolset/kits/*/*
 .venv
 .venv_wsl
 .secrets
+tests/results/
