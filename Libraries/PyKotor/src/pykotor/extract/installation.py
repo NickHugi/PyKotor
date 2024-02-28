@@ -482,6 +482,8 @@ class Installation:  # noqa: PLR0904
         ----
             module: The filename of the module, including the extension.
         """
+        if not self._modules or module not in self._modules:
+            self.load_modules()
         self._modules[module] = list(Capsule(self.module_path() / module))
 
     def load_rims(
