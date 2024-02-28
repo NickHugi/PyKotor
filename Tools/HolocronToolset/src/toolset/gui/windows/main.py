@@ -541,6 +541,9 @@ class ToolWindow(QMainWindow):
             ResourceType.JRL,
             [SearchLocation.OVERRIDE, SearchLocation.CHITIN],
         )
+        if res is None:
+            print("res cannot be None in openActiveJournal")
+            return
         openResourceEditor(
             res.filepath,
             resref="global",
@@ -640,14 +643,15 @@ class ToolWindow(QMainWindow):
                 buttons=QMessageBox.Ok,
                 parent=self,
             ).exec_()
-        elif not silent:
-            QMessageBox(
-                icon=QMessageBox.Information,
-                title="Version is up to date",
-                text=f"You are running the latest version ({'.'.join(str(i) for i in PROGRAM_VERSION)}).",
-                buttons=QMessageBox.Ok,
-                parent=self,
-            ).exec_()
+        elif silent:
+            return
+        QMessageBox(
+            icon=QMessageBox.Information,
+            title="Version is up to date",
+            text=f"You are running the latest version ({'.'.join(str(i) for i in PROGRAM_VERSION)}).",
+            buttons=QMessageBox.Ok,
+            parent=self,
+        ).exec_()
 
     # endregion
 
