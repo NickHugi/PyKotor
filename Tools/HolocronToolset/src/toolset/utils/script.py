@@ -5,6 +5,8 @@ import re
 import sys
 import uuid
 
+from contextlib import suppress
+
 from PyQt5.QtWidgets import QFileDialog, QMessageBox
 
 from pykotor.common.misc import Game
@@ -21,6 +23,17 @@ from utility.error_handling import format_exception_with_variables
 from utility.misc import ProcessorArchitecture
 from utility.system.path import Path
 
+NON_TSLPATCHER_NWNNSSCOMP_PERMISSION_MSG = (
+    "PyKotor has detected you are using the {} version of nwnnsscomp.<br>"
+    " This version doesn't have any known functional problems, though it DOES require that the registry"
+    " key path:<br>{}<br>matches your KotOR installation path.<br><br>"
+    "Your installation path ({}),<br>"
+    "DOES NOT MATCH the registry value ({})<br><br>"
+    "Due to the above, the compilation/decompilation will most likely fail.<br>"
+    "Either restart HolocronToolset with admin privileges, or download and use the"
+    " TSLPatcher version of nwnnsscomp to fix this issue.<br><br>"
+    "Error details: {}"
+)
 
 def decompileScript(compiled_bytes: bytes, tsl: bool, installation_path: Path) -> str:
     """Returns the NSS bytes of a decompiled script. If no NCS Decompiler is selected, prompts the user to find the executable.
@@ -88,21 +101,39 @@ def decompileScript(compiled_bytes: bytes, tsl: bool, installation_path: Path) -
                 orig_regkey_path = r"HKEY_LOCAL_MACHINE\SOFTWARE\BioWare\SW\KOTOR"
 
             orig_regkey_value = resolve_reg_key_to_path(orig_regkey_path, "Path")
-            set_registry_key_value(orig_regkey_path, "Path", str(installation_path))
+            installation_path_str = str(installation_path)
+            if orig_regkey_value != installation_path_str:
+                try:
+                    set_registry_key_value(orig_regkey_path, "Path", installation_path_str)
+                except PermissionError as e:
+                    print(f"Permission denied: {e}")
+                    msg = NON_TSLPATCHER_NWNNSSCOMP_PERMISSION_MSG.format(
+                        extCompiler.get_info().name,
+                        orig_regkey_path,
+                        installation_path_str,
+                        orig_regkey_value,
+                        str(e)
+                    )
+                    QMessageBox(
+                        QMessageBox.Warning,
+                        "Permission denied when attempting to update nwnnsscomp in registry",
+                        msg,
+                    ).exec_()
         stdout, stderr = extCompiler.decompile_script(tempCompiledPath, tempDecompiledPath, game)
         print(stdout, "\n", stderr)
         if stderr:
             raise ValueError(stderr)  # noqa: TRY301
         return BinaryReader.load_file(tempDecompiledPath).decode(encoding="windows-1252")
     except Exception as e:
-        with Path("errorlog.txt").open("a") as f:
+        with Path("errorlog.txt", encoding="utf-8").open("a") as f:
             msg = format_exception_with_variables(e)
             print(msg, sys.stderr)  # noqa: T201
             f.write(msg)
         raise
     finally:
-        if orig_regkey_value is not None and orig_regkey_path is not None:
-            set_registry_key_value(orig_regkey_path, "Path", orig_regkey_value)
+        if orig_regkey_value and orig_regkey_path and orig_regkey_value != str(installation_path):
+            with suppress(PermissionError):
+                set_registry_key_value(orig_regkey_path, "Path", orig_regkey_value)
 
 
 def compileScript(source: str, tsl: bool, installation_path: Path) -> bytes | None:
@@ -197,7 +228,24 @@ def _compile_windows(
                 orig_regkey_path = r"HKEY_LOCAL_MACHINE\SOFTWARE\BioWare\SW\KOTOR"
 
             orig_regkey_value = resolve_reg_key_to_path(orig_regkey_path, "Path")
-            set_registry_key_value(orig_regkey_path, "Path", str(installation_path))
+            installation_path_str = str(installation_path)
+            if orig_regkey_value != installation_path_str:
+                try:
+                    set_registry_key_value(orig_regkey_path, "Path", installation_path_str)
+                except PermissionError as e:
+                    print(f"Permission denied: {e}")
+                    msg = NON_TSLPATCHER_NWNNSSCOMP_PERMISSION_MSG.format(
+                        extCompiler.get_info().name,
+                        orig_regkey_path,
+                        installation_path_str,
+                        orig_regkey_value,
+                        str(e)
+                    )
+                    QMessageBox(
+                        QMessageBox.Warning,
+                        "Permission denied when attempting to update nwnnsscomp in registry",
+                        msg,
+                    ).exec_()
         try:
             stdout, stderr = extCompiler.compile_script(tempSourcePath, tempCompiledPath, gameEnum)
         except EntryPointError:
@@ -242,7 +290,7 @@ def _compile_windows(
             if "Error: Syntax error" in stderr:
                 raise ValueError(stdout + "\n" + stderr)
 
-        # TODO(Cortisol): The version of nwnnsscomp bundled with the windows toolset uses registry key lookups.
+        # TODO(written by NickHugi): The version of nwnnsscomp bundled with the windows toolset uses registry key lookups.
         # I do not think this version matches the versions used by Mac/Linux.
         # Need to try unify this so each platform uses the same version and try
         # move away from registry keys (I don't even know how Mac/Linux determine KotOR's installation path).
@@ -250,8 +298,9 @@ def _compile_windows(
         if not tempCompiledPath.safe_isfile():
             raise FileNotFoundError(f"Could not find temp compiled script at '{tempCompiledPath}'")  # noqa: TRY003, EM102
     finally:
-        if orig_regkey_value is not None and orig_regkey_path is not None:
-            set_registry_key_value(orig_regkey_path, "Path", orig_regkey_value)
+        if orig_regkey_value and orig_regkey_path and orig_regkey_value != str(installation_path):
+            with suppress(PermissionError):
+                set_registry_key_value(orig_regkey_path, "Path", orig_regkey_value)
 
     return BinaryReader.load_file(tempCompiledPath)
 
