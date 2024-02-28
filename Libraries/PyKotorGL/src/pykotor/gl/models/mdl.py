@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import ctypes
+import io
 import math
 import struct
 
@@ -215,8 +216,21 @@ class Node:
 
 
 class Mesh:
-    def __init__(self, scene, node, texture, lightmap, vertex_data, element_data, block_size, data_bitflags,
-                 vertex_offset, normal_offset, texture_offset, lightmap_offset):
+    def __init__(
+        self,
+        scene: Scene,
+        node: Node,
+        texture: str,
+        lightmap: str,
+        vertex_data: memoryview,
+        element_data: memoryview,
+        block_size: int,
+        data_bitflags: int,
+        vertex_offset: int,
+        normal_offset: int,
+        texture_offset: int,
+        lightmap_offset: int,
+    ):
         """Initializes a Mesh object.
 
         Args:
@@ -259,13 +273,15 @@ class Mesh:
 
         glBindBuffer(GL_ARRAY_BUFFER, self._vbo)
         # Convert vertex_data bytearray to MemoryView
-        vertex_data_mv = memoryview(vertex_data)
-        glBufferData(GL_ARRAY_BUFFER, len(vertex_data), vertex_data_mv, GL_STATIC_DRAW)
+        if not isinstance(vertex_data, memoryview):
+            vertex_data = memoryview(vertex_data)
+        glBufferData(GL_ARRAY_BUFFER, len(vertex_data), vertex_data, GL_STATIC_DRAW)
 
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, self._ebo)
         # Convert element_data bytearray to MemoryView
-        element_data_mv = memoryview(element_data)
-        glBufferData(GL_ELEMENT_ARRAY_BUFFER, len(element_data), element_data_mv, GL_STATIC_DRAW)
+        if not isinstance(element_data, memoryview):
+            element_data = memoryview(element_data)
+        glBufferData(GL_ELEMENT_ARRAY_BUFFER, len(element_data), element_data, GL_STATIC_DRAW)
 
         self._face_count = len(element_data) // 2
 

@@ -13,12 +13,17 @@
       <sourceFolder url="file://$MODULE_DIR$/Tools/GuiDuplicator/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/Tools/KotorDiff/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/Tools/MDLDecompile/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/Tools/HolocronToolset/src/toolset" isTestSource="false" />
     </content>
-    <orderEntry type="jdk" jdkName="Python 3.9 (PyKotor)" jdkType="Python SDK" />
+    <orderEntry type="jdk" jdkName="Python 3.8 (PyKotor)" jdkType="Python SDK" />
     <orderEntry type="sourceFolder" forTests="false" />
+  </component>
+  <component name="PackageRequirementsSettings">
+    <option name="requirementsPath" value="" />
   </component>
   <component name="PyDocumentationSettings">
     <option name="format" value="GOOGLE" />
     <option name="myDocStringFormat" value="Google" />
+    <option name="renderExternalDocumentation" value="true" />
   </component>
 </module>
