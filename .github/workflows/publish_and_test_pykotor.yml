@@ -329,7 +329,7 @@ jobs:
               Write-Host "Newer commits are present on the remote branch, cannot continue"
               exit 1
           }
-          git add $testsResultsPath
+          git add $testsResultsPath --force
           git commit -m "Add test results"
           git push --force-with-lease origin HEAD:${{ github.ref_name }}
           $commitSHA = git rev-parse HEAD
