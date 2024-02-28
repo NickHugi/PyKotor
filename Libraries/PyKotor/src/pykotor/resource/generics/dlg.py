@@ -90,7 +90,7 @@ class DLG(GFFStructInterface):
         super().__init__()
 
         self.StartingList: GFFList  # list[DLGLink]
-        self.StuntList: GFFList # list[DLGStunt]
+        self.StuntList: GFFList  # list[DLGStunt]
 
         # Add bare minimum to be openable by DLGEditor
         if blank_node:
@@ -154,27 +154,30 @@ class DLG(GFFStructInterface):
         seen_nodes: list[DLGNode],
     ):
         for link in links:
-            if link._node not in seen_nodes:
-                print(f'{" " * indent}-> {link._node.Text}')
-                seen_links.append(link)
+            if link._node in seen_nodes:
+                continue
 
-                if link._node not in seen_nodes:
-                    seen_nodes.append(link._node)
-                    self._print_tree(
-                        link._node._links,
-                        indent + 3,
-                        seen_links,
-                        seen_nodes,
-                    )
-            else:
+            print(f'{" " * indent}-> {link._node.Text}')
+            seen_links.append(link)
+
+            if link._node in seen_nodes:
                 print(f'{" " * indent}-> [LINK] {link._node.Text}')
+                continue
+
+            seen_nodes.append(link._node)
+            self._print_tree(
+                link._node._links,
+                indent + 3,
+                seen_links,
+                seen_nodes,
+            )
 
     def all_entries(
         self,
     ) -> list[DLGEntry]:
         """Returns a flat list of all entries in the dialog.
 
-        Returns
+        Returns:
         -------
             A list of all stored entries.
         """
@@ -210,12 +213,13 @@ class DLG(GFFStructInterface):
 
         for link in links:
             entry = link._node
-            if entry not in seen_entries:
-                entries.append(entry)
-                seen_entries.append(entry)
-                for reply_link in entry._links:
-                    reply = reply_link._node
-                    entries.extend(self._all_entries(reply._links, seen_entries))
+            if entry in seen_entries:
+                continue
+            entries.append(entry)
+            seen_entries.append(entry)
+            for reply_link in entry._links:
+                reply = reply_link._node
+                entries.extend(self._all_entries(reply._links, seen_entries))
 
         return entries
 
@@ -224,7 +228,7 @@ class DLG(GFFStructInterface):
     ) -> list[DLGReply]:
         """Returns a flat list of all replies in the dialog.
 
-        Returns
+        Returns:
         -------
             A list of all stored replies.
         """
@@ -274,7 +278,7 @@ class DLG(GFFStructInterface):
 class DLGNode(GFFStructInterface):
     """Represents a node in the dialog tree.
 
-    Attributes
+    Attributes:
     ----------
         text: "Text" field.
         listener: "Listener" field.
@@ -414,9 +418,8 @@ class DLGNode(GFFStructInterface):
         self.VO_ResRef: ResRef = ResRef.from_blank()
         self.WaitFlags: int = 0
 
-
         self.QuestEntry: int = 0
-        self.FadeColor: Color = Vector3.from_null()
+        self.FadeColor: Color = Color(*Vector3.from_null())
         self.FadeDelay: float
         self.FadeLength: float
         self.CameraAnimation: int
@@ -468,11 +471,6 @@ class DLGReply(DLGNode):
         "EntryList": _GFFField(GFFFieldType.List, GFFList()),
     }
 
-    def __init__(
-        self,
-    ):
-        super().__init__()
-
 
 class DLGEntry(DLGNode):
     """Entries are nodes that are responses by NPCs."""
@@ -490,7 +488,7 @@ class DLGEntry(DLGNode):
         self,
     ) -> None:
         super().__init__()
-        Speaker = ""
+        self.Speaker: str = ""
 
 
 class DLGAnimation(GFFStructInterface):
@@ -513,7 +511,7 @@ class DLGAnimation(GFFStructInterface):
 class DLGLink(GFFStructInterface):
     """Points to a node. Links are stored either in other nodes or in the starting list of the DLG.
 
-    Attributes
+    Attributes:
     ----------
         active1: "Active" field.
         comment: "LinkComment" field. Only used in links stored in nodes.
