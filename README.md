@@ -76,48 +76,49 @@ These represent the currently passing/failing python versions/operating system c
 ### Windows:
 
 <!-- WINDOWS-BADGES-START -->
-[![3.7-x86-Build_Failed](https://img.shields.io/badge/3.7--x86_Build_Failed-lightgrey)](https://github.com/NickHugi/PyKotor/actions/runs/8059594843)
-[![3.7-x64-Build_Failed](https://img.shields.io/badge/3.7--x64_Build_Failed-lightgrey)](https://github.com/NickHugi/PyKotor/actions/runs/8059594843)
-[![3.8-x86-Build_Failed](https://img.shields.io/badge/3.8--x86_Build_Failed-lightgrey)](https://github.com/NickHugi/PyKotor/actions/runs/8059594843)
-[![3.8-x64-Build_Failed](https://img.shields.io/badge/3.8--x64_Build_Failed-lightgrey)](https://github.com/NickHugi/PyKotor/actions/runs/8059594843)
-[![3.9-x86-Build_Failed](https://img.shields.io/badge/3.9--x86_Build_Failed-lightgrey)](https://github.com/NickHugi/PyKotor/actions/runs/8059594843)
-[![3.9-x64-Build_Failed](https://img.shields.io/badge/3.9--x64_Build_Failed-lightgrey)](https://github.com/NickHugi/PyKotor/actions/runs/8059594843)
-[![3.10-x86-Build_Failed](https://img.shields.io/badge/3.10--x86_Build_Failed-lightgrey)](https://github.com/NickHugi/PyKotor/actions/runs/8059594843)
-[![3.10-x64-Build_Failed](https://img.shields.io/badge/3.10--x64_Build_Failed-lightgrey)](https://github.com/NickHugi/PyKotor/actions/runs/8059594843)
-[![3.11-x86-Build_Failed](https://img.shields.io/badge/3.11--x86_Build_Failed-lightgrey)](https://github.com/NickHugi/PyKotor/actions/runs/8059594843)
-[![3.11-x64-Build_Failed](https://img.shields.io/badge/3.11--x64_Build_Failed-lightgrey)](https://github.com/NickHugi/PyKotor/actions/runs/8059594843)
-[![3.12-x86-Build_Failed](https://img.shields.io/badge/3.12--x86_Build_Failed-lightgrey)](https://github.com/NickHugi/PyKotor/actions/runs/8059594843)
-[![3.12-x64-Build_Failed](https://img.shields.io/badge/3.12--x64_Build_Failed-lightgrey)](https://github.com/NickHugi/PyKotor/actions/runs/8059594843)
-[![3.13.0-alpha.4-x86-Build_Failed](https://img.shields.io/badge/3.13.0--alpha.4--x86_Build_Failed-lightgrey)](https://github.com/NickHugi/PyKotor/actions/runs/8059594843)
-[![3.13.0-alpha.4-x64-Build_Failed](https://img.shields.io/badge/3.13.0--alpha.4--x64_Build_Failed-lightgrey)](https://github.com/NickHugi/PyKotor/actions/runs/8059594843)
+[![3.7-x86-Build_Failed](https://img.shields.io/badge/3.7--x86_Build_Failed-lightgrey)](https://github.com/NickHugi/PyKotor/actions/runs/8074679715)
+[![3.7-x64-Build_Failed](https://img.shields.io/badge/3.7--x64_Build_Failed-lightgrey)](https://github.com/NickHugi/PyKotor/actions/runs/8074679715)
+[![3.8-x86-Build_Failed](https://img.shields.io/badge/3.8--x86_Build_Failed-lightgrey)](https://github.com/NickHugi/PyKotor/actions/runs/8074679715)
+[![3.8-x64-Build_Failed](https://img.shields.io/badge/3.8--x64_Build_Failed-lightgrey)](https://github.com/NickHugi/PyKotor/actions/runs/8074679715)
+[![3.9-x86-Build_Failed](https://img.shields.io/badge/3.9--x86_Build_Failed-lightgrey)](https://github.com/NickHugi/PyKotor/actions/runs/8074679715)
+[![3.9-x64-Build_Failed](https://img.shields.io/badge/3.9--x64_Build_Failed-lightgrey)](https://github.com/NickHugi/PyKotor/actions/runs/8074679715)
+[![3.10-x86-Build_Failed](https://img.shields.io/badge/3.10--x86_Build_Failed-lightgrey)](https://github.com/NickHugi/PyKotor/actions/runs/8074679715)
+[![3.10-x64-Build_Failed](https://img.shields.io/badge/3.10--x64_Build_Failed-lightgrey)](https://github.com/NickHugi/PyKotor/actions/runs/8074679715)
+[![3.11-x86-Build_Failed](https://img.shields.io/badge/3.11--x86_Build_Failed-lightgrey)](https://github.com/NickHugi/PyKotor/actions/runs/8074679715)
+[![3.11-x64-Build_Failed](https://img.shields.io/badge/3.11--x64_Build_Failed-lightgrey)](https://github.com/NickHugi/PyKotor/actions/runs/8074679715)
+[![3.12-x86-Build_Failed](https://img.shields.io/badge/3.12--x86_Build_Failed-lightgrey)](https://github.com/NickHugi/PyKotor/actions/runs/8074679715)
+[![3.12-x64-Build_Failed](https://img.shields.io/badge/3.12--x64_Build_Failed-lightgrey)](https://github.com/NickHugi/PyKotor/actions/runs/8074679715)
+[![3.13.0-alpha.4-x86-Build_Failed](https://img.shields.io/badge/3.13.0--alpha.4--x86_Build_Failed-lightgrey)](https://github.com/NickHugi/PyKotor/actions/runs/8074679715)
+[![3.13.0-alpha.4-x64-Build_Failed](https://img.shields.io/badge/3.13.0--alpha.4--x64_Build_Failed-lightgrey)](https://github.com/NickHugi/PyKotor/actions/runs/8074679715)
 <!-- WINDOWS-BADGES-END -->
 
 ### Linux:
 
 <!-- LINUX-BADGES-START -->
-[![3.7-x64-Build_Failed](https://img.shields.io/badge/3.7--x64_Build_Failed-lightgrey)](https://github.com/NickHugi/PyKotor/actions/runs/8059594843)
-[![3.8-x64-Build_Failed](https://img.shields.io/badge/3.8--x64_Build_Failed-lightgrey)](https://github.com/NickHugi/PyKotor/actions/runs/8059594843)
-[![3.9-x64-Build_Failed](https://img.shields.io/badge/3.9--x64_Build_Failed-lightgrey)](https://github.com/NickHugi/PyKotor/actions/runs/8059594843)
-[![3.10-x64-Build_Failed](https://img.shields.io/badge/3.10--x64_Build_Failed-lightgrey)](https://github.com/NickHugi/PyKotor/actions/runs/8059594843)
-[![3.11-x64-Build_Failed](https://img.shields.io/badge/3.11--x64_Build_Failed-lightgrey)](https://github.com/NickHugi/PyKotor/actions/runs/8059594843)
-[![3.12-x64-Build_Failed](https://img.shields.io/badge/3.12--x64_Build_Failed-lightgrey)](https://github.com/NickHugi/PyKotor/actions/runs/8059594843)
-[![3.13.0-alpha.4-x64-Build_Failed](https://img.shields.io/badge/3.13.0--alpha.4--x64_Build_Failed-lightgrey)](https://github.com/NickHugi/PyKotor/actions/runs/8059594843)
+[![3.7-x64-Build_Failed](https://img.shields.io/badge/3.7--x64_Build_Failed-lightgrey)](https://github.com/NickHugi/PyKotor/actions/runs/8074679715)
+[![3.8-x64-Build_Failed](https://img.shields.io/badge/3.8--x64_Build_Failed-lightgrey)](https://github.com/NickHugi/PyKotor/actions/runs/8074679715)
+[![3.9-x64-Build_Failed](https://img.shields.io/badge/3.9--x64_Build_Failed-lightgrey)](https://github.com/NickHugi/PyKotor/actions/runs/8074679715)
+[![3.10-x64-Build_Failed](https://img.shields.io/badge/3.10--x64_Build_Failed-lightgrey)](https://github.com/NickHugi/PyKotor/actions/runs/8074679715)
+[![3.11-x64-Build_Failed](https://img.shields.io/badge/3.11--x64_Build_Failed-lightgrey)](https://github.com/NickHugi/PyKotor/actions/runs/8074679715)
+[![3.12-x64-Build_Failed](https://img.shields.io/badge/3.12--x64_Build_Failed-lightgrey)](https://github.com/NickHugi/PyKotor/actions/runs/8074679715)
+[![3.13.0-alpha.4-x64-Build_Failed](https://img.shields.io/badge/3.13.0--alpha.4--x64_Build_Failed-lightgrey)](https://github.com/NickHugi/PyKotor/actions/runs/8074679715)
 <!-- LINUX-BADGES-END -->
 
 ### MacOS:
 
 <!-- MACOS-BADGES-START -->
-[![3.7-x64-Build_Failed](https://img.shields.io/badge/3.7--x64_Build_Failed-lightgrey)](https://github.com/NickHugi/PyKotor/actions/runs/8059594843)
-[![3.8-x64-Build_Failed](https://img.shields.io/badge/3.8--x64_Build_Failed-lightgrey)](https://github.com/NickHugi/PyKotor/actions/runs/8059594843)
-[![3.9-x64-Build_Failed](https://img.shields.io/badge/3.9--x64_Build_Failed-lightgrey)](https://github.com/NickHugi/PyKotor/actions/runs/8059594843)
-[![3.10-x64-Build_Failed](https://img.shields.io/badge/3.10--x64_Build_Failed-lightgrey)](https://github.com/NickHugi/PyKotor/actions/runs/8059594843)
-[![3.11-x64-Build_Failed](https://img.shields.io/badge/3.11--x64_Build_Failed-lightgrey)](https://github.com/NickHugi/PyKotor/actions/runs/8059594843)
-[![3.12-x64-Build_Failed](https://img.shields.io/badge/3.12--x64_Build_Failed-lightgrey)](https://github.com/NickHugi/PyKotor/actions/runs/8059594843)
-[![3.13.0-alpha.4-x64-Build_Failed](https://img.shields.io/badge/3.13.0--alpha.4--x64_Build_Failed-lightgrey)](https://github.com/NickHugi/PyKotor/actions/runs/8059594843)
+[![3.7-x64-Build_Failed](https://img.shields.io/badge/3.7--x64_Build_Failed-lightgrey)](https://github.com/NickHugi/PyKotor/actions/runs/8074679715)
+[![3.8-x64-Build_Failed](https://img.shields.io/badge/3.8--x64_Build_Failed-lightgrey)](https://github.com/NickHugi/PyKotor/actions/runs/8074679715)
+[![3.9-x64-Build_Failed](https://img.shields.io/badge/3.9--x64_Build_Failed-lightgrey)](https://github.com/NickHugi/PyKotor/actions/runs/8074679715)
+[![3.10-x64-Build_Failed](https://img.shields.io/badge/3.10--x64_Build_Failed-lightgrey)](https://github.com/NickHugi/PyKotor/actions/runs/8074679715)
+[![3.11-x64-Build_Failed](https://img.shields.io/badge/3.11--x64_Build_Failed-lightgrey)](https://github.com/NickHugi/PyKotor/actions/runs/8074679715)
+[![3.12-x64-Build_Failed](https://img.shields.io/badge/3.12--x64_Build_Failed-lightgrey)](https://github.com/NickHugi/PyKotor/actions/runs/8074679715)
+[![3.13.0-alpha.4-x64-Build_Failed](https://img.shields.io/badge/3.13.0--alpha.4--x64_Build_Failed-lightgrey)](https://github.com/NickHugi/PyKotor/actions/runs/8074679715)
 <!-- MACOS-BADGES-END -->
 
 ## License
 This repository falls under the [GPLv3 License](https://github.com/NickHugi/PyKotor/blob/master/LICENSE).
+
 
 
 
