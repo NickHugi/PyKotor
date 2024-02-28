@@ -4,7 +4,7 @@ from typing import TYPE_CHECKING
 
 from pykotor.common.language import LocalizedString
 from pykotor.common.module import Module
-from pykotor.extract.installation import SearchLocation
+from pykotor.extract.installation import Installation, SearchLocation
 from pykotor.resource.formats.erf import ERF, ERFType, write_erf
 from pykotor.resource.formats.gff import write_gff
 from pykotor.resource.formats.lyt import write_lyt
@@ -29,7 +29,6 @@ if TYPE_CHECKING:
     import os
 
     from pykotor.common.misc import ResRef
-    from pykotor.extract.installation import Installation
     from pykotor.resource.formats.lyt import LYT
     from pykotor.resource.formats.tpc.tpc_data import TPCConvertResult
     from pykotor.resource.formats.vis import VIS
@@ -262,7 +261,11 @@ def clone_module(
     write_erf(new_module, filepath)
 
 
-def rim_to_mod(filepath: os.PathLike | str):
+def rim_to_mod(
+    filepath: os.PathLike | str,
+    rim_folderpath: os.PathLike | str | None = None,
+    module_root: str | None = None,
+):
     """Creates a MOD file at the given filepath and copies the resources from the corresponding RIM files.
 
     Raises:
@@ -275,18 +278,24 @@ def rim_to_mod(filepath: os.PathLike | str):
     Args:
     ----
         filepath: The filepath of the MOD file you would like to create.
+        rim_folderpath: Folderpath where the rims can be found for this module.
+            The filestem of the filepath will be used to determine which rim to load.
     """
-    resolved_file_path: CaseAwarePath = CaseAwarePath.pathify(filepath)
-    if not is_mod_file(resolved_file_path):
+    r_outpath: CaseAwarePath = CaseAwarePath.pathify(filepath)
+    if not is_mod_file(r_outpath):
         msg = "Specified file must end with the .mod extension"
         raise ValueError(msg)
 
-    filepath_rim: CaseAwarePath = resolved_file_path.with_suffix(".rim")
-    filepath_rim_s: CaseAwarePath = resolved_file_path.parent / f"{resolved_file_path.stem}_s.rim"
+    module_root = Installation.replace_module_extensions(module_root or filepath)
+    r_rim_folderpath = CaseAwarePath.pathify(rim_folderpath) if rim_folderpath else r_outpath.parent
+
+    filepath_rim: CaseAwarePath = r_rim_folderpath / f"{module_root}.rim"
+    filepath_rim_s: CaseAwarePath = r_rim_folderpath / f"{module_root}_s.rim"
 
     mod = ERF(ERFType.MOD)
     for res in read_rim(filepath_rim):
         mod.set_data(str(res.resref), res.restype, res.data)
+
     if filepath_rim_s.is_file():
         for res in read_rim(filepath_rim_s):
             mod.set_data(str(res.resref), res.restype, res.data)

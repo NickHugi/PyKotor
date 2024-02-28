@@ -20,11 +20,15 @@ from watchdog.observers import Observer
 from pykotor.common.stream import BinaryReader
 from pykotor.extract.file import ResourceIdentifier
 from pykotor.extract.installation import SearchLocation
+from pykotor.resource.formats.erf.erf_auto import read_erf, write_erf
+from pykotor.resource.formats.erf.erf_data import ERF, ERFType
 from pykotor.resource.formats.mdl import read_mdl, write_mdl
+from pykotor.resource.formats.rim.rim_auto import read_rim, write_rim
+from pykotor.resource.formats.rim.rim_data import RIM
 from pykotor.resource.formats.tpc import read_tpc, write_tpc
 from pykotor.resource.type import ResourceType
-from pykotor.tools import model
-from pykotor.tools.misc import is_bif_file, is_rim_file
+from pykotor.tools import model, module
+from pykotor.tools.misc import is_any_erf_type_file, is_bif_file, is_capsule_file, is_erf_file, is_mod_file, is_rim_file
 from toolset.config import PROGRAM_VERSION, UPDATE_INFO_LINK
 from toolset.data.installation import HTInstallation
 from toolset.gui.dialogs.about import About
@@ -53,7 +57,7 @@ from toolset.gui.windows.indoor_builder import IndoorMapBuilder
 from toolset.gui.windows.module_designer import ModuleDesigner
 from toolset.utils.misc import openLink
 from toolset.utils.window import addWindow, openResourceEditor
-from utility.error_handling import assert_with_variable_trace, universal_simplify_exception
+from utility.error_handling import assert_with_variable_trace, format_exception_with_variables, universal_simplify_exception
 from utility.system.path import Path, PurePath
 
 if TYPE_CHECKING:
@@ -178,7 +182,7 @@ class ToolWindow(QMainWindow):
         self.ui.texturesWidget.sectionChanged.connect(self.onTexturesChanged)
         self.ui.texturesWidget.requestOpenResource.connect(self.onOpenResources)
 
-        self.ui.extractButton.clicked.connect(lambda: self.onExtractResources(self.getActiveResourceWidget().selectedResources()))
+        self.ui.extractButton.clicked.connect(lambda: self.onExtractResources(self.getActiveResourceWidget().selectedResources(), self.getActiveResourceWidget()))
         self.ui.openButton.clicked.connect(lambda: self.onOpenResources(self.getActiveResourceWidget().selectedResources()))
 
         self.ui.openAction.triggered.connect(self.openFromFile)
@@ -279,7 +283,7 @@ class ToolWindow(QMainWindow):
     def onTexturesChanged(self, newTexturepack: str):
         self.ui.texturesWidget.setResources(self.active.texturepack_resources(newTexturepack))
 
-    def onExtractResources(self, resources: list[FileResource]):
+    def onExtractResources(self, resources: list[FileResource], resourceWidget: ResourceList | None = None):
         """Extracts the resources selected in the main UI window.
 
         Args:
@@ -313,8 +317,68 @@ class ToolWindow(QMainWindow):
                     loader.addTask(lambda a=resource, b=filepath: self._extractResource(a, b, loader))
 
                 loader.exec_()
+        elif resourceWidget and is_capsule_file(resourceWidget.currentSection()):
+            module_name = resourceWidget.currentSection()
+            self._saveCapsuleFromToolUI(module_name)
 
-    def onOpenResources(self, resources: list[FileResource], useSpecializedEditor: bool | None = None):
+    def _saveCapsuleFromToolUI(self, module_name: str):
+        c_filepath = self.active.module_path() / module_name
+
+        capsuleFilter = "Module file (*.mod);;Encapsulated Resource File (*.erf);;Resource Image File (*.rim);;Save (*.sav);;All Capsule Types (*.erf; *.mod; *.rim; *.sav)"
+        capsule_type = "module"
+        if is_erf_file(c_filepath):
+            capsule_type = "erf"
+        elif is_rim_file(c_filepath):
+            capsule_type = "rim"
+        extension_to_filter = {
+            ".mod": "Module file (*.mod)",
+            ".erf": "Encapsulated Resource File (*.erf)",
+            ".rim": "Resource Image File (*.rim)",
+            ".sav": "Save ERF (*.sav)",
+        }
+        filepath_str, _filter = QFileDialog.getSaveFileName(
+            self,
+            f"Save extracted {capsule_type} '{c_filepath.stem}' as...",
+            str(Path.cwd().resolve()),
+            capsuleFilter,
+            extension_to_filter[c_filepath.suffix.lower()],  # defaults to the original extension.
+        )
+        if not filepath_str.strip():
+            return
+        r_save_filepath = Path(filepath_str)
+
+        try:
+            if is_mod_file(r_save_filepath):
+                module.rim_to_mod(r_save_filepath, self.active.module_path(), module_name)
+                QMessageBox(QMessageBox.Information, "Module Saved", f"Module saved to '{r_save_filepath}'").exec_()
+                return
+
+            erf_or_rim: ERF | RIM = read_erf(c_filepath) if is_any_erf_type_file(c_filepath) else read_rim(c_filepath)
+            if is_rim_file(r_save_filepath):
+                if isinstance(erf_or_rim, ERF):
+                    erf_or_rim = erf_or_rim.to_rim()
+                write_rim(erf_or_rim, r_save_filepath)
+                QMessageBox(QMessageBox.Information, "RIM Saved", f"Resource Image File saved to '{r_save_filepath}'").exec_()
+
+            elif is_any_erf_type_file(r_save_filepath):
+                if isinstance(erf_or_rim, RIM):
+                    erf_or_rim = erf_or_rim.to_erf()
+                erf_or_rim.erf_type = ERFType.from_extension(r_save_filepath)
+                write_erf(erf_or_rim, r_save_filepath)
+                QMessageBox(QMessageBox.Information, "ERF Saved", f"Encapsulated Resource File saved to '{r_save_filepath}'").exec_()
+
+        except Exception as e:
+            with Path("errorlog.txt").open("a", encoding="utf-8") as file:
+                lines = format_exception_with_variables(e)
+                file.writelines(lines)
+                file.write("\n----------------------\n")
+            QMessageBox(QMessageBox.Critical, "Error saving capsule", str(universal_simplify_exception(e))).exec_()
+
+    def onOpenResources(
+        self,
+        resources: list[FileResource],
+        useSpecializedEditor: bool | None = None,
+    ):
         for resource in resources:
             _filepath, _editor = openResourceEditor(
                 resource.filepath(),

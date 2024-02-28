@@ -63,3 +63,4 @@ tmp*
 .venv
 .venv_wsl
 .secrets
+tests/results/
