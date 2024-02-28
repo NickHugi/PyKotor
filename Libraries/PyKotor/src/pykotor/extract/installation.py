@@ -1093,7 +1093,7 @@ class Installation:  # noqa: PLR0904
                 SearchLocation.MODULES,
                 SearchLocation.CHITIN,
             ]
-        self.load_search_locations(order)
+        queries = set(queries)
         capsules = [] if capsules is None else capsules
         folders = [] if folders is None else folders
 
@@ -1107,7 +1107,7 @@ class Installation:  # noqa: PLR0904
 
         def check_list(resource_list: list[FileResource]):
             # Index resources by identifier
-            resource_dict: dict[ResourceIdentifier, FileResource] = {resource.identifier(): resource for resource in values}
+            resource_dict: dict[ResourceIdentifier, FileResource] = {resource.identifier(): resource for resource in resource_list}
             for query in queries:
                 resource: FileResource | None = resource_dict.get(query)
                 if resource is not None:
