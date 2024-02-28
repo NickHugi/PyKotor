@@ -65,14 +65,13 @@ if TYPE_CHECKING:
 
     from PyQt5 import QtGui
     from PyQt5.QtGui import QCloseEvent
-    from PyQt5.QtWidgets import QTreeView
 
     from pykotor.extract.file import FileResource
     from pykotor.resource.formats.mdl.mdl_data import MDL
     from pykotor.resource.formats.tpc import TPC
     from pykotor.resource.type import SOURCE_TYPES
     from pykotor.tools.path import CaseAwarePath
-    from toolset.gui.widgets.main_widgets import ResourceList
+    from toolset.gui.widgets.main_widgets import ResourceList, TextureList
 
 
 class ToolWindow(QMainWindow):
@@ -260,6 +259,7 @@ class ToolWindow(QMainWindow):
         file_path = Path(file)
         if not file_path.name:
             print(f"Cannot reload '{file}': no file loaded")
+
     def onOverrideReload(self, file_or_folder: str):
         if not self.active:
             print(f"No installation loaded, cannot reload {file_or_folder}")
@@ -626,7 +626,7 @@ class ToolWindow(QMainWindow):
     def reloadSettings(self):
         self.reloadInstallations()
 
-    def getActiveResourceWidget(self) -> ResourceList | None:
+    def getActiveResourceWidget(self) -> ResourceList | TextureList | None:
         if self.ui.resourceTabs.currentWidget() is self.ui.coreTab:
             return self.ui.coreWidget
         if self.ui.resourceTabs.currentWidget() is self.ui.modulesTab:
@@ -648,7 +648,15 @@ class ToolWindow(QMainWindow):
             self.active.load_modules()
 
         areaNames: dict[str, str] = self.active.module_names()
-        sortedKeys: list[str] = sorted(areaNames, key=lambda key: areaNames.get(key).lower())
+        sortedKeys: list[str] = sorted(
+            areaNames,
+            key=lambda moduleFileName:
+            (
+                moduleFileName
+                if self.settings.useModuleFilenames
+                else areaNames.get(moduleFileName).lower()
+            )
+        )
 
         modules: list[QStandardItem] = []
         for moduleName in sortedKeys:
