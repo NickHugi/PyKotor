@@ -51,6 +51,7 @@ from toolset.gui.editors.utp import UTPEditor
 from toolset.gui.editors.uts import UTSEditor
 from toolset.gui.editors.utt import UTTEditor
 from toolset.gui.editors.utw import UTWEditor
+from toolset.gui.widgets.main_widgets import ResourceList
 from toolset.gui.widgets.settings.misc import GlobalSettings
 from toolset.gui.windows.help import HelpWindow
 from toolset.gui.windows.indoor_builder import IndoorMapBuilder
@@ -71,7 +72,7 @@ if TYPE_CHECKING:
     from pykotor.resource.formats.tpc import TPC
     from pykotor.resource.type import SOURCE_TYPES
     from pykotor.tools.path import CaseAwarePath
-    from toolset.gui.widgets.main_widgets import ResourceList, TextureList
+    from toolset.gui.widgets.main_widgets import TextureList
 
 
 class ToolWindow(QMainWindow):
@@ -181,8 +182,8 @@ class ToolWindow(QMainWindow):
         self.ui.texturesWidget.sectionChanged.connect(self.onTexturesChanged)
         self.ui.texturesWidget.requestOpenResource.connect(self.onOpenResources)
 
-        self.ui.extractButton.clicked.connect(lambda: self.onExtractResources(self.getActiveResourceWidget().selectedResources(), self.getActiveResourceWidget()))
-        self.ui.openButton.clicked.connect(lambda: self.onOpenResources(self.getActiveResourceWidget().selectedResources()))
+        self.ui.extractButton.clicked.connect(lambda: self.onExtractResources(self.getActiveResourceWidget().selectedResources(), resourceWidget=self.getActiveResourceWidget()))
+        self.ui.openButton.clicked.connect(lambda *args: self.onOpenResources(self.getActiveResourceWidget().selectedResources(), *args, resourceWidget=self.getActiveResourceWidget()))
 
         self.ui.openAction.triggered.connect(self.openFromFile)
         self.ui.actionSettings.triggered.connect(self.openSettingsDialog)
@@ -261,11 +262,6 @@ class ToolWindow(QMainWindow):
     def onOverrideChanged(self, newDirectory: str):
         self.ui.overrideWidget.setResources(self.active.override_resources(newDirectory))
 
-    def onOverrideReload(self, file: str):
-        file_path = Path(file)
-        if not file_path.name:
-            print(f"Cannot reload '{file}': no file loaded")
-
     def onOverrideReload(self, file_or_folder: str):
         if not self.active:
             print(f"No installation loaded, cannot reload {file_or_folder}")
@@ -300,7 +296,11 @@ class ToolWindow(QMainWindow):
             return
         self.ui.texturesWidget.setResources(self.active.texturepack_resources(newTexturepack))
 
-    def onExtractResources(self, resources: list[FileResource], resourceWidget: ResourceList | None = None):
+    def onExtractResources(
+        self,
+        resources: list[FileResource],
+        resourceWidget: ResourceList | TextureList | None = None,
+    ):
         """Extracts the resources selected in the main UI window.
 
         Args:
@@ -334,7 +334,7 @@ class ToolWindow(QMainWindow):
                     loader.addTask(lambda a=resource, b=filepath: self._extractResource(a, b, loader))
 
                 loader.exec_()
-        elif resourceWidget and is_capsule_file(resourceWidget.currentSection()):
+        elif isinstance(resourceWidget, ResourceList) and is_capsule_file(resourceWidget.currentSection()):
             module_name = resourceWidget.currentSection()
             self._saveCapsuleFromToolUI(module_name)
 
@@ -395,6 +395,7 @@ class ToolWindow(QMainWindow):
         self,
         resources: list[FileResource],
         useSpecializedEditor: bool | None = None,  # noqa: FBT001
+        resourceWidget: ResourceList | TextureList | None = None 
     ):
         for resource in resources:
             _filepath, _editor = openResourceEditor(
@@ -406,6 +407,28 @@ class ToolWindow(QMainWindow):
                 self,
                 gff_specialized=useSpecializedEditor,
             )
+        if resources:
+            return
+        if not isinstance(resourceWidget, ResourceList):
+            return
+        filename = resourceWidget.currentSection()
+        if not filename:
+            return
+        erf_filepath = self.active.module_path() / filename
+        if not erf_filepath.safe_isfile():
+            return
+        res_ident = ResourceIdentifier.from_path(erf_filepath)
+        if not res_ident.restype:
+            return
+        _filepath, _editor = openResourceEditor(
+            erf_filepath,
+            res_ident.resname,
+            res_ident.restype,
+            BinaryReader.load_file(erf_filepath),
+            self.active,
+            self,
+            gff_specialized=useSpecializedEditor
+        )
 
     # endregion
 
@@ -518,6 +541,9 @@ class ToolWindow(QMainWindow):
             ResourceType.JRL,
             [SearchLocation.OVERRIDE, SearchLocation.CHITIN],
         )
+        if res is None:
+            print("res cannot be None in openActiveJournal")
+            return
         openResourceEditor(
             res.filepath,
             resref="global",
@@ -617,14 +643,15 @@ class ToolWindow(QMainWindow):
                 buttons=QMessageBox.Ok,
                 parent=self,
             ).exec_()
-        elif not silent:
-            QMessageBox(
-                icon=QMessageBox.Information,
-                title="Version is up to date",
-                text=f"You are running the latest version ({'.'.join(str(i) for i in PROGRAM_VERSION)}).",
-                buttons=QMessageBox.Ok,
-                parent=self,
-            ).exec_()
+        elif silent:
+            return
+        QMessageBox(
+            icon=QMessageBox.Information,
+            title="Version is up to date",
+            text=f"You are running the latest version ({'.'.join(str(i) for i in PROGRAM_VERSION)}).",
+            buttons=QMessageBox.Ok,
+            parent=self,
+        ).exec_()
 
     # endregion
 

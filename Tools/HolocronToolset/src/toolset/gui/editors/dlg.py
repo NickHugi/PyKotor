@@ -6,10 +6,10 @@ from typing import TYPE_CHECKING
 import pyperclip
 
 from PyQt5 import QtCore
-from PyQt5.QtCore import QBuffer, QIODevice, QItemSelectionModel
+from PyQt5.QtCore import QBuffer, QIODevice, QItemSelection, QItemSelectionModel, QPoint
 from PyQt5.QtGui import QBrush, QColor, QStandardItem, QStandardItemModel
 from PyQt5.QtMultimedia import QMediaContent, QMediaPlayer
-from PyQt5.QtWidgets import QListWidgetItem, QMenu, QMessageBox, QShortcut
+from PyQt5.QtWidgets import QListWidgetItem, QMenu, QMessageBox, QPlainTextEdit, QShortcut, QWidget
 
 from pykotor.common.misc import ResRef
 from pykotor.extract.installation import SearchLocation
@@ -25,11 +25,6 @@ from pykotor.resource.generics.dlg import (
     read_dlg,
 )
 from pykotor.resource.type import ResourceType
-from PyQt5 import QtCore
-from PyQt5.QtCore import QBuffer, QIODevice, QItemSelection, QItemSelectionModel, QPoint
-from PyQt5.QtGui import QBrush, QColor, QStandardItem, QStandardItemModel
-from PyQt5.QtMultimedia import QMediaContent, QMediaPlayer
-from PyQt5.QtWidgets import QListWidgetItem, QMenu, QMessageBox, QPlainTextEdit, QShortcut, QWidget
 from toolset.data.installation import HTInstallation
 from toolset.gui.dialogs.edit.dialog_animation import EditAnimationDialog
 from toolset.gui.dialogs.edit.dialog_model import CutsceneModelDialog
@@ -47,11 +42,7 @@ if TYPE_CHECKING:
 
     from pykotor.common.language import LocalizedString
     from pykotor.resource.formats.twoda.twoda_data import TwoDA
-    from pykotor.resource.generics.dlg import (
-        DLGAnimation,
-        DLGNode,
-        DLGStunt,
-    )
+    from pykotor.resource.generics.dlg import DLGNode
 
 _LINK_ROLE = QtCore.Qt.UserRole + 1
 _COPY_ROLE = QtCore.Qt.UserRole + 2
@@ -84,7 +75,8 @@ class DLGEditor(Editor):
         self.ui.setupUi(self)
         self._setupMenus()
         self._setupSignals()
-        self._setupInstallation(installation)
+        if installation:  # will always be None in the unittests.
+            self._setupInstallation(installation)
 
         self._focused: bool = False
         self._dlg: DLG = DLG()
@@ -804,7 +796,7 @@ class DLGEditor(Editor):
         ----------------
             - Gets link and node data from item
             - Creates a QMenu
-            - Adds actions like Focus, Move Up/Down
+            - Adds actions like Focus, etc
             - Adds separator
             - Adds additional actions based on node type
             - Adds Copy/Delete actions if entry or reply
@@ -818,8 +810,9 @@ class DLGEditor(Editor):
 
         menu.addAction("Focus").triggered.connect(lambda: self.focusOnNode(link))
         menu.addSeparator()
-        menu.addAction("Move Up").triggered.connect(lambda: self.shiftItem(item, -1))
-        menu.addAction("Move Down").triggered.connect(lambda: self.shiftItem(item, 1))
+        # REMOVEME: moving nodes is a horrible idea. It's currently broken anyway.
+        #menu.addAction("Move Up").triggered.connect(lambda: self.shiftItem(item, -1))
+        #menu.addAction("Move Down").triggered.connect(lambda: self.shiftItem(item, 1))
         menu.addSeparator()
 
         if isCopy:
@@ -835,8 +828,7 @@ class DLGEditor(Editor):
             if isinstance(self._copy, DLGReply):
                 menu.addAction("Paste Reply as Link").triggered.connect(lambda: self.addCopyLink(item, node, self._copy))
                 menu.addAction("Paste Reply as New").triggered.connect(lambda: self.addCopy(item, node, self._copy))
-        else:
-            ...
+
         if isinstance(node, DLGReply):
             menu.addAction("Copy Reply").triggered.connect(lambda: self.copyNode(node))
             menu.addAction("Delete Reply").triggered.connect(lambda: self.deleteNode(item))
@@ -847,6 +839,8 @@ class DLGEditor(Editor):
         menu.popup(self.ui.dialogTree.viewport().mapToGlobal(point))
 
     def keyPressEvent(self, event: QKeyEvent | None):
+        if not event:
+            return
         if event.key() in {QtKey.Key_Enter, QtKey.Key_Return}:
             selectedItem: QModelIndex = self.ui.dialogTree.currentIndex()
             if selectedItem.isValid():
@@ -885,7 +879,7 @@ class DLGEditor(Editor):
             item = self.model.itemFromIndex(selection.indexes()[0])
             link: DLGLink = item.data(_LINK_ROLE)
             isCopy: bool = item.data(_COPY_ROLE)
-            node: DLGNode = link._node
+            node: DLGNode | None = link.node
 
             if isinstance(node, DLGEntry):
                 self.ui.speakerEdit.setEnabled(True)
@@ -893,6 +887,7 @@ class DLGEditor(Editor):
             elif isinstance(node, DLGReply):
                 self.ui.speakerEdit.setEnabled(False)
                 self.ui.speakerEdit.setText("")
+            assert node is not None, "onSelectionChanged, node cannot be None"
 
             self.ui.textEdit.setEnabled(not isCopy)
 
