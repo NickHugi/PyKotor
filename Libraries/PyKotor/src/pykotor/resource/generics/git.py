@@ -317,11 +317,11 @@ class GITCamera(GITInstance):
     ) -> float | None:
         return math.pi - self.orientation.to_euler().x
 
-    def pitch(self) -> float:
+    def get_pitch(self) -> float:
         # Following the convention used in rotate method, where pitch affects rotation.z
         return math.pi - self.orientation.to_euler().z
 
-    def roll(self) -> float:
+    def get_roll(self) -> float:
         # Following the convention used in rotate method, where roll affects rotation.y
         return math.pi - self.orientation.to_euler().y
 

@@ -1196,8 +1196,8 @@ class ModuleDesignerControls3d:
                     if old_yaw is None:
                         print(instance.resref, "does not support rotating yaw")
                         continue
-                    old_pitch = instance.pitch() if hasattr(instance, "pitch") else 0  # type: ignore[]
-                    old_roll = instance.roll() if hasattr(instance, "roll") else 0  # type: ignore[]
+                    old_pitch = instance.get_pitch() if hasattr(instance, "get_pitch") else 0  # type: ignore[]
+                    old_roll = instance.get_roll() if hasattr(instance, "get_roll") else 0  # type: ignore[]
                     old_rotation = Vector3(old_yaw, old_pitch, old_roll)
                     self.editor.initialRotations[instance] = old_rotation
                 print("3d rotate set isDragRotating")
@@ -1265,8 +1265,8 @@ class ModuleDesignerControls3d:
             for instance, old_rotation in self.editor.initialRotations.items():
                 old_yaw, old_pitch, old_roll = old_rotation
                 new_yaw = instance.yaw() or 0
-                new_pitch = instance.pitch() if hasattr(instance, "pitch") else 0  # type: ignore[]
-                new_roll = instance.roll() if hasattr(instance, "roll") else 0  # type: ignore[]
+                new_pitch = instance.get_pitch() if hasattr(instance, "get_pitch") else 0  # type: ignore[]
+                new_roll = instance.get_roll() if hasattr(instance, "get_roll") else 0  # type: ignore[]
                 new_rotation = Vector3(new_yaw, new_pitch, new_roll)
                 if old_rotation and new_rotation != old_rotation:
                     print("Create the RotateCommand for undo/redo functionality")
