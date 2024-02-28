@@ -224,6 +224,10 @@ def set_registry_key_value(full_key_path, value_name, value_data):
         - full_key_path: The full registry key path, including the hive.
         - value_name: The name of the value to set.
         - value_data: The data to set for the value.
+
+    Raises:
+    ------
+        - PermissionError: PyKotor doesn't have permission to change the registry (usually fixed by running as admin).
     """
     try:
         import winreg
@@ -243,6 +247,8 @@ def set_registry_key_value(full_key_path, value_name, value_data):
         # Create the registry path
         try:
             create_registry_path(hive, sub_key)
+        except PermissionError:
+            raise
         except Exception as e:  # pylint: disable=W0718  # noqa: BLE001
             print(format_exception_with_variables(e))
             return
@@ -251,9 +257,8 @@ def set_registry_key_value(full_key_path, value_name, value_data):
             # Set the value
             winreg.SetValueEx(key, value_name, 0, winreg.REG_SZ, value_data)
             print(f"Successfully set {value_name} to {value_data} at {hive}\\{sub_key}")
-    except PermissionError as e:
-        print(f"Error: Permission denied creating regkey {full_key_path}")
-        print(e, "\n", repr(e))
+    except PermissionError:
+        raise
     except Exception as e:  # pylint: disable=W0718  # noqa: BLE001
         print(f"An unexpected error occurred: {e}")
         print(format_exception_with_variables(e))
