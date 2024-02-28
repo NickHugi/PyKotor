@@ -171,7 +171,7 @@ class ToolWindow(QMainWindow):
         self.ui.modulesWidget.requestReload.connect(self.onModuleReload)
         self.ui.modulesWidget.requestRefresh.connect(self.onModuleRefresh)
         self.ui.modulesWidget.requestExtractResource.connect(self.onExtractResources)
-        self.ui.modulesWidget.requestOpenResource.connect(lambda: self.onOpenResources(self.getActiveResourceWidget()))
+        self.ui.modulesWidget.requestOpenResource.connect(self.onOpenResources)
 
         self.ui.overrideWidget.sectionChanged.connect(self.onOverrideChanged)
         self.ui.overrideWidget.requestReload.connect(self.onOverrideReload)
@@ -182,8 +182,8 @@ class ToolWindow(QMainWindow):
         self.ui.texturesWidget.sectionChanged.connect(self.onTexturesChanged)
         self.ui.texturesWidget.requestOpenResource.connect(self.onOpenResources)
 
-        self.ui.extractButton.clicked.connect(lambda: self.onExtractResources(self.getActiveResourceWidget().selectedResources(), self.getActiveResourceWidget()))
-        self.ui.openButton.clicked.connect(lambda: self.onOpenResources(self.getActiveResourceWidget().selectedResources()))
+        self.ui.extractButton.clicked.connect(lambda: self.onExtractResources(self.getActiveResourceWidget().selectedResources(), resourceWidget=self.getActiveResourceWidget()))
+        self.ui.openButton.clicked.connect(lambda *args: self.onOpenResources(self.getActiveResourceWidget().selectedResources(), *args, resourceWidget=self.getActiveResourceWidget()))
 
         self.ui.openAction.triggered.connect(self.openFromFile)
         self.ui.actionSettings.triggered.connect(self.openSettingsDialog)
@@ -261,11 +261,6 @@ class ToolWindow(QMainWindow):
 
     def onOverrideChanged(self, newDirectory: str):
         self.ui.overrideWidget.setResources(self.active.override_resources(newDirectory))
-
-    def onOverrideReload(self, file: str):
-        file_path = Path(file)
-        if not file_path.name:
-            print(f"Cannot reload '{file}': no file loaded")
 
     def onOverrideReload(self, file_or_folder: str):
         if not self.active:
