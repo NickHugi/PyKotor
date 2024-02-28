@@ -4,9 +4,10 @@ from typing import TYPE_CHECKING
 
 from pykotor.common.geometry import AxisAngle, Vector4
 from pykotor.common.stream import BinaryReader, BinaryWriter
-from pykotor.resource.formats.mdl.mdl_data import MDL, MDLController, MDLControllerType, MDLNode
+from pykotor.resource.formats.mdl.mdl_data import MDL, MDLControllerType
 
 if TYPE_CHECKING:
+    from pykotor.resource.formats.mdl.mdl_data import MDLController, MDLNode
     from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES
 
 
@@ -18,7 +19,7 @@ class MDLAsciiReader:
         size: int = 0,
     ):
         self._mdl: MDL | None = None
-        self._reader = BinaryReader.from_auto(source, offset)
+        self._reader: BinaryReader = BinaryReader.from_auto(source, offset)
 
     def load(
         self,

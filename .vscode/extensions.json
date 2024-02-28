@@ -8,6 +8,12 @@
     "charliermarsh.ruff",
     "tamasfe.even-better-toml",
     "chinmaybharti.codequalitychecker",
-    "codeantai.codeantai"
+    "codeantai.codeantai",
+    "ms-vscode.powershell",
+    "ms-python.debugpy",
+    "tylerleonhardt.vscode-inline-values-powershell",
+    "almenon.arepl",
+    "rogalmic.bash-debug",
+    "mads-hartmann.bash-ide-vscode"
   ]
 }

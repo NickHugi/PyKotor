@@ -1,17 +1,22 @@
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 from pykotor.common.geometry import Vector2, Vector3
 from pykotor.common.language import LocalizedString
 from pykotor.common.misc import Game, ResRef
 from pykotor.resource.formats.gff import GFF, GFFContent, GFFList, read_gff, write_gff
 from pykotor.resource.formats.gff.gff_auto import bytes_gff
-from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES, ResourceType
+from pykotor.resource.type import ResourceType
+
+if TYPE_CHECKING:
+    from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES
 
 
 class IFO:
     """Stores module information.
 
-    Attributes
+    Attributes:
     ----------
         mod_id: "Mod_ID" field.
         vo_id: "Mod_VO_ID" field.

@@ -2,23 +2,33 @@ from __future__ import annotations
 
 import base64
 import json
+import traceback
+
 from contextlib import suppress
 from datetime import datetime, timedelta, timezone
 from tempfile import TemporaryDirectory
 from typing import TYPE_CHECKING, ClassVar
 
 import requests
+
+from PyQt5 import QtCore
+from PyQt5.QtGui import QIcon, QPixmap, QStandardItem
+from PyQt5.QtWidgets import QFileDialog, QMainWindow, QMessageBox
+from watchdog.events import FileSystemEventHandler
+from watchdog.observers import Observer
+
 from pykotor.common.stream import BinaryReader
-from pykotor.extract.file import FileResource, ResourceIdentifier, ResourceResult
+from pykotor.extract.file import ResourceIdentifier
 from pykotor.extract.installation import SearchLocation
+from pykotor.resource.formats.erf.erf_auto import read_erf, write_erf
+from pykotor.resource.formats.erf.erf_data import ERF, ERFType
 from pykotor.resource.formats.mdl import read_mdl, write_mdl
+from pykotor.resource.formats.rim.rim_auto import read_rim, write_rim
+from pykotor.resource.formats.rim.rim_data import RIM
 from pykotor.resource.formats.tpc import read_tpc, write_tpc
 from pykotor.resource.type import ResourceType
-from pykotor.tools import model
-from pykotor.tools.misc import is_bif_file, is_rim_file
-from PyQt5 import QtCore, QtGui
-from PyQt5.QtGui import QCloseEvent, QIcon, QPixmap, QStandardItem
-from PyQt5.QtWidgets import QFileDialog, QMainWindow, QMessageBox, QTreeView
+from pykotor.tools import model, module
+from pykotor.tools.misc import is_any_erf_type_file, is_bif_file, is_capsule_file, is_erf_file, is_mod_file, is_rim_file
 from toolset.config import PROGRAM_VERSION, UPDATE_INFO_LINK
 from toolset.data.installation import HTInstallation
 from toolset.gui.dialogs.about import About
@@ -48,20 +58,21 @@ from toolset.gui.windows.module_designer import ModuleDesigner
 from toolset.utils.misc import openLink
 from toolset.utils.window import addWindow, openResourceEditor
 from utility.error_handling import assert_with_variable_trace, format_exception_with_variables, universal_simplify_exception
-from utility.path import Path, PurePath
-from watchdog.events import FileSystemEventHandler
-from watchdog.observers import Observer
+from utility.system.path import Path, PurePath
 
 if TYPE_CHECKING:
     import os
 
-    from pykotor.common.misc import CaseInsensitiveDict
+    from PyQt5 import QtGui
+    from PyQt5.QtGui import QCloseEvent
+    from PyQt5.QtWidgets import QTreeView
+
+    from pykotor.extract.file import FileResource
     from pykotor.resource.formats.mdl.mdl_data import MDL
     from pykotor.resource.formats.tpc import TPC
     from pykotor.resource.type import SOURCE_TYPES
     from pykotor.tools.path import CaseAwarePath
     from toolset.gui.widgets.main_widgets import ResourceList
-    from typing_extensions import Literal
 
 
 class ToolWindow(QMainWindow):
@@ -112,7 +123,7 @@ class ToolWindow(QMainWindow):
         self.settings: GlobalSettings = GlobalSettings()
         self.installations: dict[str, HTInstallation] = {}
 
-        from toolset.uic.windows.main import Ui_MainWindow
+        from toolset.uic.windows.main import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
 
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
@@ -128,10 +139,8 @@ class ToolWindow(QMainWindow):
             self.settings.firstTime = False
 
             # Create a directory used for dumping temp files
-            try:
+            with suppress(Exception):
                 self.settings.extractPath = str(Path(str(TemporaryDirectory().name)))
-            except Exception as e:
-                print(f"Could not create temp directory: {universal_simplify_exception(e)}")
 
         self.checkForUpdates(True)
 
@@ -173,7 +182,7 @@ class ToolWindow(QMainWindow):
         self.ui.texturesWidget.sectionChanged.connect(self.onTexturesChanged)
         self.ui.texturesWidget.requestOpenResource.connect(self.onOpenResources)
 
-        self.ui.extractButton.clicked.connect(lambda: self.onExtractResources(self.getActiveResourceWidget().selectedResources()))
+        self.ui.extractButton.clicked.connect(lambda: self.onExtractResources(self.getActiveResourceWidget().selectedResources(), self.getActiveResourceWidget()))
         self.ui.openButton.clicked.connect(lambda: self.onOpenResources(self.getActiveResourceWidget().selectedResources()))
 
         self.ui.openAction.triggered.connect(self.openFromFile)
@@ -274,7 +283,7 @@ class ToolWindow(QMainWindow):
     def onTexturesChanged(self, newTexturepack: str):
         self.ui.texturesWidget.setResources(self.active.texturepack_resources(newTexturepack))
 
-    def onExtractResources(self, resources: list[FileResource]):
+    def onExtractResources(self, resources: list[FileResource], resourceWidget: ResourceList | None = None):
         """Extracts the resources selected in the main UI window.
 
         Args:
@@ -288,7 +297,7 @@ class ToolWindow(QMainWindow):
         """
         if len(resources) == 1:
             # Player saves resource with a specific name
-            default: str = f"{resources[0].resname()}.{resources[0].restype().extension}"
+            default = f"{resources[0].resname()}.{resources[0].restype().extension}"
             filepath: str = QFileDialog.getSaveFileName(self, "Save resource", default)[0]
 
             if filepath:
@@ -308,8 +317,68 @@ class ToolWindow(QMainWindow):
                     loader.addTask(lambda a=resource, b=filepath: self._extractResource(a, b, loader))
 
                 loader.exec_()
+        elif resourceWidget and is_capsule_file(resourceWidget.currentSection()):
+            module_name = resourceWidget.currentSection()
+            self._saveCapsuleFromToolUI(module_name)
 
-    def onOpenResources(self, resources: list[FileResource], useSpecializedEditor: bool | None = None):
+    def _saveCapsuleFromToolUI(self, module_name: str):
+        c_filepath = self.active.module_path() / module_name
+
+        capsuleFilter = "Module file (*.mod);;Encapsulated Resource File (*.erf);;Resource Image File (*.rim);;Save (*.sav);;All Capsule Types (*.erf; *.mod; *.rim; *.sav)"
+        capsule_type = "module"
+        if is_erf_file(c_filepath):
+            capsule_type = "erf"
+        elif is_rim_file(c_filepath):
+            capsule_type = "rim"
+        extension_to_filter = {
+            ".mod": "Module file (*.mod)",
+            ".erf": "Encapsulated Resource File (*.erf)",
+            ".rim": "Resource Image File (*.rim)",
+            ".sav": "Save ERF (*.sav)",
+        }
+        filepath_str, _filter = QFileDialog.getSaveFileName(
+            self,
+            f"Save extracted {capsule_type} '{c_filepath.stem}' as...",
+            str(Path.cwd().resolve()),
+            capsuleFilter,
+            extension_to_filter[c_filepath.suffix.lower()],  # defaults to the original extension.
+        )
+        if not filepath_str.strip():
+            return
+        r_save_filepath = Path(filepath_str)
+
+        try:
+            if is_mod_file(r_save_filepath):
+                module.rim_to_mod(r_save_filepath, self.active.module_path(), module_name)
+                QMessageBox(QMessageBox.Information, "Module Saved", f"Module saved to '{r_save_filepath}'").exec_()
+                return
+
+            erf_or_rim: ERF | RIM = read_erf(c_filepath) if is_any_erf_type_file(c_filepath) else read_rim(c_filepath)
+            if is_rim_file(r_save_filepath):
+                if isinstance(erf_or_rim, ERF):
+                    erf_or_rim = erf_or_rim.to_rim()
+                write_rim(erf_or_rim, r_save_filepath)
+                QMessageBox(QMessageBox.Information, "RIM Saved", f"Resource Image File saved to '{r_save_filepath}'").exec_()
+
+            elif is_any_erf_type_file(r_save_filepath):
+                if isinstance(erf_or_rim, RIM):
+                    erf_or_rim = erf_or_rim.to_erf()
+                erf_or_rim.erf_type = ERFType.from_extension(r_save_filepath)
+                write_erf(erf_or_rim, r_save_filepath)
+                QMessageBox(QMessageBox.Information, "ERF Saved", f"Encapsulated Resource File saved to '{r_save_filepath}'").exec_()
+
+        except Exception as e:
+            with Path("errorlog.txt").open("a", encoding="utf-8") as file:
+                lines = format_exception_with_variables(e)
+                file.writelines(lines)
+                file.write("\n----------------------\n")
+            QMessageBox(QMessageBox.Critical, "Error saving capsule", str(universal_simplify_exception(e))).exec_()
+
+    def onOpenResources(
+        self,
+        resources: list[FileResource],
+        useSpecializedEditor: bool | None = None,
+    ):
         for resource in resources:
             _filepath, _editor = openResourceEditor(
                 resource.filepath(),
@@ -352,7 +421,7 @@ class ToolWindow(QMainWindow):
 
     # region Menu Bar
     def updateMenus(self):
-        version: Literal['x', '2', '1'] = "x" if self.active is None else "2" if self.active.tsl else "1"
+        version = "x" if self.active is None else "2" if self.active.tsl else "1"
 
         dialogIconPath = f":/images/icons/k{version}/dialog.png"
         self.ui.actionNewDLG.setIcon(QIcon(QPixmap(dialogIconPath)))
@@ -421,13 +490,13 @@ class ToolWindow(QMainWindow):
 
         If there is no active information, show a message box instead.
         """
-        filepath: CaseAwarePath = self.active.path() / "dialog.tlk"
-        data: bytes = BinaryReader.load_file(filepath)
+        filepath = self.active.path() / "dialog.tlk"
+        data = BinaryReader.load_file(filepath)
         openResourceEditor(filepath, "dialog", ResourceType.TLK, data, self.active, self)
 
     def openActiveJournal(self):
         self.active.load_override(".")
-        res: ResourceResult | None = self.active.resource(
+        res = self.active.resource(
             "global",
             ResourceType.JRL,
             [SearchLocation.OVERRIDE, SearchLocation.CHITIN],
@@ -484,7 +553,7 @@ class ToolWindow(QMainWindow):
         """
         try:
             self._check_toolset_update(silent)
-        except Exception as e:  # noqa: BLE001
+        except Exception as e:  # pylint: disable=W0718  # noqa: BLE001
             if not silent:
                 etype, msg = universal_simplify_exception(e)
                 QMessageBox(
@@ -496,7 +565,7 @@ class ToolWindow(QMainWindow):
                 ).exec_()
 
     def _check_toolset_update(self, silent: bool):
-        req: requests.Response = requests.get(UPDATE_INFO_LINK, timeout=15)
+        req = requests.get(UPDATE_INFO_LINK, timeout=15)
         req.raise_for_status()
         file_data = req.json()
         base64_content = file_data["content"]
@@ -550,22 +619,21 @@ class ToolWindow(QMainWindow):
         if reload:
             self.active.load_modules()
 
-        areaNames: CaseInsensitiveDict[str] = self.active.module_names()
-        sortedKeys: list[str] = sorted(areaNames, key=lambda key: areaNames.get(key))
+        areaNames: dict[str, str] = self.active.module_names()
+        sortedKeys: list[str] = sorted(areaNames, key=lambda key: areaNames.get(key).lower())
 
         modules: list[QStandardItem] = []
         for module in sortedKeys:
             # Some users may choose to have their RIM files for the same module merged into a single option for the
             # dropdown menu.
-            lower_module_name = module.lower()
-            if self.settings.joinRIMsTogether and lower_module_name.endswith("_s.rim"):
+            if self.settings.joinRIMsTogether and module.lower().endswith("_s.rim"):
                 continue
 
             item = QStandardItem(f"{areaNames[module]} [{module}]")
             item.setData(module, QtCore.Qt.UserRole)
 
             # Some users may choose to have items representing RIM files to have grey text.
-            if self.settings.greyRIMText and lower_module_name.endswith(".rim"):
+            if self.settings.greyRIMText and module.lower().endswith(".rim"):
                 item.setForeground(self.palette().shadow())
 
             modules.append(item)
@@ -577,7 +645,7 @@ class ToolWindow(QMainWindow):
         if reload:
             self.active.load_override()
 
-        sections: list[QStandardItem] = []
+        sections = []
         for directory in self.active.override_list():
             section = QStandardItem(directory if directory.strip() else "[Root]")
             section.setData(directory, QtCore.Qt.UserRole)
@@ -588,7 +656,7 @@ class ToolWindow(QMainWindow):
         if reload:
             self.active.load_textures()
 
-        sections: list[QStandardItem] = []
+        sections = []
         for texturepack in self.active.texturepacks_list():
             section = QStandardItem(texturepack)
             section.setData(texturepack, QtCore.Qt.UserRole)
@@ -599,9 +667,8 @@ class ToolWindow(QMainWindow):
     def changeModule(self, module: str):
         # Some users may choose to merge their RIM files under one option in the Modules tab; if this is the case we
         # need to account for this.
-        casefold_module = module.casefold()
-        if self.settings.joinRIMsTogether and casefold_module.endswith("_s.rim"):
-            module = f"{module[:-6]}.rim"
+        if self.settings.joinRIMsTogether and module.lower().endswith("_s.rim"):
+            module = f"{module.lower()[:-6]}.rim"
 
         self.ui.modulesWidget.changeSection(module)
 
@@ -609,17 +676,15 @@ class ToolWindow(QMainWindow):
         if tree == self.ui.coreWidget:
             self.ui.resourceTabs.setCurrentWidget(self.ui.coreTab)
             self.ui.coreWidget.setResourceSelection(resource)
-
         elif tree == self.ui.modulesWidget:
             self.ui.resourceTabs.setCurrentWidget(self.ui.modulesTab)
-            filename: str = resource.filepath().name
+            filename = resource.filepath().name
             self.changeModule(filename)
             self.ui.modulesWidget.setResourceSelection(resource)
-
         elif tree == self.ui.overrideWidget:
             self.ui.resourceTabs.setCurrentWidget(self.ui.overrideTab)
             self.ui.overrideWidget.setResourceSelection(resource)
-            subfolder: str = ""
+            subfolder = ""
             for folder_name in self.active.override_list():
                 folder_path: CaseAwarePath = self.active.override_path() / folder_name
                 if resource.filepath().is_relative_to(folder_path) and len(subfolder) < len(folder_path.name):
@@ -681,42 +746,40 @@ class ToolWindow(QMainWindow):
         # If the user still has not set a path, then return them to the [None] option.
         if not path:
             self.ui.gameCombo.setCurrentIndex(0)
-            return
-
-        # If the installation had not already been loaded previously this session, load it now
-        if name not in self.installations:
-
-            def task() -> HTInstallation:
-                return HTInstallation(path, name, tsl, self)
-
-            self.settings.installations()[name].path = path
-            loader = AsyncLoader(self, "Loading Installation", task, "Failed to load installation")
-            if loader.exec_():
-                self.installations[name] = loader.value
-
-        # If the data has been successfully been loaded, dump the data into the models
-        if name in self.installations:
-            self.active = self.installations[name]
-
-            assert_with_variable_trace(isinstance(self.active, HTInstallation))
-            assert isinstance(self.active, HTInstallation)  # noqa: S101
-
-
-            print("Loading installation resources into UI...")
-            self.ui.coreWidget.setResources(self.active.chitin_resources())
-            self.refreshModuleList(reload=True)  # TODO: Modules/Override/Textures are loaded twice when HT is first initialized.
-            self.refreshOverrideList(reload=True)
-            self.refreshTexturePackList(reload=True)
-            self.ui.texturesWidget.setInstallation(self.active)
-
-            print("Updating menus...")
-            self.updateMenus()
-            print("Setting up watchdog observer...")
-            self.dogObserver = Observer()
-            self.dogObserver.schedule(self.dogHandler, self.active.path(), recursive=True)
-            self.dogObserver.start()
         else:
-            self.ui.gameCombo.setCurrentIndex(0)
+            # If the installation had not already been loaded previously this session, load it now
+            if name not in self.installations:
+
+                def task() -> HTInstallation:
+                    return HTInstallation(path, name, tsl, self)
+
+                self.settings.installations()[name].path = path
+                loader = AsyncLoader(self, "Loading Installation", task, "Failed to load installation")
+                if loader.exec_():
+                    self.installations[name] = loader.value
+
+            # If the data has been successfully been loaded, dump the data into the models
+            if name in self.installations:
+                self.active = self.installations[name]
+
+                assert_with_variable_trace(isinstance(self.active, HTInstallation))
+                assert isinstance(self.active, HTInstallation)  # noqa: S101
+
+                print("Loading installation resources into UI...")
+                self.ui.coreWidget.setResources(self.active.chitin_resources())
+                self.refreshModuleList(reload=True)  # TODO: Modules/Override/Textures are loaded twice when HT is first initialized.
+                self.refreshOverrideList(reload=True)
+                self.refreshTexturePackList(reload=True)
+                self.ui.texturesWidget.setInstallation(self.active)
+
+                print("Updating menus...")
+                self.updateMenus()
+                print("Setting up watchdog observer...")
+                self.dogObserver = Observer()
+                self.dogObserver.schedule(self.dogHandler, self.active.path(), recursive=True)
+                self.dogObserver.start()
+            else:
+                self.ui.gameCombo.setCurrentIndex(0)
 
     def _extractResource(self, resource: FileResource, filepath: os.PathLike | str, loader: AsyncBatchLoader):
         """Extracts a resource file from a FileResource object.
@@ -766,7 +829,7 @@ class ToolWindow(QMainWindow):
                 file.write(data)
 
         except Exception as e:
-            print(format_exception_with_variables(e))
+            traceback.print_exc()
             msg = f"Failed to extract resource: {resource.resname()}.{resource.restype().extension}"
             raise RuntimeError(msg) from e
 
@@ -794,30 +857,28 @@ class ToolWindow(QMainWindow):
                     tpc: TPC | None = self.active.texture(texture)
                     if self.ui.tpcTxiCheckbox.isChecked():
                         self._extractTxi(tpc, folderpath.joinpath(f"{texture}.tpc"))
-
-                    file_format: Literal[ResourceType.TGA, ResourceType.TPC] = ResourceType.TGA if self.ui.tpcDecompileCheckbox.isChecked() else ResourceType.TPC
-                    extension: Literal['.tga', '.tpc'] = ".tga" if file_format == ResourceType.TGA else ".tpc"
-                    write_tpc(tpc, folderpath.joinpath(f"{texture}{extension}"), file_format)
-
+                    file_format = ResourceType.TGA if self.ui.tpcDecompileCheckbox.isChecked() else ResourceType.TPC
+                    extension = "tga" if file_format == ResourceType.TGA else "tpc"
+                    write_tpc(tpc, folderpath.joinpath(f"{texture}.{extension}"), file_format)
                 except Exception as e:  # noqa: PERF203
                     etype, msg = universal_simplify_exception(e)
-                    loader.errors.append(type(e)(f"Could not find or extract tpc: '{texture}'\nReason ({etype}): {msg}"))
-
+                    loader.errors.append(e.__class__(f"Could not find or extract tpc: '{texture}'\nReason ({etype}): {msg}"))
         except Exception as e:
             etype, msg = universal_simplify_exception(e)
-            loader.errors.append(type(e)(f"Could not determine textures used in model: '{resource.resname()}'\nReason ({etype}): {msg}"))
+            loader.errors.append(e.__class__(f"Could not determine textures used in model: '{resource.resname()}'\nReason ({etype}): {msg}"))
 
     def openFromFile(self):
-        filepaths: list[str] = QFileDialog.getOpenFileNames(self, "Select files to open")[:-1][0]
+        filepaths = QFileDialog.getOpenFileNames(self, "Select files to open")[:-1][0]
 
         for filepath in filepaths:
             r_filepath = Path(filepath)
             try:
                 with r_filepath.open("rb") as file:
-                    data: bytes = file.read()
+                    data = file.read()
                 openResourceEditor(filepath, *ResourceIdentifier.from_path(r_filepath).validate(), data, self.active, self)
             except ValueError as e:
-                QMessageBox(QMessageBox.Critical, "Failed to open file", str(universal_simplify_exception(e))).exec_()
+                etype, msg = universal_simplify_exception(e)
+                QMessageBox(QMessageBox.Critical, f"Failed to open file ({etype})", msg).exec_()
 
     # endregion
 

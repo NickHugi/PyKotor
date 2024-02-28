@@ -1,28 +1,28 @@
 from __future__ import annotations
 
 import multiprocessing
+
 from abc import abstractmethod
 from time import sleep
 from typing import TYPE_CHECKING
 
+from PyQt5 import QtCore
+from PyQt5.QtCore import QPoint, QSortFilterProxyModel, QThread, QTimer
+from PyQt5.QtGui import QIcon, QImage, QPixmap, QStandardItem, QStandardItemModel, QTransform
+from PyQt5.QtWidgets import QHeaderView, QMenu, QWidget
+
 from pykotor.extract.installation import SearchLocation
 from pykotor.resource.formats.tpc import TPC, TPCTextureFormat
-from pykotor.resource.type import ResourceType
-from PyQt5 import QtCore
-from PyQt5.QtCore import QModelIndex, QPoint, QSortFilterProxyModel, QThread, QTimer
-from PyQt5.QtGui import QIcon, QImage, QPixmap, QResizeEvent, QStandardItem, QStandardItemModel, QTransform
-from PyQt5.QtWidgets import QHeaderView, QMenu, QWidget
 from utility.error_handling import format_exception_with_variables
 
 if TYPE_CHECKING:
+    from PyQt5.QtCore import QModelIndex
+    from PyQt5.QtGui import QResizeEvent
+
     from pykotor.common.misc import CaseInsensitiveDict
     from pykotor.extract.file import FileResource
+    from pykotor.resource.type import ResourceType
     from toolset.data.installation import HTInstallation
-
-GFF_TYPES: list[ResourceType] = [ResourceType.GFF, ResourceType.UTC, ResourceType.UTP, ResourceType.UTD, ResourceType.UTI,
-             ResourceType.UTM, ResourceType.UTE, ResourceType.UTT, ResourceType.UTW, ResourceType.UTS,
-             ResourceType.DLG, ResourceType.GUI, ResourceType.ARE, ResourceType.IFO, ResourceType.GIT,
-             ResourceType.JRL, ResourceType.ITP]
 
 
 class MainWindowList(QWidget):
@@ -59,7 +59,7 @@ class ResourceList(MainWindowList):
         """
         super().__init__(parent)
 
-        from toolset.uic.widgets.resource_list import Ui_Form
+        from toolset.uic.widgets.resource_list import Ui_Form  # noqa: PLC0415  # pylint: disable=C0415
         self.ui = Ui_Form()
         self.ui.setupUi(self)
         self.setupSignals()
@@ -114,7 +114,8 @@ class ResourceList(MainWindowList):
         # Add any missing resources to the list
         for resource in resources:
             for item in allResources:
-                if item.resource == resource:
+                resource_from_item: FileResource = item.resource
+                if resource_from_item == resource:
                     # Update the resource reference. Important when to a new module that share a resource
                     # with the same name and restype with the old one.
                     item.resource = resource
@@ -156,7 +157,8 @@ class ResourceList(MainWindowList):
             self.ui.resourceTree.setCurrentIndex(child)
 
         for item in model.allResourcesItems():
-            if item.resource.resname() == resource.resname() and item.resource.restype() == resource.restype():
+            resource_from_item: FileResource = item.resource
+            if resource_from_item.identifier() == resource.identifier():
                 _parentIndex = model.proxyModel().mapFromSource(item.parent().index())  # TODO: why is this unused
                 itemIndex = model.proxyModel().mapFromSource(item.index())
                 QTimer.singleShot(1, lambda index=itemIndex, item=item: select(item.parent().index(), index))
@@ -193,12 +195,13 @@ class ResourceList(MainWindowList):
         """
         menu = QMenu(self)
 
-        resources = self.selectedResources()
+        resources: list[FileResource] = self.selectedResources()
         if len(resources) == 1:
-            resource = resources[0]
-            if resource.restype() in GFF_TYPES:
+            resource: FileResource = resources[0]
+            if resource.restype().contents == "gff":
                 def open1():
                     return self.requestOpenResource.emit(resources, False)
+
                 def open2():
                     return self.requestOpenResource.emit(resources, True)
                 menu.addAction("Open").triggered.connect(open2)
@@ -268,11 +271,11 @@ class ResourceModel(QStandardItemModel):
 
     def allResourcesItems(self) -> list[QStandardItem]:
         """Returns a list of all QStandardItem objects in the model that represent resource files."""
-        resources = [
+        resources = (
             category.child(i, 0)
             for category in self._categoryItems.values()
             for i in range(category.rowCount())
-        ]
+        )
         return [item for item in resources if item is not None]
 
     def removeUnusedCategories(self):
@@ -284,12 +287,15 @@ class ResourceModel(QStandardItemModel):
 
 
 class TextureList(MainWindowList):
+    requestReload = QtCore.pyqtSignal(object)  # TODO:
+
+    requestRefresh = QtCore.pyqtSignal()  # TODO:
     iconUpdate = QtCore.pyqtSignal(object, object)
 
     def __init__(self, parent: QWidget):
         super().__init__(parent)
 
-        from toolset.uic.widgets.texture_list import Ui_Form
+        from toolset.uic.widgets.texture_list import Ui_Form  # noqa: PLC0415  # pylint: disable=C0415
         self.ui = Ui_Form()
         self.ui.setupUi(self)
         self.setupSignals()
@@ -307,8 +313,10 @@ class TextureList(MainWindowList):
 
         self._taskQueue = multiprocessing.JoinableQueue()
         self._resultQueue = multiprocessing.Queue()
-        self._consumers: list[TextureListConsumer] = [TextureListConsumer(self._taskQueue, self._resultQueue) for i in
-                                                      range(multiprocessing.cpu_count())]
+        self._consumers: list[TextureListConsumer] = [
+            TextureListConsumer(self._taskQueue, self._resultQueue)
+            for _ in range(multiprocessing.cpu_count())
+        ]
         for consumer in self._consumers:
             consumer.start()
 
@@ -354,7 +362,7 @@ class TextureList(MainWindowList):
             self.sectionModel.insertRow(self.sectionModel.rowCount(), section)
 
     def selectedResources(self) -> list[FileResource]:
-        resources = []
+        resources: list[FileResource] = []
         for proxyIndex in self.ui.resourceList.selectedIndexes():
             sourceIndex = self.texturesProxyModel.mapToSource(proxyIndex)
             item = self.texturesModel.item(sourceIndex.row())
@@ -365,7 +373,7 @@ class TextureList(MainWindowList):
         if self.texturesModel.rowCount() == 0:
             return []
 
-        scanWidth: int = self.parent().width()  # please type these
+        scanWidth: int = self.parent().width()
         scanHeight: int = self.parent().height()
 
         proxyModel = self.texturesProxyModel
@@ -425,6 +433,9 @@ class TextureList(MainWindowList):
         self.requestRefresh.emit()
 
     def onTextureListScrolled(self):
+        if self._installation is None:
+            print("No installation loaded, nothing to scroll through?")
+            return
         # Note: Avoid redundantly loading textures that have already been loaded
         textures: CaseInsensitiveDict[TPC | None] = self._installation.textures(
             [item.text() for item in self.visibleItems() if item.text().casefold() not in self._scannedTextures],
@@ -445,16 +456,20 @@ class TextureList(MainWindowList):
             self._taskQueue.put(task)
             item.setData(True, QtCore.Qt.UserRole)
 
-    def onIconUpdate(self, item, icon):
-        try:
+    def onIconUpdate(
+        self,
+        item: QStandardItem,
+        icon,
+    ):
+        try:  # FIXME: there's a race condition happening somewhere, causing the item to have previously been deleted.
             item.setIcon(icon)
         except RuntimeError as e:
-            print(format_exception_with_variables(e, ___message___="This exception has been suppressed."))
+            print(format_exception_with_variables(e, message="This exception has been suppressed."))
 
     def onResourceDoubleClicked(self):
         self.requestOpenResource.emit(self.selectedResources(), None)
 
-    def resizeEvent(self, a0: QResizeEvent):
+    def resizeEvent(self, a0: QResizeEvent):  # pylint: disable=W0613
         # Trigger the scroll slot method - this will cause any newly visible icons to load.
         self.onTextureListScrolled()
 
@@ -484,7 +499,7 @@ class TextureListTask:
     def __repr__(self):
         return str(self.row)
 
-    def __call__(self, *args, **kwargs) -> tuple[int, str, int, int, bytes | None]:
+    def __call__(self, *args, **kwargs) -> tuple[int, str, int, int, bytearray]:
         width, height, data = self.tpc.convert(TPCTextureFormat.RGB, self.bestMipmap(self.tpc))
         return self.row, self.resname, width, height, data
 

@@ -30,7 +30,7 @@ class LTR:
     def _chance() -> float:
         """Returns a randomly generated float between 0.0 and 1.0 inclusive.
 
-        Returns
+        Returns:
         -------
             A float between 0.0 and 1.0 inclusive.
         """

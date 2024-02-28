@@ -7,6 +7,8 @@ from pykotor.resource.formats.ssf.io_ssf import SSFBinaryReader
 from pykotor.tslpatcher.mods.template import PatcherModifications
 
 if TYPE_CHECKING:
+    from typing_extensions import Literal
+
     from pykotor.common.misc import Game
     from pykotor.resource.formats.ssf import SSF, SSFSound
     from pykotor.resource.type import SOURCE_TYPES
@@ -27,7 +29,7 @@ class ModificationsSSF(PatcherModifications):
     def __init__(
         self,
         filename: str,
-        replace_file: bool,
+        replace_file: bool,  # noqa: FBT001
         modifiers: list[ModifySSF] | None = None,
     ):
         super().__init__(filename)
@@ -41,7 +43,7 @@ class ModificationsSSF(PatcherModifications):
         memory: PatcherMemory,
         logger: PatchLogger,
         game: Game,
-    ) -> bytes:
+    ) -> bytes | Literal[True]:
         ssf: SSF = SSFBinaryReader(source_ssf).load()
         self.apply(ssf, memory, logger, game)
         return bytes_ssf(ssf)

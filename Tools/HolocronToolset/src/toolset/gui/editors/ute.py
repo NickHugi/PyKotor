@@ -1,18 +1,25 @@
 from __future__ import annotations
 
+from copy import deepcopy
 from typing import TYPE_CHECKING
+
+from PyQt5.QtWidgets import QCheckBox, QDoubleSpinBox, QSpinBox, QTableWidgetItem
 
 from pykotor.common.misc import ResRef
 from pykotor.resource.formats.gff import write_gff
 from pykotor.resource.generics.ute import UTE, UTECreature, dismantle_ute, read_ute
 from pykotor.resource.type import ResourceType
-from PyQt5.QtWidgets import QCheckBox, QDoubleSpinBox, QSpinBox, QTableWidgetItem, QWidget
 from toolset.data.installation import HTInstallation
 from toolset.gui.dialogs.edit.locstring import LocalizedStringDialog
 from toolset.gui.editor import Editor
 
 if TYPE_CHECKING:
     import os
+
+    from PyQt5.QtWidgets import QWidget
+
+    from pykotor.resource.formats.gff.gff_data import GFF
+    from pykotor.resource.formats.twoda.twoda_data import TwoDA
 
 
 class UTEEditor(Editor):
@@ -32,17 +39,17 @@ class UTEEditor(Editor):
             - Initialize UTE object
             - Call new() to start with a blank trigger.
         """
-        supported = [ResourceType.UTE]
+        supported: list[ResourceType] = [ResourceType.UTE]
         super().__init__(parent, "Trigger Editor", "trigger", supported, supported, installation)
 
-        from toolset.uic.editors.ute import Ui_MainWindow
+        from toolset.uic.editors.ute import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
         self._setupMenus()
         self._setupSignals()
         self._setupInstallation(installation)
 
-        self._ute = UTE()
+        self._ute: UTE = UTE()
 
         self.new()
 
@@ -82,15 +89,14 @@ class UTEEditor(Editor):
         self._installation = installation
         self.ui.nameEdit.setInstallation(installation)
 
-        factions = installation.htGetCache2DA(HTInstallation.TwoDA_FACTIONS)
-        difficulties = installation.htGetCache2DA(HTInstallation.TwoDA_ENC_DIFFICULTIES)
+        factions: TwoDA = installation.htGetCache2DA(HTInstallation.TwoDA_FACTIONS)
+        difficulties: TwoDA = installation.htGetCache2DA(HTInstallation.TwoDA_ENC_DIFFICULTIES)
 
         self.ui.difficultySelect.clear()
         self.ui.difficultySelect.setItems(difficulties.get_column("label"))
 
         self.ui.factionSelect.clear()
         self.ui.difficultySelect.setItems(factions.get_column("label"))
-
 
     def load(self, filepath: os.PathLike | str, resref: str, restype: ResourceType, data: bytes):
         super().load(filepath, resref, restype, data)
@@ -153,7 +159,7 @@ class UTEEditor(Editor):
     def build(self) -> tuple[bytes, bytes]:
         """Builds a UTE object from UI data.
 
-        Returns
+        Returns:
         -------
             tuple[bytes, bytes]: A tuple containing the UTE data and an empty string.
 
@@ -165,7 +171,7 @@ class UTEEditor(Editor):
             - Adding comment text
             - Encoding the UTE object into bytes.
         """
-        ute: UTE = self._ute
+        ute: UTE = deepcopy(self._ute)
 
         # Basic
         ute.name = self.ui.nameEdit.locstring()
@@ -209,7 +215,7 @@ class UTEEditor(Editor):
         ute.comment = self.ui.commentsEdit.toPlainText()
 
         data = bytearray()
-        gff = dismantle_ute(ute)
+        gff: GFF = dismantle_ute(ute)
         write_gff(gff, data)
 
         return data, b""
@@ -221,7 +227,7 @@ class UTEEditor(Editor):
     def changeName(self):
         dialog = LocalizedStringDialog(self, self._installation, self.ui.nameEdit.locstring())
         if dialog.exec_():
-            self._loadLocstring(self.ui.nameEdit, dialog.locstring)
+            self._loadLocstring(self.ui.nameEdit.ui.locstringText, dialog.locstring)
 
     def generateTag(self):
         if not self.ui.resrefEdit.text():
@@ -229,7 +235,7 @@ class UTEEditor(Editor):
         self.ui.tagEdit.setText(self.ui.resrefEdit.text())
 
     def generateResref(self):
-        if self._resname is not None and self._resname != "":
+        if self._resname:
             self.ui.resrefEdit.setText(self._resname)
         else:
             self.ui.resrefEdit.setText("m00xx_enc_000")
@@ -252,7 +258,13 @@ class UTEEditor(Editor):
         self.ui.respawnCountSpin.setEnabled(isContinuous)
         self.ui.respawnTimeSpin.setEnabled(isContinuous)
 
-    def addCreature(self, resname: str = "", appearanceId: int = 0, challenge: float = 0.0, singe: bool = False):
+    def addCreature(
+        self,
+        resname: str = "",
+        appearanceId: int = 0,
+        challenge: float = 0.0,
+        single: bool = False,
+    ):
         """Adds a new creature to the creature table.
 
         Args:
@@ -260,7 +272,7 @@ class UTEEditor(Editor):
             resname (str): Name of the creature
             appearanceId (int): ID number for the creature's appearance
             challenge (float): Difficulty rating for the creature
-            singe (bool): Whether the creature is a single creature encounter
+            single (bool): Whether the creature is a single creature encounter
 
         Processing Logic:
         ----------------
@@ -275,7 +287,7 @@ class UTEEditor(Editor):
         self.ui.creatureTable.insertRow(rowId)
 
         singleCheckbox = QCheckBox()
-        singleCheckbox.setChecked(singe)
+        singleCheckbox.setChecked(single)
         challengeSpin = QDoubleSpinBox()
         challengeSpin.setValue(challenge)
         appearanceSpin = QSpinBox()

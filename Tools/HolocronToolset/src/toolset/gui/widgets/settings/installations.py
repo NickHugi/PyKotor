@@ -1,16 +1,15 @@
 from __future__ import annotations
 
 import os
-from typing import Any
 
-from pykotor.common.misc import Game
-from pykotor.tools.path import find_kotor_paths_from_default
 from PyQt5 import QtCore
 from PyQt5.QtCore import QSettings
 from PyQt5.QtGui import QStandardItem, QStandardItemModel
 from PyQt5.QtWidgets import QWidget
+
+from pykotor.common.misc import Game
+from pykotor.tools.path import CaseAwarePath, find_kotor_paths_from_default
 from toolset.data.settings import Settings
-from utility.path import Path
 
 
 class InstallationsWidget(QWidget):
@@ -91,9 +90,10 @@ class InstallationsWidget(QWidget):
         installations: dict[str, dict[str, str]] = {}
 
         for row in range(self.installationsModel.rowCount()):
-            item = self.installationsModel.item(row, 0)
-            installations[item.text()] = item.data()
-            installations[item.text()]["name"] = item.text()
+            item: QStandardItem = self.installationsModel.item(row, 0)
+            item_text: str = item.text()
+            installations[item_text] = item.data()
+            installations[item_text]["name"] = item_text
 
         self.settings.settings.setValue("installations", installations)
 
@@ -166,7 +166,7 @@ class InstallationConfig:
 
     @path.setter
     def path(self, value: str):
-        installations = self._settings.value("installations", {})
+        installations: dict[str, dict[str, str]] = self._settings.value("installations", {})
         installations[self._name]["path"] = value
         self._settings.setValue("installations", installations)
 
@@ -207,10 +207,10 @@ class GlobalSettings(Settings):
             installations = {}
 
         counters: dict[Game, int] = {Game.K1: 1, Game.K2: 1}
-        existing_paths: set[Path] = {Path(inst["path"]) for inst in installations.values()}  # Create a set of existing paths
+        existing_paths: set[CaseAwarePath] = {CaseAwarePath(inst["path"]) for inst in installations.values()}  # Create a set of existing paths
 
         for game, paths in find_kotor_paths_from_default().items():
-            for path in filter(Path.exists, paths):
+            for path in filter(CaseAwarePath.safe_isdir, paths):
                 if path in existing_paths:  # If the path is already recorded, skip to the next one
                     continue
 
@@ -233,8 +233,6 @@ class GlobalSettings(Settings):
         self.settings.setValue("installations", installations)
 
         return {name: InstallationConfig(name) for name in installations}
-
-
 
     # region Strings
     extractPath = Settings._addSetting(

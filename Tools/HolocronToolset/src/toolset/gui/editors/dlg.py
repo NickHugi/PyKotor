@@ -4,27 +4,26 @@ from copy import copy, deepcopy
 from typing import TYPE_CHECKING
 
 import pyperclip
+
+from PyQt5 import QtCore
+from PyQt5.QtCore import QBuffer, QIODevice, QItemSelectionModel
+from PyQt5.QtGui import QBrush, QColor, QStandardItem, QStandardItemModel
+from PyQt5.QtMultimedia import QMediaContent, QMediaPlayer
+from PyQt5.QtWidgets import QListWidgetItem, QMenu, QMessageBox, QShortcut
+
 from pykotor.common.misc import ResRef
 from pykotor.extract.installation import SearchLocation
 from pykotor.resource.generics.dlg import (
     DLG,
-    DLGAnimation,
     DLGComputerType,
     DLGConversationType,
     DLGEntry,
     DLGLink,
-    DLGNode,
     DLGReply,
-    DLGStunt,
     read_dlg,
     write_dlg,
 )
 from pykotor.resource.type import ResourceType
-from PyQt5 import QtCore
-from PyQt5.QtCore import QBuffer, QIODevice, QItemSelection, QItemSelectionModel, QModelIndex, QPoint
-from PyQt5.QtGui import QBrush, QColor, QKeyEvent, QMouseEvent, QStandardItem, QStandardItemModel
-from PyQt5.QtMultimedia import QMediaContent, QMediaPlayer
-from PyQt5.QtWidgets import QListWidgetItem, QMenu, QMessageBox, QPlainTextEdit, QShortcut, QWidget
 from toolset.data.installation import HTInstallation
 from toolset.gui.dialogs.edit.dialog_animation import EditAnimationDialog
 from toolset.gui.dialogs.edit.dialog_model import CutsceneModelDialog
@@ -36,8 +35,17 @@ from utility.error_handling import assert_with_variable_trace
 if TYPE_CHECKING:
     import os
 
+    from PyQt5.QtCore import QItemSelection, QModelIndex, QPoint
+    from PyQt5.QtGui import QKeyEvent, QMouseEvent
+    from PyQt5.QtWidgets import QPlainTextEdit, QWidget
+
     from pykotor.common.language import LocalizedString
     from pykotor.resource.formats.twoda.twoda_data import TwoDA
+    from pykotor.resource.generics.dlg import (
+        DLGAnimation,
+        DLGNode,
+        DLGStunt,
+    )
 
 _LINK_ROLE = QtCore.Qt.UserRole + 1
 _COPY_ROLE = QtCore.Qt.UserRole + 2
@@ -65,7 +73,7 @@ class DLGEditor(Editor):
         supported: list[ResourceType] = [ResourceType.DLG]
         super().__init__(parent, "Dialog Editor", "dialog", supported, supported, installation)
 
-        from toolset.uic.editors.dlg import Ui_MainWindow
+        from toolset.uic.editors.dlg import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
         self._setupMenus()
@@ -392,7 +400,6 @@ class DLGEditor(Editor):
         ]
         installation.htBatchCache2DA(required)
 
-
         if installation.tsl:
             self._setup_tsl_install_defs(installation)
         self.ui.cameraEffectSelect.clear()
@@ -400,7 +407,7 @@ class DLGEditor(Editor):
 
         videoEffects: TwoDA | None = installation.htGetCache2DA(HTInstallation.TwoDA_VIDEO_EFFECTS)
         for i, label in enumerate(videoEffects.get_column("label")):
-            self.ui.cameraEffectSelect.addItem(label.replace("VIDEO_EFFECT_", "").replace("_" , " ").title(), i)
+            self.ui.cameraEffectSelect.addItem(label.replace("VIDEO_EFFECT_", "").replace("_", " ").title(), i)
 
     def _setup_tsl_install_defs(self, installation: HTInstallation):
         """Set up UI elements for TSL installation selection.
@@ -741,7 +748,6 @@ class DLGEditor(Editor):
                 f"Could not load audio resource '{resname}'.",
             )
 
-
     def focusOnNode(self, link: DLGLink) -> QStandardItem:
         """Focuses the dialog tree on a specific link node.
 
@@ -827,7 +833,7 @@ class DLGEditor(Editor):
         elif not self._focused:
             menu = QMenu(self)
 
-            menu.addAction("Add Entry").triggered.connect(lambda: self.addRootNode())
+            menu.addAction("Add Entry").triggered.connect(self.addRootNode)
 
             menu.popup(self.ui.dialogTree.viewport().mapToGlobal(point))
 
@@ -888,7 +894,7 @@ class DLGEditor(Editor):
         menu.popup(self.ui.dialogTree.viewport().mapToGlobal(point))
 
     def keyPressEvent(self, event: QKeyEvent | None):
-        if event.key() in (QtKey.Key_Enter, QtKey.Key_Return):
+        if event.key() in {QtKey.Key_Enter, QtKey.Key_Return}:
             selectedItem: QModelIndex = self.ui.dialogTree.currentIndex()
             if selectedItem.isValid():
                 item: QStandardItem | None = self.model.itemFromIndex(selectedItem)
@@ -989,7 +995,7 @@ class DLGEditor(Editor):
             self.ui.cameraIdSpin.setValue(node.camera_id if node.camera_id is not None else -1)
             self.ui.cameraAnimSpin.setValue(node.camera_anim if node.camera_anim is not None else -1)
             self.ui.cameraAngleSelect.setCurrentIndex(node.camera_angle if node.camera_angle is not None else 0)
-            self.ui.cameraEffectSelect.setCurrentIndex(node.camera_effect+1 if node.camera_effect is not None else 0)
+            self.ui.cameraEffectSelect.setCurrentIndex(node.camera_effect + 1 if node.camera_effect is not None else 0)
 
             self.ui.nodeUnskippableCheckbox.setChecked(node.unskippable)
             self.ui.nodeIdSpin.setValue(node.node_id)
@@ -1022,7 +1028,7 @@ class DLGEditor(Editor):
         item: QStandardItem | None = self.model.itemFromIndex(index)
 
         link: DLGLink = item.data(_LINK_ROLE)
-        node: DLGNode = link.node
+        node: DLGNode | None = link.node
 
         node.listener = self.ui.listenerEdit.text()
         if isinstance(node, DLGEntry):

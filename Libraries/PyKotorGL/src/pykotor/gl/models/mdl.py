@@ -3,12 +3,13 @@ from __future__ import annotations
 import ctypes
 import math
 import struct
+
 from copy import copy
 from typing import TYPE_CHECKING
 
 import glm
 import numpy as np
-from glm import mat4, quat, vec3, vec4
+
 from OpenGL.GL import glGenBuffers, glGenVertexArrays, glVertexAttribPointer
 from OpenGL.GL.shaders import GL_FALSE
 from OpenGL.raw.GL.ARB.tessellation_shader import GL_TRIANGLES
@@ -19,6 +20,7 @@ from OpenGL.raw.GL.VERSION.GL_1_3 import GL_TEXTURE0, GL_TEXTURE1, glActiveTextu
 from OpenGL.raw.GL.VERSION.GL_1_5 import GL_ARRAY_BUFFER, GL_ELEMENT_ARRAY_BUFFER, GL_STATIC_DRAW, glBindBuffer, glBufferData
 from OpenGL.raw.GL.VERSION.GL_2_0 import glEnableVertexAttribArray
 from OpenGL.raw.GL.VERSION.GL_3_0 import glBindVertexArray
+from glm import mat4, quat, vec3, vec4
 
 from pykotor.common.geometry import Vector3
 
@@ -38,9 +40,9 @@ class Model:
         self.root.draw(shader, transform, override_texture)
 
     def find(self, name: str) -> Node | None:
-        nodes = [self.root]
+        nodes: list[Node] = [self.root]
         while nodes:
-            node = nodes.pop()
+            node: Node = nodes.pop()
             if node.name.lower() == name.lower():
                 return node
             nodes.extend(node.children)
@@ -50,7 +52,7 @@ class Model:
         all_nodes: list[Node] = []
         search: list[Node] = [self.root]
         while search:
-            node = search.pop()
+            node: Node = search.pop()
             search.extend(node.children)
             all_nodes.append(node)
         return all_nodes
@@ -112,7 +114,7 @@ class Model:
             vertex_count = len(node.mesh.vertex_data) // node.mesh.mdx_size
             for i in range(vertex_count):
                 index = i * node.mesh.mdx_size + node.mesh.mdx_vertex
-                data = node.mesh.vertex_data[index:index+12]
+                data = node.mesh.vertex_data[index:index + 12]
                 x, y, z = struct.unpack("fff", data)
                 position = transform * vec3(x, y, z)
                 min_point.x = min(min_point.x, position.x)
@@ -141,21 +143,21 @@ class Node:
         self._recalc_transform()
 
     def root(self) -> Node:
-        ancestor = self._parent
+        ancestor: Node | None = self._parent
         while ancestor:
             ancestor = ancestor._parent
         return ancestor
 
     def ancestors(self) -> list[Node]:
-        ancestors = []
-        ancestor = self._parent
+        ancestors: list[Node] = []
+        ancestor: Node | None = self._parent
         while ancestor:
             ancestors.append(ancestor)
             ancestor = ancestor._parent
         return list(reversed(ancestors))
 
     def global_position(self) -> vec3:  # sourcery skip: class-extract-method
-        ancestors = [*self.ancestors(), self]
+        ancestors: list[Node] = [*self.ancestors(), self]
         transform = mat4()
         for ancestor in ancestors:
             transform = transform * glm.translate(ancestor._position)
@@ -165,7 +167,7 @@ class Node:
         return position
 
     def global_rotation(self) -> quat:
-        ancestors = [*self.ancestors(), self]
+        ancestors: list[Node] = [*self.ancestors(), self]
         transform = mat4()
         for ancestor in ancestors:
             transform = transform * glm.translate(ancestor._position)
@@ -175,7 +177,7 @@ class Node:
         return rotation
 
     def global_transform(self) -> mat4:
-        ancestors = [*self.ancestors(), self]
+        ancestors: list[Node] = [*self.ancestors(), self]
         transform = mat4()
         for ancestor in ancestors:
             transform = transform * glm.translate(ancestor._position)
@@ -256,22 +258,27 @@ class Mesh:
         glBindVertexArray(self._vao)
 
         glBindBuffer(GL_ARRAY_BUFFER, self._vbo)
-        glBufferData(GL_ARRAY_BUFFER, len(vertex_data), vertex_data, GL_STATIC_DRAW)
+        # Convert vertex_data bytearray to MemoryView
+        vertex_data_mv = memoryview(vertex_data)
+        glBufferData(GL_ARRAY_BUFFER, len(vertex_data), vertex_data_mv, GL_STATIC_DRAW)
 
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, self._ebo)
-        glBufferData(GL_ELEMENT_ARRAY_BUFFER, len(element_data), element_data, GL_STATIC_DRAW)
+        # Convert element_data bytearray to MemoryView
+        element_data_mv = memoryview(element_data)
+        glBufferData(GL_ELEMENT_ARRAY_BUFFER, len(element_data), element_data_mv, GL_STATIC_DRAW)
+
         self._face_count = len(element_data) // 2
 
         if data_bitflags & 0x0001:
             glEnableVertexAttribArray(1)
             glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, block_size, ctypes.c_void_p(vertex_offset))
 
-        if data_bitflags & 0x0020 and texture != "" and texture != "NULL":
+        if data_bitflags & 0x0020 and texture and texture != "NULL":
             glEnableVertexAttribArray(3)
             glVertexAttribPointer(3, 2, GL_FLOAT, GL_FALSE, block_size, ctypes.c_void_p(texture_offset))
             self.texture = texture
 
-        if data_bitflags & 0x0004 and lightmap != "" and lightmap != "NULL":
+        if data_bitflags & 0x0004 and lightmap and lightmap != "NULL":
             glEnableVertexAttribArray(4)
             glVertexAttribPointer(4, 2, GL_FLOAT, GL_FALSE, block_size, ctypes.c_void_p(lightmap_offset))
             self.lightmap = lightmap
@@ -279,11 +286,16 @@ class Mesh:
         glBindBuffer(GL_ARRAY_BUFFER, 0)
         glBindVertexArray(0)
 
-    def draw(self, shader: Shader, transform: mat4, override_texture: str | None = None):
+    def draw(
+        self,
+        shader: Shader,
+        transform: mat4,
+        override_texture: str | None = None,
+    ):
         shader.set_matrix4("model", transform)
 
         glActiveTexture(GL_TEXTURE0)
-        self._scene.texture(self.texture if override_texture is None else override_texture).use()
+        self._scene.texture(override_texture or self.texture).use()
 
         glActiveTexture(GL_TEXTURE1)
         self._scene.texture(self.lightmap).use()
@@ -340,8 +352,8 @@ class Cube:
             6, 7, 3,
         ], dtype="int16")
 
-        self.min_point = min_point
-        self.max_point = max_point
+        self.min_point: vec3 = min_point
+        self.max_point: vec3 = max_point
 
         self._vao = glGenVertexArrays(1)
         self._vbo = glGenBuffers(1)
@@ -349,11 +361,11 @@ class Cube:
         glBindVertexArray(self._vao)
 
         glBindBuffer(GL_ARRAY_BUFFER, self._vbo)
-        glBufferData(GL_ARRAY_BUFFER, len(vertices)*4, vertices, GL_STATIC_DRAW)
+        glBufferData(GL_ARRAY_BUFFER, len(vertices) * 4, vertices, GL_STATIC_DRAW)
 
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, self._ebo)
-        glBufferData(GL_ELEMENT_ARRAY_BUFFER, len(elements)*4, elements, GL_STATIC_DRAW)
-        self._face_count = len(elements)
+        glBufferData(GL_ELEMENT_ARRAY_BUFFER, len(elements) * 4, elements, GL_STATIC_DRAW)
+        self._face_count: int = len(elements)
 
         glEnableVertexAttribArray(1)
         glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 12, ctypes.c_void_p(0))
@@ -384,7 +396,7 @@ class Boundary:
             - Populate EBO with element indices
             - Configure vertex attributes.
         """
-        self._scene = scene
+        self._scene: Scene = scene
 
         vertices, elements = self._build_nd(vertices)
 
@@ -398,7 +410,7 @@ class Boundary:
 
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, self._ebo)
         glBufferData(GL_ELEMENT_ARRAY_BUFFER, len(elements) * 4, elements, GL_STATIC_DRAW)
-        self._face_count = len(elements)
+        self._face_count: int = len(elements)
 
         glEnableVertexAttribArray(1)
         glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 12, ctypes.c_void_p(0))
@@ -426,23 +438,23 @@ class Boundary:
             - Add vertices rotating around the circle four times
             - Return a new Boundary instance with the calculated vertices.
         """
-        vertices = []
+        vertices: list[Vector3] = []
         for i in range(smoothness):
-            x = math.cos(i/smoothness*math.pi/2)
-            y = math.sin(i/smoothness*math.pi/2)
-            vertices.append(Vector3(x, y, 0)*radius)
+            x = math.cos(i / smoothness * math.pi / 2)
+            y = math.sin(i / smoothness * math.pi / 2)
+            vertices.append(Vector3(x, y, 0) * radius)
         for i in range(smoothness):
-            x = math.cos(i/smoothness*math.pi/2 + math.pi/2)
-            y = math.sin(i/smoothness*math.pi/2 + math.pi/2)
-            vertices.append(Vector3(x, y, 0)*radius)
+            x = math.cos(i / smoothness * math.pi / 2 + math.pi / 2)
+            y = math.sin(i / smoothness * math.pi / 2 + math.pi / 2)
+            vertices.append(Vector3(x, y, 0) * radius)
         for i in range(smoothness):
-            x = math.cos(i/smoothness*math.pi/2 + math.pi/2*2)
-            y = math.sin(i/smoothness*math.pi/2 + math.pi/2*2)
-            vertices.append(Vector3(x, y, 0)*radius)
+            x = math.cos(i / smoothness * math.pi / 2 + math.pi / 2 * 2)
+            y = math.sin(i / smoothness * math.pi / 2 + math.pi / 2 * 2)
+            vertices.append(Vector3(x, y, 0) * radius)
         for i in range(smoothness):
-            x = math.cos(i/smoothness*math.pi/2 + math.pi/2*3)
-            y = math.sin(i/smoothness*math.pi/2 + math.pi/2*3)
-            vertices.append(Vector3(x, y, 0)*radius)
+            x = math.cos(i / smoothness * math.pi / 2 + math.pi / 2 * 3)
+            y = math.sin(i / smoothness * math.pi / 2 + math.pi / 2 * 3)
+            vertices.append(Vector3(x, y, 0) * radius)
         return Boundary(scene, vertices)
 
     def draw(self, shader: Shader, transform: mat4):
@@ -450,25 +462,25 @@ class Boundary:
         glBindVertexArray(self._vao)
         glDrawElements(GL_TRIANGLES, self._face_count, GL_UNSIGNED_SHORT, None)
 
-    def _build_nd(self, vertices) -> tuple[ndarray, ndarray]:
+    def _build_nd(self, vertices: list[Vector3]) -> tuple[ndarray, ndarray]:
         npvertices = []
         for vertex in vertices:
-            npvertices.extend([*vertex, *Vector3(vertex.x, vertex.y, vertex.z+2)])
+            npvertices.extend([*vertex, *Vector3(vertex.x, vertex.y, vertex.z + 2)])
 
-        npfaces = []
+        npfaces: list[int] = []
         count = len(vertices) * 2
         for i, _vertex in enumerate(vertices):
-            index1 = i*2
-            index2 = i*2+2 if i*2+2 < count else 0
-            index3 = i*2+1
-            index4 = (i*2+2)+1 if (i*2+2)+1 < count else 1
+            index1 = i * 2
+            index2 = i * 2 + 2 if i * 2 + 2 < count else 0
+            index3 = i * 2 + 1
+            index4 = (i * 2 + 2) + 1 if (i * 2 + 2) + 1 < count else 1
             npfaces.extend([index1, index2, index3, index2, index4, index3])
         return np.array(npvertices, dtype="float32"), np.array(npfaces, dtype="int16")
 
 
 class Empty:
     def __init__(self, scene: Scene):
-        self._scene = scene
+        self._scene: Scene = scene
 
     def draw(self, shader: Shader, transform: mat4):
         ...

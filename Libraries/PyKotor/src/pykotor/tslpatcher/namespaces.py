@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from utility.path import PurePath
+from utility.system.path import PurePath
 
 
 class PatcherNamespace:
@@ -11,8 +11,8 @@ class PatcherNamespace:
 
         Args:
         ----
-            ini_filename: Filename of ini configuration file
-            info_filename: Filename of info configuration file
+            ini_filename: str - Filename of ini configuration file
+            info_filename: str - Filename of info configuration file
 
         Processing Logic:
         ----------------

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from copy import deepcopy
 from typing import TYPE_CHECKING
 
 from pykotor.common.misc import ResRef
@@ -13,6 +14,7 @@ if TYPE_CHECKING:
     import os
 
     from PyQt5.QtWidgets import QWidget
+
     from toolset.data.installation import HTInstallation
 
 
@@ -36,7 +38,7 @@ class UTWEditor(Editor):
         supported: list[ResourceType] = [ResourceType.UTW]
         super().__init__(parent, "Waypoint Editor", "waypoint", supported, supported, installation)
 
-        from toolset.uic.editors.utw import Ui_MainWindow
+        from toolset.uic.editors.utw import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
         self._setupMenus()
@@ -109,14 +111,14 @@ class UTWEditor(Editor):
             - Serialize UTW to bytes using GFF format
             - Return bytes and empty bytes
         """
-        utw: UTW = self._utw
+        utw: UTW = deepcopy(self._utw)
 
         utw.name = self.ui.nameEdit.locstring()
         utw.tag = self.ui.tagEdit.text()
         utw.resref = ResRef(self.ui.resrefEdit.text())
         utw.has_map_note = self.ui.isNoteCheckbox.isChecked()
         utw.map_note_enabled = self.ui.noteEnabledCheckbox.isChecked()
-        utw.map_note = self.ui.noteEdit.locstring()
+        utw.map_note = self.ui.noteEdit.locstring
         utw.comment = self.ui.commentsEdit.toPlainText()
 
         data = bytearray()
@@ -132,10 +134,10 @@ class UTWEditor(Editor):
     def changeName(self):
         dialog = LocalizedStringDialog(self, self._installation, self.ui.nameEdit.locstring())
         if dialog.exec_():
-            self._loadLocstring(self.ui.nameEdit, dialog.locstring)
+            self._loadLocstring(self.ui.nameEdit.ui.locstringText, dialog.locstring)
 
     def changeNote(self):
-        dialog = LocalizedStringDialog(self, self._installation, self.ui.noteEdit.locstring())
+        dialog = LocalizedStringDialog(self, self._installation, self.ui.noteEdit.locstring)
         if dialog.exec_():
             self._loadLocstring(self.ui.noteEdit, dialog.locstring)
 

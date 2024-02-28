@@ -6,16 +6,17 @@ from pykotor.common.language import LocalizedString
 from pykotor.common.misc import Game, ResRef
 from pykotor.resource.formats.gff import GFF, GFFContent, GFFList, read_gff, write_gff
 from pykotor.resource.formats.gff.gff_auto import bytes_gff
-from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES, ResourceType
+from pykotor.resource.type import ResourceType
 
 if TYPE_CHECKING:
     from pykotor.resource.formats.gff.gff_data import GFFStruct
+    from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES
 
 
 class UTS:
     """Stores sound data.
 
-    Attributes
+    Attributes:
     ----------
         tag: "Tag" field.
         resref: "TemplateResRef" field.

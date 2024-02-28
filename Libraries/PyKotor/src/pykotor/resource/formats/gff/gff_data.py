@@ -2,19 +2,20 @@ from __future__ import annotations
 
 import math
 import os
+
 from copy import copy, deepcopy
 from enum import Enum, IntEnum
-from typing import TYPE_CHECKING, Any, Callable, ClassVar, TypeVar
+from typing import TYPE_CHECKING, Any, ClassVar, TypeVar
 
 from pykotor.common.geometry import Vector3, Vector4
 from pykotor.common.language import LocalizedString
 from pykotor.common.misc import ResRef
 from pykotor.resource.type import ResourceType
-from utility.path import PureWindowsPath
 from utility.string import compare_and_format, format_text
+from utility.system.path import PureWindowsPath
 
 if TYPE_CHECKING:
-    from collections.abc import Generator, Iterator
+    from collections.abc import Callable, Generator, Iterator
 
 T = TypeVar("T")
 U = TypeVar("U")
@@ -44,8 +45,9 @@ class GFFContent(Enum):
     GUI = "GUI "
     PTH = "PTH "
     NFO = "NFO "  # savenfo.res
-    PT  = "PT  "  # partytable.res
+    PT = "PT  "  # partytable.res
     GVT = "GVT "  # GLOBALVARS.res
+    INV = "INV "  # inventory in SAVEGAME.res
 
     @classmethod
     def has_value(
@@ -61,6 +63,20 @@ class GFFContent(Enum):
     @classmethod
     def get_valid_types(cls) -> set[str]:
         return {x.name for x in cls}
+
+    @classmethod
+    def from_res(cls, resname: str) -> GFFContent | None:
+        lower_resname = resname.lower()
+        gff_content = None
+        if lower_resname == "savenfo":
+            gff_content = GFFContent.NFO
+        elif lower_resname == "partytable":
+            gff_content = GFFContent.PT
+        elif lower_resname == "globalvars":
+            gff_content = GFFContent.GVT
+        elif lower_resname == "inventory":
+            gff_content = GFFContent.INV
+        return gff_content
 
 
 class GFFFieldType(IntEnum):
@@ -188,7 +204,6 @@ class GFF:
         return self.root.compare(other_gff.root, log_func, path, ignore_default_changes)
 
 
-
 class _GFFField:
     """Read-only data structure for items stored in GFFStruct."""
 
@@ -224,7 +239,7 @@ class _GFFField:
     ) -> GFFFieldType:
         """Returns the field type.
 
-        Returns
+        Returns:
         -------
             The field's field_type.
         """
@@ -235,7 +250,7 @@ class _GFFField:
     ) -> Any:
         """Returns the value.
 
-        Returns
+        Returns:
         -------
             The field's value.
         """
@@ -245,7 +260,7 @@ class _GFFField:
 class GFFStruct:
     """Stores a collection of GFFFields.
 
-    Attributes
+    Attributes:
     ----------
         struct_id: User defined id.
     """
@@ -341,7 +356,7 @@ class GFFStruct:
             "EditorInfo",
         }
         def is_ignorable_value(v) -> bool:
-            return bool(v and len(v) and str(v) not in ("0", "-1"))
+            return not v or str(v) in {"0", "-1"}
 
         def is_ignorable_comparison(
             old_value,
@@ -379,7 +394,7 @@ class GFFStruct:
                 if new_ftype is None:
                     msg = f"new_ftype shouldn't be None here. Relevance: old_ftype={old_ftype!r}, old_value={old_value!r}, new_value={new_value!r}"
                     raise RuntimeError(msg)
-                log_func(f"Extra '{new_ftype.name}' field found at '{child_path}': {format_text(new_value)}" )
+                log_func(f"Extra '{new_ftype.name}' field found at '{child_path}': {format_text(new_value)}")
                 is_same = False
                 continue
             if new_value is None or new_ftype is None:
@@ -394,7 +409,17 @@ class GFFStruct:
                 continue
 
             # Compare values depending on their types
-            if old_ftype == GFFFieldType.List:
+            if old_ftype == GFFFieldType.Struct:
+                assert isinstance(new_value, GFFStruct)
+                cur_struct_this: GFFStruct = old_value
+                if cur_struct_this.struct_id != new_value.struct_id:
+                    log_func(f"Struct ID is different at '{child_path}': '{cur_struct_this.struct_id}'-->'{new_value.struct_id}'")
+                    is_same = False
+
+                if not cur_struct_this.compare(new_value, log_func, child_path, ignore_default_changes):
+                    is_same = False
+                    continue
+            elif old_ftype == GFFFieldType.List:
                 gff_list: GFFList = old_value
                 if not gff_list.compare(new_value, log_func, child_path, ignore_default_changes=ignore_default_changes):
                     is_same = False
@@ -454,9 +479,10 @@ class GFFStruct:
         -------
             The field value. If the field does not exist or the value type does not match the specified type then the default is returned instead.
         """
+        assert isinstance(default, object)
         value: T = default
         if object_type is None:
-            object_type = type(default)
+            object_type = default.__class__
         if (
             self.exists(label)
             and object_type is not None
@@ -1233,7 +1259,6 @@ class GFFList:
             index: The index of the desired struct.
         """
         self._structs.pop(index)
-
 
     def compare(
         self,

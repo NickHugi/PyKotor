@@ -4,10 +4,12 @@ from typing import TYPE_CHECKING
 
 from PyQt5 import QtCore
 from PyQt5.QtWidgets import QWidget
+
 from toolset.utils.misc import getStringFromKey
 
 if TYPE_CHECKING:
     from PyQt5.QtGui import QKeyEvent
+
     from toolset.data.misc import Bind
 
 
@@ -31,7 +33,7 @@ class SetBindWidget(QWidget):
         self.keybind: set[int] = set()
         self.recordBind: bool = False
 
-        from toolset.uic.widgets.set_bind import Ui_Form
+        from toolset.uic.widgets.set_bind import Ui_Form  # noqa: PLC0415  # pylint: disable=C0415
         self.ui = Ui_Form()
         self.ui.setupUi(self)
 
@@ -56,12 +58,12 @@ class SetBindWidget(QWidget):
         self.keybind.clear()
         self.ui.setKeysEdit.setPlaceholderText("none")
 
-    def keyPressed(self, event: QKeyEvent):
+    def keyPressed(self, a0: QKeyEvent):
         if self.recordBind:
-            self.keybind.add(event.key())
+            self.keybind.add(a0.key())
             self.updateKeybindText()
 
-    def keyReleased(self, event: QKeyEvent):
+    def keyReleased(self, e: QKeyEvent):
         self.recordBind = False
 
     def setBind(self, bind: Bind):

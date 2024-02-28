@@ -5,33 +5,27 @@ import json
 import math
 import shutil
 import zipfile
+
 from copy import copy, deepcopy
 from tempfile import TemporaryDirectory
 from typing import TYPE_CHECKING
 
 import requests
-from pykotor.common.geometry import Vector2, Vector3
-from pykotor.common.stream import BinaryReader, BinaryWriter
+
 from PyQt5 import QtCore
-from PyQt5.QtCore import QPoint, QPointF, QRectF, QTimer
+from PyQt5.QtCore import QPointF, QRectF, QTimer
 from PyQt5.QtGui import (
     QColor,
-    QImage,
-    QKeyEvent,
     QKeySequence,
-    QMouseEvent,
     QPainter,
     QPainterPath,
-    QPaintEvent,
     QPen,
     QPixmap,
     QTransform,
-    QWheelEvent,
 )
 from PyQt5.QtWidgets import (
     QDialog,
     QFileDialog,
-    QFormLayout,
     QListWidgetItem,
     QMainWindow,
     QMenu,
@@ -39,22 +33,38 @@ from PyQt5.QtWidgets import (
     QPushButton,
     QWidget,
 )
-from pykotor.resource.formats.bwm.bwm_data import BWM
+
+from pykotor.common.geometry import Vector2, Vector3
+from pykotor.common.stream import BinaryReader, BinaryWriter
 from toolset.__main__ import is_frozen
 from toolset.config import UPDATE_INFO_LINK
-from toolset.data.indoorkit import Kit, KitComponent, KitComponentHook, load_kits
+from toolset.data.indoorkit import load_kits
 from toolset.data.indoormap import IndoorMap, IndoorMapRoom
 from toolset.gui.dialogs.asyncloader import AsyncLoader
 from toolset.gui.dialogs.indoor_settings import IndoorMapSettings
 from toolset.gui.windows.help import HelpWindow
-from utility.error_handling import format_exception_with_variables, universal_simplify_exception
+from utility.error_handling import assert_with_variable_trace, format_exception_with_variables, universal_simplify_exception
 from utility.misc import is_debug_mode
-from utility.path import Path, PurePath
+from utility.system.path import Path, PurePath
 
 if TYPE_CHECKING:
     import os
 
+    from PyQt5.QtCore import QPoint
+    from PyQt5.QtGui import (
+        QImage,
+        QKeyEvent,
+        QMouseEvent,
+        QPaintEvent,
+        QWheelEvent,
+    )
+    from PyQt5.QtWidgets import (
+        QFormLayout,
+    )
+
     from pykotor.resource.formats.bwm import BWMFace
+    from pykotor.resource.formats.bwm.bwm_data import BWM
+    from toolset.data.indoorkit import Kit, KitComponent, KitComponentHook
     from toolset.data.installation import HTInstallation
 
 
@@ -78,12 +88,12 @@ class IndoorMapBuilder(QMainWindow):
         """
         super().__init__(parent)
 
-        self._installation: HTInstallation = installation
+        self._installation: HTInstallation | None = installation
         self._kits: list[Kit] = []
         self._map: IndoorMap = IndoorMap()
         self._filepath: str = ""
 
-        from toolset.uic.windows.indoor_builder import Ui_MainWindow
+        from toolset.uic.windows.indoor_builder import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
 
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
@@ -155,7 +165,8 @@ class IndoorMapBuilder(QMainWindow):
             self.ui.kitSelect.addItem(kit.name, kit)
 
     def _refreshWindowTitle(self):
-        if self._filepath == "":
+        assert self._installation is not None
+        if not self._filepath:
             self.setWindowTitle(f"{self._installation.name} - Map Builder")
         else:
             self.setWindowTitle(f"{self._filepath} - {self._installation.name} - Map Builder")
@@ -173,7 +184,7 @@ class IndoorMapBuilder(QMainWindow):
 
     def save(self):
         self._map.generateMinimap()
-        if self._filepath == "":
+        if not self._filepath:
             self.saveAs()
         else:
             BinaryWriter.dump(self._filepath, self._map.write())
@@ -305,7 +316,7 @@ class IndoorMapBuilder(QMainWindow):
         elif QtCore.Qt.MiddleButton in buttons and QtCore.Qt.Key_Control in keys:
             # MMB + CTRL
             self.ui.mapRenderer.rotateCamera(delta.x / 50)
-        elif QtCore.Qt.LeftButton in buttons and QtCore.Qt.Key_Control not in keys:
+        elif QtCore.Qt.LeftButton in buttons:
             # LMB
             rooms: list[IndoorMapRoom] = self.ui.mapRenderer.selectedRooms()
             if not rooms:
@@ -317,7 +328,8 @@ class IndoorMapBuilder(QMainWindow):
             for room in [room for room in self._map.rooms if room not in rooms]:
                 hook1, hook2 = self.ui.mapRenderer.getConnectedHooks(active, room)
                 if hook1 is not None:
-                    shift = (
+                    assert hook2 is not None, assert_with_variable_trace(hook2 is not None)
+                    shift: Vector3 = (
                         room.position - active.hookPosition(hook1, False) + room.hookPosition(hook2, False)
                     ) - active.position
                     for snapping in rooms:
@@ -357,8 +369,8 @@ class IndoorMapBuilder(QMainWindow):
             else:
                 clearExisting: bool = QtCore.Qt.Key_Shift not in keys
                 room: IndoorMapRoom | None = self.ui.mapRenderer.roomUnderMouse()
-                if room:
-                    self.ui.mapRenderer.selectRoom(self.ui.mapRenderer.roomUnderMouse(), clearExisting)
+                if room is not None:
+                    self.ui.mapRenderer.selectRoom(room, clearExisting)
                 else:
                     self.ui.mapRenderer.clearSelectedRooms()
 
@@ -400,9 +412,10 @@ class IndoorMapBuilder(QMainWindow):
             self.ui.mapRenderer._cursorRotation += math.copysign(5, delta.y)
 
     def onMouseDoubleClicked(self, delta: Vector2, buttons: set[int], keys: set[int]):
-        if QtCore.Qt.LeftButton in buttons and self.ui.mapRenderer.roomUnderMouse():
+        room: IndoorMapRoom | None = self.ui.mapRenderer.roomUnderMouse()
+        if QtCore.Qt.LeftButton in buttons and room:
             self.ui.mapRenderer.clearSelectedRooms()
-            self.addConnectedToSelection(self.ui.mapRenderer.roomUnderMouse())
+            self.addConnectedToSelection(room)
 
     def onContextMenu(self, point: QPoint):
         world: Vector3 = self.ui.mapRenderer.toWorldCoords(point.x(), point.y())
@@ -421,8 +434,9 @@ class IndoorMapBuilder(QMainWindow):
     def addConnectedToSelection(self, room: IndoorMapRoom):
         self.ui.mapRenderer.selectRoom(room, False)
         for hookIndex, _hook in enumerate(room.component.hooks):
-            if room.hooks[hookIndex] is not None and room.hooks[hookIndex] not in self.ui.mapRenderer.selectedRooms():
-                self.addConnectedToSelection(room.hooks[hookIndex])
+            hook: IndoorMapRoom | None = room.hooks[hookIndex]
+            if hook is not None and hook not in self.ui.mapRenderer.selectedRooms():
+                self.addConnectedToSelection(hook)
 
 
 class IndoorMapRenderer(QWidget):
@@ -569,8 +583,8 @@ class IndoorMapRenderer(QWidget):
         """
         cos = math.cos(-self._camRotation)
         sin = math.sin(-self._camRotation)
-        x = x / self._camScale
-        y = y / self._camScale
+        x /= self._camScale
+        y /= self._camScale
         x2 = x * cos - y * sin
         y2 = x * sin + y * cos
         return Vector2(x2, y2)
@@ -623,7 +637,7 @@ class IndoorMapRenderer(QWidget):
     def cameraZoom(self) -> float:
         """Returns the current zoom value of the camera.
 
-        Returns
+        Returns:
         -------
             The camera zoom value.
         """
@@ -652,7 +666,7 @@ class IndoorMapRenderer(QWidget):
     def cameraPosition(self) -> Vector2:
         """Returns the position of the camera.
 
-        Returns
+        Returns:
         -------
             The camera position vector.
         """
@@ -683,7 +697,7 @@ class IndoorMapRenderer(QWidget):
     def cameraRotation(self) -> float:
         """Returns the current angle of the camera in radians.
 
-        Returns
+        Returns:
         -------
             The camera angle in radians.
         """
@@ -909,9 +923,7 @@ class IndoorMapRenderer(QWidget):
             for room in self._map.rooms:
                 hook1, hook2 = self.getConnectedHooks(fakeCursorRoom, room)
                 if hook1 is not None:
-                    self._cursorPoint = (
-                        room.position - fakeCursorRoom.hookPosition(hook1, False) + room.hookPosition(hook2, False)
-                    )
+                    self._cursorPoint = (room.position - fakeCursorRoom.hookPosition(hook1, False) + room.hookPosition(hook2, False))
 
         self._underMouseRoom = None
         for room in self._map.rooms:
@@ -949,7 +961,7 @@ class KitDownloader(QDialog):
     def __init__(self, parent: QWidget):
         super().__init__(parent)
 
-        from toolset.uic.dialogs.indoor_downloader import Ui_Dialog
+        from toolset.uic.dialogs.indoor_downloader import Ui_Dialog  # pylint: disable=C0415  # noqa: PLC0415
 
         self.ui = Ui_Dialog()
         self.ui.setupUi(self)
@@ -978,14 +990,14 @@ class KitDownloader(QDialog):
         for kitName, kitDict in updateInfoData["kits"].items():
             kitId = kitDict["id"]
             kitPath = Path(f"kits/{kitId}.json")
-            if kitPath.exists():
+            if kitPath.safe_isfile():
                 button = QPushButton("Already Downloaded")
-                button.setEnabled(False)
+                button.setEnabled(True)
                 localKitDict = None
                 try:
                     localKitDict = json.loads(BinaryReader.load_file(kitPath))
                 except Exception as e:
-                    print(universal_simplify_exception(e),"\n in _setupDownloads for kit update check")
+                    print(universal_simplify_exception(e), "\n in _setupDownloads for kit update check")
                     button.setText("Missing JSON - click to redownload.")
                     button.setEnabled(True)
                 else:
@@ -1026,7 +1038,7 @@ class KitDownloader(QDialog):
                 button.setText("Download Complete")
             except Exception as e:
                 # Handle exception or log error
-                print(format_exception_with_variables(e, ___message___="Error downloading kit"))
+                print(format_exception_with_variables(e, message="Error downloading kit"))
                 button.setText("Download Failed")
                 button.setEnabled(True)
         else:
@@ -1037,7 +1049,12 @@ class KitDownloader(QDialog):
                 button.setText("Download Failed")
                 button.setEnabled(True)
 
-    def download_file(self, url_or_repo: str, local_path: os.PathLike | str, repo_path=None):
+    def download_file(
+        self,
+        url_or_repo: str,
+        local_path: os.PathLike | str,
+        repo_path: os.PathLike | str | None = None,
+    ):
         local_path = Path(local_path)
         local_path.parent.mkdir(parents=True, exist_ok=True)
 
@@ -1046,7 +1063,7 @@ class KitDownloader(QDialog):
             owner, repo = PurePath(url_or_repo).parts[-2:]
             api_url = f"https://api.github.com/repos/{owner}/{repo}/contents/{PurePath(repo_path).as_posix()}"
 
-            file_info: dict[str, str | bytes] = self._get_update_data(api_url)
+            file_info: dict = self._get_update_data(api_url)
             # Check if it's a file and get the download URL
             if file_info["type"] == "file":
                 download_url = file_info["download_url"]
@@ -1084,7 +1101,7 @@ class KitDownloader(QDialog):
             elif item["type"] == "dir":
                 self.download_directory(repo, item_path, local_path)
 
-    def _get_update_data(self, link):
+    def _get_update_data(self, link: str | bytes):
         req: requests.Response = requests.get(link, timeout=15)
         req.raise_for_status()
         return req.json()
@@ -1106,28 +1123,28 @@ class KitDownloader(QDialog):
                     zip_file.extractall(tempdir)
                     src_path = str(tempdir_path / kitId)
                     this_kit_dst_path = kits_path / kitId
-                    print(f"Copying {src_path} to {this_kit_dst_path}...")
-                    if this_kit_dst_path.exists():
+                    print(f"Copying '{src_path}' to '{this_kit_dst_path}'...")
+                    if this_kit_dst_path.is_dir():
                         print(f"Deleting old {kitId} kit folder/files...")
                         shutil.rmtree(this_kit_dst_path)
                     shutil.copytree(src_path, str(this_kit_dst_path))
                     this_kit_json_filename = f"{kitId}.json"
                     src_kit_json_path = tempdir_path / this_kit_json_filename
-                    if not src_kit_json_path.exists():
-                        msg = f"Kit {kitId} is missing the {this_kit_json_filename} file, cannot complete download"
+                    if not src_kit_json_path.safe_isfile():
+                        msg = f"Kit '{kitId}' is missing the '{this_kit_json_filename}' file, cannot complete download"
                         print(msg)
                         return False
                     shutil.copy(src_kit_json_path, kits_path / this_kit_json_filename)
-            except Exception as original_exception:  # noqa: BLE001
+            except Exception as original_exception:  # pylint: disable=W0718  # noqa: BLE001
                 print(format_exception_with_variables(original_exception))
                 return False
             finally:
                 try:
-                    if tempdir:
+                    if tempdir and Path(tempdir).safe_isdir():
                         shutil.rmtree(tempdir)
-                except Exception as exc:  # noqa: BLE001
+                except Exception as exc:  # pylint: disable=W0718  # noqa: BLE001
                     print(format_exception_with_variables(exc))
 
-        if is_frozen() and kits_zip_path.exists():
+        if kits_zip_path.is_file():
             kits_zip_path.unlink()
         return True

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import os
 import sys
+
 from pathlib import Path
 from typing import Any
 
@@ -9,7 +10,7 @@ from setuptools import setup
 
 
 def main():
-    HERE = Path(__file__).parent
+    HERE = Path(__file__).resolve().parent
 
     # Load information from pyproject.toml
     with HERE.joinpath("pyproject.toml").open() as toml_file:
@@ -31,7 +32,6 @@ def main():
     if len(sys.argv) < 2:
         sys.argv.append("install")
 
-
     for key in ("authors", "readme"):  # Remove keys that are not needed in setup()
         if key in project_metadata:
             project_metadata.pop(key)
@@ -46,7 +46,6 @@ def main():
     )
 
 
-
 import contextlib
 import datetime
 import re
@@ -54,13 +53,15 @@ import re
 TIME_RE = re.compile(r"([0-9]{2}):([0-9]{2}):([0-9]{2})(\.([0-9]{3,6}))?")
 _number_with_underscores = re.compile("([0-9])(_([0-9]))*")
 _escapes = ["0", "b", "f", "n", "r", "t", '"']
-_escapedchars = ["\0", "\b", "\f", "\n", "\r", "\t", '\"']
+_escapedchars = ["\0", "\b", "\f", "\n", "\r", "\t", '"']
 _escape_to_escapedchars = dict(zip(_escapes, _escapedchars))
 _groupname_re = re.compile(r"^[A-Za-z0-9_-]+$")
 unicode = str
 _range = range
 basestring = str
 unichr = chr
+
+
 def _load_unicode_escapes(v, hexbytes, prefix):
     skip = False
     i = len(v) - 1
@@ -91,6 +92,8 @@ def _load_unicode_escapes(v, hexbytes, prefix):
         v += unichr(int(hxb, 16))
         v += unicode(hx[len(hxb):])
     return v
+
+
 def _unescape(v):
     """Unescape characters in a TOML string."""
     i = 0
@@ -111,6 +114,8 @@ def _unescape(v):
             backslash = True
         i += 1
     return v
+
+
 class TomlTz(datetime.tzinfo):
     def __init__(self, toml_offset):
         if toml_offset == "Z":
@@ -132,6 +137,8 @@ class TomlTz(datetime.tzinfo):
 
     def dst(self, dt):
         return datetime.timedelta(0)
+
+
 def _load_date(val):
     microsecond = 0
     tz = None
@@ -177,8 +184,11 @@ def _load_date(val):
     except ValueError:
         return None
     return d
+
+
 class InlineTableDict:
     """Sentinel subclass of dict for inline tables."""
+
 
 class TomlDecoder:
 
@@ -203,7 +213,7 @@ class TomlDecoder:
             try: _, value = candidate_group.split("=", 1)
             except ValueError: raise ValueError("Invalid inline table encountered")
             value = value.strip()
-            if ((value[0] == value[-1] and value[0] in ('"', "'")) or (value[0] in "-0123456789" or value in ("true", "false") or (value[0] == "[" and value[-1] == "]") or (value[0] == "{" and value[-1] == "}"))):
+            if ((value[0] == value[-1] and value[0] in {'"', "'"}) or (value[0] in "-0123456789" or value in {"true", "false"} or (value[0] == "[" and value[-1] == "]") or (value[0] == "{" and value[-1] == "}"))):
                 groups.append(candidate_group)
             elif len(candidate_groups) > 0:
                 candidate_groups[0] = f"{candidate_group},{candidate_groups[0]}"
@@ -280,7 +290,7 @@ class TomlDecoder:
                 if level not in currentlevel: currentlevel[level] = self.get_empty_table()
                 currentlevel = currentlevel[level]
             pair[0] = levels[-1].strip()
-        elif pair[0][0] in ['"', "'"] and pair[0][-1] == pair[0][0]:
+        elif pair[0][0] in {'"', "'"} and pair[0][-1] == pair[0][0]:
             pair[0] = _unescape(pair[0][1:-1])
         k, koffset = self._load_line_multiline_str(pair[1])
         if k > -1:
@@ -375,42 +385,41 @@ class TomlDecoder:
                                                      v[1] == v[2]):
                 v = v[2:-2]
             return (v[1:-1], "str")
-        elif v[0] == "[":
+        if v[0] == "[":
             return (self.load_array(v), "array")
-        elif v[0] == "{":
+        if v[0] == "{":
             inline_object = self.get_empty_inline_table()
             self.load_inline_object(v, inline_object)
             return (inline_object, "inline_object")
-        elif TIME_RE.match(v):
+        if TIME_RE.match(v):
             h, m, s, _, ms = TIME_RE.match(v).groups()
             time = datetime.time(int(h), int(m), int(s), int(ms) if ms else 0)
             return (time, "time")
-        else:
-            parsed_date = _load_date(v)
-            if parsed_date is not None: return (parsed_date, "date")
-            if not strictly_valid: raise ValueError("Weirdness with leading zeroes or underscores in your number.")
-            itype = "int"
-            neg = False
-            if v[0] == "-":
-                neg = True
-                v = v[1:]
-            elif v[0] == "+":
-                v = v[1:]
-            v = v.replace("_", "")
-            lowerv = v.lower()
-            if "." in v or ("x" not in v and ("e" in v or "E" in v)):
-                if "." in v and v.split(".", 1)[1] == "": raise ValueError("This float is missing digits after the point")
-                if v[0] not in "0123456789": raise ValueError("This float doesn't have a leading digit")
-                v = float(v)
-                itype = "float"
-            elif len(lowerv) == 3 and (lowerv in ("inf", "nan")):
-                v = float(v)
-                itype = "float"
-            if itype == "int":
-                v = int(v, 0)
-            if neg:
-                return (0 - v, itype)
-            return (v, itype)
+        parsed_date = _load_date(v)
+        if parsed_date is not None: return (parsed_date, "date")
+        if not strictly_valid: raise ValueError("Weirdness with leading zeroes or underscores in your number.")
+        itype = "int"
+        neg = False
+        if v[0] == "-":
+            neg = True
+            v = v[1:]
+        elif v[0] == "+":
+            v = v[1:]
+        v = v.replace("_", "")
+        lowerv = v.lower()
+        if "." in v or ("x" not in v and ("e" in v or "E" in v)):
+            if "." in v and v.split(".", 1)[1] == "": raise ValueError("This float is missing digits after the point")
+            if v[0] not in "0123456789": raise ValueError("This float doesn't have a leading digit")
+            v = float(v)
+            itype = "float"
+        elif len(lowerv) == 3 and (lowerv in {"inf", "nan"}):
+            v = float(v)
+            itype = "float"
+        if itype == "int":
+            v = int(v, 0)
+        if neg:
+            return (0 - v, itype)
+        return (v, itype)
 
     def bounded_string(self, s):
         if len(s) == 0:
@@ -527,6 +536,7 @@ class TomlDecoder:
     def embed_comments(self, idx, currentlevel):
         pass
 
+
 def _strictly_valid_num(n):
     n = n.strip()
     if not n:
@@ -539,7 +549,7 @@ def _strictly_valid_num(n):
         return False
     if len(n) == 1:
         return True
-    if n[0] == "0" and n[1] not in [".", "o", "b", "x"]:
+    if n[0] == "0" and n[1] not in {".", "o", "b", "x"}:
         return False
     if n[0] == "+" or n[0] == "-":
         n = n[1:]
@@ -576,6 +586,7 @@ def load_toml(f, _dict=dict, decoder=None):
             return loads(f.read(), _dict, decoder)
         except AttributeError:
             raise TypeError("You can only load a file descriptor, filename or list")
+
 
 def loads(s, _dict=dict, decoder=None):
     implicitgroups = []
@@ -619,7 +630,7 @@ def loads(s, _dict=dict, decoder=None):
                     continue
                 if item.isalnum() or item == "_" or item == "-":
                     continue
-                if (dottedkey and sl[i - 1] == "." and (item in ('"', "'"))):
+                if (dottedkey and sl[i - 1] == "." and (item in {'"', "'"})):
                     openstring, openstrchar = True, item
                     continue
             elif keyname == 2:
@@ -826,11 +837,10 @@ def loads(s, _dict=dict, decoder=None):
                         groupstr = ".".join(groups[i:j]).strip()
                     groups[i] = groupstr[1:-1]
                     groups[i + 1:j] = []
-                else:
-                    if not _groupname_re.match(groups[i]):
-                        raise ValueError("Invalid group name '" +
-                                              groups[i] + "'. Try quoting it.",
-                                              original, pos)
+                elif not _groupname_re.match(groups[i]):
+                    raise ValueError("Invalid group name '" +
+                                          groups[i] + "'. Try quoting it.",
+                                          original, pos)
                 i += 1
             currentlevel = retval
             for i in _range(len(groups)):

@@ -1,15 +1,18 @@
 from __future__ import annotations
 
-import os
 import shutil
+
 from typing import TYPE_CHECKING
 
 from pykotor.common.stream import BinaryReader
 from pykotor.tslpatcher.mods.template import PatcherModifications
 from utility.error_handling import universal_simplify_exception
-from utility.path import Path, PurePath
+from utility.system.path import PurePath
 
 if TYPE_CHECKING:
+    import os
+
+    from typing_extensions import Literal
 
     from pykotor.common.misc import Game
     from pykotor.resource.type import SOURCE_TYPES
@@ -67,11 +70,11 @@ def create_backup(
             create_uninstall_scripts(backup_folderpath, uninstall_folder, game_folder)
             processed_files.add(uninstall_str_lower)
 
-        if destination_filepath.exists():
+        if destination_filepath.is_file():
             # Check if the backup path exists and generate a new one if necessary
             i = 2
             filestem: str = backup_filepath.stem
-            while backup_filepath.exists():
+            while backup_filepath.safe_exists():
                 backup_filepath = backup_filepath.parent / f"{filestem} ({i}){backup_filepath.suffix}"
                 i += 1
 
@@ -86,7 +89,7 @@ def create_backup(
 
             # Write the file path to remove these files.txt in backup directory
             removal_files_txt: CaseAwarePath = backup_folderpath.joinpath("remove these files.txt")
-            line: str = ("\n" if removal_files_txt.exists() else "") + destination_file_str
+            line: str = ("\n" if removal_files_txt.is_file() else "") + destination_file_str
             with removal_files_txt.open(mode="a", encoding="utf-8") as f:
                 f.write(line)
 
@@ -311,26 +314,19 @@ class InstallFile(PatcherModifications):
         self.action: str = "Copy "
         self.skip_if_not_replace: bool = True
 
+    def __hash__(self):  # HACK: organize this into PatcherModifications class later, this is only used for nwscript.nss currently.
+        return hash((self.destination, self.saveas, self.replace_file))
+
     def patch_resource(
         self,
         source: SOURCE_TYPES,
         memory: PatcherMemory,
         logger: PatchLogger,
         game: Game,
-    ) -> bytes:
+    ) -> bytes | Literal[True]:
         self.apply(source, memory, logger, game)
-
-        if isinstance(source, BinaryReader):
-            return source.read_all()
-        if isinstance(source, (str, os.PathLike)):
-            return BinaryReader.load_file(source)
-        if isinstance(source, (bytearray, memoryview)):
-            return bytes(source)
-        if isinstance(source, bytes):
-            return source
-
-        msg = f"The `source` arg was not an expected type (e.g. not a filepath, bytes object, or binary reader). Instead got type '{type(source)}'"
-        raise TypeError(msg)
+        with BinaryReader.from_auto(source) as reader:
+            return reader.read_all()
 
     def apply(self, source, *args, **kwargs):
         ...

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import math
+
 from typing import ClassVar
 
 
@@ -252,13 +253,13 @@ lowerrightcoords {self.lr_coords_count}
         self.fontheight = 128 * custom_scaling * max_char_height / (25 * resolution[1])
         self.baselineheight = baseline_height / resolution[1]
 
-        #self.texturewidth: float = self.numchars * custom_scaling / 50  # maybe?
-        #self.fontheight: float = (self.numchars * custom_scaling * max_char_height) / (50 * resolution[1])  # maybe?
+        # self.texturewidth: float = self.numchars * custom_scaling / 50  # maybe?
+        # self.fontheight: float = (self.numchars * custom_scaling * max_char_height) / (50 * resolution[1])  # maybe?
 
         # TODO: I'm pretty sure fontwidth could be calculated here too. During testing, it's been easier to leave that at 1.000000 so there's less variables to worry about.
         # We should figure out the relationship for proper readability. I think vanilla K1 defines texturewidth as 'resolution_x / 100'.
         # Also worth mentioning the above math doesn't even work if the resolution isn't a perfect square.
         # EDIT: Editing fontwidth yields no changes in K1. Might do something in K2.
-        #self.fontwidth = self.texturewidth / self.fontheight * max_char_height / resolution[0]
-        #assert int(round(self.fontwidth)) == 1
+        # self.fontwidth = self.texturewidth / self.fontheight * max_char_height / resolution[0]
+        # assert int(round(self.fontwidth)) == 1
 

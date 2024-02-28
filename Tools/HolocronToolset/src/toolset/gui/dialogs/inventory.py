@@ -2,39 +2,48 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, NamedTuple
 
-from pykotor.common.misc import EquipmentSlot, InventoryItem, ResRef
-from pykotor.common.stream import BinaryReader
-from pykotor.extract.capsule import Capsule
-from pykotor.extract.file import ResourceIdentifier, ResourceResult
-from pykotor.extract.installation import SearchLocation
-from pykotor.resource.formats.tlk import TLK, read_tlk
-from pykotor.resource.generics.uti import UTI, read_uti
-from pykotor.resource.type import ResourceType
-from pykotor.tools.misc import is_bif_file, is_capsule_file
-from pykotor.tools.path import CaseAwarePath
 from PyQt5 import QtCore
-from PyQt5.QtCore import QPoint, QSize, QSortFilterProxyModel, QThread
-from PyQt5.QtGui import QDragEnterEvent, QDragMoveEvent, QDropEvent, QIcon, QPixmap, QStandardItem, QStandardItemModel
+from PyQt5.QtCore import QSize, QSortFilterProxyModel, QThread
+from PyQt5.QtGui import QIcon, QPixmap, QStandardItem, QStandardItemModel
 from PyQt5.QtWidgets import (
     QAction,
     QDialog,
     QFrame,
-    QLabel,
     QMenu,
     QProgressBar,
     QTableWidget,
     QTableWidgetItem,
     QTreeView,
     QVBoxLayout,
-    QWidget,
 )
+
+from pykotor.common.misc import EquipmentSlot, InventoryItem, ResRef
+from pykotor.common.stream import BinaryReader
+from pykotor.extract.capsule import Capsule
+from pykotor.extract.file import ResourceIdentifier
+from pykotor.extract.installation import SearchLocation
+from pykotor.resource.formats.tlk import read_tlk
+from pykotor.resource.generics.uti import read_uti
+from pykotor.resource.type import ResourceType
+from pykotor.tools.misc import is_bif_file, is_capsule_file
+from pykotor.tools.path import CaseAwarePath
 from toolset.data.installation import HTInstallation
 from utility.error_handling import format_exception_with_variables
 
 if TYPE_CHECKING:
     import os
 
+    from PyQt5.QtCore import QModelIndex, QPoint
+    from PyQt5.QtGui import QDragEnterEvent, QDragMoveEvent, QDropEvent
+    from PyQt5.QtWidgets import (
+        QLabel,
+        QWidget,
+    )
+
+    from pykotor.extract.file import ResourceResult
+    from pykotor.resource.formats.tlk import TLK
     from pykotor.resource.formats.twoda.twoda_data import TwoDA
+    from pykotor.resource.generics.uti import UTI
 
 _RESNAME_ROLE = QtCore.Qt.UserRole + 1
 _FILEPATH_ROLE = QtCore.Qt.UserRole + 2
@@ -76,7 +85,7 @@ class InventoryEditor(QDialog):
         """
         super().__init__(parent)
 
-        from toolset.uic.dialogs.inventory import Ui_Dialog
+        from toolset.uic.dialogs.inventory import Ui_Dialog  # pylint: disable=C0415  # noqa: PLC0415
         self.ui = Ui_Dialog()
         self.ui.setupUi(self)
 
@@ -109,7 +118,7 @@ class InventoryEditor(QDialog):
             EquipmentSlot.CLAW3: SlotMapping(self.ui.claw3Picture, self.ui.claw3Frame, ":/images/inventory/{}_gauntlet.png"),
             EquipmentSlot.HIDE: SlotMapping(self.ui.hidePicture, self.ui.hideFrame, ":/images/inventory/{}_armor.png"),
         }
-        self._droid = droid
+        self._droid: bool = droid
         self.inventory: list[InventoryItem] = inventory
         self.equipment: dict[EquipmentSlot, InventoryItem] = equipment
         self.is_store: bool = is_store
@@ -187,7 +196,7 @@ class InventoryEditor(QDialog):
         for widget in self.ui.standardEquipmentTab.children() + self.ui.naturalEquipmentTab.children():  # type: ignore[reportGeneralTypeIssues]
             # HACK: isinstance is not working (possibly due to how DropFrame is imported in _ui.py file.
             # Also make sure there is an item in the slot otherwise the GFF will create a struct for each slot.
-            if "DropFrame" in str(type(widget)) and widget.resname:
+            if "DropFrame" in widget.__class__.__name__ and widget.resname:
                 self.equipment[widget.slot] = InventoryItem(ResRef(widget.resname), widget.droppable, widget.infinite)
 
     def buildItems(self):
@@ -291,11 +300,11 @@ class InventoryEditor(QDialog):
 
             slotPicture.setToolTip(f"{resname}\n{filepath}\n{name}")
             slotPicture.setPixmap(self.getItemImage(uti))
-            slotFrame = self._slotMap[slot].frame
+            slotFrame: DropFrame = self._slotMap[slot].frame
 
             slotFrame.setItem(resname, filepath, name, False, False)
         else:
-            image = self._slotMap[slot].emptyImage.format("droid" if self._droid else "human")
+            image: str = self._slotMap[slot].emptyImage.format("droid" if self._droid else "human")
             slotPicture.setToolTip("")
             slotPicture.setPixmap(QPixmap(image))
 
@@ -307,12 +316,12 @@ class InventoryEditor(QDialog):
         self.ui.modulesTree.model().setFilterFixedString(text)
         self.ui.overrideTree.model().setFilterFixedString(text)
 
-    def openItemContextMenu(self, widget: QWidget | ItemContainer, point: QPoint):
+    def openItemContextMenu(self, widget: DropFrame | ItemContainer, point: QPoint):
         """Opens an item context menu at a given point.
 
         Args:
         ----
-            widget: QWidget | ItemContainer: Widget the menu is for
+            widget: ItemContainer: Widget the menu is for
             point: QPoint: Point to open menu at
 
         Processing Logic:
@@ -365,7 +374,11 @@ class InventoryEditor(QDialog):
 
 
 class ItemContainer:
-    def __init__(self, droppable: bool = False, infinite: bool = False):
+    def __init__(
+        self,
+        droppable: bool = False,
+        infinite: bool = False,
+    ):
         self.resname: str = ""
         self.filepath: str = ""
         self.name: str = ""
@@ -381,7 +394,14 @@ class ItemContainer:
         self.droppable = False
         self.infinite = False
 
-    def setItem(self, resname: str, filepath: str, name: str, droppable: bool, infinite: bool):
+    def setItem(
+        self,
+        resname: str,
+        filepath: str,
+        name: str,
+        droppable: bool,
+        infinite: bool,
+    ):
         self.resname = resname
         self.filepath = filepath
         self.name = name
@@ -488,7 +508,7 @@ class DropFrame(ItemContainer, QFrame):
 
     def removeItem(self):
         ItemContainer.removeItem(self)
-        self.window().setEquipment(self.slot, "")
+        self.window().setEquipment(self.slot, "")  # type: ignore[]
 
     def toggleDroppable(self):
         ItemContainer.toggleDroppable(self)
@@ -518,7 +538,7 @@ class InventoryTable(QTableWidget):
             - Creates a custom resname table widget
             - Sets the row with the item info.
         """
-        rowID = self.rowCount()
+        rowID: int = self.rowCount()
         self.insertRow(rowID)
         filepath, name, uti = self.window().getItem(resname, "")
         iconItem: QTableWidgetItem = self._set_uti(uti)
@@ -548,13 +568,13 @@ class InventoryTable(QTableWidget):
             tree: QTreeView = event.source()
             proxyModel: QSortFilterProxyModel = tree.model()
             model: ItemModel = proxyModel.sourceModel()
-            index = proxyModel.mapToSource(tree.selectedIndexes()[0])
-            item = model.itemFromIndex(index)
+            index: QModelIndex = proxyModel.mapToSource(tree.selectedIndexes()[0])
+            item: QStandardItem = model.itemFromIndex(index)
             event.accept()
-            rowID = self.rowCount()
+            rowID: int = self.rowCount()
             self.insertRow(rowID)
             filepath, name, uti = self.window().getItem(item.data(_RESNAME_ROLE), item.data(_FILEPATH_ROLE))
-            iconItem = self._set_uti(uti)
+            iconItem: QTableWidgetItem = self._set_uti(uti)
             nameItem = QTableWidgetItem(item.text())
             nameItem.setFlags(nameItem.flags() ^ QtCore.Qt.ItemIsEditable)
             resnameItem = InventoryTableResnameItem(item.data(_RESNAME_ROLE), item.data(_FILEPATH_ROLE), item.text(), False, False)
@@ -565,7 +585,7 @@ class InventoryTable(QTableWidget):
         self.setItem(rowID, 1, resnameItem)
         self.setItem(rowID, 2, nameItem)
 
-    def _set_uti(self, uti):
+    def _set_uti(self, uti: UTI) -> QTableWidgetItem:
         pixmap = self.window().getItemImage(uti)
         result = QTableWidgetItem(QIcon(pixmap), "")
         result.setSizeHint(QSize(48, 48))
@@ -614,7 +634,7 @@ class InventoryTable(QTableWidget):
         if len(self.selectedIndexes()) == 0:
             return
 
-        itemContainer = self.item(self.selectionModel().selectedRows(1)[0].row(), 1)
+        itemContainer: QTableWidgetItem | None = self.item(self.selectionModel().selectedRows(1)[0].row(), 1)
         if isinstance(itemContainer, ItemContainer):
             menu = QMenu(self)
             if self.is_store:
@@ -691,9 +711,9 @@ class ItemBuilderDialog(QDialog):
         slots: int = baseitems.get_row(uti.base_item).get_integer("equipableslots", 0) if uti is not None else 0
         category: str = self.getCategory(uti)
 
-        if result.filepath.endswith((".bif", ".key")):
+        if result.filepath.suffix.lower() in {".bif", ".key"}:
             self.coreModel.addItem(result.resname, category, result.filepath, name, slots)
-        elif is_capsule_file(result.filepath.name):
+        elif is_capsule_file(result.filepath):
             self.modulesModel.addItem(result.resname, category, result.filepath, name, slots)
         else:
             self.overrideModel.addItem(result.resname, category, result.filepath, name, slots)
@@ -800,12 +820,13 @@ class ItemBuilderWorker(QThread):
             capsules=self._capsules,
         )
         for result in results.values():
-            uti = None
+            uti: UTI | None = None
             try:  # FIXME
                 uti = read_uti(result.data)
-            except Exception as e:  # noqa: BLE001
-                print(format_exception_with_variables(e, ___message___="This exception has been suppressed but needs to be fixed."))
-            self.utiLoaded.emit(uti, result)
+            except Exception as e:  # pylint: disable=W0718  # noqa: BLE001
+                print(format_exception_with_variables(e, message="This exception has been suppressed but needs to be fixed."))
+            else:
+                self.utiLoaded.emit(uti, result)
         self.finished.emit()
 
 
@@ -853,7 +874,7 @@ class ItemModel(QStandardItemModel):
             - Tooltip, filepath, resname, and slots are set as item data.
             - The item is appended to the category item in the model.
         """
-        item = QStandardItem(name if name != "" else resname)
+        item = QStandardItem(name or resname)
         item.setToolTip(f"{resname}\n{filepath}\n{name}")
         item.setData(filepath, _FILEPATH_ROLE)
         item.setData(resname, _RESNAME_ROLE)

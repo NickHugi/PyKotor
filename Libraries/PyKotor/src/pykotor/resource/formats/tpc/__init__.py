@@ -1,3 +1,4 @@
+from __future__ import annotations
 from .tpc_data import (
     TPC,
     TPCTextureFormat,

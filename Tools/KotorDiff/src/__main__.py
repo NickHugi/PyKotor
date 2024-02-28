@@ -1,11 +1,10 @@
 from __future__ import annotations
 
 import cProfile
-import os
 import pathlib
 import sys
+
 from argparse import ArgumentParser
-from hashlib import sha256
 from io import StringIO
 from typing import TYPE_CHECKING
 
@@ -28,15 +27,20 @@ from pykotor.resource.formats import gff, lip, tlk, twoda
 from pykotor.tools.misc import is_capsule_file
 from pykotor.tools.path import CaseAwarePath
 from utility.error_handling import universal_simplify_exception
-from utility.path import Path, PureWindowsPath
+from utility.misc import generate_hash
+from utility.system.path import Path, PureWindowsPath
 
 if TYPE_CHECKING:
+    import os
+
     from pykotor.extract.file import FileResource
+
 OUTPUT_LOG: Path | None = None
 LOGGING_ENABLED: bool | None = None
 
 PARSER_ARGS = None
 PARSER = None
+
 
 def log_output(*args, **kwargs):
     global OUTPUT_LOG  # noqa: PLW0603
@@ -63,7 +67,7 @@ def log_output(*args, **kwargs):
                 or "log_install_differ.log"
             )
             OUTPUT_LOG = Path(chosen_log_file_path).resolve()
-            if OUTPUT_LOG.parent.exists():
+            if OUTPUT_LOG.parent.safe_isdir():
                 break
             print("Invalid path:", OUTPUT_LOG)
             PARSER.print_help()
@@ -71,27 +75,6 @@ def log_output(*args, **kwargs):
     # Write the captured output to the file
     with OUTPUT_LOG.open("a", encoding="utf-8") as f:
         f.write(msg)
-
-
-def compute_sha256(where: os.PathLike | str | bytes):
-    """Compute the SHA-256 hash of the data."""
-    sha256_hash = sha256()
-    if isinstance(where, bytes):
-        sha256_hash.update(where)
-        return sha256_hash.hexdigest()
-
-    if isinstance(where, (os.PathLike, str)):
-        file_path = Path.pathify(where).resolve()
-
-        with file_path.open("rb") as f:
-            while True:
-                data = f.read(0x10000)  # read in 64k chunks
-                if not data:
-                    break
-                sha256_hash.update(data)
-
-        return sha256_hash.hexdigest()
-    return None
 
 
 def relative_path_from_to(src, dst) -> Path:
@@ -112,14 +95,14 @@ def visual_length(s: str, tab_length=8) -> int:
 
     # Split the string at tabs, sum the lengths of the substrings,
     # and add the necessary spaces to account for the tab stops.
-    parts = s.split("\t")
-    vis_length = sum(len(part) for part in parts)
+    parts: list[str] = s.split("\t")
+    vis_length: int = sum(len(part) for part in parts)
     for part in parts[:-1]:  # all parts except the last one
         vis_length += tab_length - (len(part) % tab_length)
     return vis_length
 
 
-gff_types = [x.value.lower().strip() for x in gff.GFFContent]
+gff_types: list[str] = [x.value.lower().strip() for x in gff.GFFContent]
 
 
 def diff_data(
@@ -152,11 +135,11 @@ def diff_data(
         gff2: gff.GFF | None = None
         try:
             gff1 = gff.read_gff(data1)
-        except Exception as e:  # noqa: BLE001
+        except Exception as e:  # pylint: disable=W0718  # noqa: BLE001
             return log_output(f"[Error] loading GFF {file1_rel.parent / where}!\n{universal_simplify_exception(e)}")  # type: ignore[func-returns-value]
         try:
             gff2 = gff.read_gff(data2)
-        except Exception as e:  # noqa: BLE001
+        except Exception as e:  # pylint: disable=W0718  # noqa: BLE001
             return log_output(f"[Error] loading GFF {file2_rel.parent / where}!\n{universal_simplify_exception(e)}")  # type: ignore[func-returns-value]
         if gff1 and not gff2:
             return log_output(f"GFF resource missing in memory:\t'{file1_rel.parent / where}'")  # type: ignore[func-returns-value]
@@ -174,7 +157,7 @@ def diff_data(
         twoda2: twoda.TwoDA | None = None
         try:
             twoda1 = twoda.read_2da(data1)
-        except Exception as e:  # noqa: BLE001
+        except Exception as e:  # pylint: disable=W0718  # noqa: BLE001
             if (
                 file1_rel.parent.name.lower() == "rims"
                 and file1_rel.name.lower() in {"global.rim", "miniglobal.rim"}
@@ -183,7 +166,7 @@ def diff_data(
             return log_output(f"Error loading 2DA {file1_rel.parent / where}!\n{universal_simplify_exception(e)}")  # type: ignore[func-returns-value]
         try:
             twoda2 = twoda.read_2da(data2)
-        except Exception as e:  # noqa: BLE001
+        except Exception as e:  # pylint: disable=W0718  # noqa: BLE001
             if (
                 file1_rel.parent.name.lower() == "rims"
                 and file1_rel.name.lower() in {"global.rim", "miniglobal.rim"}
@@ -210,12 +193,12 @@ def diff_data(
         try:
             log_output(f"Loading TLK '{file1_rel.parent / where}'")
             tlk1 = tlk.read_tlk(data1)
-        except Exception as e:  # noqa: BLE001
+        except Exception as e:  # pylint: disable=W0718  # noqa: BLE001
             return log_output(f"Error loading TLK {file1_rel.parent / where}!\n{universal_simplify_exception(e)}")  # type: ignore[func-returns-value]
         try:
             log_output(f"Loading TLK '{file2_rel.parent / where}'")
             tlk2 = tlk.read_tlk(data2)
-        except Exception as e:  # noqa: BLE001
+        except Exception as e:  # pylint: disable=W0718  # noqa: BLE001
             return log_output(f"Error loading TLK {file2_rel.parent / where}!\n{universal_simplify_exception(e)}")  # type: ignore[func-returns-value]
         if tlk1 and not tlk2:
             message = f"TLK resource missing in memory:\t'{file1_rel.parent / where}'"
@@ -236,11 +219,11 @@ def diff_data(
         lip2: lip.LIP | None = None
         try:
             lip1 = lip.read_lip(data1)
-        except Exception as e:  # noqa: BLE001
+        except Exception as e:  # pylint: disable=W0718  # noqa: BLE001
             return log_output(f"Error loading LIP {file1_rel.parent / where}!\n{universal_simplify_exception(e)}")  # type: ignore[func-returns-value]
         try:
             lip2 = lip.read_lip(data2)
-        except Exception as e:  # noqa: BLE001
+        except Exception as e:  # pylint: disable=W0718  # noqa: BLE001
             return log_output(f"Error loading LIP {file2_rel.parent / where}!\n{universal_simplify_exception(e)}")  # type: ignore[func-returns-value]
         if lip1 and not lip2:
             message = f"LIP resource missing in memory:\t'{file1_rel.parent / where}'"
@@ -258,7 +241,7 @@ def diff_data(
             return log_output_with_separator(message)
         return True
 
-    if PARSER_ARGS.compare_hashes and compute_sha256(data1) != compute_sha256(data2):
+    if PARSER_ARGS.compare_hashes and generate_hash(data1) != generate_hash(data2):
         log_output(f"'{where}': SHA256 is different")
         return False
     return True
@@ -268,7 +251,7 @@ def log_output_with_separator(message, below=True, above=False, surround=False):
     if above or surround:
         log_output(visual_length(message) * "-")
     log_output(message)
-    if below and not above or surround:
+    if (below and not above) or surround:
         log_output(visual_length(message) * "-")
 
 
@@ -279,10 +262,10 @@ def diff_files(file1: os.PathLike | str, file2: os.PathLike | str) -> bool | Non
     c_file2_rel: Path = relative_path_from_to(c_file1, c_file2)
     is_same_result: bool | None = True
 
-    if not c_file1.exists():
+    if not c_file1.safe_isfile():
         log_output(f"Missing file:\t{c_file1_rel}")
         return False
-    if not c_file2.exists():
+    if not c_file2.safe_isfile():
         log_output(f"Missing file:\t{c_file2_rel}")
         return False
 
@@ -375,12 +358,12 @@ def diff_installs(install_path1: os.PathLike | str, install_path2: os.PathLike |
 
     streamwaves_path1: CaseAwarePath = (
         rinstall_path1.joinpath("streamwaves")
-        if rinstall_path1.joinpath("streamwaves").exists()
+        if rinstall_path1.joinpath("streamwaves").safe_isdir()
         else rinstall_path1.joinpath("streamvoice")
     )
     streamwaves_path2: CaseAwarePath = (
         rinstall_path2.joinpath("streamwaves")
-        if rinstall_path2.joinpath("streamwaves").exists()
+        if rinstall_path2.joinpath("streamwaves").safe_isdir()
         else rinstall_path2.joinpath("streamvoice")
     )
     is_same_result = diff_directories(streamwaves_path1, streamwaves_path2) and is_same_result
@@ -389,14 +372,14 @@ def diff_installs(install_path1: os.PathLike | str, install_path2: os.PathLike |
 
 def is_kotor_install_dir(path: os.PathLike | str) -> bool | None:
     c_path: CaseAwarePath = CaseAwarePath.pathify(path)
-    return c_path.safe_isdir() and c_path.joinpath("chitin.key").safe_exists()
+    return c_path.safe_isdir() and c_path.joinpath("chitin.key").safe_isfile()
 
 
 def run_differ_from_args(path1: Path, path2: Path) -> bool | None:
-    if not path1.exists():
+    if not path1.safe_exists():
         log_output(f"--path1='{path1}' does not exist on disk, cannot diff")
         return None
-    if not path2.exists():
+    if not path2.safe_exists():
         log_output(f"--path2='{path2}' does not exist on disk, cannot diff")
         return None
     if is_kotor_install_dir(path1) and is_kotor_install_dir(path2):
@@ -408,10 +391,11 @@ def run_differ_from_args(path1: Path, path2: Path) -> bool | None:
     msg = f"--path1='{path1.name}' and --path2='{path2.name}' must be the same type"
     raise ValueError(msg)
 
+
 def main():
     global PARSER_ARGS
-    global PARSER
-    global LOGGING_ENABLED
+    global PARSER  # noqa: PLW0603
+    global LOGGING_ENABLED  # noqa: PLW0603
     PARSER = ArgumentParser(description="Finds differences between two KOTOR installations")
     PARSER.add_argument("--path1", type=str, help="Path to the first K1/TSL install, file, or directory to diff.")
     PARSER.add_argument("--path2", type=str, help="Path to the second K1/TSL install, file, or directory to diff.")
@@ -431,7 +415,7 @@ def main():
             or (unknown[0] if len(unknown) > 0 else None)
             or input("Path to the first K1/TSL install, file, or directory to diff: "),
         ).resolve()
-        if PARSER_ARGS.path1.exists():
+        if PARSER_ARGS.path1.safe_exists():
             break
         print("Invalid path:", PARSER_ARGS.path1)
         PARSER.print_help()
@@ -442,7 +426,7 @@ def main():
             or (unknown[1] if len(unknown) > 1 else None)
             or input("Path to the second K1/TSL install, file, or directory to diff: "),
         ).resolve()
-        if PARSER_ARGS.path2.exists():
+        if PARSER_ARGS.path2.safe_exists():
             break
         print("Invalid path:", PARSER_ARGS.path2)
         PARSER.print_help()
@@ -490,10 +474,12 @@ def main():
             log_output("Completed with errors found during comparison")
             sys.exit(3)
     except KeyboardInterrupt:
-        if profiler is not None:
-            _stop_profiler(profiler)
         log_output("KeyboardInterrupt - KotorDiff was cancelled by user.")
         raise
+    finally:
+        if profiler is not None:
+            _stop_profiler(profiler)
+
 
 def _stop_profiler(profiler: cProfile.Profile):
     profiler.disable()

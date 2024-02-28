@@ -1,6 +1,8 @@
+from __future__ import annotations
 
 from PyQt5 import QtCore
 from PyQt5.QtWidgets import QWidget
+
 from toolset.gui.widgets.settings.installations import GlobalSettings
 
 

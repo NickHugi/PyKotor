@@ -1,15 +1,16 @@
 from __future__ import annotations
 
 import math
+
 from abc import ABC, abstractmethod
 from enum import IntEnum
+from typing import TYPE_CHECKING, NoReturn
 
 from pykotor.common.geometry import Polygon3, Vector2, Vector3, Vector4
 from pykotor.common.language import LocalizedString
 from pykotor.common.misc import Color, Game, ResRef
 from pykotor.extract.file import ResourceIdentifier
-from pykotor.resource.formats.gff import GFF, GFFContent, GFFList, GFFStruct, read_gff, write_gff
-from pykotor.resource.formats.gff.gff_auto import bytes_gff
+from pykotor.resource.formats.gff import GFF, GFFContent, GFFList, GFFStruct, bytes_gff, read_gff, write_gff
 from pykotor.resource.generics.utc import UTC, bytes_utc
 from pykotor.resource.generics.utd import UTD, bytes_utd
 from pykotor.resource.generics.ute import UTE, bytes_ute
@@ -18,7 +19,10 @@ from pykotor.resource.generics.utp import UTP, bytes_utp
 from pykotor.resource.generics.uts import UTS, bytes_uts
 from pykotor.resource.generics.utt import UTT, bytes_utt
 from pykotor.resource.generics.utw import UTW, bytes_utw
-from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES, ResourceType
+from pykotor.resource.type import ResourceType
+
+if TYPE_CHECKING:
+    from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES
 
 
 class GIT:
@@ -49,7 +53,7 @@ class GIT:
     ) -> list[GITInstance]:
         """Returns a list of all instances stored inside the GIT, regardless of the type.
 
-        Returns
+        Returns:
         -------
             A list of all stored instances.
         """
@@ -260,7 +264,7 @@ class GITCamera(GITInstance):
         camera_id: int = 0,
     ):
         super().__init__(x, y, z)
-        self.camera_id = camera_id
+        self.camera_id: int = camera_id
         self.fov: float = 45
         self.height: float = 0.0
         self.mic_range: float = 0.0
@@ -287,7 +291,7 @@ class GITCamera(GITInstance):
         pitch: float,
         roll: float,
     ):
-        rotation = self.orientation.to_euler()
+        rotation: Vector3 = self.orientation.to_euler()
         rotation.x += yaw
         rotation.y += roll
         rotation.z += pitch
@@ -458,9 +462,9 @@ class GITEncounterSpawnPoint:
         y: float = 0.0,
         z: float = 0.0,
     ):
-        self.x = x
-        self.y = y
-        self.z = z
+        self.x: float = x
+        self.y: float = y
+        self.z: float = z
         self.orientation: float = 0.0
 
 
@@ -510,7 +514,7 @@ class GITEncounter(GITInstance):
         yaw: float,
         pitch: float,
         roll: float,
-    ):
+    ) -> NoReturn:
         msg = "Encounters cannot be rotated."
         raise ValueError(msg)
 
@@ -632,7 +636,7 @@ class GITSound(GITInstance):
         yaw: float,
         pitch: float,
         roll: float,
-    ):
+    ) -> NoReturn:
         msg = "Sounds cannot be rotated."
         raise ValueError(msg)
 
@@ -743,7 +747,7 @@ class GITTrigger(GITInstance):
         yaw: float,
         pitch: float,
         roll: float,
-    ):
+    ) -> NoReturn:
         msg = "Triggers cannot be rotated."
         raise ValueError(msg)
 

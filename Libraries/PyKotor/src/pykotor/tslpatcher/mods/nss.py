@@ -1,24 +1,34 @@
+"""Represents patches specific to [CompileList] logic."""
 from __future__ import annotations
 
 import os
 import re
-import tempfile
+
+from tempfile import TemporaryDirectory
 from typing import TYPE_CHECKING
 
 from pykotor.common.stream import BinaryReader, BinaryWriter
-from pykotor.resource.formats.ncs import bytes_ncs
-from pykotor.resource.formats.ncs import compile_nss as compile_with_builtin
+from pykotor.resource.formats.ncs import (
+    bytes_ncs,
+    compile_nss as compile_with_builtin,
+)
+from pykotor.resource.formats.ncs.compiler.classes import EntryPointError
 from pykotor.resource.formats.ncs.compilers import ExternalNCSCompiler
 from pykotor.tools.encoding import decode_bytes_with_fallbacks
+from pykotor.tools.path import CaseAwarePath
 from pykotor.tslpatcher.mods.template import PatcherModifications
 from utility.error_handling import universal_simplify_exception
-from utility.path import Path, PurePath, PureWindowsPath
+from utility.system.path import Path, PurePath, PureWindowsPath
 
 if TYPE_CHECKING:
+    from typing_extensions import Literal
+
     from pykotor.common.misc import Game
+    from pykotor.resource.formats.ncs.ncs_data import NCS
     from pykotor.resource.type import SOURCE_TYPES
     from pykotor.tslpatcher.logger import PatchLogger
     from pykotor.tslpatcher.memory import PatcherMemory
+
 
 class MutableString:
     def __init__(self, value: str):
@@ -26,22 +36,15 @@ class MutableString:
     def __str__(self):
         return self.value
 
+
 class ModificationsNSS(PatcherModifications):
     def __init__(self, filename, replace=None, modifiers=None):
         super().__init__(filename, replace, modifiers)
         self.saveas = str(PurePath(filename).with_suffix(".ncs"))
         self.action: str = "Compile"
-        self.nwnnsscomp_path: Path
-
-    @staticmethod
-    def load(nss_source: SOURCE_TYPES) -> bytes | None:
-        if isinstance(nss_source, (bytearray, memoryview)):
-            return bytes(nss_source)
-        if isinstance(nss_source, bytes):
-            return nss_source
-        if isinstance(nss_source, (os.PathLike, str)):
-            return BinaryReader.load_file(nss_source)
-        return None
+        self.nwnnsscomp_path: Path  # TODO: fix type. Default None or Path?
+        self.temp_script_folder: Path
+        self.skip_if_not_replace = True
 
     def patch_resource(
         self,
@@ -49,7 +52,7 @@ class ModificationsNSS(PatcherModifications):
         memory: PatcherMemory,
         logger: PatchLogger,
         game: Game,
-    ) -> bytes:
+    ) -> bytes | Literal[True]:
         """Takes the source nss bytes and replaces instances of 2DAMEMORY# and StrRef# with the values in patcher memory. Compiles the
         source bytes and returns the ncs compiled script as a bytes object.
 
@@ -70,23 +73,28 @@ class ModificationsNSS(PatcherModifications):
             2. Replaces 2DAMEMORY# and StrRef# tokens with values from patcher memory
             3. Attempts to compile with external NWN compiler if on Windows
             4. Falls back to built-in compiler if external isn't available, fails, or not on Windows
-        """  # noqa: D205
-        nss_bytes: bytes | None = self.load(nss_source)
+        """
+        with BinaryReader.from_auto(nss_source) as reader:
+            nss_bytes: bytes = reader.read_all()
         if nss_bytes is None:
             logger.add_error("Invalid nss source provided to ModificationsNSS.apply()")
-            return b""
+            return True
 
+        # Replace memory tokens in the script, and save to the file.
         source = MutableString(decode_bytes_with_fallbacks(nss_bytes))
         self.apply(source, memory, logger, game)
+        temp_script_file = self.temp_script_folder / self.sourcefile
+        BinaryWriter.dump(temp_script_file, source.value.encode(encoding="windows-1252", errors="ignore"))
 
+        # Compile with external on windows, fall back to built-in if mac/linux or if external fails.
         is_windows = os.name == "nt"
-        nwnnsscomp_exists: bool | None = self.nwnnsscomp_path.safe_exists()
+        nwnnsscomp_exists: bool | None = self.nwnnsscomp_path.safe_isfile()
         if is_windows and self.nwnnsscomp_path and nwnnsscomp_exists:
             nwnnsscompiler = ExternalNCSCompiler(self.nwnnsscomp_path)
-            detected_nwnnsscomp: str = next(
-                (k for k, v in ExternalNCSCompiler.NWNNSSCOMP_SHA256_HASHES.items() if v == nwnnsscompiler.filehash),
-                "UNKNOWN/INVALID",
-            )
+            try:
+                detected_nwnnsscomp: str = nwnnsscompiler.get_info().name
+            except ValueError:
+                detected_nwnnsscomp: str = "<UNKNOWN>"
             if detected_nwnnsscomp != "TSLPatcher":
                 logger.add_warning(
                     "The nwnnsscomp.exe in the tslpatchdata folder is not the expected TSLPatcher version.\n"
@@ -94,8 +102,8 @@ class ModificationsNSS(PatcherModifications):
                     "PyKotor will compile regardless, but this may not yield the expected result.",
                 )
             try:
-                return self._compile_with_external(source.value, nwnnsscompiler, logger, game)
-            except Exception as e:  # noqa: BLE001
+                return self._compile_with_external(temp_script_file, nwnnsscompiler, logger, game)
+            except Exception as e:  # pylint: disable=W0718  # noqa: BLE001
                 logger.add_error(str(universal_simplify_exception(e)))
 
         if is_windows:
@@ -107,7 +115,17 @@ class ModificationsNSS(PatcherModifications):
             logger.add_note(f"Patching from a unix operating system, compiling '{self.sourcefile}' using the built-in compilers...")
 
         # Compile using built-in script compiler if external compiler fails.
-        return bytes_ncs(compile_with_builtin(source.value, game))
+        try:
+            ncs: NCS = compile_with_builtin(
+                source.value,
+                game,
+                [],  # [RemoveNopOptimizer(), RemoveMoveSPEqualsZeroOptimizer(), RemoveUnusedBlocksOptimizer()],  # TODO: ncs optimizers need testing
+                library_lookup=[CaseAwarePath.pathify(self.temp_script_folder)],
+            )
+        except EntryPointError as e:
+            logger.add_note(str(e))
+            return True
+        return bytes(bytes_ncs(ncs))
 
     def apply(
         self,
@@ -136,39 +154,42 @@ class ModificationsNSS(PatcherModifications):
         while match:
             token_id = int(nss_source.value[match.start() + 10 : match.end() - 1])
             memory_val: str | PureWindowsPath = memory.memory_2da[token_id]
+            if memory_val is None:
+                msg = f"2DAMEMORY{token_id} was not defined before use."
+                raise KeyError(msg)
             if isinstance(memory_val, PureWindowsPath):
-                logger.add_error(str(TypeError(f"memory_2da lookup cannot be !FieldPath, got '{memory_val!r}'")))
+                logger.add_error(str(TypeError(f"memory_2da lookup cannot be !FieldPath for [CompileList] patches, got '2DAMEMORY{token_id}={memory_val!r}'")))
                 match = re.search(r"#2DAMEMORY\d+#", nss_source.value)
                 continue
 
-            value_str: str = memory_val
-            nss_source.value = nss_source.value[: match.start()] + value_str + nss_source.value[match.end() :]
+            nss_source.value = nss_source.value[: match.start()] + memory_val + nss_source.value[match.end() :]
             match = re.search(r"#2DAMEMORY\d+#", nss_source.value)
 
         match = re.search(r"#StrRef\d+#", nss_source.value)
         while match:
             token_id = int(nss_source.value[match.start() + 7 : match.end() - 1])
-            value: int = memory.memory_str[token_id]
+            memory_strval: int | None = memory.memory_str.get(token_id, None)
+            if memory_strval is None:
+                msg = f"StrRef{token_id} was not defined before use."
+                raise KeyError(msg)
+            value: int = memory_strval
             nss_source.value = nss_source.value[: match.start()] + str(value) + nss_source.value[match.end() :]
             match = re.search(r"#StrRef\d+#", nss_source.value)
 
-
     def _compile_with_external(
         self,
-        nss_script: str,
+        temp_script_file: Path,
         nwnnsscompiler: ExternalNCSCompiler,
         logger: PatchLogger,
         game: Game,
-    ) -> bytes:
-        # Get a temporary filename.
-        temp_source_script: Path
-        with tempfile.NamedTemporaryFile(mode="w+t", suffix=".nss", dir=self.nwnnsscomp_path.parent) as temp_file:
-            temp_source_script = Path(temp_file.name)
-
-        # Dump the script to a tempfile, then send to the external compiler.
-        BinaryWriter.dump(temp_source_script, nss_script.encode(encoding="windows-1252", errors="ignore"))
-        tempcompiled_filepath: Path = self.nwnnsscomp_path.parent / "temp_script.ncs"
-        stdout, stderr = nwnnsscompiler.compile_script(temp_source_script, tempcompiled_filepath, game)
+    ) -> bytes | Literal[True]:
+        with TemporaryDirectory() as tempdir:
+            tempcompiled_filepath: Path = Path(tempdir) / "temp_script.ncs"
+            stdout, stderr = nwnnsscompiler.compile_script(temp_script_file, tempcompiled_filepath, game)
+            result: bool | bytes = "File is an include file, ignored" in stdout
+            if not result:
+                # Return the compiled bytes
+                result = BinaryReader.load_file(tempcompiled_filepath)
 
         # Parse the output.
         if stdout.strip():
@@ -176,10 +197,8 @@ class ModificationsNSS(PatcherModifications):
                 if line.strip():
                     logger.add_verbose(line)
         if stderr.strip():
-            for line in stdout.split("\n"):
+            for line in stderr.split("\n"):
                 if line.strip():
                     logger.add_error(line)
-            raise ValueError(stderr)
 
-        # Return the compiled bytes
-        return BinaryReader.load_file(tempcompiled_filepath)
+        return result

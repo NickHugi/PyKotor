@@ -2,8 +2,9 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from pykotor.common.misc import Color
 from PyQt5.QtWidgets import QWidget
+
+from pykotor.common.misc import Color
 
 if TYPE_CHECKING:
     from toolset.gui.widgets.edit.color import ColorEdit

@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Generator
+from typing import TYPE_CHECKING
 
 from pykotor.common.stream import BinaryReader
 from pykotor.extract.file import FileResource, ResourceIdentifier, ResourceResult
@@ -8,10 +8,12 @@ from pykotor.resource.formats.erf import ERF, ERFType, read_erf, write_erf
 from pykotor.resource.formats.rim import RIM, read_rim, write_rim
 from pykotor.resource.type import ResourceType
 from pykotor.tools.misc import is_any_erf_type_file, is_capsule_file, is_rim_file
-from utility.path import Path
+from utility.system.path import Path
 
 if TYPE_CHECKING:
     import os
+
+    from collections.abc import Iterator
 
 
 class Capsule:
@@ -47,14 +49,14 @@ class Capsule:
             - Initialize self._path and self._resources attributes
             - Reload resources from file.
         """
-        self._path: Path = Path.pathify(path)  # type: ignore[assignment]
+        self._path: Path = Path.pathify(path).absolute()  # type: ignore[assignment]
         self._resources: list[FileResource] = []
 
         if not is_capsule_file(self._path):
             msg = f"Invalid file extension in capsule filepath '{self._path}'."
             raise ValueError(msg)
 
-        if create_nonexisting and not self._path.exists():  # type: ignore[reportGeneralTypeIssues]
+        if create_nonexisting and not self._path.safe_isfile():  # type: ignore[reportGeneralTypeIssues]
             if is_rim_file(self._path):
                 write_rim(RIM(), self._path)
             elif is_any_erf_type_file(self._path):
@@ -64,7 +66,7 @@ class Capsule:
 
     def __iter__(
         self,
-    ) -> Generator[FileResource, Any, None]:
+    ) -> Iterator[FileResource]:
         yield from self._resources
 
     def __len__(
@@ -259,8 +261,8 @@ class Capsule:
             if file_type == "RIM ":
                 return self._load_rim(reader)
 
-            msg = f"File '{self._path}' must be a ERF/MOD/SAV/RIM capsule."
-            raise NotImplementedError(msg)
+        msg = f"File '{self._path}' must be a ERF/MOD/SAV/RIM capsule."
+        raise NotImplementedError(msg)
 
     def add(
         self,
@@ -339,9 +341,11 @@ class Capsule:
         restypes: list[ResourceType] = []
         reader.seek(offset_to_keys)
         for _ in range(entry_count):
-            resrefs.append(reader.read_string(16))
+            resref = reader.read_string(16)
+            resrefs.append(resref)
             resids.append(reader.read_uint32())
-            restypes.append(ResourceType.from_id(reader.read_uint16()))
+            restype = reader.read_uint16()
+            restypes.append(ResourceType.from_id(restype))
             reader.skip(2)
 
         reader.seek(offset_to_resources)

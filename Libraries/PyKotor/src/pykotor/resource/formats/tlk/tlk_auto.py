@@ -1,17 +1,19 @@
 from __future__ import annotations
 
 import os
+
 from typing import TYPE_CHECKING
 
 from pykotor.common.stream import BinaryReader
 from pykotor.resource.formats.tlk.io_tlk import TLKBinaryReader, TLKBinaryWriter
 from pykotor.resource.formats.tlk.io_tlk_json import TLKJSONReader, TLKJSONWriter
 from pykotor.resource.formats.tlk.io_tlk_xml import TLKXMLReader, TLKXMLWriter
-from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES, ResourceType
+from pykotor.resource.type import ResourceType
 
 if TYPE_CHECKING:
     from pykotor.common.language import Language
     from pykotor.resource.formats.tlk.tlk_data import TLK
+    from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES
 
 
 def detect_tlk(
@@ -55,8 +57,8 @@ def detect_tlk(
         if isinstance(source, (os.PathLike, str)):
             with BinaryReader.from_file(source, offset) as reader:
                 file_format = check(reader.read_string(4))
-        elif isinstance(source, (bytes, bytearray)):
-            file_format = check(source[:4].decode("ascii", "ignore"))
+        elif isinstance(source, (memoryview, bytes, bytearray)):
+            file_format = check(bytes(source[:4]).decode("ascii", "ignore"))
         elif isinstance(source, BinaryReader):
             file_format = check(source.read_string(4))
             source.skip(-4)

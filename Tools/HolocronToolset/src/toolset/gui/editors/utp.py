@@ -4,6 +4,8 @@ from contextlib import suppress
 from copy import deepcopy
 from typing import TYPE_CHECKING
 
+from PyQt5.QtWidgets import QMessageBox
+
 from pykotor.common.misc import ResRef
 from pykotor.common.module import Module
 from pykotor.common.stream import BinaryWriter
@@ -13,7 +15,6 @@ from pykotor.resource.generics.dlg import DLG, dismantle_dlg
 from pykotor.resource.generics.utp import UTP, dismantle_utp, read_utp
 from pykotor.resource.type import ResourceType
 from pykotor.tools import placeable
-from PyQt5.QtWidgets import QMessageBox, QWidget
 from toolset.data.installation import HTInstallation
 from toolset.gui.dialogs.edit.locstring import LocalizedStringDialog
 from toolset.gui.dialogs.inventory import InventoryEditor
@@ -23,6 +24,8 @@ from toolset.utils.window import openResourceEditor
 
 if TYPE_CHECKING:
     import os
+
+    from PyQt5.QtWidgets import QWidget
 
     from pykotor.extract.file import ResourceResult
     from pykotor.resource.formats.twoda.twoda_data import TwoDA
@@ -55,7 +58,7 @@ class UTPEditor(Editor):
         self._placeables2DA = installation.htGetCache2DA("placeables")
         self._utp = UTP()
 
-        from toolset.uic.editors.utp import Ui_MainWindow
+        from toolset.uic.editors.utp import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
         self._setupMenus()
@@ -285,7 +288,7 @@ class UTPEditor(Editor):
     def changeName(self):
         dialog = LocalizedStringDialog(self, self._installation, self.ui.nameEdit.locstring())
         if dialog.exec_():
-            self._loadLocstring(self.ui.nameEdit, dialog.locstring)
+            self._loadLocstring(self.ui.nameEdit.ui.locstringText, dialog.locstring)
 
     def generateTag(self):
         if not self.ui.resrefEdit.text():
@@ -397,10 +400,10 @@ class UTPEditor(Editor):
         self.setFixedSize(674, 457)
 
         data, _ = self.build()
-        modelname = placeable.get_model(read_utp(data), self._installation, placeables=self._placeables2DA)
-        mdl = self._installation.resource(modelname, ResourceType.MDL)
-        mdx = self._installation.resource(modelname, ResourceType.MDX)
-        if mdl and mdx:
+        modelname: str = placeable.get_model(read_utp(data), self._installation, placeables=self._placeables2DA)
+        mdl: ResourceResult | None = self._installation.resource(modelname, ResourceType.MDL)
+        mdx: ResourceResult | None = self._installation.resource(modelname, ResourceType.MDX)
+        if mdl is not None and mdx is not None:
             self.ui.previewRenderer.setModel(mdl.data, mdx.data)
         else:
             self.ui.previewRenderer.clearModel()

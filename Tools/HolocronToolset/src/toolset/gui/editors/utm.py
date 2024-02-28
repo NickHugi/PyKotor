@@ -1,8 +1,9 @@
 from __future__ import annotations
 
+from copy import deepcopy
 from typing import TYPE_CHECKING
 
-from pykotor.common.misc import CaseInsensitiveDict, ResRef
+from pykotor.common.misc import ResRef
 from pykotor.common.module import Module
 from pykotor.extract.capsule import Capsule
 from pykotor.resource.formats.gff import write_gff
@@ -17,6 +18,9 @@ if TYPE_CHECKING:
     import os
 
     from PyQt5.QtWidgets import QWidget
+
+    from pykotor.common.misc import CaseInsensitiveDict
+    from pykotor.resource.formats.gff.gff_data import GFF
     from toolset.data.installation import HTInstallation
 
 
@@ -41,7 +45,7 @@ class UTMEditor(Editor):
 
         self._utm: UTM = UTM()
 
-        from toolset.uic.editors.utm import Ui_MainWindow
+        from toolset.uic.editors.utm import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
         self._setupMenus()
@@ -109,7 +113,7 @@ class UTMEditor(Editor):
     def build(self) -> tuple[bytes, bytes]:
         """Builds a UTM object from UI fields.
 
-        Returns
+        Returns:
         -------
             data: The built UTM data.
             b"": An empty bytes object.
@@ -121,7 +125,7 @@ class UTMEditor(Editor):
             - Write GFF to bytearray
             - Return bytearray and empty bytes
         """
-        utm: UTM = self._utm
+        utm: UTM = deepcopy(self._utm)
 
         # Basic
         utm.name = self.ui.nameEdit.locstring()
@@ -138,7 +142,7 @@ class UTMEditor(Editor):
         utm.comment = self.ui.commentsEdit.toPlainText()
 
         data = bytearray()
-        gff = dismantle_utm(utm)
+        gff: GFF = dismantle_utm(utm)
         write_gff(gff, data)
 
         return data, b""
@@ -150,7 +154,7 @@ class UTMEditor(Editor):
     def changeName(self):
         dialog = LocalizedStringDialog(self, self._installation, self.ui.nameEdit.locstring())
         if dialog.exec_():
-            self._loadLocstring(self.ui.nameEdit, dialog.locstring)
+            self._loadLocstring(self.ui.nameEdit.ui.locstringText, dialog.locstring)
 
     def generateTag(self):
         if not self.ui.resrefEdit.text():
@@ -168,11 +172,13 @@ class UTMEditor(Editor):
 
         try:
             root: str = Module.get_root(self._filepath)
+            case_root = root.casefold()
             module_names: CaseInsensitiveDict[str] = self._installation.module_names()
-            capsulesPaths: list[str] = [path for path in module_names if root.casefold() in path.casefold() and path.casefold() != self._filepath]
+            filepath_str = str(self._filepath)
+            capsulesPaths: list[str] = [path for path in module_names if case_root in path and path != filepath_str]
             capsules.extend([Capsule(self._installation.module_path() / path) for path in capsulesPaths])
         except Exception as e:
-            print(format_exception_with_variables(e, ___message___="This exception has been suppressed."))
+            print(format_exception_with_variables(e, message="This exception has been suppressed."))
 
         inventoryEditor = InventoryEditor(self, self._installation, capsules, [], self._utm.inventory, {}, False, True, True)
         if inventoryEditor.exec_():

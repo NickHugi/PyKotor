@@ -2,22 +2,28 @@
 from __future__ import annotations
 
 import io
+import mmap
 import os
 import struct
+
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, BinaryIO
+from typing import TYPE_CHECKING
 
 from pykotor.common.geometry import Vector2, Vector3, Vector4
 from pykotor.common.language import LocalizedString
 from pykotor.tools.encoding import decode_bytes_with_fallbacks
-from utility.path import Path
+from utility.system.path import Path
 
 if TYPE_CHECKING:
+    from types import TracebackType
+
+    from typing_extensions import Literal
+
     from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES
 
 
 def _endian_char(
-    big: bool,
+    big: bool,  # noqa: FBT001
 ) -> str:
     """Returns the character that represents either big endian or small endian in struct unpack.
 
@@ -43,24 +49,29 @@ class ArrayHead:
 
 
 class BinaryReader:
-    """Used for easy reading of binary files."""
+    """Provides easier reading of binary objects that abstracts uniformly to all different stream/data types."""
 
     def __init__(
         self,
-        stream: BinaryIO,
+        stream: io.RawIOBase | io.BufferedIOBase | mmap.mmap,
         offset: int = 0,
         size: int | None = None,
     ):
-        self._stream: BinaryIO = stream
-        self._offset: int = offset
         self.auto_close: bool = True
+
+        self._stream: io.RawIOBase | io.BufferedIOBase | mmap.mmap = stream
+        self._offset: int = offset
         self._stream.seek(offset)
 
-        available = self.true_size() - offset
-        self._size: int = available if size is None else size
-        if available > self.true_size():
-            msg = "Specified size is greater than the number of available bytes."
+        total_size = self.true_size()
+        if self._offset > total_size - (size or 0):
+            msg = "Specified offset/size is greater than the number of available bytes."
             raise OSError(msg)
+        if size and size < 0:
+            msg = f"Size must be greater than zero, got {size}"
+            raise ValueError(msg)
+
+        self._size: int = total_size - self._offset if size is None else size
 
     def __enter__(
         self,
@@ -69,12 +80,29 @@ class BinaryReader:
 
     def __exit__(
         self,
-        exc_type,
-        exc_val,
-        exc_tb,
+        exc_type: type[BaseException] | None,
+        exc_val: BaseException | None,
+        exc_tb: TracebackType | None,
     ):
-        if self.auto_close:
-            self.close()
+        self.close()
+
+    @classmethod
+    def from_stream(
+        cls,
+        stream: io.RawIOBase | io.BufferedIOBase,
+        offset: int = 0,
+        size: int | None = None,
+    ):
+        if not stream.seekable():
+            msg = "Stream must be seekable"
+            raise ValueError(msg)
+
+        try:
+            mmap_stream = mmap.mmap(stream.fileno(), length=0, access=mmap.ACCESS_READ)
+        except (ValueError, OSError):  # ValueError means mmap cannot map to empty files
+            return cls(stream, offset, size)
+        else:
+            return cls(mmap_stream, offset, size)
 
     @classmethod
     def from_file(
@@ -95,13 +123,16 @@ class BinaryReader:
         -------
             A new BinaryReader instance.
         """
-        stream: BinaryIO = Path.pathify(path).open("rb")
-        return BinaryReader(stream, offset, size)
+        stream = Path.pathify(path).open("rb")
+        instance = cls.from_stream(stream, offset, size)
+        if instance._stream is not stream:
+            stream.close()
+        return instance
 
     @classmethod
     def from_bytes(
         cls,
-        data: bytes,
+        data: bytes | memoryview | bytearray,
         offset: int = 0,
         size: int | None = None,
     ) -> BinaryReader:
@@ -118,7 +149,7 @@ class BinaryReader:
             A new BinaryReader instance.
         """
         stream = io.BytesIO(data)
-        return BinaryReader(stream, offset, size)
+        return cls(stream, offset, size)
 
     @classmethod
     def from_auto(
@@ -126,16 +157,26 @@ class BinaryReader:
         source: SOURCE_TYPES,
         offset: int = 0,
         size: int | None = None,
-    ):
+    ) -> BinaryReader:
         if isinstance(source, (os.PathLike, str)):  # is path
-            reader = BinaryReader.from_file(source, offset, size)
-        elif isinstance(source, (bytes, bytearray, memoryview)):  # is binary data
-            reader = BinaryReader.from_bytes(source, offset, size)
-        elif isinstance(source, BinaryReader):
-            reader = BinaryReader(source._stream, source._offset, source._size)
+            reader = cls.from_file(source, offset, size)
+
+        elif isinstance(source, (memoryview, bytes, bytearray)):  # is binary data
+            reader = cls.from_bytes(source, offset, size)
+
+        elif isinstance(source, (io.IOBase, mmap.mmap)):
+            if isinstance(source, (io.RawIOBase, io.BufferedIOBase)):  # only seekable streams are supported.
+                reader = cls.from_stream(source, offset, size)
+            else:
+                msg = f"Stream of type '{source.__class__}' is not supported by this {cls.__name__} class."
+                raise TypeError(msg)
+
+        elif isinstance(source, BinaryReader):  # is already a BinaryReader instance
+            reader = cls(source._stream, source.offset(), source.size())
+
         else:
-            msg = "Must specify a path, bytes-like object or an existing BinaryReader instance."
-            raise NotImplementedError(msg)
+            msg = f"Must specify a path, bytes-like object, stream, io. or an existing BinaryReader instance, got type ({source.__class__})."
+            raise TypeError(msg)
 
         return reader
 
@@ -173,7 +214,6 @@ class BinaryReader:
         Returns:
         -------
             int: The offset value
-        Retrieves and returns the internally stored offset value.
         """
         return self._offset
 
@@ -187,9 +227,9 @@ class BinaryReader:
     def size(
         self,
     ) -> int:
-        """Returns the total number of bytes accessible.
+        """Returns the total number of bytes remaining in the stream.
 
-        Returns
+        Returns:
         -------
             The number of accessible bytes.
         """
@@ -200,14 +240,17 @@ class BinaryReader:
     ) -> int:
         """Returns the total number of bytes in the stream.
 
-        Returns
+        Returns:
         -------
             The total file size.
         """
-        pos: int = self._stream.tell()
-        self._stream.seek(0, 2)
-        size: int = self._stream.tell()
-        self._stream.seek(pos)
+        if isinstance(self._stream, mmap.mmap):
+            return self._stream.size()
+
+        current = self._stream.tell()
+        self._stream.seek(0, os.SEEK_END)
+        size = self._stream.tell()
+        self._stream.seek(current)
         return size
 
     def remaining(
@@ -215,7 +258,7 @@ class BinaryReader:
     ) -> int:
         """Returns the remaining number of bytes in the stream.
 
-        Returns
+        Returns:
         -------
             The total file size.
         """
@@ -224,7 +267,7 @@ class BinaryReader:
     def close(
         self,
     ):
-        """Closes the stream."""
+        """Closes the underlying stream and releases any resources."""
         self._stream.close()
 
     def skip(
@@ -245,7 +288,7 @@ class BinaryReader:
     ) -> int:
         """Returns the byte offset into the stream.
 
-        Returns
+        Returns:
         -------
             The byte offset.
         """
@@ -276,17 +319,8 @@ class BinaryReader:
         Returns:
         -------
             bytes: The bytes read from the stream
-
-        Processing Logic:
-        ----------------
-            - Get the length of bytes remaining from current offset to end of stream
-            - Seek the stream to the current offset
-            - Read the bytes of the given length from the stream
-            - Return the bytes read.
         """
-        length = self.size() - self._offset
-        self._stream.seek(self._offset)
-        return self._stream.read(length)
+        return self._stream.read(self.remaining()) or b""
 
     def read_uint8(
         self,
@@ -304,7 +338,7 @@ class BinaryReader:
             An integer from the stream.
         """
         self.exceed_check(1)
-        return struct.unpack(f"{_endian_char(big)}B", self._stream.read(1))[0]
+        return struct.unpack(f"{_endian_char(big)}B", self._stream.read(1) or b"")[0]
 
     def read_int8(
         self,
@@ -322,7 +356,7 @@ class BinaryReader:
             An integer from the stream.
         """
         self.exceed_check(1)
-        return struct.unpack(f"{_endian_char(big)}b", self._stream.read(1))[0]
+        return struct.unpack(f"{_endian_char(big)}b", self._stream.read(1) or b"")[0]
 
     def read_uint16(
         self,
@@ -340,7 +374,7 @@ class BinaryReader:
             An integer from the stream.
         """
         self.exceed_check(2)
-        return struct.unpack(f"{_endian_char(big)}H", self._stream.read(2))[0]
+        return struct.unpack(f"{_endian_char(big)}H", self._stream.read(2) or b"")[0]
 
     def read_int16(
         self,
@@ -358,7 +392,7 @@ class BinaryReader:
             An integer from the stream.
         """
         self.exceed_check(2)
-        return struct.unpack(f"{_endian_char(big)}h", self._stream.read(2))[0]
+        return struct.unpack(f"{_endian_char(big)}h", self._stream.read(2) or b"")[0]
 
     def read_uint32(
         self,
@@ -369,11 +403,11 @@ class BinaryReader:
         """Reads an unsigned 32-bit integer from the stream.
 
         If max_is_neg1 flag is set to true and the bytes read off the stream are equal to 0xFFFFFFFF then the method
-        will return a value of -1 instead of 4294967295.
+        will return a value of -1 instead of 4294967295 (hex 0xFFFFFFFF).
 
         Args:
         ----
-            max_neg1: Return -1 when the value of the stream equals 0xFFFFFFFF.
+            max_neg1: Return -1 when the value of the stream equals 0xFFFFFFFF (dec 4294967295).
             big: Read int bytes as big endian.
 
         Returns:
@@ -381,9 +415,9 @@ class BinaryReader:
             An integer from the stream.
         """
         self.exceed_check(4)
-        unpacked = struct.unpack(f"{_endian_char(big)}I", self._stream.read(4))[0]
+        unpacked = struct.unpack(f"{_endian_char(big)}I", self._stream.read(4) or b"")[0]
 
-        if unpacked == 0xFFFFFFFF and max_neg1:
+        if unpacked == 0xFFFFFFFF and max_neg1:  # noqa: PLR2004
             unpacked = -1
 
         return unpacked
@@ -404,7 +438,7 @@ class BinaryReader:
             An integer from the stream.
         """
         self.exceed_check(4)
-        return struct.unpack(f"{_endian_char(big)}i", self._stream.read(4))[0]
+        return struct.unpack(f"{_endian_char(big)}i", self._stream.read(4) or b"")[0]
 
     def read_uint64(
         self,
@@ -422,7 +456,7 @@ class BinaryReader:
             An integer from the stream.
         """
         self.exceed_check(8)
-        return struct.unpack(f"{_endian_char(big)}Q", self._stream.read(8))[0]
+        return struct.unpack(f"{_endian_char(big)}Q", self._stream.read(8) or b"")[0]
 
     def read_int64(
         self,
@@ -440,7 +474,7 @@ class BinaryReader:
             An integer from the stream.
         """
         self.exceed_check(8)
-        return struct.unpack(f"{_endian_char(big)}q", self._stream.read(8))[0]
+        return struct.unpack(f"{_endian_char(big)}q", self._stream.read(8) or b"")[0]
 
     def read_single(
         self,
@@ -458,7 +492,7 @@ class BinaryReader:
             An float from the stream.
         """
         self.exceed_check(4)
-        return struct.unpack(f"{_endian_char(big)}f", self._stream.read(4))[0]
+        return struct.unpack(f"{_endian_char(big)}f", self._stream.read(4) or b"")[0]
 
     def read_double(
         self,
@@ -476,7 +510,7 @@ class BinaryReader:
             An float from the stream.
         """
         self.exceed_check(8)
-        return struct.unpack(f"{_endian_char(big)}d", self._stream.read(8))[0]
+        return struct.unpack(f"{_endian_char(big)}d", self._stream.read(8) or b"")[0]
 
     def read_vector2(
         self,
@@ -559,12 +593,13 @@ class BinaryReader:
             A bytes object containing the read bytes.
         """
         self.exceed_check(length)
-        return self._stream.read(length)
+        return self._stream.read(length) or b""
 
     def read_string(
         self,
         length: int,
         encoding: str | None = "windows-1252",
+        errors: Literal["ignore", "strict", "replace"] = "ignore",
     ) -> str:
         """Reads a string from the stream with the specified length.
 
@@ -581,8 +616,8 @@ class BinaryReader:
             A string read from the stream.
         """
         self.exceed_check(length)
-        string_byte_data = self._stream.read(length)
-        string = decode_bytes_with_fallbacks(string_byte_data, encoding=encoding, errors="ignore")
+        string_byte_data = self._stream.read(length) or b""
+        string = decode_bytes_with_fallbacks(string_byte_data, encoding=encoding, errors=errors)
         if "\0" in string:
             string = string[: string.index("\0")].rstrip("\0")
             string = string.replace("\0", "")
@@ -591,25 +626,45 @@ class BinaryReader:
     def read_terminated_string(
         self,
         terminator: str,
+        length: int = -1,
+        encoding: str = "ascii",
+        *,
+        strict: bool = True,
     ) -> str:
-        """Reads a string continuously from the stream until it hits the terminator string specified.
-
-        Any unknown characters are ignored.
+        """Reads a string continuously from the stream up to a specified length or until it hits the terminator character, whichever comes first.
+        If length is -1, reads until the terminator is encountered without a length constraint.
 
         Args:
         ----
-            terminator: The terminator string.
+            terminator: The terminator character.
+            length: The maximum length to read from the stream, or -1 for no length constraint.
+                If a terminator is found before length is reached, skip the remaining.
+            encoding: the encoding to use, in most cases this should be "ascii" (default)
+            strict: Whether to stop appending the final string if a character could not be decoded by the encoding.
 
         Returns:
         -------
             A string read from the stream.
         """
-        string = ""
-        char = ""
-        while char != terminator:
+        string: str = ""
+        char: str = ""
+        bytes_read: int = 0
+
+        while char != terminator and (length == -1 or bytes_read < length):
             string += char
             self.exceed_check(1)
-            char = self.read_bytes(1).decode("ascii", errors="ignore")
+            char = self.read_bytes(1).decode(encoding=encoding, errors="ignore")
+            bytes_read += 1
+            if not char and strict:
+                break
+
+        if length == -1:
+            return string
+
+        # If a length is specified and not all bytes were read, skip the remaining bytes
+        remaining_length = length - bytes_read
+        if remaining_length > 0:
+            self.skip(remaining_length)
         return string
 
     def read_locstring(
@@ -619,7 +674,7 @@ class BinaryReader:
 
         The binary data structure that is read follows the structure found in the GFF format specification.
 
-        Returns
+        Returns:
         -------
             A LocalizedString read from the stream.
         """
@@ -627,7 +682,7 @@ class BinaryReader:
         self.skip(4)  # total number of bytes of the localized string
         locstring.stringref = self.read_uint32(max_neg1=True)
         string_count = self.read_uint32()
-        for _i in range(string_count):
+        for _ in range(string_count):
             string_id = self.read_uint32()
             language, gender = LocalizedString.substring_pair(string_id)
             length = self.read_uint32()
@@ -644,9 +699,9 @@ class BinaryReader:
         self,
         length: int = 1,
     ) -> bytes:
-        data: bytes = self._stream.read(length)
+        data = self._stream.read(length)
         self._stream.seek(-length, 1)
-        return data
+        return b"" if data is None else data
 
     def exceed_check(
         self,
@@ -660,7 +715,7 @@ class BinaryReader:
 
         Raises:
         ------
-            OSError: Iset_datahe given number sex exceeds the number of remaining bytes.
+            OSError: When the attempted read operation exceeds the number of remaining bytes.
         """
         if self.position() + num > self.size():
             msg = "This operation would exceed the streams boundaries."
@@ -721,20 +776,22 @@ class BinaryWriter(ABC):
         source: TARGET_TYPES,
     ) -> BinaryWriter:
         if isinstance(source, (os.PathLike, str)):  # is path
-            return BinaryWriter.to_file(source)
+            return cls.to_file(source)
         if isinstance(source, bytearray):  # is mutable binary data
-            return BinaryWriter.to_bytearray(source)
+            return cls.to_bytearray(source)
         if isinstance(source, (bytes, memoryview)):  # is immutable binary data
-            return BinaryWriter.to_bytearray(bytearray(source))
-        if isinstance(source, BinaryWriter):
-            return source
+            return cls.to_bytearray(bytearray(source))
+        if isinstance(source, BinaryWriterFile):
+            return BinaryWriterFile(source._stream, source.offset)  # noqa: SLF001
+        if isinstance(source, BinaryWriterBytearray):
+            return BinaryWriterBytearray(source._ba, source._offset)  # noqa: SLF001
         msg = "Must specify a path, bytes object or an existing BinaryWriter instance."
         raise NotImplementedError(msg)
 
     @staticmethod
     def dump(
         path: os.PathLike | str,
-        data: bytes,
+        data: bytes | bytearray | memoryview | mmap.mmap,
     ):
         """Convenience method used to write the specified data to the specified file.
 
@@ -758,7 +815,7 @@ class BinaryWriter(ABC):
     ) -> int:
         """Returns the total file size.
 
-        Returns
+        Returns:
         -------
             The total file size.
         """
@@ -769,7 +826,7 @@ class BinaryWriter(ABC):
     ) -> bytes:
         """Returns the full file data.
 
-        Returns
+        Returns:
         -------
             The full file data.
         """
@@ -804,7 +861,7 @@ class BinaryWriter(ABC):
     ) -> int:
         """Returns the byte offset into the stream.
 
-        Returns
+        Returns:
         -------
             The byte offset.
         """
@@ -1026,7 +1083,7 @@ class BinaryWriter(ABC):
         self,
         value: str,
         encoding: str | None = "windows-1252",
-        errors: str = "errors",
+        errors: str = "strict",
         *,
         big: bool = False,
         prefix_length: int = 0,
@@ -1082,11 +1139,11 @@ class BinaryWriter(ABC):
 class BinaryWriterFile(BinaryWriter):
     def __init__(
         self,
-        stream: BinaryIO,
+        stream: io.BufferedIOBase | io.RawIOBase,
         offset: int = 0,
     ):
-        self._stream: BinaryIO = stream
-        self.offset: int = offset
+        self._stream: io.BufferedIOBase | io.RawIOBase = stream
+        self.offset: int = offset  # FIXME: rename to _offset like all the other classes in this file.
         self.auto_close: bool = True
 
         self._stream.seek(offset)
@@ -1116,7 +1173,7 @@ class BinaryWriterFile(BinaryWriter):
     ) -> int:
         """Returns the total file size.
 
-        Returns
+        Returns:
         -------
             The total file size.
         """
@@ -1131,15 +1188,15 @@ class BinaryWriterFile(BinaryWriter):
     ) -> bytes:
         """Returns the full file data.
 
-        Returns
+        Returns:
         -------
             The full file data.
         """
         pos: int = self._stream.tell()
         self._stream.seek(0)
-        data: bytes = self._stream.read()
+        data: bytes | None = self._stream.read()
         self._stream.seek(pos)
-        return data
+        return b"" if data is None else data
 
     def clear(
         self,
@@ -1171,7 +1228,7 @@ class BinaryWriterFile(BinaryWriter):
     ) -> int:
         """Returns the byte offset into the stream.
 
-        Returns
+        Returns:
         -------
             The byte offset.
         """
@@ -1429,16 +1486,19 @@ class BinaryWriterFile(BinaryWriter):
                 msg = "The string length is too large for a prefix length of 1."
                 raise ValueError(msg)
             self.write_uint8(len(value), big=big)
+
         elif prefix_length == 2:
             if len(value) > 0xFFFF:
                 msg = "The string length is too large for a prefix length of 2."
                 raise ValueError(msg)
             self.write_uint16(len(value), big=big)
+
         elif prefix_length == 4:
             if len(value) > 0xFFFFFFFF:
                 msg = "The string length is too large for a prefix length of 4."
                 raise ValueError(msg)
             self.write_uint32(len(value), big=big)
+
         else:
             msg = f"An invalid prefix length '{prefix_length}' was provided."
             raise ValueError(msg)
@@ -1447,10 +1507,7 @@ class BinaryWriterFile(BinaryWriter):
             while len(value) < string_length:
                 value += padding
             value = value[:string_length]
-        if encoding is None:
-            self._stream.write(value.encode("windows-1252", errors=errors))
-        else:
-            self._stream.write(value.encode(encoding, errors=errors))
+        self._stream.write(value.encode(encoding or "windows-1252", errors=errors))
 
     def write_line(
         self,
@@ -1491,12 +1548,13 @@ class BinaryWriterFile(BinaryWriter):
         bw: BinaryWriterBytearray = BinaryWriter.to_bytearray()
         bw.write_uint32(value.stringref, big=big, max_neg1=True)
         bw.write_uint32(len(value), big=big)
+
         for language, gender, substring in value:
             string_id: int = LocalizedString.substring_id(language, gender)
             bw.write_uint32(string_id, big=big)
             bw.write_string(substring, prefix_length=4, encoding=language.get_encoding())
-        locstring_data: bytes = bw.data()
 
+        locstring_data: bytes = bw.data()
         self.write_uint32(len(locstring_data))
         self.write_bytes(locstring_data)
 
@@ -1534,7 +1592,7 @@ class BinaryWriterBytearray(BinaryWriter):
     ) -> int:
         """Returns the total file size.
 
-        Returns
+        Returns:
         -------
             The total file size.
         """
@@ -1545,7 +1603,7 @@ class BinaryWriterBytearray(BinaryWriter):
     ) -> bytes:
         """Returns the full file data.
 
-        Returns
+        Returns:
         -------
             The full file data.
         """
@@ -1580,7 +1638,7 @@ class BinaryWriterBytearray(BinaryWriter):
     ) -> int:
         """Returns the byte offset into the stream.
 
-        Returns
+        Returns:
         -------
             The byte offset.
         """

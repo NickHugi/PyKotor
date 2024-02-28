@@ -1,12 +1,16 @@
 from __future__ import annotations
 
 from enum import IntEnum
+from typing import TYPE_CHECKING
 
 from pykotor.common.language import LocalizedString
 from pykotor.common.misc import Game
 from pykotor.resource.formats.gff import GFF, GFFContent, GFFList, read_gff, write_gff
 from pykotor.resource.formats.gff.gff_auto import bytes_gff
-from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES, ResourceType
+from pykotor.resource.type import ResourceType
+
+if TYPE_CHECKING:
+    from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES
 
 
 class JRL:
@@ -23,7 +27,7 @@ class JRL:
 class JRLQuest:
     """Stores data of an individual quest.
 
-    Attributes
+    Attributes:
     ----------
         name: "Name" field.
         planet_id: "PlanetID" field.
@@ -49,7 +53,7 @@ class JRLQuest:
 class JRLEntry:
     """Stores the data for an entry in a quest.
 
-    Attributes
+    Attributes:
     ----------
         end: "End" field.
         entry_id: "ID" field.
@@ -140,8 +144,9 @@ def write_jrl(
     jrl: JRL,
     target: TARGET_TYPES,
     file_format: ResourceType = ResourceType.GFF,
+    game: Game = Game.K2,
 ):
-    gff: GFF = dismantle_jrl(jrl)
+    gff: GFF = dismantle_jrl(jrl, game)
     write_gff(gff, target, file_format)
 
 

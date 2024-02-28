@@ -1,7 +1,8 @@
 from __future__ import annotations
 
 import base64
-from typing import Any
+
+from typing import TYPE_CHECKING, Any
 
 # Try to import defusedxml, fallback to ElementTree if not available
 from xml.etree import ElementTree
@@ -16,8 +17,11 @@ from pykotor.common.geometry import Vector3, Vector4
 from pykotor.common.language import LocalizedString
 from pykotor.common.misc import ResRef
 from pykotor.resource.formats.gff.gff_data import GFF, GFFFieldType, GFFList, GFFStruct
-from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES, ResourceReader, ResourceWriter, autoclose
+from pykotor.resource.type import ResourceReader, ResourceWriter, autoclose
 from utility.misc import indent
+
+if TYPE_CHECKING:
+    from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES
 
 
 class GFFXMLReader(ResourceReader):

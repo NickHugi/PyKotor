@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from copy import deepcopy
 from typing import TYPE_CHECKING
 
 from pykotor.common.misc import ResRef
@@ -13,8 +14,9 @@ from toolset.gui.editor import Editor
 if TYPE_CHECKING:
     import os
 
-    from pykotor.resource.formats.twoda.twoda_data import TwoDA
     from PyQt5.QtWidgets import QWidget
+
+    from pykotor.resource.formats.twoda.twoda_data import TwoDA
 
 
 class UTTEditor(Editor):
@@ -37,7 +39,7 @@ class UTTEditor(Editor):
         supported = [ResourceType.UTT]
         super().__init__(parent, "Trigger Editor", "trigger", supported, supported, installation)
 
-        from toolset.uic.editors.utt import Ui_MainWindow
+        from toolset.uic.editors.utt import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
         self._setupMenus()
@@ -124,7 +126,7 @@ class UTTEditor(Editor):
     def build(self) -> tuple[bytes, bytes]:
         """Builds an UTT from UI input.
 
-        Returns
+        Returns:
         -------
             tuple[bytes, bytes]: A tuple containing the GFF data (bytes) and any errors (bytes).
 
@@ -134,7 +136,7 @@ class UTTEditor(Editor):
         - Serializes the UTT to GFF format
         - Returns the GFF data and any errors
         """
-        utt: UTT = self._utt
+        utt: UTT = deepcopy(self._utt)
 
         # Basic
         utt.name = self.ui.nameEdit.locstring()
@@ -183,7 +185,7 @@ class UTTEditor(Editor):
     def changeName(self):
         dialog = LocalizedStringDialog(self, self._installation, self.ui.nameEdit.locstring())
         if dialog.exec_():
-            self._loadLocstring(self.ui.nameEdit, dialog.locstring)
+            self._loadLocstring(self.ui.nameEdit.ui.locstringText, dialog.locstring)
 
     def generateTag(self):
         if not self.ui.resrefEdit.text():

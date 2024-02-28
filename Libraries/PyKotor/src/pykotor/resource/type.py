@@ -1,16 +1,24 @@
 """This module contains the ResourceType class and initializes the static list of ResourceTypes that can be found in both games."""
 from __future__ import annotations
 
+import io
+import mmap
 import os
 import uuid
+
 from enum import Enum
-from typing import Callable, Iterable, NamedTuple, TypeVar, Union
+from pathlib import Path
+from typing import TYPE_CHECKING, NamedTuple, TypeVar, Union
 from xml.etree.ElementTree import ParseError
 
 from pykotor.common.stream import BinaryReader, BinaryWriter
-from utility.string import CaseInsensitiveWrappedStr, WrappedStr
+from utility.error_handling import format_exception_with_variables
 
-SOURCE_TYPES = Union[os.PathLike, str, bytes, bytearray, BinaryReader]
+if TYPE_CHECKING:
+    from collections.abc import Callable, Iterable
+
+STREAM_TYPES = Union[io.BufferedIOBase, io.RawIOBase, mmap.mmap]
+SOURCE_TYPES = Union[os.PathLike, str, bytes, bytearray, memoryview, BinaryReader, STREAM_TYPES]
 TARGET_TYPES = Union[os.PathLike, str, bytearray, BinaryWriter]
 
 
@@ -42,6 +50,7 @@ class ResourceWriter:
     ):
         self._writer.close()
 
+
 class ResourceTuple(NamedTuple):
     type_id: int
     extension: str
@@ -61,22 +70,36 @@ class ResourceType(Enum):
 
     Stored in the class is also several static attributes, each an actual resource type used by the games.
 
-    Attributes
+    Attributes:
     ----------
         type_id: Integer id of the resource type as recognized by the games.
         extension: File extension associated with the resource type and as recognized by the game.
         category: Short description on what kind of data the resource type stores.
         contents: How the resource type stores data, ie. plaintext, binary, or gff.
+
     """
 
-    INVALID = ResourceTuple(0, "", "Undefined", "binary", is_invalid=True)
+    INVALID = ResourceTuple(-1, "", "Undefined", "binary", is_invalid=True)
+    RES = ResourceTuple(0, "res", "Save Data", "gff")
     BMP = ResourceTuple(1, "bmp", "Images", "binary")
+    MVE = ResourceTuple(2, "mve", "Video", "video")  # Video, Infinity Engine
     TGA = ResourceTuple(3, "tga", "Textures", "binary")
     WAV = ResourceTuple(4, "wav", "Audio", "binary")
     PLT = ResourceTuple(6, "plt", "Other", "binary")
-    INI = ResourceTuple(7, "ini", "Text Files", "plaintext")
+    INI = ResourceTuple(7, "ini", "Text Files", "plaintext")  # swkotor.ini
+    BMU = ResourceTuple(8, "bmu", "Audio", "binary")  # mp3 with obfuscated extra header
+    MPG = ResourceTuple(9, "mpg", "Video", "binary")
     TXT = ResourceTuple(10, "txt", "Text Files", "plaintext")
+    WMA = ResourceTuple(11, "wma", "Audio", "binary")
+    WMV = ResourceTuple(12, "wmv", "Audio", "binary")
+    XMV = ResourceTuple(13, "xmv", "Audio", "binary")  # Xbox video
+    PLH = ResourceTuple(2000, "plh", "Models", "binary")
+    TEX = ResourceTuple(2001, "tex", "Textures", "binary")
     MDL = ResourceTuple(2002, "mdl", "Models", "binary")
+    THG = ResourceTuple(2003, "thg", "Unused", "binary")
+    FNT = ResourceTuple(2005, "fnt", "Font", "binary")
+    LUA = ResourceTuple(2007, "lua", "Scripts", "plaintext")
+    SLT = ResourceTuple(2008, "slt", "Unused", "binary")
     NSS = ResourceTuple(2009, "nss", "Scripts", "plaintext")
     NCS = ResourceTuple(2010, "ncs", "Scripts", "binary")
     MOD = ResourceTuple(2011, "mod", "Modules", "binary")
@@ -95,28 +118,72 @@ class ResourceType(Enum):
     UTC = ResourceTuple(2027, "utc", "Creatures", "gff")
     DLG = ResourceTuple(2029, "dlg", "Dialogs", "gff")
     ITP = ResourceTuple(2030, "itp", "Palettes", "binary")
+    BTT = ResourceTuple(2031, "bit", "Triggers", "gff")
     UTT = ResourceTuple(2032, "utt", "Triggers", "gff")
     DDS = ResourceTuple(2033, "dds", "Textures", "binary")
     UTS = ResourceTuple(2035, "uts", "Sounds", "gff")
     LTR = ResourceTuple(2036, "ltr", "Other", "binary")
     GFF = ResourceTuple(2037, "gff", "Other", "gff")
     FAC = ResourceTuple(2038, "fac", "Factions", "gff")
+    BTE = ResourceTuple(2039, "bte", "Encounters", "gff")
     UTE = ResourceTuple(2040, "ute", "Encounters", "gff")
+    BTD = ResourceTuple(2041, "btd", "Doors", "gff")
     UTD = ResourceTuple(2042, "utd", "Doors", "gff")
+    BTP = ResourceTuple(2043, "btp", "Placeables", "gff")
     UTP = ResourceTuple(2044, "utp", "Placeables", "gff")
-    DFT = ResourceTuple(2045, "dft", "Other", "binary")
+    DFT = ResourceTuple(2045, "dft", "Defaults", "binary")
+    DTF = ResourceTuple(2045, "dft", "Defaults", "plaintext")
     GIC = ResourceTuple(2046, "gic", "Module Data", "gff")
     GUI = ResourceTuple(2047, "gui", "GUIs", "gff")
+    BTM = ResourceTuple(2050, "btm", "Merchants", "gff")
     UTM = ResourceTuple(2051, "utm", "Merchants", "gff")
     DWK = ResourceTuple(2052, "dwk", "Walkmeshes", "binary")
     PWK = ResourceTuple(2053, "pwk", "Walkmeshes", "binary")
     JRL = ResourceTuple(2056, "jrl", "Journals", "gff")
+    SAV = ResourceTuple(2057, "sav", "Save Data", "erf")
     UTW = ResourceTuple(2058, "utw", "Waypoints", "gff")
+    FourPC = ResourceTuple(2059, "4pc", "Textures", "binary")  # RGBA 16-bit
     SSF = ResourceTuple(2060, "ssf", "Soundsets", "binary")
+    HAK = ResourceTuple(2061, "hak", "Modules", "erf")
+    NWM = ResourceTuple(2062, "nwm", "Modules", "erf")
+    BIK = ResourceTuple(2063, "bik", "Videos", "binary")
     NDB = ResourceTuple(2064, "ndb", "Other", "binary")
     PTM = ResourceTuple(2065, "ptm", "Other", "binary")
     PTT = ResourceTuple(2066, "ptt", "Other", "binary")
+    NCM = ResourceTuple(2067, "ncm", "Unused", "binary")
+    MFX = ResourceTuple(2068, "mfx", "Unused", "binary")
+    MAT = ResourceTuple(2069, "mat", "Materials", "binary")
+    MDB = ResourceTuple(2070, "mdb", "Models", "binary")
+    SAY = ResourceTuple(2071, "say", "Unused", "binary")
+    TTF = ResourceTuple(2072, "ttf", "Fonts", "binary")
+    TTC = ResourceTuple(2073, "ttc", "Unused", "binary")
+    CUT = ResourceTuple(2074, "cut", "Cutscenes", "gff")
+    KA  = ResourceTuple(2075, "ka", "Unused", "xml")  # noqa: E221
     JPG = ResourceTuple(2076, "jpg", "Images", "binary")
+    ICO = ResourceTuple(2077, "ico", "Images", "binary")
+    OGG = ResourceTuple(2078, "ogg", "Audio", "binary")
+    SPT = ResourceTuple(2079, "spt", "Unused", "binary")
+    SPW = ResourceTuple(2080, "spw", "Unused", "binary")
+    WFX = ResourceTuple(2081, "wfx", "Unused", "xml")
+    UGM = ResourceTuple(2082, "ugm", "Unused", "binary")
+    QDB = ResourceTuple(2083, "qdb", "Unused", "gff")
+    QST = ResourceTuple(2084, "qst", "Unused", "gff")
+    NPC = ResourceTuple(2085, "npc", "Unused", "binary")
+    SPN = ResourceTuple(2086, "spn", "Unused", "binary")
+    UTX = ResourceTuple(2087, "utx", "Unused", "binary")
+    MMD = ResourceTuple(2088, "mmd", "Unused", "binary")
+    SMM = ResourceTuple(2089, "smm", "Unused", "binary")
+    UTA = ResourceTuple(2090, "uta", "Unused", "binary")
+    MDE = ResourceTuple(2091, "mde", "Unused", "binary")
+    MDV = ResourceTuple(2092, "mdv", "Unused", "binary")
+    MDA = ResourceTuple(2093, "mda", "Unused", "binary")
+    MBA = ResourceTuple(2094, "mba", "Unused", "binary")
+    OCT = ResourceTuple(2095, "oct", "Unused", "binary")
+    BFX = ResourceTuple(2096, "bfx", "Unused", "binary")
+    PDB = ResourceTuple(2097, "pdb", "Unused", "binary")
+    PVS = ResourceTuple(2099, "pvs", "Unused", "binary")
+    CFX = ResourceTuple(2100, "cfx", "Unused", "binary")
+    LUC = ResourceTuple(2101, "luc", "Scripts", "binary")
     PNG = ResourceTuple(2110, "png", "Images", "binary")
     LYT = ResourceTuple(3000, "lyt", "Module Data", "plaintext")
     VIS = ResourceTuple(3001, "vis", "Module Data", "plaintext")
@@ -125,9 +192,11 @@ class ResourceType(Enum):
     LIP = ResourceTuple(3004, "lip", "Lips", "lips")
     TPC = ResourceTuple(3007, "tpc", "Textures", "binary")
     MDX = ResourceTuple(3008, "mdx", "Models", "binary")
+    CWA = ResourceTuple(3027, "cwa", "Crowd Attributes", "gff")
+    BIP = ResourceTuple(3028, "bip", "Lips", "lips")
     ERF = ResourceTuple(9997, "erf", "Modules", "binary")
-    RES = ResourceTuple(69420, "res", "Save Data", "gff")
-    SAV = ResourceTuple(42069, "sav", "Save Data", "erf")
+    BIF = ResourceTuple(9998, "bif", "Archives", "binary")
+    KEY = ResourceTuple(9999, "key", "Chitin", "binary")
 
     # For Toolset Use:
     MP3 = ResourceTuple(25014, "mp3", "Audio", "binary")
@@ -158,6 +227,7 @@ class ResourceType(Enum):
     TwoDA_JSON = ResourceTuple(50024, "2da.json", "2D Arrays", "plaintext")
     TLK_JSON = ResourceTuple(50025, "tlk.json", "Talk Tables", "plaintext")
     LIP_JSON = ResourceTuple(50026, "lip.json", "Lips", "plaintext")
+    RES_XML = ResourceTuple(50027, "res.xml", "Save Data", "plaintext")
 
     def __new__(cls, *args, **kwargs):
         obj: ResourceType = object.__new__(cls)  # type: ignore[annotation-unchecked]
@@ -177,7 +247,7 @@ class ResourceType(Enum):
         is_invalid: bool = False,  # noqa: FBT001, FBT002
     ):
         self.type_id: int = type_id  # type: ignore[misc]
-        self.extension: CaseInsensitiveWrappedStr = CaseInsensitiveWrappedStr.cast(extension.strip().lower())
+        self.extension: str = extension.strip().lower()
         self.category: str = category
         self.contents: str = contents
         self.is_invalid: bool = is_invalid
@@ -193,7 +263,7 @@ class ResourceType(Enum):
 
         return (  # For dynamically constructed invalid members
             f"{self.__class__.__name__}.from_invalid("
-            f"{f'type_id={self.type_id}, ' if self.type_id else ''}"
+            f"{f'type_id={self.type_id}, '}"
             f"{f'extension={self.extension}, ' if self.extension else ''}"
             f"{f'category={self.category}, ' if self.category else ''}"
             f"contents={self.contents})"
@@ -201,9 +271,9 @@ class ResourceType(Enum):
 
     def __str__(
         self,
-    ):
+    ) -> str:
         """Returns the extension in all caps."""
-        return self.extension.upper()
+        return str(self.extension.upper())
 
     def __int__(
         self,
@@ -220,11 +290,12 @@ class ResourceType(Enum):
         A ResourceType and a str are equal if the extension is case-sensitively equal to the string.
         A ResourceType and a int are equal if the type_id is equal to the integer.
         """
+        # sourcery skip: assign-if-exp, merge-duplicate-blocks, reintroduce-else, remove-redundant-if, split-or-ifs
         if isinstance(other, ResourceType):
             if self.is_invalid or other.is_invalid:
                 return self.is_invalid and other.is_invalid
             return self.name == other.name
-        if isinstance(other, (str, WrappedStr)):
+        if isinstance(other, str):
             return self.extension == other.lower()
         if isinstance(other, int):
             return self.type_id == other
@@ -312,12 +383,18 @@ class ResourceType(Enum):
         return self
 
 R = TypeVar("R")
+
+
 def autoclose(func: Callable[..., R]) -> Callable[..., R]:
-    def _autoclose(self: ResourceReader | ResourceWriter, auto_close: bool = True) -> R:
+    def _autoclose(self: ResourceReader | ResourceWriter, auto_close: bool = True) -> R:  # noqa: FBT002, FBT001
         try:
             resource: R = func(self, auto_close)
         except (OSError, ParseError, ValueError, IndexError, StopIteration) as e:
-            msg = "Tried to load an unsupported or corrupted file."
+            with Path("errorlog.txt").open("a", encoding="utf-8") as file:
+                lines = format_exception_with_variables(e)
+                file.writelines(lines)
+                file.write("\n----------------------\n")
+                msg = "Tried to load an unsupported or corrupted file."
             raise ValueError(msg) from e
         finally:
             if auto_close:

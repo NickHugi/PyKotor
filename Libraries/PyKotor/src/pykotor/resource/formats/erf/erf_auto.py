@@ -4,10 +4,11 @@ from typing import TYPE_CHECKING
 
 from pykotor.resource.formats.erf.erf_data import ERFType
 from pykotor.resource.formats.erf.io_erf import ERFBinaryReader, ERFBinaryWriter
-from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES, ResourceType
+from pykotor.resource.type import ResourceType
 
 if TYPE_CHECKING:
     from pykotor.resource.formats.erf.erf_data import ERF
+    from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES
 
 
 def read_erf(
@@ -61,7 +62,7 @@ def write_erf(
     if hasattr(file_format, "name") and file_format.name in ERFType.__members__:
         ERFBinaryWriter(erf, target).write()
     else:
-        msg = f"Unsupported format specified: '{file_format!r}'; expected one of {', '.join(member.name for member in ERFType)}."
+        msg = f"Unsupported format specified: '{file_format!r}'; expected one of {', '.join(f'ResourceType.{member.name}' for member in ERFType)}."
         raise ValueError(msg)
 
 

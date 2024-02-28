@@ -2,12 +2,16 @@ from __future__ import annotations
 
 import math
 import struct
-from copy import deepcopy
-from typing import NamedTuple
 
-from pykotor.common.geometry import Vector3, Vector4
+from copy import deepcopy
+from typing import TYPE_CHECKING, NamedTuple
+
+from pykotor.common.geometry import Vector4
 from pykotor.common.misc import Game
 from pykotor.common.stream import BinaryReader
+
+if TYPE_CHECKING:
+    from pykotor.common.geometry import Vector3
 
 _GEOM_ROOT_FP0_K1 = 4273776
 _GEOM_ROOT_FP1_K1 = 4216096
@@ -143,6 +147,7 @@ def list_lightmaps(
         - The unique lightmap names are returned as a list.
     """
     lightmaps: list[str] = []
+    lightmaps_caseset: set[str] = set()
 
     with BinaryReader.from_bytes(data, 12) as reader:
         reader.seek(168)
@@ -163,8 +168,10 @@ def list_lightmaps(
             if node_id & 32:
                 reader.seek(node_offset + 200)
                 lightmap = reader.read_string(32)
-                if lightmap and lightmap != "NULL" and lightmap.lower() not in lightmaps:
-                    lightmaps.append(lightmap.lower())
+                lowercase_lightmap = lightmap.lower()
+                if lightmap and lightmap != "NULL" and lowercase_lightmap not in lightmaps_caseset:
+                    lightmaps.append(lightmap)
+                    lightmaps_caseset.add(lowercase_lightmap)
 
     return lightmaps
 
@@ -689,7 +696,7 @@ def convert_to_k2(
     for offset_location, offset_value in offsets.items():
         data[offset_location : offset_location + 4] = struct.pack("I", offset_value)
 
-    return bytes(0 for i in range(4)) + struct.pack("I", len(data)) + mdx_size + data
+    return bytes(0 for _ in range(4)) + struct.pack("I", len(data)) + mdx_size + data
 
 
 def transform(
@@ -874,13 +881,13 @@ def flip(
             if node_id & 32:
                 reader.seek(node_offset + 80)
                 fp = reader.read_uint32()
-                tsl = fp not in (
+                tsl = fp not in {
                     _MESH_FP0_K1,
                     _SKIN_FP0_K1,
                     _DANGLY_FP0_K2,
                     _AABB_FP0_K1,
                     _SABER_FP0_K1,
-                )
+                }
 
                 reader.seek(node_offset + 80 + 8)
                 faces_offset = reader.read_uint32()

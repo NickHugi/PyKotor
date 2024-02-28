@@ -147,7 +147,7 @@
     <addaction name="actionFind"/>
     <addaction name="actionInsert"/>
    </widget>
-   <widget class="QMenu" name="menuFIle">
+   <widget class="QMenu" name="menuFile">
     <property name="title">
      <string>File</string>
     </property>
@@ -166,7 +166,7 @@
     </property>
     <addaction name="actionAuto_detect_slower"/>
    </widget>
-   <addaction name="menuFIle"/>
+   <addaction name="menuFile"/>
    <addaction name="menuView"/>
    <addaction name="menuLanguage"/>
   </widget>
