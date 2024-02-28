@@ -200,6 +200,7 @@ class GITInstance(ABC):
             z (float): The z-coordinate of the position.
         """
         self.position: Vector3 = Vector3(x, y, z)
+        self.resref: ResRef = ResRef.from_blank()
 
     @abstractmethod
     def identifier(self) -> ResourceIdentifier | None:
@@ -247,7 +248,6 @@ class GITInstance(ABC):
         self,
     ) -> float | None:
         """Returns the yaw rotation (in radians) of the instance if the instance supports it, otherwise returns None."""
-        ...
 
 
 class GITCamera(GITInstance):
@@ -312,10 +312,18 @@ class GITCamera(GITInstance):
     ) -> str:
         return "Camera"
 
-    def yaw(
+    def yaw(  # TODO: Why is this not y...?
         self,
     ) -> float | None:
         return math.pi - self.orientation.to_euler().x
+
+    def pitch(self) -> float:
+        # Following the convention used in rotate method, where pitch affects rotation.z
+        return math.pi - self.orientation.to_euler().z
+
+    def roll(self) -> float:
+        # Following the convention used in rotate method, where roll affects rotation.y
+        return math.pi - self.orientation.to_euler().y
 
 
 class GITCreature(GITInstance):
