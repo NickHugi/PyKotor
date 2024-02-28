@@ -63,3 +63,4 @@ Tools/HolocronToolset/src/toolset/kits/*/*
 .venv_wsl
 .secrets
 tests/results/
+Tools/HolocronToolset/src/toolset/profiler_output.pstat
