@@ -568,9 +568,9 @@ class DLGEditor(Editor):
     def copyPath(self, node: DLGNode):
         path: str = ""
         if isinstance(node, DLGEntry):
-            path = f"EntryList\\{node.list_index}"
+            path = f"EntryList\\{node._list_index}"
         elif isinstance(node, DLGReply):
-            path = f"ReplyList\\{node.list_index}"
+            path = f"ReplyList\\{node._list_index}"
         if path:
             pyperclip.copy(path)
 
@@ -692,12 +692,12 @@ class DLGEditor(Editor):
         else:
             prefix = "N"
 
-        list_prefix: str = f"{prefix}{node.list_index}: "
+        list_prefix: str = f"{prefix}{node._list_index}: "
         if not node._links:
             item.setText(f"{list_prefix}[End Dialog]")
         else:
-            text: str = self._installation.string(node.text, "(continue)")
-            if node.list_index != -1:
+            text: str = self._installation.string(node.Text, "(continue)")
+            if node._list_index != -1:
                 text = f"{list_prefix}{text}"
             item.setText(text)
 
@@ -936,7 +936,7 @@ class DLGEditor(Editor):
             item: QStandardItem | None = self.model.itemFromIndex(selection.indexes()[0])
             link: DLGLink = item.data(_LINK_ROLE)
             isCopy: bool = item.data(_COPY_ROLE)
-            node: DLGNode | None = link.node
+            node: DLGNode | None = link._node
 
             if isinstance(node, DLGEntry):
                 self.ui.speakerEdit.setEnabled(True)
@@ -1001,14 +1001,16 @@ class DLGEditor(Editor):
             self.ui.cameraIdSpin.setValue(node.CameraID if node.CameraID is not None else -1)
             self.ui.cameraAnimSpin.setValue(node.CameraAnimation if node.CameraAnimation is not None else -1)
             self.ui.cameraAngleSelect.setCurrentIndex(node.CameraAnimation if node.CameraAnimation is not None else 0)
-            self.ui.cameraEffectSelect.setCurrentIndex(node.CamVidEffect+1 if node.CamVidEffect is not None else 0)
+            self.ui.cameraEffectSelect.setCurrentIndex(node.CamVidEffect + 1 if node.CamVidEffect is not None else 0)
 
             self.ui.nodeUnskippableCheckbox.setChecked(node.NodeUnskippable)
+            assert isinstance(node.NodeID, int)
             self.ui.nodeIdSpin.setValue(node.NodeID)
             self.ui.alienRaceNodeSpin.setValue(node.AlienRaceNode)
             self.ui.postProcSpin.setValue(node.PostProcNode)
             delay = -1 if node.Delay == 4294967295 else node.Delay
             self.ui.delaySpin.setValue(delay)
+            assert isinstance(link.Logic, int)
             self.ui.logicSpin.setValue(link.Logic)
             self.ui.waitFlagSpin.setValue(node.WaitFlags)
             self.ui.fadeTypeSpin.setValue(node.FadeType)

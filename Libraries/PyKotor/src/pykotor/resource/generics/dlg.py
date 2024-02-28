@@ -1,15 +1,18 @@
 from __future__ import annotations
 
 from enum import IntEnum
-from typing import ClassVar
+from typing import TYPE_CHECKING, ClassVar
 
 from pykotor.common.geometry import Vector3
 from pykotor.common.language import Gender, Language, LocalizedString
 from pykotor.common.misc import Color, Game, ResRef
-from pykotor.resource.formats.gff import GFF, GFFContent, GFFList, GFFStruct, read_gff, write_gff
+from pykotor.resource.formats.gff import GFF, GFFContent, GFFList, read_gff, write_gff
 from pykotor.resource.formats.gff.gff_auto import bytes_gff
-from pykotor.resource.formats.gff.gff_data import GFFFieldType, GFFStructInterface, _GFFField
-from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES, ResourceType
+from pykotor.resource.formats.gff.gff_data import GFFFieldType, GFFStructInterface, _GFFField  # noqa: PLC2701
+from pykotor.resource.type import ResourceType
+
+if TYPE_CHECKING:
+    from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES
 
 
 class DLGComputerType(IntEnum):
@@ -22,10 +25,11 @@ class DLGConversationType(IntEnum):
     Computer = 1
     Other = 2
 
+
 class DLG(GFFStructInterface):
     """Stores dialog data.
 
-    Attributes
+    Attributes:
     ----------
         word_count: "NumWords" field.
         on_abort: "EndConverAbort" field.
@@ -87,13 +91,26 @@ class DLG(GFFStructInterface):
         self,
         blank_node: bool = True,
     ):
+        """Initializes a DLGNode object.
+
+        Args:
+        ----
+            blank_node (bool): Whether to add a blank starter node
+
+        Processing Logic:
+        ----------------
+            1. Initializes starter and stunt lists
+            2. Sets default values for node properties
+            3. Adds a blank starter node if blank_node is True
+            4. Sets deprecated properties for backwards compatibility.
+        """
         super().__init__()
 
         self.StartingList: GFFList  # list[DLGLink]
         self.StuntList: GFFList  # list[DLGStunt]
 
-        # Add bare minimum to be openable by DLGEditor
         if blank_node:
+            # Add bare minimum to be openable by DLGEditor
             starter = DLGLink()
             entry = DLGEntry()
             entry.Text.set_data(Language.ENGLISH, Gender.MALE, "")
@@ -142,9 +159,10 @@ class DLG(GFFStructInterface):
 
     def print_tree(
         self,
-    ) -> None:
+    ):
         """Prints all the nodes (one per line) in the dialog tree with appropriate indentation."""
-        self._print_tree(self.StartingList, 0, [], [])
+        StartingList: list[DLGLink] = self.StartingList  # type: ignore[reportAssignmentType, assignment]
+        self._print_tree(StartingList, 0, [], [])
 
     def _print_tree(
         self,
@@ -208,10 +226,10 @@ class DLG(GFFStructInterface):
         """
         entries = []
 
-        links = self.StartingList if links is None else links
+        starting_links: list[DLGLink] = self.StartingList if links is None else links
         seen_entries = [] if seen_entries is None else seen_entries
 
-        for link in links:
+        for link in starting_links:
             entry = link._node
             if entry in seen_entries:
                 continue
@@ -258,19 +276,20 @@ class DLG(GFFStructInterface):
             - Mark node as seen and recurse on its links
             - Extend replies with results of recursion.
         """
-        replies = []
+        replies: list[DLGReply] = []
 
-        links = [_ for link in self.StartingList for _ in link._node._links] if links is None else links
+        starting_links: list[DLGLink] = [_ for link in self.StartingList for _ in link._node._links] if links is None else links
         seen_replies = [] if seen_replies is None else seen_replies
 
-        for link in links:
+        for link in starting_links:
             reply = link._node
-            if reply not in seen_replies:
-                replies.append(reply)
-                seen_replies.append(reply)
-                for entry_link in reply._links:
-                    entry = entry_link._node
-                    replies.extend(self._all_replies(entry._links, seen_replies))
+            if reply in seen_replies:
+                continue
+            replies.append(reply)
+            seen_replies.append(reply)
+            for entry_link in reply._links:
+                entry = entry_link._node
+                replies.extend(self._all_replies(entry._links, seen_replies))
 
         return replies
 
@@ -399,6 +418,8 @@ class DLGNode(GFFStructInterface):
         super().__init__()
         self._links: list[DLGLink]
         object.__setattr__(self, "_links", [])
+        self._list_index: int
+        object.__setattr__(self, "_list_index", -1)
 
         self.Comment: str = ""
 
@@ -460,7 +481,6 @@ class DLGNode(GFFStructInterface):
         self,
     ):
         return str(self.Text.get(Language.ENGLISH, Gender.MALE))
-
 
 
 class DLGReply(DLGNode):
@@ -573,11 +593,11 @@ class DLGLink(GFFStructInterface):
 
 class DLGStunt(GFFStructInterface):
     """
-    Attributes
+    Attributes:
     ----------
     participant: "Participant" field.
     stunt_model: "StuntModel" field.
-    """  # noqa: D205, D212
+    """  # noqa: D212, D415
 
     FIELDS: ClassVar[dict[str, _GFFField]] = {
         "Participant": _GFFField(GFFFieldType.String, ""),
@@ -640,6 +660,7 @@ def construct_dlg(
     for i, entry_struct in enumerate(entry_list):
         entry = all_entries[i]
         entry._update_from_struct(entry_struct)
+        entry._list_index = i
         anim_list = entry_struct.acquire("AnimList", GFFList())
         for i, anim_struct in enumerate(anim_list):
             entry.AnimList._structs[i] = DLGAnimation.from_struct(anim_struct)
@@ -698,6 +719,7 @@ def dismantle_dlg(
     gff = GFF(GFFContent.DLG)
     gff.root = dlg
     return gff
+
 
 def read_dlg(
     source: SOURCE_TYPES,

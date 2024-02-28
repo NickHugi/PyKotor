@@ -147,7 +147,7 @@ class GFF:
         content: GFFContent = GFFContent.GFF,
     ):
         self.content: GFFContent = content
-        self.root: GFFStruct = GFFStruct(-1)
+        self.root: GFFStruct = GFFStruct(struct_id=-1)
 
     def print_tree(
         self,
@@ -326,7 +326,7 @@ class GFFStruct:
         other_gff_struct: GFFStruct,
         log_func: Callable = print,
         current_path: PureWindowsPath | os.PathLike | str | None = None,
-        ignore_default_changes=False,
+        ignore_default_changes: bool = False,
     ) -> bool:
         """Recursively compares two GFFStructs.
 
@@ -1192,6 +1192,7 @@ class GFFStruct:
             raise TypeError(msg)
         return copy(self._fields[label].value())
 
+
 class GFFStructInterface(GFFStruct):
 
     @classmethod
@@ -1218,6 +1219,7 @@ class GFFStructInterface(GFFStruct):
     def from_struct(cls, struct: GFFStruct):
         new_instance = cls.__new__(cls)
         super(cls, new_instance).__init__()
+        new_instance.struct_id = struct.struct_id
         new_instance._update_from_struct(struct)
         return new_instance
 
