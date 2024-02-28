@@ -26,8 +26,6 @@ from utility.error_handling import format_exception_with_variables
 from utility.system.path import Path, PurePath
 
 if TYPE_CHECKING:
-    import os
-
     from pykotor.common.language import LocalizedString
     from pykotor.extract.talktable import StringResult
     from pykotor.resource.formats.gff import GFF
