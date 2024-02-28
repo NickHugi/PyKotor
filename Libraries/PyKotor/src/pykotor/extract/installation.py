@@ -1,7 +1,9 @@
 from __future__ import annotations
 
+import os
 import re
 
+from concurrent.futures import ThreadPoolExecutor
 from copy import copy
 from enum import Enum, IntEnum
 from typing import TYPE_CHECKING, Any, Callable, ClassVar, Generator, NamedTuple
@@ -24,8 +26,6 @@ from utility.error_handling import format_exception_with_variables
 from utility.system.path import Path, PurePath
 
 if TYPE_CHECKING:
-    import os
-
     from pykotor.common.language import LocalizedString
     from pykotor.extract.talktable import StringResult
     from pykotor.resource.formats.gff import GFF
@@ -174,46 +174,49 @@ class Installation:  # noqa: PLR0904
         self._streamsounds: list[FileResource] = []
         self._streamwaves: list[FileResource] = []
         self._game: Game | None = None
-        self.load()
 
-    def load(self):
+        self._initialized = False
+        self.reload_all()
+
+    def reload_all(self):
         self.load_chitin()
         self.load_lips()
         self.load_modules()
         self.load_override()
-        if self.game() == Game.K1:
+        if self.game().is_k1():
             self.load_rims()
         self.load_streammusic()
         self.load_streamsounds()
-        if self.game() == Game.K1:
+        if self.game().is_k1():
             self.load_streamwaves()
-        elif self.game() == Game.K2:
+        elif self.game().is_k2():
             self.load_streamvoice()
         self.load_textures()
-        print(f"Finished loading the installation from {self._path!s}")
+        print(f"Finished loading the installation from {self._path}")
+        self._initialized = True
 
     def __iter__(self) -> Generator[FileResource, Any, None]:
-        def generator() -> Generator[FileResource, Any, None]:
-            yield from self._chitin
-            yield from self._streammusic
-            yield from self._streamsounds
-            yield from self._streamwaves
-            for resources in self._override.values():
-                yield from resources
-            for resources in self._modules.values():
-                yield from resources
-            for resources in self._lips.values():
-                yield from resources
-            for resources in self._texturepacks.values():
-                yield from resources
-            for resources in self._rims.values():
-                yield from resources
-            tlk_path = self._path / "dialog.tlk"
-            yield FileResource("dialog", ResourceType.TLK, tlk_path.stat().st_size, 0, tlk_path)
-            female_tlk_path = self._path / "dialogf.tlk"
-            if female_tlk_path.safe_isfile():
-                yield FileResource("dialogf", ResourceType.TLK, female_tlk_path.stat().st_size, 0, female_tlk_path)
-        return generator()
+        if not self._initialized:
+            self.reload_all()
+        yield from self._chitin
+        yield from self._streammusic
+        yield from self._streamsounds
+        yield from self._streamwaves
+        for resources in self._override.values():
+            yield from resources
+        for resources in self._modules.values():
+            yield from resources
+        for resources in self._lips.values():
+            yield from resources
+        for resources in self._texturepacks.values():
+            yield from resources
+        for resources in self._rims.values():
+            yield from resources
+        tlk_path = self._path / "dialog.tlk"
+        yield FileResource("dialog", ResourceType.TLK, tlk_path.stat().st_size, 0, tlk_path)
+        female_tlk_path = self._path / "dialogf.tlk"
+        if female_tlk_path.safe_isfile():
+            yield FileResource("dialogf", ResourceType.TLK, female_tlk_path.stat().st_size, 0, female_tlk_path)
 
     # region Get Paths
     def path(self) -> CaseAwarePath:
@@ -355,6 +358,35 @@ class Installation:  # noqa: PLR0904
     # endregion
 
     # region Load Data
+    def load_single_resource(
+        self,
+        filepath: Path | CaseAwarePath,
+        capsule_check: Callable | None = None,
+    ) -> tuple[Path, list[FileResource] | FileResource | None]:
+        # sourcery skip: extract-method
+        try:
+            if capsule_check:
+                if not capsule_check(filepath):
+                    return filepath, None
+                return filepath, list(Capsule(filepath))
+
+            resname: str
+            restype: ResourceType
+            resname, restype = ResourceIdentifier.from_path(filepath)
+            if restype.is_invalid:
+                return filepath, None
+
+            return filepath, FileResource(
+                resname,
+                restype,
+                filepath.stat().st_size,
+                offset=0,
+                filepath=filepath,
+            )
+        except Exception as e:  # noqa: BLE001
+            with Path("errorlog.txt").open("a", encoding="utf-8") as f:
+                f.write(format_exception_with_variables(e))
+        return filepath, None
 
     def load_resources(
         self,
@@ -379,42 +411,45 @@ class Installation:  # noqa: PLR0904
         """
         resources: dict[str, list[FileResource]] | list[FileResource] = {} if capsule_check else []
 
-        r_path = Path(str(path))
+        r_path = Path(path)
         if not r_path.safe_isdir():
             print(f"The '{r_path.name}' folder did not exist when loading the installation at '{self._path}', skipping...")
             return resources
 
-        print(f"Loading '{r_path.name}' folder from installation...")
-        files_iter: Generator[Path, None, None] = (
-            r_path.safe_rglob("*")
+        files_iter = (
+            path.safe_rglob("*")
             if recurse
-            else r_path.safe_iterdir()
+            else path.safe_iterdir()
         )
-        file: Path | None = None
-        for file in files_iter:
-            try:
-                if capsule_check:
-                    if not capsule_check(file):
-                        continue
-                    resources[file.name] = list(Capsule(file))  # type: ignore[assignment, call-overload]
 
-                else:
-                    resname, restype = ResourceIdentifier.from_path(file)
-                    if restype.is_invalid:
-                        continue
+        # Determine number of workers dynamically based on available CPUs
+        num_cores = os.cpu_count() or 1  # Ensure at least one core is returned
+        max_workers = num_cores * 4  # Use 4x the number of cores
+        with ThreadPoolExecutor(max_workers=max_workers) as executor:
+            # Submit tasks to the executor
+            futures = [
+                executor.submit(self.load_single_resource, file, capsule_check)
+                for file in files_iter
+            ]
 
-                    resource = FileResource(
-                        resname,
-                        restype,
-                        file.stat().st_size,
-                        0,
-                        file,
-                    )
-                    resources.append(resource)  # type: ignore[assignment, call-overload, union-attr]
-            except Exception as e:  # pylint: disable=W0718  # noqa: BLE001
-                with Path("errorlog.txt").open("a") as f:
-                    f.write(format_exception_with_variables(e))
-        if not resources or file is None:
+            # Gather resources and omit `None` values (errors or skips)
+            if isinstance(resources, dict):
+                for f in futures:
+                    filepath, resource = f.result()
+                    if resource is None:
+                        continue
+                    if not isinstance(resource, list):
+                        continue
+                    resources[filepath.name] = resource
+            else:
+                for f in futures:
+                    filepath, resource = f.result()
+                    if resource is None:
+                        continue
+                    if isinstance(resource, FileResource):
+                        resources.append(resource)
+
+        if not resources:
             print(f"No resources found at '{r_path}' when loading the installation, skipping...")
         return resources
 
@@ -447,6 +482,8 @@ class Installation:  # noqa: PLR0904
         ----
             module: The filename of the module, including the extension.
         """
+        if not self._modules or module not in self._modules:
+            self.load_modules()
         self._modules[module] = list(Capsule(self.module_path() / module))
 
     def load_rims(
@@ -535,21 +572,29 @@ class Installation:  # noqa: PLR0904
         else:
             override_list[override_list.index(resource)] = resource
 
-    def load_streammusic(self):
+    def load_streammusic(
+        self,
+    ):
         """Reloads the list of resources in the streammusic folder linked to the Installation."""
         self._streammusic = self.load_resources(self.streammusic_path())  # type: ignore[assignment]
 
-    def load_streamsounds(self):
+    def load_streamsounds(
+        self,
+    ):
         """Reloads the list of resources in the streamsounds folder linked to the Installation."""
         self._streamsounds = self.load_resources(self.streamsounds_path())  # type: ignore[assignment]
 
-    def load_streamwaves(self):
+    def load_streamwaves(
+        self,
+    ):
         """Reloads the list of resources in the streamwaves folder linked to the Installation."""
-        self._streamwaves = self.load_resources(self._find_resource_folderpath("streamwaves"), recurse=True)  # type: ignore[assignment]
+        self._streamwaves = self.load_resources(self._find_resource_folderpath(("streamwaves", "streamvoice")), recurse=True)  # type: ignore[assignment]
 
-    def load_streamvoice(self):
+    def load_streamvoice(
+        self,
+    ):
         """Reloads the list of resources in the streamvoice folder linked to the Installation."""
-        self._streamwaves = self.load_resources(self._find_resource_folderpath("streamvoice"), recurse=True)  # type: ignore[assignment]
+        self._streamwaves = self.load_resources(self._find_resource_folderpath(("streamvoice", "streamwaves")), recurse=True)  # type: ignore[assignment]
 
     # endregion
 
@@ -1062,9 +1107,9 @@ class Installation:  # noqa: PLR0904
             for resource_list in resource_dict.values():
                 check_list(resource_list)
 
-        def check_list(values: list[FileResource]):
+        def check_list(resource_list: list[FileResource]):
             # Index resources by identifier
-            resource_dict: dict[ResourceIdentifier, FileResource] = {resource.identifier(): resource for resource in values}
+            resource_dict: dict[ResourceIdentifier, FileResource] = {resource.identifier(): resource for resource in resource_list}
             for query in queries:
                 resource: FileResource | None = resource_dict.get(query)
                 if resource is not None:
@@ -1089,8 +1134,8 @@ class Installation:  # noqa: PLR0904
                     )
                     locations[resource.identifier()].append(location)
 
-        def check_folders(values: list[Path]):
-            for folder in values:
+        def check_folders(resource_folders: list[Path]):
+            for folder in resource_folders:
                 for file in folder.safe_rglob("*"):
                     if not file.safe_isfile():
                         continue
@@ -1252,16 +1297,16 @@ class Installation:  # noqa: PLR0904
                         tpc.txi = get_txi_from_list(case_resname, capsule.resources())
                     textures[case_resname] = tpc
 
-        def check_folders(values: list[Path]):
+        def check_folders(resource_folders: list[Path]):
             queried_texture_files: set[Path] = set()
-            for folder in values:
+            for folder in resource_folders:
                 queried_texture_files.update(
                     file
-                    for file in folder.rglob("*")
+                    for file in folder.safe_rglob("*")
                     if (
                         file.stem.casefold() in case_resnames
                         and ResourceType.from_extension(file.suffix) in texture_types
-                        and file.is_file()
+                        and file.safe_isfile()
                     )
                 )
             for texture_file in queried_texture_files:
@@ -1378,9 +1423,9 @@ class Installation:  # noqa: PLR0904
                     sound_data: bytes | None = None
                     for sformat in sound_formats:
                         sound_data = capsule.resource(case_resname, sformat)
-                        if sound_data is not None:
+                        if sound_data is not None:  # Break after first match found. Note that this means any other formats in this list will be ignored
                             break
-                    if sound_data is None:
+                    if sound_data is None:  # No sound data found in this list.
                         continue
                     case_resnames.remove(case_resname)
                     sounds[case_resname] = deobfuscate_audio(sound_data) if sound_data else b""
@@ -1390,11 +1435,11 @@ class Installation:  # noqa: PLR0904
             for folder in values:
                 queried_sound_files.update(
                     file
-                    for file in folder.rglob("*")
+                    for file in folder.safe_rglob("*")
                     if (
                         file.stem.casefold() in case_resnames
                         and ResourceType.from_extension(file.suffix) in sound_formats
-                        and file.is_file()
+                        and file.safe_isfile()
                     )
                 )
             for sound_file in queried_sound_files:

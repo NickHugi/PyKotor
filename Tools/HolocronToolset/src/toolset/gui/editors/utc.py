@@ -4,7 +4,7 @@ from copy import deepcopy
 from typing import TYPE_CHECKING
 
 from PyQt5 import QtCore
-from PyQt5.QtCore import QSettings
+from PyQt5.QtCore import QObject, QSettings
 from PyQt5.QtGui import QImage, QPixmap, QTransform
 from PyQt5.QtWidgets import QListWidgetItem, QMessageBox
 
@@ -41,7 +41,13 @@ if TYPE_CHECKING:
 
 
 class UTCEditor(Editor):
-    def __init__(self, parent: QWidget | None, installation: HTInstallation | None = None, *, mainwindow=None):
+    def __init__(
+        self,
+        parent: QWidget | None,
+        installation: HTInstallation | None = None,
+        *,
+        mainwindow: QWidget | QObject | None = None,
+    ):
         """Initializes the Creature Editor window.
 
         Args:
