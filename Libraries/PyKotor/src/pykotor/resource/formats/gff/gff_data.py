@@ -1305,6 +1305,7 @@ class GFFStructInterface(GFFStruct):
             msg = f"Unsupported field type for {attr}"
             raise TypeError(msg)
 
+
 class GFFList:
     """A collection of GFFStructs."""
 
