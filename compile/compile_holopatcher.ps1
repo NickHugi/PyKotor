@@ -19,8 +19,9 @@ if ($this_noprompt) {
     . $rootPath/install_python_venv.ps1 -venv_name $venv_name
 }
 
+$src_path = (Resolve-Path -LiteralPath "$rootPath/Tools/HoloPatcher/src")
 $current_working_dir = (Get-Location).Path
-Set-Location -LiteralPath (Resolve-Path -LiteralPath "$rootPath/Tools/HoloPatcher/src").Path
+Set-Location -LiteralPath $src_path
 
 # Determine the final executable path
 $finalExecutablePath = $null
@@ -58,6 +59,9 @@ $pyInstallerArgs = @{
         'arabic-reshaper',
         'PyQt5-Qt5',
         'PyQt5-sip',
+        'sip',
+        'PyQt5-tools'
+        'qt5-applications'
         'watchdog',
         'Markdown',
         'pyperclip',
