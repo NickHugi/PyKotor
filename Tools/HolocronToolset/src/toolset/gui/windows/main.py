@@ -871,9 +871,9 @@ class ToolWindow(QMainWindow):
 
                 print("Loading installation resources into UI...")
                 self.ui.coreWidget.setResources(self.active.chitin_resources())
-                self.refreshModuleList(reload=True)  # TODO: Modules/Override/Textures are loaded twice when HT is first initialized.
-                self.refreshOverrideList(reload=True)
-                self.refreshTexturePackList(reload=True)
+                self.refreshModuleList(reload=False)  # TODO: Modules/Override/Textures are loaded twice when HT is first initialized.
+                self.refreshOverrideList(reload=False)
+                self.refreshTexturePackList(reload=False)
                 self.ui.texturesWidget.setInstallation(self.active)
 
                 print("Updating menus...")
