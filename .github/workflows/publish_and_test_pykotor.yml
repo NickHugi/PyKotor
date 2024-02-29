@@ -327,8 +327,12 @@ jobs:
           Remove-Item -Path $artifact_reports_dir -Recurse -Force -ErrorAction SilentlyContinue
 
           git fetch origin $branchName
+          if (git log "${{ github.sha }}"..origin/$branchName --oneline) {
+              Write-Host "Newer commits are present on the remote branch, cannot continue"
+              exit 1
+          }
           git add $testsResultsPath --force
-          git commit --amend --no-edit
+          git commit -m "Add test results"
           git push --force-with-lease origin HEAD:${{ github.ref_name }}
           $commitSHA = git rev-parse HEAD
 
