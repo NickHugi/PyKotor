@@ -639,20 +639,20 @@ class ToolWindow(QMainWindow):
             toolsetDownloadLink = data["toolsetDownloadLink"]
 
             QMessageBox(
-                icon=QMessageBox.Information,
-                title="New version is available.",
-                text=f"New version available for <a href='{toolsetDownloadLink}'>download</a>.",
-                buttons=QMessageBox.Ok,
-                parent=self,
+                QMessageBox.Information,
+                "New version is available.",
+                f"New version available for <a href='{toolsetDownloadLink}'>download</a>.",
+                QMessageBox.Ok,
+                self,
             ).exec_()
         elif silent:
             return
         QMessageBox(
-            icon=QMessageBox.Information,
-            title="Version is up to date",
-            text=f"You are running the latest version ({'.'.join(str(i) for i in PROGRAM_VERSION)}).",
-            buttons=QMessageBox.Ok,
-            parent=self,
+            QMessageBox.Information,
+            "Version is up to date",
+            f"You are running the latest version ({'.'.join(str(i) for i in PROGRAM_VERSION)}).",
+            QMessageBox.Ok,
+            self,
         ).exec_()
 
     # endregion
