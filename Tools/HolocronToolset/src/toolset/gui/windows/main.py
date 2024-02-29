@@ -439,23 +439,23 @@ class ToolWindow(QMainWindow):
     def dropEvent(self, e: QtGui.QDropEvent | None):
         if e is None:
             return
-        if e.mimeData().hasUrls():
-            for url in e.mimeData().urls():
-                filepath = url.toLocalFile()
-                r_filepath = Path(filepath)
-                with r_filepath.open("rb") as file:
-                    resref, restype = ResourceIdentifier.from_path(filepath)
-                    data = file.read()
-                    openResourceEditor(r_filepath, resref, restype, data, self.active, self)
+        if not e.mimeData().hasUrls():
+            return
+        for url in e.mimeData().urls():
+            filepath: str = url.toLocalFile()
+            data = BinaryReader.load_file(filepath)
+            resref, restype = ResourceIdentifier.from_path(filepath)
+            openResourceEditor(filepath, resref, restype, data, self.active, self)
 
     def dragEnterEvent(self, e: QtGui.QDragEnterEvent | None):
         if e is None:
             return
-        if e.mimeData().hasUrls():
-            for url in e.mimeData().urls():
-                with suppress(Exception):
-                    _resref, _restype = ResourceIdentifier.from_path(url.toLocalFile()).validate()
-                    e.accept()
+        if not e.mimeData().hasUrls():
+            return
+        for url in e.mimeData().urls():
+            with suppress(Exception):
+                _resref, _restype = ResourceIdentifier.from_path(url.toLocalFile()).validate()
+                e.accept()
 
     # endregion
 
@@ -634,19 +634,39 @@ class ToolWindow(QMainWindow):
         decoded_content = base64.b64decode(base64_content)  # Correctly decoding the base64 content
         data = json.loads(decoded_content.decode("utf-8"))
 
-        toolsetLatestVersion = tuple(map(int, str(data["toolsetLatestVersion"]).split(".")))
-        if toolsetLatestVersion > PROGRAM_VERSION:
-            toolsetDownloadLink = data["toolsetDownloadLink"]
+        if isinstance(PROGRAM_VERSION, tuple):
+            x = ""
+            for v in PROGRAM_VERSION:
+                if not x:
+                    x = str(v)
+                else:
+                    x += f".{v}"
+        else:
+            x = str(PROGRAM_VERSION)
 
-            QMessageBox(
-                QMessageBox.Information,
-                "New version is available.",
-                f"New version available for <a href='{toolsetDownloadLink}'>download</a>.",
-                QMessageBox.Ok,
-                self,
-            ).exec_()
-        elif silent:
+        version_check: bool | None = None
+        with suppress(Exception):
+            from distutils.version import LooseVersion  # noqa: PLC0415
+            version_check = LooseVersion(data["toolsetLatestVersion"]) > LooseVersion(x)
+        if version_check is None:
+            with suppress(Exception):
+                from packaging import version  # noqa: PLC0415
+                version_check = version.parse(data["toolsetLatestVersion"]) > version.parse(x)
+        if not version_check:
             return
+
+        toolsetDownloadLink = data["toolsetDownloadLink"]
+        QMessageBox(
+            QMessageBox.Information,
+            "New version is available.",
+            f"New version available for <a href='{toolsetDownloadLink}'>download</a>.",
+            QMessageBox.Ok,
+            self,
+        ).exec_()
+
+        if silent:
+            return
+
         QMessageBox(
             QMessageBox.Information,
             "Version is up to date",
