@@ -79,7 +79,7 @@ OUTPUT_LOG: Path
 LOGGING_ENABLED: bool
 processed_files: set[Path] = set()
 
-gff_types: list[str] = [x.value.lower().strip() for x in GFFContent]
+gff_types: list[str] = list(GFFContent.get_extensions())
 fieldtype_to_fieldname: dict[GFFFieldType, str] = {
     GFFFieldType.UInt8: "Byte",
     GFFFieldType.Int8: "Char",

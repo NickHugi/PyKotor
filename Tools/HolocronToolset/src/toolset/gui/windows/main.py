@@ -550,7 +550,7 @@ class ToolWindow(QMainWindow):
             restype=ResourceType.JRL,
             data=res.data,
             installation=self.active,
-            parentwindow=self,
+            parentWindow=self,
         )
 
     def openFileSearchDialog(self):
@@ -565,6 +565,7 @@ class ToolWindow(QMainWindow):
         searchDialog = FileSearcher(self, self.installations)
         searchDialog.setModal(False)  # Make the dialog non-modal
         searchDialog.show()  # Show the dialog without blocking
+        addWindow(searchDialog)
         searchDialog.fileResults.connect(self.handleSearchCompleted)
 
     def handleSearchCompleted(
@@ -575,6 +576,7 @@ class ToolWindow(QMainWindow):
         resultsDialog = FileResults(self, results_list, searchedInstallation)
         resultsDialog.setModal(False)  # Make the dialog non-modal
         resultsDialog.show()  # Show the dialog without blocking
+        addWindow(resultsDialog)
         resultsDialog.selectionSignal.connect(self.handleResultsSelection)
 
     def handleResultsSelection(

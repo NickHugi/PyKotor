@@ -150,7 +150,7 @@ class FileResults(QDialog):
     def __init__(
         self,
         parent: QWidget,
-        results: list[FileResource],
+        results: list[FileResource] | set[FileResource],
         installation: HTInstallation,
     ):
         """Initialize the search results dialog.
@@ -238,5 +238,5 @@ class FileResults(QDialog):
             restype=resource.restype(),
             data=resource.data(),
             installation=self.installation,
-            parentwindow=self.window().parent(),
+            parentWindow=self.window().parent(),
         )
