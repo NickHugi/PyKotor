@@ -15,12 +15,17 @@ if TYPE_CHECKING:
 
 
 class AsyncLoader(QDialog):
+    optionalFinishHook = QtCore.pyqtSignal(object)
+    optionalErrorHook = QtCore.pyqtSignal(object)
+
     def __init__(
         self,
         parent: QWidget,
         title: str,
         task: Callable,
         errorTitle: str | None = None,
+        *,
+        startImmediately: bool = True
     ):
         """Initializes a progress dialog.
 
@@ -67,6 +72,10 @@ class AsyncLoader(QDialog):
         self._worker = AsyncWorker(self, task)
         self._worker.successful.connect(self._onSuccessful)
         self._worker.failed.connect(self._onFailed)
+        if startImmediately:
+            self.startWorker()
+
+    def startWorker(self):
         self._worker.start()
 
     def closeEvent(self, e: QCloseEvent):
@@ -83,10 +92,12 @@ class AsyncLoader(QDialog):
 
     def _onSuccessful(self, result: Any):
         self.value = result
+        self.optionalFinishHook.emit(result)
         self.accept()
 
     def _onFailed(self, error: Exception):
         self.error = error
+        self.optionalErrorHook.emit(error)
         self.reject()
 
         with Path("errorlog.txt").open("a", encoding="utf-8") as file:
