@@ -245,7 +245,7 @@ no-sections = false
 required-imports = ["from __future__ import annotations"]
 
 [tool.ruff.format]
-indent-style = "spaces"
+indent-style = "space"
 skip-magic-trailing-comma = true
 
 [tool.ruff.lint.pyupgrade]
