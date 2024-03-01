@@ -1,5 +1,6 @@
 {
 	"toolsetLatestVersion": "2.2.1b9",
+	"toolsetLatestNotes": "Fixed a GFFEditor save issue and added some support for nested ERFs",
 	"holopatcherLatestVersion": "1.5.2",
 	"toolsetDownloadLink": "https://mega.nz/folder/cGJDAKaa#WzsWF8LgUkM8U2FDEoeeRA",
 	"holopatcherDownloadLink": "https://deadlystream.com/files/file/2243-holopatcher",

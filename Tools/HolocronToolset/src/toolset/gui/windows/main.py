@@ -659,7 +659,7 @@ class ToolWindow(QMainWindow):
         QMessageBox(
             QMessageBox.Information,
             "New version is available.",
-            f"New version available for <a href='{toolsetDownloadLink}'>download</a>.",
+            f"New version available for <a href='{toolsetDownloadLink}'>download</a>.<br>{data['toolsetLatestNotes']}",
             QMessageBox.Ok,
             self,
         ).exec_()
