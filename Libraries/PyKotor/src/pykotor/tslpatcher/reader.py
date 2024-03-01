@@ -193,11 +193,11 @@ class ConfigReader:
         orphaned_sections: set[str] = all_sections_set - self.previously_parsed_sections
         if len(orphaned_sections):
             orphaned_sections_str: str = "\n".join(orphaned_sections)
-            self.log.add_warning(f"Orphaned ini sections found in changes ini:\n{orphaned_sections_str}")
+            self.log.add_note(f"There are some orphaned ini sections found in the changes:\n{orphaned_sections_str}")
 
         return self.config
 
-    def get_section_name(self, section_name: str):
+    def get_section_name(self, section_name: str) -> str | None:
         """Resolves the case-insensitive section name string if found and returns the case-sensitive correct section name."""
         s: str | None = next(
             (section for section in self.ini.sections() if section.lower() == section_name.lower()),

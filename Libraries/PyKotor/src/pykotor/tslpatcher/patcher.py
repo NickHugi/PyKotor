@@ -173,11 +173,11 @@ class ModInstaller:
         exists: bool
         if is_capsule_file(patch.destination):
             if not output_container_path.safe_isfile():
-                msg = f"The capsule '{patch.destination}' did not exist, or permission issues occurred, when attempting to {patch.action.lower().rstrip()} '{patch.sourcefile}'. Skipping file..."
+                msg = f"The capsule '{patch.destination}' did not exist, or permission issues occurred, when attempting to {patch.action.lower().rstrip()} '{patch.sourcefile}'. Skipping file..."  # noqa: E501
                 raise FileNotFoundError(msg)
             capsule = Capsule(output_container_path)
             create_backup(self.log, output_container_path, *self.backup(), PurePath(patch.destination).parent)
-            exists = capsule.exists(*ResourceIdentifier.from_path(patch.saveas))
+            exists = capsule.exists(*ResourceIdentifier.from_path(patch.saveas).unpack())
         else:
             create_backup(self.log, output_container_path.joinpath(patch.saveas), *self.backup(), patch.destination)
             exists = output_container_path.joinpath(patch.saveas).is_file()
@@ -193,7 +193,7 @@ class ModInstaller:
         self,
         patch: PatcherModifications,
         output_container_path: CaseAwarePath,
-        exists_at_output_location: bool | None = None,
+        exists_at_output_location: bool | None = None,  # noqa: FBT001
         capsule: Capsule | None = None,
     ) -> bytes | None:
         """Looks up the file/resource that is expected to be patched.
@@ -222,10 +222,21 @@ class ModInstaller:
                 return self.load_resource_file(self.mod_path / patch.sourcefolder / patch.sourcefile)
             if capsule is None:
                 return self.load_resource_file(output_container_path / patch.saveas)
-            return capsule.resource(*ResourceIdentifier.from_path(patch.saveas))
+            return capsule.resource(*ResourceIdentifier.from_path(patch.saveas).unpack())
         except OSError as e:
             self.log.add_error(f"Could not load source file to {patch.action.lower().strip()}:{os.linesep}{universal_simplify_exception(e)}")
             return None
+
+    def handle_modrim_shadow(self, patch: PatcherModifications):
+        """Check if a patch is being installed into a rim and overshadowed by a .mod."""
+        # uncomment and define the attrs if we decide this should be configurable.
+        #modrim_type: str = patch.modrim_type.lower().strip()
+        #if not modrim_type or modrim_type == ignore
+        #    return
+        modrim_path = self.game_path / patch.destination / patch.saveas
+        mod_path = modrim_path.with_name(Installation.replace_module_extensions(modrim_path.name) + ".mod")
+        if modrim_path != mod_path and mod_path.safe_isfile():
+            self.log.add_warning(f"This mod intends to install '{patch.saveas}' into '{patch.destination}'. Since {mod_path.name} exists, this instruction makes zero sense as this resource rim is overshadowed by the .mod anyway.")
 
     def handle_override_type(self, patch: PatcherModifications):
         """Handles the desired behavior set by the !OverrideType tslpatcher var for the specified patch.
@@ -259,14 +270,14 @@ class ModInstaller:
                     shutil.move(str(override_resource_path), str(renamed_file_path))
                 except Exception as e:  # pylint: disable=W0718  # noqa: BLE001
                     # Handle exceptions such as permission errors or file in use.
-                    self.log.add_error(f"Could not rename '{patch.saveas}' to '{renamed_file_path.name}' in the Override folder: {universal_simplify_exception(e)}")
+                    self.log.add_error(f"Could not rename '{patch.saveas}' to '{renamed_file_path.name}' in the Override folder: {universal_simplify_exception(e)}")  # noqa: E501
             elif override_type == OverrideType.WARN:
-                self.log.add_warning(f"A resource located at '{override_resource_path}' is shadowing this mod's changes in {patch.destination}!")
+                self.log.add_warning(f"A resource located at '{override_resource_path}' is shadowing this mod's changes in {patch.destination}!")  # noqa: E501
 
     def should_patch(
         self,
         patch: PatcherModifications,
-        exists: bool | None = False,  # noqa: FBT002
+        exists: bool | None = False,  # noqa: FBT002, FBT001
         capsule: Capsule | None = None,
     ) -> bool:
         """Log information about the patch, including source and destination.
@@ -296,13 +307,13 @@ class ModInstaller:
             - Checks if the target capsule exists if patching one
             - Logs the patching action
             - Returns True if the patch should be applied.
-        """
+        """  # noqa: E501
         local_folder: str = self.game_path.name if patch.destination.strip("\\").strip("/") == "." else patch.destination
         container_type: Literal["folder", "archive"] = "folder" if capsule is None else "archive"
 
         if patch.replace_file and exists:
             saveas_str: str = f"'{patch.saveas}' in" if patch.saveas != patch.sourcefile else "in"
-            self.log.add_note(f"{patch.action[:-1]}ing '{patch.sourcefile}' and replacing existing file {saveas_str} the '{local_folder}' {container_type}")
+            self.log.add_note(f"{patch.action[:-1]}ing '{patch.sourcefile}' and replacing existing file {saveas_str} the '{local_folder}' {container_type}")  # noqa: E501
             return True
 
         if not patch.skip_if_not_replace and not patch.replace_file and exists:
@@ -314,7 +325,7 @@ class ModInstaller:
             return False
 
         if capsule is not None and not capsule.path().safe_isfile():
-            self.log.add_error(f"The capsule '{patch.destination}' did not exist when attempting to {patch.action.lower().rstrip()} '{patch.sourcefile}'. Skipping file...")
+            self.log.add_error(f"The capsule '{patch.destination}' did not exist when attempting to {patch.action.lower().rstrip()} '{patch.sourcefile}'. Skipping file...")  # noqa: E501
             return False
 
         # In capsules, I haven't seen any TSLPatcher mods reach this point. TSLPatcher at least supports this portion for non-capsules.
@@ -380,6 +391,7 @@ class ModInstaller:
 
                 if capsule is not None:
                     self.handle_override_type(patch)
+                    self.handle_modrim_shadow(patch)
                     capsule.add(*ResourceIdentifier.from_path(patch.saveas), patched_data)
                 else:
                     # if self.game.is_ios():  # TODO:
@@ -394,23 +406,28 @@ class ModInstaller:
                     f.write(f"\n{detailed_error}")
 
         if config.save_processed_scripts == 0 and temp_script_folder is not None and temp_script_folder.safe_isdir():
-            self.log.add_note(f"Cleaning temporary script folder at '{temp_script_folder}' (hint: use 'SaveProcessedScripts=1' in [Settings] to keep these scripts)")
+            self.log.add_note(f"Cleaning temporary script folder at '{temp_script_folder}' (hint: use 'SaveProcessedScripts=1' in [Settings] to keep these scripts)")  # noqa: E501
             shutil.rmtree(temp_script_folder, ignore_errors=True)
 
         num_patches_completed: int = config.patch_count()
-        self.log.add_note(f"Successfully completed {num_patches_completed} {'patch' if num_patches_completed == 1 else 'total patches'}.")
+        self.log.add_note(f"Successfully completed {num_patches_completed} {'patch' if num_patches_completed == 1 else 'total patches'}.")  # noqa: E501
 
     def _prepare_compilelist(self, config: PatcherConfig) -> CaseAwarePath | None:
-        """tslpatchdata should be read-only, this allows us to replace memory tokens while ensuring include scripts work correctly."""  # noqa: D403
+        """tslpatchdata should be read-only, this allows us to replace memory tokens while ensuring include scripts work correctly."""  # noqa: D403, E501
         if not config.patches_nss:
             return None
 
         # Move nwscript.nss to Override if there are any nss patches to do
+        # This is required for any non-tslpatcher versions of nwnnsscomp.exe
+        # See Libraries\PyKotor\src\pykotor\resource\formats\ncs\compilers.py for more information.
         if (self.mod_path / "nwscript.nss").safe_isfile():
             file_install = InstallFile("nwscript.nss", replace_existing=True)
             if file_install not in config.install_list:
                 config.install_list.append(file_install)
 
+        # Copy all .nss files in the mod path, to a temp working directory
+        # where we can change all the stringref/2damemory tokens without overwriting the original files.
+        # First delete the temp folder if it already exists.
         temp_script_folder: CaseAwarePath = self.mod_path / "temp_nss_working_dir"
         if temp_script_folder.safe_isdir():
             shutil.rmtree(temp_script_folder, ignore_errors=True)
@@ -420,6 +437,7 @@ class ModInstaller:
                 continue
             shutil.copy(file, temp_script_folder)
 
+        # Store the location of the temp folder in each nss patch.
         for nss_patch in config.patches_nss:
             nss_patch.temp_script_folder = temp_script_folder
         return temp_script_folder
