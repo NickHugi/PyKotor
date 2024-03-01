@@ -646,13 +646,13 @@ class ToolWindow(QMainWindow):
 
         version_check: bool | None = None
         with suppress(Exception):
-            from distutils.version import LooseVersion  # noqa: PLC0415
-            version_check = LooseVersion(data["toolsetLatestVersion"]) > LooseVersion(x)
+            from packaging import version  # noqa: PLC0415
+            version_check = version.parse(data["toolsetLatestVersion"]) > version.parse(x)
         if version_check is None:
             with suppress(Exception):
-                from packaging import version  # noqa: PLC0415
-                version_check = version.parse(data["toolsetLatestVersion"]) > version.parse(x)
-        if not version_check:
+                from distutils.version import LooseVersion  # noqa: PLC0415
+                version_check = LooseVersion(data["toolsetLatestVersion"]) > LooseVersion(x)
+        if version_check is False:
             return
 
         toolsetDownloadLink = data["toolsetDownloadLink"]
