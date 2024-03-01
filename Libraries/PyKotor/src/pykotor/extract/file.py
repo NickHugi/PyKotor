@@ -250,6 +250,9 @@ class ResourceIdentifier:
         msg = f"Index out of range for ResourceIdentifier. key: {key}"
         raise IndexError(msg)
 
+    def unpack(self) -> tuple[str, ResourceType]:
+        return self.resname, self.restype
+
     def __eq__(self, other: object):
         # sourcery skip: assign-if-exp, reintroduce-else
         if isinstance(other, ResourceIdentifier):
