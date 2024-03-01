@@ -127,11 +127,17 @@ class FileResource:
         self,
     ):
         if self.inside_capsule:
-            from pykotor.extract.capsule import Capsule  # Prevent circular imports
+            from pykotor.extract.capsule import Capsule  # Prevent circular imports  # noqa: PLC0415
 
             capsule = Capsule(self._filepath)
             res: FileResource | None = capsule.info(self._resname, self._restype)
-            assert res is not None, f"Resource '{self._identifier}' not found in Capsule at '{self._filepath}'"
+            if res is None and self._identifier == self._filepath.name and self._filepath.safe_isfile():  # the capsule is the resource itself:
+                self._offset = 0
+                self._size = self._filepath.stat().st_size
+                return
+            if res is None:
+                msg = f"Resource '{self._identifier}' not found in Capsule at '{self._filepath}'"
+                raise FileNotFoundError(msg)
 
             self._offset = res.offset()
             self._size = res.size()

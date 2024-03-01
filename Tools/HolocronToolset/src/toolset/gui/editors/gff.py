@@ -33,26 +33,7 @@ _TEXT_SUBSTRING_ROLE = QtCore.Qt.UserRole + 2
 
 class GFFEditor(Editor):
     def __init__(self, parent: QWidget | None, installation: HTInstallation | None = None):
-        supported: list[ResourceType] = [
-            ResourceType.GFF,
-            ResourceType.UTC,
-            ResourceType.UTP,
-            ResourceType.UTD,
-            ResourceType.UTI,
-            ResourceType.UTM,
-            ResourceType.UTE,
-            ResourceType.UTT,
-            ResourceType.UTW,
-            ResourceType.UTS,
-            ResourceType.DLG,
-            ResourceType.GUI,
-            ResourceType.ARE,
-            ResourceType.IFO,
-            ResourceType.GIT,
-            ResourceType.JRL,
-            ResourceType.ITP,
-            ResourceType.RES,
-        ]
+        supported: list[ResourceType] = [restype for restype in ResourceType if restype.contents == "gff"]
         super().__init__(parent, "GFF Editor", "none", supported, supported, installation)
         self.resize(400, 250)
 
@@ -231,7 +212,7 @@ class GFFEditor(Editor):
             bytes: An empty byte array (superclass uses for mdx)
         """
         gff_content = self._gff_content or GFFContent.from_res(self._resname or "")
-        gff_type = self._restype or ResourceType.GFF
+        gff_type = ResourceType.GFF
 
         exts = gff_type.extension.split(".")
         test_content = gff_type.name.upper()
@@ -239,7 +220,8 @@ class GFFEditor(Editor):
             gff_type = ResourceType.GFF_XML
             test_content = exts[-2].upper()
         if test_content in GFFContent.__members__:
-            gff_content = GFFContent.__members__[test_content]
+            #gff_content = GFFContent.__members__[test_content]
+            gff_content = GFFContent.GFF
         if not gff_content:
             gff_content = GFFContent.GFF
 
