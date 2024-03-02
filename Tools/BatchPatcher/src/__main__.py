@@ -690,8 +690,8 @@ def patch_resource(resource: FileResource) -> GFF | TPC | None:
             )
             if (
                 alien_vo_count < 3
+                and alien_owner in {0, "0", None}
                 and alien_vo_count != -1
-                and alien_owner not in {0, "0"}
                 and SCRIPT_GLOBALS.set_unskippable
                 and gff.content == GFFContent.DLG
             ):
