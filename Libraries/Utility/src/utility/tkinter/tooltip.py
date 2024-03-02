@@ -5,8 +5,8 @@ import tkinter as tk
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from tkinter import ttk
     from collections.abc import Callable
+    from tkinter import ttk
 
 
 class ToolTip:

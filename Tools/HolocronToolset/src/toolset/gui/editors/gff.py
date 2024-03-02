@@ -34,33 +34,14 @@ _TEXT_SUBSTRING_ROLE = QtCore.Qt.UserRole + 2
 
 class GFFEditor(Editor):
     def __init__(self, parent: QWidget | None, installation: HTInstallation | None = None):
-        supported: list[ResourceType] = [
-            ResourceType.GFF,
-            ResourceType.UTC,
-            ResourceType.UTP,
-            ResourceType.UTD,
-            ResourceType.UTI,
-            ResourceType.UTM,
-            ResourceType.UTE,
-            ResourceType.UTT,
-            ResourceType.UTW,
-            ResourceType.UTS,
-            ResourceType.DLG,
-            ResourceType.GUI,
-            ResourceType.ARE,
-            ResourceType.IFO,
-            ResourceType.GIT,
-            ResourceType.JRL,
-            ResourceType.ITP,
-            ResourceType.RES,
-        ]
+        supported: list[ResourceType] = [restype for restype in ResourceType if restype.contents == "gff"]
         super().__init__(parent, "GFF Editor", "none", supported, supported, installation)
         self.resize(400, 250)
 
         self._talktable: TalkTable | None = installation.talktable() if installation else None
         self._gff_content: GFFContent | None = None
 
-        from toolset.uic.editors.gff import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
+        from toolset.uic.editors.gff import Ui_MainWindow  # pylint: disable=C0415
 
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
@@ -232,7 +213,7 @@ class GFFEditor(Editor):
             bytes: An empty byte array (superclass uses for mdx)
         """
         gff_content = self._gff_content or GFFContent.from_res(self._resname or "")
-        gff_type = self._restype or ResourceType.GFF
+        gff_type = ResourceType.GFF
 
         exts = gff_type.extension.split(".")
         test_content = gff_type.name.upper()
@@ -240,7 +221,8 @@ class GFFEditor(Editor):
             gff_type = ResourceType.GFF_XML
             test_content = exts[-2].upper()
         if test_content in GFFContent.__members__:
-            gff_content = GFFContent.__members__[test_content]
+            #gff_content = GFFContent.__members__[test_content]
+            gff_content = GFFContent.GFF
         if not gff_content:
             gff_content = GFFContent.GFF
 
@@ -332,7 +314,7 @@ class GFFEditor(Editor):
         """
         for i in range(item.rowCount()):
             child = item.child(i, 0)
-            assert child is not None, f"child cannot be None in {self!r}_build_list({item!r}, {gffList!r})"
+            assert child is not None, f"child cannot be None in {self!r}._build_list({item!r}, {gffList!r})"
             struct_id = child.data(_VALUE_NODE_ROLE)
             gffStruct: GFFStruct = gffList.add(struct_id)
             self._build_struct(child, gffStruct)
@@ -378,74 +360,76 @@ class GFFEditor(Editor):
             - Populate dropdowns and lists
             - Handle specialized types like vectors and localized strings.
         """
-        def set_widget(arg0, arg1, item):
+
+        def set_spinbox(minv: int, maxv: int, item: QListWidgetItem):
             self.ui.pages.setCurrentWidget(self.ui.intPage)
-            self.ui.intSpin.setRange(arg0, arg1)
+            self.ui.intSpin.setRange(minv, maxv)
             self.ui.intSpin.setValue(item.data(_VALUE_NODE_ROLE))
+
         if item.data(_TYPE_NODE_ROLE) is None:  # Field-less struct (root or in list)
             self.ui.fieldBox.setEnabled(False)
+            set_spinbox(-1, 0xFFFFFFFF, item)
+            return
 
-            set_widget(-1, 0xFFFFFFFF, item)
-        else:
-            self.ui.fieldBox.setEnabled(True)
-            self.ui.typeCombo.setCurrentText(item.data(_TYPE_NODE_ROLE).name)
-            self.ui.labelEdit.setText(item.data(_LABEL_NODE_ROLE))
+        self.ui.fieldBox.setEnabled(True)
+        self.ui.typeCombo.setCurrentText(item.data(_TYPE_NODE_ROLE).name)
+        self.ui.labelEdit.setText(item.data(_LABEL_NODE_ROLE))
 
-            if item.data(_TYPE_NODE_ROLE) == GFFFieldType.Int8:
-                set_widget(-0x80, 0x7F, item)
-            elif item.data(_TYPE_NODE_ROLE) == GFFFieldType.Int16:
-                set_widget(-0x8000, 0x7FFF, item)
-            elif item.data(_TYPE_NODE_ROLE) == GFFFieldType.Int32:
-                set_widget(-0x80000000, 0x7FFFFFFF, item)
-            elif item.data(_TYPE_NODE_ROLE) == GFFFieldType.Int64:
-                set_widget(-0x8000000000000000, 0x7FFFFFFFFFFFFFFF, item)
-            elif item.data(_TYPE_NODE_ROLE) == GFFFieldType.UInt8:
-                set_widget(0, 0xFF, item)
-            elif item.data(_TYPE_NODE_ROLE) == GFFFieldType.UInt16:
-                set_widget(0, 0xFFFF, item)
-            elif item.data(_TYPE_NODE_ROLE) == GFFFieldType.UInt32:
-                set_widget(0, 0xFFFFFFFF, item)
-            elif item.data(_TYPE_NODE_ROLE) == GFFFieldType.UInt64:
-                set_widget(0, 0xFFFFFFFFFFFFFFFF, item)
-            elif item.data(_TYPE_NODE_ROLE) in {GFFFieldType.Double, GFFFieldType.Single}:
-                self.ui.pages.setCurrentWidget(self.ui.floatPage)
-                self.ui.floatSpin.setValue(item.data(_VALUE_NODE_ROLE))
-            elif item.data(_TYPE_NODE_ROLE) == GFFFieldType.ResRef:
-                self.ui.pages.setCurrentWidget(self.ui.linePage)
-                self.ui.lineEdit.setText(str(item.data(_VALUE_NODE_ROLE)))
-            elif item.data(_TYPE_NODE_ROLE) == GFFFieldType.String:
-                self.ui.pages.setCurrentWidget(self.ui.textPage)
-                self.ui.textEdit.setPlainText(str(item.data(_VALUE_NODE_ROLE)))
-            elif item.data(_TYPE_NODE_ROLE) == GFFFieldType.Struct:
-                set_widget(-1, 0xFFFFFFFF, item)
-            elif item.data(_TYPE_NODE_ROLE) == GFFFieldType.List:
-                self.ui.pages.setCurrentWidget(self.ui.blankPage)
-            elif item.data(_TYPE_NODE_ROLE) == GFFFieldType.Vector3:
-                self.ui.pages.setCurrentWidget(self.ui.vector3Page)
-                vec3 = item.data(_VALUE_NODE_ROLE)
-                self.ui.xVec3Spin.setValue(vec3.x)
-                self.ui.yVec3Spin.setValue(vec3.y)
-                self.ui.zVec3Spin.setValue(vec3.z)
-            elif item.data(_TYPE_NODE_ROLE) == GFFFieldType.Vector4:
-                self.ui.pages.setCurrentWidget(self.ui.vector4Page)
-                vec4 = item.data(_VALUE_NODE_ROLE)
-                self.ui.xVec4Spin.setValue(vec4.x)
-                self.ui.yVec4Spin.setValue(vec4.y)
-                self.ui.zVec4Spin.setValue(vec4.z)
-                self.ui.wVec4Spin.setValue(vec4.w)
-            elif item.data(_TYPE_NODE_ROLE) == GFFFieldType.Binary:
-                self.ui.pages.setCurrentWidget(self.ui.blankPage)
-            elif item.data(_TYPE_NODE_ROLE) == GFFFieldType.LocalizedString:
-                locstring: LocalizedString = item.data(_VALUE_NODE_ROLE)
-                self.ui.pages.setCurrentWidget(self.ui.substringPage)
-                self.ui.substringEdit.setEnabled(False)
-                self.ui.stringrefSpin.setValue(locstring.stringref)
-                self.ui.substringList.clear()
-                for language, gender, text in locstring:
-                    item = QListWidgetItem(f"{language.name.title()}, {gender.name.title()}")
-                    item.setData(_TEXT_SUBSTRING_ROLE, text)
-                    item.setData(_ID_SUBSTRING_ROLE, LocalizedString.substring_id(language, gender))
-                    self.ui.substringList.addItem(item)
+        if item.data(_TYPE_NODE_ROLE) == GFFFieldType.Int8:
+            set_spinbox(-0x80, 0x7F, item)
+        elif item.data(_TYPE_NODE_ROLE) == GFFFieldType.Int16:
+            set_spinbox(-0x8000, 0x7FFF, item)
+        elif item.data(_TYPE_NODE_ROLE) == GFFFieldType.Int32:
+            set_spinbox(-0x80000000, 0x7FFFFFFF, item)
+        elif item.data(_TYPE_NODE_ROLE) == GFFFieldType.Int64:
+            set_spinbox(-0x8000000000000000, 0x7FFFFFFFFFFFFFFF, item)
+        elif item.data(_TYPE_NODE_ROLE) == GFFFieldType.UInt8:
+            set_spinbox(0, 0xFF, item)
+        elif item.data(_TYPE_NODE_ROLE) == GFFFieldType.UInt16:
+            set_spinbox(0, 0xFFFF, item)
+        elif item.data(_TYPE_NODE_ROLE) == GFFFieldType.UInt32:
+            set_spinbox(0, 0xFFFFFFFF, item)
+        elif item.data(_TYPE_NODE_ROLE) == GFFFieldType.UInt64:
+            set_spinbox(0, 0xFFFFFFFFFFFFFFFF, item)
+        elif item.data(_TYPE_NODE_ROLE) in {GFFFieldType.Double, GFFFieldType.Single}:
+            self.ui.pages.setCurrentWidget(self.ui.floatPage)
+            self.ui.floatSpin.setValue(item.data(_VALUE_NODE_ROLE))
+        elif item.data(_TYPE_NODE_ROLE) == GFFFieldType.ResRef:
+            self.ui.pages.setCurrentWidget(self.ui.linePage)
+            self.ui.lineEdit.setText(str(item.data(_VALUE_NODE_ROLE)))
+        elif item.data(_TYPE_NODE_ROLE) == GFFFieldType.String:
+            self.ui.pages.setCurrentWidget(self.ui.textPage)
+            self.ui.textEdit.setPlainText(str(item.data(_VALUE_NODE_ROLE)))
+        elif item.data(_TYPE_NODE_ROLE) == GFFFieldType.Struct:
+            set_spinbox(-1, 0xFFFFFFFF, item)
+        elif item.data(_TYPE_NODE_ROLE) == GFFFieldType.List:
+            self.ui.pages.setCurrentWidget(self.ui.blankPage)
+        elif item.data(_TYPE_NODE_ROLE) == GFFFieldType.Vector3:
+            self.ui.pages.setCurrentWidget(self.ui.vector3Page)
+            vec3 = item.data(_VALUE_NODE_ROLE)
+            self.ui.xVec3Spin.setValue(vec3.x)
+            self.ui.yVec3Spin.setValue(vec3.y)
+            self.ui.zVec3Spin.setValue(vec3.z)
+        elif item.data(_TYPE_NODE_ROLE) == GFFFieldType.Vector4:
+            self.ui.pages.setCurrentWidget(self.ui.vector4Page)
+            vec4 = item.data(_VALUE_NODE_ROLE)
+            self.ui.xVec4Spin.setValue(vec4.x)
+            self.ui.yVec4Spin.setValue(vec4.y)
+            self.ui.zVec4Spin.setValue(vec4.z)
+            self.ui.wVec4Spin.setValue(vec4.w)
+        elif item.data(_TYPE_NODE_ROLE) == GFFFieldType.Binary:
+            self.ui.pages.setCurrentWidget(self.ui.blankPage)
+        elif item.data(_TYPE_NODE_ROLE) == GFFFieldType.LocalizedString:
+            locstring: LocalizedString = item.data(_VALUE_NODE_ROLE)
+            self.ui.pages.setCurrentWidget(self.ui.substringPage)
+            self.ui.substringEdit.setEnabled(False)
+            self.ui.stringrefSpin.setValue(locstring.stringref)
+            self.ui.substringList.clear()
+            for language, gender, text in locstring:
+                item = QListWidgetItem(f"{language.name.title()}, {gender.name.title()}")
+                item.setData(_TEXT_SUBSTRING_ROLE, text)
+                item.setData(_ID_SUBSTRING_ROLE, LocalizedString.substring_id(language, gender))
+                self.ui.substringList.addItem(item)
 
     def updateData(self):
         """Updates data in the GFF tree model.
@@ -496,8 +480,6 @@ class GFFEditor(Editor):
             item.data(_VALUE_NODE_ROLE).stringref = self.ui.stringrefSpin.value()
         elif item.data(_TYPE_NODE_ROLE) == GFFFieldType.Struct or item.data(_TYPE_NODE_ROLE) is None:
             item.setData(self.ui.intSpin.value(), _VALUE_NODE_ROLE)
-
-        assert item is not None
         self.refreshItemText(item)
 
     def substringSelected(self):
@@ -553,6 +535,7 @@ class GFFEditor(Editor):
         for i in range(self.ui.substringList.count()):
             item = self.ui.substringList.item(i)
             if item.data(_ID_SUBSTRING_ROLE) == substringId:
+                print(f"Substring ID '{substringId}' already exists, exit")
                 return
 
         item = QListWidgetItem(f"{language.name.title()}, {gender.name.title()}")
@@ -603,6 +586,9 @@ class GFFEditor(Editor):
         - Sets the foreground color based on the item's type
         - Updates the item with the refreshed text.
         """
+        label: str
+        ftype: GFFFieldType
+        value: Any
         label, ftype, value = item.data(_LABEL_NODE_ROLE), item.data(_TYPE_NODE_ROLE), item.data(_VALUE_NODE_ROLE)
 
         if ftype is None and item.parent() is None:
@@ -724,6 +710,7 @@ class GFFEditor(Editor):
             item: The item to remove
         """
         item.parent().removeRow(item.row())
+        self.refreshItemText(item)
 
     def removeSelectedNodes(self):
         """Removes selected nodes from the tree.
@@ -763,19 +750,17 @@ class GFFEditor(Editor):
         proxyIndex = self.ui.treeView.indexAt(point)
         sourceIndex = self.proxyModel.mapToSource(proxyIndex)
         item = self.model.itemFromIndex(sourceIndex)
+        if item is None:
+            return
 
-        if item is not None:
-            menu = QMenu(self)
-
-            if item.data(_TYPE_NODE_ROLE) == GFFFieldType.List:
-                menu.addAction("Add Struct").triggered.connect(lambda: self.addNode(item))
-            elif item.data(_TYPE_NODE_ROLE) in {GFFFieldType.Struct, None}:
-                self._build_context_menu_gff_struct(menu, item)
-
-            if item.data(_TYPE_NODE_ROLE) is not None:
-                menu.addAction("Remove").triggered.connect(lambda: self.removeNode(item))
-
-            menu.popup(self.ui.treeView.viewport().mapToGlobal(point))
+        menu = QMenu(self)
+        nested_type = item.data(_TYPE_NODE_ROLE)
+        if nested_type == GFFFieldType.List:
+            menu.addAction("Add Struct").triggered.connect(lambda: self.addNode(item))
+        elif nested_type in {GFFFieldType.Struct, None}:
+            self._build_context_menu_gff_struct(menu, item)
+        menu.addAction("Remove").triggered.connect(lambda: self.removeNode(item))
+        menu.popup(self.ui.treeView.viewport().mapToGlobal(point))
 
     def _build_context_menu_gff_struct(self, menu: QMenu, item: QStandardItem):
         """Builds a context menu for a GFF node item.
@@ -833,8 +818,9 @@ class GFFEditor(Editor):
             - If a file is selected, load it as a TalkTable and assign to self._talktable.
         """
         filepath, filter = QFileDialog.getOpenFileName(self, "Select a TLK file", "", "TalkTable (*.tlk)")
-        if filepath:
-            self._talktable = TalkTable(filepath)
+        if not filepath:
+            return
+        self._talktable = TalkTable(filepath)
 
     def changeLocstringText(self):
         """Changes the text displayed based on the selected string reference.

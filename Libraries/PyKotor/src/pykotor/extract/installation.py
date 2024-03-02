@@ -2,12 +2,14 @@ from __future__ import annotations
 
 import os
 import re
-from concurrent.futures import ThreadPoolExecutor, as_completed
+
+from concurrent.futures import ThreadPoolExecutor
+from contextlib import suppress
 from copy import copy
 from enum import Enum, IntEnum
 from typing import TYPE_CHECKING, Any, Callable, ClassVar, Generator, NamedTuple
 
-from pykotor.common.language import Gender, Language
+from pykotor.common.language import Gender, Language, LocalizedString
 from pykotor.common.misc import CaseInsensitiveDict, Game
 from pykotor.common.stream import BinaryReader
 from pykotor.extract.capsule import Capsule
@@ -16,20 +18,17 @@ from pykotor.extract.file import FileResource, LocationResult, ResourceIdentifie
 from pykotor.extract.talktable import TalkTable
 from pykotor.resource.formats.erf.erf_data import ERFType
 from pykotor.resource.formats.gff import read_gff
+from pykotor.resource.formats.gff.gff_data import GFFContent, GFFFieldType, GFFList, GFFStruct
 from pykotor.resource.formats.tpc import TPC, read_tpc
 from pykotor.resource.type import ResourceType
 from pykotor.tools.misc import is_capsule_file, is_erf_file, is_mod_file, is_rim_file
 from pykotor.tools.path import CaseAwarePath
-from pykotor.tools.sound import deobfuscate_audio
 from utility.error_handling import format_exception_with_variables
 from utility.misc import remove_duplicates
 from utility.string import CaseInsensitiveWrappedStr
 from utility.system.path import Path, PurePath
 
 if TYPE_CHECKING:
-    import os
-
-    from pykotor.common.language import LocalizedString
     from pykotor.extract.talktable import StringResult
     from pykotor.resource.formats.gff import GFF
 
@@ -386,10 +385,9 @@ class Installation:  # noqa: PLR0904
                 filepath=filepath,
             )
         except Exception as e:  # noqa: BLE001
-            with Path("errorlog.txt").open("a") as f:
+            with Path("errorlog.txt").open("a", encoding="utf-8") as f:
                 f.write(format_exception_with_variables(e))
         return filepath, None
-
 
     def load_resources(
         self,
@@ -419,6 +417,7 @@ class Installation:  # noqa: PLR0904
             print(f"The '{r_path.name}' folder did not exist when loading the installation at '{self._path}', skipping...")
             return resources
 
+        print(f"Loading {r_path.relative_to(self._path)}...")
         files_iter = (
             path.safe_rglob("*")
             if recurse
@@ -1302,8 +1301,8 @@ class Installation:  # noqa: PLR0904
                     )
                     locations[resource.identifier()].append(location)
 
-        def check_folders(values: list[Path]):
-            for folder in values:
+        def check_folders(resource_folders: list[Path]):
+            for folder in resource_folders:
                 for file in folder.safe_rglob("*"):
                     if not file.safe_isfile():
                         continue
@@ -1513,6 +1512,146 @@ class Installation:  # noqa: PLR0904
             texture.txi = data.decode("ascii", errors="ignore")
 
         return textures
+
+    def find_tlk_entry_references(
+        self,
+        query_stringref: int,
+        order: list[SearchLocation] | None = None,
+        *,
+        capsules: list[Capsule] | None = None,
+        folders: list[Path] | None = None,
+    ) -> set[FileResource]:
+        """Finds all gffs that utilize this stringref in their localizedstring.
+
+        If no gffs could not be found the value will return None.
+
+        Args:
+        ----
+            stringref: A number representing the locstring to find.
+            order: The ordered list of locations to check.
+            capsules: An extra list of capsules to search in.
+            folders: An extra list of folders to search in.
+
+        Returns:
+        -------
+            A set of FileResources.
+        """
+        capsules = [] if capsules is None else capsules
+        folders = [] if folders is None else folders
+        if order is None:
+            order = [
+                SearchLocation.CUSTOM_FOLDERS,
+                SearchLocation.OVERRIDE,
+                SearchLocation.CUSTOM_MODULES,
+                SearchLocation.CHITIN,
+                SearchLocation.RIMS,
+                SearchLocation.MODULES,
+            ]
+
+        gffs: set[FileResource] = set()
+        gff_extensions: set[str] = GFFContent.get_extensions()
+
+        def recurse_gff_lists(gff_list: GFFList) -> bool:
+            for gff_struct in gff_list:
+                result = recurse_gff_structs(gff_struct)
+                if result:
+                    return True
+            return False
+
+        def recurse_gff_structs(gff_struct: GFFStruct) -> bool:
+            for _label, ftype, fval in gff_struct:
+                if ftype == GFFFieldType.List and isinstance(fval, GFFList):
+                    result = recurse_gff_lists(fval)
+                    if result:
+                        return True
+                if ftype == GFFFieldType.Struct and isinstance(fval, GFFStruct):
+                    result = recurse_gff_structs(fval)
+                    if result:
+                        return True
+                if ftype != GFFFieldType.LocalizedString or not isinstance(fval, LocalizedString):
+                    continue
+                if fval.stringref == query_stringref:
+                    return True
+            return False
+
+        def try_get_gff(gff_data: bytes) -> GFF | None:
+            with suppress(OSError, ValueError):
+                return read_gff(gff_data)
+            return None
+
+        def check_dict(resource_dict: dict[str, list[FileResource]]):
+            for resources in resource_dict.values():
+                check_list(resources)
+
+        def check_list(resource_list: list[FileResource]):
+            for resource in resource_list:
+                this_restype: ResourceType = resource.restype()
+                if this_restype.extension not in gff_extensions:
+                    continue
+                valid_gff: GFF | None = try_get_gff(resource.data())
+                if not valid_gff:
+                    continue
+                if not recurse_gff_structs(valid_gff.root):
+                    continue
+                gffs.add(resource)
+
+        def check_capsules(capsules_list: list[Capsule]):
+            for capsule in capsules_list:
+                for resource in capsule.resources():
+                    if resource.restype().extension not in gff_extensions:
+                        continue
+                    valid_gff: GFF | None = try_get_gff(resource.data())
+                    if not valid_gff:
+                        continue
+                    if not recurse_gff_structs(valid_gff.root):
+                        continue
+                    gffs.add(resource)
+
+        def check_folders(values: list[Path]):
+            gff_files: set[Path] = set()
+            for folder in values:  # Having two loops makes it easier to filter out irrelevant files when stepping through the 2nd
+                gff_files.update(
+                    file
+                    for file in folder.safe_rglob("*")
+                    if (
+                        file.suffix
+                        and file.suffix[1:].casefold() in gff_extensions
+                        and file.safe_isfile()
+                    )
+                )
+            for gff_file in gff_files:
+                gff_data = BinaryReader.load_file(gff_file)
+                valid_gff: GFF | None = None
+                restype: ResourceType | None = None
+                with suppress(ValueError, OSError):
+                    valid_gff = read_gff(gff_data)
+                    restype = ResourceType.from_extension(gff_file.suffix).validate()
+                if not valid_gff or not restype:
+                    continue
+                if not recurse_gff_structs(valid_gff.root):
+                    continue
+                fileres = FileResource(
+                    resname=gff_file.stem,
+                    restype=restype,
+                    size=gff_file.stat().st_size,
+                    filepath=gff_file
+                )
+                gffs.add(fileres)
+
+        function_map: dict[SearchLocation, Callable] = {
+            SearchLocation.OVERRIDE: lambda: check_dict(self._override),
+            SearchLocation.MODULES: lambda: check_dict(self._modules),
+            SearchLocation.RIMS: lambda: check_dict(self._rims),
+            SearchLocation.CHITIN: lambda: check_list(self._chitin),
+            SearchLocation.CUSTOM_MODULES: lambda: check_capsules(capsules),
+            SearchLocation.CUSTOM_FOLDERS: lambda: check_folders(folders),  # type: ignore[arg-type]
+        }
+
+        for item in order:
+            assert isinstance(item, SearchLocation)
+            function_map.get(item, lambda: None)()
+
+        return gffs
 
     def sound(
         self,

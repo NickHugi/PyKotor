@@ -25,6 +25,7 @@ from toolset.utils.window import openResourceEditor
 if TYPE_CHECKING:
     import os
 
+    from PyQt5.QtCore import QObject
     from PyQt5.QtWidgets import QWidget
 
     from pykotor.extract.file import ResourceResult
@@ -32,7 +33,13 @@ if TYPE_CHECKING:
 
 
 class UTPEditor(Editor):
-    def __init__(self, parent: QWidget | None, installation: HTInstallation | None = None, *, mainwindow=None):
+    def __init__(
+        self,
+        parent: QWidget | None,
+        installation: HTInstallation | None = None,
+        *,
+        mainwindow: QWidget | QObject | None = None,
+    ):
         """Initialize Placeable Editor.
 
         Args:
@@ -63,7 +70,8 @@ class UTPEditor(Editor):
         self.ui.setupUi(self)
         self._setupMenus()
         self._setupSignals()
-        self._setupInstallation(installation)
+        if installation is not None:  # will only be none in the unittests
+            self._setupInstallation(installation)
 
         self.update3dPreview()
         self.new()
