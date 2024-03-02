@@ -394,8 +394,8 @@ class ToolWindow(QMainWindow):
     def onOpenResources(
         self,
         resources: list[FileResource],
-        useSpecializedEditor: bool | None = None,  # noqa: FBT001
-        resourceWidget: ResourceList | TextureList | None = None 
+        useSpecializedEditor: bool | None = None,
+        resourceWidget: ResourceList | TextureList | None = None,
     ):
         for resource in resources:
             _filepath, _editor = openResourceEditor(
@@ -646,31 +646,30 @@ class ToolWindow(QMainWindow):
 
         version_check: bool | None = None
         with suppress(Exception):
-            from packaging import version  # noqa: PLC0415
+            from packaging import version
+
             version_check = version.parse(data["toolsetLatestVersion"]) > version.parse(x)
         if version_check is None:
             with suppress(Exception):
-                from distutils.version import LooseVersion  # noqa: PLC0415
+                from distutils.version import LooseVersion
+
                 version_check = LooseVersion(data["toolsetLatestVersion"]) > LooseVersion(x)
         if version_check is False:
-            return
+            if silent:
+                return
+            QMessageBox(
+                QMessageBox.Information,
+                "Version is up to date",
+                f"You are running the latest version ({'.'.join(str(i) for i in PROGRAM_VERSION)}).",
+                QMessageBox.Ok,
+                self,
+            ).exec_()
 
         toolsetDownloadLink = data["toolsetDownloadLink"]
         QMessageBox(
             QMessageBox.Information,
             "New version is available.",
             f"New version available for <a href='{toolsetDownloadLink}'>download</a>.<br>{data['toolsetLatestNotes']}",
-            QMessageBox.Ok,
-            self,
-        ).exec_()
-
-        if silent:
-            return
-
-        QMessageBox(
-            QMessageBox.Information,
-            "Version is up to date",
-            f"You are running the latest version ({'.'.join(str(i) for i in PROGRAM_VERSION)}).",
             QMessageBox.Ok,
             self,
         ).exec_()
