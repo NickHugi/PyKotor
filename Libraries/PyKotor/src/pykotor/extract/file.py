@@ -49,15 +49,15 @@ class FileResource:
         )
 
         self._sha256_hash: str = ""
-        self._internal = False
-        self._task_running = False
+        self._internal: bool = False
+        self._hash_task_running: bool = False
 
     def __setattr__(self, __name, __value):
         if (
             hasattr(self, __name)
-            and __name not in {"_internal", "_task_running"}
+            and __name not in {"_internal", "_hash_task_running"}
             and not self._internal
-            and not self._task_running
+            and not self._hash_task_running
         ):
             msg = f"Cannot modify immutable FileResource instance, attempted `setattr({self!r}, {__name!r}, {__value!r})`"
             raise RuntimeError(msg)
@@ -81,7 +81,7 @@ class FileResource:
     def __str__(self):
         return str(self._identifier)
 
-    def __eq__(  # Checks are ordered from fastest to slowest.
+    def __eq__(
         self,
         other: FileResource | ResourceIdentifier | bytes | bytearray | memoryview | object,
     ):
@@ -127,7 +127,7 @@ class FileResource:
         self,
     ):
         if self.inside_capsule:
-            from pykotor.extract.capsule import Capsule  # Prevent circular imports  # noqa: PLC0415
+            from pykotor.extract.capsule import Capsule  # Prevent circular imports
 
             capsule = Capsule(self._filepath)
             res: FileResource | None = capsule.info(self._resname, self._restype)
@@ -172,11 +172,12 @@ class FileResource:
                 file.seek(self._offset)
                 data: bytes = file.read_bytes(self._size)
 
-                if not self._task_running:
+                if not self._hash_task_running:
+
                     def background_task(res: FileResource, sentdata: bytes):
-                        res._task_running = True
-                        res._file_hash = generate_hash(sentdata)
-                        res._task_running = False
+                        res._hash_task_running = True  # noqa: SLF001
+                        res._file_hash = generate_hash(sentdata)  # noqa: SLF001
+                        res._hash_task_running = False  # noqa: SLF001
 
                     with ThreadPoolExecutor(thread_name_prefix="background_fileresource_sha1hash_calculation") as executor:
                         executor.submit(background_task, self, data)

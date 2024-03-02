@@ -36,6 +36,7 @@ if TYPE_CHECKING:
     from toolset.data.installation import HTInstallation
 
 
+# TODO: Creating a child editor from this class is not intuitive, document the requirements at some point.
 class Editor(QMainWindow):
     """Editor is a base class for all file-specific editors.
 
@@ -76,15 +77,15 @@ class Editor(QMainWindow):
         """
         super().__init__(parent)
         self._is_capsule_editor = False
+        self._installation: HTInstallation | None = installation
 
         self._filepath: Path | None = None
         self._resname: str | None = None
         self._restype: ResourceType | None = None
         self._revert: bytes | None = None
         self._readSupported: list[ResourceType] = readSupported
-        self._writeSupported: list[ResourceType] = writeSupported
+        self._writeSupported: list[ResourceType] = readSupported.copy() if readSupported is writeSupported else writeSupported
         self._global_settings: GlobalSettings = GlobalSettings()
-        self._installation: HTInstallation = installation
         self._mainwindow: QMainWindow | None = mainwindow
 
         self._editorTitle: str = title
@@ -154,7 +155,7 @@ class Editor(QMainWindow):
             - If encapsulated, constructs the title combining file path, installation, editor title
             - If not encapsulated, constructs title combining parent folder, file, installation, editor title.
         """
-        installationName = "No Installation" if self._installation is None else self._installation.name  # TODO: Fix it always saying 'no installation' in every case.
+        installationName = "No Installation" if self._installation is None else self._installation.name
 
         if self._filepath is None:
             self.setWindowTitle(self._editorTitle)
@@ -201,7 +202,7 @@ class Editor(QMainWindow):
                 self._filepath = Path(filepath_str)
         else:
             self._filepath = Path(filepath_str)
-            self._resname, self._restype = identifier
+            self._resname, self._restype = identifier.unpack()
         self.save()
 
         self.refreshWindowTitle()
@@ -297,27 +298,24 @@ class Editor(QMainWindow):
             - Checks for RIM saving disabled setting and shows dialog
             - Writes data to RIM file
             - Updates installation cache.
-        """
+        """  # sourcery skip: class-extract-method
+        assert self._filepath is not None, assert_with_variable_trace(self._filepath is not None)
+        assert self._resname is not None, assert_with_variable_trace(self._resname is not None)
+        assert self._restype is not None, assert_with_variable_trace(self._restype is not None)
+
         if self._global_settings.disableRIMSaving:
             dialog = RimSaveDialog(self)
             dialog.exec_()
             if dialog.option == RimSaveOption.MOD:
-                assert self._filepath is not None, assert_with_variable_trace(self._filepath is not None)
                 folderpath: Path = self._filepath.parent
                 filename: str = f"{Module.get_root(self._filepath)}.mod"
                 self._filepath = folderpath / filename
                 # Re-save with the updated filepath
                 self.save()
             elif dialog.option == RimSaveOption.Override:
-                assert self._resname is not None, assert_with_variable_trace(self._resname is not None)
-                assert self._restype is not None, assert_with_variable_trace(self._restype is not None)
                 self._filepath = self._installation.override_path() / f"{self._resname}.{self._restype.extension}"
                 self.save()
             return
-
-        assert self._filepath is not None, assert_with_variable_trace(self._filepath is not None)  # sourcery skip: class-extract-method
-        assert self._resname is not None, assert_with_variable_trace(self._resname is not None)
-        assert self._restype is not None, assert_with_variable_trace(self._restype is not None)
 
         rim: RIM = read_rim(self._filepath)
 
@@ -445,7 +443,7 @@ class Editor(QMainWindow):
 
         self.savedFile.emit(self._filepath, self._resname, self._restype, data)
 
-    def open(self):    # noqa: A003
+    def open(self):
         """Opens a file dialog to select a file to open.
 
         Processing Logic:
@@ -464,13 +462,13 @@ class Editor(QMainWindow):
         if is_capsule_file(r_filepath) and f"Load from module ({capsule_types})" in self._openFilter:
             dialog = LoadFromModuleDialog(Capsule(r_filepath), self._readSupported)
             if dialog.exec_():
-                self.load_module_from_dialog_info(dialog, r_filepath)
+                self._load_module_from_dialog_info(dialog, r_filepath)
         else:
             data: bytes = BinaryReader.load_file(r_filepath)
             res_ident: ResourceIdentifier = ResourceIdentifier.from_path(r_filepath).validate()
-            self.load(r_filepath, *res_ident, data)
+            self.load(r_filepath, *res_ident.unpack(), data)
 
-    def load_module_from_dialog_info(self, dialog: LoadFromModuleDialog, c_filepath: Path):
+    def _load_module_from_dialog_info(self, dialog: LoadFromModuleDialog, c_filepath: Path):
         resname: str | None = dialog.resname()
         restype: ResourceType | None = dialog.restype()
         data: bytes | None = dialog.data()
@@ -507,20 +505,22 @@ class Editor(QMainWindow):
         self._restype = restype
         self._revert = data
         for action in self.menuBar().actions()[0].menu().actions():
-            if action.text() == "Revert":
-                action.setEnabled(True)
+            if action.text() != "Revert":
+                continue
+            action.setEnabled(True)
         self.refreshWindowTitle()
         self.loadedFile.emit(str(self._filepath), self._resname, self._restype, data)
 
-    def exit(self):  # noqa: A003
+    def exit(self):
         self.close()
 
     def new(self):
         self._revert = None
         self._filepath = None
         for action in self.menuBar().actions()[0].menu().actions():
-            if action.text() == "Revert":
-                action.setEnabled(False)
+            if action.text() != "Revert":
+                continue
+            action.setEnabled(False)
         self.refreshWindowTitle()
         self.newFile.emit()
 
@@ -547,7 +547,7 @@ class Editor(QMainWindow):
             - Checks if locstring has stringref or not
             - Sets textbox text and style accordingly.
         """
-        setText: Callable[..., None] = textbox.setPlainText if isinstance(textbox, QPlainTextEdit) else textbox.setText
+        setText: Callable[[str], None] = textbox.setPlainText if isinstance(textbox, QPlainTextEdit) else textbox.setText
         className = "QLineEdit" if isinstance(textbox, QLineEdit) else "QPlainTextEdit"
 
         textbox.locstring = locstring

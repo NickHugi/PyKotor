@@ -675,24 +675,26 @@ def patch_resource(resource: FileResource) -> GFF | TPC | None:
         try:
             # log_output(f"Loading {resource.resname()}.{resource.restype().extension} from '{resource.filepath().name}'")
             gff = read_gff(resource.data())
-            made_change = False
+            alien_owner: str | None = None
             if gff.content == GFFContent.DLG and SCRIPT_GLOBALS.set_unskippable:
                 skippable = gff.root.acquire("Skippable", None)
                 if skippable not in {0, "0"}:
                     conversationtype = gff.root.acquire("ConversationType", None)
                     if conversationtype not in {"1", 1}:
-                        alien_owner: str | None = gff.root.acquire("AlienRaceOwner", None)  # TSL only
-                        if alien_owner in {"0", 0}:
-                            made_change = True
-                            gff.root.set_uint8("Skippable", 0)
-                            log_output(f"ConversationType: {conversationtype}", f"alien_owner: {alien_owner}", f"Conditions passed, setting dialog unskippable for {resource._path_ident_obj}")
+                        alien_owner = gff.root.acquire("AlienRaceOwner", None)  # TSL only
             result_made_change, alien_vo_count = patch_nested_gff(
                 gff.root,
                 gff.content,
                 gff,
                 resource._path_ident_obj  # noqa: SLF001
             )
-            if not made_change and alien_vo_count < 3 and alien_vo_count != -1 and SCRIPT_GLOBALS.set_unskippable and gff.content == GFFContent.DLG:
+            if (
+                alien_vo_count < 3
+                and alien_vo_count != -1
+                and not alien_owner
+                and SCRIPT_GLOBALS.set_unskippable
+                and gff.content == GFFContent.DLG
+            ):
                 skippable = gff.root.acquire("Skippable", None)
                 if skippable not in {0, "0"}:
                     conversationtype = gff.root.acquire("ConversationType", None)

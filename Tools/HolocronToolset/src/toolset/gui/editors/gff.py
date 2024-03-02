@@ -479,7 +479,6 @@ class GFFEditor(Editor):
             item.data(_VALUE_NODE_ROLE).stringref = self.ui.stringrefSpin.value()
         elif item.data(_TYPE_NODE_ROLE) == GFFFieldType.Struct or item.data(_TYPE_NODE_ROLE) is None:
             item.setData(self.ui.intSpin.value(), _VALUE_NODE_ROLE)
-
         self.refreshItemText(item)
 
     def substringSelected(self):
@@ -535,6 +534,7 @@ class GFFEditor(Editor):
         for i in range(self.ui.substringList.count()):
             item = self.ui.substringList.item(i)
             if item.data(_ID_SUBSTRING_ROLE) == substringId:
+                print(f"Substring ID '{substringId}' already exists, exit")
                 return
 
         item = QListWidgetItem(f"{language.name.title()}, {gender.name.title()}")
@@ -585,6 +585,9 @@ class GFFEditor(Editor):
         - Sets the foreground color based on the item's type
         - Updates the item with the refreshed text.
         """
+        label: str
+        ftype: GFFFieldType
+        value: Any
         label, ftype, value = item.data(_LABEL_NODE_ROLE), item.data(_TYPE_NODE_ROLE), item.data(_VALUE_NODE_ROLE)
 
         if ftype is None and item.parent() is None:
@@ -755,10 +758,7 @@ class GFFEditor(Editor):
             menu.addAction("Add Struct").triggered.connect(lambda: self.addNode(item))
         elif nested_type in {GFFFieldType.Struct, None}:
             self._build_context_menu_gff_struct(menu, item)
-
-        if nested_type is not None:
-            menu.addAction("Remove").triggered.connect(lambda: self.removeNode(item))
-
+        menu.addAction("Remove").triggered.connect(lambda: self.removeNode(item))
         menu.popup(self.ui.treeView.viewport().mapToGlobal(point))
 
     def _build_context_menu_gff_struct(self, menu: QMenu, item: QStandardItem):
