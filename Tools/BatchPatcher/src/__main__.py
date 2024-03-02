@@ -607,7 +607,7 @@ def recurse_through_list(
     return made_change, alien_vo_count
 
 
-def fix_encoding(text: str, encoding: str):
+def fix_encoding(text: str, encoding: str) -> str:
     return text.encode(encoding=encoding, errors="ignore").decode(encoding=encoding, errors="ignore").strip()
 
 
@@ -952,7 +952,7 @@ def determine_input_path(path: Path):
     return None
 
 
-def execute_patchloop_thread():
+def execute_patchloop_thread() -> str | None:
     try:
         SCRIPT_GLOBALS.install_running = True
         do_main_patchloop()
@@ -963,7 +963,7 @@ def execute_patchloop_thread():
         return messagebox.showerror("Error", f"An error occurred during patching\n{e!r}")
 
 
-def do_main_patchloop():
+def do_main_patchloop() -> str:
     # Validate args
     if not SCRIPT_GLOBALS.chosen_languages:
         if SCRIPT_GLOBALS.translate:
