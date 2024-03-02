@@ -62,7 +62,7 @@ from pykotor.resource.type import ResourceType
 from pykotor.tools.encoding import decode_bytes_with_fallbacks
 from pykotor.tools.misc import is_any_erf_type_file, is_capsule_file
 from pykotor.tools.path import CaseAwarePath, find_kotor_paths_from_default
-from pykotor.tslpatcher.logger import PatchLogger
+from pykotor.tslpatcher.logger import LogType, PatchLogger
 from translate.language_translator import TranslationOption, Translator
 from utility.system.path import Path, PurePath
 
@@ -1274,7 +1274,7 @@ class KOTORPatchingToolUI:
 
     def apply_translation_option(self, varname, value):
         setattr(SCRIPT_GLOBALS.pytranslator, varname, value)  # TODO: add all the variable names to __init__ of Translator class
-        self.write_log(f"Applied Options for {self.translation_option.get()}: {varname} = {value}")
+        self.write_log(PatchLog(f"Applied Options for {self.translation_option.get()}: {varname} = {value}", LogType.NOTE))
         cur_toption: TranslationOption = TranslationOption.__members__[self.translation_option.get()]
         msg: str = cur_toption.validate_args(SCRIPT_GLOBALS.pytranslator)
         if msg:
