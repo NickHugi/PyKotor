@@ -593,5 +593,5 @@ jobs:
               Write-Error "Newer commits are present on the remote branch, cannot update readme"
               exit 1
           }
-          git commit -m "Add test results/Update README.md with test results status badges."
+          git commit -m "Add test results/Update README.md status badges."
           git push --force-with-lease origin HEAD:${{ github.ref_name }}
