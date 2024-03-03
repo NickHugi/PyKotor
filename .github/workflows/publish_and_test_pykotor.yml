@@ -119,26 +119,15 @@ jobs:
       shell: pwsh
 
     - name: Set UPX directory path
+      if: runner.os != 'macOS'
       id: upx_dir
       run: |
         $upx_dir = "./upx-dir"
-        if ("${{ runner.os }}" -ne "macOS") {
-          $upx_dir = $([System.IO.Path]::GetFullPath('./upx-dir'))
-          Dir -Recurse $upx_dir | Get-Childitem
-          echo "UPX_DIR=$upx_dir" | Out-File -FilePath $env:GITHUB_ENV -Append
-          Write-Output "UPX_DIR set to '$upx_dir'"
-        }
+        $upx_dir = $([System.IO.Path]::GetFullPath('./upx-dir'))
+        Dir -Recurse $upx_dir | Get-Childitem
+        echo "UPX_DIR=$upx_dir" | Out-File -FilePath $env:GITHUB_ENV -Append
+        Write-Output "UPX_DIR set to '$upx_dir'"
       shell: pwsh
-
-    - name: Install HoloPatcher dependencies
-      run: |
-        ./install_python_venv.ps1 -noprompt -venv_name .venv_holopatcher_${{ matrix.os }}_${{ matrix.python-version }}_${{ matrix.architecture }}
-        pip install "pyinstaller==5.4" --prefer-binary
-        pip install "pyinstaller==5.6.1" --prefer-binary
-        pip install "pyinstaller==5.5" --prefer-binary
-        ./compile/deps_holopatcher.ps1 -noprompt -venv_name .venv_holopatcher_${{ matrix.os }}_${{ matrix.python-version }}_${{ matrix.architecture }}
-      shell: pwsh
-      continue-on-error: true
 
     - name: Install Visual Studio 2015 C++ Redistributable
       if: runner.os == 'Windows'
@@ -169,74 +158,250 @@ jobs:
         Start-Process $output -ArgumentList '/install', '/quiet', '/norestart' -Wait
         Remove-Item -Path $output
       shell: pwsh
+
+    - name: Install HoloPatcher dependencies
+      if: ${{ success() || failure() }}
+      id: holopatcher_deps
+      run: |  # known pyinstaller versions that work with upx compressions, not all are available on all python versions.
+        $ErrorActionPreference = 'Stop'
+        try {
+          ./install_python_venv.ps1 -noprompt -venv_name .venv_holopatcher_${{ matrix.os }}_${{ matrix.python-version }}_${{ matrix.architecture }}
+          if ("${{ matrix.python-version }}" -eq "3.12") {
+            pip install "pyinstaller==5.13" --prefer-binary
+          } elseif ("${{ matrix.python-version }}" -eq "3.11") {
+            pip install "pyinstaller==5.6.1" --prefer-binary
+            pip install "pyinstaller==5.5" --prefer-binary
+          } else {
+            pip install "pyinstaller==5.4" --prefer-binary
+          }
+          $output = ""
+          ./compile/deps_holopatcher.ps1 -noprompt -venv_name .venv_holopatcher_${{ matrix.os }}_${{ matrix.python-version }}_${{ matrix.architecture }} 2>&1 | ForEach-Object {
+            Write-Output $_ -ForegroundColor Gray
+            $output += $_
+          }
+          if ($output -match 'ERROR:') {
+            Write-Error "Error in output"
+            Add-Content -Path $env:GITHUB_OUTPUT -Value "success=false"
+            exit 1
+          } else {
+            Add-Content -Path $env:GITHUB_OUTPUT -Value "success=true"
+          }
+        } catch {
+          Add-Content -Path $env:GITHUB_OUTPUT -Value "success=false"
+          exit 1
+        }
+      shell: pwsh
     
     - name: Compile HoloPatcher
+      if: ${{ steps.holopatcher_deps.outputs.success }} == 'true'
       run: |
         $upxDir = $env:UPX_DIR
         Write-Host "Using UPX directory at '$upxDir'"
-        ./compile/compile_holopatcher.ps1 -noprompt -venv_name .venv_holopatcher_${{ matrix.os }}_${{ matrix.python-version }}_${{ matrix.architecture }} -upx_dir $upxDir
+        $output = ""
+        ./compile/compile_holopatcher.ps1 -noprompt -venv_name .venv_holopatcher_${{ matrix.os }}_${{ matrix.python-version }}_${{ matrix.architecture }} -upx_dir $upxDir 2>&1 | ForEach-Object {
+          Write-Output $_ -ForegroundColor Gray
+          $output += $_
+        }
+        $warningCount = ($output -match 'WARNING: Library not found: could not resolve').Count
+        if ($output -match 'ERROR:') {
+          Write-Error "Error in output"
+          Add-Content -Path $env:GITHUB_OUTPUT -Value "success=false"
+          exit 1
+        } elseif ($warningCount -ge 3) {
+          Write-Output "Many library not found warnings raised, pyinstaller was probably unsuccessful."
+          Add-Content -Path $env:GITHUB_OUTPUT -Value "success=false"
+          exit 1
+        } else {
+          Add-Content -Path $env:GITHUB_OUTPUT -Value "success=true"
+        }
       shell: pwsh
-      continue-on-error: true
 
     - name: Install Holocron Toolset dependencies
-      run: |
-        ./install_python_venv.ps1 -noprompt -venv_name .venv_toolset_${{ matrix.os }}_${{ matrix.python-version }}_${{ matrix.architecture }}
-        pip install "pyinstaller==5.4" --prefer-binary
-        ./compile/deps_toolset.ps1 -noprompt -venv_name .venv_toolset_${{ matrix.os }}_${{ matrix.python-version }}_${{ matrix.architecture }}
+      if: ${{ success() || failure() }}
+      id: toolset_deps
+      run: |  # known pyinstaller versions that work with upx compressions, not all are available on all python versions.
+        $ErrorActionPreference = 'Stop'
+        try {
+          ./install_python_venv.ps1 -noprompt -venv_name .venv_toolset_${{ matrix.os }}_${{ matrix.python-version }}_${{ matrix.architecture }}
+          if ("${{ matrix.python-version }}" -eq "3.12") {
+            pip install "pyinstaller==5.13" --prefer-binary
+          } elseif ("${{ matrix.python-version }}" -eq "3.11") {
+            pip install "pyinstaller==5.6.1" --prefer-binary
+            pip install "pyinstaller==5.5" --prefer-binary
+          } else {
+            pip install "pyinstaller==5.4" --prefer-binary
+          }
+          $output = ""
+          ./compile/deps_toolset.ps1 -noprompt -venv_name .venv_toolset_${{ matrix.os }}_${{ matrix.python-version }}_${{ matrix.architecture }} 2>&1 | ForEach-Object {
+            Write-Output $_ -ForegroundColor Gray
+            $output += $_
+          }
+          if ($output -match 'ERROR:') {
+            Write-Error "Error in output"
+            Add-Content -Path $env:GITHUB_OUTPUT -Value "success=false"
+            exit 1
+          } else {
+            Add-Content -Path $env:GITHUB_OUTPUT -Value "success=true"
+          }
+        } catch {
+          Add-Content -Path $env:GITHUB_OUTPUT -Value "success=false"
+          exit 1
+        }
       shell: pwsh
-      continue-on-error: true
 
     - name: Compile Holocron Toolset
+      if: ${{ steps.toolset_deps.outputs.success }} == 'true'
       run: |
         $upxDir = $env:UPX_DIR
         Write-Host "Using UPX directory at '$upxDir'"
-        ./compile/compile_toolset.ps1 -noprompt -venv_name .venv_toolset_${{ matrix.os }}_${{ matrix.python-version }}_${{ matrix.architecture }} -upx_dir $upxDir
+        $output = ""
+        ./compile/compile_toolset.ps1 -noprompt -venv_name .venv_toolset_${{ matrix.os }}_${{ matrix.python-version }}_${{ matrix.architecture }} -upx_dir $upxDir 2>&1 | ForEach-Object {
+          Write-Output $_ -ForegroundColor Gray
+          $output += $_
+        }
+        $warningCount = ($output -match 'WARNING: Library not found: could not resolve').Count
+        if ($output -match 'ERROR:') {
+          Write-Error "Error in output"
+          Add-Content -Path $env:GITHUB_OUTPUT -Value "success=false"
+          exit 1
+        } elseif ($warningCount -ge 3) {
+          Write-Output "Many library not found warnings raised, pyinstaller was probably unsuccessful."
+          Add-Content -Path $env:GITHUB_OUTPUT -Value "success=false"
+          exit 1
+        } else {
+          Add-Content -Path $env:GITHUB_OUTPUT -Value "success=true"
+        }
       shell: pwsh
-      continue-on-error: true
       env:
         UPX_DIR: ${{ env.UPX_DIR }}
 
     - name: Install BatchPatcher dependencies
-      run: |
-        ./install_python_venv.ps1 -noprompt -venv_name .venv_batchpatcher_${{ matrix.os }}_${{ matrix.python-version }}_${{ matrix.architecture }}
-        pip install "pyinstaller==5.4" --prefer-binary
-        ./compile/deps_batchpatcher.ps1 -noprompt -venv_name .venv_batchpatcher_${{ matrix.os }}_${{ matrix.python-version }}_${{ matrix.architecture }}
+      if: ${{ success() || failure() }}
+      id: batchpatcher_deps
+      run: |  # known pyinstaller versions that work with upx compressions, not all are available on all python versions.
+        $ErrorActionPreference = 'Stop'
+        try {
+          ./install_python_venv.ps1 -noprompt -venv_name .venv_batchpatcher_${{ matrix.os }}_${{ matrix.python-version }}_${{ matrix.architecture }}
+          if ("${{ matrix.python-version }}" -eq "3.12") {
+            pip install "pyinstaller==5.13" --prefer-binary
+          } elseif ("${{ matrix.python-version }}" -eq "3.11") {
+            pip install "pyinstaller==5.6.1" --prefer-binary
+            pip install "pyinstaller==5.5" --prefer-binary
+          } else {
+            pip install "pyinstaller==5.4" --prefer-binary
+          }
+          $output = ""
+          ./compile/deps_batchpatcher.ps1 -noprompt -venv_name .venv_batchpatcher_${{ matrix.os }}_${{ matrix.python-version }}_${{ matrix.architecture }} 2>&1 | ForEach-Object {
+            Write-Output $_ -ForegroundColor Gray
+            $output += $_
+          }
+          if ($output -match 'ERROR:') {
+            Write-Error "Error in output"
+            Add-Content -Path $env:GITHUB_OUTPUT -Value "success=false"
+            exit 1
+          } else {
+            Add-Content -Path $env:GITHUB_OUTPUT -Value "success=true"
+          }
+        } catch {
+          Add-Content -Path $env:GITHUB_OUTPUT -Value "success=false"
+          exit 1
+        }
       shell: pwsh
-      continue-on-error: true
 
     - name: Compile BatchPatcher
+      if: ${{ steps.batchpatcher_deps.outputs.success }} == 'true'
       run: |
         $upxDir = $env:UPX_DIR
         Write-Host "Using UPX directory at '$upxDir'"
-        ./compile/compile_batchpatcher.ps1 -noprompt -venv_name .venv_batchpatcher_${{ matrix.os }}_${{ matrix.python-version }}_${{ matrix.architecture }} -upx_dir $upxDir
+        $output = ""
+        ./compile/compile_batchpatcher.ps1 -noprompt -venv_name .venv_batchpatcher_${{ matrix.os }}_${{ matrix.python-version }}_${{ matrix.architecture }} -upx_dir $upxDir 2>&1 | ForEach-Object {
+          Write-Output $_ -ForegroundColor Gray
+          $output += $_
+        }
+        $warningCount = ($output -match 'WARNING: Library not found: could not resolve').Count
+        if ($output -match 'ERROR:') {
+          Write-Error "Error in output"
+          Add-Content -Path $env:GITHUB_OUTPUT -Value "success=false"
+          exit 1
+        } elseif ($warningCount -ge 3) {
+          Write-Output "Many library not found warnings raised, pyinstaller was probably unsuccessful."
+          Add-Content -Path $env:GITHUB_OUTPUT -Value "success=false"
+          exit 1
+        } else {
+          Add-Content -Path $env:GITHUB_OUTPUT -Value "success=true"
+        }
       shell: pwsh
-      continue-on-error: true
 
     - name: Compile KotorDiff
+      if: ${{ success() || failure() }}
       run: |
         $upxDir = $env:UPX_DIR
         Write-Host "Using UPX directory at '$upxDir'"
         ./install_python_venv.ps1 -noprompt -venv_name .venv_kotordiff_${{ matrix.os }}_${{ matrix.python-version }}_${{ matrix.architecture }}
-        pip install "pyinstaller==5.4" --prefer-binary
+        if ("${{ matrix.python-version }}" -eq "3.12") {
+          pip install "pyinstaller==5.13" --prefer-binary
+        } elseif ("${{ matrix.python-version }}" -eq "3.11") {
+          pip install "pyinstaller==5.6.1" --prefer-binary
+          pip install "pyinstaller==5.5" --prefer-binary
+        } else {
+          pip install "pyinstaller==5.4" --prefer-binary
+        }
         pip install -r Tools/KotorDiff/requirements.txt --prefer-binary
-        ./compile/compile_kotordiff.ps1 -noprompt -venv_name .venv_kotordiff_${{ matrix.os }}_${{ matrix.python-version }}_${{ matrix.architecture }} -upx_dir $upxDir
+        $output = ""
+        ./compile/compile_kotordiff.ps1 -noprompt -venv_name .venv_kotordiff_${{ matrix.os }}_${{ matrix.python-version }}_${{ matrix.architecture }} -upx_dir $upxDir 2>&1 | ForEach-Object {
+          Write-Output $_ -ForegroundColor Gray
+          $output += $_
+        }
+        $warningCount = ($output -match 'WARNING: Library not found: could not resolve').Count
+        if ($output -match 'ERROR:') {
+          Write-Error "Error in output"
+          Add-Content -Path $env:GITHUB_OUTPUT -Value "success=false"
+          exit 1
+        } elseif ($warningCount -ge 3) {
+          Write-Output "Many library not found warnings raised, pyinstaller was probably unsuccessful."
+          Add-Content -Path $env:GITHUB_OUTPUT -Value "success=false"
+          exit 1
+        } else {
+          Add-Content -Path $env:GITHUB_OUTPUT -Value "success=true"
+        }
       shell: pwsh
-      continue-on-error: true
 
     - name: Compile GUIDuplicator
+      if: ${{ success() || failure() }}
       run: |
         $upxDir = $env:UPX_DIR
         Write-Host "Using UPX directory at '$upxDir'"
         ./install_python_venv.ps1 -noprompt -venv_name .venv_guiduplicator_${{ matrix.os }}_${{ matrix.python-version }}_${{ matrix.architecture }}
-        pip install "pyinstaller==5.4" --prefer-binary
+        if ("${{ matrix.python-version }}" -eq "3.12") {
+          pip install "pyinstaller==5.13" --prefer-binary
+        } elseif ("${{ matrix.python-version }}" -eq "3.11") {
+          pip install "pyinstaller==5.6.1" --prefer-binary
+          pip install "pyinstaller==5.5" --prefer-binary
+        } else {
+          pip install "pyinstaller==5.4" --prefer-binary
+        }
         pip install -r Tools/GuiDuplicator/requirements.txt --prefer-binary
-        ./compile/compile_gui_duplicator.ps1 -noprompt -venv_name .venv_guiduplicator_${{ matrix.os }}_${{ matrix.python-version }}_${{ matrix.architecture }} -upx_dir $upxDir
+        ./compile/compile_gui_duplicator.ps1 -noprompt -venv_name .venv_guiduplicator_${{ matrix.os }}_${{ matrix.python-version }}_${{ matrix.architecture }} -upx_dir $upxDir 2>&1 | ForEach-Object {
+          Write-Output $_ -ForegroundColor Gray
+          $output += $_
+        }
+        $warningCount = ($output -match 'WARNING: Library not found: could not resolve').Count
+        if ($output -match 'ERROR:') {
+          Write-Error "Error in output"
+          Add-Content -Path $env:GITHUB_OUTPUT -Value "success=false"
+          exit 1
+        } elseif ($warningCount -ge 3) {
+          Write-Output "Many library not found warnings raised, pyinstaller was probably unsuccessful."
+          Add-Content -Path $env:GITHUB_OUTPUT -Value "success=false"
+          exit 1
+        } else {
+          Add-Content -Path $env:GITHUB_OUTPUT -Value "success=true"
+        }
       shell: pwsh
-      continue-on-error: true
 
     - name: Upload compiled binaries
-      uses: actions/upload-artifact@v4
       if: ${{ success() || failure() }}
+      uses: actions/upload-artifact@v4
       with:
         name: publish_${{ matrix.os }}_${{ matrix.python-version }}_${{ matrix.architecture }}
         path: ./dist/**
@@ -252,6 +417,7 @@ jobs:
       shell: pwsh
 
     - name: Install development packages
+      if: ${{ success() || failure() }}
       run: |
         ./install_python_venv.ps1 -noprompt -venv_name .venv_${{ matrix.os }}_${{ matrix.python-version }}_${{ matrix.architecture }}
         if ($env:python_version -eq "3.7") {
@@ -264,18 +430,17 @@ jobs:
           pip install -r requirements-dev-py313.txt --prefer-binary
         }
       shell: pwsh
-      continue-on-error: true
 
     - name: Run all unittests/pytests
+      if: ${{ success() || failure() }}
       run: |
         ./install_python_venv.ps1 -noprompt -venv_name .venv_${{ matrix.os }}_${{ matrix.python-version }}_${{ matrix.architecture }}
         python -m pytest tests -v -ra -o log_cli=true --capture=no --junitxml=pytest_report.xml --html=pytest_report.html --self-contained-html --tb=no --continue-on-collection-errors
       shell: pwsh
-      continue-on-error: true
 
     - name: Upload Pytest Reports
-      uses: actions/upload-artifact@v4
       if: ${{ success() || failure() }}
+      uses: actions/upload-artifact@v4
       with:
         name: pytest_report_${{ matrix.os }}_${{ matrix.python-version }}_${{ matrix.architecture }}
         path: |
@@ -310,8 +475,9 @@ jobs:
           $commitSHA = "${{ github.sha }}"
 
           $testsResultsPath = "tests/results"
+          $testsResultsCommitPath = $testsResultsPath + "/$commitSHA"
           Remove-Item -Path $testsResultsPath -Recurse -Force -ErrorAction SilentlyContinue
-          New-Item -ItemType Directory -Force -Path $testsResultsPath
+          New-Item -ItemType Directory -Force -Path $testsResultsCommitPath -ErrorAction SilentlyContinue
 
           $OS_NAMES = @("windows-2019", "ubuntu-20.04", "macos-12")
           $PYTHON_VERSIONS = @('3.7', '3.8', '3.9', '3.10', '3.11', '3.12')
@@ -321,14 +487,14 @@ jobs:
           New-Item -ItemType Directory -Force -Path $artifact_reports_dir -ErrorAction SilentlyContinue
           #Dir -Recurse $artifact_reports_dir | Get-Childitem
           Get-ChildItem $artifact_reports_dir | ForEach-Object {
-            Write-Output "Moving $($_.FullName) to $testsResultsPath..."
-            Move-Item -LiteralPath $_.FullName -Destination $testsResultsPath
+            Write-Output "Moving $($_.FullName) to $testsResultsCommitPath..."
+            Move-Item -LiteralPath $_.FullName -Destination $testsResultsCommitPath
           }
           Remove-Item -Path $artifact_reports_dir -Recurse -Force -ErrorAction SilentlyContinue
 
           git fetch origin $branchName
           if (git log "${{ github.sha }}"..origin/$branchName --oneline) {
-              Write-Host "Newer commits are present on the remote branch, cannot continue"
+              Write-Error "Newer commits are present on the remote branch, cannot add test files."
               exit 1
           }
           git add $testsResultsPath --force
@@ -338,7 +504,7 @@ jobs:
 
           $testResults = @{}
 
-          Get-ChildItem $testsResultsPath -Recurse -Filter pytest_report.xml | ForEach-Object {
+          Get-ChildItem $testsResultsCommitPath -Recurse -Filter pytest_report.xml | ForEach-Object {
             [xml]$TestResultsXml = Get-Content $_.FullName
             $totalTests = [int]$TestResultsXml.testsuites.testsuite.tests
             $failedTests = [int]$TestResultsXml.testsuites.testsuite.failures
@@ -432,9 +598,9 @@ jobs:
           git fetch origin $branchName
           # Checking if there are newer commits on the remote branch than the commit that triggered the workflow
           if (git log "${{ github.sha }}"..origin/$branchName --oneline) {
-              Write-Host "Newer commits are present on the remote branch, cannot continue"
+              Write-Error "Newer commits are present on the remote branch, cannot update readme"
               exit 1
           }
           git add $ReadmePath
-          git commit -m "Add test results"
+          git commit -m "Update README.md with test results status badges."
           git push --force-with-lease origin HEAD:${{ github.ref_name }}
