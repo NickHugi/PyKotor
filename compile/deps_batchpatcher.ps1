@@ -18,7 +18,8 @@ if ($this_noprompt) {
 }
 
 if ((Get-OS) -eq "Mac") {
-    $pyVersion = (Get-Python-Version) -replace '(\d+\.\d+)\.\d+', '$1'
+    $versionObject = Get-Python-Version $pythonExePath
+    $pyVersion = "{0}.{1}" -f $versionObject.Major, $versionObject.Minor
     brew update
     brew install python-tk@$pyVersion tcl-tk
 } elseif ((Get-OS) -eq "Linux") {
