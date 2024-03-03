@@ -492,16 +492,6 @@ jobs:
           }
           Remove-Item -Path $artifact_reports_dir -Recurse -Force -ErrorAction SilentlyContinue
 
-          git fetch origin $branchName
-          if (git log "${{ github.sha }}"..origin/$branchName --oneline) {
-              Write-Error "Newer commits are present on the remote branch, cannot add test files."
-              exit 1
-          }
-          git add $testsResultsPath --force
-          git commit -m "Add test results"
-          git push --force-with-lease origin HEAD:${{ github.ref_name }}
-          $commitSHA = git rev-parse HEAD
-
           $testResults = @{}
 
           Get-ChildItem $testsResultsCommitPath -Recurse -Filter pytest_report.xml | ForEach-Object {
@@ -602,5 +592,6 @@ jobs:
               exit 1
           }
           git add $ReadmePath
-          git commit -m "Update README.md with test results status badges."
+          git add $testsResultsPath --force
+          git commit -m "Add test results/Update README.md with test results status badges."
           git push --force-with-lease origin HEAD:${{ github.ref_name }}
