@@ -176,7 +176,7 @@ jobs:
           }
           $output = ""
           ./compile/deps_holopatcher.ps1 -noprompt -venv_name .venv_holopatcher_${{ matrix.os }}_${{ matrix.python-version }}_${{ matrix.architecture }} 2>&1 | ForEach-Object {
-            Write-Output $_ -ForegroundColor Gray
+            Write-Output $_
             $output += $_
           }
           if ($output -match 'ERROR:') {
@@ -199,7 +199,7 @@ jobs:
         Write-Host "Using UPX directory at '$upxDir'"
         $output = ""
         ./compile/compile_holopatcher.ps1 -noprompt -venv_name .venv_holopatcher_${{ matrix.os }}_${{ matrix.python-version }}_${{ matrix.architecture }} -upx_dir $upxDir 2>&1 | ForEach-Object {
-          Write-Output $_ -ForegroundColor Gray
+          Write-Output $_
           $output += $_
         }
         $warningCount = ($output -match 'WARNING: Library not found: could not resolve').Count
@@ -233,7 +233,7 @@ jobs:
           }
           $output = ""
           ./compile/deps_toolset.ps1 -noprompt -venv_name .venv_toolset_${{ matrix.os }}_${{ matrix.python-version }}_${{ matrix.architecture }} 2>&1 | ForEach-Object {
-            Write-Output $_ -ForegroundColor Gray
+            Write-Output $_
             $output += $_
           }
           if ($output -match 'ERROR:') {
@@ -256,7 +256,7 @@ jobs:
         Write-Host "Using UPX directory at '$upxDir'"
         $output = ""
         ./compile/compile_toolset.ps1 -noprompt -venv_name .venv_toolset_${{ matrix.os }}_${{ matrix.python-version }}_${{ matrix.architecture }} -upx_dir $upxDir 2>&1 | ForEach-Object {
-          Write-Output $_ -ForegroundColor Gray
+          Write-Output $_
           $output += $_
         }
         $warningCount = ($output -match 'WARNING: Library not found: could not resolve').Count
@@ -292,7 +292,7 @@ jobs:
           }
           $output = ""
           ./compile/deps_batchpatcher.ps1 -noprompt -venv_name .venv_batchpatcher_${{ matrix.os }}_${{ matrix.python-version }}_${{ matrix.architecture }} 2>&1 | ForEach-Object {
-            Write-Output $_ -ForegroundColor Gray
+            Write-Output $_
             $output += $_
           }
           if ($output -match 'ERROR:') {
@@ -315,7 +315,7 @@ jobs:
         Write-Host "Using UPX directory at '$upxDir'"
         $output = ""
         ./compile/compile_batchpatcher.ps1 -noprompt -venv_name .venv_batchpatcher_${{ matrix.os }}_${{ matrix.python-version }}_${{ matrix.architecture }} -upx_dir $upxDir 2>&1 | ForEach-Object {
-          Write-Output $_ -ForegroundColor Gray
+          Write-Output $_
           $output += $_
         }
         $warningCount = ($output -match 'WARNING: Library not found: could not resolve').Count
@@ -349,7 +349,7 @@ jobs:
         pip install -r Tools/KotorDiff/requirements.txt --prefer-binary
         $output = ""
         ./compile/compile_kotordiff.ps1 -noprompt -venv_name .venv_kotordiff_${{ matrix.os }}_${{ matrix.python-version }}_${{ matrix.architecture }} -upx_dir $upxDir 2>&1 | ForEach-Object {
-          Write-Output $_ -ForegroundColor Gray
+          Write-Output $_
           $output += $_
         }
         $warningCount = ($output -match 'WARNING: Library not found: could not resolve').Count
@@ -382,7 +382,7 @@ jobs:
         }
         pip install -r Tools/GuiDuplicator/requirements.txt --prefer-binary
         ./compile/compile_gui_duplicator.ps1 -noprompt -venv_name .venv_guiduplicator_${{ matrix.os }}_${{ matrix.python-version }}_${{ matrix.architecture }} -upx_dir $upxDir 2>&1 | ForEach-Object {
-          Write-Output $_ -ForegroundColor Gray
+          Write-Output $_
           $output += $_
         }
         $warningCount = ($output -match 'WARNING: Library not found: could not resolve').Count
