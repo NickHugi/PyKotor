@@ -51,6 +51,7 @@ from toolset.gui.editors.utp import UTPEditor
 from toolset.gui.editors.uts import UTSEditor
 from toolset.gui.editors.utt import UTTEditor
 from toolset.gui.editors.utw import UTWEditor
+from toolset.gui.widgets.main_widgets import ResourceList
 from toolset.gui.widgets.settings.misc import GlobalSettings
 from toolset.gui.windows.help import HelpWindow
 from toolset.gui.windows.indoor_builder import IndoorMapBuilder
@@ -65,14 +66,13 @@ if TYPE_CHECKING:
 
     from PyQt5 import QtGui
     from PyQt5.QtGui import QCloseEvent
-    from PyQt5.QtWidgets import QTreeView
 
     from pykotor.extract.file import FileResource
     from pykotor.resource.formats.mdl.mdl_data import MDL
     from pykotor.resource.formats.tpc import TPC
     from pykotor.resource.type import SOURCE_TYPES
     from pykotor.tools.path import CaseAwarePath
-    from toolset.gui.widgets.main_widgets import ResourceList
+    from toolset.gui.widgets.main_widgets import TextureList
 
 
 class ToolWindow(QMainWindow):
@@ -142,7 +142,7 @@ class ToolWindow(QMainWindow):
             with suppress(Exception):
                 self.settings.extractPath = str(Path(str(TemporaryDirectory().name)))
 
-        self.checkForUpdates(True)
+        self.checkForUpdates(silent=True)
 
     def _setupSignals(self):
         """Connects signals to slots for UI interactions.
@@ -182,8 +182,8 @@ class ToolWindow(QMainWindow):
         self.ui.texturesWidget.sectionChanged.connect(self.onTexturesChanged)
         self.ui.texturesWidget.requestOpenResource.connect(self.onOpenResources)
 
-        self.ui.extractButton.clicked.connect(lambda: self.onExtractResources(self.getActiveResourceWidget().selectedResources(), self.getActiveResourceWidget()))
-        self.ui.openButton.clicked.connect(lambda: self.onOpenResources(self.getActiveResourceWidget().selectedResources()))
+        self.ui.extractButton.clicked.connect(lambda: self.onExtractResources(self.getActiveResourceWidget().selectedResources(), resourceWidget=self.getActiveResourceWidget()))
+        self.ui.openButton.clicked.connect(lambda *args: self.onOpenResources(self.getActiveResourceWidget().selectedResources(), self.settings.gff_specializedEditors, resourceWidget=self.getActiveResourceWidget()))
 
         self.ui.openAction.triggered.connect(self.openFromFile)
         self.ui.actionSettings.triggered.connect(self.openSettingsDialog)
@@ -223,6 +223,9 @@ class ToolWindow(QMainWindow):
         if eventType == "deleted":
             self.onModuleRefresh()
         else:
+            if not changedFile or not changedFile.strip():  # FIXME: Why is the watchdog constantly sending invalid filenames?
+                print(f"onModuleFileUpdated: can't reload module '{changedFile}', invalid name")
+                return
             # Reload the resource cache for the module
             self.active.reload_module(changedFile)
             # If the current module opened is the file which was updated, then we
@@ -234,6 +237,9 @@ class ToolWindow(QMainWindow):
         self.onModuleReload(newModuleFile)
 
     def onModuleReload(self, moduleFile: str):
+        if not moduleFile or not moduleFile.strip():  # FIXME: Why is the watchdog constantly sending invalid filenames?
+            print(f"onModuleReload: can't reload module '{moduleFile}', invalid name")
+            return
         resources: list[FileResource] = self.active.module_resources(moduleFile)
 
         # Some users may choose to have their RIM files for the same module merged into a single option for the
@@ -256,19 +262,19 @@ class ToolWindow(QMainWindow):
     def onOverrideChanged(self, newDirectory: str):
         self.ui.overrideWidget.setResources(self.active.override_resources(newDirectory))
 
-    def onOverrideReload(self, file: str):
-        file_path = Path(file)
-        if not file_path.name:
-            print(f"Cannot reload '{file}': no file loaded")
+    def onOverrideReload(self, file_or_folder: str):
+        if not self.active:
+            print(f"No installation loaded, cannot reload {file_or_folder}")
             return
-        if not file_path.is_relative_to(self.active.override_path()):
-            print(f"{file_path} is not relative to the override folder, cannot reload")
+        file_or_folder_path = Path(self.active.override_path(), file_or_folder)
+        if not file_or_folder_path.is_relative_to(self.active.override_path()):
+            print(f"{file_or_folder_path} is not relative to the override folder, cannot reload")
             return
-        if file_path.is_file():
-            self.active.reload_override_file(file_path)
-            folder_path = file_path.parent
+        if file_or_folder_path.safe_isfile():
+            self.active.reload_override_file(file_or_folder_path)
+            folder_path = file_or_folder_path.parent
         else:
-            folder_path = file_path
+            folder_path = file_or_folder_path
         self.ui.overrideWidget.setResources(
             self.active.override_resources(
                 Path._fix_path_formatting(str(folder_path.relative_to(self.active.override_path())).replace(str(self.active.override_path()), ""))
@@ -278,12 +284,23 @@ class ToolWindow(QMainWindow):
         )
 
     def onOverrideRefresh(self):
+        if not self.active:
+            print("No installation loaded, cannot refresh Override")
+            return
+        print(f"Refreshing list of override folders available at {self.active.path()}")
         self.refreshOverrideList()
 
     def onTexturesChanged(self, newTexturepack: str):
+        if not self.active:
+            print(f"No installation loaded, cannot change texturepack to '{newTexturepack}'")
+            return
         self.ui.texturesWidget.setResources(self.active.texturepack_resources(newTexturepack))
 
-    def onExtractResources(self, resources: list[FileResource], resourceWidget: ResourceList | None = None):
+    def onExtractResources(
+        self,
+        resources: list[FileResource],
+        resourceWidget: ResourceList | TextureList | None = None,
+    ):
         """Extracts the resources selected in the main UI window.
 
         Args:
@@ -317,7 +334,7 @@ class ToolWindow(QMainWindow):
                     loader.addTask(lambda a=resource, b=filepath: self._extractResource(a, b, loader))
 
                 loader.exec_()
-        elif resourceWidget and is_capsule_file(resourceWidget.currentSection()):
+        elif isinstance(resourceWidget, ResourceList) and is_capsule_file(resourceWidget.currentSection()):
             module_name = resourceWidget.currentSection()
             self._saveCapsuleFromToolUI(module_name)
 
@@ -331,7 +348,7 @@ class ToolWindow(QMainWindow):
         elif is_rim_file(c_filepath):
             capsule_type = "rim"
         extension_to_filter = {
-            ".mod": "Module file (*.mod)",
+            ".mod": "Module (*.mod)",
             ".erf": "Encapsulated Resource File (*.erf)",
             ".rim": "Resource Image File (*.rim)",
             ".sav": "Save ERF (*.sav)",
@@ -367,7 +384,7 @@ class ToolWindow(QMainWindow):
                 write_erf(erf_or_rim, r_save_filepath)
                 QMessageBox(QMessageBox.Information, "ERF Saved", f"Encapsulated Resource File saved to '{r_save_filepath}'").exec_()
 
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001  # pylint: disable=broad-exception-caught
             with Path("errorlog.txt").open("a", encoding="utf-8") as file:
                 lines = format_exception_with_variables(e)
                 file.writelines(lines)
@@ -378,6 +395,7 @@ class ToolWindow(QMainWindow):
         self,
         resources: list[FileResource],
         useSpecializedEditor: bool | None = None,
+        resourceWidget: ResourceList | TextureList | None = None,
     ):
         for resource in resources:
             _filepath, _editor = openResourceEditor(
@@ -389,6 +407,28 @@ class ToolWindow(QMainWindow):
                 self,
                 gff_specialized=useSpecializedEditor,
             )
+        if resources:
+            return
+        if not isinstance(resourceWidget, ResourceList):
+            return
+        filename = resourceWidget.currentSection()
+        if not filename:
+            return
+        erf_filepath = self.active.module_path() / filename
+        if not erf_filepath.safe_isfile():
+            return
+        res_ident = ResourceIdentifier.from_path(erf_filepath)
+        if not res_ident.restype:
+            return
+        _filepath, _editor = openResourceEditor(
+            erf_filepath,
+            res_ident.resname,
+            res_ident.restype,
+            BinaryReader.load_file(erf_filepath),
+            self.active,
+            self,
+            gff_specialized=useSpecializedEditor
+        )
 
     # endregion
 
@@ -399,23 +439,23 @@ class ToolWindow(QMainWindow):
     def dropEvent(self, e: QtGui.QDropEvent | None):
         if e is None:
             return
-        if e.mimeData().hasUrls():
-            for url in e.mimeData().urls():
-                filepath = url.toLocalFile()
-                r_filepath = Path(filepath)
-                with r_filepath.open("rb") as file:
-                    resref, restype = ResourceIdentifier.from_path(filepath)
-                    data = file.read()
-                    openResourceEditor(r_filepath, resref, restype, data, self.active, self)
+        if not e.mimeData().hasUrls():
+            return
+        for url in e.mimeData().urls():
+            filepath: str = url.toLocalFile()
+            data = BinaryReader.load_file(filepath)
+            resref, restype = ResourceIdentifier.from_path(filepath)
+            openResourceEditor(filepath, resref, restype, data, self.active, self)
 
     def dragEnterEvent(self, e: QtGui.QDragEnterEvent | None):
         if e is None:
             return
-        if e.mimeData().hasUrls():
-            for url in e.mimeData().urls():
-                with suppress(Exception):
-                    _resref, _restype = ResourceIdentifier.from_path(url.toLocalFile()).validate()
-                    e.accept()
+        if not e.mimeData().hasUrls():
+            return
+        for url in e.mimeData().urls():
+            with suppress(Exception):
+                _resref, _restype = ResourceIdentifier.from_path(url.toLocalFile()).validate()
+                e.accept()
 
     # endregion
 
@@ -501,13 +541,16 @@ class ToolWindow(QMainWindow):
             ResourceType.JRL,
             [SearchLocation.OVERRIDE, SearchLocation.CHITIN],
         )
+        if res is None:
+            print("res cannot be None in openActiveJournal")
+            return
         openResourceEditor(
             res.filepath,
             resref="global",
             restype=ResourceType.JRL,
             data=res.data,
             installation=self.active,
-            parentwindow=self,
+            parentWindow=self,
         )
 
     def openFileSearchDialog(self):
@@ -516,26 +559,45 @@ class ToolWindow(QMainWindow):
         If a search is conducted then a FileResults dialog displays the results
         where the user can then select a resource and the selected resouce will then be shown in the main window.
         """
+        if self.active is None:
+            print("No installation active, ergo nothing to search")
+            return
         searchDialog = FileSearcher(self, self.installations)
-        if searchDialog.exec_():
-            resultsDialog = FileResults(self, searchDialog.results, searchDialog.installation)
-            if resultsDialog.exec_() and resultsDialog.selection:
-                selection: FileResource = resultsDialog.selection
+        searchDialog.setModal(False)  # Make the dialog non-modal
+        searchDialog.show()  # Show the dialog without blocking
+        addWindow(searchDialog)
+        searchDialog.fileResults.connect(self.handleSearchCompleted)
 
-                # Open relevant tab then select resource in the tree
-                if selection.filepath().is_relative_to(self.active.module_path()):
-                    self.ui.resourceTabs.setCurrentIndex(1)
-                    self.selectResource(self.ui.modulesWidget, selection)
-                elif selection.filepath().is_relative_to(self.active.override_path()):
-                    self.ui.resourceTabs.setCurrentIndex(2)
-                    self.selectResource(self.ui.overrideWidget, selection)
-                elif is_bif_file(selection.filepath().name):
-                    self.selectResource(self.ui.coreWidget, selection)
+    def handleSearchCompleted(
+        self,
+        results_list: list[FileResource],
+        searchedInstallation: HTInstallation,
+    ):
+        resultsDialog = FileResults(self, results_list, searchedInstallation)
+        resultsDialog.setModal(False)  # Make the dialog non-modal
+        resultsDialog.show()  # Show the dialog without blocking
+        addWindow(resultsDialog)
+        resultsDialog.selectionSignal.connect(self.handleResultsSelection)
+
+    def handleResultsSelection(
+        self,
+        selection: FileResource,
+    ):
+        # Open relevant tab then select resource in the tree
+        if selection.filepath().is_relative_to(self.active.module_path()):
+            self.ui.resourceTabs.setCurrentIndex(1)
+            self.selectResource(self.ui.modulesWidget, selection)
+        elif selection.filepath().is_relative_to(self.active.override_path()):
+            self.ui.resourceTabs.setCurrentIndex(2)
+            self.selectResource(self.ui.overrideWidget, selection)
+        elif is_bif_file(selection.filepath().name):
+            self.selectResource(self.ui.coreWidget, selection)
 
     def openIndoorMapBuilder(self):
         IndoorMapBuilder(self, self.active).show()
 
-    def openInstructionsWindow(self):
+    @staticmethod
+    def openInstructionsWindow():
         """Opens the instructions window."""
         window = HelpWindow(None)
         addWindow(window)
@@ -544,7 +606,7 @@ class ToolWindow(QMainWindow):
         """Opens the about dialog."""
         About(self).exec_()
 
-    def checkForUpdates(self, silent: bool = False):
+    def checkForUpdates(self, *, silent: bool = False):
         """Scans for any updates and opens a dialog with a message based on the scan result.
 
         Args:
@@ -552,7 +614,7 @@ class ToolWindow(QMainWindow):
             silent: If true, only shows popup if an update is available.
         """
         try:
-            self._check_toolset_update(silent)
+            self._check_toolset_update(silent=silent)
         except Exception as e:  # pylint: disable=W0718  # noqa: BLE001
             if not silent:
                 etype, msg = universal_simplify_exception(e)
@@ -564,26 +626,37 @@ class ToolWindow(QMainWindow):
                     self,
                 ).exec_()
 
-    def _check_toolset_update(self, silent: bool):
-        req = requests.get(UPDATE_INFO_LINK, timeout=15)
+    def _check_toolset_update(self, *, silent: bool):
+        req: requests.Response = requests.get(UPDATE_INFO_LINK, timeout=15)
         req.raise_for_status()
         file_data = req.json()
         base64_content = file_data["content"]
         decoded_content = base64.b64decode(base64_content)  # Correctly decoding the base64 content
         data = json.loads(decoded_content.decode("utf-8"))
 
-        toolsetLatestVersion = tuple(map(int, str(data["toolsetLatestVersion"]).split(".")))
-        if toolsetLatestVersion > PROGRAM_VERSION:
-            toolsetDownloadLink = data["toolsetDownloadLink"]
+        if isinstance(PROGRAM_VERSION, tuple):
+            x = ""
+            for v in PROGRAM_VERSION:
+                if not x:
+                    x = str(v)
+                else:
+                    x += f".{v}"
+        else:
+            x = str(PROGRAM_VERSION)
 
-            QMessageBox(
-                QMessageBox.Information,
-                "New version is available.",
-                f"New version available for <a href='{toolsetDownloadLink}'>download</a>.",
-                QMessageBox.Ok,
-                self,
-            ).exec_()
-        elif not silent:
+        version_check: bool | None = None
+        with suppress(Exception):
+            from packaging import version
+
+            version_check = version.parse(data["toolsetLatestVersion"]) > version.parse(x)
+        if version_check is None:
+            with suppress(Exception):
+                from distutils.version import LooseVersion
+
+                version_check = LooseVersion(data["toolsetLatestVersion"]) > LooseVersion(x)
+        if version_check is False:
+            if silent:
+                return
             QMessageBox(
                 QMessageBox.Information,
                 "Version is up to date",
@@ -592,13 +665,22 @@ class ToolWindow(QMainWindow):
                 self,
             ).exec_()
 
+        toolsetDownloadLink = data["toolsetDownloadLink"]
+        QMessageBox(
+            QMessageBox.Information,
+            "New version is available.",
+            f"New version available for <a href='{toolsetDownloadLink}'>download</a>.<br>{data['toolsetLatestNotes']}",
+            QMessageBox.Ok,
+            self,
+        ).exec_()
+
     # endregion
 
     # region Other
     def reloadSettings(self):
         self.reloadInstallations()
 
-    def getActiveResourceWidget(self) -> ResourceList | None:
+    def getActiveResourceWidget(self) -> ResourceList | TextureList | None:
         if self.ui.resourceTabs.currentWidget() is self.ui.coreTab:
             return self.ui.coreWidget
         if self.ui.resourceTabs.currentWidget() is self.ui.modulesTab:
@@ -609,10 +691,10 @@ class ToolWindow(QMainWindow):
             return self.ui.texturesWidget
         return None
 
-    def refreshModuleList(self, reload: bool = True):
+    def refreshModuleList(self, *, reload: bool = True):
         """Refreshes the list of modules in the modulesCombo combobox."""
-        # Do nothing if no installation is currently loaded
         if self.active is None:
+            print("no installation is currently loaded, cannot refresh module list")
             return
 
         # If specified the user can forcibly reload the resource list for every module
@@ -620,28 +702,40 @@ class ToolWindow(QMainWindow):
             self.active.load_modules()
 
         areaNames: dict[str, str] = self.active.module_names()
-        sortedKeys: list[str] = sorted(areaNames, key=lambda key: areaNames.get(key).lower())
+        sortedKeys: list[str] = sorted(
+            areaNames,
+            key=lambda moduleFileName:
+            (
+                moduleFileName.lower()
+                if self.settings.useModuleFilenames
+                else areaNames.get(moduleFileName).lower()
+            )
+        )
 
         modules: list[QStandardItem] = []
-        for module in sortedKeys:
+        for moduleName in sortedKeys:
             # Some users may choose to have their RIM files for the same module merged into a single option for the
             # dropdown menu.
-            if self.settings.joinRIMsTogether and module.lower().endswith("_s.rim"):
+            lower_module_name = moduleName.lower()
+            if self.settings.joinRIMsTogether and lower_module_name.endswith("_s.rim"):
                 continue
 
-            item = QStandardItem(f"{areaNames[module]} [{module}]")
-            item.setData(module, QtCore.Qt.UserRole)
+            item = QStandardItem(f"{areaNames[moduleName]} [{moduleName}]")
+            item.setData(moduleName, QtCore.Qt.UserRole)
 
             # Some users may choose to have items representing RIM files to have grey text.
-            if self.settings.greyRIMText and module.lower().endswith(".rim"):
+            if self.settings.greyRIMText and lower_module_name.endswith(".rim"):
                 item.setForeground(self.palette().shadow())
 
             modules.append(item)
 
         self.ui.modulesWidget.setSections(modules)
 
-    def refreshOverrideList(self, reload=True):
+    def refreshOverrideList(self, *, reload=True):
         """Refreshes the list of override directories in the overrideFolderCombo combobox."""
+        if self.active is None:
+            print("no installation is currently loaded, cannot refresh override list")
+            return
         if reload:
             self.active.load_override()
 
@@ -652,7 +746,26 @@ class ToolWindow(QMainWindow):
             sections.append(section)
         self.ui.overrideWidget.setSections(sections)
 
-    def refreshTexturePackList(self, reload=True):
+    def refreshSavesList(self, *, reload=True):
+        """Refreshes the list of override directories in the overrideFolderCombo combobox."""
+        if self.active is None:
+            print("no installation is currently loaded, cannot refresh saves list")
+            return
+        if reload:
+            self.active.load_saves()
+
+        sections: list[QStandardItem] = []
+        for save_path in self.active._saves:
+            save_path_str = str(save_path)
+            section = QStandardItem(save_path_str)
+            section.setData(save_path_str, QtCore.Qt.UserRole)
+            sections.append(section)
+        self.ui.savesWidget.setSections(sections)
+
+    def refreshTexturePackList(self, *, reload=True):
+        if self.active is None:
+            print("no installation is currently loaded, cannot refresh texturepack list")
+            return
         if reload:
             self.active.load_textures()
 
@@ -664,15 +777,19 @@ class ToolWindow(QMainWindow):
 
         self.ui.texturesWidget.setSections(sections)
 
-    def changeModule(self, module: str):
+    def changeModule(self, moduleName: str):
         # Some users may choose to merge their RIM files under one option in the Modules tab; if this is the case we
         # need to account for this.
-        if self.settings.joinRIMsTogether and module.lower().endswith("_s.rim"):
-            module = f"{module.lower()[:-6]}.rim"
+        if self.settings.joinRIMsTogether and moduleName.casefold().endswith("_s.rim"):
+            moduleName = f"{moduleName[:-6]}.rim"
 
-        self.ui.modulesWidget.changeSection(module)
+        self.ui.modulesWidget.changeSection(moduleName)
 
-    def selectResource(self, tree: QTreeView, resource: FileResource):
+    def selectResource(self, tree: ResourceList, resource: FileResource):
+        """This function seems to reload the resource after determining the ui widget containing it.
+
+        Seems to only be used for the FileSearcher dialog.
+        """
         if tree == self.ui.coreWidget:
             self.ui.resourceTabs.setCurrentWidget(self.ui.coreTab)
             self.ui.coreWidget.setResourceSelection(resource)
@@ -690,6 +807,11 @@ class ToolWindow(QMainWindow):
                 if resource.filepath().is_relative_to(folder_path) and len(subfolder) < len(folder_path.name):
                     subfolder = folder_name
             self.changeOverrideFolder(subfolder)
+
+        elif tree == self.ui.savesWidget:
+            self.ui.resourceTabs.setCurrentWidget(self.ui.savesTab)
+            filename = resource.filepath().name
+            self.onSaveReload(filename)
 
     def changeOverrideFolder(self, subfolder: str):
         self.ui.overrideWidget.changeSection(subfolder)
@@ -745,6 +867,7 @@ class ToolWindow(QMainWindow):
 
         # If the user still has not set a path, then return them to the [None] option.
         if not path:
+            print("User did not choose a path for this installation.")
             self.ui.gameCombo.setCurrentIndex(0)
         else:
             # If the installation had not already been loaded previously this session, load it now
@@ -767,9 +890,9 @@ class ToolWindow(QMainWindow):
 
                 print("Loading installation resources into UI...")
                 self.ui.coreWidget.setResources(self.active.chitin_resources())
-                self.refreshModuleList(reload=True)  # TODO: Modules/Override/Textures are loaded twice when HT is first initialized.
-                self.refreshOverrideList(reload=True)
-                self.refreshTexturePackList(reload=True)
+                self.refreshModuleList(reload=False)  # TODO: Modules/Override/Textures are loaded twice when HT is first initialized.
+                self.refreshOverrideList(reload=False)
+                self.refreshTexturePackList(reload=False)
                 self.ui.texturesWidget.setInstallation(self.active)
 
                 print("Updating menus...")

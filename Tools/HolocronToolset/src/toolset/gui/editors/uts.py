@@ -18,6 +18,7 @@ from toolset.gui.editor import Editor
 if TYPE_CHECKING:
     import os
 
+    from PyQt5.QtCore import QObject
     from PyQt5.QtGui import QCloseEvent
     from PyQt5.QtWidgets import QWidget
 
@@ -25,7 +26,13 @@ if TYPE_CHECKING:
 
 
 class UTSEditor(Editor):
-    def __init__(self, parent: QWidget | None, installation: HTInstallation | None = None):
+    def __init__(
+        self,
+        parent: QWidget | None,
+        installation: HTInstallation | None = None,
+        *,
+        mainwindow: QWidget | QObject | None = None,
+    ):
         """Initialize the Sound Editor window.
 
         Args:
@@ -56,7 +63,8 @@ class UTSEditor(Editor):
         self.ui.setupUi(self)
         self._setupMenus()
         self._setupSignals()
-        self._setupInstallation(installation)
+        if installation is not None:  # will only be none in the unittests
+            self._setupInstallation(installation)
 
         self.new()
 

@@ -4,21 +4,28 @@ from time import sleep
 from typing import TYPE_CHECKING
 
 from PyQt5 import QtCore
-from PyQt5.QtCore import QSortFilterProxyModel, QThread
+from PyQt5.QtCore import QSortFilterProxyModel, QThread, Qt
 from PyQt5.QtGui import QStandardItem, QStandardItemModel
-from PyQt5.QtWidgets import QAction, QDialog, QProgressBar, QShortcut, QVBoxLayout
+from PyQt5.QtWidgets import QAction, QDialog, QMenu, QMessageBox, QProgressBar, QShortcut, QVBoxLayout
 
 from pykotor.common.language import Language
 from pykotor.common.misc import ResRef
 from pykotor.resource.formats.tlk import TLK, TLKEntry, bytes_tlk, read_tlk, write_tlk
 from pykotor.resource.type import ResourceType
+from toolset.gui.dialogs.asyncloader import AsyncLoader
+from toolset.gui.dialogs.search import FileResults
 from toolset.gui.editor import Editor
+from toolset.gui.widgets.settings.installations import GlobalSettings
+from toolset.utils.window import addWindow, openResourceEditor
+from utility.misc import is_debug_mode
 
 if TYPE_CHECKING:
     import os
 
+    from PyQt5.QtCore import QModelIndex
     from PyQt5.QtWidgets import QWidget
 
+    from pykotor.extract.file import FileResource
     from toolset.data.installation import HTInstallation
 
 
@@ -85,6 +92,8 @@ class TLKEditor(Editor):
         self.ui.talkTable.clicked.connect(self.selectionChanged)
         self.ui.textEdit.textChanged.connect(self.updateEntry)
         self.ui.soundEdit.textChanged.connect(self.updateEntry)
+        self.ui.talkTable.setContextMenuPolicy(Qt.CustomContextMenu)
+        self.ui.talkTable.customContextMenuRequested.connect(self.showContextMenu)
 
         self.populateLanguageMenu()
 
@@ -117,14 +126,16 @@ class TLKEditor(Editor):
             print("Auto detect selected")
             self.change_language(Language.UNKNOWN)
 
-    def change_language(self, language: Language):
+    def change_language(self, language: Language):  # sourcery skip: class-extract-method
         self.language = language
         if not self._revert:
             return
         tlk: TLK = read_tlk(self._revert, language=language)
-        self._extracted_from_new_2()
+        self.model.clear()
+        self.model.setColumnCount(2)
+        self.ui.talkTable.hideColumn(1)
         dialog = LoaderDialog(self, bytes_tlk(tlk), self.model)
-        self._extracted_from_load_10(dialog)
+        self._init_model_dialog(dialog)
 
     def load(self, filepath: os.PathLike | str, resref: str, restype: ResourceType, data: bytes):
         """Loads data into the resource from a file.
@@ -146,13 +157,14 @@ class TLKEditor(Editor):
             - Connects selection changed signal
             - Sets max rows in spinbox.
         """
-        super().load(filepath, resref, restype, data)
-        self._extracted_from_new_2()
+        super().load(filepath, resref, restype, data)  # sourcery skip: class-extract-method
+        self.model.clear()
+        self.model.setColumnCount(2)
+        self.ui.talkTable.hideColumn(1)
         dialog = LoaderDialog(self, data, self.model)
-        self._extracted_from_load_10(dialog)
+        self._init_model_dialog(dialog)
 
-    # TODO Rename this here and in `change_language` and `load`
-    def _extracted_from_load_10(self, dialog: LoaderDialog):
+    def _init_model_dialog(self, dialog: LoaderDialog):
         dialog.exec_()
         self.model = dialog.model
         self.proxyModel = QSortFilterProxyModel(self)
@@ -161,18 +173,89 @@ class TLKEditor(Editor):
         self.ui.talkTable.selectionModel().selectionChanged.connect(self.selectionChanged)
         self.ui.jumpSpinbox.setMaximum(self.model.rowCount())
 
+    def showContextMenu(self, position):
+        # Map the point to index to determine which item is under the cursor
+        index = self.ui.talkTable.indexAt(position)
+        if not index.isValid():
+            return
+
+        menu = QMenu()
+
+        # Add 'Find References' action
+        findAction = QAction("Find LocalizedString references", self)
+        findAction.triggered.connect(lambda: self.findReferences(index))
+        menu.addAction(findAction)
+
+        # Add more actions as needed
+        otherAction = QAction("Other Action", self)
+        # Connect otherAction to its slot here
+
+        menu.addAction(otherAction)
+
+        # Show the menu at the current position
+        menu.exec_(self.ui.talkTable.viewport().mapToGlobal(position))
+
+    def findReferences(self, index: QModelIndex):
+        # Implement the logic to find references based on the provided index
+        stringref = index.row()
+        print(f"Finding references to stringref: {stringref}")
+        loader = AsyncLoader(
+            self,
+            f"Looking for stringref '{stringref}' in {self._installation.path()}...",
+            lambda: self._installation.find_tlk_entry_references(stringref),
+            errorTitle="An unexpected error occurred searching the installation.",
+            startImmediately=False
+        )
+        loader.setModal(False)
+        loader.show()
+        loader.optionalFinishHook.connect(lambda results: self.handleSearchCompleted(stringref, results, self._installation))
+        loader.startWorker()
+        addWindow(loader)
+
+    def handleSearchCompleted(
+        self,
+        stringref: int,
+        results_list: list[FileResource] | set[FileResource],
+        searchedInstallation: HTInstallation,
+    ):
+        if not results_list:
+            QMessageBox(
+                QMessageBox.Information,
+                "No resources found",
+                f"There are no GFFs that reference this tlk entry (stringref {stringref})",
+                parent=self,
+            ).exec_()
+            return
+        resultsDialog = FileResults(self, results_list, searchedInstallation)
+        resultsDialog.setModal(False)  # Make the dialog non-modal
+        resultsDialog.show()  # Show the dialog without blocking
+        resultsDialog.setWindowTitle(f"{len(results_list)} results for stringref '{stringref}' in {self._installation.path()}")
+        addWindow(resultsDialog)
+        resultsDialog.selectionSignal.connect(self.handleResultsSelection)
+
+    def handleResultsSelection(
+        self,
+        selection: FileResource,
+    ):
+        # Open relevant tab then select resource in the tree
+        filepath, editor = openResourceEditor(
+            selection.filepath(),
+            selection.resname(),
+            selection.restype(),
+            selection.data(),
+            self._installation,
+            self,
+            gff_specialized=GlobalSettings().gff_specializedEditors
+        )
+
     def new(self):
         super().new()
 
-        self._extracted_from_new_2()
-        self.ui.textEdit.setEnabled(False)
-        self.ui.soundEdit.setEnabled(False)
-
-    # TODO Rename this here and in `_extracted_from_load_5` and `new`
-    def _extracted_from_new_2(self):
-        self.model.clear()
+        self.model.clear()  # sourcery skip: class-extract-method
         self.model.setColumnCount(2)
         self.ui.talkTable.hideColumn(1)
+        self.ui.textEdit.setEnabled(False)
+        self.ui.soundEdit.setEnabled(False)
 
     def build(self) -> tuple[bytes, bytes]:
         """Builds a TLK file from the model data.
@@ -232,7 +315,7 @@ class TLKEditor(Editor):
         """
         selected = self.ui.talkTable.selectionModel().selection()
 
-        if len(selected.indexes()) == 0:
+        if not selected.indexes():
             self.ui.textEdit.setEnabled(False)
             self.ui.soundEdit.setEnabled(False)
             return
@@ -338,7 +421,8 @@ class LoaderWorker(QThread):
         batch: list[list[QStandardItem]] = []
         for _stringref, entry in tlk:
             batch.append([QStandardItem(entry.text), QStandardItem(str(entry.voiceover))])
-            if len(batch) > 200:
+            large_amount = 200
+            if len(batch) > large_amount:
                 self.batch.emit(batch)
                 batch = []
                 sleep(0.001)
