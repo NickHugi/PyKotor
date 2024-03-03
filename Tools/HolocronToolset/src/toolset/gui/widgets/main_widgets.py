@@ -59,7 +59,8 @@ class ResourceList(MainWindowList):
         """
         super().__init__(parent)
 
-        from toolset.uic.widgets.resource_list import Ui_Form  # noqa: PLC0415  # pylint: disable=C0415
+        from toolset.uic.widgets.resource_list import Ui_Form  # pylint: disable=C0415
+
         self.ui = Ui_Form()
         self.ui.setupUi(self)
         self.setupSignals()
@@ -259,7 +260,7 @@ class ResourceModel(QStandardItemModel):
         item2 = QStandardItem(resource.restype().extension.upper())
         self._getCategoryItem(resource.restype()).appendRow([item1, item2])
 
-    def resourceFromIndexes(self, indexes: list[QModelIndex], proxy: bool = True) -> list[FileResource]:
+    def resourceFromIndexes(self, indexes: list[QModelIndex], *, proxy: bool = True) -> list[FileResource]:
         items = []
         for index in indexes:
             sourceIndex = self._proxyModel.mapToSource(index) if proxy else index
@@ -267,7 +268,7 @@ class ResourceModel(QStandardItemModel):
         return self.resourceFromItems(items)
 
     def resourceFromItems(self, items: list[QStandardItem]) -> list[FileResource]:
-        return [item.resource for item in items if hasattr(item, "resource")]
+        return [item.resource for item in items if hasattr(item, "resource")]  # type: ignore[reportAttributeAccessIssue]
 
     def allResourcesItems(self) -> list[QStandardItem]:
         """Returns a list of all QStandardItem objects in the model that represent resource files."""
@@ -281,9 +282,13 @@ class ResourceModel(QStandardItemModel):
     def removeUnusedCategories(self):
         for row in range(self.rowCount())[::-1]:
             item = self.item(row)
-            if item.rowCount() == 0:
-                del self._categoryItems[item.text()]
-                self.removeRow(row)
+            if item.rowCount() != 0:
+                continue
+            text = item.text()
+            if text not in self._categoryItems:
+                continue
+            del self._categoryItems[text]
+            self.removeRow(row)
 
 
 class TextureList(MainWindowList):
@@ -295,7 +300,8 @@ class TextureList(MainWindowList):
     def __init__(self, parent: QWidget):
         super().__init__(parent)
 
-        from toolset.uic.widgets.texture_list import Ui_Form  # noqa: PLC0415  # pylint: disable=C0415
+        from toolset.uic.widgets.texture_list import Ui_Form  # pylint: disable=C0415
+
         self.ui = Ui_Form()
         self.ui.setupUi(self)
         self.setupSignals()

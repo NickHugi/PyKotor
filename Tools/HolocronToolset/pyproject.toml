@@ -46,51 +46,15 @@ Issues = "https://github.com/NickHugi/PyKotor/issues"
 ## define only linter configurations below this point ##
 ########################################################
 
-[tool.black]
-line-length = 130
-target-version = ['py37']
-include = '\.pyi?$'
-exclude = '''
-/(
-    \.git
-| \.hg
-| \.github
-| \.mypy_cache
-| \.tox
-| \.venv
-| venv
-| _build
-| buck-out
-| build
-| __pycache__
-| dist
-| nuitka_dist
-| \.history
-| \.idea
-| \.chat
-| \.ruff_cache
-| \.trunk
-| .mdx
-| .mdl
-)/
-'''
-
-[tool.isort]
-atomic = true
-profile = "black"
-line_length = 130
-skip_gitignore = true
-
 [tool.ruff]
 extend = "../../pyproject.toml"
+
+[tool.ruff.lint]
 ignore = [
     "N",     # disable case checks for pyqt5
 ]
 
-[tool.ruff.isort]
-required-imports = ["from __future__ import annotations"]
-
-[tool.ruff.per-file-ignores]
+[tool.ruff.lint.per-file-ignores]
 "tests/*.py" = ["ALL"]
 ".github/*py" = ["INP001"]
 "__init__.py" = ["I001", "F401"]
@@ -102,10 +66,13 @@ required-imports = ["from __future__ import annotations"]
 ".mdl" = ["ALL"]
 "pykotor/resource/formats/ncs/compiler/*.py" = ["ALL"]
 
-[tool.ruff.flake8-pytest-style]
+[tool.ruff.lint.flake8-pytest-style]
 fixture-parentheses = false
 
-[tool.ruff.pyupgrade]
+[tool.ruff.lint.isort]
+required-imports = ["from __future__ import annotations"]
+
+[tool.ruff.lint.pyupgrade]
 keep-runtime-typing = true
 
 [tool.mccabe]

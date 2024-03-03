@@ -78,7 +78,8 @@ class DLGEditor(Editor):
         self.ui.setupUi(self)
         self._setupMenus()
         self._setupSignals()
-        self._setupInstallation(installation)
+        if installation:  # will always be None in the unittests.
+            self._setupInstallation(installation)
 
         self._focused: bool = False
         self._dlg: DLG = DLG()
@@ -849,7 +850,7 @@ class DLGEditor(Editor):
         ----------------
             - Gets link and node data from item
             - Creates a QMenu
-            - Adds actions like Focus, Move Up/Down
+            - Adds actions like Focus, etc
             - Adds separator
             - Adds additional actions based on node type
             - Adds Copy/Delete actions if entry or reply
@@ -863,8 +864,9 @@ class DLGEditor(Editor):
 
         menu.addAction("Focus").triggered.connect(lambda: self.focusOnNode(link))
         menu.addSeparator()
-        menu.addAction("Move Up").triggered.connect(lambda: self.shiftItem(item, -1))
-        menu.addAction("Move Down").triggered.connect(lambda: self.shiftItem(item, 1))
+        # REMOVEME: moving nodes is a horrible idea. It's currently broken anyway.
+        #menu.addAction("Move Up").triggered.connect(lambda: self.shiftItem(item, -1))
+        #menu.addAction("Move Down").triggered.connect(lambda: self.shiftItem(item, 1))
         menu.addSeparator()
 
         if isCopy:
@@ -880,8 +882,7 @@ class DLGEditor(Editor):
             if isinstance(self._copy, DLGReply):
                 menu.addAction("Paste Reply as Link").triggered.connect(lambda: self.addCopyLink(item, node, self._copy))
                 menu.addAction("Paste Reply as New").triggered.connect(lambda: self.addCopy(item, node, self._copy))
-        else:
-            ...
+
         if isinstance(node, DLGReply):
             menu.addAction("Copy Reply").triggered.connect(lambda: self.copyNode(node))
             menu.addAction("Delete Reply").triggered.connect(lambda: self.deleteNode(item))
@@ -894,6 +895,8 @@ class DLGEditor(Editor):
         menu.popup(self.ui.dialogTree.viewport().mapToGlobal(point))
 
     def keyPressEvent(self, event: QKeyEvent | None):
+        if not event:
+            return
         if event.key() in {QtKey.Key_Enter, QtKey.Key_Return}:
             selectedItem: QModelIndex = self.ui.dialogTree.currentIndex()
             if selectedItem.isValid():
@@ -932,7 +935,7 @@ class DLGEditor(Editor):
             item: QStandardItem | None = self.model.itemFromIndex(selection.indexes()[0])
             link: DLGLink = item.data(_LINK_ROLE)
             isCopy: bool = item.data(_COPY_ROLE)
-            node: DLGNode = link.node
+            node: DLGNode | None = link.node
 
             if isinstance(node, DLGEntry):
                 self.ui.speakerEdit.setEnabled(True)
@@ -940,6 +943,7 @@ class DLGEditor(Editor):
             elif isinstance(node, DLGReply):
                 self.ui.speakerEdit.setEnabled(False)
                 self.ui.speakerEdit.setText("")
+            assert node is not None, "onSelectionChanged, node cannot be None"
 
             self.ui.textEdit.setEnabled(not isCopy)
 

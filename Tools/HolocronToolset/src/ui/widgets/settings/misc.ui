@@ -44,6 +44,13 @@
         </widget>
        </item>
        <item>
+        <widget class="QCheckBox" name="useModuleFilenamesCheck">
+         <property name="text">
+          <string>Sort by filename rather than area name in the Modules tab.</string>
+         </property>
+        </widget>
+       </item>
+       <item>
         <widget class="QCheckBox" name="greyRimCheck">
          <property name="text">
           <string>Set RIM files to have grey text in the Modules tab of the Main Window.</string>

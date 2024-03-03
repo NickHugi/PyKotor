@@ -207,7 +207,8 @@ class GlobalSettings(Settings):
             installations = {}
 
         counters: dict[Game, int] = {Game.K1: 1, Game.K2: 1}
-        existing_paths: set[CaseAwarePath] = {CaseAwarePath(inst["path"]) for inst in installations.values()}  # Create a set of existing paths
+        # Create a set of existing paths
+        existing_paths: set[CaseAwarePath] = {CaseAwarePath(inst["path"]) for inst in installations.values()}
 
         for game, paths in find_kotor_paths_from_default().items():
             for path in filter(CaseAwarePath.safe_isdir, paths):
@@ -264,6 +265,10 @@ class GlobalSettings(Settings):
     )
     joinRIMsTogether = Settings._addSetting(
         "joinRIMsTogether",
+        False,
+    )
+    useModuleFilenames = Settings._addSetting(
+        "useModuleFilenames",
         False,
     )
     greyRIMText = Settings._addSetting(

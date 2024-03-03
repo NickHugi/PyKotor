@@ -57,11 +57,6 @@ class ERF:
     ):
         return f"{self.__class__.__name__}({self.erf_type!r})"
 
-    def __repr__(
-        self,
-    ):
-        return f"{self.__class__.__name__}({self.erf_type!r})"
-
     def __iter__(
         self,
     ):
@@ -167,7 +162,7 @@ class ERF:
         -------
             A new RIM object.
         """
-        from pykotor.resource.formats.rim import RIM  # Prevent circular imports
+        from pykotor.resource.formats.rim import RIM  # Prevent circular imports  # noqa: PLC0415
 
         rim = RIM()
         for resource in self._resources:

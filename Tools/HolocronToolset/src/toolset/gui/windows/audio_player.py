@@ -23,7 +23,7 @@ if TYPE_CHECKING:
 
 
 class AudioPlayer(QMainWindow):
-    def __init__(self, parent: QWidget):
+    def __init__(self, parent: QWidget | None):
         super().__init__(parent)
 
         from toolset.uic.windows.audio_player import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415

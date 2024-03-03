@@ -43,6 +43,7 @@
         "-Xdev"
       ],
       "console": "integratedTerminal",
+      "justMyCode": true,
     },
     {
       "name": "Run HoloPatcher",
@@ -51,7 +52,8 @@
       "program": "${workspaceFolder}${pathSeparator}Tools${pathSeparator}HoloPatcher${pathSeparator}src${pathSeparator}__main__.py",
       "cwd": "${workspaceFolder}/Tools/HoloPatcher/src/",
       "console": "integratedTerminal",
-      "env": {"PYTHONPATH": "${workspaceFolder}/Libraries/PyKotor/src;${workspaceFolder}/Libraries/Utility/src;${env:PYTHONPATH}"}
+      "env": {"PYTHONPATH": "${workspaceFolder}/Libraries/PyKotor/src;${workspaceFolder}/Libraries/Utility/src;${env:PYTHONPATH}"},
+      "justMyCode": true,
     },
     {
       "name": "Run BatchPatcher",
@@ -60,7 +62,8 @@
       "program": "${workspaceFolder}${pathSeparator}Tools${pathSeparator}BatchPatcher${pathSeparator}src${pathSeparator}__main__.py",
       "cwd": "${workspaceFolder}/Tools/BatchPatcher/src/",
       "console": "integratedTerminal",
-      "env": {"PYTHONPATH": "${workspaceFolder}/Libraries/PyKotor/src;${workspaceFolder}/Libraries/Utility/src;${env:PYTHONPATH}"}
+      "env": {"PYTHONPATH": "${workspaceFolder}/Libraries/PyKotor/src;${workspaceFolder}/Libraries/Utility/src;${env:PYTHONPATH}"},
+      "justMyCode": true,
     },
   ]
 }
