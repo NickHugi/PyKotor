@@ -599,9 +599,10 @@ jobs:
           }
       
           # Convert the array directly to JSON
-          $jsonMatrix = $matrixArray | ConvertTo-Json -Depth 5
+          $jsonMatrix = $matrixArray | ConvertTo-Json -Depth 5 -Compress
           # Use a single line of JSON for the matrix to avoid issues
-          $singleLineJsonMatrix = $jsonMatrix -replace "`n", ""
+          $singleLineJsonMatrix = $jsonMatrix -replace "`r", ""
+          $singleLineJsonMatrix = $singleLineJsonMatrix -replace "`n", ""
           Write-Host "Matrix JSON:"
           Write-Host $singleLineJsonMatrix
       
