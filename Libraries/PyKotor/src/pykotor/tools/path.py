@@ -10,8 +10,8 @@ from pykotor.tools.registry import find_software_key, winreg_key
 from utility.string import ireplace
 from utility.system.path import (
     Path as InternalPath,
-    PosixPath as InternalPosixPath,
     PurePath as InternalPurePath,
+    PosixPath as InternalPosixPath,
     WindowsPath as InternalWindowsPath,
 )
 from utility.system.registry import resolve_reg_key_to_path
@@ -366,7 +366,7 @@ def get_default_paths() -> dict[str, dict[Game, list[str]]]:
         },
         "Darwin": {
             Game.K1: [
-                "~/Library/Application Support/Steam/steamapps/common/swkotor/Knights of the Old Republic.app/Contents/Assets",
+                "~/Library/Application Support/Steam/steamapps/common/swkotor/Knights of the Old Republic.app/Contents/Assets",  # Verified
                 "~/Library/Applications/Steam/steamapps/common/swkotor/Knights of the Old Republic.app/Contents/Assets/",
                 # TODO: app store version of k1
             ],

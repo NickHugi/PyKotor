@@ -44,7 +44,8 @@ class UTTEditor(Editor):
         self.ui.setupUi(self)
         self._setupMenus()
         self._setupSignals()
-        self._setupInstallation(installation)
+        if installation is not None:  # will only be none in the unittests
+            self._setupInstallation(installation)
 
         self._utt: UTT = UTT()
 
@@ -66,7 +67,13 @@ class UTTEditor(Editor):
         self.ui.factionSelect.setItems(factions.get_column("label"))
         self.ui.trapSelect.setItems(traps.get_column("label"))
 
-    def load(self, filepath: os.PathLike | str, resref: str, restype: ResourceType, data: bytes):
+    def load(
+        self,
+        filepath: os.PathLike | str,
+        resref: str,
+        restype: ResourceType,
+        data: bytes,
+    ):
         super().load(filepath, resref, restype, data)
 
         utt: UTT = read_utt(data)

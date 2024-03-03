@@ -127,7 +127,7 @@ class TPCBinaryReader(ResourceReader):
             mm_height = max(mm_height, 1)
 
         file_size = self._reader.size()
-        txi = self._reader.read_string(file_size - self._reader.position())
+        txi = self._reader.read_string(file_size - self._reader.position(), encoding="ascii")
 
         self._tpc.txi = txi
         self._tpc.set_data(width, height, mipmaps, tpc_format)

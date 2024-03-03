@@ -49,11 +49,16 @@ class FileResource:
         )
 
         self._sha256_hash: str = ""
-        self._internal = False
-        self._task_running = False
+        self._internal: bool = False
+        self._hash_task_running: bool = False
 
     def __setattr__(self, __name, __value):
-        if hasattr(self, __name) and __name not in {"_internal", "_task_running"} and not self._internal and not self._task_running:
+        if (
+            hasattr(self, __name)
+            and __name not in {"_internal", "_hash_task_running"}
+            and not self._internal
+            and not self._hash_task_running
+        ):
             msg = f"Cannot modify immutable FileResource instance, attempted `setattr({self!r}, {__name!r}, {__value!r})`"
             raise RuntimeError(msg)
 
@@ -76,7 +81,7 @@ class FileResource:
     def __str__(self):
         return str(self._identifier)
 
-    def __eq__(  # Checks are ordered from fastest to slowest.
+    def __eq__(
         self,
         other: FileResource | ResourceIdentifier | bytes | bytearray | memoryview | object,
     ):
@@ -126,7 +131,13 @@ class FileResource:
 
             capsule = Capsule(self._filepath)
             res: FileResource | None = capsule.info(self._resname, self._restype)
-            assert res is not None, f"Resource '{self._identifier}' not found in Capsule at '{self._filepath}'"
+            if res is None and self._identifier == self._filepath.name and self._filepath.safe_isfile():  # the capsule is the resource itself:
+                self._offset = 0
+                self._size = self._filepath.stat().st_size
+                return
+            if res is None:
+                msg = f"Resource '{self._identifier}' not found in Capsule at '{self._filepath}'"
+                raise FileNotFoundError(msg)
 
             self._offset = res.offset()
             self._size = res.size()
@@ -161,11 +172,12 @@ class FileResource:
                 file.seek(self._offset)
                 data: bytes = file.read_bytes(self._size)
 
-                if not self._task_running:
+                if not self._hash_task_running:
+
                     def background_task(res: FileResource, sentdata: bytes):
-                        res._task_running = True
-                        res._file_hash = generate_hash(sentdata)
-                        res._task_running = False
+                        res._hash_task_running = True  # noqa: SLF001
+                        res._file_hash = generate_hash(sentdata)  # noqa: SLF001
+                        res._hash_task_running = False  # noqa: SLF001
 
                     with ThreadPoolExecutor(thread_name_prefix="background_fileresource_sha1hash_calculation") as executor:
                         executor.submit(background_task, self, data)
@@ -238,6 +250,9 @@ class ResourceIdentifier:
             return self.restype
         msg = f"Index out of range for ResourceIdentifier. key: {key}"
         raise IndexError(msg)
+
+    def unpack(self) -> tuple[str, ResourceType]:
+        return self.resname, self.restype
 
     def __eq__(self, other: object):
         # sourcery skip: assign-if-exp, reintroduce-else

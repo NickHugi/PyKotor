@@ -60,7 +60,8 @@ class JRLEditor(Editor):
         self.ui.setupUi(self)
         self._setupMenus()
         self._setupSignals()
-        self._setupInstallation(installation)
+        if installation is not None:  # will only be none in the unittests
+            self._setupInstallation(installation)
 
         self._jrl: JRL = JRL()
         self._model: QStandardItemModel = QStandardItemModel(self)
