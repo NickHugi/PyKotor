@@ -4,7 +4,7 @@ from copy import deepcopy
 from typing import TYPE_CHECKING
 
 from PyQt5 import QtCore
-from PyQt5.QtCore import QObject, QSettings
+from PyQt5.QtCore import QSettings
 from PyQt5.QtGui import QImage, QPixmap, QTransform
 from PyQt5.QtWidgets import QListWidgetItem, QMessageBox
 
@@ -28,6 +28,7 @@ from utility.error_handling import format_exception_with_variables
 if TYPE_CHECKING:
     import os
 
+    from PyQt5.QtCore import QObject
     from PyQt5.QtWidgets import QWidget
     from typing_extensions import Literal
 

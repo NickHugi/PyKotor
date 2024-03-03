@@ -1,8 +1,22 @@
 from __future__ import annotations
 
 import os
+import pathlib
+import sys
 
-from utility.system.path import Path
+
+def update_sys_path(path: pathlib.Path):
+    working_dir = str(path)
+    if working_dir not in sys.path:
+        sys.path.append(working_dir)
+
+
+file_absolute_path = pathlib.Path(__file__).resolve()
+utility_path = file_absolute_path.parents[4] / "Libraries" / "Utility" / "src"
+if utility_path.exists():
+    update_sys_path(utility_path)
+
+from utility.system.path import Path  # noqa: E402
 
 # working dir should always be 'toolset' when running this script.
 this_script_path = Path(__file__).absolute()
@@ -23,16 +37,16 @@ def get_ui_files() -> list[Path]:
 
 def compile_ui(ignore_timestamp: bool = False):
     for ui_file in get_ui_files():
-        if not ui_file.safe_isfile():
+        if ui_file.safe_isdir():
             print(f"Skipping {ui_file}, not a file.")
             continue
         relpath = ui_file.relative_to(UI_SOURCE_DIR)
         subdir_ui_target = Path(UI_TARGET_DIR, relpath)
         ui_target: Path = subdir_ui_target.with_suffix(".py")
 
-        if not subdir_ui_target.safe_exists():
-            print("mkdir", subdir_ui_target)
-            subdir_ui_target.mkdir(exist_ok=True, parents=True)
+        if not ui_target.safe_isfile():
+            print("mkdir", ui_target.parent)
+            ui_target.parent.mkdir(exist_ok=True, parents=True)
 
         # If the target file does not yet exist, use timestamp=0 as this will force the timestamp check to pass
         source_timestamp: float = ui_file.stat().st_mtime

@@ -3,7 +3,6 @@ from __future__ import annotations
 from copy import deepcopy
 from typing import TYPE_CHECKING
 
-from PyQt5.QtCore import QObject
 from PyQt5.QtWidgets import QMessageBox
 
 from pykotor.common.misc import ResRef
@@ -22,6 +21,7 @@ from toolset.utils.window import openResourceEditor
 if TYPE_CHECKING:
     import os
 
+    from PyQt5.QtCore import QObject
     from PyQt5.QtWidgets import QWidget
 
     from pykotor.extract.file import ResourceResult
@@ -69,7 +69,8 @@ class UTDEditor(Editor):
         self.ui.setupUi(self)
         self._setupMenus()
         self._setupSignals()
-        self._setupInstallation(installation)
+        if installation is not None:  # will only be none in the unittests
+            self._setupInstallation(installation)
 
         self.update3dPreview()
         self.new()

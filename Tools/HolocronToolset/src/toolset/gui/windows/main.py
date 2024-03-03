@@ -183,7 +183,7 @@ class ToolWindow(QMainWindow):
         self.ui.texturesWidget.requestOpenResource.connect(self.onOpenResources)
 
         self.ui.extractButton.clicked.connect(lambda: self.onExtractResources(self.getActiveResourceWidget().selectedResources(), resourceWidget=self.getActiveResourceWidget()))
-        self.ui.openButton.clicked.connect(lambda *args: self.onOpenResources(self.getActiveResourceWidget().selectedResources(), *args, resourceWidget=self.getActiveResourceWidget()))
+        self.ui.openButton.clicked.connect(lambda *args: self.onOpenResources(self.getActiveResourceWidget().selectedResources(), self.settings.gff_specializedEditors, resourceWidget=self.getActiveResourceWidget()))
 
         self.ui.openAction.triggered.connect(self.openFromFile)
         self.ui.actionSettings.triggered.connect(self.openSettingsDialog)
@@ -394,8 +394,8 @@ class ToolWindow(QMainWindow):
     def onOpenResources(
         self,
         resources: list[FileResource],
-        useSpecializedEditor: bool | None = None,  # noqa: FBT001
-        resourceWidget: ResourceList | TextureList | None = None 
+        useSpecializedEditor: bool | None = None,
+        resourceWidget: ResourceList | TextureList | None = None,
     ):
         for resource in resources:
             _filepath, _editor = openResourceEditor(
@@ -439,23 +439,23 @@ class ToolWindow(QMainWindow):
     def dropEvent(self, e: QtGui.QDropEvent | None):
         if e is None:
             return
-        if e.mimeData().hasUrls():
-            for url in e.mimeData().urls():
-                filepath = url.toLocalFile()
-                r_filepath = Path(filepath)
-                with r_filepath.open("rb") as file:
-                    resref, restype = ResourceIdentifier.from_path(filepath)
-                    data = file.read()
-                    openResourceEditor(r_filepath, resref, restype, data, self.active, self)
+        if not e.mimeData().hasUrls():
+            return
+        for url in e.mimeData().urls():
+            filepath: str = url.toLocalFile()
+            data = BinaryReader.load_file(filepath)
+            resref, restype = ResourceIdentifier.from_path(filepath)
+            openResourceEditor(filepath, resref, restype, data, self.active, self)
 
     def dragEnterEvent(self, e: QtGui.QDragEnterEvent | None):
         if e is None:
             return
-        if e.mimeData().hasUrls():
-            for url in e.mimeData().urls():
-                with suppress(Exception):
-                    _resref, _restype = ResourceIdentifier.from_path(url.toLocalFile()).validate()
-                    e.accept()
+        if not e.mimeData().hasUrls():
+            return
+        for url in e.mimeData().urls():
+            with suppress(Exception):
+                _resref, _restype = ResourceIdentifier.from_path(url.toLocalFile()).validate()
+                e.accept()
 
     # endregion
 
@@ -550,7 +550,7 @@ class ToolWindow(QMainWindow):
             restype=ResourceType.JRL,
             data=res.data,
             installation=self.active,
-            parentwindow=self,
+            parentWindow=self,
         )
 
     def openFileSearchDialog(self):
@@ -565,6 +565,7 @@ class ToolWindow(QMainWindow):
         searchDialog = FileSearcher(self, self.installations)
         searchDialog.setModal(False)  # Make the dialog non-modal
         searchDialog.show()  # Show the dialog without blocking
+        addWindow(searchDialog)
         searchDialog.fileResults.connect(self.handleSearchCompleted)
 
     def handleSearchCompleted(
@@ -575,6 +576,7 @@ class ToolWindow(QMainWindow):
         resultsDialog = FileResults(self, results_list, searchedInstallation)
         resultsDialog.setModal(False)  # Make the dialog non-modal
         resultsDialog.show()  # Show the dialog without blocking
+        addWindow(resultsDialog)
         resultsDialog.selectionSignal.connect(self.handleResultsSelection)
 
     def handleResultsSelection(
@@ -632,25 +634,44 @@ class ToolWindow(QMainWindow):
         decoded_content = base64.b64decode(base64_content)  # Correctly decoding the base64 content
         data = json.loads(decoded_content.decode("utf-8"))
 
-        toolsetLatestVersion = tuple(map(int, str(data["toolsetLatestVersion"]).split(".")))
-        if toolsetLatestVersion > PROGRAM_VERSION:
-            toolsetDownloadLink = data["toolsetDownloadLink"]
+        if isinstance(PROGRAM_VERSION, tuple):
+            x = ""
+            for v in PROGRAM_VERSION:
+                if not x:
+                    x = str(v)
+                else:
+                    x += f".{v}"
+        else:
+            x = str(PROGRAM_VERSION)
 
+        version_check: bool | None = None
+        with suppress(Exception):
+            from packaging import version
+
+            version_check = version.parse(data["toolsetLatestVersion"]) > version.parse(x)
+        if version_check is None:
+            with suppress(Exception):
+                from distutils.version import LooseVersion
+
+                version_check = LooseVersion(data["toolsetLatestVersion"]) > LooseVersion(x)
+        if version_check is False:
+            if silent:
+                return
             QMessageBox(
-                icon=QMessageBox.Information,
-                title="New version is available.",
-                text=f"New version available for <a href='{toolsetDownloadLink}'>download</a>.",
-                buttons=QMessageBox.Ok,
-                parent=self,
+                QMessageBox.Information,
+                "Version is up to date",
+                f"You are running the latest version ({'.'.join(str(i) for i in PROGRAM_VERSION)}).",
+                QMessageBox.Ok,
+                self,
             ).exec_()
-        elif silent:
-            return
+
+        toolsetDownloadLink = data["toolsetDownloadLink"]
         QMessageBox(
-            icon=QMessageBox.Information,
-            title="Version is up to date",
-            text=f"You are running the latest version ({'.'.join(str(i) for i in PROGRAM_VERSION)}).",
-            buttons=QMessageBox.Ok,
-            parent=self,
+            QMessageBox.Information,
+            "New version is available.",
+            f"New version available for <a href='{toolsetDownloadLink}'>download</a>.<br>{data['toolsetLatestNotes']}",
+            QMessageBox.Ok,
+            self,
         ).exec_()
 
     # endregion
@@ -869,9 +890,9 @@ class ToolWindow(QMainWindow):
 
                 print("Loading installation resources into UI...")
                 self.ui.coreWidget.setResources(self.active.chitin_resources())
-                self.refreshModuleList(reload=True)  # TODO: Modules/Override/Textures are loaded twice when HT is first initialized.
-                self.refreshOverrideList(reload=True)
-                self.refreshTexturePackList(reload=True)
+                self.refreshModuleList(reload=False)  # TODO: Modules/Override/Textures are loaded twice when HT is first initialized.
+                self.refreshOverrideList(reload=False)
+                self.refreshTexturePackList(reload=False)
                 self.ui.texturesWidget.setInstallation(self.active)
 
                 print("Updating menus...")

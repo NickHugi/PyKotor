@@ -5,10 +5,11 @@ import traceback
 from contextlib import suppress
 from typing import TYPE_CHECKING, Any
 
+import pyperclip
+
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QColor
 from PyQt5.QtWidgets import QHBoxLayout, QLabel, QMenu, QStatusBar, QWidget
-import pyperclip
 
 from pykotor.common.geometry import SurfaceMaterial, Vector2
 from pykotor.common.misc import Color

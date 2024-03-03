@@ -13,6 +13,7 @@ from pykotor.extract.file import ResourceIdentifier
 from pykotor.resource.formats.erf import ERF, ERFResource, ERFType, read_erf, write_erf
 from pykotor.resource.formats.rim import RIM, read_rim, write_rim
 from pykotor.resource.type import ResourceType
+from pykotor.tools.misc import is_capsule_file
 from toolset.gui.editor import Editor
 from toolset.gui.widgets.settings.installations import GlobalSettings
 from toolset.utils.window import openResourceEditor
@@ -58,6 +59,7 @@ class ERFEditor(Editor):
         self.ui.setupUi(self)
         self._setupMenus()
         self._setupSignals()
+        self._is_capsule_editor = True
 
         self.model = QStandardItemModel(self)
         self.ui.tableView.setModel(self.model)
@@ -122,6 +124,7 @@ class ERFEditor(Editor):
         self.model.setColumnCount(3)
         self.model.setHorizontalHeaderLabels(["ResRef", "Type", "Size"])
         self.ui.refreshButton.setEnabled(True)
+
         def human_readable_size(byte_size: float) -> str:
             for unit in ["bytes", "KB", "MB", "GB", "TB", "PB", "EB", "ZB", "YB"]:
                 if byte_size < 1024:  # noqa: PLR2004
@@ -217,9 +220,14 @@ class ERFEditor(Editor):
 
         data: tuple[bytes, bytes] = self.build()
         self._revert = data[0]
-
-        with self._filepath.open("wb") as file:
-            file.write(data[0])
+        if is_capsule_file(self._filepath.parent) and not self._filepath.safe_isfile():
+            self.saveAs()
+            # saveNested currently broken.
+            return
+            self._saveNestedCapsule(*data)
+        else:
+            with self._filepath.open("wb") as file:
+                file.write(data[0])
 
     def extractSelected(self):
         """Extract selected resources to a folder.
@@ -276,7 +284,7 @@ class ERFEditor(Editor):
         for filepath in filepaths:
             c_filepath = Path(filepath)
             try:
-                resref, restype = ResourceIdentifier.from_path(c_filepath).validate()
+                resref, restype = ResourceIdentifier.from_path(c_filepath).validate().unpack()
                 data = BinaryReader.load_file(c_filepath)
                 resource = ERFResource(ResRef(resref), restype, data)
 
@@ -319,18 +327,20 @@ class ERFEditor(Editor):
             item = self.model.itemFromIndex(index)
             resource: ERFResource = item.data()
 
-            # if resource.restype.name in ERFType.__members__:
-            #    QMessageBox(
-            #        QMessageBox.Warning,
-            #        "Cannot open nested ERF files",
-            #        "Editing ERF or RIM files nested within each other is not supported.",
-            #        QMessageBox.Ok,
-            #        self,
-            #    ).exec_()
-            #    continue
+            if resource.restype.name in ERFType.__members__:
+                QMessageBox(
+                    QMessageBox.Warning,
+                    "Nested ERF/RIM files is mostly unsupported.",
+                    "You are attempting to open a nested ERF/RIM. Any action besides extracting from them will not work. You've been warned.",
+                    QMessageBox.Ok,
+                    self,
+                ).exec_()
+            new_filepath = self._filepath
+            if resource.restype.name in ERFType.__members__ or resource.restype == ResourceType.RIM:
+                new_filepath /= str(ResourceIdentifier(str(resource.resref), resource.restype))
 
             tempPath, editor = openResourceEditor(
-                self._filepath,
+                new_filepath,
                 str(resource.resref),
                 resource.restype,
                 resource.data,

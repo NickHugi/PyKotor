@@ -91,7 +91,7 @@ multi_line_output = 3
 line-length = 130
 
 # Enable preview features.
-preview = true
+preview = false
 
 fix = true
 force-exclude = true
@@ -133,6 +133,7 @@ ignore = [
     "ANN204",   # Missing return type annotation for special method
     "ARG002",   # Unused method argument: `method`
     "COM812",   # missing-trailing-comma
+    "ERA001",   # Found commented out code.
 #    "FBT001",   # Boolean positional arg in function definition
 #    "FBT002",   # Boolean default value in function definition
     "D100",     # Missing docstring in public module
@@ -155,6 +156,12 @@ ignore = [
     "N815",     # Variable `var` in class scope should not be mixedCase
     "PLR0904",  # Too many public methods
     "T201",     # 'print' found
+    "TRY003",   # Avoid specifying long messages outside the exception class
+    "EM101",    # Exception must not use a string literal, assign to variable first
+    "EM102",    # Exception must not use an f-string literal, assign to variable first
+    "SIM108",   # Use ternary operator instead of 'if' 'else' block
+    "SIM114",   # Combine `if` branches using logical `or` operator
+
 # The following are currently violated by the codebase.
 #    "D205",     # 1 blank line required between summary line and description
 #    "E402",     # Module level import not at top of file
@@ -182,9 +189,10 @@ ignore = [
 #    "Q003",     # avoidable-escaped-quote
 #    "COM812",   # missing-trailing-comma
 #    "COM819",   # prohibited-trailing-comma
+    "ISC001",
 ]
 
-[tool.ruff.per-file-ignores]
+[tool.ruff.lint.per-file-ignores]
 "*.pyi" = [
   "I002", # from __future__ import annotations
 ]
@@ -198,6 +206,7 @@ ignore = [
 ".mdx" = ["ALL"]
 ".mdl" = ["ALL"]
 "pykotor/resource/formats/ncs/compiler/*.py" = ["ALL"]
+"tests/results" = ["ALL"]
 
 [tool.ruff.lint.flake8-pytest-style]
 fixture-parentheses = false
@@ -214,9 +223,6 @@ suppress-none-returning = true
 
 [tool.ruff.lint.flake8-bandit]
 check-typed-exception = true
-
-[tool.ruff.lint.flake8-errmsg]
-max-string-length = 20
 
 [tool.ruff.lint.flake8-quotes]
 docstring-quotes = "double"
@@ -244,8 +250,10 @@ no-sections = false
 required-imports = ["from __future__ import annotations"]
 
 [tool.ruff.format]
-indent-style = "tab"
-skip-magic-trailing-comma = true
+indent-style = "space"
+skip-magic-trailing-comma = false
+line-ending = "auto"
+preview = false
 
 [tool.ruff.lint.pyupgrade]
 keep-runtime-typing = false
@@ -254,19 +262,19 @@ keep-runtime-typing = false
 max-complexity = 25
 
 [tool.ruff.lint.pycodestyle]
-max-doc-length = 160
+max-doc-length = 200
 
 [tool.ruff.lint.pydocstyle]
 convention = "google"
 
 [tool.style]
-based_on_style = "pep8"
+based_on_style = "google"
 split_before_named_assigns = true
 split_complex_comprehension = true
 split_arguments_when_comma_terminated = true
 
 [tool.pylintrc]
-max-line-length = 130
+max-line-length = 200
 
 [tool.pytest.ini_options]
 log_cli = true
