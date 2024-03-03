@@ -535,7 +535,6 @@ jobs:
       - name: Re-package artifacts by Python version and architecture
         shell: pwsh
         run: |
-          Dir "published_workflow_builds" | Get-Childitem
           $here_dirpath = Split-Path -Parent $MyInvocation.MyCommand.Definition
           $packagedArtifactsPath = "$here_dirpath/packaged_artifacts"
           Remove-Item -Path $packagedArtifactsPath -Recurse -ErrorAction Ignore -Force
@@ -602,7 +601,7 @@ jobs:
           # Convert the array directly to JSON
           $jsonMatrix = $matrixArray | ConvertTo-Json -Depth 5
           # Use a single line of JSON for the matrix to avoid issues
-          $singleLineJsonMatrix = $jsonMatrix -replace "`r`n", ""
+          $singleLineJsonMatrix = $jsonMatrix -replace "`n", ""
           Write-Host "Matrix JSON:"
           Write-Host $singleLineJsonMatrix
       
