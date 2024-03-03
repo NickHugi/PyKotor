@@ -381,6 +381,7 @@ jobs:
           pip install "pyinstaller==5.4" --prefer-binary
         }
         pip install -r Tools/GuiDuplicator/requirements.txt --prefer-binary
+        $output = ""
         ./compile/compile_gui_duplicator.ps1 -noprompt -venv_name .venv_guiduplicator_${{ matrix.os }}_${{ matrix.python-version }}_${{ matrix.architecture }} -upx_dir $upxDir 2>&1 | ForEach-Object {
           Write-Output $_
           $output += $_
@@ -447,6 +448,34 @@ jobs:
         path: |
           pytest_report.html
           pytest_report.xml
+
+  package-and-upload:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: published_workflow_builds/
+          pattern: publish_*
+
+      - name: Re-package artifacts by Python version and architecture
+        run: |
+          mkdir packaged_artifacts
+          cd published_workflow_builds
+          for dir in */; do
+            python_version=$(echo "$dir" | cut -d'_' -f2)
+            architecture=$(echo "$dir" | cut -d'_' -f3)
+            os=$(echo "$dir" | cut -d'_' -f1)
+            zip -r "../packaged_artifacts/${python_version}_${architecture}.zip" "$dir" -i "*_$os.zip"
+          done
+        shell: bash
+
+      - name: Upload re-packaged artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: packaged-${{ github.run_number }}
+          path: packaged_artifacts/*.zip
 
   update-readme:
     needs: build  # do not start this job until all 'build' jobs complete
