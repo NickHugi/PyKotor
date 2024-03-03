@@ -18,7 +18,9 @@ if ($this_noprompt) {
 }
 
 if ((Get-OS) -eq "Mac") {
-    brew install python@3.12 python-tk
+    $pyVersion = (Get-Python-Version) -replace '(\d+\.\d+)\.\d+', '$1'
+    brew update
+    brew install python-tk@$pyVersion tcl-tk
 } elseif ((Get-OS) -eq "Linux") {
     if (Test-Path -Path "/etc/os-release") {
         switch ((Get-Linux-Distro-Name)) {

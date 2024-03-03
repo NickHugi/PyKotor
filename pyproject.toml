@@ -261,6 +261,11 @@ keep-runtime-typing = false
 [tool.mccabe]
 max-complexity = 25
 
+[tool.bandit]
+exclude_dirs = ["tests"]
+tests = ["B201", "B301"]
+skips = ["B101", "B601"]
+
 [tool.ruff.lint.pycodestyle]
 max-doc-length = 200
 

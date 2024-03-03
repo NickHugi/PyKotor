@@ -177,6 +177,7 @@ jobs:
         $ErrorActionPreference = 'Stop'
         try {
           ./install_python_venv.ps1 -noprompt -venv_name .venv_toolset_${{ matrix.os }}_${{ matrix.python-version }}_${{ matrix.architecture }}
+          python -m pip install --upgrade pip
           if ("${{ matrix.python-version }}" -eq "3.12") {
             pip install "pyinstaller==5.13" --prefer-binary
           } elseif ("${{ matrix.python-version }}" -eq "3.11") {
@@ -250,6 +251,7 @@ jobs:
         $ErrorActionPreference = 'Stop'
         try {
           ./install_python_venv.ps1 -noprompt -venv_name .venv_holopatcher_${{ matrix.os }}_${{ matrix.python-version }}_${{ matrix.architecture }}
+          python -m pip install --upgrade pip
           if ("${{ matrix.python-version }}" -eq "3.12") {
             pip install "pyinstaller==5.13" --prefer-binary
           } elseif ("${{ matrix.python-version }}" -eq "3.11") {
@@ -321,6 +323,7 @@ jobs:
         $ErrorActionPreference = 'Stop'
         try {
           ./install_python_venv.ps1 -noprompt -venv_name .venv_batchpatcher_${{ matrix.os }}_${{ matrix.python-version }}_${{ matrix.architecture }}
+          python -m pip install --upgrade pip
           if ("${{ matrix.python-version }}" -eq "3.12") {
             pip install "pyinstaller==5.13" --prefer-binary
           } elseif ("${{ matrix.python-version }}" -eq "3.11") {
@@ -391,6 +394,7 @@ jobs:
         $upxDir = $env:UPX_DIR
         Write-Host "Using UPX directory at '$upxDir'"
         ./install_python_venv.ps1 -noprompt -venv_name .venv_kotordiff_${{ matrix.os }}_${{ matrix.python-version }}_${{ matrix.architecture }}
+        python -m pip install --upgrade pip
         if ("${{ matrix.python-version }}" -eq "3.12") {
           pip install "pyinstaller==5.13" --prefer-binary
         } elseif ("${{ matrix.python-version }}" -eq "3.11") {
@@ -435,6 +439,7 @@ jobs:
         $upxDir = $env:UPX_DIR
         Write-Host "Using UPX directory at '$upxDir'"
         ./install_python_venv.ps1 -noprompt -venv_name .venv_guiduplicator_${{ matrix.os }}_${{ matrix.python-version }}_${{ matrix.architecture }}
+        python -m pip install --upgrade pip
         if ("${{ matrix.python-version }}" -eq "3.12") {
           pip install "pyinstaller==5.13" --prefer-binary
         } elseif ("${{ matrix.python-version }}" -eq "3.11") {
@@ -493,6 +498,7 @@ jobs:
       if: ${{ success() || failure() }}
       run: |
         ./install_python_venv.ps1 -noprompt -venv_name .venv_${{ matrix.os }}_${{ matrix.python-version }}_${{ matrix.architecture }}
+        python -m pip install --upgrade pip
         if ($env:python_version -eq "3.7") {
           pip install -r requirements-dev-py37.txt --prefer-binary
         }
@@ -584,8 +590,6 @@ jobs:
         id: set-matrix
         run: |
           $artifactNames = Get-Content 'artifact-names.txt' -ReadCount 0
-          Write-Host "Contents of artifact-names.txt:"
-          $artifactNames | ForEach-Object { Write-Host $_ }
       
           # Initialize an array to hold the artifact names directly
           $matrixArray = @()
@@ -607,7 +611,7 @@ jobs:
           Write-Host $singleLineJsonMatrix
       
           # Output the simplified JSON matrix to the GITHUB_OUTPUT environment variable
-          echo "matrix=$singleLineJsonMatrix" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+          Add-Content -Path $env:GITHUB_OUTPUT -Value "matrix=$singleLineJsonMatrix"
         shell: pwsh
 
   upload:
