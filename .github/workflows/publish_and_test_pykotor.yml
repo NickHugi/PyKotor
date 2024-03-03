@@ -586,12 +586,12 @@ jobs:
 
           Set-Content -Path $ReadmePath -Value $ReadmeContent
           git fetch origin $branchName
+          git add $ReadmePath
+          git add $testsResultsPath --force
           # Checking if there are newer commits on the remote branch than the commit that triggered the workflow
           if (git log "${{ github.sha }}"..origin/$branchName --oneline) {
               Write-Error "Newer commits are present on the remote branch, cannot update readme"
               exit 1
           }
-          git add $ReadmePath
-          git add $testsResultsPath --force
           git commit -m "Add test results/Update README.md with test results status badges."
           git push --force-with-lease origin HEAD:${{ github.ref_name }}
