@@ -11,6 +11,7 @@ from utility.string import ireplace
 from utility.system.path import (
     Path as InternalPath,
     PurePath as InternalPurePath,
+    PosixPath as InternalPosixPath,
     WindowsPath as InternalWindowsPath,
 )
 from utility.system.registry import resolve_reg_key_to_path
