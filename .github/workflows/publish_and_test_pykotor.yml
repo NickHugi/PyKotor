@@ -592,9 +592,9 @@ jobs:
 
               # Move to final upload location.
               Move-Item -LiteralPath $osSpecificZipPath -Destination $outerZipPath
+              Write-Output "$outerZipPath contents:"
+              Dir -Recurse $outerZipPath | Get-Childitem
 
-              # Clean up the intermediate zip file
-              Remove-Item -Path $osSpecificZipPath -Force -ErrorAction Ignore
               $artifactNames += $outerZipBaseName
             }
           }
