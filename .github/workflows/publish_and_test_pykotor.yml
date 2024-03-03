@@ -606,7 +606,15 @@ jobs:
           # Navigate back to the root of the workspace
           Set-Location -Path "../"
 
+      - name: Upload re-packaged artifact (fallback)
+        if: ${{ success() || failure() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: packaged_artifacts
+          path: packaged_artifacts/*
+
       - name: Generate matrix for uploading
+        if: ${{ success() || failure() }}
         id: set-matrix
         run: |
           $artifactNames = Get-Content 'artifact-names.txt' -ReadCount 0
@@ -633,12 +641,6 @@ jobs:
           # Output the simplified JSON matrix to the GITHUB_OUTPUT environment variable
           Add-Content -Path $env:GITHUB_OUTPUT -Value "matrix=$singleLineJsonMatrix"
         shell: pwsh
-
-      - name: Upload re-packaged artifact (fallback)
-        uses: actions/upload-artifact@v4
-        with:
-          name: packaged_artifacts
-          path: packaged_artifacts/*
 
   upload:
     needs: package
