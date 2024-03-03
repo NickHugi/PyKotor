@@ -62,7 +62,7 @@ from pykotor.resource.type import ResourceType
 from pykotor.tools.encoding import decode_bytes_with_fallbacks
 from pykotor.tools.misc import is_any_erf_type_file, is_capsule_file
 from pykotor.tools.path import CaseAwarePath, find_kotor_paths_from_default
-from pykotor.tslpatcher.logger import PatchLogger
+from pykotor.tslpatcher.logger import LogType, PatchLogger
 from translate.language_translator import TranslationOption, Translator
 from utility.system.path import Path, PurePath
 
@@ -607,7 +607,7 @@ def recurse_through_list(
     return made_change, alien_vo_count
 
 
-def fix_encoding(text: str, encoding: str):
+def fix_encoding(text: str, encoding: str) -> str:
     return text.encode(encoding=encoding, errors="ignore").decode(encoding=encoding, errors="ignore").strip()
 
 
@@ -952,7 +952,7 @@ def determine_input_path(path: Path):
     return None
 
 
-def execute_patchloop_thread():
+def execute_patchloop_thread() -> str | None:
     try:
         SCRIPT_GLOBALS.install_running = True
         do_main_patchloop()
@@ -963,7 +963,7 @@ def execute_patchloop_thread():
         return messagebox.showerror("Error", f"An error occurred during patching\n{e!r}")
 
 
-def do_main_patchloop():
+def do_main_patchloop() -> str:
     # Validate args
     if not SCRIPT_GLOBALS.chosen_languages:
         if SCRIPT_GLOBALS.translate:
@@ -1274,7 +1274,7 @@ class KOTORPatchingToolUI:
 
     def apply_translation_option(self, varname, value):
         setattr(SCRIPT_GLOBALS.pytranslator, varname, value)  # TODO: add all the variable names to __init__ of Translator class
-        self.write_log(f"Applied Options for {self.translation_option.get()}: {varname} = {value}")
+        self.write_log(PatchLog(f"Applied Options for {self.translation_option.get()}: {varname} = {value}", LogType.NOTE))
         cur_toption: TranslationOption = TranslationOption.__members__[self.translation_option.get()]
         msg: str = cur_toption.validate_args(SCRIPT_GLOBALS.pytranslator)
         if msg:
