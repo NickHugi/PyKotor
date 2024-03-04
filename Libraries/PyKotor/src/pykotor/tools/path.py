@@ -10,8 +10,8 @@ from pykotor.tools.registry import find_software_key, winreg_key
 from utility.string import ireplace
 from utility.system.path import (
     Path as InternalPath,
-    PosixPath as InternalPosixPath,
     PurePath as InternalPurePath,
+    PosixPath as InternalPosixPath,
     WindowsPath as InternalWindowsPath,
 )
 from utility.system.registry import resolve_reg_key_to_path
@@ -398,15 +398,19 @@ def get_default_paths() -> dict[str, dict[Game, list[str]]]:
         },
         "Darwin": {
             Game.K1: [
-                "~/Library/Application Support/Steam/steamapps/common/swkotor/Knights of the Old Republic.app/Contents/Assets",
+                "~/Library/Application Support/Steam/steamapps/common/swkotor/Knights of the Old Republic.app/Contents/Assets",  # Verified
                 "~/Library/Applications/Steam/steamapps/common/swkotor/Knights of the Old Republic.app/Contents/Assets/",
                 # TODO: app store version of k1
             ],
             Game.K2: [
                 "~/Library/Application Support/Steam/steamapps/common/Knights of the Old Republic II/Knights of the Old Republic II.app/Contents/Assets",
                 "~/Library/Applications/Steam/steamapps/common/Knights of the Old Republic II/Star Wars™: Knights of the Old Republic II.app/Contents/GameData",
+                "~/Library/Application Support/Steam/steamapps/common/Knights of the Old Republic II/KOTOR2.app/Contents/GameData/"  # Verified
+                # The following might be from a pirated version of the game, they were provided anonymously
+                # It is also possible these are the missing app store paths.
                 "~/Applications/Knights of the Old Republic 2.app/Contents/Resources/transgaming/c_drive/Program Files/SWKotOR2/",
                 "/Applications/Knights of the Old Republic 2.app/Contents/Resources/transgaming/c_drive/Program Files/SWKotOR2/",
+                # TODO: app store version of k2
             ],
         },
         "Linux": {

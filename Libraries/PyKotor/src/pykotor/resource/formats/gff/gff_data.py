@@ -65,6 +65,17 @@ class GFFContent(Enum):
         return {x.name for x in cls}
 
     @classmethod
+    def get_extensions(cls) -> set[str]:
+        gff_extensions: set[str] = set()
+        res_contents: set[GFFContent] = {cls.PTH, cls.NFO, cls.PT, cls.GVT, cls.INV}
+        for content_enum in cls:
+            if content_enum in res_contents:
+                gff_extensions.add("res")
+                continue
+            gff_extensions.add(content_enum.value.lower().strip())
+        return gff_extensions
+
+    @classmethod
     def from_res(cls, resname: str) -> GFFContent | None:
         lower_resname = resname.lower()
         gff_content = None

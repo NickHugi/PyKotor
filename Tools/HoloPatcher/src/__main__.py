@@ -92,6 +92,7 @@ class ExitCode(IntEnum):
     ABORT_INSTALL_UNSAFE = 6
     EXCEPTION_DURING_INSTALL = 7
     INSTALL_COMPLETED_WITH_ERRORS = 8
+    CRASH = 9
 
 class HoloPatcherError(Exception):
     ...
@@ -155,11 +156,17 @@ def parse_args() -> Namespace:
     return kwargs
 
 
-class App(tk.Tk):
+class App():
     def __init__(self):
         super().__init__()
-        self.title(f"Expanded Galaxy Port Custom Build {VERSION_LABEL}")
+        self.root = tk.Tk()
+        self.root.title(f"Expanded Galaxy Port Custom Build {VERSION_LABEL}")
+
         self.set_window(width=400, height=500)
+
+        # Map the title bar's X button to our handle_exit_button function.
+        # This probably also means this will be called when attempting to 'End Task' in e.g. task manager.
+        self.root.protocol("WM_DELETE_WINDOW", self.handle_exit_button)
 
         self.install_running: bool = False
         self.task_running: bool = False
@@ -171,10 +178,6 @@ class App(tk.Tk):
         self.initialize_top_menu()
         self.initialize_ui_controls()
 
-        # Map the title bar's X button to our handle_exit_button function.
-        # This probably also means this will be called when attempting to 'End Task' in e.g. task manager.
-        self.protocol("WM_DELETE_WINDOW", self.handle_exit_button)
-
         cmdline_args: Namespace = parse_args()
         self.open_mod(cmdline_args.tslpatchdata or Path.cwd())
         self.execute_commandline(cmdline_args)
@@ -185,16 +188,16 @@ class App(tk.Tk):
         height: int,
     ):
         # Get screen dimensions
-        screen_width: int = self.winfo_screenwidth()
-        screen_height: int = self.winfo_screenheight()
+        screen_width: int = self.root.winfo_screenwidth()
+        screen_height: int = self.root.winfo_screenheight()
 
         # Calculate position to center the window
         x_position = int((screen_width / 2) - (width / 2))
         y_position = int((screen_height / 2) - (height / 2))
 
         # Set the dimensions and position
-        self.geometry(f"{width}x{height}+{x_position}+{y_position}")
-        self.resizable(width=False, height=False)
+        self.root.geometry(f"{width}x{height}+{x_position}+{y_position}")
+        self.root.resizable(width=False, height=False)
 
     def initialize_logger(self):
         self.logger = PatchLogger()
@@ -205,8 +208,8 @@ class App(tk.Tk):
 
     def initialize_top_menu(self):
         # Initialize top menu bar
-        self.menu_bar = tk.Menu(self)
-        self.config(menu=self.menu_bar)
+        self.menu_bar = tk.Menu(self.root)
+        self.root.config(menu=self.menu_bar)
 
         # Tools menu
         tools_menu = tk.Menu(self.menu_bar, tearoff=0)
@@ -248,14 +251,14 @@ class App(tk.Tk):
 
     def initialize_ui_controls(self):
         # Use grid layout for main window
-        self.grid_rowconfigure(1, weight=1)
-        self.grid_columnconfigure(0, weight=1)
+        self.root.grid_rowconfigure(1, weight=1)
+        self.root.grid_columnconfigure(0, weight=1)
 
         # Configure style for Combobox
-        ttk.Style(self).configure("TCombobox", font=("Helvetica", 10), padding=4)
+        ttk.Style(self.root).configure("TCombobox", font=("Helvetica", 10), padding=4)
 
         # Top area for comboboxes and buttons
-        top_frame: tk.Frame = tk.Frame(self)
+        top_frame: tk.Frame = tk.Frame(self.root)
         top_frame.grid(row=0, column=0, sticky="ew")
         top_frame.grid_columnconfigure(0, weight=1)  # Make comboboxes expand
         top_frame.grid_columnconfigure(1, weight=0)  # Keep buttons fixed size
@@ -295,7 +298,7 @@ class App(tk.Tk):
         self.gamepaths_browse_button2.grid(row=1, column=1, padx=5, pady=2, sticky="e")
 
         # Middle area for text and scrollbar
-        text_frame = tk.Frame(self)
+        text_frame = tk.Frame(self.root)
         text_frame.grid(row=1, column=0, sticky="nsew")
         text_frame.grid_rowconfigure(0, weight=1)
         text_frame.grid_columnconfigure(0, weight=1)
@@ -311,7 +314,7 @@ class App(tk.Tk):
         self.main_text.config(yscrollcommand=scrollbar.set)
 
         # Bottom area for buttons
-        bottom_frame = tk.Frame(self)
+        bottom_frame = tk.Frame(self.root)
         bottom_frame.grid(row=2, column=0, sticky="ew")
 
         self.exit_button = ttk.Button(bottom_frame, text="Exit", command=self.handle_exit_button)
@@ -333,7 +336,7 @@ class App(tk.Tk):
         event: tk.Event,
     ):
         if self.namespaces_combobox_state == 2:  # no selection, fix the focus  # noqa: PLR2004
-            self.focus_set()
+            self.root.focus_set()
             self.namespaces_combobox_state = 0  # base status
         else:
             self.namespaces_combobox_state = 1  # combobox clicked
@@ -410,7 +413,7 @@ class App(tk.Tk):
         cmdline_args: Namespace,
     ):
         self.one_shot = True
-        self.withdraw()
+        self.root.withdraw()
         self.setup_cli_messagebox_overrides()
         if not self.preinstall_validate_chosen():
             sys.exit(ExitCode.NUMBER_OF_ARGS)
@@ -589,7 +592,7 @@ class App(tk.Tk):
             print("Failed to stop thread!")
 
         print("Destroying self")
-        self.destroy()
+        self.root.destroy()
         print("Goodbye! (sys.exit abort unsafe)")
         print("Nevermind, Forcefully kill this process (taskkill or kill command in subprocess)")
         pid = os.getpid()
@@ -609,7 +612,7 @@ class App(tk.Tk):
         event: tk.Event,
     ):
         """Adjust the combobox after a short delay."""
-        self.after(10, lambda: self.move_cursor_to_end(event.widget))
+        self.root.after(10, lambda: self.move_cursor_to_end(event.widget))
 
     def move_cursor_to_end(
         self,
@@ -620,7 +623,7 @@ class App(tk.Tk):
         position: int = len(combobox.get())
         combobox.icursor(position)
         combobox.xview(position)
-        self.focus_set()
+        self.root.focus_set()
 
     def get_namespace_description(self) -> str:
         """Show the expanded description from namespaces.ini when hovering over an option."""
@@ -730,7 +733,7 @@ class App(tk.Tk):
         except Exception as e:  # pylint: disable=W0718  # noqa: BLE001
             self._handle_general_exception(e, "An unexpected error occurred while loading the patcher namespace.")
         else:
-            self.after(10, lambda: self.move_cursor_to_end(self.namespaces_combobox))
+            self.root.after(10, lambda: self.move_cursor_to_end(self.namespaces_combobox))
 
     def _handle_general_exception(
         self,
@@ -862,7 +865,7 @@ class App(tk.Tk):
             if directory_str not in box["values"]:
                 box["values"] = (*box["values"], directory_str)
             self.after(10, self.move_cursor_to_end, self.namespaces_combobox)
-        except Exception as e:  # noqa: BLE001
+        except Exception as e:  # pylint: disable=W0718  # noqa: BLE001
             self._handle_general_exception(e, "An unexpected error occurred while loading the game directory.")
 
     @staticmethod
@@ -1486,18 +1489,19 @@ def onAppCrash(
     with Path.cwd().joinpath("errorlog.txt").open("a") as f:
         f.write(f"\n{detailed_msg}")
 
-    root = tk.Tk()
-    root.withdraw()  # Hide
-    messagebox.showerror(title, short_msg)
-    root.destroy()
-    sys.exit()
+    with contextlib.suppress(Exception):
+        root = tk.Tk()
+        root.withdraw()  # Hide
+        messagebox.showerror(title, short_msg)
+        root.destroy()
+    sys.exit(ExitCode.CRASH)
 
 sys.excepthook = onAppCrash
 
 
 def main():
     app = App()
-    app.mainloop()
+    app.root.mainloop()
 
 
 if __name__ == "__main__":

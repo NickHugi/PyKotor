@@ -12,16 +12,24 @@ if TYPE_CHECKING:
 
 from typing import TYPE_CHECKING
 
+from utility.string import insert_newlines
+
 if TYPE_CHECKING:
-    from tkinter import ttk
     from collections.abc import Callable
+    from tkinter import ttk
 
 
 class ToolTip:
-    def __init__(self, widget: ttk.Widget, callable_returns_text: Callable[..., str]):
+    def __init__(
+        self,
+        widget: ttk.Widget,
+        callable_returns_text: Callable[..., str],
+        wordwrap_at_limit: int = 100,
+    ):
         self.widget: ttk.Widget = widget
         self.get_tooltip_text: Callable[..., str] = callable_returns_text
         self.tip_window: tk.Toplevel | None = None
+        self.wordwrap_at_limit: int = wordwrap_at_limit
 
         self.widget.bind("<Enter>", self.show_tip)
         self.widget.bind("<Leave>", self.hide_tip)
@@ -29,6 +37,7 @@ class ToolTip:
     def show_tip(self, event: tk.Event | None = None):
         """Display text in a tooltip window."""
         text = self.get_tooltip_text().strip()
+        text = insert_newlines(text, self.wordwrap_at_limit)
         if not text:
             return
         bbox: tuple[int, int, int, int] | None = self.widget.bbox("insert")

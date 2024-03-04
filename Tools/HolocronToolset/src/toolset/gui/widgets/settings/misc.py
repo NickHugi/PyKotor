@@ -22,6 +22,7 @@ class MiscWidget(QWidget):
     def setupValues(self):
         self.ui.saveRimCheck.setChecked(not self.settings.disableRIMSaving)
         self.ui.mergeRimCheck.setChecked(self.settings.joinRIMsTogether)
+        self.ui.useModuleFilenamesCheck.setChecked(self.settings.useModuleFilenames)
         self.ui.greyRimCheck.setChecked(self.settings.greyRIMText)
         self.ui.showPreviewUTCCheck.setChecked(self.settings.showPreviewUTC)
         self.ui.showPreviewUTPCheck.setChecked(self.settings.showPreviewUTP)
@@ -34,6 +35,7 @@ class MiscWidget(QWidget):
     def save(self):
         self.settings.disableRIMSaving = not self.ui.saveRimCheck.isChecked()
         self.settings.joinRIMsTogether = self.ui.mergeRimCheck.isChecked()
+        self.settings.useModuleFilenames = self.ui.useModuleFilenamesCheck.isChecked()
         self.settings.greyRIMText = self.ui.greyRimCheck.isChecked()
         self.settings.showPreviewUTC = self.ui.showPreviewUTCCheck.isChecked()
         self.settings.showPreviewUTP = self.ui.showPreviewUTPCheck.isChecked()

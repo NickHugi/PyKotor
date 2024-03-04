@@ -13,6 +13,7 @@ from xml.etree.ElementTree import ParseError
 
 from pykotor.common.stream import BinaryReader, BinaryWriter
 from utility.error_handling import format_exception_with_variables
+from utility.string import WrappedStr
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterable
@@ -62,7 +63,7 @@ class ResourceTuple(NamedTuple):
         return getattr(self, key)
 
     def keys(self) -> Iterable[str]:
-        return self._fields
+        return self._fields  # pylint: disable=no-member
 
 
 class ResourceType(Enum):
@@ -321,7 +322,7 @@ class ResourceType(Enum):
             if self.is_invalid or other.is_invalid:
                 return self.is_invalid and other.is_invalid
             return self.name == other.name
-        if isinstance(other, str):
+        if isinstance(other, (str, WrappedStr)):
             return self.extension == other.lower()
         if isinstance(other, int):
             return self.type_id == other
