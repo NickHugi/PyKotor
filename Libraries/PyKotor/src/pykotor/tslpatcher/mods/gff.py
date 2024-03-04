@@ -419,7 +419,7 @@ class ModifyFieldGFF(ModifyGFF):
         navigated_container: GFFList | GFFStruct | None = self._navigate_containers(root_struct, self.path.parent)
         if not isinstance(navigated_container, GFFStruct):
             reason: str = "does not exist!" if navigated_container is None else "is not an instance of a GFFStruct."
-            logger.add_error(f"Unable to modify Field '{label}'. Parent field at '{self.path}' {reason}")
+            logger.add_error(f"Unable to modify Field '{label}'. Parent field at '{self.path.parent}' {reason}")
             return
 
         navigated_struct: GFFStruct = navigated_container

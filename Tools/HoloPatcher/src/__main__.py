@@ -269,6 +269,8 @@ class App(tk.Tk):
         # Browse for a tslpatcher mod
         self.browse_button: ttk.Button = ttk.Button(top_frame, text="Browse", command=self.open_mod)
         self.browse_button.grid(row=0, column=1, padx=5, pady=2, sticky="e")
+        self.expand_namespace_description_button: ttk.Button = ttk.Button(top_frame, width=1, text="?", command=lambda *args: messagebox.showinfo(self.namespaces_combobox.get(), self.get_namespace_description(*args)))
+        self.expand_namespace_description_button.grid(row=0, column=2, padx=2, pady=2, stick="e")
 
         # Store all discovered KOTOR install paths
         self.gamepaths = ttk.Combobox(top_frame, style="TCombobox")
