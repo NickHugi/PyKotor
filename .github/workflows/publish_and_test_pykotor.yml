@@ -17,7 +17,7 @@ jobs:
     strategy:
       fail-fast: false  # Disable automatic cancellation of other jobs
       matrix:
-        os: [windows-2019, ubuntu-latest, macos-12]
+        os: [windows-2019, ubuntu-20.04, macos-12]
         python-version: ['3.8', '3.9', '3.10', '3.11', '3.12']
         architecture: ['x86', 'x64']
         include:
@@ -31,7 +31,7 @@ jobs:
             vc_redist2019: "https://aka.ms/vs/17/release/vc_redist.x64.exe"
         exclude:
           # unix x86 is definitely not supported.
-          - os: ubuntu-latest
+          - os: ubuntu-20.04
             architecture: x86
           - os: macos-12
             architecture: x86
@@ -51,8 +51,12 @@ jobs:
     - name: Set up Python macOS
       if: ${{ runner.os == 'macOS' }}
       run: |  # warning: `brew link --overwrite python@ver` is unsafe on any non-virtualized macos.
+        echo "NONINTERACTIVE DEFAULT: $NONINTERACTIVE"
+        export NONINTERACTIVE=1
+        echo "NONINTERACTIVE NEW: $NONINTERACTIVE"
         brew analytics on
         brew update
+        brew upgrade
         brew install python@${{ matrix.python-version }} || brew link --overwrite python@${{ matrix.python-version }}
     
     - name: Reset APT sources to default
@@ -563,7 +567,7 @@ jobs:
   package:  # The goal of this job is to repackage by toolname, rather than all tools by os_pyversion_arch
     needs: build  # do not start this job until all 'build' jobs complete
     if: ${{ success() || failure() }}
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
     outputs:
       matrixJson: ${{ steps.set-matrix.outputs.matrixJson }}
     steps:
@@ -598,20 +602,25 @@ jobs:
               $fullPath = $_.FullName
               $fileBaseName = [IO.Path]::GetFileNameWithoutExtension($_.Name)
               $fileExtension = $_.Extension
-              $outerZipBaseName = "$fileBaseName`_$pythonVersion`_$architecture"
+              $outerZipBaseName = "$fileBaseName`_$pythonVersion"
               Write-Output "outerZipBaseName '$outerZipBaseName'"
               $outerZipPath = $packagedArtifactsPath + "/" + $outerZipBaseName
               Write-Output "outerZipPath '$outerZipPath'"
               New-Item -ItemType Directory -Force -Path $outerZipPath
-              $osSpecificZipName = "$fileBaseName`_$os.zip"
+              $osSpecificZipName = "$fileBaseName`_$os`_$architecture"
               Write-Output "osSpecificZipName '$osSpecificZipName'"
               $osSpecificZipPath = $outerZipPath + "/" + $osSpecificZipName
               Write-Output "osSpecificZipPath '$osSpecificZipPath'"
           
               # Archive the tool by os identifier.
               chmod 777 -R $fullPath
-              Write-Output "Compressing '$fullPath' saving to '$osSpecificZipPath'"
-              zip -r -9 "$osSpecificZipPath" "$fullPath"
+              if ($fileExtension -and $fileExtension.Trim() -and $fileExtension.ToLower().Trim() -ne ".app") {
+                Write-Output "Compressing '$fullPath' saving to '$osSpecificZipPath.tar'"
+                tar czf "$osSpecificZipPath.tar" --options level=9 --preserve "$fullPath"
+              } else {
+                Write-Output "Compressing '$fullPath' saving to '$osSpecificZipPath.zip'"
+                zip -r -9 "$osSpecificZipPath.zip" "$fullPath"
+              }
               chmod 777 -R $osSpecificZipPath
           
               $artifactNames += $outerZipBaseName
@@ -628,12 +637,13 @@ jobs:
         if: ${{ success() || failure() }}
         uses: actions/upload-artifact@v4
         with:
-          name: packaged_artifacts
+          name: all_tool_dists_onearchive
           path: packaged_artifacts/**
 
       - name: Generate matrix for uploading
         if: ${{ success() || failure() }}
         id: set-matrix
+        shell: pwsh
         run: |
           $artifactNames = Get-Content 'artifact-names.txt' -ReadCount 0
       
@@ -660,38 +670,45 @@ jobs:
           echo "matrixJson<<EOF" >> $GITHUB_ENV
           echo "$singleLineJsonMatrix" >> $GITHUB_ENV
           echo "EOF" >> $GITHUB_ENV
-        shell: pwsh
 
   test-package-output:
     needs: package
     if: ${{ success() || failure() }}
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
     steps:
-      - name: Test output
+      - name: Test write-output
         shell: pwsh
         run: |
           Write-Output "Test we're receiving github_output correctly."
+
+      - name: Test package outputs
+        shell: pwsh
+        run: |
           Write-Output "Raw: '${{ needs.package.outputs.matrixJson }}'"
+
+      - name: Test package outputs fromJson
+        shell: pwsh
+        run: |
           Write-Output "fromJson: '${{ fromJson(needs.package.outputs.matrixJson) }}'"
 
   upload:
     needs: package
     if: ${{ success() || failure() }}
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
     strategy:
       matrix:
-        artifact: ${{ fromJson(needs.package.outputs.matrixJson) }}
+        artifactb: ${{ fromJson(needs.package.outputs.matrixJson) }}
     steps:
       - name: Upload re-packaged artifact
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ matrix.artifact }}
-          path: packaged_artifacts/${{ matrix.artifact }}
+          name: ${{ matrix.artifactb }}
+          path: packaged_artifacts/${{ matrix.artifactb }}
 
   add-test-result-status-badges:
     needs: build  # do not start this job until all 'build' jobs complete
     if: ${{ success() || failure() }}
-    runs-on: ubuntu-latest  # Or any other suitable runner
+    runs-on: ubuntu-20.04  # Or any other suitable runner
     concurrency: 
       group: add-test-status-badges-${{ github.ref }}
       cancel-in-progress: true
@@ -723,7 +740,7 @@ jobs:
           Remove-Item -Path $testsResultsPath -Recurse -Force -ErrorAction SilentlyContinue
           New-Item -ItemType Directory -Force -Path $testsResultsCommitPath -ErrorAction SilentlyContinue
 
-          $OS_NAMES = @("windows-2019", "ubuntu-latest", "macos-12")
+          $OS_NAMES = @("windows-2019", "ubuntu-20.04", "macos-12")
           $PYTHON_VERSIONS = @('3.8', '3.9', '3.10', '3.11', '3.12')
           $ARCHITECTURES = @('x86', 'x64')
 
@@ -828,7 +845,7 @@ jobs:
 
                 switch ($OS) {
                     "windows-2019" { $WindowsBadgeContent += $BadgeMarkdown + "`n" }
-                    "ubuntu-latest" { $LinuxBadgeContent += $BadgeMarkdown + "`n" }
+                    "ubuntu-20.04" { $LinuxBadgeContent += $BadgeMarkdown + "`n" }
                     "macos-12" { $MacOSBadgeContent += $BadgeMarkdown + "`n" }
                 }
               }
