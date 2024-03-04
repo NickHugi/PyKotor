@@ -66,6 +66,7 @@ if TYPE_CHECKING:
 
     from PyQt5 import QtGui
     from PyQt5.QtGui import QCloseEvent
+    from watchdog.observers.api import BaseObserver
 
     from pykotor.extract.file import FileResource
     from pykotor.resource.formats.mdl.mdl_data import MDL
@@ -117,9 +118,9 @@ class ToolWindow(QMainWindow):
         """
         super().__init__()
 
-        self.dogObserver = None
+        self.dogObserver: BaseObserver | None = None
         self.dogHandler = FolderObserver(self)
-        self.active: HTInstallation = None
+        self.active: HTInstallation | None = None
         self.settings: GlobalSettings = GlobalSettings()
         self.installations: dict[str, HTInstallation] = {}
 
@@ -172,6 +173,12 @@ class ToolWindow(QMainWindow):
         self.ui.modulesWidget.requestRefresh.connect(self.onModuleRefresh)
         self.ui.modulesWidget.requestExtractResource.connect(self.onExtractResources)
         self.ui.modulesWidget.requestOpenResource.connect(self.onOpenResources)
+
+        def openModuleDesigner() -> ModuleDesigner:
+            designerUi = ModuleDesigner(self, self.active, self.active.module_path() / self.ui.modulesWidget.currentSection())
+            addWindow(designerUi)
+            return designerUi
+        self.ui.specialActionButton.clicked.connect(openModuleDesigner)
 
         self.ui.overrideWidget.sectionChanged.connect(self.onOverrideChanged)
         self.ui.overrideWidget.requestReload.connect(self.onOverrideReload)
@@ -845,11 +852,7 @@ class ToolWindow(QMainWindow):
 
         self.ui.resourceTabs.setEnabled(False)
         self.ui.sidebar.setEnabled(False)
-        self.active = None
         self.updateMenus()
-
-        if self.dogObserver is not None:
-            self.dogObserver.stop()
 
         if index <= 0:
             return
@@ -869,40 +872,48 @@ class ToolWindow(QMainWindow):
         if not path:
             print("User did not choose a path for this installation.")
             self.ui.gameCombo.setCurrentIndex(0)
-        else:
-            # If the installation had not already been loaded previously this session, load it now
-            if name not in self.installations:
+            self.active = None
+            if self.dogObserver is not None:
+                self.dogObserver.stop()
+                self.dogObserver = None
+            return
 
-                def task() -> HTInstallation:
-                    return HTInstallation(path, name, tsl, self)
+        def task(active: HTInstallation | None = None):
+            self.active = active or HTInstallation(path, name, tsl, self)
 
-                self.settings.installations()[name].path = path
-                loader = AsyncLoader(self, "Loading Installation", task, "Failed to load installation")
-                if loader.exec_():
-                    self.installations[name] = loader.value
+            assert_with_variable_trace(isinstance(self.active, HTInstallation))
+            assert isinstance(self.active, HTInstallation)  # noqa: S101
+            print("Loading core installation resources into UI...")
+            self.ui.coreWidget.setResources(self.active.chitin_resources())
+            print("Loading module resources into UI...")
+            self.refreshModuleList(reload=False)
+            print("Loading override resources into UI...")
+            self.refreshOverrideList(reload=False)
+            print("Loading TexturePack resources into UI...")
+            self.refreshTexturePackList(reload=False)
+            self.ui.texturesWidget.setInstallation(self.active)
 
-            # If the data has been successfully been loaded, dump the data into the models
-            if name in self.installations:
-                self.active = self.installations[name]
+            print("Updating menus...")
+            self.updateMenus()
+            print("Setting up watchdog observer...")
+            if self.dogObserver is not None:
+                print("Stopping old watchdog service...")
+                self.dogObserver.stop()
+            self.dogObserver = Observer()
+            self.dogObserver.schedule(self.dogHandler, self.active.path(), recursive=True)
+            self.dogObserver.start()
 
-                assert_with_variable_trace(isinstance(self.active, HTInstallation))
-                assert isinstance(self.active, HTInstallation)  # noqa: S101
+        active = self.installations.get(name)
+        loader = AsyncLoader(self, "Loading Installation" if not active else "Refreshing installation", lambda: task(active), "Failed to load installation")
+        if not loader.exec_():
+            self.active = None
+            self.ui.gameCombo.setCurrentIndex(0)
+            if self.dogObserver is not None:
+                self.dogObserver.stop()
+                self.dogObserver = None
+            print("Loader task completed.")
 
-                print("Loading installation resources into UI...")
-                self.ui.coreWidget.setResources(self.active.chitin_resources())
-                self.refreshModuleList(reload=False)  # TODO: Modules/Override/Textures are loaded twice when HT is first initialized.
-                self.refreshOverrideList(reload=False)
-                self.refreshTexturePackList(reload=False)
-                self.ui.texturesWidget.setInstallation(self.active)
-
-                print("Updating menus...")
-                self.updateMenus()
-                print("Setting up watchdog observer...")
-                self.dogObserver = Observer()
-                self.dogObserver.schedule(self.dogHandler, self.active.path(), recursive=True)
-                self.dogObserver.start()
-            else:
-                self.ui.gameCombo.setCurrentIndex(0)
+        self.settings.installations()[name].path = path
 
     def _extractResource(self, resource: FileResource, filepath: os.PathLike | str, loader: AsyncBatchLoader):
         """Extracts a resource file from a FileResource object.
