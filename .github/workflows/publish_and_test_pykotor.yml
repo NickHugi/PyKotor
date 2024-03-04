@@ -589,7 +589,7 @@ jobs:
           Write-Output "here: '$here_dirpath'"
           $packagedArtifactsPath = "$here_dirpath/packaged_artifacts"
           New-Item -ItemType Directory -Force -Path $packagedArtifactsPath
-          $artifactNames = @()
+          $artifactNames = New-Object 'System.Collections.Generic.HashSet[string]'
           
           # Navigate to the directory with downloaded artifacts
           Set-Location -Path "published_workflow_builds"
@@ -641,9 +641,7 @@ jobs:
               
               $item = Get-Item -Path $outerZipPath -ErrorAction SilentlyContinue
               if ($item -ne $null) {
-                if (-not $artifactNames -contains $item.BaseName) {
-                  $artifactNames += $item.BaseName
-                }
+                $artifactNames.Add($item.BaseName)
               }
             }
           }
