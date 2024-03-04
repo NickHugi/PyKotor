@@ -51,6 +51,7 @@ jobs:
     - name: Set up Python macOS
       if: ${{ runner.os == 'macOS' }}
       run: |  # warning: `brew link --overwrite python@ver` is unsafe on any non-virtualized macos.
+        brew analytics on
         brew update
         brew install python@${{ matrix.python-version }} || brew link --overwrite python@${{ matrix.python-version }}
     
@@ -588,6 +589,9 @@ jobs:
             $matrixPackagePath = $_
             Write-Output "Found matrix package '$matrixPackagePath'"
             $os, $pythonVersion, $architecture = $_.BaseName -replace '^publish_', '' -split '_'
+            $destinationPath = Join-Path -Path $_.Directory.FullName -ChildPath $_.BaseName
+            Expand-Archive -LiteralPath $matrixPackagePath -DestinationPath $destinationPath
+            Remove-Item -Path $matrixPackagePath -ErrorAction Continue -Force
 
             # Dynamic identification and repackaging
             Get-ChildItem -Path $matrixPackagePath | ForEach-Object {
@@ -607,7 +611,7 @@ jobs:
               # Archive the tool by os identifier.
               chmod 777 -R $_.FullName
               Write-Output "Compressing '$fullPath' saving to '$osSpecificZipPath'"
-              Compress-Archive -LiteralPath $_.FullName -DestinationPath $osSpecificZipPath -CompressionLevel Optimal
+              zip -r -9 "$osSpecificZipPath" "$fullPath"
               Dir -Recurse $outerZipPath | Get-Childitem
 
               $artifactNames += $outerZipBaseName
@@ -626,7 +630,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: packaged_artifacts
-          path: packaged_artifacts/*
+          path: packaged_artifacts/**
 
       - name: Generate matrix for uploading
         if: ${{ success() || failure() }}
@@ -726,7 +730,7 @@ jobs:
               Write-Error "Newer commits are present on the remote branch, cannot update readme"
               exit 1
           }
-          git commit -m "Add test results/Update README.md status badges."
+          git commit -m "Add test results"
           git push --force-with-lease origin HEAD:${{ github.ref_name }}
           $commitSHA = git rev-parse HEAD
 
@@ -830,5 +834,5 @@ jobs:
               Write-Error "Newer commits are present on the remote branch, cannot update readme"
               exit 1
           }
-          git commit -m "Add test results/Update README.md status badges."
+          git commit -m "Update README.md status badges."
           git push --force-with-lease origin HEAD:${{ github.ref_name }}
