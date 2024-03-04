@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from configparser import ConfigParser
+from configparser import ConfigParser, ParsingError
 from itertools import tee
 from typing import TYPE_CHECKING
 
@@ -169,8 +169,11 @@ class ConfigReader:
         )
 
         # Use case-sensitive keys
-        ini.optionxform = lambda optionstr: optionstr  # type: ignore[method-assign]
-        ini.read_string(decode_bytes_with_fallbacks(BinaryReader.load_file(resolved_file_path)))
+        ini.optionxform = lambda optionstr: optionstr if optionstr.strip() else optionstr.strip()  # type: ignore[method-assign]
+        try:
+            ini.read_string(decode_bytes_with_fallbacks(BinaryReader.load_file(resolved_file_path)))
+        except ParsingError as e:
+            raise ParsingError(f"Syntax error found in '{resolved_file_path}': {e}") from e
 
         instance = cls(ini, resolved_file_path.parent, logger)
         instance.config = PatcherConfig()
