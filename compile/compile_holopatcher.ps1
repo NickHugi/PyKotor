@@ -116,6 +116,19 @@ $pyInstallerArgs = $pyInstallerArgs.GetEnumerator() | ForEach-Object {
     }
 }
 
+$tclTkPath = $null
+if ((Get-OS) -eq "Mac") {
+    try {
+        $tclTkPath = $(brew --prefix tcl-tk)
+        Write-Output "tcl/tk path: $tclTkPath"
+    } catch {
+        Write-Warning "Unable to determine Tcl/Tk path using Homebrew"
+    }
+}
+if ($tclTkPath) {
+    $pyInstallerArgs += "--path=$tclTkPath"
+}
+
 # Add PYTHONPATH paths as arguments
 $env:PYTHONPATH -split ';' | ForEach-Object {
     $pyInstallerArgs += "--path=$_"
