@@ -103,6 +103,13 @@ if ((Get-OS) -eq "Mac") {
         Write-Output "Qt installation path set to current directory: $qtInstallPath"
     }
     $qtOs = "windows"
+    # Combine the new path with the current PATH
+    $combinedPath = [System.Environment]::GetEnvironmentVariable("PATH", [System.EnvironmentVariableTarget]::User) + ";" + $newPath
+
+    # Set the combined PATH as the new system PATH
+    [System.Environment]::SetEnvironmentVariable("PATH", $combinedPath, [System.EnvironmentVariableTarget]::User)  # [System.EnvironmentVariableTarget]::Machine for system PATH
+    $env:PATH = $env:PATH + ";" + $newPath
+    Write-Host "Added '$qtInstallPath' to user's PATH env"
 } elseif (Test-Path -Path "/etc/os-release") {
     $qtArch = "gcc_64"
     $qtOs = "linux"
