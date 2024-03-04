@@ -48,9 +48,30 @@ function Get-Linux-Distro-Name {
     return $null
 }
 
+$qtInstallPath = "$rootPath/vendor/Qt"
+$qtOs = $null
+$qtArch = $null
 if ((Get-OS) -eq "Mac") {
+    $qtOs = "mac"
+    $qtArch = "clang_64" # i'm not even going to bother to test wasm_32.
     & bash -c "brew install pyqt@5 qt" 2>&1 | Write-Output 
+} elseif ((Get-OS) -eq "Windows") {
+    if ($env:PROCESSOR_ARCHITECTURE -eq "AMD64" -or $env:PROCESSOR_ARCHITEW6432 -eq "AMD64") {
+        $qtArch = "win64_msvc2017_64"
+    } else {
+        $qtArch = "win32_msvc2017"
+    }
+    # Set the Qt installation directory based on common environment variables or default to a local 'Qt' directory
+    if (Test-Path env:GITHUB_WORKSPACE) { 
+        $qtInstallPath = Join-Path $env:GITHUB_WORKSPACE "Qt" 
+    } elseif (Test-Path env:USERPROFILE) { 
+        $qtInstallPath = Join-Path $env:USERPROFILE "Qt" 
+    } else { 
+        $qtInstallPath = Join-Path $PWD "Qt" 
+    }
 } elseif (Test-Path -Path "/etc/os-release") {
+    $qtArch = "gcc_64"
+    $qtOs = "linux"
     $distro = (Get-Linux-Distro-Name)
     switch ($distro) {
         "debian" {  # untested
@@ -102,6 +123,11 @@ if ($this_noprompt) {
 
 
 Write-Host "Installing required packages to build the holocron toolset..."
+New-Item -ItemType Directory -Force -Path $qtInstallPath
+. $pythonExePath -m pip install aqtinstall -U
+. $pythonExePath -m aqt install-qt $qtOs desktop 5.14.2 $qtArch
+. $pythonExePath -m aqt install-qt $qtOs desktop 5.14.2 $qtArch -m all
+
 . $pythonExePath -m pip install --upgrade pip --prefer-binary --progress-bar on
 . $pythonExePath -m pip install pyinstaller --prefer-binary --progress-bar on
 . $pythonExePath -m pip install -r ($rootPath + $pathSep + "Tools" + $pathSep + "HolocronToolset" + $pathSep + "requirements.txt") --prefer-binary --compile --progress-bar on

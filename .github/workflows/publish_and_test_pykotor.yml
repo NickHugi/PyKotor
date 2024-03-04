@@ -710,7 +710,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.artifactb }}
-          path: all_tool_dists_onearchive/${{ matrix.artifactb }}
+          path: all_tool_dists_onearchive/all_tool_dists_onearchive/${{ matrix.artifactb }}
           compression-level: 9
           if-no-files-found: error
 
