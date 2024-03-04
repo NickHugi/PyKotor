@@ -584,13 +584,13 @@ jobs:
           
           # Navigate to the directory with downloaded artifacts
           Set-Location -Path "published_workflow_builds"
-          Get-ChildItem -Recurse -Path "." -Directory | ForEach-Object { Write-Output $_ }
+          Get-ChildItem -Recurse -Path "." -Directory | ForEach-Object { Write-Output $_.FullName }
           
           # Extract each published artifact and repackage
           Get-ChildItem -Filter "publish_*" | ForEach-Object {
             $matrixPackagePath = $_.FullName
             Write-Output "Found matrix package '$matrixPackagePath'"
-            Get-ChildItem -Recurse -Path "." -Directory | ForEach-Object { Write-Output $matrixPackagePath }
+            Get-ChildItem -Recurse -Path "." -Directory | ForEach-Object { Write-Output $_.FullName }
             $os, $pythonVersion, $architecture = $_.BaseName -replace '^publish_', '' -split '_'
           
             # Dynamic identification and repackaging
@@ -609,15 +609,13 @@ jobs:
               Write-Output "osSpecificZipPath '$osSpecificZipPath'"
           
               # Archive the tool by os identifier.
-              chmod 777 -R $_.FullName
               Write-Output "Compressing '$fullPath' saving to '$osSpecificZipPath'"
               zip -r -9 "$osSpecificZipPath" "$fullPath"
-              Get-ChildItem -Recurse $outerZipPath -Depth 2 | ForEach-Object { Write-Output $_.FullName }
+              chmod 777 -R $osSpecificZipPath
           
               $artifactNames += $outerZipBaseName
             }
           }
-          Get-ChildItem $packagedArtifactsPath | Get-Childitem
           
           # Save artifact names to a file
           $artifactNames | Out-File -FilePath "../artifact-names.txt" -Encoding UTF8
