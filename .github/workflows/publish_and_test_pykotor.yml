@@ -685,11 +685,15 @@ jobs:
         shell: pwsh
         run: |
           Write-Output "Raw: '${{ needs.package.outputs.matrixJson }}'"
+        env:
+          DEBUG: true
 
       - name: Test package outputs fromJson
         shell: pwsh
         run: |
           Write-Output "fromJson: '${{ fromJson(needs.package.outputs.matrixJson) }}'"
+        env:
+          DEBUG: true
 
   upload:
     needs: package
@@ -704,6 +708,8 @@ jobs:
         with:
           name: ${{ matrix.artifactb }}
           path: packaged_artifacts/${{ matrix.artifactb }}
+        env:
+          DEBUG: true
 
   add-test-result-status-badges:
     needs: build  # do not start this job until all 'build' jobs complete
