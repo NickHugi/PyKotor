@@ -18,7 +18,7 @@ jobs:
       fail-fast: false  # Disable automatic cancellation of other jobs
       matrix:
         os: [windows-2019, ubuntu-latest, macos-12]
-        python-version: ['3.7', '3.8', '3.9', '3.10', '3.11', '3.12']
+        python-version: ['3.8', '3.9', '3.10', '3.11', '3.12']
         architecture: ['x86', 'x64']
         include:
           - arch: x86
@@ -50,9 +50,9 @@ jobs:
 
     - name: Set up Python macOS
       if: ${{ runner.os == 'macOS' }}
-      run: |
+      run: |  # warning: `brew link --overwrite python@ver` is unsafe on any non-virtualized macos.
         brew update
-        brew install python@${{ matrix.python-version }}
+        brew install python@${{ matrix.python-version }} || brew link --overwrite python@${{ matrix.python-version }}
     
     - name: Reset APT sources to default
       if: ${{ runner.os == 'Linux' }}
@@ -68,7 +68,7 @@ jobs:
     - name: Setup python venvs
       run: |  # create the venv early to work around an issue with the matrix runners' concurrency
         $pythonExeName = "python"
-        if ("${{ runner.os }}" -eq "macOS")
+        if ("${{ runner.os }}" -ne "Windows")
         {
           $pythonExeName = "python${{ matrix.python-version }}"
         }
@@ -573,7 +573,8 @@ jobs:
       - name: Re-package artifacts by Python version and architecture
         shell: pwsh
         run: |
-          $here_dirpath = Split-Path -Parent $MyInvocation.MyCommand.Definition
+          $here_dirpath = (Get-Location)
+          Write-Output "here: '$here_dirpath'"
           $packagedArtifactsPath = "$here_dirpath/packaged_artifacts"
           Remove-Item -Path $packagedArtifactsPath -Recurse -ErrorAction Ignore -Force
           New-Item -ItemType Directory -Force -Path $packagedArtifactsPath
@@ -590,21 +591,23 @@ jobs:
 
             # Dynamic identification and repackaging
             Get-ChildItem -Path $matrixPackagePath | ForEach-Object {
+              $fullPath = $_.FullName
               $fileBaseName = [IO.Path]::GetFileNameWithoutExtension($_.Name)
               $fileExtension = $_.Extension
               $outerZipBaseName = "$fileBaseName`_$pythonVersion`_$architecture"
+              Write-Output "outerZipBaseName '$outerZipBaseName'"
               $outerZipPath = $packagedArtifactsPath + "/" + $outerZipBaseName
+              Write-Output "outerZipPath '$outerZipPath'"
               New-Item -ItemType Directory -Force -Path $outerZipPath
               $osSpecificZipName = "$fileBaseName`_$os.zip"
+              Write-Output "osSpecificZipName '$osSpecificZipName'"
               $osSpecificZipPath = $outerZipPath + "/" + $osSpecificZipName
+              Write-Output "osSpecificZipPath '$osSpecificZipPath'"
 
               # Archive the tool by os identifier.
               chmod 777 -R $_.FullName
-              Compress-Archive -Path $_.FullName -DestinationPath $osSpecificZipPath -CompressionLevel Optimal
-
-              # Move to final upload location.
-              Move-Item -LiteralPath $osSpecificZipPath -Destination $outerZipPath
-              Write-Output "$outerZipPath contents:"
+              Write-Output "Compressing '$fullPath' saving to '$osSpecificZipPath'"
+              Compress-Archive -LiteralPath $_.FullName -DestinationPath $osSpecificZipPath -CompressionLevel Optimal
               Dir -Recurse $outerZipPath | Get-Childitem
 
               $artifactNames += $outerZipBaseName
@@ -704,7 +707,7 @@ jobs:
           New-Item -ItemType Directory -Force -Path $testsResultsCommitPath -ErrorAction SilentlyContinue
 
           $OS_NAMES = @("windows-2019", "ubuntu-latest", "macos-12")
-          $PYTHON_VERSIONS = @('3.7', '3.8', '3.9', '3.10', '3.11', '3.12')
+          $PYTHON_VERSIONS = @('3.8', '3.9', '3.10', '3.11', '3.12')
           $ARCHITECTURES = @('x86', 'x64')
 
           $artifact_reports_dir = "./all_pytest_reports"
