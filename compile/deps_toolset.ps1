@@ -61,6 +61,12 @@ if ((Get-OS) -eq "Mac") {
     } else {
         $qtArch = "win32_msvc2017"
     }
+    $pythonArch = & $pythonExePath -c "import platform; print(platform.architecture()[0])"
+    if ($pythonArch -eq "64bit") {
+        $qtArch = "win64_msvc2017_64"
+    } else {
+        $qtArch = "win32_msvc2017"
+    }
     # Set the Qt installation directory based on common environment variables or default to a local 'Qt' directory
     if (Test-Path env:GITHUB_WORKSPACE) { 
         $qtInstallPath = Join-Path $env:GITHUB_WORKSPACE "Qt" 
