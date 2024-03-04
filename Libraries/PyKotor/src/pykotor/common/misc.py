@@ -706,6 +706,13 @@ class CaseInsensitiveDict(Generic[T]):
     def __reversed__(self) -> Iterator[str]:
         return reversed(list(self._dictionary.keys()))
 
+    @overload
+    def pop(self, __key: str) -> T:
+        ...
+    @overload
+    def pop(self, __key: str, __default: VT = None) -> VT | T:
+        ...
+
     def pop(self, __key: str, __default: VT = _unique_sentinel) -> VT | T:  # type: ignore[assignment]
         lower_key: str = __key.lower()
         try:

@@ -10,7 +10,6 @@ Write-Host "The path to the script directory is: $scriptPath"
 Write-Host "The path to the root directory is: $rootPath"
 
 Write-Host "Initializing python virtual environment..."
-Write-Host "Initializing python virtual environment..."
 if ($this_noprompt) {
     . $rootPath/install_python_venv.ps1 -noprompt -venv_name $venv_name
 } else {
@@ -18,7 +17,12 @@ if ($this_noprompt) {
 }
 
 if ((Get-OS) -eq "Mac") {
-    brew install python@3.12 python-tk
+    Write-Host "path: '$pythonExePath'"
+    $versionObject = Get-Python-Version $pythonExePath
+    $pyVersion = "{0}.{1}" -f $versionObject.Major, $versionObject.Minor
+    Write-Host "pyversion: $versionObject major/minor $pyVersion"
+    brew update
+    brew install python-tk@$pyVersion tcl-tk
 } elseif ((Get-OS) -eq "Linux") {
     if (Test-Path -Path "/etc/os-release") {
         switch ((Get-Linux-Distro-Name)) {

@@ -102,7 +102,7 @@ def visual_length(s: str, tab_length=8) -> int:
     return vis_length
 
 
-gff_types: list[str] = [x.value.lower().strip() for x in gff.GFFContent]
+gff_types: list[str] = list(gff.GFFContent.get_extensions())
 
 
 def diff_data(
