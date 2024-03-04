@@ -564,6 +564,8 @@ jobs:
     needs: build  # do not start this job until all 'build' jobs complete
     if: ${{ success() || failure() }}
     runs-on: ubuntu-latest
+    outputs:
+      matrixJson: ${{ steps.set-matrix.outputs.matrixJson }}
     steps:
       - name: Download all artifacts
         uses: actions/download-artifact@v4
@@ -656,8 +658,20 @@ jobs:
           Write-Host $singleLineJsonMatrix
       
           # Output the simplified JSON matrix to the GITHUB_OUTPUT environment variable
-          Add-Content -Path $env:GITHUB_OUTPUT -Value "matrix=$singleLineJsonMatrix"
+          echo "matrixJson=$singleLineJsonMatrix" >> $GITHUB_OUTPUT
         shell: pwsh
+
+  test-package-output:
+    needs: package
+    if: ${{ success() || failure() }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Test output
+        shell: pwsh
+        run: |
+          Write-Output "Test we're receiving github_output correctly."
+          Write-Output "Raw: '${{ needs.package.outputs.matrixJson }}'"
+          Write-Output "fromJson: '${{ fromJson(needs.package.outputs.matrixJson) }}'"
 
   upload:
     needs: package
@@ -665,7 +679,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        artifact: ${{fromJson(needs.package.outputs.matrix)}}
+        artifact: ${{ fromJson(needs.package.outputs.matrixJson) }}
     steps:
       - name: Upload re-packaged artifact
         uses: actions/upload-artifact@v4
