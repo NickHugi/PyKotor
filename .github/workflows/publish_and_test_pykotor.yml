@@ -72,12 +72,12 @@ jobs:
         {
           $pythonExeName = "python${{ matrix.python-version }}"
         }
-        $pythonExeName -m venv .venv_${{ matrix.os }}_${{ matrix.python-version }}_${{ matrix.architecture }}
-        $pythonExeName -m venv .venv_holopatcher_${{ matrix.os }}_${{ matrix.python-version }}_${{ matrix.architecture }}
-        $pythonExeName -m venv .venv_toolset_${{ matrix.os }}_${{ matrix.python-version }}_${{ matrix.architecture }}
-        $pythonExeName -m venv .venv_guiduplicator_${{ matrix.os }}_${{ matrix.python-version }}_${{ matrix.architecture }}
-        $pythonExeName -m venv .venv_kotordiff_${{ matrix.os }}_${{ matrix.python-version }}_${{ matrix.architecture }}
-        $pythonExeName -m venv .venv_batchpatcher_${{ matrix.os }}_${{ matrix.python-version }}_${{ matrix.architecture }}
+        & $pythonExeName -m venv .venv_${{ matrix.os }}_${{ matrix.python-version }}_${{ matrix.architecture }}
+        & $pythonExeName -m venv .venv_holopatcher_${{ matrix.os }}_${{ matrix.python-version }}_${{ matrix.architecture }}
+        & $pythonExeName -m venv .venv_toolset_${{ matrix.os }}_${{ matrix.python-version }}_${{ matrix.architecture }}
+        & $pythonExeName -m venv .venv_guiduplicator_${{ matrix.os }}_${{ matrix.python-version }}_${{ matrix.architecture }}
+        & $pythonExeName -m venv .venv_kotordiff_${{ matrix.os }}_${{ matrix.python-version }}_${{ matrix.architecture }}
+        & $pythonExeName -m venv .venv_batchpatcher_${{ matrix.os }}_${{ matrix.python-version }}_${{ matrix.architecture }}
       shell: pwsh
 
     - name: Set UPX download URL
