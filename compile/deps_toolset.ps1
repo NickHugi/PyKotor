@@ -160,7 +160,7 @@ if ((Get-OS) -ne "Windows") {
 
 Write-Host "Installing required packages to build the holocron toolset..."
 New-Item -ItemType Directory -Force -Path $qtInstallPath -Verbose 2>&1 | Out-String | Write-Output
-. $pythonExePath -m pip install aqtinstall -U -vvv 2>&1 | Out-String | Write-Output
+. $pythonExePath -m pip install aqtinstall -U 2>&1 | Out-String | Write-Output
 . $pythonExePath -m aqt install-qt $qtOs desktop 5.14.2 $qtArch 2>&1 | Out-String | Write-Output
 if ($LastExitCode -ne 0) { Write-Output "Qt installation failed with exit code $LastExitCode"; exit $LastExitCode }
 . $pythonExePath -m aqt install-qt $qtOs desktop 5.14.2 $qtArch -m all 2>&1 | Out-String | Write-Output
