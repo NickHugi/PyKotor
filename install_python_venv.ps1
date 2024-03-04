@@ -100,7 +100,7 @@ function Set-EnvironmentVariablesFromEnvFile {
 
                 # Set environment variable
                 Write-Host "Set environment variable $key from '${$env:$key}' to '$value'"
-                Set-Item -Path "env:$key" -Value $value
+                Set-Item -LiteralPath "env:$key" -Value $value
             }
         }
         Write-Host "Environment variables set from .env file."
@@ -529,7 +529,7 @@ if (Get-ChildItem Env:VIRTUAL_ENV -ErrorAction SilentlyContinue) {  # Check if a
             $userInput = Read-Host "(Y/N)"
             if ( $userInput -ne "Y" -and $userInput -ne "y" ) {
                 $userInput = Read-Host "Enter the path to python executable:"
-                if ( Test-Path -Path $userInput -ErrorAction SilentlyContinue ) {
+                if ( Test-Path -LiteralPath $userInput -ErrorAction SilentlyContinue ) {
                     $global:pythonInstallPath = $userInput
                 } else {
                     Write-Error "Python executable not found at '$userInput'"
@@ -572,7 +572,7 @@ if (Get-ChildItem Env:VIRTUAL_ENV -ErrorAction SilentlyContinue) {  # Check if a
             # Check if activate scripts are created
             if (-not (Test-Path $activateScriptPs1) -and -not (Test-Path $activateScriptBash)) {
                 Write-Warning "Neither activate nor Activate.ps1 scripts were found. Deleting the virtual environment and attempting to recreate it with --without-pip..."
-                Remove-Item -Path $venvPath -Recurse -Force
+                Remove-Item -LiteralPath $venvPath -Recurse -Force
                 & $global:pythonInstallPath -m venv --without-pip $venvPath 2>&1
                 $installPipToVenvManually = $true
     
@@ -650,15 +650,15 @@ if ($installPipToVenvManually) {
             # Fallback to manual setuptools and pip installation
             Invoke-WebRequest -Uri "https://files.pythonhosted.org/packages/69/77/aee1ecacea4d0db740046ce1785e81d16c4b1755af50eceac4ca1a1f8bfd/setuptools-60.5.0.tar.gz" -OutFile "setuptools-60.5.0.tar.gz"
             tar -xzf "setuptools-60.5.0.tar.gz"
-            Set-Location -Path "setuptools-60.5.0"
+            Set-Location -LiteralPath "setuptools-60.5.0"
             & $pythonExePath setup.py install
-            Set-Location -Path $originalLocation
+            Set-Location -LiteralPath $originalLocation
 
             Invoke-WebRequest -Uri "https://files.pythonhosted.org/packages/94/59/6638090c25e9bc4ce0c42817b5a234e183872a1129735a9330c472cc2056/pip-24.0.tar.gz" -OutFile "pip-24.0.tar.gz"
             tar -xzf "pip-24.0.tar.gz"
-            Set-Location -Path "pip-24.0"
+            Set-Location -LiteralPath "pip-24.0"
             & $pythonExePath setup.py install
-            Set-Location -Path $originalLocation
+            Set-Location -LiteralPath $originalLocation
 
             . $activateCommand
         } else {
@@ -667,7 +667,7 @@ if ($installPipToVenvManually) {
     } catch {
         Write-Error "An error occurred during pip installation: $_"
     } finally {
-        Set-Location -Path $originalLocation
+        Set-Location -LiteralPath $originalLocation
     }
 }
 
