@@ -42,10 +42,17 @@ jobs:
     steps:
     - uses: actions/checkout@v4
     - name: Set up Python ${{ matrix.python-version }}
+      if: ${{ runner.os != 'macOS' }}
       uses: actions/setup-python@v5
       with:
         python-version: ${{ matrix.python-version }}
         architecture: ${{ matrix.architecture }}
+
+    - name: Set up Python macOS
+      if: ${{ runner.os == 'macOS' }}
+      run: |
+        brew update
+        brew install python@${{ matrix.python-version }}
     
     - name: Reset APT sources to default
       if: ${{ runner.os == 'Linux' }}
