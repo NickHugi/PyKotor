@@ -53,7 +53,6 @@ Tools/HolocronToolset/src/toolset/kits
 Tools/HolocronToolset/src/toolset/kits/*/door0_k1.utd
 Tools/HolocronToolset/src/toolset/kits/*/*
 /Tools/HolocronToolset/toolset/kits/
-tmp*
 .idea/misc.xml
 .idea/PyKotor.iml
 .idea/misc.xml
@@ -68,3 +67,4 @@ Tools/HolocronToolset/src/toolset/profiler_output.pstat
 Tools/HolocronToolset/src/toolset/profiler_output.pstat
 *.pstat
 installlog.txt
+./vendor
