@@ -89,7 +89,7 @@ class TPCEditor(Editor):
         else:
             pillow: Image.Image = Image.open(io.BytesIO(data))
             pillow = pillow.convert("RGBA")
-            pillow = ImageOps.flip(pillow)
+            #pillow = ImageOps.flip(pillow)
             self._tpc = TPC()
             self._tpc.set_single(pillow.width, pillow.height, pillow.tobytes(), TPCTextureFormat.RGBA)
 
