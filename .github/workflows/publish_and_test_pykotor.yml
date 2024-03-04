@@ -519,6 +519,7 @@ jobs:
       with:
         name: publish_${{ matrix.os }}_${{ matrix.python-version }}_${{ matrix.architecture }}
         path: ./dist/**
+        retention-days: 90
 
     - name: Install MinGW with GCC on Windows
       if: runner.os == 'Windows' && matrix.python-version == '3.13.0-alpha.4'
@@ -562,6 +563,7 @@ jobs:
         path: |
           pytest_report.html
           pytest_report.xml
+          retention-days: 90
 
   package:  # The goal of this job is to repackage by toolname, rather than all tools by os_pyversion_arch
     needs: build  # do not start this job until all 'build' jobs complete
@@ -664,36 +666,13 @@ jobs:
           echo $singleLineJsonMatrix >> $env:GITHUB_OUTPUT
           echo "EOF" >> $env:GITHUB_OUTPUT
 
-      - name: Upload re-packaged artifact (fallback)
+      - name: Upload all repackages for next job
         if: false
         uses: actions/upload-artifact@v4
         with:
           name: all_tool_dists_onearchive
           path: packaged_artifacts/**
-
-  test-package-output:
-    needs: package
-    if: ${{ success() || failure() }}
-    runs-on: ubuntu-20.04
-    steps:
-      - name: Test write-output
-        shell: pwsh
-        run: |
-          Write-Output "Test we're receiving github_output correctly."
-
-      - name: Test package outputs
-        shell: pwsh
-        run: |
-          Write-Output "Raw: '${{ needs.package.outputs.filesToArchive }}'"
-        env:
-          DEBUG: true
-
-      - name: Test package outputs fromJson
-        shell: pwsh
-        run: |
-          Write-Output "fromJson: '${{ fromJson(needs.package.outputs.filesToArchive) }}'"
-        env:
-          DEBUG: true
+          retention-days: 1  # only used for the next job.
 
   upload:
     needs: package
@@ -703,13 +682,17 @@ jobs:
       matrix:
         artifactb: ${{ fromJson(needs.package.outputs.filesToArchive) }}
     steps:
+      - name: Download repackages from package job
+        uses: actions/download-artifact@v4
+        with:
+          path: packaged_artifacts
+          pattern: all_tool_dists**
+
       - name: Upload re-packaged artifact
         uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.artifactb }}
           path: packaged_artifacts/${{ matrix.artifactb }}
-        env:
-          DEBUG: true
 
   add-test-result-status-badges:
     needs: build  # do not start this job until all 'build' jobs complete
