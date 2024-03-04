@@ -609,6 +609,7 @@ jobs:
               Write-Output "osSpecificZipPath '$osSpecificZipPath'"
           
               # Archive the tool by os identifier.
+              chmod 777 -R $fullPath
               Write-Output "Compressing '$fullPath' saving to '$osSpecificZipPath'"
               zip -r -9 "$osSpecificZipPath" "$fullPath"
               chmod 777 -R $osSpecificZipPath
@@ -656,7 +657,9 @@ jobs:
           Write-Host $singleLineJsonMatrix
       
           # Output the simplified JSON matrix to the GITHUB_OUTPUT environment variable
-          echo "matrixJson=$singleLineJsonMatrix" >> $GITHUB_OUTPUT
+          echo "matrixJson<<EOF" >> $GITHUB_ENV
+          echo "$singleLineJsonMatrix" >> $GITHUB_ENV
+          echo "EOF" >> $GITHUB_ENV
         shell: pwsh
 
   test-package-output:
