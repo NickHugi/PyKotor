@@ -577,22 +577,20 @@ jobs:
           $here_dirpath = (Get-Location)
           Write-Output "here: '$here_dirpath'"
           $packagedArtifactsPath = "$here_dirpath/packaged_artifacts"
-          Remove-Item -Path $packagedArtifactsPath -Recurse -ErrorAction Ignore -Force
           New-Item -ItemType Directory -Force -Path $packagedArtifactsPath
           $artifactNames = @()
-
+          
           # Navigate to the directory with downloaded artifacts
           Set-Location -Path "published_workflow_builds"
-
+          Get-ChildItem -Recurse -Path "." -Directory | ForEach-Object { Write-Output $_ }
+          
           # Extract each published artifact and repackage
           Get-ChildItem -Filter "publish_*" | ForEach-Object {
-            $matrixPackagePath = $_
+            $matrixPackagePath = $_.FullName
             Write-Output "Found matrix package '$matrixPackagePath'"
+            Get-ChildItem -Recurse -Path "." -Directory | ForEach-Object { Write-Output $matrixPackagePath }
             $os, $pythonVersion, $architecture = $_.BaseName -replace '^publish_', '' -split '_'
-            $destinationPath = Join-Path -Path $_.Directory.FullName -ChildPath $_.BaseName
-            Expand-Archive -LiteralPath $matrixPackagePath -DestinationPath $destinationPath
-            Remove-Item -Path $matrixPackagePath -ErrorAction Continue -Force
-
+          
             # Dynamic identification and repackaging
             Get-ChildItem -Path $matrixPackagePath | ForEach-Object {
               $fullPath = $_.FullName
@@ -607,21 +605,21 @@ jobs:
               Write-Output "osSpecificZipName '$osSpecificZipName'"
               $osSpecificZipPath = $outerZipPath + "/" + $osSpecificZipName
               Write-Output "osSpecificZipPath '$osSpecificZipPath'"
-
+          
               # Archive the tool by os identifier.
               chmod 777 -R $_.FullName
               Write-Output "Compressing '$fullPath' saving to '$osSpecificZipPath'"
               zip -r -9 "$osSpecificZipPath" "$fullPath"
-              Dir -Recurse $outerZipPath | Get-Childitem
-
+              Get-ChildItem -Recurse $outerZipPath -Depth 2 | ForEach-Object { Write-Output $_.FullName }
+          
               $artifactNames += $outerZipBaseName
             }
           }
-          Dir $packagedArtifactsPath | Get-Childitem
-
+          Get-ChildItem $packagedArtifactsPath | Get-Childitem
+          
           # Save artifact names to a file
           $artifactNames | Out-File -FilePath "../artifact-names.txt" -Encoding UTF8
-
+          
           # Navigate back to the root of the workspace
           Set-Location -Path "../"
 

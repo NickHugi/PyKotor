@@ -173,7 +173,8 @@ class ConfigReader:
         try:
             ini.read_string(decode_bytes_with_fallbacks(BinaryReader.load_file(resolved_file_path)))
         except ParsingError as e:
-            raise ParsingError(f"Syntax error found in '{resolved_file_path}': {e}") from e
+            e.source = str(resolved_file_path)
+            raise e
 
         instance = cls(ini, resolved_file_path.parent, logger)
         instance.config = PatcherConfig()
