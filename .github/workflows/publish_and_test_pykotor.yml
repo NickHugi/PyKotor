@@ -641,7 +641,9 @@ jobs:
               
               $item = Get-Item -Path $outerZipPath -ErrorAction SilentlyContinue
               if ($item -ne $null) {
-                $artifactNames += $item.BaseName
+                if (-not $artifactNames -contains $item.BaseName) {
+                  $artifactNames += $item.BaseName
+                }
               }
             }
           }
