@@ -192,7 +192,6 @@ jobs:
       if: ${{ success() || failure() }}
       id: toolset_deps
       run: |  # known pyinstaller versions that work with upx compressions, not all are available on all python versions.
-        $ErrorActionPreference = 'Stop'
         try {
           ./install_python_venv.ps1 -noprompt -venv_name .venv_toolset_${{ matrix.os }}_${{ matrix.python-version }}_${{ matrix.architecture }}
           python -m pip install --upgrade pip
@@ -271,7 +270,6 @@ jobs:
       if: ${{ success() || failure() }}
       id: holopatcher_deps
       run: |  # known pyinstaller versions that work with upx compressions, not all are available on all python versions.
-        $ErrorActionPreference = 'Stop'
         try {
           ./install_python_venv.ps1 -noprompt -venv_name .venv_holopatcher_${{ matrix.os }}_${{ matrix.python-version }}_${{ matrix.architecture }}
           python -m pip install --upgrade pip
@@ -348,7 +346,6 @@ jobs:
       if: ${{ success() || failure() }}
       id: batchpatcher_deps
       run: |  # known pyinstaller versions that work with upx compressions, not all are available on all python versions.
-        $ErrorActionPreference = 'Stop'
         try {
           ./install_python_venv.ps1 -noprompt -venv_name .venv_batchpatcher_${{ matrix.os }}_${{ matrix.python-version }}_${{ matrix.architecture }}
           python -m pip install --upgrade pip
