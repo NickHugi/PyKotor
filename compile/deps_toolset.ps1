@@ -65,6 +65,13 @@ if ((Get-OS) -eq "Mac") {
         Write-Output "System architecture determined as: 32-bit"
     }
 
+    Write-Host "Initializing python virtual environment..."
+    if ($this_noprompt) {
+        . $rootPath/install_python_venv.ps1 -noprompt -venv_name $venv_name
+    } else {
+        . $rootPath/install_python_venv.ps1 -venv_name $venv_name
+    }
+
     # Determine Python architecture
     try {
         $pythonArchOutput = & $pythonExePath -c "import platform; print(platform.architecture()[0])" | Out-String
@@ -141,11 +148,13 @@ if ((Get-OS) -eq "Mac") {
     }
 }
 
-Write-Host "Initializing python virtual environment..."
-if ($this_noprompt) {
-    . $rootPath/install_python_venv.ps1 -noprompt -venv_name $venv_name
-} else {
-    . $rootPath/install_python_venv.ps1 -venv_name $venv_name
+if ((Get-OS) -ne "Windows") {
+    Write-Host "Initializing python virtual environment..."
+    if ($this_noprompt) {
+        . $rootPath/install_python_venv.ps1 -noprompt -venv_name $venv_name
+    } else {
+        . $rootPath/install_python_venv.ps1 -venv_name $venv_name
+    }
 }
 
 
