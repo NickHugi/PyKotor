@@ -164,6 +164,7 @@ jobs:
         Invoke-WebRequest -Uri $url -OutFile $output
         Start-Process $output -ArgumentList '/install', '/quiet', '/norestart' -Wait
         Remove-Item -Path $output
+        #choco install vcredist2015 -y
       shell: pwsh
 
     - name: Install Visual Studio 2019 C++ Redistributable
@@ -174,6 +175,7 @@ jobs:
         Invoke-WebRequest -Uri $url -OutFile $output
         Start-Process $output -ArgumentList '/install', '/quiet', '/norestart' -Wait
         Remove-Item -Path $output
+        #choco install vcredist2019 -y
       shell: pwsh
 
     - name: Install Visual Studio latest C++ Redistributable
@@ -639,8 +641,11 @@ jobs:
               }
               Write-Output "Compressed '$fullPath' and saved to '$outerArchiveName'"
               chmod 777 -R "$outerArchiveName"
-          
-              $artifactNames += $outerArchiveName
+              
+              $item = Get-Item -Path $outerArchiveName -ErrorAction SilentlyContinue
+              if ($item -ne $null) {
+                $artifactNames += $item.Name
+              }
             }
           }
           
@@ -695,6 +700,7 @@ jobs:
     if: ${{ success() || failure() }}
     runs-on: ubuntu-latest
     strategy:
+      fail-fast: false
       matrix:
         artifactb: ${{ fromJson(needs.package.outputs.filesToArchive) }}
     steps:
