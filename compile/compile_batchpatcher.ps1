@@ -33,8 +33,8 @@ if ((Get-OS) -eq "Windows") {
 }
 
 # Delete the final executable if it exists
-if (Test-Path -Path $finalExecutablePath) {
-    Remove-Item -Path $finalExecutablePath -Force
+if (Test-Path -LiteralPath $finalExecutablePath) {
+    Remove-Item -LiteralPath $finalExecutablePath -Force
 }
 
 Write-Host "Compiling BatchPatcher..."
@@ -80,6 +80,19 @@ $pyInstallerArgs = $pyInstallerArgs.GetEnumerator() | ForEach-Object {
     }
 }
 
+$tclTkPath = $null
+if ((Get-OS) -eq "Mac") {
+    try {
+        $tclTkPath = $(brew --prefix tcl-tk)
+        Write-Output "tcl/tk path: $tclTkPath"
+    } catch {
+        Write-Warning "Unable to determine Tcl/Tk path using Homebrew"
+    }
+}
+if ($tclTkPath) {
+    $pyInstallerArgs += "--path=$tclTkPath"
+}
+
 # Add PYTHONPATH paths as arguments
 $env:PYTHONPATH -split ';' | ForEach-Object {
     $pyInstallerArgs += "--path=$_"
@@ -103,7 +116,7 @@ Write-Host "Executing command: $pythonExePath $argumentsArray"
 & $pythonExePath $argumentsArray
 
 # Check if the final executable exists
-if (-not (Test-Path -Path $finalExecutablePath)) {
+if (-not (Test-Path -LiteralPath $finalExecutablePath)) {
     Write-Error "BatchPatcher could not be compiled, scroll up to find out why"   
 } else {
     Write-Host "BatchPatcher was compiled to '$finalExecutablePath'"

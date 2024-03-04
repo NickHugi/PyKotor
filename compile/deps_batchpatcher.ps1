@@ -18,7 +18,10 @@ if ($this_noprompt) {
 }
 
 if ((Get-OS) -eq "Mac") {
-    brew install python@3.12 python-tk
+    $versionObject = Get-Python-Version $pythonExePath
+    $pyVersion = "{0}.{1}" -f $versionObject.Major, $versionObject.Minor
+    brew update
+    brew install python-tk@$pyVersion tcl-tk
 } elseif ((Get-OS) -eq "Linux") {
     if (Test-Path -Path "/etc/os-release") {
         switch ((Get-Linux-Distro-Name)) {
