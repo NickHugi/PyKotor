@@ -633,13 +633,6 @@ jobs:
           # Navigate back to the root of the workspace
           Set-Location -Path "../"
 
-      - name: Upload re-packaged artifact (fallback)
-        if: false
-        uses: actions/upload-artifact@v4
-        with:
-          name: all_tool_dists_onearchive
-          path: packaged_artifacts/**
-
       - name: Generate matrix for uploading
         if: ${{ success() || failure() }}
         id: set-matrix
@@ -670,6 +663,13 @@ jobs:
           echo "matrixJson<<EOF" >> $GITHUB_OUTPUT
           echo $jsonMatrix >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
+
+      - name: Upload re-packaged artifact (fallback)
+        if: false
+        uses: actions/upload-artifact@v4
+        with:
+          name: all_tool_dists_onearchive
+          path: packaged_artifacts/**
 
   test-package-output:
     needs: package
