@@ -591,7 +591,7 @@ jobs:
               $outerZipPath = $packagedArtifactsPath + "/" + $outerZipBaseName
               New-Item -ItemType Directory -Force -Path $outerZipPath
               $osSpecificZipName = "$fileBaseName`_$os.zip"
-              $osSpecificZipPath = $outerZipPath + "/" + $outerZipBaseName
+              $osSpecificZipPath = $outerZipPath + "/" + $osSpecificZipName
 
               # Archive the tool by os identifier.
               chmod 777 -R $_.FullName
