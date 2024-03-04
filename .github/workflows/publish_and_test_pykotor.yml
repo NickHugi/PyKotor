@@ -568,7 +568,7 @@ jobs:
   package:  # The goal of this job is to repackage by toolname, rather than all tools by os_pyversion_arch
     needs: build  # do not start this job until all 'build' jobs complete
     if: ${{ success() || failure() }}
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
     outputs:
       filesToArchive: ${{ steps.set-matrix.outputs.matrixJson }}
     steps:
@@ -603,9 +603,9 @@ jobs:
               $fullPath = $_.FullName
               $fileBaseName = [IO.Path]::GetFileNameWithoutExtension($_.Name)
               $fileExtension = $_.Extension
-              $outerZipBaseName = "$fileBaseName`_$pythonVersion"
-              Write-Output "outerZipBaseName '$outerZipBaseName'"
-              $outerZipPath = $packagedArtifactsPath + "/" + $outerZipBaseName
+              $outerArchiveName = "$fileBaseName`_$pythonVersion"
+              Write-Output "outerArchiveName '$outerArchiveName'"
+              $outerZipPath = $packagedArtifactsPath + "/" + $outerArchiveName
               Write-Output "outerZipPath '$outerZipPath'"
               New-Item -ItemType Directory -Force -Path $outerZipPath
               $osSpecificZipName = "$fileBaseName`_$os`_$architecture"
@@ -616,16 +616,16 @@ jobs:
               # Archive the tool by os identifier.
               chmod 777 -R $fullPath
               if ((-not $fileExtension) -or (-not $fileExtension.Trim()) -or ($fileExtension.ToLower().Trim() -eq ".app")) {
-                Write-Output "Compressing '$fullPath' saving to '$osSpecificZipPath.tar.gz'"
-                tar -czf "$osSpecificZipPath.tar.gz" -C "$fullPath" .
-                chmod 777 -R "$osSpecificZipPath.tar.gz"
+                $outerArchiveName = "$osSpecificZipPath.tar.gz"
+                tar -czf "$outerArchiveName" -C "$fullPath" .
               } else {
-                Write-Output "Compressing '$fullPath' saving to '$osSpecificZipPath.zip'"
-                zip -r -9 "$osSpecificZipPath.zip" "$fullPath"
-                chmod 777 -R "$osSpecificZipPath.zip"
+                $outerArchiveName = "$osSpecificZipPath.zip"
+                zip -r -9 "$outerArchiveName" "$fullPath"
               }
+              Write-Output "Compressed '$fullPath' and saved to '$outerArchiveName'"
+              chmod 777 -R "$outerArchiveName"
           
-              $artifactNames += $outerZipBaseName
+              $artifactNames += $outerArchiveName
             }
           }
           
@@ -673,11 +673,12 @@ jobs:
           name: all_tool_dists_onearchive
           path: packaged_artifacts/**
           retention-days: 1  # only used for the next job.
+          compression-level: 0
 
   upload:
     needs: package
     if: ${{ success() || failure() }}
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
     strategy:
       matrix:
         artifactb: ${{ fromJson(needs.package.outputs.filesToArchive) }}
@@ -686,18 +687,20 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           path: packaged_artifacts
-          pattern: all_tool_dists**
+          pattern: all_tool_dists*
 
       - name: Upload re-packaged artifact
         uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.artifactb }}
           path: packaged_artifacts/${{ matrix.artifactb }}
+          compression-level: 9
+          if-no-files-found: error
 
   add-test-result-status-badges:
     needs: build  # do not start this job until all 'build' jobs complete
     if: ${{ success() || failure() }}
-    runs-on: ubuntu-20.04  # Or any other suitable runner
+    runs-on: ubuntu-latest
     concurrency: 
       group: add-test-status-badges-${{ github.ref }}
       cancel-in-progress: true
