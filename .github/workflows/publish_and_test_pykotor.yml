@@ -245,6 +245,7 @@ jobs:
         $output -split "`n" | ForEach-Object {
             if ($_ -match 'WARNING: Library not found: could not resolve' -or
                 $_ -match 'WARNING: Cannot find ' -or
+                $_ -match 'WARNING: lib not found:' -or
                 $_ -match 'WARNING: Tcl modules directory') {
                 $warningCount++
             }
@@ -323,6 +324,7 @@ jobs:
         $output -split "`n" | ForEach-Object {
             if ($_ -match 'WARNING: Library not found: could not resolve' -or
                 $_ -match 'WARNING: Cannot find ' -or
+                $_ -match 'WARNING: lib not found:' -or
                 $_ -match 'WARNING: Tcl modules directory') {
                 $warningCount++
             }
@@ -399,6 +401,7 @@ jobs:
         $output -split "`n" | ForEach-Object {
             if ($_ -match 'WARNING: Library not found: could not resolve' -or
                 $_ -match 'WARNING: Cannot find ' -or
+                $_ -match 'WARNING: lib not found:' -or
                 $_ -match 'WARNING: Tcl modules directory') {
                 $warningCount++
             }
@@ -448,6 +451,7 @@ jobs:
         $output -split "`n" | ForEach-Object {
             if ($_ -match 'WARNING: Library not found: could not resolve' -or
                 $_ -match 'WARNING: Cannot find ' -or
+                $_ -match 'WARNING: lib not found:' -or
                 $_ -match 'WARNING: Tcl modules directory') {
                 $warningCount++
             }
@@ -496,6 +500,7 @@ jobs:
         $output -split "`n" | ForEach-Object {
             if ($_ -match 'WARNING: Library not found: could not resolve' -or
                 $_ -match 'WARNING: Cannot find ' -or
+                $_ -match 'WARNING: lib not found:' -or
                 $_ -match 'WARNING: Tcl modules directory') {
                 $warningCount++
             }
@@ -601,14 +606,14 @@ jobs:
             # Dynamic identification and repackaging
             Get-ChildItem -Path $matrixPackagePath | ForEach-Object {
               $fullPath = $_.FullName
-              $fileBaseName = [IO.Path]::GetFileNameWithoutExtension($_.Name)
+              $fileBaseName = [IO.Path]::GetFileNameWithoutExtension($_.Name) + "`_$architecture"
               $fileExtension = $_.Extension
               $outerArchiveName = "$fileBaseName`_$pythonVersion"
               Write-Output "outerArchiveName '$outerArchiveName'"
               $outerZipPath = $packagedArtifactsPath + "/" + $outerArchiveName
               Write-Output "outerZipPath '$outerZipPath'"
               New-Item -ItemType Directory -Force -Path $outerZipPath
-              $osSpecificZipName = "$fileBaseName`_$os`_$architecture"
+              $osSpecificZipName = "$fileBaseName`_$os"
               Write-Output "osSpecificZipName '$osSpecificZipName'"
               $osSpecificZipPath = $outerZipPath + "/" + $osSpecificZipName
               Write-Output "osSpecificZipPath '$osSpecificZipPath'"
@@ -694,16 +699,18 @@ jobs:
         artifactb: ${{ fromJson(needs.package.outputs.filesToArchive) }}
     steps:
       - name: Download repackages from package job
+        if: ${{ success() || failure() }}
         uses: actions/download-artifact@v4
         with:
-          path: packaged_artifacts
+          path: all_tool_dists_onearchive
           pattern: all_tool_dists*
 
       - name: Upload re-packaged artifact
+        if: ${{ success() || failure() }}
         uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.artifactb }}
-          path: packaged_artifacts/${{ matrix.artifactb }}
+          path: all_tool_dists_onearchive/${{ matrix.artifactb }}
           compression-level: 9
           if-no-files-found: error
 
