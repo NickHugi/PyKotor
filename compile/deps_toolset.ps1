@@ -56,25 +56,39 @@ if ((Get-OS) -eq "Mac") {
     $qtArch = "clang_64" # i'm not even going to bother to test wasm_32.
     & bash -c "brew install pyqt@5 qt" 2>&1 | Write-Output 
 } elseif ((Get-OS) -eq "Windows") {
+    # Determine system architecture
     if ($env:PROCESSOR_ARCHITECTURE -eq "AMD64" -or $env:PROCESSOR_ARCHITEW6432 -eq "AMD64") {
         $qtArch = "win64_msvc2017_64"
+        Write-Output "System architecture determined as: 64-bit (AMD64)"
     } else {
         $qtArch = "win32_msvc2017"
+        Write-Output "System architecture determined as: 32-bit"
     }
-    $pythonArch = & $pythonExePath -c "import platform; print(platform.architecture()[0])"
-    if ($pythonArch -eq "64bit") {
+
+    # Determine Python architecture
+    $pythonArchOutput = & $pythonExePath -c "import platform; print(platform.architecture()[0])" 2>&1
+    Write-Output "Python architecture command output: $pythonArchOutput"
+    
+    if ($pythonArchOutput -match "64bit") {
         $qtArch = "win64_msvc2017_64"
+        Write-Output "Python architecture determined as: 64-bit"
     } else {
         $qtArch = "win32_msvc2017"
+        Write-Output "Python architecture determined as: 32-bit"
     }
+
     # Set the Qt installation directory based on common environment variables or default to a local 'Qt' directory
     if (Test-Path env:GITHUB_WORKSPACE) { 
-        $qtInstallPath = Join-Path $env:GITHUB_WORKSPACE "Qt" 
+        $qtInstallPath = Join-Path $env:GITHUB_WORKSPACE "Qt"
+        Write-Output "Qt installation path set to GITHUB_WORKSPACE: $qtInstallPath"
     } elseif (Test-Path env:USERPROFILE) { 
-        $qtInstallPath = Join-Path $env:USERPROFILE "Qt" 
+        $qtInstallPath = Join-Path $env:USERPROFILE "Qt"
+        Write-Output "Qt installation path set to USERPROFILE: $qtInstallPath"
     } else { 
-        $qtInstallPath = Join-Path $PWD "Qt" 
+        $qtInstallPath = Join-Path $PWD "Qt"
+        Write-Output "Qt installation path set to current directory: $qtInstallPath"
     }
+    $qtOs = "windows"
 } elseif (Test-Path -Path "/etc/os-release") {
     $qtArch = "gcc_64"
     $qtOs = "linux"
@@ -129,10 +143,12 @@ if ($this_noprompt) {
 
 
 Write-Host "Installing required packages to build the holocron toolset..."
-New-Item -ItemType Directory -Force -Path $qtInstallPath
-. $pythonExePath -m pip install aqtinstall -U
-. $pythonExePath -m aqt install-qt $qtOs desktop 5.14.2 $qtArch
-. $pythonExePath -m aqt install-qt $qtOs desktop 5.14.2 $qtArch -m all
+New-Item -ItemType Directory -Force -Path $qtInstallPath -Verbose 2>&1 | Out-String | Write-Output
+. $pythonExePath -m pip install aqtinstall -U -vvv 2>&1 | Out-String | Write-Output
+. $pythonExePath -m aqt install-qt $qtOs desktop 5.14.2 $qtArch 2>&1 | Out-String | Write-Output
+if ($LastExitCode -ne 0) { Write-Output "Qt installation failed with exit code $LastExitCode"; exit $LastExitCode }
+. $pythonExePath -m aqt install-qt $qtOs desktop 5.14.2 $qtArch -m all 2>&1 | Out-String | Write-Output
+if ($LastExitCode -ne 0) { Write-Output "Qt installation (all modules) failed with exit code $LastExitCode"; exit $LastExitCode }
 
 . $pythonExePath -m pip install --upgrade pip --prefer-binary --progress-bar on
 . $pythonExePath -m pip install pyinstaller --prefer-binary --progress-bar on
