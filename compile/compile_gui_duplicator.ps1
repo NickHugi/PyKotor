@@ -38,8 +38,8 @@ if ((Get-OS) -eq "Windows") {
 }
 
 # Delete the final executable if it exists
-if (Test-Path -Path $finalExecutablePath) {
-    Remove-Item -Path $finalExecutablePath -Force
+if (Test-Path -LiteralPath $finalExecutablePath) {
+    Remove-Item -LiteralPath $finalExecutablePath -Force
 }
 
 Write-Host "Compiling GuiDuplicator..."
@@ -137,7 +137,7 @@ Write-Host "Executing command: $pythonExePath $argumentsArray"
 & $pythonExePath $argumentsArray
 
 # Check if the final executable exists
-if (-not (Test-Path -Path $finalExecutablePath)) {
+if (-not (Test-Path -LiteralPath $finalExecutablePath)) {
     Write-Error "GUI Duplicator could not be compiled, scroll up to find out why"   
 } else {
     Write-Host "GUI Duplicator was compiled to '$finalExecutablePath'"

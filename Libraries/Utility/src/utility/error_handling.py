@@ -64,11 +64,10 @@ def universal_simplify_exception(e: BaseException) -> tuple[str, str]:
 
     # Add more oddball exception handling here as needed
 
-    # Try commonly used attributes for human-readable messages
-    for attr in ["strerror", "message", "reason", "filename", "filename1", "filename2"]:
-        msg = getattr(e, attr, None)
-        if msg:
-            return error_name, f"{e}: {msg}"
+    error_messages = [f"- {attr}: {getattr(e, attr)}" for attr in ["strerror", "filename", "filename1", "filename2", "message", "reason"] if getattr(e, attr, None)]
+    if error_messages:
+        error_details = "\n".join(error_messages)
+        return error_name, f"{e}:\n\nDetails:\n{error_details}"
 
     err_str = str(e)
     args = getattr(e, "args", [])
