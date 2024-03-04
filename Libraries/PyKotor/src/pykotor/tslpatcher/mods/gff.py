@@ -244,8 +244,8 @@ class AddStructToListGFF(ModifyGFF):
         if isinstance(navigated_container, GFFList):
             list_container = navigated_container
         else:
-            reason: str = "navigated list could not be determined" if navigated_container is None else "is not an instance of a GFFList."
-            logger.add_error(f"Unable to add struct to list in '{self.path or f'[{self.identifier}]'}' {reason}")
+            reason: str = "Does not exist" if navigated_container is None else f"Path points to a '{navigated_container.__class__.__name__}', expected a GFFList."
+            logger.add_error(f"Unable to add struct to list '{self.path or f'[{self.identifier}]'}': {reason}")
             return
         new_struct = self.value.value(memory, GFFFieldType.Struct)
 
@@ -309,7 +309,7 @@ class AddFieldGFF(ModifyGFF):
             struct_container = navigated_container
         else:
             reason = "does not exist!" if navigated_container is None else "is not an instance of a GFFStruct."
-            logger.add_error(f"Unable to add new Field '{self.label}'. Parent field at '{self.path}' {reason}")
+            logger.add_error(f"Unable to add new GFF Field '{self.label}'. Path '{self.path}' {reason}")
             return
 
         value: Any = self.value.value(memory, self.field_type)
@@ -419,7 +419,7 @@ class ModifyFieldGFF(ModifyGFF):
         navigated_container: GFFList | GFFStruct | None = self._navigate_containers(root_struct, self.path.parent)
         if not isinstance(navigated_container, GFFStruct):
             reason: str = "does not exist!" if navigated_container is None else "is not an instance of a GFFStruct."
-            logger.add_error(f"Unable to modify Field '{label}'. Parent field at '{self.path.parent}' {reason}")
+            logger.add_error(f"Unable to modify GFF field '{label}'. Path '{self.path}' {reason}")
             return
 
         navigated_struct: GFFStruct = navigated_container
@@ -432,7 +432,7 @@ class ModifyFieldGFF(ModifyGFF):
             from_container: GFFList | GFFStruct | None = self._navigate_containers(root_struct, value.parent)
             if not isinstance(from_container, GFFStruct):
                 reason = "does not exist!" if from_container is None else "is not an instance of a GFFStruct."
-                logger.add_error(f"Unable use !FieldPath from 2DAMEMORY. Parent field at '{value}' {reason}")
+                logger.add_error(f"Unable use !FieldPath from 2DAMEMORY. Parent field at '{value.parent}' {reason}")
                 return
             value = from_container.value(value.name)
 

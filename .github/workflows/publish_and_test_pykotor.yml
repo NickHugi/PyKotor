@@ -613,7 +613,7 @@ jobs:
           
               # Archive the tool by os identifier.
               chmod 777 -R $fullPath
-              if ($fileExtension -and $fileExtension.Trim() -and $fileExtension.ToLower().Trim() -ne ".app") {
+              if ((-not $fileExtension) -or (-not $fileExtension.Trim()) -or ($fileExtension.ToLower().Trim() -eq ".app")) {
                 Write-Output "Compressing '$fullPath' saving to '$osSpecificZipPath.tar.gz'"
                 tar -czf "$osSpecificZipPath.tar.gz" -C "$fullPath" .
                 chmod 777 -R "$osSpecificZipPath.tar.gz"
@@ -660,9 +660,9 @@ jobs:
           Write-Host "Matrix JSON:"
           Write-Host $singleLineJsonMatrix
       
-          echo "matrixJson<<EOF" >> $GITHUB_OUTPUT
-          echo $jsonMatrix >> $GITHUB_OUTPUT
-          echo "EOF" >> $GITHUB_OUTPUT
+          echo "matrixJson<<EOF" >> $env:GITHUB_OUTPUT
+          echo $singleLineJsonMatrix >> $env:GITHUB_OUTPUT
+          echo "EOF" >> $env:GITHUB_OUTPUT
 
       - name: Upload re-packaged artifact (fallback)
         if: false
