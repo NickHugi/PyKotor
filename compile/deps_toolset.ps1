@@ -66,7 +66,7 @@ if ((Get-OS) -eq "Mac") {
     }
 
     # Determine Python architecture
-    $pythonArchOutput = & $pythonExePath -c "import platform; print(platform.architecture()[0])" 2>&1
+    $pythonArchOutput = & $pythonExePath -c "import platform; import traceback; try: print(platform.architecture()[0]) except Exception as e: traceback.print_exc()" 2>&1
     Write-Output "Python architecture command output: $pythonArchOutput"
     
     if ($pythonArchOutput -match "64bit") {

@@ -641,7 +641,7 @@ jobs:
               
               $item = Get-Item -Path $outerArchiveName -ErrorAction SilentlyContinue
               if ($item -ne $null) {
-                $artifactNames += $item.Name
+                $artifactNames += $item.BaseName
               }
             }
           }
