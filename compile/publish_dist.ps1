@@ -3,7 +3,7 @@ Set-Location -Path $PSScriptRoot
 $sevenZipPath = "C:\Program Files\7-Zip\7z.exe"  # Path to 7zip executable
 $gitBashLocation = "C:\Program Files\Git\bin\bash.exe"
 $sourceFolderStrPath = "..$([System.IO.Path]::DirectorySeparatorChar)dist"
-$sourceFolder = Get-ChildItem -Path $sourceFolderStrPath
+$sourceFolder = Get-ChildItem -LiteralPath $sourceFolderStrPath
 
 trap {
     Write-Host -ForegroundColor Red "$($_.InvocationInfo.PositionMessage)`n$($_.Exception.Message)"
@@ -12,7 +12,7 @@ trap {
     continue
 }
 
-function Convert-WindowsPathToUnix {
+function Convert-WindowsPathToWSL {
     param(
         [string]$path
     )
@@ -35,14 +35,14 @@ function Initialize-MacOSAppBundle {
 
     New-Item -Path $macOSFolder -ItemType Directory -Force > $null
 
-    Get-ChildItem -Path $path | Where-Object { $_.FullName -ne $appFolder } | ForEach-Object {
-        Move-Item -Path $_.FullName -Destination $macOSFolder
+    Get-ChildItem -LiteralPath $path | Where-Object { $_.FullName -ne $appFolder } | ForEach-Object {
+        Move-Item -LiteralPath $_.FullName -Destination $macOSFolder
     }
 
     $oldResourcesFolder = Join-Path -Path $macOSFolder -ChildPath "Resources"
-    Move-Item -Path $oldResourcesFolder -Destination $appFolder
+    Move-Item -LiteralPath $oldResourcesFolder -Destination $appFolder
 
-    Copy-Item -Path "./Info.plist" -Destination $contentsFolder
+    Copy-Item -LiteralPath "./Info.plist" -Destination $contentsFolder
 
     return $appFolder
 }
@@ -52,7 +52,7 @@ function Set-UnixFilePermissions {
         [string]$path,
         [string]$permissions
     )
-    $unixArchiveSource = Convert-WindowsPathToUnix -path $path
+    $unixArchiveSource = Convert-WindowsPathToWSL -path $path
     if ($null -ne (Get-Command "wsl" -ErrorAction SilentlyContinue)) {
         $command = "& wsl chmod $permissions -Rc $unixArchiveSource"
         Write-Host $command
@@ -76,11 +76,11 @@ function Compress-TarGz {
         [string]$archiveFile,
         [string]$archiveSource
     )
-    $unixArchivePath = Convert-WindowsPathToUnix -path $archiveFile
-    $unixArchiveSource = Convert-WindowsPathToUnix -path $archiveSource
+    $unixArchivePath = Convert-WindowsPathToWSL -path $archiveFile
+    $unixArchiveSource = Convert-WindowsPathToWSL -path $archiveSource
     $folderName = [System.IO.Path]::GetFileName($archiveSource)
     $parentDir = [System.IO.Path]::GetDirectoryName($archiveSource)
-    $unixParentDir = Convert-WindowsPathToUnix -path $parentDir
+    $unixParentDir = Convert-WindowsPathToWSL -path $parentDir
     if ($null -ne (Get-Command "wsl" -ErrorAction SilentlyContinue)) {
         $command = "& wsl tar -czvf $unixArchivePath -C $unixParentDir '$folderName'"
         Write-Host $command
@@ -117,7 +117,7 @@ function Compress-Zip {
     if ($null -ne (Get-Command "wsl" -ErrorAction SilentlyContinue)) {
         $parentDir = [System.IO.Path]::GetDirectoryName($archiveSource)
         $originalDir = Get-Location
-        $unixArchivePath = Convert-WindowsPathToUnix -path $archiveFile
+        $unixArchivePath = Convert-WindowsPathToWSL -path $archiveFile
         $command = "cd '$parentDir'; & wsl zip -q -r -9 '$unixArchivePath' '$([System.IO.Path]::GetFileName($archiveSource))'; cd '$originalDir'"
         Write-Host $command
         Invoke-Expression $command
@@ -150,25 +150,45 @@ function Compress-Zip {
 try {
     
     New-Item -Name "publish" -ItemType Directory -ErrorAction SilentlyContinue
+    $publishDir = Resolve-Path -LiteralPath "./publish"
     foreach ($item in $sourceFolder) {
+        $fileExtension = $item.Extension
+        if (($fileExtension.ToLower() -eq ".zip") -or ($fileExtension.ToLower() -eq ".tar.gz")) {
+            Write-Host "Skipping prepackaged $($item.Name)"
+            continue
+        }
         Write-Host ""
         Write-Host "Zipping '$item' for release..."
         Write-Host "Source path: '$($item.FullName)'"
 
         # Fix file permissions before archiving
         Set-UnixFilePermissions -path $item.FullName -permissions "777"
+        $baseName = $item.BaseName
+        $index = $baseName.ToLower().IndexOf(".app")
+        if ($index -ge 0) {
+            $baseName = $baseName.Substring(0, $index) + $baseName.Substring($index + 4)
+        }
+        if ($fileExtension.ToLower() -eq ".app") {
+            $suffix = "_Mac"
+        } elseif ($fileExtension.ToLower() -eq ".exe") {
+            $suffix = "_Windows"
+        } else {
+            $suffix = "_Unix"
+        }
 
         # Determine compression method
         if ($null -ne (Get-Command "wsl" -ErrorAction SilentlyContinue)) {
-            $archiveFile = "$item.zip"
-            Compress-Zip -archiveFile $archiveFile -archiveSource $item.FullName
+            $destinationPath = Join-Path -Path $publishDir -ChildPath "$baseName$suffix.zip"
+            Write-Host "Destination path: '$destinationPath'"
+            Compress-Zip -archiveFile $destinationPath -archiveSource $item.FullName
         } else {
             Write-Warning "Creating .tar.gz instead of .zip archives to preserve file attributes, please run on unix or wsl if you want zips."
-            $archiveFile = Join-Path -Path "publish" -ChildPath "$item.tar.gz"
-            Compress-TarGz -archiveFile $archiveFile -archiveSource $item.FullName
+            $destinationPath = Join-Path -Path $publishDir -ChildPath "$baseName$suffix.tar.gz"
+            Write-Host "Destination path: '$destinationPath'"
+            Compress-TarGz -archiveFile $destinationPath -archiveSource $item.FullName
         }
 
-        Write-Host "Publishing '$item' completed successfully."
+        Write-Host "Publishing '$item' to '$destinationPath' completed."
     }
 
     Write-Host "Zipped all dists successfully."

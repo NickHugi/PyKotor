@@ -56,7 +56,6 @@ jobs:
         echo "NONINTERACTIVE NEW: $NONINTERACTIVE"
         brew analytics on
         brew update
-        brew upgrade
         brew install python@${{ matrix.python-version }} || brew link --overwrite python@${{ matrix.python-version }}
     
     - name: Reset APT sources to default
@@ -569,7 +568,7 @@ jobs:
     if: ${{ success() || failure() }}
     runs-on: ubuntu-20.04
     outputs:
-      matrixJson: ${{ steps.set-matrix.outputs.matrixJson }}
+      filesToArchive: ${{ steps.set-matrix.outputs.matrixJson }}
     steps:
       - name: Download all artifacts
         uses: actions/download-artifact@v4
@@ -617,11 +616,12 @@ jobs:
               if ($fileExtension -and $fileExtension.Trim() -and $fileExtension.ToLower().Trim() -ne ".app") {
                 Write-Output "Compressing '$fullPath' saving to '$osSpecificZipPath.tar'"
                 tar czf "$osSpecificZipPath.tar" --options level=9 --preserve "$fullPath"
+                chmod 777 -R "$osSpecificZipPath.tar"
               } else {
                 Write-Output "Compressing '$fullPath' saving to '$osSpecificZipPath.zip'"
                 zip -r -9 "$osSpecificZipPath.zip" "$fullPath"
+                chmod 777 -R "$osSpecificZipPath.zip"
               }
-              chmod 777 -R $osSpecificZipPath
           
               $artifactNames += $outerZipBaseName
             }
@@ -634,7 +634,7 @@ jobs:
           Set-Location -Path "../"
 
       - name: Upload re-packaged artifact (fallback)
-        if: ${{ success() || failure() }}
+        if: false
         uses: actions/upload-artifact@v4
         with:
           name: all_tool_dists_onearchive
@@ -660,16 +660,16 @@ jobs:
       
           # Convert the array directly to JSON
           $jsonMatrix = $matrixArray | ConvertTo-Json -Depth 5 -Compress
+
           # Use a single line of JSON for the matrix to avoid issues
           $singleLineJsonMatrix = $jsonMatrix -replace "`r", ""
           $singleLineJsonMatrix = $singleLineJsonMatrix -replace "`n", ""
           Write-Host "Matrix JSON:"
           Write-Host $singleLineJsonMatrix
       
-          # Output the simplified JSON matrix to the GITHUB_OUTPUT environment variable
-          echo "matrixJson<<EOF" >> $GITHUB_ENV
-          echo "$singleLineJsonMatrix" >> $GITHUB_ENV
-          echo "EOF" >> $GITHUB_ENV
+          echo "matrixJson<<EOF" >> $GITHUB_OUTPUT
+          echo $jsonMatrix >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
 
   test-package-output:
     needs: package
@@ -684,14 +684,14 @@ jobs:
       - name: Test package outputs
         shell: pwsh
         run: |
-          Write-Output "Raw: '${{ needs.package.outputs.matrixJson }}'"
+          Write-Output "Raw: '${{ needs.package.outputs.filesToArchive }}'"
         env:
           DEBUG: true
 
       - name: Test package outputs fromJson
         shell: pwsh
         run: |
-          Write-Output "fromJson: '${{ fromJson(needs.package.outputs.matrixJson) }}'"
+          Write-Output "fromJson: '${{ fromJson(needs.package.outputs.filesToArchive) }}'"
         env:
           DEBUG: true
 
@@ -701,7 +701,7 @@ jobs:
     runs-on: ubuntu-20.04
     strategy:
       matrix:
-        artifactb: ${{ fromJson(needs.package.outputs.matrixJson) }}
+        artifactb: ${{ fromJson(needs.package.outputs.filesToArchive) }}
     steps:
       - name: Upload re-packaged artifact
         uses: actions/upload-artifact@v4
