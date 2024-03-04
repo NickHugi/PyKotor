@@ -125,8 +125,36 @@ if ((Get-OS) -eq "Mac") {
         Write-Warning "Unable to determine Tcl/Tk path using Homebrew"
     }
 }
-if ($tclTkPath) {
-    $pyInstallerArgs += "--path=$tclTkPath"
+
+# Prepare the Python command as a single string
+$pythonCommand = @"
+import tkinter
+root = tkinter.Tk()
+print(root.tk.exprstring('$tcl_library'))
+print(root.tk.exprstring('$tk_library'))
+"@
+if ((Get-OS) -eq "Mac") {
+    
+    # Execute the Python command and capture the output
+    $output = & $pythonExePath -c $pythonCommand
+    
+    # The output will contain both paths, one per line. Split them.
+    $lines = $output -split "`n"
+    
+    # Assuming the first line is the Tcl library path and the second line is the Tk library path
+    $tcl_library = $lines[0]
+    $tk_library = $lines[1]
+    
+    # Output the variables to verify
+    Write-Host "Raw output: $output"
+    Write-Host "Tcl library path: $tcl_library"
+    Write-Host "Tk library path: $tk_library"
+    
+    Write-Host "TCL_LIBRARY current env: '$Env:TCL_LIBRARY'"
+    Write-Host "TK_LIBRARY current env: '$Env:TK_LIBRARY'"
+    
+    #$Env:TCL_LIBRARY = $tcl_library
+    #$Env:TK_LIBRARY = $tk_library
 }
 
 # Add PYTHONPATH paths as arguments
