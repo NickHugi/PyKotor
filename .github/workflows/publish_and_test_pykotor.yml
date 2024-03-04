@@ -617,7 +617,17 @@ jobs:
               chmod 777 -R $fullPath
               if ((-not $fileExtension) -or (-not $fileExtension.Trim()) -or ($fileExtension.ToLower().Trim() -eq ".app")) {
                 $outerArchiveName = "$osSpecificZipPath.tar.gz"
-                tar -czf "$outerArchiveName" -C "$fullPath" .
+                # Check if the path is a directory or a file
+                if (Test-Path $fullPath -PathType Container) {
+                    # It's a directory, archive the entire directory
+                    tar -czf "$outerArchiveName" -C "$fullPath" .
+                } else {
+                    # It's a file, archive the file specifically
+                    # Determine the parent directory and the file name
+                    $parentDir = Split-Path -Parent $fullPath
+                    $fileName = Split-Path -Leaf $fullPath
+                    tar -czf "$outerArchiveName" -C "$parentDir" "$fileName"
+                }
               } else {
                 $outerArchiveName = "$osSpecificZipPath.zip"
                 zip -r -9 "$outerArchiveName" "$fullPath"
@@ -667,7 +677,7 @@ jobs:
           echo "EOF" >> $env:GITHUB_OUTPUT
 
       - name: Upload all repackages for next job
-        if: false
+        if: ${{ success() || failure() }}
         uses: actions/upload-artifact@v4
         with:
           name: all_tool_dists_onearchive
