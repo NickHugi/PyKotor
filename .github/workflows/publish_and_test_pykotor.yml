@@ -639,7 +639,7 @@ jobs:
               Write-Output "Compressed '$fullPath' and saved to '$outerArchiveName'"
               chmod 777 -R "$outerArchiveName"
               
-              $item = Get-Item -Path $outerArchiveName -ErrorAction SilentlyContinue
+              $item = Get-Item -Path $outerZipPath -ErrorAction SilentlyContinue
               if ($item -ne $null) {
                 $artifactNames += $item.BaseName
               }
