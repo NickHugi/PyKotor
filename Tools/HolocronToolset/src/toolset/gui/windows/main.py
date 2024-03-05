@@ -881,8 +881,16 @@ class ToolWindow(QMainWindow):
         def task(active: HTInstallation | None = None):
             self.active = active or HTInstallation(path, name, tsl, self)
 
-            assert_with_variable_trace(isinstance(self.active, HTInstallation))
-            assert isinstance(self.active, HTInstallation)  # noqa: S101
+        active = self.installations.get(name)
+        loader = AsyncLoader(self, "Loading Installation" if not active else "Refreshing installation", lambda: task(active), "Failed to load installation")
+        if not loader.exec_():
+            self.active = None
+            self.ui.gameCombo.setCurrentIndex(0)
+            if self.dogObserver is not None:
+                self.dogObserver.stop()
+                self.dogObserver = None
+            print("Loader task completed.")
+        else:
             print("Loading core installation resources into UI...")
             self.ui.coreWidget.setResources(self.active.chitin_resources())
             print("Loading module resources into UI...")
@@ -902,16 +910,6 @@ class ToolWindow(QMainWindow):
             self.dogObserver = Observer()
             self.dogObserver.schedule(self.dogHandler, self.active.path(), recursive=True)
             self.dogObserver.start()
-
-        active = self.installations.get(name)
-        loader = AsyncLoader(self, "Loading Installation" if not active else "Refreshing installation", lambda: task(active), "Failed to load installation")
-        if not loader.exec_():
-            self.active = None
-            self.ui.gameCombo.setCurrentIndex(0)
-            if self.dogObserver is not None:
-                self.dogObserver.stop()
-                self.dogObserver = None
-            print("Loader task completed.")
 
         self.settings.installations()[name].path = path
 
