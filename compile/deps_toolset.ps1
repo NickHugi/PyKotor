@@ -54,7 +54,7 @@ $qtArch = $null
 if ((Get-OS) -eq "Mac") {
     $qtOs = "mac"
     $qtArch = "clang_64" # i'm not even going to bother to test wasm_32.
-    & bash -c "brew install pyqt@5 qt" 2>&1 | Write-Output 
+    & bash -c "brew install pyqt@5 qt@5" 2>&1 | Write-Output 
 } elseif ((Get-OS) -eq "Windows") {
     # Determine system architecture
     if ($env:PROCESSOR_ARCHITECTURE -eq "AMD64" -or $env:PROCESSOR_ARCHITEW6432 -eq "AMD64") {
