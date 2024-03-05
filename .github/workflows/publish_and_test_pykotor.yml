@@ -4,6 +4,12 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+env:
+  OS_RUNNERS_JSON: '["windows-2019", "ubuntu-20.04", "macos-12"]'
+  PYTHON_VERSIONS_JSON: '["3.8", "3.9", "3.10", "3.11", "3.12"]'
+  ARCHITECTURES_JSON: '["x86", "x64"]'
+  UPX_VERSION: '4.2.2'
+  
 on:
   - push
   - workflow_dispatch
@@ -17,7 +23,7 @@ jobs:
     strategy:
       fail-fast: false  # Disable automatic cancellation of other jobs
       matrix:
-        os: [windows-2019, ubuntu-20.04, macos-12]
+        os: [windows-2019, ubuntu-20.04, macos-12]  # make sure you update the above one too.
         python-version: ['3.8', '3.9', '3.10', '3.11', '3.12']
         architecture: ['x86', 'x64']
         include:
@@ -93,17 +99,17 @@ jobs:
         $archiveName = ""
         if ("${{ runner.os }}" -eq "Windows") {
           if ("${{ matrix.architecture }}" -eq "x86") {
-            $archiveName = "upx-4.2.2-win32.zip"
+            $archiveName = "upx-${{ env.UPX_VERSION }}-win32.zip"
           } else {
-            $archiveName = "upx-4.2.2-win64.zip"
+            $archiveName = "upx-${{ env.UPX_VERSION }}-win64.zip"
           }
         } elseif ("${{ runner.os }}" -eq "Linux") {
-          $archiveName = "upx-4.2.2-amd64_linux.tar.xz"
+          $archiveName = "upx-${{ env.UPX_VERSION }}-amd64_linux.tar.xz"
         } elseif ("${{ runner.os }}" -eq "macOS") {
           $build = "yes"
-          $archiveName = "upx-4.2.2-src.tar.xz"
+          $archiveName = "upx-${{ env.UPX_VERSION }}-src.tar.xz"
         }
-        $url = "https://github.com/upx/upx/releases/download/v4.2.2/$archiveName"
+        $url = "https://github.com/upx/upx/releases/download/v${{ env.UPX_VERSION }}/$archiveName"
     
         # Write to the GITHUB_OUTPUT environment file
         Add-Content -Path $env:GITHUB_OUTPUT -Value "build=$build"
@@ -277,8 +283,7 @@ jobs:
             if ("${{ matrix.python-version }}" -eq "3.12") {
               pip install "pyinstaller==5.13" --prefer-binary
             } elseif ("${{ matrix.python-version }}" -eq "3.11") {
-              pip install "pyinstaller==5.6.1" --prefer-binary
-              pip install "pyinstaller==5.5" --prefer-binary
+              pip install "pyinstaller==5.13" --prefer-binary
             } else {
               pip install "pyinstaller==5.4" --prefer-binary
             }
@@ -587,68 +592,91 @@ jobs:
         run: |
           $here_dirpath = (Get-Location)
           Write-Output "here: '$here_dirpath'"
-          $packagedArtifactsPath = "$here_dirpath/packaged_artifacts"
+          $packagedArtifactsPath = Join-Path -Path $here_dirpath -ChildPath "packaged_artifacts"
           New-Item -ItemType Directory -Force -Path $packagedArtifactsPath
-          $artifactNames = New-Object 'System.Collections.Generic.HashSet[string]'
-          
+
           # Navigate to the directory with downloaded artifacts
           Set-Location -Path "published_workflow_builds"
           Get-ChildItem -Recurse -Path "." -Directory | ForEach-Object { Write-Output $_.FullName }
-          
-          # Extract each published artifact and repackage
+
+          $artifactNames = New-Object 'System.Collections.Generic.HashSet[string]'
+          # Iterate through each os_pythonversion_arch folder.
           Get-ChildItem -Filter "publish_*" | ForEach-Object {
             $matrixPackagePath = $_.FullName
             Write-Output "Found matrix package '$matrixPackagePath'"
             Get-ChildItem -Recurse -Path "." -Directory | ForEach-Object { Write-Output $_.FullName }
             $os, $pythonVersion, $architecture = $_.BaseName -replace '^publish_', '' -split '_'
-          
-            # Dynamic identification and repackaging
+
+            $shortOsName = $os
+            if ($os -eq "ubuntu_20.04" -or $os -eq "ubuntu_22.04" -or $os -eq "ubuntu-latest") {
+              $shortOsName = "Linux"
+            } elseif ($os -eq "macos-11" -or $os -eq "macos-12" -or $os -eq "macos-latest") {
+              $shortOsName = "Mac"
+            } elseif ($os -eq "windows-2019" -or $os -eq "windows-2022" -or $os -eq "windows-latest") {
+              $shortOsName = "Win"
+            }
+
+            # Iterate through each tool in the folder
             Get-ChildItem -Path $matrixPackagePath | ForEach-Object {
-              $fullPath = $_.FullName
-              $fileBaseName = [IO.Path]::GetFileNameWithoutExtension($_.Name) + "`_$architecture"
+              $toolExePath = $_.FullName
+              $toolFileName = $_.Name
+              $fileBaseName = [IO.Path]::GetFileNameWithoutExtension($_.Name)
               $fileExtension = $_.Extension
+
               $outerArchiveName = "$fileBaseName`_$pythonVersion"
-              Write-Output "outerArchiveName '$outerArchiveName'"
-              $outerZipPath = $packagedArtifactsPath + "/" + $outerArchiveName
-              Write-Output "outerZipPath '$outerZipPath'"
+              $outerZipPath = Join-Path -Path $packagedArtifactsPath -ChildPath $outerArchiveName
+              $osSpecificArchiveName = "$fileBaseName`_$shortOsName-$architecture"
+              $osSpecificArchivePath = Join-Path -Path $outerZipPath -ChildPath $osSpecificArchiveName
+
+              Write-Output "   ToolFileName: '$toolFileName'"
+              Write-Output "   Tool original filepath: '$toolExePath'"
+              Write-Output "outerArchiveName: '$outerArchiveName'"
+              Write-Output " - osSpecificArchiveName: '$osSpecificArchiveName'"
+              Write-Output "outerZipPath: '$outerZipPath'"
+              Write-Output " - osSpecificArchivePath: '$osSpecificArchivePath'"
+
               New-Item -ItemType Directory -Force -Path $outerZipPath
-              $osSpecificZipName = "$fileBaseName`_$os"
-              Write-Output "osSpecificZipName '$osSpecificZipName'"
-              $osSpecificZipPath = $outerZipPath + "/" + $osSpecificZipName
-              Write-Output "osSpecificZipPath '$osSpecificZipPath'"
-          
+              chmod 777 -R $toolExePath
+              $toolExeParentDirPath = Split-Path -Parent $toolExePath
+              Write-Output "Creating archive for '$toolFileName' at '$toolExeParentDirPath'..."
+
+              Write-Output ("Push-Location to start in '$toolExeParentDirPath' (originally at '$(Get-Location)')")
+              Push-Location -Path $toolExeParentDirPath
               # Archive the tool by os identifier.
-              chmod 777 -R $fullPath
               if ((-not $fileExtension) -or (-not $fileExtension.Trim()) -or ($fileExtension.ToLower().Trim() -eq ".app")) {
-                $outerArchiveName = "$osSpecificZipPath.tar.gz"
-                # Check if the path is a directory or a file
-                if (Test-Path $fullPath -PathType Container) {
-                    # It's a directory, archive the entire directory
-                    tar -czf "$outerArchiveName" -C "$fullPath" .
-                } else {
-                    # It's a file, archive the file specifically
-                    # Determine the parent directory and the file name
-                    $parentDir = Split-Path -Parent $fullPath
-                    $fileName = Split-Path -Leaf $fullPath
-                    tar -czf "$outerArchiveName" -C "$parentDir" "$fileName"
+                $osSpecificArchivePath = "$osSpecificArchivePath.tar.gz"
+                if (Test-Path $toolExePath -PathType Container -ErrorAction SilentlyContinue) {  # It's a directory
+                  tar -czf "$osSpecificArchivePath" -C "$toolExePath" .
+                } else {  # It's a file
+                  tar -czf "$osSpecificArchivePath" -C "$toolExeParentDirPath" $toolFileName
                 }
               } else {
-                $outerArchiveName = "$osSpecificZipPath.zip"
-                zip -r -9 "$outerArchiveName" "$fullPath"
+                $osSpecificArchivePath = "$osSpecificArchivePath.zip"
+                zip -r -9 "$osSpecificArchivePath" $toolFileName
               }
-              Write-Output "Compressed '$fullPath' and saved to '$outerArchiveName'"
-              chmod 777 -R "$outerArchiveName"
-              
-              $item = Get-Item -Path $outerZipPath -ErrorAction SilentlyContinue
-              if ($item -ne $null) {
-                $artifactNames.Add($item.BaseName)
-              }
+              Pop-Location
+              Write-Output ("Pop-Location to return to $(Get-Location) (was pushed to '$toolExeParentDirPath')")
+
+              Write-Output "Compressed archive saved to '$osSpecificArchivePath'"
+              chmod 777 -R "$osSpecificArchivePath"
+
+              $artifactNames.Add($outerArchiveName)
             }
           }
-          
+
           # Save artifact names to a file
           $artifactNames | Out-File -FilePath "../artifact-names.txt" -Encoding UTF8
-          
+
+          Get-ChildItem -Force | ForEach-Object {
+            $size = if ($_.PSIsContainer) { "N/A" } else { $_.Length }
+            $attrs = $_.Attributes.ToString() -replace 'ReadOnly', 'RO' -replace 'Hidden', 'H' -replace 'System', 'S' -replace 'Archive', 'A' -replace 'Directory', 'D' -replace ', ', '|'
+            [PSCustomObject]@{
+                Name = $_.Name
+                Size = $size
+                Attributes = $attrs
+            }
+          } | Format-Table -AutoSize
+
           # Navigate back to the root of the workspace
           Set-Location -Path "../"
 
@@ -748,15 +776,15 @@ jobs:
           $commitSHA = "${{ github.sha }}"
 
           $testsResultsPath = "tests/results"
-          $testsResultsCommitPath = $testsResultsPath + "/$commitSHA"
+          $testsResultsCommitPath = Join-Path -Path $testsResultsPath -ChildPath "$commitSHA"
           Remove-Item -Path $testsResultsPath -Recurse -Force -ErrorAction SilentlyContinue
           New-Item -ItemType Directory -Force -Path $testsResultsCommitPath -ErrorAction SilentlyContinue
 
-          $OS_NAMES = @("windows-2019", "ubuntu-20.04", "macos-12")
-          $PYTHON_VERSIONS = @('3.8', '3.9', '3.10', '3.11', '3.12')
-          $ARCHITECTURES = @('x86', 'x64')
+          $OS_NAMES = '${{ env.OS_RUNNERS_JSON }}' | ConvertFrom-Json
+          $PYTHON_VERSIONS = '${{ env.PYTHON_VERSIONS_JSON }}' | ConvertFrom-Json
+          $ARCHITECTURES = '${{ env.ARCHITECTURES_JSON }}' | ConvertFrom-Json
 
-          $artifact_reports_dir = "./all_pytest_reports"
+          $artifact_reports_dir = Join-Path -Path Get-Location -ChildPath "all_pytest_reports"
           New-Item -ItemType Directory -Force -Path $artifact_reports_dir -ErrorAction SilentlyContinue
           #Dir -Recurse $artifact_reports_dir | Get-Childitem
           Get-ChildItem $artifact_reports_dir | ForEach-Object {
@@ -834,7 +862,7 @@ jobs:
           foreach ($OS in $OS_NAMES) {
             foreach ($PYTHON_VERSION in $PYTHON_VERSIONS) {
               foreach ($ARCH in $ARCHITECTURES) {
-                if ($OS -ne "windows-2019" -and $ARCH -eq "x86") {
+                if ($OS -ne "windows-2019" -and $OS -ne "windows-2022" -and $OS -ne "windows-latest" -and $ARCH -eq "x86") {
                   continue  # no x86 support for unix.
                 }
                 $key = "$OS-$PYTHON_VERSION-$ARCH"
