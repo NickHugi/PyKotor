@@ -42,30 +42,7 @@ def main():
         EXTRA_PATHS.append(str(utility_src_path))
 
     EXTRAS_REQUIRE = project_metadata.get("optional-dependencies", {})
-    if "py2exe" not in sys.argv:
-
-        # Check if the installation is from PyPI or local source
-        if len(sys.argv) < 2:
-            sys.argv.append("install")
-
-        for key in ["authors", "readme"]:  # Remove keys that are not needed in setup()
-            if key in project_metadata:
-                project_metadata.pop(key)
-
-        setup(
-            **project_metadata,
-            author=AUTHORS[0]["name"],
-            author_email=AUTHORS[0]["email"],
-            maintainer=AUTHORS[1]["name"],
-            maintainer_email=AUTHORS[1]["email"],
-            version=VERSION,
-            install_requires=list(REQUIREMENTS),
-            extras_require=EXTRAS_REQUIRE,
-            long_description=README["file"],
-            long_description_content_type=README["content-type"],
-            include_dirs=EXTRA_PATHS,
-        )
-    else:
+    if "py2exe" in sys.argv:
         try:
             import py2exe
 
@@ -78,7 +55,7 @@ def main():
                 "compressed": 1,  # Compress the library archive
                 "optimize": 1,  # Apply bytecode optimization
                 "bundle_files": 1,
-                "verbose": 2,
+                "verbose": 1,
                 "dist_dir": "dist",  # Output directory, same as in the PowerShell script
                 "excludes": [
                     "numpy", "PyQt5", "PIL", "Pillow", "matplotlib", "multiprocessing", "PyOpenGL",
@@ -103,9 +80,37 @@ def main():
                     "script": "src/__main__.py",  # Main Python script to be converted into an executable
                     "icon_resources": [(1, icon_file)] if icon_file else None,  # Icon file
                     "dest_base": "HoloPatcher",
+                    "version_info": {
+                        "description": project_metadata["description"],
+                        "copyright": "GPLv3 Licensing",
+                        "version": VERSION,
+                        "product_name": "HoloPatcher",
+                        "internal_name": "PyKotor"
+                    }
                 }
             ],
             zipfile="pylibs.bin",  # Include the Python bytecode archive in the executable, if bundle_files is 3 this should be set to a specific filename
+        )
+    else:
+        # Check if the installation is from PyPI or local source
+        if len(sys.argv) < 2:
+            sys.argv.append("install")
+
+        for key in ["authors", "readme", "maintainers"]:  # Remove keys that are not needed in setup()
+            if key in project_metadata:
+                project_metadata.pop(key)
+
+        setup(
+            **project_metadata,
+            author=AUTHORS[0]["name"],
+            author_email=AUTHORS[0]["email"],
+            maintainer=AUTHORS[1]["name"],
+            maintainer_email=AUTHORS[1]["email"],
+            install_requires=list(REQUIREMENTS),
+            extras_require=EXTRAS_REQUIRE,
+            long_description=README["file"],
+            long_description_content_type=README["content-type"],
+            include_dirs=EXTRA_PATHS,
         )
 
 
