@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+import shutil
 import sys
 
 from pathlib import Path
@@ -18,6 +19,7 @@ def main():
     # Extract project metadata
     project_metadata: dict = setup_params.get("project", {})
     build_system: dict = setup_params.get("build-system", {})
+    VERSION: str = project_metadata.get("version", "0.0.0")
     AUTHORS = project_metadata.get("authors", [{"name": ""}])
     README = project_metadata.get("readme", {"file": "", "content-type": ""})
 
@@ -34,26 +36,79 @@ def main():
     if pykotor_requirements.exists():
         EXTRA_PATHS.append(str(pykotor_src_path))
         REQUIREMENTS.update(pykotor_requirements.read_text().splitlines())
+    utility_path = HERE.joinpath("..", "..", "Libraries", "Utility")
+    utility_src_path = utility_path / "src"
+    if utility_src_path.exists():
+        EXTRA_PATHS.append(str(utility_src_path))
 
     EXTRAS_REQUIRE = project_metadata.get("optional-dependencies", {})
+    if "py2exe" not in sys.argv:
 
-    # Check if the installation is from PyPI or local source
-    if len(sys.argv) < 2:
-        sys.argv.append("install")
+        # Check if the installation is from PyPI or local source
+        if len(sys.argv) < 2:
+            sys.argv.append("install")
 
-    for key in ["authors", "readme"]:  # Remove keys that are not needed in setup()
-        if key in project_metadata:
-            project_metadata.pop(key)
+        for key in ["authors", "readme"]:  # Remove keys that are not needed in setup()
+            if key in project_metadata:
+                project_metadata.pop(key)
 
-    setup(
-        **project_metadata,
-        author=AUTHORS[0]["name"],
-        install_requires=list(REQUIREMENTS),
-        extras_require=EXTRAS_REQUIRE,
-        long_description=README["file"],
-        long_description_content_type=README["content-type"],
-        include_dirs=EXTRA_PATHS,
-    )
+        setup(
+            **project_metadata,
+            author=AUTHORS[0]["name"],
+            author_email=AUTHORS[0]["email"],
+            maintainer=AUTHORS[1]["name"],
+            maintainer_email=AUTHORS[1]["email"],
+            version=VERSION,
+            install_requires=list(REQUIREMENTS),
+            extras_require=EXTRAS_REQUIRE,
+            long_description=README["file"],
+            long_description_content_type=README["content-type"],
+            include_dirs=EXTRA_PATHS,
+        )
+    else:
+        try:
+            import py2exe
+
+            from py2exe import freeze
+        except ImportError as e:
+            raise ImportError("py2exe is not installed. Please install it using 'pip install py2exe'.") from e
+        # Define options for py2exe to mimic the behavior of the PyInstaller script
+        options = {
+            "py2exe": {
+                "compressed": 1,  # Compress the library archive
+                "optimize": 1,  # Apply bytecode optimization
+                "bundle_files": 1,
+                "verbose": 2,
+                "dist_dir": "dist",  # Output directory, same as in the PowerShell script
+                "excludes": [
+                    "numpy", "PyQt5", "PIL", "Pillow", "matplotlib", "multiprocessing", "PyOpenGL",
+                    "PyGLM", "dl_translate", "torch", "deep_translator", "deepl-cli", "playwright",
+                    "pyquery", "arabic-reshaper", "PyQt5-Qt5", "PyQt5-sip", "sip", "PyQt5-tools",
+                    "qt5-applications", "watchdog", "Markdown", "pyperclip", "setuptools", "java",
+                    "java.lang", "wheel", "ruff", "pylint", "pykotor.gl", "pykotorgl", "pykotor.font",
+                    "pykotorfont", "pykotor.secure_xml", "mypy-extensions", "mypy", "isort",
+                    "install_playwright", "greenlet", "cssselect", "beautifulsoup4",
+                ],  # Modules to exclude
+                "dll_excludes": [],
+            }
+        }
+
+        # Path to icon file, adapted to the platform-specific icon extension
+        icon_file = "resources/icons/patcher_icon_v2.ico"  # Adjust the path and extension as needed
+        shutil.rmtree("./dist", ignore_errors=True)
+        freeze(
+            options=options,
+            windows=[
+                {
+                    "script": "src/__main__.py",  # Main Python script to be converted into an executable
+                    "icon_resources": [(1, icon_file)] if icon_file else None,  # Icon file
+                    "dest_base": "HoloPatcher",
+                }
+            ],
+            zipfile="pylibs.bin",  # Include the Python bytecode archive in the executable, if bundle_files is 3 this should be set to a specific filename
+        )
+
+
 
 
 import contextlib
