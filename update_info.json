@@ -1,6 +1,6 @@
 {
-	"toolsetLatestVersion": "2.2.1b11",
-	"toolsetLatestNotes": "Fixed MacOS/Linux issues, fixed thread handle-related crashes, and add Module Designer shortcut",
+	"toolsetLatestVersion": "2.2.1b12",
+	"toolsetLatestNotes": "beta-12: Fix slow ui updates. beta-11: Fixed MacOS/Linux issues, fixed thread handle-related crashes, and add Module Designer shortcut",
 	"holopatcherLatestVersion": "1.5.2",
 	"toolsetDownloadLink": "https://mega.nz/folder/cGJDAKaa#WzsWF8LgUkM8U2FDEoeeRA",
 	"holopatcherDownloadLink": "https://deadlystream.com/files/file/2243-holopatcher",
