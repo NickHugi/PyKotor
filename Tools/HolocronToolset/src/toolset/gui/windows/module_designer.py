@@ -853,7 +853,7 @@ class ModuleDesigner(QMainWindow):
         self.ui.flatRenderer.instanceSelection.clear()
         self.rebuildInstanceList()
 
-    def moveSelected(self, x: float, y: float, z: float | None = None):
+    def moveSelected(self, x: float, y: float, z: float | None = None, noUndoStack: bool = False, noZCoord: bool = False):
         """Moves selected instances by the given offsets.
 
         Args:
@@ -877,10 +877,14 @@ class ModuleDesigner(QMainWindow):
             print("Moving", instance.resref)
             new_x = instance.position.x + x
             new_y = instance.position.y + y
-            new_z = instance.position.z + (z or self.ui.mainRenderer.walkmeshPoint(instance.position.x, instance.position.y).z)
+            if noZCoord:
+                new_z = instance.position.z
+            else:
+                new_z = instance.position.z + (z or self.ui.mainRenderer.walkmeshPoint(instance.position.x, instance.position.y).z)
             old_position = instance.position
             new_position = Vector3(new_x, new_y, new_z)
-            self.undoStack.push(MoveCommand(instance, old_position, new_position))
+            if not noUndoStack:
+                self.undoStack.push(MoveCommand(instance, old_position, new_position))
             instance.position = new_position
 
     def rotateSelected(self, x: float, y: float):
@@ -1136,8 +1140,8 @@ class ModuleDesigner(QMainWindow):
     def on2dMouseReleased(self, screen: Vector2, buttons: set[int], keys: set[int]):
         self._controls2d.onMouseReleased(screen, buttons, keys)
 
-    def on2dKeyboardReleased(self, screen: Vector2, buttons: set[int], keys: set[int]):
-        self._controls2d.onKeyboardReleased(screen, buttons, keys)
+    def on2dKeyboardReleased(self, buttons: set[int], keys: set[int]):
+        self._controls2d.onKeyboardReleased(buttons, keys)
 
     def on2dMouseScrolled(self, delta: Vector2, buttons: set[int], keys: set[int]):
         self._controls2d.onMouseScrolled(delta, buttons, keys)
@@ -1609,7 +1613,7 @@ class ModuleDesignerControls2d:
                 print("moveSelected instance in 2d")
                 self.editor.initialPositions = {instance: instance.position for instance in self.editor.selectedInstances}
                 self.editor.isDragMoving = True
-            self.editor.moveSelected(worldDelta.x, worldDelta.y)
+            self.editor.moveSelected(worldDelta.x, worldDelta.y, noUndoStack=True, noZCoord=True)
 
         if self.rotateSelected.satisfied(buttons, keys):
             for instance in self.editor.selectedInstances:
