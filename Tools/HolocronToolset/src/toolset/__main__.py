@@ -26,10 +26,6 @@ def is_frozen() -> bool:  # sourcery skip: assign-if-exp, boolean-if-exp-identit
         return True
     return False
 
-if is_frozen():
-    print("App is frozen - doing multiprocessing.freeze_support()")
-    multiprocessing.freeze_support()
-
 def onAppCrash(
     etype: type[BaseException],
     e: BaseException,
@@ -92,8 +88,12 @@ if __name__ == "__main__":
     # os.environ["QT_SCALE_FACTOR_ROUNDING_POLICY"] = "PassThrough"
     # os.environ["QT_SCALE_FACTOR"] = "1"
 
-    if not is_frozen():
+    if is_frozen():
+        print("App is frozen - doing multiprocessing.freeze_support()")
+        multiprocessing.freeze_support()
+    else:
         fix_sys_and_cwd_path()
+
     from utility.system.path import Path
 
     app = QApplication(sys.argv)
