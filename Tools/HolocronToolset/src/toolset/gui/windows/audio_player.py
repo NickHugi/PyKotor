@@ -44,7 +44,13 @@ class AudioPlayer(QMainWindow):
         self.destroyed.connect(self.closeEvent)
         self.player.error.connect(lambda _: self.closeEvent())
 
-    def load(self, filepath: os.PathLike | str, resname: str, restype: ResourceType, data: bytes):
+    def load(
+        self,
+        filepath: os.PathLike | str,
+        resname: str,
+        restype: ResourceType,
+        data: bytes,
+    ):
         data = sound.deobfuscate_audio(data)
 
         self.player.stop()
@@ -83,6 +89,7 @@ class AudioPlayer(QMainWindow):
 
     def hideEvent(self, event):
         # closeEvent doesn't get called for whatever reason.
+        super().hideEvent(event)
         self.player.stop()
 
     def closeEvent(self, e: QCloseEvent | None = None):  # FIXME: this event never gets called.
