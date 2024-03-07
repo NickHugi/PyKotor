@@ -251,8 +251,11 @@ class ToolWindow(QMainWindow):
 
         # Some users may choose to have their RIM files for the same module merged into a single option for the
         # dropdown menu.
-        if self.settings.joinRIMsTogether and is_rim_file(moduleFile):
-            resources += self.active.module_resources(f"{PurePath(moduleFile).stem}_s.rim")
+        if self.settings.joinRIMsTogether:
+            if is_rim_file(moduleFile):
+                resources += self.active.module_resources(f"{PurePath(moduleFile).stem}_s.rim")
+            if is_erf_file(moduleFile):
+                resources += self.active.module_resources(f"{PurePath(moduleFile).stem}_dlg.erf")
 
         self.active.reload_module(moduleFile)
         self.ui.modulesWidget.setResources(resources)
@@ -724,8 +727,11 @@ class ToolWindow(QMainWindow):
             # Some users may choose to have their RIM files for the same module merged into a single option for the
             # dropdown menu.
             lower_module_name = moduleName.lower()
-            if self.settings.joinRIMsTogether and lower_module_name.endswith("_s.rim"):
-                continue
+            if self.settings.joinRIMsTogether:
+                if lower_module_name.endswith("_s.rim"):
+                    continue
+                if lower_module_name.endswith("_dlg.erf"):
+                    continue
 
             item = QStandardItem(f"{areaNames[moduleName]} [{moduleName}]")
             item.setData(moduleName, QtCore.Qt.UserRole)
@@ -787,8 +793,11 @@ class ToolWindow(QMainWindow):
     def changeModule(self, moduleName: str):
         # Some users may choose to merge their RIM files under one option in the Modules tab; if this is the case we
         # need to account for this.
-        if self.settings.joinRIMsTogether and moduleName.casefold().endswith("_s.rim"):
-            moduleName = f"{moduleName[:-6]}.rim"
+        if self.settings.joinRIMsTogether:
+            if moduleName.casefold().endswith("_s.rim"):
+                moduleName = f"{moduleName[:-6]}.rim"
+            if moduleName.casefold().endswith("_dlg.erf"):
+                moduleName = f"{moduleName[:-8]}.rim"
 
         self.ui.modulesWidget.changeSection(moduleName)
 

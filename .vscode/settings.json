@@ -48,7 +48,7 @@
   "python.analysis.diagnosticSeverityOverrides": {
     "reportGeneralTypeIssues": "warning",
     "reportOptionalMemberAccess": "warning", // Ignores issues with defs that can optionally be None.
-    "reportCallIssue": "none",
+    "reportCallIssue": "warning",
     "reportAssignmentType": "warning",
     "reportArgumentType": "warning",
   },
