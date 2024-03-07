@@ -672,17 +672,16 @@ class Scene:
             if self.module is not None:
                 print(f"Loading texture '{name}' from {self.module._root}")
                 module_tex = self.module.texture(name)
+                print(f"Finished checking module for texture '{name}'")
                 tpc = module_tex.resource() if module_tex is not None else None
 
             # Otherwise just search through all relevant game files
-            if tpc is None:
-                if self.module:
-                    print("Not found in module.")
+            if tpc is None and self.installation:
                 print(f"Locating texture '{name}' from override/bifs...")
-                if self.installation:
-                    tpc = self.installation.texture(name, [SearchLocation.OVERRIDE, SearchLocation.TEXTURES_TPA, SearchLocation.CHITIN])
+                tpc = self.installation.texture(name, [SearchLocation.OVERRIDE, SearchLocation.TEXTURES_TPA, SearchLocation.CHITIN])
+                print(f"Finished checking installation for texture '{name}'")
             if tpc is None:
-                print(f"NOT FOUND: Texture '{name}'")
+                print(f"NOT FOUND ANYWHERE: Texture '{name}'")
         except (OSError, ValueError) as e:
             print(format_exception_with_variables(e))
             # If an error occurs during the loading process, just use a blank image.

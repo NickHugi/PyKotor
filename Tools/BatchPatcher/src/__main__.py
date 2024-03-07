@@ -62,7 +62,7 @@ from pykotor.resource.type import ResourceType
 from pykotor.tools.encoding import decode_bytes_with_fallbacks
 from pykotor.tools.misc import is_any_erf_type_file, is_capsule_file
 from pykotor.tools.path import CaseAwarePath, find_kotor_paths_from_default
-from pykotor.tslpatcher.logger import PatchLogger
+from pykotor.tslpatcher.logger import LogType, PatchLogger
 from translate.language_translator import TranslationOption, Translator
 from utility.system.path import Path, PurePath
 
@@ -79,7 +79,7 @@ OUTPUT_LOG: Path
 LOGGING_ENABLED: bool
 processed_files: set[Path] = set()
 
-gff_types: list[str] = [x.value.lower().strip() for x in GFFContent]
+gff_types: list[str] = list(GFFContent.get_extensions())
 fieldtype_to_fieldname: dict[GFFFieldType, str] = {
     GFFFieldType.UInt8: "Byte",
     GFFFieldType.Int8: "Char",
@@ -607,7 +607,7 @@ def recurse_through_list(
     return made_change, alien_vo_count
 
 
-def fix_encoding(text: str, encoding: str):
+def fix_encoding(text: str, encoding: str) -> str:
     return text.encode(encoding=encoding, errors="ignore").decode(encoding=encoding, errors="ignore").strip()
 
 
@@ -675,24 +675,26 @@ def patch_resource(resource: FileResource) -> GFF | TPC | None:
         try:
             # log_output(f"Loading {resource.resname()}.{resource.restype().extension} from '{resource.filepath().name}'")
             gff = read_gff(resource.data())
-            made_change = False
+            alien_owner: str | None = None
             if gff.content == GFFContent.DLG and SCRIPT_GLOBALS.set_unskippable:
                 skippable = gff.root.acquire("Skippable", None)
                 if skippable not in {0, "0"}:
                     conversationtype = gff.root.acquire("ConversationType", None)
                     if conversationtype not in {"1", 1}:
-                        alien_owner: str | None = gff.root.acquire("AlienRaceOwner", None)  # TSL only
-                        if alien_owner in {"0", 0}:
-                            made_change = True
-                            gff.root.set_uint8("Skippable", 0)
-                            log_output(f"ConversationType: {conversationtype}", f"alien_owner: {alien_owner}", f"Conditions passed, setting dialog unskippable for {resource._path_ident_obj}")
+                        alien_owner = gff.root.acquire("AlienRaceOwner", None)  # TSL only
             result_made_change, alien_vo_count = patch_nested_gff(
                 gff.root,
                 gff.content,
                 gff,
                 resource._path_ident_obj  # noqa: SLF001
             )
-            if not made_change and alien_vo_count < 3 and alien_vo_count != -1 and SCRIPT_GLOBALS.set_unskippable and gff.content == GFFContent.DLG:
+            if (
+                alien_vo_count < 3
+                and alien_owner in {0, "0", None}
+                and alien_vo_count != -1
+                and SCRIPT_GLOBALS.set_unskippable
+                and gff.content == GFFContent.DLG
+            ):
                 skippable = gff.root.acquire("Skippable", None)
                 if skippable not in {0, "0"}:
                     conversationtype = gff.root.acquire("ConversationType", None)
@@ -950,7 +952,7 @@ def determine_input_path(path: Path):
     return None
 
 
-def execute_patchloop_thread():
+def execute_patchloop_thread() -> str | None:
     try:
         SCRIPT_GLOBALS.install_running = True
         do_main_patchloop()
@@ -961,7 +963,7 @@ def execute_patchloop_thread():
         return messagebox.showerror("Error", f"An error occurred during patching\n{e!r}")
 
 
-def do_main_patchloop():
+def do_main_patchloop() -> str:
     # Validate args
     if not SCRIPT_GLOBALS.chosen_languages:
         if SCRIPT_GLOBALS.translate:
@@ -1272,7 +1274,7 @@ class KOTORPatchingToolUI:
 
     def apply_translation_option(self, varname, value):
         setattr(SCRIPT_GLOBALS.pytranslator, varname, value)  # TODO: add all the variable names to __init__ of Translator class
-        self.write_log(f"Applied Options for {self.translation_option.get()}: {varname} = {value}")
+        self.write_log(PatchLog(f"Applied Options for {self.translation_option.get()}: {varname} = {value}", LogType.NOTE))
         cur_toption: TranslationOption = TranslationOption.__members__[self.translation_option.get()]
         msg: str = cur_toption.validate_args(SCRIPT_GLOBALS.pytranslator)
         if msg:

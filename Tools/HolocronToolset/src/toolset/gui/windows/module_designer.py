@@ -17,6 +17,7 @@ from pykotor.common.misc import Color, ResRef
 from pykotor.common.module import Module, ModuleResource
 from pykotor.common.stream import BinaryWriter
 from pykotor.extract.file import ResourceIdentifier
+from pykotor.resource.formats.bwm.bwm_data import BWM
 from pykotor.resource.generics.git import (
     GITCamera,
     GITCreature,
@@ -35,6 +36,7 @@ from pykotor.resource.generics.utw import read_utw
 from pykotor.resource.type import ResourceType
 from pykotor.tools import module
 from toolset.data.misc import ControlItem
+from toolset.gui.dialogs.asyncloader import AsyncLoader
 from toolset.gui.dialogs.insert_instance import InsertInstanceDialog
 from toolset.gui.dialogs.select_module import SelectModuleDialog
 from toolset.gui.editors.git import openInstanceDialog
@@ -44,6 +46,7 @@ from toolset.gui.windows.help import HelpWindow
 from toolset.utils.misc import QtMouse
 from toolset.utils.window import openResourceEditor
 from utility.error_handling import assert_with_variable_trace
+from utility.system.path import Path
 
 if TYPE_CHECKING:
     from PyQt5.QtGui import QFont, QKeyEvent
@@ -121,7 +124,7 @@ class RotateCommand(QUndoCommand):
 
 
 class ModuleDesigner(QMainWindow):
-    def __init__(self, parent: QWidget | None, installation: HTInstallation):
+    def __init__(self, parent: QWidget | None, installation: HTInstallation, mod_filepath: Path | None = None):
         """Initializes the Module Designer window.
 
         Args:
@@ -220,7 +223,10 @@ class ModuleDesigner(QMainWindow):
         self.rebuildResourceTree()
         self.rebuildInstanceList()
 
-        QTimer().singleShot(33, self.openModule)
+        if mod_filepath is None:
+            QTimer().singleShot(33, self.openModuleWithDialog)
+        else:
+            self.openModule(mod_filepath)
 
     def closeEvent(self, event):
         reply = QMessageBox.question(
@@ -251,7 +257,7 @@ class ModuleDesigner(QMainWindow):
             - Connect 3D renderer signals to mouse, key methods
             - Connect 2D renderer signals to mouse, key methods.
         """
-        self.ui.actionOpen.triggered.connect(self.openModule)
+        self.ui.actionOpen.triggered.connect(self.openModuleWithDialog)
         self.ui.actionSave.triggered.connect(self.saveGit)
         self.ui.actionInstructions.triggered.connect(self.showHelpWindow)
 
@@ -307,57 +313,60 @@ class ModuleDesigner(QMainWindow):
             title = f"{self._module.get_id()} - {self._installation.name} - Module Designer"
         self.setWindowTitle(title)
 
-#    @with_variable_trace(Exception)
-    def openModule(self):
-        """Opens a module.
-
-        Args:
-        ----
-            self: The class instance
-            dialog: The dialog to select a module
-
-        Processing Logic:
-        ----------------
-            - Unloads any currently loaded module
-            - Gets the selected module filepath
-            - Converts RIM file to mod if saving is disabled
-            - Loads the selected module into the installation
-            - Initializes the main renderer with the new module
-            - Sets the flat renderer resources from the new module.
-        """
+    def openModuleWithDialog(self):
         dialog = SelectModuleDialog(self, self._installation)
 
         if dialog.exec_():
-            self.unloadModule()
-
             mod_filepath = self._installation.module_path().joinpath(f"{dialog.module}.mod")
+            self.openModule(mod_filepath)
+
+    #    @with_variable_trace(Exception)
+    def openModule(self, mod_filepath: Path):
+        """Opens a module."""
+        def task() -> tuple[Module, GIT, list[BWM]]:
             if GlobalSettings().disableRIMSaving and not mod_filepath.is_file():
                 module.rim_to_mod(mod_filepath)
                 self._installation.load_modules()
 
-            self._module = Module(dialog.module, self._installation)
-            self.ui.mainRenderer.init(self._installation, self._module)
-
-            git: GIT | None = self._module.git().resource()
+            new_module = Module(mod_filepath.stem, self._installation)
+            git: GIT | None = new_module.git().resource()
             assert git is not None, assert_with_variable_trace(
                 git is not None,
-                f"GIT file cannot be found in {self._module.get_id()}"
+                f"GIT file cannot be found in {new_module.get_id()}"
             )
+            walkmeshes: list[BWM] = []
+            for bwm in new_module.resources.values():
+                if bwm.restype() != ResourceType.WOK:
+                    continue
+                bwm_res: BWM | None = bwm.resource()
+                if bwm_res is None:
+                    print(f"bwm '{bwm.localized_name()}' '{bwm.resname()}.{bwm.restype()}' returned None resource data, skipping...")
+                    continue
+                walkmeshes.append(bwm_res)
+            return (new_module, git, walkmeshes)
 
+        self.unloadModule()
+        loader = AsyncLoader(
+            self,
+            f"Loading '{mod_filepath.stem}' into designer...",
+            lambda: task(),
+            "Error occurred loading the module designer",
+        )
+        if loader.exec_():
+            print("Loader finished.")
+            new_module, git, walkmeshes = loader.value
+            self._module = new_module
             self.ui.flatRenderer.setGit(git)
-            self.ui.flatRenderer.setWalkmeshes(
-                [
-                    bwm.resource()  # FIXME: resource() will sometimes return None
-                    for bwm in self._module.resources.values()
-                    if bwm.restype() == ResourceType.WOK and bwm.resource() is not None
-                ],
-            )
+            self.ui.mainRenderer.init(self._installation, new_module)
+            self.ui.flatRenderer.setWalkmeshes(walkmeshes)
             self.ui.flatRenderer.centerCamera()
+        else:
+            print("Unexpected error?")
 
     def unloadModule(self):
         self._module = None
         self.ui.mainRenderer.scene = None
-        self.ui.mainRenderer._init = False  # noqa: SLF001
+        self.ui.mainRenderer._init = False
 
     def showHelpWindow(self):
         window = HelpWindow(self, "./help/tools/1-moduleEditor.md")

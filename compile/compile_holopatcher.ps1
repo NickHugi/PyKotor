@@ -1,8 +1,8 @@
 [CmdletBinding(PositionalBinding=$false)]
 param(
-  [switch]$noprompt,
-  [string]$venv_name = ".venv",
-  [string]$upx_dir
+    [switch]$noprompt,
+    [string]$venv_name = ".venv",
+    [string]$upx_dir
 )
 $this_noprompt = $noprompt
 
@@ -34,8 +34,8 @@ if ((Get-OS) -eq "Windows") {
 }
 
 # Delete the final executable if it exists
-if (Test-Path -Path $finalExecutablePath) {
-    Remove-Item -Path $finalExecutablePath -Force
+if (Test-Path -LiteralPath $finalExecutablePath) {
+    Remove-Item -LiteralPath $finalExecutablePath -Force
 }
 
 Write-Host "Compiling HoloPatcher..."
@@ -116,6 +116,47 @@ $pyInstallerArgs = $pyInstallerArgs.GetEnumerator() | ForEach-Object {
     }
 }
 
+$tclTkPath = $null
+if ((Get-OS) -eq "Mac") {
+    try {
+        $tclTkPath = $(brew --prefix tcl-tk)
+        Write-Output "tcl/tk path: $tclTkPath"
+    } catch {
+        Write-Warning "Unable to determine Tcl/Tk path using Homebrew"
+    }
+}
+
+# Prepare the Python command as a single string
+$pythonCommand = @"
+import tkinter
+root = tkinter.Tk()
+print(root.tk.exprstring('$tcl_library'))
+print(root.tk.exprstring('$tk_library'))
+"@
+if ((Get-OS) -eq "Mac") {
+    
+    # Execute the Python command and capture the output
+    $output = & $pythonExePath -c $pythonCommand
+    
+    # The output will contain both paths, one per line. Split them.
+    $lines = $output -split "`n"
+    
+    # Assuming the first line is the Tcl library path and the second line is the Tk library path
+    $tcl_library = $lines[0]
+    $tk_library = $lines[1]
+    
+    # Output the variables to verify
+    Write-Host "Raw output: $output"
+    Write-Host "Tcl library path: $tcl_library"
+    Write-Host "Tk library path: $tk_library"
+    
+    Write-Host "TCL_LIBRARY current env: '$Env:TCL_LIBRARY'"
+    Write-Host "TK_LIBRARY current env: '$Env:TK_LIBRARY'"
+    
+    #$Env:TCL_LIBRARY = $tcl_library
+    #$Env:TK_LIBRARY = $tk_library
+}
+
 # Add PYTHONPATH paths as arguments
 $env:PYTHONPATH -split ';' | ForEach-Object {
     $pyInstallerArgs += "--path=$_"
@@ -139,7 +180,7 @@ Write-Host "Executing command: $pythonExePath $argumentsArray"
 & $pythonExePath $argumentsArray
 
 # Check if the final executable exists
-if (-not (Test-Path -Path $finalExecutablePath)) {
+if (-not (Test-Path -LiteralPath $finalExecutablePath)) {
     Write-Error "HoloPatcher could not be compiled, scroll up to find out why"   
 } else {
     Write-Host "HoloPatcher was compiled to '$finalExecutablePath'"

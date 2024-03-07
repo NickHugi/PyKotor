@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from configparser import ConfigParser
+from configparser import ConfigParser, ParsingError
 from itertools import tee
 from typing import TYPE_CHECKING
 
@@ -169,8 +169,12 @@ class ConfigReader:
         )
 
         # Use case-sensitive keys
-        ini.optionxform = lambda optionstr: optionstr  # type: ignore[method-assign]
-        ini.read_string(decode_bytes_with_fallbacks(BinaryReader.load_file(resolved_file_path)))
+        ini.optionxform = lambda optionstr: optionstr if optionstr.strip() else optionstr.strip()  # type: ignore[method-assign]
+        try:
+            ini.read_string(decode_bytes_with_fallbacks(BinaryReader.load_file(resolved_file_path)))
+        except ParsingError as e:
+            e.source = str(resolved_file_path)
+            raise e
 
         instance = cls(ini, resolved_file_path.parent, logger)
         instance.config = PatcherConfig()
@@ -193,11 +197,11 @@ class ConfigReader:
         orphaned_sections: set[str] = all_sections_set - self.previously_parsed_sections
         if len(orphaned_sections):
             orphaned_sections_str: str = "\n".join(orphaned_sections)
-            self.log.add_warning(f"Orphaned ini sections found in changes ini:\n{orphaned_sections_str}")
+            self.log.add_note(f"There are some orphaned ini sections found in the changes:\n{orphaned_sections_str}")
 
         return self.config
 
-    def get_section_name(self, section_name: str):
+    def get_section_name(self, section_name: str) -> str | None:
         """Resolves the case-insensitive section name string if found and returns the case-sensitive correct section name."""
         s: str | None = next(
             (section for section in self.ini.sections() if section.lower() == section_name.lower()),

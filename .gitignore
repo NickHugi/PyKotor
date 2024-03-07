@@ -65,3 +65,6 @@ Tools/HolocronToolset/src/toolset/kits/*/*
 tests/results/
 Tools/HolocronToolset/src/toolset/profiler_output.pstat
 Tools/HolocronToolset/src/toolset/profiler_output.pstat
+*.pstat
+installlog.txt
+./vendor

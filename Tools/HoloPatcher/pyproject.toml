@@ -8,7 +8,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name="HoloPatcher"
 description="A faster, multi-platform alternative to TSLPatcher written in Python."
-version="1.7"
+version="1.5.3"
 requires-python = ">= 3.7"
 dependencies = [
     "requests",                     # for 'check for updates' feature.
@@ -19,11 +19,11 @@ authors = [{name = "NickHugi"}]
 maintainers = [{name = "th3w1zard1", email = "halomastar@gmail.com"}]
 readme = {file = "README.md", content-type = "text/markdown"}
 license = {text = "GPLv3 License"}
-keywords = ["kotor", "library", "holocron", "toolset", "pykotor", "editor", "holopatcher", "tslpatcher"]
+keywords = ["kotor", "library", "holo", "patcher", "pykotor", "star", "wars", "knights", "holopatcher", "tslpatcher"]
 
 [project.urls]
 Homepage = "https://deadlystream.com/files/file/2243-holopatcher/"
-Documentation = "https://github.com/NickHugi/PyKotor/blob/master/README.md"
+Documentation = "https://github.com/NickHugi/PyKotor/wiki/Installing-Mods-with-HoloPatcher"
 Repository = "https://github.com/NickHugi/PyKotor.git"
 Issues = "https://github.com/NickHugi/PyKotor/issues"
 #Changelog = "https://github.com/NickHugi/PyKotor/blob/master/CHANGELOG.md"
