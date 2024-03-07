@@ -34,11 +34,7 @@ def universal_simplify_exception(e: BaseException) -> tuple[str, str]:
         - Try common exception attributes for a message
         - Return a general fallback if nothing else better was determined.
     """
-<<<<<<< HEAD
-    error_name: str = type(e).__name__
-=======
     error_name: str = e.__class__.__name__
->>>>>>> master
 
     # Handle FileNotFoundError, which has 'filename' attribute
     if isinstance(e, FileNotFoundError):
