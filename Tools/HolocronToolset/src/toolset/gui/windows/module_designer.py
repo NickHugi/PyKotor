@@ -262,7 +262,7 @@ class ModuleDesigner(QMainWindow):
         if mod_filepath is None:  # Use singleShot timer so the ui window opens while the loading is happening.
             QTimer().singleShot(33, self.openModuleWithDialog)
         else:
-            QTimer().singleShot(33, lambda: self.openModule(mod_filepath))
+            self.openModule(mod_filepath)  # for some reason 3d rendering never loads when this is used...
 
     def closeEvent(self, event):
         reply = QMessageBox.question(
