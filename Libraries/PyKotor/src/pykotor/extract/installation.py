@@ -373,7 +373,7 @@ class Installation:  # noqa: PLR0904
 
             resname: str
             restype: ResourceType
-            resname, restype = ResourceIdentifier.from_path(filepath)
+            resname, restype = ResourceIdentifier.from_path(filepath).unpack()
             if restype.is_invalid:
                 return filepath, None
 
