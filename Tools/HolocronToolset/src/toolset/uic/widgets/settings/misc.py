@@ -28,6 +28,9 @@ class Ui_Form(object):
         self.saveRimCheck = QtWidgets.QCheckBox(self.scrollAreaWidgetContents)
         self.saveRimCheck.setObjectName("saveRimCheck")
         self.verticalLayout.addWidget(self.saveRimCheck)
+        self.useBetaChannel = QtWidgets.QCheckBox(self.scrollAreaWidgetContents)
+        self.useBetaChannel.setObjectName("useBetaChannel")
+        self.verticalLayout.addWidget(self.useBetaChannel)
         self.mergeRimCheck = QtWidgets.QCheckBox(self.scrollAreaWidgetContents)
         self.mergeRimCheck.setObjectName("mergeRimCheck")
         self.verticalLayout.addWidget(self.mergeRimCheck)
@@ -108,6 +111,7 @@ class Ui_Form(object):
         _translate = QtCore.QCoreApplication.translate
         Form.setWindowTitle(_translate("Form", "Form"))
         self.saveRimCheck.setText(_translate("Form", "Allow saving resources to RIM files."))
+        self.useBetaChannel.setText(_translate("Form", "Check for beta updates and take me to their download link when they\'re available."))
         self.mergeRimCheck.setText(_translate("Form", "Merge RIM files in the Modules tab of the Main Window."))
         self.useModuleFilenamesCheck.setText(_translate("Form", "Sort by filename rather than area name in the Modules tab."))
         self.greyRimCheck.setText(_translate("Form", "Set RIM files to have grey text in the Modules tab of the Main Window."))
