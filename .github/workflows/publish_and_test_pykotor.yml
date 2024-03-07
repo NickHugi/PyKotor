@@ -548,11 +548,8 @@ jobs:
         if ($env:python_version -eq "3.7") {
           pip install -r requirements-dev-py37.txt --prefer-binary
         }
-        elseif ($env:python_version -ne "3.13.0-alpha.4" -and "${{ runner.os }}" -ne "Linux" -and "${{ runner.os }}" -ne "macOS") {
-          pip install -r requirements-dev.txt --prefer-binary
-        }
         else {
-          pip install -r requirements-dev-py313.txt --prefer-binary
+          pip install -r requirements-dev.txt --prefer-binary
         }
       shell: pwsh
 
