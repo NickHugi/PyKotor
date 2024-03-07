@@ -1,6 +1,6 @@
 {
-	"toolsetLatestVersion": "2.2.1b13",
-	"toolsetLatestNotes": "Include _dlg.erf when repackaging as .mod (k2 fix)",
+	"toolsetLatestVersion": "2.2.1b14",
+	"toolsetLatestNotes": "(New in 2.2.1b14): Fix failing to load when 'cloudsaves' folder missing (and others). Better undo/redo support in designer, and fix heaven-ascending objects when moved in designer 2d map",
 	"holopatcherLatestVersion": "1.5.2",
 	"toolsetDownloadLink": "https://mega.nz/folder/cGJDAKaa#WzsWF8LgUkM8U2FDEoeeRA",
 	"holopatcherDownloadLink": "https://deadlystream.com/files/file/2243-holopatcher",
