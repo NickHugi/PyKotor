@@ -67,11 +67,7 @@ def simple_wrapper(fn_name: str, wrapped_class_type: type) -> Callable[..., Any]
         """
         orig_fn = wrapped_class_type._original_methods[fn_name]  # noqa: SLF001
         # Do not use. CaseAwarePath's performance depends on only resolving case when it absolutely has to.
-<<<<<<< HEAD
-        #if fn_name == "__new__":
-=======
         # if fn_name == "__new__":
->>>>>>> master
         #    path_obj = pathlib.Path(*args, **kwargs)
         #    if "called_from_getcase" not in kwargs and not path_obj.exists():
         #        return CaseAwarePath.get_case_sensitive_path(path_obj)
@@ -89,11 +85,7 @@ def simple_wrapper(fn_name: str, wrapped_class_type: type) -> Callable[..., Any]
                     and not pathlib_path_obj.exists()
                 ):
                     instance = CaseAwarePath.get_case_sensitive_path(arg)
-<<<<<<< HEAD
-                    if arg.__class__ in CaseAwarePath.__bases__ and arg.__class is not object:
-=======
                     if arg.__class__ in CaseAwarePath.__bases__ and arg.__class__ is not object:
->>>>>>> master
                         return new_cls(instance)
                     return instance
             return arg
@@ -162,11 +154,7 @@ def create_case_insensitive_pathlib_class(cls: type):  # TODO: move into CaseAwa
         for attr_name, attr_value in parent.__dict__.items():
             # Check if it's a method and hasn't been wrapped before
             if callable(attr_value) and attr_name not in wrapped_methods and attr_name not in ignored_methods:
-<<<<<<< HEAD
-                cls._original_methods[attr_name] = attr_value  # type: ignore[attr-defined]
-=======
                 cls._original_methods[attr_name] = attr_value  # type: ignore[attr-defined]  # pylint: disable=protected-access
->>>>>>> master
                 setattr(cls, attr_name, simple_wrapper(attr_name, cls))
                 wrapped_methods.add(attr_name)
 
@@ -191,16 +179,12 @@ class CaseAwarePath(InternalWindowsPath if os.name == "nt" else InternalPosixPat
         # Extract the differing prefix part as a new Path object
         return abs_parts[:start_index_of_rel_in_abs]
 
-<<<<<<< HEAD
-    def relative_to(self, *args, walk_up=False, **kwargs) -> InternalPath:
-=======
     def relative_to(
         self,
         *args: PathElem,
         walk_up: bool = False,
         **kwargs,
     ) -> InternalPath:
->>>>>>> master
         if not args or "other" in kwargs:
             raise TypeError("relative_to() missing 1 required positional argument: 'other'")  # noqa: TRY003, EM101
 
@@ -213,11 +197,7 @@ class CaseAwarePath(InternalWindowsPath if os.name == "nt" else InternalPosixPat
             resolved_self = resolved_self.absolute()
         else:
             parsed_other = other if isinstance(other, InternalPurePath) else InternalPurePath(other)
-<<<<<<< HEAD
-            parsed_other = other.with_segments(other, *_deprecated)
-=======
             parsed_other = parsed_other.with_segments(other, *_deprecated)
->>>>>>> master
 
         self_str, other_str = map(str, (resolved_self, parsed_other))
         replacement = ireplace(self_str, other_str, "").lstrip("\\").lstrip("/")
@@ -226,24 +206,16 @@ class CaseAwarePath(InternalWindowsPath if os.name == "nt" else InternalPosixPat
             raise ValueError(msg)
 
         if isinstance(self, CaseAwarePath) and not pathlib.Path(replacement).exists():
-<<<<<<< HEAD
-            prefixes = self.extract_absolute_prefix(InternalPath(replacement), parsed_other)
-=======
             prefixes = self.extract_absolute_prefix(InternalPath(replacement), InternalPath(parsed_other))
->>>>>>> master
             return self.get_case_sensitive_path(replacement, prefixes)
         return self.__class__(replacement)
 
     @classmethod
-<<<<<<< HEAD
-    def get_case_sensitive_path(cls, path: PathElem, prefixes: list[str] | tuple[str, ...] | None = None):
-=======
     def get_case_sensitive_path(
         cls,
         path: PathElem,
         prefixes: list[str] | tuple[str, ...] | None = None,
     ):
->>>>>>> master
         """Get a case sensitive path.
 
         Args:
@@ -295,15 +267,11 @@ class CaseAwarePath(InternalWindowsPath if os.name == "nt" else InternalPosixPat
         return cls._create_instance(*parts[num_differing_parts:], called_from_getcase=True)
 
     @classmethod
-<<<<<<< HEAD
-    def find_closest_match(cls, target: str, candidates: Generator[InternalPath, None, None]) -> str:
-=======
     def find_closest_match(
         cls,
         target: str,
         candidates: Generator[InternalPath, None, None],
     ) -> str:
->>>>>>> master
         """Finds the closest match from candidates to the target string.
 
         Args:

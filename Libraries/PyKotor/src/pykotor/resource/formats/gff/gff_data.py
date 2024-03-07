@@ -490,10 +490,7 @@ class GFFStruct:
         -------
             The field value. If the field does not exist or the value type does not match the specified type then the default is returned instead.
         """
-<<<<<<< HEAD
-=======
         assert isinstance(default, object)
->>>>>>> master
         value: T = default
         if object_type is None:
             object_type = default.__class__

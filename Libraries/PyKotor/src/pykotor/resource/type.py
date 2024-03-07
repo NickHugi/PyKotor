@@ -82,12 +82,6 @@ class ResourceType(Enum):
 
     INVALID = ResourceTuple(-1, "", "Undefined", "binary", is_invalid=True)
     RES = ResourceTuple(0, "res", "Save Data", "gff")
-<<<<<<< HEAD
-    BMP = ResourceTuple(1, "bmp", "Images", "binary")  # ???
-    TGA = ResourceTuple(3, "tga", "Textures", "binary")
-    WAV = ResourceTuple(4, "wav", "Audio", "binary")
-    INI = ResourceTuple(7, "ini", "Text Files", "plaintext")  # swkotor.ini
-=======
     BMP = ResourceTuple(1, "bmp", "Images", "binary")
     MVE = ResourceTuple(2, "mve", "Video", "video")  # Video, Infinity Engine
     TGA = ResourceTuple(3, "tga", "Textures", "binary")
@@ -96,7 +90,6 @@ class ResourceType(Enum):
     INI = ResourceTuple(7, "ini", "Text Files", "plaintext")  # swkotor.ini
     BMU = ResourceTuple(8, "bmu", "Audio", "binary")  # mp3 with obfuscated extra header
     MPG = ResourceTuple(9, "mpg", "Video", "binary")
->>>>>>> master
     TXT = ResourceTuple(10, "txt", "Text Files", "plaintext")
     WMA = ResourceTuple(11, "wma", "Audio", "binary")
     WMV = ResourceTuple(12, "wmv", "Audio", "binary")
@@ -125,11 +118,8 @@ class ResourceType(Enum):
     BTC = ResourceTuple(2026, "btc", "Creatures", "gff")  # ???
     UTC = ResourceTuple(2027, "utc", "Creatures", "gff")
     DLG = ResourceTuple(2029, "dlg", "Dialogs", "gff")
-<<<<<<< HEAD
-=======
     ITP = ResourceTuple(2030, "itp", "Palettes", "binary")
     BTT = ResourceTuple(2031, "bit", "Triggers", "gff")
->>>>>>> master
     UTT = ResourceTuple(2032, "utt", "Triggers", "gff")
     DDS = ResourceTuple(2033, "dds", "Textures", "binary")
     UTS = ResourceTuple(2035, "uts", "Sounds", "gff")
@@ -142,14 +132,9 @@ class ResourceType(Enum):
     UTD = ResourceTuple(2042, "utd", "Doors", "gff")
     BTP = ResourceTuple(2043, "btp", "Placeables", "gff")
     UTP = ResourceTuple(2044, "utp", "Placeables", "gff")
-<<<<<<< HEAD
-    DFT = ResourceTuple(2045, "dft", "Other", "binary")  # ???
-    GIC = ResourceTuple(2046, "gic", "Module Data", "gff")  # ???
-=======
     DFT = ResourceTuple(2045, "dft", "Defaults", "binary")
     DTF = ResourceTuple(2045, "dft", "Defaults", "plaintext")
     GIC = ResourceTuple(2046, "gic", "Module Data", "gff")
->>>>>>> master
     GUI = ResourceTuple(2047, "gui", "GUIs", "gff")
     BTM = ResourceTuple(2050, "btm", "Merchants", "gff")
     UTM = ResourceTuple(2051, "utm", "Merchants", "gff")
@@ -160,11 +145,6 @@ class ResourceType(Enum):
     UTW = ResourceTuple(2058, "utw", "Waypoints", "gff")
     FourPC = ResourceTuple(2059, "4pc", "Textures", "binary")  # RGBA 16-bit
     SSF = ResourceTuple(2060, "ssf", "Soundsets", "binary")
-<<<<<<< HEAD
-    NDB = ResourceTuple(2064, "ndb", "Other", "binary")  # ???
-    PTM = ResourceTuple(2065, "ptm", "Other", "binary")  # ???
-    PTT = ResourceTuple(2066, "ptt", "Other", "binary")  # ???
-=======
     HAK = ResourceTuple(2061, "hak", "Modules", "erf")
     NWM = ResourceTuple(2062, "nwm", "Modules", "erf")
     BIK = ResourceTuple(2063, "bik", "Videos", "binary")
@@ -180,7 +160,6 @@ class ResourceType(Enum):
     TTC = ResourceTuple(2073, "ttc", "Unused", "binary")
     CUT = ResourceTuple(2074, "cut", "Cutscenes", "gff")
     KA  = ResourceTuple(2075, "ka", "Unused", "xml")  # noqa: E221
->>>>>>> master
     JPG = ResourceTuple(2076, "jpg", "Images", "binary")
     ICO = ResourceTuple(2077, "ico", "Images", "binary")
     OGG = ResourceTuple(2078, "ogg", "Audio", "binary")
@@ -217,11 +196,8 @@ class ResourceType(Enum):
     CWA = ResourceTuple(3027, "cwa", "Crowd Attributes", "gff")
     BIP = ResourceTuple(3028, "bip", "Lips", "lips")
     ERF = ResourceTuple(9997, "erf", "Modules", "binary")
-<<<<<<< HEAD
-=======
     BIF = ResourceTuple(9998, "bif", "Archives", "binary")
     KEY = ResourceTuple(9999, "key", "Chitin", "binary")
->>>>>>> master
 
     # For Toolset Use:
     PLT = ResourceTuple(6, "plt", "Other", "binary")

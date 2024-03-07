@@ -3,10 +3,7 @@ from __future__ import annotations
 
 import ctypes
 import json
-<<<<<<< HEAD
-=======
 import os
->>>>>>> master
 import tkinter as tk
 
 from functools import partial
@@ -15,12 +12,8 @@ from typing import Any
 
 from utility.system.path import Path
 
-<<<<<<< HEAD
-ctypes.windll.shcore.SetProcessDpiAwareness(True)  # noqa: FBT003
-=======
 if os.name == "nt":
     ctypes.windll.shcore.SetProcessDpiAwareness(True)  # noqa: FBT003
->>>>>>> master
 
 # Current File Path
 file_path = None
@@ -54,10 +47,6 @@ default_content: dict[str, Any] = {
 def rgbToHex(rgb) -> str:
     return "#{:02x}{:02x}{:02x}".format(*rgb)
 
-<<<<<<< HEAD
-=======
-
->>>>>>> master
 # Add Different Types of Tags that can be added to the document.
 tag_types: dict[str, dict[str, str]] = {
     # Font Settings
@@ -87,14 +76,10 @@ tag_types: dict[str, dict[str, str]] = {
 
 def main():
     # Handle File Events
-<<<<<<< HEAD
-    def handle_file_manager(event: tk.Tk | None = None, action=None):
-=======
     def handle_file_manager(
         event: tk.Tk | None = None,
         action: str | None = None,
     ):
->>>>>>> master
         global document
         global file_path
 
@@ -225,9 +210,5 @@ def main():
 
     root.mainloop()
 
-<<<<<<< HEAD
-=======
-
->>>>>>> master
 if __name__ == "__main__":
     main()

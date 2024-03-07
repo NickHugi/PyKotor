@@ -160,11 +160,7 @@ def format_exception_with_variables(
     tb: types.TracebackType | None = None,
     message: str = "Assertion with Exception Trace",
 ) -> str:
-<<<<<<< HEAD
-    etype = etype if etype is not None else type(value)
-=======
     etype = etype if etype is not None else value.__class__
->>>>>>> master
     tb = tb if tb is not None else value.__traceback__
 
     # Check if the arguments are of the correct type
@@ -278,11 +274,7 @@ def with_variable_trace(
             try:
                 result: RT = f(*args, **kwargs)
                 if return_type is not unique_sentinel and not isinstance(result, return_type):
-<<<<<<< HEAD
-                    msg = f"Return type of '{f.__name__}' must be {return_type.__name__}, got {type(result)}: {result!r}: {result}"
-=======
                     msg = f"Return type of '{f.__name__}' must be {return_type.__name__}, got {result.__class__}: {result!r}: {result}"
->>>>>>> master
                     raise CustomAssertionError(msg)
             except exception_types as e:
 

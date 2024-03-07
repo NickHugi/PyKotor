@@ -59,11 +59,7 @@ class PDFWriter(PythWriter):
         return self.paragraphs
 
     def _dispatch(self, para, level=0, **kw):
-<<<<<<< HEAD
-        handler = self.paragraphDispatch[type(para)]
-=======
         handler = self.paragraphDispatch[para.__class__]
->>>>>>> master
         return handler(para, level=level, **kw)
 
     def _paragraph(self, paragraph, level=0, bulletText=None):

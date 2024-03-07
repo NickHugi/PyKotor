@@ -63,14 +63,6 @@ class BinaryReader:
         self._offset: int = offset
         self._stream.seek(offset)
 
-<<<<<<< HEAD
-        true_size = self.true_size()
-        available = true_size - offset
-        if available > true_size:
-            msg = "Specified size is greater than the number of available bytes."
-            raise OSError(msg)
-        self._size: int = available if size is None else size
-=======
         total_size = self.true_size()
         if self._offset > total_size - (size or 0):
             msg = "Specified offset/size is greater than the number of available bytes."
@@ -80,7 +72,6 @@ class BinaryReader:
             raise ValueError(msg)
 
         self._size: int = total_size - self._offset if size is None else size
->>>>>>> master
 
     def __enter__(
         self,
@@ -132,16 +123,11 @@ class BinaryReader:
         -------
             A new BinaryReader instance.
         """
-<<<<<<< HEAD
-        stream: BinaryIO = Path.pathify(path).open("rb")
-        return BinaryReader(stream, offset, size)
-=======
         stream = Path.pathify(path).open("rb")
         instance = cls.from_stream(stream, offset, size)
         if instance._stream is not stream:
             stream.close()
         return instance
->>>>>>> master
 
     @classmethod
     def from_bytes(
@@ -173,16 +159,6 @@ class BinaryReader:
         size: int | None = None,
     ) -> BinaryReader:
         if isinstance(source, (os.PathLike, str)):  # is path
-<<<<<<< HEAD
-            reader = BinaryReader.from_file(source, offset, size)
-        elif isinstance(source, (memoryview, bytes, bytearray)):  # is binary data
-            reader = BinaryReader.from_bytes(source, offset, size)
-        elif isinstance(source, BinaryReader):  # is reader
-            reader = BinaryReader(source._stream, source._offset, source._size)  # noqa: SLF001
-        else:
-            msg = f"Must specify a path, bytes-like object or an existing BinaryReader instance, got type ({type(source)})."
-            raise NotImplementedError(msg)
-=======
             reader = cls.from_file(source, offset, size)
 
         elif isinstance(source, (memoryview, bytes, bytearray)):  # is binary data
@@ -201,7 +177,6 @@ class BinaryReader:
         else:
             msg = f"Must specify a path, bytes-like object, stream, io. or an existing BinaryReader instance, got type ({source.__class__})."
             raise TypeError(msg)
->>>>>>> master
 
         return reader
 
@@ -269,12 +244,6 @@ class BinaryReader:
         -------
             The total file size.
         """
-<<<<<<< HEAD
-        pos: int = self._stream.tell()
-        self._stream.seek(0, 2)
-        size: int = self._stream.tell()
-        self._stream.seek(pos)
-=======
         if isinstance(self._stream, mmap.mmap):
             return self._stream.size()
 
@@ -282,7 +251,6 @@ class BinaryReader:
         self._stream.seek(0, os.SEEK_END)
         size = self._stream.tell()
         self._stream.seek(current)
->>>>>>> master
         return size
 
     def remaining(
@@ -299,11 +267,7 @@ class BinaryReader:
     def close(
         self,
     ):
-<<<<<<< HEAD
-        """Closes the stream."""
-=======
         """Closes the underlying stream and releases any resources."""
->>>>>>> master
         self._stream.close()
 
     def skip(
@@ -652,11 +616,7 @@ class BinaryReader:
             A string read from the stream.
         """
         self.exceed_check(length)
-<<<<<<< HEAD
-        string_byte_data = self._stream.read(length)
-=======
         string_byte_data = self._stream.read(length) or b""
->>>>>>> master
         string = decode_bytes_with_fallbacks(string_byte_data, encoding=encoding, errors=errors)
         if "\0" in string:
             string = string[: string.index("\0")].rstrip("\0")
@@ -816,18 +776,6 @@ class BinaryWriter(ABC):
         source: TARGET_TYPES,
     ) -> BinaryWriter:
         if isinstance(source, (os.PathLike, str)):  # is path
-<<<<<<< HEAD
-            return BinaryWriter.to_file(source)
-        if isinstance(source, bytearray):  # is mutable binary data
-            return BinaryWriter.to_bytearray(source)
-        if isinstance(source, (bytes, memoryview)):  # is immutable binary data
-            return BinaryWriter.to_bytearray(bytearray(source))
-        if isinstance(source, BinaryWriter):
-            if isinstance(source, BinaryWriterFile):
-                return BinaryWriterFile(source._stream, source.offset)  # noqa: SLF001
-            if isinstance(source, BinaryWriterBytearray):
-                return BinaryWriterBytearray(source._ba, source._offset)  # noqa: SLF001
-=======
             return cls.to_file(source)
         if isinstance(source, bytearray):  # is mutable binary data
             return cls.to_bytearray(source)
@@ -837,18 +785,13 @@ class BinaryWriter(ABC):
             return BinaryWriterFile(source._stream, source.offset)  # noqa: SLF001
         if isinstance(source, BinaryWriterBytearray):
             return BinaryWriterBytearray(source._ba, source._offset)  # noqa: SLF001
->>>>>>> master
         msg = "Must specify a path, bytes object or an existing BinaryWriter instance."
         raise NotImplementedError(msg)
 
     @staticmethod
     def dump(
         path: os.PathLike | str,
-<<<<<<< HEAD
-        data: bytes,
-=======
         data: bytes | bytearray | memoryview | mmap.mmap,
->>>>>>> master
     ):
         """Convenience method used to write the specified data to the specified file.
 
@@ -1251,11 +1194,7 @@ class BinaryWriterFile(BinaryWriter):
         """
         pos: int = self._stream.tell()
         self._stream.seek(0)
-<<<<<<< HEAD
-        data: bytes = self._stream.read()
-=======
         data: bytes | None = self._stream.read()
->>>>>>> master
         self._stream.seek(pos)
         return b"" if data is None else data
 
