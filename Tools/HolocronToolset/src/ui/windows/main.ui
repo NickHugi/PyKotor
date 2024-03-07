@@ -284,6 +284,7 @@
      <addaction name="actionNewUTM"/>
      <addaction name="actionNewUTW"/>
      <addaction name="actionNewUTE"/>
+     <addaction name="actionNewTLK"/>
      <addaction name="separator"/>
      <addaction name="actionNewGFF"/>
      <addaction name="actionNewERF"/>
@@ -568,6 +569,18 @@
    </property>
    <property name="text">
     <string>Merchant</string>
+   </property>
+  </action>
+  <action name="actionNewTLK">
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
+   <property name="icon">
+    <iconset resource="../../resources/resources.qrc">
+     <normaloff>:/images/icons/kx/tlk.png</normaloff>:/images/icons/kx/tlk.png</iconset>
+   </property>
+   <property name="text">
+    <string>TalkTable</string>
    </property>
   </action>
   <action name="actionNewUTI">
