@@ -85,15 +85,18 @@ class TPCEditor(Editor):
         super().load(filepath, resref, restype, data)
 
         if restype in {ResourceType.TPC, ResourceType.TGA}:
+            print("read_tpc")
             self._tpc = read_tpc(data)
+            width, height, rgb = self._tpc.convert(TPCTextureFormat.RGB, 0, y_flip=True)
+            self._tpc.set_data(width, height, [rgb], TPCTextureFormat.RGB)
         else:
+            print("pillow image")
             pillow: Image.Image = Image.open(io.BytesIO(data))
             pillow = pillow.convert("RGBA")
             pillow = ImageOps.flip(pillow)
             self._tpc = TPC()
             self._tpc.set_single(pillow.width, pillow.height, pillow.tobytes(), TPCTextureFormat.RGBA)
-
-        width, height, rgba = self._tpc.convert(TPCTextureFormat.RGB, 0)
+            width, height, rgb = self._tpc.convert(TPCTextureFormat.RGB, 0)
 
         # Calculate new dimensions maintaining aspect ratio
         max_width, max_height = 640, 480
@@ -106,7 +109,7 @@ class TPCEditor(Editor):
             new_width = int(new_height * aspect_ratio)
 
         # Create QImage and scale it
-        image = QImage(rgba, width, height, QImage.Format_RGB888)
+        image = QImage(rgb, width, height, QImage.Format_RGB888)
         scaled_image = image.scaled(new_width, new_height, Qt.KeepAspectRatio, Qt.SmoothTransformation)
 
         # Create QPixmap from the scaled QImage
@@ -160,8 +163,7 @@ class TPCEditor(Editor):
             data = self.extract_tpc_jpeg_bytes()
         return data, b""
 
-    # TODO Rename this here and in `build`
-    def extract_tpc_jpeg_bytes(self):
+    def extract_tpc_jpeg_bytes(self) -> bytes:
         """Extracts image from TPC texture and returns JPEG bytes.
 
         Args:
@@ -188,8 +190,7 @@ class TPCEditor(Editor):
         image.save(dataIO, "JPEG", quality=80)
         return dataIO.getvalue()
 
-    # TODO Rename this here and in `build`
-    def extract_png_bmp_bytes(self):
+    def extract_png_bmp_bytes(self) -> bytes:
         """Extracts texture data from a TPC texture.
 
         Args:

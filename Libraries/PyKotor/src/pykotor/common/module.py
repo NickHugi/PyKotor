@@ -105,6 +105,9 @@ class Module:  # noqa: PLR0904
 
         self.reload_resources()
 
+    def get_id(self) -> str:
+        return self._root
+
     @staticmethod
     def get_root(
         filepath: os.PathLike | str,
