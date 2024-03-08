@@ -35,7 +35,7 @@ def get_ui_files() -> list[Path]:
     return list(Path(UI_SOURCE_DIR).safe_rglob("*.ui"))
 
 
-def compile_ui(ignore_timestamp: bool = False):
+def compile_ui(*, ignore_timestamp: bool = False):
     for ui_file in get_ui_files():
         if ui_file.safe_isdir():
             print(f"Skipping {ui_file}, not a file.")
@@ -59,7 +59,7 @@ def compile_ui(ignore_timestamp: bool = False):
             os.system(command)  # noqa: S605
 
 
-def compile_qrc(ignore_timestamp: bool = False):
+def compile_qrc(*, ignore_timestamp: bool = False):
     qrc_source: Path = Path(QRC_SOURCE_PATH).resolve()
     qrc_target = Path(QRC_TARGET_PATH).resolve()
 

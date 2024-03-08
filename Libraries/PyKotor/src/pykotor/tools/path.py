@@ -3,6 +3,7 @@ from __future__ import annotations
 import os
 import pathlib
 import platform
+import tempfile
 
 from typing import TYPE_CHECKING, Any
 
@@ -10,8 +11,8 @@ from pykotor.tools.registry import find_software_key, winreg_key
 from utility.string import ireplace
 from utility.system.path import (
     Path as InternalPath,
-    PurePath as InternalPurePath,
     PosixPath as InternalPosixPath,
+    PurePath as InternalPurePath,
     WindowsPath as InternalWindowsPath,
 )
 from utility.system.registry import resolve_reg_key_to_path
@@ -23,6 +24,23 @@ if TYPE_CHECKING:
     from utility.system.path import (
         PathElem,
     )
+
+def is_filesystem_case_sensitive(path) -> bool | None:
+    """Check if the filesystem at the given path is case-sensitive.
+    This function creates a temporary file to test the filesystem behavior.
+    """
+    try:
+        with tempfile.TemporaryDirectory(dir=path) as temp_dir:
+            temp_path = pathlib.Path(temp_dir)
+            test_file = temp_path / "case_test_file"
+            test_file.touch()
+
+            # Attempt to access the same file with a different case to check case sensitivity
+            test_file_upper = temp_path / "CASE_TEST_FILE"
+            return not test_file_upper.exists()
+    except Exception:
+        return None
+
 
 
 def simple_wrapper(fn_name: str, wrapped_class_type: type) -> Callable[..., Any]:
@@ -158,7 +176,7 @@ def create_case_insensitive_pathlib_class(cls: type):  # TODO: move into CaseAwa
                 setattr(cls, attr_name, simple_wrapper(attr_name, cls))
                 wrapped_methods.add(attr_name)
 
- # TODO: Move to pykotor.common
+# TODO: Move to pykotor.common
 class CaseAwarePath(InternalWindowsPath if os.name == "nt" else InternalPosixPath):  # type: ignore[misc]
     """A class capable of resolving case-sensitivity in a path. Absolutely essential for working with KOTOR files on Unix filesystems."""
     __slots__ = ("_tail_cached",)
@@ -327,8 +345,8 @@ class CaseAwarePath(InternalWindowsPath if os.name == "nt" else InternalPosixPat
         return self._fix_path_formatting(str(other), slash="/").lower() == self.as_posix().lower()
 
     def __repr__(self):
-        str_parts = ", ".join(f'"{part}"' for part in self.parts)
-        return f"{self.__class__.__name__}({str_parts})"
+        str_path = self._flavour.sep.join(f'"{part}"' for part in self.parts)
+        return f"{self.__class__.__name__}({str_path})"
 
     def __str__(self):
         path_obj = pathlib.Path(self)

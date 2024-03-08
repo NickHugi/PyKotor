@@ -1,59 +1,150 @@
 from __future__ import annotations
 
 import os
+import shutil
 import sys
 
 from pathlib import Path
 
-from setuptools import setup
-
 
 def main():
-    HERE = Path(__file__).resolve().parent
+    HERE = Path(__file__).parent
 
     # Load information from pyproject.toml
     with HERE.joinpath("pyproject.toml").open() as toml_file:
         setup_params = load_toml(toml_file)
 
     # Extract project metadata
-    project_metadata = setup_params.get("project", {})
-    build_system = setup_params.get("build-system", {})
-    AUTHORS = project_metadata.get("authors", [{"name": ""}])
+    project_metadata: dict = setup_params.get("project", {})
+    build_system: dict = setup_params.get("build-system", {})
+    VERSION: str = project_metadata.get("version", "0.0.0")
+    AUTHORS = project_metadata.get("authors", [{"name": "", "email": ""}])
+    MAINTAINERS = project_metadata.get("maintainers", [{"name": "", "email": ""}])
     README = project_metadata.get("readme", {"file": "", "content-type": ""})
 
     # Extract and extend requirements
-    REQUIREMENTS = build_system.get("requires", [])
-    pykotor_src_path = HERE.parents[1].joinpath("Libraries", "PyKotor", "requirements.txt")
-    if pykotor_src_path.exists():
-        pykotor_requirements = pykotor_src_path.read_text().splitlines()
-        REQUIREMENTS.extend(pykotor_requirements)
+    REQUIREMENTS = {*build_system.get("requires", [])}
+    requirements_txt_path = HERE.joinpath("requirements.txt")
+    if requirements_txt_path.exists():
+        REQUIREMENTS.update(requirements_txt_path.read_text().splitlines())
 
-    # Check if the installation is from PyPI or local source
-    if "install" in sys.argv:
-        if "develop" in sys.argv:
-            REQUIREMENTS.append("pykotor>=1.7")  # Include 'pykotor' as a dependency only when installing from PyPI
-    elif len(sys.argv) < 2:
-        sys.argv.append("install")
+    EXTRA_PATHS = []
+    pykotor_path = HERE.joinpath("..", "..", "Libraries", "PyKotor")
+    pykotor_src_path = pykotor_path / "src"
+    pykotor_requirements = pykotor_path / "requirements.txt"
+    if pykotor_requirements.exists():
+        EXTRA_PATHS.append(str(pykotor_src_path))
+        REQUIREMENTS.update(pykotor_requirements.read_text().splitlines())
+    pykotorgl_path = HERE.joinpath("..", "..", "Libraries", "PyKotorGL")
+    pykotorgl_src_path = pykotorgl_path / "src"
+    if pykotorgl_src_path.exists():
+        EXTRA_PATHS.append(str(pykotorgl_src_path))
+    utility_path = HERE.joinpath("..", "..", "Libraries", "Utility")
+    utility_src_path = utility_path / "src"
+    if utility_src_path.exists():
+        EXTRA_PATHS.append(str(utility_src_path))
+
+    EXTRAS_REQUIRE = project_metadata.get("optional-dependencies", {})
+    APP = ["src/__main__.py"]
+    if "py2app" in sys.argv:
+        try:
+            import py2app  # noqa: F401
+
+            from setuptools import setup
+        except (ImportError, ModuleNotFoundError) as e:
+            raise ImportError("py2app is not installed. Please install it using 'pip install py2app setuptools'.") from e
+
+        DATA_FILES = []
+        OPTIONS = {
+            "argv_emulation": True,
+            "packages": project_metadata["dependencies"],  # Add your required packages here
+            "iconfile": "src/resources/icons/sith.icns",  # macOS icon file
+            "plist": {
+                "CFBundleName": project_metadata["name"],
+                "CFBundleDisplayName": project_metadata["name"],
+                "CFBundleGetInfoString": project_metadata["description"],
+                "CFBundleVersion": VERSION,
+                "CFBundleShortVersionString": VERSION
+            },
+            "includes": list(REQUIREMENTS),
+            "excludes": ["numpy", "PyQt5", "PIL", "Pillow", "matplotlib", "multiprocessing", "PyOpenGL", "PyGLM"],
+            "extra_scripts": EXTRA_PATHS,
+        }
+
+        setup(
+            app=APP,
+            name=project_metadata["name"],
+            data_files=DATA_FILES,
+            options={"py2app": OPTIONS},
+            setup_requires=["py2app"]
+        )
+    elif "py2exe" in sys.argv:
+        try:
+            import py2exe  # noqa: F401
+
+            from py2exe import freeze
+        except ImportError as e:
+            raise ImportError("py2exe is not installed. Please install it using 'pip install py2exe'.") from e
+        # Define options for py2exe to mimic the behavior of the PyInstaller script
+        options = {
+            "py2exe": {
+                "compressed": 1,  # Compress the library archive
+                "optimize": 1,  # Apply bytecode optimization
+                "bundle_files": 1,
+                "verbose": 1,
+                "dist_dir": "dist",  # Output directory, same as in the PowerShell script
+                "excludes": [
+                    "dl_translate",
+                    "torch",
+                ],  # Modules to exclude
+                "dll_excludes": [],
+            }
+        }
+
+        # Path to icon file, adapted to the platform-specific icon extension
+        icon_file = "src/resources/icons/sith.ico"
+        shutil.rmtree("./dist", ignore_errors=True)
+        freeze(
+            options=options,
+            windows=[
+                {
+                    "script": APP,  # Main Python script to be converted into an executable
+                    "icon_resources": [(1, icon_file)] if icon_file else None,  # Icon file
+                    "dest_base": project_metadata["name"],
+                    "version_info": {
+                        "description": project_metadata["description"],
+                        "copyright": "GPLv3 Licensing",
+                        "version": VERSION,
+                        "product_name": project_metadata["name"],
+                        "internal_name": "PyKotor"
+                    }
+                }
+            ],
+            zipfile="pylibs.bin",  # Include the Python bytecode archive in the executable, if bundle_files is 3 this should be set to a specific filename
+        )
     else:
-        msg = "bad args"
-        raise ValueError(msg)
+        from setuptools import setup
+        # Check if the installation is from PyPI or local source
+        if len(sys.argv) < 2:
+            sys.argv.append("install")
 
-    # Define setup parameters dynamically
-    setup_params = {
-        **project_metadata,
-        **AUTHORS[0],
-        "install_requires": REQUIREMENTS,
-        "long_description": README["file"],
-        "long_description_content_type": README["content-type"],
-    }
+        for key in ["authors", "readme", "maintainers"]:  # Remove keys that are not needed in setup()
+            if key in project_metadata:
+                project_metadata.pop(key)
 
-    # Remove keys that are not needed in setup()
-    keys_to_remove = ["authors", "readme"]
-    for key in keys_to_remove:
-        if key in setup_params:
-            setup_params.pop(key)
-
-    setup(**setup_params)
+        setup(
+            **project_metadata,
+            author=AUTHORS[0]["name"],
+            #author_email=AUTHORS[0]["email"],
+            maintainer=MAINTAINERS[0]["name"],
+            maintainer_email=MAINTAINERS[0]["email"],
+            install_requires=list(REQUIREMENTS),
+            extras_require=EXTRAS_REQUIRE,
+            long_description=README["file"],
+            long_description_content_type=README["content-type"],
+            include_dirs=EXTRA_PATHS,
+            package_dir={"": "src"},
+        )
 
 
 import contextlib
