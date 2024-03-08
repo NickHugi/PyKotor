@@ -205,8 +205,7 @@ jobs:
             if ("${{ matrix.python-version }}" -eq "3.12") {
               pip install "pyinstaller==5.13" --prefer-binary
             } elseif ("${{ matrix.python-version }}" -eq "3.11") {
-              pip install "pyinstaller==5.6.1" --prefer-binary
-              pip install "pyinstaller==5.5" --prefer-binary
+              pip install "pyinstaller==5.13.2" --prefer-binary
             } else {
               pip install "pyinstaller==5.4" --prefer-binary
             }
@@ -283,7 +282,7 @@ jobs:
             if ("${{ matrix.python-version }}" -eq "3.12") {
               pip install "pyinstaller==5.13" --prefer-binary
             } elseif ("${{ matrix.python-version }}" -eq "3.11") {
-              pip install "pyinstaller==5.13" --prefer-binary
+              pip install "pyinstaller==5.13.2" --prefer-binary
             } else {
               pip install "pyinstaller==5.4" --prefer-binary
             }
@@ -358,8 +357,7 @@ jobs:
             if ("${{ matrix.python-version }}" -eq "3.12") {
               pip install "pyinstaller==5.13" --prefer-binary
             } elseif ("${{ matrix.python-version }}" -eq "3.11") {
-              pip install "pyinstaller==5.6.1" --prefer-binary
-              pip install "pyinstaller==5.5" --prefer-binary
+              pip install "pyinstaller==5.13.2" --prefer-binary
             } else {
               pip install "pyinstaller==5.4" --prefer-binary
             }
@@ -434,8 +432,7 @@ jobs:
           if ("${{ matrix.python-version }}" -eq "3.12") {
             pip install "pyinstaller==5.13" --prefer-binary
           } elseif ("${{ matrix.python-version }}" -eq "3.11") {
-            pip install "pyinstaller==5.6.1" --prefer-binary
-            pip install "pyinstaller==5.5" --prefer-binary
+            pip install "pyinstaller==5.13.2" --prefer-binary
           } else {
             pip install "pyinstaller==5.4" --prefer-binary
           }
@@ -484,8 +481,7 @@ jobs:
           if ("${{ matrix.python-version }}" -eq "3.12") {
             pip install "pyinstaller==5.13" --prefer-binary
           } elseif ("${{ matrix.python-version }}" -eq "3.11") {
-            pip install "pyinstaller==5.6.1" --prefer-binary
-            pip install "pyinstaller==5.5" --prefer-binary
+            pip install "pyinstaller==5.13.2" --prefer-binary
           } else {
             pip install "pyinstaller==5.4" --prefer-binary
           }
