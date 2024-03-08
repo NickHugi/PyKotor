@@ -29,7 +29,7 @@ from pykotor.resource.formats.tpc import read_tpc, write_tpc
 from pykotor.resource.type import ResourceType
 from pykotor.tools import model, module
 from pykotor.tools.misc import is_any_erf_type_file, is_bif_file, is_capsule_file, is_erf_file, is_mod_file, is_rim_file
-from toolset.config import PROGRAM_VERSION, UPDATE_INFO_LINK
+from toolset.config import PROGRAM_VERSION, UPDATE_BETA_INFO_LINK, UPDATE_INFO_LINK
 from toolset.data.installation import HTInstallation
 from toolset.gui.dialogs.about import About
 from toolset.gui.dialogs.asyncloader import AsyncBatchLoader, AsyncLoader
@@ -58,7 +58,7 @@ from toolset.gui.windows.indoor_builder import IndoorMapBuilder
 from toolset.gui.windows.module_designer import ModuleDesigner
 from toolset.utils.misc import openLink
 from toolset.utils.window import addWindow, openResourceEditor
-from utility.error_handling import assert_with_variable_trace, format_exception_with_variables, universal_simplify_exception
+from utility.error_handling import format_exception_with_variables, universal_simplify_exception
 from utility.system.path import Path, PurePath
 
 if TYPE_CHECKING:
@@ -637,13 +637,6 @@ class ToolWindow(QMainWindow):
                 ).exec_()
 
     def _check_toolset_update(self, *, silent: bool):
-        req: requests.Response = requests.get(UPDATE_INFO_LINK, timeout=15)
-        req.raise_for_status()
-        file_data = req.json()
-        base64_content = file_data["content"]
-        decoded_content = base64.b64decode(base64_content)  # Correctly decoding the base64 content
-        data = json.loads(decoded_content.decode("utf-8"))
-
         if isinstance(PROGRAM_VERSION, tuple):
             x = ""
             for v in PROGRAM_VERSION:
@@ -653,6 +646,19 @@ class ToolWindow(QMainWindow):
                     x += f".{v}"
         else:
             x = str(PROGRAM_VERSION)
+        if "b" in PROGRAM_VERSION:
+            self.settings.useBetaChannel = True
+
+        if self.settings.useBetaChannel:  # use the beta channel if the setting is set or their version is already beta.
+            req: requests.Response = requests.get(UPDATE_BETA_INFO_LINK, timeout=15)
+        else:
+            req = requests.get(UPDATE_INFO_LINK, timeout=15)
+        req.raise_for_status()
+        file_data = req.json()
+        base64_content = file_data["content"]
+        decoded_content = base64.b64decode(base64_content)  # Correctly decoding the base64 content
+        data = json.loads(decoded_content.decode("utf-8"))
+        assert isinstance(data, dict)
 
         version_check: bool | None = None
         with suppress(Exception):
@@ -664,22 +670,25 @@ class ToolWindow(QMainWindow):
                 from distutils.version import LooseVersion
 
                 version_check = LooseVersion(data["toolsetLatestVersion"]) > LooseVersion(x)
-        if version_check is False:
+        if version_check is False:  # only check False, if None then the version check failed
             if silent:
                 return
             QMessageBox(
                 QMessageBox.Information,
                 "Version is up to date",
-                f"You are running the latest version ({'.'.join(str(i) for i in PROGRAM_VERSION)}).",
+                f"You are running the latest version ({PROGRAM_VERSION}).",
                 QMessageBox.Ok,
                 self,
             ).exec_()
+            return
 
         toolsetDownloadLink = data["toolsetDownloadLink"]
+        toolsetLatestNotes = data.get("toolsetLatestNotes", "")
+        betaString = "beta" if self.settings.useBetaChannel else ""
         QMessageBox(
             QMessageBox.Information,
-            "New version is available.",
-            f"New version available for <a href='{toolsetDownloadLink}'>download</a>.<br>{data['toolsetLatestNotes']}",
+            f"New {betaString} version is available.",
+            f"New {betaString} version available for <a href='{toolsetDownloadLink}'>download</a>.<br>{toolsetLatestNotes}",
             QMessageBox.Ok,
             self,
         ).exec_()
@@ -759,22 +768,6 @@ class ToolWindow(QMainWindow):
             sections.append(section)
         self.ui.overrideWidget.setSections(sections)
 
-    def refreshSavesList(self, *, reload=True):
-        """Refreshes the list of override directories in the overrideFolderCombo combobox."""
-        if self.active is None:
-            print("no installation is currently loaded, cannot refresh saves list")
-            return
-        if reload:
-            self.active.load_saves()
-
-        sections: list[QStandardItem] = []
-        for save_path in self.active._saves:
-            save_path_str = str(save_path)
-            section = QStandardItem(save_path_str)
-            section.setData(save_path_str, QtCore.Qt.UserRole)
-            sections.append(section)
-        self.ui.savesWidget.setSections(sections)
-
     def refreshTexturePackList(self, *, reload=True):
         if self.active is None:
             print("no installation is currently loaded, cannot refresh texturepack list")
@@ -823,11 +816,6 @@ class ToolWindow(QMainWindow):
                 if resource.filepath().is_relative_to(folder_path) and len(subfolder) < len(folder_path.name):
                     subfolder = folder_name
             self.changeOverrideFolder(subfolder)
-
-        elif tree == self.ui.savesWidget:
-            self.ui.resourceTabs.setCurrentWidget(self.ui.savesTab)
-            filename = resource.filepath().name
-            self.onSaveReload(filename)
 
     def changeOverrideFolder(self, subfolder: str):
         self.ui.overrideWidget.changeSection(subfolder)
