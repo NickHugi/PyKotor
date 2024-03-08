@@ -359,17 +359,17 @@ class GITCreature(GITInstance):
 
     def identifier(
         self,
-    ) -> ResourceIdentifier | None:
+    ) -> ResourceIdentifier:
         return ResourceIdentifier(str(self.resref), ResourceType.UTC)
 
     def blank(
         self,
-    ) -> bytes | None:
+    ) -> bytes:
         return bytes_utc(UTC())
 
     def extension(
         self,
-    ) -> ResourceType | None:
+    ) -> ResourceType:
         return ResourceType.UTC
 
     def classification(
@@ -379,7 +379,7 @@ class GITCreature(GITInstance):
 
     def yaw(
         self,
-    ) -> float | None:
+    ) -> float:
         return self.bearing
 
 
@@ -428,13 +428,13 @@ class GITDoor(GITInstance):
 
     def blank(
         self,
-    ) -> bytes | None:
+    ) -> bytes:
         return bytes_utd(UTD())
 
     def identifier(
         self,
-    ) -> ResourceIdentifier | None:
-        """Returns a ResourceIdentifier for the resource or None if not found.
+    ) -> ResourceIdentifier:
+        """Returns a ResourceIdentifier for the resource.
 
         Args:
         ----
@@ -442,13 +442,13 @@ class GITDoor(GITInstance):
 
         Returns:
         -------
-            ResourceIdentifier | None
+            ResourceIdentifier
 
         Processing Logic:
         ----------------
             - Get resource reference from self
             - Create ResourceIdentifier object from reference and type
-            - Return ResourceIdentifier or None.
+            - Return ResourceIdentifier
         """
         return ResourceIdentifier(str(self.resref), ResourceType.UTD)
 
@@ -459,7 +459,7 @@ class GITDoor(GITInstance):
 
     def yaw(
         self,
-    ) -> float | None:
+    ) -> float:
         return self.bearing
 
 
@@ -524,16 +524,16 @@ class GITEncounter(GITInstance):
         roll: float,
     ) -> NoReturn:
         msg = "Encounters cannot be rotated."
-        raise ValueError(msg)
+        raise NotImplementedError(msg)
 
     def identifier(
         self,
-    ) -> ResourceIdentifier | None:
+    ) -> ResourceIdentifier:
         return ResourceIdentifier(str(self.resref), ResourceType.UTE)
 
     def blank(
         self,
-    ) -> bytes | None:
+    ) -> bytes:
         return bytes_ute(UTE())
 
     def classification(
@@ -543,7 +543,7 @@ class GITEncounter(GITInstance):
 
     def yaw(
         self,
-    ) -> float | None:
+    ) -> None:
         return None
 
 
@@ -597,12 +597,12 @@ class GITPlaceable(GITInstance):
 
     def identifier(
         self,
-    ) -> ResourceIdentifier | None:
+    ) -> ResourceIdentifier:
         return ResourceIdentifier(str(self.resref), ResourceType.UTP)
 
     def blank(
         self,
-    ) -> bytes | None:
+    ) -> bytes:
         return bytes_utp(UTP())
 
     def classification(
@@ -612,7 +612,7 @@ class GITPlaceable(GITInstance):
 
     def yaw(
         self,
-    ) -> float | None:
+    ) -> float:
         return self.bearing
 
 
@@ -650,12 +650,12 @@ class GITSound(GITInstance):
 
     def identifier(
         self,
-    ) -> ResourceIdentifier | None:
+    ) -> ResourceIdentifier:
         return ResourceIdentifier(str(self.resref), ResourceType.UTS)
 
     def blank(
         self,
-    ) -> bytes | None:
+    ) -> bytes:
         return bytes_uts(UTS())
 
     def classification(
@@ -665,7 +665,7 @@ class GITSound(GITInstance):
 
     def yaw(
         self,
-    ) -> float | None:
+    ) -> float:
         return None
 
 
@@ -702,12 +702,12 @@ class GITStore(GITInstance):
 
     def identifier(
         self,
-    ) -> ResourceIdentifier | None:
+    ) -> ResourceIdentifier:
         return ResourceIdentifier(str(self.resref), ResourceType.UTM)
 
     def blank(
         self,
-    ) -> bytes | None:
+    ) -> bytes:
         return bytes_utm(UTM())
 
     def classification(
@@ -717,7 +717,7 @@ class GITStore(GITInstance):
 
     def yaw(
         self,
-    ) -> float | None:
+    ) -> float:
         return self.bearing
 
 
@@ -761,12 +761,12 @@ class GITTrigger(GITInstance):
 
     def identifier(
         self,
-    ) -> ResourceIdentifier | None:
+    ) -> ResourceIdentifier:
         return ResourceIdentifier(str(self.resref), ResourceType.UTT)
 
     def blank(
         self,
-    ) -> bytes | None:
+    ) -> bytes:
         return bytes_utt(UTT())
 
     def classification(
@@ -776,7 +776,7 @@ class GITTrigger(GITInstance):
 
     def yaw(
         self,
-    ) -> float | None:
+    ) -> float:
         return None
 
 
@@ -830,12 +830,12 @@ class GITWaypoint(GITInstance):
 
     def identifier(
         self,
-    ) -> ResourceIdentifier | None:
+    ) -> ResourceIdentifier:
         return ResourceIdentifier(str(self.resref), ResourceType.UTW)
 
     def blank(
         self,
-    ) -> bytes | None:
+    ) -> bytes:
         return bytes_utw(UTW())
 
     def classification(
@@ -845,7 +845,7 @@ class GITWaypoint(GITInstance):
 
     def yaw(
         self,
-    ) -> float | None:
+    ) -> float:
         return self.bearing
 
 

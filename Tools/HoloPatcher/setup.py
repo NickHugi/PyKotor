@@ -6,8 +6,6 @@ import sys
 
 from pathlib import Path
 
-from setuptools import setup
-
 
 def main():
     HERE = Path(__file__).parent
@@ -20,7 +18,8 @@ def main():
     project_metadata: dict = setup_params.get("project", {})
     build_system: dict = setup_params.get("build-system", {})
     VERSION: str = project_metadata.get("version", "0.0.0")
-    AUTHORS = project_metadata.get("authors", [{"name": ""}])
+    AUTHORS = project_metadata.get("authors", [{"name": "", "email": ""}])
+    MAINTAINERS = project_metadata.get("maintainers", [{"name": "", "email": ""}])
     README = project_metadata.get("readme", {"file": "", "content-type": ""})
 
     # Extract and extend requirements
@@ -29,7 +28,7 @@ def main():
     if requirements_txt_path.exists():
         REQUIREMENTS.update(requirements_txt_path.read_text().splitlines())
 
-    EXTRA_PATHS = [str(HERE)]
+    EXTRA_PATHS = []
     pykotor_path = HERE.joinpath("..", "..", "Libraries", "PyKotor")
     pykotor_src_path = pykotor_path / "src"
     pykotor_requirements = pykotor_path / "requirements.txt"
@@ -42,9 +41,42 @@ def main():
         EXTRA_PATHS.append(str(utility_src_path))
 
     EXTRAS_REQUIRE = project_metadata.get("optional-dependencies", {})
-    if "py2exe" in sys.argv:
+    APP = ["src/__main__.py"]
+    if "py2app" in sys.argv:
         try:
-            import py2exe
+            import py2app  # noqa: F401
+
+            from setuptools import setup
+        except (ImportError, ModuleNotFoundError) as e:
+            raise ImportError("py2app is not installed. Please install it using 'pip install py2app setuptools'.") from e
+
+        DATA_FILES = []
+        OPTIONS = {
+            "argv_emulation": True,
+            "packages": project_metadata["dependencies"],  # Add your required packages here
+            "iconfile": "resources/icons/patcher_icon_v2.icns",  # macOS icon file
+            "plist": {
+                "CFBundleName": project_metadata["name"],
+                "CFBundleDisplayName": project_metadata["name"],
+                "CFBundleGetInfoString": project_metadata["description"],
+                "CFBundleVersion": VERSION,
+                "CFBundleShortVersionString": VERSION
+            },
+            "includes": list(REQUIREMENTS),
+            "excludes": ["numpy", "PyQt5", "PIL", "Pillow", "matplotlib", "multiprocessing", "PyOpenGL", "PyGLM"],
+            "extra_scripts": EXTRA_PATHS,
+        }
+
+        setup(
+            app=APP,
+            name=project_metadata["name"],
+            data_files=DATA_FILES,
+            options={"py2app": OPTIONS},
+            setup_requires=["py2app"]
+        )
+    elif "py2exe" in sys.argv:
+        try:
+            import py2exe  # noqa: F401
 
             from py2exe import freeze
         except ImportError as e:
@@ -77,7 +109,7 @@ def main():
             options=options,
             windows=[
                 {
-                    "script": "src/__main__.py",  # Main Python script to be converted into an executable
+                    "script": APP,  # Main Python script to be converted into an executable
                     "icon_resources": [(1, icon_file)] if icon_file else None,  # Icon file
                     "dest_base": "HoloPatcher",
                     "version_info": {
@@ -92,6 +124,7 @@ def main():
             zipfile="pylibs.bin",  # Include the Python bytecode archive in the executable, if bundle_files is 3 this should be set to a specific filename
         )
     else:
+        from setuptools import setup
         # Check if the installation is from PyPI or local source
         if len(sys.argv) < 2:
             sys.argv.append("install")
@@ -103,14 +136,15 @@ def main():
         setup(
             **project_metadata,
             author=AUTHORS[0]["name"],
-            author_email=AUTHORS[0]["email"],
-            maintainer=AUTHORS[1]["name"],
-            maintainer_email=AUTHORS[1]["email"],
+            #author_email=AUTHORS[0]["email"],
+            maintainer=MAINTAINERS[0]["name"],
+            maintainer_email=MAINTAINERS[0]["email"],
             install_requires=list(REQUIREMENTS),
             extras_require=EXTRAS_REQUIRE,
             long_description=README["file"],
             long_description_content_type=README["content-type"],
             include_dirs=EXTRA_PATHS,
+            package_dir={"": "src"},
         )
 
 

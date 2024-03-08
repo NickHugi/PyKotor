@@ -781,7 +781,7 @@ jobs:
           $PYTHON_VERSIONS = '${{ env.PYTHON_VERSIONS_JSON }}' | ConvertFrom-Json
           $ARCHITECTURES = '${{ env.ARCHITECTURES_JSON }}' | ConvertFrom-Json
 
-          $artifact_reports_dir = Join-Path -Path Get-Location -ChildPath "all_pytest_reports"
+          $artifact_reports_dir = "./all_pytest_reports"
           New-Item -ItemType Directory -Force -Path $artifact_reports_dir -ErrorAction SilentlyContinue
           Dir -Recurse $artifact_reports_dir | Get-Childitem
           Get-ChildItem $artifact_reports_dir | ForEach-Object {
@@ -792,6 +792,7 @@ jobs:
 
           git fetch origin $branchName
           git add $testsResultsPath --force
+          git add $testsResultsCommitPath --force
           # Checking if there are newer commits on the remote branch than the commit that triggered the workflow
           if (git log "${{ github.sha }}"..origin/$branchName --oneline) {
               Write-Error "Newer commits are present on the remote branch, cannot update readme"
@@ -803,6 +804,7 @@ jobs:
 
           $testResults = @{}
 
+          Write-Output "Iterate through $testsResultsCommitPath"
           Get-ChildItem $testsResultsCommitPath -Recurse -Filter pytest_report.xml | ForEach-Object {
             [xml]$TestResultsXml = Get-Content $_.FullName
             $totalTests = [int]$TestResultsXml.testsuites.testsuite.tests
