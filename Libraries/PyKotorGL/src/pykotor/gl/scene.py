@@ -564,7 +564,6 @@ class Scene:
         if self.should_hide_obj(obj):
             return
 
-        print("_render_object", obj.override_texture)
         model: Model = self.model(obj.model)
         transform = transform * obj.transform()
         model.draw(shader, transform, override_texture=obj.override_texture)
