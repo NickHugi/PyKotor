@@ -320,7 +320,7 @@ class Installation:  # noqa: PLR0904
         self,
         folder_names: tuple[str, ...] | str,
         *,
-        optional: bool = False,
+        optional: bool = True,
     ) -> CaseAwarePath:
         """Finds the path to a resource folder.
 
