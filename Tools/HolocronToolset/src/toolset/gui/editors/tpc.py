@@ -84,19 +84,18 @@ class TPCEditor(Editor):
         """
         super().load(filepath, resref, restype, data)
 
+        # Read image, convert to RGB, and y_flip.
         if restype in {ResourceType.TPC, ResourceType.TGA}:
-            print("read_tpc")
             self._tpc = read_tpc(data)
-            width, height, rgb = self._tpc.convert(TPCTextureFormat.RGB, 0, y_flip=True)
-            self._tpc.set_data(width, height, [rgb], TPCTextureFormat.RGB)
+            width, height, img_bytes = self._tpc.convert(TPCTextureFormat.RGB, 0, y_flip=True)
+            self._tpc.set_data(width, height, [img_bytes], TPCTextureFormat.RGB)
         else:
-            print("pillow image")
             pillow: Image.Image = Image.open(io.BytesIO(data))
             pillow = pillow.convert("RGBA")
             pillow = ImageOps.flip(pillow)
             self._tpc = TPC()
             self._tpc.set_single(pillow.width, pillow.height, pillow.tobytes(), TPCTextureFormat.RGBA)
-            width, height, rgb = self._tpc.convert(TPCTextureFormat.RGB, 0)
+            width, height, img_bytes = self._tpc.convert(TPCTextureFormat.RGB, 0)
 
         # Calculate new dimensions maintaining aspect ratio
         max_width, max_height = 640, 480
@@ -109,7 +108,7 @@ class TPCEditor(Editor):
             new_width = int(new_height * aspect_ratio)
 
         # Create QImage and scale it
-        image = QImage(rgb, width, height, QImage.Format_RGB888)
+        image = QImage(img_bytes, width, height, QImage.Format_RGB888)
         scaled_image = image.scaled(new_width, new_height, Qt.KeepAspectRatio, Qt.SmoothTransformation)
 
         # Create QPixmap from the scaled QImage

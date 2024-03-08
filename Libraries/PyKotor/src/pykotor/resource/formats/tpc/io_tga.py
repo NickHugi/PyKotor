@@ -217,11 +217,10 @@ class TPCTGAReader(ResourceReader):
         elif datatype_code == _DataTypes.UNCOMPRESSED_BLACK_WHITE:
             data = bytearray()
             for _ in range(width * height):
-                # Read the grayscale value (assuming 1 byte per pixel)
+                # Read the grayscale value (should be 1 byte per pixel)
                 gray_value = self._reader.read_uint8()
-
-                # Convert grayscale to RGBA (R=G=B=gray_value, A=255)
-                data.extend([gray_value, gray_value, gray_value, 255])
+                # Convert grayscale to RGB
+                data.extend([gray_value, gray_value, gray_value])
         elif datatype_code == _DataTypes.RLE_COLOR_MAPPED:
             if color_map is None:
                 msg = "Expected color map not found for RLE color-mapped data"
@@ -244,6 +243,7 @@ class TPCTGAReader(ResourceReader):
         texture_format = TPCTextureFormat.RGBA if bits_per_pixel == 32 else TPCTextureFormat.RGB
         self._tpc.set_data(width, height, [bytes(data)], texture_format)
 
+        print("tga datatype_code:", next((c.name for c in _DataTypes if c.value == datatype_code), datatype_code), "y_flipped:", y_flipped, "bits_per_pixel:", bits_per_pixel)
         return self._tpc
 
 
