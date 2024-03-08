@@ -244,7 +244,7 @@ class Ui_MainWindow(object):
         self.actionNewUTM.setIcon(icon7)
         self.actionNewUTM.setObjectName("actionNewUTM")
         self.actionNewTLK = QtWidgets.QAction(MainWindow)
-        self.actionNewTLK.setEnabled(False)
+        self.actionNewTLK.setEnabled(True)
         icon8 = QtGui.QIcon()
         icon8.addPixmap(QtGui.QPixmap(":/images/icons/kx/tlk.png"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
         self.actionNewTLK.setIcon(icon8)

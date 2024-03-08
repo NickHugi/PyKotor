@@ -481,7 +481,7 @@ class ToolWindow(QMainWindow):
 
         tlkIconPath = f":/images/icons/k{version}/tlk.png"
         self.ui.actionNewTLK.setIcon(QIcon(QPixmap(tlkIconPath)))
-        self.ui.actionNewTLK.setEnabled(self.active is not None)
+        self.ui.actionNewTLK.setEnabled(True)
 
         scriptIconPath = f":/images/icons/k{version}/script.png"
         self.ui.actionNewNSS.setIcon(QIcon(QPixmap(scriptIconPath)))

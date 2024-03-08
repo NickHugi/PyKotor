@@ -573,7 +573,7 @@
   </action>
   <action name="actionNewTLK">
    <property name="enabled">
-    <bool>false</bool>
+    <bool>true</bool>
    </property>
    <property name="icon">
     <iconset resource="../../resources/resources.qrc">
