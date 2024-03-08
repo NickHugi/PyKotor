@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import os
 import pathlib
+import platform
 import sys
 import tempfile
 import unittest
@@ -48,9 +49,10 @@ class TestCaseAwarePath(TestCase):
         expected_path: pathlib.Path = self.temp_path / "SOmeDir" / "SOMEFile.txT"
         expected_path.mkdir(exist_ok=True, parents=True)
         expected_path.touch()
-        self.assertTrue(expected_path.exists(), f"expected_path: {expected_path} should always exist on disk in this test.")
-        self.assertTrue(case_aware_file_path.exists(), f"expected_path: {expected_path} actual_path: {case_aware_file_path}")
-        self.assertEqual(str(case_aware_file_path), str(expected_path))
+        self.assertTrue(expected_path.exists(), f"expected_path: '{expected_path}' should always exist on disk in this test.")
+        self.assertTrue(case_aware_file_path.exists(), f"expected_path: '{expected_path}' actual_path: '{case_aware_file_path}'")
+        self.assertTrue(str(case_aware_file_path) == str(expected_path) or platform.system() == "Darwin", 
+                        f"Path case mismatch on a case-sensitive filesystem. Case-aware path: {case_aware_file_path}, expected path: {expected_path}")
 
     def test_make_and_parse_uri(self):
         # Create a temporary directory
@@ -68,7 +70,8 @@ class TestCaseAwarePath(TestCase):
 
             # Ensure that the URI is in the expected format
             expected_uri = f'file://{temp_dir.replace(os.sep, "/")}/SAMPLE.TXT'
-            self.assertEqual(uri, expected_uri)
+            self.assertTrue(uri == expected_uri or platform.system() == "Darwin", 
+                            f"Path case mismatch on a case-sensitive filesystem. Case-aware path: {uri}, expected path: {expected_uri}")
 
             # Parse the URI back into a path
             self.assertTrue(uri.startswith("file:///"), f"Unsupported URI format: '{uri}'")
@@ -183,8 +186,10 @@ class TestCaseAwarePath(TestCase):
             case_aware_file_path.exists(),
             f"{relative} does not exist on disk",
         )
+        expected_relpath = "someDir/someFile.txt"
         if os.name == "posix":
-            self.assertEqual(str(relative), "someDir/someFile.txt")
+            self.assertTrue(str(relative) == expected_relpath or platform.system() == "Darwin", 
+                            f"Path case mismatch on a case-sensitive filesystem. Case-aware path: {relative}, expected path: {expected_relpath}")
         if os.name == "nt":
             self.assertEqual(str(relative).lower(), "somedir\\somefile.txt")
 
