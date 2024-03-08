@@ -9,6 +9,7 @@ from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QImage, QPixmap
 
 from pykotor.resource.formats.tpc import TPC, TPCTextureFormat, read_tpc, write_tpc
+from pykotor.resource.formats.tpc.io_tga import _DataTypes
 from pykotor.resource.type import ResourceType
 from toolset.gui.editor import Editor
 
@@ -85,8 +86,10 @@ class TPCEditor(Editor):
         super().load(filepath, resref, restype, data)
 
         # Read image, convert to RGB, and y_flip.
+        orig_format = None
         if restype in {ResourceType.TPC, ResourceType.TGA}:
             self._tpc = read_tpc(data)
+            orig_format = self._tpc.format()
             width, height, img_bytes = self._tpc.convert(TPCTextureFormat.RGB, 0, y_flip=True)
             self._tpc.set_data(width, height, [img_bytes], TPCTextureFormat.RGB)
         else:
@@ -117,6 +120,10 @@ class TPCEditor(Editor):
         self.ui.textureImage.setPixmap(pixmap)
         self.ui.textureImage.setScaledContents(True)
         self.ui.txiEdit.setPlainText(self._tpc.txi)
+        if self._tpc.original_datatype_code != _DataTypes.NO_IMAGE_DATA:
+            self.setToolTip(self._tpc.original_datatype_code.name + " - " + orig_format.name)
+        elif orig_format is not None:
+            self.setToolTip(orig_format.name)
 
     def new(self):
         """Set texture image from TPC texture.

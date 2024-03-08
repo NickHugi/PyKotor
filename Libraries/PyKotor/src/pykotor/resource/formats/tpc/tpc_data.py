@@ -42,6 +42,8 @@ class TPC:
         self._width: int = 4
         self._height: int = 4
         self.txi: str = ""
+        from pykotor.resource.formats.tpc.io_tga import _DataTypes
+        self.original_datatype_code: _DataTypes = _DataTypes.NO_IMAGE_DATA
 
         # TODO: cube maps
 
