@@ -1124,6 +1124,9 @@ class ModuleResource(Generic[T]):
         """
         return self._restype
 
+    def identifier(self) -> ResourceIdentifier:
+        return self._identifier
+
     def localized_name(self) -> str | None:
         # sourcery skip: assign-if-exp, reintroduce-else
         """Returns a localized name for the resource.
