@@ -76,36 +76,36 @@ These represent the currently passing/failing python versions/operating system c
 ### Windows:
 
 <!-- WINDOWS-BADGES-START -->
-[![3.8-x86-Build_Failed](https://img.shields.io/badge/3.8--x86_Build_Failed-lightgrey)](https://github.com/th3w1zard1/PyKotor/actions/runs/8185566981)
-[![3.8-x64-Build_Failed](https://img.shields.io/badge/3.8--x64_Build_Failed-lightgrey)](https://github.com/th3w1zard1/PyKotor/actions/runs/8185566981)
-[![3.9-x86-Build_Failed](https://img.shields.io/badge/3.9--x86_Build_Failed-lightgrey)](https://github.com/th3w1zard1/PyKotor/actions/runs/8185566981)
-[![3.9-x64-Build_Failed](https://img.shields.io/badge/3.9--x64_Build_Failed-lightgrey)](https://github.com/th3w1zard1/PyKotor/actions/runs/8185566981)
-[![3.10-x86-Build_Failed](https://img.shields.io/badge/3.10--x86_Build_Failed-lightgrey)](https://github.com/th3w1zard1/PyKotor/actions/runs/8185566981)
-[![3.10-x64-Build_Failed](https://img.shields.io/badge/3.10--x64_Build_Failed-lightgrey)](https://github.com/th3w1zard1/PyKotor/actions/runs/8185566981)
-[![3.11-x86-Build_Failed](https://img.shields.io/badge/3.11--x86_Build_Failed-lightgrey)](https://github.com/th3w1zard1/PyKotor/actions/runs/8185566981)
-[![3.11-x64-Build_Failed](https://img.shields.io/badge/3.11--x64_Build_Failed-lightgrey)](https://github.com/th3w1zard1/PyKotor/actions/runs/8185566981)
-[![3.12-x86-Build_Failed](https://img.shields.io/badge/3.12--x86_Build_Failed-lightgrey)](https://github.com/th3w1zard1/PyKotor/actions/runs/8185566981)
-[![3.12-x64-Build_Failed](https://img.shields.io/badge/3.12--x64_Build_Failed-lightgrey)](https://github.com/th3w1zard1/PyKotor/actions/runs/8185566981)
+[![3.8-x86-Build_Failed](https://img.shields.io/badge/3.8--x86_Build_Failed-lightgrey)](https://github.com/th3w1zard1/PyKotor/actions/runs/8185545235)
+[![3.8-x64-Build_Failed](https://img.shields.io/badge/3.8--x64_Build_Failed-lightgrey)](https://github.com/th3w1zard1/PyKotor/actions/runs/8185545235)
+[![3.9-x86-Build_Failed](https://img.shields.io/badge/3.9--x86_Build_Failed-lightgrey)](https://github.com/th3w1zard1/PyKotor/actions/runs/8185545235)
+[![3.9-x64-Build_Failed](https://img.shields.io/badge/3.9--x64_Build_Failed-lightgrey)](https://github.com/th3w1zard1/PyKotor/actions/runs/8185545235)
+[![3.10-x86-Build_Failed](https://img.shields.io/badge/3.10--x86_Build_Failed-lightgrey)](https://github.com/th3w1zard1/PyKotor/actions/runs/8185545235)
+[![3.10-x64-Build_Failed](https://img.shields.io/badge/3.10--x64_Build_Failed-lightgrey)](https://github.com/th3w1zard1/PyKotor/actions/runs/8185545235)
+[![3.11-x86-Build_Failed](https://img.shields.io/badge/3.11--x86_Build_Failed-lightgrey)](https://github.com/th3w1zard1/PyKotor/actions/runs/8185545235)
+[![3.11-x64-Build_Failed](https://img.shields.io/badge/3.11--x64_Build_Failed-lightgrey)](https://github.com/th3w1zard1/PyKotor/actions/runs/8185545235)
+[![3.12-x86-Build_Failed](https://img.shields.io/badge/3.12--x86_Build_Failed-lightgrey)](https://github.com/th3w1zard1/PyKotor/actions/runs/8185545235)
+[![3.12-x64-Build_Failed](https://img.shields.io/badge/3.12--x64_Build_Failed-lightgrey)](https://github.com/th3w1zard1/PyKotor/actions/runs/8185545235)
 <!-- WINDOWS-BADGES-END -->
 
 ### Linux:
 
 <!-- LINUX-BADGES-START -->
-[![3.8-x64-Build_Failed](https://img.shields.io/badge/3.8--x64_Build_Failed-lightgrey)](https://github.com/th3w1zard1/PyKotor/actions/runs/8185566981)
-[![3.9-x64-Build_Failed](https://img.shields.io/badge/3.9--x64_Build_Failed-lightgrey)](https://github.com/th3w1zard1/PyKotor/actions/runs/8185566981)
-[![3.10-x64-Build_Failed](https://img.shields.io/badge/3.10--x64_Build_Failed-lightgrey)](https://github.com/th3w1zard1/PyKotor/actions/runs/8185566981)
-[![3.11-x64-Build_Failed](https://img.shields.io/badge/3.11--x64_Build_Failed-lightgrey)](https://github.com/th3w1zard1/PyKotor/actions/runs/8185566981)
-[![3.12-x64-Build_Failed](https://img.shields.io/badge/3.12--x64_Build_Failed-lightgrey)](https://github.com/th3w1zard1/PyKotor/actions/runs/8185566981)
+[![3.8-x64-Build_Failed](https://img.shields.io/badge/3.8--x64_Build_Failed-lightgrey)](https://github.com/th3w1zard1/PyKotor/actions/runs/8185545235)
+[![3.9-x64-Build_Failed](https://img.shields.io/badge/3.9--x64_Build_Failed-lightgrey)](https://github.com/th3w1zard1/PyKotor/actions/runs/8185545235)
+[![3.10-x64-Build_Failed](https://img.shields.io/badge/3.10--x64_Build_Failed-lightgrey)](https://github.com/th3w1zard1/PyKotor/actions/runs/8185545235)
+[![3.11-x64-Build_Failed](https://img.shields.io/badge/3.11--x64_Build_Failed-lightgrey)](https://github.com/th3w1zard1/PyKotor/actions/runs/8185545235)
+[![3.12-x64-Build_Failed](https://img.shields.io/badge/3.12--x64_Build_Failed-lightgrey)](https://github.com/th3w1zard1/PyKotor/actions/runs/8185545235)
 <!-- LINUX-BADGES-END -->
 
 ### MacOS:
 
 <!-- MACOS-BADGES-START -->
-[![3.8-x64-Build_Failed](https://img.shields.io/badge/3.8--x64_Build_Failed-lightgrey)](https://github.com/th3w1zard1/PyKotor/actions/runs/8185566981)
-[![3.9-x64-Build_Failed](https://img.shields.io/badge/3.9--x64_Build_Failed-lightgrey)](https://github.com/th3w1zard1/PyKotor/actions/runs/8185566981)
-[![3.10-x64-Build_Failed](https://img.shields.io/badge/3.10--x64_Build_Failed-lightgrey)](https://github.com/th3w1zard1/PyKotor/actions/runs/8185566981)
-[![3.11-x64-Build_Failed](https://img.shields.io/badge/3.11--x64_Build_Failed-lightgrey)](https://github.com/th3w1zard1/PyKotor/actions/runs/8185566981)
-[![3.12-x64-Build_Failed](https://img.shields.io/badge/3.12--x64_Build_Failed-lightgrey)](https://github.com/th3w1zard1/PyKotor/actions/runs/8185566981)
+[![3.8-x64-Build_Failed](https://img.shields.io/badge/3.8--x64_Build_Failed-lightgrey)](https://github.com/th3w1zard1/PyKotor/actions/runs/8185545235)
+[![3.9-x64-Build_Failed](https://img.shields.io/badge/3.9--x64_Build_Failed-lightgrey)](https://github.com/th3w1zard1/PyKotor/actions/runs/8185545235)
+[![3.10-x64-Build_Failed](https://img.shields.io/badge/3.10--x64_Build_Failed-lightgrey)](https://github.com/th3w1zard1/PyKotor/actions/runs/8185545235)
+[![3.11-x64-Build_Failed](https://img.shields.io/badge/3.11--x64_Build_Failed-lightgrey)](https://github.com/th3w1zard1/PyKotor/actions/runs/8185545235)
+[![3.12-x64-Build_Failed](https://img.shields.io/badge/3.12--x64_Build_Failed-lightgrey)](https://github.com/th3w1zard1/PyKotor/actions/runs/8185545235)
 <!-- MACOS-BADGES-END -->
 
 ## License
