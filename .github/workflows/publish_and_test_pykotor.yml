@@ -203,7 +203,7 @@ jobs:
           python -m pip install --upgrade pip
           if ("${{ runner.os }}" -eq "Windows") {
             if ("${{ matrix.python-version }}" -eq "3.12") {
-              pip install "pyinstaller==5.13" --prefer-binary
+              pip install "pyinstaller==5.13.2" --prefer-binary
             } elseif ("${{ matrix.python-version }}" -eq "3.11") {
               pip install "pyinstaller==5.13.2" --prefer-binary
             } else {
@@ -271,6 +271,16 @@ jobs:
       env:
         UPX_DIR: ${{ env.UPX_DIR }}
 
+    - name: HolocronToolset - Create Static Binary
+      if: ${{ (success() || failure()) && runner.os == 'Linux' && steps.toolset_deps.outputs.success == 'true' }}
+      run: |
+        ./install_python_venv.ps1 -noprompt -venv_name .venv_toolset_${{ matrix.os }}_${{ matrix.python-version }}_${{ matrix.architecture }}
+        python -m pip install staticx
+        staticx ./dist/HolocronToolset ./dist/HolocronToolset-static
+        # Rename the static binary for clarity and consistency
+        mv -fv ./dist/HolocronToolset-static ./dist/HolocronToolset
+      shell: bash
+
     - name: Install HoloPatcher dependencies
       if: ${{ success() || failure() }}
       id: holopatcher_deps
@@ -280,7 +290,7 @@ jobs:
           python -m pip install --upgrade pip
           if ("${{ runner.os }}" -eq "Windows") {
             if ("${{ matrix.python-version }}" -eq "3.12") {
-              pip install "pyinstaller==5.13" --prefer-binary
+              pip install "pyinstaller==5.13.2" --prefer-binary
             } elseif ("${{ matrix.python-version }}" -eq "3.11") {
               pip install "pyinstaller==5.13.2" --prefer-binary
             } else {
@@ -346,6 +356,16 @@ jobs:
         }
       shell: pwsh
 
+    - name: HoloPatcher - Create Static Binary
+      if: ${{ (success() || failure()) && runner.os == 'Linux' && steps.holopatcher_deps.outputs.success == 'true' }}
+      run: |
+        ./install_python_venv.ps1 -noprompt -venv_name .venv_holopatcher_${{ matrix.os }}_${{ matrix.python-version }}_${{ matrix.architecture }}
+        python -m pip install staticx
+        staticx ./dist/HolocronToolset ./dist/HolocronToolset-static
+        # Rename the static binary for clarity and consistency
+        mv -fv ./dist/HolocronToolset-static ./dist/HolocronToolset
+      shell: bash
+
     - name: Install BatchPatcher dependencies
       if: ${{ success() || failure() }}
       id: batchpatcher_deps
@@ -355,7 +375,7 @@ jobs:
           python -m pip install --upgrade pip
           if ("${{ runner.os }}" -eq "Windows") {
             if ("${{ matrix.python-version }}" -eq "3.12") {
-              pip install "pyinstaller==5.13" --prefer-binary
+              pip install "pyinstaller==5.13.2" --prefer-binary
             } elseif ("${{ matrix.python-version }}" -eq "3.11") {
               pip install "pyinstaller==5.13.2" --prefer-binary
             } else {
@@ -421,6 +441,16 @@ jobs:
         }
       shell: pwsh
 
+    - name: BatchPatcher - Create Static Binary
+      if: ${{ (success() || failure()) && runner.os == 'Linux' && steps.batchpatcher_deps.outputs.success == 'true' }}
+      run: |
+        ./install_python_venv.ps1 -noprompt -venv_name .venv_batchpatcher_${{ matrix.os }}_${{ matrix.python-version }}_${{ matrix.architecture }}
+        python -m pip install staticx
+        staticx ./dist/K_BatchPatcher ./dist/K_BatchPatcher-static
+        # Rename the static binary for clarity and consistency
+        mv -fv ./dist/K_BatchPatcher-static ./dist/K_BatchPatcher
+      shell: bash
+
     - name: Compile KotorDiff
       if: ${{ success() || failure() }}
       run: |
@@ -430,7 +460,7 @@ jobs:
         python -m pip install --upgrade pip
         if ("${{ runner.os }}" -eq "Windows") {
           if ("${{ matrix.python-version }}" -eq "3.12") {
-            pip install "pyinstaller==5.13" --prefer-binary
+            pip install "pyinstaller==5.13.2" --prefer-binary
           } elseif ("${{ matrix.python-version }}" -eq "3.11") {
             pip install "pyinstaller==5.13.2" --prefer-binary
           } else {
@@ -470,6 +500,16 @@ jobs:
         }
       shell: pwsh
 
+    - name: KotorDiff - Create Static Binary
+      if: ${{ (success() || failure()) && runner.os == 'Linux' }}
+      run: |
+        ./install_python_venv.ps1 -noprompt -venv_name .venv_kotordiff_${{ matrix.os }}_${{ matrix.python-version }}_${{ matrix.architecture }}
+        python -m pip install staticx
+        staticx ./dist/KotorDiff ./dist/KotorDiff-static
+        # Rename the static binary for clarity and consistency
+        mv -fv ./dist/KotorDiff-static ./dist/KotorDiff
+      shell: bash
+
     - name: Compile GUIDuplicator
       if: ${{ success() || failure() }}
       run: |
@@ -479,7 +519,7 @@ jobs:
         python -m pip install --upgrade pip
         if ("${{ runner.os }}" -eq "Windows") {
           if ("${{ matrix.python-version }}" -eq "3.12") {
-            pip install "pyinstaller==5.13" --prefer-binary
+            pip install "pyinstaller==5.13.2" --prefer-binary
           } elseif ("${{ matrix.python-version }}" -eq "3.11") {
             pip install "pyinstaller==5.13.2" --prefer-binary
           } else {
@@ -517,6 +557,16 @@ jobs:
           Add-Content -Path $env:GITHUB_OUTPUT -Value "success=true"
         }
       shell: pwsh
+
+    - name: GUIDuplicator - Create Static Binary
+      if: ${{ (success() || failure()) && runner.os == 'Linux' }}
+      run: |
+        ./install_python_venv.ps1 -noprompt -venv_name .venv_guiduplicator_${{ matrix.os }}_${{ matrix.python-version }}_${{ matrix.architecture }}
+        python -m pip install staticx
+        staticx ./dist/GuiDuplicator ./dist/GuiDuplicator-static
+        # Rename the static binary for clarity and consistency
+        mv -fv ./dist/GuiDuplicator-static ./dist/GuiDuplicator
+      shell: bash
 
     - name: Upload compiled binaries
       if: ${{ success() || failure() }}
