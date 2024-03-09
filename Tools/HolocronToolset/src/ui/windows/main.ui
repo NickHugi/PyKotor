@@ -307,6 +307,14 @@
     <addaction name="actionEditTLK"/>
     <addaction name="actionEditJRL"/>
    </widget>
+   <widget class="QMenu" name="menuTheme">
+    <property name="title">
+     <string>Theme</string>
+    </property>
+    <addaction name="defaultLight"/>
+    <addaction name="breezeDark"/>
+    <addaction name="darkManualTheme2"/>
+   </widget>
    <widget class="QMenu" name="menuTools">
     <property name="title">
      <string>Tools</string>
@@ -337,6 +345,7 @@
    <addaction name="menuFile"/>
    <addaction name="menuEdit"/>
    <addaction name="menuTools"/>
+   <addaction name="menuTheme"/>
    <addaction name="menuHelp"/>
   </widget>
   <widget class="QStatusBar" name="statusbar"/>
@@ -641,6 +650,21 @@
    </property>
    <property name="text">
     <string>Geometry Editor</string>
+   </property>
+  </action>
+  <action name="defaultLight">
+   <property name="text">
+    <string>Default (Light)</string>
+   </property>
+  </action>
+  <action name="breezeDark">
+   <property name="text">
+    <string>Breeze (Dark)</string>
+   </property>
+  </action>
+  <action name="darkManualTheme2">
+   <property name="text">
+    <string>Fusion (Dark)</string>
    </property>
   </action>
   <action name="actionIndoorMapBuilder">

@@ -64,4 +64,7 @@
     "--exclude='./.venv'",
     "--exclude='tests/results'"
   ],
+  "github-actions.workflows.pinned.workflows": [
+    ".github/workflows/publish_and_test_pykotor.yml"
+  ],
 }
