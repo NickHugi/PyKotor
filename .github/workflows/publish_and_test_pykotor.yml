@@ -54,7 +54,7 @@ jobs:
         python-version: ${{ matrix.python-version }}
         architecture: ${{ matrix.architecture }}
 
-    - name: Set up Python macOS
+    - name: Set up Python ${{ matrix.python-version }} macOS
       if: ${{ runner.os == 'macOS' }}
       run: |  # warning: `brew link --overwrite python@ver` is unsafe on any non-virtualized macos.
         echo "NONINTERACTIVE DEFAULT: $NONINTERACTIVE"
@@ -63,6 +63,30 @@ jobs:
         brew analytics on
         brew update
         brew install python@${{ matrix.python-version }} || brew link --overwrite python@${{ matrix.python-version }}
+
+    - name: Set up Python ${{ matrix.python-version }} Linux  # macos too?
+      if: ${{ runner.os == 'Linux' }}
+      run: |
+        sudo apt-get update
+        sudo apt-get install build-essential zlib1g-dev libncurses5-dev libgdbm-dev libssl-dev libreadline-dev libffi-dev libsqlite3-dev libbz2-dev tk-dev -y
+        $pyVersion = switch (${{ matrix.python-version }}) {
+          "3.7" { "3.7.17" }
+          "3.8" { "3.8.18" }
+          "3.9" { "3.9.18" }
+          "3.10" { "3.10.13" }
+          "3.11" { "3.11.8" }
+          "3.12" { "3.12.2" }
+        }
+        Invoke-WebRequest -Uri https://www.python.org/ftp/python/$pyVersion/Python-$pyVersion.tgz -OutFile Python-$pyVersion.tgz
+        tar -xvf Python-$pyVersion.tgz
+        $current_working_dir = (Get-Location).Path
+        Set-Location -LiteralPath "Python-$pyVersion" -ErrorAction Stop
+        $env:LDFLAGS="-Wl,-rpath=/usr/local/lib"
+        sudo ./configure --enable-optimizations --with-ensurepip=install --enable-shared --disable-new-dtags
+        sudo make -j $(nproc)
+        sudo make altinstall
+        Set-Location -LiteralPath $current_working_dir
+      shell: pwsh
     
     - name: Reset APT sources to default
       if: ${{ runner.os == 'Linux' }}
@@ -81,6 +105,8 @@ jobs:
         if ("${{ runner.os }}" -ne "Windows")
         {
           $pythonExeName = "python${{ matrix.python-version }}"
+          # LD_LIBRARY_PATH must be updated. However this won't be permanent, just long enough to create the venv.
+          $env:LD_LIBRARY_PATH = "/usr/local/lib:$env:LD_LIBRARY_PATH"
         }
         & $pythonExeName -m venv .venv_${{ matrix.os }}_${{ matrix.python-version }}_${{ matrix.architecture }}
         & $pythonExeName -m venv .venv_holopatcher_${{ matrix.os }}_${{ matrix.python-version }}_${{ matrix.architecture }}
