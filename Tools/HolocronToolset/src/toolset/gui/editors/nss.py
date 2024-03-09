@@ -16,7 +16,7 @@ from PyQt5.QtGui import (
     QTextCharFormat,
     QTextFormat,
 )
-from PyQt5.QtWidgets import QListWidgetItem, QMessageBox, QPlainTextEdit, QShortcut, QTextEdit, QWidget
+from PyQt5.QtWidgets import QFileDialog, QListWidgetItem, QMessageBox, QPlainTextEdit, QShortcut, QTextEdit, QWidget
 
 from pykotor.common.scriptdefs import KOTOR_CONSTANTS, KOTOR_FUNCTIONS, TSL_CONSTANTS, TSL_FUNCTIONS
 from pykotor.resource.type import ResourceType
@@ -193,26 +193,80 @@ class NSSEditor(Editor):
 
         Processing Logic:
         ----------------
-            - Decodes NSS data and sets it as the editor text
-            - Attempts to decompile NCS data and sets decompiled source as editor text
-            - Catches errors during decompilation and displays message.
+            - Decodes NSS data and sets it as the editor text.
+            - Attempts to find NSS data to substitute for NCS data and set it as the editor text, as follows:
+              - If the loadNSSBeforeDecompile setting is enabled, prompts the user for an NSS file to read.
+                (For example from the Vanilla_KOTOR_Script_Source archive, or from fully-commented source file saved outside a mod.)
+              - If the setting is disabled, the user declines, or the file read fails, attempts to decompile the NCS data.
+            - Catches errors during decompilation or file reading and displays a message.
         """
         super().load(filepath, resref, restype, data)
         self._is_decompiled = False
 
         if restype == ResourceType.NSS:
             self.ui.codeEdit.setPlainText(data.decode("windows-1252", errors="ignore"))
-        elif restype == ResourceType.NCS:
-            try:
-                source = decompileScript(data, self._installation.path(), tsl=self._installation.tsl)
-                self.ui.codeEdit.setPlainText(source)
-                self._is_decompiled = True
-            except ValueError as e:
-                QMessageBox(QMessageBox.Critical, "Decompilation Failed", str(universal_simplify_exception(e))).exec_()
-                self.new()
-            except NoConfigurationSetError as e:
-                QMessageBox(QMessageBox.Critical, "Filepath is not set", str(universal_simplify_exception(e))).exec_()
-                self.new()
+        elif restype == ResourceType.NCS and not self._loadNSSForNCS(Path(filepath), resref) and not self._decompileNCS(data):
+            # Just load an empty editor.
+            self.new()
+
+    def _loadNSSForNCS(self, filepath: Path, resref: str) -> bool:
+        """Opens a file dialog to choose an NSS file to substitute for an NSC, unless loadNSSBeforeDecompile is disabled.
+
+        Args:
+        ----
+            filepath: The path to the NCS resource file
+            resref: The NSC resource reference
+
+        Returns:
+        -------
+            True iff NSS source was loaded in the editor.
+        """
+        if not self._global_settings.loadNSSBeforeDecompile:
+            return False
+        # Format filepath "/full/path/to/file.mod", resref "a_script" as "file.mod/a_script.ncs".
+        ncs_suffix = f".{ResourceType.NCS.extension}"
+        filename = Path(filepath.name)
+        if filename.suffix == ncs_suffix:
+            ncs_name = filename
+        else:
+            ncs_name = filename.joinpath(resref).with_suffix(ncs_suffix)
+        nss_path, _ = QFileDialog.getOpenFileName(
+            parent=self.parentWidget(),
+            caption=f"Choose Source for {ncs_name}",
+            filter=f"{ResourceType.NSS.category} File (*.{ResourceType.NSS.extension});;All Files (*)",
+        )
+        if not nss_path:
+            # User cancelled.
+            return False
+        try:
+            with open(nss_path, encoding="windows-1252") as script_file:
+                self.ui.codeEdit.setPlainText(script_file.read())
+                return True
+        except OSError as e:
+            QMessageBox(QMessageBox.Critical, "Error Opening File", str(universal_simplify_exception(e))).exec_()
+        return False
+
+    def _decompileNCS(self, data: bytes) -> bool:
+        """Attempts to decompile the given NCS data into NSS source.
+
+        Args:
+        ----
+            data: The raw resource data
+
+        Returns:
+        -------
+            True iff NSS source was loaded in the editor.
+        """
+        try:
+            source = decompileScript(data, self._installation.path(), tsl=self._installation.tsl)
+            self.ui.codeEdit.setPlainText(source)
+            self._is_decompiled = True
+            return True
+        except ValueError as e:
+            QMessageBox(QMessageBox.Critical, "Decompilation Failed", str(universal_simplify_exception(e))).exec_()
+        except NoConfigurationSetError as e:
+            QMessageBox(QMessageBox.Critical, "Filepath is not set", str(universal_simplify_exception(e))).exec_()
+        return False
 
     def build(self) -> tuple[bytes | None, bytes]:
         if self._restype != ResourceType.NCS:
@@ -698,4 +752,3 @@ class SyntaxHighlighter(QSyntaxHighlighter):
         textFormat.setFontWeight(QFont.Bold if bold else QFont.Normal)
         textFormat.setFontItalic(italic)
         return textFormat
-
