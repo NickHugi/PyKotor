@@ -250,7 +250,7 @@ class GlobalSettings(Settings):
     )
     selectedTheme = Settings._addSetting(
         "selectedTheme",
-        "",
+        "Fusion (Dark)",  # Default theme
     )
     # endregion
 

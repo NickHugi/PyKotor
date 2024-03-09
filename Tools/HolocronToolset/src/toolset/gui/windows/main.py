@@ -240,6 +240,8 @@ class ToolWindow(QMainWindow):
         self.active: HTInstallation | None = None
         self.settings: GlobalSettings = GlobalSettings()
         self.installations: dict[str, HTInstallation] = {}
+        self.original_style = self.style().objectName()
+        self.original_palette = self.palette()
 
         from toolset.uic.windows.main import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
 
@@ -416,9 +418,10 @@ class ToolWindow(QMainWindow):
             self.show()  # Re-apply the window with new flags
         elif not themeName or themeName == "Default (Light)":
             app.setStyleSheet("")  # Reset to default style
+            app.setPalette(self.original_palette)  # Reset to default palette
+            app.setStyle(self.original_style)
             # Reset window flags to default, which includes the title bar
             self.setWindowFlags(Qt.Window | Qt.WindowCloseButtonHint | Qt.WindowMinimizeButtonHint | Qt.WindowMaximizeButtonHint)
-            self.show()  # Re-apply the window with new flags
         elif themeName == "Fusion (Dark)":
             app.setStyleSheet("")  # Reset to default style
             app.setStyle("Fusion")
@@ -445,6 +448,7 @@ class ToolWindow(QMainWindow):
             dark_palette.setColor(QPalette.Disabled, QPalette.Light, QColor(53, 53, 53))
             QApplication.setPalette(dark_palette)
         print("themeName:", themeName)
+        self.show()  # Re-apply the window with new flags
 
     # region Signal callbacks
     def onModuleFileUpdated(self, changedFile: str, eventType: str):
