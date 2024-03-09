@@ -76,17 +76,31 @@ class Editor(QMainWindow):
             - Sets up other editor properties.
         """
         super().__init__(parent)
-        self._is_capsule_editor = False
+        self._is_capsule_editor: bool = False
         self._installation: HTInstallation | None = installation
 
         self._filepath: Path | None = None
         self._resname: str | None = None
         self._restype: ResourceType | None = None
         self._revert: bytes | None = None
+
+        writeSupported = readSupported.copy() if readSupported is writeSupported else writeSupported
+        additional_formats = {"XML", "JSON", "CSV", "ASCII", "YAML"}
+        for add_format in additional_formats:
+            readSupported.extend(
+                ResourceType.__members__[f"{restype.name}_{add_format}"]
+                for restype in readSupported
+                if f"{restype.name}_{add_format}" in ResourceType.__members__
+            )
+            writeSupported.extend(
+                ResourceType.__members__[f"{restype.name}_{add_format}"]
+                for restype in writeSupported
+                if f"{restype.name}_{add_format}" in ResourceType.__members__
+            )
         self._readSupported: list[ResourceType] = readSupported
-        self._writeSupported: list[ResourceType] = readSupported.copy() if readSupported is writeSupported else writeSupported
+        self._writeSupported: list[ResourceType] = writeSupported
         self._global_settings: GlobalSettings = GlobalSettings()
-        self._mainwindow: QMainWindow | None = mainwindow
+        self._mainwindow: QMainWindow | None = mainwindow  # FIXME: unused?
 
         self._editorTitle: str = title
         self.setWindowTitle(title)
@@ -411,7 +425,7 @@ class Editor(QMainWindow):
             module.rim_to_mod(c_filepath)
             erf = read_erf(c_filepath)
         else:  # originally in a bif, user chose to save into erf/mod.
-            print(f"Saving '{self._resname}.{self._restype}' to a blank new {erftype.name} file at {c_filepath}")
+            print(f"Saving '{self._resname}.{self._restype}' to a blank new {erftype.name} file at '{c_filepath}'")
             erf = ERF(erftype)  # create a new ERF I guess.
         erf.erf_type = erftype
 
@@ -473,8 +487,8 @@ class Editor(QMainWindow):
         restype: ResourceType | None = dialog.restype()
         data: bytes | None = dialog.data()
         assert resname is not None, assert_with_variable_trace(resname is not None)
-        assert restype is not None, assert_with_variable_trace(resname is not None)
-        assert data is not None, assert_with_variable_trace(resname is not None)
+        assert restype is not None, assert_with_variable_trace(restype is not None)
+        assert data is not None, assert_with_variable_trace(data is not None)
 
         self.load(c_filepath, resname, restype, data)
 
@@ -525,11 +539,13 @@ class Editor(QMainWindow):
         self.newFile.emit()
 
     def revert(self):
-        if self._revert is not None:
-            assert self._filepath is not None, assert_with_variable_trace(self._filepath is not None)
-            assert self._resname is not None, assert_with_variable_trace(self._resname is not None)
-            assert self._restype is not None, assert_with_variable_trace(self._restype is not None)
-            self.load(self._filepath, self._resname, self._restype, self._revert)
+        if self._revert is None:
+            print("No data to revert from")
+            return
+        assert self._filepath is not None, assert_with_variable_trace(self._filepath is not None)
+        assert self._resname is not None, assert_with_variable_trace(self._resname is not None)
+        assert self._restype is not None, assert_with_variable_trace(self._restype is not None)
+        self.load(self._filepath, self._resname, self._restype, self._revert)
 
     def _loadLocstring(self, textbox: QLineEdit | QPlainTextEdit, locstring: LocalizedString):
         """Loads a LocalizedString into a textbox.
@@ -550,7 +566,7 @@ class Editor(QMainWindow):
         setText: Callable[[str], None] = textbox.setPlainText if isinstance(textbox, QPlainTextEdit) else textbox.setText
         className = "QLineEdit" if isinstance(textbox, QLineEdit) else "QPlainTextEdit"
 
-        textbox.locstring = locstring
+        textbox.locstring = locstring  # type: ignore[reportAttributeAccessIssue]
         if locstring.stringref == -1:
             text = str(locstring)
             setText(text if text != "-1" else "")
