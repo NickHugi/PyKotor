@@ -169,7 +169,6 @@ class Editor(QMainWindow):
             - If encapsulated, constructs the title combining file path, installation, editor title
             - If not encapsulated, constructs title combining parent folder, file, installation, editor title.
         """
-        assert self._restype is not None, "self._restype cannot be None in refreshWindowTitle"
         installationName = "No Installation" if self._installation is None else self._installation.name
 
         if self._filepath is None:
