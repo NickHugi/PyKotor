@@ -48,7 +48,7 @@ jobs:
     steps:
     - uses: actions/checkout@v4
     - name: Set up Python ${{ matrix.python-version }}
-      if: ${{ runner.os != 'macOS' }}
+      if: ${{ runner.os != 'macOS' && runner.os != 'Linux' }}
       uses: actions/setup-python@v5
       with:
         python-version: ${{ matrix.python-version }}
@@ -69,7 +69,7 @@ jobs:
       run: |
         sudo apt-get update
         sudo apt-get install build-essential zlib1g-dev libncurses5-dev libgdbm-dev libssl-dev libreadline-dev libffi-dev libsqlite3-dev libbz2-dev tk-dev -y
-        $pyVersion = switch (${{ matrix.python-version }}) {
+        $pyVersion = switch ("${{ matrix.python-version }}") {
           "3.7" { "3.7.17" }
           "3.8" { "3.8.18" }
           "3.9" { "3.9.18" }
@@ -77,7 +77,7 @@ jobs:
           "3.11" { "3.11.8" }
           "3.12" { "3.12.2" }
         }
-        Write-Output "Downloading python $pyVersion..."
+        Write-Output "Downloading python '$pyVersion'..."
         Invoke-WebRequest -Uri https://www.python.org/ftp/python/$pyVersion/Python-$pyVersion.tgz -OutFile Python-$pyVersion.tgz
         tar -xvf Python-$pyVersion.tgz
         $current_working_dir = (Get-Location).Path
@@ -267,21 +267,23 @@ jobs:
         ./install_python_venv.ps1 -noprompt -venv_name .venv_toolset_${{ matrix.os }}_${{ matrix.python-version }}_${{ matrix.architecture }}
         # Ensure patchelf is installed
         sudo apt-get update && sudo apt-get install -y patchelf
-    
+
         # Find the virtual environment's site-packages directory
         $venvPath = $env:VIRTUAL_ENV
         Write-Host "Virtual environment path: $venvPath"
-        $sitePackagesPath = Join-Path -Path $venvPath -ChildPath "lib/python$($env:PYTHON_VERSION)/site-packages"
+        
+        # Dynamically find the Python version directory inside the venv
+        $pythonLibPath = Get-ChildItem -Path "$venvPath/lib" | Where-Object { $_.PSIsContainer } | Select-Object -First 1
+        $sitePackagesPath = Join-Path -Path $pythonLibPath.FullName -ChildPath "site-packages"
+        
         Write-Host "Site-packages path: $sitePackagesPath"
-    
+
         # Use patchelf to adjust RPATH for all shared libraries in the virtual environment
         Get-ChildItem -Path $sitePackagesPath -Filter *.so -Recurse | ForEach-Object {
           $libPath = $_.FullName
           Write-Host "Patching $libPath"
           sudo patchelf --set-rpath '$ORIGIN' $libPath
         }
-    
-        # Continue with the rest of your build and packaging process
       shell: pwsh
 
     - name: Compile Holocron Toolset
@@ -377,21 +379,23 @@ jobs:
         ./install_python_venv.ps1 -noprompt -venv_name .venv_holopatcher_${{ matrix.os }}_${{ matrix.python-version }}_${{ matrix.architecture }}
         # Ensure patchelf is installed
         sudo apt-get update && sudo apt-get install -y patchelf
-    
+
         # Find the virtual environment's site-packages directory
         $venvPath = $env:VIRTUAL_ENV
         Write-Host "Virtual environment path: $venvPath"
-        $sitePackagesPath = Join-Path -Path $venvPath -ChildPath "lib/python$($env:PYTHON_VERSION)/site-packages"
+        
+        # Dynamically find the Python version directory inside the venv
+        $pythonLibPath = Get-ChildItem -Path "$venvPath/lib" | Where-Object { $_.PSIsContainer } | Select-Object -First 1
+        $sitePackagesPath = Join-Path -Path $pythonLibPath.FullName -ChildPath "site-packages"
+        
         Write-Host "Site-packages path: $sitePackagesPath"
-    
+
         # Use patchelf to adjust RPATH for all shared libraries in the virtual environment
         Get-ChildItem -Path $sitePackagesPath -Filter *.so -Recurse | ForEach-Object {
           $libPath = $_.FullName
           Write-Host "Patching $libPath"
           sudo patchelf --set-rpath '$ORIGIN' $libPath
         }
-    
-        # Continue with the rest of your build and packaging process
       shell: pwsh
     
     - name: Compile HoloPatcher
@@ -485,21 +489,23 @@ jobs:
         ./install_python_venv.ps1 -noprompt -venv_name .venv_batchpatcher_${{ matrix.os }}_${{ matrix.python-version }}_${{ matrix.architecture }}
         # Ensure patchelf is installed
         sudo apt-get update && sudo apt-get install -y patchelf
-    
+
         # Find the virtual environment's site-packages directory
         $venvPath = $env:VIRTUAL_ENV
         Write-Host "Virtual environment path: $venvPath"
-        $sitePackagesPath = Join-Path -Path $venvPath -ChildPath "lib/python$($env:PYTHON_VERSION)/site-packages"
+        
+        # Dynamically find the Python version directory inside the venv
+        $pythonLibPath = Get-ChildItem -Path "$venvPath/lib" | Where-Object { $_.PSIsContainer } | Select-Object -First 1
+        $sitePackagesPath = Join-Path -Path $pythonLibPath.FullName -ChildPath "site-packages"
+        
         Write-Host "Site-packages path: $sitePackagesPath"
-    
+
         # Use patchelf to adjust RPATH for all shared libraries in the virtual environment
         Get-ChildItem -Path $sitePackagesPath -Filter *.so -Recurse | ForEach-Object {
           $libPath = $_.FullName
           Write-Host "Patching $libPath"
           sudo patchelf --set-rpath '$ORIGIN' $libPath
         }
-    
-        # Continue with the rest of your build and packaging process
       shell: pwsh
 
     - name: Compile BatchPatcher
