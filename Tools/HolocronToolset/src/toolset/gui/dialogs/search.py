@@ -182,7 +182,10 @@ class FileResults(QDialog):
         self.installation: HTInstallation = installation
 
         for result in results:
-            item = QListWidgetItem(result.filename())
+            filename = result.filename()
+            filepath = result.filepath()
+            parent_name = filepath.name if filename != filepath.name else f"{filepath.parent.name}"
+            item = QListWidgetItem(f"{parent_name}/{filename}")
             item.setData(QtCore.Qt.UserRole, result)
             item.setToolTip(str(result.filepath()))
             self.ui.resultList.addItem(item)
@@ -195,10 +198,6 @@ class FileResults(QDialog):
         Args:
         ----
             self: The object instance.
-
-        Returns:
-        -------
-            None: Does not return anything.
 
         Processes the current selection:
             - Gets the current item from the result list
