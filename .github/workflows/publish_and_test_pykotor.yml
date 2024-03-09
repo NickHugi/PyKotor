@@ -262,7 +262,7 @@ jobs:
       shell: pwsh
 
     - name: HolocronToolset - Adjust RPATH for shared libraries in the virtual environment
-      if: ${{ (success() || failure()) && runner.os == 'Linux' && steps.toolset_deps.outputs.success == 'true' }}
+      if: ${{ (success() || failure()) && runner.os == 'Disabled_Linux' && steps.toolset_deps.outputs.success == 'true' }}
       run: |
         ./install_python_venv.ps1 -noprompt -venv_name .venv_toolset_${{ matrix.os }}_${{ matrix.python-version }}_${{ matrix.architecture }}
         # Ensure patchelf is installed
@@ -324,7 +324,7 @@ jobs:
         UPX_DIR: ${{ env.UPX_DIR }}
 
     - name: HolocronToolset - Create Static Binary
-      if: ${{ (success() || failure()) && runner.os == 'Linux' && steps.toolset_deps.outputs.success == 'true' }}
+      if: ${{ (success() || failure()) && runner.os == 'Disabled_Linux' && steps.toolset_deps.outputs.success == 'true' }}
       run: |
         ./install_python_venv.ps1 -noprompt -venv_name .venv_toolset_${{ matrix.os }}_${{ matrix.python-version }}_${{ matrix.architecture }}
         python -m pip install staticx
@@ -374,7 +374,7 @@ jobs:
       shell: pwsh
 
     - name: HoloPatcher - Adjust RPATH for shared libraries in the virtual environment
-      if: ${{ (success() || failure()) && runner.os == 'Linux' && steps.holopatcher_deps.outputs.success == 'true' }}
+      if: ${{ (success() || failure()) && runner.os == 'Disabled_Linux' && steps.holopatcher_deps.outputs.success == 'true' }}
       run: |
         ./install_python_venv.ps1 -noprompt -venv_name .venv_holopatcher_${{ matrix.os }}_${{ matrix.python-version }}_${{ matrix.architecture }}
         # Ensure patchelf is installed
@@ -434,7 +434,7 @@ jobs:
       shell: pwsh
 
     - name: HoloPatcher - Create Static Binary
-      if: ${{ (success() || failure()) && runner.os == 'Linux' && steps.holopatcher_deps.outputs.success == 'true' }}
+      if: ${{ (success() || failure()) && runner.os == 'Disabled_Linux' && steps.holopatcher_deps.outputs.success == 'true' }}
       run: |
         ./install_python_venv.ps1 -noprompt -venv_name .venv_holopatcher_${{ matrix.os }}_${{ matrix.python-version }}_${{ matrix.architecture }}
         python -m pip install staticx
@@ -484,7 +484,7 @@ jobs:
       shell: pwsh
 
     - name: BatchPatcher - Adjust RPATH for shared libraries in the virtual environment
-      if: ${{ (success() || failure()) && runner.os == 'Linux' && steps.batchpatcher_deps.outputs.success == 'true' }}
+      if: ${{ (success() || failure()) && runner.os == 'Disabled_Linux' && steps.batchpatcher_deps.outputs.success == 'true' }}
       run: |
         ./install_python_venv.ps1 -noprompt -venv_name .venv_batchpatcher_${{ matrix.os }}_${{ matrix.python-version }}_${{ matrix.architecture }}
         # Ensure patchelf is installed
@@ -544,7 +544,7 @@ jobs:
       shell: pwsh
 
     - name: BatchPatcher - Create Static Binary
-      if: ${{ (success() || failure()) && runner.os == 'Linux' && steps.batchpatcher_deps.outputs.success == 'true' }}
+      if: ${{ (success() || failure()) && runner.os == 'Disabled_Linux' && steps.batchpatcher_deps.outputs.success == 'true' }}
       run: |
         ./install_python_venv.ps1 -noprompt -venv_name .venv_batchpatcher_${{ matrix.os }}_${{ matrix.python-version }}_${{ matrix.architecture }}
         python -m pip install staticx
