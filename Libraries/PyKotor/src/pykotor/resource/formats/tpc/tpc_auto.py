@@ -101,7 +101,7 @@ def read_tpc(
         return TPCBinaryReader(source, offset, size or 0).load()
     if file_format == ResourceType.TGA:
         return TPCTGAReader(source, offset, size or 0).load()
-    msg = "Failed to determine the format of the GFF file."
+    msg = "Failed to determine the format of the TPC/TGA file."
     raise ValueError(msg)
 
 

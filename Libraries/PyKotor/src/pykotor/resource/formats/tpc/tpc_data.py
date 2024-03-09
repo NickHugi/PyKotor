@@ -15,7 +15,7 @@ class TPCGetResult(NamedTuple):
     width: int
     height: int
     texture_format: TPCTextureFormat
-    data: bytes | None
+    data: bytes
 
 
 class TPCConvertResult(NamedTuple):
@@ -42,6 +42,8 @@ class TPC:
         self._width: int = 4
         self._height: int = 4
         self.txi: str = ""
+        from pykotor.resource.formats.tpc.io_tga import _DataTypes
+        self.original_datatype_code: _DataTypes = _DataTypes.NO_IMAGE_DATA
 
         # TODO: cube maps
 
@@ -112,14 +114,21 @@ class TPC:
         -------
             A tuple equal to (width, height, data)
         """
-        if convert_format in {TPCTextureFormat.DXT1, TPCTextureFormat.DXT5}:
-            msg = f"Conversion from {self._texture_format} to {convert_format} not implemented."
-            raise NotImplementedError(msg)
-
         width, height = self._mipmap_size(mipmap)
         raw_data: bytes = self._mipmaps[mipmap]
-        if self._texture_format == convert_format:  # Is conversion needed?
+        if self._texture_format == convert_format and not y_flip:  # Is conversion needed?
             return TPCConvertResult(width, height, bytearray(raw_data))
+
+        if y_flip:
+            bytes_per_pixel = 0
+            if self._texture_format == TPCTextureFormat.Greyscale:
+                bytes_per_pixel = 1
+            elif self._texture_format in {TPCTextureFormat.RGB, TPCTextureFormat.RGBA}:
+                bytes_per_pixel = 4 if self._texture_format == TPCTextureFormat.RGBA else 3
+            # If the image needs to be flipped and it's an uncompressed format
+            if bytes_per_pixel > 0:
+                raw_data = bytearray(self.flip_image_data(raw_data, width, height, bytes_per_pixel))
+                y_flip = False
 
         data: bytearray = bytearray(raw_data)
         if convert_format == TPCTextureFormat.Greyscale:

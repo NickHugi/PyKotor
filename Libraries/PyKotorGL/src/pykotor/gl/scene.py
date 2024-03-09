@@ -99,9 +99,7 @@ if TYPE_CHECKING:
     from pykotor.extract.installation import Installation
     from pykotor.gl.models.mdl import Model
     from pykotor.resource.formats.lyt import LYT
-    from pykotor.resource.generics.git import (
-        GIT,
-    )
+    from pykotor.resource.generics.git import GIT
     from pykotor.resource.generics.utc import UTC
     from pykotor.resource.generics.utd import UTD
     from pykotor.resource.generics.utp import UTP
@@ -540,24 +538,30 @@ class Scene:
             self.plain_shader.set_vector4("color", vec4(1.0, 0.0, 0.0, 0.4))
             self._render_object(self.plain_shader, self.cursor, mat4())
 
-    def _render_object(self, shader: Shader, obj: RenderObject, transform: mat4):
+    def should_hide_obj(self, obj: RenderObject) -> bool:
+        result = False
         if isinstance(obj.data, GITCreature) and self.hide_creatures:
-            return
-        if isinstance(obj.data, GITPlaceable) and self.hide_placeables:
-            return
-        if isinstance(obj.data, GITDoor) and self.hide_doors:
-            return
-        if isinstance(obj.data, GITTrigger) and self.hide_triggers:
-            return
-        if isinstance(obj.data, GITEncounter) and self.hide_encounters:
-            return
-        if isinstance(obj.data, GITWaypoint) and self.hide_waypoints:
-            return
-        if isinstance(obj.data, GITSound) and self.hide_sounds:
-            return
-        if isinstance(obj.data, GITStore) and self.hide_sounds:
-            return
-        if isinstance(obj.data, GITCamera) and self.hide_cameras:
+            result = True
+        elif isinstance(obj.data, GITPlaceable) and self.hide_placeables:
+            result = True
+        elif isinstance(obj.data, GITDoor) and self.hide_doors:
+            result = True
+        elif isinstance(obj.data, GITTrigger) and self.hide_triggers:
+            result = True
+        elif isinstance(obj.data, GITEncounter) and self.hide_encounters:
+            result = True
+        elif isinstance(obj.data, GITWaypoint) and self.hide_waypoints:
+            result = True
+        elif isinstance(obj.data, GITSound) and self.hide_sounds:
+            result = True
+        elif isinstance(obj.data, GITStore) and self.hide_sounds:
+            result = True
+        elif isinstance(obj.data, GITCamera) and self.hide_cameras:
+            result = True
+        return result
+
+    def _render_object(self, shader: Shader, obj: RenderObject, transform: mat4):
+        if self.should_hide_obj(obj):
             return
 
         model: Model = self.model(obj.model)
@@ -591,23 +595,7 @@ class Scene:
             self._picker_render_object(obj, mat4())
 
     def _picker_render_object(self, obj: RenderObject, transform: mat4):
-        if isinstance(obj.data, GITCreature) and self.hide_creatures:
-            return
-        if isinstance(obj.data, GITPlaceable) and self.hide_placeables:
-            return
-        if isinstance(obj.data, GITDoor) and self.hide_doors:
-            return
-        if isinstance(obj.data, GITTrigger) and self.hide_triggers:
-            return
-        if isinstance(obj.data, GITEncounter) and self.hide_encounters:
-            return
-        if isinstance(obj.data, GITWaypoint) and self.hide_waypoints:
-            return
-        if isinstance(obj.data, GITSound) and self.hide_sounds:
-            return
-        if isinstance(obj.data, GITStore) and self.hide_sounds:
-            return
-        if isinstance(obj.data, GITCamera) and self.hide_cameras:
+        if self.should_hide_obj(obj):
             return
 
         model: Model = self.model(obj.model)
@@ -672,7 +660,6 @@ class Scene:
             if self.module is not None:
                 print(f"Loading texture '{name}' from {self.module._root}")
                 module_tex = self.module.texture(name)
-                print(f"Finished checking module for texture '{name}'")
                 tpc = module_tex.resource() if module_tex is not None else None
 
             # Otherwise just search through all relevant game files
@@ -682,7 +669,7 @@ class Scene:
                 print(f"Finished checking installation for texture '{name}'")
             if tpc is None:
                 print(f"NOT FOUND ANYWHERE: Texture '{name}'")
-        except (OSError, ValueError) as e:
+        except Exception as e:  # noqa: BLE001
             print(format_exception_with_variables(e))
             # If an error occurs during the loading process, just use a blank image.
             tpc = TPC()

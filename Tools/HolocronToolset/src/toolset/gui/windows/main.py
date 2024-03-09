@@ -41,6 +41,7 @@ from toolset.gui.editors.erf import ERFEditor
 from toolset.gui.editors.gff import GFFEditor
 from toolset.gui.editors.nss import NSSEditor
 from toolset.gui.editors.ssf import SSFEditor
+from toolset.gui.editors.tlk import TLKEditor
 from toolset.gui.editors.txt import TXTEditor
 from toolset.gui.editors.utc import UTCEditor
 from toolset.gui.editors.utd import UTDEditor
@@ -195,6 +196,7 @@ class ToolWindow(QMainWindow):
         self.ui.openAction.triggered.connect(self.openFromFile)
         self.ui.actionSettings.triggered.connect(self.openSettingsDialog)
         self.ui.actionExit.triggered.connect(self.close)
+        self.ui.actionNewTLK.triggered.connect(lambda: TLKEditor(self, self.active).show())
         self.ui.actionNewDLG.triggered.connect(lambda: DLGEditor(self, self.active).show())
         self.ui.actionNewNSS.triggered.connect(lambda: NSSEditor(self, self.active).show())
         self.ui.actionNewUTC.triggered.connect(lambda: UTCEditor(self, self.active).show())
@@ -476,6 +478,10 @@ class ToolWindow(QMainWindow):
         dialogIconPath = f":/images/icons/k{version}/dialog.png"
         self.ui.actionNewDLG.setIcon(QIcon(QPixmap(dialogIconPath)))
         self.ui.actionNewDLG.setEnabled(self.active is not None)
+
+        tlkIconPath = f":/images/icons/k{version}/tlk.png"
+        self.ui.actionNewTLK.setIcon(QIcon(QPixmap(tlkIconPath)))
+        self.ui.actionNewTLK.setEnabled(True)
 
         scriptIconPath = f":/images/icons/k{version}/script.png"
         self.ui.actionNewNSS.setIcon(QIcon(QPixmap(scriptIconPath)))
