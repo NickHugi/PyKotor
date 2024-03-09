@@ -304,7 +304,8 @@ jobs:
             if ($_ -match 'WARNING: Library not found: could not resolve' -or
                 $_ -match 'WARNING: Cannot find ' -or
                 $_ -match 'WARNING: lib not found:' -or
-                $_ -match 'WARNING: Tcl modules directory') {
+                $_ -match 'WARNING: Tcl modules directory' -or
+                $_ -match 'WARNING: Failed to upx strip') {
                 $warningCount++
             }
         }
@@ -330,6 +331,7 @@ jobs:
         python -m pip install staticx
         staticx ./dist/HolocronToolset ./dist/HolocronToolset-static
         # Rename the static binary for clarity and consistency
+        Write-Output "./dist/HolocronToolset-static  --> ./dist/HolocronToolset"
         Move-Item -LiteralPath ./dist/HolocronToolset-static -Destination ./dist/HolocronToolset -Force
       shell: pwsh
 
@@ -416,7 +418,8 @@ jobs:
             if ($_ -match 'WARNING: Library not found: could not resolve' -or
                 $_ -match 'WARNING: Cannot find ' -or
                 $_ -match 'WARNING: lib not found:' -or
-                $_ -match 'WARNING: Tcl modules directory') {
+                $_ -match 'WARNING: Tcl modules directory' -or
+                $_ -match 'WARNING: Failed to upx strip') {
                 $warningCount++
             }
         }
@@ -440,6 +443,7 @@ jobs:
         python -m pip install staticx
         staticx ./dist/HoloPatcher ./dist/HoloPatcher-static
         # Rename the static binary for clarity and consistency
+        Write-Output "./dist/HoloPatcher-static  --> ./dist/HoloPatcher"
         Move-Item -LiteralPath ./dist/HoloPatcher-static -Destination ./dist/HoloPatcher -Force
       shell: pwsh
 
@@ -526,7 +530,8 @@ jobs:
             if ($_ -match 'WARNING: Library not found: could not resolve' -or
                 $_ -match 'WARNING: Cannot find ' -or
                 $_ -match 'WARNING: lib not found:' -or
-                $_ -match 'WARNING: Tcl modules directory') {
+                $_ -match 'WARNING: Tcl modules directory' -or
+                $_ -match 'WARNING: Failed to upx strip') {
                 $warningCount++
             }
         }
@@ -550,6 +555,7 @@ jobs:
         python -m pip install staticx
         staticx ./dist/K_BatchPatcher ./dist/K_BatchPatcher-static
         # Rename the static binary for clarity and consistency
+        Write-Output "./dist/K_BatchPatcher-static  --> ./dist/K_BatchPatcher"
         Move-Item -LiteralPath ./dist/K_BatchPatcher-static -Destination ./dist/K_BatchPatcher -Force
       shell: pwsh
 
@@ -585,7 +591,8 @@ jobs:
             if ($_ -match 'WARNING: Library not found: could not resolve' -or
                 $_ -match 'WARNING: Cannot find ' -or
                 $_ -match 'WARNING: lib not found:' -or
-                $_ -match 'WARNING: Tcl modules directory') {
+                $_ -match 'WARNING: Tcl modules directory' -or
+                $_ -match 'WARNING: Failed to upx strip') {
                 $warningCount++
             }
         }
@@ -609,6 +616,7 @@ jobs:
         python -m pip install staticx
         staticx ./dist/KotorDiff ./dist/KotorDiff-static
         # Rename the static binary for clarity and consistency
+        Write-Output "./dist/KotorDiff-static  --> ./dist/KotorDiff"
         Move-Item -LiteralPath ./dist/KotorDiff-static -Destination ./dist/KotorDiff -Force
       shell: pwsh
 
@@ -643,7 +651,8 @@ jobs:
             if ($_ -match 'WARNING: Library not found: could not resolve' -or
                 $_ -match 'WARNING: Cannot find ' -or
                 $_ -match 'WARNING: lib not found:' -or
-                $_ -match 'WARNING: Tcl modules directory') {
+                $_ -match 'WARNING: Tcl modules directory' -or
+                $_ -match 'WARNING: Failed to upx strip') {
                 $warningCount++
             }
         }
@@ -667,6 +676,7 @@ jobs:
         python -m pip install staticx
         staticx ./dist/GuiDuplicator ./dist/GuiDuplicator-static
         # Rename the static binary for clarity and consistency
+        Write-Output "./dist/GuiDuplicator-static  --> ./dist/GuiDuplicator"
         Move-Item -LiteralPath ./dist/GuiDuplicator-static -Destination ./dist/GuiDuplicator -Force
       shell: pwsh
 
@@ -752,7 +762,7 @@ jobs:
             $os, $pythonVersion, $architecture = $_.BaseName -replace '^publish_', '' -split '_'
 
             $shortOsName = $os
-            if ($os -eq "ubuntu_20.04" -or $os -eq "ubuntu_22.04" -or $os -eq "ubuntu-latest") {
+            if ($os -eq "ubuntu-20.04" -or $os -eq "ubuntu-22.04" -or $os -eq "ubuntu-latest") {
               $shortOsName = "Linux"
             } elseif ($os -eq "macos-11" -or $os -eq "macos-12" -or $os -eq "macos-latest") {
               $shortOsName = "Mac"
