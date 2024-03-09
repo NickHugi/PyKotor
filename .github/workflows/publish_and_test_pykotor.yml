@@ -278,8 +278,8 @@ jobs:
         python -m pip install staticx
         staticx ./dist/HolocronToolset ./dist/HolocronToolset-static
         # Rename the static binary for clarity and consistency
-        mv -fv ./dist/HolocronToolset-static ./dist/HolocronToolset
-      shell: bash
+        Move-Item -LiteralPath ./dist/HolocronToolset-static -Destination ./dist/HolocronToolset -Force
+      shell: pwsh
 
     - name: Install HoloPatcher dependencies
       if: ${{ success() || failure() }}
@@ -361,10 +361,10 @@ jobs:
       run: |
         ./install_python_venv.ps1 -noprompt -venv_name .venv_holopatcher_${{ matrix.os }}_${{ matrix.python-version }}_${{ matrix.architecture }}
         python -m pip install staticx
-        staticx ./dist/HolocronToolset ./dist/HolocronToolset-static
+        staticx ./dist/HoloPatcher ./dist/HoloPatcher-static
         # Rename the static binary for clarity and consistency
-        mv -fv ./dist/HolocronToolset-static ./dist/HolocronToolset
-      shell: bash
+        Move-Item -LiteralPath ./dist/HoloPatcher-static -Destination ./dist/HoloPatcher -Force
+      shell: pwsh
 
     - name: Install BatchPatcher dependencies
       if: ${{ success() || failure() }}
@@ -448,8 +448,8 @@ jobs:
         python -m pip install staticx
         staticx ./dist/K_BatchPatcher ./dist/K_BatchPatcher-static
         # Rename the static binary for clarity and consistency
-        mv -fv ./dist/K_BatchPatcher-static ./dist/K_BatchPatcher
-      shell: bash
+        Move-Item -LiteralPath ./dist/K_BatchPatcher-static -Destination ./dist/K_BatchPatcher -Force
+      shell: pwsh
 
     - name: Compile KotorDiff
       if: ${{ success() || failure() }}
@@ -507,8 +507,8 @@ jobs:
         python -m pip install staticx
         staticx ./dist/KotorDiff ./dist/KotorDiff-static
         # Rename the static binary for clarity and consistency
-        mv -fv ./dist/KotorDiff-static ./dist/KotorDiff
-      shell: bash
+        Move-Item -LiteralPath ./dist/KotorDiff-static -Destination ./dist/KotorDiff -Force
+      shell: pwsh
 
     - name: Compile GUIDuplicator
       if: ${{ success() || failure() }}
@@ -565,8 +565,8 @@ jobs:
         python -m pip install staticx
         staticx ./dist/GuiDuplicator ./dist/GuiDuplicator-static
         # Rename the static binary for clarity and consistency
-        mv -fv ./dist/GuiDuplicator-static ./dist/GuiDuplicator
-      shell: bash
+        Move-Item -LiteralPath ./dist/GuiDuplicator-static -Destination ./dist/GuiDuplicator -Force
+      shell: pwsh
 
     - name: Upload compiled binaries
       if: ${{ success() || failure() }}
