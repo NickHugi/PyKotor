@@ -39,7 +39,7 @@ def openResourceEditor(
     restype: ResourceType,
     data: bytes,
     installation: HTInstallation | None = None,
-    parentWindow: QWidget | QObject | None = None,
+    parentWindow: QWidget | QMainWindow | None = None,
     *,
     gff_specialized: bool | None = None,
 ) -> tuple[os.PathLike | str, Editor | QMainWindow] | tuple[None, None]:
@@ -139,7 +139,7 @@ def openResourceEditor(
         if installation is None or not gff_specialized:
             editor = GFFEditor(parentWindowWidget, installation)
         else:
-            editor = UTPEditor(parentWindowWidget, installation, mainwindow=parentWindow)
+            editor = UTPEditor(parentWindowWidget, installation, mainWindow=parentWindow)
 
     if restype in {ResourceType.UTD, ResourceType.UTD_XML}:
         if installation is None or not gff_specialized:

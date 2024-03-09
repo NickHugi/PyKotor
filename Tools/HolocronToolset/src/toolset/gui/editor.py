@@ -55,7 +55,7 @@ class Editor(QMainWindow):
         readSupported: list[ResourceType],
         writeSupported: list[ResourceType],
         installation: HTInstallation | None = None,
-        mainwindow: QMainWindow | None = None,
+        mainWindow: QMainWindow | None = None,
     ):
         """Initializes the editor.
 
@@ -100,7 +100,7 @@ class Editor(QMainWindow):
         self._readSupported: list[ResourceType] = readSupported
         self._writeSupported: list[ResourceType] = writeSupported
         self._global_settings: GlobalSettings = GlobalSettings()
-        self._mainwindow: QMainWindow | None = mainwindow  # FIXME: unused?
+        self._mainWindow: QMainWindow | None = mainWindow  # FIXME: unused?
 
         self._editorTitle: str = title
         self.setWindowTitle(title)
@@ -174,8 +174,10 @@ class Editor(QMainWindow):
         if self._filepath is None:
             self.setWindowTitle(self._editorTitle)
         elif is_capsule_file(self._filepath.name):
+            assert self._restype is not None
             self.setWindowTitle(f"{self._filepath.name}/{self._resname}.{self._restype.extension} - {installationName} - {self._editorTitle}")
         else:
+            assert self._restype is not None
             hierarchy: tuple[str, ...] = self._filepath.parts
             folder = f"{hierarchy[-2]}/" if len(hierarchy) >= 2 else ""
             self.setWindowTitle(f"{folder}{self._resname}.{self._restype.extension} - {installationName} - {self._editorTitle}")
@@ -200,7 +202,11 @@ class Editor(QMainWindow):
             identifier = ResourceIdentifier.from_path(filepath_str).validate()
         except ValueError as e:
             print(format_exception_with_variables(e))
-            QMessageBox(QMessageBox.Critical, "Invalid filename/extension", f"Check the filename and try again. Could not save!{os.linesep * 2}{universal_simplify_exception(e)}").exec_()
+            QMessageBox(
+                QMessageBox.Critical,
+                "Invalid filename/extension",
+                f"Check the filename and try again. Could not save!{os.linesep * 2}{universal_simplify_exception(e)}",
+            ).exec_()
             return
 
         capsule_types = " ".join(f"*.{e.name.lower()}" for e in ERFType) + " *.rim"
@@ -379,9 +385,9 @@ class Editor(QMainWindow):
         for index, (res_ident, this_erf_or_rim) in enumerate(reversed(nested_capsules)):
             if index == 0:
                 if self._is_capsule_editor:
-                    print(f"Not saving {self._resname} and {self._restype} to {res_ident}, is ERF/RIM editor save.")
+                    print(f"Not saving '{self._resname}.{self._restype}' to '{res_ident}', is ERF/RIM editor save.")
                     continue
-                print(f"Saving {self._resname}.{self._restype} to {res_ident}")
+                print(f"Saving '{self._resname}.{self._restype}' to '{res_ident}'")
                 this_erf_or_rim.set_data(self._resname, self._restype, data)
                 continue
             child_index = len(nested_capsules) - index
@@ -572,6 +578,7 @@ class Editor(QMainWindow):
             setText(text if text != "-1" else "")
             textbox.setStyleSheet(className + " {background-color: white;}")
         else:
+            assert self._installation is not None
             setText(self._installation.talktable().string(locstring.stringref))
             textbox.setStyleSheet(className + " {background-color: #fffded;}")
 

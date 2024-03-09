@@ -47,7 +47,7 @@ Issues = "https://github.com/NickHugi/PyKotor/issues"
 ########################################################
 
 [tool.black]
-line-length = 130
+line-length = 175
 target-version = ['py38']
 include = '\.pyi?$'
 exclude = '''
@@ -83,12 +83,12 @@ pythonVersion = "3.8"
 [tool.isort]
 atomic = true
 profile = "black"
-line_length = 130
+line_length = 175
 skip_gitignore = true
 multi_line_output = 3
 
 [tool.ruff]
-line-length = 130
+line-length = 175
 
 # Enable preview features.
 preview = false
