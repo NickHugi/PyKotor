@@ -77,6 +77,7 @@ jobs:
           "3.11" { "3.11.8" }
           "3.12" { "3.12.2" }
         }
+        Write-Output "Downloading python $pyVersion..."
         Invoke-WebRequest -Uri https://www.python.org/ftp/python/$pyVersion/Python-$pyVersion.tgz -OutFile Python-$pyVersion.tgz
         tar -xvf Python-$pyVersion.tgz
         $current_working_dir = (Get-Location).Path
@@ -229,7 +230,7 @@ jobs:
           python -m pip install --upgrade pip
           if ("${{ runner.os }}" -eq "Windows") {
             if ("${{ matrix.python-version }}" -eq "3.12") {
-              pip install "pyinstaller==5.13.2" --prefer-binary
+              pip install pyinstaller --prefer-binary -U
             } elseif ("${{ matrix.python-version }}" -eq "3.11") {
               pip install "pyinstaller==5.13.2" --prefer-binary
             } else {
@@ -258,6 +259,29 @@ jobs:
           Add-Content -Path $env:GITHUB_OUTPUT -Value "success=false"
           exit 1
         }
+      shell: pwsh
+
+    - name: HolocronToolset - Adjust RPATH for shared libraries in the virtual environment
+      if: ${{ (success() || failure()) && runner.os == 'Linux' && steps.toolset_deps.outputs.success == 'true' }}
+      run: |
+        ./install_python_venv.ps1 -noprompt -venv_name .venv_toolset_${{ matrix.os }}_${{ matrix.python-version }}_${{ matrix.architecture }}
+        # Ensure patchelf is installed
+        sudo apt-get update && sudo apt-get install -y patchelf
+    
+        # Find the virtual environment's site-packages directory
+        $venvPath = $env:VIRTUAL_ENV
+        Write-Host "Virtual environment path: $venvPath"
+        $sitePackagesPath = Join-Path -Path $venvPath -ChildPath "lib/python$($env:PYTHON_VERSION)/site-packages"
+        Write-Host "Site-packages path: $sitePackagesPath"
+    
+        # Use patchelf to adjust RPATH for all shared libraries in the virtual environment
+        Get-ChildItem -Path $sitePackagesPath -Filter *.so -Recurse | ForEach-Object {
+          $libPath = $_.FullName
+          Write-Host "Patching $libPath"
+          sudo patchelf --set-rpath '$ORIGIN' $libPath
+        }
+    
+        # Continue with the rest of your build and packaging process
       shell: pwsh
 
     - name: Compile Holocron Toolset
@@ -346,6 +370,29 @@ jobs:
           exit 1
         }
       shell: pwsh
+
+    - name: HoloPatcher - Adjust RPATH for shared libraries in the virtual environment
+      if: ${{ (success() || failure()) && runner.os == 'Linux' && steps.holopatcher_deps.outputs.success == 'true' }}
+      run: |
+        ./install_python_venv.ps1 -noprompt -venv_name .venv_holopatcher_${{ matrix.os }}_${{ matrix.python-version }}_${{ matrix.architecture }}
+        # Ensure patchelf is installed
+        sudo apt-get update && sudo apt-get install -y patchelf
+    
+        # Find the virtual environment's site-packages directory
+        $venvPath = $env:VIRTUAL_ENV
+        Write-Host "Virtual environment path: $venvPath"
+        $sitePackagesPath = Join-Path -Path $venvPath -ChildPath "lib/python$($env:PYTHON_VERSION)/site-packages"
+        Write-Host "Site-packages path: $sitePackagesPath"
+    
+        # Use patchelf to adjust RPATH for all shared libraries in the virtual environment
+        Get-ChildItem -Path $sitePackagesPath -Filter *.so -Recurse | ForEach-Object {
+          $libPath = $_.FullName
+          Write-Host "Patching $libPath"
+          sudo patchelf --set-rpath '$ORIGIN' $libPath
+        }
+    
+        # Continue with the rest of your build and packaging process
+      shell: pwsh
     
     - name: Compile HoloPatcher
       if: ${{ (success() || failure()) && steps.holopatcher_deps.outputs.success == 'true' }}
@@ -401,7 +448,7 @@ jobs:
           python -m pip install --upgrade pip
           if ("${{ runner.os }}" -eq "Windows") {
             if ("${{ matrix.python-version }}" -eq "3.12") {
-              pip install "pyinstaller==5.13.2" --prefer-binary
+              pip install pyinstaller --prefer-binary -U
             } elseif ("${{ matrix.python-version }}" -eq "3.11") {
               pip install "pyinstaller==5.13.2" --prefer-binary
             } else {
@@ -430,6 +477,29 @@ jobs:
           Add-Content -Path $env:GITHUB_OUTPUT -Value "success=false"
           exit 1
         }
+      shell: pwsh
+
+    - name: BatchPatcher - Adjust RPATH for shared libraries in the virtual environment
+      if: ${{ (success() || failure()) && runner.os == 'Linux' && steps.batchpatcher_deps.outputs.success == 'true' }}
+      run: |
+        ./install_python_venv.ps1 -noprompt -venv_name .venv_batchpatcher_${{ matrix.os }}_${{ matrix.python-version }}_${{ matrix.architecture }}
+        # Ensure patchelf is installed
+        sudo apt-get update && sudo apt-get install -y patchelf
+    
+        # Find the virtual environment's site-packages directory
+        $venvPath = $env:VIRTUAL_ENV
+        Write-Host "Virtual environment path: $venvPath"
+        $sitePackagesPath = Join-Path -Path $venvPath -ChildPath "lib/python$($env:PYTHON_VERSION)/site-packages"
+        Write-Host "Site-packages path: $sitePackagesPath"
+    
+        # Use patchelf to adjust RPATH for all shared libraries in the virtual environment
+        Get-ChildItem -Path $sitePackagesPath -Filter *.so -Recurse | ForEach-Object {
+          $libPath = $_.FullName
+          Write-Host "Patching $libPath"
+          sudo patchelf --set-rpath '$ORIGIN' $libPath
+        }
+    
+        # Continue with the rest of your build and packaging process
       shell: pwsh
 
     - name: Compile BatchPatcher
