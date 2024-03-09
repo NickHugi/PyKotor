@@ -51,6 +51,7 @@ $pyInstallerArgs = @{
     'distpath'=($rootPath + $pathSep + "dist")
     'upx-dir' = $upx_dir
     'icon'="resources/icons/sith.$iconExtension"
+    'hidden-import'="PyQt5.sip"
 }
 
 $pyInstallerArgs = $pyInstallerArgs.GetEnumerator() | ForEach-Object {

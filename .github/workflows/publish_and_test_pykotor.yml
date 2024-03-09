@@ -48,13 +48,13 @@ jobs:
     steps:
     - uses: actions/checkout@v4
     - name: Set up Python ${{ matrix.python-version }}
-      if: ${{ runner.os != 'macOS' }}
+      if: ${{ runner.os != 'macOS' && runner.os != 'Linux' }}
       uses: actions/setup-python@v5
       with:
         python-version: ${{ matrix.python-version }}
         architecture: ${{ matrix.architecture }}
 
-    - name: Set up Python macOS
+    - name: Set up Python ${{ matrix.python-version }} macOS
       if: ${{ runner.os == 'macOS' }}
       run: |  # warning: `brew link --overwrite python@ver` is unsafe on any non-virtualized macos.
         echo "NONINTERACTIVE DEFAULT: $NONINTERACTIVE"
@@ -63,6 +63,31 @@ jobs:
         brew analytics on
         brew update
         brew install python@${{ matrix.python-version }} || brew link --overwrite python@${{ matrix.python-version }}
+
+    - name: Set up Python ${{ matrix.python-version }} Linux  # macos too?
+      if: ${{ runner.os == 'Linux' }}
+      run: |
+        sudo apt-get update
+        sudo apt-get install build-essential zlib1g-dev libncurses5-dev libgdbm-dev libssl-dev libreadline-dev libffi-dev libsqlite3-dev libbz2-dev tk-dev -y
+        $pyVersion = switch ("${{ matrix.python-version }}") {
+          "3.7" { "3.7.17" }
+          "3.8" { "3.8.18" }
+          "3.9" { "3.9.18" }
+          "3.10" { "3.10.13" }
+          "3.11" { "3.11.8" }
+          "3.12" { "3.12.2" }
+        }
+        Write-Output "Downloading python '$pyVersion'..."
+        Invoke-WebRequest -Uri https://www.python.org/ftp/python/$pyVersion/Python-$pyVersion.tgz -OutFile Python-$pyVersion.tgz
+        tar -xvf Python-$pyVersion.tgz
+        $current_working_dir = (Get-Location).Path
+        Set-Location -LiteralPath "Python-$pyVersion" -ErrorAction Stop
+        $env:LDFLAGS="-Wl,-rpath=/usr/local/lib"
+        sudo ./configure --enable-optimizations --with-ensurepip=install --enable-shared --disable-new-dtags
+        sudo make -j $(nproc)
+        sudo make altinstall
+        Set-Location -LiteralPath $current_working_dir
+      shell: pwsh
     
     - name: Reset APT sources to default
       if: ${{ runner.os == 'Linux' }}
@@ -81,6 +106,8 @@ jobs:
         if ("${{ runner.os }}" -ne "Windows")
         {
           $pythonExeName = "python${{ matrix.python-version }}"
+          # LD_LIBRARY_PATH must be updated. However this won't be permanent, just long enough to create the venv.
+          $env:LD_LIBRARY_PATH = "/usr/local/lib:$env:LD_LIBRARY_PATH"
         }
         & $pythonExeName -m venv .venv_${{ matrix.os }}_${{ matrix.python-version }}_${{ matrix.architecture }}
         & $pythonExeName -m venv .venv_holopatcher_${{ matrix.os }}_${{ matrix.python-version }}_${{ matrix.architecture }}
@@ -203,10 +230,9 @@ jobs:
           python -m pip install --upgrade pip
           if ("${{ runner.os }}" -eq "Windows") {
             if ("${{ matrix.python-version }}" -eq "3.12") {
-              pip install "pyinstaller==5.13" --prefer-binary
+              pip install pyinstaller --prefer-binary -U
             } elseif ("${{ matrix.python-version }}" -eq "3.11") {
-              pip install "pyinstaller==5.6.1" --prefer-binary
-              pip install "pyinstaller==5.5" --prefer-binary
+              pip install "pyinstaller==5.13.2" --prefer-binary
             } else {
               pip install "pyinstaller==5.4" --prefer-binary
             }
@@ -235,6 +261,31 @@ jobs:
         }
       shell: pwsh
 
+    - name: HolocronToolset - Adjust RPATH for shared libraries in the virtual environment
+      if: ${{ (success() || failure()) && runner.os == 'Disabled_Linux' && steps.toolset_deps.outputs.success == 'true' }}
+      run: |
+        ./install_python_venv.ps1 -noprompt -venv_name .venv_toolset_${{ matrix.os }}_${{ matrix.python-version }}_${{ matrix.architecture }}
+        # Ensure patchelf is installed
+        sudo apt-get update && sudo apt-get install -y patchelf
+
+        # Find the virtual environment's site-packages directory
+        $venvPath = $env:VIRTUAL_ENV
+        Write-Host "Virtual environment path: $venvPath"
+        
+        # Dynamically find the Python version directory inside the venv
+        $pythonLibPath = Get-ChildItem -Path "$venvPath/lib" | Where-Object { $_.PSIsContainer } | Select-Object -First 1
+        $sitePackagesPath = Join-Path -Path $pythonLibPath.FullName -ChildPath "site-packages"
+        
+        Write-Host "Site-packages path: $sitePackagesPath"
+
+        # Use patchelf to adjust RPATH for all shared libraries in the virtual environment
+        Get-ChildItem -Path $sitePackagesPath -Filter *.so -Recurse | ForEach-Object {
+          $libPath = $_.FullName
+          Write-Host "Patching $libPath"
+          sudo patchelf --set-rpath '$ORIGIN' $libPath
+        }
+      shell: pwsh
+
     - name: Compile Holocron Toolset
       if: ${{ (success() || failure()) && steps.toolset_deps.outputs.success == 'true' }}
       run: |
@@ -253,7 +304,8 @@ jobs:
             if ($_ -match 'WARNING: Library not found: could not resolve' -or
                 $_ -match 'WARNING: Cannot find ' -or
                 $_ -match 'WARNING: lib not found:' -or
-                $_ -match 'WARNING: Tcl modules directory') {
+                $_ -match 'WARNING: Tcl modules directory' -or
+                $_ -match 'WARNING: Failed to upx strip') {
                 $warningCount++
             }
         }
@@ -272,6 +324,17 @@ jobs:
       env:
         UPX_DIR: ${{ env.UPX_DIR }}
 
+    - name: HolocronToolset - Create Static Binary
+      if: ${{ (success() || failure()) && runner.os == 'Disabled_Linux' && steps.toolset_deps.outputs.success == 'true' }}
+      run: |
+        ./install_python_venv.ps1 -noprompt -venv_name .venv_toolset_${{ matrix.os }}_${{ matrix.python-version }}_${{ matrix.architecture }}
+        python -m pip install staticx
+        staticx ./dist/HolocronToolset ./dist/HolocronToolset-static
+        # Rename the static binary for clarity and consistency
+        Write-Output "./dist/HolocronToolset-static  --> ./dist/HolocronToolset"
+        Move-Item -LiteralPath ./dist/HolocronToolset-static -Destination ./dist/HolocronToolset -Force
+      shell: pwsh
+
     - name: Install HoloPatcher dependencies
       if: ${{ success() || failure() }}
       id: holopatcher_deps
@@ -281,9 +344,9 @@ jobs:
           python -m pip install --upgrade pip
           if ("${{ runner.os }}" -eq "Windows") {
             if ("${{ matrix.python-version }}" -eq "3.12") {
-              pip install "pyinstaller==5.13" --prefer-binary
+              pip install "pyinstaller==5.13.2" --prefer-binary
             } elseif ("${{ matrix.python-version }}" -eq "3.11") {
-              pip install "pyinstaller==5.13" --prefer-binary
+              pip install "pyinstaller==5.13.2" --prefer-binary
             } else {
               pip install "pyinstaller==5.4" --prefer-binary
             }
@@ -311,6 +374,31 @@ jobs:
           exit 1
         }
       shell: pwsh
+
+    - name: HoloPatcher - Adjust RPATH for shared libraries in the virtual environment
+      if: ${{ (success() || failure()) && runner.os == 'Disabled_Linux' && steps.holopatcher_deps.outputs.success == 'true' }}
+      run: |
+        ./install_python_venv.ps1 -noprompt -venv_name .venv_holopatcher_${{ matrix.os }}_${{ matrix.python-version }}_${{ matrix.architecture }}
+        # Ensure patchelf is installed
+        sudo apt-get update && sudo apt-get install -y patchelf
+
+        # Find the virtual environment's site-packages directory
+        $venvPath = $env:VIRTUAL_ENV
+        Write-Host "Virtual environment path: $venvPath"
+        
+        # Dynamically find the Python version directory inside the venv
+        $pythonLibPath = Get-ChildItem -Path "$venvPath/lib" | Where-Object { $_.PSIsContainer } | Select-Object -First 1
+        $sitePackagesPath = Join-Path -Path $pythonLibPath.FullName -ChildPath "site-packages"
+        
+        Write-Host "Site-packages path: $sitePackagesPath"
+
+        # Use patchelf to adjust RPATH for all shared libraries in the virtual environment
+        Get-ChildItem -Path $sitePackagesPath -Filter *.so -Recurse | ForEach-Object {
+          $libPath = $_.FullName
+          Write-Host "Patching $libPath"
+          sudo patchelf --set-rpath '$ORIGIN' $libPath
+        }
+      shell: pwsh
     
     - name: Compile HoloPatcher
       if: ${{ (success() || failure()) && steps.holopatcher_deps.outputs.success == 'true' }}
@@ -330,7 +418,8 @@ jobs:
             if ($_ -match 'WARNING: Library not found: could not resolve' -or
                 $_ -match 'WARNING: Cannot find ' -or
                 $_ -match 'WARNING: lib not found:' -or
-                $_ -match 'WARNING: Tcl modules directory') {
+                $_ -match 'WARNING: Tcl modules directory' -or
+                $_ -match 'WARNING: Failed to upx strip') {
                 $warningCount++
             }
         }
@@ -347,6 +436,17 @@ jobs:
         }
       shell: pwsh
 
+    - name: HoloPatcher - Create Static Binary
+      if: ${{ (success() || failure()) && runner.os == 'Disabled_Linux' && steps.holopatcher_deps.outputs.success == 'true' }}
+      run: |
+        ./install_python_venv.ps1 -noprompt -venv_name .venv_holopatcher_${{ matrix.os }}_${{ matrix.python-version }}_${{ matrix.architecture }}
+        python -m pip install staticx
+        staticx ./dist/HoloPatcher ./dist/HoloPatcher-static
+        # Rename the static binary for clarity and consistency
+        Write-Output "./dist/HoloPatcher-static  --> ./dist/HoloPatcher"
+        Move-Item -LiteralPath ./dist/HoloPatcher-static -Destination ./dist/HoloPatcher -Force
+      shell: pwsh
+
     - name: Install BatchPatcher dependencies
       if: ${{ success() || failure() }}
       id: batchpatcher_deps
@@ -356,10 +456,9 @@ jobs:
           python -m pip install --upgrade pip
           if ("${{ runner.os }}" -eq "Windows") {
             if ("${{ matrix.python-version }}" -eq "3.12") {
-              pip install "pyinstaller==5.13" --prefer-binary
+              pip install pyinstaller --prefer-binary -U
             } elseif ("${{ matrix.python-version }}" -eq "3.11") {
-              pip install "pyinstaller==5.6.1" --prefer-binary
-              pip install "pyinstaller==5.5" --prefer-binary
+              pip install "pyinstaller==5.13.2" --prefer-binary
             } else {
               pip install "pyinstaller==5.4" --prefer-binary
             }
@@ -388,6 +487,31 @@ jobs:
         }
       shell: pwsh
 
+    - name: BatchPatcher - Adjust RPATH for shared libraries in the virtual environment
+      if: ${{ (success() || failure()) && runner.os == 'Disabled_Linux' && steps.batchpatcher_deps.outputs.success == 'true' }}
+      run: |
+        ./install_python_venv.ps1 -noprompt -venv_name .venv_batchpatcher_${{ matrix.os }}_${{ matrix.python-version }}_${{ matrix.architecture }}
+        # Ensure patchelf is installed
+        sudo apt-get update && sudo apt-get install -y patchelf
+
+        # Find the virtual environment's site-packages directory
+        $venvPath = $env:VIRTUAL_ENV
+        Write-Host "Virtual environment path: $venvPath"
+        
+        # Dynamically find the Python version directory inside the venv
+        $pythonLibPath = Get-ChildItem -Path "$venvPath/lib" | Where-Object { $_.PSIsContainer } | Select-Object -First 1
+        $sitePackagesPath = Join-Path -Path $pythonLibPath.FullName -ChildPath "site-packages"
+        
+        Write-Host "Site-packages path: $sitePackagesPath"
+
+        # Use patchelf to adjust RPATH for all shared libraries in the virtual environment
+        Get-ChildItem -Path $sitePackagesPath -Filter *.so -Recurse | ForEach-Object {
+          $libPath = $_.FullName
+          Write-Host "Patching $libPath"
+          sudo patchelf --set-rpath '$ORIGIN' $libPath
+        }
+      shell: pwsh
+
     - name: Compile BatchPatcher
       if: ${{ (success() || failure()) && steps.batchpatcher_deps.outputs.success == 'true' }}
       run: |
@@ -406,7 +530,8 @@ jobs:
             if ($_ -match 'WARNING: Library not found: could not resolve' -or
                 $_ -match 'WARNING: Cannot find ' -or
                 $_ -match 'WARNING: lib not found:' -or
-                $_ -match 'WARNING: Tcl modules directory') {
+                $_ -match 'WARNING: Tcl modules directory' -or
+                $_ -match 'WARNING: Failed to upx strip') {
                 $warningCount++
             }
         }
@@ -423,6 +548,17 @@ jobs:
         }
       shell: pwsh
 
+    - name: BatchPatcher - Create Static Binary
+      if: ${{ (success() || failure()) && runner.os == 'Disabled_Linux' && steps.batchpatcher_deps.outputs.success == 'true' }}
+      run: |
+        ./install_python_venv.ps1 -noprompt -venv_name .venv_batchpatcher_${{ matrix.os }}_${{ matrix.python-version }}_${{ matrix.architecture }}
+        python -m pip install staticx
+        staticx ./dist/K_BatchPatcher ./dist/K_BatchPatcher-static
+        # Rename the static binary for clarity and consistency
+        Write-Output "./dist/K_BatchPatcher-static  --> ./dist/K_BatchPatcher"
+        Move-Item -LiteralPath ./dist/K_BatchPatcher-static -Destination ./dist/K_BatchPatcher -Force
+      shell: pwsh
+
     - name: Compile KotorDiff
       if: ${{ success() || failure() }}
       run: |
@@ -432,10 +568,9 @@ jobs:
         python -m pip install --upgrade pip
         if ("${{ runner.os }}" -eq "Windows") {
           if ("${{ matrix.python-version }}" -eq "3.12") {
-            pip install "pyinstaller==5.13" --prefer-binary
+            pip install "pyinstaller==5.13.2" --prefer-binary
           } elseif ("${{ matrix.python-version }}" -eq "3.11") {
-            pip install "pyinstaller==5.6.1" --prefer-binary
-            pip install "pyinstaller==5.5" --prefer-binary
+            pip install "pyinstaller==5.13.2" --prefer-binary
           } else {
             pip install "pyinstaller==5.4" --prefer-binary
           }
@@ -456,7 +591,8 @@ jobs:
             if ($_ -match 'WARNING: Library not found: could not resolve' -or
                 $_ -match 'WARNING: Cannot find ' -or
                 $_ -match 'WARNING: lib not found:' -or
-                $_ -match 'WARNING: Tcl modules directory') {
+                $_ -match 'WARNING: Tcl modules directory' -or
+                $_ -match 'WARNING: Failed to upx strip') {
                 $warningCount++
             }
         }
@@ -473,6 +609,17 @@ jobs:
         }
       shell: pwsh
 
+    - name: KotorDiff - Create Static Binary
+      if: ${{ (success() || failure()) && runner.os == 'Linux' }}
+      run: |
+        ./install_python_venv.ps1 -noprompt -venv_name .venv_kotordiff_${{ matrix.os }}_${{ matrix.python-version }}_${{ matrix.architecture }}
+        python -m pip install staticx
+        staticx ./dist/KotorDiff ./dist/KotorDiff-static
+        # Rename the static binary for clarity and consistency
+        Write-Output "./dist/KotorDiff-static  --> ./dist/KotorDiff"
+        Move-Item -LiteralPath ./dist/KotorDiff-static -Destination ./dist/KotorDiff -Force
+      shell: pwsh
+
     - name: Compile GUIDuplicator
       if: ${{ success() || failure() }}
       run: |
@@ -482,10 +629,9 @@ jobs:
         python -m pip install --upgrade pip
         if ("${{ runner.os }}" -eq "Windows") {
           if ("${{ matrix.python-version }}" -eq "3.12") {
-            pip install "pyinstaller==5.13" --prefer-binary
+            pip install "pyinstaller==5.13.2" --prefer-binary
           } elseif ("${{ matrix.python-version }}" -eq "3.11") {
-            pip install "pyinstaller==5.6.1" --prefer-binary
-            pip install "pyinstaller==5.5" --prefer-binary
+            pip install "pyinstaller==5.13.2" --prefer-binary
           } else {
             pip install "pyinstaller==5.4" --prefer-binary
           }
@@ -505,7 +651,8 @@ jobs:
             if ($_ -match 'WARNING: Library not found: could not resolve' -or
                 $_ -match 'WARNING: Cannot find ' -or
                 $_ -match 'WARNING: lib not found:' -or
-                $_ -match 'WARNING: Tcl modules directory') {
+                $_ -match 'WARNING: Tcl modules directory' -or
+                $_ -match 'WARNING: Failed to upx strip') {
                 $warningCount++
             }
         }
@@ -520,6 +667,17 @@ jobs:
         } else {
           Add-Content -Path $env:GITHUB_OUTPUT -Value "success=true"
         }
+      shell: pwsh
+
+    - name: GUIDuplicator - Create Static Binary
+      if: ${{ (success() || failure()) && runner.os == 'Linux' }}
+      run: |
+        ./install_python_venv.ps1 -noprompt -venv_name .venv_guiduplicator_${{ matrix.os }}_${{ matrix.python-version }}_${{ matrix.architecture }}
+        python -m pip install staticx
+        staticx ./dist/GuiDuplicator ./dist/GuiDuplicator-static
+        # Rename the static binary for clarity and consistency
+        Write-Output "./dist/GuiDuplicator-static  --> ./dist/GuiDuplicator"
+        Move-Item -LiteralPath ./dist/GuiDuplicator-static -Destination ./dist/GuiDuplicator -Force
       shell: pwsh
 
     - name: Upload compiled binaries
@@ -601,11 +759,10 @@ jobs:
           Get-ChildItem -Filter "publish_*" | ForEach-Object {
             $matrixPackagePath = $_.FullName
             Write-Output "Found matrix package '$matrixPackagePath'"
-            Get-ChildItem -Recurse -Path "." -Directory | ForEach-Object { Write-Output $_.FullName }
             $os, $pythonVersion, $architecture = $_.BaseName -replace '^publish_', '' -split '_'
 
             $shortOsName = $os
-            if ($os -eq "ubuntu_20.04" -or $os -eq "ubuntu_22.04" -or $os -eq "ubuntu-latest") {
+            if ($os -eq "ubuntu-20.04" -or $os -eq "ubuntu-22.04" -or $os -eq "ubuntu-latest") {
               $shortOsName = "Linux"
             } elseif ($os -eq "macos-11" -or $os -eq "macos-12" -or $os -eq "macos-latest") {
               $shortOsName = "Mac"
