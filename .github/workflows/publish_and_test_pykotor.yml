@@ -647,7 +647,6 @@ jobs:
           Get-ChildItem -Filter "publish_*" | ForEach-Object {
             $matrixPackagePath = $_.FullName
             Write-Output "Found matrix package '$matrixPackagePath'"
-            Get-ChildItem -Recurse -Path "." -Directory | ForEach-Object { Write-Output $_.FullName }
             $os, $pythonVersion, $architecture = $_.BaseName -replace '^publish_', '' -split '_'
 
             $shortOsName = $os
