@@ -1,6 +1,6 @@
 {
-	"toolsetLatestVersion": "2.2.1b15",
-	"toolsetLatestNotes": "(New in 2.2.1b15): Fix prompt to update when update already applied. Fix GITEditor's zoom in/out. And fix many problems in TGA/TPC editor.",
+	"toolsetLatestVersion": "2.2.1b16",
+	"toolsetLatestNotes": "Load/Save Various KOTOR files as JSON/XML/CSV/ASCII formats. Add theme switcher. Other backend fixes.",
 	"holopatcherLatestVersion": "1.5.3b1",
 	"holopatcherLatestNotes": "",
 	"toolsetDownloadLink": "https://mega.nz/folder/cGJDAKaa#WzsWF8LgUkM8U2FDEoeeRA",
