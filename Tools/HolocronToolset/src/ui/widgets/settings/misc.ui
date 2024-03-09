@@ -65,6 +65,13 @@
         </widget>
        </item>
        <item>
+        <widget class="QCheckBox" name="loadNSSBeforeDecompileCheck">
+         <property name="text">
+          <string>Search for NSS files before decompiling NCS resources.</string>
+         </property>
+        </widget>
+       </item>
+       <item>
         <widget class="QCheckBox" name="showPreviewUTCCheck">
          <property name="text">
           <string>Show 3D Preview in UTC Editor</string>
