@@ -235,8 +235,7 @@ class Editor(QMainWindow):
 
         Processing Logic:
         ----------------
-            - Builds the data and extension to save
-            - Checks the file extension and calls the appropriate save method
+            - Calls _saveCurrentFile() to perform the save.
             - Catches any exceptions and writes to an error log.
         """
         if self._filepath is None:
@@ -268,6 +267,32 @@ class Editor(QMainWindow):
                 file.write("\n----------------------\n")
             QMessageBox(QMessageBox.Critical, "Failed to write to file", str(universal_simplify_exception(e))).exec_()
 
+    def _saveCurrentFile(self):
+        """Implementation of saving the current file.
+
+        Processing Logic:
+        ----------------
+            - Builds the data and extension to save
+            - Checks the file extension and calls the appropriate save method
+        """
+        data, data_ext = self.build()
+        if data is None:  # nsseditor
+            return
+        self._revert = data
+
+        self.refreshWindowTitle()
+
+        if is_bif_file(self._filepath):
+            self._saveEndsWithBif(data, data_ext)
+        elif is_capsule_file(self._filepath.parent):
+            self._saveNestedCapsule(data, data_ext)
+        elif is_rim_file(self._filepath.name):
+            self._saveEndsWithRim(data, data_ext)
+        elif is_any_erf_type_file(self._filepath):
+            self._saveEndsWithErf(data, data_ext)
+        else:
+            self._saveEndsWithOther(data, data_ext)
+
     def _saveEndsWithBif(self, data: bytes, data_ext: bytes):
         """Saves data if dialog returns specific options.
 
@@ -297,10 +322,10 @@ class Editor(QMainWindow):
                 self._resname = dialog2.resname()
                 self._restype = dialog2.restype()
                 self._filepath = r_filepath
-                self.save()
+                self._saveCurrentFile()
         elif dialog.option == BifSaveOption.Override:
             self._filepath = self._installation.override_path() / f"{self._resname}.{self._restype.extension}"
-            self.save()
+            self._saveCurrentFile()
         else:
             print(f"User closed out of BifSaveDialog in _saveEndsWithBif (({self._resname}.{self._restype}))")
 
@@ -331,10 +356,10 @@ class Editor(QMainWindow):
                 filename: str = f"{Module.get_root(self._filepath)}.mod"
                 self._filepath = folderpath / filename
                 # Re-save with the updated filepath
-                self.save()
+                self._saveCurrentFile()
             elif dialog.option == RimSaveOption.Override:
                 self._filepath = self._installation.override_path() / f"{self._resname}.{self._restype.extension}"
-                self.save()
+                self._saveCurrentFile()
             return
 
         rim: RIM = read_rim(self._filepath)
