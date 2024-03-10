@@ -29,6 +29,12 @@ from utility.error_handling import universal_simplify_exception
 from utility.system.path import Path
 
 if TYPE_CHECKING:
+    from PyQt5.QtGui import (
+        QPaintEvent,
+        QResizeEvent,
+        QTextBlock,
+        QTextDocument,
+    )
     import os
 
     from PyQt5.QtGui import (

@@ -13,7 +13,7 @@ from xml.etree.ElementTree import ParseError
 
 from pykotor.common.stream import BinaryReader, BinaryWriter
 from utility.error_handling import format_exception_with_variables
-from utility.string import WrappedStr
+from utility.string import CaseInsensitiveWrappedStr, WrappedStr
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterable
@@ -248,7 +248,7 @@ class ResourceType(Enum):
         is_invalid: bool = False,  # noqa: FBT001, FBT002
     ):
         self.type_id: int = type_id  # type: ignore[misc]
-        self.extension: str = extension.strip().lower()
+        self.extension: CaseInsensitiveWrappedStr = CaseInsensitiveWrappedStr.cast(extension.strip().lower())
         self.category: str = category
         self.contents: str = contents
         self.is_invalid: bool = is_invalid

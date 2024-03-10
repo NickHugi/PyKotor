@@ -1,0 +1,205 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>MainWindow</class>
+ <widget class="QMainWindow" name="MainWindow">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>809</width>
+    <height>633</height>
+   </rect>
+  </property>
+  <widget class="QWidget" name="centralwidget">
+   <layout class="QHBoxLayout" name="horizontalLayout">
+    <item>
+     <widget class="QTabWidget" name="tabWidget">
+      <property name="currentIndex">
+       <number>0</number>
+      </property>
+      <widget class="QWidget" name="tabGlobalVars">
+       <attribute name="title">
+        <string>Global Variables</string>
+       </attribute>
+       <layout class="QVBoxLayout" name="verticalLayoutGlobalVars">
+        <item>
+         <widget class="QTableWidget" name="tableWidgetGlobalVars">
+          <property name="rowCount">
+           <number>16</number>
+          </property>
+          <property name="columnCount">
+           <number>2</number>
+          </property>
+          <row/>
+          <row/>
+          <row/>
+          <row/>
+          <row/>
+          <row/>
+          <row/>
+          <row/>
+          <row/>
+          <row/>
+          <row/>
+          <row/>
+          <row/>
+          <row/>
+          <row/>
+          <row/>
+          <column/>
+          <column/>
+         </widget>
+        </item>
+       </layout>
+      </widget>
+      <widget class="QWidget" name="tabCachedModules">
+       <attribute name="title">
+        <string>Cached Modules</string>
+       </attribute>
+       <layout class="QVBoxLayout" name="verticalLayoutCachedModules">
+        <item>
+         <widget class="QTreeView" name="treeViewCachedModules"/>
+        </item>
+       </layout>
+      </widget>
+      <widget class="QWidget" name="tabGeneralResources">
+       <attribute name="title">
+        <string>General Resources</string>
+       </attribute>
+       <layout class="QVBoxLayout" name="verticalLayoutGeneralResources"/>
+      </widget>
+     </widget>
+    </item>
+    <item>
+     <widget class="QToolBox" name="toolBox">
+      <property name="currentIndex">
+       <number>0</number>
+      </property>
+      <widget class="QWidget" name="page1">
+       <property name="geometry">
+        <rect>
+         <x>0</x>
+         <y>0</y>
+         <width>392</width>
+         <height>385</height>
+        </rect>
+       </property>
+       <attribute name="label">
+        <string/>
+       </attribute>
+      </widget>
+      <widget class="QWidget" name="page2">
+       <property name="geometry">
+        <rect>
+         <x>0</x>
+         <y>0</y>
+         <width>98</width>
+         <height>28</height>
+        </rect>
+       </property>
+       <attribute name="label">
+        <string/>
+       </attribute>
+      </widget>
+      <widget class="QWidget" name="page3">
+       <property name="geometry">
+        <rect>
+         <x>0</x>
+         <y>0</y>
+         <width>98</width>
+         <height>28</height>
+        </rect>
+       </property>
+       <attribute name="label">
+        <string/>
+       </attribute>
+      </widget>
+      <widget class="QWidget" name="page4">
+       <property name="geometry">
+        <rect>
+         <x>0</x>
+         <y>0</y>
+         <width>98</width>
+         <height>28</height>
+        </rect>
+       </property>
+       <attribute name="label">
+        <string/>
+       </attribute>
+      </widget>
+      <widget class="QWidget" name="page5">
+       <property name="geometry">
+        <rect>
+         <x>0</x>
+         <y>0</y>
+         <width>98</width>
+         <height>28</height>
+        </rect>
+       </property>
+       <attribute name="label">
+        <string/>
+       </attribute>
+      </widget>
+      <widget class="QWidget" name="page6">
+       <property name="geometry">
+        <rect>
+         <x>0</x>
+         <y>0</y>
+         <width>98</width>
+         <height>28</height>
+        </rect>
+       </property>
+       <attribute name="label">
+        <string/>
+       </attribute>
+      </widget>
+      <widget class="QWidget" name="page7">
+       <property name="geometry">
+        <rect>
+         <x>0</x>
+         <y>0</y>
+         <width>98</width>
+         <height>28</height>
+        </rect>
+       </property>
+       <attribute name="label">
+        <string/>
+       </attribute>
+      </widget>
+     </widget>
+    </item>
+   </layout>
+  </widget>
+  <widget class="QMenuBar" name="menuBar">
+   <property name="geometry">
+    <rect>
+     <x>0</x>
+     <y>0</y>
+     <width>809</width>
+     <height>21</height>
+    </rect>
+   </property>
+   <widget class="QMenu" name="menuTools">
+    <property name="title">
+     <string>&amp;Tools</string>
+    </property>
+    <addaction name="actionRebuildCachedModules"/>
+    <addaction name="actionFlushEventQueue"/>
+   </widget>
+   <addaction name="menuTools"/>
+  </widget>
+  <widget class="QStatusBar" name="statusBar"/>
+  <action name="actionRebuildCachedModules">
+   <property name="text">
+    <string>Rebuild cached modules</string>
+   </property>
+  </action>
+  <action name="actionFlushEventQueue">
+   <property name="text">
+    <string>Flush EventQueue</string>
+   </property>
+  </action>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>

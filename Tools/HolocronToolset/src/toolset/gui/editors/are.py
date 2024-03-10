@@ -19,8 +19,10 @@ from toolset.gui.dialogs.edit.locstring import LocalizedStringDialog
 from toolset.gui.editor import Editor
 
 if TYPE_CHECKING:
+    from PyQt5.QtWidgets import QLabel, QWidget
     import os
 
+    from pykotor.extract.file import ResourceResult
     from PyQt5.QtWidgets import QLabel, QWidget
 
     from pykotor.resource.formats.bwm.bwm_data import BWM

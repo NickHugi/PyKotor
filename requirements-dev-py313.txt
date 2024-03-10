@@ -20,4 +20,3 @@ autoflake
 pytest
 pytest-xdist
 pytest-html
-aqtinstall

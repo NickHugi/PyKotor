@@ -115,18 +115,19 @@ class ResourceList(MainWindowList):
         # Add any missing resources to the list
         for resource in resources:
             for item in allResources:
-                resource_from_item: FileResource = item.resource
-                if resource_from_item == resource:
+                resource_from_item: FileResource = getattr(item, "resource", None)
+                if resource_from_item and resource_from_item == resource:
                     # Update the resource reference. Important when to a new module that share a resource
                     # with the same name and restype with the old one.
                     item.resource = resource
                     break
             else:
+                #print(f"Adding resource: {resource}")
                 self.modulesModel.addResource(resource)
 
         # Remove any resources that should no longer be in the list
         for item in allResources:
-            if item.resource not in resources:
+            if getattr(item, "resource", None) is None or item.resource not in resources:
                 item.parent().removeRow(item.row())
 
         # Remove unused categories
@@ -268,7 +269,7 @@ class ResourceModel(QStandardItemModel):
         return self.resourceFromItems(items)
 
     def resourceFromItems(self, items: list[QStandardItem]) -> list[FileResource]:
-        return [item.resource for item in items if hasattr(item, "resource")]  # type: ignore[reportAttributeAccessIssue]
+        return [item.resource for item in items if getattr(item, "resource", None) is not None]  # type: ignore[reportAttributeAccessIssue]
 
     def allResourcesItems(self) -> list[QStandardItem]:
         """Returns a list of all QStandardItem objects in the model that represent resource files."""
@@ -277,7 +278,7 @@ class ResourceModel(QStandardItemModel):
             for category in self._categoryItems.values()
             for i in range(category.rowCount())
         )
-        return [item for item in resources if item is not None]
+        return [item for item in resources if item and item.text().strip()]
 
     def removeUnusedCategories(self):
         for row in range(self.rowCount())[::-1]:
@@ -287,6 +288,7 @@ class ResourceModel(QStandardItemModel):
             text = item.text()
             if text not in self._categoryItems:
                 continue
+            print(f"Del category: {text}")
             del self._categoryItems[text]
             self.removeRow(row)
 

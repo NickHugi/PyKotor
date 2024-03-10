@@ -2,18 +2,29 @@ from __future__ import annotations
 
 import base64
 import json
-import traceback
 
 from contextlib import suppress
 from datetime import datetime, timedelta, timezone
 from tempfile import TemporaryDirectory
-from typing import TYPE_CHECKING, ClassVar
+from typing import TYPE_CHECKING, Callable, ClassVar
 
 import requests
 
 from PyQt5 import QtCore
-from PyQt5.QtGui import QIcon, QPixmap, QStandardItem
-from PyQt5.QtWidgets import QFileDialog, QMainWindow, QMessageBox
+from PyQt5.QtCore import QFile, QTextStream, Qt
+from PyQt5.QtGui import QColor, QIcon, QPalette, QPixmap, QStandardItem
+from PyQt5.QtWidgets import (
+    QAction,
+    QApplication,
+    QFileDialog,
+    QHBoxLayout,
+    QLabel,
+    QMainWindow,
+    QMessageBox,
+    QPushButton,
+    QVBoxLayout,
+    QWidget,
+)
 from watchdog.events import FileSystemEventHandler
 from watchdog.observers import Observer
 
@@ -29,6 +40,7 @@ from pykotor.resource.formats.tpc import read_tpc, write_tpc
 from pykotor.resource.type import ResourceType
 from pykotor.tools import model, module
 from pykotor.tools.misc import is_any_erf_type_file, is_bif_file, is_capsule_file, is_erf_file, is_mod_file, is_rim_file
+from pykotor.tools.path import CaseAwarePath
 from toolset.config import PROGRAM_VERSION, UPDATE_BETA_INFO_LINK, UPDATE_INFO_LINK
 from toolset.data.installation import HTInstallation
 from toolset.gui.dialogs.about import About
@@ -59,7 +71,12 @@ from toolset.gui.windows.indoor_builder import IndoorMapBuilder
 from toolset.gui.windows.module_designer import ModuleDesigner
 from toolset.utils.misc import openLink
 from toolset.utils.window import addWindow, openResourceEditor
-from utility.error_handling import format_exception_with_variables, universal_simplify_exception
+from ui import stylesheet_resources  # noqa: F401
+from utility.error_handling import (
+    assert_with_variable_trace,
+    format_exception_with_variables,
+    universal_simplify_exception,
+)
 from utility.system.path import Path, PurePath
 
 if TYPE_CHECKING:
@@ -67,40 +84,122 @@ if TYPE_CHECKING:
 
     from PyQt5 import QtGui
     from PyQt5.QtGui import QCloseEvent
+    from typing_extensions import Literal
     from watchdog.observers.api import BaseObserver
 
-    from pykotor.extract.file import FileResource
+    from pykotor.extract.file import FileResource, ResourceResult
     from pykotor.resource.formats.mdl.mdl_data import MDL
     from pykotor.resource.formats.tpc import TPC
     from pykotor.resource.type import SOURCE_TYPES
-    from pykotor.tools.path import CaseAwarePath
     from toolset.gui.widgets.main_widgets import TextureList
 
+class CustomTitleBar(QWidget):
+    def __init__(self, parent: QMainWindow):
+        super().__init__(parent)
+        self.setAutoFillBackground(True)
+        self.setMinimumHeight(30)
+        self.setParent(parent)
+        self.setLayout(QHBoxLayout(self))
+        self.layout().setContentsMargins(0, 0, 0, 0)
+        self.layout().setSpacing(0)
+        self.setWindowFlags(Qt.Window | Qt.WindowCloseButtonHint | Qt.WindowMinimizeButtonHint | Qt.WindowMaximizeButtonHint)
+
+        # Create a label for the window title
+        self.titleLabel = QLabel("Holocron Toolset", self)
+        self.titleLabel.setAlignment(Qt.AlignCenter)
+
+        # Create system buttons
+        self.minimizeButton = QPushButton("-", self)
+        self.maximizeButton = QPushButton("O", self)
+        self.closeButton = QPushButton("X", self)
+
+        # Remove the title bar and add custom buttons
+        self.layout().addWidget(self.titleLabel, 1)  # type: ignore[reportCallIssue]
+        self.layout().addWidget(self.minimizeButton)
+        self.layout().addWidget(self.maximizeButton)
+        self.layout().addWidget(self.closeButton)
+
+        # Configure button functionality
+        self.minimizeButton.clicked.connect(parent.showMinimized)
+        self.maximizeButton.clicked.connect(self.onMaximizeRestoreClicked)
+        self.closeButton.clicked.connect(parent.close)
+
+        # Style the title bar and buttons for a more native appearance
+        self.setStyleSheet("""
+            CustomTitleBar {
+                background-color: #ececec;
+                color: black;
+            }
+            QLabel {
+                text-align: left;
+            }
+            QPushButton {
+                background-color: #ececec;
+                border: none;
+                border-radius: 0;
+            }
+            QPushButton:hover {
+                background-color: #dcdcdc;
+            }
+            QPushButton:pressed {
+                background-color: #cacaca;
+            }
+        """)
+
+        self.setStyle(self.style())  # Refresh style
+
+    # Overriding mouse event handlers to enable dragging of the window
+    def mousePressEvent(self, event):
+        if event.button() == Qt.LeftButton:
+            self._mousePressPos = event.globalPos()  # global position at mouse press
+            self._mouseDragPos = event.globalPos()  # global position for ongoing drag
+
+    def mouseMoveEvent(self, event):
+        if event.buttons() == Qt.LeftButton:
+            # Calculate how much the mouse has been moved
+            globalPos = event.globalPos()
+            if globalPos is None or self._mouseDragPos is None:
+                return
+            diff = globalPos - self._mouseDragPos
+            newPos = self.window().frameGeometry().topLeft() + diff
+
+            # Move the window
+            self.window().move(newPos)
+
+            # Update the position for the next move
+            self._mouseDragPos = globalPos
+
+    def mouseReleaseEvent(self, event):
+        self._mousePressPos = None
+        self._mouseDragPos = None
+
+    # Button click event handlers
+    def onMinimizedClicked(self):
+        self.parent().showMinimized()
+
+    def onMaximizeRestoreClicked(self):
+        if self.parent().isMaximized():
+            self.parent().showNormal()
+            self.maximizeButton.setText("O")
+        else:
+            self.parent().showMaximized()
+            self.maximizeButton.setText("❐")
+
+    def onCloseClicked(self):
+        self.parent().close()
+
+    def setWindowTitle(self, title):
+        self.titleLabel.setText(title)
+
+    def updateStyle(self, backgroundColor):
+        # Update the custom title bar style based on the provided background color
+        self.setStyleSheet(f"background-color: {backgroundColor};")
 
 class ToolWindow(QMainWindow):
     moduleFilesUpdated = QtCore.pyqtSignal(object, object)
-
     overrideFilesUpdate = QtCore.pyqtSignal(object, object)
 
-    GFF_TYPES: ClassVar[list[ResourceType]] = [
-        ResourceType.GFF,
-        ResourceType.UTC,
-        ResourceType.UTP,
-        ResourceType.UTD,
-        ResourceType.UTI,
-        ResourceType.UTM,
-        ResourceType.UTE,
-        ResourceType.UTT,
-        ResourceType.UTW,
-        ResourceType.UTS,
-        ResourceType.DLG,
-        ResourceType.GUI,
-        ResourceType.ARE,
-        ResourceType.IFO,
-        ResourceType.GIT,
-        ResourceType.JRL,
-        ResourceType.ITP,
-    ]
+    GFF_TYPES: ClassVar[list[ResourceType]] = [restype for restype in ResourceType if restype.contents == "gff"]
 
     def __init__(self):
         """Initializes the main window.
@@ -124,12 +223,35 @@ class ToolWindow(QMainWindow):
         self.active: HTInstallation | None = None
         self.settings: GlobalSettings = GlobalSettings()
         self.installations: dict[str, HTInstallation] = {}
+        self.original_style = self.style().objectName()
+        self.original_palette = self.palette()
 
-        from toolset.uic.windows.main import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
+        from toolset.uic.windows.main import Ui_MainWindow
 
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
         self._setupSignals()
+
+        # Custom title bar setup
+        self.titleBar = CustomTitleBar(self)
+        self.titleBar.updateStyle("gray")  # Example color, change as needed
+
+        # Create a container for the custom title bar
+        titleBarContainer = QWidget()
+        titleBarLayout = QVBoxLayout(titleBarContainer)
+        titleBarLayout.setContentsMargins(0, 0, 0, 0)
+        titleBarLayout.addWidget(self.titleBar)
+
+        # Add the custom title bar container to the main window layout
+        mainLayout = QVBoxLayout()
+        mainLayout.setContentsMargins(0, 0, 0, 0)
+        mainLayout.addWidget(titleBarContainer)
+        mainLayout.addWidget(self.ui.centralwidget)
+
+        # Create a placeholder widget to apply the main layout
+        placeholderWidget = QWidget()
+        placeholderWidget.setLayout(mainLayout)
+        self.setCentralWidget(placeholderWidget)
 
         self.ui.coreWidget.hideSection()
         self.ui.coreWidget.hideReloadButton()
@@ -141,10 +263,40 @@ class ToolWindow(QMainWindow):
             self.settings.firstTime = False
 
             # Create a directory used for dumping temp files
-            with suppress(Exception):
+            try:
                 self.settings.extractPath = str(Path(str(TemporaryDirectory().name)))
+            except Exception as e:
+                print(f"Could not create temp directory: {universal_simplify_exception(e)}")
+        if not self.settings.selectedTheme:
+            self.settings.selectedTheme = "Fusion (Dark)"
 
+        self.toggle_stylesheet(self.settings.selectedTheme, showWindow=False)
         self.checkForUpdates(silent=True)
+
+    # Overriding mouse event handlers to enable dragging of the window
+    def mousePressEvent(self, event):
+        if event.button() == Qt.LeftButton:
+            self._mousePressPos = event.globalPos()
+            self._mouseMovePos = event.globalPos()
+
+    def mouseMoveEvent(self, event):
+        if event.buttons() == Qt.LeftButton:
+            # Calculate how much the mouse has been moved
+            currPos = self.mapToGlobal(self.pos())
+            globalPos = event.globalPos()
+            diff = globalPos - self._mouseMovePos
+            newPos = self.mapFromGlobal(currPos + diff)
+
+            # Move the window
+            self.move(newPos)
+
+            # Update the position for the next move
+            self._mouseMovePos = globalPos
+
+    def mouseReleaseEvent(self, event):
+        if event.button() == Qt.LeftButton:
+            self._mousePressPos = None
+            self._mouseMovePos = None
 
     def _setupSignals(self):
         """Connects signals to slots for UI interactions.
@@ -163,6 +315,8 @@ class ToolWindow(QMainWindow):
         """
         self.ui.gameCombo.currentIndexChanged.connect(self.changeActiveInstallation)
 
+        self.ui.menuTheme.triggered.connect(self.toggle_stylesheet)
+
         self.moduleFilesUpdated.connect(self.onModuleFileUpdated)
         self.overrideFilesUpdate.connect(self.onOverrideFileUpdated)
 
@@ -175,6 +329,11 @@ class ToolWindow(QMainWindow):
         self.ui.modulesWidget.requestExtractResource.connect(self.onExtractResources)
         self.ui.modulesWidget.requestOpenResource.connect(self.onOpenResources)
 
+        self.ui.savesWidget.sectionChanged.connect(self.onSavepathChanged)
+        self.ui.savesWidget.requestReload.connect(self.onSaveReload)
+        self.ui.savesWidget.requestRefresh.connect(self.onSaveRefresh)
+        self.ui.savesWidget.requestExtractResource.connect(self.onExtractResources)
+        self.ui.savesWidget.requestOpenResource.connect(self.onOpenResources)
         def openModuleDesigner() -> ModuleDesigner:
             designerUi = ModuleDesigner(self, self.active, self.active.module_path() / self.ui.modulesWidget.currentSection())
             addWindow(designerUi)
@@ -227,6 +386,61 @@ class ToolWindow(QMainWindow):
         self.ui.actionDiscordKotOR.triggered.connect(lambda: openLink("http://discord.gg/kotor"))
         self.ui.actionDiscordHolocronToolset.triggered.connect(lambda: openLink("https://discord.gg/3ME278a9tQ"))
 
+    def toggle_stylesheet(self, theme: QAction | str, *, showWindow: bool = True):
+        # get the QApplication instance,  or crash if not set
+        app = QApplication.instance()
+        if app is None or not isinstance(app, QApplication):
+            raise RuntimeError("No Qt Application found or not a QApplication instance.")
+        # TODO: don't use custom title bar yet, is ugly
+        #self.setWindowFlags(Qt.FramelessWindowHint | Qt.Window)
+        #self.titleBar.show()
+        self.titleBar.hide()
+
+        themeName: str = theme.text() if isinstance(theme, QAction) else theme
+        self.settings.selectedTheme = themeName
+        if themeName == "Breeze (Dark)":
+            file = QFile(":/dark/stylesheet.qss")
+            file.open(QFile.ReadOnly | QFile.Text)
+            stream = QTextStream(file)
+            app.setStyleSheet(stream.readAll())
+            file.close()
+            # Set window flags to remove the standard frame (title bar)
+            self.show()  # Re-apply the window with new flags
+        elif not themeName or themeName == "Default (Light)":
+            app.setStyleSheet("")  # Reset to default style
+            app.setPalette(self.original_palette)  # Reset to default palette
+            app.setStyle(self.original_style)
+            # Reset window flags to default, which includes the title bar
+            self.setWindowFlags(Qt.Window | Qt.WindowCloseButtonHint | Qt.WindowMinimizeButtonHint | Qt.WindowMaximizeButtonHint)
+        elif themeName == "Fusion (Dark)":
+            app.setStyleSheet("")  # Reset to default style
+            app.setStyle("Fusion")
+            #
+            # # Now use a palette to switch to dark colors:
+            dark_palette = QPalette()
+            dark_palette.setColor(QPalette.Window, QColor(53, 53, 53))
+            dark_palette.setColor(QPalette.WindowText, Qt.white)
+            dark_palette.setColor(QPalette.Base, QColor(35, 35, 35))
+            dark_palette.setColor(QPalette.AlternateBase, QColor(53, 53, 53))
+            dark_palette.setColor(QPalette.ToolTipBase, QColor(25, 25, 25))
+            dark_palette.setColor(QPalette.ToolTipText, Qt.white)
+            dark_palette.setColor(QPalette.Text, Qt.white)
+            dark_palette.setColor(QPalette.Button, QColor(53, 53, 53))
+            dark_palette.setColor(QPalette.ButtonText, Qt.white)
+            dark_palette.setColor(QPalette.BrightText, Qt.red)
+            dark_palette.setColor(QPalette.Link, QColor(42, 130, 218))
+            dark_palette.setColor(QPalette.Highlight, QColor(42, 130, 218))
+            dark_palette.setColor(QPalette.HighlightedText, QColor(35, 35, 35))
+            dark_palette.setColor(QPalette.Active, QPalette.Button, QColor(53, 53, 53))
+            dark_palette.setColor(QPalette.Disabled, QPalette.ButtonText, Qt.darkGray)
+            dark_palette.setColor(QPalette.Disabled, QPalette.WindowText, Qt.darkGray)
+            dark_palette.setColor(QPalette.Disabled, QPalette.Text, Qt.darkGray)
+            dark_palette.setColor(QPalette.Disabled, QPalette.Light, QColor(53, 53, 53))
+            QApplication.setPalette(dark_palette)
+        print("themeName:", themeName)
+        if showWindow:
+            self.show()  # Re-apply the window with new flags
+
     # region Signal callbacks
     def onModuleFileUpdated(self, changedFile: str, eventType: str):
         if eventType == "deleted":
@@ -265,6 +479,14 @@ class ToolWindow(QMainWindow):
     def onModuleRefresh(self):
         self.refreshModuleList()
 
+    def onSaveReload(self, saveDir: str):
+        print(f"Reloading '{saveDir}'")
+        self.active.load_saves()
+        self.onSavepathChanged(saveDir)
+
+    def onSaveRefresh(self):
+        self.refreshSavesList()
+
     def onOverrideFileUpdated(self, changedFile: str, eventType: str):
         if eventType == "deleted":
             self.onOverrideRefresh()
@@ -273,6 +495,63 @@ class ToolWindow(QMainWindow):
 
     def onOverrideChanged(self, newDirectory: str):
         self.ui.overrideWidget.setResources(self.active.override_resources(newDirectory))
+
+    def onSavepathChanged(self, newSaveDir: str):
+        if not self.active:
+            print(f"No installation loaded, cannot change to save directory '{newSaveDir}'")
+            return
+
+        newSaveDirPath = CaseAwarePath(newSaveDir)
+        if newSaveDirPath not in self.active._saves:
+            self.active.load_saves()
+            if newSaveDirPath not in self.active._saves:
+                print(f"Cannot change to '{newSaveDir}', path is not in the saves list.")
+                return
+        print("Loading save resources into UI...")
+
+        # Clear the entire model before loading new save resources
+        self.ui.savesWidget.modulesModel.invisibleRootItem().removeRows(0, self.ui.savesWidget.modulesModel.rowCount())
+        for save_path, resource_list in self.active._saves[newSaveDirPath].items():
+            # Create a new parent item for the save_path
+            save_path_item = QStandardItem(str(save_path.relative_to(save_path.parent.parent)))
+            self.ui.savesWidget.modulesModel.invisibleRootItem().appendRow(save_path_item)
+
+            # Dictionary to keep track of category items under this save_path_item
+            categoryItemsUnderSavePath = {}
+
+            for resource in resource_list:
+                resourceType = resource.restype()
+                category = resourceType.category
+
+                # Check if the category item already exists under this save_path_item
+                if category not in categoryItemsUnderSavePath:
+                    # Create new category item similar to _getCategoryItem logic
+                    categoryItem = QStandardItem(category)
+                    categoryItem.setSelectable(False)
+                    unusedItem = QStandardItem("")
+                    unusedItem.setSelectable(False)
+                    save_path_item.appendRow([categoryItem, unusedItem])
+                    categoryItemsUnderSavePath[category] = categoryItem
+
+                # Now, categoryItem is guaranteed to exist
+                categoryItem = categoryItemsUnderSavePath[category]
+
+                # Check if resource is already listed under this category
+                foundResource = False
+                for i in range(categoryItem.rowCount()):
+                    item = categoryItem.child(i)
+                    if item and item.resource == resource:
+                        # Update the resource reference if necessary
+                        item.resource = resource
+                        foundResource = True
+                        break
+
+                if not foundResource:
+                    # Add new resource under the category
+                    item1 = QStandardItem(resource.resname())
+                    item1.resource = resource
+                    item2 = QStandardItem(resourceType.extension.upper())
+                    categoryItem.appendRow([item1, item2])
 
     def onOverrideReload(self, file_or_folder: str):
         if not self.active:
@@ -289,8 +568,8 @@ class ToolWindow(QMainWindow):
             folder_path = file_or_folder_path
         self.ui.overrideWidget.setResources(
             self.active.override_resources(
-                Path._fix_path_formatting(str(folder_path.relative_to(self.active.override_path())).replace(str(self.active.override_path()), ""))
-                if folder_path not in self.active.override_path().parents
+                str(folder_path.relative_to(str(self.active.override_path())))
+                if folder_path != self.active.override_path()
                 else "."
             )
         )
@@ -326,7 +605,7 @@ class ToolWindow(QMainWindow):
         """
         if len(resources) == 1:
             # Player saves resource with a specific name
-            default = f"{resources[0].resname()}.{resources[0].restype().extension}"
+            default: str = f"{resources[0].resname()}.{resources[0].restype().extension}"
             filepath: str = QFileDialog.getSaveFileName(self, "Save resource", default)[0]
 
             if filepath:
@@ -473,7 +752,7 @@ class ToolWindow(QMainWindow):
 
     # region Menu Bar
     def updateMenus(self):
-        version = "x" if self.active is None else "2" if self.active.tsl else "1"
+        version: Literal["x", "2", "1"] = "x" if self.active is None else "2" if self.active.tsl else "1"
 
         dialogIconPath = f":/images/icons/k{version}/dialog.png"
         self.ui.actionNewDLG.setIcon(QIcon(QPixmap(dialogIconPath)))
@@ -532,6 +811,7 @@ class ToolWindow(QMainWindow):
         self.ui.actionCloneModule.setEnabled(self.active is not None)
 
     def openModuleDesigner(self):
+        assert self.active is not None, assert_with_variable_trace(self.active is not None)
         designer = ModuleDesigner(None, self.active)
         addWindow(designer)
 
@@ -546,13 +826,13 @@ class ToolWindow(QMainWindow):
 
         If there is no active information, show a message box instead.
         """
-        filepath = self.active.path() / "dialog.tlk"
-        data = BinaryReader.load_file(filepath)
+        filepath: CaseAwarePath = self.active.path() / "dialog.tlk"
+        data: bytes = BinaryReader.load_file(filepath)
         openResourceEditor(filepath, "dialog", ResourceType.TLK, data, self.active, self)
 
     def openActiveJournal(self):
         self.active.load_override(".")
-        res = self.active.resource(
+        res: ResourceResult | None = self.active.resource(
             "global",
             ResourceType.JRL,
             [SearchLocation.OVERRIDE, SearchLocation.CHITIN],
@@ -705,6 +985,7 @@ class ToolWindow(QMainWindow):
     def reloadSettings(self):
         self.reloadInstallations()
 
+
     def getActiveResourceWidget(self) -> ResourceList | TextureList | None:
         if self.ui.resourceTabs.currentWidget() is self.ui.coreTab:
             return self.ui.coreWidget
@@ -714,6 +995,8 @@ class ToolWindow(QMainWindow):
             return self.ui.overrideWidget
         if self.ui.resourceTabs.currentWidget() is self.ui.texturesTab:
             return self.ui.texturesWidget
+        if self.ui.resourceTabs.currentWidget() is self.ui.savesTab:
+            return self.ui.savesWidget
         return None
 
     def refreshModuleList(self, *, reload: bool = True):
@@ -725,6 +1008,7 @@ class ToolWindow(QMainWindow):
         # If specified the user can forcibly reload the resource list for every module
         if reload:
             self.active.load_modules()
+
 
         areaNames: dict[str, str] = self.active.module_names()
         sortedKeys: list[str] = sorted(
@@ -767,12 +1051,28 @@ class ToolWindow(QMainWindow):
         if reload:
             self.active.load_override()
 
-        sections = []
+        sections: list[QStandardItem] = []
         for directory in self.active.override_list():
             section = QStandardItem(directory if directory.strip() else "[Root]")
             section.setData(directory, QtCore.Qt.UserRole)
             sections.append(section)
         self.ui.overrideWidget.setSections(sections)
+
+    def refreshSavesList(self, *, reload=True):
+        """Refreshes the list of override directories in the overrideFolderCombo combobox."""
+        if self.active is None:
+            print("no installation is currently loaded, cannot refresh saves list")
+            return
+        if reload:
+            self.active.load_saves()
+
+        sections: list[QStandardItem] = []
+        for save_path in self.active._saves:
+            save_path_str = str(save_path)
+            section = QStandardItem(save_path_str)
+            section.setData(save_path_str, QtCore.Qt.UserRole)
+            sections.append(section)
+        self.ui.savesWidget.setSections(sections)
 
     def refreshTexturePackList(self, *, reload=True):
         if self.active is None:
@@ -781,7 +1081,7 @@ class ToolWindow(QMainWindow):
         if reload:
             self.active.load_textures()
 
-        sections = []
+        sections: list[QStandardItem] = []
         for texturepack in self.active.texturepacks_list():
             section = QStandardItem(texturepack)
             section.setData(texturepack, QtCore.Qt.UserRole)
@@ -808,15 +1108,17 @@ class ToolWindow(QMainWindow):
         if tree == self.ui.coreWidget:
             self.ui.resourceTabs.setCurrentWidget(self.ui.coreTab)
             self.ui.coreWidget.setResourceSelection(resource)
+
         elif tree == self.ui.modulesWidget:
             self.ui.resourceTabs.setCurrentWidget(self.ui.modulesTab)
-            filename = resource.filepath().name
+            filename: str = resource.filepath().name
             self.changeModule(filename)
             self.ui.modulesWidget.setResourceSelection(resource)
+
         elif tree == self.ui.overrideWidget:
             self.ui.resourceTabs.setCurrentWidget(self.ui.overrideTab)
             self.ui.overrideWidget.setResourceSelection(resource)
-            subfolder = ""
+            subfolder: str = "."
             for folder_name in self.active.override_list():
                 folder_path: CaseAwarePath = self.active.override_path() / folder_name
                 if resource.filepath().is_relative_to(folder_path) and len(subfolder) < len(folder_path.name):
@@ -858,6 +1160,12 @@ class ToolWindow(QMainWindow):
         self.updateMenus()
 
         if index <= 0:
+            print("Index out of range", index)
+            self.ui.gameCombo.setCurrentIndex(0)
+            self.active = None
+            if self.dogObserver is not None:
+                self.dogObserver.stop()
+                self.dogObserver = None
             return
 
         self.ui.resourceTabs.setEnabled(True)
@@ -881,8 +1189,11 @@ class ToolWindow(QMainWindow):
                 self.dogObserver = None
             return
 
-        def task(active: HTInstallation | None = None):
-            self.active = active or HTInstallation(path, name, tsl, self)
+        def task(active: HTInstallation | None = None) -> HTInstallation:
+            new_active = active or HTInstallation(path, name, tsl, self)
+            if not active:
+                new_active.reload_all()
+            return new_active
 
         active = self.installations.get(name)
         loader = AsyncLoader(self, "Loading Installation" if not active else "Refreshing installation", lambda: task(active), "Failed to load installation")
@@ -892,18 +1203,24 @@ class ToolWindow(QMainWindow):
             if self.dogObserver is not None:
                 self.dogObserver.stop()
                 self.dogObserver = None
-            print("Loader task completed.")
-        else:
+        else:  # KEEP UI CODE IN MAIN THREAD!
+            self.active = loader.value
             print("Loading core installation resources into UI...")
             self.ui.coreWidget.setResources(self.active.chitin_resources())
             print("Loading module resources into UI...")
             self.refreshModuleList(reload=False)
             print("Loading override resources into UI...")
             self.refreshOverrideList(reload=False)
+            print("Loading save resources into UI...")
+            self.refreshSavesList(reload=False)
             print("Loading TexturePack resources into UI...")
             self.refreshTexturePackList(reload=False)
             self.ui.texturesWidget.setInstallation(self.active)
 
+            print("Remove unused categories...")
+            self.ui.coreWidget.modulesModel.removeUnusedCategories()
+            self.ui.savesWidget.modulesModel.removeUnusedCategories()
+            self.ui.texturesWidget.setInstallation(self.active)
             print("Updating menus...")
             self.updateMenus()
             print("Setting up watchdog observer...")
@@ -913,6 +1230,7 @@ class ToolWindow(QMainWindow):
             self.dogObserver = Observer()
             self.dogObserver.schedule(self.dogHandler, self.active.path(), recursive=True)
             self.dogObserver.start()
+        print("Loader task completed.")
 
         self.settings.installations()[name].path = path
 
@@ -964,7 +1282,7 @@ class ToolWindow(QMainWindow):
                 file.write(data)
 
         except Exception as e:
-            traceback.print_exc()
+            print(format_exception_with_variables(e))
             msg = f"Failed to extract resource: {resource.resname()}.{resource.restype().extension}"
             raise RuntimeError(msg) from e
 
@@ -990,11 +1308,14 @@ class ToolWindow(QMainWindow):
             for texture in model.list_textures(data):
                 try:
                     tpc: TPC | None = self.active.texture(texture)
+                    assert tpc is not None
                     if self.ui.tpcTxiCheckbox.isChecked():
                         self._extractTxi(tpc, folderpath.joinpath(f"{texture}.tpc"))
-                    file_format = ResourceType.TGA if self.ui.tpcDecompileCheckbox.isChecked() else ResourceType.TPC
-                    extension = "tga" if file_format == ResourceType.TGA else "tpc"
-                    write_tpc(tpc, folderpath.joinpath(f"{texture}.{extension}"), file_format)
+
+                    file_format: Literal[ResourceType.TGA, ResourceType.TPC] = ResourceType.TGA if self.ui.tpcDecompileCheckbox.isChecked() else ResourceType.TPC
+                    extension: Literal[".tga", ".tpc"] = ".tga" if file_format == ResourceType.TGA else ".tpc"
+                    write_tpc(tpc, folderpath.joinpath(f"{texture}{extension}"), file_format)
+
                 except Exception as e:  # noqa: PERF203
                     etype, msg = universal_simplify_exception(e)
                     loader.errors.append(e.__class__(f"Could not find or extract tpc: '{texture}'\nReason ({etype}): {msg}"))
@@ -1003,17 +1324,19 @@ class ToolWindow(QMainWindow):
             loader.errors.append(e.__class__(f"Could not determine textures used in model: '{resource.resname()}'\nReason ({etype}): {msg}"))
 
     def openFromFile(self):
-        filepaths = QFileDialog.getOpenFileNames(self, "Select files to open")[:-1][0]
+        filepaths: list[str] = QFileDialog.getOpenFileNames(self, "Select files to open")[:-1][0]
 
         for filepath in filepaths:
-            r_filepath = Path(filepath)
             try:
-                with r_filepath.open("rb") as file:
-                    data = file.read()
-                openResourceEditor(filepath, *ResourceIdentifier.from_path(r_filepath).validate(), data, self.active, self)
-            except ValueError as e:
-                etype, msg = universal_simplify_exception(e)
-                QMessageBox(QMessageBox.Critical, f"Failed to open file ({etype})", msg).exec_()
+                openResourceEditor(
+                    filepath,
+                    *ResourceIdentifier.from_path(filepath).validate(),
+                    BinaryReader.load_file(filepath),
+                    self.active,
+                    self,
+                )
+            except ValueError as e:  # noqa: PERF203
+                QMessageBox(QMessageBox.Critical, "Failed to open file", str(universal_simplify_exception(e))).exec_()
 
     # endregion
 
@@ -1030,7 +1353,7 @@ class FolderObserver(FileSystemEventHandler):
 
         self.lastModified = rightnow
         modified_path: Path = Path(event.src_path)
-        if not modified_path.is_dir():
+        if not modified_path.safe_isdir():
             return
 
         module_path: Path = self.window.active.module_path()

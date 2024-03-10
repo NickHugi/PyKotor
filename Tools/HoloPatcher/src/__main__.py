@@ -167,6 +167,7 @@ class App():
         self.task_running: bool = False
         self.task_thread: Thread | None = None
         self.mod_path: str = ""
+        self.last_mod_install: Path | None = None  # used for basic checks, make sure user doesn't press install multiple times for the same mod
         self.namespaces: list[PatcherNamespace] = []
 
         self.initialize_logger()
@@ -502,6 +503,8 @@ class App():
             self.logger.add_note("Mod uninstaller/backup restore task completed.")
         if not fully_ran:
             self.on_namespace_option_chosen(tk.Event())
+        else:
+            self.last_mod_install = None
 
     def async_raise(self, tid: int, exctype: type):
         """Raises an exception in the threads with id tid."""
@@ -601,6 +604,7 @@ class App():
     ):
         """Adjust the combobox after a short delay."""
         self.root.after(10, lambda: self.move_cursor_to_end(event.widget))
+        self.last_mod_install = None
 
     def move_cursor_to_end(
         self,
@@ -732,6 +736,7 @@ class App():
             self._handle_general_exception(e, "An unexpected error occurred while loading the patcher namespace.")
         else:
             self.root.after(10, lambda: self.move_cursor_to_end(self.namespaces_combobox))
+            self.last_mod_install = None
 
     def _handle_general_exception(
         self,
@@ -1079,6 +1084,13 @@ class App():
         """
         namespace_option: PatcherNamespace = next(x for x in self.namespaces if x.name == self.namespaces_combobox.get())
         ini_file_path = CaseAwarePath(self.mod_path, "tslpatchdata", namespace_option.changes_filepath())
+        if self.last_mod_install and self.last_mod_install == ini_file_path:
+            if not messagebox.askyesnocancel(
+                "You've already installed this mod.",
+                "It seems you've already installed this mod. Installing it again without first uninstalling it will break things. Use Tools -> Restore Backup first.\nWould you like to continue installing this mod anyway?"
+            ):
+                return
+        self.last_mod_install = ini_file_path
         namespace_mod_path: CaseAwarePath = ini_file_path.parent
 
         self.set_state(state=True)

@@ -42,7 +42,6 @@ if TYPE_CHECKING:
         QPaintEvent,
         QWheelEvent,
     )
-
     from pykotor.common.geometry import SurfaceMaterial
     from pykotor.resource.formats.bwm import BWM, BWMFace
     from pykotor.resource.formats.tpc import TPC
@@ -739,45 +738,44 @@ class WalkmeshRenderer(QWidget):
         # Draw the git instances (represented as icons)
         painter.setOpacity(0.6)
         painter.setRenderHint(QPainter.SmoothPixmapTransform, True)
-        lower_filter = self.instanceFilter.lower()
         if self._git is not None:
             for creature in [] if self.hideCreatures else self._git.creatures:
-                if creature.resref and lower_filter not in str(creature.resref).lower():
+                if creature.resref and self.instanceFilter not in creature.resref:
                     continue
                 self._drawImage(painter, self._pixmapCreature, creature.position.x, creature.position.y, math.pi + self.camera.rotation(), 1 / 16)
 
             for door in [] if self.hideDoors else self._git.doors:
-                if door.resref and lower_filter not in str(door.resref).lower():
+                if door.resref and self.instanceFilter not in door.resref:
                     continue
                 self._drawImage(painter, self._pixmapDoor, door.position.x, door.position.y, math.pi + self.camera.rotation(), 1 / 16)
 
             for placeable in [] if self.hidePlaceables else self._git.placeables:
-                if placeable.resref and lower_filter not in str(placeable.resref).lower():
+                if placeable.resref and self.instanceFilter not in placeable.resref:
                     continue
                 self._drawImage(painter, self._pixmapPlaceable, placeable.position.x, placeable.position.y, math.pi + self.camera.rotation(), 1 / 16)
 
             for merchant in [] if self.hideStores else self._git.stores:
-                if merchant.resref and lower_filter not in str(merchant.resref).lower():
+                if merchant.resref and self.instanceFilter not in merchant.resref:
                     continue
                 self._drawImage(painter, self._pixmapMerchant, merchant.position.x, merchant.position.y, math.pi + self.camera.rotation(), 1 / 16)
 
             for waypoint in [] if self.hideWaypoints else self._git.waypoints:
-                if waypoint.resref and lower_filter not in str(waypoint.resref).lower():
+                if waypoint.resref and self.instanceFilter not in waypoint.resref:
                     continue
                 self._drawImage(painter, self._pixmapWaypoint, waypoint.position.x, waypoint.position.y, math.pi + self.camera.rotation(), 1 / 16)
 
             for sound in [] if self.hideSounds else self._git.sounds:
-                if sound.resref and lower_filter not in str(sound.resref).lower():
+                if sound.resref and self.instanceFilter not in sound.resref:
                     continue
                 self._drawImage(painter, self._pixmapSound, sound.position.x, sound.position.y, math.pi + self.camera.rotation(), 1 / 16)
 
             for encounter in [] if self.hideEncounters else self._git.encounters:
-                if encounter.resref and lower_filter not in str(encounter.resref).lower():
+                if encounter.resref and self.instanceFilter not in encounter.resref:
                     continue
                 self._drawImage(painter, self._pixmapEncounter, encounter.position.x, encounter.position.y, math.pi + self.camera.rotation(), 1 / 16)
 
             for trigger in [] if self.hideTriggers else self._git.triggers:
-                if trigger.resref and lower_filter not in str(trigger.resref).lower():
+                if trigger.resref and self.instanceFilter not in trigger.resref:
                     continue
                 self._drawImage(painter, self._pixmapTrigger, trigger.position.x, trigger.position.y, math.pi + self.camera.rotation(), 1 / 16)
 

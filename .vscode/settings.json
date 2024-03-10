@@ -25,6 +25,7 @@
     "./Libraries/PyKotorFont/src",
     "./Libraries/Utility/src",
   ],
+  "git.autofetch": false,
   "python.testing.autoTestDiscoverOnSaveEnabled": true,
   "python.testing.promptToConfigure": true,
   "python.testing.pytestEnabled": false,
@@ -63,5 +64,8 @@
   "mypy.extraArguments": [
     "--exclude='./.venv'",
     "--exclude='tests/results'"
+  ],
+  "github-actions.workflows.pinned.workflows": [
+    ".github/workflows/publish_and_test_pykotor.yml"
   ],
 }

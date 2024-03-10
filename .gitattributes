@@ -9,3 +9,4 @@ dist/* -crlf
 dist/* -diff
 dist/* binary chmod=+x
 tests/results/* merge=ours
+tests/results merge=ours

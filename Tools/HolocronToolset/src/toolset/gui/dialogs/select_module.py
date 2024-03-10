@@ -6,10 +6,11 @@ from PyQt5 import QtCore
 from PyQt5.QtWidgets import QDialog, QFileDialog, QListWidgetItem
 
 from pykotor.common.module import Module
+from pykotor.resource.formats.erf.erf_data import ERFType
 
 if TYPE_CHECKING:
     from PyQt5.QtWidgets import QWidget
-
+    from pykotor.common.misc import CaseInsensitiveDict
     from toolset.data.installation import HTInstallation
 
 
@@ -18,6 +19,7 @@ class SelectModuleDialog(QDialog):
         """Initializes the dialog to select a module.
 
         Args:
+        ----
             parent (QWidget): Parent widget
             installation (HTInstallation): HT installation object
 
@@ -48,19 +50,22 @@ class SelectModuleDialog(QDialog):
         self._buildModuleList()
 
     def _buildModuleList(self):
-        """Builds a list of installed modules
+        """Builds a list of installed modules.
+
         Args:
+        ----
             self: The class instance
-        Returns:
-            None: No return value
-        - Gets list of module names from installation object
-        - Initializes empty set to track listed modules
-        - Loops through modules list
-        - Gets module root and checks if already listed
-        - If not already listed, adds to list widget with name and root in brackets
-        - Sets root as item data for later retrieval.
+
+        Processing Logic:
+        ----------------
+            - Gets list of module names from installation object
+            - Initializes empty set to track listed modules
+            - Loops through modules list
+            - Gets module root and checks if already listed
+            - If not already listed, adds to list widget with name and root in brackets
+            - Sets root as item data for later retrieval.
         """
-        moduleNames = self._installation.module_names()
+        moduleNames: CaseInsensitiveDict[str] = self._installation.module_names()
         listedModules = set()
 
         for module in self._installation.modules_list():
@@ -75,11 +80,12 @@ class SelectModuleDialog(QDialog):
             self.ui.moduleList.addItem(item)
 
     def browse(self):
+        capsule_types = " ".join(f"*.{e.name.lower()}" for e in ERFType) + " *.rim"
         filepath, _ = QFileDialog.getOpenFileName(
             self,
             "Select module to open",
             str(self._installation.module_path()),
-            "Module File (*.mod *.rim *.erf)",
+            f"Module File ({capsule_types})",
         )
 
         if filepath:
@@ -87,13 +93,16 @@ class SelectModuleDialog(QDialog):
             self.accept()
 
     def confirm(self):
-        """Confirms the selected module
+        """Confirms the selected module.
+
         Args:
+        ----
             self: The object instance
-        Returns:
-            None: Does not return anything
-        - Gets the currently selected module from the module list widget
-        - Calls accept to close the dialog and apply changes.
+
+        Processing Logic:
+        ----------------
+            - Gets the currently selected module from the module list widget
+            - Calls accept to close the dialog and apply changes.
         """
         self.module = self.ui.moduleList.currentItem().data(QtCore.Qt.UserRole)
         self.accept()
@@ -102,18 +111,22 @@ class SelectModuleDialog(QDialog):
         self.ui.openButton.setEnabled(self.ui.moduleList.currentItem() is not None)
 
     def onFilterEdited(self):
-        """Filter modules based on filter text
+        """Filter modules based on filter text.
+
         Args:
+        ----
             self: The class instance
-        Returns:
-            None
-        - Get filter text from filter edit box
-        - Loop through each row in module list
-        - Get item at that row
-        - Hide item if filter text is not present in item text
-        - This will filter and show only matching items.
+
+        Processing Logic:
+        ----------------
+            - Get filter text from filter edit box
+            - Loop through each row in module list
+            - Get item at that row
+            - Hide item if filter text is not present in item text
+            - This will filter and show only matching items.
         """
-        text = self.ui.filterEdit.text()
+        text: str = self.ui.filterEdit.text()
+        text_nocase = text.casefold()
         for row in range(self.ui.moduleList.count()):
-            item = self.ui.moduleList.item(row)
-            item.setHidden(text.lower() not in item.text().lower())
+            item: QListWidgetItem | None = self.ui.moduleList.item(row)
+            item.setHidden(text_nocase not in item.text().casefold())

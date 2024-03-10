@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import lzma
+
 from concurrent.futures import ThreadPoolExecutor
 from contextlib import suppress
 from dataclasses import dataclass, field
@@ -7,14 +9,16 @@ from typing import TYPE_CHECKING, NamedTuple
 
 from pykotor.common.stream import BinaryReader
 from pykotor.resource.type import ResourceType
-from pykotor.tools.misc import is_bif_file, is_capsule_file
+from pykotor.tools.misc import is_bif_file, is_bzf_file, is_capsule_file
 from utility.misc import generate_hash
+from utility.string import CaseInsensitiveWrappedStr
 from utility.system.path import Path, PurePath
 
 if TYPE_CHECKING:
     import os
 
     from pykotor.common.misc import ResRef
+    from utility.string import CaseInsensitiveWrappedStr
 
 
 class FileResource:
@@ -39,12 +43,13 @@ class FileResource:
 
         self.inside_capsule: bool = is_capsule_file(self._filepath)
         self.inside_bif: bool = is_bif_file(self._filepath)
+        self.inside_bzf = is_bzf_file(self._filepath)
 
         self._file_hash: str = ""
 
         self._path_ident_obj: Path = (
             self._filepath / str(self._identifier)
-            if self.inside_capsule or self.inside_bif
+            if self.inside_capsule or self.inside_bif or self.inside_bzf
             else self._filepath
         )
 
@@ -56,8 +61,8 @@ class FileResource:
         if (
             hasattr(self, __name)
             and __name not in {"_internal", "_hash_task_running"}
-            and not self._internal
-            and not self._hash_task_running
+            and not getattr(self, "_internal", True)
+            and not getattr(self, "_hash_task_running", True)
         ):
             msg = f"Cannot modify immutable FileResource instance, attempted `setattr({self!r}, {__name!r}, {__value!r})`"
             raise RuntimeError(msg)
@@ -96,7 +101,7 @@ class FileResource:
 
     def resref(self) -> ResRef:
         from pykotor.common.misc import ResRef
-        return ResRef(self._resname)
+        return ResRef.from_invalid(self._resname)
 
     def restype(
         self,
@@ -144,6 +149,75 @@ class FileResource:
         elif not self.inside_bif:  # bifs are read-only, offset/data will never change.
             self._offset = 0
             self._size = self._filepath.stat().st_size
+
+    def decompress_lzma1(  # TODO: move to a utility class or perhaps the chitin.py?
+        self,
+        data: bytes,
+        output_size: int,
+        no_end_marker: bool = False,  # From xoreos but idk what this implies
+    ) -> bytes:
+        temp_filepath = Path.cwd().joinpath(str(self.identifier()))
+        with temp_filepath.open("wb") as f:
+            print(f"Temporarily writing compressed data to '{temp_filepath}'")
+            f.write(data)  # temporarily store the data, remove later once lzma decompress is working.
+
+        props_size = 5  # For LZMA1, the properties size is usually 5 bytes.
+        if len(data) < props_size:
+            msg = "Input data too short to contain LZMA1 properties."
+            raise ValueError(msg)
+
+        # Extract properties and prepare the filter chain.
+        props = data[:props_size]
+        lzma_filter = {
+            "id": lzma.FILTER_LZMA1,
+            "dict_size": 1 << 23,  # You might need to adjust this based on actual properties.
+            "lc": props[0] % 9,
+            "lp": (props[0] // 9) % 5,
+            "pb": props[0] // (9 * 5),
+        }
+        filter_chain = [lzma_filter]
+
+        # Adjust data to exclude the properties bytes.
+        data = data[props_size:]
+
+        try:
+            # Decompress using FORMAT_RAW with the specified filter chain.
+            decompressed_data = lzma.decompress(data, format=lzma.FORMAT_RAW, filters=filter_chain)
+
+            # Check if the decompressed data matches the expected output size, if specified.
+            if len(decompressed_data) != output_size:
+                if no_end_marker and len(decompressed_data) <= output_size:
+                    # Allow for no end marker and data being smaller than expected.
+                    pass
+                else:
+                    msg = "Decompressed data size does not match the expected output size."
+                    raise ValueError(msg)
+
+        except lzma.LZMAError as e:
+            msg = "Failed to decompress LZMA1 data."
+            raise ValueError(msg) from e
+
+        return decompressed_data
+
+        try:
+            # Attempt to decompress using the LZMA alone format, which is used for LZMA1 data.
+            # This assumes the data starts with the LZMA properties header.
+            decompressed_data = lzma.decompress(data, format=lzma.FORMAT_ALONE)
+
+            # If no_end_marker is True and decompression was successful, but we expect no end marker,
+            # we would typically check if the entire output buffer was filled. However, Python's lzma
+            # module does not give us a straightforward way to enforce or check this directly.
+
+            # Check if the decompressed data matches the expected output size if specified.
+            if output_size is not None and len(decompressed_data) != output_size:
+                msg = "Decompressed data size does not match the expected output size."
+                raise ValueError(msg)
+
+        except lzma.LZMAError as e:
+            msg = "Failed to decompress LZMA1 data."
+            raise ValueError(msg) from e
+        else:
+            return decompressed_data
 
     def data(
         self,
@@ -202,7 +276,7 @@ class FileResource:
 
 
 class ResourceResult(NamedTuple):
-    resname: str
+    resname: CaseInsensitiveWrappedStr | str
     restype: ResourceType
     filepath: Path
     data: bytes
@@ -251,9 +325,6 @@ class ResourceIdentifier:
         msg = f"Index out of range for ResourceIdentifier. key: {key}"
         raise IndexError(msg)
 
-    def unpack(self) -> tuple[str, ResourceType]:
-        return self.resname, self.restype
-
     def __eq__(self, other: object):
         # sourcery skip: assign-if-exp, reintroduce-else
         if isinstance(other, ResourceIdentifier):
@@ -262,15 +333,27 @@ class ResourceIdentifier:
             return str(self) == other.lower()
         return NotImplemented
 
-    def validate(self):
+    def validate(self, *, strict: bool = False):
+        from pykotor.common.misc import ResRef
+        _ = strict and ResRef(self.resname)
+
         if self.restype == ResourceType.INVALID:
-            msg = f"Invalid resource: '{self}'"
+            msg = f"Invalid resource: '{self!r}'"
             raise ValueError(msg)
+
         return self
+
+    def as_resref_compatible(self):
+        from pykotor.common.misc import ResRef
+        return self.__class__(str(ResRef.from_invalid(self.resname)), self.restype)
 
     @classmethod
     def identify(cls, obj: ResourceIdentifier | os.PathLike | str):
         return obj if isinstance(obj, (cls, ResourceIdentifier)) else cls.from_path(obj)
+
+    def unpack(self) -> tuple[str, ResourceType]:
+        """Unpacks a ResourceIdentifier like a tuple. This is an explicit method that isn't necessary but helps static type checkers."""
+        return self.resname, self.restype
 
     @classmethod
     def from_path(cls, file_path: os.PathLike | str) -> ResourceIdentifier:

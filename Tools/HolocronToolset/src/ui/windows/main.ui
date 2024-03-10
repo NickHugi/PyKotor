@@ -53,6 +53,31 @@
           </item>
          </layout>
         </widget>
+        <widget class="QWidget" name="savesTab">
+         <attribute name="title">
+          <string>Saves</string>
+         </attribute>
+         <layout class="QGridLayout" name="gridLayoutSaves">
+          <property name="leftMargin">
+           <number>0</number>
+          </property>
+          <property name="topMargin">
+           <number>0</number>
+          </property>
+          <property name="rightMargin">
+           <number>0</number>
+          </property>
+          <property name="bottomMargin">
+           <number>0</number>
+          </property>
+          <property name="spacing">
+           <number>0</number>
+          </property>
+          <item row="0" column="0" rowspan="2" colspan="2">
+           <widget class="ResourceList" name="savesWidget" native="true"/>
+          </item>
+         </layout>
+        </widget>
         <widget class="QWidget" name="modulesTab">
           <attribute name="title">
             <string>Modules</string>
@@ -307,6 +332,14 @@
     <addaction name="actionEditTLK"/>
     <addaction name="actionEditJRL"/>
    </widget>
+   <widget class="QMenu" name="menuTheme">
+    <property name="title">
+     <string>Theme</string>
+    </property>
+    <addaction name="defaultLight"/>
+    <addaction name="breezeDark"/>
+    <addaction name="darkManualTheme2"/>
+   </widget>
    <widget class="QMenu" name="menuTools">
     <property name="title">
      <string>Tools</string>
@@ -337,6 +370,7 @@
    <addaction name="menuFile"/>
    <addaction name="menuEdit"/>
    <addaction name="menuTools"/>
+   <addaction name="menuTheme"/>
    <addaction name="menuHelp"/>
   </widget>
   <widget class="QStatusBar" name="statusbar"/>
@@ -643,6 +677,21 @@
     <string>Geometry Editor</string>
    </property>
   </action>
+  <action name="defaultLight">
+   <property name="text">
+    <string>Default (Light)</string>
+   </property>
+  </action>
+  <action name="breezeDark">
+   <property name="text">
+    <string>Breeze (Dark)</string>
+   </property>
+  </action>
+  <action name="darkManualTheme2">
+   <property name="text">
+    <string>Fusion (Dark)</string>
+   </property>
+  </action>
   <action name="actionIndoorMapBuilder">
    <property name="enabled">
     <bool>false</bool>
@@ -671,7 +720,7 @@
   </action>
   <action name="actionDiscordKotOR">
    <property name="text">
-    <string>r/KotOR</string>
+    <string>KOTOR Community Portal</string>
    </property>
   </action>
   <action name="actionDiscordDeadlyStream">
