@@ -1727,7 +1727,7 @@ class Installation:  # noqa: PLR0904
 
         return name or root
 
-    def module_names(self) -> dict[str, str]:
+    def module_names(self, *, use_hardcoded: bool = True) -> dict[str, str]:
         """Returns a dictionary mapping module filename to the name of the area.
 
         The name is taken from the LocalizedString "Name" in the relevant module file's ARE resource.
@@ -1736,7 +1736,7 @@ class Installation:  # noqa: PLR0904
         -------
             A dictionary mapping module filename to in-game module area name.
         """
-        return {module: self.module_name(module) for module in self.modules_list()}
+        return {module: self.module_name(module, use_hardcoded=use_hardcoded) for module in self.modules_list()}
 
     def module_id(
         self,
