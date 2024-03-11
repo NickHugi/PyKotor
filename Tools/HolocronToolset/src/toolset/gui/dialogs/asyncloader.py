@@ -231,7 +231,7 @@ class AsyncBatchLoader(QDialog):
         QMessageBox(
             QMessageBox.Critical,
             errorTitle,
-            "\n".join(str(universal_simplify_exception(error)) for error in self.errors),
+            "\n".join(str(universal_simplify_exception(error)).replace(",", ":", 1) + "<br>" for error in self.errors),
         ).exec_()
 
 
