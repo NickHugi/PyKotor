@@ -243,14 +243,12 @@ class NSSEditor(Editor):
         if self._restype != ResourceType.NCS:
             return self.ui.codeEdit.toPlainText().encode("windows-1252"), b""
 
-        compiled_bytes: bytes | None = compileScript(self.ui.codeEdit.toPlainText(), self._installation.tsl, self._installation.path())
         print("compiling script from nsseditor")
+        compiled_bytes: bytes | None = compileScript(self.ui.codeEdit.toPlainText(), self._installation.tsl, self._installation.path())
         if compiled_bytes is None:
             print("user cancelled the compilation")
             return None, b""
-
-        msg = "Could not convert to bytes - nsseditor.build()"
-        raise ValueError(msg)
+        return compiled_bytes, b""
 
     def new(self):
         super().new()
@@ -278,30 +276,29 @@ class NSSEditor(Editor):
             3. Writes the compiled data to the file.
             4. Displays a success or failure message.
         """
+        orig_filepath = self._filepath
+        orig_resname = self._resname
+        orig_restype = self._restype
+        orig_revert = self._revert
         try:
-            source: str = self.ui.codeEdit.toPlainText()
-            data: bytes | None = compileScript(source, self._installation.tsl, self._installation.path())
-            if data is None:  # user cancelled
-                return
-
+            self._restype = ResourceType.NCS
             filepath: Path = self._filepath if self._filepath is not None else Path.cwd() / "untitled_script.ncs"
-            if is_any_erf_type_file(filepath.name):
-                savePath = filepath / f"{self._resname}.{self._restype.extension}"
-                erf: ERF = read_erf(filepath)
-                erf.set_data(self._resname, ResourceType.NCS, data)
-                write_erf(erf, filepath)
-            elif is_rim_file(filepath.name):
-                savePath = filepath / f"{self._resname}.{self._restype.extension}"
-                rim: RIM = read_rim(filepath)
-                rim.set_data(self._resname, ResourceType.NCS, data)
-                write_rim(rim, filepath)
+            if is_any_erf_type_file(filepath.name) or is_rim_file(filepath.name):
+                self._filename = filepath
+            elif not filepath or is_bif_file(filepath.name):
+                self._filepath = self._installation.override_path() / f"{self._resname}.ncs"
             else:
-                if not filepath or is_bif_file(filepath.name):
-                    savePath = self._installation.override_path() / f"{self._resname}.ncs"
-                else:
-                    savePath = filepath.with_suffix(".ncs")
-                BinaryWriter.dump(savePath, data)
+                self._filepath = filepath.with_suffix(".ncs")
 
+            # Save using the overridden filepath and resource type.
+            self._saveCurrentFile()
+
+            # _saveCurrentFile() may have updated the file path again (eg. to change a RIM to a MOD).
+            if is_any_erf_type_file(self._filepath.name) or is_rim_file(self._filepath.name):
+                # Format as /full/path/to/file.mod/resname.ncs
+                savePath = self._filepath / f"{self._resname}.ncs"
+            else:
+                savePath = self._filepath
             QMessageBox(
                 QMessageBox.Information,
                 "Success",
@@ -311,6 +308,15 @@ class NSSEditor(Editor):
             QMessageBox(QMessageBox.Critical, "Failed to compile", str(universal_simplify_exception(e))).exec_()
         except OSError as e:
             QMessageBox(QMessageBox.Critical, "Failed to save file", str(universal_simplify_exception(e))).exec_()
+        finally:
+            # If the original resource was an NSS, unwind all the changes that may have been made during _saveCurrentFile().
+            # If it was an NCS, compiling it is the same as saving it, so keep the updates.
+            if self._restype != orig_restype:
+                self._filepath = orig_filepath
+                self._restype = orig_restype
+                self._resname = orig_resname
+                self._revert = orig_revert
+                self.refreshWindowTitle()
 
     def changeDescription(self):
         """Change the description textbox to whatever function or constant the user has selected.
