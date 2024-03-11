@@ -55,6 +55,7 @@ $qtArch = $null
 if ((Get-OS) -eq "Mac") {
     $qtOs = "mac"
     $qtArch = "clang_64" # i'm not even going to bother to test wasm_32.
+    # Somehow none of this works, still causes exit code 1...
     $ErrorActionPreference = 'SilentlyContinue'
     try {
         & bash -c "brew install qt@5 || true" 2>&1 | Write-Output
