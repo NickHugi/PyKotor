@@ -2115,7 +2115,7 @@ class Installation:
 
         return name or root
 
-    def module_names(self) -> CaseInsensitiveDict[str]:
+    def module_names(self, *, use_hardcoded: bool = True) -> CaseInsensitiveDict[str]:
         """Returns a dictionary mapping module filename to the name of the area.
 
         The name is taken from the LocalizedString "Name" in the relevant module file's ARE resource.
@@ -2124,7 +2124,7 @@ class Installation:
         -------
             A dictionary mapping module filename to in-game module area name.
         """
-        return CaseInsensitiveDict((module, self.module_name(module)) for module in self.modules_list())
+        return CaseInsensitiveDict((module, self.module_name(module, use_hardcoded=use_hardcoded)) for module in self.modules_list())
 
     def module_id(
         self,

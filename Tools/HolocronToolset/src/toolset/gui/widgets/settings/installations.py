@@ -252,6 +252,10 @@ class GlobalSettings(Settings):
         "selectedTheme",
         "Fusion (Dark)",  # Default theme
     )
+    moduleSortOption = Settings._addSetting(
+        "moduleSortOption",
+        1,
+    )
     # endregion
 
     # region Bools
@@ -273,10 +277,6 @@ class GlobalSettings(Settings):
     )
     joinRIMsTogether = Settings._addSetting(
         "joinRIMsTogether",
-        False,
-    )
-    useModuleFilenames = Settings._addSetting(
-        "useModuleFilenames",
         False,
     )
     greyRIMText = Settings._addSetting(
