@@ -1,6 +1,6 @@
 {
-	"toolsetLatestVersion": "2.2.1b16",
-	"toolsetLatestNotes": "Load/Save Various KOTOR files as JSON/XML/CSV/ASCII formats. Add theme switcher. Other backend fixes.",
+	"toolsetLatestVersion": "2.2.1b17",
+	"toolsetLatestNotes": "Cleanup Save code and other NSS frontend improvements by @JoeNotCharles, new module sort options, cleaner error handling/display.",
 	"holopatcherLatestVersion": "1.5.2",
 	"toolsetDownloadLink": "https://mega.nz/folder/cGJDAKaa#WzsWF8LgUkM8U2FDEoeeRA",
 	"holopatcherDownloadLink": "https://deadlystream.com/files/file/2243-holopatcher",
