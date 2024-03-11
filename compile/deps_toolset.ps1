@@ -64,6 +64,7 @@ if ((Get-OS) -eq "Mac") {
     }
     $ErrorActionPreference = 'Stop'
     $LastExitCode = 0  # We don't care about whatever failed to link...
+    $global:LASTEXITCODE = 0
 } elseif ((Get-OS) -eq "Windows") {
     # Determine system architecture
     if ($env:PROCESSOR_ARCHITECTURE -eq "AMD64" -or $env:PROCESSOR_ARCHITEW6432 -eq "AMD64") {
