@@ -1775,7 +1775,10 @@ class Installation:  # noqa: PLR0904
                 module_ifo_data: bytes | None = capsule.resource("module", ResourceType.IFO)
                 if module_ifo_data:
                     ifo: GFF = read_gff(module_ifo_data)
-                    mod_id = str(ifo.root.get_resref("Mod_Entry_Area"))
+                    mod_id = str(ifo.root.get_resref("Mod_VO_ID")).strip()
+                    if mod_id:
+                        break
+                    mod_id = str(ifo.root.get_resref("Mod_Entry_Area")).strip()
                     if mod_id:
                         break
             except Exception as e:  # pylint: disable=W0718  # noqa: BLE001
