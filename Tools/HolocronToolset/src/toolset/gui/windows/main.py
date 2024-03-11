@@ -967,6 +967,7 @@ class ToolWindow(QMainWindow):
             traceback.print_exc()
             msg = f"Failed to extract resource: {resource.resname()}.{resource.restype().extension}"
             raise RuntimeError(msg) from e
+        QMessageBox(QMessageBox.Information, "Finished extracting", f"Extracted {resource.resname()} to {r_filepath}").exec_()
 
     def _extractTxi(self, tpc: TPC, filepath: Path):
         with filepath.with_suffix(".txi").open("wb") as file:
@@ -990,6 +991,8 @@ class ToolWindow(QMainWindow):
             for texture in model.list_textures(data):
                 try:
                     tpc: TPC | None = self.active.texture(texture)
+                    if tpc is None:
+                        raise ValueError(texture)  # noqa: TRY301
                     if self.ui.tpcTxiCheckbox.isChecked():
                         self._extractTxi(tpc, folderpath.joinpath(f"{texture}.tpc"))
                     file_format = ResourceType.TGA if self.ui.tpcDecompileCheckbox.isChecked() else ResourceType.TPC
@@ -997,7 +1000,7 @@ class ToolWindow(QMainWindow):
                     write_tpc(tpc, folderpath.joinpath(f"{texture}.{extension}"), file_format)
                 except Exception as e:  # noqa: PERF203
                     etype, msg = universal_simplify_exception(e)
-                    loader.errors.append(e.__class__(f"Could not find or extract tpc: '{texture}'\nReason ({etype}): {msg}"))
+                    loader.errors.append(e.__class__(f"Could not find or extract tpc: '{texture}'"))
         except Exception as e:
             etype, msg = universal_simplify_exception(e)
             loader.errors.append(e.__class__(f"Could not determine textures used in model: '{resource.resname()}'\nReason ({etype}): {msg}"))
