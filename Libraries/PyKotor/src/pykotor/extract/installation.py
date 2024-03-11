@@ -1691,28 +1691,30 @@ class Installation:  # noqa: PLR0904
         """
         root: str = self.replace_module_extensions(module_filename)
         if use_hardcoded:
-
             for key, value in HARDCODED_MODULE_NAMES.items():
                 if key.upper() in root.upper():
                     return value
+        ext = PurePath(module_filename).suffix.lower()
 
-        name: str | None = root
+        name: str | None = None
+        backup_name: str = root
+        mod_id, entry_area = self._get_tags(module_filename)
+        if not mod_id and not entry_area:
+            print("No tags found")
+            return backup_name
         for module in self.modules_list():
-            if root.lower() not in module.lower():
+            if ext != PurePath(module).suffix.lower() or root.lower() != self.replace_module_extensions(module).lower():
                 continue
-
             capsule = Capsule(self.module_path() / module)
-
-            capsule_info: FileResource | None = capsule.info("module", ResourceType.IFO)
-            if capsule_info is None:
-                return ""
-
+            capsule_info: bytes | None = capsule.resource("module", ResourceType.IFO)
+            if not capsule_info:
+                continue
             try:
-                ifo: GFF = read_gff(capsule_info.data())
-                tag: str = str(ifo.root.get_resref("Mod_Entry_Area"))
-                are_tag_resource: bytes | None = capsule.resource(tag, ResourceType.ARE)
+                are_tag_resource: bytes | None = capsule.resource(mod_id, ResourceType.ARE)
                 if are_tag_resource is None:
-                    return tag
+                    are_tag_resource = capsule.resource(entry_area, ResourceType.ARE)
+                    if are_tag_resource is None:
+                        continue
 
                 are: GFF = read_gff(are_tag_resource)
                 locstring: LocalizedString = are.root.get_locstring("Name")
@@ -1720,12 +1722,44 @@ class Installation:  # noqa: PLR0904
                     name = locstring.get(Language.ENGLISH, Gender.MALE)
                 else:
                     name = self.talktable().string(locstring.stringref)
+                if name and name.strip():
+                    break
             except Exception as e:  # pylint: disable=W0718  # noqa: BLE001
                 print(format_exception_with_variables(e, message="This exception has been suppressed in pykotor.extract.installation."))
             else:
                 break
 
-        return name or root
+        return name or backup_name
+
+    def _get_tags(self, module_filename: str):
+        root: str = self.replace_module_extensions(module_filename)
+        vo_id: str = ""
+        entry_area: str = ""
+        ext = PurePath(module_filename).suffix.lower()
+
+        for module in self.modules_list():
+            if ext != PurePath(module).suffix.lower() or root.lower() != self.replace_module_extensions(module).lower():
+                continue
+            try:
+                capsule = Capsule(self.module_path() / module)
+                module_ifo_data: bytes | None = capsule.resource("module", ResourceType.IFO)
+                if module_ifo_data:
+                    ifo: GFF = read_gff(module_ifo_data)
+                    if not vo_id:
+                        try:  # noqa: SIM105
+                            vo_id = ifo.root.get_string("Mod_VO_ID").strip()
+                        except Exception:
+                            ...#print(module, "Mod_VO_ID", str(e))
+                    if not entry_area:
+                        try:
+                            entry_area = str(ifo.root.get_resref("Mod_Entry_Area")).strip()
+                            if entry_area:
+                                break
+                        except Exception:
+                            ...#print(module, "Mod_Entry_Area", str(e))
+            except Exception as e:  # pylint: disable=W0718  # noqa: BLE001
+                print(format_exception_with_variables(e, message="This exception has been suppressed in pykotor.extract.installation."))
+        return vo_id, entry_area
 
     def module_names(self, *, use_hardcoded: bool = True) -> dict[str, str]:
         """Returns a dictionary mapping module filename to the name of the area.
@@ -1762,30 +1796,33 @@ class Installation:  # noqa: PLR0904
             for key, value in HARDCODED_MODULE_IDS.items():
                 if key.upper() in module_filename.upper():
                     return value
-
         mod_id: str = ""
-
+        ext = PurePath(module_filename).suffix.lower()
         for module in self.modules_list():
-            if root.lower() not in module.lower():
+            if ext != PurePath(module).suffix.lower() or root.lower() != self.replace_module_extensions(module).lower():
                 continue
-
             try:
                 capsule = Capsule(self.module_path() / module)
-
                 module_ifo_data: bytes | None = capsule.resource("module", ResourceType.IFO)
                 if module_ifo_data:
                     ifo: GFF = read_gff(module_ifo_data)
-                    mod_id = str(ifo.root.get_resref("Mod_VO_ID")).strip()
-                    if mod_id:
-                        break
-                    mod_id = str(ifo.root.get_resref("Mod_Entry_Area")).strip()
-                    if mod_id:
-                        break
+                    try:
+                        mod_id = ifo.root.get_string("Mod_VO_ID").strip()
+                        if mod_id:
+                            break
+                    except Exception:
+                        ...#print(module, "Mod_VO_ID", str(e))
+                    try:
+                        mod_id = str(ifo.root.get_resref("Mod_Entry_Area")).strip()
+                        if mod_id:
+                            break
+                    except Exception:
+                        ...#print(module, "Mod_Entry_Area", str(e))
             except Exception as e:  # pylint: disable=W0718  # noqa: BLE001
                 print(format_exception_with_variables(e, message="This exception has been suppressed in pykotor.extract.installation."))
         return mod_id
 
-    def module_ids(self) -> dict[str, str]:
+    def module_ids(self, *, use_hardcoded: bool = True) -> dict[str, str]:
         """Returns a dictionary mapping module filename to the ID of the module.
 
         The ID is taken from the ResRef field "Mod_Entry_Area" in the relevant module file's IFO resource.
@@ -1794,7 +1831,7 @@ class Installation:  # noqa: PLR0904
         -------
             A dictionary mapping module filename to in-game module id.
         """
-        return {module: self.module_id(module) for module in self.modules_list()}
+        return {module: self.module_id(module, use_hardcoded=use_hardcoded) for module in self.modules_list()}
 
     @staticmethod
     def replace_module_extensions(module_filepath: os.PathLike | str) -> str:
