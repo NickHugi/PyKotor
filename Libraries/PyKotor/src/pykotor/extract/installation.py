@@ -2219,7 +2219,7 @@ class Installation:
         -------
             A dictionary mapping module filename to in-game module id.
         """
-        return CaseInsensitiveDict(module: self.module_id(module, use_hardcoded=use_hardcoded) for module in self.modules_list())
+        return CaseInsensitiveDict((module, self.module_id(module, use_hardcoded=use_hardcoded)) for module in self.modules_list())
 
     @staticmethod
     def replace_module_extensions(module_filepath: os.PathLike | str) -> str:
