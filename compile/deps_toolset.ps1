@@ -55,12 +55,14 @@ $qtArch = $null
 if ((Get-OS) -eq "Mac") {
     $qtOs = "mac"
     $qtArch = "clang_64" # i'm not even going to bother to test wasm_32.
+    $ErrorActionPreference = 'SilentlyContinue'
     try {
-        & bash -c "brew install qt@5" 2>&1 | Write-Output
+        & bash -c "brew install qt@5 || true" 2>&1 | Write-Output
     }
     catch {
         Write-Host "Error installing qt@5, but continuing..."
     }
+    $ErrorActionPreference = 'Stop'
     $LastExitCode = 0  # We don't care about whatever failed to link...
 } elseif ((Get-OS) -eq "Windows") {
     # Determine system architecture
