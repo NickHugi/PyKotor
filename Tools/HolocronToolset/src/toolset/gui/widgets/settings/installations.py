@@ -286,7 +286,7 @@ class GlobalSettings(Settings):
     )
     loadNSSBeforeDecompile = Settings.addSetting(
         "loadNSSBeforeDecompile",
-        True,
+        False,
     )
     showPreviewUTC = Settings.addSetting(
         "showPreviewUTC",
