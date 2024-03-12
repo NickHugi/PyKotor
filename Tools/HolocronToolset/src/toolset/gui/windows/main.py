@@ -6,7 +6,7 @@ import json
 from contextlib import suppress
 from datetime import datetime, timedelta, timezone
 from tempfile import TemporaryDirectory
-from typing import TYPE_CHECKING, Callable, ClassVar
+from typing import TYPE_CHECKING, ClassVar
 
 import requests
 
@@ -982,7 +982,7 @@ class ToolWindow(QMainWindow):
     # endregion
 
     # region Other
-    def reloadSettings(self):
+    def reloadSettings(self):  # TODO: Don't delete cached resources for unchanged installations.
         self.reloadInstallations()
 
 
@@ -999,11 +999,10 @@ class ToolWindow(QMainWindow):
             return self.ui.savesWidget
         return None
 
-    def refreshModuleList(self, *, reload: bool = True):
-        """Refreshes the list of modules in the modulesCombo combobox."""
+    def _getModulesList(self, *, reload: bool = True) -> list[QStandardItem] | None:
         if self.active is None:
             print("no installation is currently loaded, cannot refresh module list")
-            return
+            return None
 
         # If specified the user can forcibly reload the resource list for every module
         if reload:
@@ -1047,11 +1046,19 @@ class ToolWindow(QMainWindow):
                 item.setForeground(self.palette().shadow())
 
             modules.append(item)
+        return modules
 
-        self.ui.modulesWidget.setSections(modules)
+    def refreshModuleList(
+        self,
+        *,
+        reload: bool = True,
+        moduleItems: list[QStandardItem] | None = None,
+    ):
+        """Refreshes the list of modules in the modulesCombo combobox."""
+        moduleItems = moduleItems or self._getModulesList(reload=reload)
+        self.ui.modulesWidget.setSections(moduleItems)
 
-    def refreshOverrideList(self, *, reload=True):
-        """Refreshes the list of override directories in the overrideFolderCombo combobox."""
+    def _getOverrideList(self, *, reload=True):
         if self.active is None:
             print("no installation is currently loaded, cannot refresh override list")
             return
@@ -1063,13 +1070,26 @@ class ToolWindow(QMainWindow):
             section = QStandardItem(directory if directory.strip() else "[Root]")
             section.setData(directory, QtCore.Qt.UserRole)
             sections.append(section)
-        self.ui.overrideWidget.setSections(sections)
+        return sections
 
-    def refreshSavesList(self, *, reload=True):
+    def refreshOverrideList(
+        self,
+        *,
+        reload: bool = True,
+        overrideItems: list[QStandardItem] | None = None,
+    ):
         """Refreshes the list of override directories in the overrideFolderCombo combobox."""
+        overrideItems = overrideItems or self._getOverrideList(self, reload=reload)
+        self.ui.overrideWidget.setSections(overrideItems)
+
+    def _getSavesList(
+        self,
+        *,
+        reload: bool = True,
+    ) -> list[QStandardItem] | None:
         if self.active is None:
             print("no installation is currently loaded, cannot refresh saves list")
-            return
+            return None
         if reload:
             self.active.load_saves()
 
@@ -1079,12 +1099,21 @@ class ToolWindow(QMainWindow):
             section = QStandardItem(save_path_str)
             section.setData(save_path_str, QtCore.Qt.UserRole)
             sections.append(section)
+        return sections
+
+    def refreshSavesList(self, *, reload=True):
+        """Refreshes the list of override directories in the overrideFolderCombo combobox."""
+        sections = self._getSavesList(reload=reload)
         self.ui.savesWidget.setSections(sections)
 
-    def refreshTexturePackList(self, *, reload=True):
+    def _getTexturePackList(
+        self,
+        *,
+        reload: bool = True,
+    ) -> list[QStandardItem] | None:
         if self.active is None:
             print("no installation is currently loaded, cannot refresh texturepack list")
-            return
+            return None
         if reload:
             self.active.load_textures()
 
@@ -1093,7 +1122,10 @@ class ToolWindow(QMainWindow):
             section = QStandardItem(texturepack)
             section.setData(texturepack, QtCore.Qt.UserRole)
             sections.append(section)
+        return sections
 
+    def refreshTexturePackList(self, *, reload=True):
+        sections = self._getTexturePackList(reload=reload)
         self.ui.texturesWidget.setSections(sections)
 
     def changeModule(self, moduleName: str):
@@ -1167,7 +1199,7 @@ class ToolWindow(QMainWindow):
         self.updateMenus()
 
         if index <= 0:
-            print("Index out of range", index)
+            print(f"Index out of range - self.changeActiveInstallation({index})")
             self.ui.gameCombo.setCurrentIndex(0)
             self.active = None
             if self.dogObserver is not None:
@@ -1183,7 +1215,9 @@ class ToolWindow(QMainWindow):
         tsl: bool = self.settings.installations()[name].tsl
 
         # If the user has not set a path for the particular game yet, ask them too.
-        if not path:
+        if not path or not Path(path).safe_isdir():
+            if path and path.strip():
+                QMessageBox(QMessageBox.Warning, f"installation '{path}' not found", "Select another path now.").exec_()
             path = QFileDialog.getExistingDirectory(self, f"Select the game directory for {name}")
 
         # If the user still has not set a path, then return them to the [None] option.
@@ -1196,49 +1230,60 @@ class ToolWindow(QMainWindow):
                 self.dogObserver = None
             return
 
-        def task(active: HTInstallation | None = None) -> HTInstallation:
+        def load_task(active: HTInstallation | None = None) -> HTInstallation:
             new_active = active or HTInstallation(path, name, tsl, self)
             if not active:
                 new_active.reload_all()
             return new_active
 
         active = self.installations.get(name)
-        loader = AsyncLoader(self, "Loading Installation" if not active else "Refreshing installation", lambda: task(active), "Failed to load installation")
+        loader = AsyncLoader(self, "Loading Installation" if not active else "Refreshing installation", lambda: load_task(active), "Failed to load installation")
         if not loader.exec_():
             self.active = None
             self.ui.gameCombo.setCurrentIndex(0)
             if self.dogObserver is not None:
                 self.dogObserver.stop()
                 self.dogObserver = None
-        else:  # KEEP UI CODE IN MAIN THREAD!
-            self.active = loader.value
-            print("Loading core installation resources into UI...")
-            self.ui.coreWidget.setResources(self.active.chitin_resources())
-            print("Loading module resources into UI...")
-            self.refreshModuleList(reload=False)
-            print("Loading override resources into UI...")
-            self.refreshOverrideList(reload=False)
-            print("Loading save resources into UI...")
-            self.refreshSavesList(reload=False)
-            print("Loading TexturePack resources into UI...")
-            self.refreshTexturePackList(reload=False)
-            self.ui.texturesWidget.setInstallation(self.active)
-
-            print("Remove unused categories...")
-            self.ui.coreWidget.modulesModel.removeUnusedCategories()
-            self.ui.savesWidget.modulesModel.removeUnusedCategories()
-            self.ui.texturesWidget.setInstallation(self.active)
-            print("Updating menus...")
-            self.updateMenus()
-            print("Setting up watchdog observer...")
+            return
+        self.active = loader.value
+        # KEEP UI CODE IN MAIN THREAD!
+        def prepare_task() -> tuple[list[QStandardItem] | None, ...]:
+            return (
+                self._getModulesList(reload=False),
+                self._getOverrideList(reload=False),
+                self._getSavesList(reload=False),
+                self._getTexturePackList(reload=False),
+            )
+        loader = AsyncLoader(self, "Preparing resources...", lambda: prepare_task(), "Failed to load installation")
+        if not loader.exec_():
+            self.active = None
+            self.ui.gameCombo.setCurrentIndex(0)
             if self.dogObserver is not None:
-                print("Stopping old watchdog service...")
                 self.dogObserver.stop()
-            self.dogObserver = Observer()
-            self.dogObserver.schedule(self.dogHandler, self.active.path(), recursive=True)
-            self.dogObserver.start()
+                self.dogObserver = None
+            return
+        print("Loading core installation resources into UI...")
+        self.ui.coreWidget.setResources(self.active.chitin_resources())
+        moduleItems, overrideItems, saveItems, textureItems = loader.value
+        self.ui.modulesWidget.setSections(moduleItems)
+        self.ui.overrideWidget.setSections(overrideItems)
+        self.ui.savesWidget.setSections(saveItems)
+        self.ui.texturesWidget.setSections(textureItems)
+        self.ui.texturesWidget.setInstallation(self.active)
+        print("Remove unused categories...")
+        self.ui.coreWidget.modulesModel.removeUnusedCategories()
+        self.ui.savesWidget.modulesModel.removeUnusedCategories()
+        self.ui.texturesWidget.setInstallation(self.active)
+        print("Updating menus...")
+        self.updateMenus()
+        print("Setting up watchdog observer...")
+        if self.dogObserver is not None:
+            print("Stopping old watchdog service...")
+            self.dogObserver.stop()
+        self.dogObserver = Observer()
+        self.dogObserver.schedule(self.dogHandler, self.active.path(), recursive=True)
+        self.dogObserver.start()
         print("Loader task completed.")
-
         self.settings.installations()[name].path = path
 
     def _extractResource(self, resource: FileResource, filepath: os.PathLike | str, loader: AsyncBatchLoader):
