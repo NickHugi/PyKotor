@@ -280,6 +280,8 @@ class NSSEditor(Editor):
         orig_resname = self._resname
         orig_restype = self._restype
         orig_revert = self._revert
+        # save() will send this signal if the file is saved successfully. Use it to show a success message.
+        saved_connection = self.savedFile.connect(self._compiledResourceSaved)
         try:
             self._restype = ResourceType.NCS
             filepath: Path = self._filepath if self._filepath is not None else Path.cwd() / "untitled_script.ncs"
@@ -291,25 +293,15 @@ class NSSEditor(Editor):
                 self._filepath = filepath.with_suffix(".ncs")
 
             # Save using the overridden filepath and resource type.
-            self._saveCurrentFile()
-
-            # _saveCurrentFile() may have updated the file path again (eg. to change a RIM to a MOD).
-            if is_any_erf_type_file(self._filepath.name) or is_rim_file(self._filepath.name):
-                # Format as /full/path/to/file.mod/resname.ncs
-                savePath = self._filepath / f"{self._resname}.ncs"
-            else:
-                savePath = self._filepath
-            QMessageBox(
-                QMessageBox.Information,
-                "Success",
-                f"Compiled script successfully saved to:\n {savePath}.",
-            ).exec_()
+            self.save()
         except ValueError as e:
             QMessageBox(QMessageBox.Critical, "Failed to compile", str(universal_simplify_exception(e))).exec_()
         except OSError as e:
             QMessageBox(QMessageBox.Critical, "Failed to save file", str(universal_simplify_exception(e))).exec_()
         finally:
-            # If the original resource was an NSS, unwind all the changes that may have been made during _saveCurrentFile().
+            # Don't show the compileCurrentScript() success message for other saved files.
+            self.disconnect(saved_connection)
+            # If the original resource was an NSS, unwind all the changes that may have been made during save().
             # If it was an NCS, compiling it is the same as saving it, so keep the updates.
             if self._restype != orig_restype:
                 self._filepath = orig_filepath
@@ -317,6 +309,18 @@ class NSSEditor(Editor):
                 self._resname = orig_resname
                 self._revert = orig_revert
                 self.refreshWindowTitle()
+
+    def _compiledResourceSaved(self, filepath: str, resname: str, restype: ResourceType, data: bytes):
+        """Shows a messagebox after compileCurrentScript successfully saves an NCS resource."""
+        savePath = Path(filepath)
+        if is_any_erf_type_file(savePath.name) or is_rim_file(savePath.name):
+            # Format as /full/path/to/file.mod/resname.ncs
+            savePath = savePath / f"{resname}.ncs"
+        QMessageBox(
+            QMessageBox.Information,
+            "Success",
+            f"Compiled script successfully saved to:\n {savePath}.",
+        ).exec_()
 
     def changeDescription(self):
         """Change the description textbox to whatever function or constant the user has selected.
