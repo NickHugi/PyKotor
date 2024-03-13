@@ -1061,7 +1061,7 @@ class ToolWindow(QMainWindow):
     def _getOverrideList(self, *, reload=True):
         if self.active is None:
             print("no installation is currently loaded, cannot refresh override list")
-            return
+            return None
         if reload:
             self.active.load_override()
 

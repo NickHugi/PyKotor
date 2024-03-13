@@ -19,7 +19,6 @@ from toolset.gui.widgets.settings.installations import GlobalSettings
 from toolset.utils.window import openResourceEditor
 
 if TYPE_CHECKING:
-    from PyQt5.QtWidgets import QWidget
     import os
 
     from PyQt5.QtCore import QObject

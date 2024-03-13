@@ -10,6 +10,7 @@ from pykotor.resource.formats.erf.erf_data import ERFType
 
 if TYPE_CHECKING:
     from PyQt5.QtWidgets import QWidget
+
     from pykotor.common.misc import CaseInsensitiveDict
     from toolset.data.installation import HTInstallation
 

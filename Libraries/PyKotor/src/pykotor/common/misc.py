@@ -3,7 +3,7 @@
 
 from __future__ import annotations
 
-from collections.abc import ItemsView, Iterable, Iterator, Mapping
+from collections.abc import Mapping
 from enum import Enum, IntEnum
 from typing import TYPE_CHECKING, ClassVar, Generic, TypeVar, overload
 
@@ -12,6 +12,8 @@ from utility.string import CaseInsensitiveWrappedStr
 
 if TYPE_CHECKING:
     import os
+
+    from collections.abc import ItemsView, Iterable, Iterator
 
 T = TypeVar("T")
 VT = TypeVar("VT")

@@ -25,6 +25,7 @@ from utility.system.path import Path
 
 if TYPE_CHECKING:
     from PyQt5.QtWidgets import QWidget
+
     from pykotor.common.module import Module
     from pykotor.extract.file import FileResource
     from toolset.data.installation import HTInstallation

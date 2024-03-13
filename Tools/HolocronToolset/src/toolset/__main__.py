@@ -10,7 +10,7 @@ import traceback
 
 from typing import TYPE_CHECKING
 
-from PyQt5.QtCore import QFile, QTextStream, QThread
+from PyQt5.QtCore import QThread
 from PyQt5.QtWidgets import QApplication
 
 if TYPE_CHECKING:
