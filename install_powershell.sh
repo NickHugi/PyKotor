@@ -191,6 +191,7 @@ install_powershell_mac_fallback() {
     else
         echo "Unsupported architecture: $ARCH"
         exit 1
+    fi
 
     echo "Downloading $PKG_FILENAME from $PS_PKG_PREFIX... please wait..."
     curl -L -o "$PKG_FILENAME" "$PS_PKG_PREFIX/$PKG_FILENAME"
@@ -233,13 +234,13 @@ install_powershell_mac() {
         # Install Homebrew
         echo "Installing Powershell through Homebrew is recommended (by microsoft themselves)"
         echo "Install HomeBrew now? (y) otherwise attempt to fallback to direct pkg download (n)"
-        if [ $noprompt == false ]
+        if [ $noprompt == false ]; then
             read -p "Enter your choice (y/N): " user_choice
         else
             user_choice = "y"
         fi
 
-        if [ $user_choice == "y" ] | [ $user_choice == "Y"]; then
+        if [ $user_choice == "y" ] || [ $user_choice == "Y"]; then
             echo "Installing HomeBrew... please wait..."
             /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
             echo 'eval $(/opt/homebrew/bin/brew shellenv)' >> ~/.zprofile
@@ -390,7 +391,7 @@ case "$OS" in
                     echo "In order to install powershell, we must convert you to alma linux through their supported process (recommended)."
                     echo "WARNING: Converting CentOS to AlmaLinux is a significant change and not reversible. This process will change your CentOS distribution to AlmaLinux to continue with the PowerShell installation."
                     echo "Do you want to continue with the conversion?"
-                    if [ $noprompt == false ]
+                    if [ $noprompt == false ]; then
                         read -p "Enter your choice (y/N): " user_choice
                     else
                         user_choice = "y"
