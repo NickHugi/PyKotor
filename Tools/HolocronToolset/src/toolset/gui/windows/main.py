@@ -763,7 +763,7 @@ class ToolWindow(QMainWindow):
         """Refreshes the list of override directories in the overrideFolderCombo combobox."""
         if self.active is None:
             print("no installation is currently loaded, cannot refresh override list")
-            return None
+            return
         if reload:
             self.active.load_override()
 
