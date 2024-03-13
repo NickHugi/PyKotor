@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from collections import namedtuple
+from contextlib import contextmanager
 from operator import attrgetter
 from typing import TYPE_CHECKING, ClassVar
 
@@ -146,6 +148,44 @@ class NSSEditor(Editor):
             item.setData(QtCore.Qt.UserRole, constant)
             self.ui.constantList.addItem(item)
 
+    # A context that can be saved and restored by _snapshotResTypeContext.
+    SavedContext = namedtuple("SavedContext", ["filepath", "resname", "restype", "revert", "saved_connection"])
+
+    @contextmanager
+    def _snapshotResTypeContext(self, saved_file_callback=None):
+        """Snapshots the current _restype and associated state, to restore after a with statement.
+
+        This saves the current _filepath, _resname and _revert data in a context object and restores it when done.
+        If saved_file_callback is not None, it will be connected to the savedFile slot during the with statement.
+        If a file is successfully saved during that time it will be called with these arguments before the context
+        manager restores the original state: (filepath: str, resname: str, restype: ResourceType, data: bytes)
+
+        Usage:
+
+            # self._restype is NSS
+            with self._snapshotResTypeContext():
+                # Do something that might change self._restype to NSC.
+                self.saveAs()
+            # after the with statement, self._restype is returned to NSS.
+        """
+        if saved_file_callback:
+            saved_connection = self.savedFile.connect(saved_file_callback)
+        else:
+            saved_connection = None
+        context = NSSEditor.SavedContext(self._filepath, self._resname, self._restype, self._revert, saved_connection)
+        try:
+            yield context
+        finally:
+            if context.saved_connection:
+                self.disconnect(context.saved_connection)
+            # If _restype chagned, unwind all the changes that may have been made.
+            if self._restype != context.restype:
+                self._filepath = context.filepath
+                self._resname = context.resname
+                self._restype = context.restype
+                self._revert = context.revert
+                self.refreshWindowTitle()
+
     def load(self, filepath: os.PathLike | str, resref: str, restype: ResourceType, data: bytes):
         """Loads a resource into the editor.
 
@@ -216,41 +256,26 @@ class NSSEditor(Editor):
             3. Writes the compiled data to the file.
             4. Displays a success or failure message.
         """
-        orig_filepath = self._filepath
-        orig_resname = self._resname
-        orig_restype = self._restype
-        orig_revert = self._revert
-        # save() will send this signal if the file is saved successfully. Use it to show a success message.
-        saved_connection = self.savedFile.connect(self._compiledResourceSaved)
-        try:
-            self._restype = ResourceType.NCS
-            filepath: Path = self._filepath if self._filepath is not None else Path.cwd() / "untitled_script.ncs"
-            if is_any_erf_type_file(filepath.name) or is_rim_file(filepath.name):
-                # Save the NCS resource into the given ERF/RIM.
-                # If this is not allowed save() will find a new path to save at.
-                self._filepath = filepath
-            elif not filepath or is_bif_file(filepath.name):
-                self._filepath = self._installation.override_path() / f"{self._resname}.ncs"
-            else:
-                self._filepath = filepath.with_suffix(".ncs")
+        # _compiledResourceSaved() will show a success message if the file is saved successfully.
+        with self._snapshotResTypeContext(self._compiledResourceSaved):
+            try:
+                self._restype = ResourceType.NCS
+                filepath: Path = self._filepath if self._filepath is not None else Path.cwd() / "untitled_script.ncs"
+                if is_any_erf_type_file(filepath.name) or is_rim_file(filepath.name):
+                    # Save the NCS resource into the given ERF/RIM.
+                    # If this is not allowed save() will find a new path to save at.
+                    self._filepath = filepath
+                elif not filepath or is_bif_file(filepath.name):
+                    self._filepath = self._installation.override_path() / f"{self._resname}.ncs"
+                else:
+                    self._filepath = filepath.with_suffix(".ncs")
 
-            # Save using the overridden filepath and resource type.
-            self.save()
-        except ValueError as e:
-            QMessageBox(QMessageBox.Critical, "Failed to compile", str(universal_simplify_exception(e))).exec_()
-        except OSError as e:
-            QMessageBox(QMessageBox.Critical, "Failed to save file", str(universal_simplify_exception(e))).exec_()
-        finally:
-            # Don't show the compileCurrentScript() success message for other saved files.
-            self.disconnect(saved_connection)
-            # If the original resource was an NSS, unwind all the changes that may have been made during save().
-            # If it was an NCS, compiling it is the same as saving it, so keep the updates.
-            if self._restype != orig_restype:
-                self._filepath = orig_filepath
-                self._restype = orig_restype
-                self._resname = orig_resname
-                self._revert = orig_revert
-                self.refreshWindowTitle()
+                # Save using the overridden filepath and resource type.
+                self.save()
+            except ValueError as e:
+                QMessageBox(QMessageBox.Critical, "Failed to compile", str(universal_simplify_exception(e))).exec_()
+            except OSError as e:
+                QMessageBox(QMessageBox.Critical, "Failed to save file", str(universal_simplify_exception(e))).exec_()
 
     def _compiledResourceSaved(self, filepath: str, resname: str, restype: ResourceType, data: bytes):
         """Shows a messagebox after compileCurrentScript successfully saves an NCS resource."""
