@@ -240,7 +240,7 @@ install_powershell_mac() {
             user_choice = "y"
         fi
 
-        if [ $user_choice == "y" ] | [ $user_choice == "Y"]; then
+        if [ $user_choice == "y" ] || [ $user_choice == "Y"]; then
             echo "Installing HomeBrew... please wait..."
             /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
             echo 'eval $(/opt/homebrew/bin/brew shellenv)' >> ~/.zprofile
