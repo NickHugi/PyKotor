@@ -61,7 +61,7 @@ class BinaryReader:
         self.auto_close: bool = True
 
         # Safe to change outside constructor.
-        self.buffer_size = 4096 if buffer_size is None else buffer_size  # Size of the buffer for chunked reading
+        self.buffer_size: int = 65536 if buffer_size is None else buffer_size  # Size of the buffer for chunked reading
 
         # Definitions don't change after construction.
         self._stream: io.RawIOBase | io.BufferedIOBase | mmap.mmap = stream
@@ -70,7 +70,7 @@ class BinaryReader:
         # Definitions are updated internally.
         self._stream_pos: int = offset
         self._buffer: bytearray = bytearray()
-        self._buffer_pos = 0
+        self._buffer_pos: int = 0
 
         # Setup
         self._stream.seek(offset)
@@ -85,8 +85,7 @@ class BinaryReader:
             raise ValueError(msg)
 
         self._size: int = total_size - offset if size is None else size
-        self._stream_pos = offset # Initialize the stream position to the offset.
-        self._fill_buffer()
+        self._stream_pos: int = offset # Initialize the stream position to the offset.
 
     def __repr__(
         self,
@@ -111,12 +110,10 @@ class BinaryReader:
 
     def _fill_buffer(self):
         # Calculate the remaining size that can be read from the stream, respecting the initial offset and total size.
-        remaining = self._size - (self._stream_pos - self._offset)
-        if remaining > 0:
-            read_size = min(self.buffer_size, remaining)
-            self._buffer = bytearray(self._stream.read(read_size))
-            self._buffer_pos = 0
-            # Do not adjust _stream_pos here; it will be updated on read.
+        read_size = min(self.buffer_size, self.remaining())
+        self._buffer = bytearray(self._stream.read(read_size) or b"")
+        self._buffer_pos = 0
+        # Do not adjust _stream_pos here; it will be updated on read.
 
     def read(self, size: int) -> bytes:
         if size <= 0:
@@ -135,6 +132,8 @@ class BinaryReader:
 
             # Calculate how much to read from the buffer.
             available_to_read = min(size, len(self._buffer) - self._buffer_pos)
+            if not available_to_read:
+                raise OSError("This operation would exceed the streams boundaries.")
             result.extend(self._buffer[self._buffer_pos:self._buffer_pos + available_to_read])
             self._buffer_pos += available_to_read
             size -= available_to_read
@@ -348,29 +347,16 @@ class BinaryReader:
         # Reflects the abstraction of reading from the stream, including buffer reads.
         return self._stream_pos + self._buffer_pos - self._offset
 
-    def seek(
-        self,
-        position: int,
-    ):
-        """Moves the stream pointer to the byte offset.
-
-        Args:
-        ----
-            position: The byte index into stream.
-        """
-        # Calculate the absolute position in the stream.
-        absolute_position = self._offset + position
-
-        # Check if the desired position falls within the current buffer.
-        if self._offset <= absolute_position < (self._offset + len(self._buffer)):
-            # Adjust buffer position without refilling if within current buffer range.
-            self._buffer_pos = absolute_position - self._offset
-        else:
-            # If outside the current buffer, seek the stream and refill the buffer.
-            self._stream.seek(absolute_position)
-            self._stream_pos = absolute_position  # Update stream position to the new absolute position.
-            self._fill_buffer()  # Refill the buffer from the new position.
-            self._buffer_pos = 0  # Reset buffer position since we've refilled the buffer.
+    def seek(self, position: int):
+        """Moves the internal pointer to the specified position, efficiently handling buffering."""
+        absolute_position = position + self._offset
+        # For positions outside the current buffer or when the buffer is empty,
+        # Seek the underlying stream and refill the buffer.
+        self._stream.seek(absolute_position)
+        self._stream_pos = absolute_position  # Update the stream position accordingly.
+        self._buffer = bytearray()  # Clear the current buffer.
+        self._fill_buffer()  # Refill the buffer from the current stream position.
+        self._buffer_pos = 0  # Reset buffer position for the new buffer.
 
     def read_all(
         self,
