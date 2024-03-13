@@ -182,15 +182,16 @@ install_powershell_mac_fallback() {
     PS_PKG_PREFIX="https://github.com/PowerShell/PowerShell/releases/download/v$PS_VERSION/"
 
     # Apple Silicon Mac
-    if [ "$ARCH" == "arm64" ]; then
+    if [ "$ARCH" = "arm64" ]; then
         PKG_FILENAME="powershell-$PS_VERSION-osx-arm64.pkg"
     # Intel Mac
-    elif [ "$ARCH" == "x86_64" ]; then
+    elif [ "$ARCH" = "x86_64" ]; then
         PKG_FILENAME="powershell-$PS_VERSION-osx-x64.pkg"
     # Unknown architecture
     else
         echo "Unsupported architecture: $ARCH"
         exit 1
+    fi
 
     echo "Downloading $PKG_FILENAME from $PS_PKG_PREFIX... please wait..."
     curl -L -o "$PKG_FILENAME" "$PS_PKG_PREFIX/$PKG_FILENAME"
