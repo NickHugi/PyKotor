@@ -85,6 +85,7 @@ def read_tpc(
         source: The source of the data.
         offset: The byte offset of the file inside the data.
         size: Number of bytes to allowed to read from the stream. If not specified, uses the whole stream.
+        txi_source: An optional source to the TXI data to use. If this is a filepath, it *must* exist on disk.
 
     Raises:
     ------
@@ -100,25 +101,25 @@ def read_tpc(
     file_format: ResourceType = detect_tpc(source, offset)
 
     if file_format == ResourceType.TPC:
-        return TPCBinaryReader(source, offset, size or 0).load()
-    if file_format == ResourceType.TGA:
+        loaded_tpc = TPCBinaryReader(source, offset, size or 0).load()
+    elif file_format == ResourceType.TGA:
         loaded_tpc = TPCTGAReader(source, offset, size or 0).load()
-        # Attempt to find TXI. If txi_source not set, determine if source is a filepath and see if the txi is in the same folder.
-        if txi_source is None and isinstance(source, (os.PathLike, str)):
-            txi_source = CaseAwarePath.pathify(source).with_suffix(".txi")
-            if not txi_source.safe_isfile():
-                return loaded_tpc
-
-        elif isinstance(txi_source, (os.PathLike, str)):
-            txi_source = CaseAwarePath.pathify(txi_source).with_suffix(".txi")
-
-        if txi_source is None:
+    else:
+        msg = "Failed to determine the format of the TPC/TGA file."
+        raise ValueError(msg)
+    if txi_source is None and isinstance(source, (os.PathLike, str)):
+        txi_source = CaseAwarePath.pathify(source).with_suffix(".txi")
+        if not txi_source.safe_isfile():
             return loaded_tpc
-        with BinaryReader.from_auto(txi_source) as f:
-            loaded_tpc.txi = f.read_all().decode(encoding="ascii", errors="ignore")
+
+    elif isinstance(txi_source, (os.PathLike, str)):
+        txi_source = CaseAwarePath.pathify(txi_source).with_suffix(".txi")
+
+    if txi_source is None:
         return loaded_tpc
-    msg = "Failed to determine the format of the TPC/TGA file."
-    raise ValueError(msg)
+    with BinaryReader.from_auto(txi_source) as f:
+        loaded_tpc.txi = f.read_all().decode(encoding="ascii", errors="ignore")
+    return loaded_tpc
 
 
 def write_tpc(
