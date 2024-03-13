@@ -88,7 +88,7 @@ class TPCEditor(Editor):
         # Read image, convert to RGB, and y_flip.
         orig_format = None
         if restype in {ResourceType.TPC, ResourceType.TGA}:
-            self._tpc = read_tpc(data)
+            self._tpc = read_tpc(data, txi_source=filepath)
             orig_format = self._tpc.format()
             width, height, img_bytes = self._tpc.convert(TPCTextureFormat.RGB, 0, y_flip=True)
             self._tpc.set_data(width, height, [img_bytes], TPCTextureFormat.RGB)

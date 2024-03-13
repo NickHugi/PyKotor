@@ -1,4 +1,5 @@
 from __future__ import annotations
+import os
 
 from typing import TYPE_CHECKING
 
@@ -73,6 +74,7 @@ def read_tpc(
     source: SOURCE_TYPES,
     offset: int = 0,
     size: int | None = None,
+    txi_source: SOURCE_TYPES | None = None,
 ) -> TPC:
     """Returns an TPC instance from the source.
 
@@ -100,7 +102,21 @@ def read_tpc(
     if file_format == ResourceType.TPC:
         return TPCBinaryReader(source, offset, size or 0).load()
     if file_format == ResourceType.TGA:
-        return TPCTGAReader(source, offset, size or 0).load()
+        loaded_tpc = TPCTGAReader(source, offset, size or 0).load()
+        # Attempt to find TXI. If txi_source not set, determine if source is a filepath and see if the txi is in the same folder.
+        if txi_source is None and isinstance(source, (os.PathLike, str)):
+            txi_source = CaseAwarePath.pathify(source).with_suffix(".txi")
+            if not txi_source.safe_isfile():
+                return loaded_tpc
+
+        elif isinstance(txi_source, (os.PathLike, str)):
+            txi_source = CaseAwarePath.pathify(txi_source).with_suffix(".txi")
+
+        if txi_source is None:
+            return loaded_tpc
+        with BinaryReader.from_auto(txi_source) as f:
+            loaded_tpc.txi = f.read_all().decode(encoding="ascii", errors="ignore")
+        return loaded_tpc
     msg = "Failed to determine the format of the TPC/TGA file."
     raise ValueError(msg)
 
