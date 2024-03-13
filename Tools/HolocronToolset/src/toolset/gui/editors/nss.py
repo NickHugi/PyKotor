@@ -17,9 +17,6 @@ from PyQt5.QtGui import (
 from PyQt5.QtWidgets import QFileDialog, QListWidgetItem, QMessageBox, QPlainTextEdit, QShortcut, QTextEdit, QWidget
 
 from pykotor.common.scriptdefs import KOTOR_CONSTANTS, KOTOR_FUNCTIONS, TSL_CONSTANTS, TSL_FUNCTIONS
-from pykotor.common.stream import BinaryWriter
-from pykotor.resource.formats.erf import read_erf, write_erf
-from pykotor.resource.formats.rim import read_rim, write_rim
 from pykotor.resource.type import ResourceType
 from pykotor.tools.misc import is_any_erf_type_file, is_bif_file, is_rim_file
 from toolset.gui.editor import Editor
@@ -29,12 +26,6 @@ from utility.error_handling import universal_simplify_exception
 from utility.system.path import Path
 
 if TYPE_CHECKING:
-    from PyQt5.QtGui import (
-        QPaintEvent,
-        QResizeEvent,
-        QTextBlock,
-        QTextDocument,
-    )
     import os
 
     from PyQt5.QtGui import (
@@ -45,8 +36,6 @@ if TYPE_CHECKING:
     )
 
     from pykotor.common.script import ScriptConstant, ScriptFunction
-    from pykotor.resource.formats.erf import ERF
-    from pykotor.resource.formats.rim import RIM
     from toolset.data.installation import HTInstallation
 
 
@@ -210,7 +199,7 @@ class NSSEditor(Editor):
             # User cancelled.
             return False
         try:
-            with open(nss_path, encoding="windows-1252") as script_file:
+            with Path(nss_path).open(encoding="windows-1252") as script_file:
                 self.ui.codeEdit.setPlainText(script_file.read())
                 return True
         except OSError as e:
@@ -232,11 +221,12 @@ class NSSEditor(Editor):
             source = decompileScript(data, self._installation.tsl, self._installation.path())
             self.ui.codeEdit.setPlainText(source)
             self._is_decompiled = True
-            return True
         except ValueError as e:
             QMessageBox(QMessageBox.Critical, "Decompilation Failed", str(universal_simplify_exception(e))).exec_()
         except NoConfigurationSetError as e:
             QMessageBox(QMessageBox.Critical, "Filepath is not set", str(universal_simplify_exception(e))).exec_()
+        else:
+            return True
         return False
 
     def build(self) -> tuple[bytes | None, bytes]:
@@ -276,6 +266,8 @@ class NSSEditor(Editor):
             3. Writes the compiled data to the file.
             4. Displays a success or failure message.
         """
+        assert self._filepath is not None, "self._filepath cannot be None in compileCurrentScript()"
+        assert self._installation is not None, "self._installation cannot be None in compileCurrentScript()"
         orig_filepath = self._filepath
         orig_resname = self._resname
         orig_restype = self._restype
