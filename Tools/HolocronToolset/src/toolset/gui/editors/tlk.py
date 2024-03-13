@@ -17,7 +17,6 @@ from toolset.gui.dialogs.search import FileResults
 from toolset.gui.editor import Editor
 from toolset.gui.widgets.settings.installations import GlobalSettings
 from toolset.utils.window import addWindow, openResourceEditor
-from utility.misc import is_debug_mode
 
 if TYPE_CHECKING:
     import os

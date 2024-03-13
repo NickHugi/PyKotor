@@ -298,10 +298,11 @@ class ERFEditor(Editor):
                     lines = format_exception_with_variables(e)
                     file.writelines(lines)
                     file.write("\n----------------------\n")
+                error_msg = str(universal_simplify_exception(e)).replace("\n", "<br>")
                 QMessageBox(
                     QMessageBox.Critical,
                     "Failed to add resource",
-                    f"Could not add resource at {c_filepath.absolute()}:\n{universal_simplify_exception(e)}",
+                    f"Could not add resource at {c_filepath.absolute()}:<br><br>{error_msg}",
                 ).exec_()
 
     def selectFilesToAdd(self):

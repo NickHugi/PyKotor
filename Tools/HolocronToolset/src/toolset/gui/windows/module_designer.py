@@ -15,7 +15,6 @@ from pykotor.common.misc import Color, ResRef
 from pykotor.common.module import Module, ModuleResource
 from pykotor.common.stream import BinaryWriter
 from pykotor.extract.file import ResourceIdentifier
-from pykotor.resource.formats.bwm.bwm_data import BWM
 from pykotor.resource.generics.git import (
     GITCamera,
     GITCreature,
@@ -44,7 +43,6 @@ from toolset.gui.windows.help import HelpWindow
 from toolset.utils.misc import QtMouse
 from toolset.utils.window import openResourceEditor
 from utility.error_handling import assert_with_variable_trace
-from utility.system.path import Path
 
 if TYPE_CHECKING:
     from PyQt5.QtGui import QFont, QKeyEvent
@@ -52,6 +50,7 @@ if TYPE_CHECKING:
     from glm import vec3
 
     from pykotor.gl.scene import Camera
+    from pykotor.resource.formats.bwm.bwm_data import BWM
     from pykotor.resource.generics.are import ARE
     from pykotor.resource.generics.git import (
         GIT,
@@ -62,6 +61,7 @@ if TYPE_CHECKING:
     from toolset.gui.editor import Editor
     from toolset.gui.widgets.renderer.module import ModuleRenderer
     from toolset.gui.widgets.renderer.walkmesh import WalkmeshRenderer
+    from utility.system.path import Path
 
 
 class ModuleDesigner(QMainWindow):  # noqa: PLR0904
