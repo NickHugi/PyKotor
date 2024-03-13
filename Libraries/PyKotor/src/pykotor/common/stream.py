@@ -61,7 +61,7 @@ class BinaryReader:
         self.auto_close: bool = True
 
         # Safe to change outside constructor.
-        self.buffer_size: int = 65536 if buffer_size is None else buffer_size  # Size of the buffer for chunked reading
+        self.buffer_size: int = 4096 if buffer_size is None else buffer_size  # Size of the buffer for chunked reading
 
         # Definitions don't change after construction.
         self._stream: io.RawIOBase | io.BufferedIOBase | mmap.mmap = stream
@@ -126,14 +126,12 @@ class BinaryReader:
                 prev_buffer_len = len(self._buffer)  # Capture the buffer length before refill
                 self._fill_buffer()
                 if not self._buffer:  # If buffer is still empty after refill, end of file/stream.
-                    self.exceed_check(size)  # Check before attempting to read
+                    raise OSError("This operation would exceed the bounds of the stream.")
                 # Adjust stream position only after actual refill.
                 self._stream_pos += (prev_buffer_len - self._buffer_pos)
 
             # Calculate how much to read from the buffer.
             available_to_read = min(size, len(self._buffer) - self._buffer_pos)
-            if not available_to_read:
-                raise OSError("This operation would exceed the streams boundaries.")
             result.extend(self._buffer[self._buffer_pos:self._buffer_pos + available_to_read])
             self._buffer_pos += available_to_read
             size -= available_to_read
