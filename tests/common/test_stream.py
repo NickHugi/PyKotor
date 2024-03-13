@@ -30,8 +30,8 @@ class TestBinaryReader(TestCase):
         self.data4 = b"\x79\xE9\xF6\xC2" + b"\x68\x91\xED\x7C\x3F\xDD\x5E\x40"
 
         self.reader1 = BinaryReader.from_bytes(self.data1)
-        self.reader1b = BinaryReader.from_bytes(self.data1, 3)
-        self.reader1c = BinaryReader.from_bytes(self.data1, 3, 4)
+        self.reader1b = BinaryReader.from_bytes(self.data1, offset=3)
+        self.reader1c = BinaryReader.from_bytes(self.data1, offset=3, size=4)
         self.reader2 = BinaryReader.from_bytes(self.data2)
         self.reader3 = BinaryReader.from_bytes(self.data3)
         self.reader4 = BinaryReader.from_bytes(self.data4)
