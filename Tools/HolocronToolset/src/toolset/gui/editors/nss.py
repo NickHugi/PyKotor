@@ -226,7 +226,9 @@ class NSSEditor(Editor):
             self._restype = ResourceType.NCS
             filepath: Path = self._filepath if self._filepath is not None else Path.cwd() / "untitled_script.ncs"
             if is_any_erf_type_file(filepath.name) or is_rim_file(filepath.name):
-                self._filename = filepath
+                # Save the NCS resource into the given ERF/RIM.
+                # If this is not allowed save() will find a new path to save at.
+                self._filepath = filepath
             elif not filepath or is_bif_file(filepath.name):
                 self._filepath = self._installation.override_path() / f"{self._resname}.ncs"
             else:
