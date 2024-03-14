@@ -3,6 +3,7 @@ from __future__ import annotations
 from collections import namedtuple
 from contextlib import contextmanager
 from operator import attrgetter
+from pathlib import PurePath
 from typing import TYPE_CHECKING, ClassVar
 
 from PyQt5 import QtCore
@@ -73,7 +74,7 @@ class NSSEditor(Editor):
         self._setupSignals()
 
         self._length: int = 0
-        self._is_decompiled: bool = False
+        self._is_decompiled: bool = False  # REM: ensure this stays updated.
         self._global_settings: GlobalSettings = GlobalSettings()
         self._highlighter: SyntaxHighlighter = SyntaxHighlighter(self.ui.codeEdit.document(), installation)
         self.setInstallation(self._installation)
@@ -205,46 +206,46 @@ class NSSEditor(Editor):
 
         if restype == ResourceType.NSS:
             self.ui.codeEdit.setPlainText(data.decode("windows-1252", errors="ignore"))
-        elif restype == ResourceType.NCS and not self._loadNSSForNCS(Path(filepath), resref) and not self._decompileNCS(data):
+        elif (
+            restype == ResourceType.NCS
+            and not self._loadNSSForNCS(resref)
+            and not self._decompileNCS(data)
+        ):
             # Just load an empty editor.
             self.new()
 
-    def _loadNSSForNCS(self, filepath: Path, resref: str) -> bool:
-        """Opens a file dialog to choose an NSS file to substitute for an NSC, unless loadNSSBeforeDecompile is disabled.
+    def _loadNSSForNCS(self, resref: str) -> bool:
+        """Opens a file dialog to choose an NSS file to substitute for an NCS, unless loadNSSBeforeDecompile is disabled.
 
         Args:
         ----
             filepath: The path to the NCS resource file
-            resref: The NSC resource reference
+            resref: The NCS resource reference
 
         Returns:
         -------
-            True iff NSS source was loaded in the editor.
+            True if NSS source was loaded in the editor.
         """
         if not self._global_settings.loadNSSBeforeDecompile:
             return False
         # Format filepath "/full/path/to/file.mod", resref "a_script" as "file.mod/a_script.ncs".
-        ncs_suffix = f".{ResourceType.NCS.extension}"
-        filename = Path(filepath.name)
-        if filename.suffix == ncs_suffix:
-            ncs_name = filename
-        else:
-            ncs_name = filename.joinpath(resref).with_suffix(ncs_suffix)
         nss_path, _ = QFileDialog.getOpenFileName(
             parent=self.parentWidget(),
-            caption=f"Choose Source for {ncs_name}",
+            caption=f"Choose Source NSS for '{resref}.{ResourceType.NCS.extension}'",
             filter=f"{ResourceType.NSS.category} File (*.{ResourceType.NSS.extension});;All Files (*)",
         )
         if not nss_path:
             # User cancelled.
             return False
+
         try:
-            with open(nss_path, encoding="windows-1252") as script_file:
+            with Path(nss_path).open(encoding="windows-1252", errors="replace") as script_file:
                 self.ui.codeEdit.setPlainText(script_file.read())
-                return True
         except OSError as e:
             QMessageBox(QMessageBox.Critical, "Error Opening File", str(universal_simplify_exception(e))).exec_()
-        return False
+            return False
+        else:
+            return True
 
     def _decompileNCS(self, data: bytes) -> bool:
         """Attempts to decompile the given NCS data into NSS source.
@@ -261,21 +262,22 @@ class NSSEditor(Editor):
             source = decompileScript(data, self._installation.path(), tsl=self._installation.tsl)
             self.ui.codeEdit.setPlainText(source)
             self._is_decompiled = True
-            return True
         except ValueError as e:
             QMessageBox(QMessageBox.Critical, "Decompilation Failed", str(universal_simplify_exception(e))).exec_()
         except NoConfigurationSetError as e:
             QMessageBox(QMessageBox.Critical, "Filepath is not set", str(universal_simplify_exception(e))).exec_()
+        else:
+            return True
         return False
 
     def build(self) -> tuple[bytes | None, bytes]:
         if self._restype != ResourceType.NCS:
             return self.ui.codeEdit.toPlainText().encode("windows-1252"), b""
 
-        print("compiling script from nsseditor")
+        print("Compiling script from NSSEditor.build()")
         compiled_bytes: bytes | None = compileScript(self.ui.codeEdit.toPlainText(), self._installation.tsl, self._installation.path())
         if compiled_bytes is None:
-            print("user cancelled the compilation")
+            print("User cancelled the NSS Compilation from NSSEditor.build()")
             return None, b""
         return compiled_bytes, b""
 
