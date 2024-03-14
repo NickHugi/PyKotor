@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import QMessageBox, QWidget
 
 from pykotor.resource.formats.erf.erf_data import ERFType
@@ -236,6 +237,7 @@ def openResourceEditor(
         try:
             editor.load(filepath, resref, restype, data)
             editor.show()
+            editor.activateWindow()
 
             addWindow(editor)
 
@@ -245,7 +247,8 @@ def openResourceEditor(
                 "An unexpected error has occurred",
                 str(universal_simplify_exception(e)),
                 QMessageBox.Ok,
-                parentWindowWidget
+                parentWindowWidget,
+                flags=Qt.Window | Qt.Dialog | Qt.WindowStaysOnTopHint
             ).show()
             raise
         else:
@@ -256,7 +259,8 @@ def openResourceEditor(
             "Failed to open file",
             f"The selected file format '{restype}' is not yet supported.",
             QMessageBox.Ok,
-            parentWindowWidget
+            parentWindowWidget,
+            flags=Qt.Window | Qt.Dialog | Qt.WindowStaysOnTopHint
         ).show()
 
     return None, None
