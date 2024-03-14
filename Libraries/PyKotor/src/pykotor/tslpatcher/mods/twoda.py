@@ -570,11 +570,6 @@ class Modifications2DA(PatcherModifications):
         logger: PatchLogger,
         game: Game,
     ):
-        hardcapped_row_limits = {
-            "placeables.2da": 256,
-            "upcrystals.2da": 256,
-            "upgrade.2da": 32,
-        }
         for row in self.modifiers:
             try:
                 row.apply(twoda, memory)
