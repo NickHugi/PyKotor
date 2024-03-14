@@ -146,18 +146,12 @@ function Install-Linux-Deps {
             switch ($distro) {
                 "debian" {
                     sudo apt-get update
-                    sudo apt-get install python3 -y
-                    sudo apt-get install python3-dev -y
-                    sudo apt-get install python3-venv -y
-                    sudo apt-get install python3-pip -y
+                    sudo apt-get install python3 python3-dev python3-venv python3-pip -y
                     break
                 }
                 "ubuntu" {
                     sudo apt-get update
-                    sudo apt-get install python3 -y
-                    sudo apt-get install python3-dev -y
-                    sudo apt-get install python3-venv -y
-                    sudo apt-get install python3-pip -y
+                    sudo apt-get install python3 python3-dev python3-venv python3-pip -y
                     break
                 }
                 "alpine" {
@@ -504,9 +498,6 @@ function Find-Python {
             Find-Python -intrnal
         }
     }
-    if ( -not $intrnal -and (Get-Linux-Distro-Name) -eq "ubuntu" -or (Get-Linux-Distro-Name) -eq "debian") {
-        Install-Linux-Deps
-    }
 }
 
 $venvPath = $repoRootPath + $pathSep + $venv_name
@@ -522,6 +513,9 @@ if (Get-ChildItem Env:VIRTUAL_ENV -ErrorAction SilentlyContinue) {  # Check if a
 } elseif ($venvPath -ne ($repoRootPath + $pathSep) -and (Test-Path $venvPath -ErrorAction SilentlyContinue)) {
     Write-Host "Found existing python virtual environment at '$venvPath'"
 } else {
+    if ((Get-Linux-Distro-Name) -eq "ubuntu" -or (Get-Linux-Distro-Name) -eq "debian") {
+        Install-Linux-Deps
+    }
     Find-Python
     if ( $global:pythonInstallPath -eq "" ) {
         if ( -not $noprompt ) {
