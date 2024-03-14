@@ -950,7 +950,7 @@ class ToolWindow(QMainWindow):
             return
         print("Loading core installation resources into UI...")
         self.ui.coreWidget.setResources(self.active.chitin_resources())
-        moduleItems, overrideItems, saveItems, textureItems = loader.value
+        moduleItems, overrideItems, textureItems = loader.value
         self.ui.modulesWidget.setSections(moduleItems)
         self.ui.overrideWidget.setSections(overrideItems)
         self.ui.texturesWidget.setSections(textureItems)
@@ -968,6 +968,7 @@ class ToolWindow(QMainWindow):
         self.dogObserver.start()
         print("Loader task completed.")
         self.settings.installations()[name].path = path
+        self.installations[name] = self.active
 
     def _extractResource(self, resource: FileResource, filepath: os.PathLike | str, loader: AsyncBatchLoader):
         """Extracts a resource file from a FileResource object.
