@@ -106,7 +106,8 @@ class AsyncLoader(QDialog):
             file.write("\n----------------------\n")
 
         if self.errorTitle:
-            QMessageBox(QMessageBox.Critical, self.errorTitle, str(universal_simplify_exception(error))).exec_()
+            error_msg = str(universal_simplify_exception(error)).replace("\n", "<br>")
+            QMessageBox(QMessageBox.Critical, self.errorTitle, error_msg).exec_()
 
 
 class AsyncWorker(QThread):
@@ -231,7 +232,7 @@ class AsyncBatchLoader(QDialog):
         QMessageBox(
             QMessageBox.Critical,
             errorTitle,
-            "\n".join(str(universal_simplify_exception(error)) for error in self.errors),
+            "\n".join(str(universal_simplify_exception(error)).replace(",", ":", 1) + "<br>" for error in self.errors),
         ).exec_()
 
 

@@ -23,6 +23,7 @@ if TYPE_CHECKING:
 
     from PyQt5.QtWidgets import QLabel, QWidget
 
+    from pykotor.extract.file import ResourceResult
     from pykotor.resource.formats.bwm.bwm_data import BWM
     from pykotor.resource.formats.lyt.lyt_data import LYT
     from pykotor.resource.formats.tpc.tpc_data import TPC

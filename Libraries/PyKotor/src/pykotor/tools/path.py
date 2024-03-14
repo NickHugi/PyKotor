@@ -401,9 +401,10 @@ def get_default_paths() -> dict[str, dict[Game, list[str]]]:
         },
         "Linux": {
             Game.K1: [
-                "~/.local/share/Steam/common/SteamApps/swkotor",
-                "~/.local/share/Steam/common/steamapps/swkotor",
-                "~/.local/share/Steam/common/swkotor",
+                "~/.local/share/steam/common/steamapps/swkotor",
+                "~/.local/share/steam/common/steamapps/swkotor",
+                "~/.local/share/steam/common/swkotor",
+                "~/.steam/debian-installation/steamapps/common/swkotor"  # verified
                 "~/.steam/root/steamapps/common/swkotor",  # executable name is `KOTOR1` no extension
                 # wsl paths
                 "/mnt/C/Program Files/Steam/steamapps/common/swkotor",
@@ -414,10 +415,13 @@ def get_default_paths() -> dict[str, dict[Game, list[str]]]:
                 "/mnt/C/Amazon Games/Library/Star Wars - Knights of the Old",
             ],
             Game.K2: [
-                "~/.local/share/Steam/common/SteamApps/Knights of the Old Republic II",
                 "~/.local/share/Steam/common/steamapps/Knights of the Old Republic II",
+                "~/.local/share/Steam/common/steamapps/kotor2",  # guess
                 "~/.local/share/aspyr-media/kotor2",
-                "~/.local/share/Steam/common/Knights of the Old Republic II",
+                "~/.local/share/aspyr-media/Knights of the Old Republic II",  # guess
+                "~/.local/share/Steam/common/Knights of the Old Republic II",  # ??? wrong?
+                "~/.steam/debian-installation/steamapps/common/Knights of the Old Republic II"  # guess
+                "~/.steam/debian-installation/steamapps/common/kotor2"  # guess
                 "~/.steam/root/steamapps/common/Knights of the Old Republic II",  # executable name is `KOTOR2` no extension
                 # wsl paths
                 "/mnt/C/Program Files/Steam/steamapps/common/Knights of the Old Republic II",
