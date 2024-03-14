@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from operator import attrgetter
+from pathlib import PurePath
 from typing import TYPE_CHECKING, ClassVar
 
 from PyQt5 import QtCore
@@ -14,7 +15,7 @@ from PyQt5.QtGui import (
     QTextCharFormat,
     QTextFormat,
 )
-from PyQt5.QtWidgets import QListWidgetItem, QMessageBox, QPlainTextEdit, QShortcut, QTextEdit, QWidget
+from PyQt5.QtWidgets import QFileDialog, QListWidgetItem, QMessageBox, QPlainTextEdit, QShortcut, QTextEdit, QWidget
 
 from pykotor.common.scriptdefs import KOTOR_CONSTANTS, KOTOR_FUNCTIONS, TSL_CONSTANTS, TSL_FUNCTIONS
 from pykotor.common.stream import BinaryWriter
@@ -76,7 +77,7 @@ class NSSEditor(Editor):
         self._setupSignals()
 
         self._length: int = 0
-        self._is_decompiled: bool = False
+        self._is_decompiled: bool = False  # REM: ensure this stays updated.
         self._global_settings: GlobalSettings = GlobalSettings()
         self._highlighter: SyntaxHighlighter = SyntaxHighlighter(self.ui.codeEdit.document(), installation)
         self.setInstallation(self._installation)
@@ -158,35 +159,90 @@ class NSSEditor(Editor):
 
         Processing Logic:
         ----------------
-            - Decodes NSS data and sets it as the editor text
-            - Attempts to decompile NCS data and sets decompiled source as editor text
-            - Catches errors during decompilation and displays message.
+            - Decodes NSS data and sets it as the editor text.
+            - Attempts to find NSS data to substitute for NCS data and set it as the editor text, as follows:
+              - If the loadNSSBeforeDecompile setting is enabled, prompts the user for an NSS file to read.
+                (For example from the Vanilla_KOTOR_Script_Source archive, or from fully-commented source file saved outside a mod.)
+              - If the setting is disabled, the user declines, or the file read fails, attempts to decompile the NCS data.
+            - Catches errors during decompilation or file reading and displays a message.
         """
         super().load(filepath, resref, restype, data)
         self._is_decompiled = False
 
         if restype == ResourceType.NSS:
             self.ui.codeEdit.setPlainText(data.decode("windows-1252", errors="ignore"))
-        elif restype == ResourceType.NCS:
-            try:
-                source = decompileScript(data, self._installation.tsl, self._installation.path())
-                self.ui.codeEdit.setPlainText(source)
-                self._is_decompiled = True
-            except ValueError as e:
-                QMessageBox(QMessageBox.Critical, "Decompilation Failed", str(universal_simplify_exception(e))).exec_()
-                self.new()
-            except NoConfigurationSetError as e:
-                QMessageBox(QMessageBox.Critical, "Filepath is not set", str(universal_simplify_exception(e))).exec_()
-                self.new()
+        elif (
+            restype == ResourceType.NCS
+            and not self._loadNSSForNCS(resref)
+            and not self._decompileNCS(data)
+        ):
+            # Just load an empty editor.
+            self.new()
+
+    def _loadNSSForNCS(self, resref: str) -> bool:
+        """Opens a file dialog to choose an NSS file to substitute for an NCS, unless loadNSSBeforeDecompile is disabled.
+
+        Args:
+        ----
+            filepath: The path to the NCS resource file
+            resref: The NCS resource reference
+
+        Returns:
+        -------
+            True if NSS source was loaded in the editor.
+        """
+        if not self._global_settings.loadNSSBeforeDecompile:
+            return False
+        # Format filepath "/full/path/to/file.mod", resref "a_script" as "file.mod/a_script.ncs".
+        nss_path, _ = QFileDialog.getOpenFileName(
+            parent=self.parentWidget(),
+            caption=f"Choose Source NSS for '{resref}.{ResourceType.NCS.extension}'",
+            filter=f"{ResourceType.NSS.category} File (*.{ResourceType.NSS.extension});;All Files (*)",
+        )
+        if not nss_path:
+            # User cancelled.
+            return False
+
+        try:
+            with Path(nss_path).open(encoding="windows-1252", errors="replace") as script_file:
+                self.ui.codeEdit.setPlainText(script_file.read())
+        except OSError as e:
+            QMessageBox(QMessageBox.Critical, "Error Opening File", str(universal_simplify_exception(e))).exec_()
+            return False
+        else:
+            return True
+
+    def _decompileNCS(self, data: bytes) -> bool:
+        """Attempts to decompile the given NCS data into NSS source.
+
+        Args:
+        ----
+            data: The raw resource data
+
+        Returns:
+        -------
+            True iff NSS source was loaded in the editor.
+        """
+        try:
+            source = decompileScript(data, self._installation.tsl, self._installation.path())
+            self.ui.codeEdit.setPlainText(source)
+            self._is_decompiled = True
+        except ValueError as e:
+            QMessageBox(QMessageBox.Critical, "Decompilation Failed", str(universal_simplify_exception(e))).exec_()
+        except NoConfigurationSetError as e:
+            QMessageBox(QMessageBox.Critical, "Filepath is not set", str(universal_simplify_exception(e))).exec_()
+        else:
+            return True
+        return False
 
     def build(self) -> tuple[bytes | None, bytes]:
         if self._restype != ResourceType.NCS:
             return self.ui.codeEdit.toPlainText().encode("windows-1252"), b""
 
-        print("compiling script from nsseditor")
+        print("Compiling script from NSSEditor.build()")
         compiled_bytes: bytes | None = compileScript(self.ui.codeEdit.toPlainText(), self._installation.tsl, self._installation.path())
         if compiled_bytes is None:
-            print("user cancelled the compilation")
+            print("User cancelled the NSS Compilation from NSSEditor.build()")
             return None, b""
         return compiled_bytes, b""
 
@@ -576,7 +632,7 @@ class SyntaxHighlighter(QSyntaxHighlighter):
             "keyword": self.getCharFormat("blue"),
             "operator": self.getCharFormat("darkRed"),
             "numbers": self.getCharFormat("brown"),
-            "comment": self.getCharFormat("gray", False, True),
+            "comment": self.getCharFormat("gray", bold=False, italic=True),
             "string": self.getCharFormat("darkMagenta"),
             "brace": self.getCharFormat("darkRed"),
             "function": self.getCharFormat("darkGreen"),
@@ -653,6 +709,7 @@ class SyntaxHighlighter(QSyntaxHighlighter):
     def getCharFormat(
         self,
         color: str | int,
+        *,
         bold: bool = False,
         italic: bool = False,
     ) -> QTextCharFormat:

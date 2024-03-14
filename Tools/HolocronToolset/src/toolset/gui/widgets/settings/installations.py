@@ -279,6 +279,10 @@ class GlobalSettings(Settings):
         "greyRIMText",
         True,
     )
+    loadNSSBeforeDecompile = Settings._addSetting(
+        "loadNSSBeforeDecompile",
+        False,
+    )
     showPreviewUTC = Settings._addSetting(
         "showPreviewUTC",
         True,
