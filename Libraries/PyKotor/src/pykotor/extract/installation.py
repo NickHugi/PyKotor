@@ -1348,7 +1348,7 @@ class Installation:  # noqa: PLR0904
         *,
         capsules: list[Capsule] | None = None,
         folders: list[Path] | None = None,
-    ) -> set[FileResource]:
+    ) -> set[FileResource]:  # TODO: 2da's have 'strref' columns that we should parse.
         """Finds all gffs that utilize this stringref in their localizedstring.
 
         If no gffs could not be found the value will return None.
