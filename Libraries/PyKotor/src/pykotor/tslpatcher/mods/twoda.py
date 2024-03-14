@@ -544,8 +544,9 @@ class AddColumn2DA(Modify2DA):
 
 class Modifications2DA(PatcherModifications):
     hardcapped_row_limits = {
-        "placeables.2da": 255,
-        "upcrystals.2da": 255,
+        "placeables.2da": 256,
+        "upcrystals.2da": 256,
+        "upgrade.2da": 32,
     }
     def __init__(self, filename: str):
         super().__init__(filename)
