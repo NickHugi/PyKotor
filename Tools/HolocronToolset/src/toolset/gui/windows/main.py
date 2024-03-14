@@ -19,6 +19,7 @@ from watchdog.events import FileSystemEventHandler
 from watchdog.observers import Observer
 
 from pykotor.common.stream import BinaryReader
+from pykotor.extract.capsule import Capsule
 from pykotor.extract.file import ResourceIdentifier
 from pykotor.extract.installation import SearchLocation
 from pykotor.resource.formats.erf.erf_auto import read_erf, write_erf
@@ -947,6 +948,13 @@ class ToolWindow(QMainWindow):
             return
         print("Loading core installation resources into UI...")
         self.ui.coreWidget.setResources(self.active.chitin_resources())
+        if self.active.game().is_k1():
+            patch_erf_path = self.active.path() / "patch.erf"
+            if patch_erf_path.safe_isfile():
+                self.ui.coreWidget.setResources(Capsule(patch_erf_path).resources(), clear_existing=False)
+        self.ui.coreWidget.setResources(self.active._streamwaves, "Stream Waves", clear_existing=False)
+        self.ui.coreWidget.setResources(self.active._streammusic, "Stream Music", clear_existing=False)
+        self.ui.coreWidget.setResources(self.active._streamsounds, "Stream Sounds", clear_existing=False)
         moduleItems, overrideItems, textureItems = prepare_loader.value
         self.ui.modulesWidget.setSections(moduleItems)
         self.ui.overrideWidget.setSections(overrideItems)
