@@ -12,6 +12,7 @@ from typing import TYPE_CHECKING, ClassVar
 import requests
 
 from PyQt5 import QtCore
+from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QIcon, QPixmap, QStandardItem
 from PyQt5.QtWidgets import QFileDialog, QMainWindow, QMessageBox
 from watchdog.events import FileSystemEventHandler
@@ -690,14 +691,17 @@ class ToolWindow(QMainWindow):
 
         toolsetDownloadLink = data["toolsetDownloadLink"]
         toolsetLatestNotes = data.get("toolsetLatestNotes", "")
-        betaString = "beta" if self.settings.useBetaChannel else ""
-        QMessageBox(
+        betaString = "beta " if self.settings.useBetaChannel else ""
+        msgBox = QMessageBox(
             QMessageBox.Information,
-            f"New {betaString} version is available.",
-            f"New {betaString} version available for <a href='{toolsetDownloadLink}'>download</a>.<br>{toolsetLatestNotes}",
+            f"New {betaString}version is available.",
+            f"New {betaString}version available for <a href='{toolsetDownloadLink}'>download</a>.<br>{toolsetLatestNotes}",
             QMessageBox.Ok,
-            self,
-        ).exec_()
+            parent=None,
+            flags=Qt.Window | Qt.Dialog | Qt.WindowStaysOnTopHint
+        )
+        msgBox.setWindowIcon(self.windowIcon())
+        msgBox.exec_()
 
     # endregion
 
@@ -992,7 +996,7 @@ class ToolWindow(QMainWindow):
                 return
 
             if resource.restype() == ResourceType.TPC:
-                tpc: TPC = read_tpc(data)
+                tpc: TPC = read_tpc(data, txi_source=r_filepath)
 
                 if self.ui.tpcTxiCheckbox.isChecked():
                     self._extractTxi(tpc, r_filepath)
