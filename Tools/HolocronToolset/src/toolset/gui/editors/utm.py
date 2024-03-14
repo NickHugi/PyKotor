@@ -181,6 +181,16 @@ class UTMEditor(Editor):
         except Exception as e:
             print(format_exception_with_variables(e, message="This exception has been suppressed."))
 
-        inventoryEditor = InventoryEditor(self, self._installation, capsules, [], self._utm.inventory, {}, False, True, True)
+        inventoryEditor = InventoryEditor(
+            self,
+            self._installation,
+            capsules,
+            [],
+            self._utm.inventory,
+            {},
+            droid=False,
+            hide_equipment=True,
+            is_store=True,
+        )
         if inventoryEditor.exec_():
             self._utm.inventory = inventoryEditor.inventory

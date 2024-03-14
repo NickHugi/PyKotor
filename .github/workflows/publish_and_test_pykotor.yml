@@ -727,7 +727,7 @@ jobs:
         path: |
           pytest_report.html
           pytest_report.xml
-          retention-days: 90
+        retention-days: 90
 
   package:  # The goal of this job is to repackage by toolname, rather than all tools by os_pyversion_arch
     needs: build  # do not start this job until all 'build' jobs complete
@@ -1029,7 +1029,6 @@ jobs:
                     $DetailsURL = $testResults[$key]['DetailsURL']
                     # Encode the label to replace spaces with underscores and URI-encode other special characters
                     $encodedKey = [System.Web.HttpUtility]::UrlEncode($shortKey.Replace(' ', '_').Replace('-', '--'))
-                    $BadgeURLPassed = "https://img.shields.io/badge/${encodedKey}_Passed-${passedTests}-brightgreen"
                     $BadgeMarkdown = '[![' + $key + '](https://img.shields.io/badge/build-' + $encodedKey + '_Passing_' + $passedTests + '-brightgreen?style=plastic&logo=simple-icons&logoColor=%23FF5e34&label=' + $failedTests + '&labelColor=%23c71818&color=%232f991a)](' + $DetailsURL + ')'
                 } else {
                     Write-Host "No test results for '$key', must have failed, generating 'Build Failed' badge..."

@@ -174,6 +174,7 @@ def generate_hash(
     data_input: bytes | bytearray | memoryview | os.PathLike | str,
     hash_algo: str = "sha1",  # sha1 is faster than md5 in python somehow
     chunk_size: int = 262144,  # 256KB default
+    *,
     always_chunk: bool = False,  # Don't unnecessarily chunk bytes/bytearray inputs.
 ) -> str:
     # Create a hash object for the specified algorithm

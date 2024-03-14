@@ -12,6 +12,7 @@ from typing import TYPE_CHECKING, ClassVar
 import requests
 
 from PyQt5 import QtCore
+from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QIcon, QPixmap, QStandardItem
 from PyQt5.QtWidgets import QFileDialog, QMainWindow, QMessageBox
 from watchdog.events import FileSystemEventHandler
@@ -690,14 +691,17 @@ class ToolWindow(QMainWindow):
 
         toolsetDownloadLink = data["toolsetDownloadLink"]
         toolsetLatestNotes = data.get("toolsetLatestNotes", "")
-        betaString = "beta" if self.settings.useBetaChannel else ""
-        QMessageBox(
+        betaString = "beta " if self.settings.useBetaChannel else ""
+        msgBox = QMessageBox(
             QMessageBox.Information,
-            f"New {betaString} version is available.",
-            f"New {betaString} version available for <a href='{toolsetDownloadLink}'>download</a>.<br>{toolsetLatestNotes}",
+            f"New {betaString}version is available.",
+            f"New {betaString}version available for <a href='{toolsetDownloadLink}'>download</a>.<br>{toolsetLatestNotes}",
             QMessageBox.Ok,
-            self,
-        ).exec_()
+            parent=None,
+            flags=Qt.Window | Qt.Dialog | Qt.WindowStaysOnTopHint
+        )
+        msgBox.setWindowIcon(self.windowIcon())
+        msgBox.exec_()
 
     # endregion
 
@@ -943,7 +947,7 @@ class ToolWindow(QMainWindow):
                 return
 
             if resource.restype() == ResourceType.TPC:
-                tpc: TPC = read_tpc(data)
+                tpc: TPC = read_tpc(data, txi_source=r_filepath)
 
                 if self.ui.tpcTxiCheckbox.isChecked():
                     self._extractTxi(tpc, r_filepath)
@@ -967,6 +971,7 @@ class ToolWindow(QMainWindow):
             traceback.print_exc()
             msg = f"Failed to extract resource: {resource.resname()}.{resource.restype().extension}"
             raise RuntimeError(msg) from e
+        QMessageBox(QMessageBox.Information, "Finished extracting", f"Extracted {resource.resname()} to {r_filepath}").exec_()
 
     def _extractTxi(self, tpc: TPC, filepath: Path):
         with filepath.with_suffix(".txi").open("wb") as file:
@@ -990,6 +995,8 @@ class ToolWindow(QMainWindow):
             for texture in model.list_textures(data):
                 try:
                     tpc: TPC | None = self.active.texture(texture)
+                    if tpc is None:
+                        raise ValueError(texture)  # noqa: TRY301
                     if self.ui.tpcTxiCheckbox.isChecked():
                         self._extractTxi(tpc, folderpath.joinpath(f"{texture}.tpc"))
                     file_format = ResourceType.TGA if self.ui.tpcDecompileCheckbox.isChecked() else ResourceType.TPC
@@ -997,7 +1004,7 @@ class ToolWindow(QMainWindow):
                     write_tpc(tpc, folderpath.joinpath(f"{texture}.{extension}"), file_format)
                 except Exception as e:  # noqa: PERF203
                     etype, msg = universal_simplify_exception(e)
-                    loader.errors.append(e.__class__(f"Could not find or extract tpc: '{texture}'\nReason ({etype}): {msg}"))
+                    loader.errors.append(e.__class__(f"Could not find or extract tpc: '{texture}'"))
         except Exception as e:
             etype, msg = universal_simplify_exception(e)
             loader.errors.append(e.__class__(f"Could not determine textures used in model: '{resource.resname()}'\nReason ({etype}): {msg}"))

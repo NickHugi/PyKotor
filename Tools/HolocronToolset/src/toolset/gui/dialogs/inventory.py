@@ -15,6 +15,7 @@ from PyQt5.QtWidgets import (
     QTableWidgetItem,
     QTreeView,
     QVBoxLayout,
+    QWidget,
 )
 
 from pykotor.common.misc import EquipmentSlot, InventoryItem, ResRef
@@ -35,10 +36,7 @@ if TYPE_CHECKING:
 
     from PyQt5.QtCore import QModelIndex, QPoint
     from PyQt5.QtGui import QDragEnterEvent, QDragMoveEvent, QDropEvent
-    from PyQt5.QtWidgets import (
-        QLabel,
-        QWidget,
-    )
+    from PyQt5.QtWidgets import QLabel
 
     from pykotor.extract.file import ResourceResult
     from pykotor.resource.formats.tlk import TLK
@@ -58,7 +56,7 @@ class SlotMapping(NamedTuple):
 
 class InventoryEditor(QDialog):
     def __init__(self, parent: QWidget, installation: HTInstallation, capsules: list[Capsule], folders: list[str],
-                 inventory: list[InventoryItem], equipment: dict[EquipmentSlot, InventoryItem], droid: bool = False,
+                 inventory: list[InventoryItem], equipment: dict[EquipmentSlot, InventoryItem], *, droid: bool = False,
                  hide_equipment: bool = False, is_store: bool = False):
         """Initializes the inventory dialog.
 
@@ -687,8 +685,10 @@ class ItemBuilderDialog(QDialog):
         self.setWindowTitle("Building Item Lists...")
 
         self.coreModel = ItemModel(installation.mainWindow)
-        self.modulesModel = ItemModel(self.parent())
-        self.overrideModel = ItemModel(self.parent())
+        parent_widget = self.parent()
+        assert isinstance(parent_widget, QWidget)
+        self.modulesModel = ItemModel(parent_widget)
+        self.overrideModel = ItemModel(parent_widget)
         self._tlk: TLK = read_tlk(CaseAwarePath(installation.path(), "dialog.tlk"))
         self._installation: HTInstallation = installation
         self._capsules: list[Capsule] = capsules
