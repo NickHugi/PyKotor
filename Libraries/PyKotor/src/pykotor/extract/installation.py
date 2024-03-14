@@ -1462,6 +1462,7 @@ class Installation:  # noqa: PLR0904
                     resname=gff_file.stem,
                     restype=restype,
                     size=gff_file.stat().st_size,
+                    offset=0,
                     filepath=gff_file
                 )
                 gffs.add(fileres)
