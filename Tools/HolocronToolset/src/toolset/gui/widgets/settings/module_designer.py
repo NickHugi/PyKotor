@@ -35,7 +35,7 @@ class ModuleDesignerWidget(SettingsWidget):
         self.binds: list = []
         self.colours: list = []
 
-        from toolset.uic.widgets.settings import module_designer
+        from toolset.uic.widgets.settings import module_designer  # noqa: PLC0415  # pylint: disable=import-outside-toplevel
 
         self.ui = module_designer.Ui_Form()
         self.ui.setupUi(self)
