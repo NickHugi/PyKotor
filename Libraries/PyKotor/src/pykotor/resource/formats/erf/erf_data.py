@@ -109,7 +109,7 @@ class ERF:
             - If existing resource, update its properties
             - Add/update resource to internal lists and dict
         """
-        ident: ResourceIdentifier = ResourceIdentifier(resname, restype)
+        ident: ResourceIdentifier = ResourceIdentifier(resname, restype).as_resref_compatible()
         resource: ERFResource | None = self._resource_dict.get(ident)
         resref = ResRef(ident.resname)
         if resource is None:
@@ -133,7 +133,7 @@ class ERF:
         -------
             The bytes data of the resource or None.
         """
-        resource: ERFResource | None = self._resource_dict.get(ResourceIdentifier(resname, restype))
+        resource: ERFResource | None = self._resource_dict.get(ResourceIdentifier(resname, restype).as_resref_compatible())
         return resource.data if resource is not None else None
 
     def remove(
@@ -148,7 +148,7 @@ class ERF:
             resname: The resource reference filename.
             restype: The resource type.
         """
-        key = ResourceIdentifier(resname, restype)
+        key = ResourceIdentifier(resname, restype).as_resref_compatible()
         resource: ERFResource | None = self._resource_dict.pop(key, None)
         if resource:  # FIXME: should raise here
             self._resources.remove(resource)

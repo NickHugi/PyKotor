@@ -3,6 +3,7 @@ from __future__ import annotations
 import os
 import pathlib
 import sys
+from types import ModuleType
 import unittest
 
 from typing import TYPE_CHECKING

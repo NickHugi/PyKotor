@@ -14,6 +14,7 @@ from pykotor.extract.talktable import TalkTable
 from pykotor.resource.formats.gff import GFF, GFFContent, GFFFieldType, GFFList, GFFStruct, read_gff, write_gff
 from pykotor.resource.type import ResourceType
 from toolset.gui.editor import Editor
+from utility.error_handling import format_exception_with_variables
 
 if TYPE_CHECKING:
     import os

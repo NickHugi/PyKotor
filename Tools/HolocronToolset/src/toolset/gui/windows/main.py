@@ -918,10 +918,13 @@ class ToolWindow(QMainWindow):
             return
 
         def load_task(active: HTInstallation | None = None) -> HTInstallation:
-            return active or HTInstallation(path, name, tsl, self)
+            new_active = active or HTInstallation(path, name, tsl, self)
+            if active is None:
+                new_active.reload_all()
+            return new_active
 
         active = self.installations.get(name)
-        loader = AsyncLoader(self, "Loading Installation" if not active else "Refreshing installation", lambda: load_task(active), "Failed to load installation")
+        loader = AsyncLoader(self, "Loading Installation" if active is None else "Refreshing installation", lambda: load_task(active), "Failed to load installation")
         if not loader.exec_():
             self.active = None
             self.ui.gameCombo.setCurrentIndex(0)

@@ -1200,7 +1200,6 @@ class ModuleResource(Generic[T]):
             if resource is None:
                 msg = f"Resource '{file_name}' not found in '{self._active}'"
                 raise ValueError(msg)
-            return resource.data
 
         return BinaryReader.load_file(self._active)
 
