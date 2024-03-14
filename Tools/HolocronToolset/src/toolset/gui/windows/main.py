@@ -917,6 +917,7 @@ class ToolWindow(QMainWindow):
             self.dogObserver = Observer()
             self.dogObserver.schedule(self.dogHandler, self.active.path(), recursive=True)
             self.dogObserver.start()
+            self.installations[name] = self.active
 
         self.settings.installations()[name].path = path
 
