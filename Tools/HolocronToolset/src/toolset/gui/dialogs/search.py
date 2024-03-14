@@ -38,6 +38,7 @@ class FileSearcher(QDialog):
         from toolset.uic.dialogs import search  # pylint: disable=C0415  # noqa: PLC0415
         self.ui = search.Ui_Dialog()
         self.ui.setupUi(self)
+        assert len(installations) > 0, "No installations passed to FileSearcher"
 
         self._installations: dict[str, HTInstallation] = installations
         for name, installation in installations.items():
@@ -62,6 +63,7 @@ class FileSearcher(QDialog):
             None
         """
         installation: HTInstallation = self.ui.installationSelect.currentData()
+        assert bool(installation), "No installation chosen in FileSearcher"
         caseSensitive = self.ui.caseSensitiveRadio.isChecked()
         filenamesOnly = self.ui.filenamesOnlyCheck.isChecked()
         text = self.ui.searchTextEdit.text()
