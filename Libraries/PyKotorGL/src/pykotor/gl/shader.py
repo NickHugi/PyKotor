@@ -1,4 +1,5 @@
 from __future__ import annotations
+import math
 
 from typing import TYPE_CHECKING
 
@@ -23,6 +24,7 @@ from OpenGL.raw.GL.VERSION.GL_1_0 import (
     glTexParameteri,
 )
 from OpenGL.raw.GL.VERSION.GL_1_1 import glBindTexture
+from OpenGL.raw.GL.VERSION.GL_1_2 import GL_TEXTURE_MAX_LOD, GL_TEXTURE_MIN_LOD
 from OpenGL.raw.GL.VERSION.GL_1_3 import glCompressedTexImage2D
 from OpenGL.raw.GL.VERSION.GL_2_0 import GL_FRAGMENT_SHADER, GL_VERTEX_SHADER, glUniform1i, glUseProgram
 
@@ -173,13 +175,20 @@ class Texture:
         self._id = tex_id
 
     @classmethod
-    def from_tpc(cls, tpc: TPC) -> Texture:
-        width, height, tpc_format, data = tpc.get(0)
+    def from_tpc(
+        cls,
+        tpc: TPC,
+        min_resolution: int = 128,
+        max_resolution: int = 2048,
+    ) -> Texture:
+        # Start with the highest resolution mipmap
+        width, height, tpc_format, data = tpc.get(0)  # Assuming index 0 is the highest resolution
         image_size = len(data)
 
         gl_id = glGenTextures(1)
         glBindTexture(GL_TEXTURE_2D, gl_id)
 
+        # Upload texture data based on format
         if tpc_format == TPCTextureFormat.DXT1:
             glCompressedTexImage2D(GL_TEXTURE_2D, 0, GL_COMPRESSED_RGB_S3TC_DXT1_EXT, width, height, 0, image_size, data)
         if tpc_format == TPCTextureFormat.DXT5:
@@ -189,10 +198,32 @@ class Texture:
         if tpc_format == TPCTextureFormat.RGBA:
             glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data)
 
+        # Texture parameters
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT)
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT)
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST_MIPMAP_LINEAR)
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR)
+
+        # Calculate LOD based on resolution constraints
+        max_lod: int = 0
+        min_lod: int = 0
+        current_width, current_height = width, height
+
+        while current_width > min_resolution or current_height > min_resolution:
+            current_width /= 2
+            current_height /= 2
+            min_lod += 1
+
+        current_width, current_height = width, height  # Reset to highest resolution
+
+        while (current_width > max_resolution or current_height > max_resolution) and max_lod < min_lod:
+            current_width /= 2
+            current_height /= 2
+            max_lod += 1
+
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_LOD, min_lod)
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LOD, max_lod)
+
         glGenerateMipmap(GL_TEXTURE_2D)
 
         return Texture(gl_id)
