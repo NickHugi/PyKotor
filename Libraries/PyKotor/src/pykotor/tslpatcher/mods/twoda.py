@@ -138,7 +138,7 @@ class RowValueHigh(RowValue):
     Attributes:
     ----------
     column: Column to get the max integer from. If None it takes it from the Row Label.
-    """  # noqa: D212
+    """  # noqa: D212, D415
 
     def __init__(self, column: str | None):
         self.column: str | None = column
@@ -543,6 +543,10 @@ class AddColumn2DA(Modify2DA):
 
 
 class Modifications2DA(PatcherModifications):
+    hardcapped_row_limits = {
+        "placeables.2da": 255,
+        "upcrystals.2da": 255,
+    }
     def __init__(self, filename: str):
         super().__init__(filename)
         self.modifiers: list[Modify2DA] = []
@@ -565,6 +569,11 @@ class Modifications2DA(PatcherModifications):
         logger: PatchLogger,
         game: Game,
     ):
+        hardcapped_row_limits = {
+            "placeables.2da": 256,
+            "upcrystals.2da": 256,
+            "upgrade.2da": 32,
+        }
         for row in self.modifiers:
             try:
                 row.apply(twoda, memory)
@@ -578,3 +587,14 @@ class Modifications2DA(PatcherModifications):
                 else:
                     logger.add_error(msg)
                     break
+        if game.is_k2():  # k2 doesn't have hard limits?
+            return
+
+        # Exceeding row count maximums will break the game.
+        twoda_row_limit = hardcapped_row_limits.get(self.saveas.lower())
+        if twoda_row_limit is None:
+            return
+        cur_row_count = len(twoda._rows)
+        rows_added = cur_row_count - twoda_row_limit
+        if cur_row_count > twoda_row_limit:
+            raise ValueError(f"{self.saveas} has a max row count of {twoda_row_limit}. Adding more will break the game. This mod attempted to add {rows_added} rows and have not been applied.")
