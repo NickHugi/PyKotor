@@ -10,7 +10,7 @@ import traceback
 
 from typing import TYPE_CHECKING
 
-from PyQt5.QtCore import QThread
+from PyQt5.QtCore import QFile, QTextStream, QThread
 from PyQt5.QtWidgets import QApplication
 
 if TYPE_CHECKING:
@@ -97,6 +97,14 @@ if __name__ == "__main__":
     from utility.system.path import Path
 
     app = QApplication(sys.argv)
+
+    import ui.stylesheet_resources as stylesheet_resources  # noqa: F401
+
+    # set stylesheet
+    #file = QFile(":/dark/stylesheet.qss")
+    #file.open(QFile.ReadOnly | QFile.Text)
+    #stream = QTextStream(file)
+    #app.setStyleSheet(stream.readAll())
 
     # font = app.font()
     # font.setPixelSize(15)

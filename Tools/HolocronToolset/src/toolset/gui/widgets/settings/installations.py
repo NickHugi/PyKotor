@@ -248,6 +248,10 @@ class GlobalSettings(Settings):
         "ncsDecompilerPath",
         "",
     )
+    selectedTheme = Settings._addSetting(
+        "selectedTheme",
+        "Fusion (Dark)",  # Default theme
+    )
     # endregion
 
     # region Bools
