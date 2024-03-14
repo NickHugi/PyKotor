@@ -301,7 +301,7 @@ class ToolWindow(QMainWindow):
             print("No installation loaded, cannot refresh Override")
             return
         print(f"Refreshing list of override folders available at {self.active.path()}")
-        self.refreshOverrideList()
+        self.refreshOverrideList(reload=False)
 
     def onTexturesChanged(self, newTexturepack: str):
         if not self.active:
@@ -801,7 +801,7 @@ class ToolWindow(QMainWindow):
         reload: bool = True,
     ) -> list[QStandardItem] | None:
         if self.active is None:
-            print("no installation is currently loaded, cannot refresh texturepack list")
+            print("No installation is currently loaded, cannot refresh texturepack list")
             return None
         if reload:
             self.active.load_textures()
