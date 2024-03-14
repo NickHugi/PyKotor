@@ -7,7 +7,7 @@ from time import sleep
 from typing import TYPE_CHECKING
 
 from PyQt5 import QtCore
-from PyQt5.QtCore import QPoint, QSortFilterProxyModel, QThread, QTimer
+from PyQt5.QtCore import QPoint, QSortFilterProxyModel, QThread, QTimer, Qt
 from PyQt5.QtGui import QIcon, QImage, QPixmap, QStandardItem, QStandardItemModel, QTransform
 from PyQt5.QtWidgets import QHeaderView, QMenu, QWidget
 
@@ -311,6 +311,7 @@ class TextureList(MainWindowList):
 
         self.texturesModel = QStandardItemModel()
         self.texturesProxyModel = QSortFilterProxyModel()
+        self.texturesProxyModel.setFilterCaseSensitivity(Qt.CaseInsensitive)
         self.texturesProxyModel.setSourceModel(self.texturesModel)
         self.ui.resourceList.setModel(self.texturesProxyModel)
 
@@ -427,7 +428,7 @@ class TextureList(MainWindowList):
             sleep(0.1)
 
     def onFilterStringUpdated(self):
-        self.texturesProxyModel.setFilterFixedString(self.ui.searchEdit.text().casefold())
+        self.texturesProxyModel.setFilterFixedString(self.ui.searchEdit.text())
 
     def onSectionChanged(self):
         self.sectionChanged.emit(self.ui.sectionCombo.currentData(QtCore.Qt.UserRole))

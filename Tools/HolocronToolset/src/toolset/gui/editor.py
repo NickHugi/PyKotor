@@ -202,10 +202,11 @@ class Editor(QMainWindow):
             identifier = ResourceIdentifier.from_path(filepath_str).validate()
         except ValueError as e:
             print(format_exception_with_variables(e))
+            error_msg = str(universal_simplify_exception(e)).replace("\n", "<br>")
             QMessageBox(
                 QMessageBox.Critical,
                 "Invalid filename/extension",
-                f"Check the filename and try again. Could not save!{os.linesep * 2}{universal_simplify_exception(e)}",
+                f"Check the filename and try again. Could not save!<br><br>{error_msg}",
             ).exec_()
             return
 
@@ -266,7 +267,8 @@ class Editor(QMainWindow):
                 lines = format_exception_with_variables(e)
                 file.writelines(lines)
                 file.write("\n----------------------\n")
-            QMessageBox(QMessageBox.Critical, "Failed to write to file", str(universal_simplify_exception(e))).exec_()
+            error_msg = str(universal_simplify_exception(e)).replace("\n", "<br>")
+            QMessageBox(QMessageBox.Critical, "Failed to write to file", error_msg).exec_()
 
     def _saveEndsWithBif(self, data: bytes, data_ext: bytes):
         """Saves data if dialog returns specific options.

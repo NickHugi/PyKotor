@@ -211,7 +211,7 @@ class Node:
         if self.mesh and self.render:
             self.mesh.draw(shader, transform, override_texture)
 
-        for child in self.children:  
+        for child in self.children:
             child.draw(shader, transform, override_texture=override_texture)
 
 
