@@ -13,7 +13,6 @@ from utility.error_handling import universal_simplify_exception
 if TYPE_CHECKING:
     import os
 
-    from PyQt5.QtCore import QObject
     from PyQt5.QtWidgets import QMainWindow
 
     from gui.editor import Editor
@@ -39,7 +38,7 @@ def openResourceEditor(
     restype: ResourceType,
     data: bytes,
     installation: HTInstallation | None = None,
-    parentWindow: QWidget | QObject | None = None,
+    parentWindow: QWidget | QMainWindow | None = None,
     *,
     gff_specialized: bool | None = None,
 ) -> tuple[os.PathLike | str, Editor | QMainWindow] | tuple[None, None]:
@@ -94,118 +93,119 @@ def openResourceEditor(
 
     editor = None
     parentWindowWidget = parentWindow if isinstance(parentWindow, QWidget) else None
+    # don't send parentWindowWidget to the editors. This allows each editor to be treated as their own window.
 
     if restype in {ResourceType.TwoDA, ResourceType.TwoDA_CSV, ResourceType.TwoDA_JSON}:
-        editor = TwoDAEditor(parentWindowWidget, installation)
+        editor = TwoDAEditor(None, installation)
 
     if restype in {ResourceType.SSF, ResourceType.SSF_XML}:
-        editor = SSFEditor(parentWindowWidget, installation)
+        editor = SSFEditor(None, installation)
 
     if restype in {ResourceType.TLK, ResourceType.TLK_XML, ResourceType.TLK_JSON}:
-        editor = TLKEditor(parentWindowWidget, installation)
+        editor = TLKEditor(None, installation)
 
     if restype in {ResourceType.WOK, ResourceType.DWK, ResourceType.PWK}:
-        editor = BWMEditor(parentWindowWidget, installation)
+        editor = BWMEditor(None, installation)
 
     if restype in {ResourceType.TPC, ResourceType.TGA, ResourceType.JPG, ResourceType.BMP, ResourceType.PNG}:
-        editor = TPCEditor(parentWindowWidget, installation)
+        editor = TPCEditor(None, installation)
 
     if restype in {ResourceType.TXT, ResourceType.TXI, ResourceType.LYT, ResourceType.VIS}:
-        editor = TXTEditor(parentWindowWidget)
+        editor = TXTEditor(None)
 
     if restype in {ResourceType.NSS, ResourceType.NCS}:
         if installation:
-            editor = NSSEditor(parentWindowWidget, installation)
+            editor = NSSEditor(None, installation)
         elif restype == ResourceType.NSS:
             QMessageBox.warning(parentWindowWidget, "No installation loaded", "The toolset cannot use its full nss editor features until you select an installation.")
-            editor = TXTEditor(parentWindowWidget, installation)
+            editor = TXTEditor(None, installation)
         else:
             QMessageBox.warning(parentWindowWidget, "Cannot decompile NCS without an installation active", "Please select an installation from the dropdown before loading an NCS.")
             return None, None
 
     if restype in {ResourceType.DLG, ResourceType.DLG_XML}:
         if installation is None or not gff_specialized:  # noqa: SIM108
-            editor = GFFEditor(parentWindowWidget, installation)
+            editor = GFFEditor(None, installation)
         else:
-            editor = DLGEditor(parentWindowWidget, installation)
+            editor = DLGEditor(None, installation)
 
     if restype in {ResourceType.UTC, ResourceType.UTC_XML}:
         if installation is None or not gff_specialized:
-            editor = GFFEditor(parentWindowWidget, installation)
+            editor = GFFEditor(None, installation)
         else:
-            editor = UTCEditor(parentWindowWidget, installation, mainwindow=parentWindow)
+            editor = UTCEditor(None, installation, mainwindow=parentWindow)
 
     if restype in {ResourceType.UTP, ResourceType.UTP_XML}:
         if installation is None or not gff_specialized:
-            editor = GFFEditor(parentWindowWidget, installation)
+            editor = GFFEditor(None, installation)
         else:
-            editor = UTPEditor(parentWindowWidget, installation, mainwindow=parentWindow)
+            editor = UTPEditor(None, installation, mainWindow=parentWindow)
 
     if restype in {ResourceType.UTD, ResourceType.UTD_XML}:
         if installation is None or not gff_specialized:
-            editor = GFFEditor(parentWindowWidget, installation)
+            editor = GFFEditor(None, installation)
         else:
-            editor = UTDEditor(parentWindowWidget, installation, mainwindow=parentWindow)
+            editor = UTDEditor(None, installation, mainwindow=parentWindow)
 
     if restype in {ResourceType.UTS, ResourceType.UTS_XML}:
         if installation is None or not gff_specialized:  # noqa: SIM108
-            editor = GFFEditor(parentWindowWidget, installation)
+            editor = GFFEditor(None, installation)
         else:
-            editor = UTSEditor(parentWindowWidget, installation)
+            editor = UTSEditor(None, installation)
 
     if restype in {ResourceType.UTT, ResourceType.UTT_XML}:
         if installation is None or not gff_specialized:  # noqa: SIM108
-            editor = GFFEditor(parentWindowWidget, installation)
+            editor = GFFEditor(None, installation)
         else:
-            editor = UTTEditor(parentWindowWidget, installation)
+            editor = UTTEditor(None, installation)
 
     if restype in {ResourceType.UTM, ResourceType.UTM_XML}:
         if installation is None or not gff_specialized:  # noqa: SIM108
-            editor = GFFEditor(parentWindowWidget, installation)
+            editor = GFFEditor(None, installation)
         else:
-            editor = UTMEditor(parentWindowWidget, installation)
+            editor = UTMEditor(None, installation)
 
     if restype in {ResourceType.UTW, ResourceType.UTW_XML}:
         if installation is None or not gff_specialized:  # noqa: SIM108
-            editor = GFFEditor(parentWindowWidget, installation)
+            editor = GFFEditor(None, installation)
         else:
-            editor = UTWEditor(parentWindowWidget, installation)
+            editor = UTWEditor(None, installation)
 
     if restype in {ResourceType.UTE, ResourceType.UTE_XML}:
         if installation is None or not gff_specialized:  # noqa: SIM108
-            editor = GFFEditor(parentWindowWidget, installation)
+            editor = GFFEditor(None, installation)
         else:
-            editor = UTEEditor(parentWindowWidget, installation)
+            editor = UTEEditor(None, installation)
 
     if restype in {ResourceType.UTI, ResourceType.UTI_XML}:
         if installation is None or not gff_specialized:  # noqa: SIM108
-            editor = GFFEditor(parentWindowWidget, installation)
+            editor = GFFEditor(None, installation)
         else:
-            editor = UTIEditor(parentWindowWidget, installation)
+            editor = UTIEditor(None, installation)
 
     if restype in {ResourceType.JRL, ResourceType.JRL_XML}:
         if installation is None or not gff_specialized:  # noqa: SIM108
-            editor = GFFEditor(parentWindowWidget, installation)
+            editor = GFFEditor(None, installation)
         else:
-            editor = JRLEditor(parentWindowWidget, installation)
+            editor = JRLEditor(None, installation)
 
     if restype in {ResourceType.ARE, ResourceType.ARE_XML}:
         if installation is None or not gff_specialized:  # noqa: SIM108
-            editor = GFFEditor(parentWindowWidget, installation)
+            editor = GFFEditor(None, installation)
         else:
-            editor = AREEditor(parentWindowWidget, installation)
+            editor = AREEditor(None, installation)
 
     if restype in {ResourceType.PTH, ResourceType.PTH_XML}:
         if installation is None or not gff_specialized:  # noqa: SIM108
-            editor = GFFEditor(parentWindowWidget, installation)
+            editor = GFFEditor(None, installation)
         else:
-            editor = PTHEditor(parentWindowWidget, installation)
+            editor = PTHEditor(None, installation)
 
     if restype in {ResourceType.GIT, ResourceType.GIT_XML}:
         if installation is None or not gff_specialized:  # noqa: SIM108
-            editor = GFFEditor(parentWindowWidget, installation)
+            editor = GFFEditor(None, installation)
         else:
-            editor = GITEditor(parentWindowWidget, installation)
+            editor = GITEditor(None, installation)
 
     if restype in {
         ResourceType.GFF,
@@ -224,13 +224,13 @@ def openResourceEditor(
         editor = GFFEditor(None, installation)
 
     if restype in {ResourceType.WAV, ResourceType.MP3}:
-        editor = AudioPlayer(parentWindowWidget)
+        editor = AudioPlayer(None)
 
     if restype.name in ERFType.__members__ or restype == ResourceType.RIM:
-        editor = ERFEditor(parentWindowWidget, installation)
+        editor = ERFEditor(None, installation)
 
     if restype in {ResourceType.MDL, ResourceType.MDX}:
-        editor = MDLEditor(parentWindowWidget, installation)
+        editor = MDLEditor(None, installation)
 
     if editor is not None:
         try:

@@ -3,7 +3,7 @@ Module resources refer to the resources stored in the game’s module files. The
 
 Resources contained in the module files can be directly edited and saved through the toolset without having to extract them. However, this is an irreversible operation so if you are editing files shipped directly with the game be sure to make backups otherwise you will need to reinstall the whole game.
 
-A single module can have its resources be stored across multiple module files and you can see this in the vanilla game (eg. danm14aa.rim and danm14aa_s.rim both contain resources for “Dantooine – Courtyard”).
+A single module can have its resources be stored across multiple module files and you can see this in the vanilla game (eg. danm14aa.rim and danm14aa_s.rim both contain resources for “Dantooine – Courtyard”). In the second game, the _dlg.erf would also be part of the module.
 
 ## Module Tab
 The “Module” tab allows you to navigate through the various module files through a dropdown menu and view the resources stored inside them. Like the Core tab you can search for resources using the textbox.

@@ -202,13 +202,12 @@ class PurePath(pathlib.PurePath, metaclass=PurePathType):  # type: ignore[misc]
 
     def __str__(self):
         """Return the result from _fix_path_formatting that was initialized."""
-        if hasattr(self, "_cached_str"):  # Sometimes pathlib's internal instance creation mechanisms won't call our __init__
-            return self._cached_str
-        self._cached_str = self._fix_path_formatting(super().__str__(), slash=self._flavour.sep)  # type: ignore[reportAttributeAccessIssue]
+        if not hasattr(self, "_cached_str"):  # Sometimes pathlib's internal instance creation mechanisms won't call our __init__
+            self._cached_str = self._fix_path_formatting(super().__str__(), slash=self._flavour.sep)  # type: ignore[reportAttributeAccessIssue]
         return self._cached_str
 
     def __repr__(self):
-        return f"{self.__class__.__name__}({self})"
+        return f"{self.__class__.__name__}({self!s})"
 
     def __eq__(self, __value):
         if self is __value:

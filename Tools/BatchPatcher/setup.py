@@ -1,61 +1,145 @@
 from __future__ import annotations
 
 import os
+import shutil
 import sys
 
 from pathlib import Path
-from typing import Any
-
-from setuptools import setup
 
 
 def main():
-    HERE = Path(__file__).resolve().parent
+    HERE = Path(__file__).parent
 
     # Load information from pyproject.toml
     with HERE.joinpath("pyproject.toml").open() as toml_file:
         setup_params = load_toml(toml_file)
 
     # Extract project metadata
-    project_metadata: dict[str, Any] = setup_params.get("project", {})
-    build_system: dict[str, dict] = setup_params.get("build-system", {})
+    project_metadata: dict = setup_params.get("project", {})
+    build_system: dict = setup_params.get("build-system", {})
+    VERSION: str = project_metadata.get("version", "0.0.0")
     AUTHORS: list[dict[str, str]] = project_metadata.get("authors", [{"name": "", "email": ""}])
     MAINTAINERS: list[dict[str, str]] = project_metadata.get("maintainers", [{"name": "", "email": ""}])
-    README: dict[str, str] = project_metadata.get("readme", {"file": "", "content-type": ""})
+    README = project_metadata.get("readme", {"file": "", "content-type": ""})
 
     # Extract and extend requirements
     REQUIREMENTS = {*build_system.get("requires", [])}
-    REQUIREMENTS.update(project_metadata["dependencies"])
+    requirements_txt_path = HERE.joinpath("requirements.txt")
+    if requirements_txt_path.exists():
+        REQUIREMENTS.update(requirements_txt_path.read_text().splitlines())
 
-    # Check if the installation is from PyPI or local source
-    if len(sys.argv) < 2:
-        sys.argv.append("install")
-
-    for key in ["authors", "readme", "maintainers"]:  # Remove keys that are not needed in setup()
-        if key in project_metadata:
-            project_metadata.pop(key)
-
-    EXTRA_PATHS = []
-    utility_path = HERE.joinpath("..", "Utility")
+    EXTRA_PATHS = [str(HERE)]
+    pykotor_path = HERE.joinpath("..", "..", "Libraries", "PyKotor")
+    pykotor_src_path = pykotor_path / "src"
+    pykotor_requirements = pykotor_path / "requirements.txt"
+    if pykotor_requirements.exists():
+        EXTRA_PATHS.append(str(pykotor_src_path))
+        REQUIREMENTS.update(pykotor_requirements.read_text().splitlines())
+    pykotorgl_path = HERE.joinpath("..", "..", "Libraries", "PyKotorGL")
+    pykotorgl_src_path = pykotorgl_path / "src"
+    if pykotorgl_src_path.exists():
+        EXTRA_PATHS.append(str(pykotorgl_src_path))
+    utility_path = HERE.joinpath("..", "..", "Libraries", "Utility")
     utility_src_path = utility_path / "src"
     if utility_src_path.exists():
         EXTRA_PATHS.append(str(utility_src_path))
 
     EXTRAS_REQUIRE = project_metadata.get("optional-dependencies", {})
+    APP = ["src/__main__.py"]
+    if "py2app" in sys.argv:
+        try:
+            import py2app  # noqa: F401
 
-    setup(
-        **project_metadata,
-        author=AUTHORS[0]["name"],
-        #author_email=AUTHORS[0]["email"],
-        maintainer=MAINTAINERS[0]["name"],
-        maintainer_email=MAINTAINERS[0]["email"],
-        install_requires=list(REQUIREMENTS),
-        extras_require=EXTRAS_REQUIRE,
-        long_description=README["file"],
-        long_description_content_type=README["content-type"],
-        include_dirs=EXTRA_PATHS,
-        package_dir={"": "src"},
-    )
+            from setuptools import setup
+        except (ImportError, ModuleNotFoundError) as e:
+            raise ImportError("py2app is not installed. Please install it using 'pip install py2app setuptools'.") from e
+
+        DATA_FILES = []
+        OPTIONS = {
+            "argv_emulation": True,
+            "packages": project_metadata["dependencies"],  # Add your required packages here
+            "plist": {
+                "CFBundleName": project_metadata["name"],
+                "CFBundleDisplayName": project_metadata["name"],
+                "CFBundleGetInfoString": project_metadata["description"],
+                "CFBundleVersion": VERSION,
+                "CFBundleShortVersionString": VERSION
+            },
+            "includes": list(REQUIREMENTS),
+            "excludes": ["numpy", "PyQt5", "PIL", "Pillow", "matplotlib", "multiprocessing", "PyOpenGL", "PyGLM"],
+            "extra_scripts": EXTRA_PATHS,
+        }
+
+        setup(
+            app=APP,
+            name=project_metadata["name"],
+            data_files=DATA_FILES,
+            options={"py2app": OPTIONS},
+            setup_requires=["py2app"]
+        )
+    elif "py2exe" in sys.argv:
+        try:
+            import py2exe  # noqa: F401
+
+            from py2exe import freeze
+        except ImportError as e:
+            raise ImportError("py2exe is not installed. Please install it using 'pip install py2exe'.") from e
+        # Define options for py2exe to mimic the behavior of the PyInstaller script
+        options = {
+            "py2exe": {
+                "compressed": 1,  # Compress the library archive
+                "optimize": 1,  # Apply bytecode optimization
+                "bundle_files": 1,
+                "verbose": 1,
+                "dist_dir": "dist",  # Output directory, same as in the PowerShell script
+                "excludes": [
+                    "dl_translate",
+                    "torch",
+                ],  # Modules to exclude
+                "dll_excludes": [],
+            }
+        }
+        shutil.rmtree("./dist", ignore_errors=True)
+        freeze(
+            options=options,
+            windows=[
+                {
+                    "script": APP,  # Main Python script to be converted into an executable
+                    "icon_resources": None,  # Icon file
+                    "dest_base": project_metadata["name"],
+                    "version_info": {
+                        "description": project_metadata["description"],
+                        "copyright": "GPLv3 Licensing",
+                        "version": VERSION,
+                        "product_name": project_metadata["name"],
+                        "internal_name": "PyKotor"
+                    }
+                }
+            ],
+            zipfile="pylibs.bin",  # Include the Python bytecode archive in the executable, if bundle_files is 3 this should be set to a specific filename
+        )
+    else:
+        from setuptools import setup
+        # Check if the installation is from PyPI or local source
+        if len(sys.argv) < 2:
+            sys.argv.append("install")
+
+        for key in ["authors", "readme", "maintainers"]:  # Remove keys that are not needed in setup()
+            if key in project_metadata:
+                project_metadata.pop(key)
+
+        setup(
+            **project_metadata,
+            author=AUTHORS[0]["name"],
+            author_email=AUTHORS[0]["email"],
+            maintainer=MAINTAINERS[0]["name"],
+            maintainer_email=MAINTAINERS[0]["email"],
+            install_requires=list(REQUIREMENTS),
+            extras_require=EXTRAS_REQUIRE,
+            long_description=README["file"],
+            long_description_content_type=README["content-type"],
+            include_dirs=EXTRA_PATHS,
+        )
 
 
 import contextlib
@@ -216,22 +300,28 @@ class TomlDecoder:
 
         return DynamicInlineTableDict()
 
-    def load_inline_object(self, line, currentlevel, multikey=False, multibackslash=False):
+    def load_inline_object(self, line, currentlevel, multikey=False,
+                           multibackslash=False):
         candidate_groups = line[1:-1].split(",")
         groups = []
-        if len(candidate_groups) == 1 and not candidate_groups[0].strip(): candidate_groups.pop()
+        if len(candidate_groups) == 1 and not candidate_groups[0].strip():
+            candidate_groups.pop()
         while len(candidate_groups) > 0:
             candidate_group = candidate_groups.pop(0)
-            try: _, value = candidate_group.split("=", 1)
-            except ValueError: raise ValueError("Invalid inline table encountered")
+            try:
+                _, value = candidate_group.split("=", 1)
+            except ValueError:
+                raise ValueError("Invalid inline table encountered")
             value = value.strip()
             if ((value[0] == value[-1] and value[0] in {'"', "'"}) or (value[0] in "-0123456789" or value in {"true", "false"} or (value[0] == "[" and value[-1] == "]") or (value[0] == "{" and value[-1] == "}"))):
                 groups.append(candidate_group)
             elif len(candidate_groups) > 0:
                 candidate_groups[0] = f"{candidate_group},{candidate_groups[0]}"
-            else: raise ValueError("Invalid inline table value encountered")
+            else:
+                raise ValueError("Invalid inline table value encountered")
         for group in groups:
-            status = self.load_line(group, currentlevel, multikey, multibackslash)
+            status = self.load_line(group, currentlevel, multikey,
+                                    multibackslash)
             if status is not None:
                 break
 
@@ -255,7 +345,6 @@ class TomlDecoder:
                 quotesplits += doublequotesplit.split("'")
                 quoted = not quoted
         return quotesplits
-
     def load_line(self, line, currentlevel, multikey, multibackslash):
         i = 1
         quotesplits = self._get_split_on_quotes(line)
@@ -270,11 +359,9 @@ class TomlDecoder:
         if _number_with_underscores.match(pair[-1]):
             pair[-1] = pair[-1].replace("_", "")
         while len(pair[-1]) and (pair[-1][0] != " " and pair[-1][0] != "\t" and pair[-1][0] != "'" and pair[-1][0] != '"' and pair[-1][0] != "[" and pair[-1][0] != "{" and pair[-1].strip() != "true" and pair[-1].strip() != "false"):
-            try:
+            with contextlib.suppress(ValueError):
                 float(pair[-1])
                 break
-            except ValueError:
-                pass
             if _load_date(pair[-1]) is not None:
                 break
             if TIME_RE.match(pair[-1]):
@@ -282,7 +369,8 @@ class TomlDecoder:
             i += 1
             prev_val = pair[-1]
             pair = line.split("=", i)
-            if prev_val == pair[-1]: raise ValueError("Invalid date or number")
+            if prev_val == pair[-1]:
+                raise ValueError("Invalid date or number")
             if strictly_valid:
                 strictly_valid = _strictly_valid_num(pair[-1])
         pair = ["=".join(pair[:-1]).strip(), pair[-1].strip()]
@@ -295,11 +383,15 @@ class TomlDecoder:
                     else:
                         levels += [level.strip() for level in quotesplit.split(".")]
                     quoted = not quoted
-            else: levels = pair[0].split(".")
-            while levels[-1] == "": levels = levels[:-1]
+            else:
+                levels = pair[0].split(".")
+            while levels[-1] == "":
+                levels = levels[:-1]
             for level in levels[:-1]:
-                if level == "": continue
-                if level not in currentlevel: currentlevel[level] = self.get_empty_table()
+                if level == "":
+                    continue
+                if level not in currentlevel:
+                    currentlevel[level] = self.get_empty_table()
                 currentlevel = currentlevel[level]
             pair[0] = levels[-1].strip()
         elif pair[0][0] in {'"', "'"} and pair[0][-1] == pair[0][0]:
@@ -316,7 +408,8 @@ class TomlDecoder:
         try:
             currentlevel[pair[0]]
             raise ValueError("Duplicate keys!")
-        except TypeError as e: raise ValueError("Duplicate keys!") from e
+        except TypeError as e:
+            raise ValueError("Duplicate keys!") from e
         except KeyError:
             if multikey:
                 return multikey, multilinestr, multibackslash
@@ -324,26 +417,35 @@ class TomlDecoder:
 
     def _load_line_multiline_str(self, p):
         poffset = 0
-        if len(p) < 3: return -1, poffset
-        if p[0] == "[" and (p.strip()[-1] != "]" and self._load_array_isstrarray(p)):
+        if len(p) < 3:
+            return -1, poffset
+        if p[0] == "[" and (p.strip()[-1] != "]" and
+                            self._load_array_isstrarray(p)):
             newp = p[1:].strip().split(",")
-            while len(newp) > 1 and newp[-1][0] != '"' and newp[-1][0] != "'": newp = newp[:-2] + [newp[-2] + "," + newp[-1]]
+            while len(newp) > 1 and newp[-1][0] != '"' and newp[-1][0] != "'":
+                newp = newp[:-2] + [newp[-2] + "," + newp[-1]]
             newp = newp[-1]
             poffset = len(p) - len(newp)
             p = newp
-        if p[0] != '"' and p[0] != "'": return -1, poffset
-        if p[1] != p[0] or p[2] != p[0]: return -1, poffset
-        if len(p) > 5 and p[-1] == p[0] and p[-2] == p[0] and p[-3] == p[0]: return -1, poffset
+        if p[0] != '"' and p[0] != "'":
+            return -1, poffset
+        if p[1] != p[0] or p[2] != p[0]:
+            return -1, poffset
+        if len(p) > 5 and p[-1] == p[0] and p[-2] == p[0] and p[-3] == p[0]:
+            return -1, poffset
         return len(p) - 1, poffset
 
     def load_value(self, v, strictly_valid=True):
-        if not v: raise ValueError("Empty value is invalid")
+        if not v:
+            raise ValueError("Empty value is invalid")
         if v == "true":
             return (True, "bool")
-        if v.lower() == "true": raise ValueError("Only all lowercase booleans allowed")
+        if v.lower() == "true":
+            raise ValueError("Only all lowercase booleans allowed")
         if v == "false":
             return (False, "bool")
-        if v.lower() == "false": raise ValueError("Only all lowercase booleans allowed")
+        if v.lower() == "false":
+            raise ValueError("Only all lowercase booleans allowed")
         if v[0] == '"' or v[0] == "'":
             quotechar = v[0]
             testv = v[1:].split(quotechar)
@@ -383,7 +485,9 @@ class TomlDecoder:
                     if i == "":
                         backslash = not backslash
                     else:
-                        if i[0] not in _escapes and (i[0] != "u" and i[0] != "U" and not backslash):
+                        if i[0] not in _escapes and (i[0] != "u" and
+                                                     i[0] != "U" and
+                                                     not backslash):
                             raise ValueError("Reserved escape sequence used")
                         if backslash:
                             backslash = False
@@ -408,8 +512,10 @@ class TomlDecoder:
             time = datetime.time(int(h), int(m), int(s), int(ms) if ms else 0)
             return (time, "time")
         parsed_date = _load_date(v)
-        if parsed_date is not None: return (parsed_date, "date")
-        if not strictly_valid: raise ValueError("Weirdness with leading zeroes or underscores in your number.")
+        if parsed_date is not None:
+            return (parsed_date, "date")
+        if not strictly_valid:
+            raise ValueError("Weirdness with leading zeroes or underscores in your number.")
         itype = "int"
         neg = False
         if v[0] == "-":
@@ -420,8 +526,10 @@ class TomlDecoder:
         v = v.replace("_", "")
         lowerv = v.lower()
         if "." in v or ("x" not in v and ("e" in v or "E" in v)):
-            if "." in v and v.split(".", 1)[1] == "": raise ValueError("This float is missing digits after the point")
-            if v[0] not in "0123456789": raise ValueError("This float doesn't have a leading digit")
+            if "." in v and v.split(".", 1)[1] == "":
+                raise ValueError("This float is missing digits after the point")
+            if v[0] not in "0123456789":
+                raise ValueError("This float doesn't have a leading digit")
             v = float(v)
             itype = "float"
         elif len(lowerv) == 3 and (lowerv in {"inf", "nan"}):
@@ -563,7 +671,7 @@ def _strictly_valid_num(n):
         return True
     if n[0] == "0" and n[1] not in {".", "o", "b", "x"}:
         return False
-    if n[0] == "+" or n[0] == "-":
+    if n[0] in {"+", "-"}:
         n = n[1:]
         if len(n) > 1 and n[0] == "0" and n[1] != ".":
             return False
@@ -582,7 +690,8 @@ def load_toml(f, _dict=dict, decoder=None):
         if not [path for path in f if op.exists(path)]:
             error_msg = "Load expects a list to contain filenames only."
             error_msg += os.linesep
-            error_msg += ("The list needs to contain the path of at least one existing file.")
+            error_msg += ("The list needs to contain the path of at least one "
+                          "existing file.")
             raise OSError(error_msg)
         if decoder is None:
             decoder = TomlDecoder(_dict)
@@ -591,7 +700,8 @@ def load_toml(f, _dict=dict, decoder=None):
             if Path.exists(l):
                 d.update(load_toml(l, _dict, decoder))
             else:
-                warn("Non-existent filename in list with at least one valid filename")
+                warn("Non-existent filename in list with at least one valid "
+                     "filename")
         return d
     else:
         try:
@@ -642,7 +752,7 @@ def loads(s, _dict=dict, decoder=None):
                     continue
                 if item.isalnum() or item == "_" or item == "-":
                     continue
-                if (dottedkey and sl[i - 1] == "." and (item in {'"', "'"})):
+                if (dottedkey and sl[i - 1] == "." and (item == '"' or item == "'")):
                     openstring, openstrchar = True, item
                     continue
             elif keyname == 2:
@@ -704,7 +814,10 @@ def loads(s, _dict=dict, decoder=None):
                     openstring = multilinestr
                 else:
                     openstring = not openstring
-            openstrchar = '"' if openstring else ""
+            if openstring:
+                openstrchar = '"'
+            else:
+                openstrchar = ""
         if item == "#" and (not openstring and not keygroup and
                             not arrayoftables):
             j = i
@@ -757,9 +870,11 @@ def loads(s, _dict=dict, decoder=None):
                 keyname = 1
                 key += item
     if keyname:
-        raise ValueError("Key name found without value. Reached end of file.", original, len(s))
+        raise ValueError("Key name found without value."
+                              " Reached end of file.", original, len(s))
     if openstring:  # reached EOF and have an unterminated string
-        raise ValueError("Unterminated string found. Reached end of file.", original, len(s))
+        raise ValueError("Unterminated string found."
+                              " Reached end of file.", original, len(s))
     s = "".join(sl)
     s = s.split("\n")
     multikey = None
@@ -870,7 +985,7 @@ def loads(s, _dict=dict, decoder=None):
                                                       "table can't be an array",
                                                       original, pos)
                         elif arrayoftables:
-                            currentlevel[group].append(decoder.get_empty_table(),
+                            currentlevel[group].append(decoder.get_empty_table()
                                                        )
                         else:
                             raise ValueError("What? " + group +
@@ -895,16 +1010,19 @@ def loads(s, _dict=dict, decoder=None):
                         currentlevel = currentlevel[-1]
         elif line[0] == "{":
             if line[-1] != "}":
-                raise ValueError("Line breaks are not allowed in inlineobjects", original, pos)
+                raise ValueError("Line breaks are not allowed in inline"
+                                      "objects", original, pos)
             try:
                 decoder.load_inline_object(line, currentlevel, multikey,
                                            multibackslash)
-            except ValueError as err: raise ValueError(str(err), original, pos)
+            except ValueError as err:
+                raise ValueError(str(err), original, pos)
         elif "=" in line:
             try:
                 ret = decoder.load_line(line, currentlevel, multikey,
                                         multibackslash)
-            except ValueError as err: raise ValueError(str(err), original, pos)
+            except ValueError as err:
+                raise ValueError(str(err), original, pos)
             if ret is not None:
                 multikey, multilinestr, multibackslash = ret
     return retval

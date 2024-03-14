@@ -12,7 +12,7 @@ from PyQt5.QtWidgets import QAction, QMessageBox
 from pykotor.resource.formats.twoda import TwoDA, read_2da, write_2da
 from pykotor.resource.type import ResourceType
 from toolset.gui.editor import Editor
-from utility.error_handling import assert_with_variable_trace
+from utility.error_handling import assert_with_variable_trace, universal_simplify_exception
 
 if TYPE_CHECKING:
     import os
@@ -117,8 +117,9 @@ class TwoDAEditor(Editor):
 
         try:
             self._load_main(data)
-        except ValueError:
-            QMessageBox(QMessageBox.Critical, "Failed to load file.", "Failed to open or load file data.").exec_()
+        except ValueError as e:
+            error_msg = str(universal_simplify_exception(e)).replace("\n", "<br>")
+            QMessageBox(QMessageBox.Critical, "Failed to load file.", f"Failed to open or load file data.<br>{error_msg}").exec_()
             self.proxyModel.setSourceModel(self.model)
             self.new()
 

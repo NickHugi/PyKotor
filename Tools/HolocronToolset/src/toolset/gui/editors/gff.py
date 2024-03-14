@@ -809,12 +809,6 @@ class GFFEditor(Editor):
         Args:
         ----
             self: The class instance
-
-        Processing Logic:
-        ----------------
-            - Open a file dialog to select a TLK file
-            - Get the selected file path and filter from the dialog
-            - If a file is selected, load it as a TalkTable and assign to self._talktable.
         """
         filepath, filter = QFileDialog.getOpenFileName(self, "Select a TLK file", "", "TalkTable (*.tlk)")
         if not filepath:

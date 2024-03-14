@@ -17,8 +17,11 @@ def main():
 
     # Extract project metadata
     project_metadata = setup_params.get("project", {})
+    assert isinstance(project_metadata, dict)
+
     build_system = setup_params.get("build-system", {})
-    AUTHORS = project_metadata.get("authors", [{"name": ""}])
+    AUTHORS = project_metadata.get("authors", [{"name": "", "email": ""}])
+    MAINTAINERS = project_metadata.get("maintainers", [{"name": "", "email": ""}])
     README = project_metadata.get("readme", {"file": "", "content-type": ""})
 
     # Extract and extend requirements
@@ -26,6 +29,16 @@ def main():
     requirements_txt_path = HERE.joinpath("requirements.txt")
     if requirements_txt_path.exists():
         REQUIREMENTS.update(requirements_txt_path.read_text().splitlines())
+
+    EXTRA_PATHS = []
+    utility_path = HERE.joinpath("..", "..", "Libraries", "Utility")
+    utility_src_path = utility_path / "src"
+    if utility_src_path.exists():
+        EXTRA_PATHS.append(str(utility_src_path))
+    pykotor_path = HERE.joinpath("..", "..", "Libraries", "PyKotor")
+    pykotor_src_path = pykotor_path / "src"
+    if pykotor_src_path.exists():
+        EXTRA_PATHS.append(str(pykotor_src_path))
 
     # Check if the installation is from PyPI or local source
     if len(sys.argv) < 2:
@@ -38,10 +51,12 @@ def main():
     setup(
         **project_metadata,
         author=AUTHORS[0]["name"],
+        maintainer=MAINTAINERS[0]["name"],
+        maintainer_email=MAINTAINERS[0]["email"],
         install_requires=list(REQUIREMENTS),
         long_description=README["file"],
         long_description_content_type=README["content-type"],
-        include_dirs=HERE,
+        package_dir={"": "src"},
     )
 
 

@@ -172,6 +172,7 @@ class InsertInstanceDialog(QDialog):
                 self.filepath = Path(self.filepath) / f"{self.resname}.{self._restype.extension}"
                 BinaryWriter.dump(self.filepath, self.data)
 
+        assert self.filepath is not None
         self._module.add_locations(self.resname, self._restype, [self.filepath])
 
     def onResourceRadioToggled(self):

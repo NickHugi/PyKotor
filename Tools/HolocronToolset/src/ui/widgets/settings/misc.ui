@@ -37,6 +37,13 @@
         </widget>
        </item>
        <item>
+        <widget class="QCheckBox" name="useBetaChannel">
+         <property name="text">
+          <string>Check for beta updates and take me to their download link when they&apos;re available.</string>
+         </property>
+        </widget>
+       </item>
+       <item>
         <widget class="QCheckBox" name="mergeRimCheck">
          <property name="text">
           <string>Merge RIM files in the Modules tab of the Main Window.</string>

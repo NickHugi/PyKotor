@@ -7,6 +7,7 @@ import unittest
 
 from unittest.mock import patch
 
+
 THIS_SCRIPT_PATH = pathlib.Path(__file__).resolve()
 PYKOTOR_PATH = THIS_SCRIPT_PATH.parents[2].joinpath("Libraries", "PyKotor", "src")
 UTILITY_PATH = THIS_SCRIPT_PATH.parents[2].joinpath("Libraries", "Utility", "src")
@@ -25,6 +26,7 @@ if __name__ == "__main__" and not __package__:
     __init__ = __import__(str(this_script_file_path.parent.name)).__init__  # type: ignore[misc]
 
 from pykotor.tools.path import CaseAwarePath
+from utility.system.path import Path
 
 
 class TestCaseAwarePath(unittest.TestCase):
@@ -43,6 +45,14 @@ class TestCaseAwarePath(unittest.TestCase):
         self.assertEqual(path1, path2)
         self.assertEqual(hash(path1), hash(path2))
         self.assertSetEqual(test_set, {CaseAwarePath("TEST\\path\\to\\nothing")})
+
+        test_list = [Path("/mnt/c/Program Files (x86)/steam/steamapps/common/swkotor/saves")]
+        self.assertIn(CaseAwarePath("/MNT/c/Program FileS (x86)/steam/steamapps/common/swkotor/saves"), test_list)
+        self.assertIn(CaseAwarePath("/mnt/c/Program Files (x86)/steam/steamapps/common/swkotor/saves"), test_list)
+
+        test_list = [CaseAwarePath("/mnt/c/Program Files (x86)/steam/steamapps/common/swkotor/saves")]
+        self.assertIn(Path("/MNT/c/Program FileS (x86)/steam/steamapps/common/swkotor/saves"), test_list)
+        self.assertIn(Path("/mnt/c/Program Files (x86)/steam/steamapps/common/swkotor/saves"), test_list)
 
     def test_valid_name_property(self):
         self.assertEqual((CaseAwarePath("test", "data\\something.test")).name, "something.test")

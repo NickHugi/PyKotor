@@ -52,7 +52,7 @@ pip install -r recommended.txt
 ### Command-Line Interface
 
 ```bash
-python __main__.py <path to game> <path to tslpatchdata> [options]
+python src/__main__.py <path to game> <path to tslpatchdata> [options]
 ```
 required arguments:
 

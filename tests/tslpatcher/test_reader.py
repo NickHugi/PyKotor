@@ -10,6 +10,8 @@ import unittest
 from configparser import ConfigParser
 from typing import TYPE_CHECKING
 
+from pykotor.tools.path import CaseAwarePath
+
 THIS_SCRIPT_PATH = pathlib.Path(__file__).resolve()
 PYKOTOR_PATH = THIS_SCRIPT_PATH.parents[2].joinpath("Libraries", "PyKotor", "src")
 UTILITY_PATH = THIS_SCRIPT_PATH.parents[2].joinpath("Libraries", "Utility", "src")
@@ -64,6 +66,7 @@ if TYPE_CHECKING:
         ChangeRow2DA,
     )
 
+K1_PATH: str = os.environ.get("K1_PATH", r"C:\Program Files (x86)\Steam\steamapps\common\swkotor")
 
 class TestConfigReader(unittest.TestCase):
     def setUp(self):
@@ -150,6 +153,8 @@ class TestConfigReader(unittest.TestCase):
         """
         self.ini.read_string(ini_text)
         self.config_reader.load(self.config)
+        for modifier in self.config.patches_tlk.modifiers:
+            modifier.load()
 
         self.assertEqual(len(self.config.patches_tlk.modifiers), 3)
         modifiers_dict = {mod.token_id: {"text": mod.text, "voiceover": mod.sound, "replace": mod.is_replacement} for mod in self.config.patches_tlk.modifiers}
@@ -178,6 +183,8 @@ class TestConfigReader(unittest.TestCase):
 
         self.ini.read_string(ini_text)
         self.config_reader.load(self.config)
+        for modifier in self.config.patches_tlk.modifiers:
+            modifier.load()
 
         self.assertEqual(len(self.config.patches_tlk.modifiers), 3)
         modifiers_dict = {mod.token_id: {"text": mod.text, "voiceover": mod.sound, "replace": mod.is_replacement} for mod in self.config.patches_tlk.modifiers}
@@ -207,6 +214,8 @@ class TestConfigReader(unittest.TestCase):
 
         self.ini.read_string(ini_text)
         self.config_reader.load(self.config)
+        for modifier in self.config.patches_tlk.modifiers:
+            modifier.load()
 
         self.assertEqual(len(self.config.patches_tlk.modifiers), 3)
         modifiers_dict = {mod.token_id: {"text": mod.text, "voiceover": mod.sound, "replace": mod.is_replacement} for mod in self.config.patches_tlk.modifiers}
@@ -236,6 +245,8 @@ class TestConfigReader(unittest.TestCase):
         self.config_reader.load(self.config)
 
         self.assertEqual(len(self.config.patches_tlk.modifiers), 3)
+        for modifier in self.config.patches_tlk.modifiers:
+            modifier.load()
         modifiers_dict = {mod.token_id: {"text": mod.text, "voiceover": mod.sound, "replace": mod.is_replacement} for mod in self.config.patches_tlk.modifiers}
         self.assertDictEqual(
             modifiers_dict,
@@ -269,6 +280,8 @@ class TestConfigReader(unittest.TestCase):
         self.config_reader.load(self.config)
 
         modifiers1 = self.config.patches_tlk.modifiers.copy()
+        for modifier in modifiers1:
+            modifier.load()
         self.assertEqual(len(self.config.patches_tlk.modifiers), 26)
 
         self.ini = ConfigParser()
@@ -310,6 +323,8 @@ class TestConfigReader(unittest.TestCase):
         self.config_reader.load(self.config)
 
         modifiers2: list[ModifyTLK] = self.config.patches_tlk.modifiers.copy()
+        for modifier in modifiers2:
+            modifier.load()
         self.assertEqual(len(self.config.patches_tlk.modifiers), 26)
 
         modifiers_dict1: dict[int, dict[str, str | ResRef | bool]] = {
@@ -447,6 +462,8 @@ class TestConfigReader(unittest.TestCase):
         """
         self.ini.read_string(ini_text)
         self.config_reader.load(self.config)
+        for modifier in self.config.patches_tlk.modifiers:
+            modifier.load()
 
         self.assertEqual(len(self.config.patches_tlk.modifiers), 5)
         modifiers_dict = {mod.token_id: {"text": mod.text, "voiceover": mod.sound} for mod in self.config.patches_tlk.modifiers}
@@ -480,6 +497,8 @@ class TestConfigReader(unittest.TestCase):
 
         self.ini.read_string(ini_text)
         self.config_reader.load(self.config)
+        for modifier in self.config.patches_tlk.modifiers:
+            modifier.load()
 
         self.assertEqual(len(self.config.patches_tlk.modifiers), 3)
         modifiers_dict = {mod.token_id: {"text": mod.text, "voiceover": mod.sound} for mod in self.config.patches_tlk.modifiers}

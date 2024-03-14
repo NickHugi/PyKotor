@@ -76,7 +76,7 @@ class HelpWindow(QMainWindow):
         if "structure" in data:
             for title in data["structure"]:
                 item = QTreeWidgetItem([title])
-                item.setData(0, QtCore.Qt.UserRole, data["structure"][title]["filename"])  # type: ignore[attr-defined]
+                item.setData(0, QtCore.Qt.UserRole, data["structure"][title]["filename"])
                 add(item)
                 self._setupContentsRecJSON(item, data["structure"][title])
 
@@ -84,7 +84,7 @@ class HelpWindow(QMainWindow):
         add: Callable[..., None] = self.ui.contentsTree.addTopLevelItem if parent is None else parent.addChild
 
         for child in element:
-            item = QTreeWidgetItem([child.get("name")])  # FIXME: typing
+            item = QTreeWidgetItem([child.get("name", "")])
             item.setData(0, QtCore.Qt.UserRole, child.get("file"))
             add(item)
             self._setupContentsRecXML(item, child)
@@ -170,14 +170,24 @@ class HelpWindow(QMainWindow):
                     loader = AsyncLoader(self, "Download newer help files...", task, "Failed to update.")
                     if loader.exec_():
                         self._setupContents()
-        except Exception as e:
+        except (ConnectionError, requests.HTTPError, requests.ConnectionError, requests.RequestException):
+            error_msg = str(universal_simplify_exception(e)).replace("\n", "<br>")
             QMessageBox(
                 QMessageBox.Information,
                 "Unable to fetch latest version of the help booklet.",
                 (
-                    f"{universal_simplify_exception(e)}\n"
+                    f"{error_msg}<br>"
                     "Check if you are connected to the internet."
                 ),
+                QMessageBox.Ok,
+                self,
+            ).exec_()
+        except Exception as e:
+            error_msg = str(universal_simplify_exception(e)).replace("\n", "<br>")
+            QMessageBox(
+                QMessageBox.Information,
+                "An unexpected error occurred while fetching the help booklet.",
+                error_msg,
                 QMessageBox.Ok,
                 self,
             ).exec_()

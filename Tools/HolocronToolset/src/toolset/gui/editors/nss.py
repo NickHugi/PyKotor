@@ -183,14 +183,12 @@ class NSSEditor(Editor):
         if self._restype != ResourceType.NCS:
             return self.ui.codeEdit.toPlainText().encode("windows-1252"), b""
 
-        compiled_bytes: bytes | None = compileScript(self.ui.codeEdit.toPlainText(), self._installation.tsl, self._installation.path())
         print("compiling script from nsseditor")
+        compiled_bytes: bytes | None = compileScript(self.ui.codeEdit.toPlainText(), self._installation.tsl, self._installation.path())
         if compiled_bytes is None:
             print("user cancelled the compilation")
             return None, b""
-
-        msg = "Could not convert to bytes - nsseditor.build()"
-        raise ValueError(msg)
+        return compiled_bytes, b""
 
     def new(self):
         super().new()

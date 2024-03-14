@@ -4,3 +4,27 @@ requires = [
     "wheel"
 ]
 build-backend = "setuptools.build_meta"
+
+[project]
+name="PyKotorGL"
+version="1.7"
+description="A Python library that can render most modules from the game Knights of the Old Republic and its sequel."
+authors = [{name = "NickHugi"}]
+maintainers = [{name = "th3w1zard1", email = "halomastar@gmail.com"}]
+readme = {file = "README.md", content-type = "text/markdown"}
+license = {text = "GPLv3 License"}
+keywords = ["kotor", "library", "holocron", "toolset", "pykotor", "editor", "holopatcher", "tslpatcher"]
+requires-python = ">= 3.7"
+dependencies = ["ply>=3.11,<4"]  # required for the nss compiler lexer
+
+[project.optional-dependencies]
+font                 = ["Pillow>=9.5"]    # required for TXI/TGA fonts
+secure_xml           = ["defusedxml~=0.7"]    # secure XML parsing
+encodings = ["charset-normalizer>=2.0,<3.4"]  # used for localized string decodings
+
+[project.urls]
+Homepage = "https://github.com/NickHugi/PyKotor"
+Documentation = "https://github.com/NickHugi/PyKotor/blob/master/README.md"
+Repository = "https://github.com/NickHugi/PyKotor.git"
+Issues = "https://github.com/NickHugi/PyKotor/issues"
+#Changelog = "https://github.com/NickHugi/PyKotor/blob/master/CHANGELOG.md"

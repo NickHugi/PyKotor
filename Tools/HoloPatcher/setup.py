@@ -1,11 +1,10 @@
 from __future__ import annotations
 
 import os
+import shutil
 import sys
 
 from pathlib import Path
-
-from setuptools import setup
 
 
 def main():
@@ -18,7 +17,9 @@ def main():
     # Extract project metadata
     project_metadata: dict = setup_params.get("project", {})
     build_system: dict = setup_params.get("build-system", {})
-    AUTHORS = project_metadata.get("authors", [{"name": ""}])
+    VERSION: str = project_metadata.get("version", "0.0.0")
+    AUTHORS = project_metadata.get("authors", [{"name": "", "email": ""}])
+    MAINTAINERS = project_metadata.get("maintainers", [{"name": "", "email": ""}])
     README = project_metadata.get("readme", {"file": "", "content-type": ""})
 
     # Extract and extend requirements
@@ -27,33 +28,126 @@ def main():
     if requirements_txt_path.exists():
         REQUIREMENTS.update(requirements_txt_path.read_text().splitlines())
 
-    EXTRA_PATHS = [str(HERE)]
+    EXTRA_PATHS = []
     pykotor_path = HERE.joinpath("..", "..", "Libraries", "PyKotor")
     pykotor_src_path = pykotor_path / "src"
     pykotor_requirements = pykotor_path / "requirements.txt"
     if pykotor_requirements.exists():
         EXTRA_PATHS.append(str(pykotor_src_path))
         REQUIREMENTS.update(pykotor_requirements.read_text().splitlines())
+    utility_path = HERE.joinpath("..", "..", "Libraries", "Utility")
+    utility_src_path = utility_path / "src"
+    if utility_src_path.exists():
+        EXTRA_PATHS.append(str(utility_src_path))
 
     EXTRAS_REQUIRE = project_metadata.get("optional-dependencies", {})
+    APP = ["src/__main__.py"]
+    if "py2app" in sys.argv:
+        try:
+            import py2app  # noqa: F401
 
-    # Check if the installation is from PyPI or local source
-    if len(sys.argv) < 2:
-        sys.argv.append("install")
+            from setuptools import setup
+        except (ImportError, ModuleNotFoundError) as e:
+            raise ImportError("py2app is not installed. Please install it using 'pip install py2app setuptools'.") from e
 
-    for key in ["authors", "readme"]:  # Remove keys that are not needed in setup()
-        if key in project_metadata:
-            project_metadata.pop(key)
+        DATA_FILES = []
+        OPTIONS = {
+            "argv_emulation": True,
+            "packages": project_metadata["dependencies"],  # Add your required packages here
+            "iconfile": "resources/icons/patcher_icon_v2.icns",  # macOS icon file
+            "plist": {
+                "CFBundleName": project_metadata["name"],
+                "CFBundleDisplayName": project_metadata["name"],
+                "CFBundleGetInfoString": project_metadata["description"],
+                "CFBundleVersion": VERSION,
+                "CFBundleShortVersionString": VERSION
+            },
+            "includes": list(REQUIREMENTS),
+            "excludes": ["numpy", "PyQt5", "PIL", "Pillow", "matplotlib", "multiprocessing", "PyOpenGL", "PyGLM"],
+            "extra_scripts": EXTRA_PATHS,
+        }
 
-    setup(
-        **project_metadata,
-        author=AUTHORS[0]["name"],
-        install_requires=list(REQUIREMENTS),
-        extras_require=EXTRAS_REQUIRE,
-        long_description=README["file"],
-        long_description_content_type=README["content-type"],
-        include_dirs=EXTRA_PATHS,
-    )
+        setup(
+            app=APP,
+            name=project_metadata["name"],
+            data_files=DATA_FILES,
+            options={"py2app": OPTIONS},
+            setup_requires=["py2app"]
+        )
+    elif "py2exe" in sys.argv:
+        try:
+            import py2exe  # noqa: F401
+
+            from py2exe import freeze
+        except ImportError as e:
+            raise ImportError("py2exe is not installed. Please install it using 'pip install py2exe'.") from e
+        # Define options for py2exe to mimic the behavior of the PyInstaller script
+        options = {
+            "py2exe": {
+                "compressed": 1,  # Compress the library archive
+                "optimize": 1,  # Apply bytecode optimization
+                "bundle_files": 1,
+                "verbose": 1,
+                "dist_dir": "dist",  # Output directory, same as in the PowerShell script
+                "excludes": [
+                    "numpy", "PyQt5", "PIL", "Pillow", "matplotlib", "multiprocessing", "PyOpenGL",
+                    "PyGLM", "dl_translate", "torch", "deep_translator", "deepl-cli", "playwright",
+                    "pyquery", "arabic-reshaper", "PyQt5-Qt5", "PyQt5-sip", "sip", "PyQt5-tools",
+                    "qt5-applications", "watchdog", "Markdown", "pyperclip", "setuptools", "java",
+                    "java.lang", "wheel", "ruff", "pylint", "pykotor.gl", "pykotorgl", "pykotor.font",
+                    "pykotorfont", "pykotor.secure_xml", "mypy-extensions", "mypy", "isort",
+                    "install_playwright", "greenlet", "cssselect", "beautifulsoup4",
+                ],  # Modules to exclude
+                "dll_excludes": [],
+            }
+        }
+
+        # Path to icon file, adapted to the platform-specific icon extension
+        icon_file = "resources/icons/patcher_icon_v2.ico"  # Adjust the path and extension as needed
+        shutil.rmtree("./dist", ignore_errors=True)
+        freeze(
+            options=options,
+            windows=[
+                {
+                    "script": APP,  # Main Python script to be converted into an executable
+                    "icon_resources": [(1, icon_file)] if icon_file else None,  # Icon file
+                    "dest_base": "HoloPatcher",
+                    "version_info": {
+                        "description": project_metadata["description"],
+                        "copyright": "GPLv3 Licensing",
+                        "version": VERSION,
+                        "product_name": "HoloPatcher",
+                        "internal_name": "PyKotor"
+                    }
+                }
+            ],
+            zipfile="pylibs.bin",  # Include the Python bytecode archive in the executable, if bundle_files is 3 this should be set to a specific filename
+        )
+    else:
+        from setuptools import setup
+        # Check if the installation is from PyPI or local source
+        if len(sys.argv) < 2:
+            sys.argv.append("install")
+
+        for key in ["authors", "readme", "maintainers"]:  # Remove keys that are not needed in setup()
+            if key in project_metadata:
+                project_metadata.pop(key)
+
+        setup(
+            **project_metadata,
+            author=AUTHORS[0]["name"],
+            #author_email=AUTHORS[0]["email"],
+            maintainer=MAINTAINERS[0]["name"],
+            maintainer_email=MAINTAINERS[0]["email"],
+            install_requires=list(REQUIREMENTS),
+            extras_require=EXTRAS_REQUIRE,
+            long_description=README["file"],
+            long_description_content_type=README["content-type"],
+            include_dirs=EXTRA_PATHS,
+            package_dir={"": "src"},
+        )
+
+
 
 
 import contextlib

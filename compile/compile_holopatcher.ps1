@@ -1,8 +1,8 @@
 [CmdletBinding(PositionalBinding=$false)]
 param(
-  [switch]$noprompt,
-  [string]$venv_name = ".venv",
-  [string]$upx_dir
+    [switch]$noprompt,
+    [string]$venv_name = ".venv",
+    [string]$upx_dir
 )
 $this_noprompt = $noprompt
 

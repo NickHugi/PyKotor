@@ -25,8 +25,7 @@ from toolset.utils.window import openResourceEditor
 if TYPE_CHECKING:
     import os
 
-    from PyQt5.QtCore import QObject
-    from PyQt5.QtWidgets import QWidget
+    from PyQt5.QtWidgets import QMainWindow, QWidget
 
     from pykotor.extract.file import ResourceResult
     from pykotor.resource.formats.twoda.twoda_data import TwoDA
@@ -38,7 +37,7 @@ class UTPEditor(Editor):
         parent: QWidget | None,
         installation: HTInstallation | None = None,
         *,
-        mainwindow: QWidget | QObject | None = None,
+        mainWindow: QWidget | QMainWindow | None = None,
     ):
         """Initialize Placeable Editor.
 
@@ -59,7 +58,7 @@ class UTPEditor(Editor):
             7. Update 3D preview and call new() to initialize editor.
         """
         supported = [ResourceType.UTP]
-        super().__init__(parent, "Placeable Editor", "placeable", supported, supported, installation, mainwindow)
+        super().__init__(parent, "Placeable Editor", "placeable", supported, supported, installation, mainWindow)
 
         self.globalSettings: GlobalSettings = GlobalSettings()
         self._placeables2DA = installation.htGetCache2DA("placeables")
@@ -219,7 +218,7 @@ class UTPEditor(Editor):
         Returns:
         -------
             data: The built UTP data
-            b"": Empty byte string
+            mdx b"": Empty byte string
 
         Builds a UTP by:
             - Setting UTP properties like name, tag, scripts from UI elements
@@ -365,10 +364,22 @@ class UTPEditor(Editor):
                 path for path in self._installation.module_names()
                 if root in path and path != self._filepath
             ]
-            newCapsules: list[Capsule] = [Capsule(self._installation.module_path() / mod_filename) for mod_filename in moduleNames]
+            newCapsules: list[Capsule] = [
+                Capsule(self._installation.module_path() / mod_filename)
+                for mod_filename in moduleNames
+            ]
             capsules.extend(newCapsules)
 
-        inventoryEditor = InventoryEditor(self, self._installation, capsules, [], self._utp.inventory, {}, False, True)
+        inventoryEditor = InventoryEditor(
+            self,
+            self._installation,
+            capsules,
+            [],
+            self._utp.inventory,
+            {},
+            droid=False,
+            hide_equipment=True,
+        )
         if inventoryEditor.exec_():
             self._utp.inventory = inventoryEditor.inventory
             self.updateItemCount()

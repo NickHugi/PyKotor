@@ -158,7 +158,7 @@ class GITEditor(Editor):
 
         self.new()
 
-    def _setupHotkeys(self):
+    def _setupHotkeys(self):  # TODO: use GlobalSettings() defined hotkeys
         self.ui.actionDeleteSelected.setShortcut(QKeySequence("Del"))
         self.ui.actionZoomIn.setShortcut(QKeySequence("+"))
         self.ui.actionZoomOut.setShortcut(QKeySequence("-"))
@@ -684,7 +684,7 @@ class _InstanceMode(_Mode):
             openInstanceDialog(self._editor, instance, self._installation)
             self.buildList()
 
-    def editSelectedInstanceResource(self):
+    def editSelectedInstanceResource(self):  # TODO: create a static method out of this in pykotor.tools or add to the module class. This is a very useful function.
         """Edits the selected instance resource.
 
         Processing Logic:
@@ -697,32 +697,33 @@ class _InstanceMode(_Mode):
         """
         selection: list[GITInstance] = self._ui.renderArea.instanceSelection.all()
 
-        if selection:
-            instance: GITInstance = selection[-1]
-            resname, restype = instance.identifier()
-            filepath: Path | None = None
+        if not selection:
+            return
+        instance: GITInstance = selection[-1]
+        resname, restype = instance.identifier().unpack()
+        filepath: Path | None = None
 
-            order: list[SearchLocation] = [SearchLocation.CHITIN, SearchLocation.MODULES, SearchLocation.OVERRIDE]
-            search: list[LocationResult] = self._installation.location(resname, restype, order)
+        order: list[SearchLocation] = [SearchLocation.CHITIN, SearchLocation.MODULES, SearchLocation.OVERRIDE]
+        search: list[LocationResult] = self._installation.location(resname, restype, order)
 
-            for result in search:
-                lowercase_path_parts: list[str] = [f.lower() for f in result.filepath.parts]
-                if "override" in lowercase_path_parts:
-                    filepath = result.filepath
-                else:
-                    module_root: str = Module.get_root(self._editor.filepath())
-
-                    # Check if module root is in path parents or is a .rim
-                    lowercase_path_parents: list[str] = [str(parent).lower() for parent in result.filepath.parents]
-                    if module_root.lower() in lowercase_path_parents and (filepath is None or is_rim_file(filepath)):
-                        filepath = result.filepath
-
-            if filepath:
-                data: bytes = getResourceFromFile(filepath, resname, restype)
-                openResourceEditor(filepath, resname, restype, data, self._installation, self._editor)
+        for result in search:
+            lowercase_path_parts: list[str] = [f.lower() for f in result.filepath.parts]
+            if "override" in lowercase_path_parts:
+                filepath = result.filepath
             else:
-                # TODO Make prompt for override/MOD
-                ...
+                module_root: str = Module.get_root(self._editor.filepath())
+
+                # TODO: document what the purpose of this is. Why check parents.
+                lowercase_path_parents: list[str] = [str(parent).lower() for parent in result.filepath.parents]
+                if module_root.lower() in lowercase_path_parents and (filepath is None or is_rim_file(filepath)):
+                    filepath = result.filepath
+
+        if filepath:
+            data: bytes = getResourceFromFile(filepath, resname, restype)
+            openResourceEditor(filepath, resname, restype, data, self._installation, self._editor)
+        else:
+            # TODO Make prompt for override/MOD
+            ...
 
     def editSelectedInstanceGeometry(self):
         if self._ui.renderArea.instanceSelection.last():
@@ -746,10 +747,6 @@ class _InstanceMode(_Mode):
         ----
             instance: {The selected GIT instance object}
             menu: {The QMenu to add actions to}.
-
-        Returns:
-        -------
-            None: {Does not return anything, just adds actions to the provided menu}
 
         Processing Logic:
         ----------------
@@ -795,60 +792,46 @@ class _InstanceMode(_Mode):
                 name = self._editor.getInstanceExternalTag(instance)
             elif self._editor.settings.creatureLabel == "name":
                 name = self._editor.getInstanceExternalName(instance)
-            else:
-                name = instance.identifier().resname
         elif isinstance(instance, GITPlaceable):
             if self._editor.settings.placeableLabel == "tag":
                 name = self._editor.getInstanceExternalTag(instance)
             elif self._editor.settings.placeableLabel == "name":
                 name = self._editor.getInstanceExternalName(instance)
-            else:
-                name = instance.identifier().resname
         elif isinstance(instance, GITDoor):
             if self._editor.settings.doorLabel == "tag":
                 name = instance.tag
             elif self._editor.settings.doorLabel == "name":
                 name = self._editor.getInstanceExternalName(instance)
-            else:
-                name = instance.identifier().resname
         elif isinstance(instance, GITStore):
             if self._editor.settings.storeLabel == "tag":
                 name = self._editor.getInstanceExternalTag(instance)
             elif self._editor.settings.storeLabel == "name":
                 name = self._editor.getInstanceExternalName(instance)
-            else:
-                name = instance.identifier().resname
         elif isinstance(instance, GITSound):
             if self._editor.settings.soundLabel == "tag":
                 name = self._editor.getInstanceExternalTag(instance)
             elif self._editor.settings.soundLabel == "name":
                 name = self._editor.getInstanceExternalName(instance)
-            else:
-                name = instance.identifier().resname
         elif isinstance(instance, GITWaypoint):
             if self._editor.settings.waypointLabel == "tag":
                 name = instance.tag
             elif self._editor.settings.waypointLabel == "name":
-                name = self._installation.string(instance.name, None)
-            else:
-                name = instance.identifier().resname
+                name = self._installation.string(instance.name, "")
         elif isinstance(instance, GITEncounter):
             if self._editor.settings.encounterLabel == "tag":
                 name = self._editor.getInstanceExternalTag(instance)
             elif self._editor.settings.encounterLabel == "name":
                 name = self._editor.getInstanceExternalName(instance)
-            else:
-                name = instance.identifier().resname
         elif isinstance(instance, GITTrigger):
             if self._editor.settings.triggerLabel == "tag":
                 name = instance.tag
             elif self._editor.settings.triggerLabel == "name":
                 name = self._editor.getInstanceExternalName(instance)
-            else:
-                name = instance.identifier().resname
 
-        text: str = instance.identifier().resname if name is None else name
-        if name is None:
+        ident = instance.identifier()
+        text: str = name or ""
+        if not name:
+            text = ident and ident.resname or ""
             font = item.font()
             font.setItalic(True)
             item.setFont(font)
@@ -945,7 +928,7 @@ class _InstanceMode(_Mode):
     def buildList(self):
         self._ui.listWidget.clear()
 
-        def instanceSort(inst: GITInstance):
+        def instanceSort(inst: GITInstance) -> str:
             textToSort: str = str(inst.camera_id) if isinstance(inst, GITCamera) else inst.identifier().resname
             return textToSort.rjust(9, "0") if isinstance(inst, GITCamera) else inst.identifier().restype.extension + textToSort
 
@@ -953,7 +936,7 @@ class _InstanceMode(_Mode):
         for instance in instances:
             filterSource: str = str(instance.camera_id) if isinstance(instance, GITCamera) else instance.identifier().resname
             isVisible: bool | None = self._ui.renderArea.isInstanceVisible(instance)
-            isFiltered: bool = self._ui.filterEdit.text() in filterSource
+            isFiltered: bool = self._ui.filterEdit.text().lower() in filterSource.lower()
 
             if isVisible and isFiltered:
                 icon = QIcon(self._ui.renderArea.instancePixmap(instance))
@@ -1009,15 +992,16 @@ class _InstanceMode(_Mode):
 
     def rotateSelected(self, angle: float):
         for instance in self._ui.renderArea.instanceSelection.all():
-            instance.rotate(angle)
+            instance.rotate(angle, 0, 0)
 
     def rotateSelectedToPoint(self, x: float, y: float):
         for instance in self._ui.renderArea.instanceSelection.all():
             rotation: float = -math.atan2(x - instance.position.x, y - instance.position.y)
+            yaw = instance.yaw() or 0.01
             if isinstance(instance, GITCamera):
-                instance.rotate(instance.yaw() - rotation, 0, 0)
+                instance.rotate(yaw - rotation, 0, 0)
             else:
-                instance.rotate(-instance.yaw() + rotation, 0, 0)
+                instance.rotate(-yaw + rotation, 0, 0)
 
     def moveCamera(self, x: float, y: float):
         self._ui.renderArea.camera.nudgePosition(x, y)
@@ -1094,12 +1078,9 @@ class _GeometryMode(_Mode):
 
         # Do not change the selection if the selected instance if its still underneath the mouse
         if selection and selection[0] in underMouse:
+            print(f"Not changing selection: selected instance '{selection[0].instance.classification()}' is still underneath the mouse.")
             return
-
-        if underMouse:
-            self._ui.renderArea.geometrySelection.select(underMouse)
-        else:
-            self._ui.renderArea.geometrySelection.select([])
+        self._ui.renderArea.geometrySelection.select(underMouse or [])
 
     def deleteSelected(self):
         vertex: GeomPoint | None = self._ui.renderArea.geometrySelection.last()
@@ -1149,7 +1130,11 @@ class GITControlScheme:
 
     def onMouseScrolled(self, delta: Vector2, buttons: set[int], keys: set[int]):
         if self.zoomCamera.satisfied(buttons, keys):
-            self.editor.zoomCamera(delta.y / 50)
+            # A smaller zoom_step will provide finer control over the zoom level.
+            if not delta.y:
+                return  # sometimes it'll be zero when holding middlemouse-down.
+            zoom_factor = 1.1 if delta.y > 0 else 0.9
+            self.editor.zoomCamera(zoom_factor)
 
     def onMouseMoved(
         self,

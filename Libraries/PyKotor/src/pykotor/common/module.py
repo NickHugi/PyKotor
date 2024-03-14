@@ -105,6 +105,9 @@ class Module:  # noqa: PLR0904
 
         self.reload_resources()
 
+    def get_id(self) -> str:
+        return self._root
+
     @staticmethod
     def get_root(
         filepath: os.PathLike | str,
@@ -1120,6 +1123,9 @@ class ModuleResource(Generic[T]):
             The resource type.
         """
         return self._restype
+
+    def identifier(self) -> ResourceIdentifier:
+        return self._identifier
 
     def localized_name(self) -> str | None:
         # sourcery skip: assign-if-exp, reintroduce-else

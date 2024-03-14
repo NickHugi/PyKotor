@@ -205,6 +205,7 @@ class Node:
         self._recalc_transform()
 
     def draw(self, shader: Shader, transform: mat4, override_texture: str | None = None):
+        # TODO: use multi-threading to accumulate texture data, then draw all at once.
         transform = transform * self._transform
 
         if self.mesh and self.render:

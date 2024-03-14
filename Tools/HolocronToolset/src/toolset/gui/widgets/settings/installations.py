@@ -255,6 +255,10 @@ class GlobalSettings(Settings):
         "disableRIMSaving",
         True,
     )
+    useBetaChannel = Settings._addSetting(
+        "useBetaChannel",
+        False,
+    )
     firstTime = Settings._addSetting(
         "firstTime",
         True,
