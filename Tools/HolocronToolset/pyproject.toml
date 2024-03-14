@@ -85,4 +85,4 @@ split_complex_comprehension = true
 split_arguments_when_comma_terminated = true
 
 [tool.pylintrc]
-max-line-length = 130
+max-line-length = 175
