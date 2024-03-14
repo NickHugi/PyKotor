@@ -178,7 +178,7 @@ class NSSEditor(Editor):
         finally:
             if context.saved_connection:
                 self.disconnect(context.saved_connection)
-            # If _restype chagned, unwind all the changes that may have been made.
+            # If _restype changed, unwind all the changes that may have been made.
             if self._restype != context.restype:
                 self._filepath = context.filepath
                 self._resname = context.resname
