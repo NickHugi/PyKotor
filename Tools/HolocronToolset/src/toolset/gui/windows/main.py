@@ -264,7 +264,7 @@ class ToolWindow(QMainWindow):
         self.ui.modulesWidget.setResources(resources)
 
     def onModuleRefresh(self):
-        self.refreshModuleList()
+        self.refreshModuleList(reload=False)
 
     def onOverrideFileUpdated(self, changedFile: str, eventType: str):
         if eventType == "deleted":
@@ -792,7 +792,7 @@ class ToolWindow(QMainWindow):
         overrideItems: list[QStandardItem] | None = None,
     ):
         """Refreshes the list of override directories in the overrideFolderCombo combobox."""
-        overrideItems = overrideItems or self._getOverrideList(self, reload=reload)
+        overrideItems = overrideItems or self._getOverrideList(reload=reload)
         self.ui.overrideWidget.setSections(overrideItems)
 
     def _getTexturePackList(
