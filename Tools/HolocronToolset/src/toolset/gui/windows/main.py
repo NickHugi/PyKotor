@@ -918,10 +918,7 @@ class ToolWindow(QMainWindow):
             return
 
         def load_task(active: HTInstallation | None = None) -> HTInstallation:
-            new_active = active or HTInstallation(path, name, tsl, self)
-            if not new_active:
-                new_active.reload_all()
-            return new_active
+            return active or HTInstallation(path, name, tsl, self)
 
         active = self.installations.get(name)
         loader = AsyncLoader(self, "Loading Installation" if not active else "Refreshing installation", lambda: load_task(active), "Failed to load installation")
