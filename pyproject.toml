@@ -129,6 +129,7 @@ unfixable = [
 ]
 ignore = [
 # The following rules are too strict to be realistically used by ruff:
+    "ANN101",   # Checks that instance method self arguments have type annotations.
     "ANN401",   # Dynamically typed expressions (typing.Any) are disallowed in {name}
     "ANN204",   # Missing return type annotation for special method
     "ARG002",   # Unused method argument: `method`
@@ -155,7 +156,9 @@ ignore = [
     "N806",     # Variable `jumpToOffset` in function should be lowercase
     "N815",     # Variable `var` in class scope should not be mixedCase
     "PLR0904",  # Too many public methods
+    "RUF100",   # Unused `noqa` directive (non-enabled: `PLC0415`)
     "T201",     # 'print' found
+    "TD001",    # Invalid TODO tag: `FIXME`
     "TRY003",   # Avoid specifying long messages outside the exception class
     "EM101",    # Exception must not use a string literal, assign to variable first
     "EM102",    # Exception must not use an f-string literal, assign to variable first
