@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING
 from pykotor.common.language import LocalizedString
 from pykotor.common.module import Module
 from pykotor.extract.installation import Installation, SearchLocation
-from pykotor.resource.formats.erf import ERF, ERFType, write_erf
+from pykotor.resource.formats.erf import ERF, ERFType, read_erf, write_erf
 from pykotor.resource.formats.gff import write_gff
 from pykotor.resource.formats.lyt import write_lyt
 from pykotor.resource.formats.rim import read_rim
@@ -291,6 +291,7 @@ def rim_to_mod(
 
     filepath_rim: CaseAwarePath = r_rim_folderpath / f"{module_root}.rim"
     filepath_rim_s: CaseAwarePath = r_rim_folderpath / f"{module_root}_s.rim"
+    filepath_dlg_erf: CaseAwarePath = r_rim_folderpath / f"{module_root}_dlg.erf"
 
     mod = ERF(ERFType.MOD)
     for res in read_rim(filepath_rim):
@@ -298,6 +299,10 @@ def rim_to_mod(
 
     if filepath_rim_s.is_file():
         for res in read_rim(filepath_rim_s):
+            mod.set_data(str(res.resref), res.restype, res.data)
+
+    if filepath_dlg_erf.is_file():
+        for res in read_erf(filepath_dlg_erf):
             mod.set_data(str(res.resref), res.restype, res.data)
 
     write_erf(mod, filepath, ResourceType.MOD)

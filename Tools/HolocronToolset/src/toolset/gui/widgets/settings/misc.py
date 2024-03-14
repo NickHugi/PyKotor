@@ -20,6 +20,7 @@ class MiscWidget(QWidget):
         self.setupValues()
 
     def setupValues(self):
+        self.ui.useBetaChannel.setChecked(self.settings.useBetaChannel)
         self.ui.saveRimCheck.setChecked(not self.settings.disableRIMSaving)
         self.ui.mergeRimCheck.setChecked(self.settings.joinRIMsTogether)
         self.ui.useModuleFilenamesCheck.setChecked(self.settings.useModuleFilenames)
@@ -33,6 +34,7 @@ class MiscWidget(QWidget):
         self.ui.nssCompEdit.setText(self.settings.nssCompilerPath)
 
     def save(self):
+        self.settings.useBetaChannel = not self.ui.useBetaChannel.isChecked()
         self.settings.disableRIMSaving = not self.ui.saveRimCheck.isChecked()
         self.settings.joinRIMsTogether = self.ui.mergeRimCheck.isChecked()
         self.settings.useModuleFilenames = self.ui.useModuleFilenamesCheck.isChecked()

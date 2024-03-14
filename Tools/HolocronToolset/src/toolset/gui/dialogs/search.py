@@ -38,6 +38,7 @@ class FileSearcher(QDialog):
         from toolset.uic.dialogs import search  # pylint: disable=C0415  # noqa: PLC0415
         self.ui = search.Ui_Dialog()
         self.ui.setupUi(self)
+        assert len(installations) > 0, "No installations passed to FileSearcher"
 
         self._installations: dict[str, HTInstallation] = installations
         for name, installation in installations.items():
@@ -62,6 +63,7 @@ class FileSearcher(QDialog):
             None
         """
         installation: HTInstallation = self.ui.installationSelect.currentData()
+        assert bool(installation), "No installation chosen in FileSearcher"
         caseSensitive = self.ui.caseSensitiveRadio.isChecked()
         filenamesOnly = self.ui.filenamesOnlyCheck.isChecked()
         text = self.ui.searchTextEdit.text()
@@ -182,7 +184,10 @@ class FileResults(QDialog):
         self.installation: HTInstallation = installation
 
         for result in results:
-            item = QListWidgetItem(result.filename())
+            filename = result.filename()
+            filepath = result.filepath()
+            parent_name = filepath.name if filename != filepath.name else f"{filepath.parent.name}"
+            item = QListWidgetItem(f"{parent_name}/{filename}")
             item.setData(QtCore.Qt.UserRole, result)
             item.setToolTip(str(result.filepath()))
             self.ui.resultList.addItem(item)
@@ -195,10 +200,6 @@ class FileResults(QDialog):
         Args:
         ----
             self: The object instance.
-
-        Returns:
-        -------
-            None: Does not return anything.
 
         Processes the current selection:
             - Gets the current item from the result list

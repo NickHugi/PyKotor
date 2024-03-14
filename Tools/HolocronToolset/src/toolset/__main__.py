@@ -17,6 +17,15 @@ if TYPE_CHECKING:
     from types import TracebackType
 
 
+def is_frozen() -> bool:  # sourcery skip: assign-if-exp, boolean-if-exp-identity, reintroduce-else, remove-unnecessary-cast
+    # Check for sys.frozen attribute
+    if getattr(sys, "frozen", False):
+        return True
+    # Check if the executable is in a temp directory (common for frozen apps)
+    if tempfile.gettempdir() in sys.executable:
+        return True
+    return False
+
 def onAppCrash(
     etype: type[BaseException],
     e: BaseException,
@@ -31,17 +40,6 @@ def onAppCrash(
         file.write("\n----------------------\n")
     # Mimic default behavior by printing the traceback to stderr
     traceback.print_exception(etype, e, tback)
-
-
-def is_frozen() -> bool:  # sourcery skip: assign-if-exp, boolean-if-exp-identity, reintroduce-else, remove-unnecessary-cast
-    # Check for sys.frozen attribute
-    if getattr(sys, "frozen", False):
-        return True
-    # Check if the executable is in a temp directory (common for frozen apps)
-    if tempfile.gettempdir() in sys.executable:
-        return True
-    return False
-
 
 def fix_sys_and_cwd_path():
     """Fixes sys.path and current working directory for PyKotor.
@@ -95,6 +93,7 @@ if __name__ == "__main__":
         multiprocessing.freeze_support()
     else:
         fix_sys_and_cwd_path()
+
     from utility.system.path import Path
 
     app = QApplication(sys.argv)

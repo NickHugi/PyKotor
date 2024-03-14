@@ -4,6 +4,12 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+env:
+  OS_RUNNERS_JSON: '["windows-2019", "ubuntu-20.04", "macos-12"]'
+  PYTHON_VERSIONS_JSON: '["3.8", "3.9", "3.10", "3.11", "3.12"]'
+  ARCHITECTURES_JSON: '["x86", "x64"]'
+  UPX_VERSION: '4.2.2'
+  
 on:
   - push
   - workflow_dispatch
@@ -17,7 +23,7 @@ jobs:
     strategy:
       fail-fast: false  # Disable automatic cancellation of other jobs
       matrix:
-        os: [windows-2019, ubuntu-20.04, macos-12]
+        os: [windows-2019, ubuntu-20.04, macos-12]  # make sure you update the above one too.
         python-version: ['3.8', '3.9', '3.10', '3.11', '3.12']
         architecture: ['x86', 'x64']
         include:
@@ -42,13 +48,13 @@ jobs:
     steps:
     - uses: actions/checkout@v4
     - name: Set up Python ${{ matrix.python-version }}
-      if: ${{ runner.os != 'macOS' }}
+      if: ${{ runner.os != 'macOS' && runner.os != 'Linux' }}
       uses: actions/setup-python@v5
       with:
         python-version: ${{ matrix.python-version }}
         architecture: ${{ matrix.architecture }}
 
-    - name: Set up Python macOS
+    - name: Set up Python ${{ matrix.python-version }} macOS
       if: ${{ runner.os == 'macOS' }}
       run: |  # warning: `brew link --overwrite python@ver` is unsafe on any non-virtualized macos.
         echo "NONINTERACTIVE DEFAULT: $NONINTERACTIVE"
@@ -57,6 +63,31 @@ jobs:
         brew analytics on
         brew update
         brew install python@${{ matrix.python-version }} || brew link --overwrite python@${{ matrix.python-version }}
+
+    - name: Set up Python ${{ matrix.python-version }} Linux  # macos too?
+      if: ${{ runner.os == 'Linux' }}
+      run: |
+        sudo apt-get update
+        sudo apt-get install build-essential zlib1g-dev libncurses5-dev libgdbm-dev libssl-dev libreadline-dev libffi-dev libsqlite3-dev libbz2-dev tk-dev -y
+        $pyVersion = switch ("${{ matrix.python-version }}") {
+          "3.7" { "3.7.17" }
+          "3.8" { "3.8.18" }
+          "3.9" { "3.9.18" }
+          "3.10" { "3.10.13" }
+          "3.11" { "3.11.8" }
+          "3.12" { "3.12.2" }
+        }
+        Write-Output "Downloading python '$pyVersion'..."
+        Invoke-WebRequest -Uri https://www.python.org/ftp/python/$pyVersion/Python-$pyVersion.tgz -OutFile Python-$pyVersion.tgz
+        tar -xvf Python-$pyVersion.tgz
+        $current_working_dir = (Get-Location).Path
+        Set-Location -LiteralPath "Python-$pyVersion" -ErrorAction Stop
+        $env:LDFLAGS="-Wl,-rpath=/usr/local/lib"
+        sudo ./configure --enable-optimizations --with-ensurepip=install --enable-shared --disable-new-dtags
+        sudo make -j $(nproc)
+        sudo make altinstall
+        Set-Location -LiteralPath $current_working_dir
+      shell: pwsh
     
     - name: Reset APT sources to default
       if: ${{ runner.os == 'Linux' }}
@@ -75,6 +106,8 @@ jobs:
         if ("${{ runner.os }}" -ne "Windows")
         {
           $pythonExeName = "python${{ matrix.python-version }}"
+          # LD_LIBRARY_PATH must be updated. However this won't be permanent, just long enough to create the venv.
+          $env:LD_LIBRARY_PATH = "/usr/local/lib:$env:LD_LIBRARY_PATH"
         }
         & $pythonExeName -m venv .venv_${{ matrix.os }}_${{ matrix.python-version }}_${{ matrix.architecture }}
         & $pythonExeName -m venv .venv_holopatcher_${{ matrix.os }}_${{ matrix.python-version }}_${{ matrix.architecture }}
@@ -93,17 +126,17 @@ jobs:
         $archiveName = ""
         if ("${{ runner.os }}" -eq "Windows") {
           if ("${{ matrix.architecture }}" -eq "x86") {
-            $archiveName = "upx-4.2.2-win32.zip"
+            $archiveName = "upx-${{ env.UPX_VERSION }}-win32.zip"
           } else {
-            $archiveName = "upx-4.2.2-win64.zip"
+            $archiveName = "upx-${{ env.UPX_VERSION }}-win64.zip"
           }
         } elseif ("${{ runner.os }}" -eq "Linux") {
-          $archiveName = "upx-4.2.2-amd64_linux.tar.xz"
+          $archiveName = "upx-${{ env.UPX_VERSION }}-amd64_linux.tar.xz"
         } elseif ("${{ runner.os }}" -eq "macOS") {
           $build = "yes"
-          $archiveName = "upx-4.2.2-src.tar.xz"
+          $archiveName = "upx-${{ env.UPX_VERSION }}-src.tar.xz"
         }
-        $url = "https://github.com/upx/upx/releases/download/v4.2.2/$archiveName"
+        $url = "https://github.com/upx/upx/releases/download/v${{ env.UPX_VERSION }}/$archiveName"
     
         # Write to the GITHUB_OUTPUT environment file
         Add-Content -Path $env:GITHUB_OUTPUT -Value "build=$build"
@@ -197,10 +230,9 @@ jobs:
           python -m pip install --upgrade pip
           if ("${{ runner.os }}" -eq "Windows") {
             if ("${{ matrix.python-version }}" -eq "3.12") {
-              pip install "pyinstaller==5.13" --prefer-binary
+              pip install pyinstaller --prefer-binary -U
             } elseif ("${{ matrix.python-version }}" -eq "3.11") {
-              pip install "pyinstaller==5.6.1" --prefer-binary
-              pip install "pyinstaller==5.5" --prefer-binary
+              pip install "pyinstaller==5.13.2" --prefer-binary
             } else {
               pip install "pyinstaller==5.4" --prefer-binary
             }
@@ -229,6 +261,31 @@ jobs:
         }
       shell: pwsh
 
+    - name: HolocronToolset - Adjust RPATH for shared libraries in the virtual environment
+      if: ${{ (success() || failure()) && runner.os == 'Disabled_Linux' && steps.toolset_deps.outputs.success == 'true' }}
+      run: |
+        ./install_python_venv.ps1 -noprompt -venv_name .venv_toolset_${{ matrix.os }}_${{ matrix.python-version }}_${{ matrix.architecture }}
+        # Ensure patchelf is installed
+        sudo apt-get update && sudo apt-get install -y patchelf
+
+        # Find the virtual environment's site-packages directory
+        $venvPath = $env:VIRTUAL_ENV
+        Write-Host "Virtual environment path: $venvPath"
+        
+        # Dynamically find the Python version directory inside the venv
+        $pythonLibPath = Get-ChildItem -Path "$venvPath/lib" | Where-Object { $_.PSIsContainer } | Select-Object -First 1
+        $sitePackagesPath = Join-Path -Path $pythonLibPath.FullName -ChildPath "site-packages"
+        
+        Write-Host "Site-packages path: $sitePackagesPath"
+
+        # Use patchelf to adjust RPATH for all shared libraries in the virtual environment
+        Get-ChildItem -Path $sitePackagesPath -Filter *.so -Recurse | ForEach-Object {
+          $libPath = $_.FullName
+          Write-Host "Patching $libPath"
+          sudo patchelf --set-rpath '$ORIGIN' $libPath
+        }
+      shell: pwsh
+
     - name: Compile Holocron Toolset
       if: ${{ (success() || failure()) && steps.toolset_deps.outputs.success == 'true' }}
       run: |
@@ -247,7 +304,8 @@ jobs:
             if ($_ -match 'WARNING: Library not found: could not resolve' -or
                 $_ -match 'WARNING: Cannot find ' -or
                 $_ -match 'WARNING: lib not found:' -or
-                $_ -match 'WARNING: Tcl modules directory') {
+                $_ -match 'WARNING: Tcl modules directory' -or
+                $_ -match 'WARNING: Failed to upx strip') {
                 $warningCount++
             }
         }
@@ -266,6 +324,17 @@ jobs:
       env:
         UPX_DIR: ${{ env.UPX_DIR }}
 
+    - name: HolocronToolset - Create Static Binary
+      if: ${{ (success() || failure()) && runner.os == 'Disabled_Linux' && steps.toolset_deps.outputs.success == 'true' }}
+      run: |
+        ./install_python_venv.ps1 -noprompt -venv_name .venv_toolset_${{ matrix.os }}_${{ matrix.python-version }}_${{ matrix.architecture }}
+        python -m pip install staticx
+        staticx ./dist/HolocronToolset ./dist/HolocronToolset-static
+        # Rename the static binary for clarity and consistency
+        Write-Output "./dist/HolocronToolset-static  --> ./dist/HolocronToolset"
+        Move-Item -LiteralPath ./dist/HolocronToolset-static -Destination ./dist/HolocronToolset -Force
+      shell: pwsh
+
     - name: Install HoloPatcher dependencies
       if: ${{ success() || failure() }}
       id: holopatcher_deps
@@ -275,10 +344,9 @@ jobs:
           python -m pip install --upgrade pip
           if ("${{ runner.os }}" -eq "Windows") {
             if ("${{ matrix.python-version }}" -eq "3.12") {
-              pip install "pyinstaller==5.13" --prefer-binary
+              pip install "pyinstaller==5.13.2" --prefer-binary
             } elseif ("${{ matrix.python-version }}" -eq "3.11") {
-              pip install "pyinstaller==5.6.1" --prefer-binary
-              pip install "pyinstaller==5.5" --prefer-binary
+              pip install "pyinstaller==5.13.2" --prefer-binary
             } else {
               pip install "pyinstaller==5.4" --prefer-binary
             }
@@ -306,6 +374,31 @@ jobs:
           exit 1
         }
       shell: pwsh
+
+    - name: HoloPatcher - Adjust RPATH for shared libraries in the virtual environment
+      if: ${{ (success() || failure()) && runner.os == 'Disabled_Linux' && steps.holopatcher_deps.outputs.success == 'true' }}
+      run: |
+        ./install_python_venv.ps1 -noprompt -venv_name .venv_holopatcher_${{ matrix.os }}_${{ matrix.python-version }}_${{ matrix.architecture }}
+        # Ensure patchelf is installed
+        sudo apt-get update && sudo apt-get install -y patchelf
+
+        # Find the virtual environment's site-packages directory
+        $venvPath = $env:VIRTUAL_ENV
+        Write-Host "Virtual environment path: $venvPath"
+        
+        # Dynamically find the Python version directory inside the venv
+        $pythonLibPath = Get-ChildItem -Path "$venvPath/lib" | Where-Object { $_.PSIsContainer } | Select-Object -First 1
+        $sitePackagesPath = Join-Path -Path $pythonLibPath.FullName -ChildPath "site-packages"
+        
+        Write-Host "Site-packages path: $sitePackagesPath"
+
+        # Use patchelf to adjust RPATH for all shared libraries in the virtual environment
+        Get-ChildItem -Path $sitePackagesPath -Filter *.so -Recurse | ForEach-Object {
+          $libPath = $_.FullName
+          Write-Host "Patching $libPath"
+          sudo patchelf --set-rpath '$ORIGIN' $libPath
+        }
+      shell: pwsh
     
     - name: Compile HoloPatcher
       if: ${{ (success() || failure()) && steps.holopatcher_deps.outputs.success == 'true' }}
@@ -325,7 +418,8 @@ jobs:
             if ($_ -match 'WARNING: Library not found: could not resolve' -or
                 $_ -match 'WARNING: Cannot find ' -or
                 $_ -match 'WARNING: lib not found:' -or
-                $_ -match 'WARNING: Tcl modules directory') {
+                $_ -match 'WARNING: Tcl modules directory' -or
+                $_ -match 'WARNING: Failed to upx strip') {
                 $warningCount++
             }
         }
@@ -342,6 +436,17 @@ jobs:
         }
       shell: pwsh
 
+    - name: HoloPatcher - Create Static Binary
+      if: ${{ (success() || failure()) && runner.os == 'Disabled_Linux' && steps.holopatcher_deps.outputs.success == 'true' }}
+      run: |
+        ./install_python_venv.ps1 -noprompt -venv_name .venv_holopatcher_${{ matrix.os }}_${{ matrix.python-version }}_${{ matrix.architecture }}
+        python -m pip install staticx
+        staticx ./dist/HoloPatcher ./dist/HoloPatcher-static
+        # Rename the static binary for clarity and consistency
+        Write-Output "./dist/HoloPatcher-static  --> ./dist/HoloPatcher"
+        Move-Item -LiteralPath ./dist/HoloPatcher-static -Destination ./dist/HoloPatcher -Force
+      shell: pwsh
+
     - name: Install BatchPatcher dependencies
       if: ${{ success() || failure() }}
       id: batchpatcher_deps
@@ -351,10 +456,9 @@ jobs:
           python -m pip install --upgrade pip
           if ("${{ runner.os }}" -eq "Windows") {
             if ("${{ matrix.python-version }}" -eq "3.12") {
-              pip install "pyinstaller==5.13" --prefer-binary
+              pip install pyinstaller --prefer-binary -U
             } elseif ("${{ matrix.python-version }}" -eq "3.11") {
-              pip install "pyinstaller==5.6.1" --prefer-binary
-              pip install "pyinstaller==5.5" --prefer-binary
+              pip install "pyinstaller==5.13.2" --prefer-binary
             } else {
               pip install "pyinstaller==5.4" --prefer-binary
             }
@@ -383,6 +487,31 @@ jobs:
         }
       shell: pwsh
 
+    - name: BatchPatcher - Adjust RPATH for shared libraries in the virtual environment
+      if: ${{ (success() || failure()) && runner.os == 'Disabled_Linux' && steps.batchpatcher_deps.outputs.success == 'true' }}
+      run: |
+        ./install_python_venv.ps1 -noprompt -venv_name .venv_batchpatcher_${{ matrix.os }}_${{ matrix.python-version }}_${{ matrix.architecture }}
+        # Ensure patchelf is installed
+        sudo apt-get update && sudo apt-get install -y patchelf
+
+        # Find the virtual environment's site-packages directory
+        $venvPath = $env:VIRTUAL_ENV
+        Write-Host "Virtual environment path: $venvPath"
+        
+        # Dynamically find the Python version directory inside the venv
+        $pythonLibPath = Get-ChildItem -Path "$venvPath/lib" | Where-Object { $_.PSIsContainer } | Select-Object -First 1
+        $sitePackagesPath = Join-Path -Path $pythonLibPath.FullName -ChildPath "site-packages"
+        
+        Write-Host "Site-packages path: $sitePackagesPath"
+
+        # Use patchelf to adjust RPATH for all shared libraries in the virtual environment
+        Get-ChildItem -Path $sitePackagesPath -Filter *.so -Recurse | ForEach-Object {
+          $libPath = $_.FullName
+          Write-Host "Patching $libPath"
+          sudo patchelf --set-rpath '$ORIGIN' $libPath
+        }
+      shell: pwsh
+
     - name: Compile BatchPatcher
       if: ${{ (success() || failure()) && steps.batchpatcher_deps.outputs.success == 'true' }}
       run: |
@@ -401,7 +530,8 @@ jobs:
             if ($_ -match 'WARNING: Library not found: could not resolve' -or
                 $_ -match 'WARNING: Cannot find ' -or
                 $_ -match 'WARNING: lib not found:' -or
-                $_ -match 'WARNING: Tcl modules directory') {
+                $_ -match 'WARNING: Tcl modules directory' -or
+                $_ -match 'WARNING: Failed to upx strip') {
                 $warningCount++
             }
         }
@@ -418,6 +548,17 @@ jobs:
         }
       shell: pwsh
 
+    - name: BatchPatcher - Create Static Binary
+      if: ${{ (success() || failure()) && runner.os == 'Disabled_Linux' && steps.batchpatcher_deps.outputs.success == 'true' }}
+      run: |
+        ./install_python_venv.ps1 -noprompt -venv_name .venv_batchpatcher_${{ matrix.os }}_${{ matrix.python-version }}_${{ matrix.architecture }}
+        python -m pip install staticx
+        staticx ./dist/K_BatchPatcher ./dist/K_BatchPatcher-static
+        # Rename the static binary for clarity and consistency
+        Write-Output "./dist/K_BatchPatcher-static  --> ./dist/K_BatchPatcher"
+        Move-Item -LiteralPath ./dist/K_BatchPatcher-static -Destination ./dist/K_BatchPatcher -Force
+      shell: pwsh
+
     - name: Compile KotorDiff
       if: ${{ success() || failure() }}
       run: |
@@ -427,10 +568,9 @@ jobs:
         python -m pip install --upgrade pip
         if ("${{ runner.os }}" -eq "Windows") {
           if ("${{ matrix.python-version }}" -eq "3.12") {
-            pip install "pyinstaller==5.13" --prefer-binary
+            pip install "pyinstaller==5.13.2" --prefer-binary
           } elseif ("${{ matrix.python-version }}" -eq "3.11") {
-            pip install "pyinstaller==5.6.1" --prefer-binary
-            pip install "pyinstaller==5.5" --prefer-binary
+            pip install "pyinstaller==5.13.2" --prefer-binary
           } else {
             pip install "pyinstaller==5.4" --prefer-binary
           }
@@ -451,7 +591,8 @@ jobs:
             if ($_ -match 'WARNING: Library not found: could not resolve' -or
                 $_ -match 'WARNING: Cannot find ' -or
                 $_ -match 'WARNING: lib not found:' -or
-                $_ -match 'WARNING: Tcl modules directory') {
+                $_ -match 'WARNING: Tcl modules directory' -or
+                $_ -match 'WARNING: Failed to upx strip') {
                 $warningCount++
             }
         }
@@ -468,6 +609,17 @@ jobs:
         }
       shell: pwsh
 
+    - name: KotorDiff - Create Static Binary
+      if: ${{ (success() || failure()) && runner.os == 'Linux' }}
+      run: |
+        ./install_python_venv.ps1 -noprompt -venv_name .venv_kotordiff_${{ matrix.os }}_${{ matrix.python-version }}_${{ matrix.architecture }}
+        python -m pip install staticx
+        staticx ./dist/KotorDiff ./dist/KotorDiff-static
+        # Rename the static binary for clarity and consistency
+        Write-Output "./dist/KotorDiff-static  --> ./dist/KotorDiff"
+        Move-Item -LiteralPath ./dist/KotorDiff-static -Destination ./dist/KotorDiff -Force
+      shell: pwsh
+
     - name: Compile GUIDuplicator
       if: ${{ success() || failure() }}
       run: |
@@ -477,10 +629,9 @@ jobs:
         python -m pip install --upgrade pip
         if ("${{ runner.os }}" -eq "Windows") {
           if ("${{ matrix.python-version }}" -eq "3.12") {
-            pip install "pyinstaller==5.13" --prefer-binary
+            pip install "pyinstaller==5.13.2" --prefer-binary
           } elseif ("${{ matrix.python-version }}" -eq "3.11") {
-            pip install "pyinstaller==5.6.1" --prefer-binary
-            pip install "pyinstaller==5.5" --prefer-binary
+            pip install "pyinstaller==5.13.2" --prefer-binary
           } else {
             pip install "pyinstaller==5.4" --prefer-binary
           }
@@ -500,7 +651,8 @@ jobs:
             if ($_ -match 'WARNING: Library not found: could not resolve' -or
                 $_ -match 'WARNING: Cannot find ' -or
                 $_ -match 'WARNING: lib not found:' -or
-                $_ -match 'WARNING: Tcl modules directory') {
+                $_ -match 'WARNING: Tcl modules directory' -or
+                $_ -match 'WARNING: Failed to upx strip') {
                 $warningCount++
             }
         }
@@ -515,6 +667,17 @@ jobs:
         } else {
           Add-Content -Path $env:GITHUB_OUTPUT -Value "success=true"
         }
+      shell: pwsh
+
+    - name: GUIDuplicator - Create Static Binary
+      if: ${{ (success() || failure()) && runner.os == 'Linux' }}
+      run: |
+        ./install_python_venv.ps1 -noprompt -venv_name .venv_guiduplicator_${{ matrix.os }}_${{ matrix.python-version }}_${{ matrix.architecture }}
+        python -m pip install staticx
+        staticx ./dist/GuiDuplicator ./dist/GuiDuplicator-static
+        # Rename the static binary for clarity and consistency
+        Write-Output "./dist/GuiDuplicator-static  --> ./dist/GuiDuplicator"
+        Move-Item -LiteralPath ./dist/GuiDuplicator-static -Destination ./dist/GuiDuplicator -Force
       shell: pwsh
 
     - name: Upload compiled binaries
@@ -543,11 +706,8 @@ jobs:
         if ($env:python_version -eq "3.7") {
           pip install -r requirements-dev-py37.txt --prefer-binary
         }
-        elseif ($env:python_version -ne "3.13.0-alpha.4" -and "${{ runner.os }}" -ne "Linux" -and "${{ runner.os }}" -ne "macOS") {
-          pip install -r requirements-dev.txt --prefer-binary
-        }
         else {
-          pip install -r requirements-dev-py313.txt --prefer-binary
+          pip install -r requirements-dev.txt --prefer-binary
         }
       shell: pwsh
 
@@ -567,7 +727,7 @@ jobs:
         path: |
           pytest_report.html
           pytest_report.xml
-          retention-days: 90
+        retention-days: 90
 
   package:  # The goal of this job is to repackage by toolname, rather than all tools by os_pyversion_arch
     needs: build  # do not start this job until all 'build' jobs complete
@@ -587,68 +747,90 @@ jobs:
         run: |
           $here_dirpath = (Get-Location)
           Write-Output "here: '$here_dirpath'"
-          $packagedArtifactsPath = "$here_dirpath/packaged_artifacts"
+          $packagedArtifactsPath = Join-Path -Path $here_dirpath -ChildPath "packaged_artifacts"
           New-Item -ItemType Directory -Force -Path $packagedArtifactsPath
-          $artifactNames = New-Object 'System.Collections.Generic.HashSet[string]'
-          
+
           # Navigate to the directory with downloaded artifacts
           Set-Location -Path "published_workflow_builds"
           Get-ChildItem -Recurse -Path "." -Directory | ForEach-Object { Write-Output $_.FullName }
-          
-          # Extract each published artifact and repackage
+
+          $artifactNames = New-Object 'System.Collections.Generic.HashSet[string]'
+          # Iterate through each os_pythonversion_arch folder.
           Get-ChildItem -Filter "publish_*" | ForEach-Object {
             $matrixPackagePath = $_.FullName
             Write-Output "Found matrix package '$matrixPackagePath'"
-            Get-ChildItem -Recurse -Path "." -Directory | ForEach-Object { Write-Output $_.FullName }
             $os, $pythonVersion, $architecture = $_.BaseName -replace '^publish_', '' -split '_'
-          
-            # Dynamic identification and repackaging
+
+            $shortOsName = $os
+            if ($os -eq "ubuntu-20.04" -or $os -eq "ubuntu-22.04" -or $os -eq "ubuntu-latest") {
+              $shortOsName = "Linux"
+            } elseif ($os -eq "macos-11" -or $os -eq "macos-12" -or $os -eq "macos-latest") {
+              $shortOsName = "Mac"
+            } elseif ($os -eq "windows-2019" -or $os -eq "windows-2022" -or $os -eq "windows-latest") {
+              $shortOsName = "Win"
+            }
+
+            # Iterate through each tool in the folder
             Get-ChildItem -Path $matrixPackagePath | ForEach-Object {
-              $fullPath = $_.FullName
-              $fileBaseName = [IO.Path]::GetFileNameWithoutExtension($_.Name) + "`_$architecture"
+              $toolExePath = $_.FullName
+              $toolFileName = $_.Name
+              $fileBaseName = [IO.Path]::GetFileNameWithoutExtension($_.Name)
               $fileExtension = $_.Extension
+
               $outerArchiveName = "$fileBaseName`_$pythonVersion"
-              Write-Output "outerArchiveName '$outerArchiveName'"
-              $outerZipPath = $packagedArtifactsPath + "/" + $outerArchiveName
-              Write-Output "outerZipPath '$outerZipPath'"
+              $outerZipPath = Join-Path -Path $packagedArtifactsPath -ChildPath $outerArchiveName
+              $osSpecificArchiveName = "$fileBaseName`_$shortOsName-$architecture"
+              $osSpecificArchivePath = Join-Path -Path $outerZipPath -ChildPath $osSpecificArchiveName
+
+              Write-Output "   ToolFileName: '$toolFileName'"
+              Write-Output "   Tool original filepath: '$toolExePath'"
+              Write-Output "outerArchiveName: '$outerArchiveName'"
+              Write-Output " - osSpecificArchiveName: '$osSpecificArchiveName'"
+              Write-Output "outerZipPath: '$outerZipPath'"
+              Write-Output " - osSpecificArchivePath: '$osSpecificArchivePath'"
+
               New-Item -ItemType Directory -Force -Path $outerZipPath
-              $osSpecificZipName = "$fileBaseName`_$os"
-              Write-Output "osSpecificZipName '$osSpecificZipName'"
-              $osSpecificZipPath = $outerZipPath + "/" + $osSpecificZipName
-              Write-Output "osSpecificZipPath '$osSpecificZipPath'"
-          
+              chmod 777 -R $toolExePath
+              $toolExeParentDirPath = Split-Path -Parent $toolExePath
+              Write-Output "Creating archive for '$toolFileName' at '$toolExeParentDirPath'..."
+
+              Write-Output ("Push-Location to start in '$toolExeParentDirPath' (originally at '$(Get-Location)')")
+              Push-Location -Path $toolExeParentDirPath
               # Archive the tool by os identifier.
-              chmod 777 -R $fullPath
               if ((-not $fileExtension) -or (-not $fileExtension.Trim()) -or ($fileExtension.ToLower().Trim() -eq ".app")) {
-                $outerArchiveName = "$osSpecificZipPath.tar.gz"
-                # Check if the path is a directory or a file
-                if (Test-Path $fullPath -PathType Container) {
-                    # It's a directory, archive the entire directory
-                    tar -czf "$outerArchiveName" -C "$fullPath" .
-                } else {
-                    # It's a file, archive the file specifically
-                    # Determine the parent directory and the file name
-                    $parentDir = Split-Path -Parent $fullPath
-                    $fileName = Split-Path -Leaf $fullPath
-                    tar -czf "$outerArchiveName" -C "$parentDir" "$fileName"
+                $osSpecificArchivePath = "$osSpecificArchivePath.tar.gz"
+                if (Test-Path $toolExePath -PathType Container -ErrorAction SilentlyContinue) {  # It's a directory
+                  tar -czf "$osSpecificArchivePath" -C "$toolExePath" .
+                } else {  # It's a file
+                  tar -czf "$osSpecificArchivePath" -C "$toolExeParentDirPath" $toolFileName
                 }
               } else {
-                $outerArchiveName = "$osSpecificZipPath.zip"
-                zip -r -9 "$outerArchiveName" "$fullPath"
+                $osSpecificArchivePath = "$osSpecificArchivePath.zip"
+                zip -r -9 "$osSpecificArchivePath" $toolFileName
               }
-              Write-Output "Compressed '$fullPath' and saved to '$outerArchiveName'"
-              chmod 777 -R "$outerArchiveName"
-              
-              $item = Get-Item -Path $outerZipPath -ErrorAction SilentlyContinue
-              if ($item -ne $null) {
-                $artifactNames.Add($item.BaseName)
-              }
+              Pop-Location
+              Write-Output ("Pop-Location to return to $(Get-Location) (was pushed to '$toolExeParentDirPath')")
+
+              Write-Output "Compressed archive saved to '$osSpecificArchivePath'"
+              chmod 777 -R "$osSpecificArchivePath"
+
+              $artifactNames.Add($outerArchiveName)
             }
           }
-          
+
           # Save artifact names to a file
           $artifactNames | Out-File -FilePath "../artifact-names.txt" -Encoding UTF8
-          
+
+          Get-ChildItem -Force | ForEach-Object {
+            $size = if ($_.PSIsContainer) { "N/A" } else { $_.Length }
+            $attrs = $_.Attributes.ToString() -replace 'ReadOnly', 'RO' -replace 'Hidden', 'H' -replace 'System', 'S' -replace 'Archive', 'A' -replace 'Directory', 'D' -replace ', ', '|'
+            [PSCustomObject]@{
+                Name = $_.Name
+                Size = $size
+                Attributes = $attrs
+            }
+          } | Format-Table -AutoSize
+
           # Navigate back to the root of the workspace
           Set-Location -Path "../"
 
@@ -748,17 +930,17 @@ jobs:
           $commitSHA = "${{ github.sha }}"
 
           $testsResultsPath = "tests/results"
-          $testsResultsCommitPath = $testsResultsPath + "/$commitSHA"
           Remove-Item -Path $testsResultsPath -Recurse -Force -ErrorAction SilentlyContinue
+          $testsResultsCommitPath = Join-Path -Path $testsResultsPath -ChildPath "$commitSHA"
           New-Item -ItemType Directory -Force -Path $testsResultsCommitPath -ErrorAction SilentlyContinue
 
-          $OS_NAMES = @("windows-2019", "ubuntu-20.04", "macos-12")
-          $PYTHON_VERSIONS = @('3.8', '3.9', '3.10', '3.11', '3.12')
-          $ARCHITECTURES = @('x86', 'x64')
+          $OS_NAMES = '${{ env.OS_RUNNERS_JSON }}' | ConvertFrom-Json
+          $PYTHON_VERSIONS = '${{ env.PYTHON_VERSIONS_JSON }}' | ConvertFrom-Json
+          $ARCHITECTURES = '${{ env.ARCHITECTURES_JSON }}' | ConvertFrom-Json
 
           $artifact_reports_dir = "./all_pytest_reports"
           New-Item -ItemType Directory -Force -Path $artifact_reports_dir -ErrorAction SilentlyContinue
-          #Dir -Recurse $artifact_reports_dir | Get-Childitem
+          Dir -Recurse $artifact_reports_dir | Get-Childitem
           Get-ChildItem $artifact_reports_dir | ForEach-Object {
             Write-Output "Moving $($_.FullName) to $testsResultsCommitPath..."
             Move-Item -LiteralPath $_.FullName -Destination $testsResultsCommitPath
@@ -767,6 +949,7 @@ jobs:
 
           git fetch origin $branchName
           git add $testsResultsPath --force
+          git add $testsResultsCommitPath --force
           # Checking if there are newer commits on the remote branch than the commit that triggered the workflow
           if (git log "${{ github.sha }}"..origin/$branchName --oneline) {
               Write-Error "Newer commits are present on the remote branch, cannot update readme"
@@ -778,6 +961,7 @@ jobs:
 
           $testResults = @{}
 
+          Write-Output "Iterate through $testsResultsCommitPath"
           Get-ChildItem $testsResultsCommitPath -Recurse -Filter pytest_report.xml | ForEach-Object {
             [xml]$TestResultsXml = Get-Content $_.FullName
             $totalTests = [int]$TestResultsXml.testsuites.testsuite.tests
@@ -792,7 +976,7 @@ jobs:
             } else {
               $cleanRelHtmlFilePath = $relHtmlFilePath
             }
-            $DetailsURL = "https://github.com/$repository/blob/$commitSHA/$cleanRelHtmlFilePath"
+            $DetailsURL = "https://htmlpreview.github.io/?https://github.com/$repository/blob/$commitSHA/$cleanRelHtmlFilePath"
             $key = $_.Directory.Name.Replace('pytest_report_', '').Replace('_', '-')
             Write-Host "KEY FOUND: '$key'"
 
@@ -834,7 +1018,7 @@ jobs:
           foreach ($OS in $OS_NAMES) {
             foreach ($PYTHON_VERSION in $PYTHON_VERSIONS) {
               foreach ($ARCH in $ARCHITECTURES) {
-                if ($OS -ne "windows-2019" -and $ARCH -eq "x86") {
+                if ($OS -ne "windows-2019" -and $OS -ne "windows-2022" -and $OS -ne "windows-latest" -and $ARCH -eq "x86") {
                   continue  # no x86 support for unix.
                 }
                 $key = "$OS-$PYTHON_VERSION-$ARCH"
@@ -845,7 +1029,6 @@ jobs:
                     $DetailsURL = $testResults[$key]['DetailsURL']
                     # Encode the label to replace spaces with underscores and URI-encode other special characters
                     $encodedKey = [System.Web.HttpUtility]::UrlEncode($shortKey.Replace(' ', '_').Replace('-', '--'))
-                    $BadgeURLPassed = "https://img.shields.io/badge/${encodedKey}_Passed-${passedTests}-brightgreen"
                     $BadgeMarkdown = '[![' + $key + '](https://img.shields.io/badge/build-' + $encodedKey + '_Passing_' + $passedTests + '-brightgreen?style=plastic&logo=simple-icons&logoColor=%23FF5e34&label=' + $failedTests + '&labelColor=%23c71818&color=%232f991a)](' + $DetailsURL + ')'
                 } else {
                     Write-Host "No test results for '$key', must have failed, generating 'Build Failed' badge..."

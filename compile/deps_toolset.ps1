@@ -48,13 +48,14 @@ function Get-Linux-Distro-Name {
     return $null
 }
 
+$useAqtInstall = $false
 $qtInstallPath = "$rootPath/vendor/Qt"
 $qtOs = $null
 $qtArch = $null
 if ((Get-OS) -eq "Mac") {
     $qtOs = "mac"
     $qtArch = "clang_64" # i'm not even going to bother to test wasm_32.
-    & bash -c "brew install pyqt@5 qt@5" 2>&1 | Write-Output 
+    & bash -c "brew install qt@5" 2>&1 | Write-Output 
 } elseif ((Get-OS) -eq "Windows") {
     # Determine system architecture
     if ($env:PROCESSOR_ARCHITECTURE -eq "AMD64" -or $env:PROCESSOR_ARCHITEW6432 -eq "AMD64") {
@@ -92,24 +93,17 @@ if ((Get-OS) -eq "Mac") {
     }
 
     # Set the Qt installation directory based on common environment variables or default to a local 'Qt' directory
-    if (Test-Path env:GITHUB_WORKSPACE) { 
+    if (Test-Path $env:GITHUB_WORKSPACE) {
         $qtInstallPath = Join-Path $env:GITHUB_WORKSPACE "Qt"
-        Write-Output "Qt installation path set to GITHUB_WORKSPACE: $qtInstallPath"
-    } elseif (Test-Path env:USERPROFILE) { 
+        Write-Output "Aqt installation path set to GITHUB_WORKSPACE: $qtInstallPath"
+    } elseif (Test-Path $env:USERPROFILE) {
         $qtInstallPath = Join-Path $env:USERPROFILE "Qt"
-        Write-Output "Qt installation path set to USERPROFILE: $qtInstallPath"
-    } else { 
+        Write-Output "Aqt installation path set to USERPROFILE: $qtInstallPath"
+    } else {
         $qtInstallPath = Join-Path $PWD "Qt"
-        Write-Output "Qt installation path set to current directory: $qtInstallPath"
+        Write-Output "Aqt installation path set to current directory: $qtInstallPath"
     }
     $qtOs = "windows"
-    # Combine the new path with the current PATH
-    $combinedPath = [System.Environment]::GetEnvironmentVariable("PATH", [System.EnvironmentVariableTarget]::User) + ";" + $newPath
-
-    # Set the combined PATH as the new system PATH
-    [System.Environment]::SetEnvironmentVariable("PATH", $combinedPath, [System.EnvironmentVariableTarget]::User)  # [System.EnvironmentVariableTarget]::Machine for system PATH
-    $env:PATH = $env:PATH + ";" + $newPath
-    Write-Host "Added '$qtInstallPath' to user's PATH env"
 } elseif (Test-Path -Path "/etc/os-release") {
     $qtArch = "gcc_64"
     $qtOs = "linux"
@@ -148,10 +142,23 @@ if ((Get-OS) -eq "Mac") {
             sudo pacman-key --init
             sudo pacman-key --populate archlinux
             sudo pacman -Sy archlinux-keyring --noconfirm
-            sudo pacman -Syu --noconfirm
-            sudo pacman -S mesa libxcb qt5-base qt5-wayland xcb-util-wm xcb-util-keysyms xcb-util-image xcb-util-renderutil python-opengl libxcomposite gtk3 atk mpdecimal python-pyqt5 qt5-base qt5-multimedia qt5-svg pulseaudio pulseaudio-alsa gstreamer mesa libglvnd ttf-dejavu fontconfig gst-plugins-base gst-plugins-good gst-plugins-bad gst-plugins-ugly --noconfirm
+            sudo pacman -Syu --needed mesa libxcb qt5-base qt5-wayland xcb-util-wm xcb-util-keysyms xcb-util-image xcb-util-renderutil python-opengl libxcomposite gtk3 atk mpdecimal python-pyqt5 qt5-base qt5-multimedia qt5-svg pulseaudio pulseaudio-alsa gstreamer mesa libglvnd ttf-dejavu fontconfig gst-plugins-base gst-plugins-good gst-plugins-bad gst-plugins-ugly --noconfirm
             break
         }
+    }
+}
+if ($useAqtInstall -eq $true) {
+    # Combine the new path with the current PATH
+    $origUserPath = [System.Environment]::GetEnvironmentVariable("PATH", [System.EnvironmentVariableTarget]::User)
+    if (-not $origUserPath -contains $qtInstallPath) {
+        $combinedPath = $origUserPath + ";" + $qtInstallPath
+        [System.Environment]::SetEnvironmentVariable("PATH", $combinedPath, [System.EnvironmentVariableTarget]::User)  # [System.EnvironmentVariableTarget]::Machine for system PATH
+        Write-Host "Added '$qtInstallPath' to user's PATH env"
+    }
+    $origCurPath = $env:PATH
+    if (-not $origCurPath -contains $qtInstallPath) {
+        $env:PATH = $env:PATH + ";" + $qtInstallPath
+        Write-Host "Added '$qtInstallPath' to cur PATH env"
     }
 }
 
@@ -166,12 +173,12 @@ if ((Get-OS) -ne "Windows") {
 
 
 Write-Host "Installing required packages to build the holocron toolset..."
-New-Item -ItemType Directory -Force -Path $qtInstallPath -Verbose 2>&1 | Out-String | Write-Output
-. $pythonExePath -m pip install aqtinstall -U 2>&1 | Out-String | Write-Output
-. $pythonExePath -m aqt install-qt $qtOs desktop 5.14.2 $qtArch 2>&1 | Out-String | Write-Output
-if ($LastExitCode -ne 0) { Write-Output "Qt installation failed with exit code $LastExitCode"; exit $LastExitCode }
-. $pythonExePath -m aqt install-qt $qtOs desktop 5.14.2 $qtArch -m all 2>&1 | Out-String | Write-Output
-if ($LastExitCode -ne 0) { Write-Output "Qt installation (all modules) failed with exit code $LastExitCode"; exit $LastExitCode }
+if ($useAqtInstall -eq $true) {
+    New-Item -ItemType Directory -Force -Path $qtInstallPath -Verbose 2>&1 | Out-String | Write-Output
+    . $pythonExePath -m pip install aqtinstall -U 2>&1 | Out-String | Write-Output
+    . $pythonExePath -m aqt install-qt $qtOs desktop 5.15.2 $qtArch -m all 2>&1 | Out-String | Write-Output
+    if ($LastExitCode -ne 0) { Write-Output "Qt installation (all modules) failed with exit code $LastExitCode"; exit $LastExitCode }
+}
 
 . $pythonExePath -m pip install --upgrade pip --prefer-binary --progress-bar on
 . $pythonExePath -m pip install pyinstaller --prefer-binary --progress-bar on

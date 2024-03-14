@@ -41,8 +41,16 @@ class AudioPlayer(QMainWindow):
         self.ui.timeSlider.sliderReleased.connect(self.changePosition)
         self.player.durationChanged.connect(self.durationChanged)
         self.player.positionChanged.connect(self.positionChanged)
+        self.destroyed.connect(self.closeEvent)
+        self.player.error.connect(lambda _: self.closeEvent())
 
-    def load(self, filepath: os.PathLike | str, resname: str, restype: ResourceType, data: bytes):
+    def load(
+        self,
+        filepath: os.PathLike | str,
+        resname: str,
+        restype: ResourceType,
+        data: bytes,
+    ):
         data = sound.deobfuscate_audio(data)
 
         self.player.stop()
@@ -79,5 +87,15 @@ class AudioPlayer(QMainWindow):
         position: int = self.ui.timeSlider.value()
         self.player.setPosition(position)
 
-    def closeEvent(self, e: QCloseEvent | None):
+    def hideEvent(self, event):
+        # closeEvent doesn't get called for whatever reason.
+        super().hideEvent(event)
         self.player.stop()
+
+    def closeEvent(self, e: QCloseEvent | None = None):  # FIXME: this event never gets called.
+        print("Closing window and stopping player")  # Debugging line to confirm this method is called
+        self.player.stop()  # Stop the player
+
+        if e is not None:
+            e.accept()  # Notify the event system that the event has been handled
+            super().closeEvent(e)  # Call the parent class's closeEvent method
