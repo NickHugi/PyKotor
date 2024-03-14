@@ -1776,7 +1776,7 @@ class Installation:  # noqa: PLR0904
         self,
         module_filename: str,
         *,
-        use_hardcoded: bool = True,
+        use_hardcoded: bool = False,
     ) -> str:
         """Returns the ID of the area for a module from the installations module list.
 
