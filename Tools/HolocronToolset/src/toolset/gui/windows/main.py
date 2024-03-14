@@ -919,7 +919,7 @@ class ToolWindow(QMainWindow):
 
         def load_task(active: HTInstallation | None = None) -> HTInstallation:
             new_active = active or HTInstallation(path, name, tsl, self)
-            if not active:
+            if not new_active:
                 new_active.reload_all()
             return new_active
 
@@ -940,8 +940,8 @@ class ToolWindow(QMainWindow):
                 self._getOverrideList(reload=False),
                 self._getTexturePackList(reload=False),
             )
-        loader = AsyncLoader(self, "Preparing resources...", lambda: prepare_task(), "Failed to load installation")
-        if not loader.exec_():
+        prepare_loader = AsyncLoader(self, "Preparing resources...", lambda: prepare_task(), "Failed to load installation")
+        if not prepare_loader.exec_():
             self.active = None
             self.ui.gameCombo.setCurrentIndex(0)
             if self.dogObserver is not None:
@@ -950,7 +950,7 @@ class ToolWindow(QMainWindow):
             return
         print("Loading core installation resources into UI...")
         self.ui.coreWidget.setResources(self.active.chitin_resources())
-        moduleItems, overrideItems, textureItems = loader.value
+        moduleItems, overrideItems, textureItems = prepare_loader.value
         self.ui.modulesWidget.setSections(moduleItems)
         self.ui.overrideWidget.setSections(overrideItems)
         self.ui.texturesWidget.setSections(textureItems)
