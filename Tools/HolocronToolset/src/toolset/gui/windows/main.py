@@ -818,6 +818,9 @@ class ToolWindow(QMainWindow):
             loader = AsyncLoader(self, f"{action} override list...", task, "Error refreshing override list.")
             loader.exec_()
             overrideItems = loader.value
+        if overrideItems is None:
+            print("Nothing to refresh.")
+            return
         self.ui.overrideWidget.setSections(overrideItems)
 
     def _getTexturePackList(
