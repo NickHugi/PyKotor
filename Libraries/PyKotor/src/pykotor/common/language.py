@@ -437,7 +437,7 @@ class LocalizedString:
         """Returns the number of substrings."""
         return len(self._substrings)
 
-    def __hash__(self):
+    def __hash__(self):  # FIXME: LocalizedString is currently partially mutable and partially immutable. Need to either remove __hash__ and don't use it in lists/sets/keys, or fully make it immutable (don't allow stringref to change after initialization, and remove set_data method)
         return hash(self.stringref)
 
     def __str__(self):

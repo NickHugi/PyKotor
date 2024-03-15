@@ -76,4 +76,4 @@ def compile_qrc(*, ignore_timestamp: bool = False):
 
 if __name__ == "__main__":
     compile_ui(ignore_timestamp=False)
-    compile_qrc(ignore_timestamp=True)
+    compile_qrc(ignore_timestamp=False)

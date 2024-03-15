@@ -265,10 +265,10 @@ class MDLAsciiWriter:
                 )
                 self._writer.write_line(indent, f"selfillumcolor {red} {green} {blue}")
 
-            if controller.controller_type == MDLControllerType.ALPHA:
+            if controller.controller_type == MDLControllerType.MESH_ALPHA:
                 self._writer.write_line(indent, f"alpha {controller.rows[0].data[0]}")
 
-            if controller.controller_type == MDLControllerType.SCALE:
+            if controller.controller_type == MDLControllerType.MESH_SCALE:
                 self._writer.write_line(indent, f"scale {controller.rows[0].data[0]}")
 
     def _write_anim_controllers(

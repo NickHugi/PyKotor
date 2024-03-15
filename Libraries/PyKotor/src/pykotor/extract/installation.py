@@ -87,7 +87,6 @@ class ItemTuple(NamedTuple):
     name: str
     filepath: Path
 
-
 class TexturePackNames(Enum):
     """Full list of texturepack ERF filenames for both games."""
 
@@ -154,7 +153,7 @@ HARDCODED_MODULE_IDS: dict[str, str] = {
 
 
 class Installation:
-    """Installation provides a centralized location for loading resources stored in the game through its various folders and formats."""
+    """Installation provides a centralized location for loading resources stored in the game through its various folders and formats."""  # noqa: E501
 
     TEXTURES_TYPES: ClassVar[list[ResourceType]] = [
         ResourceType.TPC,
@@ -556,7 +555,7 @@ class Installation:
     ):
         """Reloads the list of module files in the rims folder linked to the Installation."""
         self._rims = self.load_resources(self.rims_path(), capsule_check=is_rim_file)  # type: ignore[assignment]
-        # self._rims.extend(self.load_resources(self.module_path(), capsule_check=is_rim_file))  # type: ignore[assignment]
+        #self._rims.extend(self.load_resources(self.module_path(), capsule_check=is_rim_file))  # type: ignore[assignment]
 
     def load_textures(
         self,
@@ -725,7 +724,7 @@ class Installation:
         -------
             A list of FileResources.
         """
-        if not self._modules or (filename and filename not in self._modules):
+        if not self._modules or filename and filename not in self._modules:
             self.load_modules()
 
         return (
@@ -759,7 +758,7 @@ class Installation:
         -------
             A list of FileResources.
         """
-        if not self._lips or (filename and filename not in self._lips):
+        if not self._lips or filename and filename not in self._lips:
             self.load_lips()
 
         return (
@@ -804,7 +803,7 @@ class Installation:
 
         if self.game() == Game.K1 and (
             not self._rims
-            or (filename and filename not in self._rims)
+            or filename and filename not in self._rims
         ):
             self.load_rims()
 
@@ -858,7 +857,7 @@ class Installation:
         -------
             A list of FileResources from the 'texturepacks' folder of the Installation.
         """
-        if not self._texturepacks or (filename and filename not in self._texturepacks):
+        if not self._texturepacks or filename and filename not in self._texturepacks:
             self.load_textures()
 
         return (
@@ -1090,6 +1089,7 @@ class Installation:
                     highest_scoring_game = game
 
             return highest_scoring_game
+
 
         return determine_highest_scoring_game()
 
@@ -1363,14 +1363,16 @@ class Installation:
             # Index resources by identifier
             lookup_dict: dict[ResourceIdentifier, FileResource] = {resource.identifier(): resource for resource in resource_list}
             for query in queries:
-                resource: FileResource | None = lookup_dict.get(query)
-                if resource is not None:
-                    location = LocationResult(
-                        resource.filepath(),
-                        resource.offset(),
-                        resource.size(),
-                    )
-                    locations[query].append(location)
+                if query not in lookup_dict:
+                    continue
+
+                resource: FileResource = lookup_dict[query]
+                location = LocationResult(
+                    resource.filepath(),
+                    resource.offset(),
+                    resource.size(),
+                )
+                locations[query].append(location)
 
         def check_capsules(values: list[Capsule]):
             for capsule in values:
@@ -1833,7 +1835,7 @@ class Installation:
                             break
                     if sound_data is None:  # No sound data found in this list.
                         continue
-                    case_resnames.remove(CaseInsensitiveWrappedStr.cast(case_resname))
+                    case_resnames.remove(CaseInsensitiveWrappedStr.cast(case_resname))  # TODO: maybe check if sound_data is empty first?
                     sounds[case_resname] = deobfuscate_audio(sound_data) if sound_data else b""
 
         def check_folders(values: list[Path]):
@@ -1843,8 +1845,8 @@ class Installation:
                     file
                     for file in folder.safe_rglob("*")
                     if (
-                        ResourceType.from_extension(file.suffix) in sound_formats
-                        and file.stem in case_resnames
+                        file.stem in case_resnames
+                        and ResourceType.from_extension(file.suffix) in sound_formats
                         and file.safe_isfile()
                     )
                 )
@@ -2087,23 +2089,21 @@ class Installation:
 
         name: str | None = None
         backup_name: str = root
-        mod_id, entry_area = self._get_tags(module_filename)
-        if not mod_id and not entry_area:
-            print("No tags found")
+        mod_id = self.module_id(module_filename)
+        if not mod_id:
+            print(f"No module id found for '{root}'")
             return backup_name
-        for module in self.modules_list():
-            if ext != PurePath(module).suffix.lower() or root.lower() != self.replace_module_extensions(module).lower():
+        for iterated_module_filename in self.modules_list():
+            if (
+                ext != PurePath(iterated_module_filename).suffix.lower()
+                or root.lower() != self.replace_module_extensions(iterated_module_filename).lower()
+            ):
                 continue
-            capsule = Capsule(self.module_path() / module)
-            capsule_info: bytes | None = capsule.resource("module", ResourceType.IFO)
-            if not capsule_info:
-                continue
+            capsule = Capsule(self.module_path() / iterated_module_filename)
             try:
                 are_tag_resource: bytes | None = capsule.resource(mod_id, ResourceType.ARE)
                 if are_tag_resource is None:
-                    are_tag_resource = capsule.resource(entry_area, ResourceType.ARE)
-                    if are_tag_resource is None:
-                        continue
+                    continue
 
                 are: GFF = read_gff(are_tag_resource)
                 locstring: LocalizedString = are.root.get_locstring("Name")
@@ -2120,36 +2120,6 @@ class Installation:
 
         return name or backup_name
 
-    def _get_tags(self, module_filename: str):
-        root: str = self.replace_module_extensions(module_filename)
-        vo_id: str = ""
-        entry_area: str = ""
-        ext = PurePath(module_filename).suffix.lower()
-
-        for module in self.modules_list():
-            if ext != PurePath(module).suffix.lower() or root.lower() != self.replace_module_extensions(module).lower():
-                continue
-            try:
-                capsule = Capsule(self.module_path() / module)
-                module_ifo_data: bytes | None = capsule.resource("module", ResourceType.IFO)
-                if module_ifo_data:
-                    ifo: GFF = read_gff(module_ifo_data)
-                    if not vo_id:
-                        try:  # noqa: SIM105
-                            vo_id = ifo.root.get_string("Mod_VO_ID").strip()
-                        except Exception:
-                            ...#print(module, "Mod_VO_ID", str(e))
-                    if not entry_area:
-                        try:
-                            entry_area = str(ifo.root.get_resref("Mod_Entry_Area")).strip()
-                            if entry_area:
-                                break
-                        except Exception:
-                            ...#print(module, "Mod_Entry_Area", str(e))
-            except Exception as e:  # pylint: disable=W0718  # noqa: BLE001
-                print(format_exception_with_variables(e, message="This exception has been suppressed in pykotor.extract.installation."))
-        return vo_id, entry_area
-
     def module_names(self, *, use_hardcoded: bool = True) -> CaseInsensitiveDict[str]:
         """Returns a dictionary mapping module filename to the name of the area.
 
@@ -2165,7 +2135,8 @@ class Installation:
         self,
         module_filename: str,
         *,
-        use_hardcoded: bool = True,
+        use_hardcoded: bool = False,
+        use_alternate: bool = False
     ) -> str:
         """Returns the ID of the area for a module from the installations module list.
 
@@ -2185,33 +2156,159 @@ class Installation:
             for key, value in HARDCODED_MODULE_IDS.items():
                 if key.upper() in module_filename.upper():
                     return value
-        mod_id: str = ""
-        ext = PurePath(module_filename).suffix.lower()
-        for module in self.modules_list():
-            if ext != PurePath(module).suffix.lower() or root.lower() != self.replace_module_extensions(module).lower():
-                continue
-            try:
-                capsule = Capsule(self.module_path() / module)
-                module_ifo_data: bytes | None = capsule.resource("module", ResourceType.IFO)
-                if module_ifo_data:
-                    ifo: GFF = read_gff(module_ifo_data)
-                    try:
-                        mod_id = ifo.root.get_string("Mod_VO_ID").strip()
-                        if mod_id:
-                            break
-                    except Exception:
-                        ...#print(module, "Mod_VO_ID", str(e))
-                    try:
-                        mod_id = str(ifo.root.get_resref("Mod_Entry_Area")).strip()
-                        if mod_id:
-                            break
-                    except Exception:
-                        ...#print(module, "Mod_Entry_Area", str(e))
-            except Exception as e:  # pylint: disable=W0718  # noqa: BLE001
-                print(format_exception_with_variables(e, message="This exception has been suppressed in pykotor.extract.installation."))
-        return mod_id
 
-    def module_ids(self, *, use_hardcoded: bool = True) -> dict[str, str]:
+        lower_root: str = root.lower()
+        found_mod_id: str = root
+        all_modules_list = self.modules_list()
+
+        matching_module_filenames: set[str] = set()
+        for iterated_module_filename in all_modules_list:
+            lower_iterated_module_filename = iterated_module_filename.lower()
+            if lower_root != self.replace_module_extensions(lower_iterated_module_filename):
+                continue
+            matching_module_filenames.add(lower_iterated_module_filename)
+
+        with suppress(Exception):
+            mod_filename = f"{lower_root}.mod"
+            our_erf_rims_module: set[Capsule] = set()
+            if module_filename.lower() == mod_filename and mod_filename in matching_module_filenames:
+                our_erf_rims_module.add(Capsule(self.module_path() / mod_filename))
+            # Prioritize the .mod
+            rim_filename = f"{lower_root}.rim"
+            rim_s_filename = f"{lower_root}_s.rim"
+            _dlg_filename = f"{lower_root}._dlg.erf"
+            if rim_filename in matching_module_filenames:
+                our_erf_rims_module.add(Capsule(self.module_path() / rim_filename))
+            if rim_s_filename in matching_module_filenames:
+                our_erf_rims_module.add(Capsule(self.module_path() / rim_s_filename))
+            if _dlg_filename in matching_module_filenames:
+                our_erf_rims_module.add(Capsule(self.module_path() / _dlg_filename))
+
+            mod_id: str = ""
+            mod_ids_to_try: set[str] = set()
+            for iterated_capsule in our_erf_rims_module:
+                try:
+                    module_ifo_data: bytes | None = iterated_capsule.resource("module", ResourceType.IFO)
+                    if not module_ifo_data:
+                        continue
+
+                    ifo: GFF = read_gff(module_ifo_data)
+                    try:  # Only ever seen this wrong for custom modules.
+                        if ifo.root.exists("Mod_Area_list"):
+                            mod_area_list = ifo.root.get_list("Mod_Area_list")
+                            mod_id = found_mod_id = self._get_mod_id_from_area_list(mod_area_list)
+                            if use_alternate:  # noqa: SIM102
+                                if mod_id and mod_id.lower() in lower_root:
+                                    #print(f"Alternate: Found Mod_Area_list '{mod_id}' in '{lower_root}'")
+                                    return mod_id
+                                #print(f"Mod_Area_list '{mod_id}' not in '{lower_root}'")
+                    except Exception:  # noqa: PERF203, BLE001
+                        ...#print(module, "Mod_Area_list", str(e))
+                    else:
+                        if mod_id:
+                            ...#print(f"Got ID '{mod_id}' in Mod_Area_list erf/rim '{iterated_capsule.filename()}'")
+                        if not use_alternate and mod_id and mod_id.strip():
+                            if not use_alternate and iterated_capsule.info(mod_id, ResourceType.ARE) is not None:
+                                return mod_id
+                            mod_ids_to_try.add(mod_id)
+                            print(f"Mod_Area_list entry '{mod_id}' invalid? erf/rim '{iterated_capsule.filename()}'")
+                        #else:
+                        #    print(f"Mod_Area_list not defined? erf/rim '{iterated_capsule.filename()}'")
+                        mod_id = ""
+
+                    try:  # Adding because I'm unsure if the case is maintained.
+                        if ifo.root.exists("Mod_Area_List"):
+                            mod_area_list = ifo.root.get_list("Mod_Area_List")
+                            mod_id = found_mod_id = self._get_mod_id_from_area_list(mod_area_list)
+                            if use_alternate:  # noqa: SIM102
+                                if mod_id and mod_id.lower() in lower_root:
+                                    #print(f"Alternate: Found Mod_Area_List '{mod_id}' in '{lower_root}'")
+                                    return mod_id
+                                #print(f"Mod_Area_List '{mod_id}' not in '{lower_root}'")
+                    except Exception:  # noqa: PERF203, BLE001
+                        ...#print(module, "Mod_Area_List", str(e))
+                    else:
+                        if mod_id:
+                            print(f"Got ID '{mod_id}' in Mod_Area_List for erf/rim '{iterated_capsule.filename()}'")
+                        if not use_alternate and mod_id and mod_id.strip():
+                            if iterated_capsule.info(mod_id, ResourceType.ARE) is not None:
+                                return mod_id
+                            mod_ids_to_try.add(mod_id)
+                            print(f"Mod_Area_List entry '{mod_id}' invalid? erf/rim '{iterated_capsule.filename()}'")
+                        #else:
+                        #    print(f"Mod_Area_List not defined? erf/rim '{iterated_capsule.filename()}'")
+                        mod_id = ""
+
+                    try:  # Sometimes wrong, and sometimes it's not defined.
+                        if ifo.root.exists("Mod_VO_ID"):
+                            mod_id = found_mod_id = ifo.root.get_string("Mod_VO_ID").strip()
+                            if use_alternate:  # noqa: SIM102
+                                if mod_id and mod_id.lower() in lower_root:
+                                    #print(f"Alternate: Found Mod_VO_ID '{mod_id}' in '{lower_root}'")
+                                    return mod_id
+                                #print(f"Mod_VO_ID '{mod_id}' not in '{lower_root}'")
+                    except Exception:  # noqa: PERF203, BLE001
+                        ...#print(module, "Mod_VO_ID", str(e))
+                    else:
+                        if mod_id:
+                            ...#print(f"Got ID '{mod_id}' in Mod_VO_ID for erf/rim '{iterated_capsule.filename()}'")
+                        if not use_alternate and mod_id.strip():
+                            if iterated_capsule.info(mod_id, ResourceType.ARE) is not None:
+                                return mod_id
+                            mod_ids_to_try.add(mod_id)
+                            print(f"Mod_VO_ID entry '{mod_id}' invalid? erf/rim '{iterated_capsule.filename()}'")
+                        #else:
+                        #    print(f"Mod_VO_ID not defined? erf/rim '{iterated_capsule.filename()}'")
+                        mod_id = ""
+
+                    try:  # This one is sometimes wrong in k1, doesn't seem to be used much (if at all) in k2
+                        if ifo.root.exists("Mod_Entry_Area"):
+                            mod_id = found_mod_id = str(ifo.root.get_resref("Mod_Entry_Area")).strip()
+                            if use_alternate:  # noqa: SIM102
+                                if mod_id and mod_id.lower() in lower_root:
+                                    #print(f"Alternate: Found Mod_Entry_Area '{mod_id}' in '{lower_root}'")
+                                    return mod_id
+                                #print(f"Mod_Entry_Area '{mod_id}' not in '{lower_root}'")
+                    except Exception:  # noqa: PERF203, BLE001
+                        ...#print(module, "Mod_Entry_Area", str(e))
+                    else:
+                        if mod_id:
+                            ...#print(f"Got ID '{mod_id}' in Mod_Entry_Area for erf/rim '{iterated_capsule.filename()}'")
+                        if not use_alternate and mod_id.strip():
+                            if iterated_capsule.info(mod_id, ResourceType.ARE) is not None:
+                                return mod_id
+                            mod_ids_to_try.add(mod_id)
+                            print(f"Mod_Entry_Area entry '{mod_id}' invalid? erf/rim '{iterated_capsule.filename()}'")
+                        #else:
+                        #    print(f"Mod_Entry_Area not defined? erf/rim '{iterated_capsule.filename()}'")
+                        mod_id = ""
+
+                except Exception as e:  # pylint: disable=W0718  # noqa: BLE001
+                    print(format_exception_with_variables(e, message="This exception has been suppressed in pykotor.extract.installation."))
+
+            # Validate the ARE exists.
+            for mod_id in mod_ids_to_try:
+                for capsule in our_erf_rims_module:
+                    if capsule.info(mod_id, ResourceType.ARE) is None:
+                        continue
+                    return mod_id
+                if mod_id.startswith("m") or mod_id[1].isdigit():
+                    found_mod_id = mod_id
+        print(f"NOT FOUND: Module ID for '{module_filename}', using backup of '{found_mod_id}'")
+        return found_mod_id
+
+    def _get_mod_id_from_area_list(self, mod_area_list: GFFList) -> str | None:
+        for gff_struct in mod_area_list:
+            try:
+                mod_id = str(gff_struct.get_resref("Area_Name"))
+            except Exception:  # noqa: PERF203, BLE001
+                print(format_exception_with_variables(e, message="This exception has been suppressed in pykotor.extract.installation."))
+            else:
+                if mod_id and mod_id.strip():
+                    return mod_id
+        return None
+
+    def module_ids(self, *, use_hardcoded: bool = False) -> CaseInsensitiveDict[str]:
         """Returns a dictionary mapping module filename to the ID of the module.
 
         The ID is taken from the ResRef field "Mod_Entry_Area" in the relevant module file's IFO resource.

@@ -149,7 +149,7 @@ class ModuleRenderer(QOpenGLWidget):
         return Vector3(x, y, z)
 
     def initializeGL(self):
-        self.scene = Scene()
+        self.scene = Scene(useOverride=self.settings.loadOverrideTextures)
 
     def resetMouseButtons(self):
         self._mouseDown.clear()

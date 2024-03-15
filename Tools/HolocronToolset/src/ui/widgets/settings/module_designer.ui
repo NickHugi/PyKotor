@@ -29,6 +29,13 @@
        </rect>
       </property>
       <layout class="QVBoxLayout" name="verticalLayout">
+         <item>
+          <widget class="QCheckBox" name="loadOverrideTextures">
+           <property name="text">
+            <string>Load override textures when using the Module Designer.</string>
+           </property>
+          </widget>
+         </item>
        <item>
         <layout class="QFormLayout" name="formLayout_3">
          <item row="0" column="0">

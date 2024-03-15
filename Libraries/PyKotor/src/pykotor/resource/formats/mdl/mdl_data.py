@@ -1,12 +1,13 @@
 from __future__ import annotations
 
 from enum import IntEnum
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Tuple
 
 from pykotor.common.geometry import SurfaceMaterial, Vector3, Vector4
 from pykotor.common.misc import Color
 from pykotor.resource.type import ResourceType
 
+BONE_INDICES = Tuple[int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int]
 if TYPE_CHECKING:
     from pykotor.common.geometry import Vector2
 
@@ -540,9 +541,11 @@ class MDLMesh:
 
         # Trimesh
         self.vertex_positions: list[Vector3] = []
-        self.vertex_normals: list[Vector3] | None = None
-        self.vertex_uv1: list[Vector2] | None = None
-        self.vertex_uv2: list[Vector2] | None = None
+        self.vertex_normals: list[Vector3] = []
+        self.vertex_uv1: list[Vector2] = []
+        self.vertex_uv2: list[Vector2] = []
+        self.vertex_uv3: list[Vector2] = []
+        self.vertex_uv4: list[Vector2] = []
 
         # KotOR 2 Only
         self.dirt_enabled: bool = False
@@ -561,9 +564,9 @@ class MDLSkin:
 
     def __init__(
         self,
-    ):
-        self.bone_indices: tuple[int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int] = (0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
-        self.qbones: list[Vector3] = []
+    ) -> None:
+        self.bone_indices: BONE_INDICES = (0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
+        self.qbones: list[Vector4] = []
         self.tbones: list[Vector3] = []
         self.bonemap: list[int] = []
 
@@ -618,11 +621,70 @@ class MDLControllerType(IntEnum):
 
     POSITION = 8
     ORIENTATION = 20
-    SCALE = 36
+    MESH_SCALE = 36
     ILLUM_COLOR = 100
-    ALPHA = 132
+    MESH_ALPHA = 132
+    LIGHT_COLOR = 76
+    LIGHT_RADIUS = 88
+    LIGHT_SHADOWRADIUS = 96
+    LIGHT_VERTICALDISPLACEMENT = 100
+    LIGHT_MULTIPLIER = 140
 
-    P2P_BEZIER_2 = 132
+    EMITTER_ALPHAEND = 80
+    EMITTER_ALPHASTART = 84
+    EMITTER_BIRTHRATE = 88
+    EMITTER_BOUNCE_CO = 92
+    EMITTER_COMBINETIME = 96
+    EMITTER_DRAG = 100
+    EMITTER_FPS = 104
+    EMITTER_FRAMEEND = 108
+    EMITTER_FRAMESTART = 112
+    EMITTER_GRAV = 116
+    EMITTER_LIFEEXP = 120
+    EMITTER_MASS = 124
+    EMITTER_P2P_BEZIER_1 = 128
+    EMITTER_P2P_BEZIER_2 = 132
+    EMITTER_PARTICLEROT = 136
+
+    EMITTER_RANDVEL = 140
+    EMITTER_SIZESTART = 144
+    EMITTER_SIZEEND = 148
+    EMITTER_SIZESTART_Y = 152
+    EMITTER_SIZEEND_Y = 156
+    EMITTER_SPREAD = 160
+    EMITTER_THRESHOLD = 164
+    EMITTER_VELOCITY = 168
+    EMITTER_XSIZE = 172
+    EMITTER_YSIZE = 176
+    EMITTER_BLURLENGTH = 180
+    EMITTER_LIGHTNINGDELAY = 184
+    EMITTER_LIGHTNINGRADIUS = 188
+    EMITTER_LIGHTNINGSCALE = 192
+    EMITTER_LIGHTNINGSUBDIV = 196
+    EMITTER_LIGHTNINGZIGZAG = 200
+
+    EMITTER_ALPHAMID = 216
+    EMITTER_PERCENTSTART = 220
+    EMITTER_PERCENTMID = 224
+    EMITTER_PERCENTEND = 228
+    EMITTER_SIZEMID = 232
+    EMITTER_SIZEMID_Y = 236
+    EMITTER_RANDOMBIRTHRATE = 240
+
+    EMITTER_TARGETSIZE = 252
+    EMITTER_NUMCONTROLPTS = 256
+    EMITTER_CONTROLPTRADIUS = 260
+    EMITTER_CONTROLPTDELAY = 264
+    EMITTER_TANGENTSPREAD = 268
+    EMITTER_TANGENTLENGTH = 272
+
+    EMITTER_COLORMID = 284
+
+    EMITTER_COLOREND = 380
+
+    EMITTER_COLORSTART = 392
+
+    EMITTER_DETONATE = 502
 
 
 class MDLController:

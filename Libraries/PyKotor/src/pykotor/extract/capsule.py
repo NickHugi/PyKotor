@@ -1,6 +1,11 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+import os
+
+from copy import copy
+from threading import Lock
+from time import time
+from typing import TYPE_CHECKING, ClassVar
 
 from pykotor.common.stream import BinaryReader
 from pykotor.extract.file import FileResource, ResourceIdentifier, ResourceResult
@@ -15,6 +20,7 @@ if TYPE_CHECKING:
 
     from collections.abc import Iterator
 
+    from typing_extensions import Self
 
 class Capsule:
     """Capsule object is used for loading the list of resources stored in the .erf/.rim/.mod/.sav files used by the game.
@@ -22,6 +28,39 @@ class Capsule:
     Resource data is not actually stored in memory by default but is instead loaded up on demand with the
     Capsule.resource() method. Use the RIM or ERF classes if you want to solely work with capsules in memory.
     """
+
+    _cache: ClassVar[dict[Path, tuple[Self, float]]] = {}
+    _lock = Lock()
+    MAX_INSTANCE_TIME = 3  # seconds
+
+    @classmethod
+    def _get_cached_instance(
+        cls,
+        path: os.PathLike | str,
+    ) -> tuple[Self, float] | tuple[None, None]:
+        """Check the cache for an existing instance and its creation time."""
+        with cls._lock:
+            key = Path.pathify(path).absolute()
+            if key in cls._cache:
+                instance, created_at = cls._cache[key]
+                if time() - created_at <= cls.MAX_INSTANCE_TIME:
+                    return instance, created_at
+                new_instance = copy(instance)
+                return new_instance, created_at
+            return None, None
+
+    def __new__(
+        cls,
+        path: os.PathLike | str,
+        *args,
+        **kwargs,
+    ):
+        # Override __new__ to ensure _cache checking logic is applied
+        # even before __init__ is called.
+        instance, _created_at = cls._get_cached_instance(path)
+        if instance is not None:
+            return instance
+        return super().__new__(cls)
 
     def __init__(
         self,
@@ -49,20 +88,47 @@ class Capsule:
             - Initialize self._path and self._resources attributes
             - Reload resources from file.
         """
-        self._path: Path = Path.pathify(path).absolute()  # type: ignore[assignment]
-        self._resources: list[FileResource] = []
+        # To avoid reinitializing an instance from the cache,
+        # only proceed if the _path attribute is not set.
+        if hasattr(self, "_path"):
+            return
+        self._path: Path = Path.pathify(path)
+        self._resources: set[FileResource] = set()
 
         if not is_capsule_file(self._path):
             msg = f"Invalid file extension in capsule filepath '{self._path}'."
             raise ValueError(msg)
 
-        if create_nonexisting and not self._path.safe_isfile():  # type: ignore[reportGeneralTypeIssues]
+        if create_nonexisting and not self._path.safe_isfile():
             if is_rim_file(self._path):
                 write_rim(RIM(), self._path)
             elif is_any_erf_type_file(self._path):
                 write_erf(ERF(ERFType.from_extension(self._path.suffix)), self._path)
 
         self.reload()
+        self._cache_instance()
+
+    def _cache_instance(self):
+        """Cache the current instance along with the current time."""
+        with self._lock:
+            self._cache[self._path] = (self, time())
+
+    def __copy__(self) -> Self:
+        # Manually create a new instance of the class without calling __new__ or __init__
+        cls = self.__class__
+        new_instance = object.__new__(cls)
+
+        # Copy all attributes directly, ensuring they are the exact same instances,
+        # except for the _resources list which needs to be a new list with the same items.
+        for attr, value in self.__dict__.items():
+            if attr == "_resources":
+                # Create a new list for _resources, but use the same item instances.
+                setattr(new_instance, attr, list(value))
+            else:
+                # Directly assign all other attributes to ensure they are the same instances.
+                setattr(new_instance, attr, value)
+
+        return new_instance
 
     def __iter__(
         self,
@@ -78,10 +144,10 @@ class Capsule:
         self,
         *,
         reload: bool = False,
-    ) -> list[FileResource]:
+    ) -> set[FileResource]:
         if reload:
             self.reload()
-        return self._resources
+        return self._resources.copy()
 
     def resource(
         self,
@@ -352,7 +418,7 @@ class Capsule:
         for i in range(entry_count):
             res_offset: int = reader.read_uint32()
             res_size:   int = reader.read_uint32()
-            self._resources.append(FileResource(resrefs[i], restypes[i], res_size, res_offset, self._path))
+            self._resources.add(FileResource(resrefs[i], restypes[i], res_size, res_offset, self._path))
 
     def _load_rim(
         self,
@@ -389,4 +455,4 @@ class Capsule:
             reader.skip(4)
             offset = reader.read_uint32()
             size = reader.read_uint32()
-            self._resources.append(FileResource(resref, restype, size, offset, self._path))
+            self._resources.add(FileResource(resref, restype, size, offset, self._path))

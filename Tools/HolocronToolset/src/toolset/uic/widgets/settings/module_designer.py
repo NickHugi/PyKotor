@@ -25,6 +25,9 @@ class Ui_Form(object):
         self.scrollAreaWidgetContents.setObjectName("scrollAreaWidgetContents")
         self.verticalLayout = QtWidgets.QVBoxLayout(self.scrollAreaWidgetContents)
         self.verticalLayout.setObjectName("verticalLayout")
+        self.loadOverrideTextures = QtWidgets.QCheckBox(self.scrollAreaWidgetContents)
+        self.loadOverrideTextures.setObjectName("loadOverrideTextures")
+        self.verticalLayout.addWidget(self.loadOverrideTextures)
         self.formLayout_3 = QtWidgets.QFormLayout()
         self.formLayout_3.setObjectName("formLayout_3")
         self.label_20 = QtWidgets.QLabel(self.scrollAreaWidgetContents)
@@ -848,6 +851,7 @@ class Ui_Form(object):
     def retranslateUi(self, Form):
         _translate = QtCore.QCoreApplication.translate
         Form.setWindowTitle(_translate("Form", "Form"))
+        self.loadOverrideTextures.setText(_translate("Form", "Load override textures when using the Module Designer."))
         self.label_20.setText(_translate("Form", "Field of View:"))
         self.groupBox.setTitle(_translate("Form", "3D Controls"))
         self.controls3dResetButton.setText(_translate("Form", "Reset"))

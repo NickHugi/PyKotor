@@ -49,8 +49,8 @@ def is_rim_file(filepath: os.PathLike | str) -> bool:
 
 
 def is_bif_file(filepath: os.PathLike | str) -> bool:
-    """Returns true if the given filename has a BIF file extension."""
-    return PurePath.pathify(normalize_ext(filepath)).suffix.lower() == ".bif"
+    """Returns true if the given filename has a BIF or BZF file extension."""
+    return PurePath.pathify(filepath).suffix.lower() in {".bif", ".bzf"}
 
 
 def is_bzf_file(filepath: os.PathLike | str) -> bool:

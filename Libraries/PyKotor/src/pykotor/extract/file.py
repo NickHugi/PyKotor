@@ -223,6 +223,7 @@ class FileResource:
         self,
         *,
         reload: bool = False,
+        _internal: bool = False,
     ) -> bytes:
         """Opens the file the resource is located at and returns the bytes data of the resource.
 
@@ -245,6 +246,8 @@ class FileResource:
             with BinaryReader.from_file(self._filepath) as file:
                 file.seek(self._offset)
                 data: bytes = file.read_bytes(self._size)
+                if self.inside_bzf:
+                    data = self.decompress_lzma1(data, self._size)
 
                 if not self._hash_task_running:
 
@@ -302,7 +305,7 @@ class ResourceIdentifier:
     def __hash__(
         self,
     ):
-        return hash(str(self))
+        return hash(CaseInsensitiveWrappedStr(str(self)))
 
     def __repr__(
         self,

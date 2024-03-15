@@ -264,6 +264,10 @@ class ModuleDesigner(QMainWindow):
         else:
             self.openModule(mod_filepath)  # for some reason 3d rendering never loads when this is used...
 
+    def showEvent(self, event):
+        super().showEvent(event)
+        self.activateWindow()
+
     def closeEvent(self, event):
         reply = QMessageBox.question(
             self,
@@ -1290,6 +1294,11 @@ class ModuleDesignerControls3d:
             self.renderer.scene.camera.z -= (upward.z + sideward.z) * strength
             self.renderer.scene.camera.y -= (upward.y + sideward.y) * strength
             self.renderer.scene.camera.x -= (upward.x + sideward.x) * strength
+
+        if self.rotateCamera.satisfied(buttons, keys):
+            strength = self.settings.moveCameraSensitivity3d / 10000
+            self.renderer.rotateCamera(-screenDelta.x * strength, screenDelta.y * strength)
+            return  # save users from motion sickness: don't process other commands during view rotations.
 
         if self.zoomCameraMM.satisfied(buttons, keys):
             strength = self.settings.zoomCameraSensitivity3d / 5000

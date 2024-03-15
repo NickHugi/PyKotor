@@ -111,7 +111,7 @@ SEARCH_ORDER: list[SearchLocation] = [SearchLocation.CUSTOM_MODULES, SearchLocat
 class Scene:
     SPECIAL_MODELS: ClassVar[list[str]] = ["waypoint", "store", "sound", "camera", "trigger", "encounter", "unknown"]
 
-    def __init__(self, *, installation: Installation | None = None, module: Module | None = None):
+    def __init__(self, *, installation: Installation | None = None, module: Module | None = None, useOverride: bool = True):
         """Initializes the renderer.
 
         Args:
@@ -140,6 +140,7 @@ class Scene:
         self.module: Module | None = module
         self.camera: Camera = Camera()
         self.cursor: RenderObject = RenderObject("cursor")
+        self.useOverrideTextures: bool = useOverride
 
         self.textures["NULL"] = Texture.from_color()
 
@@ -566,7 +567,7 @@ class Scene:
 
         model: Model = self.model(obj.model)
         transform = transform * obj.transform()
-        model.draw(shader, transform, override_texture=obj.override_texture)
+        model.draw(shader, transform, override_texture=obj.override_texture if self.useOverrideTextures else None)
 
         for child in obj.children:
             self._render_object(shader, child, transform)

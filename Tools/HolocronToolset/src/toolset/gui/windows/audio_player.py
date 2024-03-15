@@ -44,6 +44,10 @@ class AudioPlayer(QMainWindow):
         self.destroyed.connect(self.closeEvent)
         self.player.error.connect(lambda _: self.closeEvent())
 
+    def showEvent(self, event):
+        super().showEvent(event)
+        self.activateWindow()
+
     def load(
         self,
         filepath: os.PathLike | str,

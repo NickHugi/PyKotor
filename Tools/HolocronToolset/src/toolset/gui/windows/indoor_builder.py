@@ -104,6 +104,10 @@ class IndoorMapBuilder(QMainWindow):
 
         self.ui.mapRenderer.setMap(self._map)
 
+    def showEvent(self, event):
+        super().showEvent(event)
+        self.activateWindow()
+
     def _setupSignals(self):
         """Connect signals to slots.
 

@@ -31,6 +31,7 @@ from watchdog.events import FileSystemEventHandler
 from watchdog.observers import Observer
 
 from pykotor.common.stream import BinaryReader
+from pykotor.extract.capsule import Capsule
 from pykotor.extract.file import ResourceIdentifier
 from pykotor.extract.installation import SearchLocation
 from pykotor.resource.formats.erf.erf_auto import read_erf, write_erf
@@ -263,6 +264,7 @@ class ToolWindow(QMainWindow):
         firstTime = self.settings.firstTime
         if firstTime:
             self.settings.firstTime = False
+            self.settings.selectedTheme = "Default (Light)"
 
             # Create a directory used for dumping temp files
             try:
@@ -272,8 +274,13 @@ class ToolWindow(QMainWindow):
         if not self.settings.selectedTheme:
             self.settings.selectedTheme = "Fusion (Dark)"
 
-        self.toggle_stylesheet(self.settings.selectedTheme, showWindow=False)
+        self.toggle_stylesheet(self.settings.selectedTheme)
+
         self.checkForUpdates(silent=True)
+
+    def showEvent(self, event):
+        super().showEvent(event)
+        self.activateWindow()
 
     # Overriding mouse event handlers to enable dragging of the window
     def mousePressEvent(self, event):
@@ -282,6 +289,8 @@ class ToolWindow(QMainWindow):
             self._mouseMovePos = event.globalPos()
 
     def mouseMoveEvent(self, event):
+        if not hasattr(self, "_mouseMovePos"):
+            return  # Main window not initialized yet.
         if event.buttons() == Qt.LeftButton:
             # Calculate how much the mouse has been moved
             currPos = self.mapToGlobal(self.pos())
@@ -484,7 +493,6 @@ class ToolWindow(QMainWindow):
 
     def onSaveReload(self, saveDir: str):
         print(f"Reloading '{saveDir}'")
-        self.active.load_saves()
         self.onSavepathChanged(saveDir)
 
     def onSaveRefresh(self):
@@ -504,16 +512,16 @@ class ToolWindow(QMainWindow):
             print(f"No installation loaded, cannot change to save directory '{newSaveDir}'")
             return
 
-        newSaveDirPath = CaseAwarePath(newSaveDir)
-        if newSaveDirPath not in self.active._saves:
-            self.active.load_saves()
-            if newSaveDirPath not in self.active._saves:
-                print(f"Cannot change to '{newSaveDir}', path is not in the saves list.")
-                return
         print("Loading save resources into UI...")
 
         # Clear the entire model before loading new save resources
         self.ui.savesWidget.modulesModel.invisibleRootItem().removeRows(0, self.ui.savesWidget.modulesModel.rowCount())
+        newSaveDirPath = CaseAwarePath(newSaveDir)
+        if newSaveDirPath not in self.active._saves:
+            self.active.load_saves()
+            if newSaveDirPath not in self.active._saves:
+                print(f"Cannot load save {newSaveDirPath}: not found in saves list")
+                return
         for save_path, resource_list in self.active._saves[newSaveDirPath].items():
             # Create a new parent item for the save_path
             save_path_item = QStandardItem(str(save_path.relative_to(save_path.parent.parent)))
@@ -1030,16 +1038,17 @@ class ToolWindow(QMainWindow):
 
         areaNames: dict[str, str] = self.active.module_names()
         def sortAlgo(moduleFileName: str):
-            if "stunt" in moduleFileName.lower():
-                return "zzzzz" + moduleFileName
+            lowerModuleFileName = moduleFileName.lower()
+            if "stunt" in lowerModuleFileName:  # keep the least used stunt modules at the bottom.
+                return "zzzzz" + lowerModuleFileName
             if self.settings.moduleSortOption == 0:  #"Sort by filename":
-                return moduleFileName.lower()
+                return lowerModuleFileName
             if self.settings.moduleSortOption == 1:  #"Sort by humanized area name":
-                return areaNames.get(moduleFileName).lower() + moduleFileName
+                return areaNames.get(moduleFileName).lower() + lowerModuleFileName
             # non-hardcoded mod_area_name
-            areaName = self.active.module_id(moduleFileName, use_hardcoded=False)
+            areaName = self.active.module_id(moduleFileName, use_hardcoded=False, use_alternate=True)
             #print("filename:", moduleFileName, "area_id:", areaName)
-            return areaName + moduleFileName
+            return areaName + lowerModuleFileName
 
         sortedKeys: list[str] = sorted(
             areaNames,
@@ -1096,6 +1105,26 @@ class ToolWindow(QMainWindow):
             section.setData(directory, QtCore.Qt.UserRole)
             sections.append(section)
         return sections
+
+    def refreshSavesList(self, *, reload=True):
+        """Refreshes the list of override directories in the overrideFolderCombo combobox."""
+        if self.active is None:
+            print("No installation is currently loaded, cannot refresh saves list")
+            return
+
+        if reload:
+            print("Reloading saves...")
+            self.active.load_saves()
+        else:
+            print("Refreshing saves...")
+
+        sections: list[QStandardItem] = []
+        for save_path in self.active._saves:
+            save_path_str = str(save_path)
+            section = QStandardItem(save_path_str)
+            section.setData(save_path_str, QtCore.Qt.UserRole)
+            sections.append(section)
+        self.ui.savesWidget.setSections(sections)
 
     def refreshOverrideList(
         self,
@@ -1173,6 +1202,11 @@ class ToolWindow(QMainWindow):
                     subfolder = folder_name
             self.changeOverrideFolder(subfolder)
 
+        elif tree == self.ui.savesWidget:
+            self.ui.resourceTabs.setCurrentWidget(self.ui.savesTab)
+            filename = resource.filepath().name
+            self.onSaveReload(filename)
+
     def changeOverrideFolder(self, subfolder: str):
         self.ui.overrideWidget.changeSection(subfolder)
 
@@ -1242,12 +1276,12 @@ class ToolWindow(QMainWindow):
 
         def load_task(active: HTInstallation | None = None) -> HTInstallation:
             new_active = active or HTInstallation(path, name, tsl, self)
-            if not active:
+            if active is None:
                 new_active.reload_all()
             return new_active
 
         active = self.installations.get(name)
-        loader = AsyncLoader(self, "Loading Installation" if not active else "Refreshing installation", lambda: load_task(active), "Failed to load installation")
+        loader = AsyncLoader(self, "Loading Installation" if active is None else "Refreshing installation", lambda: load_task(active), "Failed to load installation")
         if not loader.exec_():
             self.active = None
             self.ui.gameCombo.setCurrentIndex(0)
@@ -1273,7 +1307,16 @@ class ToolWindow(QMainWindow):
             return
         print("Loading core installation resources into UI...")
         self.ui.coreWidget.setResources(self.active.chitin_resources())
+        if self.active.game().is_k1():
+            patch_erf_path = self.active.path() / "patch.erf"
+            if patch_erf_path.safe_isfile():
+                self.ui.coreWidget.setResources(Capsule(patch_erf_path).resources(), clear_existing=False)
+        self.ui.coreWidget.setResources(self.active._streamwaves, "Stream Waves", clear_existing=False)
+        self.ui.coreWidget.setResources(self.active._streammusic, "Stream Music", clear_existing=False)
+        self.ui.coreWidget.setResources(self.active._streamsounds, "Stream Sounds", clear_existing=False)
         moduleItems, overrideItems, textureItems = prepare_loader.value
+        print("Loading saves list into UI...")
+        self.refreshSavesList(reload=False)
         self.ui.modulesWidget.setSections(moduleItems)
         self.ui.overrideWidget.setSections(overrideItems)
         self.ui.texturesWidget.setSections(textureItems)
@@ -1357,10 +1400,10 @@ class ToolWindow(QMainWindow):
 
     def _decompileMdl(self, resource: FileResource, data: SOURCE_TYPES):
         mdxData: bytes = self.active.resource(resource.resname(), ResourceType.MDX).data
-        mdl: MDL | None = read_mdl(data, 0, 0, mdxData, 0, 0)
+        mdl: MDL | None = read_mdl(data, 0, 0, mdxData, 0, 0, self.active.game())
 
         data = bytearray()
-        write_mdl(mdl, data, ResourceType.MDL_ASCII)
+        write_mdl(mdl, data, ResourceType.MDL_ASCII, self.active.game())
         return data
 
     def _extractMdlTextures(self, resource: FileResource, folderpath: Path, loader: AsyncBatchLoader, data: bytes):

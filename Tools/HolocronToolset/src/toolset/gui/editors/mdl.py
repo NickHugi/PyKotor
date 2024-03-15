@@ -112,7 +112,7 @@ class MDLEditor(Editor):
             return
 
         self.ui.modelRenderer.setModel(mdl_data, mdx_data)
-        self._mdl = read_mdl(mdl_data, 0, 0, mdx_data, 0, 0)
+        self._mdl = read_mdl(mdl_data, 0, 0, mdx_data, 0, 0, self._installation.game())
 
     def _loadMDL(self, mdl: MDL):
         self._mdl = mdl

@@ -237,7 +237,6 @@ def openResourceEditor(
         try:
             editor.load(filepath, resref, restype, data)
             editor.show()
-            editor.activateWindow()
 
             addWindow(editor)
 

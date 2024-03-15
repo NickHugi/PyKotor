@@ -48,6 +48,10 @@ class HelpWindow(QMainWindow):
         if startingPage:
             self.displayFile(startingPage)
 
+    def showEvent(self, event):
+        super().showEvent(event)
+        self.activateWindow()
+
     def _setupSignals(self):
         self.ui.contentsTree.clicked.connect(self.onContentsClicked)
 

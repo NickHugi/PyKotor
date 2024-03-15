@@ -3,6 +3,7 @@ from __future__ import annotations
 import os
 
 from typing import TYPE_CHECKING
+from pykotor.common.misc import Game
 
 from pykotor.common.stream import BinaryReader
 from pykotor.resource.formats.mdl.io_mdl import MDLBinaryReader, MDLBinaryWriter
@@ -74,6 +75,7 @@ def read_mdl(
     source_ext: SOURCE_TYPES | None = None,
     offset_ext: int = 0,
     size_ext: int = 0,
+    game: Game = Game.K2,
 ) -> MDL:
     """Returns an MDL instance from the source.
 
@@ -109,6 +111,7 @@ def read_mdl(
             source_ext,
             offset_ext,
             size_ext,
+            game,
         ).load()
     if file_format == ResourceType.MDL_ASCII:
         return MDLAsciiReader(source, offset, size or 0).load()
@@ -121,7 +124,8 @@ def write_mdl(
     target: TARGET_TYPES,
     file_format: ResourceType = ResourceType.MDL,
     target_ext: TARGET_TYPES | None = None,
-):
+    game: Game = Game.K2,
+) -> None:
     """Writes the MDL data to the target location with the specified format (MDL or MDL_ASCII).
 
     Args:
@@ -138,7 +142,7 @@ def write_mdl(
         ValueError: If the specified format was unsupported.
     """
     if file_format == ResourceType.MDL:
-        MDLBinaryWriter(mdl, target, target_ext or target).write()
+        MDLBinaryWriter(mdl, target, target_ext or target, game).write()
     elif file_format == ResourceType.MDL_ASCII:
         MDLAsciiWriter(mdl, target).write()
     else:

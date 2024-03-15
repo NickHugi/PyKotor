@@ -96,7 +96,8 @@ class BinaryReader:
         if not stream.seekable():
             msg = "Stream must be seekable"
             raise ValueError(msg)
-
+        if isinstance(stream, io.RawIOBase):
+            return io.BufferedReader(stream)
         try:
             mmap_stream = mmap.mmap(stream.fileno(), length=0, access=mmap.ACCESS_READ)
         except (ValueError, OSError):  # ValueError means mmap cannot map to empty files

@@ -96,6 +96,7 @@ class ModuleDesignerWidget(SettingsWidget):
             self._registerColour(getattr(self.ui, colorEdit), colorEdit[:-4])
 
     def setupValues(self):
+        self.ui.loadOverrideTextures.setChecked(self.settings.loadOverrideTextures)
         self.ui.fovSpin.setValue(self.settings.fieldOfView)
         self._load3dBindValues()
         self._loadFcBindValues()
@@ -103,6 +104,7 @@ class ModuleDesignerWidget(SettingsWidget):
         self._loadColourValues()
 
     def save(self):
+        self.settings.loadOverrideTextures = self.ui.loadOverrideTextures.isChecked()
         self.settings.fieldOfView = self.ui.fovSpin.value()
         self.settings.zoomCameraSensitivity3d = self.ui.moveCameraSensitivity3dEdit.value()
         self.settings.rotateCameraSensitivity3d = self.ui.rotateCameraSensitivity3dEdit.value()
@@ -158,6 +160,11 @@ class ModuleDesignerSettings(Settings):
         for setting in dir(self):
             if setting.endswith("Colour"):
                 self.settings.remove(setting)
+
+    loadOverrideTextures = Settings._addSetting(
+        "loadOverrideTextures",
+        False,
+    )
 
     # region Ints/Binds (Controls - 3D)
     moveCameraSensitivity3d = Settings._addSetting(

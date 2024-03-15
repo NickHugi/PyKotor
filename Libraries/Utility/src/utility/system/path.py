@@ -8,8 +8,10 @@ import subprocess
 import sys
 import uuid
 
+from collections import OrderedDict
 from tempfile import TemporaryDirectory
-from typing import TYPE_CHECKING, Any, Union
+from threading import Lock
+from typing import TYPE_CHECKING, Any, ClassVar, Union
 
 from utility.error_handling import format_exception_with_variables
 
@@ -72,15 +74,30 @@ class PurePathType(type):
 
 
 class PurePath(pathlib.PurePath, metaclass=PurePathType):  # type: ignore[misc]
-    # pylint: disable-all
-    def __new__(
-        cls,
-        *args,
-        **kwargs
-    ) -> Self:
+    _cache: ClassVar[OrderedDict] = OrderedDict()
+    _cache_limit = 1024  # Set limit for number of entries
+    _lock = Lock()
+
+    def __new__(cls, *args, **kwargs):
+        orig_cls = cls
         if cls is PurePath:
             cls = PureWindowsPath if os.name == "nt" else PurePosixPath
-        return super().__new__(cls, *cls.parse_args(args), **kwargs)  # type: ignore[reportReturnType]
+
+        args_list_parsed = cls.parse_args(args)
+        canonical_args = (*args_list_parsed, orig_cls)
+        with cls._lock:
+            # Use canonical_args as key to check cache
+            if canonical_args in cls._cache:
+                # Move to end to mark as recently used
+                cls._cache.move_to_end(canonical_args)
+                return cls._cache[canonical_args]
+
+            instance = super().__new__(cls, *args_list_parsed)
+            cls._cache[canonical_args] = instance
+            # Ensure the cache does not exceed the specified limit
+            if len(cls._cache) > cls._cache_limit:
+                cls._cache.popitem(last=False)  # Remove the oldest item
+            return instance
 
     def __init__(
         self,
@@ -91,7 +108,7 @@ class PurePath(pathlib.PurePath, metaclass=PurePathType):  # type: ignore[misc]
             super().__init__()
         else:
             super().__init__(*self.parse_args(args), **kwargs)
-        self._cached_str = self._fix_path_formatting(super().__str__(), slash=self._flavour.sep)  # type: ignore[reportAttributeAccessIssue]
+        self._cached_str = self._fix_path_formatting(super().__str__(), slash=self._flavour.sep)
 
     @classmethod
     def _create_instance(
@@ -110,13 +127,14 @@ class PurePath(pathlib.PurePath, metaclass=PurePathType):  # type: ignore[misc]
     ) -> list[PathElem]:
         args_list = list(args)
         for i, arg in enumerate(args_list):
-            if isinstance(arg, cls):
-                continue  # Do nothing if already our instance type
+            if isinstance(arg, pathlib.PurePath):
+                continue  # Do nothing if already a pathlib.PurePath instance, saves unnecessary complexity
 
             formatted_path_str: str = cls._fix_path_formatting(cls._fspath_str(arg), slash=cls._flavour.sep)  # type: ignore[reportAttributeAccessIssue]
-            drive, path = os.path.splitdrive(formatted_path_str)
-            if drive and not path:
-                formatted_path_str = f"{drive}{cls._flavour.sep}"  # type: ignore[reportAttributeAccessIssue]
+            if os.name == "nt":
+                drive, path = os.path.splitdrive(formatted_path_str)
+                if drive and not path:
+                    formatted_path_str = f"{drive}{cls._flavour.sep}"  # type: ignore[reportAttributeAccessIssue]
             args_list[i] = formatted_path_str
 
         return args_list
@@ -450,42 +468,33 @@ class Path(PurePath, pathlib.Path):  # type: ignore[misc]
         if cls is Path:
             cls = WindowsPath if os.name == "nt" else PosixPath
         return super().__new__(cls, *cls.parse_args(args), **kwargs)  # type: ignore[reportReturnType]
+
     # Safe rglob operation
     def safe_rglob(
         self,
         pattern: str,
     ) -> Generator[Self, Any, None]:
-        try:
-            iterator: Generator[Self, Any, None] = self.rglob(pattern)
-        except Exception as e:  # pylint: disable=W0718  # noqa: BLE001
-            #print(format_exception_with_variables(e, message="This exception has been suppressed and is only relevant for debug purposes."))
-            return
-        else:
-            while True:
-                try:
-                    yield next(iterator)
-                except StopIteration:  # noqa: PERF203
-                    break  # StopIteration means there are no more files to iterate over
-                except Exception as e:  # pylint: disable=W0718  # noqa: BLE001
-                    #print(format_exception_with_variables(e, message="This exception has been suppressed and is only relevant for debug purposes."))
-                    continue  # Ignore the file that caused an exception and move to the next
+        iterator: Generator[Self, Any, None] = self.rglob(pattern)
+        while True:
+            try:
+                yield next(iterator)
+            except StopIteration:  # noqa: PERF203
+                break  # StopIteration means there are no more files to iterate over
+            except Exception as e:  # pylint: disable=W0718  # noqa: BLE001, S112
+                #print(format_exception_with_variables(e, message="This exception has been suppressed and is only relevant for debug purposes."))
+                continue  # Ignore the file that caused an exception and move to the next
 
     # Safe iterdir operation
     def safe_iterdir(self) -> Generator[Self, Any, None]:
-        try:
-            iterator: Generator[Self, Any, None] = self.iterdir()
-        except Exception as e:  # pylint: disable=W0718  # noqa: BLE001
-            print(format_exception_with_variables(e, message="This exception has been suppressed and is only relevant for debug purposes."))
-            return
-        else:
-            while True:
-                try:
-                    yield next(iterator)
-                except StopIteration:  # noqa: PERF203
-                    break  # StopIteration means there are no more files to iterate over
-                except Exception as e:  # pylint: disable=W0718  # noqa: BLE001
-                    #print(format_exception_with_variables(e, message="This exception has been suppressed and is only relevant for debug purposes."))
-                    continue  # Ignore the file that caused an exception and move to the next
+        iterator: Generator[Self, Any, None] = self.iterdir()
+        while True:
+            try:
+                yield next(iterator)
+            except StopIteration:  # noqa: PERF203
+                break  # StopIteration means there are no more files to iterate over
+            except Exception as e:  # pylint: disable=W0718  # noqa: BLE001, S112
+                #print(format_exception_with_variables(e, message="This exception has been suppressed and is only relevant for debug purposes."))
+                continue  # Ignore the file that caused an exception and move to the next
 
     # Safe is_dir operation
     def safe_isdir(self) -> bool | None:

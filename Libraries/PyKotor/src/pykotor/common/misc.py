@@ -112,7 +112,11 @@ class ResRef(CaseInsensitiveWrappedStr):
     def is_valid(cls, filestem) -> bool:
         return filestem == cls.from_invalid(filestem)
 
-    def set_data(
+    @classmethod
+    def is_valid(cls, filestem) -> bool:
+        return filestem == cls.from_invalid(filestem)
+
+    def set_data(  # noqa: D417
         self,
         text: str,
         *,
