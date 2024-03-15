@@ -697,7 +697,7 @@ class Installation:  # noqa: PLR0904
 
     def override_resources(
         self,
-        directory: str,
+        directory: str | None = None,
     ) -> list[FileResource]:
         """Returns a list of FileResources stored in the specified subdirectory located in the 'override' folder linked to the Installation.
 
@@ -707,7 +707,14 @@ class Installation:  # noqa: PLR0904
         -------
             A list of FileResources.
         """
-        return self._override[directory]
+        if not self._override or directory and directory not in self._override:
+            self.load_override()
+
+        return (
+            self._override[directory]
+            if directory
+            else [override_resource for ov_subfolder_name in self._override for override_resource in self._override[ov_subfolder_name]]
+        )
 
     # endregion
 
