@@ -667,23 +667,18 @@ class ToolWindow(QMainWindow):
         json_data_match = re.search(r"<---JSON_START--->\#(.*)\#<---JSON_END--->", decoded_content_str, flags=re.DOTALL)
 
         if json_data_match:
-            #print(f"Match found! {json_data_match.group(1)}")
-            json_str = json_data_match.group(1)  # Extract the JSON string
-            REMOTE_PROGRAM_INFO = json.loads(json_str)  # Parse the JSON string into a Python dictionary
-
-            # Now you can access the data from config_dict
-            print(REMOTE_PROGRAM_INFO["toolsetLatestVersion"])
-            print(REMOTE_PROGRAM_INFO["updateInfoLink"])
+            json_str = json_data_match.group(1)
+            REMOTE_PROGRAM_INFO = json.loads(json_str)
         else:
             raise ValueError(f"JSON data not found or markers are incorrect: {json_data_match}")
         assert isinstance(REMOTE_PROGRAM_INFO, dict)
 
         if self.settings.useBetaChannel:
             toolsetLatestNotes = REMOTE_PROGRAM_INFO.get("toolsetBetaLatestNotes", "")
-            toolsetDownloadLink = REMOTE_PROGRAM_INFO.get("toolsetDownloadLink", LOCAL_PROGRAM_INFO["toolsetDownloadLink"])
+            toolsetDownloadLink = REMOTE_PROGRAM_INFO.get("toolsetBetaDownloadLink", LOCAL_PROGRAM_INFO["toolsetDownloadLink"])
         else:
             toolsetLatestNotes = REMOTE_PROGRAM_INFO.get("toolsetLatestNotes", "")
-            toolsetDownloadLink = REMOTE_PROGRAM_INFO.get("toolsetBetaDownloadLink", LOCAL_PROGRAM_INFO["toolsetBetaDownloadLink"])
+            toolsetDownloadLink = REMOTE_PROGRAM_INFO.get("toolsetDownloadLink", LOCAL_PROGRAM_INFO["toolsetBetaDownloadLink"])
 
         version_check: bool | None = None
         with suppress(Exception):
