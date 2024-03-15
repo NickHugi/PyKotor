@@ -16,7 +16,7 @@ from PyQt5.QtWidgets import QMainWindow, QMessageBox, QTreeWidgetItem
 from pykotor.common.stream import BinaryReader
 from pykotor.tools.encoding import decode_bytes_with_fallbacks
 from toolset.__main__ import is_frozen
-from toolset.config import UPDATE_INFO_LINK
+from toolset.config import LOCAL_PROGRAM_INFO
 from toolset.gui.dialogs.asyncloader import AsyncLoader
 from utility.error_handling import universal_simplify_exception
 from utility.system.path import Path, PurePath
@@ -25,7 +25,6 @@ if TYPE_CHECKING:
     import os
 
     from PyQt5.QtWidgets import QWidget
-
 
 class HelpWindow(QMainWindow):
     ENABLE_UPDATES = True
@@ -147,7 +146,8 @@ class HelpWindow(QMainWindow):
 
     def checkForUpdates(self):
         try:
-            req = requests.get(UPDATE_INFO_LINK, timeout=15)
+            update_info_link = LOCAL_PROGRAM_INFO["updateInfoLink"]  # TODO: settings.useBetaChannel
+            req = requests.get(update_info_link, timeout=15)
             req.raise_for_status()
             file_data = req.json()
             base64_content = file_data["content"]

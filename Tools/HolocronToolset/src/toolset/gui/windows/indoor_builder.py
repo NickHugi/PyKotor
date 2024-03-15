@@ -37,7 +37,7 @@ from PyQt5.QtWidgets import (
 from pykotor.common.geometry import Vector2, Vector3
 from pykotor.common.stream import BinaryReader, BinaryWriter
 from toolset.__main__ import is_frozen
-from toolset.config import UPDATE_INFO_LINK
+from toolset.config import LOCAL_PROGRAM_INFO
 from toolset.data.indoorkit import load_kits
 from toolset.data.indoormap import IndoorMap, IndoorMapRoom
 from toolset.gui.dialogs.asyncloader import AsyncLoader
@@ -982,7 +982,8 @@ class KitDownloader(QDialog):
                 - If not, sets button to "Download"
             - Adds kit name and button to layout in group box
         """
-        file_data = self._get_update_data(UPDATE_INFO_LINK)
+        update_info_link = LOCAL_PROGRAM_INFO["updateInfoLink"]  # TODO: settings.useBetaChannel
+        file_data = self._get_update_data(update_info_link)
         base64_content = file_data["content"]
         decoded_content = base64.b64decode(base64_content)  # Correctly decoding the base64 content
         updateInfoData = json.loads(decoded_content.decode("utf-8"))
