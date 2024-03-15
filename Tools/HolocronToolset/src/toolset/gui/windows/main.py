@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import base64
 import json
+import re
 import traceback
 
 from contextlib import suppress
@@ -30,7 +31,8 @@ from pykotor.resource.formats.tpc import read_tpc, write_tpc
 from pykotor.resource.type import ResourceType
 from pykotor.tools import model, module
 from pykotor.tools.misc import is_any_erf_type_file, is_bif_file, is_capsule_file, is_erf_file, is_mod_file, is_rim_file
-from toolset.config import PROGRAM_VERSION, UPDATE_BETA_INFO_LINK, UPDATE_INFO_LINK
+from pykotor.tools.path import CaseAwarePath
+from toolset.config import LOCAL_PROGRAM_INFO
 from toolset.data.installation import HTInstallation
 from toolset.gui.dialogs.about import About
 from toolset.gui.dialogs.asyncloader import AsyncBatchLoader, AsyncLoader
@@ -646,53 +648,65 @@ class ToolWindow(QMainWindow):
                 ).exec_()
 
     def _check_toolset_update(self, *, silent: bool):
-        if isinstance(PROGRAM_VERSION, tuple):
-            x = ""
-            for v in PROGRAM_VERSION:
-                if not x:
-                    x = str(v)
-                else:
-                    x += f".{v}"
+        CURRENT_VERSION = LOCAL_PROGRAM_INFO["currentVersion"]
+        if self.settings.useBetaChannel:
+            UPDATE_INFO_LINK = LOCAL_PROGRAM_INFO["updateBetaInfoLink"]
         else:
-            x = str(PROGRAM_VERSION)
-        if "b" in PROGRAM_VERSION:
-            self.settings.useBetaChannel = True
+            UPDATE_INFO_LINK = LOCAL_PROGRAM_INFO["updateInfoLink"]
 
-        if self.settings.useBetaChannel:  # use the beta channel if the setting is set or their version is already beta.
-            req: requests.Response = requests.get(UPDATE_BETA_INFO_LINK, timeout=15)
-        else:
-            req = requests.get(UPDATE_INFO_LINK, timeout=15)
+        req = requests.get(UPDATE_INFO_LINK, timeout=15)
         req.raise_for_status()
         file_data = req.json()
         base64_content = file_data["content"]
         decoded_content = base64.b64decode(base64_content)  # Correctly decoding the base64 content
-        data = json.loads(decoded_content.decode("utf-8"))
-        assert isinstance(data, dict)
+        decoded_content_str = decoded_content.decode(encoding="utf-8")
+        # use for testing only:
+        #with open("config.py") as f:
+        #    decoded_content_str = f.read()
+        # Use regex to extract the JSON part between the markers
+        json_data_match = re.search(r"<---JSON_START--->\#(.*)\#<---JSON_END--->", decoded_content_str, flags=re.DOTALL)
+
+        if json_data_match:
+            #print(f"Match found! {json_data_match.group(1)}")
+            json_str = json_data_match.group(1)  # Extract the JSON string
+            REMOTE_PROGRAM_INFO = json.loads(json_str)  # Parse the JSON string into a Python dictionary
+
+            # Now you can access the data from config_dict
+            print(REMOTE_PROGRAM_INFO["toolsetLatestVersion"])
+            print(REMOTE_PROGRAM_INFO["updateInfoLink"])
+        else:
+            raise ValueError(f"JSON data not found or markers are incorrect: {json_data_match}")
+        assert isinstance(REMOTE_PROGRAM_INFO, dict)
+
+        if self.settings.useBetaChannel:
+            toolsetLatestNotes = REMOTE_PROGRAM_INFO.get("toolsetBetaLatestNotes", "")
+            toolsetDownloadLink = REMOTE_PROGRAM_INFO.get("toolsetDownloadLink", LOCAL_PROGRAM_INFO["toolsetDownloadLink"])
+        else:
+            toolsetLatestNotes = REMOTE_PROGRAM_INFO.get("toolsetLatestNotes", "")
+            toolsetDownloadLink = REMOTE_PROGRAM_INFO.get("toolsetBetaDownloadLink", LOCAL_PROGRAM_INFO["toolsetBetaDownloadLink"])
 
         version_check: bool | None = None
         with suppress(Exception):
             from packaging import version
 
-            version_check = version.parse(data["toolsetLatestVersion"]) > version.parse(x)
+            version_check = version.parse(REMOTE_PROGRAM_INFO["toolsetLatestVersion"]) > version.parse(CURRENT_VERSION)
         if version_check is None:
             with suppress(Exception):
                 from distutils.version import LooseVersion
 
-                version_check = LooseVersion(data["toolsetLatestVersion"]) > LooseVersion(x)
-        if version_check is False:  # only check False, if None then the version check failed
+                version_check = LooseVersion(REMOTE_PROGRAM_INFO["toolsetLatestVersion"]) > LooseVersion(CURRENT_VERSION)
+        if version_check is False:  # Only check False. if None then the version check failed
             if silent:
                 return
             QMessageBox(
                 QMessageBox.Information,
                 "Version is up to date",
-                f"You are running the latest version ({PROGRAM_VERSION}).",
+                f"You are running the latest version ({CURRENT_VERSION}).",
                 QMessageBox.Ok,
                 self,
             ).exec_()
             return
 
-        toolsetDownloadLink = data["toolsetDownloadLink"]
-        toolsetLatestNotes = data.get("toolsetLatestNotes", "")
         betaString = "beta " if self.settings.useBetaChannel else ""
         msgBox = QMessageBox(
             QMessageBox.Information,
