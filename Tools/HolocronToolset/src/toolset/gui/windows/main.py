@@ -731,10 +731,10 @@ class ToolWindow(QMainWindow):
             return self.ui.texturesWidget
         return None
 
-    def _getModulesList(self, *, reload: bool = True) -> list[QStandardItem] | None:
+    def _getModulesList(self, *, reload: bool = True) -> list[QStandardItem]:
         if self.active is None:
-            print("no installation is currently loaded, cannot refresh module list")
-            return None
+            print("No installation is currently loaded, cannot refresh modules list")
+            return []
 
         # If specified the user can forcibly reload the resource list for every module
         if reload:
@@ -781,7 +781,7 @@ class ToolWindow(QMainWindow):
         """Refreshes the list of modules in the modulesCombo combobox."""
         if not moduleItems:
             action = "Reloading" if reload else "Refreshing"
-            def task() -> list[QStandardItem] | None:
+            def task() -> list[QStandardItem]:
                 return self._getModulesList(reload=reload)
             loader = AsyncLoader(self, f"{action} modules list...", task, "Error refreshing module list.")
             loader.exec_()
@@ -813,14 +813,11 @@ class ToolWindow(QMainWindow):
             self.active.load_override()
         if not overrideItems:
             action = "Reloading" if reload else "Refreshing"
-            def task() -> list[QStandardItem] | None:
+            def task() -> list[QStandardItem]:
                 return self._getOverrideList(reload=reload)
             loader = AsyncLoader(self, f"{action} override list...", task, "Error refreshing override list.")
             loader.exec_()
             overrideItems = loader.value
-        if overrideItems is None:
-            print("Nothing to refresh.")
-            return
         self.ui.overrideWidget.setSections(overrideItems)
 
     def _getTexturePackList(
