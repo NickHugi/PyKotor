@@ -103,13 +103,13 @@ if ((Get-OS) -eq "Mac") {
     }
 
     # Set the Qt installation directory based on common environment variables or default to a local 'Qt' directory
-    if (Test-Path env:GITHUB_WORKSPACE) { 
+    if (Test-Path $env:GITHUB_WORKSPACE) {
         $qtInstallPath = Join-Path $env:GITHUB_WORKSPACE "Qt"
         Write-Output "Aqt installation path set to GITHUB_WORKSPACE: $qtInstallPath"
-    } elseif (Test-Path env:USERPROFILE) { 
+    } elseif (Test-Path $env:USERPROFILE) {
         $qtInstallPath = Join-Path $env:USERPROFILE "Qt"
         Write-Output "Aqt installation path set to USERPROFILE: $qtInstallPath"
-    } else { 
+    } else {
         $qtInstallPath = Join-Path $PWD "Qt"
         Write-Output "Aqt installation path set to current directory: $qtInstallPath"
     }

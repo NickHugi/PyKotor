@@ -53,6 +53,8 @@ def decode_bytes_with_fallbacks(
         - Try strict errors first, then fallback errors handling
     """
     provided_encoding: str | None = encoding or (lang.get_encoding() if lang else None)
+    if provided_encoding is not None:
+        return byte_content.decode(encoding=provided_encoding, errors=errors)
     if charset_normalizer is None:
         if provided_encoding is None:
             provided_encoding = "windows-1252" if only_8bit_encodings else "utf-8"
@@ -111,10 +113,9 @@ def decode_bytes_with_fallbacks(
 
         return byte_content.decode(encoding=best_encoding, errors=attempt_errors)
 
-    if encoding is None:
-        # Attempt strict first for more accurate results.
-        with contextlib.suppress(UnicodeDecodeError):
-            return _decode_attempt(attempt_errors="strict")
+    # Attempt strict first for more accurate results.
+    with contextlib.suppress(UnicodeDecodeError):
+        return _decode_attempt(attempt_errors="strict")
     return _decode_attempt(attempt_errors=errors)
 
 

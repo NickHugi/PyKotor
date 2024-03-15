@@ -152,7 +152,7 @@ def parse_args() -> Namespace:
     return kwargs
 
 
-class App():
+class App:
     def __init__(self):
         self.root = tk.Tk()
         self.root.title(f"HoloPatcher {VERSION_LABEL}")

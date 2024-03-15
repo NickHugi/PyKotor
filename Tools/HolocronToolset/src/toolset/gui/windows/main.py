@@ -352,7 +352,8 @@ class ToolWindow(QMainWindow):
         self.ui.texturesWidget.requestOpenResource.connect(self.onOpenResources)
 
         self.ui.extractButton.clicked.connect(lambda: self.onExtractResources(self.getActiveResourceWidget().selectedResources(), resourceWidget=self.getActiveResourceWidget()))
-        self.ui.openButton.clicked.connect(lambda *args: self.onOpenResources(self.getActiveResourceWidget().selectedResources(), self.settings.gff_specializedEditors, resourceWidget=self.getActiveResourceWidget()))
+        self.ui.openButton.clicked.connect(lambda *args: self.onOpenResources(self.getActiveResourceWidget().selectedResources(),
+                                                                              self.settings.gff_specializedEditors, resourceWidget=self.getActiveResourceWidget()))
 
         self.ui.openAction.triggered.connect(self.openFromFile)
         self.ui.actionSettings.triggered.connect(self.openSettingsDialog)
@@ -479,7 +480,7 @@ class ToolWindow(QMainWindow):
         self.ui.modulesWidget.setResources(resources)
 
     def onModuleRefresh(self):
-        self.refreshModuleList()
+        self.refreshModuleList(reload=False)
 
     def onSaveReload(self, saveDir: str):
         print(f"Reloading '{saveDir}'")
@@ -568,6 +569,7 @@ class ToolWindow(QMainWindow):
             folder_path = file_or_folder_path.parent
         else:
             folder_path = file_or_folder_path
+            self.active.load_override(folder_path)
         self.ui.overrideWidget.setResources(
             self.active.override_resources(
                 str(folder_path.relative_to(str(self.active.override_path())))
@@ -581,7 +583,7 @@ class ToolWindow(QMainWindow):
             print("No installation loaded, cannot refresh Override")
             return
         print(f"Refreshing list of override folders available at {self.active.path()}")
-        self.refreshOverrideList()
+        self.refreshOverrideList(reload=False)
 
     def onTexturesChanged(self, newTexturepack: str):
         if not self.active:
@@ -987,11 +989,13 @@ class ToolWindow(QMainWindow):
         betaString = "beta " if self.settings.useBetaChannel else ""
         msgBox = QMessageBox(
             QMessageBox.Information,
-            f"New {betaString} version is available.",
-            f"New {betaString} version available for <a href='{toolsetDownloadLink}'>download</a>.<br>{toolsetLatestNotes}",
+            f"New {betaString}version is available.",
+            f"New {betaString}version available for <a href='{toolsetDownloadLink}'>download</a>.<br>{toolsetLatestNotes}",
             QMessageBox.Ok,
-            self,
+            parent=None,
+            flags=Qt.Window | Qt.Dialog | Qt.WindowStaysOnTopHint
         )
+        msgBox.setWindowIcon(self.windowIcon())
         msgBox.exec_()
 
     # endregion
@@ -1070,13 +1074,19 @@ class ToolWindow(QMainWindow):
         moduleItems: list[QStandardItem] | None = None,
     ):
         """Refreshes the list of modules in the modulesCombo combobox."""
-        moduleItems = moduleItems or self._getModulesList(reload=reload)
+        if not moduleItems:
+            action = "Reloading" if reload else "Refreshing"
+            def task() -> list[QStandardItem] | None:
+                return self._getModulesList(reload=reload)
+            loader = AsyncLoader(self, f"{action} modules list...", task, "Error refreshing module list.")
+            loader.exec_()
+            moduleItems = loader.value
         self.ui.modulesWidget.setSections(moduleItems)
 
     def _getOverrideList(self, *, reload=True):
         if self.active is None:
-            print("no installation is currently loaded, cannot refresh override list")
-            return None
+            print("No installation is currently loaded, cannot refresh override list")
+            return []
         if reload:
             self.active.load_override()
 
@@ -1094,32 +1104,16 @@ class ToolWindow(QMainWindow):
         overrideItems: list[QStandardItem] | None = None,
     ):
         """Refreshes the list of override directories in the overrideFolderCombo combobox."""
-        overrideItems = overrideItems or self._getOverrideList(self, reload=reload)
-        self.ui.overrideWidget.setSections(overrideItems)
-
-    def _getSavesList(
-        self,
-        *,
-        reload: bool = True,
-    ) -> list[QStandardItem] | None:
-        if self.active is None:
-            print("no installation is currently loaded, cannot refresh saves list")
-            return None
         if reload:
-            self.active.load_saves()
-
-        sections: list[QStandardItem] = []
-        for save_path in self.active._saves:
-            save_path_str = str(save_path)
-            section = QStandardItem(save_path_str)
-            section.setData(save_path_str, QtCore.Qt.UserRole)
-            sections.append(section)
-        return sections
-
-    def refreshSavesList(self, *, reload=True):
-        """Refreshes the list of override directories in the overrideFolderCombo combobox."""
-        sections = self._getSavesList(reload=reload)
-        self.ui.savesWidget.setSections(sections)
+            self.active.load_override()
+        if not overrideItems:
+            action = "Reloading" if reload else "Refreshing"
+            def task() -> list[QStandardItem] | None:
+                return self._getOverrideList(reload=reload)
+            loader = AsyncLoader(self, f"{action} override list...", task, "Error refreshing override list.")
+            loader.exec_()
+            overrideItems = loader.value
+        self.ui.overrideWidget.setSections(overrideItems)
 
     def _getTexturePackList(
         self,
@@ -1127,7 +1121,7 @@ class ToolWindow(QMainWindow):
         reload: bool = True,
     ) -> list[QStandardItem] | None:
         if self.active is None:
-            print("no installation is currently loaded, cannot refresh texturepack list")
+            print("No installation is currently loaded, cannot refresh texturepack list")
             return None
         if reload:
             self.active.load_textures()
@@ -1214,8 +1208,9 @@ class ToolWindow(QMainWindow):
         self.updateMenus()
 
         if index <= 0:
-            print(f"Index out of range - self.changeActiveInstallation({index})")
-            self.ui.gameCombo.setCurrentIndex(0)
+            if index < 0:
+                print(f"Index out of range - self.changeActiveInstallation({index})")
+                self.ui.gameCombo.setCurrentIndex(0)
             self.active = None
             if self.dogObserver is not None:
                 self.dogObserver.stop()
@@ -1266,11 +1261,10 @@ class ToolWindow(QMainWindow):
             return (
                 self._getModulesList(reload=False),
                 self._getOverrideList(reload=False),
-                self._getSavesList(reload=False),
                 self._getTexturePackList(reload=False),
             )
-        loader = AsyncLoader(self, "Preparing resources...", lambda: prepare_task(), "Failed to load installation")
-        if not loader.exec_():
+        prepare_loader = AsyncLoader(self, "Preparing resources...", lambda: prepare_task(), "Failed to load installation")
+        if not prepare_loader.exec_():
             self.active = None
             self.ui.gameCombo.setCurrentIndex(0)
             if self.dogObserver is not None:
@@ -1279,15 +1273,12 @@ class ToolWindow(QMainWindow):
             return
         print("Loading core installation resources into UI...")
         self.ui.coreWidget.setResources(self.active.chitin_resources())
-        moduleItems, overrideItems, saveItems, textureItems = loader.value
+        moduleItems, overrideItems, textureItems = prepare_loader.value
         self.ui.modulesWidget.setSections(moduleItems)
         self.ui.overrideWidget.setSections(overrideItems)
-        self.ui.savesWidget.setSections(saveItems)
         self.ui.texturesWidget.setSections(textureItems)
-        self.ui.texturesWidget.setInstallation(self.active)
         print("Remove unused categories...")
         self.ui.coreWidget.modulesModel.removeUnusedCategories()
-        self.ui.savesWidget.modulesModel.removeUnusedCategories()
         self.ui.texturesWidget.setInstallation(self.active)
         print("Updating menus...")
         self.updateMenus()
@@ -1300,6 +1291,7 @@ class ToolWindow(QMainWindow):
         self.dogObserver.start()
         print("Loader task completed.")
         self.settings.installations()[name].path = path
+        self.installations[name] = self.active
 
     def _extractResource(self, resource: FileResource, filepath: os.PathLike | str, loader: AsyncBatchLoader):
         """Extracts a resource file from a FileResource object.
@@ -1328,7 +1320,7 @@ class ToolWindow(QMainWindow):
                 return
 
             if resource.restype() == ResourceType.TPC:
-                tpc: TPC = read_tpc(data)
+                tpc: TPC = read_tpc(data, txi_source=r_filepath)
 
                 if self.ui.tpcTxiCheckbox.isChecked():
                     self._extractTxi(tpc, r_filepath)
@@ -1399,7 +1391,7 @@ class ToolWindow(QMainWindow):
             try:
                 openResourceEditor(
                     filepath,
-                    *ResourceIdentifier.from_path(filepath).validate(),
+                    *ResourceIdentifier.from_path(filepath).validate().unpack(),
                     BinaryReader.load_file(filepath),
                     self.active,
                     self,

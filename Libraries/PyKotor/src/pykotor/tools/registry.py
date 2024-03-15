@@ -208,7 +208,7 @@ def create_registry_path(hive, path):  # sourcery skip: raise-from-previous-erro
             try:
                 winreg.CreateKey(hive, current_path)
             except PermissionError:
-                raise PermissionError(f"Permission denied. Administrator privileges required.") from e  # noqa: B904, TRY003, EM101
+                raise PermissionError("Permission denied. Administrator privileges required.") from e  # noqa: B904, TRY003, EM101
             except Exception as e:  # pylint: disable=W0718  # noqa: BLE001
                 # sourcery skip: raise-specific-error
                 raise Exception(f"Failed to create registry key: {current_path}. Error: {e}")  # noqa: TRY002, TRY003, EM102, B904

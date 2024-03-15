@@ -328,7 +328,7 @@ class GFFStruct:
 
         Returns:
         -------
-            A GFFFieldType value.
+            A boolean result of whether the field exists or not.
         """
         return label in self._fields
 
