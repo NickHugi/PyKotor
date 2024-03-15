@@ -1,16 +1,11 @@
 from __future__ import annotations
 
-import base64
-import json
-import re
 import traceback
 
 from contextlib import suppress
 from datetime import datetime, timedelta, timezone
 from tempfile import TemporaryDirectory
 from typing import TYPE_CHECKING, ClassVar
-
-import requests
 
 from PyQt5 import QtCore
 from PyQt5.QtCore import Qt
@@ -32,7 +27,7 @@ from pykotor.resource.type import ResourceType
 from pykotor.tools import model, module
 from pykotor.tools.misc import is_any_erf_type_file, is_bif_file, is_capsule_file, is_erf_file, is_mod_file, is_rim_file
 from pykotor.tools.path import CaseAwarePath
-from toolset.config import LOCAL_PROGRAM_INFO
+from toolset.config import CURRENT_VERSION, getRemoteToolsetUpdateInfo, remoteVersionNewer
 from toolset.data.installation import HTInstallation
 from toolset.gui.dialogs.about import About
 from toolset.gui.dialogs.asyncloader import AsyncBatchLoader, AsyncLoader
@@ -617,10 +612,12 @@ class ToolWindow(QMainWindow):
     def openIndoorMapBuilder(self):
         IndoorMapBuilder(self, self.active).show()
 
-    @staticmethod
-    def openInstructionsWindow():
+    def openInstructionsWindow(self):
         """Opens the instructions window."""
         window = HelpWindow(None)
+        window.setWindowIcon(self.windowIcon())
+        window.show()
+        window.activateWindow()
         addWindow(window)
 
     def openAboutDialog(self):
@@ -648,76 +645,67 @@ class ToolWindow(QMainWindow):
                 ).exec_()
 
     def _check_toolset_update(self, *, silent: bool):
-        CURRENT_VERSION = LOCAL_PROGRAM_INFO["currentVersion"]
-        if self.settings.useBetaChannel:
-            UPDATE_INFO_LINK = LOCAL_PROGRAM_INFO["updateBetaInfoLink"]
+        remoteInfo = getRemoteToolsetUpdateInfo(
+            useBetaChannel=self.settings.useBetaChannel,
+            silent=silent,
+        )
+        if not isinstance(remoteInfo, dict):
+            if silent:
+                return
+            raise remoteInfo
+
+        toolsetLatestReleaseVersion = remoteInfo["toolsetLatestVersion"]
+        toolsetLatestBetaVersion = remoteInfo["toolsetLatestBetaVersion"]
+        releaseNewerThanBeta = remoteVersionNewer(toolsetLatestReleaseVersion, toolsetLatestBetaVersion)
+        if (
+            self.settings.alsoCheckReleaseVersion
+            and (
+                not self.settings.useBetaChannel
+                or releaseNewerThanBeta is True
+            )
+        ):
+            releaseVersionChecked = True
+            greatestAvailableVersion = remoteInfo["toolsetLatestVersion"]
+            toolsetLatestNotes = remoteInfo.get("toolsetLatestNotes", "")
+            toolsetDownloadLink = remoteInfo["toolsetDownloadLink"]
         else:
-            UPDATE_INFO_LINK = LOCAL_PROGRAM_INFO["updateInfoLink"]
+            releaseVersionChecked = False
+            greatestAvailableVersion = remoteInfo["toolsetLatestBetaVersion"]
+            toolsetLatestNotes = remoteInfo.get("toolsetBetaLatestNotes", "")
+            toolsetDownloadLink = remoteInfo["toolsetBetaDownloadLink"]
 
-        req = requests.get(UPDATE_INFO_LINK, timeout=15)
-        req.raise_for_status()
-        file_data = req.json()
-        base64_content = file_data["content"]
-        decoded_content = base64.b64decode(base64_content)  # Correctly decoding the base64 content
-        decoded_content_str = decoded_content.decode(encoding="utf-8")
-        # use for testing only:
-        #with open("config.py") as f:
-        #    decoded_content_str = f.read()
-        # Use regex to extract the JSON part between the markers
-        json_data_match = re.search(r"<---JSON_START--->\#(.*)\#<---JSON_END--->", decoded_content_str, flags=re.DOTALL)
-
-        if json_data_match:
-            json_str = json_data_match.group(1)
-            REMOTE_PROGRAM_INFO = json.loads(json_str)
-        else:
-            raise ValueError(f"JSON data not found or markers are incorrect: {json_data_match}")
-        assert isinstance(REMOTE_PROGRAM_INFO, dict)
-
-        if self.settings.useBetaChannel:
-            toolsetLatestNotes = REMOTE_PROGRAM_INFO.get("toolsetBetaLatestNotes", "")
-            toolsetDownloadLink = REMOTE_PROGRAM_INFO.get("toolsetBetaDownloadLink", LOCAL_PROGRAM_INFO["toolsetDownloadLink"])
-        else:
-            toolsetLatestNotes = REMOTE_PROGRAM_INFO.get("toolsetLatestNotes", "")
-            toolsetDownloadLink = REMOTE_PROGRAM_INFO.get("toolsetDownloadLink", LOCAL_PROGRAM_INFO["toolsetBetaDownloadLink"])
-
-        version_check: bool | None = None
-        with suppress(Exception):
-            from packaging import version
-
-            version_check = version.parse(REMOTE_PROGRAM_INFO["toolsetLatestVersion"]) > version.parse(CURRENT_VERSION)
-        if version_check is None:
-            with suppress(Exception):
-                from distutils.version import LooseVersion
-
-                version_check = LooseVersion(REMOTE_PROGRAM_INFO["toolsetLatestVersion"]) > LooseVersion(CURRENT_VERSION)
+        version_check = remoteVersionNewer(CURRENT_VERSION, greatestAvailableVersion)
         if version_check is False:  # Only check False. if None then the version check failed
             if silent:
                 return
-            QMessageBox(
+            upToDateMsgBox = QMessageBox(
                 QMessageBox.Information,
                 "Version is up to date",
                 f"You are running the latest version ({CURRENT_VERSION}).",
                 QMessageBox.Ok,
-                self,
-            ).exec_()
+                parent=None,
+                flags=Qt.Window | Qt.Dialog | Qt.WindowStaysOnTopHint
+            )
+            upToDateMsgBox.setWindowIcon(self.windowIcon())
+            upToDateMsgBox.exec_()
             return
 
-        betaString = "beta " if self.settings.useBetaChannel else ""
-        msgBox = QMessageBox(
+        betaString = "release " if releaseVersionChecked else "beta "
+        newVersionMsgBox = QMessageBox(
             QMessageBox.Information,
-            f"New {betaString}version is available.",
-            f"New {betaString}version available for <a href='{toolsetDownloadLink}'>download</a>.<br>{toolsetLatestNotes}",
+            f"New toolset {betaString}version available.",
+            f"Your toolset version ({CURRENT_VERSION}) is outdated.<br>A new toolset {betaString}version ({greatestAvailableVersion}) available for <a href='{toolsetDownloadLink}'>download</a>.<br>{toolsetLatestNotes}",
             QMessageBox.Ok,
             parent=None,
             flags=Qt.Window | Qt.Dialog | Qt.WindowStaysOnTopHint
         )
-        msgBox.setWindowIcon(self.windowIcon())
-        msgBox.exec_()
+        newVersionMsgBox.setWindowIcon(self.windowIcon())
+        newVersionMsgBox.exec_()
 
     # endregion
 
     # region Other
-    def reloadSettings(self):  # TODO: Don't delete cached resources for unchanged installations.
+    def reloadSettings(self):
         self.reloadInstallations()
 
     def getActiveResourceWidget(self) -> ResourceList | TextureList | None:

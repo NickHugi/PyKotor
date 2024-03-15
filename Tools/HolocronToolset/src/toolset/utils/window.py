@@ -39,7 +39,7 @@ def openResourceEditor(
     restype: ResourceType,
     data: bytes,
     installation: HTInstallation | None = None,
-    parentWindow: QWidget | QMainWindow | None = None,
+    parentWindow: QWidget | None = None,
     *,
     gff_specialized: bool | None = None,
 ) -> tuple[os.PathLike | str, Editor | QMainWindow] | tuple[None, None]:
@@ -121,7 +121,8 @@ def openResourceEditor(
             QMessageBox.warning(parentWindowWidget, "No installation loaded", "The toolset cannot use its full nss editor features until you select an installation.")
             editor = TXTEditor(None, installation)
         else:
-            QMessageBox.warning(parentWindowWidget, "Cannot decompile NCS without an installation active", "Please select an installation from the dropdown before loading an NCS.")
+            QMessageBox.warning(parentWindowWidget,
+                                "Cannot decompile NCS without an installation active", "Please select an installation from the dropdown before loading an NCS.")
             return None, None
 
     if restype in {ResourceType.DLG, ResourceType.DLG_XML}:
@@ -208,30 +209,19 @@ def openResourceEditor(
         else:
             editor = GITEditor(None, installation)
 
-    if restype in {
-        ResourceType.GFF,
-        ResourceType.GFF_XML,
-        ResourceType.ITP,
-        ResourceType.ITP_XML,
-        ResourceType.GUI,
-        ResourceType.GUI_XML,
-        ResourceType.IFO,
-        ResourceType.IFO_XML,
-        ResourceType.RES,
-        ResourceType.RES_XML,
-        ResourceType.FAC,
-        ResourceType.FAC_XML,
-    }:
-        editor = GFFEditor(None, installation)
-
     if restype in {ResourceType.WAV, ResourceType.MP3}:
         editor = AudioPlayer(None)
+        if parentWindowWidget is not None:  # TODO(th3w1zard1): add a custom icon for AudioPlayer
+            editor.setWindowIcon(parentWindowWidget.windowIcon())
 
     if restype.name in ERFType.__members__ or restype == ResourceType.RIM:
         editor = ERFEditor(None, installation)
 
     if restype in {ResourceType.MDL, ResourceType.MDX}:
         editor = MDLEditor(None, installation)
+
+    if editor is None and restype.is_plaintext_gff or restype.contents == "gff":
+        editor = GFFEditor(None, installation)
 
     if editor is not None:
         try:

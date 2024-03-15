@@ -259,6 +259,10 @@ class GlobalSettings(Settings):
         "useBetaChannel",
         False,
     )
+    alsoCheckReleaseVersion = Settings._addSetting(
+        "alsoCheckReleaseVersion",
+        True,
+    )
     firstTime = Settings._addSetting(
         "firstTime",
         True,
