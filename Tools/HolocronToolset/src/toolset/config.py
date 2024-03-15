@@ -4,7 +4,7 @@ from __future__ import annotations
 
 LOCAL_PROGRAM_INFO = \
 {  #<---JSON_START--->#{
-    "currentVersion": "2.1b18",
+    "currentVersion": "2.2.1b18",
     "toolsetLatestVersion": "2.1.2",
     "toolsetLatestBetaVersion": "2.2.1b18",
     "updateInfoLink": "https://api.github.com/repos/NickHugi/PyKotor/contents/Tools/HolocronToolset/src/toolset/config.py",
