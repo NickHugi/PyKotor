@@ -199,12 +199,11 @@ class ResourceList(MainWindowList):
                 - Add "Open" and "Open with GFF Editor" actions
                 - Connect actions to emit signals to open resource.
         """
-        menu = QMenu(self)
-
         resources: list[FileResource] = self.selectedResources()
         if len(resources) == 1:
             resource: FileResource = resources[0]
             if resource.restype().contents == "gff":
+                menu = QMenu(self)
                 def open1():
                     return self.requestOpenResource.emit(resources, False)
 
@@ -213,7 +212,7 @@ class ResourceList(MainWindowList):
                 menu.addAction("Open").triggered.connect(open2)
                 menu.addAction("Open with GFF Editor").triggered.connect(open1)
 
-        menu.popup(self.ui.resourceTree.mapToGlobal(point))
+                menu.popup(self.ui.resourceTree.mapToGlobal(point))
 
     def onResourceDoubleClicked(self):
         self.requestOpenResource.emit(self.selectedResources(), None)
