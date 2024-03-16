@@ -41,6 +41,7 @@ class HelpWindow(QMainWindow):
         self.startingPage: str | None = startingPage
 
     def showEvent(self, a0):
+        super().showEvent(a0)
         self.ui.textDisplay.setSearchPaths(["./help"])
 
         if self.ENABLE_UPDATES:
@@ -48,10 +49,6 @@ class HelpWindow(QMainWindow):
 
         if self.startingPage is not None:
             self.displayFile(self.startingPage)
-
-    def showEvent(self, event):
-        super().showEvent(event)
-        self.activateWindow()
 
     def _setupSignals(self):
         self.ui.contentsTree.clicked.connect(self.onContentsClicked)
