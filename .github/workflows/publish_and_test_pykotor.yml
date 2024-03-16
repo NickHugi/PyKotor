@@ -975,7 +975,12 @@ jobs:
           }
           Remove-Item -Path $artifact_reports_dir -Recurse -Force -ErrorAction SilentlyContinue
 
+          # Remove the readme temporarily to prevent merge conflicts
+          $ReadmePath = "./README.md"
+          Remove-Item -Path $ReadmePath -Force -ErrorAction Stop
+
           git fetch origin $branchName
+          git add $ReadmePath --force
           git add $testsResultsPath --force
           git add $testsResultsCommitPath --force
           # Checking if there are newer commits on the remote branch than the commit that triggered the workflow
@@ -983,7 +988,7 @@ jobs:
               Write-Error "Newer commits are present on the remote branch, cannot update readme"
               exit 1
           }
-          git commit -m "Add test results"
+          git commit -m "Add test results, prepare README"
           git push --force-with-lease origin HEAD:${{ github.ref_name }}
           $commitSHA = git rev-parse HEAD
 
@@ -1016,7 +1021,6 @@ jobs:
             }
           }
 
-          $ReadmePath = "./README.md"
           $ReadmeContent = Get-Content $ReadmePath -Raw
 
           $WindowsBadgeContent = ""
