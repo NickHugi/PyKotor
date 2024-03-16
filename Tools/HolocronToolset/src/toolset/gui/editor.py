@@ -399,6 +399,7 @@ class Editor(QMainWindow):
             write_erf(child_erf_or_rim, data) if isinstance(child_erf_or_rim, ERF) else write_rim(child_erf_or_rim, data)
             this_erf_or_rim.set_data(*child_res_ident.unpack(), bytes(data))
         write_erf(this_erf_or_rim, c_filepath) if isinstance(this_erf_or_rim, ERF) else write_rim(this_erf_or_rim, c_filepath)
+        self.savedFile.emit(str(c_filepath), self._resname, self._restype, data)
 
     def _saveEndsWithErf(self, data: bytes, data_ext: bytes):
         # Create the mod file if it does not exist.
