@@ -209,22 +209,6 @@ def openResourceEditor(
         else:
             editor = GITEditor(None, installation)
 
-    if restype in {
-        ResourceType.GFF,
-        ResourceType.GFF_XML,
-        ResourceType.ITP,
-        ResourceType.ITP_XML,
-        ResourceType.GUI,
-        ResourceType.GUI_XML,
-        ResourceType.IFO,
-        ResourceType.IFO_XML,
-        ResourceType.RES,
-        ResourceType.RES_XML,
-        ResourceType.FAC,
-        ResourceType.FAC_XML,
-    }:
-        editor = GFFEditor(None, installation)
-
     if restype in {ResourceType.WAV, ResourceType.MP3}:
         editor = AudioPlayer(None)
         if parentWindowWidget is not None:  # TODO(th3w1zard1): add a custom icon for AudioPlayer
@@ -235,6 +219,9 @@ def openResourceEditor(
 
     if restype in {ResourceType.MDL, ResourceType.MDX}:
         editor = MDLEditor(None, installation)
+
+    if editor is None and (restype.is_plaintext_gff or restype.contents == "gff"):
+        editor = GFFEditor(None, installation)
 
     if editor is not None:
         try:
