@@ -1,12 +1,12 @@
 from __future__ import annotations
 
-from contextvars import ContextVar
 import inspect
 import os
 import sys
 import traceback
 import types
 
+from contextvars import ContextVar
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, TypeVar
 

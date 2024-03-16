@@ -3,7 +3,6 @@ from __future__ import annotations
 from collections import namedtuple
 from contextlib import contextmanager
 from operator import attrgetter
-from pathlib import PurePath
 from typing import TYPE_CHECKING, ClassVar
 
 from PyQt5 import QtCore
@@ -160,7 +159,7 @@ class NSSEditor(Editor):
 
             # self._restype is NSS
             with self._snapshotResTypeContext():
-                # Do something that might change self._restype to NSC.
+                # Do something that might change self._restype to NCS.
                 self.saveAs()
             # after the with statement, self._restype is returned to NSS.
         """

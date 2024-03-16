@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from copy import deepcopy
 from typing import TYPE_CHECKING
 
 from PyQt5.QtGui import QColor, QImage, QPixmap
@@ -13,7 +12,7 @@ from pykotor.extract.installation import SearchLocation
 from pykotor.resource.formats.bwm import read_bwm
 from pykotor.resource.formats.gff import write_gff
 from pykotor.resource.formats.lyt import read_lyt
-from pykotor.resource.generics.are import ARE, ARENorthAxis, ARERoom, AREWindPower, dismantle_are, read_are
+from pykotor.resource.generics.are import ARE, ARENorthAxis, AREWindPower, dismantle_are, read_are
 from pykotor.resource.type import ResourceType
 from toolset.data.installation import HTInstallation
 from toolset.gui.dialogs.edit.locstring import LocalizedStringDialog
@@ -29,6 +28,7 @@ if TYPE_CHECKING:
     from pykotor.resource.formats.lyt.lyt_data import LYT
     from pykotor.resource.formats.tpc.tpc_data import TPC
     from pykotor.resource.formats.twoda.twoda_data import TwoDA
+    from pykotor.resource.generics.are import ARERoom
     from toolset.gui.widgets.long_spinbox import LongSpinBox
 
 
@@ -58,7 +58,7 @@ class AREEditor(Editor):
         self.resize(400, 250)
 
         self._are: ARE = ARE()
-        self._minimap = None
+        self._minimap: TPC | None = None
         self._rooms: list[ARERoom] = []  # TODO(th3w1zard1): define somewhere in ui.
 
         from toolset.uic.editors.are import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
@@ -172,7 +172,7 @@ class AREEditor(Editor):
                 SearchLocation.TEXTURES_GUI,
                 SearchLocation.MODULES
             ]
-            self._minimap: TPC | None = self._installation.texture(f"lbl_map{self._resname}", order)
+            self._minimap = self._installation.texture(f"lbl_map{self._resname}", order)
             if self._minimap is None:
                 print(f"Could not find texture 'lbl_map{self._resname}' required for minimap")
             else:

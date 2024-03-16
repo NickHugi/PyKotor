@@ -975,6 +975,7 @@ jobs:
           }
           Remove-Item -Path $artifact_reports_dir -Recurse -Force -ErrorAction SilentlyContinue
 
+          $ReadmeContent = Get-Content $ReadmePath -Raw
           # Remove the readme temporarily to prevent merge conflicts
           $ReadmePath = "./README.md"
           Remove-Item -Path $ReadmePath -Force -ErrorAction Stop
@@ -1021,7 +1022,6 @@ jobs:
             }
           }
 
-          $ReadmeContent = Get-Content $ReadmePath -Raw
 
           $WindowsBadgeContent = ""
           $LinuxBadgeContent = ""

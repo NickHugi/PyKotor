@@ -3,8 +3,8 @@ from __future__ import annotations
 import os
 
 from typing import TYPE_CHECKING
-from pykotor.common.misc import Game
 
+from pykotor.common.misc import Game
 from pykotor.common.stream import BinaryReader
 from pykotor.resource.formats.mdl.io_mdl import MDLBinaryReader, MDLBinaryWriter
 from pykotor.resource.formats.mdl.io_mdl_ascii import MDLAsciiReader, MDLAsciiWriter

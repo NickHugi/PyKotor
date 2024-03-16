@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import lzma
 import struct
 
 from typing import TYPE_CHECKING
@@ -9,7 +8,6 @@ from pykotor.common.stream import BinaryReader, BinaryWriter
 from pykotor.extract.file import FileResource, ResourceIdentifier
 from pykotor.resource.type import ResourceType
 from pykotor.tools.path import CaseAwarePath
-from utility.error_handling import format_exception_with_variables
 from utility.system.path import PurePath
 
 if TYPE_CHECKING:

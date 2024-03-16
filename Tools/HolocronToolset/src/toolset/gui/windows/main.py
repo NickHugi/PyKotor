@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-import traceback
-
 from contextlib import suppress
 from datetime import datetime, timedelta, timezone
 from tempfile import TemporaryDirectory
