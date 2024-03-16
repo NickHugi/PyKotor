@@ -38,14 +38,16 @@ class HelpWindow(QMainWindow):
         self.ui.setupUi(self)
         self._setupSignals()
         self._setupContents()
+        self.startingPage: str | None = startingPage
 
+    def showEvent(self, a0):
         self.ui.textDisplay.setSearchPaths(["./help"])
 
         if self.ENABLE_UPDATES:
             self.checkForUpdates()
 
-        if startingPage:
-            self.displayFile(startingPage)
+        if self.startingPage is not None:
+            self.displayFile(self.startingPage)
 
     def _setupSignals(self):
         self.ui.contentsTree.clicked.connect(self.onContentsClicked)
