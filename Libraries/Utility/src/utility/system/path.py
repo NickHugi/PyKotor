@@ -125,7 +125,7 @@ class PurePath(pathlib.PurePath, metaclass=PurePathType):  # type: ignore[misc]
     def _fix_path_formatting(
         str_path: str,
         *,
-        slash=os.sep,
+        slash: str = os.sep,
     ) -> str:
         """Formats a path string.
 

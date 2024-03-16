@@ -45,7 +45,8 @@ class TestPathInheritance(unittest.TestCase):
 
     def test_path_hashing(self):
         test_list = [Path("/mnt/c/Program Files (x86)/steam/steamapps/common/swkotor/saves")]
-        self.assertNotIn(Path("/MNT/c/Program FileS (x86)/steam/steamapps/common/swkotor/saves"), test_list)
+        if os.name == "posix":
+            self.assertNotIn(Path("/MNT/c/Program FileS (x86)/steam/steamapps/common/swkotor/saves"), test_list)
         self.assertIn(Path("/mnt/c/Program Files (x86)/steam/steamapps/common/swkotor/saves"), test_list)
 
     def test_pure_windows_path_isinstance(self):

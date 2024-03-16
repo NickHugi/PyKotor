@@ -209,7 +209,7 @@ class NSSEditor(Editor):
             self.ui.codeEdit.setPlainText(data.decode("windows-1252", errors="ignore"))
         elif restype == ResourceType.NCS:
             try:
-                source = decompileScript(data, self._installation.tsl, self._installation.path())
+                source = decompileScript(data, self._installation.path(), tsl=self._installation.tsl)
                 self.ui.codeEdit.setPlainText(source)
                 self._is_decompiled = True
             except ValueError as e:
