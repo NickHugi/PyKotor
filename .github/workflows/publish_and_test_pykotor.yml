@@ -1022,7 +1022,6 @@ jobs:
             }
           }
 
-
           $WindowsBadgeContent = ""
           $LinuxBadgeContent = ""
           $MacOSBadgeContent = ""
@@ -1047,43 +1046,35 @@ jobs:
             return $readmeContent -replace $pattern, $replacement
           }
 
-          foreach ($OS in $OS_NAMES) {
-            foreach ($INTERPRETER in $INTERPRETERS) {
-              foreach ($PYTHON_VERSION in $PYTHON_VERSIONS) {
-                foreach ($ARCH in $ARCHITECTURES) {
-                  if ($OS -ne "windows-2019" -and $OS -ne "windows-2022" -and $OS -ne "windows-latest" -and $ARCH -eq "x86") {
-                    continue  # no x86 support for unix.
-                  }
-                  $key = "$OS-$PYTHON_VERSION-$ARCH"
-                  $shortKey = "$PYTHON_VERSION-$ARCH"
-                  if ($testResults.ContainsKey($key)) {
-                      $passedTests = $testResults[$key]['Passed']
-                      $failedTests = $testResults[$key]['Failed']
-                      $DetailsURL = $testResults[$key]['DetailsURL']
-                      # Encode the label to replace spaces with underscores and URI-encode other special characters
-                      $encodedKey = [System.Web.HttpUtility]::UrlEncode($shortKey.Replace(' ', '_').Replace('-', '--'))
-                      $BadgeMarkdown = '[![' + $key + '](https://img.shields.io/badge/build-' + $encodedKey + '_Passing_' + $passedTests + '-brightgreen?style=plastic&logo=simple-icons&logoColor=%23FF5e34&label=' + $failedTests + '&labelColor=%23c71818&color=%232f991a)](' + $DetailsURL + ')'
-                  } else {
-                      Write-Host "No test results for '$key', must have failed, generating 'Build Failed' badge..."
-                      $encodedKey = [System.Web.HttpUtility]::UrlEncode($shortKey.Replace(' ', '_').Replace('-', '--'))
-                      $BadgeURLBuildFailed = "https://img.shields.io/badge/${encodedKey}_Build_Failed-lightgrey"
-                      $DetailsURL = "https://github.com/$repository/actions/runs/${{ github.run_id }}"
-                      $BadgeMarkdown = "[![$shortKey-Build_Failed]($BadgeURLBuildFailed)]($DetailsURL)"
-                  }
+          foreach ($key in $testResults.Keys) {
+            $os, $python_or_pypy, $pythonVersion, $architecture = $key -replace '-', '_' -split '_'
+            $key = "$os-$python_or_pypy-$pythonVersion-$architecture"
+            $shortKey = "$python_or_pypy-$pythonVersion-$architecture"
+            if ($testResults.ContainsKey($key)) {
+                $passedTests = $testResults[$key]['Passed']
+                $failedTests = $testResults[$key]['Failed']
+                $DetailsURL = $testResults[$key]['DetailsURL']
+                # Encode the label to replace spaces with underscores and URI-encode other special characters
+                $encodedKey = [System.Web.HttpUtility]::UrlEncode($shortKey.Replace(' ', '_').Replace('-', '--'))
+                $BadgeMarkdown = '[![' + $key + '](https://img.shields.io/badge/build-' + $encodedKey + '_Passing_' + $passedTests + '-brightgreen?style=plastic&logo=simple-icons&logoColor=%23FF5e34&label=' + $failedTests + '&labelColor=%23c71818&color=%232f991a)](' + $DetailsURL + ')'
+            } else {
+                Write-Host "No test results for '$key', must have failed, generating 'Build Failed' badge..."
+                $encodedKey = [System.Web.HttpUtility]::UrlEncode($shortKey.Replace(' ', '_').Replace('-', '--'))
+                $BadgeURLBuildFailed = "https://img.shields.io/badge/${encodedKey}_Build_Failed-lightgrey"
+                $DetailsURL = "https://github.com/$repository/actions/runs/${{ github.run_id }}"
+                $BadgeMarkdown = "[![$shortKey-Build_Failed]($BadgeURLBuildFailed)]($DetailsURL)"
+            }
 
-                  switch ($OS) {
-                      "windows-2019" { $WindowsBadgeContent += $BadgeMarkdown + "`n" }
-                      "windows-2022" { $WindowsBadgeContent += $BadgeMarkdown + "`n" }
-                      "windows-latest" { $WindowsBadgeContent += $BadgeMarkdown + "`n" }
-                      "ubuntu-20.04" { $LinuxBadgeContent += $BadgeMarkdown + "`n" }
-                      "ubuntu-22.04" { $LinuxBadgeContent += $BadgeMarkdown + "`n" }
-                      "ubuntu-latest" { $LinuxBadgeContent += $BadgeMarkdown + "`n" }
-                      "macos-10" { $MacOSBadgeContent += $BadgeMarkdown + "`n" }
-                      "macos-12" { $MacOSBadgeContent += $BadgeMarkdown + "`n" }
-                      "macos-latest" { $MacOSBadgeContent += $BadgeMarkdown + "`n" }
-                  }
-                }
-              }
+            switch ($os) {
+                "windows-2019" { $WindowsBadgeContent += $BadgeMarkdown + "`n" }
+                "windows-2022" { $WindowsBadgeContent += $BadgeMarkdown + "`n" }
+                "windows-latest" { $WindowsBadgeContent += $BadgeMarkdown + "`n" }
+                "ubuntu-20.04" { $LinuxBadgeContent += $BadgeMarkdown + "`n" }
+                "ubuntu-22.04" { $LinuxBadgeContent += $BadgeMarkdown + "`n" }
+                "ubuntu-latest" { $LinuxBadgeContent += $BadgeMarkdown + "`n" }
+                "macos-10" { $MacOSBadgeContent += $BadgeMarkdown + "`n" }
+                "macos-12" { $MacOSBadgeContent += $BadgeMarkdown + "`n" }
+                "macos-latest" { $MacOSBadgeContent += $BadgeMarkdown + "`n" }
             }
           }
 
