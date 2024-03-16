@@ -220,7 +220,7 @@ def openResourceEditor(
     if restype in {ResourceType.MDL, ResourceType.MDX}:
         editor = MDLEditor(None, installation)
 
-    if editor is None and restype.is_plaintext_gff or restype.contents == "gff":
+    if editor is None and (restype.is_plaintext_gff or restype.contents == "gff"):
         editor = GFFEditor(None, installation)
 
     if editor is not None:
