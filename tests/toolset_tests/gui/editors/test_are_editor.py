@@ -95,6 +95,7 @@ class AREEditorTest(TestCase):
     def test_gff_reconstruct_from_k1_installation(self):
         self.installation = Installation(K1_PATH)  # type: ignore[arg-type]
         for are_resource in (resource for resource in self.installation if resource.restype() == ResourceType.ARE):
+            print("Load ", are_resource.resname())
             old = read_gff(are_resource.data())
             self.editor.load(are_resource.filepath(), are_resource.resname(), are_resource.restype(), are_resource.data())
 
@@ -102,7 +103,10 @@ class AREEditorTest(TestCase):
             new = read_gff(data)
 
             diff = old.compare(new, self.log_func, ignore_default_changes=True)
-            self.assertTrue(diff, os.linesep.join(self.log_messages))
+            self.assertTrue(
+                diff,
+                f"{are_resource.identifier()} failed to diff.{os.linesep.join(self.log_messages)}",
+            )
 
     @unittest.skipIf(
         not K2_PATH or not pathlib.Path(K2_PATH).joinpath("chitin.key").exists(),
