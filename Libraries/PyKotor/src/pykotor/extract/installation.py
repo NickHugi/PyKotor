@@ -7,7 +7,7 @@ from concurrent.futures import ThreadPoolExecutor
 from contextlib import suppress
 from copy import copy
 from enum import Enum, IntEnum
-from typing import TYPE_CHECKING, Any, Callable, ClassVar, Generator, NamedTuple
+from typing import TYPE_CHECKING, Any, Callable, ClassVar, Generator, Literal, NamedTuple
 
 from pykotor.common.language import Gender, Language, LocalizedString
 from pykotor.common.misc import CaseInsensitiveDict, Game
@@ -1715,8 +1715,8 @@ class Installation:  # noqa: PLR0904
                     return value
         matching_module_filenames = self._find_matching_erf_rim_from_root(lower_root)
         name: str | None = root
-        our_erf_rims_module: set[tuple[str, Capsule]] = set()
-        self._build_capsule_info(
+        our_erf_rims_module: list[tuple[str, Capsule]] = []
+        _capsule_dict = self._build_capsule_info(
             lower_root,
             module_filename,
             matching_module_filenames,
@@ -1761,16 +1761,20 @@ class Installation:  # noqa: PLR0904
         module_filename: str,
         *,
         use_hardcoded: bool = True,
-        use_alternate: bool = False
+        use_alternate: bool = False,
+        also_return_cached_capsules: bool = False,
     ) -> str:
         """Returns the ID of the area for a module from the installations module list.
 
-        The ID is taken from the ResRef field "Mod_Entry_Area" in the relevant module file's IFO resource.
+        The ID is taken from the ResRef field "Mod_Entry_Area"/"Mod_Entry_list"/"Mod_VO_ID" in the relevant module file's IFO resource.
 
         Args:
         ----
             module_filename: The name of the module file.
             use_hardcoded: Deprecated (does nothing)
+            use_alternate: Gets the ID that matches the part of the filename. Only really useful for sorting. Normally this function returns
+                the ID name that matches the existing ARE/GIT resources.
+            also_return_cached_capsules: prevent unnecessary capsule lookups. Makes the return type tuple[str, dict[Path, Capsule]]
 
         Returns:
         -------
@@ -1781,8 +1785,8 @@ class Installation:  # noqa: PLR0904
         found_mod_id: str = root
         matching_module_filenames = self._find_matching_erf_rim_from_root(lower_root)
         try:
-            our_erf_rims_module: set[Capsule] = set()
-            self._build_capsule_info(
+            our_erf_rims_module: list[Capsule] = []
+            _cached_capsules: dict[Path, Capsule] = self._build_capsule_info(
                 lower_root,
                 module_filename,
                 matching_module_filenames,
@@ -1790,176 +1794,180 @@ class Installation:  # noqa: PLR0904
                 modid_lookup=False,
             )
             mod_id: str = ""
+            is_our_search: bool = False
             mod_ids_to_try: set[str] = set()
             for iterated_capsule in our_erf_rims_module:
                 try:
                     module_ifo_data: bytes | None = iterated_capsule.resource("module", ResourceType.IFO)
                     if not module_ifo_data:
                         continue
-
                     ifo: GFF = read_gff(module_ifo_data)
-                    try:  # Only ever seen this wrong for custom modules.
-                        if ifo.root.exists("Mod_Area_list"):
-                            mod_area_list = ifo.root.get_list("Mod_Area_list")
-                            mod_id = found_mod_id = self._get_mod_id_from_area_list(mod_area_list)
-                            if use_alternate:  # noqa: SIM102  # sourcery skip: merge-nested-ifs, remove-str-from-print, swap-nested-ifs
-                                if mod_id and mod_id.lower() in lower_root:
-                                    #print(f"Alternate: Found Mod_Area_list '{mod_id}' in '{lower_root}'")
-                                    return mod_id
-                                #print(f"Mod_Area_list '{mod_id}' not in '{lower_root}'")
-                    except Exception as e:  # noqa: PERF203, BLE001
-                        print(iterated_capsule.filename(), "Mod_Area_list", str(e))
-                    else:
-                        #if mod_id:
-                        #    print(f"Got ID '{mod_id}' in Mod_Area_list erf/rim '{iterated_capsule.filename()}'")
-                        if not use_alternate:
-                            if mod_id and mod_id.strip():
-                                if iterated_capsule.info(mod_id, ResourceType.ARE) is not None:
-                                    return mod_id
-                                mod_ids_to_try.add(mod_id)
-                                #print(f"Mod_Area_list entry '{mod_id}' invalid? erf/rim '{iterated_capsule.filename()}'")
-                            #else:
-                                #print(f"Mod_Area_list not defined? erf/rim '{iterated_capsule.filename()}'")
-                        mod_id = ""
 
-                    try:  # Adding because I'm unsure if the case is maintained.
-                        if ifo.root.exists("Mod_Area_List"):
-                            mod_area_list = ifo.root.get_list("Mod_Area_List")
-                            mod_id = found_mod_id = self._get_mod_id_from_area_list(mod_area_list)
-                            if use_alternate:  # noqa: SIM102  # sourcery skip: merge-nested-ifs
-                                if mod_id and mod_id.lower() in lower_root:
-                                    #print(f"Alternate: Found Mod_Area_List '{mod_id}' in '{lower_root}'")
-                                    return mod_id
-                                #print(f"Mod_Area_List '{mod_id}' not in '{lower_root}'")
-                    except Exception as e:  # noqa: PERF203, BLE001
-                        print(iterated_capsule.filename(), "Mod_Area_List", str(e))
-                    else:
-                        #if mod_id:
-                        #    print(f"Got ID '{mod_id}' in Mod_Area_List for erf/rim '{iterated_capsule.filename()}'")
-                        if not use_alternate:
-                            if mod_id and mod_id.strip():
-                                if iterated_capsule.info(mod_id, ResourceType.ARE) is not None:
-                                    return mod_id
-                                mod_ids_to_try.add(mod_id)
-                                #print(f"Mod_Area_List entry '{mod_id}' invalid? erf/rim '{iterated_capsule.filename()}'")
-                            #else:
-                                #print(f"Mod_Area_List not defined? erf/rim '{iterated_capsule.filename()}'")
-                        mod_id = ""
+                    # Only ever seen this wrong for custom modules.
+                    mod_id, is_our_search = self._process_mod_attribute(ifo, use_alternate, lower_root, iterated_capsule, mod_ids_to_try, "Mod_Area_list", mode=0)
+                    if is_our_search:
+                        found_mod_id = mod_id
+                        break
+                    if mod_id and mod_id.strip():
+                        found_mod_id = mod_id
 
-                    try:  # Sometimes wrong, and sometimes it's not defined.
-                        if ifo.root.exists("Mod_VO_ID"):
-                            mod_id = found_mod_id = ifo.root.get_string("Mod_VO_ID").strip()
-                            if use_alternate:  # noqa: SIM102  # sourcery skip: merge-nested-ifs
-                                if mod_id and mod_id.lower() in lower_root:
-                                    #print(f"Alternate: Found Mod_VO_ID '{mod_id}' in '{lower_root}'")
-                                    return mod_id
-                                #print(f"Mod_VO_ID '{mod_id}' not in '{lower_root}'")
-                    except Exception as e:  # noqa: PERF203, BLE001
-                        print(iterated_capsule.filename(), "Mod_VO_ID", str(e))
-                    else:
-                        #if mod_id:
-                        #    print(f"Got ID '{mod_id}' in Mod_VO_ID for erf/rim '{iterated_capsule.filename()}'")
-                        if not use_alternate:
-                            if mod_id and mod_id.strip():
-                                if iterated_capsule.info(mod_id, ResourceType.ARE) is not None:
-                                    return mod_id
-                                mod_ids_to_try.add(mod_id)
-                                #print(f"Mod_VO_ID entry '{mod_id}' invalid? erf/rim '{iterated_capsule.filename()}'")
-                            #else:
-                                #print(f"Mod_VO_ID not defined? erf/rim '{iterated_capsule.filename()}'")
-                        mod_id = ""
+                    # Adding because I'm unsure if the case is maintained.
+                    mod_id, is_our_search = self._process_mod_attribute(ifo, use_alternate, lower_root, iterated_capsule, mod_ids_to_try, "Mod_Area_List", mode=0)
+                    if is_our_search:
+                        found_mod_id = mod_id
+                        break
+                    if mod_id and mod_id.strip():
+                        found_mod_id = mod_id
 
-                    try:  # This one is sometimes wrong in k1, doesn't seem to be used much (if at all) in k2
-                        if ifo.root.exists("Mod_Entry_Area"):
-                            mod_id = found_mod_id = str(ifo.root.get_resref("Mod_Entry_Area")).strip()
-                            if use_alternate:  # noqa: SIM102  # sourcery skip: merge-nested-ifs
-                                if mod_id and mod_id.lower() in lower_root:
-                                    #print(f"Alternate: Found Mod_Entry_Area '{mod_id}' in '{lower_root}'")
-                                    return mod_id
-                                #print(f"Mod_Entry_Area '{mod_id}' not in '{lower_root}'")
-                    except Exception as e:  # noqa: PERF203, BLE001
-                        print(iterated_capsule.filename(), "Mod_Entry_Area", str(e))
-                    else:
-                        #if mod_id:
-                        #    print(f"Got ID '{mod_id}' in Mod_Entry_Area for erf/rim '{iterated_capsule.filename()}'")
-                        if not use_alternate:  # noqa: SIM102
-                            if mod_id and mod_id.strip():
-                                if iterated_capsule.info(mod_id, ResourceType.ARE) is not None:
-                                    return mod_id
-                                mod_ids_to_try.add(mod_id)
-                                #print(f"Mod_Entry_Area entry '{mod_id}' invalid? erf/rim '{iterated_capsule.filename()}'")
-                            #else:
-                                #print(f"Mod_Entry_Area not defined? erf/rim '{iterated_capsule.filename()}'")
-                        mod_id = ""
+                    # Sometimes wrong, and sometimes it's not defined.
+                    mod_id, is_our_search = self._process_mod_attribute(ifo, use_alternate, lower_root, iterated_capsule, mod_ids_to_try, "Mod_VO_ID", mode=1)
+                    if is_our_search:
+                        found_mod_id = mod_id
+                        break
+                    if mod_id and mod_id.strip():
+                        found_mod_id = mod_id
+
+                    # This one is sometimes wrong in k1, doesn't seem to be used much (if at all) in k2
+                    mod_id, is_our_search = self._process_mod_attribute(ifo, use_alternate, lower_root, iterated_capsule, mod_ids_to_try, "Mod_Entry_Area", mode=1)
+                    if is_our_search:
+                        found_mod_id = mod_id
+                        break
+                    if mod_id and mod_id.strip():
+                        found_mod_id = mod_id
 
                 except Exception as e:  # pylint: disable=W0718  # noqa: BLE001
                     print(format_exception_with_variables(e, message="This exception has been suppressed in pykotor.extract.installation."))
 
+            if is_our_search:  # Skip ARE validation (faster).
+                #if use_alternate:
+                #    print(f"Alternate: Returning '{found_mod_id}' for '{module_filename}'")
+                #else:
+                #    print(f"Main: returning '{found_mod_id}' for '{module_filename}'")
+                if also_return_cached_capsules:
+                    return found_mod_id, _cached_capsules  # type: ignore[reportReturnType]
+                return found_mod_id
             # Validate the ARE exists.
             for mod_id in mod_ids_to_try:
                 for capsule in our_erf_rims_module:
                     #print(f"Checking for '{mod_id}' in '{module_filename}'")
                     if capsule.info(mod_id, ResourceType.ARE) is None:
                         continue
-                    return mod_id
-                if mod_id.startswith("m") or mod_id[1].isdigit():
+                    if also_return_cached_capsules:  # Found at this point.
+                        return found_mod_id, _cached_capsules  # type: ignore[reportReturnType]
+                    return found_mod_id
+                if mod_id and mod_id.startswith("m") or mod_id[1].isdigit():
                     found_mod_id = mod_id
         except Exception as e:  # noqa: BLE001
             print(format_exception_with_variables(e, message="This exception has been suppressed in pykotor.extract.installation."))
         #print(f"NOT FOUND: Module ID for '{module_filename}', using backup of '{found_mod_id}'")
+        if also_return_cached_capsules:
+            return found_mod_id, _cached_capsules  # type: ignore[reportReturnType]
         return found_mod_id
+
+    def _process_mod_attribute(
+        self,
+        ifo: GFF,
+        use_alternate: bool,  # noqa: FBT001
+        lower_root: str,
+        iterated_capsule: Capsule,
+        mod_ids_to_try: set[str],
+        attribute_name: str,
+        mode: Literal[0, 1]
+    ) -> tuple[str, bool]:
+        """Processes a specified mod attribute (Mod_VO_ID or Mod_Entry_Area), extracting its value and handling exceptions."""
+        found_mod_id: str = ""
+        try:
+            if ifo.root.exists(attribute_name):
+                if mode == 0:
+                    mod_area_list = ifo.root.get_list(attribute_name)
+                    found_mod_id = self._get_mod_id_from_area_list(mod_area_list)
+                else:
+                    found_mod_id = ifo.root.get_string(attribute_name).strip()
+                if use_alternate: # noqa: SIM102  # sourcery skip: remove-str-from-print, merge-nested-ifs, swap-nested-ifs
+                    if found_mod_id and found_mod_id.lower() in lower_root:
+                        #print(f"Alternate: Found {attribute_name} '{found_mod_id}' in '{lower_root}'")
+                        return found_mod_id, True
+                    #print(f"Alternate: {attribute_name} '{found_mod_id}' not in '{lower_root}'")
+        except Exception as e:  # noqa: BLE001
+            print(iterated_capsule.filename(), attribute_name, str(e))
+        else:
+            # if found_mod_id:
+            #     print(f"Got ID '{found_mod_id}' in {attribute_name} for erf/rim '{iterated_capsule.filename()}'")
+            if not use_alternate: # noqa: SIM102  # sourcery skip: remove-str-from-print, merge-nested-ifs, swap-nested-ifs
+                if found_mod_id and found_mod_id.strip():
+                    if iterated_capsule.info(found_mod_id, ResourceType.ARE) is not None:
+                        return found_mod_id, True
+                    mod_ids_to_try.add(found_mod_id)
+                    #print(f"{attribute_name} entry '{found_mod_id}' invalid? erf/rim '{iterated_capsule.filename()}'")
+                #else:
+                    #print(f"{attribute_name} not defined? erf/rim '{iterated_capsule.filename()}'")
+        return found_mod_id, False
+
+    def _build_item(
+        self,
+        erfrim_filepath: CaseAwarePath,
+        modid_lookup: bool,  # noqa: FBT001
+        mod_id: str,
+        our_erf_rims_module: list[Capsule] | list[tuple[str, Capsule]],
+        cached_capsules: dict[Path, Capsule],
+    ) -> Capsule:
+        capsule: Capsule = cached_capsules.get(erfrim_filepath, Capsule(erfrim_filepath))
+        item: Capsule | tuple[str, Capsule] = (mod_id, capsule) if modid_lookup else capsule
+        our_erf_rims_module.append(item)  # type: ignore[reportArgumentType]
+        return capsule
+
+    def _process_filename_for_capsule(
+        self,
+        rim_or_erf_filename: str,
+        modid_lookup: bool,  # noqa: FBT001
+        mod_id: str,
+        our_erf_rims_module: list[tuple[str, Capsule]] | list[Capsule],
+        cached_capsules: dict[Path, Capsule]
+    ) -> None:
+        """Constructs the filepath from the given filename, checks if the file exists,
+        and attempts to build a capsule from it, catching and handling any exceptions.
+        """
+        filepath = self.module_path() / rim_or_erf_filename
+        if filepath.safe_isfile():
+            try:
+                cached_capsules[filepath] = self._build_item(filepath, modid_lookup, mod_id, our_erf_rims_module, cached_capsules)
+            except Exception as e:  # noqa: BLE001
+                print(format_exception_with_variables(e, message="This exception has been suppressed in pykotor.extract.installation."))
 
     def _build_capsule_info(
         self,
         lower_root: str,
         module_filename: str,
         matching_module_filenames: set[str],
-        our_erf_rims_module: set[tuple[str, Capsule]] | set[Capsule],
+        our_erf_rims_module: list[tuple[str, Capsule]] | list[Capsule],
         *,
         modid_lookup: bool = True,
-    ):
-        mod_filename = f"{lower_root}.mod"
-        mod_id: str = ""
-        if modid_lookup:
-            mod_id = self.module_id(mod_filename)
+    ) -> dict[Path, Capsule]:
+        _cached_capsules: dict[Path, Capsule]
+        mod_id: str
+        mod_id, _cached_capsules = self.module_id(module_filename, also_return_cached_capsules=True) if modid_lookup else ("", {})  # type: ignore[reportAssignmentType]
+
+        mod_filename: str = f"{lower_root}.mod"
         if module_filename.lower() == mod_filename and mod_filename in matching_module_filenames:
             mod_filepath = self.module_path() / mod_filename
             if mod_filepath.safe_isfile():
                 try:
-                    self._build_item(mod_filepath, modid_lookup, mod_id, our_erf_rims_module)
+                    _cached_capsules[mod_filepath] = self._build_item(mod_filepath, modid_lookup, mod_id, our_erf_rims_module, _cached_capsules)
                 except Exception as e:  # noqa: BLE001
                     print(format_exception_with_variables(e, message="This exception has been suppressed in pykotor.extract.installation."))
-        # Prioritize the .mod
-        rim_filename = f"{lower_root}.rim"
-        rim_s_filename = f"{lower_root}_s.rim"
-        _dlg_filename = f"{lower_root}._dlg.erf"
-        rim_filepath = self.module_path() / rim_filename
-        rim_s_filepath = self.module_path() / rim_s_filename
-        _dlg_filepath = self.module_path() / _dlg_filename
-        #print("Filenames:", mod_filename, rim_filename, rim_s_filename, _dlg_filename)
-        if modid_lookup:
-            mod_id = self.module_id(module_filename)
-        if rim_filename in matching_module_filenames and rim_filepath.safe_isfile():
-            try:
-                self._build_item(rim_filepath, modid_lookup, mod_id, our_erf_rims_module)
-            except Exception as e:  # noqa: BLE001
-                print(format_exception_with_variables(e, message="This exception has been suppressed in pykotor.extract.installation."))
-        if rim_s_filename in matching_module_filenames and rim_s_filepath.safe_isfile():
-            try:
-                self._build_item(rim_s_filepath, modid_lookup, mod_id, our_erf_rims_module)
-            except Exception as e:  # noqa: BLE001
-                print(format_exception_with_variables(e, message="This exception has been suppressed in pykotor.extract.installation."))
-        if _dlg_filename in matching_module_filenames and _dlg_filepath.safe_isfile():
-            try:
-                self._build_item(_dlg_filepath, modid_lookup, mod_id, our_erf_rims_module)
-            except Exception as e:  # noqa: BLE001
-                print(format_exception_with_variables(e, message="This exception has been suppressed in pykotor.extract.installation."))
+            return _cached_capsules
 
-    def _build_item(self, erfrim_filepath: os.PathLike | str, modid_lookup: bool, mod_id: str, our_erf_rims_module: set):  # noqa: FBT001
-        item: Capsule | tuple[str, Capsule] = Capsule(erfrim_filepath)
-        if modid_lookup:
-            item = (mod_id, item)
-        our_erf_rims_module.add(item)
+        # Only consider .rim/_s.rim/_erf.dlg if module_filename does not have a .mod suffix OR if a .mod with this lower_root doesn't exist on disk.
+        rim_filename = f"{lower_root}.rim"
+        if rim_filename in matching_module_filenames:
+            self._process_filename_for_capsule(rim_filename, modid_lookup, mod_id, our_erf_rims_module, _cached_capsules)
+        rim_s_filename = f"{lower_root}_s.rim"
+        if rim_s_filename in matching_module_filenames:
+            self._process_filename_for_capsule(rim_s_filename, modid_lookup, mod_id, our_erf_rims_module, _cached_capsules)
+        _dlg_filename = f"{lower_root}._dlg.erf"
+        if _dlg_filename in matching_module_filenames:
+            self._process_filename_for_capsule(_dlg_filename, modid_lookup, mod_id, our_erf_rims_module, _cached_capsules)
+        return _cached_capsules
 
     def _find_matching_erf_rim_from_root(self, lower_root: str) -> set[str]:
         result: set[str] = set()

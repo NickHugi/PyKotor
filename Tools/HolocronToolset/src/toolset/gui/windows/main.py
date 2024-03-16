@@ -729,18 +729,18 @@ class ToolWindow(QMainWindow):
             self.active.load_modules()
 
         areaNames: dict[str, str] = self.active.module_names()
-        def sortAlgo(moduleFileName: str):
+        def sortAlgo(moduleFileName: str) -> str:
             lowerModuleFileName = moduleFileName.lower()
             if "stunt" in lowerModuleFileName:  # keep the least used stunt modules at the bottom.
-                return f"zzzzz{lowerModuleFileName}"
-            if self.settings.moduleSortOption == 0:  #"Sort by filename":
-                return lowerModuleFileName
-            if self.settings.moduleSortOption == 1:  #"Sort by humanized area name":
-                return areaNames.get(moduleFileName).lower() + lowerModuleFileName
-            # non-hardcoded mod_area_name
-            areaName = self.active.module_id(moduleFileName, use_hardcoded=False, use_alternate=True)
-            #print("filename:", moduleFileName, "area_id:", areaName)
-            return areaName + lowerModuleFileName
+                sortStr = "zzzzz"
+            elif self.settings.moduleSortOption == 0:  #"Sort by filename":
+                sortStr = ""
+            elif self.settings.moduleSortOption == 1:  #"Sort by humanized area name":
+                sortStr = areaNames.get(moduleFileName).lower()
+            else:  # alternate mod id that attempts to match to filename.
+                sortStr = self.active.module_id(moduleFileName, use_hardcoded=False, use_alternate=True)
+            sortStr += f"_{lowerModuleFileName}".lower()
+            return sortStr
 
         sortedKeys: list[str] = sorted(
             areaNames,
