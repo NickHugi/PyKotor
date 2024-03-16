@@ -157,7 +157,7 @@ class UTIEditor(Editor):
         self.ui.costSpin.setValue(uti.cost)
         self.ui.additionalCostSpin.setValue(uti.add_cost)
         self.ui.upgradeSpin.setValue(uti.upgrade_level)
-        self.ui.plotCheckbox.setChecked(bool(uti.plot))  # TODO: incorrect type (bool v int)
+        self.ui.plotCheckbox.setChecked(bool(uti.plot))
         self.ui.chargesSpin.setValue(uti.charges)
         self.ui.stackSpin.setValue(uti.stack_size)
         self.ui.modelVarSpin.setValue(uti.model_variation)
@@ -347,7 +347,7 @@ class UTIEditor(Editor):
         return installation.talktable().string(stringref)
 
     @staticmethod
-    def subpropertyName(installation: HTInstallation, prop: int, subprop: int):
+    def subpropertyName(installation: HTInstallation, prop: int, subprop: int) -> None | str:
         """Gets the name of a subproperty of an item property.
 
         Args:

@@ -369,14 +369,14 @@ class PTHEditor(Editor):
         self._controls.onKeyboardPressed(buttons, keys)
 
     @status_bar_decorator
-    def keyPressEvent(self, e: QKeyEvent | None):
+    def keyPressEvent(self, e: QKeyEvent):
         print(f"keyPressEvent(e={e!r})", file=self.stdout)
         if e is None:
             return
         self.ui.renderArea.keyPressEvent(e)
 
     @status_bar_decorator
-    def keyReleaseEvent(self, e: QKeyEvent | None):
+    def keyReleaseEvent(self, e: QKeyEvent):
         print(f"keyReleaseEvent(e={e!r})", file=self.stdout)
         if e is None:
             return

@@ -11,21 +11,21 @@ if TYPE_CHECKING:
     from typing_extensions import LiteralString, Self, SupportsIndex
 
 def insert_newlines(text: str, length: int = 100) -> str:
-    words = text.split(' ')
-    new_string = ''
-    current_line = ''
-    
+    words = text.split(" ")
+    new_string = ""
+    current_line = ""
+
     for word in words:
         if len(current_line) + len(word) + 1 <= length:
-            current_line += word + ' '
+            current_line += word + " "
         else:
-            new_string += current_line.rstrip() + '\n'
-            current_line = word + ' '
-    
+            new_string += current_line.rstrip() + "\n"
+            current_line = word + " "
+
     # Add the last line if there's any content left.
     if current_line:
         new_string += current_line.rstrip()
-    
+
     return new_string
 
 def ireplace(original: str, target: str, replacement: str) -> str:

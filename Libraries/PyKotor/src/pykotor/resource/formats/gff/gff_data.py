@@ -11,6 +11,7 @@ from pykotor.common.geometry import Vector3, Vector4
 from pykotor.common.language import LocalizedString
 from pykotor.common.misc import ResRef
 from pykotor.resource.type import ResourceType
+from utility.error_handling import safe_repr
 from utility.string import compare_and_format, format_text
 from utility.system.path import PureWindowsPath
 
@@ -25,9 +26,14 @@ class GFFContent(Enum):
     """The different resources that the GFF can represent."""
 
     GFF = "GFF "
-    IFO = "IFO "
-    ARE = "ARE "
-    GIT = "GIT "
+    BIC = "BIC "
+    BTC = "BTC "
+    BTD = "BTD "  # guess
+    BTE = "BTE "  # guess
+    BTI = "BTI "
+    BTP = "BTP "  # guess
+    BTM = "BTM "  # guess
+    BTT = "BTT "  # guess
     UTC = "UTC "
     UTD = "UTD "
     UTE = "UTE "
@@ -37,15 +43,17 @@ class GFFContent(Enum):
     UTM = "UTM "
     UTT = "UTT "
     UTW = "UTW "
+    ARE = "ARE "
     DLG = "DLG "
-    JRL = "JRL "
     FAC = "FAC "
-    ITP = "ITP "
-    BIC = "BIC "
+    GIT = "GIT "
     GUI = "GUI "
+    IFO = "IFO "
+    ITP = "ITP "
+    JRL = "JRL "
     PTH = "PTH "
     NFO = "NFO "  # savenfo.res
-    PT = "PT  "  # partytable.res
+    PT  = "PT  "  # partytable.res
     GVT = "GVT "  # GLOBALVARS.res
     INV = "INV "  # inventory in SAVEGAME.res
 
@@ -245,6 +253,9 @@ class _GFFField:
         self._field_type: GFFFieldType = field_type
         self._value: Any = value
 
+    def __repr__(self):
+        return safe_repr(self)
+
     def field_type(
         self,
     ) -> GFFFieldType:
@@ -328,7 +339,7 @@ class GFFStruct:
 
         Returns:
         -------
-            A GFFFieldType value.
+            A boolean result of whether the field exists or not.
         """
         return label in self._fields
 
@@ -405,11 +416,11 @@ class GFFStruct:
                 if new_ftype is None:
                     msg = f"new_ftype shouldn't be None here. Relevance: old_ftype={old_ftype!r}, old_value={old_value!r}, new_value={new_value!r}"
                     raise RuntimeError(msg)
-                log_func(f"Extra '{new_ftype.name}' field found at '{child_path}': {format_text(new_value)}")
+                log_func(f"Extra '{new_ftype.name}' field found at '{child_path}': {format_text(safe_repr(new_value))}")
                 is_same = False
                 continue
             if new_value is None or new_ftype is None:
-                log_func(f"Missing '{old_ftype.name}' field at '{child_path}': {format_text(old_value)}")
+                log_func(f"Missing '{old_ftype.name}' field at '{child_path}': {format_text(safe_repr(old_value))}")
                 is_same = False
                 continue
 

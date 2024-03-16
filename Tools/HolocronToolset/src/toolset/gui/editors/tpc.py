@@ -11,6 +11,7 @@ from PyQt5.QtGui import QImage, QPixmap
 from pykotor.resource.formats.tpc import TPC, TPCTextureFormat, read_tpc, write_tpc
 from pykotor.resource.formats.tpc.io_tga import _DataTypes
 from pykotor.resource.type import ResourceType
+from pykotor.tools.path import CaseAwarePath
 from toolset.gui.editor import Editor
 
 if TYPE_CHECKING:
@@ -88,7 +89,10 @@ class TPCEditor(Editor):
         # Read image, convert to RGB, and y_flip.
         orig_format = None
         if restype in {ResourceType.TPC, ResourceType.TGA}:
-            self._tpc = read_tpc(data)
+            txi_filepath: CaseAwarePath | None = CaseAwarePath.pathify(filepath).with_suffix(".txi")
+            if not txi_filepath.safe_isfile():
+                txi_filepath = None
+            self._tpc = read_tpc(data, txi_source=txi_filepath)
             orig_format = self._tpc.format()
             width, height, img_bytes = self._tpc.convert(TPCTextureFormat.RGB, 0, y_flip=True)
             self._tpc.set_data(width, height, [img_bytes], TPCTextureFormat.RGB)

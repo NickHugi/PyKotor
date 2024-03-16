@@ -7,7 +7,7 @@ from time import sleep
 from typing import TYPE_CHECKING
 
 from PyQt5 import QtCore
-from PyQt5.QtCore import QPoint, QSortFilterProxyModel, QThread, QTimer
+from PyQt5.QtCore import QPoint, QSortFilterProxyModel, QThread, QTimer, Qt
 from PyQt5.QtGui import QIcon, QImage, QPixmap, QStandardItem, QStandardItemModel, QTransform
 from PyQt5.QtWidgets import QHeaderView, QMenu, QWidget
 
@@ -97,7 +97,7 @@ class ResourceList(MainWindowList):
             if section in self.ui.sectionCombo.itemText(i):
                 self.ui.sectionCombo.setCurrentIndex(i)
 
-    def setResources(self, resources: list[FileResource]):
+    def setResources(self, resources: list[FileResource], customCategory: str | None = None, *, clear_existing: bool = True):
         """Adds and removes FileResources from the modules model.
 
         Args:
@@ -112,21 +112,26 @@ class ResourceList(MainWindowList):
         """
         allResources: list[QStandardItem] = self.modulesModel.allResourcesItems()
 
-        # Add any missing resources to the list
-        for resource in resources:
-            for item in allResources:
-                resource_from_item: FileResource = item.resource
-                if resource_from_item == resource:
-                    # Update the resource reference. Important when to a new module that share a resource
-                    # with the same name and restype with the old one.
-                    item.resource = resource
-                    break
-            else:
-                self.modulesModel.addResource(resource)
+        # Convert the list of resources to a set for O(1) lookup times
+        resourceSet: set[FileResource] = set(resources)
 
-        # Remove any resources that should no longer be in the list
-        for item in allResources:
-            if item.resource not in resources:
+        # Create a mapping of existing resources to their items for quick access
+        resourceItemMap: dict[FileResource, QStandardItem] = {item.resource: item for item in allResources}
+
+        # Add or update resources
+        for resource in resourceSet:
+            if resource in resourceItemMap:
+                # Update existing resource item
+                resourceItemMap[resource].resource = resource
+            else:
+                # Add new resource
+                self.modulesModel.addResource(resource, customCategory)
+
+        if clear_existing:
+            # Identify and remove non-matching resources if they are not in the updated resources set
+            for item in allResources:
+                if item.resource in resourceSet:
+                    continue
                 item.parent().removeRow(item.row())
 
         # Remove unused categories
@@ -194,12 +199,11 @@ class ResourceList(MainWindowList):
                 - Add "Open" and "Open with GFF Editor" actions
                 - Connect actions to emit signals to open resource.
         """
-        menu = QMenu(self)
-
         resources: list[FileResource] = self.selectedResources()
         if len(resources) == 1:
             resource: FileResource = resources[0]
             if resource.restype().contents == "gff":
+                menu = QMenu(self)
                 def open1():
                     return self.requestOpenResource.emit(resources, False)
 
@@ -208,7 +212,7 @@ class ResourceList(MainWindowList):
                 menu.addAction("Open").triggered.connect(open2)
                 menu.addAction("Open with GFF Editor").triggered.connect(open1)
 
-        menu.popup(self.ui.resourceTree.mapToGlobal(point))
+                menu.popup(self.ui.resourceTree.mapToGlobal(point))
 
     def onResourceDoubleClicked(self):
         self.requestOpenResource.emit(self.selectedResources(), None)
@@ -244,21 +248,26 @@ class ResourceModel(QStandardItemModel):
         self.setColumnCount(2)
         self.setHorizontalHeaderLabels(["ResRef", "Type"])
 
-    def _getCategoryItem(self, resourceType: ResourceType) -> QStandardItem:
-        if resourceType.category not in self._categoryItems:
-            categoryItem = QStandardItem(resourceType.category)
+    def _addResourceIntoCategory(
+        self,
+        resourceType: ResourceType,
+        customCategory: str | None = None,
+    ) -> QStandardItem:
+        chosen_category = resourceType.category if customCategory is None else customCategory
+        if chosen_category not in self._categoryItems:
+            categoryItem = QStandardItem(chosen_category)
             categoryItem.setSelectable(False)
             unusedItem = QStandardItem("")
             unusedItem.setSelectable(False)
-            self._categoryItems[resourceType.category] = categoryItem
+            self._categoryItems[chosen_category] = categoryItem
             self.appendRow([categoryItem, unusedItem])
-        return self._categoryItems[resourceType.category]
+        return self._categoryItems[chosen_category]
 
-    def addResource(self, resource: FileResource):
+    def addResource(self, resource: FileResource, customCategory: str | None = None):
         item1 = QStandardItem(resource.resname())
         item1.resource = resource
         item2 = QStandardItem(resource.restype().extension.upper())
-        self._getCategoryItem(resource.restype()).appendRow([item1, item2])
+        self._addResourceIntoCategory(resource.restype(), customCategory).appendRow([item1, item2])
 
     def resourceFromIndexes(self, indexes: list[QModelIndex], *, proxy: bool = True) -> list[FileResource]:
         items = []
@@ -311,6 +320,7 @@ class TextureList(MainWindowList):
 
         self.texturesModel = QStandardItemModel()
         self.texturesProxyModel = QSortFilterProxyModel()
+        self.texturesProxyModel.setFilterCaseSensitivity(Qt.CaseInsensitive)
         self.texturesProxyModel.setSourceModel(self.texturesModel)
         self.ui.resourceList.setModel(self.texturesProxyModel)
 
@@ -427,7 +437,7 @@ class TextureList(MainWindowList):
             sleep(0.1)
 
     def onFilterStringUpdated(self):
-        self.texturesProxyModel.setFilterFixedString(self.ui.searchEdit.text().casefold())
+        self.texturesProxyModel.setFilterFixedString(self.ui.searchEdit.text())
 
     def onSectionChanged(self):
         self.sectionChanged.emit(self.ui.sectionCombo.currentData(QtCore.Qt.UserRole))
