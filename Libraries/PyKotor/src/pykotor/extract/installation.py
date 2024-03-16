@@ -2268,9 +2268,9 @@ class Installation:
                     found_mod_id = ifo.root.get_string(attribute_name).strip()
                 if use_alternate: # noqa: SIM102  # sourcery skip: remove-str-from-print, merge-nested-ifs, swap-nested-ifs
                     if found_mod_id and found_mod_id.lower() in lower_root:
-                        print(f"Alternate: Found {attribute_name} '{found_mod_id}' in '{lower_root}'")
+                        #print(f"Alternate: Found {attribute_name} '{found_mod_id}' in '{lower_root}'")
                         return found_mod_id, True
-                    print(f"Alternate: {attribute_name} '{found_mod_id}' not in '{lower_root}'")
+                    #print(f"Alternate: {attribute_name} '{found_mod_id}' not in '{lower_root}'")
         except Exception as e:  # noqa: BLE001
             print(iterated_capsule.filename(), attribute_name, str(e))
         else:
@@ -2281,9 +2281,9 @@ class Installation:
                     if iterated_capsule.info(found_mod_id, ResourceType.ARE) is not None:
                         return found_mod_id, True
                     mod_ids_to_try.add(found_mod_id)
-                    print(f"{attribute_name} entry '{found_mod_id}' invalid? erf/rim '{iterated_capsule.filename()}'")
-                else:
-                    print(f"{attribute_name} not defined? erf/rim '{iterated_capsule.filename()}'")
+                    #print(f"{attribute_name} entry '{found_mod_id}' invalid? erf/rim '{iterated_capsule.filename()}'")
+                #else:
+                    #print(f"{attribute_name} not defined? erf/rim '{iterated_capsule.filename()}'")
         return found_mod_id, False
 
     def _build_item(
