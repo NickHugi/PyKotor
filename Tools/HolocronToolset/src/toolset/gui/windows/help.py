@@ -41,6 +41,7 @@ class HelpWindow(QMainWindow):
         self.startingPage: str | None = startingPage
 
     def showEvent(self, a0):
+        super().showEvent(a0)
         self.ui.textDisplay.setSearchPaths(["./help"])
 
         if self.ENABLE_UPDATES:

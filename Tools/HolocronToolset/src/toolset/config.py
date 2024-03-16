@@ -55,7 +55,7 @@ def getRemoteToolsetUpdateInfo(*, useBetaChannel: bool = False, silent: bool = F
         #with open("config.py") as f:
         #    decoded_content_str = f.read()
         # Use regex to extract the JSON part between the markers
-        json_data_match = re.search(r"<---JSON_START--->\#(.*)\#<---JSON_END--->", decoded_content_str, flags=re.DOTALL)
+        json_data_match = re.search(r"<---JSON_START--->\#(.*?)\#<---JSON_END--->", decoded_content_str, flags=re.DOTALL)
 
         if json_data_match:
             json_str = json_data_match.group(1)
@@ -67,16 +67,16 @@ def getRemoteToolsetUpdateInfo(*, useBetaChannel: bool = False, silent: bool = F
     except Exception as e:  # noqa: BLE001
         errMsg = str(universal_simplify_exception(e))
         result = silent or QMessageBox.question(
-            parent=None,
-            title="Error occurred fetching update information.",
-            text=(
+            None,
+            "Error occurred fetching update information.",
+            (
                 "An error occurred while fetching the latest toolset information.<br><br>" +
                 errMsg.replace("\n", "<br>") +
                 "<br><br>" +
                 "Would you like to check against the local database instead?"
             ),
-            buttons=QMessageBox.Yes | QMessageBox.No,
-            defaultButton=QMessageBox.Yes,
+            QMessageBox.Yes | QMessageBox.No,
+            QMessageBox.Yes,
         )
         if result not in {QMessageBox.Yes, True}:
             return e
