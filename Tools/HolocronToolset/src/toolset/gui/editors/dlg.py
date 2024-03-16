@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING
 import pyperclip
 
 from PyQt5 import QtCore
-from PyQt5.QtCore import QBuffer, QIODevice, QItemSelectionModel
+from PyQt5.QtCore import QBuffer, QIODevice, QItemSelectionModel, QTimer
 from PyQt5.QtGui import QBrush, QColor, QStandardItem, QStandardItemModel
 from PyQt5.QtMultimedia import QMediaContent, QMediaPlayer
 from PyQt5.QtWidgets import QListWidgetItem, QMenu, QMessageBox, QShortcut
@@ -703,6 +703,10 @@ class DLGEditor(Editor):
         if color is not None:
             item.setForeground(QBrush(color))
 
+    def blinkWindow(self):
+        self.setWindowOpacity(0.7)
+        QTimer.singleShot(125, lambda: self.setWindowOpacity(1))
+
     def playSound(self, resname: str):
         """Plays a sound resource.
 
@@ -736,18 +740,8 @@ class DLGEditor(Editor):
             self.buffer.open(QIODevice.ReadOnly)
             self.player.setMedia(QMediaContent(), self.buffer)
             QtCore.QTimer.singleShot(0, self.player.play)
-        elif data is None:
-            QMessageBox(
-                QMessageBox.Critical,
-                "Could not find audio file",
-                f"Could not find audio resource '{resname}'.",
-            )
         else:
-            QMessageBox(
-                QMessageBox.Critical,
-                "Corrupted/blank audio file",
-                f"Could not load audio resource '{resname}'.",
-            )
+            self.blinkWindow()
 
     def focusOnNode(self, link: DLGLink) -> QStandardItem:
         """Focuses the dialog tree on a specific link node.
@@ -894,25 +888,28 @@ class DLGEditor(Editor):
 
         menu.popup(self.ui.dialogTree.viewport().mapToGlobal(point))
 
-    def keyPressEvent(self, event: QKeyEvent | None):
-        if not event:
+    def keyPressEvent(self, event: QKeyEvent):
+        selectedItem: QModelIndex = self.ui.dialogTree.currentIndex()
+        if not selectedItem.isValid():
             return
         if event.key() in {QtKey.Key_Enter, QtKey.Key_Return}:
-            selectedItem: QModelIndex = self.ui.dialogTree.currentIndex()
-            if selectedItem.isValid():
-                item: QStandardItem | None = self.model.itemFromIndex(selectedItem)
-                link = item.data(_LINK_ROLE)
-                if link:
-                    self.focusOnNode(link)
-        super().keyPressEvent(event)  # Call the base class method to ensure default behavior
-
-    def mouseDoubleClickEvent(self, event: QMouseEvent | None):
-        selectedItem: QModelIndex = self.ui.dialogTree.currentIndex()
-        if selectedItem.isValid():
             item: QStandardItem | None = self.model.itemFromIndex(selectedItem)
             link = item.data(_LINK_ROLE)
             if link:
                 self.focusOnNode(link)
+        if event.key() in {QtKey.Key_P}:
+            self.ui.soundButton.clicked.connect(lambda: self.playSound(self.ui.soundEdit.text()))
+            self.ui.voiceButton.clicked.connect(lambda: self.playSound(self.ui.voiceEdit.text()))
+        super().keyPressEvent(event)  # Call the base class method to ensure default behavior
+
+    def mouseDoubleClickEvent(self, event: QMouseEvent):
+        selectedItem: QModelIndex = self.ui.dialogTree.currentIndex()
+        if not selectedItem.isValid():
+            return
+        item: QStandardItem | None = self.model.itemFromIndex(selectedItem)
+        link = item.data(_LINK_ROLE)
+        if link:
+            self.focusOnNode(link)
         super().mouseDoubleClickEvent(event)
 
     def onSelectionChanged(self, selection: QItemSelection):
@@ -1033,6 +1030,7 @@ class DLGEditor(Editor):
 
         link: DLGLink = item.data(_LINK_ROLE)
         node: DLGNode | None = link.node
+        assert node is not None
 
         node.listener = self.ui.listenerEdit.text()
         if isinstance(node, DLGEntry):
@@ -1100,7 +1098,7 @@ class DLGEditor(Editor):
         node.alien_race_node = self.ui.alienRaceNodeSpin.value()
         node.post_proc_node = self.ui.postProcSpin.value()
         node.delay = self.ui.delaySpin.value()
-        link.logic = self.ui.logicSpin.value()
+        link.logic = bool(self.ui.logicSpin.value())
         node.wait_flags = self.ui.waitFlagSpin.value()
         node.fade_type = self.ui.fadeTypeSpin.value()
 
