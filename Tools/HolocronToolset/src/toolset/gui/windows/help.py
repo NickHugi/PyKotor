@@ -1,25 +1,24 @@
 from __future__ import annotations
 
-import base64
-import json
 import xml.etree.ElementTree as ElemTree
 import zipfile
 
 from typing import TYPE_CHECKING, Callable
 
 import markdown
-import requests
 
 from PyQt5 import QtCore
+from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import QMainWindow, QMessageBox, QTreeWidgetItem
 
 from pykotor.common.stream import BinaryReader
 from pykotor.tools.encoding import decode_bytes_with_fallbacks
 from toolset.__main__ import is_frozen
-from toolset.config import LOCAL_PROGRAM_INFO
+from toolset.config import download_github_file, getRemoteToolsetUpdateInfo
 from toolset.gui.dialogs.asyncloader import AsyncLoader
+from toolset.gui.widgets.settings.installations import GlobalSettings
 from utility.error_handling import universal_simplify_exception
-from utility.system.path import Path, PurePath
+from utility.system.path import Path
 
 if TYPE_CHECKING:
     import os
@@ -39,14 +38,16 @@ class HelpWindow(QMainWindow):
         self.ui.setupUi(self)
         self._setupSignals()
         self._setupContents()
+        self.startingPage: str | None = startingPage
 
+    def showEvent(self, a0):
         self.ui.textDisplay.setSearchPaths(["./help"])
 
         if self.ENABLE_UPDATES:
             self.checkForUpdates()
 
-        if startingPage:
-            self.displayFile(startingPage)
+        if self.startingPage is not None:
+            self.displayFile(self.startingPage)
 
     def showEvent(self, event):
         super().showEvent(event)
@@ -92,115 +93,51 @@ class HelpWindow(QMainWindow):
             add(item)
             self._setupContentsRecXML(item, child)
 
-    def download_file(
-        self,
-        url_or_repo: str,
-        local_path: os.PathLike | str,
-        repo_path: os.PathLike | str | None = None,
-    ):
-        local_path = Path(local_path)
-        local_path.parent.mkdir(parents=True, exist_ok=True)
-
-        if repo_path is not None:
-            # Construct the API URL for the file in the repository
-            owner, repo = PurePath(url_or_repo).parts[-2:]
-            api_url = f"https://api.github.com/repos/{owner}/{repo}/contents/{PurePath(repo_path).as_posix()}"
-
-            file_info = self._request_api_data(api_url)
-            # Check if it's a file and get the download URL
-            if file_info["type"] == "file":
-                download_url = file_info["download_url"]
-            else:
-                msg = "The provided repo_path does not point to a file."
-                raise ValueError(msg)
-        else:
-            # Direct URL
-            download_url = url_or_repo
-
-        # Download the file
-        with requests.get(download_url, stream=True, timeout=15) as r:
-            r.raise_for_status()
-            with local_path.open("wb") as f:
-                for chunk in r.iter_content(chunk_size=8192):
-                    f.write(chunk)
-
-    def download_directory(
-        self,
-        repo: os.PathLike | str,
-        local_dir: os.PathLike | str,
-        repo_path: os.PathLike | str,
-    ):
-        repo = PurePath(repo)
-        repo_path = PurePath(repo_path)
-        api_url = f"https://api.github.com/repos/{repo.as_posix()}/contents/{repo_path.as_posix()}"
-        data = self._request_api_data(api_url)
-        for item in data:
-            item_path = Path(item["path"])
-            local_path = item_path.relative_to("toolset")
-
-            if item["type"] == "file":
-                self.download_file(item["download_url"], Path(local_dir, local_path))
-            elif item["type"] == "dir":
-                self.download_directory(repo, item_path, local_path)
-
-    def _request_api_data(self, api_url: str):
-        response = requests.get(api_url, timeout=15)
-        response.raise_for_status()
-        return response.json()
-
     def checkForUpdates(self):
+        remoteInfo = getRemoteToolsetUpdateInfo(
+            useBetaChannel=GlobalSettings().useBetaChannel,
+        )
         try:
-            update_info_link = LOCAL_PROGRAM_INFO["updateInfoLink"]  # TODO: settings.useBetaChannel
-            req = requests.get(update_info_link, timeout=15)
-            req.raise_for_status()
-            file_data = req.json()
-            base64_content = file_data["content"]
-            decoded_content = base64.b64decode(base64_content)  # Correctly decoding the base64 content
-            updateInfoData = json.loads(decoded_content.decode("utf-8"))
+            if not isinstance(remoteInfo, dict):
+                raise remoteInfo  # noqa: TRY301
 
-            new_version = tuple(map(int, str(updateInfoData["help"]["version"]).split(".")))
+            new_version = tuple(map(int, str(remoteInfo["help"]["version"]).split(".")))
             if self.version is None or new_version > self.version:
-                msgbox = QMessageBox(
+                newHelpMsgBox = QMessageBox(
                     QMessageBox.Information,
                     "Update available",
                     "A newer version of the help book is available for download, would you like to download it?",
+                    parent=None,
+                    flags=Qt.Window | Qt.Dialog | Qt.WindowStaysOnTopHint
                 )
-                msgbox.addButton(QMessageBox.Yes)
-                msgbox.addButton(QMessageBox.No)
-                user_response = msgbox.exec_()
+                newHelpMsgBox.setWindowIcon(self.windowIcon())
+                newHelpMsgBox.addButton(QMessageBox.Yes)
+                newHelpMsgBox.addButton(QMessageBox.No)
+                user_response = newHelpMsgBox.exec_()
                 if user_response == QMessageBox.Yes:
                     def task():
                         return self._downloadUpdate()
                     loader = AsyncLoader(self, "Download newer help files...", task, "Failed to update.")
                     if loader.exec_():
                         self._setupContents()
-        except (ConnectionError, requests.HTTPError, requests.ConnectionError, requests.RequestException):
+        except Exception as e:  # noqa: BLE001
             error_msg = str(universal_simplify_exception(e)).replace("\n", "<br>")
-            QMessageBox(
+            errMsgBox = QMessageBox(
                 QMessageBox.Information,
-                "Unable to fetch latest version of the help booklet.",
-                (
-                    f"{error_msg}<br>"
-                    "Check if you are connected to the internet."
-                ),
-                QMessageBox.Ok,
-                self,
-            ).exec_()
-        except Exception as e:
-            error_msg = str(universal_simplify_exception(e)).replace("\n", "<br>")
-            QMessageBox(
-                QMessageBox.Information,
-                "An unexpected error occurred while fetching the help booklet.",
+                "An unexpected error occurred while parsing the help booklet.",
                 error_msg,
                 QMessageBox.Ok,
-                self,
-            ).exec_()
+                parent=None,
+                flags=Qt.Window | Qt.Dialog | Qt.WindowStaysOnTopHint
+            )
+            errMsgBox.setWindowIcon(self.windowIcon())
+            errMsgBox.exec_()
 
     def _downloadUpdate(self):
         help_path = Path("help").resolve()
         help_path.mkdir(parents=True, exist_ok=True)
         help_zip_path = Path("./help.zip").resolve()
-        self.download_file("NickHugi/PyKotor", help_zip_path, "/Tools/HolocronToolset/downloads/help.zip")
+        download_github_file("NickHugi/PyKotor", help_zip_path, "/Tools/HolocronToolset/downloads/help.zip")
 
         # Extract the ZIP file
         with zipfile.ZipFile(help_zip_path) as zip_file:

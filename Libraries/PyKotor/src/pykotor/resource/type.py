@@ -59,6 +59,7 @@ class ResourceTuple(NamedTuple):
     category: str
     contents: str
     is_invalid: bool = False
+    is_plaintext_gff: bool = False
 
     def __getitem__(self, key):
         return getattr(self, key)
@@ -205,31 +206,31 @@ class ResourceType(Enum):
     TLK_XML = ResourceTuple(50001, "tlk.xml", "Talk Tables", "plaintext")
     MDL_ASCII = ResourceTuple(50002, "mdl.ascii", "Models", "plaintext")
     TwoDA_CSV = ResourceTuple(50003, "2da.csv", "2D Arrays", "plaintext")
-    GFF_XML = ResourceTuple(50004, "gff.xml", "Other", "plaintext")
-    IFO_XML = ResourceTuple(50005, "ifo.xml", "Module Data", "plaintext")
-    GIT_XML = ResourceTuple(50006, "git.xml", "Module Data", "plaintext")
-    UTI_XML = ResourceTuple(50007, "uti.xml", "Items", "plaintext")
-    UTC_XML = ResourceTuple(50008, "utc.xml", "Creatures", "plaintext")
-    DLG_XML = ResourceTuple(50009, "dlg.xml", "Dialogs", "plaintext")
+    GFF_XML = ResourceTuple(50004, "gff.xml", "Other", "plaintext", is_plaintext_gff=True)
+    IFO_XML = ResourceTuple(50005, "ifo.xml", "Module Data", "plaintext", is_plaintext_gff=True)
+    GIT_XML = ResourceTuple(50006, "git.xml", "Module Data", "plaintext", is_plaintext_gff=True)
+    UTI_XML = ResourceTuple(50007, "uti.xml", "Items", "plaintext", is_plaintext_gff=True)
+    UTC_XML = ResourceTuple(50008, "utc.xml", "Creatures", "plaintext", is_plaintext_gff=True)
+    DLG_XML = ResourceTuple(50009, "dlg.xml", "Dialogs", "plaintext", is_plaintext_gff=True)
     ITP_XML = ResourceTuple(50010, "itp.xml", "Palettes", "plaintext")
-    UTT_XML = ResourceTuple(50011, "utt.xml", "Triggers", "plaintext")
-    UTS_XML = ResourceTuple(50012, "uts.xml", "Sounds", "plaintext")
-    FAC_XML = ResourceTuple(50013, "fac.xml", "Factions", "plaintext")
-    UTE_XML = ResourceTuple(50014, "ute.xml", "Encounters", "plaintext")
-    UTD_XML = ResourceTuple(50015, "utd.xml", "Doors", "plaintext")
-    UTP_XML = ResourceTuple(50016, "utp.xml", "Placeables", "plaintext")
-    GUI_XML = ResourceTuple(50017, "gui.xml", "GUIs", "plaintext")
-    UTM_XML = ResourceTuple(50018, "utm.xml", "Merchants", "plaintext")
-    JRL_XML = ResourceTuple(50019, "jrl.xml", "Journals", "plaintext")
-    UTW_XML = ResourceTuple(50020, "utw.xml", "Waypoints", "plaintext")
-    PTH_XML = ResourceTuple(50021, "pth.xml", "Paths", "plaintext")
+    UTT_XML = ResourceTuple(50011, "utt.xml", "Triggers", "plaintext", is_plaintext_gff=True)
+    UTS_XML = ResourceTuple(50012, "uts.xml", "Sounds", "plaintext", is_plaintext_gff=True)
+    FAC_XML = ResourceTuple(50013, "fac.xml", "Factions", "plaintext", is_plaintext_gff=True)
+    UTE_XML = ResourceTuple(50014, "ute.xml", "Encounters", "plaintext", is_plaintext_gff=True)
+    UTD_XML = ResourceTuple(50015, "utd.xml", "Doors", "plaintext", is_plaintext_gff=True)
+    UTP_XML = ResourceTuple(50016, "utp.xml", "Placeables", "plaintext", is_plaintext_gff=True)
+    GUI_XML = ResourceTuple(50017, "gui.xml", "GUIs", "plaintext", is_plaintext_gff=True)
+    UTM_XML = ResourceTuple(50018, "utm.xml", "Merchants", "plaintext", is_plaintext_gff=True)
+    JRL_XML = ResourceTuple(50019, "jrl.xml", "Journals", "plaintext", is_plaintext_gff=True)
+    UTW_XML = ResourceTuple(50020, "utw.xml", "Waypoints", "plaintext", is_plaintext_gff=True)
+    PTH_XML = ResourceTuple(50021, "pth.xml", "Paths", "plaintext", is_plaintext_gff=True)
     LIP_XML = ResourceTuple(50022, "lip.xml", "Lips", "plaintext")
     SSF_XML = ResourceTuple(50023, "ssf.xml", "Soundsets", "plaintext")
-    ARE_XML = ResourceTuple(50023, "are.xml", "Module Data", "plaintext")
+    ARE_XML = ResourceTuple(50023, "are.xml", "Module Data", "plaintext", is_plaintext_gff=True)
     TwoDA_JSON = ResourceTuple(50024, "2da.json", "2D Arrays", "plaintext")
     TLK_JSON = ResourceTuple(50025, "tlk.json", "Talk Tables", "plaintext")
     LIP_JSON = ResourceTuple(50026, "lip.json", "Lips", "plaintext")
-    RES_XML = ResourceTuple(50027, "res.xml", "Save Data", "plaintext")
+    RES_XML = ResourceTuple(50027, "res.xml", "Save Data", "plaintext", is_plaintext_gff=True)
 
     def __new__(cls, *args, **kwargs):
         obj: ResourceType = object.__new__(cls)  # type: ignore[annotation-unchecked]
@@ -247,12 +248,14 @@ class ResourceType(Enum):
         category: str,
         contents: str,
         is_invalid: bool = False,  # noqa: FBT001, FBT002
+        is_plaintext_gff: bool = False,  # noqa: FBT001, FBT002
     ):
         self.type_id: int = type_id  # type: ignore[misc]
         self.extension: CaseInsensitiveWrappedStr = CaseInsensitiveWrappedStr.cast(extension.strip().lower())
         self.category: str = category
         self.contents: str = contents
         self.is_invalid: bool = is_invalid
+        self.is_plaintext_gff: bool = is_plaintext_gff
 
     def __bool__(self) -> bool:
         return not self.is_invalid
