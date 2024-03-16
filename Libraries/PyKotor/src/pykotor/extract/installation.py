@@ -1735,6 +1735,8 @@ class Installation:  # noqa: PLR0904
                     name = locstring.get(Language.ENGLISH, Gender.MALE)
                 else:
                     name = self.talktable().string(locstring.stringref)
+                if name and name.strip():
+                    return name
             except Exception as e:  # pylint: disable=W0718  # noqa: BLE001, PERF203
                 print(format_exception_with_variables(e, message="This exception has been suppressed in pykotor.extract.installation."))
             mod_ids_to_try.add(mod_id)
@@ -1743,7 +1745,6 @@ class Installation:  # noqa: PLR0904
         for mod_id in mod_ids_to_try:
             for _unfound_mod_id, capsule in our_erf_rims_module:
                 with suppress(Exception):
-                    #print(f"Checking for '{mod_id}' in '{module_filename}'")
                     are_resource = capsule.info(mod_id, ResourceType.ARE)
                     if are_resource is None:
                         continue
@@ -1752,7 +1753,7 @@ class Installation:  # noqa: PLR0904
                         name = locstring.get(Language.ENGLISH, Gender.MALE)
                     else:
                         name = self.talktable().string(locstring.stringref)
-                    if name is not None:
+                    if name and name.strip():
                         return name
         return name or module_filename
 
