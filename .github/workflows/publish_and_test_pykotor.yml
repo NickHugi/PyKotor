@@ -311,7 +311,6 @@ jobs:
         $upxDir = $env:UPX_DIR
         Write-Host "Using UPX directory at '$upxDir'"
         $output = ""
-        pip list --outdated --format=json | ConvertFrom-Json | ForEach-Object { Write-Host "Upgrading '$($_.name)'"; pip install -U $_.name --upgrade-strategy "eager" }
         . ./compile/compile_toolset.ps1 -noprompt -venv_name .venv_toolset_${{ matrix.os }}_${{ matrix.python_pypy }}_${{ matrix.python-version }}_${{ matrix.architecture }} -upx_dir $upxDir 2>&1 | ForEach-Object {
           Write-Output $_.ToString()
           $output += $_.ToString() + "`n"
@@ -427,7 +426,6 @@ jobs:
         $upxDir = $env:UPX_DIR
         Write-Host "Using UPX directory at '$upxDir'"
         $output = ""
-        pip list --outdated --format=json | ConvertFrom-Json | ForEach-Object { Write-Host "Upgrading '$($_.name)'"; pip install -U $_.name --upgrade-strategy "eager" }
         . ./compile/compile_holopatcher.ps1 -noprompt -venv_name .venv_holopatcher_${{ matrix.os }}_${{ matrix.python_pypy }}_${{ matrix.python-version }}_${{ matrix.architecture }} -upx_dir $upxDir 2>&1 | ForEach-Object {
           Write-Output $_.ToString()
           $output += $_.ToString() + "`n"
@@ -541,7 +539,6 @@ jobs:
         $upxDir = $env:UPX_DIR
         Write-Host "Using UPX directory at '$upxDir'"
         $output = ""
-        pip list --outdated --format=json | ConvertFrom-Json | ForEach-Object { Write-Host "Upgrading '$($_.name)'"; pip install -U $_.name --upgrade-strategy "eager" }
         . ./compile/compile_batchpatcher.ps1 -noprompt -venv_name .venv_batchpatcher_${{ matrix.os }}_${{ matrix.python_pypy }}_${{ matrix.python-version }}_${{ matrix.architecture }} -upx_dir $upxDir 2>&1 | ForEach-Object {
           Write-Output $_.ToString()
           $output += $_.ToString() + "`n"
@@ -603,7 +600,6 @@ jobs:
         }
         pip install -r Tools/KotorDiff/requirements.txt --prefer-binary
         $output = ""
-        pip list --outdated --format=json | ConvertFrom-Json | ForEach-Object { Write-Host "Upgrading '$($_.name)'"; pip install -U $_.name --upgrade-strategy "eager" }
         . ./compile/compile_kotordiff.ps1 -noprompt -venv_name .venv_kotordiff_${{ matrix.os }}_${{ matrix.python_pypy }}_${{ matrix.python-version }}_${{ matrix.architecture }} -upx_dir $upxDir 2>&1 | ForEach-Object {
           Write-Output $_.ToString()
           $output += $_.ToString() + "`n"
@@ -665,7 +661,6 @@ jobs:
         }
         pip install -r Tools/GuiDuplicator/requirements.txt --prefer-binary
         $output = ""
-        pip list --outdated --format=json | ConvertFrom-Json | ForEach-Object { Write-Host "Upgrading '$($_.name)'"; pip install -U $_.name --upgrade-strategy "eager" }
         . ./compile/compile_gui_duplicator.ps1 -noprompt -venv_name .venv_guiduplicator_${{ matrix.os }}_${{ matrix.python_pypy }}_${{ matrix.python-version }}_${{ matrix.architecture }} -upx_dir $upxDir 2>&1 | ForEach-Object {
           Write-Output $_.ToString()
           if($_ -match 'ERROR:') {
@@ -735,7 +730,6 @@ jobs:
         else {
           pip install -r requirements-dev.txt --prefer-binary
         }
-        pip list --outdated --format=json | ConvertFrom-Json | ForEach-Object { Write-Host "Upgrading '$($_.name)'"; pip install -U $_.name --upgrade-strategy "eager" }
       shell: pwsh
 
     - name: Run all unittests/pytests
