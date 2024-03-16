@@ -161,7 +161,7 @@ class ModuleDesignerSettings(Settings):
             if setting.endswith("Colour"):
                 self.settings.remove(setting)
 
-    loadOverrideTextures = Settings._addSetting(
+    loadOverrideTextures = Settings.addSetting(
         "loadOverrideTextures",
         False,
     )
