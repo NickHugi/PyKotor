@@ -236,58 +236,62 @@ class GlobalSettings(Settings):
         return {name: InstallationConfig(name) for name in installations}
 
     # region Strings
-    extractPath = Settings._addSetting(
+    extractPath = Settings.addSetting(
         "extractPath",
         "",
     )
-    nssCompilerPath = Settings._addSetting(
+    nssCompilerPath = Settings.addSetting(
         "nssCompilerPath",
         "ext/nwnnsscomp.exe" if os.name == "nt" else "ext/nwnnsscomp",
     )
-    ncsDecompilerPath = Settings._addSetting(
+    ncsDecompilerPath = Settings.addSetting(
         "ncsDecompilerPath",
         "",
     )
     # endregion
 
     # region Bools
-    disableRIMSaving = Settings._addSetting(
+    disableRIMSaving = Settings.addSetting(
         "disableRIMSaving",
         True,
     )
-    useBetaChannel = Settings._addSetting(
+    useBetaChannel = Settings.addSetting(
         "useBetaChannel",
         False,
     )
-    firstTime = Settings._addSetting(
+    alsoCheckReleaseVersion = Settings.addSetting(
+        "alsoCheckReleaseVersion",
+        True,
+    )
+    firstTime = Settings.addSetting(
         "firstTime",
         True,
     )
-    gff_specializedEditors = Settings._addSetting(
+    gff_specializedEditors = Settings.addSetting(
         "gff_specializedEditors",
         True,
     )
-    joinRIMsTogether = Settings._addSetting(
+    joinRIMsTogether = Settings.addSetting(
         "joinRIMsTogether",
         False,
     )
-    useModuleFilenames = Settings._addSetting(
+    useModuleFilenames = Settings.addSetting(
         "useModuleFilenames",
         False,
     )
-    greyRIMText = Settings._addSetting(
+    greyRIMText = Settings.addSetting(
         "greyRIMText",
         True,
     )
-    showPreviewUTC = Settings._addSetting(
+    showPreviewUTC = Settings.addSetting(
         "showPreviewUTC",
         True,
     )
-    showPreviewUTP = Settings._addSetting(
+    showPreviewUTP = Settings.addSetting(
         "showPreviewUTP",
         True,
     )
-    showPreviewUTD = Settings._addSetting(
+    showPreviewUTD = Settings.addSetting(
         "showPreviewUTD",
         True,
     )

@@ -27,6 +27,11 @@ class TwoDA:
         self._headers: list[str] = [] if headers is None else headers  # for columns
         self._labels: list[str] = []  # for rows
 
+    def __repr__(
+        self,
+    ):
+        return self.__class__.__name__ + f"(headers={self._headers!r}, labels={self._labels!r}, rows={self._rows!r})"
+
     def __iter__(
         self,
     ):

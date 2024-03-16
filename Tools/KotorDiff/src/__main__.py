@@ -34,6 +34,7 @@ if TYPE_CHECKING:
     import os
 
     from pykotor.extract.file import FileResource
+    from utility.system.path import PurePath
 
 OUTPUT_LOG: Path | None = None
 LOGGING_ENABLED: bool | None = None
@@ -77,7 +78,7 @@ def log_output(*args, **kwargs):
         f.write(msg)
 
 
-def relative_path_from_to(src, dst) -> Path:
+def relative_path_from_to(src: PurePath, dst: PurePath) -> Path:
     src_parts = list(src.parts)
     dst_parts = list(dst.parts)
 
@@ -89,7 +90,7 @@ def relative_path_from_to(src, dst) -> Path:
     return Path(*rel_parts)
 
 
-def visual_length(s: str, tab_length=8) -> int:
+def visual_length(s: str, tab_length: int = 8) -> int:
     if "\t" not in s:
         return len(s)
 
@@ -247,7 +248,7 @@ def diff_data(
     return True
 
 
-def log_output_with_separator(message, below=True, above=False, surround=False):
+def log_output_with_separator(message, *, below=True, above=False, surround=False):
     if above or surround:
         log_output(visual_length(message) * "-")
     log_output(message)
@@ -330,7 +331,7 @@ def diff_directories(dir1: os.PathLike | str, dir2: os.PathLike | str) -> bool |
 
 
 def diff_installs(install_path1: os.PathLike | str, install_path2: os.PathLike | str) -> bool | None:
-    # TODO: use pykotor.extract.installation
+    # TODO(th3w1zard1): use pykotor.extract.installation
     rinstall_path1: CaseAwarePath = CaseAwarePath.pathify(install_path1).resolve()
     rinstall_path2: CaseAwarePath = CaseAwarePath.pathify(install_path2).resolve()
     log_output()

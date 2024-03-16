@@ -35,7 +35,7 @@ NON_TSLPATCHER_NWNNSSCOMP_PERMISSION_MSG = (
     "Error details: {}"
 )
 
-def decompileScript(compiled_bytes: bytes, tsl: bool, installation_path: Path) -> str:
+def decompileScript(compiled_bytes: bytes, installation_path: Path, *, tsl: bool) -> str:
     """Returns the NSS bytes of a decompiled script. If no NCS Decompiler is selected, prompts the user to find the executable.
 
     Current implementation copies the NCS to a temporary directory (configured in settings), decompiles it there,
@@ -136,7 +136,7 @@ def decompileScript(compiled_bytes: bytes, tsl: bool, installation_path: Path) -
                 set_registry_key_value(orig_regkey_path, "Path", orig_regkey_value)
 
 
-def compileScript(source: str, tsl: bool, installation_path: Path) -> bytes | None:
+def compileScript(source: str, installation_path: Path, *, tsl: bool) -> bytes | None:
     # sourcery skip: assign-if-exp, introduce-default-else
     """Returns the NCS bytes of compiled source script using either nwnnsscomp.exe (Windows only) or our built-in compiler. If no NSS Compiler is selected, prompts the user to find the executable.
 

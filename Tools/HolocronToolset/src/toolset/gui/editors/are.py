@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from copy import deepcopy
 from typing import TYPE_CHECKING
 
 from PyQt5.QtGui import QColor, QImage, QPixmap
@@ -12,7 +13,7 @@ from pykotor.extract.installation import SearchLocation
 from pykotor.resource.formats.bwm import read_bwm
 from pykotor.resource.formats.gff import write_gff
 from pykotor.resource.formats.lyt import read_lyt
-from pykotor.resource.generics.are import ARE, ARENorthAxis, AREWindPower, dismantle_are, read_are
+from pykotor.resource.generics.are import ARE, ARENorthAxis, ARERoom, AREWindPower, dismantle_are, read_are
 from pykotor.resource.type import ResourceType
 from toolset.data.installation import HTInstallation
 from toolset.gui.dialogs.edit.locstring import LocalizedStringDialog
@@ -58,6 +59,7 @@ class AREEditor(Editor):
 
         self._are: ARE = ARE()
         self._minimap = None
+        self._rooms: list[ARERoom] = []  # TODO(th3w1zard1): define somewhere in ui.
 
         from toolset.uic.editors.are import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
 
@@ -148,8 +150,7 @@ class AREEditor(Editor):
             - Sets script properties like onEnter, onExit
             - Sets comment text.
         """
-        self._are = are
-
+        self._rooms = are.rooms
         if self._resname:
             res_result_lyt: ResourceResult | None = self._installation.resource(self._resname, ResourceType.LYT)
             if res_result_lyt:
@@ -344,6 +345,9 @@ class AREEditor(Editor):
 
         # Comments
         are.comment = self.ui.commentsEdit.toPlainText()
+
+        # Remaining.
+        are.rooms = self._rooms
 
         return are
 

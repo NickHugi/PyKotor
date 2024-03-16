@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import base64
 import json
 import math
 import shutil
@@ -10,10 +9,8 @@ from copy import copy, deepcopy
 from tempfile import TemporaryDirectory
 from typing import TYPE_CHECKING
 
-import requests
-
 from PyQt5 import QtCore
-from PyQt5.QtCore import QPointF, QRectF, QTimer
+from PyQt5.QtCore import QPointF, QRectF, QTimer, Qt
 from PyQt5.QtGui import (
     QColor,
     QKeySequence,
@@ -37,18 +34,18 @@ from PyQt5.QtWidgets import (
 from pykotor.common.geometry import Vector2, Vector3
 from pykotor.common.stream import BinaryReader, BinaryWriter
 from toolset.__main__ import is_frozen
-from toolset.config import UPDATE_INFO_LINK
+from toolset.config import download_github_file, getRemoteToolsetUpdateInfo, remoteVersionNewer
 from toolset.data.indoorkit import load_kits
 from toolset.data.indoormap import IndoorMap, IndoorMapRoom
 from toolset.gui.dialogs.asyncloader import AsyncLoader
 from toolset.gui.dialogs.indoor_settings import IndoorMapSettings
+from toolset.gui.widgets.settings.installations import GlobalSettings
 from toolset.gui.windows.help import HelpWindow
 from utility.error_handling import assert_with_variable_trace, format_exception_with_variables, universal_simplify_exception
 from utility.misc import is_debug_mode
-from utility.system.path import Path, PurePath
+from utility.system.path import Path
 
 if TYPE_CHECKING:
-    import os
 
     from PyQt5.QtCore import QPoint
     from PyQt5.QtGui import (
@@ -165,8 +162,9 @@ class IndoorMapBuilder(QMainWindow):
             self.ui.kitSelect.addItem(kit.name, kit)
 
     def _refreshWindowTitle(self):
-        assert self._installation is not None
-        if not self._filepath:
+        if not self._installation:
+            self.setWindowTitle("No installation - Map Builder")
+        elif not self._filepath:
             self.setWindowTitle(f"{self._installation.name} - Map Builder")
         else:
             self.setWindowTitle(f"{self._filepath} - {self._installation.name} - Map Builder")
@@ -180,7 +178,9 @@ class IndoorMapBuilder(QMainWindow):
 
     def showHelpWindow(self):
         window = HelpWindow(self, "./help/tools/2-mapBuilder.md")
+        window.setWindowIcon(self.windowIcon())
         window.show()
+        window.activateWindow()
 
     def save(self):
         self._map.generateMinimap()
@@ -840,9 +840,7 @@ class IndoorMapRenderer(QWidget):
         painter.setRenderHint(QPainter.LosslessImageRendering, True)
 
         for room in self._map.rooms:
-            self._drawImage(
-                painter, room.component.image, Vector2.from_vector3(room.position), room.rotation, room.flip_x, room.flip_y,
-            )
+            self._drawImage(painter, room.component.image, Vector2.from_vector3(room.position), room.rotation, room.flip_x, room.flip_y)
 
             for hook in [] if self.hideMagnets else room.component.hooks:
                 hookIndex = room.component.hooks.index(hook)
@@ -982,44 +980,54 @@ class KitDownloader(QDialog):
                 - If not, sets button to "Download"
             - Adds kit name and button to layout in group box
         """
-        file_data = self._get_update_data(UPDATE_INFO_LINK)
-        base64_content = file_data["content"]
-        decoded_content = base64.b64decode(base64_content)  # Correctly decoding the base64 content
-        updateInfoData = json.loads(decoded_content.decode("utf-8"))
+        updateInfoData = getRemoteToolsetUpdateInfo(
+            useBetaChannel=GlobalSettings().useBetaChannel,
+        )
+        try:
+            if not isinstance(updateInfoData, dict):
+                raise updateInfoData  # noqa: TRY301
 
-        for kitName, kitDict in updateInfoData["kits"].items():
-            kitId = kitDict["id"]
-            kitPath = Path(f"kits/{kitId}.json")
-            if kitPath.safe_isfile():
-                button = QPushButton("Already Downloaded")
-                button.setEnabled(True)
-                localKitDict = None
-                try:
-                    localKitDict = json.loads(BinaryReader.load_file(kitPath))
-                except Exception as e:
-                    print(universal_simplify_exception(e), "\n in _setupDownloads for kit update check")
-                    button.setText("Missing JSON - click to redownload.")
+            for kitName, kitDict in updateInfoData["kits"].items():
+                kitId = kitDict["id"]
+                kitPath = Path(f"kits/{kitId}.json")
+                if kitPath.safe_isfile():
+                    button = QPushButton("Already Downloaded")
                     button.setEnabled(True)
-                else:
+                    localKitDict = None
                     try:
-                        local_kit_version = tuple(map(int, str(localKitDict["version"]).split(".")))
-                        retrieved_kit_version = tuple(map(int, str(kitDict["version"]).split(".")))
-                        if local_kit_version < retrieved_kit_version:
+                        localKitDict = json.loads(BinaryReader.load_file(kitPath))
+                    except Exception as e:  # noqa: BLE001
+                        print(universal_simplify_exception(e), "\n in _setupDownloads for kit update check")
+                        button.setText("Missing JSON - click to redownload.")
+                        button.setEnabled(True)
+                    else:
+                        local_kit_version = str(localKitDict["version"])
+                        retrieved_kit_version = str(kitDict["version"])
+                        if remoteVersionNewer(local_kit_version, retrieved_kit_version) is not False:
                             button.setText("Update Available")
                             button.setEnabled(True)
-                    except Exception as e:
-                        print(universal_simplify_exception(e))
+                else:
+                    button = QPushButton("Download")
+                button.clicked.connect(
+                    lambda _,
+                    kitDict=kitDict,
+                    button=button: self._downloadButtonPressed(button, kitDict),
+                )
 
-            else:
-                button = QPushButton("Download")
-            button.clicked.connect(
-                lambda _,
-                kitDict=kitDict,
-                button=button: self._downloadButtonPressed(button, kitDict),
+                layout: QFormLayout = self.ui.groupBox.layout()
+                layout.addRow(kitName, button)
+        except Exception as e:  # noqa: BLE001
+            error_msg = str(universal_simplify_exception(e)).replace("\n", "<br>")
+            errMsgBox = QMessageBox(
+                QMessageBox.Information,
+                "An unexpected error occurred while setting up the kit downloader.",
+                error_msg,
+                QMessageBox.Ok,
+                parent=None,
+                flags=Qt.Window | Qt.Dialog | Qt.WindowStaysOnTopHint
             )
-
-            layout: QFormLayout = self.ui.groupBox.layout()
-            layout.addRow(kitName, button)
+            errMsgBox.setWindowIcon(self.windowIcon())
+            errMsgBox.exec_()
 
     def _downloadButtonPressed(self, button: QPushButton, infoDict: dict):
         button.setText("Downloading")
@@ -1049,68 +1057,11 @@ class KitDownloader(QDialog):
                 button.setText("Download Failed")
                 button.setEnabled(True)
 
-    def download_file(
-        self,
-        url_or_repo: str,
-        local_path: os.PathLike | str,
-        repo_path: os.PathLike | str | None = None,
-    ):
-        local_path = Path(local_path)
-        local_path.parent.mkdir(parents=True, exist_ok=True)
-
-        if repo_path is not None:
-            # Construct the API URL for the file in the repository
-            owner, repo = PurePath(url_or_repo).parts[-2:]
-            api_url = f"https://api.github.com/repos/{owner}/{repo}/contents/{PurePath(repo_path).as_posix()}"
-
-            file_info: dict = self._get_update_data(api_url)
-            # Check if it's a file and get the download URL
-            if file_info["type"] == "file":
-                download_url = file_info["download_url"]
-            else:
-                msg = "The provided repo_path does not point to a file."
-                raise ValueError(msg)
-        else:
-            # Direct URL
-            download_url = url_or_repo
-
-        # Download the file
-        with requests.get(download_url, stream=True, timeout=15) as r:
-            r.raise_for_status()
-            with local_path.open("wb") as f:
-                for chunk in r.iter_content(chunk_size=8192):
-                    f.write(chunk)
-
-    def download_directory(
-        self,
-        repo: os.PathLike | str,
-        local_dir: os.PathLike | str,
-        repo_path: os.PathLike | str,
-    ):
-        """This method should not be used due to github's api restrictions. Use download_file to get a .zip of the folder instead."""  # noqa: D404
-        repo = PurePath.pathify(repo)
-        repo_path = PurePath.pathify(repo_path)
-        api_url = f"https://api.github.com/repos/{repo.as_posix()}/contents/{repo_path.as_posix()}"
-        data = self._get_update_data(api_url)
-        for item in data:
-            item_path = Path(item["path"])
-            local_path = item_path.relative_to("toolset")
-
-            if item["type"] == "file":
-                self.download_file(item["download_url"], local_path)
-            elif item["type"] == "dir":
-                self.download_directory(repo, item_path, local_path)
-
-    def _get_update_data(self, link: str | bytes):
-        req: requests.Response = requests.get(link, timeout=15)
-        req.raise_for_status()
-        return req.json()
-
     def _downloadKit(self, kitId: str) -> bool:
         kits_path = Path("kits").resolve()
         kits_path.mkdir(parents=True, exist_ok=True)
         kits_zip_path = Path("kits.zip")
-        self.download_file("NickHugi/PyKotor", kits_zip_path, "Tools/HolocronToolset/downloads/kits.zip")
+        download_github_file("NickHugi/PyKotor", kits_zip_path, "Tools/HolocronToolset/downloads/kits.zip")
 
         # Extract the ZIP file
         with zipfile.ZipFile("./kits.zip") as zip_file:
