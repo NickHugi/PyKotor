@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from contextvars import ContextVar
 import inspect
 import os
 import sys
@@ -7,7 +8,7 @@ import traceback
 import types
 
 from pathlib import Path
-from typing import TYPE_CHECKING, TypeVar
+from typing import TYPE_CHECKING, Any, TypeVar
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -96,11 +97,56 @@ class CustomAssertionError(AssertionError):
         self.message: str = kwargs.get("message", args[0])
         super().__init__(*args, **kwargs)
 
+_currently_processing: ContextVar[set] = ContextVar("_currently_processing", default=set())
+def safe_repr(obj: Any, max_length: int = 200, indent_level: int = 0) -> str:
+    """Safely generate a repr string for objects without a custom __repr__, with line wrapping and indentation."""
+    # Retrieve the current set of object ids being processed
+    current_set = _currently_processing.get()
+    obj_id = id(obj)
+    if obj_id in current_set:
+        return f"<...recursion of {obj.__class__.__name__}...>"
+
+    # Add the current object id to the set
+    current_set.add(obj_id)
+    _currently_processing.set(current_set)  # Update the context variable with the modified set
+
+    indent = "    "  # Define the indentation unit (4 spaces).
+    try:
+        if hasattr(obj, "__class__") and obj.__class__.__repr__ is not object.__repr__:
+            # Call the object's __repr__ with _is_safe_repr_call set to True
+            try:
+                return repr(obj)
+            except Exception:  # noqa: BLE001
+                # Fallback to the base object __repr__ if an error occurs
+                return object.__repr__(obj)
+        attrs: list[str] = []
+        base_indent = indent * indent_level
+        next_indent = indent * (indent_level + 1)
+        for attr_name in dir(obj):
+            attr_value = getattr(obj, attr_name)
+            if not attr_name.startswith("__") and not callable(attr_value):
+                try:
+                    this_repr = safe_repr(attr_value, max_length, indent_level + 1)
+                    # Concatenate attribute name and its representation with appropriate indentation
+                    attr_repr = f"{attr_name}={this_repr}"
+                        # Check if current attribute representation exceeds the max length
+                    if len(attr_repr) > max_length:
+                        attr_repr = f"{attr_repr[:max_length]}..."
+                    attrs.append(attr_repr)
+                except Exception:  # noqa: BLE001
+                    attrs.append(f"{attr_name}={object.__repr__(attr_value)}")  # Use repr(obj) as a fallback
+        # Join attributes with a comma and a space, and apply next-level indentation
+        joined_attrs = (",\n" + next_indent).join(attrs)
+    except Exception:  # noqa: BLE001
+        # Fallback to the base object __repr__ if an error occurs
+        return object.__repr__(obj)
+    else:
+        return f"{obj.__class__.__name__}(\n{next_indent}{joined_attrs}\n{base_indent})"
 
 def format_var_str(
-    var,
-    val,
-    max_length=512,
+    var: str,
+    val: Any,
+    max_length: int = 512,
 ) -> str | None:
     """Format variable and its value into a string, handling exceptions and length."""
     if var in default_attrs or var in ignore_attrs:
@@ -119,8 +165,8 @@ def format_var_str(
         exc = e
 
     try:
-        val_repr = repr(val)
-        if len(val_repr) > max_length:
+        val_repr = safe_repr(val)
+        if len(val_repr) > max_length*2:
             val_repr = f"{val_repr[:max_length]}...<truncated>"
     except Exception:  # pylint: disable=W0718  # noqa: BLE001
         val_repr = unique_sentinel
@@ -158,7 +204,7 @@ def format_exception_with_variables(
     value: BaseException,
     etype: type[BaseException] | None = None,
     tb: types.TracebackType | None = None,
-    message: str = "Assertion with Exception Trace",
+    message: str = "",
 ) -> str:
     etype = etype if etype is not None else value.__class__
     tb = tb if tb is not None else value.__traceback__
@@ -187,9 +233,7 @@ def format_exception_with_variables(
 
     # Construct a detailed message with variables from all stack frames
     detailed_message: list[str] = [
-        f"{message}: Exception '{value}' of type '{etype}' occurred.",
-        "Formatted Traceback:",
-        formatted_traceback,
+        f"{message} Exception '{value}' of type '{etype}' occurred.",
         "Stack Trace Variables:",
     ]
     for frame_info in frames:
@@ -198,6 +242,7 @@ def format_exception_with_variables(
         detailed_message.append("This is the original exception:")
         detailed_message.extend(format_exception_with_variables(value.__cause__, message="Causing Exception's Stack Trace Variables:").split("\n"))
 
+    detailed_message.append(formatted_traceback)
     return "\n".join(detailed_message)
 
 

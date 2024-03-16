@@ -231,7 +231,7 @@ class ToolWindow(QMainWindow):
         if eventType == "deleted":
             self.onModuleRefresh()
         else:
-            if not changedFile or not changedFile.strip():  # FIXME: Why is the watchdog constantly sending invalid filenames?
+            if not changedFile or not changedFile.strip():  # FIXME(th3w1zard1): Why is the watchdog constantly sending invalid filenames?
                 print(f"onModuleFileUpdated: can't reload module '{changedFile}', invalid name")
                 return
             # Reload the resource cache for the module
@@ -245,7 +245,7 @@ class ToolWindow(QMainWindow):
         self.onModuleReload(newModuleFile)
 
     def onModuleReload(self, moduleFile: str):
-        if not moduleFile or not moduleFile.strip():  # FIXME: Why is the watchdog constantly sending invalid filenames?
+        if not moduleFile or not moduleFile.strip():  # FIXME(th3w1zard1): Why is the watchdog constantly sending invalid filenames?
             print(f"onModuleReload: can't reload module '{moduleFile}', invalid name")
             return
         resources: list[FileResource] = self.active.module_resources(moduleFile)
@@ -1038,12 +1038,12 @@ class ToolWindow(QMainWindow):
         with filepath.with_suffix(".txi").open("wb") as file:
             file.write(tpc.txi.encode("ascii"))
 
-    def _decompileTpc(self, tpc: TPC):
+    def _decompileTpc(self, tpc: TPC) -> bytearray:
         data = bytearray()
         write_tpc(tpc, data, ResourceType.TGA)
         return data
 
-    def _decompileMdl(self, resource: FileResource, data: SOURCE_TYPES):
+    def _decompileMdl(self, resource: FileResource, data: SOURCE_TYPES) -> bytearray:
         mdxData: bytes = self.active.resource(resource.resname(), ResourceType.MDX).data
         mdl: MDL | None = read_mdl(data, 0, 0, mdxData, 0, 0)
 
