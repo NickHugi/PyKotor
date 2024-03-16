@@ -1785,6 +1785,7 @@ class Installation:  # noqa: PLR0904
         module_filename: str,
         *,
         use_hardcoded: bool = False,
+        use_alternate: bool = False
     ) -> str:
         """Returns the ID of the area for a module from the installations module list.
 
@@ -1804,31 +1805,157 @@ class Installation:  # noqa: PLR0904
             for key, value in HARDCODED_MODULE_IDS.items():
                 if key.upper() in module_filename.upper():
                     return value
-        mod_id: str = ""
-        ext = PurePath(module_filename).suffix.lower()
-        for module in self.modules_list():
-            if ext != PurePath(module).suffix.lower() or root.lower() != self.replace_module_extensions(module).lower():
+
+        lower_root: str = root.lower()
+        found_mod_id: str = root
+        all_modules_list = self.modules_list()
+
+        matching_module_filenames: set[str] = set()
+        for iterated_module_filename in all_modules_list:
+            lower_iterated_module_filename = iterated_module_filename.lower()
+            if lower_root != self.replace_module_extensions(lower_iterated_module_filename):
                 continue
-            try:
-                capsule = Capsule(self.module_path() / module)
-                module_ifo_data: bytes | None = capsule.resource("module", ResourceType.IFO)
-                if module_ifo_data:
+            matching_module_filenames.add(lower_iterated_module_filename)
+
+        with suppress(Exception):
+            mod_filename = f"{lower_root}.mod"
+            our_erf_rims_module: set[Capsule] = set()
+            if module_filename.lower() == mod_filename and mod_filename in matching_module_filenames:
+                our_erf_rims_module.add(Capsule(self.module_path() / mod_filename))
+            # Prioritize the .mod
+            rim_filename = f"{lower_root}.rim"
+            rim_s_filename = f"{lower_root}_s.rim"
+            _dlg_filename = f"{lower_root}._dlg.erf"
+            if rim_filename in matching_module_filenames:
+                our_erf_rims_module.add(Capsule(self.module_path() / rim_filename))
+            if rim_s_filename in matching_module_filenames:
+                our_erf_rims_module.add(Capsule(self.module_path() / rim_s_filename))
+            if _dlg_filename in matching_module_filenames:
+                our_erf_rims_module.add(Capsule(self.module_path() / _dlg_filename))
+
+            mod_id: str = ""
+            mod_ids_to_try: set[str] = set()
+            for iterated_capsule in our_erf_rims_module:
+                try:
+                    module_ifo_data: bytes | None = iterated_capsule.resource("module", ResourceType.IFO)
+                    if not module_ifo_data:
+                        continue
+
                     ifo: GFF = read_gff(module_ifo_data)
-                    try:
-                        mod_id = ifo.root.get_string("Mod_VO_ID").strip()
+                    try:  # Only ever seen this wrong for custom modules.
+                        if ifo.root.exists("Mod_Area_list"):
+                            mod_area_list = ifo.root.get_list("Mod_Area_list")
+                            mod_id = found_mod_id = self._get_mod_id_from_area_list(mod_area_list)
+                            if use_alternate:  # noqa: SIM102
+                                if mod_id and mod_id.lower() in lower_root:
+                                    #print(f"Alternate: Found Mod_Area_list '{mod_id}' in '{lower_root}'")
+                                    return mod_id
+                                #print(f"Mod_Area_list '{mod_id}' not in '{lower_root}'")
+                    except Exception:  # noqa: PERF203, BLE001
+                        ...#print(module, "Mod_Area_list", str(e))
+                    else:
                         if mod_id:
-                            break
-                    except Exception:
+                            ...#print(f"Got ID '{mod_id}' in Mod_Area_list erf/rim '{iterated_capsule.filename()}'")
+                        if not use_alternate and mod_id and mod_id.strip():
+                            if not use_alternate and iterated_capsule.info(mod_id, ResourceType.ARE) is not None:
+                                return mod_id
+                            mod_ids_to_try.add(mod_id)
+                            print(f"Mod_Area_list entry '{mod_id}' invalid? erf/rim '{iterated_capsule.filename()}'")
+                        #else:
+                        #    print(f"Mod_Area_list not defined? erf/rim '{iterated_capsule.filename()}'")
+                        mod_id = ""
+
+                    try:  # Adding because I'm unsure if the case is maintained.
+                        if ifo.root.exists("Mod_Area_List"):
+                            mod_area_list = ifo.root.get_list("Mod_Area_List")
+                            mod_id = found_mod_id = self._get_mod_id_from_area_list(mod_area_list)
+                            if use_alternate:  # noqa: SIM102
+                                if mod_id and mod_id.lower() in lower_root:
+                                    #print(f"Alternate: Found Mod_Area_List '{mod_id}' in '{lower_root}'")
+                                    return mod_id
+                                #print(f"Mod_Area_List '{mod_id}' not in '{lower_root}'")
+                    except Exception:  # noqa: PERF203, BLE001
+                        ...#print(module, "Mod_Area_List", str(e))
+                    else:
+                        if mod_id:
+                            print(f"Got ID '{mod_id}' in Mod_Area_List for erf/rim '{iterated_capsule.filename()}'")
+                        if not use_alternate and mod_id and mod_id.strip():
+                            if iterated_capsule.info(mod_id, ResourceType.ARE) is not None:
+                                return mod_id
+                            mod_ids_to_try.add(mod_id)
+                            print(f"Mod_Area_List entry '{mod_id}' invalid? erf/rim '{iterated_capsule.filename()}'")
+                        #else:
+                        #    print(f"Mod_Area_List not defined? erf/rim '{iterated_capsule.filename()}'")
+                        mod_id = ""
+
+                    try:  # Sometimes wrong, and sometimes it's not defined.
+                        if ifo.root.exists("Mod_VO_ID"):
+                            mod_id = found_mod_id = ifo.root.get_string("Mod_VO_ID").strip()
+                            if use_alternate:  # noqa: SIM102
+                                if mod_id and mod_id.lower() in lower_root:
+                                    #print(f"Alternate: Found Mod_VO_ID '{mod_id}' in '{lower_root}'")
+                                    return mod_id
+                                #print(f"Mod_VO_ID '{mod_id}' not in '{lower_root}'")
+                    except Exception:  # noqa: PERF203, BLE001
                         ...#print(module, "Mod_VO_ID", str(e))
-                    try:
-                        mod_id = str(ifo.root.get_resref("Mod_Entry_Area")).strip()
+                    else:
                         if mod_id:
-                            break
-                    except Exception:
+                            ...#print(f"Got ID '{mod_id}' in Mod_VO_ID for erf/rim '{iterated_capsule.filename()}'")
+                        if not use_alternate and mod_id.strip():
+                            if iterated_capsule.info(mod_id, ResourceType.ARE) is not None:
+                                return mod_id
+                            mod_ids_to_try.add(mod_id)
+                            print(f"Mod_VO_ID entry '{mod_id}' invalid? erf/rim '{iterated_capsule.filename()}'")
+                        #else:
+                        #    print(f"Mod_VO_ID not defined? erf/rim '{iterated_capsule.filename()}'")
+                        mod_id = ""
+
+                    try:  # This one is sometimes wrong in k1, doesn't seem to be used much (if at all) in k2
+                        if ifo.root.exists("Mod_Entry_Area"):
+                            mod_id = found_mod_id = str(ifo.root.get_resref("Mod_Entry_Area")).strip()
+                            if use_alternate:  # noqa: SIM102
+                                if mod_id and mod_id.lower() in lower_root:
+                                    #print(f"Alternate: Found Mod_Entry_Area '{mod_id}' in '{lower_root}'")
+                                    return mod_id
+                                #print(f"Mod_Entry_Area '{mod_id}' not in '{lower_root}'")
+                    except Exception:  # noqa: PERF203, BLE001
                         ...#print(module, "Mod_Entry_Area", str(e))
-            except Exception as e:  # pylint: disable=W0718  # noqa: BLE001
+                    else:
+                        if mod_id:
+                            ...#print(f"Got ID '{mod_id}' in Mod_Entry_Area for erf/rim '{iterated_capsule.filename()}'")
+                        if not use_alternate and mod_id.strip():
+                            if iterated_capsule.info(mod_id, ResourceType.ARE) is not None:
+                                return mod_id
+                            mod_ids_to_try.add(mod_id)
+                            print(f"Mod_Entry_Area entry '{mod_id}' invalid? erf/rim '{iterated_capsule.filename()}'")
+                        #else:
+                        #    print(f"Mod_Entry_Area not defined? erf/rim '{iterated_capsule.filename()}'")
+                        mod_id = ""
+
+                except Exception as e:  # pylint: disable=W0718  # noqa: BLE001
+                    print(format_exception_with_variables(e, message="This exception has been suppressed in pykotor.extract.installation."))
+
+            # Validate the ARE exists.
+            for mod_id in mod_ids_to_try:
+                for capsule in our_erf_rims_module:
+                    if capsule.info(mod_id, ResourceType.ARE) is None:
+                        continue
+                    return mod_id
+                if mod_id.startswith("m") or mod_id[1].isdigit():
+                    found_mod_id = mod_id
+        print(f"NOT FOUND: Module ID for '{module_filename}', using backup of '{found_mod_id}'")
+        return found_mod_id
+
+    def _get_mod_id_from_area_list(self, mod_area_list: GFFList) -> str | None:
+        for gff_struct in mod_area_list:
+            try:
+                mod_id = str(gff_struct.get_resref("Area_Name"))
+            except Exception as e:  # noqa: PERF203, BLE001
                 print(format_exception_with_variables(e, message="This exception has been suppressed in pykotor.extract.installation."))
-        return mod_id
+            else:
+                if mod_id and mod_id.strip():
+                    return mod_id
+        return None
 
     def module_ids(self, *, use_hardcoded: bool = True) -> dict[str, str]:
         """Returns a dictionary mapping module filename to the ID of the module.
