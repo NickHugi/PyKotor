@@ -68,7 +68,7 @@ class AudioPlayer(QMainWindow):
     def open(self):
         filepath: str = QFileDialog.getOpenFileName(self, "Select an audio file")[0]
         if filepath:
-            resname, restype = ResourceIdentifier.from_path(filepath).validate()
+            resname, restype = ResourceIdentifier.from_path(filepath).validate().unpack()
             data: bytes = BinaryReader.load_file(filepath)
             self.load(filepath, resname, restype, data)
 
@@ -96,7 +96,7 @@ class AudioPlayer(QMainWindow):
         super().hideEvent(event)
         self.player.stop()
 
-    def closeEvent(self, e: QCloseEvent | None = None):  # FIXME: this event never gets called.
+    def closeEvent(self, e: QCloseEvent | None = None):  # FIXME(th3w1zard1): this event never gets called.
         print("Closing window and stopping player")  # Debugging line to confirm this method is called
         self.player.stop()  # Stop the player
 

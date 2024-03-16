@@ -43,6 +43,12 @@ class TestPathInheritance(unittest.TestCase):
         self.assertIs(Path("mypath").__class__.__base__, Path)
         self.assertIs(CaseAwarePath("mypath").__class__.__base__, WindowsPath if os.name == "nt" else PosixPath)
 
+    def test_path_hashing(self):
+        test_list = [Path("/mnt/c/Program Files (x86)/steam/steamapps/common/swkotor/saves")]
+        if os.name == "posix":
+            self.assertNotIn(Path("/MNT/c/Program FileS (x86)/steam/steamapps/common/swkotor/saves"), test_list)
+        self.assertIn(Path("/mnt/c/Program Files (x86)/steam/steamapps/common/swkotor/saves"), test_list)
+
     def test_pure_windows_path_isinstance(self):
         self.assertIsInstance(PureWindowsPath("mypath"), PurePath)
         self.assertTrue(issubclass(PureWindowsPath, PurePath))

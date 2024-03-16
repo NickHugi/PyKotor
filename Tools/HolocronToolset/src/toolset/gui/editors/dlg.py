@@ -9,7 +9,7 @@ from PyQt5 import QtCore
 from PyQt5.QtCore import QBuffer, QIODevice, QItemSelectionModel, QTimer
 from PyQt5.QtGui import QBrush, QColor, QStandardItem, QStandardItemModel
 from PyQt5.QtMultimedia import QMediaContent, QMediaPlayer
-from PyQt5.QtWidgets import QListWidgetItem, QMenu, QMessageBox, QShortcut
+from PyQt5.QtWidgets import QListWidgetItem, QMenu, QShortcut
 
 from pykotor.common.misc import ResRef
 from pykotor.extract.installation import SearchLocation

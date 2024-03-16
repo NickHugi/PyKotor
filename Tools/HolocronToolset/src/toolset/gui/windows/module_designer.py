@@ -204,12 +204,12 @@ class ModuleDesigner(QMainWindow):
         self.ui.setupUi(self)
         self._setupSignals()
 
-        def intColorToQColor(int_value) -> QColor:
+        def intColorToQColor(intvalue: int) -> QColor:
             """Converts an integer color value to a QColor object.
 
             Args:
             ----
-                int_value: Integer color value.
+                intvalue: Integer color value.
 
             Returns:
             -------
@@ -221,7 +221,7 @@ class ModuleDesigner(QMainWindow):
                 - Multiply each component by 255 to convert to QColor expected value range of 0-255
                 - Pass converted values to QColor constructor to return QColor object.
             """
-            color = Color.from_rgba_integer(int_value)
+            color = Color.from_rgba_integer(intvalue)
             return QColor(int(color.r * 255), int(color.g * 255), int(color.b * 255), int(color.a * 255))
 
         self.materialColors: dict[SurfaceMaterial, QColor] = {
@@ -537,7 +537,7 @@ class ModuleDesigner(QMainWindow):
         resource.activate(location)
         self.ui.mainRenderer.scene.clearCacheBuffer.append(ResourceIdentifier(resource.resname(), resource.restype()))
 
-    def selectResourceItem(self, instance: GITInstance, clearExisting: bool = True):
+    def selectResourceItem(self, instance: GITInstance, *, clearExisting: bool = True):
         """Select a resource item in the tree.
 
         Args:
@@ -1088,9 +1088,8 @@ class ModuleDesigner(QMainWindow):
         menu = QMenu(self)
 
         rot = self.ui.mainRenderer.scene.camera
-        view = rot.true_position()
-        menu.addAction("Insert Camera").triggered.connect(lambda: self.addInstance(GITCamera(*world, camera_id=0), walkmeshSnap=False))
-        menu.addAction("Insert Camera at View").triggered.connect(lambda: self.addInstance(GITCamera(view.x, view.y, view.z, rot.yaw, rot.pitch, 0, 0), False))
+        menu.addAction("Insert Camera").triggered.connect(lambda: self.addInstance(GITCamera(*world), walkmeshSnap=False))
+        menu.addAction("Insert Camera at View").triggered.connect(lambda: self.addInstance(GITCamera(view.x, view.y, view.z, rot.yaw, rot.pitch, 0, 0), walkmeshSnap=False))
         menu.addSeparator()
         menu.addAction("Insert Creature").triggered.connect(lambda: self.addInstance(GITCreature(*world), walkmeshSnap=True))
         menu.addAction("Insert Door").triggered.connect(lambda: self.addInstance(GITDoor(*world), walkmeshSnap=False))
@@ -1169,12 +1168,12 @@ class ModuleDesigner(QMainWindow):
     # endregion
 
     # region Events
-    def keyPressEvent(self, e: QKeyEvent, bubble: bool = True):
+    def keyPressEvent(self, e: QKeyEvent, bubble: bool = True):  # noqa: FBT001, FBT002
         super().keyPressEvent(e)
         self.ui.mainRenderer.keyPressEvent(e)
         self.ui.flatRenderer.keyPressEvent(e)
 
-    def keyReleaseEvent(self, e: QKeyEvent, bubble: bool = True):
+    def keyReleaseEvent(self, e: QKeyEvent, bubble: bool = True):  # noqa: FBT001, FBT002
         super().keyReleaseEvent(e)
         self.ui.mainRenderer.keyReleaseEvent(e)
         self.ui.flatRenderer.keyReleaseEvent(e)

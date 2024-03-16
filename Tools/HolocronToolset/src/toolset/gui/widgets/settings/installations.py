@@ -236,74 +236,74 @@ class GlobalSettings(Settings):
         return {name: InstallationConfig(name) for name in installations}
 
     # region Strings
-    extractPath = Settings._addSetting(
+    extractPath = Settings.addSetting(
         "extractPath",
         "",
     )
-    nssCompilerPath = Settings._addSetting(
+    nssCompilerPath = Settings.addSetting(
         "nssCompilerPath",
         "ext/nwnnsscomp.exe" if os.name == "nt" else "ext/nwnnsscomp",
     )
-    ncsDecompilerPath = Settings._addSetting(
+    ncsDecompilerPath = Settings.addSetting(
         "ncsDecompilerPath",
         "",
     )
-    selectedTheme = Settings._addSetting(
+    selectedTheme = Settings.addSetting(
         "selectedTheme",
         "Fusion (Dark)",  # Default theme
     )
-    moduleSortOption = Settings._addSetting(
+    moduleSortOption = Settings.addSetting(
         "moduleSortOption",
         1,
-    )
-    selectedTheme = Settings._addSetting(
-        "selectedTheme",
-        "Fusion (Dark)",  # Default theme
     )
     # endregion
 
     # region Bools
-    disableRIMSaving = Settings._addSetting(
+    disableRIMSaving = Settings.addSetting(
         "disableRIMSaving",
         True,
     )
-    useBetaChannel = Settings._addSetting(
+    useBetaChannel = Settings.addSetting(
         "useBetaChannel",
         False,
     )
-    alsoCheckReleaseVersion = Settings._addSetting(
+    alsoCheckReleaseVersion = Settings.addSetting(
         "alsoCheckReleaseVersion",
         True,
     )
-    firstTime = Settings._addSetting(
+    firstTime = Settings.addSetting(
         "firstTime",
         True,
     )
-    gff_specializedEditors = Settings._addSetting(
+    gff_specializedEditors = Settings.addSetting(
         "gff_specializedEditors",
         True,
     )
-    joinRIMsTogether = Settings._addSetting(
+    joinRIMsTogether = Settings.addSetting(
         "joinRIMsTogether",
         False,
     )
-    greyRIMText = Settings._addSetting(
-        "greyRIMText",
-        True,
-    )
-    loadNSSBeforeDecompile = Settings._addSetting(
+    loadNSSBeforeDecompile = Settings.addSetting(
         "loadNSSBeforeDecompile",
         False,
     )
-    showPreviewUTC = Settings._addSetting(
+    useModuleFilenames = Settings.addSetting(
+        "useModuleFilenames",
+        False,
+    )
+    greyRIMText = Settings.addSetting(
+        "greyRIMText",
+        True,
+    )
+    showPreviewUTC = Settings.addSetting(
         "showPreviewUTC",
         True,
     )
-    showPreviewUTP = Settings._addSetting(
+    showPreviewUTP = Settings.addSetting(
         "showPreviewUTP",
         True,
     )
-    showPreviewUTD = Settings._addSetting(
+    showPreviewUTD = Settings.addSetting(
         "showPreviewUTD",
         True,
     )

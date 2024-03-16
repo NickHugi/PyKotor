@@ -9,8 +9,6 @@ from copy import copy, deepcopy
 from tempfile import TemporaryDirectory
 from typing import TYPE_CHECKING
 
-import requests
-
 from PyQt5 import QtCore
 from PyQt5.QtCore import QPointF, QRectF, QTimer, Qt
 from PyQt5.QtGui import (
@@ -36,7 +34,7 @@ from PyQt5.QtWidgets import (
 from pykotor.common.geometry import Vector2, Vector3
 from pykotor.common.stream import BinaryReader, BinaryWriter
 from toolset.__main__ import is_frozen
-from toolset.config import LOCAL_PROGRAM_INFO, download_github_file, getRemoteToolsetUpdateInfo, remoteVersionNewer
+from toolset.config import download_github_file, getRemoteToolsetUpdateInfo, remoteVersionNewer
 from toolset.data.indoorkit import load_kits
 from toolset.data.indoormap import IndoorMap, IndoorMapRoom
 from toolset.gui.dialogs.asyncloader import AsyncLoader
@@ -45,10 +43,9 @@ from toolset.gui.widgets.settings.installations import GlobalSettings
 from toolset.gui.windows.help import HelpWindow
 from utility.error_handling import assert_with_variable_trace, format_exception_with_variables, universal_simplify_exception
 from utility.misc import is_debug_mode
-from utility.system.path import Path, PurePath
+from utility.system.path import Path
 
 if TYPE_CHECKING:
-    import os
 
     from PyQt5.QtCore import QPoint
     from PyQt5.QtGui import (
@@ -169,8 +166,9 @@ class IndoorMapBuilder(QMainWindow):
             self.ui.kitSelect.addItem(kit.name, kit)
 
     def _refreshWindowTitle(self):
-        assert self._installation is not None
-        if not self._filepath:
+        if not self._installation:
+            self.setWindowTitle("No installation - Map Builder")
+        elif not self._filepath:
             self.setWindowTitle(f"{self._installation.name} - Map Builder")
         else:
             self.setWindowTitle(f"{self._filepath} - {self._installation.name} - Map Builder")

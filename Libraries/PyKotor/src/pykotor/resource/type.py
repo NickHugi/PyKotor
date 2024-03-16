@@ -12,7 +12,6 @@ from typing import TYPE_CHECKING, NamedTuple, TypeVar, Union
 from xml.etree.ElementTree import ParseError
 
 from pykotor.common.stream import BinaryReader, BinaryWriter
-from utility.string import WrappedStr
 from utility.error_handling import format_exception_with_variables
 from utility.string import CaseInsensitiveWrappedStr, WrappedStr
 
@@ -59,7 +58,7 @@ class ResourceTuple(NamedTuple):
     category: str
     contents: str
     is_invalid: bool = False
-    is_plaintext_gff: bool = False
+    target_member: str | None = None
 
     def __getitem__(self, key):
         return getattr(self, key)
@@ -121,7 +120,7 @@ class ResourceType(Enum):
     UTC = ResourceTuple(2027, "utc", "Creatures", "gff")
     DLG = ResourceTuple(2029, "dlg", "Dialogs", "gff")
     ITP = ResourceTuple(2030, "itp", "Palettes", "binary")
-    BTT = ResourceTuple(2031, "bit", "Triggers", "gff")
+    BTT = ResourceTuple(2031, "btt", "Triggers", "gff")
     UTT = ResourceTuple(2032, "utt", "Triggers", "gff")
     DDS = ResourceTuple(2033, "dds", "Textures", "binary")
     UTS = ResourceTuple(2035, "uts", "Sounds", "gff")
@@ -206,31 +205,31 @@ class ResourceType(Enum):
     TLK_XML = ResourceTuple(50001, "tlk.xml", "Talk Tables", "plaintext")
     MDL_ASCII = ResourceTuple(50002, "mdl.ascii", "Models", "plaintext")
     TwoDA_CSV = ResourceTuple(50003, "2da.csv", "2D Arrays", "plaintext")
-    GFF_XML = ResourceTuple(50004, "gff.xml", "Other", "plaintext", is_plaintext_gff=True)
-    IFO_XML = ResourceTuple(50005, "ifo.xml", "Module Data", "plaintext", is_plaintext_gff=True)
-    GIT_XML = ResourceTuple(50006, "git.xml", "Module Data", "plaintext", is_plaintext_gff=True)
-    UTI_XML = ResourceTuple(50007, "uti.xml", "Items", "plaintext", is_plaintext_gff=True)
-    UTC_XML = ResourceTuple(50008, "utc.xml", "Creatures", "plaintext", is_plaintext_gff=True)
-    DLG_XML = ResourceTuple(50009, "dlg.xml", "Dialogs", "plaintext", is_plaintext_gff=True)
+    GFF_XML = ResourceTuple(50004, "gff.xml", "Other", "plaintext", target_member="GFF")
+    IFO_XML = ResourceTuple(50005, "ifo.xml", "Module Data", "plaintext", target_member="IFO")
+    GIT_XML = ResourceTuple(50006, "git.xml", "Module Data", "plaintext", target_member="GIT")
+    UTI_XML = ResourceTuple(50007, "uti.xml", "Items", "plaintext", target_member="UTI")
+    UTC_XML = ResourceTuple(50008, "utc.xml", "Creatures", "plaintext", target_member="UTC")
+    DLG_XML = ResourceTuple(50009, "dlg.xml", "Dialogs", "plaintext", target_member="DLG")
     ITP_XML = ResourceTuple(50010, "itp.xml", "Palettes", "plaintext")
-    UTT_XML = ResourceTuple(50011, "utt.xml", "Triggers", "plaintext", is_plaintext_gff=True)
-    UTS_XML = ResourceTuple(50012, "uts.xml", "Sounds", "plaintext", is_plaintext_gff=True)
-    FAC_XML = ResourceTuple(50013, "fac.xml", "Factions", "plaintext", is_plaintext_gff=True)
-    UTE_XML = ResourceTuple(50014, "ute.xml", "Encounters", "plaintext", is_plaintext_gff=True)
-    UTD_XML = ResourceTuple(50015, "utd.xml", "Doors", "plaintext", is_plaintext_gff=True)
-    UTP_XML = ResourceTuple(50016, "utp.xml", "Placeables", "plaintext", is_plaintext_gff=True)
-    GUI_XML = ResourceTuple(50017, "gui.xml", "GUIs", "plaintext", is_plaintext_gff=True)
-    UTM_XML = ResourceTuple(50018, "utm.xml", "Merchants", "plaintext", is_plaintext_gff=True)
-    JRL_XML = ResourceTuple(50019, "jrl.xml", "Journals", "plaintext", is_plaintext_gff=True)
-    UTW_XML = ResourceTuple(50020, "utw.xml", "Waypoints", "plaintext", is_plaintext_gff=True)
-    PTH_XML = ResourceTuple(50021, "pth.xml", "Paths", "plaintext", is_plaintext_gff=True)
-    LIP_XML = ResourceTuple(50022, "lip.xml", "Lips", "plaintext")
-    SSF_XML = ResourceTuple(50023, "ssf.xml", "Soundsets", "plaintext")
-    ARE_XML = ResourceTuple(50023, "are.xml", "Module Data", "plaintext", is_plaintext_gff=True)
-    TwoDA_JSON = ResourceTuple(50024, "2da.json", "2D Arrays", "plaintext")
-    TLK_JSON = ResourceTuple(50025, "tlk.json", "Talk Tables", "plaintext")
-    LIP_JSON = ResourceTuple(50026, "lip.json", "Lips", "plaintext")
-    RES_XML = ResourceTuple(50027, "res.xml", "Save Data", "plaintext", is_plaintext_gff=True)
+    UTT_XML = ResourceTuple(50011, "utt.xml", "Triggers", "plaintext", target_member="UTT")
+    UTS_XML = ResourceTuple(50012, "uts.xml", "Sounds", "plaintext", target_member="UTS")
+    FAC_XML = ResourceTuple(50013, "fac.xml", "Factions", "plaintext", target_member="FAC")
+    UTE_XML = ResourceTuple(50014, "ute.xml", "Encounters", "plaintext", target_member="UTE")
+    UTD_XML = ResourceTuple(50015, "utd.xml", "Doors", "plaintext", target_member="UTD")
+    UTP_XML = ResourceTuple(50016, "utp.xml", "Placeables", "plaintext", target_member="UTP")
+    GUI_XML = ResourceTuple(50017, "gui.xml", "GUIs", "plaintext", target_member="GUI")
+    UTM_XML = ResourceTuple(50018, "utm.xml", "Merchants", "plaintext", target_member="UTM")
+    JRL_XML = ResourceTuple(50019, "jrl.xml", "Journals", "plaintext", target_member="JRL")
+    UTW_XML = ResourceTuple(50020, "utw.xml", "Waypoints", "plaintext", target_member="UTW")
+    PTH_XML = ResourceTuple(50021, "pth.xml", "Paths", "plaintext", target_member="PTH")
+    LIP_XML = ResourceTuple(50022, "lip.xml", "Lips", "plaintext", target_member="LIP")
+    SSF_XML = ResourceTuple(50023, "ssf.xml", "Soundsets", "plaintext", target_member="SSF")
+    ARE_XML = ResourceTuple(50023, "are.xml", "Module Data", "plaintext", target_member="ARE")
+    TwoDA_JSON = ResourceTuple(50024, "2da.json", "2D Arrays", "plaintext", target_member="TwoDA")
+    TLK_JSON = ResourceTuple(50025, "tlk.json", "Talk Tables", "plaintext", target_member="TLK")
+    LIP_JSON = ResourceTuple(50026, "lip.json", "Lips", "plaintext", target_member="LIP")
+    RES_XML = ResourceTuple(50027, "res.xml", "Save Data", "plaintext", target_member="RES")
 
     def __new__(cls, *args, **kwargs):
         obj: ResourceType = object.__new__(cls)  # type: ignore[annotation-unchecked]
@@ -248,21 +247,24 @@ class ResourceType(Enum):
         category: str,
         contents: str,
         is_invalid: bool = False,  # noqa: FBT001, FBT002
-        is_plaintext_gff: bool = False,  # noqa: FBT001, FBT002
+        target_member: str | None = None,
     ):
         self.type_id: int = type_id  # type: ignore[misc]
         self.extension: CaseInsensitiveWrappedStr = CaseInsensitiveWrappedStr.cast(extension.strip().lower())
         self.category: str = category
         self.contents: str = contents
         self.is_invalid: bool = is_invalid
-        self.is_plaintext_gff: bool = is_plaintext_gff
+        self.target_member: str | None = target_member
+
+    def target_type(self):
+        return self if self.target_member is None else self.__class__.__members__[self.target_member]
 
     def __bool__(self) -> bool:
         return not self.is_invalid
 
     def __repr__(
         self,
-    ) -> str:
+    ) -> str:  # sourcery skip: simplify-fstring-formatting
         if self.name == "INVALID" or not self.is_invalid:
             return f"{self.__class__.__name__}.{self.name}"
 
