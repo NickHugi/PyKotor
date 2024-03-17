@@ -4,6 +4,8 @@ import struct
 
 from typing import TYPE_CHECKING
 
+import qtpy
+
 from qtpy import QtCore
 from qtpy.QtGui import QColor, QIcon, QImage, QPixmap
 from qtpy.QtWidgets import QListWidgetItem, QShortcut
@@ -49,7 +51,16 @@ class BWMEditor(Editor):
         supported = [ResourceType.WOK, ResourceType.DWK, ResourceType.PWK]
         super().__init__(parent, "Walkmesh Painter", "walkmesh", supported, supported, installation)
 
-        from toolset.uic.pyqt5.editors.bwm import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
+        if qtpy.API_NAME == "PySide2":
+            from toolset.uic.pyside2.editors.bwm import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
+        elif qtpy.API_NAME == "PySide6":
+            from toolset.uic.pyside6.editors.bwm import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
+        elif qtpy.API_NAME == "PyQt5":
+            from toolset.uic.pyqt5.editors.bwm import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
+        elif qtpy.API_NAME == "PyQt6":
+            from toolset.uic.pyqt6.editors.bwm import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
+        else:
+            raise ImportError(f"Unsupported Qt bindings: {qtpy.API_NAME}")
 
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)

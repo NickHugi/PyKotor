@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import qtpy
+
 from qtpy.QtGui import QColor, QImage, QPixmap
 from qtpy.QtWidgets import QColorDialog, QWidget
 
@@ -13,7 +15,17 @@ class ColorEdit(QWidget):
         self._color: Color = Color(255, 255, 255)
         self.allowAlpha: bool = False
 
-        from toolset.uic.pyqt5.widgets.color_edit import Ui_Form  # noqa: PLC0415  # pylint: disable=C0415
+        if qtpy.API_NAME == "PySide2":
+            from toolset.uic.pyside2.widgets.color_edit import Ui_Form  # noqa: PLC0415  # pylint: disable=C0415
+        elif qtpy.API_NAME == "PySide6":
+            from toolset.uic.pyside6.widgets.color_edit import Ui_Form  # noqa: PLC0415  # pylint: disable=C0415
+        elif qtpy.API_NAME == "PyQt5":
+            from toolset.uic.pyqt5.widgets.color_edit import Ui_Form  # noqa: PLC0415  # pylint: disable=C0415
+        elif qtpy.API_NAME == "PyQt6":
+            from toolset.uic.pyqt6.widgets.color_edit import Ui_Form  # noqa: PLC0415  # pylint: disable=C0415
+        else:
+            raise ImportError(f"Unsupported Qt bindings: {qtpy.API_NAME}")
+
         self.ui = Ui_Form()
         self.ui.setupUi(self)
 

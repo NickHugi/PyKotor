@@ -5,6 +5,8 @@ from contextlib import contextmanager
 from operator import attrgetter
 from typing import TYPE_CHECKING, ClassVar
 
+import qtpy
+
 from qtpy import QtCore
 from qtpy.QtCore import QRect, QRegExp, QSize
 from qtpy.QtGui import (
@@ -19,9 +21,6 @@ from qtpy.QtGui import (
 from qtpy.QtWidgets import QListWidgetItem, QMessageBox, QPlainTextEdit, QShortcut, QTextEdit, QWidget
 
 from pykotor.common.scriptdefs import KOTOR_CONSTANTS, KOTOR_FUNCTIONS, TSL_CONSTANTS, TSL_FUNCTIONS
-from pykotor.common.stream import BinaryWriter
-from pykotor.resource.formats.erf import read_erf, write_erf
-from pykotor.resource.formats.rim import read_rim, write_rim
 from pykotor.resource.type import ResourceType
 from pykotor.tools.misc import is_any_erf_type_file, is_bif_file, is_rim_file
 from toolset.gui.editor import Editor
@@ -41,8 +40,6 @@ if TYPE_CHECKING:
     )
 
     from pykotor.common.script import ScriptConstant, ScriptFunction
-    from pykotor.resource.formats.erf import ERF
-    from pykotor.resource.formats.rim import RIM
     from toolset.data.installation import HTInstallation
 
 
@@ -70,7 +67,16 @@ class NSSEditor(Editor):
         supported: list[ResourceType] = [ResourceType.NSS, ResourceType.NCS]
         super().__init__(parent, "Script Editor", "script", supported, supported, installation)
 
-        from toolset.uic.pyqt5.editors.nss import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
+        if qtpy.API_NAME == "PySide2":
+            from toolset.uic.pyside2.editors.nss import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
+        elif qtpy.API_NAME == "PySide6":
+            from toolset.uic.pyside6.editors.nss import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
+        elif qtpy.API_NAME == "PyQt5":
+            from toolset.uic.pyqt5.editors.nss import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
+        elif qtpy.API_NAME == "PyQt6":
+            from toolset.uic.pyqt6.editors.nss import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
+        else:
+            raise ImportError(f"Unsupported Qt bindings: {qtpy.API_NAME}")
 
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)

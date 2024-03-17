@@ -1,7 +1,8 @@
 from __future__ import annotations
 
-from copy import deepcopy
 from typing import TYPE_CHECKING
+
+import qtpy
 
 from qtpy.QtGui import QColor, QImage, QPixmap
 from qtpy.QtWidgets import QColorDialog
@@ -61,7 +62,16 @@ class AREEditor(Editor):
         self._minimap = None
         self._rooms: list[ARERoom] = []  # TODO(th3w1zard1): define somewhere in ui.
 
-        from toolset.uic.pyqt5.editors.are import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
+        if qtpy.API_NAME == "PySide2":
+            from toolset.uic.pyside2.editors.are import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
+        elif qtpy.API_NAME == "PySide6":
+            from toolset.uic.pyside6.editors.are import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
+        elif qtpy.API_NAME == "PyQt5":
+            from toolset.uic.pyqt5.editors.are import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
+        elif qtpy.API_NAME == "PyQt6":
+            from toolset.uic.pyqt6.editors.are import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
+        else:
+            raise ImportError(f"Unsupported Qt bindings: {qtpy.API_NAME}")
 
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)

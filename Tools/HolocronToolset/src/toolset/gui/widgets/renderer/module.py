@@ -18,9 +18,9 @@ from pykotor.resource.type import ResourceType
 from utility.error_handling import assert_with_variable_trace
 
 if TYPE_CHECKING:
+    from glm import vec3
     from qtpy.QtGui import QKeyEvent, QMouseEvent, QResizeEvent, QWheelEvent
     from qtpy.QtWidgets import QWidget
-    from glm import vec3
 
     from pykotor.common.module import Module
     from pykotor.resource.formats.bwm import BWMFace

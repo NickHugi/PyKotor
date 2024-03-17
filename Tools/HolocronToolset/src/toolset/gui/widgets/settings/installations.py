@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import os
 
+import qtpy
+
 from qtpy import QtCore
 from qtpy.QtCore import QSettings
 from qtpy.QtGui import QStandardItem, QStandardItemModel
@@ -35,7 +37,17 @@ class InstallationsWidget(QWidget):
         self.installationsModel: QStandardItemModel = QStandardItemModel()
         self.settings = GlobalSettings()
 
-        from toolset.uic.pyqt5.widgets.settings import installations
+        if qtpy.API_NAME == "PySide2":
+            from toolset.uic.pyside2.widgets.settings import installations  # noqa: PLC0415  # pylint: disable=C0415
+        elif qtpy.API_NAME == "PySide6":
+            from toolset.uic.pyside6.widgets.settings import installations  # noqa: PLC0415  # pylint: disable=C0415
+        elif qtpy.API_NAME == "PyQt5":
+            from toolset.uic.pyqt5.widgets.settings import installations  # noqa: PLC0415  # pylint: disable=C0415
+        elif qtpy.API_NAME == "PyQt6":
+            from toolset.uic.pyqt6.widgets.settings import installations  # noqa: PLC0415  # pylint: disable=C0415
+        else:
+            raise ImportError(f"Unsupported Qt bindings: {qtpy.API_NAME}")
+
         self.ui = installations.Ui_Form()
         self.ui.setupUi(self)
         self.setupValues()

@@ -5,6 +5,8 @@ import math
 from copy import deepcopy
 from typing import TYPE_CHECKING
 
+import qtpy
+
 from qtpy import QtCore
 from qtpy.QtCore import QPoint, QTimer
 from qtpy.QtGui import QColor, QIcon, QPixmap
@@ -45,9 +47,9 @@ from toolset.utils.window import openResourceEditor
 from utility.error_handling import assert_with_variable_trace
 
 if TYPE_CHECKING:
+    from glm import vec3
     from qtpy.QtGui import QFont, QKeyEvent
     from qtpy.QtWidgets import QCheckBox, QWidget
-    from glm import vec3
 
     from pykotor.gl.scene import Camera
     from pykotor.resource.formats.bwm.bwm_data import BWM
@@ -99,7 +101,16 @@ class ModuleDesigner(QMainWindow):  # noqa: PLR0904
         self.hideCameras: bool = False
         self.lockInstances: bool = False
 
-        from toolset.uic.pyqt5.windows.module_designer import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
+        if qtpy.API_NAME == "PySide2":
+            from toolset.uic.pyside2.windows.module_designer import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
+        elif qtpy.API_NAME == "PySide6":
+            from toolset.uic.pyside6.windows.module_designer import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
+        elif qtpy.API_NAME == "PyQt5":
+            from toolset.uic.pyqt5.windows.module_designer import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
+        elif qtpy.API_NAME == "PyQt6":
+            from toolset.uic.pyqt6.windows.module_designer import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
+        else:
+            raise ImportError(f"Unsupported Qt bindings: {qtpy.API_NAME}")
 
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)

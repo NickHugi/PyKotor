@@ -4,6 +4,8 @@ import math
 
 from typing import TYPE_CHECKING
 
+import qtpy
+
 from qtpy.QtGui import QColor, QIcon, QImage, QPixmap
 from qtpy.QtWidgets import QColorDialog, QDialog, QDoubleSpinBox
 
@@ -20,7 +22,16 @@ class PlaceableDialog(QDialog):
     def __init__(self, parent: QWidget, placeable: GITPlaceable):
         super().__init__(parent)
 
-        from toolset.uic.pyqt5.dialogs.instance.placeable import Ui_Dialog  # pylint: disable=C0415  # noqa: PLC0415
+        if qtpy.API_NAME == "PySide2":
+            from toolset.uic.pyside2.dialogs.instance.placeable import Ui_Dialog  # noqa: PLC0415  # pylint: disable=C0415
+        elif qtpy.API_NAME == "PySide6":
+            from toolset.uic.pyside6.dialogs.instance.placeable import Ui_Dialog  # noqa: PLC0415  # pylint: disable=C0415
+        elif qtpy.API_NAME == "PyQt5":
+            from toolset.uic.pyqt5.dialogs.instance.placeable import Ui_Dialog  # noqa: PLC0415  # pylint: disable=C0415
+        elif qtpy.API_NAME == "PyQt6":
+            from toolset.uic.pyqt6.dialogs.instance.placeable import Ui_Dialog  # noqa: PLC0415  # pylint: disable=C0415
+        else:
+            raise ImportError(f"Unsupported Qt bindings: {qtpy.API_NAME}")
 
         self.ui = Ui_Dialog()
         self.ui.setupUi(self)

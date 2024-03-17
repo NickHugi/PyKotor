@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import qtpy
+
 from qtpy.QtWidgets import QDialog
 
 from pykotor.resource.type import ResourceType
@@ -11,7 +13,16 @@ class SaveToModuleDialog(QDialog):
     def __init__(self, resref, restype, supported):
         super().__init__()
 
-        from toolset.uic.pyqt5.dialogs.save_to_module import Ui_Dialog  # pylint: disable=C0415  # noqa: PLC0415
+        if qtpy.API_NAME == "PySide2":
+            from toolset.uic.pyside2.dialogs.save_to_module import Ui_Dialog  # noqa: PLC0415  # pylint: disable=C0415
+        elif qtpy.API_NAME == "PySide6":
+            from toolset.uic.pyside6.dialogs.save_to_module import Ui_Dialog  # noqa: PLC0415  # pylint: disable=C0415
+        elif qtpy.API_NAME == "PyQt5":
+            from toolset.uic.pyqt5.dialogs.save_to_module import Ui_Dialog  # noqa: PLC0415  # pylint: disable=C0415
+        elif qtpy.API_NAME == "PyQt6":
+            from toolset.uic.pyqt6.dialogs.save_to_module import Ui_Dialog  # noqa: PLC0415  # pylint: disable=C0415
+        else:
+            raise ImportError(f"Unsupported Qt bindings: {qtpy.API_NAME}")
 
         self.ui = Ui_Dialog()
         self.ui.setupUi(self)

@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, NamedTuple
 
+import qtpy
+
 from qtpy.QtWidgets import QDialog, QMessageBox
 
 from pykotor.common.module import Module
@@ -52,7 +54,17 @@ class CloneModuleDialog(QDialog):
         """
         super().__init__(parent)
 
-        from toolset.uic.pyqt5.dialogs import clone_module  # pylint: disable=C0415  # noqa: PLC0415
+        if qtpy.API_NAME == "PySide2":
+            from toolset.uic.pyside2.dialogs import clone_module  # noqa: PLC0415  # pylint: disable=C0415
+        elif qtpy.API_NAME == "PySide6":
+            from toolset.uic.pyside6.dialogs import clone_module  # noqa: PLC0415  # pylint: disable=C0415
+        elif qtpy.API_NAME == "PyQt5":
+            from toolset.uic.pyqt5.dialogs import clone_module  # noqa: PLC0415  # pylint: disable=C0415
+        elif qtpy.API_NAME == "PyQt6":
+            from toolset.uic.pyqt6.dialogs import clone_module  # noqa: PLC0415  # pylint: disable=C0415
+        else:
+            raise ImportError(f"Unsupported Qt bindings: {qtpy.API_NAME}")
+
         self.ui = clone_module.Ui_Dialog()
         self.ui.setupUi(self)
 

@@ -7,8 +7,9 @@ from datetime import datetime, timedelta, timezone
 from tempfile import TemporaryDirectory
 from typing import TYPE_CHECKING, ClassVar
 
-from qtpy import QtCore
 import qtpy
+
+from qtpy import QtCore
 from qtpy.QtCore import QMetaObject, Qt
 from qtpy.QtGui import QIcon, QPixmap, QStandardItem
 from qtpy.QtWidgets import QFileDialog, QMainWindow, QMessageBox
