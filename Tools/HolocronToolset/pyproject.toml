@@ -23,6 +23,7 @@ dependencies = [
     "certifi==2021.10.8",
     "pyperclip~=1.8",
     "jsonpickle",
+    "qtpy",
 #    "pykotor>=1.7",
 #    "pykotor[gl]>=1.7"
 ]
