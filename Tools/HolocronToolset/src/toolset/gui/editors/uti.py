@@ -3,9 +3,8 @@ from __future__ import annotations
 from copy import deepcopy
 from typing import TYPE_CHECKING
 
-import qtpy
-
 from qtpy import QtCore
+import qtpy
 from qtpy.QtWidgets import QDialog, QListWidgetItem, QShortcut, QTreeWidgetItem
 
 from pykotor.common.misc import ResRef
@@ -54,13 +53,13 @@ class UTIEditor(Editor):
         self._uti = UTI()
 
         if qtpy.API_NAME == "PySide2":
-            pass  # noqa: PLC0415  # pylint: disable=C0415
+            from toolset.uic.pyside2.editors.uti import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
         elif qtpy.API_NAME == "PySide6":
-            pass  # noqa: PLC0415  # pylint: disable=C0415
+            from toolset.uic.pyside6.editors.uti import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
         elif qtpy.API_NAME == "PyQt5":
-            pass  # noqa: PLC0415  # pylint: disable=C0415
+            from toolset.uic.pyqt5.editors.uti import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
         elif qtpy.API_NAME == "PyQt6":
-            pass  # noqa: PLC0415  # pylint: disable=C0415
+            from toolset.uic.pyqt6.editors.uti import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
         else:
             raise ImportError(f"Unsupported Qt bindings: {qtpy.API_NAME}")
 
