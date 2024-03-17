@@ -2,14 +2,14 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from PyQt5.QtGui import QIcon, QPixmap
-from PyQt5.QtWidgets import QDialog
+from qtpy.QtGui import QIcon, QPixmap
+from qtpy.QtWidgets import QDialog
 
 from pykotor.common.misc import ResRef
 from pykotor.resource.generics.git import GITModuleLink
 
 if TYPE_CHECKING:
-    from PyQt5.QtWidgets import QWidget
+    from qtpy.QtWidgets import QWidget
 
     from pykotor.resource.generics.git import GITTrigger
     from toolset.data.installation import HTInstallation
@@ -19,7 +19,7 @@ class TriggerDialog(QDialog):
     def __init__(self, parent: QWidget, trigger: GITTrigger, installation: HTInstallation):
         super().__init__(parent)
 
-        from toolset.uic.dialogs.instance.trigger import Ui_Dialog  # pylint: disable=C0415  # noqa: PLC0415
+        from toolset.uic.pyqt5.dialogs.instance.trigger import Ui_Dialog  # pylint: disable=C0415  # noqa: PLC0415
 
         self.ui = Ui_Dialog()
         self.ui.setupUi(self)

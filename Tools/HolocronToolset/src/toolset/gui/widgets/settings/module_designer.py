@@ -2,18 +2,18 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from PyQt5 import QtCore
+from qtpy import QtCore
 
 from toolset.data.settings import Settings
 from toolset.gui.widgets.settings.base import SettingsWidget
 from toolset.utils.misc import QtKey, QtMouse
 
 if TYPE_CHECKING:
-    from PyQt5.QtWidgets import QWidget
+    from qtpy.QtWidgets import QWidget
 
 
 class ModuleDesignerWidget(SettingsWidget):
-    editedSignal = QtCore.pyqtSignal()
+    editedSignal = QtCore.Signal()
 
     def __init__(self, parent: QWidget):
         """Initializes the Module Designer UI.
@@ -35,7 +35,7 @@ class ModuleDesignerWidget(SettingsWidget):
         self.binds: list = []
         self.colours: list = []
 
-        from toolset.uic.widgets.settings import module_designer
+        from toolset.uic.pyqt5.widgets.settings import module_designer
 
         self.ui = module_designer.Ui_Form()
         self.ui.setupUi(self)

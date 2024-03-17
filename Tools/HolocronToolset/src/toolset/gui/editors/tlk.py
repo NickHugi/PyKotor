@@ -3,10 +3,10 @@ from __future__ import annotations
 from time import sleep
 from typing import TYPE_CHECKING
 
-from PyQt5 import QtCore
-from PyQt5.QtCore import QSortFilterProxyModel, QThread, Qt
-from PyQt5.QtGui import QStandardItem, QStandardItemModel
-from PyQt5.QtWidgets import QAction, QDialog, QMenu, QMessageBox, QProgressBar, QShortcut, QVBoxLayout
+from qtpy import QtCore
+from qtpy.QtCore import QSortFilterProxyModel, QThread, Qt
+from qtpy.QtGui import QStandardItem, QStandardItemModel
+from qtpy.QtWidgets import QAction, QDialog, QMenu, QMessageBox, QProgressBar, QShortcut, QVBoxLayout
 
 from pykotor.common.language import Language
 from pykotor.common.misc import ResRef
@@ -21,8 +21,8 @@ from toolset.utils.window import addWindow, openResourceEditor
 if TYPE_CHECKING:
     import os
 
-    from PyQt5.QtCore import QModelIndex
-    from PyQt5.QtWidgets import QWidget
+    from qtpy.QtCore import QModelIndex
+    from qtpy.QtWidgets import QWidget
 
     from pykotor.extract.file import FileResource
     from toolset.data.installation import HTInstallation
@@ -49,7 +49,7 @@ class TLKEditor(Editor):
         supported: list[ResourceType] = [ResourceType.TLK, ResourceType.TLK_XML, ResourceType.TLK_JSON]
         super().__init__(parent, "TLK Editor", "none", supported, supported, installation)
 
-        from toolset.uic.editors.tlk import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
+        from toolset.uic.pyqt5.editors.tlk import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
 
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
@@ -401,10 +401,10 @@ class LoaderDialog(QDialog):
 
 
 class LoaderWorker(QThread):
-    batch = QtCore.pyqtSignal(object)
-    entryCount = QtCore.pyqtSignal(object)
-    loaded = QtCore.pyqtSignal()
-    language = QtCore.pyqtSignal(object)
+    batch = QtCore.Signal(object)
+    entryCount = QtCore.Signal(object)
+    loaded = QtCore.Signal()
+    language = QtCore.Signal(object)
 
     def __init__(self, fileData, model):
         super().__init__()

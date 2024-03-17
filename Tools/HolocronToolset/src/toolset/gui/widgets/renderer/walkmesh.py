@@ -5,9 +5,9 @@ import math
 from copy import copy
 from typing import TYPE_CHECKING, Generic, NamedTuple, TypeVar
 
-from PyQt5 import QtCore
-from PyQt5.QtCore import QPointF, QRect, QRectF, QTimer
-from PyQt5.QtGui import (
+from qtpy import QtCore
+from qtpy.QtCore import QPointF, QRect, QRectF, QTimer
+from qtpy.QtGui import (
     QColor,
     QImage,
     QPainter,
@@ -16,7 +16,7 @@ from PyQt5.QtGui import (
     QPixmap,
     QTransform,
 )
-from PyQt5.QtWidgets import QWidget
+from qtpy.QtWidgets import QWidget
 
 from pykotor.common.geometry import Vector2, Vector3
 from pykotor.resource.formats.tpc import TPCTextureFormat
@@ -36,7 +36,7 @@ from toolset.utils.misc import clamp
 from utility.error_handling import assert_with_variable_trace
 
 if TYPE_CHECKING:
-    from PyQt5.QtGui import (
+    from qtpy.QtGui import (
         QKeyEvent,
         QMouseEvent,
         QPaintEvent,
@@ -130,22 +130,22 @@ class WalkmeshSelection(Generic[T]):
 
 
 class WalkmeshRenderer(QWidget):
-    mouseMoved = QtCore.pyqtSignal(object, object, object, object)  # screen coords, screen delta, mouse, keys
+    mouseMoved = QtCore.Signal(object, object, object, object)  # screen coords, screen delta, mouse, keys
     """Signal emitted when mouse is moved over the widget."""
 
-    mouseScrolled = QtCore.pyqtSignal(object, object, object)  # screen delta, mouse, keys
+    mouseScrolled = QtCore.Signal(object, object, object)  # screen delta, mouse, keys
     """Signal emitted when mouse is scrolled over the widget."""
 
-    mouseReleased = QtCore.pyqtSignal(object, object, object)  # screen coords, mouse, keys
+    mouseReleased = QtCore.Signal(object, object, object)  # screen coords, mouse, keys
     """Signal emitted when a mouse button is released after being pressed on the widget."""
 
-    mousePressed = QtCore.pyqtSignal(object, object, object)  # screen coords, mouse, keys
+    mousePressed = QtCore.Signal(object, object, object)  # screen coords, mouse, keys
     """Signal emitted when a mouse button is pressed on the widget."""
 
-    keyPressed = QtCore.pyqtSignal(object, object)  # mouse keys
-    keyReleased = QtCore.pyqtSignal(object, object)  # mouse keys
-    instanceHovered = QtCore.pyqtSignal(object)  # instance
-    instancePressed = QtCore.pyqtSignal(object)  # instance
+    keyPressed = QtCore.Signal(object, object)  # mouse keys
+    keyReleased = QtCore.Signal(object, object)  # mouse keys
+    instanceHovered = QtCore.Signal(object)  # instance
+    instancePressed = QtCore.Signal(object)  # instance
 
     def __init__(self, parent: QWidget):
         """Initializes the WalkmeshViewer widget.

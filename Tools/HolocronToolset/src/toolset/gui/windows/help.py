@@ -15,9 +15,9 @@ from typing import TYPE_CHECKING, Callable
 
 import markdown
 
-from PyQt5 import QtCore
-from PyQt5.QtCore import Qt
-from PyQt5.QtWidgets import QMainWindow, QMessageBox, QTreeWidgetItem
+from qtpy import QtCore
+from qtpy.QtCore import Qt
+from qtpy.QtWidgets import QMainWindow, QMessageBox, QTreeWidgetItem
 
 from pykotor.common.stream import BinaryReader
 from pykotor.tools.encoding import decode_bytes_with_fallbacks
@@ -31,7 +31,7 @@ from utility.system.path import Path
 if TYPE_CHECKING:
     import os
 
-    from PyQt5.QtWidgets import QWidget
+    from qtpy.QtWidgets import QWidget
 
 class HelpWindow(QMainWindow):
     ENABLE_UPDATES = True
@@ -41,7 +41,7 @@ class HelpWindow(QMainWindow):
 
         self.version: tuple[int, ...] | None = None
 
-        from toolset.uic.windows import help as toolset_help  # noqa: PLC0415  # pylint: disable=C0415
+        from toolset.uic.pyqt5.windows import help as toolset_help  # noqa: PLC0415  # pylint: disable=C0415
         self.ui = toolset_help.Ui_MainWindow()
         self.ui.setupUi(self)
         self._setupSignals()

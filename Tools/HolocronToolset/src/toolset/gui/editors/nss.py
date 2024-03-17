@@ -5,9 +5,9 @@ from contextlib import contextmanager
 from operator import attrgetter
 from typing import TYPE_CHECKING, ClassVar
 
-from PyQt5 import QtCore
-from PyQt5.QtCore import QRect, QRegExp, QSize
-from PyQt5.QtGui import (
+from qtpy import QtCore
+from qtpy.QtCore import QRect, QRegExp, QSize
+from qtpy.QtGui import (
     QColor,
     QFont,
     QFontMetricsF,
@@ -16,7 +16,7 @@ from PyQt5.QtGui import (
     QTextCharFormat,
     QTextFormat,
 )
-from PyQt5.QtWidgets import QListWidgetItem, QMessageBox, QPlainTextEdit, QShortcut, QTextEdit, QWidget
+from qtpy.QtWidgets import QListWidgetItem, QMessageBox, QPlainTextEdit, QShortcut, QTextEdit, QWidget
 
 from pykotor.common.scriptdefs import KOTOR_CONSTANTS, KOTOR_FUNCTIONS, TSL_CONSTANTS, TSL_FUNCTIONS
 from pykotor.common.stream import BinaryWriter
@@ -33,7 +33,7 @@ from utility.system.path import Path
 if TYPE_CHECKING:
     import os
 
-    from PyQt5.QtGui import (
+    from qtpy.QtGui import (
         QPaintEvent,
         QResizeEvent,
         QTextBlock,
@@ -70,7 +70,7 @@ class NSSEditor(Editor):
         supported: list[ResourceType] = [ResourceType.NSS, ResourceType.NCS]
         super().__init__(parent, "Script Editor", "script", supported, supported, installation)
 
-        from toolset.uic.editors.nss import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
+        from toolset.uic.pyqt5.editors.nss import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
 
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)

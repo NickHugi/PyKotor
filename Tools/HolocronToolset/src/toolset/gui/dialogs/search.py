@@ -3,8 +3,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any, Callable, Generator
 
-from PyQt5 import QtCore
-from PyQt5.QtWidgets import QDialog, QListWidgetItem
+from qtpy import QtCore
+from qtpy.QtWidgets import QDialog, QListWidgetItem
 
 from pykotor.extract.file import FileResource
 from pykotor.resource.type import ResourceType
@@ -13,7 +13,7 @@ from toolset.gui.dialogs.asyncloader import AsyncBatchLoader
 from toolset.utils.window import openResourceEditor
 
 if TYPE_CHECKING:
-    from PyQt5.QtWidgets import QWidget
+    from qtpy.QtWidgets import QWidget
 
 @dataclass
 class FileSearchQuery:
@@ -30,12 +30,12 @@ class FileSearchQuery:
 
 class FileSearcher(QDialog):
 
-    fileResults = QtCore.pyqtSignal(list, HTInstallation)
+    fileResults = QtCore.Signal(list, HTInstallation)
 
     def __init__(self, parent: QWidget | None, installations: dict[str, HTInstallation]):
         super().__init__(parent)
 
-        from toolset.uic.dialogs import search  # pylint: disable=C0415  # noqa: PLC0415
+        from toolset.uic.pyqt5.dialogs import search  # pylint: disable=C0415  # noqa: PLC0415
         self.ui = search.Ui_Dialog()
         self.ui.setupUi(self)
         assert len(installations) > 0, "No installations passed to FileSearcher"
@@ -147,7 +147,7 @@ class FileSearcher(QDialog):
 
 
 class FileResults(QDialog):
-    selectionSignal = QtCore.pyqtSignal(FileResource)
+    selectionSignal = QtCore.Signal(FileResource)
 
     def __init__(
         self,
@@ -172,7 +172,7 @@ class FileResults(QDialog):
         """
         super().__init__(parent)
 
-        from toolset.uic.dialogs.search_result import Ui_Dialog  # pylint: disable=C0415  # noqa: PLC0415
+        from toolset.uic.pyqt5.dialogs.search_result import Ui_Dialog  # pylint: disable=C0415  # noqa: PLC0415
         self.ui = Ui_Dialog()
         self.ui.setupUi(self)
 

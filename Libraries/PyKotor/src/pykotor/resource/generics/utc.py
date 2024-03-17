@@ -223,7 +223,7 @@ class UTCClass:
 
     def __eq__(
         self,
-        other: UTCClass,
+        other: UTCClass | object,
     ):
         if isinstance(other, UTCClass):
             return self.class_id == other.class_id and self.class_level == self.class_level
@@ -479,7 +479,8 @@ def dismantle_utc(
             power_struct.set_uint16("Spell", power)
             power_struct.set_uint8("SpellFlags", 1)
             power_struct.set_uint8("SpellMetaMagic", 0)
-        power_list._structs = sorted(power_list._structs, key=lambda power_struct_local: utc_class._original_powers_mapping.get(power_struct_local.get_uint16("Spell"), float("inf")))
+        power_list._structs = sorted(power_list._structs,
+                                     key=lambda power_struct_local: utc_class._original_powers_mapping.get(power_struct_local.get_uint16("Spell"), float("inf")))
 
     feat_list: GFFList = root.set_list("FeatList", GFFList())
     for feat in utc.feats:
@@ -489,7 +490,7 @@ def dismantle_utc(
     # Might be better to use GFFStructInterface from that PR.
     feat_list._structs = sorted(feat_list._structs, key=lambda feat: utc._original_feat_mapping.get(feat.get_uint16("Feat"), float("inf")))
 
-    # Not sure what these are for, verified they exist in K1's 'c_drdg.utc' in data\templates.bif
+    # Not sure what these are for, verified they exist in K1's 'c_drdg.utc' in data\templates.bif. Might be unused in which case this can be deleted.
     if utc._extra_unimplemented_skills:
         for val in utc._extra_unimplemented_skills:
             skill_list.add(0).set_uint8("Rank", val)

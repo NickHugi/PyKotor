@@ -4,7 +4,7 @@ from contextlib import suppress
 from copy import deepcopy
 from typing import TYPE_CHECKING
 
-from PyQt5.QtWidgets import QMessageBox
+from qtpy.QtWidgets import QMessageBox
 
 from pykotor.common.misc import ResRef
 from pykotor.common.module import Module
@@ -25,7 +25,7 @@ from toolset.utils.window import openResourceEditor
 if TYPE_CHECKING:
     import os
 
-    from PyQt5.QtWidgets import QMainWindow, QWidget
+    from qtpy.QtWidgets import QMainWindow, QWidget
 
     from pykotor.extract.file import ResourceResult
     from pykotor.resource.formats.twoda.twoda_data import TwoDA
@@ -64,7 +64,7 @@ class UTPEditor(Editor):
         self._placeables2DA = installation.htGetCache2DA("placeables")
         self._utp = UTP()
 
-        from toolset.uic.editors.utp import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
+        from toolset.uic.pyqt5.editors.utp import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
         self._setupMenus()

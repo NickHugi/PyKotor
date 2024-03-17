@@ -10,7 +10,6 @@ def update_sys_path(path: pathlib.Path):
     if working_dir not in sys.path:
         sys.path.append(working_dir)
 
-
 file_absolute_path = pathlib.Path(__file__).resolve()
 utility_path = file_absolute_path.parents[4] / "Libraries" / "Utility" / "src"
 if utility_path.exists():
@@ -18,30 +17,35 @@ if utility_path.exists():
 
 from utility.system.path import Path  # noqa: E402
 
-# working dir should always be 'toolset' when running this script.
-this_script_path = Path(__file__).absolute()
-HERE = this_script_path.parent
-if this_script_path.parent.name.lower() != "toolset":
-    HERE = Path(__file__).parents[1]
-    os.chdir(HERE)
+# Working dir should always be 'toolset' when running this script.
+TOOLSET_DIR = Path(file_absolute_path.parents[1], "toolset")
+if not TOOLSET_DIR.safe_isdir():
+    while len(TOOLSET_DIR.parts) > 1 and TOOLSET_DIR.name.lower() != "toolset":
+        TOOLSET_DIR = TOOLSET_DIR.parent
+    if TOOLSET_DIR.name.lower() != "toolset":
+        raise RuntimeError("Could not find the toolset folder! Please ensure this script is ran somewhere inside the toolset folder or a subdirectory.")
 
-UI_SOURCE_DIR = Path("../src/ui/").absolute()
-UI_TARGET_DIR = Path("../src/toolset/uic/").absolute()
-QRC_SOURCE_PATH = Path("../src/resources/resources.qrc").absolute()
-QRC_TARGET_PATH = Path("../src/resources_rc.py").absolute()
+os.chdir(TOOLSET_DIR)
+
+UI_SOURCE_DIR = Path("../ui/")
+UI_TARGET_DIR = Path("../toolset/uic/")
+QRC_SOURCE_PATH = Path("../resources/resources.qrc")
+QRC_TARGET_PATH = Path("../toolset/rcc")
 
 
-def get_ui_files() -> list[Path]:
-    return list(Path(UI_SOURCE_DIR).safe_rglob("*.ui"))
-
-
-def compile_ui(*, ignore_timestamp: bool = False):
-    for ui_file in get_ui_files():
+def compile_ui(qt_version: str, *, ignore_timestamp: bool = False):
+    ui_compiler = {
+        "pyside2": "pyside2-uic",
+        "pyside6": "pyside6-uic",
+        "pyqt5": "pyuic5",
+        "pyqt6": "pyuic6"
+    }[qt_version]
+    for ui_file in Path(UI_SOURCE_DIR).safe_rglob("*.ui"):
         if ui_file.safe_isdir():
             print(f"Skipping {ui_file}, not a file.")
             continue
         relpath = ui_file.relative_to(UI_SOURCE_DIR)
-        subdir_ui_target = Path(UI_TARGET_DIR, relpath)
+        subdir_ui_target = Path(UI_TARGET_DIR, qt_version, relpath).safe_relative_to(TOOLSET_DIR)
         ui_target: Path = subdir_ui_target.with_suffix(".py")
 
         if not ui_target.safe_isfile():
@@ -54,26 +58,49 @@ def compile_ui(*, ignore_timestamp: bool = False):
 
         # Only recompile if source file is newer than the existing target file or ignore_timestamp is set to True
         if source_timestamp > target_timestamp or ignore_timestamp:
-            command = f"pyuic5 {ui_file.relative_to(HERE)} -o {ui_target}"
+            command = f"{ui_compiler} {ui_file.safe_relative_to(TOOLSET_DIR)} -o {ui_target}"
             print(command)
             os.system(command)  # noqa: S605
 
 
-def compile_qrc(*, ignore_timestamp: bool = False):
+def compile_qrc(qt_version: str, *, ignore_timestamp: bool = False):
     qrc_source: Path = Path(QRC_SOURCE_PATH).resolve()
-    qrc_target = Path(QRC_TARGET_PATH).resolve()
+    qrc_target = Path(QRC_TARGET_PATH, f"resources_rc_{qt_version}.py").resolve()
+
+    if not qrc_target.parent.safe_isdir():
+        print("mkdir", qrc_target.parent)
+        qrc_target.parent.mkdir(exist_ok=True, parents=True)
 
     # If the target file does not yet exist, use timestamp=0 as this will force the timestamp check to pass
     source_timestamp: float = qrc_source.stat().st_mtime
     target_timestamp: float = qrc_target.stat().st_mtime if qrc_target.safe_isfile() else 0.0
 
-    # Only recompile if source file is newer than the existing target file or ignore_timestamp is set to True
     if source_timestamp > target_timestamp or ignore_timestamp:
-        command = f"pyrcc5 {qrc_source} -o {qrc_target}"
+        rc_compiler = {
+            "pyside2": "pyside2-rcc",
+            "pyside6": "pyside6-rcc",
+            "pyqt5": "pyrcc5",
+            "pyqt6": "pyside6-rcc"
+        }[qt_version]
+        command = f"{rc_compiler} {qrc_source} -o {qrc_target}"
         os.system(command)  # noqa: S605
         print(command)
 
 
 if __name__ == "__main__":
-    compile_ui(ignore_timestamp=False)
-    compile_qrc(ignore_timestamp=True)
+    qt_versions = ["pyside2", "pyside6", "pyqt5", "pyqt6"]
+    qt_versions_to_run: list[str] | None = None
+    if len(sys.argv) > 1:
+        qt_version = sys.argv[1]
+        if qt_version in qt_versions:
+            qt_versions_to_run = [qt_version]
+        else:
+            print(f"Invalid Qt version specified. Please choose from [{qt_versions}].")
+            sys.exit(1)
+    else:
+        qt_versions_to_run = qt_versions
+
+    for qt_version in qt_versions_to_run:
+        compile_ui(qt_version, ignore_timestamp=True)
+        compile_qrc(qt_version, ignore_timestamp=True)
+    print("All ui compilations completed")

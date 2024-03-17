@@ -6,9 +6,9 @@ from abc import ABC, abstractmethod
 from copy import deepcopy
 from typing import TYPE_CHECKING
 
-from PyQt5 import QtCore
-from PyQt5.QtGui import QColor, QIcon, QKeySequence
-from PyQt5.QtWidgets import QDialog, QListWidgetItem, QMenu
+from qtpy import QtCore
+from qtpy.QtGui import QColor, QIcon, QKeySequence
+from qtpy.QtWidgets import QDialog, QListWidgetItem, QMenu
 
 from pykotor.common.geometry import SurfaceMaterial, Vector2, Vector3
 from pykotor.common.misc import Color
@@ -52,9 +52,9 @@ from toolset.utils.window import openResourceEditor
 if TYPE_CHECKING:
     import os
 
-    from PyQt5.QtCore import QPoint
-    from PyQt5.QtGui import QKeyEvent
-    from PyQt5.QtWidgets import QCheckBox, QWidget
+    from qtpy.QtCore import QPoint
+    from qtpy.QtGui import QKeyEvent
+    from qtpy.QtWidgets import QCheckBox, QWidget
 
     from pykotor.extract.file import LocationResult, ResourceIdentifier, ResourceResult
     from pykotor.resource.formats.bwm.bwm_data import BWM
@@ -92,7 +92,7 @@ def openInstanceDialog(parent: QWidget, instance: GITInstance, installation: HTI
 
 
 class GITEditor(Editor):
-    settingsUpdated = QtCore.pyqtSignal(object)
+    settingsUpdated = QtCore.Signal(object)
 
     def __init__(self, parent: QWidget | None, installation: HTInstallation | None = None):
         """Initializes the GIT editor.
@@ -107,7 +107,7 @@ class GITEditor(Editor):
         supported = [ResourceType.GIT]
         super().__init__(parent, "GIT Editor", "git", supported, supported, installation)
 
-        from toolset.uic.editors.git import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
+        from toolset.uic.pyqt5.editors.git import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
 
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)

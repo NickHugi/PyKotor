@@ -4,10 +4,10 @@ import time
 
 from typing import TYPE_CHECKING
 
-from PyQt5 import QtCore
-from PyQt5.QtCore import QBuffer, QIODevice
-from PyQt5.QtMultimedia import QMediaContent, QMediaPlayer
-from PyQt5.QtWidgets import QFileDialog, QMainWindow
+from qtpy import QtCore
+from qtpy.QtCore import QBuffer, QIODevice
+from qtpy.QtMultimedia import QMediaContent, QMediaPlayer
+from qtpy.QtWidgets import QFileDialog, QMainWindow
 
 from pykotor.common.stream import BinaryReader
 from pykotor.extract.file import ResourceIdentifier
@@ -16,8 +16,8 @@ from pykotor.tools import sound
 if TYPE_CHECKING:
     import os
 
-    from PyQt5.QtGui import QCloseEvent
-    from PyQt5.QtWidgets import QWidget
+    from qtpy.QtGui import QCloseEvent
+    from qtpy.QtWidgets import QWidget
 
     from pykotor.resource.type import ResourceType
 
@@ -26,7 +26,7 @@ class AudioPlayer(QMainWindow):
     def __init__(self, parent: QWidget | None):
         super().__init__(parent)
 
-        from toolset.uic.windows.audio_player import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
+        from toolset.uic.pyqt5.windows.audio_player import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
 
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)

@@ -5,11 +5,11 @@ from typing import TYPE_CHECKING
 
 import pyperclip
 
-from PyQt5 import QtCore
-from PyQt5.QtCore import QBuffer, QIODevice, QItemSelectionModel, QTimer
-from PyQt5.QtGui import QBrush, QColor, QStandardItem, QStandardItemModel
-from PyQt5.QtMultimedia import QMediaContent, QMediaPlayer
-from PyQt5.QtWidgets import QListWidgetItem, QMenu, QShortcut
+from qtpy import QtCore
+from qtpy.QtCore import QBuffer, QIODevice, QItemSelectionModel, QTimer
+from qtpy.QtGui import QBrush, QColor, QStandardItem, QStandardItemModel
+from qtpy.QtMultimedia import QMediaContent, QMediaPlayer
+from qtpy.QtWidgets import QListWidgetItem, QMenu, QShortcut
 
 from pykotor.common.misc import ResRef
 from pykotor.extract.installation import SearchLocation
@@ -35,9 +35,9 @@ from utility.error_handling import assert_with_variable_trace
 if TYPE_CHECKING:
     import os
 
-    from PyQt5.QtCore import QItemSelection, QModelIndex, QPoint
-    from PyQt5.QtGui import QKeyEvent, QMouseEvent
-    from PyQt5.QtWidgets import QPlainTextEdit, QWidget
+    from qtpy.QtCore import QItemSelection, QModelIndex, QPoint
+    from qtpy.QtGui import QKeyEvent, QMouseEvent
+    from qtpy.QtWidgets import QPlainTextEdit, QWidget
 
     from pykotor.common.language import LocalizedString
     from pykotor.resource.formats.twoda.twoda_data import TwoDA
@@ -73,7 +73,7 @@ class DLGEditor(Editor):
         supported: list[ResourceType] = [ResourceType.DLG]
         super().__init__(parent, "Dialog Editor", "dialog", supported, supported, installation)
 
-        from toolset.uic.editors.dlg import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
+        from toolset.uic.pyqt5.editors.dlg import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
         self._setupMenus()

@@ -3,10 +3,10 @@ from __future__ import annotations
 from copy import deepcopy
 from typing import TYPE_CHECKING
 
-from PyQt5 import QtCore
-from PyQt5.QtCore import QBuffer, QIODevice
-from PyQt5.QtMultimedia import QMediaContent, QMediaPlayer
-from PyQt5.QtWidgets import QListWidgetItem, QMessageBox
+from qtpy import QtCore
+from qtpy.QtCore import QBuffer, QIODevice
+from qtpy.QtMultimedia import QMediaContent, QMediaPlayer
+from qtpy.QtWidgets import QListWidgetItem, QMessageBox
 
 from pykotor.common.misc import ResRef
 from pykotor.resource.formats.gff import write_gff
@@ -18,9 +18,9 @@ from toolset.gui.editor import Editor
 if TYPE_CHECKING:
     import os
 
-    from PyQt5.QtCore import QObject
-    from PyQt5.QtGui import QCloseEvent
-    from PyQt5.QtWidgets import QWidget
+    from qtpy.QtCore import QObject
+    from qtpy.QtGui import QCloseEvent
+    from qtpy.QtWidgets import QWidget
 
     from toolset.data.installation import HTInstallation
 
@@ -57,7 +57,7 @@ class UTSEditor(Editor):
         self.player = QMediaPlayer(self)
         self.buffer = QBuffer(self)
 
-        from toolset.uic.editors.uts import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
+        from toolset.uic.pyqt5.editors.uts import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
 
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)

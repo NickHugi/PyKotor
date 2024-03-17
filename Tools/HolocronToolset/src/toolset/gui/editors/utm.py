@@ -17,7 +17,7 @@ from utility.error_handling import format_exception_with_variables
 if TYPE_CHECKING:
     import os
 
-    from PyQt5.QtWidgets import QWidget
+    from qtpy.QtWidgets import QWidget
 
     from pykotor.common.misc import CaseInsensitiveDict
     from pykotor.resource.formats.gff.gff_data import GFF
@@ -45,7 +45,7 @@ class UTMEditor(Editor):
 
         self._utm: UTM = UTM()
 
-        from toolset.uic.editors.utm import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
+        from toolset.uic.pyqt5.editors.utm import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
         self._setupMenus()

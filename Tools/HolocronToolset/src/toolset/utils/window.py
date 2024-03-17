@@ -2,8 +2,8 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from PyQt5.QtCore import Qt
-from PyQt5.QtWidgets import QMessageBox, QWidget
+from qtpy.QtCore import Qt
+from qtpy.QtWidgets import QMessageBox, QWidget
 
 from pykotor.resource.formats.erf.erf_data import ERFType
 from pykotor.resource.type import ResourceType
@@ -14,7 +14,7 @@ from utility.error_handling import universal_simplify_exception
 if TYPE_CHECKING:
     import os
 
-    from PyQt5.QtWidgets import QMainWindow
+    from qtpy.QtWidgets import QMainWindow
 
     from gui.editor import Editor
     from toolset.data.installation import HTInstallation

@@ -4,9 +4,9 @@ import struct
 
 from typing import TYPE_CHECKING
 
-from PyQt5 import QtCore
-from PyQt5.QtGui import QColor, QIcon, QImage, QPixmap
-from PyQt5.QtWidgets import QListWidgetItem, QShortcut
+from qtpy import QtCore
+from qtpy.QtGui import QColor, QIcon, QImage, QPixmap
+from qtpy.QtWidgets import QListWidgetItem, QShortcut
 
 from pykotor.common.geometry import SurfaceMaterial
 from pykotor.resource.formats.bwm import read_bwm, write_bwm
@@ -17,7 +17,7 @@ from utility.error_handling import assert_with_variable_trace
 if TYPE_CHECKING:
     import os
 
-    from PyQt5.QtWidgets import QWidget
+    from qtpy.QtWidgets import QWidget
 
     from pykotor.common.geometry import Vector2, Vector3
     from pykotor.resource.formats.bwm import BWM, BWMFace
@@ -49,7 +49,7 @@ class BWMEditor(Editor):
         supported = [ResourceType.WOK, ResourceType.DWK, ResourceType.PWK]
         super().__init__(parent, "Walkmesh Painter", "walkmesh", supported, supported, installation)
 
-        from toolset.uic.editors.bwm import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
+        from toolset.uic.pyqt5.editors.bwm import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
 
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)

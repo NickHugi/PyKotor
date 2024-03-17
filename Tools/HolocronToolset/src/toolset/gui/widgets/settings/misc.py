@@ -1,20 +1,20 @@
 from __future__ import annotations
 
-from PyQt5 import QtCore
-from PyQt5.QtWidgets import QWidget
+from qtpy import QtCore
+from qtpy.QtWidgets import QWidget
 
 from toolset.gui.widgets.settings.installations import GlobalSettings
 
 
 class MiscWidget(QWidget):
-    editedSignal = QtCore.pyqtSignal()
+    editedSignal = QtCore.Signal()
 
     def __init__(self, parent: QWidget):
         super().__init__(parent)
 
         self.settings = GlobalSettings()
 
-        from toolset.uic.widgets.settings import misc
+        from toolset.uic.pyqt5.widgets.settings import misc
         self.ui = misc.Ui_Form()
         self.ui.setupUi(self)
         self.setupValues()

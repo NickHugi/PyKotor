@@ -5,10 +5,10 @@ import math
 from copy import deepcopy
 from typing import TYPE_CHECKING
 
-from PyQt5 import QtCore
-from PyQt5.QtCore import QPoint, QTimer
-from PyQt5.QtGui import QColor, QIcon, QPixmap
-from PyQt5.QtWidgets import QAction, QListWidgetItem, QMainWindow, QMenu, QMessageBox, QTreeWidgetItem
+from qtpy import QtCore
+from qtpy.QtCore import QPoint, QTimer
+from qtpy.QtGui import QColor, QIcon, QPixmap
+from qtpy.QtWidgets import QAction, QListWidgetItem, QMainWindow, QMenu, QMessageBox, QTreeWidgetItem
 
 from pykotor.common.geometry import SurfaceMaterial, Vector2, Vector3, Vector4
 from pykotor.common.misc import Color, ResRef
@@ -45,8 +45,8 @@ from toolset.utils.window import openResourceEditor
 from utility.error_handling import assert_with_variable_trace
 
 if TYPE_CHECKING:
-    from PyQt5.QtGui import QFont, QKeyEvent
-    from PyQt5.QtWidgets import QCheckBox, QWidget
+    from qtpy.QtGui import QFont, QKeyEvent
+    from qtpy.QtWidgets import QCheckBox, QWidget
     from glm import vec3
 
     from pykotor.gl.scene import Camera
@@ -99,7 +99,7 @@ class ModuleDesigner(QMainWindow):  # noqa: PLR0904
         self.hideCameras: bool = False
         self.lockInstances: bool = False
 
-        from toolset.uic.windows.module_designer import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
+        from toolset.uic.pyqt5.windows.module_designer import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
 
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)

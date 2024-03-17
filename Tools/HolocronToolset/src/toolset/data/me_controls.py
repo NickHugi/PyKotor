@@ -6,9 +6,9 @@ import math
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, Any, NoReturn
 
-from PyQt5 import QtCore
-from PyQt5.QtCore import QPoint
-from PyQt5.QtGui import QKeySequence
+from qtpy import QtCore
+from qtpy.QtCore import QPoint
+from qtpy.QtGui import QKeySequence
 from jsmin import jsmin
 
 from pykotor.common.geometry import Vector3

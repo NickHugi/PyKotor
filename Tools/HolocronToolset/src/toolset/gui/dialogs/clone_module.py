@@ -2,14 +2,14 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, NamedTuple
 
-from PyQt5.QtWidgets import QDialog, QMessageBox
+from qtpy.QtWidgets import QDialog, QMessageBox
 
 from pykotor.common.module import Module
 from pykotor.tools import module
 from toolset.gui.dialogs.asyncloader import AsyncLoader
 
 if TYPE_CHECKING:
-    from PyQt5.QtWidgets import QWidget
+    from qtpy.QtWidgets import QWidget
 
     from toolset.data.installation import HTInstallation
 
@@ -52,7 +52,7 @@ class CloneModuleDialog(QDialog):
         """
         super().__init__(parent)
 
-        from toolset.uic.dialogs import clone_module  # pylint: disable=C0415  # noqa: PLC0415
+        from toolset.uic.pyqt5.dialogs import clone_module  # pylint: disable=C0415  # noqa: PLC0415
         self.ui = clone_module.Ui_Dialog()
         self.ui.setupUi(self)
 

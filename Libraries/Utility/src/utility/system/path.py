@@ -544,6 +544,11 @@ class Path(PurePath, pathlib.Path):  # type: ignore[misc]
             permission_value += 0o1  # Add 1 for execute permission (001 in binary)
         return permission_value
 
+    def safe_relative_to(self, *other: PathElem) -> Self:
+        with contextlib.suppress(ValueError):
+            return super().relative_to(*other)
+        return self.__class__(os.path.relpath(self, self.__class__(*other)))
+
     def has_access(
         self,
         mode: int = 0o6,

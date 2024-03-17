@@ -3,8 +3,8 @@ from __future__ import annotations
 from copy import deepcopy
 from typing import TYPE_CHECKING
 
-from PyQt5 import QtCore
-from PyQt5.QtWidgets import QDialog, QListWidgetItem, QShortcut, QTreeWidgetItem
+from qtpy import QtCore
+from qtpy.QtWidgets import QDialog, QListWidgetItem, QShortcut, QTreeWidgetItem
 
 from pykotor.common.misc import ResRef
 from pykotor.resource.formats.gff import write_gff
@@ -18,7 +18,7 @@ from utility.error_handling import assert_with_variable_trace, format_exception_
 if TYPE_CHECKING:
     import os
 
-    from PyQt5.QtWidgets import QWidget
+    from qtpy.QtWidgets import QWidget
     from typing_extensions import Literal
 
     from pykotor.resource.formats.twoda.twoda_data import TwoDA
@@ -51,7 +51,7 @@ class UTIEditor(Editor):
 
         self._uti = UTI()
 
-        from toolset.uic.editors.uti import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
+        from toolset.uic.pyqt5.editors.uti import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
         self._setupMenus()
@@ -422,7 +422,7 @@ class PropertyEditor(QDialog):
         """
         super().__init__()
 
-        from toolset.uic.dialogs.property import Ui_Dialog
+        from toolset.uic.pyqt5.dialogs.property import Ui_Dialog
         self.ui = Ui_Dialog()
         self.ui.setupUi(self)
 

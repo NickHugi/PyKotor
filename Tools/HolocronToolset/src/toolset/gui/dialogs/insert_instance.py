@@ -2,9 +2,9 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from PyQt5 import QtCore
-from PyQt5.QtGui import QColor
-from PyQt5.QtWidgets import QDialog, QDialogButtonBox, QListWidgetItem
+from qtpy import QtCore
+from qtpy.QtGui import QColor
+from qtpy.QtWidgets import QDialog, QDialogButtonBox, QListWidgetItem
 
 from pykotor.common.misc import ResRef
 from pykotor.common.stream import BinaryWriter
@@ -24,7 +24,7 @@ from toolset.gui.widgets.settings.installations import GlobalSettings
 from utility.system.path import Path
 
 if TYPE_CHECKING:
-    from PyQt5.QtWidgets import QWidget
+    from qtpy.QtWidgets import QWidget
 
     from pykotor.common.module import Module
     from pykotor.extract.file import FileResource
@@ -58,7 +58,7 @@ class InsertInstanceDialog(QDialog):
         self.data: bytes = b""
         self.filepath: Path | None = None
 
-        from toolset.uic.dialogs.insert_instance import Ui_Dialog  # pylint: disable=C0415  # noqa: PLC0415
+        from toolset.uic.pyqt5.dialogs.insert_instance import Ui_Dialog  # pylint: disable=C0415  # noqa: PLC0415
 
         self.ui = Ui_Dialog()
         self.ui.setupUi(self)

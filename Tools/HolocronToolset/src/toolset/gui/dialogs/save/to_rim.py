@@ -3,10 +3,10 @@ from __future__ import annotations
 from enum import IntEnum
 from typing import TYPE_CHECKING
 
-from PyQt5.QtWidgets import QDialog
+from qtpy.QtWidgets import QDialog
 
 if TYPE_CHECKING:
-    from PyQt5.QtWidgets import QWidget
+    from qtpy.QtWidgets import QWidget
 
 
 class RimSaveOption(IntEnum):
@@ -19,7 +19,7 @@ class RimSaveDialog(QDialog):
     def __init__(self, parent: QWidget):
         super().__init__(parent)
 
-        from toolset.uic.dialogs import save_in_rim  # pylint: disable=C0415  # noqa: PLC0415
+        from toolset.uic.pyqt5.dialogs import save_in_rim  # pylint: disable=C0415  # noqa: PLC0415
 
         self.ui = save_in_rim.Ui_Dialog()
         self.ui.setupUi(self)

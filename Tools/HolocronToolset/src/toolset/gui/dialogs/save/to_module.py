@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from PyQt5.QtWidgets import QDialog
+from qtpy.QtWidgets import QDialog
 
 from pykotor.resource.type import ResourceType
 
@@ -11,7 +11,7 @@ class SaveToModuleDialog(QDialog):
     def __init__(self, resref, restype, supported):
         super().__init__()
 
-        from toolset.uic.dialogs.save_to_module import Ui_Dialog  # pylint: disable=C0415  # noqa: PLC0415
+        from toolset.uic.pyqt5.dialogs.save_to_module import Ui_Dialog  # pylint: disable=C0415  # noqa: PLC0415
 
         self.ui = Ui_Dialog()
         self.ui.setupUi(self)

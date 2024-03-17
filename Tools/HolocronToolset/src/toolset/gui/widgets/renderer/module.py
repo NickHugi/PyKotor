@@ -6,9 +6,9 @@ from copy import copy
 from datetime import datetime, timedelta, timezone
 from typing import TYPE_CHECKING
 
-from PyQt5 import QtCore
-from PyQt5.QtCore import QTimer
-from PyQt5.QtWidgets import QOpenGLWidget
+from qtpy import QtCore
+from qtpy.QtCore import QTimer
+from qtpy.QtWidgets import QOpenGLWidget
 
 from pykotor.common.geometry import Vector2, Vector3
 from pykotor.gl.scene import Scene
@@ -18,8 +18,8 @@ from pykotor.resource.type import ResourceType
 from utility.error_handling import assert_with_variable_trace
 
 if TYPE_CHECKING:
-    from PyQt5.QtGui import QKeyEvent, QMouseEvent, QResizeEvent, QWheelEvent
-    from PyQt5.QtWidgets import QWidget
+    from qtpy.QtGui import QKeyEvent, QMouseEvent, QResizeEvent, QWheelEvent
+    from qtpy.QtWidgets import QWidget
     from glm import vec3
 
     from pykotor.common.module import Module
@@ -28,26 +28,26 @@ if TYPE_CHECKING:
 
 
 class ModuleRenderer(QOpenGLWidget):
-    sceneInitalized = QtCore.pyqtSignal()
+    sceneInitalized = QtCore.Signal()
     """Signal emitted when scene has been initialized."""
 
-    mouseMoved = QtCore.pyqtSignal(object, object, object, object, object)  # screen coords, screen delta, world/mouse pos, mouse, keys
+    mouseMoved = QtCore.Signal(object, object, object, object, object)  # screen coords, screen delta, world/mouse pos, mouse, keys
     """Signal emitted when mouse is moved over the widget."""
 
-    mouseScrolled = QtCore.pyqtSignal(object, object, object)  # screen delta, mouse, keys
+    mouseScrolled = QtCore.Signal(object, object, object)  # screen delta, mouse, keys
     """Signal emitted when mouse is scrolled over the widget."""
 
-    mouseReleased = QtCore.pyqtSignal(object, object, object)  # screen coords, mouse, keys
+    mouseReleased = QtCore.Signal(object, object, object)  # screen coords, mouse, keys
     """Signal emitted when a mouse button is released after being pressed on the widget."""
 
-    mousePressed = QtCore.pyqtSignal(object, object, object)  # screen coords, mouse, keys
+    mousePressed = QtCore.Signal(object, object, object)  # screen coords, mouse, keys
     """Signal emitted when a mouse button is pressed on the widget."""
 
-    keyboardPressed = QtCore.pyqtSignal(object, object)  # mouse, keys
+    keyboardPressed = QtCore.Signal(object, object)  # mouse, keys
 
-    keyboardReleased = QtCore.pyqtSignal(object, object)  # mouse, keys
+    keyboardReleased = QtCore.Signal(object, object)  # mouse, keys
 
-    objectSelected = QtCore.pyqtSignal(object)
+    objectSelected = QtCore.Signal(object)
     """Signal emitted when an object has been selected through the renderer."""
 
     def __init__(self, parent: QWidget):

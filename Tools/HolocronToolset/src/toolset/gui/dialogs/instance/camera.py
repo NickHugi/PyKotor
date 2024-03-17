@@ -2,11 +2,11 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from PyQt5.QtGui import QIcon, QPixmap
-from PyQt5.QtWidgets import QDialog
+from qtpy.QtGui import QIcon, QPixmap
+from qtpy.QtWidgets import QDialog
 
 if TYPE_CHECKING:
-    from PyQt5.QtWidgets import QWidget
+    from qtpy.QtWidgets import QWidget
 
     from pykotor.resource.generics.git import GITCamera
 
@@ -15,7 +15,7 @@ class CameraDialog(QDialog):
     def __init__(self, parent: QWidget, camera: GITCamera):
         super().__init__(parent)
 
-        from toolset.uic.dialogs.instance.camera import Ui_Dialog  # pylint: disable=C0415  # noqa: PLC0415
+        from toolset.uic.pyqt5.dialogs.instance.camera import Ui_Dialog  # pylint: disable=C0415  # noqa: PLC0415
 
         self.ui = Ui_Dialog()
         self.ui.setupUi(self)

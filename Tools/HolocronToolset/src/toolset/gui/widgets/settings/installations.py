@@ -2,10 +2,10 @@ from __future__ import annotations
 
 import os
 
-from PyQt5 import QtCore
-from PyQt5.QtCore import QSettings
-from PyQt5.QtGui import QStandardItem, QStandardItemModel
-from PyQt5.QtWidgets import QWidget
+from qtpy import QtCore
+from qtpy.QtCore import QSettings
+from qtpy.QtGui import QStandardItem, QStandardItemModel
+from qtpy.QtWidgets import QWidget
 
 from pykotor.common.misc import Game
 from pykotor.tools.path import CaseAwarePath, find_kotor_paths_from_default
@@ -13,7 +13,7 @@ from toolset.data.settings import Settings
 
 
 class InstallationsWidget(QWidget):
-    edited = QtCore.pyqtSignal()
+    edited = QtCore.Signal()
 
     def __init__(self, parent: QWidget):
         """Initialize the Installations widget.
@@ -35,7 +35,7 @@ class InstallationsWidget(QWidget):
         self.installationsModel: QStandardItemModel = QStandardItemModel()
         self.settings = GlobalSettings()
 
-        from toolset.uic.widgets.settings import installations
+        from toolset.uic.pyqt5.widgets.settings import installations
         self.ui = installations.Ui_Form()
         self.ui.setupUi(self)
         self.setupValues()

@@ -2,10 +2,10 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
 
-from PyQt5 import QtCore
-from PyQt5.QtCore import QSortFilterProxyModel
-from PyQt5.QtGui import QBrush, QColor, QStandardItem, QStandardItemModel
-from PyQt5.QtWidgets import QFileDialog, QListWidgetItem, QMenu, QShortcut
+from qtpy import QtCore
+from qtpy.QtCore import QSortFilterProxyModel
+from qtpy.QtGui import QBrush, QColor, QStandardItem, QStandardItemModel
+from qtpy.QtWidgets import QFileDialog, QListWidgetItem, QMenu, QShortcut
 
 from pykotor.common.geometry import Vector3, Vector4
 from pykotor.common.language import Gender, Language, LocalizedString
@@ -18,8 +18,8 @@ from toolset.gui.editor import Editor
 if TYPE_CHECKING:
     import os
 
-    from PyQt5.QtCore import QItemSelectionRange, QModelIndex
-    from PyQt5.QtWidgets import QWidget
+    from qtpy.QtCore import QItemSelectionRange, QModelIndex
+    from qtpy.QtWidgets import QWidget
 
     from toolset.data.installation import HTInstallation
 
@@ -40,7 +40,7 @@ class GFFEditor(Editor):
         self._talktable: TalkTable | None = installation.talktable() if installation else None
         self._gff_content: GFFContent | None = None
 
-        from toolset.uic.editors.gff import Ui_MainWindow  # pylint: disable=C0415
+        from toolset.uic.pyqt5.editors.gff import Ui_MainWindow  # pylint: disable=C0415
 
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)

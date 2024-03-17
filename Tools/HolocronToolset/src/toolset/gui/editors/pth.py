@@ -7,9 +7,9 @@ from typing import TYPE_CHECKING, Any
 
 import pyperclip
 
-from PyQt5.QtCore import Qt
-from PyQt5.QtGui import QColor
-from PyQt5.QtWidgets import QHBoxLayout, QLabel, QMenu, QStatusBar, QWidget
+from qtpy.QtCore import Qt
+from qtpy.QtGui import QColor
+from qtpy.QtWidgets import QHBoxLayout, QLabel, QMenu, QStatusBar, QWidget
 
 from pykotor.common.geometry import SurfaceMaterial, Vector2
 from pykotor.common.misc import Color
@@ -28,8 +28,8 @@ if TYPE_CHECKING:
 
     from collections.abc import Callable
 
-    from PyQt5.QtCore import QPoint
-    from PyQt5.QtGui import QKeyEvent, QMouseEvent
+    from qtpy.QtCore import QPoint
+    from qtpy.QtGui import QKeyEvent, QMouseEvent
 
     from pykotor.common.geometry import Vector3
     from pykotor.extract.file import ResourceIdentifier, ResourceResult
@@ -118,7 +118,7 @@ class PTHEditor(Editor):
         self.setupStatusBar()
         self.stdout = CustomStdout(self)
 
-        from toolset.uic.editors.pth import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
+        from toolset.uic.pyqt5.editors.pth import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
         self._setupMenus()

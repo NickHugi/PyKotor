@@ -2,8 +2,8 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from PyQt5.QtCore import QVariant, Qt
-from PyQt5.QtWidgets import QDialog, QListWidgetItem
+from qtpy.QtCore import Qt
+from qtpy.QtWidgets import QDialog, QListWidgetItem
 
 if TYPE_CHECKING:
     from pykotor.extract.capsule import Capsule
@@ -14,7 +14,7 @@ if TYPE_CHECKING:
 class LoadFromModuleDialog(QDialog):
     """LoadFromModuleDialog lets the user select a resource from a ERF or RIM."""
 
-    def __init__(self, capsule: Capsule, supported):
+    def __init__(self, capsule: Capsule, supported: list[ResourceType]):
         """Initialize a dialog to load resources from a capsule.
 
         Args:
@@ -31,7 +31,7 @@ class LoadFromModuleDialog(QDialog):
         """
         super().__init__()
 
-        from toolset.uic.dialogs.load_from_module import Ui_Dialog  # pylint: disable=C0415  # noqa: PLC0415
+        from toolset.uic.pyqt5.dialogs.load_from_module import Ui_Dialog  # pylint: disable=C0415  # noqa: PLC0415
 
         self.ui = Ui_Dialog()
         self.ui.setupUi(self)
@@ -41,7 +41,7 @@ class LoadFromModuleDialog(QDialog):
                 continue
             filename = resource.filename()
             item = QListWidgetItem(filename)
-            item.setData(Qt.UserRole, QVariant(resource))
+            item.setData(Qt.UserRole, resource)
             self.ui.resourceList.addItem(item)
 
     def resname(self) -> str | None:

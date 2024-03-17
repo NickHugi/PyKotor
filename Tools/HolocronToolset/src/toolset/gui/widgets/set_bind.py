@@ -2,13 +2,13 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from PyQt5 import QtCore
-from PyQt5.QtWidgets import QWidget
+from qtpy import QtCore
+from qtpy.QtWidgets import QWidget
 
 from toolset.utils.misc import getStringFromKey
 
 if TYPE_CHECKING:
-    from PyQt5.QtGui import QKeyEvent
+    from qtpy.QtGui import QKeyEvent
 
     from toolset.data.misc import Bind
 
@@ -33,7 +33,7 @@ class SetBindWidget(QWidget):
         self.keybind: set[int] = set()
         self.recordBind: bool = False
 
-        from toolset.uic.widgets.set_bind import Ui_Form  # noqa: PLC0415  # pylint: disable=C0415
+        from toolset.uic.pyqt5.widgets.set_bind import Ui_Form  # noqa: PLC0415  # pylint: disable=C0415
         self.ui = Ui_Form()
         self.ui.setupUi(self)
 
