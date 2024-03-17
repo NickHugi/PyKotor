@@ -91,37 +91,59 @@ ignore_attrs: set[str] = {
     "__builtins__",
 }
 
-
 class CustomAssertionError(AssertionError):
     def __init__(self, *args, **kwargs):
         self.message: str = kwargs.get("message", args[0])
         super().__init__(*args, **kwargs)
 
-_currently_processing: ContextVar[set] = ContextVar("_currently_processing", default=set())
+def is_builtin_class_instance(obj: Any) -> bool:
+    """Check if the object is an instance of a built-in class."""
+    return obj.__class__.__module__ in ("builtins", "__builtin__")
+
+_currently_processing: ContextVar[list] = ContextVar("_currently_processing", default=[])
 def safe_repr(obj: Any, max_length: int = 200, indent_level: int = 0) -> str:
     """Safely generate a repr string for objects without a custom __repr__, with line wrapping and indentation."""
-    # Retrieve the current set of object ids being processed
-    current_set = _currently_processing.get()
+    if is_builtin_class_instance(obj):
+        try:
+            obj_repr = repr(obj)
+            # Truncate if necessary
+            if len(obj_repr) > max_length:
+                return f"{obj_repr[:max_length]}..."
+        except Exception:  # noqa: BLE001
+            return object.__repr__(obj)
+        else:
+            return obj_repr
+    indent: str = "    "  # Define the indentation unit (4 spaces).
+
+    # Retrieve the stack of objects currently being processed
+    current_stack = _currently_processing.get()
     obj_id = id(obj)
-    if obj_id in current_set:
-        return f"<...recursion of {obj.__class__.__name__}...>"
 
-    # Add the current object id to the set
-    current_set.add(obj_id)
-    _currently_processing.set(current_set)  # Update the context variable with the modified set
+    # Check for recursion - if this object is already in the stack
+    for frame in current_stack:
+        if obj_id == frame["id"]:
+            # Finish the partial representation for this object and return
+            base_indent = indent * frame["indent_level"]
+            return f"{frame['representation']}...\n{base_indent})"
 
-    indent = "    "  # Define the indentation unit (4 spaces).
     try:
+        # Initialize the representation for this object and add it to the stack
+        base_indent = indent * indent_level
+        next_indent = indent * (indent_level + 1)
+        representation: str = f"{obj.__class__.__name__}(\n{next_indent}"
+        current_stack.append({"id": obj_id, "indent_level": indent_level, "representation": representation})
+        _currently_processing.set(current_stack)
+
         if hasattr(obj, "__class__") and obj.__class__.__repr__ is not object.__repr__:
             # Call the object's __repr__ with _is_safe_repr_call set to True
             try:
                 return repr(obj)
             except Exception:  # noqa: BLE001
                 # Fallback to the base object __repr__ if an error occurs
-                return object.__repr__(obj)
+                representation += object.__repr__(obj)
+            return representation
+
         attrs: list[str] = []
-        base_indent = indent * indent_level
-        next_indent = indent * (indent_level + 1)
         for attr_name in dir(obj):
             attr_value = getattr(obj, attr_name)
             if not attr_name.startswith("__") and not callable(attr_value):
@@ -134,14 +156,17 @@ def safe_repr(obj: Any, max_length: int = 200, indent_level: int = 0) -> str:
                         attr_repr = f"{attr_repr[:max_length]}..."
                     attrs.append(attr_repr)
                 except Exception:  # noqa: BLE001
-                    attrs.append(f"{attr_name}={object.__repr__(attr_value)}")  # Use repr(obj) as a fallback
-        # Join attributes with a comma and a space, and apply next-level indentation
+                    attrs.append(f"{attr_name}={object.__repr__(attr_value)}")
         joined_attrs = (",\n" + next_indent).join(attrs)
+        final_repr = f"{representation}{joined_attrs}\n{base_indent})" if attrs else f"{representation}{base_indent})"
     except Exception:  # noqa: BLE001
-        # Fallback to the base object __repr__ if an error occurs
         return object.__repr__(obj)
     else:
-        return f"{obj.__class__.__name__}(\n{next_indent}{joined_attrs}\n{base_indent})"
+        return final_repr
+    finally:
+        # Always remove the object from the stack to avoid leaks
+        current_stack.pop()
+        _currently_processing.set(current_stack)
 
 def format_var_str(
     var: str,
