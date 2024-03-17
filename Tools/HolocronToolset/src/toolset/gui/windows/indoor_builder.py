@@ -92,13 +92,13 @@ class IndoorMapBuilder(QMainWindow):
         self._filepath: str = ""
 
         if qtpy.API_NAME == "PySide2":
-            from toolset.uic.pyside2.dialogs.indoor_downloader import Ui_Dialog  # noqa: PLC0415  # pylint: disable=C0415
+            from toolset.uic.pyside2.windows.indoor_builder import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
         elif qtpy.API_NAME == "PySide6":
-            from toolset.uic.pyside6.dialogs.indoor_downloader import Ui_Dialog  # noqa: PLC0415  # pylint: disable=C0415
+            from toolset.uic.pyside6.windows.indoor_builder import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
         elif qtpy.API_NAME == "PyQt5":
-            from toolset.uic.pyqt5.dialogs.indoor_downloader import Ui_Dialog  # noqa: PLC0415  # pylint: disable=C0415
+            from toolset.uic.pyqt5.windows.indoor_builder import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
         elif qtpy.API_NAME == "PyQt6":
-            from toolset.uic.pyqt6.dialogs.indoor_downloader import Ui_Dialog  # noqa: PLC0415  # pylint: disable=C0415
+            from toolset.uic.pyqt6.windows.indoor_builder import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
         else:
             raise ImportError(f"Unsupported Qt bindings: {qtpy.API_NAME}")
 
@@ -970,13 +970,13 @@ class KitDownloader(QDialog):
         super().__init__(parent)
 
         if qtpy.API_NAME == "PySide2":
-            from toolset.uic.pyside2.dialogs.indoor_downloader import Ui_Dialog  # noqa: PLC0415  # pylint: disable=C0415
+            from toolset.uic.pyside2.windows.indoor_builder import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
         elif qtpy.API_NAME == "PySide6":
-            from toolset.uic.pyside6.dialogs.indoor_downloader import Ui_Dialog  # noqa: PLC0415  # pylint: disable=C0415
+            from toolset.uic.pyside6.windows.indoor_builder import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
         elif qtpy.API_NAME == "PyQt5":
-            from toolset.uic.pyqt5.dialogs.indoor_downloader import Ui_Dialog  # noqa: PLC0415  # pylint: disable=C0415
+            from toolset.uic.pyqt5.windows.indoor_builder import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
         elif qtpy.API_NAME == "PyQt6":
-            from toolset.uic.pyqt6.dialogs.indoor_downloader import Ui_Dialog  # noqa: PLC0415  # pylint: disable=C0415
+            from toolset.uic.pyqt6.windows.indoor_builder import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
         else:
             raise ImportError(f"Unsupported Qt bindings: {qtpy.API_NAME}")
 
