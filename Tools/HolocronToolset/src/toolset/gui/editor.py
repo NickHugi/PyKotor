@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-import os
-
 from abc import abstractmethod
 from typing import TYPE_CHECKING, Callable
 
@@ -29,6 +27,8 @@ from utility.error_handling import assert_with_variable_trace, format_exception_
 from utility.system.path import Path
 
 if TYPE_CHECKING:
+    import os
+
     from qtpy.QtWidgets import QWidget
 
     from pykotor.common.language import LocalizedString

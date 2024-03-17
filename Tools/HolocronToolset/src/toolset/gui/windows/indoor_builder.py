@@ -9,8 +9,9 @@ from copy import copy, deepcopy
 from tempfile import TemporaryDirectory
 from typing import TYPE_CHECKING
 
-from qtpy import QtCore
 import qtpy
+
+from qtpy import QtCore
 from qtpy.QtCore import QPointF, QRectF, QTimer, Qt
 from qtpy.QtGui import (
     QColor,

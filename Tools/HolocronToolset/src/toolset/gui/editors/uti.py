@@ -3,8 +3,9 @@ from __future__ import annotations
 from copy import deepcopy
 from typing import TYPE_CHECKING
 
-from qtpy import QtCore
 import qtpy
+
+from qtpy import QtCore
 from qtpy.QtWidgets import QDialog, QListWidgetItem, QShortcut, QTreeWidgetItem
 
 from pykotor.common.misc import ResRef
@@ -313,6 +314,7 @@ class UTIEditor(Editor):
             self.ui.assignedPropertiesList.takeItem(index.row())
 
     def propertySummary(self, utiProperty: UTIProperty) -> str:
+        # sourcery skip: assign-if-exp, reintroduce-else
         """Retrieve the property, subproperty and cost names from the UTIEditor.
 
         Processing Logic:
