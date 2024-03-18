@@ -62,14 +62,6 @@ $qtVersion = switch ($qtApi) {
     default { "5.15.2" }
 }
 
-$qtPipPackageNames = switch ($qtApi) {
-    "pyqt5" { "PyQt5 PyQt5-Qt5 PyQt5-sip" }
-    "pyqt6" { "PyQt6" }
-    "pyside2" { "PySide2" }
-    "pyside6" { "PySide6" }
-    default { "PyQt5" }
-}
-
 if ($this_noprompt) {
     . $rootPath/install_python_venv.ps1 -noprompt -venv_name $venv_name
 } else {
@@ -200,9 +192,26 @@ if ($useAqtInstall -eq $true -and (Get-OS) -ne "Windows") {  # Windows seems to 
     if ($LastExitCode -ne 0) { Write-Output "Qt installation failed with exit code $LastExitCode" }
 }
 
+
 Write-Host "Installing pip packages to run the holocron toolset..."
 . $pythonExePath -m pip install --upgrade pip --prefer-binary --progress-bar on
-. $pythonExePath -m pip install -U $qtPipPackageNames --prefer-binary --progress-bar on
+switch ($qtApi) {
+    "pyqt5" {
+        . $pythonExePath -m pip install -U PyQt5 PyQt5-Qt5 PyQt5-sip --prefer-binary --progress-bar on
+    }
+    "pyqt6" {
+        . $pythonExePath -m pip install -U PyQt6 --prefer-binary --progress-bar on
+    }
+    "pyside2" {
+        . $pythonExePath -m pip install -U PySide2 --prefer-binary --progress-bar on
+    }
+    "pyside6" {
+        . $pythonExePath -m pip install -U PySide6 --prefer-binary --progress-bar on
+    }
+    default {
+        . $pythonExePath -m pip install -U PyQt5 PyQt5-Qt5 PyQt5-sip --prefer-binary --progress-bar on
+    }
+}
 . $pythonExePath -m pip install pyinstaller --prefer-binary --progress-bar on
 . $pythonExePath -m pip install -r ($rootPath + $pathSep + "Tools" + $pathSep + "HolocronToolset" + $pathSep + "requirements.txt") --prefer-binary --compile --progress-bar on
 . $pythonExePath -m pip install -r ($rootPath + $pathSep + "Libraries" + $pathSep + "PyKotor" + $pathSep + "requirements.txt") --prefer-binary --compile --progress-bar on
