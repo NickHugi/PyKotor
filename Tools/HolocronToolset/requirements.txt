@@ -1,7 +1,5 @@
 #tsidna~=3.3  # TODO: can't be found on pip/pypi?
-PyQt5~=5.15
-PyQt5-Qt5~=5.15
-PyQt5-sip~=12.10
+qtpy
 urllib3~=1.26
 watchdog>=2.1,<3.1
 Markdown>=3.3,<3.6
@@ -12,4 +10,3 @@ pyperclip~=1.8
 setuptools>=67.8.0
 Pillow>=9.5
 jsonpickle
-qtpy

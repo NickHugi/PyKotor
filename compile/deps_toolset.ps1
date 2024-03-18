@@ -48,6 +48,34 @@ function Get-Linux-Distro-Name {
     return $null
 }
 
+$qtApi = $env:QT_API
+if (-not $qtApi) {
+    $qtApi = "pyqt5"  # Default to PyQt5 if QT_API is not set
+}
+
+# Define the Qt version and modules to install based on $qtApi
+$qtVersion = switch ($qtApi) {
+    "pyqt5" { "5.15.2" } # Last LTS version of Qt5
+    "pyside2" { "5.15.2" } # Last LTS version of Qt5
+    "pyqt6" { "6.2.2" }  # A stable Qt6 version, adjust as needed
+    "pyside6" { "6.2.2" }  # A stable Qt6 version, adjust as needed
+    default { "5.15.2" }
+}
+
+$qtPipPackageNames = switch ($qtApi) {
+    "pyqt5" { "PyQt5 PyQt5-Qt5 PyQt5-sip" }
+    "pyqt6" { "PyQt6" }
+    "pyside2" { "PySide2" }
+    "pyside6" { "PySide6" }
+    default { "PyQt5" }
+}
+
+if ($this_noprompt) {
+    . $rootPath/install_python_venv.ps1 -noprompt -venv_name $venv_name
+} else {
+    . $rootPath/install_python_venv.ps1 -venv_name $venv_name
+}
+
 $useAqtInstall = $false
 $qtInstallPath = "$rootPath/vendor/Qt"
 $qtOs = $null
@@ -55,7 +83,14 @@ $qtArch = $null
 if ((Get-OS) -eq "Mac") {
     $qtOs = "mac"
     $qtArch = "clang_64" # i'm not even going to bother to test wasm_32.
-    & bash -c "brew install qt@5" 2>&1 | Write-Output 
+    switch ($qtApi) {
+        "pyqt5"   { & bash -c "brew install qt5 -q" }
+        "pyqt6"   { & bash -c "brew install qt6 -q" }
+        "pyside2" { & bash -c "brew install qt5 -q" }  # PySide2 typically uses Qt5
+        "pyside6" { & bash -c "brew install qt6 -q" }
+        default   { & bash -c "brew install qt5 -q" }
+    }
+    . $pythonExePath -m pip install $qtApi qtpy -U --prefer-binary
 } elseif ((Get-OS) -eq "Windows") {
     # Determine system architecture
     if ($env:PROCESSOR_ARCHITECTURE -eq "AMD64" -or $env:PROCESSOR_ARCHITEW6432 -eq "AMD64") {
@@ -64,13 +99,6 @@ if ((Get-OS) -eq "Mac") {
     } else {
         $qtArch = "win32_msvc2017"
         Write-Output "System architecture determined as: 32-bit"
-    }
-
-    Write-Host "Initializing python virtual environment..."
-    if ($this_noprompt) {
-        . $rootPath/install_python_venv.ps1 -noprompt -venv_name $venv_name
-    } else {
-        . $rootPath/install_python_venv.ps1 -venv_name $venv_name
     }
 
     # Determine Python architecture
@@ -147,7 +175,9 @@ if ((Get-OS) -eq "Mac") {
         }
     }
 }
-if ($useAqtInstall -eq $true) {
+
+
+if ($useAqtInstall -eq $true -and (Get-OS) -ne "Windows") {  # Windows seems to always have qt5/6?
     # Combine the new path with the current PATH
     $origUserPath = [System.Environment]::GetEnvironmentVariable("PATH", [System.EnvironmentVariableTarget]::User)
     if (-not $origUserPath -contains $qtInstallPath) {
@@ -160,27 +190,19 @@ if ($useAqtInstall -eq $true) {
         $env:PATH = $env:PATH + ";" + $qtInstallPath
         Write-Host "Added '$qtInstallPath' to cur PATH env"
     }
-}
 
-if ((Get-OS) -ne "Windows") {
-    Write-Host "Initializing python virtual environment..."
-    if ($this_noprompt) {
-        . $rootPath/install_python_venv.ps1 -noprompt -venv_name $venv_name
-    } else {
-        . $rootPath/install_python_venv.ps1 -venv_name $venv_name
-    }
-}
+    $modules = "qtbase,qtmultimedia"
+    if ($qtApi -match "6") { $modules += ",qt5compat" } # Include qt5compat for Qt6 for compatibility
 
-
-Write-Host "Installing required packages to build the holocron toolset..."
-if ($useAqtInstall -eq $true) {
     New-Item -ItemType Directory -Force -Path $qtInstallPath -Verbose 2>&1 | Out-String | Write-Output
     . $pythonExePath -m pip install aqtinstall -U 2>&1 | Out-String | Write-Output
-    . $pythonExePath -m aqt install-qt $qtOs desktop 5.15.2 $qtArch -m all 2>&1 | Out-String | Write-Output
-    if ($LastExitCode -ne 0) { Write-Output "Qt installation (all modules) failed with exit code $LastExitCode"; exit $LastExitCode }
+    . $pythonExePath -m aqt install-qt $qtOs desktop $qtVersion $qtArch -m $modules 2>&1 | Out-String | Write-Output
+    if ($LastExitCode -ne 0) { Write-Output "Qt installation failed with exit code $LastExitCode" }
 }
 
+Write-Host "Installing pip packages to run the holocron toolset..."
 . $pythonExePath -m pip install --upgrade pip --prefer-binary --progress-bar on
+. $pythonExePath -m pip install -U $qtPipPackageNames --prefer-binary --progress-bar on
 . $pythonExePath -m pip install pyinstaller --prefer-binary --progress-bar on
 . $pythonExePath -m pip install -r ($rootPath + $pathSep + "Tools" + $pathSep + "HolocronToolset" + $pathSep + "requirements.txt") --prefer-binary --compile --progress-bar on
 . $pythonExePath -m pip install -r ($rootPath + $pathSep + "Libraries" + $pathSep + "PyKotor" + $pathSep + "requirements.txt") --prefer-binary --compile --progress-bar on
