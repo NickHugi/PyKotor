@@ -1,4 +1,4 @@
-name: Compile and Test PyKotor
+name: Test PyKotor
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}

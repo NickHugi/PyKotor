@@ -1,4 +1,4 @@
-name: Compile and Test PyKotor
+name: Publish PyKotor Tools CI/CD
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
