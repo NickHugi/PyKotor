@@ -64,6 +64,7 @@ jobs:
         }
       shell: pwsh
 
+    - uses: actions/checkout@v4
     - name: Test Powershell installer
       if: ${{ runner.os != 'Windows' }}
       id: setup-powershell
@@ -71,7 +72,6 @@ jobs:
         bash ./install_powershell.sh
       shell: bash
 
-    - uses: actions/checkout@v4
     - name: Set up ${{ matrix.python_pypy }} ${{ matrix.python-version }}
       if: ${{ runner.os != 'macOS' && (runner.os != 'Linux' || matrix.python_pypy == 'pypy') }}
       uses: actions/setup-python@v5

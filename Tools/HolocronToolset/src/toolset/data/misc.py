@@ -17,7 +17,7 @@ class ControlItem:
         *,
         exactKeys: bool = True,
     ) -> bool:
-        """Handles the mouse scroll event.
+        """Determines if mouse/keyboard events are our hotkey action.
 
         Args:
         ----
