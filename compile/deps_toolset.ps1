@@ -68,7 +68,7 @@ if ($this_noprompt) {
     . $rootPath/install_python_venv.ps1 -venv_name $venv_name
 }
 
-$useAqtInstall = $true
+$useAqtInstall = $false
 $qtInstallPath = "$rootPath/vendor/Qt"
 $qtOs = $null
 $qtArch = $null
@@ -168,6 +168,7 @@ if ((Get-OS) -eq "Mac") {
 
 
 if ($useAqtInstall -eq $true) {  # Windows seems to always have qt5/6?
+    . $pythonExePath -m pip install --upgrade aqtinstall --prefer-binary --progress-bar on
     # Combine the new path with the current PATH
     $origUserPath = [System.Environment]::GetEnvironmentVariable("PATH", [System.EnvironmentVariableTarget]::User)
     if (-not $origUserPath -contains $qtInstallPath) {
@@ -194,7 +195,7 @@ Write-Host "Installing pip packages to run the holocron toolset..."
 . $pythonExePath -m pip install --upgrade pip --prefer-binary --progress-bar on
 switch ($qtApi) {
     "pyqt5" {
-        . $pythonExePath -m pip install -U PyQt5 PyQt5-Qt5 PyQt5-sip --prefer-binary --progress-bar on
+       # . $pythonExePath -m pip install -U PyQt5 PyQt5-Qt5 PyQt5-sip --prefer-binary --progress-bar on
     }
     "pyqt6" {
         . $pythonExePath -m pip install -U PyQt6 --prefer-binary --progress-bar on
@@ -206,7 +207,7 @@ switch ($qtApi) {
         . $pythonExePath -m pip install -U PySide6 --prefer-binary --progress-bar on
     }
     default {
-        . $pythonExePath -m pip install -U PyQt5 PyQt5-Qt5 PyQt5-sip --prefer-binary --progress-bar on
+        #. $pythonExePath -m pip install -U PyQt5 PyQt5-Qt5 PyQt5-sip --prefer-binary --progress-bar on
     }
 }
 . $pythonExePath -m pip install pyinstaller --prefer-binary --progress-bar on
