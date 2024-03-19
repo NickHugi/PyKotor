@@ -68,7 +68,7 @@ if ($this_noprompt) {
     . $rootPath/install_python_venv.ps1 -venv_name $venv_name
 }
 
-$useAqtInstall = $false
+$useAqtInstall = $true
 $qtInstallPath = "$rootPath/vendor/Qt"
 $qtOs = $null
 $qtArch = $null
@@ -86,10 +86,8 @@ if ((Get-OS) -eq "Mac") {
 } elseif ((Get-OS) -eq "Windows") {
     # Determine system architecture
     if ($env:PROCESSOR_ARCHITECTURE -eq "AMD64" -or $env:PROCESSOR_ARCHITEW6432 -eq "AMD64") {
-        $qtArch = "win64_msvc2017_64"
         Write-Output "System architecture determined as: 64-bit (AMD64)"
     } else {
-        $qtArch = "win32_msvc2017"
         Write-Output "System architecture determined as: 32-bit"
     }
 
@@ -105,15 +103,15 @@ if ((Get-OS) -eq "Mac") {
     Write-Output "Python architecture command output: $pythonArchOutput"
     
     if ($pythonArchOutput -match "64bit") {
-        $qtArch = "win64_msvc2017_64"
+        $qtArch = "win64_msvc2015_64"
         Write-Output "Python architecture determined as: 64-bit"
     } else {
-        $qtArch = "win32_msvc2017"
+        $qtArch = "win32_msvc2015"
         Write-Output "Python architecture determined as: 32-bit"
     }
 
     # Set the Qt installation directory based on common environment variables or default to a local 'Qt' directory
-    if (Test-Path $env:GITHUB_WORKSPACE) {
+    if ($null -ne $env:GITHUB_WORKSPACE -and (Test-Path $env:GITHUB_WORKSPACE)) {
         $qtInstallPath = Join-Path $env:GITHUB_WORKSPACE "Qt"
         Write-Output "Aqt installation path set to GITHUB_WORKSPACE: $qtInstallPath"
     } elseif (Test-Path $env:USERPROFILE) {
@@ -169,7 +167,7 @@ if ((Get-OS) -eq "Mac") {
 }
 
 
-if ($useAqtInstall -eq $true -and (Get-OS) -ne "Windows") {  # Windows seems to always have qt5/6?
+if ($useAqtInstall -eq $true) {  # Windows seems to always have qt5/6?
     # Combine the new path with the current PATH
     $origUserPath = [System.Environment]::GetEnvironmentVariable("PATH", [System.EnvironmentVariableTarget]::User)
     if (-not $origUserPath -contains $qtInstallPath) {
@@ -183,13 +181,12 @@ if ($useAqtInstall -eq $true -and (Get-OS) -ne "Windows") {  # Windows seems to 
         Write-Host "Added '$qtInstallPath' to cur PATH env"
     }
 
-    $modules = "qtbase,qtmultimedia"
-    if ($qtApi -match "6") { $modules += ",qt5compat" } # Include qt5compat for Qt6 for compatibility
-
-    New-Item -ItemType Directory -Force -Path $qtInstallPath -Verbose 2>&1 | Out-String | Write-Output
-    . $pythonExePath -m pip install aqtinstall -U 2>&1 | Out-String | Write-Output
-    . $pythonExePath -m aqt install-qt $qtOs desktop $qtVersion $qtArch -m $modules 2>&1 | Out-String | Write-Output
-    if ($LastExitCode -ne 0) { Write-Output "Qt installation failed with exit code $LastExitCode" }
+    # Execute the aqtinstall command directly with arguments
+    Write-Output "Executing $pythonExePath -m aqt install-qt $qtOs desktop $qtVersion $qtArch -m qtwebglplugin qtquick3d qtdatavis3d qt5compat --outputdir=$qtInstallPath"
+    . $pythonExePath -m aqt install-qt $qtOs desktop $qtVersion $qtArch -m qtwebglplugin qtquick3d qtdatavis3d --outputdir=$qtInstallPath 2>&1 | Out-String | Write-Output
+    if ($LastExitCode -ne 0) {
+        Write-Output "Qt installation failed with exit code $LastExitCode"
+    }
 }
 
 
