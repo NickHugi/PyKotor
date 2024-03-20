@@ -219,7 +219,7 @@ class NSSEditor(Editor):
             return self.ui.codeEdit.toPlainText().encode("windows-1252"), b""
 
         print("compiling script from nsseditor")
-        compiled_bytes: bytes | None = compileScript(self.ui.codeEdit.toPlainText(), self._installation.tsl, self._installation.path())
+        compiled_bytes: bytes | None = compileScript(self.ui.codeEdit.toPlainText(), self._installation.path(), tsl=self._installation.tsl)
         if compiled_bytes is None:
             print("user cancelled the compilation")
             return None, b""

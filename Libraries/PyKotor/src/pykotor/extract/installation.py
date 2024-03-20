@@ -1890,7 +1890,7 @@ class Installation:  # noqa: PLR0904
                         return found_mod_id, True
                     #print(f"Alternate: {attribute_name} '{found_mod_id}' not in '{lower_root}'")
         except Exception as e:  # noqa: BLE001
-            print(iterated_capsule.filename(), attribute_name, str(e))
+            ...#print(iterated_capsule.filename(), attribute_name, str(e))
         else:
             # if found_mod_id:
             #     print(f"Got ID '{found_mod_id}' in {attribute_name} for erf/rim '{iterated_capsule.filename()}'")
