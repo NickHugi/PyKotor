@@ -668,7 +668,7 @@ class GFFEditor(Editor):
         self.loadItem(item)  # type: ignore[]
         self.refreshItemText(item)
 
-    def insertNode(self, parent: QStandardItem, label: str, ftype: GFFFieldType, value: Any):
+    def insertNode(self, parent: QStandardItem, label: str, ftype: GFFFieldType, value: Any) -> QStandardItem:
         """Inserts a new child node under the given parent node.
 
         Args:
@@ -691,6 +691,7 @@ class GFFEditor(Editor):
         item.setData(value, _VALUE_NODE_ROLE)
         parent.appendRow(item)
         self.refreshItemText(item)
+        return item
 
     def addNode(self, item: QStandardItem):
         """Add a node from the tree model.
@@ -699,7 +700,19 @@ class GFFEditor(Editor):
         ----
             item: The item to add
         """
-        self.insertNode(item, "New Struct", GFFFieldType.Struct, GFFStruct())
+        def set_spinbox(minv: int, maxv: int, item: QListWidgetItem):
+            self.ui.pages.setCurrentWidget(self.ui.intPage)
+            self.ui.intSpin.setRange(minv, maxv)
+            self.ui.intSpin.setValue(item.data(_VALUE_NODE_ROLE))
+        parentType = item.data(_TYPE_NODE_ROLE)
+        newValue = GFFStruct()
+        newLabel = "[New Struct]"
+        if parentType == GFFFieldType.List:
+            self.ui.fieldBox.setEnabled(False)
+            newValue = newValue.struct_id
+            newLabel = str(item.rowCount())
+        newItem = self.insertNode(item, newLabel, GFFFieldType.Struct, newValue)
+        set_spinbox(-1, 0xFFFFFFFF, newItem)
 
     def removeNode(self, item: QStandardItem):
         """Remove a node from the tree model.
