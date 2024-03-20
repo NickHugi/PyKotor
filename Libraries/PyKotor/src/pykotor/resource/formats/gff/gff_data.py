@@ -5,7 +5,8 @@ import os
 
 from copy import copy, deepcopy
 from enum import Enum, IntEnum
-from typing import TYPE_CHECKING, Any, ClassVar, TypeVar
+from itertools import chain
+from typing import TYPE_CHECKING, Any, Callable, ClassVar, Iterable, TypeVar
 
 from pykotor.common.geometry import Vector3, Vector4
 from pykotor.common.language import LocalizedString
@@ -165,7 +166,7 @@ class GFF:
         content: GFFContent = GFFContent.GFF,
     ):
         self.content: GFFContent = content
-        self.root: GFFStruct = GFFStruct(-1)
+        self.root: GFFStruct = GFFStruct(struct_id=-1)
 
     def print_tree(
         self,
@@ -278,7 +279,6 @@ class _GFFField:
         """
         return self._value
 
-
 class GFFStruct:
     """Stores a collection of GFFFields.
 
@@ -348,7 +348,7 @@ class GFFStruct:
         other_gff_struct: GFFStruct,
         log_func: Callable = print,
         current_path: PureWindowsPath | os.PathLike | str | None = None,
-        ignore_default_changes=False,
+        ignore_default_changes: bool = False,
     ) -> bool:
         """Recursively compares two GFFStructs.
 
@@ -662,8 +662,8 @@ class GFFStruct:
     def set_resref(
         self,
         label: str,
-        value: ResRef,
-    ):
+        value: str | ResRef,
+    ) -> None:
         """Sets the value and field type of the field with the specified label.
 
         Args:
@@ -671,6 +671,8 @@ class GFFStruct:
             label: The field label.
             value: The new field value.
         """
+        if isinstance(value, str):
+            value = ResRef(value)
         self._fields[label] = _GFFField(GFFFieldType.ResRef, value)
 
     def set_string(
@@ -1211,6 +1213,121 @@ class GFFStruct:
             msg = "The specified field does not store a List value."
             raise TypeError(msg)
         return copy(self._fields[label].value())
+
+
+class GFFStructInterface(GFFStruct):
+
+    @classmethod
+    def _get_FIELDS(cls) -> dict[str, _GFFField]:
+        return cls.FIELDS
+
+    @classmethod
+    def _get_K2_FIELDS(cls) -> dict[str, _GFFField]:
+        return cls.K2_FIELDS
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+    def __dir__(self) -> Iterable[str]:
+        return chain(
+            super().__dir__(),
+            (
+                label for label in {**type(self)._get_FIELDS(), **type(self)._get_K2_FIELDS()}
+                if self.exists(label)
+            ),
+        )
+
+    @classmethod
+    def from_struct(cls, struct: GFFStruct):
+        new_instance = cls.__new__(cls)
+        super(cls, new_instance).__init__()
+        new_instance.struct_id = struct.struct_id
+        new_instance._update_from_struct(struct)
+        return new_instance
+
+    def _update_from_struct(self, struct: GFFStruct):
+        all_fields: dict[str, _GFFField] = {}
+        all_fields.update(self._get_FIELDS())
+        all_fields.update(self._get_K2_FIELDS())
+        for label, field_type, value in struct:
+            self._set_field_value(field_type, label, value)
+
+    def __getattribute__(self, attr: str):
+        if attr.startswith("_") or attr == "struct_id" or attr in GFFStruct.__dict__ or attr in type(self).__dict__:
+            return super().__getattribute__(attr)
+        all_fields: dict[str, _GFFField] = {}
+        all_fields.update(type(self)._get_FIELDS())
+        all_fields.update(type(self)._get_K2_FIELDS())
+        if attr not in all_fields:
+            msg = f"'{self.__class__.__name__}' object has no attribute '{attr}'"
+            raise AttributeError(msg)
+        gff_field: _GFFField = all_fields[attr]
+        return super().acquire(
+            attr,
+            gff_field.value(),
+            gff_field.field_type().return_type(),
+        )
+
+    def __setattr__(self, attr, value) -> None:
+        if attr.startswith("_") or attr == "struct_id":
+            super().__setattr__(attr, value)
+            return
+        all_fields: dict[str, _GFFField] = {}
+        all_fields.update(type(self)._get_FIELDS())
+        all_fields.update(type(self)._get_K2_FIELDS())
+        field_type: GFFFieldType | None
+        if attr not in all_fields:
+            field_type = self.what_type(attr) if self.exists(attr) else None
+        else:
+            field_type = all_fields[attr].field_type()
+        if field_type is None:
+            msg = f"'{self.__class__.__name__}' object has no attribute '{attr}'"
+            raise AttributeError(msg)
+        #if not field_type:
+        #    msg = f"'{self.__class__.__name__}' No field type defined for {attr}"
+        #    raise TypeError(msg)
+        self._set_field_value(field_type, attr, value)
+
+    def _set_field_value(self, field_type, attr, value):
+        if field_type == GFFFieldType.UInt8:
+            super().set_uint8(attr, value)
+        elif field_type == GFFFieldType.Int8:
+            super().set_int8(attr, value)
+        elif field_type == GFFFieldType.UInt16:
+            super().set_uint16(attr, value)
+        elif field_type == GFFFieldType.Int16:
+            super().set_int16(attr, value)
+        elif field_type == GFFFieldType.UInt32:
+            super().set_uint32(attr, value)
+        elif field_type == GFFFieldType.Int32:
+            super().set_int32(attr, value)
+        elif field_type == GFFFieldType.UInt64:
+            super().set_uint64(attr, value)
+        elif field_type == GFFFieldType.Int64:
+            super().set_int64(attr, value)
+        elif field_type == GFFFieldType.Single:
+            super().set_single(attr, value)
+        elif field_type == GFFFieldType.Double:
+            super().set_double(attr, value)
+        elif field_type == GFFFieldType.String:
+            super().set_string(attr, value)
+        elif field_type == GFFFieldType.ResRef:
+            super().set_resref(attr, value)
+        elif field_type == GFFFieldType.LocalizedString:
+            super().set_locstring(attr, value)
+        elif field_type == GFFFieldType.Binary:
+            super().set_binary(attr, value)
+        elif field_type == GFFFieldType.Struct:
+            super().set_struct(attr, value)
+        elif field_type == GFFFieldType.List:
+            super().set_list(attr, value)
+        elif field_type == GFFFieldType.Vector4:
+            super().set_vector4(attr, value)
+        elif field_type == GFFFieldType.Vector3:
+            super().set_vector3(attr, value)
+        else:
+            msg = f"Unsupported field type for {attr}"
+            raise TypeError(msg)
 
 
 class GFFList:
