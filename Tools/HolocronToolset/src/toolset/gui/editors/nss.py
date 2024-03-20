@@ -655,45 +655,38 @@ class SyntaxHighlighter(QSyntaxHighlighter):
         Args:
         ----
             text (str | None): The text to highlight.
-
-        Returns:
-        -------
-            None: No value is returned.
-
-        Processing Logic:
-        ----------------
-            1. Checks if text is None and returns if so.
-            2. Loops through rules to find expressions and apply formatting.
-            3. Sets current block state to 0.
-            4. Finds comment blocks and applies comment formatting.
         """
         if text is None:
-            print("text cannot be None", "highlightBlock")
             return
-        for expression, nth, format in self.rules:
-            index: int = expression.indexIn(text, 0)
 
-            while index >= 0:
-                index = expression.pos(nth)
-                length: int = len(expression.cap(nth))
-                self.setFormat(index, length, format)
-                index = expression.indexIn(text, index + length)
+        for expression, nth, format in self.rules:
+            matchIterator = expression.globalMatch(text)
+            while matchIterator.hasNext():
+                match = matchIterator.next()
+                self.setFormat(match.capturedStart(), match.capturedLength(), format)
 
         self.setCurrentBlockState(0)
 
         startIndex = 0
         if self.previousBlockState() != 1:
-            startIndex = SyntaxHighlighter.COMMENT_BLOCK_START.indexIn(text, startIndex)
+            match = SyntaxHighlighter.COMMENT_BLOCK_START.match(text)
+            startIndex = match.capturedStart() if match.hasMatch() else -1
 
         while startIndex >= 0:
-            endIndex = SyntaxHighlighter.COMMENT_BLOCK_END.indexIn(text, startIndex)
+            match = SyntaxHighlighter.COMMENT_BLOCK_END.match(text, startIndex)
+            endIndex = match.capturedStart() if match.hasMatch() else -1
+
             if endIndex == -1:
                 self.setCurrentBlockState(1)
                 commentLength = len(text) - startIndex
             else:
-                commentLength = endIndex - startIndex + 2
+                commentLength = endIndex - startIndex + match.capturedLength()
+
             self.setFormat(startIndex, commentLength, self.styles["comment"])
-            startIndex = SyntaxHighlighter.COMMENT_BLOCK_START.indexIn(text, startIndex + commentLength + 2)
+            if endIndex == -1:
+                break  # Exit the loop if no end comment marker is found
+            match = SyntaxHighlighter.COMMENT_BLOCK_START.match(text, startIndex + commentLength)
+            startIndex = match.capturedStart() if match.hasMatch() else -1
 
     def getCharFormat(
         self,
