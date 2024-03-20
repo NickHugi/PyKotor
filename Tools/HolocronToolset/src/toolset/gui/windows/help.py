@@ -3,11 +3,13 @@ from __future__ import annotations
 # Try to import defusedxml, fallback to ElementTree if not available
 from xml.etree import ElementTree
 
+import qtpy
+
 try:  # sourcery skip: remove-redundant-exception, simplify-single-exception-tuple
     from defusedxml.ElementTree import fromstring as _fromstring
     ElementTree.fromstring = _fromstring
 except (ImportError, ModuleNotFoundError):
-    print("warning: diffusedxml is not available but recommended due to security concerns.")
+    print("warning: defusedxml is not available but recommended due to security concerns.")
 
 import zipfile
 
@@ -15,9 +17,9 @@ from typing import TYPE_CHECKING, Callable
 
 import markdown
 
-from PyQt5 import QtCore
-from PyQt5.QtCore import Qt
-from PyQt5.QtWidgets import QMainWindow, QMessageBox, QTreeWidgetItem
+from qtpy import QtCore
+from qtpy.QtCore import Qt
+from qtpy.QtWidgets import QMainWindow, QMessageBox, QTreeWidgetItem
 
 from pykotor.common.stream import BinaryReader
 from pykotor.tools.encoding import decode_bytes_with_fallbacks
@@ -31,7 +33,7 @@ from utility.system.path import Path
 if TYPE_CHECKING:
     import os
 
-    from PyQt5.QtWidgets import QWidget
+    from qtpy.QtWidgets import QWidget
 
 class HelpWindow(QMainWindow):
     ENABLE_UPDATES = True
@@ -41,7 +43,17 @@ class HelpWindow(QMainWindow):
 
         self.version: tuple[int, ...] | None = None
 
-        from toolset.uic.windows import help as toolset_help  # noqa: PLC0415  # pylint: disable=C0415
+        if qtpy.API_NAME == "PySide2":
+            from toolset.uic.pyside2.windows import help as toolset_help  # noqa: PLC0415  # pylint: disable=C0415
+        elif qtpy.API_NAME == "PySide6":
+            from toolset.uic.pyside6.windows import help as toolset_help  # noqa: PLC0415  # pylint: disable=C0415
+        elif qtpy.API_NAME == "PyQt5":
+            from toolset.uic.pyqt5.windows import help as toolset_help  # noqa: PLC0415  # pylint: disable=C0415
+        elif qtpy.API_NAME == "PyQt6":
+            from toolset.uic.pyqt6.windows import help as toolset_help  # noqa: PLC0415  # pylint: disable=C0415
+        else:
+            raise ImportError(f"Unsupported Qt bindings: {qtpy.API_NAME}")
+
         self.ui = toolset_help.Ui_MainWindow()
         self.ui.setupUi(self)
         self._setupSignals()

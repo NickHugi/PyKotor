@@ -2,8 +2,10 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from PyQt5 import QtCore
-from PyQt5.QtWidgets import QWidget
+import qtpy
+
+from qtpy import QtCore
+from qtpy.QtWidgets import QWidget
 
 from pykotor.common.language import LocalizedString
 from toolset.gui.dialogs.edit.locstring import LocalizedStringDialog
@@ -14,7 +16,7 @@ if TYPE_CHECKING:
 
 
 class LocalizedStringLineEdit(QWidget):
-    editingFinished = QtCore.pyqtSignal()
+    editingFinished = QtCore.Signal()
 
     def __init__(self, parent: QWidget):
         """Initialize a locstring edit widget.
@@ -32,7 +34,17 @@ class LocalizedStringLineEdit(QWidget):
         """
         super().__init__(parent)
 
-        from toolset.uic.widgets.locstring_edit import Ui_Form  # noqa: PLC0415  # pylint: disable=C0415
+        if qtpy.API_NAME == "PySide2":
+            from toolset.uic.pyside2.widgets.locstring_edit import Ui_Form  # noqa: PLC0415  # pylint: disable=C0415
+        elif qtpy.API_NAME == "PySide6":
+            from toolset.uic.pyside6.widgets.locstring_edit import Ui_Form  # noqa: PLC0415  # pylint: disable=C0415
+        elif qtpy.API_NAME == "PyQt5":
+            from toolset.uic.pyqt5.widgets.locstring_edit import Ui_Form  # noqa: PLC0415  # pylint: disable=C0415
+        elif qtpy.API_NAME == "PyQt6":
+            from toolset.uic.pyqt6.widgets.locstring_edit import Ui_Form  # noqa: PLC0415  # pylint: disable=C0415
+        else:
+            raise ImportError(f"Unsupported Qt bindings: {qtpy.API_NAME}")
+
         self.ui = Ui_Form()
         self.ui.setupUi(self)
 

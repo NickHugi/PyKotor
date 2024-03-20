@@ -11,7 +11,7 @@ try:  # sourcery skip: remove-redundant-exception, simplify-single-exception-tup
     from defusedxml.ElementTree import fromstring as _fromstring
     ElementTree.fromstring = _fromstring
 except (ImportError, ModuleNotFoundError):
-    print("warning: diffusedxml is not available but recommended due to security concerns.")
+    print("warning: defusedxml is not available but recommended due to security concerns.")
 
 from pykotor.common.geometry import Vector3, Vector4
 from pykotor.common.language import LocalizedString

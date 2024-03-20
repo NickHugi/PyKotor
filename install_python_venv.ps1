@@ -316,18 +316,32 @@ function Get-Python-Version {
     Param (
         [string]$pythonPath
     )
+    
+    Write-Host "Attempting to determine version for: $pythonPath"
+    
     try {
         if (Test-Path $pythonPath -ErrorAction SilentlyContinue) {
-            $global:pythonVersionOutput = & $pythonPath --version 2>&1
-            $global:pythonVersionString = $global:pythonVersionOutput -replace '^Python\s+'
-            $numericVersionString = $global:pythonVersionString -replace '(\d+\.\d+\.\d+).*', '$1'
+            # Explicitly capturing both stdout and stderr
+            $versionOutput = & $pythonPath --version 2>&1
+            Write-Host "Raw Version Output: $versionOutput"
+
+            # Check for Python version pattern
+            $versionOutputString = "$versionOutput"
+            $numericVersionString = $versionOutputString -replace 'Python\s(\d+\.\d+\.\d+).*', '$1'
+            Write-Host "Matched version '$numericVersionString'"
             $global:pythonVersion = [Version]$numericVersionString
             return $global:pythonVersion
+        } else {
+            Write-Host "The specified path does not exist: $pythonPath"
         }
     } catch {
-        return [Version]"0.0.0"
+        Write-Host "An error occurred while determining Python version: $_"
     }
+    # If we reach here, no version has been successfully parsed
+    Write-Host "Defaulting to version 0.0.0 due to failure to detect version."
+    return [Version]"0.0.0"
 }
+
 
 $minVersion = [Version]"3.7.0"
 $maxVersion = [Version]"3.13.0"
@@ -366,6 +380,9 @@ function Get-PythonPaths {
     $windowsVersion = $version -replace '\.', ''  # "3.8" becomes "38"
 
     $windowsPaths = @(
+        "C:\Program Files\PyPy\pypy3.exe",
+        "C:\hostedtoolcache\windows\PyPy\3.10.13\x86",
+        "$env:USERPROFILE\AppData\Local\Programs\PyPy\pypy3.exe",
         "C:\Program Files\Python$windowsVersion\python.exe",
         "C:\Program Files (x86)\Python$windowsVersion\python.exe",
         "C:\Program Files\Python$windowsVersion-32\python.exe",
@@ -377,6 +394,11 @@ function Get-PythonPaths {
     )
 
     $linuxAndMacPaths = @(
+        "/usr/bin/pypy3",                                # Common path for PyPy
+        "/usr/local/bin/pypy3",                          # Another common path for PyPy
+        "~/.local/bin/pypy3",                            # User local installation for PyPy
+        "~/.pyenv/versions/pypy$version/bin/pypy3",           # PyPy installed via pyenv
+        "/usr/local/Cellar/pypy3/$version/bin/pypy3"        # Homebrew on macOS for PyPy
         "/usr/bin/python$version",
         "/usr/local/bin/python$version",
         "/bin/python$version",
@@ -424,7 +446,6 @@ function Test-PythonCommand {
             return $true
         } else {
             Write-Host "python '$testPath' version '$global:pythonVersion' not supported"
-            Clear-GlobalPythonVariablesIfNecessary
         }
     }
     return $false
@@ -435,7 +456,7 @@ function Find-Python {
         [switch]$intrnal
     )
     # Check for Python 3 command and version
-    $pythonVersions = @('python3.8', 'python3', 'python3.9', 'python3.10', 'python3.11', 'python3.12', 'python3.13', 'python3.14', 'python')
+    $pythonVersions = @('pypy3.8', 'pypy3.9', 'pypy3.10', 'pypy3.11', 'pypy3.12', 'python3.8', 'python3', 'python3.9', 'python3.10', 'python3.11', 'python3.12', 'python3.13', 'python3.14', 'python')
     foreach ($pyCommandPathCheck in $pythonVersions) {
         if (Test-PythonCommand -CommandName $pyCommandPathCheck) {
             return
@@ -578,7 +599,7 @@ if (Get-ChildItem Env:VIRTUAL_ENV -ErrorAction SilentlyContinue) {  # Check if a
     }
 }
 
-if ( $findVenvExecutable -eq $true) {
+if ( $findVenvExecutable -eq $true -or -not $pythonExePath) {
     # Define potential paths for Python executable within the virtual environment
     $pythonExePaths = switch ((Get-OS)) {
         'Windows' { @("$venvPath\Scripts\python.exe") }
@@ -600,6 +621,8 @@ if ( $findVenvExecutable -eq $true) {
         exit
     }
 }
+
+Write-Host "python EXE path: $pythonExePath"
 
 
 Write-Host "Activating venv at '$venvPath'"

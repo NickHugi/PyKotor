@@ -7,8 +7,8 @@ import math
 from copy import copy, deepcopy
 from typing import TYPE_CHECKING, NamedTuple
 
-from PyQt5 import QtCore
-from PyQt5.QtGui import QColor, QImage, QPainter, QPixmap, QTransform
+from qtpy import QtCore
+from qtpy.QtGui import QColor, QImage, QPainter, QPixmap, QTransform
 
 from pykotor.common.geometry import Vector2, Vector3, Vector4
 from pykotor.common.language import LocalizedString

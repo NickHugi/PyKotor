@@ -40,7 +40,6 @@ jobs:
             python-version: '3.12'
 
     steps:
-  
     - name: Determine Python version string
       id: set-python-version
       run: |

@@ -9,7 +9,7 @@ from typing import TYPE_CHECKING, Any
 
 import requests
 
-from PyQt5.QtWidgets import QMessageBox
+from qtpy.QtWidgets import QMessageBox
 
 from utility.error_handling import universal_simplify_exception
 from utility.system.path import Path, PurePath

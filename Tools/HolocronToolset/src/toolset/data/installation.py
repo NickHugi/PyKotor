@@ -3,7 +3,7 @@ from __future__ import annotations
 from contextlib import suppress
 from typing import TYPE_CHECKING
 
-from PyQt5.QtGui import QImage, QPixmap, QTransform
+from qtpy.QtGui import QImage, QPixmap, QTransform
 
 from pykotor.extract.file import ResourceIdentifier
 from pykotor.extract.installation import Installation, SearchLocation
@@ -12,8 +12,8 @@ from pykotor.resource.formats.twoda import read_2da
 from pykotor.resource.type import ResourceType
 
 if TYPE_CHECKING:
-    from PyQt5.QtGui import QStandardItemModel
-    from PyQt5.QtWidgets import QWidget
+    from qtpy.QtGui import QStandardItemModel
+    from qtpy.QtWidgets import QWidget
 
     from pykotor.resource.formats.tpc import TPC
     from pykotor.resource.formats.twoda import TwoDA

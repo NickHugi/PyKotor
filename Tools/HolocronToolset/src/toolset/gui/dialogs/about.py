@@ -2,12 +2,14 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from PyQt5.QtWidgets import QDialog
+import qtpy
+
+from qtpy.QtWidgets import QDialog
 
 from toolset.config import LOCAL_PROGRAM_INFO
 
 if TYPE_CHECKING:
-    from PyQt5.QtWidgets import QWidget
+    from qtpy.QtWidgets import QWidget
 
 
 class About(QDialog):
@@ -20,13 +22,23 @@ class About(QDialog):
 
         Processing Logic:
         ----------------
-        - Sets up the UI from the about.py UI file
-        - Connects the closeButton clicked signal to close the dialog
-        - Replaces the version placeholder in the about text with the actual version.
+            - Sets up the UI from the about.py UI file
+            - Connects the closeButton clicked signal to close the dialog
+            - Replaces the version placeholder in the about text with the actual version.
         """
         super().__init__(parent)
 
-        from toolset.uic.dialogs import about  # pylint: disable=C0415  # noqa: PLC0415
+        if qtpy.API_NAME == "PySide2":
+            from toolset.uic.pyside2.dialogs import about  # pylint: disable=C0415  # noqa: PLC0415
+        elif qtpy.API_NAME == "PySide6":
+            from toolset.uic.pyside6.dialogs import about  # pylint: disable=C0415  # noqa: PLC0415
+        elif qtpy.API_NAME == "PyQt5":
+            from toolset.uic.pyqt5.dialogs import about  # pylint: disable=C0415  # noqa: PLC0415
+        elif qtpy.API_NAME == "PyQt6":
+            from toolset.uic.pyqt6.dialogs import about  # pylint: disable=C0415  # noqa: PLC0415
+        else:
+            raise ImportError(f"Unsupported Qt bindings: {qtpy.API_NAME}")
+
         self.ui = about.Ui_Dialog()
         self.ui.setupUi(self)
 

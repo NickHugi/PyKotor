@@ -1,4 +1,4 @@
-name: Compile PyKotor
+name: Publish PyKotor Tools CI/CD
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -27,8 +27,8 @@ jobs:
         os: [windows-2019, ubuntu-20.04, macos-12]  # make sure you update the above one too.
         python-version: ["3.8", "3.9", "3.10", "3.11", "3.12"]
         architecture: ['x86', 'x64']
-        python_pypy: ['python']
-        #qt_version: ['pyqt5', 'pyqt6', 'pyside2', 'pyside6']
+        python_pypy: ['python', 'pypy']
+        qt_version: ['pyqt5', 'pyqt6', 'pyside2', 'pyside6']
         include:
           - arch: x86
             vc_redist2015: "https://download.microsoft.com/download/9/3/F/93FCF1E7-E6A4-478B-96E7-D4B285925B00/vc_redist.x86.exe"
@@ -50,15 +50,15 @@ jobs:
           - python_pypy: 'pypy'
             python-version: '3.12'
           # PyQt5 doesn't seem to be compatible with PyPy
-          #- python_pypy: "pypy"
-          #  qt_version: 'pyqt5'
-          #- python_pypy: "pypy"
-          #  qt_version: 'pyside2'
-          #- python_pypy: "pypy"
-          #  qt_version: 'pyqt6'
-          #- python_pypy: "pypy"
-          #  python-version: '3.10'
-          #  os: 'windows-2019'
+          - python_pypy: "pypy"
+            qt_version: 'pyqt5'
+          - python_pypy: "pypy"
+            qt_version: 'pyside2'
+          - python_pypy: "pypy"
+            qt_version: 'pyqt6'
+          - python_pypy: "pypy"
+            python-version: '3.10'
+            os: 'windows-2019'
 
     outputs:
       matrix-os: ${{ toJson(matrix.os) }}
@@ -90,12 +90,6 @@ jobs:
         python-version: ${{ env.PYTHON_VERSION }}
         architecture: ${{ matrix.architecture }}
 
-    - name: Set up python 3.12 mac (stops brew erroring on linking)
-      if: ${{ runner.os == 'macOS' && matrix.python-version != '3.12' }}
-      run: |
-        brew install python@3.12 --quiet || true
-      shell: bash
-
     - name: Set up ${{ matrix.python_pypy }} ${{ matrix.python-version }} macOS
       if: ${{ runner.os == 'macOS' }}
       run: |  # warning: `brew link --overwrite python@ver` is unsafe on any non-virtualized macos.
@@ -104,27 +98,33 @@ jobs:
         echo "NONINTERACTIVE NEW: $NONINTERACTIVE"
         brew analytics on
         brew update
-        brew install ${{ matrix.python_pypy }}@${{ matrix.python-version }} || brew link --overwrite ${{ matrix.python_pypy }}@${{ matrix.python-version }}
+        if ( "${{ matrix.python-version }}" -ne "3.8" ) {  # not available I guess, will have to borrow the linux compilation code...
+          if ("${{ matrix.python_pypy}}" -eq "pypy") {
+            brew install pypy${{ matrix.python-version }} || brew link --overwrite pypy${{ matrix.python-version }}
+          } else {
+            brew install python@${{ matrix.python-version }} || brew link --overwrite python@${{ matrix.python-version }}
+          }
+        }
+      shell: pwsh
 
-    - name: Set up ${{ matrix.python_pypy }} ${{ matrix.python-version }} ${{ runner.os }}  # macos too?
-      if: ${{ runner.os == 'Linux' && matrix.python_pypy == 'python' }}
+    - name: Set up ${{ matrix.python_pypy }} ${{ matrix.python-version }} Linux  # macos too?
+      if: ${{ runner.os == 'Linux' && matrix.python_pypy == 'python' || runner.os == 'macOS' && matrix.python-version == '3.8' }}
       run: |
         if ("${{ runner.os }}" -eq "Linux") {
           sudo apt-get update
           sudo apt-get install build-essential zlib1g-dev libncurses5-dev libgdbm-dev libssl-dev libreadline-dev libffi-dev libsqlite3-dev libbz2-dev tk-dev -y
+          $pyVersion = switch ("${{ matrix.python-version }}") {
+            "3.7" { "3.7.17" }
+            "3.8" { "3.8.18" }
+            "3.9" { "3.9.18" }
+            "3.10" { "3.10.13" }
+            "3.11" { "3.11.8" }
+            "3.12" { "3.12.2" }
+          }
         } elseif ("${{ runner.os }}" -eq "macOS") {
           # Ensure Xcode Command Line Tools are installed?
           # xcode-select --install 2>$null | Out-Null
         }
-        $pyVersion = switch ("${{ matrix.python-version }}") {
-          "3.7" { "3.7.17" }
-          "3.8" { "3.8.18" }
-          "3.9" { "3.9.18" }
-          "3.10" { "3.10.13" }
-          "3.11" { "3.11.8" }
-          "3.12" { "3.12.2" }
-        }
-
         Write-Output "Downloading ${{ matrix.python_pypy }} '$pyVersion'..."
         Invoke-WebRequest -Uri https://www.python.org/ftp/python/$pyVersion/Python-$pyVersion.tgz -OutFile Python-$pyVersion.tgz
         tar -xvf Python-$pyVersion.tgz
@@ -288,7 +288,7 @@ jobs:
           } else {
             pip install pyinstaller -U --prefer-binary
           }
-          #$env:QT_API = if (-not [string]::IsNullOrEmpty($env:QT_API)) { $env:QT_API } else { "{{ matrix.qt_version }}" }
+          $env:QT_API = if (-not [string]::IsNullOrEmpty($env:QT_API)) { $env:QT_API } else { "${{ matrix.qt_version }}" }
           $output = ""
           $errorLines = @()
           . ./compile/deps_toolset.ps1 -noprompt -venv_name .venv_toolset_${{ matrix.os }}_${{ matrix.python_pypy }}_${{ matrix.python-version }}_${{ matrix.architecture }} 2>&1 | ForEach-Object {
@@ -343,6 +343,10 @@ jobs:
         $upxDir = $env:UPX_DIR
         Write-Host "Using UPX directory at '$upxDir'"
         $output = ""
+
+        . ./install_python_venv.ps1 -noprompt -venv_name .venv_toolset_${{ matrix.os }}_${{ matrix.python_pypy }}_${{ matrix.python-version }}_${{ matrix.architecture }}
+        $pythonExePath -m pip install ${{ matrix.qt_version }} -U --prefer-binary
+
         . ./compile/compile_toolset.ps1 -noprompt -venv_name .venv_toolset_${{ matrix.os }}_${{ matrix.python_pypy }}_${{ matrix.python-version }}_${{ matrix.architecture }} -upx_dir $upxDir 2>&1 | ForEach-Object {
           Write-Output $_.ToString()
           $output += $_.ToString() + "`n"

@@ -3,8 +3,10 @@ from __future__ import annotations
 from copy import deepcopy
 from typing import TYPE_CHECKING
 
-from PyQt5 import QtCore
-from PyQt5.QtWidgets import QDialog, QListWidgetItem, QShortcut, QTreeWidgetItem
+import qtpy
+
+from qtpy import QtCore
+from qtpy.QtWidgets import QDialog, QListWidgetItem, QShortcut, QTreeWidgetItem
 
 from pykotor.common.misc import ResRef
 from pykotor.resource.formats.gff import write_gff
@@ -18,7 +20,7 @@ from utility.error_handling import assert_with_variable_trace, format_exception_
 if TYPE_CHECKING:
     import os
 
-    from PyQt5.QtWidgets import QWidget
+    from qtpy.QtWidgets import QWidget
     from typing_extensions import Literal
 
     from pykotor.resource.formats.twoda.twoda_data import TwoDA
@@ -51,7 +53,17 @@ class UTIEditor(Editor):
 
         self._uti = UTI()
 
-        from toolset.uic.editors.uti import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
+        if qtpy.API_NAME == "PySide2":
+            from toolset.uic.pyside2.editors.uti import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
+        elif qtpy.API_NAME == "PySide6":
+            from toolset.uic.pyside6.editors.uti import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
+        elif qtpy.API_NAME == "PyQt5":
+            from toolset.uic.pyqt5.editors.uti import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
+        elif qtpy.API_NAME == "PyQt6":
+            from toolset.uic.pyqt6.editors.uti import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
+        else:
+            raise ImportError(f"Unsupported Qt bindings: {qtpy.API_NAME}")
+
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
         self._setupMenus()
@@ -302,6 +314,7 @@ class UTIEditor(Editor):
             self.ui.assignedPropertiesList.takeItem(index.row())
 
     def propertySummary(self, utiProperty: UTIProperty) -> str:
+        # sourcery skip: assign-if-exp, reintroduce-else
         """Retrieve the property, subproperty and cost names from the UTIEditor.
 
         Processing Logic:
@@ -422,7 +435,17 @@ class PropertyEditor(QDialog):
         """
         super().__init__()
 
-        from toolset.uic.dialogs.property import Ui_Dialog
+        if qtpy.API_NAME == "PySide2":
+            from toolset.uic.pyside2.dialogs.property import Ui_Dialog  # noqa: PLC0415  # pylint: disable=C0415
+        elif qtpy.API_NAME == "PySide6":
+            from toolset.uic.pyside6.dialogs.property import Ui_Dialog  # noqa: PLC0415  # pylint: disable=C0415
+        elif qtpy.API_NAME == "PyQt5":
+            from toolset.uic.pyqt5.dialogs.property import Ui_Dialog  # noqa: PLC0415  # pylint: disable=C0415
+        elif qtpy.API_NAME == "PyQt6":
+            from toolset.uic.pyqt6.dialogs.property import Ui_Dialog  # noqa: PLC0415  # pylint: disable=C0415
+        else:
+            raise ImportError(f"Unsupported Qt bindings: {qtpy.API_NAME}")
+
         self.ui = Ui_Dialog()
         self.ui.setupUi(self)
 

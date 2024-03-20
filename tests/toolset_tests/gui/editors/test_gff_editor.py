@@ -13,8 +13,8 @@ from unittest import TestCase, TestResult
 from utility.error_handling import format_exception_with_variables
 
 try:
-    from PyQt5.QtTest import QTest
-    from PyQt5.QtWidgets import QApplication as qapp
+    from qtpy.QtTest import QTest
+    from qtpy.QtWidgets import QApplication as qapp
 except (ImportError, ModuleNotFoundError):
     QTest, qapp = None, None  # type: ignore[misc, assignment]
 
@@ -103,7 +103,7 @@ class CustomTestResult(unittest.TextTestResult):
 )
 @unittest.skipIf(
     QTest is None or not qapp,
-    "PyQt5 is required, please run pip install -r requirements.txt before running this test.",
+    "qtpy is required, please run pip install -r requirements.txt before running this test.",
 )
 class GFFEditorTest(TestCase):
     K1_INSTALLATION = None
