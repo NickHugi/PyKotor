@@ -371,6 +371,11 @@ class GFFEditor(Editor):
             self.ui.fieldBox.setEnabled(False)
             set_spinbox(-1, 0xFFFFFFFF, item)
             return
+        if self.ui.blankPage.layout() is not None:
+            while self.ui.blankPage.layout().count():
+                child = self.ui.blankPage.layout().takeAt(0)
+                if child.widget():
+                    child.widget().deleteLater()
 
         self.ui.fieldBox.setEnabled(True)
         self.ui.typeCombo.setCurrentText(item.data(_TYPE_NODE_ROLE).name)
@@ -407,13 +412,13 @@ class GFFEditor(Editor):
             self.ui.pages.setCurrentWidget(self.ui.blankPage)
         elif item.data(_TYPE_NODE_ROLE) == GFFFieldType.Vector3:
             self.ui.pages.setCurrentWidget(self.ui.vector3Page)
-            vec3 = item.data(_VALUE_NODE_ROLE)
+            vec3: Vector3 = item.data(_VALUE_NODE_ROLE)
             self.ui.xVec3Spin.setValue(vec3.x)
             self.ui.yVec3Spin.setValue(vec3.y)
             self.ui.zVec3Spin.setValue(vec3.z)
         elif item.data(_TYPE_NODE_ROLE) == GFFFieldType.Vector4:
             self.ui.pages.setCurrentWidget(self.ui.vector4Page)
-            vec4 = item.data(_VALUE_NODE_ROLE)
+            vec4: Vector4 = item.data(_VALUE_NODE_ROLE)
             self.ui.xVec4Spin.setValue(vec4.x)
             self.ui.yVec4Spin.setValue(vec4.y)
             self.ui.zVec4Spin.setValue(vec4.z)
@@ -438,7 +443,7 @@ class GFFEditor(Editor):
             self.ui.blankPage.layout().addWidget(binaryDataLabel)
             copyButton = QPushButton("Copy Binary Data")
             self.ui.blankPage.layout().addWidget(copyButton)
-            copyButton.clicked.connect(lambda: pyperclip.copy(str(hexDataStr)))
+            copyButton.clicked.connect(lambda: pyperclip.copy(hexDataStr))
         elif item.data(_TYPE_NODE_ROLE) == GFFFieldType.LocalizedString:
             locstring: LocalizedString = item.data(_VALUE_NODE_ROLE)
             self.ui.pages.setCurrentWidget(self.ui.substringPage)
