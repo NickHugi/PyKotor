@@ -71,7 +71,13 @@ jobs:
         echo "NONINTERACTIVE NEW: $NONINTERACTIVE"
         brew analytics on
         brew update
-        brew install ${{ matrix.python_pypy }}@${{ matrix.python-version }} || brew link --overwrite ${{ matrix.python_pypy }}@${{ matrix.python-version }}
+        if ( "${{ matrix.python-version }}" -ne "3.8" ) {  # not available I guess, will have to borrow the linux compilation code...
+          if ("${{ matrix.python_pypy}}" -eq "pypy") {
+            brew install pypy${{ matrix.python-version }} || brew link --overwrite pypy${{ matrix.python-version }}
+          } else {
+            brew install python@${{ matrix.python-version }} || brew link --overwrite python@${{ matrix.python-version }}
+          }
+        }
 
     - name: Set up ${{ matrix.python_pypy }} ${{ matrix.python-version }} Linux  # macos too?
       if: ${{ runner.os == 'Linux' && matrix.python_pypy == 'python' }}
@@ -134,7 +140,7 @@ jobs:
       if: ${{ success() || failure() }}
       run: |
         . ./install_python_venv.ps1 -noprompt -venv_name .venv_${{ matrix.os }}_${{ matrix.python_pypy }}_${{ matrix.python-version }}_${{ matrix.architecture }}
-        & $pythonExePath -m pytest tests -v -ra -o log_cli=true --capture=no --junitxml=pytest_report.xml --json --json-file=pytest_report.json --html=pytest_report.html --self-contained-html --tb=no --continue-on-collection-errors
+        & $pythonExePath -m pytest tests -v -ra -o log_cli=true --capture=no --junitxml=pytest_report.xml --json-report --json-report-file=pytest_report.json --html=pytest_report.html --self-contained-html --tb=no --continue-on-collection-errors
       shell: pwsh
       continue-on-error: true
 

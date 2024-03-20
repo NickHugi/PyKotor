@@ -95,7 +95,11 @@ jobs:
         brew analytics on
         brew update
         if ( "${{ matrix.python-version }}" -ne "3.8" ) {  # not available I guess, will have to borrow the linux compilation code...
-          brew install ${{ matrix.python_pypy }}@${{ matrix.python-version }} || brew link --overwrite ${{ matrix.python_pypy }}@${{ matrix.python-version }}
+          if ("${{ matrix.python_pypy}}" -eq "pypy") {
+            brew install pypy${{ matrix.python-version }} || brew link --overwrite pypy${{ matrix.python-version }}
+          } else {
+            brew install python@${{ matrix.python-version }} || brew link --overwrite python@${{ matrix.python-version }}
+          }
         }
 
     - name: Set up ${{ matrix.python_pypy }} ${{ matrix.python-version }} Linux  # macos too?
