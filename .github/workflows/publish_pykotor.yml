@@ -48,6 +48,13 @@ jobs:
           # PyQt5 doesn't seem to be compatible with PyPy
           - python_pypy: "pypy"
             qt_version: 'pyqt5'
+          - python_pypy: "pypy"
+            qt_version: 'pyside2'
+          - python_pypy: "pypy"
+            qt_version: 'pyqt6'
+          - python_pypy: "pypy"
+            python_version: '3.10'
+            os: 'windows-2019'
 
     outputs:
       matrix-os: ${{ toJson(matrix.os) }}
