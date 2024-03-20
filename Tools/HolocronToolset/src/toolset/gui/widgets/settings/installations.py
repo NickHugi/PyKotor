@@ -248,6 +248,10 @@ class GlobalSettings(Settings):
         "ncsDecompilerPath",
         "",
     )
+    moduleSortOption = Settings.addSetting(
+        "moduleSortOption",
+        1,
+    )
     # endregion
 
     # region Bools

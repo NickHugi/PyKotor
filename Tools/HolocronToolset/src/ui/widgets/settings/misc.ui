@@ -68,10 +68,25 @@
         </widget>
        </item>
        <item>
-        <widget class="QCheckBox" name="useModuleFilenamesCheck">
-         <property name="text">
-          <string>Sort by filename rather than area name in the Modules tab.</string>
-         </property>
+        <widget class="QComboBox" name="moduleSortOptionComboBox">
+            <property name="editable">
+                <bool>false</bool>
+            </property>
+            <item>
+                <property name="text">
+                    <string>Sort by filename</string>
+                </property>
+            </item>
+            <item>
+                <property name="text">
+                    <string>Sort by humanized area name</string>
+                </property>
+            </item>
+            <item>
+                <property name="text">
+                    <string>Sort by area name</string>
+                </property>
+            </item>
         </widget>
        </item>
        <item>
