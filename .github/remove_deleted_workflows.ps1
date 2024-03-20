@@ -4,7 +4,7 @@ $repo = "PyKotor"  # Replace with your repository name
 $workflowsDir = "./workflows"  # Adjust the path to your local clone of the repository
 
 # Whitelist of workflow filenames to exclude from deletion (just the filenames, not full path)
-$whitelist = @("compile_and_test_pykotor.yml")
+$whitelist = @("compile_and_test_pykotor.yml", "publish_and_test_pykotor.yml", "publish_pykotor.yml", "run_and_report_pytests.yml")
 
 # Authenticate with GitHub CLI (if necessary)
 #gh auth login
@@ -24,11 +24,12 @@ foreach ($workflow in $allWorkflows.workflows) {
     if (-not (Test-Path -Path $localPath) -and -not ($whitelist -contains $workflowFile)) {
         $workflowId = $workflow.id
         if ($workflowId) {
-            # Fetch and delete all workflow runs for this workflow ID
+            Write-Output "Fetch workflow runs for workflow $workflowFile id $workflowId"
             $runs = gh api repos/$user/$repo/actions/workflows/$workflowId/runs --jq ".workflow_runs[] | {id: .id}" --paginate | ConvertFrom-Json
             if ($runs -and $runs.Count -gt 0) {
                 foreach ($run in $runs) {
-                    gh api -X DELETE -H "Accept: application/vnd.github+json" repos/$user/$repo/actions/workflows/$workflowId/runs/$run.id
+                    Write-Output "Deleting run '$($run.id)' from workflow '$workflowFile'..."
+                    gh api --method DELETE -H "Accept: application/vnd.github+json" -H "X-GitHub-Api-Version: 2022-11-28" "repos/$user/$repo/actions/runs/$($run.id)"
                 }
             }
         }

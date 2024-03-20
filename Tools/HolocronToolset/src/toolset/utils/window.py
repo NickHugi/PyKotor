@@ -14,6 +14,7 @@ from utility.error_handling import universal_simplify_exception
 if TYPE_CHECKING:
     import os
 
+    from qtpy.QtGui import QCloseEvent
     from qtpy.QtWidgets import QMainWindow
 
     from gui.editor import Editor
@@ -23,13 +24,21 @@ WINDOWS: list[QWidget] = []
 
 
 def addWindow(window: QWidget):
-    def removeFromList(a0):
-        QWidget.closeEvent(window, a0)
+    # Save the original closeEvent method
+    original_closeEvent = window.closeEvent
+
+    # Define a new closeEvent method that also calls the original
+    def newCloseEvent(event: QCloseEvent | None = None, *args, **kwargs):  # Make arg optional just in case the class has the wrong definition.
         if window in WINDOWS:
             WINDOWS.remove(window)
+        # Call the original closeEvent
+        original_closeEvent(event, *args, **kwargs)  # type: ignore[reportArgumentType]
 
+    # Override the widget's closeEvent with the new one
+    window.closeEvent = newCloseEvent  # type: ignore[reportAttributeAccessIssue]
+
+    # Add the window to the global list and show it
     WINDOWS.append(window)
-    window.closeEvent = removeFromList
     window.show()
 
 
@@ -108,7 +117,7 @@ def openResourceEditor(
     if restype.category == "Walkmeshes":
         editor = BWMEditor(None, installation)
 
-    if restype.category in {"Images", "Textures"}:
+    if restype.category in {"Images", "Textures"} and restype != ResourceType.TXI:
         editor = TPCEditor(None, installation)
 
     if restype in {ResourceType.NSS, ResourceType.NCS}:
