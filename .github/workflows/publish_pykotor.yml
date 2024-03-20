@@ -101,6 +101,7 @@ jobs:
             brew install python@${{ matrix.python-version }} || brew link --overwrite python@${{ matrix.python-version }}
           }
         }
+      shell: pwsh
 
     - name: Set up ${{ matrix.python_pypy }} ${{ matrix.python-version }} Linux  # macos too?
       if: ${{ runner.os == 'Linux' && matrix.python_pypy == 'python' || runner.os == 'macOS' && matrix.python-version == '3.8' }}

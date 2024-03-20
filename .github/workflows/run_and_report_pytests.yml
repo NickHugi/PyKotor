@@ -78,6 +78,7 @@ jobs:
             brew install python@${{ matrix.python-version }} || brew link --overwrite python@${{ matrix.python-version }}
           }
         }
+      shell: pwsh
 
     - name: Set up ${{ matrix.python_pypy }} ${{ matrix.python-version }} Linux  # macos too?
       if: ${{ runner.os == 'Linux' && matrix.python_pypy == 'python' }}
@@ -176,20 +177,19 @@ jobs:
         shell: pwsh
         run: |
           $testsResultsPath = "tests/results"
-          $testsResultsCommitPath = Join-Path -Path $testsResultsPath -ChildPath "${{ github.sha }}"
 
           # Remove old tests to ensure every result is commit-specific.
           Remove-Item -Path $testsResultsPath -Recurse -Force -ErrorAction SilentlyContinue
 
           # Create the new tests directory for this commit.
-          New-Item -ItemType Directory -Force -Path $testsResultsCommitPath -ErrorAction SilentlyContinue
+          New-Item -ItemType Directory -Force -Path $testsResultsPath -ErrorAction SilentlyContinue
 
           $artifact_reports_dir = "./all_pytest_reports"
           New-Item -ItemType Directory -Force -Path $artifact_reports_dir -ErrorAction SilentlyContinue
           Dir -Recurse $artifact_reports_dir | Get-Childitem
           Get-ChildItem $artifact_reports_dir | ForEach-Object {
-            Write-Output "Moving '$($_.FullName)'' to '$testsResultsCommitPath'..."
-            Move-Item -LiteralPath $_.FullName -Destination $testsResultsCommitPath
+            Write-Output "Moving '$($_.FullName)'' to '$testsResultsPath'..."
+            Move-Item -LiteralPath $_.FullName -Destination $testsResultsPath
           }
 
           # Git configuration and commit
@@ -199,6 +199,5 @@ jobs:
 
           git fetch origin $branchName
           git add $testsResultsPath --force
-          git add $testsResultsCommitPath --force
           git commit -m "Add test results"
           git push --force-with-lease origin HEAD:${{ github.ref_name }}
