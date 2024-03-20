@@ -25,6 +25,10 @@
     "./Libraries/PyKotorFont/src",
     "./Libraries/Utility/src",
   ],
+  "remote.WSL.fileWatcher.polling": true,
+  "files.watcherExclude": {
+      "**/.git/**": true
+  },
   "python.testing.autoTestDiscoverOnSaveEnabled": true,
   "python.testing.promptToConfigure": true,
   "python.testing.pytestEnabled": false,
@@ -48,7 +52,7 @@
   "python.analysis.diagnosticSeverityOverrides": {
     "reportGeneralTypeIssues": "warning",
     "reportOptionalMemberAccess": "warning", // Ignores issues with defs that can optionally be None.
-    "reportCallIssue": "none",
+    "reportCallIssue": "none",  // is buggy, doesn't handle NamedTuple correctly.
     "reportAssignmentType": "warning",
     "reportArgumentType": "warning",
   },

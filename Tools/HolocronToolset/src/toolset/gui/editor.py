@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-import os
-
 from abc import abstractmethod
 from typing import TYPE_CHECKING, Callable
 
@@ -29,6 +27,8 @@ from utility.error_handling import assert_with_variable_trace, format_exception_
 from utility.system.path import Path
 
 if TYPE_CHECKING:
+    import os
+
     from PyQt5.QtWidgets import QWidget
 
     from pykotor.common.language import LocalizedString
@@ -55,7 +55,7 @@ class Editor(QMainWindow):
         readSupported: list[ResourceType],
         writeSupported: list[ResourceType],
         installation: HTInstallation | None = None,
-        mainwindow: QMainWindow | None = None,
+        mainWindow: QMainWindow | None = None,
     ):
         """Initializes the editor.
 
@@ -76,17 +76,31 @@ class Editor(QMainWindow):
             - Sets up other editor properties.
         """
         super().__init__(parent)
-        self._is_capsule_editor = False
+        self._is_capsule_editor: bool = False
         self._installation: HTInstallation | None = installation
 
         self._filepath: Path | None = None
         self._resname: str | None = None
         self._restype: ResourceType | None = None
         self._revert: bytes | None = None
+
+        writeSupported = readSupported.copy() if readSupported is writeSupported else writeSupported
+        additional_formats = {"XML", "JSON", "CSV", "ASCII", "YAML"}
+        for add_format in additional_formats:
+            readSupported.extend(
+                ResourceType.__members__[f"{restype.name}_{add_format}"]
+                for restype in readSupported
+                if f"{restype.name}_{add_format}" in ResourceType.__members__
+            )
+            writeSupported.extend(
+                ResourceType.__members__[f"{restype.name}_{add_format}"]
+                for restype in writeSupported
+                if f"{restype.name}_{add_format}" in ResourceType.__members__
+            )
         self._readSupported: list[ResourceType] = readSupported
-        self._writeSupported: list[ResourceType] = readSupported.copy() if readSupported is writeSupported else writeSupported
+        self._writeSupported: list[ResourceType] = writeSupported
         self._global_settings: GlobalSettings = GlobalSettings()
-        self._mainwindow: QMainWindow | None = mainwindow
+        self._mainWindow: QMainWindow | None = mainWindow  # FIXME: unused?
 
         self._editorTitle: str = title
         self.setWindowTitle(title)
@@ -160,8 +174,10 @@ class Editor(QMainWindow):
         if self._filepath is None:
             self.setWindowTitle(self._editorTitle)
         elif is_capsule_file(self._filepath.name):
+            assert self._restype is not None
             self.setWindowTitle(f"{self._filepath.name}/{self._resname}.{self._restype.extension} - {installationName} - {self._editorTitle}")
         else:
+            assert self._restype is not None
             hierarchy: tuple[str, ...] = self._filepath.parts
             folder = f"{hierarchy[-2]}/" if len(hierarchy) >= 2 else ""
             self.setWindowTitle(f"{folder}{self._resname}.{self._restype.extension} - {installationName} - {self._editorTitle}")
@@ -186,7 +202,12 @@ class Editor(QMainWindow):
             identifier = ResourceIdentifier.from_path(filepath_str).validate()
         except ValueError as e:
             print(format_exception_with_variables(e))
-            QMessageBox(QMessageBox.Critical, "Invalid filename/extension", f"Check the filename and try again. Could not save!{os.linesep * 2}{universal_simplify_exception(e)}").exec_()
+            error_msg = str(universal_simplify_exception(e)).replace("\n", "<br>")
+            QMessageBox(
+                QMessageBox.Critical,
+                "Invalid filename/extension",
+                f"Check the filename and try again. Could not save!<br><br>{error_msg}",
+            ).exec_()
             return
 
         capsule_types = " ".join(f"*.{e.name.lower()}" for e in ERFType) + " *.rim"
@@ -246,7 +267,8 @@ class Editor(QMainWindow):
                 lines = format_exception_with_variables(e)
                 file.writelines(lines)
                 file.write("\n----------------------\n")
-            QMessageBox(QMessageBox.Critical, "Failed to write to file", str(universal_simplify_exception(e))).exec_()
+            error_msg = str(universal_simplify_exception(e)).replace("\n", "<br>")
+            QMessageBox(QMessageBox.Critical, "Failed to write to file", error_msg).exec_()
 
     def _saveEndsWithBif(self, data: bytes, data_ext: bytes):
         """Saves data if dialog returns specific options.
@@ -365,9 +387,9 @@ class Editor(QMainWindow):
         for index, (res_ident, this_erf_or_rim) in enumerate(reversed(nested_capsules)):
             if index == 0:
                 if self._is_capsule_editor:
-                    print(f"Not saving {self._resname} and {self._restype} to {res_ident}, is ERF/RIM editor save.")
+                    print(f"Not saving '{self._resname}.{self._restype}' to '{res_ident}', is ERF/RIM editor save.")
                     continue
-                print(f"Saving {self._resname}.{self._restype} to {res_ident}")
+                print(f"Saving '{self._resname}.{self._restype}' to '{res_ident}'")
                 this_erf_or_rim.set_data(self._resname, self._restype, data)
                 continue
             child_index = len(nested_capsules) - index
@@ -377,6 +399,7 @@ class Editor(QMainWindow):
             write_erf(child_erf_or_rim, data) if isinstance(child_erf_or_rim, ERF) else write_rim(child_erf_or_rim, data)
             this_erf_or_rim.set_data(*child_res_ident.unpack(), bytes(data))
         write_erf(this_erf_or_rim, c_filepath) if isinstance(this_erf_or_rim, ERF) else write_rim(this_erf_or_rim, c_filepath)
+        self.savedFile.emit(str(c_filepath), self._resname, self._restype, data)
 
     def _saveEndsWithErf(self, data: bytes, data_ext: bytes):
         # Create the mod file if it does not exist.
@@ -411,7 +434,7 @@ class Editor(QMainWindow):
             module.rim_to_mod(c_filepath)
             erf = read_erf(c_filepath)
         else:  # originally in a bif, user chose to save into erf/mod.
-            print(f"Saving '{self._resname}.{self._restype}' to a blank new {erftype.name} file at {c_filepath}")
+            print(f"Saving '{self._resname}.{self._restype}' to a blank new {erftype.name} file at '{c_filepath}'")
             erf = ERF(erftype)  # create a new ERF I guess.
         erf.erf_type = erftype
 
@@ -473,8 +496,8 @@ class Editor(QMainWindow):
         restype: ResourceType | None = dialog.restype()
         data: bytes | None = dialog.data()
         assert resname is not None, assert_with_variable_trace(resname is not None)
-        assert restype is not None, assert_with_variable_trace(resname is not None)
-        assert data is not None, assert_with_variable_trace(resname is not None)
+        assert restype is not None, assert_with_variable_trace(restype is not None)
+        assert data is not None, assert_with_variable_trace(data is not None)
 
         self.load(c_filepath, resname, restype, data)
 
@@ -525,11 +548,13 @@ class Editor(QMainWindow):
         self.newFile.emit()
 
     def revert(self):
-        if self._revert is not None:
-            assert self._filepath is not None, assert_with_variable_trace(self._filepath is not None)
-            assert self._resname is not None, assert_with_variable_trace(self._resname is not None)
-            assert self._restype is not None, assert_with_variable_trace(self._restype is not None)
-            self.load(self._filepath, self._resname, self._restype, self._revert)
+        if self._revert is None:
+            print("No data to revert from")
+            return
+        assert self._filepath is not None, assert_with_variable_trace(self._filepath is not None)
+        assert self._resname is not None, assert_with_variable_trace(self._resname is not None)
+        assert self._restype is not None, assert_with_variable_trace(self._restype is not None)
+        self.load(self._filepath, self._resname, self._restype, self._revert)
 
     def _loadLocstring(self, textbox: QLineEdit | QPlainTextEdit, locstring: LocalizedString):
         """Loads a LocalizedString into a textbox.
@@ -550,12 +575,13 @@ class Editor(QMainWindow):
         setText: Callable[[str], None] = textbox.setPlainText if isinstance(textbox, QPlainTextEdit) else textbox.setText
         className = "QLineEdit" if isinstance(textbox, QLineEdit) else "QPlainTextEdit"
 
-        textbox.locstring = locstring
+        textbox.locstring = locstring  # type: ignore[reportAttributeAccessIssue]
         if locstring.stringref == -1:
             text = str(locstring)
             setText(text if text != "-1" else "")
             textbox.setStyleSheet(className + " {background-color: white;}")
         else:
+            assert self._installation is not None
             setText(self._installation.talktable().string(locstring.stringref))
             textbox.setStyleSheet(className + " {background-color: #fffded;}")
 

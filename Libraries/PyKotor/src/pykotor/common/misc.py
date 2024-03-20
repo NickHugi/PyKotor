@@ -3,13 +3,16 @@
 
 from __future__ import annotations
 
+from collections.abc import Mapping
 from enum import Enum, IntEnum
-from typing import TYPE_CHECKING, ClassVar, Generic, ItemsView, Iterable, Iterator, Mapping, TypeVar, overload
+from typing import TYPE_CHECKING, ClassVar, Generic, ItemsView, Iterable, Iterator, TypeVar, overload
 
 from pykotor.common.geometry import Vector3
 
 if TYPE_CHECKING:
     import os
+
+    from collections.abc import ItemsView, Iterable, Iterator
 
 T = TypeVar("T")
 VT = TypeVar("VT")

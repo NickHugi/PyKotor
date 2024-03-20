@@ -41,8 +41,16 @@ class AudioPlayer(QMainWindow):
         self.ui.timeSlider.sliderReleased.connect(self.changePosition)
         self.player.durationChanged.connect(self.durationChanged)
         self.player.positionChanged.connect(self.positionChanged)
+        self.destroyed.connect(self.closeEvent)
+        self.player.error.connect(lambda _: self.closeEvent())
 
-    def load(self, filepath: os.PathLike | str, resname: str, restype: ResourceType, data: bytes):
+    def load(
+        self,
+        filepath: os.PathLike | str,
+        resname: str,
+        restype: ResourceType,
+        data: bytes,
+    ):
         data = sound.deobfuscate_audio(data)
 
         self.player.stop()
@@ -56,7 +64,7 @@ class AudioPlayer(QMainWindow):
     def open(self):
         filepath: str = QFileDialog.getOpenFileName(self, "Select an audio file")[0]
         if filepath:
-            resname, restype = ResourceIdentifier.from_path(filepath).validate()
+            resname, restype = ResourceIdentifier.from_path(filepath).validate().unpack()
             data: bytes = BinaryReader.load_file(filepath)
             self.load(filepath, resname, restype, data)
 
@@ -79,5 +87,9 @@ class AudioPlayer(QMainWindow):
         position: int = self.ui.timeSlider.value()
         self.player.setPosition(position)
 
-    def closeEvent(self, e: QCloseEvent | None):
+    def closeEvent(self, e: QCloseEvent | None = None):
         self.player.stop()
+
+        if e is not None:
+            e.accept()
+            super().closeEvent(e)

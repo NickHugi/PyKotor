@@ -67,7 +67,7 @@ while True:
         parser_args.compile = None
 
 
-def process_file(mdl_file: Path, output_path: Path, should_compile: bool):
+def process_file(mdl_file: Path, output_path: Path, *, should_compile: bool):
     model = read_mdl(mdl_file)
     if should_compile:
         write_mdl(
@@ -90,7 +90,7 @@ def main():
         input_path: Path = parser_args.input
 
         if input_path.safe_isfile():
-            process_file(input_path, parser_args.output, parser_args.compile)
+            process_file(input_path, parser_args.output, should_compile=parser_args.compile)
 
         elif input_path.safe_isdir():
             for gui_file in input_path.safe_rglob("*.gui"):
@@ -98,7 +98,7 @@ def main():
                     relative_path: Path = gui_file.relative_to(input_path)
                     new_output_dir: Path = parser_args.output / relative_path.parent / gui_file.stem
                     new_output_dir.mkdir(parents=True, exist_ok=True)
-                    process_file(gui_file, new_output_dir, parser_args.compile)
+                    process_file(gui_file, new_output_dir, should_compile=parser_args.compile)
                 except KeyboardInterrupt:  # noqa: PERF203
                     raise
                 except Exception:  # pylint: disable=W0718  # noqa: BLE001

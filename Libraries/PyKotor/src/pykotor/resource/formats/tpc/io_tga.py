@@ -5,6 +5,12 @@ import struct
 from enum import IntEnum
 from typing import TYPE_CHECKING
 
+try:
+    from PIL import Image
+    pillow_available = True
+except ImportError:
+    pillow_available = False
+
 from pykotor.common.stream import BinaryReader
 from pykotor.resource.formats.tpc.tpc_data import TPC, TPCTextureFormat
 from pykotor.resource.type import ResourceReader, ResourceWriter, autoclose
@@ -150,14 +156,66 @@ class TPCTGAReader(ResourceReader):
 
         Processing Logic:
         ----------------
-            - Read header values from the reader
-            - Check for uncompressed or RLE encoded RGB data
-            - Load pixel data into rows or run lengths
-            - Assemble pixel data into a single bytearray
-            - Set the loaded data on the TPC texture.
+            - Check if Pillow is available and use it to load the image if so.
+            - If Pillow is not available, do the following:
+                - Read header values from the reader
+                - Check for uncompressed or RLE encoded RGB data
+                - Load pixel data into rows or run lengths
+                - Assemble pixel data into a single bytearray
+                - Set the loaded data on the TPC texture.
         """
         self._tpc = TPC()
+        # Preliminary format determination
+        _id_length = self._reader.read_uint8()
+        _colormap_type = self._reader.read_uint8()
+        datatype_code = self._reader.read_uint8()
+        # ...read other header parts...?
 
+        # Move the reader back to the start after reading the header
+        self._reader.seek(0)
+
+        if pillow_available:
+            # Use Pillow for supported formats
+            self._load_with_pillow()
+        else:
+            # Fallback to custom logic for all other cases
+            self._load_with_custom_logic()
+
+        datacode_name = next((c.name for c in _DataTypes if c.value == datatype_code), _DataTypes.NO_IMAGE_DATA.name)
+        self._tpc.original_datatype_code = _DataTypes.__members__[datacode_name]
+        return self._tpc
+
+    def _load_with_pillow(
+        self,
+    ) -> TPC | None:
+        # Use Pillow to handle the TGA file
+        print("Loading with pillow")
+        with Image.open(self._reader._stream) as img:  # type: ignore[reportArgumentType]  their static type is incorrect, it supports any stream/byte/filepath-like object.
+            # Determine the appropriate texture format based on the image mode
+            if img.mode == "L":
+                texture_format = TPCTextureFormat.Greyscale
+                new_img = img.convert("L")  # Convert to Greyscale if not already
+            elif img.mode == "RGB":
+                texture_format = TPCTextureFormat.RGB
+                new_img = img.convert("RGB")  # Ensure the image is in RGB format
+            elif img.mode == "RGBA":
+                texture_format = TPCTextureFormat.RGBA
+                new_img = img.convert("RGBA")  # Ensure the image is in RGBA format
+            else:  # TODO: ???
+                print(f"Unknown pillow TGA format '{img.mode}'")
+                texture_format = TPCTextureFormat.RGBA
+                new_img = img.convert("RGBA")  # Ensure the image is in RGBA format
+                return
+            new_img = new_img.transpose(Image.FLIP_TOP_BOTTOM)
+
+            width, height = new_img.size
+            data = new_img.tobytes()
+
+            self._tpc.set_data(width, height, [data], texture_format)
+
+    def _load_with_custom_logic(
+        self,
+    ):
         id_length = self._reader.read_uint8()
         colormap_type = self._reader.read_uint8()
         datatype_code = self._reader.read_uint8()
@@ -217,11 +275,10 @@ class TPCTGAReader(ResourceReader):
         elif datatype_code == _DataTypes.UNCOMPRESSED_BLACK_WHITE:
             data = bytearray()
             for _ in range(width * height):
-                # Read the grayscale value (assuming 1 byte per pixel)
+                # Read the grayscale value (should be 1 byte per pixel)
                 gray_value = self._reader.read_uint8()
-
-                # Convert grayscale to RGBA (R=G=B=gray_value, A=255)
-                data.extend([gray_value, gray_value, gray_value, 255])
+                # Convert grayscale to RGB
+                data.extend([gray_value, gray_value, gray_value])
         elif datatype_code == _DataTypes.RLE_COLOR_MAPPED:
             if color_map is None:
                 msg = "Expected color map not found for RLE color-mapped data"
@@ -241,11 +298,11 @@ class TPCTGAReader(ResourceReader):
             raise ValueError(msg)
 
         # Set the texture format based on the bits per pixel
+        datacode_name = next((c.name for c in _DataTypes if c.value == datatype_code), _DataTypes.NO_IMAGE_DATA.name)
+        self._tpc.original_datatype_code = _DataTypes.__members__[datacode_name]
+        print("tga datatype_code:", datacode_name, "y_flipped:", y_flipped, "bits_per_pixel:", bits_per_pixel)
         texture_format = TPCTextureFormat.RGBA if bits_per_pixel == 32 else TPCTextureFormat.RGB
         self._tpc.set_data(width, height, [bytes(data)], texture_format)
-
-        return self._tpc
-
 
 class TPCTGAWriter(ResourceWriter):
     def __init__(

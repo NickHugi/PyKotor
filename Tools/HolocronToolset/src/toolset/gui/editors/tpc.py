@@ -9,7 +9,9 @@ from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QImage, QPixmap
 
 from pykotor.resource.formats.tpc import TPC, TPCTextureFormat, read_tpc, write_tpc
+from pykotor.resource.formats.tpc.io_tga import _DataTypes
 from pykotor.resource.type import ResourceType
+from pykotor.tools.path import CaseAwarePath
 from toolset.gui.editor import Editor
 
 if TYPE_CHECKING:
@@ -84,19 +86,23 @@ class TPCEditor(Editor):
         """
         super().load(filepath, resref, restype, data)
 
+        # Read image, convert to RGB, and y_flip.
+        orig_format = None
         if restype in {ResourceType.TPC, ResourceType.TGA}:
-            print("read_tpc")
-            self._tpc = read_tpc(data)
-            width, height, rgb = self._tpc.convert(TPCTextureFormat.RGB, 0, y_flip=True)
-            self._tpc.set_data(width, height, [rgb], TPCTextureFormat.RGB)
+            txi_filepath: CaseAwarePath | None = CaseAwarePath.pathify(filepath).with_suffix(".txi")
+            if not txi_filepath.safe_isfile():
+                txi_filepath = None
+            self._tpc = read_tpc(data, txi_source=txi_filepath)
+            orig_format = self._tpc.format()
+            width, height, img_bytes = self._tpc.convert(TPCTextureFormat.RGB, 0, y_flip=True)
+            self._tpc.set_data(width, height, [img_bytes], TPCTextureFormat.RGB)
         else:
-            print("pillow image")
             pillow: Image.Image = Image.open(io.BytesIO(data))
             pillow = pillow.convert("RGBA")
             pillow = ImageOps.flip(pillow)
             self._tpc = TPC()
             self._tpc.set_single(pillow.width, pillow.height, pillow.tobytes(), TPCTextureFormat.RGBA)
-            width, height, rgb = self._tpc.convert(TPCTextureFormat.RGB, 0)
+            width, height, img_bytes = self._tpc.convert(TPCTextureFormat.RGB, 0)
 
         # Calculate new dimensions maintaining aspect ratio
         max_width, max_height = 640, 480
@@ -109,7 +115,7 @@ class TPCEditor(Editor):
             new_width = int(new_height * aspect_ratio)
 
         # Create QImage and scale it
-        image = QImage(rgb, width, height, QImage.Format_RGB888)
+        image = QImage(img_bytes, width, height, QImage.Format_RGB888)
         scaled_image = image.scaled(new_width, new_height, Qt.KeepAspectRatio, Qt.SmoothTransformation)
 
         # Create QPixmap from the scaled QImage
@@ -118,6 +124,10 @@ class TPCEditor(Editor):
         self.ui.textureImage.setPixmap(pixmap)
         self.ui.textureImage.setScaledContents(True)
         self.ui.txiEdit.setPlainText(self._tpc.txi)
+        if self._tpc.original_datatype_code != _DataTypes.NO_IMAGE_DATA:
+            self.setToolTip(self._tpc.original_datatype_code.name + " - " + orig_format.name)
+        elif orig_format is not None:
+            self.setToolTip(orig_format.name)
 
     def new(self):
         """Set texture image from TPC texture.

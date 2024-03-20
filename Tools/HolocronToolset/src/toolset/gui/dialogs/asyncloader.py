@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Callable
+from typing import TYPE_CHECKING, Any, Callable, Generic, TypeVar
 
 from PyQt5 import QtCore
 from PyQt5.QtCore import QThread
@@ -13,8 +13,9 @@ if TYPE_CHECKING:
     from PyQt5.QtGui import QCloseEvent
     from PyQt5.QtWidgets import QWidget
 
+T = TypeVar("T")
 
-class AsyncLoader(QDialog):
+class AsyncLoader(QDialog, Generic[T]):
     optionalFinishHook = QtCore.pyqtSignal(object)
     optionalErrorHook = QtCore.pyqtSignal(object)
 
@@ -22,7 +23,7 @@ class AsyncLoader(QDialog):
         self,
         parent: QWidget,
         title: str,
-        task: Callable,
+        task: Callable[..., T],
         errorTitle: str | None = None,
         *,
         startImmediately: bool = True
@@ -65,7 +66,7 @@ class AsyncLoader(QDialog):
 
         self.setWindowFlag(QtCore.Qt.WindowContextHelpButtonHint, False)
 
-        self.value: Any = None
+        self.value: T = None
         self.error: Exception | None = None
         self.errorTitle: str | None = errorTitle
 
@@ -106,7 +107,8 @@ class AsyncLoader(QDialog):
             file.write("\n----------------------\n")
 
         if self.errorTitle:
-            QMessageBox(QMessageBox.Critical, self.errorTitle, str(universal_simplify_exception(error))).exec_()
+            error_msg = str(universal_simplify_exception(error)).replace("\n", "<br>")
+            QMessageBox(QMessageBox.Critical, self.errorTitle, error_msg).exec_()
 
 
 class AsyncWorker(QThread):
@@ -231,7 +233,7 @@ class AsyncBatchLoader(QDialog):
         QMessageBox(
             QMessageBox.Critical,
             errorTitle,
-            "\n".join(str(universal_simplify_exception(error)) for error in self.errors),
+            "\n".join(str(universal_simplify_exception(error)).replace(",", ":", 1) + "<br>" for error in self.errors),
         ).exec_()
 
 

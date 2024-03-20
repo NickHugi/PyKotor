@@ -37,6 +37,30 @@
         </widget>
        </item>
        <item>
+        <widget class="QCheckBox" name="useBetaChannel">
+         <property name="text">
+          <string>Check for beta updates and take me to their download link when they&apos;re available.</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <layout class="QHBoxLayout" name="hBoxLayoutForSubOption">
+         <property name="leftMargin">
+          <number>20</number>
+         </property>
+         <item>
+          <widget class="QCheckBox" name="alsoCheckReleaseVersion">
+           <property name="text">
+            <string>Also check release version if it is newer than beta version.</string>
+           </property>
+           <property name="enabled">
+            <bool>true</bool>
+           </property>
+          </widget>
+         </item>
+        </layout>
+       </item>
+       <item>
         <widget class="QCheckBox" name="mergeRimCheck">
          <property name="text">
           <string>Merge RIM files in the Modules tab of the Main Window.</string>
@@ -44,10 +68,25 @@
         </widget>
        </item>
        <item>
-        <widget class="QCheckBox" name="useModuleFilenamesCheck">
-         <property name="text">
-          <string>Sort by filename rather than area name in the Modules tab.</string>
-         </property>
+        <widget class="QComboBox" name="moduleSortOptionComboBox">
+            <property name="editable">
+                <bool>false</bool>
+            </property>
+            <item>
+                <property name="text">
+                    <string>Sort by filename</string>
+                </property>
+            </item>
+            <item>
+                <property name="text">
+                    <string>Sort by humanized area name</string>
+                </property>
+            </item>
+            <item>
+                <property name="text">
+                    <string>Sort by area name</string>
+                </property>
+            </item>
         </widget>
        </item>
        <item>
