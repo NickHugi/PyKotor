@@ -411,3 +411,4 @@ class Ui_MainWindow(object):
         self.actionDiscordDeadlyStream.setText(_translate("MainWindow", "Deadly Stream"))
         self.actionModuleDesigner.setText(_translate("MainWindow", "Module Designer"))
 from toolset.gui.widgets.main_widgets import ResourceList, TextureList
+from toolset.rcc import resources_rc_pyqt5

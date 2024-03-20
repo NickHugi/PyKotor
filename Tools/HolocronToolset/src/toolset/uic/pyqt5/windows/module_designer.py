@@ -521,3 +521,4 @@ class Ui_MainWindow(object):
         self.actionHide2DView.setText(_translate("MainWindow", "Hide 2D View"))
 from toolset.gui.widgets.renderer.module import ModuleRenderer
 from toolset.gui.widgets.renderer.walkmesh import WalkmeshRenderer
+from toolset.rcc import resources_rc_pyqt5

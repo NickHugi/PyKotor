@@ -583,3 +583,4 @@ class Ui_MainWindow(object):
         self.actionUseEncounterName.setText(_translate("MainWindow", "Name"))
         self.actionUseEncounterTag.setText(_translate("MainWindow", "Tag"))
 from toolset.gui.widgets.renderer.walkmesh import WalkmeshRenderer
+from toolset.rcc import resources_rc_pyqt5

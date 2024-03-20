@@ -17,7 +17,7 @@ from PySide6.QtGui import (QBrush, QColor, QConicalGradient, QCursor,
     QPalette, QPixmap, QRadialGradient, QTransform)
 from PySide6.QtWidgets import (QApplication, QDialog, QLabel, QPushButton,
     QSizePolicy, QWidget)
-
+from toolset.rcc import resources_rc_pyside6
 class Ui_Dialog(object):
     def setupUi(self, Dialog):
         if not Dialog.objectName():

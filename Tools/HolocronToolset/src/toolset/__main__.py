@@ -88,23 +88,8 @@ if __name__ == "__main__":
     os.environ["QT_DEBUG_PLUGINS"] = "1"
     os.environ["QT_API"] = os.environ.get("QT_API", "pyside6")  # supports pyqt5, pyqt6, pyside2, pyside6
 
-    # Import the appropriate resources module based on the Qt bindings being used
     import qtpy
-
-    if qtpy.API_NAME == "PySide2":
-        from toolset.rcc.resources_rc_pyside2 import qCleanupResources, qInitResources
-    elif qtpy.API_NAME == "PySide6":
-        from toolset.rcc.resources_rc_pyside6 import qCleanupResources, qInitResources
-    elif qtpy.API_NAME == "PyQt5":
-        from toolset.rcc.resources_rc_pyqt5 import qCleanupResources, qInitResources
-    elif qtpy.API_NAME == "PyQt6":
-        from toolset.rcc.resources_rc_pyqt6 import qCleanupResources, qInitResources
-    else:
-        raise ImportError(f"Unsupported Qt bindings: {qtpy.API_NAME}")
     print(f"Using qt bindings '{qtpy.API_NAME}'")
-
-    # Initialize the resources
-    qInitResources()
 
     # os.environ["QT_AUTO_SCREEN_SCALE_FACTOR"] = "1"
     # os.environ["QT_SCALE_FACTOR_ROUNDING_POLICY"] = "PassThrough"
@@ -142,4 +127,3 @@ if __name__ == "__main__":
     if profiler:
         profiler.disable()
         profiler.dump_stats(str(Path("profiler_output.pstat")))
-    qCleanupResources()

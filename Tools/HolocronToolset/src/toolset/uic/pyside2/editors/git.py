@@ -14,7 +14,7 @@ from PySide2.QtWidgets import *
 
 from toolset.gui.widgets.renderer.walkmesh import WalkmeshRenderer
 
-
+from toolset.rcc import resources_rc_pyside2
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
         if not MainWindow.objectName():

@@ -62,11 +62,11 @@ def compile_ui(qt_version: str, *, ignore_timestamp: bool = False):
             command = f"{ui_compiler} {ui_file.safe_relative_to(TOOLSET_DIR)} -o {ui_target}"
             print(command)
             os.system(command)  # noqa: S605
-            # Post-processing: Remove the import resources_rc line. We already import it in __main__.py.
+            # Post-processing: Fix importing resources_rc
             with ui_target.open("r") as file:
                 filedata = file.read()
-            # Remove the line
-            filedata = re.sub(r"^import resources_rc.*\n?", "", filedata, flags=re.MULTILINE)
+            filedata = re.sub(r"^import resources_rc.*\n?", f"from toolset.rcc import resources_rc_{qt_version}", filedata, flags=re.MULTILINE)
+            filedata = re.sub(r"^from resources_rc.*\n?", f"from toolset.rcc.resources_rc_{qt_version}", filedata, flags=re.MULTILINE)
             # Write the file out again
             with ui_target.open("w") as file:
                 file.write(filedata)

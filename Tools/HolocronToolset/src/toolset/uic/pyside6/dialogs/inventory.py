@@ -22,7 +22,7 @@ from PySide6.QtWidgets import (QAbstractItemView, QApplication, QDialog, QFrame,
     QWidget)
 
 from toolset.gui.dialogs.inventory import (DropFrame, InventoryTable)
-
+from toolset.rcc import resources_rc_pyside6
 class Ui_Dialog(object):
     def setupUi(self, Dialog):
         if not Dialog.objectName():

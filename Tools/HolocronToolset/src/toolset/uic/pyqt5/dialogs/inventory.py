@@ -522,3 +522,4 @@ class Ui_Dialog(object):
         self.okButton.setText(_translate("Dialog", "OK"))
         self.cancelButton.setText(_translate("Dialog", "Cancel"))
 from toolset.gui.dialogs.inventory import DropFrame, InventoryTable
+from toolset.rcc import resources_rc_pyqt5
