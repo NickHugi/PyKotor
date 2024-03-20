@@ -126,12 +126,7 @@ jobs:
       run: |
         . ./install_python_venv.ps1 -noprompt -venv_name .venv_${{ matrix.os }}_${{ matrix.python_pypy }}_${{ matrix.python-version }}_${{ matrix.architecture }}
         & $pythonExePath -m pip install --upgrade pip
-        if ($env:python_version -eq "3.7") {
-          pip install -r requirements-dev-py37.txt --prefer-binary
-        }
-        else {
-          pip install -r requirements-dev.txt --prefer-binary
-        }
+        pip install -r requirements-pytest.txt --prefer-binary
         pip list --outdated --format=json | ConvertFrom-Json | ForEach-Object { Write-Host "Upgrading '$($_.name)'"; pip install -U $_.name --upgrade-strategy "eager" }
       shell: pwsh
 
