@@ -230,7 +230,7 @@ class NSSEditor(Editor):
             return self.ui.codeEdit.toPlainText().encode("windows-1252"), b""
 
         print("compiling script from nsseditor")
-        compiled_bytes: bytes | None = compileScript(self.ui.codeEdit.toPlainText(), self._installation.tsl, self._installation.path())
+        compiled_bytes: bytes | None = compileScript(self.ui.codeEdit.toPlainText(), self._installation.path(), tsl=self._installation.tsl)
         if compiled_bytes is None:
             print("user cancelled the compilation")
             return None, b""
@@ -418,15 +418,25 @@ class NSSEditor(Editor):
 
     def onFunctionSearch(self):
         string = self.ui.functionSearchEdit.text()
+        if not string:
+            return
+        lower_string = string.lower()
         for i in range(self.ui.functionList.count()):
             item = self.ui.functionList.item(i)
-            item.setHidden(string not in item.text())
+            if not item:
+                continue
+            item.setHidden(lower_string not in item.text().lower())
 
     def onConstantSearch(self):
         string = self.ui.constantSearchEdit.text()
+        if not string:
+            return
+        lower_string = string.lower()
         for i in range(self.ui.constantList.count()):
             item = self.ui.constantList.item(i)
-            item.setHidden(string not in item.text())
+            if not item:
+                continue
+            item.setHidden(lower_string not in item.text().lower())
 
 
 class LineNumberArea(QWidget):

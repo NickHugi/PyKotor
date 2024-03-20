@@ -5,6 +5,10 @@ concurrency:
   cancel-in-progress: true
 
 env:
+  OS_RUNNERS_JSON: '["windows-2019", "ubuntu-20.04", "macos-12"]'
+  PYTHON_VERSIONS_JSON: '["3.8", "3.9", "3.10", "3.11", "3.12"]'
+  ARCHITECTURES_JSON: '["x86", "x64"]'
+  INTERPRETERS_JSON: '["python"]'
   UPX_VERSION: '4.2.2'
   
 on:
@@ -126,7 +130,7 @@ jobs:
         tar -xvf Python-$pyVersion.tgz
         $current_working_dir = (Get-Location).Path
         Set-Location -LiteralPath "Python-$pyVersion" -ErrorAction Stop
-        $env:LDFLAGS="-Wl,-rpath=/usr/local/lib"
+        $env:LDFLAGS=""
         sudo ./configure --enable-optimizations --with-ensurepip=install --enable-shared --disable-new-dtags
         sudo make -j $(nproc)
         sudo make altinstall
@@ -143,6 +147,7 @@ jobs:
         echo "deb http://archive.ubuntu.com/ubuntu $(lsb_release -cs)-backports main restricted universe multiverse" | sudo tee -a /etc/apt/sources.list
         echo "deb http://security.ubuntu.com/ubuntu $(lsb_release -cs)-security main restricted universe multiverse" | sudo tee -a /etc/apt/sources.list
         sudo apt-get update -y
+      shell: bash
 
     - name: Setup python venvs
       run: |  # create the venv early to work around an issue with the matrix runners' concurrency
@@ -371,8 +376,6 @@ jobs:
           Add-Content -Path $env:GITHUB_OUTPUT -Value "success=true"
         }
       shell: pwsh
-      env:
-        UPX_DIR: ${{ env.UPX_DIR }}
 
     - name: HolocronToolset - Create Static Binary
       if: ${{ (success() || failure()) && runner.os == 'Disabled_Linux' && steps.toolset_deps.outputs.success == 'true' }}
@@ -732,8 +735,49 @@ jobs:
         Move-Item -LiteralPath ./dist/GuiDuplicator-static -Destination ./dist/GuiDuplicator -Force
       shell: pwsh
 
-    - name: Upload compiled binaries
+    - name: Upload compiled binaries attempt 1
       if: ${{ success() || failure() }}
+      id: upload_attempt_1
+      uses: actions/upload-artifact@v4
+      with:
+        name: publish_${{ matrix.os }}_${{ matrix.python_pypy }}_${{ matrix.python-version }}_${{ matrix.architecture }}
+        path: ./dist/**
+        retention-days: 90
+      continue-on-error: true
+
+    - name: Upload compiled binaries attempt 2
+      id: upload_attempt_2
+      if: ${{ (success() || failure()) && steps.upload_attempt_1.outcome == 'failure' }}
+      uses: actions/upload-artifact@v4
+      with:
+        name: publish_${{ matrix.os }}_${{ matrix.python_pypy }}_${{ matrix.python-version }}_${{ matrix.architecture }}
+        path: ./dist/**
+        retention-days: 90
+      continue-on-error: true
+
+    - name: Upload compiled binaries attempt 3
+      id: upload_attempt_3
+      if: ${{ (success() || failure()) && steps.upload_attempt_2.outcome == 'failure' }}
+      uses: actions/upload-artifact@v4
+      with:
+        name: publish_${{ matrix.os }}_${{ matrix.python_pypy }}_${{ matrix.python-version }}_${{ matrix.architecture }}
+        path: ./dist/**
+        retention-days: 90
+      continue-on-error: true
+
+    - name: Upload compiled binaries attempt 4
+      id: upload_attempt_4
+      if: ${{ (success() || failure()) && steps.upload_attempt_3.outcome == 'failure' }}
+      uses: actions/upload-artifact@v4
+      with:
+        name: publish_${{ matrix.os }}_${{ matrix.python_pypy }}_${{ matrix.python-version }}_${{ matrix.architecture }}
+        path: ./dist/**
+        retention-days: 90
+      continue-on-error: true
+
+    - name: Upload compiled binaries attempt 5
+      id: upload_attempt_5
+      if: ${{ (success() || failure()) && steps.upload_attempt_4.outcome == 'failure' }}
       uses: actions/upload-artifact@v4
       with:
         name: publish_${{ matrix.os }}_${{ matrix.python_pypy }}_${{ matrix.python-version }}_${{ matrix.architecture }}
