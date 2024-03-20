@@ -93,7 +93,7 @@ jobs:
     - name: Set up python 3.12 mac (stops brew erroring on linking)
       if: ${{ runner.os == 'macOS' && matrix.python-version != '3.12' }}
       run: |
-        brew install python@3.12 -quiet || true
+        brew install python@3.12 --quiet || true
       shell: bash
 
     - name: Set up ${{ matrix.python_pypy }} ${{ matrix.python-version }} macOS
