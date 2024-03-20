@@ -610,7 +610,7 @@ class SyntaxHighlighter(QSyntaxHighlighter):
             "keyword": self.getCharFormat("blue"),
             "operator": self.getCharFormat("darkRed"),
             "numbers": self.getCharFormat("brown"),
-            "comment": self.getCharFormat("gray", False, True),
+            "comment": self.getCharFormat("gray", bold=False, italic=True),
             "string": self.getCharFormat("darkMagenta"),
             "brace": self.getCharFormat("darkRed"),
             "function": self.getCharFormat("darkGreen"),
@@ -687,6 +687,7 @@ class SyntaxHighlighter(QSyntaxHighlighter):
     def getCharFormat(
         self,
         color: str | int,
+        *,
         bold: bool = False,
         italic: bool = False,
     ) -> QTextCharFormat:
