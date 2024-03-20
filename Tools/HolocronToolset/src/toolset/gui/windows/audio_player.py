@@ -1,22 +1,25 @@
 from __future__ import annotations
 
+import os
 import time
 
+from contextlib import suppress
+from tempfile import NamedTemporaryFile
 from typing import TYPE_CHECKING
 
 import qtpy
 
 from qtpy import QtCore
-from qtpy.QtCore import QBuffer, QIODevice
+from qtpy.QtCore import QBuffer
 from qtpy.QtMultimedia import QMediaPlayer
 from qtpy.QtWidgets import QFileDialog, QMainWindow
 
 from pykotor.common.stream import BinaryReader
 from pykotor.extract.file import ResourceIdentifier
 from pykotor.tools import sound
+from utility.system.path import Path
 
 if TYPE_CHECKING:
-    import os
 
     from qtpy.QtGui import QCloseEvent
     from qtpy.QtWidgets import QWidget
@@ -53,31 +56,53 @@ class AudioPlayer(QMainWindow):
         self.player.durationChanged.connect(self.durationChanged)
         self.player.positionChanged.connect(self.positionChanged)
         self.destroyed.connect(self.closeEvent)
-        self.player.error.connect(lambda _: self.closeEvent())
+        qt_api = os.environ.get("QT_API", "")
+        if qt_api in {"pyside2", "pyqt5"}:
+            self.player.error.connect(lambda _: self.handleError())
+        else:
+            self.player.errorOccurred.connect(lambda *args, **kwargs: self.handleError(*args, **kwargs))
 
-    def load(
-        self,
-        filepath: os.PathLike | str,
-        resname: str,
-        restype: ResourceType,
-        data: bytes,
-    ):
-        data = sound.deobfuscate_audio(data)
+        self.tempFile = None  # Reference to the temporary file for PyQt6/Pyside6
 
+    def handleError(self, *args, **kwargs):
+        print("Error:", *args, **kwargs)
+        self.closeEvent(None)
+
+    def set_media(self, data: bytes, restype: ResourceType):
         self.player.stop()
-        self.buffer = QBuffer(self)
-        self.buffer.setData(data)
+        data = sound.deobfuscate_audio(data)
+        # Clear any existing temporary file
+        if self.tempFile and Path(self.tempFile.name).exists():
+            self.tempFile.delete = True
+            os.remove(self.tempFile.name)
+            self.tempFile = None
+
+        if data:
+            qt_api = os.environ.get("QT_API", "")
+            if qt_api.lower() in {"pyqt6", "pyside6"}:
+                # Write data to a temporary file for PyQt6 and PySide6
+                self.tempFile = NamedTemporaryFile(delete=False, suffix=f".{restype!s}")
+                self.tempFile.write(data)
+                self.tempFile.close()
+                self.player.setSource(self.tempFile.name)
+            else:
+                # Directly use data in buffer for PyQt5 and PySide2
+                buffer = QBuffer(self)
+                buffer.setData(data)
+                if buffer.open(QtCore.QIODevice.ReadOnly):
+                    self.player.setMedia(QtCore.QMediaContent(), buffer)
+
+    def load(self, filepath: os.PathLike | str, resname: str, restype: ResourceType, data: bytes):
         self.setWindowTitle(f"{resname}.{restype.extension} - Audio Player")
-        if self.buffer.open(QIODevice.ReadOnly):
-            self.player.setMedia(QMediaContent(), self.buffer)
-            QtCore.QTimer.singleShot(0, self.player.play)
+        self.set_media(data, restype)  # Use the refined set_media method
 
     def open(self):
         filepath: str = QFileDialog.getOpenFileName(self, "Select an audio file")[0]
         if filepath:
-            resname, restype = ResourceIdentifier.from_path(filepath).validate().unpack()
-            data: bytes = BinaryReader.load_file(filepath)
-            self.load(filepath, resname, restype, data)
+            with suppress(ValueError, TypeError):
+                resname, restype = ResourceIdentifier.from_path(filepath).validate().unpack()
+                data: bytes = BinaryReader.load_file(filepath)
+                self.load(filepath, resname, restype, data)
 
     def durationChanged(self, duration: int):
         totalTime: str = time.strftime("%H:%M:%S", time.gmtime(duration // 1000))
@@ -98,12 +123,7 @@ class AudioPlayer(QMainWindow):
         position: int = self.ui.timeSlider.value()
         self.player.setPosition(position)
 
-    def hideEvent(self, event):
-        # closeEvent doesn't get called for whatever reason.
-        super().hideEvent(event)
-        self.player.stop()
-
-    def closeEvent(self, e: QCloseEvent | None = None):  # FIXME(th3w1zard1): this event never gets called.
+    def closeEvent(self, e: QCloseEvent):
         print("Closing window and stopping player")  # Debugging line to confirm this method is called
         self.player.stop()  # Stop the player
 
