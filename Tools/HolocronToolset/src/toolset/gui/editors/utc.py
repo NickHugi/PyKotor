@@ -287,6 +287,13 @@ class UTCEditor(Editor):
         self.ui.intelligenceSpin.setValue(utc.intelligence)
         self.ui.wisdomSpin.setValue(utc.wisdom)
         self.ui.charismaSpin.setValue(utc.charisma)
+
+        # TODO(th3w1zard1): Fix the maximum. Use max due to uncertainty, but it's probably always 150.
+        self.ui.baseHpSpin.setMaximum(max(self.ui.baseHpSpin.maximum(), utc.hp))
+        self.ui.currentHpSpin.setMaximum(max(self.ui.currentHpSpin.maximum(), utc.current_hp))
+        self.ui.maxHpSpin.setMaximum(max(self.ui.maxHpSpin.maximum(), utc.max_hp))
+        self.ui.currentFpSpin.setMaximum(max(self.ui.currentFpSpin.maximum(), utc.fp))
+        self.ui.maxFpSpin.setMaximum(max(self.ui.maxFpSpin.maximum(), utc.max_fp))
         self.ui.baseHpSpin.setValue(utc.hp)
         self.ui.currentHpSpin.setValue(utc.current_hp)
         self.ui.maxHpSpin.setValue(utc.max_hp)

@@ -129,6 +129,8 @@ unfixable = [
 ]
 ignore = [
 # The following rules are too strict to be realistically used by ruff:
+    "ANN002",   # Checks that function *args arguments have type annotations.
+    "ANN003",   # Checks that function **kwargs arguments have type annotations.
     "ANN101",   # Checks that instance method self arguments have type annotations.
     "ANN102",   # Checks that class method cls arguments have type annotations.
     "ANN401",   # Dynamically typed expressions (typing.Any) are disallowed in {name}

@@ -20,6 +20,7 @@
     "ms-vscode-remote.remote-wsl",
     "redhat.vscode-yaml",
     "shakram02.bash-beautify",
-    "be5invis.toml"
+    "be5invis.toml",
+    "github.vscode-github-actions"
   ]
 }

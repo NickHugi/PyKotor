@@ -746,12 +746,10 @@ class ItemBuilderDialog(QDialog):
             return "Creature Claw"
         if slots & EquipmentSlot.HEAD.value:
             return "Droid Sensors" if droid else "Headgear"
-        if slots & EquipmentSlot.IMPLANT.value and not droid:
-            return "Implants"
+        if slots & EquipmentSlot.IMPLANT.value:
+            return "Droid Utilities" if droid else "Implants"
         if slots & EquipmentSlot.GAUNTLET.value and not droid:
             return "Gauntlets"
-        if slots & EquipmentSlot.IMPLANT.value and droid:  # is the check for 'droid' unnecessary here?
-            return "Droid Utilities"
         if slots & EquipmentSlot.LEFT_ARM.value:
             return "Droid Special Weapons" if droid else "Shields"
         if slots & EquipmentSlot.ARMOR.value:
