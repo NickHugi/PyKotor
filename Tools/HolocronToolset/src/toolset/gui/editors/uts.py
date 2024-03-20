@@ -7,7 +7,7 @@ import qtpy
 
 from qtpy import QtCore
 from qtpy.QtCore import QBuffer, QIODevice
-from qtpy.QtMultimedia import QMediaContent, QMediaPlayer
+from qtpy.QtMultimedia import QMediaPlayer
 from qtpy.QtWidgets import QListWidgetItem, QMessageBox
 
 from pykotor.common.misc import ResRef

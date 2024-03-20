@@ -12,7 +12,6 @@ from PySide2.QtCore import *
 from PySide2.QtGui import *
 from PySide2.QtWidgets import *
 
-import resources_rc
 
 class Ui_Dialog(object):
     def setupUi(self, Dialog):

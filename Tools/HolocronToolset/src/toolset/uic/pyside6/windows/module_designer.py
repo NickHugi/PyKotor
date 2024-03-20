@@ -24,7 +24,6 @@ from PySide6.QtWidgets import (QAbstractItemView, QApplication, QCheckBox, QFram
 
 from toolset.gui.widgets.renderer.module import ModuleRenderer
 from toolset.gui.widgets.renderer.walkmesh import WalkmeshRenderer
-import resources_rc
 
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):

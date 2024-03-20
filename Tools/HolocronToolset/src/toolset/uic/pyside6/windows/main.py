@@ -23,7 +23,6 @@ from PySide6.QtWidgets import (QApplication, QCheckBox, QComboBox, QFrame,
     QVBoxLayout, QWidget)
 
 from toolset.gui.widgets.main_widgets import (ResourceList, TextureList)
-import resources_rc
 
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):

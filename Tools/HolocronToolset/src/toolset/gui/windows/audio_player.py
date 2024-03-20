@@ -8,7 +8,7 @@ import qtpy
 
 from qtpy import QtCore
 from qtpy.QtCore import QBuffer, QIODevice
-from qtpy.QtMultimedia import QMediaContent, QMediaPlayer
+from qtpy.QtMultimedia import QMediaPlayer
 from qtpy.QtWidgets import QFileDialog, QMainWindow
 
 from pykotor.common.stream import BinaryReader

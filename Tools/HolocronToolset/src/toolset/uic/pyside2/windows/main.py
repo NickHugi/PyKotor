@@ -15,7 +15,6 @@ from PySide2.QtWidgets import *
 from toolset.gui.widgets.main_widgets import ResourceList
 from toolset.gui.widgets.main_widgets import TextureList
 
-import resources_rc
 
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):

@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING, ClassVar
 import qtpy
 
 from qtpy import QtCore
-from qtpy.QtCore import QRect, QRegExp, QSize
+from qtpy.QtCore import QRect, QRegularExpression, QSize
 from qtpy.QtGui import (
     QColor,
     QFont,
@@ -596,8 +596,8 @@ class SyntaxHighlighter(QSyntaxHighlighter):
 
     OPERATORS: ClassVar[list[str]] = ["=", "==", "!=", "<", "<=", ">", ">=", "!", "\\+", "-", "/", "<<", ">>", "\\&", "\\|"]
 
-    COMMENT_BLOCK_START = QRegExp("/\\*")
-    COMMENT_BLOCK_END = QRegExp("\\*/")
+    COMMENT_BLOCK_START = QRegularExpression("/\\*")
+    COMMENT_BLOCK_END = QRegularExpression("\\*/")
 
     BRACES: ClassVar[list[str]] = ["\\{", "\\}", "\\(", "\\)", "\\[", "\\]"]
 
@@ -621,7 +621,7 @@ class SyntaxHighlighter(QSyntaxHighlighter):
             "keyword": self.getCharFormat("blue"),
             "operator": self.getCharFormat("darkRed"),
             "numbers": self.getCharFormat("brown"),
-            "comment": self.getCharFormat("gray", False, True),
+            "comment": self.getCharFormat("gray", bold=False, italic=True),
             "string": self.getCharFormat("darkMagenta"),
             "brace": self.getCharFormat("darkRed"),
             "function": self.getCharFormat("darkGreen"),
@@ -647,7 +647,7 @@ class SyntaxHighlighter(QSyntaxHighlighter):
             (r"//[^\n]*", 0, self.styles["comment"]),
         ]
 
-        self.rules: list[tuple[QtCore.QRegExp, int, QTextCharFormat]] = [(QtCore.QRegExp(pat), index, fmt) for (pat, index, fmt) in rules]
+        self.rules: list[tuple[QtCore.QRegularExpression, int, QTextCharFormat]] = [(QtCore.QRegularExpression(pat), index, fmt) for (pat, index, fmt) in rules]
 
     def highlightBlock(self, text: str | None):
         """Highlights blocks of text.
@@ -698,6 +698,7 @@ class SyntaxHighlighter(QSyntaxHighlighter):
     def getCharFormat(
         self,
         color: str | int,
+        *,
         bold: bool = False,
         italic: bool = False,
     ) -> QTextCharFormat:
@@ -708,4 +709,3 @@ class SyntaxHighlighter(QSyntaxHighlighter):
         textFormat.setFontWeight(QFont.Bold if bold else QFont.Normal)
         textFormat.setFontItalic(italic)
         return textFormat
-

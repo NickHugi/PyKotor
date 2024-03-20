@@ -15,7 +15,6 @@ from PySide2.QtWidgets import *
 from toolset.gui.dialogs.inventory import DropFrame
 from toolset.gui.dialogs.inventory import InventoryTable
 
-import resources_rc
 
 class Ui_Dialog(object):
     def setupUi(self, Dialog):

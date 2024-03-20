@@ -23,7 +23,6 @@ from PySide6.QtWidgets import (QApplication, QCheckBox, QGridLayout, QHBoxLayout
     QWidget)
 
 from toolset.gui.widgets.renderer.walkmesh import WalkmeshRenderer
-import resources_rc
 
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
