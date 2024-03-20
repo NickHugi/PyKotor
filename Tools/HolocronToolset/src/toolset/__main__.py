@@ -86,7 +86,7 @@ if __name__ == "__main__":
     if os.name == "nt":
         os.environ["QT_MULTIMEDIA_PREFERRED_PLUGINS"] = "windowsmediafoundation"
     os.environ["QT_DEBUG_PLUGINS"] = "1"
-    os.environ["QT_API"] = os.environ.get("QT_API", "pyside6")  # supports pyqt5, pyqt6, pyside2, pyside6
+    os.environ["QT_API"] = os.environ.get("QT_API", "pyqt5")  # supports pyqt5, pyqt6, pyside2, pyside6
 
     import qtpy
     print(f"Using qt bindings '{qtpy.API_NAME}'")

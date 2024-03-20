@@ -736,37 +736,34 @@ class DLGEditor(Editor):
             - Starts playback of the sound using a single shot timer to avoid blocking.
             - Displays an error message if the sound resource is not found.
         """
-        # Determine the Qt binding currently in use by checking QT_API environment variable
-        qt_api = os.environ.get("QT_API", "")
-
-        if qt_api in ["pyqt5", "pyside2"]:
+        if qtpy.API_NAME in ["PyQt5", "PySide2"]:
             # PyQt5 and PySide2 code path
             from qtpy.QtMultimedia import QMediaContent
 
-            def set_media(player: QMediaPlayer, data: bytes):
+            def set_media(data: bytes | None):
                 if data:
-                    buffer = QBuffer()
-                    buffer.setData(data)
-                    buffer.open(QIODevice.ReadOnly)
-                    player.setMedia(QMediaContent(), buffer)
-                    QTimer.singleShot(0, player.play)
+                    self.buffer = QBuffer(self)
+                    self.buffer.setData(data)
+                    self.buffer.open(QIODevice.ReadOnly)
+                    self.player.setMedia(QMediaContent(), self.buffer)
+                    QtCore.QTimer.singleShot(0, self.player.play)
                 else:
                     self.blinkWindow()
 
-        elif qt_api in ["pyqt6", "pyside6"]:
+        elif qtpy.API_NAME in ["PyQt6", "PySide6"]:
             # PyQt6 and PySide6 code path
-            def set_media(player: QMediaPlayer, data: bytes):
+            def set_media(data: bytes | None):
                 if data:
                     with TemporaryDirectory() as tmpdir:
                         tmpdir_path = Path(tmpdir)
                         tmpmediafile = (tmpdir_path / tmpdir_path.stem).with_suffix(".wav")
                         BinaryWriter.dump(tmpmediafile, data)
-                        player.setSource(str(tmpmediafile))
-                        QTimer.singleShot(0, player.play)
+                        self.player.setSource(str(tmpmediafile))
+                        QTimer.singleShot(0, self.player.play)
                 else:
                     self.blinkWindow()
         else:
-            raise ValueError(f"Unsupported QT_API value: {qt_api}")
+            raise ValueError(f"Unsupported QT_API value: {qtpy.API_NAME}")
 
         self.player.stop()
 
@@ -780,7 +777,7 @@ class DLGEditor(Editor):
             ],
         )
 
-        set_media(self.player, data)
+        set_media(data)
 
     def focusOnNode(self, link: DLGLink) -> QStandardItem:
         """Focuses the dialog tree on a specific link node.

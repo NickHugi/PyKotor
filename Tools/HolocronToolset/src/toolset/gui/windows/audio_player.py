@@ -10,7 +10,7 @@ from typing import TYPE_CHECKING
 import qtpy
 
 from qtpy import QtCore
-from qtpy.QtCore import QBuffer
+from qtpy.QtCore import QBuffer, QIODevice
 from qtpy.QtMultimedia import QMediaPlayer
 from qtpy.QtWidgets import QFileDialog, QMainWindow
 
@@ -56,8 +56,7 @@ class AudioPlayer(QMainWindow):
         self.player.durationChanged.connect(self.durationChanged)
         self.player.positionChanged.connect(self.positionChanged)
         self.destroyed.connect(self.closeEvent)
-        qt_api = os.environ.get("QT_API", "")
-        if qt_api in {"pyside2", "pyqt5"}:
+        if qtpy.API_NAME in {"PySide2", "PyQt5"}:
             self.player.error.connect(lambda _: self.handleError())
         else:
             self.player.errorOccurred.connect(lambda *args, **kwargs: self.handleError(*args, **kwargs))
@@ -77,20 +76,24 @@ class AudioPlayer(QMainWindow):
             os.remove(self.tempFile.name)
             self.tempFile = None
 
-        if data:
-            qt_api = os.environ.get("QT_API", "")
-            if qt_api.lower() in {"pyqt6", "pyside6"}:
-                # Write data to a temporary file for PyQt6 and PySide6
-                self.tempFile = NamedTemporaryFile(delete=False, suffix=f".{restype!s}")
-                self.tempFile.write(data)
-                self.tempFile.close()
-                self.player.setSource(self.tempFile.name)
-            else:
-                # Directly use data in buffer for PyQt5 and PySide2
-                buffer = QBuffer(self)
-                buffer.setData(data)
-                if buffer.open(QtCore.QIODevice.ReadOnly):
-                    self.player.setMedia(QtCore.QMediaContent(), buffer)
+        if not data:
+            return
+
+        if qtpy.API_NAME in {"PyQt6", "PySide6"}:
+            # Write data to a temporary file for PyQt6 and PySide6
+            self.tempFile = NamedTemporaryFile(delete=False, suffix=f".{restype!s}")
+            self.tempFile.write(data)
+            self.tempFile.close()
+            self.player.setSource(self.tempFile.name)
+            QtCore.QTimer.singleShot(0, self.player.play)
+        else:
+            # Directly use data in buffer for PyQt5 and PySide2
+            self.buffer = QBuffer(self)
+            self.buffer.setData(data)
+            if self.buffer.open(QIODevice.ReadOnly):
+                from PyQt5.QtMultimedia import QMediaContent
+                self.player.setMedia(QMediaContent(), self.buffer)
+                QtCore.QTimer.singleShot(0, self.player.play)
 
     def load(self, filepath: os.PathLike | str, resname: str, restype: ResourceType, data: bytes):
         self.setWindowTitle(f"{resname}.{restype.extension} - Audio Player")
