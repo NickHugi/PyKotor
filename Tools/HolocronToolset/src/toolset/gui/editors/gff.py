@@ -433,10 +433,13 @@ class GFFEditor(Editor):
                     if child.widget():
                         child.widget().deleteLater()
 
-            # Display raw binary data in a QLabel with word wrapping enabled
-            binaryDataLabel = QLabel(f"{binaryData}")
+            # Convert binary data to a hexadecimal string for display
+            hexDataStr = " ".join(f"{b:02X}" for b in binaryData)
+
+            # Display the hexadecimal data in a QLabel with word wrapping enabled
+            binaryDataLabel = QLabel(f"{hexDataStr}")
             binaryDataLabel.setWordWrap(True)
-            binaryDataLabel.setFont(QFont("Courier New", 8))  # Set a monospaced font
+            binaryDataLabel.setFont(QFont("Courier New", 7))  # Set a monospaced font
             binaryDataLabel.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Preferred)
             binaryDataLabel.setMaximumWidth(self.ui.blankPage.width()-20)  # Set the max width to the parent's width
 
