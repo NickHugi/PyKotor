@@ -10,8 +10,8 @@ from typing import TYPE_CHECKING
 import qtpy
 
 from qtpy import QtCore
-from qtpy.QtCore import QBuffer, QIODevice
-from qtpy.QtMultimedia import QMediaPlayer
+from qtpy.QtCore import QBuffer, QIODevice, QUrl
+from qtpy.QtMultimedia import QAudioOutput, QMediaPlayer
 from qtpy.QtWidgets import QFileDialog, QMainWindow
 
 from pykotor.common.stream import BinaryReader
@@ -71,29 +71,29 @@ class AudioPlayer(QMainWindow):
         self.player.stop()
         data = sound.deobfuscate_audio(data)
         # Clear any existing temporary file
-        if self.tempFile and Path(self.tempFile.name).exists():
+        if self.tempFile and Path(self.tempFile.name).safe_isfile():
             self.tempFile.delete = True
             os.remove(self.tempFile.name)
-            self.tempFile = None
+        self.tempFile = None
 
         if not data:
             return
 
-        if qtpy.API_NAME in {"PyQt6", "PySide6"}:
-            # Write data to a temporary file for PyQt6 and PySide6
-            self.tempFile = NamedTemporaryFile(delete=False, suffix=f".{restype!s}")
+        if qtpy.API_NAME in {"PyQt6", "PySide6"}:  # audio is still broken for pyqt6/pyside6...
+            self.tempFile = NamedTemporaryFile(delete=False, suffix=f".{str(restype).lower()}")
             self.tempFile.write(data)
             self.tempFile.close()
-            self.player.setSource(self.tempFile.name)
-            QtCore.QTimer.singleShot(0, self.player.play)
+            print(f"Wrote audioplayer audio data to '{self.tempFile.name}'")
+            self.player.setSource(QUrl.fromLocalFile(self.tempFile.name))
         else:
-            # Directly use data in buffer for PyQt5 and PySide2
             self.buffer = QBuffer(self)
             self.buffer.setData(data)
-            if self.buffer.open(QIODevice.ReadOnly):
-                from PyQt5.QtMultimedia import QMediaContent
-                self.player.setMedia(QMediaContent(), self.buffer)
-                QtCore.QTimer.singleShot(0, self.player.play)
+            if not self.buffer.open(QIODevice.ReadOnly):
+                print("Audio player Buffer not ready?")
+                return
+            from PyQt5.QtMultimedia import QMediaContent
+            self.player.setMedia(QMediaContent(), self.buffer)
+        QtCore.QTimer.singleShot(0, self.player.play)
 
     def load(self, filepath: os.PathLike | str, resname: str, restype: ResourceType, data: bytes):
         self.setWindowTitle(f"{resname}.{restype.extension} - Audio Player")
