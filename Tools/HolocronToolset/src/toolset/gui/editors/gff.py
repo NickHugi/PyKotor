@@ -421,36 +421,24 @@ class GFFEditor(Editor):
         elif item.data(_TYPE_NODE_ROLE) == GFFFieldType.Binary:
             binaryData: bytes = item.data(_VALUE_NODE_ROLE)
             self.ui.pages.setCurrentWidget(self.ui.blankPage)
-
-            # Ensure that self.ui.blankPage has a QVBoxLayout
             if self.ui.blankPage.layout() is None:
                 layout = QVBoxLayout(self.ui.blankPage)
                 self.ui.blankPage.setLayout(layout)
             else:
-                # Clear existing widgets from the layout
                 while self.ui.blankPage.layout().count():
                     child = self.ui.blankPage.layout().takeAt(0)
                     if child.widget():
                         child.widget().deleteLater()
-
-            # Convert binary data to a hexadecimal string for display
             hexDataStr = " ".join(f"{b:02X}" for b in binaryData)
-
-            # Display the hexadecimal data in a QLabel with word wrapping enabled
             binaryDataLabel = QLabel(f"{hexDataStr}")
             binaryDataLabel.setWordWrap(True)
-            binaryDataLabel.setFont(QFont("Courier New", 7))  # Set a monospaced font
+            binaryDataLabel.setFont(QFont("Courier New", 7))
             binaryDataLabel.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Preferred)
-            binaryDataLabel.setMaximumWidth(self.ui.blankPage.width()-20)  # Set the max width to the parent's width
-
+            binaryDataLabel.setMaximumWidth(self.ui.blankPage.width()-20)  # -20 otherwise the pane grows for some reason.
             self.ui.blankPage.layout().addWidget(binaryDataLabel)
-
-            # Create a copy button and add it to the blankPage layout
             copyButton = QPushButton("Copy Binary Data")
             self.ui.blankPage.layout().addWidget(copyButton)
-
-            # Connect the button click event to the copy function
-            copyButton.clicked.connect(lambda: pyperclip.copy(str(binaryData)))
+            copyButton.clicked.connect(lambda: pyperclip.copy(str(hexDataStr)))
         elif item.data(_TYPE_NODE_ROLE) == GFFFieldType.LocalizedString:
             locstring: LocalizedString = item.data(_VALUE_NODE_ROLE)
             self.ui.pages.setCurrentWidget(self.ui.substringPage)
