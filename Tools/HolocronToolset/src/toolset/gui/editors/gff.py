@@ -434,11 +434,11 @@ class GFFEditor(Editor):
                         child.widget().deleteLater()
 
             # Display raw binary data in a QLabel with word wrapping enabled
-            binaryDataLabel = QLabel(f"Binary Data: {binaryData}")
+            binaryDataLabel = QLabel(f"{binaryData}")
             binaryDataLabel.setWordWrap(True)
             binaryDataLabel.setFont(QFont("Courier New", 8))  # Set a monospaced font
             binaryDataLabel.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Preferred)
-            binaryDataLabel.setMaximumWidth(self.ui.blankPage.width())  # Set the max width to the parent's width
+            binaryDataLabel.setMaximumWidth(self.ui.blankPage.width()-20)  # Set the max width to the parent's width
 
             self.ui.blankPage.layout().addWidget(binaryDataLabel)
 
