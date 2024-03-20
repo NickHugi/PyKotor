@@ -2,10 +2,12 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
 
+import pyperclip
+
 from PyQt5 import QtCore
 from PyQt5.QtCore import QSortFilterProxyModel
-from PyQt5.QtGui import QBrush, QColor, QStandardItem, QStandardItemModel
-from PyQt5.QtWidgets import QFileDialog, QListWidgetItem, QMenu, QShortcut
+from PyQt5.QtGui import QBrush, QColor, QFont, QStandardItem, QStandardItemModel
+from PyQt5.QtWidgets import QFileDialog, QLabel, QListWidgetItem, QMenu, QPushButton, QShortcut, QSizePolicy, QVBoxLayout
 
 from pykotor.common.geometry import Vector3, Vector4
 from pykotor.common.language import Gender, Language, LocalizedString
@@ -417,7 +419,35 @@ class GFFEditor(Editor):
             self.ui.zVec4Spin.setValue(vec4.z)
             self.ui.wVec4Spin.setValue(vec4.w)
         elif item.data(_TYPE_NODE_ROLE) == GFFFieldType.Binary:
+            binaryData: bytes = item.data(_VALUE_NODE_ROLE)
             self.ui.pages.setCurrentWidget(self.ui.blankPage)
+
+            # Ensure that self.ui.blankPage has a QVBoxLayout
+            if self.ui.blankPage.layout() is None:
+                layout = QVBoxLayout(self.ui.blankPage)
+                self.ui.blankPage.setLayout(layout)
+            else:
+                # Clear existing widgets from the layout
+                while self.ui.blankPage.layout().count():
+                    child = self.ui.blankPage.layout().takeAt(0)
+                    if child.widget():
+                        child.widget().deleteLater()
+
+            # Display raw binary data in a QLabel with word wrapping enabled
+            binaryDataLabel = QLabel(f"Binary Data: {binaryData}")
+            binaryDataLabel.setWordWrap(True)
+            binaryDataLabel.setFont(QFont("Courier New", 8))  # Set a monospaced font
+            binaryDataLabel.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Preferred)
+            binaryDataLabel.setMaximumWidth(self.ui.blankPage.width())  # Set the max width to the parent's width
+
+            self.ui.blankPage.layout().addWidget(binaryDataLabel)
+
+            # Create a copy button and add it to the blankPage layout
+            copyButton = QPushButton("Copy Binary Data")
+            self.ui.blankPage.layout().addWidget(copyButton)
+
+            # Connect the button click event to the copy function
+            copyButton.clicked.connect(lambda: pyperclip.copy(str(binaryData)))
         elif item.data(_TYPE_NODE_ROLE) == GFFFieldType.LocalizedString:
             locstring: LocalizedString = item.data(_VALUE_NODE_ROLE)
             self.ui.pages.setCurrentWidget(self.ui.substringPage)
