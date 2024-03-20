@@ -58,7 +58,7 @@ if ((Get-OS) -eq "Mac") {
     # Somehow none of this works, still causes exit code 1...
     $ErrorActionPreference = 'SilentlyContinue'
     try {
-        & bash -c "brew install qt@5 || true" 2>&1 | Write-Output
+        & bash -c "brew install qt@5 -q || true" 2>&1 | Write-Output
     }
     catch {
         Write-Host "Error installing qt@5, but continuing..."
