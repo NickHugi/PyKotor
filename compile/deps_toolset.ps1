@@ -84,17 +84,8 @@ if ((Get-OS) -eq "Mac") {
     }
     . $pythonExePath -m pip install $qtApi qtpy -U --prefer-binary
 
-    # Somehow none of this works, still causes exit code 1...
-    $ErrorActionPreference = 'Continue'
-    try {
-        brew install --quiet qt@5 2>&1 | out-null
-    }
-    catch {
-        Write-Host "Error installing qt@5, but continuing..."
-    }
-    $ErrorActionPreference = 'Stop'
-    $LastExitCode = 0  # We don't care about whatever failed to link...
-    $global:LASTEXITCODE = 0
+    brew install --quiet --force qt@5
+
 } elseif ((Get-OS) -eq "Windows") {
     # Determine system architecture
     if ($env:PROCESSOR_ARCHITECTURE -eq "AMD64" -or $env:PROCESSOR_ARCHITEW6432 -eq "AMD64") {
