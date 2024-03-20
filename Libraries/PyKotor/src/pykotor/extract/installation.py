@@ -1339,7 +1339,7 @@ class Installation:
 
         def check_list(resource_list: list[FileResource]):
             # Index resources by identifier
-            lookup_dict: dict[ResourceIdentifier, FileResource] = {resource.identifier(): resource for resource in resource_list}
+            lookup_dict = {resource.identifier(): resource for resource in resource_list}
             for query in queries:
                 if query not in lookup_dict:
                     continue

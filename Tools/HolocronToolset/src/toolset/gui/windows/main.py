@@ -512,9 +512,9 @@ class ToolWindow(QMainWindow):
         newSaveDirPath = CaseAwarePath(newSaveDir)
         if newSaveDirPath not in self.active._saves:
             self.active.load_saves()
-            if newSaveDirPath not in self.active._saves:
-                print(f"Cannot load save {newSaveDirPath}: not found in saves list")
-                return
+        if newSaveDirPath not in self.active._saves:
+            print(f"Cannot load save {newSaveDirPath}: not found in saves list")
+            return
         for save_path, resource_list in self.active._saves[newSaveDirPath].items():
             # Create a new parent item for the save_path
             save_path_item = QStandardItem(str(save_path.relative_to(save_path.parent.parent)))
@@ -1090,14 +1090,10 @@ class ToolWindow(QMainWindow):
     def refreshSavesList(self, *, reload=True):
         """Refreshes the list of override directories in the overrideFolderCombo combobox."""
         if self.active is None:
-            print("No installation is currently loaded, cannot refresh saves list")
+            print("no installation is currently loaded, cannot refresh saves list")
             return
-
         if reload:
-            print("Reloading saves...")
             self.active.load_saves()
-        else:
-            print("Refreshing saves...")
 
         sections: list[QStandardItem] = []
         for save_path in self.active._saves:
@@ -1262,7 +1258,7 @@ class ToolWindow(QMainWindow):
             return new_active
 
         active = self.installations.get(name)
-        loader = AsyncLoader(self, "Loading Installation" if active is None else "Refreshing installation", lambda: load_task(active), "Failed to load installation")
+        loader = AsyncLoader(self, "Refreshing installation" if active else "Loading Installation", lambda: load_task(active), "Failed to load installation")
         if not loader.exec_():
             self.active = None
             self.ui.gameCombo.setCurrentIndex(0)

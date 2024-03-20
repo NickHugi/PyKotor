@@ -223,7 +223,7 @@ class UTCClass:
 
     def __eq__(
         self,
-        other: UTCClass,
+        other: UTCClass | object,
     ):
         if isinstance(other, UTCClass):
             return self.class_id == other.class_id and self.class_level == self.class_level

@@ -6,6 +6,7 @@ from pykotor.common.language import LocalizedString
 from pykotor.common.misc import Game, ResRef
 from pykotor.resource.formats.gff import GFF, GFFContent, GFFList, read_gff, write_gff
 from pykotor.resource.formats.gff.gff_auto import bytes_gff
+from pykotor.resource.formats.gff.gff_data import GFFStruct
 from pykotor.resource.type import ResourceType
 
 if TYPE_CHECKING:
@@ -92,32 +93,33 @@ class UTIProperty:
         self.upgrade_type: int | None = None
 
 
-def construct_uti(
-    gff: GFF,
-) -> UTI:
+def construct_uti_from_struct(
+    gff_struct: GFFStruct,
+    *,
+    use_deprecated: bool = True,  # noqa: ARG001
+):
     uti = UTI()
 
-    root = gff.root
-    uti.resref = root.acquire("TemplateResRef", ResRef.from_blank())
-    uti.base_item = root.acquire("BaseItem", 0)
-    uti.name = root.acquire("LocalizedName", LocalizedString.from_invalid())
-    uti.description = root.acquire("DescIdentified", LocalizedString.from_invalid())
-    uti.tag = root.acquire("Tag", "")
-    uti.charges = root.acquire("Charges", 0)
-    uti.cost = root.acquire("Cost", 0)
-    uti.stack_size = root.acquire("StackSize", 0)
-    uti.plot = root.acquire("Plot", 0)
-    uti.add_cost = root.acquire("AddCost", 0)
-    uti.palette_id = root.acquire("PaletteID", 0)
-    uti.comment = root.acquire("Comment", "")
-    uti.model_variation = root.acquire("ModelVariation", 0)
-    uti.body_variation = root.acquire("BodyVariation", 0)
-    uti.texture_variation = root.acquire("TextureVar", 0)
-    uti.upgrade_level = root.acquire("UpgradeLevel", 0)
-    uti.stolen = root.acquire("Stolen", 0)
-    uti.identified = root.acquire("Identified", 0)
+    uti.resref = gff_struct.acquire("TemplateResRef", ResRef.from_blank())
+    uti.base_item = gff_struct.acquire("BaseItem", 0)
+    uti.name = gff_struct.acquire("LocalizedName", LocalizedString.from_invalid())
+    uti.description = gff_struct.acquire("DescIdentified", LocalizedString.from_invalid())
+    uti.tag = gff_struct.acquire("Tag", "")
+    uti.charges = gff_struct.acquire("Charges", 0)
+    uti.cost = gff_struct.acquire("Cost", 0)
+    uti.stack_size = gff_struct.acquire("StackSize", 0)
+    uti.plot = gff_struct.acquire("Plot", 0)
+    uti.add_cost = gff_struct.acquire("AddCost", 0)
+    uti.palette_id = gff_struct.acquire("PaletteID", 0)
+    uti.comment = gff_struct.acquire("Comment", "")
+    uti.model_variation = gff_struct.acquire("ModelVariation", 0)
+    uti.body_variation = gff_struct.acquire("BodyVariation", 0)
+    uti.texture_variation = gff_struct.acquire("TextureVar", 0)
+    uti.upgrade_level = gff_struct.acquire("UpgradeLevel", 0)
+    uti.stolen = gff_struct.acquire("Stolen", 0)
+    uti.identified = gff_struct.acquire("Identified", 0)
 
-    for property_struct in root.acquire("PropertiesList", GFFList()):
+    for property_struct in gff_struct.acquire("PropertiesList", GFFList()):
         prop = UTIProperty()
         uti.properties.append(prop)
         prop.cost_table = property_struct.acquire("CostTable", 0)
@@ -133,16 +135,19 @@ def construct_uti(
 
     return uti
 
+def construct_uti(
+    gff: GFF,
+) -> UTI:
+    root = gff.root
+    return construct_uti_from_struct(root)
 
-def dismantle_uti(
+def dismantle_uti_to_struct(
     uti: UTI,
     game: Game = Game.K2,
     *,
     use_deprecated: bool = True,
-) -> GFF:
-    gff = GFF(GFFContent.UTI)
-
-    root = gff.root
+) -> GFFStruct:
+    root = GFFStruct()
     root.set_resref("TemplateResRef", uti.resref)
     root.set_int32("BaseItem", uti.base_item)
     root.set_locstring("LocalizedName", uti.name)
@@ -181,6 +186,16 @@ def dismantle_uti(
         root.set_uint8("Stolen", uti.stolen)
         root.set_uint8("Identified", uti.identified)
 
+    return root
+
+def dismantle_uti(
+    uti: UTI,
+    game: Game = Game.K2,
+    *,
+    use_deprecated: bool = True,
+) -> GFF:
+    gff = GFF(GFFContent.UTI)
+    gff.root = dismantle_uti_to_struct(uti, game, use_deprecated=use_deprecated)
     return gff
 
 
