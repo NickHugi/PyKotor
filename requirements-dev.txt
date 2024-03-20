@@ -16,3 +16,4 @@ pytest
 pytest-xdist
 pytest-html
 aqtinstall
+pytest-json-report
