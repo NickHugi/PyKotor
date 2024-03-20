@@ -1,0 +1,287 @@
+name: Test PyKotor
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  OS_RUNNERS_JSON: '["windows-2019", "ubuntu-20.04", "macos-12"]'
+  PYTHON_VERSIONS_JSON: '["3.7", "3.8", "3.9", "3.10", "3.11", "3.12"]'
+  ARCHITECTURES_JSON: '["x86", "x64"]'
+  INTERPRETERS_JSON: '["python"]'
+  
+on:
+  - push
+  - workflow_dispatch
+
+permissions:
+  contents: write
+
+jobs:
+  runtests:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false  # Disable automatic cancellation of other jobs
+      matrix:
+        os: [windows-2019, ubuntu-20.04, macos-12]  # make sure you update the above one too.
+        python-version: ["3.7", "3.8", "3.9", "3.10", "3.11", "3.12"]
+        architecture: ['x86', 'x64']
+        python_pypy: ['python']
+        exclude:
+          # unix x86 is definitely not supported.
+          - os: ubuntu-20.04
+            architecture: x86
+          - os: macos-12
+            architecture: x86
+          # Latest pypy is 3.10
+          - python_pypy: 'pypy'
+            python-version: '3.11'
+          - python_pypy: 'pypy'
+            python-version: '3.12'
+
+    steps:
+  
+    - name: Determine Python version string
+      id: set-python-version
+      run: |
+        if ( "${{ matrix.python_pypy }}" -eq "pypy" ) {
+          Add-Content -Path $env:GITHUB_ENV -Value "PYTHON_VERSION=pypy-${{ matrix.python-version }}"
+        } else {
+          Add-Content -Path $env:GITHUB_ENV -Value "PYTHON_VERSION=${{ matrix.python-version }}"
+        }
+      shell: pwsh
+
+    - uses: actions/checkout@v4
+    - name: Set up ${{ matrix.python_pypy }} ${{ matrix.python-version }}
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ env.PYTHON_VERSION }}
+        architecture: ${{ matrix.architecture }}
+
+    - name: Set up ${{ matrix.python_pypy }} ${{ matrix.python-version }} macOS
+      if: ${{ runner.os == 'macOS' }}
+      run: |  # warning: `brew link --overwrite python@ver` is unsafe on any non-virtualized macos.
+        echo "NONINTERACTIVE DEFAULT: $NONINTERACTIVE"
+        export NONINTERACTIVE=1
+        echo "NONINTERACTIVE NEW: $NONINTERACTIVE"
+        brew analytics on
+        brew update
+        brew install ${{ matrix.python_pypy }}@${{ matrix.python-version }} || brew link --overwrite ${{ matrix.python_pypy }}@${{ matrix.python-version }}
+
+    - name: Setup python venvs
+      run: |  # create the venv early to work around an issue with the matrix runners' concurrency
+        $pythonExeName = "${{ matrix.python_pypy }}"
+        if ("${{ runner.os }}" -ne "Windows")
+        {
+          $pythonExeName = "${{ matrix.python_pypy }}${{ matrix.python-version }}"
+          # LD_LIBRARY_PATH must be updated. However this won't be permanent, just long enough to create the venv.
+          $env:LD_LIBRARY_PATH = "/usr/local/lib:$env:LD_LIBRARY_PATH"
+        }
+        & $pythonExeName -m venv .venv_${{ matrix.os }}_${{ matrix.python_pypy }}_${{ matrix.python-version }}_${{ matrix.architecture }}
+      shell: pwsh
+
+    - name: Install development packages
+      if: ${{ success() || failure() }}
+      run: |
+        . ./install_python_venv.ps1 -noprompt -venv_name .venv_${{ matrix.os }}_${{ matrix.python_pypy }}_${{ matrix.python-version }}_${{ matrix.architecture }}
+        & $pythonExePath -m pip install --upgrade pip
+        if ("${{ matrix.python-version }}" -eq "3.7") {
+          pip install -r requirements-dev-py37.txt --prefer-binary
+        }
+        else {
+          pip install -r requirements-dev.txt --prefer-binary
+        }
+      shell: pwsh
+
+    - name: Run all unittests/pytests
+      if: ${{ success() || failure() }}
+      run: |
+        . ./install_python_venv.ps1 -noprompt -venv_name .venv_${{ matrix.os }}_${{ matrix.python_pypy }}_${{ matrix.python-version }}_${{ matrix.architecture }}
+        & $pythonExePath -m pytest tests -v -ra -o log_cli=true --capture=no --junitxml=pytest_report.xml --html=pytest_report.html --self-contained-html --tb=no --continue-on-collection-errors
+      shell: pwsh
+      continue-on-error: true
+
+    - name: Upload Pytest Reports
+      if: ${{ success() || failure() }}
+      uses: actions/upload-artifact@v4
+      with:
+        name: pytest_report_${{ matrix.os }}_${{ matrix.python_pypy }}_${{ matrix.python-version }}_${{ matrix.architecture }}
+        path: |
+          pytest_report.html
+          pytest_report.xml
+        retention-days: 90
+
+  add-test-result-status-badges:
+    needs: runtests
+    if: ${{ success() || failure() }}
+    runs-on: ubuntu-latest
+    concurrency: 
+      group: add-test-status-badges-${{ github.ref }}
+      cancel-in-progress: true
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: all_pytest_reports
+          pattern: pytest_report_*
+
+      - name: Extract and update README with custom test status badges
+        shell: pwsh
+        run: |
+          # Git configuration and commit
+          git config --global user.name "GitHub Action"
+          git config --global user.email "action@github.com"
+
+          # Determine the branch that triggered the workflow
+          $branchName = "${{ github.ref_name }}"
+          $repository_owner = "${{ github.repository_owner }}"
+          $repository = "${{ github.repository }}"
+          $commitSHA = "${{ github.sha }}"
+
+          $testsResultsPath = "tests/results"
+          Remove-Item -Path $testsResultsPath -Recurse -Force -ErrorAction SilentlyContinue
+          $testsResultsCommitPath = Join-Path -Path $testsResultsPath -ChildPath "$commitSHA"
+          New-Item -ItemType Directory -Force -Path $testsResultsCommitPath -ErrorAction SilentlyContinue
+
+          $OS_NAMES = '${{ env.OS_RUNNERS_JSON }}' | ConvertFrom-Json
+          $PYTHON_VERSIONS = '${{ env.PYTHON_VERSIONS_JSON }}' | ConvertFrom-Json
+          $ARCHITECTURES = '${{ env.ARCHITECTURES_JSON }}' | ConvertFrom-Json
+          $INTERPRETERS = '${{ env.INTERPRETERS_JSON }}' | ConvertFrom-Json
+
+          $artifact_reports_dir = "./all_pytest_reports"
+          New-Item -ItemType Directory -Force -Path $artifact_reports_dir -ErrorAction SilentlyContinue
+          Get-ChildItem $artifact_reports_dir | ForEach-Object {
+            Write-Output "Moving $($_.FullName) to $testsResultsCommitPath..."
+            Move-Item -LiteralPath $_.FullName -Destination $testsResultsCommitPath
+          }
+          Remove-Item -Path $artifact_reports_dir -Recurse -Force -ErrorAction SilentlyContinue
+
+          $ReadmePath = "./README.md"
+          $ReadmeContent = Get-Content $ReadmePath -Raw
+          # Remove the readme temporarily to prevent merge conflicts
+          Remove-Item -Path $ReadmePath -Force -ErrorAction Stop
+
+          git fetch origin $branchName
+          git add $ReadmePath --force
+          git add $testsResultsPath --force
+          git add $testsResultsCommitPath --force
+          # Checking if there are newer commits on the remote branch than the commit that triggered the workflow
+          if (git log "${{ github.sha }}"..origin/$branchName --oneline) {
+              Write-Error "Newer commits are present on the remote branch, cannot update readme"
+              exit 1
+          }
+          git commit -m "Add test results, prepare README"
+          git push --force-with-lease origin HEAD:${{ github.ref_name }}
+          $commitSHA = git rev-parse HEAD
+
+          $testResults = @{}
+
+          Write-Output "Iterate through $testsResultsCommitPath"
+          Get-ChildItem $testsResultsCommitPath -Recurse -Filter pytest_report.xml | ForEach-Object {
+            $os, $python_or_pypy, $pythonVersion, $architecture = $_.BaseName -replace '^publish_', '' -split '_'
+            [xml]$TestResultsXml = Get-Content $_.FullName
+            $totalTests = [int]$TestResultsXml.testsuites.testsuite.tests
+            $failedTests = [int]$TestResultsXml.testsuites.testsuite.failures
+            $errors = [int]$TestResultsXml.testsuites.testsuite.errors
+            $passedTests = $totalTests - $failedTests - $errors
+
+            $resultFilePathHtml = $_.FullName -replace '\.xml$', '.html'
+            $relHtmlFilePath = Resolve-Path -Path $resultFilePathHtml -Relative
+            if ($relHtmlFilePath.StartsWith(".\") -or $relHtmlFilePath.StartsWith("./")) {
+              $cleanRelHtmlFilePath = $relHtmlFilePath.Substring(2)
+            } else {
+              $cleanRelHtmlFilePath = $relHtmlFilePath
+            }
+            $DetailsURL = "https://htmlpreview.github.io/?https://github.com/$repository/blob/$commitSHA/$cleanRelHtmlFilePath"
+            $key = $_.Directory.Name.Replace('pytest_report_', '').Replace('_', '-')
+            Write-Host "KEY FOUND: '$key'"
+
+            $testResults[$key] = @{
+              Passed = $passedTests
+              Failed = $failedTests + $errors
+              Total  = $totalTests
+              DetailsURL = $DetailsURL
+            }
+          }
+
+          $WindowsBadgeContent = ""
+          $LinuxBadgeContent = ""
+          $MacOSBadgeContent = ""
+
+          $windowsBadgesStartPlaceholder = "<!-- WINDOWS-BADGES-START -->"
+          $windowsBadgesEndPlaceholder = "<!-- WINDOWS-BADGES-END -->"
+          $linuxBadgesStartPlaceholder = "<!-- LINUX-BADGES-START -->"
+          $linuxBadgesEndPlaceholder = "<!-- LINUX-BADGES-END -->"
+          $macosBadgesStartPlaceholder = "<!-- MACOS-BADGES-START -->"
+          $macosBadgesEndPlaceholder = "<!-- MACOS-BADGES-END -->"
+
+          function Replace-BadgeContent {
+            param (
+              [string]$readmeContent,
+              [string]$badgeContent,
+              [string]$startPlaceholder,
+              [string]$endPlaceholder
+            )
+
+            $pattern = [regex]::Escape($startPlaceholder) + "(.|\n)*?" + [regex]::Escape($endPlaceholder)
+            $replacement = $startPlaceholder + "`n" + $badgeContent + "`n" + $endPlaceholder
+            return $readmeContent -replace $pattern, $replacement
+          }
+
+          foreach ($OS in $OS_NAMES) {
+            foreach ($INTERPRETER in $INTERPRETERS) {
+              foreach ($PYTHON_VERSION in $PYTHON_VERSIONS) {
+                foreach ($ARCH in $ARCHITECTURES) {
+                  if ($OS -ne "windows-2019" -and $OS -ne "windows-2022" -and $OS -ne "windows-latest" -and $ARCH -eq "x86") {
+                    continue  # no x86 support for unix.
+                  }
+                  $key = "$OS-$INTERPRETER-$PYTHON_VERSION-$ARCH"
+                  $shortKey = "$INTERPRETER-$PYTHON_VERSION-$ARCH"
+                  if ($testResults.ContainsKey($key)) {
+                      $passedTests = $testResults[$key]['Passed']
+                      $failedTests = $testResults[$key]['Failed']
+                      $DetailsURL = $testResults[$key]['DetailsURL']
+                      # Encode the label to replace spaces with underscores and URI-encode other special characters
+                      $encodedKey = [System.Web.HttpUtility]::UrlEncode($shortKey.Replace(' ', '_').Replace('-', '--'))
+                      $BadgeMarkdown = '[![' + $key + '](https://img.shields.io/badge/build-' + $encodedKey + '_Passing_' + $passedTests + '-brightgreen?style=plastic&logo=simple-icons&logoColor=%23FF5e34&label=' + $failedTests + '&labelColor=%23c71818&color=%232f991a)](' + $DetailsURL + ')'
+                  } else {
+                      Write-Host "No test results for '$key', must have failed, generating 'Build Failed' badge..."
+                      $encodedKey = [System.Web.HttpUtility]::UrlEncode($shortKey.Replace(' ', '_').Replace('-', '--'))
+                      $BadgeURLBuildFailed = "https://img.shields.io/badge/${encodedKey}_Build_Failed-lightgrey"
+                      $DetailsURL = "https://github.com/$repository/actions/runs/${{ github.run_id }}"
+                      $BadgeMarkdown = "[![$shortKey-Build_Failed]($BadgeURLBuildFailed)]($DetailsURL)"
+                  }
+
+                  switch ($OS) {
+                      "windows-2019" { $WindowsBadgeContent += $BadgeMarkdown + "`n" }
+                      "windows-2022" { $WindowsBadgeContent += $BadgeMarkdown + "`n" }
+                      "windows-latest" { $WindowsBadgeContent += $BadgeMarkdown + "`n" }
+                      "ubuntu-20.04" { $LinuxBadgeContent += $BadgeMarkdown + "`n" }
+                      "ubuntu-22.04" { $LinuxBadgeContent += $BadgeMarkdown + "`n" }
+                      "ubuntu-latest" { $LinuxBadgeContent += $BadgeMarkdown + "`n" }
+                      "macos-10" { $MacOSBadgeContent += $BadgeMarkdown + "`n" }
+                      "macos-12" { $MacOSBadgeContent += $BadgeMarkdown + "`n" }
+                      "macos-latest" { $MacOSBadgeContent += $BadgeMarkdown + "`n" }
+                  }
+                }
+              }
+            }
+          }
+
+          $ReadmeContent = Replace-BadgeContent -readmeContent $ReadmeContent -badgeContent $WindowsBadgeContent.TrimEnd() -startPlaceholder $windowsBadgesStartPlaceholder -endPlaceholder $windowsBadgesEndPlaceholder
+          $ReadmeContent = Replace-BadgeContent -readmeContent $ReadmeContent -badgeContent $LinuxBadgeContent.TrimEnd() -startPlaceholder $linuxBadgesStartPlaceholder -endPlaceholder $linuxBadgesEndPlaceholder
+          $ReadmeContent = Replace-BadgeContent -readmeContent $ReadmeContent -badgeContent $MacOSBadgeContent.TrimEnd() -startPlaceholder $macosBadgesStartPlaceholder -endPlaceholder $macosBadgesEndPlaceholder
+
+          Set-Content -Path $ReadmePath -Value $ReadmeContent
+          git fetch origin $branchName
+          git add $ReadmePath
+          # Checking if there are newer commits on the remote branch than the commit that triggered the workflow
+          if (git log "${{ github.sha }}"..origin/$branchName --oneline) {
+              Write-Error "Newer commits are present on the remote branch, cannot update readme"
+              exit 1
+          }
+          git commit -m "Update README.md status badges."
+          git push --force-with-lease origin HEAD:${{ github.ref_name }}
