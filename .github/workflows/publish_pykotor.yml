@@ -1,4 +1,4 @@
-name: Compile and Test PyKotor
+name: Compile PyKotor
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -8,6 +8,7 @@ env:
   OS_RUNNERS_JSON: '["windows-2019", "ubuntu-20.04", "macos-12"]'
   PYTHON_VERSIONS_JSON: '["3.8", "3.9", "3.10", "3.11", "3.12"]'
   ARCHITECTURES_JSON: '["x86", "x64"]'
+  INTERPRETERS_JSON: '["python"]'
   UPX_VERSION: '4.2.2'
   
 on:
@@ -24,8 +25,10 @@ jobs:
       fail-fast: false  # Disable automatic cancellation of other jobs
       matrix:
         os: [windows-2019, ubuntu-20.04, macos-12]  # make sure you update the above one too.
-        python-version: ['3.8', '3.9', '3.10', '3.11', '3.12']
+        python-version: ["3.8", "3.9", "3.10", "3.11", "3.12"]
         architecture: ['x86', 'x64']
+        python_pypy: ['python']
+        #qt_version: ['pyqt5', 'pyqt6', 'pyside2', 'pyside6']
         include:
           - arch: x86
             vc_redist2015: "https://download.microsoft.com/download/9/3/F/93FCF1E7-E6A4-478B-96E7-D4B285925B00/vc_redist.x86.exe"
@@ -41,20 +44,59 @@ jobs:
             architecture: x86
           - os: macos-12
             architecture: x86
+          # latest PyPy version as of 17/03/2024 is 3.10.
+          - python_pypy: 'pypy'
+            python-version: '3.11'
+          - python_pypy: 'pypy'
+            python-version: '3.12'
+          # PyQt5 doesn't seem to be compatible with PyPy
+          #- python_pypy: "pypy"
+          #  qt_version: 'pyqt5'
+          #- python_pypy: "pypy"
+          #  qt_version: 'pyside2'
+          #- python_pypy: "pypy"
+          #  qt_version: 'pyqt6'
+          #- python_pypy: "pypy"
+          #  python-version: '3.10'
+          #  os: 'windows-2019'
+
     outputs:
       matrix-os: ${{ toJson(matrix.os) }}
       matrix-python-version: ${{ toJson(matrix.python-version) }}
 
     steps:
+    - name: Determine Python version string
+      id: set-python-version
+      run: |
+        if ( "${{ matrix.python_pypy }}" -eq "pypy" ) {
+          Add-Content -Path $env:GITHUB_ENV -Value "PYTHON_VERSION=pypy-${{ matrix.python-version }}"
+        } else {
+          Add-Content -Path $env:GITHUB_ENV -Value "PYTHON_VERSION=${{ matrix.python-version }}"
+        }
+      shell: pwsh
+
     - uses: actions/checkout@v4
-    - name: Set up Python ${{ matrix.python-version }}
-      if: ${{ runner.os != 'macOS' && runner.os != 'Linux' }}
+    - name: Test Powershell installer
+      if: ${{ runner.os != 'Windows' }}
+      id: setup-powershell
+      run: |
+        bash ./install_powershell.sh
+      shell: bash
+
+    - name: Set up ${{ matrix.python_pypy }} ${{ matrix.python-version }}
+      if: ${{ runner.os != 'macOS' && (runner.os != 'Linux' || matrix.python_pypy == 'pypy') }}
       uses: actions/setup-python@v5
       with:
-        python-version: ${{ matrix.python-version }}
+        python-version: ${{ env.PYTHON_VERSION }}
         architecture: ${{ matrix.architecture }}
 
-    - name: Set up Python ${{ matrix.python-version }} macOS
+    - name: Set up python 3.12 mac (stops brew erroring on linking)
+      if: ${{ runner.os == 'macOS' && matrix.python-version != '3.12' }}
+      run: |
+        brew install python@3.12 --quiet || true
+      shell: bash
+
+    - name: Set up ${{ matrix.python_pypy }} ${{ matrix.python-version }} macOS
       if: ${{ runner.os == 'macOS' }}
       run: |  # warning: `brew link --overwrite python@ver` is unsafe on any non-virtualized macos.
         echo "NONINTERACTIVE DEFAULT: $NONINTERACTIVE"
@@ -62,13 +104,18 @@ jobs:
         echo "NONINTERACTIVE NEW: $NONINTERACTIVE"
         brew analytics on
         brew update
-        brew install python@${{ matrix.python-version }} || brew link --overwrite python@${{ matrix.python-version }}
+        brew install ${{ matrix.python_pypy }}@${{ matrix.python-version }} || brew link --overwrite ${{ matrix.python_pypy }}@${{ matrix.python-version }}
 
-    - name: Set up Python ${{ matrix.python-version }} Linux  # macos too?
-      if: ${{ runner.os == 'Linux' }}
+    - name: Set up ${{ matrix.python_pypy }} ${{ matrix.python-version }} ${{ runner.os }}  # macos too?
+      if: ${{ runner.os == 'Linux' && matrix.python_pypy == 'python' }}
       run: |
-        sudo apt-get update
-        sudo apt-get install build-essential zlib1g-dev libncurses5-dev libgdbm-dev libssl-dev libreadline-dev libffi-dev libsqlite3-dev libbz2-dev tk-dev -y
+        if ("${{ runner.os }}" -eq "Linux") {
+          sudo apt-get update
+          sudo apt-get install build-essential zlib1g-dev libncurses5-dev libgdbm-dev libssl-dev libreadline-dev libffi-dev libsqlite3-dev libbz2-dev tk-dev -y
+        } elseif ("${{ runner.os }}" -eq "macOS") {
+          # Ensure Xcode Command Line Tools are installed?
+          # xcode-select --install 2>$null | Out-Null
+        }
         $pyVersion = switch ("${{ matrix.python-version }}") {
           "3.7" { "3.7.17" }
           "3.8" { "3.8.18" }
@@ -77,12 +124,13 @@ jobs:
           "3.11" { "3.11.8" }
           "3.12" { "3.12.2" }
         }
-        Write-Output "Downloading python '$pyVersion'..."
+
+        Write-Output "Downloading ${{ matrix.python_pypy }} '$pyVersion'..."
         Invoke-WebRequest -Uri https://www.python.org/ftp/python/$pyVersion/Python-$pyVersion.tgz -OutFile Python-$pyVersion.tgz
         tar -xvf Python-$pyVersion.tgz
         $current_working_dir = (Get-Location).Path
         Set-Location -LiteralPath "Python-$pyVersion" -ErrorAction Stop
-        $env:LDFLAGS="-Wl,-rpath=/usr/local/lib"
+        $env:LDFLAGS=""
         sudo ./configure --enable-optimizations --with-ensurepip=install --enable-shared --disable-new-dtags
         sudo make -j $(nproc)
         sudo make altinstall
@@ -99,22 +147,22 @@ jobs:
         echo "deb http://archive.ubuntu.com/ubuntu $(lsb_release -cs)-backports main restricted universe multiverse" | sudo tee -a /etc/apt/sources.list
         echo "deb http://security.ubuntu.com/ubuntu $(lsb_release -cs)-security main restricted universe multiverse" | sudo tee -a /etc/apt/sources.list
         sudo apt-get update -y
+      shell: bash
 
     - name: Setup python venvs
       run: |  # create the venv early to work around an issue with the matrix runners' concurrency
-        $pythonExeName = "python"
+        $pythonExeName = "${{ matrix.python_pypy }}"
         if ("${{ runner.os }}" -ne "Windows")
         {
-          $pythonExeName = "python${{ matrix.python-version }}"
+          $pythonExeName = "${{ matrix.python_pypy }}${{ matrix.python-version }}"
           # LD_LIBRARY_PATH must be updated. However this won't be permanent, just long enough to create the venv.
           $env:LD_LIBRARY_PATH = "/usr/local/lib:$env:LD_LIBRARY_PATH"
         }
-        & $pythonExeName -m venv .venv_${{ matrix.os }}_${{ matrix.python-version }}_${{ matrix.architecture }}
-        & $pythonExeName -m venv .venv_holopatcher_${{ matrix.os }}_${{ matrix.python-version }}_${{ matrix.architecture }}
-        & $pythonExeName -m venv .venv_toolset_${{ matrix.os }}_${{ matrix.python-version }}_${{ matrix.architecture }}
-        & $pythonExeName -m venv .venv_guiduplicator_${{ matrix.os }}_${{ matrix.python-version }}_${{ matrix.architecture }}
-        & $pythonExeName -m venv .venv_kotordiff_${{ matrix.os }}_${{ matrix.python-version }}_${{ matrix.architecture }}
-        & $pythonExeName -m venv .venv_batchpatcher_${{ matrix.os }}_${{ matrix.python-version }}_${{ matrix.architecture }}
+        & $pythonExeName -m venv .venv_holopatcher_${{ matrix.os }}_${{ matrix.python_pypy }}_${{ matrix.python-version }}_${{ matrix.architecture }}
+        & $pythonExeName -m venv .venv_toolset_${{ matrix.os }}_${{ matrix.python_pypy }}_${{ matrix.python-version }}_${{ matrix.architecture }}
+        & $pythonExeName -m venv .venv_guiduplicator_${{ matrix.os }}_${{ matrix.python_pypy }}_${{ matrix.python-version }}_${{ matrix.architecture }}
+        & $pythonExeName -m venv .venv_kotordiff_${{ matrix.os }}_${{ matrix.python_pypy }}_${{ matrix.python-version }}_${{ matrix.architecture }}
+        & $pythonExeName -m venv .venv_batchpatcher_${{ matrix.os }}_${{ matrix.python_pypy }}_${{ matrix.python-version }}_${{ matrix.architecture }}
       shell: pwsh
 
     - name: Set UPX download URL
@@ -226,8 +274,9 @@ jobs:
       id: toolset_deps
       run: |  # known pyinstaller versions that work with upx compressions, not all are available on all python versions.
         try {
-          ./install_python_venv.ps1 -noprompt -venv_name .venv_toolset_${{ matrix.os }}_${{ matrix.python-version }}_${{ matrix.architecture }}
-          python -m pip install --upgrade pip
+          . ./install_python_venv.ps1 -noprompt -venv_name .venv_toolset_${{ matrix.os }}_${{ matrix.python_pypy }}_${{ matrix.python-version }}_${{ matrix.architecture }}
+          Write-Host "Python executable path: $pythonExePath"
+          & $pythonExePath -m pip install --upgrade pip
           if ("${{ runner.os }}" -eq "Windows") {
             if ("${{ matrix.python-version }}" -eq "3.12") {
               pip install pyinstaller --prefer-binary -U
@@ -239,9 +288,10 @@ jobs:
           } else {
             pip install pyinstaller -U --prefer-binary
           }
+          #$env:QT_API = if (-not [string]::IsNullOrEmpty($env:QT_API)) { $env:QT_API } else { "{{ matrix.qt_version }}" }
           $output = ""
           $errorLines = @()
-          ./compile/deps_toolset.ps1 -noprompt -venv_name .venv_toolset_${{ matrix.os }}_${{ matrix.python-version }}_${{ matrix.architecture }} 2>&1 | ForEach-Object {
+          . ./compile/deps_toolset.ps1 -noprompt -venv_name .venv_toolset_${{ matrix.os }}_${{ matrix.python_pypy }}_${{ matrix.python-version }}_${{ matrix.architecture }} 2>&1 | ForEach-Object {
             Write-Output $_.ToString()
             $output += $_.ToString() + "`n"
             if($_ -match 'ERROR:') {
@@ -256,6 +306,7 @@ jobs:
             Add-Content -Path $env:GITHUB_OUTPUT -Value "success=true"
           }
         } catch {
+          Write-Host -ForegroundColor Red "$($_.InvocationInfo.PositionMessage)`n$($_.Exception.Message)"
           Add-Content -Path $env:GITHUB_OUTPUT -Value "success=false"
           exit 1
         }
@@ -264,7 +315,7 @@ jobs:
     - name: HolocronToolset - Adjust RPATH for shared libraries in the virtual environment
       if: ${{ (success() || failure()) && runner.os == 'Disabled_Linux' && steps.toolset_deps.outputs.success == 'true' }}
       run: |
-        ./install_python_venv.ps1 -noprompt -venv_name .venv_toolset_${{ matrix.os }}_${{ matrix.python-version }}_${{ matrix.architecture }}
+        . ./install_python_venv.ps1 -noprompt -venv_name .venv_toolset_${{ matrix.os }}_${{ matrix.python_pypy }}_${{ matrix.python-version }}_${{ matrix.architecture }}
         # Ensure patchelf is installed
         sudo apt-get update && sudo apt-get install -y patchelf
 
@@ -292,7 +343,7 @@ jobs:
         $upxDir = $env:UPX_DIR
         Write-Host "Using UPX directory at '$upxDir'"
         $output = ""
-        ./compile/compile_toolset.ps1 -noprompt -venv_name .venv_toolset_${{ matrix.os }}_${{ matrix.python-version }}_${{ matrix.architecture }} -upx_dir $upxDir 2>&1 | ForEach-Object {
+        . ./compile/compile_toolset.ps1 -noprompt -venv_name .venv_toolset_${{ matrix.os }}_${{ matrix.python_pypy }}_${{ matrix.python-version }}_${{ matrix.architecture }} -upx_dir $upxDir 2>&1 | ForEach-Object {
           Write-Output $_.ToString()
           $output += $_.ToString() + "`n"
           if($_ -match 'ERROR:') {
@@ -321,14 +372,12 @@ jobs:
           Add-Content -Path $env:GITHUB_OUTPUT -Value "success=true"
         }
       shell: pwsh
-      env:
-        UPX_DIR: ${{ env.UPX_DIR }}
 
     - name: HolocronToolset - Create Static Binary
       if: ${{ (success() || failure()) && runner.os == 'Disabled_Linux' && steps.toolset_deps.outputs.success == 'true' }}
       run: |
-        ./install_python_venv.ps1 -noprompt -venv_name .venv_toolset_${{ matrix.os }}_${{ matrix.python-version }}_${{ matrix.architecture }}
-        python -m pip install staticx
+        . ./install_python_venv.ps1 -noprompt -venv_name .venv_toolset_${{ matrix.os }}_${{ matrix.python_pypy }}_${{ matrix.python-version }}_${{ matrix.architecture }}
+        & $pythonExePath -m pip install staticx
         staticx ./dist/HolocronToolset ./dist/HolocronToolset-static
         # Rename the static binary for clarity and consistency
         Write-Output "./dist/HolocronToolset-static  --> ./dist/HolocronToolset"
@@ -340,8 +389,8 @@ jobs:
       id: holopatcher_deps
       run: |  # known pyinstaller versions that work with upx compressions, not all are available on all python versions.
         try {
-          ./install_python_venv.ps1 -noprompt -venv_name .venv_holopatcher_${{ matrix.os }}_${{ matrix.python-version }}_${{ matrix.architecture }}
-          python -m pip install --upgrade pip
+          . ./install_python_venv.ps1 -noprompt -venv_name .venv_holopatcher_${{ matrix.os }}_${{ matrix.python_pypy }}_${{ matrix.python-version }}_${{ matrix.architecture }}
+          & $pythonExePath -m pip install --upgrade pip
           if ("${{ runner.os }}" -eq "Windows") {
             if ("${{ matrix.python-version }}" -eq "3.12") {
               pip install "pyinstaller==5.13.2" --prefer-binary
@@ -355,7 +404,7 @@ jobs:
           }
           $output = ""
           $errorLines = @()
-          ./compile/deps_holopatcher.ps1 -noprompt -venv_name .venv_holopatcher_${{ matrix.os }}_${{ matrix.python-version }}_${{ matrix.architecture }} 2>&1 | ForEach-Object {
+          . ./compile/deps_holopatcher.ps1 -noprompt -venv_name .venv_holopatcher_${{ matrix.os }}_${{ matrix.python_pypy }}_${{ matrix.python-version }}_${{ matrix.architecture }} 2>&1 | ForEach-Object {
             Write-Output $_.ToString()
             $output += $_.ToString() + "`n"
             if($_ -match 'ERROR:') {
@@ -370,6 +419,7 @@ jobs:
             Add-Content -Path $env:GITHUB_OUTPUT -Value "success=true"
           }
         } catch {
+          Write-Host -ForegroundColor Red "$($_.InvocationInfo.PositionMessage)`n$($_.Exception.Message)"
           Add-Content -Path $env:GITHUB_OUTPUT -Value "success=false"
           exit 1
         }
@@ -378,7 +428,7 @@ jobs:
     - name: HoloPatcher - Adjust RPATH for shared libraries in the virtual environment
       if: ${{ (success() || failure()) && runner.os == 'Disabled_Linux' && steps.holopatcher_deps.outputs.success == 'true' }}
       run: |
-        ./install_python_venv.ps1 -noprompt -venv_name .venv_holopatcher_${{ matrix.os }}_${{ matrix.python-version }}_${{ matrix.architecture }}
+        . ./install_python_venv.ps1 -noprompt -venv_name .venv_holopatcher_${{ matrix.os }}_${{ matrix.python_pypy }}_${{ matrix.python-version }}_${{ matrix.architecture }}
         # Ensure patchelf is installed
         sudo apt-get update && sudo apt-get install -y patchelf
 
@@ -406,7 +456,7 @@ jobs:
         $upxDir = $env:UPX_DIR
         Write-Host "Using UPX directory at '$upxDir'"
         $output = ""
-        ./compile/compile_holopatcher.ps1 -noprompt -venv_name .venv_holopatcher_${{ matrix.os }}_${{ matrix.python-version }}_${{ matrix.architecture }} -upx_dir $upxDir 2>&1 | ForEach-Object {
+        . ./compile/compile_holopatcher.ps1 -noprompt -venv_name .venv_holopatcher_${{ matrix.os }}_${{ matrix.python_pypy }}_${{ matrix.python-version }}_${{ matrix.architecture }} -upx_dir $upxDir 2>&1 | ForEach-Object {
           Write-Output $_.ToString()
           $output += $_.ToString() + "`n"
           if($_ -match 'ERROR:') {
@@ -439,8 +489,8 @@ jobs:
     - name: HoloPatcher - Create Static Binary
       if: ${{ (success() || failure()) && runner.os == 'Disabled_Linux' && steps.holopatcher_deps.outputs.success == 'true' }}
       run: |
-        ./install_python_venv.ps1 -noprompt -venv_name .venv_holopatcher_${{ matrix.os }}_${{ matrix.python-version }}_${{ matrix.architecture }}
-        python -m pip install staticx
+        . ./install_python_venv.ps1 -noprompt -venv_name .venv_holopatcher_${{ matrix.os }}_${{ matrix.python_pypy }}_${{ matrix.python-version }}_${{ matrix.architecture }}
+        & $pythonExePath -m pip install staticx
         staticx ./dist/HoloPatcher ./dist/HoloPatcher-static
         # Rename the static binary for clarity and consistency
         Write-Output "./dist/HoloPatcher-static  --> ./dist/HoloPatcher"
@@ -452,8 +502,8 @@ jobs:
       id: batchpatcher_deps
       run: |  # known pyinstaller versions that work with upx compressions, not all are available on all python versions.
         try {
-          ./install_python_venv.ps1 -noprompt -venv_name .venv_batchpatcher_${{ matrix.os }}_${{ matrix.python-version }}_${{ matrix.architecture }}
-          python -m pip install --upgrade pip
+          . ./install_python_venv.ps1 -noprompt -venv_name .venv_batchpatcher_${{ matrix.os }}_${{ matrix.python_pypy }}_${{ matrix.python-version }}_${{ matrix.architecture }}
+          & $pythonExePath -m pip install --upgrade pip
           if ("${{ runner.os }}" -eq "Windows") {
             if ("${{ matrix.python-version }}" -eq "3.12") {
               pip install pyinstaller --prefer-binary -U
@@ -467,7 +517,7 @@ jobs:
           }
           $output = ""
           $errorLines = @()
-          ./compile/deps_batchpatcher.ps1 -noprompt -venv_name .venv_batchpatcher_${{ matrix.os }}_${{ matrix.python-version }}_${{ matrix.architecture }} 2>&1 | ForEach-Object {
+          . ./compile/deps_batchpatcher.ps1 -noprompt -venv_name .venv_batchpatcher_${{ matrix.os }}_${{ matrix.python_pypy }}_${{ matrix.python-version }}_${{ matrix.architecture }} 2>&1 | ForEach-Object {
             Write-Output $_.ToString()
             $output += $_.ToString() + "`n"
             if($_ -match 'ERROR:') {
@@ -482,6 +532,7 @@ jobs:
             Add-Content -Path $env:GITHUB_OUTPUT -Value "success=true"
           }
         } catch {
+          Write-Host -ForegroundColor Red "$($_.InvocationInfo.PositionMessage)`n$($_.Exception.Message)"
           Add-Content -Path $env:GITHUB_OUTPUT -Value "success=false"
           exit 1
         }
@@ -490,7 +541,7 @@ jobs:
     - name: BatchPatcher - Adjust RPATH for shared libraries in the virtual environment
       if: ${{ (success() || failure()) && runner.os == 'Disabled_Linux' && steps.batchpatcher_deps.outputs.success == 'true' }}
       run: |
-        ./install_python_venv.ps1 -noprompt -venv_name .venv_batchpatcher_${{ matrix.os }}_${{ matrix.python-version }}_${{ matrix.architecture }}
+        . ./install_python_venv.ps1 -noprompt -venv_name .venv_batchpatcher_${{ matrix.os }}_${{ matrix.python_pypy }}_${{ matrix.python-version }}_${{ matrix.architecture }}
         # Ensure patchelf is installed
         sudo apt-get update && sudo apt-get install -y patchelf
 
@@ -518,7 +569,7 @@ jobs:
         $upxDir = $env:UPX_DIR
         Write-Host "Using UPX directory at '$upxDir'"
         $output = ""
-        ./compile/compile_batchpatcher.ps1 -noprompt -venv_name .venv_batchpatcher_${{ matrix.os }}_${{ matrix.python-version }}_${{ matrix.architecture }} -upx_dir $upxDir 2>&1 | ForEach-Object {
+        . ./compile/compile_batchpatcher.ps1 -noprompt -venv_name .venv_batchpatcher_${{ matrix.os }}_${{ matrix.python_pypy }}_${{ matrix.python-version }}_${{ matrix.architecture }} -upx_dir $upxDir 2>&1 | ForEach-Object {
           Write-Output $_.ToString()
           $output += $_.ToString() + "`n"
           if($_ -match 'ERROR:') {
@@ -551,8 +602,8 @@ jobs:
     - name: BatchPatcher - Create Static Binary
       if: ${{ (success() || failure()) && runner.os == 'Disabled_Linux' && steps.batchpatcher_deps.outputs.success == 'true' }}
       run: |
-        ./install_python_venv.ps1 -noprompt -venv_name .venv_batchpatcher_${{ matrix.os }}_${{ matrix.python-version }}_${{ matrix.architecture }}
-        python -m pip install staticx
+        . ./install_python_venv.ps1 -noprompt -venv_name .venv_batchpatcher_${{ matrix.os }}_${{ matrix.python_pypy }}_${{ matrix.python-version }}_${{ matrix.architecture }}
+        & $pythonExePath -m pip install staticx
         staticx ./dist/K_BatchPatcher ./dist/K_BatchPatcher-static
         # Rename the static binary for clarity and consistency
         Write-Output "./dist/K_BatchPatcher-static  --> ./dist/K_BatchPatcher"
@@ -564,8 +615,8 @@ jobs:
       run: |
         $upxDir = $env:UPX_DIR
         Write-Host "Using UPX directory at '$upxDir'"
-        ./install_python_venv.ps1 -noprompt -venv_name .venv_kotordiff_${{ matrix.os }}_${{ matrix.python-version }}_${{ matrix.architecture }}
-        python -m pip install --upgrade pip
+        . ./install_python_venv.ps1 -noprompt -venv_name .venv_kotordiff_${{ matrix.os }}_${{ matrix.python_pypy }}_${{ matrix.python-version }}_${{ matrix.architecture }}
+        & $pythonExePath -m pip install --upgrade pip
         if ("${{ runner.os }}" -eq "Windows") {
           if ("${{ matrix.python-version }}" -eq "3.12") {
             pip install "pyinstaller==5.13.2" --prefer-binary
@@ -579,7 +630,7 @@ jobs:
         }
         pip install -r Tools/KotorDiff/requirements.txt --prefer-binary
         $output = ""
-        ./compile/compile_kotordiff.ps1 -noprompt -venv_name .venv_kotordiff_${{ matrix.os }}_${{ matrix.python-version }}_${{ matrix.architecture }} -upx_dir $upxDir 2>&1 | ForEach-Object {
+        . ./compile/compile_kotordiff.ps1 -noprompt -venv_name .venv_kotordiff_${{ matrix.os }}_${{ matrix.python_pypy }}_${{ matrix.python-version }}_${{ matrix.architecture }} -upx_dir $upxDir 2>&1 | ForEach-Object {
           Write-Output $_.ToString()
           $output += $_.ToString() + "`n"
           if($_ -match 'ERROR:') {
@@ -612,8 +663,8 @@ jobs:
     - name: KotorDiff - Create Static Binary
       if: ${{ (success() || failure()) && runner.os == 'Linux' }}
       run: |
-        ./install_python_venv.ps1 -noprompt -venv_name .venv_kotordiff_${{ matrix.os }}_${{ matrix.python-version }}_${{ matrix.architecture }}
-        python -m pip install staticx
+        . ./install_python_venv.ps1 -noprompt -venv_name .venv_kotordiff_${{ matrix.os }}_${{ matrix.python_pypy }}_${{ matrix.python-version }}_${{ matrix.architecture }}
+        & $pythonExePath -m pip install staticx
         staticx ./dist/KotorDiff ./dist/KotorDiff-static
         # Rename the static binary for clarity and consistency
         Write-Output "./dist/KotorDiff-static  --> ./dist/KotorDiff"
@@ -625,8 +676,8 @@ jobs:
       run: |
         $upxDir = $env:UPX_DIR
         Write-Host "Using UPX directory at '$upxDir'"
-        ./install_python_venv.ps1 -noprompt -venv_name .venv_guiduplicator_${{ matrix.os }}_${{ matrix.python-version }}_${{ matrix.architecture }}
-        python -m pip install --upgrade pip
+        . ./install_python_venv.ps1 -noprompt -venv_name .venv_guiduplicator_${{ matrix.os }}_${{ matrix.python_pypy }}_${{ matrix.python-version }}_${{ matrix.architecture }}
+        & $pythonExePath -m pip install --upgrade pip
         if ("${{ runner.os }}" -eq "Windows") {
           if ("${{ matrix.python-version }}" -eq "3.12") {
             pip install "pyinstaller==5.13.2" --prefer-binary
@@ -640,7 +691,7 @@ jobs:
         }
         pip install -r Tools/GuiDuplicator/requirements.txt --prefer-binary
         $output = ""
-        ./compile/compile_gui_duplicator.ps1 -noprompt -venv_name .venv_guiduplicator_${{ matrix.os }}_${{ matrix.python-version }}_${{ matrix.architecture }} -upx_dir $upxDir 2>&1 | ForEach-Object {
+        . ./compile/compile_gui_duplicator.ps1 -noprompt -venv_name .venv_guiduplicator_${{ matrix.os }}_${{ matrix.python_pypy }}_${{ matrix.python-version }}_${{ matrix.architecture }} -upx_dir $upxDir 2>&1 | ForEach-Object {
           Write-Output $_.ToString()
           if($_ -match 'ERROR:') {
             $errorLines += $_.ToString()
@@ -672,61 +723,61 @@ jobs:
     - name: GUIDuplicator - Create Static Binary
       if: ${{ (success() || failure()) && runner.os == 'Linux' }}
       run: |
-        ./install_python_venv.ps1 -noprompt -venv_name .venv_guiduplicator_${{ matrix.os }}_${{ matrix.python-version }}_${{ matrix.architecture }}
-        python -m pip install staticx
+        . ./install_python_venv.ps1 -noprompt -venv_name .venv_guiduplicator_${{ matrix.os }}_${{ matrix.python_pypy }}_${{ matrix.python-version }}_${{ matrix.architecture }}
+        & $pythonExePath -m pip install staticx
         staticx ./dist/GuiDuplicator ./dist/GuiDuplicator-static
         # Rename the static binary for clarity and consistency
         Write-Output "./dist/GuiDuplicator-static  --> ./dist/GuiDuplicator"
         Move-Item -LiteralPath ./dist/GuiDuplicator-static -Destination ./dist/GuiDuplicator -Force
       shell: pwsh
 
-    - name: Upload compiled binaries
+    - name: Upload compiled binaries attempt 1
       if: ${{ success() || failure() }}
+      id: upload_attempt_1
       uses: actions/upload-artifact@v4
       with:
-        name: publish_${{ matrix.os }}_${{ matrix.python-version }}_${{ matrix.architecture }}
+        name: publish_${{ matrix.os }}_${{ matrix.python_pypy }}_${{ matrix.python-version }}_${{ matrix.architecture }}
         path: ./dist/**
         retention-days: 90
-
-    - name: Install MinGW with GCC on Windows
-      if: runner.os == 'Windows' && matrix.python-version == '3.13.0-alpha.4'
-      run: |
-        choco install mingw -y
-        $mingwPath = Get-ChildItem -Path C:\, D:\, B:\ -Filter mingw64 -Recurse -ErrorAction SilentlyContinue -Directory | Select-Object -First 1 -ExpandProperty FullName
-        if (-not $mingwPath) { throw "MinGW installation not found" }
-        $binPath = Join-Path -Path $mingwPath -ChildPath "bin"
-        echo "$binPath" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
-      shell: pwsh
-
-    - name: Install development packages
-      if: ${{ success() || failure() }}
-      run: |
-        ./install_python_venv.ps1 -noprompt -venv_name .venv_${{ matrix.os }}_${{ matrix.python-version }}_${{ matrix.architecture }}
-        python -m pip install --upgrade pip
-        if ($env:python_version -eq "3.7") {
-          pip install -r requirements-dev-py37.txt --prefer-binary
-        }
-        else {
-          pip install -r requirements-dev.txt --prefer-binary
-        }
-      shell: pwsh
-
-    - name: Run all unittests/pytests
-      if: ${{ success() || failure() }}
-      run: |
-        ./install_python_venv.ps1 -noprompt -venv_name .venv_${{ matrix.os }}_${{ matrix.python-version }}_${{ matrix.architecture }}
-        python -m pytest tests -v -ra -o log_cli=true --capture=no --junitxml=pytest_report.xml --html=pytest_report.html --self-contained-html --tb=no --continue-on-collection-errors
-      shell: pwsh
       continue-on-error: true
 
-    - name: Upload Pytest Reports
-      if: ${{ success() || failure() }}
+    - name: Upload compiled binaries attempt 2
+      id: upload_attempt_2
+      if: ${{ (success() || failure()) && steps.upload_attempt_1.outcome == 'failure' }}
       uses: actions/upload-artifact@v4
       with:
-        name: pytest_report_${{ matrix.os }}_${{ matrix.python-version }}_${{ matrix.architecture }}
-        path: |
-          pytest_report.html
-          pytest_report.xml
+        name: publish_${{ matrix.os }}_${{ matrix.python_pypy }}_${{ matrix.python-version }}_${{ matrix.architecture }}
+        path: ./dist/**
+        retention-days: 90
+      continue-on-error: true
+
+    - name: Upload compiled binaries attempt 3
+      id: upload_attempt_3
+      if: ${{ (success() || failure()) && steps.upload_attempt_2.outcome == 'failure' }}
+      uses: actions/upload-artifact@v4
+      with:
+        name: publish_${{ matrix.os }}_${{ matrix.python_pypy }}_${{ matrix.python-version }}_${{ matrix.architecture }}
+        path: ./dist/**
+        retention-days: 90
+      continue-on-error: true
+
+    - name: Upload compiled binaries attempt 4
+      id: upload_attempt_4
+      if: ${{ (success() || failure()) && steps.upload_attempt_3.outcome == 'failure' }}
+      uses: actions/upload-artifact@v4
+      with:
+        name: publish_${{ matrix.os }}_${{ matrix.python_pypy }}_${{ matrix.python-version }}_${{ matrix.architecture }}
+        path: ./dist/**
+        retention-days: 90
+      continue-on-error: true
+
+    - name: Upload compiled binaries attempt 5
+      id: upload_attempt_5
+      if: ${{ (success() || failure()) && steps.upload_attempt_4.outcome == 'failure' }}
+      uses: actions/upload-artifact@v4
+      with:
+        name: publish_${{ matrix.os }}_${{ matrix.python_pypy }}_${{ matrix.python-version }}_${{ matrix.architecture }}
+        path: ./dist/**
         retention-days: 90
 
   package:  # The goal of this job is to repackage by toolname, rather than all tools by os_pyversion_arch
@@ -752,14 +803,13 @@ jobs:
 
           # Navigate to the directory with downloaded artifacts
           Set-Location -Path "published_workflow_builds"
-          Get-ChildItem -Recurse -Path "." -Directory | ForEach-Object { Write-Output $_.FullName }
 
           $artifactNames = New-Object 'System.Collections.Generic.HashSet[string]'
           # Iterate through each os_pythonversion_arch folder.
           Get-ChildItem -Filter "publish_*" | ForEach-Object {
             $matrixPackagePath = $_.FullName
             Write-Output "Found matrix package '$matrixPackagePath'"
-            $os, $pythonVersion, $architecture = $_.BaseName -replace '^publish_', '' -split '_'
+            $os, $python_or_pypy, $pythonVersion, $architecture = $_.BaseName -replace '^publish_', '' -split '_'
 
             $shortOsName = $os
             if ($os -eq "ubuntu-20.04" -or $os -eq "ubuntu-22.04" -or $os -eq "ubuntu-latest") {
@@ -821,15 +871,16 @@ jobs:
           # Save artifact names to a file
           $artifactNames | Out-File -FilePath "../artifact-names.txt" -Encoding UTF8
 
-          Get-ChildItem -Force | ForEach-Object {
-            $size = if ($_.PSIsContainer) { "N/A" } else { $_.Length }
-            $attrs = $_.Attributes.ToString() -replace 'ReadOnly', 'RO' -replace 'Hidden', 'H' -replace 'System', 'S' -replace 'Archive', 'A' -replace 'Directory', 'D' -replace ', ', '|'
-            [PSCustomObject]@{
-                Name = $_.Name
-                Size = $size
-                Attributes = $attrs
-            }
-          } | Format-Table -AutoSize
+          # use for debug
+          # Get-ChildItem -Force | ForEach-Object {
+          #   $size = if ($_.PSIsContainer) { "N/A" } else { $_.Length }
+          #   $attrs = $_.Attributes.ToString() -replace 'ReadOnly', 'RO' -replace 'Hidden', 'H' -replace 'System', 'S' -replace 'Archive', 'A' -replace 'Directory', 'D' -replace ', ', '|'
+          #   [PSCustomObject]@{
+          #       Name = $_.Name
+          #       Size = $size
+          #       Attributes = $attrs
+          #   }
+          # } | Format-Table -AutoSize
 
           # Navigate back to the root of the workspace
           Set-Location -Path "../"
@@ -898,166 +949,3 @@ jobs:
           path: all_tool_dists_onearchive/all_tool_dists_onearchive/${{ matrix.artifactb }}
           compression-level: 9
           if-no-files-found: error
-
-  add-test-result-status-badges:
-    needs: build  # do not start this job until all 'build' jobs complete
-    if: ${{ success() || failure() }}
-    runs-on: ubuntu-latest
-    concurrency: 
-      group: add-test-status-badges-${{ github.ref }}
-      cancel-in-progress: true
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Download all artifacts
-        uses: actions/download-artifact@v4
-        with:
-          path: all_pytest_reports
-          pattern: pytest_report_*
-
-      - name: Extract and update README with custom test status badges
-        shell: pwsh
-        run: |
-          # Git configuration and commit
-          git config --global user.name "GitHub Action"
-          git config --global user.email "action@github.com"
-
-          # Determine the branch that triggered the workflow
-          $branchName = "${{ github.ref_name }}"
-          $repository_owner = "${{ github.repository_owner }}"
-          $repository = "${{ github.repository }}"
-          $commitSHA = "${{ github.sha }}"
-
-          $testsResultsPath = "tests/results"
-          Remove-Item -Path $testsResultsPath -Recurse -Force -ErrorAction SilentlyContinue
-          $testsResultsCommitPath = Join-Path -Path $testsResultsPath -ChildPath "$commitSHA"
-          New-Item -ItemType Directory -Force -Path $testsResultsCommitPath -ErrorAction SilentlyContinue
-
-          $OS_NAMES = '${{ env.OS_RUNNERS_JSON }}' | ConvertFrom-Json
-          $PYTHON_VERSIONS = '${{ env.PYTHON_VERSIONS_JSON }}' | ConvertFrom-Json
-          $ARCHITECTURES = '${{ env.ARCHITECTURES_JSON }}' | ConvertFrom-Json
-
-          $artifact_reports_dir = "./all_pytest_reports"
-          New-Item -ItemType Directory -Force -Path $artifact_reports_dir -ErrorAction SilentlyContinue
-          Dir -Recurse $artifact_reports_dir | Get-Childitem
-          Get-ChildItem $artifact_reports_dir | ForEach-Object {
-            Write-Output "Moving $($_.FullName) to $testsResultsCommitPath..."
-            Move-Item -LiteralPath $_.FullName -Destination $testsResultsCommitPath
-          }
-          Remove-Item -Path $artifact_reports_dir -Recurse -Force -ErrorAction SilentlyContinue
-
-          git fetch origin $branchName
-          git add $testsResultsPath --force
-          git add $testsResultsCommitPath --force
-          # Checking if there are newer commits on the remote branch than the commit that triggered the workflow
-          if (git log "${{ github.sha }}"..origin/$branchName --oneline) {
-              Write-Error "Newer commits are present on the remote branch, cannot update readme"
-              exit 1
-          }
-          git commit -m "Add test results"
-          git push --force-with-lease origin HEAD:${{ github.ref_name }}
-          $commitSHA = git rev-parse HEAD
-
-          $testResults = @{}
-
-          Write-Output "Iterate through $testsResultsCommitPath"
-          Get-ChildItem $testsResultsCommitPath -Recurse -Filter pytest_report.xml | ForEach-Object {
-            [xml]$TestResultsXml = Get-Content $_.FullName
-            $totalTests = [int]$TestResultsXml.testsuites.testsuite.tests
-            $failedTests = [int]$TestResultsXml.testsuites.testsuite.failures
-            $errors = [int]$TestResultsXml.testsuites.testsuite.errors
-            $passedTests = $totalTests - $failedTests - $errors
-
-            $resultFilePathHtml = $_.FullName -replace '\.xml$', '.html'
-            $relHtmlFilePath = Resolve-Path -Path $resultFilePathHtml -Relative
-            if ($relHtmlFilePath.StartsWith(".\") -or $relHtmlFilePath.StartsWith("./")) {
-              $cleanRelHtmlFilePath = $relHtmlFilePath.Substring(2)
-            } else {
-              $cleanRelHtmlFilePath = $relHtmlFilePath
-            }
-            $DetailsURL = "https://htmlpreview.github.io/?https://github.com/$repository/blob/$commitSHA/$cleanRelHtmlFilePath"
-            $key = $_.Directory.Name.Replace('pytest_report_', '').Replace('_', '-')
-            Write-Host "KEY FOUND: '$key'"
-
-            $testResults[$key] = @{
-              Passed = $passedTests
-              Failed = $failedTests + $errors
-              Total  = $totalTests
-              DetailsURL = $DetailsURL
-            }
-          }
-
-          $ReadmePath = "./README.md"
-          $ReadmeContent = Get-Content $ReadmePath -Raw
-
-          $WindowsBadgeContent = ""
-          $LinuxBadgeContent = ""
-          $MacOSBadgeContent = ""
-
-          $windowsBadgesStartPlaceholder = "<!-- WINDOWS-BADGES-START -->"
-          $windowsBadgesEndPlaceholder = "<!-- WINDOWS-BADGES-END -->"
-          $linuxBadgesStartPlaceholder = "<!-- LINUX-BADGES-START -->"
-          $linuxBadgesEndPlaceholder = "<!-- LINUX-BADGES-END -->"
-          $macosBadgesStartPlaceholder = "<!-- MACOS-BADGES-START -->"
-          $macosBadgesEndPlaceholder = "<!-- MACOS-BADGES-END -->"
-
-          function Replace-BadgeContent {
-            param (
-              [string]$readmeContent,
-              [string]$badgeContent,
-              [string]$startPlaceholder,
-              [string]$endPlaceholder
-            )
-
-            $pattern = [regex]::Escape($startPlaceholder) + "(.|\n)*?" + [regex]::Escape($endPlaceholder)
-            $replacement = $startPlaceholder + "`n" + $badgeContent + "`n" + $endPlaceholder
-            return $readmeContent -replace $pattern, $replacement
-          }
-
-          foreach ($OS in $OS_NAMES) {
-            foreach ($PYTHON_VERSION in $PYTHON_VERSIONS) {
-              foreach ($ARCH in $ARCHITECTURES) {
-                if ($OS -ne "windows-2019" -and $OS -ne "windows-2022" -and $OS -ne "windows-latest" -and $ARCH -eq "x86") {
-                  continue  # no x86 support for unix.
-                }
-                $key = "$OS-$PYTHON_VERSION-$ARCH"
-                $shortKey = "$PYTHON_VERSION-$ARCH"
-                if ($testResults.ContainsKey($key)) {
-                    $passedTests = $testResults[$key]['Passed']
-                    $failedTests = $testResults[$key]['Failed']
-                    $DetailsURL = $testResults[$key]['DetailsURL']
-                    # Encode the label to replace spaces with underscores and URI-encode other special characters
-                    $encodedKey = [System.Web.HttpUtility]::UrlEncode($shortKey.Replace(' ', '_').Replace('-', '--'))
-                    $BadgeMarkdown = '[![' + $key + '](https://img.shields.io/badge/build-' + $encodedKey + '_Passing_' + $passedTests + '-brightgreen?style=plastic&logo=simple-icons&logoColor=%23FF5e34&label=' + $failedTests + '&labelColor=%23c71818&color=%232f991a)](' + $DetailsURL + ')'
-                } else {
-                    Write-Host "No test results for '$key', must have failed, generating 'Build Failed' badge..."
-                    $encodedKey = [System.Web.HttpUtility]::UrlEncode($shortKey.Replace(' ', '_').Replace('-', '--'))
-                    $BadgeURLBuildFailed = "https://img.shields.io/badge/${encodedKey}_Build_Failed-lightgrey"
-                    $DetailsURL = "https://github.com/$repository/actions/runs/${{ github.run_id }}"
-                    $BadgeMarkdown = "[![$shortKey-Build_Failed]($BadgeURLBuildFailed)]($DetailsURL)"
-                }
-
-                switch ($OS) {
-                    "windows-2019" { $WindowsBadgeContent += $BadgeMarkdown + "`n" }
-                    "ubuntu-20.04" { $LinuxBadgeContent += $BadgeMarkdown + "`n" }
-                    "macos-12" { $MacOSBadgeContent += $BadgeMarkdown + "`n" }
-                }
-              }
-            }
-          }
-
-          $ReadmeContent = Replace-BadgeContent -readmeContent $ReadmeContent -badgeContent $WindowsBadgeContent.TrimEnd() -startPlaceholder $windowsBadgesStartPlaceholder -endPlaceholder $windowsBadgesEndPlaceholder
-          $ReadmeContent = Replace-BadgeContent -readmeContent $ReadmeContent -badgeContent $LinuxBadgeContent.TrimEnd() -startPlaceholder $linuxBadgesStartPlaceholder -endPlaceholder $linuxBadgesEndPlaceholder
-          $ReadmeContent = Replace-BadgeContent -readmeContent $ReadmeContent -badgeContent $MacOSBadgeContent.TrimEnd() -startPlaceholder $macosBadgesStartPlaceholder -endPlaceholder $macosBadgesEndPlaceholder
-
-          Set-Content -Path $ReadmePath -Value $ReadmeContent
-          git fetch origin $branchName
-          git add $ReadmePath
-          # Checking if there are newer commits on the remote branch than the commit that triggered the workflow
-          if (git log "${{ github.sha }}"..origin/$branchName --oneline) {
-              Write-Error "Newer commits are present on the remote branch, cannot update readme"
-              exit 1
-          }
-          git commit -m "Update README.md status badges."
-          git push --force-with-lease origin HEAD:${{ github.ref_name }}

@@ -28,6 +28,7 @@ if TYPE_CHECKING:
     from pykotor.resource.formats.lyt.lyt_data import LYT
     from pykotor.resource.formats.tpc.tpc_data import TPC
     from pykotor.resource.formats.twoda.twoda_data import TwoDA
+    from pykotor.resource.generics.are import ARERoom
     from toolset.gui.widgets.long_spinbox import LongSpinBox
 
 
@@ -58,6 +59,7 @@ class AREEditor(Editor):
 
         self._are: ARE = ARE()
         self._minimap = None
+        self._rooms: list[ARERoom] = []  # TODO(th3w1zard1): define somewhere in ui.
 
         from toolset.uic.editors.are import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
 
@@ -148,8 +150,7 @@ class AREEditor(Editor):
             - Sets script properties like onEnter, onExit
             - Sets comment text.
         """
-        self._are = are
-
+        self._rooms = are.rooms
         if self._resname:
             res_result_lyt: ResourceResult | None = self._installation.resource(self._resname, ResourceType.LYT)
             if res_result_lyt:
@@ -344,6 +345,9 @@ class AREEditor(Editor):
 
         # Comments
         are.comment = self.ui.commentsEdit.toPlainText()
+
+        # Remaining.
+        are.rooms = self._rooms
 
         return are
 

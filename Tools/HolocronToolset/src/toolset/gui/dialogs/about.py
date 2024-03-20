@@ -4,7 +4,7 @@ from typing import TYPE_CHECKING
 
 from PyQt5.QtWidgets import QDialog
 
-from toolset.config import PROGRAM_VERSION
+from toolset.config import LOCAL_PROGRAM_INFO
 
 if TYPE_CHECKING:
     from PyQt5.QtWidgets import QWidget
@@ -32,4 +32,4 @@ class About(QDialog):
 
         self.ui.closeButton.clicked.connect(self.close)
 
-        self.ui.aboutLabel.setText(self.ui.aboutLabel.text().replace("X.X.X", PROGRAM_VERSION))
+        self.ui.aboutLabel.setText(self.ui.aboutLabel.text().replace("X.X.X", LOCAL_PROGRAM_INFO["currentVersion"]))

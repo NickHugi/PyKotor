@@ -105,7 +105,7 @@ class ModuleDesigner(QMainWindow):  # noqa: PLR0904
         self.ui.setupUi(self)
         self._setupSignals()
 
-        def intColorToQColor(intvalue) -> QColor:
+        def intColorToQColor(intvalue: int) -> QColor:
             """Converts an integer color value to a QColor object.
 
             Args:
@@ -391,7 +391,7 @@ class ModuleDesigner(QMainWindow):  # noqa: PLR0904
         resource.activate(location)
         self.ui.mainRenderer.scene.clearCacheBuffer.append(ResourceIdentifier(resource.resname(), resource.restype()))
 
-    def selectResourceItem(self, instance: GITInstance, clearExisting: bool = True):
+    def selectResourceItem(self, instance: GITInstance, *, clearExisting: bool = True):
         """Select a resource item in the tree.
 
         Args:
@@ -559,7 +559,7 @@ class ModuleDesigner(QMainWindow):  # noqa: PLR0904
         self.rebuildInstanceList()
 
 #    @with_variable_trace(Exception)
-    def addInstance(self, instance: GITInstance, walkmeshSnap: bool = True):
+    def addInstance(self, instance: GITInstance, *, walkmeshSnap: bool = True):
         """Adds a GIT instance to the editor.
 
         Args:
@@ -859,17 +859,17 @@ class ModuleDesigner(QMainWindow):  # noqa: PLR0904
 
         view = self.ui.mainRenderer.scene.camera.true_position()
         rot = self.ui.mainRenderer.scene.camera
-        menu.addAction("Insert Camera").triggered.connect(lambda: self.addInstance(GITCamera(*world), False))
-        menu.addAction("Insert Camera at View").triggered.connect(lambda: self.addInstance(GITCamera(view.x, view.y, view.z, rot.yaw, rot.pitch, 0, 0), False))
+        menu.addAction("Insert Camera").triggered.connect(lambda: self.addInstance(GITCamera(*world), walkmeshSnap=False))
+        menu.addAction("Insert Camera at View").triggered.connect(lambda: self.addInstance(GITCamera(view.x, view.y, view.z, rot.yaw, rot.pitch, 0, 0), walkmeshSnap=False))
         menu.addSeparator()
-        menu.addAction("Insert Creature").triggered.connect(lambda: self.addInstance(GITCreature(*world), True))
-        menu.addAction("Insert Door").triggered.connect(lambda: self.addInstance(GITDoor(*world), False))
-        menu.addAction("Insert Placeable").triggered.connect(lambda: self.addInstance(GITPlaceable(*world), False))
-        menu.addAction("Insert Store").triggered.connect(lambda: self.addInstance(GITStore(*world), False))
-        menu.addAction("Insert Sound").triggered.connect(lambda: self.addInstance(GITSound(*world), False))
-        menu.addAction("Insert Waypoint").triggered.connect(lambda: self.addInstance(GITWaypoint(*world), False))
-        menu.addAction("Insert Encounter").triggered.connect(lambda: self.addInstance(GITEncounter(*world), False))
-        menu.addAction("Insert Trigger").triggered.connect(lambda: self.addInstance(GITTrigger(*world), False))
+        menu.addAction("Insert Creature").triggered.connect(lambda: self.addInstance(GITCreature(*world), walkmeshSnap=True))
+        menu.addAction("Insert Door").triggered.connect(lambda: self.addInstance(GITDoor(*world), walkmeshSnap=False))
+        menu.addAction("Insert Placeable").triggered.connect(lambda: self.addInstance(GITPlaceable(*world), walkmeshSnap=False))
+        menu.addAction("Insert Store").triggered.connect(lambda: self.addInstance(GITStore(*world), walkmeshSnap=False))
+        menu.addAction("Insert Sound").triggered.connect(lambda: self.addInstance(GITSound(*world), walkmeshSnap=False))
+        menu.addAction("Insert Waypoint").triggered.connect(lambda: self.addInstance(GITWaypoint(*world), walkmeshSnap=False))
+        menu.addAction("Insert Encounter").triggered.connect(lambda: self.addInstance(GITEncounter(*world), walkmeshSnap=False))
+        menu.addAction("Insert Trigger").triggered.connect(lambda: self.addInstance(GITTrigger(*world), walkmeshSnap=False))
 
         menu.popup(self.cursor().pos())
         menu.aboutToHide.connect(self.ui.mainRenderer.resetMouseButtons)
@@ -927,12 +927,12 @@ class ModuleDesigner(QMainWindow):  # noqa: PLR0904
     # endregion
 
     # region Events
-    def keyPressEvent(self, e: QKeyEvent, bubble: bool = True):
+    def keyPressEvent(self, e: QKeyEvent, bubble: bool = True):  # noqa: FBT001, FBT002
         super().keyPressEvent(e)
         self.ui.mainRenderer.keyPressEvent(e)
         self.ui.flatRenderer.keyPressEvent(e)
 
-    def keyReleaseEvent(self, e: QKeyEvent, bubble: bool = True):
+    def keyReleaseEvent(self, e: QKeyEvent, bubble: bool = True):  # noqa: FBT001, FBT002
         super().keyReleaseEvent(e)
         self.ui.mainRenderer.keyReleaseEvent(e)
         self.ui.flatRenderer.keyReleaseEvent(e)
@@ -1370,7 +1370,6 @@ class ModuleDesignerControls2d:
             world: Vector3 = self.renderer.toWorldCoords(screen.x, screen.y)
             self.editor.onContextMenu(world, self.renderer.mapToGlobal(QPoint(int(screen.x), int(screen.y))))
 
-    # TODO Rename this here and in `onMousePressed`
     def _duplicate_instance(self):
         instance: GITInstance = deepcopy(self.editor.selectedInstances[-1])
         result = self.renderer.mapFromGlobal(self.renderer.cursor().pos())

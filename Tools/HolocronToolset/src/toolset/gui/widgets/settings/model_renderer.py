@@ -8,14 +8,14 @@ class ModelRendererSettings(Settings):
         super().__init__("ModelRenderer")
 
     # region Bools
-    utcShowByDefault = Settings._addSetting(
+    utcShowByDefault = Settings.addSetting(
         "utcShowByDefault",
         False,
     )
     # endregion
 
     # region Ints
-    backgroundColour = Settings._addSetting(
+    backgroundColour = Settings.addSetting(
         "backgroundColour",
         0,
     )

@@ -107,161 +107,161 @@ class GITSettings(Settings):
                 self.settings.remove(setting)
 
     # region Strings (Instance Labels)
-    creatureLabel = Settings._addSetting(
+    creatureLabel = Settings.addSetting(
         "creatureLabel",
         "",
     )
-    doorLabel = Settings._addSetting(
+    doorLabel = Settings.addSetting(
         "doorLabel",
         "",
     )
-    placeableLabel = Settings._addSetting(
+    placeableLabel = Settings.addSetting(
         "placeableLabel",
         "",
     )
-    storeLabel = Settings._addSetting(
+    storeLabel = Settings.addSetting(
         "storeLabel",
         "",
     )
-    soundLabel = Settings._addSetting(
+    soundLabel = Settings.addSetting(
         "soundLabel",
         "",
     )
-    waypointLabel = Settings._addSetting(
+    waypointLabel = Settings.addSetting(
         "waypointLabel",
         "",
     )
-    cameraLabel = Settings._addSetting(
+    cameraLabel = Settings.addSetting(
         "cameraLabel",
         "",
     )
-    encounterLabel = Settings._addSetting(
+    encounterLabel = Settings.addSetting(
         "encounterLabel",
         "",
     )
-    triggerLabel = Settings._addSetting(
+    triggerLabel = Settings.addSetting(
         "triggerLabel",
         "",
     )
     # endregion
 
     # region Ints (Material Colours)
-    undefinedMaterialColour = Settings._addSetting(
+    undefinedMaterialColour = Settings.addSetting(
         "undefinedMaterialColour",
         671088895,
     )
-    dirtMaterialColour = Settings._addSetting(
+    dirtMaterialColour = Settings.addSetting(
         "dirtMaterialColour",
         4281084972,
     )
-    obscuringMaterialColour = Settings._addSetting(
+    obscuringMaterialColour = Settings.addSetting(
         "obscuringMaterialColour",
         671088895,
     )
-    grassMaterialColour = Settings._addSetting(
+    grassMaterialColour = Settings.addSetting(
         "grassMaterialColour",
         4281084972,
     )
-    stoneMaterialColour = Settings._addSetting(
+    stoneMaterialColour = Settings.addSetting(
         "stoneMaterialColour",
         4281084972,
     )
-    woodMaterialColour = Settings._addSetting(
+    woodMaterialColour = Settings.addSetting(
         "woodMaterialColour",
         4281084972,
     )
-    waterMaterialColour = Settings._addSetting(
+    waterMaterialColour = Settings.addSetting(
         "waterMaterialColour",
         4281084972,
     )
-    nonWalkMaterialColour = Settings._addSetting(
+    nonWalkMaterialColour = Settings.addSetting(
         "nonWalkMaterialColour",
         671088895,
     )
-    transparentMaterialColour = Settings._addSetting(
+    transparentMaterialColour = Settings.addSetting(
         "transparentMaterialColour",
         671088895,
     )
-    carpetMaterialColour = Settings._addSetting(
+    carpetMaterialColour = Settings.addSetting(
         "carpetMaterialColour",
         4281084972,
     )
-    metalMaterialColour = Settings._addSetting(
+    metalMaterialColour = Settings.addSetting(
         "metalMaterialColour",
         4281084972,
     )
-    puddlesMaterialColour = Settings._addSetting(
+    puddlesMaterialColour = Settings.addSetting(
         "puddlesMaterialColour",
         4281084972,
     )
-    swampMaterialColour = Settings._addSetting(
+    swampMaterialColour = Settings.addSetting(
         "swampMaterialColour",
         4281084972,
     )
-    mudMaterialColour = Settings._addSetting(
+    mudMaterialColour = Settings.addSetting(
         "mudMaterialColour",
         4281084972,
     )
-    leavesMaterialColour = Settings._addSetting(
+    leavesMaterialColour = Settings.addSetting(
         "leavesMaterialColour",
         4281084972,
     )
-    doorMaterialColour = Settings._addSetting(
+    doorMaterialColour = Settings.addSetting(
         "doorMaterialColour",
         4281084972,
     )
-    lavaMaterialColour = Settings._addSetting(
+    lavaMaterialColour = Settings.addSetting(
         "lavaMaterialColour",
         671088895,
     )
-    bottomlessPitMaterialColour = Settings._addSetting(
+    bottomlessPitMaterialColour = Settings.addSetting(
         "bottomlessPitMaterialColour",
         671088895,
     )
-    deepWaterMaterialColour = Settings._addSetting(
+    deepWaterMaterialColour = Settings.addSetting(
         "deepWaterMaterialColour",
         671088895,
     )
-    nonWalkGrassMaterialColour = Settings._addSetting(
+    nonWalkGrassMaterialColour = Settings.addSetting(
         "nonWalkGrassMaterialColour",
         671088895,
     )
     # endregion
 
     # region Binds (Controls)
-    moveCameraBind = Settings._addSetting(
+    moveCameraBind = Settings.addSetting(
         "moveCameraBind",
         ({QtKey.Key_Control}, {QtMouse.LeftButton}),
     )
-    rotateCameraBind = Settings._addSetting(
+    rotateCameraBind = Settings.addSetting(
         "rotateCameraBind",
         ({QtKey.Key_Control}, {QtMouse.MiddleButton}),
     )
-    zoomCameraBind = Settings._addSetting(
+    zoomCameraBind = Settings.addSetting(
         "zoomCameraBind",
         ({QtKey.Key_Control}, None),
     )
-    rotateSelectedToPointBind = Settings._addSetting(
+    rotateSelectedToPointBind = Settings.addSetting(
         "rotateSelectedToPointBind",
         (set(), {QtMouse.MiddleButton}),
     )
-    moveSelectedBind = Settings._addSetting(
+    moveSelectedBind = Settings.addSetting(
         "moveSelectedBind",
         (set(), {QtMouse.LeftButton}),
     )
-    selectUnderneathBind = Settings._addSetting(
+    selectUnderneathBind = Settings.addSetting(
         "selectUnderneathBind",
         (set(), {QtMouse.LeftButton}),
     )
-    deleteSelectedBind = Settings._addSetting(
+    deleteSelectedBind = Settings.addSetting(
         "deleteSelectedBind",
         ({QtKey.Key_Delete}, None),
     )
-    duplicateSelectedBind = Settings._addSetting(
+    duplicateSelectedBind = Settings.addSetting(
         "duplicateSelectedBind",
         ({QtKey.Key_Alt}, {QtMouse.LeftButton}),
     )
-    toggleLockInstancesBind = Settings._addSetting(
+    toggleLockInstancesBind = Settings.addSetting(
         "toggleLockInstancesBind",
         ({QtKey.Key_L}, set()),
     )

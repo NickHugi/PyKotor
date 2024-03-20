@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from collections import namedtuple
+from contextlib import contextmanager
 from operator import attrgetter
 from typing import TYPE_CHECKING, ClassVar
 
@@ -17,9 +19,6 @@ from PyQt5.QtGui import (
 from PyQt5.QtWidgets import QListWidgetItem, QMessageBox, QPlainTextEdit, QShortcut, QTextEdit, QWidget
 
 from pykotor.common.scriptdefs import KOTOR_CONSTANTS, KOTOR_FUNCTIONS, TSL_CONSTANTS, TSL_FUNCTIONS
-from pykotor.common.stream import BinaryWriter
-from pykotor.resource.formats.erf import read_erf, write_erf
-from pykotor.resource.formats.rim import read_rim, write_rim
 from pykotor.resource.type import ResourceType
 from pykotor.tools.misc import is_any_erf_type_file, is_bif_file, is_rim_file
 from toolset.gui.editor import Editor
@@ -39,8 +38,6 @@ if TYPE_CHECKING:
     )
 
     from pykotor.common.script import ScriptConstant, ScriptFunction
-    from pykotor.resource.formats.erf import ERF
-    from pykotor.resource.formats.rim import RIM
     from toolset.data.installation import HTInstallation
 
 
@@ -146,6 +143,44 @@ class NSSEditor(Editor):
             item.setData(QtCore.Qt.UserRole, constant)
             self.ui.constantList.addItem(item)
 
+    # A context that can be saved and restored by _snapshotResTypeContext.
+    SavedContext = namedtuple("SavedContext", ["filepath", "resname", "restype", "revert", "saved_connection"])
+
+    @contextmanager
+    def _snapshotResTypeContext(self, saved_file_callback=None):
+        """Snapshots the current _restype and associated state, to restore after a with statement.
+
+        This saves the current _filepath, _resname and _revert data in a context object and restores it when done.
+        If saved_file_callback is not None, it will be connected to the savedFile slot during the with statement.
+        If a file is successfully saved during that time it will be called with these arguments before the context
+        manager restores the original state: (filepath: str, resname: str, restype: ResourceType, data: bytes)
+
+        Usage:
+
+            # self._restype is NSS
+            with self._snapshotResTypeContext():
+                # Do something that might change self._restype to NSC.
+                self.saveAs()
+            # after the with statement, self._restype is returned to NSS.
+        """
+        if saved_file_callback:
+            saved_connection = self.savedFile.connect(saved_file_callback)
+        else:
+            saved_connection = None
+        context = NSSEditor.SavedContext(self._filepath, self._resname, self._restype, self._revert, saved_connection)
+        try:
+            yield context
+        finally:
+            if context.saved_connection:
+                self.disconnect(context.saved_connection)
+            # If _restype changed, unwind all the changes that may have been made.
+            if self._restype != context.restype:
+                self._filepath = context.filepath
+                self._resname = context.resname
+                self._restype = context.restype
+                self._revert = context.revert
+                self.refreshWindowTitle()
+
     def load(self, filepath: os.PathLike | str, resref: str, restype: ResourceType, data: bytes):
         """Loads a resource into the editor.
 
@@ -169,7 +204,7 @@ class NSSEditor(Editor):
             self.ui.codeEdit.setPlainText(data.decode("windows-1252", errors="ignore"))
         elif restype == ResourceType.NCS:
             try:
-                source = decompileScript(data, self._installation.tsl, self._installation.path())
+                source = decompileScript(data, self._installation.path(), tsl=self._installation.tsl)
                 self.ui.codeEdit.setPlainText(source)
                 self._is_decompiled = True
             except ValueError as e:
@@ -184,7 +219,7 @@ class NSSEditor(Editor):
             return self.ui.codeEdit.toPlainText().encode("windows-1252"), b""
 
         print("compiling script from nsseditor")
-        compiled_bytes: bytes | None = compileScript(self.ui.codeEdit.toPlainText(), self._installation.tsl, self._installation.path())
+        compiled_bytes: bytes | None = compileScript(self.ui.codeEdit.toPlainText(), self._installation.path(), tsl=self._installation.tsl)
         if compiled_bytes is None:
             print("user cancelled the compilation")
             return None, b""
@@ -216,39 +251,38 @@ class NSSEditor(Editor):
             3. Writes the compiled data to the file.
             4. Displays a success or failure message.
         """
-        try:
-            source: str = self.ui.codeEdit.toPlainText()
-            data: bytes | None = compileScript(source, self._installation.tsl, self._installation.path())
-            if data is None:  # user cancelled
-                return
-
-            filepath: Path = self._filepath if self._filepath is not None else Path.cwd() / "untitled_script.ncs"
-            if is_any_erf_type_file(filepath.name):
-                savePath = filepath / f"{self._resname}.{self._restype.extension}"
-                erf: ERF = read_erf(filepath)
-                erf.set_data(self._resname, ResourceType.NCS, data)
-                write_erf(erf, filepath)
-            elif is_rim_file(filepath.name):
-                savePath = filepath / f"{self._resname}.{self._restype.extension}"
-                rim: RIM = read_rim(filepath)
-                rim.set_data(self._resname, ResourceType.NCS, data)
-                write_rim(rim, filepath)
-            else:
-                if not filepath or is_bif_file(filepath.name):
-                    savePath = self._installation.override_path() / f"{self._resname}.ncs"
+        # _compiledResourceSaved() will show a success message if the file is saved successfully.
+        with self._snapshotResTypeContext(self._compiledResourceSaved):
+            try:
+                self._restype = ResourceType.NCS
+                filepath: Path = self._filepath if self._filepath is not None else Path.cwd() / "untitled_script.ncs"
+                if is_any_erf_type_file(filepath.name) or is_rim_file(filepath.name):
+                    # Save the NCS resource into the given ERF/RIM.
+                    # If this is not allowed save() will find a new path to save at.
+                    self._filepath = filepath
+                elif not filepath or is_bif_file(filepath.name):
+                    self._filepath = self._installation.override_path() / f"{self._resname}.ncs"
                 else:
-                    savePath = filepath.with_suffix(".ncs")
-                BinaryWriter.dump(savePath, data)
+                    self._filepath = filepath.with_suffix(".ncs")
 
-            QMessageBox(
-                QMessageBox.Information,
-                "Success",
-                f"Compiled script successfully saved to:\n {savePath}.",
-            ).exec_()
-        except ValueError as e:
-            QMessageBox(QMessageBox.Critical, "Failed to compile", str(universal_simplify_exception(e))).exec_()
-        except OSError as e:
-            QMessageBox(QMessageBox.Critical, "Failed to save file", str(universal_simplify_exception(e))).exec_()
+                # Save using the overridden filepath and resource type.
+                self.save()
+            except ValueError as e:
+                QMessageBox(QMessageBox.Critical, "Failed to compile", str(universal_simplify_exception(e))).exec_()
+            except OSError as e:
+                QMessageBox(QMessageBox.Critical, "Failed to save file", str(universal_simplify_exception(e))).exec_()
+
+    def _compiledResourceSaved(self, filepath: str, resname: str, restype: ResourceType, data: bytes):
+        """Shows a messagebox after compileCurrentScript successfully saves an NCS resource."""
+        savePath = Path(filepath)
+        if is_any_erf_type_file(savePath.name) or is_rim_file(savePath.name):
+            # Format as /full/path/to/file.mod/resname.ncs
+            savePath = savePath / f"{resname}.ncs"
+        QMessageBox(
+            QMessageBox.Information,
+            "Success",
+            f"Compiled script successfully saved to:\n {savePath}.",
+        ).exec_()
 
     def changeDescription(self):
         """Change the description textbox to whatever function or constant the user has selected.
@@ -373,15 +407,25 @@ class NSSEditor(Editor):
 
     def onFunctionSearch(self):
         string = self.ui.functionSearchEdit.text()
+        if not string:
+            return
+        lower_string = string.lower()
         for i in range(self.ui.functionList.count()):
             item = self.ui.functionList.item(i)
-            item.setHidden(string not in item.text())
+            if not item:
+                continue
+            item.setHidden(lower_string not in item.text().lower())
 
     def onConstantSearch(self):
         string = self.ui.constantSearchEdit.text()
+        if not string:
+            return
+        lower_string = string.lower()
         for i in range(self.ui.constantList.count()):
             item = self.ui.constantList.item(i)
-            item.setHidden(string not in item.text())
+            if not item:
+                continue
+            item.setHidden(lower_string not in item.text().lower())
 
 
 class LineNumberArea(QWidget):
@@ -576,7 +620,7 @@ class SyntaxHighlighter(QSyntaxHighlighter):
             "keyword": self.getCharFormat("blue"),
             "operator": self.getCharFormat("darkRed"),
             "numbers": self.getCharFormat("brown"),
-            "comment": self.getCharFormat("gray", False, True),
+            "comment": self.getCharFormat("gray", bold=False, italic=True),
             "string": self.getCharFormat("darkMagenta"),
             "brace": self.getCharFormat("darkRed"),
             "function": self.getCharFormat("darkGreen"),
@@ -653,6 +697,7 @@ class SyntaxHighlighter(QSyntaxHighlighter):
     def getCharFormat(
         self,
         color: str | int,
+        *,
         bold: bool = False,
         italic: bool = False,
     ) -> QTextCharFormat:
