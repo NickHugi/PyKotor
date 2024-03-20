@@ -116,7 +116,7 @@ jobs:
             "3.11" { "3.11.8" }
             "3.12" { "3.12.2" }
           }
-        } elif ("${{ runner.os }}" -eq "macOS") {
+        } elseif ("${{ runner.os }}" -eq "macOS") {
           # Ensure Xcode Command Line Tools are installed?
           # xcode-select --install 2>$null | Out-Null
         }
