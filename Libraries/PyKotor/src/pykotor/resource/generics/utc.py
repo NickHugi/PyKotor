@@ -95,6 +95,10 @@ class UTC:
     def __init__(
         self,
     ):
+        # internal use only, to preserve the original order:
+        self._original_feat_mapping: dict[int, int] = {}
+        self._extra_unimplemented_skills: list[int] = []
+
         self.resref: ResRef = ResRef.from_blank()
         self.conversation: ResRef = ResRef.from_blank()
         self.tag: str = ""
@@ -112,9 +116,16 @@ class UTC:
         self.faction_id: int = 0
         self.walkrate_id: int = 0
         self.soundset_id: int = 0
+        self.save_will: int = 0
+        self.save_fortitude: int = 0
+        self.morale: int = 0
+        self.morale_recovery: int = 0
+        self.morale_breakpoint: int = 0
 
         self.body_variation: int = 0
         self.texture_variation: int = 0
+
+        self.portrait_resref: ResRef = ResRef.from_blank()
 
         self.not_reorienting: bool = False
         self.party_interact: bool = False
@@ -188,7 +199,7 @@ class UTC:
         self.description: LocalizedString = LocalizedString.from_invalid()
         self.lawfulness: int = 0
         self.phenotype_id: int = 0
-        # self.on_rested: ResRef = ResRef.from_blank()  # noqa: ERA001
+        # self.on_rested: ResRef = ResRef.from_blank()
         self.subrace_name: str = ""
 
 
@@ -198,6 +209,9 @@ class UTCClass:
         class_id: int,
         class_level: int = 0,
     ):
+        # internal use only, to preserve the original order:
+        self._original_powers_mapping: dict[int, int] = {}
+
         self.class_id: int = class_id
         self.class_level: int = class_level
         self.powers: list[int] = []
@@ -244,6 +258,14 @@ def construct_utc(
     utc.portrait_id = root.acquire("PortraitId", 0)
     utc.palette_id = root.acquire("PaletteID", 0)
     utc.bodybag_id = root.acquire("BodyBag", 0)
+
+    # TODO(th3w1zard1): Add these seemingly missing fields into UTCEditor?
+    utc.portrait_resref = root.acquire("Portrait", ResRef.from_blank())
+    utc.save_will = root.acquire("SaveWill", 0)
+    utc.save_fortitude = root.acquire("SaveFortitude", 0)
+    utc.morale = root.acquire("Morale", 0)
+    utc.morale_recovery = root.acquire("MoraleRecovery", 0)
+    utc.morale_breakpoint = root.acquire("MoraleBreakpoint", 0)
 
     utc.body_variation = root.acquire("BodyVariation", 0)
     utc.texture_variation = root.acquire("TextureVar", 0)
@@ -308,6 +330,13 @@ def construct_utc(
     utc.security = skill_list.at(6).acquire("Rank", 0)
     utc.treat_injury = skill_list.at(7).acquire("Rank", 0)
 
+    # Not sure why there's extras... some utc's in k1 have 20 structs in the SkillList.
+    if len(skill_list._structs) > 8:
+        utc._extra_unimplemented_skills = [
+            skill_struct.acquire("Rank", 0)
+            for skill_struct in skill_list._structs[8:]
+        ]
+
     class_list: GFFList = root.acquire("ClassList", GFFList())
     for class_struct in class_list:
         class_id = class_struct.acquire("Class", 0)
@@ -315,14 +344,18 @@ def construct_utc(
         utc_class = UTCClass(class_id, class_level)
 
         power_list: GFFList = class_struct.acquire("KnownList0", GFFList())
-        for power_struct in power_list:
-            utc_class.powers.append(power_struct.acquire("Spell", 0))
+        for index, power_struct in enumerate(power_list):
+            spell_thing = power_struct.acquire("Spell", 0)
+            utc_class.powers.append(spell_thing)
+            utc_class._original_powers_mapping[spell_thing] = index
 
         utc.classes.append(utc_class)
 
     feat_list: GFFList = root.acquire("FeatList", GFFList())
-    for feat_struct in feat_list:
-        utc.feats.append(feat_struct.acquire("Feat", 0))
+    for index, feat_struct in enumerate(feat_list):
+        feat_id_thing: int = feat_struct.acquire("Feat", 0)
+        utc.feats.append(feat_id_thing)
+        utc._original_feat_mapping[feat_id_thing] = index
 
     equipment_list: GFFList = root.acquire("Equip_ItemList", GFFList())
     for equipment_struct in equipment_list:
@@ -366,6 +399,14 @@ def dismantle_utc(
     root.set_int32("WalkRate", utc.walkrate_id)
     root.set_uint16("SoundSetFile", utc.soundset_id)
     root.set_uint16("PortraitId", utc.portrait_id)
+
+    # TODO(th3w1zard1): Add these seemingly missing fields into UTCEditor?
+    root.set_resref("Portrait", utc.portrait_resref)
+    root.set_uint8("SaveWill", utc.save_will)
+    root.set_uint8("SaveFortitude", utc.save_fortitude)
+    root.set_uint8("Morale", utc.morale)
+    root.set_uint8("MoraleRecovery", utc.morale_recovery)
+    root.set_uint8("MoraleBreakpoint", utc.morale_breakpoint)
 
     root.set_uint8("BodyVariation", utc.body_variation)
     root.set_uint8("TextureVar", utc.texture_variation)
@@ -438,10 +479,20 @@ def dismantle_utc(
             power_struct.set_uint16("Spell", power)
             power_struct.set_uint8("SpellFlags", 1)
             power_struct.set_uint8("SpellMetaMagic", 0)
+        power_list._structs = sorted(power_list._structs, key=lambda power_struct_local: utc_class._original_powers_mapping.get(power_struct_local.get_uint16("Spell"), float("inf")))
 
     feat_list: GFFList = root.set_list("FeatList", GFFList())
     for feat in utc.feats:
         feat_list.add(1).set_uint16("Feat", feat)
+
+    # Sort utc.feats according to their original index, stored in utc._original_feat_mapping
+    # Might be better to use GFFStructInterface from that PR.
+    feat_list._structs = sorted(feat_list._structs, key=lambda feat: utc._original_feat_mapping.get(feat.get_uint16("Feat"), float("inf")))
+
+    # Not sure what these are for, verified they exist in K1's 'c_drdg.utc' in data\templates.bif
+    if utc._extra_unimplemented_skills:
+        for val in utc._extra_unimplemented_skills:
+            skill_list.add(0).set_uint8("Rank", val)
 
     equipment_list: GFFList = root.set_list("Equip_ItemList", GFFList())
     for slot, item in utc.equipment.items():

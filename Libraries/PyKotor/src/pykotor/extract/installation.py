@@ -2069,7 +2069,7 @@ class Installation:
         -------
             A dictionary mapping module filename to in-game module id.
         """
-        return CaseInsensitiveDict((module, self.module_id(module, use_hardcoded=use_hardcoded)) for module in self.modules_list())
+        return CaseInsensitiveDict((module, self.module_id(module, use_hardcoded=use_hardcoded, use_alternate=use_alternate)) for module in self.modules_list())
 
     def module_name(
         self,
@@ -2118,6 +2118,8 @@ class Installation:
                     name = locstring.get(Language.ENGLISH, Gender.MALE)
                 else:
                     name = self.talktable().string(locstring.stringref)
+                if name and name.strip():
+                    return name
             except Exception as e:  # pylint: disable=W0718  # noqa: BLE001, PERF203
                 print(format_exception_with_variables(e, message="This exception has been suppressed in pykotor.extract.installation."))
             mod_ids_to_try.add(mod_id)
@@ -2126,7 +2128,6 @@ class Installation:
         for mod_id in mod_ids_to_try:
             for _unfound_mod_id, capsule in our_erf_rims_module:
                 with suppress(Exception):
-                    #print(f"Checking for '{mod_id}' in '{module_filename}'")
                     are_resource = capsule.info(mod_id, ResourceType.ARE)
                     if are_resource is None:
                         continue
@@ -2135,7 +2136,7 @@ class Installation:
                         name = locstring.get(Language.ENGLISH, Gender.MALE)
                     else:
                         name = self.talktable().string(locstring.stringref)
-                    if name is not None:
+                    if name and name.strip():
                         return name
         return name or module_filename
 
@@ -2272,7 +2273,7 @@ class Installation:
                         return found_mod_id, True
                     #print(f"Alternate: {attribute_name} '{found_mod_id}' not in '{lower_root}'")
         except Exception as e:  # noqa: BLE001
-            print(iterated_capsule.filename(), attribute_name, str(e))
+            ...#print(iterated_capsule.filename(), attribute_name, str(e))
         else:
             # if found_mod_id:
             #     print(f"Got ID '{found_mod_id}' in {attribute_name} for erf/rim '{iterated_capsule.filename()}'")

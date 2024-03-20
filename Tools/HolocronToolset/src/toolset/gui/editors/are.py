@@ -58,7 +58,7 @@ class AREEditor(Editor):
         self.resize(400, 250)
 
         self._are: ARE = ARE()
-        self._minimap: TPC | None = None
+        self._minimap = None
         self._rooms: list[ARERoom] = []  # TODO(th3w1zard1): define somewhere in ui.
 
         from toolset.uic.editors.are import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
