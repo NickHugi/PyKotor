@@ -87,15 +87,9 @@ class AudioPlayer(QMainWindow):
         position: int = self.ui.timeSlider.value()
         self.player.setPosition(position)
 
-    def hideEvent(self, event):
-        # closeEvent doesn't get called for whatever reason.
-        super().hideEvent(event)
+    def closeEvent(self, e: QCloseEvent | None = None):
         self.player.stop()
 
-    def closeEvent(self, e: QCloseEvent | None = None):  # FIXME(th3w1zard1): this event never gets called.
-        print("Closing window and stopping player")  # Debugging line to confirm this method is called
-        self.player.stop()  # Stop the player
-
         if e is not None:
-            e.accept()  # Notify the event system that the event has been handled
-            super().closeEvent(e)  # Call the parent class's closeEvent method
+            e.accept()
+            super().closeEvent(e)
