@@ -941,21 +941,22 @@ class ToolWindow(QMainWindow):
 
         toolsetLatestReleaseVersion = remoteInfo["toolsetLatestVersion"]
         toolsetLatestBetaVersion = remoteInfo["toolsetLatestBetaVersion"]
-        releaseNewerThanBeta = not remoteVersionNewer(toolsetLatestReleaseVersion, toolsetLatestBetaVersion)
-        if self.settings.alsoCheckReleaseVersion and (
-            not self.settings.useBetaChannel
-            or releaseNewerThanBeta
+        releaseNewerThanBeta = remoteVersionNewer(toolsetLatestBetaVersion, toolsetLatestReleaseVersion)
+        if (
+            self.settings.useBetaChannel
+            and self.settings.alsoCheckReleaseVersion
+            and releaseNewerThanBeta
+            or not self.settings.useBetaChannel
         ):
-            releaseVersionChecked = True
-            greatestAvailableVersion = remoteInfo["toolsetLatestVersion"]
+            betaString = "release"
+            greatestAvailableVersion = toolsetLatestReleaseVersion
             toolsetLatestNotes = remoteInfo.get("toolsetLatestNotes", "")
             toolsetDownloadLink = remoteInfo["toolsetDownloadLink"]
         else:
-            releaseVersionChecked = False
-            greatestAvailableVersion = remoteInfo["toolsetLatestBetaVersion"]
+            betaString = "beta"
+            greatestAvailableVersion = toolsetLatestBetaVersion
             toolsetLatestNotes = remoteInfo.get("toolsetBetaLatestNotes", "")
             toolsetDownloadLink = remoteInfo["toolsetBetaDownloadLink"]
-
         version_check = remoteVersionNewer(CURRENT_VERSION, greatestAvailableVersion)
         if version_check is False:  # Only check False. if None then the version check failed
             if silent:
@@ -972,11 +973,10 @@ class ToolWindow(QMainWindow):
             upToDateMsgBox.exec_()
             return
 
-        betaString = "release " if releaseVersionChecked else "beta "
         newVersionMsgBox = QMessageBox(
             QMessageBox.Information,
-            f"New toolset {betaString}version available.",
-            f"Your toolset version ({CURRENT_VERSION}) is outdated.<br>A new toolset {betaString}version ({greatestAvailableVersion}) available for <a href='{toolsetDownloadLink}'>download</a>.<br>{toolsetLatestNotes}",
+            f"New toolset {betaString} version available.",
+            f"Your toolset version ({CURRENT_VERSION}) is outdated.<br>A new toolset {betaString} version ({greatestAvailableVersion}) available for <a href='{toolsetDownloadLink}'>download</a>.<br>{toolsetLatestNotes}",
             QMessageBox.Ok,
             parent=None,
             flags=Qt.Window | Qt.Dialog | Qt.WindowStaysOnTopHint
