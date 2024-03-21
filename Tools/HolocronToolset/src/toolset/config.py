@@ -19,9 +19,9 @@ if TYPE_CHECKING:
 
 LOCAL_PROGRAM_INFO = \
 {  #<---JSON_START--->#{
-    "currentVersion": "2.2.1b18",
+    "currentVersion": "2.2.1b19",
     "toolsetLatestVersion": "2.1.2",
-    "toolsetLatestBetaVersion": "2.2.1b18",
+    "toolsetLatestBetaVersion": "2.2.1b19",
     "updateInfoLink": "https://api.github.com/repos/NickHugi/PyKotor/contents/Tools/HolocronToolset/src/toolset/config.py",
     "updateBetaInfoLink": "https://api.github.com/repos/NickHugi/PyKotor/contents/Tools/HolocronToolset/src/toolset/config.py?ref=bleeding-edge",
     "toolsetDownloadLink": "https://deadlystream.com/files/file/1982-holocron-toolset",
